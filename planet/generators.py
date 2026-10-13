@@ -1,12 +1,12 @@
-"""Three entirely different ways to make a planet's terrain.
+"""Terrain generators. (The `noise` and `faults` generators lived here
+until commit 503f101; see git history.)
 
 Every generator has the signature
 
     gen(grid, rng, **params) -> (elevation_m: ndarray, extra_layers: dict)
 
 and returns elevation in metres with 0 = sea level. Everything downstream
-(climate, rivers, erosion, biomes) is shared, so you can compare the three
-directly.
+(climate, rivers, erosion, biomes) is shared.
 """
 
 from __future__ import annotations
@@ -19,22 +19,6 @@ from .grid import Grid
 from .noise import Perlin3D, fbm, ridged
 
 
-def to_sea_level(raw: np.ndarray, ocean_fraction: float, max_height: float = 6500,
-                 max_depth: float = 6000) -> np.ndarray:
-    """Shift and scale an arbitrary 'height-ish' field so the requested share of
-    cells is under water, then map to metres. Land gets a curve that keeps
-    most of it low (real continents are mostly lowland)."""
-    sea = np.quantile(raw, ocean_fraction)
-    s = raw - sea
-    out = np.empty_like(s)
-    land = s > 0
-    if land.any():
-        out[land] = max_height * (s[land] / s[land].max()) ** 1.5
-    if (~land).any():
-        out[~land] = -max_depth * (-s[~land] / -s[~land].min()) ** 0.6
-    return out
-
-
 def smooth(grid: Grid, values: np.ndarray, passes: int = 1, amount: float = 0.5) -> np.ndarray:
     a, b = grid.edges[:, 0], grid.edges[:, 1]
     deg = np.bincount(np.concatenate([a, b]), minlength=grid.n)
@@ -45,65 +29,7 @@ def smooth(grid: Grid, values: np.ndarray, passes: int = 1, amount: float = 0.5)
 
 
 # ---------------------------------------------------------------------------
-# 1. NOISE: "sculpt with static"
-# ---------------------------------------------------------------------------
-def gen_noise(grid: Grid, rng: np.random.Generator, ocean_fraction: float = 0.65,
-              continent_scale: float = 1.2, warp: float = 0.4,
-              mountain_amount: float = 0.35) -> tuple[np.ndarray, dict]:
-    """Fractal noise sampled on the sphere. The most common technique: fast,
-    pretty, and has no idea what a mountain range *is*. Mountains end up
-    as random speckle rather than long chains, which is its tell.
-
-    - continent_scale: lower = fewer, bigger continents.
-    - warp: domain warping. Feed noise into the coordinates of other noise
-      to get swirly, less blobby coastlines.
-    - mountain_amount: weight of a 'ridged' noise layer on land.
-    """
-    seed = int(rng.integers(2**31))
-    n1, n2, n3 = Perlin3D(seed), Perlin3D(seed + 1), Perlin3D(seed + 2)
-    p = grid.centers
-    if warp:
-        q = np.stack([fbm(n2, p + o, octaves=3, freq=1.0) for o in (0.0, 5.2, 9.7)], axis=1)
-        p = p + warp * q
-    base = fbm(n1, p, octaves=7, freq=continent_scale)
-    mask = np.clip(base * 4 + 0.2, 0, 1)  # mountains only where it's already fairly high
-    mountains = ridged(n3, p, octaves=5, freq=2.5) * mask
-    raw = base + mountain_amount * mountains
-    return to_sea_level(raw, ocean_fraction), {}
-
-
-# ---------------------------------------------------------------------------
-# 2. FAULTS: "slice the planet a thousand times"
-# ---------------------------------------------------------------------------
-def gen_faults(grid: Grid, rng: np.random.Generator, ocean_fraction: float = 0.65,
-               n_faults: int = 1200, offset: float = 0.5,
-               sharpness: float = 1.0) -> tuple[np.ndarray, dict]:
-    """A classic from the 1990s demoscene (Hugo Elias / 'spherical landscapes').
-    Repeatedly cut the planet with a random plane; nudge everything on one
-    side up and everything on the other side down. After ~1000 cuts you get
-    surprisingly Earth-like fractal coastlines from an absurdly simple rule.
-
-    - n_faults: number of cuts.
-    - offset: how far from the planet's centre cut planes may sit. At 0
-      every cut goes through the centre and the planet comes out
-      'antisymmetric': the opposite side of every continent is an ocean.
-    - sharpness: higher = crisper cliffs at each cut.
-    """
-    p = grid.centers
-    width = grid.spacing / max(sharpness, 1e-3)
-    h = np.zeros(grid.n)
-    for start in range(0, n_faults, 250):
-        k = min(250, n_faults - start)
-        normals = rng.normal(size=(k, 3))
-        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
-        d = rng.uniform(-offset, offset, size=k)
-        h += np.tanh((p @ normals.T - d) / width).sum(axis=1)
-    h = smooth(grid, h, passes=2, amount=0.4)
-    return to_sea_level(h, ocean_fraction), {}
-
-
-# ---------------------------------------------------------------------------
-# 3. PLATES: "fake geology"
+# PLATES: "fake geology"
 # ---------------------------------------------------------------------------
 def _grow_plates(grid: Grid, rng: np.random.Generator, n_plates: int) -> np.ndarray:
     """Random flood fill from seed cells. Each plate gets a random growth rate
@@ -156,8 +82,8 @@ def gen_plates(grid: Grid, rng: np.random.Generator, n_plates: int = 14,
        - pulling apart under continent -> rift valley (East Africa)
     5. Spread each boundary feature inland with a falloff.
 
-    Mountains therefore come in long chains along plate edges, unlike in
-    the noise method. Ocean is whatever's left; there's no ocean_fraction.
+    Mountains therefore come in long chains along plate edges rather than
+    as random speckle. Ocean is whatever's left; there's no ocean_fraction.
     """
     seed = int(rng.integers(2**31))
     noise = Perlin3D(seed)
@@ -259,4 +185,4 @@ def gen_plates(grid: Grid, rng: np.random.Generator, n_plates: int = 14,
     return h, extra
 
 
-GENERATORS = {"noise": gen_noise, "faults": gen_faults, "plates": gen_plates}
+GENERATORS = {"plates": gen_plates}

@@ -1,38 +1,38 @@
 # procgen_world
 
-Toy procedural planets: three different terrain generators, a shared
+Toy procedural planets: a plate-tectonics terrain generator, a
 climate / river / biome pipeline, a plain-text world format, and a 3D
 browser viewer.
 
 ## Quick start
 
 ```sh
-uv run python -m planet generate --seed 1          # all three methods, seed 1
+uv run python -m planet generate --seed 1          # writes worlds/plates-s1-L5.{json,txt}
 uv run python -m planet serve                       # opens http://127.0.0.1:8765/viewer/
 ```
 
 Other things to try:
 
 ```sh
-uv run python -m planet generate -m plates -s 42 -l 6                    # one method, more detail
-uv run python -m planet generate -m plates --set n_plates=6 continental_fraction=0.5
-uv run python -m planet generate -m noise --set ocean_fraction=0.4 warp=1.0
-uv run python -m planet generate -m faults --set offset=0 --erosion 0     # see the antipode trick
+uv run python -m planet generate -s 42 -l 6                              # more detail
+uv run python -m planet generate --set n_plates=6 continental_fraction=0.5
+uv run python -m planet generate --erosion 0                             # skip river erosion
 uv run python -m planet show worlds/plates-s1-L5.json --layer elevation  # ASCII map in the terminal
 ```
 
 `-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (default, ~240 km cells),
 6 = 41k (~120 km), 7 = 164k (slow, big files).
 
-## The three generators (`planet/generators.py`)
+## Terrain: plates (`planet/generators.py`)
 
-| method   | idea | tell-tale look | knobs (`--set`) |
-|----------|------|----------------|-----------------|
-| `noise`  | Fractal (Perlin) noise sampled on the sphere, plus ridged noise for mountains. The industry default. | Pretty, blobby; mountains are speckles, not chains. | `ocean_fraction`, `continent_scale`, `warp`, `mountain_amount` |
-| `faults` | Slice the planet with ~1000 random planes; raise one side, lower the other. 1990s demoscene classic. | Very Earth-like fractal coastlines; tends toward one big supercontinent. | `ocean_fraction`, `n_faults`, `offset`, `sharpness` |
-| `plates` | Cartoon plate tectonics: random plates, spin each one, build mountains/trenches/ridges where they collide or separate. | Long mountain chains along plate edges, trenches off coasts, island arcs. | `n_plates`, `continental_fraction`, `mountain_height`, `trench_depth`, `ridge_height`, `plate_speed` |
+Cartoon plate tectonics: random plates, each spun around a random axis, with
+mountains, trenches, ridges and rifts built where plates collide or separate.
+Knobs (`--set`): `n_plates`, `continental_fraction`, `mountain_height`,
+`trench_depth`, `ridge_height`, `plate_speed`.
 
-All three then go through the same pipeline:
+(Earlier `noise` and `faults` generators are in git history at commit 503f101.)
+
+Terrain then goes through the shared pipeline:
 
 1. **Climate** (`climate.py`): temperature from latitude and altitude; Earth-style
    wind bands carry moisture off the oceans; air rains out as it cools, which

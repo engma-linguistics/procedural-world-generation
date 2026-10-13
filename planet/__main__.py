@@ -61,15 +61,15 @@ def main():
     ap = argparse.ArgumentParser(prog="planet")
     sub = ap.add_subparsers(required=True)
 
-    g = sub.add_parser("generate", help="make a world (or all three methods with --method all)")
-    g.add_argument("--method", "-m", default="all", choices=[*GENERATORS, "all"])
+    g = sub.add_parser("generate", help="make a world")
+    g.add_argument("--method", "-m", default="plates", choices=[*GENERATORS, "all"])
     g.add_argument("--seed", "-s", type=int, default=1)
     g.add_argument("--level", "-l", type=int, default=5,
                    help="grid detail: 4=2.5k cells, 5=10k, 6=41k, 7=164k (slow)")
     g.add_argument("--erosion", type=float, default=1.0, help="0 disables river erosion")
     g.add_argument("--name", "-n")
     g.add_argument("--set", nargs="*", metavar="KEY=VALUE",
-                   help="generator params, e.g. --set n_plates=8 ocean_fraction=0.5")
+                   help="generator params, e.g. --set n_plates=8 continental_fraction=0.5")
     g.set_defaults(func=cmd_generate)
 
     s = sub.add_parser("show", help="print an ASCII map of a saved world")
