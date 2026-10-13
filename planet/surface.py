@@ -7,10 +7,18 @@ and is deposited in closed basins (lakes) or at the river mouth, where it
 spreads out into a shelf/delta. Isostasy (in tectonics.elevation) turns
 removed or added crust into lower or higher ground.
 
-Erosion at a 120-240 km cell size can't resolve individual valleys, so it has
-two parts:
-  denudation  the ground as a whole wears down, faster the higher it is
-              (dh/dt = -(h/tau)(0.5 + h/2 km)), scaled by rock and rainfall
+Erosion at a 60-240 km cell size can't resolve individual valleys, so it has
+three parts, all scaled by rock and rainfall:
+  hillslope   ground wears down in proportion to how far it stands above its
+              neighbours (Ahnert 1970: denudation ~ local relief). Steep range
+              fronts and plateau edges go fast; a plateau's flat interior and
+              broad old uplands barely change. Like a diffusion (rate ~
+              kappa * drop / spacing^2), so it's the same at any resolution.
+  weathering  everything above base level also wears down, slowly when low
+              and much faster when high (dh/dt = -(h/tau)(1 + (h/h0)^2), h
+              above base): high ground has deep valleys, frost and glaciers
+              below the cell scale, so young ranges are cut down quickly
+              while old ones linger at 1-2 km (Montgomery & Brandon 2002)
   incision    rivers cut down toward the next cell downstream at a rate
               ~ sqrt(water flow) (stream power), so big rivers keep their
               valleys low and drainage divides stay high
@@ -41,9 +49,29 @@ COVER_K = 2.0  # loose-ish sedimentary cover erodes fastest
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed
 
 
+R_KM = 6371.0
+
+
 def rain_factor(precip_mm):
-    """Wetter ground erodes faster, but only weakly (relief matters more)."""
-    return np.clip(np.sqrt(np.maximum(precip_mm, 0) / 800.0), 0.25, 2.0)
+    """Wetter ground erodes faster; deserts barely erode (little runoff to
+    carry anything away, so their mountains and plateaus last)."""
+    return np.clip((np.maximum(precip_mm, 0) / 800.0) ** 0.8, 0.1, 2.5)
+
+
+@njit(cache=True)
+def _relief(h, nbr_off, nbr_idx):
+    """Mean height each cell stands above its neighbours (lower ones only;
+    the sea counts as 0 m), m."""
+    n = h.shape[0]
+    out = np.zeros(n)
+    for i in range(n):
+        s = 0.0
+        for k in range(nbr_off[i], nbr_off[i + 1]):
+            hj = max(h[nbr_idx[k]], 0.0)
+            if h[i] > hj:
+                s += h[i] - hj
+        out[i] = s / (nbr_off[i + 1] - nbr_off[i])
+    return out
 
 
 @njit(cache=True)
@@ -85,7 +113,7 @@ def _spread(dep, ea, eb, k, n_sub):
     return d
 
 
-def erode(grid, elev, thick, cover, rock, cont, precip, dt, tau, incision, scale, iso_land, iso_sea):
+def erode(grid, elev, thick, cover, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso_land, iso_sea):
     """One step of erosion + sediment transport on the world view.
     Returns (thick, cover, removed_km, flow, downstream)."""
     n = grid.n
@@ -95,10 +123,15 @@ def erode(grid, elev, thick, cover, rock, cont, precip, dt, tau, incision, scale
     flow = kernels.accumulate(down, order, rain_m)
 
     K = np.where(cover > COVER_SHOWS, COVER_K, ROCK_K[rock]) * rain_factor(precip)
-    # denudation toward base level (continental interiors settle ~200 m up)
+    # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
+    # Laplacian on this grid; exponential form can't overshoot)
+    d_km = grid.spacing * R_KM
+    relief = _relief(elev.astype(float), grid.nbr_off, grid.nbr_idx) * land
+    h = elev - relief * (1 - np.exp(-4 * hillslope * K * dt / d_km**2))
+    # weathering toward base level (continental interiors settle ~200 m up)
     base = np.where(cont, 200.0, 0.0)
-    above = np.maximum(elev - base, 0) * land
-    h = elev - above + above / (1 + dt / tau * K * (0.5 + above / 2000.0))
+    above = np.maximum(h - base, 0) * land
+    h = h - above * (1 - np.exp(-K * dt / tau * (1 + (above / h0) ** 2)))
     # river incision toward the next cell downstream (implicit, unconditionally stable)
     h = h.astype(float)
     kernels.stream_power(h, down, order, np.where(land, incision * K * np.sqrt(flow) * dt, 0.0))

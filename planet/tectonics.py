@@ -84,7 +84,9 @@ class Params:
     # flattened at the numerical limit: ~1 km in 4 Myr from flow alone.)
     crust_flow: float = 0.0006
     # surface (see surface.py): erosion, rivers, sediment, climate
-    erosion_timescale: float = 70.0  # Myr e-folding of ground 2 km up, for rock of erodibility 1
+    hillslope: float = 100.0  # km^2/Myr: wearing-down of ground standing above its neighbours
+    erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
+    erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
     incision: float = 0.004  # river cutting, per Myr per sqrt(flow)
     climate_every: float = 10.0  # Myr between rainfall updates
@@ -687,7 +689,14 @@ class Simulation:
         self.age[self.owned] += dt
         self._world_view()
         cont, rock = self.w_cont, self.w_rock.copy()
-        t = self.w_thick + growth * dt + plume * np.where(cont, 0.25, 1.0) * dt
+        # Volcanoes can't build forever: past ~4.5 km above the sea (Mauna Kea,
+        # 10 km above its sea floor) magma can't lift itself to the summit and
+        # the flanks slide away. Plume heads under continents make broad lava
+        # plateaus (~2.5 km, Yellowstone) rather than peaks.
+        as_volcano = elevation(self.w_thick, self.w_age, cont, np.where(cont, rock, HOTSPOT), self.swell)
+        room = np.maximum(np.where(cont, 2500.0, 4500.0) - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
+        plume = np.minimum(plume * np.where(cont, 0.25, 1.0) * dt, room) / dt
+        t = self.w_thick + growth * dt + plume * dt
         # Collisions: the crust that was shortened away is stacked into a
         # belt a few hundred km wide (Himalaya + Tibet), not one cell.
         ea, eb = g.edges[:, 0], g.edges[:, 1]
@@ -718,7 +727,7 @@ class Simulation:
             self.climate_t = self.t
         t, cover, self.removed, self.flow, self.down = surface.erode(
             g, elevation(t, self.w_age, cont, rock, self.swell), t, self.w_cover, rock, cont, self.precip, dt,
-            p.erosion_timescale, p.incision, self.scale, ISO_LAND, ISO_SEA)
+            p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale, ISO_LAND, ISO_SEA)
 
         # ocean crust thickened enough by arcs or sediment becomes continental;
         # hotspot piles (Hawaii, Iceland) stay oceanic however big
