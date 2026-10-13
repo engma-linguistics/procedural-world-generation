@@ -103,6 +103,10 @@ class Params:
     reef_temp: float = 23.5  # C, annual mean sea surface (reefs reach ~30 deg latitude)
     reef_rate: float = 200.0  # m/Myr of build-up near the surface (much less deeper: light-limited)
     reef_mud: float = 10.0  # m/Myr of river mud deposited is enough to smother reefs
+    # mantle heat at the start relative to the end state (1 = steady, today's Earth);
+    # scales plume numbers, arc melting and (as sqrt) plate speed. See Simulation.heat
+    heat_start: float = 1.0
+    heat_halflife: float = 600.0  # Myr
     # events
     suture_after: float = 30.0  # Myr of continental collision before plates can weld...
     suture_closing: float = 2.0  # ...once they've (nearly) stopped converging, cm/yr
@@ -714,7 +718,7 @@ class Simulation:
         arc_src = np.zeros(n)
         over = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
         rate = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
-        np.maximum.at(arc_src, over, p.arc_growth * thermostat * rate)
+        np.maximum.at(arc_src, over, p.arc_growth * self.heat() * thermostat * rate)
         growth = spread(arc_src, 1.6)
         # rifting stretches continental crust thin near the opening boundary;
         # that thinned crust is why continents have drowned shelves and slopes
@@ -824,6 +828,14 @@ class Simulation:
         np.minimum.at(trench, down, -350 * np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]]))
         self.w_trench = np.maximum(trench, -4000)
 
+    def heat(self) -> float:
+        """Mantle heat relative to today's. A young planet is hotter (more
+        radioactive decay, leftover heat of formation): more plumes, more
+        melting at arcs, a runnier mantle and faster plates. It fades toward
+        1 with the given half-life."""
+        p = self.params
+        return 1.0 + (p.heat_start - 1.0) * 0.5 ** (self.t / p.heat_halflife)
+
     def _volcanoes(self, growth, t, rng):
         """The ring of fire: individual volcanoes along active arcs (Fuji,
         Rainier, the Andes' peaks). Each is far smaller than a cell, so it's a
@@ -869,9 +881,9 @@ class Simulation:
         Returns (crust added per Myr, dome height in m) on each world cell."""
         p, g = self.params, self.grid
         self.hotspots = [h for h in self.hotspots if self.t - h["born"] < h["life"]]
-        n_new = rng.poisson(p.hotspots * self.dt / p.hotspot_life)
+        n_new = rng.poisson(p.hotspots * self.heat() * self.dt / p.hotspot_life)
         if self.step_no == 1:
-            n_new = p.hotspots  # start with a full set, of mixed ages
+            n_new = int(round(p.hotspots * self.heat()))  # start with a full set, of mixed ages
         spreading = np.concatenate([bd["a"][bd["opening"]], bd["b"][bd["opening"]]])
         for _ in range(n_new):
             v = rng.normal(size=3)
@@ -934,7 +946,7 @@ class Simulation:
             self.mantle[k] = self.mantle[k] * decay + np.sqrt(1 - decay**2) * rng.normal(size=3)
             tau = torque[k] + p.mantle_noise * self.mantle[k] * area * 0.5
             Dk = drag[k] + 0.1 * area * np.eye(3)  # regularise spin about the plate's own centre
-            target = p.mobility * np.linalg.solve(Dk, tau)
+            target = p.mobility * self.heat() ** 0.5 * np.linalg.solve(Dk, tau)
             self.omega[k] += (target - self.omega[k]) * relax
             vmax = np.linalg.norm(np.cross(self.omega[k], P[self.owner == k]), axis=1).max(initial=0) * CMYR
             if vmax > p.max_speed:
@@ -1055,7 +1067,7 @@ class Simulation:
             area = np.trace(Dh, axis1=1, axis2=2) / 2
             tau = s_ @ tq + p.mantle_noise * 0.5 * area[:, None] * self.mantle[k]
             Dh = Dh + 0.1 * area[:, None, None] * np.eye(3)
-            motion.append(p.mobility * np.linalg.solve(Dh, tau[:, :, None])[:, :, 0])
+            motion.append(p.mobility * self.heat() ** 0.5 * np.linalg.solve(Dh, tau[:, :, None])[:, :, 0])
         opening = np.einsum("tj,tj->t", np.cross(motion[0] - motion[1], c), t) * CMYR
         frac = side.mean(1)
         opening[(frac < 0.25) | (frac > 0.75)] = 0
