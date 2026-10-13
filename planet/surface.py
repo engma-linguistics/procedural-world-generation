@@ -42,10 +42,14 @@ ROCKS = [
     (3, "sediment", "sedimentary rock", 1.5, "#e9c46a"),
     (4, "orogen", "metamorphic belt (gneiss, schist)", 0.6, "#8e7dbe"),
     (5, "craton", "ancient shield (granite, gneiss)", 0.3, "#6c757d"),
+    (6, "limestone", "limestone (reefs, carbonate platforms)", 1.0, "#a8dadc"),
 ]
-OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON = range(6)
+OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON, LIMESTONE = range(7)
 ROCK_K = np.array([r[3] for r in ROCKS])
-COVER_K = 2.0  # loose-ish sedimentary cover erodes fastest
+# Cover is a well-mixed column: ordinary sediment plus some km of carbonate
+# and lava (tectonics.EXTRA); its erodibility is the mix of theirs.
+COVER_K = 2.0  # loose-ish sand and mud erode fastest
+CARB_K, LAVA_K = ROCK_K[LIMESTONE], ROCK_K[HOTSPOT]
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed
 
 
@@ -113,16 +117,26 @@ def _spread(dep, ea, eb, k, n_sub):
     return d
 
 
-def erode(grid, elev, thick, cover, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso_land, iso_sea):
-    """One step of erosion + sediment transport on the world view.
-    Returns (thick, cover, removed_km, flow, downstream)."""
+def surface_rock(rock, cover, carb, lava):
+    """What's exposed at the surface: the basement, unless sediment covers it."""
+    sed = np.where(carb > 0.5 * cover, LIMESTONE, np.where(lava > 0.5 * cover, HOTSPOT, SEDIMENT))
+    return np.where(cover > COVER_SHOWS, sed, rock).astype(np.uint8)
+
+
+def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso):
+    """One step of erosion + sediment transport on the world view. Eroded
+    cover takes its carbonate and lava with it pro rata; what's deposited
+    is ordinary sediment. iso: m of elevation per km of crust, per cell.
+    Returns (thick, cover, carb, lava, removed_km, deposited_km, flow, downstream)."""
     n = grid.n
     land = elev > 0
     filled, down, order = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
     rain_m = np.where(land, precip, 0) / 1000.0
     flow = kernels.accumulate(down, order, rain_m)
 
-    K = np.where(cover > COVER_SHOWS, COVER_K, ROCK_K[rock]) * rain_factor(precip)
+    c = np.maximum(cover, 1e-9)
+    k_cover = (COVER_K * (cover - carb - lava) + CARB_K * carb + LAVA_K * lava) / c
+    K = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * rain_factor(precip)
     # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
     # Laplacian on this grid; exponential form can't overshoot)
     d_km = grid.spacing * R_KM
@@ -135,14 +149,16 @@ def erode(grid, elev, thick, cover, rock, cont, precip, dt, hillslope, tau, h0, 
     # river incision toward the next cell downstream (implicit, unconditionally stable)
     h = h.astype(float)
     kernels.stream_power(h, down, order, np.where(land, incision * K * np.sqrt(flow) * dt, 0.0))
-    removed = np.maximum(elev - h, 0) * land / iso_land  # km of rock
+    removed = np.minimum(np.maximum(elev - h, 0) * land / iso, np.maximum(thick, 0))  # km of rock
 
-    from_cover = np.minimum(cover, removed)
+    from_cover = np.clip(removed, 0, np.maximum(cover, 0))
+    keep = 1 - from_cover / c
+    carb, lava = carb * keep, lava * keep
     cover = cover - from_cover
     thick = thick - removed
 
     # route it: lakes keep what fits, the rest reaches the sea
-    pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso_land, 0.0)
+    pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso, 0.0)
     dep = _route(down, order, removed, pit_room, ~land)
     ocean = ~land
     ea, eb = grid.edges[:, 0], grid.edges[:, 1]
@@ -151,4 +167,4 @@ def erode(grid, elev, thick, cover, rock, cont, precip, dt, hillslope, tau, h0, 
     dep = np.where(ocean, dep_sea, dep)
     thick = thick + dep
     cover = cover + dep
-    return thick, cover, removed, flow, down
+    return thick, cover, carb, lava, removed, dep, flow, down

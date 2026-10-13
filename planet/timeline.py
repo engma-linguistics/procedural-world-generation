@@ -37,7 +37,8 @@ LAYERS = {  # name -> dtype on disk
     "continental": "u1",
     "age": "<u2",
     "boundary": "i1",
-    "rock": "u1",  # surface.ROCKS id
+    "rock": "u1",  # surface.ROCKS id of the basement
+    "surface": "u1",  # surface.ROCKS id of what's exposed (basement or sediment cover)
     "cover": "u1",  # sediment cover, units of 0.1 km
     "thickness": "u1",  # crust, km
     "precip": "<u2",  # mm/yr
@@ -99,7 +100,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
                      ("plate", snap.plate), ("continental", snap.continental),
                      ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary),
-                     ("rock", snap.rock), ("cover", np.clip(np.round(snap.cover * 10), 0, 255)),
+                     ("rock", snap.rock), ("surface", snap.surface), ("cover", np.clip(np.round(snap.cover * 10), 0, 255)),
                      ("thickness", np.clip(np.round(snap.thickness), 0, 255)),
                      ("precip", np.clip(np.round(snap.precip), 0, 65535)),
                      ("flow", np.clip(np.round(16 * np.log2(1 + snap.flow)), 0, 255)),
@@ -107,7 +108,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             data[k].append(v.astype(LAYERS[k]))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
-                       "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots]})
+                       "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
+                       "volcanoes": [[round(a, 1), round(b, 1)] for a, b in snap.volcanoes]})
 
     keep(sim)
     sim.run(myr, keep)
@@ -265,12 +267,12 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
     extra = {"plate": snap.plate, "crust": snap.continental.astype(int),
              "plate_boundary": snap.boundary.astype(int), "crust_age": np.round(snap.age),
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
-             "rock": snap.rock.astype(int), "sediment_cover": snap.cover,
+             "rock": snap.rock.astype(int), "surface_rock": snap.surface.astype(int), "sediment_cover": snap.cover,
              "crust_thickness": snap.thickness}
     meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"],
             "source_run": run_dir.name, "source_run_name": run["name"], "t_myr": at,
             "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "hotspots": snap.hotspots}
+            "hotspots": snap.hotspots, "volcanoes": snap.volcanoes}
     world = W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]})
     return W.save(world, f"{run['name']} @ {at:g} Myr")
 
