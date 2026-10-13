@@ -33,6 +33,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .kernels import build_raster, locate, order_cells
+
 
 @dataclass
 class Grid:
@@ -43,6 +45,9 @@ class Grid:
     cell_corners: list[list[int]]  # per cell, ordered corner indices (5 or 6)
     neighbors: list[list[int]]  # per cell, neighbour cell indices, same order
     edges: np.ndarray  # (E, 2) each undirected adjacency once, i < j
+    nbr_off: np.ndarray  # CSR offsets: neighbours of i are nbr_idx[nbr_off[i]:nbr_off[i+1]]
+    nbr_idx: np.ndarray
+    _raster: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -59,6 +64,21 @@ class Grid:
     @property
     def pentagons(self) -> np.ndarray:
         return np.array([i for i, c in enumerate(self.cell_corners) if len(c) == 5])
+
+    @property
+    def raster(self) -> np.ndarray:
+        """Coarse lat/lon -> nearest cell lookup, used to seed point location."""
+        if self._raster is None:
+            w = int(4 * 2 ** self.level) * 2
+            self._raster = build_raster(self.centers, self.nbr_off, self.nbr_idx, w, w // 2)
+        return self._raster
+
+    def locate(self, pts: np.ndarray, guess: np.ndarray | None = None) -> np.ndarray:
+        """Nearest cell id for each unit vector in pts (N, 3)."""
+        if guess is None:
+            guess = np.full(len(pts), -1, np.int64)
+        return locate(np.ascontiguousarray(pts), guess, self.raster, self.centers,
+                      self.nbr_off, self.nbr_idx)
 
     @property
     def spacing(self) -> float:
@@ -89,22 +109,22 @@ def _icosahedron() -> tuple[np.ndarray, np.ndarray]:
 
 
 def _subdivide(verts: np.ndarray, faces: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    verts = list(verts)
-    cache: dict[tuple[int, int], int] = {}
-
-    def midpoint(a: int, b: int) -> int:
-        key = (a, b) if a < b else (b, a)
-        if key not in cache:
-            m = verts[a] + verts[b]
-            verts.append(m / np.linalg.norm(m))
-            cache[key] = len(verts) - 1
-        return cache[key]
-
-    new_faces = []
-    for a, b, c in faces:
-        ab, bc, ca = midpoint(a, b), midpoint(b, c), midpoint(c, a)
-        new_faces += [[a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]]
-    return np.array(verts), np.array(new_faces)
+    """Split each triangle into 4. New midpoint vertices are appended after the
+    existing ones, so the ids of coarser levels are preserved: cells
+    0 .. 10*4**k+2 of any grid form the level-k grid."""
+    nf = len(faces)
+    e = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    e.sort(axis=1)
+    uniq, inv = np.unique(e, axis=0, return_inverse=True)
+    inv = inv.ravel()
+    mid = verts[uniq[:, 0]] + verts[uniq[:, 1]]
+    mid /= np.linalg.norm(mid, axis=1, keepdims=True)
+    nv = len(verts)
+    ab, bc, ca = inv[:nf] + nv, inv[nf:2 * nf] + nv, inv[2 * nf:] + nv
+    a, b, c = faces.T
+    new = np.stack([np.stack([a, ab, ca], 1), np.stack([b, bc, ab], 1),
+                    np.stack([c, ca, bc], 1), np.stack([ab, bc, ca], 1)], 1).reshape(-1, 3)
+    return np.concatenate([verts, mid]), new
 
 
 def build_grid(level: int = 5) -> Grid:
@@ -124,35 +144,17 @@ def build_grid(level: int = 5) -> Grid:
     corners /= np.linalg.norm(corners, axis=1, keepdims=True)
 
     n = len(verts)
-    vert_faces: list[list[int]] = [[] for _ in range(n)]
-    for fi, tri in enumerate(faces):
-        for v in tri:
-            vert_faces[v].append(fi)
+    # vertex -> faces in CSR form
+    flat = faces.ravel()
+    order = np.argsort(flat, kind="stable")
+    vf_idx = (order // 3).astype(np.int64)
+    vf_off = np.zeros(n + 1, np.int64)
+    np.cumsum(np.bincount(flat, minlength=n), out=vf_off[1:])
+    corner_idx, nbr_idx = order_cells(verts, faces, corners, vf_off, vf_idx)
 
-    cell_corners: list[list[int]] = []
-    neighbors: list[list[int]] = []
-    for v in range(n):
-        # Order the surrounding triangles counter-clockwise around the cell
-        # centre (as seen from outside the sphere).
-        c = verts[v]
-        ref = np.cross(c, [0.0, 0.0, 1.0])
-        if np.linalg.norm(ref) < 1e-6:
-            ref = np.cross(c, [1.0, 0.0, 0.0])
-        ref /= np.linalg.norm(ref)
-        ref2 = np.cross(c, ref)
-        fs = vert_faces[v]
-        d = corners[fs] - c
-        ang = np.arctan2(d @ ref2, d @ ref)
-        ordered = [fs[i] for i in np.argsort(ang)]
-        cell_corners.append(ordered)
-        # The neighbour "between" consecutive corners k and k+1 is the vertex
-        # those two triangles share besides v.
-        nb = []
-        for k in range(len(ordered)):
-            shared = set(faces[ordered[k]]) & set(faces[ordered[(k + 1) % len(ordered)]])
-            shared.discard(v)
-            nb.append(shared.pop())
-        neighbors.append(nb)
-
-    edges = np.array(sorted({(min(a, b), max(a, b)) for a, nb in enumerate(neighbors) for b in nb}))
-    return Grid(level, verts, faces, corners, cell_corners, neighbors, edges)
+    cell_corners = [corner_idx[vf_off[i]:vf_off[i + 1]].tolist() for i in range(n)]
+    neighbors = [nbr_idx[vf_off[i]:vf_off[i + 1]].tolist() for i in range(n)]
+    src = np.repeat(np.arange(n), np.diff(vf_off))
+    pairs = np.stack([src, nbr_idx], 1)
+    edges = pairs[pairs[:, 0] < pairs[:, 1]]
+    return Grid(level, verts, faces, corners, cell_corners, neighbors, edges, vf_off, nbr_idx)

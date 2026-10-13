@@ -14,45 +14,19 @@
 
 from __future__ import annotations
 
-import heapq
-
 import numpy as np
 
+from . import kernels
 from .grid import Grid
 
 
 def priority_flood(grid: Grid, elev: np.ndarray, eps: float = 0.01):
     """Returns (filled, downstream, order). order runs outlet -> headwater."""
-    n = grid.n
-    filled = elev.astype(float).copy()
-    down = np.full(n, -1)
-    closed = elev <= 0
-    if not closed.any():
-        closed[np.argmin(elev)] = True
-    heap = [(filled[i], i) for i in np.flatnonzero(closed)]
-    heapq.heapify(heap)
-    order = []
-    nbrs = grid.neighbors
-    while heap:
-        z, i = heapq.heappop(heap)
-        order.append(i)
-        for j in nbrs[i]:
-            if not closed[j]:
-                closed[j] = True
-                if filled[j] < z + eps:
-                    filled[j] = z + eps
-                down[j] = i
-                heapq.heappush(heap, (filled[j], j))
-    return filled, down, np.array(order)
+    return kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, eps)
 
 
 def accumulate(down: np.ndarray, order: np.ndarray, rain: np.ndarray) -> np.ndarray:
-    flow = rain.astype(float).copy()
-    for i in order[::-1]:
-        d = down[i]
-        if d >= 0:
-            flow[d] += flow[i]
-    return flow
+    return kernels.accumulate(down, order, rain.astype(float))
 
 
 def erode(grid: Grid, elev: np.ndarray, precip_mm: np.ndarray, iterations: int = 12,
@@ -66,14 +40,7 @@ def erode(grid: Grid, elev: np.ndarray, precip_mm: np.ndarray, iterations: int =
     for _ in range(iterations):
         _, down, order = priority_flood(grid, h)
         flow = accumulate(down, order, rain)
-        f = k * np.sqrt(flow)
-        for i in order:
-            d = down[i]
-            if d < 0:
-                continue
-            hd = max(h[d], 0.0)
-            if h[i] > hd:
-                h[i] = (h[i] + f[i] * hd) / (1 + f[i])
+        kernels.stream_power(h, down, order, k * np.sqrt(flow))
         # Hillslope creep: land relaxes a bit toward its neighbours.
         land = h > 0
         nb_mean = (np.bincount(a, h[b], grid.n) + np.bincount(b, h[a], grid.n)) / deg

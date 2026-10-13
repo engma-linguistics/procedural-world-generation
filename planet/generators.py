@@ -15,6 +15,7 @@ from collections import deque
 
 import numpy as np
 
+from . import kernels
 from .grid import Grid
 from .noise import Perlin3D, fbm, ridged
 
@@ -34,31 +35,10 @@ def smooth(grid: Grid, values: np.ndarray, passes: int = 1, amount: float = 0.5)
 def _grow_plates(grid: Grid, rng: np.random.Generator, n_plates: int) -> np.ndarray:
     """Random flood fill from seed cells. Each plate gets a random growth rate
     so we get a mix of big and small plates, like Earth's."""
-    plate = np.full(grid.n, -1)
     seeds = rng.choice(grid.n, n_plates, replace=False)
     rates = rng.uniform(0.3, 1.0, n_plates) ** 2
-    frontier: list[list[int]] = [[] for _ in range(n_plates)]
-    for k, s in enumerate(seeds):
-        plate[s] = k
-        frontier[k].append(s)
-    remaining = grid.n - n_plates
-    while remaining:
-        live = [k for k in range(n_plates) if frontier[k]]
-        w = rates[live] / rates[live].sum()
-        k = live[rng.choice(len(live), p=w)]
-        f = frontier[k]
-        idx = rng.integers(len(f))
-        cell = f[idx]
-        free = [nb for nb in grid.neighbors[cell] if plate[nb] < 0]
-        if not free:
-            f[idx] = f[-1]
-            f.pop()
-            continue
-        nb = free[rng.integers(len(free))]
-        plate[nb] = k
-        f.append(nb)
-        remaining -= 1
-    return plate
+    return kernels.grow_regions(int(rng.integers(2**31)), seeds.astype(np.int64), rates,
+                                grid.nbr_off, grid.nbr_idx, grid.n)
 
 
 def gen_plates(grid: Grid, rng: np.random.Generator, n_plates: int = 14,
