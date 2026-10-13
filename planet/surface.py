@@ -43,13 +43,18 @@ ROCKS = [
     (4, "orogen", "metamorphic belt (gneiss, schist)", 0.6, "#8e7dbe"),
     (5, "craton", "ancient shield (granite, gneiss)", 0.3, "#6c757d"),
     (6, "limestone", "limestone (reefs, carbonate platforms)", 1.0, "#a8dadc"),
+    (7, "sandstone", "sandstone (rivers, beaches, dunes)", 1.2, "#f4a259"),
+    (8, "shale", "shale and mudstone", 1.6, "#9c8f7a"),
+    (9, "evaporite", "evaporites (salt, gypsum)", 3.0, "#f1faee"),
+    (10, "coal", "coal measures (shale, sandstone, coal)", 1.6, "#2b2d42"),
 ]
-OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON, LIMESTONE = range(7)
+OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON, LIMESTONE, SANDSTONE, SHALE, EVAPORITE, COAL = range(11)
 ROCK_K = np.array([r[3] for r in ROCKS])
-# Cover is a well-mixed column: ordinary sediment plus some km of carbonate
-# and lava (tectonics.EXTRA); its erodibility is the mix of theirs.
-COVER_K = 2.0  # loose-ish sand and mud erode fastest
-CARB_K, LAVA_K = ROCK_K[LIMESTONE], ROCK_K[HOTSPOT]
+# Cover is a well-mixed column: mud (shale) plus some km of each of
+# MIX_ROCKS (tectonics.EXTRA, columns 1..); its erodibility is the mix of theirs.
+MIX_ROCKS = np.array([LIMESTONE, HOTSPOT, EVAPORITE, COAL, SANDSTONE])
+MIX_K = ROCK_K[MIX_ROCKS]
+COVER_K = ROCK_K[SHALE]
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed
 
 
@@ -79,10 +84,12 @@ def _relief(h, nbr_off, nbr_idx):
 
 
 @njit(cache=True)
-def _route(down, order, sed, pit_room, is_ocean):
+def _route(down, order, sed, pit_room, is_ocean, h, d_km, drop):
     """Carry eroded rock (km of crust per cell) down the river network,
-    headwaters first. Closed basins keep what fits; everything else ends at
-    the ocean cell where the river meets the sea."""
+    headwaters first. Closed basins keep what fits; on gentle ground rivers
+    drop some of their load (floodplains, the plains in front of mountain
+    ranges): a share 1 - exp(-d_km / drop) per cell, less on steep ground.
+    Everything else ends at the ocean cell where the river meets the sea."""
     n = sed.shape[0]
     dep = np.zeros(n)
     flux = sed.copy()
@@ -96,6 +103,11 @@ def _route(down, order, sed, pit_room, is_ocean):
             dep[i] += keep
             flux[i] -= keep
         d = down[i]
+        if d >= 0 and not is_ocean[d]:
+            slope = max(h[i] - h[d], 0.0) / d_km  # m per km
+            keep = flux[i] * (1 - np.exp(-d_km / drop)) * np.exp(-slope / 2.0)
+            dep[i] += keep
+            flux[i] -= keep
         if d >= 0:
             flux[d] += flux[i]
         else:
@@ -117,19 +129,26 @@ def _spread(dep, ea, eb, k, n_sub):
     return d
 
 
-def surface_rock(rock, cover, carb, lava):
-    """What's exposed at the surface: the basement, unless sediment covers it."""
-    sed = np.where(carb > 0.5 * cover, LIMESTONE, np.where(lava > 0.5 * cover, HOTSPOT, SEDIMENT))
+def surface_rock(rock, cover, mix):
+    """What's exposed at the surface: the basement, unless sediment covers it,
+    in which case the cover's main ingredient. Coal seams are thin, so a few
+    percent of coal makes a coal-measures sequence."""
+    parts = np.column_stack([mix, np.maximum(cover - mix.sum(1), 0)])
+    sed = np.append(MIX_ROCKS, SHALE)[np.argmax(parts, axis=1)]
+    coal = mix[:, list(MIX_ROCKS).index(COAL)] > 0.03 * cover
+    sed = np.where(coal, COAL, sed)
     return np.where(cover > COVER_SHOWS, sed, rock).astype(np.uint8)
 
 
-def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso,
-          k_mult=1.0):
+def erode(grid, elev, thick, cover, mix, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso,
+          k_mult=1.0, alluvial=3000.0):
     """One step of erosion + sediment transport on the world view. Eroded
-    cover takes its carbonate and lava with it pro rata; what's deposited
-    is ordinary sediment. iso: m of elevation per km of crust, per cell;
-    k_mult: extra erodibility factor per cell (glaciers).
-    Returns (thick, cover, carb, lava, removed_km, deposited_km, flow, downstream)."""
+    cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
+    it pro rata; what's deposited is plain clastic sediment (the caller
+    decides how much of it is sand). iso: m of elevation per km of crust, per cell;
+    k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
+    gentle river course over which ~63% of the load settles on land.
+    Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream, lake)."""
     n = grid.n
     land = elev > 0
     filled, down, order = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
@@ -137,7 +156,7 @@ def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslop
     flow = kernels.accumulate(down, order, rain_m)
 
     c = np.maximum(cover, 1e-9)
-    k_cover = (COVER_K * (cover - carb - lava) + CARB_K * carb + LAVA_K * lava) / c
+    k_cover = (COVER_K * np.maximum(cover - mix.sum(1), 0) + mix @ MIX_K) / c
     K = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * rain_factor(precip) * k_mult
     # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
     # Laplacian on this grid; exponential form can't overshoot)
@@ -155,13 +174,13 @@ def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslop
 
     from_cover = np.clip(removed, 0, np.maximum(cover, 0))
     keep = 1 - from_cover / c
-    carb, lava = carb * keep, lava * keep
+    mix = mix * keep[:, None]
     cover = cover - from_cover
     thick = thick - removed
 
     # route it: lakes keep what fits, the rest reaches the sea
     pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso, 0.0)
-    dep = _route(down, order, removed, pit_room, ~land)
+    dep = _route(down, order, removed, pit_room, ~land, h, d_km, alluvial)
     ocean = ~land
     ea, eb = grid.edges[:, 0], grid.edges[:, 1]
     sea = ocean[ea] & ocean[eb]
@@ -169,4 +188,4 @@ def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslop
     dep = np.where(ocean, dep_sea, dep)
     thick = thick + dep
     cover = cover + dep
-    return thick, cover, carb, lava, removed, dep, flow, down
+    return thick, cover, mix, removed, dep, flow, down, land & (filled - elev > 5)

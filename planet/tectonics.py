@@ -99,6 +99,13 @@ class Params:
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today)
     ice_summer_temp: float = 1.0  # C: land with warmest month below this holds ice
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
+    # rocks
+    plants_from: float = 0.0  # Myr: land plants exist from this time on (slow erosion, make coal)
+    craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
+    evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
+    coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp
+    ocean_ref_age: float = 50.0  # Myr: mean sea-floor age at which tectonic sea level is 0
+    alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     # hotspots: mantle plumes fixed in the mantle; plates slide over them
     hotspots: int = 10  # typical number alive at once
     hotspot_life: float = 120.0  # Myr, mean
@@ -440,11 +447,14 @@ ISO_SEA = 200.0  # under water the displaced stuff is water, not air
 #   lift  m of broad doming over a plume; it rides away with the plate and
 #         decays as the hot mantle under it cools (Hawaii's swell trails
 #         ~1000 km down the chain)
-#   carb  km of the sediment cover that is carbonate (limestone), and
-#   lava  km of it that is lava flows (flood basalts, hotspot tracks);
-#         the rest is ordinary sediment (sand, mud)
-EXTRA = ("lift", "carb", "lava")
-LIFT, CARB, LAVA = range(3)
+#   carb  km of the sediment cover that is carbonate (limestone),
+#   lava  km of it that is lava flows (flood basalts, hotspot tracks),
+#   evap  km of evaporites (salt, gypsum), coal  km of coal,
+#   sand  km of sandstone; the rest of the cover is mud (shale).
+# Columns MIX line up with surface.MIX_ROCKS.
+EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand")
+LIFT, CARB, LAVA, EVAP, COAL, SAND = range(6)
+MIX = slice(1, 6)
 
 
 ISO_VOLCANO = 350.0  # a narrow volcanic pile is also held up by the stiff plate around it (flexure)
@@ -535,7 +545,9 @@ class Simulation:
         self.swell = np.zeros(n)  # m: broad dome pushed up by active plumes
         # climate (see _climate): global temperature offset from today's
         # Earth, its random part, slow baselines of the CO2 sources and sinks
-        self.sea_level = 0.0  # m, relative to an ice-free planet
+        self.sea_level = 0.0  # m, relative to an ice-free planet with average ocean floor
+        self.sea_ice = self.sea_tect = 0.0  # its two parts (see _climate, _global_temperature)
+        self.depth_ref = None
         self.ice = np.zeros(n)  # m of land ice
         self.dT, self.drift, self.refs = 0.0, 0.0, None
         self.newc = 0
@@ -611,6 +623,13 @@ class Simulation:
         rock = np.where(craton, CRATON, np.where(cont, OROGEN, OCEAN)).astype(np.uint8)
         blanket = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=3.0)
         cover = np.where(cont, np.clip(1.5 * blanket + 0.6, 0, 3) + np.where(inland < 1, 1.5, 0), 0)
+        # Continental rock ages from the unsimulated past (own random stream,
+        # so adding this didn't change the rest of the set-up): shields
+        # 1.5-3.5 Gyr, the belts around them 0.3-1.4 Gyr.
+        r2 = np.random.default_rng([self.seed, 7])
+        a_n = fbm(Perlin3D(int(r2.integers(2**31))), x, octaves=4, freq=2.5)
+        age = np.where(cont, np.where(rock == CRATON, 2500 + 900 * a_n, 850 + 500 * a_n), age)
+        age = np.where(cont, np.maximum(age, 300), age)
         for k in range(p.n_plates):
             m = plate == k
             self.alive[k] = True
@@ -797,6 +816,7 @@ class Simulation:
         t = _crust_flow(t, ea[both], eb[both], p.crust_flow * dt / 3, int(round(3 * self.scale**2)))
         t = np.minimum(t, MAX_KM)
         rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
+        squeezed = cont & (t > 50) & (t > self.w_thick + 0.1)  # being thickened right now
 
         # weather, ice, rivers, erosion, sediment
         self._global_temperature(growth, rng)
@@ -806,10 +826,16 @@ class Simulation:
         # 'glacial buzzsaw' that keeps ranges from growing much above the
         # snowline); polar ice frozen to its bed protects it instead.
         k_mult = np.where(self.ice > 0, np.where(self.t_warm > -8, p.glacial_erosion, 0.3), 1.0)
-        t, cover, x[:, CARB], x[:, LAVA], self.removed, dep, self.flow, self.down = surface.erode(
-            g, elevation(t, self.w_age, cont, rock, self.swell - self.sea_level), t, cover, x[:, CARB], x[:, LAVA],
+        # Plants (once they exist) hold soil on wet ground; bare wet ground
+        # washes away faster. Deserts are bare either way.
+        wet = np.clip(self.precip / 800.0, 0, 1)
+        self.veg = (self.t >= p.plants_from) * wet * np.clip((self.t_warm - 5) / 10, 0, 1) * (self.w_elev > 0)
+        k_mult = k_mult * (1 + 0.6 * wet * (1 - self.veg))
+        t, cover, x[:, MIX], self.removed, dep, self.flow, self.down, lake = surface.erode(
+            g, elevation(t, self.w_age, cont, rock, self.swell - self.sea_level), t, cover, x[:, MIX],
             rock, cont, self.precip, dt, p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale,
-            isostasy(cont, rock), k_mult)
+            isostasy(cont, rock), k_mult, p.alluvial)
+        self._sediments(t, cover, x, dep, lake, cont, rock)
 
         # Reefs: in warm, clear, shallow sea, corals and other carbonate
         # makers build up to just below sea level, fast enough to outpace any
@@ -823,6 +849,7 @@ class Simulation:
         carb = grow / isostasy(cont, rock)
         t, cover = t + carb, cover + carb
         x[:, CARB] += carb
+        t, cover = t + self.chem, cover + self.chem
 
         # ocean crust thickened enough by arcs or sediment becomes continental;
         # hotspot piles (Hawaii, Iceland) stay oceanic however big, unless
@@ -830,12 +857,21 @@ class Simulation:
         sedimented = cover > 0.5 * (t - OCEAN_KM)
         born = ~cont & (t >= BECOMES_CONT_KM) & ((rock != HOTSPOT) | sedimented)
         rock[born] = np.where(sedimented[born], SEDIMENT, ARC)
+        # Rock age (continents): crust that's just formed or been remelted /
+        # metamorphosed starts again at 0. Old, cool, untouched crust
+        # stiffens into craton (Canada, Siberia, Africa's shields).
+        age = self.w_age.copy()
+        age[born | (cont & arcky)] = 0.0
+        age[squeezed & (rock != CRATON)] = 0.0
+        self.w_age = age
+        rock[cont & (age > p.craton_age) & (t < 45) & (rock != CRATON) & (rock != HOTSPOT)] = CRATON
         self.w_cont = cont | born
         self.w_thick = np.clip(t, 1.0, MAX_KM)
         self.w_cover = np.clip(cover, 0, self.w_thick)
         shrink = self.w_cover / np.maximum(cover, 1e-9)
-        x[:, CARB] = np.clip(x[:, CARB] * shrink, 0, self.w_cover)
-        x[:, LAVA] = np.clip(x[:, LAVA] * shrink, 0, self.w_cover - x[:, CARB])
+        m = np.maximum(x[:, MIX] * shrink[:, None], 0)
+        over = np.maximum(m.sum(1) / np.maximum(self.w_cover, 1e-9), 1.0)
+        x[:, MIX] = m / over[:, None]
         self.w_extra = x
         self.w_rock = rock
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
@@ -851,6 +887,34 @@ class Simulation:
         down = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
         np.minimum.at(trench, down, -350 * np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]]))
         self.w_trench = np.maximum(trench, -4000)
+
+    def _sediments(self, t, cover, x, dep, lake, cont, rock):
+        """Which kind of sediment forms where. In place on t, cover, x; the
+        chemical deposits are added later (self.chem) with the reefs.
+          sand       near its source (lakes, rivers, beaches, deltas); farther
+                     out only mud settles. Desert winds sort loose cover into dunes.
+          evaporite  where water evaporates faster than it arrives: salt lakes
+                     in hot dry closed basins (Dead Sea, Great Salt Lake) and
+                     shallow hot seas next to desert (the Persian Gulf)
+          coal       warm, wet, low-lying swamps full of plants, if plants
+                     exist (none before land plants ~450 Ma on Earth)"""
+        p, g, dt = self.params, self.grid, self.dt
+        e = elevation(t, self.w_age, cont, rock, self.swell - self.sea_level)
+        land = e > 0
+        x[:, SAND] += dep * np.where(land, 0.6, np.where(e > -200, 0.5, 0.15))
+        shale = np.maximum(cover - x[:, MIX].sum(1), 0)
+        dunes = land & (self.precip < 200)
+        x[:, SAND] += np.where(dunes, shale * (1 - np.exp(-0.01 * dt)), 0)
+        T, P = self.temp, self.precip
+        n_land = np.add.reduceat(land[g.nbr_idx], g.nbr_off[:-1])
+        salt_lake = lake & (P < 400) & (T > 10)
+        sabkha = ~land & (e > -300) & (n_land > 0) & (T >= 22) & (P < 400)
+        evap = (salt_lake * p.evaporite_rate + sabkha * 0.25 * p.evaporite_rate) * dt
+        swamp = land & (e < 250) & (P > 1000) & (self.veg > 0.5)
+        coal = swamp * p.coal_rate * dt
+        x[:, EVAP] += evap
+        x[:, COAL] += coal
+        self.chem = evap + coal  # km of crust, added with the reefs
 
     def _global_temperature(self, growth, rng):
         """The planet's mean temperature, as an offset dT from today's Earth.
@@ -869,6 +933,7 @@ class Simulation:
         self.drift = self.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
         land = self.w_elev > 0
         warm = np.exp(0.06 * (self.temp - 15.0)) if self.temp is not None else 1.0  # chemical weathering
+        warm = warm * (1 + 0.5 * getattr(self, "veg", 0.0))  # roots and soils speed it up
         source = self.newc / self.scale**2 + 20.0 * growth.sum() / self.scale**2
         sink = float((self.removed * land * warm).sum()) / self.scale**2
         now = np.array([max(source, 1e-6), max(sink, 1e-6)])
@@ -881,6 +946,21 @@ class Simulation:
         self.co2 = getattr(self, "co2", 0.0)
         c = 1 - np.exp(-dt / 10.0)
         self.co2 += c * (np.log(rel[0]) - np.log(rel[1]) - self.co2)
+        # Sea level also follows the ocean basins: young sea floor is hot and
+        # shallow, so when ridges are long and fast the water has less room
+        # and floods the continents (the Cretaceous, ~200 m higher than now).
+        # Halved because the extra water also pushes the sea floor down.
+        # Measured against a slow (300 Myr) average of itself, which starts
+        # from sea floor with exponentially distributed ages (mean
+        # p.ocean_ref_age), so only real changes in spreading move the sea.
+        ocean = ~self.w_cont
+        depth = float(ocean_depth(self.w_age[ocean]).mean()) if ocean.any() else 0.0
+        if self.depth_ref is None:
+            ages = -p.ocean_ref_age * np.log(1 - (np.arange(1000) + 0.5) / 1000)
+            self.depth_ref = float(ocean_depth(ages).mean())
+        self.depth_ref += (1 - np.exp(-dt / 300.0)) * (depth - self.depth_ref)
+        self.sea_tect = float(np.clip(0.5 * (depth - self.depth_ref), -250, 250))
+        self.sea_level = self.sea_ice + self.sea_tect
         ice_frac = (self.ice > 0).mean()
         target = self.drift + p.co2_sensitivity * np.clip(self.co2, -1.5, 1.5) - p.ice_albedo * ice_frac / 0.03
         self.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - self.dT)
@@ -908,7 +988,8 @@ class Simulation:
         # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
         vol = (self.ice / 1000.0).sum() * self.cell_area * R_KM**2
         ocean_area = (~land).sum() * self.cell_area * R_KM**2
-        self.sea_level = -0.9 * vol / max(ocean_area, 1.0) * 1000.0
+        self.sea_ice = -0.9 * vol / max(ocean_area, 1.0) * 1000.0
+        self.sea_level = self.sea_ice + self.sea_tect
         self.koppen = climate.koppen(e, self.temp, self.t_warm, self.t_cold, self.precip, self.p_jul,
                                      self.p_jan, g.lat, self.ice)
         self.climate_t = self.t
@@ -1340,7 +1421,7 @@ class Simulation:
             downstream=self.down.copy(),
             hotspots=[list(latlon(h["pos"])) for h in self.hotspots],
             volcanoes=[list(latlon(v["pos"])) for v in self.volcanoes],
-            surface=surface.surface_rock(self.w_rock, self.w_cover, self.w_extra[:, CARB], self.w_extra[:, LAVA]),
+            surface=surface.surface_rock(self.w_rock, self.w_cover, self.w_extra[:, MIX]),
             **self._climate_now(),
         )
 

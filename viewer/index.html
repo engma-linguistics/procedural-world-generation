@@ -189,6 +189,7 @@ const RAMPS = {
                       [50, '#fd8d3c'], [65, '#d94801'], [80, '#7f2704']],
   sediment: [[0, '#3a3a3a'], [0.5, '#7d6b4f'], [2, '#c9a464'], [6, '#f0d58c'], [15, '#fff7dc']],
 };
+RAMPS['rock age'] = [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000, '#6e4f3a'], [3500, '#3a2a22']];
 RAMPS.rainfall = RAMPS.precipitation;
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top' };
@@ -211,7 +212,7 @@ function cellColors(layer) {
       if (L.plate_boundary[i] > 0) c.lerp(RED, 0.75);
       else if (L.plate_boundary[i] < 0) c.lerp(CYAN, 0.75);
     } else if (layer === 'crust age') {
-      if (L.crust[i]) c.copy(CONT); else rampFns[layer](L.crust_age[i], c);
+      if (L.crust[i]) rampFns['rock age'](L.crust_age[i], c); else rampFns[layer](L.crust_age[i], c);
     } else if (layer === 'rock type') {
       c.set(V.rockColors[L.rock[i]]);
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
@@ -534,7 +535,7 @@ function renderLegend() {
     const g = stops.map(([v, c]) => `${c} ${((v - lo) / (hi - lo) * 100).toFixed(1)}%`).join(',');
     el.innerHTML = `<div><div class="grad" style="background:linear-gradient(90deg,${g})"></div>
       <div class="row" style="justify-content:space-between;width:260px"><span>${lo}</span><span class="muted">${UNITS[state.layer]}</span><span>${hi}</span></div>
-      ${state.layer === 'crust age' ? '<div class="muted"><span class="sw" style="background:#8a8478"></span>continental crust</div>' : ''}</div>`;
+      ${state.layer === 'crust age' ? '<div class="muted">continents: age of the rock since it last formed or was remade <span class="sw" style="background:#f2e6d0"></span>0 <span class="sw" style="background:#a87d5a"></span>1 Gyr <span class="sw" style="background:#3a2a22"></span>3.5 Gyr</div>' : ''}</div>`;
   }
   if (V.kind === 'run' && $('events').checked) {
     el.innerHTML += Object.entries(EVENT_COLORS).slice(0, 5).map(([k, c]) =>
@@ -606,7 +607,7 @@ function describe(i) {
   }
   if (L.plate) {
     lines.push(`plate ${L.plate[i]} (${L.crust[i] ? 'continental' : 'oceanic'})`);
-    if (L.crust_age && !L.crust[i]) lines.push(`sea floor age ${Math.round(L.crust_age[i])} Myr`);
+    if (L.crust_age) lines.push(`${L.crust[i] ? 'rock' : 'sea floor'} age ${Math.round(L.crust_age[i])} Myr`);
     const v = plateVelocity(i);
     if (v && (V.kind === 'run' || V.meta.method === 'tectonics')) lines.push(`moving ${(Math.hypot(...v) * CMYR).toFixed(1)} cm/yr`);
     if (L.plate_boundary[i]) lines.push(L.plate_boundary[i] > 0 ? 'converging boundary' : 'diverging boundary');
