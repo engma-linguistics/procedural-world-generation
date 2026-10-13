@@ -75,11 +75,11 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         if s.step_no % stride:
             return
         snap = s.snapshot()
-        data["elevation"].append(np.clip(np.round(snap.elevation), -32000, 32000))
-        data["plate"].append(snap.plate)
-        data["continental"].append(snap.continental)
-        data["age"].append(np.clip(np.round(snap.age), 0, 65535))
-        data["boundary"].append(snap.boundary)
+        # cast now: at level 7, 126 float64 keyframes per layer would be ~1 GB
+        for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
+                     ("plate", snap.plate), ("continental", snap.continental),
+                     ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary)):
+            data[k].append(v.astype(LAYERS[k]))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()}})
 

@@ -17,15 +17,22 @@ Each step:
                           ocean beats old ocean. The loser's crust there is
                           deleted: that's subduction. Continent vs continent
                           is a collision.
- 4. Physics on the resulting world map: ocean floor sinks as it ages,
-    subduction builds arcs (Andes, Japan), collisions build big ranges
-    (Himalaya), and a placeholder decay wears continents back down.
+ 4. Physics on the resulting world map. Every cell carries a crust
+    thickness, and elevation follows from it by isostasy (thick crust floats
+    higher) plus, for ocean floor, its age (it sinks as it cools). Arcs
+    add crust above subducting slabs (Andes, Japan); collisions stack it
+    (Himalaya/Tibet), very thick crust flows sideways, erosion (placeholder)
+    removes it from high ground, and part of that becomes sediment on the
+    continental margins. Continental crust is conserved through all of it,
+    so the continents neither leak away nor swell over billions of years.
  5. Forces -> velocities. Plates have no momentum (it's basically very slow
     Stokes flow), so each step the velocity is *solved* from the forces:
     slab pull (dominant), ridge push, collision resistance, and a slowly
     wandering mantle-drag term that supplies meandering.
- 6. Events: long collisions weld plates together; big continental plates
-    eventually rift apart; plates consumed down to a sliver get absorbed.
+ 6. Events: long collisions weld plates together; plates split when a big
+    continent overheats the mantle beneath it, when the forces on a plate
+    pull its halves apart, or when old ocean floor at a passive margin
+    breaks off and starts to sink (new subduction); slivers get absorbed.
 
 Determinism: all randomness for step s comes from default_rng([seed, s]),
 so any step can be reproduced exactly by re-running from t=0.
@@ -65,15 +72,23 @@ class Params:
     continental_keel: float = 1.5  # extra drag per continental cell
     mobility: float = 0.008
     max_speed: float = 18.0  # cm/yr
-    # mountain building (m per Myr per cm/yr of convergence)
-    arc_uplift: float = 9.0
-    collision_uplift: float = 22.0
-    erosion_timescale: float = 70.0  # Myr: placeholder until real erosion runs in-loop
+    # crust: arcs add new crust above subducting slabs (km/Myr per cm/yr of
+    # convergence); collisions stack crust (see _resolve), which then flows
+    # sideways where it's very thick; erosion removes it from high ground
+    # and some of that ends up as sediment on the continental margins
+    arc_growth: float = 0.03
+    crust_flow: float = 0.03  # per Myr, between neighbours, where crust > 40 km
+    erosion_timescale: float = 100.0  # Myr e-folding of ground 2 km up (faster above, slower below); placeholder until step 3
+    sediment_kept: float = 0.5  # share of eroded crust deposited on margins (rest is subducted)
     # events
     suture_after: float = 30.0  # Myr of sustained continental collision -> weld plates
     rift_timescale: float = 130.0  # Myr: mean time before a big continental plate rifts
     rift_min_continent: float = 0.07  # fraction of surface
-    big_plate: float = 0.16  # plates larger than this (any crust) may also split
+    stress_min_plate: float = 0.05  # plates larger than this (any crust) can break under stress
+    rift_stress: float = 3.0  # cm/yr: how hard the halves must pull apart before it can break
+    big_plate: float = 0.2  # plates bigger than this fraction of the surface break up more readily
+    settle_time: float = 30.0  # Myr after forming before a plate can break under stress
+    margin_age: float = 120.0  # Myr: ocean floor older than this at a passive margin may start subducting
     max_plates: int = 30
 
 
@@ -95,11 +110,45 @@ class Event:
 # compiled kernels
 # ---------------------------------------------------------------------------
 @njit(cache=True)
-def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_idx,
-             ridge_depth, Q, centers):
+def _fill(k, r, refs, owned, age, cont, thick):
+    """Fill hole r in plate k's grid from its neighbours refs (-1 = not part
+    of this plate). It's continental only if it's completely enclosed by
+    continent; otherwise it copies just its oceanic neighbours. A notch in a
+    continent's edge (no oceanic neighbour, not enclosed) is left empty.
+
+    A majority vote here let continents fill in their own ragged edges every
+    step and slowly swell (~1.5% of the planet per 100 Myr)."""
+    nc, no = 0, 0
+    sa, st, oa, ot = 0.0, 0.0, 0.0, 0.0
+    for j in refs:
+        if j < 0 or not owned[k, j]:
+            continue
+        if cont[k, j]:
+            nc += 1
+            sa += age[k, j]
+            st += thick[k, j]
+        else:
+            no += 1
+            oa += age[k, j]
+            ot += thick[k, j]
+    if nc == len(refs):
+        age[k, r], thick[k, r], cont[k, r] = sa / nc, st / nc, True
+    elif no > 0:
+        age[k, r], thick[k, r], cont[k, r] = oa / no, ot / no, False
+    else:
+        return False
+    owned[k, r] = True
+    return True
+
+
+@njit(cache=True)
+def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, Q, centers):
     """Decide which plate owns each world cell; delete subducted crust,
     fill aliasing holes, create new ocean floor in gaps.
-    Returns (owner, new_crust flag, collision count matrix)."""
+    Returns (owner, new_crust flag, collision count matrix).
+
+    Continent vs continent: the loser's crust isn't destroyed, it's stacked
+    onto the winner's (crust is too buoyant to sink: collisions thicken it)."""
     P, n = idx.shape
     owner = np.full(n, -1, np.int64)
     newc = np.zeros(n, np.bool_)
@@ -115,26 +164,12 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
             r = idx[k, i]
             if owned[k, r]:
                 continue
-            cnt, tot = 0, 0
+            cnt, tot = 0, nbr_off[r + 1] - nbr_off[r]
             for e in range(nbr_off[r], nbr_off[r + 1]):
-                tot += 1
                 if owned[k, nbr_idx[e]]:
                     cnt += 1
-            if cnt < tot - 2:
-                continue
-            se, sa, sb, sc = 0.0, 0.0, 0.0, 0
-            for e in range(nbr_off[r], nbr_off[r + 1]):
-                j = nbr_idx[e]
-                if owned[k, j]:
-                    se += elev[k, j]
-                    sa += age[k, j]
-                    sb += base[k, j]
-                    sc += 1 if cont[k, j] else 0
-            owned[k, r] = True
-            elev[k, r] = se / cnt
-            age[k, r] = sa / cnt
-            base[k, r] = sb / cnt
-            cont[k, r] = 2 * sc > cnt
+            if cnt >= tot - 2:
+                _fill(k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick)
     for i in range(n):
         m = 0
         for k in range(P):
@@ -151,7 +186,7 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
                 if cont[k, rk]:
                     w = k
             elif cont[k, rk]:
-                if k == prev_owner[i] or (w != prev_owner[i] and elev[k, rk] > elev[w, rw]):
+                if k == prev_owner[i] or (w != prev_owner[i] and thick[k, rk] > thick[w, rw]):
                     w = k
             elif age[k, rk] < age[w, rw]:
                 w = k
@@ -165,6 +200,7 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
             if cont[k, rk] and cont[w, rw]:
                 coll[w, k] += 1
                 coll[k, w] += 1
+                thick[w, rw] += thick[k, rk]
             owned[k, rk] = False
     # gaps: first try "hole in a plate" (aliasing), else new ocean floor
     for i in range(n):
@@ -182,23 +218,9 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
             if cnt > best_c:
                 best_c, best_k = cnt, k
         if best_k >= 0 and best_c >= 4:
-            k = best_k
-            r = idx[k, i]
-            se, sa, sb, sc, cnt = 0.0, 0.0, 0.0, 0, 0
-            for e in range(nbr_off[r], nbr_off[r + 1]):
-                j = nbr_idx[e]
-                if owned[k, j]:
-                    se += elev[k, j]
-                    sa += age[k, j]
-                    sb += base[k, j]
-                    sc += 1 if cont[k, j] else 0
-                    cnt += 1
-            owned[k, r] = True
-            elev[k, r] = se / cnt
-            age[k, r] = sa / cnt
-            base[k, r] = sb / cnt
-            cont[k, r] = 2 * sc > cnt
-            owner[i] = k
+            r = idx[best_k, i]
+            if _fill(best_k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick):
+                owner[i] = best_k
     counts = np.zeros(P, np.int64)
     for i in range(n):
         if owner[i] >= 0:
@@ -216,31 +238,19 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
             # Surrounded by one plate (at most one other gap next to it): a real
             # ridge always borders another plate, so this is a sampling hole.
             # Fill it from the neighbours instead of making new sea floor.
-            r = idx[k, i]
-            se, sa, sb, sc, cnt = 0.0, 0.0, 0.0, 0, 0
+            refs = np.full(deg, -1, np.int64)
             for e in range(nbr_off[i], nbr_off[i + 1]):
-                j = nbr_idx[e]
-                if owner[j] == k:
-                    rj = idx[k, j]
-                    se += elev[k, rj]
-                    sa += age[k, rj]
-                    sb += base[k, rj]
-                    sc += 1 if cont[k, rj] else 0
-                    cnt += 1
-            owned[k, r] = True
-            elev[k, r] = se / cnt
-            age[k, r] = sa / cnt
-            base[k, r] = sb / cnt
-            cont[k, r] = 2 * sc > cnt
-            owner[i] = k
-            continue
+                if owner[nbr_idx[e]] == k:
+                    refs[e - nbr_off[i]] = idx[k, nbr_idx[e]]
+            if _fill(k, idx[k, i], refs, owned, age, cont, thick):
+                owner[i] = k
+                continue
         if counts[k] == 0:
             k = prev_owner[i] if prev_owner[i] >= 0 and alive[prev_owner[i]] else np.argmax(alive)
         r = idx[k, i]
         owned[k, r] = True
-        elev[k, r] = ridge_depth
         age[k, r] = 0.0
-        base[k, r] = 0.0
+        thick[k, r] = OCEAN_KM
         cont[k, r] = False
         owner[i] = k
         newc[i] = True
@@ -256,11 +266,26 @@ def _resolve(alive, idx, owned, elev, age, cont, base, prev_owner, nbr_off, nbr_
                 q[a] = Q[k, a, 0] * centers[r2, 0] + Q[k, a, 1] * centers[r2, 1] + Q[k, a, 2] * centers[r2, 2]
             if kernels.walk_nearest(q, i, centers, nbr_off, nbr_idx) == i:
                 owned[k, r2] = True
-                elev[k, r2] = ridge_depth
                 age[k, r2] = 0.0
-                base[k, r2] = 0.0
+                thick[k, r2] = OCEAN_KM
                 cont[k, r2] = False
     return owner, newc, coll
+
+
+@njit(cache=True)
+def _crust_flow(t, ea, eb, k0, n_sub):
+    """Thick crust spreads to its neighbours, faster the thicker it is."""
+    t = t.copy()
+    flux = np.empty(len(ea))
+    for _ in range(n_sub):
+        for e in range(len(ea)):
+            a, b = ea[e], eb[e]
+            x = max(max(t[a], t[b]) - 40.0, 0.0) / 10.0
+            flux[e] = min(k0 * (x + x * x * x), 0.15) * (t[b] - t[a])
+        for e in range(len(ea)):
+            t[ea[e]] += flux[e]
+            t[eb[e]] -= flux[e]
+    return t
 
 
 @njit(cache=True)
@@ -339,6 +364,24 @@ def rotation(axis_angle: np.ndarray) -> np.ndarray:
     return np.eye(3) + np.sin(th) * K + (1 - np.cos(th)) * K @ K
 
 
+# Crust thickness (km) and isostasy. Crust floats on the denser mantle like
+# ice on water: thicker crust stands higher, and for continents ~85% of any
+# thickening is hidden below as a root (Airy isostasy: 1 km of extra crust
+# -> ~150 m of extra elevation). 35 km of continental crust sits at ~250 m;
+# Tibet's ~70 km gives ~5.5 km.
+OCEAN_KM = 7.0  # normal oceanic crust
+CONT_KM = 35.0  # normal continental crust
+BECOMES_CONT_KM = 20.0  # an arc or sediment pile this thick is continental crust
+MAX_KM = 80.0
+ISO_LAND = 150.0  # m of elevation per km of crust
+ISO_SEA = 200.0  # under water the displaced stuff is water, not air
+
+
+def elevation(thick, age, cont):
+    return np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),
+                    ocean_depth(age) + ISO_SEA * (thick - OCEAN_KM))
+
+
 def ocean_depth(age):
     """Half-space cooling: sea floor sinks ~ sqrt(age). (Real fit: 2600 + 345*sqrt(t) m.)"""
     return -np.minimum(2600 + 345 * np.sqrt(np.maximum(age, 0)), 6400)
@@ -379,14 +422,14 @@ class Simulation:
         self.omega = np.zeros((P_MAX, 3))
         self.mantle = np.zeros((P_MAX, 3))
         self.owned = np.zeros((P_MAX, n), bool)
-        self.elev = np.zeros((P_MAX, n))
         self.age = np.zeros((P_MAX, n))
-        self.base = np.zeros((P_MAX, n))
+        self.thick = np.zeros((P_MAX, n))
         self.cont = np.zeros((P_MAX, n), bool)
         self.idx = np.tile(np.arange(n), (P_MAX, 1))
         self.contact = np.zeros((P_MAX, P_MAX))
         self.last_logged = np.full((P_MAX, P_MAX), -1e9)
         self.rifted_at = np.full((P_MAX, P_MAX), -1e9)
+        self.formed = np.zeros(P_MAX)  # when each plate got its current shape
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / n
         self.edge_len = g.spacing
@@ -422,7 +465,12 @@ class Simulation:
             # A supercontinent is one plate: hand it to whichever plate holds
             # most of it, so the story starts with rifting, not collisions.
             k0 = np.bincount(plate[cont], minlength=p.n_plates).argmax()
-            plate = np.where(cont, k0, plate)
+            # Its plate also carries the ocean near its coast (passive margins,
+            # like the Atlantic's today). Otherwise every bay belongs to some
+            # other plate and the breakup tears the coast into fingers.
+            near, _ = kernels.bfs_within(np.flatnonzero(cont), np.zeros(n, np.int64),
+                                         g.nbr_off, g.nbr_idx, int(3 * self.scale))
+            plate = np.where(near >= 0, k0, plate)
             # oceanic leftovers cut off from their plate join a neighbour
             for k in range(p.n_plates):
                 lab, nl = components(g, plate == k)
@@ -444,13 +492,13 @@ class Simulation:
         old_mtn = 900 * ridged(Perlin3D(int(rng.integers(2**31))), x, octaves=5, freq=2.5) * cont
         age = np.clip(90 + 90 * fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=3, freq=1.0), 5, 180)
         elev = np.where(cont, base + old_mtn, ocean_depth(age))
+        thick = np.where(cont, np.maximum(CONT_KM + (elev - 250) / ISO_LAND, BECOMES_CONT_KM + 1), OCEAN_KM)
         for k in range(p.n_plates):
             m = plate == k
             self.alive[k] = True
             self.owned[k] = m
             self.cont[k] = cont & m
-            self.elev[k] = np.where(m, elev, 0)
-            self.base[k] = np.where(m, base, 0)
+            self.thick[k] = np.where(m, thick, 0)
             self.age[k] = np.where(m, age, 0)
             axis = rng.normal(size=3)
             axis /= np.linalg.norm(axis)
@@ -478,8 +526,8 @@ class Simulation:
 
         # 3. resolve ownership
         self.owner, newc, coll = _resolve(
-            self.alive, self.idx, self.owned, self.elev, self.age, self.cont, self.base,
-            self.owner, g.nbr_off, g.nbr_idx, float(ocean_depth(0.0)), self.Q, g.centers)
+            self.alive, self.idx, self.owned, self.age, self.cont, self.thick,
+            self.owner, g.nbr_off, g.nbr_idx, self.Q, g.centers)
         _cleanup_ghosts(self.alive, self.owned, self.Q, g.centers, self.owner, g.raster,
                         g.nbr_off, g.nbr_idx)
         self._world_view()
@@ -499,18 +547,17 @@ class Simulation:
     def _world_view(self):
         o, i = self.owner, np.arange(self.grid.n)
         r = self.idx[o, i]
-        self.w_elev = self.elev[o, r]
         self.w_age = self.age[o, r]
         self.w_cont = self.cont[o, r]
-        self.w_base = self.base[o, r]
+        self.w_thick = self.thick[o, r]
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont)
         self.w_ref = r
 
     def _scatter(self):
         o, r = self.owner, self.w_ref
-        self.elev[o, r] = self.w_elev
         self.age[o, r] = self.w_age
         self.cont[o, r] = self.w_cont
-        self.base[o, r] = self.w_base
+        self.thick[o, r] = self.w_thick
 
     def velocity(self) -> np.ndarray:
         """Tangent velocity of every cell (rad/Myr, world frame)."""
@@ -556,44 +603,51 @@ class Simulation:
             out[hit] = src_rate[s[hit]] * np.exp(-((dist[hit] / w) ** 2))
             return out
 
-        # arcs on the overriding side of subduction zones
+        # arcs: melting above the sinking slab adds new crust to the overriding plate
         arc_src = np.zeros(n)
         over = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
         rate = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
-        np.maximum.at(arc_src, over, p.arc_uplift * rate)
-        # big ranges on both sides of continental collisions
-        col_src = np.zeros(n)
-        cm = bd["collision"]
-        np.maximum.at(col_src, a[cm], p.collision_uplift * conv[cm])
-        np.maximum.at(col_src, b[cm], p.collision_uplift * conv[cm])
-        uplift = spread(arc_src, 1.6) + spread(col_src, 3.0)
+        np.maximum.at(arc_src, over, p.arc_growth * rate)
+        growth = spread(arc_src, 1.6)
 
-        # Time evolution acts on *every* cell of every plate, in the plate's own
-        # frame. (Doing it only on the cells currently visible on the world
-        # grid left the 10-20% momentarily unsampled cells un-aged: speckle.)
-        own = self.owned
-        oc_r, co_r = own & ~self.cont, own & self.cont
-        age0 = self.age[oc_r]
-        self.age[own] += dt
-        # oceanic: depth follows age; anything built on top (arcs) decays slowly
-        excess = np.maximum(self.elev[oc_r] - ocean_depth(age0), 0) * np.exp(-dt / 40.0)
-        self.elev[oc_r] = ocean_depth(self.age[oc_r]) + excess
-        # continental: relax toward base level (stand-in for erosion)
-        lvl = self.base[co_r]
-        self.elev[co_r] = lvl + (self.elev[co_r] - lvl) * np.exp(-dt / p.erosion_timescale)
+        # Ageing acts on *every* cell of every plate, in the plate's own frame.
+        # (Doing it only on the cells currently visible on the world grid left
+        # the 10-20% momentarily unsampled cells un-aged: speckle.)
+        self.age[self.owned] += dt
         self._world_view()
-        self.w_elev = self.w_elev + uplift * dt
-        oc = ~self.w_cont
-        # island arcs that reach near sea level become new continental crust
-        born = oc & (self.w_elev > -400)
-        self.w_cont = self.w_cont | born
-        self.w_base = np.where(born, 0.0, self.w_base)
-        # gentle lateral spreading of continental relief
+        t = self.w_thick + growth * dt
+        cont = self.w_cont
+
+        # erosion (placeholder until step 3): high ground loses rock, and the
+        # higher and steeper it is, the faster: dh/dt = -(h/tau) (0.5 + h / 2 km).
+        # Young ranges wear down quickly; old worn-down ones linger for
+        # hundreds of Myr, like the Appalachians and Urals.
+        above = np.maximum(elevation(t, self.w_age, cont) - np.where(cont, 200.0, 0.0), 0)
+        after = above / (1 + dt / p.erosion_timescale * (0.5 + above / 2000.0))
+        removed = (above - after) / ISO_LAND
+        t = t - removed
+        # sediment: a share of it lands on the same plate's continental
+        # margins (ocean cells next to its continent); the rest is lost to
+        # trenches. Thick enough piles become continental crust (Bengal fan).
+        # (margin = ocean within ~250 km of the coast, on the same plate)
+        dist, _ = kernels.bfs_within(np.flatnonzero(cont), self.owner, g.nbr_off, g.nbr_idx,
+                                     int(round(self.scale)))
+        margin = ~cont & (dist > 0)
+        eroded = np.bincount(self.owner, removed, P_MAX)
+        slots = np.bincount(self.owner[margin], minlength=P_MAX)
+        t[margin] += p.sediment_kept * eroded[self.owner[margin]] / slots[self.owner[margin]]
+        # crustal flow: very thick crust is hot and weak at depth and spreads
+        # sideways (Tibet is doing this now), within a continent on one plate.
+        # Faster the thicker it is, which is why crust >~70 km is so rare.
+        # A diffusion: per-cell rates scale with 1/spacing^2, so finer grids
+        # take more (equally stable) substeps.
         ea, eb = g.edges[:, 0], g.edges[:, 1]
-        same = (self.owner[ea] == self.owner[eb]) & self.w_cont[ea] & self.w_cont[eb]
-        flux = 0.04 * (self.w_elev[eb] - self.w_elev[ea]) * same
-        self.w_elev = self.w_elev + np.bincount(ea, flux, n) - np.bincount(eb, flux, n)
-        self.w_elev = np.minimum(self.w_elev, 9500)
+        both = (self.owner[ea] == self.owner[eb]) & cont[ea] & cont[eb]
+        t = _crust_flow(t, ea[both], eb[both], p.crust_flow * dt / 3, int(round(3 * self.scale**2)))
+        born = ~cont & (t >= BECOMES_CONT_KM)
+        self.w_cont = cont | born
+        self.w_thick = np.minimum(t, MAX_KM)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont)
         self._scatter()
 
         # remember for snapshots
@@ -630,9 +684,11 @@ class Simulation:
         np.add.at(F, b[c], d[c] * k)
 
         torque = np.zeros((P_MAX, 3))
-        np.add.at(torque, self.owner, np.cross(P, F))
+        cell_torque = np.cross(P, F)
+        np.add.at(torque, self.owner, cell_torque)
         w = self.cell_area * (1 + p.continental_keel * self.w_cont)
         outer = (np.eye(3)[None] - P[:, :, None] * P[:, None, :]) * w[:, None, None]
+        self.cell_torque, self.cell_drag = cell_torque, outer  # for _stress_cut
         drag = np.zeros((P_MAX, 3, 3))
         np.add.at(drag, self.owner, outer)
 
@@ -672,7 +728,7 @@ class Simulation:
         has = self.owned[gone, r]
         t, r = t[has], r[has]
         self.owned[keep, t] = True
-        for arr in (self.elev, self.age, self.base, self.cont):
+        for arr in (self.age, self.thick, self.cont):
             arr[keep, t] = arr[gone, r]
         ak, ag = (self.owner == keep).sum(), (self.owner == gone).sum()
         self.omega[keep] = (self.omega[keep] * ak + self.omega[gone] * ag) / max(ak + ag, 1)
@@ -733,73 +789,196 @@ class Simulation:
             self._merge(keep, k)
             self._log("absorbed", [keep, k], where, "remnant plate {1} is absorbed into plate {0}")
 
+    def _stress_cut(self, k, rng, tries=6):
+        """Plates are rigid only up to a point. Try a few straight cuts through
+        plate k and, for each, solve how the two halves would move on their
+        own (same force balance as _forces). Returns (centre, cut normal,
+        opening speed in cm/yr) for the cut across which the halves most want
+        to pull apart, e.g. a plate with slabs pulling on opposite sides."""
+        p = self.params
+        cells = np.flatnonzero(self.owner == k)
+        P = self.grid.centers[cells]
+        c = P.mean(0)
+        c /= np.linalg.norm(c)
+        t = rng.normal(size=(tries, 3))
+        t -= (t @ c)[:, None] * c
+        t /= np.linalg.norm(t, axis=1, keepdims=True)
+        side = ((P - c) @ t.T > 0).T.astype(float)  # (tries, cells)
+        tq, D = self.cell_torque[cells], self.cell_drag[cells]
+        motion = []
+        for s_ in (side, 1 - side):
+            Dh = np.einsum("tc,cij->tij", s_, D)
+            area = np.trace(Dh, axis1=1, axis2=2) / 2
+            tau = s_ @ tq + p.mantle_noise * 0.5 * area[:, None] * self.mantle[k]
+            Dh = Dh + 0.1 * area[:, None, None] * np.eye(3)
+            motion.append(p.mobility * np.linalg.solve(Dh, tau[:, :, None])[:, :, 0])
+        opening = np.einsum("tj,tj->t", np.cross(motion[0] - motion[1], c), t) * CMYR
+        frac = side.mean(1)
+        opening[(frac < 0.25) | (frac > 0.75)] = 0
+        i = int(opening.argmax())
+        return (c, t[i], float(opening[i])) if opening[i] > 0 else (c, None, 0.0)
+
+    def _old_margins(self):
+        """Per plate: mean age of the ocean floor along its passive margins
+        (coastlines where continent and ocean ride on the same plate, like
+        today's Atlantic coasts), and how many margin edges it has."""
+        a, b = self.grid.edges[:, 0], self.grid.edges[:, 1]
+        m = (self.owner[a] == self.owner[b]) & (self.w_cont[a] != self.w_cont[b])
+        ocean = np.where(self.w_cont[a], b, a)[m]
+        k = self.owner[a][m]
+        cnt = np.bincount(k, minlength=P_MAX)
+        age = np.bincount(k, self.w_age[ocean], P_MAX) / np.maximum(cnt, 1)
+        return age, cnt
+
     def _maybe_rift(self, rng):
+        """Three ways a plate splits, each a hazard rate (per Myr, in units of
+        1/rift_timescale); at most one split per step.
+          heat:   a big continent insulates the mantle under it and rifts
+                  (Pangaea -> Atlantic).
+          stress: a big plate whose halves are pulled different ways breaks
+                  along the line where they'd separate fastest.
+          margin: old ocean floor at a passive margin is cold and dense enough
+                  to break off and start sinking under the continent: new
+                  subduction (the closing half of the Wilson cycle)."""
         p, g = self.params, self.grid
         if self.alive.sum() >= min(p.max_plates, P_MAX):
             return
         P = g.centers
         cont_cells = np.bincount(self.owner, weights=self.w_cont, minlength=P_MAX)
         all_cells = np.bincount(self.owner, minlength=P_MAX)
+        margin_age, margin_len = self._old_margins()
         threshold = p.rift_min_continent * g.n
-        big = p.big_plate * g.n
+        big = p.stress_min_plate * g.n
         for k in np.flatnonzero(self.alive):
-            # big continents rift (heat builds up under them); so, more slowly,
-            # do very large plates of any kind (ridge jumps, new plates forming)
-            rate = max(cont_cells[k] / threshold if cont_cells[k] >= threshold else 0,
-                       0.5 * all_cells[k] / big if all_cells[k] >= big else 0)
+            heat = cont_cells[k] / threshold if cont_cells[k] >= threshold else 0.0
+            stress, cut, t_s = 0.0, None, None
+            # (a freshly formed plate gets time to settle first, or splits cascade)
+            if all_cells[k] >= big and self.t - self.formed[k] >= p.settle_time:
+                c_s, t_s, opening = self._stress_cut(k, rng)
+                if opening > p.rift_stress:
+                    stress = (opening / p.rift_stress - 1) * all_cells[k] / big
+                # Plates much bigger than the Pacific (~20% of Earth) are rare:
+                # they span too many different mantle flow regimes to stay whole.
+                stress += 2 * max(0.0, all_cells[k] / (p.big_plate * g.n) - 1)
+                if stress > 0 and t_s is not None:
+                    cut = (c_s, t_s)
+            margin = 0.0
+            ocean_cells = all_cells[k] - cont_cells[k]
+            if (margin_len[k] >= 4 * self.scale and ocean_cells >= 0.5 * big
+                    and cont_cells[k] >= 0.5 * big):
+                margin = max(0.0, margin_age[k] / p.margin_age - 1) * 3
+            rate = heat + stress + margin
             if rate == 0 or rng.random() > 1 - np.exp(-self.dt / p.rift_timescale * rate):
                 continue
-            continental = cont_cells[k] >= threshold
-            # cut through the plate's continental core (or the whole plate) with a wiggly great circle
-            core = P[(self.owner == k) & (self.w_cont if continental else True)]
-            c = core.mean(0)
-            c /= np.linalg.norm(c)
-            t = rng.normal(size=3)
-            t -= (t @ c) * c
-            t /= np.linalg.norm(t)
-            nz = Perlin3D(int(rng.integers(2**31)))
             refs = np.flatnonzero(self.owned[k])
             world = P[refs] @ self.Q[k].T
-            side = (world - c) @ t + 0.12 * fbm(nz, world, octaves=4, freq=3.0) > 0
-            frac = side.mean()
-            if not 0.2 < frac < 0.8:
+            u = rng.random() * rate
+            if u < margin:
+                # the ocean side of the largest stretch of ocean on this plate
+                lab, _ = components(g, (self.owner == k) & ~self.w_cont)
+                biggest = np.bincount(lab[lab >= 0]).argmax()
+                at = g.locate(world)
+                side = ~self.cont[k, refs] & (lab[at] == biggest)
+                if self._split(k, refs, world, side, toward=True):
+                    edge = (self.owner == k) & self.w_cont & (lab[g.nbr_idx[g.nbr_off[:-1]]] == biggest)
+                    c = P[edge].mean(0) if edge.any() else world[side].mean(0)
+                    self._log("subduction", [k, self.newest], c, "old ocean floor on plate {0} breaks off "
+                              "its continental margin and starts to sink; it becomes plate {1}")
+                    return
                 continue
-            new = int(np.flatnonzero(~self.alive)[0])
-            self.label[new] = self.next_label
-            self.next_label += 1
-            for arr in (self.contact, self.last_logged, self.rifted_at):
-                fill = 0 if arr is self.contact else -1e9
-                arr[new, :] = fill
-                arr[:, new] = fill
-            self.mantle[new] = 0
-            self.alive[new] = True
-            self.Q[new] = self.Q[k]
-            self.idx[new] = self.idx[k]
-            self.owned[new] = False
-            r = refs[side]
-            self.owned[new, r] = True
-            self.owned[k, r] = False
-            for arr in (self.elev, self.age, self.base, self.cont):
-                arr[new] = arr[k]
-            cA = world[~side].mean(0)
-            cB = world[side].mean(0)
-            axis = np.cross(cA, cB)
-            axis /= np.linalg.norm(axis)
-            push = 2.5 / CMYR
-            self.omega[new] = self.omega[k] + axis * push
-            self.omega[k] = self.omega[k] - axis * push
-            # the rift keeps pushing for a while: seed the wandering term
-            self.mantle[new] = self.mantle[k] + axis * 4.0
-            self.mantle[k] = self.mantle[k] - axis * 4.0
-            a_, b_ = min(k, new), max(k, new)
-            self.rifted_at[a_, b_] = self.t
-            self.last_logged[a_, b_] = self.t
-            self.contact[a_, b_] = 0
-            moved = np.isin(self.w_ref, r) & (self.owner == k)
-            self.owner[moved] = new
-            what = "continent on plate" if continental else "oceanic plate"
-            self._log("rift", [k, new], c, what + " {0} rifts apart; the split-off part becomes plate {1}")
-            return  # at most one rift per step
+            if u < margin + stress:
+                if cut is None:  # a huge plate with no clear stress direction
+                    c = P[self.owner == k].mean(0)
+                    c /= np.linalg.norm(c)
+                    t = rng.normal(size=3)
+                    t -= (t @ c) * c
+                    t /= np.linalg.norm(t)
+                else:
+                    c, t = cut
+                why = "is pulled apart by the forces on it"
+            else:
+                core = P[(self.owner == k) & self.w_cont]
+                c = core.mean(0)
+                c /= np.linalg.norm(c)
+                t = rng.normal(size=3)
+                t -= (t @ c) * c
+                t /= np.linalg.norm(t)
+                why = "rifts apart"
+            side = self._rift_side(k, c, t, rng, world)
+            if not 0.2 < side.mean() < 0.8:
+                continue
+            self._split(k, refs, world, side, toward=False)
+            what = "continent on plate" if cont_cells[k] >= threshold else "plate"
+            self._log("rift", [k, self.newest], c, what + " {0} " + why + "; the split-off part becomes plate {1}")
+            return
+
+    def _rift_side(self, k, c, t, rng, world):
+        """Which of plate k's reference cells (at positions `world`) go to the
+        new plate. The cut is a great circle through c with normal t, bent
+        out of shape by warped multi-scale noise so it wanders like a real
+        rift (East Africa, the Atlantic's zig-zag margins). Stray fragments
+        it cuts off are handed back to whichever side surrounds them."""
+        g = self.grid
+        seeds = rng.integers(2**31, size=4)
+        def cut(x):
+            warp = np.stack([fbm(Perlin3D(int(sd)), x, octaves=3, freq=2.0) for sd in seeds[:3]], 1)
+            y = x + 0.12 * warp
+            return (y - c) @ t + 0.07 * fbm(Perlin3D(int(seeds[3])), y, octaves=4, freq=4.0)
+        mine = np.flatnonzero(self.owner == k)
+        v = np.full(g.n, np.nan)
+        v[mine] = cut(g.centers[mine])
+        on = self.owner == k
+        wside = on & (v > 0)
+        for m in (wside, on & ~wside):
+            lab, nl = components(g, m)
+            if nl > 1:
+                sizes = np.bincount(lab[lab >= 0])
+                stray = (lab >= 0) & (lab != sizes.argmax())
+                wside = np.where(stray, ~wside & on, wside)
+        cell = g.locate(world)
+        here = self.owner[cell] == k
+        return np.where(here, wside[cell], cut(world) > 0)
+
+    def _split(self, k, refs, world, side, toward):
+        """Move plate k's reference cells refs[side] to a new plate. The two
+        parts get a nudge apart (a rift) or together (new subduction)."""
+        if side.sum() < 4 or (~side).sum() < 4:
+            return False
+        new = int(np.flatnonzero(~self.alive)[0])
+        self.newest = new
+        self.label[new] = self.next_label
+        self.next_label += 1
+        for arr in (self.contact, self.last_logged, self.rifted_at):
+            fill = 0 if arr is self.contact else -1e9
+            arr[new, :] = fill
+            arr[:, new] = fill
+        self.alive[new] = True
+        self.formed[new] = self.formed[k] = self.t
+        self.Q[new] = self.Q[k]
+        self.idx[new] = self.idx[k]
+        self.owned[new] = False
+        r = refs[side]
+        self.owned[new, r] = True
+        self.owned[k, r] = False
+        for arr in (self.age, self.thick, self.cont):
+            arr[new] = arr[k]
+        axis = np.cross(world[~side].mean(0), world[side].mean(0))
+        axis /= np.linalg.norm(axis)
+        if toward:
+            axis = -axis
+        push = 2.5 / CMYR
+        self.omega[new] = self.omega[k] + axis * push
+        self.omega[k] = self.omega[k] - axis * push
+        # the push lasts a while: seed the wandering term
+        self.mantle[new] = self.mantle[k] + axis * 4.0
+        self.mantle[k] = self.mantle[k] - axis * 4.0
+        a_, b_ = min(k, new), max(k, new)
+        self.rifted_at[a_, b_] = self.t
+        self.last_logged[a_, b_] = self.t
+        self.contact[a_, b_] = 0
+        moved = np.isin(self.w_ref, r) & (self.owner == k)
+        self.owner[moved] = new
+        return True
 
     # ------------------------------------------------------------- output
     def snapshot(self) -> Snapshot:

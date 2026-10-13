@@ -195,10 +195,7 @@ def nearest_cell_map(g: Grid, width: int, height: int) -> np.ndarray:
     lon = np.radians(-180 + (np.arange(width) + 0.5) * 360 / width)
     LON, LAT = np.meshgrid(lon, lat)
     pts = np.stack([np.cos(LAT) * np.cos(LON), np.cos(LAT) * np.sin(LON), np.sin(LAT)], -1).reshape(-1, 3)
-    idx = np.empty(len(pts), dtype=int)
-    for s in range(0, len(pts), 2048):
-        idx[s:s + 2048] = np.argmax(pts[s:s + 2048] @ g.centers.T, axis=1)
-    return idx.reshape(height, width)
+    return g.locate(pts).reshape(height, width)
 
 
 ELEV_CHARS = " .:-=+*#%@"

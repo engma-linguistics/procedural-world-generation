@@ -438,7 +438,7 @@ function buildOverlays() {
   }
   Object.values(overlays).forEach((o) => group.add(o));
 }
-const EVENT_COLORS = { rift: 0x3bf0ff, collision: 0xff6b3b, suture: 0xffd23b, absorbed: 0xc58cff, consumed: 0xc58cff };
+const EVENT_COLORS = { rift: 0x3bf0ff, subduction: 0x7dff6b, collision: 0xff6b3b, suture: 0xffd23b, absorbed: 0xc58cff, consumed: 0xc58cff };
 
 // ------------------------------------------------------------ UI
 function renderLegend() {
@@ -459,7 +459,7 @@ function renderLegend() {
       ${state.layer === 'crust age' ? '<div class="muted"><span class="sw" style="background:#8a8478"></span>continental crust</div>' : ''}</div>`;
   }
   if (V.kind === 'run' && $('events').checked) {
-    el.innerHTML += Object.entries(EVENT_COLORS).slice(0, 4).map(([k, c]) =>
+    el.innerHTML += Object.entries(EVENT_COLORS).slice(0, 5).map(([k, c]) =>
       `<span><span class="sw" style="background:#${c.toString(16).padStart(6, '0')}"></span>${k}</span>`).join('');
   }
 }
