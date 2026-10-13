@@ -72,8 +72,9 @@
   <div class="row seg" id="layerSeg"></div>
 
   <h2>Overlays</h2>
-  <label class="worldOnly"><input type="checkbox" id="rivers" checked> Rivers</label>
+  <label><input type="checkbox" id="rivers" checked> Rivers</label>
   <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
+  <label class="runOnly"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
   <label><input type="checkbox" id="outlines"> Cell outlines</label>
   <label><input type="checkbox" id="pentas"> Highlight the 12 pentagons</label>
   <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
@@ -82,7 +83,7 @@
 
   <h2>Relief exaggeration <span id="reliefVal" class="muted"></span></h2>
   <input type="range" id="relief" min="0" max="80" value="25">
-  <div class="worldOnly">
+  <div>
     <h2>River threshold <span id="riverVal" class="muted"></span></h2>
     <input type="range" id="riverQ" min="80" max="99.5" step="0.5" value="95">
   </div>
@@ -182,8 +183,13 @@ const RAMPS = {
   temperature: [[-30, '#2b3f99'], [-10, '#5b8fd6'], [0, '#e6f0f5'], [12, '#f4d27a'], [24, '#e2703a'], [32, '#9e1c1c']],
   precipitation: [[0, '#d9c49a'], [300, '#c9c27a'], [800, '#7fb35a'], [1600, '#2f8f5a'], [2500, '#1f6f8f'], [4000, '#203f8f']],
   'crust age': [[0, '#d7301f'], [15, '#fc8d59'], [40, '#fee08b'], [80, '#91bfdb'], [140, '#4575b4'], [200, '#313695']],
+  'crust thickness': [[0, '#08306b'], [8, '#2171b5'], [20, '#9ecae1'], [30, '#c7e9c0'], [38, '#74c476'],
+                      [50, '#fd8d3c'], [65, '#d94801'], [80, '#7f2704']],
+  sediment: [[0, '#3a3a3a'], [0.5, '#7d6b4f'], [2, '#c9a464'], [6, '#f0d58c'], [15, '#fff7dc']],
 };
-const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', 'crust age': 'Myr (sea floor)' };
+RAMPS.rainfall = RAMPS.precipitation;
+const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
+                'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff');
@@ -204,7 +210,13 @@ function cellColors(layer) {
       else if (L.plate_boundary[i] < 0) c.lerp(CYAN, 0.75);
     } else if (layer === 'crust age') {
       if (L.crust[i]) c.copy(CONT); else rampFns[layer](L.crust_age[i], c);
-    } else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
+    } else if (layer === 'rock type') {
+      c.set(V.rockColors[L.rock[i]]);
+      if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
+    } else if (layer === 'crust thickness') rampFns[layer](L.thickness ? L.thickness[i] : L.crust_thickness[i], c);
+    else if (layer === 'sediment') rampFns[layer](L.cover ? L.cover[i] / 10 : L.sediment_cover[i], c);
+    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precip[i], c); }
+    else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else rampFns[layer](L[layer][i], c);
     out[3 * i] = c.r; out[3 * i + 1] = c.g; out[3 * i + 2] = c.b;
   }
@@ -212,10 +224,12 @@ function cellColors(layer) {
 }
 
 function availableLayers() {
-  if (V.kind === 'run') return ['elevation', 'plates', 'crust age'];
+  if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
+    V.data.rock ? ['rock type', 'crust thickness', 'sediment', 'rainfall'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
+  if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
   return ls;
 }
 
@@ -343,6 +357,36 @@ function buildOverlays() {
   const G = V.grid, L = V.layers, globe = state.mode === 'globe';
   const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;   // skip lines across the dateline
 
+  if (V.kind === 'run' && $('rivers').checked && L.flow) {
+    const q = +$('riverQ').value / 100, nbr = V.grid.nbr;
+    const fl = []; for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0) fl.push(L.flow[i]);
+    fl.sort((a, b) => a - b);
+    const thr = fl.length ? Math.max(fl[Math.floor(q * (fl.length - 1))], 1) : Infinity;
+    const big = fl.length ? fl[Math.floor(0.995 * (fl.length - 1))] : Infinity;
+    const small = [], large = [];
+    for (let i = 0; i < V.n; i++) {
+      const sl = L.down[i];
+      if (sl === 255 || L.elevation[i] <= 0 || L.flow[i] < thr) continue;
+      const a = cellPos(i, 1.003), b = cellPos(nbr[i][sl], 1.003);
+      if (wraps(a, b)) continue;
+      (L.flow[i] >= big ? large : small).push(...a, ...b);
+    }
+    overlays.rivers = lineObj(small, 0x4fb3ff);
+    overlays.riversBig = lineObj(large, 0xa8e1ff);
+  }
+  if (V.kind === 'run' && $('hotspots').checked && V.hotspots) {
+    const pts = [], globe_ = globe;
+    for (const [la, lo] of V.hotspots) {
+      const r0 = globe_ ? 1.012 : 1;
+      for (const rad of [1.2, 2.4]) for (let k = 0; k < 16; k++) {
+        const a1 = k / 16 * 2 * Math.PI, a2 = (k + 1) / 16 * 2 * Math.PI, cl = Math.max(Math.cos(la * Math.PI / 180), 0.2);
+        const p1 = llPos(la + rad * Math.sin(a1), lo + rad * Math.cos(a1) / cl, r0);
+        const p2 = llPos(la + rad * Math.sin(a2), lo + rad * Math.cos(a2) / cl, r0);
+        if (!wraps(p1, p2)) pts.push(...p1, ...p2);
+      }
+    }
+    overlays.hotspots = lineObj(pts, 0xff9f1c);
+  }
   if (V.kind === 'world' && $('rivers').checked) {
     const q = +$('riverQ').value / 100, fl = V.landFlowSorted;
     const thr = fl.length ? fl[Math.floor(q * (fl.length - 1))] : Infinity;
@@ -447,6 +491,11 @@ function renderLegend() {
     const present = new Set(V.layers.biome);
     el.innerHTML = V.legend.biome.filter((b) => present.has(b.id))
       .map((b) => `<span><span class="sw" style="background:${b.color}"></span>${b.name}</span>`).join('');
+  } else if (state.layer === 'rock type') {
+    const present = new Set(V.layers.rock);
+    el.innerHTML = V.rocks.filter((r) => present.has(r.id))
+      .map((r) => `<span><span class="sw" style="background:${r.color}"></span>${r.name}</span>`).join('') +
+      '<span class="muted">(basement rock; faded = under the sea; see "sediment" for what covers it)</span>';
   } else if (state.layer === 'plates') {
     el.innerHTML = `<span>Each colour = one plate (bright = continental crust, dark = oceanic)</span>
       <span><span class="sw" style="background:#ff3b3b"></span>converging boundary</span>
@@ -462,6 +511,8 @@ function renderLegend() {
     el.innerHTML += Object.entries(EVENT_COLORS).slice(0, 5).map(([k, c]) =>
       `<span><span class="sw" style="background:#${c.toString(16).padStart(6, '0')}"></span>${k}</span>`).join('');
   }
+  if (V.kind === 'run' && $('hotspots').checked && V.hotspots)
+    el.innerHTML += '<span><span class="sw" style="background:#ff9f1c"></span>hotspot</span>';
 }
 
 function renderLayerButtons() {
@@ -514,6 +565,8 @@ function describe(i) {
     lines.push(`biome ${V.legend.biome[L.biome[i]].name}`, `temp ${L.temperature[i]} °C`,
       `rain ${L.precipitation[i]} mm/yr`, `river flow ${L.flow[i]}`);
     if (L.lake[i]) lines.push('lake');
+    if (L.rock) lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${L.sediment_cover[i].toFixed(1)} km`,
+                           `crust ${Math.round(L.crust_thickness[i])} km thick`);
   }
   if (L.plate) {
     lines.push(`plate ${L.plate[i]} (${L.crust[i] ? 'continental' : 'oceanic'})`);
@@ -521,6 +574,11 @@ function describe(i) {
     const v = plateVelocity(i);
     if (v && (V.kind === 'run' || V.meta.method === 'tectonics')) lines.push(`moving ${(Math.hypot(...v) * CMYR).toFixed(1)} cm/yr`);
     if (L.plate_boundary[i]) lines.push(L.plate_boundary[i] > 0 ? 'converging boundary' : 'diverging boundary');
+  }
+  if (V.kind === 'run' && L.rock) {
+    lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${(L.cover[i] / 10).toFixed(1)} km`,
+               `crust ${L.thickness[i]} km thick`);
+    if (L.elevation[i] > 0) lines.push(`rain ${L.precip[i]} mm/yr`);
   }
   if (V.kind === 'run') lines.unshift(`t = ${V.t} Myr`);
   return lines;
@@ -567,7 +625,7 @@ seg('modeSeg', 'mode', () => {
   buildTopology(); paint();
 });
 $('smooth').addEventListener('change', paint);
-['rivers', 'outlines', 'pentas', 'arrows', 'events'].forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
+['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots'].forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
@@ -581,7 +639,8 @@ function setWorld(w) {
   const fl = w.layers.flow.filter((_, i) => w.layers.elevation[i] > 0).sort((a, b) => a - b);
   V = { kind: 'world', name: w.name, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         legend: w.legend, meta: w.meta, summary: w.summary, pentagons: w.meta.pentagons,
-        level: w.meta.level, landFlowSorted: fl };
+        level: w.meta.level, landFlowSorted: fl,
+        rocks: w.meta.rocks || [], rockColors: (w.meta.rocks || []).map((r) => r.color) };
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
 }
@@ -598,7 +657,8 @@ async function loadRun(dir, wantT) {
   for (const [k, s] of Object.entries(run.layers)) data[k] = new TYPED[s.dtype](buf, s.offset, s.shape[0] * s.shape[1]);
   const pg = prepareGrid(grid);
   V = { kind: 'run', name: run.name, run, data, grid, n: pg.n, cornerCells: pg.cornerCells,
-        pentagons: grid.pentagons, level: grid.level, frame: 0 };
+        pentagons: grid.pentagons, level: grid.level, frame: 0,
+        rocks: run.rocks || [], rockColors: (run.rocks || []).map((r) => r.color) };
   document.title = `${run.name} · Planet Viewer`;
   $('frame').max = run.frames.length - 1;
   let f = 0;
@@ -613,6 +673,8 @@ function setFrame(f, repaint = true) {
   const sl = (a) => a.subarray(f * n, (f + 1) * n);
   V.layers = { elevation: sl(d.elevation), plate: sl(d.plate), crust: sl(d.continental),
                crust_age: sl(d.age), plate_boundary: sl(d.boundary) };
+  for (const k of ['rock', 'cover', 'thickness', 'precip', 'flow', 'down']) if (d[k]) V.layers[k] = sl(d[k]);
+  V.hotspots = r.frames[f].hotspots;
   $('frame').value = f;
   $('tlabel').textContent = `${V.t} Myr`;
   if (repaint) { paint(); renderRunSummary(); updateHover(); }
@@ -671,7 +733,7 @@ function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
   if (p.get('layer')) state.layer = p.get('layer');
-  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin', 'events']) if (p.has(id)) $(id).checked = p.get(id) === '1';
+  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin', 'events', 'hotspots']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
   return p;
 }

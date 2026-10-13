@@ -25,6 +25,7 @@ import numpy as np
 from . import world as W
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
+from .surface import ROCKS
 from .tectonics import CMYR, Params, Simulation
 
 RUNS = W.ROOT / "runs"
@@ -36,7 +37,25 @@ LAYERS = {  # name -> dtype on disk
     "continental": "u1",
     "age": "<u2",
     "boundary": "i1",
+    "rock": "u1",  # surface.ROCKS id
+    "cover": "u1",  # sediment cover, units of 0.1 km
+    "thickness": "u1",  # crust, km
+    "precip": "<u2",  # mm/yr
+    "flow": "u1",  # river flow, 16 * log2(1 + flow)
+    "down": "u1",  # which neighbour (index into grid nbr list) the river goes to; 255 = none
 }
+
+
+def down_slot(grid: Grid, down: np.ndarray) -> np.ndarray:
+    """Encode each cell's downstream cell as its position in the cell's
+    neighbour list (fits in a byte)."""
+    deg = np.diff(grid.nbr_off)
+    src = np.repeat(np.arange(grid.n), deg)
+    pos = np.arange(len(grid.nbr_idx)) - grid.nbr_off[src]
+    hit = grid.nbr_idx == down[src]
+    out = np.full(grid.n, 255, np.uint8)
+    out[src[hit]] = pos[hit]
+    return out
 
 
 def make_params(overrides: dict) -> Params:
@@ -51,7 +70,7 @@ def write_grid(grid: Grid) -> Path:
     """Geometry for the viewer, shared by every run at this level."""
     GRIDS.mkdir(exist_ok=True)
     path = GRIDS / f"L{grid.level}.json"
-    if path.exists():
+    if path.exists() and '"nbr"' in path.read_text()[-200000:]:
         return path
     ll = lambda v: (np.round(np.degrees(np.arcsin(np.clip(v[:, 2], -1, 1))), 3).tolist(),
                     np.round(np.degrees(np.arctan2(v[:, 1], v[:, 0])), 3).tolist())
@@ -59,7 +78,8 @@ def write_grid(grid: Grid) -> Path:
     clat, clon = ll(grid.corners)
     path.write_text(json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
                                 "corner_lon": clon, "cells": grid.cell_corners,
-                                "pentagons": grid.pentagons.tolist()}, separators=(",", ":")))
+                                "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
+                               separators=(",", ":")))
     return path
 
 
@@ -78,10 +98,16 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         # cast now: at level 7, 126 float64 keyframes per layer would be ~1 GB
         for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
                      ("plate", snap.plate), ("continental", snap.continental),
-                     ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary)):
+                     ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary),
+                     ("rock", snap.rock), ("cover", np.clip(np.round(snap.cover * 10), 0, 255)),
+                     ("thickness", np.clip(np.round(snap.thickness), 0, 255)),
+                     ("precip", np.clip(np.round(snap.precip), 0, 65535)),
+                     ("flow", np.clip(np.round(16 * np.log2(1 + snap.flow)), 0, 255)),
+                     ("down", down_slot(s.grid, snap.downstream))):
             data[k].append(v.astype(LAYERS[k]))
         frames.append({"t": s.t, "stats": s.stats(),
-                       "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()}})
+                       "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
+                       "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots]})
 
     keep(sim)
     sim.run(myr, keep)
@@ -108,6 +134,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  "params": asdict(params), "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
+        "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
         "events": [e.as_dict() for e in sim.events],
         "frames": frames,
         "layers": layout,
@@ -204,7 +231,9 @@ def replay(run_dir: Path, at: float) -> Simulation:
     return sim
 
 
-def slice_world(run_dir: Path, at: float, erosion: float = 1.0) -> Path:
+def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
+    """erosion: strength of the final river-carving pass. Erosion already ran
+    for the whole history inside the simulation; this only sharpens valleys."""
     run, arr = load_frames(run_dir)
     m = run["meta"]
     at = round(at / m["dt"]) * m["dt"]
@@ -233,9 +262,13 @@ def slice_world(run_dir: Path, at: float, erosion: float = 1.0) -> Path:
     v = sim.velocity()
     extra = {"plate": snap.plate, "crust": snap.continental.astype(int),
              "plate_boundary": snap.boundary.astype(int), "crust_age": np.round(snap.age),
-             "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v}
+             "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
+             "rock": snap.rock.astype(int), "sediment_cover": snap.cover,
+             "crust_thickness": snap.thickness}
     meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"],
-            "source_run": run["name"], "t_myr": at}
+            "source_run": run["name"], "t_myr": at,
+            "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
+            "hotspots": snap.hotspots}
     world = W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]})
     return W.save(world, f"{run['name']}-t{at:g}")
 

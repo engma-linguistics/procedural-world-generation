@@ -48,8 +48,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from numba import njit
 
-from . import kernels
+from . import climate, kernels, surface
 from .grid import Grid
+from .surface import ARC, CRATON, HOTSPOT, OCEAN, OROGEN, SEDIMENT
 from .noise import Perlin3D, fbm, ridged
 
 R_KM = 6371.0
@@ -61,7 +62,9 @@ P_MAX = 48
 class Params:
     n_plates: int = 12
     start: str = "supercontinent"  # or "scattered"
-    continental_fraction: float = 0.32
+    # starting share of the surface that's continental crust, and the level
+    # the thermostat on island-arc growth holds it near (Earth: ~0.41)
+    continental_fraction: float = 0.4
     # forces (arbitrary units; mobility converts torque to rad/Myr)
     slab_pull: float = 1.0
     ridge_push: float = 0.15
@@ -73,13 +76,22 @@ class Params:
     mobility: float = 0.008
     max_speed: float = 18.0  # cm/yr
     # crust: arcs add new crust above subducting slabs (km/Myr per cm/yr of
-    # convergence); collisions stack crust (see _resolve), which then flows
-    # sideways where it's very thick; erosion removes it from high ground
-    # and some of that ends up as sediment on the continental margins
+    # convergence, before the thermostat); collisions stack crust (see
+    # _resolve), which then flows sideways where it's very thick
     arc_growth: float = 0.03
-    crust_flow: float = 0.03  # per Myr, between neighbours, where crust > 40 km
-    erosion_timescale: float = 100.0  # Myr e-folding of ground 2 km up (faster above, slower below); placeholder until step 3
-    sediment_kept: float = 0.5  # share of eroded crust deposited on margins (rest is subducted)
+    # per Myr between level-5 neighbours, times (x + x^3), x = (crust - 40 km)/10 km.
+    # (At 0.03 the stability clamp in _crust_flow always bound, so plateaus
+    # flattened at the numerical limit: ~1 km in 4 Myr from flow alone.)
+    crust_flow: float = 0.0006
+    # surface (see surface.py): erosion, rivers, sediment, climate
+    erosion_timescale: float = 70.0  # Myr e-folding of ground 2 km up, for rock of erodibility 1
+    stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
+    incision: float = 0.004  # river cutting, per Myr per sqrt(flow)
+    climate_every: float = 10.0  # Myr between rainfall updates
+    # hotspots: mantle plumes fixed in the mantle; plates slide over them
+    hotspots: int = 10  # typical number alive at once
+    hotspot_life: float = 120.0  # Myr, mean
+    hotspot_rate: float = 4.0  # km/Myr of crust added at the centre (a quarter of that under continents)
     # events
     suture_after: float = 30.0  # Myr of sustained continental collision -> weld plates
     rift_timescale: float = 130.0  # Myr: mean time before a big continental plate rifts
@@ -110,7 +122,7 @@ class Event:
 # compiled kernels
 # ---------------------------------------------------------------------------
 @njit(cache=True)
-def _fill(k, r, refs, owned, age, cont, thick):
+def _fill(k, r, refs, owned, age, cont, thick, rock, cover):
     """Fill hole r in plate k's grid from its neighbours refs (-1 = not part
     of this plate). It's continental only if it's completely enclosed by
     continent; otherwise it copies just its oceanic neighbours. A notch in a
@@ -119,7 +131,8 @@ def _fill(k, r, refs, owned, age, cont, thick):
     A majority vote here let continents fill in their own ragged edges every
     step and slowly swell (~1.5% of the planet per 100 Myr)."""
     nc, no = 0, 0
-    sa, st, oa, ot = 0.0, 0.0, 0.0, 0.0
+    sa, st, sc, oa, ot, oc = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    rc, ro = -1, -1
     for j in refs:
         if j < 0 or not owned[k, j]:
             continue
@@ -127,14 +140,20 @@ def _fill(k, r, refs, owned, age, cont, thick):
             nc += 1
             sa += age[k, j]
             st += thick[k, j]
+            sc += cover[k, j]
+            rc = j
         else:
             no += 1
             oa += age[k, j]
             ot += thick[k, j]
+            oc += cover[k, j]
+            ro = j
     if nc == len(refs):
-        age[k, r], thick[k, r], cont[k, r] = sa / nc, st / nc, True
+        age[k, r], thick[k, r], cont[k, r], cover[k, r] = sa / nc, st / nc, True, sc / nc
+        rock[k, r] = rock[k, rc]
     elif no > 0:
-        age[k, r], thick[k, r], cont[k, r] = oa / no, ot / no, False
+        age[k, r], thick[k, r], cont[k, r], cover[k, r] = oa / no, ot / no, False, oc / no
+        rock[k, r] = rock[k, ro]
     else:
         return False
     owned[k, r] = True
@@ -142,7 +161,7 @@ def _fill(k, r, refs, owned, age, cont, thick):
 
 
 @njit(cache=True)
-def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, Q, centers):
+def _resolve(alive, idx, owned, age, cont, thick, rock, cover, prev_owner, nbr_off, nbr_idx, Q, centers, stacked):
     """Decide which plate owns each world cell; delete subducted crust,
     fill aliasing holes, create new ocean floor in gaps.
     Returns (owner, new_crust flag, collision count matrix).
@@ -169,7 +188,7 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
                 if owned[k, nbr_idx[e]]:
                     cnt += 1
             if cnt >= tot - 2:
-                _fill(k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick)
+                _fill(k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover)
     for i in range(n):
         m = 0
         for k in range(P):
@@ -200,7 +219,9 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
             if cont[k, rk] and cont[w, rw]:
                 coll[w, k] += 1
                 coll[k, w] += 1
-                thick[w, rw] += thick[k, rk]
+                stacked[i] += thick[k, rk]  # spread over a belt in _physics
+                if rock[w, rw] != CRATON:
+                    rock[w, rw] = OROGEN  # buried, squeezed and cooked
             owned[k, rk] = False
     # gaps: first try "hole in a plate" (aliasing), else new ocean floor
     for i in range(n):
@@ -219,7 +240,7 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
                 best_c, best_k = cnt, k
         if best_k >= 0 and best_c >= 4:
             r = idx[best_k, i]
-            if _fill(best_k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick):
+            if _fill(best_k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover):
                 owner[i] = best_k
     counts = np.zeros(P, np.int64)
     for i in range(n):
@@ -242,7 +263,7 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
             for e in range(nbr_off[i], nbr_off[i + 1]):
                 if owner[nbr_idx[e]] == k:
                     refs[e - nbr_off[i]] = idx[k, nbr_idx[e]]
-            if _fill(k, idx[k, i], refs, owned, age, cont, thick):
+            if _fill(k, idx[k, i], refs, owned, age, cont, thick, rock, cover):
                 owner[i] = k
                 continue
         if counts[k] == 0:
@@ -251,6 +272,8 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
         owned[k, r] = True
         age[k, r] = 0.0
         thick[k, r] = OCEAN_KM
+        rock[k, r] = OCEAN
+        cover[k, r] = 0.0
         cont[k, r] = False
         owner[i] = k
         newc[i] = True
@@ -268,6 +291,8 @@ def _resolve(alive, idx, owned, age, cont, thick, prev_owner, nbr_off, nbr_idx, 
                 owned[k, r2] = True
                 age[k, r2] = 0.0
                 thick[k, r2] = OCEAN_KM
+                rock[k, r2] = OCEAN
+                cover[k, r2] = 0.0
                 cont[k, r2] = False
     return owner, newc, coll
 
@@ -377,9 +402,13 @@ ISO_LAND = 150.0  # m of elevation per km of crust
 ISO_SEA = 200.0  # under water the displaced stuff is water, not air
 
 
-def elevation(thick, age, cont):
+ISO_VOLCANO = 350.0  # a narrow volcanic pile is also held up by the stiff plate around it (flexure)
+
+
+def elevation(thick, age, cont, rock=None, swell=0.0):
+    sea = ISO_SEA if rock is None else np.where(rock == HOTSPOT, ISO_VOLCANO, ISO_SEA)
     return np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),
-                    ocean_depth(age) + ISO_SEA * (thick - OCEAN_KM))
+                    ocean_depth(age) + sea * (thick - OCEAN_KM)) + swell
 
 
 def ocean_depth(age):
@@ -402,6 +431,13 @@ class Snapshot:
     age: np.ndarray  # Myr
     boundary: np.ndarray  # +1 converging, -1 diverging, 0 otherwise
     omega: dict[int, list[float]]  # plate id -> angular velocity (rad/Myr)
+    rock: np.ndarray  # surface.ROCKS id of the basement
+    cover: np.ndarray  # km of sediment on top
+    thickness: np.ndarray  # km of crust
+    precip: np.ndarray  # mm/yr
+    flow: np.ndarray  # river flow (sum of upstream rainfall, cells x m/yr)
+    downstream: np.ndarray  # next cell down the river, -1 at the sea
+    hotspots: list  # [lat, lon] of each live plume
 
 
 @dataclass
@@ -424,12 +460,19 @@ class Simulation:
         self.owned = np.zeros((P_MAX, n), bool)
         self.age = np.zeros((P_MAX, n))
         self.thick = np.zeros((P_MAX, n))
+        self.rock = np.zeros((P_MAX, n), np.uint8)
+        self.cover = np.zeros((P_MAX, n))  # km of sediment on top of the basement
+        self.hotspots = []  # dicts: pos (mantle frame = world frame), born, life
         self.cont = np.zeros((P_MAX, n), bool)
         self.idx = np.tile(np.arange(n), (P_MAX, 1))
         self.contact = np.zeros((P_MAX, P_MAX))
         self.last_logged = np.full((P_MAX, P_MAX), -1e9)
         self.rifted_at = np.full((P_MAX, P_MAX), -1e9)
         self.formed = np.zeros(P_MAX)  # when each plate got its current shape
+        self.precip, self.climate_t = None, 0.0
+        self.removed = self.flow = self.stacked = np.zeros(n)
+        self.down = np.full(n, -1, np.int64)
+        self.swell = np.zeros(n)  # m: broad dome pushed up by active plumes
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / n
         self.edge_len = g.spacing
@@ -493,12 +536,22 @@ class Simulation:
         age = np.clip(90 + 90 * fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=3, freq=1.0), 5, 180)
         elev = np.where(cont, base + old_mtn, ocean_depth(age))
         thick = np.where(cont, np.maximum(CONT_KM + (elev - 250) / ISO_LAND, BECOMES_CONT_KM + 1), OCEAN_KM)
+        # What the planet's unsimulated early history leaves behind: ancient
+        # cratons deep inside the continents, wrapped in old mountain belts,
+        # partly under a blanket of flat-lying sediment.
+        core = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=2.0)
+        craton = cont & (dist >= 2 * self.scale) & (core > -0.05)
+        rock = np.where(craton, CRATON, np.where(cont, OROGEN, OCEAN)).astype(np.uint8)
+        blanket = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=3.0)
+        cover = np.where(cont, np.clip(1.5 * blanket + 0.6, 0, 3) + np.where(inland < 1, 1.5, 0), 0)
         for k in range(p.n_plates):
             m = plate == k
             self.alive[k] = True
             self.owned[k] = m
             self.cont[k] = cont & m
             self.thick[k] = np.where(m, thick, 0)
+            self.rock[k] = np.where(m, rock, 0)
+            self.cover[k] = np.where(m, cover, 0)
             self.age[k] = np.where(m, age, 0)
             axis = rng.normal(size=3)
             axis /= np.linalg.norm(axis)
@@ -525,16 +578,17 @@ class Simulation:
             self.idx[k] = g.locate(g.centers @ self.Q[k], self.idx[k])
 
         # 3. resolve ownership
+        self.stacked = np.zeros(g.n)
         self.owner, newc, coll = _resolve(
-            self.alive, self.idx, self.owned, self.age, self.cont, self.thick,
-            self.owner, g.nbr_off, g.nbr_idx, self.Q, g.centers)
+            self.alive, self.idx, self.owned, self.age, self.cont, self.thick, self.rock, self.cover,
+            self.owner, g.nbr_off, g.nbr_idx, self.Q, g.centers, self.stacked)
         _cleanup_ghosts(self.alive, self.owned, self.Q, g.centers, self.owner, g.raster,
                         g.nbr_off, g.nbr_idx)
         self._world_view()
 
         # 4. boundaries, uplift, forces
         bd = self._boundaries()
-        self._physics(bd)
+        self._physics(bd, rng)
         self._forces(bd, rng)
 
         # 5. events
@@ -550,7 +604,9 @@ class Simulation:
         self.w_age = self.age[o, r]
         self.w_cont = self.cont[o, r]
         self.w_thick = self.thick[o, r]
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont)
+        self.w_rock = self.rock[o, r]
+        self.w_cover = self.cover[o, r]
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell)
         self.w_ref = r
 
     def _scatter(self):
@@ -558,6 +614,8 @@ class Simulation:
         self.age[o, r] = self.w_age
         self.cont[o, r] = self.w_cont
         self.thick[o, r] = self.w_thick
+        self.rock[o, r] = self.w_rock
+        self.cover[o, r] = self.w_cover
 
     def velocity(self) -> np.ndarray:
         """Tangent velocity of every cell (rad/Myr, world frame)."""
@@ -587,7 +645,7 @@ class Simulation:
                     a_down=a_down, b_down=b_down, opening=opening)
 
     # ------------------------------------------------------------- physics
-    def _physics(self, bd):
+    def _physics(self, bd, rng):
         g, p, dt = self.grid, self.params, self.dt
         n = g.n
         a, b, conv = bd["a"], bd["b"], np.clip(bd["conv"], 0, 15)
@@ -603,51 +661,74 @@ class Simulation:
             out[hit] = src_rate[s[hit]] * np.exp(-((dist[hit] / w) ** 2))
             return out
 
-        # arcs: melting above the sinking slab adds new crust to the overriding plate
+        # arcs: melting above the sinking slab adds new crust to the overriding
+        # plate. A thermostat holds continental area near continental_fraction
+        # (real growth vs. loss at trenches is roughly balanced but uncertain).
+        frac = max(self.w_cont.mean(), 1e-3)
+        thermostat = np.clip((p.continental_fraction / frac) ** 4, 0.1, 5.0)
         arc_src = np.zeros(n)
         over = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
         rate = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
-        np.maximum.at(arc_src, over, p.arc_growth * rate)
+        np.maximum.at(arc_src, over, p.arc_growth * thermostat * rate)
         growth = spread(arc_src, 1.6)
+        # rifting stretches continental crust thin near the opening boundary;
+        # that thinned crust is why continents have drowned shelves and slopes
+        rift_src = np.zeros(n)
+        op = bd["opening"]
+        opening_rate = -np.clip(bd["conv"][op], -15, 0)
+        np.maximum.at(rift_src, a[op], p.stretching * opening_rate)
+        np.maximum.at(rift_src, b[op], p.stretching * opening_rate)
+        stretch = spread(rift_src, 1.0)
+        plume = self._hotspots(rng)
 
         # Ageing acts on *every* cell of every plate, in the plate's own frame.
         # (Doing it only on the cells currently visible on the world grid left
         # the 10-20% momentarily unsampled cells un-aged: speckle.)
         self.age[self.owned] += dt
         self._world_view()
-        t = self.w_thick + growth * dt
-        cont = self.w_cont
+        cont, rock = self.w_cont, self.w_rock.copy()
+        t = self.w_thick + growth * dt + plume * np.where(cont, 0.25, 1.0) * dt
+        # Collisions: the crust that was shortened away is stacked into a
+        # belt a few hundred km wide (Himalaya + Tibet), not one cell.
+        ea, eb = g.edges[:, 0], g.edges[:, 1]
+        both = (self.owner[ea] == self.owner[eb]) & cont[ea] & cont[eb]
+        if self.stacked.any():
+            t = t + surface._spread(self.stacked, ea[both], eb[both], 0.15, int(round(6 * self.scale**2)))
+        # arc rock: on continents wherever arcs build; at sea only once the
+        # crust has thickened into a real island arc
+        arcky = (growth * dt > 0.1) & (rock != CRATON) & (cont | (t > OCEAN_KM + 5))
+        rock[arcky] = ARC
+        thin = cont & (t > 22)
+        t[thin] = np.maximum(22.0, t[thin] * np.exp(-stretch[thin] * dt))
+        rock[~cont & (plume * dt > 0.2)] = HOTSPOT
 
-        # erosion (placeholder until step 3): high ground loses rock, and the
-        # higher and steeper it is, the faster: dh/dt = -(h/tau) (0.5 + h / 2 km).
-        # Young ranges wear down quickly; old worn-down ones linger for
-        # hundreds of Myr, like the Appalachians and Urals.
-        above = np.maximum(elevation(t, self.w_age, cont) - np.where(cont, 200.0, 0.0), 0)
-        after = above / (1 + dt / p.erosion_timescale * (0.5 + above / 2000.0))
-        removed = (above - after) / ISO_LAND
-        t = t - removed
-        # sediment: a share of it lands on the same plate's continental
-        # margins (ocean cells next to its continent); the rest is lost to
-        # trenches. Thick enough piles become continental crust (Bengal fan).
-        # (margin = ocean within ~250 km of the coast, on the same plate)
-        dist, _ = kernels.bfs_within(np.flatnonzero(cont), self.owner, g.nbr_off, g.nbr_idx,
-                                     int(round(self.scale)))
-        margin = ~cont & (dist > 0)
-        eroded = np.bincount(self.owner, removed, P_MAX)
-        slots = np.bincount(self.owner[margin], minlength=P_MAX)
-        t[margin] += p.sediment_kept * eroded[self.owner[margin]] / slots[self.owner[margin]]
         # crustal flow: very thick crust is hot and weak at depth and spreads
         # sideways (Tibet is doing this now), within a continent on one plate.
         # Faster the thicker it is, which is why crust >~70 km is so rare.
         # A diffusion: per-cell rates scale with 1/spacing^2, so finer grids
         # take more (equally stable) substeps.
-        ea, eb = g.edges[:, 0], g.edges[:, 1]
-        both = (self.owner[ea] == self.owner[eb]) & cont[ea] & cont[eb]
         t = _crust_flow(t, ea[both], eb[both], p.crust_flow * dt / 3, int(round(3 * self.scale**2)))
-        born = ~cont & (t >= BECOMES_CONT_KM)
+        t = np.minimum(t, MAX_KM)
+        rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
+
+        # weather, rivers, erosion, sediment
+        if self.precip is None or self.t - self.climate_t >= p.climate_every - 1e-9:
+            e = elevation(t, self.w_age, cont, rock, self.swell)
+            self.precip = climate.precipitation(g, e, climate.temperature(g, e))
+            self.climate_t = self.t
+        t, cover, self.removed, self.flow, self.down = surface.erode(
+            g, elevation(t, self.w_age, cont, rock, self.swell), t, self.w_cover, rock, cont, self.precip, dt,
+            p.erosion_timescale, p.incision, self.scale, ISO_LAND, ISO_SEA)
+
+        # ocean crust thickened enough by arcs or sediment becomes continental;
+        # hotspot piles (Hawaii, Iceland) stay oceanic however big
+        born = ~cont & (t >= BECOMES_CONT_KM) & (rock != HOTSPOT)
+        rock[born] = np.where(cover[born] > 0.5 * (t[born] - OCEAN_KM), SEDIMENT, ARC)
         self.w_cont = cont | born
         self.w_thick = np.minimum(t, MAX_KM)
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont)
+        self.w_cover = np.clip(cover, 0, self.w_thick)
+        self.w_rock = rock
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell)
         self._scatter()
 
         # remember for snapshots
@@ -660,6 +741,35 @@ class Simulation:
         down = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
         np.minimum.at(trench, down, -350 * np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]]))
         self.w_trench = np.maximum(trench, -4000)
+
+    def _hotspots(self, rng):
+        """Mantle plumes: fixed in the mantle while plates slide over them, so
+        each leaves a trail of volcanoes that drift away, erode and sink as
+        their sea floor ages (Hawaii -> Emperor seamounts). A new plume's
+        head arrives as a short, huge outpouring (flood basalts, like the
+        Deccan Traps). Returns crust added per Myr on each world cell."""
+        p, g = self.params, self.grid
+        self.hotspots = [h for h in self.hotspots if self.t - h["born"] < h["life"]]
+        n_new = rng.poisson(p.hotspots * self.dt / p.hotspot_life)
+        if self.step_no == 1:
+            n_new = p.hotspots  # start with a full set, of mixed ages
+        for _ in range(n_new):
+            v = rng.normal(size=3)
+            life = rng.uniform(0.4, 1.6) * p.hotspot_life
+            born = self.t - (rng.uniform(0, life) if self.step_no == 1 else 0.0)
+            self.hotspots.append({"pos": v / np.linalg.norm(v), "born": born, "life": life,
+                                  "strength": rng.uniform(0.5, 1.5)})
+        out = np.zeros(g.n)
+        self.swell = np.zeros(g.n)
+        r = 150.0 / R_KM  # plume radius, radians
+        for h in self.hotspots:
+            age = self.t - h["born"]
+            head = 4.0 if age < 6 else 1.0
+            d2 = 2 * (1 - g.centers @ h["pos"])  # chord^2 ~ angle^2
+            near = d2 < (3 * r) ** 2
+            out[near] += p.hotspot_rate * h["strength"] * head * np.exp(-d2[near] / r**2)
+            self.swell = np.maximum(self.swell, 1000.0 * h["strength"] * np.exp(-d2 / (4 * r) ** 2))
+        return out
 
     # ------------------------------------------------------------- forces
     def _forces(self, bd, rng):
@@ -728,7 +838,7 @@ class Simulation:
         has = self.owned[gone, r]
         t, r = t[has], r[has]
         self.owned[keep, t] = True
-        for arr in (self.age, self.thick, self.cont):
+        for arr in (self.age, self.thick, self.cont, self.rock, self.cover):
             arr[keep, t] = arr[gone, r]
         ak, ag = (self.owner == keep).sum(), (self.owner == gone).sum()
         self.omega[keep] = (self.omega[keep] * ak + self.omega[gone] * ag) / max(ak + ag, 1)
@@ -960,7 +1070,7 @@ class Simulation:
         r = refs[side]
         self.owned[new, r] = True
         self.owned[k, r] = False
-        for arr in (self.age, self.thick, self.cont):
+        for arr in (self.age, self.thick, self.cont, self.rock, self.cover):
             arr[new] = arr[k]
         axis = np.cross(world[~side].mean(0), world[side].mean(0))
         axis /= np.linalg.norm(axis)
@@ -991,6 +1101,13 @@ class Simulation:
             age=self.w_age.copy(),
             boundary=getattr(self, "w_boundary", np.zeros(self.grid.n, np.int8)).copy(),
             omega={int(self.label[k]): self.omega[k].tolist() for k in live},
+            rock=self.w_rock.copy(),
+            cover=self.w_cover.copy(),
+            thickness=self.w_thick.copy(),
+            precip=self.precip.copy() if self.precip is not None else np.zeros(self.grid.n),
+            flow=self.flow.copy(),
+            downstream=self.down.copy(),
+            hotspots=[list(latlon(h["pos"])) for h in self.hotspots],
         )
 
     def stats(self) -> dict:

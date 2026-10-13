@@ -4,3 +4,4 @@ __pycache__/
 worlds/
 runs/
 grids/
+.claude/

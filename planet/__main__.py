@@ -111,7 +111,8 @@ def main():
     sl = sub.add_parser("slice", help="replay a run to one moment and build a full world there")
     sl.add_argument("run", help="e.g. runs/run-s1-L5")
     sl.add_argument("--at", type=float, required=True, help="time in Myr")
-    sl.add_argument("--erosion", type=float, default=1.0)
+    sl.add_argument("--erosion", type=float, default=0.3,
+                    help="final valley-sharpening pass (erosion already ran during the simulation)")
     sl.set_defaults(func=cmd_slice)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
