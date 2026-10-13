@@ -1,4 +1,6 @@
 .venv/
 __pycache__/
-# Generated output: reproducible from method + seed + params
+# Generated output: reproducible from seed + params
 worlds/
+runs/
+grids/

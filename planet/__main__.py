@@ -8,7 +8,9 @@ import http.server
 import json
 import socketserver
 import webbrowser
+from pathlib import Path
 
+from . import timeline as T
 from . import world as W
 from .generators import GENERATORS
 
@@ -45,8 +47,31 @@ def cmd_show(args):
     print(W.ascii_map(w, args.layer, args.width))
 
 
+def cmd_simulate(args):
+    params = T.make_params(_parse_set(args.set))
+    name = args.name or f"run-s{args.seed}-L{args.level}"
+    out = T.simulate(args.seed, args.level, args.myr, args.dt, args.every, name, params)
+    run = json.loads((out / "run.json").read_text())
+    kinds = {}
+    for e in run["events"]:
+        kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
+    last = run["frames"][-1]["stats"]
+    print(f"{out.relative_to(W.ROOT)}  [{run['meta']['generated_in_s']}s, {len(run['frames'])} keyframes]  "
+          f"events {kinds}  final: {last['plates']} plates, land {last['land_pct']}%")
+
+
+def cmd_slice(args):
+    path = T.slice_world(Path(args.run), args.at, args.erosion)
+    print(path.relative_to(W.ROOT))
+
+
+def cmd_report(args):
+    print(T.report(Path(args.run)).relative_to(W.ROOT))
+
+
 def cmd_serve(args):
     W.update_index()
+    T.update_index()
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(W.ROOT))
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("127.0.0.1", args.port), handler) as httpd:
@@ -71,6 +96,27 @@ def main():
     g.add_argument("--set", nargs="*", metavar="KEY=VALUE",
                    help="generator params, e.g. --set n_plates=8 continental_fraction=0.5")
     g.set_defaults(func=cmd_generate)
+
+    t = sub.add_parser("simulate", help="time-stepped plate tectonics -> runs/<name>/")
+    t.add_argument("--seed", "-s", type=int, default=1)
+    t.add_argument("--level", "-l", type=int, default=5)
+    t.add_argument("--myr", type=float, default=500, help="how long to simulate (million years)")
+    t.add_argument("--dt", type=float, default=2, help="time step (million years)")
+    t.add_argument("--every", type=float, default=4, help="keep a viewer keyframe every N Myr")
+    t.add_argument("--name", "-n")
+    t.add_argument("--set", nargs="*", metavar="KEY=VALUE",
+                   help="tectonics params, e.g. --set n_plates=16 start=scattered")
+    t.set_defaults(func=cmd_simulate)
+
+    sl = sub.add_parser("slice", help="replay a run to one moment and build a full world there")
+    sl.add_argument("run", help="e.g. runs/run-s1-L5")
+    sl.add_argument("--at", type=float, required=True, help="time in Myr")
+    sl.add_argument("--erosion", type=float, default=1.0)
+    sl.set_defaults(func=cmd_slice)
+
+    rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
+    rp.add_argument("run")
+    rp.set_defaults(func=cmd_report)
 
     s = sub.add_parser("show", help="print an ASCII map of a saved world")
     s.add_argument("file")

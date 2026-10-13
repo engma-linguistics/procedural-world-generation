@@ -41,7 +41,16 @@ def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
     grid = build_grid(level)
     rng = np.random.default_rng(seed)
     elev, extra = GENERATORS[method](grid, rng, **params)
+    meta = {"method": method, "seed": seed, "level": level}
+    return finish(grid, elev, extra, meta, erosion, erosion_iterations, equator_temp,
+                  pole_temp, params, t0)
 
+
+def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
+           erosion_iterations: int = 12, equator_temp: float = 28.0, pole_temp: float = -22.0,
+           params: dict | None = None, t0: float | None = None) -> dict:
+    """Shared back half of the pipeline: climate -> erosion -> rivers -> biomes."""
+    t0 = t0 or time.time()
     temp = climate.temperature(grid, elev, equator_temp, pole_temp)
     precip = climate.precipitation(grid, elev, temp)
     if erosion > 0 and erosion_iterations > 0:
@@ -64,14 +73,12 @@ def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
 
     meta = {
-        "method": method,
-        "seed": seed,
-        "level": level,
+        **meta,
         "cells": grid.n,
         "pentagons": grid.pentagons.tolist(),
         "cell_size_km": round(grid.spacing * PLANET_RADIUS_KM),
         "params": {"erosion": erosion, "erosion_iterations": erosion_iterations,
-                   "equator_temp": equator_temp, "pole_temp": pole_temp, **params},
+                   "equator_temp": equator_temp, "pole_temp": pole_temp, **(params or {})},
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
@@ -254,7 +261,10 @@ def text_report(world: dict, summary: dict, width: int = 120) -> str:
     out = [f"# World: {world.get('name', '?')}",
            f"method={m['method']} seed={m['seed']} level={m['level']} cells={m['cells']} "
            f"(~{m['cell_size_km']} km apart on an Earth-sized planet)",
-           f"params: {json.dumps(m['params'])}", "", "## Summary",
+           f"params: {json.dumps(m['params'])}"]
+    if "source_run" in m:
+        out.append(f"sliced from tectonic run runs/{m['source_run']} at t = {m['t_myr']:g} Myr")
+    out += ["", "## Summary",
            _compact_json(summary), ""]
     layers = ["biome", "elevation"] + (["plate"] if "plate" in world["layers"] else []) + ["precipitation"]
     for layer in layers:
