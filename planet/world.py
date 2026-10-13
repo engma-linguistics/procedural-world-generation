@@ -19,6 +19,7 @@ conversation-friendly view.
 from __future__ import annotations
 
 import json
+import secrets
 import time
 from collections import deque
 from pathlib import Path
@@ -281,8 +282,15 @@ def _np(o):
     raise TypeError(type(o))
 
 
-def save(world: dict, name: str) -> Path:
+def new_id() -> str:
+    """Short random id for a run or world (6 hex characters)."""
+    return secrets.token_hex(3)
+
+
+def save(world: dict, name: str, file_id: str | None = None) -> Path:
+    """Saves worlds/<id>.json (+ .txt); `name` is the human-readable label."""
     WORLDS.mkdir(exist_ok=True)
+    file_id = file_id or new_id()
     g: Grid = world["grid"]
     world["name"] = name
     summary = summarize(world)
@@ -297,6 +305,7 @@ def save(world: dict, name: str) -> Path:
     parts = [
         ('"format"', json.dumps("procgen-planet/1")),
         ('"name"', json.dumps(name)),
+        ('"id"', json.dumps(file_id)),
         ('"meta"', json.dumps(world["meta"], default=_np)),
         ('"summary"', json.dumps(summary, default=_np)),
         ('"legend"', json.dumps({"biome": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]}
@@ -311,9 +320,9 @@ def save(world: dict, name: str) -> Path:
                             for k, v in grid_obj.items())
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + '\n},\n"grid": {\n' + grid_lines + "\n}\n}\n"
-    path = WORLDS / f"{name}.json"
+    path = WORLDS / f"{file_id}.json"
     path.write_text(text)
-    (WORLDS / f"{name}.txt").write_text(text_report(world, summary))
+    (WORLDS / f"{file_id}.txt").write_text(text_report(world, summary))
     update_index()
     return path
 
@@ -333,6 +342,16 @@ def update_index():
     for p in sorted(WORLDS.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         if p.name == "index.json":
             continue
-        meta = json.loads(p.read_text())
-        items.append({"file": p.name, "name": meta.get("name", p.stem), **{k: meta["meta"][k] for k in ("method", "seed", "level")}})
+        # the header (name, id, meta) is on the first few lines; don't parse megabytes of layers
+        head = {}
+        with open(p) as fh:
+            for line in fh:
+                if line.startswith('"layers"'):
+                    break
+                if line.startswith(('"name"', '"id"', '"meta"')):
+                    k, v = line.split(":", 1)
+                    head[json.loads(k)] = json.loads(v.rstrip().rstrip(","))
+        m = head.get("meta", {})
+        items.append({"file": p.name, "id": head.get("id", p.stem), "name": head.get("name", p.stem),
+                      "created": m.get("created", ""), **{k: m.get(k) for k in ("method", "seed", "level")}})
     (WORLDS / "index.json").write_text(json.dumps(items, indent=1))

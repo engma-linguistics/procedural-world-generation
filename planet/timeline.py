@@ -112,7 +112,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     keep(sim)
     sim.run(myr, keep)
 
-    out = RUNS / name
+    run_id = W.new_id()
+    out = RUNS / run_id
     out.mkdir(parents=True, exist_ok=True)
     layout, offset = {}, 0
     with open(out / "frames.bin", "wb") as f:
@@ -127,6 +128,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     write_grid(grid)
     run = {
         "format": "procgen-run/1",
+        "id": run_id,
         "name": name,
         "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr,
                  "every": stride * dt, "steps": sim.step_no,
@@ -165,11 +167,11 @@ def report(run_dir: Path) -> Path:
     grid = build_grid(m["level"])
     defaults = asdict(Params())
     changed = {k: v for k, v in m["params"].items() if defaults.get(k) != v}
-    out = [f"# Tectonic run: {run['name']}",
+    out = [f"# Tectonic run {run.get('id', run_dir.name)}: {run['name']}  (created {m['created']})",
            f"seed={m['seed']} level={m['level']} cells={m['cells']} (~{m['cell_size_km']} km) "
            f"dt={m['dt']} Myr, {m['myr']} Myr total, keyframe every {m['every']} Myr",
            f"non-default params: {json.dumps(changed) if changed else 'none'}",
-           f"replay any time with: uv run python -m planet slice runs/{run['name']} --at <Myr>", "",
+           f"replay any time with: uv run python -m planet slice {run_dir.name} --at <Myr>", "",
            "## Events"]
     out += [f"  t={e['t']:>5.0f}  {e['kind']:<9} {e['text']}  near ({e['lat']}, {e['lon']})"
             for e in run["events"]] or ["  (none)"]
@@ -266,11 +268,36 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
              "rock": snap.rock.astype(int), "sediment_cover": snap.cover,
              "crust_thickness": snap.thickness}
     meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"],
-            "source_run": run["name"], "t_myr": at,
+            "source_run": run_dir.name, "source_run_name": run["name"], "t_myr": at,
             "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "hotspots": snap.hotspots}
     world = W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]})
-    return W.save(world, f"{run['name']}-t{at:g}")
+    return W.save(world, f"{run['name']} @ {at:g} Myr")
+
+
+def find_run(ref: str) -> Path:
+    """A run by id ('a3f9c2') or path ('runs/a3f9c2')."""
+    p = Path(ref)
+    for cand in (p, RUNS / ref, RUNS / p.name):
+        if (cand / "run.json").exists():
+            return cand
+    raise SystemExit(f"no run {ref!r} (see: uv run python -m planet list)")
+
+
+def delete(ref: str) -> list[Path]:
+    """Delete a run (by id) or a world (by id); returns what was removed."""
+    import shutil
+    gone = []
+    if (RUNS / ref / "run.json").exists():
+        shutil.rmtree(RUNS / ref)
+        gone.append(RUNS / ref)
+    for ext in (".json", ".txt"):
+        if (W.WORLDS / f"{ref}{ext}").exists() and ref != "index":
+            (W.WORLDS / f"{ref}{ext}").unlink()
+            gone.append(W.WORLDS / f"{ref}{ext}")
+    update_index()
+    W.update_index()
+    return gone
 
 
 def update_index():
@@ -278,6 +305,7 @@ def update_index():
     items = []
     for p in sorted(RUNS.glob("*/run.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         r = json.loads(p.read_text())
-        items.append({"dir": p.parent.name, "name": r["name"], "seed": r["meta"]["seed"],
-                      "level": r["meta"]["level"], "myr": r["meta"]["myr"]})
+        items.append({"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
+                      "seed": r["meta"]["seed"], "level": r["meta"]["level"], "myr": r["meta"]["myr"],
+                      "created": r["meta"]["created"]})
     (RUNS / "index.json").write_text(json.dumps(items, indent=1))

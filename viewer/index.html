@@ -60,7 +60,8 @@
 
 <div id="controls" class="panel">
   <h1>Planet Viewer</h1>
-  <select id="worldSel"></select>
+  <div class="row" style="gap:6px"><select id="worldSel" style="flex:1;min-width:0"></select>
+    <button id="delBtn" title="Delete this run/world from disk">Delete</button></div>
   <div class="muted" style="margin-top:4px">or drop a world .json anywhere</div>
 
   <h2>View</h2>
@@ -529,15 +530,15 @@ function renderSummary() {
   if (V.kind === 'run') return renderRunSummary();
   const m = V.meta, s = V.summary;
   let cmd;
-  if (m.source_run) cmd = `uv run python -m planet slice runs/${m.source_run} --at ${m.t_myr}`;
+  if (m.source_run) cmd = `uv run python -m planet slice ${m.source_run} --at ${m.t_myr}`;
   else {
     const set = Object.entries(m.params).filter(([k]) => !['erosion_iterations', 'equator_temp', 'pole_temp', 'erosion'].includes(k));
     cmd = `uv run python -m planet generate -m ${m.method} -s ${m.seed} -l ${m.level}` +
       (m.params.erosion !== 1 ? ` --erosion ${m.params.erosion}` : '') +
       (set.length ? ' --set ' + set.map(([k, v]) => `${k}=${v}`).join(' ') : '');
   }
-  $('summary').innerHTML = `<b>${V.name}</b> <span class="muted">· ${m.cells} cells · ~${m.cell_size_km} km each</span><br>
-    ${m.source_run ? `<span class="muted">Sliced from run ${m.source_run} at ${m.t_myr} Myr</span><br>` : ''}
+  $('summary').innerHTML = `<b>${V.id || ''}</b> ${V.name} <span class="muted">· ${m.cells} cells · ~${m.cell_size_km} km each</span><br>
+    ${m.source_run ? `<span class="muted">Sliced from run ${m.source_run} at ${m.t_myr} Myr · made ${m.created}</span><br>` : ''}
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
     <span class="muted">Landmasses:</span> ${s.landmasses.slice(0, 5).map((l) => `${l.name} ${l.pct_of_surface}%`).join(', ')}<br>
     <span class="muted">Remake:</span> <code>${cmd}</code>`;
@@ -548,10 +549,10 @@ function renderRunSummary() {
   const win = Math.max(10, m.every * 2.5);
   const evs = r.events.map((e, idx) =>
     `<div class="ev ${Math.abs(e.t - V.t) <= win ? 'now' : ''}" data-t="${e.t}"><span class="tt">${e.t}</span><span style="color:#${(EVENT_COLORS[e.kind] || 0xffffff).toString(16).padStart(6, '0')}">${e.kind}</span><span>${e.text}</span></div>`).join('');
-  $('summary').innerHTML = `<b>${r.name}</b> <span class="muted">· seed ${m.seed} · ${m.cells} cells</span><br>
+  $('summary').innerHTML = `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${m.cells} cells · made ${m.created}</span><br>
     t = ${V.t} Myr · ${s.plates} plates · land ${s.land_pct}% · ${s.landmasses} landmasses (largest ${s.largest_landmass_pct}%)<br>
     plate speed: mean ${s.mean_speed_cmyr}, max ${s.max_speed_cmyr} cm/yr · peak ${s.max_elev_m} m<br>
-    <span class="muted">Build a full world here:</span> <code>uv run python -m planet slice runs/${r.name} --at ${V.t}</code>
+    <span class="muted">Build a full world here:</span> <code>uv run python -m planet slice ${r.id || r.name} --at ${V.t}</code>
     <h2>Events <span class="muted">(click to jump)</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;
   const now = $('summary').querySelector('.ev.now');
   if (now && state.playing) now.scrollIntoView({ block: 'nearest' });
@@ -637,7 +638,7 @@ function setWorld(w) {
   stop();
   const G = w.grid, pg = prepareGrid(G);
   const fl = w.layers.flow.filter((_, i) => w.layers.elevation[i] > 0).sort((a, b) => a - b);
-  V = { kind: 'world', name: w.name, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
+  V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         legend: w.legend, meta: w.meta, summary: w.summary, pentagons: w.meta.pentagons,
         level: w.meta.level, landFlowSorted: fl,
         rocks: w.meta.rocks || [], rockColors: (w.meta.rocks || []).map((r) => r.color) };
@@ -749,14 +750,28 @@ async function init() {
     return;
   }
   const opt = (v, label) => `<option value="${v}">${label}</option>`;
+  const when = (c) => (c || '').slice(5, 16);  // "MM-DD HH:MM"
   $('worldSel').innerHTML =
-    (runs.length ? `<optgroup label="Tectonic timelines">${runs.map((r) => opt('run:' + r.dir, `${r.name} (${r.myr} Myr)`)).join('')}</optgroup>` : '') +
-    (worlds.length ? `<optgroup label="Worlds">${worlds.map((w) => opt('world:' + w.file, w.name)).join('')}</optgroup>` : '');
+    (runs.length ? `<optgroup label="Tectonic timelines (newest first)">${runs.map((r) =>
+      opt('run:' + r.dir, `${r.id} · ${r.name} · ${r.myr} Myr · ${when(r.created)}`)).join('')}</optgroup>` : '') +
+    (worlds.length ? `<optgroup label="Worlds (newest first)">${worlds.map((w) =>
+      opt('world:' + w.file, `${w.id} · ${w.name} · ${when(w.created)}`)).join('')}</optgroup>` : '');
   let want = urlp.get('run') ? 'run:' + urlp.get('run') : urlp.get('world') ? 'world:' + urlp.get('world') : $('worldSel').value;
   $('worldSel').value = want;
   if (want.startsWith('run:')) await loadRun(want.slice(4), urlp.has('t') ? +urlp.get('t') : null);
   else await loadSelection(want);
 }
+$('delBtn').addEventListener('click', async () => {
+  const v = $('worldSel').value; if (!v) return;
+  const [kind, id] = v.split(':');
+  const label = $('worldSel').selectedOptions[0].textContent;
+  if (!confirm(`Delete ${label}?\nThis removes it from disk.`)) return;
+  const r = await fetch(`../${kind === 'run' ? 'runs' : 'worlds'}/${id.replace(/\.json$/, '')}`, { method: 'DELETE' });
+  if (!r.ok) { alert(`Delete failed (HTTP ${r.status}). Is the viewer running via 'python -m planet serve'?`); return; }
+  const u = new URL(location); ['world', 'run', 't'].forEach((k) => u.searchParams.delete(k)); history.replaceState(null, '', u);
+  urlp.delete('run'); urlp.delete('world'); urlp.delete('t');
+  await init();
+});
 init().catch((err) => { $('info').textContent = 'Load failed: ' + err.message; console.error(err); });
 
 renderer.setAnimationLoop((now) => {
