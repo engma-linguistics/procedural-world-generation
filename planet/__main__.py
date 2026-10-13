@@ -66,6 +66,19 @@ def cmd_slice(args):
     print(path.relative_to(W.ROOT))
 
 
+def cmd_zoom(args):
+    from . import zoom as Z
+    out = Z.zoom(args.world, args.lat, args.lon, args.size_km, args.res_km, args.seed, args.iterations)
+    m = json.loads((out / "zoom.json").read_text())
+    s = m["stats"]
+    print(f"{out.relative_to(W.ROOT)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
+    print(f"  land {s['land_pct']}% (coarse {s['coarse_land_pct']}%, land/sea agreement {s['land_sea_agreement_pct']}%)"
+          f"  elevation {s['min_m']:.0f}..{s['max_m']:.0f} m, mean {s['mean_elev_m']:.0f} m"
+          f" (coarse {s['coarse_mean_elev_m']:.0f} m)")
+    print(f"  biggest river {s['max_discharge_m3s']:.0f} m3/s, {s['lakes']} lakes;"
+          f" view: http://127.0.0.1:8765/viewer/zoom.html?id={m['id']}")
+
+
 def cmd_report(args):
     print(T.report(T.find_run(args.run)).relative_to(W.ROOT))
 
@@ -156,6 +169,16 @@ def main():
     sl.add_argument("--erosion", type=float, default=0.3,
                     help="final valley-sharpening pass (erosion already ran during the simulation)")
     sl.set_defaults(func=cmd_slice)
+
+    z = sub.add_parser("zoom", help="refine a region of a sliced world to a few km -> zooms/<id>/")
+    z.add_argument("world", help="world id, e.g. a3f9c2 (see `list`)")
+    z.add_argument("--lat", type=float, required=True, help="centre latitude")
+    z.add_argument("--lon", type=float, required=True, help="centre longitude")
+    z.add_argument("--size-km", type=float, default=1000, help="side of the square region")
+    z.add_argument("--res-km", type=float, default=2, help="pixel size (1000 km / 2 km = 500x500)")
+    z.add_argument("--seed", type=int, default=1, help="detail noise variant")
+    z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
+    z.set_defaults(func=cmd_zoom)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")

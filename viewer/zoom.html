@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regional Zoom</title>
+<style>
+  :root {
+    --bg: #0b0f17; --panel: rgba(18, 24, 36, 0.92); --text: #dfe6f0; --muted: #8b97a8;
+    --accent: #7cc4ff; --border: #2a3446;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; }
+  #c.drag { cursor: grabbing; }
+  .panel { position: fixed; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(4px); }
+  #controls { top: 12px; left: 12px; width: 280px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  #info { top: 12px; right: 12px; width: 260px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  #legend { bottom: 12px; left: 304px; max-width: calc(100vw - 600px); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  #legend:empty { display: none; }
+  #scale { bottom: 12px; right: 12px; font-size: 12px; }
+  #scale .bar { height: 6px; border: 1px solid var(--text); border-top: none; margin-top: 2px; }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
+  select { width: 100%; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px; }
+  label { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 1px 0; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
+    border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
+  .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .muted { color: var(--muted); }
+  code { background: #111827; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  .grad { height: 10px; width: 220px; border-radius: 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  td { padding: 1px 0; vertical-align: top; }
+  td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+  a { color: var(--accent); }
+  #msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; }
+  @media (max-width: 800px) { #info { display: none; } #legend { left: 12px; bottom: 60px; max-width: calc(100vw - 24px); } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="msg"></div>
+
+<div id="controls" class="panel">
+  <h1>Regional Zoom</h1>
+  <select id="zoomSel"></select>
+  <div class="muted" style="margin-top:4px">make one: <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code></div>
+
+  <h2>Layer</h2>
+  <div class="row seg" id="layerSeg"></div>
+
+  <h2>Overlays</h2>
+  <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
+  <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
+
+  <h2>About this zoom</h2>
+  <div id="about" class="muted">&mdash;</div>
+  <p class="muted" style="margin-top:10px">Scroll to zoom, drag to pan, double-click to reset.
+    <a href="index.html">Globe viewer</a></p>
+</div>
+
+<div id="info" class="panel"><span class="muted">Hover the map.</span></div>
+<div id="legend" class="panel"></div>
+<div id="scale" class="panel"><span id="scaleLbl"></span><div class="bar" id="scaleBar"></div></div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const R_KM = 6371;
+const LAYERS = [
+  ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
+  ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'],
+  ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['coarse', 'Coarse cells'],
+];
+const state = { meta: null, L: null, layer: 'relief', imgs: {}, shade: null,
+  view: { s: 1, x: 0, y: 0 }, off: document.createElement('canvas') };
+const canvas = $('c'), ctx = canvas.getContext('2d');
+
+// ------------------------------------------------------------ helpers
+function hex(c) { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function ramp(stops, v) {
+  if (v <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (v <= stops[i][0]) {
+      const [a, ca] = stops[i - 1], [b, cb] = stops[i], t = (v - a) / (b - a);
+      return [ca[0] + t * (cb[0] - ca[0]), ca[1] + t * (cb[1] - ca[1]), ca[2] + t * (cb[2] - ca[2])];
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+const SEA = [[-7000, [12, 28, 70]], [-4000, [20, 48, 102]], [-1500, [34, 78, 140]], [-200, [64, 124, 182]], [0, [104, 164, 206]]];
+const RAIN = [[0, [150, 90, 40]], [250, [215, 180, 110]], [600, [190, 210, 120]], [1200, [80, 170, 110]], [2500, [30, 110, 160]], [4000, [40, 40, 140]]];
+const TEMP = [[-30, [60, 40, 140]], [-10, [80, 120, 220]], [0, [190, 230, 250]], [10, [120, 200, 120]], [20, [240, 210, 90]], [30, [220, 70, 40]]];
+const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
+
+async function getJSON(url) {
+  try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : null; } catch { return null; }
+}
+function loadImage(url) {
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = url; });
+}
+
+// ------------------------------------------------------------ loading
+async function init() {
+  const idx = (await getJSON('../zooms/index.json')) || [];
+  const sel = $('zoomSel');
+  if (!idx.length) {
+    sel.innerHTML = '<option>(no zooms yet)</option>';
+    $('msg').innerHTML = 'No zooms found in <code>zooms/</code>.<br>Make one with <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code>';
+    return;
+  }
+  sel.innerHTML = idx.map((z) => `<option value="${z.id}">${z.id} &middot; ${z.name}</option>`).join('');
+  const p = new URLSearchParams(location.search);
+  if (p.get('layer') && LAYERS.some((l) => l[0] === p.get('layer'))) state.layer = p.get('layer');
+  const want = p.get('id');
+  if (want && idx.some((z) => z.id === want)) sel.value = want;
+  sel.onchange = () => load(sel.value);
+  $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
+  $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
+  $('rivers').onchange = render;
+  $('smooth').onchange = draw;
+  await load(sel.value);
+}
+
+function syncURL() {
+  const p = new URLSearchParams({ id: state.meta.id, layer: state.layer });
+  history.replaceState(null, '', '?' + p);
+}
+
+async function load(id) {
+  $('msg').textContent = 'loading ' + id + '...';
+  const base = `../zooms/${id}/`;
+  const meta = await getJSON(base + 'zoom.json');
+  if (!meta) { $('msg').textContent = 'could not read ' + base + 'zoom.json'; return; }
+  const buf = await (await fetch(base + meta.files.layers, { cache: 'no-store' })).arrayBuffer();
+  const L = {};
+  for (const [k, spec] of Object.entries(meta.layers)) {
+    const n = spec.shape[0] * spec.shape[1];
+    L[k] = spec.dtype === 'float32' ? new Float32Array(buf, spec.offset, n) : new Uint8Array(buf, spec.offset, n);
+  }
+  state.meta = meta; state.L = L; state.imgs = {};
+  const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
+    loadImage(base + meta.files.coarse).catch(() => null)]);
+  state.imgs.relief = rel; state.imgs.coarse = coarse;
+  state.shade = hillshade(L.elevation, meta.nx, meta.ny, meta.res_km);
+  $('msg').textContent = '';
+  about();
+  resetView();
+  render();
+  syncURL();
+}
+
+function hillshade(h, nx, ny, res) {
+  const out = new Float32Array(nx * ny), d = res * 1000, ex = 2.0;
+  const az = 315 * Math.PI / 180, alt = 40 * Math.PI / 180;
+  const lx = Math.sin(az) * Math.cos(alt), ly = Math.cos(az) * Math.cos(alt), lz = Math.sin(alt);
+  for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++) {
+    const i = r * nx + c;
+    const hl = h[r * nx + Math.max(c - 1, 0)], hr = h[r * nx + Math.min(c + 1, nx - 1)];
+    const hu = h[Math.max(r - 1, 0) * nx + c], hd = h[Math.min(r + 1, ny - 1) * nx + c];
+    const dx = ex * (hr - hl) / (2 * d), dy = ex * (hu - hd) / (2 * d);  // north = up
+    out[i] = Math.max(0, (-dx * lx - dy * ly + lz) / Math.sqrt(1 + dx * dx + dy * dy));
+  }
+  return out;
+}
+
+function about() {
+  const m = state.meta, s = m.stats, sw = m.source_world;
+  $('about').innerHTML = `<table>
+    <tr><td>source</td><td>world <a href="index.html?world=${sw.id}.json">${sw.id}</a>${sw.t_myr != null ? `, run ${sw.source_run} @ ${sw.t_myr} Myr` : ''}</td></tr>
+    <tr><td>centre</td><td>${fmt(m.center.lat, 2)}, ${fmt(m.center.lon, 2)}</td></tr>
+    <tr><td>size</td><td>${m.size_km} km, ${m.nx}&times;${m.ny} px @ ${fmt(m.res_km, 2)} km</td></tr>
+    <tr><td>seed</td><td>${m.seed}</td></tr>
+    <tr><td>land</td><td>${s.land_pct}% (coarse ${s.coarse_land_pct}%)</td></tr>
+    <tr><td>elevation</td><td>${fmt(s.min_m)} .. ${fmt(s.max_m)} m</td></tr>
+    <tr><td>mean</td><td>${fmt(s.mean_elev_m)} m (coarse ${fmt(s.coarse_mean_elev_m)} m)</td></tr>
+    <tr><td>largest river</td><td>${fmt(s.max_discharge_m3s)} m&sup3;/s</td></tr>
+    <tr><td>lakes</td><td>${s.lakes}</td></tr>
+    <tr><td>made in</td><td>${m.generated_in_s} s</td></tr>
+    <tr><td>files</td><td><a href="../zooms/${m.id}/heightmap.png">heightmap.png</a> (16-bit: ${fmt(m.heightmap.min_m)}..${fmt(m.heightmap.max_m)} m)<br>
+      <a href="../zooms/${m.id}/preview.png">preview.png</a> &middot; <a href="../zooms/${m.id}/zoom.json">zoom.json</a></td></tr>
+  </table>`;
+}
+
+// ------------------------------------------------------------ rendering
+function legendFor(kind) {
+  const lg = state.meta.legend;
+  return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
+    : kind === 'biome' ? lg.biomes : lg.rocks;
+}
+
+function render() {
+  const m = state.meta, L = state.L;
+  if (!m) return;
+  for (const b of $('layerSeg').children) b.classList.toggle('on', b.dataset.v === state.layer);
+  const nx = m.nx, ny = m.ny, n = nx * ny, off = state.off;
+  off.width = nx; off.height = ny;
+  const oc = off.getContext('2d');
+  const k = state.layer;
+  $('legend').innerHTML = '';
+  if (k === 'relief' || k === 'coarse') {
+    if (state.imgs[k]) oc.drawImage(state.imgs[k], 0, 0);
+    if (k === 'coarse') $('legend').innerHTML = '<span class="muted">the source world\'s cells (nearest cell), with its big rivers</span>';
+    draw();
+    return;
+  }
+  const img = oc.createImageData(nx, ny), px = img.data;
+  const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
+  const overlay = $('rivers').checked;
+  let lut = null, present = null;
+  if (['rock', 'surface_rock', 'climate', 'biome'].includes(k)) {
+    lut = {}; present = new Set();
+    for (const e of legendFor(k)) lut[e.id] = { ...e, rgb: hex(e.color) };
+  }
+  let lo = Infinity, hi = -Infinity;
+  if (k === 'height') for (let i = 0; i < n; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
+  const minArea = 500 * Math.max(m.res_km / 2, 1);
+  for (let i = 0; i < n; i++) {
+    let c;
+    const s = sh[i], wet = water[i];
+    if (k === 'height') { const g = 255 * (h[i] - lo) / (hi - lo || 1); c = [g, g, g]; }
+    else if (k === 'shade') { const g = 255 * Math.min(1, 0.15 + 0.95 * s); c = wet === 1 ? [g * 0.45, g * 0.55, g * 0.75] : [g, g, g]; }
+    else if (k === 'rivers') {
+      const g = 30 + 60 * s;
+      c = wet === 1 ? [10, 20, 45] : wet === 2 ? [40, 110, 200] : [g, g, g];
+      if (wet === 0 && area[i] >= minArea / 4 && q[i] > 1) {
+        const t = Math.min(1, Math.max(0, Math.log10(q[i]) / 4.5));
+        c = [40 + 60 * t, 120 + 120 * t, 200 + 55 * t].map((v, j) => c[j] + (v - c[j]) * Math.min(1, 0.35 + t));
+      }
+    } else if (lut) {
+      const e = lut[L[k][i]];
+      if (wet === 1 && k !== 'rock' && k !== 'surface_rock') c = ramp(SEA, h[i]);
+      else { c = e ? e.rgb : [255, 0, 255]; present.add(L[k][i]); const f = 0.55 + 0.5 * s; c = [c[0] * f, c[1] * f, c[2] * f]; }
+    } else if (k === 'precipitation' || k === 'temperature') {
+      c = ramp(k === 'precipitation' ? RAIN : TEMP, L[k][i]);
+      const f = wet === 1 ? 0.6 : 0.6 + 0.45 * s; c = [c[0] * f, c[1] * f, c[2] * f];
+    }
+    if (overlay && lut && wet === 0 && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
+    if (overlay && lut && wet === 2) c = [70, 130, 196];
+    px[4 * i] = c[0]; px[4 * i + 1] = c[1]; px[4 * i + 2] = c[2]; px[4 * i + 3] = 255;
+  }
+  oc.putImageData(img, 0, 0);
+  // legends
+  if (lut) {
+    $('legend').innerHTML = [...present].sort((a, b) => a - b).filter((id) => lut[id])
+      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}</span>`).join('');
+  } else if (k === 'height') {
+    $('legend').innerHTML = `<span>${fmt(lo)} m</span><div class="grad" style="background:linear-gradient(90deg,#000,#fff)"></div><span>${fmt(hi)} m</span>
+      <span class="muted">(same mapping as heightmap.png: ${fmt(m.heightmap.metres_per_step, 3)} m per 16-bit step)</span>`;
+  } else if (k === 'precipitation' || k === 'temperature') {
+    const st = k === 'precipitation' ? RAIN : TEMP;
+    const g = st.map(([v, c]) => `rgb(${c}) ${100 * (v - st[0][0]) / (st[st.length - 1][0] - st[0][0])}%`).join(',');
+    $('legend').innerHTML = `<span>${st[0][0]}</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div>
+      <span>${st[st.length - 1][0]} ${k === 'precipitation' ? 'mm/yr' : '&deg;C'}</span>`;
+  } else if (k === 'rivers') {
+    $('legend').innerHTML = '<span class="muted">brighter and bluer = more discharge (log scale, 1 to 30,000+ m&sup3;/s)</span>';
+  }
+  draw();
+}
+
+function resetView() {
+  const m = state.meta;
+  const W = innerWidth, H = innerHeight;
+  const s = Math.min((W - 340) / m.nx, (H - 40) / m.ny);
+  state.view = { s, x: 300 + (W - 300 - s * m.nx) / 2, y: (H - s * m.ny) / 2 };
+}
+
+function draw() {
+  const dpr = devicePixelRatio || 1;
+  canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#0b0f17'; ctx.fillRect(0, 0, innerWidth, innerHeight);
+  if (!state.meta) return;
+  const v = state.view, m = state.meta;
+  ctx.imageSmoothingEnabled = $('smooth').checked && !['rock', 'surface_rock', 'climate', 'biome'].includes(state.layer);
+  ctx.drawImage(state.off, v.x, v.y, v.s * m.nx, v.s * m.ny);
+  ctx.strokeStyle = '#2a3446'; ctx.strokeRect(v.x - 0.5, v.y - 0.5, v.s * m.nx + 1, v.s * m.ny + 1);
+  // scale bar: a round number of km about 120 px long
+  const kmPerPx = m.res_km / v.s, target = 120 * kmPerPx;
+  const p10 = Math.pow(10, Math.floor(Math.log10(target)));
+  const nice = [1, 2, 5, 10].map((f) => f * p10).filter((x) => x <= target).pop() || p10;
+  $('scaleLbl').textContent = `${nice} km`;
+  $('scaleBar').style.width = `${nice / kmPerPx}px`;
+}
+
+// ------------------------------------------------------------ hover / pan / zoom
+function pixelAt(ev) {
+  const v = state.view, m = state.meta;
+  const c = Math.floor((ev.clientX - v.x) / v.s), r = Math.floor((ev.clientY - v.y) / v.s);
+  return c >= 0 && r >= 0 && c < m.nx && r < m.ny ? [r, c] : null;
+}
+
+function latlon(xkm, ykm) {
+  const m = state.meta, la = m.center.lat * Math.PI / 180, lo = m.center.lon * Math.PI / 180;
+  const C = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
+  let E = [-C[1], C[0], 0]; const ne = Math.hypot(E[0], E[1]) || 1; E = ne < 1e-9 ? [0, 1, 0] : [E[0] / ne, E[1] / ne, 0];
+  const N = [C[1] * E[2] - C[2] * E[1], C[2] * E[0] - C[0] * E[2], C[0] * E[1] - C[1] * E[0]];
+  const rho = Math.hypot(xkm, ykm) / R_KM, az = Math.atan2(xkm, ykm);
+  const p = [0, 1, 2].map((j) => Math.cos(rho) * C[j] + Math.sin(rho) * (Math.sin(az) * E[j] + Math.cos(az) * N[j]));
+  return [Math.asin(p[2]) * 180 / Math.PI, Math.atan2(p[1], p[0]) * 180 / Math.PI];
+}
+
+function hover(ev) {
+  if (!state.meta) return;
+  const rc = pixelAt(ev);
+  if (!rc) { $('info').innerHTML = '<span class="muted">Hover the map.</span>'; return; }
+  const [r, c] = rc, m = state.meta, L = state.L, i = r * m.nx + c, lg = m.legend;
+  const x = (c + 0.5 - m.nx / 2) * m.res_km, y = (m.ny / 2 - r - 0.5) * m.res_km;
+  const [la, lo] = latlon(x, y);
+  const name = (list, id) => (list.find((e) => e.id === id) || {}).name || id;
+  const kop = lg.koppen.find((e) => e.id === L.climate[i]) || {};
+  const wet = ['land', 'sea', 'lake'][L.water[i]];
+  $('info').innerHTML = `<table>
+    <tr><td>lat, lon</td><td>${fmt(la, 3)}, ${fmt(lo, 3)}</td></tr>
+    <tr><td>x, y</td><td>${fmt(x, 1)}, ${fmt(y, 1)} km</td></tr>
+    <tr><td>elevation</td><td>${fmt(L.elevation[i])} m${L.water[i] === 2 ? ` (lake ${fmt(L.lake_depth[i])} m deep)` : ''}</td></tr>
+    <tr><td>surface</td><td>${wet}${L.ice[i] > 0 ? ', glacier' : ''}</td></tr>
+    <tr><td>rock</td><td>${name(lg.rocks, L.rock[i])}</td></tr>
+    <tr><td>exposed</td><td>${name(lg.rocks, L.surface_rock[i])}</td></tr>
+    <tr><td>climate</td><td>${kop.code || ''} ${kop.name || ''}</td></tr>
+    <tr><td>biome</td><td>${name(lg.biomes, L.biome[i])}</td></tr>
+    <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C</td></tr>
+    <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr</td></tr>
+    <tr><td>river</td><td>${L.water[i] === 0 ? `${fmt(L.discharge[i], L.discharge[i] < 10 ? 1 : 0)} m&sup3;/s, ${fmt(L.drainage_area[i])} km&sup2;` : '-'}</td></tr>
+  </table>`;
+}
+
+let drag = null;
+canvas.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y }; canvas.classList.add('drag'); });
+addEventListener('mouseup', () => { drag = null; canvas.classList.remove('drag'); });
+addEventListener('mousemove', (e) => {
+  if (drag) { state.view.x = drag.vx + e.clientX - drag.x; state.view.y = drag.vy + e.clientY - drag.y; draw(); }
+  if (e.target === canvas) hover(e);
+});
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const v = state.view, f = Math.exp(-e.deltaY * 0.0015);
+  const ns = Math.min(Math.max(v.s * f, 0.2), 40);
+  v.x = e.clientX - (e.clientX - v.x) * ns / v.s; v.y = e.clientY - (e.clientY - v.y) * ns / v.s; v.s = ns;
+  draw();
+}, { passive: false });
+canvas.addEventListener('dblclick', () => { resetView(); draw(); });
+addEventListener('resize', draw);
+
+init();
+</script>
+</body>
+</html>
