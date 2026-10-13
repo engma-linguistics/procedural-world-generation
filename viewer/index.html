@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planet Viewer</title>
+<style>
+  :root {
+    --bg: #0b0f17; --panel: rgba(18, 24, 36, 0.92); --text: #dfe6f0; --muted: #8b97a8;
+    --accent: #7cc4ff; --border: #2a3446;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  /* Explicit CSS size: the drawing buffer is devicePixelRatio x larger and the
+     canvas would otherwise display at that size (2x too big on Retina). */
+  #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  .panel { position: fixed; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(4px); }
+  #controls { top: 12px; left: 12px; width: 270px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  #info { top: 12px; right: 12px; width: 250px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  #legend { bottom: 12px; left: 12px; max-width: 520px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  #summary { bottom: 12px; right: 12px; width: 300px; font-size: 12px; max-height: 40vh; overflow-y: auto; }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 4px; }
+  select, input[type=range] { width: 100%; }
+  select { background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px; }
+  label { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 1px 0; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
+    border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .seg button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
+  .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .muted { color: var(--muted); }
+  code { background: #111827; padding: 1px 4px; border-radius: 3px; font-size: 11px; word-break: break-all; }
+  .grad { height: 10px; width: 260px; border-radius: 2px; }
+  #drop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(10, 20, 40, .8); font-size: 20px; border: 3px dashed var(--accent); }
+  #toast { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: var(--accent);
+    color: #06121f; padding: 6px 12px; border-radius: 6px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  details summary { cursor: pointer; color: var(--muted); }
+  @media (max-width: 700px) { #info, #summary { display: none; } #controls { width: 220px; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="controls" class="panel">
+  <h1>Planet Viewer</h1>
+  <select id="worldSel"></select>
+  <div class="muted" style="margin-top:4px">or drop a world .json anywhere</div>
+
+  <h2>View</h2>
+  <div class="row seg" id="modeSeg">
+    <button data-v="globe" class="on">Globe</button><button data-v="map">Flat map</button>
+  </div>
+
+  <h2>Colour by</h2>
+  <div class="row seg" id="layerSeg"></div>
+
+  <h2>Overlays</h2>
+  <label><input type="checkbox" id="rivers" checked> Rivers</label>
+  <label><input type="checkbox" id="outlines"> Cell outlines</label>
+  <label><input type="checkbox" id="pentas"> Highlight the 12 pentagons</label>
+  <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
+  <label><input type="checkbox" id="smooth"> Smooth colours (hide cells)</label>
+  <label><input type="checkbox" id="spin"> Auto-rotate</label>
+
+  <h2>Relief exaggeration <span id="reliefVal" class="muted"></span></h2>
+  <input type="range" id="relief" min="0" max="80" value="25">
+  <h2>River threshold <span id="riverVal" class="muted"></span></h2>
+  <input type="range" id="riverQ" min="80" max="99.5" step="0.5" value="95">
+
+  <details style="margin-top:10px"><summary>Why pentagons?</summary>
+    <p class="muted">You can't cover a sphere with only hexagons. Euler's formula (V&minus;E+F&nbsp;=&nbsp;2)
+    forces exactly 12 pentagons into any hex-ish sphere grid, like the black patches on a football.
+    This grid is an icosahedron subdivided and turned inside out (its dual), so the 12 pentagons sit
+    where the icosahedron's 12 corners were. Tick the box above to find them.</p>
+  </details>
+</div>
+
+<div id="info" class="panel"><span class="muted">Hover a cell. Click to copy its description.</span></div>
+<div id="legend" class="panel"></div>
+<div id="summary" class="panel"></div>
+<div id="drop">Drop world .json</div>
+<div id="toast"></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = (id) => document.getElementById(id);
+const R_EARTH = 6371000;
+
+// ------------------------------------------------------------ three setup
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f17);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
+camera.position.set(0, 0.6, 3.4);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.minDistance = 1.15; controls.maxDistance = 10;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+camera.add(sun); sun.position.set(-1.5, 1.5, 1);
+scene.add(camera);
+const group = new THREE.Group();
+scene.add(group);
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+// Map is 4 x 2 units (lon/90, lat/90); back the camera off until all of it fits.
+function fitMap() {
+  const halfH = Math.max(1, 2 / camera.aspect) * 1.04;
+  camera.position.set(0, 0, halfH / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  controls.target.set(0, 0, 0);
+}
+addEventListener('resize', () => { resize(); if (state.mode === 'map') fitMap(); });
+resize();
+
+// ------------------------------------------------------------ state
+const state = { world: null, mode: 'globe', layer: 'biome' };
+let mesh = null, triCell = null, overlays = {};
+
+// ------------------------------------------------------------ colours
+function ramp(stops) {
+  const cs = stops.map(([v, c]) => [v, new THREE.Color(c)]);
+  return (v) => {
+    if (v <= cs[0][0]) return cs[0][1];
+    for (let i = 1; i < cs.length; i++) {
+      if (v <= cs[i][0]) {
+        const t = (v - cs[i - 1][0]) / (cs[i][0] - cs[i - 1][0]);
+        return cs[i - 1][1].clone().lerp(cs[i][1], t);
+      }
+    }
+    return cs[cs.length - 1][1];
+  };
+}
+const RAMPS = {
+  elevation: [[-8000, '#0a1a36'], [-4000, '#153766'], [-1000, '#2d68a3'], [-1, '#6aa7d8'],
+              [0, '#3f7d3f'], [300, '#6f9a4b'], [1000, '#c4b56c'], [2000, '#a37a4a'],
+              [3500, '#7d6656'], [5000, '#e6e2dc'], [8000, '#ffffff']],
+  temperature: [[-30, '#2b3f99'], [-10, '#5b8fd6'], [0, '#e6f0f5'], [12, '#f4d27a'], [24, '#e2703a'], [32, '#9e1c1c']],
+  precipitation: [[0, '#d9c49a'], [300, '#c9c27a'], [800, '#7fb35a'], [1600, '#2f8f5a'], [2500, '#1f6f8f'], [4000, '#203f8f']],
+};
+const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
+const OCEAN = new THREE.Color('#1c2f4f');
+
+function cellColors(w, layer) {
+  const L = w.layers, n = w.n, out = new Array(n);
+  const elev = L.elevation;
+  if (layer === 'biome') {
+    const pal = w.legend.biome.map((b) => new THREE.Color(b.color));
+    for (let i = 0; i < n; i++) out[i] = pal[L.biome[i]];
+  } else if (layer === 'plates') {
+    const ids = L.plate, crust = L.crust, bd = L.plate_boundary;
+    for (let i = 0; i < n; i++) {
+      const c = new THREE.Color().setHSL((ids[i] * 0.618034) % 1, 0.55, crust[i] ? 0.55 : 0.32);
+      if (bd[i] > 0) c.lerp(new THREE.Color('#ff3b3b'), 0.75);
+      if (bd[i] < 0) c.lerp(new THREE.Color('#3bf0ff'), 0.75);
+      out[i] = c;
+    }
+  } else {
+    const f = rampFns[layer], v = L[layer];
+    for (let i = 0; i < n; i++)
+      out[i] = (layer !== 'elevation' && elev[i] <= 0) ? OCEAN : f(v[i]);
+  }
+  return out;
+}
+
+// ------------------------------------------------------------ geometry
+function toVec(lat, lon, r) {
+  const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
+  const x = Math.cos(la) * Math.cos(lo), y = Math.cos(la) * Math.sin(lo), z = Math.sin(la);
+  return [x * r, z * r, -y * r];   // planet north = three.js +Y
+}
+
+function prepare(w) {
+  const G = w.grid;
+  w.n = G.lat.length;
+  const nc = G.corner_lat.length;
+  // each corner touches 3 cells; used for smooth colours and relief
+  w.cornerCells = Array.from({ length: nc }, () => []);
+  G.cells.forEach((cs, i) => cs.forEach((c) => w.cornerCells[c].push(i)));
+  const fl = w.layers.flow.filter((_, i) => w.layers.elevation[i] > 0).sort((a, b) => a - b);
+  w.landFlowSorted = fl;
+  w.hasPlates = 'plate' in w.layers;
+}
+
+function radiusFn(w) {
+  const ex = +$('relief').value;
+  const elev = w.layers.elevation;
+  return (e) => 1 + ex * Math.max(e, 0) / R_EARTH;
+}
+
+function buildMesh() {
+  const w = state.world, G = w.grid, L = w.layers;
+  const colors = cellColors(w, state.layer);
+  const smooth = $('smooth').checked;
+  const rad = radiusFn(w);
+  const elev = L.elevation;
+  const cornerElev = w.cornerCells.map((cs) => cs.reduce((s, i) => s + Math.max(elev[i], 0), 0) / cs.length);
+  const cornerCol = smooth ? w.cornerCells.map((cs) => {
+    const c = new THREE.Color(0, 0, 0); cs.forEach((i) => { c.r += colors[i].r; c.g += colors[i].g; c.b += colors[i].b; });
+    return c.multiplyScalar(1 / cs.length);
+  }) : null;
+
+  const pos = [], col = [], tc = [];
+  const push = (p, c) => { pos.push(p[0], p[1], p[2]); col.push(c.r, c.g, c.b); };
+
+  for (let i = 0; i < w.n; i++) {
+    const cs = G.cells[i];
+    const ci = colors[i];
+    if (state.mode === 'globe') {
+      const C = toVec(G.lat[i], G.lon[i], rad(elev[i]));
+      const P = cs.map((k) => toVec(G.corner_lat[k], G.corner_lon[k], rad(cornerElev[k])));
+      for (let k = 0; k < cs.length; k++) {
+        const k2 = (k + 1) % cs.length;
+        push(C, ci); push(P[k], smooth ? cornerCol[cs[k]] : ci); push(P[k2], smooth ? cornerCol[cs[k2]] : ci);
+        tc.push(i);
+      }
+    } else {
+      // equirectangular: unwrap corner longitudes around the cell centre
+      const lon0 = G.lon[i];
+      const pts = cs.map((k) => {
+        let d = G.corner_lon[k] - lon0; d -= 360 * Math.round(d / 360);
+        return [lon0 + d, G.corner_lat[k]];
+      });
+      const minL = Math.min(...pts.map((p) => p[0])), maxL = Math.max(...pts.map((p) => p[0]));
+      const shifts = [0]; if (minL < -180) shifts.push(360); if (maxL > 180) shifts.push(-360);
+      for (const s of shifts) {
+        const C = [(lon0 + s) / 90, G.lat[i] / 90, 0];
+        for (let k = 0; k < cs.length; k++) {
+          const k2 = (k + 1) % cs.length;
+          push(C, ci);
+          push([(pts[k][0] + s) / 90, pts[k][1] / 90, 0], smooth ? cornerCol[cs[k]] : ci);
+          push([(pts[k2][0] + s) / 90, pts[k2][1] / 90, 0], smooth ? cornerCol[cs[k2]] : ci);
+          tc.push(i);
+        }
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals();
+  if (mesh) { group.remove(mesh); mesh.geometry.dispose(); }
+  const mat = state.mode === 'globe'
+    ? new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.FrontSide })
+    : new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  mesh = new THREE.Mesh(geo, mat);
+  triCell = tc;
+  group.add(mesh);
+  buildOverlays();
+  renderLegend();
+}
+
+// position of a cell centre (with relief) for overlays
+function cellPos(i, lift = 1.002) {
+  const w = state.world, G = w.grid;
+  if (state.mode === 'globe') {
+    const r = radiusFn(w)(w.layers.elevation[i]) * lift;
+    return toVec(G.lat[i], G.lon[i], r);
+  }
+  return [G.lon[i] / 90, G.lat[i] / 90, 0.002];
+}
+
+function lineObj(pts, color, opacity = 1) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity }));
+}
+
+function buildOverlays() {
+  Object.values(overlays).forEach((o) => { group.remove(o); o.geometry.dispose(); });
+  overlays = {};
+  const w = state.world, G = w.grid, L = w.layers, globe = state.mode === 'globe';
+  const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;   // skip lines across the dateline
+
+  if ($('rivers').checked) {
+    const q = +$('riverQ').value / 100, fl = w.landFlowSorted;
+    const thr = fl.length ? fl[Math.floor(q * (fl.length - 1))] : Infinity;
+    const big = fl.length ? fl[Math.floor(0.995 * (fl.length - 1))] : Infinity;
+    const small = [], large = [];
+    for (let i = 0; i < w.n; i++) {
+      const d = L.downstream[i];
+      if (d < 0 || L.elevation[i] <= 0 || L.flow[i] < thr) continue;
+      const a = cellPos(i, 1.003), b = cellPos(d, 1.003);
+      if (wraps(a, b)) continue;
+      (L.flow[i] >= big ? large : small).push(...a, ...b);
+    }
+    overlays.rivers = lineObj(small, 0x4fb3ff);
+    overlays.riversBig = lineObj(large, 0xa8e1ff);
+  }
+  if ($('outlines').checked || $('pentas').checked) {
+    const rad = radiusFn(w);
+    const elev = L.elevation;
+    const cornerElev = w.cornerCells.map((cs) => cs.reduce((s, i) => s + Math.max(elev[i], 0), 0) / cs.length);
+    const cp = (k, i) => {
+      if (globe) return toVec(G.corner_lat[k], G.corner_lon[k], rad(cornerElev[k]) * 1.001);
+      let d = G.corner_lon[k] - G.lon[i]; d -= 360 * Math.round(d / 360);
+      return [(G.lon[i] + d) / 90, G.corner_lat[k] / 90, 0.001];
+    };
+    const ring = (i, arr) => {
+      const cs = G.cells[i];
+      for (let k = 0; k < cs.length; k++) arr.push(...cp(cs[k], i), ...cp(cs[(k + 1) % cs.length], i));
+    };
+    if ($('outlines').checked) {
+      const pts = []; for (let i = 0; i < w.n; i++) ring(i, pts);
+      overlays.outlines = lineObj(pts, 0x000000, 0.35);
+    }
+    if ($('pentas').checked) {
+      const pts = [];
+      for (const p of w.meta.pentagons) {
+        ring(p, pts);
+        const c = cellPos(p, 1.0);
+        const out = cellPos(p, globe ? 1.12 : 1).map((v, j) => (globe ? v : v + (j === 2 ? 0.1 : 0)));
+        pts.push(...c, ...out);
+      }
+      overlays.pentas = lineObj(pts, 0xff3df2);
+    }
+  }
+  if ($('arrows').checked && w.hasPlates && L._plate_velocity) {
+    // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
+    const nSample = 10 * 4 ** Math.max(w.meta.level - 2, 0) + 2;
+    const pts = [], s = 0.12;
+    for (let i = 0; i < Math.min(nSample, w.n); i++) {
+      const v = L._plate_velocity[i];
+      const a = cellPos(i, 1.004);
+      if (globe) {
+        const A = new THREE.Vector3(...a), V = new THREE.Vector3(v[0], v[2], -v[1]).multiplyScalar(s);
+        const B = A.clone().add(V), side = new THREE.Vector3().crossVectors(A, V).normalize().multiplyScalar(V.length() * 0.3);
+        const back = V.clone().multiplyScalar(-0.35);
+        pts.push(...a, ...B.toArray(), ...B.toArray(), ...B.clone().add(back).add(side).toArray(),
+                 ...B.toArray(), ...B.clone().add(back).sub(side).toArray());
+      } else {
+        // project velocity onto local east/north
+        const la = w.grid.lat[i] * Math.PI / 180, lo = w.grid.lon[i] * Math.PI / 180;
+        const e = -Math.sin(lo) * v[0] + Math.cos(lo) * v[1];
+        const nn = -Math.sin(la) * Math.cos(lo) * v[0] - Math.sin(la) * Math.sin(lo) * v[1] + Math.cos(la) * v[2];
+        const bx = a[0] + e * s, by = a[1] + nn * s;
+        pts.push(...a, bx, by, a[2],
+                 bx, by, a[2], bx - 0.35 * e * s - 0.3 * nn * s, by - 0.35 * nn * s + 0.3 * e * s, a[2],
+                 bx, by, a[2], bx - 0.35 * e * s + 0.3 * nn * s, by - 0.35 * nn * s - 0.3 * e * s, a[2]);
+      }
+    }
+    overlays.arrows = lineObj(pts, 0xffffff);
+  }
+  Object.values(overlays).forEach((o) => group.add(o));
+}
+
+// ------------------------------------------------------------ UI
+function renderLegend() {
+  const w = state.world, el = $('legend');
+  if (state.layer === 'biome') {
+    const present = new Set(w.layers.biome);
+    el.innerHTML = w.legend.biome.filter((b) => present.has(b.id))
+      .map((b) => `<span><span class="sw" style="background:${b.color}"></span>${b.name}</span>`).join('');
+  } else if (state.layer === 'plates') {
+    el.innerHTML = `<span>Each colour = one plate (bright = continental crust, dark = oceanic)</span>
+      <span><span class="sw" style="background:#ff3b3b"></span>converging boundary</span>
+      <span><span class="sw" style="background:#3bf0ff"></span>diverging boundary</span>`;
+  } else {
+    const stops = RAMPS[state.layer], lo = stops[0][0], hi = stops[stops.length - 1][0];
+    const g = stops.map(([v, c]) => `${c} ${((v - lo) / (hi - lo) * 100).toFixed(1)}%`).join(',');
+    const unit = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr' }[state.layer];
+    el.innerHTML = `<div><div class="grad" style="background:linear-gradient(90deg,${g})"></div>
+      <div class="row" style="justify-content:space-between;width:260px"><span>${lo}</span><span class="muted">${unit}</span><span>${hi}</span></div></div>`;
+  }
+}
+
+function renderLayerButtons() {
+  const layers = ['biome', 'elevation', 'temperature', 'precipitation'];
+  if (state.world.hasPlates) layers.push('plates');
+  if (!layers.includes(state.layer)) state.layer = 'biome';
+  $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}">${l}</button>`).join('');
+  $('arrowsLbl').style.display = state.world.hasPlates ? '' : 'none';
+}
+
+function renderSummary() {
+  const w = state.world, m = w.meta, s = w.summary;
+  const set = Object.entries(m.params).filter(([k]) => !['erosion_iterations', 'equator_temp', 'pole_temp', 'erosion'].includes(k));
+  const cmd = `uv run python -m planet generate -m ${m.method} -s ${m.seed} -l ${m.level}` +
+    (m.params.erosion !== 1 ? ` --erosion ${m.params.erosion}` : '') +
+    (set.length ? ' --set ' + set.map(([k, v]) => `${k}=${v}`).join(' ') : '');
+  $('summary').innerHTML = `<b>${w.name}</b> <span class="muted">· ${m.cells} cells · ~${m.cell_size_km} km each</span><br>
+    Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
+    <span class="muted">Landmasses:</span> ${s.landmasses.slice(0, 5).map((l) => `${l.name} ${l.pct_of_surface}%`).join(', ')}<br>
+    <span class="muted">Remake:</span> <code>${cmd}</code>`;
+}
+
+function describe(i) {
+  const w = state.world, L = w.layers, G = w.grid;
+  const b = w.legend.biome[L.biome[i]].name;
+  const lines = [
+    `cell ${i}${w.meta.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
+    `lat ${G.lat[i].toFixed(1)}, lon ${G.lon[i].toFixed(1)}`,
+    `elevation ${L.elevation[i]} m`,
+    `biome ${b}`,
+    `temp ${L.temperature[i]} °C`,
+    `rain ${L.precipitation[i]} mm/yr`,
+    `river flow ${L.flow[i]}`,
+  ];
+  if (L.lake[i]) lines.push('lake');
+  if (w.hasPlates) lines.push(`plate ${L.plate[i]} (${L.crust[i] ? 'continental' : 'oceanic'})`);
+  return lines;
+}
+
+// hover / click
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let hovered = -1;
+renderer.domElement.addEventListener('pointermove', (e) => {
+  mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  if (!mesh) return;
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObject(mesh)[0];
+  hovered = hit ? triCell[hit.faceIndex] : -1;
+  $('info').innerHTML = hovered >= 0 ? describe(hovered).join('<br>') + '<br><span class="muted">click to copy</span>'
+    : '<span class="muted">Hover a cell. Click to copy its description.</span>';
+});
+let downAt = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!downAt || hovered < 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
+  const txt = `${state.world.name}: ` + describe(hovered).join(', ');
+  navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
+});
+function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => (el.style.opacity = 0), 1800); }
+
+function seg(id, key, after) {
+  $(id).addEventListener('click', (e) => {
+    const v = e.target.dataset?.v; if (!v) return;
+    state[key] = v;
+    [...$(id).children].forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+    after();
+  });
+}
+seg('layerSeg', 'layer', buildMesh);
+seg('modeSeg', 'mode', () => {
+  group.rotation.set(0, 0, 0);
+  controls.enableRotate = state.mode === 'globe';
+  controls.reset();
+  if (state.mode === 'globe') { camera.position.set(0, 0.6, 3.4); controls.target.set(0, 0, 0); } else fitMap();
+  buildMesh();
+});
+['smooth'].forEach((id) => $(id).addEventListener('change', buildMesh));
+['rivers', 'outlines', 'pentas', 'arrows'].forEach((id) => $(id).addEventListener('change', buildOverlays));
+$('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
+$('relief').addEventListener('change', buildMesh);
+$('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
+$('riverQ').addEventListener('change', buildOverlays);
+$('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land';
+
+function setWorld(w, label) {
+  prepare(w);
+  state.world = w;
+  document.title = `${w.name} · Planet Viewer`;
+  renderLayerButtons();
+  renderSummary();
+  buildMesh();
+}
+
+async function loadFile(file) {
+  const r = await fetch('../worlds/' + file);
+  if (!r.ok) throw new Error(`${file}: HTTP ${r.status}`);
+  setWorld(await r.json());
+  const u = new URL(location); u.searchParams.set('world', file); history.replaceState(null, '', u);
+}
+
+$('worldSel').addEventListener('change', (e) => loadFile(e.target.value));
+
+// drag & drop (works even when opened as a plain file://)
+addEventListener('dragover', (e) => { e.preventDefault(); $('drop').style.display = 'flex'; });
+addEventListener('dragleave', (e) => { if (e.target === $('drop')) $('drop').style.display = 'none'; });
+addEventListener('drop', async (e) => {
+  e.preventDefault(); $('drop').style.display = 'none';
+  const f = e.dataTransfer.files[0]; if (f) setWorld(JSON.parse(await f.text()));
+});
+
+// URL options, e.g. ?world=x.json&mode=map&layer=plates&pentas=1&arrows=1&outlines=1&relief=40
+function applyUrlOptions() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
+  if (p.get('layer')) state.layer = p.get('layer');
+  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
+  if (p.get('relief')) $('relief').value = p.get('relief');
+}
+applyUrlOptions();
+$('reliefVal').textContent = $('relief').value + '×';
+
+async function init() {
+  try {
+    const idx = await (await fetch('../worlds/index.json', { cache: 'no-store' })).json();
+    $('worldSel').innerHTML = idx.map((x) => `<option value="${x.file}">${x.name}</option>`).join('');
+    const want = new URLSearchParams(location.search).get('world') || idx[0]?.file;
+    if (want) { $('worldSel').value = want; await loadFile(want); }
+  } catch (err) {
+    $('info').innerHTML = `Couldn't fetch worlds/index.json (${err.message}).<br>Run <code>uv run python -m planet serve</code>, or drop a .json file here.`;
+  }
+}
+init();
+
+renderer.setAnimationLoop(() => {
+  if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
