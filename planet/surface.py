@@ -123,10 +123,12 @@ def surface_rock(rock, cover, carb, lava):
     return np.where(cover > COVER_SHOWS, sed, rock).astype(np.uint8)
 
 
-def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso):
+def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso,
+          k_mult=1.0):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its carbonate and lava with it pro rata; what's deposited
-    is ordinary sediment. iso: m of elevation per km of crust, per cell.
+    is ordinary sediment. iso: m of elevation per km of crust, per cell;
+    k_mult: extra erodibility factor per cell (glaciers).
     Returns (thick, cover, carb, lava, removed_km, deposited_km, flow, downstream)."""
     n = grid.n
     land = elev > 0
@@ -136,7 +138,7 @@ def erode(grid, elev, thick, cover, carb, lava, rock, cont, precip, dt, hillslop
 
     c = np.maximum(cover, 1e-9)
     k_cover = (COVER_K * (cover - carb - lava) + CARB_K * carb + LAVA_K * lava) / c
-    K = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * rain_factor(precip)
+    K = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * rain_factor(precip) * k_mult
     # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
     # Laplacian on this grid; exponential form can't overshoot)
     d_km = grid.spacing * R_KM

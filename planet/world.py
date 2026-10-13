@@ -53,11 +53,11 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     """Shared back half of the pipeline: climate -> erosion -> rivers -> biomes."""
     t0 = t0 or time.time()
     temp = climate.temperature(grid, elev, equator_temp, pole_temp)
-    precip = climate.precipitation(grid, elev, temp)
+    precip, _ = climate.precipitation(grid, elev, temp)
     if erosion > 0 and erosion_iterations > 0:
         elev = hydrology.erode(grid, elev, precip, erosion_iterations, erosion)
         temp = climate.temperature(grid, elev, equator_temp, pole_temp)
-        precip = climate.precipitation(grid, elev, temp)
+        precip, _ = climate.precipitation(grid, elev, temp)
     flow, down, lake = hydrology.rivers_and_lakes(grid, elev, precip)
     biome = climate.biomes(elev, temp, precip, lake)
 

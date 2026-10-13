@@ -194,7 +194,7 @@ const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: '
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
-const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff');
+const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
 
 function plateColor(id, continental, out) {
   return out.setHSL((id * 0.618034) % 1, 0.55, continental ? 0.55 : 0.32);
@@ -215,6 +215,8 @@ function cellColors(layer) {
     } else if (layer === 'rock type') {
       c.set(V.rockColors[L.rock[i]]);
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
+    } else if (layer === 'climate') {
+      c.set(V.koppenColors[L.climate[i]] || '#1d3f6e');
     } else if (layer === 'surface rock') {
       c.set(V.rockColors[L.surface ? L.surface[i] : L.surface_rock[i]]);
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
@@ -222,7 +224,10 @@ function cellColors(layer) {
     else if (layer === 'sediment') rampFns[layer](L.cover ? L.cover[i] / 10 : L.sediment_cover[i], c);
     else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precip[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
-    else rampFns[layer](L[layer][i], c);
+    else {
+      rampFns[layer](L[layer][i], c);
+      if (layer === 'elevation' && L.ice && L.ice[i] > 0 && elev[i] > 0) c.lerp(ICE, 0.75);
+    }
     out[3 * i] = c.r; out[3 * i + 1] = c.g; out[3 * i + 2] = c.b;
   }
   return out;
@@ -230,10 +235,12 @@ function cellColors(layer) {
 
 function availableLayers() {
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
-    V.data.rock ? (V.data.surface ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : []);
+    V.data.rock ? (V.data.surface ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
+    V.data.climate ? ['temperature', 'climate'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
+  if (V.layers.climate) ls.push('climate');
   if (V.layers.surface_rock) ls.push('surface rock');
   if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
   return ls;
@@ -513,6 +520,11 @@ function renderLegend() {
       .map((r) => `<span><span class="sw" style="background:${r.color}"></span>${r.name}</span>`).join('') +
       (surf ? '<span class="muted">(what you would walk on: sediment where it covers the basement; faded = under the sea)</span>'
             : '<span class="muted">(basement rock; faded = under the sea; see "sediment" for what covers it)</span>');
+  } else if (state.layer === 'climate') {
+    const present = new Set(V.layers.climate);
+    el.innerHTML = V.koppen.filter((k) => present.has(k.id) && k.code !== '-')
+      .map((k) => `<span title="${k.name}"><span class="sw" style="background:${k.color}"></span>${k.code} ${k.name}</span>`).join('') +
+      '<span class="muted">(Köppen climate classes)</span>';
   } else if (state.layer === 'plates') {
     el.innerHTML = `<span>Each colour = one plate (bright = continental crust, dark = oceanic)</span>
       <span><span class="sw" style="background:#ff3b3b"></span>converging boundary</span>
@@ -570,6 +582,7 @@ function renderRunSummary() {
   $('summary').innerHTML = `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${m.cells} cells · made ${m.created}</span><br>
     t = ${V.t} Myr · ${s.plates} plates · land ${s.land_pct}% · ${s.landmasses} landmasses (largest ${s.largest_landmass_pct}%)<br>
     plate speed: mean ${s.mean_speed_cmyr}, max ${s.max_speed_cmyr} cm/yr · peak ${s.max_elev_m} m<br>
+    ${s.global_temp_c != null ? `global mean ${s.global_temp_c} °C (Earth today ~14.5) · land ice ${s.ice_pct}% of surface · sea level ${s.sea_level_m} m<br>` : ''}
     <span class="muted">Build a full world here:</span> <code>uv run python -m planet slice ${r.id || r.name} --at ${V.t}</code>
     <h2>Events <span class="muted">(click to jump)</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;
   const now = $('summary').querySelector('.ev.now');
@@ -585,6 +598,9 @@ function describe(i) {
       `rain ${L.precipitation[i]} mm/yr`, `river flow ${L.flow[i]}`);
     if (L.lake[i]) lines.push('lake');
     if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
+    if (L.climate && L.elevation[i] > 0) lines.push(`climate ${V.koppen[L.climate[i]].code} (${V.koppen[L.climate[i]].name}), ` +
+      `months ${Math.round(L.cold_month[i])} to ${Math.round(L.warm_month[i])} °C`);
+    if (L.ice && L.ice[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
     if (L.rock) lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${L.sediment_cover[i].toFixed(1)} km`,
                            `crust ${Math.round(L.crust_thickness[i])} km thick`);
   }
@@ -600,6 +616,11 @@ function describe(i) {
     lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${(L.cover[i] / 10).toFixed(1)} km`,
                `crust ${L.thickness[i]} km thick`);
     if (L.elevation[i] > 0) lines.push(`rain ${L.precip[i]} mm/yr`);
+    if (L.climate && L.elevation[i] > 0) {
+      const k = V.koppen[L.climate[i]];
+      lines.push(`climate ${k.code} (${k.name}), mean ${L.temperature[i]} °C`);
+      if (L.ice[i]) lines.push(`ice ~${L.ice[i] * 20} m thick`);
+    }
   }
   if (V.kind === 'run') lines.unshift(`t = ${V.t} Myr`);
   return lines;
@@ -661,7 +682,8 @@ function setWorld(w) {
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         legend: w.legend, meta: w.meta, summary: w.summary, pentagons: w.meta.pentagons,
         level: w.meta.level, landFlowSorted: fl,
-        rocks: w.meta.rocks || [], rockColors: (w.meta.rocks || []).map((r) => r.color) };
+        rocks: w.meta.rocks || [], rockColors: (w.meta.rocks || []).map((r) => r.color),
+        koppen: w.meta.koppen || [], koppenColors: (w.meta.koppen || []).map((k) => k.color) };
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
 }
@@ -679,7 +701,8 @@ async function loadRun(dir, wantT) {
   const pg = prepareGrid(grid);
   V = { kind: 'run', name: run.name, run, data, grid, n: pg.n, cornerCells: pg.cornerCells,
         pentagons: grid.pentagons, level: grid.level, frame: 0,
-        rocks: run.rocks || [], rockColors: (run.rocks || []).map((r) => r.color) };
+        rocks: run.rocks || [], rockColors: (run.rocks || []).map((r) => r.color),
+        koppen: run.koppen || [], koppenColors: (run.koppen || []).map((k) => k.color) };
   document.title = `${run.name} · Planet Viewer`;
   $('frame').max = run.frames.length - 1;
   let f = 0;
@@ -694,7 +717,7 @@ function setFrame(f, repaint = true) {
   const sl = (a) => a.subarray(f * n, (f + 1) * n);
   V.layers = { elevation: sl(d.elevation), plate: sl(d.plate), crust: sl(d.continental),
                crust_age: sl(d.age), plate_boundary: sl(d.boundary) };
-  for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down']) if (d[k]) V.layers[k] = sl(d[k]);
+  for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down', 'temperature', 'climate', 'ice']) if (d[k]) V.layers[k] = sl(d[k]);
   V.hotspots = r.frames[f].hotspots;
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;

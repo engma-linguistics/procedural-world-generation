@@ -89,7 +89,16 @@ class Params:
     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
     incision: float = 0.004  # river cutting, per Myr per sqrt(flow)
-    climate_every: float = 10.0  # Myr between rainfall updates
+    climate_every: float = 8.0  # Myr between climate (rain, ice, sea level) updates
+    # climate (see Simulation._global_temperature)
+    tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
+    climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
+    climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
+    climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
+    co2_sensitivity: float = 3.0  # C per e-fold of volcanic CO2 output relative to weathering
+    ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today)
+    ice_summer_temp: float = 1.0  # C: land with warmest month below this holds ice
+    glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # hotspots: mantle plumes fixed in the mantle; plates slide over them
     hotspots: int = 10  # typical number alive at once
     hotspot_life: float = 120.0  # Myr, mean
@@ -481,6 +490,11 @@ class Snapshot:
     hotspots: list  # [lat, lon] of each live plume
     volcanoes: list  # [lat, lon] of each active arc volcano
     surface: np.ndarray  # surface.ROCKS id of what's exposed (basement or its sediment cover)
+    temperature: np.ndarray  # C, annual mean
+    t_warm: np.ndarray  # C, warmest month
+    t_cold: np.ndarray  # C, coldest month
+    koppen: np.ndarray  # climate.KOPPEN id
+    ice: np.ndarray  # m of land ice
 
 
 @dataclass
@@ -519,6 +533,13 @@ class Simulation:
         self.removed = self.flow = self.stacked = np.zeros(n)
         self.down = np.full(n, -1, np.int64)
         self.swell = np.zeros(n)  # m: broad dome pushed up by active plumes
+        # climate (see _climate): global temperature offset from today's
+        # Earth, its random part, slow baselines of the CO2 sources and sinks
+        self.sea_level = 0.0  # m, relative to an ice-free planet
+        self.ice = np.zeros(n)  # m of land ice
+        self.dT, self.drift, self.refs = 0.0, 0.0, None
+        self.newc = 0
+        self.t_warm = self.t_cold = self.p_jul = self.p_jan = self.koppen = None
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / n
         self.edge_len = g.spacing
@@ -628,6 +649,7 @@ class Simulation:
         self.owner, newc, coll = _resolve(
             self.alive, self.idx, self.owned, self.age, self.cont, self.thick, self.rock, self.cover, self.extra,
             self.owner, g.nbr_off, g.nbr_idx, self.Q, g.centers, self.stacked)
+        self.newc = int(newc.sum())
         _cleanup_ghosts(self.alive, self.owned, self.Q, g.centers, self.owner, g.raster,
                         g.nbr_off, g.nbr_idx)
         self._world_view()
@@ -654,7 +676,7 @@ class Simulation:
         self.w_cover = self.cover[o, r]
         self.w_extra = self.extra[o, r]
         self.swell = self.w_extra[:, LIFT]
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
         self.w_ref = r
 
     def _scatter(self):
@@ -744,7 +766,7 @@ class Simulation:
         # 10 km above its sea floor) magma can't lift itself to the summit and
         # the flanks slide away. Plume heads under continents make broad lava
         # plateaus (~2.5 km, Yellowstone) rather than peaks.
-        as_volcano = elevation(self.w_thick, self.w_age, cont, np.where(cont, rock, HOTSPOT), self.swell)
+        as_volcano = elevation(self.w_thick, self.w_age, cont, np.where(cont, rock, HOTSPOT), self.swell - self.sea_level)
         room = np.maximum(np.where(cont, 2500.0, 4500.0) - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
         plume = np.minimum(plume * np.where(cont, 0.25, 1.0) * dt, room) / dt
         t = self.w_thick + growth * dt + plume * dt
@@ -776,16 +798,18 @@ class Simulation:
         t = np.minimum(t, MAX_KM)
         rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
 
-        # weather, rivers, erosion, sediment
+        # weather, ice, rivers, erosion, sediment
+        self._global_temperature(growth, rng)
         if self.precip is None or self.t - self.climate_t >= p.climate_every - 1e-9:
-            e = elevation(t, self.w_age, cont, rock, self.swell)
-            self.temp = climate.temperature(g, e)
-            self.precip = climate.precipitation(g, e, self.temp)
-            self.climate_t = self.t
+            self._climate(elevation(t, self.w_age, cont, rock, self.swell - self.sea_level))
+        # Glaciers grind their beds hard where they slide on meltwater (the
+        # 'glacial buzzsaw' that keeps ranges from growing much above the
+        # snowline); polar ice frozen to its bed protects it instead.
+        k_mult = np.where(self.ice > 0, np.where(self.t_warm > -8, p.glacial_erosion, 0.3), 1.0)
         t, cover, x[:, CARB], x[:, LAVA], self.removed, dep, self.flow, self.down = surface.erode(
-            g, elevation(t, self.w_age, cont, rock, self.swell), t, cover, x[:, CARB], x[:, LAVA], rock, cont,
-            self.precip, dt, p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale,
-            isostasy(cont, rock))
+            g, elevation(t, self.w_age, cont, rock, self.swell - self.sea_level), t, cover, x[:, CARB], x[:, LAVA],
+            rock, cont, self.precip, dt, p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale,
+            isostasy(cont, rock), k_mult)
 
         # Reefs: in warm, clear, shallow sea, corals and other carbonate
         # makers build up to just below sea level, fast enough to outpace any
@@ -793,7 +817,7 @@ class Simulation:
         # becomes an atoll; carried out of the tropics, the reef dies and it
         # drowns into a flat-topped seamount (the Darwin point, ~30 deg).
         # Muddy water from big rivers stops them (no reefs off the Amazon).
-        e = elevation(t, self.w_age, cont, rock, self.swell)
+        e = elevation(t, self.w_age, cont, rock, self.swell - self.sea_level)
         reef = (e < -5) & (e > -1500) & (self.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
         grow = np.minimum(p.reef_rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
         carb = grow / isostasy(cont, rock)
@@ -814,7 +838,7 @@ class Simulation:
         x[:, LAVA] = np.clip(x[:, LAVA] * shrink, 0, self.w_cover - x[:, CARB])
         self.w_extra = x
         self.w_rock = rock
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
         self._scatter()
 
         # remember for snapshots
@@ -827,6 +851,67 @@ class Simulation:
         down = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
         np.minimum.at(trench, down, -350 * np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]]))
         self.w_trench = np.maximum(trench, -4000)
+
+    def _global_temperature(self, growth, rng):
+        """The planet's mean temperature, as an offset dT from today's Earth.
+        Three things move it, slowly (tens of Myr):
+          drift      a random walk that keeps returning toward 0 (all the
+                     carbon-cycle and ocean details this model doesn't have)
+          CO2        volcanism at ridges and arcs adds it (warming); fresh
+                     rock weathering in warm, wet mountains removes it
+                     (cooling, e.g. the Himalaya since 40 Ma). Each is measured
+                     against its own slow average, so only changes count.
+          ice        ice sheets reflect sunlight (cooling feedback)
+        Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
+        Permo-Carboniferous, today) between long greenhouse ones."""
+        p, dt = self.params, self.dt
+        a = np.exp(-dt / p.climate_drift_time)
+        self.drift = self.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
+        land = self.w_elev > 0
+        warm = np.exp(0.06 * (self.temp - 15.0)) if self.temp is not None else 1.0  # chemical weathering
+        source = self.newc / self.scale**2 + 20.0 * growth.sum() / self.scale**2
+        sink = float((self.removed * land * warm).sum()) / self.scale**2
+        now = np.array([max(source, 1e-6), max(sink, 1e-6)])
+        if self.refs is None:
+            self.refs = now.copy()
+        b = 1 - np.exp(-dt / 200.0)
+        self.refs = self.refs + b * (now - self.refs)
+        rel = now / self.refs
+        # smooth the noisy per-step rates over ~10 Myr
+        self.co2 = getattr(self, "co2", 0.0)
+        c = 1 - np.exp(-dt / 10.0)
+        self.co2 += c * (np.log(rel[0]) - np.log(rel[1]) - self.co2)
+        ice_frac = (self.ice > 0).mean()
+        target = self.drift + p.co2_sensitivity * np.clip(self.co2, -1.5, 1.5) - p.ice_albedo * ice_frac / 0.03
+        self.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - self.dT)
+
+    def _climate(self, e):
+        """Temperature, seasons, rain, ice and Koppen class on elevation e
+        (m above the current sea level, without ice)."""
+        p, g = self.params, self.grid
+        land = e > 0
+        surf = e + self.ice  # an ice sheet's top is high and cold
+        tilt_adj = (p.tilt - 23.4) * 0.3  # more tilt: milder poles, slightly cooler tropics
+        self.temp = climate.temperature(g, surf, 28.0 + 0.5 * self.dT - 0.3 * tilt_adj,
+                                        -22.0 + 1.5 * self.dT + tilt_adj)
+        self.t_warm, self.t_cold = climate.seasons(g, e, self.temp, p.tilt)
+        self.precip, self.p_jul, self.p_jan = climate.seasonal_precipitation(
+            g, e, self.temp, self.t_warm, self.t_cold, p.tilt, np.exp(0.03 * self.dT))
+        # Ice: where summers stay near freezing and there's snow to feed it.
+        # The real ice comes and goes with ~100 kyr cycles; this is the
+        # average extent over them. Ice sheets thicken inland from their edges.
+        iced = land & (self.t_warm < p.ice_summer_temp) & (self.precip > 25)
+        edge = np.flatnonzero(iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) > 0))
+        hops, _ = kernels.bfs_within(edge, iced.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
+        d_km = np.maximum(hops, 0) * g.spacing * R_KM
+        self.ice = np.where(iced, 300.0 + 2700.0 * (1 - np.exp(-d_km / 600.0)), 0.0)
+        # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
+        vol = (self.ice / 1000.0).sum() * self.cell_area * R_KM**2
+        ocean_area = (~land).sum() * self.cell_area * R_KM**2
+        self.sea_level = -0.9 * vol / max(ocean_area, 1.0) * 1000.0
+        self.koppen = climate.koppen(e, self.temp, self.t_warm, self.t_cold, self.precip, self.p_jul,
+                                     self.p_jan, g.lat, self.ice)
+        self.climate_t = self.t
 
     def heat(self) -> float:
         """Mantle heat relative to today's. A young planet is hotter (more
@@ -852,7 +937,7 @@ class Simulation:
         self.volcanoes = live
         # only on established arcs: continental margins (Andes, Cascades) or
         # island arcs that have built up near the surface (Japan, Aleutians)
-        near_top = elevation(t, self.w_age, self.w_cont, self.w_rock, self.swell) > -1500
+        near_top = elevation(t, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level) > -1500
         cand = np.flatnonzero((growth * dt > 0.15) & near_top & (self.w_cont | (t > OCEAN_KM + 8)))
         if len(cand) == 0:
             return t
@@ -1256,7 +1341,22 @@ class Simulation:
             hotspots=[list(latlon(h["pos"])) for h in self.hotspots],
             volcanoes=[list(latlon(v["pos"])) for v in self.volcanoes],
             surface=surface.surface_rock(self.w_rock, self.w_cover, self.w_extra[:, CARB], self.w_extra[:, LAVA]),
+            **self._climate_now(),
         )
+
+    def _climate_now(self):
+        """Climate fields for a snapshot. They're updated every climate_every
+        Myr; the sea/land pattern may have moved since, so cells that are now
+        sea get the sea class and no ice."""
+        n = self.grid.n
+        if self.koppen is None:
+            z = np.zeros(n)
+            return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z)
+        land = self.w_elev > 0
+        k = np.where(land, self.koppen, climate.SEA_CLASS)
+        k = np.where(land & (k == climate.SEA_CLASS), 28, k)  # newly emerged: call it tundra-ish
+        return dict(temperature=self.temp.copy(), t_warm=self.t_warm.copy(), t_cold=self.t_cold.copy(),
+                    koppen=k, ice=np.where(land, self.ice, 0.0))
 
     def stats(self) -> dict:
         g = self.grid
@@ -1272,6 +1372,9 @@ class Simulation:
             "landmasses": int((sizes >= 3).sum()),
             "largest_landmass_pct": round(100 * sizes.max() / g.n, 1),
             "max_elev_m": int(self.w_elev.max()),
+            "global_temp_c": round(14.5 + self.dT, 1),
+            "sea_level_m": round(self.sea_level, 1),
+            "ice_pct": round(100 * float((self.ice > 0).mean()), 1),
             "mean_speed_cmyr": round(float(v.mean()), 2),
             "max_speed_cmyr": round(float(v.max()), 2),
         }
