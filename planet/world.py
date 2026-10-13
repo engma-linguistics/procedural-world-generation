@@ -36,28 +36,27 @@ PLANET_RADIUS_KM = 6371
 
 
 def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
-             erosion_iterations: int = 12, equator_temp: float = 28.0,
-             pole_temp: float = -22.0, **params) -> dict:
+             erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4, **params) -> dict:
     t0 = time.time()
     grid = build_grid(level)
     rng = np.random.default_rng(seed)
     elev, extra = GENERATORS[method](grid, rng, **params)
     meta = {"method": method, "seed": seed, "level": level}
-    return finish(grid, elev, extra, meta, erosion, erosion_iterations, equator_temp,
-                  pole_temp, params, t0)
+    return finish(grid, elev, extra, meta, erosion, erosion_iterations, dT, tilt, params, t0)
 
 
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
-           erosion_iterations: int = 12, equator_temp: float = 28.0, pole_temp: float = -22.0,
-           params: dict | None = None, t0: float | None = None) -> dict:
-    """Shared back half of the pipeline: climate -> erosion -> rivers -> biomes."""
+           erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
+           params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None) -> dict:
+    """Shared back half of the pipeline: climate -> erosion -> rivers -> biomes.
+    dT: global temperature offset from today's Earth; ice: m of land ice."""
     t0 = t0 or time.time()
-    temp = climate.temperature(grid, elev, equator_temp, pole_temp)
-    precip, _ = climate.precipitation(grid, elev, temp)
+    c = climate.compute(grid, elev, dT, tilt, ice)
     if erosion > 0 and erosion_iterations > 0:
-        elev = hydrology.erode(grid, elev, precip, erosion_iterations, erosion)
-        temp = climate.temperature(grid, elev, equator_temp, pole_temp)
-        precip, _ = climate.precipitation(grid, elev, temp)
+        elev = hydrology.erode(grid, elev, c["precip"], erosion_iterations, erosion)
+        c = climate.compute(grid, elev, dT, tilt, ice)
+    temp, precip = c["temp"], c["precip"]
+    extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lake = hydrology.rivers_and_lakes(grid, elev, precip)
     biome = climate.biomes(elev, temp, precip, lake)
 
@@ -79,7 +78,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "pentagons": grid.pentagons.tolist(),
         "cell_size_km": round(grid.spacing * PLANET_RADIUS_KM),
         "params": {"erosion": erosion, "erosion_iterations": erosion_iterations,
-                   "equator_temp": equator_temp, "pole_temp": pole_temp, **(params or {})},
+                   "dT": dT, "tilt": tilt, **(params or {})},
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }

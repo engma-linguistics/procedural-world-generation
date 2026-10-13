@@ -65,6 +65,14 @@ class Params:
     # starting share of the surface that's continental crust, and the level
     # the thermostat on island-arc growth holds it near (Earth: ~0.41)
     continental_fraction: float = 0.4
+    # Growing continents: start with this share instead (< 0: same as
+    # continental_fraction) and let the thermostats raise it toward
+    # continental_fraction over ~continental_growth Myr (e-folding). With a
+    # hot early mantle (heat_start ~2) this gives a mostly-ocean young world
+    # whose land emerges over the first Gyr, as Earth's probably did.
+    continental_start: float = -1.0
+    continental_growth: float = 700.0
+    continental_thickness: float = 37.0  # km: the mean the volume thermostat aims for
     # forces (arbitrary units; mobility converts torque to rad/Myr)
     slab_pull: float = 1.0
     ridge_push: float = 0.15
@@ -88,6 +96,9 @@ class Params:
     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
+    subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches
+    accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
+    rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
     incision: float = 0.004  # river cutting, per Myr per sqrt(flow)
     climate_every: float = 8.0  # Myr between climate (rain, ice, sea level) updates
     # climate (see Simulation._global_temperature)
@@ -104,7 +115,7 @@ class Params:
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp
-    ocean_ref_age: float = 50.0  # Myr: mean sea-floor age at which tectonic sea level is 0
+    ocean_ref_age: float = 50.0  # unused now (sea level 0 = the starting sea floor); kept so older runs replay
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     # hotspots: mantle plumes fixed in the mantle; plates slide over them
     hotspots: int = 10  # typical number alive at once
@@ -123,6 +134,7 @@ class Params:
     # scales plume numbers, arc melting and (as sqrt) plate speed. See Simulation.heat
     heat_start: float = 1.0
     heat_halflife: float = 600.0  # Myr
+    hot_sea: float = 600.0  # m of extra sea level per unit of extra mantle heat
     # events
     suture_after: float = 30.0  # Myr of continental collision before plates can weld...
     suture_closing: float = 2.0  # ...once they've (nearly) stopped converging, cm/yr
@@ -505,6 +517,8 @@ class Snapshot:
     t_cold: np.ndarray  # C, coldest month
     koppen: np.ndarray  # climate.KOPPEN id
     ice: np.ndarray  # m of land ice
+    wind: np.ndarray  # (n, 3) annual-mean surface wind, ~1 = a steady trade wind
+    current: np.ndarray  # (n, 3) surface ocean current, same scale
 
 
 @dataclass
@@ -551,6 +565,9 @@ class Simulation:
         self.ice = np.zeros(n)  # m of land ice
         self.dT, self.drift, self.refs = 0.0, 0.0, None
         self.newc = 0
+        self.rift_pool = np.zeros(P_MAX)  # km x cells of stretched-out crust waiting to line a rift
+        self.newc_mask = np.zeros(n, bool)
+        self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process
         self.t_warm = self.t_cold = self.p_jul = self.p_jan = self.koppen = None
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / n
@@ -582,7 +599,7 @@ class Simulation:
         else:
             bias = rng.uniform(-1, 1, p.n_plates)
             field_ = fbm(nz, x, octaves=5, freq=1.3) + 0.25 * bias[plate]
-        cont = field_ > np.quantile(field_, 1 - p.continental_fraction)
+        cont = field_ > np.quantile(field_, 1 - self.target_fraction())
         if p.start == "supercontinent":
             # A supercontinent is one plate: hand it to whichever plate holds
             # most of it, so the story starts with rifting, not collisions.
@@ -664,14 +681,17 @@ class Simulation:
             self.idx[k] = g.locate(g.centers @ self.Q[k], self.idx[k])
 
         # 3. resolve ownership
+        vol0 = float((self.w_thick * self.w_cont).sum())
         self.stacked = np.zeros(g.n)
         self.owner, newc, coll = _resolve(
             self.alive, self.idx, self.owned, self.age, self.cont, self.thick, self.rock, self.cover, self.extra,
             self.owner, g.nbr_off, g.nbr_idx, self.Q, g.centers, self.stacked)
         self.newc = int(newc.sum())
+        self.newc_mask = newc
         _cleanup_ghosts(self.alive, self.owned, self.Q, g.centers, self.owner, g.raster,
                         g.nbr_off, g.nbr_idx)
         self._world_view()
+        self._book("resolve", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
 
         # 4. boundaries, uplift, forces
         bd = self._boundaries()
@@ -679,10 +699,12 @@ class Simulation:
         self._forces(bd, rng)
 
         # 5. events
+        vol0 = float((self.w_thick * self.w_cont).sum())
         self._sutures(bd)
         self._absorb_slivers()
         self._maybe_rift(rng)
         self._world_view()
+        self._book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
 
     # ------------------------------------------------------------- world view
     def _world_view(self):
@@ -754,8 +776,15 @@ class Simulation:
         # arcs: melting above the sinking slab adds new crust to the overriding
         # plate. A thermostat holds continental area near continental_fraction
         # (real growth vs. loss at trenches is roughly balanced but uncertain).
+        # Two gentle thermostats: arc growth (adds crust) follows the volume
+        # of continental crust, subduction erosion (removes continental
+        # edges) its area. Together they hold both near their targets, and so
+        # the average thickness, which decides how high continents stand.
         frac = max(self.w_cont.mean(), 1e-3)
-        thermostat = np.clip((p.continental_fraction / frac) ** 4, 0.1, 5.0)
+        vol = max(float((self.w_thick * self.w_cont).mean()), 1e-3)
+        target = self.target_fraction()
+        thermostat = np.clip((target * p.continental_thickness / vol) ** 4, 0.1, 5.0)
+        shrink = np.clip((frac / target) ** 4, 0.2, 5.0)
         arc_src = np.zeros(n)
         over = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
         rate = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
@@ -766,8 +795,12 @@ class Simulation:
         rift_src = np.zeros(n)
         op = bd["opening"]
         opening_rate = -np.clip(bd["conv"][op], -15, 0)
-        np.maximum.at(rift_src, a[op], p.stretching * opening_rate)
-        np.maximum.at(rift_src, b[op], p.stretching * opening_rate)
+        # only crust that hasn't been thinned yet keeps a rift stretching:
+        # once the edge is thin (or the rift floor is new margin or ocean)
+        # the stretching moves to the ridge and the margin is left behind
+        fresh = self.w_cont & (self.w_thick > 23.0)
+        np.maximum.at(rift_src, a[op], p.stretching * opening_rate * fresh[a[op]])
+        np.maximum.at(rift_src, b[op], p.stretching * opening_rate * fresh[b[op]])
         stretch = spread(rift_src, 1.0)
         plume, dome = self._hotspots(rng, bd)
 
@@ -781,14 +814,22 @@ class Simulation:
         # the swell rides off with the plate and subsides as the mantle under it cools
         x[:, LIFT] = np.maximum(x[:, LIFT] * np.exp(-dt / p.swell_time), dome)
         self.swell = x[:, LIFT]
-        # Volcanoes can't build forever: past ~4.5 km above the sea (Mauna Kea,
-        # 10 km above its sea floor) magma can't lift itself to the summit and
-        # the flanks slide away. Plume heads under continents make broad lava
-        # plateaus (~2.5 km, Yellowstone) rather than peaks.
+        # Volcanoes can't build forever. Magma rises only as high as its own
+        # buoyancy can push it (Mauna Kea's summit, 4.2 km up and 10 km above
+        # its sea floor, is about the limit); runny basalt spreads out into
+        # broad shields instead of piling higher; steep flanks slide away in
+        # giant landslides. So growth slows as the pile nears that height.
+        # A cell is ~100 km across, so its *average* tops out lower than a
+        # summit: ~3 km for an ocean island, ~2 km for a continental lava
+        # plateau (Yellowstone, Deccan).
         as_volcano = elevation(self.w_thick, self.w_age, cont, np.where(cont, rock, HOTSPOT), self.swell - self.sea_level)
-        room = np.maximum(np.where(cont, 2500.0, 4500.0) - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
-        plume = np.minimum(plume * np.where(cont, 0.25, 1.0) * dt, room) / dt
+        head = np.where(cont, 2000.0, 3000.0)
+        taper = np.clip(1 - (np.maximum(as_volcano, 0) / head) ** 2, 0, 1)
+        room = np.maximum(head - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
+        plume = np.minimum(plume * np.where(cont, 0.25, 1.0) * taper * dt, room) / dt
         t = self.w_thick + growth * dt + plume * dt
+        self._book("arc", 0, growth * dt, cont)
+        self._book("plume", 0, plume * dt, cont)
         # on a continent the plume's lava spreads over the land as a cover of
         # basalt flows (Snake River Plain, Deccan Traps)
         cover = self.w_cover + plume * dt * cont
@@ -801,13 +842,60 @@ class Simulation:
         if self.stacked.any():
             stack_add = surface._spread(self.stacked, ea[both], eb[both], 0.15, int(round(6 * self.scale**2)))
             t = t + stack_add
+            self._book("collision", 0, stack_add, cont)
+        # Trenches scrape part of the sediment off the sinking plate onto the
+        # edge of the overriding one (accretionary wedges: Makran, Barbados,
+        # much of Japan); the rest goes down with the slab. The share scraped
+        # per step grows with how much plate the trench swallows in it.
+        if p.accretion > 0:
+            dn = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
+            up = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
+            cv = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
+            share = p.accretion * np.minimum(1.0, cv * 10 * dt / (self.edge_len * R_KM))
+            scraped = np.zeros(n)
+            np.maximum.at(scraped, dn, share * cover[dn])
+            gain = np.zeros(n)
+            np.add.at(gain, up, scraped[dn] / np.maximum(np.bincount(dn, minlength=n)[dn], 1))
+            keep = 1 - scraped / np.maximum(cover, 1e-9)
+            x[:, MIX] *= keep[:, None]
+            t, cover = t - scraped + gain, cover - scraped + gain
+            self._book("accreted", 0, gain, cont)
+        # Subduction erosion: the slab also grinds away the underside and
+        # front of the overriding continent and drags it down (the Andes'
+        # coast has retreated ~250 km since the Jurassic). Globally it removes
+        # about as much continental crust as arcs add. A continental edge cell
+        # worn below 15 km is gone: what's left counts as oceanic.
+        if p.subduction_erosion > 0:
+            dn = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
+            up = np.concatenate([b[bd["a_down"]], a[bd["b_down"]]])
+            cv = np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]])
+            worn = np.zeros(n)
+            np.maximum.at(worn, up, p.subduction_erosion * cv * dt * shrink)
+            worn = np.minimum(worn * cont, t)
+            t0 = t
+            t = t - worn
+            self._book("subd.erosion", t0, t, cont)
+            gone = cont & (worn > 0) & (t < 15.0)
+            if gone.any():
+                self._book("subd.erosion", t, 0, gone)
+                cont = cont.copy()
+                cont[gone] = False
+                rock[gone] = OCEAN
+                t[gone] = OCEAN_KM
+                cover[gone] = 0.0
+                x[gone] = 0.0
         # arc rock: on continents wherever arcs build; at sea only once the
         # crust has thickened into a real island arc
         arcky = (growth * dt > 0.1) & (rock != CRATON) & (cont | (t > OCEAN_KM + 5))
         rock[arcky] = ARC
+        t0 = t
         t = self._volcanoes(growth, t, rng)
+        self._book("volcano", t0, t, cont)
         thin = cont & (t > 22)
+        t0 = t.copy()
         t[thin] = np.maximum(22.0, t[thin] * np.exp(-stretch[thin] * dt))
+        self._book("stretch", t0, t, cont)
+        cont = self._rifted_margin(t0 - t, t, cont, rock, cover, x)
         rock[~cont & (plume * dt > 0.2)] = HOTSPOT
 
         # crustal flow: very thick crust is hot and weak at depth and spreads
@@ -815,8 +903,12 @@ class Simulation:
         # Faster the thicker it is, which is why crust >~70 km is so rare.
         # A diffusion: per-cell rates scale with 1/spacing^2, so finer grids
         # take more (equally stable) substeps.
-        t = _crust_flow(t, ea[both], eb[both], p.crust_flow * dt / 3, int(round(3 * self.scale**2)))
+        t0 = t
+        # (a hotter planet's crust is softer: mountains and plateaus can't stand as high)
+        t = _crust_flow(t, ea[both], eb[both], p.crust_flow * self.heat() ** 2 * dt / 3,
+                        int(round(3 * self.scale**2 * self.heat() ** 2)))
         t = np.minimum(t, MAX_KM)
+        self._book("flow+cap", t0, t, cont)
         # Collision belts are folded, faulted and metamorphosed wherever the
         # crust is being stacked up, whatever it was before (an old arc,
         # sediment); very thick crust is metamorphosed too.
@@ -837,10 +929,12 @@ class Simulation:
         wet = np.clip(self.precip / 800.0, 0, 1)
         self.veg = (self.t >= p.plants_from) * wet * np.clip((self.t_warm - 5) / 10, 0, 1) * (self.w_elev > 0)
         k_mult = k_mult * (1 + 0.6 * wet * (1 - self.veg))
+        t0 = t
         t, cover, x[:, MIX], self.removed, dep, self.flow, self.down, lake = surface.erode(
             g, elevation(t, self.w_age, cont, rock, self.swell - self.sea_level), t, cover, x[:, MIX],
             rock, cont, self.precip, dt, p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale,
             isostasy(cont, rock), k_mult, p.alluvial)
+        self._book("erosion", t0, t, cont)
         self._sediments(t, cover, x, dep, lake, cont, rock)
 
         # Reefs: in warm, clear, shallow sea, corals and other carbonate
@@ -856,6 +950,7 @@ class Simulation:
         t, cover = t + carb, cover + carb
         x[:, CARB] += carb
         t, cover = t + self.chem, cover + self.chem
+        self._book("reef+chem", 0, carb + self.chem, cont)
 
         # ocean crust thickened enough by arcs or sediment becomes continental;
         # hotspot piles (Hawaii, Iceland) stay oceanic however big, unless
@@ -863,6 +958,7 @@ class Simulation:
         sedimented = cover > 0.5 * (t - OCEAN_KM)
         born = ~cont & (t >= BECOMES_CONT_KM) & ((rock != HOTSPOT) | sedimented)
         rock[born] = np.where(sedimented[born], SEDIMENT, ARC)
+        self._book("born", 0, t, born)
         # Rock age (continents): crust that's just formed or been remelted /
         # metamorphosed starts again at 0. Old, cool, untouched crust
         # stiffens into craton (Canada, Siberia, Africa's shields).
@@ -873,6 +969,7 @@ class Simulation:
         rock[cont & (age > p.craton_age) & (t < 45) & (rock != CRATON) & (rock != HOTSPOT)] = CRATON
         self.w_cont = cont | born
         self.w_thick = np.clip(t, 1.0, MAX_KM)
+        self._book("clip", t, self.w_thick, self.w_cont)
         self.w_cover = np.clip(cover, 0, self.w_thick)
         shrink = self.w_cover / np.maximum(cover, 1e-9)
         m = np.maximum(x[:, MIX] * shrink[:, None], 0)
@@ -893,6 +990,44 @@ class Simulation:
         down = np.concatenate([a[bd["a_down"]], b[bd["b_down"]]])
         np.minimum.at(trench, down, -350 * np.concatenate([conv[bd["a_down"]], conv[bd["b_down"]]]))
         self.w_trench = np.maximum(trench, -4000)
+
+    def _rifted_margin(self, lost, t, cont, rock, cover, x):
+        """Stretching doesn't destroy crust, it spreads it thinner over a
+        wider area: the opening rift is floored by thinned continental crust
+        (rifted margins: 10-25 km thick, 100-300 km wide, under 1-4 km of sea)
+        before true ocean floor appears. The crust a plate's continental edge
+        loses to stretching is pooled and laid down as new margin cells in
+        the gap next to it. In place on t, rock, cover, x; returns cont."""
+        g, p = self.grid, self.params
+        own = self.owner
+        self.rift_pool += np.bincount(own, np.maximum(lost, 0) * cont, P_MAX)
+        self.rift_pool *= np.exp(-self.dt / 100.0)  # a rift that never opens keeps it in its thickened flanks... eventually
+        if p.rift_margin_km <= 0 or not self.newc_mask.any():
+            return cont
+        near, src = kernels.bfs_within(np.flatnonzero(cont), own, g.nbr_off, g.nbr_idx, int(round(2 * self.scale)))
+        cand = self.newc_mask & ~cont & (near > 0)
+        if not cand.any():
+            return cont
+        cont = cont.copy()
+        for k in np.unique(own[cand]):
+            n_cells = int(self.rift_pool[k] // p.rift_margin_km)
+            if n_cells <= 0:
+                continue
+            cells = np.flatnonzero(cand & (own == k))
+            cells = cells[np.argsort(near[cells], kind="stable")][:n_cells]
+            s = src[cells]
+            t[cells] = p.rift_margin_km
+            cont[cells] = True
+            rock[cells] = rock[s]
+            self.w_age[cells] = self.w_age[s]
+            cover[cells] = 0.0
+            x[cells] = 0.0
+            self.rift_pool[k] -= len(cells) * p.rift_margin_km
+            self._book("margin", 0, p.rift_margin_km, np.isin(np.arange(g.n), cells))
+        return cont
+
+    def _book(self, what, before, after, cont):
+        self.budget[what] = self.budget.get(what, 0.0) + float(np.sum((after - before) * cont)) / self.scale**2
 
     def _sediments(self, t, cover, x, dep, lake, cont, rock):
         """Which kind of sediment forms where. In place on t, cover, x; the
@@ -945,7 +1080,9 @@ class Simulation:
         now = np.array([max(source, 1e-6), max(sink, 1e-6)])
         if self.refs is None:
             self.refs = now.copy()
-        b = 1 - np.exp(-dt / 200.0)
+        # (the baselines learn fast at first: the made-up starting state
+        # isn't an equilibrium, and shouldn't jolt the climate)
+        b = 1 - np.exp(-dt / min(200.0, 10.0 + self.t))
         self.refs = self.refs + b * (now - self.refs)
         rel = now / self.refs
         # smooth the noisy per-step rates over ~10 Myr
@@ -961,11 +1098,14 @@ class Simulation:
         # p.ocean_ref_age), so only real changes in spreading move the sea.
         ocean = ~self.w_cont
         depth = float(ocean_depth(self.w_age[ocean]).mean()) if ocean.any() else 0.0
-        if self.depth_ref is None:
-            ages = -p.ocean_ref_age * np.log(1 - (np.arange(1000) + 0.5) / 1000)
-            self.depth_ref = float(ocean_depth(ages).mean())
-        self.depth_ref += (1 - np.exp(-dt / 300.0)) * (depth - self.depth_ref)
+        if self.depth_ref is None:  # the starting sea floor defines sea level 0
+            self.depth_ref = depth
+        self.depth_ref += (1 - np.exp(-dt / min(300.0, 10.0 + self.t))) * (depth - self.depth_ref)
         self.sea_tect = float(np.clip(0.5 * (depth - self.depth_ref), -250, 250))
+        # A hotter mantle melts more at ridges: thicker, more buoyant ocean
+        # crust and shallower ocean basins, so the same water stands higher
+        # on the continents (one reason the young Earth was mostly sea).
+        self.sea_tect += p.hot_sea * (self.heat() - 1.0)
         self.sea_level = self.sea_ice + self.sea_tect
         ice_frac = (self.ice > 0).mean()
         target = self.drift + p.co2_sensitivity * np.clip(self.co2, -1.5, 1.5) - p.ice_albedo * ice_frac / 0.03
@@ -976,13 +1116,10 @@ class Simulation:
         (m above the current sea level, without ice)."""
         p, g = self.params, self.grid
         land = e > 0
-        surf = e + self.ice  # an ice sheet's top is high and cold
-        tilt_adj = (p.tilt - 23.4) * 0.3  # more tilt: milder poles, slightly cooler tropics
-        self.temp = climate.temperature(g, surf, 28.0 + 0.5 * self.dT - 0.3 * tilt_adj,
-                                        -22.0 + 1.5 * self.dT + tilt_adj)
-        self.t_warm, self.t_cold = climate.seasons(g, e, self.temp, p.tilt)
-        self.precip, self.p_jul, self.p_jan = climate.seasonal_precipitation(
-            g, e, self.temp, self.t_warm, self.t_cold, p.tilt, np.exp(0.03 * self.dT))
+        c = climate.compute(g, e, self.dT, p.tilt, np.where(land, self.ice, 0.0))
+        self.temp, self.t_warm, self.t_cold = c["temp"], c["t_warm"], c["t_cold"]
+        self.precip, self.p_jul, self.p_jan = c["precip"], c["p_jul"], c["p_jan"]
+        self.wind, self.current = 0.5 * (c["wind_jul"] + c["wind_jan"]), c["current"]
         # Ice: where summers stay near freezing and there's snow to feed it.
         # The real ice comes and goes with ~100 kyr cycles; this is the
         # average extent over them. Ice sheets thicken inland from their edges.
@@ -999,6 +1136,14 @@ class Simulation:
         self.koppen = climate.koppen(e, self.temp, self.t_warm, self.t_cold, self.precip, self.p_jul,
                                      self.p_jan, g.lat, self.ice)
         self.climate_t = self.t
+
+    def target_fraction(self) -> float:
+        """Share of the surface the continents are steered toward now."""
+        p = self.params
+        if p.continental_start < 0:
+            return p.continental_fraction
+        return p.continental_fraction + (p.continental_start - p.continental_fraction) * np.exp(
+            -self.t / p.continental_growth)
 
     def heat(self) -> float:
         """Mantle heat relative to today's. A young planet is hotter (more
@@ -1438,12 +1583,15 @@ class Simulation:
         n = self.grid.n
         if self.koppen is None:
             z = np.zeros(n)
-            return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z)
+            z3 = np.zeros((n, 3))
+            return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z,
+                        wind=z3, current=z3)
         land = self.w_elev > 0
         k = climate.koppen(self.w_elev, self.temp, self.t_warm, self.t_cold, self.precip, self.p_jul,
                            self.p_jan, self.grid.lat, np.where(land, self.ice, 0.0))
         return dict(temperature=self.temp.copy(), t_warm=self.t_warm.copy(), t_cold=self.t_cold.copy(),
-                    koppen=k, ice=np.where(land, self.ice, 0.0))
+                    koppen=k, ice=np.where(land, self.ice, 0.0), wind=self.wind.copy(),
+                    current=np.where(land[:, None], 0.0, self.current))
 
     def stats(self) -> dict:
         g = self.grid

@@ -77,6 +77,8 @@
   <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
   <label class="runOnly"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
   <label class="runOnly"><input type="checkbox" id="volcanoes" checked> Arc volcanoes</label>
+  <label class="runOnly"><input type="checkbox" id="winds"> Winds (yearly average)</label>
+  <label class="runOnly"><input type="checkbox" id="currents"> Ocean currents</label>
   <label><input type="checkbox" id="outlines"> Cell outlines</label>
   <label><input type="checkbox" id="pentas"> Highlight the 12 pentagons</label>
   <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
@@ -453,6 +455,36 @@ function buildOverlays() {
       overlays.pentas = lineObj(pts, 0xff3df2);
     }
   }
+  // winds and currents: stored as (east, north) x50; drawn on an evenly spread sample of cells
+  const flowArrows = (ke, kn, color, oceanOnly, lvlDrop) => {
+    const nS = Math.min(10 * 4 ** Math.max(V.level - lvlDrop, 0) + 2, V.n), pts = [], s = 0.0011;
+    for (let i = 0; i < nS; i++) {
+      if (oceanOnly && L.elevation[i] > 0) continue;
+      let ue = L[ke][i], un = L[kn][i];
+      const m = Math.hypot(ue, un); if (m < 3) continue;
+      if (m > 90) { ue *= 90 / m; un *= 90 / m; }
+      const la = G.lat[i] * Math.PI / 180, lo = G.lon[i] * Math.PI / 180;
+      const a = cellPos(i, 1.004);
+      if (globe) {
+        // planet-frame east/north -> three.js axes
+        const E = new THREE.Vector3(...toThree([-Math.sin(lo), Math.cos(lo), 0]));
+        const N = new THREE.Vector3(...toThree([-Math.sin(la) * Math.cos(lo), -Math.sin(la) * Math.sin(lo), Math.cos(la)]));
+        const A = new THREE.Vector3(...a), Vv = E.multiplyScalar(ue * s).add(N.multiplyScalar(un * s));
+        const B = A.clone().add(Vv), side = new THREE.Vector3().crossVectors(A, Vv).normalize().multiplyScalar(Vv.length() * 0.3);
+        const back = Vv.clone().multiplyScalar(-0.35);
+        pts.push(...a, ...B.toArray(), ...B.toArray(), ...B.clone().add(back).add(side).toArray(),
+                 ...B.toArray(), ...B.clone().add(back).sub(side).toArray());
+      } else {
+        const e = ue * s, nn = un * s, bx = a[0] + e, by = a[1] + nn;
+        pts.push(...a, bx, by, a[2],
+                 bx, by, a[2], bx - 0.35 * e - 0.3 * nn, by - 0.35 * nn + 0.3 * e, a[2],
+                 bx, by, a[2], bx - 0.35 * e + 0.3 * nn, by - 0.35 * nn - 0.3 * e, a[2]);
+      }
+    }
+    return lineObj(pts, color);
+  };
+  if (V.kind === 'run' && $('winds').checked && L.wind_e) overlays.winds = flowArrows('wind_e', 'wind_n', 0xffe08a, false, 2);
+  if (V.kind === 'run' && $('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1);
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
     const nSample = 10 * 4 ** Math.max(V.level - 2, 0) + 2;
@@ -545,6 +577,10 @@ function renderLegend() {
     el.innerHTML += '<span><span class="sw" style="background:#ff9f1c"></span>hotspot</span>';
   if (V.kind === 'run' && $('volcanoes').checked && V.volcanoes)
     el.innerHTML += '<span><span class="sw" style="background:#ff2d2d"></span>arc volcano</span>';
+  if (V.kind === 'run' && $('winds').checked && V.layers.wind_e)
+    el.innerHTML += '<span><span class="sw" style="background:#ffe08a"></span>wind</span>';
+  if (V.kind === 'run' && $('currents').checked && V.layers.current_e)
+    el.innerHTML += '<span><span class="sw" style="background:#7fffd4"></span>ocean current</span>';
 }
 
 function renderLayerButtons() {
@@ -668,7 +704,7 @@ seg('modeSeg', 'mode', () => {
   buildTopology(); paint();
 });
 $('smooth').addEventListener('change', paint);
-['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes'].forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
+['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents'].forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
@@ -718,7 +754,8 @@ function setFrame(f, repaint = true) {
   const sl = (a) => a.subarray(f * n, (f + 1) * n);
   V.layers = { elevation: sl(d.elevation), plate: sl(d.plate), crust: sl(d.continental),
                crust_age: sl(d.age), plate_boundary: sl(d.boundary) };
-  for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down', 'temperature', 'climate', 'ice']) if (d[k]) V.layers[k] = sl(d[k]);
+  for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down', 'temperature', 'climate', 'ice',
+                   'wind_e', 'wind_n', 'current_e', 'current_n']) if (d[k]) V.layers[k] = sl(d[k]);
   V.hotspots = r.frames[f].hotspots;
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;
@@ -779,7 +816,7 @@ function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
   if (p.get('layer')) state.layer = p.get('layer');
-  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin', 'events', 'hotspots', 'volcanoes']) if (p.has(id)) $(id).checked = p.get(id) === '1';
+  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin', 'events', 'hotspots', 'volcanoes', 'winds', 'currents']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
   return p;
 }

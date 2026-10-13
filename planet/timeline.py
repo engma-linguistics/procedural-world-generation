@@ -47,6 +47,10 @@ LAYERS = {  # name -> dtype on disk
     "climate": "u1",  # climate.KOPPEN id
     "ice": "u1",  # land ice, units of 20 m
     "flow": "u1",  # river flow, 16 * log2(1 + flow)
+    "wind_e": "i1",  # annual-mean wind, east and north components x 50
+    "wind_n": "i1",
+    "current_e": "i1",  # surface ocean current, x 50
+    "current_n": "i1",
     "down": "u1",  # which neighbour (index into grid nbr list) the river goes to; 255 = none
 }
 
@@ -61,6 +65,14 @@ def down_slot(grid: Grid, down: np.ndarray) -> np.ndarray:
     out = np.full(grid.n, 255, np.uint8)
     out[src[hit]] = pos[hit]
     return out
+
+
+def vec_layers(grid: Grid, name: str, v: np.ndarray):
+    """(east, north) components of tangent vectors, x50 as int8 layers."""
+    from .climate import _geom
+    G = _geom(grid)
+    q = lambda x: np.clip(np.round(50 * x), -127, 127)
+    return [(f"{name}_e", q((v * G["east"]).sum(1))), (f"{name}_n", q((v * G["north"]).sum(1)))]
 
 
 def make_params(overrides: dict) -> Params:
@@ -110,7 +122,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                      ("temperature", np.clip(np.round(snap.temperature), -128, 127)),
                      ("climate", snap.koppen), ("ice", np.clip(np.round(snap.ice / 20), 0, 255)),
                      ("flow", np.clip(np.round(16 * np.log2(1 + snap.flow)), 0, 255)),
-                     ("down", down_slot(s.grid, snap.downstream))):
+                     ("down", down_slot(s.grid, snap.downstream)),
+                     *vec_layers(s.grid, "wind", snap.wind), *vec_layers(s.grid, "current", snap.current)):
             data[k].append(v.astype(LAYERS[k]))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
@@ -275,8 +288,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
              "plate_boundary": snap.boundary.astype(int), "crust_age": np.round(snap.age),
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
              "rock": snap.rock.astype(int), "surface_rock": snap.surface.astype(int), "sediment_cover": snap.cover,
-             "crust_thickness": snap.thickness, "climate": snap.koppen, "ice": snap.ice,
-             "warm_month": snap.t_warm, "cold_month": snap.t_cold}
+             "crust_thickness": snap.thickness, "ice": snap.ice}
     meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"],
             "source_run": run_dir.name, "source_run_name": run["name"], "t_myr": at,
             "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
@@ -284,9 +296,8 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
             "hotspots": snap.hotspots, "volcanoes": snap.volcanoes}
     meta["global_temp_c"] = round(14.5 + sim.dT, 1)
     meta["sea_level_m"] = round(sim.sea_level, 1)
-    tilt_adj = (sim.params.tilt - 23.4) * 0.3
     world = W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                     equator_temp=28.0 + 0.5 * sim.dT - 0.3 * tilt_adj, pole_temp=-22.0 + 1.5 * sim.dT + tilt_adj)
+                     dT=sim.dT, tilt=sim.params.tilt, ice=snap.ice)
     return W.save(world, f"{run['name']} @ {at:g} Myr")
 
 
