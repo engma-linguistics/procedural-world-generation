@@ -797,8 +797,10 @@ class Simulation:
         # belt a few hundred km wide (Himalaya + Tibet), not one cell.
         ea, eb = g.edges[:, 0], g.edges[:, 1]
         both = (self.owner[ea] == self.owner[eb]) & cont[ea] & cont[eb]
+        stack_add = np.zeros(n)
         if self.stacked.any():
-            t = t + surface._spread(self.stacked, ea[both], eb[both], 0.15, int(round(6 * self.scale**2)))
+            stack_add = surface._spread(self.stacked, ea[both], eb[both], 0.15, int(round(6 * self.scale**2)))
+            t = t + stack_add
         # arc rock: on continents wherever arcs build; at sea only once the
         # crust has thickened into a real island arc
         arcky = (growth * dt > 0.1) & (rock != CRATON) & (cont | (t > OCEAN_KM + 5))
@@ -815,8 +817,12 @@ class Simulation:
         # take more (equally stable) substeps.
         t = _crust_flow(t, ea[both], eb[both], p.crust_flow * dt / 3, int(round(3 * self.scale**2)))
         t = np.minimum(t, MAX_KM)
+        # Collision belts are folded, faulted and metamorphosed wherever the
+        # crust is being stacked up, whatever it was before (an old arc,
+        # sediment); very thick crust is metamorphosed too.
+        squeezed = cont & (stack_add > 0.05 * dt)
+        rock[squeezed & (rock != CRATON)] = OROGEN
         rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
-        squeezed = cont & (t > 50) & (t > self.w_thick + 0.1)  # being thickened right now
 
         # weather, ice, rivers, erosion, sediment
         self._global_temperature(growth, rng)
@@ -1434,8 +1440,8 @@ class Simulation:
             z = np.zeros(n)
             return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z)
         land = self.w_elev > 0
-        k = np.where(land, self.koppen, climate.SEA_CLASS)
-        k = np.where(land & (k == climate.SEA_CLASS), 28, k)  # newly emerged: call it tundra-ish
+        k = climate.koppen(self.w_elev, self.temp, self.t_warm, self.t_cold, self.precip, self.p_jul,
+                           self.p_jan, self.grid.lat, np.where(land, self.ice, 0.0))
         return dict(temperature=self.temp.copy(), t_warm=self.t_warm.copy(), t_cold=self.t_cold.copy(),
                     koppen=k, ice=np.where(land, self.ice, 0.0))
 
