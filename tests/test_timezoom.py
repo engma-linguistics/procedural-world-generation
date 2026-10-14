@@ -78,10 +78,8 @@ def test_orbit_moves_the_ice(cold_src):
     assert not np.allclose(a["state"]["H"], b["state"]["H"])
 
 
-def test_saved_run_format(cold_src, cold_run, tmp_path, monkeypatch):
+def test_saved_run_format(cold_src, cold_run, data_root):
     """Written in the run format the viewer reads, marked as a time zoom."""
-    monkeypatch.setattr(T, "RUNS", tmp_path / "runs")
-    monkeypatch.setattr(T, "GRIDS", tmp_path / "grids")
     out = Z.save(cold_run, cold_src, kyr=40, step=0.5, every=2.0)
     run, arr = T.load_frames(out)
     m = run["meta"]
@@ -97,7 +95,7 @@ def test_saved_run_format(cold_src, cold_run, tmp_path, monkeypatch):
               "sea_level_m", "ice_pct", "mean_speed_cmyr", "max_speed_cmyr"):  # what the viewer shows
         assert k in run["frames"][0]["stats"], k
     assert (out / "run.txt").exists()
-    idx = json.loads((T.RUNS / "index.json").read_text())
+    idx = json.loads((data_root / "runs" / "index.json").read_text())
     assert idx[0]["kind"] == "timezoom" and idx[0]["at_myr"] == cold_src["at"]
     with pytest.raises(SystemExit):
         T.slice_world(out, 0.0)

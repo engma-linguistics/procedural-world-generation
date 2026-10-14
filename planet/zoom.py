@@ -60,11 +60,12 @@ Pipeline
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp); any pits left are filled.
 
-Outputs: zooms/<id>/
+Outputs: zooms/<id>/ (paths and layer files: store.py)
   zoom.json      meta: source world, centre, size, resolution, projection,
-                 layer layout of layers.bin, legends, heightmap mapping, stats
-  layers.bin     raw little-endian arrays (float32 / uint8), (ny, nx), row 0
-                 = north; offsets in zoom.json["layers"]. load() reads it.
+                 layer specs (file, dtype, shape, units), legends, heightmap
+                 mapping, stats
+  layers/<name>.bin  one raw little-endian array per layer (float32 / uint8),
+                 (ny, nx), row 0 = north. load() reads them.
   heightmap.png  16-bit greyscale: elev_m = min_m + v / 65535 * (max_m - min_m)
   preview.png    hillshade x hypsometric tint, lakes, rivers
   coarse.png     the source cells (nearest cell) for comparison
@@ -80,14 +81,14 @@ from pathlib import Path
 import numpy as np
 
 from . import climate, hydrology, kernels
+from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
 from .geo import R_KM, latlon, xyz
 from .images import write_png
-from .climate import BIOMES, KOPPEN, LAPSE
-from .surface import ROCK_K, ROCKS
+from .climate import LAPSE
+from .surface import ROCK_K
 
-ZOOMS = W.ROOT / "zooms"
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
@@ -163,11 +164,7 @@ def _box_mean(a, w, r):
 
 
 def find_world(ref: str) -> Path:
-    p = Path(ref)
-    for cand in (p, W.WORLDS / f"{ref}.json", W.WORLDS / ref, W.WORLDS / f"{p.name}.json"):
-        if cand.is_file():
-            return cand
-    raise SystemExit(f"no world {ref!r} (see: uv run python -m planet list)")
+    return S.find_world(ref)
 
 
 def _octaves(wavelength, finest):
@@ -1164,19 +1161,10 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
          seed: int) -> Path:
     world_id = world_path.stem
     zid = zoom_id(world_id, lat, lon, size_km, res_km, seed)
-    out = ZOOMS / zid
+    out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
-    layout, offset = {}, 0
-    with open(out / "layers.bin", "wb") as fh:
-        for k, v in z["layers"].items():
-            arr = np.ascontiguousarray(v.astype(v.dtype.newbyteorder("<")))
-            pad = (-offset) % 8
-            fh.write(b"\0" * pad)
-            offset += pad
-            layout[k] = {"dtype": np.dtype(v.dtype).name, "offset": offset, "shape": list(arr.shape),
-                         "units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
-            fh.write(arr.tobytes())
-            offset += arr.nbytes
+    layout = S.write_layers(out, z["layers"], {k: {"units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
+                                               for k in z["layers"]})
     h = z["layers"]["elevation"].astype(float)
     lo, hi = float(np.floor(h.min())), float(np.ceil(h.max()))
     hi = max(hi, lo + 1)
@@ -1190,7 +1178,7 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
                                  "sw": (-half, -half)}.items()}
     m = world["meta"]
     meta = {
-        "format": "procgen-zoom/1",
+        "format": "procgen-zoom/2",
         "id": zid,
         "name": f"{world.get('name') or world_id}: {lat:g}, {lon:g} ({size_km:g} km @ {z['res']:g} km)",
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -1208,18 +1196,13 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
             "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)",
             "corners_latlon": corners,
         },
-        "files": {"layers": "layers.bin", "heightmap": "heightmap.png", "preview": "preview.png",
-                  "coarse": "coarse.png"},
+        "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png"},
         "layers": layout,
         "heightmap": {"bits": 16, "min_m": lo, "max_m": hi,
                       "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
                       "formula": "elev_m = min_m + value / 65535 * (max_m - min_m)",
                       "metres_per_step": round((hi - lo) / 65535, 4)},
-        "legend": {
-            "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
-            "biomes": [{"id": b[0], "name": b[1], "color": b[3]} for b in BIOMES],
-        },
+        "legend": S.legends(),
         "params": z["params"],
         "stats": z["stats"],
     }
@@ -1230,30 +1213,13 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
 
 def load(ref: str | Path) -> tuple[dict, dict]:
     """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it)."""
-    p = Path(ref)
-    d = p if (p / "zoom.json").exists() else ZOOMS / str(ref)
+    d = S.find_zoom(ref)
     meta = json.loads((d / "zoom.json").read_text())
-    raw = (d / "layers.bin").read_bytes()
-    layers = {}
-    for k, spec in meta["layers"].items():
-        dt = np.dtype(spec["dtype"]).newbyteorder("<")
-        layers[k] = np.frombuffer(raw, dt, int(np.prod(spec["shape"])), spec["offset"]).reshape(spec["shape"])
-    return meta, layers
+    return meta, S.read_layers(d, meta["layers"])
 
 
 def update_index():
-    ZOOMS.mkdir(exist_ok=True)
-    items = []
-    for p in sorted(ZOOMS.glob("*/zoom.json"), key=lambda p: p.stat().st_mtime, reverse=True):
-        try:
-            m = json.loads(p.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
-        sw = m["source_world"]
-        items.append({"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
-                      "world_name": sw.get("name"), "source_run": sw.get("source_run"), "t_myr": sw.get("t_myr"),
-                      "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]})
-    (ZOOMS / "index.json").write_text(json.dumps(items, indent=1))
+    S.update_index("zoom")
 
 
 def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0, seed: int = 1,
