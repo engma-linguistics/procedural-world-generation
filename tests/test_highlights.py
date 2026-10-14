@@ -46,8 +46,16 @@ def test_find_on_sliced_world(world4):
     by = check(world4, H.find(world4))
     L = world4["layers"]
     assert {"largest_river", "continent"} <= set(by)
-    # a range needs ground above 1500 m, which a small, old world may not have
-    assert ("mountain_range" in by) == (np.asarray(L["elevation"]).max() > 1500)
+    # a range needs a few cells (3, bridged across single low cells) of ground
+    # above 1500 m, which a small, old world may not have
+    elev = np.asarray(L["elevation"])
+    land = elev > 0
+    high = land & (elev >= max(1500.0, float(np.quantile(elev[land], 0.95))))
+    lab, k = world4["grid"].components(high)
+    if k and np.bincount(lab[lab >= 0]).max() >= 3:
+        assert "mountain_range" in by
+    if "mountain_range" in by:
+        assert high.sum() >= 3
     # the largest river's cell is a mouth: land draining straight into the sea
     m = by["largest_river"]["cell"]
     assert L["elevation"][m] > 0 and L["elevation"][L["downstream"][m]] <= 0

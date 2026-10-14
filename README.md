@@ -164,6 +164,12 @@ Sliced and one-shot terrain then go through the shared pipeline:
    wind-driven streamfunction per basin (Stommel model: fast warm western
    boundary currents, circumpolar currents); the jet stream from the thermal
    wind steers the storm tracks; low-level winds turn along high mountains.
+   The deep overturning (`ocean.py`): sea-surface salinity from evaporation,
+   rain, river mouths, sea-ice brine and meltwater; density from temperature
+   and salinity; deep water sinks where the winter water is densest (Nordic
+   and Labrador seas, the Antarctic margin; not the fresh North Pacific), and
+   the warm water flowing in to replace it, along the currents, warms its
+   way north (the North Atlantic Drift and a milder Norway).
    Evaporation: potential evaporation from sunshine and temperature per
    half-year (Oudin), actual evaporation from the Budyko curve (Fu), and
    runoff = rain - evaporation (~40% of the rain on land, like Earth's).
