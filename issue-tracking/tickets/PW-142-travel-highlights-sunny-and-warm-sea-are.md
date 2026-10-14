@@ -1,4 +1,5 @@
 ---
+id: PW-142
 title: "Travel highlights: 'sunny' and 'warm sea' are proxies (dry month, air over the sea)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: travel
 blocked_by: []
 relates: [PW-140, PW-126]
 refs: [planet/highlights.py, planet/world.py, "world 67317b"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -30,3 +33,6 @@ store them as world layers (`sst_jul/jan`, `cloud_jul/jan`) and use them in
 `_beach_cands`.
 - [ ] decide whether a seasonal SST / cloud layer is worth storing on worlds
 - [ ] if so, switch the beach finder to it
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-travel-sunshine-sst.md (found by travel).
