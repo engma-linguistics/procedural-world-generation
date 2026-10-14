@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -24,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from planet import climate  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
+from planet.provenance import code_version  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
 
 GROUP = np.array([k[1][0] for k in climate.KOPPEN])
@@ -76,11 +76,9 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[1, 2])
     a = ap.parse_args()
     t0 = time.time()
-    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True,
-                            text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain", "planet"], cwd=ROOT, capture_output=True,
-                                text=True).stdout.strip())
-    rec = {"commit": commit + ("+dirty" if dirty else ""), "date": time.strftime("%Y-%m-%d %H:%M"),
+    code = code_version()
+    rec = {"commit": f"{code['commit']}{'+dirty' if code['dirty'] else ''}", "src": code["planet_src_sha"],
+           "date": time.strftime("%Y-%m-%d %H:%M"),
            "earth": earth_scores(), "worlds": [world_scores(s, a.myr) for s in a.seeds]}
     rec["seconds"] = round(time.time() - t0)
     out = ROOT / "docs" / "scorecard.jsonl"

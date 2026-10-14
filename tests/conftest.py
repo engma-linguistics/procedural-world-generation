@@ -8,6 +8,11 @@ from planet.grid import build_grid
 from planet.tectonics import Params, Simulation
 
 
+def pytest_addoption(parser):
+    parser.addoption("--update-golden", action="store_true",
+                     help="rewrite tests/golden/*.json from the current code (for commits meant to change outputs)")
+
+
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: envelope tests on level-5 worlds (~1 min); skip with -m 'not slow'")
 

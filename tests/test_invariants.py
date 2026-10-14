@@ -110,3 +110,37 @@ def test_params_from_old_run():
     with pytest.warns(UserWarning, match="some_removed_param"):
         p = Params.from_stored(stored)
     assert p.n_plates == 9 and p.tilt == Params().tilt
+
+
+def test_simulate_slice_provenance(tmp_path, monkeypatch):
+    """simulate stamps the code into run.json; slicing at a keyframe must
+    reproduce it, and refuses to save a world when it doesn't (unless forced).
+    Runs without the stamp (older runs) still slice."""
+    import json
+    monkeypatch.setattr(T, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(T, "GRIDS", tmp_path / "grids")
+    monkeypatch.setattr(W, "WORLDS", tmp_path / "worlds")
+    out = T.simulate(1, 4, 8.0, 2.0, 4.0, "t", Params())
+    run = json.loads((out / "run.json").read_text())
+    assert run["meta"]["code"]["planet_src_sha"]
+    world = json.loads(T.slice_world(out, 8.0).read_text())
+    assert world["meta"]["replay_matches_keyframe"] is True
+
+    # an older run: no code stamp, plus a param this code no longer has
+    del run["meta"]["code"]
+    run["meta"]["params"]["long_gone_param"] = 1
+    (out / "run.json").write_text(json.dumps(run))
+    with pytest.warns(UserWarning):
+        T.slice_world(out, 4.0)
+
+    # the stored keyframe no longer matches what the code computes
+    spec = run["layers"]["elevation"]
+    elev = np.memmap(out / "frames.bin", spec["dtype"], "r+", spec["offset"], tuple(spec["shape"]))
+    elev[-1] += 1
+    elev.flush()
+    del elev
+    with pytest.warns(UserWarning), pytest.raises(T.ReplayMismatch):
+        T.slice_world(out, 8.0)
+    with pytest.warns(UserWarning):
+        world = json.loads(T.slice_world(out, 8.0, force=True).read_text())
+    assert world["meta"]["replay_matches_keyframe"] is False
