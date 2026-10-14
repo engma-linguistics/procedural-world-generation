@@ -1,4 +1,5 @@
 ---
+id: PW-151
 title: Humidity layers - the rain model's vapour drains to near zero over dry land in winter
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerocean
 blocked_by: []
 relates: [PW-144]
 refs: [planet/climate.py, "world 64fc00"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -29,3 +32,6 @@ humidity that only loses water to actual rain; then compare with observed RH
 (e.g. ERA5 2 m dew point) in tools/earth_check.py.
 - [ ] Delhi / Sahara January RH ~30-50% without the floor
 - [ ] no change to rain (goldens)
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-humidity-dry-air.md (found by viewerocean).

@@ -1,4 +1,5 @@
 ---
+id: PW-152
 title: "Earth: Mediterranean and Red Sea too fresh and cool (salinity 35.7 / 37.4 psu)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerocean
 blocked_by: []
 relates: [PW-016]
 refs: [planet/ocean.py, planet/climate.py, "world 64fc00"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -22,3 +25,6 @@ subtropics). Likely causes: the coarse (level-5) overturning grid mixes the narr
 seas with the open ocean through their straits, and salinity is carried / relaxed
 regardless of the sill. Matters for a Mediterranean outflow analogue and for which
 marginal seas could make deep water on other worlds.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-med-sea-salinity.md (found by viewerocean).

@@ -1,4 +1,5 @@
 ---
+id: PW-154
 title: Overturning schematic - deep limbs missing or roundabout on some worlds
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerocean
 blocked_by: []
 relates: [PW-137]
 refs: [planet/ocean.py, "world 9b8200"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -27,3 +30,6 @@ demo world 9b8200 (run f59dd6 @ 1000 Myr):
 Options: start the deep route from the site through shallower sea (e.g. 500 m) for its
 first few hundred km (overflows), and weigh distance more against the western-boundary
 preference. It is a schematic, so this is cosmetic.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-overturning-schematic-gaps.md (found by viewerocean).

@@ -1,4 +1,5 @@
 ---
+id: PW-153
 title: Ocean layers (salinity, sinking, SST) and the overturning strength in run keyframes
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerocean
 blocked_by: []
 relates: [PW-137, PW-144]
 refs: [planet/timeline.py, planet/tectonics/output.py, planet/tectonics/earth.py, planet/store.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -27,3 +30,6 @@ sinking keyframes are probably not worth it; SST maybe as i1 (whole C).
 - [ ] sim keeps sss / overturning sum from the last climate step; frame stats get moc_sv, moc_north_sv, moc_south_sv
 - [ ] viewer run summary shows it (and maybe a small chart)
 - [ ] decide on per-cell keyframe layers (likely no)
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-ocean-layers-in-keyframes.md (found by viewerocean).
