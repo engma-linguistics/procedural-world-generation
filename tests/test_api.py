@@ -23,9 +23,13 @@ def dirs(tmp_path_factory):
 def test_parse_zoom_request():
     r = api.parse_zoom_request({"world": "abc.json", "lat": 10, "lon": 190})
     assert r["world"] == "abc" and r["lon"] == -170 and r["size_km"] == 1000 and r["res_km"] == 2
+    assert r["iterations"] == 15
+    assert api.parse_zoom_request({"world": "abc", "lat": 0, "lon": 0, "iterations": 30})["iterations"] == 30
+    # the default keeps the old ids; other iteration counts get their own zoom
+    assert Z.zoom_id("abc", 0, 0, 100, 1, 1) == Z.zoom_id("abc", 0, 0, 100, 1, 1, 15) != Z.zoom_id("abc", 0, 0, 100, 1, 1, 30)
     for bad in ({"lat": 0, "lon": 0}, {"run": "x", "world": "y", "lat": 0, "lon": 0},
                 {"world": "x", "lat": 95, "lon": 0}, {"world": "x", "lat": 0, "lon": 0, "size_km": 5},
-                {"world": "x", "lat": "north", "lon": 0}, {"run": "x", "lat": 0, "lon": 0}):
+                {"world": "x", "lat": "north", "lon": 0}, {"world": "x", "lat": 0, "lon": 0, "iterations": 0}, {"run": "x", "lat": 0, "lon": 0}):
         with pytest.raises(api.BadRequest):
             api.parse_zoom_request(bad)
 

@@ -1910,15 +1910,18 @@ LAYER_DOC = {
 }
 
 
-def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float, seed: int) -> str:
+def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float, seed: int,
+            iterations: int = 15) -> str:
     key = f"{world_id}|{lat:.4f}|{lon:.4f}|{size_km:g}|{res_km:g}|{seed}"
+    if iterations != 15:  # the default keeps the ids it always had
+        key += f"|it{iterations}"
     return hashlib.sha1(key.encode()).hexdigest()[:6]
 
 
 def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km: float, res_km: float,
-         seed: int) -> Path:
+         seed: int, iterations: int = 15) -> Path:
     world_id = world_path.stem
-    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed)
+    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
     layout = S.write_layers(out, z["layers"], {k: {"units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
@@ -1994,4 +1997,4 @@ def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km
         raise SystemExit("this world has no rock/climate layers; zoom needs a world sliced from a tectonic run")
     lon = (lon + 180) % 360 - 180
     z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log)
-    return save(z, path, world, lat, lon, size_km, res_km, seed)
+    return save(z, path, world, lat, lon, size_km, res_km, seed, iterations)
