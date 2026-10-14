@@ -329,12 +329,13 @@ The result is a run in kyr. The viewer shows it with an ice-thickness layer and 
 
 ## 10. Highlights (`highlights.py`)
 
-Twenty-four detectors look for places worth a visit:
+Twenty-eight detectors look for places worth a visit:
 
 - **Land:** peaks, ranges, plateaus, canyons, rifts, volcanic arcs, hotspot islands.
 - **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
 - **Climate:** "wine country", rain shadows, climate records.
 - **Variety:** the most varied 1000 km square.
+- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
 
 Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
 

@@ -200,3 +200,60 @@ def test_cli_at_auto():
     assert _at("auto") == "auto" and _at("120") == 120.0
     with pytest.raises(Exception):
         _at("soon")
+
+
+def test_travel(gen4):
+    """Beach, ski and mild-winter finders on planted places, each in its own
+    hemisphere's season; worlds without the July/January layers get none."""
+    w, g = gen4, gen4["grid"]
+    L = w["layers"]
+    e = L["elevation"]
+    L["ice"] = np.zeros(g.n)
+    L["lake"][:] = 0
+    # nowhere is nice: 0 C all year, wet, no waves
+    for k in ("temperature_jul", "temperature_jan"):
+        L[k] = np.zeros(g.n)
+    for k in ("precipitation_jul", "precipitation_jan"):
+        L[k] = np.full(g.n, 2000.0)
+    L["wave_power"] = np.where(e > 0, 0.0, 0.5)
+    nb = lambda c: g.nbr_idx[g.nbr_off[c]:g.nbr_off[c + 1]]
+    coast = [int(c) for c in np.flatnonzero(e > 0) if (e[nb(c)] <= 0).sum() >= 2 and (e[nb(c)] > 0).any()]
+    north = [c for c in coast if g.lat[c] > 15]
+    south = [c for c in coast if g.lat[c] < -15]
+    assert north and south
+    # a beach in the north: warm, dry July, warm sea, gentle surf
+    b = north[0]
+    e[b] = 20
+    L["temperature_jul"][b], L["precipitation_jul"][b] = 28, 300
+    sea = nb(b)[e[nb(b)] <= 0]
+    L["temperature_jul"][sea], L["wave_power"][sea] = 25, 8.0
+    # a southern coast that is warm and dry in July: its winter, so no beach
+    s = south[0]
+    L["temperature_jul"][s], L["precipitation_jul"][s] = 28, 300
+    sea_s = nb(s)[e[nb(s)] <= 0]
+    L["temperature_jul"][sea_s], L["wave_power"][sea_s] = 25, 8.0
+    # ski country in the north: freezing, snowy January slopes over a town at 2 C
+    c = _inland_cell(w)
+    town = int(nb(c)[0])
+    e[c], e[town] = 2500, 800
+    L["temperature_jan"][c], L["temperature_jul"][c], L["precipitation_jan"][c] = -8, 10, 1200
+    L["temperature_jan"][town] = 2
+    # a mild, dry winter in the south (July 15 C, little rain)
+    m = south[-1]
+    L["temperature_jul"][m], L["precipitation_jul"][m] = 15, 200
+    feats = H.find(w)
+    check(w, feats)
+    by = lambda k: [f for f in feats if f["kind"] == k]
+    assert [f["cell"] for f in by("beach")] == [b]
+    assert "July 28 °C" in by("beach")[0]["blurb"] and by("beach")[0]["stats"]["sea_c"] == 25
+    ski = by("ski")
+    assert [f["cell"] for f in ski] == [c] and ski[0]["stats"]["town_cell"] == town
+    assert ski[0]["stats"]["vertical_m"] > 1000 and "January -8 °C" in ski[0]["blurb"]
+    assert [f["cell"] for f in by("mild_winter")] == [m] and "July 15 °C" in by("mild_winter")[0]["blurb"]
+    # a glaciated summit is no ski field
+    L["ice"][c] = 200
+    assert not [f for f in H.find(w) if f["kind"] == "ski"]
+    # worlds made before the seasonal layers: no travel places, no errors
+    for k in H.SEASON_LAYERS:
+        del L[k]
+    assert not {"beach", "ski", "mild_winter", "year_round"} & {f["kind"] for f in H.find(w)}
