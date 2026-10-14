@@ -2,7 +2,7 @@
 id: PW-166
 title: World 800c99 lacks the new rift_strain and glaciated_myr layers; re-slice it for the demos
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: store
 effort: s
@@ -39,4 +39,5 @@ glaciated in the last 80 Myr, so a scoured-shield demo needs another
 - [ ] landform demo zooms regenerated from it
 
 ## Updates
+- 2026-10-14: Status todo -> done. Superseded: fresh L7 run 8571dd (seed 21, current code incl. rift_strain/glaciated_myr) and world a08983 @ 408 Myr with highlights and zooms; landform demo zooms f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau).
 - 2026-10-14: Created from inbox draft draft-reslice-for-rift-strain-glaciated.md (found by zoomland2).
