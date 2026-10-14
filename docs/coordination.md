@@ -52,3 +52,29 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world 2f38e3 (`tools/earth_world.py`; re-make after climate changes and delete the old one); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
+
+## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
+**In flight:** the volcanoes agent (epic PW-001: PW-002/003/004) in worktree `.claude/worktrees/volcanoes` (branch `volcanoes`). It touches tectonics `volcanism.py`, state/checkpoints, slicing and `zoom.py`. When it reports:
+1. merge;
+2. pytest;
+3. `board.py intake`;
+4. restart the server;
+5. show the owner the L7 island-chain demo.
+
+**Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
+
+**Order of work** (smallest-easiest first, then biggest impact; avoid files a running agent owns):
+1. Now, in parallel with volcanoes (no file overlap):
+   - **climate/timezoom batch:** PW-102 (ice persisting after its mountain moves; owner-reported), PW-040, PW-034, PW-036;
+   - **hydrology:** PW-058.
+2. After volcanoes merges:
+   - **zoom small batch:** PW-062 to PW-070;
+   - **tectonics small:** PW-050, PW-048.
+3. **Tectonics quality before tonight's L8:** PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge). Then run the L8 overnight (owner approved one L8 tonight once a big batch of tickets is closed). Earth-like, `--every 10`, ~1.2 Gyr, `--checkpoint-every 300`, plus a matching L7. Use `--at auto` for worlds.
+4. **Big epics**, in this suggested order (the owner may reorder):
+   - PW-005 landform classes (PW-006 stratigraphy, PW-007 rocks, PW-008 history, PW-009 classes, PW-010 zoom batch 1);
+   - PW-090 finishing pass (PW-091 first: time zoom from a chosen world → finished world; PW-037 imprint; PW-104 embedded ice ages);
+   - PW-013 rain/ocean (PW-014 diagnose first; it can run in parallel with the landform work, since the files differ).
+5. **PW-103** (multiscale time) is a vision epic; not scheduled.
+
+**Owner preferences learned today:** L7 is the default; L6 only for quick large-scale tests (weather). The coordinator is the main ticket maker and consumer; the owner looks at specific tickets on request. The owner plans to use worlds for games/TTRPGs with time as a component.
