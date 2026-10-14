@@ -87,7 +87,10 @@ Sliced and one-shot terrain then go through the shared pipeline:
 
 1. **Climate** (`climate.py`): temperature from latitude and altitude; Earth-style
    wind bands carry moisture off the oceans; air rains out as it cools, which
-   gives wet windward coasts and rain-shadow deserts.
+   gives wet windward coasts and rain-shadow deserts. Ocean gyres come from a
+   wind-driven streamfunction per basin (Stommel model: fast warm western
+   boundary currents, circumpolar currents); the jet stream from the thermal
+   wind steers the storm tracks; low-level winds turn along high mountains.
 2. **Erosion and rivers** (`hydrology.py`): priority-flood drainage, flow
    accumulation, then stream-power erosion that cuts valleys. `--erosion 0` skips it.
 3. **Biomes**: a Whittaker-style lookup on temperature and rainfall.

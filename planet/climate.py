@@ -206,8 +206,7 @@ def gradient(grid: Grid, f: np.ndarray) -> np.ndarray:
     """Tangent gradient per cell, units of f per km."""
     G = _geom(grid)
     df = f[G["dst"]] - f[G["src"]]
-    g = np.zeros((grid.n, 3))
-    np.add.at(g, G["src"], G["d"] * df[:, None])
+    g = np.stack([np.bincount(G["src"], G["d"][:, k] * df, grid.n) for k in range(3)], 1)
     return g * (2.0 / (G["deg"][:, None] * G["h"]))
 
 
@@ -338,6 +337,30 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
 
 def speed(v):
     return np.linalg.norm(v, axis=1)
+
+
+def deflect(grid: Grid, v: np.ndarray, surf: np.ndarray, tune: dict) -> np.ndarray:
+    """Air flows round high ground rather than over it: a shallow layer of
+    air near the ground can't climb kilometres (it would have to be
+    pushed up against its own weight), so the part of the wind running up
+    into high terrain (above ~block_m) is turned to run along the slope
+    instead, keeping its speed (the westerlies part round Tibet; the
+    trades are steered along the Andes). Partial where the ground is only
+    a little above block_m (some air still crosses, and deeper winds carry
+    over), full (block = 1) where it rises another block_m above it.
+    surf: ground or ice height, m."""
+    if tune["block"] <= 0:
+        return v
+    # how far the terrain ahead rises above block_m, felt a few hundred km out
+    excess = smooth(grid, np.maximum(surf - tune["block_m"], 0.0), tune["block_km"])
+    g = gradient(grid, excess)
+    gn = np.linalg.norm(g, axis=1, keepdims=True)
+    n = g / np.maximum(gn, 1e-12)
+    b = tune["block"] * np.clip(excess / tune["block_m"], 0, 1)[:, None] * (gn > 1e-9)
+    into = np.maximum((v * n).sum(1, keepdims=True), 0)
+    w = v - b * into * n
+    s0, s1 = speed(v)[:, None], np.maximum(speed(w), 1e-12)[:, None]
+    return w * np.minimum(s0 / s1, 1.0 / np.maximum(1 - b, 0.3))
 
 
 # --------------------------------------------------------------------------
@@ -658,11 +681,78 @@ def storminess(grid: Grid, t_sl: np.ndarray) -> np.ndarray:
     return np.interp(grid.lat, lat_c, grad)
 
 
-def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune) -> dict:
+OMEGA = 7.292e-5  # 1/s: the planet's spin (Earth)
+
+
+def season_temps(grid: Grid, surf: np.ndarray, t_warm: np.ndarray, t_cold: np.ndarray, hk: float = 0.64):
+    """Each half-year's mean temperature (Apr-Sep 'jul', Oct-Mar 'jan'),
+    reduced to sea level, from the warmest- and coldest-month temperatures
+    (a sine averages hk of its peak over a half-year). surf: height of the
+    ground or ice surface, m. Returns (t_jul, t_jan)."""
+    tm = 0.5 * (t_warm + t_cold)
+    dt = hk * 0.5 * (t_warm - t_cold) * np.where(grid.lat >= 0, 1, -1)
+    lift = LAPSE * np.maximum(surf, 0)
+    return tm + dt + lift, tm - dt + lift
+
+
+def jet_stream(grid: Grid, t_sl: np.ndarray, tune: dict | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """The upper-level wind (~10 km up) for one season, from the thermal
+    wind relation: the wind aloft blows along the isotherms (cold air on its
+    left in the north), the faster the sharper the temperature contrast
+    beneath it: u = g H / (f T) up x grad(T), f the Coriolis parameter.
+    So it's strongest at the polar front, in winter, and bends round warm
+    and cold land (the jet over Japan, the trough over eastern Canada). The
+    surface wind beneath adds little and is left out. t_sl: the season's
+    temperatures reduced to sea level (C). Near the equator, where f
+    vanishes, the relation fails and the jet fades out. Returns (jet: tangent
+    vectors in m/s, baroclinicity: the temperature gradient near the ground
+    in C per 1000 km, smoothed over baro_km, which is what feeds the storms)."""
+    tune = {**TUNE, **(tune or {})}
+    G = _geom(grid)
+    lat = grid.lat
+    # Storms grow from the contrast near the ground, land-sea fronts and all.
+    S = smooth(grid, t_sl, tune["baro_km"])
+    baro = np.linalg.norm(gradient(grid, S), axis=1) * 1000.0
+    # Land-sea contrasts are shallow (a few km of air); the north-south
+    # contrast fills the whole troposphere. So aloft only part of the
+    # former is felt (jet_anom), smoothed further (to ~jet_km in all).
+    width = 3.0
+    nb = int(180 // width)
+    bins = np.clip(((lat + 90) // width).astype(int), 0, nb - 1)
+    zm = np.bincount(bins, S, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
+    zm = np.convolve(np.pad(zm, 2, mode="edge"), np.ones(5) / 5, mode="valid")
+    lat_c = -90 + width * (np.arange(nb) + 0.5)
+    dzm = np.interp(lat, lat_c, np.gradient(zm) / (width * 111.2))  # C per km northward
+    anom = smooth_big(grid, S - np.interp(lat, lat_c, zm), np.sqrt(max(tune["jet_km"] ** 2 - tune["baro_km"] ** 2, 0)))
+    gT = dzm[:, None] * G["north"] + tune["jet_anom"] * gradient(grid, anom)  # C per km
+    a = np.abs(lat)
+    f = 2 * OMEGA * np.maximum(np.sin(np.radians(a)), np.sin(np.radians(tune["jet_f_lat"])))
+    k = 9.81 * tune["jet_h"] / (f * 250.0) / 1000.0 * np.sign(lat)  # m/s per (C per km)
+    k *= np.clip(a / tune["jet_f_lat"], 0, 1) ** 2
+    jet = k[:, None] * np.cross(grid.centers, gT)
+    return jet, baro
+
+
+def storm_track(grid: Grid, jet: np.ndarray, baro: np.ndarray, tune: dict) -> np.ndarray:
+    """Storminess (~1 in a mid-latitude winter) along the storm tracks:
+    storms are born where the temperature contrast is sharp (baro, C per
+    1000 km; off the east coasts of continents in winter, where cold land
+    air meets warm currents) and the jet steers them downstream, so they
+    carry on across the ocean (to Ireland, to British Columbia) and fade
+    over a few thousand km."""
+    h = _geom(grid)["h"]
+    k = np.exp(-h / tune["track_km"])
+    b = baro / 7.0
+    return carry(grid, jet, (1 - k) * b, np.full(grid.n, k), 2 * tune["track_km"], 0.2)
+
+
+def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, track=None) -> dict:
     """Per-cell inputs of the rain kernel for one season (see _rain).
     t_air: surface air temperature (C, used over land), sst: sea surface
     temperature, v: wind, shift: deg the tropical rain belt is north of the
-    equator, t_sl_season: the season's temperatures reduced to sea level."""
+    equator, t_sl_season: the season's temperatures reduced to sea level,
+    track: storminess along the jet's storm tracks (storm_track), which
+    takes over a share storm_jet of the latitude belt's storminess."""
     ocean = elev <= 0
     lat = grid.lat
     up = LAPSE * np.maximum(elev, 0)
@@ -682,6 +772,8 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune) ->
     # Storms stir moisture around (eddy mixing) and make large-scale rain,
     # both in proportion to the storminess (~1 in a mid-latitude winter).
     B = storminess(grid, t_sl_season) / 7.0
+    if track is not None:
+        B = (1 - tune["storm_jet"]) * B + tune["storm_jet"] * track
     diff = np.clip(0.12 + tune["eddy"] * B, 0, 1.0)
     # The tropical rain belt (where the trade winds meet and the air rises)
     # follows the sun; ~25 deg either side of it the air sinks (the dry
@@ -774,6 +866,19 @@ TUNE = dict(
     big=1.5,  # ... and of their continent-wide part
     big_km=2000.0,  # km: the scale of that part
     eq_up=15.0,  # C: equatorial upwelling (cold tongues) under a full trade wind
+    coast_up=10.0,  # C: coastal upwelling where a full wind pushes the surface water offshore (the slow
+    # eastern-boundary currents bring little cold of their own: Peru and Namibia are cold from below)
+    block=1.0,  # share of the wind running up into high ground that turns along it instead
+    block_m=1500.0,  # m: ground higher than this blocks the low-level wind ...
+    block_km=250.0,  # ... felt this far out
+    # jet stream and storm tracks
+    jet_km=1000.0,  # km: smoothing of the temperature field the jet follows
+    jet_anom=0.4,  # share of the land-sea temperature contrast felt through the troposphere
+    baro_km=600.0,  # km: smoothing of the low-level temperature contrast storms grow from
+    jet_h=10000.0,  # m: depth of the air the thermal wind builds up over (~the troposphere)
+    jet_f_lat=20.0,  # deg: the thermal wind fades out equatorward of this
+    storm_jet=0.7,  # share of the storminess that follows the jet's storm tracks (rest: latitude belts)
+    track_km=2500.0,  # km a storm track carries on downstream of where storms are born
     # ocean currents
     gyre=0.05,  # strength of the wind-driven gyres (scales the streamfunction's currents)
     gyre_km=200.0,  # km: friction width of the western boundary currents at the equator (r/beta)
@@ -960,6 +1065,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       sst                    C: sea-surface temperature (annual)
       wind_jul, wind_jan     tangent vectors, ~1 = a steady trade wind
       current                tangent vectors of the surface ocean currents
+      jet_jul, jet_jan       tangent vectors, m/s: the upper-level wind (jet stream)
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
     currents and sea-surface temperature -> air temperatures carried by the
@@ -993,9 +1099,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_sl_jul, t_sl_jan = t_sl0 + dsl, t_sl0 - dsl
     v_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"])
     v_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"])
+    v_jul, v_jan = deflect(grid, v_jul, surf, tune), deflect(grid, v_jan, surf, tune)
     v_ann = 0.5 * (v_jul + v_jan)
 
-    sst, cur = sea_surface(grid, ocean, t_sea, v_ann, eq_upwelling=tune["eq_up"], tune=tune)
+    sst, cur = sea_surface(grid, ocean, t_sea, v_ann, upwelling=tune["coast_up"], eq_upwelling=tune["eq_up"],
+                           tune=tune)
     sst = np.maximum(sst, FREEZE)
 
     # Each place takes on the temperature of the air the wind brings it.
@@ -1038,8 +1146,16 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
     sst_jul = np.maximum(sst + sgn * hk * sea_half, FREEZE)
     sst_jan = np.maximum(sst - sgn * hk * sea_half, FREEZE)
-    r_jul, r_jan = rain(grid, elev, [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune),
-                                     _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune)],
+    # the jet stream over each half-year's temperatures steers its storms
+    jets, tracks = [], []
+    for t_s in season_temps(grid, surf, t_warm, t_cold, hk):
+        j, baro = jet_stream(grid, t_s, tune)
+        jets.append(j)
+        tracks.append(storm_track(grid, j, baro, tune))
+    r_jul, r_jan = rain(grid, elev, [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune,
+                                                    tracks[0]),
+                                     _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune,
+                                                    tracks[1])],
                         tune)
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
@@ -1069,4 +1185,4 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_cold = np.minimum(t_cold, temp)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
-                sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur)
+                sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1])
