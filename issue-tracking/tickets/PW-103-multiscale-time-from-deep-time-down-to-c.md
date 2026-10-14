@@ -21,4 +21,5 @@ Owner's long-term goal (2026-10-14), not now: use worlds for games/TTRPGs with t
 Example use: 10 fantasy species; where could each plausibly have evolved, where would their ranges meet and mix, how ranges shifted through glacials. Needs new systems: high-resolution climate time series (orbital + volcanic + solar + ocean variability), biome/habitat shift tracking, connectivity (land bridges at low sea level, mountain/desert barriers), possibly simple range-dynamics models. Keep the architecture able to support it (state at an end point, sub-runs with finer time steps, per-period layers).
 
 ## Updates
+- 2026-10-14: Owner (2026-10-14): framing as phases of one grand timeline, all visible together: Phase 1 = tectonic run (Myr steps; pick a point in time); Phase 2 = ~1 Myr glacial pass from that point (kyr steps; PW-091, PW-104); Phase 3 (later) = finest pass over the last ~20 kyr (centuries). Provenance in the viewer is the first step.
 - 2026-10-14: Created.
