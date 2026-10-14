@@ -31,18 +31,17 @@ from __future__ import annotations
 
 import numpy as np
 
-from numba import njit
+from numba import njit, prange
 
 from . import kernels
+from .geo import R_KM
 from .grid import Grid
 
 LAPSE = 6.5 / 1000  # degC per metre
 FREEZE = -1.8  # C: sea water freezes
-R_KM = 6371.0
 
 
-def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 27.8,
-                pole_temp: float = -10.4) -> np.ndarray:
+def temperature(grid: Grid, elev: np.ndarray, equator_temp: float, pole_temp: float) -> np.ndarray:
     """Annual mean temperature of land by latitude and height, for land the
     sea's air doesn't reach (compute brings the sea air in). The shape is a
     polynomial in sin^2(latitude), the classic shape of simple energy-
@@ -55,7 +54,7 @@ def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 27.8,
     return t - LAPSE * np.maximum(elev, 0)
 
 
-def sea_temperature(grid: Grid, equator_temp: float = 27.0, pole_temp: float = -7.5) -> np.ndarray:
+def sea_temperature(grid: Grid, equator_temp: float, pole_temp: float) -> np.ndarray:
     """The latitude's sea-surface temperature before currents move heat
     around (Earth: ~27 C at the equator, ~21 C at 30 deg, ~9 C at 50 deg).
     Cooler than land in the subtropics: a warm sea evaporates a lot, which
@@ -113,24 +112,32 @@ def _geom(grid: Grid):
         d -= (d * p[src]).sum(1, keepdims=True) * p[src]
         d /= np.linalg.norm(d, axis=1, keepdims=True)
         deg = np.bincount(src, minlength=grid.n).astype(np.float64)
+        # Each cell's outgoing and incoming directed edges, in edge order: the
+        # kernels gather along these in parallel and still add up in the same
+        # order as a loop over the edges (so the results are bit-identical).
+        out_e = np.argsort(src, kind="stable")
+        in_e = np.argsort(dst, kind="stable")
+        off = np.concatenate([[0], np.cumsum(np.bincount(src, minlength=grid.n))])
+        in_off = np.concatenate([[0], np.cumsum(np.bincount(dst, minlength=grid.n))])
         if len(_GEOM) > 4:
             _GEOM.clear()
-        _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM)
+        _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM,
+                          out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e])
     return _GEOM[key]
 
 
 _COARSE = {}
 
 
-def _coarse(grid: Grid):
-    """A coarser icosphere (~900 km cells) for patterns thousands of km
-    across: which coarse cell each fine cell falls in, the coarse
+def _coarse(grid: Grid, level: int = 3):
+    """A coarser icosphere (level 3: ~900 km cells, for patterns thousands
+    of km across): which coarse cell each fine cell falls in, the coarse
     neighbours, and weights to interpolate back smoothly (the nearby coarse
     cells, by distance). Cached."""
     from .grid import build_grid
-    key = (id(grid), grid.n)
+    key = (id(grid), grid.n, level)
     if key not in _COARSE:
-        cg = build_grid(min(3, grid.level))
+        cg = build_grid(min(level, grid.level))
         cidx = cg.locate(grid.centers)
         cand = np.zeros((grid.n, 7), np.int64)
         ok = np.zeros((grid.n, 7), bool)
@@ -143,7 +150,7 @@ def _coarse(grid: Grid):
         d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
         w = np.where(ok, np.maximum(0.0, 1 - d / (1.2 * cg.spacing)), 0.0)
         w /= w.sum(1, keepdims=True)
-        if len(_COARSE) > 4:
+        if len(_COARSE) > 8:
             _COARSE.clear()
         _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
                             h=cg.spacing * R_KM)
@@ -151,15 +158,26 @@ def _coarse(grid: Grid):
 
 
 @njit(cache=True)
-def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w):
+def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
     """Average f onto the coarse grid, blur it there (iters neighbour
-    averages) and interpolate it back."""
+    averages) and interpolate it back. The average is over the fine cells
+    in each coarse cell, or (full) weighted by the interpolation weights,
+    which is smoother: each fine cell counts towards all the coarse cells
+    near it (a nested grid's cells on a coarse cell's edge are as near to
+    the next one)."""
     tot = np.zeros(nc)
     cnt = np.zeros(nc)
-    for i in range(f.shape[0]):
-        tot[cidx[i]] += f[i]
-        cnt[cidx[i]] += 1.0
-    c = tot / np.maximum(cnt, 1.0)
+    if full:
+        for i in range(f.shape[0]):
+            for k in range(cand.shape[1]):
+                tot[cand[i, k]] += w[i, k] * f[i]
+                cnt[cand[i, k]] += w[i, k]
+        c = tot / np.maximum(cnt, 1e-12)
+    else:
+        for i in range(f.shape[0]):
+            tot[cidx[i]] += f[i]
+            cnt[cidx[i]] += 1.0
+        c = tot / np.maximum(cnt, 1.0)
     g = np.empty(nc)
     for _ in range(iters):
         for j in range(nc):
@@ -180,75 +198,135 @@ def smooth_big(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     C = _coarse(grid)
     iters = int(round(4 * (km / C["h"]) ** 2))
     return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                          C["cand"], C["w"])
+                          C["cand"], C["w"], False)
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _smooth(f, nbr_off, nbr_idx, iters, w):
     f = f.copy()
     g = np.empty_like(f)
     for _ in range(iters):
-        for i in range(f.shape[0]):
+        for i in prange(f.shape[0]):
             s = 0.0
             for e in range(nbr_off[i], nbr_off[i + 1]):
                 s += f[nbr_idx[e]]
             g[i] = (1 - w) * f[i] + w * s / (nbr_off[i + 1] - nbr_off[i])
-        f[:] = g
+        f, g = g, f
     return f
 
 
+COARSE_CELLS = 2.4  # a blur this many coarser cells wide or more is done on the coarser grid
+
+
 def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
-    """Blur a field over roughly `km` (Gaussian-ish sigma)."""
-    iters = int(round(4 * (km / _geom(grid)["h"]) ** 2))
+    """Blur a field over roughly `km` (Gaussian-ish sigma). A wide blur is
+    done on the coarsest grid level it still spans COARSE_CELLS cells of
+    (at level 6: ~580 km and up, a grid level coarser), which is ~10x
+    cheaper and the same to within ~0.5% of the field's spread. Moving the
+    field to that grid and back blurs it by about half a coarse cell's
+    width already, so that much is taken off the blur there."""
+    h = _geom(grid)["h"]
+    lev = grid.level
+    while lev > 0 and km >= COARSE_CELLS * h * 2 ** (grid.level - lev + 1):
+        lev -= 1
+    if lev < grid.level:
+        C = _coarse(grid, lev)
+        iters = int(round(4 * max(km**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
+        return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
+                              C["cand"], C["w"], True)
+    iters = int(round(4 * (km / h) ** 2))
     if iters <= 0:
         return f.astype(np.float64)
     return _smooth(np.ascontiguousarray(f, np.float64), grid.nbr_off, grid.nbr_idx, iters, 0.5)
 
 
+@njit(cache=True, parallel=True)
+def _gradient(f, src, dst, d, out_off, out_e, deg, h):
+    n = out_off.shape[0] - 1
+    g = np.empty((n, 3))
+    for i in prange(n):
+        g0 = 0.0
+        g1 = 0.0
+        g2 = 0.0
+        for k in range(out_off[i], out_off[i + 1]):
+            e = out_e[k]
+            df = f[dst[e]] - f[src[e]]
+            g0 += d[e, 0] * df
+            g1 += d[e, 1] * df
+            g2 += d[e, 2] * df
+        c = 2.0 / (deg[i] * h)
+        g[i, 0] = g0 * c
+        g[i, 1] = g1 * c
+        g[i, 2] = g2 * c
+    return g
+
+
 def gradient(grid: Grid, f: np.ndarray) -> np.ndarray:
     """Tangent gradient per cell, units of f per km."""
     G = _geom(grid)
-    df = f[G["dst"]] - f[G["src"]]
-    g = np.stack([np.bincount(G["src"], G["d"][:, k] * df, grid.n) for k in range(3)], 1)
-    return g * (2.0 / (G["deg"][:, None] * G["h"]))
+    return _gradient(np.ascontiguousarray(f, np.float64), G["src"], G["dst"], G["d"], G["out_off"], G["out_e"],
+                     G["deg"], G["h"])
+
+
+@njit(cache=True, parallel=True)
+def _out_shares(v, d, out_off, out_e, allowed):
+    n = out_off.shape[0] - 1
+    w = np.empty(d.shape[0])
+    tot = np.empty(n)
+    for i in prange(n):
+        t = 0.0
+        for k in range(out_off[i], out_off[i + 1]):
+            e = out_e[k]
+            x = max(v[i, 0] * d[e, 0] + v[i, 1] * d[e, 1] + v[i, 2] * d[e, 2], 0.0)
+            if allowed.shape[0] > 0:
+                x = x * allowed[e]
+            w[e] = x
+            t += x
+        tot[i] = t
+        t = max(t, 1e-12)
+        for k in range(out_off[i], out_off[i + 1]):
+            w[out_e[k]] = w[out_e[k]] / t
+    return w, tot
 
 
 def _edge_weights(grid: Grid, v: np.ndarray, allowed: np.ndarray | None = None):
     """Share of each cell's outflow along each directed edge, for flow v.
     allowed: optional per-edge mask (e.g. sea-to-sea only for currents)."""
     G = _geom(grid)
-    src = G["src"]
-    w = np.maximum((v[src] * G["d"]).sum(1), 0)
-    if allowed is not None:
-        w = w * allowed
-    tot = np.bincount(src, w, grid.n)
-    return w / np.maximum(tot[src], 1e-12), tot > 1e-12
+    allowed = np.zeros(0) if allowed is None else np.ascontiguousarray(allowed, np.float64)
+    w, tot = _out_shares(np.ascontiguousarray(v, np.float64), G["d"], G["out_off"], G["out_e"], allowed)
+    return w, tot > 1e-12
 
 
-@njit(cache=True)
-def _relax_along(a, b, src, dst, out_w, deg, nbr_off, nbr_idx, iters, diffusion):
+@njit(cache=True, parallel=True)
+def _relax_along(a, b, in_src, in_w, in_off, deg, nbr_off, nbr_idx, iters, diffusion):
     """Steady state of x = a + b * (upstream x): each cell sees the
     flow-weighted mean of the cells feeding it (its own value if none), mixed
     a little with its neighbours. Used to carry heat with ocean currents and
-    air temperatures with the wind."""
+    air temperatures with the wind. in_off, in_src, in_w: each cell's
+    incoming edges (CSR, in edge order), where they come from and their
+    share of the source cell's outflow."""
     n = a.shape[0]
     x = a.copy()
-    num = np.empty(n)
+    y = np.empty(n)
     den = np.empty(n)
+    for i in prange(n):
+        dw = 0.0
+        for k in range(in_off[i], in_off[i + 1]):
+            dw += in_w[k]
+        den[i] = dw
     for _ in range(iters):
-        num[:] = 0.0
-        den[:] = 0.0
-        for e in range(src.shape[0]):
-            num[dst[e]] += out_w[e] * x[src[e]]
-            den[dst[e]] += out_w[e]
-        for i in range(n):
-            up = (num[i] + 1e-3 * x[i]) / (den[i] + 1e-3)
+        for i in prange(n):
+            num = 0.0
+            for k in range(in_off[i], in_off[i + 1]):
+                num += in_w[k] * x[in_src[k]]
+            up = (num + 1e-3 * x[i]) / (den[i] + 1e-3)
             s = 0.0
             for e in range(nbr_off[i], nbr_off[i + 1]):
                 s += x[nbr_idx[e]]
             up = (1 - diffusion) * up + diffusion * s / deg[i]
-            num[i] = a[i] + b[i] * up
-        x[:] = num
+            y[i] = a[i] + b[i] * up
+        x, y = y, x
     return x
 
 
@@ -259,8 +337,8 @@ def carry(grid: Grid, v: np.ndarray, a: np.ndarray, b: np.ndarray, km: float = 8
     G = _geom(grid)
     out_w, _ = _edge_weights(grid, v, allowed)
     iters = int(km / G["h"]) + 10
-    return _relax_along(a.astype(np.float64), b.astype(np.float64), G["src"], G["dst"], out_w, G["deg"],
-                        grid.nbr_off, grid.nbr_idx, iters, diffusion)
+    return _relax_along(a.astype(np.float64), b.astype(np.float64), G["in_src"], out_w[G["in_e"]], G["in_off"],
+                        G["deg"], grid.nbr_off, grid.nbr_idx, iters, diffusion)
 
 
 def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width: float = 3.0):
@@ -406,23 +484,59 @@ def _stommel(F, beta, east_d, solve, order, nbr_off, nbr_idx, r, h, damp, iters,
     from its eastern shore. damp: a weak pull of psi toward 0 (keeps a sea
     with no coasts at all well-posed). Returns psi."""
     n = F.shape[0]
-    psi = np.zeros(n)
+    # The coefficients don't change between sweeps: work them out once, and
+    # store the cells in the order they're swept (it's faster to read them
+    # in order). pos: each cell's place in that order (the cells that aren't
+    # solved, whose psi stays 0, after them).
+    pos = np.empty(n, np.int64)
+    m = 0
+    for k in range(order.shape[0]):
+        if solve[order[k]]:
+            pos[order[k]] = m
+            m += 1
+    rest = m
+    for k in range(order.shape[0]):
+        if not solve[order[k]]:
+            pos[order[k]] = rest
+            rest += 1
+    off = np.zeros(m + 1, np.int64)
+    for k in range(order.shape[0]):
+        i = order[k]
+        if solve[i]:
+            off[pos[i] + 1] = nbr_off[i + 1] - nbr_off[i]
+    for k in range(m):
+        off[k + 1] += off[k]
+    coef = np.empty(off[m])
+    nb = np.empty(off[m], np.int64)
+    den = np.empty(m)
+    rhs = np.empty(m)
+    for k in range(order.shape[0]):
+        i = order[k]
+        if not solve[i]:
+            continue
+        p = pos[i]
+        deg = nbr_off[i + 1] - nbr_off[i]
+        lap = 4.0 * r / (deg * h * h)
+        adv = 2.0 * beta[i] / (deg * h)
+        dc = 0.0
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            c = lap + adv * east_d[e]
+            coef[off[p] + e - nbr_off[i]] = c
+            nb[off[p] + e - nbr_off[i]] = pos[nbr_idx[e]]
+            dc += c
+        den[p] = dc + damp
+        rhs[p] = F[i]
+    x = np.zeros(n)
     for _ in range(iters):
-        for k in range(order.shape[0]):
-            i = order[k]
-            if not solve[i]:
-                continue
-            deg = nbr_off[i + 1] - nbr_off[i]
-            lap = 4.0 * r / (deg * h * h)
-            adv = 2.0 * beta[i] / (deg * h)
+        for p in range(m):
             num = 0.0
-            den = 0.0
-            for e in range(nbr_off[i], nbr_off[i + 1]):
-                c = lap + adv * east_d[e]
-                num += c * psi[nbr_idx[e]]
-                den += c
-            new = (num - F[i]) / (den + damp)
-            psi[i] += omega * (new - psi[i])
+            for e in range(off[p], off[p + 1]):
+                num += coef[e] * x[nb[e]]
+            new = (num - rhs[p]) / den[p]
+            x[p] += omega * (new - x[p])
+    psi = np.empty(n)
+    for i in range(n):
+        psi[i] = x[pos[i]]
     return psi
 
 
@@ -578,17 +692,18 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
 # --------------------------------------------------------------------------
 # Rain
 # --------------------------------------------------------------------------
-def _qsat(t, k=0.07):
-    """Water the air can hold at t C, relative to 0 C (~3.8 g/kg)."""
+def _qsat(t, k):
+    """Water the air can hold at t C, relative to 0 C (~3.8 g/kg); k: per C
+    (Clausius-Clapeyron ~0.07)."""
     return np.exp(k * t)
 
 
 LQ = 9.5  # C of moist static energy per unit of vapour (latent heat / heat capacity * 3.8 g/kg)
 
 
-@njit(cache=True)
-def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffusion, out_w,
-          src, dst, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, et, evap, mean_mm):
+@njit(cache=True, parallel=True)
+def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffusion, in_w,
+          in_src, in_off, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, et, evap, mean_mm):
     """Water vapour carried along the wind, for all seasons at once
     (arrays are [season, cell]). Each iteration, in each cell:
     - over the sea the air takes up water to src_q;
@@ -607,14 +722,15 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
     - then the air moves on (move: share per iteration; slow winds linger)
       and mixes with its neighbours (diffusion: eddies, storms).
     Returns the rain rate averaged over the last quarter of the iterations,
-    and the large-scale part of it."""
+    and the large-scale part of it. (Parallel over cells; the one sum over
+    all cells stays serial, so the results don't depend on the threads.)"""
     S, n = qs.shape
     m = src_q.copy()
     acc = np.zeros((S, n))
     acc_ls = np.zeros((S, n))
     ema = np.zeros((S, n))  # running mean of each place's rain
     tcor = np.zeros((S, n))  # wet ground cooler, dry ground hotter (C)
-    moved = np.empty(n)
+    moved = np.empty((S, n))
     tail = max(iterations // 4, 1)
     for it in range(iterations):
         if evap != 0 and it >= 20 and it % 10 == 0:
@@ -623,13 +739,25 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                 for i in range(n):
                     tot += ema[k, i]
             scale = mean_mm * S * n / max(tot, 1e-12)  # model units -> mm/yr
-            for k in range(S):
-                for i in range(n):
-                    if not ocean[i]:
+            for i in prange(n):
+                if not ocean[i]:
+                    for k in range(S):
                         lp = np.log10(max(ema[k, i] * scale, 1.0) / 100.0) / 1.2
                         tcor[k, i] = evap * (1.0 - 2.0 * min(max(lp, 0.0), 1.0))
+        last = it >= iterations - tail
         for k in range(S):
-            for i in range(n):
+            # The previous season's mixing with the neighbours (p) is done in
+            # the same pass as this season's rain: they touch different
+            # numbers, so this only saves a pass over the cells. (The last
+            # season's mixing waits for the next iteration; after the last
+            # iteration it would no longer change the rain.)
+            p = k - 1 if k > 0 else (S - 1 if it > 0 else -1)
+            for i in prange(n):
+                if p >= 0:
+                    t = 0.0
+                    for e in range(nbr_off[i], nbr_off[i + 1]):
+                        t += moved[p, nbr_idx[e]]
+                    m[p, i] = (1 - diffusion[p, i]) * moved[p, i] + diffusion[p, i] * t / deg[i]
                 if ocean[i]:
                     if src_q[k, i] > m[k, i]:
                         m[k, i] = src_q[k, i]
@@ -649,22 +777,17 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                 r = fex * excess + rate * (q - excess)
                 m[k, i] = q - r
                 ema[k, i] += 0.05 * (r - ema[k, i])
-                if it >= iterations - tail:
+                if last:
                     acc[k, i] += r
                     acc_ls[k, i] += r_ls
-            mk = m[k]
-            mv = move[k]
-            for i in range(n):
-                moved[i] = (1 - mv[i]) * mk[i]
-            ow = out_w[k]
-            for e in range(src.shape[0]):
-                moved[dst[e]] += mv[src[e]] * mk[src[e]] * ow[e]
-            dk = diffusion[k]
-            for i in range(n):
-                t = 0.0
-                for e in range(nbr_off[i], nbr_off[i + 1]):
-                    t += moved[nbr_idx[e]]
-                mk[i] = (1 - dk[i]) * moved[i] + dk[i] * t / deg[i]
+            # the air moves on: each cell keeps what stays and gathers what
+            # its upwind neighbours send it
+            for i in prange(n):
+                mo = (1 - move[k, i]) * m[k, i]
+                for e in range(in_off[i], in_off[i + 1]):
+                    j = in_src[e]
+                    mo += move[k, j] * m[k, j] * in_w[k, e]
+                moved[k, i] = mo
     return acc / tail, acc_ls / tail
 
 
@@ -814,7 +937,7 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> np.ndarray:
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
     r, r_ls = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-                    st["warm"], st["move"], st["diff"], st["out_w"], G["src"], G["dst"], G["deg"],
+                    st["warm"], st["move"], st["diff"], st["out_w"][:, G["in_e"]], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
                     tune["cv_scale"], tune["et"], tune["evap_cool"], tune["mean_mm"])
     # Storms carry their rain with them: the large-scale (frontal) rain is
@@ -825,15 +948,6 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> np.ndarray:
         w = np.clip(tune["storm_mix"] * st["B"][k], 0, 0.9)
         r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
     return r
-
-
-def precipitation(grid: Grid, elev: np.ndarray, temp: np.ndarray, **_):
-    """Annual rain without seasons (generators' quick path): temp is used
-    for both the air and the sea surface. Returns (mm/yr, scale)."""
-    t_sl = np.where(elev <= 0, temp, temp + LAPSE * np.maximum(elev, 0))
-    r = rain(grid, elev, [_season_inputs(grid, elev, temp, temp, wind(grid), 0.0, t_sl, TUNE)], TUNE)[0]
-    scale = TUNE["mean_mm"] / max(r.mean(), 1e-12)
-    return np.clip(r * scale, 0, 6000), scale
 
 
 TUNE = dict(
