@@ -31,13 +31,19 @@ Pipeline
    (smoothed). Then each coarse cell's mean is pulled back to its coarse
    value (smooth correction field), so the region doesn't drift.
    This is the *target* surface for step 6.
+   Big river mouths (>= DELTA_MIN_Q) get a delta plain: within a radius R
+   growing with discharge and the coarse sediment cover offshore, the
+   detail is damped and the land pulled down to a few metres above the
+   sea, the sea floor shallows, and a lobe of land is pushed out to sea.
 5. Big rivers. Coarse cells with large flow become smooth (Catmull-Rom,
    noise-warped) polylines; a valley with a monotone-downstream floor is
    cut along each, and along them the landscape pass treats discharge as
    at least the coarse river's. Rivers (and smaller streams) entering
    from outside the region bring their coarse discharge in at the edge.
-   Coarse lake cells become lakes (outline like the coast; surface at the
-   coarse level), which act as outlets.
+   Coarse lakes become lakes: outline like the coast, surface at the
+   coarse water level (the world's lake_level, else the spill level),
+   depth following the coarse fill depth and growing away from the
+   shore. Below each delta apex the river splits into distributaries.
 6. Landscape pass on the raster: a steady-state stream-power landscape.
    Priority flood + steepest-descent D8 routing gives a drainage network
    and discharge Q (precipitation + inflow); walking up from the outlets
@@ -47,6 +53,10 @@ Pipeline
    dendritically. C is a smooth field refitted each iteration so every
    ~35 km neighbourhood keeps the target's mean; the network is
    recomputed on the new surface and the whole thing repeated (~15x).
+   Lakes are outlets held at their surface, with a rim kept above the
+   water except at the outlet (the shore pixel nearest the coarse lake's
+   exit); an open lake's inflow leaves again there. Distributaries take
+   their share of the water at each split.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp); any pits left are filled.
 
@@ -69,7 +79,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate
+from . import climate, hydrology, kernels
 from . import world as W
 from . import zoom_kernels as ZK
 from .geo import R_KM, latlon, xyz
@@ -87,6 +97,7 @@ SEA_CLIMATE = 30  # KOPPEN "-"
 # landscape pass: discharge exponent of the steady-state slope, hillslope
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
+DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +183,85 @@ def _catmull_rom(p0, p1, p2, p3, n):
                   + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
 
 
+def _shift(a: np.ndarray, dr: int, dc: int, fill):
+    """a[r + dr, c + dc] at (r, c), `fill` off the raster."""
+    ny, nx = a.shape
+    out = np.full_like(a, fill)
+    out[max(0, -dr):ny - max(0, dr), max(0, -dc):nx - max(0, dc)] = \
+        a[max(0, dr):ny - max(0, -dr), max(0, dc):nx - max(0, -dc)]
+    return out
+
+
+def coarse_lakes(g, L: dict, elev: np.ndarray):
+    """Coarse lakes as (label per cell, -1 off lakes; water level per lake;
+    exit cell per lake, -1 if it's closed). The level is the world's
+    `lake_level` layer when it has one (NaN or ground level = no lake;
+    `lake_kind` 2 = closed, keeps its water), else the spill level from a
+    priority flood of the coarse elevation. The exit is the cell the lake
+    overflows into (the biggest one, if the flood found several)."""
+    n = g.n
+    lake = np.asarray(L.get("lake", np.zeros(n))).astype(bool)
+    level = hydrology.priority_flood(g, elev)[0]
+    if "lake_level" in L:
+        lv = np.asarray(L["lake_level"], float)
+        ok = np.isfinite(lv) & (lv > elev + 0.5)
+        lake, level = ok, np.where(ok, lv, level)
+    lake &= elev > 0
+    lab, nl = kernels.components(lake, g.nbr_off, g.nbr_idx)
+    lvl, exit_ = np.zeros(nl), np.full(nl, -1)
+    if nl == 0:
+        return lab, lvl, exit_
+    down, flow = np.asarray(L["downstream"]).astype(int), np.asarray(L["flow"], float)
+    kind = np.asarray(L["lake_kind"]).astype(int) if "lake_kind" in L else None
+    cells = np.flatnonzero(lab >= 0)
+    cells = cells[np.argsort(lab[cells], kind="stable")]
+    for k, cc in enumerate(np.split(cells, np.flatnonzero(np.diff(lab[cells])) + 1)):
+        lvl[k] = np.median(level[cc])
+        out = down[cc]
+        out = out[(out >= 0)]
+        out = out[lab[out] != k]
+        closed = kind is not None and np.bincount(kind[cc]).argmax() == 2
+        if len(out) and not closed:
+            exit_[k] = out[np.argmax(flow[out])]
+    return lab, lvl, exit_
+
+
+def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
+    """Big coarse river mouths in or near the region, biggest first, as dicts:
+    mouth point (x, y km; between the last land cell and the sea cell),
+    seaward unit vector u, discharge q (m^3/s), sediment factor sf (0..1,
+    from the coarse sediment cover offshore), delta plain radius R and lobe
+    radius Rl (km). Mouths inside a bigger delta are dropped."""
+    land = elev > 0
+    cand = sel[land[sel] & (down[sel] >= 0)]
+    cand = cand[~land[down[cand]]]
+    q = flow[cand] * cell_area * KM2_M_PER_YR_TO_M3S
+    keep = q >= DELTA_MIN_Q
+    cand, q = cand[keep], q[keep]
+    cover = np.asarray(L.get("sediment_cover", np.zeros(g.n)), float)
+    sea_sel = sel[~land[sel]]
+    out = []
+    for k in np.argsort(-q):
+        i, d = cand[k], down[cand[k]]
+        p = g.centers[i] + g.centers[d]
+        (mx,), (my,) = fr.to_plane((p / np.linalg.norm(p))[None])
+        (ix, dx), (iy, dy) = fr.to_plane(g.centers[[i, d]])
+        u = np.array([dx - ix, dy - iy])
+        u /= max(np.linalg.norm(u), 1e-9)
+        near = np.arccos(np.clip(g.centers[sea_sel] @ (p / np.linalg.norm(p)), -1, 1)) * R_KM < 2.5 * sp
+        sf = float(smoothstep(0.5, 8.0, cover[sea_sel][near].max())) if near.any() else 0.0
+        # Earth: Nile ~150 km of plain at 2,800 m^3/s, Mississippi ~250 km at
+        # 17,000, Ganges-Brahmaputra ~350 km (huge sediment load)
+        R = float(np.clip(10.0 * (q[k] / 100) ** 0.35 * (0.8 + 0.6 * sf), 15.0, 300.0))
+        if max(abs(mx), abs(my)) > size_km / 2 + 0.5 * R:
+            continue
+        if any(np.hypot(mx - o["x"], my - o["y"]) < 0.8 * o["R"] for o in out):
+            continue
+        out.append({"x": mx, "y": my, "u": u, "q": float(q[k]), "sf": sf, "R": R,
+                    "Rl": 0.22 * R * (0.6 + 0.8 * sf), "cell": int(i)})
+    return out
+
+
 # ---------------------------------------------------------------------------
 # The refinement
 # ---------------------------------------------------------------------------
@@ -235,12 +325,39 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ind = ind[:, 0]
     log(f"  interpolated {len(sel)} coarse cells onto {nx}x{ny} px [{time.time() - t0:.1f}s]")
 
+    # --- delta plains at big river mouths --------------------------------
+    # Within R of the mouth (R grows with discharge and offshore sediment)
+    # the land becomes a flat plain a few metres above the sea (wD, zD), the
+    # sea floor shallows (prodelta: wS, zS), and a lobe of new land is pushed
+    # out to sea (added to the land/sea indicator). The detail noise and the
+    # coarse-mean correction are damped there (wC).
+    flow, down = L["flow"].astype(float), L["downstream"].astype(int)
+    deltas = _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area)
+    wD, zD, wS, zS, wC, lobe = (np.zeros(npx) for _ in range(6))
+    hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
+    for dl in deltas:
+        R = dl["R"]
+        r = np.hypot(px - dl["x"], py - dl["y"])
+        w = smoothstep(R, 0.55 * R, r) * hf
+        zD = np.where(w > wD, 0.8 + 10.0 * (r / R) ** 1.5, zD)
+        wD = np.maximum(wD, w)
+        zS = np.where(r < 1.2 * R, np.maximum(zS, -(2.0 + 50.0 * (r / R) ** 2)), zS)
+        wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r))
+        wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r))
+        # the lobe is centred half its radius offshore and lifts the land/sea
+        # indicator there to a little above the coast value
+        lc = np.array([dl["x"], dl["y"]]) + 0.5 * dl["Rl"] * dl["u"]
+        k = int(np.argmin((px - lc[0]) ** 2 + (py - lc[1]) ** 2))
+        amp_l = np.clip(0.35 - ind[k], 0.0, 2.0) if np.hypot(px[k] - lc[0], py[k] - lc[1]) < 2 * res else 1.0
+        lobe += amp_l * np.exp(-((px - lc[0]) ** 2 + (py - lc[1]) ** 2) / dl["Rl"] ** 2)
+    zS = np.where(wS > 0, zS, -1e9)
+
     # --- coastline -------------------------------------------------------
     lam = 0.9 * sp
     cw = ZK.fbm(Pk, lam, 4, 0.5, S + 7) / 0.17 * 0.12 * sp  # domain warp: bays, headlands
     Pc = np.ascontiguousarray(Pk + cw[:, None] * np.array([0.57, -0.41, 0.71]))
     coast_n = ZK.fbm(Pc, lam, _octaves(lam, 2 * res), 0.62, S + 1) / 0.15
-    ind_n = ind + 0.22 * coast_n
+    ind_n = ind + 0.22 * coast_n + lobe
     land = ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ind_n)
@@ -259,13 +376,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     w_r = np.clip(rug, 0, 1) ** 2
     detail = (1 - w_r) * f1 + w_r * (0.4 * f1 + 0.9 * rr)
     detail = 2.2 * np.tanh(detail / 2.2) + 0.06 * tex  # no absurd spikes
-    amp_land = rug * (0.36 * np.maximum(base, 0) + 0.3 * np.nan_to_num(rel) + 25) + 12
-    amp_sea = 5 + 0.08 * np.abs(base)
+    amp_land = (rug * (0.36 * np.maximum(base, 0) + 0.3 * np.nan_to_num(rel) + 25) + 12) * (1 - 0.9 * wD)
+    amp_sea = (5 + 0.08 * np.abs(base)) * (1 - 0.7 * wS)
     taper = np.where(land, smoothstep(0.0, 0.35, ind_n), smoothstep(0.0, 0.25, -ind_n))
     h = base + taper * np.where(land, amp_land, amp_sea) * detail
 
+    # soft floor/ceiling at the coast (the delta plain and prodelta get a much harder one)
+    s_land, s_sea = 15.0 * (1 - 0.95 * wD), 15.0 * (1 - 0.9 * wS)
+
     def clamp(hh):
-        return np.where(land, 0.5 + softplus(hh - 0.5, 15.0), -0.5 - softplus(-0.5 - hh, 15.0))
+        return np.where(land, 0.5 + softplus(hh - 0.5, s_land), -0.5 - softplus(-0.5 - hh, s_sea))
 
     h = clamp(h)
 
@@ -281,18 +401,22 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         tot = np.bincount(own_s, hh, minlength=len(sel))
         return tot / np.maximum(cnt, 1), cnt
 
-    corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n))
+    corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n)) * (1 - wC)
     for _ in range(2):
         m, cnt = cell_means(h)
         ok = cnt > 0.25 * full_px
         resid = np.where(ok, e_c - m, 0.0)
         corr, _ = ZK.gauss_interp(px, py, cx, cy, resid[:, None], ok[:, None].astype(float), 0.5 * sp)
         h = clamp(h + corr_taper * np.nan_to_num(corr[:, 0]))
+    if deltas:  # the plain keeps a little of the (damped) detail
+        det = taper * amp_land * detail
+        h = np.where(land, (1 - wD) * h + wD * (zD + det), (1 - wS) * h + wS * np.maximum(h, zS))
+        h = clamp(h)
     log(f"  coast + detail + mean correction [{time.time() - t0:.1f}s]")
 
     # --- coarse rivers -> valleys + inflow --------------------------------
-    flow, down = L["flow"].astype(float), L["downstream"].astype(int)
-    lake_c = L.get("lake", np.zeros(g.n)).astype(bool)
+    clab, clvl, cexit = coarse_lakes(g, L, elev)
+    lake_c = clab >= 0
     in_sel = np.zeros(g.n, bool)
     in_sel[sel] = True
     riv = in_sel & (elev > 0) & (flow >= river_min_flow) & (down >= 0)
@@ -446,39 +570,309 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     glacier = land & (ice > 1) & (ice_eff > 40)
     # Lakes where the coarse world has them (a coarse lake cell is a lake
     # basin ~100 km across): outline like the coast, from a smoothed
-    # lake/no-lake indicator plus fractal noise; surface at the coarse lake
-    # elevation; bowl-shaped bed. Lakes are outlets for the landscape pass,
-    # so the land around them drains in and stays above the water.
+    # lake/no-lake indicator plus fractal noise. The surface is the coarse
+    # lake's water level (spill level, or the world's lake_level); the depth
+    # follows the coarse fill depth (level - coarse ground), growing with
+    # distance from the shore over a length set by the lake's size. In the
+    # landscape pass a lake is an outlet held at its surface, so the land
+    # around it drains in and is built up from the water; a one-pixel rim is
+    # kept above the surface except along the outlet: the shore pixel
+    # nearest the coarse lake's exit that drains away. Open lakes pass their
+    # inflow (plus the rain on them) on at the outlet, closed ones keep it.
     min_px = max(3, int(np.ceil(30.0 / res**2)))  # ~30 km^2
     lake = np.zeros(npx, bool)
-    lake_level = np.zeros(npx)
+    surf = np.zeros(npx)  # lake surface
+    depth = np.zeros(npx)
+    lakes = []  # per fine lake: pixels, level, exit point (x, y) or None
     lk_c = lake_c[sel] & land_c
     if lk_c.any():
-        lind, _ = ZK.gauss_interp(px, py, cx, cy, np.column_stack([np.where(lk_c, 1.0, -1.0), e_c]),
+        dep_c = np.where(lk_c, clvl[np.maximum(clab[sel], 0)] - e_c, 0.0)
+        lind, _ = ZK.gauss_interp(px, py, cx, cy, np.column_stack([np.where(lk_c, 1.0, -1.0), dep_c]),
                                   np.column_stack([land_c, lk_c]).astype(float), 0.42 * sp)
         lake_n = ZK.fbm(Pc, 0.5 * sp, _octaves(0.5 * sp, 2 * res), 0.6, S + 8) / 0.15
         cand = land & ~edge & ~glacier & (np.nan_to_num(lind[:, 0], nan=-1.0) + 0.2 * lake_n > 0.1)
         lab, sizes = ZK.label_components(cand, nx, ny)
-        for k in np.flatnonzero(sizes >= min_px):
-            comp = lab == k
-            level = float(np.nanmean(lind[comp, 1])) + 3.0
-            lake |= comp
-            lake_level = np.where(comp, level, lake_level)
-        if lake.any():
-            l2 = lake.reshape(ny, nx)
-            shore_d = _box_mean(l2.astype(float), np.ones((ny, nx)), max(1, int(round(8 / res)))).ravel()
-            h = np.where(lake, np.maximum(lake_level - 2.0 - 40.0 * shore_d**2, 0.6), h)
-            outlet = outlet | lake
+        pl = np.flatnonzero(lab >= 0)
+        pl = pl[sizes[lab[pl]] >= min_px]
+        pl = pl[np.argsort(lab[pl], kind="stable")]
+        lk_cells = sel[lk_c]
+        for pix in np.split(pl, np.flatnonzero(np.diff(lab[pl])) + 1) if len(pl) else []:
+            cl = clab[own[pix]]
+            cl = cl[cl >= 0]
+            if len(cl):
+                c = np.bincount(cl).argmax()
+            else:  # the outline drifted off the coarse lake cells: nearest one
+                c = clab[lk_cells[np.argmin(np.hypot(cx[lk_c] - px[pix].mean(), cy[lk_c] - py[pix].mean()))]]
+            ex = None
+            if cexit[c] >= 0:
+                (a,), (b,) = fr.to_plane(g.centers[cexit[c]][None])
+                ex = (a, b)
+            lake[pix] = True
+            surf[pix] = clvl[c]
+            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex})
+    if lakes:
+        ds = ZK.inside_distance(lake, nx, ny) * res  # km to the shore
+        dc = np.nan_to_num(lind[:, 1], nan=0.0)
+        nz = ZK.fbm(Pk, 0.3 * sp, _octaves(0.3 * sp, 2 * res), 0.55, S + 9) / 0.17
+        for lk in lakes:
+            pix = lk["px"]
+            dcm = np.maximum(dc[pix], 2.0)
+            ell = np.clip(0.25 * ds[pix].max(), 2 * res, 80.0)
+            d0 = dcm * (1 - np.exp(-ds[pix] / ell)) * np.clip(1 + 0.3 * nz[pix], 0.4, 1.6)
+            # about the coarse mean depth overall
+            depth[pix] = np.maximum(np.clip(dcm.mean() / max(d0.mean(), 1e-6), 0.7, 3.0) * d0, 0.5)
+        h = np.where(lake, surf, h)
+        outlet = outlet | lake
+    lake_id = np.full(npx, -1)
+    for j, lk in enumerate(lakes):
+        lake_id[lk["px"]] = j
+    # the rim: land next to a lake (the highest one, if it touches two)
+    ring_lvl, ring_id = np.full(npx, -np.inf), np.full(npx, -1)
+    l2, id2 = np.where(lake, surf, -np.inf).reshape(ny, nx), lake_id.reshape(ny, nx)
+    for dr in (-1, 0, 1):
+        for dcol in (-1, 0, 1):
+            v, i2 = _shift(l2, dr, dcol, -np.inf).ravel(), _shift(id2, dr, dcol, -1).ravel()
+            ring_id = np.where(v > ring_lvl, i2, ring_id)
+            ring_lvl = np.maximum(ring_lvl, v)
+    ring = land & ~lake & ~edge & (ring_id >= 0)
+    ring_px = [np.flatnonzero(ring & (ring_id == j)) for j in range(len(lakes))]
+    lake_seq = sorted(range(len(lakes)), key=lambda j: -lakes[j]["level"])  # upstream lakes first
     rain = precip / 1000.0 * res * res  # km^2 m/yr per pixel
     srcq = rain + inflow
     Kr = ROCK_K[np.minimum(surf_f, len(ROCK_K) - 1)]
     jitter = np.random.default_rng(seed).random(npx)
     active = land & ~edge & ~lake
     idx = np.arange(npx)
+    target = h.copy()
+
+    def lake_outlets(rec):
+        """Per lake, the rim pixel nearest the coarse exit that drains away (-1: none)."""
+        outs = np.full(len(lakes), -1)
+        for j, lk in enumerate(lakes):
+            c = ring_px[j]
+            if lk["exit"] is None or not len(c):
+                continue
+            c = c[(rec[c] >= 0) & ~lake[np.maximum(rec[c], 0)]]
+            if len(c):
+                outs[j] = c[np.argmin(np.hypot(px[c] - lk["exit"][0], py[c] - lk["exit"][1]))]
+        return outs
+
+    def rims(rec, outs):
+        """Per-pixel floor (rims above their lake) and cap (outlet channels
+        below it) for the landscape integration."""
+        fl, cp = np.full(npx, 0.5), cap.copy()
+        fl[ring] = ring_lvl[ring] + 0.5
+        for j, o in enumerate(outs):
+            if o >= 0:
+                ch = ZK.chain(rec, o)
+                fl[ch] = 0.5
+                cp[ch] = np.minimum(cp[ch], lakes[j]["level"] - 0.3)
+        return fl, cp
+
+    def reroute(rec, order):
+        """Apply the distributary receivers (if they leave the network acyclic)."""
+        if not len(ov_src):
+            return rec, order, False
+        r2 = rec.copy()
+        r2[ov_src] = ov_dst
+        o2 = ZK.receiver_order(r2)
+        return (r2, o2, True) if len(o2) == npx else (rec, order, False)
+
+    def route(src, rec, order, outs, split_ok):
+        """Accumulate src downstream, then pass each open lake's total on at
+        its outlet and divide the water at distributary splits."""
+        q = ZK.accumulate(rec, order, src)
+        tot = np.zeros(len(lakes))
+        for j in lake_seq:
+            tot[j] = q[lakes[j]["px"]].sum()
+            if outs[j] >= 0:
+                ZK.add_chain(q, rec, outs[j], tot[j])
+        if split_ok:
+            for s, kids, f in splits:
+                qs = q[s]
+                ZK.add_chain(q, rec, kids[0], -(1 - f[0]) * qs)
+                for c, fk in zip(kids[1:], f[1:]):
+                    ZK.add_chain(q, rec, c, fk * qs)
+        return q, tot
+
+    # --- distributaries --------------------------------------------------
+    # Below a delta apex (on the main river, 0.6 R up from its mouth) the
+    # river splits into 2-6 branches that fan out to points on the coast
+    # around the main mouth: a binary tree of wandering paths, each branch
+    # taking a share of the water. D8 routing gives every pixel a single
+    # receiver, so the branches are pinned as receiver overrides and the
+    # shares are added down each branch (route); the landscape pass then
+    # builds the plain around them. Laid out once the drainage network of
+    # the landscape pass has settled a bit (a third of the way through).
+    ov_src = ov_dst = np.zeros(0, np.int64)
+    splits = []
+
+    def make_branches(rec0, order0):
+        """Receiver overrides (src, dst) and splits for the deltas, laid out
+        on the drainage network (rec0, order0) of a landscape iteration."""
+        ov, splits = {}, []
+        score = route(srcq, rec0, order0, lake_outlets(rec0), False)[0]
+        assigned = np.zeros(npx, bool)
+        rng = np.random.default_rng(seed + 7)
+
+        # Each branch heads for its own point on the coast, spread around the
+        # main mouth: every step gets closer to its goal (so it arrives and
+        # can't loop), choosing the neighbour closest to the goal's direction
+        # plus a wandering noise angle, and keeping clear of the other
+        # branches where it can.
+        wander = [0.7 * ZK.fbm(Pk, 25.0, 3, 0.5, S + 41 + k) / 0.17 for k in range(2)]
+        coast = np.zeros(npx, bool)  # land next to the sea
+        for dr, dcol in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            coast |= active & _shift(sea.reshape(ny, nx), dr, dcol, False).ravel()
+        nb8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+
+        def crowd(q, i):
+            """Other branches' pixels next to q (not counting i)."""
+            r0, c0 = divmod(q, nx)
+            return sum(assigned[(r0 + a) * nx + c0 + b] for a, b in nb8
+                       if 0 <= r0 + a < ny and 0 <= c0 + b < nx and (r0 + a) * nx + c0 + b != i)
+
+        def toward(s0, gx, gy, nsteps, blocked):
+            """Pixels (start excluded) from s0 towards (gx, gy) km, at most
+            nsteps; on arriving at a coast pixel, one more step into the sea."""
+            out, i, seen = [], int(s0), {int(s0)}
+            mix = rng.uniform(0, 2 * np.pi)  # each branch wanders its own way
+            while len(out) < nsteps:
+                r0, c0 = divmod(i, nx)
+                d0 = np.hypot(px[i] - gx, py[i] - gy)
+                th = np.arctan2(gy - py[i], gx - px[i]) + np.cos(mix) * wander[0][i] + np.sin(mix) * wander[1][i]
+                best, bs = -1, -9.0
+                for a, b in nb8:
+                    if not (0 <= r0 + a < ny and 0 <= c0 + b < nx):
+                        continue
+                    q = (r0 + a) * nx + c0 + b
+                    if blocked[q] or q in seen:
+                        continue
+                    dq = np.hypot(px[q] - gx, py[q] - gy)
+                    if len(out) < 3:  # leave the split point: on fresh ground, not much further away
+                        if assigned[q] or dq > d0 + res:
+                            continue
+                    elif dq >= d0 and not sea[q]:
+                        continue
+                    sc = np.cos(np.arctan2(-a, b) - th) - (3.0 if assigned[q] else 0.3 * crowd(q, i))
+                    sc += 2.0 if (sea[q] and d0 < 1.5 * res) else 0.0
+                    if sc > bs:
+                        best, bs = q, sc
+                if best < 0:
+                    break
+                out.append(best)
+                seen.add(best)
+                if assigned[best] or outlet[best]:
+                    break
+                i = best
+            return out
+
+        def commit(start, pix, blocked):
+            """Pin pix as a channel after start; it ends at the sea (or a lake,
+            or the region edge) or where it joins another branch. Returns
+            (first pixel, last pixel, open end?)."""
+            prev, first = start, -1
+            for p in pix:
+                if blocked[p]:
+                    return first, prev, True
+                if prev != start:
+                    ov[prev] = p
+                if first < 0:
+                    first = p
+                if outlet[p] or assigned[p]:
+                    return first, p, False
+                assigned[p] = True
+                prev = p
+            return first, prev, True
+
+        def grow(s, goals, seg, blocked):
+            """Split at pixel s into two groups of coast goals (one each if
+            only two); a group heads for its goals' mean for `seg` pixels,
+            then splits again."""
+            k0 = len(splits)
+            splits.append(None)
+            m = max(len(goals) // 2, 1)
+            groups = [goals[:m], goals[m:]] if len(goals) > 1 else [goals]
+            share = np.array([len(gp) for gp in groups], float) * rng.uniform(0.75, 1.25, len(groups))
+            kids, fr_ = [], []
+            for gp, f in zip(groups, share):
+                gx, gy = np.mean([px[q] for q in gp]), np.mean([py[q] for q in gp])
+                pix = toward(s, gx, gy, npx if len(gp) == 1 else seg, blocked)
+                first, last, open_ = commit(s, pix, blocked)
+                if first < 0:
+                    continue
+                kids.append(first)
+                fr_.append(f)
+                if open_ and len(gp) > 1:
+                    grow(last, gp, seg, blocked)
+            if kids:
+                ov[s] = kids[0]
+            splits[k0] = (s, kids, np.array(fr_) / max(sum(fr_), 1e-9)) if len(kids) > 1 else None
+
+        # main upstream branch of each pixel (the one bringing the most water)
+        bp = np.full(npx, -1)
+        by_q = np.argsort(score, kind="stable")
+        by_q = by_q[rec0[by_q] >= 0]
+        bp[rec0[by_q]] = by_q  # the last (biggest) write wins
+        blocked = np.zeros(npx, bool)
+        for dl in deltas:
+            R = dl["R"]
+            r = np.hypot(px - dl["x"], py - dl["y"])
+            mouth = active & (r < R) & sea[np.maximum(rec0, 0)] & (rec0 >= 0)
+            if not mouth.any():
+                continue
+            # walk up the main river from its mouth to the apex (0.6 R up
+            # the river), then on up while it's still the main river; that
+            # stretch is pinned so the river can't drift away from the apex
+            m0 = np.flatnonzero(mouth)[np.argmax(score[mouth])]
+            if score[m0] < 0.2 * dl["q"] / KM2_M_PER_YR_TO_M3S:
+                continue
+            up, a, run = [m0], -1, 0.0
+            while len(up) < 4 * R / res and bp[up[-1]] >= 0:
+                c = bp[up[-1]]
+                run += res * (1.4142 if (c % nx != up[-1] % nx and c // nx != up[-1] // nx) else 1.0)
+                if a < 0 and run > 0.6 * R:
+                    a = up[-1]
+                if a >= 0 and (score[c] < 0.5 * score[a] or not active[c]):
+                    break
+                up.append(c)
+            if a < 0 or r[a] > 1.2 * R or assigned[up[up.index(a):]].any():
+                continue
+            snap = (dict(ov), len(splits), assigned.copy(), blocked.copy())
+            trunk = up[up.index(a) + 1:]
+            for c in trunk:  # pin the main channel down to the apex
+                ov[c] = rec0[c]
+            assigned[[a] + trunk] = True
+            blocked[[a] + trunk] = True
+            nb = int(np.clip(round(1 + 1.2 * np.log10(dl["q"] / 1000) + 1.5 * dl["sf"]), 2, 6))
+            # goals: coast pixels spread over a fan around the main mouth
+            phi = np.arctan2(py[m0] - py[a], px[m0] - px[a])
+            ln = np.hypot(px[m0] - px[a], py[m0] - py[a])
+            spread = np.radians(min(30.0 + 20.0 * (nb - 1), 130.0))
+            cp = np.flatnonzero(coast & ~assigned)
+            ca = (np.arctan2(py[cp] - py[a], px[cp] - px[a]) - phi + np.pi) % (2 * np.pi) - np.pi
+            cd = np.hypot(px[cp] - px[a], py[cp] - py[a])
+            goals = []
+            for th in spread * np.linspace(-0.5, 0.5, nb) + rng.normal(0, 0.05, nb):
+                ok = (np.abs(ca - th) < 0.12) & (cd > 0.5 * ln) & (cd < 2.0 * ln)
+                if ok.any():
+                    q = int(cp[ok][np.argmin(cd[ok])])
+                    if q not in goals:
+                        goals.append(q)
+            if len(goals) < 2:
+                goals = [int(m0)] + goals
+            grow(a, goals, max(int(0.15 * ln / res), 2), blocked)
+            rt = rec0.copy()
+            rt[list(ov)] = list(ov.values())
+            if len(ZK.receiver_order(rt)) < npx:  # a branch looped back: no distributaries here
+                ov, assigned, blocked = snap[0], snap[2], snap[3]
+                del splits[snap[1]:]
+        return (np.array(list(ov), dtype=np.int64), np.array(list(ov.values()), dtype=np.int64),
+                [sp_ for sp_ in splits if sp_ is not None])
+
     # Steady-state stream power: slope = C / K * Q^-m. C is a smooth field
     # fitted so every ~35 km neighbourhood keeps the mean of the target
     # surface; a little noise in C varies the relief from valley to valley.
-    target = h.copy()
     rad = max(1, int(round(0.3 * sp / res)))
     wmask = land.reshape(ny, nx).astype(float)
     tmean = _box_mean(np.maximum(target, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
@@ -490,13 +884,18 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     rough = np.where(glacier, 0.5, 1.0) * var / Kr
     for it in range(iterations):
         filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
-        Q = ZK.accumulate(rec, order, srcq)
+        if deltas and it == iterations // 3:  # once the network has settled a bit
+            ov_src, ov_dst, splits = make_branches(rec, order)
+        rec, order, split_ok = reroute(rec, order)
+        outs = lake_outlets(rec)
+        Q, _ = route(srcq, rec, order, outs, split_ok)
         diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
         dist = res * np.where(diag, 1.4142, 1.0)
         # coarse river courses count as carrying at least their coarse discharge
         slope = np.minimum(C * rough * np.maximum(np.maximum(Q, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
+        fl, cp = rims(rec, outs)
         h = target.copy()
-        ZK.integrate(h, rec, order, slope, dist, ~active, 0.5, soft, 0.5 * amp_land + 1, cap)
+        ZK.integrate(h, rec, order, slope, dist, ~active, fl, soft, 0.5 * amp_land + 1, cp)
         hmean = _box_mean(np.maximum(h, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
         C = C * np.clip(tmean / np.maximum(hmean, 1.0), 0.5, 2.0) ** 0.8
     # soften D8 streaks and knife-edge ridges on hillslopes; keep channels sharp
@@ -504,17 +903,29 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     kd = np.where(active, np.where(glacier, 0.4, KD * (1 - 0.8 * chan)), 0.0)
     for _ in range(SMOOTH_STEPS):
         h = ZK.diffuse(h, kd, active, nx, ny)
+    h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
+    h = np.where(ring, np.maximum(h, fl), h)  # nor the rims below their lake
     log(f"  landscape pass: {iterations} iterations [{time.time() - t0:.1f}s]")
 
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
-    Q = ZK.accumulate(rec, order, srcq)
-    area = ZK.accumulate(rec, order, np.full(npx, res * res))
-    lake_depth = np.where(lake, np.maximum(lake_level - h, 0.5), 0.0)
+    rec, order, split_ok = reroute(rec, order)
+    outs = lake_outlets(rec)
+    Q, lake_in = route(srcq, rec, order, outs, split_ok)
+    area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
+    h = np.where(lake, surf - depth, h)
+    lake_depth = np.where(lake, depth, 0.0)
     discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     area = np.where(land, area, 0.0)
+    lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
+                         "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
+                         "max_depth_m": round(float(depth[lk["px"]].max()), 1),
+                         "inflow_m3s": round(float(lake_in[j] * KM2_M_PER_YR_TO_M3S), 1),
+                         "outlet": [int(outs[j] // nx), int(outs[j] % nx)] if outs[j] >= 0 else None,
+                         "outflow_m3s": round(float(discharge[outs[j]]), 1) if outs[j] >= 0 else 0.0}
+                        for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])
 
     # --- climate on the fine terrain -------------------------------------
     hl = np.maximum(h, 0)
@@ -549,6 +960,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
         "rivers_entering": n_rivers_in,
+        "largest_lakes": lake_info[:5],
+        "deltas": [{"mouth_km": [round(d["x"], 1), round(d["y"], 1)], "discharge_m3s": round(d["q"]),
+                    "plain_radius_km": round(d["R"])} for d in deltas],
+        "distributary_splits": len(splits),
     }
     layers = {
         "elevation": h.astype(np.float32),
@@ -664,7 +1079,8 @@ LAYER_DOC = {
     "elevation": ("m", "ground elevation (lake beds included), sea level 0"),
     "water": ("enum", "0 land, 1 sea, 2 lake"),
     "lake_depth": ("m", "water depth in lakes (lake surface = elevation + lake_depth)"),
-    "discharge": ("m^3/s", "mean river discharge (precipitation routed downhill, plus inflow at the edges)"),
+    "discharge": ("m^3/s", "mean river discharge (precipitation routed downhill, plus inflow at the edges; "
+                           "open lakes pass theirs on at the outlet; split among delta distributaries)"),
     "drainage_area": ("km^2", "upstream area inside the region"),
     "precipitation": ("mm/yr", "annual precipitation (interpolated from the coarse world)"),
     "temperature": ("C", "mean annual temperature, lapse-rate adjusted to the fine elevation"),

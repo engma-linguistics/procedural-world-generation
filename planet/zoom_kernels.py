@@ -285,16 +285,17 @@ def accumulate(rec, order, src):
 @njit(cache=True)
 def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
     """Steady-state profile: walking outlet -> headwater, each pixel sits
-    s_i (m per km) x dist_i (km) above its receiver. Above `soft` the
-    slope tapers off (rounded summits rather than absurd peaks) and nothing
-    goes above `cap`; always a little above the receiver so drainage stays
-    intact. Pixels with fixed=True (outlets, region edge) keep their height."""
+    s_i (m per km) x dist_i (km) above its receiver (or above floor_i, if
+    that is higher: lake rims). Above `soft` the slope tapers off (rounded
+    summits rather than absurd peaks) and nothing goes above `cap`; always
+    a little above the receiver so drainage stays intact. Pixels with
+    fixed=True (outlets, region edge) keep their height."""
     for t in range(order.shape[0]):
         i = order[t]
         d = rec[i]
         if fixed[i] or d < 0:
             continue
-        base = max(h[d], floor)
+        base = max(h[d], floor[i])
         over = max(base - soft[i], 0.0) / scale[i]
         inc = s[i] * dist[i] / ((1.0 + over) * (1.0 + over))
         h[i] = max(min(base + inc, cap[i]), base + 0.01 * dist[i])
@@ -351,3 +352,106 @@ def label_components(mask, nx, ny):
         sizes[nl] = cnt
         nl += 1
     return lab, sizes[:nl]
+
+
+@njit(cache=True)
+def receiver_order(rec):
+    """Order outlet -> headwater of a receiver forest (rec -1 at the roots),
+    breadth-first from the roots. Shorter than rec if rec has a cycle."""
+    n = rec.shape[0]
+    off = np.zeros(n + 1, np.int64)
+    for i in range(n):
+        if rec[i] >= 0:
+            off[rec[i] + 1] += 1
+    for i in range(n):
+        off[i + 1] += off[i]
+    kids = np.empty(off[n], np.int64)
+    pos = off[:n].copy()
+    for i in range(n):
+        d = rec[i]
+        if d >= 0:
+            kids[pos[d]] = i
+            pos[d] += 1
+    order = np.empty(n, np.int64)
+    k = 0
+    for i in range(n):
+        if rec[i] < 0:
+            order[k] = i
+            k += 1
+    head = 0
+    while head < k:
+        i = order[head]
+        head += 1
+        for e in range(off[i], off[i + 1]):
+            order[k] = kids[e]
+            k += 1
+    return order[:k]
+
+
+@njit(cache=True)
+def chain(rec, start):
+    """Pixels from start down its receivers to the outlet (inclusive)."""
+    out = np.empty(rec.shape[0], np.int64)
+    k = 0
+    i = start
+    while i >= 0 and k < rec.shape[0]:
+        out[k] = i
+        k += 1
+        i = rec[i]
+    return out[:k]
+
+
+@njit(cache=True)
+def add_chain(q, rec, start, amount):
+    """Add `amount` to q along the receiver chain from start (water put in
+    at one pixel and carried downstream: lake outlets, distributaries)."""
+    i = start
+    k = 0
+    while i >= 0 and k < q.shape[0]:
+        q[i] += amount
+        i = rec[i]
+        k += 1
+
+
+@njit(cache=True)
+def inside_distance(mask, nx, ny, edge_outside=True):
+    """Chamfer distance (pixels; 1 and sqrt 2 steps) from each mask pixel to
+    the nearest pixel outside the mask (or outside the raster, if
+    edge_outside); 0 off mask."""
+    big = 1e9
+    d = np.where(mask, big, 0.0)
+    for r in range(ny):
+        for c in range(nx):
+            i = r * nx + c
+            if d[i] == 0.0:
+                continue
+            v = d[i]
+            for dr, dc, w in ((-1, -1, 1.4142135623730951), (-1, 0, 1.0), (-1, 1, 1.4142135623730951),
+                              (0, -1, 1.0)):
+                rr, cc = r + dr, c + dc
+                if rr < 0 or cc < 0 or cc >= nx:
+                    if not edge_outside:
+                        continue
+                    u = 0.0
+                else:
+                    u = d[rr * nx + cc]
+                v = min(v, u + w)
+            d[i] = v
+    for r in range(ny - 1, -1, -1):
+        for c in range(nx - 1, -1, -1):
+            i = r * nx + c
+            if d[i] == 0.0:
+                continue
+            v = d[i]
+            for dr, dc, w in ((1, 1, 1.4142135623730951), (1, 0, 1.0), (1, -1, 1.4142135623730951),
+                              (0, 1, 1.0)):
+                rr, cc = r + dr, c + dc
+                if rr >= ny or cc < 0 or cc >= nx:
+                    if not edge_outside:
+                        continue
+                    u = 0.0
+                else:
+                    u = d[rr * nx + cc]
+                v = min(v, u + w)
+            d[i] = v
+    return d
