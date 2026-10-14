@@ -1,4 +1,5 @@
 ---
+id: PW-115
 title: "Time zoom: the ablation zone is one cell wide (sub-cell melt at margins)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: climfix
 blocked_by: []
 relates: [PW-036]
 refs: [planet/timezoom.py, planet/timezoom_kernels.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Ideas: a sub-cell hypsometry for margin cells (melt computed over a spread of su
 the cell's and its ice-free neighbours'), or a partial ice cover per cell. Measure with the share of
 ablating cells away from the margin and the ablation area ratio (Greenland today ~0.15-0.2 of its area).
 - [ ] ablating ice not confined to margin cells; ablation area ratio reported in the run's stats
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-timezoom-one-cell-ablation-zone.md (found by climfix).

@@ -1,4 +1,5 @@
 ---
+id: PW-112
 title: "Climate: bare polar lowland summers far too warm (Antarctica's ground at +15 C)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: climfix
 blocked_by: []
 relates: [PW-102]
 refs: [planet/climate.py, planet/tectonics/earth.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Likely cause: temperature() (polar -10 C at sea level) plus seasons() summer swi
 with evap_cool's desert term (+ for dry ground) adding more. Probe: earth_ice.py-style loop
 (climate.compute on data/earth L6 with ice, then earth.ice_sheets, 4 iterations).
 - [ ] Antarctica (and Greenland) hold their ice under the main-run rule on Earth geography
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-polar-bare-ground-too-warm.md (found by climfix).

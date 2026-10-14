@@ -1,4 +1,5 @@
 ---
+id: PW-111
 title: "More, thicker ice on generated planets after PW-102: keep or tune ICE_FEEDBACK?"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: climfix
 blocked_by: []
 relates: [PW-102]
 refs: [planet/tectonics/earth.py, "run e960ee", "run b1eb73", "run 5ec775", "run 428083"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Options:
 - B: 0.6-0.65, to land between (needs an L6 run each; ~6 min).
 - C: keep 0.75 but cap the albedo feedback or ICE_MAX lower (3 km) to trim the icehouse sea-level lows.
 Lean: A (it matches Earth's ice per land area and thickness), check the L7 showcase look first.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-ice-amount-generated-runs.md (found by climfix).

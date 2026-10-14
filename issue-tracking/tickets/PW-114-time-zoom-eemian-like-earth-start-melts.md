@@ -1,4 +1,5 @@
 ---
+id: PW-114
 title: "Time zoom: Eemian-like Earth start melts Antarctica, not Greenland"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: climfix
 blocked_by: []
 relates: [PW-034]
 refs: [planet/timezoom.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -21,3 +24,6 @@ snow takes 0.2 of the anomaly and the mix over the 600 km air mass is mostly sea
 comes from its spring months (Sep-Nov, +60-70 W/m2 at 70S under the Eemian orbit). Check the
 seasonal lag and which months melt, and whether bare-ice margins (f_snow) respond enough in Greenland.
 Measure: tools-free probe `TZ.simulate(TZ.source_earth(6), kyr=10)`, ice volume change by region.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-timezoom-eemian-split.md (found by climfix).
