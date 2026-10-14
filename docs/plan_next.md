@@ -239,3 +239,28 @@ Order: 1 → 6, small to large.
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
+
+## Overnight state (2026-10-14 00:10): for the coordinator after context compaction
+
+**User asleep.** Cleared for ONE level-8 run (save it for last; kick off no later than 05:00) and up to 8 level-7 runs, plus any level-6 runs. The user reviews in the morning. Commit locally only.
+
+**Agents in flight**, each in its own worktree `.claude/worktrees/<branch>` with symlinked `data runs worlds zooms grids`. When one reports: merge its branch into main, run `uv run pytest`, fix conflicts, regenerate goldens if outputs legitimately changed (`uv run pytest tests/test_golden.py --update-golden`), add its "remaining issues" to Known issues, and restart the server if server code changed.
+
+| Branch | What it's doing |
+|---|---|
+| `mantle` | Breakup fix plus B′ mantle field, hotspots tied to warm mantle, lighter sediment density. Will make a 2 Gyr level-6 showcase run. |
+| `store` | `planet/store.py`, one file per layer (viewer loads lazily), consistent layer names, worlds referencing the shared grid, checkpoints via `Simulation.state()`/`load_state`/`from_state`, `planet/server.py`. Existing outputs may need regenerating after this. |
+| `ocean` | Overturning circulation (salinity from E−P, runoff, sea ice, a meltwater hook for timezoom) and its heat transport ("mild Norway"). |
+| `falls` | Knickpoint waterfalls in the zoom (resistant lip, plunge pool, gorge retreat) and the fix for the lake-outlet cliff. |
+
+The viewer server (`planet serve --no-open`, port 8765) was started by the coordinator. Restart it after server changes:
+`pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open > $CLAUDE_JOB_DIR/tmp/serve.log 2>&1 &`
+
+**Level-7 timing:** ~1.8 s/Myr under load (≈30 min/Gyr), 0.9 GB RSS. Land went 29→22% in the first 20 Myr at level 7, so check resolution dependence. **Level 8 estimate:** ~2 h/Gyr, ~3.5 GB RAM. Frames are large (level 8 ≈ 17 MB/frame), so use `--every 10` or more.
+
+**Overnight plan after merges:**
+1. **Lakes on the run globe** (queue 5c).
+2. **Regenerate the six showcase worlds** at level 6 with the new code, delete the old ones (keep the Earth world `59a918`, re-made with `tools/earth_world.py`), recompute highlights, and pre-make zooms (`planet highlights <run> --at T --zoom 6`).
+3. **Level-7 runs:** first an Earth-like ~1–2 Gyr run to check resolution dependence against level 6 (land, dry share, ocean age, landmasses; supercontinent cycle), then showcases. Up to 8.
+4. **Level-8 run** last, started by 05:00. Earth-like, `--every 10`, ~1–1.5 Gyr.
+5. **Morning report** for the user: what merged, the run ids with what to look at, highlights/zooms to open, and open decisions.
