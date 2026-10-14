@@ -154,6 +154,7 @@ Order: 1 → 6, small to large.
    - plateaus;
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
+5b. **Real waterfalls in the zoom.** Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
 
 ## Known issues to come back to (collected from the agents' reports, 2026-10-13)
