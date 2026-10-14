@@ -922,7 +922,7 @@ class Shield(Synth):
         if np.any(g > 0.05):  # scoured: rock basins and knobs
             n = cx.noise(6.0, 3, 451)
             knob = cx.noise(2.5, 2, 452)
-            z = z - g * (45.0 * smoothstep(0.35, 0.8, n) - 8.0 * knob)
+            z = z - g * (45.0 * smoothstep(0.45, 0.85, n) - 3.0 * knob)
         return z
 
     def basins(self, cx):

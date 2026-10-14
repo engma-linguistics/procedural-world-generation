@@ -2185,7 +2185,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "min_m": round(float(h.min()), 1),
         "max_m": round(float(h.max()), 1),
         "max_discharge_m3s": round(float(discharge.max()), 1),
-        "lakes": int(len(np.unique(ZK.label_components(lake, nx, ny)[0][lake]))),
+        "lakes": int(len(np.unique(ZK.label_components(lake | lf_lake, nx, ny)[0][lake | lf_lake]))),
+        # (of which in a landform class's closed basins: a rift's half-grabens, a scoured shield)
         "landform_lakes": int(len(np.unique(ZK.label_components(lf_lake, nx, ny)[0][lf_lake]))),
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
