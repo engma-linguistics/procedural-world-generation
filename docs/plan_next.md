@@ -224,6 +224,8 @@ Order: 1 → 6, small to large.
 - Continental area overshoots to about 45% (target 40%).
 - Ocean plate boundaries are ragged.
 
+- **Too few plates after the mantle merge:** seed 1 drops to 2–3 plates around 500–700 Myr at both L6 and L7. Showcases end with 4 (2b59b1, 9219ac); Earth has ~7 major plus ~8 minor. Rifting may need to split big plates more readily, or plate absorption is too eager (41–61 absorbed vs 52–69 rifts per run). See `docs/review/overnight_runs.md`.
+
 **Highlights**
 - ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
