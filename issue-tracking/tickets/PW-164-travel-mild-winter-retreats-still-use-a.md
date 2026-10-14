@@ -1,4 +1,5 @@
 ---
+id: PW-164
 title: "Travel: mild-winter retreats still use a dry winter month as the sunshine proxy"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: clouds
 blocked_by: []
 relates: [PW-142, PW-143]
 refs: [planet/highlights.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -20,3 +23,6 @@ winter month) still uses a dry winter month as its stand-in for "sunny". A winte
 sunshine (e.g. >= 5-6 h/day; the Canaries ~6-7, Nice ~5, London ~2) and put the hours in the
 blurb, as the beaches do ("January 16 °C, 6 h of sunshine a day, 17 mm of rain").
 - [ ] mild winters ranked by winter sunshine; test_highlights updated
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-mild-winter-sunshine.md (found by clouds).

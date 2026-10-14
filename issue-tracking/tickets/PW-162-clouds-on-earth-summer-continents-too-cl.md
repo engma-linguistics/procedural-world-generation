@@ -1,4 +1,5 @@
 ---
+id: PW-162
 title: "Clouds on Earth: summer continents too clear, wet tropics too gloomy, NH winter trade-wind seas too cloudy"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: clouds
 blocked_by: []
 relates: [PW-143, PW-019]
 refs: [planet/climate.py, tools/earth_check.py, "world dc3732", docs/review/clouds/]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -31,3 +34,6 @@ What I'd try: a seasonal free-troposphere temperature in the stability measure (
 weakens in winter); let cumulus over land use the (vapour_mixed) humidity of the summer air
 mass rather than the kernel's drained vapour. Most of the rest should move with PW-015 (rain).
 - [ ] Siberia annual cloud >= 55%, Canary January <= 65%, without moving the passing regions
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-cloud-regional-misses.md (found by clouds).

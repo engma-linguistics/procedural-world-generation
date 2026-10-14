@@ -1,4 +1,5 @@
 ---
+id: PW-163
 title: "Clouds on temperature (PW-143 phase 2): replace evap_cool with cloud shading, or leave clouds diagnostic?"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: clouds
 blocked_by: []
 relates: [PW-143]
 refs: [planet/climate.py, tools/earth_check.py, "world dc3732"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
   `continental`, `evap_cool` and the ice terms. Largest, and the only one likely to improve Earth.
 
 Lean: A now; B only if generated worlds show cloudy coasts that are too hot in summer.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-cloud-temperature-feedback.md (found by clouds).
