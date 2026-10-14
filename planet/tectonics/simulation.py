@@ -15,6 +15,11 @@ Everything else that changes is listed in Simulation.STATE, by group:
   earth      the earth system (earth.py): EARTH_STATE
   log        events, budget
 
+Simulation.state() returns a deep copy of all of it, and
+Simulation.from_state() / load_state() put it back: a run continued from
+a saved state is bit-identical to one that never stopped (tests/test_state.py),
+because each step's randomness depends only on (seed, step_no).
+
 The world view (w_age, w_cont, w_thick, w_rock, w_cover, w_extra, w_ref,
 w_elev, swell) is the plates' crust seen on the world grid. Between steps
 it is always _world_view() of the state above, so it isn't part of it.
@@ -22,6 +27,7 @@ it is always _world_view() of the state above, so it isn't part of it.
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -70,12 +76,25 @@ class Simulation:
         *EARTH_STATE, "events", "budget")
 
     def __post_init__(self):
+        self._configure()
+        self._init_state()
+        initial_state(self)
+        self._world_view()
+        # tidy up slivers left by the initial set-up before the clock starts
+        events.absorb_slivers(self)
+        self.events.clear()
+        self._world_view()
+
+    def _configure(self):
+        """What follows from the grid."""
         g = self.grid
-        n = g.n
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
-        self.cell_area = 4 * np.pi / n
+        self.cell_area = 4 * np.pi / g.n
         self.edge_len = g.spacing
 
+    def _init_state(self):
+        """Every STATE attribute, empty: no plates yet, no climate yet."""
+        n = self.grid.n
         # clock
         self.step_no = 0
         self.t = 0.0
@@ -106,12 +125,30 @@ class Simulation:
         self.events: list[events.Event] = []
         self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process
 
-        initial_state(self)
+    # ------------------------------------------------------------- state
+    def state(self) -> dict:
+        """A deep copy of everything that changes during the run: {name:
+        value} for every name in STATE (numpy arrays, a Plates, plain
+        lists/dicts/floats, None for climate fields not computed yet).
+        (A checkpoint file can shrink it a lot: only plates.alive slots
+        matter, and of their (P, n) arrays only the plates.owned cells.)"""
+        return copy.deepcopy({name: getattr(self, name) for name in self.STATE})
+
+    def load_state(self, state: dict):
+        """Continue from a state() taken from a simulation with the same
+        grid, seed, params and dt."""
+        for name in self.STATE:
+            setattr(self, name, copy.deepcopy(state[name]))
         self._world_view()
-        # tidy up slivers left by the initial set-up before the clock starts
-        events.absorb_slivers(self)
-        self.events.clear()
-        self._world_view()
+
+    @classmethod
+    def from_state(cls, grid: Grid, seed: int, params: Params, dt: float, state: dict) -> "Simulation":
+        """A simulation resumed from state() (without building the starting planet)."""
+        sim = cls.__new__(cls)
+        sim.grid, sim.seed, sim.params, sim.dt = grid, seed, params, dt
+        sim._configure()
+        sim.load_state(state)
+        return sim
 
     # ------------------------------------------------------------- main loop
     def run(self, until_t: float, on_step=None):
