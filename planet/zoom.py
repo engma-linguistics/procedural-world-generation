@@ -80,8 +80,10 @@ Pipeline
    Distributaries take their share of the water at each split. The coarse
    rivers keep at least their valley floor (the staircase, with its falls,
    only in the valley bottom); a reach with falls has its receivers pinned
-   along its course, the river held at its staircase (floor and cap) and
-   banks held above it, so the river reaches its lips; each fall's gorge has walls held at the lip's level (cliffs,
+   along its course, the river held at its staircase (floor and cap; no
+   higher than its foot below it, down to the next confluence) and valley
+   sides a few km wide held above it (banks()), so the river reaches its
+   lips and doesn't run perched above the land beside it; each fall's gorge has walls held at the lip's level (cliffs,
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, under ice too); any pits
@@ -340,7 +342,8 @@ COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
 FALLS_MIN_SHARE = 0.05  # a reach's falls are placed from where its pinned course carries this share of the coarse discharge
 SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is evened out, a bigger one unpinned
-RAPIDS_SIDE_GRAD = 30.0  # m/km: ... and the ground beyond its banks falls off no faster than this
+BANK_KM, BANK_SIDE_GRAD = 4.0, 30.0  # held river courses: banks this wide (km, >= 2 px), then falling off (m/km)
+BANK_MAX_Q = 300.0  # m^3/s: ... not lifting other rivers carrying this much
 
 
 def lip_resistance(surface_rock: int, basement: int, cover_km: float) -> float:
@@ -1345,6 +1348,32 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     rapids = np.zeros(npx, bool)  # below a lake's outlet (rims())
 
+    def banks(ch, z, take_max):
+        """Valley sides along a held river course (pixels ch at heights z):
+        per pixel within BANK_KM (at least 2 px) of it, the height of the
+        nearest course pixel (the highest, or lowest, of equally near ones)
+        + 0.5 m; beyond that falling off at BANK_SIDE_GRAD m/km, out to at
+        most 20 km. Returns (pixels, floor), course pixels and inactive
+        ones left out."""
+        wk = max(BANK_KM, 2 * res)
+        wmax = wk + 20.0
+        kk = int(np.ceil(wmax / res))
+        r0, c0 = np.divmod(ch, nx)
+        bd = np.full(npx, np.inf)
+        bf = np.full(npx, -np.inf if take_max else np.inf)
+        for d, dr, dc in sorted((res * np.hypot(dr, dc), dr, dc) for dr in range(-kk, kk + 1) for dc in range(-kk, kk + 1)):
+            if d > wmax:
+                break
+            r, c = r0 + dr, c0 + dc
+            inr = (r >= 0) & (r < ny) & (c >= 0) & (c < nx)
+            win, f = r[inr] * nx + c[inr], z[inr]
+            a = active[win] & (bd[win] >= d - 1e-9)
+            bd[win[a]] = d
+            (np.maximum if take_max else np.minimum).at(bf, win[a], f[a])
+        near = np.flatnonzero(np.isfinite(bd) & (bd > 0))
+        fz = bf[near] + 0.5 - BANK_SIDE_GRAD * np.maximum(bd[near] - wk, 0.0)
+        return near, fz
+
     def rims(rec, outs, step):
         """Per-pixel floor (rims above their lake) and cap (outlet channels
         below it) for the landscape integration."""
@@ -1360,32 +1389,18 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 # lies no more than RAPIDS_GRAD * s below the lake, s km down
                 # the river (rapids), out to the first fall placed on the
                 # outflow, instead of a cliff down to a river graded up from far
-                # below. Its banks, out to a few km, stand a little above the
-                # river beside them (or the water just finds a neighbour that
-                # drops away), and beyond them fall off at RAPIDS_SIDE_GRAD.
+                # below. Its banks stand a little above the river beside them
+                # (or the water just finds a neighbour that drops away): banks().
                 lv = lakes[j]["level"] - 0.3
                 s_ch = np.concatenate([[0.0], np.cumsum(chain_km(ch))])
                 st_ = np.flatnonzero(step[ch] > 0)
                 rkm = min(lv / RAPIDS_GRAD, 150.0, s_ch[st_[0]] if len(st_) else np.inf)
                 ok = s_ch <= rkm
-                r0, c0 = np.divmod(ch[ok], nx)
                 fz = lv - RAPIDS_GRAD * s_ch[ok]
-                wk = max(4.0, 2 * res)  # bank width, km
-                wmax = wk + min(lv / RAPIDS_SIDE_GRAD, 20.0)
-                kk = int(np.ceil(wmax / res))
-                bd, bf = np.full(npx, np.inf), np.full(npx, -np.inf)  # distance to the nearest river pixel, its floor
-                offs = sorted((res * np.hypot(dr, dc), dr, dc) for dr in range(-kk, kk + 1) for dc in range(-kk, kk + 1))
-                for d, dr, dc in offs:
-                    if d > wmax:
-                        break
-                    r, c = r0 + dr, c0 + dc
-                    inr = (r >= 0) & (r < ny) & (c >= 0) & (c < nx)
-                    win, f = r[inr] * nx + c[inr], fz[inr]
-                    a = active[win] & (bd[win] >= d - 1e-9)
-                    bd[win[a]] = d
-                    np.maximum.at(bf, win[a], f[a])
-                near = np.isfinite(bd)
-                fz_ = np.where(bd[near] > 0, bf[near] + 0.5 - RAPIDS_SIDE_GRAD * np.maximum(bd[near] - wk, 0.0), bf[near])
+                near, fz_ = banks(ch[ok], fz, True)
+                near, fz_ = np.concatenate([ch[ok], near]), np.concatenate([fz, fz_])
+                a = active[near]
+                near, fz_ = near[a], fz_[a]
                 # (never above the coarse ground: where that drops away fast, so does the river)
                 fz_ = np.minimum(fz_, np.maximum(base[near], target[near]))
                 fl[near] = np.maximum(fl[near], fz_)
@@ -1414,7 +1429,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         quarter of the fall towards the gorge mouth, so its walls are cliffs
         and side streams join it in hanging falls."""
         step, flg, cliff, lips = np.zeros(npx), np.full(npx, -np.inf), np.zeros(npx, bool), []
-        c_idx, c_val, ends = [], [], []
+        c_idx, c_val, ends, end_z, end_k = [], [], [], [], []
         rv = (kpix >= 0) & bottom & (rec >= 0) & (Q >= 0.3 * q_course) & active  # (starting in the valley bottom)
         # (on the pinned course itself, a fraction of that will do: the coarse
         # discharge is the cell's whole, and near the head of a reach, or of a
@@ -1447,6 +1462,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             sv = np.maximum.accumulate(s_ch)
             c_idx.append(ch)
             c_val.append(stair_z(kp, sv))
+            end_z.append(float(c_val[-1][-1]))
+            end_k.append(k_)
             for st in kp["steps"]:
                 j = np.flatnonzero(sv >= st["s"])
                 if not len(j) or j[0] == 0:
@@ -1478,27 +1495,42 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         c_val = np.concatenate(c_val) if c_val else np.zeros(0)
         if len(c_idx):
             # Banks: the ground beside the river on a reach with falls stands
-            # above it (the lower of the neighbouring river pixels), so the
-            # river stays in its course down to the lip instead of leaving it
+            # above it (the lowest of the nearest river pixels), so the river
+            # stays in its course down to the lip instead of leaving it
             # (sideways, down a bare step) wherever the land next to it drains
-            # lower. Not on the river itself, nor on its course below the reach.
+            # lower, and doesn't run perched above the land beside it: valley
+            # sides a few km wide (banks()). Not on the river itself, nor on
+            # its course below the reach.
             on = np.zeros(npx, bool)
             on[c_idx] = True
             for e_ in ends:
                 on[ZK.chain(rec, e_)] = True
-            bank = np.full(npx, np.inf)
+            b, fz = banks(c_idx, c_val, False)
+            # (nor on other rivers: a bigger river nearby, or another coarse
+            # river's valley bottom, isn't lifted onto this one's banks)
+            keep = ~on[b] & ~(bottom[b] & (kpix[b] < 0)) & (Q[b] * KM2_M_PER_YR_TO_M3S < BANK_MAX_Q)
+            b, fz = b[keep], fz[keep]
+            flg[b] = np.maximum(flg[b], fz)
+            cliff[c_idx] = True  # the course and its banks don't creep either
             r, cc = np.divmod(c_idx, nx)
             for dr in (-1, 0, 1):
                 for dc in (-1, 0, 1):
                     ok = (r + dr >= 0) & (r + dr < ny) & (cc + dc >= 0) & (cc + dc < nx)
-                    np.minimum.at(bank, ((r + dr) * nx + cc + dc)[ok], c_val[ok])
-            b = np.isfinite(bank) & ~on & active
-            flg[b] = np.maximum(flg[b], bank[b] + 0.5)
-            cliff[c_idx] = True  # the course and its banks don't creep either
-            cliff[b] = True
+                    nb = ((r + dr) * nx + cc + dc)[ok]
+                    cliff[nb[active[nb] & ~on[nb]]] = True
         if lips:
             flg[[lp for lp, _, _ in lips]] = -np.inf
-        return c_idx, c_val, step, flg, cliff, lips
+        # below each reach the river runs no higher than the foot of its
+        # staircase (else it holds the reach's lower falls up: they vanish)
+        # (until it joins a bigger river, or another reach with falls)
+        below = []
+        for e_, k_ in zip(ends, end_k):
+            g = ZK.chain(rec, e_)[1:]
+            stop = (Q[g] > 1.5 * Q[e_]) | ((kpix[g] >= 0) & (kpix[g] != k_))
+            below.append(g[:np.flatnonzero(stop)[0]] if stop.any() else g)
+        b_val = np.concatenate([np.full(len(g), z_) for g, z_ in zip(below, end_z)]) if below else np.zeros(0)
+        below = np.concatenate(below) if below else np.zeros(0, np.int64)
+        return c_idx, c_val, step, flg, cliff, lips, (below, b_val)
 
     # the courses of reaches with falls (pinned receivers), on open ground
     pin = {a: b for a, b in pin_pairs if active[a] and active[b]}
@@ -1781,7 +1813,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         dist = res * np.where(diag, 1.4142, 1.0)
         # coarse river courses count as carrying at least their coarse discharge
         slope = np.minimum(C * rough * np.maximum(np.maximum(Q, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
-        c_idx, c_val, step, flg, cliff, _ = place_falls(rec, Q, hprev)
+        c_idx, c_val, step, flg, cliff, _, (b_idx, b_val) = place_falls(rec, Q, hprev)
         fl, cp = rims(rec, outs, step)
         was_river |= Q >= 0.3 * q_course
         # (on a reach with falls, only in the valley bottom: a stream wandering
@@ -1789,6 +1821,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         flc = np.where(was_river & ((kpix < 0) | bottom), z_course, -np.inf)
         flc[c_idx] = c_val  # the river itself, on reaches with falls
         cp[c_idx] = np.minimum(cp[c_idx], c_val + 1.0)  # ... at its staircase, not above it
+        np.minimum.at(cp, b_idx, b_val + 1.0)
         # (beach ridges and levees, but not under the channels themselves)
         fl = np.maximum(np.maximum(np.maximum(np.maximum(fl, flg), flc), vpin),
                         np.where(Q * KM2_M_PER_YR_TO_M3S < 30.0, delta_floor, -np.inf))
