@@ -71,7 +71,7 @@ After making a showcase: slice its worlds, then `uv run python -m planet highlig
    - **PW-005 landform classes**, data side first: PW-006 stratigraphy, PW-007 rocks, PW-008 history, PW-009 classes; then the zoom batches PW-010, PW-011, PW-012;
    - **zoom small batch** PW-062 to PW-070, done before PW-010 starts (both edit `zoom.py`);
    - **tectonics small:** PW-050, PW-048 (keep clear of PW-008's files, or fold them into it).
-3. **Tectonics quality:** PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge).
+3. **Tectonics quality:** PW-108 (km-scale cell churn at converging boundaries; may feed PW-053), PW-109 (climate before events, small), PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge).
 4. **Then the L8** (owner approved one, once a big batch of tickets is closed): Earth-like, `--every 10`, ~1.2 Gyr, `--checkpoint-every 300`, plus a matching L7. Use `--at auto` for worlds. It waits for PW-008 (per-cell history is recorded during the run, so an earlier L8 could never get landform classes) and for step 3.
 5. **Other big epics:**
    - PW-090 finishing pass (PW-091 first: time zoom from a chosen world → finished world; PW-037 imprint; PW-104 embedded ice ages);

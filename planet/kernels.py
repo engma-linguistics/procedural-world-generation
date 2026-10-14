@@ -234,6 +234,118 @@ def _root(parent, i):
 
 
 @njit(cache=True)
+def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
+    """elev with every hollow shallower than min_depth filled to its rim.
+
+    Water rises in all basins at once (cells in order of height, as in
+    lakes()). Where basins meet at a saddle, each one except the deepest
+    whose floor lies less than min_depth below the saddle is filled to it
+    (it drains into the deepest through channels too small to see); where a
+    basin reaches the sea's drainage, it is filled to that point if it is
+    shallower than min_depth. So a shallow dip in the floor of a deep basin
+    becomes part of the basin's floor instead of a pit of its own, and a
+    whole basin less than min_depth deep drains. Filled ground rises by eps
+    per cell away from where it spills, so water runs across it (as in
+    priority_flood). elev: m, <= 0 is sea.
+    Returns (h, keep): the filled elevation, and the cells of the basins
+    left standing (deeper than min_depth)."""
+    n = elev.shape[0]
+    h = elev.copy()
+    sea = elev <= 0
+    if not sea.any():
+        sea[np.argmin(elev)] = True
+    asc = np.argsort(elev, kind="mergesort")
+    parent = np.arange(n)
+    bottom = elev.copy()  # each basin's lowest point
+    tosea = sea.copy()
+    done = sea.copy()
+    keep = np.zeros(n, np.bool_)
+    head = np.arange(n)  # each basin's cells, as a linked list
+    tail = np.arange(n)
+    nxt = np.full(n, -1, np.int64)
+    roots = np.empty(16, np.int64)
+    mark = np.full(n, -1, np.int64)  # cells being filled at step t (and not reached yet)
+    queue = np.empty(n, np.int64)
+    for t in range(n):
+        i = asc[t]
+        if sea[i]:
+            continue
+        z = elev[i]
+        nr = 0
+        to_sea = False
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if not done[j]:
+                continue
+            r = _root(parent, j)
+            if tosea[r]:
+                to_sea = True
+                continue
+            seen = False
+            for k in range(nr):
+                if roots[k] == r:
+                    seen = True
+            if not seen:
+                roots[nr] = r
+                nr += 1
+        done[i] = True
+        if nr == 0 and not to_sea:  # a new pit
+            continue
+        # the deepest basin first: it receives the others
+        for k in range(1, nr):
+            if bottom[roots[k]] < bottom[roots[0]]:
+                roots[0], roots[k] = roots[k], roots[0]
+        if to_sea or nr > 1:  # spill point or saddle: shallow basins fill to it
+            nq = 0
+            for k in range(0 if to_sea else 1, nr):
+                r = roots[k]
+                if z - bottom[r] < min_depth:
+                    c = head[r]
+                    while c >= 0:
+                        mark[c] = t
+                        c = nxt[c]
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[e]
+                if mark[j] == t:
+                    mark[j] = -1
+                    h[j] = z + eps
+                    queue[nq] = j
+                    nq += 1
+            q0 = 0
+            while q0 < nq:
+                c = queue[q0]
+                q0 += 1
+                for e in range(nbr_off[c], nbr_off[c + 1]):
+                    j = nbr_idx[e]
+                    if mark[j] == t:
+                        mark[j] = -1
+                        h[j] = h[c] + eps
+                        queue[nq] = j
+                        nq += 1
+            if to_sea:
+                for k in range(nr):
+                    r = roots[k]
+                    tosea[r] = True
+                    if z - bottom[r] >= min_depth:
+                        c = head[r]
+                        while c >= 0:
+                            keep[c] = True
+                            c = nxt[c]
+                tosea[i] = True
+                continue
+        r0 = roots[0]
+        for k in range(1, nr):
+            r = roots[k]
+            parent[r] = r0
+            nxt[tail[r0]] = head[r]
+            tail[r0] = tail[r]
+        parent[i] = r0
+        nxt[tail[r0]] = i
+        tail[r0] = i
+    return h, keep
+
+
+@njit(cache=True)
 def _wet_try(r, c, q, ev, loss, wet):
     """Put cell c under root r's lake if r has the water for it: the lake
     takes cells in order of height until its evaporation matches its

@@ -203,6 +203,7 @@ flowchart LR
 - **Flow accumulation** sums runoff downstream.
 
 **Lakes** are **fill-and-spill** with evaporation:
+0. Hollows less than 20 m deep are filled first: at ~110 km a cell's height is a mean, and channels too small to see drain them. This also holds inside a basin, so dips in a flat floor join the floor instead of becoming pits of their own.
 1. Water rises in all basins at once, and basins merge as they meet.
 2. A basin grows only while its inflow beats the evaporation off its surface.
 3. How it ends:
@@ -210,7 +211,7 @@ flowchart LR
    - It stops first: a **closed salt lake** (the Caspian, Great Salt Lake).
    - It is a dry pit: a **salt pan** (playa).
 
-On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~21% of land drains inland (Earth: ~18%).
+On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth: ~18%).
 
 ## 6. Coasts: waves, tides, deltas (`coast.py`)
 
