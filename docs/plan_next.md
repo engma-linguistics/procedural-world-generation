@@ -184,6 +184,12 @@ Order: 1 → 6, small to large.
 - **Sediment piles reach 33 km** (Earth max about 20–22 km). (`water`)
 - **Drainage switches outlet in one step when a rift opens.** (`water`, optional)
 - **Zoom lakes are sinks:** the water level is wrong and the floor is a flat 42 m; there are no deltas or distributaries. (`zoomwater`)
+- **Zoom lakes and deltas are merged (`zoomwater`); what's left:**
+  - The lake outlet river drops about 140 m within a few km (a cliff waterfall). The downstream river's profile is built up from the sea, well below the lake. It needs a floor on the outlet channel that steps down gradually downstream.
+  - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). River water entering at the zoom's edge can drain straight back out through the edge.
+  - Delta fans are small, and their branches run straight (only 8 possible step directions). There are no distributaries when the fine-scale river reaches the sea away from the coarse mouth.
+  - A small lake fragment sometimes has no outlet and acts as a sink.
+  - The real `lake_level`/`lake_kind`/runoff layers from `water` are untested in the zoom (only the fallback was exercised).
 - **Fjords aren't carved in the zoom:** fjord coasts are only detected.
 
 **Crust and continents**
