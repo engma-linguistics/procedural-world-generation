@@ -31,8 +31,9 @@ seasons doc in `world.seasons` notes the months can be swapped there.
 If the climate gains a seasonal SST (ocean.py has one internally) or a cloud fraction,
 store them as world layers (`sst_jul/jan`, `cloud_jul/jan`) and use them in
 `_beach_cands`.
-- [ ] decide whether a seasonal SST / cloud layer is worth storing on worlds
-- [ ] if so, switch the beach finder to it
+- [x] decide whether a seasonal SST / cloud layer is worth storing on worlds (SST: yes, PW-144; clouds: PW-143)
+- [x] if so, switch the beach finder to it (SST done: `_beach_cands` uses sst_jul / sst_jan; the sunshine proxy waits for clouds)
 
 ## Updates
+- 2026-10-14: The warm-sea half is done (PW-144, viewerocean): worlds store sst_jul / sst_jan and the beach finder uses the sea's own summer surface temperature next to the coast (falls back to the air over the sea on older worlds). Sunshine still uses the dry-month proxy until clouds (PW-143).
 - 2026-10-14: Created from inbox draft draft-travel-sunshine-sst.md (found by travel).

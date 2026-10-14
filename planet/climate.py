@@ -715,6 +715,24 @@ def _qsat(t, k):
     return np.exp(k * t)
 
 
+def humidity(q: np.ndarray, t_air: np.ndarray, tune: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Dew point (C) and relative humidity (%) of the air near the ground,
+    holding q water vapour (_rain's, in _qsat units) at t_air C, by the
+    model's own Clausius-Clapeyron rate q_k (a little gentler than the real
+    ~0.07/C). A half-year's mean air is never quite saturated: the ratio x
+    of q to what the air can hold saturates softly, x / (1 + x^4)^(1/4)
+    (0.85 over the sea -> ~79%; 1 -> 84%), where the vapour comes from the
+    air mass aloft, warmer than a frosty ground. And the rain model's air
+    loses its water too readily over long dry stretches (it is tuned for the
+    rain, not the vapour): the driest air is held at HUMID_MIN."""
+    x = np.maximum(q / _qsat(t_air, tune["q_k"]), HUMID_MIN)
+    rh = x / (1.0 + x**4) ** 0.25
+    return t_air + np.log(rh) / tune["q_k"], 100.0 * rh
+
+
+HUMID_MIN = 0.15  # the lowest relative humidity humidity() reports
+
+
 LQ = 9.5  # C of moist static energy per unit of vapour (latent heat / heat capacity * 3.8 g/kg)
 
 
@@ -739,8 +757,9 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
     - then the air moves on (move: share per iteration; slow winds linger)
       and mixes with its neighbours (diffusion: eddies, storms).
     Returns the rain rate averaged over the last quarter of the iterations,
-    the large-scale part of it, and the evaporation from the sea (the water
-    the air takes up over it, same units). (Parallel over cells; the one sum over
+    the large-scale part of it, the evaporation from the sea (the water
+    the air takes up over it, same units), and the air's water vapour left
+    after its rain (_qsat units: 1 = saturated at 0 C). (Parallel over cells; the one sum over
     all cells stays serial, so the results don't depend on the threads.)"""
     S, n = qs.shape
     m = src_q.copy()
@@ -750,6 +769,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
     tcor = np.zeros((S, n))  # wet ground cooler, dry ground hotter (C)
     moved = np.empty((S, n))
     acc_up = np.zeros((S, n))  # water the air takes up over the sea (evaporation)
+    acc_q = np.zeros((S, n))  # the air's water vapour after its rain (for humidity)
     tail = max(iterations // 4, 1)
     for it in range(iterations):
         if evap != 0 and it >= 20 and it % 10 == 0:
@@ -801,6 +821,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                 if last:
                     acc[k, i] += r
                     acc_ls[k, i] += r_ls
+                    acc_q[k, i] += q - r
             # the air moves on: each cell keeps what stays and gathers what
             # its upwind neighbours send it
             for i in prange(n):
@@ -809,7 +830,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                     j = in_src[e]
                     mo += move[k, j] * m[k, j] * in_w[k, e]
                 moved[k, i] = mo
-    return acc / tail, acc_ls / tail, acc_up / tail
+    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail
 
 
 def storminess(grid: Grid, t_sl: np.ndarray) -> np.ndarray:
@@ -951,14 +972,15 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
                 diff=diff, out_w=out_w, B=B)
 
 
-def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray]:
+def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rain rate (model units) per season, [season, cell], from the inputs
-    of _season_inputs for each season, and the evaporation from the sea
-    (same units and shape; 0 on land)."""
+    of _season_inputs for each season, the evaporation from the sea
+    (same units and shape; 0 on land) and the air's water vapour (_qsat
+    units, same shape; see humidity())."""
     G = _geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
-    r, r_ls, up = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
+    r, r_ls, up, vap = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
                     st["warm"], st["move"], st["diff"], st["out_w"][:, G["in_e"]], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
                     tune["cv_scale"], tune["et"], tune["evap_cool"], tune["mean_mm"])
@@ -969,7 +991,7 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarr
     for k in range(len(seasons_in)):
         w = np.clip(tune["storm_mix"] * st["B"][k], 0, 0.9)
         r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
-    return r, up
+    return r, up, vap
 
 
 TUNE = dict(
@@ -1322,6 +1344,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       precip, p_jul, p_jan   mm/yr: annual, and the rate in each half-year
       koppen                 KOPPEN id
       sst                    C: sea-surface temperature (annual)
+      sst_jul, sst_jan       C: ... in July and January (the peak months of the sea's
+                             seasonal swing, as t_warm / t_cold; not below freezing)
+      dew_jul, dew_jan       C: dew point of the air near the ground, July / January
+                             half-year (humidity())
+      rh_jul, rh_jan         %: relative humidity, July / January half-year
       wind_jul, wind_jan     tangent vectors, ~1 = a steady trade wind
       current                tangent vectors of the surface ocean currents
       jet_jul, jet_jan       tangent vectors, m/s: the upper-level wind (jet stream)
@@ -1407,7 +1434,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         j, baro = jet_stream(grid, t_s, tune)
         jets.append(j)
         tracks.append(storm_track(grid, j, baro, tune))
-    (r_jul, r_jan), (e_jul, e_jan) = rain(
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(
         grid, elev, [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
                      _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])],
         tune)
@@ -1449,8 +1476,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
+    # July / January: the sea's peak months (where it is iced over most of
+    # the year, the summer's heat goes into melting the ice: a smaller
+    # swing), and the half-years' humidity
+    swing = sgn * sea_half * np.clip((sst - FREEZE) / 4.0, 0.1, 1.0)
+    sst_m = (np.maximum(sst + swing, FREEZE), np.maximum(sst - swing, FREEZE))
+    tm = 0.5 * (t_warm + t_cold)
+    dt = hk * (np.where(north, t_warm, t_cold) - tm)
+    (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(q_jul, tm + dt, tune), humidity(q_jan, tm - dt, tune)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
-                sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
+                sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
+                rh_jan=rh_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
                 sss=oc["sss"], density=oc["density"], density_winter=oc["density_w"], overturning=oc["sinking"],
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],
                 sea_evap=sea_evap, sea_ice_growth=ice_m, moc_sites=oc["sites"],

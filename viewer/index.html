@@ -104,6 +104,11 @@
   .hl:hover { background: #1d2738; }
   .hl.sel { background: #223652; }
   .hl .k { color: var(--muted); display: inline-block; min-width: 20px; }
+  .hl .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  #hlCats { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+  #hlCats button { font-size: 11px; padding: 1px 6px; border-radius: 9px; background: #151c28; color: var(--muted); border: 1px solid var(--border); cursor: pointer; }
+  #hlCats button.on { color: #fff; border-color: currentColor; }
+  #hlCats button .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
   .hl .blurb { color: var(--muted); padding: 2px 0 2px 20px; }
   #hlList.stale .hl b { opacity: .6; }
   /* top right, so it stays put over zoom.html too (which moves its own info box down when embedded) */
@@ -149,6 +154,7 @@
     <div class="row" style="align-items:center"><button id="hlFind" class="btn">Find highlights</button>
       <label title="Markers and numbers on the globe"><input type="checkbox" id="hlMarks" checked> markers</label></div>
     <div id="hlStatus" class="muted"></div>
+    <div id="hlCats"></div>
     <div id="hlList"></div>
   </details>
 
@@ -161,7 +167,8 @@
     <label data-needs="wind_e"><input type="checkbox" id="winds"> Winds <span id="windYear">(yearly average)</span>
       <select id="windSeason" data-needs="wind_jul_e" style="flex: none; width: auto; padding: 1px" title="Surface winds averaged over the year, or over the July / January half-years (monsoons reverse between them)">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
-    <label data-needs="current_e"><input type="checkbox" id="currents"> Ocean currents</label>
+    <label data-needs="current_e" title="Surface currents (wind-driven gyres) as streamlines: brighter = faster, chevrons show the way"><input type="checkbox" id="currents"> Ocean currents</label>
+    <label data-needs="sinking" title="The thermohaline overturning: where deep water sinks (rings, sized by Sv), the warm surface inflow feeding it (the model's route) and a schematic of the deep return flow (not modelled)"><input type="checkbox" id="overturning"> Overturning (deep water)</label>
     <label data-needs="jet_e" title="Upper-level winds (~10 km up), yearly average"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
     <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
@@ -290,13 +297,20 @@ RAMPS.rainfall = RAMPS.precipitation;
 RAMPS['wave power'] = [[0, '#1d2f55'], [5, '#2f6f8f'], [15, '#4fae9b'], [30, '#b8d66b'], [60, '#f2c14e'], [100, '#e8603c']];  // kW/m
 RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];  // m
 RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
+// the sea and the air's moisture (worlds): sea-surface temperature (C), salinity (psu), relative humidity (%), dew point (C)
+RAMPS['sea temperature'] = [[-2, '#3b3a8f'], [4, '#3f74c0'], [10, '#5fb6c8'], [16, '#bfe3b0'], [21, '#f2d77a'], [26, '#ef8f45'], [30, '#b8282a']];
+RAMPS.salinity = [[31, '#3b2a78'], [33, '#3f6fb5'], [34.2, '#8fc3d8'], [34.9, '#e9eee6'], [35.8, '#f0c870'], [37, '#d9783a'], [39, '#9e2a1e']];
+RAMPS.humidity = [[15, '#b98a4f'], [35, '#e3cf94'], [55, '#d9e7c4'], [70, '#7fc3b0'], [82, '#3f8fb0'], [95, '#244f8f']];
+RAMPS['dew point'] = [[-25, '#5b4f9a'], [-5, '#9fb0d0'], [5, '#d8e6e0'], [12, '#b9dc8a'], [17, '#f2d55e'], [21, '#ef8a3a'], [25, '#b8283a']];
 // model minus observed (Earth reference world): temperature in C, rainfall as log2 of the ratio
 RAMPS['temperature difference'] = [[-10, '#2b5fb3'], [-5, '#7fa8de'], [-1, '#eef1f4'], [1, '#eef1f4'], [5, '#e8956b'], [10, '#b2262b']];
 RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], [0.2, '#f0ece2'], [1, '#80cdc1'], [2, '#018571']];
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
                 'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed',
-                'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)' };
+                'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
+                'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
+                humidity: '% rel. humidity, year', 'dew point': '°C dew point, year' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -318,7 +332,8 @@ function obsView(layer) {
 // Seasons (PW-126): worlds store July and January temperature and rain
 // (temperature_jul, precipitation_jan, ...). state.season ('' = the year,
 // 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
-const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation' };
+const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation',
+                   'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint' };
 const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
@@ -334,8 +349,10 @@ function seasonalData(layer) {
 function seasonUnits(layer) {
   const s = colourSeason(layer);
   if (!s) return UNITS[layer];
-  return SEASONAL[layer] === 'temperature' ? `°C, ${SEASON_NAMES[s]} mean`
-    : `mm/yr, ${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate`;
+  const half = s === 'jul' ? 'Apr–Sep' : 'Oct–Mar';
+  return { temperature: `°C, ${SEASON_NAMES[s]} mean`, sst: `°C sea surface, ${SEASON_NAMES[s]}`,
+           humidity: `% rel. humidity, ${half}`, dewpoint: `°C dew point, ${half}` }[SEASONAL[layer]]
+    || `mm/yr, ${half} rate`;
 }
 function setSeason(s) {
   state.season = s in SEASON_NAMES ? s : '';
@@ -390,6 +407,8 @@ function lakeLine(i) {
   return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ~${Math.round(d)} m deep` : '');
 }
 
+// colour layers drawn at sea only -> their world layer
+const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst' };
 // fills a Float32Array(3n) with per-cell colours
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
@@ -420,9 +439,13 @@ function cellColors(layer) {
       if (elev[i] <= 0 || !L.landform[i]) c.copy(OCEAN); else c.set(V.landformColors[L.landform[i]] || '#888');
     } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
     else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
-    else if (layer === 'wave power' || layer === 'tide range') {  // at sea only
+    else if (layer === 'wave power' || layer === 'tide range' || layer === 'salinity' || layer === 'sea temperature') {  // at sea only
       if (elev[i] > 0) c.copy(BARE).lerp(OCEAN, 0.15);
-      else rampFns[layer](layer === 'wave power' ? L.wave_power[i] : L.tide_range[i], c);
+      else rampFns[layer]((sv || L[SEA_LAYERS[layer]])[i], c);
+    }
+    else if (layer === 'humidity' || layer === 'dew point') {  // land and sea (land a little greyed, for the coasts)
+      rampFns[layer](sv[i], c);
+      if (elev[i] > 0) c.lerp(BARE, 0.3);
     }
     else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](sv[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
@@ -450,6 +473,9 @@ function availableLayers() {
   if (V.layers.landform) ls.push('landforms');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
+  if (V.layers.sst) ls.push('sea temperature');
+  if (V.layers.salinity) ls.push('salinity');
+  if (V.layers.humidity) ls.push('humidity', 'dew point');
   return ls;
 }
 
@@ -693,7 +719,18 @@ function buildOverlays() {
     const w = windKey();  // 'wind' or a half-year's 'wind_jul' / 'wind_jan'
     overlays.winds = flowArrows(w + '_e', w + '_n', 0xffe08a, false, 2, 50);
   }
-  if ($('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1, 50);
+  // (streamlines take ~0.15 s at level 7: arrows while a run plays)
+  if ($('currents').checked && L.current_e) {
+    if (state.playing) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1, 50);
+    else [overlays.currents, overlays.currentHeads] = streamOverlay('current_e', 'current_n');
+  }
+  mocGroup.children.forEach((o) => { o.material.map?.dispose(); o.material.dispose(); });
+  mocGroup.clear();
+  if ($('overturning').checked && V.kind === 'world' && V.meta.overturning) {
+    const labels = [];
+    Object.assign(overlays, overturningOverlay(V.meta.overturning, labels));
+    labels.forEach((l) => mocGroup.add(l));
+  }
   if ($('jet').checked && L.jet_e) overlays.jet = flowArrows('jet_e', 'jet_n', 0xd59cff, false, 2, 2.5, 1.02);
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
@@ -760,6 +797,235 @@ function buildOverlays() {
   buildAxis();
   buildHighlightMarks();
 }
+// ------------------------------------------------------------ ocean currents as streamlines, the overturning loop
+// Streamlines (Jobard & Lefer 1997, simplified): from evenly spread seeds,
+// trace the current both ways (midpoint steps on the sphere, the velocity
+// interpolated from the nearest cells) until the line reaches land, slack
+// water, or comes within STREAM_SEP of another line (or closes on itself:
+// a gyre). Brighter = faster; chevrons show the way it flows. Cached per
+// world / frame, in lat/lon.
+const STREAM_SEP = 2.6 * Math.PI / 180;  // rad between neighbouring lines
+function lineColored(pts, cols, opacity = 1) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  return new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: opacity < 1, opacity }));
+}
+function streamlines(ke, kn) {
+  const key = `${ke}|${V.kind === 'run' ? V.t : V.id}`;
+  if (V._stream && V._stream.key === key) return V._stream.lines;
+  const G = V.grid, L = V.layers, n = V.n, nbr = G.nbr;
+  const P = new Float64Array(3 * n), U = new Float64Array(3 * n), spd = new Float64Array(n);
+  const sea = [];
+  for (let i = 0; i < n; i++) {
+    const la = G.lat[i] * Math.PI / 180, lo = G.lon[i] * Math.PI / 180, cla = Math.cos(la);
+    P[3 * i] = cla * Math.cos(lo); P[3 * i + 1] = cla * Math.sin(lo); P[3 * i + 2] = Math.sin(la);
+    if (L.elevation[i] > 0) continue;
+    const ue = L[ke][i], un = L[kn][i];
+    U[3 * i] = -Math.sin(lo) * ue - Math.sin(la) * Math.cos(lo) * un;
+    U[3 * i + 1] = Math.cos(lo) * ue - Math.sin(la) * Math.sin(lo) * un;
+    U[3 * i + 2] = cla * un;
+    spd[i] = Math.hypot(ue, un); sea.push(spd[i]);
+  }
+  sea.sort((a, b) => a - b);
+  const ref = Math.max(sea[Math.floor(0.9 * (sea.length - 1))] || 0, 1e-6);
+  const h = Math.sqrt(4 * Math.PI / n), step = Math.min(0.45 * h, STREAM_SEP / 4), minSpd = 0.12 * ref;
+  const dot = (p, i) => p[0] * P[3 * i] + p[1] * P[3 * i + 1] + p[2] * P[3 * i + 2];
+  const locate = (p, c) => {  // greedy walk to the nearest cell
+    for (;;) {
+      let best = c, bd = dot(p, c);
+      for (const j of nbr[c]) { const d = dot(p, j); if (d > bd) { bd = d; best = j; } }
+      if (best === c) return c;
+      c = best;
+    }
+  };
+  const vel = (p, c) => {  // inverse-distance mean of the cell's and its neighbours' currents, on p's tangent plane
+    let vx = 0, vy = 0, vz = 0, ws = 0;
+    for (const j of [c, ...nbr[c]]) {
+      const w = 1 / (1 - dot(p, j) + 0.05 * h * h);
+      vx += w * U[3 * j]; vy += w * U[3 * j + 1]; vz += w * U[3 * j + 2]; ws += w;
+    }
+    vx /= ws; vy /= ws; vz /= ws;
+    const r = vx * p[0] + vy * p[1] + vz * p[2];
+    return [vx - r * p[0], vy - r * p[1], vz - r * p[2]];
+  };
+  const move = (p, v, s) => {  // p + s * unit(v), back onto the sphere
+    const m = Math.hypot(...v) || 1, q = [p[0] + s * v[0] / m, p[1] + s * v[1] / m, p[2] + s * v[2] / m], l = Math.hypot(...q);
+    return [q[0] / l, q[1] / l, q[2] / l];
+  };
+  // occupancy: lat/lon bins of ~STREAM_SEP / 2, holding [line, step, point]
+  const bdeg = STREAM_SEP * 90 / Math.PI, rows = Math.ceil(180 / bdeg), occ = new Map();
+  const colsOf = (r) => Math.max(1, Math.round(360 * Math.cos((-90 + (r + 0.5) * bdeg) * Math.PI / 180) / bdeg));
+  const llOf = (p) => [Math.asin(Math.max(-1, Math.min(1, p[2]))) * 180 / Math.PI, Math.atan2(p[1], p[0]) * 180 / Math.PI];
+  const rowOf = (la) => Math.max(0, Math.min(rows - 1, Math.floor((la + 90) / bdeg)));
+  const colOf = (lo, r) => { const cols = colsOf(r); return Math.floor((lo + 180) / 360 * cols) % cols; };
+  const sep2 = 0.5 * (0.5 * STREAM_SEP) ** 2, selfGap = 3 * STREAM_SEP / step;
+  // another line (or this one, far back along it) within ~STREAM_SEP / 2 (seed: within STREAM_SEP)
+  const near = (p, line, k, seed = false) => {
+    const [la, lo] = llOf(p), r = rowOf(la), w = seed ? 2 : 1, lim = seed ? 4 * sep2 : sep2;
+    for (let rr = Math.max(0, r - w); rr <= Math.min(rows - 1, r + w); rr++) {
+      const cols = colsOf(rr), c = colOf(lo, rr);
+      for (let dc = -w; dc <= w; dc++) {
+        const o = occ.get(rr * 100000 + ((c + dc + cols) % cols));
+        if (!o) continue;
+        for (const [l2, k2, q] of o) {
+          if (l2 === line && Math.abs(k2 - k) < selfGap) continue;
+          if (1 - (p[0] * q[0] + p[1] * q[1] + p[2] * q[2]) < lim) return true;
+        }
+      }
+    }
+    return false;
+  };
+  const mark = (p, line, k) => {
+    const [la, lo] = llOf(p), r = rowOf(la), key = r * 100000 + colOf(lo, r);
+    (occ.get(key) || occ.set(key, []).get(key)).push([line, k, p]);
+    return key;
+  };
+  const lines = [], maxSteps = Math.round(Math.PI / step);
+  for (let seed = 0; seed < n && lines.length < 900; seed++) {
+    if (L.elevation[seed] > 0 || spd[seed] < 2.5 * minSpd) continue;
+    const p0 = [P[3 * seed], P[3 * seed + 1], P[3 * seed + 2]], id = lines.length;
+    if (near(p0, -1, 0, true)) continue;
+    const keys = [mark(p0, id, 0)];
+    const half = (sgn) => {
+      const pts = [], sp = [];
+      let p = p0, c = seed;
+      for (let k = 1; k < maxSteps; k++) {
+        const v1 = vel(p, c), pm = move(p, v1, 0.5 * step * sgn), cm = locate(pm, c);
+        const v2 = vel(pm, cm), q = move(p, v2, step * sgn), cq = locate(q, cm);
+        const s = Math.hypot(...v2);
+        if (L.elevation[cq] > 0 || s < minSpd || near(q, id, sgn * k)) break;
+        pts.push(q); sp.push(s); keys.push(mark(q, id, sgn * k)); p = q; c = cq;
+      }
+      return [pts, sp];
+    };
+    const [f, fs] = half(1), [b, bs] = half(-1);
+    if (f.length + b.length < 6) {  // too short: forget it
+      for (const key of new Set(keys)) occ.set(key, occ.get(key).filter((e) => e[0] !== id));
+      continue;
+    }
+    const pts = [...b.reverse(), p0, ...f], sp = [...bs.reverse(), spd[seed], ...fs];
+    lines.push({ pts: pts.map(llOf), sp: sp.map((x) => x / ref) });
+  }
+  V._stream = { key, lines };
+  return lines;
+}
+// lat/lon -> a point on screen, and the chevron (arrowhead) at b coming from a
+function chevron(a, b, size, out) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A);
+  if (d.lengthSq() === 0) return;
+  d.normalize().multiplyScalar(size);
+  const normal = state.mode === 'globe' ? B.clone().normalize() : new THREE.Vector3(0, 0, 1);
+  const side = new THREE.Vector3().crossVectors(normal, d).multiplyScalar(0.6);
+  out.push(...b, ...B.clone().sub(d).add(side).toArray(), ...b, ...B.clone().sub(d).sub(side).toArray());
+}
+function streamOverlay(ke, kn) {
+  const globe = state.mode === 'globe', r = 1.004, pts = [], cols = [], heads = [], hc = [];
+  const lo = new THREE.Color('#1f6f78'), hi = new THREE.Color('#b4fff0'), c = new THREE.Color();
+  for (const ln of streamlines(ke, kn)) {
+    const xy = ln.pts.map(([la, lo_]) => llPos(la, lo_, r));
+    for (let k = 0; k < xy.length - 1; k++) {
+      if (!globe && Math.abs(xy[k][0] - xy[k + 1][0]) > 2) continue;
+      c.copy(lo).lerp(hi, Math.min(1, Math.sqrt(ln.sp[k + 1])));
+      pts.push(...xy[k], ...xy[k + 1]); cols.push(c.r, c.g, c.b, c.r, c.g, c.b);
+      if ((k + 6) % 14 === 0 && k + 1 < xy.length) {
+        const n0 = heads.length; chevron(xy[k], xy[k + 1], globe ? 0.012 : 0.016, heads);
+        for (let j = n0; j < heads.length; j += 3) hc.push(c.r, c.g, c.b);
+      }
+    }
+  }
+  return [lineColored(pts, cols), lineColored(heads, hc)];
+}
+
+// The overturning (world meta "overturning", ocean.loop_schematic): sinking
+// sites as rings sized by their Sv, the warm surface inflow along the route
+// the model sends it (solid), and the deep return flow (dashed: a schematic,
+// the model has no deep ocean) to where deep water comes back up.
+function labelSprite(text, color) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  const g = cv.getContext('2d');
+  g.font = 'bold 36px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 7; g.strokeStyle = '#0b0f17'; g.strokeText(text, 128, 34);
+  g.fillStyle = color; g.fillText(text, 128, 34);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthTest: false }));
+  sp.scale.set(0.2, 0.05, 1);
+  return sp;
+}
+const MOC_COLORS = { sink: 0xbfe0ff, surface: 0xff8a3a, deep: 0x7f9fff, up: 0x5ff0c8 };
+function overturningOverlay(meta, labels) {
+  const globe = state.mode === 'globe', r0 = globe ? 1.007 : 1;
+  const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;
+  const ring = (la, lo, rad, out, nseg = 28) => {
+    const cl = Math.max(Math.cos(la * Math.PI / 180), 0.15);
+    for (let k = 0; k < nseg; k++) {
+      const a1 = k / nseg * 2 * Math.PI, a2 = (k + 1) / nseg * 2 * Math.PI;
+      const p1 = llPos(la + rad * Math.sin(a1), lo + rad * Math.cos(a1) / cl, r0), p2 = llPos(la + rad * Math.sin(a2), lo + rad * Math.cos(a2) / cl, r0);
+      if (!wraps(p1, p2)) out.push(...p1, ...p2);
+    }
+  };
+  const sink = [], surf = [], deep = [], up = [], heads = { surface: [], deep: [] };
+  // a path as three parallel lines (WebGL lines are one pixel wide): offsets of +-w deg across it
+  const wide = (ll, w) => [-w, 0, w].map((o) => ll.map(([la, lo], k) => {
+    const a = ll[Math.max(k - 1, 0)], b = ll[Math.min(k + 1, ll.length - 1)], cl = Math.max(Math.cos(la * Math.PI / 180), 0.15);
+    let dn = b[0] - a[0], de = (((b[1] - a[1] + 540) % 360) - 180) * cl;
+    const m = Math.hypot(dn, de) || 1;
+    return [la - o * de / m, lo + o * dn / m / cl];
+  }));
+  const arc = ([la1, lo1], [la2, lo2]) => {  // great-circle degrees
+    const r = Math.PI / 180, c = Math.sin(la1 * r) * Math.sin(la2 * r) + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.cos((lo2 - lo1) * r);
+    return Math.acos(Math.max(-1, Math.min(1, c))) / r;
+  };
+  for (const p of meta.paths || []) {
+    // surface paths run from the site to their source: the water flows the other way
+    const raw = p.limb === 'surface' ? [...p.pts].reverse() : p.pts, ll = [raw[0]];
+    for (let k = 1; k < raw.length; k++) {  // in steps of <= 0.5 deg, for even dashes
+      const [a, b] = [raw[k - 1], raw[k]], m = Math.ceil(arc(a, b) / 0.5), dl = ((b[1] - a[1] + 540) % 360) - 180;
+      for (let j = 1; j <= m; j++) ll.push([a[0] + (b[0] - a[0]) * j / m, ((a[1] + dl * j / m + 540) % 360) - 180]);
+    }
+    // per segment: drawn (dashes of 1.6 deg, gaps of 1 deg on the deep limb) and where the chevrons go (every 9 deg)
+    const draw = [], head = [];
+    let run = 0, on = true, since = 0;
+    for (let k = 0; k < ll.length - 1; k++) {
+      const d = arc(ll[k], ll[k + 1]);
+      draw.push(p.limb !== 'deep' || on); run += d; since += d;
+      if (run > (on ? 1.6 : 1.0)) { on = !on; run = 0; }
+      head.push(since > 9 && k > 1); if (since > 9 && k > 1) since = 0;
+    }
+    const out = p.limb === 'deep' ? deep : surf;
+    wide(ll, 0.22).forEach((w, j) => {
+      const pts = w.map(([la, lo]) => llPos(la, lo, r0));
+      for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], b = pts[k + 1];
+        if (wraps(a, b)) continue;
+        if (draw[k]) out.push(...a, ...b);
+        if (head[k] && j === 1) chevron(a, b, globe ? 0.02 : 0.024, heads[p.limb]);
+      }
+    });
+    if (p.limb === 'deep') { const [la, lo] = ll[ll.length - 1]; ring(la, lo, 1.4, up, 16); ring(la, lo, 0.6, up, 10); }
+  }
+  for (const s of meta.sites || []) {
+    if (s.sv < 0.1) continue;
+    const rad = 1.3 * Math.sqrt(s.sv) + 0.6;
+    ring(s.lat, s.lon, rad, sink); ring(s.lat, s.lon, rad * 0.55, sink, 18);
+    const cl = Math.max(Math.cos(s.lat * Math.PI / 180), 0.15), d = rad * 0.38;  // an X: going down
+    for (const [a, b] of [[[d, d], [-d, -d]], [[d, -d], [-d, d]]]) {
+      const p1 = llPos(s.lat + a[0], s.lon + a[1] / cl, r0), p2 = llPos(s.lat + b[0], s.lon + b[1] / cl, r0);
+      if (!wraps(p1, p2)) sink.push(...p1, ...p2);
+    }
+    if (s.sv >= 0.3) {
+      const lab = labelSprite(`${s.sv.toFixed(1)} Sv`, '#cfe4ff');
+      lab.position.set(...(globe ? llPos(s.lat + rad + 1.2, s.lon, 1.03) : [s.lon / 90, (s.lat + rad + 2) / 90, 0.01]));
+      if (!globe) lab.scale.set(0.16, 0.04, 1);
+      labels.push(lab);
+    }
+  }
+  return { mocSink: lineObj(sink, MOC_COLORS.sink), mocSurf: lineObj(surf, MOC_COLORS.surface),
+           mocSurfHeads: lineObj(heads.surface, MOC_COLORS.surface), mocDeep: lineObj(deep, MOC_COLORS.deep),
+           mocDeepHeads: lineObj(heads.deep, MOC_COLORS.deep), mocUp: lineObj(up, MOC_COLORS.up, 0.8) };
+}
+const mocGroup = new THREE.Group();  // the overturning's Sv labels
+group.add(mocGroup);
+
 const EVENT_COLORS = { rift: 0x3bf0ff, subduction: 0x7dff6b, collision: 0xff6b3b, suture: 0xffd23b, absorbed: 0xc58cff, consumed: 0xc58cff,
                        'glacial max': 0x9fd8ff, interglacial: 0xffb36b };  // the last two: time zooms
 const hexColor = (c) => '#' + c.toString(16).padStart(6, '0');
@@ -907,6 +1173,7 @@ function renderLegend() {
   } else {
     el.innerHTML = rampLegend(state.layer, seasonUnits(state.layer) + (ov ? ' (observed)' : '')) +
       (state.layer === 'crust age' ? '<div class="muted">continents: age of the rock since it last formed or was remade <span class="sw" style="background:#f2e6d0"></span>0 <span class="sw" style="background:#a87d5a"></span>1 Gyr <span class="sw" style="background:#3a2a22"></span>3.5 Gyr</div>' : '') +
+      (state.layer === 'dew point' ? '<span class="muted">(above ~20 °C feels muggy)</span>' : '') +
       (state.layer === 'elevation' && V.tz ? '<span class="muted">(ice surface included; heights above that moment\'s sea level)</span>' : '');
   }
   if (LAKE_LAYERS.has(state.layer) && !ov && (V.layers.lake_kind || V.layers.lake)) {
@@ -930,7 +1197,10 @@ function renderLegend() {
     el.innerHTML += `<span><span class="sw" style="background:#ffe08a"></span>wind${
       { wind_jul: ' (July)', wind_jan: ' (January)' }[windKey()] || ''}</span>`;
   if ($('currents').checked && V.layers.current_e)
-    el.innerHTML += '<span><span class="sw" style="background:#7fffd4"></span>ocean current</span>';
+    el.innerHTML += '<span><span class="sw" style="background:linear-gradient(90deg,#1f6f78,#b4fff0)"></span>ocean current (slow → fast)</span>';
+  if ($('overturning').checked && V.kind === 'world' && V.meta.overturning)
+    el.innerHTML += sw('#bfe0ff', '⊗ deep water sinks (Sv)') + sw('#ff8a3a', 'warm inflow (model)') +
+      sw('#7f9fff', '- - deep return (schematic)') + sw('#5ff0c8', '◎ wells up');
   if ($('jet').checked && V.layers.jet_e)
     el.innerHTML += '<span><span class="sw" style="background:#d59cff"></span>jet stream</span>';
 }
@@ -967,7 +1237,19 @@ function renderSummary() {
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
     <span class="muted">Landmasses:</span> ${s.landmasses.slice(0, 5).map((l) => `${l.name} ${l.pct_of_surface}%`).join(', ')}<br>
+    ${overturningLine(m.overturning)}
     <span class="muted">Remake:</span> <code>${cmd}</code>`;
+}
+
+// the overturning's strength and its main sinking sites (world meta, ocean.loop_schematic)
+function overturningLine(o) {
+  if (!o) return '';
+  const ll = (s) => `${Math.abs(s.lat).toFixed(0)}°${s.lat >= 0 ? 'N' : 'S'} ${Math.abs(s.lon).toFixed(0)}°${s.lon >= 0 ? 'E' : 'W'}`;
+  const sites = (o.sites || []).filter((s) => s.sv >= 0.3).sort((a, b) => b.sv - a.sv);
+  return `<span title="Thermohaline overturning (ocean.py): deep water formed where the winter sea is densest. Tick &quot;Overturning&quot; under Overlays to see it.">` +
+    `<span class="muted">Overturning:</span> ${o.sv.toFixed(1)} Sv sinking (north ${o.north_sv.toFixed(1)}, south ${o.south_sv.toFixed(1)})` +
+    (sites.length ? `<span class="muted"> · </span>${sites.slice(0, 4).map((s) => `${ll(s)} ${s.sv.toFixed(1)}`).join(', ')}` : ' · no sinking site') +
+    '</span><br>';
 }
 
 function renderRunSummary() {
@@ -1253,6 +1535,13 @@ function describe(i) {
                            `crust ${Math.round(L.crust_thickness[i])} km thick`);
     lines.push(...landformLines(i));
     if (L.wave_power && L.elevation[i] <= 0) lines.push(`waves ${L.wave_power[i].toFixed(1)} kW/m, tides ${L.tide_range[i].toFixed(1)} m`);
+    if (L.sst && L.elevation[i] <= 0) {
+      lines.push(`sea ${L.sst[i].toFixed(1)} °C (July ${L.sst_jul[i].toFixed(1)}, January ${L.sst_jan[i].toFixed(1)}), ` +
+        `salinity ${L.salinity[i].toFixed(2)} psu`);
+      if (L.sinking[i] >= 0.005) lines.push(`deep water sinks here: ${L.sinking[i].toFixed(2)} Sv`);
+    }
+    if (L.humidity_jul) lines.push(`humidity: July ${L.humidity_jul[i]}% (dew point ${L.dewpoint_jul[i]} °C), ` +
+      `January ${L.humidity_jan[i]}% (${L.dewpoint_jan[i]} °C)`);
     if (L.obs_temperature) {  // the Earth reference world
       const ot = L.obs_temperature[i], op = L.obs_precipitation[i], ok = L.obs_climate[i];
       if (ot != null) lines.push(`observed: ${ot} °C` + (L.obs_cold_month[i] != null
@@ -1383,7 +1672,7 @@ seg('modeSeg', 'mode', () => {
 });
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'jet',
+const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'overturning', 'jet',
                      'axis', 'tropics'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
@@ -1567,10 +1856,34 @@ $('hlFind').addEventListener('click', () => fetchHighlights(false));
 OVERLAY_IDS.push('hlMarks');  // so ?hlMarks=0 works in the URL
 $('hlMarks').addEventListener('change', buildHighlightMarks);
 
+// categories (planet/highlights.py CATEGORIES): a colour each, on the markers and the list,
+// and a filter (state.hlCat, '' = all; ?hlcat= in the URL)
+const HL_CATS = { landscape: '#e8b86a', water: '#5fb8ff', climate: '#8fe07a', travel: '#ff8ad8', geology: '#ff6b4a' };
+const hlColor = (f) => HL_CATS[f.category] || '#c0c0c0';
+const hlShown = (f) => !state.hlCat || f.category === state.hlCat;
+state.hlCat = '';  // (?hlcat=: applyUrlOptions)
+function renderHlCats() {
+  const el = $('hlCats');
+  if (!hl) { el.innerHTML = ''; return; }
+  const cnt = {};
+  for (const f of hl.features) cnt[f.category] = (cnt[f.category] || 0) + 1;
+  el.innerHTML = `<button data-c="" class="${state.hlCat ? '' : 'on'}">all ${hl.features.length}</button>` +
+    Object.entries(HL_CATS).filter(([c]) => cnt[c]).map(([c, col]) =>
+      `<button data-c="${c}" class="${state.hlCat === c ? 'on' : ''}" style="${state.hlCat === c ? 'color:' + col : ''}"><span class="dot" style="background:${col}"></span>${c} ${cnt[c]}</button>`).join('');
+}
+$('hlCats').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.hlCat = b.dataset.c;
+  const u = new URL(location);
+  if (state.hlCat) u.searchParams.set('hlcat', state.hlCat); else u.searchParams.delete('hlcat');
+  history.replaceState(null, '', u);
+  renderHighlights(); buildHighlightMarks();
+});
 function renderHighlights() {
   const here = hl && hl.key === viewKey();
   const list = $('hlList');
   list.classList.toggle('stale', !!hl && !here);
+  renderHlCats();
   if (!hl) {
     $('hlStatus').textContent = 'Not looked for yet' + (V && V.kind === 'run' ? ` at ${V.t} Myr.` : '.');
     list.innerHTML = '';
@@ -1579,7 +1892,9 @@ function renderHighlights() {
   $('hlStatus').innerHTML = here ? `${hl.features.length} places, best first · world ${hl.world}`
     : `These are for t = ${hl.t} Myr (click one to go back there), or find them for ${V.t} Myr.`;
   list.innerHTML = hl.features.map((f, k) => {
-    let html = `<div class="hl ${k === hlSel ? 'sel' : ''}" data-k="${k}"><span class="k">${f.rank}.</span><b>${f.title}</b>`;
+    if (!hlShown(f) && k !== hlSel) return '';
+    let html = `<div class="hl ${k === hlSel ? 'sel' : ''}" data-k="${k}"><span class="k">${f.rank}.</span>` +
+      `<span class="dot" style="background:${hlColor(f)}" title="${f.category || ''}"></span><b>${f.title}</b>`;
     if (k === hlSel) {
       html += `<div class="blurb">${f.blurb}<br>`;
       if (f.zoom) html += `<a href="#" data-zoom="${f.zoom}">open zoom ${f.zoom}</a> (made already)`;
@@ -1652,9 +1967,10 @@ function buildHighlightMarks() {
   if (!hl || hl.key !== key || !$('hlMarks').checked) return;
   const globe = state.mode === 'globe', r0 = globe ? 1.016 : 1;
   const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;
-  const rings = [], paths = [], sel = [];
+  const rings = {}, paths = {}, sel = [];
   hl.features.forEach((f, k) => {
-    const out = k === hlSel ? sel : rings, cl = Math.max(Math.cos(f.lat * Math.PI / 180), 0.2), rad = k === hlSel ? 2.2 : 1.4;
+    if (!hlShown(f) && k !== hlSel) return;
+    const col = hlColor(f), out = k === hlSel ? sel : (rings[col] ||= []), cl = Math.max(Math.cos(f.lat * Math.PI / 180), 0.2), rad = k === hlSel ? 2.2 : 1.4;
     for (let j = 0; j < 20; j++) {
       const a1 = j / 20 * 2 * Math.PI, a2 = (j + 1) / 20 * 2 * Math.PI;
       const p1 = llPos(f.lat + rad * Math.sin(a1), f.lon + rad * Math.cos(a1) / cl, r0);
@@ -1663,15 +1979,17 @@ function buildHighlightMarks() {
     }
     for (let j = 0; f.path && j < f.path.length - 1; j++) {
       const p1 = llPos(...f.path[j], r0), p2 = llPos(...f.path[j + 1], r0);
-      if (!wraps(p1, p2)) paths.push(...p1, ...p2);
+      if (!wraps(p1, p2)) (paths[col] ||= []).push(...p1, ...p2);
     }
-    const label = textSprite(String(f.rank), k === hlSel ? '#ffffff' : '#ff8ad8');
+    const label = textSprite(String(f.rank), k === hlSel ? '#ffffff' : col);
     const lp = globe ? llPos(f.lat + rad, f.lon, 1.03) : [f.lon / 90, (f.lat + rad + 1.5) / 90, 0.01];
     label.position.set(...lp);
     label.scale.setScalar(globe ? 0.075 : 0.06);
     hlGroup.add(label);
   });
-  hlGroup.add(lineObj(rings, 0xff8ad8), lineObj(paths, 0xff8ad8, 0.8), lineObj(sel, 0xffffff));
+  for (const [col, pts] of Object.entries(rings)) hlGroup.add(lineObj(pts, col));
+  for (const [col, pts] of Object.entries(paths)) hlGroup.add(lineObj(pts, col, 0.8));
+  hlGroup.add(lineObj(sel, 0xffffff));
 }
 
 // ------------------------------------------------------------ tabs: globe | regional zoom (zoom.html in an iframe)
@@ -1711,6 +2029,8 @@ async function setWorld(w) {
   stop(); picked = null; renderZoomBox();
   const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
   const pg = prepareGrid(G);
+  for (const k of ['humidity', 'dewpoint'])  // the year's: the mean of the two half-years
+    if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), ...legendFields(w.legend) };
@@ -1838,12 +2158,17 @@ function setFrame(f, repaint = true) {
 
 // ------------------------------------------------------------ playback
 let lastAdvance = 0;
-function stop() { state.playing = false; $('play').innerHTML = '&#9654;'; }
+function stop() {
+  const was = state.playing;
+  state.playing = false; $('play').innerHTML = '&#9654;';
+  if (was && V && mesh && $('currents').checked) buildOverlays();  // back to streamlines
+}
 function togglePlay() {
   if (!V || V.kind !== 'run') return;
   if (!state.playing && V.frame >= V.run.frames.length - 1) setFrame(0);
-  state.playing = !state.playing;
-  $('play').innerHTML = state.playing ? '&#10073;&#10073;' : '&#9654;';
+  if (state.playing) return stop();
+  state.playing = true;
+  $('play').innerHTML = '&#10073;&#10073;';
 }
 $('play').addEventListener('click', togglePlay);
 $('frame').addEventListener('input', (e) => { stop(); setFrame(+e.target.value); });
@@ -1919,7 +2244,8 @@ function applyUrlOptions() {
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
-  if (p.get('season')) setSeason(p.get('season'));  // jul | jan: the winds' half-year and the temperature / rain season
+  if (p.get('season')) setSeason(p.get('season'));
+  if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }
 const urlp = applyUrlOptions();

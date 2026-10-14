@@ -2,7 +2,7 @@
 id: PW-141
 title: Viewer highlights list needs categories (55 places in one list)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -26,4 +26,5 @@ small filter/grouping in the viewer list, and a colour per category for the mark
 - [ ] list filter or grouping; marker colour per category
 
 ## Updates
+- 2026-10-14: Status todo -> done. viewerocean: highlights.py CATEGORIES (landscape, water, climate, travel, geology) and a 'category' field on every feature; the viewer has category chips with counts that filter the list and markers (?hlcat=), and colours markers, labels, paths and list dots by category.
 - 2026-10-14: Created from inbox draft draft-highlight-categories.md (found by travel).
