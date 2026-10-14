@@ -1,4 +1,5 @@
 ---
+id: PW-110
 title: Lakes cover ~1.8x more land since the hierarchical MIN_DEPTH fill; keep, or add a shore rule?
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: hydrofix
 blocked_by: []
 relates: [PW-058]
 refs: [planet/hydrology.py, planet/kernels.py, "run 28e6be", "run a61cd5", "world 84ce45", docs/review/lakes/]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -45,3 +48,8 @@ Minor, same area: two lobes of one closed lake can stay separate pieces when
 the lake stops exactly at the height of a broad flat saddle (28e6be @ 200 Myr
 (20.7,-177.3): two ~100-cell lobes at 648.1 m joined by dry cells at
 648.05-648.25 m). It's correct shoreline behaviour, but it reads as two lakes.
+
+Coordinator notes (intake): a 2.9 million km^2 salt lake is ~8x the Caspian (0.37 million km^2), so option C (scale with basin size) deserves weight even if the global total is Earth-like. Also the Earth check's Nile at Khartoum went 2.65 -> 0.10 of observed (before: too wet, now: too dry, as an upstream lake evaporates almost all of it); check which lake, since the real Nile passes the Sudd and still delivers ~2800 m^3/s.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-lake-area-after-hierarchical-fill.md (found by hydrofix).
