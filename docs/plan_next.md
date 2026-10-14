@@ -220,6 +220,8 @@ Order: 1 → 6, small to large.
 - Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
 
 **Infrastructure**
+- **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
+- `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
