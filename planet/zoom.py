@@ -125,7 +125,7 @@ SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
 # How rugged the sub-cell detail is, by basement rock (surface.ROCKS ids).
-RUGGED = {0: 0.35, 1: 0.85, 2: 0.9, 3: 0.45, 4: 1.0, 5: 0.35}
+RUGGED = {0: 0.35, 1: 0.85, 2: 0.9, 3: 0.45, 4: 1.0, 5: 0.35, 11: 0.6}
 SEA_CLIMATE = 30  # KOPPEN "-"
 LIMESTONE = 6  # surface.ROCKS
 # landscape pass: discharge exponent of the steady-state slope, hillslope
@@ -338,7 +338,8 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
 KP_MIN_GRAD, KP_GRADED, KP_MIN_EXCESS, KP_MIN_Q = 0.8, 0.2, 50.0, 100.0  # m/km, m/km, m, m^3/s
 KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 # how well each rock (surface.ROCKS id) holds a lip
-KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3}
+KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3,
+             11: 1.0, 12: 0.95, 13: 0.9, 14: 0.85, 15: 0.5}
 COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
 FALLS_MIN_SHARE = 0.05  # a reach's falls are placed from where its pinned course carries this share of the coarse discharge
@@ -1225,6 +1226,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     rock_f = L["rock"][cell_l].astype(np.uint8)
     surf_f = L.get("surface_rock", L["rock"])[cell_l].astype(np.uint8)
     clim_f = L.get("climate", np.full(g.n, SEA_CLIMATE))[cell_l].astype(np.uint8)
+    form_f = np.asarray(L["landform"])[cell_l].astype(np.uint8) if "landform" in L else None
     if vf is not None:  # the volcanoes' own rock, and their reefs' limestone
         rock_f = np.where(vf["rock"] > 0, vf["rock"], rock_f).astype(np.uint8)
         surf_f = np.where(vf["reef"], LIMESTONE, np.where(vf["rock"] > 0, vf["rock"], surf_f)).astype(np.uint8)
@@ -2014,6 +2016,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "surface_rock": surf_f,
         "climate": clim_f,
         "biome": biome,
+        **({"landform": form_f} if form_f is not None else {}),
     }
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
@@ -2144,6 +2147,7 @@ LAYER_DOC = {
     "surface_rock": ("ROCKS id", "exposed rock: basement or sediment cover"),
     "climate": ("KOPPEN id", "Koppen class; alpine tundra/ice cap added from the fine elevation"),
     "biome": ("BIOMES id", "climate.biomes on the fine fields"),
+    "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
 }
 
 

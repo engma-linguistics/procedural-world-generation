@@ -34,7 +34,8 @@ Where the load ends up:
               slope (turbidity currents) and spreads over the deep sea floor
               over ~fan_km (submarine fans) before it settles
 
-The cover rocks (limestone, sandstone, shale, evaporite, coal) are in ROCKS;
+The cover rocks (limestone, sandstone, shale, evaporite, coal, flood basalt,
+tuff) are in ROCKS;
 which one shows at the surface follows from the cover's mix (surface_rock).
 The table can grow further: a new class is a row plus a rule for where it
 forms.
@@ -61,12 +62,18 @@ ROCKS = [
     (8, "shale", "shale and mudstone", 1.6, "#9c8f7a"),
     (9, "evaporite", "evaporites (salt, gypsum)", 3.0, "#f1faee"),
     (10, "coal", "coal measures (shale, sandstone, coal)", 1.6, "#2b2d42"),
+    (11, "granite", "granite (exhumed plutons: batholiths, domes)", 0.5, "#e8a0a8"),
+    (12, "quartzite", "quartzite (sandstone folded deep in a collision)", 0.4, "#d8cfc0"),
+    (13, "flood_basalt", "flood basalt (continental traps, lava plains)", 1.0, "#5a4a5e"),
+    (14, "dolomite", "dolomite (buried limestone: a hard carbonate caprock)", 0.7, "#6fa8b8"),
+    (15, "tuff", "volcanic tuff (ignimbrite and ash from arcs)", 0.9, "#c98b6b"),
 ]
-OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON, LIMESTONE, SANDSTONE, SHALE, EVAPORITE, COAL = range(11)
+(OCEAN, HOTSPOT, ARC, SEDIMENT, OROGEN, CRATON, LIMESTONE, SANDSTONE, SHALE, EVAPORITE, COAL, GRANITE, QUARTZITE,
+ FLOOD_BASALT, DOLOMITE, TUFF) = range(16)
 ROCK_K = np.array([r[3] for r in ROCKS])
 # Cover is a well-mixed column: mud (shale) plus some km of each of
 # MIX_ROCKS (tectonics.EXTRA, columns 1..); its erodibility is the mix of theirs.
-MIX_ROCKS = np.array([LIMESTONE, HOTSPOT, EVAPORITE, COAL, SANDSTONE])
+MIX_ROCKS = np.array([LIMESTONE, FLOOD_BASALT, EVAPORITE, COAL, SANDSTONE, TUFF])
 MIX_K = ROCK_K[MIX_ROCKS]
 COVER_K = ROCK_K[SHALE]
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed

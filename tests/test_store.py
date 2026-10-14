@@ -197,7 +197,7 @@ def test_run_layout(data_root):
         assert (out / spec["file"]).stat().st_size == np.dtype(spec["dtype"]).itemsize * np.prod(spec["shape"]), k
         assert spec["shape"] == [3, run["meta"]["cells"]]
     assert run["layers"]["ice"]["scale"] == 20 and run["layers"]["flow"]["transform"] == "log2p1"
-    assert set(run["legend"]) == {"rocks", "koppen", "biomes"}
+    assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms"}
     run2, arr = T.load_frames(out, ("plate", "downstream"))
     sim = run_sim(myr=8)
     assert np.array_equal(T.frame(run2, arr, "plate", 2), sim.snapshot().plate)

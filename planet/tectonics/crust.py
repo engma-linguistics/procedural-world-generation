@@ -23,10 +23,15 @@ import numpy as np
 
 from .. import kernels, surface
 from ..geo import R_KM
-from ..surface import ARC, CRATON, HOTSPOT, OCEAN, OROGEN, SEDIMENT
-from .isostasy import BECOMES_CONT_KM, LAVA, MAX_KM, MIX, OCEAN_KM
+from ..surface import ARC, CRATON, FLOOD_BASALT, GRANITE, HOTSPOT, OCEAN, OROGEN, SEDIMENT, SHALE, TUFF
+from . import record
+from .isostasy import BECOMES_CONT_KM, LAVA, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X
 from .plate_kernels import crust_flow
 from .plates import P_MAX
+
+TUFF_SHARE = 0.1  # of the new arc crust on a continent that erupts as ash and ignimbrite sheets (cover)
+GRANITE_KM = 4.0  # km of erosion since an arc went quiet that exposes its plutons (a batholith)
+RIFT_THINNING = 0.015  # per Myr: crust thinning faster than this is being rifted (record.t_rift)
 
 
 @dataclass
@@ -37,6 +42,9 @@ class Column:
     x: np.ndarray  # isostasy.EXTRA columns
     cont: np.ndarray  # continental
     rock: np.ndarray  # basement rock id
+    rec: np.ndarray  # record.RECORD columns: strata and history
+    lith: np.ndarray  # record: the strata's rocks
+    eroded_cover: np.ndarray | None = None  # km of cover erosion took this step (earth.erode)
 
 
 def thermostats(sim):
@@ -101,13 +109,19 @@ def rift_stretching(sim, bd):
 def add_arcs_and_plumes(sim, col, growth, plume):
     """New crust from arcs and plumes. On a continent the plume's lava
     spreads over the land as a cover of basalt flows (Snake River Plain,
-    Deccan Traps)."""
+    Deccan Traps), and part of an arc's erupts as ash and ignimbrite
+    sheets (tuff: the Altiplano-Puna, Taupo); both go on top of the strata."""
     dt, cont = sim.dt, col.cont
     col.t = col.t + growth * dt + plume * dt
     sim.book("arc", 0, growth * dt, cont)
     sim.book("plume", 0, plume * dt, cont)
-    col.cover = col.cover + plume * dt * cont
-    col.x[:, LAVA] += plume * dt * cont
+    lava, tuff = plume * dt * cont, TUFF_SHARE * growth * dt * cont
+    col.cover = col.cover + lava + tuff
+    col.x[:, LAVA] += lava
+    col.x[:, TUFF_X] += tuff
+    n = sim.grid.n
+    record.add_top(col.rec, col.lith, lava, np.full(n, FLOOD_BASALT, np.uint8), sim.t)
+    record.add_top(col.rec, col.lith, tuff, np.full(n, TUFF, np.uint8), sim.t)
 
 
 def inner_edges(sim, cont):
@@ -149,6 +163,10 @@ def accrete(sim, bd, conv, col):
     col.x[:, MIX] *= keep[:, None]
     col.t, col.cover = col.t - scraped + gain, col.cover - scraped + gain
     sim.book("accreted", 0, gain, col.cont)
+    # the wedge is scraped off the top and thrust up in folds (Makran, Barbados)
+    record.remove_top(col.rec, col.lith, scraped)
+    record.add_top(col.rec, col.lith, gain, np.full(n, SHALE, np.uint8), sim.t)
+    record.fold(col.rec, col.lith, gain > 0, np.zeros(n), col.cover, col.t, sim.t)
 
 
 def subduction_erosion(sim, bd, conv, col, shrink):
@@ -176,6 +194,8 @@ def subduction_erosion(sim, bd, conv, col, shrink):
         t[gone] = OCEAN_KM
         col.cover[gone] = 0.0
         col.x[gone] = 0.0
+        col.rec[gone] = record.blank()
+        col.lith[gone] = 0
 
 
 def arc_rock(sim, col, growth):
@@ -194,6 +214,7 @@ def stretch(sim, col, rate, plume, newc):
     thin = col.cont & (t > 22)
     t0 = t.copy()
     t[thin] = np.maximum(22.0, t[thin] * np.exp(-rate[thin] * dt))
+    record.rift(col.rec, thin & (rate > RIFT_THINNING), np.log(t0 / np.maximum(t, 1e-9)), sim.t)
     sim.book("stretch", t0, t, col.cont)
     rifted_margin(sim, t0 - t, col, newc)
     col.rock[~col.cont & (plume * dt > 0.2)] = HOTSPOT
@@ -232,6 +253,12 @@ def rifted_margin(sim, lost, col, newc):
         sim.w_age[cells] = sim.w_age[s]
         col.cover[cells] = 0.0
         col.x[cells] = 0.0
+        # (the source's history, no strata yet; rifted now)
+        col.rec[cells] = col.rec[s]
+        col.rec[cells, record.KM] = 0.0
+        col.rec[cells, record.T] = record.NEVER
+        col.rec[cells, record.T_RIFT] = sim.t
+        col.lith[cells] = 0
         pl.rift_pool[k] -= len(cells) * p.rift_margin_km
         sim.book("margin", 0, p.rift_margin_km, np.isin(np.arange(g.n), cells))
 
@@ -255,6 +282,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
     sim.book("flow+cap", t0, t, cont)
     squeezed = cont & (stack_add > 0.05 * dt)
     rock[squeezed & (rock != CRATON)] = OROGEN
+    record.fold(col.rec, col.lith, squeezed, stack_add, col.cover, t, sim.t)
     rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
     return squeezed
 
@@ -264,8 +292,11 @@ def birth_and_cratons(sim, col, arcky, squeezed):
     hotspot piles (Hawaii, Iceland) stay oceanic however big, unless
     it's sediment from a nearby continent that's piling up on them.
     Rock age (continents): crust that's just formed or been remelted /
-    metamorphosed starts again at 0. Old, cool, untouched crust
-    stiffens into craton (Canada, Siberia, Africa's shields).
+    metamorphosed starts again at 0 (and so does its exhumation, the
+    erosion since: record.EXHUMED). An arc worn GRANITE_KM down since
+    it went quiet shows its plutons (granite: the Sierra Nevada's
+    batholith). Old, cool, untouched crust stiffens into craton (Canada,
+    Siberia, Africa's shields).
     Updates sim.w_age; returns the cells born continental."""
     p, t, cont, rock = sim.params, col.t, col.cont, col.rock
     sedimented = col.cover > 0.5 * (t - OCEAN_KM)
@@ -276,5 +307,7 @@ def birth_and_cratons(sim, col, arcky, squeezed):
     age[born | (cont & arcky)] = 0.0
     age[squeezed & (rock != CRATON)] = 0.0
     sim.w_age = age
+    col.rec[age == 0, record.EXHUMED] = 0.0
+    rock[cont & (rock == ARC) & (col.rec[:, record.EXHUMED] >= GRANITE_KM) & (col.cover < surface.COVER_SHOWS)] = GRANITE
     rock[cont & (age > p.craton_age) & (t < 45) & (rock != CRATON) & (rock != HOTSPOT)] = CRATON
     return born

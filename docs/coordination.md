@@ -29,7 +29,7 @@ pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open
 | Level | Cells | Cell size | `simulate` time | Memory / disk |
 |---|---|---|---|---|
 | 6 | 41k | ~110 km | ~6 min per Gyr | checkpoint ~23 MB (≈229 MB per Gyr) |
-| 7 | 164k | ~55 km | ~30–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS |
+| 7 | 164k | ~55 km | ~20–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4 GB per Gyr, checkpoints ~80–130 MB each |
 | 8 | 655k | ~28 km | ~3–4 h per Gyr (4.1 h for 1.2 Gyr) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
 
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min.
@@ -56,11 +56,10 @@ Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
 ## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight (2026-10-14 evening):** worktrees `.claude/worktrees/<branch>`:
-- `landform`: PW-005 data side (PW-006/007/008/009; class layer in runs/worlds/viewer). Zoom batches PW-010–012 come after it merges.
-- `zoomsmalls`: PW-062 to PW-070.
-- `lakesize`: PW-110 (owner decision A+C: drain threshold scales with basin size) plus the Earth-check Nile drop.
-Merged since: hydrofix (PW-058), climfix (PW-102/032/040/034/036), volcanoes (PW-001–004; demo run 39d004, world a099c6, zooms e8fa0e/4e6647/122cc1). Earth world is now f8a740.
+**In flight (2026-10-14 night):** worktrees `.claude/worktrees/<branch>`:
+- `zoomland1`: PW-010 zoom synthesis batch 1 (escarpment, caprock/cuestas, lava plateau) plus a class-dispatch structure for PW-011/012. Verify world 800c99.
+- `viewerseason`: PW-126 (July/January temperature and rain on worlds plus picker), PW-128 (provenance in the viewer).
+Merged since: hydrofix, climfix, volcanoes (demo run 39d004, world a099c6), lakesize (PW-110), zoomsmalls (PW-062–070), landform (PW-006–009: record, rocks, classes; demo run f59dd6, world 800c99). Earth world is now f8a740. Runs made before the landform merge have no record, so their worlds get no classes; re-run showcases when convenient.
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 

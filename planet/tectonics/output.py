@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .. import climate, hydrology, surface
+from .. import climate, hydrology, landform, surface
 from . import volcanism
 from .events import latlon
 from .isostasy import MIX
@@ -41,11 +41,20 @@ class Snapshot:
     ice: np.ndarray  # m of land ice
     wind: np.ndarray  # (n, 3) annual-mean surface wind, ~1 = a steady trade wind
     current: np.ndarray  # (n, 3) surface ocean current, same scale
+    # landform classes and what the zoom needs to draw them (landform.py)
+    landform: np.ndarray  # landform.CLASSES id
+    landform_age: np.ndarray  # Myr, meaning by class (landform.CLASSES)
+    strata_top: np.ndarray  # surface.ROCKS id of the exposed stratum (or the basement)
+    strata_top_km: np.ndarray  # km of it (0: basement)
+    strata_next: np.ndarray  # surface.ROCKS id under it
+    strata_dip: np.ndarray  # deg
+    fold_wavelength: np.ndarray  # km (0: not folded)
 
 
 def snapshot(sim) -> Snapshot:
     """World-frame copy of everything worth saving or drawing right now."""
     live = np.flatnonzero(sim.plates.alive)
+    vrows = volcanism.rows(sim)
     return Snapshot(
         t=sim.t,
         elevation=np.where(sim.w_cont, sim.w_elev, sim.w_elev + sim.w_trench),
@@ -62,10 +71,19 @@ def snapshot(sim) -> Snapshot:
         downstream=sim.down.copy(),
         **lakes_now(sim),
         hotspots=[list(latlon(h["pos"])) for h in sim.hotspots],
-        volcanoes=volcanism.rows(sim),
+        volcanoes=vrows,
         surface=surface.surface_rock(sim.w_rock, sim.w_cover, sim.w_extra[:, MIX]),
         **climate_now(sim),
+        **landforms_now(sim, vrows),
     )
+
+
+def landforms_now(sim, vrows) -> dict:
+    """The landform classes now (landform.classify on the record)."""
+    z = np.zeros(sim.grid.n)
+    return landform.classify(sim.grid, sim.t, sim.w_elev, sim.w_cont, sim.w_rock, sim.w_cover, sim.w_extra[:, MIX],
+                             sim.w_rec, sim.w_lith, sim.w_age, z if sim.precip is None else sim.precip,
+                             z if sim.temp is None else sim.temp, vrows, sim.owner)
 
 
 def lakes_now(sim) -> dict:

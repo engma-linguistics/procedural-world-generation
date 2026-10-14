@@ -35,12 +35,14 @@ from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
+from .landform import LAYERS as LANDFORM_LAYERS
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
-              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n")
+              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n",
+              *LANDFORM_LAYERS)
 CHECKPOINT_EVERY = 100.0  # Myr
 
 
@@ -71,7 +73,12 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
             "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
             **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
-            **dict(vec_layers(grid, "jet", jet))}
+            **dict(vec_layers(grid, "jet", jet)), **landforms_of(snap)}
+
+
+def landforms_of(snap) -> dict:
+    """A snapshot's landform layers (landform.LAYERS), in real units."""
+    return {k: getattr(snap, k) for k in LANDFORM_LAYERS}
 
 
 def active_volcanoes(table: list) -> list:
@@ -302,11 +309,11 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
-                  sim.dT, sim.sea_level, erosion, meta_extra)
+                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap))
 
 
 FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
-                "sediment_cover", "crust_thickness", "ice")
+                "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS)
 
 
 def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extra) -> dict:
@@ -339,12 +346,13 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
                   a["rock"], a["surface_rock"], a["sediment_cover"], a["crust_thickness"].astype(float),
                   a["ice"], fr["hotspots"], vols, s["global_temp_c"] - 14.5,
                   s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
-                                              "from_keyframe": True, **meta_extra})
+                                              "from_keyframe": True, **meta_extra},
+                  {k: a[k] for k in LANDFORM_LAYERS})
 
 
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
-           erosion, meta_extra) -> dict:
+           erosion, meta_extra, landforms: dict) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     rng_seed = seed * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
@@ -358,7 +366,9 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
              "plate_boundary": boundary.astype(int), "crust_age": np.round(age),
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
              "rock": rock.astype(int), "surface_rock": surface_rock.astype(int), "sediment_cover": cover,
-             "crust_thickness": thickness, "ice": ice}
+             "crust_thickness": thickness, "ice": ice,
+             **{k: np.asarray(v).astype(int if S.LAYERS[k]["dtype"] in ("u1", "<u2") and S.LAYERS[k]["scale"] == 1
+                                        else float) for k, v in landforms.items()}}
     meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
             "hotspots": hotspots, "volcanoes": volcanoes, "volcano_columns": list(VOLCANO_COLUMNS)}
     meta["global_temp_c"] = round(14.5 + dT, 1)

@@ -416,6 +416,8 @@ function cellColors(layer) {
     } else if (layer === 'surface rock') {
       c.set(V.rockColors[L.surface_rock[i]]);
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
+    } else if (layer === 'landforms') {
+      if (elev[i] <= 0 || !L.landform[i]) c.copy(OCEAN); else c.set(V.landformColors[L.landform[i]] || '#888');
     } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
     else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
     else if (layer === 'wave power' || layer === 'tide range') {  // at sea only
@@ -438,13 +440,14 @@ function availableLayers() {
   if (V.tz) return ['elevation', 'ice thickness', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age']);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
-    hasLayer('climate') ? ['temperature', 'climate'] : []);
+    hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
   if (V.layers.climate) ls.push('climate');
   if (V.layers.surface_rock) ls.push('surface rock');
   if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
+  if (V.layers.landform) ls.push('landforms');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   return ls;
@@ -885,6 +888,13 @@ function renderLegend() {
       .map((r) => `<span><span class="sw" style="background:${r.color}"></span>${r.name}</span>`).join('') +
       (surf ? '<span class="muted">(what you would walk on: sediment where it covers the basement; faded = under the sea)</span>'
             : '<span class="muted">(basement rock; faded = under the sea; see "sediment" for what covers it)</span>');
+  } else if (state.layer === 'landforms') {
+    const L = V.layers, cnt = new Map();
+    let land = 0;
+    for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0 && L.landform[i]) { cnt.set(L.landform[i], (cnt.get(L.landform[i]) || 0) + 1); land++; }
+    el.innerHTML = V.landforms.filter((f) => cnt.has(f.id))
+      .map((f) => sw(f.color, `${f.name} ${(() => { const p = 100 * cnt.get(f.id) / land; return p < 1 ? p.toFixed(1) : p.toFixed(0); })()}%`)).join('') +
+      '<span class="muted">(landform classes from each cell\'s geological record: rifting, folding, strata, eruptions; % of land)</span>';
   } else if (state.layer === 'climate') {
     const present = new Set(ov ? ov.obs : V.layers.climate);
     el.innerHTML = V.koppen.filter((k) => present.has(k.id) && k.code !== '-')
@@ -1205,6 +1215,24 @@ function drawTint() {
   $('track').title = V.tz ? 'Blue under the slider: how much ice there is (darkest = the largest ice volume of this time zoom)' : COLD_HELP;
 }
 
+// the landform class of cell i and what makes it (its strata, dips, folds), when loaded
+function landformLines(i) {
+  const L = V.layers;
+  if (!L.landform || !V.landforms.length || L.elevation[i] <= 0) return [];
+  const f = V.landforms[L.landform[i]], out = [];
+  if (!f) return out;
+  out.push(`landform: ${f.name}` + (f.age && L.landform_age ? ` (${f.age} ${Math.round(L.landform_age[i])} Myr)` : ''));
+  if (L.strata_top) {
+    const top = V.rocks[L.strata_top[i]], next = V.rocks[L.strata_next[i]];
+    out.push(L.strata_top_km[i] > 0 ? `strata: ${top.name.split(' (')[0]} ${L.strata_top_km[i].toFixed(2)} km over ${next.name.split(' (')[0]}`
+                                    : `strata: none, ${top.name.split(' (')[0]} exposed`);
+    if (L.fold_wavelength && L.fold_wavelength[i] > 0)
+      out.push(`folded: dips ~${Math.round(L.strata_dip[i])}°, fold crests ~${Math.round(L.fold_wavelength[i])} km apart`);
+    else if (L.strata_dip && L.strata_top_km[i] > 0) out.push(`flat-lying, regional dip ${L.strata_dip[i].toFixed(2)}°`);
+  }
+  return out;
+}
+
 function describe(i) {
   const L = V.layers, G = V.grid;
   const lines = [`cell ${i}${V.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
@@ -1223,6 +1251,7 @@ function describe(i) {
     if (L.ice && L.ice[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
     if (L.rock) lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${L.sediment_cover[i].toFixed(1)} km`,
                            `crust ${Math.round(L.crust_thickness[i])} km thick`);
+    lines.push(...landformLines(i));
     if (L.wave_power && L.elevation[i] <= 0) lines.push(`waves ${L.wave_power[i].toFixed(1)} kW/m, tides ${L.tide_range[i].toFixed(1)} m`);
     if (L.obs_temperature) {  // the Earth reference world
       const ot = L.obs_temperature[i], op = L.obs_precipitation[i], ok = L.obs_climate[i];
@@ -1253,6 +1282,7 @@ function describe(i) {
     if (L.sediment_cover) lines.push(`sediment cover ${L.sediment_cover[i].toFixed(1)} km`);
     if (L.crust_thickness) lines.push(`crust ${L.crust_thickness[i]} km thick`);
     if (L.precipitation && L.elevation[i] > 0) lines.push(`rain ${L.precipitation[i]} mm/yr`);
+    lines.push(...landformLines(i));
     if (L.climate && L.elevation[i] > 0) {
       const k = V.koppen[L.climate[i]];
       lines.push(`climate ${k.code} (${k.name})`);
@@ -1662,6 +1692,7 @@ $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e
 // The legends (rock, Köppen and biome ids -> names and colours) come with every run and world.
 function legendFields(leg) {
   return { rocks: leg.rocks, rockColors: leg.rocks.map((r) => r.color), koppen: leg.koppen,
+           landforms: leg.landforms || [], landformColors: (leg.landforms || []).map((f) => f.color),
            koppenColors: leg.koppen.map((k) => k.color), biomes: leg.biomes, biomeColors: leg.biomes.map((b) => b.color) };
 }
 
@@ -1695,6 +1726,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
+  landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
 };
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],

@@ -17,11 +17,13 @@ from .isostasy import OCEAN_KM
 
 
 @njit(cache=True)
-def _fill(k, r, refs, owned, age, cont, thick, rock, cover, extra):
+def _fill(k, r, refs, owned, age, cont, thick, rock, cover, extra, rec, lith):
     """Fill hole r in plate k's grid from its neighbours refs (-1 = not part
     of this plate). It's continental only if it's completely enclosed by
     continent; otherwise it copies just its oceanic neighbours. A notch in a
     continent's edge (no oceanic neighbour, not enclosed) is left empty.
+    The numbers are the neighbours' mean; the rock and the record (strata,
+    history: not averageable) are one neighbour's.
 
     A majority vote here let continents fill in their own ragged edges every
     step and slowly swell (~1.5% of the planet per 100 Myr)."""
@@ -51,10 +53,14 @@ def _fill(k, r, refs, owned, age, cont, thick, rock, cover, extra):
         age[k, r], thick[k, r], cont[k, r], cover[k, r] = sa / nc, st / nc, True, sc / nc
         rock[k, r] = rock[k, rc]
         extra[k, r] = sx / nc
+        rec[k, r] = rec[k, rc]
+        lith[k, r] = lith[k, rc]
     elif no > 0:
         age[k, r], thick[k, r], cont[k, r], cover[k, r] = oa / no, ot / no, False, oc / no
         rock[k, r] = rock[k, ro]
         extra[k, r] = ox / no
+        rec[k, r] = rec[k, ro]
+        lith[k, r] = lith[k, ro]
     else:
         return False
     owned[k, r] = True
@@ -62,9 +68,11 @@ def _fill(k, r, refs, owned, age, cont, thick, rock, cover, extra):
 
 
 @njit(cache=True)
-def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner, nbr_off, nbr_idx, Q, centers, stacked):
+def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, rec, lith, blank, prev_owner, nbr_off, nbr_idx,
+            Q, centers, stacked):
     """Decide which plate owns each world cell; delete subducted crust,
-    fill aliasing holes, create new ocean floor in gaps.
+    fill aliasing holes, create new ocean floor in gaps (its record:
+    blank, record.blank()).
     Returns (owner, new ocean floor flag); adds the thickness of crust
     stacked by continental collisions to `stacked`.
 
@@ -90,7 +98,7 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
                 if owned[k, nbr_idx[e]]:
                     cnt += 1
             if cnt >= tot - 2:
-                _fill(k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover, extra)
+                _fill(k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover, extra, rec, lith)
     for i in range(n):
         m = 0
         for k in range(P):
@@ -140,7 +148,7 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
                 best_c, best_k = cnt, k
         if best_k >= 0 and best_c >= 4:
             r = idx[best_k, i]
-            if _fill(best_k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover, extra):
+            if _fill(best_k, r, nbr_idx[nbr_off[r]:nbr_off[r + 1]], owned, age, cont, thick, rock, cover, extra, rec, lith):
                 owner[i] = best_k
     counts = np.zeros(P, np.int64)
     for i in range(n):
@@ -163,7 +171,7 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
             for e in range(nbr_off[i], nbr_off[i + 1]):
                 if owner[nbr_idx[e]] == k:
                     refs[e - nbr_off[i]] = idx[k, nbr_idx[e]]
-            if _fill(k, idx[k, i], refs, owned, age, cont, thick, rock, cover, extra):
+            if _fill(k, idx[k, i], refs, owned, age, cont, thick, rock, cover, extra, rec, lith):
                 owner[i] = k
                 continue
         if counts[k] == 0:
@@ -175,6 +183,8 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
         rock[k, r] = OCEAN
         cover[k, r] = 0.0
         extra[k, r] = 0.0
+        rec[k, r] = blank
+        lith[k, r] = 0
         cont[k, r] = False
         owner[i] = k
         newc[i] = True
@@ -194,6 +204,8 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
                 rock[k, r2] = OCEAN
                 cover[k, r2] = 0.0
                 extra[k, r2] = 0.0
+                rec[k, r2] = blank
+                lith[k, r2] = 0
                 cont[k, r2] = False
     return owner, newc
 
