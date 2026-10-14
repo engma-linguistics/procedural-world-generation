@@ -791,7 +791,9 @@ def update_index():
             m = json.loads(p.read_text())
         except (OSError, json.JSONDecodeError):
             continue
-        items.append({"id": m["id"], "name": m["name"], "created": m["created"], "world": m["source_world"]["id"],
+        sw = m["source_world"]
+        items.append({"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
+                      "world_name": sw.get("name"), "source_run": sw.get("source_run"), "t_myr": sw.get("t_myr"),
                       "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]})
     (ZOOMS / "index.json").write_text(json.dumps(items, indent=1))
 

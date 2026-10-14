@@ -104,11 +104,42 @@ def cmd_delete(args):
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     """Static files, never cached (runs get regenerated in place), plus
-    DELETE /runs/<id> or /worlds/<id> for the viewer's delete button."""
+    DELETE /runs/<id> or /worlds/<id> for the viewer's delete button, and the
+    zoom API in api.py (POST /api/zoom, GET /api/jobs/<id>)."""
+
+    jobs = None  # api.Jobs, set by cmd_serve
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
+
+    def send_json(self, obj, code=200):
+        body = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", self.path)
+        if not m:
+            return super().do_GET()
+        job = self.jobs.get(m.group(1))
+        self.send_json(job if job else {"error": "no such job"}, 200 if job else 404)
+
+    def do_POST(self):
+        from . import api
+        if self.path != "/api/zoom":
+            self.send_error(404)
+            return
+        try:
+            req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            api.parse_zoom_request(req)
+        except (ValueError, api.BadRequest) as e:
+            self.send_json({"error": str(e)}, 400)
+            return
+        self.send_json({"job": self.jobs.submit(req)})
 
     def do_DELETE(self):
         m = re.fullmatch(r"/(runs|worlds)/([0-9a-zA-Z_-]+)", self.path)
@@ -124,11 +155,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def cmd_serve(args):
+    from . import api
+    from . import zoom as Z
     W.update_index()
     T.update_index()
+    Z.update_index()
+    Handler.jobs = api.Jobs()
     handler = functools.partial(Handler, directory=str(W.ROOT))
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("127.0.0.1", args.port), handler) as httpd:
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), handler) as httpd:
         url = f"http://127.0.0.1:{args.port}/viewer/"
         print(f"Viewer at {url}   (Ctrl-C to stop)")
         if not args.no_open:
