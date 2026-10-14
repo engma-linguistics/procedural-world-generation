@@ -25,7 +25,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   the accumulated rain (flow) at the mouth, in m^3/s.
 - delta site: a big river mouth with sediment to deliver (discharge x the
   basin's mean height), onto a low coast and a shallow shelf. Whether the
-  model draws a delta there is another matter, hence "delta site".
+  model draws a delta there is another matter, hence "delta site". When the
+  world has wave_power and tide_range layers, the blurb says which kind of
+  delta it would be (coast.delta_at: Galloway's river / wave / tide weights).
 - fjord coast: ice-free coast (where the glaciers have gone) that is steep
   (mountains >= 800 m within ~2 cells of the sea), with cool summers (warmest
   month 0..12 C) and enough snow (>= 400 mm/yr) to have fed glaciers. The
@@ -45,9 +47,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - waterfall / steep river: the biggest drop of the water surface (a lake's
   surface on lake cells) over one or two downstream links, on rivers of at
   least WF_MIN_Q m^3/s, ranked by the power of the falling water (discharge x
-  drop). On ~110 km cells that's a steep reach, not a fall: the zoom grades
-  the river smoothly down a valley. Pixel-scale falls are in each zoom's
-  stats ("waterfalls", zoom.waterfalls()).
+  drop). On ~110 km cells that's a steep reach, not a fall; the zoom keeps
+  part of it as real falls (zoom.knickpoints(): a lip, gorge and plunge
+  pool, plus cascades), listed in each zoom's stats ("waterfalls").
 - canyon: a river (>= 300 m^3/s) far below the median of its neighbours off
   the river, on ground averaging >= 1000 m within two cells.
 - salt lake / salt flat: the biggest lake_kind 2 (closed, salty) and 3 (salt
@@ -76,7 +78,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import hydrology
+from . import coast, hydrology
 from . import world as W
 from .climate import BIOMES, KOPPEN
 from .geo import R_KM
@@ -448,10 +450,11 @@ def rivers(ctx: _Ctx) -> list[dict]:
         if kind == "largest_river":
             d = delta_score(ctx, m)
             site = " Low coast and shallow shelf at the mouth: a likely delta site." if d["delta_like"] else ""
+            gal = galloway_note(ctx, m, q) if d["delta_like"] else {}
             blurb = (f"{_n(q)} m³/s reaches the sea here, from a {_area(len(basin) * ctx.area)} basin; "
-                     f"{_n(length)} km from its farthest source.{site}")
+                     f"{_n(length)} km from its farthest source.{site}{gal.pop('note', '')}")
             d.pop("delta_score")
-            feats.append(_feature(ctx, kind, "Largest river (its mouth)", blurb, m, 1000, {**stats, **d},
+            feats.append(_feature(ctx, kind, "Largest river (its mouth)", blurb, m, 1000, {**stats, **d, **gal},
                                   path=ctx.path(course)))
         else:
             mid = course[len(course) // 2]
@@ -487,6 +490,34 @@ def delta_score(ctx: _Ctx, m: int) -> dict:
             "delta_score": supply * flat * shallow}
 
 
+GALLOWAY_LOOK = {
+    "river": "long distributaries with levees reaching out to sea (a bird's foot, like the Mississippi's)",
+    "wave": "a smooth arc of beach ridges with one or two mouths and lagoons behind barriers (like the Nile or Sao Francisco)",
+    "tide": "funnel-shaped mouths widening to sea, elongate islands and tidal flats (like the Ganges-Brahmaputra or Mekong)",
+}
+
+
+def galloway_note(ctx: _Ctx, m: int, q: float) -> dict:
+    """What would shape a delta at mouth m (coast.delta_at): Galloway
+    weights, the dominant type and a sentence on the look; {} when the
+    world has no wave/tide layers."""
+    if "wave_power" not in ctx.L or "tide_range" not in ctx.L:
+        return {}
+    sea = int(_rivers(ctx)["down"][m])
+    cover = float(np.asarray(ctx.L.get("sediment_cover", np.zeros(ctx.n)), float)[sea]) if sea >= 0 else 0.0
+    sf = float(np.clip((cover - 0.5) / 7.5, 0, 1))
+    sf = sf * sf * (3 - 2 * sf)
+    gw = coast.delta_at(ctx.g, ctx.L, m, q, coast.plain_radius_km(q, sf))
+    w = gw["weights"]
+    top = max(w, key=w.get)
+    note = (f" Waves {gw['wave_power_kw_m']:.0f} kW/m, tides {gw['tide_range_m']:.1f} m, river sediment "
+            f"{gw['sediment_river_kgs'] * coast.SEC_PER_YR / 1e9:.0f} Mt/yr: {gw['type']} "
+            f"(river {100 * w['river']:.0f}%, wave {100 * w['wave']:.0f}%, tide {100 * w['tide']:.0f}%)"
+            + (f", so {GALLOWAY_LOOK[top]}." if w[top] >= coast.RIVER_DOMINANT else "."))
+    return {"delta_type": gw["type"], "galloway": w, "wave_power_kw_m": gw["wave_power_kw_m"],
+            "tide_range_m": gw["tide_range_m"], "note": note}
+
+
 def deltas(ctx: _Ctx, top: int = 3) -> list[dict]:
     """Big river mouths likely to build deltas (except the largest river's,
     which that feature already covers)."""
@@ -511,9 +542,10 @@ def deltas(ctx: _Ctx, top: int = 3) -> list[dict]:
         shelf = "a very shallow shelf" if d["shelf_depth_m"] < 50 else f"a {_m(d['shelf_depth_m'])}-deep shelf"
         blurb = (f"{_n(q)} m³/s from a {_n(length)} km river meets a low coast (~{_m(d['coast_m'])}) and "
                  f"{shelf}: where a delta could build.")
-        feats.append(_feature(ctx, "delta", "River mouth / delta site", blurb, m, 500,
+        gal = galloway_note(ctx, m, q)
+        feats.append(_feature(ctx, "delta", "River mouth / delta site", blurb + gal.pop("note", ""), m, 500,
                               {"discharge_m3s": round(q), "length_km": round(length),
-                               **{k: v for k, v in d.items() if k != "delta_score"}},
+                               **{k: v for k, v in d.items() if k != "delta_score"}, **gal},
                               quality=(0.4 + 0.6 * d["delta_score"] / best) * min(1, (q / 50000) ** 0.5),
                               path=ctx.path(course[-12:])))
     return _nms(ctx, feats, 500)[:top]
@@ -945,9 +977,8 @@ def waterfalls(ctx: _Ctx, top: int = 3) -> list[dict]:
         else:
             title = ("Steepest big river" if rank == 0 else "Steep river reach") + f": {_m(c['h'])} drop"
             what = (f"A {_n(c['q'])} m³/s river drops ~{_m(c['h'])} over {_n(c['km'])} km "
-                    f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells a fall is a "
-                    f"steep reach; the zoom grades the river smoothly down a deep valley (the falls it does "
-                    f"make, in its stats, are tens of metres).")
+                    f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells that's a steep "
+                    f"reach; zoom in to see the falls, gorge and cascades it holds.")
         blurb = what + f" ~{_n(c['gw'])} GW of falling water (Niagara: ~1.2 GW)."
         feats.append(_feature(ctx, "waterfall", title, blurb, a, 500,
                               {"drop_m": round(c["h"]), "reach_km": round(c["km"]), "discharge_m3s": round(c["q"]),

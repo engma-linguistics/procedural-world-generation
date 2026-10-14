@@ -99,8 +99,15 @@ def test_climate_same_on_any_thread_count(grid4):
         many = climate.compute(g, elev)
     finally:
         numba.set_num_threads(before)
+    def same(a, b):
+        if isinstance(a, dict):
+            return a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
+        if isinstance(a, list):
+            return a == b
+        return np.array_equal(a, b)
+
     for k in one:
-        assert np.array_equal(one[k], many[k]), k
+        assert same(one[k], many[k]), k
 
 
 def test_coarse_smooth_matches_fine():

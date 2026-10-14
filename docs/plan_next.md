@@ -136,7 +136,7 @@ Order: 1 → 6, small to large.
 **Queue (in order, as files free up):**
 1. After `water` merges:
    - **Climate kernels in parallel** (bit-identical) and climate updated at every keyframe (`climate_every` = 4), so the viewer's climate isn't stale. The speedup pays for the extra cost.
-   - **Then overturning circulation** in `climate.py`.
+   - **Then overturning circulation** in `climate.py`. **Done on branch `ocean`** (`planet/ocean.py`; see Known issues → Overturning).
 2. After `water` merges: **split `tectonics.py`** into kernels, crust, events and earth-system modules (output-neutral via the goldens), and drop compatibility code (`ocean_ref_age`, …). **Then the supercontinent B′** on the split code.
 3. After `timezoom` and `highlights` merge:
    - `planet/store.py` (one reader/writer for runs, zooms and timezooms);
@@ -154,7 +154,7 @@ Order: 1 → 6, small to large.
    - plateaus;
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
-5b. **Real waterfalls in the zoom.** Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
+5b. **Real waterfalls in the zoom.** **Done on branch `falls`** (see `zoom.knickpoints()`). Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
 5c. **Lakes on the run globe.** Runs store no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
 
@@ -180,10 +180,16 @@ Order: 1 → 6, small to large.
 - **Eemian-like start:** +24 m in the first 10 kyr (real: +6–9 m). `insol_k` above 0.3 melts most of Antarctica.
 - **Start anchor:** the fixed per-cell cooling that keeps the starting ice stable persists after that ice is gone. It's a calibration crutch.
 - **Smaller issues:** small accumulation jumps at each 10 kyr climate refresh; the ablation zone (where ice melts) is about one 110 km cell wide.
-- **Not done:** glacial erosion, proglacial lakes, and the meltwater link to ocean salinity (see overturning in Round 2).
+- **Not done:** glacial erosion, proglacial lakes. (The meltwater link to ocean salinity is in, branch `ocean`: each full climate gets the net ice loss since the last one as `melt`, and the overturning carries on from the last one's state. Over Earth's first 150 kyr it is only ~0.03 Sv, too small to matter.)
 
 **Climate**
-- **Norway too cold:** its sea surface is about 1.3 °C against about 7.5 °C observed, and W European winters are about 4 °C too cold. Waiting on the overturning circulation.
+- **Norway too cold:** partly fixed by the overturning (branch `ocean`). The Norwegian coast's sea surface went from 0.9 to ~5–6 °C (observed ~7.5), and Scandinavia's coldest month from −26.5 to −22.3 °C (NCEP −8.2). W European winters barely moved (−4.3 → −4.2 °C against 0.6 observed). Even a sea 8 °C warmer all over the NE Atlantic only brings them to −3 °C, so the rest is in the air-temperature model (how far the sea's air reaches inland in winter), not the ocean.
+- **Overturning circulation** (`planet/ocean.py`, branch `ocean`):
+  - **Earth:** ~11 Sv sinking in the Nordic, Irminger and Labrador seas (observed AMOC ~17 Sv) and none in the North Pacific. The Antarctic margin makes only ~2.5 Sv (AABW ~10–20 Sv): the Weddell and Ross seas are too fresh (~34.0 psu against 34.4–34.6). Their winter brine is weak, and there's no shelf/polynya ice factory.
+  - **Labrador Sea is too warm** (~7 °C sea surface against ~3.5 °C): the inflow feeds it along the Labrador coast. SW Greenland and Iceland now get summers just above 10 °C, so ET becomes D there (Reykjavik's coldest month went from −29.6 to −12.9 °C, observed −0.6 °C).
+  - **The North Atlantic's on-state is found by a spin-up rule,** not by history. With no earlier state, every polar sea that is nearly dense enough starts sinking, and the drho threshold tightens over the iterations. Without that start, the model's own salinity leaves the Nordic seas too fresh to sink: its rain model has no Atlantic/Pacific evaporation contrast to speak of. Hosing ~1 Sv into the North Atlantic shuts it down. Once the hosing stops it recovers within 2–3 climate updates, so it has no lasting off-state.
+  - **Its warmth adds to the 50–70°N ocean band** (`moc_zonal` = 0): that band's sea is now ~2–4 °C warmer than before. The Köppen score preferred this (70.69% against 70.50% with half of it taken off the band).
+  - **Cost:** about +0.15–0.2 s per climate.compute at level 6 (0.48 → ~0.65 s unloaded). The overturning is solved on the level-5 grid, but the sea surface and the air temperatures are carried a second time on the full grid.
 - **Gulf Stream and Kuroshio separate from the coast too far north** (a Stommel-model limit), so the Oyashio region is too warm.
 - **Rain is patchy cell to cell on flat ground:** neighbouring cells differ by a median 1.5× near the hothouse lake. Diagonal streaks in rain maps predate the gyre work.
 - **Older Earth errors:** Sahel and East Africa too wet; Indian and Chinese monsoons too dry; Siberia, Alaska, Quebec and NE China winters 5–10 °C off.
@@ -207,7 +213,7 @@ Order: 1 → 6, small to large.
   - **Discharge misses come from the rain model:** the Yangtze ends in a lake, and the Lena, Mekong and Ganges are too small (dry China, Siberia and Indian monsoon). The Nile is 19× too big (Sahel too wet). With observed rain, magnitudes are about right.
   - **The Orinoco gauge picks up the Amazon,** a coarse-routing artifact.
 - **Zoom lakes and deltas are merged (`zoomwater`); what's left:**
-  - The lake outlet river drops about 140 m within a few km (a cliff waterfall). The downstream river's profile is built up from the sea, well below the lake. It needs a floor on the outlet channel that steps down gradually downstream.
+  - ~~The lake outlet river drops about 140 m within a few km (a cliff waterfall).~~ Fixed (`falls`): the ground below an open lake's outlet steps down at most 2 m/km (rapids), out to the first designed fall.
   - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). River water entering at the zoom's edge can drain straight back out through the edge.
   - Delta fans are small, and their branches run straight (only 8 possible step directions). There are no distributaries when the fine-scale river reaches the sea away from the coarse mouth.
   - A small lake fragment sometimes has no outlet and acts as a sink.
@@ -223,15 +229,36 @@ Order: 1 → 6, small to large.
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
 - The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
 - ~~Pre-made zooms need re-making after `zoomwater` lands~~: re-made for a434c5 and cec38b (`hl2`).
-- **No big waterfalls in the zoom except at lake outlets.** The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
+- ~~**No big waterfalls in the zoom except at lake outlets.**~~ Fixed on `falls`: steep coarse reaches keep falls (lip, gorge, plunge pool, cascades). Notes from before the fix: The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
 - **Worlds sliced before `water` (a434c5, cec38b) have no lake_kind and no closed basins**, so salt lakes, salt pans and inland basins don't appear; exposed evaporite beds on dry land stand in as "salt flats".
 - **Canyons are weak at 110 km cells:** the Earth world finds the Kura valley and the Siang below the Tsangpo gorge, not the Grand Canyon. Rain shadows find the Himalaya, SE Tibet and the Atacama/Altiplano edge, not the Sierra Nevada. Plateaus find Tibet, Wyoming and the Altiplano (3rd). The Earth world's salt lake is in Hungary (the model climate leaves the Pannonian basin closed); the Caspian is below sea level, so it's the landlocked sea.
+
+- **Zoom falls (`falls`) are big for such big rivers:** 141 m at 60,000 m³/s is ~85 GW, about 70× Niagara, because coarse worlds drop big rivers 500–700 m over a few hundred km.
+- **The escarpment shows only as the fall and gorge**, not as stepped country. The 1-px gorge is hidden under the preview's wide river line.
+- **A designed step is lost** if the zoom's river carries under 30% of the coarse discharge or the reach leaves the region (a 256 m step on a 1,215 m³/s stream in 58ed13). `waterfalls()` keeps falls ≥15 km apart, so close cascades go unlisted.
+- **Small uphill steps on delta trunks** (path frozen early), from before `falls`.
+- **No glacial hanging valleys.** The lake-outlet cone can raise low ground up to 150 km around an outlet.
+- **Big zoom rivers are now less deeply incised** (they keep at least their valley floor), so canyons are shallower than before `falls`.
+
+**Coast: waves, tides, delta types** (`planet/coast.py`, branch `deltas`)
+- **Southern Hemisphere westerly coasts get ~half their observed wave power;** the N Atlantic and NE Pacific get ~1.5× too much. The storm tracks come mostly from land–sea contrast, so they are weak over the Southern Ocean.
+- **Wave power is ~2× too high in the Med, Baltic and Black Sea,** and India's west coast is too low (no monsoon swell). Faint straight streaks appear in the lee of islands (16 ray directions).
+- **Tides:** Fundy is too small (2.4 m; the funnel is under the cell size), the Caribbean too big (1.0 m), Arctic shelves too big (no sea-ice damping), and there are no amphidromic points.
+- **No Earth delta comes out tide-dominated:** the model gives the Ganges 3,700 m³/s (real ~40,000), and its mouth's tide is too small.
+- **The fine river can reach the coast ~100 km from the coarse mouth,** so the delta form and the river don't always line up.
+- **Not done:** spits deflected by longshore drift, mangroves, visible beach ridges in the preview, and a dendritic eroded tidal-channel network (it's noise-based now).
+- **Cost:** ~1.2 s per level-6 world.
 
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.
 - The Earth world can't be zoomed (no rock layers).
 - The cold-era timeline tint is stripy where temperature flickers from frame to frame (kept unsmoothed).
 - Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
+
+- **Run lakes vs sliced worlds (`lakes`):** closed lakes on flat basins disagree a lot (t=180 in demo run 8dc2f2: 1 shared wet cell of 88 vs 18), because the world adds ±180 m texture, its own erosion and a fresh climate. Open lakes agree roughly; the world's are smaller and about half as deep.
+- **Giant shallow lakes in runs** (up to ~2.3M km²): outlets don't cut down (see outlet incision in Backlog).
+- **Closed lakes on flat basins look speckled** on the run globe.
+- **Lakes are drawn only on the elevation and biome layers**, and run hover shows lake info only when elevation is loaded. Contrast: salt-lake teal is near some biome greens, and fresh blue is near shallow sea. `lake_depth` is stored in whole metres, so shallow lakes read "~0 m".
 
 **Infrastructure**
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.

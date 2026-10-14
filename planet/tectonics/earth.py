@@ -4,8 +4,8 @@ its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
 co2, refs, depth_ref, sea_level and its parts sea_ice / sea_tect, ice, veg,
-removed, the climate fields from climate.compute, and the rivers (flow,
-down).
+removed, the climate fields from climate.compute, the rivers (flow,
+down) and the lakes (lake_kind, lake_depth).
 """
 
 from __future__ import annotations
@@ -146,12 +146,13 @@ def erode(sim, col):
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
     iso = np.where(cover > surface.COVER_SHOWS, iso_dep, isostasy(cont, rock))
-    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lake = surface.erode(
+    col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.swell - sim.sea_level, sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep)
     sim.book("erosion", t0, col.t, cont)
-    return dep, lake
+    sim.lake_kind, sim.lake_depth = lk["kind"], lk["depth"]
+    return dep, lk["kind"]
 
 
 def sediments(sim, col, dep, lake):
