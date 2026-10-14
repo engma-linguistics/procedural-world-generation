@@ -11,6 +11,7 @@ import socketserver
 import webbrowser
 from pathlib import Path
 
+from . import highlights as H
 from . import timeline as T
 from . import world as W
 from .generators import GENERATORS
@@ -105,10 +106,37 @@ def cmd_delete(args):
         print(f"{ref}: " + (", ".join(str(p.relative_to(W.ROOT)) for p in gone) if gone else "not found"))
 
 
+def cmd_highlights(args):
+    from . import api
+    if (T.RUNS / args.ref / "run.json").exists():
+        run = json.loads((T.RUNS / args.ref / "run.json").read_text())
+        at = run["frames"][-1]["t"] if args.at is None else args.at
+        req = {"run": args.ref, "t": at}
+    else:
+        req = {"world": args.ref}
+    try:
+        res = api.highlights(req, refresh=args.refresh)
+    except api.BadRequest as e:
+        raise SystemExit(f"ERROR: {e}")
+    src = res["source"]
+    where = f"run {src['run']} at {src['t']:g} Myr, " if "run" in src else ""
+    print(f"{res['name']}  ({where}world {res['world']}; {len(res['features'])} highlights)")
+    for f in res["features"]:
+        print(f"{f['rank']:>3}. {f['title']}  ({f['lat']:.2f}, {f['lon']:.2f}; zoom {f['size_km']} km)"
+              + (f"  [zoom {f['zoom']}]" if f["zoom"] else ""))
+        print(f"     {f['blurb']}")
+    if args.zoom:
+        for f in H.pick_zooms(res["features"], args.zoom):
+            print(f"zooming: {f['title']} ({f['size_km']} km)...", flush=True)
+            r = api.zoom_job(api.zoom_request(src, f), lambda frac, msg: None)
+            print(f"zoom {r['zoom']}  {f['title']}  -> http://127.0.0.1:8765/viewer/zoom.html?id={r['zoom']}")
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     """Static files, never cached (runs get regenerated in place), plus
     DELETE /runs/<id> or /worlds/<id> for the viewer's delete button, and the
-    zoom API in api.py (POST /api/zoom, GET /api/jobs/<id>)."""
+    zoom API in api.py (POST /api/zoom, GET /api/jobs/<id>), and highlights
+    (GET /api/highlights?run=<id>&t=<Myr> or ?world=<id>)."""
 
     jobs = None  # api.Jobs, set by cmd_serve
 
@@ -125,11 +153,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path.startswith("/api/highlights?"):
+            return self.get_highlights()
         m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", self.path)
         if not m:
             return super().do_GET()
         job = self.jobs.get(m.group(1))
         self.send_json(job if job else {"error": "no such job"}, 200 if job else 404)
+
+    def get_highlights(self):
+        """Synchronous: a few seconds at most (building a world from a keyframe)."""
+        from urllib.parse import parse_qsl, urlsplit
+        from . import api
+        q = dict(parse_qsl(urlsplit(self.path).query))
+        try:
+            res = api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1")
+        except (ValueError, api.BadRequest) as e:
+            return self.send_json({"error": str(e)}, 400)
+        except SystemExit as e:  # no such run / world
+            return self.send_json({"error": str(e)}, 404)
+        except Exception as e:  # a bug: show it in the viewer rather than drop the connection
+            return self.send_json({"error": f"{type(e).__name__}: {e}"}, 500)
+        self.send_json(res)
 
     def do_POST(self):
         from . import api
@@ -220,6 +265,13 @@ def main():
     z.add_argument("--seed", type=int, default=1, help="detail noise variant")
     z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
     z.set_defaults(func=cmd_zoom)
+
+    h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
+    h.add_argument("ref", help="world id, or run id (then --at; default: the run's end)")
+    h.add_argument("--at", type=float, help="time in Myr, for a run")
+    h.add_argument("--zoom", type=int, default=0, metavar="N", help="also make regional zooms of the top N")
+    h.add_argument("--refresh", action="store_true", help="recompute instead of using the cached list")
+    h.set_defaults(func=cmd_highlights)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")

@@ -408,10 +408,10 @@ def delete(ref: str) -> list[Path]:
     if (RUNS / ref / "run.json").exists():
         shutil.rmtree(RUNS / ref)
         gone.append(RUNS / ref)
-    for ext in (".json", ".txt"):
-        if (W.WORLDS / f"{ref}{ext}").exists() and ref != "index":
-            (W.WORLDS / f"{ref}{ext}").unlink()
-            gone.append(W.WORLDS / f"{ref}{ext}")
+    for p in (W.WORLDS / f"{ref}.json", W.WORLDS / f"{ref}.txt", W.WORLDS / "highlights" / f"{ref}.json"):
+        if p.exists() and ref != "index":
+            p.unlink()
+            gone.append(p)
     update_index()
     W.update_index()
     return gone
