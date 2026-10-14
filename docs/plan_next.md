@@ -233,6 +233,11 @@ Order: 1 → 6, small to large.
 - The cold-era timeline tint is stripy where temperature flickers from frame to frame (kept unsmoothed).
 - Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
 
+- **Run lakes vs sliced worlds (`lakes`):** closed lakes on flat basins disagree a lot (t=180 in demo run 8dc2f2: 1 shared wet cell of 88 vs 18), because the world adds ±180 m texture, its own erosion and a fresh climate. Open lakes agree roughly; the world's are smaller and about half as deep.
+- **Giant shallow lakes in runs** (up to ~2.3M km²): outlets don't cut down (see outlet incision in Backlog).
+- **Closed lakes on flat basins look speckled** on the run globe.
+- **Lakes are drawn only on the elevation and biome layers**, and run hover shows lake info only when elevation is loaded. Contrast: salt-lake teal is near some biome greens, and fresh blue is near shallow sea. `lake_depth` is stored in whole metres, so shallow lakes read "~0 m".
+
 **Infrastructure**
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
