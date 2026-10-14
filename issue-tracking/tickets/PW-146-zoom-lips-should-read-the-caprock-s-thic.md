@@ -1,4 +1,5 @@
 ---
+id: PW-146
 title: Zoom lips should read the caprock's thickness and the soft rock under it
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: stratarock
 blocked_by: []
 relates: [PW-136, PW-010]
 refs: [planet/zoom.py, planet/landform.py, planet/surface.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -32,3 +35,6 @@ undercut, the fall keeps its step and retreats as a gorge). Suggested:
 Not done in the stratarock branch because zoomland1 owns zoom.py (escarpment,
 caprock and lava plateau synthesis); best folded into that work or right
 after it.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-lip-caprock-structure.md (found by stratarock).

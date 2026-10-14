@@ -1,4 +1,5 @@
 ---
+id: PW-145
 title: Coal measures nearly vanish from surface_rock now that it reads the top stratum
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: stratarock
 blocked_by: []
 relates: [PW-136]
 refs: [planet/surface.py, planet/tectonics/record.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
   in coal swamps) and show "coal measures" for a top stratum with > 3% coal.
   Needs a record field; touches record.add_top.
 Lean: A unless the viewer or highlights miss coal basins.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-coal-measures-display.md (found by stratarock).
