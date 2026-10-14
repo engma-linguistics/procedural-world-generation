@@ -326,3 +326,11 @@ Same seeds won't give the same geography under the new physics, so pick world ti
   - L7 seed 1, 1500 Myr (`--every 5 --checkpoint-every 250`);
   - a serial script re-making the L6 seed-1 comparison plus the six showcases (`$CLAUDE_JOB_DIR/tmp/runs/showcase.sh`, logs alongside).
 - **Next:** slice worlds, highlights and zooms from the showcases; the L8 run by 03:00–05:00; more L7 showcases.
+
+**Update 03:20:**
+- **Mantle:** merged at cbe40ce before the long runs. The agent is still adding plate-size-scaled stress rifting (more plates), so tonight's runs predate that.
+- **L8:** run 15b1b0 started at 01:50 (seed 1, 1200 Myr, `--every 10`). It took 85 min to reach 300 Myr under load, so expect it around 07:00–08:00.
+- **L7 done:** 1beb32 (seed 1, resolution check), 0e4c66 (seed 11, world eeaf33), f3f4ac (seed 16 hothouse, world 2c6e80).
+- **L7 running:** eef4a2 (seed 13 water world, 1500 Myr) and seed 12.
+- **L6 showcases done** (worlds and zooms made): 2b59b1, 60a706, 9219ac, 2552cf, 482ff7, f397a9.
+- **Agent `falls2`** is investigating undesigned "drop" falls of up to ~1 km in zooms.
