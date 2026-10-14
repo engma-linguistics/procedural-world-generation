@@ -145,7 +145,7 @@ Order: 1 → 6, small to large.
    - `server.py`;
    - world files reference the shared grid.
 4. **Earth reference world** in the viewer (model vs observed).
-5. **Highlights, round 2** (the user wants all of these; "big ole waterfalls" most). After `water` and `zoomwater` merge:
+5. **Highlights, round 2** (the user wants all of these; "big ole waterfalls" most). **Done on branch `hl2`** except the fastest plate (skipped); see Known issues → Highlights.
    - waterfalls and knickpoints: big drops along big rivers; refine the height and location in the zoom raster (pixel-scale drops);
    - grand canyons (deep incision on high ground);
    - salt flats and closed basins (from `lake_kind`);
@@ -154,7 +154,22 @@ Order: 1 → 6, small to large.
    - plateaus;
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
+5b. **Real waterfalls in the zoom.** Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
+5c. **Lakes on the run globe.** Runs store no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
+
+## Backlog (user notes, 2026-10-14)
+- **Delta types.** Real deltas differ by what dominates (Galloway's classification):
+  - **river-dominated:** the Mississippi's bird's-foot, a few long distributaries reaching out into calm deep water;
+  - **wave-dominated:** the Nile and São Francisco, a smooth arc-shaped coast with beach ridges;
+  - **tide-dominated:** the Ganges–Brahmaputra and Mekong, many funnel-shaped channels and islands (the Sundarbans).
+
+  The model has no waves or tides. Wave energy could come from the winds and fetch (open water the wind blows over). Tidal range could come roughly from shelf width and basin shape. Then pick the delta shape in the zoom per type. Medium effort.
+- **Giant open lakes:** outlet incision should drain them down over time; today they stay at their spill level. a89254 has a 390,000 km² open lake, larger than any open lake on Earth (Superior is 82,000 km²; only the closed Caspian is bigger).
+- **Vegetation, and eventually a "satellite view"** of the globe and zooms. Not yet.
+- **Zoom 3D view:** a simple low-poly three.js heightmap mesh with a water plane and rivers, in the existing viewer. No Unity or game-engine side project. The goal is to "see a big ole waterfall".
+- **Finer zooms:** 100–250 m pixels for small areas, if the zoom pass holds up at that scale.
+- **A level-7 showcase run** (~60 km cells, 164k cells; roughly 4–8× the cost of level 6, so ~15–30 min per Gyr), once B′ and the ocean work land. It doubles as a resolution-dependence check, since everything was calibrated at levels 5–6. **Level 8** (~30 km, 655k cells; maybe 1–2+ h per Gyr, plate arrays ~1.5 GB) only after a short trial. Neither resolves waterfalls; those come from the zoom.
 
 ## Known issues to come back to (collected from the agents' reports, 2026-10-13)
 
@@ -204,10 +219,13 @@ Order: 1 → 6, small to large.
 - Ocean plate boundaries are ragged.
 
 **Highlights**
-- Several highest peaks sit under ice caps, so their zooms are white.
-- Earth-like A's longest river crosses a cold, dry polar continent, so its zoom is bland.
+- ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
+- ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
 - The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
-- Pre-made zooms need re-making after `zoomwater` lands.
+- ~~Pre-made zooms need re-making after `zoomwater` lands~~: re-made for a434c5 and cec38b (`hl2`).
+- **No big waterfalls in the zoom except at lake outlets.** The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
+- **Worlds sliced before `water` (a434c5, cec38b) have no lake_kind and no closed basins**, so salt lakes, salt pans and inland basins don't appear; exposed evaporite beds on dry land stand in as "salt flats".
+- **Canyons are weak at 110 km cells:** the Earth world finds the Kura valley and the Siang below the Tsangpo gorge, not the Grand Canyon. Rain shadows find the Himalaya, SE Tibet and the Atacama/Altiplano edge, not the Sierra Nevada. Plateaus find Tibet, Wyoming and the Altiplano (3rd). The Earth world's salt lake is in Hungary (the model climate leaves the Pannonian basin closed); the Caspian is below sea level, so it's the landlocked sea.
 
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.
@@ -216,6 +234,58 @@ Order: 1 → 6, small to large.
 - Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
 
 **Infrastructure**
+- **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
+- `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
+- **Checkpoints are big (`store`):** about 23 MB each at level 6 (≈229 MB per 1 Gyr run, about as much as the layers). Saving only live plates' slots would shrink them.
+- **Old outputs still show in dropdowns** until deleted. Every pre-`store` run, world and zoom fails to open (all were scheduled for deletion and regeneration).
+- **Replay falls back to t=0 when the code changed** (the source hash differs), so slices of older runs take minutes, or fail with ReplayMismatch unless `--force`.
+
+## Overnight state (2026-10-14 00:10): for the coordinator after context compaction
+
+**User asleep.** Cleared for ONE level-8 run (save it for last; kick off no later than 05:00) and up to 8 level-7 runs, plus any level-6 runs. The user reviews in the morning. Commit locally only.
+
+**Agents in flight**, each in its own worktree `.claude/worktrees/<branch>` with symlinked `data runs worlds zooms grids`. When one reports: merge its branch into main, run `uv run pytest`, fix conflicts, regenerate goldens if outputs legitimately changed (`uv run pytest tests/test_golden.py --update-golden`), add its "remaining issues" to Known issues, and restart the server if server code changed.
+
+| Branch | What it's doing |
+|---|---|
+| `mantle` | Breakup fix plus B′ mantle field, hotspots tied to warm mantle, lighter sediment density. Will make a 2 Gyr level-6 showcase run. |
+| `store` | `planet/store.py`, one file per layer (viewer loads lazily), consistent layer names, worlds referencing the shared grid, checkpoints via `Simulation.state()`/`load_state`/`from_state`, `planet/server.py`. Existing outputs may need regenerating after this. |
+| `ocean` | Overturning circulation (salinity from E−P, runoff, sea ice, a meltwater hook for timezoom) and its heat transport ("mild Norway"). |
+| `falls` | Knickpoint waterfalls in the zoom (resistant lip, plunge pool, gorge retreat) and the fix for the lake-outlet cliff. |
+
+The viewer server (`planet serve --no-open`, port 8765) was started by the coordinator. Restart it after server changes:
+`pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open > $CLAUDE_JOB_DIR/tmp/serve.log 2>&1 &`
+
+**Level-7 timing:** ~1.8 s/Myr under load (≈30 min/Gyr), 0.9 GB RSS. Land went 29→22% in the first 20 Myr at level 7, so check resolution dependence. **Level 8 estimate:** ~2 h/Gyr, ~3.5 GB RAM. Frames are large (level 8 ≈ 17 MB/frame), so use `--every 10` or more.
+
+**Overnight plan after merges:**
+1. **Lakes on the run globe** (queue 5c).
+2. **Regenerate the six showcase worlds** at level 6 with the new code, delete the old ones (keep the Earth world `59a918`, re-made with `tools/earth_world.py`), recompute highlights, and pre-make zooms (`planet highlights <run> --at T --zoom 6`).
+3. **Level-7 runs:** first an Earth-like ~1–2 Gyr run to check resolution dependence against level 6 (land, dry share, ocean age, landmasses; supercontinent cycle), then showcases. Up to 8.
+4. **Level-8 run** last, started by 05:00. Earth-like, `--every 10`, ~1–1.5 Gyr.
+5. **Morning report** for the user: what merged, the run ids with what to look at, highlights/zooms to open, and open decisions.
+
+**Showcase recipes** (the old v1 runs were deleted at the `store` merge, since no old output can be read any more). All are level 6, `--every 4`, with default params except:
+
+| Old run | Name | seed | Myr | `--set` | Old worlds (t) |
+|---|---|---|---|---|---|
+| ed7401 | Earth-like A | 11 | 1000 | — | 400 (cec38b), 576 |
+| 68929f | Earth-like B | 12 | 1500 | — | 432 |
+| a89254 | Water world, land emerges | 13 | 2000 | `continental_start=0.1 heat_start=2` | 1396, 1500, 1592 (giant lake), 1960 |
+| f2d397 | Land-heavy | 14 | 1000 | `continental_fraction=0.6` | 864 |
+| 7c716b | Cold world | 15 | 1000 | `tilt=15 climate_offset=-6` | 288 |
+| d05a1e | Hothouse | 16 | 1000 | `tilt=45 climate_offset=5` | 432, 460 (a434c5) |
+
+Same seeds won't give the same geography under the new physics, so pick world times afresh.
+
+**Update 00:20:**
+- `store` is merged (1c93acf); the server has been restarted.
+- The `lakes` agent is doing step 1.
+- The other agents were told to merge main before reporting.
+- Old outputs get deleted once `falls` reports, since it tests on a434c5 and cec38b.
+- The user (at bedtime) asked for two documents, both written by subagents only **after all other overnight work is done**:
+  - `docs/morning_decisions.md`: judgement calls for the user to give feedback on. Collect them through the night.
+  - `docs/overview.md`: an overview of what the project is and how each subsystem works. At most ~5 pages of text; pictures and diagrams are welcome.

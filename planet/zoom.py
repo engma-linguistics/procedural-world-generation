@@ -60,11 +60,12 @@ Pipeline
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp); any pits left are filled.
 
-Outputs: zooms/<id>/
+Outputs: zooms/<id>/ (paths and layer files: store.py)
   zoom.json      meta: source world, centre, size, resolution, projection,
-                 layer layout of layers.bin, legends, heightmap mapping, stats
-  layers.bin     raw little-endian arrays (float32 / uint8), (ny, nx), row 0
-                 = north; offsets in zoom.json["layers"]. load() reads it.
+                 layer specs (file, dtype, shape, units), legends, heightmap
+                 mapping, stats
+  layers/<name>.bin  one raw little-endian array per layer (float32 / uint8),
+                 (ny, nx), row 0 = north. load() reads them.
   heightmap.png  16-bit greyscale: elev_m = min_m + v / 65535 * (max_m - min_m)
   preview.png    hillshade x hypsometric tint, lakes, rivers
   coarse.png     the source cells (nearest cell) for comparison
@@ -80,14 +81,14 @@ from pathlib import Path
 import numpy as np
 
 from . import climate, hydrology, kernels
+from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
 from .geo import R_KM, latlon, xyz
 from .images import write_png
-from .climate import BIOMES, KOPPEN, LAPSE
-from .surface import ROCK_K, ROCKS
+from .climate import LAPSE
+from .surface import ROCK_K
 
-ZOOMS = W.ROOT / "zooms"
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
@@ -163,11 +164,7 @@ def _box_mean(a, w, r):
 
 
 def find_world(ref: str) -> Path:
-    p = Path(ref)
-    for cand in (p, W.WORLDS / f"{ref}.json", W.WORLDS / ref, W.WORLDS / f"{p.name}.json"):
-        if cand.is_file():
-            return cand
-    raise SystemExit(f"no world {ref!r} (see: uv run python -m planet list)")
+    return S.find_world(ref)
 
 
 def _octaves(wavelength, finest):
@@ -181,6 +178,61 @@ def _catmull_rom(p0, p1, p2, p3, n):
     t2, t3 = t * t, t * t * t
     return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2
                   + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+
+
+# Waterfalls in the raster: from a channel carrying >= WF_MIN_Q m^3/s, the
+# biggest drop of the water surface over <= WF_STEPS pixels downstream that
+# is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
+WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 50.0, 30.0, 15.0, 3
+
+
+def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
+               starts: dict | None = None, top: int = 5) -> list[dict]:
+    """Pixel-scale falls along the drainage network. ws: water surface (lake
+    surface on lakes, 0 at sea), q: discharge m^3/s, rec: D8 receivers (-1
+    at outlets); starts: {lake outlet pixel: lake level}, where a fall
+    starts at the lake surface a pixel upstream. Best first by power
+    (discharge x height), at least ~15 km apart, none within 4 px of the
+    edge. Each: px (row, col), height_m, length_km, discharge_m3s,
+    power_gw, top_m, bottom_m, from_lake."""
+    n = nx * ny
+    lvl, d0 = ws.astype(float).copy(), np.zeros(n)
+    for o, v in (starts or {}).items():
+        if o >= 0 and v > lvl[o]:
+            lvl[o], d0[o] = v, res
+    row, col = np.divmod(np.arange(n), nx)
+    inner = (row >= 4) & (row < ny - 4) & (col >= 4) & (col < nx - 4)
+    i = np.flatnonzero((q >= WF_MIN_Q) & inner & (rec >= 0))
+    # a lake outlet's own step (lake surface -> outlet pixel) counts as one
+    drop = lvl[i] - ws[i]
+    ok = (d0[i] > 0) & (drop >= WF_MIN_GRAD * np.maximum(d0[i], 1e-9))
+    best_h, best_d, best_j = np.where(ok, drop, 0.0), d0[i].copy(), i.copy()
+    j, dist, alive = i.copy(), d0[i].copy(), np.ones(len(i), bool)
+    for _ in range(WF_STEPS):
+        r = rec[j]
+        alive &= r >= 0
+        rr = np.maximum(r, 0)
+        diag = (rr % nx != j % nx) & (rr // nx != j // nx)
+        dist = np.where(alive, dist + res * np.where(diag, 1.4142, 1.0), dist)
+        j = np.where(alive, rr, j)
+        drop = lvl[i] - ws[j]
+        better = alive & (drop >= WF_MIN_GRAD * dist) & (drop > best_h)
+        best_h, best_d, best_j = (np.where(better, a, b) for a, b in ((drop, best_h), (dist, best_d), (j, best_j)))
+    keep = best_h >= WF_MIN_DROP
+    i, h, d, jj = i[keep], best_h[keep], best_d[keep], best_j[keep]
+    gw = 1000 * 9.81 * q[i] * h / 1e9
+    out, sep = [], max(6, int(round(15 / res)))
+    for k in np.argsort(-gw):
+        r0, c0 = divmod(int(i[k]), nx)
+        if any(max(abs(r0 - f["px"][0]), abs(c0 - f["px"][1])) < sep for f in out):
+            continue
+        out.append({"px": [r0, c0], "height_m": round(float(h[k]), 1), "length_km": round(float(d[k]), 1),
+                    "discharge_m3s": round(float(q[i[k]]), 1), "power_gw": round(float(gw[k]), 3),
+                    "top_m": round(float(lvl[i[k]]), 1), "bottom_m": round(float(ws[jj[k]]), 1),
+                    "from_lake": bool(d0[i[k]] > 0)})
+        if len(out) >= top:
+            break
+    return out
 
 
 def _shift(a: np.ndarray, dr: int, dc: int, fill):
@@ -915,9 +967,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     outs = lake_outlets(rec)
     Q, lake_in = route(srcq, rec, order, outs, split_ok)
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
+    discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
+    falls = waterfalls(np.where(lake, surf, np.where(sea, 0.0, h)), discharge, rec, nx, ny, res,
+                       {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0})
+    for f in falls:
+        k = f["px"][0] * nx + f["px"][1]
+        f["lat"], f["lon"] = (round(v, 3) for v in _latlon(fr.to_sphere(px[[k]], py[[k]])[0]))
     h = np.where(lake, surf - depth, h)
     lake_depth = np.where(lake, depth, 0.0)
-    discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
@@ -964,6 +1021,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "deltas": [{"mouth_km": [round(d["x"], 1), round(d["y"], 1)], "discharge_m3s": round(d["q"]),
                     "plain_radius_km": round(d["R"])} for d in deltas],
         "distributary_splits": len(splits),
+        # pixel-scale falls (see waterfalls()): the landscape pass grades rivers smoothly, so big ones
+        # show up mostly where a lake spills out and the outlet channel is cut below it
+        "waterfalls": falls,
     }
     layers = {
         "elevation": h.astype(np.float32),
@@ -1101,19 +1161,10 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
          seed: int) -> Path:
     world_id = world_path.stem
     zid = zoom_id(world_id, lat, lon, size_km, res_km, seed)
-    out = ZOOMS / zid
+    out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
-    layout, offset = {}, 0
-    with open(out / "layers.bin", "wb") as fh:
-        for k, v in z["layers"].items():
-            arr = np.ascontiguousarray(v.astype(v.dtype.newbyteorder("<")))
-            pad = (-offset) % 8
-            fh.write(b"\0" * pad)
-            offset += pad
-            layout[k] = {"dtype": np.dtype(v.dtype).name, "offset": offset, "shape": list(arr.shape),
-                         "units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
-            fh.write(arr.tobytes())
-            offset += arr.nbytes
+    layout = S.write_layers(out, z["layers"], {k: {"units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
+                                               for k in z["layers"]})
     h = z["layers"]["elevation"].astype(float)
     lo, hi = float(np.floor(h.min())), float(np.ceil(h.max()))
     hi = max(hi, lo + 1)
@@ -1127,7 +1178,7 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
                                  "sw": (-half, -half)}.items()}
     m = world["meta"]
     meta = {
-        "format": "procgen-zoom/1",
+        "format": "procgen-zoom/2",
         "id": zid,
         "name": f"{world.get('name') or world_id}: {lat:g}, {lon:g} ({size_km:g} km @ {z['res']:g} km)",
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -1145,18 +1196,13 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
             "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)",
             "corners_latlon": corners,
         },
-        "files": {"layers": "layers.bin", "heightmap": "heightmap.png", "preview": "preview.png",
-                  "coarse": "coarse.png"},
+        "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png"},
         "layers": layout,
         "heightmap": {"bits": 16, "min_m": lo, "max_m": hi,
                       "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
                       "formula": "elev_m = min_m + value / 65535 * (max_m - min_m)",
                       "metres_per_step": round((hi - lo) / 65535, 4)},
-        "legend": {
-            "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
-            "biomes": [{"id": b[0], "name": b[1], "color": b[3]} for b in BIOMES],
-        },
+        "legend": S.legends(),
         "params": z["params"],
         "stats": z["stats"],
     }
@@ -1167,30 +1213,13 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
 
 def load(ref: str | Path) -> tuple[dict, dict]:
     """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it)."""
-    p = Path(ref)
-    d = p if (p / "zoom.json").exists() else ZOOMS / str(ref)
+    d = S.find_zoom(ref)
     meta = json.loads((d / "zoom.json").read_text())
-    raw = (d / "layers.bin").read_bytes()
-    layers = {}
-    for k, spec in meta["layers"].items():
-        dt = np.dtype(spec["dtype"]).newbyteorder("<")
-        layers[k] = np.frombuffer(raw, dt, int(np.prod(spec["shape"])), spec["offset"]).reshape(spec["shape"])
-    return meta, layers
+    return meta, S.read_layers(d, meta["layers"])
 
 
 def update_index():
-    ZOOMS.mkdir(exist_ok=True)
-    items = []
-    for p in sorted(ZOOMS.glob("*/zoom.json"), key=lambda p: p.stat().st_mtime, reverse=True):
-        try:
-            m = json.loads(p.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
-        sw = m["source_world"]
-        items.append({"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
-                      "world_name": sw.get("name"), "source_run": sw.get("source_run"), "t_myr": sw.get("t_myr"),
-                      "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]})
-    (ZOOMS / "index.json").write_text(json.dumps(items, indent=1))
+    S.update_index("zoom")
 
 
 def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0, seed: int = 1,

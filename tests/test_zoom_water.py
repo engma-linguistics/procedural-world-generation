@@ -100,3 +100,28 @@ def test_delta_plain_and_distributaries(water_world):
     near = np.hypot(X - dl["mouth_km"][0], Y - dl["mouth_km"][1]) < dl["plain_radius_km"]
     assert z["stats"]["distributary_splits"] >= 1
     assert (coast & near & (q > 0.1 * q[near].max())).sum() >= 2
+
+
+def test_waterfalls_on_a_staircase():
+    """A river running east along row 10 with a 100 m step at column 30, and
+    a lake at its head (surface 350 m) whose outlet pixel is at 300 m."""
+    nx, ny = 40, 24
+    ws = np.zeros((ny, nx))
+    ws[10, :] = np.where(np.arange(nx) < 30, 300.0, 200.0) - 0.1 * np.arange(nx)
+    rec = np.full(nx * ny, -1)
+    r = 10 * nx + np.arange(nx - 1)
+    rec[r] = r + 1
+    q = np.zeros(nx * ny)
+    q[r] = 1000.0
+    falls = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, 2.0, {10 * nx + 6: 350.0})
+    big = falls[0]
+    assert big["px"][0] == 10 and 27 <= big["px"][1] <= 29 and 99 <= big["height_m"] <= 101
+    assert big["discharge_m3s"] == 1000 and abs(big["power_gw"] - 0.981) < 0.01
+    lake = [f for f in falls if f["from_lake"]]
+    assert lake and lake[0]["px"] == [10, 6] and 49 <= lake[0]["height_m"] <= 51
+
+
+def test_zoom_reports_waterfalls(lake_zoom):
+    for f in lake_zoom["stats"]["waterfalls"]:
+        assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q
+        assert -90 <= f["lat"] <= 90 and -180 <= f["lon"] <= 180

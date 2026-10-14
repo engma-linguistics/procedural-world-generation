@@ -49,7 +49,8 @@
 
 <div id="controls" class="panel">
   <h1>Regional Zoom</h1>
-  <select id="zoomSel"></select>
+  <div class="row" style="gap:6px;display:flex"><select id="zoomSel" style="flex:1;min-width:0"></select>
+    <button id="delBtn" title="Delete this zoom from disk">Delete</button></div>
   <div class="muted" id="srcNote" style="margin-top:4px"></div>
   <div class="muted" style="margin-top:4px">make one: on the Globe tab, click a cell and press Zoom (or double-click a cell), or
     <code>uv run python -m planet zoom &lt;world&gt; --lat L --lon L</code></div>
@@ -140,6 +141,13 @@ async function init() {
     ? `${mine.length} zoom${mine.length > 1 ? 's' : ''} of this ${src[0] === 'world' ? 'world' : 'run'} (all zooms are in the list)`
     : `No zooms of this ${src[0] === 'world' ? 'world' : 'run'} yet; showing another. All zooms are in the list.`;
   sel.onchange = () => load(sel.value);
+  $('delBtn').onclick = async () => {
+    if (!state.meta || !confirm(`Delete zoom ${state.meta.id} (${state.meta.name})?\nThis removes it from disk.`)) return;
+    const r = await fetch(`../zooms/${state.meta.id}`, { method: 'DELETE' });
+    if (!r.ok) { alert(`Delete failed (HTTP ${r.status}). Is the viewer running via 'python -m planet serve'?`); return; }
+    history.replaceState(null, '', '?');
+    location.reload();
+  };
   $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
   $('rivers').onchange = render;
@@ -157,12 +165,12 @@ async function load(id) {
   const base = `../zooms/${id}/`;
   const meta = await getJSON(base + 'zoom.json');
   if (!meta) { $('msg').textContent = 'could not read ' + base + 'zoom.json'; return; }
-  const buf = await (await fetch(base + meta.files.layers, { cache: 'no-store' })).arrayBuffer();
+  // one file per layer (zooms/<id>/layers/<name>.bin), all small: load them all
   const L = {};
-  for (const [k, spec] of Object.entries(meta.layers)) {
-    const n = spec.shape[0] * spec.shape[1];
-    L[k] = spec.dtype === 'float32' ? new Float32Array(buf, spec.offset, n) : new Uint8Array(buf, spec.offset, n);
-  }
+  await Promise.all(Object.entries(meta.layers).map(async ([k, spec]) => {
+    const buf = await (await fetch(base + spec.file, { cache: 'no-store' })).arrayBuffer();
+    L[k] = spec.dtype === 'float32' ? new Float32Array(buf) : new Uint8Array(buf);
+  }));
   state.meta = meta; state.L = L; state.imgs = {};
   const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
     loadImage(base + meta.files.coarse).catch(() => null)]);
@@ -201,6 +209,8 @@ function about() {
     <tr><td>mean</td><td>${fmt(s.mean_elev_m)} m (coarse ${fmt(s.coarse_mean_elev_m)} m)</td></tr>
     <tr><td>largest river</td><td>${fmt(s.max_discharge_m3s)} m&sup3;/s</td></tr>
     <tr><td>lakes</td><td>${s.lakes}</td></tr>
+    ${(s.waterfalls || []).length ? `<tr><td>biggest falls</td><td>${s.waterfalls.slice(0, 3).map((w) =>
+      `${fmt(w.height_m)} m over ${fmt(w.length_km, 1)} km, ${fmt(w.discharge_m3s)} m&sup3;/s${w.from_lake ? ' (lake outlet)' : ''}`).join('<br>')}</td></tr>` : ''}
     <tr><td>made in</td><td>${m.generated_in_s} s</td></tr>
     <tr><td>files</td><td><a href="../zooms/${m.id}/heightmap.png">heightmap.png</a> (16-bit: ${fmt(m.heightmap.min_m)}..${fmt(m.heightmap.max_m)} m)<br>
       <a href="../zooms/${m.id}/preview.png">preview.png</a> &middot; <a href="../zooms/${m.id}/zoom.json">zoom.json</a></td></tr>

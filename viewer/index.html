@@ -313,12 +313,12 @@ function obsColor(ov, i, c) {
 // fills a Float32Array(3n) with per-cell colours
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
-  const elev = L.elevation, ov = obsView(layer), iceUnit = V.kind === 'run' ? 20 : 1;  // runs store ice in 20 m units
+  const elev = L.elevation, ov = obsView(layer);
   for (let i = 0; i < n; i++) {
     if (ov) obsColor(ov, i, c);
-    else if (layer === 'biome') c.set(V.legend.biome[L.biome[i]].color);
+    else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'ice thickness') {
-      if (L.ice[i] > 0) rampFns[layer](L.ice[i] * iceUnit, c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
+      if (L.ice[i] > 0) rampFns[layer](L.ice[i], c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
     }
     else if (layer === 'plates') {
       plateColor(L.plate[i], L.crust[i], c);
@@ -332,11 +332,11 @@ function cellColors(layer) {
     } else if (layer === 'climate') {
       c.set(V.koppenColors[L.climate[i]] || '#1d3f6e');
     } else if (layer === 'surface rock') {
-      c.set(V.rockColors[L.surface ? L.surface[i] : L.surface_rock[i]]);
+      c.set(V.rockColors[L.surface_rock[i]]);
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
-    } else if (layer === 'crust thickness') rampFns[layer](L.thickness ? L.thickness[i] : L.crust_thickness[i], c);
-    else if (layer === 'sediment') rampFns[layer](L.cover ? L.cover[i] / 10 : L.sediment_cover[i], c);
-    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precip[i], c); }
+    } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
+    else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
+    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precipitation[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else {
       rampFns[layer](L[layer][i], c);
@@ -351,8 +351,8 @@ function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age']);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
-    V.data.rock ? (V.data.surface ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
-    V.data.climate ? ['temperature', 'climate'] : []);
+    hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
+    hasLayer('climate') ? ['temperature', 'climate'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
@@ -486,17 +486,18 @@ function buildOverlays() {
   const G = V.grid, L = V.layers, globe = state.mode === 'globe';
   const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;   // skip lines across the dateline
 
-  if (V.kind === 'run' && $('rivers').checked && L.flow) {
-    const q = +$('riverQ').value / 100, nbr = V.grid.nbr;
+  if ($('rivers').checked && L.flow && L.downstream) {
+    // the top (100 - riverQ)% of land cells by flow; the biggest 0.5% brighter
+    const q = +$('riverQ').value / 100;
     const fl = []; for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0) fl.push(L.flow[i]);
     fl.sort((a, b) => a - b);
-    const thr = fl.length ? Math.max(fl[Math.floor(q * (fl.length - 1))], 1) : Infinity;
+    const thr = fl.length ? Math.max(fl[Math.floor(q * (fl.length - 1))], 1e-6) : Infinity;
     const big = fl.length ? fl[Math.floor(0.995 * (fl.length - 1))] : Infinity;
     const small = [], large = [];
     for (let i = 0; i < V.n; i++) {
-      const sl = L.down[i];
-      if (sl === 255 || L.elevation[i] <= 0 || L.flow[i] < thr) continue;
-      const a = cellPos(i, 1.003), b = cellPos(nbr[i][sl], 1.003);
+      const d = L.downstream[i];
+      if (d < 0 || L.elevation[i] <= 0 || L.flow[i] < thr) continue;
+      const a = cellPos(i, 1.003), b = cellPos(d, 1.003);
       if (wraps(a, b)) continue;
       (L.flow[i] >= big ? large : small).push(...a, ...b);
     }
@@ -524,21 +525,6 @@ function buildOverlays() {
       for (let k = 0; k < 3; k++) if (!wraps(c[k], c[(k + 1) % 3])) pts.push(...c[k], ...c[(k + 1) % 3]);
     }
     overlays.volcanoes = lineObj(pts, 0xff2d2d);
-  }
-  if (V.kind === 'world' && $('rivers').checked) {
-    const q = +$('riverQ').value / 100, fl = V.landFlowSorted;
-    const thr = fl.length ? fl[Math.floor(q * (fl.length - 1))] : Infinity;
-    const big = fl.length ? fl[Math.floor(0.995 * (fl.length - 1))] : Infinity;
-    const small = [], large = [];
-    for (let i = 0; i < V.n; i++) {
-      const d = L.downstream[i];
-      if (d < 0 || L.elevation[i] <= 0 || L.flow[i] < thr) continue;
-      const a = cellPos(i, 1.003), b = cellPos(d, 1.003);
-      if (wraps(a, b)) continue;
-      (L.flow[i] >= big ? large : small).push(...a, ...b);
-    }
-    overlays.rivers = lineObj(small, 0x4fb3ff);
-    overlays.riversBig = lineObj(large, 0xa8e1ff);
   }
   if ($('outlines').checked || $('pentas').checked) {
     const cp = (k, i) => {
@@ -568,8 +554,8 @@ function buildOverlays() {
       overlays.pentas = lineObj(pts, 0xff3df2);
     }
   }
-  // winds and currents: stored as (east, north) x50; the jet stream in m/s (mult scales it to match).
-  // Drawn on an evenly spread sample of cells
+  // winds and currents (~1 = a steady trade wind) and the jet stream (m/s), as (east, north)
+  // components; mult scales each to arrow length. Drawn on an evenly spread sample of cells
   const flowArrows = (ke, kn, color, oceanOnly, lvlDrop, mult = 1, r = 1.004) => {
     const nS = Math.min(10 * 4 ** Math.max(V.level - lvlDrop, 0) + 2, V.n), pts = [], s = 0.0011;
     for (let i = 0; i < nS; i++) {
@@ -598,8 +584,8 @@ function buildOverlays() {
     return lineObj(pts, color);
   };
   // runs have these in every keyframe; worlds only when saved with them (tools/earth_world.py)
-  if ($('winds').checked && L.wind_e) overlays.winds = flowArrows('wind_e', 'wind_n', 0xffe08a, false, 2);
-  if ($('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1);
+  if ($('winds').checked && L.wind_e) overlays.winds = flowArrows('wind_e', 'wind_n', 0xffe08a, false, 2, 50);
+  if ($('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1, 50);
   if ($('jet').checked && L.jet_e) overlays.jet = flowArrows('jet_e', 'jet_n', 0xd59cff, false, 2, 2.5, 1.02);
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
@@ -784,11 +770,11 @@ function renderLegend() {
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
   } else if (state.layer === 'biome') {
     const present = new Set(V.layers.biome);
-    el.innerHTML = V.legend.biome.filter((b) => present.has(b.id))
+    el.innerHTML = V.biomes.filter((b) => present.has(b.id))
       .map((b) => `<span><span class="sw" style="background:${b.color}"></span>${b.name}</span>`).join('');
   } else if (state.layer === 'rock type' || state.layer === 'surface rock') {
     const surf = state.layer === 'surface rock';
-    const present = new Set(surf ? (V.layers.surface || V.layers.surface_rock) : V.layers.rock);
+    const present = new Set(surf ? V.layers.surface_rock : V.layers.rock);
     el.innerHTML = V.rocks.filter((r) => present.has(r.id))
       .map((r) => `<span><span class="sw" style="background:${r.color}"></span>${r.name}</span>`).join('') +
       (surf ? '<span class="muted">(what you would walk on: sediment where it covers the basement; faded = under the sea)</span>'
@@ -827,8 +813,8 @@ function renderLayerButtons() {
   const layers = availableLayers();
   if (!layers.includes(state.layer)) state.layer = layers[0];
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}">${l}</button>`).join('');
-  $('arrowsLbl').style.display = V.layers.plate && !V.tz ? '' : 'none';
-  document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = V.layers[e.dataset.needs] ? '' : 'none'));
+  $('arrowsLbl').style.display = hasLayer('plate') && !V.tz ? '' : 'none';
+  document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = hasLayer(e.dataset.needs) ? '' : 'none'));
   document.body.classList.toggle('run', V.kind === 'run');
   document.querySelectorAll('.worldOnly').forEach((e) => (e.style.display = V.kind === 'world' ? '' : 'none'));
   document.querySelectorAll('.runOnly').forEach((e) => (e.style.display = V.kind === 'run' ? '' : 'none'));
@@ -1025,7 +1011,7 @@ function describe(i) {
   const lines = [`cell ${i}${V.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
     `lat ${G.lat[i].toFixed(1)}, lon ${G.lon[i].toFixed(1)}`, `elevation ${L.elevation[i]} m`];
   if (V.kind === 'world') {
-    lines.push(`biome ${V.legend.biome[L.biome[i]].name}`, `temp ${L.temperature[i]} °C`,
+    lines.push(`biome ${V.biomes[L.biome[i]].name}`, `temp ${L.temperature[i]} °C`,
       `rain ${L.precipitation[i]} mm/yr`, `river flow ${L.flow[i]}`);
     if (L.lake[i]) lines.push('lake');
     if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
@@ -1044,27 +1030,31 @@ function describe(i) {
   }
   if (V.tz) {  // glacial time zoom: no rock or rain layers
     lines[2] += ' (above this moment\'s sea level)';
-    const k = V.koppen[L.climate[i]];
-    lines.push(`mean ${L.temperature[i]} °C` + (L.elevation[i] > 0 && k ? `, climate ${k.code} (${k.name})` : ''));
-    if (L.ice[i]) lines.push(`ice ~${L.ice[i] * 20} m thick`);
+    if (L.temperature) {
+      const k = L.climate && V.koppen[L.climate[i]];
+      lines.push(`mean ${L.temperature[i]} °C` + (L.elevation[i] > 0 && k ? `, climate ${k.code} (${k.name})` : ''));
+    }
+    if (L.ice && L.ice[i]) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
   }
   if (L.plate && !V.tzEarth) {
-    lines.push(`plate ${L.plate[i]} (${L.crust[i] ? 'continental' : 'oceanic'})`);
-    if (L.crust_age) lines.push(`${L.crust[i] ? 'rock' : 'sea floor'} age ${Math.round(L.crust_age[i])} Myr`);
+    lines.push(`plate ${L.plate[i]}` + (L.crust ? ` (${L.crust[i] ? 'continental' : 'oceanic'})` : ''));
+    if (L.crust_age && L.crust) lines.push(`${L.crust[i] ? 'rock' : 'sea floor'} age ${Math.round(L.crust_age[i])} Myr`);
     const v = plateVelocity(i);
     if (v && (V.kind === 'run' || V.meta.method === 'tectonics')) lines.push(`moving ${(Math.hypot(...v) * CMYR).toFixed(1)} cm/yr`);
-    if (L.plate_boundary[i]) lines.push(L.plate_boundary[i] > 0 ? 'converging boundary' : 'diverging boundary');
+    if (L.plate_boundary && L.plate_boundary[i]) lines.push(L.plate_boundary[i] > 0 ? 'converging boundary' : 'diverging boundary');
   }
-  if (V.kind === 'run' && L.rock) {
-    if (L.surface) lines.push(`surface: ${V.rocks[L.surface[i]].name}`);
-    lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${(L.cover[i] / 10).toFixed(1)} km`,
-               `crust ${L.thickness[i]} km thick`);
-    if (L.elevation[i] > 0) lines.push(`rain ${L.precip[i]} mm/yr`);
+  if (V.kind === 'run' && !V.tz) {  // a run frame: only the layers loaded so far (those on screen)
+    if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
+    if (L.rock) lines.push(`rock: ${V.rocks[L.rock[i]].name}`);
+    if (L.sediment_cover) lines.push(`sediment cover ${L.sediment_cover[i].toFixed(1)} km`);
+    if (L.crust_thickness) lines.push(`crust ${L.crust_thickness[i]} km thick`);
+    if (L.precipitation && L.elevation[i] > 0) lines.push(`rain ${L.precipitation[i]} mm/yr`);
     if (L.climate && L.elevation[i] > 0) {
       const k = V.koppen[L.climate[i]];
-      lines.push(`climate ${k.code} (${k.name}), mean ${L.temperature[i]} °C`);
-      if (L.ice[i]) lines.push(`ice ~${L.ice[i] * 20} m thick`);
+      lines.push(`climate ${k.code} (${k.name})`);
     }
+    if (L.temperature) lines.push(`mean ${L.temperature[i]} °C`);
+    if (L.ice && L.ice[i] && L.elevation[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
   }
   if (V.kind === 'run') lines.unshift(`t = ${timeLabel(V.t)}`);
   return lines;
@@ -1118,7 +1108,7 @@ function seg(id, key, after) {
     after();
   });
 }
-seg('layerSeg', 'layer', paint);
+seg('layerSeg', 'layer', () => refresh(paint));
 state.obs = 'model';
 seg('obsSeg', 'obs', paint);
 seg('modeSeg', 'mode', () => {
@@ -1132,7 +1122,7 @@ $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
 const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'jet',
                      'axis', 'tropics'];
-OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
+OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
@@ -1421,52 +1411,117 @@ function showTab(tab, zoomId) {
 $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
 
 // ------------------------------------------------------------ loading
-function setWorld(w) {
+// The legends (rock, Köppen and biome ids -> names and colours) come with every run and world.
+function legendFields(leg) {
+  return { rocks: leg.rocks, rockColors: leg.rocks.map((r) => r.color), koppen: leg.koppen,
+           koppenColors: leg.koppen.map((k) => k.color), biomes: leg.biomes, biomeColors: leg.biomes.map((b) => b.color) };
+}
+
+// does the run (any of its layers, loaded or not) or the world have this layer?
+function hasLayer(k) { return V.kind === 'run' ? !!V.run.layers[k] : !!V.layers[k]; }
+
+// A world file names its grid file ("../grids/L6.json", relative to worlds/),
+// shared with the runs at that level.
+async function setWorld(w) {
   stop(); picked = null; renderZoomBox();
-  const G = w.grid, pg = prepareGrid(G);
-  const fl = w.layers.flow.filter((_, i) => w.layers.elevation[i] > 0).sort((a, b) => a - b);
+  const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
+  const pg = prepareGrid(G);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
-        legend: w.legend, meta: w.meta, summary: w.summary, pentagons: w.meta.pentagons,
-        level: w.meta.level, landFlowSorted: fl,
-        rocks: w.meta.rocks || [], rockColors: (w.meta.rocks || []).map((r) => r.color),
-        koppen: w.meta.koppen || [], koppenColors: (w.meta.koppen || []).map((k) => k.color) };
+        meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
+        ...legendFields(w.legend) };
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
 }
 
-const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8: Int8Array };
+// ------------------------------------------------------------ run layers
+// A run stores one file per layer, all frames in it (runs/<id>/layers/<name>.bin,
+// frames x cells). run.json "layers" says, per layer, its file, dtype, shape and
+// encoding: value = stored * scale + offset, then the transform if any
+// ("log2p1": 2^value - 1; "nbr_slot": the stored number is the position of the
+// target cell in the cell's neighbour list, 255 = none -> -1).
+// Only the layers the picture needs are downloaded (layersNeeded), when needed.
+const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8: Int8Array, float32: Float32Array };
+// colour layer / overlay -> the run layers it draws from (elevation is always loaded)
+const COLOUR_NEEDS = {
+  elevation: ['ice'], 'ice thickness': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
+  'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
+  rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
+};
+const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n'], currents: ['current_e', 'current_n'],
+                        jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
+
+function layersNeeded() {
+  const want = ['elevation', ...(COLOUR_NEEDS[state.layer] || [])];
+  for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
+  return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
+}
+
+// download what the current colour layer and overlays need (a no-op for worlds)
+async function loadNeeded() {
+  if (V?.kind !== 'run') return;
+  const v = V, want = layersNeeded();
+  if (!want.length) return;
+  $('tlabel').textContent = `loading ${want.join(', ')}…`;
+  await Promise.all(want.map(async (k) => {
+    v.pending[k] ||= fetch(v.base + v.run.layers[k].file, { cache: 'no-store' }).then((r) => {
+      if (!r.ok) throw new Error(`${v.run.layers[k].file}: HTTP ${r.status}`);
+      return r.arrayBuffer();
+    });
+    const buf = await v.pending[k];
+    v.data[k] = new TYPED[v.run.layers[k].dtype](buf);
+    v.bytes[k] = buf.byteLength;
+  }));
+  if (V === v) setFrame(V.frame, false);  // rebuild V.layers with the new ones
+}
+
+// redraw after something that may need more layers (colour layer, overlay ticked)
+async function refresh(draw) {
+  try { await loadNeeded(); } catch (err) { toast('Load failed: ' + err.message); console.error(err); return; }
+  draw();
+}
+
+// layer k of frame f in real units (see the encoding above)
+function decodeFrame(k, f) {
+  const s = V.run.layers[k], raw = V.data[k], n = V.n;
+  const a = raw.length === n ? raw : raw.subarray(f * n, (f + 1) * n);  // stored once (shape [1, cells]): every frame
+  if (s.transform === 'nbr_slot') {
+    const out = new Int32Array(n), nbr = V.grid.nbr;
+    for (let i = 0; i < n; i++) out[i] = a[i] === 255 ? -1 : nbr[i][a[i]];
+    return out;
+  }
+  if (s.scale === 1 && !s.offset && !s.transform) return a;
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = a[i] * s.scale + s.offset;
+  if (s.transform === 'log2p1') for (let i = 0; i < n; i++) out[i] = 2 ** out[i] - 1;
+  return out;
+}
+
 async function loadRun(dir, wantT) {
   stop(); picked = null; renderZoomBox();
   const base = `../runs/${dir}/`;
   const run = await (await fetch(base + 'run.json', { cache: 'no-store' })).json();
-  const [grid, buf] = await Promise.all([
-    fetch(new URL(run.grid, new URL(base, location.href))).then((r) => r.json()),
-    fetch(base + 'frames.bin', { cache: 'no-store' }).then((r) => r.arrayBuffer())]);
-  const data = {};
-  for (const [k, s] of Object.entries(run.layers)) data[k] = new TYPED[s.dtype](buf, s.offset, s.shape[0] * s.shape[1]);
+  const grid = await (await fetch(new URL(run.grid, new URL(base, location.href)))).json();
   const pg = prepareGrid(grid);
   const tz = run.kind === 'timezoom';  // glacial time zoom: time in kyr
-  V = { kind: 'run', name: run.name, dir, run, data, grid, n: pg.n, cornerCells: pg.cornerCells,
+  V = { kind: 'run', name: run.name, dir, base, run, data: {}, pending: {}, bytes: {}, grid, n: pg.n, cornerCells: pg.cornerCells,
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
-        rocks: run.rocks || [], rockColors: (run.rocks || []).map((r) => r.color),
-        koppen: run.koppen || [], koppenColors: (run.koppen || []).map((k) => k.color) };
+        ...legendFields(run.legend) };
   document.title = `${run.name} · Planet Viewer`;
   $('frame').max = run.frames.length - 1;
   let f = 0;
   if (wantT != null) f = run.frames.reduce((b, fr, i) => (Math.abs(fr.t - wantT) < Math.abs(run.frames[b].t - wantT) ? i : b), 0);
+  V.frame = f;
+  renderLayerButtons();  // settles state.layer, which says what to load
+  await loadNeeded();
   setFrame(f, false);
-  renderLayerButtons(); buildTopology(); paint(); renderRunSummary(); drawTint();
+  buildTopology(); paint(); renderRunSummary(); drawTint();
 }
 
 function setFrame(f, repaint = true) {
-  const n = V.n, d = V.data, r = V.run;
+  const r = V.run;
   V.frame = f; V.t = r.frames[f].t; V.omega = r.frames[f].omega;
-  // layers stored once (shape [1, cells], e.g. a time zoom's frozen plates) serve every frame
-  const sl = (a) => (a.length === n ? a : a.subarray(f * n, (f + 1) * n));
-  V.layers = { elevation: sl(d.elevation), plate: sl(d.plate), crust: sl(d.continental),
-               crust_age: sl(d.age), plate_boundary: sl(d.boundary) };
-  for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down', 'temperature', 'climate', 'ice',
-                   'wind_e', 'wind_n', 'current_e', 'current_n', 'jet_e', 'jet_n']) if (d[k]) V.layers[k] = sl(d[k]);
+  V.layers = {};
+  for (const k of Object.keys(V.data)) V.layers[k] = decodeFrame(k, f);
   V.hotspots = r.frames[f].hotspots;
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;
@@ -1525,7 +1580,7 @@ async function loadSelection(value) {
   else {
     const r = await fetch('../worlds/' + id);
     if (!r.ok) throw new Error(`${id}: HTTP ${r.status}`);
-    setWorld(await r.json());
+    await setWorld(await r.json());
   }
 }
 $('worldSel').addEventListener('change', (e) => loadSelection(e.target.value));
@@ -1535,7 +1590,7 @@ addEventListener('dragover', (e) => { e.preventDefault(); $('drop').style.displa
 addEventListener('dragleave', (e) => { if (e.target === $('drop')) $('drop').style.display = 'none'; });
 addEventListener('drop', async (e) => {
   e.preventDefault(); $('drop').style.display = 'none';
-  const f = e.dataTransfer.files[0]; if (f) setWorld(JSON.parse(await f.text()));
+  const f = e.dataTransfer.files[0]; if (f) await setWorld(JSON.parse(await f.text()));
 });
 
 // URL options, e.g. ?run=run-s1-L5&t=120&layer=plates&arrows=1  or  ?world=x.json&mode=map&pentas=1

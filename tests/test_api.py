@@ -6,21 +6,18 @@ import shutil
 
 import pytest
 
-from planet import api, timeline as T, world as W, zoom as Z
+from planet import api, server, store as S, timeline as T, world as W, zoom as Z
 from planet.tectonics import Params
 
 
 @pytest.fixture(scope="module")
 def dirs(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("api")
-    mp = pytest.MonkeyPatch()
-    for mod, name in ((W, "WORLDS"), (T, "RUNS"), (T, "GRIDS"), (Z, "ZOOMS")):
-        (tmp / name.lower()).mkdir()
-        mp.setattr(mod, name, tmp / name.lower())
+    S.set_root(tmp)
     run = T.simulate(seed=1, level=4, myr=40.0, dt=2.0, every=20.0, name="tiny", params=Params())
     (tmp / "runs" / run.name).rename(tmp / "runs" / "tiny01")
     yield tmp
-    mp.undo()
+    S.set_root(None)
 
 
 def test_parse_zoom_request():
@@ -95,9 +92,10 @@ def test_highlights_from_run(dirs):
     assert [g["title"] for g in hit] == [f["title"]] and hit[0]["zoom"] == zid
     shutil.rmtree(dirs / "zooms" / zid)
 
-    # deleting the world deletes its highlights
-    T.delete(wid)
+    # deleting the world deletes its highlights (through the server's DELETE route)
+    assert server.delete(f"/worlds/{wid}") == 204
     assert not (dirs / "worlds" / "highlights" / f"{wid}.json").exists()
+    assert server.delete(f"/worlds/{wid}") == 404 and server.delete("/worlds/../runs") == 400
 
     for bad in ({}, {"run": "tiny01"}, {"run": "tiny01", "t": 900}, {"run": "x", "world": "y"}):
         with pytest.raises(api.BadRequest):
@@ -127,4 +125,4 @@ def test_timezoom_job(dirs):
             api.parse_timezoom_request(bad)
     with pytest.raises(SystemExit):
         api.parse_timezoom_request({"run": "nope", "t": 0})
-    T.delete(res["run"])
+    assert S.delete("run", res["run"])

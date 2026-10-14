@@ -90,8 +90,10 @@ def global_temperature(sim, growth, newc, rng):
 
 
 def climate_due(sim) -> bool:
-    """The climate is updated every climate_every Myr (and on the first step)."""
-    return sim.precip is None or sim.t - sim.climate_t >= sim.params.climate_every - 1e-9
+    """The climate is updated on the first step and then at every multiple of
+    climate_every Myr, so keyframes on those multiples show current climate."""
+    k = sim.params.climate_every
+    return sim.precip is None or (sim.t + 1e-9) // k > (sim.climate_t + 1e-9) // k
 
 
 def update_climate(sim, e):

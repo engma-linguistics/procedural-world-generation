@@ -48,7 +48,7 @@ class Params:
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
-    climate_every: float = 8.0  # Myr between climate (rain, ice, sea level) updates
+    climate_every: float = 4.0  # Myr between climate (rain, ice, sea level) updates; keyframes (every 4) match
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
     climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
