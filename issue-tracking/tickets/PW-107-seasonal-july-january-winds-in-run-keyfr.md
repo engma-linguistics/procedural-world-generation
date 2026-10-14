@@ -1,4 +1,5 @@
 ---
+id: PW-107
 title: Seasonal (July / January) winds in run keyframes
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: quickwins
 blocked_by: []
 relates: [PW-044]
 refs: [planet/tectonics/simulation.py, planet/tectonics/output.py, planet/tectonics/earth.py, planet/timeline.py, planet/store.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ to the snapshot, to `timeline.RUN_LAYERS` and `timeline.frame_values` (via `vec_
 new run to see them. Deferred because it touches the simulation state and snapshot, which the volcanism
 work was changing at the same time.
 - [ ] new L6 run shows the season picker on the timeline, and July/January winds differ over the monsoon coasts
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-seasonal-winds-in-run-frames.md (found by quickwins).

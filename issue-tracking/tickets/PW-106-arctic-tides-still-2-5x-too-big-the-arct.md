@@ -1,4 +1,5 @@
 ---
+id: PW-106
 title: "Arctic tides still 2-5x too big: the Arctic basin counts as open ocean"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: quickwins
 blocked_by: []
 relates: [PW-027]
 refs: [planet/coast.py, tools/coast_check.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -23,3 +26,6 @@ quarter-wave resonance (W = 120 km).
 Ideas: weight openness by the reach to *deep, large* ocean (an area or connectivity criterion rather
 than a direction mean); or reduce the tide raised in a basin by its gateway width relative to its area.
 Check the Mediterranean/Baltic/Gulf of Mexico rows in coast_check don't move.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-arctic-tides-basin-connection.md (found by quickwins).
