@@ -226,6 +226,13 @@ Order: 1 → 6, small to large.
 
 - **Too few plates after the mantle merge:** seed 1 drops to 2–3 plates around 500–700 Myr at both L6 and L7. Showcases end with 4 (2b59b1, 9219ac); Earth has ~7 major plus ~8 minor. Rifting may need to split big plates more readily, or plate absorption is too eager (41–61 absorbed vs 52–69 rifts per run). See `docs/review/overnight_runs.md`.
 
+- **Supercontinent cycle (`mantle`, merged):** all 4 L6 seeds reassemble above 25% at least twice in 2 Gyr, but cycles are uneven (seed 1 is quiet from 590 to 1930 Myr) and mostly 400–870 Myr apart. Showcase run 6d9dcf (seed 2).
+- **Land runs high** (median 34–36%, up to ~40% when assembled), and crust volume drifts +2–5% mid-run: assembled continents have fewer subducting margins, and the volume thermostat only partly compensates.
+- **Plate count** median 6–7 with c8a06d2 (before: 8–10), dipping to 2–3 about 10–20% of the time. The cause is fewer plate births since the fixed heat and big-plate rift rules were removed.
+- **Single-sample ~12–13 km elevation spikes** seen once with B′ and once with the breakup fix alone. Not investigated.
+- **Sediment compaction isn't remembered** after uplift.
+- **Name clash:** `planet.tectonics.isostasy` resolves to the function, not the module.
+
 **Highlights**
 - ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.

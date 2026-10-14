@@ -34,3 +34,21 @@ Waves, tides and the Galloway delta types are merged. To see them:
 - **Screenshots:** `docs/review/deltas/`.
 
 The wave and tide formulas are physical (wind-sea growth with fetch, swell decay, shelf resonance, funnelling), but about ten constants were fitted on Earth by grid search. Wave power is within 2× at 25 of 30 coasts, and tides within 2× at 21 of 23 sites. Thresholds: lagoons appear above a wave weight of 0.3, fingers above a river weight of ~0.4, and anything without a weight of at least 0.5 is labelled "mixed". **Are fitted constants OK here?** They're the honest option at 110 km cells. The bigger miss is upstream: the model's Ganges is 10× too small, and Southern Ocean storms are too weak.
+
+## 5. Supercontinent cycle: good enough?
+Merged. Every level-6 seed now forms a supercontinent at least twice in 2 Gyr. Before, 3 of 4 never reassembled. Assemblies form over cold mantle and break up once the mantle under them warms. Showcase run **6d9dcf** (seed 2): over 25% of the surface at 0–508, 892–976, 1736–1772 and 1948–1988 Myr.
+
+Shortfalls:
+- **Uneven cycles:** some seeds go quiet for ~1 Gyr.
+- **Long gaps:** assemblies are 400–870 Myr apart, against Earth's ~300–700 (Rodinia → Pangaea ~750).
+- **High land:** 34–36%.
+- **Few plates:** a median of 6–7, sometimes 2–3.
+
+Options:
+- **A:** accept it, and tune land and plate count later.
+- **B:** spend another round on regularity: stronger insulation, shorter mantle memory.
+- **C:** restore some plate births with a gentle "big hot plate splits" nudge tied to the mantle field.
+
+My lean is C (the plate count is the most visible flaw), then A.
+
+**Note:** tonight's L7/L8 runs predate the plate-size rifting fix (c8a06d2), merged at 04:20. The six L6 showcases do too.
