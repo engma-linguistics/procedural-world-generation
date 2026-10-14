@@ -900,7 +900,10 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         moist = np.where(ocean, 1.0, rh)
         sink, B = si["sink"], np.clip(si["B"], 0, 1.2)
         inst = si["mse_t"] + LQ * q - si["mse_thr"]  # C: > 0 unstable (see _rain)
-        deep = tune["cloud_deep"] * (1 - np.exp(-np.maximum(p - tune["cloud_deep_mm0"], 0) / tune["cloud_deep_mm"]))
+        # (the towers' anvils spread over a few hundred km: the rain smoothed over cloud_rain_km,
+        # which also hides the rain's cell-to-cell streaks, PW-019)
+        p_s = smooth(grid, p, tune["cloud_rain_km"])
+        deep = tune["cloud_deep"] * (1 - np.exp(-np.maximum(p_s - tune["cloud_deep_mm0"], 0) / tune["cloud_deep_mm"]))
         storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist ** 3
         s0, s1 = tune["cloud_sc_c"]
         dry = 1 - tune["cloud_cont"] * landy * sink
@@ -1139,6 +1142,7 @@ TUNE = dict(
     cloud_deep=0.8,  # deep cloud where it rains hard (tropical rain belt, monsoons) ...
     cloud_deep_mm0=300.0,  # ... above this rain rate (mm/yr) ...
     cloud_deep_mm=1000.0,  # ... reaching 63% of it this much more
+    cloud_rain_km=300.0,  # km over which a rain belt's anvils spread its deep cloud
     cloud_storm=0.45,  # layer cloud per unit of storminess (storm tracks, fronts)
     cloud_sea=0.4,  # low cloud over the sea at 20 C (shallow cumulus, stratus) ...
     cloud_cold=0.35,  # ... plus this much over freezing water (polar seas, sea-ice edges)

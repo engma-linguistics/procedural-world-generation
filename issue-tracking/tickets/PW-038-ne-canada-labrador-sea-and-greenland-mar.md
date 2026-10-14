@@ -10,7 +10,7 @@ impact: med
 found_by: ocean
 blocked_by: []
 relates: [PW-033]
-refs: [planet/ocean.py, planet/climate.py, "world 64fc00", docs/review/ocean/]
+refs: [planet/ocean.py, planet/climate.py, "world dc3732", docs/review/ocean/]
 created: 2026-10-14
 updated: 2026-10-14
 ---

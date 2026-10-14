@@ -52,7 +52,7 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 
 Discrete volcanoes (PW-001) demo: run 39d004 (seed 13, L7, 500 Myr, `continental_start=0.1 heat_start=2`), world a099c6 (400 Myr), zooms e8fa0e (an island chain, youngest over the plume at -1.9, 35.4), 4e6647 (its atolls, 1 km) and 122cc1 (eroded islands, 1 km); before: world f724bd and its zoom 9834b6 (one big island over a plume).
 
-Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world 64fc00 (`tools/earth_world.py`; re-make after climate changes and delete the old one); ocean demo world 9b8200 (run f59dd6 @ 1000 Myr: salinity, SST, humidity, overturning); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
+Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world dc3732 (`tools/earth_world.py`; re-make after climate changes and delete the old one); ocean and clouds demo world 2085dc (run f59dd6 @ 1000 Myr: salinity, SST, humidity, overturning, cloud cover, sunshine; replaced 9b8200); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
@@ -60,7 +60,7 @@ After making a showcase: slice its worlds, then `uv run python -m planet highlig
 **In flight (2026-10-14 late):** worktrees `.claude/worktrees/<branch>`:
 - `zoomland2`: PW-011 (fault-block rift, fold belt, shield) plus PW-149/150 (/148) polish.
 - `zoomice`: PW-127 (zoom glaciers from the fine climate).
-Merged since the landform data side: viewerseason (PW-126/128; demo world 67317b), travel (PW-140), stratarock (PW-136 B), zoomland1 (PW-010 + PW-146; demo zooms b2165d, 9e2ba9, 366f51, 6a4870 on world 800c99), viewerocean (PW-137/141/144: overturning, salinity, SST, humidity, highlight categories; demo world 9b8200). Earth world is now 64fc00. Open decisions for the owner: PW-145 (coal display, lean A), PW-147 (cuesta dips, lean A now, B later).
+Merged since the landform data side: viewerseason (PW-126/128; demo world 67317b), travel (PW-140), stratarock (PW-136 B), zoomland1 (PW-010 + PW-146; demo zooms b2165d, 9e2ba9, 366f51, 6a4870 on world 800c99), viewerocean (PW-137/141/144: overturning, salinity, SST, humidity, highlight categories; demo world 9b8200, since replaced by 2085dc). Earth world was 64fc00, now dc3732 (clouds). Open decisions for the owner: PW-145 (coal display, lean A), PW-147 (cuesta dips, lean A now, B later).
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 

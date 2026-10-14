@@ -1144,7 +1144,7 @@ function rampLegend(key, units, labels) {
 function renderLegend() {
   const el = $('legend');
   const ov = obsView(state.layer);
-  // the model / observed / difference switch: only for an Earth world's temperature, rainfall and climate
+  // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
   $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
@@ -1154,6 +1154,9 @@ function renderLegend() {
   } else if (ov && ov.diff && state.layer === 'temperature') {
     el.innerHTML = rampLegend('temperature difference', UNITS['temperature difference']) +
       '<span class="muted">observed: NCEP/NCAR 2 m air, 1981–2010</span>';
+  } else if (ov && ov.diff && state.layer === 'sunshine') {
+    el.innerHTML = rampLegend('sunshine difference', 'h of sunshine a day, model minus observed') +
+      '<span class="muted">observed: CRU CL 2.0 sunshine, 1961–90 (land)</span>';
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';

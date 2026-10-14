@@ -10,7 +10,7 @@ impact: low
 found_by: viewerocean
 blocked_by: []
 relates: [PW-144]
-refs: [planet/climate.py, "world 64fc00"]
+refs: [planet/climate.py, "world dc3732"]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -20,7 +20,7 @@ PW-144 derives dew point and relative humidity from the rain kernel's water vapo
 (_rain now also returns the air's vapour after its rain; climate.humidity). Over long dry
 stretches the kernel's air keeps raining out a small share every step (it is tuned for
 the rain, not the vapour), so in a dry season the vapour falls toward zero: on Earth
-(world 64fc00) raw values gave Sahara / Delhi January dew points of -40 to -50 C (real:
+(world dc3732) raw values gave Sahara / Delhi January dew points of -40 to -50 C (real:
 about -5 to +8 C, RH 30-60%). humidity() holds the lowest relative humidity at
 HUMID_MIN = 15% and saturates high values softly (x / (1 + x^4)^(1/4)), which gives
 sensible numbers elsewhere (Amazon 63-68%, sea ~75%, London Jan 85%) but leaves dry
