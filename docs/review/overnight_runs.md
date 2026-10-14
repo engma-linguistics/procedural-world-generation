@@ -78,3 +78,5 @@ The sudden land drops occur at L8 too (e.g. 43→33% at 890, 38→24% at 940), a
   - L6 seed 14 drops 55→49% at 716.
   - Before the fix there were 3–4 such events per L7 run; now there are 1–2, and some are recoveries (fast sea-level falls).
 - **Logged in Known issues:** the cause is probably the same ridge-age to sea-level link (any big reorganisation renews ocean floor quickly), together with the low L7 continents.
+
+**L7 seed 13 on the final code (103c05, 26 min).** It ends with 9 plates and 31.8% land; before the fix it ended with 3 plates and 13.8%. The largest fast land change is 30→24% at 1376, recovering to 27% by 1408. Before the fix it was 33→14% at 1488–1500. Swings are smaller but not gone.

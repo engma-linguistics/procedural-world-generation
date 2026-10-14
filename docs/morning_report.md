@@ -4,7 +4,7 @@ Viewer: http://127.0.0.1:8765/viewer/ (server running on main's latest code). Ev
 
 **Also read:**
 - `docs/morning_decisions.md`: 5 judgement calls for you.
-- `docs/overview.md`: what the project is and how each part works. It was still being written at the time of this report.
+- `docs/overview.md`: what the project is and how each part works. Written by subagents; the stale docs it found were fixed in f45525c.
 - `docs/review/overnight_runs.md`: run numbers and the resolution comparison.
 
 ## What merged overnight
@@ -55,7 +55,7 @@ Each world has highlights; open the Highlights section in the viewer.
 
 **Earth reference world:** 2f38e3. It now has the overturning ocean, plus the wave and tide layers.
 
-**Level 7** (~30–45 min per Gyr): 0e4c66, 1ad733, f3f4ac, eef4a2, 958fd8, plus the resolution checks 1beb32 and fe7144. Each has a world with zooms. Behaviour matches level 6 closely: the same land %, landmass count and cycle timing. Of these, only fe7144 uses the final code; seed 13 on the final code was still running at the time of this report.
+**Level 7** (~30–45 min per Gyr): 0e4c66, 1ad733, f3f4ac, eef4a2, 958fd8, plus the resolution checks 1beb32 and fe7144. Each has a world with zooms. Behaviour matches level 6 closely: the same land %, landmass count and cycle timing. fe7144 (seed 1) and 103c05 (seed 13) use the final code. 103c05 ends with 9 plates and 31.8% land, against 3 plates and 13.8% before the fixes.
 
 **Level 8:** 15b1b0 (seed 1, 1.2 Gyr, made before the final fixes). It took 4.1 h, uses 3.9 GB on disk, and frames are saved every 10 Myr. World aa1864 (800 Myr) has 5 zooms. It is slow to load in the viewer.
 
