@@ -849,7 +849,8 @@ def find(world: dict) -> list[dict]:
 # Cache: worlds/highlights/<world id>.json
 # ---------------------------------------------------------------------------
 def cache_path(world_path: Path) -> Path:
-    return W.WORLDS / "highlights" / f"{world_path.stem}.json"
+    from .store import highlights_path
+    return highlights_path(world_path.stem)
 
 
 def cached(world_path: Path) -> dict | None:

@@ -18,11 +18,11 @@ Extra layers saved with it:
                         (Antarctica, some coasts), GPCP; null where neither
   obs_climate           Koppen class (climate.KOPPEN id) from Kottek et al.
                         2006; -1 where it has no data
-  wind_e, wind_n        the model's annual-mean surface wind, east/north x 50
-  current_e, current_n  the model's surface ocean currents, x 50 (0 on land)
+  wind_e, wind_n        the model's annual-mean surface wind, east/north (~1 = a steady trade wind)
+  current_e, current_n  the model's surface ocean currents, same scale (0 on land)
   jet_e, jet_n          the model's annual-mean jet stream, m/s
-(the last three pairs as in a run's keyframes, timeline.vec_layers), so
-the viewer's wind, current and jet overlays work on Earth too.
+(the last three pairs as in a run's keyframes, store.LAYERS), so the
+viewer's wind, current and jet overlays work on Earth too.
 
 When the climate model changes, just run this again (and delete the old
 world in the viewer).
@@ -71,7 +71,6 @@ def build(level: int = 6) -> dict:
     }
     meta = {"method": "earth", "seed": 0, "level": level, "source": "ETOPO1 + observations (tools/earth_data.py)",
             "remake": "uv run python tools/earth_world.py",
-            "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in climate.KOPPEN],
             "observed": {"obs_temperature": "NCEP/NCAR reanalysis 2 m air temperature, 1981-2010",
                          "obs_precipitation": "GPCC v2018 (land), GPCP v2.3 where GPCC has none",
                          "obs_climate": "Kottek et al. 2006 Koppen-Geiger, 1951-2000 (As scored as Aw)"},
@@ -84,9 +83,9 @@ def build(level: int = 6) -> dict:
     land = elev > 0
     vec = (T.vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
            + T.vec_layers(grid, "current", np.where(land[:, None], 0.0, c["current"]))
-           + T.vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"]), 1.0))
+           + T.vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"])))
     for k, v in vec:
-        world["layers"][k] = v.astype(int)
+        world["layers"][k] = np.round(v, 2)
     world["meta"]["generated_in_s"] = round(time.time() - t0, 1)
     return world
 

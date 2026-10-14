@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import functools
-import http.server
 import json
-import re
-import socketserver
-import webbrowser
-from pathlib import Path
 
 from . import highlights as H
+from . import store as S
 from . import timeline as T
 from . import world as W
 from .generators import GENERATORS
@@ -39,7 +34,7 @@ def cmd_generate(args):
         path = W.save(w, name)
         s = json.loads(path.read_text())["summary"]
         lm = ", ".join(f"{m['name']}:{m['pct_of_surface']}%" for m in s["landmasses"][:4])
-        print(f"{path.relative_to(W.ROOT)}  [{w['meta']['generated_in_s']}s]  "
+        print(f"{S.rel(path)}  [{w['meta']['generated_in_s']}s]  "
               f"land {s['land_pct']}%  landmasses {lm}  peak {s['highest_m']['elevation']} m")
 
 
@@ -52,13 +47,14 @@ def cmd_show(args):
 def cmd_simulate(args):
     params = T.make_params(_parse_set(args.set))
     name = args.name or f"seed {args.seed}, level {args.level}"
-    out = T.simulate(args.seed, args.level, args.myr, args.dt, args.every, name, params)
+    out = T.simulate(args.seed, args.level, args.myr, args.dt, args.every, name, params,
+                     checkpoint_every=args.checkpoint_every)
     run = json.loads((out / "run.json").read_text())
     kinds = {}
     for e in run["events"]:
         kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
     last = run["frames"][-1]["stats"]
-    print(f"{out.relative_to(W.ROOT)}  [{run['meta']['generated_in_s']}s, {len(run['frames'])} keyframes]  "
+    print(f"{S.rel(out)}  [{run['meta']['generated_in_s']}s, {len(run['frames'])} keyframes]  "
           f"events {kinds}  final: {last['plates']} plates, land {last['land_pct']}%")
 
 
@@ -67,7 +63,7 @@ def cmd_slice(args):
         path = T.slice_world(T.find_run(args.run), args.at, args.erosion, force=args.force)
     except T.ReplayMismatch as e:
         raise SystemExit(f"ERROR: {e}")
-    print(path.relative_to(W.ROOT))
+    print(S.rel(path))
 
 
 def cmd_zoom(args):
@@ -75,7 +71,7 @@ def cmd_zoom(args):
     out = Z.zoom(args.world, args.lat, args.lon, args.size_km, args.res_km, args.seed, args.iterations)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
-    print(f"{out.relative_to(W.ROOT)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
+    print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
     print(f"  land {s['land_pct']}% (coarse {s['coarse_land_pct']}%, land/sea agreement {s['land_sea_agreement_pct']}%)"
           f"  elevation {s['min_m']:.0f}..{s['max_m']:.0f} m, mean {s['mean_elev_m']:.0f} m"
           f" (coarse {s['coarse_mean_elev_m']:.0f} m)")
@@ -90,21 +86,18 @@ def cmd_timezoom(args):
     run = json.loads((out / "run.json").read_text())
     s = [f["stats"] for f in run["frames"]]
     lo = min(s, key=lambda x: x["sea_level_change_m"])
-    print(f"{out.relative_to(W.ROOT)}  [{run['meta']['generated_in_s']}s, {len(s)} frames]  "
+    print(f"{S.rel(out)}  [{run['meta']['generated_in_s']}s, {len(s)} frames]  "
           f"lowest sea level {lo['sea_level_change_m']:+.0f} m at {lo['t']:g} kyr "
           f"(ice {lo['ice_pct']}% of the surface); end {s[-1]['sea_level_change_m']:+.0f} m; "
           f"{len(run['events'])} glacial events")
 
 
 def cmd_report(args):
-    print(T.report(T.find_run(args.run)).relative_to(W.ROOT))
+    print(S.rel(T.report(S.find_run(args.run))))
 
 
 def cmd_list(args):
-    T.update_index()
-    W.update_index()
-    runs = json.loads((T.RUNS / "index.json").read_text())
-    worlds = json.loads((W.WORLDS / "index.json").read_text())
+    runs, worlds, zooms = (S.update_index(k) for k in S.KINDS)
     print("runs:" if runs else "runs: none")
     for r in runs:
         span = (f"time zoom: {r['kyr']:g} kyr after {r['source_run']} @ {r['at_myr']:g} Myr"
@@ -113,18 +106,34 @@ def cmd_list(args):
     print("worlds:" if worlds else "worlds: none")
     for w in worlds:
         print(f"  {w['id']}  {w['created']}  {w['name']}")
+    print("zooms:" if zooms else "zooms: none")
+    for z in zooms:
+        print(f"  {z['id']}  {z['created']}  {z['name']}")
 
 
 def cmd_delete(args):
+    """ids may say their kind (run:<id>, world:<id>, zoom:<id>); a bare id
+    must belong to one kind only."""
     for ref in args.ids:
-        gone = T.delete(ref)
-        print(f"{ref}: " + (", ".join(str(p.relative_to(W.ROOT)) for p in gone) if gone else "not found"))
+        kind, _, item_id = ref.rpartition(":")
+        kinds = [kind] if kind else S.kinds_of(item_id)
+        if kind and kind not in S.KINDS:
+            print(f"{ref}: unknown kind {kind!r} (run, world or zoom)")
+            continue
+        if len(kinds) > 1:
+            print(f"{ref}: there is a {' and a '.join(kinds)} with this id; say which, e.g. {kinds[0]}:{item_id}")
+            continue
+        gone = S.delete(kinds[0], item_id) if kinds else []
+        print(f"{ref}: " + (", ".join(S.rel(p) for p in gone) if gone else "not found"))
+    if args.orphans:
+        gone = S.delete_orphans()
+        print("orphans: " + (", ".join(S.rel(p) for p in gone) if gone else "none"))
 
 
 def cmd_highlights(args):
     from . import api
-    if (T.RUNS / args.ref / "run.json").exists():
-        run = json.loads((T.RUNS / args.ref / "run.json").read_text())
+    if S.exists("run", args.ref):
+        run = json.loads((S.find_run(args.ref) / "run.json").read_text())
         at = run["frames"][-1]["t"] if args.at is None else args.at
         req = {"run": args.ref, "t": at}
     else:
@@ -147,98 +156,9 @@ def cmd_highlights(args):
             print(f"zoom {r['zoom']}  {f['title']}  -> http://127.0.0.1:8765/viewer/zoom.html?id={r['zoom']}")
 
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    """Static files, never cached (runs get regenerated in place), plus
-    DELETE /runs/<id> or /worlds/<id> for the viewer's delete button, and the
-    zoom API in api.py (POST /api/zoom, POST /api/timezoom, GET /api/jobs/<id>), and highlights
-    (GET /api/highlights?run=<id>&t=<Myr> or ?world=<id>)."""
-
-    jobs = None  # api.Jobs, set by cmd_serve
-
-    def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
-        super().end_headers()
-
-    def send_json(self, obj, code=200):
-        body = json.dumps(obj).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_GET(self):
-        if self.path.startswith("/api/highlights?"):
-            return self.get_highlights()
-        m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", self.path)
-        if not m:
-            return super().do_GET()
-        job = self.jobs.get(m.group(1))
-        self.send_json(job if job else {"error": "no such job"}, 200 if job else 404)
-
-    def get_highlights(self):
-        """Synchronous: a few seconds at most (building a world from a keyframe)."""
-        from urllib.parse import parse_qsl, urlsplit
-        from . import api
-        q = dict(parse_qsl(urlsplit(self.path).query))
-        try:
-            res = api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1")
-        except (ValueError, api.BadRequest) as e:
-            return self.send_json({"error": str(e)}, 400)
-        except SystemExit as e:  # no such run / world
-            return self.send_json({"error": str(e)}, 404)
-        except Exception as e:  # a bug: show it in the viewer rather than drop the connection
-            return self.send_json({"error": f"{type(e).__name__}: {e}"}, 500)
-        self.send_json(res)
-
-    def do_POST(self):
-        from . import api
-        if self.path not in ("/api/zoom", "/api/timezoom"):
-            self.send_error(404)
-            return
-        try:
-            req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
-            if self.path == "/api/zoom":
-                api.parse_zoom_request(req)
-            else:  # checked (and t snapped to a keyframe) now, so a bad request fails at once
-                req = api.parse_timezoom_request(req)
-        except (ValueError, api.BadRequest) as e:
-            self.send_json({"error": str(e)}, 400)
-            return
-        except SystemExit as e:  # no such run
-            self.send_json({"error": str(e)}, 404)
-            return
-        self.send_json({"job": self.jobs.submit(req)})
-
-    def do_DELETE(self):
-        m = re.fullmatch(r"/(runs|worlds)/([0-9a-zA-Z_-]+)", self.path)
-        if not m:
-            self.send_error(400, "expected /runs/<id> or /worlds/<id>")
-            return
-        gone = T.delete(m.group(2))
-        self.send_response(204 if gone else 404)
-        self.end_headers()
-
-    def log_message(self, *a):
-        pass
-
-
 def cmd_serve(args):
-    from . import api
-    from . import zoom as Z
-    W.update_index()
-    T.update_index()
-    Z.update_index()
-    Handler.jobs = api.Jobs(api.any_job)
-    handler = functools.partial(Handler, directory=str(W.ROOT))
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    socketserver.ThreadingTCPServer.daemon_threads = True
-    with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), handler) as httpd:
-        url = f"http://127.0.0.1:{args.port}/viewer/"
-        print(f"Viewer at {url}   (Ctrl-C to stop)")
-        if not args.no_open:
-            webbrowser.open(url)
-        httpd.serve_forever()
+    from .server import serve
+    serve(args.port, open_browser=not args.no_open)
 
 
 def main():
@@ -263,6 +183,9 @@ def main():
     t.add_argument("--myr", type=float, default=500, help="how long to simulate (million years)")
     t.add_argument("--dt", type=float, default=2, help="time step (million years)")
     t.add_argument("--every", type=float, default=4, help="keep a viewer keyframe every N Myr")
+    t.add_argument("--checkpoint-every", type=float, default=T.CHECKPOINT_EVERY,
+                   help="save the full simulation state every N Myr, so slicing replays from the nearest "
+                        "one instead of t=0 (0: none; ~23 MB each at level 6)")
     t.add_argument("--name", "-n")
     t.add_argument("--set", nargs="*", metavar="KEY=VALUE",
                    help="tectonics params, e.g. --set n_plates=16 start=scattered")
@@ -310,11 +233,12 @@ def main():
     rp.add_argument("run")
     rp.set_defaults(func=cmd_report)
 
-    ls = sub.add_parser("list", help="list runs and worlds with their ids")
+    ls = sub.add_parser("list", help="list runs, worlds and zooms with their ids")
     ls.set_defaults(func=cmd_list)
 
-    d = sub.add_parser("delete", help="delete runs or worlds by id")
-    d.add_argument("ids", nargs="+")
+    d = sub.add_parser("delete", help="delete runs, worlds or zooms by id (a world takes its zooms with it)")
+    d.add_argument("ids", nargs="*", help="ids, or kind:id (run:a3f9c2, world:..., zoom:...) when ambiguous")
+    d.add_argument("--orphans", action="store_true", help="also delete zooms and highlight caches of deleted worlds")
     d.set_defaults(func=cmd_delete)
 
     s = sub.add_parser("show", help="print an ASCII map of a saved world")

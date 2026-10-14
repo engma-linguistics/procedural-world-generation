@@ -4,7 +4,7 @@ physically sane values, storage that doesn't clip, module interfaces."""
 import numpy as np
 import pytest
 
-from planet import climate, timeline as T, world as W, zoom
+from planet import climate, store as S, timeline as T, zoom
 from planet.grid import build_grid
 from planet.surface import ROCKS
 from planet.tectonics import MAX_KM, Params, Simulation
@@ -58,15 +58,15 @@ def test_layers_round_trip(sim4):
     """What a run stores reads back without silent clipping for values the
     model actually produces (sediment cover once clipped at 25.5 km)."""
     snap = sim4.snapshot()
-    big = {"cover": 60.0 * 10, "thickness": MAX_KM, "precip": 9000, "ice": 3000 / 20}
+    big = {"sediment_cover": 60.0, "crust_thickness": MAX_KM, "precipitation": 9000, "ice": 3000,
+           "elevation": -12000, "flow": 5000.0}
     for k, v in big.items():
-        info = np.iinfo(np.dtype(T.LAYERS[k]))
-        assert info.max >= v, k
-    assert np.iinfo(np.dtype(T.LAYERS["elevation"])).min <= -12000
-    for name, arr in T.vec_layers(sim4.grid, "wind", snap.wind):
-        assert np.abs(arr).max() < 127, name  # not saturating the int8
-    for name, arr in T.vec_layers(sim4.grid, "jet", T.jet_of(sim4.grid, snap), 1.0):
-        assert np.abs(arr).max() < 127, name
+        spec = S.LAYERS[k]
+        back = S.decode(S.encode(np.array([v]), spec), spec)[0]
+        assert abs(back - v) <= max(spec["scale"], 0.05 * v if spec["transform"] else 0), k
+    vecs = T.vec_layers(sim4.grid, "wind", snap.wind) + T.vec_layers(sim4.grid, "jet", T.jet_of(sim4.grid, snap))
+    for name, arr in vecs:
+        assert np.abs(S.encode(arr, S.LAYERS[name])).max() < 127, name  # not saturating the int8
 
 
 def test_climate_compute_interface(grid4):
@@ -138,14 +138,11 @@ def test_params_from_old_run():
     assert p.n_plates == 9 and p.tilt == Params().tilt
 
 
-def test_simulate_slice_provenance(tmp_path, monkeypatch):
+def test_simulate_slice_provenance(data_root):
     """simulate stamps the code into run.json; slicing at a keyframe must
     reproduce it, and refuses to save a world when it doesn't (unless forced).
     Runs without the stamp (older runs) still slice."""
     import json
-    monkeypatch.setattr(T, "RUNS", tmp_path / "runs")
-    monkeypatch.setattr(T, "GRIDS", tmp_path / "grids")
-    monkeypatch.setattr(W, "WORLDS", tmp_path / "worlds")
     out = T.simulate(1, 4, 8.0, 2.0, 4.0, "t", Params())
     run = json.loads((out / "run.json").read_text())
     assert run["meta"]["code"]["planet_src_sha"]
@@ -161,7 +158,7 @@ def test_simulate_slice_provenance(tmp_path, monkeypatch):
 
     # the stored keyframe no longer matches what the code computes
     spec = run["layers"]["elevation"]
-    elev = np.memmap(out / "frames.bin", spec["dtype"], "r+", spec["offset"], tuple(spec["shape"]))
+    elev = np.memmap(out / spec["file"], spec["dtype"], "r+", shape=tuple(spec["shape"]))
     elev[-1] += 1
     elev.flush()
     del elev
