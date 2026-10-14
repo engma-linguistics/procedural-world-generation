@@ -84,7 +84,7 @@ S0 = 1361.0  # W/m2, the star's light at the planet's mean distance
 
 LAYERS = {  # per frame (name -> dtype on disk), as in timeline.LAYERS
     "elevation": "<i2",  # m, surface (ice included) above that frame's sea level
-    "ice": "u1",  # land ice, units of 20 m
+    "ice": "<u2",  # land ice, units of 20 m (as runs; 16 bits: domes on big polar continents pass 5.1 km)
     "temperature": "i1",  # C, annual mean
     "climate": "u1",  # climate.KOPPEN id
 }
@@ -422,7 +422,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         k = climate.koppen(surf, t_ann, t_warm, t_cold, precip, fields_["p_jul"] * p_scale,
                            fields_["p_jan"] * p_scale, lat, np.where(land, ice, 0.0))
         out["elevation"].append(np.clip(np.round(surf), -32000, 32000).astype("<i2"))
-        out["ice"].append(np.clip(np.round(ice / 20), 0, 255).astype("u1"))
+        out["ice"].append(np.clip(np.round(ice / 20), 0, 65535).astype("<u2"))
         out["temperature"].append(np.clip(np.round(t_ann), -128, 127).astype("i1"))
         out["climate"].append(k.astype("u1"))
         vol = float((H * area).sum())
