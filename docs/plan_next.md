@@ -349,3 +349,11 @@ Same seeds won't give the same geography under the new physics, so pick world ti
 - **L7 running:** eef4a2 (seed 13 water world, 1500 Myr) and seed 12.
 - **L6 showcases done** (worlds and zooms made): 2b59b1, 60a706, 9219ac, 2552cf, 482ff7, f397a9.
 - **Agent `falls2`** is investigating undesigned "drop" falls of up to ~1 km in zooms.
+
+**Update 05:25:**
+- **Merged:** mantle tip (c8a06d2: rift stress scaled by plate size), falls2 (designed falls the river bypassed) and l7jumps (margin subduction breaks off one basin). All 76 zooms were rebuilt after falls2.
+- **Running on the final code:**
+  - L7 verification runs, seeds 1 and 13, 1500 Myr;
+  - the six L6 showcases re-made, then worlds, highlights and zooms (`showcase2.sh`, then `post2.sh`).
+- **Once those finish:** delete the older L6 showcase runs (2b59b1, 60a706, 9219ac, 2552cf, 482ff7, f397a9) with their worlds and zooms. Keep the L7 runs from tonight (pre-fix, but informative).
+- **L8 15b1b0** (pre-fix code) is due ~05:50.
