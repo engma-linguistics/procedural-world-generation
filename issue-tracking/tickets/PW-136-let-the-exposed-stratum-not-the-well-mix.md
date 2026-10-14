@@ -2,7 +2,7 @@
 id: PW-136
 title: Let the exposed stratum, not the well-mixed cover, set surface rock and erodibility
 type: task
-status: needs-decision
+status: todo
 parent: PW-005
 subsystem: surface
 effort: m
@@ -39,4 +39,5 @@ Options:
 Lean: B now, C as an experiment after PW-010 shows what the zoom needs.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> todo. Owner decision (2026-10-14): B now (the exposed stratum sets surface_rock and the zoom's rock/erodibility, display only), C (feed erosion so caprock protects in the run) after the first zoom batch PW-010.
 - 2026-10-14: Created from inbox draft draft-strata-set-erodibility.md (found by landform).
