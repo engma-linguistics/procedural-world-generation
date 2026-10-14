@@ -129,6 +129,7 @@ LIMESTONE = 6  # surface.ROCKS
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 
 
 # ---------------------------------------------------------------------------
@@ -335,6 +336,7 @@ KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3}
 COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
+SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is evened out, a bigger one unpinned
 RAPIDS_SIDE_GRAD = 30.0  # m/km: ... and the ground beyond its banks falls off no faster than this
 
 
@@ -1723,7 +1725,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 goals = [int(m0)] + goals
             # order the goals around the fan, so each split divides neighbours
             goals.sort(key=lambda q: (np.arctan2(py[q] - py[a], px[q] - px[a]) - phi + np.pi) % (2 * np.pi))
-            grow(a, goals, max(int(0.15 * ln / res), 2), blocked)
+            # (the branches stay on low ground: not up into the hills beside the plain)
+            grow(a, goals, max(int(0.15 * ln / res), 2), blocked | (target > BRANCH_MAX_Z))
             rt = rec0.copy()
             rt[list(ov)] = list(ov.values())
             if len(ZK.receiver_order(rt)) < npx:  # a branch looped back: no distributaries here
@@ -1822,7 +1825,21 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+    rec0 = rec
     rec, order, split_ok = reroute(rec, order)
+    # The pinned courses (reaches with falls, delta trunks and distributaries)
+    # were laid out on an earlier surface: where one now runs uphill, a small
+    # step (<= SETTLE_M) is evened out by lifting the pixel above it; at a big
+    # one (a course the water has left) the course is unpinned.
+    up = (rec != rec0) & (rec >= 0) & active
+    up &= h[np.maximum(rec, 0)] > h + SETTLE_M
+    if up.any():
+        r2 = np.where(up, rec0, rec)
+        o2 = ZK.receiver_order(r2)
+        if len(o2) == npx:
+            rec, order = r2, o2
+    diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
+    ZK.settle(h, rec, order, ~active, res * np.where(diag, 1.4142, 1.0), SETTLE_M)
     outs = lake_outlets(rec)
     Q, lake_in = route(srcq, rec, order, outs, split_ok)
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
