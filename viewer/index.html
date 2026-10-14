@@ -18,7 +18,7 @@
   .panel { position: fixed; background: var(--panel); border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(4px); }
   #controls { top: 12px; left: 12px; width: 270px; max-height: calc(100vh - 24px); overflow-y: auto; }
-  #info { top: 12px; right: 12px; width: 250px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  #info { top: 56px; right: 12px; width: 250px; z-index: 5; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
   #legend { bottom: 12px; left: 12px; max-width: 520px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
   #summary { bottom: 12px; right: 12px; width: 320px; font-size: 12px; max-height: 40vh; overflow-y: auto; }
   #timeline { bottom: 12px; left: 50%; transform: translateX(-50%); width: min(720px, calc(100vw - 24px));
@@ -52,7 +52,39 @@
   #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--accent);
     color: #06121f; padding: 6px 12px; border-radius: 6px; opacity: 0; transition: opacity .3s; pointer-events: none; }
   details summary { cursor: pointer; color: var(--muted); }
-  @media (max-width: 700px) { #info, #summary { display: none; } #controls { width: 220px; } }
+  .btn { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 3px 8px;
+    border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .btn:hover, .seg button:hover { border-color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  /* collapsible sections of the control panel; open/closed is remembered */
+  details.sec { margin-top: 8px; }
+  details.sec > summary { list-style: none; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    padding: 2px 0 4px; user-select: none; }
+  details.sec > summary::-webkit-details-marker { display: none; }
+  details.sec > summary::before { content: '\25B8'; display: inline-block; width: 14px; font-size: 13px;
+    line-height: 1; transition: transform .15s; }
+  details.sec[open] > summary::before { transform: rotate(90deg); }
+  details.sec > summary:hover { color: var(--text); }
+  details.sec h2:first-child { margin-top: 2px; }
+  details.sec p { margin: 4px 0 0; }
+  #tiltInset { top: 12px; left: 294px; padding: 6px 8px; font-size: 11px; text-align: center; pointer-events: none; }
+  #tiltInset svg { display: block; }
+  #zoomBox { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+    font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  #zoomBox select { padding: 2px; }
+  #zoomBox .x { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 2px; }
+  .bar { height: 6px; background: #111827; border: 1px solid var(--border); border-radius: 3px; margin: 4px 0; }
+  .bar > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
+  .err { color: #ff8a80; }
+  a { color: var(--accent); }
+  /* top right, so it stays put over zoom.html too (which moves its own info box down when embedded) */
+  #tabs { top: 12px; right: 12px; padding: 4px; z-index: 20; }
+  #zoomFrame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: none; z-index: 10; background: var(--bg); }
+  body.zoomTab #zoomFrame { display: block; }
+  body.zoomTab .panel:not(#tabs), body.zoomTab #toast { display: none !important; }
+  @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; } }
+  /* short windows: the legend moves right of the control panel so they don't overlap */
+  @media (max-height: 860px) { #legend { left: 294px; max-width: min(520px, calc(100vw - 650px)); } }
 </style>
 </head>
 <body>
@@ -64,48 +96,63 @@
     <button id="delBtn" title="Delete this run/world from disk">Delete</button></div>
   <div class="muted" style="margin-top:4px">or drop a world .json anywhere</div>
 
-  <h2>View</h2>
-  <div class="row seg" id="modeSeg">
-    <button data-v="globe" class="on">Globe</button><button data-v="map">Flat map</button>
-  </div>
+  <details class="sec" data-sec="view" open><summary>View</summary>
+    <div class="row">
+      <div class="row seg" id="modeSeg">
+        <button data-v="globe" class="on">Globe</button><button data-v="map">Flat map</button>
+      </div>
+      <button id="northUp" class="btn" title="Turn the globe so north points up, keeping the longitude (key N)">North up</button>
+    </div>
+  </details>
 
-  <h2>Colour by</h2>
-  <div class="row seg" id="layerSeg"></div>
+  <details class="sec" data-sec="layer" open><summary>Colour by</summary>
+    <div class="row seg" id="layerSeg"></div>
+  </details>
 
-  <h2>Overlays</h2>
-  <label><input type="checkbox" id="rivers" checked> Rivers</label>
-  <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
-  <label class="runOnly"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
-  <label class="runOnly"><input type="checkbox" id="volcanoes" checked> Arc volcanoes</label>
-  <label class="runOnly"><input type="checkbox" id="winds"> Winds (yearly average)</label>
-  <label class="runOnly"><input type="checkbox" id="currents"> Ocean currents</label>
-  <label><input type="checkbox" id="outlines"> Cell outlines</label>
-  <label><input type="checkbox" id="pentas"> Highlight the 12 pentagons</label>
-  <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
-  <label><input type="checkbox" id="smooth"> Smooth colours (hide cells)</label>
-  <label><input type="checkbox" id="spin"> Auto-rotate</label>
+  <details class="sec" data-sec="overlays" open><summary>Overlays</summary>
+    <label><input type="checkbox" id="rivers" checked> Rivers</label>
+    <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
+    <label class="runOnly"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
+    <label class="runOnly"><input type="checkbox" id="volcanoes" checked> Arc volcanoes</label>
+    <label class="runOnly"><input type="checkbox" id="winds"> Winds (yearly average)</label>
+    <label class="runOnly"><input type="checkbox" id="currents"> Ocean currents</label>
+    <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
+    <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
+    <label><input type="checkbox" id="tropics"> Equator, tropics, polar circles</label>
+  </details>
 
-  <h2>Relief exaggeration <span id="reliefVal" class="muted"></span></h2>
-  <input type="range" id="relief" min="0" max="80" value="25">
-  <div>
+  <details class="sec" data-sec="display"><summary>Display</summary>
+    <label><input type="checkbox" id="outlines"> Cell outlines</label>
+    <label><input type="checkbox" id="pentas"> Highlight the 12 pentagons</label>
+    <label><input type="checkbox" id="smooth"> Smooth colours (hide cells)</label>
+    <label><input type="checkbox" id="spin"> Auto-rotate</label>
+  </details>
+
+  <details class="sec" data-sec="sliders"><summary>Sliders</summary>
+    <h2>Relief exaggeration <span id="reliefVal" class="muted"></span></h2>
+    <input type="range" id="relief" min="0" max="80" value="25">
     <h2>River threshold <span id="riverVal" class="muted"></span></h2>
     <input type="range" id="riverQ" min="80" max="99.5" step="0.5" value="95">
-  </div>
-  <div class="runOnly">
-    <h2>Playback speed</h2>
-    <select id="fps"><option value="4">slow</option><option value="10" selected>normal</option>
-      <option value="20">fast</option><option value="40">very fast</option></select>
-  </div>
+    <div class="runOnly">
+      <h2>Playback speed</h2>
+      <select id="fps"><option value="4">slow</option><option value="10" selected>normal</option>
+        <option value="20">fast</option><option value="40">very fast</option></select>
+    </div>
+  </details>
 
-  <details style="margin-top:10px"><summary>Why pentagons?</summary>
+  <details class="sec" data-sec="pentagons"><summary>Why pentagons?</summary>
     <p class="muted">You can't cover a sphere with only hexagons. Euler's formula (V&minus;E+F&nbsp;=&nbsp;2)
     forces exactly 12 pentagons into any hex-ish sphere grid, like the black patches on a football.
     This grid is an icosahedron subdivided and turned inside out (its dual), so the 12 pentagons sit
-    where the icosahedron's 12 corners were. Tick the box above to find them.</p>
+    where the icosahedron's 12 corners were. Tick the box under "Display" to find them.</p>
   </details>
 </div>
 
-<div id="info" class="panel"><span class="muted">Hover a cell. Click to copy its description.</span></div>
+<div id="info" class="panel"><div id="infoText"><span class="muted">Hover a cell. Click to copy its description
+  and to zoom into that region.</span></div><div id="zoomBox" hidden></div></div>
+<div id="tiltInset" class="panel" title="The spin axis against the plane of the orbit"></div>
+<div id="tabs" class="panel row seg"><button data-tab="globe" class="on">Globe</button><button data-tab="zoom">Regional zoom</button></div>
+<iframe id="zoomFrame" title="Regional zoom"></iframe>
 <div id="legend" class="panel"></div>
 <div id="summary" class="panel"></div>
 <div id="timeline" class="panel">
@@ -536,8 +583,94 @@ function buildOverlays() {
     for (const [k, pts] of Object.entries(byKind)) overlays['ev_' + k] = lineObj(pts, EVENT_COLORS[k] || 0xffffff);
   }
   Object.values(overlays).forEach((o) => group.add(o));
+  buildAxis();
 }
 const EVENT_COLORS = { rift: 0x3bf0ff, subduction: 0x7dff6b, collision: 0xff6b3b, suture: 0xffd23b, absorbed: 0xc58cff, consumed: 0xc58cff };
+
+// ------------------------------------------------------------ spin axis and tilt
+// The globe is drawn with north up (+Y), so the spin axis is the Y axis. The
+// tilt (angle between the spin axis and the orbit's axis) comes from the
+// run/world params; it sets the tropics (sun overhead at midsummer) and the
+// polar circles (midnight sun).
+function planetTilt() {
+  const p = V.kind === 'run' ? V.run.meta.params : V.meta && V.meta.params;
+  return p && p.tilt != null ? +p.tilt : 23.4;
+}
+
+function textSprite(text, color) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const g = cv.getContext('2d');
+  g.font = 'bold 44px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 32, 34);
+  g.fillStyle = color; g.fillText(text, 32, 34);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
+  sp.scale.set(0.11, 0.11, 1);
+  return sp;
+}
+
+const axisGroup = new THREE.Group();
+group.add(axisGroup);
+function buildAxis() {
+  axisGroup.children.forEach((o) => { o.geometry?.dispose(); o.material.map?.dispose(); o.material.dispose(); });
+  axisGroup.clear();
+  const tilt = planetTilt(), globe = state.mode === 'globe';
+  if ($('axis').checked && globe) {
+    const end = 1.15;  // stays in view at the default camera distance
+    axisGroup.add(lineObj([0, -end, 0, 0, end, 0], 0xffffff, 0.8));
+    for (const [y, label, color] of [[1, 'N', '#ff8a6b'], [-1, 'S', '#9fd8ff']]) {
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.06, 12), new THREE.MeshBasicMaterial({ color }));
+      cone.position.set(0, y * end, 0);
+      if (y < 0) cone.rotation.x = Math.PI;
+      const sp = textSprite(label, color);
+      sp.center.set(-0.15, 0.5);  // label just right of the tip, whichever way the globe is turned
+      sp.position.set(0, y * end, 0);
+      axisGroup.add(cone, sp);
+    }
+  }
+  if ($('tropics').checked) {
+    // [latitude, colour, opacity]: equator, tropics at +-tilt, polar circles at +-(90 - tilt)
+    const circles = [[0, 0xffffff, 0.5], [tilt, 0xffc864, 0.75], [-tilt, 0xffc864, 0.75],
+                     [90 - tilt, 0x9fd8ff, 0.7], [tilt - 90, 0x9fd8ff, 0.7]];
+    for (const [la, color, op] of circles) {
+      const pts = [];
+      if (globe) {
+        for (let k = 0; k < 128; k++) pts.push(...llPos(la, k / 128 * 360, 1.006), ...llPos(la, (k + 1) / 128 * 360, 1.006));
+      } else pts.push(-2, la / 90, 0.004, 2, la / 90, 0.004);
+      axisGroup.add(lineObj(pts, color, op));
+    }
+  }
+  renderTiltInset(tilt);
+}
+
+// small side view: the orbit plane (dashed), the planet, and its axis leaning by the tilt
+function renderTiltInset(tilt) {
+  const el = $('tiltInset');
+  el.style.display = $('axis').checked ? '' : 'none';
+  const a = tilt * Math.PI / 180, cx = 72, cy = 36, L = 30, r = 13;
+  const ax = L * Math.sin(a), ay = L * Math.cos(a), ex = r * Math.cos(a), ey = r * Math.sin(a);
+  const arcR = 22, arcEnd = [cx + arcR * Math.sin(a), cy - arcR * Math.cos(a)];
+  el.innerHTML = `<svg width="116" height="72" viewBox="0 0 116 72">
+    <line x1="2" y1="${cy}" x2="114" y2="${cy}" stroke="#8b97a8" stroke-dasharray="3 3"/>
+    <text x="2" y="${cy - 4}" fill="#8b97a8" font-size="8">orbit plane</text>
+    <line x1="${cx}" y1="3" x2="${cx}" y2="69" stroke="#8b97a8" stroke-width=".6" stroke-dasharray="1 2"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#2d68a3" stroke="#6aa7d8"/>
+    <line x1="${cx - ex}" y1="${cy - ey}" x2="${cx + ex}" y2="${cy + ey}" stroke="#ffffff" stroke-opacity=".5"/>
+    <path d="M ${cx} ${cy - arcR} A ${arcR} ${arcR} 0 0 1 ${arcEnd[0]} ${arcEnd[1]}" fill="none" stroke="#ffc864"/>
+    <line x1="${cx - ax}" y1="${cy + ay}" x2="${cx + ax}" y2="${cy - ay}" stroke="#ffffff" stroke-width="1.5"/>
+    <text x="${cx + ax + 1}" y="${cy - ay + 1}" fill="#ff8a6b" font-size="9" font-weight="bold">N</text>
+  </svg>tilt ${+tilt.toFixed(1)}°`;
+}
+
+function northUp() {
+  if (state.mode !== 'globe') { fitMap(); return; }
+  // keep the camera's longitude and distance, put it level with the equator
+  const p = camera.position, d = p.distanceTo(controls.target);
+  const az = Math.atan2(p.x - controls.target.x, p.z - controls.target.z);
+  controls.target.set(0, 0, 0);
+  camera.position.set(d * Math.sin(az), 0, d * Math.cos(az));
+  camera.lookAt(0, 0, 0);
+}
+$('northUp').addEventListener('click', northUp);
 
 // ------------------------------------------------------------ UI
 function renderLegend() {
@@ -671,8 +804,8 @@ function updateHover() {
   ray.setFromCamera(mouse, camera);
   const hit = ray.intersectObject(mesh)[0];
   hovered = hit ? topo.triCell[hit.faceIndex] : -1;
-  $('info').innerHTML = hovered >= 0 ? describe(hovered).join('<br>') + '<br><span class="muted">click to copy</span>'
-    : '<span class="muted">Hover a cell. Click to copy its description.</span>';
+  $('infoText').innerHTML = hovered >= 0 ? describe(hovered).join('<br>') + '<br><span class="muted">click to copy and zoom</span>'
+    : '<span class="muted">Hover a cell. Click to copy its description and to zoom into that region.</span>';
 }
 renderer.domElement.addEventListener('pointermove', (e) => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -684,8 +817,22 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downAt || hovered < 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
   const txt = `${V.name}: ` + describe(hovered).join(', ');
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
+  pickCell(hovered);
 });
 function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => (el.style.opacity = 0), 1800); }
+
+// collapsible panel sections: remember which are open. localStorage can be
+// missing or throw (private windows, file://), so every access is guarded.
+const SECTIONS_KEY = 'planetViewer.sections';
+let openSections = {};
+try { openSections = JSON.parse(localStorage.getItem(SECTIONS_KEY)) || {}; } catch { openSections = {}; }
+document.querySelectorAll('details.sec').forEach((d) => {
+  if (d.dataset.sec in openSections) d.open = !!openSections[d.dataset.sec];
+  d.addEventListener('toggle', () => {
+    openSections[d.dataset.sec] = d.open;
+    try { localStorage.setItem(SECTIONS_KEY, JSON.stringify(openSections)); } catch { /* not saved */ }
+  });
+});
 
 function seg(id, key, after) {
   $(id).addEventListener('click', (e) => {
@@ -704,16 +851,131 @@ seg('modeSeg', 'mode', () => {
   buildTopology(); paint();
 });
 $('smooth').addEventListener('change', paint);
-['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents'].forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
+// overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
+const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents',
+                     'axis', 'tropics'];
+OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
 $('riverQ').addEventListener('change', buildOverlays);
 $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land';
 
+// ------------------------------------------------------------ regional zoom
+// Clicking a cell offers a zoom of the region around it. The server (planet
+// serve) does the work as a background job: for a run it first builds a full
+// world at the current time (a replay from t=0, ~1 min at level 6, reused
+// afterwards), then refines the region. We poll the job and open the result.
+let picked = null, zoomJob = null, zoomSize = 1000;
+const ZOOM_SIZES = [250, 500, 1000, 2000, 4000];
+const ZOOM_PX = 500;  // pixels across, whatever the size: 1000 km -> 2 km pixels
+
+function zoomSource() {
+  if (V.kind === 'run') return { run: V.dir, t: V.t };
+  if (V.id && V.layers.rock) return { world: V.id };
+  return null;  // a generated (not sliced) world has no rock/climate layers to refine
+}
+
+function pickCell(i) {
+  picked = { lat: +V.grid.lat[i].toFixed(2), lon: +V.grid.lon[i].toFixed(2) };
+  renderZoomBox();
+}
+
+function renderZoomBox() {
+  const box = $('zoomBox');
+  let html = '';
+  if (picked && V) {
+    const src = zoomSource();
+    html += `<button class="x" data-act="close" title="Close">&times;</button>
+      <b>Zoom into this region</b><br>
+      <span class="muted">centre ${picked.lat}, ${picked.lon}${V.kind === 'run' ? ` · t = ${V.t} Myr` : ''}</span><br>`;
+    if (src) {
+      html += `<div class="row" style="margin-top:4px;align-items:center">
+        <select id="zoomSize">${ZOOM_SIZES.map((k) => `<option value="${k}" ${k === zoomSize ? 'selected' : ''}>${k} km</option>`).join('')}</select>
+        <button class="btn" data-act="go" ${zoomJob && !zoomJob.finished ? 'disabled' : ''}>Zoom</button></div>
+        <div class="muted">${ZOOM_PX}×${ZOOM_PX} px at ${+(zoomSize / ZOOM_PX).toFixed(2)} km${V.kind === 'run' ? '; the run is sliced at this time first (about a minute, once)' : ''}</div>`;
+    } else html += '<div class="muted">Zooming needs a world sliced from a run (or a run). This one has no rock or climate layers.</div>';
+  }
+  if (zoomJob) {
+    const j = zoomJob;
+    html += `<div style="margin-top:6px"><b>${j.label}</b><br>`;
+    if (j.status === 'error') html += `<span class="err">${j.error}</span>`;
+    else if (j.status === 'done') html += `done: zoom <a href="#" data-act="open">${j.zoom}</a> (opened in the Regional zoom tab)`;
+    else html += `<div class="bar"><div style="width:${Math.round(100 * (j.progress || 0))}%"></div></div>
+      <span class="muted">${j.message || j.status}</span>`;
+    html += '</div>';
+  }
+  box.innerHTML = html;
+  box.hidden = !html;
+}
+
+$('zoomBox').addEventListener('change', (e) => { if (e.target.id === 'zoomSize') { zoomSize = +e.target.value; renderZoomBox(); } });
+$('zoomBox').addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (act === 'close') { picked = null; if (zoomJob?.finished) zoomJob = null; renderZoomBox(); }
+  if (act === 'go') startZoom();
+  if (act === 'open') { e.preventDefault(); showTab('zoom', zoomJob.zoom); }
+});
+
+async function startZoom() {
+  const src = zoomSource(); if (!src || !picked) return;
+  const req = { ...src, lat: picked.lat, lon: picked.lon, size_km: zoomSize, res_km: zoomSize / ZOOM_PX };
+  zoomJob = { label: `${zoomSize} km around ${picked.lat}, ${picked.lon}`, status: 'starting', progress: 0 };
+  renderZoomBox();
+  let r;
+  try {
+    r = await fetch('../api/zoom', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
+  } catch (err) { r = null; }
+  if (!r || r.status === 501 || r.status === 404) {
+    Object.assign(zoomJob, { status: 'error', finished: true,
+      error: 'The server has no zoom API. Restart it: uv run python -m planet serve' });
+    return renderZoomBox();
+  }
+  const out = await r.json().catch(() => ({}));
+  if (!r.ok) { Object.assign(zoomJob, { status: 'error', finished: true, error: out.error || `HTTP ${r.status}` }); return renderZoomBox(); }
+  pollJob(out.job);
+}
+
+async function pollJob(id) {
+  const job = zoomJob;
+  while (job === zoomJob) {
+    let j;
+    try { const r = await fetch(`../api/jobs/${id}`, { cache: 'no-store' }); j = await r.json(); }
+    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    Object.assign(job, j);
+    if (j.status === 'done' || j.status === 'error') {
+      job.finished = true;
+      renderZoomBox();
+      if (j.status === 'done') showTab('zoom', j.zoom);
+      return;
+    }
+    renderZoomBox();
+    await new Promise((ok) => setTimeout(ok, 1000));
+  }
+}
+
+// ------------------------------------------------------------ tabs: globe | regional zoom (zoom.html in an iframe)
+state.tab = 'globe';
+function showTab(tab, zoomId) {
+  state.tab = tab;
+  document.body.classList.toggle('zoomTab', tab === 'zoom');
+  [...$('tabs').children].forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  if (tab === 'zoom') {
+    stop();
+    const f = $('zoomFrame');
+    if (zoomId) f.src = 'zoom.html?id=' + encodeURIComponent(zoomId);
+    else if (!f.getAttribute('src')) f.src = 'zoom.html';
+  }
+  const u = new URL(location);
+  if (tab === 'zoom') u.searchParams.set('tab', 'zoom'); else u.searchParams.delete('tab');
+  if (zoomId) u.searchParams.set('zoom', zoomId);
+  history.replaceState(null, '', u);
+}
+$('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
+
 // ------------------------------------------------------------ loading
 function setWorld(w) {
-  stop();
+  stop(); picked = null; renderZoomBox();
   const G = w.grid, pg = prepareGrid(G);
   const fl = w.layers.flow.filter((_, i) => w.layers.elevation[i] > 0).sort((a, b) => a - b);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
@@ -727,7 +989,7 @@ function setWorld(w) {
 
 const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8: Int8Array };
 async function loadRun(dir, wantT) {
-  stop();
+  stop(); picked = null; renderZoomBox();
   const base = `../runs/${dir}/`;
   const run = await (await fetch(base + 'run.json', { cache: 'no-store' })).json();
   const [grid, buf] = await Promise.all([
@@ -736,7 +998,7 @@ async function loadRun(dir, wantT) {
   const data = {};
   for (const [k, s] of Object.entries(run.layers)) data[k] = new TYPED[s.dtype](buf, s.offset, s.shape[0] * s.shape[1]);
   const pg = prepareGrid(grid);
-  V = { kind: 'run', name: run.name, run, data, grid, n: pg.n, cornerCells: pg.cornerCells,
+  V = { kind: 'run', name: run.name, dir, run, data, grid, n: pg.n, cornerCells: pg.cornerCells,
         pentagons: grid.pentagons, level: grid.level, frame: 0,
         rocks: run.rocks || [], rockColors: (run.rocks || []).map((r) => r.color),
         koppen: run.koppen || [], koppenColors: (run.koppen || []).map((k) => k.color) };
@@ -760,7 +1022,7 @@ function setFrame(f, repaint = true) {
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;
   $('tlabel').textContent = `${V.t} Myr`;
-  if (repaint) { paint(); renderRunSummary(); updateHover(); }
+  if (repaint) { paint(); renderRunSummary(); updateHover(); if (picked) renderZoomBox(); }
   const u = new URL(location); u.searchParams.set('t', V.t); history.replaceState(null, '', u);
 }
 
@@ -776,7 +1038,9 @@ function togglePlay() {
 $('play').addEventListener('click', togglePlay);
 $('frame').addEventListener('input', (e) => { stop(); setFrame(+e.target.value); });
 addEventListener('keydown', (e) => {
-  if (!V || V.kind !== 'run' || e.target.tagName === 'SELECT') return;
+  if (!V || state.tab === 'zoom' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'KeyN' && !e.metaKey && !e.ctrlKey) northUp();
+  if (V.kind !== 'run') return;
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   if (e.code === 'ArrowRight') { stop(); setFrame(Math.min(V.frame + 1, V.run.frames.length - 1)); }
   if (e.code === 'ArrowLeft') { stop(); setFrame(Math.max(V.frame - 1, 0)); }
@@ -816,18 +1080,19 @@ function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
   if (p.get('layer')) state.layer = p.get('layer');
-  for (const id of ['rivers', 'outlines', 'pentas', 'arrows', 'smooth', 'spin', 'events', 'hotspots', 'volcanoes', 'winds', 'currents']) if (p.has(id)) $(id).checked = p.get(id) === '1';
+  for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
   return p;
 }
 const urlp = applyUrlOptions();
+if (urlp.get('tab') === 'zoom') showTab('zoom', urlp.get('zoom'));
 $('reliefVal').textContent = $('relief').value + '×';
 
 async function getJSON(url) { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : []; } catch { return []; } }
 async function init() {
   const [runs, worlds] = await Promise.all([getJSON('../runs/index.json'), getJSON('../worlds/index.json')]);
   if (!runs.length && !worlds.length) {
-    $('info').innerHTML = `No runs or worlds found.<br>Run <code>uv run python -m planet simulate</code> then
+    $('infoText').innerHTML = `No runs or worlds found.<br>Run <code>uv run python -m planet simulate</code> then
       <code>uv run python -m planet serve</code>, or drop a world .json here.`;
     return;
   }
@@ -854,9 +1119,10 @@ $('delBtn').addEventListener('click', async () => {
   urlp.delete('run'); urlp.delete('world'); urlp.delete('t');
   await init();
 });
-init().catch((err) => { $('info').textContent = 'Load failed: ' + err.message; console.error(err); });
+init().catch((err) => { $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
 
 renderer.setAnimationLoop((now) => {
+  if (state.tab === 'zoom') return;  // the globe is hidden
   if (state.playing && V?.kind === 'run' && now - lastAdvance > 1000 / +$('fps').value) {
     lastAdvance = now;
     if (V.frame >= V.run.frames.length - 1) stop(); else setFrame(V.frame + 1);

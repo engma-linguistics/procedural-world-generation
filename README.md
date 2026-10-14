@@ -16,8 +16,13 @@ uv run python -m planet serve                      # opens http://127.0.0.1:8765
 
 In the viewer, pick a run from the dropdown and press play (or space;
 arrow keys step frames). Click an event in the list to jump to it. The panel
-shows the exact `slice` command for the moment you're looking at. Zooms have
-their own page: `http://127.0.0.1:8765/viewer/zoom.html`.
+shows the exact `slice` command for the moment you're looking at. Click a
+cell, then "Zoom" in the info box, to refine the region around it: the server
+slices the run at that time (once; about a minute at level 6) and zooms in,
+then opens the result in the "Regional zoom" tab (also on its own at
+`http://127.0.0.1:8765/viewer/zoom.html`). The globe shows the spin axis and
+the tilt; tick "Equator, tropics, polar circles" for those, and press N (or
+"North up") to level the view.
 
 Other things to try:
 
