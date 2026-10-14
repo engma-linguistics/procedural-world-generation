@@ -36,7 +36,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   is better.
 - rift: diverging plate boundary with continental land of two different
   plates within ~3 cells (a continent splitting, or a new narrow sea).
-- volcanic arc: chains of the run's active volcanoes (meta "volcanoes")
+- volcanic arc: chains of the run's active arc volcanoes (meta "volcanoes")
   less than 600 km apart; hotspot islands: land of hotspot basalt on oceanic
   crust within 1500 km of a live hotspot.
 - climate records (hottest, coldest, wettest, driest) are on ice-free land
@@ -83,6 +83,7 @@ from . import world as W
 from .climate import BIOMES, KOPPEN
 from .geo import R_KM
 from .grid import Grid
+from .tectonics.volcanism import ARC as ARC_VOLCANO
 
 # cached lists are recomputed whenever this file changes
 VERSION = hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:10]
@@ -732,7 +733,10 @@ def _chains(ctx: _Ctx, pts: list, link_km: float) -> list[list[int]]:
 
 
 def volcanic_arcs(ctx: _Ctx, top: int = 2) -> list[dict]:
-    vols = ctx.meta.get("volcanoes") or []
+    # active arc volcanoes, from the world's volcano table (tectonics.volcanism.COLUMNS;
+    # a time zoom's lists only the active ones: lat, lon, kind)
+    vols = [r[:2] for r in (ctx.meta.get("volcanoes") or [])
+            if len(r) >= 3 and r[2] == ARC_VOLCANO and (len(r) < 5 or r[4])]
     if len(vols) < 3:
         return []
     cells = ctx.g.locate(np.array([_unit(la, lo) for la, lo in vols]))

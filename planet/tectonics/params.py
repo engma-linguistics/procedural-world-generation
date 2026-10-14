@@ -82,9 +82,13 @@ class Params:
     hotspot_life: float = 120.0  # Myr, mean
     hotspot_rate: float = 4.0  # km/Myr of crust added at the centre (a quarter of that under continents)
     hotspot_at_ridges: float = 0.6  # share of new plumes that rise under a ridge or rift
+    # a plume opens a new vent every this x the plate's flexural wavelength of
+    # plate motion (volcanism.vent_gap: Hawaii ~80 km)
+    vent_spacing: float = 1.25
+    vent_erosion: float = 10.0  # Myr e-folding of a volcano's height above the sea, at 1500 mm/yr of rain
     volcano_life: float = 8.0  # Myr an arc volcano (or its replacement nearby) stays active
-    volcano_spacing: float = 350.0  # km: at most one shown volcano per this much arc
-    volcano_km: float = 2.0  # km of crust a new volcano adds to its cell (~300 m on land)
+    volcano_spacing: float = 120.0  # km: at most one active volcano per this much arc
+    volcano_km3: float = 2000.0  # km3 of crust a new arc volcano adds (to its cell), give or take 50%
     swell_time: float = 12.0  # Myr: the swell decays behind a plume as the plate carries it off
     # reefs: carbonate builds shallow sea floor up to sea level where it's warm and clear
     reef_temp: float = 23.5  # C, annual mean sea surface (reefs reach ~30 deg latitude)

@@ -2,7 +2,7 @@
 id: PW-003
 title: Pass volcano lists (arc and hotspot) into worlds and zooms
 type: story
-status: todo
+status: in-progress
 parent: PW-001
 subsystem: store
 effort: m
@@ -22,4 +22,5 @@ checkpoints, slice them into the world (position, kind, age, height, active or n
 nearby ones to `zoom.zoom()`. Show them as a viewer overlay on worlds if cheap.
 
 ## Updates
+- 2026-10-14: Status todo -> in-progress. Started in worktree volcanoes.
 - 2026-10-14: Created from the discrete-volcanoes epic (owner discussion 2026-10-14).

@@ -7,6 +7,7 @@ On disk (paths and formats: store.py): runs/<id>/
   layers/<name>.bin  one file per layer, (n_frames, n_cells) raw little-endian,
                    so the viewer loads only the layers it draws
   state/<t>.ckpt   the full simulation state every `checkpoint_every` Myr
+  volcanoes.json.gz  every volcano (arc and hotspot) at each keyframe
   run.txt          the conversation-friendly report (event log, stats table,
                    ASCII maps), rendered from the files above.
 
@@ -34,6 +35,7 @@ from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
+from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
@@ -72,6 +74,13 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             **dict(vec_layers(grid, "jet", jet))}
 
 
+def active_volcanoes(table: list) -> list:
+    """[lat, lon, kind] of the active volcanoes in a volcano table (rows of
+    tectonics.volcanism.COLUMNS): what a run's keyframes list for the viewer
+    (the full table is in volcanoes.json.gz, store.write_volcanoes)."""
+    return [[round(r[0], 1), round(r[1], 1), r[2]] for r in table if r[4]]
+
+
 def make_params(overrides: dict) -> Params:
     known = {f.name for f in fields(Params)}
     bad = set(overrides) - known
@@ -88,7 +97,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
-    frames, data = [], {k: [] for k in RUN_LAYERS}
+    frames, vframes, data = [], [], {k: [] for k in RUN_LAYERS}
     jet = {"src": None, "v": None}  # the climate (and so the jet) changes only every climate_every Myr
     run_id = S.new_id()
     out = S.runs_dir() / run_id
@@ -107,13 +116,15 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
                        "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
-                       "volcanoes": [[round(a, 1), round(b, 1)] for a, b in snap.volcanoes]})
+                       "volcanoes": active_volcanoes(snap.volcanoes)})
+        vframes.append(snap.volcanoes)
 
     out.mkdir(parents=True, exist_ok=True)
     try:
         keep(sim)
         sim.run(myr, keep)
         layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS})
+        S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
     except BaseException:
         shutil.rmtree(out, ignore_errors=True)
         raise
@@ -313,6 +324,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     times = np.array([f["t"] for f in run["frames"]])
     i = int(np.argmin(np.abs(times - at)))
     fr = run["frames"][i]
+    vt = S.read_volcanoes(run_dir)
+    vols = vt["frames"][i] if vt and vt["columns"] == list(VOLCANO_COLUMNS) else []
     a = {k: frame(run, arr, k, i) for k in FRAME_LAYERS}
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])
@@ -324,7 +337,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
                   a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
                   a["rock"], a["surface_rock"], a["sediment_cover"], a["crust_thickness"].astype(float),
-                  a["ice"], fr["hotspots"], fr["volcanoes"], s["global_temp_c"] - 14.5,
+                  a["ice"], fr["hotspots"], vols, s["global_temp_c"] - 14.5,
                   s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                               "from_keyframe": True, **meta_extra})
 
@@ -347,7 +360,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
              "rock": rock.astype(int), "surface_rock": surface_rock.astype(int), "sediment_cover": cover,
              "crust_thickness": thickness, "ice": ice}
     meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
-            "hotspots": hotspots, "volcanoes": volcanoes}
+            "hotspots": hotspots, "volcanoes": volcanoes, "volcano_columns": list(VOLCANO_COLUMNS)}
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},

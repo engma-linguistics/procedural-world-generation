@@ -2,7 +2,7 @@
 id: PW-001
 title: "Discrete volcanoes: hotspot and arc volcanoes as objects that ride their plate"
 type: epic
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: xl
@@ -33,4 +33,5 @@ Owner approved 2026-10-14 ("let's see it"), at level 7. Stories: run-side vents;
 zoom rendering (incl. atolls).
 
 ## Updates
+- 2026-10-14: Status todo -> in-progress. Started in worktree volcanoes (PW-002..004).
 - 2026-10-14: Created from the 2026-10-14 discussion with the owner (approved, at level 7).

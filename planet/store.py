@@ -8,6 +8,7 @@ both, e.g. for tests). Under it:
   runs/<id>/run.txt              the conversation-friendly report
   runs/<id>/layers/<name>.bin    one layer, all frames: (frames, cells), raw little-endian
   runs/<id>/state/<t>.ckpt       full simulation state every ~100 Myr (replay starts there)
+  runs/<id>/volcanoes.json.gz    every volcano at every keyframe (write_volcanoes)
   worlds/<id>.json, <id>.txt     a full world (JSON layers; the grid by reference)
   worlds/highlights/<id>.json    highlights.py cache for world <id>
   zooms/<id>/zoom.json           a regional zoom: meta + layer specs
@@ -33,6 +34,7 @@ vocabulary of layer names shared by runs, time zooms, worlds and the viewer.
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import pickle
@@ -474,6 +476,28 @@ def update_index(kind: str) -> list[dict]:
     entries = [e for _, e in items(kind)]
     (d / "index.json").write_text(json.dumps(entries, indent=1))
     return entries
+
+
+# ---------------------------------------------------------------------------
+# Volcanoes: the table of every volcano (tectonics.volcanism.COLUMNS) at each
+# keyframe of a run, gzipped JSON (~0.5-2k rows a frame: too big for run.json,
+# whose frames list only the active ones, for the viewer)
+# ---------------------------------------------------------------------------
+def volcanoes_path(run_dir: Path) -> Path:
+    return Path(run_dir) / "volcanoes.json.gz"
+
+
+def write_volcanoes(run_dir: Path, columns, frames: list) -> Path:
+    path = volcanoes_path(run_dir)
+    path.write_bytes(gzip.compress(json.dumps({"columns": list(columns), "frames": frames},
+                                              separators=(",", ":")).encode(), 6))
+    return path
+
+
+def read_volcanoes(run_dir: Path) -> dict | None:
+    """{"columns", "frames": [rows per keyframe]}, or None for a run without it."""
+    path = volcanoes_path(run_dir)
+    return json.loads(gzip.decompress(path.read_bytes())) if path.exists() else None
 
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 id: PW-004
 title: Zoom draws separate volcanic cones, eroded old islands and atolls
 type: story
-status: todo
+status: in-progress
 parent: PW-001
 subsystem: zoom
 effort: l
@@ -22,4 +22,5 @@ has subsided in warm water (SST > ~20 °C), a fringing reef → barrier reef →
 should read as separate peaks, not a ridge.
 
 ## Updates
+- 2026-10-14: Status todo -> in-progress. Started in worktree volcanoes.
 - 2026-10-14: Created from the discrete-volcanoes epic (owner discussion 2026-10-14).

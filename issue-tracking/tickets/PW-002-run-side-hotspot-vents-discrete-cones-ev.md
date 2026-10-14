@@ -2,7 +2,7 @@
 id: PW-002
 title: "Run-side hotspot vents: discrete cones every 50-100 km of plate motion"
 type: story
-status: todo
+status: in-progress
 parent: PW-001
 subsystem: tectonics
 effort: l
@@ -27,4 +27,5 @@ type), subsides with crust age and erodes; old vents drop below sea level (guyot
 - [ ] At L7 an ocean hotspot leaves a chain of separate islands/seamounts, youngest over the plume
 
 ## Updates
+- 2026-10-14: Status todo -> in-progress. Started in worktree volcanoes.
 - 2026-10-14: Created from the discrete-volcanoes epic (owner discussion 2026-10-14).
