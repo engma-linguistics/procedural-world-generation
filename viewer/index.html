@@ -1033,7 +1033,7 @@ function coldness(s) {
   return Math.min(1, Math.max(0, (s.ice_pct - 1) / 2, (13 - s.global_temp_c) / 4));
 }
 const COLD_HELP = 'Blue under the slider: cold eras (land ice on more than 1% of the surface, or a global mean below 13 °C; ' +
-  'darkest = Earth-like icehouse or colder). That is where a glacial time zoom shows ice ages.';
+  'darkest = Earth-like icehouse or colder; smoothed over 5 keyframes). That is where a glacial time zoom shows ice ages.';
 
 // The tint strip under the time slider: cold eras for a main run; for a time zoom, the ice volume.
 function drawTint() {
@@ -1041,16 +1041,26 @@ function drawTint() {
   cv.width = w; cv.height = 1;
   const g = cv.getContext('2d');
   g.clearRect(0, 0, w, 1);
-  let val = fr.map((f) => coldness(f.stats));
+  // a running mean over 5 keyframes: temperature wobbles frame to frame near
+  // the thresholds, which drew the strip as stripes (PW-081)
+  const raw = fr.map((f) => coldness(f.stats));
+  let val = raw.map((_, i) => {
+    const win = raw.slice(Math.max(0, i - 2), i + 3);
+    return win.reduce((a, b) => a + b, 0) / win.length;
+  });
   if (V.tz) {
     const sl = fr.map((f) => f.stats.sea_level_change_m), hi = Math.max(...sl), lo = Math.min(...sl);
     val = sl.map((v) => (hi - lo > 1 ? (hi - v) / (hi - lo) : 0));
   }
   const dx = w / Math.max(fr.length - 1, 1);
   val.forEach((c, i) => {
-    if (c < 0.05) return;
-    g.fillStyle = `rgba(120, 190, 255, ${(0.15 + 0.7 * c).toFixed(2)})`;
-    g.fillRect(Math.round((i - 0.5) * dx), 0, Math.ceil(dx) + 1, 1);
+    if (c < 0.01) return;
+    // ramps in from 0 so a value wobbling near the bottom doesn't switch on and off
+    const a = c < 0.1 ? 2.2 * c : 0.15 + 0.7 * c;
+    g.fillStyle = `rgba(120, 190, 255, ${a.toFixed(2)})`;
+    // abutting, not overlapping: overlapped translucent rects doubled the alpha in thin stripes
+    const x0 = Math.max(0, Math.round((i - 0.5) * dx)), x1 = Math.round((i + 0.5) * dx);
+    g.fillRect(x0, 0, Math.max(x1 - x0, 1), 1);
   });
   $('track').title = V.tz ? 'Blue under the slider: how much ice there is (darkest = the largest ice volume of this time zoom)' : COLD_HELP;
 }
