@@ -123,15 +123,27 @@ where that copy currently sits. Every step (default 2 Myr):
    build big ranges, rifts stretch continents thin; climate, rivers and erosion
    wear the land down and lay down sediment;
 4. velocities are *solved* from forces (no momentum): slab pull, ridge push,
-   collision resistance, plus a slowly wandering mantle-drag term (meandering);
-5. events: long collisions weld plates (suture), big continents rift, slivers
-   get absorbed.
+   collision resistance, basal traction from the mantle, plus a small, slowly
+   wandering drag term (meandering). The mantle (`mantle.py`) is a smooth,
+   world-frame temperature anomaly that remembers where slabs sank (cold) and
+   where continents sat still (warm, insulated); it flows from warm to cold
+   and drags the plates along, so continents gather over the slab graveyards
+   into a supercontinent, which warms the mantle under itself and is pulled
+   apart again (a supercontinent cycle; not guaranteed for every seed). New
+   plumes rise from the warm mantle, mostly at its edges;
+5. events: long collisions weld plates (suture); plates whose halves are pulled
+   apart split along their weakest line (old sutures, thinned crust, over
+   plumes) into a few big pieces, never continental slivers; old passive
+   margins start subducting; slivers get absorbed.
 
 Main knobs (`--set`): `n_plates`, `start` (`supercontinent`|`scattered`),
 `continental_fraction`, `slab_pull`, `ridge_push`, `collision_drag`,
+`mantle_drag`, `mantle_memory`, `mantle_scale_km`, `slab_cold`, `insulation`,
 `mantle_noise`, `mantle_timescale`, `mobility`, `max_speed`, `arc_growth`,
 `crust_flow`, `erosion_timescale`, `suture_after`, `rift_timescale`,
-`rift_min_continent`, `big_plate`, `max_plates`. Defaults live in `Params`.
+`rift_stress`, `rift_min_piece`, `max_plates`. Defaults live in `Params`.
+`uv run python tools/supercontinent.py --seed 1 2` tracks the largest landmass,
+landmass count, mantle temperature and rifts over 2 Gyr (`--plot` draws them).
 
 The package's docstring (`planet/tectonics/__init__.py`) maps its modules:
 `simulation` (state, step), `plates`, `motion` (forces), `crust` (the crust

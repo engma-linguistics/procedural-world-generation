@@ -1,9 +1,10 @@
 """Plate events: collisions, sutures, slivers, rifts.
 
-Long collisions weld plates together; plates split when a big continent
-overheats the mantle beneath it, when the forces on a plate pull its halves
-apart, or when old ocean floor at a passive margin breaks off and starts to
-sink (new subduction); slivers get absorbed. Every event is logged as an
+Long collisions weld plates together; plates split when the forces on them
+(slab pull, ridge push, the mantle's basal traction) pull their halves
+apart, along their weakest line, or when old ocean floor at a passive
+margin breaks off and starts to sink (new subduction); slivers get
+absorbed. Every event is logged as an
 Event for the run's timeline.
 """
 
@@ -159,13 +160,15 @@ def strength(sim) -> np.ndarray:
     instead along their weak zones: the belts where they were welded
     together (young collision belts, still warm and faulted; Pangaea split
     along the ~300-400 Myr old Appalachian/Caledonian sutures) and crust
-    already thinned by earlier stretching."""
+    already thinned by earlier stretching. A plume head under a plate heats
+    and weakens it too (Afar, the Deccan before India left Madagascar)."""
     cont, rock, age = sim.w_cont, sim.w_rock, sim.w_age
     s = np.ones(sim.grid.n)
     s[cont & (rock == CRATON)] = 1.6
     belt = cont & (rock == OROGEN)
     s[belt] = 0.85 - 0.5 * np.exp(-age[belt] / 400.0)
-    return np.where(cont, s * np.clip(sim.w_thick / 35.0, 0.7, 1.0), s)
+    s = np.where(cont, s * np.clip(sim.w_thick / 35.0, 0.7, 1.0), s)
+    return s * (1 - 0.3 * np.clip(sim.swell / 1000.0, 0, 1))
 
 
 def piece_ok(sim, cont_a, cont_b) -> bool:
@@ -230,24 +233,6 @@ def stress_cut(sim, k, cf: CellForces, rng, tries=12):
     return (at[i], t[i], float(eff[i])) if eff[i] > 0 else (c, None, 0.0)
 
 
-def weak_cut(sim, k, rng, tries=12):
-    """A cut across plate k's continent along its weakest line (heat
-    rifting): (point on the cut, normal), or (c, None) if every cut would
-    leave a sliver."""
-    cells = np.flatnonzero((sim.owner == k) & sim.w_cont)
-    c = sim.grid.centers[cells].mean(0)
-    c /= np.linalg.norm(c)
-    t, off, side, line = cut_lines(sim, cells, c, rng, tries)
-    weak = (line @ strength(sim)[cells]) / np.maximum(line.sum(1), 1)
-    na = side.sum(1)
-    ok = np.array([piece_ok(sim, x, len(cells) - x) for x in na]) & (line.sum(1) > 0)
-    if not ok.any():
-        return c, None
-    i = int(np.where(ok, -weak, -np.inf).argmax())
-    at = c + off[i] * t[i]
-    return at / np.linalg.norm(at), t[i]
-
-
 def old_margins(sim):
     """Per plate: mean age of the ocean floor along its passive margins
     (coastlines where continent and ocean ride on the same plate, like
@@ -262,12 +247,15 @@ def old_margins(sim):
 
 
 def maybe_rift(sim, cf: CellForces, rng):
-    """Three ways a plate splits, each a hazard rate (per Myr, in units of
+    """Two ways a plate splits, each a hazard rate (per Myr, in units of
     1/rift_timescale); at most one split per step.
-      heat:   a big continent insulates the mantle under it and rifts
-              (Pangaea -> Atlantic).
       stress: a big plate whose halves are pulled different ways breaks
-              along the line where they'd separate fastest.
+              along the line where they'd separate fastest for the
+              strength of the rock there (stress_cut). The forces include
+              the mantle's basal traction (mantle.py), so a continent over
+              a warm mantle upwelling, whose flow diverges under it, is
+              pulled apart (Pangaea -> Atlantic, East Africa today), as is
+              a plate with slabs pulling on opposite sides.
       margin: old ocean floor at a passive margin is cold and dense enough
               to break off and start sinking under the continent: new
               subduction (the closing half of the Wilson cycle)."""
@@ -278,33 +266,26 @@ def maybe_rift(sim, cf: CellForces, rng):
     cont_cells = np.bincount(sim.owner, weights=sim.w_cont, minlength=P_MAX)
     all_cells = np.bincount(sim.owner, minlength=P_MAX)
     margin_age, margin_len = old_margins(sim)
-    threshold = p.rift_min_continent * g.n
     big = p.stress_min_plate * g.n
     for k in np.flatnonzero(pl.alive):
-        heat = cont_cells[k] / threshold if cont_cells[k] >= threshold else 0.0
-        stress, cut, t_s = 0.0, None, None
+        stress, cut = 0.0, None
         # (a freshly formed plate gets time to settle first, or splits cascade)
         if all_cells[k] >= big and sim.t - pl.formed[k] >= p.settle_time:
             c_s, t_s, opening = stress_cut(sim, k, cf, rng)
-            if opening > p.rift_stress:
+            if opening > p.rift_stress and t_s is not None:
                 stress = (opening / p.rift_stress - 1) * all_cells[k] / big
-            # Plates much bigger than the Pacific (~20% of Earth) are rare:
-            # they span too many different mantle flow regimes to stay whole.
-            stress += 2 * max(0.0, all_cells[k] / (p.big_plate * g.n) - 1)
-            if stress > 0 and t_s is not None:
                 cut = (c_s, t_s)
         margin = 0.0
         ocean_cells = all_cells[k] - cont_cells[k]
         if (margin_len[k] >= 4 * sim.scale and ocean_cells >= 0.5 * big
                 and cont_cells[k] >= 0.5 * big):
             margin = max(0.0, margin_age[k] / p.margin_age - 1) * 3
-        rate = heat + stress + margin
+        rate = stress + margin
         if rate == 0 or rng.random() > 1 - np.exp(-sim.dt / p.rift_timescale * rate):
             continue
         refs = np.flatnonzero(pl.owned[k])
         world = P[refs] @ pl.Q[k].T
-        u = rng.random() * rate
-        if u < margin:
+        if rng.random() * rate < margin:
             # the ocean side of the largest stretch of ocean on this plate
             lab, _ = g.components((sim.owner == k) & ~sim.w_cont)
             biggest = np.bincount(lab[lab >= 0]).argmax()
@@ -320,29 +301,16 @@ def maybe_rift(sim, cf: CellForces, rng):
                     "its continental margin and starts to sink; it becomes plate {1}")
                 return
             continue
-        if u < margin + stress:
-            if cut is None:  # a huge plate with no clear stress direction
-                c, t = weak_cut(sim, k, rng) if cont_cells[k] > 0 else (None, None)
-                if t is None:
-                    c = P[sim.owner == k].mean(0)
-                    c /= np.linalg.norm(c)
-                    t = rng.normal(size=3)
-                    t -= (t @ c) * c
-                    t /= np.linalg.norm(t)
-            else:
-                c, t = cut
-            why = "is pulled apart by the forces on it"
-        else:
-            c, t = weak_cut(sim, k, rng)
-            if t is None:
-                continue
-            why = "rifts apart"
+        c, t = cut
         side = rift_side(sim, k, c, t, rng, world)
-        if side is None or not 0.2 < side.mean() < 0.8:
+        if side is None or not 0.15 < side.mean() < 0.85:
             continue
+        cont_k = cont_cells[k] >= 2 * p.rift_min_piece * g.n
+        heat = float(sim.mantle[g.locate(c[None])[0]])
         new = split(sim, k, refs, world, side, toward=False)
-        what = "continent on plate" if cont_cells[k] >= threshold else "plate"
-        log(sim, "rift", [k, new], c, what + " {0} " + why + "; the split-off part becomes plate {1}")
+        what = "continent on plate {0} rifts apart" if cont_k else "plate {0} is pulled apart by the forces on it"
+        why = " over warm mantle" if heat > 0.3 else (" over cold mantle" if heat < -0.3 else "")
+        log(sim, "rift", [k, new], c, what + why + "; the split-off part becomes plate {1}")
         return
 
 

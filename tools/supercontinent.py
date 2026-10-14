@@ -73,6 +73,9 @@ def sample(sim, v0) -> dict:
         "plates": int(sim.plates.alive.sum()),
         "volume": round(float((sim.w_thick * sim.w_cont).sum()) / v0, 4),
         "max_elev": int(sim.w_elev.max()),
+        "cover_max": round(float(sim.w_cover.max()), 2),
+        "cover_cap": int((sim.w_cover >= sim.params.metamorphic_depth - 0.01).sum()),
+        "elev_p99": int(np.percentile(sim.w_elev[land], 99)) if land.any() else 0,
     }
     m = getattr(sim, "mantle", None)
     if m is not None:
@@ -133,6 +136,7 @@ def summary(d, thr=25.0) -> str:
     starts = [a[0] for a in asm]
     gaps = np.diff(starts).tolist() if len(starts) > 1 else []
     masses = [r["masses"] for r in late]
+    between = [r["masses"] for r in late if r["largest"] < 20] or [0]
     rifts = [e for e in d["events"] if e["kind"] != "suture"]
     causes = {}
     for e in rifts:
@@ -141,8 +145,8 @@ def summary(d, thr=25.0) -> str:
     last = tr[-1]
     return (f"seed {d['seed']} ({d['seconds']}s): assemblies>{thr:g}% at {[f'{a:g}-{b:g} ({c:.0f}%)' for a, b, c in asm]}"
             f" gaps {gaps}; largest max {max(r['largest'] for r in tr):.1f}% median {np.median([r['largest'] for r in late]):.1f}%;"
-            f" masses>0.5% median {np.median(masses):.0f} (range {min(masses)}-{max(masses)});"
-            f" land {min(r['land'] for r in late):.1f}-{max(r['land'] for r in late):.1f}%;"
+            f" masses>0.5% median {np.median(masses):.0f} (range {min(masses)}-{max(masses)}; dispersed, largest<20%: {np.median(between):.0f});"
+            f" land {min(r['land'] for r in late):.1f}-{max(r['land'] for r in late):.1f}% (median {np.median([r['land'] for r in late]):.1f});"
             f" volume x{last['volume']}; ocean age median {np.median([r['ocean_age'] for r in late]):.0f};"
             f" speed median {np.median([r['speed'] for r in late]):.2f}; rifts {causes}"
             f" (continental pieces <3%: {small}); sutures {sum(1 for e in d['events'] if e['kind'] == 'suture')}")

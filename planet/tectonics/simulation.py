@@ -10,6 +10,9 @@ Everything else that changes is listed in Simulation.STATE, by group:
   plates     plates (a plates.Plates: every per-plate array) and owner
              (which plate's crust is on top in each world cell)
   features   hotspots, volcanoes (volcanism.py)
+  mantle     mantle, mantle_lid, mantle_eddies: the mantle's temperature
+             anomaly, how long continent has covered it, and its smaller
+             unresolved eddies (mantle.py), world frame
   boundary   w_boundary, w_trench: the plate boundaries of the last step,
              for snapshots
   earth      the earth system (earth.py): EARTH_STATE
@@ -34,7 +37,7 @@ from typing import ClassVar
 import numpy as np
 
 from ..grid import Grid
-from . import crust, earth, events, motion, output, volcanism
+from . import crust, earth, events, mantle, motion, output, volcanism
 from .crust import Column
 from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation
 from .params import Params
@@ -73,13 +76,14 @@ class Simulation:
     # Everything that changes during a run (see the module docstring).
     STATE: ClassVar[tuple[str, ...]] = (
         "step_no", "t", "plates", "owner", "hotspots", "volcanoes", "w_boundary", "w_trench",
-        *EARTH_STATE, "events", "budget")
+        "mantle", "mantle_lid", "mantle_eddies", *EARTH_STATE, "events", "budget")
 
     def __post_init__(self):
         self._configure()
         self._init_state()
         initial_state(self)
         self._world_view()
+        mantle.init(self)
         # tidy up slivers left by the initial set-up before the clock starts
         events.absorb_slivers(self)
         self.events.clear()
@@ -107,6 +111,10 @@ class Simulation:
         # boundaries of the last step
         self.w_boundary = np.zeros(n, np.int8)  # +1 converging, -1 diverging
         self.w_trench = np.zeros(n)  # m of trench depth (snapshot elevation)
+        # the mantle under the plates (mantle.py), world frame
+        self.mantle = np.zeros(n)  # temperature anomaly, ~+-1
+        self.mantle_lid = np.zeros(n)  # running average of continental cover over it
+        self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
         self.dT, self.drift, self.co2, self.refs, self.depth_ref = 0.0, 0.0, 0.0, None, None
         # m, relative to an ice-free planet with the starting sea floor
@@ -173,6 +181,7 @@ class Simulation:
 
         # 4. boundaries, crust and surface, forces
         bd = motion.boundaries(self)
+        mantle.update(self, bd)
         self._physics(bd, newc, stacked, rng)
         cell_forces = motion.forces(self, bd, rng)
 

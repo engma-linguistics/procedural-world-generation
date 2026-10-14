@@ -27,12 +27,18 @@ Each step (Simulation.step):
     continents neither leak away nor swell over billions of years.
  5. Forces -> velocities. Plates have no momentum (it's basically very slow
     Stokes flow), so each step the velocity is *solved* from the forces:
-    slab pull (dominant), ridge push, collision resistance, and a slowly
-    wandering mantle-drag term that supplies meandering.
- 6. Events: long collisions weld plates together; plates split when a big
-    continent overheats the mantle beneath it, when the forces on a plate
-    pull its halves apart, or when old ocean floor at a passive margin
-    breaks off and starts to sink (new subduction); slivers get absorbed.
+    slab pull (dominant), ridge push, collision resistance, basal traction
+    from the mantle flowing under the plates, and a small, slowly
+    wandering drag term that supplies meandering. The mantle (mantle.py)
+    is a temperature anomaly in the world frame: cold where slabs have
+    sunk for a long time, warm under continents that sit still; it flows
+    from warm to cold, so continents gather over the cold (a
+    supercontinent), warm the mantle under them, and are pulled apart.
+ 6. Events: long collisions weld plates together; plates split when the
+    forces on them (including that traction) pull their halves apart,
+    along their weakest line and never into continental slivers, or when
+    old ocean floor at a passive margin breaks off and starts to sink (new
+    subduction); slivers get absorbed.
 
 Modules
 -------
@@ -41,6 +47,7 @@ Modules
   plates         Plates (all per-plate state), rotations, units
   plate_kernels  numba kernels: resolve ownership, crust flow, ghost cleanup
   motion         plate boundaries; forces -> velocities
+  mantle         the mantle's temperature anomaly: slabs, insulation, traction, plumes
   isostasy       crust thickness -> elevation; the per-cell EXTRA columns
   crust          the crust budget: arcs, collisions, accretion, subduction
                  erosion, stretching and rifted margins, crustal flow,
