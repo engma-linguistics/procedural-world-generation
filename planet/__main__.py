@@ -82,6 +82,19 @@ def cmd_zoom(args):
           f" view: http://127.0.0.1:8765/viewer/zoom.html?id={m['id']}")
 
 
+def cmd_timezoom(args):
+    from . import timezoom as TZ
+    out = TZ.timezoom(args.run, args.at, args.kyr, args.step, args.every, _parse_set(args.set),
+                      level=args.level, name=args.name)
+    run = json.loads((out / "run.json").read_text())
+    s = [f["stats"] for f in run["frames"]]
+    lo = min(s, key=lambda x: x["sea_level_change_m"])
+    print(f"{out.relative_to(W.ROOT)}  [{run['meta']['generated_in_s']}s, {len(s)} frames]  "
+          f"lowest sea level {lo['sea_level_change_m']:+.0f} m at {lo['t']:g} kyr "
+          f"(ice {lo['ice_pct']}% of the surface); end {s[-1]['sea_level_change_m']:+.0f} m; "
+          f"{len(run['events'])} glacial events")
+
+
 def cmd_report(args):
     print(T.report(T.find_run(args.run)).relative_to(W.ROOT))
 
@@ -93,7 +106,9 @@ def cmd_list(args):
     worlds = json.loads((W.WORLDS / "index.json").read_text())
     print("runs:" if runs else "runs: none")
     for r in runs:
-        print(f"  {r['id']}  {r['created']}  {r['name']}  ({r['myr']:g} Myr)")
+        span = (f"time zoom: {r['kyr']:g} kyr after {r['source_run']} @ {r['at_myr']:g} Myr"
+                if r.get("kind") == "timezoom" else f"{r['myr']:g} Myr")
+        print(f"  {r['id']}  {r['created']}  {r['name']}  ({span})")
     print("worlds:" if worlds else "worlds: none")
     for w in worlds:
         print(f"  {w['id']}  {w['created']}  {w['name']}")
@@ -220,6 +235,18 @@ def main():
     z.add_argument("--seed", type=int, default=1, help="detail noise variant")
     z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
     z.set_defaults(func=cmd_zoom)
+
+    tz = sub.add_parser("timezoom", help="glacial time zoom: ~1 Myr of ice ages from one moment of a run -> runs/<id>/")
+    tz.add_argument("run", help="run id (see `list`), or 'earth' for today's Earth (ETOPO1)")
+    tz.add_argument("--at", type=float, default=0.0, help="moment of the run, Myr (nearest keyframe)")
+    tz.add_argument("--kyr", type=float, default=1000, help="how long to simulate (thousand years)")
+    tz.add_argument("--step", type=float, default=0.5, help="time step (kyr)")
+    tz.add_argument("--every", type=float, default=2.0, help="keep a viewer frame every N kyr")
+    tz.add_argument("--level", "-l", type=int, default=6, help="grid level (earth only; runs use their own)")
+    tz.add_argument("--name", "-n")
+    tz.add_argument("--set", nargs="*", metavar="KEY=VALUE",
+                    help="timezoom.TZParams knobs, e.g. --set insol_k=0.2 phases=zero")
+    tz.set_defaults(func=cmd_timezoom)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")
