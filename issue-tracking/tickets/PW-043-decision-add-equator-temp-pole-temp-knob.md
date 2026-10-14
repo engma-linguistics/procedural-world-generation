@@ -2,7 +2,7 @@
 id: PW-043
 title: "Decision: add equator_temp / pole_temp knobs?"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 subsystem: climate
 effort: xs
@@ -25,4 +25,5 @@ hothouse or cold world is set by those two.
 Coordinator's lean: B (close as wontdo) unless you want worlds with an unusual equator-to-pole gradient.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> wontdo. Owner chose option B (2026-10-14): no new knobs; dT and tilt cover it.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Viewer / Earth world.
