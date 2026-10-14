@@ -36,6 +36,7 @@ from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
+from .surface import surface_rock
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
@@ -312,7 +313,7 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
                   sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap))
 
 
-FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
+FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock",
                 "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS)
 
 
@@ -340,10 +341,12 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     for label, w in fr["omega"].items():
         omega[int(label)] = w
     velocity = np.cross(omega[a["plate"]], grid.centers)
+    # the exposed rock from the stored strata, by the current rule (as snapshot() does)
+    exposed = surface_rock(a["rock"], a["sediment_cover"], a["strata_top"], a["strata_top_km"])
     s = fr["stats"]
     return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
                   a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
-                  a["rock"], a["surface_rock"], a["sediment_cover"], a["crust_thickness"].astype(float),
+                  a["rock"], exposed, a["sediment_cover"], a["crust_thickness"].astype(float),
                   a["ice"], fr["hotspots"], vols, s["global_temp_c"] - 14.5,
                   s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                               "from_keyframe": True, **meta_extra},

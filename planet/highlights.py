@@ -1209,7 +1209,7 @@ def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
         muddy = ctx.dilate(muddy, 1)
     cold = np.asarray(L["cold_month"], float)
     reef = ocean & (ctx.elev > -REEF_MAX_DEPTH) & (cold >= REEF_MIN_C) & ctx.dilate(ctx.land) & ~muddy
-    lime = ctx.land & (np.asarray(L["surface_rock"]) == 6) if "surface_rock" in L else None
+    lime = ctx.land & np.isin(L["surface_rock"], (6, 14)) if "surface_rock" in L else None  # limestone, dolomite
     out = []
     for cells in ctx.components(reef, min_cells=3, bridge=1)[:8]:
         length, spine = ctx.spine(cells, ctx.dilate(reef) & sea)

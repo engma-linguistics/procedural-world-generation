@@ -142,6 +142,7 @@ flowchart LR
 - **Basement:** ocean crust, hotspot basalt, arc, sediment-born continent, orogen, craton, and **granite** (an arc worn 4 km down after it went quiet shows its plutons, like the Sierra Nevada).
 - **Cover:** limestone (reefs), sandstone, shale, evaporite (salt from hot closed lakes and flats), coal (warm swamps), **flood basalt** (a plume's lava on a continent), **tuff** (10% of a continental arc's new crust erupts as ash and ignimbrite).
 - **Erodibility** runs from 0.3 (craton) to 3.0 (evaporite).
+- **Surface rock** (`surface_rock`, what the viewer and the zoom see) is the cover's exposed stratum from the record below (thin veneers under 20 m looked through), so a thin dolomite or basalt caprock shows over the shale beneath it; where less than 50 m of cover is left, the basement shows through. Erosion still uses the well-mixed cover's erodibility (caprock protecting the soft rock under it in the run is PW-136 option C).
 
 **Erosion** runs every step and is scaled by rain:
 - **hillslope diffusion** smooths relief;

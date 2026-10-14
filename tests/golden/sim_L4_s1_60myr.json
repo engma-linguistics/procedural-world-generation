@@ -17,7 +17,7 @@
  "idx": "<i8[48, 2562]:16339d98fd5e64519a53",
  "snap_elevation": "<f8[2562]:6a067c1c5ca291a346f4",
  "snap_boundary": "|i1[2562]:85da1d99f5641cedfa07",
- "snap_surface": "|u1[2562]:7ec3320c27a3e62fb549",
+ "snap_surface": "|u1[2562]:bb20c9428d05cc27fdad",
  "snap_koppen": "<i8[2562]:758e8d4c1a210aeb6b4a",
  "snap_landform": "|u1[2562]:5602c67e0d44dad934cc",
  "events": "7ca736acab11332421ba",
