@@ -316,3 +316,11 @@ Same seeds won't give the same geography under the new physics, so pick world ti
 - The user (at bedtime) asked for two documents, both written by subagents only **after all other overnight work is done**:
   - `docs/morning_decisions.md`: judgement calls for the user to give feedback on. Collect them through the night.
   - `docs/overview.md`: an overview of what the project is and how each subsystem works. At most ~5 pages of text; pictures and diagrams are welcome.
+
+**Update 01:45:**
+- **Merged:** lakes, falls, ocean, deltas, and mantle at cbe40ce (the mantle agent is still finishing docs, a scorecard and a showcase).
+- **Old outputs deleted.**
+- **Running:**
+  - L7 seed 1, 1500 Myr (`--every 5 --checkpoint-every 250`);
+  - a serial script re-making the L6 seed-1 comparison plus the six showcases (`$CLAUDE_JOB_DIR/tmp/runs/showcase.sh`, logs alongside).
+- **Next:** slice worlds, highlights and zooms from the showcases; the L8 run by 03:00–05:00; more L7 showcases.
