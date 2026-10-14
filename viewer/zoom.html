@@ -201,6 +201,8 @@ function about() {
     <tr><td>mean</td><td>${fmt(s.mean_elev_m)} m (coarse ${fmt(s.coarse_mean_elev_m)} m)</td></tr>
     <tr><td>largest river</td><td>${fmt(s.max_discharge_m3s)} m&sup3;/s</td></tr>
     <tr><td>lakes</td><td>${s.lakes}</td></tr>
+    ${(s.waterfalls || []).length ? `<tr><td>biggest falls</td><td>${s.waterfalls.slice(0, 3).map((w) =>
+      `${fmt(w.height_m)} m over ${fmt(w.length_km, 1)} km, ${fmt(w.discharge_m3s)} m&sup3;/s${w.from_lake ? ' (lake outlet)' : ''}`).join('<br>')}</td></tr>` : ''}
     <tr><td>made in</td><td>${m.generated_in_s} s</td></tr>
     <tr><td>files</td><td><a href="../zooms/${m.id}/heightmap.png">heightmap.png</a> (16-bit: ${fmt(m.heightmap.min_m)}..${fmt(m.heightmap.max_m)} m)<br>
       <a href="../zooms/${m.id}/preview.png">preview.png</a> &middot; <a href="../zooms/${m.id}/zoom.json">zoom.json</a></td></tr>
