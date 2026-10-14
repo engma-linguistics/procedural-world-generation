@@ -84,6 +84,26 @@ def test_climate_compute_interface(grid4):
     assert 700 < c["precip"].mean() < 1300
 
 
+def test_climate_same_on_any_thread_count(grid4):
+    """The parallel climate kernels add up in a fixed order, so the
+    results are bit-identical whatever the number of threads."""
+    numba = pytest.importorskip("numba")
+    g = grid4
+    rng = np.random.default_rng(1)
+    elev = np.where(rng.random(g.n) < 0.3, rng.uniform(0, 3000, g.n), -3000.0)
+    before = numba.get_num_threads()
+    try:
+        numba.set_num_threads(1)
+        one = climate.compute(g, elev)
+        numba.set_num_threads(min(3, numba.config.NUMBA_NUM_THREADS))
+        many = climate.compute(g, elev)
+    finally:
+        numba.set_num_threads(before)
+    for k in one:
+        assert np.array_equal(one[k], many[k]), k
+
+
+
 def test_gyres_and_jet():
     """One ocean between two coasts (a pole-to-pole continent 60 deg wide):
     the subtropical gyre's return flow runs poleward in a narrow fast
