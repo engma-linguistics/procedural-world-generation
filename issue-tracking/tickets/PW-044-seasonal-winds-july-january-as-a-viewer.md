@@ -2,7 +2,7 @@
 id: PW-044
 title: Seasonal winds (July / January) as a viewer toggle
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -22,4 +22,6 @@ to see. The climate already computes `wind_jul` and `wind_jan`; store them per f
 also"), never done.
 
 ## Updates
+- 2026-10-14: Status in-progress -> done. Worlds now store wind_jul_e/n and wind_jan_e/n (world.finish; store specs added, int8 like wind_e). The viewer's Winds overlay has a season picker (year / July / January; URL ?season=jul|jan) shown only when the world has the layers; the legend names the season; runs fall back to the yearly mean. Checked with headless-Chrome screenshots of world 63f57e (01b0f7 @ 384 Myr, sliced for this) in July and January, and run 01b0f7. Run keyframes don't get the seasonal winds yet: that needs the simulation snapshot, filed as an inbox draft (draft-seasonal-winds-in-run-frames).
+- 2026-10-14: Status todo -> in-progress. Started on branch quickwins.
 - 2026-10-14: Migrated from plan_next@bdc967f item 5 (winds), the optional seasonal toggle that wasn't built.
