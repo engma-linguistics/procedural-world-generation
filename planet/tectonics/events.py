@@ -14,11 +14,15 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..geo import R_KM
 from ..geo import latlon as _latlon
+from ..kernels import bfs_within
 from ..noise import Perlin3D, fbm
 from ..surface import CRATON, OROGEN
 from .motion import Boundaries, CellForces
 from .plates import CMYR, P_MAX
+
+TRENCH_KM = 6000.0  # length of margin along which new subduction starts (margin_side)
 
 
 @dataclass
@@ -291,15 +295,11 @@ def maybe_rift(sim, cf: CellForces, rng):
         refs = np.flatnonzero(pl.owned[k])
         world = P[refs] @ pl.Q[k].T
         if rng.random() * rate < margin:
-            # the ocean side of the largest stretch of ocean on this plate
-            lab, _ = g.components((sim.owner == k) & ~sim.w_cont)
-            biggest = np.bincount(lab[lab >= 0]).argmax()
-            at = g.locate(world)
-            side = ~pl.cont[k, refs] & (lab[at] == biggest)
+            side, trench = margin_side(sim, k, world)
             new = split(sim, k, refs, world, side, toward=True)
             if new is not None:
-                # continental cells of plate k with any neighbour in that stretch of ocean
-                touches = np.logical_or.reduceat(lab[g.nbr_idx] == biggest, g.nbr_off[:-1])
+                # continental cells of plate k along the new trench
+                touches = np.logical_or.reduceat(trench[g.nbr_idx], g.nbr_off[:-1])
                 edge = (sim.owner == k) & sim.w_cont & touches
                 c = P[edge].mean(0) if edge.any() else world[side].mean(0)
                 log(sim, "subduction", [k, new], c, "old ocean floor on plate {0} breaks off "
@@ -317,6 +317,61 @@ def maybe_rift(sim, cf: CellForces, rng):
         why = " over warm mantle" if heat > 0.3 else (" over cold mantle" if heat < -0.3 else "")
         log(sim, "rift", [k, new], c, what + why + "; the split-off part becomes plate {1}")
         return
+
+
+def margin_side(sim, k, world):
+    """Which of plate k's reference cells (at positions `world`) break off
+    when old ocean floor starts to sink at one of its passive margins;
+    and the ocean cells along that margin (world cells, for the log).
+
+    The trench starts along one stretch of margin, ~TRENCH_KM long, where
+    the floor is oldest, and soon runs the length of it (Izu-Bonin-Mariana
+    is ~3000 km long, the Aleutians and Kuriles ~5000). What
+    breaks off is the ocean in front of it: the cells of the plate's
+    largest ocean nearer to that stretch than to any other coast or plate
+    boundary, so its far side becomes a ridge in mid-ocean. (Breaking off
+    the whole ocean made one plate wrapped around every continent: half of
+    all the coastlines on the plate became trenches and the other half
+    ridges, so the ocean floor renewed itself, and the sea rose by
+    hundreds of m, within a few Myr.)
+    The islands, microcontinents and small enclosed seas of plate k inside
+    that piece go with it: they ride on the ocean floor around them (left
+    behind, each would be a hole in the new plate ringed by a trench)."""
+    g = sim.grid
+    on = sim.owner == k
+    lab, _ = g.components(on & ~sim.w_cont)
+    sea = lab == np.bincount(lab[lab >= 0]).argmax()
+    # its edges: the coasts of the plate's continents (not of the small
+    # islands, which ride along), and the other plates
+    small = 0.1 * sim.params.rift_min_piece * g.n
+    clab, _ = g.components(on & sim.w_cont)
+    csize = np.bincount(clab[clab >= 0])
+    big_cont = (clab >= 0) & (csize[np.maximum(clab, 0)] >= small)
+    coast = np.logical_or.reduceat(big_cont[g.nbr_idx], g.nbr_off[:-1]) & sea
+    edge = (np.logical_or.reduceat(~on[g.nbr_idx], g.nbr_off[:-1]) & sea) | coast
+    if not coast.any():
+        return np.zeros(len(world), bool), coast
+    # the stretch of coast with the oldest floor on average (candidates:
+    # its 200 oldest cells)
+    cc = np.flatnonzero(coast)
+    reach = np.cos(TRENCH_KM / 2 / R_KM)
+    cand = cc[np.argsort(-sim.w_age[cc], kind="stable")[:200]]
+    near = g.centers[cand] @ g.centers[cc].T > reach
+    seed = cand[int(((near * sim.w_age[cc]).sum(1) / near.sum(1)).argmax())]
+    trench = coast & (g.centers @ g.centers[seed] > reach)
+    sources = np.flatnonzero(edge)
+    _, src = bfs_within(sources, sea.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
+    wside = sea & (src >= 0) & trench[np.maximum(src, 0)]
+    rest, n_rest = g.components(on & ~wside)
+    if n_rest > 1:
+        sizes = np.bincount(rest[rest >= 0])
+        touches = np.logical_or.reduceat(wside[g.nbr_idx], g.nbr_off[:-1])
+        borders = np.bincount(rest[rest >= 0], weights=touches[rest >= 0], minlength=len(sizes)) > 0
+        tiny = (sizes < small) & borders
+        tiny[sizes.argmax()] = False
+        wside |= (rest >= 0) & tiny[np.maximum(rest, 0)]
+    at = g.locate(world)
+    return wside[at] & on[at], trench
 
 
 def rift_side(sim, k, c, t, rng, world, tries=4):
