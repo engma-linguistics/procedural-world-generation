@@ -1,0 +1,297 @@
+"""The Simulation: its state, the time step, and the world view.
+
+State
+-----
+Configuration (fixed for a run): grid, seed, params, dt, and what follows
+from them (scale, cell_area, edge_len).
+
+Everything else that changes is listed in Simulation.STATE, by group:
+  clock      step_no, t
+  plates     plates (a plates.Plates: every per-plate array) and owner
+             (which plate's crust is on top in each world cell)
+  features   hotspots, volcanoes (volcanism.py)
+  boundary   w_boundary, w_trench: the plate boundaries of the last step,
+             for snapshots
+  earth      the earth system (earth.py): EARTH_STATE
+  log        events, budget
+
+The world view (w_age, w_cont, w_thick, w_rock, w_cover, w_extra, w_ref,
+w_elev, swell) is the plates' crust seen on the world grid. Between steps
+it is always _world_view() of the state above, so it isn't part of it.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import ClassVar
+
+import numpy as np
+
+from ..grid import Grid
+from . import crust, earth, events, motion, output, volcanism
+from .crust import Column
+from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation
+from .params import Params
+from .plate_kernels import cleanup_ghosts, resolve
+from .plates import Plates
+from .setup import initial_state
+
+
+@dataclass
+class Simulation:
+    grid: Grid
+    seed: int
+    params: Params = field(default_factory=Params)
+    dt: float = 2.0
+
+    # The earth system's state (earth.py). The climate fields come from
+    # climate.compute, every params.climate_every Myr (None before the first).
+    EARTH_STATE: ClassVar[tuple[str, ...]] = (
+        "dT",  # C: global temperature offset from today's Earth
+        "drift",  # C: its random part
+        "co2",  # smoothed log ratio of volcanic CO2 sources to weathering sinks
+        "refs",  # slow baselines of [source, sink] (None before the first step)
+        "depth_ref",  # m: slow baseline of the mean ocean depth (None before the first step)
+        "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
+        "ice",  # m of land ice per cell
+        "veg",  # plant cover 0..1 per cell (0.0 before the first step)
+        "removed",  # km of crust eroded per cell in the last step (feeds weathering)
+        "climate_t",  # Myr: when the climate fields were computed
+        "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
+        "precip", "p_jul", "p_jan",  # mm/yr: annual, July, January
+        "runoff", "aet", "lake_evap",  # mm/yr
+        "koppen",  # climate.KOPPEN id
+        "wind", "current",  # (n, 3) annual-mean surface wind and ocean current
+        "flow", "down",  # rivers of the last step: flow and next cell downstream (-1 at sea)
+    )
+    # Everything that changes during a run (see the module docstring).
+    STATE: ClassVar[tuple[str, ...]] = (
+        "step_no", "t", "plates", "owner", "hotspots", "volcanoes", "w_boundary", "w_trench",
+        *EARTH_STATE, "events", "budget")
+
+    def __post_init__(self):
+        g = self.grid
+        n = g.n
+        self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
+        self.cell_area = 4 * np.pi / n
+        self.edge_len = g.spacing
+
+        # clock
+        self.step_no = 0
+        self.t = 0.0
+        # plates (filled in by setup.initial_state)
+        self.plates = Plates.empty(n, len(EXTRA), next_label=self.params.n_plates)
+        self.owner = np.zeros(n, np.int64)
+        # features
+        self.hotspots = []  # dicts: pos (mantle frame = world frame), born, life, strength
+        self.volcanoes = []  # arc volcanoes: dicts plate, ref (cell in the plate's frame), born, life, pos
+        # boundaries of the last step
+        self.w_boundary = np.zeros(n, np.int8)  # +1 converging, -1 diverging
+        self.w_trench = np.zeros(n)  # m of trench depth (snapshot elevation)
+        # earth system (EARTH_STATE)
+        self.dT, self.drift, self.co2, self.refs, self.depth_ref = 0.0, 0.0, 0.0, None, None
+        # m, relative to an ice-free planet with the starting sea floor
+        self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
+        self.ice = np.zeros(n)
+        self.veg = 0.0
+        self.removed = np.zeros(n)
+        self.climate_t = 0.0
+        self.temp = self.t_warm = self.t_cold = None
+        self.precip = self.p_jul = self.p_jan = None
+        self.runoff = self.aet = self.lake_evap = None
+        self.koppen = self.wind = self.current = None
+        self.flow = np.zeros(n)
+        self.down = np.full(n, -1, np.int64)
+        # log
+        self.events: list[events.Event] = []
+        self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process
+
+        initial_state(self)
+        self._world_view()
+        # tidy up slivers left by the initial set-up before the clock starts
+        events.absorb_slivers(self)
+        self.events.clear()
+        self._world_view()
+
+    # ------------------------------------------------------------- main loop
+    def run(self, until_t: float, on_step=None):
+        while self.t < until_t - 1e-9:
+            self.step()
+            if on_step:
+                on_step(self)
+
+    def step(self):
+        """One time step. All randomness comes from default_rng([seed,
+        step_no]), drawn in a fixed order: hotspots, volcanoes, global
+        temperature (all in _physics), then the forces, then rifts."""
+        self.step_no += 1
+        self.t = self.step_no * self.dt
+        rng = np.random.default_rng([self.seed, self.step_no])
+
+        # 1-2. move plates and pull
+        self.plates.move(self.grid, self.dt)
+
+        # 3. resolve ownership
+        newc, stacked = self._resolve()
+
+        # 4. boundaries, crust and surface, forces
+        bd = motion.boundaries(self)
+        self._physics(bd, newc, stacked, rng)
+        cell_forces = motion.forces(self, bd, rng)
+
+        # 5. events
+        vol0 = float((self.w_thick * self.w_cont).sum())
+        events.sutures(self, bd)
+        events.absorb_slivers(self)
+        events.maybe_rift(self, cell_forces, rng)
+        self._world_view()
+        self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
+
+    def _resolve(self):
+        """Decide which plate owns each world cell (plate_kernels.resolve).
+        Returns (new ocean floor mask, km of crust stacked by collisions)."""
+        g, pl = self.grid, self.plates
+        vol0 = float((self.w_thick * self.w_cont).sum())
+        stacked = np.zeros(g.n)
+        self.owner, newc, coll = resolve(
+            pl.alive, pl.idx, pl.owned, pl.age, pl.cont, pl.thick, pl.rock, pl.cover, pl.extra,
+            self.owner, g.nbr_off, g.nbr_idx, pl.Q, g.centers, stacked)
+        cleanup_ghosts(pl.alive, pl.owned, pl.Q, g.centers, self.owner, g.raster, g.nbr_off, g.nbr_idx)
+        self._world_view()
+        self.book("resolve", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
+        return newc, stacked
+
+    # ------------------------------------------------------------- physics
+    def _physics(self, bd, newc, stacked, rng):
+        """Crust, surface and climate on the world map for one step: a
+        sequence of substeps on one Column (crust.py), written back to the
+        plates at the end."""
+        conv = np.clip(bd.conv, 0, 15)
+        thermostat, shrink = crust.thermostats(self)
+        growth = crust.arc_growth(self, bd, conv, thermostat)
+        stretch = crust.rift_stretching(self, bd)
+        plume, dome = volcanism.hotspots(self, rng, bd)
+
+        col = self._age(dome)
+        plume = volcanism.cap_plumes(self, col, plume)
+        crust.add_arcs_and_plumes(self, col, growth, plume)
+        edges = crust.inner_edges(self, col.cont)
+        stack_add = crust.stack_collisions(self, col, stacked, edges)
+        crust.accrete(self, bd, conv, col)
+        crust.subduction_erosion(self, bd, conv, col, shrink)
+        arcky = crust.arc_rock(self, col, growth)
+        t0 = col.t.copy()  # (volcanoes edits it in place)
+        col.t = volcanism.volcanoes(self, growth, col.t, rng)
+        self.book("volcano", t0, col.t, col.cont)
+        crust.stretch(self, col, stretch, plume, newc)
+        squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
+
+        # weather, ice, rivers, erosion, sediment
+        earth.global_temperature(self, growth, int(newc.sum()), rng)
+        if earth.climate_due(self):
+            earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level))
+        dep, lake = earth.erode(self, col)
+        chem = earth.sediments(self, col, dep, lake)
+        earth.bury(self, col)
+        earth.reefs(self, col, dep, chem)
+
+        born = crust.birth_and_cratons(self, col, arcky, squeezed)
+        self._write_back(col, born)
+        self._record_boundaries(bd, conv)
+
+    def _age(self, dome):
+        """Age every plate's crust by dt and unpack the world view into the
+        Column the physics works on.
+
+        Ageing acts on *every* cell of every plate, in the plate's own frame.
+        (Doing it only on the cells currently visible on the world grid left
+        the 10-20% momentarily unsampled cells un-aged: speckle.)"""
+        pl = self.plates
+        pl.age[pl.owned] += self.dt
+        self._world_view()
+        col = Column(t=self.w_thick, cover=self.w_cover, x=self.w_extra.copy(), cont=self.w_cont,
+                     rock=self.w_rock.copy())
+        # the swell rides off with the plate and subsides as the mantle under it cools
+        col.x[:, LIFT] = np.maximum(col.x[:, LIFT] * np.exp(-self.dt / self.params.swell_time), dome)
+        self.swell = col.x[:, LIFT]
+        return col
+
+    def _write_back(self, col, born):
+        """Make the column the new world view and copy it to the plates.
+        Crust is kept between 1 km and MAX_KM, and the sediment cover can't
+        be thicker than the crust (its rock mix shrinks with it)."""
+        x = col.x
+        self.w_cont = col.cont | born
+        self.w_thick = np.clip(col.t, 1.0, MAX_KM)
+        self.book("clip", col.t, self.w_thick, self.w_cont)
+        self.w_cover = np.clip(col.cover, 0, self.w_thick)
+        shrink = self.w_cover / np.maximum(col.cover, 1e-9)
+        m = np.maximum(x[:, MIX] * shrink[:, None], 0)
+        over = np.maximum(m.sum(1) / np.maximum(self.w_cover, 1e-9), 1.0)
+        x[:, MIX] = m / over[:, None]
+        self.w_extra = x
+        self.w_rock = col.rock
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
+        self._scatter()
+
+    def _record_boundaries(self, bd, conv):
+        """Remember this step's plate boundaries and trenches for snapshots."""
+        n = self.grid.n
+        bnd = np.zeros(n, np.int8)
+        conv_cells = np.concatenate([bd.a[bd.collision | bd.subduct], bd.b[bd.collision | bd.subduct]])
+        bnd[bd.spreading] = -1
+        bnd[conv_cells] = 1
+        self.w_boundary = bnd
+        trench = np.zeros(n)
+        np.minimum.at(trench, bd.sinking, -350 * bd.at_trenches(conv))
+        self.w_trench = np.maximum(trench, -4000)
+
+    def book(self, what, before, after, cont):
+        """Add the change in continental crust (km x level-5 cells) to the budget under `what`."""
+        self.budget[what] = self.budget.get(what, 0.0) + float(np.sum((after - before) * cont)) / self.scale**2
+
+    # ------------------------------------------------------------- world view
+    def _world_view(self):
+        """The plates' crust as seen on the world grid (the w_* arrays)."""
+        pl = self.plates
+        o, i = self.owner, np.arange(self.grid.n)
+        r = pl.idx[o, i]
+        self.w_age = pl.age[o, r]
+        self.w_cont = pl.cont[o, r]
+        self.w_thick = pl.thick[o, r]
+        self.w_rock = pl.rock[o, r]
+        self.w_cover = pl.cover[o, r]
+        self.w_extra = pl.extra[o, r]
+        self.swell = self.w_extra[:, LIFT]
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
+        self.w_ref = r
+
+    def _scatter(self):
+        """Write the world view back into the plates' frames."""
+        pl = self.plates
+        o, r = self.owner, self.w_ref
+        pl.age[o, r] = self.w_age
+        pl.cont[o, r] = self.w_cont
+        pl.thick[o, r] = self.w_thick
+        pl.rock[o, r] = self.w_rock
+        pl.cover[o, r] = self.w_cover
+        pl.extra[o, r] = self.w_extra
+
+    # ------------------------------------------------------------- queries
+    def heat(self) -> float:
+        """Mantle heat relative to today's (see earth.heat)."""
+        return earth.heat(self.params, self.t)
+
+    def target_fraction(self) -> float:
+        """Share of the surface the continents are steered toward now."""
+        return earth.target_fraction(self.params, self.t)
+
+    def velocity(self) -> np.ndarray:
+        """Tangent velocity of every cell (rad/Myr, world frame)."""
+        return motion.velocity(self)
+
+    def snapshot(self) -> output.Snapshot:
+        return output.snapshot(self)
+
+    def stats(self) -> dict:
+        return output.stats(self)
