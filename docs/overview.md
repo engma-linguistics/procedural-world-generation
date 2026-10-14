@@ -191,7 +191,7 @@ flowchart LR
 *World 7c5adf (Earth-like A, 976 Myr), Köppen classes.*
 
 ![Model currents on Earth](overview/earth_currents.jpg)
-*The model's temperature and currents on real Earth terrain (world 2f38e3). Gyres, the Gulf Stream, the Kuroshio and the Antarctic Circumpolar Current emerge.*
+*The model's temperature and currents on real Earth terrain (world f8a740). Gyres, the Gulf Stream, the Kuroshio and the Antarctic Circumpolar Current emerge.*
 
 ![Overturning on Earth](overview/earth_overturning.jpg)
 *Overturning on Earth (from `docs/review/ocean/`). Top: sinking in the Nordic and Labrador seas and off Antarctica, and the inflow riding the Gulf Stream. Bottom: the warming it adds.*
@@ -341,7 +341,7 @@ Other checks:
 - `pytest`: invariants, envelopes and golden hashes.
 
 ![Earth temperature error](overview/earth_temperature_diff.jpg)
-*Model minus observed temperature on Earth (2f38e3). East Antarctica and NE Canada come out too warm.*
+*Model minus observed temperature on Earth (f8a740). East Antarctica and NE Canada come out too warm.*
 
 **Main weak spots:**
 - **Climate:** regional errors (monsoons, the Sahel, continental winters) and weak Southern Ocean waves.

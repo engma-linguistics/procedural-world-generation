@@ -10,7 +10,7 @@ impact: low
 found_by: viewer2
 blocked_by: []
 relates: []
-refs: [tools/earth_world.py, planet/zoom.py, "world 2f38e3"]
+refs: [tools/earth_world.py, planet/zoom.py, "world f8a740"]
 created: 2026-10-14
 updated: 2026-10-14
 ---

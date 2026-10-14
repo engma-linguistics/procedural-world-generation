@@ -10,7 +10,7 @@ impact: low
 found_by: hl2
 blocked_by: []
 relates: [PW-067]
-refs: [planet/highlights.py, "world 2f38e3"]
+refs: [planet/highlights.py, "world f8a740"]
 created: 2026-10-14
 updated: 2026-10-14
 ---

@@ -2,7 +2,7 @@
 id: PW-113
 title: Remake the Earth world after the PW-040 observation fix
 type: task
-status: todo
+status: done
 parent: null
 subsystem: docs
 effort: xs
@@ -23,4 +23,5 @@ merging, rerun `uv run python tools/earth_world.py` and repoint references to 2f
 caption, viewer bookmarks) if the id changes.
 
 ## Updates
+- 2026-10-14: Status todo -> done. Remade: world f8a740; old 2f38e3 deleted.
 - 2026-10-14: Created from inbox draft draft-remake-earth-world.md (found by climfix).
