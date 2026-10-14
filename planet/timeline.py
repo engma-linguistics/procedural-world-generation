@@ -8,9 +8,10 @@ On disk: runs/<name>/
   run.txt     the conversation-friendly report (event log, stats table,
               ASCII maps), rendered from the two files above.
 
-A run is fully determined by (seed, level, dt, params). Keyframes are just a
-cache for the viewer: `slice` replays the simulation from t=0 to any step
-and builds a complete world there (climate, rivers, biomes).
+A run is fully determined by (seed, level, dt, params) and the code version.
+`slice` replays the simulation from t=0 to any step and builds a complete
+world there (climate, rivers, biomes); `world_from_frame` builds one straight
+from a stored keyframe instead (seconds, no replay; the viewer's zoom uses it).
 """
 
 from __future__ import annotations
@@ -304,32 +305,75 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
     """A complete world (climate, rivers, biomes, all layers) from a
     simulation's current state, in memory."""
     snap = sim.snapshot()
-    at = sim.t
-    g = sim.grid
-    m = {"seed": sim.seed, "level": g.level, "params": asdict(sim.params)}
-    rng_seed = m["seed"] * 100003 + int(at)
+    return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
+                  snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
+                  snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
+                  sim.dT, sim.sea_level, erosion, meta_extra)
+
+
+FRAME_LAYERS = ("elevation", "plate", "continental", "age", "boundary", "rock", "surface",
+                "cover", "thickness", "ice")
+
+
+def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extra) -> dict:
+    """A complete world from a stored keyframe, without replaying: exactly
+    the state the viewer shows, at keyframe precision (elevation to 1 m, ice
+    to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe."""
+    run = json.loads((run_dir / "run.json").read_text())
+    m = run["meta"]
+    missing = [k for k in FRAME_LAYERS if k not in run["layers"]]
+    if missing or "sea_level_m" not in run["frames"][0]["stats"]:
+        raise ValueError(f"run {run_dir.name} is too old to build worlds from its keyframes "
+                         f"(missing {', '.join(missing) or 'sea level'}); use `planet slice`")
+    times = np.array([f["t"] for f in run["frames"]])
+    i = int(np.argmin(np.abs(times - at)))
+    fr = run["frames"][i]
+    a = {}
+    for k in FRAME_LAYERS:
+        spec = run["layers"][k]
+        dt = np.dtype(spec["dtype"]).newbyteorder("<")
+        n = spec["shape"][1]
+        a[k] = np.fromfile(run_dir / "frames.bin", dt, n, offset=spec["offset"] + i * n * dt.itemsize)
+    grid = build_grid(m["level"])
+    params = Params.from_stored(m["params"])
+    omega = np.zeros((int(a["plate"].max()) + 1, 3))
+    for label, w in fr["omega"].items():
+        omega[int(label)] = w
+    velocity = np.cross(omega[a["plate"]], grid.centers)
+    s = fr["stats"]
+    return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
+                  a["continental"].astype(bool), a["boundary"].astype(int), a["age"].astype(float), velocity,
+                  a["rock"], a["surface"], a["cover"] / 10.0, a["thickness"].astype(float),
+                  a["ice"] * 20.0, fr["hotspots"], fr["volcanoes"], s["global_temp_c"] - 14.5,
+                  s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
+                                              "from_keyframe": True, **meta_extra})
+
+
+def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
+           v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
+           erosion, meta_extra) -> dict:
+    m = {"seed": seed, "level": g.level, "params": asdict(params)}
+    rng_seed = seed * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
     tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
     rough = ridged(Perlin3D(rng_seed + 1), g.centers, octaves=5, freq=5.0)
-    e = snap.elevation.astype(float)
     mountains = np.clip((e - 800) / 2500, 0, 1)
     elev = e + 180 * tex * (e > 0) + mountains * 900 * (rough - 0.45)
     elev = np.where((e > 0) & (elev <= 0), 5.0, elev)  # texture shouldn't drown coasts
 
-    v = sim.velocity()
-    extra = {"plate": snap.plate, "crust": snap.continental.astype(int),
-             "plate_boundary": snap.boundary.astype(int), "crust_age": np.round(snap.age),
+    extra = {"plate": plate, "crust": continental.astype(int),
+             "plate_boundary": boundary.astype(int), "crust_age": np.round(age),
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
-             "rock": snap.rock.astype(int), "surface_rock": snap.surface.astype(int), "sediment_cover": snap.cover,
-             "crust_thickness": snap.thickness, "ice": snap.ice}
-    meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"], **meta_extra, "t_myr": at,
+             "rock": rock.astype(int), "surface_rock": surface_rock.astype(int), "sediment_cover": cover,
+             "crust_thickness": thickness, "ice": ice}
+    meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
             "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
-            "hotspots": snap.hotspots, "volcanoes": snap.volcanoes}
-    meta["global_temp_c"] = round(14.5 + sim.dT, 1)
-    meta["sea_level_m"] = round(sim.sea_level, 1)
+            "hotspots": hotspots, "volcanoes": volcanoes}
+    meta["global_temp_c"] = round(14.5 + dT, 1)
+    meta["sea_level_m"] = round(sea_level, 1)
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                    dT=sim.dT, tilt=sim.params.tilt, ice=snap.ice)
+                    dT=dT, tilt=params.tilt, ice=ice)
 
 
 def find_run(ref: str) -> Path:

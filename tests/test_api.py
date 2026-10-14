@@ -2,25 +2,23 @@
 fake run in a temporary data directory."""
 
 import json
-from dataclasses import asdict
-
 import pytest
 
 from planet import api, timeline as T, world as W, zoom as Z
 from planet.tectonics import Params
 
 
-@pytest.fixture
-def dirs(tmp_path, monkeypatch):
-    for mod, name in ((W, "WORLDS"), (T, "RUNS"), (Z, "ZOOMS")):
-        (tmp_path / name.lower()).mkdir()
-        monkeypatch.setattr(mod, name, tmp_path / name.lower())
-    # a run is fully determined by its meta; replay doesn't need frames
-    run = {"id": "tiny01", "name": "tiny", "meta": {"seed": 1, "level": 4, "dt": 2.0, "myr": 40.0,
-                                                    "params": asdict(Params())}, "frames": []}
-    (tmp_path / "runs" / "tiny01").mkdir()
-    (tmp_path / "runs" / "tiny01" / "run.json").write_text(json.dumps(run))
-    return tmp_path
+@pytest.fixture(scope="module")
+def dirs(tmp_path_factory):
+    tmp = tmp_path_factory.mktemp("api")
+    mp = pytest.MonkeyPatch()
+    for mod, name in ((W, "WORLDS"), (T, "RUNS"), (T, "GRIDS"), (Z, "ZOOMS")):
+        (tmp / name.lower()).mkdir()
+        mp.setattr(mod, name, tmp / name.lower())
+    run = T.simulate(seed=1, level=4, myr=40.0, dt=2.0, every=20.0, name="tiny", params=Params())
+    (tmp / "runs" / run.name).rename(tmp / "runs" / "tiny01")
+    yield tmp
+    mp.undo()
 
 
 def test_parse_zoom_request():
@@ -40,6 +38,7 @@ def test_zoom_job_from_run(dirs):
     assert seen and all(0 <= f <= 1 for f in seen) and seen[-1] == 1.0
     meta, layers = Z.load(dirs / "zooms" / res["zoom"])
     assert meta["source_world"]["source_run"] == "tiny01" and meta["source_world"]["t_myr"] == 20
+    assert api.world_header(dirs / "worlds" / f"{res['world']}.json")["meta"]["from_keyframe"]
     assert layers["elevation"].shape == (20, 20)
     idx = json.loads((dirs / "zooms" / "index.json").read_text())
     assert idx[0]["source_run"] == "tiny01" and idx[0]["t_myr"] == 20

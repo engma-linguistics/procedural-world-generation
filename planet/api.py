@@ -20,8 +20,6 @@ from pathlib import Path
 from . import timeline as T
 from . import world as W
 from . import zoom as Z
-from .grid import build_grid
-from .tectonics import Params, Simulation
 
 
 class BadRequest(ValueError):
@@ -88,23 +86,29 @@ def find_slice(run_dir: Path, at: float) -> Path | None:
 
 
 def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
-    """Like `planet slice`, but reuses an existing slice and reports progress
-    (the replay from t=0 is most of the time)."""
+    """A world at the run's keyframe nearest t, built straight from the stored
+    keyframe (a few seconds, and exactly what the viewer shows). Runs too old
+    for that are replayed from t=0 instead, which refuses if the code has
+    changed since. Reuses an existing slice."""
     run_dir = T.find_run(run_ref)
     run = json.loads((run_dir / "run.json").read_text())
-    m = run["meta"]
-    at = round(t / m["dt"]) * m["dt"]
-    if not 0 <= at <= m["myr"] + 1e-9:
-        raise BadRequest(f"t must be between 0 and {m['myr']}")
+    times = [f["t"] for f in run["frames"]]
+    at = min(times, key=lambda x: abs(x - t))
+    if abs(at - t) > run["meta"]["every"]:
+        raise BadRequest(f"t must be between 0 and {run['meta']['myr']}")
     found = find_slice(run_dir, at)
     if found:
         progress(1.0, f"using world {found.stem} (already sliced at {at:g} Myr)")
         return found
-    sim = Simulation(build_grid(m["level"]), m["seed"], Params(**m["params"]), m["dt"])
-    progress(0.0, f"replaying {run_dir.name} to {at:g} Myr")
-    sim.run(at, on_step=lambda s: progress(0.9 * s.t / max(at, 1e-9), f"replaying: {s.t:g} / {at:g} Myr"))
-    progress(0.9, "building the world (climate, rivers, biomes)")
-    world = T.world_from_sim(sim, 0.3, source_run=run_dir.name, source_run_name=run["name"])
+    progress(0.1, "building the world from the keyframe (climate, rivers, biomes)")
+    try:
+        world = T.world_from_frame(run_dir, at)
+    except ValueError:
+        progress(0.1, f"old run: replaying {run_dir.name} to {at:g} Myr (can take a minute)")
+        try:
+            return T.slice_world(run_dir, at)
+        except T.ReplayMismatch as e:
+            raise BadRequest(str(e)) from None
     path = W.save(world, f"{run['name']} @ {at:g} Myr")
     progress(1.0, f"saved world {path.stem}")
     return path
