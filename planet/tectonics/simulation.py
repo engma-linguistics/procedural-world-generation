@@ -69,6 +69,7 @@ class Simulation:
         "koppen",  # climate.KOPPEN id
         "wind", "current",  # (n, 3) annual-mean surface wind and ocean current
         "flow", "down",  # rivers of the last step: flow and next cell downstream (-1 at sea)
+        "lake_kind", "lake_depth",  # lakes of the last step: hydrology lake_kind, m of water
     )
     # Everything that changes during a run (see the module docstring).
     STATE: ClassVar[tuple[str, ...]] = (
@@ -121,6 +122,8 @@ class Simulation:
         self.koppen = self.wind = self.current = None
         self.flow = np.zeros(n)
         self.down = np.full(n, -1, np.int64)
+        self.lake_kind = np.zeros(n, np.int8)
+        self.lake_depth = np.zeros(n)
         # log
         self.events: list[events.Event] = []
         self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process

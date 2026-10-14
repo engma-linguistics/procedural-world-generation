@@ -310,12 +310,47 @@ function obsColor(ov, i, c) {
   return c.set(m === o ? '#3fae5a' : koppenGroup(m) === koppenGroup(o) ? '#e8c547' : '#d0453a');
 }
 
+// Lakes, drawn the same way for runs and worlds. lake_kind (hydrology): 0 none,
+// 1 open (fresh: it spills, its river flows on), 2 closed (salty: evaporation
+// balances the inflow), 3 salt pan (a closed basin's dry floor). Depth: a run
+// frame stores lake_depth, a world lake_level (its surface; minus elevation =
+// depth); a world from before lake_kind has only lake (0/1, drawn as fresh).
+const LAKE_KINDS = { 1: ['fresh lake', '#4f8fcf'], 2: ['salt lake', '#4fb3a0'], 3: ['salt pan', '#efe8d8'] };
+const LAKE_COLS = Object.fromEntries(Object.entries(LAKE_KINDS).map(([k, [, c]]) => [k, new THREE.Color(c)]));
+const DEEP_LAKE = new THREE.Color('#1f4f8a');
+// the colour layers lakes are drawn on (not rainfall or climate: their own blues and greens would read as lakes)
+const LAKE_LAYERS = new Set(['biome', 'elevation']);
+function lakeKind(i) {
+  const L = V.layers;
+  if (L.elevation[i] <= 0) return 0;
+  return L.lake_kind ? L.lake_kind[i] : L.lake ? (L.lake[i] ? 1 : 0) : 0;
+}
+function lakeDepth(i) {
+  const L = V.layers;
+  return L.lake_depth ? L.lake_depth[i] : L.lake_level ? L.lake_level[i] - L.elevation[i] : null;
+}
+// colours cell i's lake into c (deeper water darker); false where there's none
+function lakeColor(i, c) {
+  const k = lakeKind(i);
+  if (!k || !LAKE_COLS[k]) return false;
+  c.copy(LAKE_COLS[k]);
+  const d = lakeDepth(i);
+  if (k !== 3 && d > 0) c.lerp(DEEP_LAKE, Math.min(d / 500, 1) * 0.6);
+  return true;
+}
+function lakeLine(i) {
+  const k = lakeKind(i), d = lakeDepth(i);
+  if (!k) return null;
+  return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ~${Math.round(d)} m deep` : '');
+}
+
 // fills a Float32Array(3n) with per-cell colours
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
-  const elev = L.elevation, ov = obsView(layer);
+  const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
   for (let i = 0; i < n; i++) {
-    if (ov) obsColor(ov, i, c);
+    if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
+    else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'ice thickness') {
       if (L.ice[i] > 0) rampFns[layer](L.ice[i], c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
@@ -770,7 +805,7 @@ function renderLegend() {
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
   } else if (state.layer === 'biome') {
     const present = new Set(V.layers.biome);
-    el.innerHTML = V.biomes.filter((b) => present.has(b.id))
+    el.innerHTML = V.biomes.filter((b) => present.has(b.id) && !(b.name === 'lake' && V.layers.lake_kind))
       .map((b) => `<span><span class="sw" style="background:${b.color}"></span>${b.name}</span>`).join('');
   } else if (state.layer === 'rock type' || state.layer === 'surface rock') {
     const surf = state.layer === 'surface rock';
@@ -792,6 +827,11 @@ function renderLegend() {
     el.innerHTML = rampLegend(state.layer, UNITS[state.layer] + (ov ? ' (observed)' : '')) +
       (state.layer === 'crust age' ? '<div class="muted">continents: age of the rock since it last formed or was remade <span class="sw" style="background:#f2e6d0"></span>0 <span class="sw" style="background:#a87d5a"></span>1 Gyr <span class="sw" style="background:#3a2a22"></span>3.5 Gyr</div>' : '') +
       (state.layer === 'elevation' && V.tz ? '<span class="muted">(ice surface included; heights above that moment\'s sea level)</span>' : '');
+  }
+  if (LAKE_LAYERS.has(state.layer) && !ov && (V.layers.lake_kind || V.layers.lake)) {
+    const kinds = new Set();
+    for (let i = 0; i < V.n; i++) kinds.add(lakeKind(i));
+    el.innerHTML += Object.entries(LAKE_KINDS).filter(([k]) => kinds.has(+k)).map(([, [name, c]]) => sw(c, name)).join('');
   }
   if (V.kind === 'run' && $('events').checked) {  // the kinds of event this run has
     const kinds = [...new Set(V.run.events.map((e) => e.kind))];
@@ -1013,7 +1053,6 @@ function describe(i) {
   if (V.kind === 'world') {
     lines.push(`biome ${V.biomes[L.biome[i]].name}`, `temp ${L.temperature[i]} °C`,
       `rain ${L.precipitation[i]} mm/yr`, `river flow ${L.flow[i]}`);
-    if (L.lake[i]) lines.push('lake');
     if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
     if (L.climate && L.elevation[i] > 0) lines.push(`climate ${V.koppen[L.climate[i]].code} (${V.koppen[L.climate[i]].name}), ` +
       `months ${Math.round(L.cold_month[i])} to ${Math.round(L.warm_month[i])} °C`);
@@ -1056,6 +1095,8 @@ function describe(i) {
     if (L.temperature) lines.push(`mean ${L.temperature[i]} °C`);
     if (L.ice && L.ice[i] && L.elevation[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
   }
+  const lk = (L.lake_kind || L.lake) && lakeLine(i);
+  if (lk) lines.splice(3, 0, lk);  // under the elevation
   if (V.kind === 'run') lines.unshift(`t = ${timeLabel(V.t)}`);
   return lines;
 }
@@ -1442,8 +1483,9 @@ async function setWorld(w) {
 // Only the layers the picture needs are downloaded (layersNeeded), when needed.
 const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8: Int8Array, float32: Float32Array };
 // colour layer / overlay -> the run layers it draws from (elevation is always loaded)
+const LAKE_NEEDS = ['lake_kind', 'lake_depth'];
 const COLOUR_NEEDS = {
-  elevation: ['ice'], 'ice thickness': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
+  elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
 };

@@ -38,7 +38,7 @@ from .tectonics import CMYR, Params, Simulation
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
-              "downstream", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n")
+              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n")
 CHECKPOINT_EVERY = 100.0  # Myr
 
 
@@ -67,6 +67,7 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "surface_rock": snap.surface, "sediment_cover": snap.cover, "crust_thickness": snap.thickness,
             "precipitation": snap.precip, "temperature": snap.temperature, "climate": snap.koppen,
             "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
+            "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
             **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
             **dict(vec_layers(grid, "jet", jet))}
 
