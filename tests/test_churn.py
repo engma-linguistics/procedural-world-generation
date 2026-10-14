@@ -43,7 +43,9 @@ def test_coherence_welds_inlets_and_drops_thin_shreds():
     assert col.cont[hole] and weld[hole]
     assert not col.cont[shred] and drop[shred]
     assert col.cont[isle]
-    assert np.array_equal(col.t, t0)  # only the type changes
+    assert col.t[hole] > 20  # crust flowed in from around it...
+    assert abs(col.t.sum() - t0.sum()) < 1e-6  # ...volume kept
+    assert col.t[shred] == 15.0 and col.t[isle] == 30.0
     assert weld.sum() + drop.sum() <= 20  # and only on one-cell features
 
 

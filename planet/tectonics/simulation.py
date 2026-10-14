@@ -203,7 +203,7 @@ class Simulation:
         # 6. climate, every climate_every Myr, on the ground as the events
         # left it: a keyframe shows the climate of the ground it shows, and
         # the next steps' erosion uses it
-        if earth.climate_due(self):
+        if earth.climate_due(self) or self.step_no == 1:  # (the first step's ran mid-step too)
             self._climate(self.w_elev)
 
     def _climate(self, e):

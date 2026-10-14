@@ -320,8 +320,10 @@ def coherence(sim, col):
     thinned margin or basin around it: it counts as (thin) continental
     crust from now on. A thin continental cell (< BECOMES_CONT_KM) nearly
     ringed by ocean floor (>= all but 2 of its neighbours oceanic) is a
-    shred of margin: ocean floor. The crust keeps its thickness, so the
-    ground hardly moves; only its type follows its surroundings.
+    shred of margin: ocean floor. A shred keeps its thickness; into an
+    inlet the continental crust around it flows (lower-crustal flow,
+    volume kept): its neighbours each give it an equal share until it is
+    as thick as their new mean, so a one-cell pit becomes a shallow dip.
     Why: a mosaic of one-cell inlets and shreds, left by margins, arcs and
     sampling, was carried past the world grid by the moving plates and
     showed as cells flipping between continent and deep sea every few Myr
@@ -337,16 +339,25 @@ def coherence(sim, col):
     weld = ring & ~col.cont & (n_cont >= n_same - 2) & (col.rock != HOTSPOT)
     shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
     if weld.any() or shred.any():
-        sim.book("coherence", 0, col.t, weld.astype(float) - shred)
+        v0 = col.t * col.cont
         col.cont = col.cont.copy()
         # (its basement: a continental neighbour's)
         ok = same & col.cont[g.nbr_idx]
         first = np.minimum.reduceat(np.where(ok, np.arange(len(ok)), len(ok)), g.nbr_off[:-1])
         w = np.flatnonzero(weld)
         col.rock[w] = col.rock[g.nbr_idx[first[w]]]
+        # crust flows in from the continental neighbours
+        t = col.t
+        s_t = np.add.reduceat(np.where(ok, t[g.nbr_idx], 0.0), g.nbr_off[:-1])
+        x = np.where(weld, np.maximum(s_t / np.maximum(n_cont, 1) - t, 0) / (n_cont + 1), 0.0)
+        e = np.flatnonzero(ok & weld[src])
+        loss = np.zeros(g.n)
+        np.add.at(loss, g.nbr_idx[e], x[src[e]])
+        col.t = t - loss + np.where(weld, x * n_cont, 0.0)
         col.cont[weld] = True
         col.cont[shred] = False
         col.rock[shred] = OCEAN
+        sim.book("coherence", v0, col.t * col.cont, 1.0)
     return weld, shred
 
 
