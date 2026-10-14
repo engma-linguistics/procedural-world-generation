@@ -26,11 +26,19 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - delta site: a big river mouth with sediment to deliver (discharge x the
   basin's mean height), onto a low coast and a shallow shelf. Whether the
   model draws a delta there is another matter, hence "delta site".
-- fjord coast: steep coast (mountains >= 800 m within ~2 cells of the sea)
-  with cool summers (warmest month < 13 C) or ice nearby, and enough snow
-  (>= 500 mm/yr or ice) to have fed glaciers. The zoom doesn't carve fjords.
-- Mediterranean ("wine country"): Koppen Csa/Csb land of moderate relief.
-- rift: diverging plate boundary on or beside continental crust.
+- fjord coast: ice-free coast (where the glaciers have gone) that is steep
+  (mountains >= 800 m within ~2 cells of the sea), with cool summers (warmest
+  month 0..12 C) and enough snow (>= 400 mm/yr) to have fed glaciers. The
+  zoom doesn't carve fjords.
+- Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m; hillier
+  is better.
+- rift: diverging plate boundary with continental land of two different
+  plates within ~3 cells (a continent splitting, or a new narrow sea).
+- volcanic arc: chains of the run's active volcanoes (meta "volcanoes")
+  less than 600 km apart; hotspot islands: land of hotspot basalt on oceanic
+  crust within 1500 km of a live hotspot.
+- climate records (hottest, coldest, wettest, driest) are on ice-free land
+  and dropped when they sit on a better feature.
 """
 
 from __future__ import annotations
@@ -430,7 +438,9 @@ def deltas(ctx: _Ctx, top: int = 3) -> list[dict]:
         return []
     biggest = int(mouths[np.argmax(R["q"][mouths])])
     cand = mouths[np.argsort(-R["q"][mouths])][:40]
-    scored = [(delta_score(ctx, int(m)), int(m)) for m in cand if m != biggest]
+    # the largest river's mouth (and its neighbours) are that feature's
+    cand = [int(m) for m in cand if ctx.dist(biggest, [m])[0] > 500]
+    scored = [(delta_score(ctx, m), m) for m in cand]
     scored = [s for s in scored if s[0]["delta_like"] and R["q"][s[1]] > 2000]
     scored.sort(key=lambda s: -s[0]["delta_score"])
     best = scored[0][0]["delta_score"] if scored else 1.0
@@ -444,7 +454,8 @@ def deltas(ctx: _Ctx, top: int = 3) -> list[dict]:
         feats.append(_feature(ctx, "delta", "River mouth / delta site", blurb, m, 500,
                               {"discharge_m3s": round(q), "length_km": round(length),
                                **{k: v for k, v in d.items() if k != "delta_score"}},
-                              quality=0.6 + 0.4 * d["delta_score"] / best, path=ctx.path(course[-12:])))
+                              quality=(0.4 + 0.6 * d["delta_score"] / best) * min(1, (q / 50000) ** 0.5),
+                              path=ctx.path(course[-12:])))
     return _nms(ctx, feats, 500)[:top]
 
 
@@ -573,7 +584,7 @@ def fjords(ctx: _Ctx, top: int = 2) -> list[dict]:
     high = ctx.ring_max(np.where(ctx.land, ctx.elev, 0.0), 2)
     ice = L["ice"] if "ice" in L else np.zeros(ctx.n)
     # cool summers at the coast itself: glaciers reached the sea (now or in colder times)
-    cold = (L["warm_month"] < 12) | (ice > 0)
+    cold = ((L["warm_month"] < 12) & (L["warm_month"] > 0)) | (ice > 0)
     snowy = (L["precipitation"] >= 400) | (ice > 0)
     # the sea next to it should be more than a sliver of lake-like water: part of a real ocean
     ocean = np.zeros(ctx.n, bool)

@@ -1032,8 +1032,8 @@ async function fetchHighlights(cached) {
     return;
   }
   if (!out.features) { if (!hl || hl.key !== key) renderHighlights(); return; }
+  if (!hl || hl.key !== key) hlSel = -1;  // a refresh of the same list keeps the selection
   hl = { key, t: out.t_myr, world: out.world, features: out.features };
-  hlSel = -1;
   renderHighlights();
   buildHighlightMarks();
 }
