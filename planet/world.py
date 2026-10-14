@@ -1,37 +1,35 @@
 """Pipeline (generate -> climate -> erosion/rivers -> biomes) and file I/O.
 
-On-disk format: worlds/<name>.json
+On-disk format: worlds/<id>.json (paths: store.py)
 -----------------------------------
 {
-  "format": "procgen-planet/1",
+  "format": "procgen-planet/2",
+  "name", "id",
   "meta":    {...how it was made: method, seed, params...},
   "summary": {...headline stats...},
-  "legend":  {...biome ids -> names/colours...},
-  "layers":  {"elevation": [m per cell], "temperature": [...], ...},
-  "grid":    {"lat": [...], "lon": [...], "corner_lat": [...], "corner_lon": [...],
-              "cells": [[corner ids] per cell], "neighbors": [[cell ids] per cell]}
+  "legend":  {"rocks", "koppen", "biomes": ids -> names/colours (store.legends)},
+  "grid":    "../grids/L<level>.json"  (the shared grid file, as runs use:
+              lat, lon, corner_lat, corner_lon, cells, pentagons, nbr),
+  "layers":  {"elevation": [m per cell], "temperature": [...], ...}
 }
-Every array in "layers" is indexed by cell id. A plain-text companion,
-worlds/<name>.txt, has the summary plus ASCII maps. That's the
-conversation-friendly view.
+Every array in "layers" is indexed by cell id; layer names are store.LAYERS'
+vocabulary. A plain-text companion, worlds/<id>.txt, has the summary plus
+ASCII maps. That's the conversation-friendly view.
 """
 
 from __future__ import annotations
 
 import json
-import secrets
 import time
 from pathlib import Path
 
 import numpy as np
 
 from . import climate, hydrology
+from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
 from .grid import Grid, build_grid
-
-ROOT = Path(__file__).resolve().parent.parent
-WORLDS = ROOT / "worlds"
 
 
 def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
@@ -278,57 +276,34 @@ def text_report(world: dict, summary: dict, width: int = 120) -> str:
 # ---------------------------------------------------------------------------
 # Save / load
 # ---------------------------------------------------------------------------
-def _np(o):
-    if isinstance(o, np.generic):
-        return o.item()
-    if isinstance(o, np.ndarray):
-        return o.tolist()
-    raise TypeError(type(o))
-
-
-def latlon_lists(v: np.ndarray) -> tuple[list, list]:
-    """Lat and lon (degrees, 3 decimals) of unit vectors, as JSON-ready lists."""
-    lat, lon = latlon(v)
-    return np.round(lat, 3).tolist(), np.round(lon, 3).tolist()
-
-
-def new_id() -> str:
-    """Short random id for a run or world (6 hex characters)."""
-    return secrets.token_hex(3)
+_np = S.jsonable  # json.dumps default= for numpy values
 
 
 def save(world: dict, name: str, file_id: str | None = None) -> Path:
     """Saves worlds/<id>.json (+ .txt); `name` is the human-readable label."""
-    WORLDS.mkdir(exist_ok=True)
-    file_id = file_id or new_id()
+    S.worlds_dir().mkdir(parents=True, exist_ok=True)
+    file_id = file_id or S.new_id()
     g: Grid = world["grid"]
     world["name"] = name
     summary = summarize(world)
-    from .climate import BIOMES
-
-    clat, clon = latlon_lists(g.corners)
-    lat, lon = latlon_lists(g.centers)
+    S.write_grid(g)
     parts = [
-        ('"format"', json.dumps("procgen-planet/1")),
+        ('"format"', json.dumps("procgen-planet/2")),
         ('"name"', json.dumps(name)),
         ('"id"', json.dumps(file_id)),
         ('"meta"', json.dumps(world["meta"], default=_np)),
         ('"summary"', json.dumps(summary, default=_np)),
-        ('"legend"', json.dumps({"biome": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]}
-                                           for b in BIOMES]})),
+        ('"legend"', json.dumps(S.legends())),
+        ('"grid"', json.dumps(f"../grids/L{g.level}.json")),
     ]
     layer_lines = ",\n".join(
         f'  {json.dumps(k)}: {json.dumps(np.asarray(v).tolist(), separators=(",", ":"))}'
         for k, v in world["layers"].items())
-    grid_obj = {"lat": lat, "lon": lon, "corner_lat": clat, "corner_lon": clon,
-                "cells": g.cell_corners, "neighbors": g.neighbors}
-    grid_lines = ",\n".join(f'  {json.dumps(k)}: {json.dumps(v, separators=(",", ":"), default=_np)}'
-                            for k, v in grid_obj.items())
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
-    text = "{\n" + body + ',\n"layers": {\n' + layer_lines + '\n},\n"grid": {\n' + grid_lines + "\n}\n}\n"
-    path = WORLDS / f"{file_id}.json"
+    text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
+    path = S.path_of("world", file_id)
     path.write_text(text)
-    (WORLDS / f"{file_id}.txt").write_text(text_report(world, summary))
+    path.with_suffix(".txt").write_text(text_report(world, summary))
     update_index()
     return path
 
@@ -344,20 +319,4 @@ def load(path: str | Path) -> dict:
 
 
 def update_index():
-    items = []
-    for p in sorted(WORLDS.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
-        if p.name == "index.json":
-            continue
-        # the header (name, id, meta) is on the first few lines; don't parse megabytes of layers
-        head = {}
-        with open(p) as fh:
-            for line in fh:
-                if line.startswith('"layers"'):
-                    break
-                if line.startswith(('"name"', '"id"', '"meta"')):
-                    k, v = line.split(":", 1)
-                    head[json.loads(k)] = json.loads(v.rstrip().rstrip(","))
-        m = head.get("meta", {})
-        items.append({"file": p.name, "id": head.get("id", p.stem), "name": head.get("name", p.stem),
-                      "created": m.get("created", ""), **{k: m.get(k) for k in ("method", "seed", "level")}})
-    (WORLDS / "index.json").write_text(json.dumps(items, indent=1))
+    S.update_index("world")

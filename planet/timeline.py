@@ -1,83 +1,53 @@
 """Tectonic runs: simulate, store keyframes, report, replay, slice.
 
-On disk: runs/<name>/
-  run.json    small and human-readable: settings, per-frame stats, plate
-              velocities, the event log, and the layout of frames.bin
-  frames.bin  raw little-endian arrays, one block per layer, shape
-              (n_frames, n_cells). For the viewer; never parsed as JSON.
-  run.txt     the conversation-friendly report (event log, stats table,
-              ASCII maps), rendered from the two files above.
+On disk (paths and formats: store.py): runs/<id>/
+  run.json         small and human-readable: settings, per-frame stats, plate
+                   velocities, the event log, and the layer specs (file,
+                   dtype, shape, encoding, units)
+  layers/<name>.bin  one file per layer, (n_frames, n_cells) raw little-endian,
+                   so the viewer loads only the layers it draws
+  state/<t>.ckpt   the full simulation state every `checkpoint_every` Myr
+  run.txt          the conversation-friendly report (event log, stats table,
+                   ASCII maps), rendered from the files above.
 
 A run is fully determined by (seed, level, dt, params) and the code version.
-`slice` replays the simulation from t=0 to any step and builds a complete
-world there (climate, rivers, biomes); `world_from_frame` builds one straight
-from a stored keyframe instead (seconds, no replay; the viewer's zoom uses it).
+`slice` replays the simulation (from the nearest checkpoint at or before the
+time asked for) and builds a complete world there (climate, rivers, biomes);
+`world_from_frame` builds one straight from a stored keyframe instead
+(seconds, no replay; the viewer's zoom uses it).
 """
 
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from dataclasses import asdict, fields
 from pathlib import Path
 
 import numpy as np
 
+from . import store as S
 from . import world as W
 from .provenance import code_version, describe
 from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
-from .climate import KOPPEN
-from .surface import ROCKS
 from .tectonics import CMYR, Params, Simulation
 
-RUNS = W.ROOT / "runs"
-GRIDS = W.ROOT / "grids"
-
-LAYERS = {  # name -> dtype on disk
-    "elevation": "<i2",
-    "plate": "<u2",
-    "continental": "u1",
-    "age": "<u2",
-    "boundary": "i1",
-    "rock": "u1",  # surface.ROCKS id of the basement
-    "surface": "u1",  # surface.ROCKS id of what's exposed (basement or sediment cover)
-    "cover": "<u2",  # sediment cover, units of 0.1 km
-    "thickness": "u1",  # crust, km
-    "precip": "<u2",  # mm/yr
-    "temperature": "i1",  # C, annual mean
-    "climate": "u1",  # climate.KOPPEN id
-    "ice": "u1",  # land ice, units of 20 m
-    "flow": "u1",  # river flow (upstream runoff, cells x m/yr), 16 * log2(1 + flow)
-    "wind_e": "i1",  # annual-mean wind, east and north components x 50
-    "wind_n": "i1",
-    "current_e": "i1",  # surface ocean current, x 50
-    "current_n": "i1",
-    "jet_e": "i1",  # annual-mean jet stream (upper-level wind), east and north components, m/s
-    "jet_n": "i1",  # (optional: runs made before Oct 2026 don't have the jet layers)
-    "down": "u1",  # which neighbour (index into grid nbr list) the river goes to; 255 = none
-}
+# the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
+RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
+              "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
+              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n")
+CHECKPOINT_EVERY = 100.0  # Myr
 
 
-def down_slot(grid: Grid, down: np.ndarray) -> np.ndarray:
-    """Encode each cell's downstream cell as its position in the cell's
-    neighbour list (fits in a byte)."""
-    deg = np.diff(grid.nbr_off)
-    src = np.repeat(np.arange(grid.n), deg)
-    pos = np.arange(len(grid.nbr_idx)) - grid.nbr_off[src]
-    hit = grid.nbr_idx == down[src]
-    out = np.full(grid.n, 255, np.uint8)
-    out[src[hit]] = pos[hit]
-    return out
-
-
-def vec_layers(grid: Grid, name: str, v: np.ndarray, scale: float = 50.0):
-    """(east, north) components of tangent vectors, x scale as int8 layers."""
+def vec_layers(grid: Grid, name: str, v: np.ndarray):
+    """(east, north) components of tangent vectors (n, 3), as
+    [(name_e, east), (name_n, north)] in the vectors' own units."""
     from .climate import _geom
     G = _geom(grid)
-    q = lambda x: np.clip(np.round(scale * x), -127, 127)
-    return [(f"{name}_e", q((v * G["east"]).sum(1))), (f"{name}_n", q((v * G["north"]).sum(1)))]
+    return [(f"{name}_e", (v * G["east"]).sum(1)), (f"{name}_n", (v * G["north"]).sum(1))]
 
 
 def jet_of(grid: Grid, snap) -> np.ndarray:
@@ -90,6 +60,18 @@ def jet_of(grid: Grid, snap) -> np.ndarray:
     return climate.jet_stream(grid, 0.5 * (t_jul + t_jan))[0]
 
 
+def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
+    """A snapshot's keyframe layers in real units (store.encode stores them)."""
+    return {"elevation": snap.elevation, "plate": snap.plate, "crust": snap.continental,
+            "crust_age": snap.age, "plate_boundary": snap.boundary, "rock": snap.rock,
+            "surface_rock": snap.surface, "sediment_cover": snap.cover, "crust_thickness": snap.thickness,
+            "precipitation": snap.precip, "temperature": snap.temperature, "climate": snap.koppen,
+            "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
+            "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
+            **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
+            **dict(vec_layers(grid, "jet", jet))}
+
+
 def make_params(overrides: dict) -> Params:
     known = {f.name for f in fields(Params)}
     bad = set(overrides) - known
@@ -98,114 +80,87 @@ def make_params(overrides: dict) -> Params:
     return Params(**overrides)
 
 
-def write_grid(grid: Grid) -> Path:
-    """Geometry for the viewer, shared by every run at this level."""
-    GRIDS.mkdir(exist_ok=True)
-    path = GRIDS / f"L{grid.level}.json"
-    if path.exists() and '"nbr"' in path.read_text()[-200000:]:
-        return path
-    lat, lon = W.latlon_lists(grid.centers)
-    clat, clon = W.latlon_lists(grid.corners)
-    path.write_text(json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
-                                "corner_lon": clon, "cells": grid.cell_corners,
-                                "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
-                               separators=(",", ":")))
-    return path
-
-
 def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: str,
-             params: Params) -> Path:
+             params: Params, checkpoint_every: float = CHECKPOINT_EVERY) -> Path:
+    """checkpoint_every: Myr between saved simulation states (0: none)."""
     t0 = time.time()
     grid = build_grid(level)
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
-    frames, data = [], {k: [] for k in LAYERS}
+    ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
+    frames, data = [], {k: [] for k in RUN_LAYERS}
     jet = {"src": None, "v": None}  # the climate (and so the jet) changes only every climate_every Myr
+    run_id = S.new_id()
+    out = S.runs_dir() / run_id
 
     def keep(s: Simulation):
+        if ck_stride and s.step_no and s.step_no % ck_stride == 0:
+            S.save_checkpoint(out, s)
         if s.step_no % stride:
             return
         snap = s.snapshot()
         if jet["v"] is None or jet["src"] is not s.t_warm:
             jet["src"], jet["v"] = s.t_warm, jet_of(s.grid, snap)
-        # cast now: at level 7, 126 float64 keyframes per layer would be ~1 GB
-        for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
-                     ("plate", snap.plate), ("continental", snap.continental),
-                     ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary),
-                     ("rock", snap.rock), ("surface", snap.surface), ("cover", np.clip(np.round(snap.cover * 10), 0, 65535)),
-                     ("thickness", np.clip(np.round(snap.thickness), 0, 255)),
-                     ("precip", np.clip(np.round(snap.precip), 0, 65535)),
-                     ("temperature", np.clip(np.round(snap.temperature), -128, 127)),
-                     ("climate", snap.koppen), ("ice", np.clip(np.round(snap.ice / 20), 0, 255)),
-                     ("flow", np.clip(np.round(16 * np.log2(1 + snap.flow)), 0, 255)),
-                     ("down", down_slot(s.grid, snap.downstream)),
-                     *vec_layers(s.grid, "wind", snap.wind), *vec_layers(s.grid, "current", snap.current),
-                     *vec_layers(s.grid, "jet", jet["v"], 1.0)):
-            data[k].append(v.astype(LAYERS[k]))
+        # encode now: at level 7, 126 float64 keyframes per layer would be ~1 GB
+        for k, v in frame_values(s.grid, snap, jet["v"]).items():
+            data[k].append(S.encode(v, S.LAYERS[k], s.grid))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
                        "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
                        "volcanoes": [[round(a, 1), round(b, 1)] for a, b in snap.volcanoes]})
 
-    keep(sim)
-    sim.run(myr, keep)
-
-    run_id = W.new_id()
-    out = RUNS / run_id
     out.mkdir(parents=True, exist_ok=True)
-    layout, offset = {}, 0
-    with open(out / "frames.bin", "wb") as f:
-        for k, dtype in LAYERS.items():
-            arr = np.ascontiguousarray(np.stack(data[k]).astype(dtype))
-            pad = (-offset) % 8
-            f.write(b"\0" * pad)
-            offset += pad
-            layout[k] = {"dtype": np.dtype(dtype).name, "offset": offset, "shape": list(arr.shape)}
-            f.write(arr.tobytes())
-            offset += arr.nbytes
-    write_grid(grid)
-    run = {
-        "format": "procgen-run/1",
+    try:
+        keep(sim)
+        sim.run(myr, keep)
+        layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS})
+    except BaseException:
+        shutil.rmtree(out, ignore_errors=True)
+        raise
+    S.write_grid(grid)
+    S.write_json(out / "run.json", {
+        "format": "procgen-run/2",
         "id": run_id,
         "name": name,
         "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr,
-                 "every": stride * dt, "steps": sim.step_no,
+                 "every": stride * dt, "steps": sim.step_no, "checkpoint_every": ck_stride * dt,
                  "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
-        "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
+        "legend": S.legends(),
+        "layers": layers,
         "events": [e.as_dict() for e in sim.events],
         "frames": frames,
-        "layers": layout,
-    }
-    (out / "run.json").write_text(json.dumps(run, default=W._np, separators=(",", ":")))
+    })
     report(out)
     update_index()
     return out
 
 
-def load_frames(run_dir: Path) -> tuple[dict, dict]:
-    run = json.loads((run_dir / "run.json").read_text())
-    raw = (run_dir / "frames.bin").read_bytes()
-    arrays = {}
-    for k, spec in run["layers"].items():
-        dt = np.dtype(spec["dtype"]).newbyteorder("<")
-        count = int(np.prod(spec["shape"]))
-        arrays[k] = np.frombuffer(raw, dt, count, spec["offset"]).reshape(spec["shape"])
-    return run, arrays
+def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
+    """(run.json, {layer: raw (frames, cells) array, memory-mapped}); decode
+    a frame with frame()."""
+    run = json.loads((Path(run_dir) / "run.json").read_text())
+    return run, S.read_layers(run_dir, run["layers"], names)
+
+
+def frame(run: dict, arr: dict, name: str, i: int, grid: Grid | None = None) -> np.ndarray:
+    """Layer `name` at frame i in real units (a layer stored once serves every frame)."""
+    a = arr[name]
+    return S.decode(np.asarray(a[i if a.shape[0] > 1 else 0]), run["layers"][name], grid)
 
 
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 def report(run_dir: Path) -> Path:
-    run, arr = load_frames(run_dir)
+    run, arr = load_frames(run_dir, ())
     if run.get("kind") == "timezoom":
         from . import timezoom
         return timezoom.report(run_dir)
+    arr = S.read_layers(run_dir, run["layers"], ("elevation", "plate", "crust"))
     m = run["meta"]
     grid = build_grid(m["level"])
     defaults = asdict(Params())
@@ -228,21 +183,20 @@ def report(run_dir: Path) -> Path:
                    f"{s['landmasses']:>10}  {s['largest_landmass_pct']:>8}  {s['max_elev_m']:>8}  "
                    f"{s['mean_speed_cmyr']:>6}  {s['max_speed_cmyr']:>5}")
     for i in np.unique(np.linspace(0, len(frames) - 1, 5).round().astype(int)):
-        w = {"grid": grid, "layers": {"elevation": arr["elevation"][i].astype(int),
-                                       "plate": arr["plate"][i].astype(int)}}
+        w = {"grid": grid, "layers": {"elevation": frame(run, arr, "elevation", i).astype(int),
+                                       "plate": frame(run, arr, "plate", i).astype(int)}}
         out += ["", f"## t = {frames[i]['t']:.0f} Myr: elevation", W.LEGENDS["elevation"],
                 W.ascii_map(w, "elevation", 100, 25)]
     last = len(frames) - 1
-    w = {"grid": grid, "layers": {"elevation": arr["elevation"][last].astype(int),
-                                   "plate": arr["plate"][last].astype(int)}}
+    plate = frame(run, arr, "plate", last).astype(int)
+    w = {"grid": grid, "layers": {"elevation": frame(run, arr, "elevation", last).astype(int), "plate": plate}}
     out += ["", f"## t = {frames[last]['t']:.0f} Myr: plates", W.LEGENDS["plate"],
             W.ascii_map(w, "plate", 100, 25)]
     # per-plate table at the end
     om = frames[last]["omega"]
     out += ["", f"## Plates at t = {frames[last]['t']:.0f} Myr",
             "  plate  area%  continental%  mean_speed(cm/yr)  heading"]
-    plate = arr["plate"][last].astype(int)
-    cont = arr["continental"][last].astype(bool)
+    cont = frame(run, arr, "crust", last).astype(bool)
     for k, w_ in sorted(om.items(), key=lambda kv: -(plate == int(kv[0])).sum()):
         sel = plate == int(k)
         if not sel.any():
@@ -267,11 +221,20 @@ def report(run_dir: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Replay + slice
 # ---------------------------------------------------------------------------
-def replay(run_dir: Path, at: float) -> Simulation:
-    run = json.loads((run_dir / "run.json").read_text())
+def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) -> Simulation:
+    """The run's simulation at time `at`: from the latest checkpoint at or
+    before it when the run was made by this same code (else from t=0)."""
+    run = S.read_header(Path(run_dir) / "run.json")
     m = run["meta"]
     grid = build_grid(m["level"])
-    sim = Simulation(grid, m["seed"], Params.from_stored(m["params"]), m["dt"])
+    params = Params.from_stored(m["params"])
+    made_by = m.get("code") or {}
+    usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
+    if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
+        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1]))
+        log(f"replaying from the checkpoint at t={usable[-1]:g}")
+    else:
+        sim = Simulation(grid, m["seed"], params, m["dt"])
     sim.run(at)
     return sim
 
@@ -287,7 +250,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     for the whole history inside the simulation; this only sharpens valleys.
     Raises ReplayMismatch if the replay doesn't match the stored keyframe at
     `at`, unless force (then the world is saved, marked as not matching)."""
-    run, arr = load_frames(run_dir)
+    run, arr = load_frames(run_dir, ("elevation", "plate"))
     _not_timezoom(run, run_dir)
     m = run["meta"]
     at = round(at / m["dt"]) * m["dt"]
@@ -305,8 +268,8 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     same = None
     if at in times:
         i = times.index(at)
-        same = (np.array_equal(arr["plate"][i], snap.plate.astype("<u2")) and
-                np.array_equal(arr["elevation"][i], np.clip(np.round(snap.elevation), -32000, 32000).astype("<i2")))
+        same = all(np.array_equal(arr[k][i], S.encode(v, run["layers"][k]))
+                   for k, v in (("plate", snap.plate), ("elevation", snap.elevation)))
         if same:
             print(f"replay at t={at:g} matches the stored keyframe")
         else:
@@ -331,30 +294,26 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
                   sim.dT, sim.sea_level, erosion, meta_extra)
 
 
-FRAME_LAYERS = ("elevation", "plate", "continental", "age", "boundary", "rock", "surface",
-                "cover", "thickness", "ice")
+FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
+                "sediment_cover", "crust_thickness", "ice")
 
 
 def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extra) -> dict:
     """A complete world from a stored keyframe, without replaying: exactly
     the state the viewer shows, at keyframe precision (elevation to 1 m, ice
     to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe."""
-    run = json.loads((run_dir / "run.json").read_text())
+    run, arr = load_frames(run_dir, ())
     _not_timezoom(run, run_dir)
     m = run["meta"]
     missing = [k for k in FRAME_LAYERS if k not in run["layers"]]
     if missing or "sea_level_m" not in run["frames"][0]["stats"]:
         raise ValueError(f"run {run_dir.name} is too old to build worlds from its keyframes "
                          f"(missing {', '.join(missing) or 'sea level'}); use `planet slice`")
+    arr = S.read_layers(run_dir, run["layers"], FRAME_LAYERS)
     times = np.array([f["t"] for f in run["frames"]])
     i = int(np.argmin(np.abs(times - at)))
     fr = run["frames"][i]
-    a = {}
-    for k in FRAME_LAYERS:
-        spec = run["layers"][k]
-        dt = np.dtype(spec["dtype"]).newbyteorder("<")
-        n = spec["shape"][1]
-        a[k] = np.fromfile(run_dir / "frames.bin", dt, n, offset=spec["offset"] + i * n * dt.itemsize)
+    a = {k: frame(run, arr, k, i) for k in FRAME_LAYERS}
     grid = build_grid(m["level"])
     params = Params.from_stored(m["params"])
     omega = np.zeros((int(a["plate"].max()) + 1, 3))
@@ -363,9 +322,9 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     velocity = np.cross(omega[a["plate"]], grid.centers)
     s = fr["stats"]
     return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
-                  a["continental"].astype(bool), a["boundary"].astype(int), a["age"].astype(float), velocity,
-                  a["rock"], a["surface"], a["cover"] / 10.0, a["thickness"].astype(float),
-                  a["ice"] * 20.0, fr["hotspots"], fr["volcanoes"], s["global_temp_c"] - 14.5,
+                  a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
+                  a["rock"], a["surface_rock"], a["sediment_cover"], a["crust_thickness"].astype(float),
+                  a["ice"], fr["hotspots"], fr["volcanoes"], s["global_temp_c"] - 14.5,
                   s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                               "from_keyframe": True, **meta_extra})
 
@@ -388,8 +347,6 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
              "rock": rock.astype(int), "surface_rock": surface_rock.astype(int), "sediment_cover": cover,
              "crust_thickness": thickness, "ice": ice}
     meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
-            "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "hotspots": hotspots, "volcanoes": volcanoes}
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
@@ -406,38 +363,8 @@ def _not_timezoom(run: dict, run_dir: Path):
 
 def find_run(ref: str) -> Path:
     """A run by id ('a3f9c2') or path ('runs/a3f9c2')."""
-    p = Path(ref)
-    for cand in (p, RUNS / ref, RUNS / p.name):
-        if (cand / "run.json").exists():
-            return cand
-    raise SystemExit(f"no run {ref!r} (see: uv run python -m planet list)")
-
-
-def delete(ref: str) -> list[Path]:
-    """Delete a run (by id) or a world (by id); returns what was removed."""
-    import shutil
-    gone = []
-    if (RUNS / ref / "run.json").exists():
-        shutil.rmtree(RUNS / ref)
-        gone.append(RUNS / ref)
-    for p in (W.WORLDS / f"{ref}.json", W.WORLDS / f"{ref}.txt", W.WORLDS / "highlights" / f"{ref}.json"):
-        if p.exists() and ref != "index":
-            p.unlink()
-            gone.append(p)
-    update_index()
-    W.update_index()
-    return gone
+    return S.find_run(ref)
 
 
 def update_index():
-    RUNS.mkdir(exist_ok=True)
-    items = []
-    for p in sorted(RUNS.glob("*/run.json"), key=lambda p: p.stat().st_mtime, reverse=True):
-        r = json.loads(p.read_text())
-        m = r["meta"]
-        item = {"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
-                "seed": m["seed"], "level": m["level"], "myr": m["myr"], "created": m["created"]}
-        if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom.py): time in kyr
-            item.update(kind="timezoom", source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
-        items.append(item)
-    (RUNS / "index.json").write_text(json.dumps(items, indent=1))
+    S.update_index("run")

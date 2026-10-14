@@ -233,9 +233,64 @@ Order: 1 → 6, small to large.
 - The cold-era timeline tint is stripy where temperature flickers from frame to frame (kept unsmoothed).
 - Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
 
+- **Run lakes vs sliced worlds (`lakes`):** closed lakes on flat basins disagree a lot (t=180 in demo run 8dc2f2: 1 shared wet cell of 88 vs 18), because the world adds ±180 m texture, its own erosion and a fresh climate. Open lakes agree roughly; the world's are smaller and about half as deep.
+- **Giant shallow lakes in runs** (up to ~2.3M km²): outlets don't cut down (see outlet incision in Backlog).
+- **Closed lakes on flat basins look speckled** on the run globe.
+- **Lakes are drawn only on the elevation and biome layers**, and run hover shows lake info only when elevation is loaded. Contrast: salt-lake teal is near some biome greens, and fresh blue is near shallow sea. `lake_depth` is stored in whole metres, so shallow lakes read "~0 m".
+
 **Infrastructure**
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
+- **Checkpoints are big (`store`):** about 23 MB each at level 6 (≈229 MB per 1 Gyr run, about as much as the layers). Saving only live plates' slots would shrink them.
+- **Old outputs still show in dropdowns** until deleted. Every pre-`store` run, world and zoom fails to open (all were scheduled for deletion and regeneration).
+- **Replay falls back to t=0 when the code changed** (the source hash differs), so slices of older runs take minutes, or fail with ReplayMismatch unless `--force`.
+
+## Overnight state (2026-10-14 00:10): for the coordinator after context compaction
+
+**User asleep.** Cleared for ONE level-8 run (save it for last; kick off no later than 05:00) and up to 8 level-7 runs, plus any level-6 runs. The user reviews in the morning. Commit locally only.
+
+**Agents in flight**, each in its own worktree `.claude/worktrees/<branch>` with symlinked `data runs worlds zooms grids`. When one reports: merge its branch into main, run `uv run pytest`, fix conflicts, regenerate goldens if outputs legitimately changed (`uv run pytest tests/test_golden.py --update-golden`), add its "remaining issues" to Known issues, and restart the server if server code changed.
+
+| Branch | What it's doing |
+|---|---|
+| `mantle` | Breakup fix plus B′ mantle field, hotspots tied to warm mantle, lighter sediment density. Will make a 2 Gyr level-6 showcase run. |
+| `store` | `planet/store.py`, one file per layer (viewer loads lazily), consistent layer names, worlds referencing the shared grid, checkpoints via `Simulation.state()`/`load_state`/`from_state`, `planet/server.py`. Existing outputs may need regenerating after this. |
+| `ocean` | Overturning circulation (salinity from E−P, runoff, sea ice, a meltwater hook for timezoom) and its heat transport ("mild Norway"). |
+| `falls` | Knickpoint waterfalls in the zoom (resistant lip, plunge pool, gorge retreat) and the fix for the lake-outlet cliff. |
+
+The viewer server (`planet serve --no-open`, port 8765) was started by the coordinator. Restart it after server changes:
+`pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open > $CLAUDE_JOB_DIR/tmp/serve.log 2>&1 &`
+
+**Level-7 timing:** ~1.8 s/Myr under load (≈30 min/Gyr), 0.9 GB RSS. Land went 29→22% in the first 20 Myr at level 7, so check resolution dependence. **Level 8 estimate:** ~2 h/Gyr, ~3.5 GB RAM. Frames are large (level 8 ≈ 17 MB/frame), so use `--every 10` or more.
+
+**Overnight plan after merges:**
+1. **Lakes on the run globe** (queue 5c).
+2. **Regenerate the six showcase worlds** at level 6 with the new code, delete the old ones (keep the Earth world `59a918`, re-made with `tools/earth_world.py`), recompute highlights, and pre-make zooms (`planet highlights <run> --at T --zoom 6`).
+3. **Level-7 runs:** first an Earth-like ~1–2 Gyr run to check resolution dependence against level 6 (land, dry share, ocean age, landmasses; supercontinent cycle), then showcases. Up to 8.
+4. **Level-8 run** last, started by 05:00. Earth-like, `--every 10`, ~1–1.5 Gyr.
+5. **Morning report** for the user: what merged, the run ids with what to look at, highlights/zooms to open, and open decisions.
+
+**Showcase recipes** (the old v1 runs were deleted at the `store` merge, since no old output can be read any more). All are level 6, `--every 4`, with default params except:
+
+| Old run | Name | seed | Myr | `--set` | Old worlds (t) |
+|---|---|---|---|---|---|
+| ed7401 | Earth-like A | 11 | 1000 | — | 400 (cec38b), 576 |
+| 68929f | Earth-like B | 12 | 1500 | — | 432 |
+| a89254 | Water world, land emerges | 13 | 2000 | `continental_start=0.1 heat_start=2` | 1396, 1500, 1592 (giant lake), 1960 |
+| f2d397 | Land-heavy | 14 | 1000 | `continental_fraction=0.6` | 864 |
+| 7c716b | Cold world | 15 | 1000 | `tilt=15 climate_offset=-6` | 288 |
+| d05a1e | Hothouse | 16 | 1000 | `tilt=45 climate_offset=5` | 432, 460 (a434c5) |
+
+Same seeds won't give the same geography under the new physics, so pick world times afresh.
+
+**Update 00:20:**
+- `store` is merged (1c93acf); the server has been restarted.
+- The `lakes` agent is doing step 1.
+- The other agents were told to merge main before reporting.
+- Old outputs get deleted once `falls` reports, since it tests on a434c5 and cec38b.
+- The user (at bedtime) asked for two documents, both written by subagents only **after all other overnight work is done**:
+  - `docs/morning_decisions.md`: judgement calls for the user to give feedback on. Collect them through the night.
+  - `docs/overview.md`: an overview of what the project is and how each subsystem works. At most ~5 pages of text; pictures and diagrams are welcome.

@@ -52,11 +52,11 @@ Model (per 500-yr step, see simulate)
   meets open water. Sea level falls by 0.9 x ice volume / ocean area, so
   coastlines and land bridges move with the ice.
 
-Output: runs/<id>/ in the run format (timeline.py) so the viewer plays it,
-with time in kyr since the start and run["kind"] = meta["kind"] =
+Output: runs/<id>/ in the run format (timeline.py, store.py) so the viewer
+plays it, with time in kyr since the start and run["kind"] = meta["kind"] =
 "timezoom". Per-frame layers: elevation (surface incl. ice, relative to
-that frame's sea level), ice, temperature, climate. plate / continental /
-age / boundary are stored once (shape [1, cells]): geology is frozen.
+that frame's sea level), ice, temperature, climate. plate / crust /
+crust_age / plate_boundary are stored once (shape [1, cells]): geology is frozen.
 Frame stats carry sea level, ice volume and the orbit.
 """
 
@@ -71,6 +71,7 @@ from pathlib import Path
 import numpy as np
 
 from . import climate
+from . import store as S
 from . import timeline as T
 from . import world as W
 from .geo import R_KM
@@ -82,13 +83,13 @@ R_M = R_KM * 1000.0
 RHO_I, RHO_W = 917.0, 1028.0
 S0 = 1361.0  # W/m2, the star's light at the planet's mean distance
 
-LAYERS = {  # per frame (name -> dtype on disk), as in timeline.LAYERS
-    "elevation": "<i2",  # m, surface (ice included) above that frame's sea level
-    "ice": "<u2",  # land ice, units of 20 m (as runs; 16 bits: domes on big polar continents pass 5.1 km)
-    "temperature": "i1",  # C, annual mean
-    "climate": "u1",  # climate.KOPPEN id
+LAYERS = {  # per frame: store.LAYERS names and encodings, as runs
+    "elevation": S.LAYERS["elevation"],  # m, surface (ice included) above that frame's sea level
+    "ice": {**S.LAYERS["ice"], "dtype": "<u2"},  # 20 m steps in 16 bits: domes on big polar continents pass 5.1 km
+    "temperature": S.LAYERS["temperature"],  # C, annual mean
+    "climate": S.LAYERS["climate"],  # climate.KOPPEN id
 }
-STATIC = {"plate": "<u2", "continental": "u1", "age": "<u2", "boundary": "i1"}  # stored once
+STATIC = ("plate", "crust", "crust_age", "plate_boundary")  # stored once
 
 
 @dataclass
@@ -264,7 +265,7 @@ def source_from_run(run_dir: Path, at: float) -> dict:
     global temperature offset dT, tilt and the frozen geology at `at` Myr,
     from the stored keyframe nearest to `at` (as timeline.world_from_frame:
     no replay; ice to 20 m, dT to 0.1 C)."""
-    run, arr = T.load_frames(run_dir)
+    run, arr = T.load_frames(run_dir, ("elevation", "ice", *STATIC))
     if run.get("kind") == "timezoom":
         raise SystemExit("that's a time zoom already; give its source run")
     m = run["meta"]
@@ -277,9 +278,10 @@ def source_from_run(run_dir: Path, at: float) -> dict:
         raise SystemExit(f"run {run_dir.name} is too old (its keyframes have no climate)")
     return {"source_run": run.get("id", run_dir.name), "source_name": run["name"], "seed": m["seed"],
             "level": m["level"], "tilt": m["params"].get("tilt", 23.4), "params": m["params"],
-            "grid": build_grid(m["level"]), "at": float(fr["t"]), "elev": arr["elevation"][i].astype(float),
-            "ice": arr["ice"][i].astype(float) * 20.0, "dT": fr["stats"]["global_temp_c"] - 14.5,
-            "sea_level": fr["stats"]["sea_level_m"], "static": {k: arr[k][i] for k in STATIC},
+            "grid": build_grid(m["level"]), "at": float(fr["t"]),
+            "elev": T.frame(run, arr, "elevation", i).astype(float),
+            "ice": T.frame(run, arr, "ice", i).astype(float), "dT": fr["stats"]["global_temp_c"] - 14.5,
+            "sea_level": fr["stats"]["sea_level_m"], "static": {k: T.frame(run, arr, k, i) for k in STATIC},
             "hotspots": fr["hotspots"], "volcanoes": fr["volcanoes"]}
 
 
@@ -290,8 +292,8 @@ def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
             "tilt": sim.params.tilt, "params": asdict(sim.params), "grid": sim.grid, "at": float(sim.t),
             "elev": snap.elevation.astype(float), "ice": snap.ice.astype(float), "dT": float(sim.dT),
             "sea_level": float(sim.sea_level),
-            "static": {"plate": snap.plate, "continental": snap.continental, "age": snap.age,
-                       "boundary": snap.boundary},
+            "static": {"plate": snap.plate, "crust": snap.continental, "crust_age": snap.age,
+                       "plate_boundary": snap.boundary},
             "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
             "volcanoes": [[round(a, 1), round(b, 1)] for a, b in snap.volcanoes]}
 
@@ -311,8 +313,8 @@ def source_earth(level: int = 6) -> dict:
     return {"source_run": "earth", "source_name": "Earth (ETOPO1)", "seed": 0, "level": level, "tilt": 23.44,
             "params": {"tilt": 23.44}, "grid": grid, "at": 0.0, "elev": elev, "ice": np.where(land, ice, 0.0),
             "dT": 0.0, "sea_level": 0.0,
-            "static": {"plate": np.zeros(grid.n), "continental": land, "age": np.zeros(grid.n),
-                       "boundary": np.zeros(grid.n)},
+            "static": {"plate": np.zeros(grid.n), "crust": land, "crust_age": np.zeros(grid.n),
+                       "plate_boundary": np.zeros(grid.n)},
             "hotspots": [], "volcanoes": [],
             "obs": {k: d[f"obs_{k}"].astype(float) for k in ("t_warm", "t_cold", "p_jul", "p_jan")}}
 
@@ -422,10 +424,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         precip = 0.5 * (fields_["p_jul"] + fields_["p_jan"]) * p_scale
         k = climate.koppen(surf, t_ann, t_warm, t_cold, precip, fields_["p_jul"] * p_scale,
                            fields_["p_jan"] * p_scale, lat, np.where(land, ice, 0.0))
-        out["elevation"].append(np.clip(np.round(surf), -32000, 32000).astype("<i2"))
-        out["ice"].append(np.clip(np.round(ice / 20), 0, 65535).astype("<u2"))
-        out["temperature"].append(np.clip(np.round(t_ann), -128, 127).astype("i1"))
-        out["climate"].append(k.astype("u1"))
+        for name, v in (("elevation", surf), ("ice", ice), ("temperature", t_ann), ("climate", k)):
+            out[name].append(S.encode(v, LAYERS[name]))
         vol = float((H * area).sum())
         frames.append({"t": round(t_kyr, 3), "stats": stats(t_kyr, surf, ice, vol, orb, dq65, dTg)})
 
@@ -589,7 +589,7 @@ def glacial_events(res: dict, g: Grid, min_swing: float = 15.0) -> list[dict]:
             ext, d = i, -d
     ev = []
     for i, lo in turns:
-        ice = res["data"]["ice"][i].astype(float) * 20
+        ice = S.decode(res["data"]["ice"][i], LAYERS["ice"])
         j = int(np.argmax(ice))
         s = fr[i]["stats"]
         ev.append({"t": fr[i]["t"], "kind": "glacial max" if lo else "interglacial",
@@ -601,32 +601,18 @@ def glacial_events(res: dict, g: Grid, min_swing: float = 15.0) -> list[dict]:
 
 def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str | None = None) -> Path:
     g: Grid = src["grid"]
-    run_id = W.new_id()
-    out = T.RUNS / run_id
-    out.mkdir(parents=True, exist_ok=True)
+    run_id = S.new_id()
+    out = S.path_of("run", run_id)
     nf = len(res["frames"])
-    layout, offset = {}, 0
-    blocks = [(k, LAYERS[k], res["data"][k]) for k in LAYERS] + \
-             [(k, STATIC[k], np.asarray(src["static"][k])[None, :]) for k in STATIC]
-    with open(out / "frames.bin", "wb") as f:
-        for k, dtype, a in blocks:
-            if k == "age":
-                a = np.clip(np.round(a), 0, 65535)
-            arr = np.ascontiguousarray(a.astype(dtype))
-            pad = (-offset) % 8
-            f.write(b"\0" * pad)
-            offset += pad
-            layout[k] = {"dtype": np.dtype(dtype).name, "offset": offset, "shape": list(arr.shape)}
-            f.write(arr.tobytes())
-            offset += arr.nbytes
-    T.write_grid(g)
+    arrays = {**{k: res["data"][k] for k in LAYERS},
+              **{k: S.encode(np.asarray(src["static"][k])[None, :], S.LAYERS[k]) for k in STATIC}}
+    layers = S.write_layers(out, arrays, {**LAYERS, **{k: S.LAYERS[k] for k in STATIC}})
+    S.write_grid(g)
     for fr in res["frames"]:
         fr.update(omega={}, hotspots=src["hotspots"], volcanoes=src["volcanoes"])
-    from .climate import KOPPEN
-    from .surface import ROCKS
     label = name or f"time zoom: {src['source_name']} @ {src['at']:g} Myr"
-    run = {
-        "format": "procgen-run/1",
+    S.write_json(out / "run.json", {
+        "format": "procgen-run/2",
         "kind": "timezoom",
         "id": run_id,
         "name": label,
@@ -640,13 +626,11 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
                  "static_layers": list(STATIC),
                  "code": code_version(), "generated_in_s": res["runtime_s"], "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{g.level}.json",
-        "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-        "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
+        "legend": S.legends(),
+        "layers": layers,
         "events": glacial_events(res, g),
         "frames": res["frames"],
-        "layers": layout,
-    }
-    (out / "run.json").write_text(json.dumps(run, default=W._np, separators=(",", ":")))
+    })
     report(out)
     T.update_index()
     return out
@@ -655,7 +639,7 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
 def report(run_dir: Path) -> Path:
     """runs/<id>/run.txt: settings, the sea-level / ice / orbit table, ASCII
     maps of the ice at the start, the biggest glacial maximum and the end."""
-    run, arr = T.load_frames(run_dir)
+    run, arr = T.load_frames(run_dir, ("elevation", "ice"))
     m = run["meta"]
     grid = build_grid(m["level"])
     defaults = asdict(TZParams())
@@ -680,7 +664,8 @@ def report(run_dir: Path) -> Path:
                    f"{s['eccentricity']:.4f}  {s['precession_index']:>8.4f}  {s['insol_65n_jul_anom']:>8.1f}")
     sl = np.array([f["stats"]["sea_level_change_m"] for f in fr])
     for title, i in (("start", 0), ("largest ice volume", int(np.argmin(sl))), ("end", len(fr) - 1)):
-        w = {"grid": grid, "layers": {"elevation": np.where(arr["ice"][i] > 0, 5000, arr["elevation"][i].astype(int))}}
+        w = {"grid": grid, "layers": {"elevation": np.where(arr["ice"][i] > 0, 5000,
+                                                             T.frame(run, arr, "elevation", i).astype(int))}}
         out += ["", f"## t = {fr[i]['t']:g} kyr ({title}): land ice shown as '#', sea level "
                 f"{fr[i]['stats']['sea_level_change_m']:+.0f} m", W.LEGENDS["elevation"],
                 W.ascii_map(w, "elevation", 100, 25)]

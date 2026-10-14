@@ -34,3 +34,11 @@ def sim4_60():
 @pytest.fixture(scope="session")
 def grid4():
     return build_grid(4)
+
+
+@pytest.fixture
+def data_root(tmp_path, monkeypatch):
+    """A temporary data root (store.root()) for tests that write runs, worlds or zooms."""
+    from planet import store
+    monkeypatch.setattr(store, "_root", tmp_path)
+    return tmp_path

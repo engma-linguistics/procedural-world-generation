@@ -8,7 +8,8 @@ browser viewer.
 
 ```sh
 uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
-uv run python -m planet list                       # runs and worlds with their ids
+uv run python -m planet list                       # runs, worlds and zooms with their ids
+uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr)
@@ -138,7 +139,9 @@ budget), `volcanism`, `earth` (climate, sea level, erosion), `events` (rifts,
 sutures), `isostasy`, `plate_kernels`, `setup`, `output`. `Simulation.state()`
 returns the whole state (what a checkpoint must save).
 
-Runs are deterministic: `slice` replays from t=0 (a few seconds) and checks
+Runs are deterministic: `slice` replays from the nearest saved state at or
+before the moment asked for (`simulate` saves the full simulation state
+every 100 Myr, `--checkpoint-every`; ~23 MB each at level 6) and checks
 itself against the stored keyframe. Each run records the code that made it
 (`meta.code`: git commit, dirty flag, hash of `planet/**/*.py`). If the model has
 changed since, the replay is a different planet: `slice` warns, and when the
@@ -182,19 +185,45 @@ patches on a football. In the viewer, tick "Highlight the 12 pentagons".
 
 ## Files
 
-- `runs/<name>/run.json`: settings, per-keyframe stats, plate velocities and the
-  event log. Small and readable.
-- `runs/<name>/frames.bin`: keyframe arrays for the viewer (raw binary; layout in run.json).
-- `runs/<name>/run.txt`: the one to read or paste into a chat. It has the event log,
+Paths, ids, indexes, deleting and the binary layer format live in
+`planet/store.py`. Outputs go under the data root: the repository by
+default, or `$PLANET_DATA` (e.g. `PLANET_DATA=/tmp/scratch uv run python -m
+planet simulate ...`; `serve` then shows that root's runs).
+
+- `runs/<id>/run.json`: settings, per-keyframe stats, plate velocities, the
+  event log, and the layer specs. Small and readable.
+- `runs/<id>/layers/<name>.bin`: one file per layer, all keyframes (raw
+  little-endian, frames x cells). The viewer downloads only the layers it
+  draws. Each layer's spec in run.json says its dtype, shape and encoding
+  (`value = stored * scale + offset`, then an optional transform: `log2p1`
+  for river flow, `nbr_slot` for the downstream cell), so Python and the
+  viewer read them the same way.
+- `runs/<id>/state/<t>.ckpt`: the full simulation state every 100 Myr, where
+  `slice` starts replaying.
+- `runs/<id>/run.txt`: the one to read or paste into a chat. It has the event log,
   stats over time, ASCII elevation maps at five moments, and a plate table.
-- `worlds/<name>.json` / `.txt`: a full world (from `slice` or `generate`). The
-  `.txt` has the summary and ASCII maps. Water layers: `flow` (river flow,
+- `worlds/<id>.json` / `.txt`: a full world (from `slice` or `generate`); it
+  names its grid file (`"grid": "../grids/L6.json"`) rather than including
+  it. The `.txt` has the summary and ASCII maps. Water layers: `flow` (river flow,
   upstream runoff in cells x m/yr; times a cell's area per year = m3/s),
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
   surface in m, same datum as `elevation`; equal to `elevation` where there's
   no lake, so `lake_level - elevation` is the water depth).
-- `grids/L<level>.json`: grid geometry shared by all runs at that level.
+- `worlds/highlights/<id>.json`: the highlights found in world `<id>` (a cache).
+- `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
+- `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.
+
+Layer names are the same in runs, time zooms, worlds and zooms (`store.LAYERS`):
+`elevation, plate, crust` (1 = continental), `crust_age, plate_boundary, rock,
+surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
+climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
+jet_e/_n`. Run frames keep `lake_depth` (m of water) where worlds keep
+`lake_level` (its surface); `lake_kind` means the same in both.
+
+`delete` removes one item by id (`run:<id>`, `world:<id>` or `zoom:<id>`
+when a run and a world share an id); `delete --orphans` clears zooms and
+highlight caches whose world is gone. The viewer's Delete buttons do the same.
 
 All of these are generated output (git-ignored) and reproducible from seed + settings.
 

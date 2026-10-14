@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 
 from . import highlights as H
+from . import store as S
 from . import timeline as T
 from . import world as W
 from . import zoom as Z
@@ -74,20 +75,12 @@ def parse_zoom_request(req: dict) -> dict:
 
 def world_header(path: Path) -> dict:
     """name/id/meta of a saved world without parsing its layers."""
-    head = {}
-    with open(path) as fh:
-        for line in fh:
-            if line.startswith('"layers"'):
-                break
-            if line.startswith(('"name"', '"id"', '"meta"')):
-                k, v = line.split(":", 1)
-                head[json.loads(k)] = json.loads(v.rstrip().rstrip(","))
-    return head
+    return S.read_header(path, ("name", "id", "meta"))
 
 
 def find_slice(run_dir: Path, at: float) -> Path | None:
     """An already saved world sliced from this run at this time, if any."""
-    for p in sorted(W.WORLDS.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for p in sorted(S.worlds_dir().glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         if p.name == "index.json":
             continue
         try:
@@ -119,8 +112,8 @@ def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
 
 
 def _slice_run(run_ref: str, t: float, progress) -> Path:
-    run_dir = T.find_run(run_ref)
-    run = json.loads((run_dir / "run.json").read_text())
+    run_dir = S.find_run(run_ref)
+    run = S.read_header(run_dir / "run.json")
     at = keyframe_t(run_dir, t)
     found = find_slice(run_dir, at)
     if found:
@@ -147,9 +140,9 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     if "run" in r:
         world_path = slice_run(r["run"], r["t"], lambda f, msg: progress(0.5 * f, msg))
     else:
-        world_path = Z.find_world(r["world"])
+        world_path = S.find_world(r["world"])
     zid = Z.zoom_id(world_path.stem, r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"])
-    if (Z.ZOOMS / zid / "zoom.json").exists():
+    if S.exists("zoom", zid):
         progress(1.0, f"zoom {zid} already exists")
         return {"zoom": zid, "world": world_path.stem}
     done = [0]
@@ -183,12 +176,12 @@ def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> d
     first if there isn't one (unless cached_only)."""
     src = parse_source(req)
     if "run" in src:
-        run_dir = T.find_run(src["run"])
+        run_dir = S.find_run(src["run"])
         at = keyframe_t(run_dir, src["t"])
         src["t"] = at
         world_path = find_slice(run_dir, at) if cached_only else slice_run(src["run"], at)
     else:
-        world_path = Z.find_world(src["world"])
+        world_path = S.find_world(src["world"])
     d = None
     if world_path is not None:
         d = H.cached(world_path) if cached_only else H.for_world(world_path, refresh)
@@ -200,7 +193,7 @@ def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> d
     for f in d["features"]:
         zr = zoom_request(src, f)
         zid = Z.zoom_id(world_path.stem, zr["lat"], zr["lon"], zr["size_km"], zr["res_km"], 1)
-        feats.append({**f, "zoom": zid if (Z.ZOOMS / zid / "zoom.json").exists() else None})
+        feats.append({**f, "zoom": zid if S.exists("zoom", zid) else None})
     return {**out, "name": d.get("name"), "t_myr": d.get("t_myr"), "computed_in_s": d.get("computed_in_s"),
             "features": feats}
 
@@ -217,7 +210,7 @@ def parse_timezoom_request(req: dict) -> dict:
     out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 300)}
     if not 1 <= out["kyr"] <= 2000:
         raise BadRequest("kyr must be within 1..2000")
-    run_dir = T.find_run(out["run"])
+    run_dir = S.find_run(out["run"])
     run = json.loads((run_dir / "run.json").read_text())
     if run.get("kind") == "timezoom":
         raise BadRequest("this is a time zoom already; start one from its source run")
@@ -233,9 +226,9 @@ def find_timezoom(run_id: str, at: float, kyr: float) -> str | None:
     from .timezoom import TZParams
     from dataclasses import asdict
     defaults = asdict(TZParams())
-    for p in T.RUNS.glob("*/run.json"):
+    for p in S.runs_dir().glob("*/run.json"):
         try:
-            r = json.loads(p.read_text())
+            r = S.read_header(p)
         except (OSError, ValueError):
             continue
         m = r.get("meta", {})
@@ -249,8 +242,8 @@ def timezoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     """POST /api/timezoom's work: {"run": id of the new time zoom}."""
     from . import timezoom as TZ
     r = parse_timezoom_request(req)
-    run_dir = T.find_run(r["run"])
-    run_id = json.loads((run_dir / "run.json").read_text()).get("id", run_dir.name)  # as timezoom records it
+    run_dir = S.find_run(r["run"])
+    run_id = S.read_header(run_dir / "run.json").get("id", run_dir.name)  # as timezoom records it
     found = find_timezoom(run_id, r["t"], r["kyr"])
     if found:
         progress(1.0, f"time zoom {found} already exists")
