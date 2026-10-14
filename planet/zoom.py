@@ -86,7 +86,8 @@ Pipeline
    lips and doesn't run perched above the land beside it; each fall's gorge has walls held at the lip's level (cliffs,
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
-   stay sharp: creep never lifts a stream's bed, under ice too); any pits
+   stay sharp: creep never lifts a stream's bed, but for a little under
+   ice); any pits
    left are filled. Falls are listed only where the drop stands out from
    the river around it (waterfalls()).
 
@@ -343,6 +344,7 @@ RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below
 FALLS_MIN_SHARE = 0.05  # a reach's falls are placed from where its pinned course carries this share of the coarse discharge
 SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is evened out, a bigger one unpinned
 BANK_KM, BANK_SIDE_GRAD = 4.0, 30.0  # held river courses: banks this wide (km, >= 2 px), then falling off (m/km)
+ICE_SNOUT_GRAD = 50.0  # m/km: under ice, creep may lift a stream's bed by this much per km in from the ice's edge
 BANK_MAX_Q = 300.0  # m^3/s: ... not lifting other rivers carrying this much
 
 
@@ -1834,13 +1836,17 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     chan = np.clip(np.log10(np.maximum(Q, 1e-3) / (50 * res * res)) / 2, 0, 1)
     cliff = _dilate(cliff.reshape(ny, nx), 2).ravel()  # falls, gorges and their walls don't creep
     kd = np.where(active & ~cliff, np.where(glacier, 0.4, KD * (1 - 0.8 * chan)), 0.0)
-    # (creep rounds the hillslopes, but never lifts a stream's bed, under ice
-    # too: in a deep valley it would fill the channel towards its walls in
-    # places, leaving steps and pits along the stream, undesigned 'falls')
+    # (creep rounds the hillslopes, but never lifts a stream's bed: in a deep
+    # valley it would fill the channel towards its walls in places, leaving
+    # steps and pits along the stream, undesigned 'falls'. Under ice it does,
+    # the ice surface is smooth, but by no more than ICE_SNOUT_GRAD m per km
+    # in from the ice's edge: else the glacier ends in a cliff.)
     stream = active & (chan > 0)
+    lift = np.where(glacier, ICE_SNOUT_GRAD * res * ZK.inside_distance(glacier, nx, ny, False), 0.0)
+    h0 = h
     for _ in range(SMOOTH_STEPS):
         hd = ZK.diffuse(h, kd, active, nx, ny)
-        h = np.where(stream, np.minimum(hd, h), hd)
+        h = np.where(stream, np.minimum(hd, np.maximum(h, h0 + lift)), hd)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
@@ -1888,7 +1894,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
     # the designed falls: where they ended up, and a plunge pool at each foot
     lips = place_falls(rec, Q, h)[5]
-    falls = waterfalls(ws_f, discharge, rec, nx, ny, res,
+    falls = waterfalls(ws_f, np.where(glacier, 0.0, discharge), rec, nx, ny, res,  # (no falls under the ice)
                        {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0},
                        designed=[lp for lp, _, _ in lips])
     pool = np.zeros(npx)
