@@ -9,8 +9,10 @@ planet's geography. In order (see compute):
 - Winds: the planet-wide belts (trade winds, westerlies, polar easterlies)
   plus the winds that land-sea temperature contrasts make (monsoons,
   subtropical highs, winter highs over cold continents).
-- Ocean currents (the wind-driven gyres) move heat around: warm water up
-  the east coasts, cold water down the west coasts, upwelling.
+- Ocean currents: the wind-driven gyres, solved as a streamfunction in
+  each ocean basin (the Stommel model), plus the circumpolar and
+  equatorial currents. They move heat around: fast warm currents up the
+  east coasts of continents, slow cold drift down the west coasts, upwelling.
 - Each place takes on the temperature of the air the wind brings it: mild
   sea air on west coasts in the westerlies, harsh land air inland.
 - Rain: water vapour picked up over the sea (and evaporated from wet land)
@@ -341,45 +343,172 @@ def speed(v):
 # --------------------------------------------------------------------------
 # Ocean currents and sea-surface temperature
 # --------------------------------------------------------------------------
-def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Surface currents, as the big wind-driven gyres make them: the wind's
-    east-west push (westward under the trade winds, eastward under the
-    westerlies), plus currents along the coasts that close each gyre. In the
-    subtropical gyres water runs poleward along the western side of an ocean
-    (east coasts of continents: the warm Gulf Stream, Kuroshio, Brazil
-    current) and back toward the equator along its eastern side (west
-    coasts: the cold California, Humboldt, Canary, Benguela currents);
-    poleward of ~45 deg the subpolar gyres turn the other way (cold
-    Labrador and Oyashio currents, the mild North Atlantic drift reaching
-    Norway). Only seas wide enough for a gyre get the coastal currents.
+def _csr_east(grid: Grid):
+    """Eastward component of the unit direction from each cell to each of its
+    neighbours, in the CSR order of grid.nbr_idx (for the numba kernels).
+    Cached."""
+    G = _geom(grid)
+    if "csr_east" not in G:
+        p = grid.centers
+        src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+        d = p[grid.nbr_idx] - p[src]
+        d -= (d * p[src]).sum(1, keepdims=True) * p[src]
+        d /= np.linalg.norm(d, axis=1, keepdims=True)
+        G["csr_east"] = (d * G["east"][src]).sum(1)
+    return G["csr_east"]
+
+
+def curl(grid: Grid, v: np.ndarray) -> np.ndarray:
+    """Vertical component of the curl of a tangent field, per km (>0:
+    counter-clockwise seen from above). curl = -div(up x v); div from the
+    flux through each cell's sides."""
+    G = _geom(grid)
+    w = np.cross(grid.centers, v)
+    src, dst = G["src"], G["dst"]
+    flux = ((w[dst] - w[src]) * G["d"]).sum(1)
+    return -np.bincount(src, flux, grid.n) * 2.0 / (G["deg"] * G["h"])
+
+
+@njit(cache=True)
+def _stommel(F, beta, east_d, solve, order, nbr_off, nbr_idx, r, h, damp, iters, omega):
+    """Gauss-Seidel / SOR relaxation of r lap(psi) + beta dpsi/dx = F on the
+    cells where solve is set (psi stays 0 elsewhere: the coasts). The graph
+    Laplacian is 4/(deg h^2) sum(psi_j - psi_i) and the eastward derivative
+    2/(deg h) sum((d_ij . east_i)(psi_j - psi_i)), both exact for linear
+    fields on a regular hexagonal grid. order: cells sorted east to west, so
+    one sweep carries the interior (Sverdrup) balance across a whole ocean
+    from its eastern shore. damp: a weak pull of psi toward 0 (keeps a sea
+    with no coasts at all well-posed). Returns psi."""
+    n = F.shape[0]
+    psi = np.zeros(n)
+    for _ in range(iters):
+        for k in range(order.shape[0]):
+            i = order[k]
+            if not solve[i]:
+                continue
+            deg = nbr_off[i + 1] - nbr_off[i]
+            lap = 4.0 * r / (deg * h * h)
+            adv = 2.0 * beta[i] / (deg * h)
+            num = 0.0
+            den = 0.0
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                c = lap + adv * east_d[e]
+                num += c * psi[nbr_idx[e]]
+                den += c
+            new = (num - F[i]) / (den + damp)
+            psi[i] += omega * (new - psi[i])
+    return psi
+
+
+def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | None = None
+             ) -> tuple[np.ndarray, np.ndarray]:
+    """Surface ocean currents, from the wind (the Stommel model of the
+    wind-driven gyres). The wind's twisting (the curl of its stress) pushes
+    the water toward or away from the poles, and on a spinning planet the
+    sea answers by flowing round closed gyres. Because the Coriolis effect
+    grows toward the poles (beta), the return flow is squeezed into a
+    narrow fast current on each ocean's western side: in the subtropical
+    gyres warm water runs poleward up the east coasts of continents (Gulf
+    Stream, Kuroshio, Brazil, Agulhas, East Australian currents) and drifts
+    slowly back toward the equator across the rest of the ocean, coldest
+    along the west coasts (California, Humboldt, Canary, Benguela); poleward
+    of the westerlies the subpolar gyres turn the other way (cold Labrador
+    and Oyashio currents; the North Atlantic drift reaching Norway).
+    Solved as r lap(psi) + beta dpsi/dx = curl(wind) with psi = 0 on the
+    coasts, for the whole ocean at once (with walls on every coast, that's
+    each basin separately); the current is up x grad(psi). Islands smaller
+    than ~150,000 km^2 (Iceland, Cuba) don't count as walls: the gyres are
+    solved as if they were sea (their own island circulation is left out). Plus two flows the gyres don't capture:
+    - a circumpolar current where some latitude is sea all the way round
+      (no coast to close a gyre: the westerlies drive the water round the
+      planet, the Antarctic Circumpolar Current);
+    - the equatorial currents, pushed straight along by the trade winds
+      where the Coriolis effect vanishes.
     Returns (current vectors, unit vectors pointing away from nearest land)."""
+    tune = {**TUNE, **(tune or {})}
     G = _geom(grid)
     up = grid.centers
-    ue = smooth(grid, np.where(ocean, (wind_v * G["east"]).sum(1), 0.0), 300.0)
-    v = ue[:, None] * G["east"]
+    h = G["h"]
+    lat = grid.lat
+    # Small islands are sea as far as the gyres are concerned.
+    land = ~ocean
+    lab, nlab = _components(grid, land)
+    sizes = np.bincount(lab[lab >= 0], minlength=max(nlab, 1)) * (4 * np.pi * R_KM**2 / grid.n)
+    wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
+    sea = ~wall
+    cosl = np.cos(np.radians(lat))
+    tau = wind_v * np.abs(speed(wind_v))[:, None] ** (tune["tau_pow"] - 1)  # stress ~ |u|^p
+    F = R_KM * smooth(grid, curl(grid, tau), 250.0) * sea
+    # The boundary layer (r/beta) has to span a couple of cells to be resolved.
+    r = max(tune["gyre_km"], 0.8 * h)
+    order = np.argsort(-grid.lon, kind="stable")
+    iters = int(tune["gyre_iters"] * 2 ** max(grid.level - 6, 0))  # finer grids: more cells across an ocean
+    psi = _stommel(F, cosl, _csr_east(grid), sea, order, grid.nbr_off, grid.nbr_idx, r, h, r / 3000.0**2,
+                   iters, 1.3)
+    v = tune["gyre"] * np.cross(up, gradient(grid, psi))
+    # circumpolar: latitude bands with no wall all the way round
+    width = 2.0
+    nb = int(180 // width)
+    bins = np.clip(((lat + 90) // width).astype(int), 0, nb - 1)
+    open_band = np.bincount(bins, wall, nb) == 0
+    ue = (wind_v * G["east"]).sum(1)
+    zm = np.bincount(bins, ue, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
+    ring = np.interp(lat, -90 + width * (np.arange(nb) + 0.5),
+                     np.convolve(np.pad(open_band * zm, 3, mode="edge"), np.ones(7) / 7, mode="valid"))
+    # equatorial currents: the trades' push where Coriolis vanishes
+    eq = np.exp(-(lat / tune["eq_cur_lat"]) ** 2)
+    push = tune["acc"] * ring + tune["eq_cur"] * eq * smooth(grid, np.where(ocean, ue, 0.0), 300.0)
+    v = v + push[:, None] * G["east"]
+    # nothing flows into a coast
     coast = np.flatnonzero(ocean & (np.add.reduceat(~ocean[grid.nbr_idx], grid.nbr_off[:-1]) > 0))
     hops, _ = kernels.bfs_within(coast, ocean.astype(np.int64), grid.nbr_off, grid.nbr_idx, 8)
     dl = np.where(ocean, np.where(hops >= 0, hops + 1.0, 9.0), 0.0)
     away = gradient(grid, smooth(grid, dl, 150.0))
     away /= np.maximum(np.linalg.norm(away, axis=1, keepdims=True), 1e-9)
-    near = ocean & (hops >= 0)
-    # which side of its ocean a cell is on: +1 western side (land to the west)
-    side = np.clip(3 * (away * G["east"]).sum(1), -1, 1)
-    a = np.abs(grid.lat)
-    band = np.clip((45 - a) / 6, -1, 1) * np.clip((80 - a) / 6, 0, 1) * np.clip((a - 3) / 5, 0, 1)
-    wide = np.clip((smooth(grid, ocean.astype(float), 1200.0) - 0.45) / 0.3, 0, 1)
-    poleward = side * band * wide * np.exp(-np.maximum(hops, 0) / 2.5) * near
-    hemi = np.sign(grid.lat)[:, None]
-    v = v + 1.5 * poleward[:, None] * hemi * G["north"]
+    near = ocean & (hops >= 0) & (hops <= 2)
     into = np.minimum((v * away).sum(1, keepdims=True), 0)
-    v = np.where((near & (hops <= 2))[:, None], v - into * away, v)
+    v = np.where(near[:, None], v - into * away, v)
     v -= (v * up).sum(1, keepdims=True) * up
-    return np.where(ocean[:, None], v, 0.0), np.where((near & (hops <= 2))[:, None], away, 0.0)
+    # the fastest real currents run ~2 m/s; a coastal jet a cell or two wide
+    # can overshoot on a coarse grid
+    s = np.maximum(speed(v), 1e-12)[:, None]
+    v = v * 2.5 * np.tanh(s / 2.5) / s
+    return np.where(ocean[:, None], v, 0.0), np.where(near[:, None], away, 0.0)
+
+
+def _components(grid: Grid, mask: np.ndarray) -> tuple[np.ndarray, int]:
+    """Connected components of mask: label per cell (-1 outside), count."""
+    return _label(mask, grid.nbr_off, grid.nbr_idx)
+
+
+@njit(cache=True)
+def _label(mask, nbr_off, nbr_idx):
+    n = mask.shape[0]
+    lab = np.full(n, -1, np.int64)
+    q = np.empty(n, np.int64)
+    k = 0
+    for s in range(n):
+        if not mask[s] or lab[s] >= 0:
+            continue
+        lab[s] = k
+        q[0] = s
+        head, tail = 0, 1
+        while head < tail:
+            i = q[head]
+            head += 1
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[e]
+                if mask[j] and lab[j] < 0:
+                    lab[j] = k
+                    q[tail] = j
+                    tail += 1
+        k += 1
+    return lab, k
 
 
 def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndarray,
                 relax_km: float = 2500.0, upwelling: float = 5.0,
-                eq_upwelling: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
+                eq_upwelling: float = 0.0, tune: dict | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Sea-surface temperature: the latitude's temperature t_eq, moved by the
     currents (warm water poleward along the western side of each ocean, cold
     water toward the equator along the eastern side), plus coastal upwelling
@@ -387,7 +516,8 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     Namibia) and equatorial upwelling (eq_upwelling, C). Each band's average
     is kept. Returns (sst, current)."""
     G = _geom(grid)
-    cur, away = currents(grid, ocean, wind_v)
+    tune = {**TUNE, **(tune or {})}
+    cur, away = currents(grid, ocean, wind_v, tune)
     # Ekman transport: 90 deg to the right of the wind in the north, left in the south
     ek = np.cross(wind_v, grid.centers) * np.sign(grid.lat)[:, None]
     off = np.clip((ek * away).sum(1), 0, 1.5)
@@ -395,7 +525,12 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     cold = upwelling * off * lat_ok
     src = G["src"]
     allowed = (ocean[src] & ocean[G["dst"]]).astype(np.float64)
-    keep = np.exp(-G["h"] / relax_km)
+    # The water gives its heat up to the air over a set time, so a fast
+    # current carries its warmth (or cold) far before it fades: relax_km at
+    # the reference speed cur_ref (the Gulf Stream reaches Norway, the slow
+    # drift across an ocean's middle soon takes on the latitude's temperature).
+    reach = relax_km * np.clip(speed(cur) / tune["cur_ref"], tune["cur_min"], tune["cur_max"])
+    keep = np.exp(-G["h"] / reach)
     if eq_upwelling > 0:
         # Equatorial upwelling: easterlies on the equator push the surface
         # water apart (Ekman, to the right in the north and left in the
@@ -408,7 +543,7 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
         cold = cold + eq_upwelling * np.clip(-u_e, 0, 1) * np.exp(-(grid.lat / 6.0) ** 2) * thin
     a = np.where(ocean, (1 - keep) * (t_eq - cold), t_eq)
     b = np.where(ocean, keep, 0.0)
-    sst = carry(grid, cur, a, b, km=3 * relax_km, diffusion=0.15, allowed=allowed)
+    sst = carry(grid, cur, a, b, km=1.5 * tune["cur_max"] * relax_km, diffusion=0.15, allowed=allowed)
     anom = np.where(ocean, sst - t_eq, 0.0)
     anom -= np.where(ocean, zonal_mean(grid, anom, ocean), 0.0)
     return t_eq + anom, cur
@@ -639,6 +774,18 @@ TUNE = dict(
     big=1.5,  # ... and of their continent-wide part
     big_km=2000.0,  # km: the scale of that part
     eq_up=15.0,  # C: equatorial upwelling (cold tongues) under a full trade wind
+    # ocean currents
+    gyre=0.05,  # strength of the wind-driven gyres (scales the streamfunction's currents)
+    gyre_km=200.0,  # km: friction width of the western boundary currents at the equator (r/beta)
+    gyre_iters=300,  # relaxation sweeps of the gyre solver (over-relaxed: converged to <1%)
+    tau_pow=1.0,  # wind stress ~ |wind|^tau_pow (1: linear)
+    island_km2=150000.0,  # land smaller than this doesn't wall off the gyres
+    acc=1.0,  # circumpolar current per unit of zonal wind, where a latitude is sea all round
+    eq_cur=1.0,  # equatorial currents per unit of zonal (trade) wind ...
+    eq_cur_lat=8.0,  # ... within ~this many deg of the equator
+    cur_ref=0.5,  # current speed at which sea-surface heat is carried ~2500 km before it fades ...
+    cur_min=0.3,  # ... scaled with speed, between these multiples
+    cur_max=3.0,
     # temperature
     continental=24.0,  # C: seasonal half-swing of land left to itself (times season strength)
     sea_half=6.0,  # C: the sea's seasonal half-swing (times season strength)
@@ -848,7 +995,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     v_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"])
     v_ann = 0.5 * (v_jul + v_jan)
 
-    sst, cur = sea_surface(grid, ocean, t_sea, v_ann, eq_upwelling=tune["eq_up"])
+    sst, cur = sea_surface(grid, ocean, t_sea, v_ann, eq_upwelling=tune["eq_up"], tune=tune)
     sst = np.maximum(sst, FREEZE)
 
     # Each place takes on the temperature of the air the wind brings it.
@@ -916,6 +1063,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     cool = tune["ice_cooling"] * on_ice
     temp, t_cold = temp - cool, t_cold - cool
     t_warm = np.where(on_ice, np.minimum(t_warm - cool, 0.5 * np.maximum(t_warm - cool, 0)), t_warm)
+    # (the melting cap can hold an ice sheet's summer below what its year
+    # would average: then it's that cold all year)
+    temp = np.minimum(temp, t_warm)
+    t_cold = np.minimum(t_cold, temp)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur)
