@@ -72,7 +72,8 @@ Pipeline
    Lakes are outlets held at their surface, with a rim kept above the
    water except at the outlet (the shore pixel nearest the coarse lake's
    exit); an open lake's inflow leaves again there, and the ground below
-   the outlet steps down at most RAPIDS_GRAD m/km (rapids, not a cliff).
+   the outlet (in a corridor along its river) steps down at most
+   RAPIDS_GRAD m/km (rapids, not a cliff).
    A closed lake's smaller fragments drain to its biggest one; a fragment
    that should drain but finds no outlet becomes land (no fragment
    swallows its rivers).
@@ -294,6 +295,7 @@ KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3}
 COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
+RAPIDS_SIDE_GRAD = 30.0  # m/km: ... and the ground beyond its banks falls off no faster than this
 
 
 def lip_resistance(surface_rock: int, basement: int, cover_km: float) -> float:
@@ -1296,33 +1298,53 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 outs[j] = c[np.argmin(np.hypot(px[c] - lk["exit"][0], py[c] - lk["exit"][1]))]
         return outs
 
+    rapids = np.zeros(npx, bool)  # below a lake's outlet (rims())
+
     def rims(rec, outs, step):
         """Per-pixel floor (rims above their lake) and cap (outlet channels
         below it) for the landscape integration."""
         fl, cp = np.full(npx, 0.5), cap.copy()
         fl[ring] = ring_lvl[ring] + 0.5
+        rapids[:] = False
         for j, o in enumerate(outs):
             if o >= 0:
                 ch = ZK.chain(rec, o)
                 fl[ch] = 0.5  # no rim along the outflow
                 cp[ch] = np.minimum(cp[ch], lakes[j]["level"] - 0.3)
-                # Below the sill the ground steps down gradually: nothing within
-                # d km of the outlet lies more than RAPIDS_GRAD * d below the
-                # lake (rapids), out to the first fall placed on the outflow,
-                # instead of a cliff down to a river graded up from far below
-                # (and on all sides, or the water just finds a neighbour that
-                # drops away).
+                # Below the sill the ground steps down gradually: the outflow
+                # lies no more than RAPIDS_GRAD * s below the lake, s km down
+                # the river (rapids), out to the first fall placed on the
+                # outflow, instead of a cliff down to a river graded up from far
+                # below. Its banks, out to a few km, stand a little above the
+                # river beside them (or the water just finds a neighbour that
+                # drops away), and beyond them fall off at RAPIDS_SIDE_GRAD.
                 lv = lakes[j]["level"] - 0.3
                 s_ch = np.concatenate([[0.0], np.cumsum(chain_km(ch))])
                 st_ = np.flatnonzero(step[ch] > 0)
                 rkm = min(lv / RAPIDS_GRAD, 150.0, s_ch[st_[0]] if len(st_) else np.inf)
-                rp = int(rkm / res) + 1
-                r0, c0 = divmod(int(o), nx)
-                rs, cs = np.arange(max(r0 - rp, 0), min(r0 + rp + 1, ny)), np.arange(max(c0 - rp, 0), min(c0 + rp + 1, nx))
-                win = (rs[:, None] * nx + cs[None, :]).ravel()
-                d = np.hypot(px[win] - px[o], py[win] - py[o])
-                win, d = win[(d <= rkm) & active[win]], d[(d <= rkm) & active[win]]
-                fl[win] = np.maximum(fl[win], lv - RAPIDS_GRAD * d)
+                ok = s_ch <= rkm
+                r0, c0 = np.divmod(ch[ok], nx)
+                fz = lv - RAPIDS_GRAD * s_ch[ok]
+                wk = max(4.0, 2 * res)  # bank width, km
+                wmax = wk + min(lv / RAPIDS_SIDE_GRAD, 20.0)
+                kk = int(np.ceil(wmax / res))
+                bd, bf = np.full(npx, np.inf), np.full(npx, -np.inf)  # distance to the nearest river pixel, its floor
+                offs = sorted((res * np.hypot(dr, dc), dr, dc) for dr in range(-kk, kk + 1) for dc in range(-kk, kk + 1))
+                for d, dr, dc in offs:
+                    if d > wmax:
+                        break
+                    r, c = r0 + dr, c0 + dc
+                    inr = (r >= 0) & (r < ny) & (c >= 0) & (c < nx)
+                    win, f = r[inr] * nx + c[inr], fz[inr]
+                    a = active[win] & (bd[win] >= d - 1e-9)
+                    bd[win[a]] = d
+                    np.maximum.at(bf, win[a], f[a])
+                near = np.isfinite(bd)
+                fz_ = np.where(bd[near] > 0, bf[near] + 0.5 - RAPIDS_SIDE_GRAD * np.maximum(bd[near] - wk, 0.0), bf[near])
+                # (never above the coarse ground: where that drops away fast, so does the river)
+                fz_ = np.minimum(fz_, np.maximum(base[near], target[near]))
+                fl[near] = np.maximum(fl[near], fz_)
+                rapids[near] = True
         return fl, cp
 
     def chain_km(ch):
@@ -1731,7 +1753,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     for _ in range(SMOOTH_STEPS):
         h = ZK.diffuse(h, kd, active, nx, ny)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
-    h = np.where(ring, np.maximum(h, fl), h)  # nor the rims below their lake
+    h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
     log(f"  landscape pass: {iterations} iterations [{time.time() - t0:.1f}s]")
 
