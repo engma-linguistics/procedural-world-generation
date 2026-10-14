@@ -177,6 +177,9 @@ def summarize(world: dict) -> dict:
     }
     if "plate" in L:
         s["plates"] = int(L["plate"].max() + 1)
+    if "landform" in L:
+        from .landform import shares
+        s["landform_pct"] = shares(np.asarray(L["landform"]))
     return s
 
 

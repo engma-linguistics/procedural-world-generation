@@ -11,7 +11,8 @@ import numpy as np
 
 from .. import kernels
 from ..noise import Perlin3D, fbm, ridged
-from ..surface import CRATON, OCEAN, OROGEN
+from ..surface import CRATON, OCEAN, OROGEN, SHALE
+from . import record
 from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth, sediment_lift
 from .plates import CMYR
 
@@ -95,4 +96,6 @@ def initial_state(sim):
         axis = rng.normal(size=3)
         axis /= np.linalg.norm(axis)
         pl.omega[k] = axis * rng.uniform(2, 6) / CMYR
+        # the blanket is one flat-lying layer of mud (its history isn't simulated)
+        record.reconcile(pl.rec[k], pl.lith[k], pl.cover[k], np.full(n, SHALE, np.uint8), 0.0)
     sim.owner = plate.astype(np.int64)

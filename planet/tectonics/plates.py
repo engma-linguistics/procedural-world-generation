@@ -13,6 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..geo import R_KM
+from . import record
 
 CMYR = R_KM / 10.0  # (rad/Myr on unit sphere) -> cm/yr
 P_MAX = 48  # plate slots; slots are reused, labels are the permanent ids
@@ -28,8 +29,9 @@ def rotation(axis_angle: np.ndarray) -> np.ndarray:
     return np.eye(3) + np.sin(th) * K + (1 - np.cos(th)) * K @ K
 
 
-# the per-cell crust columns each plate carries in its own frame (isostasy.EXTRA: extra's columns)
-CRUST = ("age", "thick", "cont", "rock", "cover", "extra")
+# the per-cell crust columns each plate carries in its own frame (isostasy.EXTRA: extra's
+# columns; record.RECORD: rec's, the strata and history)
+CRUST = ("age", "thick", "cont", "rock", "cover", "extra", "rec", "lith")
 
 
 @dataclass
@@ -53,7 +55,10 @@ class Plates:
       cont              continental (else oceanic)
       rock              surface.ROCKS id of the basement
       cover             km of sediment on top of the basement
-      extra (P, n, 6)   isostasy.EXTRA columns
+      extra (P, n, 7)   isostasy.EXTRA columns
+      rec (P, n, R)     record.RECORD columns (float32): the strata's thickness
+                        and dates, and the crust's history (rift, folding, ...)
+      lith (P, n, K)    record: each stratum's rock (surface.ROCKS id), top first
       idx               cell of the plate's grid under each world cell
                         (refreshed every step; also read for unowned cells)
     Pairs of plates, (P, P), upper triangle (i < j) for the timers:
@@ -77,6 +82,8 @@ class Plates:
     rock: np.ndarray
     cover: np.ndarray
     extra: np.ndarray
+    rec: np.ndarray
+    lith: np.ndarray
     idx: np.ndarray
     contact: np.ndarray
     closing: np.ndarray
@@ -86,13 +93,14 @@ class Plates:
     @classmethod
     def empty(cls, n: int, n_extra: int, next_label: int) -> "Plates":
         P = P_MAX
+        rec, lith = record.empty((P, n))
         return cls(
             alive=np.zeros(P, bool), label=np.arange(P), next_label=next_label, formed=np.zeros(P),
             Q=np.tile(np.eye(3), (P, 1, 1)), omega=np.zeros((P, 3)), wander=np.zeros((P, 3)),
             rift_pool=np.zeros(P),
             owned=np.zeros((P, n), bool), age=np.zeros((P, n)), thick=np.zeros((P, n)),
             cont=np.zeros((P, n), bool), rock=np.zeros((P, n), np.uint8), cover=np.zeros((P, n)),
-            extra=np.zeros((P, n, n_extra)), idx=np.tile(np.arange(n), (P, 1)),
+            extra=np.zeros((P, n, n_extra)), rec=rec, lith=lith, idx=np.tile(np.arange(n), (P, 1)),
             contact=np.zeros((P, P)), closing=np.zeros((P, P)),
             last_logged=np.full((P, P), -1e9), rifted_at=np.full((P, P), -1e9))
 

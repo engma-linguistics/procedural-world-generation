@@ -190,6 +190,16 @@ LAYERS = {
     "jet_n": _spec("i1", "m/s", "annual-mean jet stream (upper-level wind), north component"),
     "wave_power": _spec("<u2", "kW/m", "mean wave power arriving at sea cells (coast.py; 0 on land)", scale=0.1),
     "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
+    # landform classes and their parameters (landform.py; read from each cell's geological record)
+    "landform": _spec("u1", "id", "landform class (landform.CLASSES; legend 'landforms')"),
+    "landform_age": _spec("<u2", "Myr", "landform age; by class: since rifting, folding, eruption, the top "
+                                        "stratum last grew, or the basement formed (landform.CLASSES)"),
+    "strata_top": _spec("u1", "ROCKS id", "exposed stratum (or the basement, where none is left)"),
+    "strata_top_km": _spec("u1", "km", "thickness of the exposed stratum (0: basement)", scale=0.02),
+    "strata_next": _spec("u1", "ROCKS id", "what lies under the exposed stratum (next stratum or the basement)"),
+    "strata_dip": _spec("u1", "deg", "dip of the exposed strata (folded: by the squeezing; flat: regional slope)",
+                        scale=0.25),
+    "fold_wavelength": _spec("u1", "km", "distance between fold crests (0: strata not folded)", scale=0.2),
 }
 
 
@@ -310,10 +320,12 @@ def write_grid(grid) -> Path:
 
 
 def legends() -> dict:
-    """Rock, Koppen and biome ids -> names and colours, as every file stores them."""
+    """Rock, Koppen, biome and landform ids -> names and colours, as every file stores them."""
     from .climate import BIOMES, KOPPEN
+    from .landform import legend
     from .surface import ROCKS
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
+            "landforms": legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 

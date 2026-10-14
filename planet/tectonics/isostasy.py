@@ -45,11 +45,13 @@ RHO_OCEAN = RHO_MANTLE - ISO_SEA / K_SEA  # 2.85
 #   carb  km of the sediment cover that is carbonate (limestone),
 #   lava  km of it that is lava flows (flood basalts, hotspot tracks),
 #   evap  km of evaporites (salt, gypsum), coal  km of coal,
-#   sand  km of sandstone; the rest of the cover is mud (shale).
-# Columns MIX line up with surface.MIX_ROCKS.
-EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand")
-LIFT, CARB, LAVA, EVAP, COAL, SAND = range(6)
-MIX = slice(1, 6)
+#   sand  km of sandstone, tuff  km of volcanic ash and ignimbrite from
+#         arcs on continents; the rest of the cover is mud (shale).
+# Columns MIX line up with surface.MIX_ROCKS. (The order the cover is
+# layered in is in tectonics.record.)
+EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand", "tuff")
+LIFT, CARB, LAVA, EVAP, COAL, SAND, TUFF = range(7)
+MIX = slice(1, 7)
 
 
 def isostasy(cont, rock):

@@ -23,8 +23,8 @@ Simulation.from_state() / load_state() put it back: a run continued from
 a saved state is bit-identical to one that never stopped (tests/test_state.py),
 because each step's randomness depends only on (seed, step_no).
 
-The world view (w_age, w_cont, w_thick, w_rock, w_cover, w_extra, w_ref,
-w_elev, swell) is the plates' crust seen on the world grid. Between steps
+The world view (w_age, w_cont, w_thick, w_rock, w_cover, w_extra, w_rec,
+w_lith, w_ref, w_elev, swell) is the plates' crust seen on the world grid. Between steps
 it is always _world_view() of the state above, so it isn't part of it.
 """
 
@@ -37,7 +37,7 @@ from typing import ClassVar
 import numpy as np
 
 from ..grid import Grid
-from . import crust, earth, events, mantle, motion, output, volcanism
+from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
 from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation, sediment_km
 from .params import Params
@@ -208,7 +208,7 @@ class Simulation:
         stacked = np.zeros(g.n)
         self.owner, newc = resolve(
             pl.alive, pl.idx, pl.owned, pl.age, pl.cont, pl.thick, pl.rock, pl.cover, pl.extra,
-            self.owner, g.nbr_off, g.nbr_idx, pl.Q, g.centers, stacked)
+            pl.rec, pl.lith, record.blank(), self.owner, g.nbr_off, g.nbr_idx, pl.Q, g.centers, stacked)
         cleanup_ghosts(pl.alive, pl.owned, pl.Q, g.centers, self.owner, g.raster, g.nbr_off, g.nbr_idx)
         self._world_view()
         self.book("resolve", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
@@ -254,6 +254,7 @@ class Simulation:
         chem = earth.sediments(self, col, dep, lake)
         earth.bury(self, col)
         earth.reefs(self, col, dep, chem)
+        col.rec[self.ice > 0, record.T_ICE] = self.t
 
         born = crust.birth_and_cratons(self, col, arcky, squeezed)
         self._write_back(col, born)
@@ -270,7 +271,7 @@ class Simulation:
         pl.age[pl.owned] += self.dt
         self._world_view()
         col = Column(t=self.w_thick, cover=self.w_cover, x=self.w_extra.copy(), cont=self.w_cont,
-                     rock=self.w_rock.copy())
+                     rock=self.w_rock.copy(), rec=self.w_rec.copy(), lith=self.w_lith.copy())
         # the swell rides off with the plate and subsides as the mantle under it cools
         col.x[:, LIFT] = np.maximum(col.x[:, LIFT] * np.exp(-self.dt / self.params.swell_time), dome)
         self.swell = col.x[:, LIFT]
@@ -279,7 +280,8 @@ class Simulation:
     def _write_back(self, col, born):
         """Make the column the new world view and copy it to the plates.
         Crust is kept between 1 km and MAX_KM, and the sediment cover can't
-        be thicker than the crust (its rock mix shrinks with it)."""
+        be thicker than the crust (its rock mix shrinks with it). The strata
+        are made to add up to the final cover (record.reconcile)."""
         x = col.x
         self.w_cont = col.cont | born
         self.w_thick = np.clip(col.t, 1.0, MAX_KM)
@@ -291,6 +293,9 @@ class Simulation:
         x[:, MIX] = m / over[:, None]
         self.w_extra = x
         self.w_rock = col.rock
+        record.diagenesis(col.rec, col.lith)
+        record.reconcile(col.rec, col.lith, self.w_cover, record.default_rock(self.w_cover, x[:, MIX]), self.t)
+        self.w_rec, self.w_lith = col.rec, col.lith
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
                                 sediment_km(self.w_cover, self.w_extra))
         self._scatter()
@@ -323,6 +328,8 @@ class Simulation:
         self.w_rock = pl.rock[o, r]
         self.w_cover = pl.cover[o, r]
         self.w_extra = pl.extra[o, r]
+        self.w_rec = pl.rec[o, r]
+        self.w_lith = pl.lith[o, r]
         self.swell = self.w_extra[:, LIFT]
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
                                 sediment_km(self.w_cover, self.w_extra))
@@ -338,6 +345,8 @@ class Simulation:
         pl.rock[o, r] = self.w_rock
         pl.cover[o, r] = self.w_cover
         pl.extra[o, r] = self.w_extra
+        pl.rec[o, r] = self.w_rec
+        pl.lith[o, r] = self.w_lith
 
     # ------------------------------------------------------------- queries
     def heat(self) -> float:

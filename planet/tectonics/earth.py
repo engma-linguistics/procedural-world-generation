@@ -14,6 +14,8 @@ import numpy as np
 
 from .. import climate, hydrology, kernels, surface
 from ..geo import R_KM
+from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
+from . import record
 from .isostasy import CARB, COAL, EVAP, MIX, SAND, elevation, isostasy, ocean_depth, sediment_iso, sediment_km
 
 
@@ -235,14 +237,20 @@ def erode(sim, col):
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep)
     sim.book("erosion", t0, col.t, cont)
+    # the basement comes up by what's worn off net (the strata: in sediments())
+    col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
+    col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)
     sim.lake_kind, sim.lake_depth = lk["kind"], lk["depth"]
     return dep, lk["kind"]
 
 
 def sediments(sim, col, dep, lake):
-    """Which kind of sediment forms where. In place on col.x; returns the
-    chemical deposits (km of crust per cell), which are added later with
-    the reefs.
+    """Which kind of sediment forms where. In place on col.x, and on the
+    strata: a cell that lost more cover to erosion than it got loses its
+    top, one that got more gains a layer (what rivers lay down on land is
+    sandstone, what settles in the sea mud, shale; a deposit passing over
+    eroding ground isn't kept). Returns the chemical deposits (km of evaporite and of
+    coal per cell), which are added later with the reefs.
       sand       near its source (lakes, rivers, beaches, deltas); farther
                  out only mud settles. Desert winds sort loose cover into dunes.
       evaporite  where water evaporates faster than it arrives: closed
@@ -255,6 +263,9 @@ def sediments(sim, col, dep, lake):
     e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.swell - sim.sea_level, sediment_km(col.cover, x))
     land = e > 0
     x[:, SAND] += dep * np.where(land, 0.6, np.where(e > -200, 0.5, 0.15))
+    net = dep - col.eroded_cover
+    record.remove_top(col.rec, col.lith, np.maximum(-net, 0))
+    record.add_top(col.rec, col.lith, np.maximum(net, 0), np.where(land, SANDSTONE, SHALE).astype(np.uint8), sim.t)
     shale = np.maximum(cover - x[:, MIX].sum(1), 0)
     dunes = land & (sim.precip < 200)
     x[:, SAND] += np.where(dunes, shale * (1 - np.exp(-0.01 * dt)), 0)
@@ -267,13 +278,15 @@ def sediments(sim, col, dep, lake):
     coal = swamp * p.coal_rate * dt
     x[:, EVAP] += evap
     x[:, COAL] += coal
-    return evap + coal
+    return evap, coal
 
 
 def bury(sim, col):
     """Deep in a thick pile the sediment is cooked into metamorphic rock:
-    it stays crust, but it's basement now, not cover."""
+    it stays crust, but it's basement now, not cover (the bottom of the
+    strata)."""
     cooked = np.maximum(col.cover - sim.params.metamorphic_depth, 0)
+    record.remove_bottom(col.rec, col.lith, cooked)
     col.x[:, MIX] *= (1 - cooked / np.maximum(col.cover, 1e-9))[:, None]
     col.cover = col.cover - cooked
 
@@ -285,8 +298,11 @@ def reefs(sim, col, dep, chem):
     becomes an atoll; carried out of the tropics, the reef dies and it
     drowns into a flat-topped seamount (the Darwin point, ~30 deg).
     Muddy water from big rivers stops them (no reefs off the Amazon).
-    The chemical sediments (evaporite, coal) join the crust here too."""
+    The chemical sediments (chem: km of evaporite and of coal) join the
+    crust here too. All go on top of the strata."""
     p, dt = sim.params, sim.dt
+    evap, coal = chem
+    chem = evap + coal
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
     e = elevation(col.t, sim.w_age, cont, rock, sim.swell - sim.sea_level, sed)
@@ -297,3 +313,7 @@ def reefs(sim, col, dep, chem):
     col.x[:, CARB] += carb
     col.t, col.cover = col.t + chem, col.cover + chem
     sim.book("reef+chem", 0, carb + chem, cont)
+    n = sim.grid.n
+    record.add_top(col.rec, col.lith, evap, np.full(n, EVAPORITE, np.uint8), sim.t)
+    record.add_top(col.rec, col.lith, coal, np.full(n, COAL_ROCK, np.uint8), sim.t)
+    record.add_top(col.rec, col.lith, carb, np.full(n, LIMESTONE, np.uint8), sim.t)
