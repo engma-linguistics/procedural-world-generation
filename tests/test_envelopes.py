@@ -67,13 +67,13 @@ EARTH = Path(__file__).resolve().parent.parent / "data" / "earth" / "L6.npz"
 @pytest.mark.skipif(not EARTH.exists(), reason="Earth data not downloaded (run tools/earth_check.py once)")
 def test_earth_climate_score():
     """The climate on real Earth geography keeps matching observed Koppen
-    main groups on at least ~2/3 of land (70% when calibrated, Oct 2026)."""
+    main groups on at least ~2/3 of land: earth_data.koppen_agreement's
+    area-weighted "group" score (70.7% when calibrated, Oct 2026)."""
     from planet.grid import build_grid
+    from tools.earth_data import koppen_agreement
     e = np.load(EARTH)
     g = build_grid(6)
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
     c = climate.compute(g, elev, 0.0, 23.4, ice)
-    land = (elev > 0) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
-    obs_group = np.array([climate.KOPPEN[int(k)][1][0] if 0 <= k < len(climate.KOPPEN) else "?" for k in obs])
-    agree = (GROUP[c["koppen"][land]] == obs_group[land]).mean()
-    assert agree >= 0.66, agree
+    agree = koppen_agreement(g, c["koppen"], obs, elev)["group"]
+    assert agree >= 66, agree

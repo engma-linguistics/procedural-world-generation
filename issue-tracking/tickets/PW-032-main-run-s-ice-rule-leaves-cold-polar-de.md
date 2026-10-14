@@ -2,7 +2,7 @@
 id: PW-032
 title: Main run's ice rule leaves cold polar deserts bare
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: m
@@ -21,4 +21,5 @@ where an ice sheet would cover them (ice flows in from wetter margins; East Anta
 little snow). Revisit it in the main model, e.g. let ice extent spread from accumulating margins.
 
 ## Updates
+- 2026-10-14: Status todo -> done. Fixed in d38bc09 (climfix, with PW-102): cold ground with too little snow of its own is iced when connected to a snowier part of the same cold region. L6 seed 21: polar land iced 28 -> 63%.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Glacial time zoom ('Related: the main run's ice rule').

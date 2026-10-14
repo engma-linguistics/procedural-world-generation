@@ -39,8 +39,6 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from planet import climate  # noqa: E402
-from planet import timeline as T  # noqa: E402
 from planet import world as W  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import earth_on_grid  # noqa: E402
@@ -77,15 +75,6 @@ def build(level: int = 6) -> dict:
             "global_temp_c": 14.5, "sea_level_m": 0.0}
     world = W.finish(grid, elev, extra, meta, erosion=0.0, dT=0.0, tilt=TILT, params={"earth": True},
                      t0=t0, ice=ice)
-    # winds, currents and the jet stream: world.finish doesn't keep them, so
-    # compute the climate once more (the same inputs: erosion is off)
-    c = climate.compute(grid, elev, 0.0, TILT, ice)
-    land = elev > 0
-    vec = (T.vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
-           + T.vec_layers(grid, "current", np.where(land[:, None], 0.0, c["current"]))
-           + T.vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"])))
-    for k, v in vec:
-        world["layers"][k] = np.round(v, 2)
     world["meta"]["generated_in_s"] = round(time.time() - t0, 1)
     return world
 

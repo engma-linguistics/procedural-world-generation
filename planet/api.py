@@ -2,7 +2,8 @@
 from the viewer. Plain functions plus a one-job-at-a-time queue, so tests can
 drive them without a socket.
 
-  POST /api/zoom      {run, t} or {world}, plus {lat, lon, size_km, res_km}
+  POST /api/zoom      {run, t} or {world}, plus {lat, lon, size_km, res_km,
+                      seed?, iterations? (landscape-pass iterations, default 15)}
                       -> {"job": id}
   GET  /api/jobs/<id> -> {"status": queued|running|done|error, "progress": 0..1,
                           "message", "zoom" (when done), "error" (when failed)}
@@ -58,6 +59,9 @@ def parse_zoom_request(req: dict) -> dict:
     out = {"lat": _num(req, "lat"), "lon": _num(req, "lon"), "size_km": _num(req, "size_km", 1000)}
     out["res_km"] = _num(req, "res_km", out["size_km"] / 500)
     out["seed"] = int(_num(req, "seed", 1))
+    out["iterations"] = int(_num(req, "iterations", 15))
+    if not 1 <= out["iterations"] <= 100:
+        raise BadRequest("iterations must be within 1..100")
     if not -90 <= out["lat"] <= 90:
         raise BadRequest("lat must be within -90..90")
     out["lon"] = (out["lon"] + 180) % 360 - 180
@@ -141,7 +145,7 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
         world_path = slice_run(r["run"], r["t"], lambda f, msg: progress(0.5 * f, msg))
     else:
         world_path = S.find_world(r["world"])
-    zid = Z.zoom_id(world_path.stem, r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"])
+    zid = Z.zoom_id(world_path.stem, r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], r["iterations"])
     if S.exists("zoom", zid):
         progress(1.0, f"zoom {zid} already exists")
         return {"zoom": zid, "world": world_path.stem}
@@ -152,7 +156,7 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
         progress(0.5 + 0.5 * min(done[0], 4) / 5, msg.strip())
 
     progress(0.5, "zooming in")
-    out = Z.zoom(str(world_path), r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], log=log)
+    out = Z.zoom(str(world_path), r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], r["iterations"], log=log)
     progress(1.0, "done")
     return {"zoom": out.name, "world": world_path.stem}
 

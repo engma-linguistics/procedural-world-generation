@@ -23,7 +23,8 @@ of storms thousands of km away (Southern Ocean swell on Chile, Cape Town,
 Western Australia; North Atlantic swell on Ireland and Portugal).
 
 For each ocean cell, rays are traced outward over the sea in N_DIR
-directions, up to D_MAX km or the first land (or winter sea ice). Walking
+directions, up to D_MAX km or the first land (or sea ice, where a half-year
+is mostly frozen). Walking
 back in along each ray, the sea state travelling toward the cell grows,
 using the "equivalent fetch" method, under each stretch's wind component
 along the ray (directional spreading ~cos^2 around the wind), decays as
@@ -33,6 +34,12 @@ Mexico's or the North Sea's take the edge off). Summing the directions
 gives the power arriving at the cell. A coast in the lee of land gets
 little: every ray toward the sea is short, and the waves in the long ones
 travel away from it.
+
+Sea ice (sea_ice_share): the share of each half-year a sea cell is
+frozen, from a sine through its warmest and coldest months crossing
+climate.FREEZE. The power arriving in a half-year is scaled by the cell's
+open-water share of it, so an Arctic coast open for ~3 months gets waves
+for those months only (and its deltas lean river-dominated).
 
 Wind speed: the climate's half-year mean winds are vectors (~1 = a steady
 trade wind, ~7 m/s). Wave power grows as ~U^5, so storms dominate; the
@@ -60,6 +67,9 @@ A crude physical proxy, in three factors:
    shelf): amplification 1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a
    friction term (Bay of Fundy, Patagonia, NW Australia, the Yellow Sea).
    Shelves far wider than that lose the tide to friction instead (Siberia).
+   Sea ice adds friction at the top of the water column (ice-ocean drag is
+   comparable to bottom drag): both friction terms grow by ICE_FRIC x the
+   share of the year the sea is frozen (Arctic shelves).
 3. Funnelling. A tide running into a narrowing embayment is squeezed
    (Green's law: amplitude ~ width^-1/2): the fewer directions open to
    the sea within R_NEAR km, the bigger the tide (the head of the Bay of
@@ -127,6 +137,7 @@ L_SHELF_FRIC = 1200.0  # km: decay of the tide over a shelf wider than lambda/4
 R_NEAR = 300.0  # km: the reach that counts a direction as open to the sea (funnelling)
 SELF_KM = 5000.0  # km: a sea this wide (sqrt of its area) raises a full tide on its own
 T_M2 = 44712.0  # s: the main lunar tide's period
+ICE_FRIC = 1.0  # extra shelf friction (x R_FRIC, / L_SHELF_FRIC) under a sea frozen all year
 
 
 @njit(cache=True)
@@ -276,14 +287,29 @@ def _season_winds(grid, elev, c, ice):
         j, baro = climate.jet_stream(grid, t_s)
         tr = climate.storm_track(grid, j, baro, climate.TUNE)
         tracks.append(STORM_ZONAL * climate.storminess(grid, t_s) / 7.0 + (1 - STORM_ZONAL) * tr)
-    U, D, icy = [], [], []
-    ocean = elev <= 0
-    for v, tr, t_s in zip((c["wind_jul"], c["wind_jan"]), tracks, temps):
+    U, D = [], []
+    for v, tr in zip((c["wind_jul"], c["wind_jan"]), tracks):
         sp = np.linalg.norm(v, axis=1)
         U.append(GUST * (U_TRADE * sp + U_STORM * np.clip(tr, 0, 2)))
         D.append(np.where(sp[:, None] > 1e-6, v / np.maximum(sp, 1e-6)[:, None], 0.0))
-        icy.append(ocean & (t_s < climate.FREEZE))  # the sea freezes over in that half-year
-    return np.array(U), np.array(D), np.array(icy)
+    return np.array(U), np.array(D), sea_ice_share(grid, elev, c)
+
+
+def sea_ice_share(grid, elev: np.ndarray, c: dict) -> np.ndarray:
+    """(2, cells): the share of each half-year (jul, jan) that a sea cell is
+    frozen (0 on land): the monthly temperature taken as a sine between the
+    coldest and warmest months, frozen below climate.FREEZE. Its annual mean
+    is the share of the year under ice."""
+    ocean = np.asarray(elev, float) <= 0
+    tm = 0.5 * (np.asarray(c["t_warm"], float) + np.asarray(c["t_cold"], float))
+    a = np.maximum(0.5 * (np.asarray(c["t_warm"], float) - np.asarray(c["t_cold"], float)), 1e-6)
+    th = np.arccos(np.clip((climate.FREEZE - tm) / a, -1.0, 1.0))  # open while |phase from the warm peak| < th
+    open_warm = np.minimum(th, np.pi / 2) / (np.pi / 2)
+    open_cold = np.maximum(th - np.pi / 2, 0.0) / (np.pi / 2)
+    north = grid.lat >= 0
+    jul = np.where(north, 1 - open_warm, 1 - open_cold)
+    jan = np.where(north, 1 - open_cold, 1 - open_warm)
+    return np.where(ocean, np.array([jul, jan]), 0.0)
 
 
 def wave_power(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None) -> np.ndarray:
@@ -297,12 +323,16 @@ def wave_power(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None) -
 def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: np.ndarray) -> np.ndarray:
     """wave_power() from given winds: U (seasons, cells) effective speed m/s,
     D (seasons, cells, 3) unit direction the wind blows toward (0: calm),
-    icy (seasons, cells) frozen sea. Mean over the seasons, kW/m."""
+    icy (seasons, cells) the share of the season the sea is frozen (or a
+    bool mask): mostly frozen sea (>= 0.5) stops the waves along the rays,
+    and the power arriving at a cell is scaled by its open-water share.
+    Mean over the seasons, kW/m."""
     elev = np.asarray(elev, float)
     land = elev > 0
     ocean = ~land
     U, D = np.asarray(U, float), np.asarray(D, float)
-    blocked = (np.asarray(icy, bool) | land[None, :]).astype(np.bool_)
+    icy = np.asarray(icy, float)
+    blocked = ((icy >= 0.5) | land[None, :]).astype(np.bool_)
     depth = np.maximum(-elev, 1.0)
     kfric = np.exp(-depth / SHELF_FRIC_M) / SHELF_FRIC_KM
     targets = np.flatnonzero(ocean)
@@ -311,7 +341,7 @@ def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: 
     p = _wave_rays(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, blocked, U, np.ascontiguousarray(D),
                    kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0)
     out = np.zeros(grid.n)
-    out[targets] = p.mean(1)
+    out[targets] = (p * (1.0 - icy[:, targets].T)).mean(1)
     return out
 
 
@@ -335,10 +365,12 @@ def _shelf_width(grid, elev, ocean):
     return W, hs
 
 
-def tide_range(grid, elev: np.ndarray, detail: bool = False):
-    """Tidal range at each ocean cell, m (0 on land). With detail, also a
-    dict of the factors (connection, shelf amplification, funnel, shelf
-    width km, openness)."""
+def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarray | None = None):
+    """Tidal range at each ocean cell, m (0 on land). ice_share: the share
+    of the year each cell is frozen (sea_ice_share(...).mean(0)), adding
+    friction on the shelf; None: no sea ice. With detail, also a dict of the
+    factors (connection, shelf amplification, funnel, shelf width km,
+    openness)."""
     elev = np.asarray(elev, float)
     land = elev > 0
     ocean = ~land
@@ -372,8 +404,9 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False):
     W, hs = _shelf_width(grid, elev, ocean)
     lam = np.sqrt(GRAV * hs) * T_M2 / 1000.0  # km
     kw = 2 * np.pi * W / lam
-    amp = 1.0 / np.sqrt(np.cos(np.minimum(kw, np.pi / 2)) ** 2 + R_FRIC ** 2)
-    amp *= np.exp(-np.maximum(W - lam / 4, 0) / L_SHELF_FRIC)
+    fric = 1.0 + ICE_FRIC * (0.0 if ice_share is None else np.asarray(ice_share, float))
+    amp = 1.0 / np.sqrt(np.cos(np.minimum(kw, np.pi / 2)) ** 2 + (R_FRIC * fric) ** 2)
+    amp *= np.exp(-np.maximum(W - lam / 4, 0) * fric / L_SHELF_FRIC)
     # 3. funnelling
     fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR)) ** 0.5, 0.65, 2.2)
     out = np.where(ocean, R_OPEN * conn * amp * fun, 0.0)

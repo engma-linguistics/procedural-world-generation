@@ -998,7 +998,9 @@ TUNE = dict(
     rh_c=0.8,  # relative humidity above which the large-scale rain runs at full rate...
     rh_pow=3.0,  # ...and how fast it falls off below it
     # winds and seasons
-    ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be
+    ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be ...
+    ice_cool_km=300.0,  # ... in full where the land this far around is all ice (a small cap sits in
+    # its surroundings' air)
     belt_shift=10.0,  # deg the tropical rain belt follows the sun at the solstice (times tilt/23.4)
     hk=0.64,  # the half-years' mean of a seasonal swing (2/pi of the peak, for a sine)
     monsoon=1.0,  # strength of the land-sea pressure winds ...
@@ -1335,7 +1337,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                              meltwater - evaporation), global mean taken off
       sea_evap               mm/yr: evaporation from the sea
       sea_ice_growth         m: sea ice frozen per winter
-    and moc_sites: a list of dicts per sinking site (lat, lon, sv, drho,
+    and ground: (t_warm, t_cold, temp) of the bare ground under the ice (ice_surface
+    turns them back into the ice's), moc_sites: a list of dicts per sinking site (lat, lon, sv, drho,
     area_km2, heat_pw) and moc_state, a dict to pass on as moc_start.
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
@@ -1415,8 +1418,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # (the rain model lets the air take up water over sea ice too; it doesn't)
     open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale * open_y, 0.0)
-    fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune)
-    t_warm, t_cold, temp = _land_finish(t_warm, t_cold, temp, **fin)
+    fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
+               cover=ice_cover(grid, ice, land, tune))
+    t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
 
     # The deep ocean's overturning (ocean.py): fresh water in and out of the
@@ -1441,7 +1445,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     if oc["sites"]:
         sst = oc["sst"]
         t_warm, t_cold, temp, _ = _air_temps(sst=sst, **air)
-        t_warm, t_cold, temp = _land_finish(t_warm, t_cold, temp, **fin)
+        t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
         wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
@@ -1450,7 +1454,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                 sss=oc["sss"], density=oc["density"], density_winter=oc["density_w"], overturning=oc["sinking"],
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],
                 sea_evap=sea_evap, sea_ice_growth=ice_m, moc_sites=oc["sites"],
-                moc_state=oc["state"])
+                moc_state=oc["state"], ground=ground)
 
 
 def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune):
@@ -1490,8 +1494,10 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     return t_warm, t_cold, temp, open_w
 
 
-def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, ocean, tune):
-    """The rain's and the ice's effect on the land's temperatures."""
+def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, ocean, tune):
+    """The rain's and the ice's effect on the land's temperatures. Returns
+    (t_warm, t_cold, temp) on the ice surface and the same three for the
+    bare ground under it (see ice_surface)."""
     # Wet ground and plants spend the summer sun on evaporating water rather
     # than on heating the air: rainy summers stay cooler, droughty ones and
     # deserts get hotter (Houston vs Phoenix). (The rain kernel feels this too.)
@@ -1499,15 +1505,53 @@ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, ocean, tu
     dry = 1.0 - 2.0 * np.clip(np.log10(np.maximum(p_sum, 1.0) / 100.0) / 1.2, 0, 1)  # +1 desert .. -1 wet
     t_warm = np.where(land, t_warm + tune["evap_cool"] * dry, t_warm)
     temp = np.where(land, temp + 0.5 * tune["evap_cool"] * dry, temp)
-    # An ice sheet keeps itself cold: its white surface reflects most of the
-    # sunshine, and in summer melting holds it near 0 C however warm the air
-    # (Antarctica's coast reaches ~0 C in summer, its plateau ~-30 C). So
-    # once ice has formed it outlasts the climate that made it.
     # (near the equator the rainy 'summer' can be the cooler half-year:
     # warmest and coldest are whichever is warmer and colder)
     t_warm, t_cold = np.maximum(t_warm, t_cold), np.minimum(t_warm, t_cold)
-    on_ice = (ice > 0) & ~ocean
-    cool = tune["ice_cooling"] * on_ice
+    # the bare ground under the ice: its own height, no white surface
+    up = LAPSE * np.where(land, ice, 0.0)
+    ground = (t_warm + up, t_cold + up, temp + up)
+    return (*ice_surface(*ground, np.where(land, ice, 0.0), cover, tune), ground)
+
+
+def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None = None) -> np.ndarray:
+    """How much (0..1) of ice_cooling land ice (m) gets: the share of the land
+    within ~ice_cool_km that is under ice (~1 on and around a big sheet,
+    small on a lone mountain cap), and only away from the tropics, where
+    long cold nights and winters let the air over the ice pool and chill
+    (and where the model's sea-level summers, calibrated on ice-free land,
+    are too warm for an ice surface): none within 15 deg of the equator,
+    in full from 50 deg."""
+    tune = TUNE if tune is None else tune
+    km = tune["ice_cool_km"]
+    a = smooth(grid, ((ice > 0) & land).astype(float), km)
+    b = smooth(grid, land.astype(float), km)
+    polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
+    return np.where(ice > 0, np.clip(a / np.maximum(b, 1e-6), 0.0, 1.0) * polar, 0.0)
+
+
+def ice_cooling(ice, cover, tune=None):
+    """C: how much colder land ice (m) keeps its own surface (its white top,
+    the cold air pooling on it): in full on a big polar sheet, little on a
+    small mountain cap that sits in the warmer air around it, none in the
+    tropics (a cap like Quelccaya's is barely colder than the rock beside
+    it). cover: ice_cover."""
+    tune = TUNE if tune is None else tune
+    return tune["ice_cooling"] * (ice > 0) * cover
+
+
+def ice_surface(t_warm, t_cold, temp, ice, cover, tune=None):
+    """Temperatures on top of land ice (m; 0 = bare ground), from those of
+    the bare ground under it: the ice's own height (lapse rate), and its
+    white surface. An ice sheet keeps itself cold: it reflects most of the
+    sunshine, and in summer melting holds it near 0 C however warm the air
+    (Antarctica's coast reaches ~0 C in summer, its plateau ~-30 C). So
+    once ice has formed it outlasts the climate that made it (but see
+    earth.ice_sheets: only partly). cover: ice_cover."""
+    on_ice = ice > 0
+    up = LAPSE * ice
+    t_warm, t_cold, temp = t_warm - up, t_cold - up, temp - up
+    cool = ice_cooling(ice, cover, tune)
     temp, t_cold = temp - cool, t_cold - cool
     t_warm = np.where(on_ice, np.minimum(t_warm - cool, 0.5 * np.maximum(t_warm - cool, 0)), t_warm)
     # (the melting cap can hold an ice sheet's summer below what its year

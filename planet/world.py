@@ -76,8 +76,17 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
         # wave crest, and the tidal range, m
         "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
-        "tide_range": np.round(coast.tide_range(grid, elev), 2),
+        "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c).mean(0)), 2),
     }
+    # winds, currents (0 on land) and the jet stream as east/north components,
+    # annual means of the two half-years, plus the July and January winds
+    # (the monsoons), for the viewer's overlays
+    from .timeline import vec_layers
+    for k, v in (vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
+                 + vec_layers(grid, "current", np.where((elev > 0)[:, None], 0.0, c["current"]))
+                 + vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"]))
+                 + vec_layers(grid, "wind_jul", c["wind_jul"]) + vec_layers(grid, "wind_jan", c["wind_jan"])):
+        layers[k] = np.round(v, 2)
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
 

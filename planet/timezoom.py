@@ -22,8 +22,10 @@ Model (per 500-yr step, see simulate)
   the poles and tropics.
 - Climate: a full climate.compute every climate_every kyr on the current
   surface (ice domes included, as height) and global temperature; in
-  between the stored fields are shifted by the lapse rate over the changed
-  surface, the global change and the orbital anomaly. Global temperature
+  between the stored fields (blended from the previous full climate to the
+  newest over the interval, so they change smoothly, ~climate_every late)
+  are shifted by the lapse rate over the changed surface, the global
+  change and the orbital anomaly. Global temperature
   follows the ice: CO2 drops as ice grows (~ -2.5 C at an Earth-LGM-sized
   ice volume, then saturates) and new ice sheets reflect sunlight (a
   smaller version of the main run's ice_albedo rule, capped). Rain scales
@@ -119,7 +121,8 @@ class TZParams:
     summer_damp: float = 0.6  # its summer warmth (above the annual mean) is damped by this share,
     melt_hold: float = 0.5  # temperatures above 0 C are scaled by this (as climate.compute),
     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
-    absorb_km: float = 1000.0  # ... mixed over this scale (km; the air mass), 0 = locally
+    absorb_km: float = 600.0  # ... mixed over this scale (km; the air mass), 0 = locally (wider pulls the
+    # open sea's full absorption onto coastal ice: Earth's Eemian-like start then melts +25 m in 10 kyr)
     bright_smb: float = 0.5  # m/yr: bright where snow outlasts the summer, bare where it loses this much ...
     bare_share: float = 0.3  # ... and bare ice keeps this share of the snow's effects
     albedo_share: float = 0.2  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
@@ -158,8 +161,8 @@ def orbit_phases(p: TZParams, seed: int, earth: bool = False) -> np.ndarray:
     mode = ("eemian" if earth else "seed") if p.phases == "auto" else p.phases
     if mode == "zero":
         return np.zeros(4)
-    if mode == "eemian":
-        return np.array([0.0, 90.0, 0.0, 0.0])
+    if mode == "eemian":  # (405 kyr term at 0: eccentricity ~0.042, as at 127 ka; both peaks gave 0.052)
+        return np.array([0.0, 90.0, 0.0, 90.0])
     if mode == "seed":
         return np.random.default_rng([seed, 7919]).uniform(0, 360, 4)
     return np.array([float(x) for x in p.phases.split(",")])
@@ -418,8 +421,17 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         if "bias" in fields_:
             b = fields_["bias"]
             tw, tc, pj, pn = tw + b["t_warm"], tc + b["t_cold"], pj * b["p_jul"], pn * b["p_jan"]
-        fields_.update(t_mean=0.5 * (tw + tc), half=0.5 * np.maximum(tw - tc, 0), p_jul=pj, p_jan=pn,
-                       s0=np.maximum(surf, 0), dTg0=dTg)
+        new = dict(t_mean=0.5 * (tw + tc), half=0.5 * np.maximum(tw - tc, 0), p_jul=pj, p_jan=pn,
+                   s0=np.maximum(surf, 0), dTg0=dTg)
+        # the steps until the next refresh blend from the last one to this one, so the climate
+        # (snowfall above all) changes smoothly instead of jumping at each refresh
+        fields_["prev"], fields_["next"] = fields_.get("next", new), new
+        fields_.update(new)
+
+    def blend(w):
+        """The climate fields a share w (0..1) of the way from the last full climate to the newest."""
+        a, b = fields_["prev"], fields_["next"]
+        fields_.update({k: (1 - w) * a[k] + w * b[k] for k in b})
 
     def obs_bias(c):
         """Observed minus modelled climate at the start (temperatures: a
@@ -511,6 +523,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                                   p.ice_albedo_max))
         if s_no % refresh == 0:
             full_climate(dTg)
+        blend((s_no % refresh) / refresh)
         surf, grounded = grounded_surface()
         land = surf > 0
         dt_wet = amp * (dTg - fields_["dTg0"])

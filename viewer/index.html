@@ -146,7 +146,9 @@
     <label data-needs-volc="hotspots"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
     <label data-needs-volc="volcanoes"><input type="checkbox" id="volcanoes" checked> Volcanoes</label>
     <!-- data-needs: shown only when the run frame or world has that layer -->
-    <label data-needs="wind_e"><input type="checkbox" id="winds"> Winds (yearly average)</label>
+    <label data-needs="wind_e"><input type="checkbox" id="winds"> Winds <span id="windYear">(yearly average)</span>
+      <select id="windSeason" data-needs="wind_jul_e" style="flex: none; width: auto; padding: 1px" title="Surface winds averaged over the year, or over the July / January half-years (monsoons reverse between them)">
+        <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
     <label data-needs="current_e"><input type="checkbox" id="currents"> Ocean currents</label>
     <label data-needs="jet_e" title="Upper-level winds (~10 km up), yearly average"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
@@ -642,7 +644,10 @@ function buildOverlays() {
     return lineObj(pts, color);
   };
   // runs have these in every keyframe; worlds only when saved with them (tools/earth_world.py)
-  if ($('winds').checked && L.wind_e) overlays.winds = flowArrows('wind_e', 'wind_n', 0xffe08a, false, 2, 50);
+  if ($('winds').checked && L.wind_e) {
+    const w = windKey();  // 'wind' or a half-year's 'wind_jul' / 'wind_jan'
+    overlays.winds = flowArrows(w + '_e', w + '_n', 0xffe08a, false, 2, 50);
+  }
   if ($('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1, 50);
   if ($('jet').checked && L.jet_e) overlays.jet = flowArrows('jet_e', 'jet_n', 0xd59cff, false, 2, 2.5, 1.02);
   if ($('arrows').checked && L.plate) {
@@ -869,7 +874,8 @@ function renderLegend() {
     if (has((v) => v[3] === 2)) el.innerHTML += '<span><span class="sw" style="background:#5ff0e6"></span>atoll</span>';
   }
   if ($('winds').checked && V.layers.wind_e)
-    el.innerHTML += '<span><span class="sw" style="background:#ffe08a"></span>wind</span>';
+    el.innerHTML += `<span><span class="sw" style="background:#ffe08a"></span>wind${
+      { wind_jul: ' (July)', wind_jan: ' (January)' }[windKey()] || ''}</span>`;
   if ($('currents').checked && V.layers.current_e)
     el.innerHTML += '<span><span class="sw" style="background:#7fffd4"></span>ocean current</span>';
   if ($('jet').checked && V.layers.jet_e)
@@ -882,6 +888,7 @@ function renderLayerButtons() {
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}">${l}</button>`).join('');
   $('arrowsLbl').style.display = hasLayer('plate') && !V.tz ? '' : 'none';
   document.querySelectorAll('[data-needs]').forEach((e) => (e.style.display = hasLayer(e.dataset.needs) ? '' : 'none'));
+  $('windYear').style.display = hasLayer('wind_jul_e') ? 'none' : '';  // the season picker says it instead
   document.body.classList.toggle('run', V.kind === 'run');
   document.querySelectorAll('.worldOnly').forEach((e) => (e.style.display = V.kind === 'world' ? '' : 'none'));
   document.querySelectorAll('.runOnly').forEach((e) => (e.style.display = V.kind === 'run' ? '' : 'none'));
@@ -1052,7 +1059,7 @@ function coldness(s) {
   return Math.min(1, Math.max(0, (s.ice_pct - 1) / 2, (13 - s.global_temp_c) / 4));
 }
 const COLD_HELP = 'Blue under the slider: cold eras (land ice on more than 1% of the surface, or a global mean below 13 °C; ' +
-  'darkest = Earth-like icehouse or colder). That is where a glacial time zoom shows ice ages.';
+  'darkest = Earth-like icehouse or colder; smoothed over 5 keyframes). That is where a glacial time zoom shows ice ages.';
 
 // The tint strip under the time slider: cold eras for a main run; for a time zoom, the ice volume.
 function drawTint() {
@@ -1060,16 +1067,26 @@ function drawTint() {
   cv.width = w; cv.height = 1;
   const g = cv.getContext('2d');
   g.clearRect(0, 0, w, 1);
-  let val = fr.map((f) => coldness(f.stats));
+  // a running mean over 5 keyframes: temperature wobbles frame to frame near
+  // the thresholds, which drew the strip as stripes (PW-081)
+  const raw = fr.map((f) => coldness(f.stats));
+  let val = raw.map((_, i) => {
+    const win = raw.slice(Math.max(0, i - 2), i + 3);
+    return win.reduce((a, b) => a + b, 0) / win.length;
+  });
   if (V.tz) {
     const sl = fr.map((f) => f.stats.sea_level_change_m), hi = Math.max(...sl), lo = Math.min(...sl);
     val = sl.map((v) => (hi - lo > 1 ? (hi - v) / (hi - lo) : 0));
   }
   const dx = w / Math.max(fr.length - 1, 1);
   val.forEach((c, i) => {
-    if (c < 0.05) return;
-    g.fillStyle = `rgba(120, 190, 255, ${(0.15 + 0.7 * c).toFixed(2)})`;
-    g.fillRect(Math.round((i - 0.5) * dx), 0, Math.ceil(dx) + 1, 1);
+    if (c < 0.01) return;
+    // ramps in from 0 so a value wobbling near the bottom doesn't switch on and off
+    const a = c < 0.1 ? 2.2 * c : 0.15 + 0.7 * c;
+    g.fillStyle = `rgba(120, 190, 255, ${a.toFixed(2)})`;
+    // abutting, not overlapping: overlapped translucent rects doubled the alpha in thin stripes
+    const x0 = Math.max(0, Math.round((i - 0.5) * dx)), x1 = Math.round((i + 0.5) * dx);
+    g.fillRect(x0, 0, Math.max(x1 - x0, 1), 1);
   });
   $('track').title = V.tz ? 'Blue under the slider: how much ice there is (darkest = the largest ice volume of this time zoom)' : COLD_HELP;
 }
@@ -1150,11 +1167,38 @@ let downAt = null;
 renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downAt || hovered < 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
-  const txt = `${V.name}: ` + describe(hovered).join(', ');
+  const txt = `${refOf(hovered)} ${V.name}: ` + describe(hovered).join(', ') + ` ${linkOf(hovered)}`;
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
   pickCell(hovered);
 });
 renderer.domElement.addEventListener('dblclick', () => { if (hovered >= 0) { pickCell(hovered); startZoom(); } });
+// References (PW-105, convention in issue-tracking/README.md): run:<id>@<t>Myr(lat,lon) or
+// world:<id>(lat,lon), and a deep link that reopens the viewer there (?run=&t=&lat=&lon=, picking the cell)
+function refOf(i) {
+  const ll = `(${V.grid.lat[i].toFixed(2)},${V.grid.lon[i].toFixed(2)})`;
+  if (V.kind === 'run') return `run:${V.run.id || V.dir}@${V.t}Myr${ll}`;
+  return V.id ? `world:${V.id}${ll}` : ll;
+}
+function linkOf(i) {
+  const u = new URL(location.href);
+  for (const k of [...u.searchParams.keys()]) if (!['mode', 'layer'].includes(k)) u.searchParams.delete(k);
+  if (V.kind === 'run') { u.searchParams.set('run', V.dir); u.searchParams.set('t', V.t); }
+  else if (V.id) u.searchParams.set('world', V.id + '.json');
+  u.searchParams.set('lat', V.grid.lat[i].toFixed(2)); u.searchParams.set('lon', V.grid.lon[i].toFixed(2));
+  return u.href;
+}
+// ?lat=&lon=: turn to the place and pick the nearest cell
+function goToLatLon(lat, lon) {
+  const r = Math.PI / 180, x = Math.cos(lat * r) * Math.cos(lon * r), y = Math.cos(lat * r) * Math.sin(lon * r), z = Math.sin(lat * r);
+  const G = V.grid; let best = -1, bd = -2;
+  for (let i = 0; i < V.n; i++) {
+    const a = G.lat[i] * r, b = G.lon[i] * r, d = Math.cos(a) * (Math.cos(b) * x + Math.sin(b) * y) + Math.sin(a) * z;
+    if (d > bd) { bd = d; best = i; }
+  }
+  $('spin').checked = false;
+  turnTo(lat, lon);
+  pickCell(best);
+}
 function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => (el.style.opacity = 0), 1800); }
 
 // collapsible panel sections: remember which are open. localStorage can be
@@ -1193,6 +1237,15 @@ $('smooth').addEventListener('change', paint);
 const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'jet',
                      'axis', 'tropics'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
+// the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
+function windKey() {
+  const s = $('windSeason').value, k = s ? 'wind_' + s : 'wind';
+  return s && V.layers[k + '_e'] ? k : 'wind';
+}
+$('windSeason').addEventListener('change', () => {
+  if ($('windSeason').value) $('winds').checked = true;
+  refresh(() => { buildOverlays(); renderLegend(); });
+});
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
@@ -1518,7 +1571,8 @@ const COLOUR_NEEDS = {
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
 };
-const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n'], currents: ['current_e', 'current_n'],
+const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
+                        currents: ['current_e', 'current_n'],
                         jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
 
 function layersNeeded() {
@@ -1683,6 +1737,7 @@ addEventListener('drop', async (e) => {
 });
 
 // URL options, e.g. ?run=19385e&t=120&layer=rainfall&arrows=1  or  ?world=ae28af.json&mode=map&pentas=1
+// (&lat=..&lon=..: turn to that place and pick its cell; clicking a cell copies such a link)
 // (6-hex ids; world= is the file name with .json; layer= is a viewer layer name, spaces URL-encoded: crust%20age)
 function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
@@ -1691,6 +1746,7 @@ function applyUrlOptions() {
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
+  if (p.get('season')) $('windSeason').value = p.get('season');  // jul | jan: the wind overlay's half-year
   return p;
 }
 const urlp = applyUrlOptions();
@@ -1734,6 +1790,7 @@ async function init() {
   $('worldSel').value = want;
   if (want.startsWith('run:')) await loadRun(want.slice(4), urlp.has('t') ? +urlp.get('t') : null);
   else await loadSelection(want);
+  if (urlp.has('lat') && urlp.has('lon')) { goToLatLon(+urlp.get('lat'), +urlp.get('lon')); urlp.delete('lat'); urlp.delete('lon'); }
 }
 $('delBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;

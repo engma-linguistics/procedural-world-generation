@@ -64,7 +64,8 @@ Caspian count as sea). A cell is land if its land fraction >= 0.5. Then:
             model only uses surface height (temperature) and ice > 0.
 Observed fields are sampled (nearest pixel) at each cell centre:
   obs_koppen    KOPPEN id (-1 where Kottek has no land), As -> Aw
-  obs_temp, obs_t_warm, obs_t_cold   NCEP 2 m, annual mean / warmest / coldest month (C)
+  obs_temp, obs_t_warm, obs_t_cold   NCEP 2 m, annual mean / warmest / coldest month (C),
+                interpolated at sea level and moved to the cell's height at 6.5 C/km
   obs_precip, obs_p_jul, obs_p_jan   GPCC land (mm/yr; NaN over sea/Antarctica);
                 p_jul is the Apr-Sep rate, p_jan the Oct-Mar rate (as the model)
   obs_gpcp      GPCP annual precipitation, land + ocean (mm/yr)
@@ -91,7 +92,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "earth"
-CACHE_VERSION = 2
+CACHE_VERSION = 4
 
 ERDDAP = [
     "https://upwell.pfeg.noaa.gov/erddap/griddap/",
@@ -230,6 +231,12 @@ def _sample(r: dict, lat: np.ndarray, lon: np.ndarray, val: np.ndarray | None = 
     """Nearest-pixel lookup of a regular(ish) lat/lon raster at points.
     Works for any monotonic lat axis (incl. Gaussian) and lon in 0..360 or +-180."""
     v = r["val"] if val is None else val
+    yi, xi = _pixel(r, lat, lon)
+    return v[..., yi, xi]
+
+
+def _pixel(r: dict, lat: np.ndarray, lon: np.ndarray):
+    """(row, column) of the raster pixel nearest to each point (see _sample)."""
     rl, ro = r["lat"].astype(float), r["lon"].astype(float)
     order = np.argsort(rl)
     j = np.searchsorted(rl[order], lat).clip(1, len(rl) - 1)
@@ -239,7 +246,26 @@ def _sample(r: dict, lat: np.ndarray, lon: np.ndarray, val: np.ndarray | None = 
     dlon = 360.0 / len(ro) if ro[-1] - ro[0] < 359.9 else (ro[1] - ro[0])
     xi = np.round(lo / dlon).astype(int) % len(ro)
     xi = np.minimum(xi, len(ro) - 1)
-    return v[..., yi, xi]
+    return yi, xi
+
+
+def _bilinear(r: dict, val: np.ndarray, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+    """Bilinear interpolation of a lat/lon raster (..., lat, lon) at points
+    (monotonic lat axis incl. Gaussian, regular periodic lon). Beyond the
+    first/last latitude row the edge row is used."""
+    rl, ro = r["lat"].astype(float), r["lon"].astype(float)
+    order = np.argsort(rl)
+    rl, v = rl[order], val[..., order, :]
+    j = np.searchsorted(rl, lat).clip(1, len(rl) - 1)
+    fy = np.clip((lat - rl[j - 1]) / (rl[j] - rl[j - 1]), 0, 1)
+    dlon = ro[1] - ro[0]
+    x = np.mod(lon - ro[0], 360.0) / dlon
+    x0 = np.floor(x).astype(int) % len(ro)
+    x1 = (x0 + 1) % len(ro)
+    fx = x - np.floor(x)
+    a = v[..., j - 1, x0] * (1 - fx) + v[..., j - 1, x1] * fx
+    b = v[..., j, x0] * (1 - fx) + v[..., j, x1] * fx
+    return a * (1 - fy) + b * fy
 
 
 def _build(grid) -> dict:
@@ -311,11 +337,55 @@ def _build(grid) -> dict:
 
     t = raster("ncep_t2m")
     tv = np.where(np.abs(t["val"]) > 1e30, np.nan, t["val"]) - 273.15
-    tm = _sample(t, clat, clon, tv)
+    # The reanalysis is a ~1.9 deg grid on its own smooth terrain: sampled
+    # as is, a cell on a steep range gets its pixel's temperature at the
+    # pixel's mean height, and the model (which follows each cell's height)
+    # differs from it in a cell-to-cell speckle of several C over the Andes
+    # and Himalaya (PW-040). So: bring each pixel to sea level with the
+    # model's lapse rate (6.5 C/km) from its mean height (ETOPO surface,
+    # sea as 0), interpolate that smooth field bilinearly to the cell, and
+    # take it back up to the cell's own height.
+    ny, nx = tv.shape[-2:]
+    ty, tx = _pixel(t, LA.ravel(), LO.ravel())
+    pix = ty * nx + tx
+    z_pix = (np.bincount(pix, w * np.maximum(s, 0.0), ny * nx)
+             / np.maximum(np.bincount(pix, w, ny * nx), 1e-12)).reshape(ny, nx)
+    t_sl = tv + 6.5e-3 * z_pix[None]
+    tm = _bilinear(t, t_sl, clat, clon) - 6.5e-3 * np.maximum(surface, 0.0)[None, :]
     out["obs_temp"] = tm.mean(0).astype(np.float32)
     out["obs_t_warm"] = tm.max(0).astype(np.float32)
     out["obs_t_cold"] = tm.min(0).astype(np.float32)
     return out
+
+
+def cell_areas(grid) -> np.ndarray:
+    """Spherical area of each cell (sr), triangle fan from the centre."""
+    k = max(len(c) for c in grid.cell_corners)
+    idx = np.array([c + [c[-1]] * (k - len(c)) for c in grid.cell_corners])
+    a = grid.centers[:, None, :]
+    b = grid.corners[idx]
+    c = grid.corners[np.roll(idx, -1, axis=1)]
+    num = np.abs(np.einsum("nkj,nkj->nk", a, np.cross(b, c)))
+    den = 1 + np.einsum("nkj,nkj->nk", a, b) + np.einsum("nkj,nkj->nk", b, c) + np.einsum("nkj,nkj->nk", c, a)
+    return (2 * np.arctan2(num, den)).sum(1)
+
+
+def koppen_agreement(grid, koppen, obs_koppen, elev) -> dict:
+    """The Earth Koppen score, one definition for earth_check, scorecard and
+    the tests: over the model's land (elev > 0) outside Antarctica (lat >
+    -60) where Kottek has a land class, the share of the *area* (true cell
+    areas) whose model class matches the observed one: "group" (main group
+    A-E) and "exact" (full code), in %. "group_cells" is the unweighted
+    share of cells, which the test floor and scorecard quoted before
+    2026-10-14 (within ~0.1 point of "group" at level 6)."""
+    from planet import climate
+    k, obs = np.asarray(koppen, int), np.asarray(obs_koppen, int)
+    group = np.array([c[1][0] for c in climate.KOPPEN])
+    m = (np.asarray(elev) > 0) & (grid.lat > -60) & (obs >= 0) & (obs < len(group)) & (obs != climate.SEA_CLASS)
+    w = cell_areas(grid)[m]
+    gm, go = group[k[m]], group[obs[m]]
+    return {"group": 100 * float(w[gm == go].sum() / w.sum()), "exact": 100 * float(w[k[m] == obs[m]].sum() / w.sum()),
+            "group_cells": 100 * float((gm == go).mean())}
 
 
 def earth_on_grid(grid) -> dict:

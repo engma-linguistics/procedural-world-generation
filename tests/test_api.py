@@ -23,9 +23,13 @@ def dirs(tmp_path_factory):
 def test_parse_zoom_request():
     r = api.parse_zoom_request({"world": "abc.json", "lat": 10, "lon": 190})
     assert r["world"] == "abc" and r["lon"] == -170 and r["size_km"] == 1000 and r["res_km"] == 2
+    assert r["iterations"] == 15
+    assert api.parse_zoom_request({"world": "abc", "lat": 0, "lon": 0, "iterations": 30})["iterations"] == 30
+    # the default keeps the old ids; other iteration counts get their own zoom
+    assert Z.zoom_id("abc", 0, 0, 100, 1, 1) == Z.zoom_id("abc", 0, 0, 100, 1, 1, 15) != Z.zoom_id("abc", 0, 0, 100, 1, 1, 30)
     for bad in ({"lat": 0, "lon": 0}, {"run": "x", "world": "y", "lat": 0, "lon": 0},
                 {"world": "x", "lat": 95, "lon": 0}, {"world": "x", "lat": 0, "lon": 0, "size_km": 5},
-                {"world": "x", "lat": "north", "lon": 0}, {"run": "x", "lat": 0, "lon": 0}):
+                {"world": "x", "lat": "north", "lon": 0}, {"world": "x", "lat": 0, "lon": 0, "iterations": 0}, {"run": "x", "lat": 0, "lon": 0}):
         with pytest.raises(api.BadRequest):
             api.parse_zoom_request(bad)
 
@@ -68,7 +72,8 @@ def test_highlights_from_run(dirs):
     # nothing computed yet at 40 Myr: cached_only just says so, without building a world
     res = api.highlights({"run": "tiny01", "t": "40"}, cached_only=True)
     assert res["features"] is None and res["world"] is None
-    n_worlds = len(list((dirs / "worlds").glob("*.json")))
+    worlds = lambda: [p for p in (dirs / "worlds").glob("*.json") if p.name != "index.json"]
+    n_worlds = len(worlds())
 
     res = api.highlights({"run": "tiny01", "t": "40"})
     assert res["t_myr"] == 40 and res["features"] and all(f["zoom"] is None for f in res["features"])
@@ -77,7 +82,7 @@ def test_highlights_from_run(dirs):
     # the cache is in a subfolder: world listings and slice lookups don't see it
     W.update_index()
     assert [w["id"] for w in json.loads((dirs / "worlds" / "index.json").read_text())].count(wid) == 1
-    assert len(list((dirs / "worlds").glob("*.json"))) == n_worlds + 1
+    assert len(worlds()) == n_worlds + 1
     assert api.find_slice(dirs / "runs" / "tiny01", 40.0).stem == wid
 
     # now cached (also by world id), and a zoom made the way the viewer makes it is found
@@ -86,7 +91,7 @@ def test_highlights_from_run(dirs):
     f = next(f for f in res["features"] if f["zoomable"])
     zr = api.zoom_request(res["source"], f)
     zid = Z.zoom_id(wid, zr["lat"], zr["lon"], zr["size_km"], zr["res_km"], 1)
-    (dirs / "zooms" / zid).mkdir()
+    (dirs / "zooms" / zid).mkdir(parents=True)
     (dirs / "zooms" / zid / "zoom.json").write_text("{}")
     hit = [g for g in api.highlights({"run": "tiny01", "t": 40})["features"] if g["zoom"]]
     assert [g["title"] for g in hit] == [f["title"]] and hit[0]["zoom"] == zid

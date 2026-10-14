@@ -238,3 +238,22 @@ def test_hook_runs_check_from_edited_path(root, tmp_path):
     bad.unlink()
     r = fire({"tool_name": "Edit", "tool_input": {"file_path": str(bad)}, "cwd": str(tmp_path)})
     assert r.returncode == 0, r.stderr
+
+
+def test_check_warns_on_dangling_data_refs(tmp_path, capsys):
+    repo = tmp_path / "repo"
+    root = repo / "issue-tracking"
+    (root / "tickets").mkdir(parents=True)
+    (root / "inbox").mkdir()
+    for d in ("runs/fe7144", "zooms/f81832", "worlds"):
+        (repo / d).mkdir(parents=True)
+    (repo / "worlds" / "7c5adf.json").write_text("{}")
+    new(root, "Refs", "s", "med", "zoom", "--ref", "run fe7144", "--ref", "world:7c5adf(1.0,2.0)",
+        "--ref", "zoom:f81832", "--ref", "run:abcdef@40Myr(1,2)", "--desc", "Seen on world 000000.")
+    capsys.readouterr()
+    assert check(root) == 0  # a warning, not a failure
+    assert "warning: 1 refs" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        run(root, "check", "--refs")
+    out = capsys.readouterr().out
+    assert "refs run abcdef" in out and "refs world 000000" in out and "fe7144" not in out

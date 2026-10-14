@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from . import highlights as H
 from . import store as S
@@ -58,9 +59,29 @@ def cmd_simulate(args):
           f"events {kinds}  final: {last['plates']} plates, land {last['land_pct']}%")
 
 
-def cmd_slice(args):
+def _at(v: str):
+    """--at: a time in Myr, or 'auto' for the run's representative moment."""
+    if v == "auto":
+        return v
     try:
-        path = T.slice_world(T.find_run(args.run), args.at, args.erosion, force=args.force)
+        return float(v)
+    except ValueError:
+        raise argparse.ArgumentTypeError("a time in Myr, or 'auto'") from None
+
+
+def _resolve_at(run_dir, at):
+    """'auto' -> highlights.representative_time of the run (printed)."""
+    if at != "auto":
+        return at
+    t = H.representative_time(json.loads((Path(run_dir) / "run.json").read_text())["frames"])
+    print(f"representative moment: {t:g} Myr", flush=True)
+    return t
+
+
+def cmd_slice(args):
+    run_dir = T.find_run(args.run)
+    try:
+        path = T.slice_world(run_dir, _resolve_at(run_dir, args.at), args.erosion, force=args.force)
     except T.ReplayMismatch as e:
         raise SystemExit(f"ERROR: {e}")
     print(S.rel(path))
@@ -137,7 +158,7 @@ def cmd_highlights(args):
     from . import api
     if S.exists("run", args.ref):
         run = json.loads((S.find_run(args.ref) / "run.json").read_text())
-        at = run["frames"][-1]["t"] if args.at is None else args.at
+        at = run["frames"][-1]["t"] if args.at is None else _resolve_at(S.find_run(args.ref), args.at)
         req = {"run": args.ref, "t": at}
     else:
         req = {"world": args.ref}
@@ -197,7 +218,9 @@ def main():
 
     sl = sub.add_parser("slice", help="replay a run to one moment and build a full world there")
     sl.add_argument("run", help="run id, e.g. a3f9c2 (see `list`)")
-    sl.add_argument("--at", type=float, required=True, help="time in Myr")
+    sl.add_argument("--at", type=_at, required=True,
+                    help="time in Myr, or 'auto': the run's most typical moment after 300 Myr "
+                         "(land %%, largest landmass and landmass count nearest their medians)")
     sl.add_argument("--erosion", type=float, default=0.3,
                     help="final valley-sharpening pass (erosion already ran during the simulation)")
     sl.add_argument("--force", action="store_true",
@@ -216,7 +239,7 @@ def main():
 
     h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
     h.add_argument("ref", help="world id, or run id (then --at; default: the run's end)")
-    h.add_argument("--at", type=float, help="time in Myr, for a run")
+    h.add_argument("--at", type=_at, help="time in Myr for a run, or 'auto' (see slice --at)")
     h.add_argument("--zoom", type=int, default=0, metavar="N", help="also make regional zooms of the top N")
     h.add_argument("--refresh", action="store_true", help="recompute instead of using the cached list")
     h.set_defaults(func=cmd_highlights)

@@ -2,6 +2,7 @@
 
     uv run python -m planet highlights <world-id>            # or: <run-id> --at <Myr>
     uv run python -m planet highlights <run-id> --at 400 --zoom 5   # also pre-make 5 zooms
+    uv run python -m planet highlights <run-id> --at auto           # a representative moment
 
 Each detector looks for one kind of place (the highest peak, the longest
 mountain range, a big river mouth, a fjord coast...) and returns features:
@@ -32,8 +33,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   (mountains >= 800 m within ~2 cells of the sea), with cool summers (warmest
   month 0..12 C) and enough snow (>= 400 mm/yr) to have fed glaciers. The
   zoom doesn't carve fjords.
-- Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m; hillier
-  is better.
+- Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m with a
+  warmest month <= 30 C (a hothouse Cs at 40 C is correct but no vineyard);
+  hillier is better.
 - rift: diverging plate boundary with continental land of two different
   plates within ~3 cells (a continent splitting, or a new narrow sea).
 - volcanic arc: chains of the run's active arc volcanoes (meta "volcanoes")
@@ -643,6 +645,9 @@ def ice_sheet(ctx: _Ctx) -> list[dict]:
                      quality=0.6 + 0.4 * min(a / 2e6, 1))]
 
 
+MED_MAX_WARM_C = 30.0
+
+
 def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
     """Csa/Csb (hot or warm dry summers, mild wet winters) on hilly but
     not alpine land: where wine country would be."""
@@ -650,7 +655,8 @@ def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
         return []
     k = ctx.L["climate"]
     relief = ctx.ring_max(ctx.elev) - ctx.ring_min(np.where(ctx.land, ctx.elev, 0.0))
-    ok = ctx.land & ((k == 7) | (k == 8)) & (ctx.elev < 1500)
+    # warmest month <= 30 C: Seville, the hottest real wine Csa, is ~28 C
+    ok = ctx.land & ((k == 7) | (k == 8)) & (ctx.elev < 1500) & (ctx.L["warm_month"] <= MED_MAX_WARM_C)
     regions = ctx.components(ok, min_cells=2, bridge=1)
     feats = []
     for rank, cells in enumerate(regions[:top]):
@@ -1432,6 +1438,31 @@ def find(world: dict) -> list[dict]:
     for k, f in enumerate(rest):
         f["rank"] = k + 1
     return rest
+
+
+# ---------------------------------------------------------------------------
+# A representative moment of a run (`--at auto`)
+# ---------------------------------------------------------------------------
+REPRESENTATIVE_AFTER_MYR = 300.0
+
+
+def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR) -> float:
+    """The keyframe time most typical of a run's mature geography: after
+    `after_myr` (once the start-up has settled; the last two thirds for a
+    shorter run), the frame whose land %, largest landmass % and log of the
+    landmass count are jointly closest to that stretch's medians, each
+    measured in its interquartile ranges. Neither the most dispersed nor the
+    most assembled moment, which is what a showcase world should be."""
+    end = frames[-1]["t"]
+    start = after_myr if end > after_myr else end / 3
+    late = [f for f in frames if f["t"] >= start] or frames[-1:]
+    x = np.array([[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
+                   np.log(1 + f["stats"]["landmasses"])] for f in late], float)
+    med = np.median(x, 0)
+    q1, q3 = np.percentile(x, [25, 75], 0)
+    scale = np.maximum(q3 - q1, 1e-6 + 0.05 * np.abs(med))
+    d = np.sqrt((((x - med) / scale) ** 2).sum(1))
+    return float(late[int(np.argmin(d))]["t"])
 
 
 # ---------------------------------------------------------------------------

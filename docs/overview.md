@@ -162,7 +162,7 @@ flowchart LR
   - Air cools 6.5 °C/km with height (the **lapse rate**).
   - Seasons scale with the axial tilt.
   - **Continentality** comes from carrying air temperatures along the seasonal winds, so interiors swing and windward coasts stay mild.
-  - Ice is 10 °C colder (albedo).
+  - A big polar ice sheet is 10 °C colder than bare ground (albedo, cold air pooling on it); a small cap gets less, a tropical one none.
 - **Winds:**
   - The three-cell pattern (**Hadley/Ferrel/polar**: trades, westerlies, polar easterlies), shifted with the season.
   - **Monsoon** winds from land–sea pressure contrasts.
@@ -186,6 +186,11 @@ flowchart LR
   - potential evaporation from sunshine and temperature (**Oudin**);
   - actual evaporation from the **Budyko** curve (Fu's form);
   - runoff = rain − actual evaporation.
+- **Ice sheets** (main run, `earth.ice_sheets`): the average extent over the ice-age cycles, in balance with the current mountains (ice answers its climate in ~10 kyr, far inside a 4 Myr step):
+  - ice holds where the summer on it stays near freezing and snowfall beats the year's degree-day melt (~25 mm/yr on a polar plateau, ~100 on a sheet's margin; a dry tropical plateau stays bare);
+  - existing ice partly keeps itself (its white top, ¾ of its height), so a cap outlives its climate a little but follows its range as it moves or wears down;
+  - cold polar desert is covered by ice flowing in from a snowier part of the same cold region;
+  - thickness is a steady (Nye) profile from the edge: ~330 m at the margin, ~1.9 km 300 km in, up to 4 km; a little thinner for dry sheets and warm (soft) ice.
 
 ![Köppen climate classes](overview/koppen.jpg)
 *World 7c5adf (Earth-like A, 976 Myr), Köppen classes.*
@@ -203,6 +208,7 @@ flowchart LR
 - **Flow accumulation** sums runoff downstream.
 
 **Lakes** are **fill-and-spill** with evaporation:
+0. Hollows less than 20 m deep are filled first: at ~110 km a cell's height is a mean, and channels too small to see drain them. This also holds inside a basin, so dips in a flat floor join the floor instead of becoming pits of their own.
 1. Water rises in all basins at once, and basins merge as they meet.
 2. A basin grows only while its inflow beats the evaporation off its surface.
 3. How it ends:
@@ -210,7 +216,7 @@ flowchart LR
    - It stops first: a **closed salt lake** (the Caspian, Great Salt Lake).
    - It is a dry pit: a **salt pan** (playa).
 
-On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~21% of land drains inland (Earth: ~18%).
+On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth: ~18%).
 
 ## 6. Coasts: waves, tides, deltas (`coast.py`)
 
@@ -328,7 +334,7 @@ Each scores as kind priority × quality. Results are cached in `worlds/highlight
 
 `tools/scorecard.py` appends a line per commit to `docs/scorecard.jsonl`. It scores our climate on real Earth terrain against observed Köppen classes, and two 1 Gyr worlds against plausible ranges. As of c8a06d2:
 
-- **Earth's Köppen:** 70.7% agreement on main groups and 38% on exact classes. Log-rain correlation is 0.59.
+- **Earth's Köppen:** 70.7% agreement on main groups and 38% on exact classes. Log-rain correlation is 0.59. "Agreement" is always `tools/earth_data.koppen_agreement`: the share of land *area* outside Antarctica, where Kottek has a land class, whose model class matches (scorecard, earth_check and the 66% test floor all use it).
 - **The two worlds:**
   - land 29–37%;
   - crust volume conserved within 2.4%;

@@ -10,7 +10,7 @@ impact: med
 found_by: ocean
 blocked_by: []
 relates: [PW-033]
-refs: [planet/ocean.py, planet/climate.py, "world 2f38e3", docs/review/ocean/]
+refs: [planet/ocean.py, planet/climate.py, "world f8a740", docs/review/ocean/]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -23,4 +23,4 @@ difference view shows NE Canada, Labrador and Greenland's margins too warm, whic
 Laurentide ice inception in the time zoom (Labrador/Baffin summers ~5 °C too warm).
 
 ## Updates
-- 2026-10-14: Migrated. Merged: 'Labrador Sea is too warm' (ocean), 'NE Canada, Labrador and Greenland's margins too warm' (viewer2, seen on the deleted Earth world 8e052d, still visible on 2f38e3 per docs/overview.md), Labrador/Baffin summers from the time-zoom Earth issue.
+- 2026-10-14: Migrated. Merged: 'Labrador Sea is too warm' (ocean), 'NE Canada, Labrador and Greenland's margins too warm' (viewer2, seen on the deleted Earth world 8e052d, still visible on f8a740 per docs/overview.md), Labrador/Baffin summers from the time-zoom Earth issue.

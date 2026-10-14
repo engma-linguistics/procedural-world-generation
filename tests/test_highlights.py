@@ -180,3 +180,23 @@ def test_salt_and_inland_basins(gen4):
 def test_most_varied(world4):
     v = [f for f in H.find(world4) if f["kind"] == "varied_square"]
     assert len(v) == 1 and v[0]["stats"]["koppen_classes"] >= 2 and v[0]["size_km"] == 1000
+
+
+def test_representative_time():
+    # a run that alternates dispersed (many small landmasses) and assembled
+    # (one big one) eras after 300 Myr: the pick is a typical in-between frame
+    def fr(t, land, big, n):
+        return {"t": t, "stats": {"land_pct": land, "largest_landmass_pct": big, "landmasses": n}}
+    frames = [fr(t, 5, 1, 200) for t in range(0, 300, 20)]  # start-up: ignored
+    frames += [fr(300, 30, 5, 60), fr(320, 30, 28, 3), fr(340, 30, 14, 20), fr(360, 30, 15, 22),
+               fr(380, 30, 16, 19), fr(400, 30, 6, 55), fr(420, 31, 27, 4)]
+    assert H.representative_time(frames) in (340, 360, 380)
+    # a short run: the last two thirds
+    assert H.representative_time(frames[:6]) >= 100 / 3
+
+
+def test_cli_at_auto():
+    from planet.__main__ import _at
+    assert _at("auto") == "auto" and _at("120") == 120.0
+    with pytest.raises(Exception):
+        _at("soon")

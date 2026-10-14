@@ -207,3 +207,15 @@ def test_delta_tidal_flats(three_deltas):
         return ((Lr["water"] == 1) & (Lr["elevation"] > -0.5 * Lr["tide_range"]) & (Lr["tide_range"] > 0.8)).sum()
     assert flats(three_deltas["tide"]) > 50
     assert flats(three_deltas["river"]) == 0  # (a 0.2 m tide)
+
+
+def test_sea_ice_share():
+    # a warm sea, a sea frozen all year, and an Arctic one open ~3 months in its (northern) summer
+    from types import SimpleNamespace
+    g = SimpleNamespace(lat=np.array([10.0, 80.0, 72.0, 72.0]))
+    c = {"t_warm": np.array([28.0, -10.0, 8.0, 8.0]), "t_cold": np.array([20.0, -40.0, -30.0, -30.0])}
+    elev = np.array([-100.0, -100.0, -100.0, 50.0])
+    s = coast.sea_ice_share(g, elev, c)
+    assert s[:, 0].max() == 0 and s[:, 1].min() == 1 and s[:, 3].max() == 0  # land: 0
+    assert 0.3 < s[0, 2] < 0.7 and s[1, 2] == 1  # July half partly open, January frozen
+    assert 0.6 < s[:, 2].mean() < 0.85  # ~3-4 months open a year
