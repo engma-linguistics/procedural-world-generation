@@ -11,6 +11,7 @@ uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics 
 uv run python -m planet list                       # runs, worlds and zooms with their ids
 uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
+uv run python -m planet slice <run-id> --at auto   # ... at a representative moment (typical land/landmasses after 300 Myr)
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/

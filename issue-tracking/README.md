@@ -92,10 +92,24 @@ The 14 fields above are the complete schema; `check` rejects unknown and missing
 - `impact`: how much better the planets look, behave or match Earth, or how much other work it unblocks. **high**: visible on most worlds or a key Earth check, or it unblocks an epic. **med**: visible in some places or zooms, or a clear Earth miss in one region. **low**: cosmetic, rare, or internal tidiness.
 - `found_by`: the branch, agent or user that found it (`falls2`, `coordinator`, `daniel`).
 - `blocked_by`, `relates`: ticket ids, recorded on one side only; `show` computes "blocks" and "related by".
-- `refs`: file paths, doc sections, run/world/zoom ids (`"run fe7144"`, `"zoom f81832"`). Quote anything with spaces or commas.
+- `refs`: file paths, doc sections, run/world/zoom ids (`"run fe7144"`, `"zoom f81832"`). Quote anything with spaces or commas. See "References to runs, worlds and places" below.
 - `created`, `updated`: `YYYY-MM-DD`; `update` bumps `updated`.
 
 **Updates are append-only**, newest first, each `- YYYY-MM-DD: text`. Don't edit or delete old entries. Close with `done` or `wontdo` and a one-line reason. Delete a file only if the ticket was a mistake. Never rename a file, even if the title changes.
+
+## References to runs, worlds and places
+
+Point at a moment and a place with these forms (in `refs` or in prose):
+
+| What | Form | Example |
+|---|---|---|
+| a run at a time, at a place | `run:<id>@<t>Myr(<lat>,<lon>)` | `run:428083@624Myr(7.80,156.60)` |
+| a world, at a place | `world:<id>(<lat>,<lon>)` | `world:7c5adf(-30.08,119.50)` |
+| a regional zoom | `zoom:<id>` | `zoom:f81832` |
+
+The plain `run fe7144` / `world 7c5adf` / `zoom f81832` still work for a whole run, world or zoom. Use lat/lon, not cell ids: cell ids differ by grid level. Clicking a cell in the viewer copies the reference, the cell's description and a deep link that reopens the viewer there (`viewer/?run=428083&t=624&lat=7.80&lon=156.60`, or `?world=7c5adf.json&lat=..&lon=..`); paste the reference into the ticket and the link too if it helps.
+
+Runs, worlds and zooms get deleted (`planet delete`). `check` warns when open tickets' `refs` name ids that no longer exist; `check --refs` lists every such ref in all tickets' `refs` and Descriptions. Replace a dangling ref with a current one or note in an update that it's gone.
 
 ## CLI
 
@@ -112,7 +126,7 @@ uv run python issue-tracking/board.py new --type task --title "..." --subsystem 
     [--found-by coordinator] [--parent PW-002] [--status needs-decision] [--desc "..."] [--ref X] [--relates PW-1] [--blocked-by PW-2]
 uv run python issue-tracking/board.py update PW-014 "Fixed in a1b2c3d." [--status done]
 uv run python issue-tracking/board.py intake ...                              # see above
-uv run python issue-tracking/board.py check                                   # validate tickets and inbox drafts
+uv run python issue-tracking/board.py check [--refs]                          # validate tickets and inbox drafts (--refs: list dangling run/world/zoom refs)
 ```
 
 `morning` prints to stdout; paste it where needed, but never commit a generated digest file. Its "updated in the last N hours" is day-granular (tickets carry dates, not times). Other edits (title, description, refs, links) are made directly in the file.

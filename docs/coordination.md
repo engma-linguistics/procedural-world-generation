@@ -38,7 +38,7 @@ pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open
 - Shell gotcha: zsh doesn't split `$x` into words, so `uv run python -m planet simulate $args` passes one argument. Use an array or bash. (A level-7 verification run failed silently this way on 2026-10-14.)
 
 ## Showcase recipes
-All `--every 4` (L8: `--every 10`), default params except as listed. The same seeds don't give the same geography after physics changes, so pick world times afresh, at a representative moment (PW-029), not the most dispersed one.
+All `--every 4` (L8: `--every 10`), default params except as listed. The same seeds don't give the same geography after physics changes, so pick world times afresh, at a representative moment, not the most dispersed one: `planet slice <run> --at auto` (or `highlights <run> --at auto`) picks the keyframe after 300 Myr whose land %, largest landmass and landmass count are jointly nearest the run's medians (`highlights.representative_time`). For a deliberately assembled or dispersed world, give the time.
 
 | Name | seed | Myr | `--set` | Current L6 run (2026-10-14) | Worlds |
 |---|---|---|---|---|---|
@@ -51,4 +51,4 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 
 Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world 2f38e3 (`tools/earth_world.py`; re-make after climate changes and delete the old one); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
 
-After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at T --zoom 6` for highlights and pre-made zooms.
+After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.

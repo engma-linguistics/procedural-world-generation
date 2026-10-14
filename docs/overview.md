@@ -322,7 +322,7 @@ Each scores as kind priority × quality. Results are cached in `worlds/highlight
 
 `tools/scorecard.py` appends a line per commit to `docs/scorecard.jsonl`. It scores our climate on real Earth terrain against observed Köppen classes, and two 1 Gyr worlds against plausible ranges. As of c8a06d2:
 
-- **Earth's Köppen:** 70.7% agreement on main groups and 38% on exact classes. Log-rain correlation is 0.59.
+- **Earth's Köppen:** 70.7% agreement on main groups and 38% on exact classes. Log-rain correlation is 0.59. "Agreement" is always `tools/earth_data.koppen_agreement`: the share of land *area* outside Antarctica, where Kottek has a land class, whose model class matches (scorecard, earth_check and the 66% test floor all use it).
 - **The two worlds:**
   - land 29–37%;
   - crust volume conserved within 2.4%;
