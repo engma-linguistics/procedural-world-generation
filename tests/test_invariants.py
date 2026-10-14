@@ -103,6 +103,19 @@ def test_climate_same_on_any_thread_count(grid4):
         assert np.array_equal(one[k], many[k]), k
 
 
+def test_coarse_smooth_matches_fine():
+    """A wide blur is done on a coarser grid (climate.smooth); it should
+    match the plain neighbour-averaging blur to well under 1% of the
+    blurred field's spread."""
+    g = build_grid(6)
+    rng = np.random.default_rng(0)
+    f = np.sin(3 * np.radians(g.lat)) + np.cos(2 * np.radians(g.lon)) + rng.standard_normal(g.n)
+    h = climate._geom(g)["h"]
+    for km in (600.0, 900.0):
+        fine = climate._smooth(f, g.nbr_off, g.nbr_idx, int(round(4 * (km / h) ** 2)), 0.5)
+        coarse = climate.smooth(g, f, km)
+        assert np.sqrt(((coarse - fine) ** 2).mean()) < 0.01 * fine.std(), km
+
 
 def test_gyres_and_jet():
     """One ocean between two coasts (a pole-to-pole continent 60 deg wide):

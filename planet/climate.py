@@ -129,15 +129,15 @@ def _geom(grid: Grid):
 _COARSE = {}
 
 
-def _coarse(grid: Grid):
-    """A coarser icosphere (~900 km cells) for patterns thousands of km
-    across: which coarse cell each fine cell falls in, the coarse
+def _coarse(grid: Grid, level: int = 3):
+    """A coarser icosphere (level 3: ~900 km cells, for patterns thousands
+    of km across): which coarse cell each fine cell falls in, the coarse
     neighbours, and weights to interpolate back smoothly (the nearby coarse
     cells, by distance). Cached."""
     from .grid import build_grid
-    key = (id(grid), grid.n)
+    key = (id(grid), grid.n, level)
     if key not in _COARSE:
-        cg = build_grid(min(3, grid.level))
+        cg = build_grid(min(level, grid.level))
         cidx = cg.locate(grid.centers)
         cand = np.zeros((grid.n, 7), np.int64)
         ok = np.zeros((grid.n, 7), bool)
@@ -150,7 +150,7 @@ def _coarse(grid: Grid):
         d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
         w = np.where(ok, np.maximum(0.0, 1 - d / (1.2 * cg.spacing)), 0.0)
         w /= w.sum(1, keepdims=True)
-        if len(_COARSE) > 4:
+        if len(_COARSE) > 8:
             _COARSE.clear()
         _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
                             h=cg.spacing * R_KM)
@@ -158,15 +158,26 @@ def _coarse(grid: Grid):
 
 
 @njit(cache=True)
-def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w):
+def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
     """Average f onto the coarse grid, blur it there (iters neighbour
-    averages) and interpolate it back."""
+    averages) and interpolate it back. The average is over the fine cells
+    in each coarse cell, or (full) weighted by the interpolation weights,
+    which is smoother: each fine cell counts towards all the coarse cells
+    near it (a nested grid's cells on a coarse cell's edge are as near to
+    the next one)."""
     tot = np.zeros(nc)
     cnt = np.zeros(nc)
-    for i in range(f.shape[0]):
-        tot[cidx[i]] += f[i]
-        cnt[cidx[i]] += 1.0
-    c = tot / np.maximum(cnt, 1.0)
+    if full:
+        for i in range(f.shape[0]):
+            for k in range(cand.shape[1]):
+                tot[cand[i, k]] += w[i, k] * f[i]
+                cnt[cand[i, k]] += w[i, k]
+        c = tot / np.maximum(cnt, 1e-12)
+    else:
+        for i in range(f.shape[0]):
+            tot[cidx[i]] += f[i]
+            cnt[cidx[i]] += 1.0
+        c = tot / np.maximum(cnt, 1.0)
     g = np.empty(nc)
     for _ in range(iters):
         for j in range(nc):
@@ -187,7 +198,7 @@ def smooth_big(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     C = _coarse(grid)
     iters = int(round(4 * (km / C["h"]) ** 2))
     return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                          C["cand"], C["w"])
+                          C["cand"], C["w"], False)
 
 
 @njit(cache=True, parallel=True)
@@ -204,9 +215,26 @@ def _smooth(f, nbr_off, nbr_idx, iters, w):
     return f
 
 
+COARSE_CELLS = 2.4  # a blur this many coarser cells wide or more is done on the coarser grid
+
+
 def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
-    """Blur a field over roughly `km` (Gaussian-ish sigma)."""
-    iters = int(round(4 * (km / _geom(grid)["h"]) ** 2))
+    """Blur a field over roughly `km` (Gaussian-ish sigma). A wide blur is
+    done on the coarsest grid level it still spans COARSE_CELLS cells of
+    (at level 6: ~580 km and up, a grid level coarser), which is ~10x
+    cheaper and the same to within ~0.5% of the field's spread. Moving the
+    field to that grid and back blurs it by about half a coarse cell's
+    width already, so that much is taken off the blur there."""
+    h = _geom(grid)["h"]
+    lev = grid.level
+    while lev > 0 and km >= COARSE_CELLS * h * 2 ** (grid.level - lev + 1):
+        lev -= 1
+    if lev < grid.level:
+        C = _coarse(grid, lev)
+        iters = int(round(4 * max(km**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
+        return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
+                              C["cand"], C["w"], True)
+    iters = int(round(4 * (km / h) ** 2))
     if iters <= 0:
         return f.astype(np.float64)
     return _smooth(np.ascontiguousarray(f, np.float64), grid.nbr_off, grid.nbr_idx, iters, 0.5)
