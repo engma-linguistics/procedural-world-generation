@@ -49,6 +49,11 @@ Pipeline
    valley floor along the reach becomes a staircase (a main fall whose lip
    has retreated upstream of the escarpment, cutting a gorge, and smaller
    cascades below), with heights set by discharge and the lip's rock.
+   Above each fall the river runs on a plateau as high as the fall, back
+   up to where it meets the valley floor (staircase()); the falls are
+   scaled down until that plateau is nowhere above the coarse ground.
+   Tributaries join such a reach at the staircase's level. Near the
+   zoom's own coast, river floors rise at most COAST_FLOOR_GRAD m/km.
    Rivers entering at the region's edge can't drain straight back out.
 6. Landscape pass on the raster: a steady-state stream-power landscape.
    Priority flood + steepest-descent D8 routing gives a drainage network
@@ -64,9 +69,11 @@ Pipeline
    exit); an open lake's inflow leaves again there, and the ground below
    the outlet steps down at most RAPIDS_GRAD m/km (rapids, not a cliff).
    Distributaries take their share of the water at each split. The coarse
-   rivers keep at least their valley floor (the staircase, with its falls);
-   each fall's gorge has walls held at the lip's level (cliffs, hanging
-   side valleys), and a plunge pool (a small lake) at its foot.
+   rivers keep at least their valley floor (the staircase, with its falls,
+   only in the valley bottom); a reach with falls has its receivers pinned
+   along its course and banks held above it, so the river reaches its
+   lips; each fall's gorge has walls held at the lip's level (cliffs,
+   hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp); any pits left are filled.
 
@@ -191,9 +198,10 @@ def _catmull_rom(p0, p1, p2, p3, n):
 
 
 # Waterfalls in the raster: from a channel carrying >= WF_MIN_Q m^3/s, the
-# biggest drop of the water surface over <= WF_STEPS pixels downstream that
-# is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
+# biggest drop of the water surface over <= WF_STEPS pixels (and <= WF_MAX_KM)
+# downstream that is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
 WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 50.0, 30.0, 15.0, 3
+WF_MAX_KM = 5.0  # ... and over at most this far (at least one pixel): on coarse pixels a steep reach isn't a fall
 
 
 def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
@@ -218,7 +226,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     ok = (d0[i] > 0) & (drop >= WF_MIN_GRAD * np.maximum(d0[i], 1e-9))
     best_h, best_d, best_j = np.where(ok, drop, 0.0), d0[i].copy(), i.copy()
     j, dist, alive = i.copy(), d0[i].copy(), np.ones(len(i), bool)
-    for _ in range(WF_STEPS):
+    for _ in range(max(1, min(WF_STEPS, int(WF_MAX_KM // res)))):
         r = rec[j]
         alive &= r >= 0
         rr = np.maximum(r, 0)
@@ -267,6 +275,7 @@ KP_MIN_GRAD, KP_GRADED, KP_MIN_EXCESS, KP_MIN_Q = 0.8, 0.2, 50.0, 100.0  # m/km,
 KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 # how well each rock (surface.ROCKS id) holds a lip
 KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3}
+COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
 
 
@@ -344,8 +353,94 @@ def knickpoints(ws: np.ndarray, down: np.ndarray, riv: np.ndarray, land: np.ndar
 
 def stair_z(kp: dict, sv: np.ndarray) -> np.ndarray:
     """The staircase floor of a reach with falls (knickpoints(), with the
-    floor between the falls, 'cont', added in build) at arc lengths sv km."""
-    return np.interp(sv, kp["s"], kp["cont"]) - sum(st["h"] * (sv >= st["s"]) for st in kp["steps"])
+    floor between the falls, 'cont' at arc lengths 's_c', added by
+    staircase()) at arc lengths sv km."""
+    return np.interp(sv, kp["s_c"], kp["cont"]) - sum(st["h"] * (sv >= st["s"]) for st in kp["steps"])
+
+
+def _raster_path(line: np.ndarray, res: float, nx: int, ny: int) -> tuple[np.ndarray, np.ndarray]:
+    """Pixels (8-connected, no repeats; -1 where it's off the raster) along
+    a polyline in km (x east, y north of the centre), and the arc length
+    along the line at each."""
+    seg = np.hypot(*np.diff(line, axis=0).T)
+    s = np.concatenate([[0.0], np.cumsum(seg)])
+    t = np.arange(0.0, s[-1] + 1e-9, 0.25 * res)
+    x, y = np.interp(t, s, line[:, 0]), np.interp(t, s, line[:, 1])
+    c, r = np.floor(x / res + nx / 2).astype(int), np.floor(ny / 2 - y / res).astype(int)
+    p = np.where((c >= 0) & (c < nx) & (r >= 0) & (r < ny), r * nx + c, -1)
+    new = np.r_[True, p[1:] != p[:-1]]
+    out, arc, seen = [], [], {}
+    for q, tq in zip(p[new], t[new]):
+        if q >= 0 and q in seen:  # a loop: cut it out
+            for o in out[seen[q] + 1:]:
+                seen.pop(o, None)
+            del out[seen[q] + 1:], arc[seen[q] + 1:]
+            continue
+        if q >= 0:
+            seen[q] = len(out)
+        out.append(int(q))
+        arc.append(float(tq))
+    # Where a loop was cut out (a meander coming back across its own pixel),
+    # the arc length jumps: let the course's arc lag and catch up at most 1.5x
+    # as fast as it goes, so its floor doesn't drop the loop's fall in one step.
+    out, arc = np.array(out, dtype=np.int64), np.array(arc)
+    for k in range(1, len(arc)):
+        a, b = out[k - 1], out[k]
+        if a < 0 or b < 0:  # (off the raster: no pixels to lag on)
+            continue
+        step = res * (1.4142 if a % nx != b % nx and a // nx != b // nx else 1.0)
+        arc[k] = min(arc[k], arc[k - 1] + 1.5 * step)
+    return out, arc
+
+
+def _stair_floor(s: np.ndarray, tz: np.ndarray, steps: list, f: float) -> np.ndarray:
+    """The floor at arc lengths s (ascending, the lips' own s and just above
+    them included) of a reach whose valley floor is tz, with each step's
+    height scaled by f: below the lowest fall the valley floor; above each
+    lip a plateau graded at KP_GRADED, until it meets the valley floor."""
+    z = tz.copy()
+    for st in sorted(steps, key=lambda st: -st["s"]):  # downstream first
+        top = np.interp(st["s"], s, z) + f * st["h"]
+        up = s < st["s"]
+        z[up] = np.maximum(z[up], top + KP_GRADED * (st["s"] - s[up]))
+    return z
+
+
+def staircase(kp: dict, tz: np.ndarray, ez: np.ndarray) -> float:
+    """Fit the falls of a reach (knickpoints()) into its valley. tz: the
+    valley floor, ez: the coarse ground, both at kp["s"]. Above each fall
+    the river runs on a plateau as high as the fall (_stair_floor()), which
+    must fit in the land: the floor stays no higher than the coarse ground,
+    and joins the river above the reach no higher than the valley floor
+    there. (Before, the whole reach's floor was lifted to hold the falls at
+    its far end: the river ran on a ridge, hundreds of metres above the land
+    beside it, and the fine river left it wherever it could, dropping off
+    the side in a bare step, at no lip.) Scales the steps' heights down to
+    fit (returned: the factor) and sets kp["s_c"], kp["cont"] for stair_z()."""
+    s = kp["s"]
+    tz = np.minimum.accumulate(tz)
+    lips = np.array([st["s"] for st in kp["steps"]])
+    sc = np.unique(np.concatenate([s, lips, np.maximum(lips - 1e-3, 0.0)]))
+    t = np.interp(sc, s, tz)
+    ceil = np.maximum(np.interp(sc, s, ez), t)
+    ceil[0] = t[0]
+
+    def fits(f):
+        return np.all(_stair_floor(sc, t, kp["steps"], f) <= ceil + 1e-6)
+
+    lo, hi = 0.0, 1.0
+    if not fits(hi):
+        for _ in range(30):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if fits(mid) else (lo, mid)
+    else:
+        lo = 1.0
+    for st in kp["steps"]:
+        st["h"] *= lo
+    z = _stair_floor(sc, t, kp["steps"], 1.0)
+    kp["s_c"] = sc
+    kp["cont"] = z + sum(st["h"] * (sc >= st["s"]) for st in kp["steps"])
+    return lo
 
 
 def _shift(a: np.ndarray, dr: int, dc: int, fill):
@@ -778,6 +873,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     log(f"  coast + detail + mean correction [{time.time() - t0:.1f}s]")
 
     # --- coarse rivers -> valleys + inflow --------------------------------
+    coast_cap = COAST_FLOOR_GRAD * res * ZK.inside_distance(land, nx, ny, False)  # (see z_course)
     clab, clvl, cexit = coarse_lakes(g, L, elev)
     lake_c = clab >= 0
     in_sel = np.zeros(g.n, bool)
@@ -792,6 +888,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     n_rivers_in = 0
     river_segs = []
     polys, inflow_pts = {}, []  # warped coarse river polylines per cell; (pixel, radius px) where rivers enter
+    pin_pairs = []  # (pixel, receiver) along the courses of reaches with falls
     kps = []
     if len(riv_ids):
         up_main = {}
@@ -875,17 +972,52 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         for kp in kps:
             cells, sk, m = kp["cells"], kp["s"], kp["m"]
             Tz = np.concatenate([np.linspace(*zseg[c], m)[(1 if j else 0):] for j, c in enumerate(cells)])
+            Ez = np.concatenate([np.linspace(ws_c[c], ws_c[down[c]], m)[(1 if j else 0):] for j, c in enumerate(cells)])
+            line = np.concatenate([polys[c] if j == 0 else polys[c][1:] for j, c in enumerate(cells)])
+            # (the valley floor near the zoom's coast: see z_course)
+            lc = np.floor(line[:, 0] / res + nx / 2).astype(int)
+            lr = np.floor(ny / 2 - line[:, 1] / res).astype(int)
+            inr = (lc >= 0) & (lc < nx) & (lr >= 0) & (lr < ny)
+            Tz[inr] = np.minimum(Tz[inr], coast_cap[(lr * nx + lc)[inr]])
+            # the river keeps to the reach's course (receivers pinned along it, in the landscape pass)
+            pp, pa = _raster_path(line, res, nx, ny)
+            kp["course_px"], kp["course_s"] = pp[pp >= 0], pa[pp >= 0]
+            # (and the main river above the reach, so its water arrives at the top of the course)
+            ups_, u = [], up_main.get(cells[0])
+            while u is not None and u in polys and len(ups_) < 8:
+                ups_.append(polys[u])
+                u = up_main.get(u)
+            for q_ in [pp] + [_raster_path(pl, res, nx, ny)[0] for pl in ups_]:
+                pin_pairs += [(a, b) for a, b in zip(q_[:-1], q_[1:])
+                              if a >= 0 and b >= 0 and abs(a // nx - b // nx) <= 1 and abs(a % nx - b % nx) <= 1]
             drop = Tz[0] - Tz[-1]
             Hs = np.array([st["h"] for st in kp["steps"]])
             scale = min(1.0, 0.85 * max(drop, 0.0) / max(Hs.sum(), 1e-9))
             for st in kp["steps"]:
                 st["h"] *= scale
-            Hs = Hs * scale
-            # between the falls, the floor keeps the rest of the valley floor's drop
-            kp["cont"] = Tz[0] - (1 - Hs.sum() / max(drop, 1e-9)) * (Tz[0] - np.minimum.accumulate(Tz))
+            # the plateau above each fall must fit in the valley (staircase())
+            kp["fit"] = staircase(kp, Tz, Ez)
             Z = stair_z(kp, sk)
             for j, c in enumerate(cells):
                 stair[c] = (kp, j, Z[j * (m - 1):(j + 1) * (m - 1) + 1])
+        # A tributary joining a reach with falls joins it at the staircase's
+        # level (on the plateau above a fall), not at the valley floor below
+        # it: else its valley is a trench below the main river, which spills
+        # into it and leaves its course. Raised floors carry on upstream.
+        zseg = {i: [z1, z2] for _, z1, z2, _, _, i in segs}
+        ups = {}
+        for i in zseg:
+            ups.setdefault(down[i], []).append(i)
+        todo = [(i, stair[down[i]][2][0]) for i in zseg if down[i] in stair and i not in stair]
+        while todo:
+            i, zj = todo.pop()
+            if i in stair or zj <= zseg[i][1]:
+                continue
+            zseg[i][1] = zj
+            zseg[i][0] = max(zseg[i][0], zj)
+            todo += [(u, zseg[i][0]) for u in ups.get(i, [])]
+        segs = [(pts, *zseg[i], q, rcell, i) for pts, _, _, q, rcell, i in segs]
+        pin_px = np.array([a for a, b in pin_pairs if 3 <= a // nx < ny - 3 and 3 <= a % nx < nx - 3], dtype=np.int64)
         k = 0
         ax, ay, bx, by, za, zb, fw, wall, reach, sq, kseg, s0seg = ([] for _ in range(12))
         half = size_km / 2 - 4 * res
@@ -917,6 +1049,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 p = pw[j[0] + 1]
                 col = int(np.clip(np.floor(p[0] / res + nx / 2), 3, nx - 4))
                 row = int(np.clip(np.floor(ny / 2 - p[1] / res), 3, ny - 4))
+                if len(pin_px):  # onto a pinned course (of a reach with falls) if it runs here
+                    pr, pc = np.divmod(pin_px, nx)
+                    dk = np.maximum(np.abs(pr - row), np.abs(pc - col))
+                    if dk.min() <= 4:
+                        row, col = (int(v) for v in divmod(int(pin_px[np.argmin(dk)]), nx))
                 inflow[row * nx + col] += q
                 inflow_pts.append((row * nx + col, int(min(np.ceil((w_floor + min(2500 / s_wall, 40)) / res) + 2, 30))))
                 n_rivers_in += 1
@@ -946,6 +1083,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             if on_k.any():
                 zc[on_k] = stair_z(kp, s_pix[on_k])
         z_course = np.where(land & (I >= 0) & (D < arr(reach)[Ii]), zc, -np.inf)
+        # ... but no higher than a gentle ramp up from the zoom's own coast,
+        # which may lie inland of the coarse one: else the river is held at
+        # the coarse valley floor right to the sea and drops into it off a cliff
+        # (a reach with falls has it in its valley floor already: staircase())
+        z_course = np.where(kpix < 0, np.minimum(z_course, coast_cap), z_course)
         bottom = D < np.maximum(arr(fw)[Ii], res) + 2 * res  # the valley bottom along the polyline
         q_course = np.where(I >= 0, arr(sq)[Ii], np.inf)
     # smaller coarse streams crossing into the region bring their water too
@@ -1130,8 +1272,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     def place_falls(rec, Q, hprev):
         """Follow each reach with falls down the river as it runs now: from
-        its most upstream pixel carrying the coarse river's water (>= 0.3x
-        the coarse discharge), down the receivers, with the arc length along
+        the first pixel of its course carrying the coarse river's water
+        (>= 0.3x the coarse discharge; else the most upstream such pixel in
+        the valley bottom), down the receivers (pinned along the reach's
+        course: reroute), with the arc length along
         the reach (of the nearest polyline point) taken as a running maximum
         so it only grows. The river gets the staircase floor at that arc
         length, and the lip of each fall is where it crosses the fall's step.
@@ -1143,17 +1287,33 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         quarter of the fall towards the gorge mouth, so its walls are cliffs
         and side streams join it in hanging falls."""
         step, flg, cliff, lips = np.zeros(npx), np.full(npx, -np.inf), np.zeros(npx, bool), []
-        c_idx, c_val = [], []
-        rv = (kpix >= 0) & (rec >= 0) & (Q >= 0.3 * q_course) & active
+        c_idx, c_val, ends = [], [], []
+        rv = (kpix >= 0) & bottom & (rec >= 0) & (Q >= 0.3 * q_course) & active  # (starting in the valley bottom)
         for k_, kp in enumerate(kps):
-            r_k = np.flatnonzero(rv & (kpix == k_))
+            # (on its pinned course if the water is there: another river in
+            # the corridor, e.g. a parallel reach, mustn't be taken for it)
+            cp_ = kp["course_px"]
+            r_k = cp_[rv[cp_] & (kpix[cp_] == k_)]
             if not len(r_k):
-                continue
-            ch = ZK.chain(rec, int(r_k[np.argmin(s_pix[r_k])]))
+                r_k = np.flatnonzero(rv & (kpix == k_))
+                if not len(r_k):
+                    continue
+                r_k = r_k[np.argsort(s_pix[r_k])]
+            ch = ZK.chain(rec, int(r_k[0]))
             mine = kpix[ch] == k_
             ch = ch[:np.flatnonzero(mine)[-1] + 1]
             ch = ch[active[ch]]
-            sv = np.maximum.accumulate(np.where(kpix[ch] == k_, s_pix[ch], 0.0))
+            if not len(ch):
+                continue
+            ends.append(int(ch[-1]))
+            # (the arc length along the course itself where the river is on it:
+            # the nearest polyline point jumps where a meander comes back near itself)
+            s_ch = np.where(kpix[ch] == k_, s_pix[ch], 0.0)
+            on_c = np.isin(ch, kp["course_px"])
+            if on_c.any():
+                o = np.argsort(kp["course_px"])
+                s_ch[on_c] = kp["course_s"][o[np.searchsorted(kp["course_px"], ch[on_c], sorter=o)]]
+            sv = np.maximum.accumulate(s_ch)
             c_idx.append(ch)
             c_val.append(stair_z(kp, sv))
             for st in kp["steps"]:
@@ -1183,14 +1343,59 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                         ok = active[nb] & (Q[nb] < 0.3 * Q[lip]) & (nb != lip)
                         np.maximum.at(flg, nb[ok], top[ok])
                         cliff[nb[ok]] = True
-        if lips:
-            flg[[lp for lp, _, _ in lips]] = -np.inf
         c_idx = np.concatenate(c_idx) if c_idx else np.zeros(0, np.int64)
         c_val = np.concatenate(c_val) if c_val else np.zeros(0)
+        if len(c_idx):
+            # Banks: the ground beside the river on a reach with falls stands
+            # above it (the lower of the neighbouring river pixels), so the
+            # river stays in its course down to the lip instead of leaving it
+            # (sideways, down a bare step) wherever the land next to it drains
+            # lower. Not on the river itself, nor on its course below the reach.
+            on = np.zeros(npx, bool)
+            on[c_idx] = True
+            for e_ in ends:
+                on[ZK.chain(rec, e_)] = True
+            bank = np.full(npx, np.inf)
+            r, cc = np.divmod(c_idx, nx)
+            for dr in (-1, 0, 1):
+                for dc in (-1, 0, 1):
+                    ok = (r + dr >= 0) & (r + dr < ny) & (cc + dc >= 0) & (cc + dc < nx)
+                    np.minimum.at(bank, ((r + dr) * nx + cc + dc)[ok], c_val[ok])
+            b = np.isfinite(bank) & ~on & active
+            flg[b] = np.maximum(flg[b], bank[b] + 0.5)
+            cliff[c_idx] = True  # the course and its banks don't creep either
+            cliff[b] = True
+        if lips:
+            flg[[lp for lp, _, _ in lips]] = -np.inf
         return c_idx, c_val, step, flg, cliff, lips
 
+    # the courses of reaches with falls (pinned receivers), on open ground
+    pin = {a: b for a, b in pin_pairs if active[a] and active[b]}
+    pin_src, pin_dst = np.array(list(pin), dtype=np.int64), np.array(list(pin.values()), dtype=np.int64)
+
     def reroute(rec, order):
-        """Apply the distributary receivers (if they leave the network acyclic)."""
+        """Pin the courses of reaches with falls, then apply the distributary
+        receivers (each only if it leaves the network acyclic)."""
+        src, dst = pin_src, pin_dst
+        while len(src):
+            r2 = rec.copy()
+            r2[src] = dst
+            o2 = ZK.receiver_order(r2)
+            if len(o2) == npx:
+                rec, order = r2, o2
+                break
+            # a loop (a course draining back into itself): unpin the loop's pixels
+            done = np.zeros(npx, bool)
+            done[o2] = True
+            walk, i = {}, int(np.flatnonzero(~done)[0])
+            while i not in walk:
+                walk[i] = len(walk)
+                i = int(r2[i])
+            loop = list(walk)[walk[i]:]
+            keep = ~np.isin(src, loop)
+            if keep.all():
+                break
+            src, dst = src[keep], dst[keep]
         if not len(ov_src):
             return rec, order, False
         r2 = rec.copy()
@@ -1439,7 +1644,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         c_idx, c_val, step, flg, cliff, _ = place_falls(rec, Q, hprev)
         fl, cp = rims(rec, outs, step)
         was_river |= Q >= 0.3 * q_course
-        flc = np.where(was_river, z_course, -np.inf)
+        # (on a reach with falls, only in the valley bottom: a stream wandering
+        # off the course isn't held up at the plateau's level)
+        flc = np.where(was_river & ((kpix < 0) | bottom), z_course, -np.inf)
         flc[c_idx] = c_val  # the river itself, on reaches with falls
         # (beach ridges and levees, but not under the channels themselves)
         fl = np.maximum(np.maximum(np.maximum(fl, flg), flc),

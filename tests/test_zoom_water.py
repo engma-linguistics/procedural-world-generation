@@ -65,8 +65,11 @@ def test_lake_rim_holds_the_water(lake_zoom):
     edge[[0, -1], :] = edge[:, [0, -1]] = True
     orow, ocol = lake_zoom["stats"]["largest_lakes"][0]["outlet"]
     rr, cc = np.nonzero(low & ~edge)
-    # only the outlet channel may sit below the water
-    assert np.all(np.maximum(np.abs(rr - orow), np.abs(cc - ocol)) <= 2), list(zip(rr, cc))
+    # only the outlet channel may sit below the water (the lake's, or a
+    # plunge pool's below a fall's lip)
+    outs = [(orow, ocol)] + [tuple(st["lip_px"]) for kp in lake_zoom["kps"] for st in kp["steps"] if "lip_px" in st]
+    near = [min(max(abs(r - a), abs(c - b)) for a, b in outs) for r, c in zip(rr, cc)]
+    assert np.all(np.array(near, int) <= 2), list(zip(rr, cc))
 
 
 def test_lake_depth_varies(lake_zoom):
@@ -132,14 +135,14 @@ def test_zoom_reports_waterfalls(lake_zoom):
 # down a valley, which drops off a 600 m escarpment at longitude 0 (craton
 # under a thin sandstone cover).
 # ---------------------------------------------------------------------------
-@pytest.fixture(scope="module")
-def falls_world():
+def _escarpment_world(slope, scarp):
+    """The continent sloping east at `slope` m/km, with a `scarp` m escarpment at longitude 0."""
     g = build_grid(5)
     lat, lon = latlon(g.centers)
     d0 = _dist_km(g, 0.0, 0.0)
     xk, yk = lon * 111.2, lat * 111.2
-    elev = np.where(d0 < 2500, 80 + 0.1 * (2500 - xk) + 0.6 * np.abs(yk)
-                    + 600 * zoom.smoothstep(150.0, -150.0, xk), -3000.0)
+    elev = np.where(d0 < 2500, 80 + slope * (2500 - xk) + 0.6 * np.abs(yk)
+                    + scarp * zoom.smoothstep(150.0, -150.0, xk), -3000.0)
     precip = np.full(g.n, 1200.0)
     c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
     flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
@@ -151,6 +154,11 @@ def falls_world():
         "ice": np.zeros(g.n), "sediment_cover": np.where(land, 0.2, 6.0),
     }
     return {"grid": g, "layers": layers, "meta": {"level": 5}}
+
+
+@pytest.fixture(scope="module")
+def falls_world():
+    return _escarpment_world(0.1, 600)
 
 
 @pytest.fixture(scope="module")
@@ -235,3 +243,48 @@ def test_lake_outlet_has_no_cliff(lake_zoom):
     km = res * np.arange(len(ch)) * 1.42
     assert np.all(lk["level_m"] - ws[ch] <= zoom.RAPIDS_GRAD * km + 15), (lk["level_m"], ws[ch])
     assert not [f for f in z["stats"]["waterfalls"] if f["from_lake"] and f["height_m"] > 30]
+
+
+def test_staircase_fits_the_valley():
+    """The falls of a long reach whose steepest link is at its far end: the
+    floor drops at the lips and stands on a plateau above each, but never
+    above the coarse ground, and never below the valley floor."""
+    s = np.linspace(0.0, 600.0, 61)
+    tz = 1000.0 - 1.5 * s  # the valley floor, 1.5 m/km
+    ez = tz + 150.0  # the coarse ground, 150 m above it
+    kp = {"s": s, "steps": [{"s": 500.0, "h": 400.0}, {"s": 560.0, "h": 200.0}]}
+    f = zoom.staircase(kp, tz, ez)
+    assert 0 < f < 1  # 400 m doesn't fit in a 150 m deep valley: scaled down
+    sv = np.linspace(0.0, 600.0, 6001)
+    z = zoom.stair_z(kp, sv)
+    t, e = np.interp(sv, s, tz), np.interp(sv, s, ez)
+    assert np.all(z <= e + 1e-6) and np.all(z >= t - 1e-6)
+    assert np.all(np.diff(z) <= 1e-9)
+    assert abs(z[0] - tz[0]) < 1e-6 and abs(z[-1] - tz[-1]) < 1e-6
+    for st in kp["steps"]:  # each fall is a sharp step of its (scaled) height
+        top, bot = zoom.stair_z(kp, np.array([st["s"] - 1e-3, st["s"]]))
+        assert abs(top - bot - st["h"]) < 0.05
+    assert kp["steps"][0]["h"] >= 100  # most of the valley's depth, at the lip
+    # far upstream of the falls the river is back on its valley floor
+    assert np.allclose(z[sv < 300], t[sv < 300])
+
+
+@pytest.fixture(scope="module")
+def long_reach_zoom():
+    """Rivers falling 1.2 m/km for a thousand km down to the escarpment: a
+    long reach with falls, whose designed falls (at its far end) used to
+    hold the river on a ridge hundreds of metres above the land all the way
+    down to them."""
+    return zoom.build(_escarpment_world(1.2, 400), 0.5, -3.0, size_km=1000, res_km=5, iterations=6,
+                      log=lambda *a: None)
+
+
+def test_big_falls_are_designed(long_reach_zoom):
+    """Regression: the river used to leave its perched course wherever the
+    land beside it drained lower, dropping 400-1200 m off the side in a bare
+    step ("drop", no lip, gorge or plunge pool), while the designed lips
+    downstream got ~0 m. Now every big fall on a big river is a designed lip."""
+    falls = long_reach_zoom["stats"]["waterfalls"]
+    big = [f for f in falls if f["discharge_m3s"] >= 2000 and f["height_m"] >= 100]
+    assert big and all(f["kind"] == "lip" for f in big), falls
+    assert max(f["height_m"] for f in big) >= 200
