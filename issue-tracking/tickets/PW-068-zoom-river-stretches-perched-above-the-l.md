@@ -2,7 +2,7 @@
 id: PW-068
 title: "Zoom: river stretches perched above the land beside them"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -21,4 +21,5 @@ beside them, an embankment look (seen on a pre-rebuild zoom's upper reach). Lowe
 land, or raise the valley sides.
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoomsmalls: reaches with falls get valley sides (banks(): BANK_KM 4 km at river level + 0.5 m, then 30 m/km) instead of 1-px banks, and the river is capped at its staircase. 20 zooms: river px beside land > 30 m lower 702 -> 195 (> 100 m 260 -> 11, worst 869 -> 364 m). Leftovers in an inbox draft.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Highlights (falls2).
