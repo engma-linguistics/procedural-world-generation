@@ -172,6 +172,10 @@ Order: 1 → 6, small to large.
 - **Gulf Stream and Kuroshio separate from the coast too far north** (a Stommel-model limit), so the Oyashio region is too warm.
 - **Rain is patchy cell to cell on flat ground:** neighbouring cells differ by a median 1.5× near the hothouse lake. Diagonal streaks in rain maps predate the gyre work.
 - **Older Earth errors:** Sahel and East Africa too wet; Indian and Chinese monsoons too dry; Siberia, Alaska, Quebec and NE China winters 5–10 °C off.
+- **Visible in the Earth world's temperature difference view (8e052d):**
+  - The East Antarctic interior is about 10 °C too warm.
+  - NE Canada, Labrador and Greenland's margins are too warm; this also blocks Laurentide ice inception in the time zoom.
+  - The Andes and the Tibetan margin are speckled.
 - **The jet stream is broad and zonal,** with modest meanders.
 - **The run viewer's climate is up to 4 Myr stale** (`climate_every` = 8 vs keyframes every 4). The fix is queued with the parallel climate kernels.
 
