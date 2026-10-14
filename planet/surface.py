@@ -21,7 +21,18 @@ three parts, all scaled by rock and rainfall:
               while old ones linger at 1-2 km (Montgomery & Brandon 2002)
   incision    rivers cut down toward the next cell downstream at a rate
               ~ sqrt(water flow) (stream power), so big rivers keep their
-              valleys low and drainage divides stay high
+              valleys low and drainage divides stay high. The flow is the
+              runoff (rain minus evaporation), and evaporating lakes can
+              end a river (hydrology.lakes)
+
+Where the load ends up:
+  land        closed basins and lakes keep what reaches them; on gentle
+              ground rivers drop part of it (floodplains)
+  sea         near the shore first: the delta and the shelf fill up to
+              their level (the delta top just above the sea, so the coast
+              builds out: progradation), and what's left goes down the
+              slope (turbidity currents) and spreads over the deep sea floor
+              over ~fan_km (submarine fans) before it settles
 
 The rock table is meant to grow: more classes (limestone, sandstone vs shale,
 evaporite, coal...) can be added as rows plus a rule for where they form.
@@ -32,7 +43,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
-from . import kernels
+from . import hydrology, kernels
 from .geo import R_KM
 
 # id, key, name, erodibility (relative), colour
@@ -117,7 +128,7 @@ def _route(down, order, sed, pit_room, is_ocean, h, d_km, drop):
 
 @njit(cache=True)
 def _spread(dep, ea, eb, k, n_sub):
-    """Spread sea-floor deposits out from river mouths (deltas, shelves)."""
+    """Spread sea-floor deposits out sideways (currents, waves along the coast)."""
     d = dep.copy()
     flux = np.empty(len(ea))
     for _ in range(n_sub):
@@ -127,6 +138,46 @@ def _spread(dep, ea, eb, k, n_sub):
             d[ea[e]] += flux[e]
             d[eb[e]] -= flux[e]
     return d
+
+
+DELTA_TOP = 2.0  # m: a delta builds its top just above the sea
+SHELF_TOP = -60.0  # m: farther out, sediment builds up to about wave base
+SHELF_EDGE = -400.0  # m: below this it's the slope and the deep sea floor
+
+
+@njit(cache=True)
+def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
+    """Where the rivers' load (km of crust arriving at each sea cell) settles.
+    Shallowest first: each cell on the shelf keeps what fits below its
+    target level (DELTA_TOP next to land, SHELF_TOP farther out) and passes
+    the rest to its deepest neighbour. Below the shelf edge (a steep coast,
+    the slope, the deep sea floor) a share 1 - exp(-d_km / fan_km) settles
+    per cell passed, so a delta builds out into deep water only slowly. A
+    sea-floor low (a trench, an enclosed basin) keeps whatever reaches it."""
+    n = elev.shape[0]
+    dep = np.zeros(n)
+    flux = load.copy()
+    idx = np.argsort(-elev)
+    for t in range(n):
+        i = idx[t]
+        if not ocean[i] or flux[i] <= 0:
+            continue
+        if elev[i] > SHELF_EDGE:
+            keep = min(flux[i], max((DELTA_TOP if coast[i] else SHELF_TOP) - elev[i], 0.0) / iso[i])
+        else:
+            keep = min(flux[i] * (1 - np.exp(-d_km / fan_km)), (SHELF_TOP - elev[i]) / iso[i])
+        dep[i] += keep
+        f = flux[i] - keep
+        lo, bz = -1, elev[i]
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if ocean[j] and elev[j] < bz:
+                lo, bz = j, elev[j]
+        if lo >= 0:
+            flux[lo] += f
+        else:
+            dep[i] += f
+    return dep
 
 
 def surface_rock(rock, cover, mix):
@@ -140,19 +191,21 @@ def surface_rock(rock, cover, mix):
     return np.where(cover > COVER_SHOWS, sed, rock).astype(np.uint8)
 
 
-def erode(grid, elev, thick, cover, mix, rock, cont, precip, dt, hillslope, tau, h0, incision, scale, iso,
-          k_mult=1.0, alluvial=3000.0):
+def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
+          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
-    decides how much of it is sand). iso: m of elevation per km of crust, per cell;
+    decides how much of it is sand). precip, runoff, aet (actual evaporation)
+    and lake_evap in mm/yr; iso: m of elevation per km of crust, per cell;
     k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
-    gentle river course over which ~63% of the load settles on land.
-    Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream, lake)."""
+    gentle river course over which ~63% of the load settles on land; fan_km:
+    km of deep sea floor over which ~63% of what passes the shelf settles.
+    Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
+    lake_kind)."""
     land = elev > 0
-    filled, down, order = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
-    rain_m = np.where(land, precip, 0) / 1000.0
-    flow = kernels.accumulate(down, order, rain_m)
+    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap)
+    flow, down, order, filled = hydrology.route(grid, elev, lk)
 
     c = np.maximum(cover, 1e-9)
     k_cover = (COVER_K * np.maximum(cover - mix.sum(1), 0) + mix @ MIX_K) / c
@@ -177,14 +230,29 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, dt, hillslope, tau,
     cover = cover - from_cover
     thick = thick - removed
 
-    # route it: lakes keep what fits, the rest reaches the sea
+    # route it: lakes and hollows keep what fits, closed lakes all of it, the rest reaches the sea
     pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso, 0.0)
     dep = _route(down, order, removed, pit_room, ~land, h, d_km, alluvial)
+    # a closed lake spreads what its rivers bring over its floor, deepest most
+    lab, k = grid.components(lk["sink"] & lk["wet"])
+    if k:
+        m = lab >= 0
+        depth = (lk["level"] - elev)[m] + 1.0
+        dep[m] = (np.bincount(lab[m], dep[m], k) / np.bincount(lab[m], depth, k))[lab[m]] * depth
     ocean = ~land
+    coast = ocean & (np.add.reduceat(land[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
+    dep_sea = _offshore(np.where(ocean, dep, 0.0), elev.astype(float), iso.astype(float), ocean, coast,
+                        grid.nbr_off, grid.nbr_idx, d_km, fan_km)
+    # then currents spread it sideways: a little along the shelf, more over
+    # the deep sea floor (turbidity currents fan out)
     ea, eb = grid.edges[:, 0], grid.edges[:, 1]
-    sea = ocean[ea] & ocean[eb]
-    dep_sea = _spread(np.where(ocean, dep, 0.0), ea[sea], eb[sea], 0.15, int(round(4 * scale**2)))
+    shelf = ocean & (elev > SHELF_EDGE)
+    deep = ocean & ~shelf
+    on_shelf = np.where(shelf, dep_sea, 0.0)
+    dep_sea = (_spread(on_shelf, ea[shelf[ea] & shelf[eb]], eb[shelf[ea] & shelf[eb]], 0.15, int(round(scale**2)))
+               + _spread(dep_sea - on_shelf, ea[deep[ea] & deep[eb]], eb[deep[ea] & deep[eb]], 0.15,
+                         int(round(4 * scale**2))))
     dep = np.where(ocean, dep_sea, dep)
     thick = thick + dep
     cover = cover + dep
-    return thick, cover, mix, removed, dep, flow, down, land & (filled - elev > 5)
+    return thick, cover, mix, removed, dep, flow, down, lk["kind"]

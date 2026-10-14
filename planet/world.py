@@ -52,21 +52,29 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     t0 = t0 or time.time()
     c = climate.compute(grid, elev, dT, tilt, ice)
     if erosion > 0 and erosion_iterations > 0:
-        elev = hydrology.erode(grid, elev, c["precip"], erosion_iterations, erosion)
+        elev = hydrology.erode(grid, elev, c["runoff"], erosion_iterations, erosion)
         c = climate.compute(grid, elev, dT, tilt, ice)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
-    flow, down, lake = hydrology.rivers_and_lakes(grid, elev, precip)
-    biome = climate.biomes(elev, temp, precip, lake)
+    flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
+    biome = climate.biomes(elev, temp, precip, lk["wet"])
+    elev_m = np.round(elev).astype(int)
 
     layers = {
-        "elevation": np.round(elev).astype(int),
+        "elevation": elev_m,
         "temperature": np.round(temp, 1),
         "precipitation": np.round(precip).astype(int),
         "biome": biome,
-        "flow": np.round(flow, 2),
+        "flow": np.round(flow, 2),  # river flow: upstream runoff, cells x m/yr (x cell area / 1 yr = m3/s)
         "downstream": down,
-        "lake": lake.astype(int),
+        "lake": lk["wet"].astype(int),
+        # lake surface, m, same datum as "elevation" (lake_level - elevation = water depth);
+        # equal to elevation where there's no lake
+        "lake_level": np.maximum(np.round(lk["level"]).astype(int), elev_m),
+        "lake_kind": lk["kind"].astype(int),  # hydrology: 0 none, 1 open (fresh), 2 closed (salt), 3 salt pan
+        "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
+        "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
+        "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
     }
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
@@ -153,11 +161,24 @@ def summarize(world: dict) -> dict:
         "land_biomes_pct": {names[k]: round(100 * c / land.sum(), 1)
                             for k, c in sorted(enumerate(counts), key=lambda kc: -kc[1]) if c},
         "lake_cells": int(L["lake"].sum()),
+        **_lake_summary(g, L),
         "largest_rivers": rivers,
     }
     if "plate" in L:
         s["plates"] = int(L["plate"].max() + 1)
     return s
+
+
+def _lake_summary(g: Grid, L: dict) -> dict:
+    """Count lakes by kind (connected cells of one kind = one lake)."""
+    if "lake_kind" not in L:
+        return {}
+    k = np.asarray(L["lake_kind"])
+    out = {}
+    for kind, name in ((hydrology.OPEN_LAKE, "open"), (hydrology.CLOSED_LAKE, "closed"),
+                       (hydrology.SALT_PAN, "salt_pan")):
+        out[f"lakes_{name}"] = int(g.components(k == kind)[1])
+    return out
 
 
 def _river_length(g: Grid, L: dict, mouth: int) -> int:

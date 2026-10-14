@@ -41,7 +41,7 @@ uv run python -m planet report <run-id>                                         
 ```sh
 uv run pytest                    # invariants + envelope tests (~30 s)
 uv run pytest -m "not slow"      # invariants only (~6 s)
-uv run python tools/earth_check.py --png earth.png   # climate model on real Earth vs observations
+uv run python tools/earth_check.py --png earth.png   # climate, rivers and lakes on real Earth vs observations
 uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended to docs/scorecard.jsonl
 ```
 
@@ -103,8 +103,15 @@ Sliced and one-shot terrain then go through the shared pipeline:
    wind-driven streamfunction per basin (Stommel model: fast warm western
    boundary currents, circumpolar currents); the jet stream from the thermal
    wind steers the storm tracks; low-level winds turn along high mountains.
-2. **Erosion and rivers** (`hydrology.py`): priority-flood drainage, flow
-   accumulation, then stream-power erosion that cuts valleys. `--erosion 0` skips it.
+   Evaporation: potential evaporation from sunshine and temperature per
+   half-year (Oudin), actual evaporation from the Budyko curve (Fu), and
+   runoff = rain - evaporation (~40% of the rain on land, like Earth's).
+2. **Erosion, rivers and lakes** (`hydrology.py`): rivers carry the runoff.
+   Priority-flood drainage, flow accumulation, then stream-power erosion that
+   cuts valleys (`--erosion 0` skips it). Lakes evaporate: each basin fills
+   only until the evaporation off its lake balances its inflow, or it spills.
+   Dry basins hold closed salt lakes (the Caspian, Great Salt Lake) or salt
+   pans, and their rivers end there.
 3. **Biomes**: a Whittaker-style lookup on temperature and rainfall.
 
 Shared knobs: `--erosion <strength>`, `--set erosion_iterations=12 equator_temp=28 pole_temp=-22`.
@@ -123,7 +130,12 @@ patches on a football. In the viewer, tick "Highlight the 12 pentagons".
 - `runs/<name>/run.txt`: the one to read or paste into a chat. It has the event log,
   stats over time, ASCII elevation maps at five moments, and a plate table.
 - `worlds/<name>.json` / `.txt`: a full world (from `slice` or `generate`). The
-  `.txt` has the summary and ASCII maps.
+  `.txt` has the summary and ASCII maps. Water layers: `flow` (river flow,
+  upstream runoff in cells x m/yr; times a cell's area per year = m3/s),
+  `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
+  1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
+  surface in m, same datum as `elevation`; equal to `elevation` where there's
+  no lake, so `lake_level - elevation` is the water depth).
 - `grids/L<level>.json`: grid geometry shared by all runs at that level.
 
 All of these are generated output (git-ignored) and reproducible from seed + settings.

@@ -183,6 +183,14 @@ def _heap_pop(hk, hv, size):
 def priority_flood(elev, nbr_off, nbr_idx, eps):
     """Barnes et al. 2014 priority-flood + epsilon. Returns (filled,
     downstream, order); order runs outlet -> headwater."""
+    return priority_flood_to(elev, elev <= 0, nbr_off, nbr_idx, eps)
+
+
+@njit(cache=True)
+def priority_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
+    """Priority-flood toward the cells in `outlet` (the sea, plus any
+    lakes that end rivers): every other cell drains to one of them, pits
+    filled. Returns (filled, downstream, order); order runs outlet -> headwater."""
     n = elev.shape[0]
     filled = elev.copy()
     down = np.full(n, -1, np.int64)
@@ -192,7 +200,7 @@ def priority_flood(elev, nbr_off, nbr_idx, eps):
     size = 0
     any_ocean = False
     for i in range(n):
-        if elev[i] <= 0:
+        if outlet[i]:
             closed[i] = True
             size = _heap_push(hk, hv, size, filled[i], i)
             any_ocean = True
@@ -215,6 +223,192 @@ def priority_flood(elev, nbr_off, nbr_idx, eps):
                 down[j] = i
                 size = _heap_push(hk, hv, size, filled[j], j)
     return filled, down, order[:k]
+
+
+@njit(cache=True)
+def _root(parent, i):
+    while parent[i] != i:
+        parent[i] = parent[parent[i]]
+        i = parent[i]
+    return i
+
+
+@njit(cache=True)
+def _wet_try(r, c, q, ev, loss, wet):
+    """Put cell c under root r's lake if r has the water for it: the lake
+    takes cells in order of height until its evaporation matches its
+    inflow. A cell it could only half fill stays dry (the shore)."""
+    need = q[r] - ev[r]
+    if need <= 0:
+        return False
+    if need >= 0.5 * loss[c]:
+        wet[c] = True
+        ev[r] += loss[c]
+        return True
+    return False
+
+
+@njit(cache=True)
+def _push_dry(r, c, head, tail, nxt):
+    nxt[c] = -1
+    if head[r] < 0:
+        head[r] = c
+    else:
+        nxt[tail[r]] = c
+    tail[r] = c
+
+
+@njit(cache=True)
+def _merge_dry(a, b, head, tail, nxt, elev):
+    """Merge root b's list of dry cells (sorted by height) into root a's."""
+    x, y = head[a], head[b]
+    h, t = -1, -1
+    while x >= 0 or y >= 0:
+        if y < 0 or (x >= 0 and elev[x] <= elev[y]):
+            c, x = x, nxt[x]
+        else:
+            c, y = y, nxt[y]
+        if h < 0:
+            h = c
+        else:
+            nxt[t] = c
+        t = c
+    if t >= 0:
+        nxt[t] = -1
+    head[a], tail[a] = h, t
+    head[b], tail[b] = -1, -1
+
+
+@njit(cache=True)
+def lakes(elev, nbr_off, nbr_idx, src, loss):
+    """Lakes that evaporate (fill and spill, with evaporation).
+
+    Water runs downhill (steepest descent) into pits. Each pit's basin then
+    floods from its lowest cell up, one cell at a time in order of height
+    (all basins together, lowest first, like water rising everywhere at
+    once). A lake stops rising when the evaporation off its surface (loss
+    per wet cell) matches the water flowing in (src summed over its
+    catchment): a closed lake. If it reaches the lowest point of its rim
+    first, it spills: over the rim into the next basin (which gets the
+    surplus and may rise in turn, so basins merge into one lake), or into
+    the sea (an open lake).
+
+    elev: m, <= 0 is sea; src: water each land cell sends downhill;
+    loss: the extra water a cell loses while under a lake (same units).
+    Returns (wet, open, out_z, pit, catch): cell under a lake; the cell's
+    basin spills to the sea (its lakes are fresh, through-flowing);
+    elevation at which that basin met the sea's drainage; cell is a pit
+    (no lower neighbour); water reaching each cell downhill (catchment)."""
+    n = elev.shape[0]
+    sea = elev <= 0
+    if not sea.any():
+        sea[np.argmin(elev)] = True
+    # steepest descent and catchments
+    rcv = np.full(n, -1, np.int64)
+    for i in range(n):
+        if sea[i]:
+            continue
+        bz = elev[i]
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if elev[j] < bz:
+                bz, rcv[i] = elev[j], j
+    asc = np.argsort(elev, kind="mergesort")
+    catch = np.where(sea, 0.0, src)
+    for t in range(n - 1, -1, -1):
+        i = asc[t]
+        if not sea[i] and rcv[i] >= 0:
+            catch[rcv[i]] += catch[i]
+    # flood every basin from below
+    parent = np.arange(n)
+    q = np.zeros(n)  # water flowing into the basin (root)
+    ev = np.zeros(n)  # evaporation from its lake
+    tosea = sea.copy()  # root's basin already spills to the sea
+    open_ = np.zeros(n, np.bool_)
+    out_z = np.zeros(n)
+    head = np.full(n, -1, np.int64)
+    tail = np.full(n, -1, np.int64)
+    nxt = np.full(n, -1, np.int64)
+    wet = np.zeros(n, np.bool_)
+    done = sea.copy()
+    roots = np.empty(16, np.int64)
+    for t in range(n):
+        i = asc[t]
+        if sea[i]:
+            continue
+        nr = 0
+        to_sea = False
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if not done[j]:
+                continue
+            r = _root(parent, j)
+            if tosea[r]:
+                to_sea = True
+                continue
+            seen = False
+            for k in range(nr):
+                if roots[k] == r:
+                    seen = True
+            if not seen:
+                roots[nr] = r
+                nr += 1
+        done[i] = True
+        if to_sea:  # every basin touching i spills here into the sea's drainage
+            for k in range(nr):
+                r = roots[k]
+                tosea[r] = True
+                open_[r] = (head[r] < 0) and q[r] > ev[r]
+                out_z[r] = elev[i]
+            tosea[i] = True
+            out_z[i] = elev[i]
+            continue
+        if nr == 0:  # a new pit
+            q[i] = catch[i]
+            if not _wet_try(i, i, q, ev, loss, wet):
+                _push_dry(i, i, head, tail, nxt)
+            continue
+        r0 = roots[0]
+        for k in range(1, nr):  # basins meet at i: one lake from here up
+            r = roots[k]
+            parent[r] = r0
+            q[r0] += q[r]
+            ev[r0] += ev[r]
+            _merge_dry(r0, r, head, tail, nxt, elev)
+        parent[i] = r0
+        if rcv[i] < 0:  # a flat pit next to the basin
+            q[r0] += catch[i]
+        # the basin's surplus spreads over its dry low ground first
+        while q[r0] > ev[r0] and head[r0] >= 0:
+            c = head[r0]
+            if not _wet_try(r0, c, q, ev, loss, wet):
+                break
+            head[r0] = nxt[c]
+            if head[r0] < 0:
+                tail[r0] = -1
+        if head[r0] >= 0 or not _wet_try(r0, i, q, ev, loss, wet):
+            _push_dry(r0, i, head, tail, nxt)
+    for i in range(n):
+        r = _root(parent, i)
+        open_[i] = open_[r]
+        out_z[i] = out_z[r]
+    return wet, open_, out_z, (rcv < 0) & ~sea, catch
+
+
+@njit(cache=True)
+def accumulate_lakes(down, order, src, wet):
+    """Flow accumulation where lake cells can lose water (src < 0 under a
+    lake: evaporation). A river through a lake leaves it with what's left;
+    a lake can't send a negative flow on downstream."""
+    flow = src.copy()
+    for t in range(order.shape[0] - 1, -1, -1):
+        i = order[t]
+        if not wet[i] and flow[i] < 0:
+            flow[i] = 0.0
+        d = down[i]
+        if d >= 0:
+            flow[d] += flow[i]
+    return np.maximum(flow, 0.0)
 
 
 @njit(cache=True)

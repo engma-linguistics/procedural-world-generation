@@ -49,7 +49,7 @@ from dataclasses import dataclass, field, fields
 import numpy as np
 from numba import njit
 
-from . import climate, kernels, surface
+from . import climate, hydrology, kernels, surface
 from .geo import R_KM, latlon as _latlon
 from .grid import Grid
 from .surface import ARC, CRATON, HOTSPOT, OCEAN, OROGEN, SEDIMENT
@@ -100,7 +100,7 @@ class Params:
     subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
-    incision: float = 0.004  # river cutting, per Myr per sqrt(flow)
+    incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
     climate_every: float = 8.0  # Myr between climate (rain, ice, sea level) updates
     # climate (see Simulation._global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
@@ -120,6 +120,10 @@ class Params:
     # run.json files that list it still load; remove once old runs are retired.
     ocean_ref_age: float = 50.0
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
+    fan_km: float = 1000.0  # km of deep sea floor over which ~63% of the load that passes the shelf settles
+    # km: sediment buried deeper than this is cooked (~500 C) into metamorphic
+    # rock and joins the basement (Earth's thickest piles: ~20 km)
+    metamorphic_depth: float = 18.0
     # hotspots: mantle plumes fixed in the mantle; plates slide over them
     hotspots: int = 10  # typical number alive at once
     hotspot_life: float = 120.0  # Myr, mean
@@ -493,7 +497,7 @@ class Snapshot:
     cover: np.ndarray  # km of sediment on top
     thickness: np.ndarray  # km of crust
     precip: np.ndarray  # mm/yr
-    flow: np.ndarray  # river flow (sum of upstream rainfall, cells x m/yr)
+    flow: np.ndarray  # river flow (sum of upstream runoff, cells x m/yr)
     downstream: np.ndarray  # next cell down the river, -1 at the sea
     hotspots: list  # [lat, lon] of each live plume
     volcanoes: list  # [lat, lon] of each active arc volcano
@@ -565,6 +569,7 @@ class Simulation:
         self.newest = -1  # slot of the most recently split-off plate
         self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process
         self.t_warm = self.t_cold = self.p_jul = self.p_jan = self.koppen = None
+        self.runoff = self.aet = self.lake_evap = None  # mm/yr, from _climate
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / n
         self.edge_len = g.spacing
@@ -928,10 +933,15 @@ class Simulation:
         t0 = t
         t, cover, x[:, MIX], self.removed, dep, self.flow, self.down, lake = surface.erode(
             g, elevation(t, self.w_age, cont, rock, self.swell - self.sea_level), t, cover, x[:, MIX],
-            rock, cont, self.precip, dt, p.hillslope, p.erosion_timescale, p.erosion_height, p.incision, self.scale,
-            isostasy(cont, rock), k_mult, p.alluvial)
+            rock, cont, self.precip, self.runoff, self.aet, self.lake_evap, dt, p.hillslope, p.erosion_timescale,
+            p.erosion_height, p.incision, self.scale, isostasy(cont, rock), k_mult, p.alluvial, p.fan_km)
         self._book("erosion", t0, t, cont)
         self._sediments(t, cover, x, dep, lake, cont, rock)
+        # deep in a thick pile the sediment is cooked into metamorphic rock:
+        # it stays crust, but it's basement now, not cover
+        cooked = np.maximum(cover - p.metamorphic_depth, 0)
+        x[:, MIX] *= (1 - cooked / np.maximum(cover, 1e-9))[:, None]
+        cover = cover - cooked
 
         # Reefs: in warm, clear, shallow sea, corals and other carbonate
         # makers build up to just below sea level, fast enough to outpace any
@@ -1030,8 +1040,8 @@ class Simulation:
         chemical deposits are added later (self.chem) with the reefs.
           sand       near its source (lakes, rivers, beaches, deltas); farther
                      out only mud settles. Desert winds sort loose cover into dunes.
-          evaporite  where water evaporates faster than it arrives: salt lakes
-                     in hot dry closed basins (Dead Sea, Great Salt Lake) and
+          evaporite  where water evaporates faster than it arrives: closed
+                     lakes and salt pans in warm basins (Dead Sea, Great Salt Lake) and
                      shallow hot seas next to desert (the Persian Gulf)
           coal       warm, wet, low-lying swamps full of plants, if plants
                      exist (none before land plants ~450 Ma on Earth)"""
@@ -1044,7 +1054,7 @@ class Simulation:
         x[:, SAND] += np.where(dunes, shale * (1 - np.exp(-0.01 * dt)), 0)
         T, P = self.temp, self.precip
         n_land = np.add.reduceat(land[g.nbr_idx], g.nbr_off[:-1])
-        salt_lake = lake & (P < 400) & (T > 10)
+        salt_lake = ((lake == hydrology.CLOSED_LAKE) | (lake == hydrology.SALT_PAN)) & (T > 10)
         sabkha = ~land & (e > -300) & (n_land > 0) & (T >= 22) & (P < 400)
         evap = (salt_lake * p.evaporite_rate + sabkha * 0.25 * p.evaporite_rate) * dt
         swamp = land & (e < 250) & (P > 1000) & (self.veg > 0.5)
@@ -1114,6 +1124,7 @@ class Simulation:
         c = climate.compute(g, e, self.dT, p.tilt, np.where(land, self.ice, 0.0))
         self.temp, self.t_warm, self.t_cold = c["temp"], c["t_warm"], c["t_cold"]
         self.precip, self.p_jul, self.p_jan = c["precip"], c["p_jul"], c["p_jan"]
+        self.runoff, self.aet, self.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
         self.wind, self.current = 0.5 * (c["wind_jul"] + c["wind_jan"]), c["current"]
         # Ice: where summers stay near freezing and there's snow to feed it.
         # The real ice comes and goes with ~100 kyr cycles; this is the

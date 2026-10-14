@@ -22,6 +22,9 @@ planet's geography. In order (see compute):
   moist enough to be unstable (tropics, summer continents). Warm air holds
   more water (~6% per C), so the tropics are wettest.
 - Koppen climate classes from the monthly-ish temperatures and rain.
+- Where the rain goes (water_balance): back into the air (evaporation,
+  limited by the sunshine and warmth to drive it, and by the rain there is)
+  or into the rivers (runoff).
 """
 
 from __future__ import annotations
@@ -899,7 +902,75 @@ TUNE = dict(
     air_km_w=900.0,  # ... its winter temperature (slower: cold ground under warm air is stable)
     evap_cool=1.5,  # C: how much cooler rainy summers are (and hotter dry ones)
     mean_mm=1000.0,  # global mean precipitation, mm/yr (Earth ~1000)
+    # evaporation and runoff (see water_balance)
+    budyko_w=2.6,  # Fu's w: how readily the land gives the rain back to the air (Earth's mean ~2.6)
+    soil_mm=150.0,  # mm of water the soil holds over from one half-year to the next
+    open_water=1.2,  # open water's evaporation per unit of the land's potential evaporation
 )
+
+
+# --------------------------------------------------------------------------
+# Evaporation and runoff
+# --------------------------------------------------------------------------
+MONTH_DAYS = np.array([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+S0_MJ = 1361.0 * 86400 / 1e6  # the solar constant, MJ/m2 per day
+LATENT = 2.45  # MJ to evaporate 1 kg of water (1 kg/m2 = 1 mm)
+
+
+def insolation(lat, tilt: float = 23.4) -> np.ndarray:
+    """Daily mean sunshine at the top of the atmosphere (MJ/m2/day) in
+    each month, shape (12, n): long polar summer days, none in polar winter."""
+    phi = np.radians(lat)[None, :]
+    mid = np.cumsum(MONTH_DAYS) - MONTH_DAYS / 2  # day of the year at mid-month
+    decl = np.radians(tilt) * np.sin(2 * np.pi * (mid - 80.0) / 365.25)[:, None]  # 0 at the March equinox
+    h0 = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1, 1))  # half the day length, radians
+    return S0_MJ / np.pi * (h0 * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(h0))
+
+
+def budyko(p, pet, w):
+    """Actual evaporation (same units as p) from rain p and potential
+    evaporation pet, by Fu's form of the Budyko curve: where energy is
+    short (pet << p) the ground gives back about pet and the rest runs off;
+    where water is short (pet >> p) nearly all the rain evaporates. w sets
+    how sharp the bend between the two is."""
+    x = pet / np.maximum(p, 1e-9)
+    return np.where(p > 0, p * (1 + x - (1 + x**w) ** (1 / w)), 0.0)
+
+
+def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None) -> dict:
+    """Where the rain goes: evaporation back to the air, or runoff into
+    rivers (mm/yr). Per half-year, so a wet winter and a dry summer
+    (Mediterranean) don't cancel out.
+      pet       potential evaporation: what a wet surface would evaporate,
+                from the sunshine (top-of-atmosphere, by latitude and month)
+                and the temperature (Oudin et al. 2005: Ra/lambda*(T+5)/100;
+                nothing below -5 C)
+      aet       actual evaporation, from the Budyko curve (Fu's equation)
+      runoff    rain - aet: what feeds the rivers (Earth: ~35-40% of the
+                rain on land)
+      lake_evap evaporation from open water (lakes; larger than pet)
+    Months are a sine between the coldest and warmest month, peaking in
+    July (north) or January (south)."""
+    tune = {**TUNE, **(tune or {})}
+    north = lat >= 0
+    ra = insolation(lat, tilt)
+    m = np.arange(12)[:, None]
+    peak = np.where(north, 6, 0)[None, :]
+    amp = 0.5 * (t_warm - t_cold)
+    t_m = np.clip(temp + amp * np.cos(2 * np.pi * (m - peak) / 12), t_cold, t_warm)
+    pet_m = np.maximum(ra / LATENT * (t_m + 5) / 100, 0) * MONTH_DAYS[:, None]  # mm per month
+    pet_jul = 2 * pet_m[3:9].sum(0)  # Apr-Sep, as a rate per year like p_jul
+    pet_jan = 2 * (pet_m[:3].sum(0) + pet_m[9:].sum(0))
+    # Each half-year on its own (amounts, mm), then again with what the
+    # soil kept from the other half-year's surplus (snowmelt and winter rain
+    # still in the ground when summer comes), up to its capacity.
+    w, cap = tune["budyko_w"], tune["soil_mm"]
+    p_s, e_s = 0.5 * np.stack([p_jul, p_jan]), 0.5 * np.stack([pet_jul, pet_jan])
+    kept = np.minimum(p_s - budyko(p_s, e_s, w), cap)[::-1]
+    aet = budyko(p_s + kept, e_s, w).sum(0)
+    precip = p_s.sum(0)
+    aet = np.minimum(aet, precip)
+    return dict(pet=e_s.sum(0), aet=aet, runoff=precip - aet, lake_evap=tune["open_water"] * e_s.sum(0))
 
 
 # --------------------------------------------------------------------------
@@ -1066,6 +1137,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       wind_jul, wind_jan     tangent vectors, ~1 = a steady trade wind
       current                tangent vectors of the surface ocean currents
       jet_jul, jet_jan       tangent vectors, m/s: the upper-level wind (jet stream)
+      pet, aet, runoff       mm/yr: potential and actual evaporation, and what runs
+                             off into rivers (0 at sea; see water_balance)
+      lake_evap              mm/yr: evaporation from open water (lakes)
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
     currents and sea-surface temperature -> air temperatures carried by the
@@ -1184,5 +1258,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     temp = np.minimum(temp, t_warm)
     t_cold = np.minimum(t_cold, temp)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
+    wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
+    wb["runoff"] = np.where(land, wb["runoff"], 0.0)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
-                sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1])
+                sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb)
