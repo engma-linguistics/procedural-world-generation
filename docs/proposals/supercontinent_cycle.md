@@ -15,6 +15,8 @@ In our runs, the starting supercontinent breaks into 30–60 pieces. Over 1.5–
 
 ### What the model has today (`planet/tectonics.py`)
 
+> **Note (2026-10-14):** "today" here means 2026-10-13, before the mantle work. This section describes the pre-mantle rules and the old single-file `planet/tectonics.py` (`_forces`, `_sutures`, `_maybe_rift`). The heat and big-plate rift rules are gone, and the code is now split into `planet/tectonics/` (`motion.forces`, `events.sutures`, `events.maybe_rift`). See "Implemented" at the end.
+
 **Plate motion** (`_forces`): each step, every plate's velocity is solved from four forces:
 - *slab pull*: a sinking slab drags its plate toward the trench;
 - *ridge push*: plates are pushed away from spreading ridges;
@@ -193,10 +195,10 @@ The user chose the breakup fix + B′, with hotspots tied to the warm mantle and
 - `stress_cut` tries 12 straight cuts with offsets.
   - It ranks them by opening speed ÷ the mean strength along the cut, × (plate area / 5%)^¼. A bigger plate pulls harder per length of cut.
   - `rift_side` tries 4 wandering (noisy) cuts and keeps the one through the weakest rock.
-- `rift_min_piece` = 0.03: no rift leaves a piece with 0.3–3% of the surface as continent. Oceanic pieces are fine.
+- `rift_min_piece` = 0.03: no rift leaves a piece carrying between 0.3% and 3% of the surface in *continental* crust (`events.piece_ok` counts only continental cells). A piece with almost no continent (under 0.3%), including a purely oceanic one of any size, is allowed.
 
 ### B′ (`mantle.py`)
-`sim.mantle` is a world-frame temperature anomaly (relative units, about ±1–2).
+`sim.mantle` is a world-frame temperature anomaly in relative units: about −1 over a long-lived slab graveyard and +1 under a continent that has sat still for a few hundred Myr (roughly ±100–200 K on Earth), with a global mean of 0 (see the `mantle.py` docstring). Parameters live in `planet/tectonics/params.py`.
 - **Smoothing:** low-passed in real spherical harmonics, degrees 1–8 (built once per grid by orthonormalising monomials), with a heat kernel over `mantle_scale_km` = 2500. The global mean is dropped.
 - **Memory:** it relaxes over `mantle_memory` = 200 Myr.
 - **Sources:**

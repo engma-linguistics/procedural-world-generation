@@ -44,7 +44,8 @@ Tidal range (world layer `tide_range`, m, mean spring-ish range)
 -----------------------------------------------------------------
 A crude physical proxy, in three factors:
 1. Connection to the open ocean. The tide is a wave raised in the big
-   ocean basins (open-ocean range ~1 m). A sea joined to the ocean only
+   ocean basins (R_OPEN = 2 m: the range on an open-ocean coast with a
+   narrow shelf, before the factors below). A sea joined to the ocean only
    through narrow, shallow straits co-oscillates weakly, and a basin too
    small to raise its own tide has almost none (the Mediterranean, Baltic
    and Black Sea: a few cm to ~0.3 m). Cells from which most directions

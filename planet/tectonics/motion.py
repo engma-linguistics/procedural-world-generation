@@ -1,13 +1,17 @@
 """Plate boundaries and plate motion.
 
-Plates have no momentum (it's basically very slow Stokes flow), so each
-step the velocity is *solved* from the forces: slab pull (dominant), ridge
+Plate motion is basically very slow Stokes flow, so each step the force
+balance gives every plate a target velocity: slab pull (dominant), ridge
 push, collision resistance, basal traction from the mantle flowing under
 the plate (mantle.py: toward cold slab graveyards, away from warm mantle),
 and a small, slowly wandering drag term that supplies meandering. Every force acts on world cells; it becomes a torque
 on the cell's plate, and a drag matrix (resistance to rotating, larger
-under continental keels) turns the plate's total torque into its angular
-velocity.
+under continental keels) turns the plate's total torque into a target
+angular velocity. The plate's angular velocity then relaxes toward that
+target over velocity_timescale (15 Myr; plate inertia, in effect) and is
+capped so no cell moves faster than max_speed (18 cm/yr). forces() runs
+after the step's move, so the velocities it sets are used by the next
+step's move.
 """
 
 from __future__ import annotations
@@ -95,8 +99,9 @@ class CellForces:
 
 
 def forces(sim, bd: Boundaries, rng) -> CellForces:
-    """Solve every plate's angular velocity from the forces on it (in place
-    on plates.omega and plates.wander)."""
+    """Move every plate's angular velocity toward the one the forces on it
+    call for (relaxing over velocity_timescale, capped at max_speed; in
+    place on plates.omega and plates.wander)."""
     g, p, dt = sim.grid, sim.params, sim.dt
     pl = sim.plates
     P = g.centers

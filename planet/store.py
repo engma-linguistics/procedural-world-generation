@@ -154,7 +154,9 @@ def _spec(dtype, units, description, scale=1, offset=0, transform=None) -> dict:
 
 
 # The names used everywhere (runs, time zooms, worlds, viewer), with the
-# encoding runs store them in. Worlds hold the same names as JSON values.
+# encoding runs store them in. Worlds hold the same names as JSON values,
+# for the layers they have: sliced and generated worlds don't store the
+# wind_*, current_* and jet_* layers (only runs and the Earth world do).
 LAYERS = {
     "elevation": _spec("<i2", "m", "ground (or ice) surface above sea level"),
     "plate": _spec("<u2", "id", "plate id"),

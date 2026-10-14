@@ -12,7 +12,7 @@ uv run python -m planet list                       # runs, worlds and zooms with
 uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
-uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr)
+uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
 ```
@@ -21,9 +21,12 @@ In the viewer, pick a run from the dropdown and press play (or space;
 arrow keys step frames). Click an event in the list to jump to it. The panel
 shows the exact `slice` command for the moment you're looking at. Click a
 cell, then "Zoom" in the info box, to refine the region around it: the server
-slices the run at that time (once; about a minute at level 6) and zooms in,
-then opens the result in the "Regional zoom" tab (also on its own at
-`http://127.0.0.1:8765/viewer/zoom.html`). The globe shows the spin axis and
+builds a world straight from the run's keyframe nearest that time
+(`timeline.world_from_frame`, a few seconds, exactly what the viewer shows;
+once per keyframe) and zooms in, then opens the result in the "Regional zoom" tab (also on its own at
+`http://127.0.0.1:8765/viewer/zoom.html`). Only runs too old to build from
+their keyframes fall back to replaying the simulation (`slice`, which can take
+minutes). The globe shows the spin axis and
 the tilt; tick "Equator, tropics, polar circles" for those, and press N (or
 "North up") to level the view.
 
@@ -52,7 +55,10 @@ uv run python -m planet report <run-id>                                         
 ```
 
 `-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (~220 km cells),
-6 = 41k (~110 km, default), 7 = 164k (~55 km). Level 6 takes ~1.5 min per 500 Myr.
+6 = 41k (~110 km), 7 = 164k (~55 km), 8 = 655k (~28 km). `simulate` defaults to
+level 6, `generate` to level 5. Rough `simulate` times on a laptop (they vary
+with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~30-40 min
+per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
 ## Glacial time zoom (`planet/timezoom.py`)
 
@@ -70,7 +76,8 @@ glacial events.
 
 From the viewer: on a run, "Glacial time zoom from here" (summary panel)
 starts one at the frame on screen (100, 300 or 1000 kyr; ~4 min per 1000 kyr
-at level 6) as a server job, and opens it when done. The time slider of a
+at level 6) as a server job, and opens it when done. The viewer (and
+`POST /api/timezoom`) defaults to 300 kyr; the CLI's `--kyr` defaults to 1000. The time slider of a
 run is tinted blue where the run is cold (land ice on > 1% of the surface or
 a global mean < 13 °C; darkest = Earth today or colder): that's where a time
 zoom shows ice ages.
@@ -113,18 +120,26 @@ uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended t
 ## Time-stepped tectonics (`planet/tectonics/`)
 
 Each plate keeps its crust on a private copy of the grid plus a rotation saying
-where that copy currently sits. Every step (default 2 Myr):
+where that copy currently sits. Every step (default 2 Myr, `--dt`):
 
 1. plates rotate by their angular velocity;
 2. every world cell asks every plate whether it has crust there. Nobody has any:
    new ocean floor (a ridge). Several do: continental beats oceanic, young ocean
    beats old (subduction); continent vs. continent is a collision;
 3. ocean floor sinks as it ages (~sqrt(age)), subduction builds arcs, collisions
-   build big ranges, rifts stretch continents thin; climate, rivers and erosion
-   wear the land down and lay down sediment;
-4. velocities are *solved* from forces (no momentum): slab pull, ridge push,
-   collision resistance, basal traction from the mantle, plus a small, slowly
-   wandering drag term (meandering). The mantle (`mantle.py`) is a smooth,
+   build big ranges, rifts stretch continents thin; rivers and erosion wear
+   the land down and lay down sediment (every step). The climate (temperature,
+   rain, ice, sea level from the ice) is recomputed only every
+   `climate_every` = 4 Myr, matching the default keyframes, and the rivers use
+   the latest one in between;
+4. forces -> velocities: slab pull, ridge push, collision resistance, basal
+   traction from the mantle, plus a small, slowly wandering drag term
+   (meandering), give each plate a target angular velocity (the force balance,
+   no momentum). The plate's velocity relaxes toward that target over
+   `velocity_timescale` = 15 Myr (a stand-in for inertia) and is capped at
+   `max_speed` = 18 cm/yr. The forces are computed after the plates have
+   moved, so each step moves the plates with the velocities set from the
+   previous step's forces. The mantle (`mantle.py`) is a smooth,
    world-frame temperature anomaly that remembers where slabs sank (cold) and
    where continents sat still (warm, insulated); it flows from warm to cold
    and drags the plates along, so continents gather over the slab graveyards
@@ -193,7 +208,11 @@ Sliced and one-shot terrain then go through the shared pipeline:
    pans, and their rivers end there.
 3. **Biomes**: a Whittaker-style lookup on temperature and rainfall.
 
-Shared knobs: `--erosion <strength>`, `--set erosion_iterations=12 equator_temp=28 pole_temp=-22`.
+Knobs: `--erosion <strength>` (`generate` and `slice`); `generate` also takes
+`--set erosion_iterations=12 dT=2 tilt=30` (`dT`: global temperature offset
+from today's Earth, °C). There are no `equator_temp`/`pole_temp` knobs:
+`climate.compute` derives the equator and pole temperatures from `dT` and
+`tilt`, and the generator fails on any `--set` key it doesn't know.
 
 ## Waves, tides and delta types (`planet/coast.py`)
 
@@ -271,12 +290,20 @@ planet simulate ...`; `serve` then shows that root's runs).
 - `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
 - `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.
 
-Layer names are the same in runs, time zooms, worlds and zooms (`store.LAYERS`):
+Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
 `elevation, plate, crust` (1 = continental), `crust_age, plate_boundary, rock,
 surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
 climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
-jet_e/_n`. Run frames keep `lake_depth` (m of water) where worlds keep
-`lake_level` (its surface); `lake_kind` means the same in both.
+jet_e/_n, wave_power, tide_range`. Not every item stores every layer: run
+frames have the wind, current and jet layers, but sliced and generated worlds
+don't (only the Earth reference world adds them; a known issue), and worlds
+add `biome`, `runoff`, `evaporation`, `pet` and the wave and tide layers. Run
+frames keep `lake_depth` (m of water) where worlds keep `lake_level` (its
+surface); `lake_kind` means the same in both. Time zooms keep a few of these
+names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
+geology). Zooms have
+their own raster layers (`zoom.LAYER_DOC`: `water`, `discharge`,
+`lake_depth`, ...).
 
 `delete` removes one item by id (`run:<id>`, `world:<id>` or `zoom:<id>`
 when a run and a world share an id); `delete --orphans` clears zooms and
@@ -287,5 +314,10 @@ All of these are generated output (git-ignored) and reproducible from seed + set
 In the viewer, clicking a cell copies a description to the clipboard, so you can
 point at a specific place when asking for changes.
 
-Viewer URL options: `?run=run-s1-L5&t=120&layer=plates&arrows=1` or
-`?world=x.json&mode=map&layer=biome&pentas=1&outlines=1&relief=40`.
+Viewer URL options: `?run=19385e&t=120&layer=plates&arrows=1` or
+`?world=ae28af.json&mode=map&layer=biome&pentas=1&outlines=1&relief=40`. Ids
+are the 6-hex-character ids from `planet list`; `world=` takes the file name,
+so it needs the `.json`. `layer=` takes the viewer's layer names, which differ
+from the stored ones: a run's rain is `layer=rainfall` (a world's is
+`precipitation`), and names with spaces need URL encoding
+(`layer=crust%20age`, `layer=surface%20rock`, `layer=wave%20power`).

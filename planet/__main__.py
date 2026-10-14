@@ -182,7 +182,8 @@ def main():
     t = sub.add_parser("simulate", help="time-stepped plate tectonics -> runs/<id>/")
     t.add_argument("--seed", "-s", type=int, default=1)
     t.add_argument("--level", "-l", type=int, default=6,
-                   help="grid detail: 5=10k cells (~8 s), 6=41k (~35 s), 7=164k (~4 min)")
+                   help="grid detail: 5=10k cells, 6=41k (~3 min per 500 Myr), 7=164k (~30-40 min per Gyr), "
+                        "8=655k (hours); rough times, they vary with load")
     t.add_argument("--myr", type=float, default=500, help="how long to simulate (million years)")
     t.add_argument("--dt", type=float, default=2, help="time step (million years)")
     t.add_argument("--every", type=float, default=4, help="keep a viewer keyframe every N Myr")

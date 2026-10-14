@@ -1645,7 +1645,8 @@ addEventListener('drop', async (e) => {
   const f = e.dataTransfer.files[0]; if (f) await setWorld(JSON.parse(await f.text()));
 });
 
-// URL options, e.g. ?run=run-s1-L5&t=120&layer=plates&arrows=1  or  ?world=x.json&mode=map&pentas=1
+// URL options, e.g. ?run=19385e&t=120&layer=rainfall&arrows=1  or  ?world=ae28af.json&mode=map&pentas=1
+// (6-hex ids; world= is the file name with .json; layer= is a viewer layer name, spaces URL-encoded: crust%20age)
 function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }

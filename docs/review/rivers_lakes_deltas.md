@@ -1,5 +1,7 @@
 # Rivers, lakes and deltas: findings (2026-10-13)
 
+> **Note (2026-10-14):** this is a historical investigation, kept as written. The code has moved on: most candidate fixes below are implemented (see the updated Status at the end), so the body's descriptions of the model (no evaporation, zoom lakes as sinks with a flat 42 m bed, `climate_every` = 8, line numbers) are out of date. For how things work now, see `docs/overview.md`.
+
 *From an investigation of world a434c5 (run d05a1e, hothouse, t = 460 Myr), prompted by the owner's questions. Nothing here is implemented yet; it's for discussion.*
 
 The pictures referred to below were in the session scratch dir: `place2_lake_section.png`, `place2_coarse.png`, `place1_zoom_fine.png` and `bigmouth_zoom.png`.
@@ -53,9 +55,18 @@ Rain is very sensitive to where the coast sits, so the two disagree a lot.
 8. **Run/world climate mismatch:** show the climate's age in the viewer, or recompute it.
 9. **Drainage memory:** so rivers don't switch mouths in a single step.
 
-## Status (branch `water`, 2026-10-13)
+## Status (updated 2026-10-14)
+- **Implemented: 1–7.**
+  - 1 (zoom lakes pass water through), 3 (lake bed from the coarse fill depth) and 5 (distributaries below a delta apex): `zoomwater`, merged. See the `planet/zoom.py` docstring.
+  - 4 (delta plain at big mouths): `zoomwater`, then shaped by wave and tide weights (Galloway delta types, `planet/coast.py`).
+  - 2 and 6: `water` (below).
+  - 7: `water` (below), and the "crust-density sediment" remainder is fixed too: sediment has its own lower, compacting density (`isostasy.sediment_density`, `mantle` merge).
+- **Partly: 8 (run/world climate mismatch).** The run's climate now updates every 4 Myr (`climate_every` = 4, matching the keyframes), and the viewer's zoom builds its world straight from the keyframe (`timeline.world_from_frame`). A world still adds its own texture, erosion and a fresh climate, so run and world lakes can still disagree (see Known issues in `docs/plan_next.md`).
+- **Not done: 9 (drainage memory).**
+
+### Earlier status (branch `water`, 2026-10-13)
 - **Done: 6 (evaporation).** `climate.water_balance`: potential evaporation from sunshine and temperature (Oudin), actual evaporation from the Budyko curve per half-year, runoff = rain − evaporation (0.40 of the rain on Earth's land). Rivers in the run and the worlds carry runoff. Lakes evaporate (`kernels.lakes`): closed salt lakes and salt pans form. On Earth's geography the Caspian, Aral, Balkhash, Tarim, Okavango and Altiplano basins come out closed, and 21% of the land drains to closed basins (Earth ~18%). `tools/earth_check.py` reports river discharges.
 - **Done: 2 (lake level in the world).** World layers `lake_level` (m, same datum as `elevation`; equal to it where there's no lake) and `lake_kind` (0 none, 1 open, 2 closed, 3 salt pan).
-- **Done, partly: 7 (globe sediment).** Near shore first (delta tops fill to +2 m on the shelf, so coasts build out), the excess spreads over ~1000 km of deep sea floor, closed lakes spread their load over their floor, and sediment buried deeper than 18 km becomes metamorphic basement. Piles now top out at ~18 km. The model still treats sediment as crust-density rock, so filling deep water takes ~5× its depth in sediment (Earth: ~3×).
+- **Done, partly: 7 (globe sediment).** Near shore first (delta tops fill to +2 m on the shelf, so coasts build out), the excess spreads over ~1000 km of deep sea floor, closed lakes spread their load over their floor, and sediment buried deeper than 18 km becomes metamorphic basement. Piles now top out at ~18 km. The model still treats sediment as crust-density rock, so filling deep water takes ~5× its depth in sediment (Earth: ~3×). *(Fixed since: lighter sediment, see above.)*
 - **Not done: 9 (drainage memory).** A memory of old channels would have to move with the plates (the per-cell arrays are in the world frame, and plates move ~1 cell per step). The real damping is mostly rift-flank uplift, which raises a divide next to a new rift. That's a tectonics change.
 - **Found:** generated worlds have almost no closed basins after ~150 Myr (0–2% of the land drains inland). Sediment and erosion fill every hollow, and nothing in the tectonics makes new interior sag basins.

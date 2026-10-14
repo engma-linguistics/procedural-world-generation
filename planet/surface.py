@@ -34,8 +34,10 @@ Where the load ends up:
               slope (turbidity currents) and spreads over the deep sea floor
               over ~fan_km (submarine fans) before it settles
 
-The rock table is meant to grow: more classes (limestone, sandstone vs shale,
-evaporite, coal...) can be added as rows plus a rule for where they form.
+The cover rocks (limestone, sandstone, shale, evaporite, coal) are in ROCKS;
+which one shows at the surface follows from the cover's mix (surface_rock).
+The table can grow further: a new class is a row plus a rule for where it
+forms.
 """
 
 from __future__ import annotations

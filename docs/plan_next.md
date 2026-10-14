@@ -1,6 +1,6 @@
 # Next round of work: plan
 
-*Written 2026-10-13, from the user's notes after viewing the six v1 worlds. Nothing below is implemented yet.*
+*Written 2026-10-13, from the user's notes after viewing the six v1 worlds. ~~Nothing below is implemented yet.~~ (Done 2026-10-14: items 1–6 are all implemented; see Round 2 below. The plans are kept as written.)*
 
 **Pending decision:** the supercontinent cycle is in `docs/proposals/supercontinent_cycle.md`. The user will hand that doc back and choose; the current recommendation is the breakup-size fix plus B′. It is not part of this plan.
 
@@ -36,7 +36,7 @@ Order: 1 → 6, small to large.
 ## 3. Regional zoom inside the viewer UI
 - **User's ask:** integrate the zoom tool into the UI, maybe as a separate tab.
 - **Plan:**
-  - **Server** (`planet/__main__.py` Handler): add `POST /api/zoom` with JSON `{run, t}` or `{world}`, plus `{lat, lon, size_km, res_km}`.
+  - **Server** (~~`planet/__main__.py` Handler~~; done: it lives in `planet/server.py` + `planet/api.py`): add `POST /api/zoom` with JSON `{run, t}` or `{world}`, plus `{lat, lon, size_km, res_km}`.
     - For a run, slice it at `t` first. Cache by (run, t); `T.slice_world` replays from 0, which takes ~10–60 s at level 6.
     - Then call `zoom.zoom(...)` and return the zoom id.
     - Run it in a worker thread and report progress: either `GET /api/jobs/<id>` polling or a blocking request with a spinner. Keep it simple; one job at a time is fine.
@@ -136,7 +136,7 @@ Order: 1 → 6, small to large.
 **Queue (in order, as files free up):**
 1. After `water` merges:
    - **Climate kernels in parallel** (bit-identical) and climate updated at every keyframe (`climate_every` = 4), so the viewer's climate isn't stale. The speedup pays for the extra cost.
-   - **Then overturning circulation** in `climate.py`. **Done on branch `ocean`** (`planet/ocean.py`; see Known issues → Overturning).
+   - **Then overturning circulation** in `climate.py`. **Done on branch `ocean`, merged** (`planet/ocean.py`; see Known issues → Overturning).
 2. After `water` merges: **split `tectonics.py`** into kernels, crust, events and earth-system modules (output-neutral via the goldens), and drop compatibility code (`ocean_ref_age`, …). **Then the supercontinent B′** on the split code.
 3. After `timezoom` and `highlights` merge:
    - `planet/store.py` (one reader/writer for runs, zooms and timezooms);
@@ -155,7 +155,7 @@ Order: 1 → 6, small to large.
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
 5b. **Real waterfalls in the zoom.** **Done on branch `falls`** (see `zoom.knickpoints()`). Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
-5c. **Lakes on the run globe.** Runs store no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
+5c. **Lakes on the run globe.** *(Done: runs store `lake_depth` and `lake_kind` per frame.)* ~~Runs store no lake layer,~~ Runs stored no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
 
 ## Backlog (user notes, 2026-10-14)
@@ -164,7 +164,7 @@ Order: 1 → 6, small to large.
   - **wave-dominated:** the Nile and São Francisco, a smooth arc-shaped coast with beach ridges;
   - **tide-dominated:** the Ganges–Brahmaputra and Mekong, many funnel-shaped channels and islands (the Sundarbans).
 
-  The model has no waves or tides. Wave energy could come from the winds and fetch (open water the wind blows over). Tidal range could come roughly from shelf width and basin shape. Then pick the delta shape in the zoom per type. Medium effort.
+  ~~The model has no waves or tides.~~ (Done: `planet/coast.py` has `wave_power`, `tide_range` and Galloway delta types in the zoom.) Wave energy could come from the winds and fetch (open water the wind blows over). Tidal range could come roughly from shelf width and basin shape. Then pick the delta shape in the zoom per type. Medium effort.
 - **Giant open lakes:** outlet incision should drain them down over time; today they stay at their spill level. a89254 has a 390,000 km² open lake, larger than any open lake on Earth (Superior is 82,000 km²; only the closed Caspian is bigger).
 - **Vegetation, and eventually a "satellite view"** of the globe and zooms. Not yet.
 - **Zoom 3D view:** a simple low-poly three.js heightmap mesh with a water plane and rivers, in the existing viewer. No Unity or game-engine side project. The goal is to "see a big ole waterfall".
@@ -180,11 +180,11 @@ Order: 1 → 6, small to large.
 - **Eemian-like start:** +24 m in the first 10 kyr (real: +6–9 m). `insol_k` above 0.3 melts most of Antarctica.
 - **Start anchor:** the fixed per-cell cooling that keeps the starting ice stable persists after that ice is gone. It's a calibration crutch.
 - **Smaller issues:** small accumulation jumps at each 10 kyr climate refresh; the ablation zone (where ice melts) is about one 110 km cell wide.
-- **Not done:** glacial erosion, proglacial lakes. (The meltwater link to ocean salinity is in, branch `ocean`: each full climate gets the net ice loss since the last one as `melt`, and the overturning carries on from the last one's state. Over Earth's first 150 kyr it is only ~0.03 Sv, too small to matter.)
+- **Not done:** glacial erosion, proglacial lakes. (The meltwater link to ocean salinity is in, branch `ocean`, merged: each full climate gets the net ice loss since the last one as `melt`, and the overturning carries on from the last one's state. Over Earth's first 150 kyr it is only ~0.03 Sv, too small to matter.)
 
 **Climate**
-- **Norway too cold:** partly fixed by the overturning (branch `ocean`). The Norwegian coast's sea surface went from 0.9 to ~5–6 °C (observed ~7.5), and Scandinavia's coldest month from −26.5 to −22.3 °C (NCEP −8.2). W European winters barely moved (−4.3 → −4.2 °C against 0.6 observed). Even a sea 8 °C warmer all over the NE Atlantic only brings them to −3 °C, so the rest is in the air-temperature model (how far the sea's air reaches inland in winter), not the ocean.
-- **Overturning circulation** (`planet/ocean.py`, branch `ocean`):
+- **Norway too cold:** partly fixed by the overturning (branch `ocean`, merged). The Norwegian coast's sea surface went from 0.9 to ~5–6 °C (observed ~7.5), and Scandinavia's coldest month from −26.5 to −22.3 °C (NCEP −8.2). W European winters barely moved (−4.3 → −4.2 °C against 0.6 observed). Even a sea 8 °C warmer all over the NE Atlantic only brings them to −3 °C, so the rest is in the air-temperature model (how far the sea's air reaches inland in winter), not the ocean.
+- **Overturning circulation** (`planet/ocean.py`, branch `ocean`, merged):
   - **Earth:** ~11 Sv sinking in the Nordic, Irminger and Labrador seas (observed AMOC ~17 Sv) and none in the North Pacific. The Antarctic margin makes only ~2.5 Sv (AABW ~10–20 Sv): the Weddell and Ross seas are too fresh (~34.0 psu against 34.4–34.6). Their winter brine is weak, and there's no shelf/polynya ice factory.
   - **Labrador Sea is too warm** (~7 °C sea surface against ~3.5 °C): the inflow feeds it along the Labrador coast. SW Greenland and Iceland now get summers just above 10 °C, so ET becomes D there (Reykjavik's coldest month went from −29.6 to −12.9 °C, observed −0.6 °C).
   - **The North Atlantic's on-state is found by a spin-up rule,** not by history. With no earlier state, every polar sea that is nearly dense enough starts sinking, and the drho threshold tightens over the iterations. Without that start, the model's own salinity leaves the Nordic seas too fresh to sink: its rain model has no Atlantic/Pacific evaporation contrast to speak of. Hosing ~1 Sv into the North Atlantic shuts it down. Once the hosing stops it recovers within 2–3 climate updates, so it has no lasting off-state.
@@ -198,23 +198,23 @@ Order: 1 → 6, small to large.
   - NE Canada, Labrador and Greenland's margins are too warm; this also blocks Laurentide ice inception in the time zoom.
   - The Andes and the Tibetan margin are speckled.
 - **The jet stream is broad and zonal,** with modest meanders.
-- **The run viewer's climate is up to 4 Myr stale** (`climate_every` = 8 vs keyframes every 4). The fix is queued with the parallel climate kernels.
+- ~~**The run viewer's climate is up to 4 Myr stale** (`climate_every` = 8 vs keyframes every 4). The fix is queued with the parallel climate kernels.~~ Done: `climate_every` = 4, matching the keyframes.
 
 **Rivers, lakes, sediment** (see `docs/review/rivers_lakes_deltas.md`; `water` and `zoomwater` address most)
 - **No evaporation:** discharges are 2–5× too high and there are no closed lakes. (`water`)
 - **Sediment piles reach 33 km** (Earth max about 20–22 km). (`water`)
 - **Drainage switches outlet in one step when a rift opens.** (`water`, optional)
-- **Zoom lakes are sinks:** the water level is wrong and the floor is a flat 42 m; there are no deltas or distributaries. (`zoomwater`)
+- ~~**Zoom lakes are sinks:** the water level is wrong and the floor is a flat 42 m; there are no deltas or distributaries. (`zoomwater`)~~ Done (`zoomwater`): lakes pass water on at their outlet, sit at the world's `lake_level` with a bed from the coarse fill depth, and big mouths get delta plains and distributaries.
 - **Evaporation is merged (`water`); what's left:**
   - **Drainage memory** is not implemented. Old channels would have to move with the plates; the physical damping is rift-flank uplift, which is a tectonics change.
   - **Generated worlds have almost no closed basins after ~150 Myr** (0–2% of land drains inland, against 21% on Earth's terrain). Sediment and erosion fill every hollow, and the tectonics makes no new interior basins (foreland or intermontane basins, rift-flank highs).
-  - **Sediment is treated as crust-density rock in the isostasy,** so filling deep water takes ~5× its depth in sediment (Earth ~3×). About 400 cells sit at the 18 km metamorphic cap. **The user chose (2026-10-13) to give sediment its own lower density,** compacting with depth. Do it after the tectonics split, alongside B′.
+  - ~~**Sediment is treated as crust-density rock in the isostasy,** so filling deep water takes ~5× its depth in sediment (Earth ~3×). About 400 cells sit at the 18 km metamorphic cap.~~ **The user chose (2026-10-13) to give sediment its own lower density,** compacting with depth. Done (with B′, `mantle` merge): `isostasy.sediment_density`, 2.1 → 2.6 g/cm³; basin fill now ~3× the water depth, and 0–103 cells at the cap instead of 76–664 (L6 seed 1, see `docs/proposals/supercontinent_cycle.md`).
   - **The 20 m "unresolved channel" threshold** for coarse hollows is a judgement call.
   - **Discharge misses come from the rain model:** the Yangtze ends in a lake, and the Lena, Mekong and Ganges are too small (dry China, Siberia and Indian monsoon). The Nile is 19× too big (Sahel too wet). With observed rain, magnitudes are about right.
   - **The Orinoco gauge picks up the Amazon,** a coarse-routing artifact.
 - **Zoom lakes and deltas are merged (`zoomwater`); what's left:**
   - ~~The lake outlet river drops about 140 m within a few km (a cliff waterfall).~~ Fixed (`falls`): the ground below an open lake's outlet steps down at most 2 m/km (rapids), out to the first designed fall.
-  - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). River water entering at the zoom's edge can drain straight back out through the edge.
+  - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). ~~River water entering at the zoom's edge can drain straight back out through the edge.~~ (Done: the edge next to an inflow is land, not an outlet; `zoom.py`.)
   - Delta fans are small, and their branches run straight (only 8 possible step directions). There are no distributaries when the fine-scale river reaches the sea away from the coarse mouth.
   - A small lake fragment sometimes has no outlet and acts as a sink.
   - The real `lake_level`/`lake_kind`/runoff layers from `water` are untested in the zoom (only the fallback was exercised).
@@ -233,7 +233,7 @@ Order: 1 → 6, small to large.
 - **Sediment compaction isn't remembered** after uplift.
 - **Name clash:** `planet.tectonics.isostasy` resolves to the function, not the module.
 
-- **Oceans get older after the `l7jumps` fix:** margin subduction now breaks off one basin (6000 km of the oldest passive margin) instead of the plate's whole ocean. Mean ocean age is 83 Myr at L6 against 70 before. In stagnant 2–3-plate phases the L7 mean reaches 140–185 Myr, and sea level sits on the −250 m clip.
+- **Oceans get older after the `l7jumps` fix:** margin subduction now breaks off one basin (6000 km of the oldest passive margin) instead of the plate's whole ocean. Mean ocean age is 83 Myr at L6 against 70 before. In stagnant 2–3-plate phases the L7 mean reaches 140–185 Myr, and the ocean-basin term of sea level sits on its −250 m clip. (To be precise: only that term, half the change in mean ocean depth measured against a ~300 Myr running baseline of itself, is clipped to ±250 m; the hot-mantle term and the ice term are added after the clip, so sea level itself can go beyond −250 m.)
 - **L7 continents are ~2 km thinner and ~300 m lower than at L6** (median crust 33 vs 35 km), so twice as much land sits within 100 m of sea level and land is ~2× as sensitive to sea level. Cause not found; check erosion and thermostat scaling with resolution.
 
 - **Fast sea-level swings remain after the l7jumps fix,** rarer: L7 fe7144 40→30% land at ~1140 Myr then back to 34% by 1172; L6 796a25 37→30% at 1320. Probably any big plate reorganisation renewing ocean floor quickly, plus low L7 continents. Consider limiting how fast mean ocean depth can change (ridge volume responds over ~10s of Myr) or checking the thermostat. See `docs/review/overnight_runs.md`.
@@ -286,7 +286,7 @@ Order: 1 → 6, small to large.
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
 - `api.Jobs` state is in memory only and is lost on server restart.
-- The zoom request can't choose seed, iterations or resolution (always 500 px).
+- ~~The zoom request can't choose seed, iterations or resolution (always 500 px).~~ Partly done: `POST /api/zoom` accepts `seed` and `res_km` (default `size_km`/500); it still can't choose `iterations` (always the default 15).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
 - **Checkpoints are big (`store`):** about 23 MB each at level 6 (≈229 MB per 1 Gyr run, about as much as the layers). Saving only live plates' slots would shrink them.
 - **Old outputs still show in dropdowns** until deleted. Every pre-`store` run, world and zoom fails to open (all were scheduled for deletion and regeneration).

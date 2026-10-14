@@ -25,11 +25,18 @@ Each step (Simulation.step):
     from high ground, and part of that becomes sediment on the continental
     margins. Continental crust is conserved through all of it, so the
     continents neither leak away nor swell over billions of years.
- 5. Forces -> velocities. Plates have no momentum (it's basically very slow
-    Stokes flow), so each step the velocity is *solved* from the forces:
+    Erosion and sediment run every step; the climate (temperature, rain,
+    ice, the ice's sea level) is recomputed only every climate_every Myr
+    (4), and the steps in between use the latest one.
+ 5. Forces -> velocities. Plate motion is basically very slow Stokes flow,
+    so the force balance gives each plate a target angular velocity:
     slab pull (dominant), ridge push, collision resistance, basal traction
     from the mantle flowing under the plates, and a small, slowly
-    wandering drag term that supplies meandering. The mantle (mantle.py)
+    wandering drag term that supplies meandering. The velocity relaxes
+    toward that target over velocity_timescale (15 Myr, a stand-in for
+    inertia) and is capped at max_speed (18 cm/yr). The forces come after
+    the plates have moved, so a step moves them with the velocities set
+    from the previous step's forces. The mantle (mantle.py)
     is a temperature anomaly in the world frame: cold where slabs have
     sunk for a long time, warm under continents that sit still; it flows
     from warm to cold, so continents gather over the cold (a
