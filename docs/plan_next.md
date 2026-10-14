@@ -240,6 +240,15 @@ Order: 1 → 6, small to large.
 - **No glacial hanging valleys.** The lake-outlet cone can raise low ground up to 150 km around an outlet.
 - **Big zoom rivers are now less deeply incised** (they keep at least their valley floor), so canyons are shallower than before `falls`.
 
+**Coast: waves, tides, delta types** (`planet/coast.py`, branch `deltas`)
+- **Southern Hemisphere westerly coasts get ~half their observed wave power;** the N Atlantic and NE Pacific get ~1.5× too much. The storm tracks come mostly from land–sea contrast, so they are weak over the Southern Ocean.
+- **Wave power is ~2× too high in the Med, Baltic and Black Sea,** and India's west coast is too low (no monsoon swell). Faint straight streaks appear in the lee of islands (16 ray directions).
+- **Tides:** Fundy is too small (2.4 m; the funnel is under the cell size), the Caribbean too big (1.0 m), Arctic shelves too big (no sea-ice damping), and there are no amphidromic points.
+- **No Earth delta comes out tide-dominated:** the model gives the Ganges 3,700 m³/s (real ~40,000), and its mouth's tide is too small.
+- **The fine river can reach the coast ~100 km from the coarse mouth,** so the delta form and the river don't always line up.
+- **Not done:** spits deflected by longshore drift, mangroves, visible beach ridges in the preview, and a dendritic eroded tidal-channel network (it's noise-based now).
+- **Cost:** ~1.2 s per level-6 world.
+
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.
 - The Earth world can't be zoomed (no rock layers).

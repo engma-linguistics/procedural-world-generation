@@ -24,3 +24,11 @@ The overturning circulation is merged (plots in `docs/review/ocean/`). On Earth 
 - **(b) Rain doesn't see the ocean's warming.** One extra temperature pass, no rain recompute.
 - **(c) Time cost.** Compute costs +0.17 s per climate step (~35% more). A 1 Gyr level-6 run adds ~15 s.
 - **(d) The rest of Western Europe's winter error is in the air model.** It is still ~4.8 °C too cold, because of how far sea air reaches inland in winter, not the ocean. That's a separate climate item if you want it.
+
+## 4. Delta types: fitted constants
+Waves, tides and the Galloway delta types are merged. To see them:
+- **Demo zooms:** river-dominated `00975d`, wave-dominated `f81832` (with a barrier lagoon), tide-dominated `ce4b72` (funnels and tidal flats).
+- **New colour layers in the viewer:** "wave power" and "tide range".
+- **Screenshots:** `docs/review/deltas/`.
+
+The wave and tide formulas are physical (wind-sea growth with fetch, swell decay, shelf resonance, funnelling), but about ten constants were fitted on Earth by grid search. Wave power is within 2× at 25 of 30 coasts, and tides within 2× at 21 of 23 sites. Thresholds: lagoons appear above a wave weight of 0.3, fingers above a river weight of ~0.4, and anything without a weight of at least 0.5 is labelled "mixed". **Are fitted constants OK here?** They're the honest option at 110 km cells. The bigger miss is upstream: the model's Ganges is 10× too small, and Southern Ocean storms are too weak.
