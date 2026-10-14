@@ -17,7 +17,7 @@ When an agent reports:
 2. `uv run pytest`. If outputs legitimately changed, regenerate the goldens: `uv run pytest tests/test_golden.py --update-golden`, and commit `tests/golden/*.json`.
 3. Triage its drafts: `board.py intake --list`, then `--reject` / `--merge-into` duplicates, then `board.py intake`. Commit.
 4. Restart the server if server code (`planet/server.py`, `planet/api.py`) changed.
-5. Clean up outputs (owner rule): delete runs, worlds and zooms that are out of step with current code and not referenced by an open ticket (keep in-flight agents' outputs, the Earth world, and the parents of anything kept).
+5. Clean up outputs (owner rule): `uv run python tools/cleanup_outputs.py` lists, `--yes` deletes, everything not referenced by an open ticket, not younger than 12 h (in-flight work), not the Earth world and not a parent of a kept item. The owner is fine with the coordinator running it.
 
 ## Viewer server
 `planet serve --no-open` on port 8765 (http://127.0.0.1:8765/viewer/). Restart after server changes:
