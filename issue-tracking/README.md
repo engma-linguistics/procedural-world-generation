@@ -102,7 +102,7 @@ The 14 fields above are the complete schema; `check` rejects unknown and missing
 Run from the repo root:
 
 ```bash
-uv run python issue-tracking/board.py next [--subsystem zoom] [--limit 15]   # todo/in-progress, effort asc then impact desc
+uv run python issue-tracking/board.py next [--subsystem zoom] [--limit 15]   # todo/in-progress, unblocked, effort asc then impact desc
 uv run python issue-tracking/board.py decisions [--brief]                     # needs-decision tickets with their options
 uv run python issue-tracking/board.py morning [--hours 24]                    # markdown digest: decisions + recent updates by subsystem
 uv run python issue-tracking/board.py list --open --subsystem climate         # filters: --status --type --parent --subsystem --effort --impact

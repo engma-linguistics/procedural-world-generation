@@ -179,6 +179,11 @@ def test_next_ordering(root, capsys):
     run(root, "next", "--limit", "2")
     titles = [ln.split()[-1] for ln in capsys.readouterr().out.splitlines()]
     assert titles == ["other-subsystem", "xs-low"]
+    new(root, "blocked-by-open", "xs", "high", "zoom", "--blocked-by", "PW-001")
+    new(root, "blocked-by-done", "xs", "high", "zoom", "--blocked-by", "PW-005")
+    capsys.readouterr()
+    run(root, "next", "--subsystem", "zoom", "--limit", "1")
+    assert capsys.readouterr().out.split()[-1] == "blocked-by-done"
 
 
 def test_decisions(root, capsys):

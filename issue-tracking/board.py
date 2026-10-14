@@ -355,10 +355,13 @@ def cmd_list(b, tickets, args):
 
 
 def rank_next(tickets, subsystem=None):
-    """Actionable tickets (todo / in-progress, not epics), cheapest and most
-    valuable first: effort ascending, then impact descending, then id."""
+    """Actionable tickets (todo / in-progress, not epics, no open blocker),
+    cheapest and most valuable first: effort ascending, then impact
+    descending, then id."""
+    def unblocked(t):
+        return all(tickets.get(x, {}).get("status") in CLOSED for x in t["blocked_by"])
     ts = [t for t in tickets.values()
-          if t["status"] in ("todo", "in-progress") and t["type"] != "epic"
+          if t["status"] in ("todo", "in-progress") and t["type"] != "epic" and unblocked(t)
           and (not subsystem or t.get("subsystem") == subsystem)]
     return sorted(ts, key=lambda t: (EFFORTS.index(t["effort"]) if t.get("effort") in EFFORTS else 99,
                                      -(IMPACTS.index(t["impact"]) if t.get("impact") in IMPACTS else -1),
