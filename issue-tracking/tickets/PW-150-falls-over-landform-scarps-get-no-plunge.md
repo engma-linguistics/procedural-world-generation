@@ -2,7 +2,7 @@
 id: PW-150
 title: Falls over landform scarps get no plunge pool or gorge, and most go unlisted
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: zoom
 effort: s
@@ -28,4 +28,5 @@ them (e.g. top 5 overall plus the top few per class), or a separate
 `stats.landform_falls` count/height summary.
 
 ## Updates
+- 2026-10-14: Status todo -> done. stats.falls lists every fall >= 30 m (kind lip/scarp/bench/lake outlet/drop), falls_count; waterfalls keeps top 5; scarp/bench falls get plunge pools; scarp_gorges() retreats class-cliff falls into gorges; preview marks all falls.
 - 2026-10-14: Created from inbox draft draft-zoom-landform-falls-listing.md (found by zoomland1).

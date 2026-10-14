@@ -176,7 +176,7 @@ flowchart LR
 | shield | old (≥ 500 Myr) craton or granite exposed, not folded for 300 Myr nor rifted for 100 (Canadian Shield) | basement age |
 | hills | any other land (the zoom's graded hills and mountains) | — |
 
-With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope) and the fold wavelength (1.5 × the folded pile + 2 km).
+With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope), the fold wavelength (1.5 × the folded pile + 2 km), the stretching of the last rifting (`rift_strain`, ln β) and the time since the cell was last under ice (`glaciated_myr`).
 
 ## 4. Climate (`climate.py`, `ocean.py`)
 
@@ -320,13 +320,17 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - **Great escarpment:** one step ~0.8 e* high below the escarpment cells' level e*: a lowland, a crenulated scarp, the plateau above. A designed reach crossing it takes its main fall at the scarp, the river on the plateau down to the lip.
    - **Caprock:** stepped benches, mesas and buttes, canyons 1.5× deeper; cuestas where the strata dip.
    - **Lava plateau:** a flat top over stair-stepped valley sides.
-   - Sills left across a flow path are cut through, and each coarse cell's mean is restored. Batches 2–3 (rifts, fold belts, shields; karst, dunes, coastal plains) plug in as further synthesisers (PW-011, PW-012).
+   - **Fold-and-thrust belt:** parallel folds a fold wavelength apart, across the shortening (strike from the thickened crust, the high ground and any converging boundary). Young belts are whaleback anticlines over synclinal valleys (Zagros); old ones are worn to hogbacks of the hard beds, closing round plunging fold noses (Valley and Ridge). The target carries the folds too, so the drainage is trellised, and big rivers cross the ridges in water gaps.
+   - **Fault-block rift:** tilted blocks 10–30 km wide bounded by faults along the rift's band of cells: a steep scarp, a gentle back-tilt, a flat sediment-filled half-graben, lakes in it where the climate is wet. The throw comes from the stretching (`rift_strain`, ln β) and the age; the blocks' facing flips between ~200 km patches (accommodation zones).
+   - **Shield:** a flattened plain with granite domes and inselbergs (steep, round-topped, 1–4 km across, 100–400 m); where the record says it was under ice lately (`glaciated_myr`), the domes are ground down and rock basins hold lakes.
+   - The structures' strikes and phases come from planet-fixed patches (a jittered lattice, each patch's strike read from the coarse cells around it), so overlapping zooms agree.
+   - Sills left across a flow path are cut through as gaps a few pixels wide (not across a rift's or scoured shield's closed basins, which become lakes or flats); falls over the classes' cliffs retreat into gorges and get plunge pools; each coarse cell's mean is restored. Cliffs are anti-aliased (at least ~1 px wide; benches narrower than ~2 px fade out). Batch 3 (karst, dunes, coastal plains) plugs in as further synthesisers (PW-012).
 8. **Knickpoint waterfalls:**
    - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
    - Heights are scaled so the plateau above never rises over the coarse ground (or a landform's plateau, at an escarpment). Big rivers get ~50–150 m falls; at an escarpment ~100–400 m.
    - The lip's rock: a top stratum ≥ 0.5 km thick holds it by itself; a thinner one is helped by a harder rock under it. Soft rock under the lip lets the gorge retreat faster (undercutting, as at Niagara).
    - The river is held at this staircase, between valley sides a few km wide, so it reaches its lips and doesn't run perched above the land beside it.
-   - `stats.waterfalls` in `zoom.json` lists the biggest, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
+   - `stats.falls` in `zoom.json` lists every fall ≥ 30 m (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`; `falls_count` counts those ≥ 30 and ≥ 100 m); `stats.waterfalls` keeps the biggest 5 for the panel, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
 
 Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them) and its stats (`landforms`: the share of land each synthesised class shapes).
 

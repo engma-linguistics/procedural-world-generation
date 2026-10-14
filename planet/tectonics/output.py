@@ -49,6 +49,8 @@ class Snapshot:
     strata_next: np.ndarray  # surface.ROCKS id under it
     strata_dip: np.ndarray  # deg
     fold_wavelength: np.ndarray  # km (0: not folded)
+    rift_strain: np.ndarray  # ln beta of the last rifting (0: never rifted)
+    glaciated_myr: np.ndarray  # Myr since last under ice (landform.GLACIATED_NEVER: never)
 
 
 def snapshot(sim) -> Snapshot:

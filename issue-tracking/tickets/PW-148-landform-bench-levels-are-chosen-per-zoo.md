@@ -36,4 +36,5 @@ under the rivers' ~1 m/km) built from the coarse cells alone.
 - [ ] breach cuts (zoom_landforms.breach) don't grow
 
 ## Updates
+- 2026-10-14: 2026-10-14 zoomland2 (PW-011): not done. Batch 2's fold/rift/shield structures are planet-fixed (patch lattice, 3D noise), but the batch-1 bench levels are still per zoom.
 - 2026-10-14: Created from inbox draft draft-zoom-bench-levels-per-zoom.md (found by zoomland1).
