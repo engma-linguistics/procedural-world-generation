@@ -117,7 +117,8 @@ class TZParams:
     snow_h: float = 20.0  # m: perennial snow/ice this thick is bright (phased in from 0):
     summer_damp: float = 0.6  # its summer warmth (above the annual mean) is damped by this share,
     melt_hold: float = 0.5  # temperatures above 0 C are scaled by this (as climate.compute),
-    ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little)
+    ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
+    absorb_km: float = 1000.0  # ... mixed over this scale (km; the air mass), 0 = locally
     bright_smb: float = 0.5  # m/yr: bright where snow outlasts the summer, bare where it loses this much ...
     bare_share: float = 0.3  # ... and bare ice keeps this share of the snow's effects
     albedo_share: float = 0.2  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
@@ -497,7 +498,12 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
         def year(dt_b, dq_, bright):
             f_snow = f_alb * (p.bare_share + (1 - p.bare_share) * bright)
-            k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * (1 - f_snow * (1 - p.ice_absorb))
+            # bright snow absorbs little of an insolation change, but the air over it also brings
+            # what the surroundings absorbed: the response is mixed over an air mass (absorb_km)
+            absorb = 1 - f_snow * (1 - p.ice_absorb)
+            if p.absorb_km > 0:
+                absorb = climate.smooth_big(g, absorb, p.absorb_km)
+            k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
             climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_snow,
                          climate.TUNE["ice_cooling"] * p.albedo_share, p.summer_damp, p.melt_hold, p.pdd_sigma,

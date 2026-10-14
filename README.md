@@ -11,6 +11,7 @@ uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics 
 uv run python -m planet list                       # runs and worlds with their ids
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
+uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr)
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 ```
 
@@ -35,6 +36,17 @@ uv run python -m planet report <run-id>                                         
 
 `-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (~220 km cells),
 6 = 41k (~110 km, default), 7 = 164k (~55 km). Level 6 takes ~1.5 min per 500 Myr.
+
+## Glacial time zoom (`planet/timezoom.py`)
+
+A side simulation at 500-year steps, view-only: geology frozen at one moment
+of a run, ice sheets driven by orbital (Milankovitch) cycles, with a
+degree-day mass balance, shallow-ice flow, isostasy, calving and sea level
+from the ice volume. `timezoom earth` starts from today's Earth (ETOPO1);
+`--set baseline=obs` uses the observed climate plus the model's changes.
+Knobs: `--set key=value` for any `TZParams` field (e.g. `insol_k`,
+`obliquity_amp`, `phases=zero`). The viewer plays it like a run (frames in
+kyr); its `run.txt` has the sea-level / ice / orbit table and glacial events.
 
 ## Tests and calibration
 
