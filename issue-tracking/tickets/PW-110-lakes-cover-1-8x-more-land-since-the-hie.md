@@ -2,7 +2,7 @@
 id: PW-110
 title: Lakes cover ~1.8x more land since the hierarchical MIN_DEPTH fill; keep, or add a shore rule?
 type: task
-status: todo
+status: done
 parent: null
 subsystem: hydrology
 effort: s
@@ -52,5 +52,6 @@ the lake stops exactly at the height of a broad flat saddle (28e6be @ 200 Myr
 Coordinator notes (intake): a 2.9 million km^2 salt lake is ~8x the Caspian (0.37 million km^2), so option C (scale with basin size) deserves weight even if the global total is Earth-like. Also the Earth check's Nile at Khartoum went 2.65 -> 0.10 of observed (before: too wet, now: too dry, as an upstream lake evaporates almost all of it); check which lake, since the real Nile passes the Sudd and still delivers ~2800 m^3/s.
 
 ## Updates
+- 2026-10-14: Status todo -> done. A + C (lakesize): kept the consistent rule; added hydrology.MIN_SLOPE = 0.1 m/km, so a basin must be max(20 m, 0.1 m/km x sqrt(area/pi)) deep at its rim to hold water (kernels.fill_shallow tracks basin area). Earth's L6 artefact basins (Sudd 0.09, W Siberia 0.10, Amazon 0.11 m/km) drain; real closed basins (>= 0.2) unchanged, closed-basin share 22%. Same terrain (24 checkpoints): lake share 1.76 -> 0.90% of land, lakes > 1M km2 13 -> 2, single-cell lakes 337 -> 324 (no speckle back). World 84ce45's 2.8M km2 salt lake drains (largest lake there now 840k). Run c3bf56 vs 28e6be: lake share 1.63 -> 0.96%, frames with a lake > 1M km2 40 -> 13%. Nile: the Sudd was a 250k km2 closed lake (27 m deep, 274k km2 hollow) swallowing the White and Blue Nile; GPCC Nile at Khartoum 0.10 -> 2.78. Lake-share drop: inbox draft (needs-decision).
 - 2026-10-14: Status needs-decision -> todo. Owner decision: A + C. Keep the consistent rule (a lake covers everything below its surface) and scale the whole-basin drain threshold with basin size so huge, very shallow basins drain. Also investigate the Earth-check Nile drop (2.65 -> 0.10 of observed at Khartoum).
 - 2026-10-14: Created from inbox draft draft-lake-area-after-hierarchical-fill.md (found by hydrofix).

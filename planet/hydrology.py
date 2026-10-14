@@ -62,10 +62,14 @@ NO_LAKE, OPEN_LAKE, CLOSED_LAKE, SALT_PAN = 0, 1, 2, 3
 
 
 MIN_DEPTH = 20.0  # m: shallower hollows in the cell-mean terrain are drained by unresolved channels
+# m per km: a wide hollow must also fall at least this steeply from its rim
+# to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross
+MIN_SLOPE = 0.1
 
 
 def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarray,
-          lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH) -> dict:
+          lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH,
+          min_slope: float = MIN_SLOPE) -> dict:
     """Where water stands. elev m (<= 0 is sea); runoff, actual land
     evaporation and open-water evaporation in mm/yr; no_lake: cells that
     can't hold a lake (ice sheets). A cell's elevation is its mean over
@@ -74,7 +78,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     through it, no lake). That holds inside basins too: a dip in a basin's
     floor less than min_depth below the saddle to the rest of the basin is
     part of the floor, not a pit with a lake of its own (kernels.fill_shallow),
-    so a lake on a flat, rough floor is one level body of water. Returns a
+    so a lake on a flat, rough floor is one level body of water. A wide
+    hollow must also be at least min_slope (m per km) x its radius deep,
+    radius = sqrt(area / pi) at its rim: one flatter than a big lowland
+    river's gradient is a plain that rivers cross (or that they incise and
+    fill), so it drains too. Returns a
     dict of per-cell arrays:
       wet    under a lake
       kind   NO_LAKE, OPEN_LAKE (fresh: spills, its river flows on),
@@ -89,9 +97,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     land = elev > 0
     ground = elev.astype(float)
     if min_depth > 0:
-        # hollows (and dips in a basin's floor) shallower than min_depth fill
-        # to where they spill; the rest of the land drains as priority_flood has it
-        h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth))
+        # hollows (and dips in a basin's floor) shallower than min_depth, or
+        # flatter than min_slope, fill to where they spill; the rest of the land drains as priority_flood has it
+        from .ocean import cell_area_km2
+        h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
+                                       cell_area_km2(grid), float(min_slope))
         elev = np.where(keep, h, priority_flood(grid, h)[0])
     src = np.where(land, runoff_mm, 0.0) / 1000.0
     loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0

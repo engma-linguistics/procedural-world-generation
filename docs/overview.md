@@ -232,7 +232,7 @@ With each class come the zoom's parameters: the exposed stratum, its thickness a
 - **Flow accumulation** sums runoff downstream.
 
 **Lakes** are **fill-and-spill** with evaporation:
-0. Hollows less than 20 m deep are filled first: at ~110 km a cell's height is a mean, and channels too small to see drain them. This also holds inside a basin, so dips in a flat floor join the floor instead of becoming pits of their own.
+0. Hollows less than 20 m deep are filled first: at ~110 km a cell's height is a mean, and channels too small to see drain them. This also holds inside a basin, so dips in a flat floor join the floor instead of becoming pits of their own. A wide hollow must also fall at least 0.1 m per km (a big lowland river's gradient) from its rim to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross and drains too: a hollow of 1 million km^2 needs ~56 m, one of 4 million km^2 ~113 m (`hydrology.MIN_SLOPE`).
 1. Water rises in all basins at once, and basins merge as they meet.
 2. A basin grows only while its inflow beats the evaporation off its surface.
 3. How it ends:
