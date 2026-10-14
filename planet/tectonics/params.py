@@ -63,9 +63,6 @@ class Params:
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp
-    # DEPRECATED, unused: sea level 0 is now the starting sea floor. Kept only so
-    # run.json files that list it still load; remove once old runs are retired.
-    ocean_ref_age: float = 50.0
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     fan_km: float = 1000.0  # km of deep sea floor over which ~63% of the load that passes the shelf settles
     # km: sediment buried deeper than this is cooked (~500 C) into metamorphic

@@ -190,7 +190,7 @@ class Simulation:
         g, pl = self.grid, self.plates
         vol0 = float((self.w_thick * self.w_cont).sum())
         stacked = np.zeros(g.n)
-        self.owner, newc, coll = resolve(
+        self.owner, newc = resolve(
             pl.alive, pl.idx, pl.owned, pl.age, pl.cont, pl.thick, pl.rock, pl.cover, pl.extra,
             self.owner, g.nbr_off, g.nbr_idx, pl.Q, g.centers, stacked)
         cleanup_ghosts(pl.alive, pl.owned, pl.Q, g.centers, self.owner, g.raster, g.nbr_off, g.nbr_idx)

@@ -65,14 +65,14 @@ def _fill(k, r, refs, owned, age, cont, thick, rock, cover, extra):
 def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner, nbr_off, nbr_idx, Q, centers, stacked):
     """Decide which plate owns each world cell; delete subducted crust,
     fill aliasing holes, create new ocean floor in gaps.
-    Returns (owner, new_crust flag, collision count matrix).
+    Returns (owner, new ocean floor flag); adds the thickness of crust
+    stacked by continental collisions to `stacked`.
 
     Continent vs continent: the loser's crust isn't destroyed, it's stacked
     onto the winner's (crust is too buoyant to sink: collisions thicken it)."""
     P, n = idx.shape
     owner = np.full(n, -1, np.int64)
     newc = np.zeros(n, np.bool_)
-    coll = np.zeros((P, P), np.int64)
     cand = np.empty(P, np.int64)
     q = np.empty(3)
     # Pass 0: patch small holes inside a plate (nearest-neighbour
@@ -119,8 +119,6 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
                 continue
             rk = idx[k, i]
             if cont[k, rk] and cont[w, rw]:
-                coll[w, k] += 1
-                coll[k, w] += 1
                 stacked[i] += thick[k, rk]  # spread over a belt by crust.stack_collisions
                 if rock[w, rw] != CRATON:
                     rock[w, rw] = OROGEN  # buried, squeezed and cooked
@@ -197,7 +195,7 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner,
                 cover[k, r2] = 0.0
                 extra[k, r2] = 0.0
                 cont[k, r2] = False
-    return owner, newc, coll
+    return owner, newc
 
 
 @njit(cache=True)
