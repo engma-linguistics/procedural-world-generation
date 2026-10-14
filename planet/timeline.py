@@ -203,6 +203,9 @@ def load_frames(run_dir: Path) -> tuple[dict, dict]:
 # ---------------------------------------------------------------------------
 def report(run_dir: Path) -> Path:
     run, arr = load_frames(run_dir)
+    if run.get("kind") == "timezoom":
+        from . import timezoom
+        return timezoom.report(run_dir)
     m = run["meta"]
     grid = build_grid(m["level"])
     defaults = asdict(Params())
@@ -285,6 +288,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     Raises ReplayMismatch if the replay doesn't match the stored keyframe at
     `at`, unless force (then the world is saved, marked as not matching)."""
     run, arr = load_frames(run_dir)
+    _not_timezoom(run, run_dir)
     m = run["meta"]
     at = round(at / m["dt"]) * m["dt"]
     if not 0 <= at <= m["myr"] + 1e-9:
@@ -336,6 +340,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     the state the viewer shows, at keyframe precision (elevation to 1 m, ice
     to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe."""
     run = json.loads((run_dir / "run.json").read_text())
+    _not_timezoom(run, run_dir)
     m = run["meta"]
     missing = [k for k in FRAME_LAYERS if k not in run["layers"]]
     if missing or "sea_level_m" not in run["frames"][0]["stats"]:
@@ -392,6 +397,13 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
                     dT=dT, tilt=params.tilt, ice=ice)
 
 
+def _not_timezoom(run: dict, run_dir: Path):
+    if run.get("kind") == "timezoom":
+        m = run["meta"]
+        raise SystemExit(f"{run_dir.name} is a glacial time zoom (of {m['source_run']} @ {m['at_myr']:g} Myr); "
+                         f"slice its source run instead")
+
+
 def find_run(ref: str) -> Path:
     """A run by id ('a3f9c2') or path ('runs/a3f9c2')."""
     p = Path(ref)
@@ -422,7 +434,10 @@ def update_index():
     items = []
     for p in sorted(RUNS.glob("*/run.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         r = json.loads(p.read_text())
-        items.append({"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
-                      "seed": r["meta"]["seed"], "level": r["meta"]["level"], "myr": r["meta"]["myr"],
-                      "created": r["meta"]["created"]})
+        m = r["meta"]
+        item = {"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
+                "seed": m["seed"], "level": m["level"], "myr": m["myr"], "created": m["created"]}
+        if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom.py): time in kyr
+            item.update(kind="timezoom", source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
+        items.append(item)
     (RUNS / "index.json").write_text(json.dumps(items, indent=1))
