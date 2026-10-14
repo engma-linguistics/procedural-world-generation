@@ -5,5 +5,8 @@ worlds/
 runs/
 grids/
 zooms/
-.claude/
+# Claude Code: keep worktrees and local settings out, share the hook and its wiring
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 data/
