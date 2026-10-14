@@ -139,11 +139,36 @@ Measured over a 2 Gyr run at level 6, across ~4 seeds:
 
 ---
 
+## B′: B plus rifting from mantle drag under the plates (your suggestion, 2026-10-13)
+
+**Idea.** The mantle drags on the plates' undersides (basal traction). If the flow beneath one plate diverges, pulling its two halves different ways, the plate is stretched and can split. This is the "active rifting" picture of continental breakup:
+- East Africa/Afar is rifting over a mantle upwelling today.
+- Giant lava outpourings came just before the Atlantic opened and before India left Madagascar.
+
+The other picture, "passive rifting", has a plate pulled apart from its edges; the existing slab-pull forces already cover it.
+
+On most oceanic plates the mantle acts more as a brake than an engine, since slab pull drives them faster than the mantle under them. Basal drag matters most under thick continental keels, which are exactly the plates whose breakup we care about.
+
+**Mechanism.** On top of B:
+- B's mantle field supplies a **traction vector under every cell**, flowing from warm regions toward cold ones and weighted by keel depth.
+- That traction goes into the force balance in `_forces`, as B already plans.
+- The existing **stress trigger** in `_maybe_rift` then decides breakup: it finds the line along which a plate's halves would separate fastest, compares that opening rate with a strength threshold, and today counts only boundary forces plus random drag. With traction in it, a continent over a warming, diverging mantle splits along the divergence.
+
+**What this replaces:**
+- the fixed "continent > 7% rifts at a rate of ~1/130 Myr" heat rule;
+- the "plates > 20% of the surface break up readily" rule.
+
+Breakup becomes emergent: assemblies sitting over cold downwellings hold together until insulation warms the mantle beneath them, then come apart along the warm axis. Plumes, also tied to warm mantle in B, would tend to appear along that axis just before the split, as in the Earth cases above.
+
+**Cost:** about the same as B. The traction comes from the same field, and the stress-cut machinery already exists.
+
+**Risk:** if traction is too strong, every big plate is permanently under tension; if too weak, nothing rifts at all. Envelope tests on the landmass count and the largest landmass, plus a seed sweep, would guard that.
+
 ## Recommendation
 
 Do **C's breakup fix first** (minimum piece size, cuts along old sutures), whichever option you pick. It's cheap, it's needed in every scenario, and it alone should cut the landmass count a lot.
 
-Then **B**, with A as a fallback:
+Then **B′** (B plus traction-driven rifting, replacing the fixed rifting rules), with A as a fallback:
 - B fits the project's direction: physics depth, controls that influence rather than force, and each world telling its own story.
 - If B's feedbacks prove too fiddly, A's imposed field is a quick and dependable substitute. Both use the same new basal-drag term in `_forces`, so the work isn't wasted.
 
