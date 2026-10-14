@@ -56,12 +56,11 @@ Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
 ## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight:** the volcanoes agent (epic PW-001: PW-002/003/004) in worktree `.claude/worktrees/volcanoes` (branch `volcanoes`). It touches tectonics `volcanism.py`, state/checkpoints, slicing and `zoom.py`. When it reports:
-1. merge;
-2. pytest;
-3. `board.py intake`;
-4. restart the server;
-5. show the owner the L7 island-chain demo.
+**In flight (2026-10-14 evening):** worktrees `.claude/worktrees/<branch>`:
+- `landform`: PW-005 data side (PW-006/007/008/009; class layer in runs/worlds/viewer). Zoom batches PW-010–012 come after it merges.
+- `zoomsmalls`: PW-062 to PW-070.
+- `lakesize`: PW-110 (owner decision A+C: drain threshold scales with basin size) plus the Earth-check Nile drop.
+Merged since: hydrofix (PW-058), climfix (PW-102/032/040/034/036), volcanoes (PW-001–004; demo run 39d004, world a099c6, zooms e8fa0e/4e6647/122cc1). Earth world is now f8a740.
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 
@@ -73,7 +72,7 @@ After making a showcase: slice its worlds, then `uv run python -m planet highlig
    - **PW-005 landform classes**, data side first: PW-006 stratigraphy, PW-007 rocks, PW-008 history, PW-009 classes; then the zoom batches PW-010, PW-011, PW-012;
    - **zoom small batch** PW-062 to PW-070, done before PW-010 starts (both edit `zoom.py`);
    - **tectonics small:** PW-050, PW-048 (keep clear of PW-008's files, or fold them into it).
-3. **Tectonics quality:** PW-108 (km-scale cell churn at converging boundaries; may feed PW-053), PW-109 (climate before events, small), PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge).
+3. **Tectonics quality:** PW-108 (km-scale cell churn at converging boundaries; may feed PW-053), PW-109 (climate before events, small), PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge), PW-054 (interior basins: the owner-agreed fix for too few closed basins).
 4. **Then the L8** (owner approved one, once a big batch of tickets is closed): Earth-like, `--every 10`, ~1.2 Gyr, `--checkpoint-every 300`, plus a matching L7. Use `--at auto` for worlds. It waits for PW-008 (per-cell history is recorded during the run, so an earlier L8 could never get landform classes) and for step 3.
 5. **Other big epics:**
    - PW-090 finishing pass (PW-091 first: time zoom from a chosen world → finished world; PW-037 imprint; PW-104 embedded ice ages);

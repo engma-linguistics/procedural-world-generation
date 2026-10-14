@@ -22,4 +22,5 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-10-14: Owner (2026-10-14): this is the right fix for too few closed basins (generated land draining inland is 4.2% after PW-110's slope rule, vs Earth ~18-20%). Scheduled with the tectonics-quality set.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Rivers, lakes, sediment and morning_report biggest problem 2.

@@ -6,6 +6,7 @@ import numpy as np
 from planet import climate, hydrology, kernels, timeline as T
 from planet.geo import xyz
 from planet.grid import build_grid
+from planet.ocean import cell_area_km2
 
 
 def test_water_balance_limits():
@@ -90,11 +91,29 @@ def test_fill_shallow_fills_only_shallow_hollows():
     g = build_grid(4)
     rng = np.random.default_rng(0)
     e = np.where(np.arange(g.n) < 40, -100.0, rng.uniform(1, 200, g.n))
-    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 1e9)  # every hollow: priority flood
+    a = np.ones(g.n)
+    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 1e9, a, 0.0)  # every hollow: priority flood
     assert np.allclose(h, hydrology.priority_flood(g, e)[0], atol=0.1) and not keep.any()
-    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0)
+    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0, a, 0.0)
     assert (h >= e).all() and (h - e < 20.0 + 1.0).all()
     assert keep.any() and (h[keep] == e[keep]).sum() > 0.5 * keep.sum()
+
+
+def test_fill_shallow_drains_wide_flat_basins():
+    """Two bowls 40 m deep: a narrow one holds water, a wide one (flatter than
+    min_slope from rim to middle) is a plain and drains."""
+    g = build_grid(5)
+    area = cell_area_km2(g)
+    mid = np.array([[np.cos(0.35), 0, np.sin(0.35)], [0, np.cos(0.35), np.sin(0.35)]])  # 20 N; 0 E, 90 E
+    d = np.arccos(np.clip(g.centers @ mid.T, -1, 1)) * 6371  # km from the bowls' middles
+    e = 500.0 + 0.01 * (g.lat + 60)  # land falling gently south to the sea
+    e[g.lat < -60] = -100.0
+    e = np.where(d[:, 0] < 300, 460 + 40 * d[:, 0] / 300, e)  # ~300 km across radius: 0.13 m/km
+    e = np.where(d[:, 1] < 900, 460 + 40 * d[:, 1] / 900, e)  # ~900 km radius: 0.044 m/km
+    for slope, narrow, wide in ((0.0, True, True), (0.1, True, False)):
+        h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0, area, slope)
+        assert keep[np.argmin(d[:, 0])] == narrow and keep[np.argmin(d[:, 1])] == wide
+        assert (h[d[:, 1] < 900] > 500).all() != wide  # drained: filled to the rim
 
 
 def test_world_water_layers(sim4):

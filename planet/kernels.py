@@ -234,21 +234,25 @@ def _root(parent, i):
 
 
 @njit(cache=True)
-def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
-    """elev with every hollow shallower than min_depth filled to its rim.
+def fill_shallow(elev, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
+    """elev with every hollow too shallow to hold water filled to its rim.
 
-    Water rises in all basins at once (cells in order of height, as in
-    lakes()). Where basins meet at a saddle, each one except the deepest
-    whose floor lies less than min_depth below the saddle is filled to it
-    (it drains into the deepest through channels too small to see); where a
-    basin reaches the sea's drainage, it is filled to that point if it is
-    shallower than min_depth. So a shallow dip in the floor of a deep basin
-    becomes part of the basin's floor instead of a pit of its own, and a
-    whole basin less than min_depth deep drains. Filled ground rises by eps
-    per cell away from where it spills, so water runs across it (as in
-    priority_flood). elev: m, <= 0 is sea.
+    A hollow is too shallow when its floor lies less than
+    max(min_depth, min_slope * radius) below its rim, radius = sqrt(area /
+    pi) of the hollow at the rim's level: a wide hollow must also fall
+    towards its middle at least as steeply as min_slope (m per km), or it is
+    a plain that rivers cross. Water rises in all basins at once (cells in
+    order of height, as in lakes()). Where basins meet at a saddle, each one
+    except the deepest that is too shallow is filled to it (it drains into
+    the deepest through channels too small to see); where a basin reaches
+    the sea's drainage, it is filled to that point if it is too shallow. So
+    a shallow dip in the floor of a deep basin becomes part of the basin's
+    floor instead of a pit of its own, and a whole basin that is too shallow
+    drains. Filled ground rises by eps per cell away from where it spills,
+    so water runs across it (as in priority_flood). elev: m, <= 0 is sea;
+    area: km^2 per cell.
     Returns (h, keep): the filled elevation, and the cells of the basins
-    left standing (deeper than min_depth)."""
+    left standing."""
     n = elev.shape[0]
     h = elev.copy()
     sea = elev <= 0
@@ -257,6 +261,7 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
     asc = np.argsort(elev, kind="mergesort")
     parent = np.arange(n)
     bottom = elev.copy()  # each basin's lowest point
+    size = area.astype(np.float64).copy()  # each basin's area, km^2
     tosea = sea.copy()
     done = sea.copy()
     keep = np.zeros(n, np.bool_)
@@ -299,7 +304,7 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
             nq = 0
             for k in range(0 if to_sea else 1, nr):
                 r = roots[k]
-                if z - bottom[r] < min_depth:
+                if z - bottom[r] < max(min_depth, min_slope * np.sqrt(size[r] / np.pi)):
                     c = head[r]
                     while c >= 0:
                         mark[c] = t
@@ -326,7 +331,7 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
                 for k in range(nr):
                     r = roots[k]
                     tosea[r] = True
-                    if z - bottom[r] >= min_depth:
+                    if z - bottom[r] >= max(min_depth, min_slope * np.sqrt(size[r] / np.pi)):
                         c = head[r]
                         while c >= 0:
                             keep[c] = True
@@ -339,9 +344,11 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, eps=0.01):
             parent[r] = r0
             nxt[tail[r0]] = head[r]
             tail[r0] = tail[r]
+            size[r0] += size[r]
         parent[i] = r0
         nxt[tail[r0]] = i
         tail[r0] = i
+        size[r0] += size[i]
     return h, keep
 
 
