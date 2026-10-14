@@ -280,7 +280,7 @@ Order: 1 → 6, small to large.
 - **Lakes are drawn only on the elevation and biome layers**, and run hover shows lake info only when elevation is loaded. Contrast: salt-lake teal is near some biome greens, and fresh blue is near shallow sea. `lake_depth` is stored in whole metres, so shallow lakes read "~0 m".
 
 - **Sliced worlds don't store wind, current or jet layers** (only runs and the Earth world do), so those overlays never appear on generated worlds (found by the overview agent).
-- **README knobs `equator_temp`/`pole_temp` don't reach the climate:** `climate.compute` hard-codes them from dT and tilt.
+- **No `equator_temp`/`pole_temp` knobs exist** (the README claimed them; fixed in f45525c). `climate.compute` derives them from dT and tilt. Add real knobs if wanted.
 
 **Infrastructure**
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
