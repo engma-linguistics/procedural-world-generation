@@ -10,9 +10,10 @@ rules (classify, in priority order: a cell takes the first that holds):
 
   arc            land within a cell of an arc volcano (the volcano table:
                  active, or extinct for at most 20 Myr)
-  hotspot        oceanic land: an ocean-island volcano, or within a cell
-                 of a hotspot vent standing above the sea (on a continent
-                 a plume's lava makes a lava plateau instead)
+  hotspot        oceanic land: within a cell of a hotspot vent standing
+                 above the sea, or a hotspot pile younger than HOTSPOT_MYR
+                 (on a continent a plume's lava makes a lava plateau
+                 instead; older piles are hills)
   rift           continental land stretched by a rift in the last
                  RIFT_MYR, by at least RIFT_STRAIN (ln beta) (fault blocks
                  and grabens: East Africa, Basin and Range)
@@ -101,6 +102,7 @@ HARD = (LIMESTONE, DOLOMITE, SANDSTONE, QUARTZITE, FLOOD_BASALT)
 SOFT = (SHALE, EVAPORITE, COAL, TUFF)
 CARBONATE = (LIMESTONE, DOLOMITE)
 RIFT_MYR = 20.0
+HOTSPOT_MYR = 100.0
 RIFT_STRAIN = 0.2  # ln(beta): crust thinned by ~18%
 ESCARPMENT_MYR = (8.0, 400.0)
 ESCARPMENT_M = 300.0
@@ -199,7 +201,7 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     v_arc = near_volcanoes(grid, vrows, [r[2] == V_ARC for r in vrows])
     claim(np.isfinite(v_arc), ARC_CLASS, v_arc)
     v_hot = near_volcanoes(grid, vrows, [r[2] == VENT and r[5] > 0 for r in vrows])
-    claim(~cont & (np.isfinite(v_hot) | (rock == HOTSPOT)), HOTSPOT_CLASS,
+    claim(~cont & (np.isfinite(v_hot) | ((rock == HOTSPOT) & (crust_age <= HOTSPOT_MYR))), HOTSPOT_CLASS,
           np.where(np.isfinite(v_hot), v_hot, crust_age))
 
     rift_age = t - t_rift

@@ -163,7 +163,7 @@ flowchart LR
 | Class | Rule (Earth analogue) | `landform_age` |
 |---|---|---|
 | volcanic arc | land within a cell of an arc volcano (active or extinct ≤ 20 Myr) | nearest volcano's age |
-| hotspot | oceanic land on a hotspot pile or near a vent above the sea | vent's age |
+| hotspot | oceanic land near a vent above the sea, or on a hotspot pile ≤ 100 Myr old | vent's age |
 | fault-block rift | continent stretched (ln β ≥ 0.2) in the last 20 Myr (East Africa) | since rifting |
 | great escarpment | rifted 8–400 Myr ago, standing ≥ 300 m, where the scarp has retreated to: `retreat_km(age)` (~200 km × (1 − e^(−age/150))) from a passive rifted coast (Drakensberg, Western Ghats) | since rifting |
 | fold-and-thrust belt | exposed strata predate the last folding, ≥ 0.2 km of them (Zagros, Valley and Ridge) | since folding |

@@ -163,8 +163,10 @@ def test_arcs_and_hotspots_from_the_volcano_table(g):
     p["volcanoes"] = [[row[c] for c in COLUMNS]]
     assert classify(g, p)["landform"][100] == LF.HILLS
     # an ocean-island basalt pile standing above the sea
-    q = planet(g, cont=np.zeros(g.n, bool), rock=np.full(g.n, HOTSPOT, np.uint8))
+    q = planet(g, cont=np.zeros(g.n, bool), rock=np.full(g.n, HOTSPOT, np.uint8), crust_age=np.full(g.n, 50.0))
     assert only(classify(g, q), LF.HOTSPOT_CLASS)
+    q["crust_age"][:] = 400.0  # an old, worn pile: just hills
+    assert only(classify(g, q), LF.HILLS)
 
 
 def test_priority_arc_beats_everything(g):

@@ -520,16 +520,26 @@ def read_volcanoes(run_dir: Path) -> dict | None:
 # Checkpoints: the full simulation state every ~100 Myr of a run
 # ---------------------------------------------------------------------------
 # A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
-# and volcano lists, events, budget), zlib-compressed: ~6 MB at level 5,
-# ~23 MB at level 6. Only ever read back from our own runs/.
+# and volcano lists, events, budget), zlib-compressed, the record of the
+# plates' unowned cells zeroed (save_checkpoint). Only ever read back from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
 
 def save_checkpoint(run_dir: Path, sim) -> Path:
+    """The state, with the plates' geological record (rec, lith) zeroed
+    where they own no crust (dead slots, cells their crust has left: a
+    record is only read on owned cells, and written when a plate gains
+    one), which keeps it from doubling the file. (The older columns can't
+    be zeroed the same way: a volcano still reads the swell of a cell its
+    crust has left, volcanism.base_level.)"""
     path = checkpoint_path(run_dir, sim.t)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(zlib.compress(pickle.dumps(sim.state(), protocol=5), 1))
+    state = sim.state()
+    pl = state["plates"]
+    for name in ("rec", "lith"):
+        getattr(pl, name)[~pl.owned] = 0
+    path.write_bytes(zlib.compress(pickle.dumps(state, protocol=5), 1))
     return path
 
 
