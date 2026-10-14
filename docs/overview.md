@@ -348,4 +348,4 @@ Other checks:
 - **Ice:** time zooms glaciate generated worlds too hard.
 - **Zoom:** falls are scaled down to fit under the coarse ground.
 
-The full list is in [`docs/plan_next.md` → Known issues](plan_next.md#known-issues-to-come-back-to-collected-from-the-agents-reports-2026-10-13).
+The full list is on the board: `uv run python issue-tracking/board.py list --open` (see `issue-tracking/README.md`).

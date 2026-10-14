@@ -61,7 +61,7 @@ Rain is very sensitive to where the coast sits, so the two disagree a lot.
   - 4 (delta plain at big mouths): `zoomwater`, then shaped by wave and tide weights (Galloway delta types, `planet/coast.py`).
   - 2 and 6: `water` (below).
   - 7: `water` (below), and the "crust-density sediment" remainder is fixed too: sediment has its own lower, compacting density (`isostasy.sediment_density`, `mantle` merge).
-- **Partly: 8 (run/world climate mismatch).** The run's climate now updates every 4 Myr (`climate_every` = 4, matching the keyframes), and the viewer's zoom builds its world straight from the keyframe (`timeline.world_from_frame`). A world still adds its own texture, erosion and a fresh climate, so run and world lakes can still disagree (see Known issues in `docs/plan_next.md`).
+- **Partly: 8 (run/world climate mismatch).** The run's climate now updates every 4 Myr (`climate_every` = 4, matching the keyframes), and the viewer's zoom builds its world straight from the keyframe (`timeline.world_from_frame`). A world still adds its own texture, erosion and a fresh climate, so run and world lakes can still disagree (PW-057 on the board).
 - **Not done: 9 (drainage memory).**
 
 ### Earlier status (branch `water`, 2026-10-13)
