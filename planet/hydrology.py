@@ -71,7 +71,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     can't hold a lake (ice sheets). A cell's elevation is its mean over
     ~100 km, so a hollow less than min_depth below its spill point is taken
     to be drained by a river channel too small to resolve (water flows on
-    through it, no lake). Returns a dict of per-cell arrays:
+    through it, no lake). That holds inside basins too: a dip in a basin's
+    floor less than min_depth below the saddle to the rest of the basin is
+    part of the floor, not a pit with a lake of its own (kernels.fill_shallow),
+    so a lake on a flat, rough floor is one level body of water. Returns a
+    dict of per-cell arrays:
       wet    under a lake
       kind   NO_LAKE, OPEN_LAKE (fresh: spills, its river flows on),
              CLOSED_LAKE (salty: ends its river, evaporation balances the
@@ -85,8 +89,10 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     land = elev > 0
     ground = elev.astype(float)
     if min_depth > 0:
-        filled, _, _ = priority_flood(grid, ground)
-        elev = np.where(filled - ground < min_depth, filled, ground)
+        # hollows (and dips in a basin's floor) shallower than min_depth fill
+        # to where they spill; the rest of the land drains as priority_flood has it
+        h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth))
+        elev = np.where(keep, h, priority_flood(grid, h)[0])
     src = np.where(land, runoff_mm, 0.0) / 1000.0
     loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0
     wet, open_, out_z, pit, catch = kernels.lakes(elev, grid.nbr_off, grid.nbr_idx, src, loss)

@@ -3,7 +3,7 @@ like lakes (fill and spill where it's wet, end their rivers where it's dry)."""
 
 import numpy as np
 
-from planet import climate, hydrology, timeline as T
+from planet import climate, hydrology, kernels, timeline as T
 from planet.geo import xyz
 from planet.grid import build_grid
 
@@ -65,6 +65,36 @@ def test_lake_spills_where_wet_and_closes_where_dry():
     catch = (endo & land).sum() * 30.0 / 1000
     lost = closed.sum() * (1500.0 - 300.0) / 1000
     assert abs(catch - lost) <= (1500.0 - 300.0) / 1000
+
+
+def test_closed_lake_on_a_flat_floor_is_one_lake():
+    """A deep basin whose floor is flat but rough (dips a few m deep between
+    low saddles): the dips are part of the floor, not pits of their own, so
+    a closed lake on it is one body of water, level, not a scatter of
+    single-cell lakes (PW-058)."""
+    g, elev, basin = _bowl()
+    rng = np.random.default_rng(3)
+    elev = np.where(basin, 500.0 + rng.uniform(0, 15, g.n), elev)  # 1000 m below the rim, rough to 15 m
+    land = elev > 0
+    lk = hydrology.lakes(g, elev, np.where(land, 100.0, 0.0), np.full(g.n, 300.0), np.full(g.n, 1500.0))
+    closed = (lk["kind"] == hydrology.CLOSED_LAKE) & basin  # (the notch ends in a pit of its own)
+    assert 5 <= closed.sum() < 0.5 * basin.sum()
+    assert g.components(closed)[1] == 1
+    lv = lk["level"][closed]
+    assert np.allclose(lv, lv[0])
+    # every cell of the floor the lake's surface is above is under it
+    assert not (basin & ~closed & (lk["bed"] < lv[0] - 0.5)).any()
+
+
+def test_fill_shallow_fills_only_shallow_hollows():
+    g = build_grid(4)
+    rng = np.random.default_rng(0)
+    e = np.where(np.arange(g.n) < 40, -100.0, rng.uniform(1, 200, g.n))
+    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 1e9)  # every hollow: priority flood
+    assert np.allclose(h, hydrology.priority_flood(g, e)[0], atol=0.1) and not keep.any()
+    h, keep = kernels.fill_shallow(e, g.nbr_off, g.nbr_idx, 20.0)
+    assert (h >= e).all() and (h - e < 20.0 + 1.0).all()
+    assert keep.any() and (h[keep] == e[keep]).sum() > 0.5 * keep.sum()
 
 
 def test_world_water_layers(sim4):
