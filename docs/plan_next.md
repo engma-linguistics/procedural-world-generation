@@ -145,4 +145,13 @@ Order: 1 → 6, small to large.
    - `server.py`;
    - world files reference the shared grid.
 4. **Earth reference world** in the viewer (model vs observed).
-5. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
+5. **Highlights, round 2** (the user wants all of these; "big ole waterfalls" most). After `water` and `zoomwater` merge:
+   - waterfalls and knickpoints: big drops along big rivers; refine the height and location in the zoom raster (pixel-scale drops);
+   - grand canyons (deep incision on high ground);
+   - salt flats and closed basins (from `lake_kind`);
+   - coral coasts;
+   - rain shadows;
+   - plateaus;
+   - the most varied 1000 km square;
+   - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
+6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
