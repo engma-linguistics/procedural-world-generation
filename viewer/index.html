@@ -850,7 +850,7 @@ function renderLegend() {
     let land = 0;
     for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0 && L.landform[i]) { cnt.set(L.landform[i], (cnt.get(L.landform[i]) || 0) + 1); land++; }
     el.innerHTML = V.landforms.filter((f) => cnt.has(f.id))
-      .map((f) => sw(f.color, `${f.name} ${(100 * cnt.get(f.id) / land).toFixed(0)}%`)).join('') +
+      .map((f) => sw(f.color, `${f.name} ${(() => { const p = 100 * cnt.get(f.id) / land; return p < 1 ? p.toFixed(1) : p.toFixed(0); })()}%`)).join('') +
       '<span class="muted">(landform classes from each cell\'s geological record: rifting, folding, strata, eruptions; % of land)</span>';
   } else if (state.layer === 'climate') {
     const present = new Set(ov ? ov.obs : V.layers.climate);

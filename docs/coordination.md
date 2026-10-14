@@ -29,7 +29,7 @@ pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open
 | Level | Cells | Cell size | `simulate` time | Memory / disk |
 |---|---|---|---|---|
 | 6 | 41k | ~110 km | ~6 min per Gyr | checkpoint ~23 MB (≈229 MB per Gyr) |
-| 7 | 164k | ~55 km | ~30–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS |
+| 7 | 164k | ~55 km | ~20–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4 GB per Gyr, checkpoints ~80–130 MB each |
 | 8 | 655k | ~28 km | ~3–4 h per Gyr (4.1 h for 1.2 Gyr) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
 
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min.
