@@ -202,6 +202,8 @@ With each class come the zoom's parameters: the exposed stratum, its thickness a
   - Density comes from temperature and salinity.
   - Deep water sinks where the winter sea is densest, poleward of 50° (Stommel's flow law).
   - The replacement inflow follows the currents, like the **AMOC**'s North Atlantic Drift, and warms Norway.
+  - Worlds store the sea-surface salinity and temperature (annual, July, January), the sinking per cell, and in their meta the overturning's strength in Sv with its sinking sites. The viewer's "Overturning" overlay draws the sites, the surface inflow along the model's route, and the deep return flow as a dashed **schematic** (the model has no deep ocean: a route along the deep western boundaries to the Southern Ocean or the tropics, `ocean.loop_schematic`). On Earth (world 64fc00): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1 Sv) seas and the Ross (1.9 Sv) and Weddell (0.6 Sv) seas; none in the North Pacific.
+- **Humidity:** the rain model's water vapour gives each half-year's dew point and relative humidity near the ground (`climate.humidity`; worlds store `dewpoint_jul/jan` and `humidity_jul/jan`).
 - **Rain:**
   - Moisture evaporates from the sea (Clausius–Clapeyron) and is carried by the winds.
   - It rains out three ways: as **orographic rain**, which gives wet windward slopes and **rain shadows**; as **convection**; and along storm tracks.
@@ -279,7 +281,8 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
    - rivers and lakes;
    - biomes;
    - waves and tides;
-   - July / January temperature and rain (`world.seasons`).
+   - July / January temperature and rain (`world.seasons`);
+   - the sea (temperature, salinity, sinking; the overturning in the meta) and humidity.
 
 The viewer's Zoom button instead builds the world straight from the keyframe in seconds. Worlds are `worlds/<id>.json` plus a `.txt` summary.
 
@@ -345,9 +348,9 @@ Twenty-eight detectors look for places worth a visit:
 - **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
 - **Climate:** "wine country", rain shadows, climate records.
 - **Variety:** the most varied 1000 km square.
-- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
+- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea by its summer surface temperature, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
 
-Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
+Each kind belongs to a category (landscape, water, climate, travel, geology), which the viewer filters by and colours the markers with. Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
 
 ## 11. Viewer, server, CLI
 
@@ -359,7 +362,7 @@ Each scores as kind priority × quality. Results are cached in `worlds/highlight
 - **Globe** (`viewer/index.html`):
   - three.js, one triangle fan per cell, with exaggerated relief on a globe or a flat map.
   - Runs play as animations with events and plate arrows.
-  - Worlds add climate, biome, wave and tide layers. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
+  - Worlds add climate, biome, wave, tide, sea temperature, salinity, humidity and dew point layers, and the overturning overlay. Ocean currents are drawn as streamlines (brighter = faster), so the gyres show as loops. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
   - Provenance: a world shows the run and time it came from ('<run name> @ T Myr', linked), and its zooms; a run lists what was made from it (worlds with their zooms, time zooms) and ticks their times above the time slider. From the indexes (`worlds/index.json` carries `source_run`, `t_myr`).
   - Clicking a cell offers "Zoom".
   - The URL holds the state, e.g. `?world=7c5adf.json&layer=biome&mode=map`.

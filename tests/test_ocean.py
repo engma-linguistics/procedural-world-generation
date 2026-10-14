@@ -87,3 +87,41 @@ def test_density_equation_of_state():
     assert d(25.0, 35.0) - d(26.0, 35.0) > 3 * (d(0.0, 35.0) - d(1.0, 35.0))
     assert d(10.0, 36.0) - d(10.0, 35.0) == pytest.approx(0.766, abs=0.01)
     assert d(10.0, 35.0) == pytest.approx(ocean.RHO0)
+
+
+def test_loop_schematic(basins):
+    """The overturning's numbers and its schematic loop for world meta:
+    totals add up, every drawn site has a deep limb ending where deep water
+    wells up (the southern channel, or the tropics), and northern sites a
+    surface limb from the low latitudes."""
+    g, elev, c = basins
+    o = ocean.loop_schematic(g, elev, c)
+    assert o["sv"] == pytest.approx(c["overturning"].sum(), abs=0.01)
+    assert o["north_sv"] + o["south_sv"] == pytest.approx(o["sv"], abs=0.02)
+    assert o["sites"] and o["paths"] and o["upwelling"]
+    for p in o["paths"]:
+        assert p["limb"] in ("surface", "deep") and len(p["pts"]) >= 2
+        assert all(-90 <= la <= 90 and -180 <= lo <= 180 for la, lo in p["pts"])
+        s = o["sites"][p["site"]]
+        assert s["sv"] >= ocean.LOOP_MIN_SV
+        if p["limb"] == "deep":
+            assert p["pts"][0] == [s["lat"], s["lon"]]  # from the site itself
+            end = p["pts"][-1][0]
+            assert end < -45 or abs(end) < 8
+        else:
+            assert abs(p["pts"][-1][0]) <= 26  # from the low latitudes
+
+
+def test_seasonal_sst_and_humidity(basins):
+    g, elev, c = basins
+    sea = elev <= 0
+    north = g.lat >= 0
+    hot = np.where(north, c["sst_jul"], c["sst_jan"]) - np.where(north, c["sst_jan"], c["sst_jul"])
+    assert (hot[sea] >= -1e-9).all() and hot[sea].max() > 3  # summer seas warmer
+    assert (c["sst_jul"][sea] >= climate.FREEZE - 1e-9).all()
+    for s in ("jul", "jan"):
+        rh = c["rh_" + s]
+        assert (rh >= 100 * climate.HUMID_MIN - 1e-6).all() and (rh <= 100).all()
+        assert 60 < np.median(rh[sea]) < 90
+        t = climate.humidity(np.ones(1), np.zeros(1), climate.TUNE)
+        assert t[0][0] <= 0 and 80 < t[1][0] < 90  # saturated at 0 C: ~84%, dew point a little below

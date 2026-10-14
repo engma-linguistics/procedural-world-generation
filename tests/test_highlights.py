@@ -23,6 +23,7 @@ def check(world, feats):
     assert all(a["score"] >= b["score"] for a, b in zip(feats, feats[1:]))
     for f in feats:
         assert f["title"] and f["blurb"] and f["kind"] in H.PRIORITY
+        assert f["category"] in H.CATEGORIES and f["kind"] in H.CATEGORIES[f["category"]]
         assert -90 <= f["lat"] <= 90 and -180 <= f["lon"] <= 180
         # lat/lon is the feature's cell, to the 0.01 degrees the viewer and zoom ids use
         assert abs(f["lat"] - g.lat[f["cell"]]) < 0.01 and abs(f["lon"] - g.lon[f["cell"]]) < 0.01
@@ -211,7 +212,7 @@ def test_travel(gen4):
     L["ice"] = np.zeros(g.n)
     L["lake"][:] = 0
     # nowhere is nice: 0 C all year, wet, no waves
-    for k in ("temperature_jul", "temperature_jan"):
+    for k in ("temperature_jul", "temperature_jan", "sst_jul", "sst_jan"):
         L[k] = np.zeros(g.n)
     for k in ("precipitation_jul", "precipitation_jan"):
         L[k] = np.full(g.n, 2000.0)
@@ -226,12 +227,13 @@ def test_travel(gen4):
     e[b] = 20
     L["temperature_jul"][b], L["precipitation_jul"][b] = 28, 300
     sea = nb(b)[e[nb(b)] <= 0]
-    L["temperature_jul"][sea], L["wave_power"][sea] = 25, 8.0
+    L["sst_jul"][sea], L["wave_power"][sea] = 25, 8.0  # (the sea's own July surface temperature)
+    L["temperature_jul"][sea] = 31  # (not the air over it)
     # a southern coast that is warm and dry in July: its winter, so no beach
     s = south[0]
     L["temperature_jul"][s], L["precipitation_jul"][s] = 28, 300
     sea_s = nb(s)[e[nb(s)] <= 0]
-    L["temperature_jul"][sea_s], L["wave_power"][sea_s] = 25, 8.0
+    L["sst_jul"][sea_s], L["wave_power"][sea_s] = 25, 8.0
     # ski country in the north: freezing, snowy January slopes over a town at 2 C
     c = _inland_cell(w)
     town = int(nb(c)[0])
