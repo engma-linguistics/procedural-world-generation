@@ -245,7 +245,7 @@ Before (main before this work, same metric): after the starting supercontinent b
 - **5–15 landmasses > 0.5% between assemblies:** median 5–7 while dispersed (largest < 20%), range up to 11. Before, the median was 8–10 at all times (7–9 with the breakup fix alone).
 - **Land 25–35%:** median 34–36%, on the upper edge, and up to ~40% when assembled. About +1.5 points come from the lighter sediment and the rest from assembled continents flooding less. Excursions below 25% are brief (sea-level swings when the plate count dips).
 - **Crust volume, ocean age, speeds:**
-  - volume ratio 1.00–1.02 at 2 Gyr, but the scorecard at 1 Gyr showed 1.04;
+  - volume ratio 1.00–1.02 at 2 Gyr (final scorecard at 1 Gyr: 1.007 and 1.024; ocean age 111 and 70 Myr);
   - ocean age 77–80 Myr ✓;
   - speeds 3.9–4.2 cm/yr ✓.
 - **Runtime:** the same as before or slightly faster.
