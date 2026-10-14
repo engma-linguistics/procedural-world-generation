@@ -1,4 +1,5 @@
 ---
+id: PW-139
 title: "Regional zooms: July / January temperature and rain layers (season picker in zoom.html)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerseason
 blocked_by: []
 relates: [PW-126]
 refs: [planet/zoom.py, viewer/zoom.html, planet/world.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ store.LAYERS), and in zoom.html add a season select next to the layer buttons, s
 `?season=` like the globe. Old zooms without the layers just hide the select. About 4 extra 500x500 layers per zoom (~1 MB).
 - [ ] zoom.py writes the four seasonal layers
 - [ ] zoom.html Temperature/Rain follow a year/July/January picker and ?season=
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-seasonal-layers.md (found by viewerseason).

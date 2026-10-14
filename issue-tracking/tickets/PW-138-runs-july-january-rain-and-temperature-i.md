@@ -1,4 +1,5 @@
 ---
+id: PW-138
 title: "Runs: July / January rain (and temperature) in keyframes, so the season picker works on runs"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewerseason
 blocked_by: []
 relates: [PW-107, PW-126]
 refs: [planet/timeline.py, planet/store.py, viewer/index.html]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Cost: `precipitation_*` is uint16 (2 bytes x cells x frames: at L7, 250 frames, 
 are cheap to make from a keyframe: the viewer's Zoom/Highlights does it in seconds). Lean B, done together with PW-107.
 The viewer side is ready: COLOUR_NEEDS for 'rainfall'/'temperature' would need the seasonal names added, and
 seasonalData() already reads `<layer>_<season>` from V.layers when present.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-run-seasonal-climate.md (found by viewerseason).
