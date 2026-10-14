@@ -197,7 +197,7 @@ def test_delta_types_differ(three_deltas):
     assert m["tide"]["rough"] > 1.3 * m["wave"]["rough"], m
     assert m["tide"]["sea_near"] > 0.15, m
     assert m["tide"]["sea_near"] > 1.5 * m["tide"]["sea_inland"], m
-    assert m["tide"]["sea_near"] > 2 * m["wave"]["sea_near"], m
+    assert m["tide"]["mouths"] >= 3 and m["tide"]["mouths"] >= m["wave"]["mouths"] + 2, m
 
 
 def test_delta_tidal_flats(three_deltas):

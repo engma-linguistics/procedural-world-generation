@@ -183,6 +183,44 @@ Sliced and one-shot terrain then go through the shared pipeline:
 
 Shared knobs: `--erosion <strength>`, `--set erosion_iterations=12 equator_temp=28 pole_temp=-22`.
 
+## Waves, tides and delta types (`planet/coast.py`)
+
+Every world gets two marine layers on its sea cells (0 on land):
+
+- `wave_power` (kW per m of wave crest, annual mean): rays are traced out
+  over the sea in 16 directions from each cell, and walking back in, the
+  sea grows under each stretch's wind with fetch and storm duration
+  (fully developed seas after Pierson-Moskowitz, fetch- and
+  duration-limited growth after JONSWAP), then travels on as slowly
+  decaying swell, loses energy over shallow shelves, and stops at land or
+  winter sea ice. Winds come from the climate's half-year winds plus its
+  storminess, with a gust factor because power goes as ~U^5.
+- `tide_range` (m): a proxy in three factors: the connection to the open
+  ocean (a depth-weighted diffusion from open-ocean cells, so narrow
+  shallow straits choke it; closed seas get only a small tide of their
+  own), shelf resonance (a quarter-wavelength shelf amplifies the tide,
+  very wide ones damp it) and funnelling into narrowing embayments.
+
+`PYTHONPATH=. uv run python tools/coast_check.py` scores both on today's
+Earth against known values. Waves come out within 2x at 25 of 30 coasts
+(9 in range), and tides within 2x at 21 of 23 (13 in range). It also
+prints the Galloway weights of real deltas.
+
+At each big river mouth the zoom weighs the river's sediment (BQART)
+against what the waves can carry along the shore (CERC) and what the tides
+carry in and out (the tidal prism over the flooded plain) to get
+Galloway's river, wave and tide weights (`coast.galloway`). The delta's
+shape follows the weights continuously:
+- **river:** long levee-bound fingers out to sea (a bird's foot);
+- **wave:** a smooth arc with few mouths, a barrier and lagoon on its
+  flanks, and beach ridges;
+- **tide:** funnel estuaries widening seaward, creeks cutting elongate
+  islands, and tidal flats.
+
+`zoom.json` `stats.deltas` reports the weights, the type, the mouths and
+the inputs. The zoom viewer shows them, and highlights name the type at
+delta sites.
+
 ## Why the pentagons
 
 See the docstring in `planet/grid.py`. A sphere can't be tiled with hexagons
@@ -215,7 +253,8 @@ planet simulate ...`; `serve` then shows that root's runs).
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
   surface in m, same datum as `elevation`; equal to `elevation` where there's
-  no lake, so `lake_level - elevation` is the water depth).
+  no lake, so `lake_level - elevation` is the water depth). Sea layers:
+  `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`.
 - `worlds/highlights/<id>.json`: the highlights found in world `<id>` (a cache).
 - `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
 - `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.

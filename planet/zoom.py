@@ -555,10 +555,10 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
 
 def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> int:
     """Channels of a delta reaching the sea: groups of land pixels within
-    1.3 R of the mouth that drain straight into the sea carrying >= 5% of
+    1.6 R of the mouth that drain straight into the sea carrying >= 5% of
     the delta's discharge."""
     r = np.hypot(px - dl["x"], py - dl["y"])
-    out = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (r < 1.3 * dl["R"]) & (discharge >= 0.05 * dl["q"])
+    out = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (r < 1.6 * dl["R"]) & (discharge >= 0.05 * dl["q"])
     if not out.any():
         return 0
     lab, _ = ZK.label_components(out, nx, ny)
@@ -768,6 +768,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             if Wf > res:
                 flat = ~land & (dsea < Wf) & (r < 1.2 * dl["R"])
                 h = np.where(flat, np.maximum(h, -0.5 * max(dl["tide"], 0.5) * dsea / Wf - 0.05), h)
+                # the funnels and creeks themselves are scoured deep by the tidal
+                # currents (flats only along their banks)
+                chan = ~land & (cut > 0.4) & (r < 1.1 * dl["R"])
+                h = np.where(chan, np.minimum(h, -(1.5 + 0.8 * dl["tide"]) * np.minimum(cut, 1.3)), h)
         ridge = 2.5 * wW_f * np.cos(np.pi * din / lam_r) ** 2 * (gate > -0.3)
         on = land & (wD > 0.5) & (wW_f > 0.25) & (din > 0.5 * res) & (ridge > 0.3)
         delta_floor = np.where(on, zD + ridge, delta_floor)
