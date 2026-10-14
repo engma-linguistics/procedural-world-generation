@@ -2,7 +2,7 @@
 id: PW-151
 title: Humidity layers - the rain model's vapour drains to near zero over dry land in winter
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -34,4 +34,5 @@ humidity that only loses water to actual rain; then compare with observed RH
 - [ ] no change to rain (goldens)
 
 ## Updates
+- 2026-10-14: Status todo -> done. clouds: climate.vapour_mixed keeps a background of vapour in dry air (at least half the vapour averaged over 2500 km, capped at half of what the local air holds), used for humidity and clouds only; the rain is unchanged (goldens: only the new cloud keys moved). Earth January RH: Delhi 45%, Timbuktu 33%, Kashgar 49%, Vostok ~76%; no land at the 15% floor.
 - 2026-10-14: Created from inbox draft draft-humidity-dry-air.md (found by viewerocean).

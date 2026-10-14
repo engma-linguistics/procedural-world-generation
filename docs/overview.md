@@ -210,7 +210,7 @@ With each class come the zoom's parameters: the exposed stratum, its thickness a
   - low cloud over the sea, more over cold water (polar seas, sea-ice edges), thinner under sinking air, except where the air sinks onto a strong inversion over cool upwelling water: a **stratocumulus deck** (California, Peru, Namibia, the Canaries), cloudy with little rain, which drifts over low coasts;
   - over land, cloud with the air's humidity, fair-weather cumulus where the ground makes moist air unstable, thin polar cloud; the sinking subtropical air clears it (deserts).
 
-  **Sunshine** (hours a day) is the day length times the clear share of the day; showers and cumulus build up in the afternoon, so they cost less sunshine than layer cloud. Worlds store `cloud_jul/jan` (%) and `sunshine_jul/jan` (h/day). On Earth (tools/earth_check.py, vs ICOADS ship reports and CRU sunshine): Sahara 15%, Southern Ocean 81%, the Sc decks 62–69%, the ITCZ ~65% (observed 70–80%).
+  **Sunshine** (hours a day) is the day length times the clear share of the day; showers and cumulus build up in the afternoon, so they cost less sunshine than layer cloud. Worlds store `cloud_jul/jan` (%) and `sunshine_jul/jan` (h/day). On Earth (tools/earth_check.py, vs ICOADS ship reports and CRU sunshine; world dc3732, screenshots in `docs/review/clouds/`): Sahara 17%, Southern Ocean 82%, the Sc decks 64–70%, the ITCZ 66–69% (observed ~70–80%); continental summers come out too clear and the wet tropics too gloomy, following the rain.
 - **Rain:**
   - Moisture evaporates from the sea (Clausius–Clapeyron) and is carried by the winds.
   - It rains out three ways: as **orographic rain**, which gives wet windward slopes and **rain shadows**; as **convection**; and along storm tracks.

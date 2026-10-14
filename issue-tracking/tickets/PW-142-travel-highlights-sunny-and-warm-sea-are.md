@@ -2,7 +2,7 @@
 id: PW-142
 title: "Travel highlights: 'sunny' and 'warm sea' are proxies (dry month, air over the sea)"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: m
@@ -35,5 +35,6 @@ store them as world layers (`sst_jul/jan`, `cloud_jul/jan`) and use them in
 - [x] if so, switch the beach finder to it (SST done: `_beach_cands` uses sst_jul / sst_jan; the sunshine proxy waits for clouds)
 
 ## Updates
+- 2026-10-14: Status todo -> done. clouds: the beach finder now gates and ranks on summer sunshine hours (sunshine_jul / sunshine_jan, >= 7 h/day, best from 10) instead of the dry-month proxy; blurbs give the hours ('July 28 °C, 10 h of sunshine a day, ...'). On Earth (dc3732): Gulf of California, Libyan coast, Red Sea, Namaqualand. Mild-winter retreats still use a dry month: draft-mild-winter-sunshine.
 - 2026-10-14: The warm-sea half is done (PW-144, viewerocean): worlds store sst_jul / sst_jan and the beach finder uses the sea's own summer surface temperature next to the coast (falls back to the air over the sea on older worlds). Sunshine still uses the dry-month proxy until clouds (PW-143).
 - 2026-10-14: Created from inbox draft draft-travel-sunshine-sst.md (found by travel).
