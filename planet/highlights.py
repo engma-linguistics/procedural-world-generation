@@ -39,6 +39,31 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   crust within 1500 km of a live hotspot.
 - climate records (hottest, coldest, wettest, driest) are on ice-free land
   and dropped when they sit on a better feature.
+- highest peak: under more than ICE_PEAK_M of ice it ranks lower and the
+  highest ice-free summit is added as its own place. The longest river ranks
+  lower when it's small or crosses mostly barren land (ice, tundra, desert).
+- waterfall / steep river: the biggest drop of the water surface (a lake's
+  surface on lake cells) over one or two downstream links, on rivers of at
+  least WF_MIN_Q m^3/s, ranked by the power of the falling water (discharge x
+  drop). On ~110 km cells that's a steep reach, not a fall: the zoom grades
+  the river smoothly through a gorge. Pixel-scale falls are in each zoom's
+  stats ("waterfalls", zoom.waterfalls()).
+- canyon: a river (>= 300 m^3/s) far below the median of its neighbours off
+  the river, on ground averaging >= 1000 m within two cells.
+- salt lake / salt flat: the biggest lake_kind 2 (closed, salty) and 3 (salt
+  pan) regions; inland basin: the largest land area whose drainage ends in a
+  closed lake or pit. Worlds without lake_kind have no closed basins; there,
+  evaporite beds at the surface on dry land are "salt flats".
+- coral coast: open sea next to land, shallow (cell mean <= 250 m), coldest
+  month >= 18 C, away from big river mouths; limestone on shore is a bonus.
+- rain shadow: a summit >= 1500 m with land 2-4 cells away whose rain differs
+  most between the two sides of a line through it (wet >= 600 mm, dry < 600
+  mm, >= 3x); ranked by the ratio (up to 10) x height.
+- plateau: one piece of land >= 2000 m, ice-free, whose cells differ from
+  their neighbours by < 500 m on average.
+- most varied square: the 1000 km square (around a land cell) with the most
+  even mix of Koppen classes and biomes (exp of Shannon entropy, geometric
+  mean of the two), lowered when under half land.
 """
 
 from __future__ import annotations
@@ -53,6 +78,7 @@ import numpy as np
 
 from . import hydrology
 from . import world as W
+from .climate import BIOMES, KOPPEN
 from .geo import R_KM
 from .grid import Grid
 
@@ -68,10 +94,14 @@ PRIORITY = {
     "fjords": 82, "mediterranean": 78, "volcanic_arc": 75, "hotspot_islands": 72, "rift": 70,
     "trench": 68, "lake": 66, "inland_sea": 64, "ice_sheet": 62, "desert": 60, "rainforest": 58,
     "island": 55, "archipelago": 54, "continent": 50, "hottest": 40, "coldest": 39, "wettest": 38,
-    "driest": 37,
+    "driest": 37, "ice_free_peak": 99, "waterfall": 90, "canyon": 84, "varied_square": 80, "plateau": 76,
+    "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
 }
 ROCK_SETTING = {1: "a hotspot volcano", 2: "a volcanic arc", 3: "sedimentary rock",
                 4: "a collision belt", 5: "an ancient shield"}
+KOPPEN_NAME = {k[0]: f"{k[2]} ({k[1]})" for k in KOPPEN}
+BIOME_NAME = {b[0]: b[1] for b in BIOMES}
+BARREN = (4, 5, 7, 11, 15)  # biomes: ice sheet, tundra, cold desert, hot desert, alpine / bare rock
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +263,11 @@ def _m(x: float) -> str:
     return f"{x:,.0f} m"
 
 
+def _c(x: float) -> str:
+    """Degrees C, whole (no "-0")."""
+    return f"{int(round(float(x)))} °C"
+
+
 def _plates(ps: list[int]) -> str:
     return f"plates {ps[0]} and {ps[1]}" if len(ps) >= 2 else f"plate {ps[0]}" if ps else ""
 
@@ -240,6 +275,9 @@ def _plates(ps: list[int]) -> str:
 # ---------------------------------------------------------------------------
 # Detectors: each returns a list of features, best first
 # ---------------------------------------------------------------------------
+ICE_PEAK_M = 100.0  # m of ice over the highest peak that hides it
+
+
 def highest_peak(ctx: _Ctx) -> list[dict]:
     i = int(np.argmax(ctx.elev))
     if ctx.elev[i] <= 0:
@@ -254,12 +292,26 @@ def highest_peak(ctx: _Ctx) -> list[dict]:
         where += f" at the converging edge of plate {ps[0]}"
     elif "plate" in L:
         where += " with no active plate boundary nearby (an old range)"
-    ice = float(L["ice"][i]) if "ice" in L else 0.0
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
     blurb = (f"The top of the world, {where}" if where else "The top of the world") + \
-        (f", under ~{ice:.0f} m of ice" if ice > 0 else "") + "."
-    return [_feature(ctx, "highest_peak", f"Highest peak: {_m(ctx.elev[i])}", blurb, i, 500,
-                     {"elevation_m": int(ctx.elev[i]), "plates": ps, "ice_m": round(ice)},
-                     quality=0.7 + 0.3 * min(ctx.elev[i] / 6000, 1))]
+        (f", under ~{ice[i]:.0f} m of ice" if ice[i] > 0 else "") + "."
+    # a summit under an ice cap zooms to a white blank: rank it lower, and
+    # add the highest ice-free summit as its own place
+    buried = ice[i] > ICE_PEAK_M
+    feats = [_feature(ctx, "highest_peak", f"Highest peak: {_m(ctx.elev[i])}" + (" (under ice)" if buried else ""),
+                      blurb, i, 500, {"elevation_m": int(ctx.elev[i]), "plates": ps, "ice_m": round(ice[i])},
+                      quality=(0.7 + 0.3 * min(ctx.elev[i] / 6000, 1)) * (0.7 if buried else 1.0))]
+    free = np.flatnonzero(ctx.land & (ice <= 0))
+    if buried and len(free):
+        j = int(free[np.argmax(ctx.elev[free])])
+        setting = ROCK_SETTING.get(int(L["rock"][j]), "") if "rock" in L else ""
+        km = float(ctx.dist(i, [j])[0])
+        blurb = ("The highest summit not under ice" + (f", on {setting}" if setting else "") +
+                 f"; the highest peak ({_m(ctx.elev[i])}) is {_n(km)} km away under ~{_m(ice[i])} of ice.")
+        feats.append(_feature(ctx, "ice_free_peak", f"Highest ice-free peak: {_m(ctx.elev[j])}", blurb, j, 500,
+                              {"elevation_m": int(ctx.elev[j]), "km_from_highest": round(km)},
+                              quality=0.7 + 0.3 * min(ctx.elev[j] / 6000, 1)))
+    return feats
 
 
 def deepest_trench(ctx: _Ctx) -> list[dict]:
@@ -404,8 +456,16 @@ def rivers(ctx: _Ctx) -> list[dict]:
         else:
             mid = course[len(course) // 2]
             blurb = f"From its farthest source to the sea; {_n(q)} m³/s at the mouth. This is its middle course."
+            # a long trickle across a barren (icy, tundra, desert) land makes a bland zoom: rank it lower
+            bare = 0.0
+            if "biome" in ctx.L:
+                b = np.asarray(ctx.L["biome"])[course]
+                bare = float(np.isin(b, BARREN).mean())
+                if bare > 0.5:
+                    blurb += f" Most of its course is {BIOME_NAME[int(np.bincount(b).argmax())]} country: a thin river."
             feats.append(_feature(ctx, kind, f"Longest river: {_n(length)} km", blurb, mid,
-                                  zoom_size(ctx.span_km(course, mid)), stats, path=ctx.path(course)))
+                                  zoom_size(ctx.span_km(course, mid)), stats, path=ctx.path(course),
+                                  quality=min(1.0, 0.45 + 0.55 * (q / 5000) ** 0.5) * (0.75 if bare > 0.5 else 1.0)))
     return feats
 
 
@@ -811,9 +871,500 @@ def extremes(ctx: _Ctx) -> list[dict]:
     return feats
 
 
+# ---------------------------------------------------------------------------
+# Round 2: falls, canyons, salt, reefs, rain shadows, plateaus, variety
+# ---------------------------------------------------------------------------
+def _water_surface(ctx: _Ctx) -> np.ndarray:
+    """The level water runs on: a lake's surface on its cells (the world's
+    lake_level, else the spill level), the ground elsewhere, 0 at sea."""
+    if getattr(ctx, "_ws", None) is not None:
+        return ctx._ws
+    L = ctx.L
+    ws = np.where(ctx.land, ctx.elev, 0.0)
+    lake = ctx.land & (np.asarray(L["lake"]) > 0) if "lake" in L else np.zeros(ctx.n, bool)
+    if lake.any():
+        lvl = np.asarray(L["lake_level"], float) if "lake_level" in L else \
+            hydrology.priority_flood(ctx.g, ctx.elev)[0]
+        ws = np.where(lake, np.maximum(lvl, ctx.elev), ws)
+    ctx._ws, ctx._lake = ws, lake
+    return ws
+
+
+def _link_km(ctx: _Ctx, i, j) -> np.ndarray:
+    C = ctx.g.centers
+    return np.arccos(np.clip((C[i] * C[j]).sum(-1), -1, 1)) * R_KM
+
+
+def _gw(q: float, h: float) -> float:
+    """Power of falling water, GW (rho g Q H)."""
+    return 1000 * 9.81 * q * h / 1e9
+
+
+WF_MIN_Q, WF_MIN_DROP = 300.0, 300.0  # m^3/s, m: a big river, a big drop (over one or two ~110 km links)
+
+
+def waterfalls(ctx: _Ctx, top: int = 3) -> list[dict]:
+    """Big rivers dropping steeply: the biggest fall of the water surface
+    over one or two downstream links, to land or a lake, on rivers of at
+    least WF_MIN_Q m^3/s; ranked by the power of the falling water."""
+    if "flow" not in ctx.L or not ctx.land.any():
+        return []
+    R = _rivers(ctx)
+    down, q = R["down"], R["q"]
+    ws = _water_surface(ctx)
+    lake = ctx._lake
+    i = np.flatnonzero(ctx.land & (down >= 0) & ~R["iced"] & (q >= WF_MIN_Q) & ctx.land[np.maximum(down, 0)])
+    if not len(i):
+        return []
+    d1 = down[i]
+    h1, k1 = ws[i] - ws[d1], _link_km(ctx, i, d1)
+    two = (down[d1] >= 0) & ctx.land[np.maximum(down[d1], 0)]
+    d2 = np.where(two, down[d1], d1)
+    h2 = np.where(two, ws[i] - ws[d2], -np.inf)
+    use2 = h2 > 1.3 * h1  # the second link counts if it adds a good part of the drop
+    h = np.where(use2, h2, h1)
+    km = np.where(use2, k1 + _link_km(ctx, d1, d2), k1)
+    cand = [{"cell": int(a), "h": float(hh), "km": float(kk), "q": float(q[a]), "gw": _gw(float(q[a]), float(hh)),
+             "cells": [int(a), int(b)] + ([int(c)] if u else [])}
+            for a, b, c, hh, kk, u in zip(i, d1, d2, h, km, use2) if hh >= WF_MIN_DROP]
+    cand.sort(key=lambda c: -c["gw"])
+    kept = []
+    for c in cand:  # one per stretch of river
+        if all(ctx.dist(k["cell"], [c["cell"]])[0] > 400 for k in kept):
+            kept.append(c)
+        if len(kept) >= top:
+            break
+    feats = []
+    for rank, c in enumerate(kept):
+        a, end = c["cell"], c["cells"][-1]
+        spill = bool(lake[a] and not lake[c["cells"][1]])
+        if spill:
+            title = ("Biggest waterfall" if rank == 0 else "Waterfall") + f": a {_m(c['h'])} drop from a lake"
+            what = (f"A lake spills over its rim here: its outflow, {_n(c['q'])} m³/s, drops ~{_m(c['h'])} "
+                    f"within {_n(c['km'])} km.")
+        else:
+            title = ("Steepest big river" if rank == 0 else "Steep river reach") + f": {_m(c['h'])} drop"
+            what = (f"A {_n(c['q'])} m³/s river drops ~{_m(c['h'])} over {_n(c['km'])} km "
+                    f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells a fall is a "
+                    f"steep reach; the zoom cuts it as a gorge with a smoothly graded river (its own falls, "
+                    f"in the zoom's stats, are tens of metres).")
+        blurb = what + f" ~{_n(c['gw'])} GW of falling water (Niagara: ~1.2 GW)."
+        feats.append(_feature(ctx, "waterfall", title, blurb, a, 500,
+                              {"drop_m": round(c["h"]), "reach_km": round(c["km"]), "discharge_m3s": round(c["q"]),
+                               "power_gw": round(c["gw"], 1), "top_m": round(float(ws[a])),
+                               "bottom_m": round(float(ws[end])), "lake_outlet": spill},
+                              quality=(0.8 ** rank) * min(1.0, 0.5 + c["gw"] / 40),
+                              path=ctx.path(c["cells"])))
+    return feats
+
+
+def canyons(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """A river cut deep into high ground: its cell far below the land on
+    both sides of it (the lower of the two sides' mean height, neighbours
+    off the river only), on ground averaging >= 1000 m within two cells."""
+    if "flow" not in ctx.L or not ctx.land.any():
+        return []
+    R = _rivers(ctx)
+    down, q = R["down"], R["q"]
+    mean2 = _ring_mean(ctx, np.where(ctx.land, ctx.elev, 0.0), 2)
+    riv = ctx.land & ~R["iced"] & (q >= 300) & (mean2 >= 1000) & (down >= 0)
+    up = np.full(ctx.n, -1)  # the main upstream cell (most water) of each river cell
+    has = np.flatnonzero(ctx.land & (down >= 0))
+    for c in has[np.argsort(q[has], kind="stable")]:
+        up[down[c]] = c
+    cand = []
+    for i in np.flatnonzero(riv):
+        depth, rim = _incision(ctx, int(i), down, up)
+        if depth >= 400:
+            cand.append((depth, int(i), rim))
+    cand.sort(key=lambda c: -c[0])
+    kept = []
+    for c in cand:
+        if all(ctx.dist(k[1], [c[1]])[0] > 500 for k in kept):
+            kept.append(c)
+        if len(kept) >= top:
+            break
+    feats = []
+    for rank, (depth, i, rim) in enumerate(kept):
+        # the canyon: the river's course up and down from here while it stays far below its rims
+        deep = lambda c: _incision(ctx, int(c), down, up)[0] >= 0.5 * depth
+        course = [i]
+        while up[course[0]] >= 0 and deep(up[course[0]]) and len(course) < 50:
+            course.insert(0, int(up[course[0]]))
+        while down[course[-1]] >= 0 and ctx.land[down[course[-1]]] and deep(down[course[-1]]) and len(course) < 100:
+            course.append(int(down[course[-1]]))
+        length = float(_link_km(ctx, course[:-1], course[1:]).sum()) + ctx.cell_km
+        blurb = (f"A {_n(q[i])} m³/s river runs at ~{_m(ctx.elev[i])}, ~{_m(depth)} below the high ground on "
+                 f"both sides (~{_m(rim)}), for ~{_n(length)} km: a canyon cut into an upland, like the Grand "
+                 f"Canyon (on ~{_n(ctx.cell_km)} km cells only the biggest show).")
+        feats.append(_feature(ctx, "canyon", ("Deepest canyon" if rank == 0 else "Canyon") + f": ~{_m(depth)}",
+                              blurb, i, zoom_size(max(length, 250)),
+                              {"depth_m": round(depth), "river_m": int(ctx.elev[i]), "rim_m": round(rim),
+                               "discharge_m3s": round(q[i]), "length_km": round(length)},
+                              quality=(0.8 ** rank) * (0.5 + 0.5 * min(depth / 1500, 1)), path=ctx.path(course)))
+    return feats
+
+
+def _incision(ctx: _Ctx, i: int, down: np.ndarray, up: np.ndarray) -> tuple[float, float]:
+    """(depth, rim) of river cell i: its neighbours off the river, split by
+    the flow line into left and right banks; the rim is the lower bank's
+    mean height. (0, 0) unless both banks have land."""
+    g, C = ctx.g, ctx.g.centers
+    nb = g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
+    side = np.array([j for j in nb if j != down[i] and down[j] != i and ctx.land[j]], int)
+    if not len(side):
+        return 0.0, 0.0
+    a = C[down[i]] - (C[up[i]] if up[i] >= 0 else C[i])
+    s = np.cross(a, C[side] - C[i]) @ C[i]
+    left, right = ctx.elev[side[s > 0]], ctx.elev[side[s < 0]]
+    if not len(left) or not len(right):
+        return 0.0, 0.0
+    rim = float(min(left.mean(), right.mean()))
+    return rim - float(ctx.elev[i]), rim
+
+
+def _ring_mean(ctx: _Ctx, v: np.ndarray, k: int = 1) -> np.ndarray:
+    """Mean of v over each cell and its neighbours, k times (a smoothing)."""
+    g = ctx.g
+    deg = np.diff(g.nbr_off)
+    out = v.astype(float)
+    for _ in range(k):
+        out = (out + np.add.reduceat(out[g.nbr_idx], g.nbr_off[:-1])) / (deg + 1)
+    return out
+
+
+def salt(ctx: _Ctx) -> list[dict]:
+    """Closed basins: the biggest salt lake (lake_kind 2: closed, keeps its
+    water and its salt), the biggest salt pan (lake_kind 3: dried out), and
+    the largest region draining inland (its rivers end in a closed lake or a
+    pit, not the sea). Worlds made before lake_kind existed have none of
+    these; there, exposed evaporite beds (surface rock) on dry land count as
+    salt flats."""
+    L = ctx.L
+    feats = []
+    if "lake_kind" in L:
+        kind = np.asarray(L["lake_kind"])
+        ws = _water_surface(ctx)
+        pet = np.asarray(L["pet"], float) if "pet" in L else None
+        for k, kd in ((2, "salt_lake"), (3, "salt_pan")):
+            regions = ctx.components(ctx.land & (kind == k))
+            if not regions:
+                continue
+            cells = regions[0]
+            mid = ctx.middle(cells)
+            a = len(cells) * ctx.area
+            lvl = float(np.median(ws[cells]))
+            below = f"{_m(-lvl)} below sea level" if lvl < 0 else f"at {_m(lvl)}"
+            basin = _inland_basins(ctx).get(int(_sink(ctx, [cells[0]])[0]))
+            basin_a = len(basin) * ctx.area if basin is not None else a
+            evap = f"; ~{_n(pet[cells].mean())} mm a year could evaporate" if pet is not None else ""
+            rain = float(L["precipitation"][cells].mean())
+            if k == 2:
+                depth = float((ws[cells] - ctx.elev[cells]).max())
+                title = f"Biggest salt lake: {_area(a)}"
+                blurb = (f"A lake with no outlet (like the Caspian or the Dead Sea), surface {below}, up to "
+                         f"~{_m(depth)} deep. Rivers from a {_area(basin_a)} basin feed it and the sun takes the "
+                         f"water away, leaving the salt: ~{rain:.0f} mm of rain{evap}.")
+            else:
+                title = f"Biggest salt flat: {_area(a)}"
+                blurb = (f"A dry lake bed {below}, crusted with salt (like Salar de Uyuni or Lake Eyre): what "
+                         f"reaches it from a {_area(basin_a)} basin all evaporates; ~{rain:.0f} mm of rain{evap}.")
+            feats.append(_feature(ctx, kd, title, blurb, mid, zoom_size(max(ctx.span_km(cells, mid), 250)),
+                                  {"area_km2": round(a), "surface_m": round(lvl), "basin_km2": round(basin_a)},
+                                  quality=0.6 + 0.4 * min(a / 1e5, 1)))
+    basins = _inland_basins(ctx)
+    if basins:
+        cells = max(basins.values(), key=len)
+        a = len(cells) * ctx.area
+        if a >= 5 * ctx.area:
+            low = int(cells[np.argmin(_water_surface(ctx)[cells])])
+            mid = ctx.middle(cells)
+            pct = 100 * len(cells) / max(ctx.land.sum(), 1)
+            all_inland = sum(len(b) for b in basins.values()) / max(ctx.land.sum(), 1)
+            rain = float(L["precipitation"][cells].mean())
+            blurb = (f"{_area(a)} ({pct:.0f}% of all land) whose rivers never reach the sea: they end at "
+                     f"~{_m(_water_surface(ctx)[low])} in a closed lake or salt pan; ~{rain:.0f} mm of rain a year. "
+                     f"{100 * all_inland:.0f}% of the world's land drains inland (Earth: ~20%).")
+            feats.append(_feature(ctx, "inland_basin", f"Largest inland basin: {_area(a)}", blurb, mid,
+                                  zoom_size(ctx.span_km(cells, mid)),
+                                  {"area_km2": round(a), "pct_of_land": round(float(pct), 1), "sink_cell": low,
+                                   "inland_pct_of_land": round(100 * float(all_inland), 1)},
+                                  quality=0.6 + 0.4 * min(a / 2e6, 1)))
+    if "lake_kind" not in L and "surface_rock" in L and "precipitation" in L:
+        ev = ctx.land & (np.asarray(L["surface_rock"]) == 9) & (np.asarray(L["precipitation"]) < 500)
+        regions = ctx.components(ev, min_cells=2, bridge=1)
+        if regions:
+            cells = regions[0]
+            mid = ctx.middle(cells)
+            a = len(cells) * ctx.area
+            blurb = (f"{_area(a)} of salt and gypsum beds at the surface, ~{_m(np.median(ctx.elev[cells]))} up, "
+                     f"~{L['precipitation'][cells].mean():.0f} mm of rain a year: the floors of old salt lakes "
+                     f"and seas that dried out.")
+            feats.append(_feature(ctx, "salt_flats", f"Salt flats: {_area(a)}", blurb, mid,
+                                  zoom_size(max(ctx.span_km(cells, mid), 250)), {"area_km2": round(a)},
+                                  quality=0.6 + 0.4 * min(a / 1e5, 1)))
+    return feats
+
+
+def _inland_basins(ctx: _Ctx) -> dict[int, np.ndarray]:
+    """Land draining inland, grouped by where it ends: {sink: cells}. The
+    sink is the closed lake's lowest-id cell (_sink), or the pit."""
+    if getattr(ctx, "_inland", None) is not None:
+        return ctx._inland
+    out = {}
+    _water_surface(ctx)
+    ctx._lake_lab = ctx.g.components(ctx._lake)[0]
+    if "downstream" in ctx.L and ctx.land.any():
+        R = _rivers(ctx)
+        end = R["outlet"]
+        cells = np.flatnonzero(ctx.land & ~R["mouth"][end])
+        if len(cells):
+            key = _sink(ctx, end[cells])
+            for k in np.unique(key):
+                out[int(k)] = cells[key == k]
+    ctx._inland = out
+    return out
+
+
+def _sink(ctx: _Ctx, cells) -> np.ndarray:
+    """Each cell, or the lowest-id cell of the lake it's in."""
+    lab = ctx._lake_lab
+    cells = np.asarray(cells)
+    lk = np.flatnonzero(lab >= 0)
+    first = np.full(lab.max() + 2, ctx.n)
+    np.minimum.at(first, lab[lk], lk)
+    return np.where(lab[cells] >= 0, first[np.maximum(lab[cells], 0)], cells)
+
+
+REEF_MIN_C, REEF_MAX_DEPTH = 18.0, 250.0  # coldest-month sea temperature, m of water (cell mean)
+
+
+def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """Where reefs would grow: open sea next to land that is shallow (cell
+    mean <= REEF_MAX_DEPTH m) and warm all year (coldest month >=
+    REEF_MIN_C at the surface), away from big river mouths (mud). Limestone
+    on the shore (surface rock) is old reef, a bonus."""
+    L = ctx.L
+    if "cold_month" not in L or not ctx.land.any():
+        return []
+    sea = ~ctx.land
+    ocean = np.zeros(ctx.n, bool)
+    regions = ctx.components(sea)
+    if regions:
+        ocean[regions[0]] = True
+    muddy = np.zeros(ctx.n, bool)
+    if "flow" in L:
+        R = _rivers(ctx)
+        m = np.flatnonzero(R["mouth"] & (R["q"] > 3000))
+        muddy[R["down"][m]] = True
+        muddy = ctx.dilate(muddy, 1)
+    cold = np.asarray(L["cold_month"], float)
+    reef = ocean & (ctx.elev > -REEF_MAX_DEPTH) & (cold >= REEF_MIN_C) & ctx.dilate(ctx.land) & ~muddy
+    lime = ctx.land & (np.asarray(L["surface_rock"]) == 6) if "surface_rock" in L else None
+    out = []
+    for cells in ctx.components(reef, min_cells=3, bridge=1)[:8]:
+        length, spine = ctx.spine(cells, ctx.dilate(reef) & sea)
+        length += ctx.cell_km
+        shore = ctx.dilate(np.isin(np.arange(ctx.n), cells)) & ctx.land
+        lime_pct = 100 * float(lime[shore].mean()) if lime is not None and shore.any() else 0.0
+        out.append((length * (1 + lime_pct / 100), length, cells, spine, lime_pct))
+    out.sort(key=lambda x: -x[0])
+    feats = []
+    best = out[0][0] if out else 1.0
+    for rank, (s, length, cells, spine, lime_pct) in enumerate(out[:top]):
+        mid = spine[len(spine) // 2]
+        t_cold, t_warm = float(cold[cells].mean()), float(np.asarray(L["warm_month"])[cells].mean())
+        depth = float(-ctx.elev[cells].mean())
+        lime_txt = f" {lime_pct:.0f}% of the shore is limestone, old reefs lifted onto land." if lime_pct >= 5 else ""
+        blurb = (f"{_n(length)} km of warm, shallow, clear sea along the coast: ~{_m(depth)} deep on average, "
+                 f"{t_cold:.0f}–{t_warm:.0f} °C through the year, no big river mud. Coral reef country (like "
+                 f"the Great Barrier Reef or the Caribbean).{lime_txt} The zoom shows the shallows, not the reefs.")
+        feats.append(_feature(ctx, "coral_coast", "Coral coast", blurb, mid, zoom_size(min(length, 1000)),
+                              {"length_km": round(length), "mean_depth_m": round(depth), "sea_c_min": round(t_cold, 1),
+                               "limestone_pct": round(lime_pct)},
+                              quality=(0.8 ** rank) * (0.5 + 0.5 * s / best) * min(1, 0.4 + length / 1500),
+                              path=ctx.path(spine)))
+    return feats
+
+
+def rain_shadows(ctx: _Ctx, top: int = 3) -> list[dict]:
+    """Mountains with a wet side and a dry side: for each high cell (>=
+    1500 m), the land 2-4 cells away, split in two by the line through it
+    that gives the biggest contrast in yearly rain (12 directions). Needs a
+    dry side under 600 mm, a wet side over 600 mm with at least 3x as much; ranked
+    by the ratio (up to 10) x the height of the mountains."""
+    L = ctx.L
+    if "precipitation" not in L or not ctx.land.any():
+        return []
+    P = np.asarray(L["precipitation"], float)
+    C = ctx.g.centers
+    crest = np.flatnonzero(ctx.land & (ctx.elev >= 1500) & (ctx.elev >= ctx.ring_max(ctx.elev) - 1))
+    if not len(crest):  # only summits (local maxima) are tried: one per hill
+        return []
+    ring = _rings(ctx, 4)
+    th = np.linspace(0, np.pi, 12, endpoint=False)
+    cand = []
+    for c in crest:
+        nb = np.array([j for j in ring(c) if ctx.land[j] and ctx.elev[j] < ctx.elev[c] - 300])
+        if len(nb) < 8:
+            continue
+        e = np.cross([0.0, 0.0, 1.0], C[c])
+        e = e / max(np.linalg.norm(e), 1e-9) if np.linalg.norm(e) > 1e-9 else np.array([0.0, 1.0, 0.0])
+        nn = np.cross(C[c], e)
+        d = C[nb] - C[c]
+        x, y = d @ e, d @ nn
+        r = np.hypot(x, y)
+        best = None
+        for t in th:
+            s = (x * np.cos(t) + y * np.sin(t)) / r
+            a, b = nb[s > 0.4], nb[s < -0.4]
+            if len(a) < 3 or len(b) < 3:
+                continue
+            pa, pb = P[a].mean(), P[b].mean()
+            wet, dry = (a, b) if pa > pb else (b, a)
+            ratio = max(pa, pb) / max(min(pa, pb), 10.0)
+            if best is None or ratio > best[0]:
+                best = (ratio, wet, dry)
+        if best and best[0] >= 3 and P[best[2]].mean() < 600 and P[best[1]].mean() >= 600:
+            ratio, wet, dry = best
+            cand.append((min(ratio, 10) * ctx.elev[c], int(c), ratio, wet, dry))
+    cand.sort(key=lambda x: -x[0])
+    kept = []
+    for x in cand:
+        if all(ctx.dist(k[1], [x[1]])[0] > 800 for k in kept):
+            kept.append(x)
+        if len(kept) >= top:
+            break
+    feats = []
+    best = kept[0][0] if kept else 1.0
+    for rank, (s, c, ratio, wet, dry) in enumerate(kept):
+        pw, pd = float(P[wet].mean()), float(P[dry].mean())
+        cw, cd = ctx.middle(wet), ctx.middle(dry)
+        km = float(ctx.dist(cw, [cd])[0])
+        blurb = (f"~{_n(pw)} mm of rain a year on the wet side, ~{_n(pd)} mm on the dry side ({ratio:.0f}× less), "
+                 f"{_n(km)} km apart across {_m(ctx.elev[c])} mountains: the mountains wring the rain out of the "
+                 f"air before it crosses (like the Andes over Patagonia, or the Sierra Nevada).")
+        feats.append(_feature(ctx, "rain_shadow", "Rain shadow", blurb, c, 1000,
+                              {"wet_mm": round(pw), "dry_mm": round(pd), "ratio": round(float(ratio), 1),
+                               "crest_m": int(ctx.elev[c]), "across_km": round(km)},
+                              quality=(0.8 ** rank) * (0.5 + 0.5 * s / best), path=ctx.path([cw, c, cd])))
+    return feats
+
+
+def _rings(ctx: _Ctx, k: int):
+    """cells(c): the cells 2..k links from c (not c's own neighbours)."""
+    g = ctx.g
+
+    def cells(c):
+        seen, front = {int(c)}, [int(c)]
+        out = []
+        for step in range(k):
+            nxt = []
+            for i in front:
+                for j in g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]:
+                    j = int(j)
+                    if j not in seen:
+                        seen.add(j)
+                        nxt.append(j)
+            if step >= 1:
+                out += nxt
+            front = nxt
+        return out
+    return cells
+
+
+PLATEAU_M, PLATEAU_RELIEF = 2000.0, 500.0  # m
+
+
+def plateaus(ctx: _Ctx, top: int = 3) -> list[dict]:
+    """Large high, flat ground: land >= PLATEAU_M (not under an ice sheet)
+    whose cells differ from their neighbours by < PLATEAU_RELIEF m on
+    average, in one piece of at least 4 cells. Like Tibet or the Altiplano."""
+    if not ctx.land.any():
+        return []
+    L = ctx.L
+    g = ctx.g
+    deg = np.diff(g.nbr_off)
+    relief = np.add.reduceat(np.abs(ctx.elev[g.nbr_idx] - np.repeat(ctx.elev, deg)), g.nbr_off[:-1]) / deg
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
+    mask = ctx.land & (ctx.elev >= PLATEAU_M) & (relief < PLATEAU_RELIEF) & (ice < 100)
+    feats = []
+    regions = ctx.components(mask, min_cells=4)
+    for rank, cells in enumerate(regions[:top]):
+        mid = ctx.middle(cells)
+        a = len(cells) * ctx.area
+        h, r = float(ctx.elev[cells].mean()), float(np.median(relief[cells]))
+        clim = ""
+        if "climate" in L:
+            k = np.bincount(np.asarray(L["climate"])[cells], minlength=31).argmax()
+            clim = f" Mostly {KOPPEN_NAME.get(int(k), '')}: ~{_c(L['temperature'][cells].mean())}, " \
+                   f"~{_n(L['precipitation'][cells].mean())} mm of rain a year."
+        blurb = (f"{_area(a)} of high, flat ground averaging {_m(h)} (neighbouring ~{_n(ctx.cell_km)} km cells "
+                 f"differ by ~{_m(r)}), like Tibet or the Altiplano.{clim}")
+        feats.append(_feature(ctx, "plateau", ("Largest plateau" if rank == 0 else "Plateau") + f": {_area(a)}",
+                              blurb, mid, zoom_size(ctx.span_km(cells, mid)),
+                              {"area_km2": round(a), "mean_m": round(h), "relief_m": round(r)},
+                              quality=(0.85 ** rank) * (0.4 + 0.3 * min(a / 1e6, 1) + 0.3 * min(h / 4000, 1))))
+    return feats
+
+
+VARIED_KM = 1000.0
+
+
+def most_varied(ctx: _Ctx) -> list[dict]:
+    """The VARIED_KM square (centred on a land cell, edges east-west and
+    north-south) with the most varied climates: the effective number of
+    Koppen classes x of biomes (exp of the Shannon entropy of their land
+    shares, so evenly mixed beats one big class with specks of others),
+    square-rooted, and lowered when it's under half land."""
+    L = ctx.L
+    if "climate" not in L or "biome" not in L or ctx.land.sum() < 10:
+        return []
+    land = np.flatnonzero(ctx.land)
+    C = ctx.g.centers
+    Pl = C[land]
+    kk = np.asarray(L["climate"])[land]
+    bb = np.asarray(L["biome"])[land]
+    ok_ = np.eye(max(kk.max(), 30) + 1)[kk]
+    ob = np.eye(max(bb.max(), 15) + 1)[bb]
+    full = VARIED_KM ** 2 / ctx.area  # cells in a full square
+    half = VARIED_KM / 2 / R_KM
+    best = (-1.0, -1, None, None, 0.0)
+    for s in range(0, len(land), 512):
+        ci = land[s:s + 512]
+        c = C[ci]
+        e = np.cross([0.0, 0.0, 1.0], c)
+        e /= np.maximum(np.linalg.norm(e, axis=1, keepdims=True), 1e-9)
+        nn = np.cross(c, e)
+        inside = (np.abs(e @ Pl.T) <= half) & (np.abs(nn @ Pl.T) <= half) & (c @ Pl.T > 0)
+        insf = inside.astype(float)
+        nk, nb = insf @ ok_, insf @ ob
+        cnt = inside.sum(1)
+        eff = []
+        for cnts in (nk, nb):
+            p = cnts / np.maximum(cnt, 1)[:, None]
+            eff.append(np.exp(-(p * np.log(np.where(p > 0, p, 1))).sum(1)))
+        score = np.sqrt(eff[0] * eff[1]) * np.minimum(1, cnt / (0.5 * full))
+        j = int(np.argmax(score))
+        if score[j] > best[0]:
+            best = (float(score[j]), int(ci[j]), nk[j], nb[j], float(cnt[j] / full))
+    score, c, nk, nb, landfrac = best
+    if c < 0:
+        return []
+    names = sorted(((n, k) for k, n in enumerate(nk) if n > 0), reverse=True)
+    top3 = ", ".join(f"{KOPPEN_NAME.get(k, k)} {100 * n / nk.sum():.0f}%" for n, k in names[:3])
+    n_k, n_b = int((nk > 0).sum()), int((nb > 0).sum())
+    blurb = (f"{n_k} Köppen climates and {n_b} biomes in one {_n(VARIED_KM)} km square "
+             f"({100 * min(landfrac, 1):.0f}% land): {top3}, and more. The most varied corner of the world.")
+    return [_feature(ctx, "varied_square", f"Most varied {_n(VARIED_KM)} km square", blurb, c, 1000,
+                     {"koppen_classes": n_k, "biomes": n_b, "diversity": round(score, 2),
+                      "land_pct": round(100 * min(landfrac, 1))},
+                     quality=0.6 + 0.4 * min(score / 8, 1))]
+
+
 DETECTORS = [highest_peak, mountain_ranges, rivers, deltas, deepest_trench, fjords, mediterranean,
              volcanic_arcs, hotspot_islands, rifts, lakes, inland_seas, ice_sheet, desert, rainforest,
-             landmasses, extremes]
+             landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied]
 
 
 def _nms(ctx: _Ctx, feats: list[dict], radius_km: float) -> list[dict]:

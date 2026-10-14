@@ -183,6 +183,61 @@ def _catmull_rom(p0, p1, p2, p3, n):
                   + (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
 
 
+# Waterfalls in the raster: from a channel carrying >= WF_MIN_Q m^3/s, the
+# biggest drop of the water surface over <= WF_STEPS pixels downstream that
+# is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
+WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 50.0, 30.0, 15.0, 3
+
+
+def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
+               starts: dict | None = None, top: int = 5) -> list[dict]:
+    """Pixel-scale falls along the drainage network. ws: water surface (lake
+    surface on lakes, 0 at sea), q: discharge m^3/s, rec: D8 receivers (-1
+    at outlets); starts: {lake outlet pixel: lake level}, where a fall
+    starts at the lake surface a pixel upstream. Best first by power
+    (discharge x height), at least ~15 km apart, none within 4 px of the
+    edge. Each: px (row, col), height_m, length_km, discharge_m3s,
+    power_gw, top_m, bottom_m, from_lake."""
+    n = nx * ny
+    lvl, d0 = ws.astype(float).copy(), np.zeros(n)
+    for o, v in (starts or {}).items():
+        if o >= 0 and v > lvl[o]:
+            lvl[o], d0[o] = v, res
+    row, col = np.divmod(np.arange(n), nx)
+    inner = (row >= 4) & (row < ny - 4) & (col >= 4) & (col < nx - 4)
+    i = np.flatnonzero((q >= WF_MIN_Q) & inner & (rec >= 0))
+    # a lake outlet's own step (lake surface -> outlet pixel) counts as one
+    drop = lvl[i] - ws[i]
+    ok = (d0[i] > 0) & (drop >= WF_MIN_GRAD * np.maximum(d0[i], 1e-9))
+    best_h, best_d, best_j = np.where(ok, drop, 0.0), d0[i].copy(), i.copy()
+    j, dist, alive = i.copy(), d0[i].copy(), np.ones(len(i), bool)
+    for _ in range(WF_STEPS):
+        r = rec[j]
+        alive &= r >= 0
+        rr = np.maximum(r, 0)
+        diag = (rr % nx != j % nx) & (rr // nx != j // nx)
+        dist = np.where(alive, dist + res * np.where(diag, 1.4142, 1.0), dist)
+        j = np.where(alive, rr, j)
+        drop = lvl[i] - ws[j]
+        better = alive & (drop >= WF_MIN_GRAD * dist) & (drop > best_h)
+        best_h, best_d, best_j = (np.where(better, a, b) for a, b in ((drop, best_h), (dist, best_d), (j, best_j)))
+    keep = best_h >= WF_MIN_DROP
+    i, h, d, jj = i[keep], best_h[keep], best_d[keep], best_j[keep]
+    gw = 1000 * 9.81 * q[i] * h / 1e9
+    out, sep = [], max(6, int(round(15 / res)))
+    for k in np.argsort(-gw):
+        r0, c0 = divmod(int(i[k]), nx)
+        if any(max(abs(r0 - f["px"][0]), abs(c0 - f["px"][1])) < sep for f in out):
+            continue
+        out.append({"px": [r0, c0], "height_m": round(float(h[k]), 1), "length_km": round(float(d[k]), 1),
+                    "discharge_m3s": round(float(q[i[k]]), 1), "power_gw": round(float(gw[k]), 3),
+                    "top_m": round(float(lvl[i[k]]), 1), "bottom_m": round(float(ws[jj[k]]), 1),
+                    "from_lake": bool(d0[i[k]] > 0)})
+        if len(out) >= top:
+            break
+    return out
+
+
 def _shift(a: np.ndarray, dr: int, dc: int, fill):
     """a[r + dr, c + dc] at (r, c), `fill` off the raster."""
     ny, nx = a.shape
@@ -915,9 +970,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     outs = lake_outlets(rec)
     Q, lake_in = route(srcq, rec, order, outs, split_ok)
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
+    discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
+    falls = waterfalls(np.where(lake, surf, np.where(sea, 0.0, h)), discharge, rec, nx, ny, res,
+                       {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0})
+    for f in falls:
+        k = f["px"][0] * nx + f["px"][1]
+        f["lat"], f["lon"] = (round(v, 3) for v in _latlon(fr.to_sphere(px[[k]], py[[k]])[0]))
     h = np.where(lake, surf - depth, h)
     lake_depth = np.where(lake, depth, 0.0)
-    discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
@@ -964,6 +1024,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "deltas": [{"mouth_km": [round(d["x"], 1), round(d["y"], 1)], "discharge_m3s": round(d["q"]),
                     "plain_radius_km": round(d["R"])} for d in deltas],
         "distributary_splits": len(splits),
+        # pixel-scale falls (see waterfalls()): the landscape pass grades rivers smoothly, so big ones
+        # show up mostly where a lake spills out and the outlet channel is cut below it
+        "waterfalls": falls,
     }
     layers = {
         "elevation": h.astype(np.float32),
