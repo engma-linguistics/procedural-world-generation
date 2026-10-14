@@ -2,7 +2,7 @@
 id: PW-010
 title: "Zoom synthesis batch 1: great escarpment, caprock plateau/cuestas, lava plateau"
 type: story
-status: todo
+status: done
 parent: PW-005
 subsystem: zoom
 effort: l
@@ -27,4 +27,5 @@ Merged known issues this should fix:
   under the preview's wide river line.
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoomland1: planet/zoom_landforms.py class dispatch (SYNTH: target/relief/strata hooks, smooth class weights); escarpment (scarp at e*, lowland, re-entrants; designed falls take the scarp), caprock (benches, mesas; cuestas with dip), lava plateau (stepped valley walls). 800c99, 11 zooms: falls >=30 m 44->154, >=100 m 16->77; escarpment designed lips 28->178 / 107->271 m class; cell-mean rms within ~1 m (caprock +7 m). Demo zooms b2165d 366f51 6a4870 9e2ba9 2bd5d8 3bdcbb 041c03; docs/review/landforms/zoom_*.
 - 2026-10-14: Created from the landform-classes epic; merged two falls known issues (falls2: falls scaled to fit under coarse ground; falls: escarpment shows only as fall and gorge).

@@ -33,7 +33,7 @@ class Snapshot:
     lake_depth: np.ndarray  # m of lake water (0 off lakes)
     hotspots: list  # [lat, lon] of each live plume
     volcanoes: list  # arc volcanoes and hotspot vents: rows of volcanism.COLUMNS
-    surface: np.ndarray  # surface.ROCKS id of what's exposed (basement or its sediment cover)
+    surface: np.ndarray  # surface.ROCKS id of what's exposed (the top stratum, or the basement)
     temperature: np.ndarray  # C, annual mean
     t_warm: np.ndarray  # C, warmest month
     t_cold: np.ndarray  # C, coldest month
@@ -55,6 +55,7 @@ def snapshot(sim) -> Snapshot:
     """World-frame copy of everything worth saving or drawing right now."""
     live = np.flatnonzero(sim.plates.alive)
     vrows = volcanism.rows(sim)
+    lf = landforms_now(sim, vrows)
     return Snapshot(
         t=sim.t,
         elevation=np.where(sim.w_cont, sim.w_elev, sim.w_elev + sim.w_trench),
@@ -72,9 +73,9 @@ def snapshot(sim) -> Snapshot:
         **lakes_now(sim),
         hotspots=[list(latlon(h["pos"])) for h in sim.hotspots],
         volcanoes=vrows,
-        surface=surface.surface_rock(sim.w_rock, sim.w_cover, sim.w_extra[:, MIX]),
+        surface=surface.surface_rock(sim.w_rock, sim.w_cover, lf["strata_top"], lf["strata_top_km"]),
         **climate_now(sim),
-        **landforms_now(sim, vrows),
+        **lf,
     )
 
 

@@ -35,8 +35,9 @@ Where the load ends up:
               over ~fan_km (submarine fans) before it settles
 
 The cover rocks (limestone, sandstone, shale, evaporite, coal, flood basalt,
-tuff) are in ROCKS;
-which one shows at the surface follows from the cover's mix (surface_rock).
+tuff) are in ROCKS, plus dolomite and quartzite, which only the strata make
+(tectonics/record.py). What shows at the surface is the cover's top stratum
+(surface_rock); erosion still uses the cover's well-mixed erodibility.
 The table can grow further: a new class is a row plus a rule for where it
 forms.
 """
@@ -189,14 +190,15 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
     return dep
 
 
-def surface_rock(rock, cover, mix):
-    """What's exposed at the surface: the basement, unless sediment covers it,
-    in which case the cover's main ingredient. Coal seams are thin, so a few
-    percent of coal makes a coal-measures sequence."""
-    parts = np.column_stack([mix, np.maximum(cover - mix.sum(1), 0)])
-    sed = np.append(MIX_ROCKS, SHALE)[np.argmax(parts, axis=1)]
-    coal = mix[:, list(MIX_ROCKS).index(COAL)] > 0.03 * cover
-    sed = np.where(coal, COAL, sed)
+def surface_rock(rock, cover, top, top_km):
+    """What's exposed at the surface: the cover's exposed stratum (top,
+    top_km: tectonics.record.top through landform.VENEER_KM, i.e. the
+    landform layers' strata_top / strata_top_km), so a thin hard caprock
+    shows over the soft rock under it; the basement where less than
+    COVER_SHOWS km of cover lies on it (soil and a veneer of sediment: the
+    basement shows through). Cover made only of veneers counts as shale.
+    Display and the zoom only: erosion still uses the cover's mix (erode)."""
+    sed = np.where(top_km > 0, top, SHALE)
     return np.where(cover > COVER_SHOWS, sed, rock).astype(np.uint8)
 
 

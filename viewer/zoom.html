@@ -78,7 +78,7 @@ const $ = (id) => document.getElementById(id);
 const R_KM = 6371;
 const LAYERS = [
   ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
-  ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'],
+  ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['coarse', 'Coarse cells'],
 ];
 const state = { meta: null, L: null, layer: 'relief', imgs: {}, shade: null,
@@ -237,7 +237,7 @@ function about() {
 function legendFor(kind) {
   const lg = state.meta.legend;
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
-    : kind === 'biome' ? lg.biomes : lg.rocks;
+    : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || []) : lg.rocks;
 }
 
 function render() {
@@ -249,6 +249,7 @@ function render() {
   const oc = off.getContext('2d');
   const k = state.layer;
   $('legend').innerHTML = '';
+  if (k === 'landform' && !L.landform) { $('legend').innerHTML = '<span class="muted">this zoom has no landform layer (its world predates them)</span>'; return; }
   if (k === 'relief' || k === 'coarse') {
     if (state.imgs[k]) oc.drawImage(state.imgs[k], 0, 0);
     if (k === 'coarse') $('legend').innerHTML = '<span class="muted">the source world\'s cells (nearest cell), with its big rivers</span>';
@@ -259,7 +260,7 @@ function render() {
   const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
   const overlay = $('rivers').checked;
   let lut = null, present = null;
-  if (['rock', 'surface_rock', 'climate', 'biome'].includes(k)) {
+  if (['rock', 'surface_rock', 'climate', 'biome', 'landform'].includes(k)) {
     lut = {}; present = new Set();
     for (const e of legendFor(k)) lut[e.id] = { ...e, rgb: hex(e.color) };
   }
@@ -323,7 +324,7 @@ function draw() {
   ctx.fillStyle = '#0b0f17'; ctx.fillRect(0, 0, innerWidth, innerHeight);
   if (!state.meta) return;
   const v = state.view, m = state.meta;
-  ctx.imageSmoothingEnabled = $('smooth').checked && !['rock', 'surface_rock', 'climate', 'biome'].includes(state.layer);
+  ctx.imageSmoothingEnabled = $('smooth').checked && !['rock', 'surface_rock', 'climate', 'biome', 'landform'].includes(state.layer);
   ctx.drawImage(state.off, v.x, v.y, v.s * m.nx, v.s * m.ny);
   ctx.strokeStyle = '#2a3446'; ctx.strokeRect(v.x - 0.5, v.y - 0.5, v.s * m.nx + 1, v.s * m.ny + 1);
   // scale bar: a round number of km about 120 px long
