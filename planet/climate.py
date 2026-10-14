@@ -1,16 +1,25 @@
 """Toy climate: temperature, prevailing wind, rainfall, then biomes.
 
-Not a real climate model, but it has the three effects that make maps
-look plausible:
+Not a real climate model (no equations of motion are solved), but each
+step is a simplified version of a real mechanism, so it works on any
+planet's geography. In order (see compute):
 
-- Latitude: hot equator, cold poles. Altitude: -6.5 degC per km.
-- Earth-like wind bands: easterly trade winds below ~30 deg, westerlies
-  from 30 to 60, polar easterlies above. Moisture is picked up over the
-  ocean and carried downwind.
-- Warm air holds more water than cold air (roughly +7% per degC). When
-  wind pushes air up a mountain it cools, can't hold its water, and
-  rains. That gives wet windward slopes and dry 'rain shadow' deserts
-  behind ranges, with no special-case code.
+- Temperature by latitude and height (-6.5 C per km), separately for land
+  and sea; the seasons swing more with latitude and on land.
+- Winds: the planet-wide belts (trade winds, westerlies, polar easterlies)
+  plus the winds that land-sea temperature contrasts make (monsoons,
+  subtropical highs, winter highs over cold continents).
+- Ocean currents (the wind-driven gyres) move heat around: warm water up
+  the east coasts, cold water down the west coasts, upwelling.
+- Each place takes on the temperature of the air the wind brings it: mild
+  sea air on west coasts in the westerlies, harsh land air inland.
+- Rain: water vapour picked up over the sea (and evaporated from wet land)
+  is carried by the wind. It rains where the air is forced up (mountains:
+  wet windward slopes, dry rain shadows), where storms stir it (mid-
+  latitudes), and in showers where the air near the ground is warm and
+  moist enough to be unstable (tropics, summer continents). Warm air holds
+  more water (~6% per C), so the tropics are wettest.
+- Koppen climate classes from the monthly-ish temperatures and rain.
 """
 
 from __future__ import annotations
@@ -23,32 +32,58 @@ from . import kernels
 from .grid import Grid
 
 LAPSE = 6.5 / 1000  # degC per metre
+FREEZE = -1.8  # C: sea water freezes
 R_KM = 6371.0
 
 
-def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 28.0,
-                pole_temp: float = -22.0) -> np.ndarray:
-    s = np.abs(np.sin(np.radians(grid.lat)))
-    # Exponent fitted by eye to Earth's zonal means (~27C at the equator,
-    # ~0C at 60 deg, ~-20C at the poles).
-    t = equator_temp + (pole_temp - equator_temp) * s**3.5
+def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 27.8,
+                pole_temp: float = -10.4) -> np.ndarray:
+    """Annual mean temperature of land by latitude and height, for land the
+    sea's air doesn't reach (compute brings the sea air in). The shape is a
+    polynomial in sin^2(latitude), the classic shape of simple energy-
+    balance climate models, fitted to Earth's land reduced to sea level:
+    ~28 C in the tropics, ~15 C at 40 deg, ~0 C at 60 deg; the poles'
+    -10 C is for low ground (ice sheets are high, hence much colder)."""
+    x = np.sin(np.radians(grid.lat)) ** 2
+    f = 0.156 * x + 2.012 * x**2 - 1.168 * x**3  # 0 at the equator, 1 at the poles
+    t = equator_temp + (pole_temp - equator_temp) * f
     return t - LAPSE * np.maximum(elev, 0)
 
 
+def sea_temperature(grid: Grid, equator_temp: float = 27.0, pole_temp: float = -7.5) -> np.ndarray:
+    """The latitude's sea-surface temperature before currents move heat
+    around (Earth: ~27 C at the equator, ~21 C at 30 deg, ~9 C at 50 deg).
+    Cooler than land in the subtropics: a warm sea evaporates a lot, which
+    cools it, and the ocean gyres carry heat poleward. Not clipped at
+    freezing: below ~-1.8 C the sea freezes over (see compute)."""
+    s = np.abs(np.sin(np.radians(grid.lat)))
+    return equator_temp + (pole_temp - equator_temp) * s**2.3
+
+
+def season_strength(grid: Grid, tilt: float = 23.4) -> np.ndarray:
+    """How strongly the seasons swing at each latitude, 0..~1. The
+    difference between summer and winter sunshine grows roughly like
+    sin(latitude) (times the axial tilt). Near the equator the swing is
+    damped further: there the Earth's spin barely deflects the winds, so
+    the air spreads any heating sideways and temperatures stay even (and
+    the summer there is the cloudy rainy season)."""
+    a = np.abs(grid.lat)
+    return np.sin(np.radians(a)) * np.clip(0.65 + a / 70.0, 0, 1) * (tilt / 23.4)
+
+
 def seasons(grid: Grid, elev: np.ndarray, temp: np.ndarray, tilt: float = 23.4):
-    """Warmest- and coldest-month temperatures around the annual mean.
-    The swing grows with latitude (the tilt makes summer days long and
-    winter days short) and with distance from the sea, which evens
-    temperatures out (Vancouver: 4 to 18 C; Yakutsk, 62 N inland: -39 to +19).
-    Returns (t_warm, t_cold)."""
+    """First guess of the warmest- and coldest-month temperatures (used for
+    the winds; compute refines them). The swing grows with latitude and
+    with distance from the sea, which evens temperatures out (Vancouver: 4
+    to 18 C; Yakutsk, 62 N inland: -39 to +19). Returns (t_warm, t_cold)."""
     land = elev > 0
     coast = np.flatnonzero(land & (np.add.reduceat(~land[grid.nbr_idx], grid.nbr_off[:-1]) > 0))
     hops, _ = kernels.bfs_within(coast, land.astype(np.int64), grid.nbr_off, grid.nbr_idx, 10**6)
     dist = np.where(land, np.maximum(hops, 0) * grid.spacing * R_KM + 50.0, 0.0)
     dist = np.where(land & (hops < 0), 3000.0, dist)  # land with no coast at all
     continental = 1 - np.exp(-dist / 800.0)
-    half_range = (4.0 + 28.0 * continental) * np.abs(np.sin(np.radians(grid.lat))) * (tilt / 23.4)
-    half_range += 1.0 * land  # even the tropics have a small swing on land
+    half_range = (4.0 + 24.0 * continental) * season_strength(grid, tilt)
+    half_range += 0.3 * land  # even the tropics have a small swing on land
     return temp + half_range, temp - half_range
 
 
@@ -60,7 +95,7 @@ _GEOM = {}
 
 def _geom(grid: Grid):
     """Per-grid constants: local east/north unit vectors, directed edges and
-    their tangent directions. Cached."""
+    their tangent directions, cell spacing (km). Cached."""
     key = (id(grid), grid.n)
     if key not in _GEOM:
         p = grid.centers
@@ -75,8 +110,72 @@ def _geom(grid: Grid):
         deg = np.bincount(src, minlength=grid.n).astype(np.float64)
         if len(_GEOM) > 4:
             _GEOM.clear()
-        _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg)
+        _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM)
     return _GEOM[key]
+
+
+_COARSE = {}
+
+
+def _coarse(grid: Grid):
+    """A coarser icosphere (~900 km cells) for patterns thousands of km
+    across: which coarse cell each fine cell falls in, the coarse
+    neighbours, and weights to interpolate back smoothly (the nearby coarse
+    cells, by distance). Cached."""
+    from .grid import build_grid
+    key = (id(grid), grid.n)
+    if key not in _COARSE:
+        cg = build_grid(min(3, grid.level))
+        cidx = cg.locate(grid.centers)
+        cand = np.zeros((grid.n, 7), np.int64)
+        ok = np.zeros((grid.n, 7), bool)
+        cand[:, 0], ok[:, 0] = cidx, True
+        deg = np.diff(cg.nbr_off)
+        for k in range(6):  # the containing coarse cell and its neighbours
+            has = deg[cidx] > k
+            cand[has, k + 1] = cg.nbr_idx[cg.nbr_off[cidx[has]] + k]
+            ok[has, k + 1] = True
+        d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
+        w = np.where(ok, np.maximum(0.0, 1 - d / (1.2 * cg.spacing)), 0.0)
+        w /= w.sum(1, keepdims=True)
+        if len(_COARSE) > 4:
+            _COARSE.clear()
+        _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
+                            h=cg.spacing * R_KM)
+    return _COARSE[key]
+
+
+@njit(cache=True)
+def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w):
+    """Average f onto the coarse grid, blur it there (iters neighbour
+    averages) and interpolate it back."""
+    tot = np.zeros(nc)
+    cnt = np.zeros(nc)
+    for i in range(f.shape[0]):
+        tot[cidx[i]] += f[i]
+        cnt[cidx[i]] += 1.0
+    c = tot / np.maximum(cnt, 1.0)
+    g = np.empty(nc)
+    for _ in range(iters):
+        for j in range(nc):
+            t = 0.0
+            for e in range(off[j], off[j + 1]):
+                t += c[idx[e]]
+            g[j] = 0.5 * c[j] + 0.5 * t / (off[j + 1] - off[j])
+        c[:] = g
+    out = np.zeros(f.shape[0])
+    for i in range(f.shape[0]):
+        for k in range(cand.shape[1]):
+            out[i] += w[i, k] * c[cand[i, k]]
+    return out
+
+
+def smooth_big(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
+    """Blur a field over thousands of km (on the coarse grid: cheap)."""
+    C = _coarse(grid)
+    iters = int(round(4 * (km / C["h"]) ** 2))
+    return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
+                          C["cand"], C["w"])
 
 
 @njit(cache=True)
@@ -95,8 +194,7 @@ def _smooth(f, nbr_off, nbr_idx, iters, w):
 
 def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     """Blur a field over roughly `km` (Gaussian-ish sigma)."""
-    h = grid.spacing * R_KM
-    iters = int(round(4 * (km / h) ** 2))
+    iters = int(round(4 * (km / _geom(grid)["h"]) ** 2))
     if iters <= 0:
         return f.astype(np.float64)
     return _smooth(np.ascontiguousarray(f, np.float64), grid.nbr_off, grid.nbr_idx, iters, 0.5)
@@ -108,8 +206,7 @@ def gradient(grid: Grid, f: np.ndarray) -> np.ndarray:
     df = f[G["dst"]] - f[G["src"]]
     g = np.zeros((grid.n, 3))
     np.add.at(g, G["src"], G["d"] * df[:, None])
-    h = grid.spacing * R_KM
-    return g * (2.0 / (G["deg"][:, None] * h))
+    return g * (2.0 / (G["deg"][:, None] * G["h"]))
 
 
 def _edge_weights(grid: Grid, v: np.ndarray, allowed: np.ndarray | None = None):
@@ -129,7 +226,7 @@ def _relax_along(a, b, src, dst, out_w, deg, nbr_off, nbr_idx, iters, diffusion)
     """Steady state of x = a + b * (upstream x): each cell sees the
     flow-weighted mean of the cells feeding it (its own value if none), mixed
     a little with its neighbours. Used to carry heat with ocean currents and
-    sea air inland."""
+    air temperatures with the wind."""
     n = a.shape[0]
     x = a.copy()
     num = np.empty(n)
@@ -157,7 +254,7 @@ def carry(grid: Grid, v: np.ndarray, a: np.ndarray, b: np.ndarray, km: float = 8
     to travel ~km."""
     G = _geom(grid)
     out_w, _ = _edge_weights(grid, v, allowed)
-    iters = int(km / (grid.spacing * R_KM)) + 10
+    iters = int(km / G["h"]) + 10
     return _relax_along(a.astype(np.float64), b.astype(np.float64), G["src"], G["dst"], out_w, G["deg"],
                         grid.nbr_off, grid.nbr_idx, iters, diffusion)
 
@@ -174,27 +271,36 @@ def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width:
     return zm[bins]
 
 
+def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
+    """Mean of f over each cell's neighbours."""
+    return np.add.reduceat(f[grid.nbr_idx], grid.nbr_off[:-1]) / np.diff(grid.nbr_off)
+
+
 # --------------------------------------------------------------------------
 # Wind
 # --------------------------------------------------------------------------
 def wind(grid: Grid, shift: float = 0.0) -> np.ndarray:
     """The planet-wide three-cell pattern, the same at every longitude:
     easterly trade winds below ~30 deg, westerlies from 30 to 60, polar
-    easterlies above. shift (deg) moves the bands north (northern summer)."""
+    easterlies above. shift (deg) moves the bands north (northern summer):
+    the tropical belts follow the sun fully, the westerlies only a third as
+    much (they stay strong at 45-60 deg in winter, which is what brings the
+    sea's mild air deep into Europe)."""
     G = _geom(grid)
-    lat = grid.lat - shift
+    lat = grid.lat - shift * (0.3 + 0.7 * np.exp(-(grid.lat / 25.0) ** 2))
     a = np.abs(lat)
     hemi = np.sign(lat)[:, None]
     # east component: trades strongest ~12 deg, calm 'horse latitudes' ~30,
     # westerlies strongest ~48, weak polar easterlies; poleward component:
     # toward the equator under the trades, poleward under the westerlies
-    ue = (-0.9 * np.exp(-((a - 12) / 14) ** 2) + 1.0 * np.exp(-((a - 48) / 13) ** 2)
+    ue = (-0.9 * np.exp(-((a - 12) / 14) ** 2) + 1.0 * np.exp(-((a - 48) / 15) ** 2)
           - 0.4 * np.exp(-((a - 78) / 10) ** 2))[:, None]
     un = (-0.3 * np.sin(np.radians(6 * np.minimum(a, 90))))[:, None]
     return ue * G["east"] + un * hemi * G["north"]
 
 
-def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1.0):
+def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1.0, big: float = 0.0,
+                 big_km: float = 2000.0):
     """Zonal bands plus the winds made by land-sea temperature contrasts.
     Air over ground warmer than its latitude's average rises (low pressure),
     over cooler ground it sinks (high pressure). Away from the equator the
@@ -203,11 +309,16 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
     (monsoons) and the cooler oceans hold subtropical highs whose western
     sides send warm moist air up the east coasts (Florida, China) while
     their eastern sides blow dry along the west coasts (California, Chile).
-    Winter continents push cold dry air out (Siberian high). t_sl: surface
-    temperature reduced to sea level, C. Returns (wind, warmth): warmth is
-    the smoothed temperature excess, C (>0: rising air, <0: sinking)."""
+    Winter continents push cold dry air out (Siberian high). Two scales: the
+    contrast smoothed over ~900 km, plus (big) a continent-wide part over
+    big_km, which reaches out over the neighbouring oceans (the summer heat
+    of all of Asia pulls the monsoon across the Indian Ocean). t_sl:
+    surface temperature reduced to sea level, C. Returns (wind, warmth):
+    warmth is the smoothed temperature excess, C (>0: rising air)."""
     anom = t_sl - zonal_mean(grid, t_sl)
     warmth = smooth(grid, anom, 900.0)
+    if big > 0:
+        warmth = warmth + big * smooth_big(grid, anom, big_km)
     P = -warmth  # warm -> low pressure
     g = gradient(grid, P) * 1000.0  # per 1000 km
     up = grid.centers
@@ -267,12 +378,14 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray) -> tuple[np.ndar
 
 
 def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndarray,
-                relax_km: float = 2500.0, upwelling: float = 5.0) -> tuple[np.ndarray, np.ndarray]:
+                relax_km: float = 2500.0, upwelling: float = 5.0,
+                eq_upwelling: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
     """Sea-surface temperature: the latitude's temperature t_eq, moved by the
     currents (warm water poleward along the western side of each ocean, cold
     water toward the equator along the eastern side), plus coastal upwelling
     where the wind pushes surface water away from a coast (Peru, California,
-    Namibia). Each band's average is kept. Returns (sst, current)."""
+    Namibia) and equatorial upwelling (eq_upwelling, C). Each band's average
+    is kept. Returns (sst, current)."""
     G = _geom(grid)
     cur, away = currents(grid, ocean, wind_v)
     # Ekman transport: 90 deg to the right of the wind in the north, left in the south
@@ -282,7 +395,17 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     cold = upwelling * off * lat_ok
     src = G["src"]
     allowed = (ocean[src] & ocean[G["dst"]]).astype(np.float64)
-    keep = np.exp(-grid.spacing * R_KM / relax_km)
+    keep = np.exp(-G["h"] / relax_km)
+    if eq_upwelling > 0:
+        # Equatorial upwelling: easterlies on the equator push the surface
+        # water apart (Ekman, to the right in the north and left in the
+        # south), and cold water wells up - but only where the warm layer is
+        # thin, near the ocean's eastern shore (the trades pile warm water up
+        # in the west): the cold tongues off Ecuador and in the Gulf of Guinea.
+        land_big = smooth_big(grid, (~ocean).astype(float), 1500.0)
+        thin = np.clip((gradient(grid, land_big) * G["east"]).sum(1) * 3000.0, 0, 1)  # land to the east
+        u_e = (wind_v * G["east"]).sum(1)
+        cold = cold + eq_upwelling * np.clip(-u_e, 0, 1) * np.exp(-(grid.lat / 6.0) ** 2) * thin
     a = np.where(ocean, (1 - keep) * (t_eq - cold), t_eq)
     b = np.where(ocean, keep, 0.0)
     sst = carry(grid, cur, a, b, km=3 * relax_km, diffusion=0.15, allowed=allowed)
@@ -295,105 +418,236 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
 # Rain
 # --------------------------------------------------------------------------
 def _qsat(t, k=0.07):
+    """Water the air can hold at t C, relative to 0 C (~3.8 g/kg)."""
     return np.exp(k * t)
 
 
+LQ = 9.5  # C of moist static energy per unit of vapour (latent heat / heat capacity * 3.8 g/kg)
+
+
 @njit(cache=True)
-def _rain(qs, src_q, ocean, base_rate, fex, recycle, move, src, dst, out_w, deg, nbr_off, nbr_idx,
-          iterations, diffusion, rh_c, rh_pow):
-    """Humidity carried along the wind. Over the sea the air takes up water
-    to src_q. Everywhere it rains a share fex of what it can't hold (qs)
-    plus a share base_rate of the rest, which needs the air to be fairly
-    humid (relative humidity m/qs near rh_c or more: hot desert air carries
-    plenty of water but rarely rains it); on land part of the rain
-    evaporates again (recycle). move: share of the air that moves on per
-    iteration (slow winds linger). Averaged over the last quarter."""
-    n = qs.shape[0]
+def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffusion, out_w,
+          src, dst, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, et, evap, mean_mm):
+    """Water vapour carried along the wind, for all seasons at once
+    (arrays are [season, cell]). Each iteration, in each cell:
+    - over the sea the air takes up water to src_q;
+    - over land it takes up what the ground evaporates: a share et of the
+      rain the place gets in an average season, because soil, groundwater
+      and deep roots keep the wet season's water for the dry one (less where
+      it is cold: warm);
+    - it rains a share fex of what the air can't hold (above qs);
+    - plus large-scale rain (fronts, rising air), a share ls_rate of the
+      rest that needs fairly humid air (relative humidity near rh_c or more);
+    - plus showers and thunderstorms, a share cv_rate per cv_scale C of
+      instability: the moist static energy of the air near the ground (heat
+      + height + latent heat of its vapour: mse_t + LQ * vapour) above that
+      of the air aloft (mse_thr). Wet ground is cooler and dry ground hotter
+      (evap C, see compute), which feeds back on the showers;
+    - then the air moves on (move: share per iteration; slow winds linger)
+      and mixes with its neighbours (diffusion: eddies, storms).
+    Returns the rain rate averaged over the last quarter of the iterations,
+    and the large-scale part of it."""
+    S, n = qs.shape
     m = src_q.copy()
-    acc = np.zeros(n)
+    acc = np.zeros((S, n))
+    acc_ls = np.zeros((S, n))
+    ema = np.zeros((S, n))  # running mean of each place's rain
+    tcor = np.zeros((S, n))  # wet ground cooler, dry ground hotter (C)
     moved = np.empty(n)
     tail = max(iterations // 4, 1)
     for it in range(iterations):
-        for i in range(n):
-            if ocean[i] and src_q[i] > m[i]:
-                m[i] = src_q[i]
-            excess = max(m[i] - qs[i], 0.0)
-            rh = min(m[i] / max(qs[i], 1e-12) / rh_c, 1.0)
-            r = fex * excess + base_rate[i] * (m[i] - excess) * rh**rh_pow
-            m[i] -= r * (1 - recycle[i])
-            if it >= iterations - tail:
-                acc[i] += r
-        for i in range(n):
-            moved[i] = (1 - move[i]) * m[i]
-        for e in range(src.shape[0]):
-            moved[dst[e]] += move[src[e]] * m[src[e]] * out_w[e]
-        for i in range(n):
-            s = 0.0
-            for e in range(nbr_off[i], nbr_off[i + 1]):
-                s += moved[nbr_idx[e]]
-            m[i] = (1 - diffusion) * moved[i] + diffusion * s / deg[i]
-    return acc / tail
+        if evap != 0 and it >= 20 and it % 10 == 0:
+            tot = 0.0
+            for k in range(S):
+                for i in range(n):
+                    tot += ema[k, i]
+            scale = mean_mm * S * n / max(tot, 1e-12)  # model units -> mm/yr
+            for k in range(S):
+                for i in range(n):
+                    if not ocean[i]:
+                        lp = np.log10(max(ema[k, i] * scale, 1.0) / 100.0) / 1.2
+                        tcor[k, i] = evap * (1.0 - 2.0 * min(max(lp, 0.0), 1.0))
+        for k in range(S):
+            for i in range(n):
+                if ocean[i]:
+                    if src_q[k, i] > m[k, i]:
+                        m[k, i] = src_q[k, i]
+                else:
+                    year = 0.0
+                    for j in range(S):
+                        year += ema[j, i]
+                    m[k, i] += et * warm[k, i] * year / S
+                q = m[k, i]
+                excess = max(q - qs[k, i], 0.0)
+                rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
+                rate = ls_rate[k, i] * rh**rh_pow
+                r_ls = rate * (q - excess)
+                inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale
+                if inst > 0:
+                    rate += cv_rate[k, i] * min(inst, 2.0)
+                r = fex * excess + rate * (q - excess)
+                m[k, i] = q - r
+                ema[k, i] += 0.05 * (r - ema[k, i])
+                if it >= iterations - tail:
+                    acc[k, i] += r
+                    acc_ls[k, i] += r_ls
+            mk = m[k]
+            mv = move[k]
+            for i in range(n):
+                moved[i] = (1 - mv[i]) * mk[i]
+            ow = out_w[k]
+            for e in range(src.shape[0]):
+                moved[dst[e]] += mv[src[e]] * mk[src[e]] * ow[e]
+            dk = diffusion[k]
+            for i in range(n):
+                t = 0.0
+                for e in range(nbr_off[i], nbr_off[i + 1]):
+                    t += moved[nbr_idx[e]]
+                mk[i] = (1 - dk[i]) * moved[i] + dk[i] * t / deg[i]
+    return acc / tail, acc_ls / tail
 
 
-TUNE = dict(
-    rh=0.85,  # sea air's humidity relative to saturation at the sea surface
-    q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
-    lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
-    fex=0.25,  # share of the oversaturated water that rains out in one cell (rest further on)
-    base=0.035,  # background rain-out per cell, times the belt pattern
-    recycle=0.35,  # share of land rain that evaporates back into the air (warm, wet land)
-    belt_shift=10.0,  # deg the tropical rain belt follows the sun (times tilt/23.4)
-    monsoon=1.0,  # strength of the land-sea pressure winds
-    belt_dry=0.3,  # how dry the subtropics are everywhere (the land-sea pattern adds more where it applies)
-    convect=0.4,  # per C of warmth excess: more rain where air rises over warm ground
-    storm=0.6,  # rain from the mid-latitude storm tracks (~50 deg)
-    rh_c=0.8,  # relative humidity above which the background rain runs at full rate...
-    rh_pow=3.0,  # ...and how fast it falls off below it
-    continental=20.0,  # C: extra seasonal swing (times sin lat) far from sea air
-    mean_mm=1000.0,  # global mean precipitation, mm/yr (Earth ~1000)
-)
+def storminess(grid: Grid, t_sl: np.ndarray) -> np.ndarray:
+    """How stormy each latitude is in a season: the north-south temperature
+    gradient of the latitude belt (C per 1000 km, from its zonal mean). The
+    mid-latitude storms feed on exactly this contrast, which is why they
+    are strongest in winter and reach further toward the equator then
+    (winter rain around the Mediterranean, dry summers)."""
+    width = 3.0
+    nb = int(180 // width)
+    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, nb - 1)
+    zm = np.bincount(bins, t_sl, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
+    zm = np.convolve(np.pad(zm, 2, mode="edge"), np.ones(5) / 5, mode="valid")
+    grad = np.abs(np.gradient(zm)) / (width * 111.2) * 1000.0
+    lat_c = -90 + width * (np.arange(nb) + 0.5)
+    return np.interp(grid.lat, lat_c, grad)
 
 
-def _belt(lat, shift, dry=0.25, storm=0.45, rise=None):
-    """Large-scale rising (wet) and sinking (dry) air by latitude: the
-    tropical rain belt, the dry subtropics (~25 deg), the mid-latitude
-    storm tracks (~50 deg), dry poles."""
-    a = np.abs(lat - shift)
-    # (where the land-sea pattern makes air rise, e.g. a summer monsoon,
-    # it overrides the subtropical sinking)
-    sink = dry if rise is None else dry * np.clip(1 - rise / 4.0, 0, 1)
-    return np.clip(0.45 + 0.85 * np.exp(-((lat - shift) / 10) ** 2) + storm * np.exp(-((a - 50) / 14) ** 2)
-                   - sink * np.exp(-((a - 25) / 9) ** 2), 0.1, None)
-
-
-def rain_season(grid: Grid, elev, t_air, sst, v, shift, rise=None, tune=TUNE):
-    """Rain rate (model units) for one season. rise: warmth excess (C) from
-    monsoon_wind; air rises (and rains) over ground warmer than its
-    latitude, sinks (dry) over cooler ground."""
-    G = _geom(grid)
+def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune) -> dict:
+    """Per-cell inputs of the rain kernel for one season (see _rain).
+    t_air: surface air temperature (C, used over land), sst: sea surface
+    temperature, v: wind, shift: deg the tropical rain belt is north of the
+    equator, t_sl_season: the season's temperatures reduced to sea level."""
     ocean = elev <= 0
-    # rising air cools, but less than the ground does: only part of the
-    # cooling with height wrings water out (plateau edges otherwise strip it all)
-    land_t = t_air + (1 - tune["lapse_q"]) * LAPSE * np.maximum(elev, 0)
-    qs = np.where(ocean, _qsat(sst, tune["q_k"]), _qsat(land_t, tune["q_k"]))
+    lat = grid.lat
+    up = LAPSE * np.maximum(elev, 0)
+    # How much water the air can hold. Clouds form in the air mass aloft,
+    # whose temperature follows the big picture (the sea-level temperature
+    # smoothed over ~800 km) rather than the ground under it: a frosty
+    # winter night inland doesn't wring the water out of the air. But where
+    # the ground is hotter than the air mass (a summer desert), the sun-
+    # heated air is stirred up from the ground through kilometres, and
+    # clouds need that hot air saturated: hot desert air carries water but
+    # rarely rains it. Rising air cools, but less than the ground does: only
+    # part (lapse_q) of the cooling with height wrings water out.
+    t_sl = np.where(ocean, sst, t_air + up)
+    t_mass = np.maximum(smooth(grid, t_sl, tune["airmass_km"]), np.where(ocean, -99.0, t_sl))
+    qs = np.where(ocean, _qsat(sst, tune["q_k"]), _qsat(t_mass - tune["lapse_q"] * up, tune["q_k"]))
     src_q = np.where(ocean, tune["rh"] * qs, 0.0)
+    # Storms stir moisture around (eddy mixing) and make large-scale rain,
+    # both in proportion to the storminess (~1 in a mid-latitude winter).
+    B = storminess(grid, t_sl_season) / 7.0
+    diff = np.clip(0.12 + tune["eddy"] * B, 0, 1.0)
+    # The tropical rain belt (where the trade winds meet and the air rises)
+    # follows the sun; ~25 deg either side of it the air sinks (the dry
+    # subtropics, the trade-wind inversion); the poles are dry highs.
+    itcz = np.exp(-((lat - shift) / tune["itcz_w"]) ** 2)
+    sink = np.exp(-((np.abs(lat - shift) - 25) / 9) ** 2)
+    pole = np.clip((np.abs(lat) - 70) / 15, 0, 1)
+    ls = tune["base"] * np.clip(tune["bg"] + tune["storm"] * B + tune["itcz_ls"] * itcz
+                                - tune["belt_dry"] * sink - 0.3 * pole, 0.05, None)
+    # Showers need unstable air: warm, moist air near the ground compared
+    # with the air aloft. Within ~20-30 deg of the equator the air aloft has
+    # the same temperature everywhere (the Earth's spin is too weak there to
+    # hold temperature differences up), set by the warmest seas: so hot but
+    # dry deserts and cool seas stay stable while humid hot land and warm
+    # seas boil over. Further poleward the air aloft follows the latitude's
+    # sea temperature (so summer continents get thunderstorms).
+    mse_t = np.where(ocean, sst, t_air + 9.8e-3 * np.maximum(elev, 0))  # (+ height: g/cp per m)
+    zs = zonal_mean(grid, sst, ocean)
+    t_trop = zs[np.abs(lat) < 20].max()
+    zs = zs + np.clip((tune["wtg"] + 15 - np.abs(lat)) / 15, 0, 1) * np.maximum(t_trop - zs, 0)
+    t_ref = smooth(grid, zs, 800.0)
+    mse_thr = t_ref + LQ * tune["rh"] * _qsat(t_ref, tune["q_k"])
+    cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
     out_w, _ = _edge_weights(grid, v)
     move = np.clip(speed(v), 0.25, 1.0)
-    rec = np.where(ocean, 0.0, tune["recycle"] * np.clip(t_air / 15.0, 0, 1))
-    base = tune["base"] * _belt(grid.lat, shift, tune["belt_dry"], tune["storm"], rise)
-    if rise is not None:
-        base = base * np.clip(1 + tune["convect"] * rise, 0.25, 3.0)
+    warm = np.clip(t_air / 15.0, 0, 1)  # evaporation needs warmth
+    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, warm=warm, move=move,
+                diff=diff, out_w=out_w, B=B)
+
+
+def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> np.ndarray:
+    """Rain rate (model units) per season, [season, cell], from the inputs
+    of _season_inputs for each season."""
+    G = _geom(grid)
+    st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
-    return _rain(qs, src_q, ocean, base, tune["fex"], rec, move, G["src"], G["dst"], out_w, G["deg"],
-                 grid.nbr_off, grid.nbr_idx, iters, 0.12, tune["rh_c"], tune["rh_pow"])
+    r, r_ls = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
+                    st["warm"], st["move"], st["diff"], st["out_w"], G["src"], G["dst"], G["deg"],
+                    grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
+                    tune["cv_scale"], tune["et"], tune["evap_cool"], tune["mean_mm"])
+    # Storms carry their rain with them: the large-scale (frontal) rain is
+    # spread over a storm's size, so e.g. the storms that brew over warm
+    # coastal seas in winter rain on the east coasts even though the mean
+    # wind blows offshore there.
+    for k in range(len(seasons_in)):
+        w = np.clip(tune["storm_mix"] * st["B"][k], 0, 0.9)
+        r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
+    return r
 
 
 def precipitation(grid: Grid, elev: np.ndarray, temp: np.ndarray, **_):
-    """Annual rain without seasons (generators' quick path). Returns
-    (mm/yr, scale)."""
-    r = rain_season(grid, elev, temp, temp, wind(grid), 0.0)
+    """Annual rain without seasons (generators' quick path): temp is used
+    for both the air and the sea surface. Returns (mm/yr, scale)."""
+    t_sl = np.where(elev <= 0, temp, temp + LAPSE * np.maximum(elev, 0))
+    r = rain(grid, elev, [_season_inputs(grid, elev, temp, temp, wind(grid), 0.0, t_sl, TUNE)], TUNE)[0]
     scale = TUNE["mean_mm"] / max(r.mean(), 1e-12)
     return np.clip(r * scale, 0, 6000), scale
+
+
+TUNE = dict(
+    # moisture
+    rh=0.85,  # sea air's humidity relative to saturation at the sea surface
+    q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
+    lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
+    airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
+    et=0.5,  # share of land rain that evaporates back into the air (soil, plants)
+    # rain-making
+    fex=0.25,  # share of the oversaturated water that rains out in one cell (rest further on)
+    base=0.035,  # rain-out per cell and iteration (large-scale rain; showers: cv times this)
+    bg=0.45,  # large-scale rain everywhere (fronts, drizzle), times base
+    itcz_ls=0.3,  # extra large-scale rain under the tropical rain belt
+    itcz_w=10.0,  # deg: half-width of the tropical rain belt
+    belt_dry=0.3,  # how much the sinking subtropical air suppresses large-scale rain
+    storm=0.6,  # large-scale rain from storms, per unit of storminess
+    eddy=1.0,  # how much storms stir moisture around, per unit of storminess
+    storm_mix=1.0,  # share of the frontal rain spread over a storm's size, per unit of storminess
+    storm_km=600.0,  # km: a storm's rain area
+    cv=4.0,  # showers: rain-out per cell and iteration at cv_scale C of instability, times base
+    cv_scale=10.0,  # C of moist static energy excess for full-rate showers
+    itcz_cv=1.0,  # showers are likelier under the tropical rain belt (rising air) ...
+    cv_sink=0.5,  # ... and rarer under the sinking subtropical air
+    wtg=20.0,  # deg: the tropics' even temperature aloft reaches this far (then fades over 15 deg)
+    rh_c=0.8,  # relative humidity above which the large-scale rain runs at full rate...
+    rh_pow=3.0,  # ...and how fast it falls off below it
+    # winds and seasons
+    ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be
+    belt_shift=10.0,  # deg the tropical rain belt follows the sun at the solstice (times tilt/23.4)
+    hk=0.64,  # the half-years' mean of a seasonal swing (2/pi of the peak, for a sine)
+    monsoon=1.0,  # strength of the land-sea pressure winds ...
+    big=1.5,  # ... and of their continent-wide part
+    big_km=2000.0,  # km: the scale of that part
+    eq_up=15.0,  # C: equatorial upwelling (cold tongues) under a full trade wind
+    # temperature
+    continental=24.0,  # C: seasonal half-swing of land left to itself (times season strength)
+    sea_half=6.0,  # C: the sea's seasonal half-swing (times season strength)
+    coast=0.35,  # sea air at a coast per share of sea neighbours (sea breezes, fog)
+    air_km_s=450.0,  # km over which air over land takes on the land's summer temperature
+    air_km_w=900.0,  # ... its winter temperature (slower: cold ground under warm air is stable)
+    evap_cool=1.5,  # C: how much cooler rainy summers are (and hotter dry ones)
+    mean_mm=1000.0,  # global mean precipitation, mm/yr (Earth ~1000)
+)
 
 
 # --------------------------------------------------------------------------
@@ -561,55 +815,104 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       current                tangent vectors of the surface ocean currents
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
-    currents and sea-surface temperature -> sea air carried inland sets how
-    mild each place is -> rain in each half-year."""
+    currents and sea-surface temperature -> air temperatures carried by the
+    winds -> rain in each half-year -> wet ground cools the summer."""
     tune = {**TUNE, **(tune or {})}
     n = grid.n
     ocean = elev <= 0
     land = ~ocean
     ice = np.zeros(n) if ice is None else ice
     surf = elev + ice
-    tilt_adj = (tilt - 23.4) * 0.3  # more tilt: milder poles, slightly cooler tropics
-    eq, pole = 28.0 + 0.5 * dT - 0.3 * tilt_adj, -22.0 + 1.5 * dT + tilt_adj
-    temp0 = temperature(grid, surf, eq, pole)
-    t_sea = temperature(grid, np.zeros(n), eq, pole)  # the latitude's temperature at sea level
-    warm0, cold0 = seasons(grid, elev, temp0, tilt)
     north = grid.lat >= 0
+    sgn = np.where(north, 1, -1)
+    tilt_adj = (tilt - 23.4) * 0.3  # more tilt: milder poles, slightly cooler tropics
+    eq, pole = 27.8 + 0.5 * dT - 0.3 * tilt_adj, -10.4 + 1.5 * dT + tilt_adj
+    temp0 = temperature(grid, surf, eq, pole)
+    # the latitude's sea temperature; below freezing, the air over sea ice
+    t_sea_air = sea_temperature(grid, eq - 0.8, pole + 2.9)
+    t_sea = np.maximum(t_sea_air, FREEZE)
+    s = season_strength(grid, tilt)
+    sea_half = tune["sea_half"] * s
+
+    # Winds for each half-year (Apr-Sep 'jul', Oct-Mar 'jan'). Rain is a
+    # half-year mean, so the winds and rain use the half-years' mean
+    # conditions: a sine averages 2/pi (hk) of its peak.
+    hk = tune["hk"]
+    shift = hk * tune["belt_shift"] * tilt / 23.4
+    warm0, cold0 = seasons(grid, elev, temp0, tilt)
     lift = LAPSE * np.maximum(surf, 0)  # back to sea level, for pressure
-    shift = tune["belt_shift"] * tilt / 23.4
-    v_jul, rise_jul = monsoon_wind(grid, np.where(north, warm0, cold0) + lift, shift, tune["monsoon"])
-    v_jan, rise_jan = monsoon_wind(grid, np.where(north, cold0, warm0) + lift, -shift, tune["monsoon"])
+    t_sl0 = np.where(ocean, t_sea_air, 0.5 * (warm0 + cold0) + lift)
+    dsl = np.where(ocean, sea_half, 0.5 * (warm0 - cold0)) * sgn * hk
+    t_sl_jul, t_sl_jan = t_sl0 + dsl, t_sl0 - dsl
+    v_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"])
+    v_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"])
     v_ann = 0.5 * (v_jul + v_jan)
 
-    sst, cur = sea_surface(grid, ocean, t_sea, v_ann)
-    anom = np.where(ocean, sst - t_sea, 0.0)
-    # How much sea air reaches each place, and the sea's temperature
-    # anomaly it brings (west coasts in the westerlies are mild, east coasts
-    # and interiors get continental extremes).
-    keep = np.exp(-grid.spacing * R_KM / 900.0)
-    sea_air = carry(grid, v_ann, ocean.astype(float), np.where(ocean, 0.0, keep), diffusion=0.25)
-    brought = carry(grid, v_ann, anom, np.where(ocean, 0.0, keep), diffusion=0.25)
-    # also mild right at any coast (sea breezes, fog)
-    coast_air = np.where(land, 0.35 * (np.add.reduceat(ocean[grid.nbr_idx].astype(float), grid.nbr_off[:-1])
-                                       / np.diff(grid.nbr_off)), 1.0)
-    sea_air = np.clip(np.maximum(sea_air, coast_air), 0, 1)
-    temp = np.where(ocean, sst, temp0 + brought)
-    s = np.abs(np.sin(np.radians(grid.lat))) * (tilt / 23.4)
-    half = (np.where(ocean, 3.0, 4.0 + tune["continental"] * (1 - sea_air)) * s + 1.0 * land)
-    # the sea's warmth matters most in winter (Norway vs Labrador)
-    t_warm = temp + half - 0.4 * np.maximum(brought, 0)
-    t_cold = temp - half + 0.4 * np.maximum(brought, 0)
-    t_jul = np.where(north, t_warm, t_cold)
-    t_jan = np.where(north, t_cold, t_warm)
-    sst_jul = sst + np.where(north, 1, -1) * 3.0 * s
-    sst_jan = sst - np.where(north, 1, -1) * 3.0 * s
+    sst, cur = sea_surface(grid, ocean, t_sea, v_ann, eq_upwelling=tune["eq_up"])
+    sst = np.maximum(sst, FREEZE)
 
-    r_jul = rain_season(grid, elev, t_jul, sst_jul, v_jul, shift, rise_jul, tune)
-    r_jan = rain_season(grid, elev, t_jan, sst_jan, v_jan, -shift, rise_jan, tune)
+    # Each place takes on the temperature of the air the wind brings it.
+    # Air over land drifts toward the land's own temperature for the
+    # season (land holds little heat: hot summers, cold winters) over a few
+    # hundred km; air over open sea has the water's temperature (mild
+    # winters, cool summers). So in the westerlies the west coasts get sea
+    # air (Ireland, Vancouver), the east coasts and interiors land air, and
+    # where the winter wind blows from the north (the east sides of
+    # continents) it brings the cold with it. A frozen sea moderates
+    # nothing: the air over winter sea ice is as cold as over land.
+    v_sum = np.where(north[:, None], v_jul, v_jan)  # each hemisphere's summer wind
+    v_win = np.where(north[:, None], v_jan, v_jul)
+    half_l = tune["continental"] * s + 0.3  # land left to itself
+    t_land = temp0 + lift  # (carried at sea level; heights are taken off after)
+    open_w = ocean * np.clip((sst - sea_half - FREEZE) / 2.0, 0, 1)  # open water in winter
+    eq_s = np.where(ocean, sst + sea_half, t_land + half_l)
+    eq_w = np.where(ocean, open_w * (sst - sea_half) + (1 - open_w) * (t_land - half_l), t_land - half_l)
+    h = _geom(grid)["h"]
+    k_s = np.where(ocean, 0.0, np.exp(-h / tune["air_km_s"]))
+    k_w = np.where(ocean, 0.0, np.exp(-h / tune["air_km_w"]))
+    t_warm = carry(grid, v_sum, (1 - k_s) * eq_s, k_s, 4 * tune["air_km_s"], 0.25)
+    t_cold = carry(grid, v_win, (1 - k_w) * eq_w, k_w, 4 * tune["air_km_w"], 0.25)
+    # right at a coast the sea's air mixes in anyway (sea breezes, fog)
+    sea_n, open_n = _nbr_mean(grid, ocean.astype(float)), _nbr_mean(grid, open_w)
+    c_s, c_w = tune["coast"] * sea_n, tune["coast"] * open_n
+    sea_s = _nbr_mean(grid, np.where(ocean, eq_s, 0.0)) / np.maximum(sea_n, 1e-9)
+    sea_w = _nbr_mean(grid, np.where(ocean, eq_w, 0.0) * open_w) / np.maximum(open_n, 1e-9)
+    t_warm = (1 - c_s) * t_warm + c_s * sea_s - lift
+    t_cold = (1 - c_w) * t_cold + c_w * sea_w - lift
+    temp = 0.5 * (t_warm + t_cold)
+    # over the sea: the water's temperature (the air over sea ice is colder)
+    t_ice = 3.0 * np.minimum(t_sea_air - t_sea, 0)
+    temp = np.where(ocean, sst + t_ice, temp)
+    t_warm = np.where(ocean, sst + sea_half + t_ice, t_warm)
+    t_cold = np.where(ocean, sst - sea_half + 1.5 * t_ice, t_cold)
+
+    # rain in each half-year, from its mean conditions
+    tm = 0.5 * (t_warm + t_cold)
+    dt = hk * (np.where(north, t_warm, t_cold) - tm)
+    sst_jul = np.maximum(sst + sgn * hk * sea_half, FREEZE)
+    sst_jan = np.maximum(sst - sgn * hk * sea_half, FREEZE)
+    r_jul, r_jan = rain(grid, elev, [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune),
+                                     _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune)],
+                        tune)
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
+    # Wet ground and plants spend the summer sun on evaporating water rather
+    # than on heating the air: rainy summers stay cooler, droughty ones and
+    # deserts get hotter (Houston vs Phoenix). (The rain kernel feels this too.)
+    p_sum = np.where(north, p_jul, p_jan)
+    dry = 1.0 - 2.0 * np.clip(np.log10(np.maximum(p_sum, 1.0) / 100.0) / 1.2, 0, 1)  # +1 desert .. -1 wet
+    t_warm = np.where(land, t_warm + tune["evap_cool"] * dry, t_warm)
+    temp = np.where(land, temp + 0.5 * tune["evap_cool"] * dry, temp)
+    # An ice sheet keeps itself cold: its white surface reflects most of the
+    # sunshine, and in summer melting holds it near 0 C however warm the air
+    # (Antarctica's coast reaches ~0 C in summer, its plateau ~-30 C). So
+    # once ice has formed it outlasts the climate that made it.
+    on_ice = (ice > 0) & ~ocean
+    cool = tune["ice_cooling"] * on_ice
+    temp, t_cold = temp - cool, t_cold - cool
+    t_warm = np.where(on_ice, np.minimum(t_warm - cool, 0.5 * np.maximum(t_warm - cool, 0)), t_warm)
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, wind_jul=v_jul, wind_jan=v_jan, current=cur)

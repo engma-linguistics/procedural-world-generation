@@ -40,7 +40,7 @@ LAYERS = {  # name -> dtype on disk
     "boundary": "i1",
     "rock": "u1",  # surface.ROCKS id of the basement
     "surface": "u1",  # surface.ROCKS id of what's exposed (basement or sediment cover)
-    "cover": "u1",  # sediment cover, units of 0.1 km
+    "cover": "<u2",  # sediment cover, units of 0.1 km
     "thickness": "u1",  # crust, km
     "precip": "<u2",  # mm/yr
     "temperature": "i1",  # C, annual mean
@@ -116,7 +116,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
                      ("plate", snap.plate), ("continental", snap.continental),
                      ("age", np.clip(np.round(snap.age), 0, 65535)), ("boundary", snap.boundary),
-                     ("rock", snap.rock), ("surface", snap.surface), ("cover", np.clip(np.round(snap.cover * 10), 0, 255)),
+                     ("rock", snap.rock), ("surface", snap.surface), ("cover", np.clip(np.round(snap.cover * 10), 0, 65535)),
                      ("thickness", np.clip(np.round(snap.thickness), 0, 255)),
                      ("precip", np.clip(np.round(snap.precip), 0, 65535)),
                      ("temperature", np.clip(np.round(snap.temperature), -128, 127)),
