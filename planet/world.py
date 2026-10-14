@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, hydrology
+from . import climate, coast, hydrology
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -73,6 +73,10 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
         "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
+        # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
+        # wave crest, and the tidal range, m
+        "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
+        "tide_range": np.round(coast.tide_range(grid, elev), 2),
     }
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v

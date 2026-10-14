@@ -180,6 +180,8 @@ LAYERS = {
     "current_n": _spec("i1", "same scale as wind", "surface ocean current, north component", scale=0.02),
     "jet_e": _spec("i1", "m/s", "annual-mean jet stream (upper-level wind), east component"),
     "jet_n": _spec("i1", "m/s", "annual-mean jet stream (upper-level wind), north component"),
+    "wave_power": _spec("<u2", "kW/m", "mean wave power arriving at sea cells (coast.py; 0 on land)", scale=0.1),
+    "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
 }
 
 

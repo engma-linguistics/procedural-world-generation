@@ -90,7 +90,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, hydrology, kernels
+from . import climate, coast, hydrology, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -417,14 +417,152 @@ def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
         sf = float(smoothstep(0.5, 8.0, cover[sea_sel][near].max())) if near.any() else 0.0
         # Earth: Nile ~150 km of plain at 2,800 m^3/s, Mississippi ~250 km at
         # 17,000, Ganges-Brahmaputra ~350 km (huge sediment load)
-        R = float(np.clip(10.0 * (q[k] / 100) ** 0.35 * (0.8 + 0.6 * sf), 15.0, 300.0))
+        R = coast.plain_radius_km(float(q[k]), sf)
         if max(abs(mx), abs(my)) > size_km / 2 + 0.5 * R:
             continue
         if any(np.hypot(mx - o["x"], my - o["y"]) < 0.8 * o["R"] for o in out):
             continue
+        # Galloway weights: the river's sediment against the waves and tides
+        # at the mouth (coast.py), the marine values from the sea cells
+        # around the mouth (the world's wave_power / tide_range layers)
+        gw = coast.delta_at(g, L, int(i), float(q[k]), R)
+        w, wave, tide, marine = gw["weights"], gw["wave_power_kw_m"], gw["tide_range_m"], gw["marine"]
+        nbr = int(np.clip(round(1 + 1.2 * np.log10(q[k] / 1000) + 1.5 * sf), 2, 6))
+        # waves rework the mouths into one or two; tides open many
+        n_mouths = int(np.clip(round(nbr * (1 - 0.75 * w["wave"]) + 4 * w["tide"]), 1, 9))
         out.append({"x": mx, "y": my, "u": u, "q": float(q[k]), "sf": sf, "R": R,
-                    "Rl": 0.22 * R * (0.6 + 0.8 * sf), "cell": int(i)})
+                    "Rl": 0.22 * R * (0.6 + 0.8 * sf), "cell": int(i), "wave": wave, "tide": tide,
+                    "marine": marine, "gw": gw, "wR": w["river"], "wW": w["wave"], "wT": w["tide"],
+                    "nb": n_mouths})
     return out
+
+
+def _coast_along(ind, nx: int, ny: int, res: float, x0: float, y0: float, d, smax: float) -> float:
+    """Distance (km) from (x0, y0) along unit vector d to where the land/sea
+    indicator ind (per pixel) first turns negative (the coast); smax if it
+    doesn't within smax, 0 if it starts at sea."""
+    for s in np.arange(0.0, smax, 0.5 * res):
+        c = int(np.floor((x0 + s * d[0]) / res + nx / 2))
+        r = int(np.floor(ny / 2 - (y0 + s * d[1]) / res))
+        if 0 <= r < ny and 0 <= c < nx and ind[r * nx + c] < 0:
+            return float(s)
+    return float(smax)
+
+
+def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> dict:
+    """The delta's shape in the land/sea indicator, from its Galloway
+    weights (wR, wW, wT), each part scaled by its weight so mixed deltas
+    get a mix (nothing is switched on or off by type):
+    - lobe: new land pushed out to sea; long and narrow for a river-
+      dominated delta, a broad low arc for a wave-dominated one, little for
+      a tide-dominated one;
+    - fingers (river): narrow strips of levee-bound land along each
+      distributary, prograding far out into the sea (the bird's foot);
+    - funnels (tide): estuaries along the coast that widen seaward
+      exponentially (half-width ~ exp(s / Lb)), and a mesh of tidal creeks
+      stretched along the flow that cuts the plain into elongate islands;
+    - smooth: how much the coastline noise is damped (waves straighten the
+      shore into a smooth arc; the fingers keep clean edges).
+    Everything is placed relative to the coast as the land/sea indicator
+    ind (per pixel) draws it, which can lie tens of km from the coarse mouth.
+    Returns per-pixel fields (lobe: added to the indicator, cut: taken
+    off it, keep: a floor for it, smooth: 0..1) and the points the distributaries should head for
+    (finger tips or funnel heads; empty: fan out over the coast)."""
+    R, Rl, wR, wW, wT = dl["R"], dl["Rl"], dl["wR"], dl["wW"], dl["wT"]
+    # seaward: toward the sea as the indicator has it around the mouth (the
+    # coarse cells' direction can be ~45 deg off the fine coast's)
+    ang = np.linspace(0, 2 * np.pi, 48, endpoint=False)
+    rx, ry = dl["x"] + 0.4 * R * np.cos(ang), dl["y"] + 0.4 * R * np.sin(ang)
+    cc = np.clip(np.floor(rx / res + nx / 2).astype(int), 0, nx - 1)
+    rr_ = np.clip(np.floor(ny / 2 - ry / res).astype(int), 0, ny - 1)
+    sea_w = np.clip(-ind[rr_ * nx + cc], 0, None)
+    u = np.asarray(dl["u"], float)
+    if sea_w.sum() > 0:
+        v = np.array([np.sum(sea_w * np.cos(ang)), np.sum(sea_w * np.sin(ang))])
+        if np.linalg.norm(v) > 1e-9:
+            u = v / np.linalg.norm(v)
+    dl["u"] = u
+    t = np.array([-u[1], u[0]])
+    dx, dy = px - dl["x"], py - dl["y"]
+    r = np.hypot(dx, dy)
+    a, b = dx * u[0] + dy * u[1], dx * t[0] + dy * t[1]  # along (seaward) and across the mouth
+    near = r < 2.5 * R
+    lobe, cut, smooth, keep = (np.zeros_like(px) for _ in range(4))
+    keep -= 9.0
+    # the lobe, centred on the coast seaward of the mouth: out ~0.3 R, and wide for waves
+    s0 = _coast_along(ind, nx, ny, res, dl["x"], dl["y"], u, 1.5 * R)
+    la = R * (0.12 + 0.08 * wR + 0.25 * wW)
+    lb = R * (0.3 - 0.1 * wR + 0.7 * wW + 0.2 * wT)
+    amp = 1.0 - 0.5 * wT
+    lobe[near] = amp * np.exp(-((a[near] - s0) / la) ** 2 - (b[near] / lb) ** 2)
+    dl["lobe_at"] = (dl["x"] + s0 * u[0], dl["y"] + s0 * u[1])
+    smooth[near] = smoothstep(1.4 * R, 0.9 * R, r[near]) * np.clip(0.85 * wW + 0.5 * wR, 0, 0.9)
+    goals, kind = [], "fan"
+    n = dl["nb"]
+    # fingers: from the mouth out along a fan of directions
+    Lf = R * 1.1 * wR ** 2  # (the Mississippi's bird's foot reaches ~100 km out from a ~250 km plain)
+    if Lf > 3 * res and n >= 1:
+        wf = max(2.0 * res, 0.06 * R)
+        spread = np.radians(50 + 15 * min(n, 5))
+        th = (np.linspace(-0.5, 0.5, n) if n > 1 else np.zeros(1)) * spread + rng.normal(0, 0.08, n)
+        for k in range(n):
+            dk = np.cos(th[k]) * u + np.sin(th[k]) * t
+            Lk = Lf * rng.uniform(0.6, 1.1)
+            Lk += _coast_along(ind, nx, ny, res, dl["x"], dl["y"], dk, 1.5 * R)  # out from the coast
+            s = dx * dk[0] + dy * dk[1]
+            c = np.abs(dx * dk[1] - dy * dk[0])
+            f = np.exp(-(c / wf) ** 2) * smoothstep(-0.3 * Lk, 0.0, s) * smoothstep(Lk, 0.85 * Lk, s)
+            # land at least along the axis, wider the more the river dominates
+            # (none below a river weight of ~0.4)
+            keep = np.maximum(keep, 0.3 * (1.6 * wR * f - 0.6))
+            goals.append((dl["x"] + Lk * dk[0], dl["y"] + Lk * dk[1]))
+        kind = "fingers"
+    # funnels: spread along the coast either side of the mouth
+    amp_t = 1.6 * wT
+    if amp_t > 0.3:
+        span = 1.2 * R
+        Wm = (0.05 + 0.07 * wT) * R  # half-width at the coast
+        Lb = 0.25 * R  # convergence length: the width e-folds over this far inland
+        Lfun = (0.2 + 0.3 * wT) * R  # how far inland the funnel reaches
+        nf = max(n, 2)
+        heads = []
+        for k in range(nf):
+            o = (k / (nf - 1) - 0.5) * span + rng.normal(0, 0.04 * span)
+            fan = 0.35 * o / span + rng.normal(0, 0.05)
+            dk = np.cos(fan) * u + np.sin(fan) * t
+            cx_, cy_ = dl["x"] + o * t[0], dl["y"] + o * t[1]
+            sc = _coast_along(ind, nx, ny, res, cx_, cy_, dk, 1.5 * R)  # its mouth on the coast
+            cx_, cy_ = cx_ + sc * dk[0], cy_ + sc * dk[1]
+            ex, ey = px - cx_, py - cy_
+            s = ex * dk[0] + ey * dk[1]
+            c = np.abs(ex * dk[1] - ey * dk[0])
+            hw = np.maximum(Wm * np.exp(np.minimum(s, 0.6 * R) / Lb), 0.6 * res)
+            f = smoothstep(hw, 0.5 * hw, c) * smoothstep(-Lfun, -Lfun + 2 * res, s) * (s < 0.8 * R)
+            f *= smoothstep(0.85 * R, 0.6 * R, r)  # within the plain (no estuaries cut into hills)
+            cut = np.maximum(cut, amp_t * f)
+            heads.append((cx_ - Lfun * dk[0], cy_ - Lfun * dk[1]))
+        if wT >= wR:
+            goals, kind = heads, "funnels"
+        # tidal creeks: the zero lines of a noise field stretched 3.5x along
+        # the flow (long channels, few cross-links: elongate islands)
+        zone = smoothstep(0.8 * R, 0.5 * R, r) * smoothstep(s0 - 0.6 * R, s0 - 0.3 * R, a)
+        pts = np.ascontiguousarray(np.column_stack([a / 3.5, b, np.full_like(a, 1000.0 * (dl["cell"] % 97))]))
+        nn = ZK.fbm(pts, 0.15 * R, 3, 0.5, 977 + dl["cell"]) / 0.17
+        creek = smoothstep(0.12, 0.0, np.abs(nn))
+        cut = np.maximum(cut, 1.3 * wT * creek * zone)
+    return {"lobe": lobe, "cut": cut, "smooth": smooth, "keep": keep, "goals": goals, "kind": kind}
+
+
+def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> int:
+    """Channels of a delta reaching the sea: groups of land pixels within
+    1.3 R of the mouth that drain straight into the sea carrying >= 5% of
+    the delta's discharge."""
+    r = np.hypot(px - dl["x"], py - dl["y"])
+    out = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (r < 1.3 * dl["R"]) & (discharge >= 0.05 * dl["q"])
+    if not out.any():
+        return 0
+    lab, _ = ZK.label_components(out, nx, ny)
+    return int(len(np.unique(lab[out])))
 
 
 # ---------------------------------------------------------------------------
@@ -498,23 +636,30 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # coarse-mean correction are damped there (wC).
     flow, down = L["flow"].astype(float), L["downstream"].astype(int)
     deltas = _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area)
-    wD, zD, wS, zS, wC, lobe = (np.zeros(npx) for _ in range(6))
+    wD, zD, wS, zS, wC, lobe, cut, smooth_c, wR_f, wW_f = (np.zeros(npx) for _ in range(10))
+    keep = np.full(npx, -9.0)
     hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
-    for dl in deltas:
+    for j, dl in enumerate(deltas):
         R = dl["R"]
         r = np.hypot(px - dl["x"], py - dl["y"])
         w = smoothstep(R, 0.55 * R, r) * hf
-        zD = np.where(w > wD, 0.8 + 10.0 * (r / R) ** 1.5, zD)
+        zD = np.where(w > wD, coast.PLAIN_Z0 + coast.PLAIN_RISE * (r / R) ** 1.5, zD)
+        wR_f, wW_f = np.where(w > wD, dl["wR"], wR_f), np.where(w > wD, dl["wW"], wW_f)
         wD = np.maximum(wD, w)
         zS = np.where(r < 1.2 * R, np.maximum(zS, -(2.0 + 50.0 * (r / R) ** 2)), zS)
         wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r))
         wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r))
-        # the lobe is centred half its radius offshore and lifts the land/sea
-        # indicator there to a little above the coast value
-        lc = np.array([dl["x"], dl["y"]]) + 0.5 * dl["Rl"] * dl["u"]
+        # its shape from the Galloway weights; the lobe lifts the land/sea
+        # indicator at its centre to a little above the coast value
+        f = _delta_forms(dl, px, py, res, np.random.default_rng(seed * 7919 + 101 + j), ind, nx, ny)
+        lc = np.asarray(dl["lobe_at"])
         k = int(np.argmin((px - lc[0]) ** 2 + (py - lc[1]) ** 2))
         amp_l = np.clip(0.35 - ind[k], 0.0, 2.0) if np.hypot(px[k] - lc[0], py[k] - lc[1]) < 2 * res else 1.0
-        lobe += amp_l * np.exp(-((px - lc[0]) ** 2 + (py - lc[1]) ** 2) / dl["Rl"] ** 2)
+        lobe += amp_l * f["lobe"]
+        cut = np.maximum(cut, f["cut"])
+        smooth_c = np.maximum(smooth_c, f["smooth"])
+        keep = np.maximum(keep, f["keep"])
+        dl["goals"], dl["form"] = f["goals"], f["kind"]
     zS = np.where(wS > 0, zS, -1e9)
 
     # --- coastline -------------------------------------------------------
@@ -522,7 +667,28 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     cw = ZK.fbm(Pk, lam, 4, 0.5, S + 7) / 0.17 * 0.12 * sp  # domain warp: bays, headlands
     Pc = np.ascontiguousarray(Pk + cw[:, None] * np.array([0.57, -0.41, 0.71]))
     coast_n = ZK.fbm(Pc, lam, _octaves(lam, 2 * res), 0.62, S + 1) / 0.15
-    ind_n = ind + 0.22 * coast_n + lobe
+    ind_n = np.maximum(ind + 0.22 * coast_n * (1 - smooth_c) + lobe, keep) - cut
+    # Wave-dominated deltas: a barrier of sand along the flanks, with a
+    # lagoon behind it (broken by a few tidal inlets), its width growing
+    # with the wave weight above ~0.3.
+    lagoon = np.zeros(npx, bool)
+    if any(dl["wW"] > 0.3 for dl in deltas):
+        din = ZK.inside_distance(ind_n > 0, nx, ny) * res  # km inside the coast
+        gate = ZK.fbm(Pk, 40.0, 2, 0.5, S + 51) / 0.17
+        for dl in deltas:
+            if dl["wW"] <= 0.3:
+                continue
+            R = dl["R"]
+            dx, dy = px - dl["x"], py - dl["y"]
+            r = np.hypot(dx, dy)
+            flank = np.abs(dx * dl["u"][0] + dy * dl["u"][1]) < 0.7 * np.maximum(r, 1e-9)
+            bw = max(2.0 * res, 3.0)  # barrier width, km (at least 2 px)
+            lw = max(1.0 * res, (dl["wW"] - 0.3) / 0.7 * 0.08 * R)  # lagoon width
+            band = (din > bw + 0.1 * res) & (din <= bw + lw) & (r > 0.2 * R) & (r < 1.1 * R) & flank & (hf > 0.5)
+            inlet = (din > 0) & (din <= bw + 0.1 * res) & (r > 0.2 * R) & (r < 1.1 * R) & flank & (gate < -0.75)
+            lagoon |= band | inlet
+        ind_n = np.where(lagoon, np.minimum(ind_n, -0.05), ind_n)
+        log(f"  lagoons: {int(lagoon.sum())} px")
     land = ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ind_n)
@@ -577,6 +743,34 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         det = taper * amp_land * detail
         h = np.where(land, (1 - wD) * h + wD * (zD + det), (1 - wS) * h + wS * np.maximum(h, zS))
         h = clamp(h)
+    # waves and tides on the fine grid (from the sea cells): the deltas' tidal
+    # flats, and layers of the zoom
+    tide_f, wave_f = np.zeros(npx), np.zeros(npx)
+    if "tide_range" in L and "wave_power" in L:
+        mv, _ = ZK.gauss_interp(px, py, cx, cy, np.column_stack([np.asarray(L["tide_range"], float)[sel],
+                                                                 np.asarray(L["wave_power"], float)[sel]]),
+                                np.column_stack([~land_c, ~land_c]).astype(float), 0.6 * sp)
+        tide_f, wave_f = np.nan_to_num(mv[:, 0]), np.nan_to_num(mv[:, 1])
+    delta_floor = np.full(npx, -np.inf)  # beach ridges and levees, held as floors in the landscape pass
+    if deltas:
+        # Tidal flats: offshore of a tide-influenced delta, a band of sea floor
+        # between low and mean tide (exposed at low water), wider with the
+        # tide weight. Beach ridges: on a wave-influenced delta plain, old
+        # shorelines a few metres high parallel to the coast (spacing
+        # exaggerated to a few pixels), broken here and there.
+        dsea = ZK.inside_distance(~land, nx, ny, False) * res
+        din = ZK.inside_distance(land, nx, ny, False) * res
+        gate = ZK.fbm(Pk, 30.0, 2, 0.5, S + 52) / 0.17
+        lam_r = max(3.0 * res, 3.0)
+        for dl in deltas:
+            r = np.hypot(px - dl["x"], py - dl["y"])
+            Wf = 0.15 * dl["wT"] * dl["R"]
+            if Wf > res:
+                flat = ~land & (dsea < Wf) & (r < 1.2 * dl["R"])
+                h = np.where(flat, np.maximum(h, -0.5 * max(dl["tide"], 0.5) * dsea / Wf - 0.05), h)
+        ridge = 2.5 * wW_f * np.cos(np.pi * din / lam_r) ** 2 * (gate > -0.3)
+        on = land & (wD > 0.5) & (wW_f > 0.25) & (din > 0.5 * res) & (ridge > 0.3)
+        delta_floor = np.where(on, zD + ridge, delta_floor)
     log(f"  coast + detail + mean correction [{time.time() - t0:.1f}s]")
 
     # --- coarse rivers -> valleys + inflow --------------------------------
@@ -649,6 +843,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         wamp = 0.10 * sp / 0.17
         wx = ZK.fbm(sp_pts, lw, 4, 0.5, S + 11) * wamp
         wy = ZK.fbm(sp_pts, lw, 4, 0.5, S + 12) * wamp
+        # (no meanders near a delta's mouth: the river must arrive at its delta)
+        for dl in deltas:
+            dd = np.hypot(allp[:, 0] - dl["x"], allp[:, 1] - dl["y"])
+            damp = smoothstep(0.3 * dl["R"], 1.5 * dl["R"], dd)
+            wx, wy = wx * damp, wy * damp
         allp = allp + np.column_stack([wx, wy])
         k = 0
         for pts, z1, z2, q, rcell, i in segs:
@@ -1037,7 +1236,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # can't loop), choosing the neighbour closest to the goal's direction
         # plus a wandering noise angle, and keeping clear of the other
         # branches where it can.
-        wander = [0.7 * ZK.fbm(Pk, 25.0, 3, 0.5, S + 41 + k) / 0.17 for k in range(2)]
+        # (a river-dominated delta's channels run straighter, between their levees)
+        wander = [0.7 * (1 - 0.7 * wR_f) * ZK.fbm(Pk, 25.0, 3, 0.5, S + 41 + k) / 0.17 for k in range(2)]
         coast = np.zeros(npx, bool)  # land next to the sea
         for dr, dcol in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             coast |= active & _shift(sea.reshape(ny, nx), dr, dcol, False).ravel()
@@ -1161,23 +1361,37 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ov[c] = rec0[c]
             assigned[[a] + trunk] = True
             blocked[[a] + trunk] = True
-            nb = int(np.clip(round(1 + 1.2 * np.log10(dl["q"] / 1000) + 1.5 * dl["sf"]), 2, 6))
-            # goals: coast pixels spread over a fan around the main mouth
+            nb = dl["nb"]  # from the Galloway weights (_deltas): waves leave few mouths, tides many
+            if nb < 2:  # a single mouth: no distributaries (the trunk stays pinned)
+                continue
             phi = np.arctan2(py[m0] - py[a], px[m0] - px[a])
             ln = np.hypot(px[m0] - px[a], py[m0] - py[a])
-            spread = np.radians(min(30.0 + 20.0 * (nb - 1), 130.0))
             cp = np.flatnonzero(coast & ~assigned)
-            ca = (np.arctan2(py[cp] - py[a], px[cp] - px[a]) - phi + np.pi) % (2 * np.pi) - np.pi
             cd = np.hypot(px[cp] - px[a], py[cp] - py[a])
             goals = []
-            for th in spread * np.linspace(-0.5, 0.5, nb) + rng.normal(0, 0.05, nb):
-                ok = (np.abs(ca - th) < 0.12) & (cd > 0.5 * ln) & (cd < 2.0 * ln)
-                if ok.any():
-                    q = int(cp[ok][np.argmin(cd[ok])])
-                    if q not in goals:
-                        goals.append(q)
+            if dl["goals"]:
+                # the tips of the fingers (river) or the heads of the funnels
+                # (tide): the coast pixel nearest each, not too close to the apex
+                for gx, gy in dl["goals"]:
+                    ok = cd > 0.4 * ln
+                    if ok.any():
+                        q = int(cp[ok][np.argmin(np.hypot(px[cp[ok]] - gx, py[cp[ok]] - gy))])
+                        if q not in goals:
+                            goals.append(q)
+            else:
+                # coast pixels spread over a fan around the main mouth
+                spread = np.radians(min(30.0 + 20.0 * (nb - 1), 130.0))
+                ca = (np.arctan2(py[cp] - py[a], px[cp] - px[a]) - phi + np.pi) % (2 * np.pi) - np.pi
+                for th in spread * np.linspace(-0.5, 0.5, nb) + rng.normal(0, 0.05, nb):
+                    ok = (np.abs(ca - th) < 0.12) & (cd > 0.5 * ln) & (cd < 2.0 * ln)
+                    if ok.any():
+                        q = int(cp[ok][np.argmin(cd[ok])])
+                        if q not in goals:
+                            goals.append(q)
             if len(goals) < 2:
                 goals = [int(m0)] + goals
+            # order the goals around the fan, so each split divides neighbours
+            goals.sort(key=lambda q: (np.arctan2(py[q] - py[a], px[q] - px[a]) - phi + np.pi) % (2 * np.pi))
             grow(a, goals, max(int(0.15 * ln / res), 2), blocked)
             rt = rec0.copy()
             rt[list(ov)] = list(ov.values())
@@ -1205,6 +1419,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
         if deltas and it == iterations // 3:  # once the network has settled a bit
             ov_src, ov_dst, splits = make_branches(rec, order)
+            # levees: the land along the distributaries stands a little
+            # above the plain, more so on a river-dominated delta
+            chan = np.zeros(npx, bool)
+            chan[ov_src] = True
+            lev = _dilate(chan.reshape(ny, nx), 1).ravel() & ~chan & active & (wD > 0.3)
+            delta_floor = np.where(lev, np.maximum(delta_floor, zD + 0.5 + 3.0 * wR_f), delta_floor)
         rec, order, split_ok = reroute(rec, order)
         outs = lake_outlets(rec)
         Q, _ = route(srcq, rec, order, outs, split_ok)
@@ -1217,7 +1437,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         was_river |= Q >= 0.3 * q_course
         flc = np.where(was_river, z_course, -np.inf)
         flc[c_idx] = c_val  # the river itself, on reaches with falls
-        fl = np.maximum(np.maximum(fl, flg), flc)
+        # (beach ridges and levees, but not under the channels themselves)
+        fl = np.maximum(np.maximum(np.maximum(fl, flg), flc),
+                        np.where(Q * KM2_M_PER_YR_TO_M3S < 30.0, delta_floor, -np.inf))
         h = target.copy()
         ZK.integrate(h, rec, order, slope, dist, ~active, fl, soft, 0.5 * amp_land + 1, cp)
         hprev = h
@@ -1317,8 +1539,17 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "coarse_river_cells": int(len(riv_ids)),
         "rivers_entering": n_rivers_in,
         "largest_lakes": lake_info[:5],
+        # Galloway weights (coast.galloway) and the shape they gave each delta
         "deltas": [{"mouth_km": [round(d["x"], 1), round(d["y"], 1)], "discharge_m3s": round(d["q"]),
-                    "plain_radius_km": round(d["R"])} for d in deltas],
+                    "plain_radius_km": round(d["R"]), "type": d["gw"]["type"], "weights": d["gw"]["weights"],
+                    "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
+                    "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
+                                       for k in ("river", "wave", "tide")},
+                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny),
+                    "form": d["form"], "marine_layers": d["marine"],
+                    "seaward": [round(float(v), 3) for v in d["u"]],
+                    "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
+                   for d in deltas],
         "distributary_splits": len(splits),
         # pixel-scale falls (see waterfalls()); kind "lip": a knickpoint kept from a steep coarse reach
         # (see knickpoints()), with its gorge and plunge pool
@@ -1334,6 +1565,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "precipitation": precip.astype(np.float32),
         "temperature": temp.astype(np.float32),
         "ice": np.where(glacier, np.maximum(ice, 1.0), 0).astype(np.float32),
+        "tide_range": np.where(sea, tide_f, 0).astype(np.float32),
+        "wave_power": np.where(sea, wave_f, 0).astype(np.float32),
         "rock": rock_f,
         "surface_rock": surf_f,
         "climate": clim_f,
@@ -1402,6 +1635,10 @@ def preview(z: dict) -> np.ndarray:
     ice = (Lr["ice"] > 0) & (water == 0)
     col = np.where(ice[..., None], col * 0.3 + np.array([235, 242, 250]) * 0.7 * (0.55 + 0.5 * shade[..., None]), col)
     col = np.where((water == 2)[..., None], np.array([70, 130, 196.0]), col)
+    if "tide_range" in Lr:  # tidal flats: sea floor above low tide (dry at low water)
+        tr = Lr["tide_range"]
+        flat = (water == 1) & (h > -0.5 * tr) & (tr > 0.8)
+        col = np.where(flat[..., None], np.array([156, 150, 122.0]) * (0.8 + 0.3 * shade[..., None]), col)
     q, area = Lr["discharge"], Lr["drainage_area"]
     land = (water == 0) & ~ice
     riv = (area >= RIVER_MIN_AREA * max(res / 2.0, 1.0)) & (q > 3.0) & land
@@ -1453,6 +1690,8 @@ LAYER_DOC = {
     "precipitation": ("mm/yr", "annual precipitation (interpolated from the coarse world)"),
     "temperature": ("C", "mean annual temperature, lapse-rate adjusted to the fine elevation"),
     "ice": ("m", "land ice thickness (interpolated)"),
+    "tide_range": ("m", "tidal range at sea (interpolated from the world's tide_range; 0 on land)"),
+    "wave_power": ("kW/m", "mean wave power at sea (interpolated from the world's wave_power; 0 on land)"),
     "rock": ("ROCKS id", "basement rock (surface.ROCKS)"),
     "surface_rock": ("ROCKS id", "exposed rock: basement or sediment cover"),
     "climate": ("KOPPEN id", "Koppen class; alpine tundra/ice cap added from the fine elevation"),

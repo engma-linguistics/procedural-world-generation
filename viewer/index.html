@@ -273,13 +273,16 @@ const RAMPS = {
 };
 RAMPS['rock age'] = [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000, '#6e4f3a'], [3500, '#3a2a22']];
 RAMPS.rainfall = RAMPS.precipitation;
+RAMPS['wave power'] = [[0, '#1d2f55'], [5, '#2f6f8f'], [15, '#4fae9b'], [30, '#b8d66b'], [60, '#f2c14e'], [100, '#e8603c']];  // kW/m
+RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];  // m
 RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
 // model minus observed (Earth reference world): temperature in C, rainfall as log2 of the ratio
 RAMPS['temperature difference'] = [[-10, '#2b5fb3'], [-5, '#7fa8de'], [-1, '#eef1f4'], [1, '#eef1f4'], [5, '#e8956b'], [10, '#b2262b']];
 RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], [0.2, '#f0ece2'], [1, '#80cdc1'], [2, '#018571']];
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
-                'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed' };
+                'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed',
+                'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -371,6 +374,10 @@ function cellColors(layer) {
       if (elev[i] <= 0) c.lerp(OCEAN, 0.45);
     } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
     else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
+    else if (layer === 'wave power' || layer === 'tide range') {  // at sea only
+      if (elev[i] > 0) c.copy(BARE).lerp(OCEAN, 0.15);
+      else rampFns[layer](layer === 'wave power' ? L.wave_power[i] : L.tide_range[i], c);
+    }
     else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precipitation[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else {
@@ -394,6 +401,8 @@ function availableLayers() {
   if (V.layers.climate) ls.push('climate');
   if (V.layers.surface_rock) ls.push('surface rock');
   if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
+  if (V.layers.wave_power) ls.push('wave power');
+  if (V.layers.tide_range) ls.push('tide range');
   return ls;
 }
 
@@ -1059,6 +1068,7 @@ function describe(i) {
     if (L.ice && L.ice[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
     if (L.rock) lines.push(`rock: ${V.rocks[L.rock[i]].name}`, `sediment cover ${L.sediment_cover[i].toFixed(1)} km`,
                            `crust ${Math.round(L.crust_thickness[i])} km thick`);
+    if (L.wave_power && L.elevation[i] <= 0) lines.push(`waves ${L.wave_power[i].toFixed(1)} kW/m, tides ${L.tide_range[i].toFixed(1)} m`);
     if (L.obs_temperature) {  // the Earth reference world
       const ot = L.obs_temperature[i], op = L.obs_precipitation[i], ok = L.obs_climate[i];
       if (ot != null) lines.push(`observed: ${ot} °C` + (L.obs_cold_month[i] != null

@@ -197,6 +197,19 @@ function hillshade(h, nx, ny, res) {
   return out;
 }
 
+// a delta's Galloway weights (planet/coast.py): what reworks its sediment
+const DELTA_FORM = { fingers: "bird's foot", funnels: 'tidal funnels', fan: 'fan' };
+function deltaLine(d) {
+  if (!d.weights) return `${fmt(d.discharge_m3s)} m&sup3;/s, plain ${fmt(d.plain_radius_km)} km`;
+  const w = d.weights, bar = (k, c) => `<span title="${k} ${fmt(100 * w[k])}%" style="display:inline-block;height:8px;width:${Math.round(60 * w[k])}px;background:${c}"></span>`;
+  return `<b>${d.type}</b>${d.lat_lon ? ` at ${d.lat_lon[0]}, ${d.lat_lon[1]}` : ''}<br>
+    <span style="white-space:nowrap">${bar('river', '#3b7dd8')}${bar('wave', '#e0b050')}${bar('tide', '#5fb59a')}</span>
+    river ${fmt(100 * w.river)}% &middot; wave ${fmt(100 * w.wave)}% &middot; tide ${fmt(100 * w.tide)}%<br>
+    ${fmt(d.discharge_m3s)} m&sup3;/s, ${fmt(d.sediment_mt_yr.river, 1)} Mt/yr of sediment; waves ${fmt(d.wave_power_kw_m, 1)} kW/m,
+    tides ${fmt(d.tide_range_m, 1)} m; ${d.mouths} mouth${d.mouths === 1 ? '' : 's'}, ${DELTA_FORM[d.form] || d.form}` +
+    (d.marine_layers === false ? ' <span class="muted">(world has no wave/tide layers)</span>' : '');
+}
+
 function about() {
   const m = state.meta, s = m.stats, sw = m.source_world;
   $('about').innerHTML = `<table>
@@ -211,6 +224,7 @@ function about() {
     <tr><td>lakes</td><td>${s.lakes}</td></tr>
     ${(s.waterfalls || []).length ? `<tr><td>biggest falls</td><td>${s.waterfalls.slice(0, 3).map((w) =>
       `${fmt(w.height_m)} m over ${fmt(w.length_km, 1)} km, ${fmt(w.discharge_m3s)} m&sup3;/s${w.from_lake ? ' (lake outlet)' : ''}${w.gorge_km ? `, gorge ${fmt(w.gorge_km, 1)} km` : ''} at ${w.lat}, ${w.lon}`).join('<br>')}</td></tr>` : ''}
+    ${(s.deltas || []).length ? `<tr><td>deltas</td><td>${s.deltas.slice(0, 4).map((d) => deltaLine(d)).join('<br>')}</td></tr>` : ''}
     <tr><td>made in</td><td>${m.generated_in_s} s</td></tr>
     <tr><td>files</td><td><a href="../zooms/${m.id}/heightmap.png">heightmap.png</a> (16-bit: ${fmt(m.heightmap.min_m)}..${fmt(m.heightmap.max_m)} m)<br>
       <a href="../zooms/${m.id}/preview.png">preview.png</a> &middot; <a href="../zooms/${m.id}/zoom.json">zoom.json</a></td></tr>
