@@ -155,7 +155,21 @@ Order: 1 → 6, small to large.
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
 5b. **Real waterfalls in the zoom.** Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
+5c. **Lakes on the run globe.** Runs store no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
+
+## Backlog (user notes, 2026-10-14)
+- **Delta types.** Real deltas differ by what dominates (Galloway's classification):
+  - **river-dominated:** the Mississippi's bird's-foot, a few long distributaries reaching out into calm deep water;
+  - **wave-dominated:** the Nile and São Francisco, a smooth arc-shaped coast with beach ridges;
+  - **tide-dominated:** the Ganges–Brahmaputra and Mekong, many funnel-shaped channels and islands (the Sundarbans).
+
+  The model has no waves or tides. Wave energy could come from the winds and fetch (open water the wind blows over). Tidal range could come roughly from shelf width and basin shape. Then pick the delta shape in the zoom per type. Medium effort.
+- **Giant open lakes:** outlet incision should drain them down over time; today they stay at their spill level. a89254 has a 390,000 km² open lake, larger than any open lake on Earth (Superior is 82,000 km²; only the closed Caspian is bigger).
+- **Vegetation, and eventually a "satellite view"** of the globe and zooms. Not yet.
+- **Zoom 3D view:** a simple low-poly three.js heightmap mesh with a water plane and rivers, in the existing viewer. No Unity or game-engine side project. The goal is to "see a big ole waterfall".
+- **Finer zooms:** 100–250 m pixels for small areas, if the zoom pass holds up at that scale.
+- **A level-7 showcase run** (~60 km cells, 164k cells; roughly 4–8× the cost of level 6, so ~15–30 min per Gyr), once B′ and the ocean work land. It doubles as a resolution-dependence check, since everything was calibrated at levels 5–6. **Level 8** (~30 km, 655k cells; maybe 1–2+ h per Gyr, plate arrays ~1.5 GB) only after a short trial. Neither resolves waterfalls; those come from the zoom.
 
 ## Known issues to come back to (collected from the agents' reports, 2026-10-13)
 
