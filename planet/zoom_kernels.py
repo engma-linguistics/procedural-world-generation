@@ -471,3 +471,53 @@ def inside_distance(mask, nx, ny, edge_outside=True):
                 v = min(v, u + w)
             d[i] = v
     return d
+
+
+
+@njit(cache=True)
+def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_km):
+    """Ice routed down the drainage (rec, order outlet -> headwater) from
+    the accumulation zone acc: there each pixel adds its surplus bal (m/yr
+    water equivalent; nothing for a negative one: cold, dry ground under the
+    ice is still ice) over its whole area; below it the ice runs down the
+    valleys as a tongue w0 x (flux / f0)^w_exp km wide (at most f_max
+    m3/yr enters a tongue, the rest is lost at the zone's margin), losing
+    bal x its width x the step's length on each pixel, until nothing is left
+    or it has run max_km (from where its main feeder left the zone). stop:
+    pixels the ice can't enter (sea, lakes). Returns (flux m3/yr through
+    each pixel, 0 off the ice; width km, res in the zone; how far below the
+    zone, km)."""
+    n = rec.shape[0]
+    fin = np.zeros(n)
+    fbest = np.zeros(n)
+    flux = np.zeros(n)
+    wid = np.zeros(n)
+    run = np.zeros(n)
+    run_in = np.zeros(n)
+    for t in range(order.shape[0] - 1, -1, -1):
+        i = order[t]
+        if stop[i]:
+            continue
+        f = fin[i]
+        if acc[i]:
+            f += max(bal[i], 0.0) * res * res * 1e6
+            wid[i] = res
+            run[i] = 0.0
+        else:
+            if f <= 0.0 or run_in[i] > max_km:
+                continue
+            f = min(f, f_max)
+            w = w0 * (f / f0) ** w_exp
+            wid[i] = w
+            run[i] = run_in[i]
+            f = f + bal[i] * w * res * 1e6
+        flux[i] = max(f, 1e-9)  # (the snout: melted away here)
+        d = rec[i]
+        if d < 0 or f <= 0.0:
+            continue
+        step = res * (1.4142135623730951 if (d % nx != i % nx and d // nx != i // nx) else 1.0)
+        fin[d] += f
+        if f > fbest[d]:  # (its run is the biggest feeder's)
+            fbest[d] = f
+            run_in[d] = run[i] + step
+    return flux, wid, run

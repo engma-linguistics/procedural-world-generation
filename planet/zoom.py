@@ -87,7 +87,11 @@ Pipeline
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, but for a little under
-   ice).
+   ice). Glaciers (glaciers(), PW-127) from each pixel's own climate:
+   accumulation where its summer at its own height is below the run's
+   ice_summer_temp and the snow outlasts the melt (earth.ice_sheets' rule),
+   the surplus routed down the valleys as melting tongues; outlined on the
+   target surface, redrawn on the finished one.
    Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
    shapes the target (the structure the drainage organises around: fold
    ridges, fault blocks, domes) and reshapes the finished landscape,
@@ -785,6 +789,99 @@ def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> i
 
 
 # ---------------------------------------------------------------------------
+# Glaciers (PW-127): from each pixel's own climate, by earth.ice_sheets' rule
+# ---------------------------------------------------------------------------
+# Accumulation where the pixel's summer, felt on the ice (lapse-corrected to
+# its own height, minus the cooling the coarse ice gives its own surface), is
+# below the run's ice_summer_temp and enough snow falls to outlast the melt
+# (earth.ICE_SNOW_MIN + ICE_DDF x positive degree-days); the cold ground
+# connected to such a pixel is ice too (polar desert fed from a snowier
+# part). From there the surplus is routed down the valleys (glacier_flow) as
+# tongues that melt (GL_DDF_ICE x degree-days of the uncapped summer, less
+# the snow) over their width as they descend, so valley glaciers reach below the
+# snowline only as narrow tongues fed from above (Franz Josef ends in
+# rainforest at ~300 m). Widths: ~0.8 km at 0.1 km3/yr water equivalent
+# (Franz Josef), ~2.6 km at the GL_F_MAX cap.
+GL_W0, GL_F0, GL_W_EXP = 0.8, 1e8, 0.35  # tongue width km = W0 x (flux m3/yr / F0)^W_EXP
+GL_F_MAX = 3e9  # m3/yr: at most this enters one tongue (Bering, Malaspina: a few km3/yr; a sheet's margin loses the rest along its length)
+GL_MAX_KM = 100.0  # km: no tongue runs further below its zone (Pio XI ~64 km, Bering ~190 km in all)
+GL_DDF_ICE = 8.0  # mm water per positive degree-day on bare ice (snow: earth.ICE_DDF = 3; Braithwaite 1995)
+GL_DRAW = 0.5  # a tongue narrower than this many pixels isn't drawn
+GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EXP
+GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
+
+
+def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per coarse cell: the warmest and coldest month (C) of the bare ground
+    under any ice, and how much colder the ice keeps its own surface (C;
+    earth.ice_sheets: ICE_FEEDBACK of its height plus its white top). The
+    world's climate is on the ice surface (climate.ice_surface): this undoes
+    it (its height, its cooling, the melting that halves a positive summer)."""
+    from .tectonics.earth import ICE_FEEDBACK
+    land = L["elevation"] > 0
+    ice = np.where(land, ice, 0.0)
+    tw = np.asarray(L.get("warm_month", L["temperature"]), float)
+    tc = np.asarray(L["cold_month"], float) if "cold_month" in L else 2 * np.asarray(L["temperature"], float) - tw
+    on = ice > 0
+    cool = climate.ice_cooling(ice, climate.ice_cover(g, ice, land))
+    up = LAPSE * ice
+    gw = np.where(on, np.where(tw > 0, 2 * tw, tw) + up + cool, tw)
+    gc = np.where(on, tc + up + cool, tc)
+    return gw, gc, ICE_FEEDBACK * LAPSE * ice + cool
+
+
+def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, cold_sl, own, precip,
+             ice_c, noise, summer_max: float) -> tuple[np.ndarray, np.ndarray]:
+    """Glacier mask and ice thickness (m) on the surface h (with its
+    drainage rec, order): see GL_*. warm_sl, cold_sl: the bare ground's
+    warmest and coldest month reduced to sea level; own: the coarse ice's
+    cooling of its own surface (ice_ground); ice_c: the interpolated coarse
+    ice (m); noise: ~unit fbm; summer_max: the run's ice_summer_temp."""
+    from .tectonics.earth import ICE_DDF, ICE_MAX, ICE_SNOW_MIN, degree_days
+    hl = np.maximum(h, 0)
+    raw = warm_sl - LAPSE * hl - own + GL_NOISE_C * noise
+    t_cold = np.minimum(cold_sl - LAPSE * hl - own, raw)
+    # (melting holds an ice surface's positive summer down: earth.ice_sheets)
+    t_sum = np.where(ice_c > 1, np.minimum(raw, 0.5 * np.maximum(raw, 0)), raw)
+    cold = land & ~stop & (t_sum < summer_max)
+    surplus = precip - ICE_SNOW_MIN - ICE_DDF * degree_days(t_sum, np.minimum(t_cold, t_sum))
+    lab, _ = ZK.label_components(cold, nx, ny)
+    fed = np.zeros(int(lab.max()) + 2, bool)
+    fed[lab[cold & (surplus > 0)]] = True
+    zone = cold & fed[lab]
+    # a tongue melts at the air's summer (no cap), as bare ice (GL_DDF_ICE),
+    # and gets the share of the precipitation that falls in the months below freezing
+    mid, amp = 0.5 * (raw + t_cold), np.maximum(0.5 * (raw - t_cold), 1e-6)
+    snow = precip * np.arccos(np.clip(mid / amp, -1, 1)) / np.pi
+    melt = snow - GL_DDF_ICE * degree_days(raw, t_cold)
+    bal = np.where(zone, surplus, melt) / 1000.0
+    flux, wid, _ = ZK.glacier_flow(rec, order, bal, zone, stop | ~land, nx, res, GL_W0, GL_F0, GL_W_EXP,
+                                   GL_F_MAX, GL_MAX_KM)
+    tongue = ~zone & (flux > 0) & (wid >= GL_DRAW * res)
+    # tongues wider than a pixel spread across their valley
+    ice = zone | tongue
+    half = np.where(tongue, wid / (2 * res), 0.0).reshape(ny, nx)
+    for r in range(1, int(min(half.max(), 4.0)) + 1):
+        ice |= _dilate(half >= r + 0.5, r).ravel() & land & ~stop
+    th = np.clip(GL_H0 * (np.maximum(flux, 1.0) / GL_F0) ** GL_H_EXP, 20.0, ICE_MAX)
+    th = np.where(zone, np.maximum(th, ice_c), th)
+    th = np.where(ice & ~zone & ~tongue, _spread(th, tongue, nx, ny), th)
+    return ice, np.where(ice, th, 0.0)
+
+
+def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
+    """v carried a few pixels out from the pixels m (their max nearby)."""
+    a = np.where(m, v, 0.0).reshape(ny, nx)
+    out = a.copy()
+    for _ in range(4):
+        b = out.copy()
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            b = np.maximum(b, _shift(out, dy, dx, 0.0))
+        out = b
+    return out.ravel()
+
+
+# ---------------------------------------------------------------------------
 # The refinement
 # ---------------------------------------------------------------------------
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
@@ -832,8 +929,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     temp_c = L["temperature"][sel] + LAPSE * np.maximum(e_c, 0)
     warm = L.get("warm_month", L["temperature"])[sel] + LAPSE * np.maximum(e_c, 0)
+    # (glaciers: the bare ground's summer and winter at sea level, and the coarse ice's own cooling)
+    gw, gc, own_c = (v[sel] for v in ice_ground(g, L, L.get("ice", np.zeros(g.n)).astype(float)))
     vals = np.column_stack([np.maximum(e_c, 1.0), np.minimum(e_c, -1.0), temp_c, warm,
-                            L["precipitation"][sel].astype(float), ice_c, r_c, relief[sel]])
+                            L["precipitation"][sel].astype(float), ice_c, r_c, relief[sel],
+                            gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), own_c])
     wts = np.ones_like(vals)
     wts[:, 0] = land_c
     wts[:, 1] = ~land_c
@@ -842,6 +942,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     e_land = np.nan_to_num(fine[:, 0], nan=1.0)
     e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
     t_sl, warm_sl, precip, ice, rug, rel = (fine[:, k] for k in range(2, 8))
+    gw_sl, gc_sl, own_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(8, 11))
     ind, _ = ZK.gauss_interp(px, py, cx, cy, np.where(land_c, 1.0, -1.0)[:, None],
                              np.ones((len(sel), 1)), 0.42 * sp)
     ind = ind[:, 0]
@@ -1370,11 +1471,19 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     outlet = sea | edge
     precip = np.clip(np.nan_to_num(precip, nan=0.0), 0, None)
     ice = np.clip(np.nan_to_num(ice, nan=0.0), 0, None)
-    # glacier outline: thicker ice reaches further, high ground holds ice,
-    # and noise makes the margin lobate instead of a smooth contour
+    # glaciers from each pixel's own climate (see glaciers()): a first
+    # outline on the target surface (lakes and the landscape pass avoid and
+    # smooth it), redrawn on the finished valleys after the landscape pass
     ice_n = ZK.fbm(Pk, 0.4 * sp, _octaves(0.4 * sp, 2 * res), 0.6, S + 5) / 0.17
-    ice_eff = ice * (1 + 0.5 * ice_n) + 0.15 * (h - base)
-    glacier = land & (ice > 1) & (ice_eff > 40)
+    summer_max = float(world["meta"].get("params", {}).get("tectonics", {}).get("ice_summer_temp", 1.0))
+
+    def glacier_mask(hh, stop):
+        _, rec_g, order_g = ZK.flood_d8(hh, outlet, nx, ny, 1e-3, jitter_g)
+        return glaciers(hh, rec_g, order_g, land, stop, nx, ny, res, gw_sl, gc_sl, own_f, precip, ice,
+                        ice_n, summer_max)
+
+    jitter_g = np.random.default_rng(seed + 5).random(npx)
+    glacier, ice_th = glacier_mask(h, sea)
     # Lakes where the coarse world has them (a coarse lake cell is a lake
     # basin ~100 km across): outline like the coast, from a smoothed
     # lake/no-lake indicator plus fractal noise. The surface is the coarse
@@ -1962,6 +2071,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         hprev = h
         hmean = _box_mean(np.maximum(h, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
         C = C * np.clip(tmean / np.maximum(hmean, 1.0), 0.5, 2.0) ** 0.8
+    glacier, ice_th = glacier_mask(h, sea | lake)  # on the finished valleys
     # soften D8 streaks and knife-edge ridges on hillslopes; keep channels sharp
     chan = np.clip(np.log10(np.maximum(Q, 1e-3) / (50 * res * res)) / 2, 0, 1)
     cliff = _dilate(cliff.reshape(ny, nx), 2).ravel()  # falls, gorges and their walls don't creep
@@ -2166,6 +2276,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     clim_f = np.where(alpine, 28, clim_f)
     clim_f = np.where(land & ((t_warm < 0) | glacier), 29, clim_f).astype(np.uint8)
     biome = climate.biomes(h, temp, precip, lake | lf_lake)
+    # (the ice sheet biome is the glaciers: cold ground without ice is bare rock up high, else tundra or cold desert)
+    bare = (biome == 4) & ~glacier
+    biome = np.where(bare, np.where(h > 1500, 15, np.where(precip < 250, 7, 5)), biome)
     biome = np.where(glacier, 4, biome).astype(np.uint8)
     water = np.where(sea, 1, np.where(lake | plunge | lf_lake, 2, 0)).astype(np.uint8)
 
@@ -2228,7 +2341,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "drainage_area": area.astype(np.float32),
         "precipitation": precip.astype(np.float32),
         "temperature": temp.astype(np.float32),
-        "ice": np.where(glacier, np.maximum(ice, 1.0), 0).astype(np.float32),
+        "ice": np.where(glacier, np.maximum(ice_th, 1.0), 0).astype(np.float32),
         "tide_range": np.where(sea, tide_f, 0).astype(np.float32),
         "wave_power": np.where(sea, wave_f, 0).astype(np.float32),
         "rock": rock_f,
@@ -2362,7 +2475,7 @@ LAYER_DOC = {
     "drainage_area": ("km^2", "upstream area inside the region"),
     "precipitation": ("mm/yr", "annual precipitation (interpolated from the coarse world)"),
     "temperature": ("C", "mean annual temperature, lapse-rate adjusted to the fine elevation"),
-    "ice": ("m", "land ice thickness (interpolated)"),
+    "ice": ("m", "glacier ice thickness: the coarse ice in accumulation zones, else from the ice flux (glaciers())"),
     "tide_range": ("m", "tidal range at sea (interpolated from the world's tide_range; 0 on land)"),
     "wave_power": ("kW/m", "mean wave power at sea (interpolated from the world's wave_power; 0 on land)"),
     "rock": ("ROCKS id", "basement rock (surface.ROCKS)"),

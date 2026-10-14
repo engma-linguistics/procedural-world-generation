@@ -202,6 +202,8 @@ With each class come the zoom's parameters: the exposed stratum, its thickness a
   - Density comes from temperature and salinity.
   - Deep water sinks where the winter sea is densest, poleward of 50° (Stommel's flow law).
   - The replacement inflow follows the currents, like the **AMOC**'s North Atlantic Drift, and warms Norway.
+  - Worlds store the sea-surface salinity and temperature (annual, July, January), the sinking per cell, and in their meta the overturning's strength in Sv with its sinking sites. The viewer's "Overturning" overlay draws the sites, the surface inflow along the model's route, and the deep return flow as a dashed **schematic** (the model has no deep ocean: a route along the deep western boundaries to the Southern Ocean or the tropics, `ocean.loop_schematic`). On Earth (world 64fc00): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1 Sv) seas and the Ross (1.9 Sv) and Weddell (0.6 Sv) seas; none in the North Pacific.
+- **Humidity:** the rain model's water vapour gives each half-year's dew point and relative humidity near the ground (`climate.humidity`; worlds store `dewpoint_jul/jan` and `humidity_jul/jan`).
 - **Rain:**
   - Moisture evaporates from the sea (Clausius–Clapeyron) and is carried by the winds.
   - It rains out three ways: as **orographic rain**, which gives wet windward slopes and **rain shadows**; as **convection**; and along storm tracks.
@@ -279,7 +281,8 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
    - rivers and lakes;
    - biomes;
    - waves and tides;
-   - July / January temperature and rain (`world.seasons`).
+   - July / January temperature and rain (`world.seasons`);
+   - the sea (temperature, salinity, sinking; the overturning in the meta) and humidity.
 
 The viewer's Zoom button instead builds the world straight from the keyframe in seconds. Worlds are `worlds/<id>.json` plus a `.txt` summary.
 
@@ -302,6 +305,7 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - Coarse rivers become meandering, carved valleys, and rivers entering at the edge bring their discharge.
    - Lakes take the world's level and kind. Open lakes pass their water on; closed ones keep it.
 5. **Landscape pass:** 15 iterations of steady-state stream power (slope ∝ discharge^−0.5). These **grade** rivers into smooth concave profiles.
+   - **Glaciers** (`glaciers()`, PW-127) come from each pixel's own climate, by the main run's ice rule (`earth.ice_sheets`): ice accumulates where the pixel's summer, lapse-corrected to its own height (the world's ice-surface temperatures undone to the bare ground, then the coarse ice's own cooling put back), is below `ice_summer_temp` and enough snow falls to outlast the melt; cold ground joined to such a zone is ice too. The surplus is routed down the valleys as tongues (~0.8 km wide at 0.1 km³/yr, at most 3 km³/yr and 100 km) that melt as bare ice on the way down, so glaciers reach below the snowline only as narrow tongues. A coarse ice sheet stays one sheet (its own cooling keeps its pixels cold) with outlet tongues at its margin. The outline is drawn on the target surface (lakes avoid it, the landscape pass smooths under it) and redrawn on the finished valleys; the `ice` layer is the coarse thickness in the zones, else a thickness from the flux, and the ice-sheet biome is exactly the glaciers.
 6. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is drawn as its own edifice: a Gaussian shield (with rift-zone lobes, and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones are lowered as the run says (`top_m`) and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon. Near hotspot vents on the sea floor the terrain is replaced by the vents' floor plus their cones, so the sea between two vents is sea even where the coarse cell is land. Young volcanoes keep their smooth cone through the landscape pass; older ones are carved by it.
 7. **Landform classes** (`zoom_landforms.py`): each coarse cell's landform class shapes the finished landscape through a class-dispatch registry (`SYNTH`: per class, `target` / `relief` / `strata` hooks, blended by smooth class weights, so there are no cell seams):
    - **relief** around the drainage: each pixel's height above the first channel below it is reshaped into flat interfluves over steep valley walls (channels and every flow path kept);
@@ -348,9 +352,9 @@ Twenty-eight detectors look for places worth a visit:
 - **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
 - **Climate:** "wine country", rain shadows, climate records.
 - **Variety:** the most varied 1000 km square.
-- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
+- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea by its summer surface temperature, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
 
-Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
+Each kind belongs to a category (landscape, water, climate, travel, geology), which the viewer filters by and colours the markers with. Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
 
 ## 11. Viewer, server, CLI
 
@@ -362,7 +366,7 @@ Each scores as kind priority × quality. Results are cached in `worlds/highlight
 - **Globe** (`viewer/index.html`):
   - three.js, one triangle fan per cell, with exaggerated relief on a globe or a flat map.
   - Runs play as animations with events and plate arrows.
-  - Worlds add climate, biome, wave and tide layers. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
+  - Worlds add climate, biome, wave, tide, sea temperature, salinity, humidity and dew point layers, and the overturning overlay. Ocean currents are drawn as streamlines (brighter = faster), so the gyres show as loops. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
   - Provenance: a world shows the run and time it came from ('<run name> @ T Myr', linked), and its zooms; a run lists what was made from it (worlds with their zooms, time zooms) and ticks their times above the time slider. From the indexes (`worlds/index.json` carries `source_run`, `t_myr`).
   - Clicking a cell offers "Zoom".
   - The URL holds the state, e.g. `?world=7c5adf.json&layer=biome&mode=map`.

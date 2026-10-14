@@ -289,7 +289,13 @@ planet simulate ...`; `serve` then shows that root's runs).
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
   surface in m, same datum as `elevation`; equal to `elevation` where there's
   no lake, so `lake_level - elevation` is the water depth). Sea layers:
-  `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`.
+  `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`; `sst`,
+  `sst_jul`, `sst_jan` (sea-surface temperature, C), `salinity` (psu) and
+  `sinking` (Sv of deep water sinking per cell), see `planet/ocean.py` (0 on
+  land). Air: `dewpoint_jul/_jan` (C) and `humidity_jul/_jan` (% relative
+  humidity) for the two half-years. World meta `overturning` has the
+  overturning's strength (`sv`, `north_sv`, `south_sv`), its sinking sites
+  and a schematic of its loop (`ocean.loop_schematic`).
 - `worlds/highlights/<id>.json`: the highlights found in world `<id>` (a cache).
 - `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
 - `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.
@@ -298,7 +304,8 @@ Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
 `elevation, plate, crust` (1 = continental), `crust_age, plate_boundary, rock,
 surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
 climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
-jet_e/_n, wave_power, tide_range`, and the landform layers (`planet/landform.py`:
+jet_e/_n, wave_power, tide_range, sst, sst_jul/_jan, salinity, sinking,
+dewpoint_jul/_jan, humidity_jul/_jan` (the last seven worlds only), and the landform layers (`planet/landform.py`:
 `landform` (class id, legend `landforms`), `landform_age`, `strata_top`,
 `strata_top_km`, `strata_next`, `strata_dip`, `fold_wavelength`), which run
 frames and sliced worlds both carry. Not every item stores every layer: run
