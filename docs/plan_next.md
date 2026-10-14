@@ -192,6 +192,12 @@ Order: 1 → 6, small to large.
 - The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
 - Pre-made zooms need re-making after `zoomwater` lands.
 
+**Viewer / Earth world** (from the viewer2 report)
+- The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.
+- The Earth world can't be zoomed (no rock layers).
+- The cold-era timeline tint is stripy where temperature flickers from frame to frame (kept unsmoothed).
+- Time zooms made from the button run away too: f87163 reaches −520 m with ice 7.4 km thick. This is the "generated worlds glaciate too hard" issue above.
+
 **Infrastructure**
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
