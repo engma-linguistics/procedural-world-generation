@@ -171,6 +171,24 @@ def test_waterfalls_on_a_staircase():
     assert lake and lake[0]["px"] == [10, 6] and 49 <= lake[0]["height_m"] <= 51
 
 
+def test_steep_reach_is_not_a_fall():
+    """A stream falling a steady 40 m/km on 4 km pixels drops 160 m per
+    pixel, but it's a steep reach, not a fall (PW-070); a step of the same
+    height on a gentle river is one."""
+    nx, ny, res = 40, 24, 4.0
+    r = 10 * nx + np.arange(nx - 1)
+    rec = np.full(nx * ny, -1)
+    rec[r] = r + 1
+    q = np.zeros(nx * ny)
+    q[r] = 300.0
+    ws = np.zeros((ny, nx))
+    ws[10, :] = 3000.0 - 40.0 * res * np.arange(nx)
+    assert not zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    ws[10, :] = 3000.0 - 0.5 * res * np.arange(nx) - 160.0 * (np.arange(nx) >= 20)
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 162) < 1
+
+
 def test_zoom_reports_waterfalls(lake_zoom):
     for f in lake_zoom["stats"]["waterfalls"]:
         assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q

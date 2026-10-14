@@ -84,7 +84,9 @@ Pipeline
    lips; each fall's gorge has walls held at the lip's level (cliffs,
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
-   stay sharp); any pits left are filled.
+   stay sharp: creep never lifts a stream's bed, under ice too); any pits
+   left are filled. Falls are listed only where the drop stands out from
+   the river around it (waterfalls()).
 
 Outputs: zooms/<id>/ (paths and layer files: store.py)
   zoom.json      meta: source world, centre, size, resolution, projection,
@@ -220,17 +222,22 @@ def _catmull_rom(p0, p1, p2, p3, n):
 # downstream that is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
 WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 50.0, 30.0, 15.0, 3
 WF_MAX_KM = 5.0  # ... and over at most this far (at least one pixel): on coarse pixels a steep reach isn't a fall
+WF_CONTRAST, WF_CONTEXT_KM = 3.0, 6.0  # ... and WF_CONTRAST x steeper than the river within WF_CONTEXT_KM (see waterfalls())
 
 
 def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
-               starts: dict | None = None, top: int = 5) -> list[dict]:
+               starts: dict | None = None, top: int = 5, designed=()) -> list[dict]:
     """Pixel-scale falls along the drainage network. ws: water surface (lake
     surface on lakes, 0 at sea), q: discharge m^3/s, rec: D8 receivers (-1
     at outlets); starts: {lake outlet pixel: lake level}, where a fall
-    starts at the lake surface a pixel upstream. Best first by power
-    (discharge x height), at least ~15 km apart, none within 4 px of the
-    edge. Each: px (row, col), height_m, length_km, discharge_m3s,
-    power_gw, top_m, bottom_m, from_lake."""
+    starts at the lake surface a pixel upstream. A drop that isn't at a
+    lake outlet or within 3 px of a `designed` lip pixel must stand out from
+    the river around it: at least WF_CONTRAST x as steep as the reaches
+    just above and below it (else it's a steep reach, rapids or a cascade
+    of a mountain stream, not a fall: coarse pixels and small steep streams
+    have many). Best first by power (discharge x height), at least ~15 km
+    apart, none within 4 px of the edge. Each: px (row, col), height_m,
+    length_km, discharge_m3s, power_gw, top_m, bottom_m, from_lake."""
     n = nx * ny
     lvl, d0 = ws.astype(float).copy(), np.zeros(n)
     for o, v in (starts or {}).items():
@@ -256,6 +263,39 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         best_h, best_d, best_j = (np.where(better, a, b) for a, b in ((drop, best_h), (dist, best_d), (j, best_j)))
     keep = best_h >= WF_MIN_DROP
     i, h, d, jj = i[keep], best_h[keep], best_d[keep], best_j[keep]
+    # concentrated: steeper than the river above and below (over ~2x the
+    # fall's length, at least WF_CONTEXT_KM), by WF_CONTRAST
+    up = np.full(n, -1)
+    o = np.argsort(q, kind="stable")
+    o = o[rec[o] >= 0]
+    up[rec[o]] = o  # main donor (the biggest; the last write wins)
+    ctx = max(2.0 * res, WF_CONTEXT_KM)
+
+    def walk(start, nxt, length):
+        """(pixel, km) after following nxt (up or rec) from start for ~length km."""
+        p, km = start.copy(), np.zeros(len(start))
+        for _ in range(int(np.ceil(length / res)) + 1):
+            r = nxt[p]
+            go = (r >= 0) & (km < length)
+            if not go.any():
+                break
+            rr = np.maximum(r, 0)
+            diag = (rr % nx != p % nx) & (rr // nx != p // nx)
+            km = np.where(go, km + res * np.where(diag, 1.4142, 1.0), km)
+            p = np.where(go, rr, p)
+        return p, km
+
+    L = np.maximum(2 * d, ctx)
+    pu, ku = walk(i, up, float(L.max()) if len(L) else 0.0)
+    pd_, kd_ = walk(jj, rec, float(L.max()) if len(L) else 0.0)
+    g_ctx = (np.maximum(ws[pu] - lvl[i], 0) + np.maximum(ws[jj] - ws[pd_], 0)) / np.maximum(ku + kd_, res)
+    fixed = d0[i] > 0  # (lake outlets and designed lips are falls whatever the river around them)
+    r_, c_ = np.divmod(i, nx)
+    for p in designed:
+        a, b = divmod(int(p), nx)
+        fixed |= (np.abs(r_ - a) <= 3) & (np.abs(c_ - b) <= 3)
+    ok = fixed | (h / np.maximum(d, 1e-9) >= WF_CONTRAST * g_ctx)
+    i, h, d, jj = i[ok], h[ok], d[ok], jj[ok]
     gw = 1000 * 9.81 * q[i] * h / 1e9
     out, sep = [], max(6, int(round(15 / res)))
     for k in np.argsort(-gw):
@@ -1750,8 +1790,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     chan = np.clip(np.log10(np.maximum(Q, 1e-3) / (50 * res * res)) / 2, 0, 1)
     cliff = _dilate(cliff.reshape(ny, nx), 2).ravel()  # falls, gorges and their walls don't creep
     kd = np.where(active & ~cliff, np.where(glacier, 0.4, KD * (1 - 0.8 * chan)), 0.0)
+    # (creep rounds the hillslopes, but never lifts a stream's bed, under ice
+    # too: in a deep valley it would fill the channel towards its walls in
+    # places, leaving steps and pits along the stream, undesigned 'falls')
+    stream = active & (chan > 0)
     for _ in range(SMOOTH_STEPS):
-        h = ZK.diffuse(h, kd, active, nx, ny)
+        hd = ZK.diffuse(h, kd, active, nx, ny)
+        h = np.where(stream, np.minimum(hd, h), hd)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
@@ -1783,10 +1828,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
     discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
-    falls = waterfalls(ws_f, discharge, rec, nx, ny, res,
-                       {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0})
     # the designed falls: where they ended up, and a plunge pool at each foot
     lips = place_falls(rec, Q, h)[5]
+    falls = waterfalls(ws_f, discharge, rec, nx, ny, res,
+                       {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0},
+                       designed=[lp for lp, _, _ in lips])
     pool = np.zeros(npx)
     for lip, st, kp in lips:
         foot = int(rec[lip])
