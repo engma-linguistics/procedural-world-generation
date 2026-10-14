@@ -303,13 +303,21 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - Lakes take the world's level and kind. Open lakes pass their water on; closed ones keep it.
 5. **Landscape pass:** 15 iterations of steady-state stream power (slope ∝ discharge^−0.5). These **grade** rivers into smooth concave profiles.
 6. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is drawn as its own edifice: a Gaussian shield (with rift-zone lobes, and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones are lowered as the run says (`top_m`) and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon. Near hotspot vents on the sea floor the terrain is replaced by the vents' floor plus their cones, so the sea between two vents is sea even where the coarse cell is land. Young volcanoes keep their smooth cone through the landscape pass; older ones are carved by it.
-7. **Knickpoint waterfalls:**
+7. **Landform classes** (`zoom_landforms.py`): each coarse cell's landform class shapes the finished landscape through a class-dispatch registry (`SYNTH`: per class, `target` / `relief` / `strata` hooks, blended by smooth class weights, so there are no cell seams):
+   - **relief** around the drainage: each pixel's height above the first channel below it is reshaped into flat interfluves over steep valley walls (channels and every flow path kept);
+   - **strata** as benches and cliffs (`bench_map`): hard beds over soft, horizontal (one level per zoom) or tilted by the dip into cuestas. A river crossing a cliff falls over it; a valley cut below a level makes a re-entrant; a hill above one is a mesa.
+   - **Great escarpment:** one step ~0.8 e* high below the escarpment cells' level e*: a lowland, a crenulated scarp, the plateau above. A designed reach crossing it takes its main fall at the scarp, the river on the plateau down to the lip.
+   - **Caprock:** stepped benches, mesas and buttes, canyons 1.5× deeper; cuestas where the strata dip.
+   - **Lava plateau:** a flat top over stair-stepped valley sides.
+   - Sills left across a flow path are cut through, and each coarse cell's mean is restored. Batches 2–3 (rifts, fold belts, shields; karst, dunes, coastal plains) plug in as further synthesisers (PW-011, PW-012).
+8. **Knickpoint waterfalls:**
    - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
-   - Heights are scaled so the plateau above never rises over the coarse ground. Big rivers get ~50–150 m falls.
+   - Heights are scaled so the plateau above never rises over the coarse ground (or a landform's plateau, at an escarpment). Big rivers get ~50–150 m falls; at an escarpment ~100–400 m.
+   - The lip's rock: a top stratum ≥ 0.5 km thick holds it by itself; a thinner one is helped by a harder rock under it. Soft rock under the lip lets the gorge retreat faster (undercutting, as at Niagara).
    - The river is held at this staircase, between valley sides a few km wide, so it reaches its lips and doesn't run perched above the land beside it.
    - `stats.waterfalls` in `zoom.json` lists the biggest, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
 
-Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them; synthesising each class's terrain is PW-010–012) and its stats.
+Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them) and its stats (`landforms`: the share of land each synthesised class shapes).
 
 ![Delta types](overview/zoom_deltas.jpg)
 *Delta types in three 600 km zooms of world 0f7abd: a bird's foot into a calm sea; a smooth wave-built coast; tidal funnels with 6.6 m tides.*
@@ -387,6 +395,5 @@ Other checks:
   - thinner continents at level 7.
 - **Basins:** generated worlds lose their closed basins over time.
 - **Ice:** time zooms glaciate generated worlds too hard.
-- **Zoom:** falls are scaled down to fit under the coarse ground.
 
 The full list is on the board: `uv run python issue-tracking/board.py list --open` (see `issue-tracking/README.md`).

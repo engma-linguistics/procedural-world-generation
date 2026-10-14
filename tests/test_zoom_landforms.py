@@ -135,3 +135,19 @@ def test_designed_falls_take_the_scarp(esc_pair):
                 for st in kp["steps"][:1] if st.get("height_m")]
     assert lips(esc, True) and max(lips(esc, True)) >= 250
     assert max(lips(esc, True)) > max(lips(plain, False)) + 100
+
+
+def test_caprock_holds_the_lip():
+    """PW-146: a hard cap over soft rock holds a lip (Niagara), a thin one
+    is helped by what's under it, and soft rock under the lip lets the
+    gorge retreat faster."""
+    SS, SH, DOL, GRAN, CRATON = 7, 8, 14, 11, 5
+    niagara = (DOL, CRATON, 2.0, 0.6, SH)  # dolomite cap over shale, 2 km of cover
+    assert zoom.lip_resistance(*niagara) == zoom.KP_RESIST[DOL]
+    # a sandstone veneer over granite: the granite holds it; a thick one doesn't
+    assert zoom.lip_resistance(SS, CRATON, 2.0, 0.1, GRAN) == zoom.KP_RESIST[GRAN]
+    assert zoom.lip_resistance(SS, CRATON, 2.0, 0.8, GRAN) == zoom.KP_RESIST[SS]
+    # undercut: shale under the cap retreats faster than granite under it
+    assert zoom.lip_undercut(*niagara) > 1.1 > 0.7 > zoom.lip_undercut(SS, CRATON, 2.0, 0.6, GRAN)
+    # without strata layers: the old rule (basement under a thin cover)
+    assert zoom.lip_resistance(SS, CRATON, 0.2) == zoom.KP_RESIST[CRATON]

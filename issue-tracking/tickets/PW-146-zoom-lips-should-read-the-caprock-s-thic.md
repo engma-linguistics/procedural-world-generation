@@ -2,7 +2,7 @@
 id: PW-146
 title: Zoom lips should read the caprock's thickness and the soft rock under it
 type: task
-status: todo
+status: done
 parent: PW-010
 subsystem: zoom
 effort: s
@@ -37,4 +37,5 @@ caprock and lava plateau synthesis); best folded into that work or right
 after it.
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoomland1: lip_resistance reads strata_top_km/strata_next (a top stratum >= 0.5 km holds the lip; a thinner one is helped by a harder rock under it); gorge retreat x lip_undercut (softness of the rock under the lip, 0.6-1.4; Niagara ~8 km at 6,000 m3/s).
 - 2026-10-14: Created from inbox draft draft-zoom-lip-caprock-structure.md (found by stratarock).

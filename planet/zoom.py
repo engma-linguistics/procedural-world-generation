@@ -87,7 +87,16 @@ Pipeline
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, but for a little under
-   ice); any pits
+   ice).
+   Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
+   reshapes the finished landscape, blended by smooth class weights: the
+   relief around the drainage (flat interfluves over steep valley walls)
+   and hard beds as benches and cliffs (a great escarpment's scarp, caprock
+   benches, mesas and cuestas, a lava plateau's stepped valley sides);
+   rivers crossing a cliff fall over it. Sills across a flow path are cut
+   through and each coarse cell's mean is kept. A designed reach crossing
+   an escarpment takes its main fall at the scarp, with the plateau above
+   it (the ground it must fit under is lifted: scarp_fall). Any pits
    left are filled. Falls are listed only where the drop stands out from
    the river around it (waterfalls()).
 
@@ -322,9 +331,10 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
 # KP_MIN_GRAD over consecutive links, with at least KP_MIN_EXCESS m of drop
 # beyond a graded KP_GRADED m/km, keeps part of that drop as falls instead of
 # being graded smooth. How much is concentrated, and where:
-# - lip resistance R (0..1) from the exposed rock (or the basement, under a
-#   thin cover: a sandstone veneer over shield granite holds a lip like the
-#   granite does): KP_RESIST;
+# - lip resistance R (0..1) from the exposed stratum when it is at least
+#   LIP_CAP_KM thick (a caprock holds the lip by itself), else the harder of
+#   it and the rock under it (strata_next: a sandstone veneer over shield
+#   granite holds a lip like the granite does): KP_RESIST, lip_resistance();
 # - concentrated fraction f = (0.25 + 0.45 R) / (1 + Q / 50,000)^0.3: hard
 #   lips hold more, the biggest rivers wear their lips into cataracts
 #   (Niagara: ~51 of ~99 m between the lakes; the Congo's Livingstone falls:
@@ -334,8 +344,10 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
 #   down the reach below the gorge;
 # - the lip has retreated from the escarpment (the middle of the steepest
 #   link) upstream by a gorge of length 4 km x sqrt(Q / 1000 m^3/s) x
-#   (1.5 - R) (Niagara: ~11 km at ~6,000 m^3/s), at most 60 km and most of
-#   the reach above the escarpment.
+#   (1.5 - R) x the undercut of the rock under the lip (0.6 granite .. 1.4
+#   evaporite: lip_undercut(); Niagara, dolomite over shale: ~8 km at ~6,000
+#   m^3/s, ~11 km real), at most 60 km and most of the reach above the
+#   escarpment.
 KP_MIN_GRAD, KP_GRADED, KP_MIN_EXCESS, KP_MIN_Q = 0.8, 0.2, 50.0, 100.0  # m/km, m/km, m, m^3/s
 KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 # how well each rock (surface.ROCKS id) holds a lip
@@ -348,15 +360,41 @@ SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is ev
 BANK_KM, BANK_SIDE_GRAD = 4.0, 30.0  # held river courses: banks this wide (km, >= 2 px), then falling off (m/km)
 ICE_SNOUT_GRAD = 50.0  # m/km: under ice, creep may lift a stream's bed by this much per km in from the ice's edge
 BANK_MAX_Q = 300.0  # m^3/s: ... not lifting other rivers carrying this much
+LIP_CAP_KM = 0.5  # km: a top stratum this thick holds a lip by itself (see lip_resistance)
 SCARP_MIN_W = 0.3  # a designed reach takes its main fall at a landform scarp where the class weighs this much
 LF_CHANNEL_Q = 5.0  # m^3/s: landform relief (zoom_landforms) is shaped around channels carrying this much
 
 
-def lip_resistance(surface_rock: int, basement: int, cover_km: float) -> float:
+def _under(surface_rock, basement, cover_km, top_km=None, next_rock=None) -> int:
+    """The rock under the exposed one: the next stratum (strata_next), else,
+    without strata layers, the basement under a thin cover (the cover's own
+    mix otherwise)."""
+    if next_rock is not None:
+        return int(next_rock)
+    return int(basement) if cover_km < 0.5 else int(surface_rock)
+
+
+def lip_resistance(surface_rock: int, basement: int, cover_km: float, top_km: float | None = None,
+                   next_rock: int | None = None) -> float:
+    """How well the exposed rock holds a lip (0..1). A top stratum at least
+    LIP_CAP_KM thick holds it by itself, hard over soft or not (Niagara: the
+    dolomite cap, whatever the shale below does); a thinner one is soon cut
+    through, and the rock under it (the next stratum, or the basement under
+    a thin cover: strata_next) holds it if that is harder."""
     r = KP_RESIST.get(int(surface_rock), 0.5)
-    if cover_km < 0.5:  # a thin cover: the river soon cuts into the basement, which then holds the lip
-        r = max(r, KP_RESIST.get(int(basement), 0.5))
+    thin = (cover_km if top_km is None else top_km) < LIP_CAP_KM
+    if thin:
+        r = max(r, KP_RESIST.get(_under(surface_rock, basement, cover_km, top_km, next_rock), 0.5))
     return r
+
+
+def lip_undercut(surface_rock: int, basement: int, cover_km: float, top_km: float | None = None,
+                 next_rock: int | None = None) -> float:
+    """How fast a fall's gorge retreats for the rock under its lip (x the
+    lip's own term): soft rock under the cap is undercut, the cap breaks off
+    and the fall walks back (Niagara: shale under the dolomite), hard rock
+    under it slows it. 0.6 (granite) .. 1.4 (evaporite)."""
+    return 0.6 + 0.8 * (1 - KP_RESIST.get(_under(surface_rock, basement, cover_km, top_km, next_rock), 0.5))
 
 
 def knickpoints(ws: np.ndarray, down: np.ndarray, riv: np.ndarray, land: np.ndarray, q: np.ndarray,
@@ -408,7 +446,8 @@ def knickpoints(ws: np.ndarray, down: np.ndarray, riv: np.ndarray, land: np.ndar
         k = int(np.argmax(drop / km))  # the escarpment: middle of the steepest link
         s_e = 0.5 * (s[k * (m - 1)] + s[(k + 1) * (m - 1)])
         R = lip_resistance(*rock[cells[k]])
-        gorge = float(min(4.0 * np.sqrt(Q / 1000) * (1.5 - R), 60.0, 0.8 * s_e + 0.4 * (s[(k + 1) * (m - 1)] - s_e)))
+        gorge = float(min(4.0 * np.sqrt(Q / 1000) * (1.5 - R) * lip_undercut(*rock[cells[k]]), 60.0,
+                          0.8 * s_e + 0.4 * (s[(k + 1) * (m - 1)] - s_e)))
         s_lip = max(s_e - gorge, 0.0)
         R = max(R, lip_resistance(*rock[cells[min(int(np.searchsorted(s, s_lip) // (m - 1)), len(cells) - 1)]]))
         f = (0.25 + 0.45 * R) / (1 + Q / 50000) ** 0.3
@@ -1091,7 +1130,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         kps = knickpoints(ws_c, down, riv, elev > 0, flow * cell_area * KM2_M_PER_YR_TO_M3S,
                           {c: float(np.arccos(np.clip(g.centers[c] @ g.centers[down[c]], -1, 1)) * R_KM)
                            for c in polys}, polys,
-                          {c: (int(srock[c]), int(rock[c]), float(cover_all[c])) for c in polys})
+                          {c: (int(srock[c]), int(rock[c]), float(cover_all[c]),
+                               *((float(L["strata_top_km"][c]), int(L["strata_next"][c])) if "strata_next" in L else ()))
+                           for c in polys})
         # Along a reach with falls the valley floor becomes a staircase: the
         # floor between the falls is graded at what's left of the reach's
         # slope, and drops by each fall's height at its lip.
