@@ -280,3 +280,12 @@ The viewer server (`planet serve --no-open`, port 8765) was started by the coord
 | d05a1e | Hothouse | 16 | 1000 | `tilt=45 climate_offset=5` | 432, 460 (a434c5) |
 
 Same seeds won't give the same geography under the new physics, so pick world times afresh.
+
+**Update 00:20:**
+- `store` is merged (1c93acf); the server has been restarted.
+- The `lakes` agent is doing step 1.
+- The other agents were told to merge main before reporting.
+- Old outputs get deleted once `falls` reports, since it tests on a434c5 and cec38b.
+- The user (at bedtime) asked for two documents, both written by subagents only **after all other overnight work is done**:
+  - `docs/morning_decisions.md`: judgement calls for the user to give feedback on. Collect them through the night.
+  - `docs/overview.md`: an overview of what the project is and how each subsystem works. At most ~5 pages of text; pictures and diagrams are welcome.
