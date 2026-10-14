@@ -11,7 +11,7 @@ compiled code in __pycache__, so later runs start instantly.
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 # ---------------------------------------------------------------------------
 # Grid construction
@@ -118,14 +118,15 @@ def build_raster(centers, nbr_off, nbr_idx, w, h):
     return out
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def locate(pts, guess, raster, centers, nbr_off, nbr_idx):
     """Nearest cell for each row of pts. guess[i] >= 0 is used as the walk's
     starting point (fast when points moved only a little); otherwise the
-    raster supplies one."""
+    raster supplies one. Each point's walk is independent, so the parallel
+    loop gives exactly the serial result."""
     h, w = raster.shape
     out = np.empty(pts.shape[0], np.int64)
-    for i in range(pts.shape[0]):
+    for i in prange(pts.shape[0]):
         s = guess[i]
         if s < 0:
             lat = np.arcsin(min(1.0, max(-1.0, pts[i, 2])))

@@ -239,6 +239,7 @@ def _resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner
     newc = np.zeros(n, np.bool_)
     coll = np.zeros((P, P), np.int64)
     cand = np.empty(P, np.int64)
+    q = np.empty(3)
     # Pass 0: patch small holes inside a plate (nearest-neighbour
     # sampling of a rotated grid occasionally lands on a ref cell nobody
     # wrote). Without this, older crust underneath shows through as speckle.
@@ -351,7 +352,6 @@ def _resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, prev_owner
             r2 = nbr_idx[e]
             if owned[k, r2]:
                 continue
-            q = np.empty(3)
             for a in range(3):
                 q[a] = Q[k, a, 0] * centers[r2, 0] + Q[k, a, 1] * centers[r2, 1] + Q[k, a, 2] * centers[r2, 2]
             if kernels.walk_nearest(q, i, centers, nbr_off, nbr_idx) == i:
