@@ -582,6 +582,17 @@ function buildOverlays() {
     }
     for (const [k, pts] of Object.entries(byKind)) overlays['ev_' + k] = lineObj(pts, EVENT_COLORS[k] || 0xffffff);
   }
+  if (picked) {  // the square a zoom would cover
+    const pts = [], r0 = globe ? 1.014 : 1, h = zoomSize / 2 / 111.2, cl = Math.max(Math.cos(picked.lat * Math.PI / 180), 0.1);
+    const corners = [[-h, -h], [-h, h], [h, h], [h, -h], [-h, -h]];
+    for (let c = 0; c < 4; c++) for (let k = 0; k < 8; k++) {
+      const [a0, b0] = corners[c], [a1, b1] = corners[c + 1];
+      const f = (t) => llPos(picked.lat + a0 + (a1 - a0) * t, picked.lon + (b0 + (b1 - b0) * t) / cl, r0);
+      const p1 = f(k / 8), p2 = f((k + 1) / 8);
+      if (!wraps(p1, p2)) pts.push(...p1, ...p2);
+    }
+    overlays.zoomRegion = lineObj(pts, 0xffffff);
+  }
   Object.values(overlays).forEach((o) => group.add(o));
   buildAxis();
 }
@@ -804,8 +815,9 @@ function updateHover() {
   ray.setFromCamera(mouse, camera);
   const hit = ray.intersectObject(mesh)[0];
   hovered = hit ? topo.triCell[hit.faceIndex] : -1;
-  $('infoText').innerHTML = hovered >= 0 ? describe(hovered).join('<br>') + '<br><span class="muted">click to copy and zoom</span>'
-    : '<span class="muted">Hover a cell. Click to copy its description and to zoom into that region.</span>';
+  if (picked) return;  // the info box stays on the clicked cell until it's closed
+  $('infoText').innerHTML = hovered >= 0 ? describe(hovered).join('<br>') + '<br><span class="muted">click: copy and pick for zooming · double-click: zoom</span>'
+    : '<span class="muted">Hover a cell. Click to copy its description and pick it for a regional zoom; double-click to zoom straight in.</span>';
 }
 renderer.domElement.addEventListener('pointermove', (e) => {
   mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
@@ -819,6 +831,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
   pickCell(hovered);
 });
+renderer.domElement.addEventListener('dblclick', () => { if (hovered >= 0) { pickCell(hovered); startZoom(); } });
 function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => (el.style.opacity = 0), 1800); }
 
 // collapsible panel sections: remember which are open. localStorage can be
@@ -864,8 +877,8 @@ $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% o
 // ------------------------------------------------------------ regional zoom
 // Clicking a cell offers a zoom of the region around it. The server (planet
 // serve) does the work as a background job: for a run it first builds a full
-// world at the current time (a replay from t=0, ~1 min at level 6, reused
-// afterwards), then refines the region. We poll the job and open the result.
+// world from the keyframe on screen (a few seconds, reused afterwards), then
+// refines the region. We poll the job and open the result.
 let picked = null, zoomJob = null, zoomSize = 1000;
 const ZOOM_SIZES = [250, 500, 1000, 2000, 4000];
 const ZOOM_PX = 500;  // pixels across, whatever the size: 1000 km -> 2 km pixels
@@ -877,8 +890,17 @@ function zoomSource() {
 }
 
 function pickCell(i) {
-  picked = { lat: +V.grid.lat[i].toFixed(2), lon: +V.grid.lon[i].toFixed(2) };
+  picked = { i, lat: +V.grid.lat[i].toFixed(2), lon: +V.grid.lon[i].toFixed(2) };
   renderZoomBox();
+  buildOverlays();
+}
+
+function unpick() {
+  picked = null;
+  if (zoomJob?.finished) zoomJob = null;
+  renderZoomBox();
+  buildOverlays();
+  updateHover();
 }
 
 function renderZoomBox() {
@@ -886,14 +908,15 @@ function renderZoomBox() {
   let html = '';
   if (picked && V) {
     const src = zoomSource();
-    html += `<button class="x" data-act="close" title="Close">&times;</button>
-      <b>Zoom into this region</b><br>
+    $('infoText').innerHTML = describe(picked.i).join('<br>');
+    html += `<button class="x" data-act="close" title="Close (Esc)">&times;</button>
+      <b>Zoom into this region</b> <span class="muted">(white square)</span><br>
       <span class="muted">centre ${picked.lat}, ${picked.lon}${V.kind === 'run' ? ` · t = ${V.t} Myr` : ''}</span><br>`;
     if (src) {
       html += `<div class="row" style="margin-top:4px;align-items:center">
         <select id="zoomSize">${ZOOM_SIZES.map((k) => `<option value="${k}" ${k === zoomSize ? 'selected' : ''}>${k} km</option>`).join('')}</select>
         <button class="btn" data-act="go" ${zoomJob && !zoomJob.finished ? 'disabled' : ''}>Zoom</button></div>
-        <div class="muted">${ZOOM_PX}×${ZOOM_PX} px at ${+(zoomSize / ZOOM_PX).toFixed(2)} km${V.kind === 'run' ? '; the run is sliced at this time first (about a minute, once)' : ''}</div>`;
+        <div class="muted">${ZOOM_PX}×${ZOOM_PX} px at ${+(zoomSize / ZOOM_PX).toFixed(2)} km${V.kind === 'run' ? '; a full world is built from this frame first (a few seconds, once)' : ''}</div>`;
     } else html += '<div class="muted">Zooming needs a world sliced from a run (or a run). This one has no rock or climate layers.</div>';
   }
   if (zoomJob) {
@@ -909,10 +932,10 @@ function renderZoomBox() {
   box.hidden = !html;
 }
 
-$('zoomBox').addEventListener('change', (e) => { if (e.target.id === 'zoomSize') { zoomSize = +e.target.value; renderZoomBox(); } });
+$('zoomBox').addEventListener('change', (e) => { if (e.target.id === 'zoomSize') { zoomSize = +e.target.value; renderZoomBox(); buildOverlays(); } });
 $('zoomBox').addEventListener('click', (e) => {
   const act = e.target.dataset.act;
-  if (act === 'close') { picked = null; if (zoomJob?.finished) zoomJob = null; renderZoomBox(); }
+  if (act === 'close') unpick();
   if (act === 'go') startZoom();
   if (act === 'open') { e.preventDefault(); showTab('zoom', zoomJob.zoom); }
 });
@@ -920,6 +943,7 @@ $('zoomBox').addEventListener('click', (e) => {
 async function startZoom() {
   const src = zoomSource(); if (!src || !picked) return;
   const req = { ...src, lat: picked.lat, lon: picked.lon, size_km: zoomSize, res_km: zoomSize / ZOOM_PX };
+  if (zoomJob && !zoomJob.finished) return;
   zoomJob = { label: `${zoomSize} km around ${picked.lat}, ${picked.lon}`, status: 'starting', progress: 0 };
   renderZoomBox();
   let r;
@@ -962,9 +986,10 @@ function showTab(tab, zoomId) {
   [...$('tabs').children].forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   if (tab === 'zoom') {
     stop();
-    const f = $('zoomFrame');
-    if (zoomId) f.src = 'zoom.html?id=' + encodeURIComponent(zoomId);
-    else if (!f.getAttribute('src')) f.src = 'zoom.html';
+    // reloaded every time, so zooms made since show up in its list
+    const q = new URLSearchParams(zoomId ? { id: zoomId } : {});
+    if (V?.kind === 'run') q.set('run', V.dir); else if (V?.id) q.set('world', V.id);
+    $('zoomFrame').src = 'zoom.html?' + q;
   }
   const u = new URL(location);
   if (tab === 'zoom') u.searchParams.set('tab', 'zoom'); else u.searchParams.delete('tab');
@@ -1040,6 +1065,7 @@ $('frame').addEventListener('input', (e) => { stop(); setFrame(+e.target.value);
 addEventListener('keydown', (e) => {
   if (!V || state.tab === 'zoom' || e.target.tagName === 'SELECT') return;
   if (e.code === 'KeyN' && !e.metaKey && !e.ctrlKey) northUp();
+  if (e.code === 'Escape' && picked) unpick();
   if (V.kind !== 'run') return;
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   if (e.code === 'ArrowRight') { stop(); setFrame(Math.min(V.frame + 1, V.run.frames.length - 1)); }
