@@ -136,7 +136,7 @@ Order: 1 → 6, small to large.
 **Queue (in order, as files free up):**
 1. After `water` merges:
    - **Climate kernels in parallel** (bit-identical) and climate updated at every keyframe (`climate_every` = 4), so the viewer's climate isn't stale. The speedup pays for the extra cost.
-   - **Then overturning circulation** in `climate.py`.
+   - **Then overturning circulation** in `climate.py`. **Done on branch `ocean`** (`planet/ocean.py`; see Known issues → Overturning).
 2. After `water` merges: **split `tectonics.py`** into kernels, crust, events and earth-system modules (output-neutral via the goldens), and drop compatibility code (`ocean_ref_age`, …). **Then the supercontinent B′** on the split code.
 3. After `timezoom` and `highlights` merge:
    - `planet/store.py` (one reader/writer for runs, zooms and timezooms);
@@ -180,10 +180,16 @@ Order: 1 → 6, small to large.
 - **Eemian-like start:** +24 m in the first 10 kyr (real: +6–9 m). `insol_k` above 0.3 melts most of Antarctica.
 - **Start anchor:** the fixed per-cell cooling that keeps the starting ice stable persists after that ice is gone. It's a calibration crutch.
 - **Smaller issues:** small accumulation jumps at each 10 kyr climate refresh; the ablation zone (where ice melts) is about one 110 km cell wide.
-- **Not done:** glacial erosion, proglacial lakes, and the meltwater link to ocean salinity (see overturning in Round 2).
+- **Not done:** glacial erosion, proglacial lakes. (The meltwater link to ocean salinity is in, branch `ocean`: each full climate gets the net ice loss since the last one as `melt`, and the overturning carries on from the last one's state. Over Earth's first 150 kyr it is only ~0.03 Sv, too small to matter.)
 
 **Climate**
-- **Norway too cold:** its sea surface is about 1.3 °C against about 7.5 °C observed, and W European winters are about 4 °C too cold. Waiting on the overturning circulation.
+- **Norway too cold:** partly fixed by the overturning (branch `ocean`). The Norwegian coast's sea surface went from 0.9 to ~5–6 °C (observed ~7.5), and Scandinavia's coldest month from −26.5 to −22.3 °C (NCEP −8.2). W European winters barely moved (−4.3 → −4.2 °C against 0.6 observed). Even a sea 8 °C warmer all over the NE Atlantic only brings them to −3 °C, so the rest is in the air-temperature model (how far the sea's air reaches inland in winter), not the ocean.
+- **Overturning circulation** (`planet/ocean.py`, branch `ocean`):
+  - **Earth:** ~11 Sv sinking in the Nordic, Irminger and Labrador seas (observed AMOC ~17 Sv) and none in the North Pacific. The Antarctic margin makes only ~2.5 Sv (AABW ~10–20 Sv): the Weddell and Ross seas are too fresh (~34.0 psu against 34.4–34.6). Their winter brine is weak, and there's no shelf/polynya ice factory.
+  - **Labrador Sea is too warm** (~7 °C sea surface against ~3.5 °C): the inflow feeds it along the Labrador coast. SW Greenland and Iceland now get summers just above 10 °C, so ET becomes D there (Reykjavik's coldest month went from −29.6 to −12.9 °C, observed −0.6 °C).
+  - **The North Atlantic's on-state is found by a spin-up rule,** not by history. With no earlier state, every polar sea that is nearly dense enough starts sinking, and the drho threshold tightens over the iterations. Without that start, the model's own salinity leaves the Nordic seas too fresh to sink: its rain model has no Atlantic/Pacific evaporation contrast to speak of. Hosing ~1 Sv into the North Atlantic shuts it down. Once the hosing stops it recovers within 2–3 climate updates, so it has no lasting off-state.
+  - **Its warmth adds to the 50–70°N ocean band** (`moc_zonal` = 0): that band's sea is now ~2–4 °C warmer than before. The Köppen score preferred this (70.69% against 70.50% with half of it taken off the band).
+  - **Cost:** about +0.15–0.2 s per climate.compute at level 6 (0.48 → ~0.65 s unloaded). The overturning is solved on the level-5 grid, but the sea surface and the air temperatures are carried a second time on the full grid.
 - **Gulf Stream and Kuroshio separate from the coast too far north** (a Stommel-model limit), so the Oyashio region is too warm.
 - **Rain is patchy cell to cell on flat ground:** neighbouring cells differ by a median 1.5× near the hothouse lake. Diagonal streaks in rain maps predate the gyre work.
 - **Older Earth errors:** Sahel and East Africa too wet; Indian and Chinese monsoons too dry; Siberia, Alaska, Quebec and NE China winters 5–10 °C off.

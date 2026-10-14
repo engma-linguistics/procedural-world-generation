@@ -387,11 +387,30 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         surf = np.where(grounded, bed + H, bed) - sl
         return surf, grounded
 
+    melt_ref = {"H": H.copy(), "t": 0.0}
+
+    def meltwater(t_kyr):
+        """Fresh water from the ice the sheets have lost since the last full
+        climate (m/yr of water per cell, where they thinned; the net loss
+        over the planet, nothing while they grow). The ocean's overturning
+        feels it (climate.compute's melt)."""
+        yrs = (t_kyr - melt_ref["t"]) * 1000.0
+        dv = (H - melt_ref["H"]) * area
+        melt_ref.update(H=H.copy(), t=t_kyr)
+        loss = np.maximum(-dv, 0.0)
+        net = max(-float(dv.sum()), 0.0)
+        if yrs <= 0 or net <= 0 or loss.sum() <= 0:
+            return None
+        return RHO_I / RHO_W * loss * (net / loss.sum()) / area / yrs
+
     def full_climate(dTg):
         nonlocal t_compute
         t0 = time.time()
         surf, _ = grounded_surface()
-        c = climate.compute(g, surf, dT_run + dTg, tilt)
+        # (the overturning carries on from the last full climate's state)
+        c = climate.compute(g, surf, dT_run + dTg, tilt, melt=meltwater(t_kyr), moc_start=fields_.get("moc"))
+        fields_["moc"] = c["moc_state"]
+        fields_["moc_sv"] = (float(c["overturning"][lat >= 0].sum()), float(c["overturning"][lat < 0].sum()))
         t_compute += time.time() - t0
         if p.baseline == "obs" and "bias" not in fields_:
             fields_["bias"] = obs_bias(c)
@@ -444,6 +463,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                 "obliquity": round(orb[0], 3), "eccentricity": round(orb[1], 4),
                 "perihelion": round(orb[2], 1), "precession_index": round(orb[1] * math.sin(math.radians(orb[2])), 4),
                 "insol_65n_jul_anom": round(dq65, 1), "dT_global": round(dTg, 2),
+                "overturning_north_sv": round(fields_["moc_sv"][0], 1),
+                "overturning_south_sv": round(fields_["moc_sv"][1], 1),
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}
 
     i65 = int(np.argmin(np.abs(BAND_LAT - 65)))
