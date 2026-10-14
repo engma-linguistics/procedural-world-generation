@@ -1,4 +1,5 @@
 ---
+id: PW-135
 title: Rifted margins have no flank uplift, so few great escarpments stand high
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: landform
 blocked_by: []
 relates: [PW-010]
 refs: [planet/tectonics/crust.py, planet/landform.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Ghats, Eastern Australia's divide), and that high edge is what retreats as
 the great escarpment. Try a flexural flank uplift alongside
 `crust.rift_stretching` (a broad, decaying `lift`-like term on the cells
 next to the stretched belt), then recheck escarpment share and heights.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-rift-shoulder-uplift.md (found by landform).

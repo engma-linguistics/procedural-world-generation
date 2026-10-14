@@ -1,4 +1,5 @@
 ---
+id: PW-134
 title: Per-cell records (and rock, cover) flicker frame to frame as the world grid resamples the plates
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: landform
 blocked_by: []
 relates: [PW-108, PW-009]
 refs: [planet/landform.py, planet/tectonics/simulation.py, "run 472faf (deleted; rerun seed 21 L7)"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -32,3 +35,6 @@ nearest-neighbour sampling, and at converging boundaries PW-108's churn.
 Options: a little lateral diffusion of cover thickness within a plate; or
 gather the world view with a smoother sampling for display layers. Look at
 it together with PW-108.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-record-speckle-flicker.md (found by landform).

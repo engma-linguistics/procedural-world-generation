@@ -1,4 +1,5 @@
 ---
+id: PW-136
 title: Let the exposed stratum, not the well-mixed cover, set surface rock and erodibility
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: landform
 blocked_by: []
 relates: [PW-006, PW-010]
 refs: [planet/tectonics/record.py, planet/surface.py, planet/landform.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
   scorecard and expect retuning.
 
 Lean: B now, C as an experiment after PW-010 shows what the zoom needs.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-strata-set-erodibility.md (found by landform).
