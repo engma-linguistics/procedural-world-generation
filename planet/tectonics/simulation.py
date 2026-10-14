@@ -39,7 +39,7 @@ import numpy as np
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation
+from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation, sediment_km
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve
 from .plates import Plates
@@ -235,7 +235,8 @@ class Simulation:
         # weather, ice, rivers, erosion, sediment
         earth.global_temperature(self, growth, int(newc.sum()), rng)
         if earth.climate_due(self):
-            earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level))
+            earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
+                                                 sediment_km(col.cover, col.x)))
         dep, lake = earth.erode(self, col)
         chem = earth.sediments(self, col, dep, lake)
         earth.bury(self, col)
@@ -277,7 +278,8 @@ class Simulation:
         x[:, MIX] = m / over[:, None]
         self.w_extra = x
         self.w_rock = col.rock
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
+                                sediment_km(self.w_cover, self.w_extra))
         self._scatter()
 
     def _record_boundaries(self, bd, conv):
@@ -309,7 +311,8 @@ class Simulation:
         self.w_cover = pl.cover[o, r]
         self.w_extra = pl.extra[o, r]
         self.swell = self.w_extra[:, LIFT]
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level)
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
+                                sediment_km(self.w_cover, self.w_extra))
         self.w_ref = r
 
     def _scatter(self):

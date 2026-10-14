@@ -11,7 +11,7 @@ import numpy as np
 
 from ..geo import R_KM
 from . import mantle
-from .isostasy import ISO_LAND, ISO_VOLCANO, OCEAN_KM, elevation
+from .isostasy import ISO_LAND, ISO_VOLCANO, OCEAN_KM, elevation, sediment_km
 from ..surface import HOTSPOT
 
 
@@ -66,7 +66,8 @@ def cap_plumes(sim, col, plume):
     plateau (Yellowstone, Deccan). Returns the plume's crust growth
     (km/Myr) after that; under continents a quarter of it."""
     dt, cont = sim.dt, col.cont
-    as_volcano = elevation(sim.w_thick, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.swell - sim.sea_level)
+    as_volcano = elevation(sim.w_thick, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.swell - sim.sea_level,
+                           sediment_km(col.cover, col.x))
     head = np.where(cont, 2000.0, 3000.0)
     taper = np.clip(1 - (np.maximum(as_volcano, 0) / head) ** 2, 0, 1)
     room = np.maximum(head - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
@@ -90,7 +91,8 @@ def volcanoes(sim, growth, t, rng):
     sim.volcanoes = live
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
-    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.swell - sim.sea_level) > -1500
+    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.swell - sim.sea_level,
+                         sediment_km(sim.w_cover, sim.w_extra)) > -1500
     cand = np.flatnonzero((growth * dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))
     if len(cand) == 0:
         return t

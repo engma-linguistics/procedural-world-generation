@@ -12,7 +12,7 @@ import numpy as np
 from .. import kernels
 from ..noise import Perlin3D, fbm, ridged
 from ..surface import CRATON, OCEAN, OROGEN
-from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth
+from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth, sediment_lift
 from .plates import CMYR
 
 
@@ -74,6 +74,8 @@ def initial_state(sim):
     rock = np.where(craton, CRATON, np.where(cont, OROGEN, OCEAN)).astype(np.uint8)
     blanket = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=3.0)
     cover = np.where(cont, np.clip(1.5 * blanket + 0.6, 0, 3) + np.where(inland < 1, 1.5, 0), 0)
+    # (sediment is lighter than crust: the same ground needs less of it)
+    thick = np.where(cont, np.maximum(thick - sediment_lift(cont, rock, cover) / ISO_LAND, BECOMES_CONT_KM + 1), thick)
     # Continental rock ages from the unsimulated past (own random stream,
     # so adding this didn't change the rest of the set-up): shields
     # 1.5-3.5 Gyr, the belts around them 0.3-1.4 Gyr.

@@ -48,7 +48,7 @@ Modules
   plate_kernels  numba kernels: resolve ownership, crust flow, ghost cleanup
   motion         plate boundaries; forces -> velocities
   mantle         the mantle's temperature anomaly: slabs, insulation, traction, plumes
-  isostasy       crust thickness -> elevation; the per-cell EXTRA columns
+  isostasy       crust thickness -> elevation (light, compacting sediment); the per-cell EXTRA columns
   crust          the crust budget: arcs, collisions, accretion, subduction
                  erosion, stretching and rifted margins, crustal flow,
                  continents born, cratons; the thermostats
