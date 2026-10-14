@@ -167,13 +167,14 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
             n2 = ZK.fbm(np.ascontiguousarray(Pk[win]), 5.0, 2, 0.5, S + 62) / 0.17
             if top > 0 and rr - sh_now < 2 * res + hw:  # fringing reef: a flat out from the shore
                 rr = sh_now + max(1.5 * res, 1.5)
-                c = np.where(rho <= rr, -2.0, -2.0 - (rho - rr) * FORE_REEF)
+                c = np.where(rho_e <= rr, -2.0, -2.0 - (rho_e - rr) * FORE_REEF)
             else:  # barrier reef or atoll: rim, lagoon inside
                 lag = -(LAGOON_M + 15.0 * np.clip(n2, -1, 1))
                 rim = np.where(n2 > 0.35, MOTU_M, -1.0)
-                c = np.where(np.abs(rho - rr) <= hw, rim,
-                             np.where(rho < rr, np.minimum(lag, -3.0), -1.0 - (rho - rr - hw) * FORE_REEF))
-            reefpx = (c >= zz) & (rho < rr + hw + 1.0)
+                # (the ring follows the island's lobed old shore, not a circle)
+                c = np.where(np.abs(rho_e - rr) <= hw, rim,
+                             np.where(rho_e < rr, np.minimum(lag, -3.0), -1.0 - (rho_e - rr - hw) * FORE_REEF))
+            reefpx = (c >= zz) & (rho_e < rr + hw + 1.0)
             zz = np.maximum(zz, c)
         if prov:
             floors.append((vx[j], vy[j], f))

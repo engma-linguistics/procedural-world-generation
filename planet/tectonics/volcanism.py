@@ -53,6 +53,7 @@ COLUMNS = ("lat", "lon", "kind", "age", "active", "top_m", "floor_m", "height_m"
 PLUME_KM = 150.0  # radius of a plume's head and swell
 HEAD_MYR = 6.0  # a new plume's head: a huge outpouring for this long (flood basalts)
 GAP_KM = (60.0, 150.0)  # km of plate motion between a plume's vents (vent_gap)
+SCATTER_KM = 12.0  # rms offset of a vent from the plume's track
 VENT_KM = 25.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~25-60 km)
 TOP_MAX = (4200.0, 3500.0)  # m: highest summit at sea (Mauna Kea), on a continent
 APRON_TOP = (-2000.0, 1500.0)  # m: lava that can't pile higher spreads into a broad apron up to here
@@ -136,6 +137,12 @@ def hotspots(sim, rng, bd):
                 at += h["gap"] - h["run"]
                 f = at / d
                 q = _slerp(h["ppos"], p_now, f)
+                # not quite in line: magma finds its own way up (Hawaii's
+                # Loa and Kea trends lie ~40 km apart)
+                side = np.cross(q, p_now - h["ppos"])
+                if np.linalg.norm(side) > 1e-12:
+                    q = q + side / np.linalg.norm(side) * vrng.normal(0, SCATTER_KM) / R_KM
+                    q /= np.linalg.norm(q)
                 cb = int(g.locate((pl.Q[k] @ q)[None])[0])
                 segs.append((cur, f))
                 cur = new_vent(sim, vrng, VENT, k, q, cb, sim.step_no * 1000 + 500 + seq, plume=h["id"])
@@ -178,12 +185,13 @@ def vent_gap(sim, rng, c):
     plate's elastic thickness ~2.7 km x sqrt(age in Myr) at sea (Watts) and
     ~40 km under a continent. Hawaii (90 Myr floor, Te ~25 km): alpha ~65
     km, volcanoes ~40-60 km apart and islands ~100 km apart. The gap is
-    params.vent_spacing x alpha, give or take 25%, within GAP_KM: ~100 km
+    params.vent_spacing x alpha within GAP_KM, give or take 30%: ~100 km
     for Hawaii, so that a chain is a string of islands (the channels between
-    Hawaii's islands are 30-50 km wide), 60 km on young floor."""
+    Hawaii's islands are 30-50 km wide), 60 km on young floor (where two
+    vents close together merge into one island, like Maui's)."""
     te = 40.0 if sim.w_cont[c] else max(2.7 * np.sqrt(max(sim.w_age[c], 0.0)), 3.0)
     alpha = 65.0 * (te / 25.0) ** 0.75
-    return float(np.clip(sim.params.vent_spacing * alpha * rng.uniform(0.75, 1.25), GAP_KM[0], GAP_KM[1]))
+    return float(np.clip(sim.params.vent_spacing * alpha, GAP_KM[0], GAP_KM[1]) * rng.uniform(0.7, 1.3))
 
 
 def stencil(g, pos, r_km):
@@ -251,8 +259,8 @@ def new_vent(sim, rng, kind, k, ppos, c, vid, plume=-1, vol=0.0, life=0.0):
     pl = sim.plates
     cont = bool(sim.w_cont[c])
     if kind == VENT:
-        hmax = 3000.0 * rng.uniform(0.8, 1.1) if cont else \
-            min(2500.0 + 800.0 * np.sqrt(max(sim.w_age[c], 0.0)), 10500.0) * rng.uniform(0.85, 1.1)
+        hmax = 3000.0 * rng.uniform(0.7, 1.1) if cont else \
+            min(2500.0 + 800.0 * np.sqrt(max(sim.w_age[c], 0.0)), 10500.0) * rng.uniform(0.7, 1.1)
     else:
         hmax = 0.0
     # the ground it starts on: the lowest of its cell and their neighbours (a

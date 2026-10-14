@@ -73,8 +73,8 @@ def test_zoom_cones_are_separate_islands():
     f = ZV.fields(w, fr, px, py, res, 55.0, Pk, 1, n * res)
     z = np.maximum(f["floor"], f["z"])
     r = np.hypot(px, py)
-    assert (z[np.abs(r - 20) < 0.6] > 0).any()  # motu on the rim
-    lagoon = z[r < 15]
+    assert (z[(r > 12) & (r < 30)] > 0).any()  # motu on the (lobed) rim
+    lagoon = z[r < 12]
     assert (lagoon < 0).all() and (lagoon > -80).all()
-    assert z[at(30)] < -1000
+    assert np.median(z[np.abs(r - 34) < 1]) < -800  # the reef front drops off
     assert f["list"][0]["form"] == "atoll"
