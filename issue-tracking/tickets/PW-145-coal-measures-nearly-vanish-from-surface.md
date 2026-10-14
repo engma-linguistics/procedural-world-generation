@@ -2,7 +2,7 @@
 id: PW-145
 title: Coal measures nearly vanish from surface_rock now that it reads the top stratum
 type: task
-status: needs-decision
+status: done
 parent: PW-005
 subsystem: surface
 effort: s
@@ -32,4 +32,5 @@ Options:
 Lean: A unless the viewer or highlights miss coal basins.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Owner decision: A (accept coal folding into thicker strata on the surface map). Coal and other resources go in the resources epic later.
 - 2026-10-14: Created from inbox draft draft-coal-measures-display.md (found by stratarock).

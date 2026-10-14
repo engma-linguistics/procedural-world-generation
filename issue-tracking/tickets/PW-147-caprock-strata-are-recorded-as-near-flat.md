@@ -2,7 +2,7 @@
 id: PW-147
 title: Caprock strata are recorded as near-flat, so the zoom never makes cuestas
 type: task
-status: needs-decision
+status: todo
 parent: PW-005
 subsystem: surface
 effort: m
@@ -34,4 +34,5 @@ Options:
 Lean: A now, B if cuestas are wanted (it is physics, not a zoom fudge).
 
 ## Updates
+- 2026-10-14: Status needs-decision -> todo. Owner decision: B (record a broad regional tilt in the run so cuestas form), wanted for sure but low priority.
 - 2026-10-14: Created from inbox draft draft-cuestas-need-dips.md (found by zoomland1).
