@@ -2,6 +2,8 @@
 fake run in a temporary data directory."""
 
 import json
+import shutil
+
 import pytest
 
 from planet import api, timeline as T, world as W, zoom as Z
@@ -63,3 +65,40 @@ def test_jobs_queue(dirs):
     assert jobs.wait(b)["status"] == "error" and jobs.get(b)["error"] == "bad input"
     assert jobs.wait(c)["status"] == "done"
     assert jobs.get("nope") is None
+
+
+def test_highlights_from_run(dirs):
+    # nothing computed yet at 40 Myr: cached_only just says so, without building a world
+    res = api.highlights({"run": "tiny01", "t": "40"}, cached_only=True)
+    assert res["features"] is None and res["world"] is None
+    n_worlds = len(list((dirs / "worlds").glob("*.json")))
+
+    res = api.highlights({"run": "tiny01", "t": "40"})
+    assert res["t_myr"] == 40 and res["features"] and all(f["zoom"] is None for f in res["features"])
+    wid = res["world"]
+    assert (dirs / "worlds" / "highlights" / f"{wid}.json").exists()
+    # the cache is in a subfolder: world listings and slice lookups don't see it
+    W.update_index()
+    assert [w["id"] for w in json.loads((dirs / "worlds" / "index.json").read_text())].count(wid) == 1
+    assert len(list((dirs / "worlds").glob("*.json"))) == n_worlds + 1
+    assert api.find_slice(dirs / "runs" / "tiny01", 40.0).stem == wid
+
+    # now cached (also by world id), and a zoom made the way the viewer makes it is found
+    again = api.highlights({"world": wid}, cached_only=True)
+    assert [f["title"] for f in again["features"]] == [f["title"] for f in res["features"]]
+    f = next(f for f in res["features"] if f["zoomable"])
+    zr = api.zoom_request(res["source"], f)
+    zid = Z.zoom_id(wid, zr["lat"], zr["lon"], zr["size_km"], zr["res_km"], 1)
+    (dirs / "zooms" / zid).mkdir()
+    (dirs / "zooms" / zid / "zoom.json").write_text("{}")
+    hit = [g for g in api.highlights({"run": "tiny01", "t": 40})["features"] if g["zoom"]]
+    assert [g["title"] for g in hit] == [f["title"]] and hit[0]["zoom"] == zid
+    shutil.rmtree(dirs / "zooms" / zid)
+
+    # deleting the world deletes its highlights
+    T.delete(wid)
+    assert not (dirs / "worlds" / "highlights" / f"{wid}.json").exists()
+
+    for bad in ({}, {"run": "tiny01"}, {"run": "tiny01", "t": 900}, {"run": "x", "world": "y"}):
+        with pytest.raises(api.BadRequest):
+            api.highlights(bad)

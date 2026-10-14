@@ -12,6 +12,7 @@ uv run python -m planet list                       # runs and worlds with their 
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
+uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
 ```
 
 In the viewer, pick a run from the dropdown and press play (or space;
@@ -23,6 +24,15 @@ then opens the result in the "Regional zoom" tab (also on its own at
 `http://127.0.0.1:8765/viewer/zoom.html`). The globe shows the spin axis and
 the tilt; tick "Equator, tropics, polar circles" for those, and press N (or
 "North up") to level the view.
+
+"Find highlights" (in the panel) lists the places worth a closer look at the
+moment on screen: the highest peak, the longest mountain range, the largest and
+longest rivers, river mouths where deltas could build, fjord coasts,
+Mediterranean "wine country", volcanic arcs, hotspot islands, rifts, the
+biggest lake, deserts, rainforests, ice sheets and a few climate records
+(`planet/highlights.py`; cached in `worlds/highlights/`). Click one to turn the
+globe to it and pick it for a zoom at a suggested size; `planet highlights
+--zoom N` makes those zooms ahead of time.
 
 Other things to try:
 

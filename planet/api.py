@@ -6,6 +6,12 @@ drive them without a socket.
                       -> {"job": id}
   GET  /api/jobs/<id> -> {"status": queued|running|done|error, "progress": 0..1,
                           "message", "zoom" (when done), "error" (when failed)}
+  GET  /api/highlights?run=<id>&t=<Myr>  or  ?world=<id>   [&cached=1] [&refresh=1]
+                      -> {"world", "t_myr", "features": [...] (highlights.py), each
+                          with "zoom": the id of an existing zoom of it, or null}
+                      For a run this builds the world first if needed (a few
+                      seconds). cached=1 only looks: features is null when
+                      nothing has been computed yet.
 """
 
 from __future__ import annotations
@@ -17,9 +23,13 @@ import threading
 import time
 from pathlib import Path
 
+from . import highlights as H
 from . import timeline as T
 from . import world as W
 from . import zoom as Z
+
+ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
+_slicing = threading.Lock()  # the zoom worker and highlights requests may slice the same run at once
 
 
 class BadRequest(ValueError):
@@ -85,17 +95,29 @@ def find_slice(run_dir: Path, at: float) -> Path | None:
     return None
 
 
-def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
-    """A world at the run's keyframe nearest t, built straight from the stored
-    keyframe (a few seconds, and exactly what the viewer shows). Runs too old
-    for that are replayed from t=0 instead, which refuses if the code has
-    changed since. Reuses an existing slice."""
-    run_dir = T.find_run(run_ref)
+def keyframe_t(run_dir: Path, t: float) -> float:
+    """The run's keyframe time nearest t."""
     run = json.loads((run_dir / "run.json").read_text())
     times = [f["t"] for f in run["frames"]]
     at = min(times, key=lambda x: abs(x - t))
     if abs(at - t) > run["meta"]["every"]:
         raise BadRequest(f"t must be between 0 and {run['meta']['myr']}")
+    return at
+
+
+def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
+    """A world at the run's keyframe nearest t, built straight from the stored
+    keyframe (a few seconds, and exactly what the viewer shows). Runs too old
+    for that are replayed from t=0 instead, which refuses if the code has
+    changed since. Reuses an existing slice."""
+    with _slicing:
+        return _slice_run(run_ref, t, progress)
+
+
+def _slice_run(run_ref: str, t: float, progress) -> Path:
+    run_dir = T.find_run(run_ref)
+    run = json.loads((run_dir / "run.json").read_text())
+    at = keyframe_t(run_dir, t)
     found = find_slice(run_dir, at)
     if found:
         progress(1.0, f"using world {found.stem} (already sliced at {at:g} Myr)")
@@ -136,6 +158,47 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     out = Z.zoom(str(world_path), r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], log=log)
     progress(1.0, "done")
     return {"zoom": out.name, "world": world_path.stem}
+
+
+def parse_source(req: dict) -> dict:
+    """{run, t} or {world} from a request (query values may be strings)."""
+    if bool(req.get("run")) == bool(req.get("world")):
+        raise BadRequest("give either run (+ t) or world")
+    if req.get("run"):
+        return {"run": str(req["run"]), "t": _num(req, "t")}
+    return {"world": str(req["world"]).removesuffix(".json")}
+
+
+def zoom_request(source: dict, f: dict) -> dict:
+    """The zoom request the viewer sends for a highlight (so the zoom ids match)."""
+    return {**source, "lat": f["lat"], "lon": f["lon"], "size_km": f["size_km"], "res_km": f["size_km"] / ZOOM_PX}
+
+
+def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> dict:
+    """GET /api/highlights. For a run, builds the world at that keyframe
+    first if there isn't one (unless cached_only)."""
+    src = parse_source(req)
+    if "run" in src:
+        run_dir = T.find_run(src["run"])
+        at = keyframe_t(run_dir, src["t"])
+        src["t"] = at
+        world_path = find_slice(run_dir, at) if cached_only else slice_run(src["run"], at)
+    else:
+        world_path = Z.find_world(src["world"])
+    d = None
+    if world_path is not None:
+        d = H.cached(world_path) if cached_only else H.for_world(world_path, refresh)
+    out = {"source": src, "world": world_path.stem if world_path else None,
+           "t_myr": src.get("t"), "features": None}
+    if d is None:
+        return out
+    feats = []
+    for f in d["features"]:
+        zr = zoom_request(src, f)
+        zid = Z.zoom_id(world_path.stem, zr["lat"], zr["lon"], zr["size_km"], zr["res_km"], 1)
+        feats.append({**f, "zoom": zid if (Z.ZOOMS / zid / "zoom.json").exists() else None})
+    return {**out, "name": d.get("name"), "t_myr": d.get("t_myr"), "computed_in_s": d.get("computed_in_s"),
+            "features": feats}
 
 
 class Jobs:
