@@ -220,6 +220,9 @@ def stretch(sim, col, rate, plume, newc):
     col.rock[~col.cont & (plume * dt > 0.2)] = HOTSPOT
 
 
+MARGIN_MIN_KM = 12.0  # thinnest rifted-margin crust laid in a rift (else: ocean floor)
+
+
 def rifted_margin(sim, lost, col, newc):
     """Stretching doesn't destroy crust, it spreads it thinner over a
     wider area: the opening rift is floored by thinned continental crust
@@ -227,6 +230,14 @@ def rifted_margin(sim, lost, col, newc):
     before true ocean floor appears. The crust a plate's continental edge
     loses to stretching is pooled and laid down as new margin cells in
     the gap next to it (newc: the new ocean floor of this step).
+    The margin grows outward from the continent one ring of cells at a
+    time, a whole ring at once (thinner, down to MARGIN_MIN_KM, when the
+    pool runs short), so it is one continuous belt. (Laying the pool's
+    cells wherever they fell left a mosaic of margin and ocean-floor
+    cells, and bands of them as the rift opened step by step; the floor
+    cells sank to -4 km beside -2 km margin, and the plates carried the
+    mosaic past the world grid as cells flipping between continent and
+    deep sea every few Myr: PW-108.)
     In place on col (and sim.w_age)."""
     g, p, pl = sim.grid, sim.params, sim.plates
     own = sim.owner
@@ -235,32 +246,47 @@ def rifted_margin(sim, lost, col, newc):
     pl.rift_pool *= np.exp(-sim.dt / 100.0)  # a rift that never opens keeps it in its thickened flanks... eventually
     if p.rift_margin_km <= 0 or not newc.any():
         return
-    near, src = kernels.bfs_within(np.flatnonzero(cont), own, g.nbr_off, g.nbr_idx, int(round(2 * sim.scale)))
-    cand = newc & ~cont & (near > 0)
+    src_of = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
+    cand = newc & ~cont
     if not cand.any():
         return
     cont = col.cont = cont.copy()
-    for k in np.unique(own[cand]):
-        n_cells = int(pl.rift_pool[k] // p.rift_margin_km)
-        if n_cells <= 0:
-            continue
-        cells = np.flatnonzero(cand & (own == k))
-        cells = cells[np.argsort(near[cells], kind="stable")][:n_cells]
-        s = src[cells]
-        col.t[cells] = p.rift_margin_km
-        cont[cells] = True
-        col.rock[cells] = col.rock[s]
-        sim.w_age[cells] = sim.w_age[s]
-        col.cover[cells] = 0.0
-        col.x[cells] = 0.0
-        # (the source's history, no strata yet; rifted now)
-        col.rec[cells] = col.rec[s]
-        col.rec[cells, record.KM] = 0.0
-        col.rec[cells, record.T] = record.NEVER
-        col.rec[cells, record.T_RIFT] = sim.t
-        col.lith[cells] = 0
-        pl.rift_pool[k] -= len(cells) * p.rift_margin_km
-        sim.book("margin", 0, p.rift_margin_km, np.isin(np.arange(g.n), cells))
+    laid = np.zeros(g.n, bool)
+    for _ in range(int(round(2 * sim.scale))):
+        # free new floor next to continental crust of its own plate: the next ring
+        same = cont[g.nbr_idx] & (own[g.nbr_idx] == own[src_of])
+        touch = np.logical_or.reduceat(same, g.nbr_off[:-1]) & cand & ~cont
+        if not touch.any():
+            break
+        # a source for each: a continental neighbour on the same plate (the first)
+        first = np.where(same, np.arange(len(g.nbr_idx)), len(g.nbr_idx))
+        s_all = g.nbr_idx[np.minimum(np.minimum.reduceat(first, g.nbr_off[:-1]), len(g.nbr_idx) - 1)]
+        grew = False
+        for k in np.unique(own[touch]):
+            cells = np.flatnonzero(touch & (own == k))
+            km = min(p.rift_margin_km, pl.rift_pool[k] / len(cells))
+            if km < MARGIN_MIN_KM:
+                continue
+            s = s_all[cells]
+            col.t[cells] = km
+            cont[cells] = True
+            col.rock[cells] = col.rock[s]
+            sim.w_age[cells] = sim.w_age[s]
+            col.cover[cells] = 0.0
+            col.x[cells] = 0.0
+            # (the source's history, no strata yet; rifted now)
+            col.rec[cells] = col.rec[s]
+            col.rec[cells, record.KM] = 0.0
+            col.rec[cells, record.T] = record.NEVER
+            col.rec[cells, record.T_RIFT] = sim.t
+            col.lith[cells] = 0
+            pl.rift_pool[k] -= len(cells) * km
+            laid[cells] = True
+            grew = True
+        if not grew:
+            break
+    if laid.any():
+        sim.book("margin", 0, col.t, laid)
 
 
 def flow_and_orogeny(sim, col, edges, stack_add):
@@ -285,6 +311,43 @@ def flow_and_orogeny(sim, col, edges, stack_add):
     record.fold(col.rec, col.lith, squeezed, stack_add, col.cover, t, sim.t)
     rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
     return squeezed
+
+
+def coherence(sim, col):
+    """Crust type is coherent at the grid's scale. An ocean-floor cell
+    nearly ringed by continental crust of its own plate (a one-cell inlet
+    or hole, <= 2 of its neighbours oceanic) is, at 50-100 km, part of the
+    thinned margin or basin around it: it counts as (thin) continental
+    crust from now on. A thin continental cell (< BECOMES_CONT_KM) nearly
+    ringed by ocean floor (>= all but 2 of its neighbours oceanic) is a
+    shred of margin: ocean floor. The crust keeps its thickness, so the
+    ground hardly moves; only its type follows its surroundings.
+    Why: a mosaic of one-cell inlets and shreds, left by margins, arcs and
+    sampling, was carried past the world grid by the moving plates and
+    showed as cells flipping between continent and deep sea every few Myr
+    (PW-108). In place on col; returns (cells made continental, cells made
+    oceanic)."""
+    g = sim.grid
+    own = sim.owner
+    src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
+    same = own[g.nbr_idx] == own[src]
+    n_same = np.add.reduceat(same.astype(np.int64), g.nbr_off[:-1])
+    n_cont = np.add.reduceat((same & col.cont[g.nbr_idx]).astype(np.int64), g.nbr_off[:-1])
+    ring = n_same >= 5  # (not on a plate boundary)
+    weld = ring & ~col.cont & (n_cont >= n_same - 2) & (col.rock != HOTSPOT)
+    shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
+    if weld.any() or shred.any():
+        sim.book("coherence", 0, col.t, weld.astype(float) - shred)
+        col.cont = col.cont.copy()
+        # (its basement: a continental neighbour's)
+        ok = same & col.cont[g.nbr_idx]
+        first = np.minimum.reduceat(np.where(ok, np.arange(len(ok)), len(ok)), g.nbr_off[:-1])
+        w = np.flatnonzero(weld)
+        col.rock[w] = col.rock[g.nbr_idx[first[w]]]
+        col.cont[weld] = True
+        col.cont[shred] = False
+        col.rock[shred] = OCEAN
+    return weld, shred
 
 
 def birth_and_cratons(sim, col, arcky, squeezed):

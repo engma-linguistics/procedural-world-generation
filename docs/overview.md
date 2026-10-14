@@ -93,8 +93,9 @@ On four seeds the largest landmass passed 25% of the surface every 400–870 Myr
 - **Building crust:**
   - Subduction grows **volcanic arcs**.
   - Collisions stack crust, and over-thick crust **flows** outward, widening plateaus.
-  - Rifts thin continents.
+  - Rifts thin continents, and the crust they lose floors the opening rift as a continuous belt of thinned margin crust, laid ring by ring outward from the continent.
   - Hotspots build islands and flood basalts under a ~1 km swell (see **Volcanoes** below).
+- **Crust type is coherent at the grid's scale** (`crust.coherence`): a one-cell inlet of ocean floor nearly ringed by its plate's continent counts as (thin) continental crust, and a thin (< 20 km) shred of continent nearly ringed by ocean floor as ocean floor; thickness is kept, only the type follows. Without it, the plates carried one-cell mosaics of margin, arc and ocean crust past the world grid, and cells flipped between continent and deep sea every few Myr (PW-108; `tools/churn.py` measures it).
 - **Crust budget:** a "thermostat" steers arc growth and subduction erosion toward the target continental fraction (40%).
 - **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy).
   - Continents stand 250 m plus 150 m per km of crust beyond 35 km.

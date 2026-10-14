@@ -269,6 +269,7 @@ class Simulation:
         earth.reefs(self, col, dep, chem)
         col.rec[self.ice > 0, record.T_ICE] = self.t
 
+        crust.coherence(self, col)
         born = crust.birth_and_cratons(self, col, arcky, squeezed)
         self._write_back(col, born)
         self._record_boundaries(bd, conv)

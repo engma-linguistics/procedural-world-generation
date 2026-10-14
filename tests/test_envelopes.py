@@ -10,6 +10,7 @@ import pytest
 from planet import climate
 
 from helpers import run_sim
+from tools.churn import churn, sim_frame
 
 pytestmark = pytest.mark.slow
 GROUP = np.array([k[1][0] for k in climate.KOPPEN])
@@ -19,8 +20,12 @@ GROUP = np.array([k[1][0] for k in climate.KOPPEN])
 def world(request):
     # the dry share swings a lot as continents move: average it over the last 80 Myr
     sim, dry = run_sim(level=5, seed=request.param, myr=320), []
+    frames = []
     for t in (340, 360, 380, 400):
-        sim.run(t)
+        while sim.t < t - 1e-9:  # (keyframes every 4 Myr over the last 40, for the churn)
+            sim.run(sim.t + 4)
+            if sim.t > 356:
+                frames.append(sim_frame(sim))
         land = sim.w_elev > 0
         dry.append(100 * (GROUP[sim.snapshot().koppen[land]] == "B").mean())
     land = sim.w_elev > 0
@@ -33,6 +38,7 @@ def world(request):
         dry=float(np.mean(dry)),
         ocean_age=sim.w_age[ocean].mean(),
         thick=sim.w_thick[sim.w_cont].mean(),
+        churn=churn(sim.grid, frames),
     )
 
 
@@ -51,6 +57,15 @@ def test_plates(world):
     assert 2 <= st["mean_speed_cmyr"] <= 9  # Earth ~4-5
     assert 5 <= st["plates"] <= 30
     assert 25 <= world["ocean_age"] <= 120  # Earth ~64
+
+
+def test_churn(world):
+    """Continental cells that flip type (or by > 2 km) and flip back within
+    8 Myr: sampling artifacts (PW-108). At level 5, 400 Myr: crust 0.4-0.8%
+    and any 1.0-1.8% with crust.coherence, 2.9-3.3% and 3.2-3.8% before."""
+    c = world["churn"]
+    assert c["crust"] <= 1.5, c
+    assert c["any"] <= 2.5, c
 
 
 def test_climate(world):
