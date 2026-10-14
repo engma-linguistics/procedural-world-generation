@@ -73,6 +73,9 @@ Pipeline
    water except at the outlet (the shore pixel nearest the coarse lake's
    exit); an open lake's inflow leaves again there, and the ground below
    the outlet steps down at most RAPIDS_GRAD m/km (rapids, not a cliff).
+   A closed lake's smaller fragments drain to its biggest one; a fragment
+   that should drain but finds no outlet becomes land (no fragment
+   swallows its rivers).
    Distributaries take their share of the water at each split. The coarse
    rivers keep at least their valley floor (the staircase, with its falls,
    only in the valley bottom); a reach with falls has its receivers pinned
@@ -1231,7 +1234,21 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ex = (a, b)
             lake[pix] = True
             surf[pix] = clvl[c]
-            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex})
+            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c)})
+        # A closed lake's smaller fragments (its outline broken up by the
+        # noise or the coarse mask) pass their water on to its biggest one
+        # instead of swallowing their rivers (the biggest stays closed).
+        main = {}
+        for j, lk in enumerate(lakes):
+            m = main.get(lk["cl"])
+            if lk["exit"] is None and (m is None or len(lk["px"]) > len(lakes[m]["px"])):
+                main[lk["cl"]] = j
+        for j, lk in enumerate(lakes):
+            m = main.get(lk["cl"])
+            if lk["exit"] is None and m is not None and m != j:
+                mp = lakes[m]["px"]
+                k = mp[np.argmin(np.hypot(px[mp] - px[lk["px"]].mean(), py[mp] - py[lk["px"]].mean()))]
+                lk["exit"] = (float(px[k]), float(py[k]))
     if lakes:
         ds = ZK.inside_distance(lake, nx, ny) * res  # km to the shore
         dc = np.nan_to_num(lind[:, 1], nan=0.0)
@@ -1718,6 +1735,22 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
     log(f"  landscape pass: {iterations} iterations [{time.time() - t0:.1f}s]")
 
+    # A lake fragment that should pass its water on but found no way out
+    # (all of its shore drains back into it) would swallow its rivers: it
+    # becomes land instead, a flat at its level that the rivers cross.
+    rec = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)[1]
+    outs = lake_outlets(reroute(rec, ZK.receiver_order(rec))[0])
+    sink = [j for j, lk in enumerate(lakes) if lk["exit"] is not None and outs[j] < 0]
+    if sink:
+        for j in sink:
+            lake[lakes[j]["px"]] = False
+        kept = [j for j in range(len(lakes)) if j not in sink]
+        lakes, ring_px = [lakes[j] for j in kept], [ring_px[j] for j in kept]
+        lake_seq = sorted(range(len(lakes)), key=lambda j: -lakes[j]["level"])
+        outlet = sea | edge | lake
+        active = land & ~edge & ~lake
+        log(f"  {len(sink)} lake fragments without an outlet made land")
+
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
@@ -1847,7 +1880,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
-            "stats": stats, "coarse": coarse, "rec": rec, "kps": kps, "seconds": round(time.time() - t0, 1),
+            "stats": stats, "coarse": coarse, "rec": rec, "kps": kps,
+            "lakes": [{"open": lk["exit"] is not None, "outlet": int(outs[j]), "n_px": int(len(lk["px"])),
+                       "level": lk["level"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
+                      for j, lk in enumerate(lakes)],
+            "debug": {"pinned": pin_src, "overrides": ov_src},
+            "seconds": round(time.time() - t0, 1),
             "params": {"iterations": iterations, "river_min_flow": river_min_flow, "coarse_spacing_km": round(sp, 1)}}
 
 

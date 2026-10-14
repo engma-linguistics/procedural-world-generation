@@ -52,6 +52,53 @@ def test_lake_passes_its_water_on(lake_zoom):
     assert lk["inflow_m3s"] <= lk["outflow_m3s"] < 1.1 * lk["inflow_m3s"]
 
 
+def test_every_lake_fragment_passes_its_water_on(lake_zoom):
+    """No fragment of an open lake swallows its rivers (PW-062)."""
+    assert lake_zoom["lakes"]
+    assert all(lk["open"] and lk["outlet"] >= 0 for lk in lake_zoom["lakes"]), lake_zoom["lakes"]
+
+
+@pytest.fixture(scope="module")
+def closed_zoom():
+    """The same basin in a dry climate: it holds a closed lake (lake_kind 2)
+    whose level (the world's lake_level) stands well below the spill level."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 260 + 0.3 * (2500 - d0), -3000.0)
+    elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
+    precip = np.full(g.n, 500.0)
+    c = {"runoff": 0.2 * precip, "aet": 0.8 * precip, "lake_evap": np.full(g.n, 1200.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    wet = lk["wet"]
+    assert wet.sum() >= 3 and np.all(lk["kind"][wet] == 2), "the dry basin should hold a closed lake"
+    spill = hydrology.priority_flood(g, elev)[0]
+    level = float(np.median(lk["level"][wet]))
+    assert level < np.median(spill[wet]) - 30
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": wet.astype(int),
+        "lake_level": np.where(wet, lk["level"], np.nan), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"],
+        "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 4),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
+    }
+    z = zoom.build({"grid": g, "layers": layers, "meta": {"level": 5}}, *LAKE_AT, size_km=1600, res_km=8,
+                   iterations=6, log=lambda *a: None)
+    return z, level
+
+
+def test_closed_lake_keeps_its_water(closed_zoom):
+    z, level = closed_zoom
+    lk = z["stats"]["largest_lakes"][0]
+    assert abs(lk["level_m"] - level) < 1.0  # the world's lake_level, not the spill level
+    assert lk["outlet"] is None and lk["outflow_m3s"] == 0.0
+    assert lk["inflow_m3s"] > 0
+    # its smaller fragments (if any) pass their water on to it
+    main = max(z["lakes"], key=lambda d: d["n_px"])
+    assert not main["open"] and main["outlet"] < 0
+    assert all(d["outlet"] >= 0 for d in z["lakes"] if d is not main), z["lakes"]
+
+
 def test_lake_rim_holds_the_water(lake_zoom):
     Lr = lake_zoom["layers"]
     water, h = Lr["water"], Lr["elevation"].astype(float)
