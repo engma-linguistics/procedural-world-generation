@@ -279,6 +279,9 @@ Order: 1 → 6, small to large.
 - **Closed lakes on flat basins look speckled** on the run globe.
 - **Lakes are drawn only on the elevation and biome layers**, and run hover shows lake info only when elevation is loaded. Contrast: salt-lake teal is near some biome greens, and fresh blue is near shallow sea. `lake_depth` is stored in whole metres, so shallow lakes read "~0 m".
 
+- **Sliced worlds don't store wind, current or jet layers** (only runs and the Earth world do), so those overlays never appear on generated worlds (found by the overview agent).
+- **README knobs `equator_temp`/`pole_temp` don't reach the climate:** `climate.compute` hard-codes them from dT and tilt.
+
 **Infrastructure**
 - **Parallel numba kernels aren't safe for concurrent calls from several Python threads** (climate and `kernels.locate`). The API runs one job at a time; keep it that way, or add a lock.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac. Parallel launches cost about 40–57 µs each.
