@@ -15,7 +15,7 @@ Usage (from the repo root):
     uv run python issue-tracking/board.py intake [--list] [FILE...]
     uv run python issue-tracking/board.py intake --reject FILE "reason"
     uv run python issue-tracking/board.py intake --merge-into PW-NNN FILE
-    uv run python issue-tracking/board.py check
+    uv run python issue-tracking/board.py check [--refs]
 
 Standard library only, so it also runs as plain `python3 issue-tracking/board.py`.
 """
@@ -590,6 +590,30 @@ def draft_path(b, name):
     return p
 
 
+# run/world/zoom references: "run fe7144", run:fe7144@384Myr(10.2,40.1), world:7c5adf(...), zoom:f81832
+DATA_REF_RE = re.compile(r"\b(run|world|zoom)[ :]([0-9a-f]{6})\b")
+
+
+def dangling_refs(b, items, body=False):
+    """(ticket or draft name, ref) for each run/world/zoom id in `refs` (and
+    with body=True, also in the Description) that no longer exists in the
+    repo's runs/, worlds/ or zooms/. Empty when those folders aren't there."""
+    repo = b.root.resolve().parent
+    if not (repo / "runs").is_dir():
+        return []
+    exists = {"run": lambda i: (repo / "runs" / i).is_dir(), "world": lambda i: (repo / "worlds" / f"{i}.json").is_file(),
+              "zoom": lambda i: (repo / "zooms" / i).is_dir()}
+    out = []
+    for name, t in items:
+        texts = [str(r) for r in (t.get("refs") or [])] + ([description(t)] if body else [])
+        seen = set()
+        for kind, i in (m for txt in texts for m in DATA_REF_RE.findall(txt)):
+            if (kind, i) not in seen and not exists[kind](i):
+                seen.add((kind, i))
+                out.append((name, f"{kind} {i}"))
+    return out
+
+
 def cmd_check(b, tickets, args):
     problems = list(args.load_errors)
     for tid, t in tickets.items():
@@ -604,6 +628,14 @@ def cmd_check(b, tickets, args):
             continue
         problems += [f"inbox/{path.name}: {m}" for m in problems_for(d, tickets, draft=True)]
     print("\n".join(problems) if problems else f"OK ({len(tickets)} tickets, {n_drafts} inbox drafts)")
+    # a warning, not a problem: deleting a run/world/zoom leaves refs to it behind
+    open_items = [(tid, t) for tid, t in tickets.items() if t.get("status") not in CLOSED]
+    gone = dangling_refs(b, open_items if not args.refs else list(tickets.items()), body=args.refs)
+    if args.refs:
+        print("\n".join(f"warning: {n} refs {r}, which no longer exists" for n, r in gone) or "no dangling refs")
+    elif gone:
+        print(f"warning: {len(gone)} refs in open tickets to runs/worlds/zooms that no longer exist "
+              f"(board.py check --refs lists them)")
     sys.exit(1 if problems else 0)
 
 
@@ -675,7 +707,9 @@ def main(argv=None):
     s.add_argument("--merge-into", nargs=2, metavar=("ID", "FILE"),
                    help="append a draft to an existing ticket as an update, then delete it")
 
-    sub.add_parser("check", help="validate all tickets and inbox drafts")
+    s = sub.add_parser("check", help="validate all tickets and inbox drafts")
+    s.add_argument("--refs", action="store_true",
+                   help="list refs to runs/worlds/zooms that no longer exist (all tickets, refs and Descriptions)")
 
     args = p.parse_args(argv)
     b = Board(args.root)

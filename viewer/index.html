@@ -147,7 +147,7 @@
     <label class="runOnly"><input type="checkbox" id="volcanoes" checked> Arc volcanoes</label>
     <!-- data-needs: shown only when the run frame or world has that layer -->
     <label data-needs="wind_e"><input type="checkbox" id="winds"> Winds <span id="windYear">(yearly average)</span>
-      <select id="windSeason" data-needs="wind_jul_e" style="flex: none; padding: 1px" title="Surface winds averaged over the year, or over the July / January half-years (monsoons reverse between them)">
+      <select id="windSeason" data-needs="wind_jul_e" style="flex: none; width: auto; padding: 1px" title="Surface winds averaged over the year, or over the July / January half-years (monsoons reverse between them)">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
     <label data-needs="current_e"><input type="checkbox" id="currents"> Ocean currents</label>
     <label data-needs="jet_e" title="Upper-level winds (~10 km up), yearly average"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
@@ -1148,11 +1148,38 @@ let downAt = null;
 renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downAt || hovered < 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
-  const txt = `${V.name}: ` + describe(hovered).join(', ');
+  const txt = `${refOf(hovered)} ${V.name}: ` + describe(hovered).join(', ') + ` ${linkOf(hovered)}`;
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
   pickCell(hovered);
 });
 renderer.domElement.addEventListener('dblclick', () => { if (hovered >= 0) { pickCell(hovered); startZoom(); } });
+// References (PW-105, convention in issue-tracking/README.md): run:<id>@<t>Myr(lat,lon) or
+// world:<id>(lat,lon), and a deep link that reopens the viewer there (?run=&t=&lat=&lon=, picking the cell)
+function refOf(i) {
+  const ll = `(${V.grid.lat[i].toFixed(2)},${V.grid.lon[i].toFixed(2)})`;
+  if (V.kind === 'run') return `run:${V.run.id || V.dir}@${V.t}Myr${ll}`;
+  return V.id ? `world:${V.id}${ll}` : ll;
+}
+function linkOf(i) {
+  const u = new URL(location.href);
+  for (const k of [...u.searchParams.keys()]) if (!['mode', 'layer'].includes(k)) u.searchParams.delete(k);
+  if (V.kind === 'run') { u.searchParams.set('run', V.dir); u.searchParams.set('t', V.t); }
+  else if (V.id) u.searchParams.set('world', V.id + '.json');
+  u.searchParams.set('lat', V.grid.lat[i].toFixed(2)); u.searchParams.set('lon', V.grid.lon[i].toFixed(2));
+  return u.href;
+}
+// ?lat=&lon=: turn to the place and pick the nearest cell
+function goToLatLon(lat, lon) {
+  const r = Math.PI / 180, x = Math.cos(lat * r) * Math.cos(lon * r), y = Math.cos(lat * r) * Math.sin(lon * r), z = Math.sin(lat * r);
+  const G = V.grid; let best = -1, bd = -2;
+  for (let i = 0; i < V.n; i++) {
+    const a = G.lat[i] * r, b = G.lon[i] * r, d = Math.cos(a) * (Math.cos(b) * x + Math.sin(b) * y) + Math.sin(a) * z;
+    if (d > bd) { bd = d; best = i; }
+  }
+  $('spin').checked = false;
+  turnTo(lat, lon);
+  pickCell(best);
+}
 function toast(t) { const el = $('toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => (el.style.opacity = 0), 1800); }
 
 // collapsible panel sections: remember which are open. localStorage can be
@@ -1673,6 +1700,7 @@ addEventListener('drop', async (e) => {
 });
 
 // URL options, e.g. ?run=19385e&t=120&layer=rainfall&arrows=1  or  ?world=ae28af.json&mode=map&pentas=1
+// (&lat=..&lon=..: turn to that place and pick its cell; clicking a cell copies such a link)
 // (6-hex ids; world= is the file name with .json; layer= is a viewer layer name, spaces URL-encoded: crust%20age)
 function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
@@ -1725,6 +1753,7 @@ async function init() {
   $('worldSel').value = want;
   if (want.startsWith('run:')) await loadRun(want.slice(4), urlp.has('t') ? +urlp.get('t') : null);
   else await loadSelection(want);
+  if (urlp.has('lat') && urlp.has('lon')) { goToLatLon(+urlp.get('lat'), +urlp.get('lon')); urlp.delete('lat'); urlp.delete('lon'); }
 }
 $('delBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;
