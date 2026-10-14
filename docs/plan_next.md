@@ -107,3 +107,36 @@ Order: 1 → 6, small to large.
 - Continental area overshoots (~45% vs the 40% target).
 - Lakes are too many and too large; ocean plate boundaries are ragged.
 - Earth climate errors: Sahel and East Africa too wet; Indian and Chinese monsoons too dry; winter temperatures off by 5–10 °C in Siberia, Alaska, Quebec and NE China.
+
+---
+
+# Round 2 (started 2026-10-13): status and queue
+
+**Done and merged:** items 1–5 above. The viewer has the panel, tilt, zoom tab and jet overlay. The model has gyres, the jet stream and terrain winds. Also merged: the code-review "safe now" cleanup, golden tests and code-version stamps, keyframe worlds for the zoom API, and the plate-merge fix.
+
+**Running (separate worktrees):**
+- `timezoom`: item 6.
+- `highlights`: points of interest, plus pre-made zooms.
+- `water`: evaporation and runoff (Budyko), closed/salt lakes, `lake_level` world layer, sediment limits.
+- `zoomwater`: zoom lakes pass water through, true lake level and bed, delta plains and distributaries.
+
+**User decisions (2026-10-13):**
+- **No backward compatibility.** Old runs, worlds and zooms can be deleted whenever a change breaks them. Don't keep code paths only so old runs replay.
+- **Splitting big files and the review's refactors are approved.**
+- **Supercontinent:** C's breakup fix plus **B′**: a mantle temperature field (slab graveyards and continental insulation), basal traction into `_forces`, and the stress trigger decides rifts, replacing the fixed heat and big-plate rules. Hotspots are tied to the warm mantle. The user does not need cycles to be guaranteed.
+- **Overturning (deep) ocean circulation:** wanted, done physically. Density from SST and salinity, with salinity from evaporation minus precipitation, so it comes after `water`. Use a zonally averaged or box overturning per basin, with poleward heat transport following from it (the "mild Norway" fix).
+- **An Earth reference in the viewer:** our climate model on real Earth terrain next to the observed data.
+
+**Queue (in order, as files free up):**
+1. After `water` merges:
+   - **Climate kernels in parallel** (bit-identical) and climate updated at every keyframe (`climate_every` = 4), so the viewer's climate isn't stale. The speedup pays for the extra cost.
+   - **Then overturning circulation** in `climate.py`.
+2. After `water` merges: **split `tectonics.py`** into kernels, crust, events and earth-system modules (output-neutral via the goldens), and drop compatibility code (`ocean_ref_age`, …). **Then the supercontinent B′** on the split code.
+3. After `timezoom` and `highlights` merge:
+   - `planet/store.py` (one reader/writer for runs, zooms and timezooms);
+   - one file per layer, so the viewer loads only what it draws;
+   - checkpoints every ~100 Myr;
+   - `server.py`;
+   - world files reference the shared grid.
+4. **Earth reference world** in the viewer (model vs observed).
+5. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
