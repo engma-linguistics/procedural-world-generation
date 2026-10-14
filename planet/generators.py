@@ -11,8 +11,6 @@ and returns elevation in metres with 0 = sea level. Everything downstream
 
 from __future__ import annotations
 
-from collections import deque
-
 import numpy as np
 
 from . import kernels
@@ -128,18 +126,9 @@ def gen_plates(grid: Grid, rng: np.random.Generator, n_plates: int = 14,
     delta[boundary] /= count[boundary]
 
     # Spread inward from the nearest boundary cell (BFS within the plate).
-    dist = np.full(grid.n, np.inf)
-    src = np.full(grid.n, -1)
-    q = deque()
-    for i in np.flatnonzero(boundary):
-        dist[i], src[i] = 0, i
-        q.append(i)
-    while q:
-        i = q.popleft()
-        for j in grid.neighbors[i]:
-            if plate[j] == plate[i] and dist[j] == np.inf:
-                dist[j], src[j] = dist[i] + 1, src[i]
-                q.append(j)
+    hops, src = kernels.bfs_within(np.flatnonzero(boundary), plate.astype(np.int64),
+                                   grid.nbr_off, grid.nbr_idx, grid.n)
+    dist = np.where(hops >= 0, hops, np.inf)
     scale = 2 ** (grid.level - 5)  # widths are tuned for level 5
     has = src >= 0
     falloff = np.zeros(grid.n)
