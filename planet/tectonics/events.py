@@ -223,7 +223,12 @@ def stress_cut(sim, k, cf: CellForces, rng, tries=12):
     opening = np.einsum("tj,tj->t", np.cross(motion[0] - motion[1], at), t) * CMYR
     s = strength(sim)[cells]
     weak = (line @ s) / np.maximum(line.sum(1), 1)
-    eff = opening / np.maximum(weak, 0.1)
+    # The pull on each half grows with its area, the rock resisting it
+    # with the cut's length: the bigger the plate, the smaller the
+    # difference in motion it takes to break it (why plates much bigger
+    # than the Pacific are rare). Gently: (area / stress_min_plate)^(1/4).
+    size = max(len(cells) / (p.stress_min_plate * sim.grid.n), 1.0) ** 0.25
+    eff = opening * size / np.maximum(weak, 0.1)
     frac = side.mean(1)
     cont = sim.w_cont[cells].astype(float)
     ca = side @ cont
