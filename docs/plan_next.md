@@ -154,7 +154,7 @@ Order: 1 → 6, small to large.
    - plateaus;
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
-5b. **Real waterfalls in the zoom.** Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
+5b. **Real waterfalls in the zoom.** **Done on branch `falls`** (see `zoom.knickpoints()`). Where the coarse river drops steeply (big drop and discharge, the `waterfall` highlight), keep a knickpoint: a resistant-rock lip with a plunge pool and a gorge cut back upstream, instead of grading the reach smooth. Fix the lake-outlet cliff at the same time. The user wants big waterfalls most.
 5c. **Lakes on the run globe.** Runs store no lake layer, so a 390,000 km² lake (a89254 @ 1592) shows only as a dip. The simulation already computes lake levels and kinds each step (`surface.erode` → `hydrology.lakes`), so keep them and store `lake_depth` and `lake_kind` per frame. Then draw lakes in the run viewer like worlds do. Do it after `store` and `mantle` merge.
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
 
@@ -213,7 +213,7 @@ Order: 1 → 6, small to large.
   - **Discharge misses come from the rain model:** the Yangtze ends in a lake, and the Lena, Mekong and Ganges are too small (dry China, Siberia and Indian monsoon). The Nile is 19× too big (Sahel too wet). With observed rain, magnitudes are about right.
   - **The Orinoco gauge picks up the Amazon,** a coarse-routing artifact.
 - **Zoom lakes and deltas are merged (`zoomwater`); what's left:**
-  - The lake outlet river drops about 140 m within a few km (a cliff waterfall). The downstream river's profile is built up from the sea, well below the lake. It needs a floor on the outlet channel that steps down gradually downstream.
+  - ~~The lake outlet river drops about 140 m within a few km (a cliff waterfall).~~ Fixed (`falls`): the ground below an open lake's outlet steps down at most 2 m/km (rapids), out to the first designed fall.
   - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). River water entering at the zoom's edge can drain straight back out through the edge.
   - Delta fans are small, and their branches run straight (only 8 possible step directions). There are no distributaries when the fine-scale river reaches the sea away from the coarse mouth.
   - A small lake fragment sometimes has no outlet and acts as a sink.
@@ -229,9 +229,16 @@ Order: 1 → 6, small to large.
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
 - The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
 - ~~Pre-made zooms need re-making after `zoomwater` lands~~: re-made for a434c5 and cec38b (`hl2`).
-- **No big waterfalls in the zoom except at lake outlets.** The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
+- ~~**No big waterfalls in the zoom except at lake outlets.**~~ Fixed on `falls`: steep coarse reaches keep falls (lip, gorge, plunge pool, cascades). Notes from before the fix: The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
 - **Worlds sliced before `water` (a434c5, cec38b) have no lake_kind and no closed basins**, so salt lakes, salt pans and inland basins don't appear; exposed evaporite beds on dry land stand in as "salt flats".
 - **Canyons are weak at 110 km cells:** the Earth world finds the Kura valley and the Siang below the Tsangpo gorge, not the Grand Canyon. Rain shadows find the Himalaya, SE Tibet and the Atacama/Altiplano edge, not the Sierra Nevada. Plateaus find Tibet, Wyoming and the Altiplano (3rd). The Earth world's salt lake is in Hungary (the model climate leaves the Pannonian basin closed); the Caspian is below sea level, so it's the landlocked sea.
+
+- **Zoom falls (`falls`) are big for such big rivers:** 141 m at 60,000 m³/s is ~85 GW, about 70× Niagara, because coarse worlds drop big rivers 500–700 m over a few hundred km.
+- **The escarpment shows only as the fall and gorge**, not as stepped country. The 1-px gorge is hidden under the preview's wide river line.
+- **A designed step is lost** if the zoom's river carries under 30% of the coarse discharge or the reach leaves the region (a 256 m step on a 1,215 m³/s stream in 58ed13). `waterfalls()` keeps falls ≥15 km apart, so close cascades go unlisted.
+- **Small uphill steps on delta trunks** (path frozen early), from before `falls`.
+- **No glacial hanging valleys.** The lake-outlet cone can raise low ground up to 150 km around an outlet.
+- **Big zoom rivers are now less deeply incised** (they keep at least their valley floor), so canyons are shallower than before `falls`.
 
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.

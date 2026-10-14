@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from planet import hydrology, zoom
-from planet.geo import R_KM, xyz
+from planet.geo import R_KM, latlon, xyz
 from planet.grid import build_grid
 
 LAKE_AT = (5.0, 8.0)  # lat, lon of the basin
@@ -125,3 +125,113 @@ def test_zoom_reports_waterfalls(lake_zoom):
     for f in lake_zoom["stats"]["waterfalls"]:
         assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q
         assert -90 <= f["lat"] <= 90 and -180 <= f["lon"] <= 180
+
+
+# ---------------------------------------------------------------------------
+# Real waterfalls: a continent whose rivers gather into one trunk flowing east
+# down a valley, which drops off a 600 m escarpment at longitude 0 (craton
+# under a thin sandstone cover).
+# ---------------------------------------------------------------------------
+@pytest.fixture(scope="module")
+def falls_world():
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    d0 = _dist_km(g, 0.0, 0.0)
+    xk, yk = lon * 111.2, lat * 111.2
+    elev = np.where(d0 < 2500, 80 + 0.1 * (2500 - xk) + 0.6 * np.abs(yk)
+                    + 600 * zoom.smoothstep(150.0, -150.0, xk), -3000.0)
+    precip = np.full(g.n, 1200.0)
+    c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    land = elev > 0
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lk["wet"].astype(int),
+        "rock": np.full(g.n, 5), "surface_rock": np.full(g.n, 7), "climate": np.full(g.n, 2),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(land, 0.2, 6.0),
+    }
+    return {"grid": g, "layers": layers, "meta": {"level": 5}}
+
+
+@pytest.fixture(scope="module")
+def falls_zoom(falls_world):
+    return zoom.build(falls_world, 0.5, -1.0, size_km=1000, res_km=5, iterations=6, log=lambda *a: None)
+
+
+def test_escarpment_keeps_a_waterfall(falls_zoom):
+    z = falls_zoom
+    nx, res = z["nx"], z["res"]
+    lips = [f for f in z["stats"]["waterfalls"] if f["kind"] == "lip"]
+    assert lips, z["stats"]["waterfalls"]
+    f = max(lips, key=lambda f: f["height_m"])
+    assert f["height_m"] >= 80 and f["discharge_m3s"] > 10000
+    # concentrated: most of it over a single pixel, all of it within 3
+    assert f["length_km"] <= 3 * 1.42 * res
+    Lr = z["layers"]
+    ws = (Lr["elevation"] + Lr["lake_depth"]).ravel().astype(float)
+    lip = f["px"][0] * nx + f["px"][1]
+    ch = zoom.ZK.chain(z["rec"], lip)
+    drops = ws[ch[:3]] - ws[ch[1:4]]
+    assert drops.max() >= 0.7 * f["height_m"], drops
+    # the river above the lip is at grade with it: no further big drop just upstream
+    up = np.flatnonzero(z["rec"] == ch[np.argmax(drops)])
+    up = up[np.argmax(Lr["discharge"].ravel()[up])]
+    assert ws[up] - ws[ch[np.argmax(drops)]] < 0.2 * f["height_m"]
+    # a plunge pool at the foot
+    foot = ch[np.argmax(drops) + 1]
+    assert Lr["water"].ravel()[foot] == 2 and Lr["lake_depth"].ravel()[foot] >= 5
+    assert f["plunge_pool_m"] >= 5
+    # a gorge cut back from the escarpment: below the fall the river runs
+    # between walls standing well above it
+    assert f["gorge_km"] >= res
+    q = Lr["discharge"].ravel()
+    gorge = ch[np.argmax(drops) + 1:][:max(int(f["gorge_km"] / res), 1)]
+    walls = []
+    for p in gorge:
+        r, c = divmod(int(p), nx)
+        nb = [(r + a) * nx + c + b for a in (-1, 0, 1) for b in (-1, 0, 1)
+              if (a or b) and q[(r + a) * nx + c + b] < 0.3 * q[p]]
+        walls.append(max(ws[nb]) - ws[p])
+    assert np.median(walls) >= 0.4 * f["height_m"], walls
+
+
+def test_knickpoint_design():
+    """A reach dropping 400 m over two ~110 km links on shield granite keeps
+    a big share of the drop as falls; on shale less of it; a huge river
+    splits it into a cascade."""
+    pl = lambda x0: np.column_stack([np.linspace(x0, x0 + 110, 13), np.zeros(13)])
+    ws = np.array([900.0, 700.0, 500.0, 480.0])
+    down = np.array([1, 2, 3, -1])
+    riv = np.ones(4, bool)
+    land = np.ones(4, bool)
+    polys = {0: pl(0), 1: pl(110), 2: pl(220)}
+    km = {0: 110.0, 1: 110.0, 2: 110.0}
+
+    def design(q, rock):
+        kp = zoom.knickpoints(ws, down, riv, land, np.full(4, q), km, polys, {c: rock for c in polys})
+        assert len(kp) == 1
+        return kp[0]
+
+    hard, soft = design(1000.0, (5, 5, 0.0)), design(1000.0, (8, 8, 2.0))
+    assert len(hard["steps"]) == 1 and hard["steps"][0]["h"] > soft["steps"][0]["h"] > 0
+    assert 150 <= hard["steps"][0]["h"] <= 300  # of ~350 m excess drop
+    big = design(60000.0, (5, 5, 0.0))
+    assert len(big["steps"]) >= 3
+    assert big["steps"][0]["h"] > big["steps"][1]["h"]
+    # the lip has retreated upstream of the escarpment, further on a bigger river
+    assert big["steps"][0]["gorge_km"] > hard["steps"][0]["gorge_km"] > 0
+
+
+def test_lake_outlet_has_no_cliff(lake_zoom):
+    """Below the lake's outlet the river steps down gradually (or in one
+    designed fall), not a cliff down to a river graded from far below."""
+    z = lake_zoom
+    lk = z["stats"]["largest_lakes"][0]
+    nx, res = z["nx"], z["res"]
+    Lr = z["layers"]
+    ws = (Lr["elevation"] + Lr["lake_depth"]).ravel().astype(float)
+    o = lk["outlet"][0] * nx + lk["outlet"][1]
+    ch = zoom.ZK.chain(z["rec"], o)[:6]
+    km = res * np.arange(len(ch)) * 1.42
+    assert np.all(lk["level_m"] - ws[ch] <= zoom.RAPIDS_GRAD * km + 15), (lk["level_m"], ws[ch])
+    assert not [f for f in z["stats"]["waterfalls"] if f["from_lake"] and f["height_m"] > 30]

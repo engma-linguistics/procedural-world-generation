@@ -45,9 +45,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - waterfall / steep river: the biggest drop of the water surface (a lake's
   surface on lake cells) over one or two downstream links, on rivers of at
   least WF_MIN_Q m^3/s, ranked by the power of the falling water (discharge x
-  drop). On ~110 km cells that's a steep reach, not a fall: the zoom grades
-  the river smoothly down a valley. Pixel-scale falls are in each zoom's
-  stats ("waterfalls", zoom.waterfalls()).
+  drop). On ~110 km cells that's a steep reach, not a fall; the zoom keeps
+  part of it as real falls (zoom.knickpoints(): a lip, gorge and plunge
+  pool, plus cascades), listed in each zoom's stats ("waterfalls").
 - canyon: a river (>= 300 m^3/s) far below the median of its neighbours off
   the river, on ground averaging >= 1000 m within two cells.
 - salt lake / salt flat: the biggest lake_kind 2 (closed, salty) and 3 (salt
@@ -945,9 +945,8 @@ def waterfalls(ctx: _Ctx, top: int = 3) -> list[dict]:
         else:
             title = ("Steepest big river" if rank == 0 else "Steep river reach") + f": {_m(c['h'])} drop"
             what = (f"A {_n(c['q'])} m³/s river drops ~{_m(c['h'])} over {_n(c['km'])} km "
-                    f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells a fall is a "
-                    f"steep reach; the zoom grades the river smoothly down a deep valley (the falls it does "
-                    f"make, in its stats, are tens of metres).")
+                    f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells that's a steep "
+                    f"reach; zoom in to see the falls, gorge and cascades it holds.")
         blurb = what + f" ~{_n(c['gw'])} GW of falling water (Niagara: ~1.2 GW)."
         feats.append(_feature(ctx, "waterfall", title, blurb, a, 500,
                               {"drop_m": round(c["h"]), "reach_km": round(c["km"]), "discharge_m3s": round(c["q"]),
