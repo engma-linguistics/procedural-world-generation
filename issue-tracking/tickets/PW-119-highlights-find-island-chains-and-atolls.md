@@ -1,4 +1,5 @@
 ---
+id: PW-119
 title: "Highlights: find island chains and atolls from the volcano table"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: volcanoes
 blocked_by: []
 relates: [PW-004]
 refs: [planet/highlights.py, planet/zoom_volcanoes.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -19,3 +22,6 @@ and reef state, and `zoom_volcanoes.form()` names what each looks like. A detect
 how many separate islands, atolls and guyots they have in a row (Hawaii -> Midway -> Emperor), and
 coral atoll groups, and pick a zoom that fits the chain. At level 6 this matters more: the cells there
 rarely show the islands (see the coarse-grid draft).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-hotspot-chain-highlight.md (found by volcanoes).

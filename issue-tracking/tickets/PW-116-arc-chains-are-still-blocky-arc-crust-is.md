@@ -1,5 +1,6 @@
 ---
-title: "Arc chains are still blocky arc-crust islands with a few cones; real arcs have a volcano every ~50-70 km"
+id: PW-116
+title: Arc chains are still blocky arc-crust islands with a few cones; real arcs have a volcano every ~50-70 km
 type: task
 status: todo
 parent: PW-001
@@ -10,6 +11,8 @@ found_by: volcanoes
 blocked_by: []
 relates: [PW-004]
 refs: [planet/tectonics/volcanism.py, planet/zoom_volcanoes.py, planet/tectonics/params.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -28,3 +31,6 @@ What to try:
 - [ ] In the zoom, add minor cones between the listed volcanoes along the active arc's trend
       (plate_boundary converging cells), sized from the neighbours.
 - [ ] Re-check the shelf case: a line of volcanic islands and peaks along the arc, not blocks.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-arc-volcano-density.md (found by volcanoes).

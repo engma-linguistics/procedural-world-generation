@@ -1,4 +1,5 @@
 ---
+id: PW-117
 title: "Hotspot islands are sub-cell: at level 6 (and half the time at 7) the grid shows a bank, not land"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: volcanoes
 blocked_by: []
 relates: [PW-002]
 refs: [planet/tectonics/volcanism.py, planet/zoom_volcanoes.py, viewer/index.html]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 
 Lean: A, plus C if the globe looks too empty of islands (it matters for climate and rivers only a
 little: these are small islands).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-coarse-grid-hotspot-islands.md (found by volcanoes).
