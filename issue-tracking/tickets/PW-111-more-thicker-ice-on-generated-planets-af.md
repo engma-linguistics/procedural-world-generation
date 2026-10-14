@@ -2,7 +2,7 @@
 id: PW-111
 title: "More, thicker ice on generated planets after PW-102: keep or tune ICE_FEEDBACK?"
 type: task
-status: needs-decision
+status: done
 parent: null
 subsystem: climate
 effort: xs
@@ -33,4 +33,5 @@ Options:
 Lean: A (it matches Earth's ice per land area and thickness), check the L7 showcase look first.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Owner decision: A, keep ICE_FEEDBACK = 0.75. Confirm by eye on the next L7 showcase.
 - 2026-10-14: Created from inbox draft draft-ice-amount-generated-runs.md (found by climfix).
