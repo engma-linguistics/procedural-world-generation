@@ -149,7 +149,6 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, dt, hillslope, tau,
     k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
     gentle river course over which ~63% of the load settles on land.
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream, lake)."""
-    n = grid.n
     land = elev > 0
     filled, down, order = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
     rain_m = np.where(land, precip, 0) / 1000.0

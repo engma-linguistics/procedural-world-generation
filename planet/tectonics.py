@@ -665,7 +665,7 @@ class Simulation:
                 on_step(self)
 
     def step(self):
-        g, p, dt = self.grid, self.params, self.dt
+        g, dt = self.grid, self.dt
         self.step_no += 1
         self.t = self.step_no * dt
         rng = np.random.default_rng([self.seed, self.step_no])

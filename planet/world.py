@@ -185,9 +185,6 @@ def nearest_cell_map(g: Grid, width: int, height: int) -> np.ndarray:
     return g.locate(pts).reshape(height, width)
 
 
-ELEV_CHARS = " .:-=+*#%@"
-
-
 def ascii_map(world: dict, layer: str = "biome", width: int = 120, height: int | None = None) -> str:
     g, L = world["grid"], world["layers"]
     height = height or width // 4
