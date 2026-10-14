@@ -2,6 +2,7 @@
 
     uv run python -m planet highlights <world-id>            # or: <run-id> --at <Myr>
     uv run python -m planet highlights <run-id> --at 400 --zoom 5   # also pre-make 5 zooms
+    uv run python -m planet highlights <run-id> --at auto           # a representative moment
 
 Each detector looks for one kind of place (the highest peak, the longest
 mountain range, a big river mouth, a fjord coast...) and returns features:
@@ -1433,6 +1434,31 @@ def find(world: dict) -> list[dict]:
     for k, f in enumerate(rest):
         f["rank"] = k + 1
     return rest
+
+
+# ---------------------------------------------------------------------------
+# A representative moment of a run (`--at auto`)
+# ---------------------------------------------------------------------------
+REPRESENTATIVE_AFTER_MYR = 300.0
+
+
+def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR) -> float:
+    """The keyframe time most typical of a run's mature geography: after
+    `after_myr` (once the start-up has settled; the last two thirds for a
+    shorter run), the frame whose land %, largest landmass % and log of the
+    landmass count are jointly closest to that stretch's medians, each
+    measured in its interquartile ranges. Neither the most dispersed nor the
+    most assembled moment, which is what a showcase world should be."""
+    end = frames[-1]["t"]
+    start = after_myr if end > after_myr else end / 3
+    late = [f for f in frames if f["t"] >= start] or frames[-1:]
+    x = np.array([[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
+                   np.log(1 + f["stats"]["landmasses"])] for f in late], float)
+    med = np.median(x, 0)
+    q1, q3 = np.percentile(x, [25, 75], 0)
+    scale = np.maximum(q3 - q1, 1e-6 + 0.05 * np.abs(med))
+    d = np.sqrt((((x - med) / scale) ** 2).sum(1))
+    return float(late[int(np.argmin(d))]["t"])
 
 
 # ---------------------------------------------------------------------------
