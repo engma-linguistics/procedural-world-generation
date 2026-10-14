@@ -2,7 +2,7 @@
 id: PW-121
 title: Lake share on generated worlds fell to ~0.9-1.0% of land with the 0.1 m/km basin slope rule; keep it?
 type: task
-status: needs-decision
+status: done
 parent: null
 subsystem: hydrology
 effort: xs
@@ -46,4 +46,5 @@ Options:
   in docs and the scorecard from now on.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Owner decision: keep MIN_SLOPE = 0.1 for now. Closed-basin share is to be fixed by making real basins (PW-054), not by loosening the drain rule.
 - 2026-10-14: Created from inbox draft draft-lake-share-after-slope-rule.md (found by lakesize).
