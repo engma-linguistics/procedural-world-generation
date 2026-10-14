@@ -19,8 +19,18 @@ All shares/means are area-weighted with the true spherical cell areas.
 cells that are missing (sea in their mask) are skipped. "Antarctica" means
 lat < -60.
 
+Rivers: the model's runoff (rain minus evaporation) routed over Earth's
+elevation on the same grid (hydrology.rivers_and_lakes, with evaporating
+lakes), compared at the mouths of big rivers with observed mean discharge
+(Dai & Trenberth 2002 / GRDC-style figures; the Nile before its dams).
+Inland seas that ETOPO puts below sea level (Caspian, Black Sea) count as
+land basins there, so they become lakes. The column "obs P" routes the
+runoff the same scheme makes from GPCC's observed rain instead, which
+separates evaporation/runoff error from rain error.
+
 Only depends on climate.compute(grid, elev, dT, tilt, ice) and its keys
-temp/t_warm/t_cold/precip/p_jul/p_jan/koppen, plus KOPPEN/SEA_CLASS.
+temp/t_warm/t_cold/precip/p_jul/p_jan/koppen/runoff/aet/lake_evap, plus
+KOPPEN/SEA_CLASS, climate.water_balance and hydrology.rivers_and_lakes.
 """
 
 from __future__ import annotations
@@ -35,7 +45,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from planet import climate  # noqa: E402
+from planet import climate, hydrology  # noqa: E402
 from planet import images  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools import earth_data  # noqa: E402
@@ -134,6 +144,41 @@ POINTS = [
     ("Utqiagvik", 71.3, -156.8, ("ET",)),
     ("Summit GL", 72.6, -38.5, ("EF",)),
     ("Vostok", -78.5, 106.8, ("EF",)),
+]
+
+# Big rivers: name, observed mean discharge at the mouth (m3/s), and gauges
+# on the main stems inside the basin (lat, lon). The routed river through
+# each gauge is followed to its end and the flow there summed over distinct
+# ends: on 110 km cells of Earth's mean elevation a river can reach the sea
+# some way from its real mouth (the Congo through Gabon), but the basin's
+# water is still counted.
+RIVERS = [
+    ("Amazon", 209000, [(-1.95, -55.5)]),  # Obidos
+    ("Congo", 41000, [(0.05, 18.3)]),  # Mbandaka
+    ("Ganges-Brahmaputra", 38000, [(25.6, 85.1), (26.2, 91.7)]),  # Patna, Guwahati
+    ("Orinoco", 37000, [(7.6, -66.2)]),  # Caicara
+    ("Yangtze", 30000, [(30.6, 114.3)]),  # Wuhan
+    ("Yenisei", 19600, [(61.6, 90.0)]),
+    ("Mississippi", 17000, [(32.3, -90.9)]),  # Vicksburg
+    ("Lena", 17000, [(66.8, 123.4)]),  # Zhigansk
+    ("Mekong", 15000, [(15.1, 105.8)]),  # Pakse
+    ("Ob", 12500, [(61.0, 69.0)]),  # Khanty-Mansiysk
+    ("Mackenzie", 10000, [(61.9, -121.4)]),  # Fort Simpson
+    ("Nile", 2800, [(15.6, 32.5)]),  # Khartoum (natural flow at the sea, before the dams)
+    ("Murray", 800, [(-34.2, 142.2)]),  # Mildura
+]
+# Closed (endorheic) lakes and salt pans: name, lat, lon
+CLOSED_LAKES = [
+    ("Caspian Sea", 42.0, 50.5),
+    ("Aral Sea", 45.0, 60.0),
+    ("Great Salt Lake / Great Basin", 40.5, -116.0),
+    ("Lake Eyre", -28.5, 137.3),
+    ("Lake Chad", 13.0, 14.5),
+    ("Lake Balkhash", 46.5, 74.5),
+    ("Tarim / Lop Nur", 40.0, 88.0),
+    ("Okavango / Makgadikgadi", -20.0, 24.0),
+    ("Dead Sea", 31.5, 35.5),
+    ("Altiplano (Titicaca, Uyuni)", -18.0, -68.0),
 ]
 
 # Named regions for the error hunt: (name, lat0, lat1, lon0, lon1)
@@ -393,7 +438,82 @@ def analyse(grid, d, c) -> dict:
         rr["top_kottek"] = top(np.maximum(ok, 0), rk) if rk.any() else ("?", 0.0)
         regs.append(rr)
     R["regions"] = regs
+    R["rivers"] = earth_rivers(grid, d, c, w)
     return R
+
+
+def earth_rivers(grid, d, c, w) -> dict:
+    """Route runoff on Earth and compare discharges at big river mouths."""
+    ice = d["ice"].astype(np.float64)
+    # Routing ground: the true mean land surface (earth_data clamps land
+    # below sea level to 1 m for the climate), and sea cells cut off from
+    # the world ocean (Caspian, Black Sea...) are land basins with their
+    # real beds; everything raised so that all of it stays above 0.
+    sea = d["elev"] <= 0
+    lab, k = grid.components(sea)
+    big = np.argmax(np.bincount(lab[lab >= 0], minlength=k))
+    inland = sea & (lab != big)
+    ground = np.where(sea, d["surface"], d["surface"] - ice).astype(np.float64)
+    lift = 1.0 - min(ground[~sea | inland].min(), 0.0)
+    elev = np.where(sea & ~inland, ground, ground + lift)
+    land = elev > 0
+    scale = w / w.mean()  # flow in units of mean-cell x m/yr; true areas
+    sq = 4 * np.pi * (6371e3) ** 2 / grid.n / 3.156e7  # mean cell x m/yr -> m3/s
+
+    def routed(cc):
+        cc = {k2: cc[k2] * scale for k2 in ("runoff", "aet", "lake_evap")}
+        return hydrology.rivers_and_lakes(grid, elev, cc, ice)
+
+    flow, down, lk = routed(c)
+    # the same evaporation scheme on GPCC's observed rain (model where GPCC has none)
+    pj = np.where(np.isfinite(d["obs_p_jul"]), d["obs_p_jul"], c["p_jul"])
+    pn = np.where(np.isfinite(d["obs_p_jan"]), d["obs_p_jan"], c["p_jan"])
+    wb = climate.water_balance(grid.lat, c["temp"], c["t_warm"], c["t_cold"], pj, pn)
+    wb["runoff"] = np.where(land, wb["runoff"], 0.0)
+    flow_o, down_o, lk_o = routed(wb)
+    def at_mouth(fl, dn, gauges):
+        """The biggest river within 150 km of each gauge, followed to its
+        end: (m3/s summed over the distinct places they leave the land, km
+        from the first gauge to the end, True if one ends in a closed lake)."""
+        ends = {}
+        for la, lo_ in gauges:
+            q = earth_data._unit(np.array([la]), np.array([lo_]))[0]
+            near = np.flatnonzero(land & (grid.centers @ q > np.cos(150 / 6371)))
+            if not len(near):
+                continue
+            i = int(near[np.argmax(fl[near])])
+            while dn[i] >= 0 and land[dn[i]]:
+                i = int(dn[i])
+            ends[i] = (float(fl[i] * sq), bool(dn[i] < 0))
+        if not ends:
+            return float("nan"), float("nan"), False
+        q = earth_data._unit(np.array([gauges[0][0]]), np.array([gauges[0][1]]))[0]
+        far = max(float(np.arccos(np.clip(grid.centers[i] @ q, -1, 1))) * 6371 for i in ends)
+        return sum(v[0] for v in ends.values()), far, any(v[1] for v in ends.values())
+
+    rows = []
+    for name, obs, gauges in RIVERS:
+        (m, m_km, m_lake), (o, _, o_lake) = at_mouth(flow, down, gauges), at_mouth(flow_o, down_o, gauges)
+        rows.append(dict(name=name, obs=obs, model=m, obs_rain=o, model_km=m_km, model_ends_in_lake=m_lake,
+                         obs_rain_ends_in_lake=o_lake))
+    na = land & (grid.lat > -60)
+    ratio = float((c["runoff"] * w)[na].sum() / (c["precip"] * w)[na].sum())
+    ok = na & np.isfinite(d["obs_precip"])
+    ratio_o = float((wb["runoff"] * w)[ok].sum() / (0.5 * (pj + pn) * w)[ok].sum())
+    lakes = []
+    for name, la, lo_ in CLOSED_LAKES:
+        q = earth_data._unit(np.array([la]), np.array([lo_]))[0]
+        near = grid.centers @ q > np.cos(350 / 6371)
+        kinds = lambda kk: {h: int((kk[near] == v).sum()) for h, v in (("open", hydrology.OPEN_LAKE),
+                            ("closed", hydrology.CLOSED_LAKE), ("pan", hydrology.SALT_PAN))}
+        lakes.append(dict(name=name, model=kinds(lk["kind"]), obs_rain=kinds(lk_o["kind"])))
+    n_closed = grid.components(lk["kind"] == hydrology.CLOSED_LAKE)[1]
+    n_open = grid.components(lk["kind"] == hydrology.OPEN_LAKE)[1]
+    endo = 100 * float(w[lk["endorheic"] & na].sum() / w[na].sum())
+    endo_o = 100 * float(w[lk_o["endorheic"] & na].sum() / w[na].sum())
+    return dict(rivers=rows, runoff_ratio=ratio, endorheic_pct=endo, endorheic_pct_obs_rain=endo_o, runoff_ratio_obs_rain=ratio_o, closed_lakes=lakes,
+                n_closed=int(n_closed), n_open=int(n_open), n_pans=int((lk["kind"] == hydrology.SALT_PAN).sum()),
+                lake_cells=int(lk["wet"].sum()))
 
 
 def systematic_errors(R) -> list[str]:
@@ -500,6 +620,22 @@ def report(R, times, level):
           f"{r['Tc']:6.1f}{r['Tc_obs']:6.1f} {r['Tw']:5.1f}{r['Tw_obs']:6.1f}  "
           f"{r['top_model'][0]:>4} {r['top_model'][1]:3.0f}%   {r['top_kottek'][0]:>4} {r['top_kottek'][1]:3.0f}%  "
           f"{r['group_match']:3.0f}")
+
+    rv = R["rivers"]
+    p(f"\nRivers: runoff / rain on land excl. Antarctica {rv['runoff_ratio']:.2f} (Earth ~0.35-0.40; "
+      f"{rv['runoff_ratio_obs_rain']:.2f} with GPCC rain). Discharge at the mouth, m3/s:")
+    p(f"{'river':20}{'observed':>10}{'model':>10}{'ratio':>7}{'obs P':>10}{'ratio':>7}  gauge->sea km")
+    for r in rv["rivers"]:
+        p(f"{r['name']:20}{r['obs']:10.0f}{fmt(r['model']):>10}{r['model'] / r['obs']:7.2f}"
+          f"{fmt(r['obs_rain']):>10}{r['obs_rain'] / r['obs']:7.2f}  {fmt(r['model_km']):>6}"
+          + ("  (ends in a lake)" if r["model_ends_in_lake"] else ""))
+    p(f"lakes: {rv['n_open']} open, {rv['n_closed']} closed, {rv['n_pans']} salt-pan cells "
+      f"({rv['lake_cells']} lake cells); land draining to closed basins {rv['endorheic_pct']:.0f}% "
+      f"({rv['endorheic_pct_obs_rain']:.0f}% with GPCC rain; Earth ~18%, excl. Antarctica).")
+    p("Known closed basins, cells within 350 km (model | GPCC rain):")
+    for q in rv["closed_lakes"]:
+        f = lambda k: f"open {k['open']}, closed {k['closed']}, pan {k['pan']}"
+        p(f"  {q['name']:30} {f(q['model'])}  |  {f(q['obs_rain'])}")
 
     p("\nLargest systematic errors (auto-ranked):")
     for s in R["systematic_errors"][:20]:

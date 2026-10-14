@@ -49,7 +49,7 @@ LAYERS = {  # name -> dtype on disk
     "temperature": "i1",  # C, annual mean
     "climate": "u1",  # climate.KOPPEN id
     "ice": "u1",  # land ice, units of 20 m
-    "flow": "u1",  # river flow, 16 * log2(1 + flow)
+    "flow": "u1",  # river flow (upstream runoff, cells x m/yr), 16 * log2(1 + flow)
     "wind_e": "i1",  # annual-mean wind, east and north components x 50
     "wind_n": "i1",
     "current_e": "i1",  # surface ocean current, x 50
