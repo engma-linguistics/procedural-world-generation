@@ -32,8 +32,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   (mountains >= 800 m within ~2 cells of the sea), with cool summers (warmest
   month 0..12 C) and enough snow (>= 400 mm/yr) to have fed glaciers. The
   zoom doesn't carve fjords.
-- Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m; hillier
-  is better.
+- Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m with a
+  warmest month <= 30 C (a hothouse Cs at 40 C is correct but no vineyard);
+  hillier is better.
 - rift: diverging plate boundary with continental land of two different
   plates within ~3 cells (a continent splitting, or a new narrow sea).
 - volcanic arc: chains of the run's active volcanoes (meta "volcanoes")
@@ -642,6 +643,9 @@ def ice_sheet(ctx: _Ctx) -> list[dict]:
                      quality=0.6 + 0.4 * min(a / 2e6, 1))]
 
 
+MED_MAX_WARM_C = 30.0
+
+
 def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
     """Csa/Csb (hot or warm dry summers, mild wet winters) on hilly but
     not alpine land: where wine country would be."""
@@ -649,7 +653,8 @@ def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
         return []
     k = ctx.L["climate"]
     relief = ctx.ring_max(ctx.elev) - ctx.ring_min(np.where(ctx.land, ctx.elev, 0.0))
-    ok = ctx.land & ((k == 7) | (k == 8)) & (ctx.elev < 1500)
+    # warmest month <= 30 C: Seville, the hottest real wine Csa, is ~28 C
+    ok = ctx.land & ((k == 7) | (k == 8)) & (ctx.elev < 1500) & (ctx.L["warm_month"] <= MED_MAX_WARM_C)
     regions = ctx.components(ok, min_cells=2, bridge=1)
     feats = []
     for rank, cells in enumerate(regions[:top]):
