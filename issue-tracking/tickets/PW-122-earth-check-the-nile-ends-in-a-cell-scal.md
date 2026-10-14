@@ -1,5 +1,6 @@
 ---
-title: Earth check: the Nile ends in a cell-scale pit in Nubia instead of reaching the sea
+id: PW-122
+title: "Earth check: the Nile ends in a cell-scale pit in Nubia instead of reaching the sea"
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: lakesize
 blocked_by: []
 relates: [PW-055, PW-110]
 refs: [planet/hydrology.py, tools/earth_check.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -27,3 +30,6 @@ narrower than a cell ends in a pit. A possible nudge: a hollow whose inflow
 is large (big river) and whose rim is low relative to it drains by incision
 (an antecedent gorge), e.g. allow a deeper min_depth for hollows fed by a big
 river. Relates to PW-055 (giant open lakes: outlets should cut down).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-nile-ends-in-nubian-pit.md (found by lakesize).

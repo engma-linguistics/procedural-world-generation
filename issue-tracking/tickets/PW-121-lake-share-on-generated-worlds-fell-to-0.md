@@ -1,4 +1,5 @@
 ---
+id: PW-121
 title: Lake share on generated worlds fell to ~0.9-1.0% of land with the 0.1 m/km basin slope rule; keep it?
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: lakesize
 blocked_by: []
 relates: [PW-110, PW-058]
 refs: [planet/hydrology.py, planet/kernels.py, "run c3bf56", "run 28e6be"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -41,3 +44,6 @@ Options:
   Earth Sudd/Nile artefact returns.
 - C. Keep 0.1 and compare lake share against Earth's resolvable lakes (~0.7-1%)
   in docs and the scorecard from now on.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-lake-share-after-slope-rule.md (found by lakesize).
