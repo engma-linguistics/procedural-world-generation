@@ -212,3 +212,16 @@ def test_landforms_in_runs_and_worlds(data_root):
     from planet import world as W
     saved = json.loads(W.save(w2, "lf world").read_text())
     assert "landform_pct" in saved["summary"] and saved["legend"]["landforms"][5]["key"] == "escarpment"
+
+
+def test_smoothing_removes_speckle_but_keeps_narrow_classes(g):
+    cls = np.full(g.n, LF.CAPROCK, np.uint8)
+    cls[5] = LF.HILLS  # a lone speck
+    cls[200] = LF.ESCARPMENT  # a narrow class: kept
+    cls[300] = LF.SEA
+    out = LF.smooth(g, cls)
+    assert out[5] == LF.CAPROCK and out[200] == LF.ESCARPMENT and out[300] == LF.SEA
+    cls2 = np.full(g.n, LF.HILLS, np.uint8)
+    cls2[g.neighbors[7]] = LF.SHIELD
+    cls2[7] = LF.SHIELD
+    assert np.all(LF.smooth(g, cls2)[g.neighbors[7] + [7]] == LF.SHIELD)  # a patch survives

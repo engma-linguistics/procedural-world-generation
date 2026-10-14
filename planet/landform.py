@@ -6,7 +6,8 @@ synthesises terrain to match: a great escarpment steps up to a plateau, a
 fold belt has parallel ridges, a shield has domes and inselbergs.
 
 Every class comes from recorded history, not from elevation or noise. The
-rules (classify, in priority order: a cell takes the first that holds):
+rules (classify, in priority order: a cell takes the first that holds; then
+one pass of a majority filter over the areal classes, smooth()):
 
   arc            land within a cell of an arc volcano (the volcano table:
                  active, or extinct for at most 20 Myr)
@@ -173,6 +174,32 @@ def regional_dip(grid, elev):
     return np.degrees(np.arctan(mean / (grid.spacing * R_KM * 1000.0)))
 
 
+LINES = (RIFT, ESCARPMENT, ARC_CLASS, HOTSPOT_CLASS)  # narrow classes the smoothing leaves alone
+
+
+def smooth(grid, cls, passes=1):
+    """Each cell of an areal class takes the most common areal class among
+    itself (counted twice) and its neighbours. A cell's record is that of
+    the one plate cell that happens to sit under it, and neighbouring
+    plate cells' strata differ in detail, so the rules alone leave a
+    speckle that flickers as the plates move and the sampling shifts;
+    landscapes like these are regional (hundreds of km) anyway. Narrow
+    classes (LINES) and the sea neither change nor vote."""
+    nk = len(CLASSES)
+    areal = (cls > SEA) & ~np.isin(cls, LINES)
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    for _ in range(passes):
+        votes = np.zeros((grid.n, nk))
+        nb = grid.nbr_idx
+        ok = areal[nb]
+        np.add.at(votes, (src[ok], cls[nb][ok]), 1.0)
+        votes[np.flatnonzero(areal), cls[areal]] += 2.0
+        best = votes.argmax(1).astype(cls.dtype)
+        cls = np.where(areal & (votes.max(1) > 2.0), best, cls)
+        areal = (cls > SEA) & ~np.isin(cls, LINES)
+    return cls
+
+
 def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip, temp, volcanoes,
              plate=None) -> dict:
     """The landform layers (LAYERS) for one moment. elev: m above sea level;
@@ -233,6 +260,8 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     claim(cont & (top_km == 0) & np.isin(rock, (CRATON, GRANITE)) & (crust_age >= SHIELD_MYR) & quiet,
           SHIELD, crust_age)
 
+    cls = smooth(grid, cls)
+    age = np.where(cls == HILLS, 0.0, age)  # (a cell smoothed into another areal class keeps its own age)
     dip = np.where(folded, fold_dip(rec[:, R.FOLD_STRAIN]), regional_dip(grid, elev))
     return {"landform": cls, "landform_age": np.round(np.maximum(age, 0)),
             "strata_top": top, "strata_top_km": np.where(land | (cover > 0), top_km, 0.0), "strata_next": below,
