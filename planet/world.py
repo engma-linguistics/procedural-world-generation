@@ -42,6 +42,20 @@ def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
     return finish(grid, elev, extra, meta, erosion, erosion_iterations, dT, tilt, params, t0)
 
 
+def seasons(grid: Grid, c: dict) -> dict:
+    """July and January temperature (C) and precipitation (mm/yr) from a
+    climate.compute result. Temperatures: the warmest month is July in the
+    north and January in the south (the model's seasons are a sine with its
+    peak there); near the equator, where the rainy half-year can be the
+    cooler one, the two may be the wrong way round by a degree or so.
+    Precipitation: each half-year's rate (Apr-Sep, Oct-Mar), as climate
+    computes it."""
+    north = grid.lat >= 0
+    return {"temperature_jul": np.where(north, c["t_warm"], c["t_cold"]),
+            "temperature_jan": np.where(north, c["t_cold"], c["t_warm"]),
+            "precipitation_jul": c["p_jul"], "precipitation_jan": c["p_jan"]}
+
+
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None) -> dict:
@@ -62,6 +76,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "elevation": elev_m,
         "temperature": np.round(temp, 1),
         "precipitation": np.round(precip).astype(int),
+        # July and January (seasons(): the warmest/coldest month by hemisphere), whole C and mm/yr
+        **{k: np.round(v).astype(int) for k, v in seasons(grid, c).items()},
         "biome": biome,
         "flow": np.round(flow, 2),  # river flow: upstream runoff, cells x m/yr (x cell area / 1 yr = m3/s)
         "downstream": down,

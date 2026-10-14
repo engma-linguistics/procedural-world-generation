@@ -35,6 +35,14 @@
   #track input::-moz-range-thumb { width: 14px; height: 18px; border: 0; border-radius: 3px; background: var(--accent); }
   #tint { position: absolute; left: 7px; top: 50%; height: 12px; margin-top: -6px;
     width: calc(100% - 14px); border-radius: 3px; pointer-events: none; }
+  /* worlds (and time zooms) made from this run, as ticks above the time slider */
+  #marks { position: absolute; left: 7px; right: 7px; top: -9px; height: 8px; pointer-events: none; }
+  #marks span { position: absolute; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent;
+    border-top: 6px solid #ffd27c; border-bottom: 0; pointer-events: auto; cursor: pointer; }
+  #marks span.tz { border-top-color: #9fd3ff; }
+  .tree { margin: 2px 0 0 4px; }
+  .tree div { padding: 1px 0; }
+  .tree .sub { margin-left: 14px; }
   #tlabel { font-family: ui-monospace, Menlo, monospace; min-width: 92px; text-align: right; white-space: nowrap; }
   #play { width: 34px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent);
     color: #06121f; font-size: 14px; cursor: pointer; }
@@ -131,6 +139,10 @@
     <div class="row seg" id="obsSeg" style="margin-top:6px;align-items:center;display:none"
       title="Our climate model on the real Earth, or what is observed there, or the difference (model minus observed)">
       <button data-v="model" class="on">model</button><button data-v="obs">observed</button><button data-v="diff">difference</button></div>
+    <!-- the season of temperature / rain (worlds with *_jul / *_jan layers); shared with the winds' picker and ?season= -->
+    <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
+      season <select id="layerSeason" style="flex: none; width: auto; padding: 1px">
+        <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
   </details>
 
   <details class="sec" data-sec="highlights" open><summary>Highlights</summary>
@@ -192,7 +204,7 @@
 <div id="summary" class="panel"></div>
 <div id="timeline" class="panel">
   <button id="play" title="Play / pause (space)">&#9654;</button>
-  <div id="track"><canvas id="tint"></canvas><input type="range" id="frame" min="0" max="0" value="0"></div>
+  <div id="track"><canvas id="tint"></canvas><div id="marks"></div><input type="range" id="frame" min="0" max="0" value="0"></div>
   <span id="tlabel"></span>
 </div>
 <div id="drop">Drop world .json</div>
@@ -303,6 +315,35 @@ function obsView(layer) {
   if (!V || V.kind !== 'world' || !OBS_LAYERS[layer] || !V.layers[OBS_LAYERS[layer]] || state.obs === 'model') return null;
   return { layer, model: V.layers[layer], obs: V.layers[OBS_LAYERS[layer]], diff: state.obs === 'diff' };
 }
+// Seasons (PW-126): worlds store July and January temperature and rain
+// (temperature_jul, precipitation_jan, ...). state.season ('' = the year,
+// 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
+const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation' };
+const SEASON_NAMES = { jul: 'July', jan: 'January' };
+state.season = '';
+// the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
+function colourSeason(layer = state.layer) {
+  const k = SEASONAL[layer];
+  return k && state.season && V?.layers?.[`${k}_${state.season}`] && !obsView(layer) ? state.season : '';
+}
+// the values a seasonal colour layer draws (annual or seasonal), else null
+function seasonalData(layer) {
+  const k = SEASONAL[layer], s = k && colourSeason(layer);
+  return k ? V.layers[s ? `${k}_${s}` : k] : null;
+}
+function seasonUnits(layer) {
+  const s = colourSeason(layer);
+  if (!s) return UNITS[layer];
+  return SEASONAL[layer] === 'temperature' ? `°C, ${SEASON_NAMES[s]} mean`
+    : `mm/yr, ${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate`;
+}
+function setSeason(s) {
+  state.season = s in SEASON_NAMES ? s : '';
+  $('windSeason').value = $('layerSeason').value = state.season;
+  const u = new URL(location);
+  if (state.season) u.searchParams.set('season', state.season); else u.searchParams.delete('season');
+  history.replaceState(null, '', u);
+}
 const koppenGroup = (id) => V.koppen[id]?.code[0];  // A tropical, B dry, C temperate, D continental, E polar
 
 function obsColor(ov, i, c) {
@@ -353,6 +394,7 @@ function lakeLine(i) {
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
   const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
+  const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
   for (let i = 0; i < n; i++) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
     else if (ov) obsColor(ov, i, c);
@@ -382,10 +424,10 @@ function cellColors(layer) {
       if (elev[i] > 0) c.copy(BARE).lerp(OCEAN, 0.15);
       else rampFns[layer](layer === 'wave power' ? L.wave_power[i] : L.tide_range[i], c);
     }
-    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L.precipitation[i], c); }
+    else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](sv[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else {
-      rampFns[layer](L[layer][i], c);
+      rampFns[layer]((sv || L[layer])[i], c);
       if (layer === 'elevation' && L.ice && L.ice[i] > 0 && elev[i] > 0) c.lerp(ICE, 0.75);
     }
     out[3 * i] = c.r; out[3 * i + 1] = c.g; out[3 * i + 2] = c.b;
@@ -824,6 +866,7 @@ function renderLegend() {
   const ov = obsView(state.layer);
   // the model / observed / difference switch: only for an Earth world's temperature, rainfall and climate
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
+  $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
   if (ov && ov.diff && state.layer === 'climate') {
     el.innerHTML = sw('#3fae5a', 'same class') + sw('#e8c547', 'same group (A, B, C, D or E), another class') +
@@ -862,7 +905,7 @@ function renderLegend() {
       <span><span class="sw" style="background:#ff3b3b"></span>converging boundary</span>
       <span><span class="sw" style="background:#3bf0ff"></span>diverging boundary</span>`;
   } else {
-    el.innerHTML = rampLegend(state.layer, UNITS[state.layer] + (ov ? ' (observed)' : '')) +
+    el.innerHTML = rampLegend(state.layer, seasonUnits(state.layer) + (ov ? ' (observed)' : '')) +
       (state.layer === 'crust age' ? '<div class="muted">continents: age of the rock since it last formed or was remade <span class="sw" style="background:#f2e6d0"></span>0 <span class="sw" style="background:#a87d5a"></span>1 Gyr <span class="sw" style="background:#3a2a22"></span>3.5 Gyr</div>' : '') +
       (state.layer === 'elevation' && V.tz ? '<span class="muted">(ice surface included; heights above that moment\'s sea level)</span>' : '');
   }
@@ -918,7 +961,8 @@ function renderSummary() {
   }
   if (m.remake) cmd = m.remake;  // e.g. the Earth reference world (tools/earth_world.py)
   $('summary').innerHTML = `<b>${V.id || ''}</b> ${V.name} <span class="muted">· ${m.cells} cells · ~${m.cell_size_km} km each</span><br>
-    ${m.source_run ? `<span class="muted">Sliced from run ${m.source_run} at ${m.t_myr} Myr · made ${m.created}</span><br>` : ''}
+    ${m.source_run ? `<span class="muted">From</span> ${sourceLink(m.source_run, m.t_myr)} <span class="muted">· made ${m.created}</span><br>` : ''}
+    ${zoomsOf(V.id)}
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
@@ -937,7 +981,7 @@ function renderRunSummary() {
     ${s.global_temp_c != null ? `global mean ${s.global_temp_c} °C (Earth today ~14.5) · land ice ${s.ice_pct}% of surface · sea level ${s.sea_level_m} m<br>` : ''}
     <span class="muted">Build a full world here:</span> <code>uv run python -m planet slice ${r.id || r.name} --at ${V.t}</code>
     ${timezoomBox()}`;
-  $('summary').innerHTML = `${head}
+  $('summary').innerHTML = `${head}${V.tz ? '' : runTree()}
     <h2>Events <span class="muted">(click to jump${V.tz ? '; t in kyr' : ''})</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;
   const now = $('summary').querySelector('.ev.now');
   if (now && state.playing) now.scrollIntoView({ block: 'nearest' });
@@ -966,7 +1010,7 @@ function timezoomSummary() {
     <span class="muted">orbit:</span> obliquity ${s.obliquity.toFixed(2)}° · eccentricity ${s.eccentricity.toFixed(4)} ·
     65°N July sun ${sign(s.insol_65n_jul_anom, 1)} W/m² <span class="muted" title="vs. ${V.tzEarth ? "today's orbit" : 'a circular orbit at the mean tilt'}; precession index e·sin(perihelion) ${s.precession_index}">(?)</span>
     ${timezoomChart()}
-    ${V.tzEarth ? '' : `<span class="muted">Source:</span> <a href="#" data-act="source">run ${m.source_run} at ${m.at_myr} Myr</a> · `}
+    ${V.tzEarth ? '' : `<span class="muted">From</span> ${sourceLink(m.source_run, m.at_myr)}<br>`}
     <span class="muted">Remake:</span> <code>uv run python -m planet timezoom ${src}${opts}</code>`;
 }
 
@@ -1060,6 +1104,76 @@ async function startTimezoom() {
   }
 }
 
+// ------------------------------------------------------------ provenance (PW-128)
+// What came from what, from the indexes: each world's source run and time
+// (worlds/index.json), each zoom's world (zooms/index.json) and each time
+// zoom's source run (runs/index.json). Filled by fillSelector().
+let IDX = { runs: [], worlds: [], zooms: [] };
+const esc = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const runOf = (id) => IDX.runs.find((r) => r.dir === id || r.id === id);
+// a world from a run is "<run name> @ T Myr"; others go by their name
+function worldTitle(w) {
+  if (!w.source_run) return w.name;
+  return `${w.source_run_name || runOf(w.source_run)?.name || 'run ' + w.source_run} @ ${w.t_myr} Myr`;
+}
+// '<run name> @ T Myr', linked to open the run at that time
+function sourceLink(runId, t) {
+  const r = runOf(runId), label = `${esc(r?.name || 'run ' + runId)} @ ${t} Myr`;
+  return r ? `<a href="?run=${runId}&t=${t}" data-run="${runId}" data-t="${t}" title="Open run ${runId} at ${t} Myr">${label}</a> <span class="muted">(run ${runId})</span>`
+    : `${label} <span class="muted">(run ${runId}, deleted)</span>`;
+}
+// a zoom's id, linked to open it in the Regional zoom tab (its size and place on hover)
+const zoomLink = (z) => `<a href="#" data-zoom="${z.id}" title="${esc(z.name)}">${z.id}</a>`;
+function zoomsOf(worldId) {
+  const zs = IDX.zooms.filter((z) => z.world === worldId);
+  return zs.length ? `<span class="muted">Zooms of this world:</span> ${zs.map(zoomLink).join(', ')}<br>` : '';
+}
+const madeFrom = (runId) => ({
+  worlds: IDX.worlds.filter((w) => w.source_run === runId).sort((a, b) => a.t_myr - b.t_myr),
+  tzs: IDX.runs.filter((r) => r.kind === 'timezoom' && r.source_run === runId).sort((a, b) => a.at_myr - b.at_myr),
+});
+// a main run's worlds (with their zooms) and time zooms, as a small tree
+function runTree() {
+  const { worlds, tzs } = madeFrom(V.dir);
+  let html = '<h2 title="Worlds and glacial time zooms made from this run; their times are the ticks above the time slider">Made from this run</h2>';
+  if (!worlds.length && !tzs.length) return html + '<span class="muted">nothing yet (a Zoom or Highlights here makes a world at that time)</span>';
+  html += '<div class="tree">' + worlds.map((w) => {
+    const zs = IDX.zooms.filter((z) => z.world === w.id), named = w.name !== worldTitle(w) ? ` <span class="muted">${esc(w.name)}</span>` : '';
+    return `<div><a href="#" data-jump="${w.t_myr}" title="Go to ${w.t_myr} Myr">${w.t_myr} Myr</a> · <a href="?world=${w.file}" data-world="${w.file}">world ${w.id}</a>${named}` +
+      (zs.length ? `<div class="sub"><span class="muted">zoom${zs.length > 1 ? 's' : ''}:</span> ${zs.map(zoomLink).join(', ')}</div>` : '') + '</div>';
+  }).join('') + tzs.map((r) => `<div><a href="#" data-jump="${r.at_myr}" title="Go to ${r.at_myr} Myr">${r.at_myr} Myr</a> ·
+    <a href="?run=${r.dir}" data-run="${r.dir}">time zoom ${r.id}</a> <span class="muted">${r.kyr} kyr of ice ages</span></div>`).join('') + '</div>';
+  return html;
+}
+// ticks above the time slider at the times of the worlds and time zooms made from this run
+function drawMarks() {
+  const el = $('marks');
+  el.innerHTML = '';
+  if (V?.kind !== 'run' || V.tz) return;
+  const fr = V.run.frames, t0 = fr[0].t, t1 = fr[fr.length - 1].t;
+  const { worlds, tzs } = madeFrom(V.dir), at = new Map();
+  for (const w of worlds) at.set(w.t_myr, [...(at.get(w.t_myr) || []), `world ${w.id}`]);
+  const tzAt = new Map();
+  for (const r of tzs) tzAt.set(r.at_myr, [...(tzAt.get(r.at_myr) || []), `time zoom ${r.id}`]);
+  const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * (t - t0) / (t1 - t0 || 1)).toFixed(2)}%" data-t="${t}"
+    title="${t} Myr: ${names.join(', ')} (click to go there)"></span>`;
+  el.innerHTML = [...tzAt].map(([t, n]) => tick(t, n, 'tz')).join('') + [...at].map(([t, n]) => tick(t, n, '')).join('');
+}
+$('marks').addEventListener('click', (e) => {
+  if (e.target.dataset.t == null || V?.kind !== 'run') return;
+  stop(); setFrame(nearestFrame(+e.target.dataset.t));
+});
+async function openWorld(file) {
+  $('worldSel').value = 'world:' + file;
+  await loadSelection('world:' + file);
+}
+// after something new was made: re-read the indexes, redraw what lists them
+async function refreshIndex() {
+  await fillSelector();
+  if (!V) return;
+  renderSummary(); drawMarks();
+}
+
 // ------------------------------------------------------------ cold eras on the timeline
 // 0 (warm) .. 1 (deep icehouse) for a main run's keyframe, from its land ice
 // and global mean temperature. Earth today (land ice on ~3% of the surface,
@@ -1124,8 +1238,13 @@ function describe(i) {
   const lines = [`cell ${i}${V.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
     `lat ${G.lat[i].toFixed(1)}, lon ${G.lon[i].toFixed(1)}`, `elevation ${L.elevation[i]} m`];
   if (V.kind === 'world') {
-    lines.push(`biome ${V.biomes[L.biome[i]].name}`, `temp ${L.temperature[i]} °C`,
-      `rain ${L.precipitation[i]} mm/yr`, `river flow ${L.flow[i]}`);
+    lines.push(`biome ${V.biomes[L.biome[i]].name}`);
+    const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
+    if (s) lines.push(`${SEASON_NAMES[s]}: ${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
+      ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`);
+    lines.push(`temp ${L.temperature[i]} °C${yr}` + (L.temperature_jul && !s ? `, July ${L.temperature_jul[i]}, January ${L.temperature_jan[i]}` : ''),
+      `rain ${L.precipitation[i]} mm/yr${yr}` + (L.precipitation_jul && !s ? `, July half ${L.precipitation_jul[i]}, January half ${L.precipitation_jan[i]}` : ''),
+      `river flow ${L.flow[i]}`);
     if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
     if (L.climate && L.elevation[i] > 0) lines.push(`climate ${V.koppen[L.climate[i]].code} (${V.koppen[L.climate[i]].name}), ` +
       `months ${Math.round(L.cold_month[i])} to ${Math.round(L.warm_month[i])} °C`);
@@ -1269,12 +1388,18 @@ const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspo
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
 function windKey() {
-  const s = $('windSeason').value, k = s ? 'wind_' + s : 'wind';
+  const s = state.season, k = s ? 'wind_' + s : 'wind';
   return s && V.layers[k + '_e'] ? k : 'wind';
 }
+// one season for the winds and the temperature / rain colours (they're shown together)
 $('windSeason').addEventListener('change', () => {
-  if ($('windSeason').value) $('winds').checked = true;
-  refresh(() => { buildOverlays(); renderLegend(); });
+  setSeason($('windSeason').value);
+  if (state.season) $('winds').checked = true;
+  refresh(() => { if (SEASONAL[state.layer]) paint(); else { buildOverlays(); renderLegend(); } updateHover(); });
+});
+$('layerSeason').addEventListener('change', () => {
+  setSeason($('layerSeason').value);
+  refresh(() => { paint(); updateHover(); });
 });
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
@@ -1380,7 +1505,7 @@ async function pollJob(id) {
     if (j.status === 'done' || j.status === 'error') {
       job.finished = true;
       renderZoomBox();
-      if (j.status === 'done') showTab('zoom', j.zoom);
+      if (j.status === 'done') { showTab('zoom', j.zoom); refreshIndex(); }
       return;
     }
     renderZoomBox();
@@ -1671,7 +1796,7 @@ async function loadRun(dir, wantT) {
   renderLayerButtons();  // settles state.layer, which says what to load
   await loadNeeded();
   setFrame(f, false);
-  buildTopology(); paint(); renderRunSummary(); drawTint();
+  buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();
 }
 
 // A world's volcano table (tectonics.volcanism.COLUMNS) -> [lat, lon, kind, mark]
@@ -1727,6 +1852,15 @@ addEventListener('keydown', (e) => {
 });
 function nearestFrame(t) { const fr = V.run.frames; return fr.reduce((b, x, i) => (Math.abs(x.t - t) < Math.abs(fr[b].t - t) ? i : b), 0); }
 $('summary').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-run],[data-world],[data-zoom],[data-jump]');  // provenance links
+  if (a) {
+    e.preventDefault();
+    if (a.dataset.run) return openRun(a.dataset.run, a.dataset.t != null ? +a.dataset.t : undefined);
+    if (a.dataset.world) return openWorld(a.dataset.world);
+    if (a.dataset.zoom) return showTab('zoom', a.dataset.zoom);
+    if (V.kind === 'run') { stop(); return setFrame(nearestFrame(+a.dataset.jump)); }
+    return;
+  }
   if (V.kind !== 'run') return;
   const act = e.target.dataset?.act;
   if (act === 'tz') return startTimezoom();
@@ -1778,7 +1912,7 @@ function applyUrlOptions() {
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
-  if (p.get('season')) $('windSeason').value = p.get('season');  // jul | jan: the wind overlay's half-year
+  if (p.get('season')) setSeason(p.get('season'));  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }
 const urlp = applyUrlOptions();
@@ -1788,8 +1922,11 @@ $('reliefVal').textContent = $('relief').value + '×';
 async function getJSON(url) { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : []; } catch { return []; } }
 // fills the run/world dropdown from the indexes; returns false when there's nothing
 async function fillSelector() {
-  const [runs, worlds] = await Promise.all([getJSON('../runs/index.json'), getJSON('../worlds/index.json')]);
+  const [runs, worlds, zooms] = await Promise.all([getJSON('../runs/index.json'), getJSON('../worlds/index.json'),
+                                                  getJSON('../zooms/index.json')]);
+  IDX = { runs, worlds, zooms };
   if (!runs.length && !worlds.length) return false;
+  const was = $('worldSel').value;
   const opt = (v, label) => `<option value="${v}">${label}</option>`;
   const when = (c) => (c || '').slice(5, 16);  // "MM-DD HH:MM"
   const main = runs.filter((r) => r.kind !== 'timezoom'), tzs = runs.filter((r) => r.kind === 'timezoom');
@@ -1799,7 +1936,8 @@ async function fillSelector() {
     (tzs.length ? `<optgroup label="Glacial time zooms (newest first)">${tzs.map((r) =>
       opt('run:' + r.dir, `${r.id} · ${r.name} · ${r.kyr} kyr · ${when(r.created)}`)).join('')}</optgroup>` : '') +
     (worlds.length ? `<optgroup label="Worlds (newest first)">${worlds.map((w) =>
-      opt('world:' + w.file, `${w.id} · ${w.name} · ${when(w.created)}`)).join('')}</optgroup>` : '');
+      opt('world:' + w.file, `${w.id} · ${worldTitle(w)}${w.name !== worldTitle(w) ? ' — ' + w.name : ''} · ${when(w.created)}`)).join('')}</optgroup>` : '');
+  if (was && [...$('worldSel').options].some((o) => o.value === was)) $('worldSel').value = was;
   return true;
 }
 // open a run (e.g. a time zoom just made, or a time zoom's source) at time t

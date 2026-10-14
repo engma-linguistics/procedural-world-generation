@@ -204,3 +204,19 @@ def test_run_layout(data_root):
     assert np.array_equal(T.frame(run2, arr, "downstream", 2, sim.grid), sim.snapshot().downstream)
     assert S.read_header(out / "run.json")["name"] == "t"
     assert S.update_index("run")[0]["id"] == run["id"]
+
+
+def test_world_seasons():
+    """Worlds store July / January temperature and rain (PW-126): July is the
+    warm month in the north and the cold one in the south, and the half-year
+    rains average to the annual."""
+    from planet import world as W
+    w = W.generate("plates", seed=2, level=4)
+    L, lat = w["layers"], w["grid"].lat
+    for k in ("temperature_jul", "temperature_jan", "precipitation_jul", "precipitation_jan"):
+        assert k in S.LAYERS and len(L[k]) == len(lat)
+    n, s = lat > 30, lat < -30
+    assert np.abs(L["temperature_jul"][n] - L["warm_month"][n]).max() <= 0.51
+    assert np.abs(L["temperature_jul"][s] - L["cold_month"][s]).max() <= 0.51
+    assert np.abs(L["temperature_jan"][n] - L["cold_month"][n]).max() <= 0.51
+    assert np.abs(0.5 * (L["precipitation_jul"] + L["precipitation_jan"]) - L["precipitation"]).max() <= 1
