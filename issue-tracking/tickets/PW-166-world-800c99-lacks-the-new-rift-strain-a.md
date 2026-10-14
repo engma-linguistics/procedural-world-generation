@@ -1,4 +1,5 @@
 ---
+id: PW-166
 title: World 800c99 lacks the new rift_strain and glaciated_myr layers; re-slice it for the demos
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland2
 blocked_by: []
 relates: [PW-011]
 refs: [planet/landform.py, planet/zoom_landforms.py, "world 800c99", "run f59dd6", "zoom c34d7a"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -34,3 +37,6 @@ glaciated in the last 80 Myr, so a scoured-shield demo needs another
 (docs/review/landforms/zoom_shield_glaciated_synthetic.png).
 - [ ] 800c99 (or its replacement) carries rift_strain and glaciated_myr
 - [ ] landform demo zooms regenerated from it
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-reslice-for-rift-strain-glaciated.md (found by zoomland2).

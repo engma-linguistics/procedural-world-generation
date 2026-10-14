@@ -1,4 +1,5 @@
 ---
+id: PW-167
 title: Rift zooms in wet climates fill every closed half-graben with a lake (100+ small lakes)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland2
 blocked_by: []
 relates: [PW-011]
 refs: [planet/zoom.py, planet/zoom_landforms.py, "zoom c34d7a"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ spill level, or a playa).
 Try: lakes only where the basin's catchment runoff exceeds its evaporation
 (the coarse lake_evap / runoff fields), levels below spill for closed ones,
 and fill (not lake) depressions under ~5 km2 outside the half-graben floors.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-rift-lake-count.md (found by zoomland2).

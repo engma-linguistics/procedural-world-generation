@@ -1,4 +1,5 @@
 ---
+id: PW-168
 title: Shield domes are ringed by streams in the viewer's relief (a moat look)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland2
 blocked_by: []
 relates: [PW-011]
 refs: [planet/zoom_landforms.py, "zoom 23fe61", docs/review/landforms/zoom_shield_23fe61.png]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Try: a pediment apron (a gentle concave skirt, 1-2 R) around each dome in
 the target only, so the foot streams sit farther out and the dome rises
 from a smooth pediment; or exclude dome footprints from the channel mask
 used in the landscape pass.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-shield-dome-moats.md (found by zoomland2).

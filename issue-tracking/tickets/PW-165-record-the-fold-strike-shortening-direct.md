@@ -1,4 +1,5 @@
 ---
+id: PW-165
 title: Record the fold strike (shortening direction) so fold belts don't guess it from crust thickness
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland2
 blocked_by: []
 relates: [PW-011, PW-008]
 refs: [planet/zoom_landforms.py, planet/tectonics/record.py, "world 800c99", "zoom 516580"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -29,3 +32,6 @@ folded it (or the gradient of the thickening in that step), rotated with the
 plate, as a strike angle; slice it as a landform layer (`fold_strike`) and
 let build_frames use it as the main cue. Same idea for rifts (stretching
 direction), which now use the long axis of the rift's band of cells.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-fold-strike-in-record.md (found by zoomland2).
