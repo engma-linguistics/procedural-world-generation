@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology
+from . import climate, coast, hydrology, ocean
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -70,6 +70,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
     biome = climate.biomes(elev, temp, precip, lk["wet"])
+    sea = elev <= 0
     elev_m = np.round(elev).astype(int)
 
     layers = {
@@ -93,6 +94,15 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # wave crest, and the tidal range, m
         "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
         "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c).mean(0)), 2),
+        # the sea (0 on land): surface temperature, annual and July / January (C), surface
+        # salinity (psu) and deep water sinking (Sv per cell; ocean.py's overturning)
+        **{k: np.round(np.where(sea, c[k], 0.0), 1) for k in ("sst", "sst_jul", "sst_jan")},
+        "salinity": np.round(np.where(sea, c["sss"], 0.0), 2),
+        "sinking": np.round(np.where(sea, c["overturning"], 0.0), 3),
+        # the air's humidity near the ground in the July / January half-years: dew point (C)
+        # and relative humidity (%)
+        "dewpoint_jul": np.round(c["dew_jul"]).astype(int), "dewpoint_jan": np.round(c["dew_jan"]).astype(int),
+        "humidity_jul": np.round(c["rh_jul"]).astype(int), "humidity_jan": np.round(c["rh_jan"]).astype(int),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
@@ -113,6 +123,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "cell_size_km": round(grid.spacing * R_KM),
         "params": {"erosion": erosion, "erosion_iterations": erosion_iterations,
                    "dT": dT, "tilt": tilt, **(params or {})},
+        # the overturning: Sv, sinking sites and a schematic of its loop (ocean.loop_schematic)
+        "overturning": ocean.loop_schematic(grid, elev, c),
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }

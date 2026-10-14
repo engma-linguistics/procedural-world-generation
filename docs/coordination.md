@@ -52,7 +52,7 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 
 Discrete volcanoes (PW-001) demo: run 39d004 (seed 13, L7, 500 Myr, `continental_start=0.1 heat_start=2`), world a099c6 (400 Myr), zooms e8fa0e (an island chain, youngest over the plume at -1.9, 35.4), 4e6647 (its atolls, 1 km) and 122cc1 (eroded islands, 1 km); before: world f724bd and its zoom 9834b6 (one big island over a plume).
 
-Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world f8a740 (`tools/earth_world.py`; re-make after climate changes and delete the old one); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
+Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world 64fc00 (`tools/earth_world.py`; re-make after climate changes and delete the old one); ocean demo world 9b8200 (run f59dd6 @ 1000 Myr: salinity, SST, humidity, overturning); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
@@ -60,7 +60,7 @@ After making a showcase: slice its worlds, then `uv run python -m planet highlig
 **In flight (2026-10-14 night):** worktrees `.claude/worktrees/<branch>`:
 - `zoomland1`: PW-010 zoom synthesis batch 1 (escarpment, caprock/cuestas, lava plateau) plus a class-dispatch structure for PW-011/012. Verify world 800c99.
 - `viewerseason`: PW-126 (July/January temperature and rain on worlds plus picker), PW-128 (provenance in the viewer).
-Merged since: hydrofix, climfix, volcanoes (demo run 39d004, world a099c6), lakesize (PW-110), zoomsmalls (PW-062–070), landform (PW-006–009: record, rocks, classes; demo run f59dd6, world 800c99). Earth world is now f8a740. Runs made before the landform merge have no record, so their worlds get no classes; re-run showcases when convenient.
+Merged since: hydrofix, climfix, volcanoes (demo run 39d004, world a099c6), lakesize (PW-110), zoomsmalls (PW-062–070), landform (PW-006–009: record, rocks, classes; demo run f59dd6, world 800c99). Earth world is now 64fc00 (remade with the ocean layers, viewerocean). Runs made before the landform merge have no record, so their worlds get no classes; re-run showcases when convenient.
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 

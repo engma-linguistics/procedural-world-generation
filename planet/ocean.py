@@ -635,3 +635,170 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
                 density_w=density(np.maximum(sst_f - sea_half, C.FREEZE), sss_f + brine_f),
                 sinking=sink_f, inflow=_up(M, ov["inflow"]) * sea, state=st,
                 sites=ov["sites"], sst=sst_f)
+
+
+# ---------------------------------------------------------------------------
+# A schematic of the overturning loop, for the viewer
+# ---------------------------------------------------------------------------
+LOOP_MIN_SV = 0.3  # sites weaker than this get no drawn loop
+LOOP_DEEP_M = 1500.0  # the deep return flow keeps to sea deeper than this
+LOOP_CHAN_LAT = 70.0  # deg: a circumpolar channel equatorward of this is where deep water wells up
+LOOP_GAP_DEG = 20.0  # deg: no deep limb from a site this far from the deep sea that leads to the upwelling
+LOOP_WEST_KM = 500.0  # ... preferring a western boundary: a step costs 1 + (km to land due west) / this
+
+
+def _west_distance(grid: Grid, land: np.ndarray, max_km: float, min_km2: float) -> np.ndarray:
+    """km due west from each cell to land (a landmass of at least min_km2,
+    not an island in mid-ocean), at most max_km: the deep western boundary
+    currents hug the continental slope on a basin's west side."""
+    lab, k = C._components(grid, land)
+    area = cell_area_km2(grid)
+    sizes = np.bincount(lab[land], area[land], max(k, 1))
+    land = land & (sizes[np.maximum(lab, 0)] >= min_km2)
+    out = np.full(grid.n, max_km)
+    p = grid.centers
+    cl = np.maximum(np.cos(np.radians(grid.lat)), 0.15)
+    guess = np.arange(grid.n)
+    step = 0.5 * grid.spacing * R_KM
+    for d in np.arange(step, max_km, step):
+        a = -d / R_KM / cl  # rotate west about the spin axis
+        q = np.stack([p[:, 0] * np.cos(a) - p[:, 1] * np.sin(a), p[:, 0] * np.sin(a) + p[:, 1] * np.cos(a),
+                      p[:, 2]], 1)
+        guess = grid.locate(q, guess)
+        out = np.where(land[guess] & (out >= max_km), d, out)
+    return out
+
+
+def _trace(grid: Grid, par: np.ndarray, start: int, max_points: int = 70) -> list[list[float]]:
+    """The route from start along par (to its source), as [[lat, lon], ...],
+    smoothed (a schematic, not cell steps) and thinned."""
+    cells = [start]
+    while par[cells[-1]] >= 0 and len(cells) < 20000:
+        cells.append(int(par[cells[-1]]))
+    v = grid.centers[cells].astype(float)
+    for _ in range(4):
+        if len(v) > 2:
+            v[1:-1] = 0.25 * v[:-2] + 0.5 * v[1:-1] + 0.25 * v[2:]
+    v /= np.linalg.norm(v, axis=1, keepdims=True)
+    step = max(1, int(np.ceil(len(v) / max_points)))
+    keep = list(range(0, len(v), step)) + ([len(v) - 1] if (len(v) - 1) % step else [])
+    lat = np.degrees(np.arcsin(np.clip(v[keep, 2], -1, 1)))
+    lon = np.degrees(np.arctan2(v[keep, 1], v[keep, 0]))
+    return [[round(float(a), 2), round(float(b), 2)] for a, b in zip(lat, lon)]
+
+
+def _arc(lat1: float, lon1: float, lat2: float, lon2: float, step_deg: float = 1.0) -> list[list[float]]:
+    """Points along the great circle from (lat1, lon1) to (lat2, lon2), both ends included."""
+    from .geo import latlon, xyz
+    a, b = xyz(np.radians(lat1), np.radians(lon1)), xyz(np.radians(lat2), np.radians(lon2))
+    ang = float(np.arccos(np.clip(a @ b, -1, 1)))
+    m = max(1, int(np.ceil(np.degrees(ang) / step_deg)))
+    t = np.linspace(0, 1, m + 1)[:, None]
+    v = a * np.sin((1 - t) * ang) + b * np.sin(t * ang) if ang > 1e-9 else np.repeat(a[None], m + 1, 0)
+    la, lo = latlon(v / np.linalg.norm(v, axis=1, keepdims=True))
+    return [[round(float(x), 2), round(float(y), 2)] for x, y in zip(la, lo)]
+
+
+def _arc_deg(grid: Grid, i: int, lat: float, lon: float) -> float:
+    from .geo import xyz
+    return float(np.degrees(np.arccos(np.clip(grid.centers[i] @ xyz(np.radians(lat), np.radians(lon)), -1, 1))))
+
+
+def _nearest(grid: Grid, cells: np.ndarray, lat: float, lon: float) -> int:
+    from .geo import xyz
+    p = np.asarray(xyz(np.radians(lat), np.radians(lon)), float)
+    return int(cells[np.argmax(grid.centers[cells] @ p)])
+
+
+def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = None) -> dict:
+    """The overturning in numbers plus a schematic of its loop, for world
+    meta (climate.compute's result c):
+      sv, north_sv, south_sv   Sv sinking in all, and per hemisphere
+      sites                    c's moc_sites (lat, lon, sv, drho, area_km2, heat_pw)
+      paths                    [{site, limb, pts: [[lat, lon], ...]}] per site of at
+                               least LOOP_MIN_SV:
+        limb "surface": the warm inflow from the low latitudes (equatorward
+          of moc_src_lat), along the route the model's inflow takes
+          (moc_inflow; the cheapest sea route riding it). None for a site
+          beyond a circumpolar channel: there the sinking water is replaced
+          by deep water welling up in the channel (as round Antarctica).
+        limb "deep": NOT modelled (the model has no deep ocean): the
+          textbook path of the deep return flow, the cheapest route through
+          sea deeper than LOOP_DEEP_M preferring western boundaries, to
+          where deep water comes back up: a circumpolar channel (equatorward
+          of LOOP_CHAN_LAT) in the other hemisphere if there is one (the
+          Southern Ocean), else the equatorial band.
+        A limb is left out where the site is more than LOOP_GAP_DEG from
+        the sea its route would start in.
+      upwelling                where the deep limbs end: "channel" and / or "tropics"
+      note                     says which parts are schematic"""
+    from . import climate as Cm
+    tune = tune or Cm.TUNE
+    sea = elev <= 0
+    sink = np.asarray(c["overturning"], float)
+    out = {"sv": round(float(sink.sum()), 2), "north_sv": round(float(sink[grid.lat >= 0].sum()), 2),
+           "south_sv": round(float(sink[grid.lat < 0].sum()), 2), "sites": list(c.get("moc_sites") or []),
+           "paths": []}
+    if not any(s["sv"] >= LOOP_MIN_SV for s in out["sites"]):
+        return out
+    n = grid.n
+    chan = sea & _circumpolar(grid, sea, tune)
+    chan_lat = _chan_lat(grid, chan & (np.abs(grid.lat) < LOOP_CHAN_LAT))
+    # deep limb: through deep sea, along the western boundaries
+    deep = sea & (-elev > LOOP_DEEP_M)
+    west = _west_distance(grid, ~sea, 4000.0, tune["island_km2"])
+    cost = ((1.0 + west / LOOP_WEST_KM) * np.where(-elev > 3000.0, 1.0, 1.5))[grid.nbr_idx]
+    dest = {}
+    for hemi in (1, -1):
+        # (a channel between continents, as the Southern Ocean's: not a polar sea's ring round the pole)
+        ch = chan & deep & (np.sign(grid.lat) == hemi) & (np.abs(grid.lat) < LOOP_CHAN_LAT)
+        dest[hemi] = ch if ch.sum() >= 10 else None
+    eq = deep & (np.abs(grid.lat) < 5)
+    runs = {}
+
+    def routes(key, targets):
+        if key not in runs:
+            runs[key] = _paths(np.flatnonzero(targets), deep, grid.nbr_off, grid.nbr_idx, cost)
+        return runs[key]
+
+    # surface limb: from the low latitudes, riding the model's inflow
+    infl = np.asarray(c.get("moc_inflow", np.zeros(n)), float)
+    ref = np.percentile(infl[infl > 0], 95) if (infl > 0).any() else 1.0
+    s_cost = (1.0 / (0.05 + np.clip(infl / max(ref, 1e-12), 0, 1)))[grid.nbr_idx]
+    low = sea & (np.abs(grid.lat) < tune["moc_src_lat"])
+    s_ok = sea & ~chan
+    s_dist, s_par, _ = _paths(np.flatnonzero(low), s_ok, grid.nbr_off, grid.nbr_idx, s_cost)
+    up_kind = set()
+    for k, s in enumerate(out["sites"]):
+        if s["sv"] < LOOP_MIN_SV:
+            continue
+        hemi = 1 if s["lat"] >= 0 else -1
+        # (poleward of a circumpolar channel in its own hemisphere)
+        beyond = dest[hemi] is not None and abs(s["lat"]) > chan_lat[_nearest(grid, np.arange(n), s["lat"], s["lon"])]
+        # surface limb
+        reach = np.flatnonzero(np.isfinite(s_dist))
+        if not beyond and len(reach):
+            i = _nearest(grid, reach, s["lat"], s["lon"])
+            if _arc_deg(grid, i, s["lat"], s["lon"]) <= LOOP_GAP_DEG:
+                out["paths"].append({"site": k, "limb": "surface", "pts": _trace(grid, s_par, i)})
+        # deep limb
+        other = dest[-hemi]
+        key = ("chan", -hemi) if other is not None and not beyond else ("eq", 0)
+        tg = other if key[0] == "chan" else eq
+        if not tg.any():
+            continue
+        dist, par, _ = routes(key, tg)
+        reach = np.flatnonzero(np.isfinite(dist))
+        if not len(reach):
+            continue
+        i = _nearest(grid, reach, s["lat"], s["lon"])
+        if _arc_deg(grid, i, s["lat"], s["lon"]) > LOOP_GAP_DEG:
+            continue  # (the site's own deep sea doesn't lead there)
+        # (from the site itself, along a great circle: it may sit behind a sill, as the Nordic seas do)
+        pts = _trace(grid, par, i)
+        out["paths"].append({"site": k, "limb": "deep", "pts": _arc(s["lat"], s["lon"], *pts[0]) + pts[1:]})
+        up_kind.add("channel" if key[0] == "chan" else "tropics")
+    out["upwelling"] = sorted(up_kind)
+    out["note"] = ("schematic: the surface limb follows the model's inflow; the deep limb is not modelled "
+                   "(a textbook route along the deep western boundaries)")
+    return out

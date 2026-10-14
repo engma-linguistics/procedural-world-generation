@@ -7,7 +7,10 @@
 Each detector looks for one kind of place (the highest peak, the longest
 mountain range, a big river mouth, a fjord coast...) and returns features:
 
-    {kind, title, blurb, lat, lon, cell, size_km, score, zoomable, stats, path?}
+    {kind, category, title, blurb, lat, lon, cell, size_km, score, zoomable, stats, path?}
+
+category groups the kinds for the viewer (CATEGORIES: landscape, water,
+climate, travel, geology).
 
 lat/lon/cell is where to look (a cell on the feature, near its middle);
 size_km is a suggested regional-zoom extent, one of the viewer's zoom sizes;
@@ -70,7 +73,8 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   mean of the two), lowered when under half land.
 - travel (worlds with July / January layers; each hemisphere's own summer and
   winter, July being summer in the north): beach destination (coast with a
-  warm, dry summer at sea level, a warm sea, moderate waves), ski country
+  warm, dry summer at sea level, a warm sea: its summer surface temperature,
+  sst_jul / sst_jan, where the world has them; moderate waves), ski country
   (ice-free mountains freezing and snowy in winter, not glaciated, a town with
   a tolerable winter below), mild-winter retreat (low land, mild and fairly dry
   winter), year-round resort (a beach and ski country within RESORT_KM). Each
@@ -110,6 +114,18 @@ PRIORITY = {
     "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
     "year_round": 74, "ski": 71, "beach": 70, "mild_winter": 67,
 }
+# Category per kind, for the viewer's filter and marker colours (PW-141)
+CATEGORIES = {
+    "landscape": ("highest_peak", "ice_free_peak", "mountain_range", "plateau", "canyon", "fjords", "rain_shadow",
+                  "varied_square", "continent", "island", "archipelago"),
+    "water": ("largest_river", "longest_river", "delta", "waterfall", "lake", "inland_sea", "salt_lake", "salt_pan",
+              "salt_flats", "inland_basin", "coral_coast"),
+    "climate": ("desert", "rainforest", "ice_sheet", "mediterranean", "hottest", "coldest", "wettest", "driest"),
+    "travel": ("beach", "ski", "mild_winter", "year_round"),
+    "geology": ("volcanic_arc", "hotspot_islands", "rift", "trench"),
+}
+CATEGORY = {k: c for c, kinds in CATEGORIES.items() for k in kinds}
+assert set(CATEGORY) == set(PRIORITY), set(CATEGORY) ^ set(PRIORITY)
 ROCK_SETTING = {1: "a hotspot volcano", 2: "a volcanic arc", 3: "sedimentary rock",
                 4: "a collision belt", 5: "an ancient shield"}
 KOPPEN_NAME = {k[0]: f"{k[2]} ({k[1]})" for k in KOPPEN}
@@ -251,7 +267,8 @@ def zoom_size(span_km: float) -> int:
 def _feature(ctx: _Ctx, kind: str, title: str, blurb: str, cell: int, size_km: float,
              stats: dict, quality: float = 1.0, path=None, zoomable: bool = True) -> dict:
     lat, lon = ctx.latlon(cell)
-    f = {"kind": kind, "title": title, "blurb": blurb, "lat": lat, "lon": lon, "cell": int(cell),
+    f = {"kind": kind, "category": CATEGORY[kind], "title": title, "blurb": blurb, "lat": lat, "lon": lon,
+         "cell": int(cell),
          "size_km": int(size_km), "score": round(PRIORITY[kind] * float(np.clip(quality, 0.3, 1.0)), 1),
          "zoomable": zoomable, "stats": stats}
     if path is not None:
@@ -1506,7 +1523,11 @@ def _beach_cands(ctx: _Ctx) -> list[tuple]:
     for cells in ctx.components(sea, min_cells=20):
         open_sea[cells] = True
     ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
-    sea_t, n_sea = _nbr_mean(ctx, S["t_sum"], open_sea)
+    # the sea's own summer surface temperature where the world has it (sst_jul / sst_jan),
+    # else the summer air over the sea
+    sst_sum = (np.where(S["north"], np.asarray(L["sst_jul"], float), np.asarray(L["sst_jan"], float))
+               if "sst_jul" in L and "sst_jan" in L else S["t_sum"])
+    sea_t, n_sea = _nbr_mean(ctx, sst_sum, open_sea)
     wave, _ = _nbr_mean(ctx, np.asarray(L["wave_power"], float), open_sea)
     # the beach is at sea level; the cell's temperature is for its mean height
     t_beach = S["t_sum"] + LAPSE * np.maximum(ctx.elev, 0)
