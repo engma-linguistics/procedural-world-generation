@@ -11,7 +11,7 @@ compiled code in __pycache__, so later runs start instantly.
 from __future__ import annotations
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 # ---------------------------------------------------------------------------
 # Grid construction
@@ -118,14 +118,15 @@ def build_raster(centers, nbr_off, nbr_idx, w, h):
     return out
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def locate(pts, guess, raster, centers, nbr_off, nbr_idx):
     """Nearest cell for each row of pts. guess[i] >= 0 is used as the walk's
     starting point (fast when points moved only a little); otherwise the
-    raster supplies one."""
+    raster supplies one. Each point's walk is independent, so the parallel
+    loop gives exactly the serial result."""
     h, w = raster.shape
     out = np.empty(pts.shape[0], np.int64)
-    for i in range(pts.shape[0]):
+    for i in prange(pts.shape[0]):
         s = guess[i]
         if s < 0:
             lat = np.arcsin(min(1.0, max(-1.0, pts[i, 2])))
@@ -293,6 +294,33 @@ def grow_regions(seed, seeds, rates, nbr_off, nbr_idx, n):
                     break
                 pick -= 1
     return label
+
+
+@njit(cache=True)
+def components(mask, nbr_off, nbr_idx):
+    """Connected regions of a cell mask: (label per cell, -1 outside the
+    mask; number of regions). Regions are numbered by their lowest cell id."""
+    n = mask.shape[0]
+    lab = np.full(n, -1, np.int64)
+    q = np.empty(n, np.int64)
+    k = 0
+    for s in range(n):
+        if not mask[s] or lab[s] >= 0:
+            continue
+        lab[s] = k
+        head, tail = 0, 1
+        q[0] = s
+        while head < tail:
+            i = q[head]
+            head += 1
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[e]
+                if mask[j] and lab[j] < 0:
+                    lab[j] = k
+                    q[tail] = j
+                    tail += 1
+        k += 1
+    return lab, k
 
 
 @njit(cache=True)

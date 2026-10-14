@@ -1,0 +1,23 @@
+{
+ "w_elev": "<f8[2562]:5ea4005d051bba93b20e",
+ "w_thick": "<f8[2562]:48e957a962a7a068d450",
+ "w_age": "<f8[2562]:8c543d3032179121895d",
+ "w_cover": "<f8[2562]:7ed9a0c6665313033df6",
+ "w_rock": "|u1[2562]:5a596e18590c7153c211",
+ "w_cont": "|b1[2562]:360bafdd3389b7177000",
+ "w_extra": "<f8[2562, 6]:5c8d7f993783460a8a0c",
+ "owner": "<i8[2562]:b7019bc80c152e455d1a",
+ "idx": "<i8[48, 2562]:1402415a37de29c2cddf",
+ "precip": "<f8[2562]:3df9977efb349e23fa2e",
+ "temp": "<f8[2562]:98437f35a9f3c0842228",
+ "ice": "<f8[2562]:61f490311bdd6137c5c2",
+ "flow": "<f8[2562]:766fc34bf641503901ae",
+ "down": "<i8[2562]:b617c399b411c21cf91d",
+ "snap_elevation": "<f8[2562]:38aafde134de9c794353",
+ "snap_boundary": "|i1[2562]:95c2f41bcaf17e8e5477",
+ "snap_surface": "|u1[2562]:55b7cafb502fe8976ec2",
+ "snap_koppen": "<i8[2562]:0d3816a37f89145f75e1",
+ "events": "473662000c2979c5318a",
+ "budget": "6bf02f92462b2768b676",
+ "scalars": "ec7ed2764f8eae9056c1"
+}

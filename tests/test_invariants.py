@@ -9,13 +9,13 @@ from planet.grid import build_grid
 from planet.surface import ROCKS
 from planet.tectonics import MAX_KM, Params, Simulation
 
-from conftest import continental_volume, run_sim
+from helpers import continental_volume, run_sim
 
 
-def test_deterministic():
+def test_deterministic(sim4_60):
     """Same seed and params -> identical history (runs are stored as a cache;
     slicing replays from t=0 and relies on this)."""
-    a, b = run_sim(myr=60), run_sim(myr=60)
+    a, b = sim4_60, run_sim(myr=60)
     for k in ("w_elev", "w_thick", "w_cover", "w_age", "owner", "precip", "temp"):
         assert np.array_equal(getattr(a, k), getattr(b, k)), k
     assert [e.as_dict() for e in a.events] == [e.as_dict() for e in b.events]
@@ -99,5 +99,48 @@ def test_world_and_zoom(sim4):
     i = land[len(land) // 2]
     lat, lon = float(sim4.grid.lat[i]), float(sim4.grid.lon[i])
     z = zoom.build(w, lat, lon, size_km=400, res_km=8, iterations=3, log=lambda *a: None)
-    e = z["elevation"] if "elevation" in z else z["layers"]["elevation"]
+    e = z["layers"]["elevation"]
     assert np.isfinite(e).all() and e.max() > 0
+
+
+def test_params_from_old_run():
+    """run.json from older code: removed params are dropped (with a warning),
+    missing ones take today's defaults."""
+    stored = {"n_plates": 9, "some_removed_param": 1.0}
+    with pytest.warns(UserWarning, match="some_removed_param"):
+        p = Params.from_stored(stored)
+    assert p.n_plates == 9 and p.tilt == Params().tilt
+
+
+def test_simulate_slice_provenance(tmp_path, monkeypatch):
+    """simulate stamps the code into run.json; slicing at a keyframe must
+    reproduce it, and refuses to save a world when it doesn't (unless forced).
+    Runs without the stamp (older runs) still slice."""
+    import json
+    monkeypatch.setattr(T, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(T, "GRIDS", tmp_path / "grids")
+    monkeypatch.setattr(W, "WORLDS", tmp_path / "worlds")
+    out = T.simulate(1, 4, 8.0, 2.0, 4.0, "t", Params())
+    run = json.loads((out / "run.json").read_text())
+    assert run["meta"]["code"]["planet_src_sha"]
+    world = json.loads(T.slice_world(out, 8.0).read_text())
+    assert world["meta"]["replay_matches_keyframe"] is True
+
+    # an older run: no code stamp, plus a param this code no longer has
+    del run["meta"]["code"]
+    run["meta"]["params"]["long_gone_param"] = 1
+    (out / "run.json").write_text(json.dumps(run))
+    with pytest.warns(UserWarning):
+        T.slice_world(out, 4.0)
+
+    # the stored keyframe no longer matches what the code computes
+    spec = run["layers"]["elevation"]
+    elev = np.memmap(out / "frames.bin", spec["dtype"], "r+", spec["offset"], tuple(spec["shape"]))
+    elev[-1] += 1
+    elev.flush()
+    del elev
+    with pytest.warns(UserWarning), pytest.raises(T.ReplayMismatch):
+        T.slice_world(out, 8.0)
+    with pytest.warns(UserWarning):
+        world = json.loads(T.slice_world(out, 8.0, force=True).read_text())
+    assert world["meta"]["replay_matches_keyframe"] is False

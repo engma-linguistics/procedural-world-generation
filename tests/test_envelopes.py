@@ -9,7 +9,7 @@ import pytest
 
 from planet import climate
 
-from conftest import run_sim
+from helpers import run_sim
 
 pytestmark = pytest.mark.slow
 GROUP = np.array([k[1][0] for k in climate.KOPPEN])

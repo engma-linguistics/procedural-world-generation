@@ -27,10 +27,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import struct
 import sys
 import time
-import zlib
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +36,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from planet import climate  # noqa: E402
+from planet import images  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools import earth_data  # noqa: E402
 
@@ -529,18 +528,6 @@ T_STOPS = [(-40, "#2b0057"), (-20, "#3a4cc0"), (0, "#d8e9f5"), (10, "#f7f7b0"), 
            (30, "#b2182b")]
 
 
-def write_png(path, rgb):
-    h, w, _ = rgb.shape
-    raw = b"".join(b"\x00" + rgb[y].astype(np.uint8).tobytes() for y in range(h))
-
-    def chunk(t, data):
-        return struct.pack(">I", len(data)) + t + data + struct.pack(">I", zlib.crc32(t + data) & 0xFFFFFFFF)
-
-    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
-           + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
-    Path(path).write_bytes(png)
-
-
 def render(path, grid, d, c, width=720):
     """2 columns (left model, right observed) x 3 rows (Koppen, log precip,
     annual temperature). Coastlines from the model land mask on P/T panels."""
@@ -589,7 +576,7 @@ def render(path, grid, d, c, width=720):
     rows = [np.concatenate([a, sep_v, b], 1) for a, b in zip(left, right)]
     sep_h = np.full((4, rows[0].shape[1], 3), 255.0)
     img = np.concatenate([rows[0], sep_h, rows[1], sep_h, rows[2]], 0)
-    write_png(path, img)
+    images.write_png(path, img.astype(np.uint8))
 
 
 def main():

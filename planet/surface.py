@@ -33,6 +33,7 @@ import numpy as np
 from numba import njit
 
 from . import kernels
+from .geo import R_KM
 
 # id, key, name, erodibility (relative), colour
 ROCKS = [
@@ -58,7 +59,6 @@ COVER_K = ROCK_K[SHALE]
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed
 
 
-R_KM = 6371.0
 
 
 def rain_factor(precip_mm):
@@ -149,7 +149,6 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, dt, hillslope, tau,
     k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
     gentle river course over which ~63% of the load settles on land.
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream, lake)."""
-    n = grid.n
     land = elev > 0
     filled, down, order = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
     rain_m = np.where(land, precip, 0) / 1000.0

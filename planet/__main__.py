@@ -62,7 +62,10 @@ def cmd_simulate(args):
 
 
 def cmd_slice(args):
-    path = T.slice_world(T.find_run(args.run), args.at, args.erosion)
+    try:
+        path = T.slice_world(T.find_run(args.run), args.at, args.erosion, force=args.force)
+    except T.ReplayMismatch as e:
+        raise SystemExit(f"ERROR: {e}")
     print(path.relative_to(W.ROOT))
 
 
@@ -204,6 +207,8 @@ def main():
     sl.add_argument("--at", type=float, required=True, help="time in Myr")
     sl.add_argument("--erosion", type=float, default=0.3,
                     help="final valley-sharpening pass (erosion already ran during the simulation)")
+    sl.add_argument("--force", action="store_true",
+                    help="save the world even if the replay doesn't match the run's stored keyframe")
     sl.set_defaults(func=cmd_slice)
 
     z = sub.add_parser("zoom", help="refine a region of a sliced world to a few km -> zooms/<id>/")

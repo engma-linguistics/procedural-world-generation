@@ -23,6 +23,8 @@ from pathlib import Path
 import numpy as np
 
 from . import world as W
+from .provenance import code_version, describe
+from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .climate import KOPPEN
@@ -89,10 +91,8 @@ def write_grid(grid: Grid) -> Path:
     path = GRIDS / f"L{grid.level}.json"
     if path.exists() and '"nbr"' in path.read_text()[-200000:]:
         return path
-    ll = lambda v: (np.round(np.degrees(np.arcsin(np.clip(v[:, 2], -1, 1))), 3).tolist(),
-                    np.round(np.degrees(np.arctan2(v[:, 1], v[:, 0])), 3).tolist())
-    lat, lon = ll(grid.centers)
-    clat, clon = ll(grid.corners)
+    lat, lon = W.latlon_lists(grid.centers)
+    clat, clon = W.latlon_lists(grid.corners)
     path.write_text(json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
                                 "corner_lon": clon, "cells": grid.cell_corners,
                                 "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
@@ -153,8 +153,9 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         "name": name,
         "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr,
                  "every": stride * dt, "steps": sim.step_no,
-                 "cell_size_km": round(grid.spacing * W.PLANET_RADIUS_KM),
-                 "params": asdict(params), "generated_in_s": round(time.time() - t0, 1),
+                 "cell_size_km": round(grid.spacing * R_KM),
+                 "params": asdict(params), "code": code_version(),
+                 "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
         "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
@@ -250,30 +251,52 @@ def replay(run_dir: Path, at: float) -> Simulation:
     run = json.loads((run_dir / "run.json").read_text())
     m = run["meta"]
     grid = build_grid(m["level"])
-    sim = Simulation(grid, m["seed"], Params(**m["params"]), m["dt"])
+    sim = Simulation(grid, m["seed"], Params.from_stored(m["params"]), m["dt"])
     sim.run(at)
     return sim
 
 
-def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
+class ReplayMismatch(RuntimeError):
+    """Replaying a run didn't reproduce its stored keyframe (the code
+    changed since the run was made), so a sliced world wouldn't show what
+    the viewer showed for that run."""
+
+
+def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = False) -> Path:
     """erosion: strength of the final river-carving pass. Erosion already ran
-    for the whole history inside the simulation; this only sharpens valleys."""
+    for the whole history inside the simulation; this only sharpens valleys.
+    Raises ReplayMismatch if the replay doesn't match the stored keyframe at
+    `at`, unless force (then the world is saved, marked as not matching)."""
     run, arr = load_frames(run_dir)
     m = run["meta"]
     at = round(at / m["dt"]) * m["dt"]
     if not 0 <= at <= m["myr"] + 1e-9:
         raise SystemExit(f"--at must be between 0 and {m['myr']}")
+    made_by, now = m.get("code"), code_version()
+    same_code = bool(made_by) and made_by.get("planet_src_sha") == now["planet_src_sha"]
+    if not same_code:
+        print(f"WARNING: run {run_dir.name} was made by {describe(made_by)}; this is {describe(now)}. "
+              f"The replay may not reproduce it.")
     sim = replay(run_dir, at)
     snap = sim.snapshot()
     # determinism check against the stored keyframe, when there is one
     times = [f["t"] for f in run["frames"]]
+    same = None
     if at in times:
         i = times.index(at)
         same = (np.array_equal(arr["plate"][i], snap.plate.astype("<u2")) and
                 np.array_equal(arr["elevation"][i], np.clip(np.round(snap.elevation), -32000, 32000).astype("<i2")))
-        print(f"replay at t={at:g} {'matches' if same else 'DOES NOT match'} the stored keyframe")
+        if same:
+            print(f"replay at t={at:g} matches the stored keyframe")
+        else:
+            msg = (f"replay at t={at:g} DOES NOT match the stored keyframe of run {run_dir.name}: "
+                   f"the code changed since it was made, so this world is not what the viewer shows")
+            if not force:
+                raise ReplayMismatch(msg + ". Not saved (use --force / force=True to save it anyway).")
+            print("!" * 72 + f"\nWARNING: {msg}. Saving anyway (--force).\n" + "!" * 72)
 
-    world = world_from_sim(sim, erosion, source_run=run_dir.name, source_run_name=run["name"])
+    world = world_from_sim(sim, erosion, source_run=run_dir.name, source_run_name=run["name"],
+                           replay_matches_keyframe=same, code=now)
     return W.save(world, f"{run['name']} @ {at:g} Myr")
 
 

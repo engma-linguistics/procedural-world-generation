@@ -1,0 +1,13 @@
+{
+ "current": "<f8[2562, 3]:9b1eb0416079e93fb223",
+ "koppen": "<i8[2562]:9fd16443329944c9d4a5",
+ "p_jan": "<f8[2562]:dc7c985bc98f771f8b6a",
+ "p_jul": "<f8[2562]:5e1d1ad3b2de1b972c7b",
+ "precip": "<f8[2562]:02e0a40fa9c0d43bc980",
+ "sst": "<f8[2562]:9746e4ba106ec4e28825",
+ "t_cold": "<f8[2562]:1288cb6e852ae260ace7",
+ "t_warm": "<f8[2562]:4ba73c4efa541627de1c",
+ "temp": "<f8[2562]:2e0cec7626d1e49f4961",
+ "wind_jan": "<f8[2562, 3]:37e2311257a3e1b6065a",
+ "wind_jul": "<f8[2562, 3]:6f32496ed4ba4b19831c"
+}

@@ -64,9 +64,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import struct
 import time
-import zlib
 from pathlib import Path
 
 import numpy as np
@@ -74,11 +72,12 @@ import numpy as np
 from . import climate
 from . import world as W
 from . import zoom_kernels as ZK
+from .geo import R_KM, latlon, xyz
+from .images import write_png
 from .climate import BIOMES, KOPPEN, LAPSE
 from .surface import ROCK_K, ROCKS
 
 ZOOMS = W.ROOT / "zooms"
-R_KM = float(W.PLANET_RADIUS_KM)
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
@@ -98,7 +97,7 @@ class Frame:
 
     def __init__(self, lat0: float, lon0: float):
         la, lo = np.radians(lat0), np.radians(lon0)
-        self.c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
+        self.c = xyz(la, lo)
         e = np.cross([0.0, 0.0, 1.0], self.c)
         if np.linalg.norm(e) < 1e-9:  # at a pole: pick any east
             e = np.array([0.0, 1.0, 0.0])
@@ -120,7 +119,8 @@ class Frame:
 
 
 def _latlon(p):
-    return (float(np.degrees(np.arcsin(np.clip(p[2], -1, 1)))), float(np.degrees(np.arctan2(p[1], p[0]))))
+    lat, lon = latlon(p)
+    return float(lat), float(lon)
 
 
 # ---------------------------------------------------------------------------
@@ -574,27 +574,6 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 # ---------------------------------------------------------------------------
 # Images
 # ---------------------------------------------------------------------------
-def write_png(path: Path, img: np.ndarray) -> None:
-    """Minimal PNG writer: (h, w, 3) uint8 RGB, or (h, w) uint16 greyscale."""
-    if img.dtype == np.uint16 and img.ndim == 2:
-        hgt, wid = img.shape
-        raw = img.astype(">u2").view(np.uint8).reshape(hgt, wid * 2)
-        ihdr = struct.pack(">IIBBBBB", wid, hgt, 16, 0, 0, 0, 0)
-    elif img.dtype == np.uint8 and img.ndim == 3 and img.shape[2] == 3:
-        hgt, wid = img.shape[:2]
-        raw = img.reshape(hgt, wid * 3)
-        ihdr = struct.pack(">IIBBBBB", wid, hgt, 8, 2, 0, 0, 0)
-    else:
-        raise ValueError(f"unsupported image {img.dtype} {img.shape}")
-    data = np.concatenate([np.zeros((hgt, 1), np.uint8), raw], axis=1).tobytes()
-
-    def chunk(tag, body):
-        return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
-
-    Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
-                           + chunk(b"IDAT", zlib.compress(data, 6)) + chunk(b"IEND", b""))
-
-
 def hillshade(h: np.ndarray, res_km: float, exaggeration: float = 2.0, azimuth: float = 315, altitude: float = 40):
     dzdy, dzdx = np.gradient(h * exaggeration, res_km * 1000.0)
     dzdy = -dzdy  # rows go south

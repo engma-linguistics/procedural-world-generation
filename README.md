@@ -51,6 +51,10 @@ uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended t
 - **Envelopes** (`tests/test_envelopes.py`) are plausible ranges (land 22-42%,
   dry climates 12-45% of land, plate speeds, ocean age...), so a tuning change
   that quietly breaks another part of the planet fails.
+- **Golden outputs** (`tests/test_golden.py`) pin hashes of a short level-4 run
+  and one climate computation, so refactors can be shown not to change
+  results. A commit meant to change outputs regenerates them with
+  `uv run pytest tests/test_golden.py --update-golden` and commits `tests/golden/*.json`.
 - The **scorecard** isn't pass/fail: it records how Earth-like things are per commit.
 
 ## Time-stepped tectonics (`planet/tectonics.py`)
@@ -77,7 +81,10 @@ Main knobs (`--set`): `n_plates`, `start` (`supercontinent`|`scattered`),
 `rift_min_continent`, `big_plate`, `max_plates`. Defaults live in `Params`.
 
 Runs are deterministic: `slice` replays from t=0 (a few seconds) and checks
-itself against the stored keyframe.
+itself against the stored keyframe. Each run records the code that made it
+(`meta.code`: git commit, dirty flag, hash of `planet/*.py`). If the model has
+changed since, the replay is a different planet: `slice` warns, and when the
+replay doesn't match the keyframe it refuses to save the world unless `--force`.
 
 ## One-shot terrain (`planet/generators.py`)
 
