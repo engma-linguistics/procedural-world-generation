@@ -154,7 +154,7 @@ def test_delta_plain_and_distributaries(water_world):
 
 def test_waterfalls_on_a_staircase():
     """A river running east along row 10 with a 100 m step at column 30, and
-    a lake at its head (surface 350 m) whose outlet pixel is at 300 m."""
+    a lake (surface 350 m) whose outlet pixel (column 10) is at 300 m."""
     nx, ny = 40, 24
     ws = np.zeros((ny, nx))
     ws[10, :] = np.where(np.arange(nx) < 30, 300.0, 200.0) - 0.1 * np.arange(nx)
@@ -163,12 +163,12 @@ def test_waterfalls_on_a_staircase():
     rec[r] = r + 1
     q = np.zeros(nx * ny)
     q[r] = 1000.0
-    falls = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, 2.0, {10 * nx + 6: 350.0})
+    falls = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, 2.0, {10 * nx + 10: 350.0})
     big = falls[0]
     assert big["px"][0] == 10 and 27 <= big["px"][1] <= 29 and 99 <= big["height_m"] <= 101
     assert big["discharge_m3s"] == 1000 and abs(big["power_gw"] - 0.981) < 0.01
     lake = [f for f in falls if f["from_lake"]]
-    assert lake and lake[0]["px"] == [10, 6] and 49 <= lake[0]["height_m"] <= 51
+    assert lake and lake[0]["px"] == [10, 10] and 49 <= lake[0]["height_m"] <= 51
 
 
 def test_steep_reach_is_not_a_fall():
