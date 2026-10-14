@@ -18,6 +18,8 @@ Zoom waterfalls are merged (example pictures in `docs/review/falls/`). The bigge
 
 My lean is a little of B now, then C as part of the "outlet incision" backlog item.
 
+**Update 04:00:** a follow-up fix (`falls2`) found that the biggest falls in tonight's zooms were glitches: the river ran on a raised ledge and then dropped off its side. Now that falls must fit under the coarse ground, they come out smaller. Big rivers mostly get 50–150 m (median scale 0.34 of the design), and only steep mountain fronts keep 250–550 m. So the "too powerful" worry has mostly gone away, perhaps too far: the question is now whether you want **taller** falls, which needs the zoom to build stepped plateau country above the escarpment.
+
 ## 3. The ocean overturning circulation's conservative choices
 The overturning circulation is merged (plots in `docs/review/ocean/`). On Earth it sinks in the Nordic and Labrador seas and not in the North Pacific. Norway's coastal sea temperature goes from 0.9 to ~5–6 °C, against ~7.5 °C observed. The agent chose these, all easy to revisit:
 - **(a) Spin-up rule.** The North Atlantic "on" state comes from a spin-up rule, because the model's rain has almost no Atlantic–Pacific evaporation contrast. Without the rule, the Nordic seas stay too fresh to sink. The real fix is in the moisture transport (the rain model), which is a bigger job. **Is a spin-up rule acceptable as "nudging"?**

@@ -242,6 +242,11 @@ Order: 1 → 6, small to large.
 - **No glacial hanging valleys.** The lake-outlet cone can raise low ground up to 150 km around an outlet.
 - **Big zoom rivers are now less deeply incised** (they keep at least their valley floor), so canyons are shallower than before `falls`.
 
+- **Falls are scaled down to fit under the coarse ground (`falls2`):** median fit 0.34; only 2 of 47 reaches keep full height. Big rivers now show ~50–150 m falls, and only steep mountain fronts keep 250–550 m. Full heights would need the land itself to step up into a plateau above each fall.
+- **Some stretches still run perched above the land beside them** where the zoom's land is lower than the coarse ground (f99af0's upper reach, 200–400 m): an embankment look.
+- **Some cascade steps still realise ~0 m,** and there are rare hanging joins where a river joins a falls reach mid-course (1b3609: 102 m at 1,210 m³/s).
+- **Coarse zooms (2–4 km pixels) still report steep reaches as drops,** and small streams (<400 m³/s) show 100–200 m drops on steep slopes.
+
 **Coast: waves, tides, delta types** (`planet/coast.py`, branch `deltas`)
 - **Southern Hemisphere westerly coasts get ~half their observed wave power;** the N Atlantic and NE Pacific get ~1.5× too much. The storm tracks come mostly from land–sea contrast, so they are weak over the Southern Ocean.
 - **Wave power is ~2× too high in the Med, Baltic and Black Sea,** and India's west coast is too low (no monsoon swell). Faint straight streaks appear in the lee of islands (16 ray directions).
