@@ -304,7 +304,8 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
 7. **Knickpoint waterfalls:**
    - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
    - Heights are scaled so the plateau above never rises over the coarse ground. Big rivers get ~50–150 m falls.
-   - `stats.waterfalls` in `zoom.json` lists the biggest.
+   - The river is held at this staircase, between valley sides a few km wide, so it reaches its lips and doesn't run perched above the land beside it.
+   - `stats.waterfalls` in `zoom.json` lists the biggest, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
 
 Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them; synthesising each class's terrain is PW-010–012) and its stats.
 

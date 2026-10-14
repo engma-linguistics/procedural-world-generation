@@ -52,6 +52,53 @@ def test_lake_passes_its_water_on(lake_zoom):
     assert lk["inflow_m3s"] <= lk["outflow_m3s"] < 1.1 * lk["inflow_m3s"]
 
 
+def test_every_lake_fragment_passes_its_water_on(lake_zoom):
+    """No fragment of an open lake swallows its rivers (PW-062)."""
+    assert lake_zoom["lakes"]
+    assert all(lk["open"] and lk["outlet"] >= 0 for lk in lake_zoom["lakes"]), lake_zoom["lakes"]
+
+
+@pytest.fixture(scope="module")
+def closed_zoom():
+    """The same basin in a dry climate: it holds a closed lake (lake_kind 2)
+    whose level (the world's lake_level) stands well below the spill level."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 260 + 0.3 * (2500 - d0), -3000.0)
+    elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
+    precip = np.full(g.n, 500.0)
+    c = {"runoff": 0.2 * precip, "aet": 0.8 * precip, "lake_evap": np.full(g.n, 1200.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    wet = lk["wet"]
+    assert wet.sum() >= 3 and np.all(lk["kind"][wet] == 2), "the dry basin should hold a closed lake"
+    spill = hydrology.priority_flood(g, elev)[0]
+    level = float(np.median(lk["level"][wet]))
+    assert level < np.median(spill[wet]) - 30
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": wet.astype(int),
+        "lake_level": np.where(wet, lk["level"], np.nan), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"],
+        "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 4),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
+    }
+    z = zoom.build({"grid": g, "layers": layers, "meta": {"level": 5}}, *LAKE_AT, size_km=1600, res_km=8,
+                   iterations=6, log=lambda *a: None)
+    return z, level
+
+
+def test_closed_lake_keeps_its_water(closed_zoom):
+    z, level = closed_zoom
+    lk = z["stats"]["largest_lakes"][0]
+    assert abs(lk["level_m"] - level) < 1.0  # the world's lake_level, not the spill level
+    assert lk["outlet"] is None and lk["outflow_m3s"] == 0.0
+    assert lk["inflow_m3s"] > 0
+    # its smaller fragments (if any) pass their water on to it
+    main = max(z["lakes"], key=lambda d: d["n_px"])
+    assert not main["open"] and main["outlet"] < 0
+    assert all(d["outlet"] >= 0 for d in z["lakes"] if d is not main), z["lakes"]
+
+
 def test_lake_rim_holds_the_water(lake_zoom):
     Lr = lake_zoom["layers"]
     water, h = Lr["water"], Lr["elevation"].astype(float)
@@ -107,7 +154,7 @@ def test_delta_plain_and_distributaries(water_world):
 
 def test_waterfalls_on_a_staircase():
     """A river running east along row 10 with a 100 m step at column 30, and
-    a lake at its head (surface 350 m) whose outlet pixel is at 300 m."""
+    a lake (surface 350 m) whose outlet pixel (column 10) is at 300 m."""
     nx, ny = 40, 24
     ws = np.zeros((ny, nx))
     ws[10, :] = np.where(np.arange(nx) < 30, 300.0, 200.0) - 0.1 * np.arange(nx)
@@ -116,12 +163,30 @@ def test_waterfalls_on_a_staircase():
     rec[r] = r + 1
     q = np.zeros(nx * ny)
     q[r] = 1000.0
-    falls = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, 2.0, {10 * nx + 6: 350.0})
+    falls = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, 2.0, {10 * nx + 10: 350.0})
     big = falls[0]
     assert big["px"][0] == 10 and 27 <= big["px"][1] <= 29 and 99 <= big["height_m"] <= 101
     assert big["discharge_m3s"] == 1000 and abs(big["power_gw"] - 0.981) < 0.01
     lake = [f for f in falls if f["from_lake"]]
-    assert lake and lake[0]["px"] == [10, 6] and 49 <= lake[0]["height_m"] <= 51
+    assert lake and lake[0]["px"] == [10, 10] and 49 <= lake[0]["height_m"] <= 51
+
+
+def test_steep_reach_is_not_a_fall():
+    """A stream falling a steady 40 m/km on 4 km pixels drops 160 m per
+    pixel, but it's a steep reach, not a fall (PW-070); a step of the same
+    height on a gentle river is one."""
+    nx, ny, res = 40, 24, 4.0
+    r = 10 * nx + np.arange(nx - 1)
+    rec = np.full(nx * ny, -1)
+    rec[r] = r + 1
+    q = np.zeros(nx * ny)
+    q[r] = 300.0
+    ws = np.zeros((ny, nx))
+    ws[10, :] = 3000.0 - 40.0 * res * np.arange(nx)
+    assert not zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    ws[10, :] = 3000.0 - 0.5 * res * np.arange(nx) - 160.0 * (np.arange(nx) >= 20)
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 162) < 1
 
 
 def test_zoom_reports_waterfalls(lake_zoom):

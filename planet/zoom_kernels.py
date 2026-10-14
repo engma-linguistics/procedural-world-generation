@@ -302,6 +302,21 @@ def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
         h[i] = max(min(base + inc, cap[i]), base + 0.01 * dist[i])
 
 
+@njit(cache=True)
+def settle(h, rec, order, fixed, dist, max_rise):
+    """Walking outlet -> headwater, lift each pixel that lies below its
+    receiver (+ 1 cm/km) to just above it, if that's at most max_rise m
+    (small uphill steps along courses laid out on an earlier surface)."""
+    for t in range(order.shape[0]):
+        i = order[t]
+        d = rec[i]
+        if fixed[i] or d < 0:
+            continue
+        need = h[d] + 0.01 * dist[i]
+        if h[i] < need and need - h[i] <= max_rise:
+            h[i] = need
+
+
 @njit(cache=True, parallel=True)
 def diffuse(h, kd, active, nx, ny):
     """One explicit step of hillslope creep (8-neighbour Laplacian),
