@@ -264,3 +264,16 @@ The viewer server (`planet serve --no-open`, port 8765) was started by the coord
 3. **Level-7 runs:** first an Earth-like ~1–2 Gyr run to check resolution dependence against level 6 (land, dry share, ocean age, landmasses; supercontinent cycle), then showcases. Up to 8.
 4. **Level-8 run** last, started by 05:00. Earth-like, `--every 10`, ~1–1.5 Gyr.
 5. **Morning report** for the user: what merged, the run ids with what to look at, highlights/zooms to open, and open decisions.
+
+**Showcase recipes** (the old v1 runs were deleted at the `store` merge, since no old output can be read any more). All are level 6, `--every 4`, with default params except:
+
+| Old run | Name | seed | Myr | `--set` | Old worlds (t) |
+|---|---|---|---|---|---|
+| ed7401 | Earth-like A | 11 | 1000 | — | 400 (cec38b), 576 |
+| 68929f | Earth-like B | 12 | 1500 | — | 432 |
+| a89254 | Water world, land emerges | 13 | 2000 | `continental_start=0.1 heat_start=2` | 1396, 1500, 1592 (giant lake), 1960 |
+| f2d397 | Land-heavy | 14 | 1000 | `continental_fraction=0.6` | 864 |
+| 7c716b | Cold world | 15 | 1000 | `tilt=15 climate_offset=-6` | 288 |
+| d05a1e | Hothouse | 16 | 1000 | `tilt=45 climate_offset=5` | 432, 460 (a434c5) |
+
+Same seeds won't give the same geography under the new physics, so pick world times afresh.
