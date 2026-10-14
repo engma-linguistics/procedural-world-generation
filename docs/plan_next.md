@@ -187,7 +187,7 @@ Order: 1 → 6, small to large.
 - **Evaporation is merged (`water`); what's left:**
   - **Drainage memory** is not implemented. Old channels would have to move with the plates; the physical damping is rift-flank uplift, which is a tectonics change.
   - **Generated worlds have almost no closed basins after ~150 Myr** (0–2% of land drains inland, against 21% on Earth's terrain). Sediment and erosion fill every hollow, and the tectonics makes no new interior basins (foreland or intermontane basins, rift-flank highs).
-  - **Sediment is treated as crust-density rock in the isostasy,** so filling deep water takes ~5× its depth in sediment (Earth ~3×). About 400 cells sit at the 18 km metamorphic cap. Giving sediment its own density moves continental elevations. **Decision for the user.**
+  - **Sediment is treated as crust-density rock in the isostasy,** so filling deep water takes ~5× its depth in sediment (Earth ~3×). About 400 cells sit at the 18 km metamorphic cap. **The user chose (2026-10-13) to give sediment its own lower density,** compacting with depth. Do it after the tectonics split, alongside B′.
   - **The 20 m "unresolved channel" threshold** for coarse hollows is a judgement call.
   - **Discharge misses come from the rain model:** the Yangtze ends in a lake, and the Lena, Mekong and Ganges are too small (dry China, Siberia and Indian monsoon). The Nile is 19× too big (Sahel too wet). With observed rain, magnitudes are about right.
   - **The Orinoco gauge picks up the Amazon,** a coarse-routing artifact.
