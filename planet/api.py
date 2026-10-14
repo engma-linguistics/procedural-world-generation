@@ -12,6 +12,10 @@ drive them without a socket.
                       For a run this builds the world first if needed (a few
                       seconds). cached=1 only looks: features is null when
                       nothing has been computed yet.
+  POST /api/timezoom  {run, t, kyr?} -> {"job": id}: a glacial time zoom
+                      (timezoom.py) from the run's keyframe nearest t; the
+                      job's "run" is the new run's id when done. Shares the
+                      job queue with zooms (one job at a time).
 """
 
 from __future__ import annotations
@@ -201,11 +205,72 @@ def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> d
             "features": feats}
 
 
+TIMEZOOM_KYR = (100, 300, 1000)  # the viewer's choices; the API takes 1..2000
+
+
+def parse_timezoom_request(req: dict) -> dict:
+    """{run, t, kyr} checked against the run (exists, is a main run with
+    climate in its keyframes); t snaps to the nearest keyframe. Raises
+    BadRequest, or SystemExit for an unknown run."""
+    if not isinstance(req, dict) or not req.get("run"):
+        raise BadRequest("give run and t")
+    out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 300)}
+    if not 1 <= out["kyr"] <= 2000:
+        raise BadRequest("kyr must be within 1..2000")
+    run_dir = T.find_run(out["run"])
+    run = json.loads((run_dir / "run.json").read_text())
+    if run.get("kind") == "timezoom":
+        raise BadRequest("this is a time zoom already; start one from its source run")
+    out["t"] = keyframe_t(run_dir, _num(req, "t"))
+    if "sea_level_m" not in run["frames"][0]["stats"]:
+        raise BadRequest(f"run {run_dir.name} is too old (its keyframes have no climate)")
+    return out
+
+
+def find_timezoom(run_id: str, at: float, kyr: float) -> str | None:
+    """An existing time zoom of this run, moment and length with the default
+    knobs, if any (the viewer's button makes only those)."""
+    from .timezoom import TZParams
+    from dataclasses import asdict
+    defaults = asdict(TZParams())
+    for p in T.RUNS.glob("*/run.json"):
+        try:
+            r = json.loads(p.read_text())
+        except (OSError, ValueError):
+            continue
+        m = r.get("meta", {})
+        if (r.get("kind") == "timezoom" and m.get("source_run") == run_id and abs(m["at_myr"] - at) < 1e-6
+                and abs(m["kyr"] - kyr) < 1e-6 and m.get("timezoom") == defaults):
+            return r.get("id", p.parent.name)
+    return None
+
+
+def timezoom_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/timezoom's work: {"run": id of the new time zoom}."""
+    from . import timezoom as TZ
+    r = parse_timezoom_request(req)
+    run_dir = T.find_run(r["run"])
+    run_id = json.loads((run_dir / "run.json").read_text()).get("id", run_dir.name)  # as timezoom records it
+    found = find_timezoom(run_id, r["t"], r["kyr"])
+    if found:
+        progress(1.0, f"time zoom {found} already exists")
+        return {"run": found}
+    progress(0.0, f"{r['kyr']:g} kyr of ice ages from {r['t']:g} Myr")
+    out = TZ.timezoom(str(run_dir), r["t"], r["kyr"], progress=lambda f, msg: progress(0.98 * f, msg))
+    progress(1.0, "done")
+    return {"run": out.name}
+
+
+def any_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """The server's job queue runs zooms and time zooms (req["type"])."""
+    return (timezoom_job if req.get("type") == "timezoom" else zoom_job)(req, progress)
+
+
 class Jobs:
     """Background jobs run one at a time, in submission order, on one worker
     thread. State is kept in memory only (lost on server restart)."""
 
-    def __init__(self, fn=zoom_job):
+    def __init__(self, fn=any_job):
         self.fn = fn
         self.jobs: dict[str, dict] = {}
         self.lock = threading.Lock()
@@ -242,7 +307,8 @@ class Jobs:
         self._update(jid, status="running", message="starting", started=time.time())
         try:
             res = self.fn(req, lambda f, msg: self._update(jid, progress=round(float(f), 3), message=msg))
-            self._update(jid, status="done", progress=1.0, result=res, zoom=res.get("zoom"), finished=time.time())
+            # the result's keys ("zoom", "world" or "run") are copied to the job too
+            self._update(jid, **res, status="done", progress=1.0, result=res, finished=time.time())
         except (Exception, SystemExit) as e:  # zoom/slice raise SystemExit for bad input
             self._update(jid, status="error", error=str(e) or type(e).__name__, finished=time.time())
 
