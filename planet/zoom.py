@@ -35,6 +35,11 @@ Pipeline
    growing with discharge and the coarse sediment cover offshore, the
    detail is damped and the land pulled down to a few metres above the
    sea, the sea floor shallows, and a lobe of land is pushed out to sea.
+   Volcanoes (zoom_volcanoes): every volcano of the world's table becomes
+   its own cone (shield or stratocone, eroded, planed or ringed by a reef
+   as the run says); near hotspot vents on the sea floor the terrain is
+   replaced by their floor plus the cones, so the sea between them is sea.
+   Young ones are held at their smooth cone in the landscape pass.
 5. Big rivers. Coarse cells with large flow become smooth (Catmull-Rom,
    noise-warped) polylines; a valley with a monotone-downstream floor is
    cut along each, and along them the landscape pass treats discharge as
@@ -101,6 +106,7 @@ from . import climate, coast, hydrology, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
+from . import zoom_volcanoes as ZV
 from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
@@ -112,6 +118,7 @@ KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/
 # How rugged the sub-cell detail is, by basement rock (surface.ROCKS ids).
 RUGGED = {0: 0.35, 1: 0.85, 2: 0.9, 3: 0.45, 4: 1.0, 5: 0.35}
 SEA_CLIMATE = 30  # KOPPEN "-"
+LIMESTONE = 6  # surface.ROCKS
 # landscape pass: discharge exponent of the steady-state slope, hillslope
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
@@ -155,6 +162,13 @@ def _latlon(p):
 # ---------------------------------------------------------------------------
 # Small helpers
 # ---------------------------------------------------------------------------
+def _count(items) -> dict:
+    out = {}
+    for k in items:
+        out[k] = out.get(k, 0) + 1
+    return out
+
+
 def smoothstep(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0, 1)
     return t * t * (3 - 2 * t)
@@ -838,6 +852,32 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         det = taper * amp_land * detail
         h = np.where(land, (1 - wD) * h + wD * (zD + det), (1 - wS) * h + wS * np.maximum(h, zS))
         h = clamp(h)
+    # --- volcanoes (zoom_volcanoes): each one its own cone -----------------
+    vf = ZV.fields(world, fr, px, py, res, sp, Pk, seed, size_km)
+    vtarget = np.full(npx, np.nan)  # the volcanoes' surface, for the landscape pass
+    if vf is not None:
+        # (not over a continent; a pile of hotspot lava capped with reef
+        # limestone counts as continental crust in the run, so it stays in)
+        ok_c = (np.asarray(L.get("crust", np.zeros(g.n)))[sel] == 0) | (rock[sel] == 1)
+        oceanic, _ = ZK.gauss_interp(px, py, cx, cy, ok_c[:, None].astype(float), np.ones((len(sel), 1)), 0.35 * sp)
+        oceanic = smoothstep(0.3, 0.7, np.nan_to_num(oceanic[:, 0]))
+        wv = vf["province"] * oceanic * np.isfinite(vf["floor"])
+        # the vents' sea floor: the terrain lowered by as much as its coarse
+        # level stands above their floor (the coarse cells' share of the
+        # cones themselves), keeping its texture
+        ground = h - np.maximum(base - np.nan_to_num(vf["floor"], nan=-1e4), 0.0)
+        ground = np.where(wv > 0, (1 - wv) * h + wv * ground, h)
+        # the cones on it (absolute near their summits, on the ground at their edges)
+        cz = vf["z"] + (1 - vf["z_abs"]) * (ground - vf["z_floor"])
+        cb = vf["bump"] + (1 - vf["bump_abs"]) * (h - vf["bump_floor"])
+        hv = np.maximum(ground, cz)
+        h = np.maximum(hv, cb)
+        land = np.where(wv > 0.5, h > 0, land | (h > 0.5))
+        h = np.where(land, np.maximum(h, 0.5), np.minimum(h, -0.5))
+        on_v = (wv > 0.5) & np.isfinite(vf["z"]) | np.isfinite(vf["bump"])
+        vtarget = np.where(on_v, h, np.nan)
+        log(f"  {len(vf['list'])} volcanoes: " + ", ".join(
+            f"{n} {k}" for k, n in sorted(_count(v["form"] for v in vf["list"]).items(), key=lambda kv: -kv[1])))
     # waves and tides on the fine grid (from the sea cells): the deltas' tidal
     # flats, and layers of the zoom
     tide_f, wave_f = np.zeros(npx), np.zeros(npx)
@@ -1130,6 +1170,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     rock_f = L["rock"][cell_l].astype(np.uint8)
     surf_f = L.get("surface_rock", L["rock"])[cell_l].astype(np.uint8)
     clim_f = L.get("climate", np.full(g.n, SEA_CLIMATE))[cell_l].astype(np.uint8)
+    if vf is not None:  # the volcanoes' own rock, and their reefs' limestone
+        rock_f = np.where(vf["rock"] > 0, vf["rock"], rock_f).astype(np.uint8)
+        surf_f = np.where(vf["reef"], LIMESTONE, np.where(vf["rock"] > 0, vf["rock"], surf_f)).astype(np.uint8)
 
     # --- landscape pass ----------------------------------------------------
     edge = np.zeros((ny, nx), bool)
@@ -1621,6 +1664,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # summits: slopes taper above `soft`, nothing above `cap`
     soft = tmean + 0.7 * amp_land
     cap = tmean + np.minimum(1.8 * amp_land, 3000.0)
+    vpin = np.full(npx, -np.inf)  # young volcanoes: held at their smooth cone
+    if vf is not None:
+        tv = np.isfinite(vtarget)
+        soft = np.where(tv, np.maximum(soft, target), soft)
+        cap = np.where(tv, np.maximum(cap, target + 150.0), cap)
+        pin = tv & np.isfinite(vf["pin"]) & active
+        cap = np.where(pin, target + 25.0, cap)
+        vpin = np.where(pin, target - 25.0, vpin)
     rough = np.where(glacier, 0.5, 1.0) * var / Kr
     hprev = None
     was_river = bottom.copy()  # the valley bottom, and every pixel the coarse river's water has run through
@@ -1649,7 +1700,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         flc = np.where(was_river & ((kpix < 0) | bottom), z_course, -np.inf)
         flc[c_idx] = c_val  # the river itself, on reaches with falls
         # (beach ridges and levees, but not under the channels themselves)
-        fl = np.maximum(np.maximum(np.maximum(fl, flg), flc),
+        fl = np.maximum(np.maximum(np.maximum(np.maximum(fl, flg), flc), vpin),
                         np.where(Q * KM2_M_PER_YR_TO_M3S < 30.0, delta_floor, -np.inf))
         h = target.copy()
         ZK.integrate(h, rec, order, slope, dist, ~active, fl, soft, 0.5 * amp_land + 1, cp)
@@ -1721,6 +1772,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     temp = t_sl - LAPSE * hl
     t_warm = warm_sl - LAPSE * hl
     clim_f = np.where(sea, SEA_CLIMATE, clim_f)
+    # land the coarse map has as sea (a volcanic island in a sea cell): a
+    # climate from its own temperature and rain
+    lone = land & (clim_f == SEA_CLIMATE)
+    if lone.any():
+        t_cold = 2 * temp - t_warm
+        k = np.where(t_cold >= 18, np.where(precip >= 1800, 0, np.where(precip >= 1000, 1, 2)),  # Af Am Aw
+                     np.where(t_cold > 0, np.where(t_warm >= 22, 13, 14), np.where(t_warm >= 10, 26, 28)))  # Cfa Cfb Dfc ET
+        clim_f = np.where(lone, np.where((precip < 350) & (t_cold > 0), 3, k), clim_f).astype(np.uint8)  # BWh
     alpine = land & (clim_f < 28) & (t_warm < 10)
     clim_f = np.where(alpine, 28, clim_f)
     clim_f = np.where(land & ((t_warm < 0) | glacier), 29, clim_f).astype(np.uint8)
@@ -1766,6 +1825,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # (see knickpoints()), with its gorge and plunge pool
         "waterfalls": falls,
         "knickpoints": len(kps),
+        # the volcanoes drawn (zoom_volcanoes), with what they look like now
+        "volcanoes": vf["list"] if vf is not None else [],
     }
     layers = {
         "elevation": h.astype(np.float32),

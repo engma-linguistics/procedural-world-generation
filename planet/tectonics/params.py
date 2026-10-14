@@ -83,8 +83,8 @@ class Params:
     hotspot_rate: float = 4.0  # km/Myr of crust added at the centre (a quarter of that under continents)
     hotspot_at_ridges: float = 0.6  # share of new plumes that rise under a ridge or rift
     # a plume opens a new vent every this x the plate's flexural wavelength of
-    # plate motion (volcanism.vent_gap: Hawaii ~80 km)
-    vent_spacing: float = 1.25
+    # plate motion (volcanism.vent_gap: Hawaii ~100 km)
+    vent_spacing: float = 1.5
     vent_erosion: float = 10.0  # Myr e-folding of a volcano's height above the sea, at 1500 mm/yr of rain
     volcano_life: float = 8.0  # Myr an arc volcano (or its replacement nearby) stays active
     volcano_spacing: float = 120.0  # km: at most one active volcano per this much arc

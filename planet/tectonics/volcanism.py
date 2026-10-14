@@ -28,7 +28,8 @@ Both lists are part of the simulation state. A volcano is a dict:
   vol (km3 of crust it added), height (m: its relief above the floor if
   uneroded), hmax (m: the most it can grow), r (km: its cone's radius),
   floor0, base0 (m: the ground under it and the isostatic base level, at
-  birth), floor, top (m: ground under it and its summit, now), eroded (m),
+  birth), age0 (Myr: its sea floor's age then), floor, top (m: ground
+  under it and its summit, now), eroded (m),
   reef (NO_REEF / REEF / DROWNED), shore (km: radius of its widest
   shoreline, where a reef grows).
 rows() turns them into the table worlds and zooms get (COLUMNS).
@@ -51,12 +52,14 @@ COLUMNS = ("lat", "lon", "kind", "age", "active", "top_m", "floor_m", "height_m"
 
 PLUME_KM = 150.0  # radius of a plume's head and swell
 HEAD_MYR = 6.0  # a new plume's head: a huge outpouring for this long (flood basalts)
-VENT_KM = 30.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~30-60 km)
+GAP_KM = (60.0, 150.0)  # km of plate motion between a plume's vents (vent_gap)
+VENT_KM = 25.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~25-60 km)
 TOP_MAX = (4200.0, 3500.0)  # m: highest summit at sea (Mauna Kea), on a continent
 APRON_TOP = (-2000.0, 1500.0)  # m: lava that can't pile higher spreads into a broad apron up to here
 ARC_SLOPE = 0.6  # an arc volcano's height / its cone's e-folding radius (a ~30 deg stratocone top)
 H_WAVES = 1000.0  # m: the sea's own share of eroding an island (cliff retreat), as if this much higher
 AWASH, WAVE_BASE = 50.0, -20.0  # m: an island eroded this low is planed off by the waves to this depth
+SHORE_MAX = 1.2  # radii: the widest shore (and reef ring) of a volcano
 VENT_KEEP_MYR = 250.0  # forget seamounts older than this...
 SEAMOUNT_FORGET = -3000.0  # ... or once their top is this deep
 ARC_KEEP_MYR = 20.0  # ... and arc volcanoes this long extinct
@@ -175,10 +178,12 @@ def vent_gap(sim, rng, c):
     plate's elastic thickness ~2.7 km x sqrt(age in Myr) at sea (Watts) and
     ~40 km under a continent. Hawaii (90 Myr floor, Te ~25 km): alpha ~65
     km, volcanoes ~40-60 km apart and islands ~100 km apart. The gap is
-    params.vent_spacing x alpha, give or take 25%, and 50-150 km."""
+    params.vent_spacing x alpha, give or take 25%, within GAP_KM: ~100 km
+    for Hawaii, so that a chain is a string of islands (the channels between
+    Hawaii's islands are 30-50 km wide), 60 km on young floor."""
     te = 40.0 if sim.w_cont[c] else max(2.7 * np.sqrt(max(sim.w_age[c], 0.0)), 3.0)
     alpha = 65.0 * (te / 25.0) ** 0.75
-    return float(np.clip(sim.params.vent_spacing * alpha * rng.uniform(0.75, 1.25), 50.0, 150.0))
+    return float(np.clip(sim.params.vent_spacing * alpha * rng.uniform(0.75, 1.25), GAP_KM[0], GAP_KM[1]))
 
 
 def stencil(g, pos, r_km):
@@ -226,11 +231,12 @@ def _grow(v, add):
 
 
 def base_level(sim, v):
-    """m: the isostatic base level a volcano sinks with: its plate's sea
-    floor's depth from its age (half-space cooling; none on a continent),
-    plus the plume swell it carries, minus the sea level."""
+    """m: the isostatic base level a volcano sinks with: its sea floor's
+    depth from its age (half-space cooling; none on a continent; the floor
+    ages with the volcano, from its age when the volcano was born), plus
+    the plume swell its plate carries there, minus the sea level."""
     k, r = v["plate"], v["ref"]
-    sink = 0.0 if v["cont"] else float(ocean_depth(sim.plates.age[k, r]))
+    sink = 0.0 if v["cont"] else float(ocean_depth(v["age0"] + sim.t - v["born"]))
     return sink + float(sim.plates.extra[k, r, LIFT]) - sim.sea_level
 
 
@@ -258,7 +264,7 @@ def new_vent(sim, rng, kind, k, ppos, c, vid, plume=-1, vol=0.0, life=0.0):
          "ppos": np.asarray(ppos, float), "ref": int(pl.idx[k, c]), "pos": pl.Q[k] @ ppos, "born": sim.t,
          "life": float(life), "active": True, "cont": cont, "vol": 0.0, "height": 0.0, "hmax": hmax,
          "r": VENT_KM, "floor0": floor, "base0": 0.0, "floor": floor, "top": floor,
-         "eroded": 0.0, "reef": NO_REEF, "shore": 0.0}
+         "eroded": 0.0, "reef": NO_REEF, "shore": 0.0, "age0": float(pl.age[k, int(pl.idx[k, c])])}
     v["base0"] = base_level(sim, v)
     if kind == ARC:
         # a stratocone: z = H exp(-r / lam), H = ARC_SLOPE lam, volume 2 pi lam^2 H (of relief)
@@ -345,21 +351,24 @@ def tend(sim):
             cut = max(top - TOP_MAX[1 if v["cont"] else 0], 0.0)
             v["eroded"] += cut
             top -= cut
-        elif top > 0:
+        elif top > max(v["floor"], 0.0):
             rain = float(sim.precip[c]) if sim.precip is not None else 1000.0
             tau = p.vent_erosion * np.sqrt(1500.0 / np.clip(rain, 150.0, 6000.0))
-            # dh/dt = -(h + H_WAVES) / tau: the slopes wear down, the sea cuts its cliffs back
-            cut = (top + H_WAVES) * (1 - np.exp(-dt / tau))
+            if v["floor"] < 0:  # an island
+                # dh/dt = -(h + H_WAVES) / tau: the slopes wear down, the sea cuts its cliffs back
+                cut = (top + H_WAVES) * (1 - np.exp(-dt / tau))
+            else:  # on land: it wears down toward the land around it
+                cut = (top - v["floor"]) * (1 - np.exp(-dt / tau))
             cut += max(top - cut - TOP_MAX[1 if v["cont"] else 0], 0.0)  # giant landslides
             v["eroded"] += cut
             top -= cut
-            if top < AWASH:  # the waves plane what's left down to their base: an atoll or guyot to be
-                v["eroded"] += top - WAVE_BASE
+            if v["floor"] < 0 and top < AWASH:  # the waves plane what's left down to their base:
+                v["eroded"] += top - WAVE_BASE  # an atoll or a guyot to be
                 top = WAVE_BASE
         v["top"] = top
         if sim.temp is not None:
             sst = float(sim.temp[c]) + 0.0065 * max(float(sim.w_elev[c]), 0.0)
-            if v["reef"] == NO_REEF and top > 0 and sst >= p.reef_temp:
+            if v["reef"] == NO_REEF and top > 0 > v["floor"] and sst >= p.reef_temp:
                 v["reef"] = REEF
             elif v["reef"] == REEF and sst < p.reef_temp - 1.5:
                 v["reef"] = DROWNED
@@ -370,13 +379,17 @@ def tend(sim):
 
 
 def shore_km(v):
-    """km from the summit to the shore of the (uneroded) cone today."""
+    """km from the summit to the shore of the (uneroded) cone today (at most
+    SHORE_MAX radii: on a shallow plateau the reef is a carbonate bank, not
+    a ring round the whole plateau)."""
     H, f = v["height"], v["floor"]
     if f >= 0 or H <= -f:
         return 0.0
     if v["kind"] == VENT:  # z = f + H exp(-(x/r)^2)
-        return float(v["r"] * np.sqrt(np.log(H / -f)))
-    return float(v["r"] * np.log(H / -f))  # z = f + H exp(-x/r)
+        x = np.sqrt(np.log(H / -f))
+    else:  # z = f + H exp(-x/r)
+        x = np.log(H / -f)
+    return float(v["r"] * min(x, SHORE_MAX))
 
 
 def rows(sim) -> list:

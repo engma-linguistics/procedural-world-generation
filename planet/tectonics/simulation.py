@@ -171,8 +171,10 @@ class Simulation:
 
     def step(self):
         """One time step. All randomness comes from default_rng([seed,
-        step_no]), drawn in a fixed order: hotspots, volcanoes, global
-        temperature (all in _physics), then the forces, then rifts."""
+        step_no]), drawn in a fixed order: hotspots, volcanoes (both in
+        _physics), then the forces, then rifts; plus side streams
+        default_rng([seed, step_no, k]) for the global temperature's drift
+        (k=1) and the volcanoes' own details (k=7, 8; volcanism.py)."""
         self.step_no += 1
         self.t = self.step_no * self.dt
         rng = np.random.default_rng([self.seed, self.step_no])
@@ -242,7 +244,9 @@ class Simulation:
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment
-        earth.global_temperature(self, growth, int(newc.sum()), rng)
+        # (the climate's random drift has its own stream: changes to how many
+        # numbers the tectonics draws shouldn't reshuffle the climate history)
+        earth.global_temperature(self, growth, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
         if earth.climate_due(self):
             earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
                                                  sediment_km(col.cover, col.x)))
