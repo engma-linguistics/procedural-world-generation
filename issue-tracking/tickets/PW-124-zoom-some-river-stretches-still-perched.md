@@ -1,4 +1,5 @@
 ---
+id: PW-124
 title: "Zoom: some river stretches still perched (under ice, beside other rivers)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomsmalls
 blocked_by: []
 relates: [PW-068]
 refs: [planet/zoom.py, "zoom:1ef6c5", "zoom:3ea62e", "world:f724bd(54.0,-23.14)"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ pixels (>= 100 m3/s) with land within 2 px more than 30 m below them fell 702 ->
   of the coarse ground would lower the river with the land.
 Metric: for river pixels >= 100 m3/s, min over land (< 30 m3/s) within 2 px vs the min river level
 within 2 px of that land pixel.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-perched-rivers-left.md (found by zoomsmalls).

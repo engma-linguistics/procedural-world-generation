@@ -1,4 +1,5 @@
 ---
+id: PW-125
 title: "Zoom: remaining undesigned drops on mid-size streams, coarse-zoom hanging joins, edge steps"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomsmalls
 blocked_by: []
 relates: [PW-070, PW-069]
 refs: [planet/zoom.py, "zoom:031ecf", "zoom:f2b532", "zoom:afdaf5"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -24,3 +27,6 @@ contrast filter there are ~300 such steps (149 >= 100 m), so the terrain still h
 - In the synthetic `_escarpment_world(1.2, 400)` a few cascades still realise ~0.1 m (4 of ~13).
 Measure with a per-zoom count of `waterfalls(..., top=100000)` kinds; find which floor/cap or
 re-routing leaves each step (the zoomsmalls report has the diagnostic approach).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-remaining-undesigned-drops.md (found by zoomsmalls).
