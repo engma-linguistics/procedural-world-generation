@@ -102,3 +102,29 @@ def test_highlights_from_run(dirs):
     for bad in ({}, {"run": "tiny01"}, {"run": "tiny01", "t": 900}, {"run": "x", "world": "y"}):
         with pytest.raises(api.BadRequest):
             api.highlights(bad)
+
+
+def test_timezoom_job(dirs):
+    seen = []
+    res = api.timezoom_job({"run": "tiny01", "t": 21, "kyr": 4}, lambda f, msg: seen.append((f, msg)))
+    assert seen and all(0 <= f <= 1 for f, _ in seen) and seen[-1][0] == 1.0
+    run = json.loads((dirs / "runs" / res["run"] / "run.json").read_text())
+    m = run["meta"]
+    tiny_id = json.loads((dirs / "runs" / "tiny01" / "run.json").read_text())["id"]
+    assert run["kind"] == "timezoom" and m["source_run"] == tiny_id and m["at_myr"] == 20 and m["kyr"] == 4
+    assert run["frames"][-1]["t"] == 4 and run["layers"]["plate"]["shape"][0] == 1
+    # the same request again: the existing time zoom, not a new one
+    assert api.timezoom_job({"run": "tiny01", "t": 20, "kyr": 4})["run"] == res["run"]
+
+    # through the shared queue, as the server does; the job carries the new run's id
+    jobs = api.Jobs(api.any_job)
+    j = jobs.wait(jobs.submit(api.parse_timezoom_request({"run": "tiny01", "t": 20, "kyr": "4"})))
+    assert j["status"] == "done" and j["run"] == res["run"]
+
+    for bad in ({}, {"run": "tiny01"}, {"run": "tiny01", "t": 20, "kyr": 0}, {"run": "tiny01", "t": 900},
+                {"run": res["run"], "t": 0}):  # the last: a time zoom of a time zoom
+        with pytest.raises(api.BadRequest):
+            api.parse_timezoom_request(bad)
+    with pytest.raises(SystemExit):
+        api.parse_timezoom_request({"run": "nope", "t": 0})
+    T.delete(res["run"])

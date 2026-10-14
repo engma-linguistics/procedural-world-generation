@@ -326,8 +326,9 @@ EARTH_TODAY = dict(obl=23.44, ecc=0.0167, peri=283.0)
 # The simulation
 # --------------------------------------------------------------------------
 def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2.0,
-             params: TZParams | None = None, progress: bool = False) -> dict:
-    """Run the time zoom in memory. Returns {"frames": [per-frame dicts:
+             params: TZParams | None = None, progress=False) -> dict:
+    """Run the time zoom in memory. progress: True prints a line every 5%,
+    or a function(fraction, message) gets them. Returns {"frames": [per-frame dicts:
     t (kyr), stats], "data": {layer: (frames, n) arrays}, "series": per-step
     sea level / ice volume / orbit, "params", "runtime_s"}."""
     t_start = time.time()
@@ -552,8 +553,12 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         # 5) sea level from the ice volume
         sl = -0.9 * (float((H * area).sum()) - V0) / ocean_area
         if progress and (s_no + 1) % max(1, n_steps // 20) == 0:
-            print(f"  {t_kyr + step:7.1f} kyr  sea level {sl:7.1f} m  ice {100 * (H > 1).mean():5.2f}%  "
-                  f"dT {dTg:+5.2f}  [{time.time() - t_start:.0f}s]", flush=True)
+            msg = (f"{t_kyr + step:7.1f} kyr  sea level {sl:7.1f} m  ice {100 * (H > 1).mean():5.2f}%  "
+                   f"dT {dTg:+5.2f}  [{time.time() - t_start:.0f}s]")
+            if callable(progress):  # e.g. the server's job progress: (fraction done, message)
+                progress((s_no + 1) / n_steps, " ".join(msg.split()))
+            else:
+                print("  " + msg, flush=True)
 
     return {"frames": frames, "data": {k: np.stack(v) for k, v in out.items()},
             "series": np.array(series), "flows": np.array(flows), "params": asdict(p), "phases": ph.tolist(),
@@ -686,8 +691,9 @@ def report(run_dir: Path) -> Path:
 
 def timezoom(run_ref: str, at: float = 0.0, kyr: float = 1000.0, step: float = 0.5, every: float = 2.0,
              overrides: dict | None = None, level: int = 6, name: str | None = None,
-             progress: bool = True) -> Path:
-    """CLI entry: source (a run id, or 'earth') -> simulate -> runs/<id>/."""
+             progress=True) -> Path:
+    """CLI entry: source (a run id, or 'earth') -> simulate -> runs/<id>/.
+    progress: as simulate's."""
     known = {f.name for f in fields(TZParams)}
     bad = set(overrides or {}) - known
     if bad:

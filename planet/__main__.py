@@ -150,7 +150,7 @@ def cmd_highlights(args):
 class Handler(http.server.SimpleHTTPRequestHandler):
     """Static files, never cached (runs get regenerated in place), plus
     DELETE /runs/<id> or /worlds/<id> for the viewer's delete button, and the
-    zoom API in api.py (POST /api/zoom, GET /api/jobs/<id>), and highlights
+    zoom API in api.py (POST /api/zoom, POST /api/timezoom, GET /api/jobs/<id>), and highlights
     (GET /api/highlights?run=<id>&t=<Myr> or ?world=<id>)."""
 
     jobs = None  # api.Jobs, set by cmd_serve
@@ -193,14 +193,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         from . import api
-        if self.path != "/api/zoom":
+        if self.path not in ("/api/zoom", "/api/timezoom"):
             self.send_error(404)
             return
         try:
             req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
-            api.parse_zoom_request(req)
+            if self.path == "/api/zoom":
+                api.parse_zoom_request(req)
+            else:  # checked (and t snapped to a keyframe) now, so a bad request fails at once
+                req = api.parse_timezoom_request(req)
         except (ValueError, api.BadRequest) as e:
             self.send_json({"error": str(e)}, 400)
+            return
+        except SystemExit as e:  # no such run
+            self.send_json({"error": str(e)}, 404)
             return
         self.send_json({"job": self.jobs.submit(req)})
 
@@ -223,7 +229,7 @@ def cmd_serve(args):
     W.update_index()
     T.update_index()
     Z.update_index()
-    Handler.jobs = api.Jobs()
+    Handler.jobs = api.Jobs(api.any_job)
     handler = functools.partial(Handler, directory=str(W.ROOT))
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
