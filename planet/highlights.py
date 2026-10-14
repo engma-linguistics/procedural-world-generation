@@ -68,6 +68,13 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - most varied square: the 1000 km square (around a land cell) with the most
   even mix of Koppen classes and biomes (exp of Shannon entropy, geometric
   mean of the two), lowered when under half land.
+- travel (worlds with July / January layers; each hemisphere's own summer and
+  winter, July being summer in the north): beach destination (coast with a
+  warm, dry summer at sea level, a warm sea, moderate waves), ski country
+  (ice-free mountains freezing and snowy in winter, not glaciated, a town with
+  a tolerable winter below), mild-winter retreat (low land, mild and fairly dry
+  winter), year-round resort (a beach and ski country within RESORT_KM). Each
+  blurb starts with the numbers that make it ("July 28 °C, 40 mm of rain...").
 """
 
 from __future__ import annotations
@@ -82,7 +89,7 @@ import numpy as np
 
 from . import coast, hydrology
 from . import world as W
-from .climate import BIOMES, KOPPEN
+from .climate import BIOMES, KOPPEN, LAPSE
 from .geo import R_KM
 from .grid import Grid
 from .tectonics.volcanism import ARC as ARC_VOLCANO
@@ -101,6 +108,7 @@ PRIORITY = {
     "island": 55, "archipelago": 54, "continent": 50, "hottest": 40, "coldest": 39, "wettest": 38,
     "driest": 37, "ice_free_peak": 99, "waterfall": 90, "canyon": 84, "varied_square": 80, "plateau": 76,
     "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
+    "year_round": 74, "ski": 71, "beach": 70, "mild_winter": 67,
 }
 ROCK_SETTING = {1: "a hotspot volcano", 2: "a volcanic arc", 3: "sedimentary rock",
                 4: "a collision belt", 5: "an ancient shield"}
@@ -1201,7 +1209,7 @@ def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
         muddy = ctx.dilate(muddy, 1)
     cold = np.asarray(L["cold_month"], float)
     reef = ocean & (ctx.elev > -REEF_MAX_DEPTH) & (cold >= REEF_MIN_C) & ctx.dilate(ctx.land) & ~muddy
-    lime = ctx.land & (np.asarray(L["surface_rock"]) == 6) if "surface_rock" in L else None
+    lime = ctx.land & np.isin(L["surface_rock"], (6, 14)) if "surface_rock" in L else None  # limestone, dolomite
     out = []
     for cells in ctx.components(reef, min_cells=3, bridge=1)[:8]:
         length, spine = ctx.spine(cells, ctx.dilate(reef) & sea)
@@ -1406,9 +1414,287 @@ def most_varied(ctx: _Ctx) -> list[dict]:
                      quality=0.6 + 0.4 * min(score / 8, 1))]
 
 
+# ---------------------------------------------------------------------------
+# Round 3: travel, from the July / January layers (world.seasons)
+# ---------------------------------------------------------------------------
+SEASON_LAYERS = ("temperature_jul", "temperature_jan", "precipitation_jul", "precipitation_jan")
+TRAVEL_SPACING_KM = 800.0  # places of one travel kind at least this far apart
+# beaches: summer air at sea level, monthly rain, sea surface, wave power
+BEACH_T = (22.0, 34.0, 28.0)  # C: min, max, best
+BEACH_MAX_RAIN = 90.0  # mm in the summer month (Nice ~15-40, Miami ~150 in its wet summer)
+BEACH_MIN_SEA = 20.0  # C, the sea next to it in summer
+BEACH_WAVES = (1.0, 40.0)  # kW/m: below is a dead calm, above a storm coast (Earth's west coasts at 45-60 N)
+# skiing: winter at the slopes, snow (winter rain as water), a tolerable town below
+SKI_MIN_M = 1200.0
+SKI_MAX_WINTER = -2.0  # C at the slopes (cell mean at its height)
+SKI_MIN_SUMMER = 5.0  # C at the slopes in summer: colder (with summits above the cell mean) is permanent snow / glacier
+SKI_MIN_SNOW = 300.0  # mm/yr winter-half rate: >= 150 mm of water in the winter half, ~1.5 m of snow (Colorado)
+SKI_TOWN_MIN_C, SKI_TOWN_DROP = -12.0, 500.0  # the town's winter, and how far below the slopes it is
+SKI_MIN_VERTICAL = 400.0  # m of snow-covered slope above the snow line or the town
+# mild winters
+MILD_T = (10.0, 21.0, 16.0)  # C in the winter month: min, max, best (Nice ~9, Canaries ~18)
+MILD_MAX_RAIN = 70.0  # mm in the winter month
+MILD_MAX_M = 1000.0
+RESORT_KM = 400.0  # beach and skiing this close make a year-round resort
+
+
+def _seasons(ctx: _Ctx) -> dict | None:
+    """Each cell's own summer and winter: July is summer in the north,
+    January in the south. Temperatures (C, cell mean at its height) and
+    monthly rain (mm, from the half-year rates). None on worlds made before
+    the seasonal layers."""
+    L = ctx.L
+    if any(k not in L for k in SEASON_LAYERS):
+        return None
+    if getattr(ctx, "_sea", None) is not None:
+        return ctx._sea
+    north = ctx.g.lat >= 0
+    tj, ta = np.asarray(L["temperature_jul"], float), np.asarray(L["temperature_jan"], float)
+    pj, pa = np.asarray(L["precipitation_jul"], float), np.asarray(L["precipitation_jan"], float)
+    ctx._sea = {"north": north,
+                "t_sum": np.where(north, tj, ta), "t_win": np.where(north, ta, tj),
+                # half-year rates (mm/yr) / 12: a typical month of that half-year
+                "p_sum": np.where(north, pj, pa) / 12, "p_win": np.where(north, pa, pj) / 12,
+                "rate_win": np.where(north, pa, pj)}
+    return ctx._sea
+
+
+def _summer(ctx: _Ctx, i: int) -> str:
+    return "July" if ctx.g.lat[i] >= 0 else "January"
+
+
+def _winter(ctx: _Ctx, i: int) -> str:
+    return "January" if ctx.g.lat[i] >= 0 else "July"
+
+
+def _nbr_mean(ctx: _Ctx, v: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Mean of v over each cell's neighbours inside mask, and how many there are."""
+    s, n = np.zeros(ctx.n), np.zeros(ctx.n)
+    for a, b in ((ctx.a, ctx.b), (ctx.b, ctx.a)):
+        m = mask[b]
+        np.add.at(s, a[m], v[b[m]])
+        np.add.at(n, a[m], 1)
+    return s / np.maximum(n, 1), n
+
+
+def _spaced(ctx: _Ctx, cand: list[tuple], top: int, km: float = TRAVEL_SPACING_KM) -> list[tuple]:
+    """Best first (cand: (score, cell, ...)), each at least km from those kept."""
+    kept = []
+    for c in sorted(cand, key=lambda c: -c[0]):
+        if all(ctx.dist(k[1], [c[1]])[0] > km for k in kept):
+            kept.append(c)
+        if len(kept) >= top:
+            break
+    return kept
+
+
+def _tri(x, lo, best, hi):
+    """1 at best, falling linearly to 0 at lo and hi."""
+    return np.clip(np.minimum((x - lo) / max(best - lo, 1e-9), (hi - x) / max(hi - best, 1e-9)), 0, 1)
+
+
+def _beach_cands(ctx: _Ctx) -> list[tuple]:
+    """(quality, cell, stats) for every coast cell that makes a summer beach."""
+    if getattr(ctx, "_beach", None) is not None:
+        return ctx._beach
+    S, L = _seasons(ctx), ctx.L
+    ctx._beach = []
+    if S is None or "wave_power" not in L or not ctx.land.any():
+        return ctx._beach
+    sea = ~ctx.land
+    open_sea = np.zeros(ctx.n, bool)  # not a pond: a sea of at least 20 cells
+    for cells in ctx.components(sea, min_cells=20):
+        open_sea[cells] = True
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
+    sea_t, n_sea = _nbr_mean(ctx, S["t_sum"], open_sea)
+    wave, _ = _nbr_mean(ctx, np.asarray(L["wave_power"], float), open_sea)
+    # the beach is at sea level; the cell's temperature is for its mean height
+    t_beach = S["t_sum"] + LAPSE * np.maximum(ctx.elev, 0)
+    rain = S["p_sum"]
+    ok = (ctx.land & (n_sea > 0) & (ice <= 0) & (t_beach >= BEACH_T[0]) & (t_beach <= BEACH_T[1])
+          & (rain <= BEACH_MAX_RAIN) & (sea_t >= BEACH_MIN_SEA) & (wave >= BEACH_WAVES[0]) & (wave <= BEACH_WAVES[1]))
+    rock = np.asarray(L["surface_rock"]) if "surface_rock" in L else np.zeros(ctx.n, int)
+    sed, _ = _nbr_mean(ctx, np.asarray(L.get("sediment_cover", np.zeros(ctx.n)), float), open_sea)
+    for i in np.flatnonzero(ok):
+        q_t = float(_tri(t_beach[i], BEACH_T[0] - 2, BEACH_T[2], BEACH_T[1] + 2))
+        q_dry = 1.0 - 0.6 * float(rain[i]) / BEACH_MAX_RAIN
+        q_sea = float(np.clip((sea_t[i] - BEACH_MIN_SEA + 2) / 7, 0, 1))
+        lw = np.log(wave[i])  # gentle-to-lively surf (5-20 kW/m) is best
+        q_wave = float(np.clip(1 - 0.35 * max(np.log(5) - lw, lw - np.log(20), 0), 0.3, 1))
+        sandy = bool(rock[i] in (3, 7) or sed[i] >= 0.5)  # sandstone / sediment ashore, or a sediment shelf
+        q = q_t * q_dry * q_sea * q_wave * (1.15 if sandy else 1.0)
+        ctx._beach.append((q, int(i), {"t_c": round(float(t_beach[i])), "rain_mm": round(float(rain[i])),
+                                      "sea_c": round(float(sea_t[i])), "wave_kw_m": round(float(wave[i]), 1),
+                                      "sandy": sandy, "month": _summer(ctx, int(i))}))
+    return ctx._beach
+
+
+def _surf(kw: float) -> str:
+    return "calm water" if kw < 3 else "gentle surf" if kw < 10 else "lively surf" if kw < 25 else "big surf"
+
+
+def _beach_why(s: dict) -> str:
+    return (f"{s['month']} {s['t_c']} °C, {s['rain_mm']} mm of rain, warm sea {s['sea_c']} °C, "
+            f"{_surf(s['wave_kw_m'])} ({s['wave_kw_m']:.0f} kW/m)" + (", sandy shore" if s["sandy"] else ""))
+
+
+def beaches(ctx: _Ctx, top: int = 4) -> list[dict]:
+    """Beach destinations: coast with a warm, dry summer (the hemisphere's
+    own: July in the north, January in the south; air at sea level, from the
+    cell's mean by the lapse rate), a warm sea next to it and moderate waves
+    (not a storm coast, not a dead calm); sandstone or sediment ashore or on
+    the shelf is a bonus."""
+    kept = _spaced(ctx, _beach_cands(ctx), top)
+    best = kept[0][0] if kept else 1.0
+    feats = []
+    for rank, (q, i, s) in enumerate(kept):
+        blurb = (f"{_beach_why(s)}. A warm, dry summer on the coast: a beach holiday "
+                 f"(like the Mediterranean or the Algarve in {s['month']}).")
+        feats.append(_feature(ctx, "beach", f"Beach: {s['month']} {s['t_c']} °C, sea {s['sea_c']} °C", blurb, i, 500, s, quality=(0.85 ** rank) * (0.5 + 0.5 * q / best)))
+    return feats
+
+
+def _ski_cands(ctx: _Ctx) -> list[tuple]:
+    """(quality, cell, stats) for every ski-country cell: slopes with a
+    freezing, snowy winter and a tolerable town within two cells below."""
+    if getattr(ctx, "_ski", None) is not None:
+        return ctx._ski
+    S, L = _seasons(ctx), ctx.L
+    ctx._ski = []
+    if S is None or not ctx.land.any():
+        return ctx._ski
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
+    glacier = ctx.dilate(ice > 0, 1)  # an ice cap on or next to it: not a ski field
+    tw, ts = S["t_win"], S["t_sum"]
+    top = np.flatnonzero(ctx.land & ~glacier & (ctx.elev >= SKI_MIN_M) & (tw <= SKI_MAX_WINTER)
+                         & (ts >= SKI_MIN_SUMMER) & (S["rate_win"] >= SKI_MIN_SNOW))
+    if not len(top):
+        return ctx._ski
+    town_ok = ctx.land & (ice <= 0) & (tw >= SKI_TOWN_MIN_C)
+    if "lake" in L:
+        town_ok &= np.asarray(L["lake"]) == 0
+    g = ctx.g
+    for i in top:
+        ring = {int(i)}
+        for _ in range(2):  # cells within two links
+            ring |= {int(j) for c in ring for j in g.nbr_idx[g.nbr_off[c]:g.nbr_off[c + 1]]}
+        towns = [j for j in ring if town_ok[j] and ctx.elev[j] <= ctx.elev[i] - SKI_TOWN_DROP]
+        if not towns:
+            continue
+        t = max(towns, key=lambda j: tw[j])  # the mildest town below
+        # the winter snow line: where it's 0 C between the town and the slopes
+        # (cell means at their heights); down to the town when the town freezes
+        zt, zs = float(ctx.elev[t]), float(ctx.elev[i])
+        snowline = zt if tw[t] <= 0 else zt + (zs - zt) * float(tw[t] / (tw[t] - tw[i]))
+        vertical = zs - snowline
+        if vertical < SKI_MIN_VERTICAL:
+            continue
+        snow = float(S["rate_win"][i]) / 2  # mm of water over the winter half
+        q_snow = 0.4 + 0.6 * min(snow / 600, 1)
+        q_vert = 0.5 + 0.5 * min(vertical / 1500, 1)
+        q_town = float(np.clip((tw[t] + 14) / 14, 0.3, 1))  # 0 C and up is easy; -12 C is hard going
+        q_cold = float(np.clip(1 - (-tw[i] - 15) / 15, 0.3, 1))  # colder than -15 C at the slopes is bitter
+        n_high = sum(1 for j in ring if ctx.elev[j] >= SKI_MIN_M)  # a range, not a lone peak
+        q_range = 0.6 + 0.4 * min(n_high / 8, 1)
+        ctx._ski.append((q_snow * q_vert * q_town * q_cold * q_range, int(i),
+                         {"slopes_m": int(ctx.elev[i]), "slopes_c": round(float(tw[i])), "snow_water_mm": round(snow),
+                          "snowline_m": round(snowline), "snow_to_town": bool(tw[t] <= 0), "vertical_m": round(vertical),
+                          "summer_c": round(float(ts[i])), "town_m": int(ctx.elev[t]), "town_c": round(float(tw[t])),
+                          "town_cell": int(t), "high_cells": n_high, "month": _winter(ctx, int(i))}))
+    return ctx._ski
+
+
+def _ski_why(s: dict) -> str:
+    line = "down to the town" if s["snow_to_town"] else f"from ~{_m(round(s['snowline_m'], -2))}"
+    return (f"{s['month']} {s['slopes_c']} °C at {_m(s['slopes_m'])}, {s['snow_water_mm']} mm of winter snow "
+            f"(as water, ~{s['snow_water_mm'] / 100:.1f} m of snow), snow {line}; town at {_m(s['town_m'])}, {s['town_c']} °C")
+
+
+def ski_country(ctx: _Ctx, top: int = 4) -> list[dict]:
+    """Ski country: ice-free mountains (>= SKI_MIN_M) whose winter (the
+    hemisphere's own) is below freezing on the slopes, with good winter
+    precipitation (snow), not a glaciated summit (summer above SKI_MIN_SUMMER
+    there), and a town within two cells, well below, with a tolerable winter.
+    Temperatures are cell means at the cell's height (the climate's lapse rate
+    is in them); the snow line is where 0 C falls between the town and the
+    slopes, and the skiable vertical is from it up to the slopes' height (the
+    summits above the cell mean add more)."""
+    kept = _spaced(ctx, _ski_cands(ctx), top)
+    best = kept[0][0] if kept else 1.0
+    feats = []
+    for rank, (q, i, s) in enumerate(kept):
+        blurb = (f"{_ski_why(s)}. Snowy mountains over a valley with a bearable winter: ski country "
+                 f"(like the Alps or the Rockies), ~{_m(s['vertical_m'])} of snow-covered slope.")
+        feats.append(_feature(ctx, "ski", f"Ski country: {s['month']} {s['slopes_c']} °C, ~{s['snow_water_mm'] / 100:.1f} m of snow", blurb, i, 500, s, quality=(0.85 ** rank) * (0.5 + 0.5 * q / best),
+                              path=ctx.path([s["town_cell"], i])))
+    return feats
+
+
+def mild_winters(ctx: _Ctx, top: int = 3) -> list[dict]:
+    """Mild-winter retreats: low land (< MILD_MAX_M) with a mild, fairly dry
+    winter month (the hemisphere's own: January in the north, July in the
+    south), like the Riviera or the Canaries; a coast is a bonus."""
+    S, L = _seasons(ctx), ctx.L
+    if S is None or not ctx.land.any():
+        return []
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
+    tw, rain = S["t_win"], S["p_win"]
+    ok = (ctx.land & (ice <= 0) & (ctx.elev < MILD_MAX_M) & (tw >= MILD_T[0]) & (tw <= MILD_T[1])
+          & (rain <= MILD_MAX_RAIN))
+    if "lake" in L:
+        ok &= np.asarray(L["lake"]) == 0
+    coast = ctx.dilate(~ctx.land) & ctx.land
+    cand = []
+    for i in np.flatnonzero(ok):
+        q = float(_tri(tw[i], MILD_T[0] - 2, MILD_T[2], MILD_T[1] + 3)) * (1 - 0.5 * rain[i] / MILD_MAX_RAIN)
+        q *= 1.0 if coast[i] else 0.8
+        cand.append((q, int(i)))
+    kept = _spaced(ctx, cand, top)
+    best = kept[0][0] if kept else 1.0
+    feats = []
+    for rank, (q, i) in enumerate(kept):
+        mon = _winter(ctx, i)
+        s = {"month": mon, "winter_c": round(float(tw[i])), "rain_mm": round(float(rain[i])),
+             "summer_c": round(float(S["t_sum"][i])), "coast": bool(coast[i])}
+        blurb = (f"{mon} {s['winter_c']} °C, {s['rain_mm']} mm of rain; summer {s['summer_c']} °C. A mild, "
+                 f"fairly dry winter{' by the sea' if coast[i] else ''}: somewhere to spend it (like the "
+                 f"Riviera or the Canaries).")
+        feats.append(_feature(ctx, "mild_winter", f"Mild winter: {mon} {s['winter_c']} °C, {s['rain_mm']} mm", blurb, i, 500, s,
+                              quality=(0.85 ** rank) * (0.5 + 0.5 * q / best)))
+    return feats
+
+
+def year_round(ctx: _Ctx, top: int = 1) -> list[dict]:
+    """Year-round resort: a beach and ski country within RESORT_KM of each
+    other (summer on the coast, winter in the mountains)."""
+    b, s = _beach_cands(ctx), _ski_cands(ctx)
+    if not b or not s:
+        return []
+    sc = np.array([x[1] for x in s])
+    sq = np.array([x[0] for x in s])
+    cand = []
+    for qb, i, sb in b:
+        d = ctx.dist(i, sc)
+        near = np.flatnonzero(d <= RESORT_KM)
+        if not len(near):
+            continue
+        k = int(near[np.argmax(sq[near])])
+        cand.append((float(np.sqrt(qb * sq[k])), i, sb, s[k], float(d[k])))
+    kept = _spaced(ctx, cand, top, 1500)
+    feats = []
+    for rank, (q, i, sb, (_, j, ss), km) in enumerate(kept):
+        blurb = (f"Summer on the beach: {_beach_why(sb)}. Winter skiing {_n(km)} km away: {_ski_why(ss)}.")
+        feats.append(_feature(ctx, "year_round", f"Year-round resort: beach and skiing {_n(km)} km apart", blurb, i, zoom_size(km + 100),
+                              {"km": round(km), "beach": sb, "ski": {k: v for k, v in ss.items() if k != "town_cell"},
+                               "ski_lat": ctx.latlon(j)[0], "ski_lon": ctx.latlon(j)[1]},
+                              quality=(0.85 ** rank) * (0.5 + 0.5 * min(q, 1.0)), path=ctx.path([i, j])))
+    return feats
+
+
 DETECTORS = [highest_peak, mountain_ranges, rivers, deltas, deepest_trench, fjords, mediterranean,
              volcanic_arcs, hotspot_islands, rifts, lakes, inland_seas, ice_sheet, desert, rainforest,
-             landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied]
+             landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied,
+             beaches, ski_country, mild_winters, year_round]
 
 
 def _nms(ctx: _Ctx, feats: list[dict], radius_km: float) -> list[dict]:

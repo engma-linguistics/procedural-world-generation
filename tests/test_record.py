@@ -142,3 +142,15 @@ def test_record_moves_with_its_plate():
     heirs = {label} | {e.plates[1] for e in sim.events if e.kind in ("rift", "subduction") and e.plates[0] == label}
     assert set(pl.label[sim.owner[marked]].tolist()) <= heirs
     assert np.any(marked & ~marked0)  # it moved with the plate (the plate moves ~1 cell in 20 Myr)
+
+
+def test_surface_rock_is_the_exposed_stratum():
+    """surface_rock shows the top stratum (a thin dolomite caprock over
+    shale), the basement under a cover thinner than COVER_SHOWS, and shale
+    for a cover made only of veneers."""
+    from planet.surface import COVER_SHOWS, CRATON, surface_rock
+    rock = np.full(3, CRATON)
+    cover = np.array([2.0, COVER_SHOWS / 2, 0.06])
+    top = np.array([DOLOMITE, SHALE, CRATON])
+    top_km = np.array([0.2, 0.03, 0.0])
+    assert list(surface_rock(rock, cover, top, top_km)) == [DOLOMITE, CRATON, SHALE]

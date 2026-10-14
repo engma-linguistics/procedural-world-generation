@@ -1556,6 +1556,12 @@ async function fetchHighlights(cached) {
   hl = { key, t: out.t_myr, world: out.world, features: out.features };
   renderHighlights();
   buildHighlightMarks();
+  // ?hl=<rank>: open that highlight once, the first time a list arrives
+  if (urlp.has('hl')) {
+    const k = hl.features.findIndex((f) => f.rank === +urlp.get('hl'));
+    urlp.delete('hl');
+    if (k >= 0) { goToHighlight(k); $('hlList').querySelector('.hl.sel')?.scrollIntoView({ block: 'nearest' }); }
+  }
 }
 $('hlFind').addEventListener('click', () => fetchHighlights(false));
 OVERLAY_IDS.push('hlMarks');  // so ?hlMarks=0 works in the URL
@@ -1904,6 +1910,7 @@ addEventListener('drop', async (e) => {
 
 // URL options, e.g. ?run=19385e&t=120&layer=rainfall&arrows=1  or  ?world=ae28af.json&mode=map&pentas=1
 // (&lat=..&lon=..: turn to that place and pick its cell; clicking a cell copies such a link)
+// (&hl=N: open highlight number N once its list is found or cached)
 // (6-hex ids; world= is the file name with .json; layer= is a viewer layer name, spaces URL-encoded: crust%20age)
 function applyUrlOptions() {
   const p = new URLSearchParams(location.search);

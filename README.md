@@ -38,13 +38,16 @@ longest rivers, the steepest big rivers and waterfalls, canyons, river mouths
 where deltas could build, fjord coasts, Mediterranean "wine country", volcanic
 arcs, hotspot islands, rifts, plateaus, rain shadows, coral coasts, the biggest
 lake, salt lakes, salt flats and inland basins, deserts, rainforests, ice
-sheets, the most varied 1000 km square and a few climate records
+sheets, the most varied 1000 km square and a few climate records. Worlds with
+July / January layers also get travel tips, each with the numbers that make it
+in its own hemisphere's season: beach destinations, ski country, mild-winter
+retreats and a year-round resort (a beach and skiing within 400 km)
 (`planet/highlights.py`; cached in `worlds/highlights/`). On ~110 km cells a
 "waterfall" is a steep reach of river; each zoom lists its own pixel-scale
 falls (height, discharge, place) in `zoom.json` stats, and `planet zoom`
 prints the biggest. Click one to turn the
-globe to it and pick it for a zoom at a suggested size; `planet highlights
---zoom N` makes those zooms ahead of time.
+globe to it and pick it for a zoom at a suggested size (`&hl=N` in the URL
+opens number N); `planet highlights --zoom N` makes those zooms ahead of time.
 
 Other things to try:
 

@@ -166,7 +166,7 @@ LAYERS = {
     "crust_age": _spec("<u2", "Myr", "age of the crust (sea floor: since it formed at a ridge)"),
     "plate_boundary": _spec("i1", "+1/-1", "+1 converging, -1 diverging, 0 none"),
     "rock": _spec("u1", "ROCKS id", "basement rock (surface.ROCKS)"),
-    "surface_rock": _spec("u1", "ROCKS id", "exposed rock: basement or its sediment cover"),
+    "surface_rock": _spec("u1", "ROCKS id", "exposed rock: the cover's top stratum, or the basement under < 50 m of cover"),
     "sediment_cover": _spec("<u2", "km", "sediment on top of the basement", scale=0.1),
     "crust_thickness": _spec("u1", "km", "crust thickness"),
     "precipitation": _spec("<u2", "mm/yr", "annual precipitation"),

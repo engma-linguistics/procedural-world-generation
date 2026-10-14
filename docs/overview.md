@@ -142,6 +142,7 @@ flowchart LR
 - **Basement:** ocean crust, hotspot basalt, arc, sediment-born continent, orogen, craton, and **granite** (an arc worn 4 km down after it went quiet shows its plutons, like the Sierra Nevada).
 - **Cover:** limestone (reefs), sandstone, shale, evaporite (salt from hot closed lakes and flats), coal (warm swamps), **flood basalt** (a plume's lava on a continent), **tuff** (10% of a continental arc's new crust erupts as ash and ignimbrite).
 - **Erodibility** runs from 0.3 (craton) to 3.0 (evaporite).
+- **Surface rock** (`surface_rock`, what the viewer and the zoom see) is the cover's exposed stratum from the record below (thin veneers under 20 m looked through), so a thin dolomite or basalt caprock shows over the shale beneath it; where less than 50 m of cover is left, the basement shows through. Erosion still uses the well-mixed cover's erodibility (caprock protecting the soft rock under it in the run is PW-136 option C).
 
 **Erosion** runs every step and is scaled by rain:
 - **hillslope diffusion** smooths relief;
@@ -329,12 +330,13 @@ The result is a run in kyr. The viewer shows it with an ice-thickness layer and 
 
 ## 10. Highlights (`highlights.py`)
 
-Twenty-four detectors look for places worth a visit:
+Twenty-eight detectors look for places worth a visit:
 
 - **Land:** peaks, ranges, plateaus, canyons, rifts, volcanic arcs, hotspot islands.
 - **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
 - **Climate:** "wine country", rain shadows, climate records.
 - **Variety:** the most varied 1000 km square.
+- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
 
 Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
 

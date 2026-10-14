@@ -39,5 +39,6 @@ Options:
 Lean: B now, C as an experiment after PW-010 shows what the zoom needs.
 
 ## Updates
+- 2026-10-14: Option B done (branch stratarock): surface_rock in snapshots/keyframes and worlds (world_from_frame recomputes it from the stored strata) is the exposed stratum (record.top through landform.VENEER_KM), the basement under < 50 m (COVER_SHOWS) of cover, shale for a cover of veneers only. Run evolution bit-identical (L6 seed 21, 300 Myr, 30 keyframes: only surface differs; golden only snap_surface). On f59dd6 @ 408 Myr land: sandstone 43.5->34.2%, shale 12.4->28.1%, coal 7.9->0.3%, limestone 0.8->1.4%, quartzite 0->0.3%; karst shows carbonate 18->100%, caprock hard-over-soft cells show the hard top 78->100%. Highlights count dolomite as carbonate. C (erosion K from the exposed stratum) remains, after PW-010.
 - 2026-10-14: Status needs-decision -> todo. Owner decision (2026-10-14): B now (the exposed stratum sets surface_rock and the zoom's rock/erodibility, display only), C (feed erosion so caprock protects in the run) after the first zoom batch PW-010.
 - 2026-10-14: Created from inbox draft draft-strata-set-erodibility.md (found by landform).
