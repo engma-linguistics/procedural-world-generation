@@ -129,7 +129,8 @@ def test_orphans(data_root):
     _fake("zoom", "z1", world="w1")
     _fake("zoom", "z2", world="gone")
     S.highlights_path("gone").write_text("{}")
-    assert S.orphans() == [S.path_of("zoom", "z2"), S.highlights_path("gone")]
+    (S.runs_dir() / "killed" / "state").mkdir(parents=True)
+    assert S.orphans() == [S.runs_dir() / "killed", S.path_of("zoom", "z2"), S.highlights_path("gone")]
     S.delete_orphans()
     assert S.orphans() == [] and S.exists("zoom", "z1") and S.highlights_path("w1").exists()
 

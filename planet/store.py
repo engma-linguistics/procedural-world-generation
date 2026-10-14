@@ -398,8 +398,9 @@ def delete(kind: str, item_id: str) -> list[Path]:
 
 
 def orphans() -> list[Path]:
-    """Zooms whose world is gone, and highlight caches of deleted worlds."""
-    out = []
+    """Zooms whose world is gone, highlight caches of deleted worlds, and run
+    folders without a run.json (a simulate that was killed)."""
+    out = [p for p in sorted(runs_dir().glob("*")) if p.is_dir() and not (p / "run.json").exists()]
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
             wid = json.loads(p.read_text())["source_world"]["id"]

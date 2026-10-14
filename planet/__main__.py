@@ -238,7 +238,7 @@ def main():
 
     d = sub.add_parser("delete", help="delete runs, worlds or zooms by id (a world takes its zooms with it)")
     d.add_argument("ids", nargs="*", help="ids, or kind:id (run:a3f9c2, world:..., zoom:...) when ambiguous")
-    d.add_argument("--orphans", action="store_true", help="also delete zooms and highlight caches of deleted worlds")
+    d.add_argument("--orphans", action="store_true", help="also delete zooms and highlight caches of deleted worlds, and unfinished runs")
     d.set_defaults(func=cmd_delete)
 
     s = sub.add_parser("show", help="print an ASCII map of a saved world")
