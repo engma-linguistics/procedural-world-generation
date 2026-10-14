@@ -57,10 +57,11 @@ Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
 ## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight (2026-10-14 night):** worktrees `.claude/worktrees/<branch>`:
-- `zoomland1`: PW-010 zoom synthesis batch 1 (escarpment, caprock/cuestas, lava plateau) plus a class-dispatch structure for PW-011/012. Verify world 800c99.
-- `viewerseason`: PW-126 (July/January temperature and rain on worlds plus picker), PW-128 (provenance in the viewer).
-Merged since: hydrofix, climfix, volcanoes (demo run 39d004, world a099c6), lakesize (PW-110), zoomsmalls (PW-062–070), landform (PW-006–009: record, rocks, classes; demo run f59dd6, world 800c99). Earth world is now f8a740. Runs made before the landform merge have no record, so their worlds get no classes; re-run showcases when convenient.
+**In flight (2026-10-14 late):** worktrees `.claude/worktrees/<branch>`:
+- `zoomland2`: PW-011 (fault-block rift, fold belt, shield) plus PW-149/150 (/148) polish.
+- `zoomice`: PW-127 (zoom glaciers from the fine climate).
+- `viewerocean`: PW-137 (overturning, salinity), PW-144 (SST, humidity), PW-141 (highlight categories); re-makes the Earth world.
+Merged since the landform data side: viewerseason (PW-126/128; demo world 67317b), travel (PW-140), stratarock (PW-136 B), zoomland1 (PW-010 + PW-146; demo zooms b2165d, 9e2ba9, 366f51, 6a4870 on world 800c99). Open decisions for the owner: PW-145 (coal display, lean A), PW-147 (cuesta dips, lean A now, B later).
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 
