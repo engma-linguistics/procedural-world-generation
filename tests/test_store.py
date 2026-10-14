@@ -41,6 +41,20 @@ def test_encodings_round_trip(sim4):
             assert np.abs(back - v)[inside].max() <= spec["scale"] / 2 + 1e-9, k
 
 
+def test_run_lakes(sim4):
+    """Run frames keep the lakes of the last erosion step, as worlds name
+    them: lake_kind (hydrology ids) and lake_depth (m) only on wet land."""
+    from planet import hydrology as H
+    snap = sim4.snapshot()
+    k, d = snap.lake_kind, snap.lake_depth
+    wet = (k == H.OPEN_LAKE) | (k == H.CLOSED_LAKE)
+    assert set(np.unique(k)) <= {H.NO_LAKE, H.OPEN_LAKE, H.CLOSED_LAKE, H.SALT_PAN} and (k > 0).any()
+    assert (d[wet] > 0).all() and (d[~wet] == 0).all()
+    assert not (k > 0)[(snap.elevation <= 0) | (snap.ice > 0)].any()
+    vals = T.frame_values(sim4.grid, snap, T.jet_of(sim4.grid, snap))
+    assert np.array_equal(S.encode(vals["lake_kind"], S.LAYERS["lake_kind"]), k)
+
+
 def test_layer_files(data_root):
     a = np.arange(12, dtype=np.int16).reshape(3, 4) * 7
     b = np.array([[0.5, 1.5]], np.float32)

@@ -172,6 +172,8 @@ LAYERS = {
     "flow": _spec("u1", "cells x m/yr", "river flow: upstream runoff (x cell area / 1 yr = m3/s)",
                   scale=1 / 16, transform="log2p1"),
     "downstream": _spec("u1", "cell", "next cell down the river, -1 none", transform="nbr_slot"),
+    "lake_depth": _spec("<u2", "m", "lake water depth (lake surface - elevation; 0 off lakes)"),
+    "lake_kind": _spec("u1", "id", "0 none, 1 open (fresh), 2 closed (salt), 3 salt pan (hydrology)"),
     "wind_e": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, east component", scale=0.02),
     "wind_n": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, north component", scale=0.02),
     "current_e": _spec("i1", "same scale as wind", "surface ocean current, east component", scale=0.02),

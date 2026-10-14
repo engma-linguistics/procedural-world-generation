@@ -217,7 +217,9 @@ planet simulate ...`; `serve` then shows that root's runs).
 Layer names are the same in runs, time zooms, worlds and zooms (`store.LAYERS`):
 `elevation, plate, crust` (1 = continental), `crust_age, plate_boundary, rock,
 surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
-climate, ice, flow, downstream, wind_e/_n, current_e/_n, jet_e/_n`.
+climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
+jet_e/_n`. Run frames keep `lake_depth` (m of water) where worlds keep
+`lake_level` (its surface); `lake_kind` means the same in both.
 
 `delete` removes one item by id (`run:<id>`, `world:<id>` or `zoom:<id>`
 when a run and a world share an id); `delete --orphans` clears zooms and

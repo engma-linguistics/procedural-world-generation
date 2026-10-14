@@ -202,7 +202,8 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     gentle river course over which ~63% of the load settles on land; fan_km:
     km of deep sea floor over which ~63% of what passes the shelf settles.
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
-    lake_kind)."""
+    lakes): lakes is hydrology.lakes' dict (on the terrain before this
+    step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
     land = elev > 0
     lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap)
     flow, down, order, filled = hydrology.route(grid, elev, lk)
@@ -255,4 +256,5 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     dep = np.where(ocean, dep_sea, dep)
     thick = thick + dep
     cover = cover + dep
-    return thick, cover, mix, removed, dep, flow, down, lk["kind"]
+    lk["depth"] = np.where(lk["wet"], np.maximum(lk["level"] - elev, 0.0), 0.0)
+    return thick, cover, mix, removed, dep, flow, down, lk
