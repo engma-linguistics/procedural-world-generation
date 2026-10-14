@@ -68,7 +68,8 @@ def test_highlights_from_run(dirs):
     # nothing computed yet at 40 Myr: cached_only just says so, without building a world
     res = api.highlights({"run": "tiny01", "t": "40"}, cached_only=True)
     assert res["features"] is None and res["world"] is None
-    n_worlds = len(list((dirs / "worlds").glob("*.json")))
+    worlds = lambda: [p for p in (dirs / "worlds").glob("*.json") if p.name != "index.json"]
+    n_worlds = len(worlds())
 
     res = api.highlights({"run": "tiny01", "t": "40"})
     assert res["t_myr"] == 40 and res["features"] and all(f["zoom"] is None for f in res["features"])
@@ -77,7 +78,7 @@ def test_highlights_from_run(dirs):
     # the cache is in a subfolder: world listings and slice lookups don't see it
     W.update_index()
     assert [w["id"] for w in json.loads((dirs / "worlds" / "index.json").read_text())].count(wid) == 1
-    assert len(list((dirs / "worlds").glob("*.json"))) == n_worlds + 1
+    assert len(worlds()) == n_worlds + 1
     assert api.find_slice(dirs / "runs" / "tiny01", 40.0).stem == wid
 
     # now cached (also by world id), and a zoom made the way the viewer makes it is found
