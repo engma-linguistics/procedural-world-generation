@@ -151,7 +151,10 @@ POINTS = [
 # each gauge is followed to its end and the flow there summed over distinct
 # ends: on 110 km cells of Earth's mean elevation a river can reach the sea
 # some way from its real mouth (the Congo through Gabon), but the basin's
-# water is still counted.
+# water is still counted. If a river's ends are shared with a bigger river's
+# (at 110 km the Orinoco above Caicara drains to the Amazon through the
+# Casiquiare gap, and the Ob joins the Yenisei), it is reported as captured
+# by that river, with no discharge of its own, rather than double counting.
 RIVERS = [
     ("Amazon", 209000, [(-1.95, -55.5)]),  # Obidos
     ("Congo", 41000, [(0.05, 18.3)]),  # Mbandaka
@@ -486,16 +489,24 @@ def earth_rivers(grid, d, c, w) -> dict:
                 i = int(dn[i])
             ends[i] = (float(fl[i] * sq), bool(dn[i] < 0))
         if not ends:
-            return float("nan"), float("nan"), False
+            return float("nan"), float("nan"), False, set()
         q = earth_data._unit(np.array([gauges[0][0]]), np.array([gauges[0][1]]))[0]
         far = max(float(np.arccos(np.clip(grid.centers[i] @ q, -1, 1))) * 6371 for i in ends)
-        return sum(v[0] for v in ends.values()), far, any(v[1] for v in ends.values())
+        return sum(v[0] for v in ends.values()), far, any(v[1] for v in ends.values()), set(ends)
 
+    def captor(k, ends):
+        """The bigger listed river (by observed discharge) sharing an end with river k."""
+        big = [j for j, e in enumerate(ends) if j != k and e & ends[k] and RIVERS[j][1] > RIVERS[k][1]]
+        return RIVERS[max(big, key=lambda j: RIVERS[j][1])][0] if big else None
+
+    res = [(at_mouth(flow, down, g), at_mouth(flow_o, down_o, g)) for _, _, g in RIVERS]
+    ends_m, ends_o = [r[0][3] for r in res], [r[1][3] for r in res]
     rows = []
-    for name, obs, gauges in RIVERS:
-        (m, m_km, m_lake), (o, _, o_lake) = at_mouth(flow, down, gauges), at_mouth(flow_o, down_o, gauges)
-        rows.append(dict(name=name, obs=obs, model=m, obs_rain=o, model_km=m_km, model_ends_in_lake=m_lake,
-                         obs_rain_ends_in_lake=o_lake))
+    for k, ((name, obs, _), ((m, m_km, m_lake, _), (o, _, o_lake, _))) in enumerate(zip(RIVERS, res)):
+        cap, cap_o = captor(k, ends_m), captor(k, ends_o)
+        rows.append(dict(name=name, obs=obs, model=float("nan") if cap else m,
+                         obs_rain=float("nan") if cap_o else o, model_km=m_km, model_ends_in_lake=m_lake,
+                         obs_rain_ends_in_lake=o_lake, model_captured_by=cap, obs_rain_captured_by=cap_o))
     na = land & (grid.lat > -60)
     ratio = float((c["runoff"] * w)[na].sum() / (c["precip"] * w)[na].sum())
     ok = na & np.isfinite(d["obs_precip"])
@@ -626,9 +637,11 @@ def report(R, times, level):
       f"{rv['runoff_ratio_obs_rain']:.2f} with GPCC rain). Discharge at the mouth, m3/s:")
     p(f"{'river':20}{'observed':>10}{'model':>10}{'ratio':>7}{'obs P':>10}{'ratio':>7}  gauge->sea km")
     for r in rv["rivers"]:
-        p(f"{r['name']:20}{r['obs']:10.0f}{fmt(r['model']):>10}{r['model'] / r['obs']:7.2f}"
-          f"{fmt(r['obs_rain']):>10}{r['obs_rain'] / r['obs']:7.2f}  {fmt(r['model_km']):>6}"
-          + ("  (ends in a lake)" if r["model_ends_in_lake"] else ""))
+        p(f"{r['name']:20}{r['obs']:10.0f}{fmt(r['model']):>10}{fmt(r['model'] / r['obs'], 2):>7}"
+          f"{fmt(r['obs_rain']):>10}{fmt(r['obs_rain'] / r['obs'], 2):>7}  {fmt(r['model_km']):>6}"
+          + ("  (ends in a lake)" if r["model_ends_in_lake"] else "")
+          + (f"  (model drains into the {r['model_captured_by']})" if r["model_captured_by"] else "")
+          + (f"  (obs P drains into the {r['obs_rain_captured_by']})" if r["obs_rain_captured_by"] else ""))
     p(f"lakes: {rv['n_open']} open, {rv['n_closed']} closed, {rv['n_pans']} salt-pan cells "
       f"({rv['lake_cells']} lake cells); land draining to closed basins {rv['endorheic_pct']:.0f}% "
       f"({rv['endorheic_pct_obs_rain']:.0f}% with GPCC rain; Earth ~18%, excl. Antarctica).")
