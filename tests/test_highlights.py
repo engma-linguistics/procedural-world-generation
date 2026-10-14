@@ -45,11 +45,14 @@ def check(world, feats):
 def test_find_on_sliced_world(world4):
     by = check(world4, H.find(world4))
     L = world4["layers"]
-    assert {"mountain_range", "largest_river", "continent"} <= set(by)
+    assert {"largest_river", "continent"} <= set(by)
+    # a range needs ground above 1500 m, which a small, old world may not have
+    assert ("mountain_range" in by) == (np.asarray(L["elevation"]).max() > 1500)
     # the largest river's cell is a mouth: land draining straight into the sea
     m = by["largest_river"]["cell"]
     assert L["elevation"][m] > 0 and L["elevation"][L["downstream"][m]] <= 0
-    assert by["mountain_range"]["stats"]["length_km"] > 0 and len(by["mountain_range"]["path"]) >= 2
+    if "mountain_range" in by:
+        assert by["mountain_range"]["stats"]["length_km"] > 0 and len(by["mountain_range"]["path"]) >= 2
     assert not by["continent"]["zoomable"]
 
 

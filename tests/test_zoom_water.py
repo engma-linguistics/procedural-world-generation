@@ -23,11 +23,16 @@ def water_world():
     elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
     elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
     precip = np.full(g.n, 1200.0)
-    flow, down, lake = hydrology.rivers_and_lakes(g, elev, precip)
+    # wet enough that the basin overflows: an open lake
+    c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    lake = lk["wet"]
     land = elev > 0
     layers = {
         "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
         "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lake.astype(int),
+        "lake_level": np.maximum(np.round(lk["level"]), np.round(elev)), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"],
         "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 2),
         "ice": np.zeros(g.n), "sediment_cover": np.where(land, 0.5, 6.0),
     }
