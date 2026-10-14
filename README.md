@@ -56,7 +56,31 @@ from the ice volume. `timezoom earth` starts from today's Earth (ETOPO1);
 `--set baseline=obs` uses the observed climate plus the model's changes.
 Knobs: `--set key=value` for any `TZParams` field (e.g. `insol_k`,
 `obliquity_amp`, `phases=zero`). The viewer plays it like a run (frames in
-kyr); its `run.txt` has the sea-level / ice / orbit table and glacial events.
+kyr; "ice thickness" layer; the summary panel has the sea-level / ice-volume
+curve with the 65°N summer sun under it, click it to jump, and the orbit at
+the frame on screen); its `run.txt` has the sea-level / ice / orbit table and
+glacial events.
+
+From the viewer: on a run, "Glacial time zoom from here" (summary panel)
+starts one at the frame on screen (100, 300 or 1000 kyr; ~4 min per 1000 kyr
+at level 6) as a server job, and opens it when done. The time slider of a
+run is tinted blue where the run is cold (land ice on > 1% of the surface or
+a global mean < 13 °C; darkest = Earth today or colder): that's where a time
+zoom shows ice ages.
+
+## Earth reference world
+
+```sh
+uv run python tools/earth_world.py      # prints the new world's id
+```
+
+Builds "Earth (today, ETOPO1) — model vs observed": real terrain and ice
+through the normal pipeline (our climate, rivers, biomes; erosion off), plus
+the observed temperature (NCEP), rainfall (GPCC/GPCP) and Köppen climate
+(Kottek) and the model's winds, currents and jet stream. In the viewer,
+temperature, precipitation and climate get a "model / observed / difference"
+switch (`?obs=diff` in the URL). Re-run it after climate-model changes (and
+delete the old one).
 
 ## Tests and calibration
 
