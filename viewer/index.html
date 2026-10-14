@@ -1589,7 +1589,8 @@ async function loadRun(dir, wantT) {
 }
 
 // A world's volcano table (tectonics.volcanism.COLUMNS) -> [lat, lon, kind, mark]
-// for the overlay: the active ones, islands and atolls (not the many seamounts).
+// for the overlay: the active ones, hotspot islands and atolls (not the many
+// seamounts and extinct arc volcanoes).
 // mark: 0 active, 1 island, 2 atoll (a living reef round a sunken volcano)
 function worldVolcanoes(meta) {
   const cols = meta.volcano_columns;
@@ -1598,6 +1599,7 @@ function worldVolcanoes(meta) {
   const out = [];
   for (const r of meta.volcanoes) {
     if (r[c.active]) out.push([r[c.lat], r[c.lon], r[c.kind], 0]);
+    else if (r[c.kind] === 0) continue;  // (extinct arc volcanoes: too many to show)
     else if (r[c.top_m] > 0) out.push([r[c.lat], r[c.lon], r[c.kind], 1]);
     else if (r[c.reef] === 1) out.push([r[c.lat], r[c.lon], r[c.kind], 2]);
   }

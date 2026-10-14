@@ -38,7 +38,8 @@ from .tectonics.volcanism import ARC, COLUMNS, DROWNED, REEF, SHORE_MAX
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
 CALDERA_M = (180.0, 120.0)  # depth of an active hotspot shield's caldera, an arc volcano's crater
 LAGOON_M = 35.0  # typical lagoon depth
-MOTU_M = 2.5  # height of the reef islets
+MOTU_M = 2.5  # height of the reef islets...
+MOTU_NOISE = -0.2  # ... on about 3/5 of the rim (the rest is reef flat awash)
 FORE_REEF = 700.0  # m/km: the reef front's drop
 VALLEY_KM = 6.0  # spacing of the radial valleys at the coast
 FADE = 0.8  # coarse cells over which the vents' province fades out
@@ -163,14 +164,14 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         if v["reef"] == REEF:
             sh_now = r * _shore(kind, H, f) if top > 0 else 0.0
             rr = max(min(float(v["shore_km"]), SHORE_MAX * r), sh_now, 3.0)
-            hw = max(0.75 * res, 0.8)
+            hw = max(1.0 * res, 1.0)  # half the rim's width (a ring at least 2 px wide)
             n2 = ZK.fbm(np.ascontiguousarray(Pk[win]), 5.0, 2, 0.5, S + 62) / 0.17
             if top > 0 and rr - sh_now < 2 * res + hw:  # fringing reef: a flat out from the shore
                 rr = sh_now + max(1.5 * res, 1.5)
                 c = np.where(rho_e <= rr, -2.0, -2.0 - (rho_e - rr) * FORE_REEF)
             else:  # barrier reef or atoll: rim, lagoon inside
                 lag = -(LAGOON_M + 15.0 * np.clip(n2, -1, 1))
-                rim = np.where(n2 > 0.35, MOTU_M, -1.0)
+                rim = np.where(n2 > MOTU_NOISE, MOTU_M, -1.0)
                 # (the ring follows the island's lobed old shore, not a circle)
                 c = np.where(np.abs(rho_e - rr) <= hw, rim,
                              np.where(rho_e < rr, np.minimum(lag, -3.0), -1.0 - (rho_e - rr - hw) * FORE_REEF))

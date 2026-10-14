@@ -21,4 +21,5 @@ volcano epic), mangroves on tropical sheltered coasts, barrier islands on wave-d
 cliffs vs beaches by rock strength and wave power. See also PW-077 (spits, beach ridges, tidal channels).
 
 ## Updates
+- 2026-10-14: Atolls, barrier and fringing reefs on subsiding volcanoes are now drawn by the zoom (PW-004, zoom_volcanoes.py); reefs on non-volcanic coasts are still open here.
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).
