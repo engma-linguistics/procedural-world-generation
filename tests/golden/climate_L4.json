@@ -1,13 +1,15 @@
 {
- "current": "<f8[2562, 3]:9b1eb0416079e93fb223",
- "koppen": "<i8[2562]:9fd16443329944c9d4a5",
- "p_jan": "<f8[2562]:dc7c985bc98f771f8b6a",
- "p_jul": "<f8[2562]:5e1d1ad3b2de1b972c7b",
- "precip": "<f8[2562]:02e0a40fa9c0d43bc980",
- "sst": "<f8[2562]:9746e4ba106ec4e28825",
- "t_cold": "<f8[2562]:1288cb6e852ae260ace7",
- "t_warm": "<f8[2562]:4ba73c4efa541627de1c",
- "temp": "<f8[2562]:2e0cec7626d1e49f4961",
- "wind_jan": "<f8[2562, 3]:37e2311257a3e1b6065a",
- "wind_jul": "<f8[2562, 3]:6f32496ed4ba4b19831c"
+ "current": "<f8[2562, 3]:81efb5d5638e57295f56",
+ "jet_jan": "<f8[2562, 3]:7965fe49e6300411835b",
+ "jet_jul": "<f8[2562, 3]:40978287efe18a9b1194",
+ "koppen": "<i8[2562]:4ccee0b8d4c792967a83",
+ "p_jan": "<f8[2562]:277508c159a84c0e19b2",
+ "p_jul": "<f8[2562]:1c696f617f807e8c1672",
+ "precip": "<f8[2562]:b870f2c0360c542c2812",
+ "sst": "<f8[2562]:c5e36be77824d19c7a65",
+ "t_cold": "<f8[2562]:2ff89ed8bb4ec0b8d3f5",
+ "t_warm": "<f8[2562]:b08e916dfbf0370a1515",
+ "temp": "<f8[2562]:8f51b00c0cf4956ac9d1",
+ "wind_jan": "<f8[2562, 3]:118a7d4396ff81de22cb",
+ "wind_jul": "<f8[2562, 3]:ae4fee9d7682ed840971"
 }
