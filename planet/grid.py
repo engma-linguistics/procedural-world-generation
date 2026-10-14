@@ -30,9 +30,12 @@ Construction
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 
 import numpy as np
 
+from . import kernels
+from .geo import latlon
 from .kernels import build_raster, locate, order_cells
 
 
@@ -53,17 +56,19 @@ class Grid:
     def n(self) -> int:
         return len(self.centers)
 
-    @property
+    # Derived geometry is computed once per grid and read-only (shared by
+    # every caller, so nobody may modify it in place).
+    @cached_property
     def lat(self) -> np.ndarray:
-        return np.degrees(np.arcsin(np.clip(self.centers[:, 2], -1, 1)))
+        return _frozen(latlon(self.centers)[0])
 
-    @property
+    @cached_property
     def lon(self) -> np.ndarray:
-        return np.degrees(np.arctan2(self.centers[:, 1], self.centers[:, 0]))
+        return _frozen(latlon(self.centers)[1])
 
-    @property
+    @cached_property
     def pentagons(self) -> np.ndarray:
-        return np.array([i for i, c in enumerate(self.cell_corners) if len(c) == 5])
+        return _frozen(np.array([i for i, c in enumerate(self.cell_corners) if len(c) == 5]))
 
     @property
     def raster(self) -> np.ndarray:
@@ -80,11 +85,21 @@ class Grid:
         return locate(np.ascontiguousarray(pts), guess, self.raster, self.centers,
                       self.nbr_off, self.nbr_idx)
 
-    @property
+    @cached_property
     def spacing(self) -> float:
         """Mean centre-to-centre distance between neighbours, in radians."""
         a, b = self.centers[self.edges[:, 0]], self.centers[self.edges[:, 1]]
         return float(np.mean(np.arccos(np.clip((a * b).sum(1), -1, 1))))
+
+    def components(self, mask: np.ndarray) -> tuple[np.ndarray, int]:
+        """Connected regions of mask: (label per cell, -1 outside mask; count).
+        Labels are numbered in order of each region's lowest cell id."""
+        return kernels.components(mask, self.nbr_off, self.nbr_idx)
+
+
+def _frozen(a: np.ndarray) -> np.ndarray:
+    a.flags.writeable = False
+    return a
 
 
 def _icosahedron() -> tuple[np.ndarray, np.ndarray]:

@@ -74,11 +74,11 @@ import numpy as np
 from . import climate
 from . import world as W
 from . import zoom_kernels as ZK
+from .geo import R_KM, latlon, xyz
 from .climate import BIOMES, KOPPEN, LAPSE
 from .surface import ROCK_K, ROCKS
 
 ZOOMS = W.ROOT / "zooms"
-R_KM = float(W.PLANET_RADIUS_KM)
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
 
@@ -98,7 +98,7 @@ class Frame:
 
     def __init__(self, lat0: float, lon0: float):
         la, lo = np.radians(lat0), np.radians(lon0)
-        self.c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
+        self.c = xyz(la, lo)
         e = np.cross([0.0, 0.0, 1.0], self.c)
         if np.linalg.norm(e) < 1e-9:  # at a pole: pick any east
             e = np.array([0.0, 1.0, 0.0])
@@ -120,7 +120,8 @@ class Frame:
 
 
 def _latlon(p):
-    return (float(np.degrees(np.arcsin(np.clip(p[2], -1, 1)))), float(np.degrees(np.arctan2(p[1], p[0]))))
+    lat, lon = latlon(p)
+    return float(lat), float(lon)
 
 
 # ---------------------------------------------------------------------------

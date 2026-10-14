@@ -50,11 +50,11 @@ import numpy as np
 from numba import njit
 
 from . import climate, kernels, surface
+from .geo import R_KM, latlon as _latlon
 from .grid import Grid
 from .surface import ARC, CRATON, HOTSPOT, OCEAN, OROGEN, SEDIMENT
 from .noise import Perlin3D, fbm, ridged
 
-R_KM = 6371.0
 CMYR = R_KM / 10.0  # (rad/Myr on unit sphere) -> cm/yr
 P_MAX = 48
 
@@ -415,35 +415,6 @@ def _cleanup_ghosts(alive, owned, Q, centers, owner, raster, nbr_off, nbr_idx):
     return removed
 
 
-@njit(cache=True)
-def _components(mask, nbr_off, nbr_idx):
-    n = mask.shape[0]
-    lab = np.full(n, -1, np.int64)
-    q = np.empty(n, np.int64)
-    k = 0
-    for s in range(n):
-        if not mask[s] or lab[s] >= 0:
-            continue
-        lab[s] = k
-        head, tail = 0, 1
-        q[0] = s
-        while head < tail:
-            i = q[head]
-            head += 1
-            for e in range(nbr_off[i], nbr_off[i + 1]):
-                j = nbr_idx[e]
-                if mask[j] and lab[j] < 0:
-                    lab[j] = k
-                    q[tail] = j
-                    tail += 1
-        k += 1
-    return lab, k
-
-
-def components(grid: Grid, mask: np.ndarray):
-    return _components(mask, grid.nbr_off, grid.nbr_idx)
-
-
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
@@ -504,8 +475,8 @@ def ocean_depth(age):
 
 
 def latlon(p):
-    p = p / np.linalg.norm(p)
-    return float(np.degrees(np.arcsin(np.clip(p[2], -1, 1)))), float(np.degrees(np.arctan2(p[1], p[0])))
+    lat, lon = _latlon(p / np.linalg.norm(p))
+    return float(lat), float(lon)
 
 
 @dataclass
@@ -637,7 +608,7 @@ class Simulation:
             plate = np.where(near >= 0, k0, plate)
             # oceanic leftovers cut off from their plate join a neighbour
             for k in range(p.n_plates):
-                lab, nl = components(g, plate == k)
+                lab, nl = g.components(plate == k)
                 if nl > 1:
                     sizes = np.bincount(lab[lab >= 0])
                     for piece in np.flatnonzero(sizes < sizes.max()):
@@ -1472,7 +1443,7 @@ class Simulation:
             u = rng.random() * rate
             if u < margin:
                 # the ocean side of the largest stretch of ocean on this plate
-                lab, _ = components(g, (self.owner == k) & ~self.w_cont)
+                lab, _ = g.components((self.owner == k) & ~self.w_cont)
                 biggest = np.bincount(lab[lab >= 0]).argmax()
                 at = g.locate(world)
                 side = ~self.cont[k, refs] & (lab[at] == biggest)
@@ -1529,7 +1500,7 @@ class Simulation:
         on = self.owner == k
         wside = on & (v > 0)
         for m in (wside, on & ~wside):
-            lab, nl = components(g, m)
+            lab, nl = g.components(m)
             if nl > 1:
                 sizes = np.bincount(lab[lab >= 0])
                 stray = (lab >= 0) & (lab != sizes.argmax())
@@ -1622,7 +1593,7 @@ class Simulation:
     def stats(self) -> dict:
         g = self.grid
         land = self.w_elev > 0
-        lab, nlab = components(g, land)
+        lab, nlab = g.components(land)
         sizes = np.bincount(lab[lab >= 0], minlength=1) if nlab else np.array([0])
         v = np.linalg.norm(self.velocity(), axis=1) * CMYR
         return {

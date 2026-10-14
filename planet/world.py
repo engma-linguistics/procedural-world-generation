@@ -21,18 +21,17 @@ from __future__ import annotations
 import json
 import secrets
 import time
-from collections import deque
 from pathlib import Path
 
 import numpy as np
 
 from . import climate, hydrology
 from .generators import GENERATORS
+from .geo import R_KM, latlon, xyz
 from .grid import Grid, build_grid
 
 ROOT = Path(__file__).resolve().parent.parent
 WORLDS = ROOT / "worlds"
-PLANET_RADIUS_KM = 6371
 
 
 def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
@@ -76,7 +75,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         **meta,
         "cells": grid.n,
         "pentagons": grid.pentagons.tolist(),
-        "cell_size_km": round(grid.spacing * PLANET_RADIUS_KM),
+        "cell_size_km": round(grid.spacing * R_KM),
         "params": {"erosion": erosion, "erosion_iterations": erosion_iterations,
                    "dT": dT, "tilt": tilt, **(params or {})},
         "generated_in_s": round(time.time() - t0, 2),
@@ -89,33 +88,21 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
 # Summaries
 # ---------------------------------------------------------------------------
 def landmasses(grid: Grid, land: np.ndarray, min_cells: int = 3):
-    label = np.full(grid.n, -1)
-    comps = []
-    for s in np.flatnonzero(land):
-        if label[s] >= 0:
-            continue
-        k = len(comps)
-        label[s] = k
-        q, members = deque([s]), [s]
-        while q:
-            i = q.popleft()
-            for j in grid.neighbors[i]:
-                if land[j] and label[j] < 0:
-                    label[j] = k
-                    q.append(j)
-                    members.append(j)
-        comps.append(members)
-    comps.sort(key=len, reverse=True)
+    """Connected land regions with at least min_cells cells, largest first
+    (ties: lowest cell id first), named A, B, C..."""
+    label, k = grid.components(land)
+    sizes = np.bincount(label[label >= 0], minlength=k)
     out = []
-    for idx, m in enumerate(c for c in comps if len(c) >= min_cells):
+    for idx, comp in enumerate(c for c in np.argsort(-sizes, kind="stable") if sizes[c] >= min_cells):
+        m = np.flatnonzero(label == comp)
         c = grid.centers[m].mean(0)
-        c /= np.linalg.norm(c)
+        lat, lon = latlon(c / np.linalg.norm(c))
         out.append({
             "name": _letters(idx),
             "cells": len(m),
             "pct_of_surface": round(100 * len(m) / grid.n, 2),
-            "center_lat": round(float(np.degrees(np.arcsin(c[2]))), 1),
-            "center_lon": round(float(np.degrees(np.arctan2(c[1], c[0]))), 1),
+            "center_lat": round(float(lat), 1),
+            "center_lon": round(float(lon), 1),
             "_members": m,
         })
     return out
@@ -194,7 +181,7 @@ def nearest_cell_map(g: Grid, width: int, height: int) -> np.ndarray:
     lat = np.radians(90 - (np.arange(height) + 0.5) * 180 / height)
     lon = np.radians(-180 + (np.arange(width) + 0.5) * 360 / width)
     LON, LAT = np.meshgrid(lon, lat)
-    pts = np.stack([np.cos(LAT) * np.cos(LON), np.cos(LAT) * np.sin(LON), np.sin(LAT)], -1).reshape(-1, 3)
+    pts = xyz(LAT, LON).reshape(-1, 3)
     return g.locate(pts).reshape(height, width)
 
 
@@ -281,6 +268,12 @@ def _np(o):
     raise TypeError(type(o))
 
 
+def latlon_lists(v: np.ndarray) -> tuple[list, list]:
+    """Lat and lon (degrees, 3 decimals) of unit vectors, as JSON-ready lists."""
+    lat, lon = latlon(v)
+    return np.round(lat, 3).tolist(), np.round(lon, 3).tolist()
+
+
 def new_id() -> str:
     """Short random id for a run or world (6 hex characters)."""
     return secrets.token_hex(3)
@@ -295,12 +288,8 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
     summary = summarize(world)
     from .climate import BIOMES
 
-    def corner_ll(v):
-        return (np.round(np.degrees(np.arcsin(np.clip(v[:, 2], -1, 1))), 3).tolist(),
-                np.round(np.degrees(np.arctan2(v[:, 1], v[:, 0])), 3).tolist())
-
-    clat, clon = corner_ll(g.corners)
-    lat, lon = corner_ll(g.centers)
+    clat, clon = latlon_lists(g.corners)
+    lat, lon = latlon_lists(g.centers)
     parts = [
         ('"format"', json.dumps("procgen-planet/1")),
         ('"name"', json.dumps(name)),

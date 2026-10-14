@@ -297,6 +297,33 @@ def grow_regions(seed, seeds, rates, nbr_off, nbr_idx, n):
 
 
 @njit(cache=True)
+def components(mask, nbr_off, nbr_idx):
+    """Connected regions of a cell mask: (label per cell, -1 outside the
+    mask; number of regions). Regions are numbered by their lowest cell id."""
+    n = mask.shape[0]
+    lab = np.full(n, -1, np.int64)
+    q = np.empty(n, np.int64)
+    k = 0
+    for s in range(n):
+        if not mask[s] or lab[s] >= 0:
+            continue
+        lab[s] = k
+        head, tail = 0, 1
+        q[0] = s
+        while head < tail:
+            i = q[head]
+            head += 1
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[e]
+                if mask[j] and lab[j] < 0:
+                    lab[j] = k
+                    q[tail] = j
+                    tail += 1
+        k += 1
+    return lab, k
+
+
+@njit(cache=True)
 def bfs_within(sources, label, nbr_off, nbr_idx, max_dist):
     """Multi-source BFS that never crosses into a different label.
     Returns (hop distance, originating source cell); -1 where unreached."""

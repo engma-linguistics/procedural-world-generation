@@ -24,6 +24,7 @@ import numpy as np
 
 from . import world as W
 from .provenance import code_version, describe
+from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .climate import KOPPEN
@@ -90,10 +91,8 @@ def write_grid(grid: Grid) -> Path:
     path = GRIDS / f"L{grid.level}.json"
     if path.exists() and '"nbr"' in path.read_text()[-200000:]:
         return path
-    ll = lambda v: (np.round(np.degrees(np.arcsin(np.clip(v[:, 2], -1, 1))), 3).tolist(),
-                    np.round(np.degrees(np.arctan2(v[:, 1], v[:, 0])), 3).tolist())
-    lat, lon = ll(grid.centers)
-    clat, clon = ll(grid.corners)
+    lat, lon = W.latlon_lists(grid.centers)
+    clat, clon = W.latlon_lists(grid.corners)
     path.write_text(json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
                                 "corner_lon": clon, "cells": grid.cell_corners,
                                 "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
@@ -154,7 +153,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
         "name": name,
         "meta": {"seed": seed, "level": level, "cells": grid.n, "dt": dt, "myr": myr,
                  "every": stride * dt, "steps": sim.step_no,
-                 "cell_size_km": round(grid.spacing * W.PLANET_RADIUS_KM),
+                 "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},

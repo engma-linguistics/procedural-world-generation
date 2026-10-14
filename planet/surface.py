@@ -33,6 +33,7 @@ import numpy as np
 from numba import njit
 
 from . import kernels
+from .geo import R_KM
 
 # id, key, name, erodibility (relative), colour
 ROCKS = [
@@ -58,7 +59,6 @@ COVER_K = ROCK_K[SHALE]
 COVER_SHOWS = 0.05  # km of cover before it, not the basement, is what's exposed
 
 
-R_KM = 6371.0
 
 
 def rain_factor(precip_mm):
