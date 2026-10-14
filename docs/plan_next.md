@@ -239,6 +239,9 @@ Order: 1 → 6, small to large.
 - `api.Jobs` state is in memory only and is lost on server restart.
 - The zoom request can't choose seed, iterations or resolution (always 500 px).
 - The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
+- **Checkpoints are big (`store`):** about 23 MB each at level 6 (≈229 MB per 1 Gyr run, about as much as the layers). Saving only live plates' slots would shrink them.
+- **Old outputs still show in dropdowns** until deleted. Every pre-`store` run, world and zoom fails to open (all were scheduled for deletion and regeneration).
+- **Replay falls back to t=0 when the code changed** (the source hash differs), so slices of older runs take minutes, or fail with ReplayMismatch unless `--force`.
 
 ## Overnight state (2026-10-14 00:10): for the coordinator after context compaction
 
