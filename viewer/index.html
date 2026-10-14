@@ -116,6 +116,7 @@
     <label class="runOnly"><input type="checkbox" id="volcanoes" checked> Arc volcanoes</label>
     <label class="runOnly"><input type="checkbox" id="winds"> Winds (yearly average)</label>
     <label class="runOnly"><input type="checkbox" id="currents"> Ocean currents</label>
+    <label class="runOnly" title="Upper-level winds (~10 km up), yearly average; only in runs made after the jet stream was added"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
     <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
     <label><input type="checkbox" id="tropics"> Equator, tropics, polar circles</label>
@@ -502,16 +503,17 @@ function buildOverlays() {
       overlays.pentas = lineObj(pts, 0xff3df2);
     }
   }
-  // winds and currents: stored as (east, north) x50; drawn on an evenly spread sample of cells
-  const flowArrows = (ke, kn, color, oceanOnly, lvlDrop) => {
+  // winds and currents: stored as (east, north) x50; the jet stream in m/s (mult scales it to match).
+  // Drawn on an evenly spread sample of cells
+  const flowArrows = (ke, kn, color, oceanOnly, lvlDrop, mult = 1, r = 1.004) => {
     const nS = Math.min(10 * 4 ** Math.max(V.level - lvlDrop, 0) + 2, V.n), pts = [], s = 0.0011;
     for (let i = 0; i < nS; i++) {
       if (oceanOnly && L.elevation[i] > 0) continue;
-      let ue = L[ke][i], un = L[kn][i];
+      let ue = L[ke][i] * mult, un = L[kn][i] * mult;
       const m = Math.hypot(ue, un); if (m < 3) continue;
       if (m > 90) { ue *= 90 / m; un *= 90 / m; }
       const la = G.lat[i] * Math.PI / 180, lo = G.lon[i] * Math.PI / 180;
-      const a = cellPos(i, 1.004);
+      const a = cellPos(i, r);
       if (globe) {
         // planet-frame east/north -> three.js axes
         const E = new THREE.Vector3(...toThree([-Math.sin(lo), Math.cos(lo), 0]));
@@ -532,6 +534,7 @@ function buildOverlays() {
   };
   if (V.kind === 'run' && $('winds').checked && L.wind_e) overlays.winds = flowArrows('wind_e', 'wind_n', 0xffe08a, false, 2);
   if (V.kind === 'run' && $('currents').checked && L.current_e) overlays.currents = flowArrows('current_e', 'current_n', 0x7fffd4, true, 1);
+  if (V.kind === 'run' && $('jet').checked && L.jet_e) overlays.jet = flowArrows('jet_e', 'jet_n', 0xd59cff, false, 2, 2.5, 1.02);
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
     const nSample = 10 * 4 ** Math.max(V.level - 2, 0) + 2;
@@ -725,6 +728,8 @@ function renderLegend() {
     el.innerHTML += '<span><span class="sw" style="background:#ffe08a"></span>wind</span>';
   if (V.kind === 'run' && $('currents').checked && V.layers.current_e)
     el.innerHTML += '<span><span class="sw" style="background:#7fffd4"></span>ocean current</span>';
+  if (V.kind === 'run' && $('jet').checked && V.layers.jet_e)
+    el.innerHTML += '<span><span class="sw" style="background:#d59cff"></span>jet stream</span>';
 }
 
 function renderLayerButtons() {
@@ -865,7 +870,7 @@ seg('modeSeg', 'mode', () => {
 });
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents',
+const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'jet',
                      'axis', 'tropics'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => { buildOverlays(); renderLegend(); }));
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
@@ -1042,7 +1047,7 @@ function setFrame(f, repaint = true) {
   V.layers = { elevation: sl(d.elevation), plate: sl(d.plate), crust: sl(d.continental),
                crust_age: sl(d.age), plate_boundary: sl(d.boundary) };
   for (const k of ['rock', 'surface', 'cover', 'thickness', 'precip', 'flow', 'down', 'temperature', 'climate', 'ice',
-                   'wind_e', 'wind_n', 'current_e', 'current_n']) if (d[k]) V.layers[k] = sl(d[k]);
+                   'wind_e', 'wind_n', 'current_e', 'current_n', 'jet_e', 'jet_n']) if (d[k]) V.layers[k] = sl(d[k]);
   V.hotspots = r.frames[f].hotspots;
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;
