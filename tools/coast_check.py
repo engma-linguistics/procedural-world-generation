@@ -43,6 +43,9 @@ WAVES = [
     ("Mediterranean (Gulf of Lion)", 43.0, 4.5, 3, 8), ("Baltic", 55.5, 18.0, 1, 6), ("North Sea S", 52.5, 3.5, 3, 10),
     ("Bay of Bengal head", 21.3, 89.0, 3, 8), ("Black Sea", 43.0, 34.0, 1, 5), ("Persian Gulf", 27.0, 51.5, 0.5, 3),
     ("Red Sea", 20.0, 39.0, 0.5, 3),
+    # ice-covered most of the year (rough: open-water seas of 0.5-1 m in Jul-Sep only)
+    ("Laptev (Lena delta)", 72.5, 128.0, 0.3, 3), ("Beaufort (Mackenzie)", 70.0, -135.0, 0.5, 4),
+    ("Kara (Ob/Yenisei gulfs)", 73.0, 76.0, 0.3, 3),
 ]
 
 # name, lat, lon, observed typical (spring) tidal range m (lo, hi)
@@ -58,6 +61,8 @@ TIDES = [
     ("Baltic", 55.5, 18.0, 0, 0.2), ("Black Sea", 43.0, 34.0, 0, 0.2), ("Gulf of Mexico (Mississippi)", 28.8, -89.0, 0, 0.6),
     ("Gulf of Mexico (Texas)", 27.5, -96.8, 0, 0.8), ("Caribbean (Jamaica)", 17.5, -77.0, 0, 0.5),
     ("Red Sea", 20.0, 39.0, 0, 1.0),
+    ("Laptev (Tiksi)", 71.8, 129.5, 0.1, 0.6), ("Beaufort (Mackenzie)", 69.8, -134.5, 0.2, 0.6),
+    ("East Siberian (Kolyma)", 69.8, 161.5, 0.1, 0.4),
 ]
 
 # name, mouth lat, lon, the type it's usually filed under
@@ -65,7 +70,8 @@ DELTAS = [("Mississippi", 29.1, -89.3, "river"), ("Nile", 31.4, 31.0, "wave"), (
           ("Mekong", 9.8, 106.5, "tide"), ("Niger", 4.5, 6.0, "mixed"), ("Sao Francisco", -10.5, -36.4, "wave"),
           ("Senegal", 15.9, -16.5, "wave"), ("Fly", -8.5, 143.5, "tide"), ("Amazon", 0.0, -50.0, "tide"),
           ("Danube", 45.1, 29.6, "wave"), ("Ebro", 40.7, 0.8, "wave"), ("Po", 44.9, 12.5, "river"),
-          ("Yangtze", 31.4, 121.8, "tide"), ("Mackenzie", 69.0, -135.0, "river"), ("Orinoco", 8.6, -61.0, "tide")]
+          ("Yangtze", 31.4, 121.8, "tide"), ("Mackenzie", 69.0, -135.0, "river"), ("Orinoco", 8.6, -61.0, "tide"),
+          ("Lena", 72.5, 126.5, "river")]
 
 
 def nearest(g, lat, lon, mask, max_km=350.0, by=None) -> int:
@@ -107,7 +113,7 @@ def main():
     t0 = time.time()
     wp = coast.wave_power(g, elev, c, ice)
     t1 = time.time()
-    tr, det = coast.tide_range(g, elev, detail=True)
+    tr, det = coast.tide_range(g, elev, detail=True, ice_share=coast.sea_ice_share(g, elev, c).mean(0))
     t2 = time.time()
     print(f"wave_power {t1 - t0:.1f}s, tide_range {t2 - t1:.1f}s")
     ocean = elev <= 0

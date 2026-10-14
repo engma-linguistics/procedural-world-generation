@@ -76,7 +76,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
         # wave crest, and the tidal range, m
         "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
-        "tide_range": np.round(coast.tide_range(grid, elev), 2),
+        "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c).mean(0)), 2),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
