@@ -145,7 +145,7 @@ Order: 1 → 6, small to large.
    - `server.py`;
    - world files reference the shared grid.
 4. **Earth reference world** in the viewer (model vs observed).
-5. **Highlights, round 2** (the user wants all of these; "big ole waterfalls" most). After `water` and `zoomwater` merge:
+5. **Highlights, round 2** (the user wants all of these; "big ole waterfalls" most). **Done on branch `hl2`** except the fastest plate (skipped); see Known issues → Highlights.
    - waterfalls and knickpoints: big drops along big rivers; refine the height and location in the zoom raster (pixel-scale drops);
    - grand canyons (deep incision on high ground);
    - salt flats and closed basins (from `lake_kind`);
@@ -204,10 +204,13 @@ Order: 1 → 6, small to large.
 - Ocean plate boundaries are ragged.
 
 **Highlights**
-- Several highest peaks sit under ice caps, so their zooms are white.
-- Earth-like A's longest river crosses a cold, dry polar continent, so its zoom is bland.
+- ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
+- ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
 - The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
-- Pre-made zooms need re-making after `zoomwater` lands.
+- ~~Pre-made zooms need re-making after `zoomwater` lands~~: re-made for a434c5 and cec38b (`hl2`).
+- **No big waterfalls in the zoom except at lake outlets.** The landscape pass grades every river (slope ~ Q^-0.5), and coarse rivers are carved along a smooth, linearly interpolated floor, so a coarse steep reach (e.g. 315 m over 220 km at 61,000 m³/s) becomes a smooth valley; pixel-scale falls on rivers are tens of metres. The one big kind, a lake outlet (105 m at 102,000 m³/s in a434c5's big lake, zoom cc9dcf; 153 m at 45,700 m³/s in 42bc11), comes from the zoom cutting the outlet river's floor 12–45% below the coarse ground: the "cliff waterfall" known issue under zoom lakes. The coarse world itself is flat there (lake 284 m, next cells 284 and 275 m). Real falls would need the zoom to keep a knickpoint where the coarse river drops steeply (e.g. a hard-rock lip), a zoom model change.
+- **Worlds sliced before `water` (a434c5, cec38b) have no lake_kind and no closed basins**, so salt lakes, salt pans and inland basins don't appear; exposed evaporite beds on dry land stand in as "salt flats".
+- **Canyons are weak at 110 km cells:** the Earth world finds the Kura valley and the Siang below the Tsangpo gorge, not the Grand Canyon. Rain shadows find the Himalaya, SE Tibet and the Atacama/Altiplano edge, not the Sierra Nevada. Plateaus find Tibet, Wyoming and the Altiplano (3rd). The Earth world's salt lake is in Hungary (the model climate leaves the Pannonian basin closed); the Caspian is below sea level, so it's the landlocked sea.
 
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.

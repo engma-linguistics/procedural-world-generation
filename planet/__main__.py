@@ -81,6 +81,9 @@ def cmd_zoom(args):
           f" (coarse {s['coarse_mean_elev_m']:.0f} m)")
     print(f"  biggest river {s['max_discharge_m3s']:.0f} m3/s, {s['lakes']} lakes;"
           f" view: http://127.0.0.1:8765/viewer/zoom.html?id={m['id']}")
+    for f in s.get("waterfalls", [])[:3]:
+        print(f"  waterfall {f['height_m']:.0f} m over {f['length_km']:g} km, {f['discharge_m3s']:,.0f} m3/s"
+              f"{' (lake outlet)' if f['from_lake'] else ''} at {f['lat']:.2f}, {f['lon']:.2f}")
 
 
 def cmd_timezoom(args):
