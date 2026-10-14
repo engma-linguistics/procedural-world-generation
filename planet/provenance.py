@@ -26,13 +26,13 @@ def _git(*args: str) -> str | None:
 
 
 def source_sha() -> str:
-    """Hash of the model source: planet/*.py except the command line /
+    """Hash of the model source: planet/**/*.py except the command line /
     server (__main__.py), which can't change what a run computes."""
     h = hashlib.sha256()
-    for p in sorted(PLANET.glob("*.py")):
-        if p.name == "__main__.py":
+    for p in sorted(PLANET.rglob("*.py")):
+        if p.name == "__main__.py" and p.parent == PLANET:
             continue
-        h.update(p.name.encode() + b"\0" + p.read_bytes() + b"\0")
+        h.update(p.relative_to(PLANET).as_posix().encode() + b"\0" + p.read_bytes() + b"\0")
     return h.hexdigest()[:16]
 
 

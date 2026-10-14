@@ -49,12 +49,13 @@ def _check(request, name: str, got: dict):
 def sim_digest(sim) -> dict:
     snap = sim.snapshot()
     out = {k: _h(getattr(sim, k)) for k in
-           ("w_elev", "w_thick", "w_age", "w_cover", "w_rock", "w_cont", "w_extra", "owner", "idx",
+           ("w_elev", "w_thick", "w_age", "w_cover", "w_rock", "w_cont", "w_extra", "owner",
             "precip", "temp", "ice", "flow", "down")}
+    out["idx"] = _h(sim.plates.idx)
     out.update({f"snap_{k}": _h(getattr(snap, k)) for k in ("elevation", "boundary", "surface", "koppen")})
     out["events"] = _hj([e.as_dict() for e in sim.events])
     out["budget"] = _hj(sim.budget)
-    out["scalars"] = _hj([sim.dT, sim.sea_level, sim.drift, sim.co2, int(sim.alive.sum())])
+    out["scalars"] = _hj([sim.dT, sim.sea_level, sim.drift, sim.co2, int(sim.plates.alive.sum())])
     return out
 
 

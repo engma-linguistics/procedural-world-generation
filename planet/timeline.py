@@ -34,7 +34,6 @@ from .geo import R_KM
 from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
-from . import sim_state
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
@@ -231,7 +230,7 @@ def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) ->
     made_by = m.get("code") or {}
     usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
     if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
-        sim = sim_state.restore(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1]))
+        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1]))
         log(f"replaying from the checkpoint at t={usable[-1]:g}")
     else:
         sim = Simulation(grid, m["seed"], params, m["dt"])

@@ -472,8 +472,9 @@ def update_index(kind: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Checkpoints: the full simulation state every ~100 Myr of a run
 # ---------------------------------------------------------------------------
-# A pickle of sim.get_state() (planet/sim_state.py), zlib-compressed: ~6 MB
-# at level 5, ~23 MB at level 6. Only ever read back from our own runs/.
+# A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
+# and volcano lists, events, budget), zlib-compressed: ~6 MB at level 5,
+# ~23 MB at level 6. Only ever read back from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
@@ -481,7 +482,7 @@ def checkpoint_path(run_dir: Path, t: float) -> Path:
 def save_checkpoint(run_dir: Path, sim) -> Path:
     path = checkpoint_path(run_dir, sim.t)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(zlib.compress(pickle.dumps(sim.get_state(), protocol=5), 1))
+    path.write_bytes(zlib.compress(pickle.dumps(sim.state(), protocol=5), 1))
     return path
 
 

@@ -6,7 +6,7 @@ import json
 import numpy as np
 import pytest
 
-from planet import server, sim_state, store as S, timeline as T
+from planet import server, store as S, timeline as T
 from planet.tectonics import Params, Simulation
 
 from helpers import run_sim
@@ -139,10 +139,10 @@ def test_checkpoint_resume_bit_identical(sim4_60):
     straight run's state at t' (all arrays, events, budget, scalars)."""
     states = {}
     sim = Simulation(sim4_60.grid, 1, Params(), 2.0)
-    sim.run(60, lambda s: states.setdefault(s.t, s.get_state()) if s.t in (20, 40) else None)
+    sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (20, 40) else None)
     assert sim_digest(sim) == sim_digest(sim4_60)
     for t, st in states.items():
-        r = sim_state.restore(sim.grid, 1, Params(), 2.0, st)
+        r = Simulation.from_state(sim.grid, 1, Params(), 2.0, st)
         assert r.t == t
         r.run(60)
         assert sim_digest(r) == sim_digest(sim4_60), t
