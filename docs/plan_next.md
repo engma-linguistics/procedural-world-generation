@@ -236,6 +236,8 @@ Order: 1 → 6, small to large.
 - **Oceans get older after the `l7jumps` fix:** margin subduction now breaks off one basin (6000 km of the oldest passive margin) instead of the plate's whole ocean. Mean ocean age is 83 Myr at L6 against 70 before. In stagnant 2–3-plate phases the L7 mean reaches 140–185 Myr, and sea level sits on the −250 m clip.
 - **L7 continents are ~2 km thinner and ~300 m lower than at L6** (median crust 33 vs 35 km), so twice as much land sits within 100 m of sea level and land is ~2× as sensitive to sea level. Cause not found; check erosion and thermostat scaling with resolution.
 
+- **Fast sea-level swings remain after the l7jumps fix,** rarer: L7 fe7144 40→30% land at ~1140 Myr then back to 34% by 1172; L6 796a25 37→30% at 1320. Probably any big plate reorganisation renewing ocean floor quickly, plus low L7 continents. Consider limiting how fast mean ocean depth can change (ridge volume responds over ~10s of Myr) or checking the thermostat. See `docs/review/overnight_runs.md`.
+
 **Highlights**
 - ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.

@@ -43,3 +43,38 @@ The amount of continental crust doesn't change; the continents sink (median cont
 On L6 the largest 8-Myr sea rise goes from 176 m to 111 m. Plots: `docs/review/before_after_L7.png` and `docs/review/map_1496.png`.
 
 **Verification runs** on the final code, L7, 1500 Myr: seed 1 (compare 1beb32) and seed 13 (compare eef4a2).
+
+## Level 8: 15b1b0 (seed 1, 1200 Myr, made before the plate and land-drop fixes)
+- **Cost:** 14,876 s (4.1 h, sharing the machine with 2–3 other jobs), 3.9 GB on disk with `--every 10` and checkpoints every 300 Myr.
+- **Highlights:** about 8.5 min for the world plus 5 zooms. World **aa1864** at 800 Myr.
+
+Against L7 (1beb32, same seed and code), after 300 Myr:
+
+| | L7 | L8 |
+|---|---|---|
+| Land median | 36.8% | 36.9% |
+| Landmasses > 0.5%, median | 5 | 6 |
+| Plates, median | 5 | 8 |
+| Frames with one landmass > 25% | 10% | 3% |
+
+The sudden land drops occur at L8 too (e.g. 43→33% at 890, 38→24% at 940), as expected before the fix.
+
+## Final code (after mantle c8a06d2 and l7jumps)
+- **L6 showcases re-made:**
+
+  | Run | Showcase | Plates at end | Land |
+  |---|---|---|---|
+  | 01b0f7 | Earth-like A | 7 | 37.8% |
+  | 796a25 | Earth-like B | 6 | 36.9% |
+  | f0a1b0 | Water world | 7 | 32.5% |
+  | 07fb28 | Land-heavy | 7 | 53.6% |
+  | 9abc92 | Cold | 4 | 38.1% |
+  | 19385e | Hothouse | 8 | 33.9% |
+
+  Plate counts are mostly back up from 2–4.
+- **Fast land changes are rarer but not gone.**
+  - L7 seed 1 (fe7144) still drops 40→30% at ~1140 and recovers 26→34% by 1172.
+  - L6 seed 12 (796a25) drops 37→30% at 1320 and recovers to 34% by 1364.
+  - L6 seed 14 drops 55→49% at 716.
+  - Before the fix there were 3–4 such events per L7 run; now there are 1–2, and some are recoveries (fast sea-level falls).
+- **Logged in Known issues:** the cause is probably the same ridge-age to sea-level link (any big reorganisation renews ocean floor quickly), together with the low L7 continents.
