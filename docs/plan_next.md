@@ -125,6 +125,12 @@ Order: 1 → 6, small to large.
 - **Splitting big files and the review's refactors are approved.**
 - **Supercontinent:** C's breakup fix plus **B′**: a mantle temperature field (slab graveyards and continental insulation), basal traction into `_forces`, and the stress trigger decides rifts, replacing the fixed heat and big-plate rules. Hotspots are tied to the warm mantle. The user does not need cycles to be guaranteed.
 - **Overturning (deep) ocean circulation:** wanted, done physically. Density from SST and salinity, with salinity from evaporation minus precipitation, so it comes after `water`. Use a zonally averaged or box overturning per basin, with poleward heat transport following from it (the "mild Norway" fix).
+  The salinity budget must include:
+  - **river runoff** entering each basin at its river mouths (it freshens basins like the Arctic);
+  - **moisture carried by the wind** from one basin to another (part of why the Atlantic is saltier than the Pacific);
+  - **sea ice:** brine is rejected where it forms, and fresh water is released where it melts;
+  - **ice-sheet meltwater.** In the main run this is small, since ice is near equilibrium at each climate update. In the glacial time zoom it matters a lot: meltwater pulses (Heinrich events, Younger Dryas) can weaken or shut down the overturning. So the time zoom should feed its ice melt into the same salinity term.
+  (User request 2026-10-13.)
 - **An Earth reference in the viewer:** our climate model on real Earth terrain next to the observed data.
 
 **Queue (in order, as files free up):**
