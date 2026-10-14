@@ -1,0 +1,27 @@
+---
+title: "Regional zooms: July / January temperature and rain layers (season picker in zoom.html)"
+type: task
+status: todo
+parent: null
+subsystem: zoom
+effort: s
+impact: low
+found_by: viewerseason
+blocked_by: []
+relates: [PW-126]
+refs: [planet/zoom.py, viewer/zoom.html, planet/world.py]
+---
+
+## Description
+PW-126 gave worlds `temperature_jul/jan` and `precipitation_jul/jan` (world.seasons, in world.finish) and the globe a
+year / July / January picker for the Temperature and Rain layers (`?season=jul`). Regional zooms can't show them yet:
+zoom.py interpolates only the annual `temperature` (reduced to sea level, then lapse-adjusted to the fine elevation,
+around line 778) and `precipitation` from the coarse world, and writes only those two layers.
+
+To add them: in zoom.py carry the four seasonal fields through the same coarse -> fine path as the annual ones
+(temperatures with the same sea-level reduction and lapse rate; rain as precipitation, ideally with the same
+orographic adjustment if any), write them as layers `temperature_jul` ... (uint16 / int8 like the world specs in
+store.LAYERS), and in zoom.html add a season select next to the layer buttons, shown when the zoom has them, and
+`?season=` like the globe. Old zooms without the layers just hide the select. About 4 extra 500x500 layers per zoom (~1 MB).
+- [ ] zoom.py writes the four seasonal layers
+- [ ] zoom.html Temperature/Rain follow a year/July/January picker and ?season=

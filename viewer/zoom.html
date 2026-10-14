@@ -213,7 +213,9 @@ function deltaLine(d) {
 function about() {
   const m = state.meta, s = m.stats, sw = m.source_world;
   $('about').innerHTML = `<table>
-    <tr><td>source</td><td>${sw.source_run ? `run <a href="index.html?run=${sw.source_run}&t=${sw.t_myr}" target="_top">${sw.source_run}</a> @ ${sw.t_myr} Myr, sliced as ` : ''}world <a href="index.html?world=${sw.id}.json" target="_top">${sw.id}</a><br>${sw.name || ''}</td></tr>
+    <tr><td>source</td><td>${sw.source_run
+      ? `<a href="index.html?run=${sw.source_run}&t=${sw.t_myr}" target="_top" title="Open the run at this time">${sw.name || 'run ' + sw.source_run + ' @ ' + sw.t_myr + ' Myr'}</a><br>run ${sw.source_run} @ ${sw.t_myr} Myr, sliced as world <a href="index.html?world=${sw.id}.json" target="_top">${sw.id}</a>`
+      : `world <a href="index.html?world=${sw.id}.json" target="_top">${sw.id}</a><br>${sw.name || ''}`}</td></tr>
     <tr><td>centre</td><td>${fmt(m.center.lat, 2)}, ${fmt(m.center.lon, 2)}</td></tr>
     <tr><td>size</td><td>${m.size_km} km, ${m.nx}&times;${m.ny} px @ ${fmt(m.res_km, 2)} km</td></tr>
     <tr><td>seed</td><td>${m.seed}</td></tr>

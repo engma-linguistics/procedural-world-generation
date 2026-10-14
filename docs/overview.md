@@ -253,7 +253,8 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
    - climate, then 12 erosion passes, then climate again;
    - rivers and lakes;
    - biomes;
-   - waves and tides.
+   - waves and tides;
+   - July / January temperature and rain (`world.seasons`).
 
 The viewer's Zoom button instead builds the world straight from the keyframe in seconds. Worlds are `worlds/<id>.json` plus a `.txt` summary.
 
@@ -323,7 +324,8 @@ Each scores as kind priority × quality. Results are cached in `worlds/highlight
 - **Globe** (`viewer/index.html`):
   - three.js, one triangle fan per cell, with exaggerated relief on a globe or a flat map.
   - Runs play as animations with events and plate arrows.
-  - Worlds add climate, biome, wave and tide layers.
+  - Worlds add climate, biome, wave and tide layers. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
+  - Provenance: a world shows the run and time it came from ('<run name> @ T Myr', linked), and its zooms; a run lists what was made from it (worlds with their zooms, time zooms) and ticks their times above the time slider. From the indexes (`worlds/index.json` carries `source_run`, `t_myr`).
   - Clicking a cell offers "Zoom".
   - The URL holds the state, e.g. `?world=7c5adf.json&layer=biome&mode=map`.
 - **`viewer/zoom.html`** is a 2D canvas, also embedded as the "Regional zoom" tab.

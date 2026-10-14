@@ -171,6 +171,11 @@ LAYERS = {
     "crust_thickness": _spec("u1", "km", "crust thickness"),
     "precipitation": _spec("<u2", "mm/yr", "annual precipitation"),
     "temperature": _spec("i1", "C", "annual mean temperature"),
+    # seasons (worlds): July and January, not warmest/coldest month (those swap between hemispheres)
+    "temperature_jul": _spec("i1", "C", "July mean temperature (the warmest month in the north, coldest in the south)"),
+    "temperature_jan": _spec("i1", "C", "January mean temperature (the coldest month in the north, warmest in the south)"),
+    "precipitation_jul": _spec("<u2", "mm/yr", "precipitation in the July half-year (Apr-Sep), as a rate per year"),
+    "precipitation_jan": _spec("<u2", "mm/yr", "precipitation in the January half-year (Oct-Mar), as a rate per year"),
     "climate": _spec("u1", "KOPPEN id", "Koppen class (climate.KOPPEN)"),
     "ice": _spec("u1", "m", "land ice thickness", scale=20),
     "flow": _spec("u1", "cells x m/yr", "river flow: upstream runoff (x cell area / 1 yr = m3/s)",
@@ -445,8 +450,11 @@ def _run_item(p: Path) -> dict:
 def _world_item(p: Path) -> dict:
     head = read_header(p, ("id", "name", "meta"))
     m = head.get("meta", {})
-    return {"file": p.name, "id": head.get("id", p.stem), "name": head.get("name", p.stem),
+    item = {"file": p.name, "id": head.get("id", p.stem), "name": head.get("name", p.stem),
             "created": m.get("created", ""), **{k: m.get(k) for k in ("method", "seed", "level")}}
+    if m.get("source_run"):  # provenance: the run and time it was sliced from
+        item.update({k: m.get(k) for k in ("source_run", "source_run_name", "t_myr")})
+    return item
 
 
 def _zoom_item(p: Path) -> dict:
