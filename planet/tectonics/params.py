@@ -94,6 +94,10 @@ class Params:
     rift_min_continent: float = 0.07  # fraction of surface
     stress_min_plate: float = 0.05  # plates larger than this (any crust) can break under stress
     rift_stress: float = 3.0  # cm/yr: how hard the halves must pull apart before it can break
+    # a rift never cuts off a piece with less continent than this share of
+    # the surface (but may split off purely oceanic plate): continents break
+    # into a few big blocks, along their weak zones (events.strength)
+    rift_min_piece: float = 0.03
     big_plate: float = 0.2  # plates bigger than this fraction of the surface break up more readily
     settle_time: float = 30.0  # Myr after forming before a plate can break under stress
     margin_age: float = 120.0  # Myr: ocean floor older than this at a passive margin may start subducting

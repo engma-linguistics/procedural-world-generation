@@ -15,6 +15,7 @@ import numpy as np
 
 from ..geo import latlon as _latlon
 from ..noise import Perlin3D, fbm
+from ..surface import CRATON, OROGEN
 from .motion import Boundaries, CellForces
 from .plates import CMYR, P_MAX
 
@@ -152,21 +153,60 @@ def absorb_slivers(sim):
 # ---------------------------------------------------------------------------
 # splitting plates
 # ---------------------------------------------------------------------------
-def stress_cut(sim, k, cf: CellForces, rng, tries=6):
-    """Plates are rigid only up to a point. Try a few straight cuts through
+def strength(sim) -> np.ndarray:
+    """How hard the lithosphere of each world cell is to break, relative to
+    ordinary crust (1). Old, cold cratons are strong; continents break
+    instead along their weak zones: the belts where they were welded
+    together (young collision belts, still warm and faulted; Pangaea split
+    along the ~300-400 Myr old Appalachian/Caledonian sutures) and crust
+    already thinned by earlier stretching."""
+    cont, rock, age = sim.w_cont, sim.w_rock, sim.w_age
+    s = np.ones(sim.grid.n)
+    s[cont & (rock == CRATON)] = 1.6
+    belt = cont & (rock == OROGEN)
+    s[belt] = 0.85 - 0.5 * np.exp(-age[belt] / 400.0)
+    return np.where(cont, s * np.clip(sim.w_thick / 35.0, 0.7, 1.0), s)
+
+
+def piece_ok(sim, cont_a, cont_b) -> bool:
+    """Rifts break continents into a few large pieces, not slivers: each
+    side must carry either (almost) no continent or at least
+    rift_min_piece of the surface of it."""
+    lo, hi = 0.1 * sim.params.rift_min_piece * sim.grid.n, sim.params.rift_min_piece * sim.grid.n
+    return all(not (lo < x < hi) for x in (cont_a, cont_b))
+
+
+def cut_lines(sim, cells, c, rng, tries):
+    """`tries` random straight cuts across the cells (positions on the unit
+    sphere) around centre c: normals t, offsets off (a cut is (x - c) @ t =
+    off), which side each cell is on, and the cells along each cut line."""
+    P = sim.grid.centers[cells]
+    t = rng.normal(size=(tries, 3))
+    t -= (t @ c)[:, None] * c
+    t /= np.linalg.norm(t, axis=1, keepdims=True)
+    proj = (P - c) @ t.T  # (cells, tries)
+    spread_ = np.sqrt((proj**2).mean(0))
+    off = rng.uniform(-0.6, 0.6, tries) * spread_
+    d = (proj - off).T  # (tries, cells)
+    return t, off, d > 0, np.abs(d) < sim.grid.spacing
+
+
+def stress_cut(sim, k, cf: CellForces, rng, tries=12):
+    """Plates are rigid only up to a point. Try a few straight cuts across
     plate k and, for each, solve how the two halves would move on their
-    own (same force balance as motion.forces). Returns (centre, cut normal,
-    opening speed in cm/yr) for the cut across which the halves most want
-    to pull apart, e.g. a plate with slabs pulling on opposite sides."""
+    own (same force balance as motion.forces). The cut that wins is the
+    one across which the halves most want to pull apart (e.g. slabs
+    pulling on opposite sides) for the strength of the rock along it
+    (strength()), among cuts that leave no continental sliver (piece_ok).
+    Returns (point on the cut, cut normal, effective opening speed in
+    cm/yr: opening / mean strength along the cut)."""
     p = sim.params
     cells = np.flatnonzero(sim.owner == k)
     P = sim.grid.centers[cells]
     c = P.mean(0)
     c /= np.linalg.norm(c)
-    t = rng.normal(size=(tries, 3))
-    t -= (t @ c)[:, None] * c
-    t /= np.linalg.norm(t, axis=1, keepdims=True)
-    side = ((P - c) @ t.T > 0).T.astype(float)  # (tries, cells)
+    t, off, side_b, line = cut_lines(sim, cells, c, rng, tries)
+    side = side_b.astype(float)
     tq, D = cf.torque[cells], cf.drag[cells]
     motion = []
     for s_ in (side, 1 - side):
@@ -175,11 +215,37 @@ def stress_cut(sim, k, cf: CellForces, rng, tries=6):
         tau = s_ @ tq + p.mantle_noise * 0.5 * area[:, None] * sim.plates.wander[k]
         Dh = Dh + 0.1 * area[:, None, None] * np.eye(3)
         motion.append(p.mobility * sim.heat() ** 0.5 * np.linalg.solve(Dh, tau[:, :, None])[:, :, 0])
-    opening = np.einsum("tj,tj->t", np.cross(motion[0] - motion[1], c), t) * CMYR
+    at = c + off[:, None] * t
+    at /= np.linalg.norm(at, axis=1, keepdims=True)
+    opening = np.einsum("tj,tj->t", np.cross(motion[0] - motion[1], at), t) * CMYR
+    s = strength(sim)[cells]
+    weak = (line @ s) / np.maximum(line.sum(1), 1)
+    eff = opening / np.maximum(weak, 0.1)
     frac = side.mean(1)
-    opening[(frac < 0.25) | (frac > 0.75)] = 0
-    i = int(opening.argmax())
-    return (c, t[i], float(opening[i])) if opening[i] > 0 else (c, None, 0.0)
+    cont = sim.w_cont[cells].astype(float)
+    ca = side @ cont
+    ok = (frac > 0.15) & (frac < 0.85) & np.array([piece_ok(sim, x, cont.sum() - x) for x in ca])
+    eff[~ok] = 0
+    i = int(eff.argmax())
+    return (at[i], t[i], float(eff[i])) if eff[i] > 0 else (c, None, 0.0)
+
+
+def weak_cut(sim, k, rng, tries=12):
+    """A cut across plate k's continent along its weakest line (heat
+    rifting): (point on the cut, normal), or (c, None) if every cut would
+    leave a sliver."""
+    cells = np.flatnonzero((sim.owner == k) & sim.w_cont)
+    c = sim.grid.centers[cells].mean(0)
+    c /= np.linalg.norm(c)
+    t, off, side, line = cut_lines(sim, cells, c, rng, tries)
+    weak = (line @ strength(sim)[cells]) / np.maximum(line.sum(1), 1)
+    na = side.sum(1)
+    ok = np.array([piece_ok(sim, x, len(cells) - x) for x in na]) & (line.sum(1) > 0)
+    if not ok.any():
+        return c, None
+    i = int(np.where(ok, -weak, -np.inf).argmax())
+    at = c + off[i] * t[i]
+    return at / np.linalg.norm(at), t[i]
 
 
 def old_margins(sim):
@@ -256,24 +322,23 @@ def maybe_rift(sim, cf: CellForces, rng):
             continue
         if u < margin + stress:
             if cut is None:  # a huge plate with no clear stress direction
-                c = P[sim.owner == k].mean(0)
-                c /= np.linalg.norm(c)
-                t = rng.normal(size=3)
-                t -= (t @ c) * c
-                t /= np.linalg.norm(t)
+                c, t = weak_cut(sim, k, rng) if cont_cells[k] > 0 else (None, None)
+                if t is None:
+                    c = P[sim.owner == k].mean(0)
+                    c /= np.linalg.norm(c)
+                    t = rng.normal(size=3)
+                    t -= (t @ c) * c
+                    t /= np.linalg.norm(t)
             else:
                 c, t = cut
             why = "is pulled apart by the forces on it"
         else:
-            core = P[(sim.owner == k) & sim.w_cont]
-            c = core.mean(0)
-            c /= np.linalg.norm(c)
-            t = rng.normal(size=3)
-            t -= (t @ c) * c
-            t /= np.linalg.norm(t)
+            c, t = weak_cut(sim, k, rng)
+            if t is None:
+                continue
             why = "rifts apart"
         side = rift_side(sim, k, c, t, rng, world)
-        if not 0.2 < side.mean() < 0.8:
+        if side is None or not 0.2 < side.mean() < 0.8:
             continue
         new = split(sim, k, refs, world, side, toward=False)
         what = "continent on plate" if cont_cells[k] >= threshold else "plate"
@@ -281,32 +346,50 @@ def maybe_rift(sim, cf: CellForces, rng):
         return
 
 
-def rift_side(sim, k, c, t, rng, world):
+def rift_side(sim, k, c, t, rng, world, tries=4):
     """Which of plate k's reference cells (at positions `world`) go to the
-    new plate. The cut is a great circle through c with normal t, bent
-    out of shape by warped multi-scale noise so it wanders like a real
-    rift (East Africa, the Atlantic's zig-zag margins). Stray fragments
-    it cuts off are handed back to whichever side surrounds them."""
+    new plate, or None if every try leaves a continental sliver. The cut
+    is a great circle through c with normal t, bent out of shape by warped
+    multi-scale noise so it wanders like a real rift (East Africa, the
+    Atlantic's zig-zag margins). Stray fragments it cuts off are handed
+    back to whichever side surrounds them. Of a few such wanderings, the
+    one through the weakest rock (strength()) wins: rifts follow old
+    sutures where they can."""
     g = sim.grid
-    seeds = rng.integers(2**31, size=4)
-    def cut(x):
-        warp = np.stack([fbm(Perlin3D(int(sd)), x, octaves=3, freq=2.0) for sd in seeds[:3]], 1)
-        y = x + 0.12 * warp
-        return (y - c) @ t + 0.07 * fbm(Perlin3D(int(seeds[3])), y, octaves=4, freq=4.0)
-    mine = np.flatnonzero(sim.owner == k)
-    v = np.full(g.n, np.nan)
-    v[mine] = cut(g.centers[mine])
     on = sim.owner == k
-    wside = on & (v > 0)
-    for m in (wside, on & ~wside):
-        lab, nl = g.components(m)
-        if nl > 1:
-            sizes = np.bincount(lab[lab >= 0])
-            stray = (lab >= 0) & (lab != sizes.argmax())
-            wside = np.where(stray, ~wside & on, wside)
+    mine = np.flatnonzero(on)
+    s = strength(sim)
+    best, best_w, best_cut = None, np.inf, None
+    for _ in range(tries):
+        seeds = rng.integers(2**31, size=4)
+
+        def cut(x, seeds=seeds):
+            warp = np.stack([fbm(Perlin3D(int(sd)), x, octaves=3, freq=2.0) for sd in seeds[:3]], 1)
+            y = x + 0.12 * warp
+            return (y - c) @ t + 0.07 * fbm(Perlin3D(int(seeds[3])), y, octaves=4, freq=4.0)
+        v = np.zeros(g.n)
+        v[mine] = cut(g.centers[mine])
+        wside = on & (v > 0)
+        for m in (wside, on & ~wside):
+            lab, nl = g.components(m)
+            if nl > 1:
+                sizes = np.bincount(lab[lab >= 0])
+                stray = (lab >= 0) & (lab != sizes.argmax())
+                wside = np.where(stray, ~wside & on, wside)
+        ca = int((wside & sim.w_cont).sum())
+        if not piece_ok(sim, ca, int((on & sim.w_cont).sum()) - ca):
+            continue
+        # cells along the cut: on the plate, with a neighbour across it
+        across = np.logical_or.reduceat(
+            (wside[g.nbr_idx] != np.repeat(wside, np.diff(g.nbr_off))) & on[g.nbr_idx], g.nbr_off[:-1]) & on
+        w = s[across].mean() if across.any() else np.inf
+        if w < best_w:
+            best, best_w, best_cut = wside, w, cut
+    if best is None:
+        return None
     cell = g.locate(world)
     here = sim.owner[cell] == k
-    return np.where(here, wside[cell], cut(world) > 0)
+    return np.where(here, best[cell], best_cut(world) > 0)
 
 
 def split(sim, k, refs, world, side, toward):
