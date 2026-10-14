@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .. import climate, hydrology, surface
+from . import volcanism
 from .events import latlon
 from .isostasy import MIX
 from .plates import CMYR
@@ -31,7 +32,7 @@ class Snapshot:
     lake_kind: np.ndarray  # hydrology lake_kind: 0 none, 1 open, 2 closed (salt), 3 salt pan
     lake_depth: np.ndarray  # m of lake water (0 off lakes)
     hotspots: list  # [lat, lon] of each live plume
-    volcanoes: list  # [lat, lon] of each active arc volcano
+    volcanoes: list  # arc volcanoes and hotspot vents: rows of volcanism.COLUMNS
     surface: np.ndarray  # surface.ROCKS id of what's exposed (basement or its sediment cover)
     temperature: np.ndarray  # C, annual mean
     t_warm: np.ndarray  # C, warmest month
@@ -61,7 +62,7 @@ def snapshot(sim) -> Snapshot:
         downstream=sim.down.copy(),
         **lakes_now(sim),
         hotspots=[list(latlon(h["pos"])) for h in sim.hotspots],
-        volcanoes=[list(latlon(v["pos"])) for v in sim.volcanoes],
+        volcanoes=volcanism.rows(sim),
         surface=surface.surface_rock(sim.w_rock, sim.w_cover, sim.w_extra[:, MIX]),
         **climate_now(sim),
     )

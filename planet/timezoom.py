@@ -298,7 +298,7 @@ def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
             "static": {"plate": snap.plate, "crust": snap.continental, "crust_age": snap.age,
                        "plate_boundary": snap.boundary},
             "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
-            "volcanoes": [[round(a, 1), round(b, 1)] for a, b in snap.volcanoes]}
+            "volcanoes": T.active_volcanoes(snap.volcanoes)}
 
 
 def source_earth(level: int = 6) -> dict:

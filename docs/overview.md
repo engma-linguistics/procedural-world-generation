@@ -94,11 +94,16 @@ On four seeds the largest landmass passed 25% of the surface every 400–870 Myr
   - Subduction grows **volcanic arcs**.
   - Collisions stack crust, and over-thick crust **flows** outward, widening plateaus.
   - Rifts thin continents.
-  - Hotspots build islands and flood basalts under a ~1 km swell.
+  - Hotspots build islands and flood basalts under a ~1 km swell (see **Volcanoes** below).
 - **Crust budget:** a "thermostat" steers arc growth and subduction erosion toward the target continental fraction (40%).
 - **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy).
   - Continents stand 250 m plus 150 m per km of crust beyond 35 km.
   - Ocean floor sinks as it cools: 2600 + 345·√age m, the half-space cooling law.
+- **Volcanoes** (`volcanism.py`) are point objects that ride their plate, each with its own volume and height:
+  - **Hotspot vents:** a plume stays put in the mantle and opens a new vent every ~1.25 flexural wavelengths of plate motion (50–150 km; ~80 km on Hawaii-like 90 Myr floor, from the plate's elastic thickness). A vent is fed while it's over the plume, then carried off, so a plume leaves a chain, youngest over it. Each vent's lava goes onto the grid as a 30 km Gaussian cone (consecutive vents are separate islands at level 7–8 and blur at 6), up to a height limit that grows with the plate's age (Vogt: thicker plates, taller volcanoes; Mauna Kea's 4.2 km summit at most). Lava beyond that spreads as a broad apron below −2 km. A new plume's head still floods ~300 km for 6 Myr (flood basalts).
+  - **Arc volcanoes:** one per ~120 km of active arc, 2000 km³ each, active ~8 Myr.
+  - **Ageing:** a volcano sinks with its plate's base level (sea-floor age, the swell decaying behind the plume), its part above the sea erodes (~10 Myr e-folding at 1500 mm/yr, plus wave cliff retreat) until the waves plane it off. In warm water (≥ `reef_temp`) a reef grows round its widest shore: fringing reef → barrier reef → **atoll** once the volcano is gone; carried into cold water the reef drowns (a guyot).
+  - The table of all volcanoes goes into each keyframe (`runs/<id>/volcanoes.json.gz`), checkpoint and world (`meta.volcanoes`, columns `meta.volcano_columns`).
 - **Sediment** is lighter than crust: 2.1 g/cm³, compacting to 2.6. Filling deep water takes ~3× its depth in sediment, as on Earth. Below 18 km it becomes basement.
 - **Sea level** follows mean ocean depth relative to its 300 Myr average, plus land ice. Young, shallow oceans raise it.
 - **Global temperature** combines a slow drift, CO₂ (sources: new sea floor and arcs; sink: weathering) and ice-albedo.
@@ -271,7 +276,8 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - Coarse rivers become meandering, carved valleys, and rivers entering at the edge bring their discharge.
    - Lakes take the world's level and kind. Open lakes pass their water on; closed ones keep it.
 5. **Landscape pass:** 15 iterations of steady-state stream power (slope ∝ discharge^−0.5). These **grade** rivers into smooth concave profiles.
-6. **Knickpoint waterfalls:**
+6. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is drawn as its own edifice: a Gaussian shield (with rift-zone lobes, and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones are lowered as the run says (`top_m`) and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon. Near hotspot vents on the sea floor the terrain is replaced by the vents' floor plus their cones, so the sea between two vents is sea even where the coarse cell is land. Young volcanoes keep their smooth cone through the landscape pass; older ones are carved by it.
+7. **Knickpoint waterfalls:**
    - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
    - Heights are scaled so the plateau above never rises over the coarse ground. Big rivers get ~50–150 m falls.
    - `stats.waterfalls` in `zoom.json` lists the biggest.

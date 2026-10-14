@@ -45,13 +45,21 @@ def test_run_lakes(sim4):
     """Run frames keep the lakes of the last erosion step, as worlds name
     them: lake_kind (hydrology ids) and lake_depth (m) only on wet land."""
     from planet import hydrology as H
-    snap = sim4.snapshot()
+    from planet.tectonics import Simulation
+    sim = sim4
+    for _ in range(20):  # (on 2.5k cells lakes come and go: step a copy on until there are some)
+        if (sim.snapshot().lake_kind > 0).any():
+            break
+        if sim is sim4:
+            sim = Simulation.from_state(sim4.grid, sim4.seed, sim4.params, sim4.dt, sim4.state())
+        sim.step()
+    snap = sim.snapshot()
     k, d = snap.lake_kind, snap.lake_depth
     wet = (k == H.OPEN_LAKE) | (k == H.CLOSED_LAKE)
     assert set(np.unique(k)) <= {H.NO_LAKE, H.OPEN_LAKE, H.CLOSED_LAKE, H.SALT_PAN} and (k > 0).any()
     assert (d[wet] > 0).all() and (d[~wet] == 0).all()
     assert not (k > 0)[(snap.elevation <= 0) | (snap.ice > 0)].any()
-    vals = T.frame_values(sim4.grid, snap, T.jet_of(sim4.grid, snap))
+    vals = T.frame_values(sim.grid, snap, T.jet_of(sim.grid, snap))
     assert np.array_equal(S.encode(vals["lake_kind"], S.LAYERS["lake_kind"]), k)
 
 

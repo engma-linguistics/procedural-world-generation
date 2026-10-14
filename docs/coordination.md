@@ -49,17 +49,18 @@ All `--every 4` (L8: `--every 10`), default params except as listed. The same se
 | Cold world | 15 | 1000 | `tilt=15 climate_offset=-6` | 9abc92 | 04e7a7, a9cfd7 |
 | Hothouse | 16 | 1000 | `tilt=45 climate_offset=5` | 19385e | 28cfc4, 4d7207 |
 
+Discrete volcanoes (PW-001) demo: run 39d004 (seed 13, L7, 500 Myr, `continental_start=0.1 heat_start=2`), world a099c6 (400 Myr), zooms e8fa0e (an island chain, youngest over the plume at -1.9, 35.4), 4e6647 (its atolls, 1 km) and 122cc1 (eroded islands, 1 km); before: world f724bd and its zoom 9834b6 (one big island over a plume).
+
 Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds ffb5bd assembled, 779b14 dispersed); level-7 runs on the final 2026-10-14 code fe7144 (seed 1) and 103c05 (seed 13); (level-8 run 15b1b0 deleted 2026-10-14; next L8 planned after a batch of tickets closes); Earth reference world f8a740 (`tools/earth_world.py`; re-make after climate changes and delete the old one); delta-type demo zooms 00975d / f81832 / ce4b72 on world 0f7abd; lakes demo run 8dc2f2.
 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
 ## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight:** the volcanoes agent (epic PW-001: PW-002/003/004) in worktree `.claude/worktrees/volcanoes` (branch `volcanoes`). It touches tectonics `volcanism.py`, state/checkpoints, slicing and `zoom.py`. When it reports:
-1. merge;
-2. pytest;
-3. `board.py intake`;
-4. restart the server;
-5. show the owner the L7 island-chain demo.
+**In flight (2026-10-14 evening):** worktrees `.claude/worktrees/<branch>`:
+- `landform`: PW-005 data side (PW-006/007/008/009; class layer in runs/worlds/viewer). Zoom batches PW-010–012 come after it merges.
+- `zoomsmalls`: PW-062 to PW-070.
+- `lakesize`: PW-110 (owner decision A+C: drain threshold scales with basin size) plus the Earth-check Nile drop.
+Merged since: hydrofix (PW-058), climfix (PW-102/032/040/034/036), volcanoes (PW-001–004; demo run 39d004, world a099c6, zooms e8fa0e/4e6647/122cc1). Earth world is now f8a740.
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 

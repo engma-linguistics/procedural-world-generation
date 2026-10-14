@@ -9,7 +9,7 @@ Everything else that changes is listed in Simulation.STATE, by group:
   clock      step_no, t
   plates     plates (a plates.Plates: every per-plate array) and owner
              (which plate's crust is on top in each world cell)
-  features   hotspots, volcanoes (volcanism.py)
+  features   hotspots (plumes), volcanoes (arc volcanoes and hotspot vents; volcanism.py)
   mantle     mantle, mantle_lid, mantle_eddies: the mantle's temperature
              anomaly, how long continent has covered it, and its smaller
              unresolved eddies (mantle.py), world frame
@@ -107,8 +107,9 @@ class Simulation:
         self.plates = Plates.empty(n, len(EXTRA), next_label=self.params.n_plates)
         self.owner = np.zeros(n, np.int64)
         # features
-        self.hotspots = []  # dicts: pos (mantle frame = world frame), born, life, strength
-        self.volcanoes = []  # arc volcanoes: dicts plate, ref (cell in the plate's frame), born, life, pos
+        self.hotspots = []  # plumes, dicts: pos (mantle frame = world frame), born, life, strength, and
+        #                     the vent they feed (id, label, ppos, run, gap, vent: volcanism.hotspots)
+        self.volcanoes = []  # arc volcanoes and hotspot vents, dicts (volcanism module docstring)
         # boundaries of the last step
         self.w_boundary = np.zeros(n, np.int8)  # +1 converging, -1 diverging
         self.w_trench = np.zeros(n)  # m of trench depth (snapshot elevation)
@@ -170,8 +171,10 @@ class Simulation:
 
     def step(self):
         """One time step. All randomness comes from default_rng([seed,
-        step_no]), drawn in a fixed order: hotspots, volcanoes, global
-        temperature (all in _physics), then the forces, then rifts."""
+        step_no]), drawn in a fixed order: hotspots, volcanoes (both in
+        _physics), then the forces, then rifts; plus side streams
+        default_rng([seed, step_no, k]) for the global temperature's drift
+        (k=1) and the volcanoes' own details (k=7, 8; volcanism.py)."""
         self.step_no += 1
         self.t = self.step_no * self.dt
         rng = np.random.default_rng([self.seed, self.step_no])
@@ -195,6 +198,7 @@ class Simulation:
         events.maybe_rift(self, cell_forces, rng)
         self._world_view()
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
+        volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
 
     def _resolve(self):
         """Decide which plate owns each world cell (plate_kernels.resolve).
@@ -219,10 +223,14 @@ class Simulation:
         thermostat, shrink = crust.thermostats(self)
         growth = crust.arc_growth(self, bd, conv, thermostat)
         stretch = crust.rift_stretching(self, bd)
-        plume, dome = volcanism.hotspots(self, rng, bd)
+        head, apron, vents, dome = volcanism.hotspots(self, rng, bd)
 
         col = self._age(dome)
-        plume = volcanism.cap_plumes(self, col, plume)
+        plume = volcanism.cap_plumes(self, col, head, (3000.0, 2000.0))
+        t0, col.t = col.t, col.t + plume * self.dt  # (provisionally, so the apron sees the head's lava)
+        plume = plume + volcanism.cap_plumes(self, col, apron, volcanism.APRON_TOP, cont_share=1.0)
+        col.t = t0
+        plume = plume + vents  # (each vent capped itself)
         crust.add_arcs_and_plumes(self, col, growth, plume)
         edges = crust.inner_edges(self, col.cont)
         stack_add = crust.stack_collisions(self, col, stacked, edges)
@@ -236,7 +244,9 @@ class Simulation:
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment
-        earth.global_temperature(self, growth, int(newc.sum()), rng)
+        # (the climate's random drift has its own stream: changes to how many
+        # numbers the tectonics draws shouldn't reshuffle the climate history)
+        earth.global_temperature(self, growth, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
         if earth.climate_due(self):
             earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
                                                  sediment_km(col.cover, col.x)))
