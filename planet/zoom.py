@@ -89,16 +89,23 @@ Pipeline
    stay sharp: creep never lifts a stream's bed, but for a little under
    ice).
    Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
-   reshapes the finished landscape, blended by smooth class weights: the
-   relief around the drainage (flat interfluves over steep valley walls)
+   shapes the target (the structure the drainage organises around: fold
+   ridges, fault blocks, domes) and reshapes the finished landscape,
+   blended by smooth class weights: the relief around the drainage (flat
+   interfluves over steep valley walls), the structure itself (tilted
+   fault blocks over flat half-grabens, folds and hogbacks, inselbergs)
    and hard beds as benches and cliffs (a great escarpment's scarp, caprock
    benches, mesas and cuestas, a lava plateau's stepped valley sides);
-   rivers crossing a cliff fall over it. Sills across a flow path are cut
-   through and each coarse cell's mean is kept. A designed reach crossing
+   rivers crossing a cliff fall over it, and the falls retreat into
+   gorges. Sills across a flow path are cut through as gaps a few pixels
+   wide, but not across a rift's or a scoured shield's closed basins
+   (lakes or flats in the final drainage); each coarse cell's mean is kept. A designed reach crossing
    an escarpment takes its main fall at the scarp, with the plateau above
    it (the ground it must fit under is lifted: scarp_fall). Any pits
    left are filled. Falls are listed only where the drop stands out from
-   the river around it (waterfalls()).
+   the river around it (waterfalls()): stats.falls has every fall >= 30 m
+   (kind lip / scarp / bench / lake outlet / drop; scarp and bench falls
+   get a plunge pool), stats.waterfalls the top 5 for the panel.
 
 Outputs: zooms/<id>/ (paths and layer files: store.py)
   zoom.json      meta: source world, centre, size, resolution, projection,
@@ -241,7 +248,7 @@ WF_CONTRAST, WF_CONTEXT_KM = 3.0, 6.0  # ... and WF_CONTRAST x steeper than the 
 
 
 def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
-               starts: dict | None = None, top: int = 5, designed=()) -> list[dict]:
+               starts: dict | None = None, top: int | None = 5, designed=(), sep_km: float = 15.0) -> list[dict]:
     """Pixel-scale falls along the drainage network. ws: water surface (lake
     surface on lakes, 0 at sea), q: discharge m^3/s, rec: D8 receivers (-1
     at outlets); starts: {lake outlet pixel: lake level}, where a fall
@@ -250,9 +257,10 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     the river around it: at least WF_CONTRAST x as steep as the reaches
     just above and below it (else it's a steep reach, rapids or a cascade
     of a mountain stream, not a fall: coarse pixels and small steep streams
-    have many). Best first by power (discharge x height), at least ~15 km
-    apart, none within WF_EDGE_PX of the edge. Each: px (row, col), height_m,
-    length_km, discharge_m3s, power_gw, top_m, bottom_m, from_lake."""
+    have many). Best first by power (discharge x height), at least sep_km
+    (and 3 px) apart, the first `top` (None: all), none within WF_EDGE_PX of
+    the edge. Each: px (row, col), height_m, length_km, discharge_m3s,
+    power_gw, top_m, bottom_m, from_lake; _foot: the pixel below it."""
     n = nx * ny
     lvl, d0 = ws.astype(float).copy(), np.zeros(n)
     for o, v in (starts or {}).items():
@@ -313,16 +321,18 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     ok = fixed | (h / np.maximum(d, 1e-9) >= WF_CONTRAST * g_ctx)
     i, h, d, jj = i[ok], h[ok], d[ok], jj[ok]
     gw = 1000 * 9.81 * q[i] * h / 1e9
-    out, sep = [], max(6, int(round(15 / res)))
+    out, sep = [], max(3, int(round(sep_km / res)))
+    taken = np.zeros((ny, nx), bool)  # (spacing by a mask: the full list can be long)
     for k in np.argsort(-gw):
         r0, c0 = divmod(int(i[k]), nx)
-        if any(max(abs(r0 - f["px"][0]), abs(c0 - f["px"][1])) < sep for f in out):
+        if taken[r0, c0]:
             continue
+        taken[max(r0 - sep + 1, 0):r0 + sep, max(c0 - sep + 1, 0):c0 + sep] = True
         out.append({"px": [r0, c0], "height_m": round(float(h[k]), 1), "length_km": round(float(d[k]), 1),
                     "discharge_m3s": round(float(q[i[k]]), 1), "power_gw": round(float(gw[k]), 3),
                     "top_m": round(float(lvl[i[k]]), 1), "bottom_m": round(float(ws[jj[k]]), 1),
-                    "from_lake": bool(d0[i[k]] > 0)})
-        if len(out) >= top:
+                    "from_lake": bool(d0[i[k]] > 0), "_foot": int(rec[i[k]])})
+        if top is not None and len(out) >= top:
             break
     return out
 
@@ -351,8 +361,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
 KP_MIN_GRAD, KP_GRADED, KP_MIN_EXCESS, KP_MIN_Q = 0.8, 0.2, 50.0, 100.0  # m/km, m/km, m, m^3/s
 KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 # how well each rock (surface.ROCKS id) holds a lip
-KP_RESIST = {0: 0.8, 1: 0.9, 2: 0.8, 3: 0.4, 4: 0.85, 5: 1.0, 6: 0.75, 7: 0.7, 8: 0.2, 9: 0.1, 10: 0.3,
-             11: 1.0, 12: 0.95, 13: 0.9, 14: 0.85, 15: 0.5}
+KP_RESIST = ZL.RESIST
 COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
 FALLS_MIN_SHARE = 0.05  # a reach's falls are placed from where its pinned course carries this share of the coarse discharge
@@ -363,6 +372,9 @@ BANK_MAX_Q = 300.0  # m^3/s: ... not lifting other rivers carrying this much
 LIP_CAP_KM = 0.5  # km: a top stratum this thick holds a lip by itself (see lip_resistance)
 SCARP_MIN_W = 0.3  # a designed reach takes its main fall at a landform scarp where the class weighs this much
 LF_CHANNEL_Q = 5.0  # m^3/s: landform relief (zoom_landforms) is shaped around channels carrying this much
+LF_FALL_KIND = {ZL.LF.ESCARPMENT: "scarp", ZL.LF.RIFT: "scarp", ZL.LF.CAPROCK: "bench", ZL.LF.LAVA_PLATEAU: "bench"}
+BASIN_THROUGH_Q = 100.0  # m^3/s: a river this big cuts through a landform's closed basins (rift, scoured shield)
+LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big holds a lake
 
 
 def _under(surface_rock, basement, cover_km, top_km=None, next_rock=None) -> int:
@@ -1012,7 +1024,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- landform classes (zoom_landforms): weights, parameters, hooks ----
     lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
-                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s))
+                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g.centers[sel])
 
     def keep_means(z, hh, where, f=None):
         """z with each coarse cell's mean change from hh undone (a smooth
@@ -1029,6 +1041,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             z = z + f * np.nan_to_num(corr[:, 0])
         return z
 
+    n_gorges = 0  # falls over the landform classes' cliffs retreated into gorges
     ground_up = None  # where the classes' top beds hold the ground: (weight, level) per pixel (designed falls' fit)
     scarp = None  # single scarps (escarpments): weight, level, height per pixel
     if lf is not None:
@@ -1979,16 +1992,25 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         hf, rec_, order_ = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
         hf = np.where(active, np.maximum(h, hf), h)
         chan_ = (Q * KM2_M_PER_YR_TO_M3S >= LF_CHANNEL_Q) | ~active
+        q_ = ZK.accumulate(rec_, order_, srcq) * KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
         mask_ = where * smoothstep(wk + res, wk + 4 * res, dco)
         # (cut only inside the classes' reach: a sill where a river leaves it
-        # would otherwise be cut far down its course)
-        keep_ = ((mask_ <= 0) & ~(edge & land)) | (lf.weight() < 0.02)
-        h = keep_means(ZL.breach(lf.remap(hf, mask_, rec_, order_, chan_), rec_, order_, keep_), h, active,
-                       np.clip(3 * lf.weight(), 0, 1))
+        # would otherwise be cut far down its course; and not across the
+        # closed basins of a rift or a scoured shield, but for the big rivers
+        # crossing them: those depressions are filled flat or hold lakes)
+        fixed_ = ((mask_ <= 0) & ~(edge & land)) | (lf.weight() < 0.02)
+        keep_ = fixed_ | ((lf.basins() > 0.5) & (q_ < BASIN_THROUGH_Q) & active)
+        # (the shape hooks' structures die out over a few km towards those courses: a water gap)
+        mask_s = where * smoothstep(wk + res, wk + max(4 * res, 5.0), dco)
+        h = keep_means(ZL.cut(lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_),
+                              rec_, order_, keep_, nx, ny, res,
+                              fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
         # (a sill the remap, the correction or the summits' caps leave across a
         # flow path is cut through rather than filled into a lake; the region's
         # edge, an outlet held at the target, is lowered too where land drains into it)
-        h = ZL.breach(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_)
+        # falls over the classes' cliffs retreat into gorges (PW-150)
+        h, n_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
+        h = ZL.cut(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
@@ -2012,6 +2034,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+    # a landform's closed depressions (a rift's basins, a scoured shield's
+    # rock basins) hold lakes where the class says so (Synth.lakes): the
+    # whole depression, if it is LF_LAKE_M deep somewhere and LF_LAKE_KM2 big
+    # (smaller ones are filled flat: alluvial flats, playas)
+    lf_lake, lf_depth = np.zeros(npx, bool), np.zeros(npx)
+    if lf is not None:
+        dep = np.where(active & ~glacier, filled - h, 0.0)
+        lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
+        if len(sizes):
+            deep = np.zeros(len(sizes), bool)
+            ok = (dep > LF_LAKE_M) & (lf.lakes() > 0.5) & (lab >= 0)
+            deep[lab[ok]] = True
+            lf_lake = (lab >= 0) & deep[np.maximum(lab, 0)] & (sizes[np.maximum(lab, 0)] * res * res >= LF_LAKE_KM2)
+            lf_depth = np.where(lf_lake, dep, 0.0)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     rec0 = rec
@@ -2036,9 +2072,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
     # the designed falls: where they ended up, and a plunge pool at each foot
     lips = place_falls(rec, Q, h)[5]
+    # every fall at least WF_MIN_DROP high (a few pixels apart)
     falls = waterfalls(ws_f, np.where(glacier, 0.0, discharge), rec, nx, ny, res,  # (no falls under the ice)
                        {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0},
-                       designed=[lp for lp, _, _ in lips])
+                       designed=[lp for lp, _, _ in lips], top=None, sep_km=0.0)
     pool = np.zeros(npx)
     for lip, st, kp in lips:
         foot = int(rec[lip])
@@ -2050,23 +2087,55 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         pool[foot] = max(pool[foot], float(np.clip(0.6 * hgt, 3.0, 60.0)))
         r0, c0 = divmod(lip, nx)
         for f in falls:
-            if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3:
+            if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3 and "kind" not in f:
                 f.update({"kind": "lip", "gorge_km": round(float(st["gorge_km"]), 1),
                           "lip_resistance": round(kp["resistance"], 2),
                           "coarse_reach_drop_m": round(kp["excess_m"] + KP_GRADED * kp["reach_km"]),
                           "coarse_reach_km": round(kp["reach_km"]), "plunge_pool_m": round(float(pool[foot]), 1),
                           "_kp": kps.index(kp)})
+                break
+    # falls over a landform's cliffs (a scarp, a bench, a fault scarp): their
+    # own kind, and a plunge pool at the foot
+    dom = lf.dominant() if lf is not None else np.zeros(npx, int)
     for f in falls:
-        f.setdefault("kind", "lake outlet" if f["from_lake"] else "drop")
-        # the reach's other falls (cascades), which the ~15 km spacing leaves off the list
+        if f["from_lake"]:
+            f.setdefault("kind", "lake outlet")
+        k = int(dom[f["px"][0] * nx + f["px"][1]])
+        if "kind" in f or k not in LF_FALL_KIND:
+            continue
+        f["kind"], f["landform"] = LF_FALL_KIND[k], ZL.LF.CLASSES[k][1]
+        foot = f["_foot"]
+        if foot >= 0 and active[foot] and not lf_lake[foot]:
+            pool[foot] = max(pool[foot], float(np.clip(0.6 * f["height_m"], 3.0, 60.0)))
+            f["plunge_pool_m"] = round(float(pool[foot]), 1)
+    for f in falls:
+        f.setdefault("kind", "drop")
+        f.pop("_foot", None)
+        k = f["px"][0] * nx + f["px"][1]
+        f["lat"], f["lon"] = (round(v, 3) for v in _latlon(fr.to_sphere(px[[k]], py[[k]])[0]))
+    # the panel's summary: the biggest by power, ~15 km apart, each with its
+    # reach's other falls (cascades), which the spacing leaves off it
+    top_falls, sep = [], max(6, int(round(15 / res)))
+    for f in falls:
+        if len(top_falls) >= 5:
+            break
+        if any(max(abs(f["px"][0] - t["px"][0]), abs(f["px"][1] - t["px"][1])) < sep for t in top_falls):
+            continue
+        top_falls.append(dict(f))
+    for f in falls:
+        f.pop("_kp", None)
+    for f in top_falls:
         if "_kp" in f:
             f["cascades"] = [{"px": st["lip_px"], "height_m": st["height_m"]} for st in kps[f.pop("_kp")]["steps"]
                              if "lip_px" in st and st["height_m"] >= KP_MIN_STEP
                              and max(abs(st["lip_px"][0] - f["px"][0]), abs(st["lip_px"][1] - f["px"][1])) > 3]
-        k = f["px"][0] * nx + f["px"][1]
-        f["lat"], f["lon"] = (round(v, 3) for v in _latlon(fr.to_sphere(px[[k]], py[[k]])[0]))
+    all_falls = sorted(({"px": f["px"], "lat": f["lat"], "lon": f["lon"], "height_m": f["height_m"],
+                         "discharge_m3s": f["discharge_m3s"], "kind": f["kind"]} for f in falls),
+                       key=lambda f: -f["height_m"])
     h = np.where(lake, surf - depth, h)
     lake_depth = np.where(lake, depth, 0.0)
+    h = np.where(lf_lake, h - lf_depth, h)  # (landform lakes: their beds)
+    lake_depth = np.where(lf_lake, lf_depth, lake_depth)
     # plunge pools: small lakes at the foot of the falls (the water stays at the river's level)
     plunge = pool > 0
     h = np.where(plunge, h - pool, h)
@@ -2096,9 +2165,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     alpine = land & (clim_f < 28) & (t_warm < 10)
     clim_f = np.where(alpine, 28, clim_f)
     clim_f = np.where(land & ((t_warm < 0) | glacier), 29, clim_f).astype(np.uint8)
-    biome = climate.biomes(h, temp, precip, lake)
+    biome = climate.biomes(h, temp, precip, lake | lf_lake)
     biome = np.where(glacier, 4, biome).astype(np.uint8)
-    water = np.where(sea, 1, np.where(lake | plunge, 2, 0)).astype(np.uint8)
+    water = np.where(sea, 1, np.where(lake | plunge | lf_lake, 2, 0)).astype(np.uint8)
 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
@@ -2117,6 +2186,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "max_m": round(float(h.max()), 1),
         "max_discharge_m3s": round(float(discharge.max()), 1),
         "lakes": int(len(np.unique(ZK.label_components(lake, nx, ny)[0][lake]))),
+        "landform_lakes": int(len(np.unique(ZK.label_components(lf_lake, nx, ny)[0][lf_lake]))),
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
@@ -2134,14 +2204,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
                    for d in deltas],
         "distributary_splits": len(splits),
-        # pixel-scale falls (see waterfalls()); kind "lip": a knickpoint kept from a steep coarse reach
-        # (see knickpoints()), with its gorge and plunge pool
-        "waterfalls": falls,
+        # the biggest pixel-scale falls (see waterfalls()), ~15 km apart; kind "lip": a knickpoint kept
+        # from a steep coarse reach (see knickpoints()), with its gorge and plunge pool; "scarp" / "bench":
+        # over a landform's cliff (zoom_landforms), with a plunge pool; "lake outlet"; "drop": any other
+        "waterfalls": top_falls,
+        # every fall >= WF_MIN_DROP m (px, lat, lon, height_m, discharge_m3s, kind), highest first
+        "falls": all_falls,
+        "falls_count": {"30m": sum(f["height_m"] >= 30 for f in all_falls),
+                        "100m": sum(f["height_m"] >= 100 for f in all_falls)},
         "knickpoints": len(kps),
         # the volcanoes drawn (zoom_volcanoes), with what they look like now
         "volcanoes": vf["list"] if vf is not None else [],
         # % of the land each synthesised landform class shapes (zoom_landforms)
         "landforms": lf.stats() if lf is not None else {},
+        "landform_gorges": n_gorges,
     }
     layers = {
         "elevation": h.astype(np.float32),
@@ -2240,14 +2316,17 @@ def preview(z: dict) -> np.ndarray:
     for qq, r in ((3000.0 * wide, 1), (30000.0 * wide, 2)):  # big rivers are drawn wider
         a = np.maximum(a, 0.95 * (_dilate(q > qq, r) & land))
     col = col * (1 - a[..., None]) + np.array([38, 92, 178.0]) * a[..., None]
-    # waterfalls: a white-water mark at the lip and just below it
+    # waterfalls: a white-water mark at the lip and just below it (every listed fall)
     ny, nx = h.shape
-    rr, cc = np.mgrid[0:ny, 0:nx]
-    for f in z.get("stats", {}).get("waterfalls", []):
+    st = z.get("stats", {})
+    for f in st.get("falls", st.get("waterfalls", [])):
         r0, c0 = f["px"]
         rad = (2.0 + 0.6 * np.sqrt(f["height_m"] / 30)) * max(1.0, 1.0 / res) ** 0.5
+        k = int(np.ceil(1.2 * rad))
+        a, b, c, d = max(r0 - k, 0), min(r0 + k + 1, ny), max(c0 - k, 0), min(c0 + k + 1, nx)
+        rr, cc = np.mgrid[a:b, c:d]
         foam = np.clip(1.2 - np.hypot(rr - r0, cc - c0) / rad, 0, 1)[..., None]
-        col = col * (1 - foam) + np.array([250, 252, 255.0]) * foam
+        col[a:b, c:d] = col[a:b, c:d] * (1 - foam) + np.array([250, 252, 255.0]) * foam
     return np.clip(col, 0, 255).astype(np.uint8)
 
 

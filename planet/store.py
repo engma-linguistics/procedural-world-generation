@@ -205,6 +205,8 @@ LAYERS = {
     "strata_dip": _spec("u1", "deg", "dip of the exposed strata (folded: by the squeezing; flat: regional slope)",
                         scale=0.25),
     "fold_wavelength": _spec("u1", "km", "distance between fold crests (0: strata not folded)", scale=0.2),
+    "rift_strain": _spec("u1", "ln beta", "stretching of the cell's last rifting (0: never rifted)", scale=0.01),
+    "glaciated_myr": _spec("<u2", "Myr", "since the cell was last under ice (0: now; 9999: never)"),
 }
 
 

@@ -64,6 +64,11 @@ The parameters the zoom needs come along per cell (layers()):
                    (fold_dip); flat ones by the regional slope
   fold_wavelength  km between fold crests, from the folded pile's
                    thickness (fold_wavelength; 0 where not folded)
+  rift_strain      ln(beta) of the cell's last rifting (0 where never
+                   rifted): how far a rift's fault blocks have tilted
+  glaciated_myr    Myr since the cell was last under ice (0: under ice now;
+                   GLACIATED_NEVER: never): a recently glaciated shield is
+                   scoured into lake-dotted rock basins
 """
 
 from __future__ import annotations
@@ -96,7 +101,9 @@ CLASSES = [
 (SEA, HILLS, SHIELD, FOLD_BELT, RIFT, ESCARPMENT, CAPROCK, LAVA_PLATEAU, KARST, DUNES, COASTAL_PLAIN, ARC_CLASS,
  HOTSPOT_CLASS) = range(len(CLASSES))
 
-LAYERS = ("landform", "landform_age", "strata_top", "strata_top_km", "strata_next", "strata_dip", "fold_wavelength")
+LAYERS = ("landform", "landform_age", "strata_top", "strata_top_km", "strata_next", "strata_dip", "fold_wavelength",
+          "rift_strain", "glaciated_myr")
+GLACIATED_NEVER = 9999.0  # glaciated_myr of a cell never under ice
 
 VENEER_KM = 0.02  # strata thinner than this are looked through (a veneer of soil or alluvium)
 HARD = (LIMESTONE, DOLOMITE, SANDSTONE, QUARTZITE, FLOOD_BASALT)
@@ -265,7 +272,10 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     dip = np.where(folded, fold_dip(rec[:, R.FOLD_STRAIN]), regional_dip(grid, elev))
     return {"landform": cls, "landform_age": np.round(np.maximum(age, 0)),
             "strata_top": top, "strata_top_km": np.where(land | (cover > 0), top_km, 0.0), "strata_next": below,
-            "strata_dip": dip, "fold_wavelength": np.where(folded, fold_wavelength(rec[:, R.FOLD_KM]), 0.0)}
+            "strata_dip": dip, "fold_wavelength": np.where(folded, fold_wavelength(rec[:, R.FOLD_KM]), 0.0),
+            "rift_strain": np.where(rifted, np.maximum(rec[:, R.RIFT_STRAIN], 0.0), 0.0),
+            "glaciated_myr": np.where(rec[:, R.T_ICE] > R.NEVER / 2, np.clip(t - rec[:, R.T_ICE], 0, GLACIATED_NEVER),
+                                      GLACIATED_NEVER)}
 
 
 def legend() -> list[dict]:
