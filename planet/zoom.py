@@ -115,6 +115,7 @@ from . import climate, coast, hydrology, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
+from . import zoom_landforms as ZL
 from . import zoom_volcanoes as ZV
 from .geo import R_KM, latlon, xyz
 from .images import write_png
@@ -347,6 +348,8 @@ SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is ev
 BANK_KM, BANK_SIDE_GRAD = 4.0, 30.0  # held river courses: banks this wide (km, >= 2 px), then falling off (m/km)
 ICE_SNOUT_GRAD = 50.0  # m/km: under ice, creep may lift a stream's bed by this much per km in from the ice's edge
 BANK_MAX_Q = 300.0  # m^3/s: ... not lifting other rivers carrying this much
+SCARP_MIN_W = 0.3  # a designed reach takes its main fall at a landform scarp where the class weighs this much
+LF_CHANNEL_Q = 5.0  # m^3/s: landform relief (zoom_landforms) is shaped around channels carrying this much
 
 
 def lip_resistance(surface_rock: int, basement: int, cover_km: float) -> float:
@@ -968,6 +971,35 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         delta_floor = np.where(on, zD + ridge, delta_floor)
     log(f"  coast + detail + mean correction [{time.time() - t0:.1f}s]")
 
+    # --- landform classes (zoom_landforms): weights, parameters, hooks ----
+    lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
+                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s))
+
+    def keep_means(z, hh, where, f=None):
+        """z with each coarse cell's mean change from hh undone (a smooth
+        correction, like the detail's), on `where`, in proportion to f (0..1:
+        the land the change came from; the rest keeps its height)."""
+        f = np.where(where, 1.0 if f is None else f, 0.0)
+        for _ in range(2):
+            dsum = np.bincount(own_s, np.where(where, z - hh, 0.0), minlength=len(sel))
+            fsum = np.bincount(own_s, f, minlength=len(sel))
+            cnt = np.bincount(own_s, minlength=len(sel))
+            ok = (cnt > 0.25 * full_px) & (fsum > 0.05 * cnt)
+            amp = np.where(ok, -dsum / np.maximum(fsum, np.maximum(0.3 * cnt, 1e-9)), 0.0)  # (a cell barely touched: bounded)
+            corr, _ = ZK.gauss_interp(px, py, cx, cy, amp[:, None], ok[:, None].astype(float), 0.5 * sp)
+            z = z + f * np.nan_to_num(corr[:, 0])
+        return z
+
+    ground_up = None  # where the classes' top beds hold the ground: (weight, level) per pixel (designed falls' fit)
+    scarp = None  # single scarps (escarpments): weight, level, height per pixel
+    if lf is not None:
+        dz = lf.target(h)
+        if dz is not None:
+            h = clamp(keep_means(h + dz, h, land))
+        ground_up = lf.plateau(h)
+        scarp = lf.scarps(h)
+        log("  landforms: " + ", ".join(f"{k} {v}%" for k, v in lf.stats().items()))
+
     # --- coarse rivers -> valleys + inflow --------------------------------
     coast_cap = COAST_FLOOR_GRAD * res * ZK.inside_distance(land, nx, ny, False)  # (see z_course)
     clab, clvl, cexit = coarse_lakes(g, L, elev)
@@ -1065,6 +1097,42 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # slope, and drops by each fall's height at its lip.
         zseg = {i: (z1, z2) for _, z1, z2, _, _, i in segs}
         stair = {}
+
+        def scarp_fall(kp, Tz, Ez, pix, inr):
+            """A designed reach crossing a landform's scarp (an escarpment):
+            the hard bed holds the river on the plateau down to the scarp, so
+            the valley floor and the ground above the crossing stand at the
+            scarp's level, and the main fall takes (up to) the scarp's
+            height, its lip retreated from the crossing by its gorge."""
+            ws_, lv_, hg_ = (np.where(inr, a[np.where(inr, pix, 0)], 0.0) for a in scarp)
+            on = ws_ > SCARP_MIN_W
+            a_ = np.flatnonzero(on & (Ez >= lv_))
+            if not len(a_):
+                return
+            b_ = np.flatnonzero(on & (Ez < lv_) & (np.arange(len(Ez)) > a_[0]))
+            if not len(b_):
+                return
+            j = int(b_[0])
+            sk = kp["s"]
+            st0 = kp["steps"][0]
+            # (the lip on a point of the reach's polyline, so the staircase's
+            # floor at it is the gorge's, not half the plateau's)
+            k = int(np.searchsorted(sk, max(sk[j] - st0["gorge_km"], 0.0)))
+            s_lip = float(sk[min(k, j)])
+            foot = float(Tz[min(k, j)])  # (the gorge's floor below the lip: the lowland's)
+            up = sk < s_lip
+            # above the lip the river runs on the plateau (its floor graded up
+            # from the lip), and the ground stands at the scarp's level down to
+            # the crossing (the gorge's walls)
+            Tz[up] = np.maximum(Tz[up], np.minimum(float(lv_[j]), Ez[up]) + KP_GRADED * (s_lip - sk[up]))
+            Ez[sk <= sk[j]] = np.maximum(Ez[sk <= sk[j]], np.maximum(Tz[sk <= sk[j]], lv_[j]) + 1.0)
+            st0["s"], st0["gorge_km"] = s_lip, float(sk[j] - s_lip)
+            st0["h"] = max(st0["h"], float(ws_[j] * hg_[j]), float(lv_[j]) - foot)
+            n = len(kp["steps"])  # (the cascades: spread down the reach below the scarp again)
+            for c_, st in enumerate(kp["steps"][1:], 1):
+                st["s"] = float(sk[j] + c_ / n * (sk[-1] - sk[j]))
+            kp["scarp"] = True
+
         for kp in kps:
             cells, sk, m = kp["cells"], kp["s"], kp["m"]
             Tz = np.concatenate([np.linspace(*zseg[c], m)[(1 if j else 0):] for j, c in enumerate(cells)])
@@ -1075,6 +1143,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             lr = np.floor(ny / 2 - line[:, 1] / res).astype(int)
             inr = (lc >= 0) & (lc < nx) & (lr >= 0) & (lr < ny)
             Tz[inr] = np.minimum(Tz[inr], coast_cap[(lr * nx + lc)[inr]])
+            # (a landform's plateau stands above the coarse ground: the falls may too)
+            if ground_up is not None:
+                wl, lv = (a[(lr * nx + lc)[inr]] for a in ground_up)
+                Ez[inr] += wl * np.maximum(lv - Ez[inr], 0.0)
+            if scarp is not None:
+                scarp_fall(kp, Tz, Ez, (lr * nx + lc), inr)
             # the river keeps to the reach's course (receivers pinned along it, in the landscape pass)
             pp, pa = _raster_path(line, res, nx, ny)
             kp["course_px"], kp["course_s"] = pp[pp >= 0], pa[pp >= 0]
@@ -1849,6 +1923,31 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     for _ in range(SMOOTH_STEPS):
         hd = ZK.diffuse(h, kd, active, nx, ny)
         h = np.where(stream, np.minimum(hd, np.maximum(h, h0 + lift)), hd)
+    if lf is not None:
+        # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
+        # finished landscape, each coarse cell's mean kept. Not on glaciers,
+        # lake rims and outflows, nor the courses of designed falls and their
+        # banks (their staircase is the river's; the remap would add steps to
+        # it or flatten its falls).
+        course = np.zeros(npx, bool)
+        course[c_idx] = True
+        dco = ZK.inside_distance(~course, nx, ny, False) * res
+        wk = max(BANK_KM, 2 * res)
+        where = active & ~glacier & ~ring & ~rapids
+        # (on the drainage of the crept surface; channels: >= LF_CHANNEL_Q)
+        hf, rec_, order_ = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+        hf = np.where(active, np.maximum(h, hf), h)
+        chan_ = (Q * KM2_M_PER_YR_TO_M3S >= LF_CHANNEL_Q) | ~active
+        mask_ = where * smoothstep(wk + res, wk + 4 * res, dco)
+        # (cut only inside the classes' reach: a sill where a river leaves it
+        # would otherwise be cut far down its course)
+        keep_ = ((mask_ <= 0) & ~(edge & land)) | (lf.weight() < 0.02)
+        h = keep_means(ZL.breach(lf.remap(hf, mask_, rec_, order_, chan_), rec_, order_, keep_), h, active,
+                       np.clip(3 * lf.weight(), 0, 1))
+        # (a sill the remap, the correction or the summits' caps leave across a
+        # flow path is cut through rather than filled into a lake; the region's
+        # edge, an outlet held at the target, is lowered too where land drains into it)
+        h = ZL.breach(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
@@ -2000,6 +2099,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "knickpoints": len(kps),
         # the volcanoes drawn (zoom_volcanoes), with what they look like now
         "volcanoes": vf["list"] if vf is not None else [],
+        # % of the land each synthesised landform class shapes (zoom_landforms)
+        "landforms": lf.stats() if lf is not None else {},
     }
     layers = {
         "elevation": h.astype(np.float32),
