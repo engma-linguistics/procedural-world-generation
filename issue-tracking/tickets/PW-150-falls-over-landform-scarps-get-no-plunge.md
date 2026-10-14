@@ -1,4 +1,5 @@
 ---
+id: PW-150
 title: Falls over landform scarps get no plunge pool or gorge, and most go unlisted
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland1
 blocked_by: []
 relates: [PW-010]
 refs: [planet/zoom.py, planet/zoom_landforms.py, "zoom:b2165d", "zoom:9e2ba9"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Try: give landform falls (a drop at a class cliff, weight > 0.5) their own
 kind ("scarp" / "bench") with a plunge pool at the foot, and list more of
 them (e.g. top 5 overall plus the top few per class), or a separate
 `stats.landform_falls` count/height summary.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-landform-falls-listing.md (found by zoomland1).

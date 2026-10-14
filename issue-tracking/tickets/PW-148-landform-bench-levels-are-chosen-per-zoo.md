@@ -1,4 +1,5 @@
 ---
+id: PW-148
 title: Landform bench levels are chosen per zoom, so overlapping zooms disagree
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland1
 blocked_by: []
 relates: [PW-010, PW-011]
 refs: [planet/zoom_landforms.py, "zoom:366f51", "zoom:3bdcbb"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -31,3 +34,6 @@ from all of the zone's cells), or a level field smooth enough (gradient well
 under the rivers' ~1 m/km) built from the coarse cells alone.
 - [ ] two overlapping zooms of one caprock area share their bench levels
 - [ ] breach cuts (zoom_landforms.breach) don't grow
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-bench-levels-per-zoom.md (found by zoomland1).

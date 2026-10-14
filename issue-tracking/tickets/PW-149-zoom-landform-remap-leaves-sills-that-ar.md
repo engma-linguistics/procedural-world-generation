@@ -1,4 +1,5 @@
 ---
+id: PW-149
 title: Zoom landform remap leaves sills that are cut as narrow gorges; lava steps look stippled
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland1
 blocked_by: []
 relates: [PW-010]
 refs: [planet/zoom_landforms.py, "zoom:6a4870", "zoom:b2165d", docs/review/landforms/zoom_lava_before_after.png]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -26,3 +29,6 @@ and at 2 km/px benches of ~100 m are hardly visible at all.
 Try: propagate a class's weight down the drainage on channels (a river
 leaving the zone keeps the zone's offset until it rejoins the land around),
 and widen lava cliff faces (`Strata.face`) with the pixel size.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-landform-breach-gorges.md (found by zoomland1).

@@ -1,4 +1,5 @@
 ---
+id: PW-147
 title: Caprock strata are recorded as near-flat, so the zoom never makes cuestas
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: zoomland1
 blocked_by: []
 relates: [PW-010, PW-009]
 refs: [planet/landform.py, planet/zoom_landforms.py, "world 800c99"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Options:
 - **C.** Let the zoom tilt caprock where the coarse land has a steady regional
   gradient over several cells (a basin margin), a few tenths of a degree.
 Lean: A now, B if cuestas are wanted (it is physics, not a zoom fudge).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-cuestas-need-dips.md (found by zoomland1).
