@@ -10,7 +10,8 @@ from __future__ import annotations
 import numpy as np
 
 from ..geo import R_KM
-from .isostasy import ISO_LAND, ISO_VOLCANO, OCEAN_KM, elevation
+from . import mantle
+from .isostasy import ISO_LAND, ISO_VOLCANO, OCEAN_KM, elevation, sediment_km
 from ..surface import HOTSPOT
 
 
@@ -21,7 +22,10 @@ def hotspots(sim, rng, bd):
     head arrives as a short, huge outpouring (flood basalts, like the
     Deccan Traps). Most plumes sit under ridges or rifts (Iceland,
     Galapagos, Afar: hot mantle and spreading plates find each other);
-    the rest anywhere (Hawaii, mid-plate).
+    the rest anywhere (Hawaii, mid-plate). Either way they rise from warm
+    mantle more often than cold, and most from the edges of the big warm
+    regions (mantle.plume_odds; Earth's plumes ring its two big warm
+    regions under Africa and the Pacific).
     Returns (crust added per Myr, dome height in m) on each world cell."""
     p, g = sim.params, sim.grid
     sim.hotspots = [h for h in sim.hotspots if sim.t - h["born"] < h["life"]]
@@ -29,10 +33,11 @@ def hotspots(sim, rng, bd):
     if sim.step_no == 1:
         n_new = int(round(p.hotspots * sim.heat()))  # start with a full set, of mixed ages
     spreading = bd.spreading
+    odds = mantle.plume_odds(sim) if n_new else None
     for _ in range(n_new):
-        v = rng.normal(size=3)
-        if len(spreading) and rng.random() < p.hotspot_at_ridges:
-            v = g.centers[rng.choice(spreading)] + rng.normal(size=3) * 100.0 / R_KM
+        cells = spreading if len(spreading) and rng.random() < p.hotspot_at_ridges else np.arange(g.n)
+        w = odds[cells]
+        v = g.centers[rng.choice(cells, p=w / w.sum())] + rng.normal(size=3) * 100.0 / R_KM
         life = rng.uniform(0.4, 1.6) * p.hotspot_life
         born = sim.t - (rng.uniform(0, life) if sim.step_no == 1 else 0.0)
         sim.hotspots.append({"pos": v / np.linalg.norm(v), "born": born, "life": life,
@@ -61,7 +66,8 @@ def cap_plumes(sim, col, plume):
     plateau (Yellowstone, Deccan). Returns the plume's crust growth
     (km/Myr) after that; under continents a quarter of it."""
     dt, cont = sim.dt, col.cont
-    as_volcano = elevation(sim.w_thick, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.swell - sim.sea_level)
+    as_volcano = elevation(sim.w_thick, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.swell - sim.sea_level,
+                           sediment_km(col.cover, col.x))
     head = np.where(cont, 2000.0, 3000.0)
     taper = np.clip(1 - (np.maximum(as_volcano, 0) / head) ** 2, 0, 1)
     room = np.maximum(head - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
@@ -85,7 +91,8 @@ def volcanoes(sim, growth, t, rng):
     sim.volcanoes = live
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
-    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.swell - sim.sea_level) > -1500
+    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.swell - sim.sea_level,
+                         sediment_km(sim.w_cover, sim.w_extra)) > -1500
     cand = np.flatnonzero((growth * dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))
     if len(cand) == 0:
         return t

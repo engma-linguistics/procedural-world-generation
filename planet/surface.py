@@ -192,12 +192,13 @@ def surface_rock(rock, cover, mix):
 
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
-          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0):
+          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
     decides how much of it is sand). precip, runoff, aet (actual evaporation)
-    and lake_evap in mm/yr; iso: m of elevation per km of crust, per cell;
+    and lake_evap in mm/yr; iso: m of elevation per km of crust eroded, per
+    cell; iso_dep: per km of sediment deposited (default: iso);
     k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
     gentle river course over which ~63% of the load settles on land; fan_km:
     km of deep sea floor over which ~63% of what passes the shelf settles.
@@ -232,7 +233,9 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     thick = thick - removed
 
     # route it: lakes and hollows keep what fits, closed lakes all of it, the rest reaches the sea
-    pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso, 0.0)
+    if iso_dep is None:
+        iso_dep = iso
+    pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso_dep, 0.0)
     dep = _route(down, order, removed, pit_room, ~land, h, d_km, alluvial)
     # a closed lake spreads what its rivers bring over its floor, deepest most
     lab, k = grid.components(lk["sink"] & lk["wet"])
@@ -242,7 +245,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
         dep[m] = (np.bincount(lab[m], dep[m], k) / np.bincount(lab[m], depth, k))[lab[m]] * depth
     ocean = ~land
     coast = ocean & (np.add.reduceat(land[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
-    dep_sea = _offshore(np.where(ocean, dep, 0.0), elev.astype(float), iso.astype(float), ocean, coast,
+    dep_sea = _offshore(np.where(ocean, dep, 0.0), elev.astype(float), np.asarray(iso_dep, float), ocean, coast,
                         grid.nbr_off, grid.nbr_idx, d_km, fan_km)
     # then currents spread it sideways: a little along the shelf, more over
     # the deep sea floor (turbidity currents fan out)

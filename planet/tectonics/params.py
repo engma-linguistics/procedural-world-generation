@@ -25,8 +25,17 @@ class Params:
     slab_pull: float = 1.0
     ridge_push: float = 0.15
     collision_drag: float = 1.2
-    mantle_noise: float = 0.35
+    mantle_noise: float = 0.2  # the random part of the basal drag (meandering)
     mantle_timescale: float = 60.0  # Myr: how fast the wandering drag term changes
+    # the mantle under the plates (see mantle.py): a temperature anomaly
+    # built by cold slabs and warmed under continents, whose flow drags the
+    # plates from warm toward cold
+    mantle_drag: float = 0.6  # basal traction per unit of temperature gradient
+    mantle_memory: float = 200.0  # Myr: how long the mantle remembers (0: no mantle field)
+    mantle_scale_km: float = 2500.0  # only features this big and bigger
+    slab_cold: float = 0.002  # cooling per Myr from a trench (per unit length, x conv/5 cm/yr x age/80 Myr)
+    insulation: float = 0.04  # warming per Myr under a continent that has sat still ~100 Myr
+    mantle_eddies: float = 0.3  # rms of the smaller, unresolved convection (random; changes over mantle_timescale)
     velocity_timescale: float = 15.0  # Myr: smoothing on velocity changes (plate inertia, in effect)
     continental_keel: float = 1.5  # extra drag per continental cell
     mobility: float = 0.008
@@ -90,11 +99,13 @@ class Params:
     suture_after: float = 30.0  # Myr of continental collision before plates can weld...
     suture_closing: float = 2.0  # ...once they've (nearly) stopped converging, cm/yr
     suture_max: float = 150.0  # Myr: weld anyway after this long
-    rift_timescale: float = 130.0  # Myr: mean time before a big continental plate rifts
-    rift_min_continent: float = 0.07  # fraction of surface
+    rift_timescale: float = 130.0  # Myr: sets the rift hazard for a given excess stress
     stress_min_plate: float = 0.05  # plates larger than this (any crust) can break under stress
-    rift_stress: float = 3.0  # cm/yr: how hard the halves must pull apart before it can break
-    big_plate: float = 0.2  # plates bigger than this fraction of the surface break up more readily
+    rift_stress: float = 2.0  # cm/yr: how hard the halves must pull apart before it can break
+    # a rift never cuts off a piece with less continent than this share of
+    # the surface (but may split off purely oceanic plate): continents break
+    # into a few big blocks, along their weak zones (events.strength)
+    rift_min_piece: float = 0.03
     settle_time: float = 30.0  # Myr after forming before a plate can break under stress
     margin_age: float = 120.0  # Myr: ocean floor older than this at a passive margin may start subducting
     max_plates: int = 30

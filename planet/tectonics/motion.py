@@ -2,8 +2,9 @@
 
 Plates have no momentum (it's basically very slow Stokes flow), so each
 step the velocity is *solved* from the forces: slab pull (dominant), ridge
-push, collision resistance, and a slowly wandering mantle-drag term that
-supplies meandering. Every force acts on world cells; it becomes a torque
+push, collision resistance, basal traction from the mantle flowing under
+the plate (mantle.py: toward cold slab graveyards, away from warm mantle),
+and a small, slowly wandering drag term that supplies meandering. Every force acts on world cells; it becomes a torque
 on the cell's plate, and a drag matrix (resistance to rotating, larger
 under continental keels) turns the plate's total torque into its angular
 velocity.
@@ -15,6 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import mantle
 from .plates import CMYR, P_MAX
 
 
@@ -98,6 +100,7 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     g, p, dt = sim.grid, sim.params, sim.dt
     pl = sim.plates
     P = g.centers
+    mantle.stir(sim, rng)
     a, b, d, conv = bd.a, bd.b, bd.d, bd.conv
     F = np.zeros((g.n, 3))
     L = sim.edge_len
@@ -115,6 +118,8 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     k = (p.collision_drag * np.clip(conv[c], 0, 15) * L)[:, None]
     np.add.at(F, a[c], -d[c] * k)
     np.add.at(F, b[c], d[c] * k)
+    # basal traction: the mantle flowing under the plate from warm to cold
+    F += mantle.traction(sim)
 
     torque = np.zeros((P_MAX, 3))
     cell_torque = np.cross(P, F)
