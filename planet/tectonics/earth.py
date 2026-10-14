@@ -106,14 +106,9 @@ def update_climate(sim, e):
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind, sim.current = 0.5 * (c["wind_jul"] + c["wind_jan"]), c["current"]
-    # Ice: where summers stay near freezing and there's snow to feed it.
-    # The real ice comes and goes with ~100 kyr cycles; this is the
-    # average extent over them. Ice sheets thicken inland from their edges.
-    iced = land & (sim.t_warm < p.ice_summer_temp) & (sim.precip > 25)
-    edge = np.flatnonzero(iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) > 0))
-    hops, _ = kernels.bfs_within(edge, iced.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
-    d_km = np.maximum(hops, 0) * g.spacing * R_KM
-    sim.ice = np.where(iced, 300.0 + 2700.0 * (1 - np.exp(-d_km / 600.0)), 0.0)
+    sim.ice = ice_sheets(sim, land, c["ground"])
+    ice = np.where(land, sim.ice, 0.0)
+    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, climate.ice_cover(g, ice, land))
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
     vol = (sim.ice / 1000.0).sum() * sim.cell_area * R_KM**2
     ocean_area = (~land).sum() * sim.cell_area * R_KM**2
@@ -122,6 +117,95 @@ def update_climate(sim, e):
     sim.koppen = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                                 sim.p_jan, g.lat, sim.ice)
     sim.climate_t = sim.t
+
+
+# Ice sheets (see ice_sheets)
+ICE_FEEDBACK = 0.75  # share of a sheet's own height that counts in keeping it alive
+ICE_TAU = 50e3  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
+ICE_EDGE_KM = 10.0  # km: a sheet's thinnest margin counts as this far in from its edge
+ICE_MAX = 4000.0  # m
+ICE_SNOW_MIN = 25.0  # mm/yr of snow a sheet needs where it never melts ...
+ICE_DDF = 3.0  # ... plus what melts: mm per positive degree-day (snow), days of sd 5 C around the month
+
+
+def ice_sheets(sim, land, ground):
+    """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
+    temp) of the bare ground (climate.compute's, as if there were no ice).
+    The real ice comes and goes with ~100 kyr cycles and answers its
+    climate within ~10 kyr, far inside a climate step: this is the average
+    extent over the cycles, in balance with today's mountains, so an ice
+    cap follows its range as it moves or wears down.
+      extent     where summers on the ice stay near freezing (warmest month
+                 below ice_summer_temp) and enough snow falls to outlast
+                 them: ICE_SNOW_MIN plus the year's melt from positive
+                 degree-days (~25 mm/yr on a polar plateau, ~100 on a
+                 polar sheet's margin; a dry tropical plateau a few C below
+                 freezing all year, like the Puna de Atacama, stays bare
+                 with ~110 mm/yr). Ice that is already there keeps itself
+                 partly: its white top (climate.ice_cooling: ~10 C on a big
+                 polar sheet, little on a small or tropical cap) and
+                 ICE_FEEDBACK of its height (a 2 km sheet: ~10 C). Cold
+                 polar desert with too little snow of its own is covered
+                 by ice flowing in from a snowier part of the same cold
+                 region (East Antarctica's plateau gets ~50 mm/yr).
+      thickness  a sheet's steady (Nye) profile: sqrt(2 tau/(rho g) x the
+                 distance in from its edge), ~330 m at the edge, ~1.9 km
+                 300 km in, ~3.3 km 1000 km in. Weakly (x accumulation^1/8,
+                 Vialov) thinner for dry sheets, and thinner for warm
+                 (temperate, softer) ice: a small tropical cap is a few
+                 hundred m (Quelccaya ~200 m)."""
+    p, g = sim.params, sim.grid
+    t_warm, t_cold, temp = ground
+    old = np.where(land, sim.ice, 0.0)
+    own = ICE_FEEDBACK * climate.LAPSE * old + climate.ice_cooling(old, climate.ice_cover(g, old, land))
+    # the summer the ice would feel (melting holds a summer above 0 C on ice down, as climate.ice_surface)
+    t_sum = t_warm - own
+    t_sum = np.where(old > 0, np.minimum(t_sum, 0.5 * np.maximum(t_sum, 0)), t_sum)
+    cold = land & (t_sum < p.ice_summer_temp)
+    need = ICE_SNOW_MIN + ICE_DDF * degree_days(t_sum, t_cold - own)
+    seed = np.flatnonzero(cold & (sim.precip > need))
+    hops, _ = kernels.bfs_within(seed, cold.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
+    iced = cold & (hops >= 0)
+    if not iced.any():
+        return np.zeros(g.n)
+    edge = np.flatnonzero(iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) > 0))
+    hops, _ = kernels.bfs_within(edge, iced.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
+    d_m = (np.maximum(hops, 0) * g.spacing * R_KM + ICE_EDGE_KM) * 1000.0
+    h = np.sqrt(2 * ICE_TAU / (917.0 * 9.81) * d_m)
+    # per sheet: its mean snowfall and how cold its ice is
+    lab, nk = kernels.components(iced, g.nbr_off, g.nbr_idx)
+    k = np.maximum(lab, 0)
+    cnt = np.bincount(k, weights=iced, minlength=nk)
+
+    def mean(f):
+        return (np.bincount(k, weights=f * iced, minlength=nk) / np.maximum(cnt, 1))[k]
+
+    snow = np.clip((mean(sim.precip) / 300.0) ** 0.125, 0.75, 1.15)
+    soft = 1.0 - 0.3 * np.clip((mean(temp - own) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
+    return np.where(iced, np.minimum(h * snow * soft, ICE_MAX), 0.0)
+
+
+def degree_days(t_warm, t_cold, sd=5.0):
+    """Positive degree-days in a year whose months run sinusoidally from
+    t_cold to t_warm, the days scattered around each month's mean with
+    standard deviation sd (C) (Reeh 1991, as the time zoom)."""
+    mid, half = 0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold)
+    total = np.zeros_like(mid)
+    for m in range(12):
+        t = mid + half * np.cos(2 * np.pi * m / 12)
+        x = t / sd
+        cdf = 0.5 * (1 + _erf(x / np.sqrt(2)))
+        total += (365.25 / 12) * (sd / np.sqrt(2 * np.pi) * np.exp(-0.5 * x * x) + t * cdf)
+    return total
+
+
+def _erf(x):
+    """Abramowitz-Stegun 7.1.26 (|error| < 1.5e-7)."""
+    s = np.sign(x)
+    x = np.abs(x)
+    t = 1 / (1 + 0.3275911 * x)
+    y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496735) * t + 0.254829592) * t * np.exp(-x * x)
+    return s * y
 
 
 def erode(sim, col):

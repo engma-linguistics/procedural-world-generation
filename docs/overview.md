@@ -157,7 +157,7 @@ flowchart LR
   - Air cools 6.5 °C/km with height (the **lapse rate**).
   - Seasons scale with the axial tilt.
   - **Continentality** comes from carrying air temperatures along the seasonal winds, so interiors swing and windward coasts stay mild.
-  - Ice is 10 °C colder (albedo).
+  - A big polar ice sheet is 10 °C colder than bare ground (albedo, cold air pooling on it); a small cap gets less, a tropical one none.
 - **Winds:**
   - The three-cell pattern (**Hadley/Ferrel/polar**: trades, westerlies, polar easterlies), shifted with the season.
   - **Monsoon** winds from land–sea pressure contrasts.
@@ -181,6 +181,11 @@ flowchart LR
   - potential evaporation from sunshine and temperature (**Oudin**);
   - actual evaporation from the **Budyko** curve (Fu's form);
   - runoff = rain − actual evaporation.
+- **Ice sheets** (main run, `earth.ice_sheets`): the average extent over the ice-age cycles, in balance with the current mountains (ice answers its climate in ~10 kyr, far inside a 4 Myr step):
+  - ice holds where the summer on it stays near freezing and snowfall beats the year's degree-day melt (~25 mm/yr on a polar plateau, ~100 on a sheet's margin; a dry tropical plateau stays bare);
+  - existing ice partly keeps itself (its white top, ¾ of its height), so a cap outlives its climate a little but follows its range as it moves or wears down;
+  - cold polar desert is covered by ice flowing in from a snowier part of the same cold region;
+  - thickness is a steady (Nye) profile from the edge: ~330 m at the margin, ~1.9 km 300 km in, up to 4 km; a little thinner for dry sheets and warm (soft) ice.
 
 ![Köppen climate classes](overview/koppen.jpg)
 *World 7c5adf (Earth-like A, 976 Myr), Köppen classes.*
