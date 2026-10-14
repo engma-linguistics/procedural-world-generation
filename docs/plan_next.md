@@ -184,6 +184,13 @@ Order: 1 → 6, small to large.
 - **Sediment piles reach 33 km** (Earth max about 20–22 km). (`water`)
 - **Drainage switches outlet in one step when a rift opens.** (`water`, optional)
 - **Zoom lakes are sinks:** the water level is wrong and the floor is a flat 42 m; there are no deltas or distributaries. (`zoomwater`)
+- **Evaporation is merged (`water`); what's left:**
+  - **Drainage memory** is not implemented. Old channels would have to move with the plates; the physical damping is rift-flank uplift, which is a tectonics change.
+  - **Generated worlds have almost no closed basins after ~150 Myr** (0–2% of land drains inland, against 21% on Earth's terrain). Sediment and erosion fill every hollow, and the tectonics makes no new interior basins (foreland or intermontane basins, rift-flank highs).
+  - **Sediment is treated as crust-density rock in the isostasy,** so filling deep water takes ~5× its depth in sediment (Earth ~3×). About 400 cells sit at the 18 km metamorphic cap. Giving sediment its own density moves continental elevations. **Decision for the user.**
+  - **The 20 m "unresolved channel" threshold** for coarse hollows is a judgement call.
+  - **Discharge misses come from the rain model:** the Yangtze ends in a lake, and the Lena, Mekong and Ganges are too small (dry China, Siberia and Indian monsoon). The Nile is 19× too big (Sahel too wet). With observed rain, magnitudes are about right.
+  - **The Orinoco gauge picks up the Amazon,** a coarse-routing artifact.
 - **Zoom lakes and deltas are merged (`zoomwater`); what's left:**
   - The lake outlet river drops about 140 m within a few km (a cliff waterfall). The downstream river's profile is built up from the sea, well below the lake. It needs a floor on the outlet channel that steps down gradually downstream.
   - The zoom sees only part of a big lake's catchment (45k of 125k m³/s). River water entering at the zoom's edge can drain straight back out through the edge.
