@@ -227,6 +227,13 @@ Order: 1 → 6, small to large.
 - **Worlds sliced before `water` (a434c5, cec38b) have no lake_kind and no closed basins**, so salt lakes, salt pans and inland basins don't appear; exposed evaporite beds on dry land stand in as "salt flats".
 - **Canyons are weak at 110 km cells:** the Earth world finds the Kura valley and the Siang below the Tsangpo gorge, not the Grand Canyon. Rain shadows find the Himalaya, SE Tibet and the Atacama/Altiplano edge, not the Sierra Nevada. Plateaus find Tibet, Wyoming and the Altiplano (3rd). The Earth world's salt lake is in Hungary (the model climate leaves the Pannonian basin closed); the Caspian is below sea level, so it's the landlocked sea.
 
+- **Zoom falls (`falls`) are big for such big rivers:** 141 m at 60,000 m³/s is ~85 GW, about 70× Niagara, because coarse worlds drop big rivers 500–700 m over a few hundred km.
+- **The escarpment shows only as the fall and gorge**, not as stepped country. The 1-px gorge is hidden under the preview's wide river line.
+- **A designed step is lost** if the zoom's river carries under 30% of the coarse discharge or the reach leaves the region (a 256 m step on a 1,215 m³/s stream in 58ed13). `waterfalls()` keeps falls ≥15 km apart, so close cascades go unlisted.
+- **Small uphill steps on delta trunks** (path frozen early), from before `falls`.
+- **No glacial hanging valleys.** The lake-outlet cone can raise low ground up to 150 km around an outlet.
+- **Big zoom rivers are now less deeply incised** (they keep at least their valley floor), so canyons are shallower than before `falls`.
+
 **Viewer / Earth world** (from the viewer2 report)
 - The Earth world `8e052d` has about 7% of its land as lakes (no erosion, every pit fills). Re-run `tools/earth_world.py` after `water` merges and delete the old one.
 - The Earth world can't be zoomed (no rock layers).
