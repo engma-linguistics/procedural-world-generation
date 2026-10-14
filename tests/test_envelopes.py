@@ -17,7 +17,12 @@ GROUP = np.array([k[1][0] for k in climate.KOPPEN])
 
 @pytest.fixture(scope="module", params=[1, 2])
 def world(request):
-    sim = run_sim(level=5, seed=request.param, myr=400)
+    # the dry share swings a lot as continents move: average it over the last 80 Myr
+    sim, dry = run_sim(level=5, seed=request.param, myr=320), []
+    for t in (340, 360, 380, 400):
+        sim.run(t)
+        land = sim.w_elev > 0
+        dry.append(100 * (GROUP[sim.snapshot().koppen[land]] == "B").mean())
     land = sim.w_elev > 0
     ocean = ~sim.w_cont
     st = sim.stats()
@@ -25,7 +30,7 @@ def world(request):
         sim=sim, st=st,
         land=100 * land.mean(),
         cont=100 * sim.w_cont.mean(),
-        dry=100 * (GROUP[sim.snapshot().koppen[land]] == "B").mean(),
+        dry=float(np.mean(dry)),
         ocean_age=sim.w_age[ocean].mean(),
         thick=sim.w_thick[sim.w_cont].mean(),
     )
