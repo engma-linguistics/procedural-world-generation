@@ -87,7 +87,7 @@ def test_highlights_from_run(dirs):
     f = next(f for f in res["features"] if f["zoomable"])
     zr = api.zoom_request(res["source"], f)
     zid = Z.zoom_id(wid, zr["lat"], zr["lon"], zr["size_km"], zr["res_km"], 1)
-    (dirs / "zooms" / zid).mkdir()
+    (dirs / "zooms" / zid).mkdir(parents=True)
     (dirs / "zooms" / zid / "zoom.json").write_text("{}")
     hit = [g for g in api.highlights({"run": "tiny01", "t": 40})["features"] if g["zoom"]]
     assert [g["title"] for g in hit] == [f["title"]] and hit[0]["zoom"] == zid
