@@ -233,6 +233,9 @@ Order: 1 → 6, small to large.
 - **Sediment compaction isn't remembered** after uplift.
 - **Name clash:** `planet.tectonics.isostasy` resolves to the function, not the module.
 
+- **Oceans get older after the `l7jumps` fix:** margin subduction now breaks off one basin (6000 km of the oldest passive margin) instead of the plate's whole ocean. Mean ocean age is 83 Myr at L6 against 70 before. In stagnant 2–3-plate phases the L7 mean reaches 140–185 Myr, and sea level sits on the −250 m clip.
+- **L7 continents are ~2 km thinner and ~300 m lower than at L6** (median crust 33 vs 35 km), so twice as much land sits within 100 m of sea level and land is ~2× as sensitive to sea level. Cause not found; check erosion and thermostat scaling with resolution.
+
 **Highlights**
 - ~~Several highest peaks sit under ice caps~~: an iced peak now ranks lower and the highest ice-free peak is added (`hl2`).
 - ~~Earth-like A's longest river crosses a cold, dry polar continent~~: thin rivers over barren land rank lower (`hl2`); it's still listed.
