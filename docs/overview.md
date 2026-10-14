@@ -41,7 +41,7 @@ The planet is an **icosphere**: an icosahedron whose triangles are split into fo
 Every field is a flat NumPy array, one value per cell. Neighbour lists are CSR arrays that the numba kernels loop over. The cells of a coarser level are a prefix of the finer level's, so the ocean model can run at level 5 inside a level-6 world.
 
 **World frame vs plate frame** is the key data-structure idea:
-- Each plate keeps its crust (age, thickness, rock, sediment) on its **own private copy of the whole grid**, plus a rotation saying where that copy currently sits.
+- Each plate keeps its crust (age, thickness, rock, sediment, and its geological record: strata and history, §3) on its **own private copy of the whole grid**, plus a rotation saying where that copy currently sits.
 - Moving a plate only changes the rotation. Crust is never resampled, so plate interiors never blur.
 - Each step, every world cell looks up which plate cell lies under it. The physics runs on these gathered world arrays, and the results are scattered back.
 - Climate, the mantle and sea level live only in the world frame.
@@ -139,8 +139,8 @@ flowchart LR
 ## 3. Surface: erosion, sediment, rocks (`surface.py`, `earth.py`)
 
 **Rocks.** Each cell has a basement rock and, on top of it, a **sediment cover** whose mix of ingredients is tracked.
-- **Basement:** ocean crust, hotspot basalt, arc, sediment-born continent, orogen, craton.
-- **Cover:** limestone (reefs), sandstone, shale, evaporite (salt from hot closed lakes and flats), coal (warm swamps).
+- **Basement:** ocean crust, hotspot basalt, arc, sediment-born continent, orogen, craton, and **granite** (an arc worn 4 km down after it went quiet shows its plutons, like the Sierra Nevada).
+- **Cover:** limestone (reefs), sandstone, shale, evaporite (salt from hot closed lakes and flats), coal (warm swamps), **flood basalt** (a plume's lava on a continent), **tuff** (10% of a continental arc's new crust erupts as ash and ignimbrite).
 - **Erodibility** runs from 0.3 (craton) to 3.0 (evaporite).
 
 **Erosion** runs every step and is scaled by rain:
@@ -152,6 +152,30 @@ flowchart LR
 - pits, lakes and floodplains keep a share;
 - deltas fill to +2 m and shelves to −60 m;
 - the rest spreads over the deep sea floor or is trapped in trenches, where part is scraped onto the overriding plate.
+
+**The geological record** (`tectonics/record.py`) rides with the crust on the plates (`Plates.rec`, `Plates.lith`), so a margin carried across an ocean still knows when it rifted:
+- **Strata:** the cover's top 3 layers in order, each a rock, a thickness and when it last grew. They always add up to the cover (the well-mixed cover stays the mass balance for erosion and isostasy). Net deposits go on top (sandstone on land, shale at sea, plus limestone, evaporite, coal, flood basalt, tuff), net erosion takes the top, burial into the basement the bottom. A new rock starts a layer, a pause of 20 Myr closes one, a full stack merges its bottom two. Limestone buried under 1 km turns to **dolomite**; sandstone folded in crust over 45 km thick to **quartzite**.
+- **History:** when the crust was last rifted and how much it was stretched (ln β), when it was last folded (a collision or an accretionary wedge), how much cover was folded and how hard it was squeezed, how far it has been exhumed since its basement formed, and when it was last under ice. A stratum is folded if it last grew before the cell's last folding; younger ones lie flat on the unconformity.
+- **Cost at level 7:** ~430 MB of plate arrays, ~3–4% of a step, checkpoints ~30% bigger.
+
+**Landform classes** (`landform.py`) are read from that record and the setting now, at every keyframe; a cell takes the first that holds:
+
+| Class | Rule (Earth analogue) | `landform_age` |
+|---|---|---|
+| volcanic arc | land within a cell of an arc volcano (active or extinct ≤ 20 Myr) | nearest volcano's age |
+| hotspot | oceanic land on a hotspot pile or near a vent above the sea | vent's age |
+| fault-block rift | continent stretched (ln β ≥ 0.2) in the last 20 Myr (East Africa) | since rifting |
+| great escarpment | rifted 8–400 Myr ago, standing ≥ 300 m, where the scarp has retreated to: `retreat_km(age)` (~200 km × (1 − e^(−age/150))) from a passive rifted coast (Drakensberg, Western Ghats) | since rifting |
+| fold-and-thrust belt | exposed strata predate the last folding, ≥ 0.2 km of them (Zagros, Valley and Ridge) | since folding |
+| lava plateau | ≥ 0.2 km of flood basalt on top (Deccan) | since eruption |
+| dune field | sand still piling up (top grew ≤ 20 Myr ago), < 150 mm/yr (Rub' al Khali) | top stratum |
+| karst | ≥ 0.4 km of limestone/dolomite on top, > 700 mm/yr, unfrozen | top stratum |
+| caprock plateau / cuestas | flat, exposed (not grown for 10 Myr) hard rock 0.03–1.5 km thick over soft (Colorado Plateau, Niagara) | top stratum |
+| coastal plain | < 300 m, young (≤ 30 Myr) flat clastic strata, ≤ 400 km from the coast | top stratum |
+| shield | old (≥ 500 Myr) craton or granite exposed, not folded for 300 Myr nor rifted for 100 (Canadian Shield) | basement age |
+| hills | any other land (the zoom's graded hills and mountains) | — |
+
+With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope) and the fold wavelength (1.5 × the folded pile + 2 km).
 
 ## 4. Climate (`climate.py`, `ocean.py`)
 
@@ -241,7 +265,7 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
 ## 7. Runs, keyframes, checkpoints, worlds (`timeline.py`, `store.py`, `world.py`)
 
 **`planet simulate`** writes `runs/<id>/`:
-- **Keyframes** every 4 Myr: ~20 layers as small integers, one `.bin` per layer holding every frame. The viewer fetches only what it draws.
+- **Keyframes** every 4 Myr: ~30 layers (the landform class and its parameters among them) as small integers, one `.bin` per layer holding every frame. The viewer fetches only what it draws.
 - **Checkpoints** of the full state every 100 Myr (~23 MB at level 6).
 - **Metadata:** `run.json` (settings, events, stats), a readable `run.txt`, and the code version (git commit plus a hash of `planet/**/*.py`).
 
@@ -282,7 +306,7 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - Heights are scaled so the plateau above never rises over the coarse ground. Big rivers get ~50–150 m falls.
    - `stats.waterfalls` in `zoom.json` lists the biggest.
 
-Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers and its stats.
+Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them; synthesising each class's terrain is PW-010–012) and its stats.
 
 ![Delta types](overview/zoom_deltas.jpg)
 *Delta types in three 600 km zooms of world 0f7abd: a bird's foot into a calm sea; a smooth wave-built coast; tidal funnels with 6.6 m tides.*

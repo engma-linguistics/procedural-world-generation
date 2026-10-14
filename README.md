@@ -295,7 +295,10 @@ Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
 `elevation, plate, crust` (1 = continental), `crust_age, plate_boundary, rock,
 surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
 climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
-jet_e/_n, wave_power, tide_range`. Not every item stores every layer: run
+jet_e/_n, wave_power, tide_range`, and the landform layers (`planet/landform.py`:
+`landform` (class id, legend `landforms`), `landform_age`, `strata_top`,
+`strata_top_km`, `strata_next`, `strata_dip`, `fold_wavelength`), which run
+frames and sliced worlds both carry. Not every item stores every layer: run
 frames have the wind, current and jet layers, but sliced and generated worlds
 don't (only the Earth reference world adds them; a known issue), and worlds
 add `biome`, `runoff`, `evaporation`, `pet` and the wave and tide layers. Run

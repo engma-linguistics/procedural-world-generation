@@ -30,8 +30,9 @@ rules (classify, in priority order: a cell takes the first that holds):
                  Ridge)
   lava plateau   flood basalt at the top, at least TRAPS_MIN_KM (Deccan,
                  Columbia River)
-  dune field     sandstone or sand-rich cover at the top in a hyper-arid
-                 (< DUNES_MM) lowland (ergs: Rub' al Khali)
+  dune field     sand still piling up (the top stratum grew within
+                 DUNES_MYR: sandstone, or a sand-rich cover) in a
+                 hyper-arid (< DUNES_MM) climate (ergs: Rub' al Khali)
   karst          at least KARST_MIN_KM of limestone or dolomite at the top
                  in a wet (> KARST_MM), unfrozen climate
   caprock        flat-lying, exposed (not grown for EXPOSED_MYR) hard rock
@@ -105,7 +106,7 @@ ESCARPMENT_MYR = (8.0, 400.0)
 ESCARPMENT_M = 300.0
 FOLD_MIN_KM = 0.2
 TRAPS_MIN_KM = 0.2
-DUNES_MM, DUNES_SAND, DUNES_MAX_M = 150.0, 0.35, 1500.0
+DUNES_MM, DUNES_SAND, DUNES_MYR = 150.0, 0.35, 20.0
 KARST_MIN_KM, KARST_MM = 0.4, 700.0
 CAP_KM = (0.03, 1.5)
 EXPOSED_MYR = 10.0
@@ -217,7 +218,7 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     claim(folded & (folded_km >= FOLD_MIN_KM), FOLD_BELT, t - t_fold)
     claim((top == FLOOD_BASALT) & (top_km >= TRAPS_MIN_KM), LAVA_PLATEAU, age_top)
     sand = (mix[:, SAND - MIX.start] / np.maximum(cover, 1e-9) >= DUNES_SAND) & (cover > VENEER_KM)
-    claim((precip < DUNES_MM) & ((top == SANDSTONE) | sand) & (elev < DUNES_MAX_M), DUNES, age_top)
+    claim((precip < DUNES_MM) & ((top == SANDSTONE) | sand) & (age_top <= DUNES_MYR), DUNES, age_top)
     claim(np.isin(top, CARBONATE) & (top_km >= KARST_MIN_KM) & (precip > KARST_MM) & (temp > 0), KARST, age_top)
     cap = (np.isin(top, HARD) & ~folded & np.isin(below, SOFT) & (top_km >= CAP_KM[0]) & (top_km <= CAP_KM[1])
            & (age_top >= EXPOSED_MYR))
