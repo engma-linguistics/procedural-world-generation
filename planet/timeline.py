@@ -250,7 +250,7 @@ def replay(run_dir: Path, at: float) -> Simulation:
     run = json.loads((run_dir / "run.json").read_text())
     m = run["meta"]
     grid = build_grid(m["level"])
-    sim = Simulation(grid, m["seed"], Params(**m["params"]), m["dt"])
+    sim = Simulation(grid, m["seed"], Params.from_stored(m["params"]), m["dt"])
     sim.run(at)
     return sim
 

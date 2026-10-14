@@ -43,7 +43,8 @@ speeds reported in cm/yr (1 cm/yr = 10 km/Myr), elevation in metres.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import dataclass, field, fields
 
 import numpy as np
 from numba import njit
@@ -115,7 +116,9 @@ class Params:
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp
-    ocean_ref_age: float = 50.0  # unused now (sea level 0 = the starting sea floor); kept so older runs replay
+    # DEPRECATED, unused: sea level 0 is now the starting sea floor. Kept only so
+    # run.json files that list it still load; remove once old runs are retired.
+    ocean_ref_age: float = 50.0
     alluvial: float = 3000.0  # km of gentle river course over which ~63% of its load settles on land
     # hotspots: mantle plumes fixed in the mantle; plates slide over them
     hotspots: int = 10  # typical number alive at once
@@ -147,6 +150,18 @@ class Params:
     settle_time: float = 30.0  # Myr after forming before a plate can break under stress
     margin_age: float = 120.0  # Myr: ocean floor older than this at a passive margin may start subducting
     max_plates: int = 30
+
+    @classmethod
+    def from_stored(cls, d: dict) -> "Params":
+        """Params from a stored run.json. Keys this code no longer knows
+        (removed params) are dropped with a warning; params added since the
+        run was made take today's defaults, so such a run may not replay
+        exactly (see timeline.slice_world's keyframe check)."""
+        known = {f.name for f in fields(cls)}
+        unknown = sorted(set(d) - known)
+        if unknown:
+            warnings.warn(f"ignoring params this code doesn't know: {unknown}", stacklevel=2)
+        return cls(**{k: v for k, v in d.items() if k in known})
 
 
 @dataclass
@@ -554,7 +569,7 @@ class Simulation:
         self.rifted_at = np.full((P_MAX, P_MAX), -1e9)
         self.formed = np.zeros(P_MAX)  # when each plate got its current shape
         self.precip, self.temp, self.climate_t = None, None, 0.0
-        self.removed = self.flow = self.stacked = np.zeros(n)
+        self.removed, self.flow, self.stacked = np.zeros(n), np.zeros(n), np.zeros(n)
         self.down = np.full(n, -1, np.int64)
         self.swell = np.zeros(n)  # m: broad dome pushed up by active plumes
         # climate (see _climate): global temperature offset from today's
@@ -567,6 +582,16 @@ class Simulation:
         self.newc = 0
         self.rift_pool = np.zeros(P_MAX)  # km x cells of stretched-out crust waiting to line a rift
         self.newc_mask = np.zeros(n, bool)
+        # filled in by the first step (_physics, _forces, _global_temperature,
+        # _climate); these are the values the code used before they exist
+        self.veg = 0.0  # plant cover 0..1 per cell (_physics)
+        self.co2 = 0.0  # smoothed log CO2 source/sink ratio (_global_temperature)
+        self.chem = 0.0  # km of evaporite + coal this step (_sediments)
+        self.w_trench = np.zeros(n)  # m of trench depth (snapshot elevation)
+        self.w_boundary = np.zeros(n, np.int8)  # +1 converging, -1 diverging
+        self.wind = self.current = None  # (n, 3), from _climate
+        self.cell_torque = self.cell_drag = None  # per-cell force terms (_forces, for _stress_cut)
+        self.newest = -1  # slot of the most recently split-off plate
         self.budget = {}  # km x cells of continental crust gained (+) or lost (-), by process
         self.t_warm = self.t_cold = self.p_jul = self.p_jan = self.koppen = None
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
@@ -1074,7 +1099,7 @@ class Simulation:
         self.drift = self.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
         land = self.w_elev > 0
         warm = np.exp(0.06 * (self.temp - 15.0)) if self.temp is not None else 1.0  # chemical weathering
-        warm = warm * (1 + 0.5 * getattr(self, "veg", 0.0))  # roots and soils speed it up
+        warm = warm * (1 + 0.5 * self.veg)  # roots and soils speed it up
         source = self.newc / self.scale**2 + 20.0 * growth.sum() / self.scale**2
         sink = float((self.removed * land * warm).sum()) / self.scale**2
         now = np.array([max(source, 1e-6), max(sink, 1e-6)])
@@ -1086,7 +1111,6 @@ class Simulation:
         self.refs = self.refs + b * (now - self.refs)
         rel = now / self.refs
         # smooth the noisy per-step rates over ~10 Myr
-        self.co2 = getattr(self, "co2", 0.0)
         c = 1 - np.exp(-dt / 10.0)
         self.co2 += c * (np.log(rel[0]) - np.log(rel[1]) - self.co2)
         # Sea level also follows the ocean basins: young sea floor is hot and
@@ -1094,8 +1118,8 @@ class Simulation:
         # and floods the continents (the Cretaceous, ~200 m higher than now).
         # Halved because the extra water also pushes the sea floor down.
         # Measured against a slow (300 Myr) average of itself, which starts
-        # from sea floor with exponentially distributed ages (mean
-        # p.ocean_ref_age), so only real changes in spreading move the sea.
+        # from the initial sea floor (sea level 0), so only real changes in
+        # spreading move the sea.
         ocean = ~self.w_cont
         depth = float(ocean_depth(self.w_age[ocean]).mean()) if ocean.any() else 0.0
         if self.depth_ref is None:  # the starting sea floor defines sea level 0
@@ -1453,7 +1477,9 @@ class Simulation:
                 at = g.locate(world)
                 side = ~self.cont[k, refs] & (lab[at] == biggest)
                 if self._split(k, refs, world, side, toward=True):
-                    edge = (self.owner == k) & self.w_cont & (lab[g.nbr_idx[g.nbr_off[:-1]]] == biggest)
+                    # continental cells of plate k with any neighbour in that stretch of ocean
+                    touches = np.logical_or.reduceat(lab[g.nbr_idx] == biggest, g.nbr_off[:-1])
+                    edge = (self.owner == k) & self.w_cont & touches
                     c = P[edge].mean(0) if edge.any() else world[side].mean(0)
                     self._log("subduction", [k, self.newest], c, "old ocean floor on plate {0} breaks off "
                               "its continental margin and starts to sink; it becomes plate {1}")
@@ -1558,11 +1584,11 @@ class Simulation:
         live = np.flatnonzero(self.alive)
         return Snapshot(
             t=self.t,
-            elevation=np.where(self.w_cont, self.w_elev, self.w_elev + getattr(self, "w_trench", 0)),
+            elevation=np.where(self.w_cont, self.w_elev, self.w_elev + self.w_trench),
             plate=self.label[self.owner],
             continental=self.w_cont.copy(),
             age=self.w_age.copy(),
-            boundary=getattr(self, "w_boundary", np.zeros(self.grid.n, np.int8)).copy(),
+            boundary=self.w_boundary.copy(),
             omega={int(self.label[k]): self.omega[k].tolist() for k in live},
             rock=self.w_rock.copy(),
             cover=self.w_cover.copy(),

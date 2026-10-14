@@ -99,5 +99,14 @@ def test_world_and_zoom(sim4):
     i = land[len(land) // 2]
     lat, lon = float(sim4.grid.lat[i]), float(sim4.grid.lon[i])
     z = zoom.build(w, lat, lon, size_km=400, res_km=8, iterations=3, log=lambda *a: None)
-    e = z["elevation"] if "elevation" in z else z["layers"]["elevation"]
+    e = z["layers"]["elevation"]
     assert np.isfinite(e).all() and e.max() > 0
+
+
+def test_params_from_old_run():
+    """run.json from older code: removed params are dropped (with a warning),
+    missing ones take today's defaults."""
+    stored = {"n_plates": 9, "some_removed_param": 1.0}
+    with pytest.warns(UserWarning, match="some_removed_param"):
+        p = Params.from_stored(stored)
+    assert p.n_plates == 9 and p.tilt == Params().tilt
