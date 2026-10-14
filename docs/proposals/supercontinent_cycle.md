@@ -1,6 +1,6 @@
 # Supercontinent cycle: three proposals
 
-*Status: proposal, nothing implemented yet. Written 2026-10-13.*
+*Status: C's breakup fix + B′ implemented 2026-10-14 (branch `mantle`); see "Implemented" at the end. Written 2026-10-13.*
 
 ## The problem
 
@@ -177,3 +177,90 @@ Then **B′** (B plus traction-driven rifting, replacing the fixed rifting rules
 1. Should every world be *guaranteed* a cycle (favouring A), or is it fine that some seeds never reassemble (B)?
 2. Is a tunable cycle period worth exposing as a knob (A gives it directly; B only indirectly)?
 3. Do you want plume/hotspot placement tied to the mantle field (B's bonus), or kept separate for now?
+
+---
+
+## Implemented (2026-10-14): C's breakup fix + B′, and lighter sediment
+
+The user chose the breakup fix + B′, with hotspots tied to the warm mantle and no guarantee of cycles.
+
+### Breakup fix (`events.py`)
+- `strength()` gives the lithosphere's strength per cell (1 = ordinary crust):
+  - cratons 1.6;
+  - collision belts 0.35–0.85, weakest when young (sutures);
+  - thinned crust down to ×0.7;
+  - plume swells ×0.7–1 (rifts follow plumes, like Afar).
+- `stress_cut` tries 12 straight cuts with offsets.
+  - It ranks them by opening speed ÷ the mean strength along the cut, × (plate area / 5%)^¼. A bigger plate pulls harder per length of cut.
+  - `rift_side` tries 4 wandering (noisy) cuts and keeps the one through the weakest rock.
+- `rift_min_piece` = 0.03: no rift leaves a piece with 0.3–3% of the surface as continent. Oceanic pieces are fine.
+
+### B′ (`mantle.py`)
+`sim.mantle` is a world-frame temperature anomaly (relative units, about ±1–2).
+- **Smoothing:** low-passed in real spherical harmonics, degrees 1–8 (built once per grid by orthonormalising monomials), with a heat kernel over `mantle_scale_km` = 2500. The global mean is dropped.
+- **Memory:** it relaxes over `mantle_memory` = 200 Myr.
+- **Sources:**
+  - *Cold slabs:* each trench adds cold ∝ convergence × slab age (`slab_cold` = 0.002).
+  - *Insulation:* warmth under continents ∝ `mantle_lid` (`insulation` = 0.04). `mantle_lid` is a ~100 Myr running average of continental cover over that patch of mantle. So the longer a continent stays put, the faster the mantle under it warms.
+  - *Starting state:* warm under the starting continents.
+- **Traction:** −`mantle_drag` (0.6) × ∇(mantle + eddies) × the drag weights (continental keels 2.5×). It goes into `motion.forces` before the torques, so `stress_cut` sees it.
+- **Eddies:** `mantle_eddies` (rms 0.3) is a random OU field over degrees 3–8 with a 60 Myr memory. It stands in for convection the model doesn't resolve, so different parts of a big plate get dragged different ways.
+- **Plumes:** `plume_odds` ∝ exp(1.5·T) × (1 + T⁺ × |∇T| / mean). New plumes favour warm mantle, and the edges of warm regions most.
+- **Rules removed:** the fixed heat rule (continent > 7%) and the big-plate rule (> 20%), along with the params `rift_min_continent` and `big_plate`. Other changes:
+  - `rift_stress` 3 → 2 cm/yr;
+  - per-plate wander `mantle_noise` 0.35 → 0.2;
+  - rift events say whether they opened over warm or cold mantle.
+- **Cost:** ~11 ms per step at level 6 (~2%). The basis is built once per grid (0.4 s). Level-6 runtime per 500 Myr was 86 s against 93 s before (B′ has fewer, cheaper rifts).
+- **State:** `mantle`, `mantle_lid` and `mantle_eddies` are in `Simulation.STATE`.
+
+### Lighter sediment (`isostasy.py`, user decision)
+- **Density:** sediment is 2.1 g/cm³ at the surface and compacts to 2.6 at depth (2 km e-folding). Crust is 2.80 (continental) and 2.85 (oceanic).
+- **Elevation:** `elevation()` adds `sediment_lift` for the light cover (cover minus lava flows). Erosion of cover and all deposition use the marginal `sediment_iso`.
+- **Basin fill:** filling 5 km of deep water now takes ~15 km of sediment (3×, as on Earth) instead of ~25 km.
+- **Effect at level 6, seed 1, 1 Gyr** (light vs crust-density sediment, same mantle):
+  - cells at the 18 km metamorphic cap: 0–103 instead of 76–664;
+  - land: about +1.5 points;
+  - median land elevation: +100–200 m;
+  - 99th percentile and maximum elevation: unchanged.
+  - The maximum cover still reaches the cap in a few cells.
+
+### Results: level 6, 2 Gyr, seeds 1–4 (final code, merged with main)
+Command: `tools/supercontinent.py --level 6 --seed 1 2 3 4`. "Largest" is the largest landmass above sea level, as a % of the surface.
+
+| seed | spells > 25% (Myr, peak %) | landmasses > 0.5% while dispersed | plates (median, min) | land % (median, range) | volume | ocean age | speed |
+|---|---|---|---|---|---|---|---|
+| 1 | 0–280 (start), 400–590 (29), 1930 (29) | 6 | 6, 3 | 34.4, 21.9–38.7 | 1.00 | 80 | 4.0 |
+| 2 | 0–510 (start), 870–970 (32), 1740–1770 (27), 1950–1980 (30) | 6 | 6, 2 | 34.8, 26.4–38.1 | 1.01 | 78 | 4.0 |
+| 3 | 0–240 (start), 450–720 (37), 1110–1200 (28) | 5 | 7, 2 | 35.8, 25.8–39.1 | 1.02 | 77 | 4.2 |
+| 4 | 0–300 (start), 430–550 (34), 1220–1400 (38) | 7 | 7, 2 | 34.3, 26.8–40.5 | 1.00 | 77 | 3.9 |
+
+Before (main before this work, same metric): after the starting supercontinent broke up, nothing above 25% in 3 of 4 seeds. Seed 4 had one brief spell (470–570, 31%). The largest landmass's median was 8–10%.
+
+**Against the acceptance criteria:**
+- **Reassembly > 25% at least twice per 2 Gyr:** yes, counting the starting supercontinent, in every seed.
+  - Counting only reassemblies, seed 2 has 3 and seeds 3 and 4 have 2. Seed 1 has 1, plus a single 10-Myr sample at 1930.
+  - Peaks are 27–38%.
+  - Assemblies form over cold mantle (anomaly about −0.4 to −0.5 under the largest continent). The mantle warms under them, and they rift (most continental rifts are tagged "over warm mantle").
+- **Spacing ~300–700 Myr:** mostly 400–870 Myr between assembly starts, so somewhat long. There are some longer quiet stretches (seed 1: 590–1930).
+- **5–15 landmasses > 0.5% between assemblies:** median 5–7 while dispersed (largest < 20%), range up to 11. Before, the median was 8–10 at all times (7–9 with the breakup fix alone).
+- **Land 25–35%:** median 34–36%, on the upper edge, and up to ~40% when assembled. About +1.5 points come from the lighter sediment and the rest from assembled continents flooding less. Excursions below 25% are brief (sea-level swings when the plate count dips).
+- **Crust volume, ocean age, speeds:**
+  - volume ratio 1.00–1.02 at 2 Gyr, but the scorecard at 1 Gyr showed 1.04;
+  - ocean age 77–80 Myr ✓;
+  - speeds 3.9–4.2 cm/yr ✓.
+- **Runtime:** the same as before or slightly faster.
+
+**Showcase:** run `6d9dcf`, "B′ supercontinent cycle seed 2" (level 6, 2 Gyr, with checkpoints). Spells above 25% of the surface:
+- 0–508 Myr: the start, which breaks up by ~100 and regathers by ~200;
+- 892–976 (32%);
+- 1736–1772 (27%);
+- 1948–1988 (30%).
+
+Plots: `seed<N>.png` in the job's tmp dir (largest landmass, count, events, mantle under the largest continent).
+
+### Remaining issues
+- **Low plate count:** the median is 6–7 (it was 8–10), with dips to 2–3 about 10–20% of the time. Plates are now born less often, because the fixed heat rule made ~65 splits per 2 Gyr. Traction-driven welding isn't the cause: sutures fell from ~90 to ~50.
+- **Land on the high side** (median ~34–35%), and the crust volume drifts up to +2–5% mid-run. While continents are assembled, fewer continental margins subduct, so subduction erosion removes less crust, and the volume thermostat (power 4) only partly compensates.
+- **Quiet stretches:** some seeds go quiet for ~1 Gyr between assemblies (seed 1). Cycles aren't metronomic, as the user accepted.
+- **Elevation spikes:** a one-sample ~12–13 km spike in the maximum elevation appeared once each in two runs (B′ seed 1 at 1260 Myr; breakup-fix-only seed 2 at 1200 Myr). It's probably a transient right after a split. Not investigated.
+- **Compaction isn't remembered:** an uplifted, eroded sediment pile becomes porous again.
