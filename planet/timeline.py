@@ -273,7 +273,17 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
                 np.array_equal(arr["elevation"][i], np.clip(np.round(snap.elevation), -32000, 32000).astype("<i2")))
         print(f"replay at t={at:g} {'matches' if same else 'DOES NOT match'} the stored keyframe")
 
+    world = world_from_sim(sim, erosion, source_run=run_dir.name, source_run_name=run["name"])
+    return W.save(world, f"{run['name']} @ {at:g} Myr")
+
+
+def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
+    """A complete world (climate, rivers, biomes, all layers) from a
+    simulation's current state, in memory."""
+    snap = sim.snapshot()
+    at = sim.t
     g = sim.grid
+    m = {"seed": sim.seed, "level": g.level, "params": asdict(sim.params)}
     rng_seed = m["seed"] * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
     tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
@@ -289,16 +299,14 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3) -> Path:
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
              "rock": snap.rock.astype(int), "surface_rock": snap.surface.astype(int), "sediment_cover": snap.cover,
              "crust_thickness": snap.thickness, "ice": snap.ice}
-    meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"],
-            "source_run": run_dir.name, "source_run_name": run["name"], "t_myr": at,
+    meta = {"method": "tectonics", "seed": m["seed"], "level": m["level"], **meta_extra, "t_myr": at,
             "rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "hotspots": snap.hotspots, "volcanoes": snap.volcanoes}
     meta["global_temp_c"] = round(14.5 + sim.dT, 1)
     meta["sea_level_m"] = round(sim.sea_level, 1)
-    world = W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                     dT=sim.dT, tilt=sim.params.tilt, ice=snap.ice)
-    return W.save(world, f"{run['name']} @ {at:g} Myr")
+    return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
+                    dT=sim.dT, tilt=sim.params.tilt, ice=snap.ice)
 
 
 def find_run(ref: str) -> Path:

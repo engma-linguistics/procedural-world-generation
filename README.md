@@ -7,27 +7,46 @@ browser viewer.
 ## Quick start
 
 ```sh
-uv run python -m planet simulate --seed 1                 # 500 Myr of plate tectonics -> runs/run-s1-L5/
-uv run python -m planet slice runs/run-s1-L5 --at 300     # full world (climate, rivers, biomes) at 300 Myr
-uv run python -m planet serve                              # opens http://127.0.0.1:8765/viewer/
+uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
+uv run python -m planet list                       # runs and worlds with their ids
+uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
+uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
+uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 ```
 
-In the viewer, pick a timeline from the dropdown and press play (or space;
+In the viewer, pick a run from the dropdown and press play (or space;
 arrow keys step frames). Click an event in the list to jump to it. The panel
-shows the exact `slice` command for the moment you're looking at.
+shows the exact `slice` command for the moment you're looking at. Zooms have
+their own page: `http://127.0.0.1:8765/viewer/zoom.html`.
 
 Other things to try:
 
 ```sh
 uv run python -m planet simulate -s 7 --myr 1000 --set start=scattered n_plates=16
-uv run python -m planet simulate -s 3 --set erosion_timescale=200   # mountains last longer
-uv run python -m planet report runs/run-s1-L5                       # re-render run.txt
-uv run python -m planet generate -s 42 -l 6                         # one-shot (no time) plates world
-uv run python -m planet show worlds/run-s1-L5-t300.json --layer elevation
+uv run python -m planet simulate --myr 2000 --set heat_start=2 continental_start=0.1   # ocean world, land emerges
+uv run python -m planet simulate --set tilt=45 climate_offset=5                        # extreme seasons, hothouse
+uv run python -m planet report <run-id>                                                # re-render run.txt
 ```
 
-`-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (default, ~240 km cells),
-6 = 41k (~120 km), 7 = 164k.
+`-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (~220 km cells),
+6 = 41k (~110 km, default), 7 = 164k (~55 km). Level 6 takes ~1.5 min per 500 Myr.
+
+## Tests and calibration
+
+```sh
+uv run pytest                    # invariants + envelope tests (~30 s)
+uv run pytest -m "not slow"      # invariants only (~6 s)
+uv run python tools/earth_check.py --png earth.png   # climate model on real Earth vs observations
+uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended to docs/scorecard.jsonl
+```
+
+- **Invariants** (`tests/test_invariants.py`) must hold whatever the tuning:
+  determinism, the continental crust budget closing, sane values, storage
+  that doesn't clip, the sim -> world -> zoom chain.
+- **Envelopes** (`tests/test_envelopes.py`) are plausible ranges (land 22-42%,
+  dry climates 12-45% of land, plate speeds, ocean age...), so a tuning change
+  that quietly breaks another part of the planet fails.
+- The **scorecard** isn't pass/fail: it records how Earth-like things are per commit.
 
 ## Time-stepped tectonics (`planet/tectonics.py`)
 

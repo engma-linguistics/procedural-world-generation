@@ -909,6 +909,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # sunshine, and in summer melting holds it near 0 C however warm the air
     # (Antarctica's coast reaches ~0 C in summer, its plateau ~-30 C). So
     # once ice has formed it outlasts the climate that made it.
+    # (near the equator the rainy 'summer' can be the cooler half-year:
+    # warmest and coldest are whichever is warmer and colder)
+    t_warm, t_cold = np.maximum(t_warm, t_cold), np.minimum(t_warm, t_cold)
     on_ice = (ice > 0) & ~ocean
     cool = tune["ice_cooling"] * on_ice
     temp, t_cold = temp - cool, t_cold - cool

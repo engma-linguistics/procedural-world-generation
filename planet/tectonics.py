@@ -888,7 +888,7 @@ class Simulation:
         # crust has thickened into a real island arc
         arcky = (growth * dt > 0.1) & (rock != CRATON) & (cont | (t > OCEAN_KM + 5))
         rock[arcky] = ARC
-        t0 = t
+        t0 = t.copy()  # (_volcanoes edits t in place)
         t = self._volcanoes(growth, t, rng)
         self._book("volcano", t0, t, cont)
         thin = cont & (t > 22)
