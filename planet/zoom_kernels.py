@@ -286,10 +286,11 @@ def accumulate(rec, order, src):
 def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
     """Steady-state profile: walking outlet -> headwater, each pixel sits
     s_i (m per km) x dist_i (km) above its receiver (or above floor_i, if
-    that is higher: lake rims). Above `soft` the slope tapers off (rounded
-    summits rather than absurd peaks) and nothing goes above `cap`; always
-    a little above the receiver so drainage stays intact. Pixels with
-    fixed=True (outlets, region edge) keep their height."""
+    that is higher: lake rims, gorge rims, the floors of big rivers, with
+    their falls). Above `soft` the slope tapers off (rounded summits rather
+    than absurd peaks) and nothing goes above `cap`; always a little above
+    the receiver so drainage stays intact.
+    Pixels with fixed=True (outlets, region edge) keep their height."""
     for t in range(order.shape[0]):
         i = order[t]
         d = rec[i]
