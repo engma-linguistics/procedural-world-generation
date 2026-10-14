@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from planet import climate  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
+from tools.earth_data import koppen_agreement  # noqa: E402
 from planet.provenance import code_version  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
 
@@ -38,13 +39,12 @@ def earth_scores() -> dict | None:
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
     c = climate.compute(g, elev, 0.0, 23.4, ice)
     land = (elev > 0) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
-    og = np.array([climate.KOPPEN[int(k)][1][0] if 0 <= k < len(climate.KOPPEN) else "?" for k in obs])
     mg = GROUP[c["koppen"]]
     shares = {k: round(100 * float((mg[land] == k).mean()), 1) for k in "ABCDE"}
     p, po = c["precip"][land], e["obs_precip"][land]
     ok = np.isfinite(po) & (po > 0)
-    return {"group_agree": round(100 * float((mg[land] == og[land]).mean()), 1),
-            "exact_agree": round(100 * float((c["koppen"][land] == obs[land]).mean()), 1),
+    ka = koppen_agreement(g, c["koppen"], obs, elev)  # area-weighted, the one Earth Koppen score
+    return {"group_agree": round(ka["group"], 1), "exact_agree": round(ka["exact"], 1),
             "shares": shares,
             "land_rain_mean": round(float(p.mean())),
             "log_rain_corr": round(float(np.corrcoef(np.log(p[ok] + 10), np.log(po[ok] + 10))[0, 1]), 3)}

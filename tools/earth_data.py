@@ -318,6 +318,36 @@ def _build(grid) -> dict:
     return out
 
 
+def cell_areas(grid) -> np.ndarray:
+    """Spherical area of each cell (sr), triangle fan from the centre."""
+    k = max(len(c) for c in grid.cell_corners)
+    idx = np.array([c + [c[-1]] * (k - len(c)) for c in grid.cell_corners])
+    a = grid.centers[:, None, :]
+    b = grid.corners[idx]
+    c = grid.corners[np.roll(idx, -1, axis=1)]
+    num = np.abs(np.einsum("nkj,nkj->nk", a, np.cross(b, c)))
+    den = 1 + np.einsum("nkj,nkj->nk", a, b) + np.einsum("nkj,nkj->nk", b, c) + np.einsum("nkj,nkj->nk", c, a)
+    return (2 * np.arctan2(num, den)).sum(1)
+
+
+def koppen_agreement(grid, koppen, obs_koppen, elev) -> dict:
+    """The Earth Koppen score, one definition for earth_check, scorecard and
+    the tests: over the model's land (elev > 0) outside Antarctica (lat >
+    -60) where Kottek has a land class, the share of the *area* (true cell
+    areas) whose model class matches the observed one: "group" (main group
+    A-E) and "exact" (full code), in %. "group_cells" is the unweighted
+    share of cells, which the test floor and scorecard quoted before
+    2026-10-14 (within ~0.1 point of "group" at level 6)."""
+    from planet import climate
+    k, obs = np.asarray(koppen, int), np.asarray(obs_koppen, int)
+    group = np.array([c[1][0] for c in climate.KOPPEN])
+    m = (np.asarray(elev) > 0) & (grid.lat > -60) & (obs >= 0) & (obs < len(group)) & (obs != climate.SEA_CLASS)
+    w = cell_areas(grid)[m]
+    gm, go = group[k[m]], group[obs[m]]
+    return {"group": 100 * float(w[gm == go].sum() / w.sum()), "exact": 100 * float(w[k[m] == obs[m]].sum() / w.sum()),
+            "group_cells": 100 * float((gm == go).mean())}
+
+
 def earth_on_grid(grid) -> dict:
     """Earth elevation/ice (model inputs) and observations on `grid`, cached
     as data/earth/L{level}.npz."""

@@ -49,6 +49,7 @@ from planet import climate, hydrology  # noqa: E402
 from planet import images  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools import earth_data  # noqa: E402
+from tools.earth_data import cell_areas  # noqa: E402
 
 GROUPS = "ABCDE"
 CODES = {i: c for i, c, _, _ in climate.KOPPEN}
@@ -232,18 +233,6 @@ REGIONS = [
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
-def cell_areas(grid) -> np.ndarray:
-    """Spherical area of each cell (sr), triangle fan from the centre."""
-    k = max(len(c) for c in grid.cell_corners)
-    idx = np.array([c + [c[-1]] * (k - len(c)) for c in grid.cell_corners])
-    a = grid.centers[:, None, :]
-    b = grid.corners[idx]
-    c = grid.corners[np.roll(idx, -1, axis=1)]
-    num = np.abs(np.einsum("nkj,nkj->nk", a, np.cross(b, c)))
-    den = 1 + np.einsum("nkj,nkj->nk", a, b) + np.einsum("nkj,nkj->nk", b, c) + np.einsum("nkj,nkj->nk", c, a)
-    return (2 * np.arctan2(num, den)).sum(1)
-
-
 def group_of(ids: np.ndarray) -> np.ndarray:
     """KOPPEN ids -> 0..4 for A..E, -1 for sea/missing."""
     lut = np.array([GROUPS.index(CODES[i][0]) if CODES[i][0] in GROUPS else -1
@@ -315,10 +304,7 @@ def analyse(grid, d, c) -> dict:
         "peel2007_incl_ant": PEEL_2007_INCL_ANT,
     }
     m = both & ~ant
-    R["cell_agreement_excl_ant"] = {
-        "exact": 100 * float(np.sum(w[m & (k == ok)]) / np.sum(w[m])),
-        "group": 100 * float(np.sum(w[m & (gm == go)]) / np.sum(w[m])),
-    }
+    R["cell_agreement_excl_ant"] = earth_data.koppen_agreement(grid, k, ok, d["elev"])  # the Earth Koppen score
     conf = np.zeros((5, 5))
     for i in range(5):
         for j in range(5):
