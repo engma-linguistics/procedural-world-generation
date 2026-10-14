@@ -204,6 +204,11 @@ LAYERS = {
     "dewpoint_jan": _spec("i1", "C", "dew point of the air near the ground, January half-year"),
     "humidity_jul": _spec("u1", "%", "relative humidity near the ground, July half-year"),
     "humidity_jan": _spec("u1", "%", "relative humidity near the ground, January half-year"),
+    "cloud_jul": _spec("u1", "%", "cloud cover (share of the sky), July half-year (climate.clouds)"),
+    "cloud_jan": _spec("u1", "%", "cloud cover (share of the sky), January half-year (climate.clouds)"),
+    "sunshine_jul": _spec("u1", "h/day", "bright sunshine, hours a day, July half-year (climate.sunshine)", scale=0.1),
+    "sunshine_jan": _spec("u1", "h/day", "bright sunshine, hours a day, January half-year (climate.sunshine)",
+                          scale=0.1),
     "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
     # landform classes and their parameters (landform.py; read from each cell's geological record)
     "landform": _spec("u1", "id", "landform class (landform.CLASSES; legend 'landforms')"),

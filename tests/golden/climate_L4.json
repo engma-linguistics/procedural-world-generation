@@ -1,5 +1,7 @@
 {
  "aet": "<f8[2562]:a21e8b97be4d12852d08",
+ "cloud_jan": "<f8[2562]:3fb43ad35734c1b4beae",
+ "cloud_jul": "<f8[2562]:d54b3eccb73b6371c9cf",
  "current": "<f8[2562, 3]:81efb5d5638e57295f56",
  "density": "<f8[2562]:f98c84f48a71acd71f33",
  "density_winter": "<f8[2562]:d7a9263ba55bc487abc3",
@@ -26,6 +28,8 @@
  "sst": "<f8[2562]:e891b063d91571341557",
  "sst_jan": "<f8[2562]:7e8cb4a04478761f4cce",
  "sst_jul": "<f8[2562]:635ea96ad3a826f3d19a",
+ "sun_jan": "<f8[2562]:64f67ec30607d457d6f4",
+ "sun_jul": "<f8[2562]:8ad682c41cc040d114d6",
  "t_cold": "<f8[2562]:26e13cb97663e71c2120",
  "t_warm": "<f8[2562]:db6fdd9fd7daa17fbc67",
  "temp": "<f8[2562]:f0d01eaa232314ff0855",

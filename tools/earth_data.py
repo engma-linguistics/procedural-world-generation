@@ -109,7 +109,14 @@ RASTERS = {
     "gpcp": ("https://psl.noaa.gov/thredds/dodsC/Datasets/gpcp/precip.mon.ltm.1991-2020.nc",
              "precip", "[0:1:11][0:1:71][0:1:143]"),
     "ncep_t2m": ("noaa_psl_4835_64f9_2242", "air", "[0:1:11][0:1:93][0:1:191]"),
+    # clouds (earth_clouds): ship-observed cloudiness in oktas (ICOADS 2.5 enhanced, 2 deg,
+    # 1981-2010 long-term mean) and the reanalysis' total cloud cover (%)
+    "icoads_cldc": ("noaa_psl_1a7e_ae27_207f", "cldc", "[0:1:11][0:1:89][0:1:179]"),
+    "ncep_tcdc": ("https://psl.noaa.gov/thredds/dodsC/Datasets/ncep.reanalysis.derived/other_gauss/"
+                  "tcdc.eatm.mon.ltm.1991-2020.nc", "tcdc", "[0:1:11][0:1:93][0:1:191]"),
 }
+CRU_SUNP_URL = "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_sunp.dat.gz"
+CLOUD_CACHE_VERSION = 1
 
 
 # --------------------------------------------------------------------------
@@ -399,6 +406,68 @@ def earth_on_grid(grid) -> dict:
     out = _build(grid)
     DATA.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(f, version=CACHE_VERSION, **out)
+    return out
+
+
+def cru_sunshine() -> dict:
+    """CRU CL 2.0 (New et al. 2002) mean monthly sunshine, % of the possible
+    (day length) hours, 1961-90, on a 10' grid of land points (no Antarctica):
+    dict(lat, lon, val (n, 12))."""
+    f = DATA / "raw_cru_sunp.npz"
+    if not f.exists():
+        DATA.mkdir(parents=True, exist_ok=True)
+        import gzip
+        txt = gzip.decompress(_get(CRU_SUNP_URL)).decode("ascii")
+        a = np.loadtxt(io.StringIO(txt), dtype=np.float32)
+        np.savez_compressed(f, lat=a[:, 0], lon=a[:, 1], val=a[:, 2:14])
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def _cloud_build(grid) -> dict:
+    n = grid.n
+    clat, clon = grid.lat, grid.lon
+
+    def halves(m):  # (12, n) monthly -> Apr-Sep mean, Oct-Mar mean
+        return m[3:9].mean(0), np.concatenate([m[:3], m[9:]]).mean(0)
+
+    out = {}
+    c = raster("icoads_cldc")
+    cv = np.where(~np.isfinite(c["val"]) | (np.abs(c["val"]) > 100), np.nan, c["val"]) / 8.0
+    for k, v in zip(("obs_cloud_sea_jul", "obs_cloud_sea_jan"), halves(_sample(c, clat, clon, cv))):
+        out[k] = v.astype(np.float32)
+    t = raster("ncep_tcdc")
+    tv = np.where(np.abs(t["val"]) > 1e30, np.nan, t["val"]) / 100.0
+    for k, v in zip(("obs_cloud_ncep_jul", "obs_cloud_ncep_jan"), halves(_bilinear(t, tv, clat, clon))):
+        out[k] = v.astype(np.float32)
+    s = cru_sunshine()
+    cell = grid.locate(_unit(s["lat"].astype(float), s["lon"].astype(float)))
+    w = np.cos(np.radians(s["lat"].astype(float)))
+    W = np.bincount(cell, w, n)
+    m = np.stack([np.bincount(cell, w * s["val"][:, i], n) for i in range(12)]) / np.maximum(W, 1e-12) / 100.0
+    m[:, W <= 0] = np.nan
+    for k, v in zip(("obs_sun_jul", "obs_sun_jan"), halves(m)):
+        out[k] = v.astype(np.float32)
+    return out
+
+
+def earth_clouds(grid) -> dict:
+    """Observed clouds and sunshine on `grid` (fractions 0..1; NaN where the
+    source has no data), as July (Apr-Sep) and January (Oct-Mar) half-year means:
+      obs_cloud_sea_*   ICOADS 2.5 ship-observed cloudiness (oktas / 8), 2 deg, 1981-2010:
+                        the surface observer's total cloud, over the sea
+      obs_cloud_ncep_*  NCEP/NCAR reanalysis total cloud cover, 1991-2020 (a model's clouds,
+                        too few over the stratocumulus decks; land + sea)
+      obs_sun_*         CRU CL 2.0 sunshine duration, share of the possible hours, land
+    Cached as data/earth/clouds_L{level}.npz."""
+    f = DATA / f"clouds_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == CLOUD_CACHE_VERSION and len(z["obs_sun_jul"]) == grid.n:
+            return {k: z[k] for k in z.files if k != "version"}
+    out = _cloud_build(grid)
+    DATA.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(f, version=CLOUD_CACHE_VERSION, **out)
     return out
 
 

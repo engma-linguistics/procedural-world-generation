@@ -18,6 +18,8 @@ Extra layers saved with it:
                         (Antarctica, some coasts), GPCP; null where neither
   obs_climate           Koppen class (climate.KOPPEN id) from Kottek et al.
                         2006; -1 where it has no data
+  obs_sunshine          h/day of bright sunshine over the year, CRU CL 2.0
+                        (land, no Antarctica; null elsewhere)
   wind_e, wind_n        the model's annual-mean surface wind, east/north (~1 = a steady trade wind)
   current_e, current_n  the model's surface ocean currents, same scale (0 on land)
   jet_e, jet_n          the model's annual-mean jet stream, m/s
@@ -39,9 +41,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from planet import climate  # noqa: E402
 from planet import world as W  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
-from tools.earth_data import earth_on_grid  # noqa: E402
+from tools.earth_data import earth_clouds, earth_on_grid  # noqa: E402
 
 NAME = "Earth (today, ETOPO1) — model vs observed"
 TILT = 23.44
@@ -59,6 +62,7 @@ def build(level: int = 6) -> dict:
     d = earth_on_grid(grid)
     elev, ice = d["elev"].astype(float), d["ice"].astype(float)
     rain = np.where(np.isfinite(d["obs_precip"]), d["obs_precip"], d["obs_gpcp"])
+    o, day = earth_clouds(grid), climate.day_hours(grid.lat, TILT)
     extra = {
         "ice": np.round(ice),
         "obs_temperature": _with_nulls(d["obs_temp"]),
@@ -66,12 +70,15 @@ def build(level: int = 6) -> dict:
         "obs_cold_month": _with_nulls(d["obs_t_cold"]),
         "obs_precipitation": _with_nulls(rain, 0),
         "obs_climate": d["obs_koppen"].astype(int),
+        # CRU CL 2.0 sunshine (share of the possible hours, land) as hours a day over the year
+        "obs_sunshine": _with_nulls(0.5 * sum(o[f"obs_sun_{h}"] * dh for h, dh in zip(("jul", "jan"), day))),
     }
     meta = {"method": "earth", "seed": 0, "level": level, "source": "ETOPO1 + observations (tools/earth_data.py)",
             "remake": "uv run python tools/earth_world.py",
             "observed": {"obs_temperature": "NCEP/NCAR reanalysis 2 m air temperature, 1981-2010",
                          "obs_precipitation": "GPCC v2018 (land), GPCP v2.3 where GPCC has none",
-                         "obs_climate": "Kottek et al. 2006 Koppen-Geiger, 1951-2000 (As scored as Aw)"},
+                         "obs_climate": "Kottek et al. 2006 Koppen-Geiger, 1951-2000 (As scored as Aw)",
+                         "obs_sunshine": "CRU CL 2.0 sunshine duration (New et al. 2002), 1961-90, land"},
             "global_temp_c": 14.5, "sea_level_m": 0.0}
     world = W.finish(grid, elev, extra, meta, erosion=0.0, dT=0.0, tilt=TILT, params={"earth": True},
                      t0=t0, ice=ice)

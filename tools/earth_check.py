@@ -28,8 +28,15 @@ land basins there, so they become lakes. The column "obs P" routes the
 runoff the same scheme makes from GPCC's observed rain instead, which
 separates evaporation/runoff error from rain error.
 
+Clouds: the model's cloud cover over the sea vs ICOADS ship-observed
+cloudiness (1981-2010), its sunshine share on land vs CRU CL 2.0 (1961-90),
+by band, and regional annual means vs well-known sanity targets
+(CLOUD_REGIONS; tools/earth_data.earth_clouds), plus January humidity of
+dry winter air (Delhi, the Sahara; PW-151).
+
 Only depends on climate.compute(grid, elev, dT, tilt, ice) and its keys
-temp/t_warm/t_cold/precip/p_jul/p_jan/koppen/runoff/aet/lake_evap, plus
+temp/t_warm/t_cold/precip/p_jul/p_jan/koppen/runoff/aet/lake_evap,
+cloud_jul/jan, sun_jul/jan, rh_jan, plus
 KOPPEN/SEA_CLASS, climate.water_balance and hydrology.rivers_and_lakes.
 """
 
@@ -428,7 +435,94 @@ def analyse(grid, d, c) -> dict:
         regs.append(rr)
     R["regions"] = regs
     R["rivers"] = earth_rivers(grid, d, c, w)
+    R["clouds"] = earth_clouds(grid, d, c, w)
     return R
+
+
+# Cloud regions with sanity targets: well-known annual-mean total cloud cover
+# (%, satellite/surface climatologies such as ISCCP, MODIS, CloudSat-CALIPSO
+# and ship reports; rounded ranges, the observers disagree by ~10 points).
+# Seasonal targets where the season is the point. "sea"/"land": which cells.
+CLOUD_REGIONS = [
+    ("ITCZ E Pacific", 4, 10, -150, -90, "sea", (70, 80)),
+    ("ITCZ Atlantic", 3, 9, -40, -20, "sea", (70, 80)),
+    ("W Pacific warm pool", -10, 10, 130, 170, "sea", (70, 80)),
+    ("Peru Sc deck", -25, -10, -90, -75, "sea", (60, 80)),
+    ("California Sc deck", 20, 35, -130, -118, "sea", (60, 80)),
+    ("Namibia Sc deck", -25, -10, -5, 12, "sea", (60, 80)),
+    ("Canary Sc deck", 18, 30, -30, -15, "sea", (50, 70)),
+    ("Trade cumulus (Hawaii)", 15, 25, -165, -140, "sea", (50, 65)),
+    ("Southern Ocean", -65, -50, -180, 180, "sea", (80, 90)),
+    ("N Atlantic storm track", 45, 60, -40, -10, "sea", (75, 85)),
+    ("N Pacific storm track", 40, 55, -180, -140, "sea", (75, 85)),
+    ("Arctic Ocean", 75, 90, -180, 180, "sea", (60, 85)),
+    ("Sahara", 18, 30, -10, 30, "land", (10, 20)),
+    ("Arabia", 17, 28, 40, 55, "land", (10, 25)),
+    ("Australia interior", -30, -20, 120, 145, "land", (20, 35)),
+    ("Amazon", -10, 2, -70, -50, "land", (65, 80)),
+    ("Congo basin", -5, 5, 12, 30, "land", (70, 80)),
+    ("W Europe", 43, 55, -5, 15, "land", (60, 75)),
+    ("Siberia", 55, 70, 65, 140, "land", (60, 70)),
+    ("Antarctica", -90, -70, -180, 180, "land", (40, 60)),
+]
+# seasonal contrasts, (region, July target %, January target %)
+CLOUD_SEASONS = [("India", 10, 28, 72, 88, "land", (60, 75), (10, 25)),  # monsoon summer, dry winter
+                 ("E Mediterranean", 31, 38, 15, 33, "sea", (5, 25), (40, 60))]  # dry summer under the high
+# January relative humidity of dry winter air (PW-151; observed ~30-60%)
+DRY_AIR = [("Delhi", 28.6, 77.2, (45, 70)), ("Timbuktu", 16.8, -3.0, (20, 40)), ("Riyadh", 24.7, 46.7, (40, 60)),
+           ("Kashgar", 39.5, 76.0, (55, 75))]
+
+
+def earth_clouds(grid, d, c, w) -> dict:
+    """Cloud cover and sunshine vs observed: the model's sea cloud vs ICOADS
+    ship reports and its land sunshine (share of the possible hours) vs CRU
+    CL 2.0, by 10-degree band (annual means of the two half-years); regional
+    annual cloud vs the sanity targets above (NCEP reanalysis cloud printed
+    alongside, a model's own clouds, too few over the stratocumulus decks);
+    the seasonal contrasts; and dry-air humidity."""
+    o = earth_data.earth_clouds(grid)
+    lat, lon = grid.lat, grid.lon
+    sea = d["elev"] <= 0
+    days = climate.day_hours(lat, 23.4)
+    cl = 0.5 * (c["cloud_jul"] + c["cloud_jan"])
+    sun = 0.5 * (c["sun_jul"] / np.maximum(days[0], 1e-6) + c["sun_jan"] / np.maximum(days[1], 1e-6))
+    obs_sea = 0.5 * (o["obs_cloud_sea_jul"] + o["obs_cloud_sea_jan"])
+    obs_sun = 0.5 * (o["obs_sun_jul"] + o["obs_sun_jan"])
+    ncep = 0.5 * (o["obs_cloud_ncep_jul"] + o["obs_cloud_ncep_jan"])
+    pct = lambda x: None if not np.isfinite(x) else round(100 * float(x), 1)
+    out = {"global": {"cloud": pct(wmean(cl, w, np.ones_like(sea))), "cloud_sea": pct(wmean(cl, w, sea)),
+                      "cloud_land": pct(wmean(cl, w, ~sea)), "ncep": pct(wmean(ncep, w, np.ones_like(sea)))}}
+    ok_s, ok_l = sea & np.isfinite(obs_sea), ~sea & np.isfinite(obs_sun)
+    out["sea_cloud_rmse"] = pct(np.sqrt(wmean((cl - obs_sea) ** 2, w, ok_s)))
+    out["land_sun_rmse"] = pct(np.sqrt(wmean((sun - obs_sun) ** 2, w, ok_l)))
+    out["bands"] = [{"band": f"{lo:+d}..{lo + 10:+d}", "sea": pct(wmean(cl, w, ok_s & band_mask(lat, lo, lo + 10))),
+                     "sea_obs": pct(wmean(obs_sea, w, ok_s & band_mask(lat, lo, lo + 10))),
+                     "sun": pct(wmean(sun, w, ok_l & band_mask(lat, lo, lo + 10))),
+                     "sun_obs": pct(wmean(obs_sun, w, ok_l & band_mask(lat, lo, lo + 10)))} for lo, _ in BANDS]
+
+    def region(a, b, lo, hi, surf):
+        return band_mask(lat, a, b) & (lon >= lo) & (lon < hi) & (sea if surf == "sea" else ~sea)
+
+    regs = []
+    for name, a, b, lo, hi, surf, tgt in CLOUD_REGIONS:
+        m = region(a, b, lo, hi, surf)
+        v = pct(wmean(cl, w, m))
+        regs.append({"name": name, "surface": surf, "target": tgt, "model": v,
+                     "obs": pct(wmean(obs_sea if surf == "sea" else obs_sun, w, m & np.isfinite(
+                         obs_sea if surf == "sea" else obs_sun))),
+                     "ncep": pct(wmean(ncep, w, m)), "ok": v is not None and tgt[0] - 5 <= v <= tgt[1] + 5})
+    out["regions"] = regs
+    out["seasons"] = []
+    for name, a, b, lo, hi, surf, tj, ta in CLOUD_SEASONS:
+        m = region(a, b, lo, hi, surf)
+        out["seasons"].append({"name": name, "jul": pct(wmean(c["cloud_jul"], w, m)), "jan": pct(wmean(c["cloud_jan"], w, m)),
+                               "target_jul": tj, "target_jan": ta})
+    dry = []
+    for name, la, lo, tgt in DRY_AIR:
+        i = int(grid.locate(earth_data._unit(np.array([la]), np.array([lo])))[0])
+        dry.append({"name": name, "rh_jan": round(float(c["rh_jan"][i])), "target": tgt})
+    out["dry_air"] = dry
+    return out
 
 
 def earth_rivers(grid, d, c, w) -> dict:
@@ -635,6 +729,24 @@ def report(R, times, level):
     for q in rv["closed_lakes"]:
         f = lambda k: f"open {k['open']}, closed {k['closed']}, pan {k['pan']}"
         p(f"  {q['name']:30} {f(q['model'])}  |  {f(q['obs_rain'])}")
+
+    cr = R["clouds"]
+    g = cr["global"]
+    p(f"\nClouds (annual mean of the two half-years): global {g['cloud']:.0f}% (sea {g['cloud_sea']:.0f}%, "
+      f"land {g['cloud_land']:.0f}%; Earth ~67%, NCEP reanalysis {g['ncep']:.0f}%). "
+      f"RMS error: sea cloud vs ICOADS {cr['sea_cloud_rmse']:.0f} points, land sunshine vs CRU {cr['land_sun_rmse']:.0f} points")
+    p(f"{'band':>9} | {'sea cloud':>13} | {'land sunshine':>13}   (% model / observed: ICOADS ship cloud, CRU sunshine)")
+    for b in reversed(cr["bands"]):
+        p(f"{b['band']:>9} | {fmt(b['sea']):>6} {fmt(b['sea_obs']):>6} | {fmt(b['sun']):>6} {fmt(b['sun_obs']):>6}")
+    p(f"{'region':24}{'target':>8}{'model':>7}{'obs':>6}{'ncep':>6}   (obs: ICOADS cloud at sea, CRU sunshine % on land)")
+    for r in cr["regions"]:
+        p(f"{r['name']:24}{r['target'][0]:>4}-{r['target'][1]:<3}{fmt(r['model']):>7}{fmt(r['obs']):>6}{fmt(r['ncep']):>6}"
+          f"   {'ok' if r['ok'] else 'OFF'}")
+    for r in cr["seasons"]:
+        p(f"{r['name']:24} July {fmt(r['jul'])}% (target {r['target_jul'][0]}-{r['target_jul'][1]}), "
+          f"January {fmt(r['jan'])}% (target {r['target_jan'][0]}-{r['target_jan'][1]})")
+    p("dry winter air, January relative humidity: " + ", ".join(
+        f"{r['name']} {r['rh_jan']}% ({r['target'][0]}-{r['target'][1]})" for r in cr["dry_air"]))
 
     p("\nLargest systematic errors (auto-ranked):")
     for s in R["systematic_errors"][:20]:

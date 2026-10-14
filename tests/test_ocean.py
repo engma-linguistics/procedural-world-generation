@@ -125,3 +125,28 @@ def test_seasonal_sst_and_humidity(basins):
         assert 60 < np.median(rh[sea]) < 90
         t = climate.humidity(np.ones(1), np.zeros(1), climate.TUNE)
         assert t[0][0] <= 0 and 80 < t[1][0] < 90  # saturated at 0 C: ~84%, dew point a little below
+
+
+def test_clouds_and_sunshine(basins):
+    """Cloud cover (climate.clouds): cloudy where the air rises (the tropical
+    rain belt) and in the storm tracks, clear under the sinking subtropical
+    air over land, and a stratocumulus deck on the eastern side of the
+    oceans' subtropics (cool upwelling under the inversion): cloudier than
+    the western side there with far less rain. Sunshine hours never exceed
+    the day's length."""
+    g, elev, c = basins
+    sea, lat, lon = elev <= 0, g.lat, g.lon
+    days = climate.day_hours(lat)
+    for k, (s, shift) in enumerate((("jul", 6.4), ("jan", -6.4))):
+        cl, p = c["cloud_" + s], c["p_" + s]
+        assert np.isfinite(cl).all() and (cl >= 0).all() and (cl <= 1).all()
+        assert ((c["sun_" + s] >= 0) & (c["sun_" + s] <= days[k] + 1e-9)).all()
+        assert cl[sea & (np.abs(lat - shift) < 6)].mean() > 0.6  # the tropical rain belt
+        assert cl[sea & (lat < -50) & (lat > -65)].mean() > 0.75  # the Southern Ocean's storms
+        assert cl[~sea & (np.abs(np.abs(lat) - 25) < 6)].mean() < 0.45  # the subtropical deserts
+        band = sea & (np.abs(np.abs(lat - shift) - 25) < 6) & (np.abs(lat) < 40)
+        east = band & (((lon > -35) & (lon < -20)) | ((lon > 105) & (lon < 120)))  # off the west coasts
+        west = band & (((lon > 20) & (lon < 35)) | (lon > 170) | (lon < -175))  # off the east coasts
+        assert cl[east].mean() > cl[west].mean() + 0.1 and p[east].mean() < 0.6 * p[west].mean()
+    # the dry winter air keeps a background of vapour (PW-151): little air sits at the floor
+    assert (c["rh_jan"] <= 100 * climate.HUMID_MIN + 0.5).mean() < 0.02
