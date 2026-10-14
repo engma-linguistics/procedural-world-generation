@@ -200,6 +200,19 @@ class Simulation:
         self.book("events", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         volcanism.tend(self)  # volcanoes follow their crust, sink, erode, grow reefs
 
+        # 6. climate, every climate_every Myr, on the ground as the events
+        # left it: a keyframe shows the climate of the ground it shows, and
+        # the next steps' erosion uses it
+        if earth.climate_due(self):
+            self._climate(self.w_elev)
+
+    def _climate(self, e):
+        """Update the climate on elevation e (m above the current sea level).
+        It moves the sea (land ice), so the world view's elevation follows."""
+        sea0 = self.sea_level
+        earth.update_climate(self, e)
+        self.w_elev = self.w_elev - (self.sea_level - sea0)
+
     def _resolve(self):
         """Decide which plate owns each world cell (plate_kernels.resolve).
         Returns (new ocean floor mask, km of crust stacked by collisions)."""
@@ -247,9 +260,9 @@ class Simulation:
         # (the climate's random drift has its own stream: changes to how many
         # numbers the tectonics draws shouldn't reshuffle the climate history)
         earth.global_temperature(self, growth, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
-        if earth.climate_due(self):
-            earth.update_climate(self, elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
-                                                 sediment_km(col.cover, col.x)))
+        if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
+            self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
+                                    sediment_km(col.cover, col.x)))
         dep, lake = earth.erode(self, col)
         chem = earth.sediments(self, col, dep, lake)
         earth.bury(self, col)

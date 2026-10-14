@@ -113,9 +113,10 @@ On four seeds the largest landmass passed 25% of the surface every 400–870 Myr
 2. Resolve ownership.
 3. Find the boundaries.
 4. Update the mantle.
-5. Physics: crust, arcs, hotspots, collisions, stretching, crust flow, temperature, climate every 4 Myr, erosion, sediment.
+5. Physics: crust, arcs, hotspots, collisions, stretching, crust flow, temperature, erosion, sediment.
 6. Solve the forces for the next step.
 7. Events: sutures, slivers absorbed, at most one rift.
+8. Climate every 4 Myr, on the ground the events left (so a keyframe's climate fits its ground); the next steps' erosion uses it.
 
 Together these form a loop:
 - Erosion strips mountains, and isostasy partly lifts them back.
