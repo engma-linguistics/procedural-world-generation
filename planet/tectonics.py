@@ -1286,6 +1286,16 @@ class Simulation:
         self.owned[keep, t] = True
         for arr in (self.age, self.thick, self.cont, self.rock, self.cover, self.extra):
             arr[keep, t] = arr[gone, r]
+        # World cells `gone` shows whose spot on keep's grid the pull missed
+        # (the rotated grids don't map one to one): push those too, or they
+        # would show keep's never-written (zero-thickness) crust.
+        w = np.flatnonzero(self.owner == gone)
+        rk, rg = self.idx[keep, w], self.idx[gone, w]
+        miss = ~self.owned[keep, rk]
+        rk, rg = rk[miss], rg[miss]
+        self.owned[keep, rk] = True
+        for arr in (self.age, self.thick, self.cont, self.rock, self.cover, self.extra):
+            arr[keep, rk] = arr[gone, rg]
         ak, ag = (self.owner == keep).sum(), (self.owner == gone).sum()
         self.omega[keep] = (self.omega[keep] * ak + self.omega[gone] * ag) / max(ak + ag, 1)
         self.owned[gone] = False
