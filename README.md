@@ -27,11 +27,17 @@ the tilt; tick "Equator, tropics, polar circles" for those, and press N (or
 "North up") to level the view.
 
 "Find highlights" (in the panel) lists the places worth a closer look at the
-moment on screen: the highest peak, the longest mountain range, the largest and
-longest rivers, river mouths where deltas could build, fjord coasts,
-Mediterranean "wine country", volcanic arcs, hotspot islands, rifts, the
-biggest lake, deserts, rainforests, ice sheets and a few climate records
-(`planet/highlights.py`; cached in `worlds/highlights/`). Click one to turn the
+moment on screen: the highest peak (and the highest ice-free one, when the
+top is under an ice cap), the longest mountain range, the largest and
+longest rivers, the steepest big rivers and waterfalls, canyons, river mouths
+where deltas could build, fjord coasts, Mediterranean "wine country", volcanic
+arcs, hotspot islands, rifts, plateaus, rain shadows, coral coasts, the biggest
+lake, salt lakes, salt flats and inland basins, deserts, rainforests, ice
+sheets, the most varied 1000 km square and a few climate records
+(`planet/highlights.py`; cached in `worlds/highlights/`). On ~110 km cells a
+"waterfall" is a steep reach of river; each zoom lists its own pixel-scale
+falls (height, discharge, place) in `zoom.json` stats, and `planet zoom`
+prints the biggest. Click one to turn the
 globe to it and pick it for a zoom at a suggested size; `planet highlights
 --zoom N` makes those zooms ahead of time.
 

@@ -46,7 +46,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   surface on lake cells) over one or two downstream links, on rivers of at
   least WF_MIN_Q m^3/s, ranked by the power of the falling water (discharge x
   drop). On ~110 km cells that's a steep reach, not a fall: the zoom grades
-  the river smoothly through a gorge. Pixel-scale falls are in each zoom's
+  the river smoothly down a valley. Pixel-scale falls are in each zoom's
   stats ("waterfalls", zoom.waterfalls()).
 - canyon: a river (>= 300 m^3/s) far below the median of its neighbours off
   the river, on ground averaging >= 1000 m within two cells.
@@ -56,7 +56,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   evaporite beds at the surface on dry land are "salt flats".
 - coral coast: open sea next to land, shallow (cell mean <= 250 m), coldest
   month >= 18 C, away from big river mouths; limestone on shore is a bonus.
-- rain shadow: a summit >= 1500 m with land 2-4 cells away whose rain differs
+- rain shadow: an ice-free summit >= 1500 m with land 2-4 cells away whose rain differs
   most between the two sides of a line through it (wet >= 600 mm, dry < 600
   mm, >= 3x); ranked by the ratio (up to 10) x height.
 - plateau: one piece of land >= 2000 m, ice-free, whose cells differ from
@@ -946,8 +946,8 @@ def waterfalls(ctx: _Ctx, top: int = 3) -> list[dict]:
             title = ("Steepest big river" if rank == 0 else "Steep river reach") + f": {_m(c['h'])} drop"
             what = (f"A {_n(c['q'])} m³/s river drops ~{_m(c['h'])} over {_n(c['km'])} km "
                     f"(from {_m(ws[a])} to {_m(ws[end])}). On ~{_n(ctx.cell_km)} km cells a fall is a "
-                    f"steep reach; the zoom cuts it as a gorge with a smoothly graded river (its own falls, "
-                    f"in the zoom's stats, are tens of metres).")
+                    f"steep reach; the zoom grades the river smoothly down a deep valley (the falls it does "
+                    f"make, in its stats, are tens of metres).")
         blurb = what + f" ~{_n(c['gw'])} GW of falling water (Niagara: ~1.2 GW)."
         feats.append(_feature(ctx, "waterfall", title, blurb, a, 500,
                               {"drop_m": round(c["h"]), "reach_km": round(c["km"]), "discharge_m3s": round(c["q"]),
@@ -1198,8 +1198,11 @@ def rain_shadows(ctx: _Ctx, top: int = 3) -> list[dict]:
         return []
     P = np.asarray(L["precipitation"], float)
     C = ctx.g.centers
-    crest = np.flatnonzero(ctx.land & (ctx.elev >= 1500) & (ctx.elev >= ctx.ring_max(ctx.elev) - 1))
-    if not len(crest):  # only summits (local maxima) are tried: one per hill
+    ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
+    # only summits (local maxima) are tried, one per hill; not under ice caps (a white zoom)
+    crest = np.flatnonzero(ctx.land & (ctx.elev >= 1500) & (ctx.elev >= ctx.ring_max(ctx.elev) - 1) &
+                           (ice <= ICE_PEAK_M))
+    if not len(crest):
         return []
     ring = _rings(ctx, 4)
     th = np.linspace(0, np.pi, 12, endpoint=False)
