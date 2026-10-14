@@ -34,15 +34,14 @@ import numpy as np
 from numba import njit, prange
 
 from . import kernels
+from .geo import R_KM
 from .grid import Grid
 
 LAPSE = 6.5 / 1000  # degC per metre
 FREEZE = -1.8  # C: sea water freezes
-R_KM = 6371.0
 
 
-def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 27.8,
-                pole_temp: float = -10.4) -> np.ndarray:
+def temperature(grid: Grid, elev: np.ndarray, equator_temp: float, pole_temp: float) -> np.ndarray:
     """Annual mean temperature of land by latitude and height, for land the
     sea's air doesn't reach (compute brings the sea air in). The shape is a
     polynomial in sin^2(latitude), the classic shape of simple energy-
@@ -55,7 +54,7 @@ def temperature(grid: Grid, elev: np.ndarray, equator_temp: float = 27.8,
     return t - LAPSE * np.maximum(elev, 0)
 
 
-def sea_temperature(grid: Grid, equator_temp: float = 27.0, pole_temp: float = -7.5) -> np.ndarray:
+def sea_temperature(grid: Grid, equator_temp: float, pole_temp: float) -> np.ndarray:
     """The latitude's sea-surface temperature before currents move heat
     around (Earth: ~27 C at the equator, ~21 C at 30 deg, ~9 C at 50 deg).
     Cooler than land in the subtropics: a warm sea evaporates a lot, which
@@ -665,8 +664,9 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
 # --------------------------------------------------------------------------
 # Rain
 # --------------------------------------------------------------------------
-def _qsat(t, k=0.07):
-    """Water the air can hold at t C, relative to 0 C (~3.8 g/kg)."""
+def _qsat(t, k):
+    """Water the air can hold at t C, relative to 0 C (~3.8 g/kg); k: per C
+    (Clausius-Clapeyron ~0.07)."""
     return np.exp(k * t)
 
 
@@ -920,15 +920,6 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> np.ndarray:
         w = np.clip(tune["storm_mix"] * st["B"][k], 0, 0.9)
         r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
     return r
-
-
-def precipitation(grid: Grid, elev: np.ndarray, temp: np.ndarray, **_):
-    """Annual rain without seasons (generators' quick path): temp is used
-    for both the air and the sea surface. Returns (mm/yr, scale)."""
-    t_sl = np.where(elev <= 0, temp, temp + LAPSE * np.maximum(elev, 0))
-    r = rain(grid, elev, [_season_inputs(grid, elev, temp, temp, wind(grid), 0.0, t_sl, TUNE)], TUNE)[0]
-    scale = TUNE["mean_mm"] / max(r.mean(), 1e-12)
-    return np.clip(r * scale, 0, 6000), scale
 
 
 TUNE = dict(
