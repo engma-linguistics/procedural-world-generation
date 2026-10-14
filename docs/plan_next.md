@@ -155,3 +155,44 @@ Order: 1 → 6, small to large.
    - the most varied 1000 km square;
    - fastest plate, low priority, only if something visible goes with it (e.g. a collision in progress).
 6. **Regenerate the six showcase worlds** with the new code, then delete the old ones.
+
+## Known issues to come back to (collected from the agents' reports, 2026-10-13)
+
+**Glacial time zoom** (`planet/timezoom.py`)
+- **No real 100-kyr sawtooth.** Ice shrinks back 20–50 m at insolation peaks, but the trend ratchets upward. Terminations need mechanisms that aren't modelled yet: a CO₂ rise independent of the ice, proglacial lakes, dust darkening the ice, and the overturning/meltwater coupling (below).
+- **Generated worlds glaciate too hard.** At dT 0 they reach about −400 m, roughly 3× Earth's last glacial maximum. The global temperature hits the floor set by the CO₂ and albedo feedback caps. Related: **the main run's ice rule** (`precip > 25 mm/yr`, an equilibrium extent) leaves cold polar deserts bare that an ice sheet would cover. Revisit it in the main model.
+- **Earth on our model's climate:** only −52 m at 150 kyr. Labrador and Baffin summers are ~5 °C too warm (no Laurentide inception). Tibet, Karakoram and the Altiplano grow ice caps, and Cordillera and Alaska ice is too big. **On the observed baseline:** no Fennoscandian ice.
+- **Eemian-like start:** +24 m in the first 10 kyr (real: +6–9 m). `insol_k` above 0.3 melts most of Antarctica.
+- **Start anchor:** the fixed per-cell cooling that keeps the starting ice stable persists after that ice is gone. It's a calibration crutch.
+- **Smaller issues:** small accumulation jumps at each 10 kyr climate refresh; the ablation zone (where ice melts) is about one 110 km cell wide.
+- **Not done:** glacial erosion, proglacial lakes, and the meltwater link to ocean salinity (see overturning in Round 2).
+
+**Climate**
+- **Norway too cold:** its sea surface is about 1.3 °C against about 7.5 °C observed, and W European winters are about 4 °C too cold. Waiting on the overturning circulation.
+- **Gulf Stream and Kuroshio separate from the coast too far north** (a Stommel-model limit), so the Oyashio region is too warm.
+- **Rain is patchy cell to cell on flat ground:** neighbouring cells differ by a median 1.5× near the hothouse lake. Diagonal streaks in rain maps predate the gyre work.
+- **Older Earth errors:** Sahel and East Africa too wet; Indian and Chinese monsoons too dry; Siberia, Alaska, Quebec and NE China winters 5–10 °C off.
+- **The jet stream is broad and zonal,** with modest meanders.
+- **The run viewer's climate is up to 4 Myr stale** (`climate_every` = 8 vs keyframes every 4). The fix is queued with the parallel climate kernels.
+
+**Rivers, lakes, sediment** (see `docs/review/rivers_lakes_deltas.md`; `water` and `zoomwater` address most)
+- **No evaporation:** discharges are 2–5× too high and there are no closed lakes. (`water`)
+- **Sediment piles reach 33 km** (Earth max about 20–22 km). (`water`)
+- **Drainage switches outlet in one step when a rift opens.** (`water`, optional)
+- **Zoom lakes are sinks:** the water level is wrong and the floor is a flat 42 m; there are no deltas or distributaries. (`zoomwater`)
+- **Fjords aren't carved in the zoom:** fjord coasts are only detected.
+
+**Crust and continents**
+- Continental area overshoots to about 45% (target 40%).
+- Ocean plate boundaries are ragged.
+
+**Highlights**
+- Several highest peaks sit under ice caps, so their zooms are white.
+- Earth-like A's longest river crosses a cold, dry polar continent, so its zoom is bland.
+- The hothouse wine country has 41 °C summers (Köppen-correct, not appealing).
+- Pre-made zooms need re-making after `zoomwater` lands.
+
+**Infrastructure**
+- `api.Jobs` state is in memory only and is lost on server restart.
+- The zoom request can't choose seed, iterations or resolution (always 500 px).
+- The Earth-score metric has three definitions (B5 in the code review). Unify them after the climate work settles.
