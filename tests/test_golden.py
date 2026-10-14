@@ -20,7 +20,6 @@ import pytest
 from planet import climate
 from planet.grid import build_grid
 
-from conftest import run_sim
 
 GOLDEN = Path(__file__).parent / "golden"
 
@@ -59,9 +58,9 @@ def sim_digest(sim) -> dict:
     return out
 
 
-def test_golden_sim(request):
+def test_golden_sim(request, sim4_60):
     """Level 4, seed 1, 60 Myr of tectonics + surface + climate."""
-    _check(request, "sim_L4_s1_60myr", sim_digest(run_sim(level=4, seed=1, myr=60)))
+    _check(request, "sim_L4_s1_60myr", sim_digest(sim4_60))
 
 
 def test_golden_climate(request):

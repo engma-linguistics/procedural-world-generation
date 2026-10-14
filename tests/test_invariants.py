@@ -9,13 +9,13 @@ from planet.grid import build_grid
 from planet.surface import ROCKS
 from planet.tectonics import MAX_KM, Params, Simulation
 
-from conftest import continental_volume, run_sim
+from helpers import continental_volume, run_sim
 
 
-def test_deterministic():
+def test_deterministic(sim4_60):
     """Same seed and params -> identical history (runs are stored as a cache;
     slicing replays from t=0 and relies on this)."""
-    a, b = run_sim(myr=60), run_sim(myr=60)
+    a, b = sim4_60, run_sim(myr=60)
     for k in ("w_elev", "w_thick", "w_cover", "w_age", "owner", "precip", "temp"):
         assert np.array_equal(getattr(a, k), getattr(b, k)), k
     assert [e.as_dict() for e in a.events] == [e.as_dict() for e in b.events]
