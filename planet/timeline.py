@@ -54,6 +54,8 @@ LAYERS = {  # name -> dtype on disk
     "wind_n": "i1",
     "current_e": "i1",  # surface ocean current, x 50
     "current_n": "i1",
+    "jet_e": "i1",  # annual-mean jet stream (upper-level wind), east and north components, m/s
+    "jet_n": "i1",  # (optional: runs made before Oct 2026 don't have the jet layers)
     "down": "u1",  # which neighbour (index into grid nbr list) the river goes to; 255 = none
 }
 
@@ -70,12 +72,22 @@ def down_slot(grid: Grid, down: np.ndarray) -> np.ndarray:
     return out
 
 
-def vec_layers(grid: Grid, name: str, v: np.ndarray):
-    """(east, north) components of tangent vectors, x50 as int8 layers."""
+def vec_layers(grid: Grid, name: str, v: np.ndarray, scale: float = 50.0):
+    """(east, north) components of tangent vectors, x scale as int8 layers."""
     from .climate import _geom
     G = _geom(grid)
-    q = lambda x: np.clip(np.round(50 * x), -127, 127)
+    q = lambda x: np.clip(np.round(scale * x), -127, 127)
     return [(f"{name}_e", q((v * G["east"]).sum(1))), (f"{name}_n", q((v * G["north"]).sum(1)))]
+
+
+def jet_of(grid: Grid, snap) -> np.ndarray:
+    """Annual-mean jet stream (m/s) for a snapshot, from its temperatures
+    (the thermal wind is linear in temperature, so the mean of the two
+    half-years' jets is the jet of the mean of their temperatures)."""
+    from . import climate
+    surf = np.maximum(snap.elevation, 0) + snap.ice
+    t_jul, t_jan = climate.season_temps(grid, surf, snap.t_warm, snap.t_cold, climate.TUNE["hk"])
+    return climate.jet_stream(grid, 0.5 * (t_jul + t_jan))[0]
 
 
 def make_params(overrides: dict) -> Params:
@@ -108,11 +120,14 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     frames, data = [], {k: [] for k in LAYERS}
+    jet = {"src": None, "v": None}  # the climate (and so the jet) changes only every climate_every Myr
 
     def keep(s: Simulation):
         if s.step_no % stride:
             return
         snap = s.snapshot()
+        if jet["v"] is None or jet["src"] is not s.t_warm:
+            jet["src"], jet["v"] = s.t_warm, jet_of(s.grid, snap)
         # cast now: at level 7, 126 float64 keyframes per layer would be ~1 GB
         for k, v in (("elevation", np.clip(np.round(snap.elevation), -32000, 32000)),
                      ("plate", snap.plate), ("continental", snap.continental),
@@ -124,7 +139,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                      ("climate", snap.koppen), ("ice", np.clip(np.round(snap.ice / 20), 0, 255)),
                      ("flow", np.clip(np.round(16 * np.log2(1 + snap.flow)), 0, 255)),
                      ("down", down_slot(s.grid, snap.downstream)),
-                     *vec_layers(s.grid, "wind", snap.wind), *vec_layers(s.grid, "current", snap.current)):
+                     *vec_layers(s.grid, "wind", snap.wind), *vec_layers(s.grid, "current", snap.current),
+                     *vec_layers(s.grid, "jet", jet["v"], 1.0)):
             data[k].append(v.astype(LAYERS[k]))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
