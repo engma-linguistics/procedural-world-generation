@@ -505,13 +505,13 @@ def _coarse(grid: Grid, sea: np.ndarray, level: int) -> dict:
     it and grid: fine -> coarse is the mean over the sea cells in each
     coarse cell, coarse -> fine interpolates from the nearby coarse sea
     cells (climate._coarse's weights). Cached per grid and sea mask."""
-    from .grid import build_grid
+    from .grid import shared_grid
     level = min(level, grid.level)
     key = (id(grid), grid.n, level, hash(sea.tobytes()))
     if key not in _COARSE:
         if len(_COARSE) > 8:
             _COARSE.clear()
-        cg = build_grid(level)
+        cg = shared_grid(level)  # (one per process: its climate._geom is computed once)
         K = C._coarse(grid, level)
         cnt = np.bincount(K["cidx"], sea.astype(float), cg.n)
         tot = np.bincount(K["cidx"], minlength=cg.n)

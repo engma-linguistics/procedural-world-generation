@@ -101,13 +101,17 @@ def seasons(grid: Grid, elev: np.ndarray, temp: np.ndarray, tilt: float = 23.4):
 # Grid helpers: smoothing, gradients, transport along a vector field
 # --------------------------------------------------------------------------
 _GEOM = {}
+GEOM_KEEP = 8  # grids whose constants are kept (the main grid and the shared coarse grids: grid.shared_grid)
 
 
 def _geom(grid: Grid):
     """Per-grid constants: local east/north unit vectors, directed edges and
     their tangent directions, cell spacing (km). Cached."""
     key = (id(grid), grid.n)
-    if key not in _GEOM:
+    G = _GEOM.pop(key, None)
+    if G is not None:
+        _GEOM[key] = G  # (most recently used last)
+    else:
         p = grid.centers
         east = np.cross([0.0, 0.0, 1.0], p)
         east /= np.maximum(np.linalg.norm(east, axis=1, keepdims=True), 1e-9)
@@ -160,8 +164,8 @@ def _geom(grid: Grid):
         spread = np.add.reduceat(wk * (r * r).sum(1), grid.nbr_off[:-1])
         h = grid.spacing * R_KM
         sk = wk * np.minimum(0.5 * h * h / spread, 0.9)[nsrc]
-        if len(_GEOM) > 4:
-            _GEOM.clear()
+        if len(_GEOM) >= GEOM_KEEP:  # (the least recently used goes, never the grid in use)
+            del _GEOM[next(iter(_GEOM))]
         _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM,
                           out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e], gq=gq, sk=sk)
     return _GEOM[key]
@@ -179,10 +183,10 @@ def _coarse(grid: Grid, level: int = 3):
     cells, by a bell of distance, (1 - (d/r)^2)^2 out to r = COARSE_R coarse
     cells, which is smooth at its centre and at its edge (a cone, 1 - d/r,
     leaves kinks that the gradient of the field shows). Cached."""
-    from .grid import build_grid
+    from .grid import shared_grid
     key = (id(grid), grid.n, level)
     if key not in _COARSE:
-        cg = build_grid(min(level, grid.level))
+        cg = shared_grid(min(level, grid.level))
         cidx = cg.locate(grid.centers)
         # candidates: the containing coarse cell and two rings of neighbours around it
         off, idx = cg.nbr_off, cg.nbr_idx
@@ -199,38 +203,52 @@ def _coarse(grid: Grid, level: int = 3):
         d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
         w = np.where(ok, np.maximum(0.0, 1 - (d / (COARSE_R * cg.spacing)) ** 2) ** 2, 0.0)
         w /= w.sum(1, keepdims=True)
+        # the inverse map, coarse cell -> the (fine cell, candidate) pairs that count towards it, in
+        # ascending flat order (for _coarse_smooth's gather)
+        inv = np.argsort(cand.ravel(), kind="stable")
+        inv_off = np.concatenate([[0], np.cumsum(np.bincount(cand.ravel(), minlength=cg.n))])
         if len(_COARSE) > 8:
             _COARSE.clear()
         _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
-                            h=cg.spacing * R_KM, sk=_geom(cg)["sk"])
+                            h=cg.spacing * R_KM, sk=_geom(cg)["sk"], inv=inv, inv_off=inv_off)
     return _COARSE[key]
 
 
-@njit(cache=True)
-def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w):
+@njit(cache=True, parallel=True)
+def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w, inv_off, inv):
     """Average f onto the coarse grid, blur it there (iters steps of
     _smooth, sk: the coarse grid's blur weights) and interpolate it back. Each fine cell counts towards all
     the coarse cells near it, by the interpolation weights (a nested grid's
-    cells on a coarse cell's edge are as near to the next one)."""
+    cells on a coarse cell's edge are as near to the next one).
+    Every loop is a parallel gather: coarse cell j sums its fine cells'
+    shares (inv[inv_off[j]:inv_off[j + 1]], flat indices i * K + k into
+    cand / w, ascending) in the order a loop over the fine cells would add
+    them, so the result is bit-identical to that loop at any thread count."""
+    K = cand.shape[1]
     tot = np.zeros(nc)
     cnt = np.zeros(nc)
-    for i in range(f.shape[0]):
-        for k in range(cand.shape[1]):
-            tot[cand[i, k]] += w[i, k] * f[i]
-            cnt[cand[i, k]] += w[i, k]
+    for j in prange(nc):
+        st, sc = 0.0, 0.0
+        for r in range(inv_off[j], inv_off[j + 1]):
+            i, k = inv[r] // K, inv[r] % K
+            st += w[i, k] * f[i]
+            sc += w[i, k]
+        tot[j], cnt[j] = st, sc
     c = tot / np.maximum(cnt, 1e-12)
     g = np.empty(nc)
     for _ in range(iters):
-        for j in range(nc):
+        for j in prange(nc):
             t = 0.0
             for e in range(off[j], off[j + 1]):
                 t += sk[e] * (c[idx[e]] - c[j])
             g[j] = c[j] + t
-        c[:] = g
-    out = np.zeros(f.shape[0])
-    for i in range(f.shape[0]):
-        for k in range(cand.shape[1]):
-            out[i] += w[i, k] * c[cand[i, k]]
+        c, g = g, c
+    out = np.empty(f.shape[0])
+    for i in prange(f.shape[0]):
+        o = 0.0
+        for k in range(K):
+            o += w[i, k] * c[cand[i, k]]
+        out[i] = o
     return out
 
 
@@ -283,7 +301,8 @@ def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
         fine = FINE_FINISH * C["h"]
         km_c = np.sqrt(max(km**2 - fine**2, 0.0))
         iters = int(round(4 * max(km_c**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
-        f = _coarse_smooth(f, C["cidx"], C["n"], C["off"], C["idx"], C["sk"], iters, C["cand"], C["w"])
+        f = _coarse_smooth(f, C["cidx"], C["n"], C["off"], C["idx"], C["sk"], iters, C["cand"], C["w"],
+                           C["inv_off"], C["inv"])
         km = fine
     iters = int(round(4 * (km / h) ** 2))
     if iters <= 0:
