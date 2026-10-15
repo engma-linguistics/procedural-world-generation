@@ -2,7 +2,7 @@
 id: PW-256
 title: ocean._coarse rebuilds the coarse grid every climate update and evicts climate._geom's cache (~4-8% of runs and time zooms)
 type: task
-status: in-progress
+status: done
 parent: PW-247
 subsystem: ocean
 effort: s
@@ -31,5 +31,6 @@ evict the main grid (or cache per level rather than per id). Outputs should be b
 - [ ] goldens unchanged; before/after timing of an L6 run and a time zoom
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (merged 82f4830): grid.shared_grid per process; climate._GEOM is LRU.
 - 2026-10-15: Status todo -> in-progress. Agent started (CPU speed wins, owner go-ahead 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-ocean-coarse-grid-cache-thrash.md (found by gpu-explore (PW-249)).

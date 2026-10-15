@@ -1,4 +1,5 @@
 ---
+id: PW-292
 title: Parallel loops on small grids are launch-bound (sia_flow sub-steps, coarse blurs, _smooth at L6)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: worktree-agent-abb4e9e7307244dd3 (PW-256/257)
 blocked_by: []
 relates: [PW-257, PW-215]
 refs: [planet/timezoom_kernels.py, planet/climate.py, planet/ocean.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -41,3 +44,6 @@ Still launch-bound:
   few % of a run's climate; also frees cores for concurrent jobs (TBB workers spin, PW-250).
 - [ ] sia_flow threads by active-set size (bit-identical; measure an L6 and L7 time zoom)
 - [ ] measure _smooth/_relax_along/_rain per level and thread count; cap where it helps
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-small-parallel-loops-launch-bound.md (found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).
