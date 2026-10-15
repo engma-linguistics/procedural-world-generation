@@ -128,6 +128,22 @@ def test_galloway_weights():
     assert abs(0.49 * hs * hs * te - 50.0) < 2.0
 
 
+def test_plain_radius_earth():
+    """The delta plain radius meets its own Earth calibration (within 30%, at
+    the thick offshore sediment of Earth's big deltas, sf 0.5-1), and with
+    it the Galloway types of real deltas (real Q, sediment Mt/yr, waves kW/m,
+    spring tide m; PW-269)."""
+    for q, r_earth in ((2800, 150), (17000, 250), (38000, 350)):  # Nile, Mississippi, Ganges-Brahmaputra
+        for sf in (0.5, 1.0):
+            assert 0.7 < coast.plain_radius_km(q, sf) / r_earth < 1.3, (q, sf)
+    cases = {"Ganges-Brahmaputra": (38000, 1060, 6, 3.6, "tide"), "Mekong": (15000, 160, 5, 3.0, "tide"),
+             "Mississippi": (17000, 400, 3, 0.4, "river"), "Sao Francisco": (3000, 6, 10, 2.0, "wave")}
+    for name, (q, qs, wave, tide, kind) in cases.items():
+        for sf in (0.5, 1.0):
+            g = coast.galloway(qs * 1e9 / coast.SEC_PER_YR, q, wave, tide, coast.plain_radius_km(q, sf))
+            assert g["type"] == f"{kind}-dominated", (name, sf, g)
+
+
 # ---------------------------------------------------------------------------
 # Deltas in the zoom: the same river into three different seas
 # ---------------------------------------------------------------------------
@@ -144,9 +160,11 @@ def three_deltas(water_world):  # noqa: F811
     p = g.centers[i] + g.centers[down[i]]
     lat, lon = np.degrees(np.arcsin(p[2] / np.linalg.norm(p))), np.degrees(np.arctan2(p[1], p[0]))
     out = {}
+    # (a ~53,000 m^3/s river onto thick sediment: a ~350 km delta plain, so the
+    # region must be > 2 R across for the measures below)
     for name, (wave, tide) in SEAS.items():
         Lw = {**L, "wave_power": np.where(elev > 0, 0.0, wave), "tide_range": np.where(elev > 0, 0.0, tide)}
-        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=300, res_km=2,
+        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=800, res_km=5,
                                iterations=8, log=lambda *a: None)
     return out
 

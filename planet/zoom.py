@@ -796,12 +796,27 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     return {"lobe": lobe, "cut": cut, "smooth": smooth, "keep": keep, "goals": goals, "kind": kind}
 
 
-def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> int:
-    """Channels of a delta reaching the sea: groups of land pixels within
-    1.6 R of the mouth that drain straight into the sea carrying >= 5% of
-    the delta's discharge."""
-    r = np.hypot(px - dl["x"], py - dl["y"])
-    out = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (r < 1.6 * dl["R"]) & (discharge >= 0.05 * dl["q"])
+def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int, splits=()) -> int:
+    """Channels of a delta reaching the sea: groups of land pixels that drain
+    straight into the sea carrying >= 5% of the delta's discharge, among
+    those its river's water reaches from the apex (down the receivers and
+    every distributary split on the way); without an apex, those within R of
+    the mouth. (Not a disc around the mouth: a ~350 km plain's would take in
+    the neighbouring rivers' mouths.)"""
+    mouth = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (discharge >= 0.05 * dl["q"])
+    if dl.get("apex", -1) >= 0:
+        kids = {s: k for s, k, _ in splits}
+        seen = np.zeros(len(rec), bool)
+        stack = [int(dl["apex"])]
+        while stack:
+            p = stack.pop()
+            while p >= 0 and land[p] and not seen[p]:
+                seen[p] = True
+                stack += [c for c in kids.get(p, []) if c != rec[p]]
+                p = int(rec[p])
+        out = mouth & seen
+    else:
+        out = mouth & (np.hypot(px - dl["x"], py - dl["y"]) < dl["R"])
     if not out.any():
         return 0
     lab, _ = ZK.label_components(out, nx, ny)
@@ -991,6 +1006,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     wD, zD, wS, zS, wC, lobe, cut, smooth_c, wR_f, wW_f = (np.zeros(npx) for _ in range(10))
     keep = np.full(npx, -9.0)
     hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
+    # ... and no prodelta over deep water: a delta builds out over its shelf
+    # (a ~300 km plain's prodelta must not fill the trench off it)
+    shelf_f = smoothstep(-1000.0, -200.0, e_sea)
     for j, dl in enumerate(deltas):
         R = dl["R"]
         r = np.hypot(px - dl["x"], py - dl["y"])
@@ -999,8 +1017,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         wR_f, wW_f = np.where(w > wD, dl["wR"], wR_f), np.where(w > wD, dl["wW"], wW_f)
         wD = np.maximum(wD, w)
         zS = np.where(r < 1.2 * R, np.maximum(zS, -(2.0 + 50.0 * (r / R) ** 2)), zS)
-        wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r))
-        wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r))
+        wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r) * shelf_f)
+        wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r) * np.where(ind > 0, hf, shelf_f))
         # its shape from the Galloway weights; the lobe lifts the land/sea
         # indicator at its centre to a little above the coast value
         f = _delta_forms(dl, px, py, res, np.random.default_rng(seed * 7919 + 101 + j), ind, nx, ny)
@@ -1179,6 +1197,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             if Wf > res:
                 flat = ~land & (dsea < Wf) & (r < 1.2 * dl["R"])
                 h = np.where(flat, np.maximum(h, -0.5 * max(dl["tide"], 0.5) * dsea / Wf - 0.05), h)
+                # (held by the hard floor of a prodelta, also where the delta faces deep water)
+                s_sea = np.where(flat, 1.5, s_sea)
                 # the funnels and creeks themselves are scoured deep by the tidal
                 # currents (flats only along their banks)
                 chan = ~land & (cut > 0.4) & (r < 1.1 * dl["R"])
@@ -2045,6 +2065,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ov[c] = rec0[c]
             assigned[[a] + trunk] = True
             blocked[[a] + trunk] = True
+            dl["apex"] = int(a)
             nb = dl["nb"]  # from the Galloway weights (_deltas): waves leave few mouths, tides many
             if nb < 2:  # a single mouth: no distributaries (the trunk stays pinned)
                 continue
@@ -2438,7 +2459,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
                     "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
-                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny),
+                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits),
                     "form": d["form"], "marine_layers": d["marine"],
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}

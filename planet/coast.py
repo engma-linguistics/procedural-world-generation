@@ -456,6 +456,7 @@ CHANNEL_SHARE = 0.002  # share of the delta plain that is tidal channel
 PLAIN_Z0, PLAIN_RISE = 0.8, 10.0  # m: the delta plain's height at the coast, and its rise to its edge (zoom.py)
 SED_DENSITY = 1600.0  # kg/m^3: bulk density of deposited sand (2650 x (1 - porosity 0.4))
 RIVER_DOMINANT = 0.5  # a weight at least this large names the delta's type
+PLAIN_R0, PLAIN_R_MAX = 70.0, 350.0  # km: delta plain radius at 1,000 m^3/s (sf = 1/3), and its cap
 
 
 def upstream_cells(down: np.ndarray, mouth: int) -> np.ndarray:
@@ -528,9 +529,11 @@ def galloway(qs_kgs: float, q_m3s: float, wave_kw: float, tide_m: float, plain_k
 def plain_radius_km(q_m3s: float, sf: float) -> float:
     """Radius of the delta plain a river builds (zoom.py's delta plain): grows
     with discharge and with the sediment factor sf (0..1, the coarse
-    sediment cover offshore). Earth: Nile ~150 km of plain at 2,800 m^3/s,
-    Mississippi ~250 km at 17,000, Ganges-Brahmaputra ~350 km."""
-    return float(np.clip(10.0 * (q_m3s / 100) ** 0.35 * (0.8 + 0.6 * sf), 15.0, 300.0))
+    sediment cover offshore). Calibrated on Earth's big deltas, which sit on
+    thick offshore sediment (sf ~0.5-1): Nile ~150 km of plain at 2,800 m^3/s,
+    Mississippi ~250 km at 17,000, Ganges-Brahmaputra ~350 km at 38,000
+    (this gives 110-140, 210-265 and 275-350 km)."""
+    return float(np.clip(PLAIN_R0 * (q_m3s / 1000) ** 0.35 * (0.8 + 0.6 * sf), 15.0, PLAIN_R_MAX))
 
 
 def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
