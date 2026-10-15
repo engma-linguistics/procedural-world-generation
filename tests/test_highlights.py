@@ -242,9 +242,10 @@ def test_travel(gen4):
     e[c], e[town] = 2500, 800
     L["temperature_jan"][c], L["temperature_jul"][c], L["precipitation_jan"][c] = -8, 10, 1200
     L["temperature_jan"][town] = 2
-    # a mild, dry winter in the south (July 15 C, little rain)
-    m = south[-1]
-    L["temperature_jul"][m], L["precipitation_jul"][m] = 15, 200
+    # a mild, sunny winter in the south (July 15 C, 6 h of sun), and a mild but overcast one
+    m, dull = south[-1], south[-2]
+    L["temperature_jul"][m], L["precipitation_jul"][m], L["sunshine_jul"][m] = 15, 200, 6.0
+    L["temperature_jul"][dull], L["precipitation_jul"][dull] = 15, 200
     feats = H.find(w)
     check(w, feats)
     by = lambda k: [f for f in feats if f["kind"] == k]
@@ -253,7 +254,7 @@ def test_travel(gen4):
     ski = by("ski")
     assert [f["cell"] for f in ski] == [c] and ski[0]["stats"]["town_cell"] == town
     assert ski[0]["stats"]["vertical_m"] > 1000 and "January -8 °C" in ski[0]["blurb"]
-    assert [f["cell"] for f in by("mild_winter")] == [m] and "July 15 °C" in by("mild_winter")[0]["blurb"]
+    assert [f["cell"] for f in by("mild_winter")] == [m] and "July 15 °C, 6 h of sunshine" in by("mild_winter")[0]["blurb"]
     # a glaciated summit is no ski field; an overcast summer is no beach holiday
     L["ice"][c] = 200
     L["sunshine_jul"][b] = 5.0

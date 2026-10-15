@@ -77,8 +77,8 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   summer surface temperature, sst_jul / sst_jan, where the world has them;
   moderate waves), ski country
   (ice-free mountains freezing and snowy in winter, not glaciated, a town with
-  a tolerable winter below), mild-winter retreat (low land, mild and fairly dry
-  winter), year-round resort (a beach and ski country within RESORT_KM). Each
+  a tolerable winter below), winter-sun retreat (low land with a mild winter
+  and >= 5 h of sunshine a day over the winter half-year), year-round resort (a beach and ski country within RESORT_KM). Each
   blurb starts with the numbers that make it ("July 28 °C, 40 mm of rain...").
 """
 
@@ -1452,7 +1452,9 @@ SKI_TOWN_MIN_C, SKI_TOWN_DROP = -12.0, 500.0  # the town's winter, and how far b
 SKI_MIN_VERTICAL = 400.0  # m of snow-covered slope above the snow line or the town
 # mild winters
 MILD_T = (10.0, 21.0, 16.0)  # C in the winter month: min, max, best (Nice ~9, Canaries ~18)
-MILD_MAX_RAIN = 70.0  # mm in the winter month
+MILD_SUN = (5.0, 7.5)  # h/day of bright sunshine over the winter half-year: the least, and the best
+# (Canaries ~6-7, Florida ~7, Algarve ~5.5, Nice ~5, London ~2)
+MILD_WET_MM = 150.0  # mm in the winter month: a wet winter (rain on most days) ranks lower, not out
 MILD_MAX_M = 1000.0
 RESORT_KM = 400.0  # beach and skiing this close make a year-round resort
 
@@ -1659,36 +1661,42 @@ def ski_country(ctx: _Ctx, top: int = 4) -> list[dict]:
 
 
 def mild_winters(ctx: _Ctx, top: int = 3) -> list[dict]:
-    """Mild-winter retreats: low land (< MILD_MAX_M) with a mild, fairly dry
-    winter month (the hemisphere's own: January in the north, July in the
-    south), like the Riviera or the Canaries; a coast is a bonus."""
+    """Winter-sun retreats: low land (< MILD_MAX_M) with a mild winter month
+    (the hemisphere's own: January in the north, July in the south) and
+    sunny winter days (>= MILD_SUN[0] h of bright sunshine a day over the
+    winter half-year: sunshine_jan in the north, sunshine_jul in the south),
+    like the Canaries, the Algarve or Florida; ranked by warmth and sunshine,
+    a little lower for a wet winter, and a coast is a bonus. None on worlds
+    without the sunshine layers."""
     S, L = _seasons(ctx), ctx.L
-    if S is None or not ctx.land.any():
+    if S is None or "sunshine_jul" not in L or not ctx.land.any():
         return []
     ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
     tw, rain = S["t_win"], S["p_win"]
+    sun = np.where(S["north"], np.asarray(L["sunshine_jan"], float), np.asarray(L["sunshine_jul"], float))
     ok = (ctx.land & (ice <= 0) & (ctx.elev < MILD_MAX_M) & (tw >= MILD_T[0]) & (tw <= MILD_T[1])
-          & (rain <= MILD_MAX_RAIN))
+          & (sun >= MILD_SUN[0]))
     if "lake" in L:
         ok &= np.asarray(L["lake"]) == 0
     coast = ctx.dilate(~ctx.land) & ctx.land
     cand = []
     for i in np.flatnonzero(ok):
-        q = float(_tri(tw[i], MILD_T[0] - 2, MILD_T[2], MILD_T[1] + 3)) * (1 - 0.5 * rain[i] / MILD_MAX_RAIN)
-        q *= 1.0 if coast[i] else 0.8
-        cand.append((q, int(i)))
+        q_t = float(_tri(tw[i], MILD_T[0] - 2, MILD_T[2], MILD_T[1] + 3))
+        q_sun = 0.4 + 0.6 * float(np.clip((sun[i] - MILD_SUN[0]) / (MILD_SUN[1] - MILD_SUN[0]), 0, 1))
+        q_wet = 1 - 0.4 * min(rain[i] / MILD_WET_MM, 1)
+        cand.append((q_t * q_sun * q_wet * (1.0 if coast[i] else 0.8), int(i)))
     kept = _spaced(ctx, cand, top)
     best = kept[0][0] if kept else 1.0
     feats = []
     for rank, (q, i) in enumerate(kept):
         mon = _winter(ctx, i)
-        s = {"month": mon, "winter_c": round(float(tw[i])), "rain_mm": round(float(rain[i])),
-             "summer_c": round(float(S["t_sum"][i])), "coast": bool(coast[i])}
-        blurb = (f"{mon} {s['winter_c']} °C, {s['rain_mm']} mm of rain; summer {s['summer_c']} °C. A mild, "
-                 f"fairly dry winter{' by the sea' if coast[i] else ''}: somewhere to spend it (like the "
-                 f"Riviera or the Canaries).")
-        feats.append(_feature(ctx, "mild_winter", f"Mild winter: {mon} {s['winter_c']} °C, {s['rain_mm']} mm", blurb, i, 500, s,
-                              quality=(0.85 ** rank) * (0.5 + 0.5 * q / best)))
+        s = {"month": mon, "winter_c": round(float(tw[i])), "sun_h": round(float(sun[i]), 1),
+             "rain_mm": round(float(rain[i])), "summer_c": round(float(S["t_sum"][i])), "coast": bool(coast[i])}
+        blurb = (f"{mon} {s['winter_c']} °C, {s['sun_h']:.0f} h of sunshine a day, {s['rain_mm']} mm of rain; "
+                 f"summer {s['summer_c']} °C. A mild, sunny winter{' by the sea' if coast[i] else ''}: "
+                 f"somewhere to spend it (like the Canaries or the Algarve).")
+        feats.append(_feature(ctx, "mild_winter", f"Winter sun: {mon} {s['winter_c']} °C, {s['sun_h']:.0f} h of sunshine",
+                              blurb, i, 500, s, quality=(0.85 ** rank) * (0.5 + 0.5 * q / best)))
     return feats
 
 
