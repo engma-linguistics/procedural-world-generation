@@ -15,8 +15,8 @@ refs: [planet/vegetation.py, "world 351f32"]
 ## Description
 While adding vegetation highlights (PW-208) on the L7 vegetation demo world 351f32:
 of 2163 land cells whose named type is 19-21 (Mediterranean scrub / evergreen
-woodland / pine forest), only 34 are Koppen Cs (Csa/Csb/Csc); 750 are BSh, 749 BSk,
-187 Cfa/Cfb-ish ids 10-11, 122 Cwb-ish 14 (ids from `climate.KOPPEN`). The Koppen Cs
+woodland / pine forest), only 34 are Koppen Cs (Csa 4, Csb 28, Csc 2); 750 are BSh, 749 BSk, 187 Cwb, 122 Cfb,
+102 Cfa, 97 BWk, 67 Cwa. The Koppen Cs
 regions themselves carry temperate woodland and parkland / mixed forest (the
 "Wine country" highlight at 38.8, -130.1: woodland 45%, Mediterranean pine 25%,
 mixed forest 22%; at 32.7, -179.7: woodland 96%). On Earth maquis, chaparral and
