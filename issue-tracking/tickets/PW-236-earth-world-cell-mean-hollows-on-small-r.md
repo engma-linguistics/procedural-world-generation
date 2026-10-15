@@ -1,4 +1,5 @@
 ---
+id: PW-236
 title: "Earth world: cell-mean hollows on small rivers still hold big lakes (Yakutia 223k km2, Amur 174k km2)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: hydro
 blocked_by: []
 relates: [PW-201, PW-055]
 refs: [tools/earth_world.py, planet/hydrology.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,3 +24,6 @@ sea level) and the middle Amur (48.1 N 133.7 E, 174k km2, 185 m, 5000 m3/s); als
 (Q from the model's too-wet Sahel). The valley a river runs in below a cell's mean is deeper in rugged
 cells than in flat ones; a cut that also grows with the outlet cell's relief (e.g. x (1 + relief / 50 m))
 would drain these but also cut the Great Lakes' outlets (relief 25-37 m), so it needs care.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-earth-world-leftover-lakes.md (found by hydro).
