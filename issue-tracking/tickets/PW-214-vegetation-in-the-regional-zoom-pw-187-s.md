@@ -2,7 +2,7 @@
 id: PW-214
 title: "Vegetation in the regional zoom (PW-187 step 5): per-pixel equilibrium, terrain light and water, river water, fire mosaic"
 type: story
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: zoom
 effort: m
@@ -25,4 +25,5 @@ Step 5 of docs/proposals/vegetation.md section 9.1 (section 3.7). Worlds now car
 - Zoom layers per decision 9A: vegetation, tree_cover, cover, lai, canopy_height, npp, fire_return; viewer zoom.html layers and hover.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Overnight agent, worktree vegzoom.
 - 2026-10-15: Created from inbox draft draft-veg-zoom-downscaling.md (found by veg).

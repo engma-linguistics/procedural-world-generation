@@ -2,7 +2,7 @@
 id: PW-139
 title: "Regional zooms: July / January temperature and rain layers (season picker in zoom.html)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-126]
 refs: [planet/zoom.py, viewer/zoom.html, planet/world.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,4 +30,5 @@ store.LAYERS), and in zoom.html add a season select next to the layer buttons, s
 - [ ] zoom.html Temperature/Rain follow a year/July/January picker and ?season=
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Overnight agent, worktree vegzoom.
 - 2026-10-14: Created from inbox draft draft-zoom-seasonal-layers.md (found by viewerseason).
