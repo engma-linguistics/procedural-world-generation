@@ -2,7 +2,7 @@
 id: PW-198
 title: "Finished worlds: climate ignores the frame's precession/eccentricity and the time zoom's anchor"
 type: task
-status: todo
+status: done
 parent: PW-090
 subsystem: timezoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-091, PW-104]
 refs: [planet/finish.py, planet/climate.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,4 +25,5 @@ summer than the time zoom frame it came from. Fix: give climate.compute an optio
 insolation anomaly (timezoom.insolation vs the reference orbit) and pass it from finish.py.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (icemb).
 - 2026-10-14: Created from inbox draft draft-finish-orbit-climate.md (found by finish).

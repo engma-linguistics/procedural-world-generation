@@ -1,7 +1,8 @@
 ---
+id: PW-240
 title: "Run ice: after PW-190 still -300..-350 m in the coldest eras of seeds 2 and 11"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: climate
 effort: m
@@ -10,6 +11,8 @@ found_by: icemb
 blocked_by: []
 relates: [PW-190, PW-235]
 refs: [planet/icemass.py, planet/tectonics/earth.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -40,3 +43,7 @@ Options:
 - C. A stronger thermostat on the drift (the drift is an OU of sd 3 C; with ice albedo up to 3 C it
   makes the -10 C eras), e.g. smaller `climate_drift`.
 Lean: C (smaller drift sd, ~2 C) plus B once Earth's inception has its own fix.
+
+## Updates
+- 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star): follow the agent's lean: narrow the run's climate drift (~2 C sd) first, then lower the local snow damping once Earth's ice inception has its own fix (PW-033). For after the machine move.
+- 2026-10-15: Created from inbox draft draft-run-ice-cold-eras-still-large.md (found by icemb).

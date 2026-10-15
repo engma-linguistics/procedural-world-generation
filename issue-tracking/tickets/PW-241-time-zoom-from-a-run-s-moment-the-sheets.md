@@ -1,4 +1,5 @@
 ---
+id: PW-241
 title: "Time zoom from a run's moment: the sheets still thicken and spread onto shelves at first (~-70 m in 15 kyr in a cold era)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: icemb
 blocked_by: []
 relates: [PW-190, PW-115]
 refs: [planet/tectonics/earth.py, planet/timezoom.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,3 +26,6 @@ covers 640 more land cells (+13 Mkm3) and grounds on 440 shelf cells (+4 Mkm3, m
 Options: a thicker Nye profile (ICE_TAU) to match the time zoom's flow; let the run's sheets ground on
 shallow shelves as the time zoom's do; or a short spin-up in the time zoom. Each makes the run's ice a
 little bigger.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-timezoom-start-drift.md (found by icemb).
