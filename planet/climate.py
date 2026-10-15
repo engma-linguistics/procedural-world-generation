@@ -989,7 +989,7 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
       monsoon summers, wet windward slopes (cloud_deep, growing with the
       rain above cloud_deep_mm0);
     - layer cloud of the storms and their fronts: the storm tracks, in
-      proportion to the storminess, in moist air and not under the
+      proportion to the storminess and (on land) the air's humidity, not under the
       sinking subtropical air (cloud_storm);
     - low cloud over the sea: a base of shallow cumulus and stratus
       (cloud_sea), more over cold water (cloud_cold: the polar seas, fog
@@ -1024,7 +1024,9 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         # which also hides the rain's cell-to-cell streaks, PW-019)
         p_s = smooth(grid, p, tune["cloud_rain_km"])
         deep = tune["cloud_deep"] * (1 - np.exp(-np.maximum(p_s - tune["cloud_deep_mm0"], 0) / tune["cloud_deep_mm"]))
-        storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist ** 3
+        # (a front lifts the storm's own moist air: the land's half-year mean humidity,
+        # dry in a continent's summer, thins its cloud only in proportion, PW-162)
+        storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist
         s0, s1 = tune["cloud_sc_c"]
         dry = 1 - tune["cloud_cont"] * landy * sink
         deck = tune["cloud_sc"] * np.clip((-inst - s0) / s1, 0, 1) * sink * dry
