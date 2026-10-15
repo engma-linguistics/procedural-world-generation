@@ -16,9 +16,15 @@ What the pixel adds to the coarse cell's climate:
    plus some groundwater (GW_SHARE of the local runoff in the wettest
    hollows).
 4. Rivers: a strip along each river (RIP_W0 + RIP_W1 x log10(Q / 1 m^3/s)
-   km wide; its share of the pixel) gets the river's water, up to the
-   potential evaporation: gallery forest through savanna and steppe, oasis
-   woodland along desert rivers.
+   km wide) gets the river's water, up to the potential evaporation. The
+   strip is a habitat of its own inside the pixel (PW-221): where it covers
+   some of a pixel (over RIP_MIN), the pixel's plants compete twice, on the
+   dry ground and in the strip, and the pixel's cover is the two mixed by
+   the strip's share. So a 2-4 km pixel along a desert river is mostly
+   desert with a ribbon of woodland, not one mediocre cover; it is named
+   oasis / desert riparian woodland where the strip holds a woodland and
+   is the pixel's only one (or a fifth of the pixel): gallery forest
+   through savanna and steppe, oasis woodland along desert rivers.
 5. Wet ground (the flooded habitat of vegetation.flooded, per pixel): big
    rivers' floodplains (low above the river), flat ground with a water
    surplus (mires), flat permafrost, lake shores, a coastal plain's
@@ -67,6 +73,7 @@ STEEP_TAN = (0.2, 0.7)  # tan slope: soil thins from here (~11 deg) to SOIL_THIN
 SOIL_THIN = 0.6
 RIP_W0, RIP_W1 = 0.15, 0.4  # km: riparian strip width at 1 m^3/s, and per tenfold more
 RIP_SHARE = 0.9  # share of the potential evaporation a river supplies its strip
+RIP_MIN = 0.02  # share of a pixel the strip must cover to be a habitat of its own there
 PLAIN_Q = 100.0  # m^3/s: rivers with floodplains (on a cell: 500)
 MIRE_KM = 20.0  # km: the size of the mires' patches (noise on the wetness rank)
 FW_MAX = 0.75  # most of a pixel that is flooded (as of a cell: vegetation.flooded)
@@ -244,17 +251,25 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
 
     # --- productivity, in batches -----------------------------------------
     s1 = {}
-    pot = {k: np.zeros((V.NP, nv)) for k in ("npp", "net", "lai", "on_jul", "on_jan")}
-    pot["ok"] = np.zeros((V.NP, nv), bool)
     one_d = ("tc", "tw", "tmin", "gdd5", "temp", "precip", "pet_y", "mi", "dry", "lat", "p_summer", "p_winter",
              "fire_season", "summer_drought", "dryair", "cap1", "cap2", "cloud")
-    for a in range(0, nv, CHUNK):
-        b = min(a + CHUNK, nv)
-        sl = slice(a, b)
+    # (the pixels' dry ground, then the river strips of those that have one:
+    # base maps each of these habitats to its pixel)
+    rsel = np.flatnonzero(rip > RIP_MIN)
+    nr = len(rsel)
+    base = np.concatenate([np.arange(nv), rsel])
+    ep = np.concatenate([np.zeros(nv), np.full(nr, RIP_SHARE)])
+    nh = nv + nr
+    pot = {k: np.zeros((V.NP, nh)) for k in ("npp", "net", "lai", "on_jul", "on_jan")}
+    pot["ok"] = np.zeros((V.NP, nh), bool)
+    for a in range(0, nh, CHUNK):
+        b = min(a + CHUNK, nh)
+        sl = base[a:b]
         s = V.site(latv[sl], temp[sl], t_warm[sl], t_cold[sl], pj[sl], pn[sl], tilt,
                    None if cj is None else cj[sl], None if cn is None else cn[sl],
-                   light=ri[:, sl], extra_water=gw[sl], extra_pet=RIP_SHARE * rip[sl])
+                   light=ri[:, sl], extra_water=gw[sl], extra_pet=ep[a:b])
         s["cap2"] = cap2[sl]
+        sl = slice(a, b)
         env = V.envelope(s, co2)
         viable = env & unlocked[:, None]
         eff = np.ones((V.NP, b - a))
@@ -268,8 +283,9 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         for k in one_d:
             if s.get(k) is not None:
                 s1.setdefault(k, []).append(np.asarray(s[k], float))
-    s = {k: np.concatenate(v) for k, v in s1.items()}
-    s.setdefault("cloud", None)
+    s_h = {k: np.concatenate(v) for k, v in s1.items()}
+    s_h.setdefault("cloud", None)
+    s = {k: (None if v is None else v[:nv]) for k, v in s_h.items()}  # the pixels' own (dry ground) site
 
     # --- wet ground ---------------------------------------------------------
     # the coarse cells (for the flooded share's and the cover's cell means)
@@ -322,14 +338,29 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     fw = np.clip(1 - (1 - fw_g) * (1 - shore) * (1 - coast), 0, FW_MAX)
 
     # --- competition and fire to equilibrium -------------------------------
-    grid = _neighbours(idx, nx, ny)
-    eq = V.equilibrium(grid, s, pot, fw, np.ones(nv, bool), nu0, STEPS)
+    # (the strips seed each other along the river, the dry ground each other)
+    g_d, g_r = _neighbours(idx, nx, ny), _neighbours(idx[rsel], nx, ny)
+    grid = SimpleNamespace(n=nh, nbr_off=np.concatenate([g_d.nbr_off, g_r.nbr_off[1:] + g_d.nbr_off[-1]]),
+                           nbr_idx=np.concatenate([g_d.nbr_idx, g_r.nbr_idx + nv]))
+    eq = V.equilibrium(grid, s_h, pot, fw[base], np.ones(nh, bool), None if nu0 is None else nu0[:, base], STEPS)
     nu = eq["nu"]
+    # each habitat's weight in its pixel: the strip's share, the dry ground the rest
+    wgt = np.ones(nh)
+    wgt[rsel] = 1 - rip[rsel]
+    wgt[nv:] = rip[rsel]
+
+    def mix(a):
+        """Per pixel, the habitats' values weighted by their share ((..., nh) -> (..., nv))."""
+        a = np.asarray(a, float) * wgt
+        out = a[..., :nv].copy()
+        np.add.at(out.T, rsel, a[..., nv:].T) if a.ndim > 1 else np.add.at(out, rsel, a[nv:])
+        return out
 
     # --- pulled towards the coarse cells' cover ------------------------------
     if fields["nu0"] is not None and CORR > 0:
         world_nu = np.stack([np.asarray(L[f"veg_{c}"], float)[sel] / 100 for c in V.CODES])
-        mean = np.stack([np.bincount(own, nu[p], minlength=len(sel)) for p in range(V.NP)]) / np.maximum(cnt, 1)
+        nu_px = mix(nu)
+        mean = np.stack([np.bincount(own, nu_px[p], minlength=len(sel)) for p in range(V.NP)]) / np.maximum(cnt, 1)
         lr = np.where(ok_c[None, :], np.log(np.clip((world_nu + 0.02) / (mean + 0.02), 0.5, 2.0)), 0.0)
         fl, _ = ZK.gauss_interp(px[idx], py[idx], cx, cy, lr.T.copy(), np.repeat(ok_c[:, None], V.NP, 1).astype(float),
                                 sig)
@@ -338,7 +369,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         es, _ = ZK.gauss_interp(px[idx], py[idx], cx, cy, e_c[:, None], (e_c > 1.0)[:, None].astype(float), sig)
         wz = CORR * np.clip(1 - np.abs(hv - np.nan_to_num(es[:, 0], nan=0.0)) / CORR_DZ, 0, 1)
         tot0 = nu.sum(0)
-        nu = np.where(pot["ok"], nu * np.exp(wz[None, :] * np.nan_to_num(fl.T)), 0.0)
+        nu = np.where(pot["ok"], nu * np.exp(wz[base][None, :] * np.nan_to_num(fl.T)[:, base]), 0.0)
         tot1 = nu.sum(0)
         nu = nu * np.where(tot1 > 0, np.minimum(tot0, 1.0) / np.maximum(tot1, 1e-9), 0.0)
 
@@ -350,12 +381,12 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     r_t = (nu[trees] * resist[trees, None]).sum(0) / np.maximum(nt, 1e-9)
     m_fire = 1.0 / np.maximum(b * (1 - r_t), 1e-6)  # years between stand-replacing fires
     burns = (b > 1e-3) & (nt > 0.02) & (m_fire < 2000)
-    age = np.full(nv, np.inf)
+    age = np.full(nh, np.inf)
     if burns.any():
         Pk = np.ascontiguousarray(P[idx] * R_KM)
         S = int(seed) * 1_000_003 + 17
         z = ZK.fbm(Pk, FIRE_KM, max(1, int(np.ceil(np.log2(FIRE_KM / (2 * res)))) + 1), 0.55, S + 301) / 0.17
-        u = _uniform(z)
+        u = _uniform(z)[base]
         age = np.where(burns, -m_fire * np.log(1 - u), np.inf)
         T = np.clip(1.0 / np.maximum(eq["g"], 1e-3), 10.0, 150.0)  # years a type takes to regrow
         fac = np.where(burns[None, :] & trees[:, None],
@@ -381,15 +412,30 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     eq = dict(eq, nu=nu)
 
     # --- structure and named types -----------------------------------------
-    sm = V.summary(s, pot, eq)
+    sm_h = V.summary(s_h, pot, eq)
     # canopy height from the pixel's own stand age where fire set it
     hfrac = np.sqrt(np.clip(pot["lai"] / V._col("laimax")[:, None], 0, 1))
-    hh = V._col("hmax")[:, None] * hfrac * np.where(trees[:, None], 1 - np.exp(-np.minimum(age, sm["stand_age"]) / 60.0)[None, :], 1.0)
-    sm["height"] = np.where(nu > 0.1, hh, 0.0).max(0)
+    hh = V._col("hmax")[:, None] * hfrac * np.where(trees[:, None], 1 - np.exp(-np.minimum(age, sm_h["stand_age"]) / 60.0)[None, :], 1.0)
+    sm_h["height"] = np.where(nu > 0.1, hh, 0.0).max(0)
+    # the pixel: its habitats mixed by their shares (the canopy: the taller
+    # habitat's where it has the most trees in the pixel)
+    sm = {k: mix(v) for k, v in sm_h.items() if k not in ("height", "fire_return")}
+    burned = mix(eq["burned"])
+    sm["fire_return"] = np.where(burned > 1e-4, 1.0 / np.maximum(burned, 1e-9), 0.0)
+    t_w = sm_h["tree"] * wgt
+    strip_h = np.zeros(nv, bool)
+    strip_h[rsel] = t_w[nv:] > t_w[rsel]
+    sm["height"] = sm_h["height"][:nv].copy()
+    sm["height"][rsel] = np.where(strip_h[rsel], sm_h["height"][nv:], sm_h["height"][rsel])
+    nu = mix(nu)
+    eq = dict(eq, nu=nu, burned=burned)
     types = V.classify(s, eq, sm, hv, fw=fw)
-    # oasis and desert riparian woodland: trees by a river through dry land
+    # oasis and desert riparian woodland: trees by a river through dry land,
+    # where the strip holds a woodland and is a fifth of the pixel or its only trees
     desert = rain_mi < 0.3
-    types = np.where((rip > 0.2) & desert & (sm["tree"] >= 0.1) & ~np.isin(types, list(WETLAND_TYPES)),
+    strip_wood = np.zeros(nv, bool)
+    strip_wood[rsel] = (sm_h["tree"][nv:] >= 0.1) & ((rip[rsel] > 0.2) | (sm_h["tree"][rsel] < 0.05))
+    types = np.where(strip_wood & desert & (sm["tree"] >= 0.1 * np.minimum(rip / 0.2, 1)) & ~np.isin(types, list(WETLAND_TYPES)),
                      V.T["oasis / desert riparian woodland"], types)
 
     def put(v, dtype=float):
@@ -401,7 +447,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         vegetation=np.where(veg, put(types, np.uint8), out_type).astype(np.uint8),
         tree_cover=put(100 * sm["tree"]), plant_cover=put(100 * sm["cover"]), lai=put(sm["lai"]),
         canopy_height=put(sm["height"]), npp=put(sm["npp"]),
-        fire_return=put(np.minimum(np.where(eq["burned"] > 1e-4, 1 / np.maximum(eq["burned"], 1e-9), 0.0), 9999)),
+        fire_return=put(np.minimum(sm["fire_return"], 9999)),
     )
     lt = np.bincount(types, minlength=len(V.TYPES))
     top = np.argsort(-lt)[:10]
