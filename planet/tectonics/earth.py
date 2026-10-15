@@ -17,7 +17,8 @@ from .. import climate, hydrology, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import CARB, COAL, EVAP, MIX, SAND, elevation, isostasy, ocean_depth, sediment_iso, sediment_km
+from .isostasy import (CARB, COAL, EVAP, MIX, SAND, elevation, ice_load, iso_rate, land_view, ocean_depth, sediment_iso,
+                       sediment_km)
 
 SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
 
@@ -55,7 +56,7 @@ def global_temperature(sim, growth, newc, rng):
     p, dt = sim.params, sim.dt
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
-    land = sim.w_elev > 0
+    land = sim.land()
     warm = np.exp(0.06 * (sim.temp - 15.0)) if sim.temp is not None else 1.0  # chemical weathering
     # roots and soil CO2 speed it up, in proportion to how much grows there
     # (GEOCARB's biological weathering factor)
@@ -98,7 +99,10 @@ def global_temperature(sim, growth, newc, rng):
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
     sim.sea_level = sim.sea_ice + sim.sea_tect
     ice_frac = (sim.ice > 0).mean()
-    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -1.5, 1.5) - p.ice_albedo * ice_frac / 0.03
+    # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
+    # cloudier and dimmer at high latitude, and the snow it would brighten is often white already)
+    albedo = p.ice_albedo_max * np.tanh(p.ice_albedo * ice_frac / 0.03 / max(p.ice_albedo_max, 1e-9))
+    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -1.5, 1.5) - albedo
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
@@ -111,15 +115,21 @@ def climate_due(sim) -> bool:
 
 def update_climate(sim, e):
     """Temperature, seasons, rain, ice and Koppen class on elevation e
-    (m above the current sea level, without ice)."""
+    (m above the current sea level, without ice, and without the ice's
+    load: the crust's own height). The bed under the ice is pressed down by
+    it (glacial isostasy, sim.ice_sink, settled at once in a run's Myr
+    steps): the ice's surface stands lower (warmer), and land the load
+    pushes below the sea without ice on it is sea. Grounded ice on a bed
+    below sea level stays land (isostasy.land_view)."""
     p, g = sim.params, sim.grid
+    e, ice0, _ = land_view(e - sim.ice_sink, np.where(e > 0, sim.ice, 0.0))
     land = e > 0
-    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, sim.ice, 0.0), veg=veg_feedback(sim))
+    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, ice0, 0.0), veg=veg_feedback(sim))
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind, sim.current = 0.5 * (c["wind_jul"] + c["wind_jan"]), c["current"]
-    sim.ice = ice_sheets(sim, land, c["ground"])
+    sim.ice = ice_sheets(sim, land, c["ground"], ice0)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, climate.ice_cover(g, ice, land))
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
@@ -131,6 +141,7 @@ def update_climate(sim, e):
                                 sim.p_jan, g.lat, sim.ice)
     sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]
     update_vegetation(sim, e)
+    sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
 
 
@@ -190,9 +201,12 @@ ICE_SNOW_MIN = 25.0  # mm/yr of snow a sheet needs where it never melts ...
 ICE_DDF = 3.0  # ... plus what melts: mm per positive degree-day (snow), days of sd 5 C around the month
 
 
-def ice_sheets(sim, land, ground):
+def ice_sheets(sim, land, ground, old):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
-    temp) of the bare ground (climate.compute's, as if there were no ice).
+    temp) of the bare ground (climate.compute's, as if there were no ice,
+    on the bed as the old ice pressed it down: a sheet sits lower and
+    warmer than it would on unloaded crust, PW-189); old: the ice that
+    climate saw (m, on that bed).
     The real ice comes and goes with ~100 kyr cycles and answers its
     climate within ~10 kyr, far inside a climate step: this is the average
     extent over the cycles, in balance with today's mountains, so an ice
@@ -218,7 +232,7 @@ def ice_sheets(sim, land, ground):
                  hundred m (Quelccaya ~200 m)."""
     p, g = sim.params, sim.grid
     t_warm, t_cold, temp = ground
-    old = np.where(land, sim.ice, 0.0)
+    old = np.where(land, old, 0.0)
     own = ICE_FEEDBACK * climate.LAPSE * old + climate.ice_cooling(old, climate.ice_cover(g, old, land))
     # the summer the ice would feel (melting holds a summer above 0 C on ice down, as climate.ice_surface)
     t_sum = t_warm - own
@@ -291,7 +305,7 @@ def erode(sim, col):
     # (light) sediment deposited
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
-    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, isostasy(cont, rock))
+    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock))
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.swell - sim.sea_level, sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,

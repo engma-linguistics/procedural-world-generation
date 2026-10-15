@@ -10,9 +10,9 @@ impact: low
 found_by: zoomland2
 blocked_by: []
 relates: [PW-011]
-refs: [planet/zoom_landforms.py, "zoom 23fe61", docs/review/landforms/zoom_shield_23fe61.png]
+refs: [planet/zoom_landforms.py, "zoom 23fe61", docs/review/landforms/zoom_shield_23fe61.png, "world:a08983(-16.75,-28.53)"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -29,4 +29,6 @@ from a smooth pediment; or exclude dome footprints from the channel mask
 used in the landscape pass.
 
 ## Updates
+- 2026-10-15: Merged inbox draft draft-shield-dome-apron-tried.md ("Shield dome moats (PW-168): a pediment apron in the target doesn't help; domes also get striped by gullies", found by smalls2).
+  For PW-168 (merge into it). Tried on branch smalls2: `Shield.target` = 0.8 x max(dome, apron), the apron the same dome sites at 2x the radius with a lower, gentle profile (so the foot streams would run round a pediment). Compared hillshade crops of a 250 km, 0.5 km/px zoom at -16.75, -28.53 (world a08983) before and after: no visible change to the rings, and more domes came out striped by parallel gullies across their faces (the landscape pass incising the target's dome). Not taken. The stripes are a second artefact worth fixing with the moat: both suggest the landscape pass should not see the domes at all (mask the dome footprints out of the channel network and add the domes only in `shape`), and the drainage be deflected by a separate rule (route the streams round the footprints) instead of by the target.
 - 2026-10-14: Created from inbox draft draft-shield-dome-moats.md (found by zoomland2).

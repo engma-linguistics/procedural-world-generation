@@ -358,7 +358,9 @@ climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
 jet_e/_n, wave_power, tide_range, sst, sst_jul/_jan, salinity, sinking,
 dewpoint_jul/_jan, humidity_jul/_jan, cloud_jul/_jan, sunshine_jul/_jan,
 temperature_jul/_jan, precipitation_jul/_jan, wind_jul_e/_n, wind_jan_e/_n`
-(the seasonal, sea and air layers are worlds only), and the landform layers
+(the sea, air and seasonal wind layers are worlds only; runs keep July and
+January temperature and rain too, the rain as a one-byte log scale:
+`store.run_spec`), and the landform layers
 (`planet/landform.py`: `landform` (class id, legend `landforms`),
 `landform_age`, `strata_top`, `strata_top_km`, `strata_next`, `strata_dip`,
 `fold_wavelength`, `rift_strain`, `glaciated_myr`), which run frames and

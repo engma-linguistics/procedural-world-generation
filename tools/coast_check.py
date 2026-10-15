@@ -107,8 +107,8 @@ def main():
         c = {k: z[k] for k in z.files}
     else:
         c, _ = vegetation.coupled_climate(g, elev, 0.0, TILT, ice)
-        if args.cache:
-            np.savez(args.cache, **c)
+        if args.cache:  # (the per-cell arrays only: the overturning's state etc. aren't needed here)
+            np.savez(args.cache, **{k: v for k, v in c.items() if isinstance(v, np.ndarray) and v.dtype != object})
     import time
     t0 = time.time()
     wp = coast.wave_power(g, elev, c, ice)

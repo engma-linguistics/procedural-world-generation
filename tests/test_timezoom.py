@@ -112,3 +112,19 @@ def test_feedback_room(cold_src, cold_run):
     assert min(dT) >= p.average_room * floor - 0.01
     full = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(start="interglacial"))
     assert min(f["stats"]["dT_global"] for f in full["frames"]) <= min(dT)
+
+
+def test_bed_settles_under_the_ice(cold_src, cold_run):
+    """Glacial isostasy (PW-189): the bed relaxes (iso_tau 3 kyr) toward the
+    settled dip under the ice, the run's isostasy.ice_load (flexure), from a
+    start that was already settled under its own ice."""
+    from planet.tectonics.isostasy import ice_load
+    s = cold_run["state"]
+    g = cold_src["grid"]
+    p = Z.TZParams()
+    H0 = np.maximum(np.asarray(cold_src["ice"], float), 0.0)
+    want = cold_src["elev"] + ice_load(g, H0, p.iso_ratio, p.flex_km) - ice_load(g, s["H"], p.iso_ratio, p.flex_km)
+    grew = s["H"] > H0 + 500
+    assert grew.any()
+    assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
+    assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((s["H"] - H0)[grew]) * p.iso_ratio + 20

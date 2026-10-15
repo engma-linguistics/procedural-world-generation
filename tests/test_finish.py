@@ -34,9 +34,7 @@ def test_frame_state_gives_back_the_bed(tiny):
     st = F.frame_state(tz, len(res["frames"]) - 1)
     s = res["state"]
     bed = s["bed"] - s["sl"]
-    ok = (st["ice"] == 0) | (bed >= F.BED_FLOOR + 1)
-    assert np.abs(st["elevation"][ok] - bed[ok]).max() <= 1.0
-    assert (st["elevation"][st["ice"] > 0] >= F.BED_FLOOR).all()
+    assert np.abs(st["elevation"] - bed).max() <= 1.0  # the true bed, also below sea level under grounded ice
     assert st["sea_level"] == res["frames"][-1]["stats"]["sea_level_m"]
 
 

@@ -2,7 +2,7 @@
 id: PW-192
 title: Stale numbers in module docstrings (volcanism, zoom_landforms, scorecard, earth_world)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: docs
 effort: xs
@@ -45,6 +45,7 @@ read first.
 - [ ] docstrings match the constants; coordination.md numbers refreshed
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-15: Merged inbox draft draft-zoom-landforms-stale-docstrings.md ("zoom_landforms docstrings: caprock 'relief 1.5x deeper' and shield dome sizes (rest of PW-192)", found by smalls).
   PW-192's other docstrings were fixed on branch smalls (volcanism, scorecard,
   earth_world, coordination.md numbers); `planet/zoom_landforms.py` was left

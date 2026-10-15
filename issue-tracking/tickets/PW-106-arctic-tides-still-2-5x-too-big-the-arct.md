@@ -2,7 +2,7 @@
 id: PW-106
 title: "Arctic tides still 2-5x too big: the Arctic basin counts as open ocean"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: coast
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-027]
 refs: [planet/coast.py, tools/coast_check.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,4 +28,5 @@ than a direction mean); or reduce the tide raised in a basin by its gateway widt
 Check the Mediterranean/Baltic/Gulf of Mexico rows in coast_check don't move.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-14: Created from inbox draft draft-arctic-tides-basin-connection.md (found by quickwins).

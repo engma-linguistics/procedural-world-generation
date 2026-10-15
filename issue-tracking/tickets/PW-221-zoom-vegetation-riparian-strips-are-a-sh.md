@@ -2,7 +2,7 @@
 id: PW-221
 title: "Zoom vegetation: riparian strips are a share of the pixel's water, not a sub-pixel habitat; gallery forest fades at 2-4 km/px"
 type: task
-status: todo
+status: done
 parent: PW-184
 subsystem: zoom
 effort: m
@@ -21,4 +21,5 @@ zoom_vegetation gives a river's water to a strip RIP_W0 + RIP_W1 x log10(Q) km w
 - [ ] oasis / gallery forest named where the strip holds most of the pixel's trees
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-15: Created from inbox draft draft-zoom-veg-subpixel-riparian.md (found by vegzoom).

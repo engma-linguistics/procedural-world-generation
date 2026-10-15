@@ -241,6 +241,21 @@ LAYERS = {
     "flooded": _spec("u1", "%", "share of the cell flooded part of the year (wetland habitat)"),
 }
 # the satellite view (satellite.py): true colour as 0xRRGGBB (worlds only)
+# Runs store some layers more compactly than worlds and zooms (a keyframe per
+# few Myr adds up): the half-year rain as a log scale in one byte (~4% steps).
+RUN_LAYERS = {
+    "precipitation_jul": _spec("u1", "mm/yr", "precipitation in the July half-year (Apr-Sep), as a rate per year",
+                               scale=1 / 16, transform="log2p1"),
+    "precipitation_jan": _spec("u1", "mm/yr", "precipitation in the January half-year (Oct-Mar), as a rate per year",
+                               scale=1 / 16, transform="log2p1"),
+}
+
+
+def run_spec(name: str) -> dict:
+    """The encoding a run's keyframes store layer `name` in."""
+    return RUN_LAYERS.get(name) or LAYERS[name]
+
+
 LAYERS["sat"] = _spec("<u4", "0xRRGGBB", "true colour, each hemisphere's summer (satellite.py)")
 LAYERS["sat_jul"] = _spec("<u4", "0xRRGGBB", "true colour in July (satellite.py)")
 LAYERS["sat_jan"] = _spec("<u4", "0xRRGGBB", "true colour in January (satellite.py)")

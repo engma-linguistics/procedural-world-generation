@@ -64,6 +64,7 @@ class Simulation:
         "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
+        "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
         "npp",  # g C/m2/yr per cell
@@ -130,6 +131,7 @@ class Simulation:
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
         self.ice = np.zeros(n)
+        self.ice_sink = np.zeros(n)
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
@@ -378,6 +380,17 @@ class Simulation:
         pl.lith[o, r] = self.w_lith
 
     # ------------------------------------------------------------- queries
+    def bed(self) -> np.ndarray:
+        """m above sea level of the ground, pressed down by the ice's load
+        (w_elev is the crust's own height, which the long-term processes
+        use: the load is gone ~10 kyr after its ice)."""
+        return self.w_elev - self.ice_sink
+
+    def land(self) -> np.ndarray:
+        """Land: ground above sea level, or under grounded ice (all of the
+        run's ice is grounded, even where its load pushes the bed below the sea)."""
+        return (self.bed() > 0) | (self.ice > 0)
+
     def heat(self) -> float:
         """Mantle heat relative to today's (see earth.heat)."""
         return earth.heat(self.params, self.t)

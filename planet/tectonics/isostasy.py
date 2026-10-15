@@ -13,6 +13,17 @@ more than a km of crust would (sediment_lift), and filling a deep basin
 takes ~3x its depth of sediment (as on Earth), not the ~5x crust would.
 Compaction here follows the current burial depth (it isn't remembered when
 the pile is later eroded down).
+
+Glacial isostasy (PW-189): an ice sheet presses the crust down by about
+rho_ice / rho_mantle ~ 0.28 of its thickness (a 3 km sheet: ~830 m, so the
+middle of a big sheet's bed often lies below sea level, as Greenland's and
+Antarctica's do), spread over a few hundred km by the stiff lithosphere
+(flexure: a small cap barely dents it, a continent-wide sheet sinks in
+full). After the ice melts the crust rebounds, over ~10 kyr (Hudson Bay
+and the Baltic still rise ~1 cm/yr). ice_load is the settled dip; the main
+run (Myr steps) takes it at once, the glacial time zoom relaxes toward it
+with an e-folding time of a few kyr (an "ELRA" model: elastic lithosphere,
+relaxing asthenosphere).
 """
 
 from __future__ import annotations
@@ -38,6 +49,37 @@ RHO_CONT = RHO_MANTLE - ISO_LAND / K_LAND  # the crust densities ISO_LAND / ISO_
 RHO_OCEAN = RHO_MANTLE - ISO_SEA / K_SEA  # 2.85
 
 
+RHO_ICE = 0.917
+ICE_SINK = RHO_ICE / RHO_MANTLE  # m the bed sinks per m of ice, once settled (~0.28)
+FLEX_KM = 150.0  # km: the lithosphere's flexure spreads an ice load over about this (Gaussian-ish sigma)
+BED_FLOOR = 1.0  # m: grounded ice on a bed at or below sea level keeps its cell land (land_view)
+
+
+def ice_load(grid, ice, ratio=ICE_SINK, km=FLEX_KM):
+    """m the bed is pressed down by land ice (m per cell) once settled:
+    ratio x the ice thickness, spread by the lithosphere's flexure over
+    ~km (the blur keeps the total, so a small cap sinks less than ratio x
+    its thickness and its surroundings a little)."""
+    from ..climate import smooth  # (climate doesn't import tectonics, but keep the import light)
+    ice = np.asarray(ice, float)
+    if not (ice > 0).any():
+        return np.zeros_like(ice)
+    return np.maximum(smooth(grid, ratio * ice, km), 0.0)
+
+
+def land_view(elev, ice, floor=BED_FLOOR):
+    """(elev, ice, floored) for code that takes land as elevation > 0:
+    grounded ice on a bed at or below sea level (a bed pressed down by its
+    ice, a marine ice sheet) becomes land with its bed floored at `floor` m
+    and the ice thinned to keep the surface (as tools/earth_data.py does
+    for Antarctica). ice > 0 means grounded ice (runs and time zooms store
+    only that). floored: the mask of the cells changed."""
+    elev = np.asarray(elev, float)
+    ice = np.asarray(ice, float)
+    low = (ice > 0) & (elev < floor)
+    return (np.where(low, floor, elev), np.where(low, np.maximum(elev + ice - floor, 0.0), ice), low)
+
+
 # Extra per-cell numbers carried by every plate (column order):
 #   lift  m of broad doming over a plume; it rides away with the plate and
 #         decays as the hot mantle under it cools (Hawaii's swell trails
@@ -54,7 +96,7 @@ LIFT, CARB, LAVA, EVAP, COAL, SAND, TUFF = range(7)
 MIX = slice(1, 7)
 
 
-def isostasy(cont, rock):
+def iso_rate(cont, rock):
     """m of elevation per km of crust added or removed, per cell."""
     return np.where(cont, ISO_LAND, np.where(rock == HOTSPOT, ISO_VOLCANO, ISO_SEA))
 

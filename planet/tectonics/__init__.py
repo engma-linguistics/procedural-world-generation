@@ -75,12 +75,12 @@ speeds reported in cm/yr (1 cm/yr = 10 km/Myr), elevation in metres.
 
 from .events import Event
 from .isostasy import (BECOMES_CONT_KM, CONT_KM, EXTRA, ISO_LAND, ISO_SEA, ISO_VOLCANO, MAX_KM, MIX, OCEAN_KM,
-                       elevation, isostasy, ocean_depth)
+                       elevation, iso_rate, ocean_depth)
 from .output import Snapshot
 from .params import Params
 from .plates import CMYR, P_MAX, Plates, rotation
 from .simulation import Simulation
 
 __all__ = ["BECOMES_CONT_KM", "CMYR", "CONT_KM", "EXTRA", "Event", "ISO_LAND", "ISO_SEA", "ISO_VOLCANO", "MAX_KM",
-           "MIX", "OCEAN_KM", "P_MAX", "Params", "Plates", "Simulation", "Snapshot", "elevation", "isostasy",
+           "MIX", "OCEAN_KM", "P_MAX", "Params", "Plates", "Simulation", "Snapshot", "elevation", "iso_rate",
            "ocean_depth", "rotation"]

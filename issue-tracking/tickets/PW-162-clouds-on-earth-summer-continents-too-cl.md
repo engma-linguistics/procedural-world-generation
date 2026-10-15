@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-143, PW-019]
 refs: [planet/climate.py, tools/earth_check.py, "world dc3732", docs/review/clouds/]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -36,4 +36,5 @@ mass rather than the kernel's drained vapour. Most of the rest should move with 
 - [ ] Siberia annual cloud >= 55%, Canary January <= 65%, without moving the passing regions
 
 ## Updates
+- 2026-10-15: Smalls2: land storm cloud linear in humidity (Siberia passes); trade-wind decks and wet tropics left (draft).
 - 2026-10-14: Created from inbox draft draft-cloud-regional-misses.md (found by clouds).
