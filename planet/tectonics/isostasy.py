@@ -38,7 +38,8 @@ BECOMES_CONT_KM = 20.0  # an arc or sediment pile this thick is continental crus
 MAX_KM = 80.0
 ISO_LAND = 150.0  # m of elevation per km of crust
 ISO_SEA = 200.0  # under water the displaced stuff is water, not air
-ISO_VOLCANO = 350.0  # a narrow volcanic pile is also held up by the stiff plate around it (flexure)
+ISO_VOLCANO = 350.0  # a narrow volcanic pile is also held up by the stiff plate around it (flexure)...
+VOLCANO_PILE_KM = 20.0  # ...for its first this many km beyond normal ocean crust (Hawaii's pile: ~10-15 km)
 # densities, g/cm3: mantle, sea water; sediment at the surface and deep
 # down, compacting over SED_COMPACT_KM of burial (Athy's porosity law)
 RHO_MANTLE, RHO_WATER = 3.3, 1.03
@@ -65,6 +66,54 @@ def ice_load(grid, ice, ratio=ICE_SINK, km=FLEX_KM):
     if not (ice > 0).any():
         return np.zeros_like(ice)
     return np.maximum(smooth(grid, ratio * ice, km), 0.0)
+
+
+SAG_KM = 2.2  # km: thermal subsidence after infinite stretching, air-loaded (McKenzie 1978's ~3.2 km under water)
+SAG_TIME = 63.0  # Myr: the stretched lithosphere's cooling time constant (McKenzie)
+MOAT_MAX = 2500.0  # m: deepest a moat gets, smoothly (the Ganges foreland's basement is ~4-5 km down under its fill)
+ROOT = 1000.0 - ISO_LAND  # m of root per km of extra continental crust (Airy: the part that doesn't show)
+
+
+def subsidence(grid, thick, cont, rec, t, flexure=0.3, sag=SAG_KM, sag_time=SAG_TIME, km=FLEX_KM):
+    """m of tectonic subsidence (< 0) or uplift beyond local (Airy)
+    isostasy, per cell (PW-054): what keeps basins sinking as they fill.
+
+    - Flexure: a mountain belt's load is carried by the stiff lithosphere
+      over ~km, so the plain beside it is dragged down into a moat (the
+      Ganges, Po, Persian Gulf and Alberta foreland basins; between two
+      ranges an intermontane basin: Tarim, Fergana). The root Airy puts
+      under each cell of thickened continent (ROOT per km of crust beyond
+      CONT_KM) is spread over ~km (the same lithosphere as ice_load's), and
+      continent standing where the spread root reaches deeper than its own
+      sinks by flexure x the difference (smoothly capped at MOAT_MAX). Only the moat is applied: ranges
+      keep their Airy height (the crust model makes their thickness), so
+      the belt itself isn't held up by the plate.
+    - Thermal sag after rifting: a stretched lithosphere starts hot and
+      buoyant and sinks as it cools (McKenzie 1978): sag x f(beta) of
+      uplift, f = (beta/pi) sin(pi/beta), decaying over sag_time, beta =
+      e^rift_strain from the record. Airy isostasy gives the thinned crust's
+      final, cold height at once; this adds the hot start, so a rift's
+      floor and its margins keep sinking for ~100 Myr after the stretching
+      stops (sag basins over old rifts: the North Sea, Paris, Michigan;
+      passive margins' thick wedges).
+    thick km, cont mask, rec the geological record (record.RECORD columns),
+    t Myr now."""
+    from ..climate import smooth
+    from .record import RIFT_STRAIN, T_RIFT
+    out = np.zeros(len(thick))
+    if flexure > 0:
+        root = np.where(cont, ROOT * np.maximum(thick - CONT_KM, 0.0), 0.0)
+        if root.any():
+            moat = flexure * np.maximum(smooth(grid, root, km) - root, 0.0) * cont
+            out -= MOAT_MAX * np.tanh(moat / MOAT_MAX)
+    if sag > 0:
+        age = t - rec[:, T_RIFT].astype(float)
+        hot = cont & (age >= 0) & (age < 8 * sag_time)
+        if hot.any():
+            beta = np.exp(np.maximum(rec[hot, RIFT_STRAIN].astype(float), 0.0))
+            f = beta / np.pi * np.sin(np.pi / beta)
+            out[hot] += 1000.0 * sag * f * np.exp(-age[hot] / sag_time)
+    return out
 
 
 def land_view(elev, ice, floor=BED_FLOOR):
@@ -134,9 +183,14 @@ def sediment_km(cover, extra):
 def elevation(thick, age, cont, rock, swell, sed):
     """m above sea level (swell: m of plume doming minus the sea level;
     sed: km of the crust that is (light) sediment, see sediment_km)."""
-    sea = np.where(rock == HOTSPOT, ISO_VOLCANO, ISO_SEA)
+    # (a volcanic pile is held up by the plate's flexure only up to the
+    # load it can carry, VOLCANO_PILE_KM; crust beyond that floats like
+    # any other: PW-172, a 45 km sediment-laden pile stood at 11.5 km)
+    extra = thick - OCEAN_KM
+    pile = np.where(rock == HOTSPOT, np.clip(extra, 0, VOLCANO_PILE_KM), 0.0)
     return np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),
-                    ocean_depth(age) + sea * (thick - OCEAN_KM)) + sediment_lift(cont, rock, sed) + swell
+                    ocean_depth(age) + ISO_SEA * extra + (ISO_VOLCANO - ISO_SEA) * pile) \
+        + sediment_lift(cont, rock, sed) + swell
 
 
 def ocean_depth(age):

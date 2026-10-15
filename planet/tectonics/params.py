@@ -20,7 +20,7 @@ class Params:
     # whose land emerges over the first Gyr, as Earth's probably did.
     continental_start: float = -1.0
     continental_growth: float = 700.0
-    continental_thickness: float = 37.0  # km: the mean the volume thermostat aims for
+    continental_thickness: float = 35.0  # km: the mean the volume thermostat aims for
     # forces (arbitrary units; mobility converts torque to rad/Myr)
     slab_pull: float = 1.0
     ridge_push: float = 0.15
@@ -48,6 +48,14 @@ class Params:
     # (At 0.03 the stability clamp in plate_kernels.crust_flow always bound, so plateaus
     # flattened at the numerical limit: ~1 km in 4 Myr from flow alone.)
     crust_flow: float = 0.0006
+    # tectonic subsidence beyond local isostasy (isostasy.subsidence, PW-054):
+    # share of a mountain belt's spread root that drags the plain beside it
+    # down (flexural foreland / intermontane basins), and the thermal sag of
+    # stretched lithosphere (km after infinite stretching, air-loaded) with
+    # its cooling time
+    flexure: float = 0.3
+    rift_sag: float = 2.2
+    sag_time: float = 63.0
     # surface (see surface.py): erosion, rivers, sediment, climate
     hillslope: float = 100.0  # km^2/Myr: wearing-down of ground standing above its neighbours
     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...

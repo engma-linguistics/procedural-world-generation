@@ -43,7 +43,7 @@ import numpy as np
 
 from ..geo import R_KM, latlon
 from . import mantle
-from .isostasy import ISO_LAND, ISO_VOLCANO, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
+from .isostasy import ISO_LAND, ISO_VOLCANO, LAVA, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
 from ..surface import HOTSPOT
 
 ARC, VENT = 0, 1  # kinds
@@ -58,6 +58,7 @@ GAP_KM = (60.0, 150.0)  # km of plate motion between a plume's vents (vent_gap)
 SCATTER_KM = 12.0  # rms offset of a vent from the plume's track
 VENT_KM = 25.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~25-60 km)
 TOP_MAX = (4200.0, 3500.0)  # m: highest summit at sea (Mauna Kea), on a continent
+LAVA_MAX_KM = 3.0  # km: the thickest flood-basalt pile on a continent (Siberian Traps ~3.5, Deccan ~2)
 APRON_TOP = (-2000.0, 1500.0)  # m: lava that can't pile higher spreads into a broad apron up to here
 ARC_SLOPE = 0.6  # an arc volcano's height / its cone's e-folding radius (a ~30 deg stratocone top)
 H_WAVES = 1000.0  # m: the sea's own share of eroding an island (cliff retreat), as if this much higher
@@ -427,13 +428,17 @@ def cap_plumes(sim, col, plume, tops, cont_share=0.25):
     (Iceland) and ~2 km on land (Deccan); for the apron of lava round a
     chain of vents APRON_TOP. Returns the crust growth (km/Myr) after that;
     under continents cont_share of it (a plume head's melt mostly stalls
-    under thick continental crust)."""
+    under thick continental crust), and no more than a LAVA_MAX_KM pile of
+    flood basalt on any cell (PW-133: the Deccan is ~2 km, the Siberian
+    Traps ~3.5; a plateau's height is mostly its swell, counted in
+    as_volcano, which sinks as it decays)."""
     dt, cont = sim.dt, col.cont
-    as_volcano = elevation(col.t, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.swell - sim.sea_level,
+    as_volcano = elevation(col.t, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.datum(),
                            sediment_km(col.cover, col.x))
     head = np.where(cont, tops[1], tops[0])
     taper = np.clip((head - as_volcano) / 1500.0, 0, 1)
     room = np.maximum(head - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
+    room = np.where(cont, np.minimum(room, np.maximum(LAVA_MAX_KM - col.x[:, LAVA], 0)), room)
     return np.minimum(plume * np.where(cont, cont_share, 1.0) * taper * dt, room) / dt
 
 
@@ -449,7 +454,7 @@ def volcanoes(sim, growth, t, rng):
     area = 4 * np.pi * R_KM**2 / g.n
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
-    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.swell - sim.sea_level,
+    near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.datum(),
                          sediment_km(sim.w_cover, sim.w_extra)) > -1500
     cand = np.flatnonzero((growth * dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))
     if len(cand) == 0:

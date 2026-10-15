@@ -257,7 +257,7 @@ def arc_rock(sim, col, growth):
     return arcky
 
 
-def stretch(sim, col, rate, plume, newc):
+def stretch(sim, col, rate, plume, newc, shrink=1.0):
     """Thin stretched continental crust (rate per Myr from rift_stretching)
     down to 22 km, floor the opening rifts with what it lost
     (rifted_margin), and mark ocean-floor plume piles as hotspot rock."""
@@ -267,14 +267,14 @@ def stretch(sim, col, rate, plume, newc):
     t[thin] = np.maximum(22.0, t[thin] * np.exp(-rate[thin] * dt))
     record.rift(col.rec, thin & (rate > RIFT_THINNING), np.log(t0 / np.maximum(t, 1e-9)), sim.t)
     sim.book("stretch", t0, t, col.cont)
-    rifted_margin(sim, t0 - t, col, newc)
+    rifted_margin(sim, t0 - t, col, newc, shrink)
     col.rock[~col.cont & (plume * dt > 0.2)] = HOTSPOT
 
 
 MARGIN_MIN_KM = 12.0  # thinnest rifted-margin crust laid in a rift (else: ocean floor)
 
 
-def rifted_margin(sim, lost, col, newc):
+def rifted_margin(sim, lost, col, newc, shrink=1.0):
     """Stretching doesn't destroy crust, it spreads it thinner over a
     wider area: the opening rift is floored by thinned continental crust
     (rifted margins: 10-25 km thick, 100-300 km wide, under 1-4 km of sea)
@@ -289,6 +289,10 @@ def rifted_margin(sim, lost, col, newc):
     cells sank to -4 km beside -2 km margin, and the plates carried the
     mosaic past the world grid as cells flipping between continent and
     deep sea every few Myr: PW-108.)
+    When the continents cover more than their target area (shrink > 1,
+    crust.thermostats) the margin is laid thicker, so the same pool makes
+    fewer cells of continent: up to rift_margin_km at shrink 2 (PW-046:
+    margins were a main source of the slow growth in area).
     In place on col (and sim.w_age)."""
     g, p, pl = sim.grid, sim.params, sim.plates
     own = sim.owner
@@ -297,6 +301,7 @@ def rifted_margin(sim, lost, col, newc):
     pl.rift_pool *= np.exp(-sim.dt / 100.0)  # a rift that never opens keeps it in its thickened flanks... eventually
     if p.rift_margin_km <= 0 or not newc.any():
         return
+    min_km = MARGIN_MIN_KM + max(p.rift_margin_km - MARGIN_MIN_KM, 0.0) * float(np.clip(shrink - 1.0, 0.0, 1.0))
     src_of = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
     cand = newc & ~cont
     if not cand.any():
@@ -316,7 +321,7 @@ def rifted_margin(sim, lost, col, newc):
         for k in np.unique(own[touch]):
             cells = np.flatnonzero(touch & (own == k))
             km = min(p.rift_margin_km, pl.rift_pool[k] / len(cells))
-            if km < MARGIN_MIN_KM:
+            if km < min_km:
                 continue
             s = s_all[cells]
             col.t[cells] = km
@@ -430,7 +435,9 @@ def birth_and_cratons(sim, col, arcky, squeezed):
     Siberia, Africa's shields).
     Updates sim.w_age; returns the cells born continental."""
     p, t, cont, rock = sim.params, col.t, col.cont, col.rock
-    sedimented = col.cover > 0.5 * (t - OCEAN_KM)
+    # (or a pile whose cover has reached the burial depth: what's below it
+    # was sediment too, now basement; PW-172)
+    sedimented = (col.cover > 0.5 * (t - OCEAN_KM)) | (col.cover > 0.8 * sim.params.metamorphic_depth)
     born = ~cont & (t >= BECOMES_CONT_KM) & ((rock != HOTSPOT) | sedimented)
     rock[born] = np.where(sedimented[born], SEDIMENT, ARC)
     sim.book("born", 0, t, born)

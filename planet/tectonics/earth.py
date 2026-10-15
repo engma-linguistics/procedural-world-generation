@@ -307,7 +307,7 @@ def erode(sim, col):
     iso_dep = sediment_iso(cont, rock, sed)
     iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock))
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
-        g, elevation(t, sim.w_age, cont, rock, sim.swell - sim.sea_level, sed), t, cover, x[:, MIX],
+        g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep)
     sim.book("erosion", t0, col.t, cont)
@@ -334,7 +334,7 @@ def sediments(sim, col, dep, lake):
                  exist (none before land plants ~450 Ma on Earth)"""
     p, g, dt = sim.params, sim.grid, sim.dt
     x, cover = col.x, col.cover
-    e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.swell - sim.sea_level, sediment_km(col.cover, x))
+    e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x))
     land = e > 0
     x[:, SAND] += dep * np.where(land, 0.6, np.where(e > -200, 0.5, 0.15))
     net = dep - col.eroded_cover
@@ -379,7 +379,7 @@ def reefs(sim, col, dep, chem):
     chem = evap + coal
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
-    e = elevation(col.t, sim.w_age, cont, rock, sim.swell - sim.sea_level, sed)
+    e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
     reef = (e < -5) & (e > -1500) & (sim.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
     grow = np.minimum(p.reef_rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
     carb = grow / sediment_iso(cont, rock, sed)

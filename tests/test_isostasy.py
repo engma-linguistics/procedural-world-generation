@@ -65,3 +65,43 @@ def test_land_view_keeps_the_surface():
     assert list(low) == [True, False, False]
     assert e[0] == I.BED_FLOOR and ice[0] == 2500 - 300 - I.BED_FLOOR
     assert e[1] == 200 and ice[1] == 1000 and e[2] == -50
+
+
+# Tectonic subsidence (PW-054)
+def _belt(grid, width_deg=4.0, lon0=0.0):
+    """A north-south mountain belt (60 km crust) in a continent of 35 km crust."""
+    d = np.abs(((grid.lon - lon0 + 180) % 360) - 180)
+    return np.where((d < width_deg / 2) & (np.abs(grid.lat) < 30), 60.0, I.CONT_KM)
+
+
+def test_a_mountain_belt_drags_a_moat_beside_it_and_keeps_its_own_height():
+    from planet.grid import build_grid
+    from planet.tectonics.record import empty
+    g = build_grid(6)
+    thick = _belt(g)
+    cont = np.ones(g.n, bool)
+    rec, _ = empty((g.n,))
+    s = I.subsidence(g, thick, cont, rec, 0.0)
+    d = np.abs(((g.lon + 180) % 360) - 180)
+    belt = thick > I.CONT_KM
+    beside = ~belt & (d < 4.5) & (np.abs(g.lat) < 25)
+    far = (d > 20) & (np.abs(g.lat) < 25)
+    assert np.all(s[belt] > -150)  # (a little at its tapering ends)
+    assert -2000 < s[beside].mean() < -200, s[beside].mean()  # foreland basins: ~0.5-1.5 km before their fill
+    assert np.all(s[far] == 0)
+    assert np.all(s >= -I.MOAT_MAX)
+
+
+def test_a_rift_sinks_as_it_cools():
+    from planet.grid import build_grid
+    from planet.tectonics import record
+    g = build_grid(5)
+    cont = np.ones(g.n, bool)
+    thick = np.full(g.n, I.CONT_KM)
+    rec, _ = record.empty((g.n,))
+    rec[:, record.T_RIFT] = 100.0
+    rec[:, record.RIFT_STRAIN] = np.log(1.5)
+    up = [I.subsidence(g, thick, cont, rec, t, flexure=0)[0] for t in (100.0, 163.0, 400.0)]
+    assert 500 < up[0] < 1200  # beta 1.5: ~0.8 km of hot uplift (McKenzie, air-loaded)
+    assert abs(up[1] / up[0] - np.exp(-1)) < 0.01
+    assert up[2] < 0.02 * up[0]

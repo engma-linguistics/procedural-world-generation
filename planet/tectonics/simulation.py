@@ -24,7 +24,7 @@ a saved state is bit-identical to one that never stopped (tests/test_state.py),
 because each step's randomness depends only on (seed, step_no).
 
 The world view (w_age, w_cont, w_thick, w_rock, w_cover, w_extra, w_rec,
-w_lith, w_ref, w_elev, swell) is the plates' crust seen on the world grid. Between steps
+w_lith, w_ref, w_elev, swell, dyn) is the plates' crust seen on the world grid. Between steps
 it is always _world_view() of the state above, so it isn't part of it.
 """
 
@@ -39,7 +39,7 @@ import numpy as np
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LIFT, MAX_KM, MIX, elevation, sediment_km
+from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, elevation, sediment_km, subsidence
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve
 from .plates import Plates
@@ -259,9 +259,12 @@ class Simulation:
 
         col = self._age(dome)
         plume = volcanism.cap_plumes(self, col, head, (3000.0, 2000.0))
-        t0, col.t = col.t, col.t + plume * self.dt  # (provisionally, so the apron sees the head's lava)
+        # (provisionally, so the apron sees the head's lava)
+        t0, lava0 = col.t, col.x[:, LAVA].copy()
+        col.t = col.t + plume * self.dt
+        col.x[:, LAVA] += plume * self.dt * col.cont
         plume = plume + volcanism.cap_plumes(self, col, apron, volcanism.APRON_TOP, cont_share=1.0)
-        col.t = t0
+        col.t, col.x[:, LAVA] = t0, lava0
         plume = plume + vents  # (each vent capped itself)
         crust.add_arcs_and_plumes(self, col, growth, plume)
         edges = crust.inner_edges(self, col.cont)
@@ -272,7 +275,7 @@ class Simulation:
         t0 = col.t.copy()  # (volcanoes edits it in place)
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
-        crust.stretch(self, col, stretch, plume, newc)
+        crust.stretch(self, col, stretch, plume, newc, shrink)
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment
@@ -280,7 +283,7 @@ class Simulation:
         # numbers the tectonics draws shouldn't reshuffle the climate history)
         earth.global_temperature(self, growth, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
-            self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.swell - self.sea_level,
+            self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
                                     sediment_km(col.cover, col.x)))
         dep, lake = earth.erode(self, col)
         chem = earth.sediments(self, col, dep, lake)
@@ -331,7 +334,8 @@ class Simulation:
         record.diagenesis(col.rec, col.lith)
         record.reconcile(col.rec, col.lith, self.w_cover, record.default_rock(self.w_cover, x[:, MIX]), self.t)
         self.w_rec, self.w_lith = col.rec, col.lith
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
+        self._subsidence()
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
                                 sediment_km(self.w_cover, self.w_extra))
         self._scatter()
 
@@ -366,9 +370,23 @@ class Simulation:
         self.w_rec = pl.rec[o, r]
         self.w_lith = pl.lith[o, r]
         self.swell = self.w_extra[:, LIFT]
-        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.swell - self.sea_level,
+        self._subsidence()
+        self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
                                 sediment_km(self.w_cover, self.w_extra))
         self.w_ref = r
+
+    def _subsidence(self):
+        """Tectonic subsidence beyond local isostasy (isostasy.subsidence:
+        flexural moats beside mountain belts, thermal sag after rifting),
+        from the world view's crust and record."""
+        p = self.params
+        self.dyn = subsidence(self.grid, self.w_thick, self.w_cont, self.w_rec, self.t, p.flexure, p.rift_sag,
+                              p.sag_time)
+
+    def datum(self) -> np.ndarray:
+        """m added to each cell's isostatic elevation (isostasy.elevation's
+        swell): the plume swell plus tectonic subsidence, minus the sea level."""
+        return self.swell + self.dyn - self.sea_level
 
     def _scatter(self):
         """Write the world view back into the plates' frames."""
