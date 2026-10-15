@@ -79,7 +79,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                           unlocked=veg.get("unlocked"), cheap=True)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
-        elev = hydrology.erode(grid, elev, c["runoff"], erosion_iterations, erosion)
+        elev = hydrology.erode(grid, elev, c, erosion_iterations, erosion, ice=ice)
     c = climate.compute(grid, elev, dT, tilt, ice, veg=fb)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}

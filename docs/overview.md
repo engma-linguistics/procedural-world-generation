@@ -338,7 +338,7 @@ On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and 
 
 **Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan), `flood_ratio`, `flood_month` (worlds). Runs store `lake_depth` instead of `lake_level`.
 
-**Known limits:** run and world lakes disagree (PW-057: the world's texture and erosion passes move them); generated worlds have too few closed basins (PW-054, §2.5).
+**Known limits:** run and world lakes still disagree. Finishing now keeps most of the keyframe's lakes (Jaccard overlap of lake cells with those of the keyframe under the same climate, L6, five runs: 0.31–0.89 since PW-057, 0.05–0.77 before; land draining inland now matches the keyframe's), but a run frame stores the lakes of the terrain before that step's erosion and sediment (which fills hollows to within 5 m of their spill level), and run lakes turn over within a frame or two, so a world agrees with the run frame's own lake layer on few cells (Jaccard ~0.0–0.1; see the draft on run-frame lakes). Generated worlds have too few closed basins (PW-054, §2.5).
 
 ### 2.10 Coasts: waves, tides, delta types (`coast.py`)
 
@@ -361,8 +361,8 @@ A **world** is one moment, finished. Four ways to get one:
 - **`planet finish <timezoom> --kyr N`** (PW-091, `finish.py`; the viewer's "Finish world here" on a time zoom frame): a world at any stored frame (every 2 kyr) of a glacial time zoom. Geology (plates, crust, rock, landforms, volcanoes) is the source keyframe's; bed, ice, sea level and global temperature are the frame's, the obliquity is the tilt; then the usual finishing below, so lakes form against the ice and on the pressed-down bed, and lowered seas join land. Grounded ice on a bed below sea level (pressed down by its load, or a marine sheet) is kept as land with its bed floored at 1 m and the ice thinned to keep the surface (`isostasy.land_view`, as for Antarctica in `earth_data`; all worlds, also those sliced from a run, since run keyframes store the pressed-down bed; meta `ice_bed_floored_cells`). Meta: `source_run`, `t_myr`, `timezoom`, `timezoom_kyr`, the frame's sea-level change and orbit. **Storage choice:** no re-run; each time-zoom frame already stores the surface and the grounded ice (to 1 m since PW-091), so bed = surface − ice. `planet finish <run> --at T` (or "Finish world here" on a run) is the keyframe world, as the Zoom button. An Earth time zoom finishes like `tools/earth_world.py` (real terrain, no rock record, so no regional zooms).
 - **`planet generate`** makes an unsimulated world from cartoon plates (no texture, ice, record or landforms; it can't be zoomed). **`tools/earth_world.py`** runs real Earth terrain through the same finishing, with observed climate alongside.
 
-**Finishing** (run-based worlds first get sub-cell texture in `timeline`):
-1. climate, then 12 erosion passes (strength 0.3 for slice and Zoom worlds, 1.0 for generate), then climate again;
+**Finishing** (run-based worlds first get sub-cell texture, `timeline.texture`: ±180 m of noise plus ridges on high ground, scaled by the ground's slope, so steep country (≥ 1.25 m/km between cells) gets all of it and plains and plateaus 15%: PW-057):
+1. climate, then 12 erosion passes (`hydrology.erode`, strength 0.3 for slice and Zoom worlds, 1.0 for generate: stream-power cutting with rivers routed as in the run, through open lakes and ending in closed ones, and a creep that only lowers ground, toward its lower neighbours, so it doesn't fill hollows), then climate again;
 2. rivers and lakes;
 3. vegetation (§2.18; biomes grouped from its named types);
 4. waves and tides;

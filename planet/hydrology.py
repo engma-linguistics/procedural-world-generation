@@ -39,24 +39,37 @@ def accumulate(down: np.ndarray, order: np.ndarray, rain: np.ndarray) -> np.ndar
     return kernels.accumulate(down, order, rain.astype(float))
 
 
-def erode(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, iterations: int = 12,
-          strength: float = 1.0, diffusion: float = 0.08):
-    """Carve river valleys with the runoff (mm/yr). Returns new elevation."""
+def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength: float = 1.0,
+          diffusion: float = 0.08, lake_every: int = 4, ice: np.ndarray | None = None):
+    """Carve river valleys with the climate c's runoff (climate.compute's
+    dict: runoff, aet, lake_evap, mm/yr). Rivers run as in the run
+    (surface.erode): through open lakes and on, ending in closed ones, so a
+    closed basin's rim isn't cut by water that never leaves it (the lakes
+    are worked out again every lake_every passes; 0: plain priority-flood
+    routing, every pit spilling). Returns new elevation."""
     h = elev.astype(float).copy()
-    rain = runoff_mm / 1000.0  # metres/yr; flow then ~ 'cells x m/yr'
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)
     k = 0.018 * 1.6 * strength * 2 ** (grid.level - 5)
-    a, b = grid.edges[:, 0], grid.edges[:, 1]
-    deg = np.bincount(np.concatenate([a, b]), minlength=grid.n)
-    for _ in range(iterations):
-        _, down, order = priority_flood(grid, h)
-        flow = accumulate(down, order, rain)
-        kernels.stream_power(h, down, order, k * np.sqrt(flow))
-        # Hillslope creep: land relaxes a bit toward its neighbours.
+    from .surface import _relief
+    iced = (h > 0) & (ice > 0) if ice is not None else None
+    lk = None
+    for it in range(iterations):
         land = h > 0
-        nb_mean = (np.bincount(a, h[b], grid.n) + np.bincount(b, h[a], grid.n)) / deg
-        h = np.where(land, (1 - diffusion) * h + diffusion * np.maximum(nb_mean, 1.0), h)
+        if lake_every and it % lake_every == 0:
+            lk = lakes(grid, h, c["runoff"], c["aet"], c["lake_evap"], iced)
+        if lk is None:
+            _, down, order = priority_flood(grid, h)
+            flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
+        else:
+            lk["bed"] = np.where(lk["wet"], lk["bed"], h)
+            flow, down, order, _ = route(grid, h, lk)
+        kernels.stream_power(h, down, order, np.where(land, k * np.sqrt(np.maximum(flow, 0)), 0.0))
+        # Hillslope creep, as the run's (surface.erode): land wears down toward
+        # its lower neighbours; it only lowers ground, so hollows aren't filled
+        # (PW-057: a symmetric creep filled the run's lake basins in); gentler
+        # with the strength, as the cutting (a run's keyframe is worn already).
+        h = np.where(land, h - diffusion * strength * _relief(h, grid.nbr_off, grid.nbr_idx), h)
     return h
 
 
