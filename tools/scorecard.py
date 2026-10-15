@@ -21,7 +21,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from planet import climate  # noqa: E402
+from planet import climate, vegetation  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import koppen_agreement  # noqa: E402
 from planet.provenance import code_version  # noqa: E402
@@ -37,7 +37,7 @@ def earth_scores() -> dict | None:
     e = np.load(path)
     g = build_grid(6)
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
-    c = climate.compute(g, elev, 0.0, 23.4, ice)
+    c, _ = vegetation.coupled_climate(g, elev, 0.0, 23.4, ice)
     land = (elev > 0) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
     mg = GROUP[c["koppen"]]
     shares = {k: round(100 * float((mg[land] == k).mean()), 1) for k in "ABCDE"}

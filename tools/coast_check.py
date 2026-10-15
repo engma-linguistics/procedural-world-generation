@@ -22,7 +22,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from planet import climate, coast, hydrology  # noqa: E402
+from planet import climate, coast, hydrology, vegetation  # noqa: E402
 from planet.geo import R_KM, xyz  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import earth_on_grid  # noqa: E402
@@ -106,7 +106,7 @@ def main():
         z = np.load(args.cache)
         c = {k: z[k] for k in z.files}
     else:
-        c = climate.compute(g, elev, 0.0, TILT, ice)
+        c, _ = vegetation.coupled_climate(g, elev, 0.0, TILT, ice)
         if args.cache:
             np.savez(args.cache, **c)
     import time

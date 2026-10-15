@@ -60,22 +60,30 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
            veg: dict | None = None) -> dict:
-    """Shared back half of the pipeline: climate -> erosion -> rivers ->
-    vegetation (and biomes from it). dT: global temperature offset from
+    """Shared back half of the pipeline: climate -> a first vegetation on
+    it -> erosion -> the climate again with the vegetation's feedbacks ->
+    rivers -> vegetation (and biomes from it). dT: global temperature offset from
     today's Earth; ice: m of land ice; veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
     for the meta)."""
     t0 = t0 or time.time()
+    veg = veg or {}
     c = climate.compute(grid, elev, dT, tilt, ice)
+    # The vegetation feeds back on the climate (climate.compute's veg): a
+    # first, cheap vegetation on the first climate, then the climate again
+    # with it (on the eroded terrain, if any).
+    v0 = vegetation.model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt,
+                          c["cloud_jul"], c["cloud_jan"], ice=ice, nu0=veg.get("nu0"), co2=veg.get("co2", 0.0),
+                          unlocked=veg.get("unlocked"), cheap=True)
+    fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
         elev = hydrology.erode(grid, elev, c["runoff"], erosion_iterations, erosion)
-        c = climate.compute(grid, elev, dT, tilt, ice)
+    c = climate.compute(grid, elev, dT, tilt, ice, veg=fb)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
-    veg = veg or {}
     vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
                          c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
                          co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"))

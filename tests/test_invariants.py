@@ -251,3 +251,28 @@ def test_climate_fits_ground_after_events():
 
     sim.run(300, on_step=check)
     assert not bad, bad[:10]
+
+
+def test_vegetation_feedbacks_nudge():
+    """The vegetation's feedbacks on the climate are nudges (PW-203): a
+    forested continent recycles more rain than a bare one, but the recycled
+    share stays within its band and the albedo moves each half-year by at
+    most albedo_cap."""
+    from planet import vegetation
+    g = build_grid(4)
+    elev = np.where(np.abs(g.lon) < 60, 300.0, -4000.0)
+    land = elev > 0
+    n = g.n
+    forest = dict(woody=np.ones(n), deep=np.ones(n), lai=np.full(n, 6.0), albedo=np.full(n, 0.11),
+                  mask=np.full(n, 0.75))
+    bare = vegetation.bare(n)
+    T = climate.TUNE
+    for v in (forest, bare):
+        f = climate.vegetation_feedbacks(land, v, T)
+        assert np.all(np.abs(f["et"] - T["et"]) <= T["et"] * T["et_band"] + 1e-12)
+    cf, cb = climate.compute(g, elev, veg=forest), climate.compute(g, elev, veg=bare)
+    assert cf["precip"][land].mean() > cb["precip"][land].mean()
+    assert cf["aet"][land].sum() > cb["aet"][land].sum()  # forests give more back to the air
+    c0 = climate.compute(g, elev)
+    d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
+    assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9

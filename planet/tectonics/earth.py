@@ -114,7 +114,7 @@ def update_climate(sim, e):
     (m above the current sea level, without ice)."""
     p, g = sim.params, sim.grid
     land = e > 0
-    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, sim.ice, 0.0))
+    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, sim.ice, 0.0), veg=veg_feedback(sim))
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
@@ -132,6 +132,17 @@ def update_climate(sim, e):
     sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]
     update_vegetation(sim, e)
     sim.climate_t = sim.t
+
+
+def veg_feedback(sim):
+    """The vegetation's feedbacks on the climate (climate.compute's veg),
+    from the last update's vegetation (one climate step behind): bare land
+    before land plants, an Earth-like average on the first update."""
+    if sim.t < sim.params.plants_from - 1e-9:
+        return vegetation.bare(sim.grid.n)
+    if sim.veg_frac is None:
+        return None
+    return vegetation.feedback(sim.veg_frac, sim.veg_lai)
 
 
 FLORA_END = 1000.0  # Myr: the plant groups' timeline when the run's end isn't known (params.flora_end = 0)
