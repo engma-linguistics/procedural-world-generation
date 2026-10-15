@@ -5,7 +5,8 @@
 Runs (1) the climate on real Earth geography (needs data/earth, see
 earth_check.py) and (2) level-6 simulations for --myr, then appends one JSON
 line to docs/scorecard.jsonl tagged with the git commit, so you can see
-whether model changes moved things toward or away from Earth. ~2-4 min.
+whether model changes moved things toward or away from Earth. ~11 min
+(the `seconds` field of each line).
 """
 
 from __future__ import annotations
