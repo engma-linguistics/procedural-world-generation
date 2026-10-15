@@ -21,6 +21,7 @@ uv run python issue-tracking/board.py tree --open
 Conventions, the inbox for subagents, and effort/impact definitions: `issue-tracking/README.md`.
 
 ## Elsewhere
+- `docs/backlog.md`: the open work from the epics down, with priorities and suggested batches (snapshot 2026-10-14).
 - `docs/overview.md`: how each subsystem works.
 - `docs/coordination.md`: worktrees, merging, the server, run costs, showcase recipes.
 - `docs/proposals/`: design write-ups (glacial time zoom, ocean overturning, supercontinent cycle, the round 1–2 plan as written).
