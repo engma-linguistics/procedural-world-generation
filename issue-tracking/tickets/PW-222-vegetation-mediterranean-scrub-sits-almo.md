@@ -2,7 +2,7 @@
 id: PW-222
 title: "Vegetation: Mediterranean scrub sits almost entirely outside Koppen Cs (34 of 2163 cells on world 351f32)"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -30,4 +30,5 @@ winter-wet regime, so semi-arid steppe climates get it and Cs gets parkland.
 - [ ] most Mediterranean-type cells in Cs (or a documented reason they aren't)
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-15: Created from inbox draft draft-maquis-outside-cs.md (found by smalls).

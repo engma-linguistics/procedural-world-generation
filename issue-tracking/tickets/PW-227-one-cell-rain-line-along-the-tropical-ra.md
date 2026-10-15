@@ -2,7 +2,7 @@
 id: PW-227
 title: One-cell rain line along the tropical rain belt's convergence latitude
 type: task
-status: todo
+status: done
 parent: PW-013
 subsystem: climate
 effort: s
@@ -23,4 +23,5 @@ Physically the convergence does make the rain belt, but over the belt's width (`
 - [ ] tools/earth_check.py tropical bands unchanged or better
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-15: Created from inbox draft draft-rain-itcz-line.md (found by vegclim).

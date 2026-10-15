@@ -141,6 +141,9 @@ for _p in PFTS:
     _p["tw_max"] = {"HthS": 20.0, "DecS": 20.0, "TunH": 18.0}.get(_p["code"], 99.0)
     # mm/yr: succulents need rain (or fog) most years; the hyper-arid cores of deserts are barren
     _p["p_min"] = {"Succ": 100.0}.get(_p["code"], 0.0)
+    # least moisture index P/PET: heath is a plant of wet, maritime or cold-humid ground
+    # (the drought limit amin can't tell: a sparse heath's own demand is met even at 100 mm)
+    _p["mi_min"] = {"HthS": 0.5}.get(_p["code"], 0.0)
 CODES = [p["code"] for p in PFTS]
 NP = len(PFTS)
 IDX = {c: i for i, c in enumerate(CODES)}
@@ -351,6 +354,8 @@ TYPES = [
     (60, "lake", "non-vegetated", "#4f8fcf", 3, ""),
     (61, "moss and crust carpet", "archaic", "#8f9a6a", 8,
      "Low carpets of moss, liverworts and dark microbial crust over thin soil; no grass yet, the land before flowers."),
+    (62, "dry sclerophyll scrub (mallee, mulga)", "desert", "#a89a5a", 8,
+     "Hard-leaved grey-green evergreen shrubs on poor dry ground, bare earth or tussock grass between; big fires after wet years."),
 ]
 T = {name: i for i, name, *_ in TYPES}
 TYPE_BIOME = np.array([t[4] for t in TYPES])
@@ -378,7 +383,7 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
     """The climate inputs of each cell: climate.months plus the envelope
     indices (tc, tw, tmin: BIOME4's absolute-minimum estimate, gdd5), the
     annual moisture index mi = P/PET, Gaussen dry months (rain under twice
-    the temperature) and the soil's water capacity (thinner on steep
+    the temperature), summer drought (Koppen's s) and the soil's water capacity (thinner on steep
     ground; relief: m to the steepest neighbour).
     For zoom pixels (zoom_vegetation): light (12, n) scales each month's
     light and potential evaporation (a slope's radiation index);
@@ -410,9 +415,15 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
     # (above 5 C, free of snow) is dry for sure when rain and snowmelt bring
     # under 20% of its potential evaporation, never above 100% (in between,
     # in some years: its dry spells)
+    # summer drought as Koppen's Cs/Ds has it: the driest month of the summer
+    # half-year under 40 mm and under a third of the winter's wettest
+    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
+    summer = np.where(north[None, :], jul, ~jul)
+    dry_s = np.where(summer, mo["p"], np.inf).min(0)
+    drought = (dry_s < 40) & (dry_s < np.where(summer, -np.inf, mo["p"]).max(0) / 3)
     ratio = mo["water"] / np.maximum(mo["pet"], 1e-6)
     fire = (np.clip((1.0 - ratio) / 0.8, 0, 1) * (mo["t"] > 5) * (mo["snow"] <= 1)).sum(0) / 12.0
-    return dict(mo, fire_season=fire, tc=tc, tw=tw, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
+    return dict(mo, fire_season=fire, summer_drought=drought, tc=tc, tw=tw, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
                 precip=p, pet_y=pet, mi=mi, dry=dry, lat=np.asarray(lat, float),
                 cap1=np.full(len(p), TOP_MM), cap2=DEEP_MM * (1 - steep),
                 p_summer=np.where(north, p_jul, p_jan), p_winter=np.where(north, p_jan, p_jul),
@@ -428,7 +439,8 @@ def envelope(s: dict, co2: float = 0.0) -> np.ndarray:
     for i, p in enumerate(PFTS):
         tw_min = p["tw"] + (3.0 * float(np.clip(co2, -1.5, 1.5)) if i == C4 else 0.0)
         out[i] = ((s["tc"] >= p["tc_min"]) & (s["tc"] <= p["tc_max"]) & (s["tmin"] >= p["tmin"])
-                  & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]) & (s["precip"] >= p["p_min"]))
+                  & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]) & (s["precip"] >= p["p_min"])
+                  & (s["mi"] >= p["mi_min"]))
     return out
 
 
@@ -861,7 +873,7 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
     sl_tw = tw + climate.LAPSE * np.maximum(elev, 0)
     alpine = (tw < 12) & (sl_tw >= 14) & (elev > 800)
     tropical_lat = (tc + climate.LAPSE * np.maximum(elev, 0)) >= 15
-    summer_dry = (s["p_summer"] < 0.5 * s["p_winter"]) & (tc > -3)
+    summer_dry = (np.asarray(s["summer_drought"]) > 0) & (tc > -3)
     cloud = s["cloud"] if s.get("cloud") is not None else np.clip(P / 3000.0, 0, 1)
     trop_tree = f["TrBE"] + f["TrBR"]
     out = np.full(n, -1)
@@ -902,6 +914,9 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
     share = trees / np.maximum(tree, 1e-9)
     forest = tree >= 0.6
     trop = trop_tree >= 0.5 * tree
+    # (a tropical climate's forest whose biggest share is tropical trees is tropical forest,
+    # even where warm-temperate trees together outnumber them, as in the lower montane belt)
+    trop = trop | ((dom <= 1) & tropical_lat)
     put(forest & trop & alpine | forest & trop & (tw < 21) & (cloud >= 0.65) & (elev > 1000),
         T["tropical montane cloud forest"])
     put(forest & trop & (dry <= 1) & (f["TrBE"] >= 0.5 * tree), T["tropical lowland rainforest"])
@@ -936,10 +951,13 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
     put(wood & trop & (tree >= 0.3), T["moist savanna woodland"])
     put(wood & trop, T["dry savanna"])
     put(wood & alpine & ~boreal & (tw < 14), T["alpine scrub (krummholz)"])
+    # (boreal-named woodland needs a boreal climate: cold winters and short, cool
+    # summers; birch and pine woodland elsewhere is named by its climate below)
+    subarctic = (tc < -2) & ((tw < 16) | (s["gdd5"] < 1000))
     put(wood & boreal & (s["gdd5"] < 600) & (tree < 0.3), T["forest-tundra"])
-    put(wood & boreal & (f["Moss"] >= 0.15), T["lichen woodland"])
-    put(wood & boreal & (f["C3G"] >= 0.25), T["forest steppe"])
-    put(wood & boreal, T["lichen woodland"])
+    put(wood & boreal & subarctic & (f["Moss"] >= 0.15), T["lichen woodland"])
+    put(wood & boreal & subarctic & (f["C3G"] >= 0.25), T["forest steppe"])
+    put(wood & boreal & subarctic, T["lichen woodland"])
     put(wood & summer_dry & ((dom == 2) | (f["SclS"] >= 0.15)), T["Mediterranean evergreen woodland"])
     put(wood & summer_dry & (dom == 4), T["Mediterranean pine forest"])
     put(wood & (f["C3G"] >= 0.25) & (mi < 0.7), T["forest steppe"])
@@ -957,14 +975,20 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
     sd = np.stack([f[c] for c in ("SclS", "XerS", "DecS", "HthS", "Succ")])
     sdom = np.argmax(sd, 0)
     put(shrubby & (f["Succ"] >= 0.2), T["succulent desert"])
-    put(shrubby & (sdom == 0), T["Mediterranean scrub (maquis, chaparral, fynbos)"])
+    # sclerophyll scrub is Mediterranean where the summer is dry; elsewhere it is
+    # semi-arid (mallee, mulga), a cold steppe's (sagebrush) or a humid thicket
+    put(shrubby & (sdom == 0) & summer_dry, T["Mediterranean scrub (maquis, chaparral, fynbos)"])
+    put(shrubby & (sdom == 0) & (tc < 0) & (mi < 0.5), T["shrub steppe"])
+    put(shrubby & (sdom == 0) & (mi < 0.65), T["dry sclerophyll scrub (mallee, mulga)"])
+    put(shrubby & (sdom == 0), T["temperate scrub and thicket"])
     put(shrubby & (sdom == 1) & (tc < 0), T["cold desert scrub"])
     put(shrubby & (sdom == 1) & (cover < 0.45), T["hot desert scrub"])
     put(shrubby & (sdom == 1), T["semi-desert grassland"])
     put(shrubby & (sdom >= 2) & alpine, T["alpine scrub (krummholz)"])
     put(shrubby & (sdom == 2) & tundra, T["shrub tundra"])
     put(shrubby & (sdom == 3) & tundra, T["dwarf-shrub and lichen tundra"])
-    put(shrubby & (sdom == 3), T["heathland and moorland"])
+    put(shrubby & (sdom == 3) & (mi >= 0.7), T["heathland and moorland"])
+    put(shrubby & (sdom == 3), T["shrub steppe"])
     put(shrubby & (sdom == 4), T["succulent desert"])
     put(shrubby, T["temperate scrub and thicket"])
     # 8. grass and herbs, or (where they don't make it) moss and crust

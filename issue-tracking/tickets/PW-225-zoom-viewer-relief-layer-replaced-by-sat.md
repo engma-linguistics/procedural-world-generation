@@ -2,7 +2,7 @@
 id: PW-225
 title: "Zoom viewer: 'Relief' layer replaced by 'Satellite'; decide if a hypsometric relief layer is still wanted"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: viewer
 effort: xs
@@ -25,6 +25,7 @@ Options: A) leave it (lean: the satellite view, Height and Hillshade cover it); 
 layer drawn in JS from height and rain (`zoom.tint`'s ramps), ~30 lines.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (smalls2).
 - 2026-10-15: Status todo -> in-progress. Worktree smalls2.
 - 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star, cheap and loses nothing): bring the hypsometric relief back as a non-default layer next to Satellite.
 - 2026-10-15: Created from inbox draft draft-satellite-zoom-relief-layer.md (found by satview).

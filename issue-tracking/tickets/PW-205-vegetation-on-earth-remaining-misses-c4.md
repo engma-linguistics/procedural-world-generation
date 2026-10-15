@@ -23,4 +23,5 @@ After tuning (observed climate, tools/veg_check.py --png): agreement 62%, land N
 - Burned area is 92% in savanna and grassland (GFED ~70-80%): boreal and temperate forest fires are rare (fire weather needs a dry month; boreal summers rarely qualify).
 
 ## Updates
+- 2026-10-15: Smalls2: boreal 20.2->16.9 Mkm2 (in range); C4 nudges tried and rejected (draft).
 - 2026-10-15: Created from inbox draft draft-veg-earth-tuning-remaining.md (found by veg).

@@ -117,7 +117,7 @@ Batch 1 (PW-010):
                  the zone's typical relief, so benches show on low land too)
                  over soft slopes, endlessly repeated down from the zone's
                  85th percentile of elevation: plateau, mesas, buttes and
-                 stepped benches (Grand Staircase); relief 1.5x deeper. A
+                 stepped benches (Grand Staircase). A
                  dip (strata_dip, downhill) tilts them into asymmetric
                  cuestas (scarps facing up-dip, long dip slopes).
   lava plateau   stacked flows: steps of >= 110 m (a package of flows at
@@ -1076,8 +1076,10 @@ class Rift(Synth):
 
 class Shield(Synth):
     """Old shield: a low plain (relief flattened) with granite domes and
-    inselbergs (bornhardts: steep-sided, round-topped rock domes 1-4 km
-    across rising 100-400 m; more on granite than on gneiss), placed on a
+    inselbergs (bornhardts: steep-sided, round-topped rock domes 1.6-9 km
+    across, most under ~5 km, those under 3x the pixel left out; height
+    0.1-0.3x the radius, at most 500 m, x 0.65-1 by granite share, so
+    ~100-500 m (Uluru, Sugarloaf); more on granite than on gneiss), placed on a
     planet-fixed lattice, off the streams (in the target too, so the
     drainage goes round them). Where the record says the shield was under
     ice lately (glaciated_myr, decaying over GLACIATED_MYR) it is scoured:
