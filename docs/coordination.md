@@ -57,10 +57,10 @@ Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
 ## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight (2026-10-14 ~20:00):** `tectchurn` (PW-109, PW-108).
-**Current showcase (all of today's code):** run 8571dd (L7, seed 21, 1000 Myr), world a08983 @ 408 Myr with highlights and zooms; landform demo zooms f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau). Earth world dc3732 (clouds, ocean, seasons). Generated ocean/cloud demo world 2085dc.
+**In flight (2026-10-14 ~21:00):** `tectsea` (PW-053 sea level, PW-024 plate count), `zoompolish` (PW-181 falls overlay, PW-180 runoff routing, PW-176 dune rule, PW-158/161). PW-005 epic done. Merged since: tectchurn (PW-108/109; coherence step), zoomland3 (PW-012/148/167). Note: run 8571dd predates the PW-108 tectonics change; make a fresh showcase after the tectonics-quality set.
+**Current showcase (all of today's code):** run 8571dd (L7, seed 21, 1000 Myr), world a08983 @ 408 Myr with highlights and zooms; landform demo zooms f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau), 68e925 (tower karst), 2e6433 (lowland karst/poljes), e14044 (linear/star dunes), 2d1537 (transverse dunes), ee587f (cold barchans), 8373c5 (barrier islands/lagoons), dccb9c (coastal plain). Earth world dc3732 (clouds, ocean, seasons). Generated ocean/cloud demo world 2085dc.
 Merged since the landform data side: viewerseason, travel, stratarock, zoomland1 (PW-010/146), viewerocean (PW-137/141/144), zoomice (PW-127), clouds (PW-143/151/142), zoomland2 (PW-011/149/150).
-Open owner questions: PW-163 (cloud feedback on temperature; lean keep diagnostic), PW-159 (zoom snowline under coarse ice, minor).
+Owner north star for judgement calls (2026-10-14): decide routine calls myself; prefer the proper fix unless it's a real complexity/compute burden; defer to a known bigger fix rather than patching; no half measures unless very compelling.
 
 **Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
 
