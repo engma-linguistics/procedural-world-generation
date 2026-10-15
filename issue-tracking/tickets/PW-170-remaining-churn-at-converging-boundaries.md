@@ -1,5 +1,6 @@
 ---
-title: Remaining churn at converging boundaries: plate ownership flickers along collision fronts
+id: PW-170
+title: "Remaining churn at converging boundaries: plate ownership flickers along collision fronts"
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: tectchurn
 blocked_by: []
 relates: [PW-108]
 refs: [planet/tectonics/plate_kernels.py, tools/churn.py, "run:abcdac", "run:11ca32"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -28,3 +31,6 @@ age 2 within 4 Myr). Try: delete a ghost wherever it would lose to the cell's
 owner by resolve's rules (stacking continental ghosts onto the winner), and
 fill gaps whose plates don't diverge from the neighbours (see the draft on
 spurious new floor).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-collision-owner-flicker.md (found by tectchurn).

@@ -1,4 +1,5 @@
 ---
+id: PW-174
 title: Plate cells no world cell samples miss each step's physics
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tectchurn
 blocked_by: []
 relates: [PW-108, PW-134]
 refs: [planet/tectonics/simulation.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -26,3 +29,6 @@ crust flips 3.37 -> 2.71%); with crust.coherence in place no measurable gain
 (L6 s21/s22 100-600 Myr, within noise), so it was dropped for simplicity.
 Worth revisiting for PW-134's record speckle (strata/cover differ cell to
 cell partly because of this). Cost: one numba pass like cleanup_ghosts.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-unsampled-plate-cells.md (found by tectchurn).

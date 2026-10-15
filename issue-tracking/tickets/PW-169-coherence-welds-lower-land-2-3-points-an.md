@@ -1,4 +1,5 @@
 ---
+id: PW-169
 title: Coherence welds lower land ~2-3 points and thin the continents (more thin margin crust)
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: tectchurn
 blocked_by: []
 relates: [PW-108, PW-053]
 refs: [planet/tectonics/crust.py, docs/scorecard.jsonl, "run:11ca32", "run:43930b"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -31,3 +34,6 @@ enclaves (ocean with <= 1 oceanic same-plate neighbour; the frozen-plate
 aliasing test showed notch welding gives most of the gain: flips 3.9% ->
 3.2% enclaves only, 2.0% with notches); (C) keep the rule and nudge
 continental_thickness / the area target so land comes back. Lean A or C.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-coherence-land-share.md (found by tectchurn).

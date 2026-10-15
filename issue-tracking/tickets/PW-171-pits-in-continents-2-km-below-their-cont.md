@@ -1,4 +1,5 @@
 ---
+id: PW-171
 title: Pits in continents (2+ km below their continental neighbours), from old ocean seams and welded inlets
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tectchurn
 blocked_by: []
 relates: [PW-108, PW-048]
 refs: [planet/tectonics/events.py, planet/tectonics/crust.py, tools/churn.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -31,3 +34,6 @@ sampled crust over keep's cells under gone's world cells, owned or not);
 coherence (adds crust), or fill it with sediment from them (conserves it);
 (C) leave it to deposition (slow: a 4 km pit needs ~12 km of sediment).
 Lean A and C, check B against the crust budget.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-continental-pits.md (found by tectchurn).

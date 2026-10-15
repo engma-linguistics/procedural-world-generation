@@ -1,4 +1,5 @@
 ---
+id: PW-172
 title: One-frame 11-18 km peaks are thick sediment-filled hotspot cells on ISO_VOLCANO isostasy
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tectchurn
 blocked_by: []
 relates: [PW-048, PW-108]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/crust.py, "run:a01868@588Myr cell 1522", "run:a01868@968Myr cell 87076"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -32,3 +35,6 @@ sediment (basement made from cover) in the `sedimented` test so the pile is
 born continental; (C) don't mark HOTSPOT on cells that were continental a step
 ago. Lean A+B. Coherence (PW-108 fix) removes some of the flips that start it.
 - [ ] no frame of an L7 1 Gyr run above ~9.5 km (envelope test)
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-hotspot-pile-spikes.md (found by tectchurn).
