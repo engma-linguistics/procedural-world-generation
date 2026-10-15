@@ -1,5 +1,5 @@
 ---
-title: "Land is ~34% of the surface (Earth 29%): lower the continental target or accept?"
+title: "Land is 31-34% of the surface (Earth 29%) and stands high: lower a continental target or accept?"
 type: task
 status: needs-decision
 parent: null
@@ -15,12 +15,13 @@ refs: [planet/tectonics/params.py, planet/tectonics/crust.py, tools/scorecard.py
 ## Description
 After the foundation round (tectfound: crust area held near its 40% target,
 continents back to ~36-38 km median at L6 and L7), continental crust stays at
-40-43% of the surface over 1 Gyr (it drifted to 45-47% before), but land is
-~34% (L6 seeds 2-4, 1 Gyr, mean after 100 Myr: 34.2/34.2/33.9%; before the
-round 32.5-33.7%, because the thinned continents of the old code stood lower).
+40-43% of the surface over 1 Gyr (it drifted to 45-49% before), and land is
+31-34% (scorecard seeds 1/2 at 1 Gyr: 30.8/31.1%, range 30-36%; L6 seeds 2-4,
+mean over 100-1000 Myr: 34.2/34.2/33.9%, 32.5-33.7% before the round, when
+the thinned continents stood lower). Mean land elevation is ~1100-1200 m at
+L6 and ~1350 m at L7 (Earth ~840 m).
 Earth: ~29% land on ~41% continental crust; our continents drown less of
-their area (~8 points of the surface vs Earth's ~12) and mean land stands
-~1100-1200 m (Earth ~840 m).
+their area (~8 points of the surface vs Earth's ~12).
 
 Options:
 - (A) Accept: the envelope allows 22-42%, Earth is an analogue, and the
