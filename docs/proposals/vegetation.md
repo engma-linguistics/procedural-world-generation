@@ -563,6 +563,50 @@ Steps 1–3 give a reviewable world-level vegetation map with Earth numbers (~2�
 
     **Recommend A.** It makes icehouse eras more C4-grassy and greenhouse eras more forested, as on Earth.
 
+### 9.3 Owner decisions (2026-10-14)
+
+The owner approved the proposal without notes. Decisions, with what they change:
+
+1. **A:** 21 PFTs computed, named types derived. If tuning shows a PFT has nothing to tune against, falling back towards the standard DGVM set is allowed.
+2. **A:** named types are the main land-cover layer. `biome` stays only as a coarse grouping because highlights and legends use it, not for compatibility (none is needed).
+3. **B, reworked: plant groups evolve over the run under pressure** (design below).
+4. **A:** equilibrium plus stand ages in worlds; dynamics only in the time zoom and in finished worlds.
+5. **A:** the cheap equilibrium runs at every climate update and feeds erosion and weathering first.
+6. **B:** all three climate feedbacks, including rain recycling. This is cheap: the rain kernel already has a single "share of land rain that evaporates back" (`TUNE["et"]` = 0.5 in `planet/climate.py`); recycling makes it a per-cell array set by vegetation (deep-rooted forest recycles more than desert crust), clipped to a band around 0.5 so it nudges. Add it last, after the Budyko/`evap_cool` and albedo steps are checked on Earth, and watch for a runaway forest–rain loop.
+7. **B:** all coastal life, mangroves and salt marsh included, lives in PW-188 as its own layers. The land model has 19 PFTs. Until PW-188 lands, tidal cells simply show their land vegetation. The named types "mangrove forest" and "salt marsh" are taken from PW-188's layers in the classification step (rule 2 in §2.3).
+8. **A:** lightning fire only; grazing comes with fauna in PW-103. If something behaves badly without grazing (e.g. grasslands closing to forest everywhere), a cheap placeholder is allowed, marked to be removed in PW-103.
+9. **A:** zooms store the 7 summary layers. Per-PFT fractions for a zoom can be recomputed on demand (~1–4 s, deterministic from the world's fractions and the zoom's terrain).
+10. **A:** history decides forest vs savanna.
+11. **A**, with the fixed per-type table as fallback text.
+12. **A:** a mild CO₂ nudge on C3 efficiency and the C3/C4 crossover.
+
+#### Plant groups that evolve during the run (decision 3)
+
+No evolution is simulated, but plant groups appear one after another, each under a "pressure" from the run's own climate, on a timeline scaled to the run's length rather than to Earth's years.
+
+**Groups and their PFTs.** Each group unlocks a set of PFTs. The Earth fraction is when the group appeared on Earth, as a share of the ~470 Myr since land plants:
+
+| # | Group | Unlocks | Earth | Earth fraction |
+|---|---|---|---|---|
+| 1 | pioneers: mosses, lichens, soil crusts | Moss, Sph | ~470 Ma | 0 (from `plants_from`) |
+| 2 | early vascular marsh plants | WetH | ~430 Ma | ~0.08 |
+| 3 | forests without flowers: spore trees, seed ferns, conifers | TeNE, BoNE, BoNS | 385–300 Ma | ~0.2 |
+| 4 | flowering trees and shrubs | TrBE, TrBR, TeBE, TeBS, BoBS, SclS, XerS, DecS, HthS | ~125 Ma | ~0.73 |
+| 5 | grasses and sedges | C3G, TunH | ~70 Ma | ~0.85 |
+| 6 | C4 grasses and succulents (CAM) | C4G, Succ | ~30 Ma | ~0.94 |
+
+(PW-188 can gate mangroves with group 4 and salt marsh with group 5.)
+
+**Timeline.** The span runs from `plants_from` (the existing land-plants switch, default the start of the run) to a **hard deadline D = run end − max(16 Myr, 5% of the span)**. That is 30 Myr before the end of a 600 Myr run and 100 Myr before the end of a 2 Gyr run. Every group has appeared by D. Each group can appear from about 0.6× its Earth fraction of the span (earlier than Earth, not wildly so). If it hasn't appeared by about 1.3× (capped at D), it is forced. Order is kept: a group cannot appear before the one it builds on.
+
+**Pressure.** At each climate update (every 4 Myr), the equilibrium vegetation already computes every PFT's potential productivity, so the niche a missing group would fill costs nothing to measure: the share of land where its PFTs would beat the current flora. The chance of appearing per update is proportional to that niche, times a ramp that rises to certainty at the group's window end. A planet with wide warm, dry, low-CO₂ plains gets C4 grasses early; a wet greenhouse planet gets them late. The draws are seeded (same seed, same history), and the times are stored in the run's metadata.
+
+**Stand-ins before a group exists.** An empty niche is filled by the nearest available PFT, with its limits widened and its efficiency reduced. Examples: conifer-like forest in the tropics before flowering trees appear; moss and crust where grass would be. A world sliced early in a run therefore looks archaic but not bare. Erosion feels the difference through the run's vegetation cover (decision 5): pre-forest rivers are flashier and braided, as on early Earth.
+
+**Viewer.** With a vegetation view selected, the run's time slider shows a tick and label where each group appeared.
+
+**Why 5% and not just 16 Myr.** In the run, vegetation reaches equilibrium within one 4 Myr climate update, so 16 Myr would be enough mechanically. A wider margin means worlds sliced a little before the end still have the full flora, and C4 grasses arose ~6% of the land-plant span before today on Earth.
+
 ---
 
 ## References (brief)
