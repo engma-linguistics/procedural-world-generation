@@ -511,6 +511,15 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 
 **Tests** (`uv run pytest -q`, 180 tests): invariants (determinism, the crust budget closing, sane values, storage that doesn't clip, the sim → world → zoom chain), envelopes (plausible ranges: land 22–42%, dry climates 12–45% of land, continental crust 33–50%, plate speeds 2–9 cm/yr, 5–30 plates, ocean age 25–120 Myr, churn), and golden hashes of a short L4 run and one climate computation, so refactors can be shown not to change results.
 
+**Glacial time zoom depth** (PW-031, 2026-10-14; lowest sea level vs the start, max ice):
+
+| Source | Before | After |
+|---|---|---|
+| world bcc894 (run e0e21e @ 688 Myr, L7, dT −3.3), 300 kyr | −171 m, 5.1 km | **−132 m**, 5.1 km |
+| run e0e21e @ 592 Myr (L7, dT −0.7, Earth-like), 300 kyr | — | −95 m |
+| world 8e71fd (run ee65aa @ 632 Myr, L6, dT −5.8), 200–1000 kyr | −272 m, 11.8 km | −258 m, 11.8 km (cold era: see the PW-031 follow-up draft) |
+| Earth (L6), 200 kyr | −54 m | −53 m |
+
 **Earth checks** (the model on Earth's real terrain, `tools/earth_check.py`):
 
 | Check | Result |
@@ -586,6 +595,8 @@ Two runs on the final 2026-10-14 code, random seed 3199, default (Earth-like) pa
 |---|---|---|---|---|---|
 | L6 | ee65aa (5 min) | 1000 | 8e71fd @ 632 Myr | b5da31 largest river mouth, 23437e highest peak, b15424 steepest river, b4cdbc fjords, 12e3dc most varied, 53479b delta site | ends with 12 plates, 31.7% land |
 | L7 | e0e21e (20 min) | 1000 | bcc894 @ 688 Myr | 40edef highest peak 5,533 m, a800d7 largest river mouth, 05fdf3 steepest river (830 m drop), 8bc6d8 longest range (6,900 km), 860228 fjords, 29e060 most varied | ends with 6 plates, 36.8% land |
+
+Glacial time zooms and finished worlds (PW-091): time zoom **37ad6f** (300 kyr from bcc894's moment, L7) with finished worlds **bcb4b6** (+262 kyr, its glacial maximum, sea −132 m; zoom ed4e18) and **626fbb** (+100 kyr); time zoom **1eb8d4** (300 kyr from 8e71fd's, L6) with finished world **c73271** (+120 kyr, −258 m).
 
 Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`), and zooms at `zoom.html?id=<id>`. Try the landforms, cloud, sea temperature and salinity layers, the overturning overlay, and the travel highlights.
 
