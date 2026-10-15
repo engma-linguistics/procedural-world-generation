@@ -100,13 +100,18 @@ def finish_timezoom(ref: str, kyr: float | None = None, erosion: float = 0.3,
     end). Reuses one already finished there."""
     tz_dir, run = load_timezoom(ref)
     tz_id = run.get("id", tz_dir.name)
-    m = run["meta"]
     i = frame_index(run, kyr)
     t = float(run["frames"][i]["t"])
-    found = find_finished(tz_id, t)
-    if found:
-        progress(1.0, f"using world {found.stem} (already finished at {t:g} kyr)")
-        return found
+    with S.lock(S.worlds_dir(), f"finish-{tz_id}-{t:g}"):  # (one process finishes it; the others find it)
+        found = find_finished(tz_id, t)
+        if found:
+            progress(1.0, f"using world {found.stem} (already finished at {t:g} kyr)")
+            return found
+        return _finish(tz_dir, run, tz_id, i, t, erosion, progress)
+
+
+def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, progress) -> Path:
+    m = run["meta"]
     progress(0.1, f"finishing the world at {t:g} kyr (climate, rivers, lakes, biomes)")
     st = frame_state(tz_dir, i)
     s = st["stats"]

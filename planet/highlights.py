@@ -111,6 +111,7 @@ from pathlib import Path
 import numpy as np
 
 from . import coast, hydrology
+from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
 from .geo import R_KM
@@ -2271,6 +2272,13 @@ def for_world(world_path: Path, refresh: bool = False) -> dict:
     world_path = Path(world_path)
     if not refresh and (d := cached(world_path)):
         return d
+    with S.lock(S.worlds_dir(), f"highlights-{world_path.stem}"):  # (one process computes it)
+        if not refresh and (d := cached(world_path)):
+            return d
+        return _compute(world_path)
+
+
+def _compute(world_path: Path) -> dict:
     t0 = time.time()
     world = W.load(world_path)
     feats = find(world)
@@ -2279,7 +2287,7 @@ def for_world(world_path: Path, refresh: bool = False) -> dict:
          "source_run": m.get("source_run"), "t_myr": m.get("t_myr"), "level": m.get("level"),
          "computed_in_s": round(time.time() - t0, 2), "features": feats}
     cache_path(world_path).parent.mkdir(parents=True, exist_ok=True)
-    cache_path(world_path).write_text(json.dumps(d, default=W._np, separators=(",", ":")))
+    S.write_atomic(cache_path(world_path), json.dumps(d, default=W._np, separators=(",", ":")))
     return d
 
 

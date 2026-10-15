@@ -819,7 +819,7 @@ def report(run_dir: Path) -> Path:
                 f"{fr[i]['stats']['sea_level_change_m']:+.0f} m", W.LEGENDS["elevation"],
                 W.ascii_map(w, "elevation", 100, 25)]
     path = run_dir / "run.txt"
-    path.write_text("\n".join(out) + "\n")
+    S.write_atomic(path, "\n".join(out) + "\n")
     return path
 
 
