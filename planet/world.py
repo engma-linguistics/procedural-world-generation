@@ -106,6 +106,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # equal to elevation where there's no lake
         "lake_level": np.where(lk["kind"] > 0, np.maximum(np.round(lk["level"], 1), elev_m), elev_m),  # (0.1 m: shallow lakes)
         "lake_kind": lk["kind"].astype(int),  # hydrology: 0 none, 1 open (fresh), 2 closed (salt), 3 salt pan
+        # the rivers' year (hydrology.seasonal_flow, PW-028): peak month's flow / mean month's, and the peak month
+        **_flood(grid, down, lk, c, sea),
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
         "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
@@ -322,6 +324,12 @@ def ascii_map(world: dict, layer: str = "biome", width: int = 120, height: int |
     border = "+" + "-" * width + "+"
     rows = [border] + ["|" + "".join(r) + "|" for r in grid] + [border]
     return "\n".join(rows)
+
+
+def _flood(grid: Grid, down, lk: dict, c: dict, sea) -> dict:
+    s = hydrology.seasonal_flow(grid, down, lk["order"], np.where(sea, 0.0, c["runoff"]), lk["wet"], c)
+    return {"flood_ratio": np.where(sea, 0.0, np.round(s["flood_ratio"], 1)),
+            "flood_month": np.where(sea, 0, s["flood_month"]).astype(int)}
 
 
 LEGENDS = {

@@ -250,7 +250,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 **Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
 
-**Known limits:** generated worlds lose their closed basins over time (~4% of land drains inland vs ~20% on Earth; PW-054); giant open lakes don't cut their outlets down (PW-055).
+**Known limits:** generated worlds have too few closed basins (~9–11% of land drains inland at L6 vs ~18% on Earth; PW-054): sediment fills a closed hollow within ~10–20 Myr (two thirds of the loss; rims wearing down the rest), and nothing makes basins subside (no flexural foreland or sag basins).
 
 ### 2.6 Climate (`climate.py`)
 
@@ -325,16 +325,19 @@ PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–
 
 **Lakes** are **fill-and-spill with evaporation**:
 1. Hollows under 20 m deep are filled first (at ~55–110 km a cell's height is a mean, and channels too small to see drain them). A wide hollow must also fall at least 0.1 m per km from rim to middle, or it is a plain that rivers cross (`MIN_SLOPE`; 1 million km² needs ~56 m).
-2. Water rises in all basins at once, merging as they meet; a basin grows only while its inflow beats the evaporation off its surface.
+2. Water rises in all basins at once, merging as they meet; a basin grows only while its inflow beats the evaporation off its surface. A lake that spills next to a lower closed basin sends its river on into it; that basin then gets the river too and may fill and spill in turn (the Nile into the Nubian hollow, PW-122).
 3. It ends as an **open, fresh lake** (reaches its spill point, the river flows on), a **closed salt lake** (stops first: Caspian, Great Salt Lake), or a **salt pan** (playa).
+4. **Outlets cut down** (PW-055): a river leaving a basin runs in a valley cut below its cells' mean height, `CHANNEL_K` × Q^`CHANNEL_B` = 0.1 × (m³/s)^0.7 deep (~12 m for 1000 m³/s, ~60 m for 10,000, ~300 m for 100,000), never below the next cell downstream. The lakes are worked out again on that cut terrain (twice, as drained lake floors become river courses), so a lake a big river flows out of drains down to its outlet valley; closed basins have no outflowing river and keep their water. Earth's Amazon, Congo and Orinoco lowlands and West Siberia drain; the Great Lakes, Victoria and Ontario stay. On generated worlds (L6, seeds 11 and 12, after 100 Myr) lakes cover 0.7–1.0% of land instead of 1.4%, the biggest lake averages 0.4–0.7 million km² instead of ~1, and since big through-flowing lakes no longer trap sediment, hollows survive: land draining inland doubled (4–5% to 8.5–10.6%).
 
-On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth ~18%).
+On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and Altiplano basins, and ~18% of land drains inland (Earth ~18%). The Earth world's lakes went from 6.1 to 2.4 million km² (PW-201; left over: cell-mean hollows on small rivers in Yakutia and on the Amur).
+
+**Seasonal flow** (PW-028, worlds): each cell's runoff is spread over the months by what reaches its ground (rain, and snowmelt: a cold country's winter of snow comes off in a spring flood), half of it through the ground (spread over the unfrozen months; 5% where the ground is frozen six months or more), then gathered down the rivers; a lake flattens the flood at its outlet in proportion to its size for its catchment. Stored as `flood_ratio` (the peak month's flow over the mean month's: ~1.3–1.7 for the Amazon, Congo, Mississippi; 3–4 for the Ob, Mackenzie, Yukon, Volga, Ganges) and `flood_month`. Nothing uses them yet (deltas, zoom: PW-028 follow-up).
 
 **Deltas:** big river mouths (≥ 1500 m³/s) get a delta type from Galloway's triangle (§2.10), drawn by the zoom.
 
-**Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan). Runs store `lake_depth` instead of `lake_level`.
+**Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan), `flood_ratio`, `flood_month` (worlds). Runs store `lake_depth` instead of `lake_level`.
 
-**Known limits:** giant open lakes don't drain by cutting their outlets (PW-055); no seasonal Arctic flow (PW-028); run and world lakes disagree (PW-057); the Nile ends in a pit on Earth (PW-122).
+**Known limits:** run and world lakes disagree (PW-057: the world's texture and erosion passes move them); generated worlds have too few closed basins (PW-054, §2.5).
 
 ### 2.10 Coasts: waves, tides, delta types (`coast.py`)
 
