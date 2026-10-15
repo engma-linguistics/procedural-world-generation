@@ -17,6 +17,11 @@ drive them without a socket.
                       (timezoom.py) from the run's keyframe nearest t; the
                       job's "run" is the new run's id when done. Shares the
                       job queue with zooms (one job at a time).
+  POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished
+                      world (finish.py) at the time zoom's frame nearest kyr,
+                      or straight from the run's keyframe nearest t (the
+                      same world the Zoom button makes); the job's "world"
+                      is its id when done. Reuses an existing one.
 """
 
 from __future__ import annotations
@@ -91,7 +96,8 @@ def find_slice(run_dir: Path, at: float) -> Path | None:
             m = world_header(p).get("meta", {})
         except (OSError, ValueError):
             continue
-        if m.get("source_run") == run_dir.name and m.get("t_myr") is not None and abs(m["t_myr"] - at) < 1e-6:
+        if (m.get("source_run") == run_dir.name and m.get("t_myr") is not None and abs(m["t_myr"] - at) < 1e-6
+                and not m.get("timezoom")):  # (not a world finished from a time zoom of that moment)
             return p
     return None
 
@@ -258,9 +264,53 @@ def timezoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     return {"run": out.name}
 
 
+def parse_finish_request(req: dict) -> dict:
+    """{timezoom, kyr} or {run, t}, checked: the time zoom exists and kyr is
+    within it (snapped to its nearest frame), or the run is a main run and t
+    snaps to its nearest keyframe. Raises BadRequest, or SystemExit for an
+    unknown id."""
+    from . import finish as F
+    if not isinstance(req, dict) or bool(req.get("timezoom")) == bool(req.get("run")):
+        raise BadRequest("give either timezoom (+ kyr) or run (+ t)")
+    if req.get("timezoom"):
+        try:
+            tz_dir, run = F.load_timezoom(str(req["timezoom"]))
+        except SystemExit as e:
+            if "not a glacial time zoom" in str(e):
+                raise BadRequest(str(e)) from None
+            raise
+        kyr = _num(req, "kyr", run["frames"][-1]["t"])
+        try:
+            i = F.frame_index(run, kyr)
+        except SystemExit as e:
+            raise BadRequest(str(e)) from None
+        return {"type": "finish", "timezoom": tz_dir.name, "kyr": run["frames"][i]["t"]}
+    run_dir = S.find_run(str(req["run"]))
+    run = S.read_header(run_dir / "run.json")
+    if run.get("kind") == "timezoom":
+        raise BadRequest("this is a time zoom: give it as timezoom (+ kyr)")
+    return {"type": "finish", "run": run_dir.name, "t": keyframe_t(run_dir, _num(req, "t"))}
+
+
+def finish_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/finish's work: {"world": id of the finished world}."""
+    from . import finish as F
+    r = parse_finish_request(req)
+    if "timezoom" in r:
+        with _slicing:
+            path = F.finish_timezoom(r["timezoom"], r["kyr"], progress=progress)
+    else:
+        path = slice_run(r["run"], r["t"], progress)
+    progress(1.0, f"world {path.stem}")
+    return {"world": path.stem}
+
+
+JOBS = {"timezoom": timezoom_job, "finish": finish_job}
+
+
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
-    """The server's job queue runs zooms and time zooms (req["type"])."""
-    return (timezoom_job if req.get("type") == "timezoom" else zoom_job)(req, progress)
+    """The server's job queue runs zooms, time zooms and finished worlds (req["type"])."""
+    return JOBS.get(req.get("type"), zoom_job)(req, progress)
 
 
 class Jobs:

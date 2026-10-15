@@ -14,6 +14,8 @@ uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers
 uv run python -m planet slice <run-id> --at auto   # ... at a representative moment (typical land/landmasses after 300 Myr)
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
+uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
+uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
 ```
@@ -67,10 +69,10 @@ per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
 ## Glacial time zoom (`planet/timezoom.py`)
 
-A side simulation at 500-year steps, view-only: geology frozen at one moment
+A side simulation at 500-year steps: geology frozen at one moment
 of a run, ice sheets driven by orbital (Milankovitch) cycles, with a
 degree-day mass balance, shallow-ice flow, isostasy, calving and sea level
-from the ice volume. `timezoom earth` starts from today's Earth (ETOPO1);
+from the ice it holds (above flotation, plus the room under sunken beds). `timezoom earth` starts from today's Earth (ETOPO1);
 `--set baseline=obs` uses the observed climate plus the model's changes.
 Knobs: `--set key=value` for any `TZParams` field (e.g. `insol_k`,
 `obliquity_amp`, `phases=zero`). The viewer plays it like a run (frames in
@@ -86,6 +88,25 @@ at level 6) as a server job, and opens it when done. The viewer (and
 run is tinted blue where the run is cold (land ice on > 1% of the surface or
 a global mean < 13 °C; darkest = Earth today or colder): that's where a time
 zoom shows ice ages.
+
+**Finished worlds** (`planet/finish.py`, PW-091): `planet finish <timezoom-id>
+--kyr N` turns any stored frame (every 2 kyr) of a time zoom into an ordinary
+world (`worlds/<id>.json`; world view, zooms and highlights work as usual):
+the source run's geology with that frame's ice, sunken bed, sea level and
+global temperature, run through the usual finishing (climate, rivers, lakes,
+biomes, sea, coasts). Its meta records the source run and Myr, the time zoom
+and the kyr. `planet finish <run-id> --at T` is the same without the ice
+ages: the world straight from the keyframe (what the viewer's Zoom button
+builds). In the viewer: "Finish world here" on a run frame or a time zoom
+frame (server job `POST /api/finish {timezoom, kyr}` or `{run, t}`), then the
+world opens; the run's "Made from this run" tree lists time zooms with their
+finished worlds, and a time zoom's slider has a green tick for each.
+
+The feedbacks: CO₂ drawdown and ice albedo grow with the extra ice. A run's
+moment is taken as the cycle average (its ice is the mean extent; its dT
+already holds that ice's albedo), so only `average_room` (half) of their caps
+is left; Earth starts in an interglacial with the full room (`--set
+start=interglacial|average`).
 
 ## Earth reference world
 

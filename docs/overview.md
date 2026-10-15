@@ -19,7 +19,8 @@ The physics is "toy but physical". Each process is a cheap version of a named re
 | **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~20–25 min per Gyr. |
 | **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, biomes, ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
 | **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes and landform-specific terrain. | 1–7 s. |
-| **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6. |
+| **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6, ~30 min at L7. |
+| **Finished world** | `planet finish <timezoom> --kyr N` (or `<run> --at T`) | A world at any kyr of a time zoom: its ice, sunken bed, sea level and climate on the run's geology. | Seconds (L6) to ~1 min (L7). |
 | **Highlights** | `planet highlights <run> --at auto --zoom N` | The ~40–55 most interesting places, with pre-made zooms. | Seconds. |
 
 All of these are browsed in a three.js viewer: `planet serve` (http://127.0.0.1:8765/viewer/).
@@ -33,6 +34,7 @@ flowchart LR
   E["tools/earth_world.py<br/>(real Earth terrain)"] --> W
   W -->|"planet zoom"| Z[("regional zoom<br/>500 px, 0.5–4 km/px")]
   R -->|"planet timezoom --at T"| T[("time zoom run<br/>1 Myr of ice ages")]
+  T -->|"planet finish --kyr N"| W
   W -->|"planet highlights"| H[("highlights<br/>+ pre-made zooms")]
   H --> Z
   R & W & Z & T & H --> V["viewer<br/>planet serve, :8765"]
@@ -346,9 +348,10 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
 
 ### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
-A **world** is one moment, finished. Three ways to get one:
+A **world** is one moment, finished. Four ways to get one:
 - **`planet slice <run> --at T`** (or `--at auto`: the keyframe after 300 Myr whose land %, largest landmass and landmass count are jointly nearest the run's medians). It replays the simulation from the nearest checkpoint, checks the result against the stored keyframe and refuses to save on a mismatch (the code changed since the run) unless `--force`.
 - **The viewer's Zoom button** builds the world straight from the keyframe nearest that time (`timeline.world_from_frame`, seconds, exactly what the viewer shows), reusing a world already made at that time.
+- **`planet finish <timezoom> --kyr N`** (PW-091, `finish.py`; the viewer's "Finish world here" on a time zoom frame): a world at any stored frame (every 2 kyr) of a glacial time zoom. Geology (plates, crust, rock, landforms, volcanoes) is the source keyframe's; bed, ice, sea level and global temperature are the frame's, the obliquity is the tilt; then the usual finishing below, so lakes form against the ice and on the pressed-down bed, and lowered seas join land. Grounded ice on a bed below sea level is kept as land with its bed floored at 1 m and the ice thinned to keep the surface (as for Antarctica in `earth_data`). Meta: `source_run`, `t_myr`, `timezoom`, `timezoom_kyr`, the frame's sea-level change and orbit. **Storage choice:** no re-run; each time-zoom frame already stores the surface and the grounded ice (to 1 m since PW-091), so bed = surface − ice. `planet finish <run> --at T` (or "Finish world here" on a run) is the keyframe world, as the Zoom button. An Earth time zoom finishes like `tools/earth_world.py` (real terrain, no rock record, so no regional zooms).
 - **`planet generate`** makes an unsimulated world from cartoon plates (no texture, ice, record or landforms; it can't be zoomed). **`tools/earth_world.py`** runs real Earth terrain through the same finishing, with observed climate alongside.
 
 **Finishing** (run-based worlds first get sub-cell texture in `timeline`):
@@ -429,24 +432,24 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 ### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
-**What it does:** a separate, view-only simulation. Geology is frozen at one moment of a run (or today's Earth), and ice sheets evolve for 1 Myr (CLI default; the viewer offers 100, 300 or 1000 kyr, default 300) in 500-year steps, keeping a frame every 2 kyr. It never feeds back into the run (the finishing pass that will, PW-090/PW-091, is planned).
+**What it does:** a separate simulation. Geology is frozen at one moment of a run (or today's Earth), and ice sheets evolve for 1 Myr (CLI default; the viewer offers 100, 300 or 1000 kyr, default 300) in 500-year steps, keeping a frame every 2 kyr. It never feeds back into the run, but any frame can be made into a finished world (§2.11, `planet finish`).
 
 - **Orbit (Milankovitch):** obliquity ±1.2° around the planet's tilt (41 kyr), precession (23 kyr) and eccentricity (100 and 405 kyr) set each latitude's monthly sunshine (Berger 1978), turned into a temperature anomaly.
 - **Ice:** monthly snow minus **positive-degree-day** melt; bright perennial snow feels less of a summer, bare ice more. Flow by the **shallow-ice approximation**.
-- **Bed and sea:** the bed sinks to 0.3 × the ice thickness over 3 kyr and rebounds after; floating ice breaks off and marine fronts calve; sea level falls by 0.9 × ice volume / ocean area, so coastlines and land bridges move.
-- **Climate:** fully recomputed every 10 kyr, blended and shifted in between; CO₂ drops as ice grows (~−2.5 °C at an Earth-glacial-sized ice volume) plus a small ice-albedo term; meltwater reaches the overturning.
+- **Bed and sea:** the bed sinks to 0.3 × the ice thickness over 3 kyr and rebounds after; floating ice breaks off and marine fronts calve; sea level falls by the sea water the ice holds / ocean area: 0.89 × the ice above flotation plus the room the sunken bed made below sea level (Goelzer et al. 2020; PW-031: ice filling a deep marine basin no longer counts in full), so coastlines and land bridges move.
+- **Climate:** fully recomputed every 10 kyr, blended and shifted in between; CO₂ drops as ice grows (~−2.5 °C at an Earth-glacial-sized ice volume) plus a small ice-albedo term; meltwater reaches the overturning. `start` (PW-031): Earth starts in an interglacial with the full caps (−2.5 and −2 °C); a run's moment is the cycle average (its ice is the mean extent, its dT already has that ice's albedo), so only `average_room` = half of each cap is left.
 
 **Parameters:** `--set` any `TZParams` field: `insol_k` (0.25 °C per W/m²), `obliquity_amp`, `co2_cool`, `ddf_snow/ice`, `iso_ratio`, `calving`, `phases=zero`; `baseline=obs` for Earth.
 
 **Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
 
-**Known limits:** generated worlds glaciate too hard and Earth too weakly (PW-031, PW-033); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); the start-anchor cooling lingers (PW-035); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
+**Known limits:** generated worlds in cold eras still glaciate hard: the run's ice (the climate rule of §2.8, no flow) has no ablation zone, so the time zoom's flowing sheets spread well beyond it before melt and calving balance them (PW-031 numbers below in §3); Earth glaciates too weakly (PW-033); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); the start-anchor cooling lingers (PW-035); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
 
 ### 2.15 Viewer, server and CLI (`viewer/`, `server.py`, `api.py`, `__main__.py`)
 
-**CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `highlights`, `report` (re-render run.txt), `list`, `delete` (by id; `--orphans` clears zooms and caches of deleted worlds and unfinished runs), `show` (ASCII map of a world file), `serve`.
+**CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `finish` (a world at a time zoom's kyr, or a run's time), `highlights`, `report` (re-render run.txt), `list`, `delete` (by id; `--orphans` clears zooms and caches of deleted worlds and unfinished runs), `show` (ASCII map of a world file), `serve`.
 
-**Server** (`planet serve`, port 8765): serves the viewer and the data folders, handles `DELETE` of runs, worlds and zooms, and adds `POST /api/zoom`, `POST /api/timezoom`, `GET /api/jobs/<id>` and `GET /api/highlights`. Zoom and time-zoom jobs run one at a time; job state is lost on restart (PW-085).
+**Server** (`planet serve`, port 8765): serves the viewer and the data folders, handles `DELETE` of runs, worlds and zooms, and adds `POST /api/zoom`, `POST /api/timezoom`, `POST /api/finish` (`{timezoom, kyr}` or `{run, t}` → a job whose result is `world`), `GET /api/jobs/<id>` and `GET /api/highlights`. Zoom, time-zoom and finish jobs run one at a time; job state is lost on restart (PW-085).
 
 **Globe** (`viewer/index.html`, three.js): one triangle fan per cell, with exaggerated relief, on a globe or a flat map.
 - **Runs** play as animations with an event list, plate arrows, and a time slider tinted blue in cold eras (where a time zoom will show ice ages). Layers: elevation, plates, crust age, surface rock, rock type, crust thickness, sediment, rainfall, temperature, climate, landforms.
@@ -455,6 +458,7 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 - **Earth world:** temperature, precipitation, climate and sunshine have a model / observed / difference switch (`?obs=diff`).
 - **Highlights** panel with category filters (`?hlcat=`, `&hl=N`).
 - **Provenance** (PW-128): a world shows the run and time it came from, linked, and its zooms; a run lists what was made from it and ticks their times above the slider.
+- **Pipeline** (PW-193): on a run frame, "Glacial time zoom from here" and "Finish world here"; on a time zoom frame, "Finish world here" (job progress in the panel, then the world opens). A finished world shows run @ Myr → time zoom + kyr (both linked); the run's tree nests finished worlds under their time zoom, and a time zoom's slider ticks them in green.
 - Clicking a cell copies a description (for pointing at a place); double-click or "Zoom" makes a regional zoom. The URL holds the state, e.g. `?world=a08983.json&layer=biome&mode=map`.
 
 **Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers relief, height, hillshade, rivers, rock, surface rock, climate, biome, landform, rain, temperature, ice and coarse cells; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
@@ -506,6 +510,15 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 ## 3. Calibration and validation
 
 **Tests** (`uv run pytest -q`, 180 tests): invariants (determinism, the crust budget closing, sane values, storage that doesn't clip, the sim → world → zoom chain), envelopes (plausible ranges: land 22–42%, dry climates 12–45% of land, continental crust 33–50%, plate speeds 2–9 cm/yr, 5–30 plates, ocean age 25–120 Myr, churn), and golden hashes of a short L4 run and one climate computation, so refactors can be shown not to change results.
+
+**Glacial time zoom depth** (PW-031, 2026-10-14; lowest sea level vs the start, max ice):
+
+| Source | Before | After |
+|---|---|---|
+| world bcc894 (run e0e21e @ 688 Myr, L7, dT −3.3), 300 kyr | −171 m, 5.1 km | **−132 m**, 5.1 km |
+| run e0e21e @ 592 Myr (L7, dT −0.7, Earth-like), 300 kyr | — | −95 m |
+| world 8e71fd (run ee65aa @ 632 Myr, L6, dT −5.8), 200–1000 kyr | −272 m, 11.8 km | −258 m, 11.8 km (cold era: see the PW-031 follow-up draft) |
+| Earth (L6), 200 kyr | −54 m | −53 m |
 
 **Earth checks** (the model on Earth's real terrain, `tools/earth_check.py`):
 
@@ -582,6 +595,8 @@ Two runs on the final 2026-10-14 code, random seed 3199, default (Earth-like) pa
 |---|---|---|---|---|---|
 | L6 | ee65aa (5 min) | 1000 | 8e71fd @ 632 Myr | b5da31 largest river mouth, 23437e highest peak, b15424 steepest river, b4cdbc fjords, 12e3dc most varied, 53479b delta site | ends with 12 plates, 31.7% land |
 | L7 | e0e21e (20 min) | 1000 | bcc894 @ 688 Myr | 40edef highest peak 5,533 m, a800d7 largest river mouth, 05fdf3 steepest river (830 m drop), 8bc6d8 longest range (6,900 km), 860228 fjords, 29e060 most varied | ends with 6 plates, 36.8% land |
+
+Glacial time zooms and finished worlds (PW-091): time zoom **37ad6f** (300 kyr from bcc894's moment, L7) with finished worlds **bcb4b6** (+262 kyr, its glacial maximum, sea −132 m; zoom ed4e18) and **626fbb** (+100 kyr); time zoom **1eb8d4** (300 kyr from 8e71fd's, L6) with finished world **c73271** (+120 kyr, −258 m).
 
 Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`), and zooms at `zoom.html?id=<id>`. Try the landforms, cloud, sea temperature and salinity layers, the overturning overlay, and the travel highlights.
 

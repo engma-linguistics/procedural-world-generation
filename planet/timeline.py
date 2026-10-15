@@ -337,10 +337,15 @@ FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "r
                 "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS, "tree_cover")
 
 
-def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extra) -> dict:
+def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict | None = None,
+                     **meta_extra) -> dict:
     """A complete world from a stored keyframe, without replaying: exactly
     the state the viewer shows, at keyframe precision (elevation to 1 m, ice
-    to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe."""
+    to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe.
+    state: {"elevation", "ice", "dT", "sea_level", "tilt"} replacing the
+    keyframe's (a finished world at one moment of a glacial time zoom,
+    finish.py: the geology is the keyframe's, the ice, bed, sea level and
+    climate the time zoom's)."""
     run, arr = load_frames(run_dir, ())
     _not_timezoom(run, run_dir)
     m = run["meta"]
@@ -371,18 +376,20 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
            "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
                         if t_fr >= params.plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
            "groups": groups}
-    return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
+    st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
+          "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
+    return _world(grid, m["seed"], params, float(fr["t"]), st["elevation"], a["plate"].astype(int),
                   a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
                   a["rock"], exposed, a["sediment_cover"], a["crust_thickness"].astype(float),
-                  a["ice"], fr["hotspots"], vols, s["global_temp_c"] - 14.5,
-                  s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
-                                              "from_keyframe": True, **meta_extra},
-                  {k: a[k] for k in LANDFORM_LAYERS}, veg)
+                  st["ice"], fr["hotspots"], vols, st["dT"],
+                  st["sea_level"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
+                                             "from_keyframe": True, **meta_extra},
+                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"])
 
 
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
-           erosion, meta_extra, landforms: dict, veg: dict | None = None) -> dict:
+           erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     rng_seed = seed * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
@@ -404,7 +411,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                    dT=dT, tilt=params.tilt, ice=ice, veg=veg)
+                    dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

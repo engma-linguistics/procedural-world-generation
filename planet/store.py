@@ -502,6 +502,8 @@ def _world_item(p: Path) -> dict:
             "created": m.get("created", ""), **{k: m.get(k) for k in ("method", "seed", "level")}}
     if m.get("source_run"):  # provenance: the run and time it was sliced from
         item.update({k: m.get(k) for k in ("source_run", "source_run_name", "t_myr")})
+    if m.get("timezoom"):  # a finished world (finish.py): the time zoom and its frame
+        item.update({k: m.get(k) for k in ("timezoom", "timezoom_kyr", "sea_level_change_m")})
     return item
 
 

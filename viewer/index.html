@@ -40,10 +40,11 @@
   #marks span { position: absolute; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent;
     border-top: 6px solid #ffd27c; border-bottom: 0; pointer-events: auto; cursor: pointer; }
   #marks span.tz { border-top-color: #9fd3ff; }
+  #marks span.fin { border-top-color: #b6f0a0; }
   /* with a vegetation view: when each plant group appeared (run meta plant_groups) */
-  #marks span.veg { border-top-color: #6fdc6f; }
+  #marks span.veg { border-top-color: #3fc06f; }
   #marks b { position: absolute; top: -13px; transform: translateX(-50%); font: 9px ui-monospace, Menlo, monospace;
-    color: #8fe08f; white-space: nowrap; pointer-events: auto; cursor: pointer; }
+    color: #6fd08f; white-space: nowrap; pointer-events: auto; cursor: pointer; }
   .tree { margin: 2px 0 0 4px; }
   .tree div { padding: 1px 0; }
   .tree .sub { margin-left: 14px; }
@@ -1304,7 +1305,8 @@ function renderSummary() {
   if (V.kind === 'run') return renderRunSummary();
   const m = V.meta, s = V.summary;
   let cmd;
-  if (m.source_run) cmd = `uv run python -m planet slice ${m.source_run} --at ${m.t_myr}`;
+  if (m.timezoom) cmd = `uv run python -m planet finish ${m.timezoom} --kyr ${m.timezoom_kyr}`;
+  else if (m.source_run) cmd = `uv run python -m planet slice ${m.source_run} --at ${m.t_myr}`;
   else {
     const set = Object.entries(m.params).filter(([k]) => !['erosion_iterations', 'equator_temp', 'pole_temp', 'erosion'].includes(k));
     cmd = `uv run python -m planet generate -m ${m.method} -s ${m.seed} -l ${m.level}` +
@@ -1313,7 +1315,11 @@ function renderSummary() {
   }
   if (m.remake) cmd = m.remake;  // e.g. the Earth reference world (tools/earth_world.py)
   $('summary').innerHTML = `<b>${V.id || ''}</b> ${V.name} <span class="muted">· ${m.cells} cells · ~${m.cell_size_km} km each</span><br>
-    ${m.source_run ? `<span class="muted">From</span> ${sourceLink(m.source_run, m.t_myr)} <span class="muted">· made ${m.created}</span><br>` : ''}
+    ${m.timezoom ? `<span class="muted">Finished from</span> ${m.source_run === 'earth' ? "today's Earth" : sourceLink(m.source_run, m.t_myr)}
+      <span class="muted">→</span> ${timezoomLink(m.timezoom, m.timezoom_kyr)}<br>
+      <span class="muted">sea level ${m.sea_level_change_m > 0 ? '+' : ''}${Math.round(m.sea_level_change_m)} m vs the time zoom's start
+      (${m.sea_level_m} m vs the run's reference level) · global mean ${m.global_temp_c} °C · land ice ${m.ice_volume_mkm3} M km³ · made ${m.created}</span><br>`
+    : m.source_run ? `<span class="muted">From</span> ${sourceLink(m.source_run, m.t_myr)} <span class="muted">· made ${m.created}</span><br>` : ''}
     ${zoomsOf(V.id)}
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
@@ -1343,7 +1349,7 @@ function renderRunSummary() {
     t = ${V.t} Myr · ${s.plates} plates · land ${s.land_pct}% · ${s.landmasses} landmasses (largest ${s.largest_landmass_pct}%)<br>
     plate speed: mean ${s.mean_speed_cmyr}, max ${s.max_speed_cmyr} cm/yr · peak ${s.max_elev_m} m<br>
     ${s.global_temp_c != null ? `global mean ${s.global_temp_c} °C (Earth today ~14.5) · land ice ${s.ice_pct}% of surface · sea level ${s.sea_level_m} m<br>` : ''}
-    <span class="muted">Build a full world here:</span> <code>uv run python -m planet slice ${r.id || r.name} --at ${V.t}</code>
+    ${finishBox()}
     ${timezoomBox()}`;
   $('summary').innerHTML = `${head}${V.tz ? '' : runTree()}
     <h2>Events <span class="muted">(click to jump${V.tz ? '; t in kyr' : ''})</span></h2><div id="evlist">${evs || '<span class="muted">none</span>'}</div>`;
@@ -1375,7 +1381,8 @@ function timezoomSummary() {
     65°N July sun ${sign(s.insol_65n_jul_anom, 1)} W/m² <span class="muted" title="vs. ${V.tzEarth ? "today's orbit" : 'a circular orbit at the mean tilt'}; precession index e·sin(perihelion) ${s.precession_index}">(?)</span>
     ${timezoomChart()}
     ${V.tzEarth ? '' : `<span class="muted">From</span> ${sourceLink(m.source_run, m.at_myr)}<br>`}
-    <span class="muted">Remake:</span> <code>uv run python -m planet timezoom ${src}${opts}</code>`;
+    <span class="muted">Remake:</span> <code>uv run python -m planet timezoom ${src}${opts}</code>
+    ${finishBox()}`;
 }
 
 // The whole time zoom at a glance: sea level (falls as the ice grows; ice
@@ -1468,6 +1475,73 @@ async function startTimezoom() {
   }
 }
 
+// "Finish world here" (PW-091/193): a full world (climate, rivers, lakes,
+// biomes, sea) at the moment on screen. In a time zoom: that frame's ice,
+// pressed-down bed, sea level and climate on the source run's geology
+// (planet/finish.py); in a main run: the keyframe's world (what the Zoom
+// button builds). A job on the server, then the world opens.
+let finJob = null;
+const finishedOf = (tzId) => IDX.worlds.filter((w) => w.timezoom === tzId).sort((a, b) => a.timezoom_kyr - b.timezoom_kyr);
+function finishBox() {
+  const s = V.run.frames[V.frame].stats;
+  if (!V.tz && s.sea_level_m == null) return '';
+  const here = V.tz ? `+${V.t} kyr` : `${V.t} Myr`;
+  const made = V.tz ? finishedOf(V.run.id || V.dir).find((w) => w.timezoom_kyr === V.t)
+    : IDX.worlds.find((w) => w.source_run === V.dir && w.t_myr === V.t && !w.timezoom);
+  const busy = finJob && !finJob.finished;
+  const sec = Math.max(5, Math.round(20 * V.n / 40962));
+  let html = `<div class="tzBox"><b>Finish world here</b> <span class="muted">(${here}: ${V.tz
+    ? "this frame's ice, sea level and climate on the run's geology" : 'the full world at this keyframe'};
+    then zooms and highlights)</span><br>
+    <div class="row" style="align-items:center;margin-top:3px">` +
+    (made ? `<a href="?world=${made.file}" data-world="${made.file}">open world ${made.id}</a> <span class="muted">(made already)</span>`
+      : `<button class="btn" data-act="finish" ${busy ? 'disabled' : ''}>Finish world here</button>
+         <span class="muted">~${sec < 60 ? sec + ' s' : Math.round(sec / 60) + ' min'}</span>`) + '</div>';
+  if (finJob && finJob.view === viewKey()) {
+    const j = finJob;
+    html += `<div style="margin-top:4px">${j.label}: `;
+    if (j.status === 'error') html += `<span class="err">${esc(j.error)}</span>`;
+    else if (j.status === 'done') html += `done, <a href="?world=${j.world}.json" data-world="${j.world}.json">open world ${j.world}</a>`;
+    else html += `<span class="muted">${esc(j.message || j.status)}</span><div class="bar"><div style="width:${Math.round(100 * (j.progress || 0))}%"></div></div>`;
+    html += '</div>';
+  }
+  if (V.tz) {
+    const fins = finishedOf(V.run.id || V.dir);
+    if (fins.length) html += `<span class="muted">Finished worlds of this time zoom:</span> ${fins.map((w) =>
+      `<a href="?world=${w.file}" data-world="${w.file}" title="sea level ${Math.round(w.sea_level_change_m)} m vs the start">+${w.timezoom_kyr} kyr</a>`).join(', ')}<br>`;
+    html += `<span class="muted">CLI:</span> <code>uv run python -m planet finish ${V.run.id || V.dir} --kyr ${V.t}</code>`;
+  } else html += `<span class="muted">CLI:</span> <code>uv run python -m planet finish ${V.run.id || V.dir} --at ${V.t}</code>
+    <span class="muted">(or <code>slice</code>: replayed, exact)</span>`;
+  return html + '</div>';
+}
+
+async function startFinish() {
+  if (finJob && !finJob.finished) return;
+  const req = V.tz ? { timezoom: V.dir, kyr: V.t } : { run: V.dir, t: V.t };
+  const job = finJob = { label: V.tz ? `world at +${V.t} kyr` : `world at ${V.t} Myr`, view: viewKey(), status: 'starting', progress: 0 };
+  renderRunSummary();
+  let r = null, out = {};
+  try {
+    r = await fetch('../api/finish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) });
+    out = await r.json().catch(() => ({}));
+  } catch (err) { r = null; }
+  if (!r || r.status === 501 || (r.status === 404 && !out.error)) {
+    Object.assign(job, { status: 'error', finished: true, error: 'The server has no finish API. Restart it: uv run python -m planet serve' });
+  } else if (!r.ok) Object.assign(job, { status: 'error', finished: true, error: out.error || `HTTP ${r.status}` });
+  if (job.finished) { if (V.kind === 'run') renderRunSummary(); return; }
+  while (job === finJob) {
+    let j;
+    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); }
+    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    Object.assign(job, j);
+    if (j.status === 'done' || j.status === 'error') job.finished = true;
+    if (V.kind === 'run' && !state.playing) renderRunSummary();
+    if (j.status === 'done') { await fillSelector(); await openWorld(j.world + '.json'); return; }
+    if (job.finished) return;
+    await new Promise((ok) => setTimeout(ok, 1000));
+  }
+}
+
 // ------------------------------------------------------------ provenance (PW-128)
 // What came from what, from the indexes: each world's source run and time
 // (worlds/index.json), each zoom's world (zooms/index.json) and each time
@@ -1478,7 +1552,15 @@ const runOf = (id) => IDX.runs.find((r) => r.dir === id || r.id === id);
 // a world from a run is "<run name> @ T Myr"; others go by their name
 function worldTitle(w) {
   if (!w.source_run) return w.name;
-  return `${w.source_run_name || runOf(w.source_run)?.name || 'run ' + w.source_run} @ ${w.t_myr} Myr`;
+  if (w.source_run === 'earth') return w.timezoom ? `Earth + ${w.timezoom_kyr} kyr (finished)` : w.name;
+  return `${w.source_run_name || runOf(w.source_run)?.name || 'run ' + w.source_run} @ ${w.t_myr} Myr` +
+    (w.timezoom ? ` + ${w.timezoom_kyr} kyr (finished)` : '');
+}
+// a finished world's time zoom and frame, linked to open the time zoom there
+function timezoomLink(tzId, kyr) {
+  const r = runOf(tzId);
+  return r ? `<a href="?run=${r.dir}&t=${kyr}" data-run="${r.dir}" data-t="${kyr}" title="Open time zoom ${tzId} at +${kyr} kyr">time zoom ${tzId} + ${kyr} kyr</a>`
+    : `time zoom ${tzId} + ${kyr} kyr <span class="muted">(deleted)</span>`;
 }
 // '<run name> @ T Myr', linked to open the run at that time
 function sourceLink(runId, t) {
@@ -1493,7 +1575,7 @@ function zoomsOf(worldId) {
   return zs.length ? `<span class="muted">Zooms of this world:</span> ${zs.map(zoomLink).join(', ')}<br>` : '';
 }
 const madeFrom = (runId) => ({
-  worlds: IDX.worlds.filter((w) => w.source_run === runId).sort((a, b) => a.t_myr - b.t_myr),
+  worlds: IDX.worlds.filter((w) => w.source_run === runId && !w.timezoom).sort((a, b) => a.t_myr - b.t_myr),
   tzs: IDX.runs.filter((r) => r.kind === 'timezoom' && r.source_run === runId).sort((a, b) => a.at_myr - b.at_myr),
 });
 // a main run's worlds (with their zooms) and time zooms, as a small tree
@@ -1505,22 +1587,35 @@ function runTree() {
     const zs = IDX.zooms.filter((z) => z.world === w.id), named = w.name !== worldTitle(w) ? ` <span class="muted">${esc(w.name)}</span>` : '';
     return `<div><a href="#" data-jump="${w.t_myr}" title="Go to ${w.t_myr} Myr">${w.t_myr} Myr</a> · <a href="?world=${w.file}" data-world="${w.file}">world ${w.id}</a>${named}` +
       (zs.length ? `<div class="sub"><span class="muted">zoom${zs.length > 1 ? 's' : ''}:</span> ${zs.map(zoomLink).join(', ')}</div>` : '') + '</div>';
-  }).join('') + tzs.map((r) => `<div><a href="#" data-jump="${r.at_myr}" title="Go to ${r.at_myr} Myr">${r.at_myr} Myr</a> ·
-    <a href="?run=${r.dir}" data-run="${r.dir}">time zoom ${r.id}</a> <span class="muted">${r.kyr} kyr of ice ages</span></div>`).join('') + '</div>';
+  }).join('') + tzs.map((r) => {
+    const fins = finishedOf(r.id);
+    return `<div><a href="#" data-jump="${r.at_myr}" title="Go to ${r.at_myr} Myr">${r.at_myr} Myr</a> ·
+    <a href="?run=${r.dir}" data-run="${r.dir}">time zoom ${r.id}</a> <span class="muted">${r.kyr} kyr of ice ages</span>` +
+      fins.map((w) => {
+        const zs = IDX.zooms.filter((z) => z.world === w.id);
+        return `<div class="sub"><a href="?run=${r.dir}&t=${w.timezoom_kyr}" data-run="${r.dir}" data-t="${w.timezoom_kyr}" title="Open the time zoom at +${w.timezoom_kyr} kyr">+${w.timezoom_kyr} kyr</a> ·
+          <a href="?world=${w.file}" data-world="${w.file}">finished world ${w.id}</a> <span class="muted">sea ${Math.round(w.sea_level_change_m)} m</span>` +
+          (zs.length ? ` <span class="muted">zoom${zs.length > 1 ? 's' : ''}:</span> ${zs.map(zoomLink).join(', ')}` : '') + '</div>';
+      }).join('') + '</div>';
+  }).join('') + '</div>';
   return html;
 }
 // ticks above the time slider at the times of the worlds and time zooms made from this run
 function drawMarks() {
   const el = $('marks');
   el.innerHTML = '';
-  if (V?.kind !== 'run' || V.tz) return;
+  if (V?.kind !== 'run') return;
   const fr = V.run.frames, t0 = fr[0].t, t1 = fr[fr.length - 1].t;
+  const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * (t - t0) / (t1 - t0 || 1)).toFixed(2)}%" data-t="${t}"
+    title="${t} ${V.tz ? 'kyr' : 'Myr'}: ${names.join(', ')} (click to go there)"></span>`;
+  if (V.tz) {  // a time zoom: its finished worlds
+    el.innerHTML = finishedOf(V.run.id || V.dir).map((w) => tick(w.timezoom_kyr, [`finished world ${w.id}`], 'fin')).join('');
+    return;
+  }
   const { worlds, tzs } = madeFrom(V.dir), at = new Map();
   for (const w of worlds) at.set(w.t_myr, [...(at.get(w.t_myr) || []), `world ${w.id}`]);
   const tzAt = new Map();
   for (const r of tzs) tzAt.set(r.at_myr, [...(tzAt.get(r.at_myr) || []), `time zoom ${r.id}`]);
-  const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * (t - t0) / (t1 - t0 || 1)).toFixed(2)}%" data-t="${t}"
-    title="${t} Myr: ${names.join(', ')} (click to go there)"></span>`;
   el.innerHTML = [...tzAt].map(([t, n]) => tick(t, n, 'tz')).join('') + [...at].map(([t, n]) => tick(t, n, '')).join('');
   // with a vegetation view: a tick and a label where each plant group appeared (vegetation.GROUPS)
   if (VEG_VIEWS.has(state.layer)) {
@@ -2334,6 +2429,7 @@ $('summary').addEventListener('click', (e) => {
   if (V.kind !== 'run') return;
   const act = e.target.dataset?.act;
   if (act === 'tz') return startTimezoom();
+  if (act === 'finish') return startFinish();
   if (act === 'openTz') { e.preventDefault(); return openRun(tzJob.run); }
   if (act === 'source') { e.preventDefault(); return openRun(V.run.meta.source_run, V.run.meta.at_myr); }
   const chart = e.target.closest('svg.tzchart');

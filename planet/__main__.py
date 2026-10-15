@@ -116,6 +116,28 @@ def cmd_timezoom(args):
           f"{len(run['events'])} glacial events")
 
 
+def cmd_finish(args):
+    from . import api, finish as F
+    run = S.read_header(S.find_run(args.ref) / "run.json")
+    if run.get("kind") == "timezoom":
+        if args.at is not None:
+            raise SystemExit("--at is for a run; for a time zoom give --kyr")
+        path = F.finish_timezoom(args.ref, args.kyr, args.erosion, progress=lambda f, msg: print("  " + msg, flush=True))
+    else:
+        if args.at is None or args.kyr is not None:
+            raise SystemExit("a run is finished at a time: give --at T (Myr, or 'auto'), not --kyr")
+        try:
+            path = api.slice_run(args.ref, _resolve_at(S.find_run(args.ref), args.at),
+                                 lambda f, msg: print("  " + msg, flush=True))
+        except api.BadRequest as e:
+            raise SystemExit(f"ERROR: {e}")
+    m = api.world_header(path)["meta"]
+    extra = (f", time zoom {m['timezoom']} @ {m['timezoom_kyr']:g} kyr: sea level {m['sea_level_change_m']:+.0f} m"
+             if m.get("timezoom") else "")
+    print(f"{S.rel(path)}  ({m.get('source_run')} @ {m.get('t_myr'):g} Myr{extra}; global {m['global_temp_c']} C)"
+          f"  view: http://127.0.0.1:8765/viewer/?world={path.name}")
+
+
 def cmd_report(args):
     print(S.rel(T.report(S.find_run(args.run))))
 
@@ -255,6 +277,13 @@ def main():
     tz.add_argument("--set", nargs="*", metavar="KEY=VALUE",
                     help="timezoom.TZParams knobs, e.g. --set insol_k=0.2 phases=zero")
     tz.set_defaults(func=cmd_timezoom)
+
+    fi = sub.add_parser("finish", help="a finished world at one kyr of a glacial time zoom (or at a run time) -> worlds/<id>.json")
+    fi.add_argument("ref", help="time zoom id (then --kyr, default its end), or a run id (then --at)")
+    fi.add_argument("--kyr", type=float, help="the time zoom's moment, kyr since its start (nearest stored frame)")
+    fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
+    fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
+    fi.set_defaults(func=cmd_finish)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")
