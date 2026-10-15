@@ -5,7 +5,7 @@
 ## Roadmap
 **Done on 2026-10-14:** discrete volcanoes (PW-001), landform classes and their zoom synthesis (PW-005), boundary churn (PW-108), sea-level swings (PW-053), plate-count nudge (PW-024), clouds, ocean layers, seasonal layers.
 
-**Order change (coordinator, 2026-10-15, after the owner asked whether the base layers are stable enough):** after the overnight batch (ice/isostasy, vegetation in zooms, vegetation-climate feedbacks, small tickets), run a **foundation round** before soils, resources, game attributes and the L8 run: PW-052, PW-191, PW-054, PW-046, then PW-171/170 and PW-055. Vegetation tuning is insulated (Earth-tuned, recomputed on whatever geography exists), so the vegetation steps in flight continue.
+**Status 2026-10-15:** overnight batch and foundation round merged; see docs/coordination.md "Current state" for the next steps. **Order change (coordinator, 2026-10-15, after the owner asked whether the base layers are stable enough):** after the overnight batch (ice/isostasy, vegetation in zooms, vegetation-climate feedbacks, small tickets), run a **foundation round** before soils, resources, game attributes and the L8 run: PW-052, PW-191, PW-054, PW-046, then PW-171/170 and PW-055. Vegetation tuning is insulated (Earth-tuned, recomputed on whatever geography exists), so the vegetation steps in flight continue.
 
 **Next, in order** (owner, 2026-10-14; details in `docs/backlog.md`):
 1. **Glacial isostasy (PW-189):** ice sheets press the crust down and it rebounds after they melt.

@@ -56,29 +56,12 @@ Other reference outputs: supercontinent-cycle run 6d9dcf (seed 2, 2 Gyr; worlds 
 
 After making a showcase: slice its worlds, then `uv run python -m planet highlights <run> --at auto --zoom 6` (or `--at T`) for highlights and pre-made zooms.
 
-## Current state and next steps (2026-10-14 afternoon; for the coordinator after compaction)
-**In flight (2026-10-14 ~21:00):** `tectsea` (PW-053 sea level, PW-024 plate count), `zoompolish` (PW-181 falls overlay, PW-180 runoff routing, PW-176 dune rule, PW-158/161). PW-005 epic done. Merged since: tectchurn (PW-108/109; coherence step), zoomland3 (PW-012/148/167). Note: run 8571dd predates the PW-108 tectonics change; make a fresh showcase after the tectonics-quality set.
-**Current showcase (all of today's code):** run 8571dd (L7, seed 21, 1000 Myr), world a08983 @ 408 Myr with highlights and zooms; landform demo zooms f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau), 68e925 (tower karst), 2e6433 (lowland karst/poljes), e14044 (linear/star dunes), 2d1537 (transverse dunes), ee587f (cold barchans), 8373c5 (barrier islands/lagoons), dccb9c (coastal plain). Earth world dc3732 (clouds, ocean, seasons). Generated ocean/cloud demo world 2085dc.
-Merged since the landform data side: viewerseason, travel, stratarock, zoomland1 (PW-010/146), viewerocean (PW-137/141/144), zoomice (PW-127), clouds (PW-143/151/142), zoomland2 (PW-011/149/150).
-Owner north star for judgement calls (2026-10-14): decide routine calls myself; prefer the proper fix unless it's a real complexity/compute burden; defer to a known bigger fix rather than patching; no half measures unless very compelling.
-
-**Merged today after the overnight work:** tickets (the board, CLAUDE.md, hook) and quickwins (PW-059/078/081/086/029/045/044/027/105/087 done; PW-106/107 taken in from drafts). `planet slice|highlights <run> --at auto` now picks a representative time; use it for showcase worlds.
-
-**Order of work** (owner-set 2026-10-14: landform classes before the tectonics-quality set; otherwise smallest-easiest first, then biggest impact; avoid files a running agent owns):
-1. Now, in parallel with volcanoes (no file overlap):
-   - **climate/timezoom batch:** PW-102 (ice persisting after its mountain moves; owner-reported), PW-040, PW-034, PW-036;
-   - **hydrology:** PW-058.
-2. After volcanoes merges:
-   - **PW-005 landform classes**, data side first: PW-006 stratigraphy, PW-007 rocks, PW-008 history, PW-009 classes; then the zoom batches PW-010, PW-011, PW-012;
-   - **zoom small batch** PW-062 to PW-070, done before PW-010 starts (both edit `zoom.py`);
-   - **tectonics small:** PW-050, PW-048 (keep clear of PW-008's files, or fold them into it).
-3. **Tectonics quality:** PW-108 (km-scale cell churn at converging boundaries; may feed PW-053), PW-109 (climate before events, small), PW-053 (sea-level swings), PW-052 (L7 continents ~300 m lower), PW-024 (plate-count nudge), PW-054 (interior basins: the owner-agreed fix for too few closed basins).
-3a. **Immediately next (owner, 2026-10-14 night, after compaction):** PW-091 (time zoom -> finished world at any chosen kyr) + PW-193 (UI pipeline run@Myr -> time zoom@kyr -> finished world, with provenance), bundled with PW-031 (generated worlds glaciate too hard) so finished worlds aren't buried in ice. Plan: one backend agent (finish API/CLI + PW-031) and one viewer agent, or one agent doing both in order.
-3b. **Next after the tectonics set (owner, 2026-10-14):** PW-189 glacial isostasy (top of the queue), then in parallel PW-185 soils and PW-186 vegetation proposal (owner reviews it before PW-187 vegetation model); PW-188 coastal life after. Species placement, fantasy races, hazards event histories and civilisation stay at the very end (PW-103, PW-098).
-4. **Then the L8** (owner approved one, once a big batch of tickets is closed): Earth-like, `--every 10`, ~1.2 Gyr, `--checkpoint-every 300`, plus a matching L7. Use `--at auto` for worlds. It waits for PW-008 (per-cell history is recorded during the run, so an earlier L8 could never get landform classes) and for step 3.
-5. **Other big epics:**
-   - PW-090 finishing pass (PW-091 first: time zoom from a chosen world → finished world; PW-037 imprint; PW-104 embedded ice ages);
-   - PW-013 rain/ocean (PW-014 diagnose first; it can run in parallel with the landform work, since the files differ).
-6. **PW-103** (multiscale time) is a vision epic; not scheduled.
-
-**Owner preferences learned today:** L7 is the default; L6 only for quick large-scale tests (weather). The coordinator is the main ticket maker and consumer; the owner looks at specific tickets on request. The owner plans to use worlds for games/TTRPGs with time as a component.
+## Current state and next steps (2026-10-15; for the coordinator on the new machine)
+**State:** everything merged on `main` and pushed to `origin` (GitHub, engma-linguistics/procedural-world-generation); no worktrees, no agents. 215 tests pass. Runs, worlds and zooms are not in git: regenerate them on the new machine (old outputs are out of step with the code anyway; no backward compatibility).
+**Done 2026-10-14/15:** finish pipeline (PW-091/193/031), vegetation proposal and model (PW-186/187 steps 1-6: world, run, zoom, climate feedbacks), satellite view (PW-083), glacial isostasy (PW-189), shared ice surface mass balance (PW-190 C, PW-159), weathering thermostat (PW-235), rain-streak and grid-numerics fixes (PW-211/227), foundation round (PW-052/191/046 partly/054 partly/238), hydrology (PW-055/057/201/122/028/237), two small-ticket sweeps.
+**Owner decisions to remember:** vegetation decisions in docs/proposals/vegetation.md 9.3 (evolving plant groups; rain recycling; coastal life in PW-188); game attributes (PW-206) parked long-term; satellite view wanted; moons/planet bodies epic PW-216 at the very bottom; foundation round before soils/resources/L8 (owner asked whether base layers are stable).
+**Next, in order:**
+1. Remake showcase outputs on current code (PW-202): an L7 seed-3199 run, world at `--at auto`, highlights, a few zooms, a time zoom and a finished world. Doubles as the pending L7 checks for PW-172 (peaks below ~9.5 km over 1 Gyr), PW-190 (run ice) and PW-054 (closed basins at L7).
+2. Remaining foundation items: PW-240 (run ice in cold eras: narrow climate drift), PW-046 residual thinning, PW-243 (L6/L7 closed-basin gap), PW-242 (back-arc/pull-apart basins), PW-171/170, PW-051 (re-measure, likely resolved), PW-239 (frame lakes on final terrain).
+3. Life and land surface: PW-185 soils + PW-212 (vegetation to soils), PW-213 (vegetation in the time zoom), PW-188 coastal life (+PW-209).
+4. Then PW-090 finishing pass items and PW-013 rain/ocean (regional rain errors PW-228, clouds PW-232, monsoon PW-233); the L8 run after the foundation and life work.
