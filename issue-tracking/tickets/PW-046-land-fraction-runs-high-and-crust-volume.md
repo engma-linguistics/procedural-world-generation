@@ -2,7 +2,7 @@
 id: PW-046
 title: Land fraction runs high and crust volume drifts mid-run
 type: task
-status: in-progress
+status: todo
 parent: null
 subsystem: tectonics
 effort: m
@@ -21,6 +21,7 @@ volume drifts +2–5% mid-run: assembled continents have fewer subducting margin
 thermostat only partly compensates. The v1 notes had continental area at ~45% vs a 40% target.
 
 ## Updates
+- 2026-10-15: Status in-progress -> todo. Tect2 (merged): rifted margins laid thicker when area is over target; area 41-42% -> 40-41%. Residual ~1-2 km thinning per Gyr remains.
 - 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status in-progress -> todo. Tectfound (merged): island arcs out of the volume thermostat, forearc gap, level-independent erosion, no welds at trenches, integral thermostat term. Crust 48.9/46.3% -> 42.7/42.0%. Residual: ~1-2 km thinning and +2-3 points area per Gyr (merged draft).
 - 2026-10-15: Merged inbox draft draft-residual-crust-thinning.md ("Continents still thin ~1-2 km and gain ~2-3 points of area per Gyr", found by tectfound).

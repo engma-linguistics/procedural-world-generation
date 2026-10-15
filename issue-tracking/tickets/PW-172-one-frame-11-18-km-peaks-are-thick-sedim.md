@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-048, PW-108]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/crust.py, "run:a01868@588Myr cell 1522", "run:a01868@968Myr cell 87076"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -37,5 +37,6 @@ ago. Lean A+B. Coherence (PW-108 fix) removes some of the flips that start it.
 - [ ] no frame of an L7 1 Gyr run above ~9.5 km (envelope test)
 
 ## Updates
+- 2026-10-15: Tect2 (merged): options A+B; max 9.24 km to 700 Myr on L7 seed 3199. Close after one full 1 Gyr L7 run stays below ~9.5 km.
 - 2026-10-14: Absorbs PW-048 (single-sample 12-13 km spikes; add the envelope test it asked for).
 - 2026-10-14: Created from inbox draft draft-hotspot-pile-spikes.md (found by tectchurn).

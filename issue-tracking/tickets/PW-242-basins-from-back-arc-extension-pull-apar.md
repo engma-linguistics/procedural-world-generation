@@ -1,4 +1,5 @@
 ---
+id: PW-242
 title: Basins from back-arc extension, pull-aparts and dynamic topography are still missing
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tect2
 blocked_by: []
 relates: [PW-054]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/mantle.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,3 +31,6 @@ other families of Earth's subsiding basins are not modelled:
   land share (continents sit on warm mantle), so it needs a recalibration of
   `continental_thickness` with it.
 Only worth it if closed-basin share or basin variety looks short after PW-054.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-backarc-dynamic-basins.md (found by tect2).

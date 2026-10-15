@@ -2,7 +2,7 @@
 id: PW-133
 title: Continental plume heads pile 7-16 km of flood basalt (Deccan ~2 km)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: tectonics
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-009]
 refs: [planet/tectonics/volcanism.py, planet/tectonics/crust.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -32,4 +32,5 @@ swell and sinks as it decays. Check the lava_plateau class share and its
 `strata_top_km` (landform.py) after.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (tect2): continental lava piles capped at 3 km.
 - 2026-10-14: Created from inbox draft draft-flood-basalt-too-thick.md (found by landform).

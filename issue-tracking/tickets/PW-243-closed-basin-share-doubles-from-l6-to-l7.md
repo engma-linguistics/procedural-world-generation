@@ -1,4 +1,5 @@
 ---
+id: PW-243
 title: Closed-basin share doubles from L6 to L7 (grid resolution, not tectonics)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tect2
 blocked_by: []
 relates: [PW-054]
 refs: [planet/hydrology.py, planet/tectonics/isostasy.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ outlet cutting all act per cell). The flexure share was set so L7 (the
 showcase level) isn't far above Earth, which leaves L6 short. Worth a look at
 whether the hollow rules can be made level-consistent (e.g. MIN_DEPTH or the
 outlet channel scaled with cell size), then retune `flexure` once.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-closed-basins-level-gap.md (found by tect2).
