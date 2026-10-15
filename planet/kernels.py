@@ -414,10 +414,11 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
 
     elev: m, <= 0 is sea; src: water each land cell sends downhill;
     loss: the extra water a cell loses while under a lake (same units).
-    Returns (wet, open, out_z, pit, catch): cell under a lake; the cell's
-    basin spills to the sea (its lakes are fresh, through-flowing);
+    Returns (wet, open, out_z, pit, catch, basin): cell under a lake; the
+    cell's basin spills to the sea (its lakes are fresh, through-flowing);
     elevation at which that basin met the sea's drainage; cell is a pit
-    (no lower neighbour); water reaching each cell downhill (catchment)."""
+    (no lower neighbour); water reaching each cell downhill (catchment);
+    the cell's basin (its root cell)."""
     n = elev.shape[0]
     sea = elev <= 0
     if not sea.any():
@@ -507,11 +508,50 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
                 tail[r0] = -1
         if head[r0] >= 0 or not _wet_try(r0, i, q, ev, loss, wet):
             _push_dry(r0, i, head, tail, nxt)
+    basin = np.empty(n, np.int64)
     for i in range(n):
         r = _root(parent, i)
         open_[i] = open_[r]
         out_z[i] = out_z[r]
-    return wet, open_, out_z, (rcv < 0) & ~sea, catch
+        basin[i] = r
+    return wet, open_, out_z, (rcv < 0) & ~sea, catch, basin
+
+
+@njit(cache=True)
+def closed_excess(sink, basin, wet, down, flow, src, loss, bed):
+    """Water the closed basins get from their rivers beyond what their
+    lakes evaporate, where that is more than one more cell of lake would:
+    it belongs to the basin (put on its lowest sink cell). A basin is
+    kernels.lakes' (basin: root per cell): its rivers can end in any of its
+    sink cells (a dry pit above its lake too), its lake gets all of it.
+    flow: routed (accumulate_lakes) over down; src, loss as in lakes()."""
+    n = sink.shape[0]
+    inflow = np.zeros(n)
+    evap = np.zeros(n)
+    cell = np.zeros(n)  # the most one more cell of lake would evaporate
+    low = np.full(n, -1, np.int64)
+    has = np.zeros(n, np.bool_)
+    for i in range(n):
+        d = down[i]
+        if not sink[i]:
+            if d >= 0 and sink[d]:
+                inflow[basin[d]] += flow[i]
+            continue
+        b = basin[i]
+        has[b] = True
+        inflow[b] += src[i]
+        if wet[i]:
+            evap[b] += loss[i]
+        cell[b] = max(cell[b], loss[i])
+        if low[b] < 0 or bed[i] < bed[low[b]]:
+            low[b] = i
+    out = np.zeros(n)
+    for b in range(n):
+        if has[b]:
+            x = inflow[b] - evap[b]
+            if x > cell[b] and x > 1e-9:
+                out[low[b]] = x
+    return out
 
 
 @njit(cache=True)
@@ -531,6 +571,29 @@ def accumulate_lakes(down, order, src, wet):
 
 
 @njit(cache=True)
+def accumulate_months(down, order, src, damp):
+    """accumulate() for each month (src: (12, n)), with the monthly profile
+    flattened toward its mean by damp (0..1) where a river leaves a lake
+    (a lake stores the flood and lets it out slowly)."""
+    m, n = src.shape
+    flow = src.copy()
+    for t in range(order.shape[0] - 1, -1, -1):
+        i = order[t]
+        if damp[i] > 0:
+            mean = 0.0
+            for k in range(m):
+                mean += flow[k, i]
+            mean /= m
+            for k in range(m):
+                flow[k, i] = (1 - damp[i]) * flow[k, i] + damp[i] * mean
+        d = down[i]
+        if d >= 0:
+            for k in range(m):
+                flow[k, d] += flow[k, i]
+    return flow
+
+
+@njit(cache=True)
 def accumulate(down, order, rain):
     flow = rain.copy()
     for t in range(order.shape[0] - 1, -1, -1):
@@ -539,6 +602,23 @@ def accumulate(down, order, rain):
         if d >= 0:
             flow[d] += flow[i]
     return flow
+
+
+@njit(cache=True)
+def carve(h, down, order, cut):
+    """h with each cell lowered by cut (m) where its river runs in a valley
+    below the cell's mean height, but never below the next cell downstream
+    as carved (a valley floor doesn't climb toward the sea, nor dig a pit).
+    order runs outlet -> headwater."""
+    out = h.copy()
+    for t in range(order.shape[0]):
+        i = order[t]
+        d = down[i]
+        if d < 0 or cut[i] <= 0:
+            continue
+        floor = max(out[d], 0.5 if h[i] > 0 else h[i])
+        out[i] = min(h[i], max(h[i] - cut[i], floor))
+    return out
 
 
 @njit(cache=True)

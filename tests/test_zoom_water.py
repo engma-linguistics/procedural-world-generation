@@ -25,7 +25,9 @@ def water_world():
     precip = np.full(g.n, 1200.0)
     # wet enough that the basin overflows: an open lake
     c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
-    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    # (its 53,000 m3/s river would cut the outlet of this ~200 m deep basin
+    # down and drain it: hydrology.CHANNEL_K; the zoom's lakes are tested here)
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
     lake = lk["wet"]
     land = elev > 0
     layers = {
@@ -68,7 +70,9 @@ def closed_zoom():
     elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
     precip = np.full(g.n, 500.0)
     c = {"runoff": 0.2 * precip, "aet": 0.8 * precip, "lake_evap": np.full(g.n, 1200.0)}
-    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    # (its 53,000 m3/s river would cut the outlet of this ~200 m deep basin
+    # down and drain it: hydrology.CHANNEL_K; the zoom's lakes are tested here)
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
     wet = lk["wet"]
     assert wet.sum() >= 3 and np.all(lk["kind"][wet] == 2), "the dry basin should hold a closed lake"
     spill = hydrology.priority_flood(g, elev)[0]
@@ -210,7 +214,9 @@ def _escarpment_world(slope, scarp):
                     + scarp * zoom.smoothstep(150.0, -150.0, xk), -3000.0)
     precip = np.full(g.n, 1200.0)
     c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
-    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    # (its 53,000 m3/s river would cut the outlet of this ~200 m deep basin
+    # down and drain it: hydrology.CHANNEL_K; the zoom's lakes are tested here)
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
     land = elev > 0
     layers = {
         "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
@@ -364,7 +370,9 @@ def test_a_hyperarid_zoom_has_no_rivers_of_its_own():
     elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
     precip = np.full(g.n, 60.0)
     c = {"runoff": np.zeros(g.n), "aet": precip, "lake_evap": np.full(g.n, 1500.0)}
-    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    # (its 53,000 m3/s river would cut the outlet of this ~200 m deep basin
+    # down and drain it: hydrology.CHANNEL_K; the zoom's lakes are tested here)
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
     land = elev > 0
     w = {"grid": g, "meta": {"level": 5}, "layers": {
         "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 24.0),
