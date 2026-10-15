@@ -79,17 +79,18 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                           unlocked=veg.get("unlocked"), cheap=True)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
-        elev = hydrology.erode(grid, elev, c["runoff"], erosion_iterations, erosion)
+        elev = hydrology.erode(grid, elev, c, erosion_iterations, erosion, ice=ice)
     c = climate.compute(grid, elev, dT, tilt, ice, veg=fb)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
+    sea = elev <= 0
+    flood = _flood(grid, down, lk, c, sea)
     vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
                          c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
-                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"))
+                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"])
     # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
     biome = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
-    sea = elev <= 0
     elev_m = np.round(elev).astype(int)
 
     layers = {
@@ -107,7 +108,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "lake_level": np.where(lk["kind"] > 0, np.maximum(np.round(lk["level"], 1), elev_m), elev_m),  # (0.1 m: shallow lakes)
         "lake_kind": lk["kind"].astype(int),  # hydrology: 0 none, 1 open (fresh), 2 closed (salt), 3 salt pan
         # the rivers' year (hydrology.seasonal_flow, PW-028): peak month's flow / mean month's, and the peak month
-        **_flood(grid, down, lk, c, sea),
+        **flood,
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
         "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
@@ -329,7 +330,8 @@ def ascii_map(world: dict, layer: str = "biome", width: int = 120, height: int |
 def _flood(grid: Grid, down, lk: dict, c: dict, sea) -> dict:
     s = hydrology.seasonal_flow(grid, down, lk["order"], np.where(sea, 0.0, c["runoff"]), lk["wet"], c)
     return {"flood_ratio": np.where(sea, 0.0, np.round(s["flood_ratio"], 1)),
-            "flood_month": np.where(sea, 0, s["flood_month"]).astype(int)}
+            "flood_month": np.where(sea, 0, s["flood_month"]).astype(int),
+            "river_frozen": np.where(sea, 0, s["frozen"]).astype(int)}
 
 
 LEGENDS = {

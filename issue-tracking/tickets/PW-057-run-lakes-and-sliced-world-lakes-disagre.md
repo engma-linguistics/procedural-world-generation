@@ -2,7 +2,7 @@
 id: PW-057
 title: Run lakes and sliced-world lakes disagree
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: hydrology
 effort: m
@@ -21,6 +21,7 @@ Closed lakes on flat basins disagree a lot between a run frame and the world sli
 erosion and a fresh climate. Open lakes agree roughly; the world's are smaller and about half as deep.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (hydro2).
 - 2026-10-15: Status todo -> in-progress. Worktree hydro2.
 - 2026-10-15: Coordinator decision (north star): option B. Relief-scaled world texture (plains flat, mountains rough) and one-sided creep in hydrology.erode (lowers ground only, as the run's hillslope), then re-measure lake agreement. C rejected as a mask rather than a process.
 - 2026-10-15: Merged inbox draft draft-world-lakes-vs-run-lakes.md ("PW-057 options: the world's texture and its 12 erosion passes, not the climate, move the lakes away from the run's", found by hydro).

@@ -186,6 +186,7 @@ LAYERS = {
     "flood_ratio": _spec("u1", "x", "river's peak month flow / mean month flow (hydrology.seasonal_flow; 0 at sea)",
                          scale=0.1),
     "flood_month": _spec("u1", "month", "month of the river's peak flow, 1-12 (0 at sea)"),
+    "river_frozen": _spec("u1", "months", "months a year the cell's rivers are frozen (below -2 C; 0 at sea)"),
     "wind_e": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, east component", scale=0.02),
     "wind_n": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, north component", scale=0.02),
     "wind_jul_e": _spec("i1", "~1 = steady trade wind", "July half-year surface wind, east component", scale=0.02),

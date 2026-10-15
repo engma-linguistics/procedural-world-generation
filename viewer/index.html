@@ -305,6 +305,8 @@ RAMPS['rock age'] = [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000,
 RAMPS.rainfall = RAMPS.precipitation;
 RAMPS['wave power'] = [[0, '#1d2f55'], [5, '#2f6f8f'], [15, '#4fae9b'], [30, '#b8d66b'], [60, '#f2c14e'], [100, '#e8603c']];  // kW/m
 RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];  // m
+// the rivers' year (worlds, PW-028): the peak month's flow over the mean month's (1 = steady)
+RAMPS['river floods'] = [[1, '#2f5f8f'], [1.5, '#4f9fb0'], [2, '#9fd0a0'], [3, '#f0d36b'], [4.5, '#ef8a3a'], [7, '#b8283a']];
 RAMPS['bed under ice'] = RAMPS.elevation;  // (runs, time zooms: the bed pressed down by the ice, PW-189)
 RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
 // the sea and the air's moisture (worlds): sea-surface temperature (C), salinity (psu), relative humidity (%), dew point (C)
@@ -335,6 +337,7 @@ const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.ke
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
                 'ice thickness': 'm of land ice (bare land grey)', 'bed under ice': 'm, the ground with the ice taken off (pressed down by its load; ice faintly outlined)', 'temperature difference': '°C, model minus observed',
+                'river floods': "x: the rivers' peak month over their mean month (1 = steady; Arctic spring floods 3-5); grey: frozen half the year or more",
                 'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
                 'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
                 humidity: '% rel. humidity, year', 'dew point': '°C dew point, year',
@@ -509,6 +512,10 @@ function cellColors(layer) {
       if (elev[i] <= 0) c.lerp(OCEAN, 0.25);
     }
     else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](sv[i], c); }
+    else if (layer === 'river floods') {
+      if (elev[i] <= 0) c.copy(OCEAN);
+      else { rampFns[layer](L.flood_ratio[i], c); if (L.river_frozen && L.river_frozen[i] >= 6) c.lerp(ICE, 0.35); }
+    }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else {
       rampFns[layer]((sv || L[layer])[i], c);
@@ -536,6 +543,7 @@ function availableLayers() {
   if (V.layers.landform) ls.push('landforms');
   if (V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
                                    'fire return', 'stand age', 'plant type');
+  if (V.layers.flood_ratio) ls.push('river floods');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
@@ -1845,6 +1853,21 @@ function landformLines(i) {
   return out;
 }
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+                     'November', 'December'];
+// the river through cell i: discharge (flow x cell area / 1 yr) and, in worlds with the rivers' year (PW-028),
+// when it peaks, how much above its mean month, and how long it's frozen
+function riverLine(i) {
+  const L = V.layers, q = L.flow[i] * 4 * Math.PI * 6.371e6 ** 2 / V.n / 3.156e7;
+  const qs = q >= 100 ? Math.round(q).toLocaleString('en-US') : q >= 1 ? q.toFixed(0) : q.toFixed(1);
+  let s = `river ~${qs} m³/s`;
+  if (L.flood_ratio && L.elevation[i] > 0 && L.flood_month[i] > 0) {
+    s += `, highest in ${MONTH_NAMES[L.flood_month[i] - 1]} (${L.flood_ratio[i].toFixed(1)}× its mean month)`;
+    if (L.river_frozen && L.river_frozen[i] > 0) s += `, frozen ${L.river_frozen[i]} month${L.river_frozen[i] > 1 ? 's' : ''}`;
+  }
+  return s;
+}
+
 function describe(i) {
   const L = V.layers, G = V.grid;
   const lines = [`cell ${i}${V.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
@@ -1857,7 +1880,7 @@ function describe(i) {
       ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`);
     lines.push(`temp ${L.temperature[i]} °C${yr}` + (L.temperature_jul && !s ? `, July ${L.temperature_jul[i]}, January ${L.temperature_jan[i]}` : ''),
       `rain ${L.precipitation[i]} mm/yr${yr}` + (L.precipitation_jul && !s ? `, July half ${L.precipitation_jul[i]}, January half ${L.precipitation_jan[i]}` : ''),
-      `river flow ${L.flow[i]}`);
+      riverLine(i));
     if (L.surface_rock) lines.push(`surface: ${V.rocks[L.surface_rock[i]].name}`);
     if (L.climate && L.elevation[i] > 0) lines.push(`climate ${V.koppen[L.climate[i]].code} (${V.koppen[L.climate[i]].name}), ` +
       `months ${Math.round(L.cold_month[i])} to ${Math.round(L.warm_month[i])} °C`);

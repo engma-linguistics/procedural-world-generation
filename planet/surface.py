@@ -105,12 +105,15 @@ def _relief(h, nbr_off, nbr_idx):
 
 
 @njit(cache=True)
-def _route(down, order, sed, pit_room, is_ocean, h, d_km, drop):
+def _route(down, order, sed, pit_room, pool, pool_room, is_ocean, h, d_km, drop):
     """Carry eroded rock (km of crust per cell) down the river network,
-    headwaters first. Closed basins keep what fits; on gentle ground rivers
-    drop some of their load (floodplains, the plains in front of mountain
-    ranges): a share 1 - exp(-d_km / drop) per cell, less on steep ground.
-    Everything else ends at the ocean cell where the river meets the sea."""
+    headwaters first. Closed basins keep what fits; an open lake (pool >= 0,
+    its id) keeps what fits anywhere in it (pool_room: km per lake), as the
+    river drops its load where it slows into the lake; on gentle ground
+    rivers drop some of their load (floodplains, the plains in front of
+    mountain ranges): a share 1 - exp(-d_km / drop) per cell, less on steep
+    ground. Everything else ends at the ocean cell where the river meets
+    the sea."""
     n = sed.shape[0]
     dep = np.zeros(n)
     flux = sed.copy()
@@ -119,12 +122,18 @@ def _route(down, order, sed, pit_room, is_ocean, h, d_km, drop):
         if is_ocean[i]:
             dep[i] += flux[i]
             continue
-        if pit_room[i] > 0:
+        p = pool[i]
+        if p >= 0:
+            keep = min(flux[i], pool_room[p])
+            pool_room[p] -= keep
+            dep[i] += keep
+            flux[i] -= keep
+        elif pit_room[i] > 0:
             keep = min(flux[i], pit_room[i])
             dep[i] += keep
             flux[i] -= keep
         d = down[i]
-        if d >= 0 and not is_ocean[d]:
+        if d >= 0 and not is_ocean[d] and p < 0:
             slope = max(h[i] - h[d], 0.0) / d_km  # m per km
             keep = flux[i] * (1 - np.exp(-d_km / drop)) * np.exp(-slope / 2.0)
             dep[i] += keep
@@ -222,7 +231,14 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
 
     c = np.maximum(cover, 1e-9)
     k_cover = (COVER_K * np.maximum(cover - mix.sum(1), 0) + mix @ MIX_K) / c
-    K = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * rain_factor(precip) * k_mult
+    K0 = np.where(cover > COVER_SHOWS, k_cover, ROCK_K[rock]) * k_mult
+    K = K0 * rain_factor(precip)
+    # a river cuts with its catchment's rain, not just the rain where it
+    # runs: a big river crossing a desert (or a polar desert lake's outlet)
+    # still incises (PW-055)
+    up = kernels.accumulate(down, order, land.astype(float))
+    p_up = kernels.accumulate(down, order, np.where(land, precip, 0.0)) / np.maximum(up, 1.0)
+    K_river = K0 * np.maximum(rain_factor(precip), rain_factor(p_up))
     # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
     # Laplacian on this grid; exponential form can't overshoot)
     d_km = grid.spacing * R_KM
@@ -234,7 +250,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     h = h - above * (1 - np.exp(-K * dt / tau * (1 + (above / h0) ** 2)))
     # river incision toward the next cell downstream (implicit, unconditionally stable)
     h = h.astype(float)
-    kernels.stream_power(h, down, order, np.where(land, incision * K * np.sqrt(flow) * dt, 0.0))
+    kernels.stream_power(h, down, order, np.where(land, incision * K_river * np.sqrt(flow) * dt, 0.0))
     removed = np.minimum(np.maximum(elev - h, 0) * land / iso, np.maximum(thick, 0))  # km of rock
 
     from_cover = np.clip(removed, 0, np.maximum(cover, 0))
@@ -247,7 +263,16 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     if iso_dep is None:
         iso_dep = iso
     pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso_dep, 0.0)
-    dep = _route(down, order, removed, pit_room, ~land, h, d_km, alluvial)
+    # an open lake traps what its rivers bring (up to its whole room, PW-055:
+    # a big lake on a river fills in, unless its basin sinks faster) and
+    # spreads it over its floor, deepest most
+    pool, n_pool = grid.components(lk["wet"] & ~lk["sink"])
+    m = pool >= 0
+    pool_room = np.bincount(pool[m], pit_room[m], n_pool) if n_pool else np.zeros(0)
+    dep = _route(down, order, removed, pit_room, pool, pool_room.copy(), ~land, h, d_km, alluvial)
+    if n_pool:
+        share = np.bincount(pool[m], dep[m], n_pool) / np.maximum(pool_room, 1e-30)  # (<= 1)
+        dep[m] = share[pool[m]] * pit_room[m]
     # a closed lake spreads what its rivers bring over its floor, deepest most
     lab, k = grid.components(lk["sink"] & lk["wet"])
     if k:

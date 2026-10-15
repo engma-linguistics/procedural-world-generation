@@ -2,7 +2,7 @@
 id: PW-238
 title: "Land is 31-34% of the surface (Earth 29%) and stands high: lower a continental target or accept?"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: s
@@ -38,5 +38,6 @@ Lean: C (it brings both mean land height and land share toward Earth without
 shrinking the continents); B if the owner prefers more ocean.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star: reasonably close to real behaviour, nudge): yes, nudge continental_thickness 37 -> ~35 km (or whatever brings mean land toward ~850-1000 m and land toward ~29-31%); Earth is not a parity target, so stop when it's close-ish.
 - 2026-10-15: Created from inbox draft draft-land-share-vs-earth.md (found by tectfound).

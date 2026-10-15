@@ -2,7 +2,7 @@
 id: PW-054
 title: Generated worlds lose their closed basins over time
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: l
@@ -22,6 +22,7 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status in-progress -> todo. Hydro (merged): diagnosis: 2/3 of closed-hollow loss is sediment infill, 1/3 rim wear; the rest needs tectonic subsidence (flexural and sag basins) - see merged draft. Back to the tectonics queue.
 - 2026-10-15: Merged inbox draft draft-basins-need-subsidence.md ("Closed basins need tectonic subsidence (flexural foreland / intermontane basins, sag basins) to reach Earth's ~18% inland drainage", found by hydro).
   Follow-up of PW-054 from the hydro branch (measured with a per-step basin budget, L6, seeds 11 and 12,

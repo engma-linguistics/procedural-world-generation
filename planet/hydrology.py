@@ -25,6 +25,7 @@ climate.water_balance), not the rain itself.
 from __future__ import annotations
 
 import numpy as np
+from numba import njit
 
 from . import kernels
 from .grid import Grid
@@ -39,24 +40,37 @@ def accumulate(down: np.ndarray, order: np.ndarray, rain: np.ndarray) -> np.ndar
     return kernels.accumulate(down, order, rain.astype(float))
 
 
-def erode(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, iterations: int = 12,
-          strength: float = 1.0, diffusion: float = 0.08):
-    """Carve river valleys with the runoff (mm/yr). Returns new elevation."""
+def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength: float = 1.0,
+          diffusion: float = 0.08, lake_every: int = 4, ice: np.ndarray | None = None):
+    """Carve river valleys with the climate c's runoff (climate.compute's
+    dict: runoff, aet, lake_evap, mm/yr). Rivers run as in the run
+    (surface.erode): through open lakes and on, ending in closed ones, so a
+    closed basin's rim isn't cut by water that never leaves it (the lakes
+    are worked out again every lake_every passes; 0: plain priority-flood
+    routing, every pit spilling). Returns new elevation."""
     h = elev.astype(float).copy()
-    rain = runoff_mm / 1000.0  # metres/yr; flow then ~ 'cells x m/yr'
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)
     k = 0.018 * 1.6 * strength * 2 ** (grid.level - 5)
-    a, b = grid.edges[:, 0], grid.edges[:, 1]
-    deg = np.bincount(np.concatenate([a, b]), minlength=grid.n)
-    for _ in range(iterations):
-        _, down, order = priority_flood(grid, h)
-        flow = accumulate(down, order, rain)
-        kernels.stream_power(h, down, order, k * np.sqrt(flow))
-        # Hillslope creep: land relaxes a bit toward its neighbours.
+    from .surface import _relief
+    iced = (h > 0) & (ice > 0) if ice is not None else None
+    lk = None
+    for it in range(iterations):
         land = h > 0
-        nb_mean = (np.bincount(a, h[b], grid.n) + np.bincount(b, h[a], grid.n)) / deg
-        h = np.where(land, (1 - diffusion) * h + diffusion * np.maximum(nb_mean, 1.0), h)
+        if lake_every and it % lake_every == 0:
+            lk = lakes(grid, h, c["runoff"], c["aet"], c["lake_evap"], iced)
+        if lk is None:
+            _, down, order = priority_flood(grid, h)
+            flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
+        else:
+            lk["bed"] = np.where(lk["wet"], lk["bed"], h)
+            flow, down, order, _ = route(grid, h, lk)
+        kernels.stream_power(h, down, order, np.where(land, k * np.sqrt(np.maximum(flow, 0)), 0.0))
+        # Hillslope creep, as the run's (surface.erode): land wears down toward
+        # its lower neighbours; it only lowers ground, so hollows aren't filled
+        # (PW-057: a symmetric creep filled the run's lake basins in); gentler
+        # with the strength, as the cutting (a run's keyframe is worn already).
+        h = np.where(land, h - diffusion * strength * _relief(h, grid.nbr_off, grid.nbr_idx), h)
     return h
 
 
@@ -79,30 +93,32 @@ def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
     return flow * (4 * np.pi * 6.371e6**2 / grid.n) / 3.156e7
 
 
-def _fill(grid, ground, src, loss, min_depth, min_slope):
-    """fill_shallow then kernels.lakes on ground: (bed, wet, open, out_z, pit, catch, basin)."""
-    elev = ground
-    if min_depth > 0:
-        # hollows (and dips in a basin's floor) shallower than min_depth, or
-        # flatter than min_slope, fill to where they spill; the rest of the land drains as priority_flood has it
-        from .ocean import cell_area_km2
-        h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
-                                       cell_area_km2(grid), float(min_slope))
-        elev = np.where(keep, h, priority_flood(grid, h)[0])
-    return (elev, *kernels.lakes(elev, grid.nbr_off, grid.nbr_idx, src, loss))
+def _bed(grid, ground, min_depth, min_slope):
+    """ground with the hollows (and dips in a basin's floor) shallower than
+    min_depth, or flatter than min_slope, filled to where they spill; the
+    rest of the land drains as priority_flood has it."""
+    if min_depth <= 0:
+        return ground
+    from .ocean import cell_area_km2
+    h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
+                                   cell_area_km2(grid), float(min_slope))
+    return np.where(keep, h, priority_flood(grid, h)[0])
 
 
 def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
-    """_fill, made to agree with the rivers. kernels.lakes gives each basin
-    the water that runs downhill into it, but a lake that spills where its
-    basin meets the sea's drainage can send its river on into a lower
-    closed basin next to that spill point (route() follows the river
-    there): that basin then gets the river too and fills further, and may
-    spill in turn (the Nile into the Nubian hollow, PW-122). Returns
-    (_fill's tuple, (flow, down, order, sink)) of the last try."""
+    """kernels.lakes on _bed(ground), made to agree with the rivers.
+    kernels.lakes gives each basin the water that runs downhill into it,
+    but a lake that spills where its basin meets the sea's drainage can
+    send its river on into a lower closed basin next to that spill point
+    (route() follows the river there): that basin then gets the river too
+    and fills further, and may spill in turn (the Nile into the Nubian
+    hollow, PW-122). Returns ((bed, wet, open, out_z, pit, catch, basin),
+    (flow, down, order, sink)) of the last try."""
     extra = np.zeros(grid.n)
+    bed = _bed(grid, ground, min_depth, min_slope)
     for _ in range(tries):
-        bed, wet, open_, out_z, pit, catch, basin = r = _fill(grid, ground, src + extra, loss, min_depth, min_slope)
+        wet, open_, out_z, pit, catch, basin = kernels.lakes(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss)
+        r = (bed, wet, open_, out_z, pit, catch, basin)
         sink = land & ~open_ & (wet | pit)
         lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink, src=src - loss * wet)
         flow, down, order, _ = route(grid, ground, lk0)
@@ -257,8 +273,14 @@ def seasonal_flow(grid: Grid, down: np.ndarray, order: np.ndarray, runoff_mm: np
 
 def endorheic(down: np.ndarray, order: np.ndarray, sink: np.ndarray) -> np.ndarray:
     """Cells whose water never reaches the sea (it ends in a closed lake or salt pan)."""
+    return _endorheic(down, order, sink.astype(np.bool_))
+
+
+@njit(cache=True)
+def _endorheic(down, order, sink):
     end = sink.copy()
-    for i in order:  # outlets first, so each cell's downstream is already known
+    for t in range(order.shape[0]):  # outlets first, so each cell's downstream is already known
+        i = order[t]
         if down[i] >= 0:
             end[i] = end[down[i]]
     return end
