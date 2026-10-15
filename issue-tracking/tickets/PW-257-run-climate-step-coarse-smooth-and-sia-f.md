@@ -2,7 +2,7 @@
 id: PW-257
 title: Run climate_step, _coarse_smooth and sia_flow in parallel on the CPU (zoom ~2x, time zoom ~1.4-2x)
 type: task
-status: todo
+status: in-progress
 parent: PW-247
 subsystem: climate
 effort: s
@@ -47,4 +47,5 @@ version: 3.6 ms vs 3.3 ms at L7).
 - [ ] before/after timings for an L6 run, a 2 km zoom and a 200 kyr time zoom
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (CPU speed wins, owner go-ahead 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-parallel-climate-step-and-coarse-smooth.md (found by gpu-explore (PW-249)).
