@@ -3,7 +3,7 @@ CO2, sea level, the climate model, and the surface processes that run on
 its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
-co2, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice,
+co2, rates, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice,
 the vegetation (veg, veg_frac, veg_lai, npp, veg_type, tree_cover, flora,
 veg_niche), removed, the climate fields from climate.compute, the rivers
 (flow, down) and the lakes (lake_kind, lake_depth).
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .. import climate, hydrology, kernels, surface, vegetation
+from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
@@ -21,6 +21,9 @@ from .isostasy import (CARB, COAL, EVAP, MIX, SAND, elevation, ice_load, iso_rat
                        sediment_km)
 
 SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
+EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
+WEATHER_K = 0.12  # per C: silicate weathering's temperature sensitivity (GEOCARB III: 0.09 from the activation
+# energy, ~0.03 more from the runoff; was 0.06 before PW-235)
 
 
 def heat(p, t: float) -> float:
@@ -47,7 +50,9 @@ def global_temperature(sim, growth, newc, rng):
       CO2        volcanism at ridges and arcs adds it (warming); fresh
                  rock weathering in warm, wet mountains removes it
                  (cooling, e.g. the Himalaya since 40 Ma). Each is measured
-                 against its own slow average, so only changes count.
+                 against its own slow average, so only changes count. A
+                 cold or icy planet weathers slower (the weathering
+                 thermostat), so CO2 rises and warms it back
       ice        ice sheets reflect sunlight (cooling feedback)
     Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
     Permo-Carboniferous, today) between long greenhouse ones.
@@ -57,23 +62,29 @@ def global_temperature(sim, growth, newc, rng):
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
-    warm = np.exp(0.06 * (sim.temp - 15.0)) if sim.temp is not None else 1.0  # chemical weathering
+    # chemical weathering: faster when warm (and so wetter); the weathering thermostat (Walker et al.
+    # 1981): a cold planet weathers slower, CO2 builds up and warms it back (PW-235)
+    warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else 1.0
     # roots and soil CO2 speed it up, in proportion to how much grows there
     # (GEOCARB's biological weathering factor)
     warm = warm * (1 + 0.5 * np.clip(sim.npp / 800.0, 0, 1.5))
     source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
-    sink = float((sim.removed * land * warm).sum()) / sim.scale**2
+    # (not under land ice: glaciers grind their beds fast, but the rock flour hardly weathers chemically
+    # in the cold, and counting it made a cold era draw down more CO2 the more ice it grew)
+    sink = float((sim.removed * (land & (sim.ice <= 0)) * warm).sum()) / sim.scale**2
     now = np.array([max(source, 1e-6), max(sink, 1e-6)])
+    # the noisy per-step rates, smoothed over ~10 Myr (before the logs: a log of a noisy rate averages
+    # below the log of its mean, which used to bias the CO2 index low, ~-0.3 on average)
+    c = 1 - np.exp(-dt / 10.0)
+    sim.rates = now.copy() if sim.rates is None else sim.rates + c * (now - sim.rates)
     if sim.refs is None:
-        sim.refs = now.copy()
+        sim.refs = sim.rates.copy()
     # (the baselines learn fast at first: the made-up starting state
     # isn't an equilibrium, and shouldn't jolt the climate)
     b = 1 - np.exp(-dt / min(200.0, 10.0 + sim.t))
-    sim.refs = sim.refs + b * (now - sim.refs)
-    rel = now / sim.refs
-    # smooth the noisy per-step rates over ~10 Myr
-    c = 1 - np.exp(-dt / 10.0)
-    sim.co2 += c * (np.log(rel[0]) - np.log(rel[1]) - sim.co2)
+    sim.refs = sim.refs + b * (sim.rates - sim.refs)
+    rel = sim.rates / sim.refs
+    sim.co2 = float(np.log(rel[0]) - np.log(rel[1]))
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
@@ -101,8 +112,12 @@ def global_temperature(sim, growth, newc, rng):
     ice_frac = (sim.ice > 0).mean()
     # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
     # cloudier and dimmer at high latitude, and the snow it would brighten is often white already)
-    albedo = p.ice_albedo_max * np.tanh(p.ice_albedo * ice_frac / 0.03 / max(p.ice_albedo_max, 1e-9))
-    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -1.5, 1.5) - albedo
+    def albedo(f):
+        return p.ice_albedo_max * np.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
+
+    # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
+    # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
+    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -1.5, 1.5) - (albedo(ice_frac) - albedo(EARTH_ICE))
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
@@ -128,7 +143,8 @@ def update_climate(sim, e):
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
-    sim.wind, sim.current = 0.5 * (c["wind_jul"] + c["wind_jan"]), c["current"]
+    sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
+    sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
     sim.ice = ice_sheets(sim, land, c["ground"], ice0)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, climate.ice_cover(g, ice, land))
@@ -193,12 +209,13 @@ def update_vegetation(sim, e):
 
 
 # Ice sheets (see ice_sheets)
-ICE_FEEDBACK = 0.75  # share of a sheet's own height that counts in keeping it alive
 ICE_TAU = 50e3  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
 ICE_EDGE_KM = 10.0  # km: a sheet's thinnest margin counts as this far in from its edge
+ICE_EDGE_M = icemass.EDGE_H  # m: ~330, its thickness (ICE_TAU, ICE_EDGE_KM)
 ICE_MAX = 4000.0  # m
-ICE_SNOW_MIN = 25.0  # mm/yr of snow a sheet needs where it never melts ...
-ICE_DDF = 3.0  # ... plus what melts: mm per positive degree-day (snow), days of sd 5 C around the month
+ICE_CALVE = 5e4  # m2/yr: ice lost by calving per m of coast a sheet's margin reaches (~0.7 m/yr over a
+# coastal L6 cell): a sheet that reaches the sea pays for it from its snow
+ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
 
 
 def ice_sheets(sim, land, ground, old):
@@ -208,42 +225,51 @@ def ice_sheets(sim, land, ground, old):
     warmer than it would on unloaded crust, PW-189); old: the ice that
     climate saw (m, on that bed).
     The real ice comes and goes with ~100 kyr cycles and answers its
-    climate within ~10 kyr, far inside a climate step: this is the average
-    extent over the cycles, in balance with today's mountains, so an ice
-    cap follows its range as it moves or wears down.
-      extent     where summers on the ice stay near freezing (warmest month
-                 below ice_summer_temp) and enough snow falls to outlast
-                 them: ICE_SNOW_MIN plus the year's melt from positive
-                 degree-days (~25 mm/yr on a polar plateau, ~100 on a
-                 polar sheet's margin; a dry tropical plateau a few C below
-                 freezing all year, like the Puna de Atacama, stays bare
-                 with ~110 mm/yr). Ice that is already there keeps itself
-                 partly: its white top (climate.ice_cooling: ~10 C on a big
-                 polar sheet, little on a small or tropical cap) and
-                 ICE_FEEDBACK of its height (a 2 km sheet: ~10 C). Cold
-                 polar desert with too little snow of its own is covered
-                 by ice flowing in from a snowier part of the same cold
-                 region (East Antarctica's plateau gets ~50 mm/yr).
+    climate within ~10 kyr, far inside a climate step: this is the extent
+    the flowing sheets settle to under the surface mass balance averaged
+    over the cycle's orbits (icemass.balance, the time zoom's own, PW-190;
+    a warm summer melts more than a cold one saves), in balance with
+    today's mountains, so an ice cap follows its range as it moves or
+    wears down.
+      accumulation  where snow outlasts the summer: on bare ground (a new
+                 cap starts where the year's snow lasts, so the snowline
+                 depends on the snowfall as well as the summer, PW-159), and
+                 on ice (the old ice's own thickness, or a new margin's ~330
+                 m: its height and, on a big sheet, its own bright air mass
+                 keep it colder) connected to such a start or to old ice;
+      ablation zone  each sheet then spreads ring by ring onto the land
+                 around it, the least-melting cells first, as long as its
+                 snow surplus pays for their melt (and for calving where it
+                 reaches the sea): a big snowy sheet has a wide ablation
+                 zone, a small or dry one hardly any. Cold polar desert
+                 with too little snow of its own costs nothing to cover
+                 (East Antarctica's plateau gets ~50 mm/yr);
       thickness  a sheet's steady (Nye) profile: sqrt(2 tau/(rho g) x the
                  distance in from its edge), ~330 m at the edge, ~1.9 km
                  300 km in, ~3.3 km 1000 km in. Weakly (x accumulation^1/8,
                  Vialov) thinner for dry sheets, and thinner for warm
                  (temperate, softer) ice: a small tropical cap is a few
                  hundred m (Quelccaya ~200 m)."""
-    p, g = sim.params, sim.grid
+    g = sim.grid
     t_warm, t_cold, temp = ground
     old = np.where(land, old, 0.0)
-    own = ICE_FEEDBACK * climate.LAPSE * old + climate.ice_cooling(old, climate.ice_cover(g, old, land))
-    # the summer the ice would feel (melting holds a summer above 0 C on ice down, as climate.ice_surface)
-    t_sum = t_warm - own
-    t_sum = np.where(old > 0, np.minimum(t_sum, 0.5 * np.maximum(t_sum, 0)), t_sum)
-    cold = land & (t_sum < p.ice_summer_temp)
-    need = ICE_SNOW_MIN + ICE_DDF * degree_days(t_sum, t_cold - own)
-    seed = np.flatnonzero(cold & (sim.precip > need))
-    hops, _ = kernels.bfs_within(seed, cold.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
-    iced = cold & (hops >= 0)
+    lat = g.lat
+    # snow that outlasts the summer on bare ground, and on ice (the old ice, or a new margin's), on
+    # average over the ice-age cycle's orbits (bright ice feels less of them, mixed over the air around)
+    tilt = sim.params.tilt
+    smb0, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=tilt)
+    h = np.where(old > 0, old, ICE_EDGE_M)
+    cover = icemass.sheet_cover(g, old)
+    absorb = climate.smooth_big(g, 1 - np.clip(old / icemass.SNOW_H, 0, 1) * (1 - icemass.ICE_ABSORB),
+                                icemass.ABSORB_KM)
+    smb, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, h, cover, tilt=tilt, absorb=absorb)
+    acc_ok = land & (smb > 0)
+    seed = np.flatnonzero(acc_ok & ((smb0 > 0) | (old > 0)))
+    hops, _ = kernels.bfs_within(seed, acc_ok.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
+    iced = acc_ok & (hops >= 0)
     if not iced.any():
         return np.zeros(g.n)
+    iced = ablation_zone(sim, land, iced, smb)
     edge = np.flatnonzero(iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) > 0))
     hops, _ = kernels.bfs_within(edge, iced.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
     d_m = (np.maximum(hops, 0) * g.spacing * R_KM + ICE_EDGE_KM) * 1000.0
@@ -257,8 +283,57 @@ def ice_sheets(sim, land, ground, old):
         return (np.bincount(k, weights=f * iced, minlength=nk) / np.maximum(cnt, 1))[k]
 
     snow = np.clip((mean(sim.precip) / 300.0) ** 0.125, 0.75, 1.15)
+    own = climate.LAPSE * h + climate.ice_cooling(h, climate.ice_cover(g, np.where(iced, h, 0.0), land))
     soft = 1.0 - 0.3 * np.clip((mean(temp - own) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
     return np.where(iced, np.minimum(h * snow * soft, ICE_MAX), 0.0)
+
+
+def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS):
+    """Spread each sheet (a connected accumulation zone) ring by ring onto
+    the land around it, the cheapest cells first (melt: -smb under a
+    margin's ice; plus calving where the sea is next to them), while its
+    snow surplus (its smb > 0, less its own calving) pays for them. iced:
+    the accumulation zones (in place)."""
+    g = sim.grid
+    area = sim.cell_area * (R_KM * 1000.0) ** 2
+    width = g.spacing * R_KM * 1000.0
+    off, idx = g.nbr_off, g.nbr_idx
+    src = np.repeat(np.arange(g.n), np.diff(off))
+    sea_nb = np.add.reduceat((~land)[idx], off[:-1])
+    calve = ICE_CALVE * width * np.minimum(sea_nb, 3) / 2.0 / area
+    cost = np.maximum(-smb, 0.0) + calve
+    lab, nk = kernels.components(iced, off, idx)
+    budget = np.bincount(np.maximum(lab, 0), weights=np.where(iced, smb - calve, 0.0), minlength=nk)
+    open_ = budget > 0
+    for _ in range(rings):
+        nb_lab = np.where(iced[idx], lab[idx], -1)
+        cand = np.full(g.n, -1)
+        np.maximum.at(cand, src, nb_lab)
+        cand = np.where(land & ~iced & (cand >= 0), cand, -1)
+        cand = np.where(cand >= 0, np.where(open_[np.maximum(cand, 0)], cand, -1), -1)
+        cells = np.flatnonzero(cand >= 0)
+        if len(cells) == 0:
+            break
+        k, c = cand[cells], cost[cells]
+        o = np.lexsort((c, k))
+        cells, k, c = cells[o], k[o], c[o]
+        cum = np.cumsum(c)
+        start = np.searchsorted(k, k, side="left")
+        before = cum - c - np.where(start > 0, cum[start - 1], 0.0)
+        take = before + c <= budget[k]
+        cells, k, c = cells[take], k[take], c[take]
+        if len(cells) == 0:
+            break
+        spent = np.bincount(k, weights=c, minlength=nk)
+        took = np.bincount(k, minlength=nk)
+        ring = np.bincount(cand[cand >= 0], minlength=nk)
+        budget -= spent
+        open_ &= (took == ring) & (budget > 0)
+        iced[cells] = True
+        lab[cells] = k
+        if not open_.any():
+            break
+    return iced
 
 
 def degree_days(t_warm, t_cold, sd=5.0):

@@ -2,7 +2,7 @@
 id: PW-190
 title: Land ice lowers the sea by up to 300+ m on some seeds (about 4x Antarctica's volume)
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -39,6 +39,7 @@ ice building to ~-300 m within 40 Myr is the ice following continental drift
   brought to roughly the LGM's scale (~-150..-200 m)
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (icemb): planet/icemass.py shared surface mass balance (lying snow tracked monthly; Greenland margins now ablate); flow-consistent run ice rule; time zoom margins and anchors. Time-zoom spreads now -56 to -239 m (was -127 to -321). Run cold eras still large on 2 of 4 seeds: PW-240.
 - 2026-10-15: Status todo -> in-progress. Worktree icemb (decision C).
 - 2026-10-15: Status in-progress -> todo. Coordinator decision (north star): option C. Recalibrate the shared surface mass balance used by the run and the time zoom (snowline set by snowfall, PW-159; margins must melt where bare-ground summers are ~9 C) so the flow-consistent rule then yields modest run ice AND a small time-zoom spread; ship the balance rule (B) only on top of that. Shipped meanwhile: PW-102 rule + isostasy + ice-albedo cooling capped at 3 C. D (long-term weathering thermostat for -9 to -17 C eras) is a separate ticket.
 - 2026-10-15: Merged inbox draft draft-run-ice-flow-consistent-makes-it-icier.md ("Run ice: a flow-consistent (ablation-zone) rule makes the run much icier, so PW-190's decision C can't shrink both the run's ice and the time zoom's spread", found by ice).

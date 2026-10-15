@@ -51,7 +51,8 @@ def test_finish_at_any_kyr(tiny):
     s = tzrun["frames"][-1]["stats"]
     assert m["timezoom"] == tz.name and m["timezoom_kyr"] == t_end and m["finished"]
     assert m["source_run"] == tiny["run"].name and m["t_myr"] == 20 and m["from_keyframe"]
-    assert m["sea_level_m"] == round(s["sea_level_m"], 1) and abs(m["global_temp_c"] - s["global_temp_c"]) <= 0.051  # (14.5 + (x - 14.5) may round the other way)
+    # (to the rounding: 14.5 + (t - 14.5) can round the other way)
+    assert abs(m["sea_level_m"] - s["sea_level_m"]) <= 0.051 and abs(m["global_temp_c"] - s["global_temp_c"]) <= 0.051
     assert W.load(mid)["meta"]["timezoom_kyr"] == 14
     # an ice age: more ice and (the sea having fallen) more land than at the start
     w0 = W.load(start)
@@ -75,6 +76,30 @@ def test_finish_at_any_kyr(tiny):
         F.finish_timezoom(tz.name, 99)
     with pytest.raises(SystemExit):
         F.finish_timezoom(tiny["run"].name, 0)
+
+
+def test_finished_climate_has_the_orbit(tiny):
+    """PW-198: a finished frame's climate gets the frame's monthly insolation
+    anomaly (the time zoom's own), so its summers follow the orbit: where the
+    anomaly is +x in July, the finished July is warmer than without it."""
+    tz = tiny["tz"]
+    tzrun = json.loads((tz / "run.json").read_text())
+    i = len(tzrun["frames"]) - 1
+    st = F.frame_state(tz, i)
+    d = F.orbit_dt(tzrun, st)
+    g = T.build_grid(tzrun["meta"]["level"])
+    assert d.shape == (g.n, 12) and np.abs(d).max() > 0.5
+    from planet import climate
+    land = st["elevation"] > 0
+    e = np.where(land, st["elevation"], np.minimum(st["elevation"], -1))
+    tilt = tzrun["meta"]["params"]["tilt"]
+    a = climate.compute(g, e, st["dT"], tilt, np.where(land, st["ice"], 0))
+    b = climate.compute(g, e, st["dT"], tilt, np.where(land, st["ice"], 0), orbit_dt=d)
+    north = g.lat >= 0
+    want = np.where(north, d[:, 3], d[:, 9])
+    m = land & (np.abs(want) > 1.0)
+    assert m.sum() > 5
+    assert np.corrcoef(want[m], (b["t_warm"] - a["t_warm"])[m])[0, 1] > 0.7
 
 
 def test_finish_api(tiny):

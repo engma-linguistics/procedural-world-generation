@@ -80,6 +80,7 @@ from pathlib import Path
 import numpy as np
 
 from . import climate
+from . import icemass as M
 from . import store as S
 from . import timeline as T
 from . import world as W
@@ -126,19 +127,27 @@ class TZParams:
     climate_every: float = 10.0  # kyr between full climate.compute calls
     baseline: str = "model"  # Earth only: 'obs' = observed climate + the model's changes from today
     # (the 'delta method' of paleo ice-sheet modelling: takes the climate model's regional biases out)
-    # ice surfaces
-    snow_h: float = 20.0  # m: perennial snow/ice this thick is bright (phased in from 0):
-    summer_damp: float = 0.6  # its summer warmth (above the annual mean) is damped by this share,
-    melt_hold: float = 0.5  # temperatures above 0 C are scaled by this (as climate.compute),
+    # ice surfaces (the surface mass balance's defaults are icemass's, shared with the run and the zoom)
+    snow_h: float = M.SNOW_H  # m: perennial snow/ice this thick is bright (phased in from 0):
+    summer_damp: float = M.SUMMER_DAMP  # its summer warmth (above the annual mean) is damped by this share
+    # x the sheet's cover (icemass.sheet_cover: a big sheet's own air mass; a margin or small cap little)
+    sheet_km: float = M.SHEET_KM  # (km: that air mass's size),
+    melt_hold: float = M.MELT_HOLD  # temperatures above 0 C are scaled by this (as climate.compute),
     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
     absorb_km: float = 600.0  # ... mixed over this scale (km; the air mass), 0 = locally (wider pulls the
     # open sea's full absorption onto coastal ice: Earth's Eemian-like start then melts +25 m in 10 kyr)
-    bright_smb: float = 0.5  # m/yr: bright where snow outlasts the summer, bare where it loses this much ...
-    bare_share: float = 0.3  # ... and bare ice keeps this share of the snow's effects
-    albedo_share: float = 0.2  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
-    albedo_h: float = 800.0  # ... in full from this thickness (m)
-    anchor_max: float = 15.0  # C: largest cooling that keeps the starting ice from melting (start_anchor) ...
-    anchor_rings: int = 3  # ... spread this many cells beyond it
+    snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
+    # year's snow lies, then bare: icemass)
+    bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
+    albedo_share: float = M.ALBEDO_SHARE  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
+    albedo_h: float = M.ALBEDO_H  # ... in full from this thickness (m)
+    edge_h: float = M.EDGE_H  # m: a margin cell's surface balance is its edge's, at most this thick
+    anchor: str = "auto"  # the starting ice's climate correction (start_anchor): 'obs' (Earth: the model's
+    # summer on the ice cooled to the observed one), 'balance' (the smallest cooling that keeps each starting
+    # ice cell from melting), 'none' (a run's ice is the same mass balance's mean-orbit extent already);
+    # 'auto': obs for Earth, none for a run
+    anchor_max: float = 15.0  # C: largest cooling ...
+    anchor_rings: int = 3  # ... spread this many cells beyond the ice
     # global feedbacks
     co2_cool: float = 2.5  # C global cooling per 120 m of sea level locked in extra ice (CO2 drawdown) ...
     co2_max: float = 1.0  # ... saturating at this many times that (glacial CO2 bottoms out, Earth ~180 ppm)
@@ -151,12 +160,12 @@ class TZParams:
     ice_albedo: float = 0.75  # C global cooling per 3% of the surface newly under ice (the local
     # effect is already in the ice surface's own climate; the main run uses 1.5 for both) ...
     ice_albedo_max: float = 2.0  # ... at most this many C
-    precip_k: float = 0.07  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
+    precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
     # mass balance
-    pdd_sigma: float = 5.0  # C: day-to-day spread of temperature around the monthly mean
-    ddf_snow: float = 3.0  # mm w.e. melted per positive degree-day, snow
-    ddf_ice: float = 8.0  # ... ice
-    refreeze: float = 0.6  # share of snowmelt that refreezes in the snowpack
+    pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean
+    ddf_snow: float = M.DDF_SNOW  # mm w.e. melted per positive degree-day, snow
+    ddf_ice: float = M.DDF_ICE  # ... ice
+    refreeze: float = M.REFREEZE  # share of snowmelt that refreezes in the snowpack
     # flow, bed, sea
     flow_a: float = 1e-16  # Pa^-3 yr^-1: Glen's rate factor (~-10 C ice) ...
     enhancement: float = 3.0  # ... times this (common for ice-age ice sheets; also stands in for sliding)
@@ -226,6 +235,33 @@ def insolation(obl: float, ecc: float, peri: float, lat=BAND_LAT) -> np.ndarray:
     q = S0 / np.pi * dist2[None, :] * (h0 * np.sin(phi) * np.sin(dec)[None, :]
                                         + np.cos(phi) * np.cos(dec)[None, :] * np.sin(h0))
     return np.maximum(q, 0.0)
+
+
+def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: TZParams, land: np.ndarray,
+                  ice: np.ndarray, earth: bool = False, phases: np.ndarray | None = None) -> np.ndarray:
+    """The temperature anomaly (C) per cell and month (n x 12, month 0 = April)
+    that the time zoom gives the orbit orb = (obliquity, eccentricity,
+    perihelion) against its reference orbit (p.orbit_ref): insol_k C per
+    W/m2 on land (insol_sea of that over the sea), averaged with the month
+    before (the ground lags the sun), less over bright ice (ice_absorb,
+    mixed over absorb_km). For climate.compute's orbit_dt (a finished frame,
+    PW-198)."""
+    ref = p.orbit_ref if p.orbit_ref != "auto" else ("today" if earth else "mean")
+    if ref == "today":
+        q_ref = insolation(**EARTH_TODAY)
+    elif ref == "start":
+        q_ref = insolation(*orbit_at(0.0, p, tilt, np.zeros(4) if phases is None else np.asarray(phases)))
+    else:
+        q_ref = insolation(tilt, 0.0, 0.0)
+    dq = insolation(*orb) - q_ref
+    dq = 0.5 * (dq + np.roll(dq, 1, axis=1))
+    band = np.clip(((grid.lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
+    f_snow = np.clip(np.where(land, ice, 0.0) / p.snow_h, 0, 1)
+    absorb = 1 - f_snow * (1 - p.ice_absorb)
+    if p.absorb_km > 0:
+        absorb = climate.smooth_big(grid, absorb, p.absorb_km)
+    k = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
+    return k[:, None] * dq[band]
 
 
 # --------------------------------------------------------------------------
@@ -422,7 +458,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     keep = max(1, int(round(every / step)))
     refresh = max(1, int(round(p.climate_every / step)))
     fields_ = {}
-    smb, t_ann, t_warm, t_cold, p_scale = (np.zeros(n) for _ in range(5))
+    smb, t_ann, t_warm, t_cold, p_scale, f_snow = (np.zeros(n) for _ in range(6))  # (f_snow: summer brightness)
     nsub_total = 0
     t_compute = 0.0
 
@@ -527,21 +563,41 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     anchor = np.zeros(n)  # C, fixed per-cell correction under the starting ice (see start_anchor)
 
     def start_anchor(year, dt_b, iced):
-        """The starting ice is taken to be in balance with the starting
-        climate (for a run: the main model put it where its summers stay
-        cold; for Earth: it's there). Where this model's mass balance (mean
-        orbit) would melt it anyway, those cells get the smallest cooling
-        (0.5 C steps, at most anchor_max) that lets snow outlast the summer.
-        Mostly it makes up for the climate model's ice-free seasons being too
-        warm over big polar ice sheets. Fixed for the whole run."""
-        todo = iced.copy()
+        """A fixed cooling (C, all year) of the starting ice and a few rings
+        around it, for the whole time zoom (p.anchor):
+          obs      Earth: the model's warmest month on the ice (its bare
+                   climate under icemass's ice surface) cooled to the
+                   observed one where that is colder (the climate model's
+                   ice-free summers are far too warm over Antarctica, ~+6 C
+                   at its coast against ~-5 C observed, PW-039), so the
+                   real sheets keep their real margins (Greenland's
+                   ablation zone stays);
+          balance  the smallest cooling (0.5 C steps) that lets snow outlast
+                   the summer on every starting ice cell (no ablation zone);
+          none     a run's ice is already this mass balance's extent at the
+                   mean orbit (earth.ice_sheets).
+        At most anchor_max."""
+        mode = p.anchor if p.anchor != "auto" else ("obs" if "obs" in src else "none")
         z = np.zeros_like(q_ref)
-        for off in np.arange(0.0, p.anchor_max + 1e-9, 0.5):
-            anchor[todo] = -off  # (the cells still melting try the next step; rain isn't changed)
-            year(dt_b, z, 1.0)
-            todo &= smb < 0
-            if not todo.any():
-                break
+        if mode == "none" or not iced.any():
+            return np.zeros(n)
+        if mode == "obs":
+            if "obs" not in src:
+                raise SystemExit("anchor=obs needs observations (only the Earth source has them)")
+            year(dt_b, z)
+            obs = src["obs"]["t_warm"]
+            fix = iced & np.isfinite(obs)
+            anchor[fix] = np.clip(obs[fix] - t_warm[fix], -p.anchor_max, 0.0)
+        elif mode == "balance":
+            todo = iced.copy()
+            for off in np.arange(0.0, p.anchor_max + 1e-9, 0.5):
+                anchor[todo] = -off  # (the cells still melting try the next step; rain isn't changed)
+                year(dt_b, z)
+                todo &= smb < 0
+                if not todo.any():
+                    break
+        else:
+            raise SystemExit(f"anchor must be obs, balance, none or auto, not {p.anchor!r}")
         # a climate bias is regional: spread it a few rings beyond the ice
         # (each new cell: the mean of its corrected neighbours), so ice
         # flowing out of its starting cells doesn't meet a different climate
@@ -571,12 +627,22 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         surf, grounded = grounded_surface()
         land = surf > 0
         dt_wet = amp * (dTg - fields_["dTg0"])
-        dt_base = -climate.LAPSE * (np.maximum(surf, 0) - fields_["s0"]) + dt_wet
-        f_ice = np.clip(np.where(grounded, H, 0) / p.albedo_h, 0, 1)
-        f_alb = np.clip(np.where(grounded, H, 0) / p.snow_h, 0, 1)  # perennial snow is bright from the start
+        # A margin cell (ice next to ice-free land) is a slope from the bare edge up to its inner
+        # neighbour: its snow and melt are those of the sheet's edge (edge_h thick, as the main run's
+        # margins), not of its mean thickness (~1 km at ~110 km cells, the grid's cliff-like margin),
+        # which would keep it as cold as the interior and let the sheet creep onto warm land.
+        ice_g = np.where(grounded, H, 0.0)
+        bare_land = land & (ice_g <= 1.0)
+        margin = (ice_g > 1.0) & (np.add.reduceat(bare_land[g.nbr_idx], g.nbr_off[:-1]) > 0)
+        h_sfc = np.where(margin, np.minimum(ice_g, p.edge_h), ice_g)
+        surf_eff = np.where(margin, surf - (ice_g - h_sfc), surf)
+        dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - fields_["s0"]) + dt_wet
+        f_ice = np.clip(h_sfc / p.albedo_h, 0, 1)
+        f_alb = np.clip(ice_g / p.snow_h, 0, 1)  # perennial snow is bright from the start
+        # (a sheet's summer damping: its share of the land around under ice, icemass)
+        damp = p.summer_damp * M.sheet_cover(g, np.where(grounded, H, 0.0), p.sheet_km)
 
-        def year(dt_b, dq_, bright):
-            f_snow = f_alb * (p.bare_share + (1 - p.bare_share) * bright)
+        def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
             # what the surroundings absorbed: the response is mixed over an air mass (absorb_km)
             absorb = 1 - f_snow * (1 - p.ice_absorb)
@@ -584,15 +650,15 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                 absorb = climate.smooth_big(g, absorb, p.absorb_km)
             k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
             climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
-                         fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_snow,
-                         climate.TUNE["ice_cooling"] * p.albedo_share, p.summer_damp, p.melt_hold, p.pdd_sigma,
-                         p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, smb, t_ann, t_warm, t_cold, p_scale)
-            return f_snow
+                         fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
+                         climate.TUNE["ice_cooling"] * p.albedo_share, damp, p.melt_hold, p.bare_share, p.snow_w,
+                         p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, smb, t_ann, t_warm, t_cold,
+                         p_scale, f_snow)
 
         if s_no == 0:
+            f_snow[:] = f_alb  # (the starting ice: snow-covered)
             anchor[:] = start_anchor(year, dt_base, H > 0)
-        # snow-covered (bright) where last year's snow outlasted the summer
-        f_snow = year(dt_base, dq, np.clip(1 + smb / p.bright_smb, 0, 1) if s_no else 1.0)
+        year(dt_base, dq)
         if s_no % keep == 0:
             record(t_kyr, orb, float(dq[i65, 3] + dq[i65, 4]) / 2, dTg)
         series.append((t_kyr, sl, float((H * area).sum()) / 1e15, dTg, *orb))
@@ -628,8 +694,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                       float(dv[north].sum()) * gt))
         # 4) isostasy
         bed += (bed_rest - load(H) - bed) * (1 - math.exp(-step / p.iso_tau))
-        # 5) sea level from the ice volume
-        sl = -(above_flotation(sl) - Vaf0) / ocean_area
+        # 5) sea level from the ice volume (what the ice holds depends a little on the sea level itself)
+        for _ in range(3):
+            sl = -(above_flotation(sl) - Vaf0) / ocean_area
         if progress and (s_no + 1) % max(1, n_steps // 20) == 0:
             msg = (f"{t_kyr + step:7.1f} kyr  sea level {sl:7.1f} m  ice {100 * (H > 1).mean():5.2f}%  "
                    f"dT {dTg:+5.2f}  [{time.time() - t_start:.0f}s]")
@@ -644,6 +711,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                        "Vaf0": Vaf0, "Vaf_end": above_flotation(sl)},
             "state": {"H": H, "bed": bed, "sl": sl, "smb": smb, "t_warm": t_warm, "t_ann": t_ann,
                       "p_scale": p_scale, "f_snow": f_snow, "p_ann": 0.5 * (fields_["p_jul"] + fields_["p_jan"])},
+            "anchor": anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(t_compute, 1),
             "substeps": nsub_total}
 
@@ -702,6 +770,8 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
                  "cell_size_km": round(g.spacing * R_KM),
                  "params": src["params"], "timezoom": res["params"], "orbit_phases_deg": res["phases"],
                  "dT_source": round(src["dT"], 2), "sea_level_source_m": round(src["sea_level"], 1),
+                 # (the start's climate correction over the ice, C per cell: start_anchor)
+                 "anchor": [[int(i), round(float(res["anchor"][i]), 2)] for i in np.flatnonzero(res["anchor"])],
                  "static_layers": list(STATIC),
                  "code": code_version(), "generated_in_s": res["runtime_s"], "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{g.level}.json",

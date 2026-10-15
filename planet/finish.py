@@ -22,10 +22,10 @@ Approximations (see docs/overview.md 2.11):
 - grounded ice on a bed below sea level (marine ice sheets, deep isostatic
   depressions) is stored as land with its bed floored at 1 m and the ice
   thinned to keep the surface (as tools/earth_data.py does for Antarctica);
-- the climate gets the orbit's obliquity as the tilt; precession and
-  eccentricity (the time zoom's seasonal insolation anomaly) and its
-  start-anchor cooling aren't in climate.compute, so the finished world's
-  temperatures differ a little from the time zoom's own.
+- the climate gets the frame's seasonal insolation anomaly against the
+  planet's mean orbit (obliquity, precession, eccentricity; timezoom.orbit_anomaly)
+  and the time zoom's start-anchor cooling (Earth's) as climate.compute's
+  orbit_dt (PW-198), so the finished world's seasons are the time zoom's.
 
 Provenance in the world's meta: source_run, source_run_name, t_myr (the
 run and moment the time zoom started from), timezoom (its id),
@@ -115,6 +115,10 @@ def finish_timezoom(ref: str, kyr: float | None = None, erosion: float = 0.3,
             "orbit": {k: s[k] for k in ("obliquity", "eccentricity", "perihelion", "insol_65n_jul_anom")},
             "marine_ice_floored_cells": st["floored_cells"]}
     state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt")}
+    # (the orbit's obliquity is in its insolation anomaly: the climate keeps the planet's mean tilt, as the
+    # time zoom's own)
+    state["tilt"] = float(m["params"].get("tilt", 23.44 if m["source_run"] == "earth" else 23.4))
+    state["orbit_dt"] = orbit_dt(run, st)
     if m["source_run"] == "earth":
         world = _earth_world(m["level"], state, prov, erosion=0.0)
         name = f"Earth + {t:g} kyr (time zoom {tz_id}, finished)"
@@ -127,6 +131,23 @@ def finish_timezoom(ref: str, kyr: float | None = None, erosion: float = 0.3,
     path = W.save(world, name)
     progress(1.0, f"saved world {path.stem}")
     return path
+
+
+def orbit_dt(run: dict, st: dict) -> np.ndarray:
+    """climate.compute's orbit_dt for a frame (PW-198): the time zoom's
+    monthly insolation anomaly at that frame's orbit, plus its start anchor
+    (C, all year, where it had one)."""
+    from . import timezoom as TZ
+    m = run["meta"]
+    p = TZ.TZParams(**{k: v for k, v in m.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
+    s = st["stats"]
+    grid = build_grid(m["level"])
+    land = st["elevation"] > 0
+    d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), m["params"].get("tilt", 23.4),
+                         p, land, st["ice"], earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
+    for i, v in m.get("anchor", []):
+        d[i] += v
+    return d
 
 
 def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> dict:
@@ -142,4 +163,4 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
             "sea_level_m": round(state["sea_level"], 1)}
     return W.finish(grid, state["elevation"], {"ice": np.where(land, state["ice"], 0.0), "crust": land.astype(int)},
                     meta, erosion=erosion, dT=state["dT"], tilt=state["tilt"], params={"earth": True},
-                    ice=np.where(land, state["ice"], 0.0))
+                    ice=np.where(land, state["ice"], 0.0), orbit_dt=state.get("orbit_dt"))

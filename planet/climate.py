@@ -1712,7 +1712,7 @@ def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
 
 def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             ice: np.ndarray | None = None, tune: dict | None = None, melt: np.ndarray | None = None,
-            moc_start: dict | None = None, veg: dict | None = None) -> dict:
+            moc_start: dict | None = None, veg: dict | None = None, orbit_dt: np.ndarray | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
     level; <= 0 is sea), the global temperature offset dT from today's Earth,
     axial tilt and land ice (m). melt: fresh water from shrinking ice sheets,
@@ -1754,6 +1754,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     for land with an Earth-like average cover: plants give more of the rain
     back to the air (Budyko w; rain recycling, et) and set the surface's
     albedo (see vegetation_feedbacks).
+    orbit_dt: an orbit's temperature anomaly (C) per cell and month (n x
+    12, month 0 = April; timezoom.orbit_anomaly), added to the air's
+    warmest / coldest month and annual mean before the rain (a finished
+    time-zoom frame: precession and eccentricity, PW-198).
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
     currents and sea-surface temperature -> air temperatures carried by the
@@ -1808,7 +1812,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     lift = LAPSE * np.maximum(surf, 0)
     air = dict(grid=grid, ocean=ocean, temp0=temp0, lift=lift, t_sea_air=t_sea_air, t_sea=t_sea, s=s,
                sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune)
-    t_warm, t_cold, temp, open_w = _air_temps(sst=sst, **air)
+    t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
 
     # rain in each half-year, from its mean conditions
     tm = 0.5 * (t_warm + t_cold)
@@ -1858,7 +1862,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                          np.where(ocean, np.clip(1.0 - 2.0 * open_y, 0.0, 1.0), 0.0), -elev)
     if oc["sites"]:
         sst = oc["sst"]
-        t_warm, t_cold, temp, _ = _air_temps(sst=sst, **air)
+        t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
         t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
         wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
@@ -1882,6 +1886,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],
                 sea_evap=sea_evap, sea_ice_growth=ice_m, moc_sites=oc["sites"],
                 moc_state=oc["state"], ground=ground)
+
+
+def _orbit(temps, orbit_dt, north):
+    """_air_temps' (t_warm, t_cold, temp, open water) with an orbit's monthly
+    anomaly (n x 12, month 0 = April: July is 3, January 9) added."""
+    if orbit_dt is None:
+        return temps
+    t_warm, t_cold, temp, open_w = temps
+    d = np.asarray(orbit_dt, float)
+    jul, jan = d[:, 3], d[:, 9]
+    return (t_warm + np.where(north, jul, jan), t_cold + np.where(north, jan, jul), temp + d.mean(1), open_w)
 
 
 def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune):
