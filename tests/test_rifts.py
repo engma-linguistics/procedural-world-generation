@@ -65,3 +65,29 @@ def test_margin_subduction_breaks_off_one_basin():
     for j in np.flatnonzero(sizes < 0.1 * s.params.rift_min_piece * g.n):
         nb = g.nbr_idx[np.isin(np.repeat(np.arange(g.n), np.diff(g.nbr_off)), np.flatnonzero(rest == j))]
         assert not (wside | (rest == j))[nb].all(), j
+
+
+def _column(s):
+    from planet.tectonics.crust import Column
+    return Column(t=s.w_thick.copy(), cover=s.w_cover.copy(), x=s.w_extra.copy(), cont=s.w_cont.copy(),
+                  rock=s.w_rock.copy(), rec=s.w_rec.copy(), lith=s.w_lith.copy())
+
+
+def test_crust_being_stacked_is_not_rifted():
+    """PW-172: a collision belt cell next to an opening edge was stretched and
+    dated as rifting on every step while the collision stacked it back up,
+    so its rift strain (and thermal uplift) grew without the crust thinning.
+    Crust being stacked this step is shortening: not thinned, not dated."""
+    from planet.tectonics import crust, record
+    s = Simulation(build_grid(4), 1, Params(), 2.0)
+    col = _column(s)
+    n = s.grid.n
+    stack = np.where(np.arange(n) % 2 == 0, 1.0, 0.0)  # km stacked this step on every other cell
+    t0, rift0 = col.t.copy(), col.rec[:, record.T_RIFT].copy()
+    crust.stretch(s, col, np.full(n, 0.05), np.zeros(n), np.zeros(n, bool), stack_add=stack)
+    thin = s.w_cont & (t0 > 22)
+    squeezed, free = thin & (stack > 0), thin & (stack == 0)
+    assert squeezed.any() and free.any()
+    assert np.array_equal(col.t[squeezed], t0[squeezed])
+    assert np.array_equal(col.rec[squeezed, record.T_RIFT], rift0[squeezed])
+    assert (col.t[free] < t0[free]).all() and (col.rec[free, record.T_RIFT] == s.t).all()

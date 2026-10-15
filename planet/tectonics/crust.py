@@ -260,12 +260,23 @@ def arc_rock(sim, col, growth):
     return arcky
 
 
-def stretch(sim, col, rate, plume, newc, shrink=1.0):
+SQUEEZED = 0.05  # km/Myr of collision stacking that makes a cell part of a squeezed belt (flow_and_orogeny)
+
+
+def stretch(sim, col, rate, plume, newc, shrink=1.0, stack_add=None):
     """Thin stretched continental crust (rate per Myr from rift_stretching)
     down to 22 km, floor the opening rifts with what it lost
-    (rifted_margin), and mark ocean-floor plume piles as hotspot rock."""
+    (rifted_margin), and mark ocean-floor plume piles as hotspot rock.
+    Crust a collision is stacking up this step (stack_add, km) is being
+    shortened, not stretched: it isn't thinned or dated as rifting (a belt
+    cell between a collision and an opening edge was both, every step, and
+    its rift strain added up to beta ~6-9 on 80 km crust, whose thermal
+    uplift, isostasy.subsidence, put it ~2 km above its belt: PW-172's
+    one-frame 10.6 km peaks)."""
     dt, t = sim.dt, col.t
     thin = col.cont & (t > 22)
+    if stack_add is not None:
+        thin &= stack_add <= SQUEEZED * dt
     t0 = t.copy()
     t[thin] = np.maximum(22.0, t[thin] * np.exp(-rate[thin] * dt))
     record.rift(col.rec, thin & (rate > RIFT_THINNING), np.log(t0 / np.maximum(t, 1e-9)), sim.t)
@@ -365,7 +376,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
                    int(round(3 * sim.scale**2 * sim.heat() ** 2)))
     t = col.t = np.minimum(t, MAX_KM)
     sim.book("flow+cap", t0, t, cont)
-    squeezed = cont & (stack_add > 0.05 * dt)
+    squeezed = cont & (stack_add > SQUEEZED * dt)
     rock[squeezed & (rock != CRATON)] = OROGEN
     record.fold(col.rec, col.lith, squeezed, stack_add, col.cover, t, sim.t)
     rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
