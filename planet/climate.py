@@ -458,15 +458,18 @@ def carry(grid: Grid, v: np.ndarray, a: np.ndarray, b: np.ndarray, km: float = 8
 
 
 def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width: float = 3.0):
-    """Mean of f in latitude bands `width` deg wide, given back per cell."""
-    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, int(180 // width) - 1)
-    m = np.ones(grid.n, bool) if mask is None else mask
+    """Mean of f in latitude bands `width` deg wide, given back per cell,
+    interpolated linearly in latitude between the bands' centres (a step at
+    each band's edge left straight east-west lines in the sea temperatures,
+    and the rain and clouds over the sea followed them)."""
     nb = int(180 // width)
+    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, nb - 1)
+    m = np.ones(grid.n, bool) if mask is None else mask
     tot = np.bincount(bins[m], f[m], nb)
     cnt = np.bincount(bins[m], minlength=nb)
     allm = np.bincount(bins, f, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
     zm = np.where(cnt > 0, tot / np.maximum(cnt, 1), allm)
-    return zm[bins]
+    return np.interp(grid.lat, -90 + width * (np.arange(nb) + 0.5), zm)
 
 
 def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
