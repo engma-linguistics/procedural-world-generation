@@ -2,7 +2,7 @@
 id: PW-196
 title: "Zoom terrain indices: slope-aspect radiation index and topographic wetness index layers"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -23,5 +23,6 @@ Do: compute these once after the final heightmap in zoom.py, store `radiation_in
 - [ ] noise-free: overlapping zooms agree where their heightmaps agree
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (vegzoom): planet/zoom_terrain.py; radiation_index, twi, river_dist, coast_dist.
 - 2026-10-15: Status todo -> in-progress. Overnight agent, worktree vegzoom.
 - 2026-10-14: Created from inbox draft draft-zoom-terrain-indices.md (found by vegprop).

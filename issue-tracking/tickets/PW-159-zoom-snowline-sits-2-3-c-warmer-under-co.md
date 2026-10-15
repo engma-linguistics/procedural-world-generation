@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-127, PW-102]
 refs: [planet/zoom.py, tests/test_zoom_ice.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,5 +21,6 @@ The zoom's glacier rule (PW-127) copies earth.ice_sheets: a pixel accumulates ic
 Options: (a) keep (consistent with the main run's hysteresis); (b) apply the feedback only to pixels inside the coarse sheet's own zone (no cap/feedback at the coarse ice's fringe); (c) make the threshold depend on snowfall in both the main run and the zoom (a degree-day mass balance only, no fixed summer threshold). (c) touches the main run's ice (PW-102) and its calibration.
 
 ## Updates
+- 2026-10-15: Not done in vegzoom: the agreed fix is in earth.ice_sheets (ice agent's file tonight). Pick up after the ice merge.
 - 2026-10-14: Status needs-decision -> todo. Coordinator decision (owner's north star): no half measure; make the snowline depend on snowfall and summer warmth consistently in both the run (earth.ice_sheets) and the zoom, with the height feedback applied only on the sheet itself.
 - 2026-10-14: Created from inbox draft draft-zoom-snowline-feedback.md (found by zoomice).
