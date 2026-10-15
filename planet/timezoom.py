@@ -3,8 +3,9 @@
     uv run python -m planet timezoom <run-id> --at <Myr> [--kyr 1000] [--step 0.5]
     uv run python -m planet timezoom earth [--kyr 150]          # real Earth (ETOPO1)
 
-A side simulation, view-only: it starts from one moment of a main run and
-never feeds back into it. The main run's ice is a 'typical extent over the
+A side simulation: it starts from one moment of a main run and never feeds
+back into it, but any of its frames can be made into a "finished world"
+(finish.py, `planet finish <id> --kyr N`). The main run's ice is a 'typical extent over the
 cycles' (tectonics.Simulation._climate); here the ice comes and goes with
 the orbital (Milankovitch) cycles. In a greenhouse era little happens; in
 an icehouse era the ice sheets grow and collapse.
@@ -51,8 +52,10 @@ Model (per 500-yr step, see simulate)
   iso_tau (3 kyr), and rebounds after the ice is gone.
 - Sea: ice that floats (thinner than 1.12x the water depth) breaks off;
   grounded ice on the sea floor calves at a rate ~ water depth where it
-  meets open water. Sea level falls by 0.9 x ice volume / ocean area, so
-  coastlines and land bridges move with the ice.
+  meets open water. Sea level falls by the sea water the ice holds / ocean
+  area: 0.89 x the ice above flotation (ice grounded below sea level only
+  replaces sea water) plus the room the sinking bed made below sea level
+  (Goelzer et al. 2020), so coastlines and land bridges move with the ice.
 
 Output: runs/<id>/ in the run format (timeline.py, store.py) so the viewer
 plays it, with time in kyr since the start and run["kind"] = meta["kind"] =
@@ -87,7 +90,9 @@ S0 = 1361.0  # W/m2, the star's light at the planet's mean distance
 
 LAYERS = {  # per frame: store.LAYERS names and encodings, as runs
     "elevation": S.LAYERS["elevation"],  # m, surface (ice included) above that frame's sea level
-    "ice": {**S.LAYERS["ice"], "dtype": "<u2"},  # 20 m steps in 16 bits: domes on big polar continents pass 5.1 km
+    # 1 m steps in 16 bits (domes on big polar continents pass 5.1 km), so a finished world (finish.py)
+    # gets the bed back from any frame as elevation - ice to a metre
+    "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
     "temperature": S.LAYERS["temperature"],  # C, annual mean
     "climate": S.LAYERS["climate"],  # climate.KOPPEN id
 }
@@ -132,6 +137,11 @@ class TZParams:
     # global feedbacks
     co2_cool: float = 2.5  # C global cooling per 120 m of sea level locked in extra ice (CO2 drawdown) ...
     co2_max: float = 1.0  # ... saturating at this many times that (glacial CO2 bottoms out, Earth ~180 ppm)
+    start: str = "auto"  # where the start sits in the ice-age cycle: 'interglacial' (Earth today: the CO2
+    # and ice-albedo feedbacks have their full room to a glacial maximum) or 'average' (a run's moment:
+    # its ice is the mean extent over the cycles and its dT already has that ice's albedo and part of
+    # the glacial CO2 drop, so only average_room of each cap is left); 'auto': interglacial for Earth
+    average_room: float = 0.5  # (Earth: 230 ppm on average over the last cycles, 280 interglacial, 185 glacial)
     co2_lag: float = 3.0  # kyr: CO2 follows the ice this slowly
     ice_albedo: float = 0.75  # C global cooling per 3% of the surface newly under ice (the local
     # effect is already in the ice surface's own climate; the main run uses 1.5 for both) ...
@@ -348,6 +358,10 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     tilt = float(src["tilt"])
     ph = orbit_phases(p, int(src["seed"]) * 1000 + int(round(src["at"])), src["source_run"] == "earth")
     ref = p.orbit_ref if p.orbit_ref != "auto" else ("today" if src["source_run"] == "earth" else "mean")
+    start = p.start if p.start != "auto" else ("interglacial" if src["source_run"] == "earth" else "average")
+    if start not in ("interglacial", "average"):
+        raise SystemExit(f"start must be interglacial, average or auto, not {p.start!r}")
+    room = 1.0 if start == "interglacial" else p.average_room  # share of the feedback caps left
     if ref == "start":
         q_ref = insolation(*orbit_at(0.0, p, tilt, ph))
     elif ref == "today":
@@ -368,6 +382,22 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     sl = 0.0
     ocean_area = float(area[elev0 <= 0].sum())
     V0 = float((H * area).sum())
+
+    bed0 = bed.copy()
+
+    def above_flotation(sl_):
+        """m3 of water equivalent the ice takes from the sea (the usual
+        ice-sheet bookkeeping, Goelzer et al. 2020): the grounded ice above
+        flotation (ice grounded below sea level only stands in for sea water
+        it pushed out, so filling a marine basin with ice lowers the sea far
+        less than its volume would) in ocean water, plus the room the bed's
+        sinking made below sea level (where ice presses an inland bed below
+        the sea, the ice under that level does take water out of the sea)."""
+        vaf = float((np.maximum(H - np.maximum(sl_ - bed, 0.0) * (RHO_W / RHO_I), 0.0) * area).sum())
+        pov = float(((np.maximum(-bed, 0.0) - np.maximum(-bed0, 0.0)) * area).sum())
+        return RHO_I / RHO_W * vaf + pov
+
+    Vaf0 = above_flotation(0.0)
     ice_frac0 = float((H > 1).mean())
     dT_run = float(src["dT"])
     co2 = 0.0  # C, the lagged CO2 part of the global change
@@ -471,6 +501,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                 "sea_level_m": round(src["sea_level"] + sl, 1), "sea_level_change_m": round(sl, 2),
                 "ice_pct": round(100 * float((ice > 1).mean()), 2),
                 "ice_volume_mkm3": round(vol / 1e15, 3),
+                "ice_sea_equiv_mkm3": round(above_flotation(sl) / 1e15, 3),  # m3 of sea water the ice holds
                 "max_ice_m": int(ice.max()),
                 "obliquity": round(orb[0], 3), "eccentricity": round(orb[1], 4),
                 "perihelion": round(orb[2], 1), "precession_index": round(orb[1] * math.sin(math.radians(orb[2])), 4),
@@ -518,9 +549,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         dq = insolation(*orb) - q_ref
         # global temperature: CO2 follows the ice volume (lagged), ice albedo follows its area
         excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
-        co2 += (1 - math.exp(-step / p.co2_lag)) * (-p.co2_cool * float(np.clip(excess, -0.5, p.co2_max)) - co2)
+        co2 += (1 - math.exp(-step / p.co2_lag)) * (-p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * room)) - co2)
         dTg = co2 - float(np.clip(p.ice_albedo * ((H > 1).mean() - ice_frac0) / 0.03, -p.ice_albedo_max,
-                                  p.ice_albedo_max))
+                                  p.ice_albedo_max * room))
         if s_no % refresh == 0:
             full_climate(dTg)
         blend((s_no % refresh) / refresh)
@@ -585,7 +616,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         # 4) isostasy
         bed += (bed_rest - p.iso_ratio * H - bed) * (1 - math.exp(-step / p.iso_tau))
         # 5) sea level from the ice volume
-        sl = -0.9 * (float((H * area).sum()) - V0) / ocean_area
+        sl = -(above_flotation(sl) - Vaf0) / ocean_area
         if progress and (s_no + 1) % max(1, n_steps // 20) == 0:
             msg = (f"{t_kyr + step:7.1f} kyr  sea level {sl:7.1f} m  ice {100 * (H > 1).mean():5.2f}%  "
                    f"dT {dTg:+5.2f}  [{time.time() - t_start:.0f}s]")
@@ -596,7 +627,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
     return {"frames": frames, "data": {k: np.stack(v) for k, v in out.items()},
             "series": np.array(series), "flows": np.array(flows), "params": asdict(p), "phases": ph.tolist(),
-            "budget": {**budget, "V0": V0, "V_end": float((H * area).sum()), "ocean_area": ocean_area},
+            "budget": {**budget, "V0": V0, "V_end": float((H * area).sum()), "ocean_area": ocean_area,
+                       "Vaf0": Vaf0, "Vaf_end": above_flotation(sl)},
             "state": {"H": H, "bed": bed, "sl": sl, "smb": smb, "t_warm": t_warm, "t_ann": t_ann,
                       "p_scale": p_scale, "f_snow": f_snow, "p_ann": 0.5 * (fields_["p_jul"] + fields_["p_jan"])},
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(t_compute, 1),

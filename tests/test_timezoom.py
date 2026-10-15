@@ -42,10 +42,11 @@ def test_ice_and_sea_level_bookkeeping(cold_src, cold_run):
     b = r["budget"]
     # flow conserves ice exactly; volume changes only by mass balance and calving
     assert abs((b["V_end"] - b["V0"]) - (b["smb"] - b["calved"])) < 1e-6 * max(b["V0"], 1e12)
-    # sea level is the ice volume change spread over the starting ocean
+    # sea level is the change of the sea water the ice holds, spread over the starting ocean
+    assert b["Vaf0"] <= b["V0"]
     for f in r["frames"]:
         s = f["stats"]
-        want = -0.9 * (s["ice_volume_mkm3"] * 1e15 - b["V0"]) / b["ocean_area"]
+        want = -(s["ice_sea_equiv_mkm3"] * 1e15 - b["Vaf0"]) / b["ocean_area"]
         assert abs(s["sea_level_change_m"] - want) < 0.05 + 1e-3 * abs(want), f["t"]
         assert s["sea_level_m"] == pytest.approx(cold_src["sea_level"] + s["sea_level_change_m"], abs=0.11)
     # something happened (an 8 C colder world grows ice) and sea level followed
@@ -99,3 +100,14 @@ def test_saved_run_format(cold_src, cold_run, data_root):
     assert idx[0]["kind"] == "timezoom" and idx[0]["at_myr"] == cold_src["at"]
     with pytest.raises(SystemExit):
         T.slice_world(out, 0.0)
+
+
+def test_feedback_room(cold_src, cold_run):
+    """A run's moment is the cycle average: only average_room of the CO2 and
+    ice-albedo caps is left (PW-031); 'interglacial' gets them in full."""
+    p = Z.TZParams()
+    floor = -(p.co2_cool * p.co2_max + p.ice_albedo_max)
+    dT = [f["stats"]["dT_global"] for f in cold_run["frames"]]
+    assert min(dT) >= p.average_room * floor - 0.01
+    full = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(start="interglacial"))
+    assert min(f["stats"]["dT_global"] for f in full["frames"]) <= min(dT)

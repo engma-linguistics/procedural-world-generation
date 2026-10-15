@@ -6,7 +6,8 @@
   DELETE /runs/<id>, /worlds/<id>, /zooms/<id>
                                       delete one item (store.delete; a world
                                       takes its zooms and highlights with it)
-  POST   /api/zoom, /api/timezoom     start a job (api.py) -> {"job": id}
+  POST   /api/zoom, /api/timezoom, /api/finish
+                                      start a job (api.py) -> {"job": id}
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
 
@@ -52,12 +53,14 @@ def highlights(query: str) -> tuple[dict, int]:
 
 
 def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
-    """POST /api/zoom or /api/timezoom: checks the request now (so a bad one
-    fails at once), then queues it."""
+    """POST /api/zoom, /api/timezoom or /api/finish: checks the request now
+    (so a bad one fails at once), then queues it."""
     try:
         req = json.loads(body or b"{}")
         if path == "/api/zoom":
             api.parse_zoom_request(req)
+        elif path == "/api/finish":  # kyr snaps to a frame, t to a keyframe
+            req = api.parse_finish_request(req)
         else:  # t snaps to a keyframe
             req = api.parse_timezoom_request(req)
     except (ValueError, api.BadRequest) as e:
@@ -99,7 +102,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path not in ("/api/zoom", "/api/timezoom"):
+        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
 

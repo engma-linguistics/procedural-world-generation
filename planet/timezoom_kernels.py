@@ -153,7 +153,11 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
             i = active[a]
             if out[i] <= 0.0:
                 continue
-            scale = min(1.0, H[i] * area[i] / (dt * out[i]))
+            # (written so a vanishing outflow, which can underflow to 0 for a
+            # film of ice, never divides by zero)
+            need = dt * out[i]
+            held = H[i] * area[i]
+            scale = 1.0 if need <= held else held / need
             si = _surf(bed, H, sl, flt, i)
             for e in range(off[i], off[i + 1]):
                 j = idx[e]
