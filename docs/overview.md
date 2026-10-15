@@ -268,7 +268,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 | **Classification** | **Köppen** classes (Peel 2007 rules) from monthly temperature and rain. In worlds, **biomes** are a coarse grouping of the vegetation's named types (§2.18); the zoom still uses a Whittaker-style temperature–rain lookup per pixel. |
 | **Months** | `climate.months` (PW-194) rebuilds the twelve months once for everyone who needs them: temperature (a sine between the coldest and warmest month), rain (a cosine through the two half-years, each half's sum exact), Oudin PET (the water balance's), light at the ground (top-of-atmosphere sunshine × Ångström–Prescott transmission from the cloud), snowpack and snowmelt (degree-days), and degree-days above 5 °C. Köppen reads its driest months and months above 10 °C from them (PW-200); the water balance uses the same PET but stays per half-year (its Budyko curve and soil carry-over are calibrated that way); the run's ice and the zoom's and time zoom's glacier snow keep their own sine year (the same temperatures; the time zoom adds orbital forcing per month). |
 
-**Parameters:** per run `tilt` (23.4°), `climate_offset` (0 °C), `climate_drift` (3 °C over 40 Myr), `co2_sensitivity` (3 °C), `ice_albedo` (1.5 °C per 3% of the planet iced), `ice_summer_temp` (1 °C), `climate_every` (4 Myr). The run's global temperature reaches a world as `dT` = global mean − 14.5 °C. Internal knobs (rain normalisation, seasonal swing, monsoon, upwelling, ~20 cloud parameters) are in `climate.TUNE`, not exposed on the CLI.
+**Parameters:** per run `tilt` (23.4°), `climate_offset` (0 °C), `climate_drift` (3 °C over 40 Myr), `co2_sensitivity` (3 °C), `ice_albedo` (1.5 °C per 3% of the planet iced, levelling off toward `ice_albedo_max` = 3 °C), `ice_summer_temp` (1 °C), `climate_every` (4 Myr). The run's global temperature reaches a world as `dT` = global mean − 14.5 °C. Internal knobs (rain normalisation, seasonal swing, monsoon, upwelling, ~20 cloud parameters) are in `climate.TUNE`, not exposed on the CLI.
 
 **Global temperature over a run** (`earth.py`) combines a slow random drift, CO₂ (sources: new sea floor and arcs; sink: weathering, faster when warm and wet) and ice-albedo.
 
@@ -309,6 +309,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 - Existing ice partly keeps itself (its own height and whiteness count three-quarters), so a cap outlives its climate a little but follows its range as it moves or wears down.
 - Cold polar desert is covered by ice flowing in from a snowier part of the same cold region (PW-032).
 - Thickness is a steady **Nye profile** from the edge: ~330 m at the margin, ~1.9 km 300 km in, at most 4 km; a little thinner for warm (soft) ice.
+- The ice presses its bed down (glacial isostasy, §2.2, PW-189): the sheet's surface stands ~0.28 × its thickness lower and warmer, which weakens the ice-elevation feedback (worst sea level from ice on 4 L6 seeds × 1 Gyr: −115 to −289 m, in −5 to −10 °C eras). Its whiteness cools the planet (`ice_albedo`), levelling off toward 3 °C.
 
 **Sea level** is the sum of:
 - **the ocean basins:** young, shallow ocean floor displaces water and raises the sea. The basins' depth follows the sea floor over `ridge_time` = 30 Myr, compared with a slowly learning baseline, and levels off smoothly toward ±250 m (PW-053). The starting ocean has the ages of a steadily spreading one (mean 60 Myr), so the first breakup doesn't flood the planet;
@@ -317,7 +318,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–130 m (sd) and removed the clamp hits.
 
-**Known limits:** oceans age when plates are few (PW-051, PW-191). Land ice still lowers the sea by 300+ m in the coldest eras of some seeds (PW-190).
+**Known limits:** oceans age when plates are few (PW-051, PW-191). Land ice still lowers the sea by ~300 m in the coldest eras of some seeds (PW-190; those are −9 to −13 °C eras).
 
 ### 2.9 Hydrology: rivers, lakes, deltas (`hydrology.py`, `kernels.py`)
 
@@ -454,7 +455,7 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 **Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
 
-**Known limits:** generated worlds in cold eras still glaciate hard: the run's ice (the climate rule of §2.8, no flow) has no ablation zone, so the time zoom's flowing sheets spread well beyond it before melt and calving balance them (PW-031 numbers below in §3); Earth glaciates too weakly (PW-033); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); the start-anchor cooling lingers (PW-035); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
+**Known limits:** generated worlds glaciate hard: the run's ice (the climate rule of §2.8, no flow) has no ablation zone, so the time zoom's flowing sheets spread well beyond it (on 4 L6 seeds, a 150 kyr time zoom from a run's coldest moment falls a further 140–360 m, its ice growing from 5–11% of the surface to 11–18%). Making the run's rule flow-consistent with the time zoom's mass balance was tried and makes the run itself far icier (cold eras -330 to -630 m), because the time zoom's bright-snow margins accumulate on land with ~9 °C bare-ground summers; which of the two to change is open (inbox draft on run-ice consistency, PW-190); Earth glaciates too weakly (PW-033); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); the start-anchor cooling lingers (PW-035); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
 
 ### 2.15 Viewer, server and CLI (`viewer/`, `server.py`, `api.py`, `__main__.py`)
 
