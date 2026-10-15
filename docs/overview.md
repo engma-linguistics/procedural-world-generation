@@ -288,7 +288,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
   - **Density** from temperature and salinity.
   - Deep water **sinks** where the winter sea is densest, poleward of 50° (Stommel's flow law).
   - The replacement inflow follows the surface currents, like the **AMOC**'s North Atlantic Drift, and warms the coasts it passes (a milder Norway).
-  - There is no deep ocean: the deep return flow the viewer draws is a **schematic** route.
+  - There is no deep ocean: the deep return flow the viewer draws is a **schematic** route: the cheapest way through deep sea to a circumpolar channel in the other hemisphere (else the equator), preferring western boundaries (up to 7× cheaper per step) and crossing sills and shelves only at a cost (3× below 1500 m, 10× below 400 m), so every site gets one.
 
 **Outputs (worlds):** `sst`, `sst_jul`, `sst_jan` (°C), `salinity` (psu, annual), `sinking` (Sv per cell), `current_e/n` (annual); `meta.overturning` with the total, north and south strength in Sv, the sinking sites and the schematic paths. On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1) seas and the Ross (1.9) and Weddell (0.6) seas; none in the North Pacific. Generated worlds often show ~30 Sv (showcase a08983: 32.8 Sv).
 
@@ -471,7 +471,7 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 ![The viewer](overview/viewer_globe_biome.jpg)
 *The viewer on world 7c5adf: biomes, with highlights numbered (an earlier version of the panel, before categories).*
 
-**Known limits:** lake display quirks (PW-082); no vegetation / satellite view (PW-083); overturning schematic odd on some worlds (PW-154); runs lack seasonal layers, so the season picker works only on worlds (PW-107, PW-138); zooms lack seasonal layers (PW-139).
+**Known limits:** no vegetation / satellite view (PW-083); runs lack seasonal layers, so the season picker works only on worlds (PW-107, PW-138); zooms lack seasonal layers (PW-139).
 
 ### 2.16 Store and data model (`store.py`, `timeline.py`, `provenance.py`)
 
