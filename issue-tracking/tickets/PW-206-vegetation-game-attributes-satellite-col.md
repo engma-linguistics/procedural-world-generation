@@ -6,7 +6,7 @@ status: todo
 parent: PW-184
 subsystem: viewer
 effort: m
-impact: med
+impact: low
 found_by: veg
 blocked_by: []
 relates: [PW-187, PW-083, PW-100]
@@ -19,4 +19,5 @@ updated: 2026-10-15
 Step 9 of the vegetation proposal (section 8.2, decision 11A: computed continuously from layers, the per-type table as fallback text). The named types already carry a game-facing line (`vegetation.TYPES`, legend `vegetation.types[].text`; the viewer shows it as the legend tooltip). Still to do: travel cost, visibility, forage, timber, fuel, water, fire season, hazards and seasonal look from tree_cover, canopy_height, stand_age, lai_jul/jan, npp, flooded, fire_return; a hover-card line; the satellite view (PW-083: colour = sum of PFT cover x PFT colour x seasonal LAI greenness + bare soil and snow; lai_jul/jan exist); export fields for PW-100.
 
 ## Updates
+- 2026-10-15: Owner (2026-10-15): focus is the simulation, not game use yet. Impact lowered to low; parked behind the simulation work. The satellite view (true-colour from vegetation, PW-083) is a display of the simulation and stays separate from this.
 - 2026-10-15: Created from inbox draft draft-veg-game-attributes.md (found by veg).
