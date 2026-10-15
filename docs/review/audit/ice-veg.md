@@ -127,7 +127,7 @@ t_cold at the ice's thickness), and drop `ice_surface`'s 10 °C for land ice.
 
 ### 5. Low: a finished world's orbital anomaly uses the bed, not the surface, as land
 
-**Where:** `finish.py:145`.
+**Where:** `finish.py:150`.
 
 **What:** `land = st["elevation"] > 0` is the bed. Ice cells whose bed is pressed below sea level get the sea's
 insolation response (×0.3, no snow brightness) instead of the land's that the time zoom used (`timezoom.py`,
@@ -226,7 +226,7 @@ anyway.
 | isostasy.py:54 ICE_SINK ρi/ρm | load | physical | sound / fine |
 | isostasy.py:55 FLEX_KM 150 | flexure | lithosphere | sound / fine |
 | isostasy.py:56 BED_FLOOR 1 m | land_view | bookkeeping for land tests | sound / fine |
-| finish.py:145 land = bed > 0 | orbit mask | none | bug / low (finding 5) |
+| finish.py:150 land = bed > 0 | orbit mask | none | bug / low (finding 5) |
 | vegetation.py:131 _TUNE overrides | PFT knobs | "tuned on Earth with veg_check" | tuned parameters, per PFT (not regional) / weak |
 | vegetation.py:163 EPS_SCALE 0.8 | NPP scale | Earth land NPP | tuning of one global knob / weak |
 | vegetation.py:440, 625 CO2 clip | C4 envelope, C3 fertilisation | physical sign | sound / fine |

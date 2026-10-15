@@ -13,7 +13,7 @@ refs: [planet/finish.py, planet/timezoom.py]
 ---
 
 ## Description
-`finish.orbit_dt` (finish.py:145) builds the orbital anomaly with `land = st["elevation"] > 0`, where elevation is
+`finish.orbit_dt` (finish.py:150) builds the orbital anomaly with `land = st["elevation"] > 0`, where elevation is
 the bed. Grounded ice on a bed pressed below sea level then gets the sea's insolation response (x0.3, no snow
 brightness), not the land's the time zoom used (timezoom.py: land = grounded surface > 0). It is small: it touches
 only cells under thick ice.
