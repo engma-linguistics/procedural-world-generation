@@ -74,7 +74,8 @@ FLAT_TAN = 0.02  # tan slope under which ground counts as flat for wetlands
 CORR, CORR_DZ = 0.6, 800.0  # pull towards the coarse cell's cover, faded out over this much height difference (m)
 FIRE_KM = 25.0  # km: the size of the fire mosaic's patches
 STEPS = ((10, 2.0), (50, 10.0))  # competition steps (count, years) from the warm start
-CHUNK = 40000  # pixels per potential-productivity batch (memory)
+CHUNK = 40000
+SEA_W = 0.02  # weight of the sea cells in the pixels' rain and cloud (the land cells' count)  # pixels per potential-productivity batch (memory)
 WETLAND_TYPES = {V.T[k] for k in ("tropical swamp forest", "tropical peat swamp forest", "seasonally flooded grassland",
                                   "freshwater marsh and reedbed", "temperate and boreal swamp forest", "raised bog",
                                   "fen", "permafrost peatland (palsa and polygon mire)")}
@@ -119,7 +120,9 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     cov = climate.ice_cover(g, ice, elev > 0)
     vals = np.column_stack([ta[sel] + up, gw[sel] + up, gc[sel] + up, pj[sel], pn[sel], cj[sel], cn[sel], ro[sel],
                             cov[sel]])
-    wts = np.ones_like(vals)
+    # (the land's: the sea cells' rain, cloud and runoff count only where no land cell is near, e.g. an island)
+    wts = np.where(land_c, 1.0, SEA_W)[:, None] * np.ones_like(vals)
+    wts[:, [0, 1, 2, 8]] = 1.0
     wts[:, 7] = land_c
     fine, _ = ZK.gauss_interp(px, py, cx, cy, vals, wts, 0.5 * sp)
     fine = np.nan_to_num(fine, nan=0.0)
@@ -291,22 +294,26 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     if "flooded" in L:
         # The world's flooded share of each cell, as that share of its pixels
         # (a little more, FW_MAX of each, being under water): the wettest
-        # ground by rank within the cell, hollows and valley floors (TWI) and
-        # a big river's floodplain (low above it) first, with planet-fixed
-        # noise for the mires' patches (MIRE_KM)
+        # ground by rank within the cell, hollows and valley floors (TWI)
+        # first, with planet-fixed noise for the mires' patches (MIRE_KM).
+        # The cell's floodplain share (vegetation.floodplain) is left out:
+        # the pixels' own floodplains, low above their big rivers, take it.
         fl_c = np.asarray(L["flooded"], float)[sel] / 100
+        if "flow" in L:
+            pl_c = V.floodplain(g, np.asarray(L["elevation"], float), np.asarray(L["flow"], float))[sel]
+            fl_c = np.clip(1 - (1 - fl_c) / np.maximum(1 - pl_c, 1e-6), 0, 1)
         f, _ = ZK.gauss_interp(px[idx], py[idx], cx, cy, fl_c[:, None], (np.asarray(L["elevation"])[sel] > 0)[:, None]
                                .astype(float), sig)
         Pk = np.ascontiguousarray(P[idx] * R_KM)
         noise = ZK.fbm(Pk, MIRE_KM, max(1, int(np.ceil(np.log2(MIRE_KM / (3 * res)))) + 1), 0.5,
                        int(seed) * 1_000_003 + 17 + 307) / 0.17
-        score = 0.5 * np.clip(twi_rel, -3.0, 8.0) + 3.0 * plain + 2.0 * noise
+        score = 0.5 * np.clip(twi_rel, -3.0, 8.0) + 2.0 * noise
         order = np.lexsort((score, own))
         first = np.concatenate([[0], np.cumsum(cnt)])[:-1]
         rank = np.empty(nv)
         rank[order] = (np.arange(nv) - first[own[order]] + 0.5) / np.maximum(cnt[own[order]], 1)
         q = np.nan_to_num(f[:, 0]) / FW_MAX
-        fw_g = FW_MAX * np.clip((rank - (1 - q)) / 0.1 + 0.5, 0, 1)
+        fw_g = 1 - (1 - FW_MAX * np.clip((rank - (1 - q)) / 0.1 + 0.5, 0, 1)) * (1 - 0.8 * plain)
     else:  # (no flooded layer: the cell formula of vegetation.flooded on the pixel's own ground)
         mire = 0.8 * np.clip((rain_mi - 0.9) / 0.6, 0, 1) * flat ** 2 * np.clip((10.0 - s["temp"]) / 10.0, 0.3, 1.0) \
             * (0.4 + 0.6 * wet)

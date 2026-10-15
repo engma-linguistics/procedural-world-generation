@@ -632,6 +632,16 @@ def relief(grid, elev) -> np.ndarray:
     return np.maximum.reduceat(d, grid.nbr_off[:-1])
 
 
+def floodplain(grid, elev, flow, rel=None) -> np.ndarray:
+    """The share of each cell that is a big river's floodplain or delta
+    (part of flooded(); the zoom places it along its own rivers)."""
+    rel = relief(grid, elev) if rel is None else rel
+    flat = np.clip(1 - rel / 400.0, 0, 1)
+    area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
+    q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
+    return 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
+
+
 def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     """Share of each land cell (0..0.7) under water for part of the year:
     floodplains and deltas of big rivers, flat ground with a water
@@ -640,9 +650,7 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     land = elev > 0
     rel = relief(grid, elev)
     flat = np.clip(1 - rel / 400.0, 0, 1)
-    area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
-    q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
-    plain = 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
+    plain = floodplain(grid, elev, flow, rel)
     # flat ground with more rain than evaporation can't drain it all (mires),
     # the more so where it is cool (slow decay builds peat that holds the water)
     mi = s["precip"] / np.maximum(s["pet_y"], 1.0)

@@ -955,6 +955,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     wts = np.ones_like(vals)
     wts[:, 0] = land_c
     wts[:, 1] = ~land_c
+    wts[:, 2] = np.where(land_c, 1.0, ZVG.SEA_W)  # (rain: the land's, the sea's only far from any land cell)
     wts[:, 9] = land_c  # (runoff: the land's; the sea's is 0)
     sig = 0.5 * sp
     fine, _ = ZK.gauss_interp(px, py, cx, cy, vals, wts, sig)
