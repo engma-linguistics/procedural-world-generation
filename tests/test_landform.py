@@ -95,6 +95,28 @@ def test_dunes_sand_in_a_hyperarid_lowland(g):
     assert only(classify(g, p), LF.DUNES)
 
 
+def test_dunes_need_aridity_not_just_little_rain(g):
+    """The erg rule is the aridity index P / PET (PW-176): a hot desert with
+    150 mm/yr is hyper-arid, a cold one with 80 mm/yr and little
+    evaporation is not."""
+    sand = [(SANDSTONE, 0.5, 990.0), (SHALE, 1.0, 500.0)]
+    lat = np.asarray(g.lat)
+
+    def dunes(precip, temp, warm, cold):
+        p = strata(planet(g, precip=np.full(g.n, precip), temp=np.full(g.n, temp)), sand)
+        return LF.classify(g, T, p["elev"], p["cont"], p["rock"], p["cover"], p["mix"], p["rec"], p["lith"],
+                           p["crust_age"], p["precip"], p["temp"], p["volcanoes"], t_warm=np.full(g.n, warm),
+                           t_cold=np.full(g.n, cold))["landform"] == LF.DUNES
+    assert np.all(dunes(150.0, 24.0, 32.0, 16.0)[np.abs(lat) < 25])
+    assert not np.any(dunes(80.0, -6.0, 6.0, -18.0)[(np.abs(lat) > 50) & (np.abs(lat) < 65)])
+    # ... but a polar desert dry enough still is one
+    assert np.all(dunes(20.0, -6.0, 6.0, -18.0)[(np.abs(lat) > 50) & (np.abs(lat) < 65)])
+    ai = LF.aridity(g, np.full(g.n, 100.0), np.full(g.n, -6.0), np.full(g.n, 6.0), np.full(g.n, -18.0))
+    ai_mean = LF.aridity(g, np.full(g.n, 100.0), np.full(g.n, -6.0))
+    band = (np.abs(lat) > 50) & (np.abs(lat) < 65)
+    assert np.all(ai[band] < ai_mean[band])  # (a summer above freezing evaporates: the seasons count)
+
+
 def test_fold_belt_strata_older_than_the_folding(g):
     p = strata(planet(g), [(SANDSTONE, 0.5, 600.0), (SHALE, 3.0, 500.0)])
     p["rec"][:, R.T_FOLD] = 800.0

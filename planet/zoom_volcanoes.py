@@ -198,7 +198,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         out["reef"][win] |= reefpx
         if abs(vx[j]) < half and abs(vy[j]) < half:
             out["list"].append({"lat": v["lat"], "lon": v["lon"], "kind": "arc" if arc else "hotspot",
-                                "form": form(v), "age_myr": v["age"], "top_m": v["top_m"],
+                                "form": form(v), "active": bool(v["active"]), "age_myr": v["age"], "top_m": v["top_m"],
                                 "height_m": v["height_m"], "x_km": round(float(vx[j]), 1),
                                 "y_km": round(float(vy[j]), 1)})
     if not out["list"] and not np.isfinite(out["z"]).any() and not np.isfinite(out["bump"]).any():

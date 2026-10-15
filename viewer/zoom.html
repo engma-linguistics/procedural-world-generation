@@ -40,6 +40,12 @@
   a { color: var(--accent); }
   body.embedded #info { top: 56px; }  /* inside the globe viewer's tab: room for its tab bar */
   #msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; }
+  #tip { position: fixed; z-index: 5; pointer-events: none; display: none; max-width: 300px;
+    font-size: 12px; padding: 8px 10px; }
+  #tip.pinned { pointer-events: auto; border-color: var(--accent); }
+  #tip h3 { font-size: 13px; margin: 0 0 4px; }
+  #tip .x { float: right; cursor: pointer; color: var(--muted); margin-left: 8px; }
+  .mk { display: inline-block; vertical-align: -1px; margin-right: 4px; }
   @media (max-width: 800px) { #info { display: none; } #legend { left: 12px; bottom: 60px; max-width: calc(100vw - 24px); } }
 </style>
 </head>
@@ -60,6 +66,8 @@
 
   <h2>Overlays</h2>
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
+  <label><input type="checkbox" id="falls" checked> Waterfalls <span class="muted" id="fallsN"></span></label>
+  <label><input type="checkbox" id="volc" checked> Volcanoes <span class="muted" id="volcN"></span></label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
 
   <h2>About this zoom</h2>
@@ -70,6 +78,7 @@
 
 <div id="info" class="panel"><span class="muted">Hover the map.</span></div>
 <div id="legend" class="panel"></div>
+<div id="tip" class="panel"></div>
 <div id="scale" class="panel"><span id="scaleLbl"></span><div class="bar" id="scaleBar"></div></div>
 
 <script>
@@ -79,11 +88,12 @@ const R_KM = 6371;
 const LAYERS = [
   ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
-  ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['coarse', 'Coarse cells'],
+  ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'], ['coarse', 'Coarse cells'],
 ];
 const state = { meta: null, L: null, layer: 'relief', imgs: {}, shade: null,
   view: { s: 1, x: 0, y: 0 }, off: document.createElement('canvas') };
 const canvas = $('c'), ctx = canvas.getContext('2d');
+let START_MARK = new URLSearchParams(location.search).get('mark');  // (the first zoom loaded only)
 if (window.top !== window) document.body.classList.add('embedded');
 
 // ------------------------------------------------------------ helpers
@@ -100,6 +110,8 @@ function ramp(stops, v) {
 }
 const SEA = [[-7000, [12, 28, 70]], [-4000, [20, 48, 102]], [-1500, [34, 78, 140]], [-200, [64, 124, 182]], [0, [104, 164, 206]]];
 const RAIN = [[0, [150, 90, 40]], [250, [215, 180, 110]], [600, [190, 210, 120]], [1200, [80, 170, 110]], [2500, [30, 110, 160]], [4000, [40, 40, 140]]];
+const ICE_RGB = [206, 228, 250];  // glaciers on the relief, hillshade and height layers: blue-white
+const ICE_T = [[0, [150, 190, 230]], [100, [190, 215, 245]], [500, [120, 160, 225]], [1500, [60, 90, 190]], [3000, [40, 40, 130]]];
 const TEMP = [[-30, [60, 40, 140]], [-10, [80, 120, 220]], [0, [190, 230, 250]], [10, [120, 200, 120]], [20, [240, 210, 90]], [30, [220, 70, 40]]];
 const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
 
@@ -151,6 +163,8 @@ async function init() {
   $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
   $('rivers').onchange = render;
+  $('falls').onchange = () => { render(); hideTip(); };
+  $('volc').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
   await load(sel.value);
 }
@@ -172,6 +186,8 @@ async function load(id) {
     L[k] = spec.dtype === 'float32' ? new Float32Array(buf) : new Uint8Array(buf);
   }));
   state.meta = meta; state.L = L; state.imgs = {};
+  state.marks = markers(meta);
+  hideTip();
   const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
     loadImage(base + meta.files.coarse).catch(() => null)]);
   state.imgs.relief = rel; state.imgs.coarse = coarse;
@@ -181,6 +197,14 @@ async function load(id) {
   resetView();
   render();
   syncURL();
+  // ?mark=fall:0 or ?mark=volcano:2 opens that marker's card (falls highest first)
+  const mk = (START_MARK || '').split(':');
+  START_MARK = null;
+  const o = mk.length === 2 ? (mk[0] === 'fall' ? state.marks.falls : state.marks.volc)[+mk[1]] : null;
+  if (o) {
+    const v = state.view;
+    showTip(o, { clientX: v.x + o.c * v.s, clientY: v.y + o.r * v.s }, true);
+  }
 }
 
 function hillshade(h, nx, ny, res) {
@@ -233,6 +257,113 @@ function about() {
   </table>`;
 }
 
+
+// ------------------------------------------------------------ waterfall and volcano markers
+// (stats.falls: every fall >= 30 m; stats.volcanoes: the volcanoes the zoom drew, PW-120/181)
+const FALL_KIND = {
+  lip: 'knickpoint: a resistant lip, its gorge retreating upstream',
+  scarp: 'over a landform scarp', bench: 'over a hard bed (bench)',
+  'lake outlet': 'at a lake outlet', drop: 'a steep step in the river',
+};
+function markers(m) {
+  const st = m.stats || {}, res = m.res_km, nx = m.nx, ny = m.ny;
+  const top = new Set((st.waterfalls || []).map((w) => `${w.px[0]},${w.px[1]}`));
+  const byPx = new Map((st.waterfalls || []).map((w) => [`${w.px[0]},${w.px[1]}`, w]));
+  const falls = (st.falls || st.waterfalls || []).map((f) => {
+    const key = `${f.px[0]},${f.px[1]}`;
+    return { ...(byPx.get(key) || {}), ...f, kindOf: 'fall', top: top.has(key), r: f.px[0] + 0.5, c: f.px[1] + 0.5 };
+  });
+  const volc = (st.volcanoes || []).map((v) => ({ ...v, kindOf: 'volcano', active: v.active ?? /^active/.test(v.form || ''),
+    c: v.x_km / res + nx / 2, r: ny / 2 - v.y_km / res }));
+  return { falls, volc };
+}
+function fallSize(f) { return Math.min(13, 3.5 + 1.6 * Math.sqrt(f.height_m / 30)); }
+function volcSize(v) { return Math.min(12, 4 + 2.2 * Math.sqrt(Math.max(v.height_m, 0) / 1000)); }
+function volcColors(v) {
+  return v.active ? ['#ff5a36', '#3a0d02'] : v.top_m < 0 ? [null, '#8fc2ff'] : ['#c08a52', '#2b1a0b'];
+}
+function markIcon(kind, extra) {
+  if (kind === 'fall') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,-4 L5,-4 L0,5 Z" fill="#9fe3ff" stroke="#0b2540" stroke-width="1.3"/></svg>`;
+  const [f, s] = extra;
+  return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,4.5 L5,4.5 L0,-5 Z" fill="${f || 'none'}" stroke="${s}" stroke-width="1.3"/></svg>`;
+}
+function markLegend() {
+  const mk = state.marks || { falls: [], volc: [] }, parts = [];
+  $('fallsN').textContent = mk.falls.length ? `(${mk.falls.length})` : '(none)';
+  $('volcN').textContent = mk.volc.length ? `(${mk.volc.length})` : '(none)';
+  if ($('falls').checked && mk.falls.length) parts.push(`<span>${markIcon('fall')}waterfall &ge; 30 m (size: height; ringed: the biggest by power)</span>`);
+  if ($('volc').checked && mk.volc.length) parts.push(`<span>${markIcon('v', ['#ff5a36', '#3a0d02'])}active ${markIcon('v', ['#c08a52', '#2b1a0b'])}extinct ${markIcon('v', [null, '#8fc2ff'])}below the sea (volcanoes; size: height)</span>`);
+  if (parts.length) $('legend').insertAdjacentHTML('beforeend', parts.join(''));
+}
+function drawMarks() {
+  const v = state.view, mk = state.marks;
+  if (!mk) return;
+  const X = (c) => v.x + c * v.s, Y = (r) => v.y + r * v.s;
+  ctx.lineJoin = 'round';
+  if ($('volc').checked) for (const o of mk.volc) {
+    const s = volcSize(o), x = X(o.c), y = Y(o.r), [fill, stroke] = volcColors(o);
+    ctx.beginPath(); ctx.moveTo(x - s, y + 0.8 * s); ctx.lineTo(x + s, y + 0.8 * s); ctx.lineTo(x, y - s); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    ctx.lineWidth = fill ? 1.3 : 2; ctx.strokeStyle = stroke; ctx.stroke();
+  }
+  if ($('falls').checked) for (const f of mk.falls) {
+    const s = fallSize(f), x = X(f.c), y = Y(f.r);
+    ctx.beginPath(); ctx.moveTo(x - s, y - 0.8 * s); ctx.lineTo(x + s, y - 0.8 * s); ctx.lineTo(x, y + s); ctx.closePath();
+    ctx.fillStyle = '#9fe3ff'; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = '#0b2540'; ctx.stroke();
+    if (f.top) { ctx.beginPath(); ctx.arc(x, y, s + 3.5, 0, 2 * Math.PI); ctx.lineWidth = 1.5; ctx.strokeStyle = '#e8f6ff'; ctx.stroke(); }
+  }
+}
+function pick(ev) {
+  const v = state.view, mk = state.marks;
+  if (!mk) return null;
+  let best = null, bd = Infinity;
+  const test = (o, s) => {
+    const d = Math.hypot(ev.clientX - (v.x + o.c * v.s), ev.clientY - (v.y + o.r * v.s));
+    if (d <= s + 4 && d < bd) { bd = d; best = o; }
+  };
+  if ($('falls').checked) for (const f of mk.falls) test(f, fallSize(f));
+  if ($('volc').checked) for (const o of mk.volc) test(o, volcSize(o));
+  return best;
+}
+function cardHTML(o) {
+  const row = (k, val) => `<tr><td>${k}</td><td>${val}</td></tr>`;
+  if (o.kindOf === 'fall') {
+    const casc = o.cascades || [];
+    return `<h3>${markIcon('fall')}Waterfall, ${fmt(o.height_m)} m</h3><table>
+      ${row('kind', `${o.kind}${FALL_KIND[o.kind] ? ` <span class="muted">(${FALL_KIND[o.kind]})</span>` : ''}${o.landform ? `, ${o.landform}` : ''}`)}
+      ${row('discharge', `${fmt(o.discharge_m3s, o.discharge_m3s < 10 ? 1 : 0)} m&sup3;/s`)}
+      ${o.length_km != null ? row('drop over', `${fmt(o.length_km, 1)} km`) : ''}
+      ${o.gorge_km != null ? row('gorge', o.gorge_km ? `${fmt(o.gorge_km, 1)} km below it: the fall has retreated upstream` : '<span class="muted">none</span>') : ''}
+      ${o.cascades ? row('cascades', casc.length ? `${casc.length} more down the reach: ${casc.map((c) => fmt(c.height_m) + ' m').join(', ')}` : '<span class="muted">none</span>') : ''}
+      ${o.plunge_pool_m ? row('plunge pool', `${fmt(o.plunge_pool_m)} m deep`) : ''}
+      ${o.lip_resistance != null ? row('lip rock', `resistance ${fmt(o.lip_resistance, 2)}`) : ''}
+      ${o.from_lake ? row('from', 'a lake outlet') : ''}
+      ${row('lat, lon', `${o.lat}, ${o.lon}`)}
+    </table>`;
+  }
+  const kind = o.kind === 'arc' ? 'arc volcano (stratocone)' : 'hotspot volcano (shield)';
+  return `<h3>${markIcon('v', volcColors(o))}${(o.form || 'volcano').replace(/^./, (c) => c.toUpperCase())}</h3><table>
+    ${row('kind', kind)}
+    ${row('state', o.active ? 'active' : `extinct${o.age_myr != null ? `, ${fmt(o.age_myr)} Myr old` : ''}`)}
+    ${row('summit', o.top_m >= 0 ? `${fmt(o.top_m)} m above the sea` : `${fmt(-o.top_m)} m below the sea`)}
+    ${row('height', `${fmt(o.height_m)} m above its floor`)}
+    ${row('lat, lon', `${o.lat}, ${o.lon}`)}
+  </table>`;
+}
+let pinned = null;
+function showTip(o, ev, pin) {
+  const t = $('tip');
+  t.innerHTML = (pin ? '<span class="x" title="close">&times;</span>' : '') + cardHTML(o);
+  t.classList.toggle('pinned', !!pin);
+  t.style.display = 'block';
+  const W = innerWidth, H = innerHeight, w = t.offsetWidth, h = t.offsetHeight;
+  t.style.left = `${Math.min(ev.clientX + 16, W - w - 8)}px`;
+  t.style.top = `${Math.min(ev.clientY + 16, H - h - 8)}px`;
+  if (pin) t.querySelector('.x').onclick = hideTip;
+  pinned = pin ? o : null;
+}
+function hideTip() { pinned = null; const t = $('tip'); t.style.display = 'none'; t.classList.remove('pinned'); }
+
 // ------------------------------------------------------------ rendering
 function legendFor(kind) {
   const lg = state.meta.legend;
@@ -252,7 +383,20 @@ function render() {
   if (k === 'landform' && !L.landform) { $('legend').innerHTML = '<span class="muted">this zoom has no landform layer (its world predates them)</span>'; return; }
   if (k === 'relief' || k === 'coarse') {
     if (state.imgs[k]) oc.drawImage(state.imgs[k], 0, 0);
+    if (k === 'relief' && state.imgs[k]) {  // glaciers blue-white, so they aren't taken for high bare ground
+      const im = oc.getImageData(0, 0, nx, ny), d = im.data, ice = L.ice, water = L.water, sh = state.shade;
+      let any = false;
+      for (let i = 0; i < n; i++) {
+        if (!(ice[i] > 0) || water[i] !== 0) continue;
+        any = true;
+        const f = 0.62 + 0.45 * sh[i];
+        for (let j = 0; j < 3; j++) d[4 * i + j] = 0.15 * d[4 * i + j] + 0.85 * Math.min(255, ICE_RGB[j] * f);
+      }
+      if (any) oc.putImageData(im, 0, 0);
+      $('legend').innerHTML = any ? `<span><span class="sw" style="background:rgb(${ICE_RGB})"></span>glacier / ice sheet</span>` : '';
+    }
     if (k === 'coarse') $('legend').innerHTML = '<span class="muted">the source world\'s cells (nearest cell), with its big rivers</span>';
+    markLegend();
     draw();
     return;
   }
@@ -267,15 +411,25 @@ function render() {
   let lo = Infinity, hi = -Infinity;
   if (k === 'height') for (let i = 0; i < n; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
   const minArea = 500 * Math.max(m.res_km / 2, 1);
+  const ice = L.ice;
+  let iced = false;
   for (let i = 0; i < n; i++) {
     let c;
-    const s = sh[i], wet = water[i];
-    if (k === 'height') { const g = 255 * (h[i] - lo) / (hi - lo || 1); c = [g, g, g]; }
-    else if (k === 'shade') { const g = 255 * Math.min(1, 0.15 + 0.95 * s); c = wet === 1 ? [g * 0.45, g * 0.55, g * 0.75] : [g, g, g]; }
-    else if (k === 'rivers') {
+    const s = sh[i], wet = water[i], onIce = wet === 0 && ice[i] > 0;
+    if (onIce) iced = true;
+    if (k === 'height') { const g = 255 * (h[i] - lo) / (hi - lo || 1); c = onIce ? [g * 0.8, g * 0.9, Math.min(255, g * 0.9 + 40)] : [g, g, g]; }
+    else if (k === 'shade') {
+      const g = 255 * Math.min(1, 0.15 + 0.95 * s);
+      c = wet === 1 ? [g * 0.45, g * 0.55, g * 0.75] : onIce ? ICE_RGB.map((v) => v * Math.min(1.05, 0.25 + 0.85 * s)) : [g, g, g];
+    } else if (k === 'ice') {
+      const g = 40 + 160 * s;
+      c = wet === 1 ? ramp(SEA, h[i]).map((v) => v * 0.6) : wet === 2 ? [40, 90, 150] : [g, g, g];
+      if (onIce) { const t = ramp(ICE_T, ice[i]), f = 0.65 + 0.45 * s; c = [t[0] * f, t[1] * f, t[2] * f]; }
+    } else if (k === 'rivers') {
       const g = 30 + 60 * s;
-      c = wet === 1 ? [10, 20, 45] : wet === 2 ? [40, 110, 200] : [g, g, g];
-      if (wet === 0 && area[i] >= minArea / 4 && q[i] > 1) {
+      c = wet === 1 ? [10, 20, 45] : wet === 2 ? [40, 110, 200] : onIce ? [150 + 60 * s, 165 + 60 * s, 185 + 60 * s] : [g, g, g];
+      // (no rivers drawn on the ice: the water under it is the bed's drainage; they start at the snout)
+      if (wet === 0 && !onIce && area[i] >= minArea / 4 && q[i] > 1) {
         const t = Math.min(1, Math.max(0, Math.log10(q[i]) / 4.5));
         c = [40 + 60 * t, 120 + 120 * t, 200 + 55 * t].map((v, j) => c[j] + (v - c[j]) * Math.min(1, 0.35 + t));
       }
@@ -287,7 +441,7 @@ function render() {
       c = ramp(k === 'precipitation' ? RAIN : TEMP, L[k][i]);
       const f = wet === 1 ? 0.6 : 0.6 + 0.45 * s; c = [c[0] * f, c[1] * f, c[2] * f];
     }
-    if (overlay && lut && wet === 0 && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
+    if (overlay && lut && wet === 0 && !onIce && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
     if (overlay && lut && wet === 2) c = [70, 130, 196];
     px[4 * i] = c[0]; px[4 * i + 1] = c[1]; px[4 * i + 2] = c[2]; px[4 * i + 3] = 255;
   }
@@ -305,8 +459,16 @@ function render() {
     $('legend').innerHTML = `<span>${st[0][0]}</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div>
       <span>${st[st.length - 1][0]} ${k === 'precipitation' ? 'mm/yr' : '&deg;C'}</span>`;
   } else if (k === 'rivers') {
-    $('legend').innerHTML = '<span class="muted">brighter and bluer = more discharge (log scale, 1 to 30,000+ m&sup3;/s)</span>';
+    $('legend').innerHTML = '<span class="muted">brighter and bluer = more discharge (log scale, 1 to 30,000+ m&sup3;/s)</span>'
+      + (iced ? ' <span><span class="sw" style="background:rgb(200,215,235)"></span>ice (its meltwater is drawn from the snout)</span>' : '');
+  } else if (k === 'ice') {
+    const g = ICE_T.map(([v, c]) => `rgb(${c}) ${100 * v / 3000}%`).join(',');
+    $('legend').innerHTML = iced ? `<span>ice thickness 0</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div><span>3000 m</span>`
+      : '<span class="muted">no glaciers in this zoom</span>';
+  } else if ((k === 'shade' || k === 'height') && iced) {
+    $('legend').innerHTML = `<span><span class="sw" style="background:rgb(${ICE_RGB})"></span>glacier / ice sheet</span>`;
   }
+  markLegend();
   draw();
 }
 
@@ -327,6 +489,7 @@ function draw() {
   ctx.imageSmoothingEnabled = $('smooth').checked && !['rock', 'surface_rock', 'climate', 'biome', 'landform'].includes(state.layer);
   ctx.drawImage(state.off, v.x, v.y, v.s * m.nx, v.s * m.ny);
   ctx.strokeStyle = '#2a3446'; ctx.strokeRect(v.x - 0.5, v.y - 0.5, v.s * m.nx + 1, v.s * m.ny + 1);
+  drawMarks();
   // scale bar: a round number of km about 120 px long
   const kmPerPx = m.res_km / v.s, target = 120 * kmPerPx;
   const p10 = Math.pow(10, Math.floor(Math.log10(target)));
@@ -379,16 +542,30 @@ function hover(ev) {
 
 let drag = null;
 canvas.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y }; canvas.classList.add('drag'); });
-addEventListener('mouseup', () => { drag = null; canvas.classList.remove('drag'); });
+addEventListener('mouseup', () => { const d = drag; setTimeout(() => { if (drag === d) drag = null; }, 0); canvas.classList.remove('drag'); });
 addEventListener('mousemove', (e) => {
-  if (drag) { state.view.x = drag.vx + e.clientX - drag.x; state.view.y = drag.vy + e.clientY - drag.y; draw(); }
-  if (e.target === canvas) hover(e);
+  if (drag) {
+    state.view.x = drag.vx + e.clientX - drag.x; state.view.y = drag.vy + e.clientY - drag.y; draw();
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 3) { drag.moved = true; if (pinned) hideTip(); }
+  }
+  if (e.target === canvas) {
+    hover(e);
+    if (!drag && !pinned) { const o = pick(e); if (o) showTip(o, e, false); else hideTip(); }
+    canvas.style.cursor = !drag && pick(e) ? 'pointer' : '';
+  }
 });
+canvas.addEventListener('click', (e) => {
+  if (drag && drag.moved) return;
+  const o = pick(e);
+  if (o) showTip(o, e, true); else if (pinned) hideTip();
+});
+canvas.addEventListener('mouseleave', () => { if (!pinned) hideTip(); });
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const v = state.view, f = Math.exp(-e.deltaY * 0.0015);
   const ns = Math.min(Math.max(v.s * f, 0.2), 40);
   v.x = e.clientX - (e.clientX - v.x) * ns / v.s; v.y = e.clientY - (e.clientY - v.y) * ns / v.s; v.s = ns;
+  if (pinned) hideTip();
   draw();
 }, { passive: false });
 canvas.addEventListener('dblclick', () => { resetView(); draw(); });

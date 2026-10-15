@@ -34,7 +34,12 @@ one pass of a majority filter over the areal classes, smooth()):
                  Columbia River)
   dune field     sand still piling up (the top stratum grew within
                  DUNES_MYR: sandstone, or a sand-rich cover) in a
-                 hyper-arid (< DUNES_MM) climate (ergs: Rub' al Khali)
+                 hyper-arid climate: aridity index P / PET < DUNES_AI
+                 (aridity(); our Oudin PET runs ~half Penman's in hot
+                 deserts, so 0.12 here is about UNEP's 0.06). A hot
+                 desert qualifies up to ~150-170 mm/yr, a cold one with
+                 little evaporation only below ~30-40 mm (ergs: Rub' al
+                 Khali; cold ones are rare and small)
   karst          at least KARST_MIN_KM of limestone or dolomite at the top
                  in a wet (> KARST_MM), unfrozen climate
   caprock        flat-lying, exposed (not grown for EXPOSED_MYR) hard rock
@@ -116,7 +121,7 @@ ESCARPMENT_MYR = (8.0, 400.0)
 ESCARPMENT_M = 300.0
 FOLD_MIN_KM = 0.2
 TRAPS_MIN_KM = 0.2
-DUNES_MM, DUNES_SAND, DUNES_MYR = 150.0, 0.35, 20.0
+DUNES_AI, DUNES_SAND, DUNES_MYR = 0.12, 0.35, 20.0
 KARST_MIN_KM, KARST_MM = 0.4, 700.0
 CAP_KM = (0.03, 1.5)
 EXPOSED_MYR = 10.0
@@ -207,13 +212,27 @@ def smooth(grid, cls, passes=1):
     return cls
 
 
+def aridity(grid, precip, temp, t_warm=None, t_cold=None, tilt: float = 23.4) -> np.ndarray:
+    """The aridity index P / PET (UNEP's): rain over the potential
+    evaporation of climate.pet_months (Oudin), so a cold desert with little
+    evaporation is less arid than a hot one with the same rain."""
+    from .climate import pet_months
+    temp = np.asarray(temp, float)
+    tw = temp if t_warm is None else np.asarray(t_warm, float)
+    tc = temp if t_cold is None else np.asarray(t_cold, float)
+    pet = pet_months(grid.lat, temp, tw, tc, tilt).sum(0)
+    return np.asarray(precip, float) / np.maximum(pet, 1.0)
+
+
 def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip, temp, volcanoes,
-             plate=None) -> dict:
+             plate=None, t_warm=None, t_cold=None, tilt: float = 23.4) -> dict:
     """The landform layers (LAYERS) for one moment. elev: m above sea level;
     rock: basement; mix: the cover's isostasy.MIX columns; rec, lith: the
     record (world view); crust_age: Myr; precip mm/yr, temp C; volcanoes:
     the volcano table (rows of tectonics.volcanism.COLUMNS); plate: which
-    plate each cell is on (None: all one)."""
+    plate each cell is on (None: all one); t_warm, t_cold: the warmest and
+    coldest month, C (None: temp), and the axial tilt, for the potential
+    evaporation of the aridity index (aridity())."""
     from .tectonics.volcanism import ARC as V_ARC, VENT
     n = grid.n
     land = elev > 0
@@ -254,7 +273,8 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     claim(folded & (folded_km >= FOLD_MIN_KM), FOLD_BELT, t - t_fold)
     claim((top == FLOOD_BASALT) & (top_km >= TRAPS_MIN_KM), LAVA_PLATEAU, age_top)
     sand = (mix[:, SAND - MIX.start] / np.maximum(cover, 1e-9) >= DUNES_SAND) & (cover > VENEER_KM)
-    claim((precip < DUNES_MM) & ((top == SANDSTONE) | sand) & (age_top <= DUNES_MYR), DUNES, age_top)
+    arid = aridity(grid, precip, temp, t_warm, t_cold, tilt) < DUNES_AI
+    claim(arid & ((top == SANDSTONE) | sand) & (age_top <= DUNES_MYR), DUNES, age_top)
     claim(np.isin(top, CARBONATE) & (top_km >= KARST_MIN_KM) & (precip > KARST_MM) & (temp > 0), KARST, age_top)
     cap = (np.isin(top, HARD) & ~folded & np.isin(below, SOFT) & (top_km >= CAP_KM[0]) & (top_km <= CAP_KM[1])
            & (age_top >= EXPOSED_MYR))

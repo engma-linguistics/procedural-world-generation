@@ -726,7 +726,7 @@ def lower_envelope(z, src, grad, nx, ny, res):
 GAP_GRAD, GAP_MIN_M = 400.0, 5.0  # m/km at 0.5 km pixels: the walls of a cut (see cut())
 
 
-GORGE_Q, GORGE_MIN_M = 100.0, 30.0  # m^3/s, m: a river this big falling this far over a landform's cliff...
+GORGE_Q, GORGE_MIN_M = 30.0, 30.0  # m^3/s (of runoff), m: a river this big falling this far over a landform's cliff...
 GORGE_KM, GORGE_MAX_KM, GORGE_GRAD = 3.0, 12.0, 2.0  # ... retreats into a gorge GORGE_KM sqrt(Q / 1000) long
 
 
@@ -737,7 +737,7 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
     its bed is lowered from the foot upstream for GORGE_KM x sqrt(Q / 1000
     m^3/s) km (at most GORGE_MAX_KM, and not past the next cliff up),
     rising GORGE_GRAD m/km, the fall now at the gorge's head; walls as for
-    cut(). Returns (z, number of gorges)."""
+    cut(). Returns (z, gorges: [(pixel of the fall at its head, length km)])."""
     n = nx * ny
     up = np.full(n, -1)
     o = np.argsort(q, kind="stable")
@@ -749,11 +749,11 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
     step = z - z[r1]
     cand = np.flatnonzero((q >= GORGE_Q) & (w > 0.5) & (rec >= 0) & ~fixed & (drop >= GORGE_MIN_M))
     if not len(cand):
-        return z, 0
+        return z, []
     z = z.copy()
     src = np.zeros(n, bool)
     done = np.zeros((ny, nx), bool)
-    count = 0
+    gorges = []
 
     def km(a, b):
         return res * (1.41421356 if (a % nx != b % nx and a // nx != b // nx) else 1.0)
@@ -780,11 +780,11 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
             z[a] = min(z[a], zf + GORGE_GRAD * (sa + res))
             src[a] = True
         src[foot] = True
-        count += 1
-    if count:
+        gorges.append((int(path[-1][0]), float(path[-1][1])))
+    if gorges:
         g = GAP_GRAD * min(1.0, (0.5 / res) ** 0.5)
         z = np.where(fixed, z, lower_envelope(z, src, g, nx, ny, res))
-    return z, count
+    return z, gorges
 
 
 def cut(z, rec, order, keep, nx, ny, res, fixed=None):
@@ -1232,14 +1232,14 @@ class Dunes(Synth):
     Spacing 1-3 km (more sand: bigger and further apart), heights a few %
     of the spacing (tens of m to ~150 m; star dunes higher). Planet-fixed
     patches (build_frames, 'wind': each patch's axis along the drift of the
-    cells around it, its sign downwind). Drier and warmer: more active
+    cells around it, its sign downwind). More arid (P / PET) and warmer: more active
     (frozen, snowy ground holds the sand: cold ergs half as high). On the
     finished land (an overlay: it doesn't flatten the hills under it; not
     on steep slopes nor across rivers). Crests at least MIN_PX pixels apart
     (the zoom draws the big dunes; spacing exaggerated up to 2x on coarse
     zooms, fading out beyond); the sand sheet buries the small hills (the
     target's sub-cell texture damped where there is sand)."""
-    layers = ("strata_top_km", "precipitation", "temperature", "drift_e", "drift_n", "drift_ratio")
+    layers = ("strata_top_km", "aridity", "temperature", "drift_e", "drift_n", "drift_ratio")
     axis = "wind"
     LAMBDA_KM = (1.0, 3.0)  # crest spacing, little to much sand
     HEIGHT = (0.045, 0.05, 0.08)  # x spacing: transverse / barchan, linear, star
@@ -1267,7 +1267,7 @@ class Dunes(Synth):
         F, P = cx.frames, cx.frames.patch
         res = cx.res
         supply = self._supply(cx)
-        act = (smoothstep(250.0, 60.0, cx.prm["precipitation"])
+        act = (smoothstep(0.2, 0.04, cx.prm["aridity"])  # (P / PET: the class needs < LF.DUNES_AI)
                * (0.5 + 0.5 * smoothstep(-8.0, 2.0, cx.prm["temperature"])))
         lam = self.LAMBDA_KM[0] + (self.LAMBDA_KM[1] - self.LAMBDA_KM[0]) * supply
         lamd = np.maximum(lam, self.MIN_PX * res)  # (drawn at least MIN_PX pixels apart: the big dunes, draas)
@@ -1565,6 +1565,9 @@ def sand_drift(L, sel):
 
 
 DERIVED = {
+    # the aridity index P / PET (landform.aridity; the world's own pet layer)
+    "aridity": lambda L, sel: (np.asarray(L["precipitation"], float)[sel]
+                               / np.maximum(np.asarray(L["pet"], float)[sel] if "pet" in L else 1000.0, 1.0)),
     "hard_top": lambda L, sel: _resist(np.asarray(L["strata_top"])[sel]),
     "hard_next": lambda L, sel: _resist(np.asarray(L["strata_next"])[sel]),
     "granite": lambda L, sel: (np.asarray(L["strata_top"])[sel] == 11).astype(float),  # surface.GRANITE

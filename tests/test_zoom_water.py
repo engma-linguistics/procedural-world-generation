@@ -353,3 +353,28 @@ def test_big_falls_are_designed(long_reach_zoom):
     big = [f for f in falls if f["discharge_m3s"] >= 2000 and f["height_m"] >= 100]
     assert big and all(f["kind"] == "lip" for f in big), falls
     assert max(f["height_m"] for f in big) >= 200
+
+
+def test_a_hyperarid_zoom_has_no_rivers_of_its_own():
+    """The zoom's streams are fed by the world's runoff, not its rain
+    (PW-180): 60 mm/yr that all evaporates makes no river, while the
+    landscape is still graded (its cell means kept)."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
+    precip = np.full(g.n, 60.0)
+    c = {"runoff": np.zeros(g.n), "aet": precip, "lake_evap": np.full(g.n, 1500.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    land = elev > 0
+    w = {"grid": g, "meta": {"level": 5}, "layers": {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 24.0),
+        "warm_month": np.full(g.n, 32.0), "flow": flow, "downstream": down, "lake": lk["wet"].astype(int),
+        "lake_level": np.maximum(np.round(lk["level"]), np.round(elev)), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"], "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int),
+        "climate": np.full(g.n, 3), "ice": np.zeros(g.n), "sediment_cover": np.where(land, 0.5, 6.0)}}
+    z = zoom.build(w, 5.0, 8.0, size_km=800, res_km=8, iterations=6, log=lambda *a: None)
+    assert z["layers"]["discharge"].max() < 0.5
+    w["layers"]["runoff"] = 0.5 * precip  # (the same land, wet: the same landscape)
+    wet = zoom.build(w, 5.0, 8.0, size_km=800, res_km=8, iterations=6, log=lambda *a: None)
+    assert wet["layers"]["discharge"].max() > 5.0
+    assert abs(z["stats"]["cell_mean_rms_error_m"] - wet["stats"]["cell_mean_rms_error_m"]) < 10
