@@ -27,7 +27,7 @@ After step 3 (and a big batch of closed tickets) comes the **L8 showcase run** t
 
 **Suggested start** (details in §4): five parallel agents with no file overlap: (A) PW-189 then PW-190, (B) the tectonics leftovers, (C) soils, (D) the vegetation proposal, (E) the PW-014 rain diagnosis.
 
-**Housekeeping** (§3.11): 7 duplicate or overlapping groups and 4 tickets that look stale or partly done. The proposals are in `issue-tracking/inbox/draft-backlog-housekeeping.md` for the coordinator.
+**Housekeeping** (§3.11): 7 duplicate or overlapping groups and 4 tickets that look stale or partly done. **Applied by the coordinator (f836fd4):** PW-048→172, PW-095→185, PW-071→129, PW-088→131, PW-077→097 merged; PW-083/096/097/098/188 rescoped; PW-089 closed (already done); PW-117 decided (A). Counts below predate these (now ~108 open).
 
 ### A few terms
 - **Isostasy**: crust floats on the mantle like ice on water. Thick or light crust stands high; a load (an ice sheet, a volcano) pushes it down. **Flexure**: a stiff plate spreads a load sideways over hundreds of km.
@@ -327,7 +327,7 @@ The zoom is in good shape after five batches (landforms, falls, ice, polish). Wh
 | PW-085 | infra | `api.Jobs` state is lost on server restart | s / low |
 
 ### 3.11 Housekeeping: duplicates, overlaps and stale tickets
-Proposed to the coordinator in `issue-tracking/inbox/draft-backlog-housekeeping.md`. No ticket was changed.
+Applied by the coordinator in f836fd4 (see the summary); the list below is kept as the record.
 
 **Duplicates and overlaps**
 1. **PW-048 → PW-172.** PW-172 is the diagnosis of PW-048's spikes, with options. Merge PW-048 into PW-172 and close it.
