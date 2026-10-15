@@ -302,8 +302,11 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     flat = np.clip(1 - slope / FLAT_TAN, 0, 1)
     rain_mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
     hand = h[idx] - tr["river_h"][idx]  # height above the nearest river
-    big = np.clip(np.log10(np.maximum(rq, 1.0) / PLAIN_Q) / 1.5, 0, 1)
-    plain = big * np.clip(1 - hand / (2.0 + 4.0 * big), 0, 1) * np.maximum(flat, 0.3) * (dist < 30.0)
+    # the rivers' floods (PW-028): a spring-flood or monsoon river floods
+    # more of its plain, and higher (stage ~ discharge^0.4), than a steady one
+    fs = V.flood_scale(np.asarray(L["flood_ratio"], float)[sel][np.maximum(own, 0)]) if "flood_ratio" in L else 1.0
+    big = np.clip(np.log10(np.maximum(rq * fs, 1.0) / PLAIN_Q) / 1.5, 0, 1)
+    plain = big * np.clip(1 - hand / ((2.0 + 4.0 * big) * fs ** 0.4), 0, 1) * np.maximum(flat, 0.3) * (dist < 30.0)
     near_lake = ZT.nearest(lake, nx, ny)[0][idx] <= 1.5
     shore = 0.5 * near_lake * flat
     coast = 0.85 * np.asarray(marsh, bool)[idx]
@@ -316,7 +319,8 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         # the pixels' own floodplains, low above their big rivers, take it.
         fl_c = np.asarray(L["flooded"], float)[sel] / 100
         if "flow" in L:
-            pl_c = V.floodplain(g, np.asarray(L["elevation"], float), np.asarray(L["flow"], float))[sel]
+            pl_c = V.floodplain(g, np.asarray(L["elevation"], float), np.asarray(L["flow"], float),
+                                flood_ratio=L.get("flood_ratio"))[sel]
             fl_c = np.clip(1 - (1 - fl_c) / np.maximum(1 - pl_c, 1e-6), 0, 1)
         f, _ = ZK.gauss_interp(px[idx], py[idx], cx, cy, fl_c[:, None], (np.asarray(L["elevation"])[sel] > 0)[:, None]
                                .astype(float), sig)
