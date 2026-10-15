@@ -1,4 +1,5 @@
 ---
+id: PW-228
 title: "Vegetation agreement on the model's Earth climate stuck at ~44%: the gap is regional rain (Sahel, India, E Europe and W Siberia, Congo)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: vegclim
 blocked_by: []
 relates: [PW-210, PW-026, PW-015, PW-203]
 refs: [tools/veg_check.py, tools/earth_check.py, "world b1343a"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ The rest is regional rain, not anything the vegetation or a small nudge can fix 
 - Sahel 1672 vs 593 (savanna and forest where it should be steppe), India 612 vs 1109 and SE China 846 vs 1462 (too dry: grass and savanna where forest), Congo 1185 vs 1652 (savanna south of the forest): the monsoon and the rain belt's reach (PW-013, PW-015).
 - Tried as nudges and dropped (no effect on any of these regions or on Koppen): storm eddy mixing `eddy` 1.0 -> 1.5, winter air-mass reach `air_km_w` 900 -> 1300 km.
 Use veg_check's model-climate agreement as a score for the PW-013 rain work; expect most of the remaining 6 points from the Sahel/India monsoon structure and the interior winter moisture.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-veg-agreement-rain-gaps.md (found by vegclim).
