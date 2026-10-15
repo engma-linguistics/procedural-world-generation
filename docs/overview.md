@@ -576,12 +576,14 @@ Start the viewer (`uv run python -m planet serve`) and pick these from the dropd
 
 ### Demo runs (seed 3199)
 
-> **Placeholder for the coordinator.** Two new demo runs on the current code (seed 3199, one at L6 and one at L7) are being made now. Fill in: run ids, length, worlds (`--at auto`) with highlights and zooms, and what to look at in each.
+Two runs on the final 2026-10-14 code, random seed 3199, default (Earth-like) parameters. Worlds were taken with `--at auto` (a representative moment) and have highlights plus 6 highlight zooms each. Same seed at two levels: the geography differs, since the run is chaotic.
 
-| Level | Run | Myr | World(s) | Zooms | Notes |
+| Level | Run | Myr | World | Zooms | Notes |
 |---|---|---|---|---|---|
-| L6 | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
-| L7 | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
+| L6 | ee65aa (5 min) | 1000 | 8e71fd @ 632 Myr | b5da31 largest river mouth, 23437e highest peak, b15424 steepest river, b4cdbc fjords, 12e3dc most varied, 53479b delta site | ends with 12 plates, 31.7% land |
+| L7 | e0e21e (20 min) | 1000 | bcc894 @ 688 Myr | 40edef highest peak 5,533 m, a800d7 largest river mouth, 05fdf3 steepest river (830 m drop), 8bc6d8 longest range (6,900 km), 860228 fjords, 29e060 most varied | ends with 6 plates, 36.8% land |
+
+Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`), and zooms at `zoom.html?id=<id>`. Try the landforms, cloud, sea temperature and salinity layers, the overturning overlay, and the travel highlights.
 
 ---
 
