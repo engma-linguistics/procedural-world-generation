@@ -62,7 +62,7 @@ class Simulation:
         "rates",  # [source, sink] smoothed over ~10 Myr (None before the first step)
         "refs",  # slow baselines of [source, sink] (None before the first step)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
-        "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
+        "depth_ref",  # m: the starting sea floor's mean depth, sea level 0 (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
         "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
