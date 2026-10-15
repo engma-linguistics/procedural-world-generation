@@ -1,4 +1,5 @@
 ---
+id: PW-232
 title: "Clouds on Earth, rest of PW-162: NH winter trade-wind decks too cloudy, wet tropics too gloomy, E Mediterranean January"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: smalls2
 blocked_by: []
 relates: [PW-162, PW-015]
 refs: [planet/climate.py, tools/earth_check.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -18,3 +21,6 @@ Branch smalls2 fixed PW-162's summer continents (storm cloud on land now goes wi
 - **Wet tropics too gloomy:** Amazon 82% (65-80), land sunshine 0-10 N 38% (CRU 54), 10 S-0 33% (48): deep cloud from rain that is itself 2-3x too heavy in places (East Africa, Sahel; PW-015).
 - **E Mediterranean January** 65-69% (40-60): high winter latitude-belt storminess there.
 - [ ] Canary January <= 65% and Hawaii January <= 70% without the summer Mediterranean clouding over
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-clouds-winter-trades-and-tropics.md (found by smalls2).

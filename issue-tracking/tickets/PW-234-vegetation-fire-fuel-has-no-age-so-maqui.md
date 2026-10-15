@@ -1,4 +1,5 @@
 ---
+id: PW-234
 title: "Vegetation fire: fuel has no age, so maquis and chaparral never burn (or turn to grass when they do)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: smalls2
 blocked_by: []
 relates: [PW-220, PW-205, PW-187]
 refs: [planet/vegetation.py, tools/veg_check.py, "zoom:58c0ac", "world 351f32"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ A plain nudge doesn't work (tried on branch smalls2): raising SclS `litf` 0.4 ->
 Real shrubland and forest fires are fuel-age limited: chaparral and fynbos burn every 20-60 years because the dead fuel builds up over decades after a fire, crown fires need that build-up; savanna grass is ready every year. Proper fix: a fuel-age term, e.g. the burned share of woody types limited by 1 / (years to rebuild their fuel), fuel built from the woody types' standing dead (a share of their biomass) rather than only litter flux; and a fire-weather month for boreal summers (dry spells of a week are enough there).
 - [ ] maquis / chaparral cells burn every ~20-60 yr and stay scrub (zoom 58c0ac, Earth Mediterranean boxes)
 - [ ] veg_check: burned share in savanna and grassland nearer 70-80%, Mediterranean counts not lower
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-shrubland-fire-fuel-age.md (found by smalls2).
