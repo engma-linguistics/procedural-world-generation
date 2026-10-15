@@ -286,6 +286,29 @@ def stretch(sim, col, rate, plume, newc, shrink=1.0, stack_add=None):
 
 
 MARGIN_MIN_KM = 12.0  # thinnest rifted-margin crust laid in a rift (else: ocean floor)
+POOL_MYR = 100.0  # Myr: e-folding time of a rift pool that no opening rift takes up
+
+
+def flanks(sim, col, cont):
+    """A rift that never opens (or opens too little to take its whole pool)
+    keeps the crust stretched out of it in its own flanks: the pool decays
+    over POOL_MYR back into the plate's continental cells that rifted within
+    that time (the stretched ones, equally; none left: all its continent).
+    Crust kept, so the pool isn't a sink (PW-287: the decayed share used to
+    be deleted, ~5% of all stretched crust). Booked as "rift flanks"."""
+    pl, own = sim.plates, sim.owner
+    back = pl.rift_pool * (1 - np.exp(-sim.dt / POOL_MYR))
+    pl.rift_pool -= back
+    if not (back > 0).any():
+        return
+    rifted = cont & (sim.t - col.rec[:, record.T_RIFT] <= POOL_MYR)
+    n_rift = np.bincount(own, rifted, P_MAX)
+    n_cont = np.bincount(own, cont, P_MAX)
+    to = np.where((n_rift[own] > 0) & rifted | (n_rift[own] == 0) & cont, 1.0, 0.0)
+    n_to = np.where(n_rift > 0, n_rift, n_cont)
+    add = to * (back / np.maximum(n_to, 1))[own]
+    col.t = col.t + add
+    sim.book("rift flanks", 0, add, cont)
 
 
 def rifted_margin(sim, lost, col, newc, shrink=1.0):
@@ -312,7 +335,7 @@ def rifted_margin(sim, lost, col, newc, shrink=1.0):
     own = sim.owner
     cont = col.cont
     pl.rift_pool += np.bincount(own, np.maximum(lost, 0) * cont, P_MAX)
-    pl.rift_pool *= np.exp(-sim.dt / 100.0)  # a rift that never opens keeps it in its thickened flanks... eventually
+    flanks(sim, col, cont)
     if p.rift_margin_km <= 0 or not newc.any():
         return
     min_km = MARGIN_MIN_KM + max(p.rift_margin_km - MARGIN_MIN_KM, 0.0) * float(np.clip(shrink - 1.0, 0.0, 1.0))

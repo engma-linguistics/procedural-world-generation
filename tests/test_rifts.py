@@ -91,3 +91,23 @@ def test_crust_being_stacked_is_not_rifted():
     assert np.array_equal(col.t[squeezed], t0[squeezed])
     assert np.array_equal(col.rec[squeezed, record.T_RIFT], rift0[squeezed])
     assert (col.t[free] < t0[free]).all() and (col.rec[free, record.T_RIFT] == s.t).all()
+
+
+def test_rift_pool_decays_into_its_flanks():
+    """PW-287: the stretched crust a rift never takes up goes back into the
+    plate's rifted continent (none rifted: all of it), not out of the world."""
+    from planet.tectonics import crust, record
+    s = Simulation(build_grid(4), 1, Params(), 2.0)
+    col = _column(s)
+    k = int(np.argmax(np.bincount(s.owner, s.w_cont)))
+    on = (s.owner == k) & col.cont
+    rifted = on & (np.arange(s.grid.n) % 3 == 0)
+    col.rec[:, record.T_RIFT] = np.where(rifted, s.t, record.NEVER)
+    s.plates.rift_pool[:] = 0.0
+    s.plates.rift_pool[k] = 50.0
+    t0 = col.t.copy()
+    crust.flanks(s, col, col.cont)
+    back = 50.0 - s.plates.rift_pool[k]
+    assert back > 0
+    assert np.isclose((col.t - t0).sum(), back)
+    assert np.allclose((col.t - t0)[rifted], back / rifted.sum()) and (col.t == t0)[~rifted].all()
