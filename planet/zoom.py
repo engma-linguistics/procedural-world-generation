@@ -2783,4 +2783,5 @@ def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km
         raise SystemExit("this world has no rock/climate layers; zoom needs a world sliced from a tectonic run")
     lon = (lon + 180) % 360 - 180
     z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log)
-    return save(z, path, world, lat, lon, size_km, res_km, seed, iterations)
+    with S.lock(S.zooms_dir(), zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations)):
+        return save(z, path, world, lat, lon, size_km, res_km, seed, iterations)  # (one writer per zoom folder)

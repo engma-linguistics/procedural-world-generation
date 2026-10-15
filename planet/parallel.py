@@ -21,14 +21,20 @@ running), with NUMBA_NUM_THREADS, OPENBLAS_NUM_THREADS and OMP_NUM_THREADS
 set before they import numpy or numba, and with the parent's data root.
 One worker (workers=1) runs in this process, one job after the other.
 
-Thread defaults for a single process (set_default_threads, applied when
-`planet` is first imported, unless the variables are set already): numba
-min(16, cores) threads (more gains nothing here), BLAS 1 thread (numpy's
-OpenBLAS starts one thread per core by default; nothing in the model is
-BLAS-heavy). The numba threading layer is pinned: tbb when it loads (TBB
-runs parallel kernels launched from several threads at once), else
-workqueue (which aborts on that: api.COMPUTE keeps one computation at a
-time per process).
+Threads of a single process (set_default_threads, applied when `planet` is
+first imported): numba min(16, cores) unless NUMBA_NUM_THREADS is set (more
+gains nothing here), and always one BLAS thread. numba's thread count
+doesn't change any output, but OpenBLAS's does: numpy's matrix products
+(mantle harmonics, plate rotations, linalg.solve) split their sums by thread,
+so a run at 1 or 2 BLAS threads differs bit-wise from one at 8 or 48, and
+OpenBLAS's default is one thread per core: outputs would depend on the
+machine, and worker processes (1 thread each, or they oversubscribe) would
+disagree with a single process. One BLAS thread is also faster here (L6
+100 Myr: 41 s and 115 s of CPU, against 44 s and 410 s at 48 spinning
+threads). The numba threading layer is pinned: tbb when it loads (TBB runs
+parallel kernels launched from several threads at once), else workqueue
+(which aborts on that: api.COMPUTE keeps one computation at a time per
+process).
 """
 
 from __future__ import annotations
@@ -53,11 +59,12 @@ def cpus() -> int:
 
 
 def set_default_threads() -> None:
-    """Thread caps for this process, where not set already. Only has an
-    effect before numpy and numba are imported (planet/__init__.py)."""
+    """numba threads for this process (unless set already) and one BLAS
+    thread (always: the outputs depend on it). Only has an effect before
+    numpy and numba are imported (planet/__init__.py; tools import planet
+    before numpy)."""
     os.environ.setdefault("NUMBA_NUM_THREADS", str(min(SINGLE_THREADS, cpus())))
-    for v in BLAS_VARS:
-        os.environ.setdefault(v, "1")
+    os.environ.update({v: "1" for v in BLAS_VARS})
 
 
 def pin_threading_layer() -> str:
@@ -98,7 +105,8 @@ _env_lock = threading.Lock()
 def _thread_caps(threads: int):
     """os.environ with the workers' caps while they are spawned (a spawned
     child gets this process's environment). This process's own numpy and
-    numba are loaded already (Pool imports them first), so it isn't affected."""
+    numba are loaded already (Pool imports them first), so it isn't affected.
+    (BLAS: one thread, as in every process; see the module docstring.)"""
     with _env_lock:
         old = {v: os.environ.get(v) for v in THREAD_VARS}
         os.environ.update({"NUMBA_NUM_THREADS": str(threads), **{v: "1" for v in BLAS_VARS}})
@@ -125,7 +133,10 @@ def _init(q):
 def _call(token, fn, args, root):
     from . import store as S
     S.set_root(root)
-    return fn(*args, lambda f, msg: _queue.put((token, float(f), str(msg))))
+    try:
+        return fn(*args, lambda f, msg: _queue.put((token, float(f), str(msg))))
+    finally:
+        _queue.put((token, None, None))  # (end of this call's messages: Pool.result waits for it)
 
 
 # --- in the parent -----------------------------------------------------------
@@ -140,8 +151,9 @@ class Pool:
         self.workers = max(1, workers or default_workers())
         self.threads = threads or worker_threads(self.workers)
         self._ctx = mp.get_context("spawn")
-        self._q = self._ctx.Queue()
+        self._q = self._ctx.SimpleQueue()  # (no feeder thread: a message is sent before the call returns)
         self._cbs: dict[int, object] = {}
+        self._ends: dict[int, threading.Event] = {}
         self._ids = itertools.count()
         self._lock = threading.Lock()
         self._ex = self._executor()
@@ -153,11 +165,18 @@ class Pool:
 
     def _listen(self):
         while True:
-            item = self._q.get()
+            try:
+                item = self._q.get()
+            except (EOFError, OSError, ValueError):  # (the queue closed at exit)
+                return
             if item is None:
                 return
             token, f, msg = item
-            with self._lock:  # (call() drops the callback under this lock: none fires after it returns)
+            with self._lock:  # (result() drops the callback under this lock: none fires after it returns)
+                if f is None:
+                    if token in self._ends:
+                        self._ends[token].set()
+                    continue
                 cb = self._cbs.get(token)
                 if cb is not None:
                     try:
@@ -172,6 +191,7 @@ class Pool:
         with self._lock:
             if progress is not None:
                 self._cbs[token] = progress
+            self._ends[token] = threading.Event()
             ex = self._ex
         try:
             with _thread_caps(self.threads):  # (workers are spawned in submit, as needed)
@@ -181,12 +201,12 @@ class Pool:
             with _thread_caps(self.threads):
                 fut = self._ex.submit(_call, token, fn, args, str(S.root()))
         fut.token, fut.executor = token, self._ex
-        fut.add_done_callback(lambda _: self._forget(token))
         return fut
 
     def _forget(self, token):
         with self._lock:
             self._cbs.pop(token, None)
+            self._ends.pop(token, None)
 
     def _restart(self, broken):
         with self._lock:
@@ -198,12 +218,24 @@ class Pool:
         """fut's result, raising what fn raised; no progress callback fires
         after this returns."""
         try:
-            return fut.result()
-        except BrokenProcessPool:
-            self._restart(fut.executor)
-            raise RuntimeError("the worker process died (out of memory or a crash)") from None
+            try:
+                return fut.result()
+            except BrokenProcessPool:
+                self._restart(fut.executor)
+                raise RuntimeError("the worker process died (out of memory or a crash)") from None
+            except BaseException:
+                self._wait_end(fut.token)
+                raise
+            else:
+                self._wait_end(fut.token)
         finally:
             self._forget(fut.token)
+
+    def _wait_end(self, token):
+        """Until the listener has passed on all of this call's progress messages."""
+        ev = self._ends.get(token)
+        if ev is not None:
+            ev.wait(10)
 
     def call(self, fn, *args, progress=None):
         """fn(*args, progress) in a worker, waiting for it."""
