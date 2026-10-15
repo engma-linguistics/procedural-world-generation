@@ -343,6 +343,27 @@ def _out_shares(v, d, out_off, out_e, allowed):
 
 
 @njit(cache=True, parallel=True)
+def _out_shares_face(v, src, dst, d, out_off, out_e):
+    """As _out_shares, with the wind at each edge's face (the mean of its two
+    cells' winds) rather than the sending cell's."""
+    n = out_off.shape[0] - 1
+    w = np.empty(d.shape[0])
+    for i in prange(n):
+        t = 0.0
+        for k in range(out_off[i], out_off[i + 1]):
+            e = out_e[k]
+            a, b = src[e], dst[e]
+            x = max(0.5 * ((v[a, 0] + v[b, 0]) * d[e, 0] + (v[a, 1] + v[b, 1]) * d[e, 1]
+                           + (v[a, 2] + v[b, 2]) * d[e, 2]), 0.0)
+            w[e] = x
+            t += x
+        t = max(t, 1e-12)
+        for k in range(out_off[i], out_off[i + 1]):
+            w[out_e[k]] = w[out_e[k]] / t
+    return w
+
+
+@njit(cache=True, parallel=True)
 def _inflow_geom(v, d, in_off, in_e, src, out_off, out_e):
     """Each cell's share of inflow (the sum of its upwind neighbours'
     shares of their outflow) in a wind that blew everywhere as it does
@@ -372,10 +393,14 @@ def inflow_weights(grid: Grid, v: np.ndarray) -> np.ndarray:
     cell's outflow along it in wind v, divided by the receiving cell's
     _inflow_geom, so that a wind blowing the same way everywhere neither
     piles anything up nor thins it along the icosphere's seams (which left
-    lines in the rain), while a converging wind still gathers it."""
+    lines in the rain), while a converging wind still gathers it. The
+    shares use the wind at each edge's face (the mean of the two cells'):
+    with the sending cell's own wind, the row of cells where two airstreams
+    meet head-on got the inflow of both neighbouring rows, twice the
+    convergence the wind has there, and a one-cell line of rain (PW-227)."""
     G = _geom(grid)
     v = np.ascontiguousarray(v, np.float64)
-    w, _ = _edge_weights(grid, v)
+    w = _out_shares_face(v, G["src"], G["dst"], G["d"], G["out_off"], G["out_e"])
     F = _inflow_geom(v, G["d"], G["in_off"], G["in_e"], G["src"], G["out_off"], G["out_e"])
     return w[G["in_e"]] / F[G["dst"][G["in_e"]]]
 
@@ -433,15 +458,18 @@ def carry(grid: Grid, v: np.ndarray, a: np.ndarray, b: np.ndarray, km: float = 8
 
 
 def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width: float = 3.0):
-    """Mean of f in latitude bands `width` deg wide, given back per cell."""
-    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, int(180 // width) - 1)
-    m = np.ones(grid.n, bool) if mask is None else mask
+    """Mean of f in latitude bands `width` deg wide, given back per cell,
+    interpolated linearly in latitude between the bands' centres (a step at
+    each band's edge left straight east-west lines in the sea temperatures,
+    and the rain and clouds over the sea followed them)."""
     nb = int(180 // width)
+    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, nb - 1)
+    m = np.ones(grid.n, bool) if mask is None else mask
     tot = np.bincount(bins[m], f[m], nb)
     cnt = np.bincount(bins[m], minlength=nb)
     allm = np.bincount(bins, f, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
     zm = np.where(cnt > 0, tot / np.maximum(cnt, 1), allm)
-    return zm[bins]
+    return np.interp(grid.lat, -90 + width * (np.arange(nb) + 0.5), zm)
 
 
 def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
@@ -452,6 +480,9 @@ def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------
 # Wind
 # --------------------------------------------------------------------------
+TRADE_ROUND = 3.0  # deg
+
+
 def wind(grid: Grid, shift: float = 0.0) -> np.ndarray:
     """The planet-wide three-cell pattern, the same at every longitude:
     easterly trade winds below ~30 deg, westerlies from 30 to 60, polar
@@ -466,7 +497,11 @@ def wind(grid: Grid, shift: float = 0.0) -> np.ndarray:
     # east component: trades strongest ~12 deg, calm 'horse latitudes' ~30,
     # westerlies strongest ~48, weak polar easterlies; poleward component:
     # toward the equator under the trades, poleward under the westerlies
-    ue = (-0.9 * np.exp(-((a - 12) / 14) ** 2) + 1.0 * np.exp(-((a - 48) / 15) ** 2)
+    # (the trades' east component is rounded off within TRADE_ROUND deg of the
+    # convergence, where |lat| has a corner: the speed had a one-cell dip there,
+    # where the air lingered and rained more; PW-227)
+    au = np.where(a < TRADE_ROUND, a * a / (2 * TRADE_ROUND) + TRADE_ROUND / 2, a)
+    ue = (-0.9 * np.exp(-((au - 12) / 14) ** 2) + 1.0 * np.exp(-((au - 48) / 15) ** 2)
           - 0.4 * np.exp(-((a - 78) / 10) ** 2))[:, None]
     un = (-0.3 * np.sin(np.radians(6 * np.minimum(a, 90))))[:, None]
     return ue * G["east"] + un * hemi * G["north"]
@@ -954,7 +989,7 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
       monsoon summers, wet windward slopes (cloud_deep, growing with the
       rain above cloud_deep_mm0);
     - layer cloud of the storms and their fronts: the storm tracks, in
-      proportion to the storminess, in moist air and not under the
+      proportion to the storminess and (on land) the air's humidity, not under the
       sinking subtropical air (cloud_storm);
     - low cloud over the sea: a base of shallow cumulus and stratus
       (cloud_sea), more over cold water (cloud_cold: the polar seas, fog
@@ -989,7 +1024,9 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
         # which also hides the rain's cell-to-cell streaks, PW-019)
         p_s = smooth(grid, p, tune["cloud_rain_km"])
         deep = tune["cloud_deep"] * (1 - np.exp(-np.maximum(p_s - tune["cloud_deep_mm0"], 0) / tune["cloud_deep_mm"]))
-        storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist ** 3
+        # (a front lifts the storm's own moist air: the land's half-year mean humidity,
+        # dry in a continent's summer, thins its cloud only in proportion, PW-162)
+        storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist
         s0, s1 = tune["cloud_sc_c"]
         dry = 1 - tune["cloud_cont"] * landy * sink
         deck = tune["cloud_sc"] * np.clip((-inst - s0) / s1, 0, 1) * sink * dry

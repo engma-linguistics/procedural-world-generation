@@ -102,8 +102,8 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
     surface, so it flows downhill on its own surface slope and spreads under
     its own weight. Finite volumes: the flux across each side is
     D_side (s_i - s_j) / dist * side length, D_side the mean of the two
-    cells' D (Mahaffy), grad s per cell from the Green-Gauss sum over its
-    sides. Explicit sub-steps sized by the largest D (D capped at d_cap:
+    cells' D (Mahaffy), |grad s| per cell from the Green-Gauss sum over its
+    sides or its steepest way down, whichever is larger. Explicit sub-steps sized by the largest D (D capped at d_cap:
     at ~110 km cells a margin is one cliff-like step the model can't
     resolve). Outflow is limited to what a cell holds, so H stays >= 0 and
     ice is exactly conserved. Only the `active` cells (ice and a 2-cell
@@ -124,12 +124,18 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
                 continue
             si = _surf(bed, H, sl, flt, i)
             gx, gy, gz = 0.0, 0.0, 0.0
+            down2 = 0.0
             for e in range(off[i], off[i + 1]):
-                w = 0.5 * elen[e] * (_surf(bed, H, sl, flt, idx[e]) - si)
+                sj = _surf(bed, H, sl, flt, idx[e])
+                w = 0.5 * elen[e] * (sj - si)
                 gx += w * ux[e]
                 gy += w * uy[e]
                 gz += w * uz[e]
-            g2 = (gx * gx + gy * gy + gz * gz) / (area[i] * area[i])
+                if sj < si:
+                    down2 = max(down2, ((si - sj) / dist[e]) ** 2)
+            # (the steepest way down, too: on a lone peak, a one-cell cap on an island, the Green-Gauss sum
+            # of slopes on all sides cancels and the ice would pile up without flowing, 10+ km; PW-199)
+            g2 = max((gx * gx + gy * gy + gz * gz) / (area[i] * area[i]), down2)
             h2 = H[i] * H[i]
             d = min(gamma * h2 * h2 * H[i] * g2, d_cap)
             D[i] = d

@@ -28,12 +28,12 @@ def test_encodings_round_trip(sim4):
     vals = T.frame_values(g, snap, T.jet_of(g, snap))
     assert set(vals) == set(T.RUN_LAYERS) and set(T.RUN_LAYERS) <= set(S.LAYERS)
     for k, v in vals.items():
-        spec = S.LAYERS[k]
+        spec = S.run_spec(k)
         back = S.decode(S.encode(v, spec, g), spec, g)
         v = np.asarray(v, float)
         if k == "downstream":
             assert np.array_equal(back, v), k  # exact: the next cell down, -1 at the sea
-        elif k == "flow":  # log scale: ~2% steps
+        elif spec.get("transform") == "log2p1":  # log scale: ~2-4% steps
             assert np.allclose(back, v, rtol=0.03, atol=0.05), k
         else:
             info = np.iinfo(np.dtype(spec["dtype"]))

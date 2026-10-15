@@ -43,7 +43,7 @@ import numpy as np
 
 from ..geo import R_KM, latlon
 from . import mantle
-from .isostasy import ISO_LAND, ISO_VOLCANO, LIFT, OCEAN_KM, elevation, isostasy, ocean_depth, sediment_km
+from .isostasy import ISO_LAND, ISO_VOLCANO, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
 from ..surface import HOTSPOT
 
 ARC, VENT = 0, 1  # kinds
@@ -278,7 +278,7 @@ def new_vent(sim, rng, kind, k, ppos, c, vid, plume=-1, vol=0.0, life=0.0):
     v["base0"] = base_level(sim, v)
     if kind == ARC:
         # a stratocone: z = H exp(-r / lam), H = ARC_SLOPE lam, volume 2 pi lam^2 H (of relief)
-        relief_km3 = vol * float(isostasy(np.array([cont]), np.array([sim.w_rock[c]]))[0]) / 1000.0
+        relief_km3 = vol * float(iso_rate(np.array([cont]), np.array([sim.w_rock[c]]))[0]) / 1000.0
         H = (ARC_SLOPE**2 * relief_km3 / (2 * np.pi)) ** (1 / 3)  # km
         v.update(vol=float(vol), height=H * 1000.0, r=H / ARC_SLOPE, top=floor + H * 1000.0)
     sim.volcanoes.append(v)

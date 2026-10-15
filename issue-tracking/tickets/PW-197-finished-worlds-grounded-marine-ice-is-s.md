@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-091, PW-189]
 refs: [planet/finish.py, tools/earth_data.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,4 +24,5 @@ appear); the surface is right. meta.marine_ice_floored_cells counts them. A prop
 "ice-covered, bed below sea level" as land (ties to PW-189 glacial isostasy).
 
 ## Updates
+- 2026-10-15: Ice: runs and time-zoom frames store the true bed; worlds still floor at 1 m (no world bed layer yet).
 - 2026-10-14: Created from inbox draft draft-finish-marine-ice.md (found by finish).

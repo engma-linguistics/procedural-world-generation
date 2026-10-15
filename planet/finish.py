@@ -43,8 +43,7 @@ from . import store as S
 from . import timeline as T
 from . import world as W
 from .grid import build_grid
-
-BED_FLOOR = 1.0  # m: grounded ice on a bed at or below sea level keeps its cell land (earth_data's rule)
+from .tectonics.isostasy import land_view
 
 
 def load_timezoom(ref: str) -> tuple[Path, dict]:
@@ -73,14 +72,12 @@ def frame_state(tz_dir: Path, i: int) -> dict:
     run, arr = T.load_frames(tz_dir, ("elevation", "ice"))
     surf = T.frame(run, arr, "elevation", i).astype(float)
     ice = T.frame(run, arr, "ice", i).astype(float)
-    bed = surf - ice
-    # grounded ice on a sunken bed (marine ice, deep isostatic dips): floored land, as earth_data does
-    low = (ice > 0) & (bed < BED_FLOOR)
-    bed = np.where(low, BED_FLOOR, bed)
-    ice = np.where(low, np.maximum(surf - BED_FLOOR, 0.0), ice)
+    bed = surf - ice  # (the true bed: below sea level under a marine sheet or a deep isostatic dip;
+    # the world's finishing floors it, isostasy.land_view)
     s = run["frames"][i]["stats"]
     return {"elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
-            "tilt": s["obliquity"], "floored_cells": int(low.sum()), "stats": s, "t": run["frames"][i]["t"]}
+            "tilt": s["obliquity"], "floored_cells": int(land_view(bed, ice)[2].sum()), "stats": s,
+            "t": run["frames"][i]["t"]}
 
 
 def find_finished(tz_id: str, t_kyr: float) -> Path | None:
@@ -137,6 +134,8 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
     or rock record, so only the time zoom's bed and ice go through the
     finishing (as tools/earth_world.py, without the observations)."""
     grid = build_grid(level)
+    bed, ice, _ = land_view(state["elevation"], state["ice"])
+    state = {**state, "elevation": bed, "ice": ice}
     land = state["elevation"] > 0
     meta = {"method": "earth", "seed": 0, "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
             "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),

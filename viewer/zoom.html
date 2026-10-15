@@ -90,7 +90,7 @@
 const $ = (id) => document.getElementById(id);
 const R_KM = 6371;
 const LAYERS = [
-  ['satellite', 'Satellite'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
+  ['satellite', 'Satellite'], ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
   ['fire_return', 'Fire return'], ['lai', 'Leaf area'],
@@ -449,6 +449,7 @@ function render() {
     return;
   }
   if (k === 'satellite') { satellite(oc); markLegend(); draw(); return; }
+  if (k === 'relief') { relief(oc); markLegend(); draw(); return; }
   const img = oc.createImageData(nx, ny), px = img.data;
   const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
   const overlay = $('rivers').checked;
@@ -568,6 +569,52 @@ function satellite(oc) {
   const sn = { '': "each hemisphere's summer", jul: 'July', jan: 'January' }[state.season];
   $('legend').innerHTML = `<span>true colour, ${sn}: plants by type and season, bare ground, snow, ice, lakes and sea</span>`
     + `<span class="muted">(planet/satellite.py${cl ? '; clouds: the cover is the climate\'s, the shapes made up' : ''})</span>`;
+}
+// The hypsometric relief map (PW-225; zoom.tint's ramps, as coarse.png): land by height, tinted green
+// (wet) to tan (dry) by the year's rain; sea by depth; hill-shaded; glaciers blue-white, marshes olive,
+// lakes blue, tidal flats mud; rivers (optional) in map blue, wider for the big ones.
+const LAND_WET = [[0, [92, 140, 78]], [300, [122, 160, 92]], [900, [176, 176, 118]], [1700, [160, 132, 96]],
+  [2600, [136, 116, 104]], [3600, [184, 178, 170]], [4800, [224, 218, 208]]];
+const LAND_DRY = [[0, [206, 188, 140]], [300, [196, 172, 124]], [900, [184, 154, 112]], [1700, [160, 128, 96]],
+  [2600, [136, 116, 104]], [3600, [184, 178, 170]], [4800, [224, 218, 208]]];
+const MAP_RIVER = [38, 92, 178], MARSH = [104, 128, 84], FLAT = [156, 150, 122], LAKE = [70, 130, 196];
+function relief(oc) {
+  const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
+  const img = oc.createImageData(nx, ny), px = img.data, sh = state.shade, h = L.elevation, water = L.water;
+  const q = L.discharge, area = L.drainage_area, P = L.precipitation, ice = L.ice, wl = L.wetland, tr = L.tide_range;
+  const rivers = $('rivers').checked, minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
+  let iced = false, marsh = false, flats = false;
+  for (let i = 0; i < n; i++) {
+    const s = sh[i], w = water[i];
+    let c;
+    if (w === 2) c = LAKE;
+    else if (w === 1) {
+      if (tr && tr[i] > 0.8 && h[i] > -0.5 * tr[i]) { flats = true; c = FLAT.map((v) => v * (0.8 + 0.3 * s)); }
+      else { const f = 0.75 + 0.3 * s; c = ramp(SEA, h[i]).map((v) => v * f); }
+    } else if (ice[i] > 0) {
+      iced = true;
+      const f = 0.62 + 0.45 * s; c = ICE_RGB.map((v) => Math.min(255, v * f));
+    } else if (wl && wl[i] > 0) {
+      marsh = true; c = MARSH.map((v) => v * (0.75 + 0.35 * s));
+    } else {
+      const t = Math.min(1, Math.max(0, (P[i] - 250) / 700)), a = ramp(LAND_WET, h[i]), b = ramp(LAND_DRY, h[i]);
+      const f = 0.35 + 0.85 * s;
+      c = [0, 1, 2].map((j) => (a[j] * t + b[j] * (1 - t)) * f);
+      if (rivers && area[i] >= minArea && q[i] > 3) {
+        const al = q[i] > 3000 * wide ? 0.95 : Math.min(0.95, Math.max(0.3, 0.35 + 0.25 * Math.log10(q[i] / 30)));
+        c = c.map((v, j) => v + (MAP_RIVER[j] - v) * al);
+      }
+    }
+    px[4 * i] = c[0]; px[4 * i + 1] = c[1]; px[4 * i + 2] = c[2]; px[4 * i + 3] = 255;
+  }
+  oc.putImageData(img, 0, 0);
+  const g = (st) => st.map(([v, c]) => `rgb(${c}) ${100 * v / 4800}%`).join(',');
+  const sw = (rgb, t) => `<span><span class="sw" style="background:rgb(${rgb})"></span>${t}</span>`;
+  $('legend').innerHTML = `<span>wet</span><div class="grad" style="background:linear-gradient(90deg,${g(LAND_WET)})"></div>
+    <span>dry</span><div class="grad" style="background:linear-gradient(90deg,${g(LAND_DRY)})"></div>
+    <span class="muted">(0 to 4800 m; wet = 950+ mm/yr of rain, dry = under 250)</span>`
+    + (iced ? sw(ICE_RGB, 'glacier / ice sheet') : '') + (marsh ? sw(MARSH, 'marsh') : '') + (flats ? sw(FLAT, 'tidal flats') : '')
+    + sw(LAKE, 'lake');
 }
 // clouds: fractal value noise over the zoom (km, so zooms of any size look alike), thresholded at the share
 function cloudAlpha() {

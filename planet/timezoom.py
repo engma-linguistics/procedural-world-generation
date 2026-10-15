@@ -48,11 +48,15 @@ Model (per 500-yr step, see simulate)
   positive degree days (timezoom_kernels.climate_step).
 - Flow: shallow-ice approximation, nonlinear diffusion with
   D ~ H^5 |grad s|^2 (timezoom_kernels.sia_flow).
-- Isostasy: bedrock sinks to iso_ratio x the ice thickness, relaxing with
-  iso_tau (3 kyr), and rebounds after the ice is gone.
+- Isostasy (ELRA: elastic lithosphere, relaxing asthenosphere): the bed
+  relaxes with iso_tau (3 kyr) toward its settled dip under the ice,
+  iso_ratio x the ice thickness spread by flexure over ~flex_km
+  (tectonics.isostasy.ice_load, as the main run), and rebounds after the
+  ice is gone. The start is settled (the run's bed is already pressed down
+  by its ice).
 - Sea: ice that floats (thinner than 1.12x the water depth) breaks off;
   grounded ice on the sea floor calves at a rate ~ water depth where it
-  meets open water. Sea level falls by the sea water the ice holds / ocean
+  meets open water, or stands in water deeper than calve_depth. Sea level falls by the sea water the ice holds / ocean
   area: 0.89 x the ice above flotation (ice grounded below sea level only
   replaces sea water) plus the room the sinking bed made below sea level
   (Goelzer et al. 2020), so coastlines and land bridges move with the ice.
@@ -82,6 +86,7 @@ from . import world as W
 from .geo import R_KM
 from .grid import Grid, build_grid
 from .provenance import code_version
+from .tectonics.isostasy import FLEX_KM, ICE_SINK, ice_load
 from .timezoom_kernels import climate_step, dilate, sia_flow
 
 R_M = R_KM * 1000.0
@@ -157,9 +162,13 @@ class TZParams:
     enhancement: float = 3.0  # ... times this (common for ice-age ice sheets; also stands in for sliding)
     d_cap: float = 3e8  # m2/yr: cap on the ice diffusivity (unresolved steep margins)
     cfl: float = 0.15  # explicit time step safety factor
-    iso_ratio: float = 0.3  # bedrock sinks this x ice thickness (ice/mantle density) ...
+    iso_ratio: float = ICE_SINK  # bedrock sinks this x ice thickness (ice/mantle density) ...
+    flex_km: float = FLEX_KM  # ... spread over this (km, lithospheric flexure) ...
     iso_tau: float = 3.0  # ... with this e-folding time (kyr)
-    calving: float = 1.0  # per yr: calving speed (m/yr) per m of water depth at a marine ice front
+    calving: float = 1.0  # per yr: calving speed (m/yr) per m of water depth at a marine ice front ...
+    calve_depth: float = 1500.0  # m: ... and wherever grounded ice stands in deeper water than this, even
+    # with no open sea beside it (a deep basin the grid can't resolve: ice flowing into it would float,
+    # break up and melt in the sea water under it, not fill it 10 km thick; PW-199)
 
 
 # --------------------------------------------------------------------------
@@ -376,11 +385,15 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     # state: bedrock relative to the starting sea level, its ice-free rest
     # height (the start is taken as isostatically settled), ice, sea level
     elev0 = np.asarray(src["elev"], float)
-    H = np.where(elev0 > 0, np.asarray(src["ice"], float), 0.0)
+    H = np.maximum(np.asarray(src["ice"], float), 0.0)  # (grounded: also where its load pressed the bed below the sea)
     bed = elev0.copy()
-    bed_rest = bed + p.iso_ratio * H
+
+    def load(h):
+        return ice_load(g, h, p.iso_ratio, p.flex_km)
+
+    bed_rest = bed + load(H)
     sl = 0.0
-    ocean_area = float(area[elev0 <= 0].sum())
+    ocean_area = float(area[(elev0 <= 0) & (H <= 0)].sum())
     V0 = float((H * area).sum())
 
     bed0 = bed.copy()
@@ -606,7 +619,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         if marine.any():
             open_sea = (depth > 0) & (H <= 0)
             nb_open = np.add.reduceat(open_sea[g.nbr_idx], g.nbr_off[:-1]) > 0
-            front = marine & nb_open
+            front = marine & (nb_open | (depth > p.calve_depth))
             frac = np.exp(-p.calving * depth * dt / np.sqrt(area))
             lost += np.where(front, H * (1 - frac), 0.0)
             H[front] *= frac[front]
@@ -614,7 +627,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         flows.append((float(dv[dv > 0].sum()) * gt, float(-dv[dv < 0].sum()) * gt, float((lost * area).sum()) * gt,
                       float(dv[north].sum()) * gt))
         # 4) isostasy
-        bed += (bed_rest - p.iso_ratio * H - bed) * (1 - math.exp(-step / p.iso_tau))
+        bed += (bed_rest - load(H) - bed) * (1 - math.exp(-step / p.iso_tau))
         # 5) sea level from the ice volume
         sl = -(above_flotation(sl) - Vaf0) / ocean_area
         if progress and (s_no + 1) % max(1, n_steps // 20) == 0:

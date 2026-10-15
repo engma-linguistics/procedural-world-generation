@@ -305,6 +305,7 @@ RAMPS['rock age'] = [[0, '#f2e6d0'], [300, '#d9b98c'], [1000, '#a87d5a'], [2000,
 RAMPS.rainfall = RAMPS.precipitation;
 RAMPS['wave power'] = [[0, '#1d2f55'], [5, '#2f6f8f'], [15, '#4fae9b'], [30, '#b8d66b'], [60, '#f2c14e'], [100, '#e8603c']];  // kW/m
 RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];  // m
+RAMPS['bed under ice'] = RAMPS.elevation;  // (runs, time zooms: the bed pressed down by the ice, PW-189)
 RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
 // the sea and the air's moisture (worlds): sea-surface temperature (C), salinity (psu), relative humidity (%), dew point (C)
 RAMPS['sea temperature'] = [[-2, '#3b3a8f'], [4, '#3f74c0'], [10, '#5fb6c8'], [16, '#bfe3b0'], [21, '#f2d77a'], [26, '#ef8f45'], [30, '#b8282a']];
@@ -333,7 +334,7 @@ const VEG_LAYERS = { 'tree cover': 'tree_cover', 'plant cover': 'plant_cover', '
 const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.keys(VEG_LAYERS)]);
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
-                'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed',
+                'ice thickness': 'm of land ice (bare land grey)', 'bed under ice': 'm, the ground with the ice taken off (pressed down by its load; ice faintly outlined)', 'temperature difference': '°C, model minus observed',
                 'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
                 'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
                 humidity: '% rel. humidity, year', 'dew point': '°C dew point, year',
@@ -470,6 +471,10 @@ function cellColors(layer) {
       else if (layer === 'fire return') { const y = L.fire_return[i]; rampFns[layer](y > 0 ? y : 3000, c); if (!y) c.copy(BARE).lerp(OCEAN, 0.1); }
       else rampFns[layer]((sv || L[VEG_LAYERS[layer]])[i], c);
     }
+    else if (layer === 'bed under ice') {
+      rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
+      if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
+    }
     else if (layer === 'ice thickness') {
       if (L.ice[i] > 0) rampFns[layer](L.ice[i], c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
     }
@@ -516,8 +521,8 @@ function cellColors(layer) {
 
 function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
-  if (V.tz) return ['elevation', 'ice thickness', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age']);
-  if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
+  if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age']);
+  if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
     hasLayer('vegetation') ? ['vegetation', 'tree cover', 'NPP'] : []);
@@ -1295,7 +1300,9 @@ function renderLegend() {
   const ov = obsView(state.layer);
   // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
-  $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
+  // (a run's seasonal layers download when a season is picked: the picker shows if the run has them)
+  const sk = SEASONAL[state.layer] && SEASONAL[state.layer] + '_jul';
+  $('seasonRow').style.display = sk && (V.layers[sk] || (V.kind === 'run' && V.run.layers[sk])) && !ov ? '' : 'none';
   $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
   drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
@@ -1906,7 +1913,8 @@ function describe(i) {
       lines.push(`climate ${k.code} (${k.name})`);
     }
     if (L.temperature) lines.push(`mean ${L.temperature[i]} °C`);
-    if (L.ice && L.ice[i] && L.elevation[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`);
+    if (L.ice && L.ice[i] && L.elevation[i] > 0) lines.push(`ice ~${Math.round(L.ice[i])} m thick`
+      + (L.bed ? `, bed ${Math.round(L.bed[i])} m` : ''));
   }
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) lines.splice(3, 0, lk);  // under the elevation
@@ -2404,7 +2412,7 @@ const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8:
 // colour layer / overlay -> the run layers it draws from (elevation is always loaded)
 const LAKE_NEEDS = ['lake_kind', 'lake_depth'];
 const COLOUR_NEEDS = {
-  elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
+  elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
@@ -2415,8 +2423,11 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
                         jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
 
 function layersNeeded() {
-  // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer)
-  const want = ['elevation', 'lake_kind', ...(COLOUR_NEEDS[state.layer] || [])];
+  // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
+  // ice, which says which cells are land (see iceBed)
+  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || [])];
+  // the picked season's temperature or rain (runs since PW-138 store them)
+  if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
   return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
 }
@@ -2500,11 +2511,24 @@ function worldVolcanoes(meta) {
   return out;
 }
 
+// Glacial isostasy (PW-189): a run's elevation is the bed, pressed down by its ice, so grounded ice
+// can sit on a bed below sea level; a time zoom's is the surface (ice included). L.bed keeps the bed,
+// and a run's elevation is floored at 1 m under grounded ice, so it reads as land everywhere (as worlds do).
+function iceBed(L) {
+  if (!L.elevation || !L.ice) return;
+  const n = V.n, e = L.elevation, bed = new Float32Array(n);
+  if (V.tz) { for (let i = 0; i < n; i++) bed[i] = e[i] - L.ice[i]; L.bed = bed; return; }
+  const land = new Float32Array(n);
+  for (let i = 0; i < n; i++) { bed[i] = e[i]; land[i] = L.ice[i] > 0 && e[i] < 1 ? 1 : e[i]; }
+  L.bed = bed; L.elevation = land;
+}
+
 function setFrame(f, repaint = true) {
   const r = V.run;
   V.frame = f; V.t = r.frames[f].t; V.omega = r.frames[f].omega;
   V.layers = {};
   for (const k of Object.keys(V.data)) V.layers[k] = decodeFrame(k, f);
+  iceBed(V.layers);
   V.hotspots = r.frames[f].hotspots;
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;

@@ -2,7 +2,7 @@
 id: PW-138
 title: "Runs: July / January rain (and temperature) in keyframes, so the season picker works on runs"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: store
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-107, PW-126]
 refs: [planet/timeline.py, planet/store.py, viewer/index.html]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -29,4 +29,5 @@ The viewer side is ready: COLOUR_NEEDS for 'rainfall'/'temperature' would need t
 seasonalData() already reads `<layer>_<season>` from V.layers when present.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls2).
 - 2026-10-14: Created from inbox draft draft-run-seasonal-climate.md (found by viewerseason).

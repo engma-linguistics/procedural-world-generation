@@ -23,7 +23,8 @@ of storms thousands of km away (Southern Ocean swell on Chile, Cape Town,
 Western Australia; North Atlantic swell on Ireland and Portugal).
 
 For each ocean cell, rays are traced outward over the sea in N_DIR
-directions, up to D_MAX km or the first land (or sea ice, where a half-year
+directions (each cell's fan turned by its own share of a direction step,
+so the edges of islands' shadows don't line up into streaks), up to D_MAX km or the first land (or sea ice, where a half-year
 is mostly frozen). Walking
 back in along each ray, the sea state travelling toward the cell grows,
 using the "equivalent fetch" method, under each stretch's wind component
@@ -56,7 +57,10 @@ A crude physical proxy, in three factors:
    through narrow, shallow straits co-oscillates weakly, and a basin too
    small to raise its own tide has almost none (the Mediterranean, Baltic
    and Black Sea: a few cm to ~0.3 m). Cells from which most directions
-   reach > D_OPEN km of open water are "open ocean" (connection 1); from
+   reach > D_OPEN km of open water, in a deep basin at least BASIN_KM
+   across, are "open ocean" (connection 1); a smaller deep basin behind a
+   sill (the Arctic Ocean, at L6-L7) raises only its own tide, by its size,
+   and takes the ocean's through its gateways (PW-106); from
    there the tide spreads over the sea as a screened diffusion whose
    conductance between cells is their depth (shallow straits choke it),
    decaying over ~L_TIDE km. A sea with no ocean connection at all gets
@@ -113,7 +117,8 @@ GRAV = 9.81
 # waves
 U_TRADE = 6.5  # m/s for a climate wind vector of length 1
 U_STORM = 6.0  # m/s added at storminess 1 (a mid-latitude winter storm track)
-N_DIR = 16  # ray directions
+N_DIR = 24  # wave ray directions
+N_DIR_TIDE = 16  # directions for the tides' openness and funnelling
 D_MAX = 6000.0  # km: the farthest swell is traced from
 L_SWELL = 8000.0  # km: swell energy e-folding distance
 # The wind isn't steady: for a Weibull (k = 2) spread of speeds about a mean
@@ -121,13 +126,15 @@ L_SWELL = 8000.0  # km: swell energy e-folding distance
 # 6.1^(1/5) = 1.43 x faster.
 GUST = 1.43
 T_STORM = 12.0  # hours a storm's wind blows over the same sea (duration-limited growth)
-LAND_SLOW, L_RECOVER = 0.5, 600.0  # wind off land: slower by this share, recovering over this many km of sea
+LAND_SLOW, L_RECOVER = 0.5, 1200.0  # wind off land: slower by this share, recovering over this many km of sea
 STORM_ZONAL = 0.5  # share of the storminess taken from the latitude belt (rest: the jet's storm tracks)
 SHELF_FRIC_KM, SHELF_FRIC_M = 250.0, 35.0  # bottom friction: e-folding km at the coast's depth scale
 # tides
 R_OPEN = 2.0  # m: tidal range on an open-ocean coast with a narrow shelf
 D_OPEN = 2500.0  # km of open water (direction mean) that makes a cell "open ocean"
 OPEN_FRAC = 0.55  # ... as a share of the D_OPEN-capped mean reach
+DEEP_M, BASIN_KM = 2000.0, 6000.0  # ... and in a deep basin (below DEEP_M) at least BASIN_KM across
+GATE_KM = 100.0  # km: a basin's deep core is this far from shallower water (narrow gateways don't join basins)
 L_TIDE = 3000.0  # km the tide spreads (deep water) from the open ocean into seas
 CONN_POW = 1.0  # the tide's amplitude goes as the connection to this power
 H_COND = 150.0  # m: depth at which a passage conducts the tide fully
@@ -167,13 +174,13 @@ def _basis(p):
 
 
 @njit(cache=True)
-def _march(c0, k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells):
-    """Cells along the great circle from cell c0 in direction k of ndir,
-    every step_rad, up to nsteps steps or the first land cell (included).
-    Fills cells; returns how many."""
+def _march(c0, k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells, off=0.5):
+    """Cells along the great circle from cell c0 in direction k of ndir
+    (turned by off of a direction step), every step_rad, up to nsteps steps
+    or the first land cell (included). Fills cells; returns how many."""
     p0 = centers[c0]
     e1, e2 = _basis(p0)
-    a = 2 * np.pi * (k + 0.5) / ndir
+    a = 2 * np.pi * (k + off) / ndir
     d0 = np.cos(a) * e1 + np.sin(a) * e2
     cur = c0
     m = 0
@@ -205,8 +212,13 @@ def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric
     wk = 4.0 / ndir  # sum over directions of cos^2 (on the downwind half) = ndir / 4
     for t in prange(targets.shape[0]):
         cells = np.empty(nsteps + 1, np.int64)
+        # each cell's fan of rays turned by its own share of a direction step
+        # (golden-ratio sequence): the edges of islands' and capes' shadows
+        # fall between the rays at a different place for each cell, instead
+        # of lining up into straight streaks across the sea
+        off = (targets[t] * 0.6180339887498949) % 1.0
         for k in range(ndir):
-            m, p0, d0 = _march(targets[t], k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells)
+            m, p0, d0 = _march(targets[t], k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells, off)
             for s in range(ns):
                 W = 0.0
                 sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
@@ -381,14 +393,28 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     if not len(targets):
         return (out, {}) if detail else out
     step = 0.45 * h
-    reach = _reach(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, N_DIR, step, int(D_OPEN / step), R_KM)
+    reach = _reach(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, N_DIR_TIDE, step, int(D_OPEN / step), R_KM)
+    depth = np.where(ocean, -elev, 0.0)
     openness = np.zeros(n)
     openness[targets] = np.minimum(reach, D_OPEN).mean(1) / D_OPEN
     near = np.zeros(n)
     near[targets] = (reach >= R_NEAR).mean(1)
     # 1. connection to the open ocean
-    depth = np.where(ocean, -elev, 0.0)
-    fixed = ocean & (openness >= OPEN_FRAC)
+    # ... in a big ocean basin: one of the deep (below DEEP_M) basins at least BASIN_KM
+    # across (sqrt of its area). The tide is raised by whole ocean basins; a
+    # deep sea joined to them over a sill (the Arctic Ocean behind Fram Strait,
+    # the Caribbean) is too small to raise much of its own and gets the
+    # ocean's tide only through its gateways, as any other sea (PW-106).
+    # (basins are told apart by their deep cores, over GATE_KM from shallower water,
+    # so a deep but narrow gateway doesn't join them, whatever the grid level)
+    from .kernels import bfs_within
+    shallow = np.flatnonzero(~(ocean & (depth > DEEP_M))).astype(np.int64)
+    hops, _ = bfs_within(shallow, np.zeros(n, np.int64), grid.nbr_off, grid.nbr_idx, 10 ** 6)
+    deep = ocean & (depth > DEEP_M) & (hops * h > GATE_KM)
+    dlab, dn = grid.components(deep)
+    dsize = np.sqrt(np.bincount(dlab[deep], minlength=dn) * 4 * np.pi * R_KM ** 2 / n)
+    big = deep & (dsize[np.maximum(dlab, 0)] >= BASIN_KM)
+    fixed = big & (openness >= OPEN_FRAC)
     src = np.repeat(np.arange(n), np.diff(grid.nbr_off))
     cond = np.clip(np.minimum(depth[src], depth[grid.nbr_idx]) / H_COND, 0.02, 1.0)
     decay = (h / L_TIDE) ** 2 * 6  # a 6-neighbour cell: spreads ~L_TIDE in deep water
@@ -400,6 +426,13 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     own = np.clip(size / SELF_KM, 0, 1) ** 2
     own[np.unique(lab[fixed])] = 0.0  # (seas joined to the open ocean get its tide, above)
     conn = np.maximum(conn ** CONN_POW, own[np.maximum(lab, 0)])
+    # deep basins too small to count as open ocean raise their own small tide, by
+    # their size, which spreads over their shelves as the ocean's does
+    small = deep & ~big
+    if small.any():
+        val = np.where(small, np.clip(dsize[np.maximum(dlab, 0)] / SELF_KM, 0, 1) ** 2, 0.0)
+        conn = np.maximum(conn, _tide_spread(small, val, cond, decay, grid.nbr_off, grid.nbr_idx, ocean,
+                                             min(iters, 3000)))
     # 2. shelf resonance
     W, hs = _shelf_width(grid, elev, ocean)
     lam = np.sqrt(GRAV * hs) * T_M2 / 1000.0  # km
@@ -408,7 +441,7 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     amp = 1.0 / np.sqrt(np.cos(np.minimum(kw, np.pi / 2)) ** 2 + (R_FRIC * fric) ** 2)
     amp *= np.exp(-np.maximum(W - lam / 4, 0) * fric / L_SHELF_FRIC)
     # 3. funnelling
-    fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR)) ** 0.5, 0.65, 2.2)
+    fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR_TIDE)) ** 0.5, 0.65, 2.2)
     out = np.where(ocean, R_OPEN * conn * amp * fun, 0.0)
     if detail:
         return out, {"connection": conn, "shelf_amp": amp, "funnel": fun, "shelf_km": W, "openness": openness}

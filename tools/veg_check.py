@@ -49,7 +49,7 @@ def _type_group() -> np.ndarray:
     put = {
         "forest/woodland": [1, 2, 3, 4, 5, 6, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 37, 38, 39, 40, 41, 51],
         "savanna": [7, 8, 9, 10, 11],
-        "shrubland": [19, 35, 36], "tundra": [12, 42, 43, 44, 45, 47, 48, 54],
+        "shrubland": [19, 35, 36, 62], "tundra": [12, 42, 43, 44, 45, 47, 48, 54],
         "desert": [13, 14, 16, 17, 59], "grassland": [15, 31, 32, 33, 34, 61], "ice/rock": [46, 49, 57, 58], "wetland": [50, 52, 53, 55, 56], "lake": [60]}
     for k, ids in put.items():
         g[ids] = _G[k]
