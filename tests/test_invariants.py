@@ -257,8 +257,8 @@ def test_climate_fits_ground_after_events():
 
 def test_vegetation_feedbacks_nudge():
     """The vegetation's feedbacks on the climate are nudges (PW-203): a
-    forested continent recycles more rain than a bare one, but the recycled
-    share stays within its band and the albedo moves each half-year by at
+    forested continent recycles more rain than a bare one, (through Budyko's w,
+    which stays within Fu's range), and the albedo moves each half-year by at
     most albedo_cap."""
     from planet import vegetation
     g = build_grid(4)
@@ -271,7 +271,7 @@ def test_vegetation_feedbacks_nudge():
     T = climate.TUNE
     for v in (forest, bare):
         f = climate.vegetation_feedbacks(land, v, T)
-        assert np.all(np.abs(f["et"] - T["et"]) <= T["et"] * T["et_band"] + 1e-12)
+        assert np.all((f["w"] >= 1.5) & (f["w"] <= 4.0))
     cf, cb = climate.compute(g, elev, veg=forest), climate.compute(g, elev, veg=bare)
     assert cf["precip"][land].mean() > cb["precip"][land].mean()
     assert cf["aet"][land].sum() > cb["aet"][land].sum()  # forests give more back to the air
