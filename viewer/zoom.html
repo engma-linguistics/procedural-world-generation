@@ -366,7 +366,7 @@ function hover(ev) {
     <tr><td>lat, lon</td><td>${fmt(la, 3)}, ${fmt(lo, 3)}</td></tr>
     <tr><td>x, y</td><td>${fmt(x, 1)}, ${fmt(y, 1)} km</td></tr>
     <tr><td>elevation</td><td>${fmt(L.elevation[i])} m${L.water[i] === 2 ? ` (lake ${fmt(L.lake_depth[i])} m deep)` : ''}</td></tr>
-    <tr><td>surface</td><td>${wet}${L.ice[i] > 0 ? ', glacier' : ''}</td></tr>
+    <tr><td>surface</td><td>${wet}${L.ice[i] > 0 ? ', glacier' : ''}${L.wetland && L.wetland[i] ? ', marsh' : ''}</td></tr>
     <tr><td>rock</td><td>${name(lg.rocks, L.rock[i])}</td></tr>
     <tr><td>exposed</td><td>${name(lg.rocks, L.surface_rock[i])}</td></tr>
     <tr><td>climate</td><td>${kop.code || ''} ${kop.name || ''}</td></tr>

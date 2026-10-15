@@ -20,4 +20,5 @@ In the zoom: meandering channels and oxbow lakes on low gradients, river terrace
 uplift history), alluvial fans at mountain fronts, floodplains and wetlands.
 
 ## Updates
+- 2026-10-14: zoomland3 (PW-012): coastal plains want proper meanders too; for now CoastalPlain only adds a few metres of micro-relief to the target so its rivers wander.
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).

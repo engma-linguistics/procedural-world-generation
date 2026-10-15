@@ -2,7 +2,7 @@
 id: PW-167
 title: Rift zooms in wet climates fill every closed half-graben with a lake (100+ small lakes)
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: zoom
 effort: s
@@ -30,4 +30,5 @@ Try: lakes only where the basin's catchment runoff exceeds its evaporation
 and fill (not lake) depressions under ~5 km2 outside the half-graben floors.
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoomland3: basin lakes by water balance (zoom_landforms.basin_lakes): runoff in vs open-water evaporation, upstream basins first so full ones spill into the next; closed lakes below the spill, dry flats where streams end; full ones under 5 km2 silt up; rift lakes only on the half-graben floors. f9b027 rebuilt: 155 -> 57 lakes (48 full, 3 closed, 7 silted), lake area 6620 -> 4350 km2; falls 42/28 unchanged.
 - 2026-10-14: Created from inbox draft draft-rift-lake-count.md (found by zoomland2).

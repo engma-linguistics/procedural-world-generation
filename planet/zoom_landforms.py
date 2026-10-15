@@ -27,12 +27,28 @@ the dispatcher (Landforms) blends what they return by the class's weight w_k:
                    A channel crossing a cliff falls over it.
   basins(cx),      0..1 per pixel: where the class's closed depressions stay
   lakes(cx)        closed (not breached, but for rivers >= zoom.BASIN_THROUGH_Q)
-                   and where they hold lakes (else they are filled flat).
+                   and where they may hold water: whether one does is its
+                   water balance's call (basin_lakes(), PW-167: full lakes
+                   spilling into the next, closed lakes below the spill, dry
+                   flats; the rest are filled flat).
+  overlay(cx, h,   metres added to the finished land after the final
+          fin)     drainage (Landforms.finish): a veneer the rivers no longer
+                   reshape (dunes; karst's dolines, poljes, towers), kept off
+                   streams >= overlay_q, mean-neutral over ~a cell; with
+                   `ponds`, its pits below the water table (the first flowing
+                   river down the drainage) hold water.
+  sinks(cx)        0..1: where streams under SINK_Q x this sink (karst; an
+                   erg's wadis): their valleys dry, the water resurging at
+                   springs where they leave the class.
   layers           (attribute) the world layers the class reads, interpolated
                    over its own cells into Ctx.prm (DERIVED: hardness of the
                    exposed and next strata, granite; DEFAULTS for layers a
                    world lacks).
-  axis             (attribute) 'band' / 'gradient': the class gets Ctx.frames,
+  zoned            (attribute) the class gets Ctx.zone (zone_stats(), PW-148):
+                   per pixel the statistics of its connected zone on the
+                   whole coarse grid, so its levels are the same in every
+                   zoom that sees it.
+  axis             (attribute) 'band' / 'gradient' / 'wind': the class gets Ctx.frames,
                    planet-fixed structural patches with their own strike
                    (build_frames): ~200 km Voronoi patches of a jittered 3D
                    lattice, the strike of each read from the coarse cells
@@ -64,9 +80,14 @@ correction weighted to where the classes are, falls over the classes' cliffs
 retreated into gorges (scarp_gorges()), and the result cut again. In the
 final drainage the classes' closed basins become lakes or flats.
 
-Levels are one per zoom (zone_level(), a class's median e*, a zone-wide
-period): flat-lying beds are horizontal, and a level that varied across the
-land faster than its rivers fall would meet them with cliffs from below.
+Levels are one per zone (PW-148): a class's connected region of cells on
+the whole coarse grid (zone_stats()), not the zoom's own pixels, so two
+overlapping zooms put each bench at the same height. Flat-lying beds are
+horizontal: a level that varied across the land faster than its rivers fall
+would meet them with cliffs from below; the caprock's and lava plateau's
+anchor and period are constant over the zone; the escarpment's e* is a
+smooth field of the zone's cells within ~ZONE_LOCAL_KM (it follows the
+margin's height along a long escarpment).
 
 Bench map (bench_map(), shared by batch 1). Anti-aliased (Landforms._bench):
 each cliff spans at least FACE_PX pixels across, and where a band is
@@ -85,24 +106,23 @@ lets the scarp retreat up it (re-entrants, crenulated scarps); a hill above
 a level in front of it becomes a mesa or butte.
 
 Batch 1 (PW-010):
-  escarpment     one band 0.8 e* deep below the escarpment cells' level e*
-                 (their median in the zoom), with a 0.75 cliff: the plateau
+  escarpment     one band 0.8 e* deep below the escarpment zone's level e*
+                 (its cells' median around), with a 0.75 cliff: the plateau
                  stays, the land in front of it steps down to a lowland
                  (Drakensberg, Western Ghats). The class rule puts the scarp at
                  its retreat distance from the rifted coast; valleys below e*
                  make the re-entrants of headward retreat, and the rivers
                  crossing it fall over it.
-  caprock        hard caps (strata_top_km, 40-400 m, at most twice the
-                 land's height above its drainage, so benches show on low
-                 land too) over soft slopes, endlessly repeated down from the
-                 85th percentile of the land: plateau, mesas, buttes and
+  caprock        hard caps (the zone's strata_top_km, 40-400 m, at most 1.5x
+                 the zone's typical relief, so benches show on low land too)
+                 over soft slopes, endlessly repeated down from the zone's
+                 85th percentile of elevation: plateau, mesas, buttes and
                  stepped benches (Grand Staircase); relief 1.5x deeper. A
                  dip (strata_dip, downhill) tilts them into asymmetric
                  cuestas (scarps facing up-dip, long dip slopes).
-  lava plateau   stacked flows: steps of ~60-150 m (a package of flows at
-                 zoom pixels; at least 0.8x the height above the drainage,
-                 and VISIBLE_PX pixels wide on the zone's median slope)
-                 under a flat top (90th percentile, relief x 0.3): stair-
+  lava plateau   stacked flows: steps of >= 110 m (a package of flows at
+                 zoom pixels; 0.65x the zone's typical relief) under a flat
+                 top (the zone's 95th percentile, relief x 0.3): stair-
                  stepped valley sides (Deccan, Columbia River).
 
 Batch 2 (PW-011), on the target and shape hooks:
@@ -120,6 +140,21 @@ Batch 2 (PW-011), on the target and shape hooks:
   shield         Shield: a flattened plain with granite domes and
                  inselbergs; recently glaciated (glaciated_myr): domes
                  ground down, rock basins with lakes.
+
+Batch 3 (PW-012), on the overlay and sinks hooks:
+  karst          Karst: small streams sink (dry valleys, springs); dolines
+                 and poljes (temperate, Dinaric) or towers on a flattened
+                 corrosion plain (wet tropics, Guilin); ponds where pits
+                 reach the water table; limestone vs dolomite (purity).
+  dune field     Dunes: an overlay on the land, type from the seasons' sand
+                 drift (sand_drift, RDP/DP): transverse ridges / barchans,
+                 linear, star; spacing and height from the sand's
+                 thickness; patches oriented by the drift ('wind' frames).
+  coastal plain  CoastalPlain: a smoothed plain sloping to the sea, rivers
+                 wandering over its micro-relief, low cuestas where its beds
+                 dip seaward (a shift by the coarse coast distance); barrier
+                 islands, lagoons and marshes on its wave-dominated coasts
+                 are drawn with the coastline (zoom.build).
 """
 
 from __future__ import annotations
@@ -869,7 +904,8 @@ class LavaPlateau(Synth):
     layers = ("strata_top_km",)
     zoned = True
     FLOW_M = 110.0  # a flow package's step (m), at least
-    RELIEF = 0.7  # x the zone's relief (zone_stats): at least this step
+    RELIEF = 0.65  # x the zone's relief (zone_stats): at least this step
+    TOP = 0.6  # the flat top: the zone's 95th percentile of elevation + this x its relief
 
     def relief(self, cx):
         return 1.5, 1.25
@@ -880,7 +916,7 @@ class LavaPlateau(Synth):
         # narrower than a pixel or two they fade out: Landforms._bench)
         Z = cx.zone
         P = np.maximum(self.FLOW_M, self.RELIEF * Z["relief"])
-        anchor = Z["elev_p95"] + 0.5 * Z["relief"]
+        anchor = Z["elev_p95"] + self.TOP * Z["relief"]
         return Strata(anchor, P, cliff=0.55, power=1.5, top_k=0.3)
 
 
@@ -1267,8 +1303,11 @@ class Dunes(Synth):
             zl = smoothstep(0.4, 1.0, 1.0 - np.abs(2 * tl - 1)) * np.clip(0.75 + 0.45 * nl, 0.0, 1.0)
             return zt, zl
         a, b = one(0), one(1)
-        zt = (1 - F.alpha) * a[0] + F.alpha * b[0]
-        zl = (1 - F.alpha) * a[1] + F.alpha * b[1]
+        # (between two patches the dunes switch over a narrow, wandering seam,
+        # crests ending against it, rather than cross-hatching over the blend)
+        al = smoothstep(0.42, 0.58, F.alpha + 0.12 * cx.noise(10.0, 2, 474))
+        zt = (1 - al) * a[0] + al * b[0]
+        zl = (1 - al) * a[1] + al * b[1]
         # star dunes: peaks with 3-5 arms
         cell, prob, rr = self.STAR
         q, fid, R, ang = blobs(cx.Pk, cell, np.int64(cx.seed + 475), prob, np.array(rr), 1.2, 0.6 * res)

@@ -1,0 +1,40 @@
+---
+title: Half the dune-field cells are cold polar deserts (a 1100-cell erg at 59N, -5 C)
+type: task
+status: needs-decision
+parent: PW-005
+subsystem: surface
+effort: s
+impact: med
+found_by: zoomland3
+blocked_by: []
+relates: [PW-012, PW-096]
+refs: [planet/landform.py, "world:a08983(59.34,-137.96)", "zoom:ee587f"]
+---
+
+## Description
+On world a08983 (run 8571dd @ 408 Myr) dunes cover 5.6% of land, and more
+than half of those cells are cold: the biggest erg (1142 cells, centred
+58.7N -138E) has a mean of -4.6 C and 83 mm/yr; others at -58S (518 cells,
+-6 C) and -52S. Why it is classed so: the rule is only `precip < 150 mm`
+plus sand still piling up (top stratum sandstone grown within 20 Myr). At
+59.3N the land lies in the rain shadow of an ice-capped range 4.3 km high
+(1.7 km of ice at -169E) under steady westerlies, so it gets 20-40 mm/yr,
+and the outwash from that range keeps laying sand on the plain east of it:
+a periglacial sand sea is physically plausible (Kobuk dunes 67N, the
+European sand belt in the last glacial, Antarctic dry valleys), but on
+Earth active ergs are mostly warm subtropical deserts; cold ones are small
+and frozen, snow-covered ground holds the sand much of the year. The zoom
+(PW-012) already makes cold ergs half as active (lower dunes; zoom ee587f
+shows a field of low barchans).
+
+Options:
+- A: keep the rule (cold ergs stay; the zoom damps them). Cheapest.
+- B: add a cold limit to the class rule: warm-month temperature above
+  ~10 C or mean above ~-2 C (frozen, snowy ground: sand sheets / tundra,
+  hills instead).
+- C: use aridity (P / PET < 0.05, hyper-arid) instead of raw precipitation:
+  cold deserts with tiny PET drop out naturally, hot ones with 150-200 mm
+  but huge PET get in.
+Lean: C, maybe with B's warm-month floor; a run change (landform.py), so
+goldens and the showcase move.

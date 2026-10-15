@@ -2,7 +2,7 @@
 id: PW-148
 title: Landform bench levels are chosen per zoom, so overlapping zooms disagree
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: zoom
 effort: s
@@ -36,5 +36,6 @@ under the rivers' ~1 m/km) built from the coarse cells alone.
 - [ ] breach cuts (zoom_landforms.breach) don't grow
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoomland3: levels from the class's whole connected zone on the coarse grid (zone_stats): caprock and lava anchor and period constant per zone, the escarpment's e* a smooth field of its zone's cells within ~200 km; tilted beds measured from the zone's origin. 9b19a0 (250@0.5) and the same area at 500@1 now share anchor 636 m / period 291 m (before 637/322 vs 621/259). Breach-cut px: 9b19a0 2 -> 0, 2d06f8 2934 -> 2763, d3b1c8 1738 -> 1538. Residual (tilted beds' far origin) as an inbox draft.
 - 2026-10-14: 2026-10-14 zoomland2 (PW-011): not done. Batch 2's fold/rift/shield structures are planet-fixed (patch lattice, 3D noise), but the batch-1 bench levels are still per zoom.
 - 2026-10-14: Created from inbox draft draft-zoom-bench-levels-per-zoom.md (found by zoomland1).

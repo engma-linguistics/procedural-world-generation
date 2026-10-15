@@ -94,7 +94,8 @@ Pipeline
    target surface, redrawn on the finished one.
    Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
    shapes the target (the structure the drainage organises around: fold
-   ridges, fault blocks, domes) and reshapes the finished landscape,
+   ridges, fault blocks, domes; a coastal plain or a sand sheet smoothed)
+   and reshapes the finished landscape,
    blended by smooth class weights: the relief around the drainage (flat
    interfluves over steep valley walls), the structure itself (tilted
    fault blocks over flat half-grabens, folds and hogbacks, inselbergs)
@@ -103,7 +104,15 @@ Pipeline
    rivers crossing a cliff fall over it, and the falls retreat into
    gorges. Sills across a flow path are cut through as gaps a few pixels
    wide, but not across a rift's or a scoured shield's closed basins
-   (lakes or flats in the final drainage); each coarse cell's mean is kept. A designed reach crossing
+   (in the final drainage their water balance makes them full lakes that
+   spill into the next, closed lakes below the spill, or dry flats where
+   the streams end: basin_lakes, PW-167); each coarse cell's mean is kept.
+   After the final drainage, overlays (Landforms.finish): dunes on the
+   land, karst's dolines, poljes and towers (ponds where they reach the
+   water table), karst streams sinking (dry valleys) and resurging at
+   springs. A coastal plain's wave-dominated coast gets a barrier island,
+   a lagoon and inlets with the coastline (step 3), and marshes (the
+   `wetland` layer). A designed reach crossing
    an escarpment takes its main fall at the scarp, with the plateau above
    it (the ground it must fit under is lifted: scarp_fall). Any pits
    left are filled. Falls are listed only where the drop stands out from
