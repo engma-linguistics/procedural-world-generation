@@ -1,4 +1,5 @@
 ---
+id: PW-195
 title: "Earth vegetation datasets for the vegetation check: potential vegetation, NPP, tree cover, burned area, observed half-year rain"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: vegprop
 blocked_by: []
 relates: [PW-187]
 refs: [tools/earth_data.py, tools/earth_check.py, "world dc3732", docs/proposals/vegetation.md]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -18,3 +21,6 @@ The vegetation proposal (docs/proposals/vegetation.md §7) validates the model o
 Do: add coarse (~0.5-1 deg) versions of these to earth_data.py (prefer small preprocessed products, e.g. ISLSCP II collections, to keep the download small), map them to the grid like the others, and add obs_precipitation_jul/jan to the Earth world.
 - [ ] datasets downloaded once and cached, total download stays modest (< ~100 MB)
 - [ ] mapped onto L6/L7 grids; documented in docs/overview.md §2.17
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-earth-vegetation-data.md (found by vegprop).
