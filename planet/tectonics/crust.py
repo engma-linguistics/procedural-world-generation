@@ -227,6 +227,26 @@ def subduction_erosion(sim, bd, conv, col, shrink):
         col.x[gone] = 0.0
         col.rec[gone] = record.blank()
         col.lith[gone] = 0
+        floor_age(sim, gone, col.cont)
+
+
+def floor_age(sim, cells, cont):
+    """Continental crust that has just become ocean floor (`cells`) takes
+    the mean age of the ocean floor next to it (none: 0), not its rock's
+    age: ocean depth, sea level and the age of passive margins
+    (events.old_margins) read it as the floor's cooling age, and shreds of
+    a 2 Gyr old continent showed as 2 Gyr old sea floor (PW-191)."""
+    g = sim.grid
+    w = np.flatnonzero(cells)
+    if len(w) == 0:
+        return
+    nb = (~cont) & ~cells
+    ok = nb[g.nbr_idx]
+    s_age = np.add.reduceat(np.where(ok, sim.w_age[g.nbr_idx], 0.0), g.nbr_off[:-1])
+    n_ok = np.add.reduceat(ok.astype(np.int64), g.nbr_off[:-1])
+    age = sim.w_age.copy()
+    age[w] = s_age[w] / np.maximum(n_ok[w], 1)
+    sim.w_age = age
 
 
 def arc_rock(sim, col, growth):
@@ -393,6 +413,7 @@ def coherence(sim, col, trench=None):
         col.cont[weld] = True
         col.cont[shred] = False
         col.rock[shred] = OCEAN
+        floor_age(sim, shred, col.cont)
         sim.book("coherence", v0, col.t * col.cont, 1.0)
     return weld, shred
 
