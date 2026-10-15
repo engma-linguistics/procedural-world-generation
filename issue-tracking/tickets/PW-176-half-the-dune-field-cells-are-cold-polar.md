@@ -2,7 +2,7 @@
 id: PW-176
 title: Half the dune-field cells are cold polar deserts (a 1100-cell erg at 59N, -5 C)
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: surface
 effort: s
@@ -43,5 +43,6 @@ Lean: C, maybe with B's warm-month floor; a run change (landform.py), so
 goldens and the showcase move.
 
 ## Updates
+- 2026-10-14: Status todo -> done. Dune rule: aridity index P/PET < 0.12 (landform.aridity; Oudin PET with the seasons, climate.pet_months; ~UNEP 0.06 since our PET is ~half Penman in hot deserts): a hot desert qualifies up to ~150-170 mm, a cold one below ~30-40 mm. Run 8571dd replayed to 408 Myr: dunes 5.5% -> 3.0% of land, cells with T < 0 C 1544 -> 258, hills 62.0 -> 64.7%, other classes unchanged. Zoom dune activity uses aridity too. Golden regenerated. World a08983 keeps the old classes until the next run (inbox draft). Needed a 2-line change in tectonics/output.py (pass t_warm/t_cold/tilt) (zoompolish).
 - 2026-10-14: Status needs-decision -> todo. Coordinator decision (owner's north star: take the proper fix when it's cheap): use an aridity index (P/PET) for the dune rule instead of raw precipitation, so cold, low-evaporation deserts don't count as ergs unless genuinely arid with an active sand supply.
 - 2026-10-14: Created from inbox draft draft-cold-ergs-dune-rule.md (found by zoomland3).

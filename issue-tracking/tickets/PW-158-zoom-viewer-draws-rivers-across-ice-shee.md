@@ -2,7 +2,7 @@
 id: PW-158
 title: Zoom viewer draws rivers across ice sheets
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: xs
@@ -19,4 +19,5 @@ updated: 2026-10-14
 The landscape pass routes discharge under the ice (rightly: meltwater and the bed's drainage), and the zoom viewer's rivers overlay draws every channel above its threshold, so a polar ice sheet (zoom 516056, world 800c99 at 74,-178) is covered in blue river lines. Either don't draw rivers where `ice > 0` (start them at the snout) or draw them fainter as subglacial drainage. The zoom's own preview.png already hides them under the ice tint.
 
 ## Updates
+- 2026-10-14: Status todo -> done. zoom.html draws no rivers on ice (rivers layer and the river overlay on map layers start at the snout); ice shown pale in the rivers layer with a legend note. docs/review/zoom/516056_rivers.jpg (zoompolish).
 - 2026-10-14: Created from inbox draft draft-zoom-rivers-drawn-on-ice.md (found by zoomice).

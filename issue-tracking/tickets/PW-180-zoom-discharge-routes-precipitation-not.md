@@ -2,7 +2,7 @@
 id: PW-180
 title: Zoom discharge routes precipitation, not runoff, so hyper-arid zooms draw rivers
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -31,4 +31,5 @@ means and the delta discharges don't move much in wet zooms.
 - [ ] a 50 mm/yr zoom has no river it doesn't get from outside
 
 ## Updates
+- 2026-10-14: Status todo -> done. Zoom streams carry the world runoff (land-weighted interpolation; precipitation only if a world lacks runoff); the landscape pass, creep and landform valleys keep the rain-weighted drainage area (else a desert with ~0 runoff has no graded network: cell-mean RMS 27 -> 227 m). Desert zooms: e14044 66 -> 8 px >= 3 m3/s (only the stream entering from outside, ending in the sand), 2d1537 127 -> 12. Wet/savanna: f9b027 maxQ 318 -> 172, falls 42 -> 40; 83e518 falls 27 -> 30; 2d06f8 (savanna, runoff 17% of rain) maxQ 2946 -> 534, falls 15 -> 6; 130acd falls 21 -> 9; delta discharges and cell means unchanged. WF_MIN_Q 50 -> 20, GORGE_Q 100 -> 30 m3/s; other thresholds in an inbox draft (zoompolish).
 - 2026-10-14: Created from inbox draft draft-zoom-rivers-from-precip.md (found by zoomland3).

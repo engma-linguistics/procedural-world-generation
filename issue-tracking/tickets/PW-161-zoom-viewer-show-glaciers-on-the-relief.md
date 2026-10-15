@@ -2,7 +2,7 @@
 id: PW-161
 title: "Zoom viewer: show glaciers on the relief and hillshade layers"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: xs
@@ -19,4 +19,5 @@ updated: 2026-10-14
 The zoom viewer shows the `ice` layer only through the biome view (ice sheet = glaciers since PW-127); the relief view's white is the hypsometric tint of high ground, not ice, so glaciers, ice-free high plateaus and valley tongues can't be told apart there (zoom d2a1d5: the relief view looks snow-capped everywhere above ~3 km, the biome view shows the actual icefields). Tint `ice > 0` pixels blue-white on relief/hillshade, as zoom.preview() does, and maybe add an Ice layer button (thickness).
 
 ## Updates
+- 2026-10-14: Status todo -> done. Glaciers tinted blue-white on relief (over preview.png), hillshade and height layers, with a legend swatch; new Ice layer (thickness ramp). preview.png: bluer glacier tint, bare high ground pale rock instead of snow-white. docs/review/zoom/d2a1d5_relief.jpg, d2a1d5_ice.jpg (zoompolish).
 - 2026-10-14: Created from inbox draft draft-zoom-viewer-relief-ice.md (found by zoomice).
