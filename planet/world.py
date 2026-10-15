@@ -329,7 +329,8 @@ def ascii_map(world: dict, layer: str = "biome", width: int = 120, height: int |
 def _flood(grid: Grid, down, lk: dict, c: dict, sea) -> dict:
     s = hydrology.seasonal_flow(grid, down, lk["order"], np.where(sea, 0.0, c["runoff"]), lk["wet"], c)
     return {"flood_ratio": np.where(sea, 0.0, np.round(s["flood_ratio"], 1)),
-            "flood_month": np.where(sea, 0, s["flood_month"]).astype(int)}
+            "flood_month": np.where(sea, 0, s["flood_month"]).astype(int),
+            "river_frozen": np.where(sea, 0, s["frozen"]).astype(int)}
 
 
 LEGENDS = {
