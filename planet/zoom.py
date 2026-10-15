@@ -1654,6 +1654,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ring_px = [np.flatnonzero(ring & (ring_id == j)) for j in range(len(lakes))]
     lake_seq = sorted(range(len(lakes)), key=lambda j: -lakes[j]["level"])  # upstream lakes first
     srcq = runoff / 1000.0 * res * res + inflow  # km^2 m/yr per pixel
+    # open water's net evaporation (beyond the land's, which runoff already
+    # takes off), m/yr: a lake loses it over its area before passing its water
+    # on (as the coarse world's lakes do, hydrology.lakes; PW-271), and a
+    # landform basin's water balance weighs its inflow against it
+    if "pet" in L and "evaporation" in L:
+        ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
+    else:
+        ls_c = np.full(len(sel), LF_LOSS_MM)
+    fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
+    lake_loss = np.nan_to_num(fv[:, 0]) / 1000.0
     # The landscape's shape (the stream-power grading, creep, the landform
     # classes' valleys) follows the rain-weighted drainage area instead: a
     # desert's wadis are cut by its rare floods, which mean runoff (~0
@@ -1898,15 +1908,18 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         o2 = ZK.receiver_order(r2)
         return (r2, o2, True) if len(o2) == npx else (rec, order, False)
 
-    def route(src, rec, order, outs, split_ok):
+    def route(src, rec, order, outs, split_ok, loss=None):
         """Accumulate src downstream, then pass each open lake's total on at
-        its outlet and divide the water at distributary splits."""
+        its outlet (less loss x its area, floored at 0: open water's
+        evaporation) and divide the water at distributary splits. Returns q
+        and each lake's total inflow (its own rain included)."""
         q = ZK.accumulate(rec, order, src)
         tot = np.zeros(len(lakes))
         for j in lake_seq:
             tot[j] = q[lakes[j]["px"]].sum()
             if outs[j] >= 0:
-                ZK.add_chain(q, rec, outs[j], tot[j])
+                lost = 0.0 if loss is None else loss[lakes[j]["px"]].sum() * res * res
+                ZK.add_chain(q, rec, outs[j], max(tot[j] - lost, 0.0))
         if split_ok:
             for s, kids, f in splits:
                 qs = q[s]
@@ -1931,7 +1944,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         """Receiver overrides (src, dst) and splits for the deltas, laid out
         on the drainage network (rec0, order0) of a landscape iteration."""
         ov, splits = {}, []
-        score = route(srcq, rec0, order0, lake_outlets(rec0), False)[0]
+        score = route(srcq, rec0, order0, lake_outlets(rec0), False, lake_loss)[0]
         assigned = np.zeros(npx, bool)
         rng = np.random.default_rng(seed + 7)
 
@@ -2141,7 +2154,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             delta_floor = np.where(lev, np.maximum(delta_floor, zD + 0.5 + 3.0 * wR_f), delta_floor)
         rec, order, split_ok = reroute(rec, order)
         outs = lake_outlets(rec)
-        Q, _ = route(srcq, rec, order, outs, split_ok)
+        Q, _ = route(srcq, rec, order, outs, split_ok, lake_loss)
         Qg, _ = route(srcg, rec, order, outs, split_ok)
         diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
         dist = res * np.where(diag, 1.4142, 1.0)
@@ -2245,14 +2258,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # flat where the streams end; the rest are filled flat
     lf_lake, lf_depth, lf_sink, lf_counts = np.zeros(npx, bool), np.zeros(npx), np.zeros(npx, bool), {}
     if lf is not None:
-        if "pet" in L and "evaporation" in L:  # (open water's evaporation beyond the land's)
-            ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
-        else:
-            ls_c = np.full(len(sel), LF_LOSS_MM)
-        fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
-        fv = np.nan_to_num(fv)
         surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
-            h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, fv[:, 0] / 1000.0, res, nx, ny,
+            h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, lake_loss, res, nx, ny,
             LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
         h = np.where(active, surf_b, h)
         if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
@@ -2277,7 +2284,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
     ZK.settle(h, rec, order, ~active, res * np.where(diag, 1.4142, 1.0), SETTLE_M)
     outs = lake_outlets(rec)
-    Q, lake_in = route(srcq, rec, order, outs, split_ok)
+    Q, lake_in = route(srcq, rec, order, outs, split_ok, lake_loss)
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
     discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
@@ -2368,6 +2375,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
                          "max_depth_m": round(float(depth[lk["px"]].max()), 1),
                          "inflow_m3s": round(float(lake_in[j] * KM2_M_PER_YR_TO_M3S), 1),
+                         "evaporation_m3s": round(float(lake_loss[lk["px"]].sum() * res * res * KM2_M_PER_YR_TO_M3S), 1),
                          "outlet": [int(outs[j] // nx), int(outs[j] % nx)] if outs[j] >= 0 else None,
                          "outflow_m3s": round(float(discharge[outs[j]]), 1) if outs[j] >= 0 else 0.0}
                         for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])

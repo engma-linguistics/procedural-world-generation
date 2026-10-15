@@ -4,7 +4,7 @@ a basin that fills into an open lake, and radial rivers to the sea."""
 import numpy as np
 import pytest
 
-from planet import hydrology, zoom
+from planet import climate, hydrology, zoom
 from planet.geo import R_KM, latlon, xyz
 from planet.grid import build_grid
 
@@ -51,7 +51,49 @@ def test_lake_passes_its_water_on(lake_zoom):
     lk = lake_zoom["stats"]["largest_lakes"][0]
     assert lk["outlet"] is not None
     assert lk["inflow_m3s"] > 0
-    assert lk["inflow_m3s"] <= lk["outflow_m3s"] < 1.1 * lk["inflow_m3s"]
+    net = lk["inflow_m3s"] - lk["evaporation_m3s"]
+    assert net <= lk["outflow_m3s"] < 1.1 * net
+
+
+@pytest.fixture(scope="module")
+def evap_lake():
+    """The open lake of water_world under a hot sky: open water evaporates
+    1400 mm/yr, 800 more than the land around it (still open: its rivers
+    bring more)."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
+    elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
+    precip = np.full(g.n, 1200.0)
+    c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 1400.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
+    lake = lk["wet"]
+    assert lake.sum() >= 3 and np.all(lk["kind"][lake] == 1), "the basin should still hold an open lake"
+    out = np.flatnonzero(lake & (down >= 0) & ~lake[np.maximum(down, 0)])
+    q_coarse = float(flow[out].max() * 4 * np.pi * R_KM ** 2 / g.n * zoom.KM2_M_PER_YR_TO_M3S)
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lake.astype(int),
+        "lake_level": np.maximum(np.round(lk["level"]), np.round(elev)), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"], "evaporation": c["aet"], "pet": c["lake_evap"] / climate.TUNE["open_water"],
+        "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 2),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
+    }
+    z = zoom.build({"grid": g, "layers": layers, "meta": {"level": 5}}, *LAKE_AT, size_km=1600, res_km=8,
+                   iterations=6, log=lambda *a: None)
+    return z, q_coarse
+
+
+def test_open_lake_evaporates(evap_lake):
+    """An open lake loses its open-water evaporation before passing its water
+    on, as the coarse world's lake does (PW-271): the zoom lake's outflow
+    is close to the coarse lake's (the zoom sees ~90% of its catchment)."""
+    z, q_coarse = evap_lake
+    lk = z["stats"]["largest_lakes"][0]
+    net = lk["inflow_m3s"] - lk["evaporation_m3s"]
+    assert lk["evaporation_m3s"] > 0.25 * lk["inflow_m3s"]
+    assert net <= lk["outflow_m3s"] < 1.05 * net
+    assert 0.8 < lk["outflow_m3s"] / q_coarse < 1.1, (lk, q_coarse)
 
 
 def test_every_lake_fragment_passes_its_water_on(lake_zoom):
