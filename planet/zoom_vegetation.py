@@ -247,7 +247,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     pot = {k: np.zeros((V.NP, nv)) for k in ("npp", "net", "lai", "on_jul", "on_jan")}
     pot["ok"] = np.zeros((V.NP, nv), bool)
     one_d = ("tc", "tw", "tmin", "gdd5", "temp", "precip", "pet_y", "mi", "dry", "lat", "p_summer", "p_winter",
-             "fire_season", "dryair", "cap1", "cap2", "cloud")
+             "fire_season", "summer_drought", "dryair", "cap1", "cap2", "cloud")
     for a in range(0, nv, CHUNK):
         b = min(a + CHUNK, nv)
         sl = slice(a, b)
