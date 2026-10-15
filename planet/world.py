@@ -402,8 +402,8 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
     path = S.path_of("world", file_id)
-    path.write_text(text)
-    path.with_suffix(".txt").write_text(text_report(world, summary))
+    S.write_atomic(path.with_suffix(".txt"), text_report(world, summary))
+    S.write_atomic(path, text)  # (last: a world is listed once its .json is there)
     update_index()
     return path
 

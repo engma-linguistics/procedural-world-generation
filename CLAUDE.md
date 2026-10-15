@@ -1,6 +1,6 @@
 # procgen_world
 
-Planets built by simulation: plate tectonics, climate, rivers and erosion over 0.5–2 Gyr (`planet simulate`) produce a **run**; any moment can be sliced into a **world** (climate, rivers, lakes, biomes, waves, tides); worlds can be refined into **regional zooms** (1–4 km/px) or a **glacial time zoom** (1 Myr of ice ages). A three.js viewer (`planet serve`, port 8765) shows them all. Python 3.12, numpy + numba, run everything with `uv run`.
+Planets built by simulation: plate tectonics, climate, rivers and erosion over 0.5–2 Gyr (`planet simulate`) produce a **run**; any moment can be sliced into a **world** (climate, rivers, lakes, biomes, waves, tides); worlds can be refined into **regional zooms** (1–4 km/px) or a **glacial time zoom** (1 Myr of ice ages). A three.js viewer (`planet serve`, port 8765) shows them all. Python 3.14 (standard GIL build, `.python-version`), numpy + numba, run everything with `uv run`.
 
 - **How it works:** `docs/overview.md` (subsystems, pipeline, data model). CLI and calibration: `README.md`.
 - **Roadmap:** `docs/plan_next.md`. Worktrees, merging, the server, run costs, showcase recipes: `docs/coordination.md`.

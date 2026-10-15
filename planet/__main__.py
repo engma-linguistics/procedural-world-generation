@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from . import highlights as H
+from . import parallel as P
 from . import store as S
 from . import timeline as T
 from . import world as W
@@ -46,16 +47,29 @@ def cmd_show(args):
 
 
 def cmd_simulate(args):
+    if len(args.seed) > 1:  # several runs at once, one worker process each (parallel.simulate_many)
+        specs = [{"seed": s, "level": args.level, "myr": args.myr, "dt": args.dt, "every": args.every,
+                  "set": _parse_set(args.set), "checkpoint_every": args.checkpoint_every,
+                  **({"name": f"{args.name} (seed {s})"} if args.name else {})} for s in args.seed]
+        print(f"{len(specs)} runs, {P.default_workers(len(specs)) if not args.jobs else args.jobs} at once...",
+              flush=True)
+        P.simulate_many(specs, args.jobs, args.threads,
+                        on_done=lambda i, rid: _print_run(S.find_run(rid), f"seed {specs[i]['seed']}: "))
+        return
     params = T.make_params(_parse_set(args.set))
-    name = args.name or f"seed {args.seed}, level {args.level}"
-    out = T.simulate(args.seed, args.level, args.myr, args.dt, args.every, name, params,
+    name = args.name or f"seed {args.seed[0]}, level {args.level}"
+    out = T.simulate(args.seed[0], args.level, args.myr, args.dt, args.every, name, params,
                      checkpoint_every=args.checkpoint_every)
+    _print_run(out)
+
+
+def _print_run(out, prefix=""):
     run = json.loads((out / "run.json").read_text())
     kinds = {}
     for e in run["events"]:
         kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
     last = run["frames"][-1]["stats"]
-    print(f"{S.rel(out)}  [{run['meta']['generated_in_s']}s, {len(run['frames'])} keyframes]  "
+    print(f"{prefix}{S.rel(out)}  [{run['meta']['generated_in_s']}s, {len(run['frames'])} keyframes]  "
           f"events {kinds}  final: {last['plates']} plates, land {last['land_pct']}%")
 
 
@@ -217,16 +231,25 @@ def cmd_highlights(args):
         print(f"{f['rank']:>3}. {f['title']}  ({f['lat']:.2f}, {f['lon']:.2f}; zoom {f['size_km']} km)"
               + (f"  [zoom {f['zoom']}]" if f["zoom"] else ""))
         print(f"     {f['blurb']}")
-    if args.zoom:
-        for f in H.pick_zooms(res["features"], args.zoom):
-            print(f"zooming: {f['title']} ({f['size_km']} km)...", flush=True)
-            r = api.zoom_job(api.zoom_request(src, f), lambda frac, msg: None)
-            print(f"zoom {r['zoom']}  {f['title']}  -> http://127.0.0.1:8765/viewer/zoom.html?id={r['zoom']}")
+    if args.zoom:  # the world is sliced already (above): the zooms are independent, several at once
+        picks = H.pick_zooms(res["features"], args.zoom)
+        jobs = args.jobs or P.default_workers(len(picks))
+        print(f"zooming {len(picks)} places, {min(jobs, len(picks))} at once: "
+              + "; ".join(f"{f['title']} ({f['size_km']} km)" for f in picks), flush=True)
+        P.run(api.zoom_job, [api.zoom_request(src, f) for f in picks], jobs, args.threads,
+              on_done=lambda i, r: print(f"zoom {r['zoom']}  {picks[i]['title']}  "
+                                         f"-> http://127.0.0.1:8765/viewer/zoom.html?id={r['zoom']}", flush=True))
 
 
 def cmd_serve(args):
     from .server import serve
-    serve(args.port, open_browser=not args.no_open)
+    serve(args.port, open_browser=not args.no_open, jobs=args.jobs, threads=args.threads)
+
+
+def _jobs_args(p, help_jobs: str, default=None):
+    p.add_argument("--jobs", "-j", type=int, default=default, metavar="J", help=help_jobs)
+    p.add_argument("--threads", type=int, metavar="T",
+                   help="numba threads per worker process (default: the cores shared out among them, at most 8)")
 
 
 def main():
@@ -245,7 +268,8 @@ def main():
     g.set_defaults(func=cmd_generate)
 
     t = sub.add_parser("simulate", help="time-stepped plate tectonics -> runs/<id>/")
-    t.add_argument("--seed", "-s", type=int, default=1)
+    t.add_argument("--seed", "-s", type=int, nargs="+", default=[1],
+                   help="several seeds: one run each, --jobs at a time in worker processes")
     t.add_argument("--level", "-l", type=int, default=6,
                    help="grid detail: 5=10k cells, 6=41k (~3 min per 500 Myr), 7=164k (~30-40 min per Gyr), "
                         "8=655k (hours); rough times, they vary with load")
@@ -258,6 +282,7 @@ def main():
     t.add_argument("--name", "-n")
     t.add_argument("--set", nargs="*", metavar="KEY=VALUE",
                    help="tectonics params, e.g. --set n_plates=16 start=scattered")
+    _jobs_args(t, "runs at once with several --seed (default: a quarter of the cores)")
     t.set_defaults(func=cmd_simulate)
 
     sl = sub.add_parser("slice", help="replay a run to one moment and build a full world there")
@@ -290,6 +315,8 @@ def main():
     h.add_argument("--at", type=_at, help="time in Myr for a run, or 'auto' (see slice --at)")
     h.add_argument("--zoom", type=int, default=0, metavar="N", help="also make regional zooms of the top N")
     h.add_argument("--refresh", action="store_true", help="recompute instead of using the cached list")
+    _jobs_args(h, "zooms built at once, in worker processes (default: a quarter of the cores, at most N; "
+                  "1: one after the other in this process)")
     h.set_defaults(func=cmd_highlights)
 
     tz = sub.add_parser("timezoom", help="glacial time zoom: ~1 Myr of ice ages from one moment of a run -> runs/<id>/")
@@ -332,6 +359,9 @@ def main():
     v = sub.add_parser("serve", help="open the 3D viewer in a browser")
     v.add_argument("--port", type=int, default=8765)
     v.add_argument("--no-open", action="store_true")
+    from .server import JOBS
+    _jobs_args(v, f"jobs (zooms, time zooms, finished worlds) run at once, each in a worker process "
+                  f"(default {JOBS})", default=JOBS)
     v.set_defaults(func=cmd_serve)
 
     args = ap.parse_args()

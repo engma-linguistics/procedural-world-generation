@@ -23,11 +23,11 @@ import argparse
 import sys
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import timeline as T  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
