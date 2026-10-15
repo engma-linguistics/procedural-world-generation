@@ -57,11 +57,26 @@ def test_wave_fetch_exposed_vs_sheltered(g5, monkeypatch):
     assert sheltered < 0.3 * exposed, (sheltered, exposed)
     assert lee < 0.3 * exposed, (lee, exposed)
     # the open ocean far from land: a fully developed sea for the wind, roughly
-    assert 0.3 * coast._wsat(12.0) < wp[_cell(g, 0, -120)] < 1.5 * coast._wsat(12.0)
+    # (power ~U^5, averaged over the wind's spread of speeds about its mean)
+    full = coast._wsat(12.0) * float(np.sum(coast.GUST_W * coast.GUST_X ** 5))
+    assert 0.3 * full < wp[_cell(g, 0, -120)] < 1.5 * full
 
 
-def test_wave_frozen_sea_blocks(g5):
-    """Sea ice upwind stops the waves like land."""
+def test_wind_spread_moments():
+    """The wind's Weibull (k = 2) spread of speeds: mean ~1, and the moments
+    of the growth law's regimes (U^3, U^(7/3), U^5) as for the distribution
+    (Gamma(1 + p/2) / Gamma(1.5)^p), within 1% (PW-270)."""
+    from math import gamma
+    x, w = coast.GUST_X, coast.GUST_W
+    assert abs(np.sum(w) - 1) < 1e-9 and abs(np.sum(w * x) - 1) < 0.02  # (U^0.5 in v: the least exact)
+    for p in (7 / 3, 3.0, 5.0):
+        assert abs(np.sum(w * x ** p) / (gamma(1 + p / 2) / gamma(1.5) ** p) - 1) < 0.01, p
+
+
+def test_wave_frozen_sea_blocks(g5, monkeypatch):
+    """Sea ice upwind stops the waves like land. (Long storms, so the fetch
+    limits the sea: a 12 h storm's sea is grown within ~200 km.)"""
+    monkeypatch.setattr(coast, "T_STORM", 72.0)
     g = g5
     elev = np.where((g.lon > 0) & (g.lon < 60) & (np.abs(g.lat) < 50), 300.0, -4000.0)
     U, D = np.full((2, g.n), 12.0), np.repeat(_east(g)[None], 2, 0)

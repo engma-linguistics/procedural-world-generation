@@ -43,10 +43,16 @@ open-water share of it, so an Arctic coast open for ~3 months gets waves
 for those months only (and its deltas lean river-dominated).
 
 Wind speed: the climate's half-year mean winds are vectors (~1 = a steady
-trade wind, ~7 m/s). Wave power grows as ~U^5, so storms dominate; the
-effective wind is U_TRADE x |wind| + U_STORM x storminess along the jet's
-storm tracks (climate.storm_track, ~1 in a mid-latitude winter), in each
-half-year, averaged. Calibrated on Earth (tools/coast_check.py).
+trade wind, ~7 m/s). The mean wind speed is U_TRADE x |wind| + U_STORM x
+storminess along the jet's storm tracks (climate.storm_track, ~1 in a
+mid-latitude winter), in each half-year. The speeds spread about it as a
+Weibull (k = 2) distribution; the sea is grown under four speeds of that
+spread and the powers averaged (GUST_X, GUST_W), so a fully developed sea
+(~U^5) gets 6.1 x a steady wind's power, a fetch-limited one (~U^(7/3))
+1.43 x and a duration-limited storm sea (~U^3) 1.91 x. Wind blowing off
+land is slower by LAND_SLOW and recovers over ~L_RECOVER km of sea.
+U_TRADE and U_STORM are calibrated on the open-ocean coasts of Earth
+(tools/coast_check.py).
 
 Tidal range (world layer `tide_range`, m, mean spring-ish range)
 -----------------------------------------------------------------
@@ -118,16 +124,23 @@ from .kernels import walk_nearest
 
 GRAV = 9.81
 # waves
-U_TRADE = 6.5  # m/s for a climate wind vector of length 1
-U_STORM = 6.0  # m/s added at storminess 1 (a mid-latitude winter storm track)
+U_TRADE = 6.5  # m/s (mean) for a climate wind vector of length 1
+U_STORM = 6.0  # m/s (mean) added at storminess 1 (a mid-latitude winter storm track)
 N_DIR = 24  # wave ray directions
 N_DIR_TIDE = 16  # directions for the tides' openness and funnelling
 D_MAX = 6000.0  # km: the farthest swell is traced from
 L_SWELL = 8000.0  # km: swell energy e-folding distance
-# The wind isn't steady: for a Weibull (k = 2) spread of speeds about a mean
-# U, the mean of U^5 (wave power ~ U^5) is 6.1 x U^5, as for a steady wind
-# 6.1^(1/5) = 1.43 x faster.
-GUST = 1.43
+# The wind isn't steady: its speeds spread about the mean U as a Weibull
+# (k = 2, Rayleigh) distribution. The sea is grown under each of a few
+# speeds x U and the powers averaged, so each regime of the growth law gets
+# its own moment of the spread (a fully developed sea ~U^5: 6.1 x a steady
+# wind's power; fetch-limited ~U^(7/3): 1.43; duration-limited ~U^3: 1.91;
+# PW-270). For k = 2, (U / scale)^2 is exponentially distributed, so the
+# nodes are 4-point Gauss-Laguerre's (exact for these moments to <0.3%).
+_GL_V = np.array([0.322547689619, 1.745761101158, 4.536620296921, 9.395070912301])
+_GL_W = np.array([0.603154104342, 0.357418692438, 0.038887908515, 0.000539294706])
+GUST_X = np.sqrt(_GL_V) / 0.886226925453  # speeds per unit mean (scale = 1 / Gamma(1.5))
+GUST_W = _GL_W / _GL_W.sum()
 T_STORM = 12.0  # hours a storm's wind blows over the same sea (duration-limited growth)
 LAND_SLOW, L_RECOVER = 0.5, 1200.0  # wind off land: slower by this share, recovering over this many km of sea
 STORM_ZONAL = 0.5  # share of the storminess taken from the latitude belt (rest: the jet's storm tracks)
@@ -202,10 +215,11 @@ def _march(c0, k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells
 
 @njit(cache=True, parallel=True)
 def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric, ndir, step_km, nsteps,
-               l_swell, radius, land_slow, l_recover, t_storm):
+               l_swell, radius, land_slow, l_recover, t_storm, gx, gw):
     """Wave power (kW/m) arriving at each target cell, per season (see the
-    module docstring). blocked[s]: land or sea ice in season s; U[s]: wind
-    speed m/s; wdir[s]: unit wind direction (zero where calm); kfric: bottom
+    module docstring). blocked[s]: land or sea ice in season s; U[s]: mean wind
+    speed m/s, spread over speeds gx x U with weights gw (the sea grown under
+    each, the powers averaged); wdir[s]: unit wind direction (zero where calm); kfric: bottom
     friction per km. Wind coming off land is slowed by the land's roughness
     (by land_slow) and recovers over the sea over ~l_recover km (the marine
     boundary layer): over a small sea the wind never gets up to speed.)"""
@@ -223,37 +237,38 @@ def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric
         for k in range(ndir):
             m, p0, d0 = _march(targets[t], k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells, off)
             for s in range(ns):
-                W = 0.0
-                sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
-                for j in range(m - 1, -1, -1):
-                    c = cells[j]
-                    if blocked[s, c]:
-                        W = 0.0
-                        sea_km = 0.0
-                        continue
-                    sea_km += step_km
-                    sa = j * step_rad
-                    # the waves travel inward: minus the ray's outward tangent
-                    cosd = 0.0
-                    for i in range(3):
-                        cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
-                    u = U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
-                    grew = False
-                    if cosd > 0.0 and u > 0.5:
-                        fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
-                        # a storm blows for only ~t_storm: the sea gets no older than that
-                        # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
-                        fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
-                        ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
-                        fs = min(fs, fd)
-                        if W < ws:
-                            feq = fs * (W / ws) ** 0.75 + step_km
-                            W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
-                            grew = True
-                    if not grew:
-                        W *= np.exp(-step_km / l_swell)
-                    W *= np.exp(-step_km * kfric[c])
-                out[t, s] += wk * W
+                for g in range(gx.shape[0]):  # each speed of the wind's spread
+                    W = 0.0
+                    sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
+                    for j in range(m - 1, -1, -1):
+                        c = cells[j]
+                        if blocked[s, c]:
+                            W = 0.0
+                            sea_km = 0.0
+                            continue
+                        sea_km += step_km
+                        sa = j * step_rad
+                        # the waves travel inward: minus the ray's outward tangent
+                        cosd = 0.0
+                        for i in range(3):
+                            cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
+                        u = gx[g] * U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
+                        grew = False
+                        if cosd > 0.0 and u > 0.5:
+                            fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
+                            # a storm blows for only ~t_storm: the sea gets no older than that
+                            # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
+                            fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
+                            ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
+                            fs = min(fs, fd)
+                            if W < ws:
+                                feq = fs * (W / ws) ** 0.75 + step_km
+                                W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
+                                grew = True
+                        if not grew:
+                            W *= np.exp(-step_km / l_swell)
+                        W *= np.exp(-step_km * kfric[c])
+                    out[t, s] += gw[g] * wk * W
     return out
 
 
@@ -305,7 +320,7 @@ def _season_winds(grid, elev, c, ice):
     U, D = [], []
     for v, tr in zip((c["wind_jul"], c["wind_jan"]), tracks):
         sp = np.linalg.norm(v, axis=1)
-        U.append(GUST * (U_TRADE * sp + U_STORM * np.clip(tr, 0, 2)))
+        U.append(U_TRADE * sp + U_STORM * np.clip(tr, 0, 2))
         D.append(np.where(sp[:, None] > 1e-6, v / np.maximum(sp, 1e-6)[:, None], 0.0))
     return np.array(U), np.array(D), sea_ice_share(grid, elev, c)
 
@@ -354,7 +369,7 @@ def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: 
     step = 0.45 * grid.spacing * R_KM
     nsteps = int(D_MAX / step)
     p = _wave_rays(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, blocked, U, np.ascontiguousarray(D),
-                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0)
+                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0, GUST_X, GUST_W)
     out = np.zeros(grid.n)
     out[targets] = (p * (1.0 - icy[:, targets].T)).mean(1)
     return out
