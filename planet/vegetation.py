@@ -129,15 +129,17 @@ PFTS = [dict(zip(_COLS, r)) for r in _ROWS]
 # type can't hold its own (heath: cool summers)
 _TUNE = {  # (tuned on Earth with tools/veg_check.py; overrides of the table above)
     "TeNE": dict(eps=0.95, gamma=0.005), "BoNS": dict(eps=0.95, lma=35),
-    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3), "TrBE": dict(gamma=0.005),
+    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3, gamma=0.04, carbon=3000), "TrBE": dict(gamma=0.005),
     "TrBR": dict(eps=1.0, carbon=13000, gamma=0.008, resist=0.93), "TeBE": dict(gamma=0.006), "BoNE": dict(gamma=0.005, carbon=10000),
     "TeBS": dict(eps=1.15, gamma=0.005, carbon=11000),
 }
 PIONEERS = ("BoBS", "BoNS")  # light-hungry trees that shade-tolerant ones crowd out (birch, aspen, larch)
 for _p in PFTS:
     _p.update(_TUNE.get(_p["code"], {}))
-    _p["wue"] = {"C4G": 4.0, "Succ": 5.0}.get(_p["code"], 3.0)
+    _p["wue"] = {"C4G": 4.0, "Succ": 4.0}.get(_p["code"], 3.0)
     _p["tw_max"] = {"HthS": 20.0, "DecS": 20.0, "TunH": 18.0}.get(_p["code"], 99.0)
+    # mm/yr: succulents need rain (or fog) most years; the hyper-arid cores of deserts are barren
+    _p["p_min"] = {"Succ": 100.0}.get(_p["code"], 0.0)
 CODES = [p["code"] for p in PFTS]
 NP = len(PFTS)
 IDX = {c: i for i, c in enumerate(CODES)}
@@ -406,7 +408,7 @@ def envelope(s: dict, co2: float = 0.0) -> np.ndarray:
     for i, p in enumerate(PFTS):
         tw_min = p["tw"] + (3.0 * float(np.clip(co2, -1.5, 1.5)) if i == C4 else 0.0)
         out[i] = ((s["tc"] >= p["tc_min"]) & (s["tc"] <= p["tc_max"]) & (s["tmin"] >= p["tmin"])
-                  & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]))
+                  & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]) & (s["precip"] >= p["p_min"]))
     return out
 
 
@@ -620,16 +622,18 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     flat = np.clip(1 - rel / 400.0, 0, 1)
     area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
     q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
-    plain = 0.25 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
-    surplus = np.clip((s["precip"] - s["pet_y"]) / 800.0, 0, 1)
-    wet = 0.2 * surplus * flat ** 2
-    perma = 0.3 * (s["temp"] < -2) * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2
+    plain = 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
+    # flat ground with more rain than evaporation can't drain it all (mires),
+    # the more so where it is cool (slow decay builds peat that holds the water)
+    mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
+    wet = 0.6 * np.clip((mi - 0.9) / 0.6, 0, 1) * flat ** 3 * np.clip((10.0 - s["temp"]) / 10.0, 0.3, 1.0)
+    perma = 0.35 * (s["temp"] < -2) * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2
     lk = np.isin(np.asarray(lake_kind), (OPEN_LAKE, CLOSED_LAKE))
     shore = np.zeros(grid.n)
     if lk.any():
         nb = np.add.reduceat(lk[grid.nbr_idx].astype(float), grid.nbr_off[:-1])
         shore = 0.15 * (nb > 0) * ~lk
-    f = np.clip(plain + wet + perma + shore, 0, 0.6)
+    f = np.clip(1 - (1 - plain) * (1 - wet) * (1 - perma) * (1 - shore), 0, 0.75)
     if ice is not None:
         f = np.where(ice > 0, 0.0, f)
     return np.where(land, f, 0.0)
@@ -653,7 +657,13 @@ def _competition() -> np.ndarray:
         C[TREES, i] = 0.4  # ...and takes little from them
     np.fill_diagonal(C, 1.0)
     C[:, GROUNDS] = np.where(GROUNDS[:, None], C[:, GROUNDS], 0.0)  # ground layers don't crowd the vascular plants
-    return C
+    # The flooded share is its own habitat: wetland types meet only the part of
+    # the others that grows on flooded ground (by their flood tolerance), and
+    # dryland types don't meet the wetland types at all.
+    wet, flood = _col("wet"), _col("flood")
+    hab = np.where(wet[:, None] > 0, flood[None, :], 1.0 - wet[None, :])
+    np.fill_diagonal(hab, 1.0)
+    return C * hab
 
 
 _C = _competition()

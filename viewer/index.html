@@ -40,6 +40,10 @@
   #marks span { position: absolute; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent;
     border-top: 6px solid #ffd27c; border-bottom: 0; pointer-events: auto; cursor: pointer; }
   #marks span.tz { border-top-color: #9fd3ff; }
+  /* with a vegetation view: when each plant group appeared (run meta plant_groups) */
+  #marks span.veg { border-top-color: #6fdc6f; }
+  #marks b { position: absolute; top: -13px; transform: translateX(-50%); font: 9px ui-monospace, Menlo, monospace;
+    color: #8fe08f; white-space: nowrap; pointer-events: auto; cursor: pointer; }
   .tree { margin: 2px 0 0 4px; }
   .tree div { padding: 1px 0; }
   .tree .sub { margin-left: 14px; }
@@ -145,6 +149,9 @@
       title="Our climate model on the real Earth, or what is observed there, or the difference (model minus observed)">
       <button data-v="model" class="on">model</button><button data-v="obs">observed</button><button data-v="diff">difference</button></div>
     <!-- the season of temperature / rain (worlds with *_jul / *_jan layers); shared with the winds' picker and ?season= -->
+    <!-- the plant functional type the 'plant type' layer shows (?pft=) -->
+    <label id="pftRow" style="margin-top:6px;display:none" title="Cover of one plant functional type: where are the larches?">
+      plant type <select id="pftSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
     <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
       season <select id="layerSeason" style="flex: none; width: auto; padding: 1px">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
@@ -309,13 +316,31 @@ RAMPS.sunshine = [[0, '#2e3348'], [2, '#4d5674'], [4, '#8a93a6'], [6, '#d3d3c0']
 RAMPS['temperature difference'] = [[-10, '#2b5fb3'], [-5, '#7fa8de'], [-1, '#eef1f4'], [1, '#eef1f4'], [5, '#e8956b'], [10, '#b2262b']];
 RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], [0.2, '#f0ece2'], [1, '#80cdc1'], [2, '#018571']];
 RAMPS['sunshine difference'] = [[-4, '#4d5674'], [-2, '#a3b1bf'], [-0.5, '#f0ece2'], [0.5, '#f0ece2'], [2, '#efd98a'], [4, '#e57a22']];
+// vegetation (worlds; tree cover and NPP also in runs)
+RAMPS['tree cover'] = [[0, '#e8dcb0'], [10, '#cdd28a'], [30, '#8fb85f'], [60, '#3f8f3f'], [90, '#1f5a2a']];
+RAMPS['plant cover'] = [[0, '#efe0b0'], [25, '#d8cf8a'], [50, '#a9c46a'], [75, '#5f9f4a'], [100, '#2f6f3a']];
+RAMPS['canopy height'] = [[0, '#efe6c8'], [2, '#c9cf8a'], [8, '#8fb85f'], [20, '#4f8f45'], [35, '#2a6a3a'], [50, '#123f2a']];
+RAMPS['leaf area'] = [[0, '#efe6c8'], [1, '#cfd28a'], [2.5, '#8fbf5a'], [4, '#4f9a45'], [6, '#1f6a32']];
+RAMPS.NPP = [[0, '#f2ead0'], [100, '#e3d28a'], [300, '#b9c85f'], [600, '#6faf45'], [900, '#2f8a3a'], [1300, '#0f5a2a']];
+RAMPS.biomass = [[0, '#f2ead0'], [10, '#d8d28a'], [50, '#9cc060'], [120, '#4f9a45'], [250, '#1f6a32'], [400, '#0a3f22']];
+RAMPS['fire return'] = [[0, '#3a2a2a'], [1, '#e8503a'], [3, '#f09a3a'], [10, '#f2d36a'], [50, '#c9d6a0'], [300, '#8fb0a0'], [3000, '#4f6f80']];
+RAMPS['stand age'] = [[0, '#f2d36a'], [20, '#c9cf8a'], [80, '#7fb05a'], [200, '#3f8a45'], [600, '#1f5a3a'], [2000, '#0f3a2a']];
+RAMPS['plant type'] = [[0, '#2a2a2a'], [100, '#ffffff']];  // (drawn in the PFT's own colour)
+const VEG_LAYERS = { 'tree cover': 'tree_cover', 'plant cover': 'plant_cover', 'canopy height': 'canopy_height',
+                     NPP: 'npp', biomass: 'biomass', 'fire return': 'fire_return', 'stand age': 'stand_age' };
+const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.keys(VEG_LAYERS)]);
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
                 'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed',
                 'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
                 'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
                 humidity: '% rel. humidity, year', 'dew point': '°C dew point, year',
-                cloud: '% cloud cover, year', sunshine: 'hours of bright sunshine a day, year' };
+                cloud: '% cloud cover, year', sunshine: 'hours of bright sunshine a day, year',
+                'tree cover': '% tree canopy cover', 'plant cover': '% of the ground shaded by plants',
+                'canopy height': 'm, tallest layer', 'leaf area': 'm² of leaf per m² (LAI), year',
+                NPP: 'g C/m²/yr net primary productivity', biomass: 't C/ha in living plants',
+                'fire return': 'years between fires (log scale; dark = never)', 'stand age': 'years since the last stand-replacing fire',
+                'plant type': '% cover of the plant type' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -340,7 +365,7 @@ function obsView(layer) {
 // 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
 const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation',
                    'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint', cloud: 'cloud',
-                   sunshine: 'sunshine' };
+                   sunshine: 'sunshine', 'leaf area': 'lai' };
 const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
@@ -357,7 +382,7 @@ function seasonUnits(layer) {
   const s = colourSeason(layer);
   if (!s) return UNITS[layer];
   const half = s === 'jul' ? 'Apr–Sep' : 'Oct–Mar';
-  return { temperature: `°C, ${SEASON_NAMES[s]} mean`, sst: `°C sea surface, ${SEASON_NAMES[s]}`,
+  return { temperature: `°C, ${SEASON_NAMES[s]} mean`, sst: `°C sea surface, ${SEASON_NAMES[s]}`, lai: `m² of leaf per m² (LAI), ${half}`,
            humidity: `% rel. humidity, ${half}`, dewpoint: `°C dew point, ${half}`, cloud: `% cloud cover, ${half}`,
            sunshine: `hours of bright sunshine a day, ${half}` }[SEASONAL[layer]]
     || `mm/yr, ${half} rate`;
@@ -427,6 +452,16 @@ function cellColors(layer) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
+    else if (layer === 'vegetation') {
+      if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
+    } else if (layer === 'plant type') {
+      if (elev[i] <= 0) c.copy(OCEAN);
+      else { const f = (L['veg_' + state.pft]?.[i] || 0) / 100; c.copy(BARE).lerp(pftColor(), Math.sqrt(f)); }
+    } else if (VEG_LAYERS[layer] || layer === 'leaf area') {
+      if (elev[i] <= 0) c.copy(OCEAN);
+      else if (layer === 'fire return') { const y = L.fire_return[i]; rampFns[layer](y > 0 ? y : 3000, c); if (!y) c.copy(BARE).lerp(OCEAN, 0.1); }
+      else rampFns[layer]((sv || L[VEG_LAYERS[layer]])[i], c);
+    }
     else if (layer === 'ice thickness') {
       if (L.ice[i] > 0) rampFns[layer](L.ice[i], c); else c.copy(elev[i] > 0 ? BARE : OCEAN);
     }
@@ -476,7 +511,8 @@ function availableLayers() {
   if (V.tz) return ['elevation', 'ice thickness', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age']);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
-    hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : []);
+    hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
+    hasLayer('vegetation') ? ['vegetation', 'tree cover', 'NPP'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
@@ -484,6 +520,8 @@ function availableLayers() {
   if (V.layers.surface_rock) ls.push('surface rock');
   if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
   if (V.layers.landform) ls.push('landforms');
+  if (V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
+                                   'fire return', 'stand age', 'plant type');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
@@ -1147,6 +1185,8 @@ function renderLegend() {
   // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
   $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
+  $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
+  drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
   if (ov && ov.diff && state.layer === 'climate') {
     el.innerHTML = sw('#3fae5a', 'same class') + sw('#e8c547', 'same group (A, B, C, D or E), another class') +
@@ -1160,6 +1200,30 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
+  } else if (state.layer === 'vegetation') {
+    // the named types present, grouped (forest, savanna, desert, ...), with their share of the land
+    const L = V.layers, cnt = new Map();
+    let land = 0;
+    for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0) { cnt.set(L.vegetation[i], (cnt.get(L.vegetation[i]) || 0) + 1); land++; }
+    const groups = [];
+    for (const t of V.vegTypes) if (cnt.has(t.id) && t.id > 0) {
+      if (!groups.length || groups[groups.length - 1][0] !== t.group) groups.push([t.group, []]);
+      groups[groups.length - 1][1].push(t);
+    }
+    const share = (k) => 100 * cnt.get(k) / land, pct = (k) => (share(k) < 1 ? share(k).toFixed(1) : share(k).toFixed(0));
+    // the types covering at least 0.5% of the land, by group; the rest only counted (hover a cell for them)
+    let rare = 0;
+    el.innerHTML = groups.map(([g, ts]) => {
+      const big = ts.filter((t) => share(t.id) >= 0.5 || t.id >= 57);
+      rare += ts.length - big.length;
+      return big.length ? `<span><b class="muted" style="font-weight:600">${g}:</b></span>` +
+        big.map((t) => `<span title="${esc(t.text || t.name)}">${sw(t.color, '')}${t.name} ${pct(t.id)}%</span>`).join('') : '';
+    }).join('') + `<span class="muted">(named vegetation types, % of land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
+  } else if (state.layer === 'plant type') {
+    const p = V.pfts.find((q) => q.code === state.pft);
+    el.innerHTML = `<div><div class="grad" style="background:linear-gradient(90deg,#6b675f,${p?.color || '#fff'})"></div>
+      <div class="row" style="justify-content:space-between;width:260px"><span>0</span><span class="muted">% cover</span><span>100</span></div></div>
+      <span>${p ? `${p.code}: ${esc(p.name)}` : '?'}</span><span class="muted">(${p ? 'its group: ' + esc(p.group) : ''})</span>`;
   } else if (state.layer === 'biome') {
     const present = new Set(V.layers.biome);
     el.innerHTML = V.biomes.filter((b) => present.has(b.id) && !(b.name === 'lake' && V.layers.lake_kind))
@@ -1223,6 +1287,7 @@ function renderLegend() {
 }
 
 function renderLayerButtons() {
+  fillPfts();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) state.layer = layers[0];
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}">${l}</button>`).join('');
@@ -1457,6 +1522,19 @@ function drawMarks() {
   const tick = (t, names, cls) => `<span class="${cls}" style="left:${(100 * (t - t0) / (t1 - t0 || 1)).toFixed(2)}%" data-t="${t}"
     title="${t} Myr: ${names.join(', ')} (click to go there)"></span>`;
   el.innerHTML = [...tzAt].map(([t, n]) => tick(t, n, 'tz')).join('') + [...at].map(([t, n]) => tick(t, n, '')).join('');
+  // with a vegetation view: a tick and a label where each plant group appeared (vegetation.GROUPS)
+  if (VEG_VIEWS.has(state.layer)) {
+    const short = ['mosses', 'marsh plants', 'conifers', 'flowering plants', 'grasses', 'C4 + CAM'];
+    let last = -1e9, row = 0;
+    for (const g of V.run.meta.plant_groups || []) {
+      if (g.t == null || g.t < t0 || g.t > t1) continue;
+      const xf = 100 * (g.t - t0) / (t1 - t0 || 1), x = xf.toFixed(2), title = `${g.t} Myr: ${esc(g.name)} appear (${g.pfts.join(', ')})`;
+      row = xf - last < 9 ? (row + 1) % 2 : 0;  // close labels alternate between two rows
+      last = xf;
+      el.innerHTML += `<span class="veg" style="left:${x}%" data-t="${g.t}" title="${title}"></span>` +
+        `<b style="left:${x}%;top:${-13 - 10 * row}px" data-t="${g.t}" title="${title}">${short[g.group - 1] || g.group}</b>`;
+    }
+  }
 }
 $('marks').addEventListener('click', (e) => {
   if (e.target.dataset.t == null || V?.kind !== 'run') return;
@@ -1515,6 +1593,28 @@ function drawTint() {
 }
 
 // the landform class of cell i and what makes it (its strata, dips, folds), when loaded
+// the vegetation of cell i: named type, its mix of plant types, structure, productivity, fire
+function vegLines(i) {
+  const L = V.layers;
+  if (!L.vegetation || L.elevation[i] <= 0) return [];
+  const t = V.vegTypes[L.vegetation[i]];
+  const out = [`vegetation: ${t ? t.name : '?'}`];
+  if (L.veg_Moss) {  // a world: the mix
+    const mix = V.pfts.map((p) => [L['veg_' + p.code]?.[i] || 0, p]).filter(([f]) => f >= 3).sort((a, b) => b[0] - a[0]);
+    if (mix.length) out.push(mix.slice(0, 4).map(([f, p]) => `${f}% ${p.name}`).join(', '));
+    const bits = [];
+    if (L.canopy_height[i] > 0) bits.push(`canopy ${L.canopy_height[i]} m`);
+    bits.push(`trees ${L.tree_cover[i]}%`, `NPP ${L.npp[i]} g C/m²/yr`);
+    out.push(bits.join(' · '));
+    const fr = L.fire_return[i];
+    out.push((fr > 0 ? `fires every ~${fr < 10 ? fr : Math.round(fr / 10) * 10} yr` : 'no fires') +
+             (L.tree_cover[i] >= 10 ? ` · stands ~${L.stand_age[i]} yr old` : '') +
+             (L.lai_jul ? ` · leaves: LAI ${L.lai_jul[i].toFixed(1)} Jul, ${L.lai_jan[i].toFixed(1)} Jan` : ''));
+    if (L.flooded && L.flooded[i] >= 10) out.push(`flooded part of the year: ${L.flooded[i]}% of the cell`);
+  } else if (L.tree_cover) out.push(`trees ${Math.round(L.tree_cover[i])}% · NPP ${Math.round(L.npp[i])} g C/m²/yr`);
+  return out;
+}
+
 function landformLines(i) {
   const L = V.layers;
   if (!L.landform || !V.landforms.length || L.elevation[i] <= 0) return [];
@@ -1537,7 +1637,8 @@ function describe(i) {
   const lines = [`cell ${i}${V.pentagons.includes(i) ? ' (pentagon!)' : ''}`,
     `lat ${G.lat[i].toFixed(1)}, lon ${G.lon[i].toFixed(1)}`, `elevation ${L.elevation[i]} m`];
   if (V.kind === 'world') {
-    lines.push(`biome ${V.biomes[L.biome[i]].name}`);
+    if (L.vegetation) lines.push(...vegLines(i));
+    else lines.push(`biome ${V.biomes[L.biome[i]].name}`);
     const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
     if (s) lines.push(`${SEASON_NAMES[s]}: ${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
       ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`);
@@ -1593,6 +1694,7 @@ function describe(i) {
     if (L.crust_thickness) lines.push(`crust ${L.crust_thickness[i]} km thick`);
     if (L.precipitation && L.elevation[i] > 0) lines.push(`rain ${L.precipitation[i]} mm/yr`);
     lines.push(...landformLines(i));
+    lines.push(...vegLines(i));
     if (L.climate && L.elevation[i] > 0) {
       const k = V.koppen[L.climate[i]];
       lines.push(`climate ${k.code} (${k.name})`);
@@ -1682,6 +1784,19 @@ function seg(id, key, after) {
   });
 }
 seg('layerSeg', 'layer', () => refresh(paint));
+// the plant functional type shown by the 'plant type' layer (?pft=BoNS)
+state.pft = 'TrBE';
+function pftColor() { return new THREE.Color(V.pfts.find((p) => p.code === state.pft)?.color || '#ffffff'); }
+function fillPfts() {
+  if (!V?.pfts?.length) return;
+  if (!V.pfts.some((p) => p.code === state.pft)) state.pft = V.pfts[0].code;
+  $('pftSel').innerHTML = V.pfts.map((p) => `<option value="${p.code}"${p.code === state.pft ? ' selected' : ''}>${p.code}: ${esc(p.name)}</option>`).join('');
+}
+$('pftSel').addEventListener('change', () => {
+  state.pft = $('pftSel').value;
+  const u = new URL(location); u.searchParams.set('pft', state.pft); history.replaceState(null, '', u);
+  paint(); updateHover();
+});
 state.obs = 'model';
 seg('obsSeg', 'obs', paint);
 seg('modeSeg', 'mode', () => {
@@ -2038,7 +2153,9 @@ $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e
 function legendFields(leg) {
   return { rocks: leg.rocks, rockColors: leg.rocks.map((r) => r.color), koppen: leg.koppen,
            landforms: leg.landforms || [], landformColors: (leg.landforms || []).map((f) => f.color),
-           koppenColors: leg.koppen.map((k) => k.color), biomes: leg.biomes, biomeColors: leg.biomes.map((b) => b.color) };
+           koppenColors: leg.koppen.map((k) => k.color), biomes: leg.biomes, biomeColors: leg.biomes.map((b) => b.color),
+           vegTypes: leg.vegetation?.types || [], vegColors: (leg.vegetation?.types || []).map((t) => t.color),
+           pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [] };
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?
@@ -2074,6 +2191,7 @@ const COLOUR_NEEDS = {
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
+  vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
 };
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],
@@ -2266,6 +2384,7 @@ function applyUrlOptions() {
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
   if (p.get('season')) setSeason(p.get('season'));
+  if (p.get('pft')) state.pft = p.get('pft');
   if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }

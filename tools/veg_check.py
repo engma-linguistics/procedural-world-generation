@@ -108,6 +108,8 @@ def report(grid, L, v, pv, area_km2, label: str) -> dict:
     out["boreal_mkm2"] = float(a[np.isin(types, [37, 38, 39, 40, 41])].sum() / 1e6)
     out["savanna_grass_mkm2"] = float(a[sav].sum() / 1e6)
     out["desert_xeric_mkm2"] = float(a[np.isin(types, [13, 14, 15, 16, 17, 59])].sum() / 1e6)
+    out["wetland_types_mkm2"] = float(a[np.isin(types, [5, 6, 11, 50, 51, 52, 53, 54])].sum() / 1e6)
+    out["flooded_mkm2"] = float((v["fw"] * a).sum() / 1e6)
     out["tundra_mkm2"] = float(a[np.isin(types, [42, 43, 44, 45, 46, 54, 47, 48, 49, 12])].sum() / 1e6)
     # agreement with potential vegetation
     obs_g = np.where(pv > 0, POTVEG_GROUP[pv], -1)
@@ -174,6 +176,8 @@ def fmt(r: dict) -> str:
              f"  savanna, trop. grass{r['savanna_grass_mkm2']:6.1f} Mkm2         (~20)",
              f"  desert, xeric shrub {r['desert_xeric_mkm2']:6.1f} Mkm2         (~25-30)",
              f"  tundra (+alpine)    {r['tundra_mkm2']:6.1f} Mkm2         (~8-11)",
+             f"  wetland types       {r['wetland_types_mkm2']:6.1f} Mkm2         (cells where wetland dominates; "
+             f"flooded share of all cells {r['flooded_mkm2']:.1f} Mkm2; Earth's wetlands ~5-9)",
              f"  potential-vegetation agreement {r['potveg_agreement']:.1f}%  (target >= 60 obs climate, >= 50 model)",
              "  groups (Mkm2): " + ", ".join(f"{k} {v:.1f}" for k, v in r["group_mkm2"].items()),
              "  NPP by band (model / ~MOD17): " + ", ".join(f"{k}: {m}/{o}" for k, (m, o) in r["npp_zonal"].items()),

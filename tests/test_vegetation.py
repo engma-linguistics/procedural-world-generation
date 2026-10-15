@@ -56,7 +56,7 @@ def ideal():
     arr = np.array([CLIMATES[nm] for nm in names])[k]
     lat = np.asarray(g.lat)
     # (keep each climate on cells of a sensible latitude for its daylight: use |lat| bands)
-    elev = np.full(g.n, 200.0)
+    elev = np.random.default_rng(1).uniform(100.0, 700.0, g.n)  # hilly: no wide flat, waterlogged plains
     v = V.model(g, elev, arr[:, 0], arr[:, 1], arr[:, 2], arr[:, 3], arr[:, 4], 23.4, arr[:, 5], arr[:, 5])
     return g, k, names, v, lat
 
