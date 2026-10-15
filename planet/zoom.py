@@ -2714,7 +2714,7 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
         "params": z["params"],
         "stats": z["stats"],
     }
-    (out / "zoom.json").write_text(json.dumps(meta, indent=1))
+    S.write_atomic(out / "zoom.json", json.dumps(meta, indent=1))
     update_index()
     return out
 
@@ -2750,7 +2750,7 @@ def add_satellite(ref: str | Path) -> Path:
         write_png(d / SAT_FILES[k], img)
     write_png(d / meta["files"]["preview"], preview({"layers": lay, "res": res, "satellite": sat}))
     meta["files"].update({f[:-4]: f for f in SAT_FILES.values()})
-    (d / "zoom.json").write_text(json.dumps(meta, indent=1))
+    S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
     return d
 
 
