@@ -283,22 +283,27 @@ def test_vegetation_feedbacks_nudge():
 def test_sediment_budget_closes(monkeypatch):
     """surface.erode moves rock, it doesn't make or lose it: each step's
     deposits (land, lakes, sea) add up to what it removed, and none is
-    negative (PW-283)."""
-    from planet import surface
+    negative (PW-283). And a closed basin keeps only what fits: no cell
+    where rivers end is filled above the basin's spill point (PW-280)."""
+    from planet import kernels, surface
     steps, real = [], surface.erode
 
-    def wrapped(*a, **kw):
-        out = real(*a, **kw)
-        steps.append((out[3].copy(), out[4].copy()))
+    def wrapped(grid, elev, *a, **kw):
+        out = real(grid, elev, *a, **kw)
+        spill = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)[0]
+        top = elev + out[4] * a[-1]  # (a[-1]: iso_dep, m per km deposited)
+        steps.append((out[3].copy(), out[4].copy(), out[7]["sink"] & (top > spill + 1.0), out[7]["sink"].sum()))
         return out
 
     monkeypatch.setattr(surface, "erode", wrapped)
-    run_sim(myr=40)
-    assert len(steps) >= 10
-    for removed, dep in steps:
+    run_sim(myr=100)
+    assert len(steps) >= 40
+    assert sum(s[3] for s in steps) > 50  # (closed basins to test)
+    for removed, dep, over, _ in steps:
         assert removed.sum() > 0
         assert dep.sum() == pytest.approx(removed.sum(), rel=1e-9)
         assert dep.min() >= -1e-12
+        assert not over.any()
 
 
 def test_hillslope_wear_level_consistent():

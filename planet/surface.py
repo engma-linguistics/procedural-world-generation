@@ -28,8 +28,9 @@ three parts, all scaled by rock and rainfall:
               end a river (hydrology.lakes)
 
 Where the load ends up:
-  land        closed basins and lakes keep what reaches them; on gentle
-              ground rivers drop part of it (floodplains)
+  land        closed basins and lakes keep what reaches them, up to their
+              room (a full basin spills over its rim and its rivers' load
+              runs on); on gentle ground rivers drop part of it (floodplains)
   sea         near the shore first: the delta and the shelf fill up to
               their level (the delta top just above the sea, so the coast
               builds out: progradation), and what's left goes down the
@@ -201,6 +202,72 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
     return dep
 
 
+BASIN_PASSES = 8  # closed basins an overflow may fill in turn on its way down (the Nile into the Nubian hollow)
+
+
+def _closed_basins(grid, elev, land, sink, lake_room, in_pool, dep, iso_dep):
+    """Closed basins keep what reaches them up to their room (PW-280).
+    Rivers end at a closed lake or a closed basin's pit (route), so _route
+    leaves all their load there. A basin holds it up to its spill point,
+    the lowest rim crossing toward the sea (priority-flood of the terrain):
+    a closed lake's floor takes it first, each cell in proportion to the
+    water over it (lake_room: km per cell, up to the lake's surface), so
+    the deepest fill most; once the lake is full of sediment, the rest is
+    spread over the whole hollow in proportion to each cell's room (spill
+    - 5 m - ground, less what it got already), as an open lake's is: the
+    basin fills up from the bottom and nothing rises above the rim. What
+    doesn't fit spills over the rim and runs on down the priority-flood's
+    path to the sea, into the next hollow on it if there is one (which
+    keeps what fits in turn), else into the sea. After BASIN_PASSES
+    basins, what is still over stays on the last one's floor. Open lake
+    cells (in_pool) take no share here: their room is _route's pool_room.
+    Returns dep (km per cell)."""
+    spill, pf_down, _ = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
+    hol, nh = grid.components(land & (spill > elev))
+    at = sink & (hol >= 0) & (dep > 0)
+    if not at.any():
+        return dep
+    inh = hol >= 0
+    room0 = np.where(inh & ~in_pool, np.maximum(spill - 5.0 - elev, 0) / iso_dep, 0.0)
+    load = np.bincount(hol[at], dep[at], nh)
+    dep = dep - np.where(at, dep, 0.0)
+    low = np.full(nh, -1, np.int64)  # each hollow's lowest cell
+    ci = np.flatnonzero(inh)
+    ci = ci[np.argsort(-elev[ci], kind="stable")]
+    low[hol[ci]] = ci
+    # where a hollow's overflow goes: down the priority-flood path from its
+    # spill point to the first cell outside it that is sea or in another hollow
+    dest = np.full(nh, -2, np.int64)  # (-2: not worked out yet; -1: nowhere, it stays)
+    for k in range(BASIN_PASSES + 1):
+        if k == BASIN_PASSES:
+            np.add.at(dep, low[load > 0], load[load > 0])
+            break
+        over = load
+        for cap in (lake_room, room0):  # (the lake's floor first, then the whole hollow)
+            room = np.where(inh, np.maximum(cap - dep, 0), 0.0)
+            rsum = np.bincount(hol[inh], room[inh], nh)
+            share = np.minimum(over / np.maximum(rsum, 1e-30), 1.0)
+            dep = dep + np.where(inh, share[np.maximum(hol, 0)] * room, 0.0)
+            over = over - share * rsum
+        load = np.zeros(nh)
+        for c in np.flatnonzero(over > 1e-15):
+            if dest[c] == -2:
+                t = low[c]
+                while t >= 0 and land[t] and hol[t] in (c, -1):
+                    t = pf_down[t]
+                dest[c] = t if t >= 0 and (not land[t] or hol[t] >= 0) else -1
+            t = dest[c]
+            if t < 0:
+                dep[low[c]] += over[c]
+            elif not land[t]:
+                dep[t] += over[c]
+            else:
+                load[hol[t]] += over[c]
+        if not load.any():
+            break
+    return dep
+
+
 def surface_rock(rock, cover, top, top_km):
     """What's exposed at the surface: the cover's exposed stratum (top,
     top_km: tectonics.record.top through landform.VENEER_KM, i.e. the
@@ -262,7 +329,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     cover = cover - from_cover
     thick = thick - removed
 
-    # route it: lakes and hollows keep what fits, closed lakes all of it, the rest reaches the sea
+    # route it: lakes and hollows keep what fits, closed basins up to their spill point, the rest reaches the sea
     if iso_dep is None:
         iso_dep = iso
     pit_room = np.where(land, np.maximum(filled - elev - 5, 0) / iso_dep, 0.0)
@@ -272,16 +339,13 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     pool, n_pool = grid.components(lk["wet"] & ~lk["sink"])
     m = pool >= 0
     pool_room = np.bincount(pool[m], pit_room[m], n_pool) if n_pool else np.zeros(0)
-    dep = _route(down, order, removed, pit_room, pool, pool_room.copy(), ~land, h, d_km, alluvial)
+    pool_left = pool_room.copy()
+    dep = _route(down, order, removed, pit_room, pool, pool_left, ~land, h, d_km, alluvial)
+    lake_room = np.where(lk["wet"] & lk["sink"], np.maximum(lk["level"] - elev, 0) / iso_dep, 0.0)
+    dep = _closed_basins(grid, elev, land, lk["sink"], lake_room, m, dep, iso_dep)
     if n_pool:
         share = np.bincount(pool[m], dep[m], n_pool) / np.maximum(pool_room, 1e-30)  # (<= 1)
         dep[m] = share[pool[m]] * pit_room[m]
-    # a closed lake spreads what its rivers bring over its floor, deepest most
-    lab, k = grid.components(lk["sink"] & lk["wet"])
-    if k:
-        m = lab >= 0
-        depth = (lk["level"] - elev)[m] + 1.0
-        dep[m] = (np.bincount(lab[m], dep[m], k) / np.bincount(lab[m], depth, k))[lab[m]] * depth
     ocean = ~land
     coast = ocean & (np.add.reduceat(land[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
     dep_sea = _offshore(np.where(ocean, dep, 0.0), elev.astype(float), np.asarray(iso_dep, float), ocean, coast,
