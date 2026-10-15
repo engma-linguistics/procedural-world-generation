@@ -371,3 +371,88 @@ def test_landform_falls_are_listed_with_pools(esc_pair):
     assert "scarp" in kinds, kinds
     scarp = [f for f in st["waterfalls"] if f["kind"] == "scarp"]
     assert all("plunge_pool_m" in f for f in scarp)
+
+
+# ---------------------------------------------------------------------------
+# PW-148: bench levels from the whole zone; PW-167: basin lakes by water balance
+# ---------------------------------------------------------------------------
+def test_zone_levels_are_the_same_in_overlapping_zooms():
+    """A class's zone statistics (zone_stats: the bench levels' source) at a
+    planet point are the same whichever zoom asks, whatever its centre and
+    resolution."""
+    from planet.grid import build_grid
+    from planet.geo import latlon, R_KM, xyz
+    from planet import zoom_kernels as ZK
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    xk, yk = lon * 111.2, lat * 111.2
+    land = np.hypot(xk, yk) < 2000
+    n = g.n
+    L = {"landform": np.where(land, np.where(np.abs(yk) < 900, LF.CAPROCK, LF.HILLS), LF.SEA).astype(np.uint8),
+         "elevation": np.where(land, 300 + 0.2 * xk + 0.1 * yk, -3000.0),
+         "strata_top_km": np.where(land, 0.3 + 0.0002 * xk, 0.0), "strata_dip": np.zeros(n)}
+    sp = g.spacing * R_KM
+    pts = xyz(np.radians(np.array([0.3, 0.6, -0.4])), np.radians(np.array([0.2, -0.5, 0.4])))
+    got = []
+    for lat0, lon0, size in ((0.0, 0.0, 800.0), (0.5, -0.3, 400.0)):
+        fr = zoom.Frame(lat0, lon0)
+        ang = np.arccos(np.clip(g.centers @ fr.c, -1, 1)) * R_KM
+        sel = np.flatnonzero(ang < size * 0.7072 + 4 * sp)
+        cx, cy = fr.to_plane(g.centers[sel])
+        px, py = fr.to_plane(pts)
+        Z = ZL.zone_stats(g, L, LF.CAPROCK, sel, cx, cy, px, py, fr.to_plane,
+                          lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), sp)
+        ox, oy = Z["ox"], Z["oy"]
+        origin = fr.to_sphere(ox, oy)  # (the tilted beds' origin: one planet point)
+        got.append((Z, origin))
+    (a, oa), (b, ob) = got
+    for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "relief"):
+        assert np.allclose(a[key], b[key]), key
+    assert np.allclose(a["elev_local"], b["elev_local"], atol=0.5)
+    assert np.allclose(oa, ob, atol=1e-6)
+    # one zone, its levels from all its cells: the median of its elevations
+    zone = (L["landform"] == LF.CAPROCK) & (L["elevation"] > 0)
+    assert np.allclose(a["elev_p50"], np.median(L["elevation"][zone]))
+
+
+def _bowls(nx, ny, depth=(40.0, 30.0, 20.0)):
+    """A plain sloping east (2 m/km at 0.5 km px) with three round bowls in a
+    row along it, the east edge its outlet."""
+    r, c = np.mgrid[0:ny, 0:nx]
+    h = 200.0 + 1.0 * (nx - c)
+    for k, d in enumerate(depth):
+        cc = 20 + 25 * k
+        rr = np.hypot(r - ny // 2, c - cc)
+        h = h - d * np.clip(1 - rr / 9.0, 0, 1)
+    return h.ravel().astype(float)
+
+
+def test_basin_lakes_follow_the_water_balance():
+    """PW-167: closed depressions fill only where their inflow beats the
+    evaporation: wet, all three bowls are lakes to the brim, each spilling
+    into the next; dry, a closed lake below the spill or a dry flat, and the
+    streams end there."""
+    from planet import zoom_kernels as ZK
+    nx, ny, res = 100, 40, 0.5
+    h = _bowls(nx, ny)
+    outlet = np.zeros(nx * ny, bool)
+    outlet.reshape(ny, nx)[:, -1] = True
+    jit = np.zeros(nx * ny)
+    filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jit)
+    ok = ~outlet
+    can = np.ones(nx * ny)
+    loss = np.full(nx * ny, 1.0)  # m/yr
+    args = (res, nx, ny, 5.0, 2.0, 5.0)
+    src_wet = np.full(nx * ny, 2.0 * res * res)  # 2 m/yr of runoff
+    _, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, can, src_wet, loss, *args)
+    assert n["full"] == 3 and n["closed"] == n["playa"] == 0 and not sink.any(), n
+    assert np.allclose((h + depth)[lake], filled[lake])  # to the brim
+    # dry: 0.05 m/yr of runoff, 1 m/yr lost from open water: no bowl fills
+    src_dry = np.full(nx * ny, 0.05 * res * res)
+    surf, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, can, src_dry, loss, *args)
+    assert n["full"] == 0 and n["closed"] + n["playa"] == 3, n
+    assert sink.any() and np.all((surf + 1e-6 >= h))
+    assert np.all((h + depth)[lake] < filled[lake] - 1.0)  # below the spill
+    # where the class doesn't let them hold water, depressions are just filled
+    surf, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, 0 * can, src_wet, loss, *args)
+    assert not lake.any() and not sink.any() and np.allclose(surf[ok], np.maximum(h, filled)[ok])

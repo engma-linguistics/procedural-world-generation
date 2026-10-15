@@ -378,7 +378,9 @@ SCARP_MIN_W = 0.3  # a designed reach takes its main fall at a landform scarp wh
 LF_CHANNEL_Q = 5.0  # m^3/s: landform relief (zoom_landforms) is shaped around channels carrying this much
 LF_FALL_KIND = {ZL.LF.ESCARPMENT: "scarp", ZL.LF.RIFT: "scarp", ZL.LF.CAPROCK: "bench", ZL.LF.LAVA_PLATEAU: "bench"}
 BASIN_THROUGH_Q = 100.0  # m^3/s: a river this big cuts through a landform's closed basins (rift, scoured shield)
-LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big holds a lake
+LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big can hold a lake...
+LF_FULL_KM2 = 5.0  # ... one full to the brim (spilling) at least this big (a smaller one silts up: a flat)
+LF_LOSS_MM = 300.0  # mm/yr: a lake's net evaporation where the world has no pet / evaporation layers
 
 
 def _under(surface_rock, basement, cover_km, top_km=None, next_rock=None) -> int:
@@ -1125,7 +1127,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- landform classes (zoom_landforms): weights, parameters, hooks ----
     lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
-                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g.centers[sel])
+                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g, fr.to_plane)
 
     def keep_means(z, hh, where, f=None):
         """z with each coarse cell's mean change from hh undone (a smooth
@@ -2145,19 +2147,31 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     # a landform's closed depressions (a rift's basins, a scoured shield's
-    # rock basins) hold lakes where the class says so (Synth.lakes): the
-    # whole depression, if it is LF_LAKE_M deep somewhere and LF_LAKE_KM2 big
-    # (smaller ones are filled flat: alluvial flats, playas)
-    lf_lake, lf_depth = np.zeros(npx, bool), np.zeros(npx)
+    # rock basins) hold water where the class lets them (Synth.lakes) and
+    # their water balance says (zoom_landforms.basin_lakes, PW-167): a lake
+    # to the brim where their inflow beats the evaporation (smaller ones
+    # spilling into the next), else a closed lake below the spill or a dry
+    # flat where the streams end; the rest are filled flat
+    lf_lake, lf_depth, lf_sink, lf_counts = np.zeros(npx, bool), np.zeros(npx), np.zeros(npx, bool), {}
     if lf is not None:
-        dep = np.where(active & ~glacier, filled - h, 0.0)
-        lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
-        if len(sizes):
-            deep = np.zeros(len(sizes), bool)
-            ok = (dep > LF_LAKE_M) & (lf.lakes() > 0.5) & (lab >= 0)
-            deep[lab[ok]] = True
-            lf_lake = (lab >= 0) & deep[np.maximum(lab, 0)] & (sizes[np.maximum(lab, 0)] * res * res >= LF_LAKE_KM2)
-            lf_depth = np.where(lf_lake, dep, 0.0)
+        pr_c = np.asarray(L["precipitation"], float)[sel]
+        ro_c = np.asarray(L["runoff"], float)[sel] if "runoff" in L else 0.5 * pr_c
+        if "pet" in L and "evaporation" in L:  # (open water's evaporation beyond the land's)
+            ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
+        else:
+            ls_c = np.full(len(sel), LF_LOSS_MM)
+        rv = np.column_stack([ro_c, np.maximum(ls_c, 0.0)])
+        fv, _ = ZK.gauss_interp(px, py, cx, cy, rv, np.column_stack([land_c, land_c]).astype(float), 0.5 * sp)
+        fv = np.nan_to_num(fv)
+        src_b = np.maximum(fv[:, 0], 0.0) / 1000.0 * res * res + inflow
+        surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
+            h, filled, rec, order, active & ~glacier, lf.lakes(), src_b, fv[:, 1] / 1000.0, res, nx, ny,
+            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
+        h = np.where(active, surf_b, h)
+        if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
+            outlet = outlet | lf_sink
+            active = active & ~lf_sink
+            filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     rec0 = rec
@@ -2301,6 +2315,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "lakes": int(len(np.unique(ZK.label_components(lake | lf_lake, nx, ny)[0][lake | lf_lake]))),
         # (of which in a landform class's closed basins: a rift's half-grabens, a scoured shield)
         "landform_lakes": int(len(np.unique(ZK.label_components(lf_lake, nx, ny)[0][lf_lake]))),
+        # (their closed basins by water balance: full lakes, closed lakes below the spill, dry flats, silted up)
+        "landform_basins": lf_counts,
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),

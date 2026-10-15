@@ -153,8 +153,15 @@ class Strata:
     cliff: float | np.ndarray = 0.5
     power: float | np.ndarray = 2.0
     top_k: float | np.ndarray = 1.0
-    tilt: tuple | None = None  # (tx, ty) m/km: the bedding drops along (tx, ty)
+    tilt: tuple | None = None  # (tx, ty) m/km: the bedding drops along (tx, ty)...
+    origin: tuple = (0.0, 0.0)  # ... from (ox, oy) km (zoom plane; a planet-fixed point: the zone's own)
     face: float = 0.08  # the share of a band its cliff rises over (bench_map)
+
+    def height(self, h, px, py):
+        """The stratigraphic height s the bench map reads: h, plus the tilt."""
+        if self.tilt is None:
+            return h
+        return h + self.tilt[0] * (px - self.origin[0]) + self.tilt[1] * (py - self.origin[1])
 
 
 def bench_map(s, anchor, period, bands=np.inf, cliff=0.5, power=2.0, top_k=1.0, face=0.08):
@@ -200,22 +207,12 @@ class Ctx:
     relief_m: float | None = None  # its mean height above the drainage (Landforms.remap)
     frames: Frames | None = None  # structural patches (Synth.axis)
     chan: np.ndarray | None = None  # the channels (Landforms.remap)
+    zone: dict | None = None  # per pixel, its zone's statistics (Synth.zoned; zone_stats())
     cache: dict = field(default_factory=dict)
 
     def noise(self, wavelength, octaves, k):
         """fbm ~N(0, 1)-ish at `wavelength` km (seed offset k)."""
         return ZK.fbm(self.Pk, wavelength, octaves, 0.5, self.seed + k) / 0.17
-
-    def zone_level(self, h, q):
-        """The q-th percentile of h over the class's own land (weight > 0.5;
-        else wherever it weighs): one level for the whole zoom. Flat-lying
-        beds are horizontal: levels that varied across the land would tilt
-        them, and a river gentler than the tilt would meet each cliff from
-        below."""
-        on = self.land & (self.w > 0.5)
-        if on.sum() < 10:
-            on = self.land & (self.w > 0)
-        return float(np.percentile(h[on], q)) if on.any() else float(np.max(h))
 
     def zone_relief(self, h):
         """m: the class's typical height above its drainage (set by
@@ -226,14 +223,6 @@ class Ctx:
         if not on.any():
             return 50.0
         return float(np.mean(np.abs(h - self.local_top(h, 0.3 * self.sp, 0.0))[on]))
-
-    def zone_slope(self, h):
-        """m/km: the median slope of h over the class's own land."""
-        on = self.land & (self.w > 0.5)
-        if on.sum() < 10:
-            return 0.0
-        gy, gx = np.gradient(h.reshape(self.ny, self.nx), self.res)
-        return float(np.median(np.hypot(gx, gy).ravel()[on]))
 
     def local_top(self, h, radius_km, k=1.0):
         """A smooth 'interfluve level': the local mean + k standard deviations
@@ -505,6 +494,95 @@ def build_frames(Pk, seed, cells, ind, vals: dict, cues: dict, sp, axis: str) ->
     return Frames((k1, k2), tuple(us), tuple(vs), 0.5 * (1 - smoothstep(0, b, gap)), smoothstep(0, b, gap), out)
 
 
+# ---------------------------------------------------------------------------
+# Zones (PW-148): a class's bench levels from its whole connected zone
+# ---------------------------------------------------------------------------
+ZONE_RELIEF = (0.36, 25.0)  # the zoom's typical relief over a zone: a x its median elevation + b (m; cf. zoom's detail)
+ZONE_LOCAL_KM = 200.0  # elev_local: the zone's cells within ~this of each cell (a Gaussian's sigma)
+
+
+def _wmedian(v, w):
+    o = np.argsort(v)
+    c = np.cumsum(w[o])
+    return float(v[o][np.searchsorted(c, 0.5 * c[-1])])
+
+
+def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
+    """Per pixel, the statistics of its landform zone: the connected region
+    of class k's land cells on the whole coarse grid (not only the cells
+    around the zoom) that the nearest class-k cell belongs to. So a level
+    computed from them is the same in every zoom that sees the zone: two
+    overlapping zooms put the same bench at the same height. Keys:
+    elev_p50/p85/p95 (m), top_km (median strata_top_km), dip (median
+    strata_dip, deg), relief (ZONE_RELIEF: the zoom's typical relief
+    there, m), ox, oy (km: the zone's reference cell on the zoom plane, the
+    origin of tilted beds), id (the zone's label); and elev_local, a smooth
+    field: at each of the class's cells the median elevation of its zone's
+    cells around it (weights falling off over ZONE_LOCAL_KM), interpolated
+    onto the pixels as the class's layers are (a level that follows a long
+    escarpment's height along the margin, gently, and is still the same in
+    every zoom)."""
+    form = np.asarray(L["landform"])
+    elev = np.asarray(L["elevation"], float)
+    lab, nz = grid.components((form == k) & (elev > 0))
+    mine = np.flatnonzero(lab[sel] >= 0)
+    n = len(px)
+    out = {key: np.zeros(n) for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy",
+                                        "elev_local")}
+    out["id"] = np.full(n, -1)
+    if not len(mine):
+        return out
+    zs = np.unique(lab[sel][mine])
+    top = np.asarray(L.get("strata_top_km", np.zeros(grid.n)), float)
+    dip = np.asarray(L.get("strata_dip", np.zeros(grid.n)), float)
+    tab = {}
+    for z in zs:
+        c = np.flatnonzero(lab == z)
+        e = elev[c]
+        ref = c[np.argmin(np.arccos(np.clip(grid.centers[c] @ grid.centers[c].mean(0) / max(
+            np.linalg.norm(grid.centers[c].mean(0)), 1e-12), -1, 1)))]  # (the cell nearest the zone's centroid)
+        ox, oy = to_plane(grid.centers[[ref]])
+        p50, p85, p95 = np.percentile(e, [50, 85, 95])
+        tab[z] = (p50, p85, p95, np.median(top[c]), np.median(dip[c]), ZONE_RELIEF[0] * p50 + ZONE_RELIEF[1],
+                  float(ox[0]), float(oy[0]))
+    # each pixel: the zone of the nearest class cell around the zoom
+    ccx, ccy, cz = cx[mine], cy[mine], lab[sel][mine]
+    near = np.zeros(n, np.int64)
+    best = np.full(n, np.inf)
+    for j0 in range(0, len(ccx), 256):
+        d = (px[:, None] - ccx[None, j0:j0 + 256]) ** 2 + (py[:, None] - ccy[None, j0:j0 + 256]) ** 2
+        a = np.argmin(d, 1)
+        dm = d[np.arange(n), a]
+        better = dm < best
+        near[better], best[better] = a[better] + j0, dm[better]
+    zp = cz[near]
+    out["id"] = zp
+    loc = np.zeros(len(mine))
+    for j, c in enumerate(sel[mine]):
+        zc = np.flatnonzero(lab == lab[c])
+        d = np.arccos(np.clip(grid.centers[zc] @ grid.centers[c], -1, 1)) * R_KM
+        m = d < 3 * ZONE_LOCAL_KM
+        loc[j] = _wmedian(elev[zc][m], np.exp(-0.5 * (d[m] / ZONE_LOCAL_KM) ** 2))
+    ind = np.zeros((len(sel), 1))
+    ind[mine, 0] = 1.0
+    vals = np.zeros((len(sel), 1))
+    vals[mine, 0] = loc
+    f, _ = interp(vals, ind, 0.5 * sp)
+    out["elev_local"] = np.where(np.isfinite(f[:, 0]), f[:, 0], loc[near])
+    for i, key in enumerate(("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy")):
+        vals = np.array([tab[z][i] for z in zs])
+        out[key] = vals[np.searchsorted(zs, zp)]
+    return out
+
+
+def snap(level, period):
+    """level rounded to a whole number of periods above the sea: endless
+    benches then have the same phase whatever level a zone's top bed is
+    put at."""
+    P = np.maximum(period, 1.0)
+    return P * np.round(level / P)
+
+
 @njit(cache=True)
 def lower_envelope(z, src, grad, nx, ny, res):
     """min(z, the lowest src pixel's height + grad x distance): valley walls
@@ -639,6 +717,7 @@ class Synth:
     sigma = 0.5  # x cell spacing: the Gaussian kernel its layers are interpolated with
     axis: str | None = None  # structural patches (Ctx.frames): 'band' or 'gradient' strike (build_frames)
     gaps = False  # rivers (>= GAP_Q) keep their graded beds through the shape hook's structure (water gaps)
+    zoned = False  # levels from the class's whole zone (Ctx.zone: zone_stats(), PW-148)
 
     def target(self, cx: Ctx, h: np.ndarray):
         return None
@@ -663,22 +742,22 @@ class Synth:
 
 
 class Escarpment(Synth):
-    """Great escarpment: one band below the escarpment cells' level e*,
+    """Great escarpment: one band below the escarpment zone's level e*,
     over a moderately flattened plateau."""
     layers = ("elevation",)
     line = True
+    zoned = True
     STEP = (0.8, 200.0, 1500.0)  # band height: fraction of e*, clipped to (m)
 
     def _level(self, cx):
-        """e*: the escarpment cells' level, one for the zoom (a level varying
-        along the margin faster than its rivers fall would meet them with
-        the scarp from below)."""
-        on = (cx.w > 0.5) & cx.land
-        v = cx.prm["elevation"][on] if on.any() else cx.prm["elevation"]
-        return max(float(np.median(v)), 1.0)
+        """e*: the median elevation of the escarpment zone's cells around
+        (zone_stats' elev_local: smooth, following the margin's height over
+        a few hundred km; a level varying along the margin faster than its
+        rivers fall would meet them with the scarp from below)."""
+        return np.maximum(cx.zone["elev_local"], 1.0)
 
     def _step(self, cx):
-        return float(np.clip(self.STEP[0] * self._level(cx), self.STEP[1], self.STEP[2]))
+        return np.clip(self.STEP[0] * self._level(cx), self.STEP[1], self.STEP[2])
 
     def relief(self, cx):
         return 1.2, 1.0
@@ -690,44 +769,41 @@ class Escarpment(Synth):
 class Caprock(Synth):
     """Caprock plateau, mesas, buttes and stepped benches; dipping: cuestas."""
     layers = ("strata_top_km", "strata_dip")
+    zoned = True
     CAP_M = (40.0, 400.0)  # the cap's cliff (m): strata_top_km, clipped
     CLIFF = 0.45  # the cap's share of each bench period (the rest: soft slope)
-    RELIEF = 2.0  # x the zone's height above its drainage: at most this period, so benches show on low land too
-
-    def _cap(self, cx):
-        # (one for the zoom: the bench levels lie whole periods below the
-        # anchor, so a period varying across the land would scatter them)
-        on = (cx.w > 0.5) & cx.land
-        v = cx.prm["strata_top_km"][on] if on.any() else cx.prm["strata_top_km"]
-        return float(np.clip(1000 * np.median(v), *self.CAP_M))
-
-    def relief(self, cx):
-        return 1.5, 1.5
+    RELIEF = 1.5  # x the zone's relief (zone_stats): at most this period, so benches show on low land too
+    TOP = (85, 0.25)  # the top bed: the zone's 85th percentile of elevation + 0.25 x its relief
 
     def strata(self, cx, h):
-        P = min(self._cap(cx) / self.CLIFF, max(self.RELIEF * cx.zone_relief(h), 60.0))
-        anchor = cx.zone_level(h, 85)
-        t = 1000 * np.tan(np.radians(cx.prm["strata_dip"]))  # m/km
+        # (one period and anchor per zone: the bench levels lie whole periods
+        # below the anchor, so a period varying across the land would scatter them)
+        Z = cx.zone
+        cap = np.clip(1000 * Z["top_km"], *self.CAP_M)
+        P = np.minimum(cap / self.CLIFF, np.maximum(self.RELIEF * Z["relief"], 60.0))
+        anchor = Z["elev_p85"] + self.TOP[1] * Z["relief"]
+        t = 1000 * np.tan(np.radians(Z["dip"]))  # m/km
         tilt = (t * cx.downhill[0], t * cx.downhill[1]) if np.any(t > 0.3) else None
-        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, tilt=tilt)
+        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, tilt=tilt, origin=(Z["ox"], Z["oy"]))
 
 
 class LavaPlateau(Synth):
     """Traps: stacked flows under a flat top."""
     layers = ("strata_top_km",)
-    FLOW_M = 110.0  # a flow package's step (m), at 2 km pixels
-    RELIEF = 0.8  # x the zone's height above its drainage: at least this step
-    VISIBLE_PX = 2.5  # ... and one step at least this many pixels wide on the zone's typical slope
+    zoned = True
+    FLOW_M = 110.0  # a flow package's step (m), at least
+    RELIEF = 0.7  # x the zone's relief (zone_stats): at least this step
 
     def relief(self, cx):
         return 1.5, 1.25
 
     def strata(self, cx, h):
         # (flows are ~10-50 m; at zoom pixels the steps seen are packages of
-        # them, at least ~ a third of the valleys' depth)
-        P = max(float(np.clip(self.FLOW_M * (cx.res / 2.0) ** 0.3, 60.0, 150.0)), self.RELIEF * cx.zone_relief(h),
-                self.VISIBLE_PX * cx.res * cx.zone_slope(h))
-        anchor = cx.zone_level(h, 90)
+        # them, a good part of the valleys' depth; where they come out
+        # narrower than a pixel or two they fade out: Landforms._bench)
+        Z = cx.zone
+        P = np.maximum(self.FLOW_M, self.RELIEF * Z["relief"])
+        anchor = Z["elev_p95"] + 0.5 * Z["relief"]
         return Strata(anchor, P, cliff=0.55, power=1.5, top_k=0.3)
 
 
@@ -817,7 +893,7 @@ class Rift(Synth):
     patch to patch (accommodation zones), throws vary from block to block
     and die out at the patches' ends. In the target too (x TARGET), so the
     rivers run along the basins."""
-    layers = ("rift_strain", "landform_age", "elevation", "precipitation")
+    layers = ("rift_strain", "landform_age", "elevation")
     line = True
     axis = "band"
     TARGET = 0.5
@@ -862,6 +938,7 @@ class Rift(Synth):
         env = 0.4 + 0.6 * F.edge
         g = ((1 - F.alpha) * a[0] + F.alpha * b[0]) * env
         fw = ((1 - F.alpha) * a[1] + F.alpha * b[1]) * env
+        cx.cache["floor"] = fw
         return g - fw * (h - cx.local_top(h, 4.0, 0.0))
 
     def relief(self, cx):
@@ -877,7 +954,11 @@ class Rift(Synth):
         return np.ones(len(cx.land))
 
     def lakes(self, cx):
-        return smoothstep(600.0, 1200.0, cx.prm["precipitation"])
+        # (the half-grabens' floors; whether a basin there fills is its water
+        # balance's call: zoom_landforms.basin_lakes)
+        if "floor" not in cx.cache:
+            self._z(cx, cx.base)
+        return smoothstep(0.15, 0.4, cx.cache["floor"])
 
 
 class Shield(Synth):
@@ -997,6 +1078,113 @@ def drain_level(h, rec, order, channel):
     return hc
 
 
+@njit(cache=True)
+def _next_basin(rec, order, lab):
+    """Per pixel, the first closed depression (label) down its receivers
+    other than its own (-1: none before an outlet). order: outlets first."""
+    nxt = np.full(rec.shape[0], -1, np.int64)
+    for t in range(order.shape[0]):
+        i = order[t]
+        r = rec[i]
+        if r < 0:
+            continue
+        if lab[r] >= 0 and lab[r] != lab[i]:
+            nxt[i] = lab[r]
+        else:
+            nxt[i] = nxt[r]
+    return nxt
+
+
+PLAYA_SHARE = 0.25  # a dry closed basin's flat floor: at least this share of the depression
+
+
+def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_m, min_km2, full_km2):
+    """Which of a landform's closed depressions hold water, by their water
+    balance (PW-167). h: the surface; filled, rec, order: its priority flood
+    (outlets first); dep_ok: where depressions count (active land, no ice);
+    can: 0..1, where the classes let them hold water (Synth.lakes); src:
+    water each pixel yields (runoff + inflow, km^2 m/yr); loss: a lake's net
+    evaporation (open water minus the land's, m/yr). Each depression
+    (filled - h > 0.2 m) gets its own catchment's water plus what the
+    depressions above it spill (upstream first, so small ones overflow into
+    chains). A depression at least min_m deep and min_km2 big where `can`
+    holds:
+      full    inflow >= loss x its area at the spill: a lake to the brim
+              that passes the rest on (an open lake), if at least
+              full_km2 big (a smaller full one silts up: filled flat);
+      closed  else, a lake whose area A = inflow / loss (the level where
+              the depression is that big; a salt lake), if A >= min_km2;
+      playa   else a dry flat floor (PLAYA_SHARE of it) where its streams end.
+    Every other depression is filled flat (its water passes on).
+    Returns (surface: closed lakes at their level, playas at their floor,
+    full lakes and the rest filled; lake: lake pixels (bed = surface -
+    depth); depth; sink: closed lakes and playas, where rivers end; counts)."""
+    n = nx * ny
+    dep = np.where(dep_ok, filled - h, 0.0)
+    lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
+    surf = np.where(dep_ok, np.maximum(h, filled), h)
+    lake, depth, sink = np.zeros(n, bool), np.zeros(n), np.zeros(n, bool)
+    counts = {"full": 0, "closed": 0, "playa": 0, "silted": 0}
+    nb = len(sizes)
+    if not nb:
+        return surf, lake, depth, sink, counts
+    on = lab >= 0
+    L = lab[on]
+    Q = ZK.accumulate(rec, order, src)
+    qx = np.zeros(nb)
+    np.maximum.at(qx, L, Q[on])
+    nxt_px = _next_basin(rec, order, lab)
+    # each depression's exit (its pixel with the most water) and the depression below it
+    ex = np.full(nb, -1)
+    idx = np.flatnonzero(on)
+    o = np.lexsort((Q[idx], L))
+    last = np.r_[np.flatnonzero(np.diff(L[o])), len(o) - 1]
+    ex[L[o][last]] = idx[o][last]
+    below = np.where(ex >= 0, nxt_px[np.maximum(ex, 0)], -1)
+    direct = qx.copy()
+    np.add.at(direct, below[below >= 0], -qx[below >= 0])
+    area = sizes * res * res
+    dmax = np.zeros(nb)
+    np.maximum.at(dmax, L, dep[on])
+    cmean = np.bincount(L, can[on], nb) / np.maximum(sizes, 1)
+    lmean = np.bincount(L, loss[on], nb) / np.maximum(sizes, 1)
+    cand = (dmax >= min_m) & (area >= min_km2) & (cmean > 0.5)
+    spill = np.zeros(nb)
+    for b in np.argsort(qx, kind="stable"):  # upstream first
+        inflow = max(direct[b], 0.0) + spill[b]
+        out = inflow
+        if cand[b]:
+            cap = lmean[b] * area[b]
+            px_b = np.flatnonzero(lab == b)
+            if inflow >= cap:
+                if area[b] >= full_km2:
+                    lake[px_b], depth[px_b] = True, dep[px_b]
+                    counts["full"] += 1
+                else:
+                    counts["silted"] += 1
+                out = inflow - cap
+            else:
+                out = 0.0
+                hs = np.sort(h[px_b])
+                a = inflow / max(lmean[b], 1e-9)
+                if a >= min_km2:
+                    k = min(int(np.ceil(a / (res * res))), len(hs))
+                    lvl = hs[k - 1] + 1e-3
+                    w = px_b[h[px_b] < lvl]
+                    surf[px_b] = np.maximum(h[px_b], lvl)
+                    lake[w], depth[w], sink[w] = True, lvl - h[w], True
+                    counts["closed"] += 1
+                else:
+                    k = max(int(np.ceil(PLAYA_SHARE * len(hs))), 1)
+                    lvl = hs[k - 1] + 1e-3
+                    surf[px_b] = np.maximum(h[px_b], lvl)
+                    sink[px_b[h[px_b] < lvl]] = True
+                    counts["playa"] += 1
+        if below[b] >= 0:
+            spill[below[b]] += out
+    return surf, lake, depth, sink, counts
+
+
 # the classes in landform.classify's order (the first that holds wins there; here: keeps its weight)
 PRIORITY = [LF.ARC_CLASS, LF.HOTSPOT_CLASS, LF.RIFT, LF.ESCARPMENT, LF.FOLD_BELT, LF.LAVA_PLATEAU, LF.DUNES, LF.KARST,
             LF.CAPROCK, LF.COASTAL_PLAIN, LF.SHIELD, LF.HILLS, LF.SEA]
@@ -1037,11 +1225,12 @@ class Landforms:
         self.ctxs = ctxs  # class id -> Ctx (with its w and prm)
 
     @classmethod
-    def build(cls, L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, seed, land, base, interp, centers):
-        """L: the world's layers; sel: the coarse cells around the region
-        (cx, cy: their projected centres, land_c: land; centers: their unit
-        vectors); interp(vals, wts, sigma): the zoom's Gaussian
-        interpolation onto the pixels."""
+    def build(cls, L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, seed, land, base, interp, grid, to_plane):
+        """L: the world's layers on `grid`; sel: the coarse cells around the
+        region (cx, cy: their projected centres, land_c: land);
+        interp(vals, wts, sigma): the zoom's Gaussian interpolation onto the
+        pixels; to_plane(unit vectors): the zoom's projection (km)."""
+        centers = grid.centers[sel]
         if "landform" not in L:
             return None
         form = np.asarray(L["landform"])[sel]
@@ -1093,6 +1282,9 @@ class Landforms:
             taken += c.w
         cues = {"thick": _column(L, "crust_thickness", sel), "elev": np.maximum(_column(L, "elevation", sel), 0.0),
                 "converging": _column(L, "plate_boundary", sel)}
+        for k, c in ctxs.items():
+            if SYNTH[k].zoned:
+                c.zone = zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp)
         for j, (k, c) in enumerate(ctxs.items()):
             if SYNTH[k].axis and np.any(c.w > 0):
                 ind = ((form == k) & land_c).astype(float)
@@ -1147,7 +1339,7 @@ class Landforms:
             w = c.w * mask
             if st is None or not np.any(w > 0):
                 continue
-            sv = z + (0.0 if st.tilt is None else st.tilt[0] * c.px + st.tilt[1] * c.py)
+            sv = st.height(z, c.px, c.py)
             # Anti-aliasing: each cliff spans at least FACE_PX pixels across
             # (steep, but not a one-pixel step that aliases into a staircase
             # along the scarp), and where a band is narrower than a couple of
@@ -1179,7 +1371,7 @@ class Landforms:
             st = SYNTH[k].strata(c, h)
             if st is None or not np.any(c.w > 0):
                 continue
-            sv = h + (0.0 if st.tilt is None else st.tilt[0] * c.px + st.tilt[1] * c.py)
+            sv = st.height(h, c.px, c.py)
             on = c.w * (sv >= st.anchor)
             w += on
             lvl += on * st.anchor
