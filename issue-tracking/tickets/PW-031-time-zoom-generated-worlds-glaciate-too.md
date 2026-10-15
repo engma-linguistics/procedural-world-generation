@@ -2,7 +2,7 @@
 id: PW-031
 title: "Time zoom: generated worlds glaciate too hard"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: m
@@ -22,4 +22,5 @@ viewer button run away too (one reached −520 m with ice 7.4 km thick). Calibra
 accumulation so a generated Earth-like world peaks near −100 to −150 m.
 
 ## Updates
+- 2026-10-14: Status todo -> in-progress. Agent started in worktree finish, bundled with PW-091.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Glacial time zoom. Merged 'Time zooms made from the button run away too' (viewer2).
