@@ -165,13 +165,18 @@ def strength(sim) -> np.ndarray:
     together (young collision belts, still warm and faulted; Pangaea split
     along the ~300-400 Myr old Appalachian/Caledonian sutures) and crust
     already thinned by earlier stretching. A plume head under a plate heats
-    and weakens it too (Afar, the Deccan before India left Madagascar)."""
+    and weakens it too (Afar, the Deccan before India left Madagascar), and
+    so, more broadly, does warm mantle (mantle.py): it thins the plate's
+    cold lid from below, so a big plate parked over a warm upwelling (a
+    supercontinent that has insulated its mantle) breaks more readily
+    (params.warm_rift: 1 / (1 + warm_rift x the anomaly), anomaly 0..2)."""
     cont, rock, age = sim.w_cont, sim.w_rock, sim.w_age
     s = np.ones(sim.grid.n)
     s[cont & (rock == CRATON)] = 1.6
     belt = cont & (rock == OROGEN)
     s[belt] = 0.85 - 0.5 * np.exp(-age[belt] / 400.0)
     s = np.where(cont, s * np.clip(sim.w_thick / 35.0, 0.7, 1.0), s)
+    s = s / (1 + sim.params.warm_rift * np.clip(sim.mantle, 0, 2))
     return s * (1 - 0.3 * np.clip(sim.swell / 1000.0, 0, 1))
 
 

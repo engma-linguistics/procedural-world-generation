@@ -160,9 +160,11 @@ Main knobs (`--set`): `n_plates`, `start` (`supercontinent`|`scattered`),
 `mantle_drag`, `mantle_memory`, `mantle_scale_km`, `slab_cold`, `insulation`,
 `mantle_noise`, `mantle_timescale`, `mobility`, `max_speed`, `arc_growth`,
 `crust_flow`, `erosion_timescale`, `suture_after`, `rift_timescale`,
-`rift_stress`, `rift_min_piece`, `max_plates`. Defaults live in `Params`.
+`rift_stress`, `warm_rift`, `rift_min_piece`, `ridge_time`, `max_plates`. Defaults live in `Params`.
 `uv run python tools/supercontinent.py --seed 1 2` tracks the largest landmass,
 landmass count, mantle temperature and rifts over 2 Gyr (`--plot` draws them).
+`PYTHONPATH=. uv run python tools/sealevel.py --seed 1 2` (or `--run <id>`) tracks
+sea level and its parts (ice, ocean basins, mean ocean age) and counts fast land drops.
 
 The package's docstring (`planet/tectonics/__init__.py`) maps its modules:
 `simulation` (state, step), `plates`, `motion` (forces), `crust` (the crust

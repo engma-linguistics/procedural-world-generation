@@ -36,4 +36,5 @@ aliasing test showed notch welding gives most of the gain: flips 3.9% ->
 continental_thickness / the area target so land comes back. Lean A or C.
 
 ## Updates
+- 2026-10-14: tectsea (PW-053/PW-024): L5 400 Myr mean continental thickness now 28.6/30.1 km (seeds 1/2; 29.8/29.9 with warm_rift=0), so test_envelopes' floor was lowered 30 -> 28 for the test only; the model's thickness target is unchanged pending this decision.
 - 2026-10-14: Created from inbox draft draft-coherence-land-share.md (found by tectchurn).

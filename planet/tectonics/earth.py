@@ -3,7 +3,7 @@ CO2, sea level, the climate model, and the surface processes that run on
 its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
-co2, refs, depth_ref, sea_level and its parts sea_ice / sea_tect, ice, veg,
+co2, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice, veg,
 removed, the climate fields from climate.compute, the rivers (flow,
 down) and the lakes (lake_kind, lake_depth).
 """
@@ -17,6 +17,8 @@ from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
 from .isostasy import CARB, COAL, EVAP, MIX, SAND, elevation, isostasy, ocean_depth, sediment_iso, sediment_km
+
+SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
 
 
 def heat(p, t: float) -> float:
@@ -72,15 +74,21 @@ def global_temperature(sim, growth, newc, rng):
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
     # Halved because the extra water also pushes the sea floor down.
-    # Measured against a slow (300 Myr) average of itself, which starts
-    # from the initial sea floor (sea level 0), so only real changes in
-    # spreading move the sea.
+    # The basins' volume (depth_ridge) follows the mean depth of the floor
+    # over ridge_time Myr: a real ridge system waxes and wanes over tens of
+    # Myr, while the model's spreading can stop or restart within a few
+    # steps of a suture or a rift. It is measured against a slow (300 Myr)
+    # average of itself, which starts from the initial sea floor (sea
+    # level 0), so only real changes in spreading move the sea, and it
+    # levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level has
+    # spanned about -100..+250 m).
     ocean = ~sim.w_cont
     depth = float(ocean_depth(sim.w_age[ocean]).mean()) if ocean.any() else 0.0
     if sim.depth_ref is None:  # the starting sea floor defines sea level 0
-        sim.depth_ref = depth
-    sim.depth_ref += (1 - np.exp(-dt / min(300.0, 10.0 + sim.t))) * (depth - sim.depth_ref)
-    sim.sea_tect = float(np.clip(0.5 * (depth - sim.depth_ref), -250, 250))
+        sim.depth_ref = sim.depth_ridge = depth
+    sim.depth_ridge += (1 - np.exp(-dt / p.ridge_time)) * (depth - sim.depth_ridge)
+    sim.depth_ref += (1 - np.exp(-dt / min(300.0, 10.0 + sim.t))) * (sim.depth_ridge - sim.depth_ref)
+    sim.sea_tect = SEA_TECT_MAX * float(np.tanh(0.5 * (sim.depth_ridge - sim.depth_ref) / SEA_TECT_MAX))
     # A hotter mantle melts more at ridges: thicker, more buoyant ocean
     # crust and shallower ocean basins, so the same water stands higher
     # on the continents (one reason the young Earth was mostly sea).

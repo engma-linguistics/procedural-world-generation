@@ -98,6 +98,7 @@ class Params:
     # scales plume numbers, arc melting and (as sqrt) plate speed. See earth.heat
     heat_start: float = 1.0
     heat_halflife: float = 600.0  # Myr
+    ridge_time: float = 30.0  # Myr: the ocean basins' volume (sea level) follows the sea floor's mean depth over this
     hot_sea: float = 600.0  # m of extra sea level per unit of extra mantle heat
     # events
     suture_after: float = 30.0  # Myr of continental collision before plates can weld...
@@ -106,6 +107,7 @@ class Params:
     rift_timescale: float = 130.0  # Myr: sets the rift hazard for a given excess stress
     stress_min_plate: float = 0.05  # plates larger than this (any crust) can break under stress
     rift_stress: float = 2.0  # cm/yr: how hard the halves must pull apart before it can break
+    warm_rift: float = 0.7  # warm mantle weakens the plate above it: strength / (1 + this x anomaly) (events.strength)
     # a rift never cuts off a piece with less continent than this share of
     # the surface (but may split off purely oceanic plate): continents break
     # into a few big blocks, along their weak zones (events.strength)

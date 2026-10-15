@@ -60,7 +60,8 @@ class Simulation:
         "drift",  # C: its random part
         "co2",  # smoothed log ratio of volcanic CO2 sources to weathering sinks
         "refs",  # slow baselines of [source, sink] (None before the first step)
-        "depth_ref",  # m: slow baseline of the mean ocean depth (None before the first step)
+        "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
+        "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
         "veg",  # plant cover 0..1 per cell (0.0 before the first step)
@@ -118,7 +119,8 @@ class Simulation:
         self.mantle_lid = np.zeros(n)  # running average of continental cover over it
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
-        self.dT, self.drift, self.co2, self.refs, self.depth_ref = 0.0, 0.0, 0.0, None, None
+        self.dT, self.drift, self.co2, self.refs = 0.0, 0.0, 0.0, None
+        self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
         self.ice = np.zeros(n)

@@ -77,7 +77,7 @@ Every field is a flat NumPy array, one value per cell. Neighbour lists are CSR a
 4. **Rifting** (`events.py`):
    - It tries 12 cuts across each big plate and solves each half's motion.
    - A plate splits if the halves separate fast enough, scaled up for big plates and down by the rock's strength along the cut.
-   - Weak lines are young sutures, thinned crust and plume swells. Old cratons resist.
+   - Weak lines are young sutures, thinned crust and plume swells. Old cratons resist. Warm mantle weakens the plate above it (`warm_rift`), so a big plate parked over a warm upwelling breaks more readily.
    - Pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
 5. Ocean floor ages until an old passive margin starts to subduct, breaking off a ~6000 km basin.
 
@@ -106,7 +106,7 @@ On four seeds the largest landmass passed 25% of the surface every 400–870 Myr
   - **Ageing:** a volcano sinks with its plate's base level (sea-floor age, the swell decaying behind the plume), its part above the sea erodes (~10 Myr e-folding at 1500 mm/yr, plus wave cliff retreat) until the waves plane it off. In warm water (≥ `reef_temp`) a reef grows round its widest shore: fringing reef → barrier reef → **atoll** once the volcano is gone; carried into cold water the reef drowns (a guyot).
   - The table of all volcanoes goes into each keyframe (`runs/<id>/volcanoes.json.gz`), checkpoint and world (`meta.volcanoes`, columns `meta.volcano_columns`).
 - **Sediment** is lighter than crust: 2.1 g/cm³, compacting to 2.6. Filling deep water takes ~3× its depth in sediment, as on Earth. Below 18 km it becomes basement.
-- **Sea level** follows mean ocean depth relative to its 300 Myr average, plus land ice. Young, shallow oceans raise it.
+- **Sea level** follows mean ocean depth relative to its 300 Myr average, plus land ice. Young, shallow oceans raise it. The basins' volume answers the sea floor over ~30 Myr (`ridge_time`; a ridge system waxes and wanes over tens of Myr) and levels off smoothly toward ±250 m. The starting ocean has the ages of a steadily spreading one (mean 60 Myr), so the first breakup doesn't flood the planet.
 - **Global temperature** combines a slow drift, CO₂ (sources: new sea floor and arcs; sink: weathering) and ice-albedo.
 
 **One step** (`Simulation.step`, 2 Myr):

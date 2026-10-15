@@ -64,7 +64,15 @@ def initial_state(sim):
     inland = np.minimum(np.maximum(dist, 0) / sim.scale, 3)
     base = np.where(cont, -450 + 230 * inland + 300 * texture, 0)
     old_mtn = 900 * ridged(Perlin3D(int(rng.integers(2**31))), x, octaves=5, freq=2.5) * cont
-    age = np.clip(90 + 90 * fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=3, freq=1.0), 5, 180)
+    # Ocean floor ages as a steadily spreading ocean has them (patchy, as
+    # smooth noise ranked): floor is made at a steady rate and subducted at
+    # any age up to ~180 Myr, so the share of floor of age a falls off
+    # linearly, p(a) ~ 1 - a/180, mean 60 Myr (Earth's ~64). An ocean
+    # starting far from this would renew itself in the first ~100 Myr and
+    # move the sea by hundreds of m (PW-053).
+    nz_age = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=3, freq=1.0)
+    q = (np.argsort(np.argsort(nz_age, kind="stable"), kind="stable") + 0.5) / n
+    age = 180.0 * (1 - np.sqrt(q))
     elev = np.where(cont, base + old_mtn, ocean_depth(age))
     thick = np.where(cont, np.maximum(CONT_KM + (elev - 250) / ISO_LAND, BECOMES_CONT_KM + 1), OCEAN_KM)
     # What the planet's unsimulated early history leaves behind: ancient
