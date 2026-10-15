@@ -25,6 +25,7 @@ climate.water_balance), not the rain itself.
 from __future__ import annotations
 
 import numpy as np
+from numba import njit
 
 from . import kernels
 from .grid import Grid
@@ -92,30 +93,32 @@ def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
     return flow * (4 * np.pi * 6.371e6**2 / grid.n) / 3.156e7
 
 
-def _fill(grid, ground, src, loss, min_depth, min_slope):
-    """fill_shallow then kernels.lakes on ground: (bed, wet, open, out_z, pit, catch, basin)."""
-    elev = ground
-    if min_depth > 0:
-        # hollows (and dips in a basin's floor) shallower than min_depth, or
-        # flatter than min_slope, fill to where they spill; the rest of the land drains as priority_flood has it
-        from .ocean import cell_area_km2
-        h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
-                                       cell_area_km2(grid), float(min_slope))
-        elev = np.where(keep, h, priority_flood(grid, h)[0])
-    return (elev, *kernels.lakes(elev, grid.nbr_off, grid.nbr_idx, src, loss))
+def _bed(grid, ground, min_depth, min_slope):
+    """ground with the hollows (and dips in a basin's floor) shallower than
+    min_depth, or flatter than min_slope, filled to where they spill; the
+    rest of the land drains as priority_flood has it."""
+    if min_depth <= 0:
+        return ground
+    from .ocean import cell_area_km2
+    h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
+                                   cell_area_km2(grid), float(min_slope))
+    return np.where(keep, h, priority_flood(grid, h)[0])
 
 
 def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
-    """_fill, made to agree with the rivers. kernels.lakes gives each basin
-    the water that runs downhill into it, but a lake that spills where its
-    basin meets the sea's drainage can send its river on into a lower
-    closed basin next to that spill point (route() follows the river
-    there): that basin then gets the river too and fills further, and may
-    spill in turn (the Nile into the Nubian hollow, PW-122). Returns
-    (_fill's tuple, (flow, down, order, sink)) of the last try."""
+    """kernels.lakes on _bed(ground), made to agree with the rivers.
+    kernels.lakes gives each basin the water that runs downhill into it,
+    but a lake that spills where its basin meets the sea's drainage can
+    send its river on into a lower closed basin next to that spill point
+    (route() follows the river there): that basin then gets the river too
+    and fills further, and may spill in turn (the Nile into the Nubian
+    hollow, PW-122). Returns ((bed, wet, open, out_z, pit, catch, basin),
+    (flow, down, order, sink)) of the last try."""
     extra = np.zeros(grid.n)
+    bed = _bed(grid, ground, min_depth, min_slope)
     for _ in range(tries):
-        bed, wet, open_, out_z, pit, catch, basin = r = _fill(grid, ground, src + extra, loss, min_depth, min_slope)
+        wet, open_, out_z, pit, catch, basin = kernels.lakes(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss)
+        r = (bed, wet, open_, out_z, pit, catch, basin)
         sink = land & ~open_ & (wet | pit)
         lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink, src=src - loss * wet)
         flow, down, order, _ = route(grid, ground, lk0)
@@ -270,8 +273,14 @@ def seasonal_flow(grid: Grid, down: np.ndarray, order: np.ndarray, runoff_mm: np
 
 def endorheic(down: np.ndarray, order: np.ndarray, sink: np.ndarray) -> np.ndarray:
     """Cells whose water never reaches the sea (it ends in a closed lake or salt pan)."""
+    return _endorheic(down, order, sink.astype(np.bool_))
+
+
+@njit(cache=True)
+def _endorheic(down, order, sink):
     end = sink.copy()
-    for i in order:  # outlets first, so each cell's downstream is already known
+    for t in range(order.shape[0]):  # outlets first, so each cell's downstream is already known
+        i = order[t]
         if down[i] >= 0:
             end[i] = end[down[i]]
     return end
