@@ -530,6 +530,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 
 | Tool | What it does |
 |---|---|
+| `health.py` | Multi-seed health sweep (PW-246): 8 L6 + 3 L7 seeds x 1 Gyr at once (`parallel.simulate_many`), every keyframe measured against Earth-ish envelopes (land, crust, plates, ocean age, sea level and ice, temperature, CO2, aridity, inland drainage, lakes, peaks, trees, NPP, landmasses), outliers by seed and time window, a determinism re-run, thumbnails; writes `docs/review/health/<date>/`. `--quick`: L6 only, 500 Myr. ~51 min on the Threadripper (11 workers x 2 threads). |
 | `scorecard.py` | Slow calibration scores, not pass/fail: the climate on Earth's terrain (Köppen agreement, rain correlation) and two L6 1-Gyr simulations (land, crust, landmasses, dryness, ice, speed, ocean age, crust volume). Appends a line per commit to `docs/scorecard.jsonl`. ~11 min. |
 | `earth_check.py` | The climate on real Earth vs observations: Köppen (Kottek), rain (GPCC/GPCP), temperature (NCEP), river discharge at big mouths, clouds (ICOADS), sunshine (CRU), dry-winter humidity. Prints a report; `--png`, `--json`. |
 | `earth_world.py` | Builds the "Earth (today, ETOPO1) — model vs observed" world for the viewer, with observed layers alongside. Re-make after climate changes. |
