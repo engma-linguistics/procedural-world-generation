@@ -63,6 +63,9 @@
 
   <h2>Layer</h2>
   <div class="row seg" id="layerSeg"></div>
+  <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
+    season <select id="season" style="flex: none; width: auto; padding: 1px">
+      <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
 
   <h2>Overlays</h2>
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
@@ -88,9 +91,18 @@ const R_KM = 6371;
 const LAYERS = [
   ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
-  ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'], ['coarse', 'Coarse cells'],
+  ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
+  ['fire_return', 'Fire return'], ['lai', 'Leaf area'],
+  ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
+  ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'], ['coarse', 'Coarse cells'],
 ];
-const state = { meta: null, L: null, layer: 'relief', imgs: {}, shade: null,
+// layers that need data the zoom may not have (zooms made before them): their button is hidden
+const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
+  fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform' };
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation'];
+// the temperature / rain season: '' the year, 'jul' / 'jan' the half-years (zooms with *_jul / *_jan layers)
+const SEASON_NAMES = { '': 'year', jul: 'July', jan: 'January' };
+const state = { meta: null, L: null, layer: 'relief', season: '', imgs: {}, shade: null,
   view: { s: 1, x: 0, y: 0 }, off: document.createElement('canvas') };
 const canvas = $('c'), ctx = canvas.getContext('2d');
 let START_MARK = new URLSearchParams(location.search).get('mark');  // (the first zoom loaded only)
@@ -113,6 +125,18 @@ const RAIN = [[0, [150, 90, 40]], [250, [215, 180, 110]], [600, [190, 210, 120]]
 const ICE_RGB = [206, 228, 250];  // glaciers on the relief, hillshade and height layers: blue-white
 const ICE_T = [[0, [150, 190, 230]], [100, [190, 215, 245]], [500, [120, 160, 225]], [1500, [60, 90, 190]], [3000, [40, 40, 130]]];
 const TEMP = [[-30, [60, 40, 140]], [-10, [80, 120, 220]], [0, [190, 230, 250]], [10, [120, 200, 120]], [20, [240, 210, 90]], [30, [220, 70, 40]]];
+// vegetation and terrain ramps (the globe's colours for the vegetation layers): [value, rgb], units
+const RAMPS = {
+  tree_cover: [[[0, [232, 220, 176]], [10, [205, 210, 138]], [30, [143, 184, 95]], [60, [63, 143, 63]], [90, [31, 90, 42]]], '% tree canopy cover'],
+  canopy_height: [[[0, [239, 230, 200]], [2, [201, 207, 138]], [8, [143, 184, 95]], [20, [79, 143, 69]], [35, [42, 106, 58]], [50, [18, 63, 42]]], 'm, tallest layer'],
+  npp: [[[0, [242, 234, 208]], [100, [227, 210, 138]], [300, [185, 200, 95]], [600, [111, 175, 69]], [900, [47, 138, 58]], [1300, [15, 90, 42]]], 'g C/m&sup2;/yr net primary productivity'],
+  lai: [[[0, [239, 230, 200]], [1, [207, 210, 138]], [2.5, [143, 191, 90]], [4, [79, 154, 69]], [6, [31, 106, 50]]], 'm&sup2; of leaf per m&sup2;, year'],
+  // (fire return on a log scale: years between fires; 0 = never)
+  fire_return: [[[0, [58, 42, 42]], [0.5, [232, 80, 58]], [1, [240, 154, 58]], [1.5, [242, 211, 106]], [2, [201, 214, 160]], [2.7, [143, 176, 160]], [3.5, [79, 111, 128]]], 'years between fires (log scale: 3, 10, 30, 100, 1000; grey: none)'],
+  radiation_index: [[[0.4, [40, 50, 110]], [0.8, [120, 140, 190]], [1, [225, 225, 215]], [1.2, [240, 190, 90]], [1.6, [200, 80, 30]]], "the year's sunshine on the slope / flat ground (poleward slopes darker)"],
+  twi: [[[4, [200, 170, 120]], [8, [225, 220, 190]], [11, [150, 200, 210]], [14, [60, 140, 200]], [18, [20, 50, 140]]], 'topographic wetness index ln(a / tan slope) (dry ridges to wet hollows)'],
+};
+const DECODE = { float32: Float32Array, uint8: Uint8Array, int8: Int8Array, uint16: Uint16Array, int16: Int16Array };
 const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
 
 async function getJSON(url) {
@@ -162,6 +186,10 @@ async function init() {
   };
   $('layerSeg').innerHTML = LAYERS.map(([k, n]) => `<button data-v="${k}">${n}</button>`).join('');
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
+  if (p.get('season') in SEASON_NAMES) state.season = p.get('season');
+  for (const o of ['rivers', 'falls', 'volc']) if (p.get(o) === '0') $(o).checked = false;  // e.g. ?rivers=0
+  $('season').value = state.season;
+  $('season').onchange = () => { state.season = $('season').value; render(); syncURL(); };
   $('rivers').onchange = render;
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
@@ -171,6 +199,7 @@ async function init() {
 
 function syncURL() {
   const p = new URLSearchParams({ id: state.meta.id, layer: state.layer });
+  if (state.season) p.set('season', state.season);
   history.replaceState(null, '', '?' + p);
 }
 
@@ -183,9 +212,13 @@ async function load(id) {
   const L = {};
   await Promise.all(Object.entries(meta.layers).map(async ([k, spec]) => {
     const buf = await (await fetch(base + spec.file, { cache: 'no-store' })).arrayBuffer();
-    L[k] = spec.dtype === 'float32' ? new Float32Array(buf) : new Uint8Array(buf);
+    const raw = new (DECODE[spec.dtype] || Uint8Array)(buf), sc = spec.scale ?? 1, of = spec.offset ?? 0;
+    // (scaled layers: real units, store.decode)
+    L[k] = sc === 1 && !of ? raw : Float32Array.from(raw, (v) => v * sc + of);
   }));
   state.meta = meta; state.L = L; state.imgs = {};
+  for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
+  if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'relief';
   state.marks = markers(meta);
   hideTip();
   const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
@@ -368,7 +401,8 @@ function hideTip() { pinned = null; const t = $('tip'); t.style.display = 'none'
 function legendFor(kind) {
   const lg = state.meta.legend;
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
-    : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || []) : lg.rocks;
+    : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
+    : kind === 'vegetation' ? (lg.vegetation?.types || []) : lg.rocks;
 }
 
 function render() {
@@ -381,6 +415,9 @@ function render() {
   const k = state.layer;
   $('legend').innerHTML = '';
   if (k === 'landform' && !L.landform) { $('legend').innerHTML = '<span class="muted">this zoom has no landform layer (its world predates them)</span>'; return; }
+  const seasonal = (k === 'temperature' || k === 'precipitation') && L[k + '_jul'];
+  $('seasonRow').style.display = seasonal ? '' : 'none';
+  const sk = seasonal && state.season ? `${k}_${state.season}` : k;  // the layer the colours show
   if (k === 'relief' || k === 'coarse') {
     if (state.imgs[k]) oc.drawImage(state.imgs[k], 0, 0);
     if (k === 'relief' && state.imgs[k]) {  // glaciers blue-white, so they aren't taken for high bare ground
@@ -404,8 +441,8 @@ function render() {
   const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
   const overlay = $('rivers').checked;
   let lut = null, present = null;
-  if (['rock', 'surface_rock', 'climate', 'biome', 'landform'].includes(k)) {
-    lut = {}; present = new Set();
+  if (CATEGORICAL.includes(k)) {
+    lut = {}; present = new Map();
     for (const e of legendFor(k)) lut[e.id] = { ...e, rgb: hex(e.color) };
   }
   let lo = Infinity, hi = -Infinity;
@@ -436,10 +473,20 @@ function render() {
     } else if (lut) {
       const e = lut[L[k][i]];
       if (wet === 1 && k !== 'rock' && k !== 'surface_rock') c = ramp(SEA, h[i]);
-      else { c = e ? e.rgb : [255, 0, 255]; present.add(L[k][i]); const f = 0.55 + 0.5 * s; c = [c[0] * f, c[1] * f, c[2] * f]; }
+      else if (k === 'vegetation' && wet === 2) c = [70, 130, 196];
+      else { c = e ? e.rgb : [255, 0, 255]; present.set(L[k][i], (present.get(L[k][i]) || 0) + 1); const f = 0.55 + 0.5 * s; c = [c[0] * f, c[1] * f, c[2] * f]; }
     } else if (k === 'precipitation' || k === 'temperature') {
-      c = ramp(k === 'precipitation' ? RAIN : TEMP, L[k][i]);
+      c = ramp(k === 'precipitation' ? RAIN : TEMP, L[sk][i]);
       const f = wet === 1 ? 0.6 : 0.6 + 0.45 * s; c = [c[0] * f, c[1] * f, c[2] * f];
+    } else if (RAMPS[k]) {
+      if (wet === 1) c = ramp(SEA, h[i]).map((v) => v * 0.6);
+      else if (wet === 2) c = [70, 130, 196];
+      else if (onIce) c = ICE_RGB.map((v) => v * (0.62 + 0.45 * s));
+      else {
+        const v = L[k][i];
+        c = k === 'fire_return' ? (v > 0 ? ramp(RAMPS[k][0], Math.log10(v)) : [150, 150, 140]) : ramp(RAMPS[k][0], v);
+        const f = 0.62 + 0.45 * s; c = [c[0] * f, c[1] * f, c[2] * f];
+      }
     }
     if (overlay && lut && wet === 0 && !onIce && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
     if (overlay && lut && wet === 2) c = [70, 130, 196];
@@ -447,8 +494,14 @@ function render() {
   }
   oc.putImageData(img, 0, 0);
   // legends
-  if (lut) {
-    $('legend').innerHTML = [...present].sort((a, b) => a - b).filter((id) => lut[id])
+  if (lut && k === 'vegetation') {  // named types by their share of the land, the commonest first
+    const land = [...present].filter(([id]) => id > 0 && lut[id]), tot = land.reduce((a, [, n]) => a + n, 0) || 1;
+    land.sort((a, b) => b[1] - a[1]);
+    const shown = land.filter(([, n]) => n / tot >= 0.002).slice(0, 16), rare = land.length - shown.length;
+    $('legend').innerHTML = shown.map(([id, n]) => `<span title="${lut[id].text || ''}"><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name} ${fmt(100 * n / tot, n / tot < 0.1 ? 1 : 0)}%</span>`).join('')
+      + `<span class="muted">(% of the land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
+  } else if (lut) {
+    $('legend').innerHTML = [...present.keys()].sort((a, b) => a - b).filter((id) => lut[id])
       .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}</span>`).join('');
   } else if (k === 'height') {
     $('legend').innerHTML = `<span>${fmt(lo)} m</span><div class="grad" style="background:linear-gradient(90deg,#000,#fff)"></div><span>${fmt(hi)} m</span>
@@ -457,7 +510,13 @@ function render() {
     const st = k === 'precipitation' ? RAIN : TEMP;
     const g = st.map(([v, c]) => `rgb(${c}) ${100 * (v - st[0][0]) / (st[st.length - 1][0] - st[0][0])}%`).join(',');
     $('legend').innerHTML = `<span>${st[0][0]}</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div>
-      <span>${st[st.length - 1][0]} ${k === 'precipitation' ? 'mm/yr' : '&deg;C'}</span>`;
+      <span>${st[st.length - 1][0]} ${k === 'precipitation' ? 'mm/yr' : '&deg;C'}</span>`
+      + (seasonal ? ` <span class="muted">(${state.season ? SEASON_NAMES[state.season] + (k === 'precipitation' ? ' half-year, as a rate per year' : '') : 'year'})</span>` : '');
+  } else if (RAMPS[k]) {
+    const [st, units] = RAMPS[k], a = st[0][0], b = st[st.length - 1][0];
+    const g = st.map(([v, c]) => `rgb(${c}) ${100 * (v - a) / (b - a)}%`).join(',');
+    const lab = (v) => (k === 'fire_return' ? fmt(Math.pow(10, v)) : v);
+    $('legend').innerHTML = `<span>${lab(a)}</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div><span>${lab(b)}</span> <span class="muted">${units}</span>`;
   } else if (k === 'rivers') {
     $('legend').innerHTML = '<span class="muted">brighter and bluer = more discharge (log scale, 1 to 30,000+ m&sup3;/s)</span>'
       + (iced ? ' <span><span class="sw" style="background:rgb(200,215,235)"></span>ice (its meltwater is drawn from the snout)</span>' : '');
@@ -486,7 +545,7 @@ function draw() {
   ctx.fillStyle = '#0b0f17'; ctx.fillRect(0, 0, innerWidth, innerHeight);
   if (!state.meta) return;
   const v = state.view, m = state.meta;
-  ctx.imageSmoothingEnabled = $('smooth').checked && !['rock', 'surface_rock', 'climate', 'biome', 'landform'].includes(state.layer);
+  ctx.imageSmoothingEnabled = $('smooth').checked && !CATEGORICAL.includes(state.layer);
   ctx.drawImage(state.off, v.x, v.y, v.s * m.nx, v.s * m.ny);
   ctx.strokeStyle = '#2a3446'; ctx.strokeRect(v.x - 0.5, v.y - 0.5, v.s * m.nx + 1, v.s * m.ny + 1);
   drawMarks();
@@ -529,15 +588,28 @@ function hover(ev) {
     <tr><td>lat, lon</td><td>${fmt(la, 3)}, ${fmt(lo, 3)}</td></tr>
     <tr><td>x, y</td><td>${fmt(x, 1)}, ${fmt(y, 1)} km</td></tr>
     <tr><td>elevation</td><td>${fmt(L.elevation[i])} m${L.water[i] === 2 ? ` (lake ${fmt(L.lake_depth[i])} m deep)` : ''}</td></tr>
-    <tr><td>surface</td><td>${wet}${L.ice[i] > 0 ? ', glacier' : ''}${L.wetland && L.wetland[i] ? ', marsh' : ''}</td></tr>
+    <tr><td>surface</td><td>${wet}${L.ice[i] > 0 ? ', glacier' : ''}${L.wetland && L.wetland[i] === 1 ? ', coastal marsh' : L.wetland && L.wetland[i] === 2 ? ', wetland' : ''}</td></tr>
     <tr><td>rock</td><td>${name(lg.rocks, L.rock[i])}</td></tr>
     <tr><td>exposed</td><td>${name(lg.rocks, L.surface_rock[i])}</td></tr>
     <tr><td>climate</td><td>${kop.code || ''} ${kop.name || ''}</td></tr>
     <tr><td>biome</td><td>${name(lg.biomes, L.biome[i])}</td></tr>
-    <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C</td></tr>
-    <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr</td></tr>
+    ${vegRows(i)}
+    <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
+    <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>
+    ${L.radiation_index && L.water[i] === 0 ? `<tr><td>terrain</td><td>sun ${fmt(100 * L.radiation_index[i])}% of flat &middot; wetness ${fmt(L.twi[i], 1)}${L.river_dist[i] < 255 ? ` &middot; river ${fmt(L.river_dist[i] * m.res_km, 1)} km` : ''}</td></tr>` : ''}
     <tr><td>river</td><td>${L.water[i] === 0 ? `${fmt(L.discharge[i], L.discharge[i] < 10 ? 1 : 0)} m&sup3;/s, ${fmt(L.drainage_area[i])} km&sup2;` : '-'}</td></tr>
   </table>`;
+}
+
+// the zoom's vegetation at pixel i: named type, structure, productivity, fire (zoom_vegetation)
+function vegRows(i) {
+  const L = state.L, lg = state.meta.legend;
+  if (!L.vegetation || L.water[i] !== 0) return '';
+  const t = (lg.vegetation?.types || [])[L.vegetation[i]];
+  const fr = L.fire_return[i];
+  return `<tr><td>vegetation</td><td>${t ? t.name : '?'}</td></tr>
+    <tr><td>plants</td><td>trees ${fmt(L.tree_cover[i])}%, cover ${fmt(L.plant_cover[i])}%${L.canopy_height[i] > 0 ? `, canopy ${fmt(L.canopy_height[i])} m` : ''}<br>
+      NPP ${fmt(L.npp[i])} g C/m&sup2;/yr, LAI ${fmt(L.lai[i], 1)}<br>${fr > 0 ? `fires every ~${fr < 10 ? fmt(fr) : fmt(Math.round(fr / 10) * 10)} yr` : 'no fires'}</td></tr>`;
 }
 
 let drag = null;

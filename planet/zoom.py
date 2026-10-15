@@ -148,6 +148,8 @@ from . import world as W
 from . import zoom_kernels as ZK
 from . import zoom_landforms as ZL
 from . import zoom_volcanoes as ZV
+from . import vegetation
+from . import zoom_vegetation as ZVG
 from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
@@ -944,27 +946,25 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ice_c = L.get("ice", np.zeros(g.n))[sel].astype(float)
     r_c = np.clip(r_c * np.exp(-ice_c / 500), 0.12, 1.0)
 
-    temp_c = L["temperature"][sel] + LAPSE * np.maximum(e_c, 0)
-    warm = L.get("warm_month", L["temperature"])[sel] + LAPSE * np.maximum(e_c, 0)
     # (glaciers: the bare ground's summer and winter at sea level, and the coarse ice's own cooling)
     gw, gc, own_c = (v[sel] for v in ice_ground(g, L, L.get("ice", np.zeros(g.n)).astype(float)))
-    vals = np.column_stack([np.maximum(e_c, 1.0), np.minimum(e_c, -1.0), temp_c, warm,
+    vals = np.column_stack([np.maximum(e_c, 1.0), np.minimum(e_c, -1.0),
                             L["precipitation"][sel].astype(float), ice_c, r_c, relief[sel],
                             gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), own_c,
                             np.asarray(L["runoff"] if "runoff" in L else L["precipitation"], float)[sel]])
     wts = np.ones_like(vals)
     wts[:, 0] = land_c
     wts[:, 1] = ~land_c
-    wts[:, 11] = land_c  # (runoff: the land's; the sea's is 0)
+    wts[:, 9] = land_c  # (runoff: the land's; the sea's is 0)
     sig = 0.5 * sp
     fine, _ = ZK.gauss_interp(px, py, cx, cy, vals, wts, sig)
     e_land = np.nan_to_num(fine[:, 0], nan=1.0)
     e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
-    t_sl, warm_sl, precip, ice, rug, rel = (fine[:, k] for k in range(2, 8))
-    gw_sl, gc_sl, own_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(8, 11))
+    precip, ice, rug, rel = (fine[:, k] for k in range(2, 6))
+    gw_sl, gc_sl, own_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(6, 9))
     # what feeds the streams: the world's runoff (rain minus what the land
     # evaporates, as its own rivers route), not the rain
-    runoff = np.clip(np.nan_to_num(fine[:, 11], nan=0.0), 0, None)
+    runoff = np.clip(np.nan_to_num(fine[:, 9], nan=0.0), 0, None)
     ind, _ = ZK.gauss_interp(px, py, cx, cy, np.where(land_c, 1.0, -1.0)[:, None],
                              np.ones((len(sel), 1)), 0.42 * sp)
     ind = ind[:, 0]
@@ -2341,15 +2341,25 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                         for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])
 
     # --- climate on the fine terrain -------------------------------------
+    # The bare ground's climate (zoom_vegetation.fine_fields: under the
+    # coarse ice too), lapse-corrected to the pixel; on the zoom's own
+    # glaciers the ice's surface (climate.ice_surface: its thickness, and the
+    # coarse ice's white-top cooling and summer melting cap) (PW-160)
+    fields = ZVG.fine_fields(world, fr, px, py, size_km)
     hl = np.maximum(h, 0)
-    temp = t_sl - LAPSE * hl
-    t_warm = warm_sl - LAPSE * hl
+    temp = fields["t_sl"] - LAPSE * hl
+    t_warm = fields["warm_sl"] - LAPSE * hl
+    t_cold = fields["cold_sl"] - LAPSE * hl
+    if glacier.any():
+        ice_px = np.where(glacier, np.maximum(ice_th, 1.0), 0.0)
+        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, fields["ice_cover"])
+    pix_lat = latlon(P)[0]
+    north = pix_lat >= 0
     clim_f = np.where(sea, SEA_CLIMATE, clim_f)
     # land the coarse map has as sea (a volcanic island in a sea cell): a
     # climate from its own temperature and rain
     lone = land & (clim_f == SEA_CLIMATE)
     if lone.any():
-        t_cold = 2 * temp - t_warm
         k = np.where(t_cold >= 18, np.where(precip >= 1800, 0, np.where(precip >= 1000, 1, 2)),  # Af Am Aw
                      np.where(t_cold > 0, np.where(t_warm >= 22, 13, 14), np.where(t_warm >= 10, 26, 28)))  # Cfa Cfb Dfc ET
         clim_f = np.where(lone, np.where((precip < 350) & (t_cold > 0), 3, k), clim_f).astype(np.uint8)  # BWh
@@ -2364,8 +2374,19 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     water = np.where(sea, 1, np.where(lake | plunge | lf_lake, 2, 0)).astype(np.uint8)
     # marshes: a coastal plain's lowest ground near the sea and its lagoons, where it is wet enough
     d_sea = ZK.inside_distance(land, nx, ny, False) * res
-    wetland = ((water == 0) & (w_cp > 0.5) & (h < MARSH_M) & (d_sea <= MARSH_KM) & (precip > 300.0)
-               & ~glacier).astype(np.uint8)
+    marsh = (water == 0) & (w_cp > 0.5) & (h < MARSH_M) & (d_sea <= MARSH_KM) & (precip > 300.0) & ~glacier
+
+    # --- vegetation (zoom_vegetation, PW-214) and the terrain indices (PW-196)
+    # (on the layers as stored, float32, so zoom_vegetation.fractions can redo it)
+    ice_l = np.where(glacier, np.maximum(ice_th, 1.0), 0).astype(np.float32)
+    vz = ZVG.compute(world, fr, nx, ny, res, seed, size_km,
+                     ZVG.surface(h.astype(np.float32), lake_depth.astype(np.float32), water), water, ice_l,
+                     discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log)
+    veg_l, tr = vz["layers"], vz["terrain"]
+    biome = vegetation.biome_of(veg_l["vegetation"], biome).astype(np.uint8)
+    # wetlands: 1 a coastal plain's marsh, 2 the vegetation's (floodplains, mires, lake shores: PW-178)
+    wetland = np.where(marsh, 1, np.where((water == 0) & np.isin(veg_l["vegetation"], list(ZVG.WETLAND_TYPES)), 2, 0)
+                       ).astype(np.uint8)
 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
@@ -2390,7 +2411,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "landform_basins": lf_counts,
         # (the overlays: dunes' types, karst's dolines, poljes, towers, ponds, sinking streams and springs)
         "landform_overlay": lf_overlay,
-        "barrier_px": int(barrier.sum()), "wetland_pct": round(100 * float(wetland.mean()), 2),
+        "barrier_px": int(barrier.sum()), "wetland_pct": round(100 * float((wetland > 0).mean()), 2),
+        "marsh_pct": round(100 * float(marsh.mean()), 2),
+        # the vegetation (zoom_vegetation): % of the vegetated land by named type, mean tree cover and NPP
+        "vegetation": vz["stats"],
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
@@ -2431,6 +2455,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "drainage_area": area.astype(np.float32),
         "precipitation": precip.astype(np.float32),
         "temperature": temp.astype(np.float32),
+        # July and January (the warmest / coldest month by hemisphere) and the half-years' rain (PW-139)
+        "temperature_jul": np.where(north, t_warm, t_cold), "temperature_jan": np.where(north, t_cold, t_warm),
+        "precipitation_jul": fields["p_jul"], "precipitation_jan": fields["p_jan"],
         "ice": np.where(glacier, np.maximum(ice_th, 1.0), 0).astype(np.float32),
         "tide_range": np.where(sea, tide_f, 0).astype(np.float32),
         "wave_power": np.where(sea, wave_f, 0).astype(np.float32),
@@ -2440,6 +2467,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
         "wetland": wetland,
+        # vegetation (decision 9A: the summary layers; zoom_vegetation.fractions recomputes each type's cover)
+        **veg_l,
+        # terrain indices (zoom_terrain, PW-196)
+        "radiation_index": tr["radiation_index"], "twi": tr["twi"],
+        "river_dist": np.where(land, np.minimum(tr["river_dist"], 255), 0),
+        "coast_dist": np.where(land, np.minimum(tr["coast_dist"], 255), 0),
     }
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
@@ -2566,9 +2599,35 @@ LAYER_DOC = {
     "rock": ("ROCKS id", "basement rock (surface.ROCKS)"),
     "surface_rock": ("ROCKS id", "exposed rock: basement or sediment cover"),
     "climate": ("KOPPEN id", "Koppen class; alpine tundra/ice cap added from the fine elevation"),
-    "biome": ("BIOMES id", "climate.biomes on the fine fields"),
+    "biome": ("BIOMES id", "coarse grouping of the vegetation types (vegetation.biome_of); sea and lakes by "
+                           "climate.biomes"),
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
-    "wetland": ("0/1", "marsh: a coastal plain's lowest wet ground near the sea and its lagoons"),
+    "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
+                        "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
+    # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)
+    "temperature_jul": ("C", "July mean temperature (warmest month in the north, coldest in the south), "
+                             "lapse-rate adjusted", S.LAYERS["temperature_jul"]),
+    "temperature_jan": ("C", "January mean temperature, lapse-rate adjusted", S.LAYERS["temperature_jan"]),
+    "precipitation_jul": ("mm/yr", "precipitation in the July half-year (Apr-Sep), as a rate per year",
+                          S.LAYERS["precipitation_jul"]),
+    "precipitation_jan": ("mm/yr", "precipitation in the January half-year (Oct-Mar), as a rate per year",
+                          S.LAYERS["precipitation_jan"]),
+    "vegetation": ("id", "named vegetation type (vegetation.TYPES; legend 'vegetation'), per pixel "
+                         "(zoom_vegetation)", S.LAYERS["vegetation"]),
+    "tree_cover": ("%", "tree canopy cover", S.LAYERS["tree_cover"]),
+    "plant_cover": ("%", "ground shaded by plants of any kind", S.LAYERS["plant_cover"]),
+    "lai": ("m2/m2", "leaf area index, the year's mean", S.LAYERS["lai"]),
+    "canopy_height": ("m", "height of the tallest layer covering >= 10% of the pixel (younger stands lower)",
+                      S.LAYERS["canopy_height"]),
+    "npp": ("g C/m2/yr", "net primary productivity", S.LAYERS["npp"]),
+    "fire_return": ("yr", "mean years between fires (0: none)", S.LAYERS["fire_return"]),
+    "radiation_index": ("ratio", "the year's sunshine on the slope / on flat ground at the same place "
+                                 "(poleward slopes < 1; zoom_terrain)", {"dtype": "u1", "scale": 0.01}),
+    "twi": ("ln m", "topographic wetness index ln(upslope area per m of contour / tan slope); "
+                    "depends on the pixel size (zoom_terrain)", {"dtype": "u1", "scale": 0.1}),
+    "river_dist": ("px", "distance to the nearest river (>= zoom_terrain.RIVER_Q m^3/s), pixels (x res_km "
+                         "for km), at most 255", {"dtype": "u1"}),
+    "coast_dist": ("px", "distance to the sea, pixels, at most 255 (0 at sea)", {"dtype": "u1"}),
 }
 
 
@@ -2586,8 +2645,12 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
-    layout = S.write_layers(out, z["layers"], {k: {"units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]}
-                                               for k in z["layers"]})
+    specs, arrays = {}, {}
+    for k, v in z["layers"].items():
+        units, desc, *enc = LAYER_DOC[k]
+        specs[k] = {**(enc[0] if enc else {}), "units": units, "description": desc}
+        arrays[k] = S.encode(v, specs[k]) if enc else v
+    layout = S.write_layers(out, arrays, specs)
     h = z["layers"]["elevation"].astype(float)
     lo, hi = float(np.floor(h.min())), float(np.ceil(h.max()))
     hi = max(hi, lo + 1)
@@ -2634,11 +2697,15 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     return out
 
 
-def load(ref: str | Path) -> tuple[dict, dict]:
-    """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it)."""
+def load(ref: str | Path, decode: bool = False) -> tuple[dict, dict]:
+    """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it);
+    raw as stored, or in real units with decode (scaled layers: float)."""
     d = S.find_zoom(ref)
     meta = json.loads((d / "zoom.json").read_text())
-    return meta, S.read_layers(d, meta["layers"])
+    raw = S.read_layers(d, meta["layers"])
+    if decode:
+        raw = {k: S.decode(np.asarray(v), meta["layers"][k]) for k, v in raw.items()}
+    return meta, raw
 
 
 def update_index():
