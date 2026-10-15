@@ -903,6 +903,8 @@ def _budyko1(p, pet, w):
     x = pet / p
     if x <= 1:
         return p * (1 + x - (1 + x**w) ** (1 / w))
+    if x > 1e8:  # (a trace of rain: it all evaporates; also keeps an infinite x out)
+        return p
     return p * (1 + x - x * (1 + x ** -w) ** (1 / w))  # (the same, without overflow on very dry ground)
 
 

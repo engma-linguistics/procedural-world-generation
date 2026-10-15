@@ -278,3 +278,14 @@ def test_vegetation_feedbacks_nudge():
     c0 = climate.compute(g, elev)
     d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
     assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9
+
+
+def test_kernel_budyko_matches_and_stays_finite():
+    """The rain kernel's scalar Budyko (PW-266) is water_balance's, and stays
+    finite for a trace of rain under a big potential evaporation."""
+    for p, pet, w in [(800.0, 400.0, 2.6), (300.0, 1500.0, 1.5), (50.0, 2000.0, 4.0), (2000.0, 100.0, 2.6)]:
+        assert climate._budyko1(p, pet, w) == pytest.approx(float(climate.budyko(np.array(p), np.array(pet), w)),
+                                                             rel=1e-9)
+    for p in (1e-300, 5e-324, 1e-12, 0.0):
+        e = climate._budyko1(p, 2000.0, 2.6)
+        assert np.isfinite(e) and 0.0 <= e <= p
