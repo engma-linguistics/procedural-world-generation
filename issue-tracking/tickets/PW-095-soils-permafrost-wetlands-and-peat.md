@@ -2,7 +2,7 @@
 id: PW-095
 title: Soils, permafrost, wetlands and peat
 type: story
-status: todo
+status: wontdo
 parent: PW-090
 subsystem: surface
 effort: m
@@ -21,4 +21,5 @@ relief and surface age (and the glacial imprint: till, loess, outwash). World la
 and used by the zoom and the human-use layers.
 
 ## Updates
+- 2026-10-14: Status todo -> wontdo. Merged into PW-185 (soils); permafrost, wetlands and peat go there too.
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).

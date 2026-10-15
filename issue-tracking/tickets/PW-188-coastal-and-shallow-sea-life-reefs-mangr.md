@@ -19,4 +19,5 @@ updated: 2026-10-14
 World layers and zoom placement from the stored sea temperature (sst_jul/jan), tide range, wave power, river sediment (turbidity) and shelf depth: coral reefs (warm clear shallow water; atolls already from volcanoes), mangroves (warm tidal muddy coasts), kelp (cool nutrient-rich, upwelling), seagrass (sheltered shallow). Feeds coast detail (PW-097/077).
 
 ## Updates
+- 2026-10-14: Owns reefs, mangroves, kelp and seagrass (from PW-097/077).
 - 2026-10-14: Created.

@@ -20,4 +20,5 @@ Dune fields where wind, aridity and sand supply (rivers, outwash, coasts, sandst
 from wind steadiness; loess downwind of outwash and deserts. World layers plus zoom synthesis.
 
 ## Updates
+- 2026-10-14: Rescoped: loess only (dune fields done in PW-012/PW-176).
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).

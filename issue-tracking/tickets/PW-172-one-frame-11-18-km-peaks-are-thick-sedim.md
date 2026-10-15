@@ -37,4 +37,5 @@ ago. Lean A+B. Coherence (PW-108 fix) removes some of the flips that start it.
 - [ ] no frame of an L7 1 Gyr run above ~9.5 km (envelope test)
 
 ## Updates
+- 2026-10-14: Absorbs PW-048 (single-sample 12-13 km spikes; add the envelope test it asked for).
 - 2026-10-14: Created from inbox draft draft-hotspot-pile-spikes.md (found by tectchurn).

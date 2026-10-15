@@ -2,7 +2,7 @@
 id: PW-117
 title: "Hotspot islands are sub-cell: at level 6 (and half the time at 7) the grid shows a bank, not land"
 type: task
-status: needs-decision
+status: done
 parent: PW-001
 subsystem: tectonics
 effort: s
@@ -39,4 +39,5 @@ Lean: A, plus C if the globe looks too empty of islands (it matters for climate 
 little: these are small islands).
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Coordinator decision (north star): A. The zoom is where sub-cell islands live; the globe showing a shallow bank is honest at that resolution. Revisit only if a coarse-view display trick is wanted.
 - 2026-10-14: Created from inbox draft draft-coarse-grid-hotspot-islands.md (found by volcanoes).

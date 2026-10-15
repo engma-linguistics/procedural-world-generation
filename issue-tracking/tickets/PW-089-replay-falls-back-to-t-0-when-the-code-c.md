@@ -2,7 +2,7 @@
 id: PW-089
 title: Replay falls back to t=0 when the code changed
 type: task
-status: todo
+status: done
 parent: null
 subsystem: store
 effort: m
@@ -21,4 +21,5 @@ older runs take minutes, or fail with ReplayMismatch unless `--force`. With "no 
 this mostly means: make the message clear and suggest re-running or `--force`.
 
 ## Updates
+- 2026-10-14: Status todo -> done. Already done: timeline.slice_world warns on keyframe mismatch and offers --force.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Infrastructure.

@@ -20,4 +20,5 @@ Owner backlog: vegetation, and eventually a "satellite view" (true-colour render
 snow, water) of the globe and zooms. "Not yet": pick up after PW-005 and PW-001.
 
 ## Updates
+- 2026-10-14: Rescoped: the 'satellite view' only; vegetation itself is PW-187, which this waits for.
 - 2026-10-14: Migrated from plan_next@bdc967f Backlog (owner notes 2026-10-14).
