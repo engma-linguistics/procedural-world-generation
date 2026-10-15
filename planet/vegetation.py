@@ -766,7 +766,7 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
         nh = np.maximum((ok & HERBS[:, None]).sum(0), 1)
         nu0 = np.where(TREES[:, None], START["trees"] / nt, np.where(HERBS[:, None], START["herbs"] / nh, 0.0))
     nu = np.where(ok, np.maximum(np.asarray(nu0, float), seed), 0.0)
-    out = np.empty_like(nu)
+    out = np.zeros_like(nu)  # (zeros, not empty: _step writes only `cells`, and reads their neighbours)
     burned = np.zeros(n)
     C, resist = _C, _col("resist")
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
