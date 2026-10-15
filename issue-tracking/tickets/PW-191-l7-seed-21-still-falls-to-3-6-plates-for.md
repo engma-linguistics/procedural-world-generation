@@ -1,4 +1,5 @@
 ---
+id: PW-191
 title: L7 seed 21 still falls to 3-6 plates for 300+ Myr despite the warm-mantle rift nudge
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tectsea
 blocked_by: []
 relates: [PW-024, PW-025, PW-053]
 refs: [planet/tectonics/events.py, tools/supercontinent.py, tools/sealevel.py, "run:cac9c4", "run:abcdac"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -32,3 +35,6 @@ settle_time are surface shares / times, but the cut sampling and the
 coherence welds are per cell). One seed: run 2-3 more L7 seeds (or L6 seed 21 to
 2 Gyr) before changing anything.
 - [ ] L7 plate count over 2-3 seeds understood; a dip to <= 4 for > 100 Myr either explained or made rarer
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-l7-late-plate-collapse.md (found by tectsea).

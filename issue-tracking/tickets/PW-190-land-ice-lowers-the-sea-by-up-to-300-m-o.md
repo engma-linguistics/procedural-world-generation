@@ -1,4 +1,5 @@
 ---
+id: PW-190
 title: Land ice lowers the sea by up to 300+ m on some seeds (about 4x Antarctica's volume)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tectsea
 blocked_by: []
 relates: [PW-053]
 refs: [planet/tectonics/earth.py, tools/sealevel.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -34,3 +37,6 @@ ice building to ~-300 m within 40 Myr is the ice following continental drift
 (fine) or a runaway in the albedo feedback (ICE_FEEDBACK, ice_albedo).
 - [ ] the largest sea_ice on 4 L6 seeds x 1 Gyr understood, and either justified or
   brought to roughly the LGM's scale (~-150..-200 m)
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-ice-sea-level-depth.md (found by tectsea).
