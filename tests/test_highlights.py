@@ -264,3 +264,93 @@ def test_travel(gen4):
     for k in H.SEASON_LAYERS:
         del L[k]
     assert not {"beach", "ski", "mild_winter", "year_round"} & {f["kind"] for f in H.find(w)}
+
+
+def test_vegetation_places(gen4):
+    """Great forest, savanna, wetland, maquis coast and treeline finders on
+    planted vegetation (vegetation.TYPES ids)."""
+    w, g = gen4, gen4["grid"]
+    L = w["layers"]
+    e = L["elevation"]
+    land = e > 0
+    L["ice"] = np.zeros(g.n)
+    L["vegetation"] = np.where(land, 32, 0)  # short-grass steppe everywhere, no trees, nothing flooded
+    L["tree_cover"], L["flooded"] = np.zeros(g.n), np.zeros(g.n)
+    nb = lambda c: g.nbr_idx[g.nbr_off[c]:g.nbr_off[c + 1]]
+    c = _inland_cell(w)
+    taiga = [int(x) for x in _near(g, c, 1) if land[x]]
+    L["vegetation"][taiga], L["tree_cover"][taiga] = 37, 85
+    # a treeline: krummholz at 2500 m over the taiga at 600 m
+    e[taiga] = 600
+    e[c] = 2500
+    L["vegetation"][c], L["tree_cover"][c] = 48, 5
+    # a wetland and a savanna elsewhere inland
+    far = [int(x) for x in np.flatnonzero(land) if min(np.arccos(np.clip(g.centers[x] @ g.centers[c], -1, 1)) * R_KM, 9e9) > 2500]
+    inner = [x for x in far if land[nb(x)].all()]
+    wet = [x for x in _near(g, inner[0], 1) if land[x]]
+    L["vegetation"][wet], L["flooded"][wet] = 52, 60
+    sav = [x for x in _near(g, inner[-1], 1) if land[x]]
+    L["vegetation"][sav] = 9
+    # maquis on a coast
+    coast = [int(x) for x in np.flatnonzero(land) if (e[nb(x)] <= 0).any()]
+    mq = [x for x in _near(g, coast[len(coast) // 2], 1) if land[x] and x not in wet + sav + taiga + [c]]
+    L["vegetation"][mq] = 19
+    feats = H.find(w)
+    check(w, feats)
+    by = lambda k: [f for f in feats if f["kind"] == k]
+    assert {f["category"] for f in by("great_forest")} == {"vegetation"}
+    gf = by("great_forest")
+    assert len(gf) == 1 and gf[0]["cell"] in taiga and "boreal spruce-fir taiga" in gf[0]["title"]
+    assert [f["cell"] in wet for f in by("wetland")] == [True] and "raised bog" in by("wetland")[0]["title"]
+    assert by("savanna")[0]["cell"] in sav and "dry savanna 100%" in by("savanna")[0]["blurb"]
+    assert by("maquis_coast")[0]["cell"] in mq
+    tl = [f for f in by("treeline") if "Polar" not in f["title"]]
+    assert len(tl) == 1 and tl[0]["stats"]["treeline_m"] == 600 and "alpine scrub (krummholz)" in tl[0]["blurb"]
+    # worlds without vegetation layers: none of these, no errors
+    for k in ("vegetation", "tree_cover", "flooded"):
+        del L[k]
+    assert not set(H.CATEGORIES["vegetation"]) & {f["kind"] for f in H.find(w)}
+
+
+def test_island_chain_and_atolls(gen4):
+    """Hotspot chains and atoll groups from the volcano table (volcanism.COLUMNS):
+    a planted chain of vents along the equator, youngest first, and a group
+    of arc atolls far from it."""
+    from planet.tectonics import volcanism as V
+    w = gen4
+    row = lambda lat, lon, kind, age, active, top, reef: dict(
+        lat=lat, lon=lon, kind=kind, age=age, active=active, top_m=top, floor_m=-4000.0, height_m=top + 4000.0,
+        radius_km=25.0, volume_km3=1e4, reef=reef, shore_km=0.0)
+    chain = [row(0.0, 1.0 * k, V.VENT, 2.0 * k, int(k == 0), top, reef) for k, (top, reef) in enumerate(
+        [(2000, 0), (1500, 0), (800, 0), (300, 0), (-20, V.REEF), (-30, V.REEF), (-900, V.DROWNED), (-1500, V.DROWNED)])]
+    group = [row(0.0, 120.0 + 1.5 * k, V.ARC, 30.0, 0, -10, V.REEF) for k in range(4)]
+    w["meta"] = dict(w.get("meta", {}), volcano_columns=list(V.COLUMNS),
+                     volcanoes=[[v[c] for c in V.COLUMNS] for v in chain + group])
+    feats = H.find(w)
+    check(w, feats)
+    hs = [f for f in feats if f["kind"] == "hotspot_islands"]
+    assert len(hs) == 1
+    st = hs[0]["stats"]
+    assert (st["volcanoes"], st["islands"], st["atolls"], st["sunk"], st["active"]) == (8, 4, 2, 2, True)
+    assert "Island chain: 4 islands, 2 atolls" == hs[0]["title"] and len(hs[0]["path"]) == 8
+    assert abs(hs[0]["lat"]) < 2 and -1 < hs[0]["lon"] < 8
+    at = [f for f in feats if f["kind"] == "atolls"]
+    assert len(at) == 1 and at[0]["stats"]["atolls"] == 4 and 118 < at[0]["lon"] < 127 and at[0]["category"] == "geology"
+
+
+def test_fastest_plate(world4):
+    """The fastest big plate, at its leading edge (converging boundary it
+    moves towards); none when its edges don't converge."""
+    w = dict(world4, layers=dict(world4["layers"]))
+    L = w["layers"]
+    plate, speed = np.asarray(L["plate"]), np.asarray(L["plate_speed"], float)
+    f = [x for x in H.find(w) if x["kind"] == "fastest_plate"]
+    ids, cnt = np.unique(plate, return_counts=True)
+    big = ids[cnt >= H.FAST_MIN_SHARE * len(plate)]
+    fastest = max(big, key=lambda p: speed[plate == p].mean())
+    assert len(f) <= 1
+    if f:
+        assert f[0]["stats"]["plate"] == fastest and plate[f[0]["cell"]] == fastest and f[0]["category"] == "geology"
+        assert f[0]["stats"]["speed_cmyr"] >= f[0]["stats"]["next_cmyr"]
+    L["plate_boundary"] = np.zeros_like(L["plate_boundary"])  # nothing converging: nothing to show
+    assert not [x for x in H.find(w) if x["kind"] == "fastest_plate"]

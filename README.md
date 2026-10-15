@@ -38,12 +38,14 @@ moment on screen: the highest peak (and the highest ice-free one, when the
 top is under an ice cap), the longest mountain range, the largest and
 longest rivers, the steepest big rivers and waterfalls, canyons, river mouths
 where deltas could build, fjord coasts, Mediterranean "wine country", volcanic
-arcs, hotspot islands, rifts, plateaus, rain shadows, coral coasts, the biggest
+arcs, hotspot island chains, atoll groups, rifts, the fastest plate (at its
+leading edge), plateaus, rain shadows, coral coasts, the biggest
 lake, salt lakes, salt flats and inland basins, deserts, rainforests, ice
 sheets, the deepest trench, islands and archipelagos, the most varied 1000 km
-square and a few climate records. Worlds with
+square and a few climate records; from the vegetation, great forests, the
+great savanna, wetlands, a maquis coast and the treeline. Worlds with
 July / January layers also get travel tips, each with the numbers that make it
-in its own hemisphere's season: beach destinations, ski country, mild-winter
+in its own hemisphere's season: beach destinations, ski country, winter-sun
 retreats and a year-round resort (a beach and skiing within 400 km)
 (`planet/highlights.py`; cached in `worlds/highlights/`). On ~110 km cells a
 "waterfall" is a steep reach of river; each zoom lists its own pixel-scale

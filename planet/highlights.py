@@ -10,7 +10,7 @@ mountain range, a big river mouth, a fjord coast...) and returns features:
     {kind, category, title, blurb, lat, lon, cell, size_km, score, zoomable, stats, path?}
 
 category groups the kinds for the viewer (CATEGORIES: landscape, water,
-climate, travel, geology).
+climate, travel, geology, vegetation).
 
 lat/lon/cell is where to look (a cell on the feature, near its middle);
 size_km is a suggested regional-zoom extent, one of the viewer's zoom sizes;
@@ -42,8 +42,17 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - rift: diverging plate boundary with continental land of two different
   plates within ~3 cells (a continent splitting, or a new narrow sea).
 - volcanic arc: chains of the run's active arc volcanoes (meta "volcanoes")
-  less than 600 km apart; hotspot islands: land of hotspot basalt on oceanic
-  crust within 1500 km of a live hotspot.
+  less than 600 km apart. Hotspot island chain: from the same volcano table,
+  a plume's vents on the sea floor linked when within CHAIN_LINK_KM and
+  CHAIN_LINK_MYR of each other, ranked by how many islands, atolls and guyots
+  they show (zoom_volcanoes.form), zoomed where most islands and atolls are;
+  worlds without a table fall back to land of hotspot basalt on oceanic crust
+  within 1500 km of a live hotspot. Atolls: the biggest group of atolls
+  (hotspot or arc, within ATOLL_LINK_KM) not already shown as a chain.
+- fastest plate: the big plate (>= FAST_MIN_SHARE of the planet) with the
+  highest mean speed, placed on its leading edge (converging boundary it
+  moves towards), saying what happens there (collision, subduction,
+  overriding); none when it has no such edge.
 - climate records (hottest, coldest, wettest, driest) are on ice-free land
   and dropped when they sit on a better feature.
 - highest peak: under more than ICE_PEAK_M of ice it ranks lower and the
@@ -69,8 +78,17 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - plateau: one piece of land >= 2000 m, ice-free, whose cells differ from
   their neighbours by < 500 m on average.
 - most varied square: the 1000 km square (around a land cell) with the most
-  even mix of Koppen classes and biomes (exp of Shannon entropy, geometric
-  mean of the two), lowered when under half land.
+  even mix of Koppen classes and named vegetation types (biomes on worlds
+  without vegetation; exp of Shannon entropy, geometric mean of the two),
+  lowered when under half land.
+- vegetation (worlds with the vegetation layers): rainforest is the evergreen
+  tropical forest types (else Koppen Af); great forests: the two largest
+  closed forests (tree cover >= 60%) of different kinds outside the
+  rainforest; the great savanna; the biggest wetlands (swamp forest, flooded
+  grassland, marsh, bog, fen, palsa mire); the maquis coast (Mediterranean
+  vegetation along a coast; wine country stays the Koppen Cs climate, with
+  its vegetation in the blurb); the treeline: alpine vegetation over forest
+  >= 300 m lower along a mountain range, and the polar forest-tundra belt.
 - travel (worlds with July / January layers; each hemisphere's own summer and
   winter, July being summer in the north): beach destination (coast with a
   warm, sunny summer at sea level: sunshine_jul / sunshine_jan, a warm sea: its
@@ -98,6 +116,7 @@ from .climate import BIOMES, KOPPEN, LAPSE
 from .geo import R_KM
 from .grid import Grid
 from .tectonics.volcanism import ARC as ARC_VOLCANO
+from .vegetation import TYPES as VEG_TYPES
 
 # cached lists are recomputed whenever this file changes
 VERSION = hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:10]
@@ -108,12 +127,13 @@ SEC_PER_YR = 3.156e7
 # Fixed priority per kind: how eye-catching a zoom there usually is.
 PRIORITY = {
     "highest_peak": 100, "mountain_range": 95, "largest_river": 92, "longest_river": 88, "delta": 85,
-    "fjords": 82, "mediterranean": 78, "volcanic_arc": 75, "hotspot_islands": 72, "rift": 70,
-    "trench": 68, "lake": 66, "inland_sea": 64, "ice_sheet": 62, "desert": 60, "rainforest": 58,
+    "fjords": 82, "mediterranean": 78, "volcanic_arc": 75, "hotspot_islands": 72, "atolls": 69, "rift": 70,
+    "trench": 68, "fastest_plate": 45, "lake": 66, "inland_sea": 64, "ice_sheet": 62, "desert": 60, "rainforest": 58,
     "island": 55, "archipelago": 54, "continent": 50, "hottest": 40, "coldest": 39, "wettest": 38,
     "driest": 37, "ice_free_peak": 99, "waterfall": 90, "canyon": 84, "varied_square": 80, "plateau": 76,
     "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
     "year_round": 74, "ski": 71, "beach": 70, "mild_winter": 67,
+    "wetland": 59, "great_forest": 57, "maquis_coast": 54, "savanna": 53, "treeline": 52,
 }
 # Category per kind, for the viewer's filter and marker colours (PW-141)
 CATEGORIES = {
@@ -123,7 +143,8 @@ CATEGORIES = {
               "salt_flats", "inland_basin", "coral_coast"),
     "climate": ("desert", "rainforest", "ice_sheet", "mediterranean", "hottest", "coldest", "wettest", "driest"),
     "travel": ("beach", "ski", "mild_winter", "year_round"),
-    "geology": ("volcanic_arc", "hotspot_islands", "rift", "trench"),
+    "geology": ("volcanic_arc", "hotspot_islands", "atolls", "rift", "trench", "fastest_plate"),
+    "vegetation": ("great_forest", "savanna", "wetland", "maquis_coast", "treeline"),
 }
 CATEGORY = {k: c for c, kinds in CATEGORIES.items() for k in kinds}
 assert set(CATEGORY) == set(PRIORITY), set(CATEGORY) ^ set(PRIORITY)
@@ -638,19 +659,33 @@ def desert(ctx: _Ctx) -> list[dict]:
                      quality=0.6 + 0.4 * min(a / 3e6, 1))]
 
 
+RAINFOREST_TYPES = (1, 2, 5, 6)  # vegetation: tropical lowland rainforest, cloud forest, swamp and peat swamp forest
+
+
 def rainforest(ctx: _Ctx) -> list[dict]:
-    if "climate" not in ctx.L:
+    """The largest rainforest: the evergreen tropical forest types where the
+    world has vegetation, else Koppen Af."""
+    L = ctx.L
+    if "vegetation" in L:
+        cells = _largest_region(ctx, ctx.land & np.isin(np.asarray(L["vegetation"]), RAINFOREST_TYPES))
+    elif "climate" in L:
+        cells = _largest_region(ctx, ctx.land & (L["climate"] == 0))
+    else:
         return []
-    cells = _largest_region(ctx, ctx.land & (ctx.L["climate"] == 0))
     if cells is None:
         return []
     mid = ctx.middle(cells)
     a = len(cells) * ctx.area
-    rain = float(ctx.L["precipitation"][cells].mean())
-    blurb = f"Hot and wet all year (Köppen Af), ~{_n(rain)} mm of rain a year."
+    rain = float(L["precipitation"][cells].mean())
+    stats = {"area_km2": round(a), "rain_mm": round(rain)}
+    if "vegetation" in L:
+        stats["tree_cover_pct"] = round(float(np.asarray(L["tree_cover"], float)[cells].mean()))
+        blurb = (f"Evergreen tropical forest, ~{_n(rain)} mm of rain a year, {stats['tree_cover_pct']}% canopy cover: "
+                 f"{_veg_mix(ctx, cells)}.")
+    else:
+        blurb = f"Hot and wet all year (Köppen Af), ~{_n(rain)} mm of rain a year."
     return [_feature(ctx, "rainforest", f"Largest rainforest: {_area(a)}", blurb, mid,
-                     zoom_size(ctx.span_km(cells, mid)), {"area_km2": round(a), "rain_mm": round(rain)},
-                     quality=0.6 + 0.4 * min(a / 3e6, 1))]
+                     zoom_size(ctx.span_km(cells, mid)), stats, quality=0.6 + 0.4 * min(a / 3e6, 1))]
 
 
 def ice_sheet(ctx: _Ctx) -> list[dict]:
@@ -672,6 +707,7 @@ def ice_sheet(ctx: _Ctx) -> list[dict]:
 
 
 MED_MAX_WARM_C = 30.0
+MED_TYPES = (19, 20, 21)  # vegetation: Mediterranean scrub (maquis), evergreen woodland, pine forest
 
 
 def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
@@ -684,19 +720,28 @@ def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
     # warmest month <= 30 C: Seville, the hottest real wine Csa, is ~28 C
     ok = ctx.land & ((k == 7) | (k == 8)) & (ctx.elev < 1500) & (ctx.L["warm_month"] <= MED_MAX_WARM_C)
     regions = ctx.components(ok, min_cells=2, bridge=1)
+    coast = ctx.dilate(~ctx.land) & ctx.land
     feats = []
     for rank, cells in enumerate(regions[:top]):
         mid = ctx.middle(cells)
         a = len(cells) * ctx.area
         L = ctx.L
         hilly = float(np.mean((relief[cells] > 150) & (relief[cells] < 2000)))
+        on_coast = float(coast[cells].mean())
         blurb = (f"Mediterranean climate, like wine country: {_area(a)} of dry summers (~{L['warm_month'][cells].mean():.0f} °C) "
                  f"and wet winters (~{L['cold_month'][cells].mean():.0f} °C), {_n(L['precipitation'][cells].mean())} mm a year; "
-                 f"{100 * hilly:.0f}% of it hilly.")
+                 f"{100 * hilly:.0f}% of it hilly, {100 * on_coast:.0f}% on the coast.")
+        stats = {"area_km2": round(a), "hilly_pct": round(100 * hilly), "coast_pct": round(100 * on_coast)}
+        q_veg = 0.0
+        if "vegetation" in L:  # the Mediterranean vegetation: maquis, evergreen oak woodland, pinewoods
+            med = float(np.isin(np.asarray(L["vegetation"])[cells], MED_TYPES).mean())
+            stats["med_vegetation_pct"] = round(100 * med)
+            blurb += f" Vegetation: {_veg_mix(ctx, cells)}."
+            q_veg = 0.15 * med
         feats.append(_feature(ctx, "mediterranean", "Wine country", blurb, mid,
-                              zoom_size(ctx.span_km(cells, mid)),
-                              {"area_km2": round(a), "hilly_pct": round(100 * hilly)},
-                              quality=(0.8 ** rank) * (0.5 + 0.3 * min(a / 2e5, 1) + 0.2 * hilly)))
+                              zoom_size(ctx.span_km(cells, mid)), stats,
+                              quality=(0.8 ** rank) * (0.45 + 0.25 * min(a / 2e5, 1) + 0.15 * hilly
+                                                       + 0.1 * min(on_coast / 0.3, 1) + q_veg)))
     return feats
 
 
@@ -804,8 +849,153 @@ def _extent(ctx: _Ctx, cells) -> float:
     return float(np.arccos(np.clip(C @ C.T, -1, 1)).max()) * R_KM + ctx.cell_km
 
 
+CHAIN_LINK_KM = 250.0  # vents of one hotspot track are 60-195 km apart (volcanism.vent_gap)...
+CHAIN_LINK_MYR = 8.0  # ... and ~1-8 Myr apart in age (100 km at 1-10 cm/yr)
+ATOLL_LINK_KM = 300.0  # atolls this close make one group
+WINDOW_KM = 350.0  # a chain's or group's zoom: the most islands within this of its centre
+
+
+def _volcano_forms(ctx: _Ctx) -> list[dict]:
+    """The world's volcano table (zoom_volcanoes.table) with each one's form
+    (what it looks like now: island, atoll, guyot...); [] without one."""
+    if getattr(ctx, "_vforms", None) is None:
+        from .zoom_volcanoes import form, table
+        ctx._vforms = [dict(v, form=form(v)) for v in table({"meta": ctx.meta})]
+    return ctx._vforms
+
+
+def _sunk(f: str) -> bool:
+    return f in ("guyot", "drowned atoll (guyot)", "seamount")
+
+
+def _counts(vs: list[dict]) -> tuple[int, int, int]:
+    """(islands, atolls, guyots and seamounts) among volcanoes vs."""
+    isl = sum(1 for v in vs if v["top_m"] > 0)
+    atl = sum(1 for v in vs if v["form"] == "atoll")
+    return isl, atl, sum(1 for v in vs if v["top_m"] <= 0 and _sunk(v["form"]))
+
+
+def _best_window(ctx: _Ctx, vs: list[dict], show) -> tuple[int, float]:
+    """Where to zoom on a group of volcanoes: the one with the most volcanoes
+    show(v) within WINDOW_KM (so they fit a 1000 km zoom), and the km across
+    those. Returns (index into vs, km)."""
+    P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
+    d = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM
+    vis = np.array([bool(show(v)) for v in vs])
+    near = (d <= WINDOW_KM) & vis[None, :]
+    k = int(np.argmax(near.sum(1) + 0.01 * vis))
+    span = 2 * float(d[k][near[k]].max()) if near[k].any() else 0.0
+    return k, span
+
+
+def _tracks(vents: list[dict]) -> list[list[int]]:
+    """Hotspot tracks: vents linked when within CHAIN_LINK_KM and
+    CHAIN_LINK_MYR of each other's age (consecutive vents of one plume;
+    a neighbouring plume's track of another age stays apart), biggest first."""
+    if not vents:
+        return []
+    P = np.array([_unit(v["lat"], v["lon"]) for v in vents])
+    age = np.array([v["age"] for v in vents], float)
+    link = (np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM <= CHAIN_LINK_KM) & (np.abs(age[:, None] - age[None, :]) <= CHAIN_LINK_MYR)
+    lab = np.arange(len(vents))
+    while True:
+        new = np.where(link, lab[None, :], len(vents)).min(1)
+        new = new[new]
+        if np.array_equal(new, lab):
+            break
+        lab = new
+    groups = [list(np.flatnonzero(lab == k)) for k in np.unique(lab)]
+    groups.sort(key=lambda gr: -len(gr))
+    return groups
+
+
+def _chain_hotspot_islands(ctx: _Ctx, top: int) -> list[dict]:
+    """Hotspot tracks from the volcano table (_tracks: a plume's vents in a
+    row on the sea floor, youngest over the plume), ranked by how many
+    islands, atolls and guyots they show (Hawaii -> Midway -> the Emperor
+    seamounts). The zoom goes where most islands and atolls are."""
+    if getattr(ctx, "_hchains", None) is not None:
+        return ctx._hchains[:top]
+    vents = [v for v in _volcano_forms(ctx) if v["kind"] == 1]
+    chains = []
+    for gr in _tracks(vents):
+        vs = sorted((vents[k] for k in gr), key=lambda v: v["age"])
+        if len(vs) < 3 or np.mean([v["floor_m"] < 0 for v in vs]) < 0.5:  # (a continental track: not islands)
+            continue
+        isl, atl, sunk = _counts(vs)
+        if isl + atl == 0:
+            continue
+        chains.append((isl + atl + 0.3 * sunk, vs, isl, atl, sunk))
+    chains.sort(key=lambda c: -c[0])
+    out = []
+    for rank, (s, vs, isl, atl, sunk) in enumerate(chains[:3]):
+        k, span = _best_window(ctx, vs, lambda v: v["top_m"] > 0 or v["form"] == "atoll")
+        cell = int(ctx.g.locate(np.array([_unit(vs[k]["lat"], vs[k]["lon"])]))[0])
+        P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
+        length = float(np.arccos(np.clip(P @ P.T, -1, 1)).max()) * R_KM
+        young, peak = vs[0], max(vs, key=lambda v: v["top_m"])
+        parts = ([f"{isl} island{'s' if isl != 1 else ''}"] if isl else []) \
+            + ([f"{atl} atoll{'s' if atl != 1 else ''}"] if atl else []) \
+            + ([f"{sunk} guyots and seamounts" if sunk > 1 else "a guyot"] if sunk else [])
+        head = (f"active, {_m(young['top_m'])}, over the plume" if young["active"]
+                else "under 1 Myr old" if young["age"] < 1 else f"{young['age']:.0f} Myr old")
+        blurb = (f"A hotspot chain of {len(vs)} volcanoes over ~{_n(length)} km: the youngest ({head}), "
+                 f"then {', '.join(parts)} as the plate carries them off and they sink, the oldest {vs[-1]['age']:.0f} Myr"
+                 + (f"; highest {_m(peak['top_m'])}" if peak["top_m"] > 0 else "")
+                 + ". Like Hawaii, Midway and the Emperor seamounts.")
+        title = (f"Island chain: {isl} islands" + (f", {atl} atolls" if atl else "")) if isl else f"Atoll chain: {atl} atolls"
+        path = [[round(v["lat"], 2), round(v["lon"], 2)] for v in vs]
+        if len(path) > 60:
+            path = [path[j] for j in np.unique(np.linspace(0, len(path) - 1, 60).round().astype(int))]
+        out.append(_feature(ctx, "hotspot_islands", title, blurb, cell, zoom_size(span + 100),
+                            {"volcanoes": len(vs), "islands": isl, "atolls": atl, "sunk": sunk, "length_km": round(length),
+                             "peak_m": round(peak["top_m"]), "oldest_myr": round(vs[-1]["age"]), "active": bool(young["active"])},
+                            quality=(0.8 ** rank) * (0.5 + 0.5 * min(s / 10, 1)), path=path))
+    ctx._hchains = out
+    return out[:top]
+
+
+def atolls(ctx: _Ctx, top: int = 1) -> list[dict]:
+    """Coral atoll groups: atolls (a reef ring round a lagoon where a volcano
+    sank, volcanism's reef state) of any volcano, hotspot or arc, within
+    ATOLL_LINK_KM of each other; the group with the most, with its reef-
+    fringed islands (the Tuamotus, the Marshalls, the Maldives)."""
+    vols = [v for v in _volcano_forms(ctx) if v["form"] == "atoll" or (v["top_m"] > 0 and "reef" in v["form"])]
+    groups = []
+    for gr in _chains(ctx, [(v["lat"], v["lon"]) for v in vols], ATOLL_LINK_KM):
+        vs = [vols[k] for k in gr]
+        atl = sum(1 for v in vs if v["form"] == "atoll")
+        if atl >= 3:
+            groups.append((atl + 0.5 * (len(vs) - atl), vs, atl))
+    groups.sort(key=lambda g: -g[0])
+    taken = [f["cell"] for f in _chain_hotspot_islands(ctx, 3)]  # (an atoll chain is shown as the chain)
+    out = []
+    for s, vs, atl in groups:
+        if len(out) >= top:
+            break
+        k, span = _best_window(ctx, vs, lambda v: v["form"] == "atoll")
+        cell = int(ctx.g.locate(np.array([_unit(vs[k]["lat"], vs[k]["lon"])]))[0])
+        if taken and ctx.dist(cell, taken).min() < 600:
+            continue
+        rank = len(out)
+        reefy = len(vs) - atl
+        sst = ""
+        if "sst" in ctx.L:
+            sst = f"; the sea ~{_c(ctx.L['sst'][cell])}"
+        blurb = (f"{atl} coral atolls" + (f" and {reefy} reef-fringed islands" if reefy else "")
+                 + f" within ~{_n(_extent(ctx, ctx.g.locate(np.array([_unit(v['lat'], v['lon']) for v in vs]))))} km{sst}: "
+                 "rings of reef round lagoons where old volcanoes sank, like the Tuamotus or the Marshall Islands.")
+        out.append(_feature(ctx, "atolls", f"Atolls: {atl} in a group", blurb, cell, zoom_size(span + 100),
+                            {"atolls": atl, "reef_islands": reefy}, quality=(0.8 ** rank) * (0.5 + 0.5 * min(s / 10, 1))))
+    return out
+
+
 def hotspot_islands(ctx: _Ctx, top: int = 2) -> list[dict]:
-    """Volcanic islands of hotspot basalt on oceanic crust, near a live hotspot."""
+    """Hotspot island chains from the volcano table where the world has one
+    (_chain_hotspot_islands); else volcanic islands of hotspot basalt on
+    oceanic crust, near a live hotspot."""
+    if any(v["kind"] == 1 for v in _volcano_forms(ctx)):
+        return _chain_hotspot_islands(ctx, top)
     L = ctx.L
     hs = ctx.meta.get("hotspots") or []
     if "rock" not in L or not hs:
@@ -865,6 +1055,75 @@ def rifts(ctx: _Ctx, top: int = 2) -> list[dict]:
                               {"length_km": round(length), "land_pct": round(100 * land_frac), "plates": ps},
                               quality=(0.8 ** rank) * (0.5 + 0.5 * min(length / 1500, 1)), path=ctx.path(spine)))
     return feats
+
+
+FAST_MIN_SHARE = 0.015  # a plate covering less of the planet is a microplate (they spin fast) and doesn't count
+EDGE_MIN_CELLS = 3
+
+
+def fastest_plate(ctx: _Ctx) -> list[dict]:
+    """The fastest plate (mean speed over its cells; plates of at least
+    FAST_MIN_SHARE of the planet), shown where something happens because of
+    it: its leading edge, the converging boundary cells it moves towards
+    (velocity pointing at the other plate), longest stretch first; there it
+    is colliding, diving under its neighbour or overriding it. Nothing when
+    the fastest plate has no such edge."""
+    L = ctx.L
+    if any(k not in L for k in ("plate", "plate_speed", "_plate_velocity", "plate_boundary", "crust")):
+        return []
+    plate = np.asarray(L["plate"])
+    speed = np.asarray(L["plate_speed"], float)
+    ids, cnt = np.unique(plate, return_counts=True)
+    big = ids[cnt >= FAST_MIN_SHARE * ctx.n]
+    if len(big) < 2:
+        return []
+    mean = {int(p): float(speed[plate == p].mean()) for p in big}
+    p = max(mean, key=mean.get)
+    v = np.asarray(L["_plate_velocity"], float)
+    C = ctx.g.centers
+    a, b = ctx.a, ctx.b
+    conv = np.asarray(L["plate_boundary"]) > 0
+    lead = np.zeros(ctx.n, bool)
+    across = {}
+    for i, j in ((a, b), (b, a)):
+        m = (plate[i] == p) & (plate[j] != p) & (conv[i] | conv[j]) & ((v[i] * (C[j] - C[i])).sum(1) > 0)
+        lead[i[m]] = True
+        for x, y in zip(i[m], j[m]):
+            across.setdefault(int(x), int(y))
+    regions = ctx.components(lead, min_cells=EDGE_MIN_CELLS, bridge=1)
+    if not regions:
+        return []
+    cells = regions[0]
+    other = np.array([across[int(c)] for c in cells if int(c) in across])
+    length, spine = ctx.spine(cells, ctx.dilate(lead) & (plate == p))  # (along the plate's own side)
+    length += ctx.cell_km
+    mid = spine[len(spine) // 2]
+    q = int(np.bincount(plate[other]).argmax())
+    cont = np.asarray(L["crust"]) > 0
+    mine_c, theirs_c = cont[cells].mean() >= 0.5, cont[other].mean() >= 0.5
+    zone = ctx.dilate(np.isin(np.arange(ctx.n), cells), 2)
+    top, deep = float(ctx.elev[zone].max()), float(ctx.elev[zone].min())
+    if mine_c and theirs_c:
+        what, kind_ = f"colliding with plate {q}'s continent: mountains rising to {_m(top)} (like India into Asia)", "collision"
+    elif mine_c:
+        what, kind_ = (f"overriding plate {q}'s ocean floor: a trench to {_m(-deep)} below the sea and mountains to "
+                       f"{_m(top)} (like the Andes)"), "overriding"
+    elif theirs_c:
+        what, kind_ = (f"diving under plate {q}'s continent: a trench {_m(-deep)} deep and mountains to {_m(top)} "
+                       f"(like the Nazca plate under South America)"), "subducting"
+    else:
+        arc = bool((ctx.land & zone & (plate == q)).any())
+        what, kind_ = (f"diving under plate {q}: a trench {_m(-deep)} deep"
+                       + (f" and an island arc to {_m(top)} (like the Pacific under the Marianas)" if arc else
+                          " (like the Pacific under the Marianas, before an island arc rises)")), "subducting"
+    ranked = sorted(mean.values(), reverse=True)
+    blurb = (f"Plate {p} moves at {mean[p]:.1f} cm/yr on average, the fastest of the {len(big)} big plates "
+             f"(Earth's fastest, the Pacific and Australian plates, ~7-10 cm/yr; the next here {ranked[1]:.1f}). "
+             f"Its leading edge, {_n(length)} km of it, is {what}.")
+    return [_feature(ctx, "fastest_plate", f"Fastest plate: {mean[p]:.1f} cm/yr", blurb, mid, zoom_size(length),
+                     {"plate": p, "speed_cmyr": round(mean[p], 1), "next_cmyr": round(ranked[1], 1), "edge_km": round(length),
+                      "edge": kind_, "against": q, "top_m": round(top), "deep_m": round(deep)},
+                     quality=0.5 + 0.5 * min(mean[p] / 8, 1), path=ctx.path(spine))]
 
 
 ISLAND_MAX_KM2 = 3.5e6  # bigger landmasses are continents (Greenland 2.2, Australia 7.7 million km^2)
@@ -1379,29 +1638,35 @@ def plateaus(ctx: _Ctx, top: int = 3) -> list[dict]:
 
 
 VARIED_KM = 1000.0
+VARIED_CENTRES = 6000  # most squares tried (every other land cell at level 6, ~1 in 8 at level 7)
 
 
 def most_varied(ctx: _Ctx) -> list[dict]:
     """The VARIED_KM square (centred on a land cell, edges east-west and
-    north-south) with the most varied climates: the effective number of
-    Koppen classes x of biomes (exp of the Shannon entropy of their land
-    shares, so evenly mixed beats one big class with specks of others),
+    north-south) with the most varied climates and plants: the effective
+    number of Koppen classes x of vegetation types (the named types where
+    the world has them, else biomes; exp of the Shannon entropy of their
+    land shares, so evenly mixed beats one big class with specks of others),
     square-rooted, and lowered when it's under half land."""
     L = ctx.L
-    if "climate" not in L or "biome" not in L or ctx.land.sum() < 10:
+    veg = "vegetation" if "vegetation" in L else "biome"
+    if "climate" not in L or veg not in L or ctx.land.sum() < 10:
         return []
     land = np.flatnonzero(ctx.land)
     C = ctx.g.centers
     Pl = C[land]
     kk = np.asarray(L["climate"])[land]
-    bb = np.asarray(L["biome"])[land]
+    bb = np.asarray(L[veg])[land]
     ok_ = np.eye(max(kk.max(), 30) + 1)[kk]
-    ob = np.eye(max(bb.max(), 15) + 1)[bb]
+    ob = np.eye(max(bb.max(), len(VEG_TYPES) if veg == "vegetation" else 15) + 1)[bb]
     full = VARIED_KM ** 2 / ctx.area  # cells in a full square
     half = VARIED_KM / 2 / R_KM
     best = (-1.0, -1, None, None, 0.0)
-    for s in range(0, len(land), 512):
-        ci = land[s:s + 512]
+    # candidate centres: every land cell up to VARIED_CENTRES of them, else
+    # evenly thinned (a 1000 km square hardly changes over a cell or two)
+    centres = land[::max(1, -(-len(land) // VARIED_CENTRES))]
+    for s in range(0, len(centres), 512):
+        ci = centres[s:s + 512]
         c = C[ci]
         e = np.cross([0.0, 0.0, 1.0], c)
         e /= np.maximum(np.linalg.norm(e, axis=1, keepdims=True), 1e-9)
@@ -1424,12 +1689,209 @@ def most_varied(ctx: _Ctx) -> list[dict]:
     names = sorted(((n, k) for k, n in enumerate(nk) if n > 0), reverse=True)
     top3 = ", ".join(f"{KOPPEN_NAME.get(k, k)} {100 * n / nk.sum():.0f}%" for n, k in names[:3])
     n_k, n_b = int((nk > 0).sum()), int((nb > 0).sum())
-    blurb = (f"{n_k} Köppen climates and {n_b} biomes in one {_n(VARIED_KM)} km square "
+    what = "vegetation types" if veg == "vegetation" else "biomes"
+    blurb = (f"{n_k} Köppen climates and {n_b} {what} in one {_n(VARIED_KM)} km square "
              f"({100 * min(landfrac, 1):.0f}% land): {top3}, and more. The most varied corner of the world.")
     return [_feature(ctx, "varied_square", f"Most varied {_n(VARIED_KM)} km square", blurb, c, 1000,
-                     {"koppen_classes": n_k, "biomes": n_b, "diversity": round(score, 2),
+                     {"koppen_classes": n_k, ("vegetation_types" if veg == "vegetation" else "biomes"): n_b, "diversity": round(score, 2),
                       "land_pct": round(100 * min(landfrac, 1))},
                      quality=0.6 + 0.4 * min(score / 8, 1))]
+
+
+# ---------------------------------------------------------------------------
+# Vegetation (worlds with the vegetation layers, vegetation.py)
+# ---------------------------------------------------------------------------
+VEG_NAME = {t[0]: t[1] for t in VEG_TYPES}
+VEG_GROUP = {t[0]: t[2] for t in VEG_TYPES}
+FOREST_COVER = 60.0  # % tree cover: a closed forest
+SAVANNA_TYPES = (8, 9, 10)  # moist savanna woodland, dry savanna, tropical grassland
+WETLAND_TYPES = (5, 6, 11, 50, 51, 52, 53, 54)  # swamp and peat forests, flooded grassland, marsh, bog, fen, palsa mire
+ALPINE_TYPES = (12, 47, 48, 49)  # paramo, alpine meadow, krummholz, fellfield
+TREELINE_DROP_M = 300.0  # the forest below an alpine cell at least this much lower
+TREELINE_FOREST = 40.0  # % tree cover of that forest
+
+
+def _veg_mix(ctx: _Ctx, cells, k: int = 3) -> str:
+    """The region's commonest named vegetation types with their shares."""
+    ids, cnt = np.unique(np.asarray(ctx.L["vegetation"])[np.asarray(cells)], return_counts=True)
+    order = np.argsort(-cnt, kind="stable")[:k]
+    return ", ".join(f"{VEG_NAME.get(int(ids[o]), ids[o])} {100 * cnt[o] / cnt.sum():.0f}%" for o in order)
+
+
+def _dominant(ctx: _Ctx, cells) -> int:
+    ids, cnt = np.unique(np.asarray(ctx.L["vegetation"])[np.asarray(cells)], return_counts=True)
+    return int(ids[np.argmax(cnt)])
+
+
+def great_forests(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """The largest closed forests (tree cover >= FOREST_COVER) outside the
+    evergreen tropics (the rainforest has its own place): each of a
+    different kind (its commonest type's group: boreal, temperate, warm
+    temperate, monsoon forest...), largest first."""
+    L = ctx.L
+    if "vegetation" not in L or "tree_cover" not in L:
+        return []
+    veg = np.asarray(L["vegetation"])
+    ok = ctx.land & (np.asarray(L["tree_cover"], float) >= FOREST_COVER) & ~np.isin(veg, RAINFOREST_TYPES)
+    feats, groups = [], set()
+    for cells in ctx.components(ok, min_cells=5):
+        d = _dominant(ctx, cells)
+        if VEG_GROUP[d] in groups:
+            continue
+        groups.add(VEG_GROUP[d])
+        mid = ctx.middle(cells)
+        a = len(cells) * ctx.area
+        tc = float(np.asarray(L["tree_cover"], float)[cells].mean())
+        stats = {"area_km2": round(a), "tree_cover_pct": round(tc), "type": VEG_NAME[d], "group": VEG_GROUP[d]}
+        if "canopy_height" in L:
+            stats["canopy_m"] = round(float(np.asarray(L["canopy_height"], float)[cells].mean()))
+        blurb = (f"{_area(a)} of closed forest, {round(tc)}% canopy cover"
+                 + (f", trees ~{stats['canopy_m']} m tall" if "canopy_m" in stats else "")
+                 + f": {_veg_mix(ctx, cells)}. {VEG_TYPES[d][5]}")
+        rank = len(feats)
+        feats.append(_feature(ctx, "great_forest", f"Great forest: {_area(a)} of {VEG_NAME[d]}", blurb, mid,
+                              zoom_size(ctx.span_km(cells, mid)), stats,
+                              quality=(0.85 ** rank) * (0.6 + 0.4 * min(a / 3e6, 1))))
+        if len(feats) >= top:
+            break
+    return feats
+
+
+def savanna(ctx: _Ctx) -> list[dict]:
+    """The great savanna: the largest region of savanna woodland, dry savanna
+    and tropical grassland, with how often it burns."""
+    L = ctx.L
+    if "vegetation" not in L:
+        return []
+    cells = _largest_region(ctx, ctx.land & np.isin(np.asarray(L["vegetation"]), SAVANNA_TYPES), min_cells=5)
+    if cells is None:
+        return []
+    mid = ctx.middle(cells)
+    a = len(cells) * ctx.area
+    stats = {"area_km2": round(a), "rain_mm": round(float(L["precipitation"][cells].mean()))}
+    blurb = f"{_area(a)} of grass and scattered trees, ~{_n(stats['rain_mm'])} mm of rain a year"
+    if "tree_cover" in L:
+        stats["tree_cover_pct"] = round(float(np.asarray(L["tree_cover"], float)[cells].mean()))
+        blurb += f", {stats['tree_cover_pct']}% tree cover"
+    if "fire_return" in L:
+        fr = np.asarray(L["fire_return"], float)[cells]
+        if (fr > 0).any():
+            stats["fire_return_yr"] = round(float(np.median(fr[fr > 0])))
+            blurb += f", burning every ~{stats['fire_return_yr']} years"
+    blurb += f": {_veg_mix(ctx, cells)}. Big herds and their predators."
+    return [_feature(ctx, "savanna", f"Great savanna: {_area(a)}", blurb, mid, zoom_size(ctx.span_km(cells, mid)),
+                     stats, quality=0.6 + 0.4 * min(a / 3e6, 1))]
+
+
+def wetlands(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """The biggest wetlands (the Sudd, the Pantanal, the West Siberian bogs):
+    connected swamp forest, flooded grassland, marsh, bog, fen and palsa
+    mire, one-cell gaps bridged; ranked by area x the flooded share."""
+    L = ctx.L
+    if "vegetation" not in L:
+        return []
+    regions = ctx.components(ctx.land & np.isin(np.asarray(L["vegetation"]), WETLAND_TYPES), min_cells=3, bridge=1)
+    fl = np.asarray(L["flooded"], float) if "flooded" in L else None
+    cand = []
+    for cells in regions[:20]:
+        f = float(fl[cells].mean()) if fl is not None else 30.0
+        cand.append((len(cells) * ctx.area * (0.5 + f / 100), cells, f))
+    cand.sort(key=lambda c: -c[0])
+    feats = []
+    for rank, (_, cells, f) in enumerate(cand[:top]):
+        mid = ctx.middle(cells)
+        a = len(cells) * ctx.area
+        d = _dominant(ctx, cells)
+        stats = {"area_km2": round(a), "flooded_pct": round(f), "type": VEG_NAME[d]}
+        blurb = (f"{_area(a)} of wetland, ~{round(f)}% of it under water part of the year: {_veg_mix(ctx, cells)}. "
+                 f"{VEG_TYPES[d][5]}")
+        feats.append(_feature(ctx, "wetland", f"Wetland: {_area(a)} of {VEG_NAME[d]}", blurb, mid,
+                              zoom_size(ctx.span_km(cells, mid)), stats,
+                              quality=(0.85 ** rank) * (0.5 + 0.5 * min(a / 5e5, 1))))
+    return feats
+
+
+def maquis_coast(ctx: _Ctx) -> list[dict]:
+    """The largest stretch of Mediterranean vegetation (maquis, evergreen oak
+    woodland, pinewoods) along a coast: connected cells of MED_TYPES, one-
+    cell gaps bridged, at least a quarter of them on the coast. (Wine
+    country is the Koppen Cs climate; this is the plants.)"""
+    L = ctx.L
+    if "vegetation" not in L:
+        return []
+    coast = ctx.dilate(~ctx.land) & ctx.land
+    best = None
+    for cells in ctx.components(ctx.land & np.isin(np.asarray(L["vegetation"]), MED_TYPES), min_cells=3, bridge=1):
+        on = float(coast[cells].mean())
+        if on >= 0.25 and (best is None or len(cells) * on > best[0]):
+            best = (len(cells) * on, cells, on)
+    if best is None:
+        return []
+    _, cells, on = best
+    mid = ctx.middle(cells[coast[cells]])
+    a = len(cells) * ctx.area
+    stats = {"area_km2": round(a), "coast_pct": round(100 * on),
+             "warm_month_c": round(float(L["warm_month"][cells].mean())),
+             "rain_mm": round(float(L["precipitation"][cells].mean()))}
+    blurb = (f"{_area(a)} of evergreen scrub and woodland, {stats['coast_pct']}% of it on the coast; warmest month "
+             f"~{stats['warm_month_c']} °C, ~{_n(stats['rain_mm'])} mm of rain a year")
+    if "fire_return" in L:
+        fr = np.asarray(L["fire_return"], float)[cells]
+        if (fr > 0).any():
+            stats["fire_return_yr"] = round(float(np.median(fr[fr > 0])))
+            blurb += f", burning every ~{stats['fire_return_yr']} years"
+    blurb += f": {_veg_mix(ctx, cells)}. Aromatic evergreen thickets down to the sea."
+    return [_feature(ctx, "maquis_coast", f"Maquis coast: {_area(a)}", blurb, mid,
+                     zoom_size(min(ctx.span_km(cells, mid), 1000)), stats, quality=0.5 + 0.5 * min(a / 3e5, 1))]
+
+
+def treelines(ctx: _Ctx) -> list[dict]:
+    """The treeline, two ways: on mountains, the longest line of alpine
+    meadow, krummholz or fellfield above forest (>= TREELINE_FOREST % trees)
+    at least TREELINE_DROP_M lower next to it, with the height the trees
+    reach; towards the poles, the largest belt of forest-tundra."""
+    L = ctx.L
+    if "vegetation" not in L or "tree_cover" not in L:
+        return []
+    veg = np.asarray(L["vegetation"])
+    tc = np.asarray(L["tree_cover"], float)
+    forest = ctx.land & (tc >= TREELINE_FOREST)
+    alpine = ctx.land & np.isin(veg, ALPINE_TYPES)
+    feats = []
+    # alpine: an alpine cell with a forest neighbour well below it, and that forest cell
+    a, b = ctx.a, ctx.b
+    line = np.zeros(ctx.n, bool)
+    for i, j in ((a, b), (b, a)):
+        m = alpine[i] & forest[j] & (ctx.elev[i] - ctx.elev[j] >= TREELINE_DROP_M)
+        line[i[m]] = True
+        line[j[m]] = True
+    regions = ctx.components(line, min_cells=3, bridge=1)
+    if regions:
+        cells = regions[0]
+        top_forest = cells[forest[cells]]
+        mid = ctx.middle(cells)
+        tl = float(np.percentile(ctx.elev[top_forest], 90)) if len(top_forest) else float(ctx.elev[cells].min())
+        length, path = ctx.spine(cells, ctx.dilate(line, 1))
+        lat = float(abs(ctx.g.lat[mid]))
+        stats = {"treeline_m": round(tl, -1), "length_km": round(length), "lat": round(lat)}
+        blurb = (f"Forest gives way to {VEG_NAME[_dominant(ctx, cells[alpine[cells]])]} at ~{_m(round(tl, -1))} along "
+                 f"~{_n(length)} km of mountains ({lat:.0f}° {'N' if ctx.g.lat[mid] >= 0 else 'S'}): "
+                 f"{_veg_mix(ctx, cells)}.")
+        feats.append(_feature(ctx, "treeline", f"Treeline at ~{_m(round(tl, -1))}", blurb, mid,
+                              zoom_size(min(ctx.span_km(cells, mid), 1000)), stats,
+                              quality=0.6 + 0.4 * min(length / 1500, 1), path=ctx.path(path)))
+    cells = _largest_region(ctx, ctx.land & (veg == 42), min_cells=3)  # forest-tundra
+    if cells is not None:
+        mid = ctx.middle(cells)
+        ar = len(cells) * ctx.area
+        stats = {"area_km2": round(ar), "lat": round(float(ctx.g.lat[mid]), 1),
+                 "warm_month_c": round(float(L["warm_month"][cells].mean()), 1)}
+        blurb = (f"The northern edge of the forest" if ctx.g.lat[mid] >= 0 else "The southern edge of the forest") + (
+            f": {_area(ar)} of stunted trees in sheltered hollows and tundra between, warmest month "
+            f"~{stats['warm_month_c']:.0f} °C.")
+        feats.append(_feature(ctx, "treeline", f"Polar treeline: {_area(ar)} of forest-tundra", blurb, mid,
+                              zoom_size(ctx.span_km(cells, mid)), stats, quality=0.5 + 0.3 * min(ar / 5e5, 1)))
+    return feats
 
 
 # ---------------------------------------------------------------------------
@@ -1728,9 +2190,9 @@ def year_round(ctx: _Ctx, top: int = 1) -> list[dict]:
 
 
 DETECTORS = [highest_peak, mountain_ranges, rivers, deltas, deepest_trench, fjords, mediterranean,
-             volcanic_arcs, hotspot_islands, rifts, lakes, inland_seas, ice_sheet, desert, rainforest,
+             volcanic_arcs, hotspot_islands, atolls, rifts, fastest_plate, lakes, inland_seas, ice_sheet, desert, rainforest,
              landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied,
-             beaches, ski_country, mild_winters, year_round]
+             beaches, ski_country, mild_winters, year_round, great_forests, savanna, wetlands, maquis_coast, treelines]
 
 
 def _nms(ctx: _Ctx, feats: list[dict], radius_km: float) -> list[dict]:

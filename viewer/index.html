@@ -2089,7 +2089,7 @@ $('hlMarks').addEventListener('change', buildHighlightMarks);
 
 // categories (planet/highlights.py CATEGORIES): a colour each, on the markers and the list,
 // and a filter (state.hlCat, '' = all; ?hlcat= in the URL)
-const HL_CATS = { landscape: '#e8b86a', water: '#5fb8ff', climate: '#8fe07a', travel: '#ff8ad8', geology: '#ff6b4a' };
+const HL_CATS = { landscape: '#e8b86a', water: '#5fb8ff', climate: '#8fe07a', travel: '#ff8ad8', geology: '#ff6b4a', vegetation: '#3ccf9a' };
 const hlColor = (f) => HL_CATS[f.category] || '#c0c0c0';
 const hlShown = (f) => !state.hlCat || f.category === state.hlCat;
 state.hlCat = '';  // (?hlcat=: applyUrlOptions)
@@ -2481,7 +2481,7 @@ function applyUrlOptions() {
   if (p.get('relief')) $('relief').value = p.get('relief');
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
-  if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology  // jul | jan: the winds' half-year and the temperature / rain season
+  if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }
 const urlp = applyUrlOptions();

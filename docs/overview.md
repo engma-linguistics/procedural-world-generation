@@ -367,22 +367,25 @@ A **world** is one moment, finished. Four ways to get one:
 
 ### 2.12 Highlights (`highlights.py`)
 
-**What it does:** 28 detectors find 38 kinds of place worth a visit, in five categories (the viewer filters and colours by category):
+**What it does:** 35 detectors find 45 kinds of place worth a visit, in six categories (the viewer filters and colours by category):
 
 | Category | Kinds |
 |---|---|
 | landscape | highest peak (and highest ice-free peak), mountain range, plateau, canyon, fjords, rain shadow, most varied 1000 km square, continent, island, archipelago |
 | water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast |
-| climate | desert, rainforest, ice sheet, Mediterranean "wine country", hottest, coldest, wettest, driest |
-| travel | beach destination, ski country, mild-winter retreat, year-round resort (beach and skiing within 400 km) |
-| geology | volcanic arc, hotspot islands, rift, deepest trench |
+| climate | desert, rainforest (the evergreen tropical forest types), ice sheet, Mediterranean "wine country" (Köppen Cs, with its vegetation), hottest, coldest, wettest, driest |
+| travel | beach destination, ski country, winter-sun retreat (mild winter, ≥ 5 h of sunshine a day), year-round resort (beach and skiing within 400 km) |
+| geology | volcanic arc, hotspot island chain (from the volcano table: islands, atolls and guyots in a row), atoll group, rift, deepest trench, fastest plate (at its leading edge: collision or subduction) |
+| vegetation | great forests (largest closed forests of different kinds), great savanna, wetlands, maquis coast, treeline (alpine and polar) |
 
 Each scores as kind priority × quality (0.3–1). Travel picks use each hemisphere's own summer and winter and say why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf". Results are cached in `worlds/highlights/<id>.json`; `--zoom N` pre-makes zooms of the top N at a suggested size.
 
 ![Travel highlights](review/ocean/highlights_67317b_travel_filter.jpg)
 *World 67317b, highlights filtered to the travel category.*
 
-**Known limits:** canyons are weak at cell scale (PW-079); no island-chain or atoll highlight yet (PW-119); mild-winter sunshine proxy (PW-164).
+The most varied square counts named vegetation types (biomes on worlds without vegetation). A world's highlights take ~1.5 s at L6 and ~4 s at L7.
+
+**Known limits:** canyons are weak at cell scale (PW-079).
 
 ### 2.13 Regional zoom (`zoom.py`, `zoom_landforms.py`, `zoom_volcanoes.py`, `zoom_kernels.py`)
 
@@ -667,7 +670,7 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/world.py` | world finishing and file I/O |
 | `planet/timeline.py` | simulate, keyframes, report, replay, slice, `world_from_frame` |
 | `planet/generators.py` | one-shot cartoon plates (`generate`) |
-| `planet/highlights.py` | the 28 detectors, representative time |
+| `planet/highlights.py` | the 35 detectors, representative time |
 | `planet/zoom.py`, `zoom_kernels.py` | regional zoom and its raster kernels |
 | `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
 | `planet/timezoom.py`, `timezoom_kernels.py` | glacial time zoom |
