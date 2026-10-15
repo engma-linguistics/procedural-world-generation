@@ -1,4 +1,5 @@
 ---
+id: PW-261
 title: Server's /api/highlights still computes in the server process
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: parallel
 blocked_by: []
 relates: [PW-250]
 refs: [planet/api.py, planet/server.py, planet/parallel.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -17,3 +20,6 @@ Since the parallel branch, the server's jobs (zooms, time zooms, finished worlds
 
 What to try: send the computation to the server's pool (`pool.call(H.for_world, ...)` through a small module-level wrapper), keeping the cached-only path in the server process. The file locks (`store.lock`) already keep a worker and the server from building the same slice or highlights twice.
 - [ ] two highlights requests for different worlds compute at once, without blocking file serving
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-highlights-in-worker.md (found by parallel).

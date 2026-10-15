@@ -1,4 +1,5 @@
 ---
+id: PW-260
 title: Outputs depended on the OpenBLAS thread count; now pinned to 1 (runs made before replay differently)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: parallel
 blocked_by: []
 relates: [PW-215, PW-250]
 refs: [planet/parallel.py, tests/golden/sim_L4_s1_60myr.json, docs/scorecard.jsonl]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ The parallel branch now always sets OPENBLAS/OMP/MKL_NUM_THREADS=1 (`parallel.se
 Left for the coordinator:
 - [ ] Runs made before the merge were made at BLAS = cores. Slicing them from keyframes (`world_from_frame`, the default) is unaffected, but a replay (`planet slice` from a checkpoint) will now report ReplayMismatch. Remake or delete runs that need replays (no backward compatibility).
 - [ ] Scorecard lines before the merge aren't comparable bit for bit with later ones (it's a statistical record, so this is probably fine). Note the break in `docs/scorecard.jsonl` or in coordination.md.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-blas-threads-change-outputs.md (found by parallel).

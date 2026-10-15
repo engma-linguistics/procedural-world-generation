@@ -1,4 +1,5 @@
 ---
+id: PW-262
 title: Run the test suite in several processes (pytest wall time is set by serial work)
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: parallel
 blocked_by: []
 relates: []
 refs: [tests/conftest.py, pyproject.toml]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ Options:
 - B. Leave it: ~5 min before a commit is fine.
 
 Lean: A if commits that touch `planet/` become frequent; measure first.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-pytest-in-processes.md (found by parallel).

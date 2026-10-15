@@ -1,4 +1,5 @@
 ---
+id: PW-263
 title: Portable TBB without a system libtbb (the pip "tbb" wheel isn't found by numba as is)
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: parallel
 blocked_by: []
 relates: [PW-250, PW-084]
 refs: [planet/parallel.py, pyproject.toml]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Options:
 - C. Document `LD_LIBRARY_PATH` for the rare machine that needs it.
 
 Lean: A. Outputs are identical under either layer (PW-215), and concurrency now comes from processes.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-tbb-portable.md (found by parallel).
