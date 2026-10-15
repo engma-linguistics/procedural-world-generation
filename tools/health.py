@@ -17,6 +17,10 @@ docs/review/health/<date>/report.md (per-seed tables, outliers by seed and
 time window), sweep.json (the runs and every keyframe's measures) and small
 thumbnail strips per seed. Prints a short summary.
 
+The L6 runs are deleted afterwards (the L7 ones kept: they cost ~50 min
+each) unless --keep-runs. `--manifest` re-measures and rewrites report.md
+(hand-written notes in it are lost: keep them in a separate file or re-add).
+
 The envelopes are deliberately wide: a planet built by simulation need not
 be Earth, but a run that leaves them is worth a look. Each one gives Earth's
 value and where the band comes from.
@@ -25,6 +29,7 @@ value and where the band comes from.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import sys
@@ -74,8 +79,9 @@ ENVELOPES = {
     "co2": (-1.5, 1.5, 0.0, "CO2 index (ln source/sink)", "the forcing's clip in earth.py (+-1.5); Earth 0"),
     "dry_pct": (12, 45, 30, "arid (Koppen B), % of land",
                 "tests/test_envelopes.py (12-45%); Earth ~30% (Beck et al. 2018)"),
-    "inland_pct": (8, 30, 18, "land draining inland, % of ice-free land",
-                   "Earth ~18% (overview 2.9); L6 known ~8.5-10% (PW-054, PW-243)"),
+    "inland_pct": (8, 30, 18, "land draining inland, % of ice-free land (to a closed lake, salt pan or real pit)",
+                   "Earth ~18% (overview 2.9); L6 known ~9.5-11% (PW-054, PW-243). `inland_raw_pct` (not checked) "
+                   "follows the stored `downstream` to any end, as highlights does: stale by a step (PW-239)"),
     "lake_pct": (0.2, 3.0, 1.8, "lakes, % of land",
                  "Earth ~1.8% of ice-free land (HydroLAKES, Messager et al. 2016); generated L6 worlds 0.5-1%"),
     "lake_max_mkm2": (None, GIANT_LAKE_MKM2, 0.37, "largest lake, million km2",
@@ -83,14 +89,15 @@ ENVELOPES = {
     "max_elev_km": (None, PEAK_KM, 8.85, "highest peak, km", "Everest 8.85 km; PW-172 (spikes above ~9.5 km)"),
     "trees_pct": (10, 50, 30, "tree cover, % of ice-free land (after forests appear)",
                   "Earth ~30% potential canopy (forest 55-60 of ~130 Mkm2, overview 2.18)"),
-    "npp": (200, 700, 430, "land NPP, g C/m2/yr (after forests appear)",
-            "Earth ~56 Pg C/yr over ~130 Mkm2 = ~430 (overview 2.18)"),
+    "npp": (200, 700, 430, "land NPP, g C/m2/yr (after flowering trees appear)",
+            "Earth ~56 Pg C/yr over ~130 Mkm2 = ~430; the model on Earth's terrain 50 Pg C/yr, ~385 (overview 2.18). "
+            "Before flowering trees (plant group 4) stand-ins grow at 70%, so runs sit at ~150-280"),
     "landmasses": (3, 80, None, "landmasses (>= 3 cells)", "loose: a lone supercontinent or a shattered archipelago"),
     "largest_pct": (5, 35, 16.6, "largest landmass, % of surface",
                     "Afro-Eurasia 16.6%; a Pangaea ~30% (scorecard largest_max)"),
 }
 SPINUP = 50.0  # Myr: the made-up starting state settles (hollows fill, rivers form); measured, not flagged
-GATED = {"trees_pct", "npp"}  # measured only once forests exist (plant group 3, + 20 Myr)
+GATED = {"trees_pct": 3, "npp": 4}  # measured once that plant group exists (+ 20 Myr): forests; flowering trees
 # per-run checks: (low, high, Earth, label, source)
 RUN_ENVELOPES = {
     "dT_range": (None, 25, 25, "global temperature range over the run, C",
@@ -101,7 +108,7 @@ RUN_ENVELOPES = {
     "sea_ice_below_150": (None, 10, 0, "% of keyframes with ice sea level below -150 m", "PW-240"),
     "low_plates": (None, 2, 0, "% of keyframes with <= 4 plates", "PW-191 (L7 seed 21: 1%)"),
 }
-MEASURE_LAYERS = ("elevation", "crust", "crust_thickness", "crust_age", "ice", "lake_depth", "downstream",
+MEASURE_LAYERS = ("elevation", "crust", "crust_thickness", "crust_age", "ice", "lake_depth", "lake_kind", "downstream",
                   "climate", "tree_cover", "npp")
 
 
@@ -151,14 +158,25 @@ def drain_ends(down: np.ndarray, land: np.ndarray) -> np.ndarray:
     return nxt
 
 
-def inland_share(down: np.ndarray, land: np.ndarray, free: np.ndarray) -> float | None:
+def inland_share(down: np.ndarray, land: np.ndarray, free: np.ndarray, real_end: np.ndarray | None = None):
     """% of `free` (ice-free land) whose water ends on land (the same
     definition as highlights._inland_basins: the outlet isn't a sea mouth);
-    None before the first rivers are routed."""
+    with real_end, only ends where it is True count. None before the first
+    rivers are routed."""
     if not free.any() or not (land & (down >= 0)).any():
         return None
     end = drain_ends(down, land)
-    return 100.0 * float((free & land[end]).sum()) / float(free.sum())
+    inland = land[end] if real_end is None else land[end] & real_end[end]
+    return 100.0 * float((free & inland).sum()) / float(free.sum())
+
+
+def real_hollows(grid, elev: np.ndarray, lake_kind: np.ndarray) -> np.ndarray:
+    """Cells where water can really end on this terrain: closed lakes and
+    salt pans (lake_kind 2, 3), and pits with no lower or sea neighbour.
+    (A run frame's `downstream` comes from the terrain before the step's
+    erosion and deposition, PW-239, so many of its ends no longer hold water.)"""
+    nb_min = np.minimum.reduceat(elev[grid.nbr_idx], grid.nbr_off[:-1])
+    return (lake_kind >= 2) | ((elev > 0) & (nb_min >= elev))
 
 
 def _round(v, nd):
@@ -178,6 +196,7 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
     thick = np.asarray(L["crust_thickness"], float)
     age = np.asarray(L["crust_age"], float)
     lake = land & (np.asarray(L["lake_depth"], float) > 0)
+    down = np.asarray(L["downstream"]).astype(np.int64)
     nland, nfree = max(1, int(land.sum())), max(1, int(free.sum()))
     lab, nl = grid.components(lake)
     lake_max = float(np.bincount(lab[lab >= 0]).max()) * cell_km2 / 1e6 if nl else 0.0
@@ -198,7 +217,8 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
         "temp": float(stats["global_temp_c"]),
         "co2": float(stats["co2"]),
         "dry_pct": round(100 * float((GROUP[np.asarray(L["climate"])[land]] == "B").mean()), 2) if land.any() else 0.0,
-        "inland_pct": _round(inland_share(np.asarray(L["downstream"]).astype(np.int64), land, free), 2),
+        "inland_pct": _round(inland_share(down, land, free, real_hollows(grid, elev, np.asarray(L["lake_kind"]))), 2),
+        "inland_raw_pct": _round(inland_share(down, land, free), 2),
         "lake_pct": round(100 * float(lake.sum()) / nland, 3),
         "lake_max_mkm2": round(lake_max, 3),
         "max_elev_km": round(float(elev.max()) / 1000.0, 2),
@@ -209,10 +229,10 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
     }
 
 
-def forests_from(meta: dict) -> float:
-    """When the run's first trees appeared (plant group 3), + 20 Myr; inf if never."""
+def group_from(meta: dict, group: int = 3) -> float:
+    """When plant group `group` appeared in the run (3: the first trees), + 20 Myr; inf if never."""
     for g in meta.get("plant_groups") or []:
-        if g["group"] == 3 and g["t"] is not None:
+        if g["group"] == group and g["t"] is not None:
             return float(g["t"]) + 20.0
     return float("inf")
 
@@ -253,10 +273,10 @@ def measure_run(run_dir: Path) -> dict:
     for i, fr in enumerate(run["frames"]):
         L = {k: T.frame(run, arr, k, i, grid) for k in MEASURE_LAYERS}
         frames.append(measure_frame(grid, L, fr["stats"]))
-    gate = forests_from(m)
+    gates = {k: group_from(m, grp) for k, grp in GATED.items()}
     for f in frames:
-        if f["t"] < gate:
-            for k in GATED:
+        for k, gate in gates.items():
+            if f["t"] < gate:
                 f[k] = None
     late = [f for f in frames if f["t"] >= SPINUP] or frames  # (the run checks skip the spin-up too)
     nf = len(late)
@@ -271,7 +291,8 @@ def measure_run(run_dir: Path) -> dict:
         "low_plates": round(100 * sum(f["plates"] <= 4 for f in late) / nf, 1),
     }
     return {"id": run["id"], "seed": m["seed"], "level": m["level"], "myr": m["myr"],
-            "seconds": m.get("generated_in_s"), "forests_from": gate, "checks": checks, "frames": frames}
+            "seconds": m.get("generated_in_s"), "forests_from": gates["trees_pct"], "flowers_from": gates["npp"],
+            "checks": checks, "frames": frames}
 
 
 def outliers(r: dict) -> list[dict]:
@@ -322,14 +343,15 @@ def thumbnail(grid, L: dict, idx: np.ndarray) -> np.ndarray:
     e = np.asarray(L["elevation"], float)[idx]
     ice = np.asarray(L["ice"], float)[idx] > 0
     lake = np.asarray(L["lake_depth"], float)[idx] > 0
-    tree = np.clip(np.asarray(L["tree_cover"], float)[idx] / 80.0, 0, 1)[..., None]
+    q = lambda x, k: np.round(np.clip(x, 0, 1) * k) / k  # (a few colour steps: small PNGs)
+    tree = q(np.asarray(L["tree_cover"], float)[idx] / 80.0, 4)[..., None]
     dry = (GROUP[np.asarray(L["climate"])[idx]] == "B")[..., None]
     deep, shelf = np.array([18, 38, 78.0]), np.array([52, 98, 150.0])
-    sea = deep + (shelf - deep) * np.clip(1 + e / 4000.0, 0, 1)[..., None]
+    sea = deep + (shelf - deep) * q(1 + e / 4000.0, 3)[..., None]
     bare = np.where(dry, np.array([196, 170, 120.0]), np.array([150, 140, 105.0]))
     green = np.array([48, 100, 40.0])
     landc = bare + (green - bare) * tree
-    h = np.clip(e / 5000.0, 0, 1)[..., None]
+    h = q(e / 5000.0, 4)[..., None]
     landc = landc + (np.array([120, 105, 95.0]) - landc) * h * 0.8
     img = np.where((e > 0)[..., None], landc, sea)
     img[lake & (e > 0)] = (40, 90, 160)
@@ -381,14 +403,26 @@ def report(manifest: dict, results: list[dict], det: dict | None, out_dir: Path,
           f" at {manifest.get('workers')} workers x {manifest.get('threads')} numba threads; "
           f"simulations {manifest['seconds'] / 60:.1f} min wall{manifest.get('load_note', '')}. "
           "Made by `tools/health.py` (PW-246).", ""]
-    md += ["## Runs", "", "| seed | L | Myr | run | sim s | forests from | dT range C | peaks > 9.5 km | "
+    md += ["## Runs", "", "| seed | L | Myr | run | sim s | trees / flowering trees from | dT range C | peaks > 9.5 km | "
            "giant-lake frames % | crust volume end/start | ice SL < -150 m % | <= 4 plates % |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in sweep:
         c = r["checks"]
         md.append(f"| {r['seed']} | {r['level']} | {r['myr']:g} | {r['id']} | {_f(r['seconds'], 0)} | "
-                  f"{_f(r['forests_from'], 0)} | {c['dT_range']} | {c['peak_frames']} | {c['giant_lake_frames']} | "
+                  f"{_f(r['forests_from'], 0)} / {_f(r['flowers_from'], 0)} | {c['dT_range']} | {c['peak_frames']} | {c['giant_lake_frames']} | "
                   f"{c['volume_ratio']} | {c['sea_ice_below_150']} | {c['low_plates']} |")
+    keys = list(ENVELOPES)
+    md += ["", f"## Medians by seed (after {SPINUP:g} Myr; tree cover after forests, NPP after flowering trees appear)", "",
+           "| seed | L | " + " | ".join(keys) + " |", "|---|---|" + "---|" * len(keys)]
+    for r in sweep:
+        late = [f for f in r["frames"] if f["t"] >= SPINUP]
+        md.append(f"| {r['seed']} | {r['level']} | " + " | ".join(_f(_stat_row([f[k] for f in late])[1], 1) for k in keys)
+                  + " |")
+    md += ["", "Measured on the run's keyframes (no slicing). Caveats: a keyframe's lakes and `downstream` come from "
+           "the terrain before that step's erosion and deposition (PW-239), so `inland_raw_pct` (every routed end on "
+           "land, as highlights counts it) runs ~2-3x `inland_pct` (ends that are closed lakes, salt pans or real pits "
+           "on the frame's own elevation); lake shares are the run's lakes during the step. Land ice and land shares "
+           "use cells (near-equal area)."]
     md += ["", "## Envelopes", "", "| metric | low | high | Earth | source |", "|---|---|---|---|---|"]
     for k, (lo, hi, earth, label, src) in ENVELOPES.items():
         md.append(f"| {label} (`{k}`) | {_f(lo)} | {_f(hi)} | {_f(earth, 2)} | {src} |")
@@ -401,7 +435,7 @@ def report(manifest: dict, results: list[dict], det: dict | None, out_dir: Path,
         when = "run" if o["t0"] is None else f"{o['t0']:g}-{o['t1']:g}"
         md.append(f"| {o['seed']} | {o['level']} | {o['metric']} | {when} | {_f(o['frames'])} | {_f(o['worst'], 2)} | "
                   f"{_f(lo)}..{_f(hi)} | {o['severity']} |")
-    md += ["", "## Per seed: min / median / max over the run, and spells outside the envelopes", ""]
+    md += ["", f"## Per seed: min / median / max after the {SPINUP:g} Myr spin-up, and spells outside the envelopes", ""]
     for r in sweep:
         md += [f"### Seed {r['seed']}, L{r['level']} (run {r['id']})", ""]
         if r["id"] in thumbs:
@@ -413,7 +447,7 @@ def report(manifest: dict, results: list[dict], det: dict | None, out_dir: Path,
         ts = [f["t"] for f in r["frames"]]
         for k, (lo, hi, *_rest) in ENVELOPES.items():
             vals = [f[k] for f in r["frames"]]
-            a, b, c = _stat_row(vals)
+            a, b, c = _stat_row([v for v, t in zip(vals, ts) if t >= SPINUP])
             sp = windows(ts, vals, lo, hi)
             spells = "; ".join(f"{w['t0']:g}-{w['t1']:g}: {_f(w['worst'], 2)}" for w in sp[:4])
             if len(sp) > 4:
@@ -444,7 +478,7 @@ def main():
     ap.add_argument("--manifest", type=Path, help="report on the runs of an earlier sweep.json (no new runs)")
     ap.add_argument("--out", type=Path, help="output folder (default docs/review/health/<date>)")
     ap.add_argument("--keep-runs", action="store_true", help="keep the runs (default: delete them, except L7)")
-    ap.add_argument("--thumb-width", type=int, default=200)
+    ap.add_argument("--thumb-width", type=int, default=180)
     a = ap.parse_args()
     if a.quick:
         a.l7, a.myr = [], min(a.myr, 500.0)
@@ -484,7 +518,10 @@ def main():
         thumbs[r["id"]] = (p, thumbnails(S.find_run(r["id"]), p, times, a.thumb_width))
     md = report(manifest, results, det, out, thumbs)
     (out / "report.md").write_text(md)
-    S.write_json(out / "sweep.json", {**manifest, "results": results, "determinism": det})
+    S.write_json(out / "sweep.json", {**manifest, "determinism": det,
+                                      "results": [{k: v for k, v in r.items() if k != "frames"} for r in results]})
+    (out / "frames.json.gz").write_bytes(gzip.compress(json.dumps(
+        {r["id"]: r["frames"] for r in results}, separators=(",", ":")).encode(), 9))
     sweep = [r for r in results if not r["determinism"]]
     allout = sorted((o for r in sweep for o in outliers(r)), key=lambda o: -o["severity"])
     print(f"health: simulations {manifest['seconds']} s, measures {time.time() - t0:.0f} s -> {out}/report.md")

@@ -24,6 +24,7 @@ def test_measure_frame(sim4):
     assert 0 <= m["inland_pct"] <= 100 and 0 <= m["lake_pct"] < 20 and m["lake_max_mkm2"] >= 0
     assert 0 <= m["trees_pct"] <= 100 and m["npp"] >= 0 and 0 <= m["dry_pct"] <= 100
     assert m["sea_ice_m"] <= 0 and abs(m["max_elev_km"] * 1000 - snap.elevation.max()) < 10
+    assert m["inland_pct"] <= m["inland_raw_pct"]  # (real hollows only: a subset of the routed ends)
     assert set(H.ENVELOPES) <= set(m)  # every envelope has its measure
 
 
