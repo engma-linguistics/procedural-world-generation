@@ -24,6 +24,7 @@ SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
 WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
 # runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
+REF_MYR = 1000.0  # Myr: the CO2 source's and sink's baselines learn over this (200 before PW-264)
 
 
 def heat(p, t: float) -> float:
@@ -79,9 +80,13 @@ def global_temperature(sim, growth, newc, rng):
     sim.rates = now.copy() if sim.rates is None else sim.rates + c * (now - sim.rates)
     if sim.refs is None:
         sim.refs = sim.rates.copy()
-    # (the baselines learn fast at first: the made-up starting state
-    # isn't an equilibrium, and shouldn't jolt the climate)
-    b = 1 - np.exp(-dt / min(200.0, 10.0 + sim.t))
+    # The baselines learn slowly (REF_MYR), so a lasting change in degassing
+    # or weathering keeps warming or cooling for most of a run, as a CO2
+    # stock would, rather than fading in ~200 Myr (PW-264). (They learn fast
+    # at first: the made-up starting state isn't an equilibrium, and
+    # shouldn't jolt the climate; until REF_MYR they are about the mean
+    # since the start.)
+    b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
     sim.refs = sim.refs + b * (sim.rates - sim.refs)
     rel = sim.rates / sim.refs
     sim.co2 = float(np.log(rel[0]) - np.log(rel[1]))
