@@ -207,3 +207,21 @@ def test_simulate_slice_provenance(data_root):
     with pytest.warns(UserWarning):
         world = json.loads(T.slice_world(out, 8.0, force=True).read_text())
     assert world["meta"]["replay_matches_keyframe"] is False
+
+
+def test_climate_fits_ground_after_events():
+    """The climate is computed after the step's events (sutures, slivers,
+    rifts), so at every climate step the Koppen sea class agrees with the
+    ground the step leaves (PW-109). Cells within 200 m of the sea are
+    skipped: land ice moves the sea a little after the climate is computed."""
+    sim = Simulation(build_grid(4), 5, Params(), 2.0)
+    bad = []
+
+    def check(s):
+        if s.climate_t == s.t:
+            sure = np.abs(s.w_elev) > 200
+            sea = s.koppen == climate.SEA_CLASS
+            bad.extend((s.t, int(i)) for i in np.flatnonzero(sure & (sea != (s.w_elev <= 0))))
+
+    sim.run(300, on_step=check)
+    assert not bad, bad[:10]
