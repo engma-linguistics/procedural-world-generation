@@ -45,8 +45,8 @@ def world(request):
 def test_land_and_crust(world):
     assert 22 <= world["land"] <= 42, world["land"]  # Earth 29
     assert 33 <= world["cont"] <= 50, world["cont"]  # Earth ~41 incl. shelves
-    # Earth ~35-40. Level 5 (240 km cells), 320 Myr: 29.5-34.8 km (seed 1 varies run to
-    # run, PW-215); L6/L7 34-36 km since PW-052
+    # Earth ~35-40. Level 5 (240 km cells), 320 Myr: 29.5-34.8 km across recent code versions
+    # (runs are deterministic since PW-215); L6/L7 34-36 km since PW-052
     assert 28 <= world["thick"] <= 42, world["thick"]
 
 
