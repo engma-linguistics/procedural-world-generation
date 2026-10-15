@@ -278,3 +278,24 @@ def test_vegetation_feedbacks_nudge():
     c0 = climate.compute(g, elev)
     d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
     assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9
+
+
+def test_sediment_budget_closes(monkeypatch):
+    """surface.erode moves rock, it doesn't make or lose it: each step's
+    deposits (land, lakes, sea) add up to what it removed, and none is
+    negative (PW-283)."""
+    from planet import surface
+    steps, real = [], surface.erode
+
+    def wrapped(*a, **kw):
+        out = real(*a, **kw)
+        steps.append((out[3].copy(), out[4].copy()))
+        return out
+
+    monkeypatch.setattr(surface, "erode", wrapped)
+    run_sim(myr=40)
+    assert len(steps) >= 10
+    for removed, dep in steps:
+        assert removed.sum() > 0
+        assert dep.sum() == pytest.approx(removed.sum(), rel=1e-9)
+        assert dep.min() >= -1e-12
