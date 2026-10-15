@@ -143,6 +143,7 @@ def land_view(elev, ice, floor=BED_FLOOR):
 EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand", "tuff")
 LIFT, CARB, LAVA, EVAP, COAL, SAND, TUFF = range(7)
 MIX = slice(1, 7)
+LAVA_MAX_KM = 3.0  # km: the thickest flood-basalt pile on a continent (Siberian Traps ~3.5, Deccan ~2; PW-133)
 
 
 def iso_rate(cont, rock):

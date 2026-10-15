@@ -43,7 +43,7 @@ import numpy as np
 
 from ..geo import R_KM, latlon
 from . import mantle
-from .isostasy import ISO_LAND, ISO_VOLCANO, LAVA, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
+from .isostasy import ISO_LAND, ISO_VOLCANO, LAVA, LAVA_MAX_KM, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
 from ..surface import HOTSPOT
 
 ARC, VENT = 0, 1  # kinds
@@ -58,7 +58,6 @@ GAP_KM = (60.0, 150.0)  # km of plate motion between a plume's vents (vent_gap)
 SCATTER_KM = 12.0  # rms offset of a vent from the plume's track
 VENT_KM = 25.0  # radius of a hotspot vent's Gaussian cone (Hawaii's shields: ~25-60 km)
 TOP_MAX = (4200.0, 3500.0)  # m: highest summit at sea (Mauna Kea), on a continent
-LAVA_MAX_KM = 3.0  # km: the thickest flood-basalt pile on a continent (Siberian Traps ~3.5, Deccan ~2)
 APRON_TOP = (-2000.0, 1500.0)  # m: lava that can't pile higher spreads into a broad apron up to here
 ARC_SLOPE = 0.6  # an arc volcano's height / its cone's e-folding radius (a ~30 deg stratocone top)
 H_WAVES = 1000.0  # m: the sea's own share of eroding an island (cliff retreat), as if this much higher

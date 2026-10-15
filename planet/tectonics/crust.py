@@ -25,7 +25,7 @@ from .. import kernels, surface
 from ..geo import R_KM
 from ..surface import ARC, CRATON, FLOOD_BASALT, GRANITE, HOTSPOT, OCEAN, OROGEN, SEDIMENT, SHALE, TUFF
 from . import record
-from .isostasy import BECOMES_CONT_KM, LAVA, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X
+from .isostasy import BECOMES_CONT_KM, LAVA, LAVA_MAX_KM, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X
 from .plate_kernels import crust_flow
 from .plates import P_MAX
 
@@ -136,13 +136,16 @@ def rift_stretching(sim, bd):
 def add_arcs_and_plumes(sim, col, growth, plume):
     """New crust from arcs and plumes. On a continent the plume's lava
     spreads over the land as a cover of basalt flows (Snake River Plain,
-    Deccan Traps), and part of an arc's erupts as ash and ignimbrite
+    Deccan Traps; at most a LAVA_MAX_KM pile), and part of an arc's erupts as ash and ignimbrite
     sheets (tuff: the Altiplano-Puna, Taupo); both go on top of the strata."""
     dt, cont = sim.dt, col.cont
     col.t = col.t + growth * dt + plume * dt
     sim.book("arc", 0, growth * dt, cont)
     sim.book("plume", 0, plume * dt, cont)
-    lava, tuff = plume * dt * cont, TUFF_SHARE * growth * dt * cont
+    # (lava piles no thicker than LAVA_MAX_KM: the rest of a plume's or a
+    # vent's melt stays in the crust as intrusions and underplating, PW-133)
+    lava = np.minimum(plume * dt * cont, np.maximum(LAVA_MAX_KM - col.x[:, LAVA], 0.0))
+    tuff = TUFF_SHARE * growth * dt * cont
     col.cover = col.cover + lava + tuff
     col.x[:, LAVA] += lava
     col.x[:, TUFF_X] += tuff
