@@ -44,7 +44,8 @@ def test_lake_spills_where_wet_and_closes_where_dry():
     aet = np.full(g.n, 300.0)
     lake_evap = np.full(g.n, 1500.0)
     # wet: a lot of runoff, the basin fills to its notch and the river flows on to the sea
-    wet = hydrology.lakes(g, elev, np.where(land, 2000.0, 0.0), aet, lake_evap)
+    # (with the outlet's valley not cut down: test_big_river_cuts_its_outlet_down)
+    wet = hydrology.lakes(g, elev, np.where(land, 2000.0, 0.0), aet, lake_evap, channel=0.0)
     flow, down, order, _ = hydrology.route(g, elev, wet)
     assert (wet["kind"][basin] == hydrology.OPEN_LAKE).sum() >= 0.8 * basin.sum()
     assert not wet["sink"].any()
@@ -68,6 +69,29 @@ def test_lake_spills_where_wet_and_closes_where_dry():
     assert abs(catch - lost) <= (1500.0 - 300.0) / 1000
 
 
+def test_big_river_cuts_its_outlet_down():
+    """A river leaving a lake runs in a valley cut below its cells' mean
+    height, deeper the bigger it is (PW-055): the wet bowl's lake drains
+    down below its notch, more so with more water; the dry bowl's closed
+    lake has no outlet and stays."""
+    g, elev, basin = _bowl()
+    land = elev > 0
+    aet, lake_evap = np.full(g.n, 300.0), np.full(g.n, 1500.0)
+    wet = []
+    for runoff in (1000.0, 2000.0):
+        lk = hydrology.lakes(g, elev, np.where(land, runoff, 0.0), aet, lake_evap)
+        assert not lk["sink"].any() and (lk["level"][lk["wet"]] >= elev[lk["wet"]]).all()
+        wet.append((lk["wet"] & basin).sum())
+        if wet[-1]:
+            assert (lk["kind"][lk["wet"] & basin] == hydrology.OPEN_LAKE).all()
+            assert lk["level"][lk["wet"] & basin].max() < 1500.0 - 100  # (it spills over the rim, 1500 m, uncut)
+    uncut = hydrology.lakes(g, elev, np.where(land, 1000.0, 0.0), aet, lake_evap, channel=0.0)
+    assert 0 < wet[0] < 0.5 * (uncut["wet"] & basin).sum() and wet[1] < wet[0]
+    dry = [hydrology.lakes(g, elev, np.where(land, 30.0, 0.0), aet, lake_evap, channel=ch) for ch in (0.0, None)]
+    c0, c1 = ((d["kind"] == hydrology.CLOSED_LAKE) & basin for d in dry)
+    assert c1.sum() >= 0.6 * c0.sum() > 0  # (a few cells at the divide can drain out to a cut valley instead)
+
+
 def test_closed_lake_on_a_flat_floor_is_one_lake():
     """A deep basin whose floor is flat but rough (dips a few m deep between
     low saddles): the dips are part of the floor, not pits of their own, so
@@ -77,7 +101,7 @@ def test_closed_lake_on_a_flat_floor_is_one_lake():
     rng = np.random.default_rng(3)
     elev = np.where(basin, 500.0 + rng.uniform(0, 15, g.n), elev)  # 1000 m below the rim, rough to 15 m
     land = elev > 0
-    lk = hydrology.lakes(g, elev, np.where(land, 100.0, 0.0), np.full(g.n, 300.0), np.full(g.n, 1500.0))
+    lk = hydrology.lakes(g, elev, np.where(land, 100.0, 0.0), np.full(g.n, 300.0), np.full(g.n, 1500.0), channel=0.0)
     closed = (lk["kind"] == hydrology.CLOSED_LAKE) & basin  # (the notch ends in a pit of its own)
     assert 5 <= closed.sum() < 0.5 * basin.sum()
     assert g.components(closed)[1] == 1

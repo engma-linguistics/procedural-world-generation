@@ -254,7 +254,9 @@ Sliced and one-shot terrain then go through the shared pipeline:
    cuts valleys (`--erosion 0` skips it). Lakes evaporate: each basin fills
    only until the evaporation off its lake balances its inflow, or it spills.
    Dry basins hold closed salt lakes (the Caspian, Great Salt Lake) or salt
-   pans, and their rivers end there.
+   pans, and their rivers end there. A river leaving a lake has cut its
+   outlet down (deeper the bigger the river), so big through-flowing lakes
+   drain to it.
 3. **Biomes**: a Whittaker-style lookup on temperature and rainfall.
 
 Knobs: `--erosion <strength>` (`generate` and `slice`); `generate` also takes
@@ -333,7 +335,9 @@ planet simulate ...`; `serve` then shows that root's runs).
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
   surface in m to 0.1 m, same datum as `elevation`; equal to `elevation` where there's
-  no lake, so `lake_level - elevation` is the water depth). Sea layers:
+  no lake, so `lake_level - elevation` is the water depth), `flood_ratio` (the
+  river's peak month flow / its mean month: spring floods) and `flood_month`
+  (1-12). Sea layers:
   `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`; `sst`,
   `sst_jul`, `sst_jan` (sea-surface temperature, C), `salinity` (psu) and
   `sinking` (Sv of deep water sinking per cell), see `planet/ocean.py` (0 on

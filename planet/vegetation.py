@@ -644,17 +644,31 @@ def relief(grid, elev) -> np.ndarray:
     return np.maximum.reduceat(d, grid.nbr_off[:-1])
 
 
-def floodplain(grid, elev, flow, rel=None) -> np.ndarray:
+FLOOD_REF = 2.0  # a typical river's flood ratio (peak month / mean month): floodplains as calibrated on the mean flow
+
+
+def flood_scale(flood_ratio) -> np.ndarray | float:
+    """How much bigger than its mean flow a river's flood is, relative to a
+    typical river's (hydrology.seasonal_flow's flood_ratio, PW-028; 1
+    without one): a spring-flood or monsoon river floods a wider plain than
+    a steady, lake-fed one of the same mean flow."""
+    if flood_ratio is None:
+        return 1.0
+    return np.clip(np.asarray(flood_ratio, float), 1.0, 8.0) / FLOOD_REF
+
+
+def floodplain(grid, elev, flow, rel=None, flood_ratio=None) -> np.ndarray:
     """The share of each cell that is a big river's floodplain or delta
-    (part of flooded(); the zoom places it along its own rivers)."""
+    (part of flooded(); the zoom places it along its own rivers), from its
+    flood flow (the mean x flood_scale)."""
     rel = relief(grid, elev) if rel is None else rel
     flat = np.clip(1 - rel / 400.0, 0, 1)
     area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
-    q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
+    q = np.asarray(flow, float) * area_m2 / 3.156e7 * flood_scale(flood_ratio)  # m3/s
     return 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
 
 
-def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
+def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None) -> np.ndarray:
     """Share of each land cell (0..0.7) under water for part of the year:
     floodplains and deltas of big rivers, flat ground with a water
     surplus, flat permafrost (which can't drain), and lake shores."""
@@ -662,7 +676,7 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     land = elev > 0
     rel = relief(grid, elev)
     flat = np.clip(1 - rel / 400.0, 0, 1)
-    plain = floodplain(grid, elev, flow, rel)
+    plain = floodplain(grid, elev, flow, rel, flood_ratio)
     # flat ground with more rain than evaporation can't drain it all (mires),
     # the more so where it is cool (slow decay builds peat that holds the water)
     mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
@@ -1023,9 +1037,10 @@ def biome_of(types, sea_biome) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
-          cheap: bool = False, steps=None, locked_potential: bool = False) -> dict:
+          cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
-    arrays (climate.compute's names); nu0, lai0: (NP, n) warm starts;
+    arrays (climate.compute's names; flood_ratio: the rivers' peak month
+    over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
     stood in for, STANDINS). cheap: the run's variant (local LAI step,
     fewer competition steps). locked_potential: also compute the locked
@@ -1056,7 +1071,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     pot_all = potential(s, viable_c, eff, co2, lai0, cheap)
     pot = dict(pot_all, ok=pot_all["ok"] & viable)
     fw = flooded(grid, elev, np.zeros(n) if flow is None else flow, np.zeros(n) if lake_kind is None else lake_kind,
-                 s, ice)
+                 s, ice, flood_ratio)
     eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None))
     sm = summary(s, pot, eq)
     types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw)

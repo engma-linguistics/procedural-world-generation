@@ -2,7 +2,7 @@
 id: PW-052
 title: L7 continents are ~2 km thinner and ~300 m lower than at L6
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: tectonics
 effort: m
@@ -26,6 +26,7 @@ Earth's 15.5%; 3–4 landmasses over 0.5% vs Earth's 4) and the owner is satisfi
 fragmented ties to this issue.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (tectfound): setup.py coast-distance search capped at 50 cells made big L7 interiors start as coast; fixed. L6 vs L7 now match (seed 21: 35.7 vs 35.9 km median; seed 3199: 36.0 vs 37.2).
 - 2026-10-15: Status todo -> in-progress. Foundation round, worktree tectfound.
 - 2026-10-14: PW-169 (owner, 2026-10-14): the coherence fix (PW-108) thinned continents and lowered land 2-6 points; retune the continental targets as part of this ticket rather than weakening coherence.
 - 2026-10-14: Added the owner's continent-size check (L6 matches Earth; L7 more fragmented).

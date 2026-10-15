@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-108, PW-048]
 refs: [planet/tectonics/events.py, planet/tectonics/crust.py, tools/churn.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -36,4 +36,5 @@ coherence (adds crust), or fill it with sediment from them (conserves it);
 Lean A and C, check B against the crust budget.
 
 ## Updates
+- 2026-10-15: Tectfound: suture merges copy the absorbed plate's view; big-suture flips ~1/4 of before; pit share unchanged (0.31%).
 - 2026-10-14: Created from inbox draft draft-continental-pits.md (found by tectchurn).

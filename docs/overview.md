@@ -105,7 +105,7 @@ The forces become torques, and a drag matrix turns them into each plate's rotati
 2. Colliding plates **suture** into one plate after 30 Myr of contact once closing is below 2 cm/yr (or anyway after 150 Myr; never within 80 Myr of rifting from each other).
 3. The assembled continent warms the mantle under itself.
 4. **Rifting** (`events.py`): for each plate ≥ 5% of the surface, 12 straight cuts are tried and each half's motion is solved. The plate splits if the halves pull apart faster than `rift_stress` (2 cm/yr), scaled up for big plates (size^¼) and down by the rock's strength along the cut. Weak lines: young sutures, orogens, thinned crust, plume swells. Cratons resist (×1.6). **Warm mantle weakens a plate** (strength ÷ (1 + 0.7 × anomaly), the PW-024 nudge), so a big plate parked over a warm upwelling breaks more readily. The winning cut is redrawn as 4 wandering rift lines and the weakest wins. At most one split per step; none at 30+ plates; pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
-5. Ocean floor ages; when a passive margin's floor passes 120 Myr, a new trench can start along a ~6000 km stretch of it, and the ocean beyond starts to close.
+5. Ocean floor ages; when the oldest ~6000 km of a plate's passive margins passes 120 Myr, a new trench can start along that stretch, and the ocean beyond starts to close (PW-191: the hazard used to be read from the mean of all the plate's margins, young ones included, so old oceans rarely started closing).
 6. Slivers (< 0.15% of cells) are absorbed by the plate around them.
 
 On four L6 seeds over 2 Gyr the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. Plate counts: median 8–10, minimum 3–4 (PW-024). Not guaranteed for every seed.
@@ -166,8 +166,8 @@ flowchart LR
 **Outputs:** per keyframe the `plate`, `crust`, `crust_age`, `plate_boundary`, `crust_thickness` layers and plate velocities; the event log (collisions, sutures, rifts) in `run.json`; hotspots and volcanoes.
 
 **Known limits:**
-- L7 seed 21 still falls to 3–6 plates for 300+ Myr (PW-191); the cycle's regularity is pinned (PW-025).
-- L7 continents are ~2 km thinner and ~300 m lower than at L6 (PW-052); continental area drifts up (scorecard: ~47% continental crust after 1 Gyr against a 40% target; PW-046).
+- Plate counts can still dip for a few Myr near 4 (L7 seed 21, 1 Gyr: median 11, minimum 4, 1% of frames at ≤ 4; was median 10, minimum 3, 12% with an 84 Myr spell); a big plate rimmed by ongoing collisions is compressed across every cut and can't rift until they end (PW-191). The cycle's regularity is pinned (PW-025).
+- Continents are resolution-consistent since PW-052 (the L7 start no longer has a shelf-low, craton-free interior): L6 and L7 seeds 21/3199 at 1 Gyr have 34–36 km mean continental crust (median 36–37), crust on 40–42% of the surface and land on 31–33%. They still thin by ~1–2 km over a Gyr (the last 300 Myr: ~34 km, crust 42–43%), and mean land stands ~1150 m at L6, ~1300 m at L7 (Earth ~840 m; needs a decision, see the inbox).
 - Some cell churn remains along collision fronts (PW-170, PW-173, PW-174); pits in continents from old seams (PW-171); one-frame 11–18 km spikes (PW-048, PW-172).
 - Ragged ocean boundaries (PW-047); drainage switches outlet in one step when a rift opens (PW-056).
 
@@ -190,8 +190,8 @@ flowchart LR
 
 **Crust** (`crust.py`, `isostasy.py`):
 - **Building crust:** subduction grows **volcanic arcs**; collisions stack crust, and over-thick crust **flows** outward, widening plateaus (Tibet); rifts thin continents (down to 22 km), and the crust they lose floors the opening rift as a continuous belt of 12–18 km margin crust; hotspots build islands and flood basalts under a ~1 km swell.
-- **Crust budget:** a "thermostat" steers arc growth toward a target continental volume (40% of the surface × 37 km) and subduction erosion toward the target area.
-- **Coherence** (PW-108): a one-cell inlet of ocean floor nearly ringed by its plate's continent becomes (thin) continent, with crust flowing in from around it; a thin (< 20 km) shred of continent nearly ringed by ocean becomes ocean floor. Without it, cells flipped between continent and deep sea every few Myr (`tools/churn.py` measures it).
+- **Crust budget:** two "thermostats" steer arc growth on continents toward a target continental volume (40% of the surface × 37 km) and subduction erosion toward the target area. Each answers the present error and, over ~100 Myr, a persisting one (an integral term), so area no longer settles ~12% above target. Island arcs on ocean floor grow at the nominal rate (steering them too turned a volume shortfall into new thin continent rather than thicker continents). Arcs leave a ~120 km forearc gap at the trench (the arc–trench gap), where subduction erosion grinds the edge; its rate is per km of trench, the same at every grid level (PW-046, PW-052).
+- **Coherence** (PW-108): a one-cell inlet of ocean floor nearly ringed by its plate's continent becomes (thin) continent, with crust flowing in from around it; a thin (< 20 km) shred of continent nearly ringed by ocean becomes ocean floor. No welds at trenches (a notch there is subduction erosion at work; re-welding it every step made erosion thin continents instead of shrinking them). Without it, cells flipped between continent and deep sea every few Myr (`tools/churn.py` measures it).
 - **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy). Continents stand 250 m plus 150 m per km of crust beyond 35 km. Ocean floor sinks as it cools: 2600 + 345·√age m (the half-space cooling law), at most 6400 m deep. Sediment is light (2.1 g/cm³, compacting to 2.6 with depth), so filling deep water takes ~3× its depth in sediment, as on Earth. Cover buried below 18 km becomes basement.
 - **Glacial isostasy** (PW-189, `isostasy.ice_load`): land ice presses the bed down by ρ_ice/ρ_mantle ≈ 0.28 of its thickness, spread by the lithosphere's flexure over ~150 km (a 3 km sheet: ~830 m; a one-cell cap much less). In the run it settles at once (`sim.ice_sink`, from the ice at each climate update): the keyframes' `elevation` is the pressed-down bed (it can lie below sea level under a big sheet, as Greenland's and Antarctica's do), the ice surface stands lower and warmer, and land the load pushes under the sea without ice on it is sea. Erosion, sediment, reefs and volcanoes work on the crust's own height (`w_elev`), since the dip is gone ~10 kyr after its ice. Anything that takes land as elevation > 0 sees grounded ice on a bed below sea level through `isostasy.land_view` (bed floored at 1 m, ice thinned to keep the surface). The time zoom relaxes the bed toward the same dip over a few kyr (§2.14).
 
@@ -242,15 +242,15 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 - **Hillslope diffusion** smooths relief (soil creep).
 - **Weathering** lowers land toward a base level (200 m on continents), faster on high ground.
-- **Stream-power incision** cuts valleys at a rate ∝ √(water flow) × the drop to the next cell, where the flow is the runoff gathered from upstream. It uses Braun & Willett's implicit scheme, stable at 2 Myr steps.
+- **Stream-power incision** cuts valleys at a rate ∝ √(water flow) × the drop to the next cell, where the flow is the runoff gathered from upstream. It uses Braun & Willett's implicit scheme, stable at 2 Myr steps. Its rain factor (below) is the larger of the cell's own and its catchment's mean rain, so a big river crossing a desert, or a polar-desert lake's outlet, still cuts (PW-055).
 - Erosion is scaled by rain ((P/800 mm)^0.8, clipped 0.1–2.5), ×3 under temperate (wet-based) glaciers, ×0.3 under cold ice, and is up to 1.6× faster on bare wet ground than under the vegetation's ground cover (§2.18; before plants, or plant groups, appear, rivers are flashier).
-- **Deposition** follows the drainage (§2.9): pits, lakes and floodplains keep a share; deltas fill to +2 m and shelves to −60 m; the rest spreads over the deep sea floor (~1000 km) or is trapped in trenches, where half is scraped onto the overriding plate.
+- **Deposition** follows the drainage (§2.9): pits, lakes and floodplains keep a share (an open lake traps its rivers' load up to its whole room and spreads it over its floor, deepest most, as a closed one does: PW-055); deltas fill to +2 m and shelves to −60 m; the rest spreads over the deep sea floor (~1000 km) or is trapped in trenches, where half is scraped onto the overriding plate.
 - **Chemical and biological deposits:** reefs (limestone, up to 200 m/Myr in warm shallow water), evaporites (closed lakes and pans above 10 °C, hot dry coasts), coal (warm wet vegetated lowlands). Desert winds sort loose cover into sand where rain is under 200 mm/yr.
 - **Weathering draws down CO₂**, closing the loop with climate; roots and soil CO₂ speed it up by up to 1.75× in proportion to the vegetation's productivity (NPP, GEOCARB's biological weathering factor).
 
 **Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
 
-**Known limits:** generated worlds lose their closed basins over time (~4% of land drains inland vs ~20% on Earth; PW-054); giant open lakes don't cut their outlets down (PW-055).
+**Known limits:** generated worlds have too few closed basins (~9–11% of land drains inland at L6 vs ~18% on Earth; PW-054): sediment fills a closed hollow within ~10–20 Myr (two thirds of the loss; rims wearing down the rest), and nothing makes basins subside (no flexural foreland or sag basins).
 
 ### 2.6 Climate (`climate.py`)
 
@@ -331,16 +331,19 @@ PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–
 
 **Lakes** are **fill-and-spill with evaporation**:
 1. Hollows under 20 m deep are filled first (at ~55–110 km a cell's height is a mean, and channels too small to see drain them). A wide hollow must also fall at least 0.1 m per km from rim to middle, or it is a plain that rivers cross (`MIN_SLOPE`; 1 million km² needs ~56 m).
-2. Water rises in all basins at once, merging as they meet; a basin grows only while its inflow beats the evaporation off its surface.
+2. Water rises in all basins at once, merging as they meet; a basin grows only while its inflow beats the evaporation off its surface. A lake that spills next to a lower closed basin sends its river on into it; that basin then gets the river too and may fill and spill in turn (the Nile into the Nubian hollow, PW-122).
 3. It ends as an **open, fresh lake** (reaches its spill point, the river flows on), a **closed salt lake** (stops first: Caspian, Great Salt Lake), or a **salt pan** (playa).
+4. **Outlets cut down** (PW-055): a river leaving a basin runs in a valley cut below its cells' mean height, `CHANNEL_K` × Q^`CHANNEL_B` = 0.1 × (m³/s)^0.7 deep (~12 m for 1000 m³/s, ~60 m for 10,000, ~300 m for 100,000), never below the next cell downstream. The lakes are worked out again on that cut terrain (twice, as drained lake floors become river courses), so a lake a big river flows out of drains down to its outlet valley; closed basins have no outflowing river and keep their water. Earth's Amazon, Congo and Orinoco lowlands and West Siberia drain; the Great Lakes, Victoria and Ontario stay. Giant open lakes that lasted tens of Myr were mostly polar- or hot-desert basins whose outlets barely cut (the run's incision used the outlet's own rain) and lakes left by deep sea-level lowstands (−250 to −330 m, PW-190); with the catchment-rain incision and whole-lake sediment trapping (§2.5), open lakes over 1 million km² on L6 seeds 11/12/13 (600 Myr) fell from 15 frames to 3 and frames with one over 0.5 million km² from 46 to 22, lakes cover 0.51% of land instead of 0.57%, and land draining inland fell from ~15.5% to ~13.6% (PW-054's shortfall grows a little). On generated worlds (L6, seeds 11 and 12, after 100 Myr) lakes cover 0.7–1.0% of land instead of 1.4%, the biggest lake averages 0.4–0.7 million km² instead of ~1, and since big through-flowing lakes no longer trap sediment, hollows survive: land draining inland doubled (4–5% to 8.5–10.6%).
 
-On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth ~18%).
+On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and Altiplano basins, and ~18% of land drains inland (Earth ~18%). The Earth world's lakes went from 6.1 to 2.4 million km² (PW-201; left over: cell-mean hollows on small rivers in Yakutia and on the Amur).
+
+**Seasonal flow** (PW-028, worlds): each cell's runoff is spread over the months by what reaches its ground (rain, and snowmelt: a cold country's winter of snow comes off in a spring flood), half of it through the ground (spread over the unfrozen months; 5% where the ground is frozen six months or more), then gathered down the rivers; a lake flattens the flood at its outlet in proportion to its size for its catchment. Stored as `flood_ratio` (the peak month's flow over the mean month's: ~1.3–1.7 for the Amazon, Congo, Mississippi; 3–4 for the Ob, Mackenzie, Yukon, Volga, Ganges), `flood_month` and `river_frozen` (months a year the cell's rivers are frozen). Floodplains are sized by the flood, not the mean flow (`vegetation.floodplain`: the mean × ratio / 2, so a typical river is unchanged; in the zoom the flood also reaches higher above the river, stage ~ Q^0.4): on an L6 world, cells with a ratio above 4 are 22.6% flooded instead of 18.9%, steady rivers (< 1.5) 12.9% instead of 14.7%. The viewer has a "river floods" layer and names a river's discharge, peak month, ratio and frozen months on hover. Deltas don't use it: a flood pulse on the river's term in Galloway's triangle (sediment ~Q^1.5, so ×√(ratio/2)) turned the Ganges–Brahmaputra from tide- to river-dominated on Earth and moved nothing else much, so it was left out (BQART's loads already include each river's floods).
 
 **Deltas:** big river mouths (≥ 1500 m³/s) get a delta type from Galloway's triangle (§2.10), drawn by the zoom.
 
-**Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan). Runs store `lake_depth` instead of `lake_level`.
+**Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan), `flood_ratio`, `flood_month`, `river_frozen` (worlds). Runs store `lake_depth` instead of `lake_level`.
 
-**Known limits:** giant open lakes don't drain by cutting their outlets (PW-055); no seasonal Arctic flow (PW-028); run and world lakes disagree (PW-057); the Nile ends in a pit on Earth (PW-122).
+**Known limits:** run and world lakes still disagree. Finishing now keeps most of the keyframe's lakes (Jaccard overlap of lake cells with those of the keyframe under the same climate, L6, five runs: 0.31–0.89 since PW-057, 0.05–0.77 before; land draining inland now matches the keyframe's), but a run frame stores the lakes of the terrain before that step's erosion and sediment (which fills hollows to within 5 m of their spill level), and run lakes turn over within a frame or two, so a world agrees with the run frame's own lake layer on few cells (Jaccard ~0.0–0.1; see the draft on run-frame lakes). Generated worlds have too few closed basins (PW-054, §2.5).
 
 ### 2.10 Coasts: waves, tides, delta types (`coast.py`)
 
@@ -363,8 +366,8 @@ A **world** is one moment, finished. Four ways to get one:
 - **`planet finish <timezoom> --kyr N`** (PW-091, `finish.py`; the viewer's "Finish world here" on a time zoom frame): a world at any stored frame (every 2 kyr) of a glacial time zoom. Geology (plates, crust, rock, landforms, volcanoes) is the source keyframe's; bed, ice, sea level and global temperature are the frame's, and the frame's orbit (obliquity, precession, eccentricity) is the time zoom's monthly temperature anomaly passed to `climate.compute` (`orbit_dt`, with Earth's start anchor; PW-198); then the usual finishing below, so lakes form against the ice and on the pressed-down bed, and lowered seas join land. Grounded ice on a bed below sea level (pressed down by its load, or a marine sheet) is kept as land with its bed floored at 1 m and the ice thinned to keep the surface (`isostasy.land_view`, as for Antarctica in `earth_data`; all worlds, also those sliced from a run, since run keyframes store the pressed-down bed; meta `ice_bed_floored_cells`). Meta: `source_run`, `t_myr`, `timezoom`, `timezoom_kyr`, the frame's sea-level change and orbit. **Storage choice:** no re-run; each time-zoom frame already stores the surface and the grounded ice (to 1 m since PW-091), so bed = surface − ice. `planet finish <run> --at T` (or "Finish world here" on a run) is the keyframe world, as the Zoom button. An Earth time zoom finishes like `tools/earth_world.py` (real terrain, no rock record, so no regional zooms).
 - **`planet generate`** makes an unsimulated world from cartoon plates (no texture, ice, record or landforms; it can't be zoomed). **`tools/earth_world.py`** runs real Earth terrain through the same finishing, with observed climate alongside.
 
-**Finishing** (run-based worlds first get sub-cell texture in `timeline`):
-1. climate, then 12 erosion passes (strength 0.3 for slice and Zoom worlds, 1.0 for generate), then climate again;
+**Finishing** (run-based worlds first get sub-cell texture, `timeline.texture`: ±180 m of noise plus ridges on high ground, scaled by the ground's slope, so steep country (≥ 1.25 m/km between cells) gets all of it and plains and plateaus 15%: PW-057):
+1. climate, then 12 erosion passes (`hydrology.erode`, strength 0.3 for slice and Zoom worlds, 1.0 for generate: stream-power cutting with rivers routed as in the run, through open lakes and ending in closed ones, and a creep that only lowers ground, toward its lower neighbours, so it doesn't fill hollows), then climate again;
 2. rivers and lakes;
 3. vegetation (§2.18; biomes grouped from its named types);
 4. waves and tides;
@@ -634,9 +637,9 @@ Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map 
 | Largest landmass now / max | 16% / 31% | 12% / 34% |
 | Dry (B) share of land | 39% | 33% |
 
-Plate counts (from run frames, not the scorecard): recent L6 median ~10, minimum 4; L7 seed 21 median 10, minimum 3 (PW-191).
+Plate counts (from run frames, not the scorecard): L6 median ~10, minimum 4–6; L7 seed 21 median 11, minimum 4; seed 3199 median 13, minimum 7 (foundation round, PW-191).
 
-**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), continental area drift and L7's lower continents (PW-046, PW-052), closed basins on generated worlds (PW-054), land ice depth (PW-190).
+**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), closed basins on generated worlds (PW-054), land ice depth (PW-190).
 
 ---
 

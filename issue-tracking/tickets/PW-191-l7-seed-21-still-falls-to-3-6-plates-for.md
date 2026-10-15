@@ -2,7 +2,7 @@
 id: PW-191
 title: L7 seed 21 still falls to 3-6 plates for 300+ Myr despite the warm-mantle rift nudge
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: tectonics
 effort: m
@@ -37,5 +37,6 @@ coherence welds are per cell). One seed: run 2-3 more L7 seeds (or L6 seed 21 to
 - [ ] L7 plate count over 2-3 seeds understood; a dip to <= 4 for > 100 Myr either explained or made rarer
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged (tectfound): subduction-start hazard from the oldest ~6000 km of margin; continental cells turned ocean take the neighbouring sea-floor age. L7 seed 21: min plates 3->4, frames <=4 plates 12%->1%. Remaining: giant plates ringed by collisions can't rift (noted on PW-170/PW-025).
 - 2026-10-15: Status todo -> in-progress. Foundation round, worktree tectfound.
 - 2026-10-14: Created from inbox draft draft-l7-late-plate-collapse.md (found by tectsea).

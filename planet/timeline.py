@@ -37,7 +37,7 @@ from .grid import Grid, build_grid
 from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
-from .surface import surface_rock
+from .surface import _relief, surface_rock
 from .tectonics.isostasy import land_view
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
@@ -396,6 +396,30 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
                   {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"))
 
 
+# sub-cell texture: +-TEX_M of noise plus ridges on high ground, scaled by the
+# ground's slope (TEX_FULL m per km between cells gets all of it, plains and
+# plateaus TEX_FLAT of it)
+TEX_M, TEX_FULL, TEX_FLAT = 180.0, 1.25, 0.15
+
+
+def texture(g: Grid, e: np.ndarray, seed: int, at: float) -> np.ndarray:
+    """The keyframe's cell-mean heights e with sub-cell texture: roughness the
+    plate model can't produce at this resolution. Plains and plateaus stay
+    flat and mountains get rough (PW-057: uniform +-180 m bumps, and ridges
+    on every high plateau, made new hollows, so the world's lakes weren't
+    the run's)."""
+    rng_seed = seed * 100003 + int(at)
+    tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
+    rough = ridged(Perlin3D(rng_seed + 1), g.centers, octaves=5, freq=5.0)
+    mountains = np.clip((e - 800) / 2500, 0, 1)
+    slope = _relief(e.astype(float), g.nbr_off, g.nbr_idx) / (g.spacing * R_KM)  # m per km
+    deg = np.diff(g.nbr_off)
+    slope = 0.5 * (slope + np.add.reduceat(slope[g.nbr_idx], g.nbr_off[:-1]) / deg)
+    scale = np.clip(slope / TEX_FULL, TEX_FLAT, 1.0)
+    elev = e + scale * (TEX_M * tex * (e > 0) + mountains * 900 * (rough - 0.45))
+    return np.where((e > 0) & (elev <= 0), 5.0, elev)  # texture shouldn't drown coasts
+
+
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
@@ -404,13 +428,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     # grounded ice on a bed below sea level (pressed down by its own load, or a marine sheet): land with
     # its bed floored at 1 m, the ice thinned to keep the surface (the world format's land is elevation > 0)
     e, ice, floored = land_view(e, ice)
-    rng_seed = seed * 100003 + int(at)
-    # sub-cell texture: roughness the plate model can't produce at this resolution
-    tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
-    rough = ridged(Perlin3D(rng_seed + 1), g.centers, octaves=5, freq=5.0)
-    mountains = np.clip((e - 800) / 2500, 0, 1)
-    elev = e + 180 * tex * (e > 0) + mountains * 900 * (rough - 0.45)
-    elev = np.where((e > 0) & (elev <= 0), 5.0, elev)  # texture shouldn't drown coasts
+    elev = texture(g, e, seed, at)
 
     extra = {"plate": plate, "crust": continental.astype(int),
              "plate_boundary": boundary.astype(int), "crust_age": np.round(age),

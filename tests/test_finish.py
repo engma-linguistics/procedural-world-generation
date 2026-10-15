@@ -67,10 +67,10 @@ def test_finish_at_any_kyr(tiny):
     # the same frame again: reused
     assert F.finish_timezoom(tz.name, t_end - 0.4) == end
     # frame 0 is the plain keyframe world (same bed, same texture; only the climate, 8 C colder here,
-    # carves the valleys a little differently), and isn't taken for one
+    # carves the valleys and fills the lakes a little differently), and isn't taken for one
     plain = T.world_from_frame(tiny["run"], 20.0)
     diff = np.abs(plain["layers"]["elevation"] - w0["layers"]["elevation"])
-    assert np.median(diff) == 0 and diff.max() < 30, diff.max()
+    assert np.median(diff) == 0 and diff.max() < 60, diff.max()
     assert api.find_slice(tiny["run"], 20.0) is None
     with pytest.raises(SystemExit):
         F.finish_timezoom(tz.name, 99)

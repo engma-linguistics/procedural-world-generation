@@ -244,6 +244,7 @@ def test_travel(gen4):
     L["temperature_jan"][town] = 2
     # a mild, sunny winter in the south (July 15 C, 6 h of sun), and a mild but overcast one
     m, dull = south[-1], south[-2]
+    e[m] = e[dull] = 100  # (low land)
     L["temperature_jul"][m], L["precipitation_jul"][m], L["sunshine_jul"][m] = 15, 200, 6.0
     L["temperature_jul"][dull], L["precipitation_jul"][dull] = 15, 200
     feats = H.find(w)
