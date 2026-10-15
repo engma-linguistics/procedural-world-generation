@@ -1,4 +1,5 @@
 ---
+id: PW-178
 title: Marshes only on coastal plains; delta plains, lagoon-less coasts and lake shores have none
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland3
 blocked_by: []
 relates: [PW-012, PW-094, PW-061]
 refs: [planet/zoom.py, "zoom:8373c5"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -20,3 +23,6 @@ behind them), the floodplains of big lowland rivers and the flat shores
 of shallow lakes would get the same treatment; tidal marsh (mangrove in
 the tropics) where the tide range is large. The biome layer has no
 wetland class, so the viewer's legend shows them only in the hover info.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-marshes-beyond-coastal-plains.md (found by zoomland3).

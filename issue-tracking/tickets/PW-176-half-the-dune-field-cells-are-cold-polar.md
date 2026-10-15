@@ -1,7 +1,8 @@
 ---
+id: PW-176
 title: Half the dune-field cells are cold polar deserts (a 1100-cell erg at 59N, -5 C)
 type: task
-status: needs-decision
+status: todo
 parent: PW-005
 subsystem: surface
 effort: s
@@ -10,6 +11,8 @@ found_by: zoomland3
 blocked_by: []
 relates: [PW-012, PW-096]
 refs: [planet/landform.py, "world:a08983(59.34,-137.96)", "zoom:ee587f"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -38,3 +41,7 @@ Options:
   but huge PET get in.
 Lean: C, maybe with B's warm-month floor; a run change (landform.py), so
 goldens and the showcase move.
+
+## Updates
+- 2026-10-14: Status needs-decision -> todo. Coordinator decision (owner's north star: take the proper fix when it's cheap): use an aridity index (P/PET) for the dune rule instead of raw precipitation, so cold, low-evaporation deserts don't count as ergs unless genuinely arid with an active sand supply.
+- 2026-10-14: Created from inbox draft draft-cold-ergs-dune-rule.md (found by zoomland3).

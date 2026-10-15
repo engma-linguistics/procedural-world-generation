@@ -1,4 +1,5 @@
 ---
+id: PW-180
 title: Zoom discharge routes precipitation, not runoff, so hyper-arid zooms draw rivers
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland3
 blocked_by: []
 relates: [PW-012]
 refs: [planet/zoom.py, "zoom:e14044", "zoom:2d1537"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -26,3 +29,6 @@ balance in zoom_landforms.basin_lakes already reads it), keeping
 precipitation only where the world lacks the layer; check falls, cell
 means and the delta discharges don't move much in wet zooms.
 - [ ] a 50 mm/yr zoom has no river it doesn't get from outside
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-rivers-from-precip.md (found by zoomland3).

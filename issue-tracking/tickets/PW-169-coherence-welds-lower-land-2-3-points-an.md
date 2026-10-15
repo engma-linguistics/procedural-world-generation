@@ -2,7 +2,7 @@
 id: PW-169
 title: Coherence welds lower land ~2-3 points and thin the continents (more thin margin crust)
 type: task
-status: needs-decision
+status: done
 parent: null
 subsystem: tectonics
 effort: s
@@ -36,4 +36,5 @@ aliasing test showed notch welding gives most of the gain: flips 3.9% ->
 continental_thickness / the area target so land comes back. Lean A or C.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Owner decision: C. Keep the coherence fix; restore continental thickness and land for the right reasons in PW-052 (retune targets there).
 - 2026-10-14: Created from inbox draft draft-coherence-land-share.md (found by tectchurn).

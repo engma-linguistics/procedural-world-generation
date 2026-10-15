@@ -2,7 +2,7 @@
 id: PW-005
 title: Landform classes for coarse-to-fine zoom variety
 type: epic
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: xl
@@ -31,4 +31,5 @@ Stories: per-cell stratigraphy; new rock types; history bookkeeping; class assig
 in batches of 3–4. This is also where taller waterfalls come from (morning decision 2).
 
 ## Updates
+- 2026-10-14: Status todo -> done. Epic complete: data side (PW-006-009) and zoom batches (PW-010-012) done. Remaining linked tickets are follow-ups tracked on their own: PW-130, 132, 135, 136 (option C), 147, 165, 168, 175-179.
 - 2026-10-14: Created from the 2026-10-14 discussion with the owner (waterfall decision follow-up).

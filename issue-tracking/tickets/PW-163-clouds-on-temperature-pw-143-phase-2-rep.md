@@ -2,7 +2,7 @@
 id: PW-163
 title: "Clouds on temperature (PW-143 phase 2): replace evap_cool with cloud shading, or leave clouds diagnostic?"
 type: task
-status: needs-decision
+status: done
 parent: PW-013
 subsystem: climate
 effort: m
@@ -43,4 +43,5 @@ Options:
 Lean: A now; B only if generated worlds show cloudy coasts that are too hot in summer.
 
 ## Updates
+- 2026-10-14: Status needs-decision -> done. Owner decision: keep clouds display-only for now; revisit with the PW-013 rain/ocean retune.
 - 2026-10-14: Created from inbox draft draft-cloud-temperature-feedback.md (found by clouds).

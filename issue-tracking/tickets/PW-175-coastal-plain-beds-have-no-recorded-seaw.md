@@ -1,4 +1,5 @@
 ---
+id: PW-175
 title: Coastal plain beds have no recorded seaward dip, so its cuestas follow the contours
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland3
 blocked_by: []
 relates: [PW-012, PW-147]
 refs: [planet/landform.py, planet/zoom_landforms.py, "zoom:dccb9c"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Try: record the deposit's thickness gradient (a seaward-thickening wedge)
 when shelf sediment emerges, giving coastal-plain cells a dip and a
 direction; the zoom then uses them instead of the assumption.
 Same family as PW-147 (caprock recorded as near-flat).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-coastal-plain-seaward-dip.md (found by zoomland3).

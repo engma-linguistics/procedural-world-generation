@@ -1,4 +1,5 @@
 ---
+id: PW-177
 title: "Dune fields: seams between drift patches, network dunes, unresolved barchans"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoomland3
 blocked_by: []
 relates: [PW-012]
 refs: [planet/zoom_landforms.py, "zoom:2d1537", "zoom:e14044", "zoom:ee587f"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -25,3 +28,6 @@ apart on planet-fixed ~200 km patches oriented by the sand drift. Left:
   could follow the wind modes;
 - dunes don't interact with the rivers that cross the erg (no blocked
   wadis or interdune lakes) nor climb the hills' windward sides.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-dune-detail.md (found by zoomland3).
