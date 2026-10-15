@@ -81,7 +81,7 @@ Every field is a flat NumPy array, one value per cell. Neighbour lists are CSR a
    - Pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
 5. Ocean floor ages until an old passive margin starts to subduct, breaking off a ~6000 km basin.
 
-On four seeds the largest landmass passed 25% of the surface every 400–870 Myr. That is not guaranteed.
+On four seeds (L6, 2 Gyr) the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. That is not guaranteed.
 
 ![Supercontinent assembled](overview/supercontinent_elevation.jpg)
 *World ffb5bd (run 6d9dcf at 940 Myr), mid-assembly. The largest landmass is 24% of the surface. Numbered rings are highlights.*
@@ -406,9 +406,9 @@ Other checks:
 **Main weak spots:**
 - **Climate:** regional errors (monsoons, the Sahel, continental winters) and weak Southern Ocean waves.
 - **Tectonics:**
-  - plate counts that sometimes dip to 2–3;
+  - plate counts that occasionally dip to 3–4 (median 8–10 at L6);
   - slightly high land;
-  - fast sea-level swings after reorganisations;
+  - sea level still swings ~100 m in 20 Myr with land ice and plate reorganisations;
   - thinner continents at level 7.
 - **Basins:** generated worlds lose their closed basins over time.
 - **Ice:** time zooms glaciate generated worlds too hard.

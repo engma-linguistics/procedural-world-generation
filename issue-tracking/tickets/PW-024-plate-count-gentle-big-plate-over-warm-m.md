@@ -2,7 +2,7 @@
 id: PW-024
 title: "Plate count: gentle 'big plate over warm mantle splits' nudge"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: tectonics
 effort: m
@@ -28,5 +28,6 @@ plate sitting over warm mantle (the B′ mantle field), not a forced rule. Check
 count over 4 L6 seeds × 2 Gyr with `tools/supercontinent.py`, and that the supercontinent cycle survives.
 
 ## Updates
+- 2026-10-14: Status todo -> done. tectsea 0fd35e5: events.strength / (1 + warm_rift x mantle anomaly 0..2), warm_rift = 0.7. L6 4 seeds (1-4) x 2 Gyr (supercontinent.py, samples >= 200 Myr): plate median 7/8/6/7 -> 9/10/8/10 (all 7 -> 9), min 1/4/2/2 -> 4/4/3/4, share <= 4 plates 15.5% -> 3.2%; assemblies > 25% after the start 3/3/1/2 -> 4/3/3/2, every 280-740 Myr; ocean age median 76-110 -> 60-75 Myr; speed 3.5-4.2 -> 4.2-4.5 cm/yr. L7 s21 1 Gyr (cac9c4) still dips to 3-6 plates for 640-1000 Myr: draft.
 - 2026-10-14: Owner's answer to morning decision 5: the cycle looks better and is pinned to come back to; this nudge is the concrete next step. Regularity is pinned in PW-025.
 - 2026-10-14: Migrated. Merged: Known issues 'Too few plates after the mantle merge' and 'Plate count median 6–7' (mantle), overnight_runs 'plate counts drop to 2–3', morning decision 5 option C.

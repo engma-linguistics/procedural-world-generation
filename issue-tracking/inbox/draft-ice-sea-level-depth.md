@@ -21,6 +21,9 @@ land ice (`sim.sea_ice = -0.9 x ice volume / ocean area`, earth.update_climate).
   320 Myr; the largest 20-Myr sea-level change of the run (-280 m at 140-160) is
   158 m ice + 122 m basins;
 - seed 2: sea_ice down to -191 m (before the change: -274 m); seed 21 -149 m.
+- with the PW-024 plate nudge as well (final tectsea code): seed 2 sea_ice -218 m within
+  20 Myr at ~736 Myr (the run's largest 20-Myr sea-level change, -264 m), seed 11 -190 m
+  within 20 Myr at ~160 Myr; the ocean-basin part now moves at most 98-140 m in 20 Myr.
 -338 m is ~120 M km3 of ice, ~4x Antarctica's, ~1.7x Earth's total at the Last
 Glacial Maximum (~-130 m below today, plus ~65 m still in ice). The model's sheets
 are meant as the average over ~100 kyr ice-age cycles, which should sit between
