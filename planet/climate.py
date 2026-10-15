@@ -1564,25 +1564,23 @@ SEA_CLASS = 30
 
 
 def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None):
-    """Koppen class per cell. Monthly values aren't modelled, so they're
-    estimated from the two half-years assuming a smooth (sinusoidal) annual
-    cycle of temperature and of rain."""
+    """Koppen class per cell, from the twelve months the climate implies
+    (month_temps, month_rain: as climate.months)."""
+    lat = np.asarray(lat, float)
     north = lat >= 0
-    p_sum = np.where(north, p_jul, p_jan) / 12  # monthly mean, summer half (mm)
-    p_win = np.where(north, p_jan, p_jul) / 12
-    # rain(month) = mean * (1 + a cos): the half-year means are mean*(1 +- 2a/pi),
-    # the extremes mean*(1 +- a), and where the halves meet it's the mean
-    mean = (p_sum + p_win) / 2
-    a = np.clip((p_sum - p_win) / np.maximum(p_sum + p_win, 1e-9) * np.pi / 2, -1, 1)
-    lo, hi = mean * (1 - np.abs(a)), mean * (1 + np.abs(a))
-    summer_dry = a < 0
-    dry_s, wet_s = np.where(summer_dry, lo, mean), np.where(summer_dry, mean, hi)
-    dry_w, wet_w = np.where(summer_dry, mean, lo), np.where(summer_dry, hi, mean)
-    driest = lo
+    p_m = month_rain(p_jul, p_jan)
+    t_m = month_temps(lat, temp, t_warm, t_cold)
+    # the local summer half-year: Apr-Sep in the north, Oct-Mar in the south
+    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
+    summer = np.where(north[None, :], jul, ~jul)
+    big = 1e9
+    dry_s, wet_s = np.where(summer, p_m, big).min(0), np.where(summer, p_m, -big).max(0)
+    dry_w, wet_w = np.where(summer, big, p_m).min(0), np.where(summer, -big, p_m).max(0)
+    driest = p_m.min(0)
+    p_sum = np.where(summer, p_m, 0.0).sum(0)
+    p_win = np.where(summer, 0.0, p_m).sum(0)
     P, T = p_ann, temp
-    # months above 10 C on a sinusoidal year
-    amp = np.maximum((t_warm - t_cold) / 2, 1e-6)
-    m10 = 12 * np.arccos(np.clip((10 - T) / amp, -1, 1)) / np.pi
+    m10 = (t_m >= 10).sum(0)  # months at 10 C or more
     out = np.full(len(elev), -1)
 
     def put(mask, cid):
