@@ -38,6 +38,7 @@ from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
 from .surface import surface_rock
+from .tectonics.isostasy import land_view
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
@@ -391,6 +392,9 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
+    # grounded ice on a bed below sea level (pressed down by its own load, or a marine sheet): land with
+    # its bed floored at 1 m, the ice thinned to keep the surface (the world format's land is elevation > 0)
+    e, ice, floored = land_view(e, ice)
     rng_seed = seed * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
     tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
@@ -410,6 +414,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
             "hotspots": hotspots, "volcanoes": volcanoes, "volcano_columns": list(VOLCANO_COLUMNS)}
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
+    meta["ice_bed_floored_cells"] = int(floored.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
                     dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg)
 

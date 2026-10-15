@@ -64,7 +64,7 @@ def snapshot(sim) -> Snapshot:
     lf = landforms_now(sim, vrows)
     return Snapshot(
         t=sim.t,
-        elevation=np.where(sim.w_cont, sim.w_elev, sim.w_elev + sim.w_trench),
+        elevation=np.where(sim.w_cont, sim.bed(), sim.bed() + sim.w_trench),  # (under ice: the pressed-down bed)
         plate=sim.plates.label[sim.owner],
         continental=sim.w_cont.copy(),
         age=sim.w_age.copy(),
@@ -88,7 +88,7 @@ def snapshot(sim) -> Snapshot:
 
 def vegetation_now(sim) -> dict:
     """The vegetation of the last climate update, on today's land."""
-    land = sim.w_elev > 0
+    land = sim.land()
     return dict(vegetation=np.where(land, sim.veg_type, 0).astype(np.uint8),
                 tree_cover=np.where(land, sim.tree_cover, 0.0), npp=np.where(land, sim.npp, 0.0))
 
@@ -106,7 +106,7 @@ def lakes_now(sim) -> dict:
     """The lakes of the last erosion step (hydrology.lakes on the terrain
     before it eroded). Like worlds (hydrology.rivers_and_lakes), no lakes
     on land ice, nor on cells the step left below sea level."""
-    ok = (sim.w_elev > 0) & (sim.ice <= 0)
+    ok = (sim.bed() > 0) & (sim.ice <= 0)
     kind = np.where(ok, sim.lake_kind, 0).astype(np.int8)
     wet = (kind == hydrology.OPEN_LAKE) | (kind == hydrology.CLOSED_LAKE)
     return dict(lake_kind=kind, lake_depth=np.where(wet, sim.lake_depth, 0.0))
@@ -122,8 +122,8 @@ def climate_now(sim) -> dict:
         z3 = np.zeros((n, 3))
         return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z,
                     wind=z3, current=z3)
-    land = sim.w_elev > 0
-    k = climate.koppen(sim.w_elev, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
+    land = sim.land()
+    k = climate.koppen(np.where(land, np.maximum(sim.bed(), 1.0), sim.bed()), sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                        sim.p_jan, sim.grid.lat, np.where(land, sim.ice, 0.0))
     return dict(temperature=sim.temp.copy(), t_warm=sim.t_warm.copy(), t_cold=sim.t_cold.copy(),
                 koppen=k, ice=np.where(land, sim.ice, 0.0), wind=sim.wind.copy(),
@@ -133,7 +133,7 @@ def climate_now(sim) -> dict:
 def stats(sim) -> dict:
     """A few headline numbers for progress lines and run summaries."""
     g = sim.grid
-    land = sim.w_elev > 0
+    land = sim.land()
     lab, nlab = g.components(land)
     sizes = np.bincount(lab[lab >= 0], minlength=1) if nlab else np.array([0])
     v = np.linalg.norm(sim.velocity(), axis=1) * CMYR
@@ -144,7 +144,7 @@ def stats(sim) -> dict:
         "continental_pct": round(100 * sim.w_cont.mean(), 1),
         "landmasses": int((sizes >= 3).sum()),
         "largest_landmass_pct": round(100 * sizes.max() / g.n, 1),
-        "max_elev_m": int(sim.w_elev.max()),
+        "max_elev_m": int(sim.bed().max()),
         "global_temp_c": round(14.5 + sim.dT, 1),
         "co2": round(float(sim.co2), 3),
         "sea_level_m": round(sim.sea_level, 1),
