@@ -10,7 +10,7 @@ browser viewer.
 uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
 uv run python -m planet list                       # runs, worlds and zooms with their ids
 uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)
-uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, biomes) at 300 Myr
+uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, vegetation) at 300 Myr
 uv run python -m planet slice <run-id> --at auto   # ... at a representative moment (typical land/landmasses after 300 Myr)
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
@@ -129,6 +129,7 @@ uv run pytest                    # invariants + envelope tests (~30 s)
 uv run pytest -m "not slow"      # invariants only (~6 s)
 uv run python tools/earth_check.py --png earth.png   # climate, rivers and lakes on real Earth vs observations
 uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended to docs/scorecard.jsonl
+PYTHONPATH=. uv run python tools/veg_check.py --png veg.png   # vegetation on real Earth vs potential vegetation and published numbers
 ```
 
 - **Invariants** (`tests/test_invariants.py`) must hold whatever the tuning:
@@ -336,7 +337,11 @@ temperature_jul/_jan, precipitation_jul/_jan, wind_jul_e/_n, wind_jan_e/_n`
 (`planet/landform.py`: `landform` (class id, legend `landforms`),
 `landform_age`, `strata_top`, `strata_top_km`, `strata_next`, `strata_dip`,
 `fold_wavelength`, `rift_strain`, `glaciated_myr`), which run frames and
-sliced worlds both carry. Not every item stores every layer: run frames have
+sliced worlds both carry, and the vegetation layers (`planet/vegetation.py`:
+`vegetation` (named type, legend `vegetation`), `tree_cover`, `npp` in run
+frames and worlds; worlds also `plant_cover`, `lai`, `lai_jul`, `lai_jan`,
+`canopy_height`, `biomass`, `fire_return`, `stand_age`, `pft_dominant`,
+`flooded` and `veg_<PFT>` for each of the 19 plant functional types). Not every item stores every layer: run frames have
 the annual wind, current and jet layers; worlds have those plus the July /
 January winds, and add `biome`, `runoff`, `evaporation`, `pet`,
 `warm_month`, `cold_month` and the wave and tide layers. World layers are

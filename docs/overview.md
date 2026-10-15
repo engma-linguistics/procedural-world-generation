@@ -2,7 +2,7 @@
 
 *Current state as of 2026-10-14 evening (code at 382b370, after the tectsea and zoompolish merges). Every number here was checked against the code; where another doc disagrees, this one and the code win. Open work lives on the board: `uv run python issue-tracking/board.py list --open`. Tickets are cited as PW-NNN.*
 
-**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
+**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools · 2.18 vegetation) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
 
 ---
 
@@ -17,7 +17,7 @@ The physics is "toy but physical". Each process is a cheap version of a named re
 | Step | Command | What you get | Scale and cost (level 7) |
 |---|---|---|---|
 | **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~20–25 min per Gyr. |
-| **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, biomes, ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
+| **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, vegetation (and biomes from it), ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
 | **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes and landform-specific terrain. | 1–7 s. |
 | **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6, ~30 min at L7. |
 | **Finished world** | `planet finish <timezoom> --kyr N` (or `<run> --at T`) | A world at any kyr of a time zoom: its ice, sunken bed, sea level and climate on the run's geology. | Seconds (L6) to ~1 min (L7). |
@@ -43,12 +43,12 @@ flowchart LR
 ### What you can do with it
 
 - Watch a planet's history as an animation: plates, supercontinents assembling and breaking, ice ages, sea level.
-- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates and biomes, rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range.
+- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates, 60 named vegetation types (from 19 plant types: tree cover, productivity, fire return, stand age), rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range.
 - Zoom into a region at a few hundred metres to a few km per pixel and get a 16-bit heightmap with named features: waterfalls with their heights, deltas with their type, volcanoes with their ages, and terrain shaped by its geology (escarpments, fold ridges, karst, dunes).
 - Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
 - Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
 
-**Not yet built:** soils, vegetation, resources, settlements and a game export are on the roadmap (PW-184 to PW-188, PW-155, PW-100; `docs/plan_next.md`). There is no day-scale weather yet (PW-156).
+**Not yet built:** soils, coastal life, resources, settlements and a game export are on the roadmap (PW-184, PW-185, PW-188, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world and run parts, not yet the zoom, the climate feedbacks or the time zoom (PW-187 steps 5–9). There is no day-scale weather yet (PW-156).
 
 ---
 
@@ -243,10 +243,10 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 - **Hillslope diffusion** smooths relief (soil creep).
 - **Weathering** lowers land toward a base level (200 m on continents), faster on high ground.
 - **Stream-power incision** cuts valleys at a rate ∝ √(water flow) × the drop to the next cell, where the flow is the runoff gathered from upstream. It uses Braun & Willett's implicit scheme, stable at 2 Myr steps.
-- Erosion is scaled by rain ((P/800 mm)^0.8, clipped 0.1–2.5), ×3 under temperate (wet-based) glaciers, ×0.3 under cold ice, and is faster on bare wet ground than under vegetation.
+- Erosion is scaled by rain ((P/800 mm)^0.8, clipped 0.1–2.5), ×3 under temperate (wet-based) glaciers, ×0.3 under cold ice, and is up to 1.6× faster on bare wet ground than under the vegetation's ground cover (§2.18; before plants, or plant groups, appear, rivers are flashier).
 - **Deposition** follows the drainage (§2.9): pits, lakes and floodplains keep a share; deltas fill to +2 m and shelves to −60 m; the rest spreads over the deep sea floor (~1000 km) or is trapped in trenches, where half is scraped onto the overriding plate.
 - **Chemical and biological deposits:** reefs (limestone, up to 200 m/Myr in warm shallow water), evaporites (closed lakes and pans above 10 °C, hot dry coasts), coal (warm wet vegetated lowlands). Desert winds sort loose cover into sand where rain is under 200 mm/yr.
-- **Weathering draws down CO₂**, closing the loop with climate.
+- **Weathering draws down CO₂**, closing the loop with climate; roots and soil CO₂ speed it up by up to 1.75× in proportion to the vegetation's productivity (NPP, GEOCARB's biological weathering factor).
 
 **Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
 
@@ -265,7 +265,8 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 | **Water balance** | Potential evaporation from sunshine and temperature (**Oudin**); actual evaporation from the **Budyko** curve (Fu's form); runoff = rain − actual evaporation (~40% of the rain on Earth's land). |
 | **Humidity** | Dew point and relative humidity per half-year from the rain model's vapour; dry air keeps a background of vapour mixed in from around it, so Delhi's and the Sahara's January air holds ~30–45% (PW-151). |
 | **Clouds and sunshine** | Four cloud kinds overlapping at random: deep cloud where it rains hard; layer cloud along the storm tracks; low sea cloud, more over cold water, with **stratocumulus decks** where sinking air meets cool upwelling water (California, Peru, Namibia); land cloud from humidity and fair-weather cumulus, cleared under the subtropical highs (deserts). **Sunshine** (h/day) = day length × the clear share, with showers costing less sunshine than layer cloud. Clouds are diagnostic: they don't feed back on temperature (decided, PW-163). |
-| **Classification** | **Köppen** classes (Peel 2007 rules) from monthly temperature and rain; **biomes** from a Whittaker-style temperature–rain lookup. |
+| **Classification** | **Köppen** classes (Peel 2007 rules) from monthly temperature and rain. In worlds, **biomes** are a coarse grouping of the vegetation's named types (§2.18); the zoom still uses a Whittaker-style temperature–rain lookup per pixel. |
+| **Months** | `climate.months` (PW-194) rebuilds the twelve months once for everyone who needs them: temperature (a sine between the coldest and warmest month), rain (a cosine through the two half-years, each half's sum exact), Oudin PET (the water balance's), light at the ground (top-of-atmosphere sunshine × Ångström–Prescott transmission from the cloud), snowpack and snowmelt (degree-days), and degree-days above 5 °C. Köppen, the water balance and the glacier rules still build their own (identical where shared). |
 
 **Parameters:** per run `tilt` (23.4°), `climate_offset` (0 °C), `climate_drift` (3 °C over 40 Myr), `co2_sensitivity` (3 °C), `ice_albedo` (1.5 °C per 3% of the planet iced), `ice_summer_temp` (1 °C), `climate_every` (4 Myr). The run's global temperature reaches a world as `dT` = global mean − 14.5 °C. Internal knobs (rain normalisation, seasonal swing, monsoon, upwelling, ~20 cloud parameters) are in `climate.TUNE`, not exposed on the CLI.
 
@@ -357,12 +358,12 @@ A **world** is one moment, finished. Four ways to get one:
 **Finishing** (run-based worlds first get sub-cell texture in `timeline`):
 1. climate, then 12 erosion passes (strength 0.3 for slice and Zoom worlds, 1.0 for generate), then climate again;
 2. rivers and lakes;
-3. biomes;
+3. vegetation (§2.18; biomes grouped from its named types);
 4. waves and tides;
 5. July / January temperature and rain (`world.seasons`);
 6. the sea (SST, salinity, sinking; the overturning in the meta), humidity, clouds and sunshine.
 
-**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~64 layers (§2.16); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
+**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~96 layers (§2.16; 32 of them vegetation); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
 
 ### 2.12 Highlights (`highlights.py`)
 
@@ -452,8 +453,8 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 **Server** (`planet serve`, port 8765): serves the viewer and the data folders, handles `DELETE` of runs, worlds and zooms, and adds `POST /api/zoom`, `POST /api/timezoom`, `POST /api/finish` (`{timezoom, kyr}` or `{run, t}` → a job whose result is `world`), `GET /api/jobs/<id>` and `GET /api/highlights`. Zoom, time-zoom and finish jobs run one at a time; job state is lost on restart (PW-085).
 
 **Globe** (`viewer/index.html`, three.js): one triangle fan per cell, with exaggerated relief, on a globe or a flat map.
-- **Runs** play as animations with an event list, plate arrows, and a time slider tinted blue in cold eras (where a time zoom will show ice ages). Layers: elevation, plates, crust age, surface rock, rock type, crust thickness, sediment, rainfall, temperature, climate, landforms.
-- **Worlds** add biome, precipitation, wave power, tide range, sea temperature, salinity, humidity, dew point, cloud and sunshine. Temperature, rain, SST, humidity, cloud and sunshine have a year / July / January picker (`?season=jul`).
+- **Runs** play as animations with an event list, plate arrows, and a time slider tinted blue in cold eras (where a time zoom will show ice ages). Layers: elevation, plates, crust age, surface rock, rock type, crust thickness, sediment, rainfall, temperature, climate, landforms, vegetation, tree cover, NPP. With a vegetation layer on, green ticks and labels above the slider mark when each plant group appeared.
+- **Worlds** add biome, precipitation, vegetation (named types, legend grouped), tree cover, plant cover, canopy height, leaf area (year / July / January), NPP, biomass, fire return, stand age, plant type (a picker for any one PFT's cover, `?layer=plant%20type&pft=BoNS`), wave power, tide range, sea temperature, salinity, humidity, dew point, cloud and sunshine. The hover card names the vegetation, its main plant types, canopy, tree cover, NPP, fire return and stand age. Temperature, rain, SST, humidity, cloud and sunshine have a year / July / January picker (`?season=jul`).
 - **Overlays:** rivers, plate outlines, pentagons, plate arrows, events, hotspots, volcanoes, winds (year / July / January), ocean currents as streamlines (brighter = faster), the overturning (sinking sites, surface inflow, schematic deep return), jet stream, spin axis, tropics and polar circles.
 - **Earth world:** temperature, precipitation, climate and sunshine have a model / observed / difference switch (`?obs=diff`).
 - **Highlights** panel with category filters (`?hlcat=`, `&hl=N`).
@@ -475,7 +476,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | Path | Contents |
 |---|---|
 | `runs/<id>/run.json` | settings, per-keyframe stats, plate velocities, the event log, layer specs, code version (git commit, dirty flag, hash of `planet/**/*.py`) |
-| `runs/<id>/layers/<name>.bin` | one file per layer, all keyframes (raw little-endian, frames × cells, small integers with scale/offset). The viewer fetches only what it draws. 32 layers per keyframe. |
+| `runs/<id>/layers/<name>.bin` | one file per layer, all keyframes (raw little-endian, frames × cells, small integers with scale/offset). The viewer fetches only what it draws. 35 layers per keyframe. |
 | `runs/<id>/state/<t>.ckpt` | full simulation state (with the geological record) every 100 Myr, where `slice` starts replaying |
 | `runs/<id>/volcanoes.json.gz` | every volcano ever |
 | `runs/<id>/run.txt` | readable report: events, stats over time, ASCII maps, plate table |
@@ -485,7 +486,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `grids/L<n>.json` | grid geometry shared by all items at that level |
 | `worlds/index.json`, ... | indexes the viewer reads (with `source_run`, `t_myr` for provenance) |
 
-**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, and the nine landform layers of §2.4. Run keyframes carry 32 of them; a tectonic world ~64.
+**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, the nine landform layers of §2.4, and the vegetation layers of §2.18. Run keyframes carry 35 of them; a tectonic world ~96.
 
 **Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
 
@@ -504,6 +505,31 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `sealevel.py` | Sea level and its parts (ice, basins, ocean age) per step; counts fast land drops. Runs a simulation (or reads `--run <id>`). |
 | `supercontinent.py` | Tracks the largest landmass, landmass count, mantle and rifts over 2 Gyr; reports assembly spells. Runs a simulation. |
 | `cleanup_outputs.py` | Lists (or `--yes` deletes) outputs no open ticket needs, keeping anything < 12 h old, the Earth world and the parents of kept items. |
+| `veg_check.py` | The vegetation on Earth's terrain, on the model's climate and on the observed one: land NPP, vegetation carbon, burned area, biome areas, agreement with potential natural vegetation (Ramankutty & Foley 1999, downloaded by `earth_data.earth_potveg`), NPP by latitude, Mediterranean regions, C3/C4 crossover, treeline, savanna–forest rain. `--png` maps, `--json`. ~5 s. |
+
+
+### 2.18 Vegetation (`vegetation.py`; design: `docs/proposals/vegetation.md`, PW-187)
+
+**What it does:** gives every land cell the cover of 19 **plant functional types** (PFTs: groups of plants that behave alike, from tropical broadleaf evergreen trees to C4 grasses, succulents and peat moss), and from the mix one of **60 named vegetation types** ("boreal larch taiga", "moist savanna woodland", "raised bog"). Worlds get the full model; a run computes a cheap version at every climate update, and it slows erosion and speeds weathering.
+
+**How a cell's mix is found** (equilibrium, `vegetation.model`):
+1. **Site:** `climate.months` gives the twelve months; from them the envelope indices (coldest month, an absolute-minimum estimate after BIOME4, degree-days above 5 °C, warmest month, rain), the moisture index P/PET, and the fire-weather season (the expected share of the year the litter is dry: months whose rain and snowmelt bring under 20–100% of the evaporative demand, above 5 °C and snow-free).
+2. **Productivity** per PFT as if it grew alone (**light-use efficiency**, as CASA and MODIS MOD17): each month GPP = efficiency × light × the share the leaves catch (1 − e^(−LAI/2)) × a temperature hump × water stress, but no more than the water transpired allows (water-use efficiency 3 g C/mm for C3, 4 for C4 and CAM, less in dry air). Water comes from a **two-layer soil bucket** (topsoil 50 mm, subsoil 150 mm, thinner on steep ground) that each type draws from by its root shares, so grasses live on the topsoil and trees on both (Walter's explanation of savannas). NPP = 75% of what's left after maintenance respiration (Q10 = 2). The **leaf area** is the one that maximises NPP net of leaf and fine-root turnover (a golden-section search, as BIOME4).
+3. **Competition** (TRIFFID, the Met Office's model): cover fractions follow Lotka–Volterra equations in which taller types shade shorter ones, types of one height share space (similar ones coexist), pioneers (birch, aspen, larch) are crowded out by shade-tolerant trees unless disturbed, each spreads at its net NPP over the carbon a square metre of it costs (less for stunted stands), and dies back at a background rate. In dry climates the tree canopy can't close (a cap from P/PET, after Sankaran et al. 2005). 180 implicit steps cover ~1500 years.
+4. **Fire** (GlobFIRM-like): the burned share per year rises steeply with the fire season, if there is fine fuel (≥ 250 g C/m², mostly grass) and lightning (warm, showery summers). Each type loses the burned share × (1 − its resistance): grass resprouts, savanna trees mostly survive, rainforest trees and spruce don't. Grass fuels fire and closed forest doesn't burn, so **forest and savanna are both stable over a wide band of rain and history decides**: worlds start from the run's state (sliced worlds from the simulation's fractions, Zoom-button worlds from the keyframe's tree cover); a world without history (Earth, `generate`) starts from young woodland over grass.
+5. **Grazing placeholder** (decision 8, to be replaced by fauna in PW-103): open grassland (grass cover²) adds tree and shrub mortality in climates that aren't wet all year, which keeps prairies and steppes open.
+6. **Wetlands:** the flooded share of a cell (floodplains of big rivers, flat ground with more rain than evaporation, flat permafrost, lake shores; up to 75%) is a habitat of its own for reeds and sedges, peat moss and flood-tolerant trees.
+7. **Named types:** ordered rules on the mix, structure and site (BIOME4- and IGBP-like): non-vegetated (ice, lake, < 5% cover), wetland, forest (trees ≥ 60%), woodland and savanna (10–60%), sparse, shrubland, grassland; "alpine" where a cell is cold because it is high. `biome` is a coarse grouping of them. (Mangrove forest and salt marsh will come from PW-188's coastal layers; oasis woodland needs river water, the zoom's job.)
+
+**Plant groups through a run** (decision 3): six groups appear one after another (pioneer mosses and crusts; marsh plants; conifers and other non-flowering trees; flowering trees and shrubs; grasses; C4 grasses and succulents), each from 0.6× to 1.3× its Earth fraction of the span from `plants_from` to a deadline (the run's end − max(16 Myr, 5%)), with a chance per climate update proportional to its **niche** (the share of land where its types would grow faster than what is there) and a ramp to certainty at its window's end (seeded draws; `run.json` meta `plant_groups`). Before a group exists its niche is filled by a **stand-in** with widened limits and 70% efficiency: conifer forest in the tropics before flowering trees, moss and crust carpets where grass would be.
+
+**In the run** (`tectonics/earth.update_vegetation`, every climate update): the same model, warm-started from the last update (fractions and LAI), a local LAI step instead of the search and 25 × 10-year steps; ~0.09 s at L6. Its **ground cover** (canopy and herbs 1 − e^(−0.7·LAI), plus moss and crust) replaces the old `veg` term in erosion and the coal-swamp rule, and its **NPP** sets the weathering factor. The CO₂ index nudges C3 efficiency (±~15%) and the C4 grasses' warmth threshold (lower CO₂, cooler C4; Ehleringer 1997). Climate feedbacks (Budyko w, evaporative cooling, albedo, rain recycling) are step 6, not yet in.
+
+**Outputs:** worlds: `vegetation` (named type; legend `vegetation`), `tree_cover`, `plant_cover`, `lai`, `lai_jul`, `lai_jan`, `canopy_height`, `npp`, `biomass`, `fire_return`, `stand_age`, `pft_dominant`, `flooded`, and `veg_<PFT>` (% cover) for each of the 19 PFTs; meta `vegetation` (CO₂ index, the PFTs present, the groups' times). Runs: `vegetation`, `tree_cover`, `npp` per keyframe.
+
+**Earth** (`tools/veg_check.py`, Earth world fe2af4 at L6, on observed climate / on the model's climate): potential-vegetation agreement 62% / 44% (7 groups, area-weighted; for scale, Köppen main groups score 71%); land NPP 63 / 50 Pg C/yr (Earth ~56); vegetation carbon 560 / 340 Pg C (~450–650); burned area 5.1 / 5.5 Mkm²/yr, >90% in savanna and grassland (GFED4s ~4–5, ~70–80%); forest (trees ≥ 60%) 49 / 36 Mkm² (potential ~55–60); boreal 20 / 22 Mkm² (~12–17); savanna and tropical grassland 21 / 27 (~20); desert and xeric shrubland 26 / 23 (~25–30); tundra and alpine 11 / 7 (~8–11); flooded share 6.4 Mkm² (wetlands ~5–9); Mediterranean vegetation in all five regions; median rain under forest / savanna in Africa 1610 / 960 mm; the C4 share of grasses falls below half at ~25° (observed ~30–35°); the northern treeline within ~0–4° of potential vegetation's in 10 of 12 sectors. Before tuning (literature starting values) the observed-climate run gave 49% agreement, 78 Pg C/yr, 1055 Pg C and 0.3 Mkm²/yr burned. The model-climate run inherits the climate's errors (a dry Amazon, a wet Sahel, NE Canada too warm).
+
+**Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); the zoom still draws Whittaker biomes per pixel (step 5); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
 
 ---
 
@@ -533,6 +559,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | Dry winter humidity | Delhi 45%, Timbuktu 33%, Kashgar 49% (January) |
 | Overturning | 13.7 Sv: Nordic 7.0, Labrador 4.1, Ross 1.9, Weddell 0.6; none in the North Pacific |
 | Waves / tides (`coast_check.py`) | within 2× at 25 of 30 coasts / 21 of 23 |
+| Vegetation (`veg_check.py`) | potential-vegetation agreement 62% on observed climate, 44% on the model's; land NPP 63 / 50 Pg C/yr; burned area 5.1 / 5.5 Mkm²/yr (§2.18) |
 
 ![Earth temperature error](overview/earth_temperature_diff.jpg)
 *Model minus observed annual temperature on Earth (an earlier Earth world). East Antarctica and NE Canada come out too warm.*
@@ -621,7 +648,8 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/tectonics/setup.py`, `params.py`, `output.py` | the starting planet; parameters; snapshots and stats |
 | `planet/surface.py` | rocks, erosion, sediment routing, surface rock |
 | `planet/landform.py` | the 12 landform classes |
-| `planet/climate.py` | temperature, winds, jet, gyres, SST, rain, water balance, humidity, clouds, Köppen, biomes |
+| `planet/climate.py` | temperature, winds, jet, gyres, SST, rain, water balance, humidity, clouds, Köppen, biomes, the shared months |
+| `planet/vegetation.py` | plant functional types, productivity, cover competition, fire, wetlands, named types, plant groups |
 | `planet/ocean.py` | salinity and the overturning |
 | `planet/hydrology.py`, `kernels.py` | rivers, lakes, erosion kernels |
 | `planet/coast.py` | waves, tides, Galloway delta weights |
@@ -718,6 +746,21 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | Fetch | The open-water distance the wind blows over, which sets wave size. |
 | Galloway triangle | Classifies deltas as river-, wave- or tide-dominated. |
 | Playa / salt pan | A dry lake bed crusted with salt. |
+
+**Vegetation**
+
+| Term | Meaning |
+|---|---|
+| PFT (plant functional type) | A group of plants that behave alike (leaf habit, height, climate limits, drought strategy): "boreal needleleaf evergreen tree", "C4 grass". |
+| GPP / NPP | Gross / net primary productivity: the carbon photosynthesis fixes, and what is left after the plants' own respiration (g C/m²/yr; Earth's land NPP ~56 Pg C/yr). |
+| LAI | Leaf area index: m² of leaf per m² of ground (desert ~0.2, forest 4–7). |
+| Light-use efficiency (LUE) | GPP as efficiency × the light the leaves absorb, cut by cold, heat and drought (CASA, MODIS MOD17). |
+| C3 / C4 / CAM | Three kinds of photosynthesis: the ancestral one (trees, cool grasses); a CO₂-concentrating one that wins in hot, bright, seasonally dry places (savanna grasses); a water-saving night-time one (cacti). |
+| Evergreen / summergreen / raingreen | Leaves all year / in the warm season / in the wet season. |
+| TRIFFID | The UK Met Office's vegetation dynamics: cover fractions competing by height and growth (Lotka–Volterra). |
+| GlobFIRM | LPJ's fire module: burned area from the length of the fire season, fuel and ignition. |
+| Stand age | Years since the last stand-replacing disturbance (here fire); with a steady fire rate, exponentially distributed. |
+| Treeline | Where trees stop with cold: latitude (arctic) or height (alpine). |
 
 **Procgen and this code**
 
