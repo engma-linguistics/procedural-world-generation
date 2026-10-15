@@ -529,6 +529,15 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 
 **Earth** (`tools/veg_check.py`, Earth world fe2af4 at L6, on observed climate / on the model's climate): potential-vegetation agreement 62% / 44% (7 groups, area-weighted; for scale, Köppen main groups score 71%); land NPP 63 / 50 Pg C/yr (Earth ~56); vegetation carbon 560 / 340 Pg C (~450–650); burned area 5.1 / 5.5 Mkm²/yr, >90% in savanna and grassland (GFED4s ~4–5, ~70–80%); forest (trees ≥ 60%) 49 / 36 Mkm² (potential ~55–60); boreal 20 / 22 Mkm² (~12–17); savanna and tropical grassland 21 / 27 (~20); desert and xeric shrubland 26 / 23 (~25–30); tundra and alpine 11 / 7 (~8–11); flooded share 6.4 Mkm² (wetlands ~5–9); Mediterranean vegetation in all five regions; median rain under forest / savanna in Africa 1610 / 960 mm; the C4 share of grasses falls below half at ~25° (observed ~30–35°); the northern treeline within ~0–4° of potential vegetation's in 10 of 12 sectors. Before tuning (literature starting values) the observed-climate run gave 49% agreement, 78 Pg C/yr, 1055 Pg C and 0.3 Mkm²/yr burned. The model-climate run inherits the climate's errors (a dry Amazon, a wet Sahel, NE Canada too warm).
 
+![Earth vegetation](review/vegetation/earth_groups_model_potveg_types.png)
+*`tools/veg_check.py --png` on the observed climate: the model's groups (top), potential natural vegetation (Ramankutty & Foley 1999; middle), the model's named types (bottom).*
+
+![Vegetation demo](review/vegetation/world_351f32_vegetation.png)
+*World 351f32 (run 732abb, L7, seed 3199, at 1000 Myr): named vegetation types.*
+
+![Plant groups](review/vegetation/run_732abb_700myr_group_ticks.png)
+*Run 732abb at 700 Myr, before flowering plants: conifer forests, moss and crust carpets; green ticks above the slider mark when each plant group appeared.*
+
 **Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); the zoom still draws Whittaker biomes per pixel (step 5); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
 
 ---
@@ -593,6 +602,7 @@ Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `me
 | 7 | ~20–25 min per Gyr (up to ~35 under load) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × 110–140 MB) | 13–28 s after replay | 30–45 MB |
 | 8 | ~3–4 h per Gyr | ~3.5 GB | ~17 MB per keyframe, so use `--every 10` | world + 5 highlight zooms ~8.5 min | — |
 
+- **Vegetation:** in the run ~0.09 s per climate update at L6 (~25 s per Gyr, ~8% of a run; L6 1 Gyr took 4.6 min, L7 23 min with other jobs running); in a world 0.2 s at L6. It adds ~3 MB to an L6 world (9 → 12 MB) and ~13 MB at L7 (~58 MB), and three layers (vegetation, tree cover, NPP) to run keyframes.
 - **Slicing** replays up to 100 Myr from a checkpoint: well under a minute at L6, a few minutes at L7. The Zoom button skips the replay.
 - **Zooms:** 1–7 s each; ~11–12 MB each for 500×500 px.
 - **Time zoom:** ~4 min per 1000 kyr at L6.
@@ -607,7 +617,8 @@ Start the viewer (`uv run python -m planet serve`) and pick these from the dropd
 
 **Showcase (2026-10-14 evening code, before the tectsea sea-level and plate-count change):** run **8571dd** (L7, seed 21, 1000 Myr), world **a08983** @ 408 Myr with highlights and zooms.
 - Landform demo zooms on a08983: f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau), 68e925 (tower karst), 2e6433 (lowland karst, poljes), e14044 (linear and star dunes), 2d1537 (transverse dunes), ee587f (cold barchans), 8373c5 (barrier islands, lagoons), dccb9c (coastal plain); 83e518 (waterfalls), 130acd (volcano), 2d60af (2000 km overview).
-- Earth world **dc3732** (clouds, ocean, seasons, model vs observed).
+- Earth world **dc3732** (clouds, ocean, seasons, model vs observed); **fe2af4** is the same with vegetation (PW-187).
+- Vegetation demo (PW-187): run **732abb** (L7, seed 3199, 1000 Myr; plant groups at 2, 48, 232, 724, 760 and 824 Myr), world **351f32** at 1000 Myr. Try `?world=351f32.json&layer=vegetation`, `&layer=plant%20type&pft=BoNS`, and `?run=732abb&layer=vegetation` for the group ticks.
 - Ocean and clouds demo world **2085dc**; seasons and travel demo **67317b**.
 - Discrete volcanoes: run 39d004, world a099c6.
 - Supercontinent cycle: run 6d9dcf (seed 2, 2 Gyr), worlds ffb5bd (assembled) and 779b14 (dispersed).
