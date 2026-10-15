@@ -2,7 +2,7 @@
 id: PW-085
 title: api.Jobs state is lost on server restart
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [planet/api.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,4 +20,5 @@ updated: 2026-10-14
 viewer's progress polling breaks. Low value unless restarts become common.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls).
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Infrastructure.

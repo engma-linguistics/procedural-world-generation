@@ -2,7 +2,7 @@
 id: PW-119
 title: "Highlights: find island chains and atolls from the volcano table"
 type: task
-status: todo
+status: done
 parent: PW-001
 subsystem: highlights
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-004]
 refs: [planet/highlights.py, planet/zoom_volcanoes.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,4 +24,5 @@ coral atoll groups, and pick a zoom that fits the chain. At level 6 this matters
 rarely show the islands (see the coarse-grid draft).
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls).
 - 2026-10-14: Created from inbox draft draft-hotspot-chain-highlight.md (found by volcanoes).

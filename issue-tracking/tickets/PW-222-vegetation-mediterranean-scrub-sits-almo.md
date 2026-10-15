@@ -1,4 +1,5 @@
 ---
+id: PW-222
 title: "Vegetation: Mediterranean scrub sits almost entirely outside Koppen Cs (34 of 2163 cells on world 351f32)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: smalls
 blocked_by: []
 relates: [PW-187, PW-208]
 refs: [planet/vegetation.py, "world 351f32"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Check the classifier rule for types 19-21 (vegetation.classify): it probably key
 sclerophyll-shrub dominance and dryness without asking for a summer-dry,
 winter-wet regime, so semi-arid steppe climates get it and Cs gets parkland.
 - [ ] most Mediterranean-type cells in Cs (or a documented reason they aren't)
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-maquis-outside-cs.md (found by smalls).
