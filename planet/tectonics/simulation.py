@@ -278,7 +278,7 @@ class Simulation:
         t0 = col.t.copy()  # (volcanoes edits it in place)
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
-        crust.stretch(self, col, stretch, plume, newc, shrink, stack_add)
+        crust.stretch(self, col, stretch, plume, newc, stack_add)
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment
