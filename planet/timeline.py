@@ -257,7 +257,7 @@ def report(run_dir: Path) -> Path:
         out.append(f"  {int(k):>5}  {100 * sel.mean():>5.1f}  {100 * cont[sel].mean():>12.0f}  "
                    f"{speed:>17.1f}  {compass}")
     path = run_dir / "run.txt"
-    path.write_text("\n".join(out) + "\n")
+    S.write_atomic(path, "\n".join(out) + "\n")
     return path
 
 
