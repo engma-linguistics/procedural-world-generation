@@ -12,3 +12,4 @@ zooms/
 data/
 # the server's job state (api.Jobs)
 .jobs/
+.DS_Store
