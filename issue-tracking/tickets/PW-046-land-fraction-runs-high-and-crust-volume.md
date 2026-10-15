@@ -2,7 +2,7 @@
 id: PW-046
 title: Land fraction runs high and crust volume drifts mid-run
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/earth.py, planet/tectonics/crust.py, tools/scorecard.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,4 +21,5 @@ volume drifts +2–5% mid-run: assembled continents have fewer subducting margin
 thermostat only partly compensates. The v1 notes had continental area at ~45% vs a 40% target.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Foundation round, worktree tectfound.
 - 2026-10-14: Migrated. Merged: 'Land runs high' (mantle), 'Continental area overshoots to about 45%' (v1 Also noted and Crust section).
