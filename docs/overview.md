@@ -277,7 +277,9 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 ![Köppen climate classes](overview/koppen.jpg)
 *World 7c5adf (Earth-like A, 976 Myr), Köppen classes.*
 
-**Known limits:** moisture transport between basins and across land (PW-013 epic, PW-014, PW-015); winter maritime air doesn't reach far enough inland (PW-026); rain patchy on flats (PW-019); East Antarctica ~10 °C too warm and bare polar lowland summers too warm (PW-039, PW-112); the jet is broad and zonal (PW-042); clouds: summer continents too clear, wet tropics too gloomy (PW-162). No day-scale weather (PW-156).
+**Grid numerics (PW-211):** the icosphere's cells are up to ~9% larger or smaller along the seams of the icosahedron it is built from, and wide blurs run on a coarser level. Three things keep those out of the fields' gradients (the winds follow pressure gradients, and the rain follows the winds): wide blurs finish their last half coarse cell on the fine grid and interpolate back with a smooth bell (`climate.smooth`); the blur's neighbour weights are tilted so a straight slope stays straight and spread the same km² everywhere; gradients are least-squares fits with each edge's own length; and the rain's transport divides each cell's inflow by what a uniform wind would bring it (`inflow_weights`), so seams neither gather nor thin the vapour. Before this, rain maps had diagonal lattices and straight lines that the biomes and vegetation inherited.
+
+**Known limits:** moisture transport between basins and across land (PW-013 epic, PW-014, PW-015); winter maritime air doesn't reach far enough inland (PW-026); East Antarctica ~10 °C too warm and bare polar lowland summers too warm (PW-039, PW-112); the jet is broad and zonal (PW-042); clouds: summer continents too clear, wet tropics too gloomy (PW-162). No day-scale weather (PW-156).
 
 ### 2.7 Ocean: currents, SST, salinity, overturning (`climate.py`, `ocean.py`)
 
@@ -538,7 +540,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 ![Plant groups](review/vegetation/run_732abb_700myr_group_ticks.png)
 *Run 732abb at 700 Myr, before flowering plants: conifer forests, moss and crust carpets; green ticks above the slider mark when each plant group appeared.*
 
-**Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); the zoom still draws Whittaker biomes per pixel (step 5); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
+**Known limits:** the zoom still draws Whittaker biomes per pixel (step 5); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
 
 ---
 

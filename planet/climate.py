@@ -125,72 +125,107 @@ def _geom(grid: Grid):
         in_e = np.argsort(dst, kind="stable")
         off = np.concatenate([[0], np.cumsum(np.bincount(src, minlength=grid.n))])
         in_off = np.concatenate([[0], np.cumsum(np.bincount(dst, minlength=grid.n))])
+        # Least-squares gradient weights: the gradient g that best fits the
+        # differences to the neighbours, len_e (d_e . g) = df_e, is
+        # g = sum_e gq_e df_e with gq_e = M^-1 len_e d_e, M = sum_e len_e^2 d_e d_e^T
+        # (+ the normal, to make it invertible). It uses each edge's own length:
+        # the icosphere's cells are up to ~9% smaller or larger along the seams of
+        # the icosahedron it was built from, and a gradient taken with the mean
+        # spacing shows those seams as straight lines (in the winds, then the rain).
+        ln = np.arccos(np.clip((p[src] * p[dst]).sum(1), -1.0, 1.0)) * R_KM
+        c = ln[:, None] * d
+        M = np.zeros((grid.n, 3, 3))
+        np.add.at(M, src, c[:, :, None] * c[:, None, :])
+        M += p[:, :, None] * p[:, None, :]
+        gq = np.einsum("eij,ej->ei", np.linalg.inv(M)[src], c)
+        # Blur weights (_smooth), per neighbour in grid.nbr_idx order: a
+        # plain neighbour average drifts toward the side with more or nearer
+        # neighbours and blurs less where the cells are smaller, which on
+        # the icosphere leaves the icosahedron's seams in a blurred field's
+        # gradient. So the weights are tilted until the neighbours' weighted
+        # centre is the cell's own (a straight slope stays straight), and
+        # the cell's mixing is scaled to spread the same km^2 everywhere.
+        nsrc = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+        r = p[grid.nbr_idx] - p[nsrc]
+        r -= (r * p[nsrc]).sum(1, keepdims=True) * p[nsrc]
+        r *= R_KM
+        dg = np.diff(grid.nbr_off).astype(np.float64)
+        rr = np.zeros((grid.n, 3, 3))
+        np.add.at(rr, nsrc, r[:, :, None] * r[:, None, :] / dg[nsrc, None, None])
+        rr += p[:, :, None] * p[:, None, :]  # (the normal: makes it invertible)
+        rm = np.add.reduceat(r, grid.nbr_off[:-1], axis=0) / dg[:, None]
+        b = -np.linalg.solve(rr, rm[:, :, None])[:, :, 0]
+        wk = np.maximum(1.0 / dg[nsrc] + (b[nsrc] * r).sum(1) / dg[nsrc], 0.0)
+        wk /= np.add.reduceat(wk, grid.nbr_off[:-1])[nsrc]
+        spread = np.add.reduceat(wk * (r * r).sum(1), grid.nbr_off[:-1])
+        h = grid.spacing * R_KM
+        sk = wk * np.minimum(0.5 * h * h / spread, 0.9)[nsrc]
         if len(_GEOM) > 4:
             _GEOM.clear()
         _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM,
-                          out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e])
+                          out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e], gq=gq, sk=sk)
     return _GEOM[key]
 
 
 _COARSE = {}
+COARSE_R = 1.5  # coarse cells: reach of the interpolation weights (two rings of neighbours around the
+# containing cell cover it: the nearest cell three steps away is further from any point of it)
 
 
 def _coarse(grid: Grid, level: int = 3):
     """A coarser icosphere (level 3: ~900 km cells, for patterns thousands
     of km across): which coarse cell each fine cell falls in, the coarse
-    neighbours, and weights to interpolate back smoothly (the nearby coarse
-    cells, by distance). Cached."""
+    neighbours, and weights to interpolate back smoothly: the nearby coarse
+    cells, by a bell of distance, (1 - (d/r)^2)^2 out to r = COARSE_R coarse
+    cells, which is smooth at its centre and at its edge (a cone, 1 - d/r,
+    leaves kinks that the gradient of the field shows). Cached."""
     from .grid import build_grid
     key = (id(grid), grid.n, level)
     if key not in _COARSE:
         cg = build_grid(min(level, grid.level))
         cidx = cg.locate(grid.centers)
-        cand = np.zeros((grid.n, 7), np.int64)
-        ok = np.zeros((grid.n, 7), bool)
-        cand[:, 0], ok[:, 0] = cidx, True
-        deg = np.diff(cg.nbr_off)
-        for k in range(6):  # the containing coarse cell and its neighbours
-            has = deg[cidx] > k
-            cand[has, k + 1] = cg.nbr_idx[cg.nbr_off[cidx[has]] + k]
-            ok[has, k + 1] = True
+        # candidates: the containing coarse cell and two rings of neighbours around it
+        off, idx = cg.nbr_off, cg.nbr_idx
+        ring = np.full((cg.n, 19), -1, np.int64)
+        for j in range(cg.n):
+            near = {j}
+            for a in idx[off[j]:off[j + 1]]:
+                near.add(int(a))
+                near.update(int(b) for b in idx[off[a]:off[a + 1]])
+            ring[j, :len(near)] = sorted(near)
+        cand = ring[cidx]
+        ok = cand >= 0
+        cand = np.where(ok, cand, cidx[:, None])
         d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
-        w = np.where(ok, np.maximum(0.0, 1 - d / (1.2 * cg.spacing)), 0.0)
+        w = np.where(ok, np.maximum(0.0, 1 - (d / (COARSE_R * cg.spacing)) ** 2) ** 2, 0.0)
         w /= w.sum(1, keepdims=True)
         if len(_COARSE) > 8:
             _COARSE.clear()
         _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
-                            h=cg.spacing * R_KM)
+                            h=cg.spacing * R_KM, sk=_geom(cg)["sk"])
     return _COARSE[key]
 
 
 @njit(cache=True)
-def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
-    """Average f onto the coarse grid, blur it there (iters neighbour
-    averages) and interpolate it back. The average is over the fine cells
-    in each coarse cell, or (full) weighted by the interpolation weights,
-    which is smoother: each fine cell counts towards all the coarse cells
-    near it (a nested grid's cells on a coarse cell's edge are as near to
-    the next one)."""
+def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w):
+    """Average f onto the coarse grid, blur it there (iters steps of
+    _smooth, sk: the coarse grid's blur weights) and interpolate it back. Each fine cell counts towards all
+    the coarse cells near it, by the interpolation weights (a nested grid's
+    cells on a coarse cell's edge are as near to the next one)."""
     tot = np.zeros(nc)
     cnt = np.zeros(nc)
-    if full:
-        for i in range(f.shape[0]):
-            for k in range(cand.shape[1]):
-                tot[cand[i, k]] += w[i, k] * f[i]
-                cnt[cand[i, k]] += w[i, k]
-        c = tot / np.maximum(cnt, 1e-12)
-    else:
-        for i in range(f.shape[0]):
-            tot[cidx[i]] += f[i]
-            cnt[cidx[i]] += 1.0
-        c = tot / np.maximum(cnt, 1.0)
+    for i in range(f.shape[0]):
+        for k in range(cand.shape[1]):
+            tot[cand[i, k]] += w[i, k] * f[i]
+            cnt[cand[i, k]] += w[i, k]
+    c = tot / np.maximum(cnt, 1e-12)
     g = np.empty(nc)
     for _ in range(iters):
         for j in range(nc):
             t = 0.0
             for e in range(off[j], off[j + 1]):
-                t += c[idx[e]]
-            g[j] = 0.5 * c[j] + 0.5 * t / (off[j + 1] - off[j])
+                t += sk[e] * (c[idx[e]] - c[j])
+            g[j] = c[j] + t
         c[:] = g
     out = np.zeros(f.shape[0])
     for i in range(f.shape[0]):
@@ -200,23 +235,23 @@ def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
 
 
 def smooth_big(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
-    """Blur a field over thousands of km (on the coarse grid: cheap)."""
-    C = _coarse(grid)
-    iters = int(round(4 * (km / C["h"]) ** 2))
-    return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                          C["cand"], C["w"], False)
+    """Blur a field over thousands of km (smooth() does it on a coarse grid:
+    cheap)."""
+    return smooth(grid, f, km)
 
 
 @njit(cache=True, parallel=True)
-def _smooth(f, nbr_off, nbr_idx, iters, w):
+def _smooth(f, nbr_off, nbr_idx, sk, iters):
+    """iters steps of f += sum over the neighbours of sk (f_nbr - f) (sk:
+    _geom's blur weights)."""
     f = f.copy()
     g = np.empty_like(f)
     for _ in range(iters):
         for i in prange(f.shape[0]):
             s = 0.0
             for e in range(nbr_off[i], nbr_off[i + 1]):
-                s += f[nbr_idx[e]]
-            g[i] = (1 - w) * f[i] + w * s / (nbr_off[i + 1] - nbr_off[i])
+                s += sk[e] * (f[nbr_idx[e]] - f[i])
+            g[i] = f[i] + s
         f, g = g, f
     return f
 
@@ -228,26 +263,39 @@ def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     """Blur a field over roughly `km` (Gaussian-ish sigma). A wide blur is
     done on the coarsest grid level it still spans COARSE_CELLS cells of
     (at level 6: ~580 km and up, a grid level coarser), which is ~10x
-    cheaper and the same to within ~0.5% of the field's spread. Moving the
+    cheaper and the same to within ~2% of the field's spread. Moving the
     field to that grid and back blurs it by about half a coarse cell's
-    width already, so that much is taken off the blur there."""
+    width already, so that much is taken off the blur there. The way back
+    (interpolating from the coarse cells) leaves kinks along the coarse
+    cells' edges: the field is right, but its gradient has a lattice of
+    the coarse grid's spacing in it, which the winds (pressure gradients)
+    and through them the rain used to show as diagonal streaks. So the
+    last half coarse cell of the blur is done on the fine grid, which
+    irons them out (the gradient is then within ~1.5% of a blur done all
+    on the fine grid)."""
     h = _geom(grid)["h"]
     lev = grid.level
     while lev > 0 and km >= COARSE_CELLS * h * 2 ** (grid.level - lev + 1):
         lev -= 1
+    f = np.ascontiguousarray(f, np.float64)
     if lev < grid.level:
         C = _coarse(grid, lev)
-        iters = int(round(4 * max(km**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
-        return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                              C["cand"], C["w"], True)
+        fine = FINE_FINISH * C["h"]
+        km_c = np.sqrt(max(km**2 - fine**2, 0.0))
+        iters = int(round(4 * max(km_c**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
+        f = _coarse_smooth(f, C["cidx"], C["n"], C["off"], C["idx"], C["sk"], iters, C["cand"], C["w"])
+        km = fine
     iters = int(round(4 * (km / h) ** 2))
     if iters <= 0:
-        return f.astype(np.float64)
-    return _smooth(np.ascontiguousarray(f, np.float64), grid.nbr_off, grid.nbr_idx, iters, 0.5)
+        return f.copy()
+    return _smooth(f, grid.nbr_off, grid.nbr_idx, _geom(grid)["sk"], iters)
+
+
+FINE_FINISH = 0.5  # share of a coarse cell's width of a wide blur done on the fine grid (see smooth)
 
 
 @njit(cache=True, parallel=True)
-def _gradient(f, src, dst, d, out_off, out_e, deg, h):
+def _gradient(f, src, dst, gq, out_off, out_e):
     n = out_off.shape[0] - 1
     g = np.empty((n, 3))
     for i in prange(n):
@@ -257,21 +305,20 @@ def _gradient(f, src, dst, d, out_off, out_e, deg, h):
         for k in range(out_off[i], out_off[i + 1]):
             e = out_e[k]
             df = f[dst[e]] - f[src[e]]
-            g0 += d[e, 0] * df
-            g1 += d[e, 1] * df
-            g2 += d[e, 2] * df
-        c = 2.0 / (deg[i] * h)
-        g[i, 0] = g0 * c
-        g[i, 1] = g1 * c
-        g[i, 2] = g2 * c
+            g0 += gq[e, 0] * df
+            g1 += gq[e, 1] * df
+            g2 += gq[e, 2] * df
+        g[i, 0] = g0
+        g[i, 1] = g1
+        g[i, 2] = g2
     return g
 
 
 def gradient(grid: Grid, f: np.ndarray) -> np.ndarray:
-    """Tangent gradient per cell, units of f per km."""
+    """Tangent gradient per cell, units of f per km (least squares over the
+    neighbours; see _geom)."""
     G = _geom(grid)
-    return _gradient(np.ascontiguousarray(f, np.float64), G["src"], G["dst"], G["d"], G["out_off"], G["out_e"],
-                     G["deg"], G["h"])
+    return _gradient(np.ascontiguousarray(f, np.float64), G["src"], G["dst"], G["gq"], G["out_off"], G["out_e"])
 
 
 @njit(cache=True, parallel=True)
@@ -293,6 +340,44 @@ def _out_shares(v, d, out_off, out_e, allowed):
         for k in range(out_off[i], out_off[i + 1]):
             w[out_e[k]] = w[out_e[k]] / t
     return w, tot
+
+
+@njit(cache=True, parallel=True)
+def _inflow_geom(v, d, in_off, in_e, src, out_off, out_e):
+    """Each cell's share of inflow (the sum of its upwind neighbours'
+    shares of their outflow) in a wind that blew everywhere as it does
+    there: 1 on a regular grid, but up to ~5% more or less along the
+    icosphere's seams, where the cells are arranged differently."""
+    n = in_off.shape[0] - 1
+    F = np.empty(n)
+    for i in prange(n):
+        f = 0.0
+        for k in range(in_off[i], in_off[i + 1]):
+            e = in_e[k]
+            x = max(v[i, 0] * d[e, 0] + v[i, 1] * d[e, 1] + v[i, 2] * d[e, 2], 0.0)
+            if x <= 0:
+                continue
+            j = src[e]
+            t = 0.0
+            for kk in range(out_off[j], out_off[j + 1]):
+                ee = out_e[kk]
+                t += max(v[i, 0] * d[ee, 0] + v[i, 1] * d[ee, 1] + v[i, 2] * d[ee, 2], 0.0)
+            f += x / max(t, 1e-12)
+        F[i] = f if f > 0 else 1.0
+    return F
+
+
+def inflow_weights(grid: Grid, v: np.ndarray) -> np.ndarray:
+    """Per incoming edge (in _geom's in_e order): the share of the source
+    cell's outflow along it in wind v, divided by the receiving cell's
+    _inflow_geom, so that a wind blowing the same way everywhere neither
+    piles anything up nor thins it along the icosphere's seams (which left
+    lines in the rain), while a converging wind still gathers it."""
+    G = _geom(grid)
+    v = np.ascontiguousarray(v, np.float64)
+    w, _ = _edge_weights(grid, v)
+    F = _inflow_geom(v, G["d"], G["in_off"], G["in_e"], G["src"], G["out_off"], G["out_e"])
+    return w[G["in_e"]] / F[G["dst"][G["in_e"]]]
 
 
 def _edge_weights(grid: Grid, v: np.ndarray, allowed: np.ndarray | None = None):
@@ -1079,12 +1164,12 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     t_ref = smooth(grid, zs, 800.0)
     mse_thr = t_ref + LQ * tune["rh"] * _qsat(t_ref, tune["q_k"])
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
-    out_w, _ = _edge_weights(grid, v)
+    in_w = inflow_weights(grid, v)
     move = np.clip(speed(v), 0.25, 1.0)
     warm = np.clip(t_air / 15.0, 0, 1)  # evaporation needs warmth
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
     return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, warm=warm, move=move,
-                diff=diff, out_w=out_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
+                diff=diff, in_w=in_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
                 t_air=np.where(ocean, sst, t_air))
 
 
@@ -1097,7 +1182,7 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarr
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
     r, r_ls, up, vap = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-                    st["warm"], st["move"], st["diff"], st["out_w"][:, G["in_e"]], G["in_src"], G["in_off"], G["deg"],
+                    st["warm"], st["move"], st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
                     tune["cv_scale"], tune["et"], tune["evap_cool"], tune["mean_mm"])
     # Storms carry their rain with them: the large-scale (frontal) rain is

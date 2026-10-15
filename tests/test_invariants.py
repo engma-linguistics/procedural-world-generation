@@ -112,16 +112,42 @@ def test_climate_same_on_any_thread_count(grid4):
 
 def test_coarse_smooth_matches_fine():
     """A wide blur is done on a coarser grid (climate.smooth); it should
-    match the plain neighbour-averaging blur to well under 1% of the
-    blurred field's spread."""
+    match the all-fine-grid blur to well under 1% of the blurred field's
+    spread, and its gradient (what the winds follow) to a few %: no lattice
+    of the coarse cells in it (PW-211)."""
     g = build_grid(6)
     rng = np.random.default_rng(0)
     f = np.sin(3 * np.radians(g.lat)) + np.cos(2 * np.radians(g.lon)) + rng.standard_normal(g.n)
-    h = climate._geom(g)["h"]
-    for km in (600.0, 900.0):
-        fine = climate._smooth(f, g.nbr_off, g.nbr_idx, int(round(4 * (km / h) ** 2)), 0.5)
+    G = climate._geom(g)
+    for km in (600.0, 900.0, 2000.0):
+        fine = climate._smooth(f, g.nbr_off, g.nbr_idx, G["sk"], int(round(4 * (km / G["h"]) ** 2)))
         coarse = climate.smooth(g, f, km)
         assert np.sqrt(((coarse - fine) ** 2).mean()) < 0.01 * fine.std(), km
+        gf, gc = climate.gradient(g, fine), climate.gradient(g, coarse)
+        assert np.sqrt(((gc - gf) ** 2).sum(1).mean() / (gf**2).sum(1).mean()) < 0.04, km
+
+
+def test_no_icosphere_seams():
+    """The icosphere's cells are up to ~9% larger or smaller along the
+    seams of the icosahedron it was built from. The gradient of a smooth
+    field, a blur of it, and the rain's transport in a wind blowing the same
+    way everywhere must not show them (they made straight lines in the
+    winds and rain; PW-211)."""
+    g = build_grid(6)
+    G = climate._geom(g)
+    a = np.array([0.3, -0.5, 0.8])
+    f = (g.centers @ a) ** 2 * 30
+    rough = []  # the gradient's small-scale wiggle, relative to its size (the field's own curvature at 0 km)
+    for km in (0.0, 250.0, 900.0):
+        s = climate.smooth(g, f, km) if km else f
+        gm = np.linalg.norm(climate.gradient(g, s), axis=1)
+        rough.append((gm - climate._smooth(gm, g.nbr_off, g.nbr_idx, G["sk"], 30)).std() / gm.mean())
+    assert max(rough[1:]) < 1.3 * rough[0], rough  # (a plain neighbour average: ~3x)
+    w = climate.inflow_weights(g, G["east"] + 0.5 * G["north"])
+    inflow = np.bincount(G["dst"][G["in_e"]], w, g.n)
+    # (near the equator this wind blows nearly the same way everywhere; further poleward east and north
+    # turn, a real convergence; the plain shares of the outflow are up to ~25% off)
+    assert np.abs(inflow - 1)[np.abs(g.lat) < 30].max() < 0.02
 
 
 def test_gyres_and_jet():
