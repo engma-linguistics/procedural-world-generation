@@ -55,3 +55,20 @@ def test_spells_and_outliers():
                     "sea_ice_below_150": 0, "low_plates": 0}}
     got = {(o["metric"], o["t0"]) for o in H.outliers(r)}
     assert got == {("max_elev_km", 58), ("peak_frames", None)}
+
+
+def test_frame_rivers_end_in_its_own_hollows(sim4):
+    """A run frame's rivers and lakes are those of its own terrain (PW-239):
+    every river that ends on land ends in a closed lake, a salt pan or a
+    pit of the frame's elevation (or under ice), so the raw and checked
+    inland shares agree."""
+    g, snap = sim4.grid, sim4.snapshot()
+    elev = snap.elevation.astype(float)
+    land, down = elev > 0, snap.downstream
+    end = H.drain_ends(down, land)
+    ends = np.unique(end[land & land[end]])
+    assert len(ends) > 0
+    real = H.real_hollows(g, elev, snap.lake_kind) | (snap.ice > 0)
+    assert real[ends].all(), ends[~real[ends]]
+    wet = snap.lake_depth > 0
+    assert (snap.lake_kind[wet] > 0).all() and ((snap.lake_kind == 1) | (snap.lake_kind == 2))[wet].all()
