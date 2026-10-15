@@ -139,6 +139,15 @@ temperature, precipitation and climate get a "model / observed / difference"
 switch (`?obs=diff` in the URL). Re-run it after climate-model changes (and
 delete the old one).
 
+The observations live in `data/earth/` (git-ignored). `tools/earth_data.py` downloads them, but some
+of the source servers are slow or flaky, so a cached copy is kept on the `earth-data` branch
+(~25 MB). To restore it into a checkout without staging anything:
+
+```sh
+git fetch origin earth-data
+git restore --source=origin/earth-data --worktree -- data/earth
+```
+
 ## Tests and calibration
 
 ```sh
