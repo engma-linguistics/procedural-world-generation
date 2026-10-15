@@ -8,7 +8,7 @@ effort: m
 impact: high
 found_by: health-sweep
 blocked_by: []
-relates: [PW-240, PW-191, PW-235]
+relates: [PW-240, PW-191, PW-235, PW-264, PW-276]
 refs: [docs/review/health/2026-10-15/report.md, tools/health.py]
 ---
 

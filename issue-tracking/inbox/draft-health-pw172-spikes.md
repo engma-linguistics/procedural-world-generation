@@ -8,7 +8,7 @@ effort: s
 impact: med
 found_by: health-sweep
 blocked_by: []
-relates: [PW-172, PW-048]
+relates: [PW-172, PW-048, PW-285]
 refs: [docs/review/health/2026-10-15/report.md, "run:550a5a@148Myr(5.73,162.02)", "run:550a5a@640Myr(-0.89,117.67)", "run:6114bd@944Myr(-41.03,-9.32)", "run:9068cb@512Myr(2.65,-124.10)"]
 ---
 

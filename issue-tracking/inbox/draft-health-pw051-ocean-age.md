@@ -8,7 +8,7 @@ effort: xs
 impact: low
 found_by: health-sweep
 blocked_by: []
-relates: [PW-051, PW-191]
+relates: [PW-051, PW-191, PW-288]
 refs: [docs/review/health/2026-10-15/report.md]
 ---
 
