@@ -147,7 +147,8 @@ def update_climate(sim, e):
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
     sim.ice = ice_sheets(sim, land, e, c["ground"], ice0)
     ice = np.where(land, sim.ice, 0.0)
-    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, climate.ice_cover(g, ice, land))
+    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
+                                                           sim.p_jul, sim.p_jan)
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
     vol = (sim.ice / 1000.0).sum() * sim.cell_area * R_KM**2
     ocean_area = (~land).sum() * sim.cell_area * R_KM**2
@@ -286,8 +287,9 @@ def ice_sheets(sim, land, bed, ground, old):
         return (np.bincount(k, weights=f * iced, minlength=nk) / np.maximum(cnt, 1))[k]
 
     snow = np.clip((mean(sim.precip) / 300.0) ** 0.125, 0.75, 1.15)
-    own = climate.LAPSE * h + climate.ice_cooling(h, climate.ice_cover(g, np.where(iced, h, 0.0), land))
-    soft = 1.0 - 0.3 * np.clip((mean(temp - own) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
+    h = np.where(iced, h, 0.0)
+    _, _, t_ice = climate.ice_surface(t_warm, t_cold, temp, h, icemass.sheet_cover(g, h), lat, sim.p_jul, sim.p_jan)
+    soft = 1.0 - 0.3 * np.clip((mean(t_ice) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
     fac = snow * soft
     surf = np.maximum(bed + ICE_EDGE_M * fac, bed_edge + nye * fac)
     return np.where(iced, np.minimum(surf - bed, ICE_MAX), 0.0)
