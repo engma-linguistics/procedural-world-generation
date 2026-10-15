@@ -22,8 +22,8 @@ from .isostasy import (CARB, COAL, EVAP, MIX, SAND, elevation, ice_load, iso_rat
 
 SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
-WEATHER_K = 0.12  # per C: silicate weathering's temperature sensitivity (GEOCARB III: 0.09 from the activation
-# energy, ~0.03 more from the runoff; was 0.06 before PW-235)
+WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
+# runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
 
 
 def heat(p, t: float) -> float:
