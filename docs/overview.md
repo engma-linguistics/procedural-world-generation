@@ -1,129 +1,129 @@
 # procgen_world: overview
 
-*Written 2026-10-14 from the code at a3ed559. Where older docs disagree, the code wins.*
+*Current state as of 2026-10-14 evening (code at 382b370, after the tectsea and zoompolish merges). Every number here was checked against the code; where another doc disagrees, this one and the code win. Open work lives on the board: `uv run python issue-tracking/board.py list --open`. Tickets are cited as PW-NNN.*
 
-## What it is
+**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
 
-procgen_world builds planets by simulating them, not by painting noise.
+---
 
-- **Run:** it starts with one supercontinent, and plate tectonics plays out for 0.5–2 billion years in 2 Myr steps. Meanwhile a climate model, rivers and erosion wear the land down and pile up sediment.
-- **World:** any moment of a run can become one. A world is a snapshot with climate, rivers, lakes, biomes, waves and tides on ~41,000 cells of ~110 km.
-- **From a world**, you can make:
-  - a **regional zoom**: a 500×500 px landscape at 1–4 km/px, with valleys, lakes, deltas and waterfalls;
-  - a **glacial time zoom**: 1 Myr of ice ages in 500-year steps.
+## 1. What it is
 
-A three.js browser viewer shows all of these. The physics is "toy but physical": each process is a cheap version of a named real-world mechanism, tuned against Earth. Runs are deterministic given seed and settings.
+procgen_world makes planets by **simulating** them, not by painting noise. Mountains are where plates collided, deserts are where the winds arrive dry, rivers follow the land that erosion carved, and every rock layer has a date. Because the whole history is simulated, any place on the planet can be looked at at any moment of its past. That suits games and tabletop campaigns where time matters: the same coast 50 million years earlier, an ice age in a region you know, a volcano chain growing.
+
+The physics is "toy but physical". Each process is a cheap version of a named real-world mechanism and is tuned so Earth's own geography gives Earth-like answers. Earth is a test analogue, not a target: generated planets are meant to be plausible, not copies. Runs are deterministic given the seed and settings.
+
+### The pipeline
+
+| Step | Command | What you get | Scale and cost (level 7) |
+|---|---|---|---|
+| **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~20–25 min per Gyr. |
+| **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, biomes, ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
+| **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes and landform-specific terrain. | 1–7 s. |
+| **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6. |
+| **Highlights** | `planet highlights <run> --at auto --zoom N` | The ~40–55 most interesting places, with pre-made zooms. | Seconds. |
+
+All of these are browsed in a three.js viewer: `planet serve` (http://127.0.0.1:8765/viewer/).
 
 ```mermaid
 flowchart LR
   S["planet simulate<br/>(tectonics + climate +<br/>erosion, 2 Myr steps)"] --> R[("run<br/>keyframes every 4 Myr<br/>checkpoints every 100 Myr")]
-  R -->|"slice --at T<br/>(replay from checkpoint)"| W[("world<br/>climate, rivers, lakes,<br/>biomes, waves, tides")]
+  R -->|"slice --at T<br/>(replay from checkpoint)"| W[("world<br/>climate, seasons, rivers, lakes,<br/>ocean, clouds, waves, tides")]
   R -->|"viewer Zoom button<br/>(from the keyframe)"| W
   G["planet generate<br/>(one-shot cartoon plates)"] --> W
-  W -->|"planet zoom"| Z[("regional zoom<br/>500 px, 1–4 km/px")]
+  E["tools/earth_world.py<br/>(real Earth terrain)"] --> W
+  W -->|"planet zoom"| Z[("regional zoom<br/>500 px, 0.5–4 km/px")]
   R -->|"planet timezoom --at T"| T[("time zoom run<br/>1 Myr of ice ages")]
   W -->|"planet highlights"| H[("highlights<br/>+ pre-made zooms")]
   H --> Z
   R & W & Z & T & H --> V["viewer<br/>planet serve, :8765"]
 ```
 
-## 1. The grid
+### What you can do with it
 
-The planet is an **icosphere**: an icosahedron whose triangles are split into four, `level` times. Each vertex becomes a cell, so the cells are hexagons plus exactly 12 pentagons (Euler's formula; see `planet/grid.py`). There are 10·4^L + 2 cells:
+- Watch a planet's history as an animation: plates, supercontinents assembling and breaking, ice ages, sea level.
+- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates and biomes, rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range.
+- Zoom into a region at a few hundred metres to a few km per pixel and get a 16-bit heightmap with named features: waterfalls with their heights, deltas with their type, volcanoes with their ages, and terrain shaped by its geology (escarpments, fold ridges, karst, dunes).
+- Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
+- Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
 
-| Level | Cells | Cell size |
-|---|---|---|
-| 5 | 10k | ~220 km |
-| 6 (default) | 41k | ~110 km |
-| 7 | 164k | ~55 km |
-| 8 | 655k | ~28 km |
+**Not yet built:** soils, vegetation, resources, settlements and a game export are on the roadmap (PW-184 to PW-188, PW-155, PW-100; `docs/plan_next.md`). There is no day-scale weather yet (PW-156).
 
-Every field is a flat NumPy array, one value per cell. Neighbour lists are CSR arrays that the numba kernels loop over. The cells of a coarser level are a prefix of the finer level's, so the ocean model can run at level 5 inside a level-6 world.
+---
 
-**World frame vs plate frame** is the key data-structure idea:
-- Each plate keeps its crust (age, thickness, rock, sediment, and its geological record: strata and history, §3) on its **own private copy of the whole grid**, plus a rotation saying where that copy currently sits.
+## 2. How each subsystem works
+
+Each subsection gives: what it does, the rule in plain language with its real-world analogue, the main parameters, the outputs, and the known limits with their open tickets.
+
+### 2.1 The grid (`planet/grid.py`)
+
+The planet is an **icosphere**: an icosahedron whose triangles are split into four, `level` times. Each vertex is a cell, so the cells are hexagons plus exactly 12 pentagons (Euler's formula forces 12; tick "Highlight the 12 pentagons" in the viewer).
+
+| Level | Cells | Cell spacing | Used for |
+|---|---|---|---|
+| 5 | 10k | ~220 km | `planet generate` default, ocean overturning solver, tests |
+| 6 | 41k | ~110 km | `simulate` default; quick large-scale tests |
+| 7 | 164k | ~55 km | showcases (owner's default) |
+| 8 | 655k | ~28 km | rare, hours per run |
+
+Every field is a flat NumPy array, one value per cell. Neighbour lists are CSR arrays for the numba kernels. A coarser level's cells are a prefix of the finer level's, so the ocean overturning can run at level 5 inside a level-6 or 7 world.
+
+**World frame vs plate frame**, the key data-structure idea:
+- Each plate keeps its crust (age, thickness, rock, sediment, geological record) on its **own private copy of the whole grid**, plus a rotation saying where that copy sits now.
 - Moving a plate only changes the rotation. Crust is never resampled, so plate interiors never blur.
-- Each step, every world cell looks up which plate cell lies under it. The physics runs on these gathered world arrays, and the results are scattered back.
+- Each step, every world cell looks up which plate cell lies under it, the physics runs on these gathered arrays, and the results are scattered back.
 - Climate, the mantle and sea level live only in the world frame.
 
-## 2. Tectonics (`planet/tectonics/`)
+### 2.2 Tectonics and the mantle (`planet/tectonics/`)
 
-**Who owns a cell.** After the plates rotate, `plate_kernels.resolve` looks at each world cell:
+**What it does:** moves 10–30 rigid plates over the sphere, creates and destroys crust where they meet, welds and breaks them, and lets a slowly remembering mantle steer them into supercontinent cycles.
+
+**Who owns a cell** (`plate_kernels.resolve`), after the plates rotate:
 - **Several plates overlap it:**
-  - Continental crust beats oceanic, and between two oceans the younger floor wins. The loser's crust there is deleted: that deletion *is* **subduction**.
-  - Continent against continent is a **collision**: the loser's thickness is stacked onto the winner, which becomes mountain-belt (orogen) rock.
-- **No plate covers it:** the cell becomes new 7 km ocean floor of age 0, i.e. a **mid-ocean ridge**.
+  - Continent beats ocean floor, and between two ocean floors the younger wins. The loser's crust there is deleted: that deletion *is* **subduction**.
+  - Continent against continent is a **collision**. The cell's previous owner wins; the loser's thickness is stacked and spread over a belt as mountain-belt (orogen) rock. Cratons stay cratons.
+- **No plate covers it:** it becomes new 7 km ocean floor of age 0, a **mid-ocean ridge**.
 
-**Motion from forces.** Velocities are solved each step from a force balance (`motion.py`):
-- **Forces:**
-  - **slab pull**, the strongest: a sinking slab drags its plate toward the trench, and old, dense slabs pull harder;
-  - **ridge push**, away from spreading ridges;
-  - **collision drag**;
-  - **basal traction** from the mantle;
-  - a small random wander.
-- **Solving:** the forces become torques. A drag matrix turns them into each plate's angular velocity (its Euler pole). Continental keels feel 2.5× the drag.
-- **Inertia and cap:** velocities relax toward the solution over 15 Myr, which acts like inertia, and are capped at 18 cm/yr.
+**Motion from forces** (`motion.py`). Each step every plate's velocity is solved from a force balance:
+- **slab pull**, the strongest: a sinking slab drags its plate toward the trench, more for old, dense floor (× clip(age/80 Myr, 0.3, 1.5));
+- **ridge push** away from spreading ridges;
+- **collision drag**;
+- **basal traction** from the mantle field (below);
+- a small random wander (an Ornstein–Uhlenbeck process: a random walk pulled back toward zero, ~60 Myr memory).
 
-**The mantle (B′, `mantle.py`).** A smooth world-frame temperature anomaly: spherical harmonics of degree 1–8 with a 2500 km smoothing scale and a 200 Myr memory.
-- **Cooling:** trenches cool it ("slab graveyards").
-- **Warming:** continents insulate it. A continent parked for ~100 Myr warms the mantle under it.
-- **Effect on plates:** they are dragged toward cold mantle, and a random eddy field stands in for smaller convection.
-- **Hotspots:** new plumes favour warm mantle, especially its edges.
+The forces become torques, and a drag matrix turns them into each plate's rotation (its Euler pole). Continental keels feel 2.5× the drag. Velocities relax toward the solution over 15 Myr (a stand-in for inertia) and are capped at 18 cm/yr at the plate's fastest point. A hotter early mantle (`heat_start` > 1) speeds plates as √heat.
 
-**The supercontinent cycle** emerges; no rule makes it happen:
+**The mantle (`mantle.py`, the "B′" design).** A smooth world-frame temperature anomaly built from spherical harmonics of degree 1–8 (~2500 km smoothing), with a 200 Myr memory.
+- **Cooling:** sinking slabs cool it under trenches ("slab graveyards"), in proportion to convergence × slab age.
+- **Warming:** continents insulate it. A continent parked for ~100 Myr warms the mantle under itself.
+- **Effect on plates:** basal traction drags plates from warm toward cold mantle. Random eddies (degrees 3–8) stand in for smaller convection.
+- **Plumes:** new hotspots favour warm mantle and its edges; 60% start under a ridge or rift.
+
+**The supercontinent cycle emerges**; no rule forces it:
 1. Continents gather over the cold slab graveyards.
-2. Where they collide and stall for ~30 Myr they **suture** into one plate.
-3. The assembled continent warms the mantle under itself until the traction stretches it apart.
-4. **Rifting** (`events.py`):
-   - It tries 12 cuts across each big plate and solves each half's motion.
-   - A plate splits if the halves separate fast enough, scaled up for big plates and down by the rock's strength along the cut.
-   - Weak lines are young sutures, thinned crust and plume swells. Old cratons resist. Warm mantle weakens the plate above it (`warm_rift`), so a big plate parked over a warm upwelling breaks more readily.
-   - Pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
-5. Ocean floor ages until an old passive margin starts to subduct, breaking off a ~6000 km basin.
+2. Colliding plates **suture** into one plate after 30 Myr of contact once closing is below 2 cm/yr (or anyway after 150 Myr; never within 80 Myr of rifting from each other).
+3. The assembled continent warms the mantle under itself.
+4. **Rifting** (`events.py`): for each plate ≥ 5% of the surface, 12 straight cuts are tried and each half's motion is solved. The plate splits if the halves pull apart faster than `rift_stress` (2 cm/yr), scaled up for big plates (size^¼) and down by the rock's strength along the cut. Weak lines: young sutures, orogens, thinned crust, plume swells. Cratons resist (×1.6). **Warm mantle weakens a plate** (strength ÷ (1 + 0.7 × anomaly), the PW-024 nudge), so a big plate parked over a warm upwelling breaks more readily. The winning cut is redrawn as 4 wandering rift lines and the weakest wins. At most one split per step; none at 30+ plates; pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
+5. Ocean floor ages; when a passive margin's floor passes 120 Myr, a new trench can start along a ~6000 km stretch of it, and the ocean beyond starts to close.
+6. Slivers (< 0.15% of cells) are absorbed by the plate around them.
 
-On four seeds (L6, 2 Gyr) the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. That is not guaranteed.
+On four L6 seeds over 2 Gyr the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. Plate counts: median 8–10, minimum 3–4 (PW-024). Not guaranteed for every seed.
 
 ![Supercontinent assembled](overview/supercontinent_elevation.jpg)
 *World ffb5bd (run 6d9dcf at 940 Myr), mid-assembly. The largest landmass is 24% of the surface. Numbered rings are highlights.*
 
 ![Plates of Earth-like A](overview/plates_run.jpg)
-*Run 01b0f7 at 976 Myr, plates layer. Bright colours are continental crust and dark colours oceanic. Red edges converge and cyan edges diverge. Arrows near the poles look exaggerated on the flat map.*
-
-**Crust and elevation:**
-- **Building crust:**
-  - Subduction grows **volcanic arcs**.
-  - Collisions stack crust, and over-thick crust **flows** outward, widening plateaus.
-  - Rifts thin continents, and the crust they lose floors the opening rift as a continuous belt of thinned margin crust, laid ring by ring outward from the continent.
-  - Hotspots build islands and flood basalts under a ~1 km swell (see **Volcanoes** below).
-- **Crust type is coherent at the grid's scale** (`crust.coherence`): a one-cell inlet of ocean floor nearly ringed by its plate's continent counts as (thin) continental crust, and a thin (< 20 km) shred of continent nearly ringed by ocean floor as ocean floor; a shred keeps its thickness, and the continent around an inlet flows into it (volume kept), so a one-cell pit becomes a shallow dip. Without it, the plates carried one-cell mosaics of margin, arc and ocean crust past the world grid, and cells flipped between continent and deep sea every few Myr (PW-108; `tools/churn.py` measures it).
-- **Crust budget:** a "thermostat" steers arc growth and subduction erosion toward the target continental fraction (40%).
-- **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy).
-  - Continents stand 250 m plus 150 m per km of crust beyond 35 km.
-  - Ocean floor sinks as it cools: 2600 + 345·√age m, the half-space cooling law.
-- **Volcanoes** (`volcanism.py`) are point objects that ride their plate, each with its own volume and height:
-  - **Hotspot vents:** a plume stays put in the mantle and opens a new vent every ~1.25 flexural wavelengths of plate motion (50–150 km; ~80 km on Hawaii-like 90 Myr floor, from the plate's elastic thickness). A vent is fed while it's over the plume, then carried off, so a plume leaves a chain, youngest over it. Each vent's lava goes onto the grid as a 30 km Gaussian cone (consecutive vents are separate islands at level 7–8 and blur at 6), up to a height limit that grows with the plate's age (Vogt: thicker plates, taller volcanoes; Mauna Kea's 4.2 km summit at most). Lava beyond that spreads as a broad apron below −2 km. A new plume's head still floods ~300 km for 6 Myr (flood basalts).
-  - **Arc volcanoes:** one per ~120 km of active arc, 2000 km³ each, active ~8 Myr.
-  - **Ageing:** a volcano sinks with its plate's base level (sea-floor age, the swell decaying behind the plume), its part above the sea erodes (~10 Myr e-folding at 1500 mm/yr, plus wave cliff retreat) until the waves plane it off. In warm water (≥ `reef_temp`) a reef grows round its widest shore: fringing reef → barrier reef → **atoll** once the volcano is gone; carried into cold water the reef drowns (a guyot).
-  - The table of all volcanoes goes into each keyframe (`runs/<id>/volcanoes.json.gz`), checkpoint and world (`meta.volcanoes`, columns `meta.volcano_columns`).
-- **Sediment** is lighter than crust: 2.1 g/cm³, compacting to 2.6. Filling deep water takes ~3× its depth in sediment, as on Earth. Below 18 km it becomes basement.
-- **Sea level** follows mean ocean depth relative to its 300 Myr average, plus land ice. Young, shallow oceans raise it. The basins' volume answers the sea floor over ~30 Myr (`ridge_time`; a ridge system waxes and wanes over tens of Myr) and levels off smoothly toward ±250 m. The starting ocean has the ages of a steadily spreading one (mean 60 Myr), so the first breakup doesn't flood the planet.
-- **Global temperature** combines a slow drift, CO₂ (sources: new sea floor and arcs; sink: weathering) and ice-albedo.
+*Run 01b0f7 at 976 Myr, plates layer. Bright colours are continental crust, dark colours oceanic. Red edges converge, cyan edges diverge.*
 
 **One step** (`Simulation.step`, 2 Myr):
 1. Move the plates.
-2. Resolve ownership.
+2. Resolve ownership (subduction, collision, new floor).
 3. Find the boundaries.
 4. Update the mantle.
-5. Physics: crust, arcs, hotspots, collisions, stretching, crust flow, temperature, erosion, sediment.
+5. Physics: crust budget, arcs, hotspots and vents, collisions, stretching, crust flow, global temperature, erosion and sediment, reefs, the ice record, crust-type coherence, back to the plates.
 6. Solve the forces for the next step.
-7. Events: sutures, slivers absorbed, at most one rift.
-8. Climate every 4 Myr, on the ground the events left (so a keyframe's climate fits its ground); the next steps' erosion uses it.
-
-Together these form a loop:
-- Erosion strips mountains, and isostasy partly lifts them back.
-- Sediment loads basins and builds shelves.
-- Climate decides where erosion happens.
-- Weathering draws down CO₂.
+7. Events: sutures, slivers, at most one rift.
+8. Volcanoes re-home, sink, erode and grow reefs.
+9. Climate every 4 Myr (and on step 1), **on the ground the events left** (PW-109), so a keyframe's climate fits its ground. The next steps' erosion uses it.
 
 ```mermaid
 flowchart LR
@@ -131,292 +131,591 @@ flowchart LR
   I -->|"elevation, coastlines"| C["climate (every 4 Myr)<br/>temperature, wind, rain,<br/>runoff, ice"]
   C -->|"runoff, ice, temperature"| E["erosion<br/>hillslope, weathering,<br/>stream power"]
   E -->|"eroded km"| D["sediment<br/>routed downhill: lakes,<br/>deltas, shelf, deep sea"]
-  D -->|"cover thickness, rock mix"| I
-  E -->|"mass removed"| I
+  D -->|"cover, strata"| I
   E -->|"weathering draws down CO₂"| C
   D -->|"buried >18 km: basement;<br/>trench sediment accreted"| T
   T -->|"slabs cool, continents insulate"| M["mantle field"] -->|basal traction, plumes| T
 ```
 
-## 3. Surface: erosion, sediment, rocks (`surface.py`, `earth.py`)
+**Main parameters** (`planet/tectonics/params.py`; set with `simulate --set key=value`; all are stored in `run.json`):
 
-**Rocks.** Each cell has a basement rock and, on top of it, a **sediment cover** whose mix of ingredients is tracked.
-- **Basement:** ocean crust, hotspot basalt, arc, sediment-born continent, orogen, craton, and **granite** (an arc worn 4 km down after it went quiet shows its plutons, like the Sierra Nevada).
-- **Cover:** limestone (reefs), sandstone, shale, evaporite (salt from hot closed lakes and flats), coal (warm swamps), **flood basalt** (a plume's lava on a continent), **tuff** (10% of a continental arc's new crust erupts as ash and ignimbrite).
-- **Erodibility** runs from 0.3 (craton) to 3.0 (evaporite).
-- **Surface rock** (`surface_rock`, what the viewer and the zoom see) is the cover's exposed stratum from the record below (thin veneers under 20 m looked through), so a thin dolomite or basalt caprock shows over the shale beneath it; where less than 50 m of cover is left, the basement shows through. Erosion still uses the well-mixed cover's erodibility (caprock protecting the soft rock under it in the run is PW-136 option C).
-
-**Erosion** runs every step and is scaled by rain:
-- **hillslope diffusion** smooths relief;
-- **weathering** lowers land toward a base level;
-- **stream-power incision** cuts valleys at a rate ∝ √(drainage area) × slope. It uses Braun & Willett's implicit scheme, which stays stable at 2 Myr steps.
-
-**Deposition.** Eroded material follows the drainage (§5):
-- pits, lakes and floodplains keep a share;
-- deltas fill to +2 m and shelves to −60 m;
-- the rest spreads over the deep sea floor or is trapped in trenches, where part is scraped onto the overriding plate.
-
-**The geological record** (`tectonics/record.py`) rides with the crust on the plates (`Plates.rec`, `Plates.lith`), so a margin carried across an ocean still knows when it rifted:
-- **Strata:** the cover's top 3 layers in order, each a rock, a thickness and when it last grew. They always add up to the cover (the well-mixed cover stays the mass balance for erosion and isostasy). Net deposits go on top (sandstone on land, shale at sea, plus limestone, evaporite, coal, flood basalt, tuff), net erosion takes the top, burial into the basement the bottom. A new rock starts a layer, a pause of 20 Myr closes one, a full stack merges its bottom two. Limestone buried under 1 km turns to **dolomite**; sandstone folded in crust over 45 km thick to **quartzite**.
-- **History:** when the crust was last rifted and how much it was stretched (ln β), when it was last folded (a collision or an accretionary wedge), how much cover was folded and how hard it was squeezed, how far it has been exhumed since its basement formed, and when it was last under ice. A stratum is folded if it last grew before the cell's last folding; younger ones lie flat on the unconformity.
-- **Cost at level 7:** ~430 MB of plate arrays, ~3–4% of a step, checkpoints ~30% bigger.
-
-**Landform classes** (`landform.py`) are read from that record and the setting now, at every keyframe; a cell takes the first that holds:
-
-| Class | Rule (Earth analogue) | `landform_age` |
+| Parameter | Default | Meaning |
 |---|---|---|
-| volcanic arc | land within a cell of an arc volcano (active or extinct ≤ 20 Myr) | nearest volcano's age |
-| hotspot | oceanic land near a vent above the sea, or on a hotspot pile ≤ 100 Myr old | vent's age |
-| fault-block rift | continent stretched (ln β ≥ 0.2) in the last 20 Myr (East Africa) | since rifting |
-| great escarpment | rifted 8–400 Myr ago, standing ≥ 300 m, where the scarp has retreated to: `retreat_km(age)` (~200 km × (1 − e^(−age/150))) from a passive rifted coast (Drakensberg, Western Ghats) | since rifting |
-| fold-and-thrust belt | exposed strata predate the last folding, ≥ 0.2 km of them (Zagros, Valley and Ridge) | since folding |
-| lava plateau | ≥ 0.2 km of flood basalt on top (Deccan) | since eruption |
-| dune field | sand still piling up (top grew ≤ 20 Myr ago), hyper-arid: aridity index P/PET < 0.12 (~150 mm/yr in a hot desert, ~35 mm in a cold one) (Rub' al Khali) | top stratum |
-| karst | ≥ 0.4 km of limestone/dolomite on top, > 700 mm/yr, unfrozen | top stratum |
-| caprock plateau / cuestas | flat, exposed (not grown for 10 Myr) hard rock 0.03–1.5 km thick over soft (Colorado Plateau, Niagara) | top stratum |
-| coastal plain | < 300 m, young (≤ 30 Myr) flat clastic strata, ≤ 400 km from the coast | top stratum |
-| shield | old (≥ 500 Myr) craton or granite exposed, not folded for 300 Myr nor rifted for 100 (Canadian Shield) | basement age |
-| hills | any other land (the zoom's graded hills and mountains) | — |
+| `n_plates` | 12 | plates at the start |
+| `start` | supercontinent | or `scattered` |
+| `continental_fraction` | 0.4 | target share of the surface that is continent |
+| `continental_start` | off | start with less continent and grow toward the target (water worlds) |
+| `heat_start` | 1.0 | early mantle heat relative to the end state |
+| `slab_pull` / `ridge_push` / `collision_drag` | 1.0 / 0.15 / 1.2 | force strengths |
+| `mantle_drag` | 0.6 | basal traction from the mantle field |
+| `mantle_memory` / `mantle_scale_km` | 200 Myr / 2500 | mantle memory and smallest feature |
+| `slab_cold` / `insulation` | 0.002 / 0.04 | cooling under trenches, warming under continents |
+| `mantle_eddies` / `mantle_noise` | 0.3 / 0.2 | random convection, random drag |
+| `velocity_timescale` / `max_speed` | 15 Myr / 18 cm/yr | inertia, speed cap |
+| `arc_growth` / `crust_flow` | 0.03 / 0.0006 | new arc crust, sideways flow of thick crust |
+| `suture_after` | 30 Myr | collision time before plates can weld |
+| `rift_stress` / `rift_timescale` | 2 cm/yr / 130 Myr | how hard and how often plates break |
+| `warm_rift` | 0.7 | how much warm mantle weakens a plate (PW-024) |
+| `rift_min_piece` / `max_plates` | 0.03 / 30 | smallest continental piece a rift may cut, plate ceiling |
+| `margin_age` | 120 Myr | margin age at which new subduction can start |
+| `ridge_time` | 30 Myr | sea-level response time to the sea floor (PW-053) |
+| `tilt` / `climate_offset` | 23.4° / 0 °C | axial tilt, warmer or colder history |
 
-With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope), the fold wavelength (1.5 × the folded pile + 2 km), the stretching of the last rifting (`rift_strain`, ln β) and the time since the cell was last under ice (`glaciated_myr`).
+**Outputs:** per keyframe the `plate`, `crust`, `crust_age`, `plate_boundary`, `crust_thickness` layers and plate velocities; the event log (collisions, sutures, rifts) in `run.json`; hotspots and volcanoes.
 
-## 4. Climate (`climate.py`, `ocean.py`)
+**Known limits:**
+- L7 seed 21 still falls to 3–6 plates for 300+ Myr (PW-191); the cycle's regularity is pinned (PW-025).
+- L7 continents are ~2 km thinner and ~300 m lower than at L6 (PW-052); continental area drifts up (scorecard: ~47% continental crust after 1 Gyr against a 40% target; PW-046).
+- Some cell churn remains along collision fronts (PW-170, PW-173, PW-174); pits in continents from old seams (PW-171); one-frame 11–18 km spikes (PW-048, PW-172).
+- Ragged ocean boundaries (PW-047); drainage switches outlet in one step when a rift opens (PW-056).
+- Glacial isostasy (ice pressing the crust down) is not modelled yet (PW-189, top of the queue).
 
-`climate.compute` is a **diagnostic, steady-state** model: a chain of physically motivated maps and relaxations, not a general circulation model with time steps. It takes ~0.65 s at level 6. The year has two halves, and monthly values are rebuilt as sinusoids.
+### 2.3 Volcanoes, island chains and atolls (`tectonics/volcanism.py`)
 
-- **Temperature:**
-  - It starts from latitude, on an energy-balance curve with polar amplification.
-  - Air cools 6.5 °C/km with height (the **lapse rate**).
-  - Seasons scale with the axial tilt.
-  - **Continentality** comes from carrying air temperatures along the seasonal winds, so interiors swing and windward coasts stay mild.
-  - A big polar ice sheet is 10 °C colder than bare ground (albedo, cold air pooling on it); a small cap gets less, a tropical one none.
-- **Winds:**
-  - The three-cell pattern (**Hadley/Ferrel/polar**: trades, westerlies, polar easterlies), shifted with the season.
-  - **Monsoon** winds from land–sea pressure contrasts.
-  - Ground above 1.5 km turns the wind along its slope.
-- **Jet stream:** from the **thermal wind** relation, so it is fastest where the north–south temperature gradient is sharpest. Storm tracks are carried along it and drive frontal rain and waves.
-- **Ocean gyres:**
-  - A wind-driven **Stommel** streamfunction, solved by over-relaxation, gives closed gyres and fast **western boundary currents**.
-  - Unbroken latitude bands get a **circumpolar current**.
-  - Sea-surface temperature (SST) is carried along the currents, with **coastal and equatorial upwelling**.
-- **Overturning** (`ocean.py`, run on the level-5 grid):
-  - Salinity comes from evaporation minus rain, rivers, sea-ice export and meltwater.
-  - Density comes from temperature and salinity.
-  - Deep water sinks where the winter sea is densest, poleward of 50° (Stommel's flow law).
-  - The replacement inflow follows the currents, like the **AMOC**'s North Atlantic Drift, and warms Norway.
-  - Worlds store the sea-surface salinity and temperature (annual, July, January), the sinking per cell, and in their meta the overturning's strength in Sv with its sinking sites. The viewer's "Overturning" overlay draws the sites, the surface inflow along the model's route, and the deep return flow as a dashed **schematic** (the model has no deep ocean: a route along the deep western boundaries to the Southern Ocean or the tropics, `ocean.loop_schematic`). On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1 Sv) seas and the Ross (1.9 Sv) and Weddell (0.6 Sv) seas; none in the North Pacific.
-- **Humidity:** the rain model's water vapour gives each half-year's dew point and relative humidity near the ground (`climate.humidity`; worlds store `dewpoint_jul/jan` and `humidity_jul/jan`). Dry air keeps a background of vapour mixed in from the air around it (`climate.vapour_mixed`; the rain model's own air drains to nothing over long dry stretches), so Delhi's and the Sahara's January air holds ~30–45%, not 15%.
-- **Clouds** (`climate.clouds`): a diagnostic cloud cover per half-year from what the rain model knows, four kinds overlapping at random:
-  - deep cloud where it rains hard (the ITCZ, monsoon summers, windward slopes);
-  - layer cloud along the storm tracks, in moist air, not under the sinking subtropical air;
-  - low cloud over the sea, more over cold water (polar seas, sea-ice edges), thinner under sinking air, except where the air sinks onto a strong inversion over cool upwelling water: a **stratocumulus deck** (California, Peru, Namibia, the Canaries), cloudy with little rain, which drifts over low coasts;
-  - over land, cloud with the air's humidity, fair-weather cumulus where the ground makes moist air unstable, thin polar cloud; the sinking subtropical air clears it (deserts).
+**What it does:** volcanoes are point objects that ride their plate, each with its own volume, height and age (PW-001).
 
-  **Sunshine** (hours a day) is the day length times the clear share of the day; showers and cumulus build up in the afternoon, so they cost less sunshine than layer cloud. Worlds store `cloud_jul/jan` (%) and `sunshine_jul/jan` (h/day). On Earth (tools/earth_check.py, vs ICOADS ship reports and CRU sunshine; world dc3732, screenshots in `docs/review/clouds/`): Sahara 17%, Southern Ocean 82%, the Sc decks 64–70%, the ITCZ 66–69% (observed ~70–80%); continental summers come out too clear and the wet tropics too gloomy, following the rain.
-- **Rain:**
-  - Moisture evaporates from the sea (Clausius–Clapeyron) and is carried by the winds.
-  - It rains out three ways: as **orographic rain**, which gives wet windward slopes and **rain shadows**; as **convection**; and along storm tracks.
-  - The **ITCZ** is wet and the subtropics are dry. Land recycles part of its rain.
-- **Classification:** **Köppen** classes (Peel 2007 rules) from monthly temperature and rain. **Biomes** from a Whittaker-style lookup.
-- **Water balance:**
-  - potential evaporation from sunshine and temperature (**Oudin**);
-  - actual evaporation from the **Budyko** curve (Fu's form);
-  - runoff = rain − actual evaporation.
-- **Ice sheets** (main run, `earth.ice_sheets`): the average extent over the ice-age cycles, in balance with the current mountains (ice answers its climate in ~10 kyr, far inside a 4 Myr step):
-  - ice holds where the summer on it stays near freezing and snowfall beats the year's degree-day melt (~25 mm/yr on a polar plateau, ~100 on a sheet's margin; a dry tropical plateau stays bare);
-  - existing ice partly keeps itself (its white top, ¾ of its height), so a cap outlives its climate a little but follows its range as it moves or wears down;
-  - cold polar desert is covered by ice flowing in from a snowier part of the same cold region;
-  - thickness is a steady (Nye) profile from the edge: ~330 m at the margin, ~1.9 km 300 km in, up to 4 km; a little thinner for dry sheets and warm (soft) ice.
+- **Hotspot vents:** a plume is fixed in the mantle while the plate slides over it. It opens a new vent every 1.5 flexural wavelengths of plate motion (60–150 km; ~100 km on Hawaii-like 90 Myr floor, set by the plate's elastic thickness). A vent is fed while over the plume, then carried off, so a plume leaves a chain, youngest over it (Hawaii → Midway → Emperor seamounts). Each vent goes onto the grid as a 25 km Gaussian cone (separate islands at L7–8, a blur at L6). Height is limited by the plate's age (older, thicker plates carry taller volcanoes; at most Mauna Kea's 4.2 km, 3.5 km on a continent); the rest spreads as an apron below −2 km. A new plume's head floods ~300 km for 6 Myr (flood basalts).
+- **Arc volcanoes:** one per ~120 km of active subduction arc, ~2000 km³ each, active ~8 Myr (Fuji, Rainier, the Andes).
+- **Ageing:** a dead volcano sinks with its sea floor (and with the plume swell decaying behind it). Its part above the sea erodes (~10 Myr e-folding at 1500 mm/yr of rain, faster when wetter) until the waves plane it off. In water ≥ 23.5 °C (`reef_temp`) a reef keeps up with the sinking: **fringing reef → barrier reef → atoll** once the volcano is gone. Carried below 22 °C the reef drowns and the flat top sinks as a **guyot**.
+
+**Outputs:** the full volcano table in `runs/<id>/volcanoes.json.gz`, in each checkpoint and in each world (`meta.volcanoes`, columns `meta.volcano_columns`); the viewer's Hotspots and Volcanoes overlays; drawn individually by the zoom (§2.13).
+
+**Known limits:** hotspot islands are sub-cell, so at L6 (and often L7) the globe shows a bank, not land (PW-117, needs a decision); continental plume heads pile 7–16 km of flood basalt (Deccan ~2 km; PW-133).
+
+![Island chain](review/volcanoes/after_world_a099c6_overlay.jpg)
+*World a099c6 (L7 water world, seed 13, 400 Myr): volcano overlay with hotspot chains (orange), arc volcanoes (red) and atolls (cyan).*
+
+### 2.4 Crust, rock record and landform classes
+
+**Crust** (`crust.py`, `isostasy.py`):
+- **Building crust:** subduction grows **volcanic arcs**; collisions stack crust, and over-thick crust **flows** outward, widening plateaus (Tibet); rifts thin continents (down to 22 km), and the crust they lose floors the opening rift as a continuous belt of 12–18 km margin crust; hotspots build islands and flood basalts under a ~1 km swell.
+- **Crust budget:** a "thermostat" steers arc growth toward a target continental volume (40% of the surface × 37 km) and subduction erosion toward the target area.
+- **Coherence** (PW-108): a one-cell inlet of ocean floor nearly ringed by its plate's continent becomes (thin) continent, with crust flowing in from around it; a thin (< 20 km) shred of continent nearly ringed by ocean becomes ocean floor. Without it, cells flipped between continent and deep sea every few Myr (`tools/churn.py` measures it).
+- **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy). Continents stand 250 m plus 150 m per km of crust beyond 35 km. Ocean floor sinks as it cools: 2600 + 345·√age m (the half-space cooling law), at most 6400 m deep. Sediment is light (2.1 g/cm³, compacting to 2.6 with depth), so filling deep water takes ~3× its depth in sediment, as on Earth. Cover buried below 18 km becomes basement.
+
+**Rocks** (`surface.py`). Each cell has a basement rock and a sediment cover:
+
+| Kind | Rocks (erodibility) |
+|---|---|
+| Basement | ocean crust (1.0), hotspot basalt (1.6), arc (0.8), sediment-born continent (1.5), orogen (0.6), craton (0.3), **granite** (0.5: an arc exhumed 4 km after it went quiet, like the Sierra Nevada) |
+| Cover | limestone (1.0, reefs and shelves), sandstone (1.2), shale (1.6), evaporite (3.0: salt from hot closed lakes and sabkhas), coal (1.6: warm vegetated swamps), flood basalt (1.0), tuff (0.9: 10% of a continental arc's new crust erupts as ash) |
+| Strata only | dolomite (0.7: limestone under ≥ 1 km of strata), quartzite (0.4: sandstone folded in crust > 45 km thick) |
+
+**Surface rock** (`surface_rock`, what the viewer and zoom show) is the exposed stratum from the record: veneers under 20 m are looked through, and where less than 50 m of cover is left the basement shows. Erosion still uses the well-mixed cover's erodibility (letting caprock protect soft rock in the run is PW-136 option C).
+
+**The geological record** (`tectonics/record.py`, PW-006/007/008) rides with the crust on the plates, so a margin carried across an ocean still knows when it rifted:
+- **Strata:** the cover's top 3 layers in order, each a rock, a thickness and when it last grew. They always add up to the cover. Net deposits go on top (sandstone on land, shale at sea, plus limestone, evaporite, coal, flood basalt, tuff); erosion takes the top, burial the bottom. A new rock or a 20 Myr pause starts a new layer (a still-growing top under 50 m merges into the next deposit instead); a folding closes the top layer; a full stack merges its bottom two.
+- **History:** when the crust was last rifted and how much it was stretched (ln β), when it was last folded and how hard, how much cover was folded, how far it has been exhumed, and when it was last under ice. Refolding within 50 Myr continues the same episode. A stratum is folded if it last grew before the last folding; younger ones lie flat on the unconformity.
+- Only checkpoints keep the full record; keyframes keep the landform layers below.
+
+**Landform classes** (`landform.py`, PW-009) are read from the record and the setting at every keyframe. A cell takes the first rule that holds, in this order; then one majority-filter pass smooths the areal classes:
+
+| id | Class | Rule (Earth analogue) | `landform_age` |
+|---|---|---|---|
+| 11 | volcanic arc | land within a cell of an arc volcano active or dead ≤ 20 Myr (Cascades) | youngest volcano's age |
+| 12 | hotspot | oceanic land with a vent above the sea, or hotspot rock ≤ 100 Myr old (Hawaii) | vent's age |
+| 4 | fault-block rift | continent stretched (ln β ≥ 0.2) in the last 20 Myr (East Africa, Basin and Range) | since rifting |
+| 5 | great escarpment | rifted 8–400 Myr ago, ≥ 300 m high, at the distance the scarp has retreated to from a passive rifted coast: ~200 km × (1 − e^(−age/150 Myr)) (Drakensberg, Western Ghats) | since rifting |
+| 3 | fold-and-thrust belt | ≥ 0.2 km of cover folded at the last folding (Zagros, Appalachian Valley and Ridge) | since folding |
+| 7 | lava plateau | ≥ 0.2 km of flood basalt on top (Deccan) | since eruption |
+| 9 | dune field | sand still piling up (top grew ≤ 20 Myr ago, or a sand-rich cover), hyper-arid: aridity index P/PET < 0.12 (Rub' al Khali) | top stratum |
+| 8 | karst | ≥ 0.4 km of limestone/dolomite on top, > 700 mm/yr, mean above 0 °C (Guilin, Yucatán) | top stratum |
+| 6 | caprock plateau / cuestas | flat, exposed hard rock 0.03–1.5 km thick over soft (Colorado Plateau, Niagara) | top stratum |
+| 10 | coastal plain | < 300 m, young (≤ 30 Myr) flat sandstone/shale, ≤ 400 km from the coast (US Gulf coast) | top stratum |
+| 2 | shield | old (≥ 500 Myr) craton or granite with no stratum > 20 m left, not folded for 300 Myr nor rifted for 100 (Canadian Shield) | basement age |
+| 1 | hills | any other land (the zoom's graded hills and mountains) | — |
+
+With each class come the zoom's parameters: the exposed stratum and its thickness, the rock under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed), the fold wavelength (1.5 × the folded pile + 2 km, 3–30 km), the stretching of the last rifting (`rift_strain`) and the time since the cell was last under ice (`glaciated_myr`).
+
+![Landform classes](review/landforms/world_800c99_landforms_map.png)
+*World 800c99 (L7, 408 Myr), landform layer with the share of land per class: hills 62%, fold belts 12%, caprock 7%, dunes 6%, arcs 5%, coastal plain 4%, shield 3%.*
+
+**Outputs:** layers `rock`, `surface_rock`, `sediment_cover`, `crust_thickness`, and the landform layers `landform`, `landform_age`, `strata_top`, `strata_top_km`, `strata_next`, `strata_dip`, `fold_wavelength`, `rift_strain`, `glaciated_myr`.
+
+**Known limits:** carbonates rarely reach the surface (karst 0.3–0.4% of land; Earth ~10%; PW-130); caprock is recorded near-flat, so the zoom rarely makes cuestas (PW-147, PW-175); fold strike is guessed, not recorded (PW-165); rifted margins have no flank uplift, so few escarpments stand high (PW-135); the record flickers frame to frame as the grid resamples plates (PW-134); compaction isn't remembered after uplift (PW-049); the Earth world has no record, so no landforms (PW-132).
+
+### 2.5 Surface erosion and sediment (`surface.py`, `tectonics/earth.py`)
+
+**What it does:** wears the land down every 2 Myr step and puts the material somewhere.
+
+- **Hillslope diffusion** smooths relief (soil creep).
+- **Weathering** lowers land toward a base level (200 m on continents), faster on high ground.
+- **Stream-power incision** cuts valleys at a rate ∝ √(water flow) × the drop to the next cell, where the flow is the runoff gathered from upstream. It uses Braun & Willett's implicit scheme, stable at 2 Myr steps.
+- Erosion is scaled by rain ((P/800 mm)^0.8, clipped 0.1–2.5), ×3 under temperate (wet-based) glaciers, ×0.3 under cold ice, and is faster on bare wet ground than under vegetation.
+- **Deposition** follows the drainage (§2.9): pits, lakes and floodplains keep a share; deltas fill to +2 m and shelves to −60 m; the rest spreads over the deep sea floor (~1000 km) or is trapped in trenches, where half is scraped onto the overriding plate.
+- **Chemical and biological deposits:** reefs (limestone, up to 200 m/Myr in warm shallow water), evaporites (closed lakes and pans above 10 °C, hot dry coasts), coal (warm wet vegetated lowlands). Desert winds sort loose cover into sand where rain is under 200 mm/yr.
+- **Weathering draws down CO₂**, closing the loop with climate.
+
+**Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
+
+**Known limits:** generated worlds lose their closed basins over time (~4% of land drains inland vs ~20% on Earth; PW-054); giant open lakes don't cut their outlets down (PW-055).
+
+### 2.6 Climate (`climate.py`)
+
+**What it does:** given terrain, ice, tilt and a global temperature offset, produces a steady-state climate per half-year (April–September, October–March), from which monthly values are rebuilt as sinusoids. It is a **diagnostic** model, a chain of physically motivated maps and relaxations, not a general circulation model. It runs every 4 Myr in a run and once (twice with erosion) per world, in about a second at L6.
+
+| Piece | Rule (real-world analogue) |
+|---|---|
+| **Temperature** | An energy-balance curve by latitude with polar amplification (equator 27.8 + 0.5·dT, pole −10.4 + 1.5·dT °C); air cools 6.5 °C/km with height (the **lapse rate**); seasons scale with tilt. **Continentality** comes from carrying air temperature along the seasonal winds, so interiors swing and windward coasts stay mild. Big polar ice sheets are up to 10 °C colder than bare ground (albedo, cold air pooling). |
+| **Winds** | The three-cell pattern (**Hadley / Ferrel / polar**: trade winds, westerlies, polar easterlies), shifted with the season; **monsoons** from land–sea pressure contrasts; ground above 1.5 km turns the wind along its slope. |
+| **Jet stream** | From the **thermal-wind** relation: fastest where the north–south temperature gradient is sharpest. Storm tracks follow it and drive frontal rain and waves. |
+| **Rain** | Moisture evaporates from the sea (Clausius–Clapeyron: warm air holds more) and is carried by the winds. It rains out as **orographic** rain (wet windward slopes, **rain shadows** behind), as **convection** (the **ITCZ**, monsoon summers) and along storm tracks; land recycles part of its rain. The global mean is renormalised to 1000 mm/yr × e^(0.03·dT), so absolute wetness is set by that, not by the physics. |
+| **Water balance** | Potential evaporation from sunshine and temperature (**Oudin**); actual evaporation from the **Budyko** curve (Fu's form); runoff = rain − actual evaporation (~40% of the rain on Earth's land). |
+| **Humidity** | Dew point and relative humidity per half-year from the rain model's vapour; dry air keeps a background of vapour mixed in from around it, so Delhi's and the Sahara's January air holds ~30–45% (PW-151). |
+| **Clouds and sunshine** | Four cloud kinds overlapping at random: deep cloud where it rains hard; layer cloud along the storm tracks; low sea cloud, more over cold water, with **stratocumulus decks** where sinking air meets cool upwelling water (California, Peru, Namibia); land cloud from humidity and fair-weather cumulus, cleared under the subtropical highs (deserts). **Sunshine** (h/day) = day length × the clear share, with showers costing less sunshine than layer cloud. Clouds are diagnostic: they don't feed back on temperature (decided, PW-163). |
+| **Classification** | **Köppen** classes (Peel 2007 rules) from monthly temperature and rain; **biomes** from a Whittaker-style temperature–rain lookup. |
+
+**Parameters:** per run `tilt` (23.4°), `climate_offset` (0 °C), `climate_drift` (3 °C over 40 Myr), `co2_sensitivity` (3 °C), `ice_albedo` (1.5 °C per 3% of the planet iced), `ice_summer_temp` (1 °C), `climate_every` (4 Myr). The run's global temperature reaches a world as `dT` = global mean − 14.5 °C. Internal knobs (rain normalisation, seasonal swing, monsoon, upwelling, ~20 cloud parameters) are in `climate.TUNE`, not exposed on the CLI.
+
+**Global temperature over a run** (`earth.py`) combines a slow random drift, CO₂ (sources: new sea floor and arcs; sink: weathering, faster when warm and wet) and ice-albedo.
+
+**Outputs (worlds):** `temperature`, `precipitation` and their `_jul`/`_jan` versions, `climate` (Köppen), `biome`, `warm_month`, `cold_month`, `runoff`, `evaporation`, `pet`, `dewpoint_jul/jan`, `humidity_jul/jan`, `cloud_jul/jan`, `sunshine_jul/jan`, `wind_e/n` (annual, July, January) and `jet_e/n`. "July" is the warm half in the north and the cold half in the south. Runs store annual temperature, rain, climate, wind and jet per keyframe.
 
 ![Köppen climate classes](overview/koppen.jpg)
 *World 7c5adf (Earth-like A, 976 Myr), Köppen classes.*
 
+**Known limits:** moisture transport between basins and across land (PW-013 epic, PW-014, PW-015); winter maritime air doesn't reach far enough inland (PW-026); rain patchy on flats (PW-019); East Antarctica ~10 °C too warm and bare polar lowland summers too warm (PW-039, PW-112); the jet is broad and zonal (PW-042); clouds: summer continents too clear, wet tropics too gloomy (PW-162). No day-scale weather (PW-156).
+
+### 2.7 Ocean: currents, SST, salinity, overturning (`climate.py`, `ocean.py`)
+
+- **Wind-driven gyres:** a **Stommel** streamfunction per basin, solved by over-relaxation, gives closed gyres and fast **western boundary currents** (Gulf Stream, Kuroshio). Unbroken latitude bands get a **circumpolar current**.
+- **Sea-surface temperature (SST)** is carried along the currents, with **coastal and equatorial upwelling** of cold water.
+- **Overturning** (`ocean.py`, solved on the level-5 grid):
+  - **Salinity** from evaporation minus rain, river mouths, sea-ice brine and meltwater.
+  - **Density** from temperature and salinity.
+  - Deep water **sinks** where the winter sea is densest, poleward of 50° (Stommel's flow law).
+  - The replacement inflow follows the surface currents, like the **AMOC**'s North Atlantic Drift, and warms the coasts it passes (a milder Norway).
+  - There is no deep ocean: the deep return flow the viewer draws is a **schematic** route.
+
+**Outputs (worlds):** `sst`, `sst_jul`, `sst_jan` (°C), `salinity` (psu, annual), `sinking` (Sv per cell), `current_e/n` (annual); `meta.overturning` with the total, north and south strength in Sv, the sinking sites and the schematic paths. On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1) seas and the Ross (1.9) and Weddell (0.6) seas; none in the North Pacific. Generated worlds often show ~30 Sv (showcase a08983: 32.8 Sv).
+
 ![Model currents on Earth](overview/earth_currents.jpg)
-*The model's temperature and currents on real Earth terrain (world 2f38e3). Gyres, the Gulf Stream, the Kuroshio and the Antarctic Circumpolar Current emerge.*
+*The model's currents and sea temperature on real Earth terrain (an earlier Earth world). Gyres, the Gulf Stream, the Kuroshio and the Antarctic Circumpolar Current emerge.*
 
 ![Overturning on Earth](overview/earth_overturning.jpg)
-*Overturning on Earth (from `docs/review/ocean/`). Top: sinking in the Nordic and Labrador seas and off Antarctica, and the inflow riding the Gulf Stream. Bottom: the warming it adds.*
+*Overturning on Earth (`docs/review/ocean/`). Top: sinking in the Nordic and Labrador seas and off Antarctica, the inflow riding the Gulf Stream. Bottom: the warming it adds.*
 
-## 5. Rivers and lakes (`hydrology.py`)
+**Known limits:** a spin-up rule still decides the Atlantic-on / Pacific-off state (PW-016); Antarctic sinking too weak (PW-017); NE Canada and Labrador too warm (PW-038); the Gulf Stream separates too far north (PW-041); Mediterranean too fresh (PW-152); ocean layers aren't in run keyframes (PW-153).
 
-**Routing:**
-- Water drains by **priority-flood** (Barnes 2014): from the sea, cells are visited lowest first. Every cell gets one downstream neighbour, and every pit fills to its spill level.
-- **Flow accumulation** sums runoff downstream.
+### 2.8 Ice and sea level (`tectonics/earth.py`)
 
-**Lakes** are **fill-and-spill** with evaporation:
-0. Hollows less than 20 m deep are filled first: at ~110 km a cell's height is a mean, and channels too small to see drain them. This also holds inside a basin, so dips in a flat floor join the floor instead of becoming pits of their own. A wide hollow must also fall at least 0.1 m per km (a big lowland river's gradient) from its rim to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross and drains too: a hollow of 1 million km^2 needs ~56 m, one of 4 million km^2 ~113 m (`hydrology.MIN_SLOPE`).
-1. Water rises in all basins at once, and basins merge as they meet.
-2. A basin grows only while its inflow beats the evaporation off its surface.
-3. How it ends:
-   - It reaches its spill point: an **open, fresh lake**, and the river flows on.
-   - It stops first: a **closed salt lake** (the Caspian, Great Salt Lake).
-   - It is a dry pit: a **salt pan** (playa).
+**Ice sheets in the main run** (PW-102 rule, `earth.ice_sheets`): the run's ice is the **average extent over the ice-age cycles**, in balance with the current mountains (real ice answers its climate in ~10 kyr, far inside a 4 Myr step).
+- Ice holds where the summer on it stays below `ice_summer_temp` (1 °C) and snowfall beats the year's degree-day melt (~25 mm/yr suffices on a cold polar plateau, ~100 mm on a sheet's margin; a dry tropical plateau stays bare).
+- Existing ice partly keeps itself (its own height and whiteness count three-quarters), so a cap outlives its climate a little but follows its range as it moves or wears down.
+- Cold polar desert is covered by ice flowing in from a snowier part of the same cold region (PW-032).
+- Thickness is a steady **Nye profile** from the edge: ~330 m at the margin, ~1.9 km 300 km in, at most 4 km; a little thinner for warm (soft) ice.
 
-On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth: ~18%).
+**Sea level** is the sum of:
+- **the ocean basins:** young, shallow ocean floor displaces water and raises the sea. The basins' depth follows the sea floor over `ridge_time` = 30 Myr, compared with a slowly learning baseline, and levels off smoothly toward ±250 m (PW-053). The starting ocean has the ages of a steadily spreading one (mean 60 Myr), so the first breakup doesn't flood the planet;
+- **land ice:** −0.9 × ice volume / ocean area;
+- **mantle heat:** only when `heat_start` ≠ 1.
 
-## 6. Coasts: waves, tides, deltas (`coast.py`)
+PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–130 m (sd) and removed the clamp hits.
 
-- **Wave power** (kW per m of coast):
-  - 16 rays are traced upwind from each sea cell.
-  - Walking back in, the sea grows with **fetch** (open water under the wind) and storm duration (**JONSWAP**), up to a fully developed **Pierson–Moskowitz** sea.
-  - It then travels on as swell, which decays slowly and loses energy over shelves. Land and sea ice stop it.
-- **Tide range** is a three-factor proxy:
-  - connection to the open ocean, which shallow straits choke;
-  - **shelf resonance**, strongest at about a quarter tidal wavelength;
-  - **funnelling** into narrowing bays.
-- **Delta type** (Galloway's triangle) compares three fluxes at big river mouths:
-  - the river's sediment (**BQART**);
-  - wave-driven longshore transport (**CERC**);
-  - the **tidal prism**.
+**Known limits:** land ice can lower the sea by 300+ m on some seeds, ~4× Antarctica (PW-190); glacial isostasy is missing (PW-189); oceans age when plates are few (PW-051, PW-191).
 
-  Their shares give river, wave and tide weights, and the zoom shapes the delta from them.
+### 2.9 Hydrology: rivers, lakes, deltas (`hydrology.py`, `kernels.py`)
+
+**Routing:** water drains by **priority-flood** (Barnes 2014): from the sea, cells are visited lowest first, every cell gets one downstream neighbour, and every pit fills to its spill level. **Flow accumulation** sums runoff downstream; `flow` × cell area gives discharge in m³/s.
+
+**Lakes** are **fill-and-spill with evaporation**:
+1. Hollows under 20 m deep are filled first (at ~55–110 km a cell's height is a mean, and channels too small to see drain them). A wide hollow must also fall at least 0.1 m per km from rim to middle, or it is a plain that rivers cross (`MIN_SLOPE`; 1 million km² needs ~56 m).
+2. Water rises in all basins at once, merging as they meet; a basin grows only while its inflow beats the evaporation off its surface.
+3. It ends as an **open, fresh lake** (reaches its spill point, the river flows on), a **closed salt lake** (stops first: Caspian, Great Salt Lake), or a **salt pan** (playa).
+
+On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, and ~22% of land drains inland (Earth ~18%).
+
+**Deltas:** big river mouths (≥ 1500 m³/s) get a delta type from Galloway's triangle (§2.10), drawn by the zoom.
+
+**Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan). Runs store `lake_depth` instead of `lake_level`.
+
+**Known limits:** giant open lakes don't drain by cutting their outlets (PW-055); no seasonal Arctic flow (PW-028); run and world lakes disagree (PW-057); the Nile ends in a pit on Earth (PW-122).
+
+### 2.10 Coasts: waves, tides, delta types (`coast.py`)
+
+- **Wave power** (kW per m of coast): rays go out in 16 directions from each sea cell, up to 6000 km or the first land or sea ice. Walking back in, the sea grows under the wind along each stretch with **fetch** and storm duration (**JONSWAP**), up to a fully developed **Pierson–Moskowitz** sea, then travels on as slowly decaying **swell** that loses energy over shelves.
+- **Tide range** (m) is a three-factor proxy: connection to the open ocean (shallow straits choke it), **shelf resonance** (strongest at about a quarter tidal wavelength), and **funnelling** into narrowing bays.
+- **Delta type** (Galloway's triangle) compares three fluxes at big mouths: the river's sediment (**BQART**), wave-driven longshore transport (**CERC**) and the **tidal prism**. Their shares are the river, wave and tide weights; a weight ≥ 0.5 names the type, else "mixed".
+
+`tools/coast_check.py` on today's Earth: waves within 2× at 25 of 30 coasts, tides within 2× at 21 of 23.
 
 ![Wave power](overview/wave_power.jpg)
 *Wave power on 7c5adf: the westerly storm belts and their swell, with calm water in their lee.*
 
-## 7. Runs, keyframes, checkpoints, worlds (`timeline.py`, `store.py`, `world.py`)
+**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); Fundy too small, no amphidromic points, Arctic tides too big (PW-076, PW-106); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
 
-**`planet simulate`** writes `runs/<id>/`:
-- **Keyframes** every 4 Myr: ~30 layers (the landform class and its parameters among them) as small integers, one `.bin` per layer holding every frame. The viewer fetches only what it draws.
-- **Checkpoints** of the full state every 100 Myr (~23 MB at level 6).
-- **Metadata:** `run.json` (settings, events, stats), a readable `run.txt`, and the code version (git commit plus a hash of `planet/**/*.py`).
+### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
-**`planet slice <run> --at T`** turns a moment into a **world**:
-1. Replay from the nearest checkpoint.
-2. Check the result against the keyframe, and refuse to save on a mismatch (the code changed since the run).
-3. `world.finish`:
-   - add sub-cell texture;
-   - climate, then 12 erosion passes, then climate again;
-   - rivers and lakes;
-   - biomes;
-   - waves and tides;
-   - July / January temperature and rain (`world.seasons`);
-   - the sea (temperature, salinity, sinking; the overturning in the meta), humidity, cloud cover and sunshine.
+A **world** is one moment, finished. Three ways to get one:
+- **`planet slice <run> --at T`** (or `--at auto`: the keyframe after 300 Myr whose land %, largest landmass and landmass count are jointly nearest the run's medians). It replays the simulation from the nearest checkpoint, checks the result against the stored keyframe and refuses to save on a mismatch (the code changed since the run) unless `--force`.
+- **The viewer's Zoom button** builds the world straight from the keyframe nearest that time (`timeline.world_from_frame`, seconds, exactly what the viewer shows), reusing a world already made at that time.
+- **`planet generate`** makes an unsimulated world from cartoon plates (no texture, ice, record or landforms; it can't be zoomed). **`tools/earth_world.py`** runs real Earth terrain through the same finishing, with observed climate alongside.
 
-The viewer's Zoom button instead builds the world straight from the keyframe in seconds. Worlds are `worlds/<id>.json` plus a `.txt` summary.
+**Finishing** (run-based worlds first get sub-cell texture in `timeline`):
+1. climate, then 12 erosion passes (strength 0.3 for slice and Zoom worlds, 1.0 for generate), then climate again;
+2. rivers and lakes;
+3. biomes;
+4. waves and tides;
+5. July / January temperature and rain (`world.seasons`);
+6. the sea (SST, salinity, sinking; the overturning in the meta), humidity, clouds and sunshine.
 
-Two other ways to get a world:
-- `tools/earth_world.py` runs real Earth terrain through the same pipeline and keeps observed climate alongside.
-- `planet generate` makes a quick, unsimulated world.
+**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~64 layers (§2.16); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
 
-## 8. The regional zoom (`zoom.py`)
+### 2.12 Highlights (`highlights.py`)
 
-A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by default, or 500 km at 1 km. It adds detail while keeping each coarse cell's mean. The passes:
+**What it does:** 28 detectors find 38 kinds of place worth a visit, in five categories (the viewer filters and colours by category):
 
-1. **Coastline:** coarse fields are interpolated onto the pixels, and a warped-noise coastline is drawn.
-2. **Relief:** noise is added, scaled by rock ruggedness (cratons smooth, orogens rough), then corrected back to each cell's coarse mean.
-3. **Deltas** form at mouths above 1500 m³/s, shaped continuously by the Galloway weights:
-   - **river:** levee-bound fingers (a bird's foot);
-   - **wave:** a smooth arc with barrier, lagoon and beach ridges;
-   - **tide:** funnel estuaries, creeks and flats.
-   Below the apex, **distributaries** split the flow.
-4. **Rivers and lakes:**
-   - Coarse rivers become meandering, carved valleys, and rivers entering at the edge bring their discharge.
-   - The streams are fed by the world's **runoff** (rain minus what the land evaporates), as its own rivers are (PW-180), so a hyper-arid zoom has no river it doesn't get from outside, and a savanna's streams carry ~1/5 of its rain. The landscape's shape (the grading below, creep, the landform classes' valleys) follows the rain-weighted drainage area instead: a desert's wadis are cut by rare floods that mean runoff doesn't measure.
-   - Lakes take the world's level and kind. Open lakes pass their water on; closed ones keep it.
-5. **Landscape pass:** 15 iterations of steady-state stream power (slope ∝ (rain-weighted drainage area)^−0.5, calibrated to the coarse heights). These **grade** rivers into smooth concave profiles.
-   - **Glaciers** (`glaciers()`, PW-127) come from each pixel's own climate, by the main run's ice rule (`earth.ice_sheets`): ice accumulates where the pixel's summer, lapse-corrected to its own height (the world's ice-surface temperatures undone to the bare ground, then the coarse ice's own cooling put back), is below `ice_summer_temp` and enough snow falls to outlast the melt; cold ground joined to such a zone is ice too. The surplus is routed down the valleys as tongues (~0.8 km wide at 0.1 km³/yr, at most 3 km³/yr and 100 km) that melt as bare ice on the way down, so glaciers reach below the snowline only as narrow tongues. A coarse ice sheet stays one sheet (its own cooling keeps its pixels cold) with outlet tongues at its margin. The outline is drawn on the target surface (lakes avoid it, the landscape pass smooths under it) and redrawn on the finished valleys; the `ice` layer is the coarse thickness in the zones, else a thickness from the flux, and the ice-sheet biome is exactly the glaciers.
-6. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is drawn as its own edifice: a Gaussian shield (with rift-zone lobes, and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones are lowered as the run says (`top_m`) and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon. Near hotspot vents on the sea floor the terrain is replaced by the vents' floor plus their cones, so the sea between two vents is sea even where the coarse cell is land. Young volcanoes keep their smooth cone through the landscape pass; older ones are carved by it.
-7. **Landform classes** (`zoom_landforms.py`): each coarse cell's landform class shapes the finished landscape through a class-dispatch registry (`SYNTH`: per class, `target` / `relief` / `strata` hooks, blended by smooth class weights, so there are no cell seams):
-   - **relief** around the drainage: each pixel's height above the first channel below it is reshaped into flat interfluves over steep valley walls (channels and every flow path kept);
-   - **strata** as benches and cliffs (`bench_map`): hard beds over soft, horizontal or tilted by the dip into cuestas. Their levels come from the class's whole connected zone on the coarse grid (`zone_stats`, PW-148), not from the zoom, so overlapping zooms put each bench at the same height. A river crossing a cliff falls over it; a valley cut below a level makes a re-entrant; a hill above one is a mesa.
-   - **Great escarpment:** one step ~0.8 e* high below the escarpment zone's level e* (its cells' median within ~200 km): a lowland, a crenulated scarp, the plateau above. A designed reach crossing it takes its main fall at the scarp, the river on the plateau down to the lip.
-   - **Caprock:** stepped benches, mesas and buttes, canyons 1.5× deeper; cuestas where the strata dip.
-   - **Lava plateau:** a flat top over stair-stepped valley sides.
-   - **Fold-and-thrust belt:** parallel folds a fold wavelength apart, across the shortening (strike from the thickened crust, the high ground and any converging boundary). Young belts are whaleback anticlines over synclinal valleys (Zagros); old ones are worn to hogbacks of the hard beds, closing round plunging fold noses (Valley and Ridge). The target carries the folds too, so the drainage is trellised, and big rivers cross the ridges in water gaps.
-   - **Fault-block rift:** tilted blocks 10–30 km wide bounded by faults along the rift's band of cells: a steep scarp, a gentle back-tilt, a flat sediment-filled half-graben, lakes on its floor where the water balance fills them. The throw comes from the stretching (`rift_strain`, ln β) and the age; the blocks' facing flips between ~200 km patches (accommodation zones).
-   - **Shield:** a flattened plain with granite domes and inselbergs (steep, round-topped, 1–4 km across, 100–400 m); where the record says it was under ice lately (`glaciated_myr`), the domes are ground down and rock basins hold lakes.
-   - The structures' strikes and phases come from planet-fixed patches (a jittered lattice, each patch's strike read from the coarse cells around it), so overlapping zooms agree.
-   - **Karst:** small streams (< 30 m³/s) sink underground, leaving dry valleys, and resurge at springs where they leave it; temperate karst is a plateau pocked with dolines (the big ones the pixels resolve) and poljes (flat-floored closed basins 5–25 km long); in the wet tropics a corrosion plain with steep towers 60–250 m high (Guilin). Pits that reach the water table (the first flowing river down the drainage) hold ponds and flooded poljes. Dolomite dissolves half as readily as limestone; nothing is deeper than the carbonate is thick.
-   - **Dune field:** dunes on top of the land (hills stick out; not on steep slopes nor across rivers), their type from the seasons' sand drift (Fryberger's RDP/DP from the July and January winds): transverse ridges and, with little sand, barchans where one wind blows all year; linear dunes along the resultant where two winds cross; star dunes where they reverse. 1–3 km apart and 4–8% of that high with more sand (drawn at least 5 px apart). Cold or less arid (higher P/PET) ergs are lower; their wadis end in the sand.
-   - **Coastal plain:** a smoothed plain sloping to the sea, its rivers wandering over a few metres of micro-relief; low cuestas facing inland where its beds dip seaward over soft ones; on coasts with strong waves and small tides (not at deltas, which have their own) a barrier island with inlets and a lagoon behind it; marshes on its lowest wet ground near the sea (the `wetland` layer).
-   - Sills left across a flow path are cut through as gaps a few pixels wide (not across a rift's or scoured shield's closed basins); falls over the classes' cliffs retreat into gorges and get plunge pools; each coarse cell's mean is restored. Closed basins hold water by their water balance (PW-167): the runoff in against the open water's evaporation, upstream basins first: a full lake spills into the next, else a closed lake below the spill or a dry flat where the streams end (full ones under 5 km² silt up). Cliffs are anti-aliased (at least ~1 px wide; benches narrower than ~2 px fade out).
-8. **Knickpoint waterfalls:**
-   - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
-   - Heights are scaled so the plateau above never rises over the coarse ground (or a landform's plateau, at an escarpment). Big rivers get ~50–150 m falls; at an escarpment ~100–400 m.
-   - The lip's rock: a top stratum ≥ 0.5 km thick holds it by itself; a thinner one is helped by a harder rock under it. Soft rock under the lip lets the gorge retreat faster (undercutting, as at Niagara).
-   - The river is held at this staircase, between valley sides a few km wide, so it reaches its lips and doesn't run perched above the land beside it.
-   - `stats.falls` in `zoom.json` lists every fall ≥ 30 m on a stream of ≥ 20 m³/s (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`, with its gorge, cascades and plunge pool where it has them; `falls_count` counts those ≥ 30 and ≥ 100 m); `stats.waterfalls` keeps the biggest 5 by power for the panel. An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall). The viewer draws them as its Waterfalls overlay (the preview image has no marks).
+| Category | Kinds |
+|---|---|
+| landscape | highest peak (and highest ice-free peak), mountain range, plateau, canyon, fjords, rain shadow, most varied 1000 km square, continent, island, archipelago |
+| water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast |
+| climate | desert, rainforest, ice sheet, Mediterranean "wine country", hottest, coldest, wettest, driest |
+| travel | beach destination, ski country, mild-winter retreat, year-round resort (beach and skiing within 400 km) |
+| geology | volcanic arc, hotspot islands, rift, deepest trench |
 
-Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class and the `wetland` marshes among them) and its stats (`landforms`: the share of land each synthesised class shapes; `landform_basins`: the closed basins by water balance; `landform_overlay`: dune types, dolines, poljes, towers, ponds, sinking streams and springs).
+Each scores as kind priority × quality (0.3–1). Travel picks use each hemisphere's own summer and winter and say why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf". Results are cached in `worlds/highlights/<id>.json`; `--zoom N` pre-makes zooms of the top N at a suggested size.
+
+![Travel highlights](review/ocean/highlights_67317b_travel_filter.jpg)
+*World 67317b, highlights filtered to the travel category.*
+
+**Known limits:** canyons are weak at cell scale (PW-079); no island-chain or atoll highlight yet (PW-119); mild-winter sunshine proxy (PW-164).
+
+### 2.13 Regional zoom (`zoom.py`, `zoom_landforms.py`, `zoom_volcanoes.py`, `zoom_kernels.py`)
+
+**What it does:** turns coarse cells into a 500×500 px landscape. The CLI default is 1000 km at 2 km/px; the viewer offers 250, 500, 1000 and 2000 km (0.5–4 km/px). Every coarse cell's mean height is kept, and all noise is sampled at 3D planet positions, so overlapping zooms of one world agree. A zoom needs a world with rock and climate layers (sliced from a run). It takes 1–7 s.
+
+**The passes, in order:**
+1. **Interpolate** the coarse fields onto pixels (height, temperature, rain, runoff, ice, ruggedness).
+2. **Delta plains** at mouths ≥ 1500 m³/s, shaped continuously by the Galloway weights: *river* → levee-bound fingers (a bird's foot); *wave* → a smooth arc with barrier, lagoon and beach ridges; *tide* → funnel estuaries, creeks and flats. Distributaries split the flow below the apex.
+3. **Coastline** from warped noise, with barriers, lagoons and coastal-plain barrier islands.
+4. **Relief noise** scaled by rock ruggedness (cratons smooth, orogens rough), then corrected back to each cell's mean.
+5. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is its own edifice: a Gaussian shield with rift-zone lobes (and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones stand at the run's summit height and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon.
+6. **Landform targets** for each class (below).
+7. **Rivers:** coarse rivers become valleys, rivers entering at the edge bring their discharge, and **knickpoint waterfalls** are designed where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s): a resistant lip, a plunge pool and a gorge retreated upstream. The lip's rock comes from the strata: a thick top stratum holds it, a thin one needs harder rock under it, and soft rock beneath lets the gorge retreat faster (Niagara).
+8. **Glaciers, first outline; coarse lakes** take the world's level and kind.
+9. **Landscape pass:** 15 iterations of steady-state stream power that **grade** rivers into smooth concave profiles. Streams carry the world's **runoff** (PW-180), so a hyper-arid zoom has no river it doesn't get from outside; the landscape's shape follows rain-weighted drainage area, since desert wadis are cut by rare floods.
+10. **Glaciers** (PW-127) from each pixel's own climate by the main run's ice rule, lapse-corrected to the pixel's height; the surplus is routed down the valleys as tongues (~0.8 km wide at 0.1 km³/yr, at most 3 km³/yr and 100 km long) that melt on the way down. A coarse ice sheet stays one sheet with outlet tongues.
+11. **Creep**, then the **landform remap** (relief, shape, strata), sill cuts, gorges below landform falls.
+12. **Closed basins by water balance** (PW-167): runoff in against open-water evaporation, upstream first; a full lake spills into the next, else a closed lake or a dry flat.
+13. **Falls listed**, landform overlays (dunes, dolines, towers, springs), climate and biome on the fine terrain, marshes.
+
+**Landform synthesis** (PW-010/011/012): each class has hooks (`target`, `relief`, `shape`, `strata`, `basins`, `lakes`, `overlay`, `sinks`), blended by smooth class weights so there are no cell seams. Bench levels come from the class's whole connected zone on the coarse grid (PW-148), and structure strikes from planet-fixed patches, so overlapping zooms agree.
+
+| Class | What the zoom draws |
+|---|---|
+| great escarpment | a lowland, one crenulated scarp ~0.8 × the zone's height (200–1500 m), the plateau above; rivers take their main fall at the scarp |
+| caprock | stepped benches and cliffs of hard beds over soft, mesas and buttes; cuestas where the beds dip |
+| lava plateau | flat top over stair-stepped, deep valley sides (Deccan traps) |
+| fold-and-thrust belt | parallel folds a fold wavelength apart: whaleback anticlines when young (Zagros), hogbacks of the hard beds closing round plunging noses when old (Valley and Ridge); trellised drainage, water gaps |
+| fault-block rift | tilted blocks ~10–30 km wide: a steep fault scarp, a gentle back-tilt, a sediment-filled half-graben, lakes where the water balance fills them; throw from the stretching and age |
+| shield | a flattened plain with granite domes and inselbergs; recently glaciated shields have ground-down domes and rock-basin lakes |
+| karst | small streams sink underground and resurge at springs; temperate: dolines and poljes on a plateau; wet tropics: towers 60–250 m high (Guilin) |
+| dune field | dunes by the seasons' sand drift (Fryberger): transverse and barchan dunes with one wind, linear with two crossing winds, star dunes where winds reverse; 1–3 km apart |
+| coastal plain | a smoothed plain sloping to the sea, low inland-facing cuestas, barrier islands with lagoons on wave-dominated coasts, marshes |
+
+**Falls:** `stats.falls` in `zoom.json` lists every fall ≥ 30 m on a stream ≥ 20 m³/s (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`, with gorge, cascades and plunge pool); `stats.waterfalls` keeps the 5 biggest by power. The viewer draws them as the Waterfalls overlay.
+
+**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png`, `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland`. Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays.
+
+![Zoom with waterfalls](review/zoom/83e518_relief_fall.jpg)
+*Zoom 83e518 (500 km at 1 km, showcase world a08983): Waterfalls and Volcanoes overlays; the card shows a 745 m lip fall with a 4.2 km gorge.*
 
 ![Delta types](overview/zoom_deltas.jpg)
 *Delta types in three 600 km zooms of world 0f7abd: a bird's foot into a calm sea; a smooth wave-built coast; tidal funnels with 6.6 m tides.*
 
-![Waterfall zoom](overview/zoom_waterfall.jpg)
-*Zoom ecbe17 (500 km at 1 km), an older preview: white dots are falls (now the viewer's Waterfalls overlay); the biggest is 177 m at 38,700 m³/s, below an 18.5 km gorge.*
+More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
-## 9. The glacial time zoom (`timezoom.py`)
+**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); continental hotspots drawn as shields, not calderas (PW-118); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers, high lake-outlet ramps and undesigned drops (PW-123, PW-124, PW-125); snowline under coarse ice ~2–3 °C off (PW-159, PW-160); dune seams (PW-177); marshes only on coastal plains (PW-178); no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
 
-A separate, view-only simulation. Geology is frozen at one moment of a run (or at today's Earth), and ice sheets evolve for 1 Myr in 500-year steps (100 or 300 kyr from the viewer).
+### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
-- **Forcing:** **Milankovitch** cycles of obliquity, precession and eccentricity.
-- **Ice:** snow minus **positive-degree-day** melt. Flow uses the **shallow-ice approximation**.
-- **Bed and sea:** the bed sinks under the ice, marine ice calves, and sea level follows ice volume.
-- **Climate:** fully recomputed every 10 kyr and perturbed in between, with CO₂ feedback. Meltwater reaches the overturning.
+**What it does:** a separate, view-only simulation. Geology is frozen at one moment of a run (or today's Earth), and ice sheets evolve for 1 Myr (CLI default; the viewer offers 100, 300 or 1000 kyr, default 300) in 500-year steps, keeping a frame every 2 kyr. It never feeds back into the run (the finishing pass that will, PW-090/PW-091, is planned).
 
-The result is a run in kyr. The viewer shows it with an ice-thickness layer and a sea-level curve.
+- **Orbit (Milankovitch):** obliquity ±1.2° around the planet's tilt (41 kyr), precession (23 kyr) and eccentricity (100 and 405 kyr) set each latitude's monthly sunshine (Berger 1978), turned into a temperature anomaly.
+- **Ice:** monthly snow minus **positive-degree-day** melt; bright perennial snow feels less of a summer, bare ice more. Flow by the **shallow-ice approximation**.
+- **Bed and sea:** the bed sinks to 0.3 × the ice thickness over 3 kyr and rebounds after; floating ice breaks off and marine fronts calve; sea level falls by 0.9 × ice volume / ocean area, so coastlines and land bridges move.
+- **Climate:** fully recomputed every 10 kyr, blended and shifted in between; CO₂ drops as ice grows (~−2.5 °C at an Earth-glacial-sized ice volume) plus a small ice-albedo term; meltwater reaches the overturning.
 
-## 10. Highlights (`highlights.py`)
+**Parameters:** `--set` any `TZParams` field: `insol_k` (0.25 °C per W/m²), `obliquity_amp`, `co2_cool`, `ddf_snow/ice`, `iso_ratio`, `calving`, `phases=zero`; `baseline=obs` for Earth.
 
-Twenty-eight detectors look for places worth a visit:
+**Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
 
-- **Land:** peaks, ranges, plateaus, canyons, rifts, volcanic arcs, hotspot islands.
-- **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
-- **Climate:** "wine country", rain shadows, climate records.
-- **Variety:** the most varied 1000 km square.
-- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, sunny summer at sea level, a warm sea by its summer surface temperature, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf".
+**Known limits:** generated worlds glaciate too hard and Earth too weakly (PW-031, PW-033); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); the start-anchor cooling lingers (PW-035); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
 
-Each kind belongs to a category (landscape, water, climate, travel, geology), which the viewer filters by and colours the markers with. Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
+### 2.15 Viewer, server and CLI (`viewer/`, `server.py`, `api.py`, `__main__.py`)
 
-## 11. Viewer, server, CLI
+**CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `highlights`, `report` (re-render run.txt), `list`, `delete` (by id; `--orphans` clears zooms and caches of deleted worlds and unfinished runs), `show` (ASCII map of a world file), `serve`.
 
-- **CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `highlights`, `report`, `list`, `delete`, `show`, `serve`.
-- **Server** (`planet serve`, port 8765):
-  - `server.py` serves the viewer and the data folders.
-  - `api.py` adds `POST /api/zoom`, `POST /api/timezoom`, `GET /api/jobs/<id>` and `GET /api/highlights`.
-  - Jobs run one at a time, because the numba kernels aren't thread-safe.
-- **Globe** (`viewer/index.html`):
-  - three.js, one triangle fan per cell, with exaggerated relief on a globe or a flat map.
-  - Runs play as animations with events and plate arrows.
-  - Worlds add climate, biome, wave, tide, sea temperature, salinity, humidity, dew point, cloud and sunshine layers, and the overturning overlay. Ocean currents are drawn as streamlines (brighter = faster), so the gyres show as loops. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
-  - Provenance: a world shows the run and time it came from ('<run name> @ T Myr', linked), and its zooms; a run lists what was made from it (worlds with their zooms, time zooms) and ticks their times above the time slider. From the indexes (`worlds/index.json` carries `source_run`, `t_myr`).
-  - Clicking a cell offers "Zoom".
-  - The URL holds the state, e.g. `?world=7c5adf.json&layer=biome&mode=map`.
-- **`viewer/zoom.html`** is a 2D canvas, also embedded as the "Regional zoom" tab.
-  - Layers: relief (`preview.png`), height, hillshade, rivers, rock, climate, biome, landform, rain, temperature, ice (thickness), coarse cells. Glaciers are tinted blue-white on relief, height and hillshade (bare high ground is pale rock), and rivers aren't drawn on the ice (they start at the snout).
-  - Overlays (toggles): rivers and lakes on the map layers; **Waterfalls** (every listed fall, a ▼ sized by height, the biggest by power ringed) and **Volcanoes** (▲: active, extinct, or hollow below the sea; sized by height). Hovering a marker shows its card (a fall's height, discharge, kind, gorge, cascades, plunge pool; a volcano's form, kind, age, summit); clicking pins it; `?mark=fall:0` or `?mark=volcano:3` opens one.
+**Server** (`planet serve`, port 8765): serves the viewer and the data folders, handles `DELETE` of runs, worlds and zooms, and adds `POST /api/zoom`, `POST /api/timezoom`, `GET /api/jobs/<id>` and `GET /api/highlights`. Zoom and time-zoom jobs run one at a time; job state is lost on restart (PW-085).
+
+**Globe** (`viewer/index.html`, three.js): one triangle fan per cell, with exaggerated relief, on a globe or a flat map.
+- **Runs** play as animations with an event list, plate arrows, and a time slider tinted blue in cold eras (where a time zoom will show ice ages). Layers: elevation, plates, crust age, surface rock, rock type, crust thickness, sediment, rainfall, temperature, climate, landforms.
+- **Worlds** add biome, precipitation, wave power, tide range, sea temperature, salinity, humidity, dew point, cloud and sunshine. Temperature, rain, SST, humidity, cloud and sunshine have a year / July / January picker (`?season=jul`).
+- **Overlays:** rivers, plate outlines, pentagons, plate arrows, events, hotspots, volcanoes, winds (year / July / January), ocean currents as streamlines (brighter = faster), the overturning (sinking sites, surface inflow, schematic deep return), jet stream, spin axis, tropics and polar circles.
+- **Earth world:** temperature, precipitation, climate and sunshine have a model / observed / difference switch (`?obs=diff`).
+- **Highlights** panel with category filters (`?hlcat=`, `&hl=N`).
+- **Provenance** (PW-128): a world shows the run and time it came from, linked, and its zooms; a run lists what was made from it and ticks their times above the slider.
+- Clicking a cell copies a description (for pointing at a place); double-click or "Zoom" makes a regional zoom. The URL holds the state, e.g. `?world=a08983.json&layer=biome&mode=map`.
+
+**Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers relief, height, hillshade, rivers, rock, surface rock, climate, biome, landform, rain, temperature, ice and coarse cells; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
 
 ![The viewer](overview/viewer_globe_biome.jpg)
-*The viewer on world 7c5adf: biomes, with highlights listed and numbered.*
+*The viewer on world 7c5adf: biomes, with highlights numbered (an earlier version of the panel, before categories).*
 
-## 12. How good is it?
+**Known limits:** lake display quirks (PW-082); no vegetation / satellite view (PW-083); overturning schematic odd on some worlds (PW-154); runs lack seasonal layers, so the season picker works only on worlds (PW-107, PW-138); zooms lack seasonal layers (PW-139).
 
-`tools/scorecard.py` appends a line per commit to `docs/scorecard.jsonl`. It scores our climate on real Earth terrain against observed Köppen classes, and two 1 Gyr worlds against plausible ranges. As of c8a06d2:
+### 2.16 Store and data model (`store.py`, `timeline.py`, `provenance.py`)
 
-- **Earth's Köppen:** 70.7% agreement on main groups and 38% on exact classes. Log-rain correlation is 0.59. "Agreement" is always `tools/earth_data.koppen_agreement`: the share of land *area* outside Antarctica, where Kottek has a land class, whose model class matches (scorecard, earth_check and the 66% test floor all use it).
-- **The two worlds:**
-  - land 29–37%;
-  - crust volume conserved within 2.4%;
-  - mean ocean age 70–111 Myr;
-  - plates move 3.6–5.7 cm/yr.
+Outputs go under the data root (the repository, or `$PLANET_DATA`). All are generated, git-ignored and reproducible.
 
-Other checks:
-- `tools/earth_check.py`: temperature, rain and river discharge.
-- `tools/coast_check.py`: waves and tides.
-- `pytest`: invariants, envelopes and golden hashes.
+| Path | Contents |
+|---|---|
+| `runs/<id>/run.json` | settings, per-keyframe stats, plate velocities, the event log, layer specs, code version (git commit, dirty flag, hash of `planet/**/*.py`) |
+| `runs/<id>/layers/<name>.bin` | one file per layer, all keyframes (raw little-endian, frames × cells, small integers with scale/offset). The viewer fetches only what it draws. 32 layers per keyframe. |
+| `runs/<id>/state/<t>.ckpt` | full simulation state (with the geological record) every 100 Myr, where `slice` starts replaying |
+| `runs/<id>/volcanoes.json.gz` | every volcano ever |
+| `runs/<id>/run.txt` | readable report: events, stats over time, ASCII maps, plate table |
+| `worlds/<id>.json` / `.txt` | a world, layers inline; names its grid file (`../grids/L7.json`) |
+| `worlds/highlights/<id>.json` | highlight cache |
+| `zooms/<id>/` | `zoom.json`, `layers/*.bin`, PNGs |
+| `grids/L<n>.json` | grid geometry shared by all items at that level |
+| `worlds/index.json`, ... | indexes the viewer reads (with `source_run`, `t_myr` for provenance) |
+
+**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, and the nine landform layers of §2.4. Run keyframes carry 32 of them; a tectonic world ~64.
+
+**Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
+
+**Known limits:** checkpoints are large and carry stale crust (PW-088, PW-131); replay falls back to t = 0 after code changes (PW-089); no game export yet (PW-100).
+
+### 2.17 Tools (`tools/`, run with `PYTHONPATH=. uv run python tools/X.py`)
+
+| Tool | What it does |
+|---|---|
+| `scorecard.py` | Slow calibration scores, not pass/fail: the climate on Earth's terrain (Köppen agreement, rain correlation) and two L6 1-Gyr simulations (land, crust, landmasses, dryness, ice, speed, ocean age, crust volume). Appends a line per commit to `docs/scorecard.jsonl`. ~11 min. |
+| `earth_check.py` | The climate on real Earth vs observations: Köppen (Kottek), rain (GPCC/GPCP), temperature (NCEP), river discharge at big mouths, clouds (ICOADS), sunshine (CRU), dry-winter humidity. Prints a report; `--png`, `--json`. |
+| `earth_world.py` | Builds the "Earth (today, ETOPO1) — model vs observed" world for the viewer, with observed layers alongside. Re-make after climate changes. |
+| `earth_data.py` | Downloads (~25 MB, once) and maps the Earth datasets onto the grid; holds the single Köppen score `koppen_agreement`. |
+| `coast_check.py` | Waves and tides at named real coasts, and Galloway weights of real deltas. |
+| `churn.py <run>` | How often continental cells flip and flip back within a few keyframes (PW-108). |
+| `sealevel.py` | Sea level and its parts (ice, basins, ocean age) per step; counts fast land drops. Runs a simulation (or reads `--run <id>`). |
+| `supercontinent.py` | Tracks the largest landmass, landmass count, mantle and rifts over 2 Gyr; reports assembly spells. Runs a simulation. |
+| `cleanup_outputs.py` | Lists (or `--yes` deletes) outputs no open ticket needs, keeping anything < 12 h old, the Earth world and the parents of kept items. |
+
+---
+
+## 3. Calibration and validation
+
+**Tests** (`uv run pytest -q`, 180 tests): invariants (determinism, the crust budget closing, sane values, storage that doesn't clip, the sim → world → zoom chain), envelopes (plausible ranges: land 22–42%, dry climates 12–45% of land, continental crust 33–50%, plate speeds 2–9 cm/yr, 5–30 plates, ocean age 25–120 Myr, churn), and golden hashes of a short L4 run and one climate computation, so refactors can be shown not to change results.
+
+**Earth checks** (the model on Earth's real terrain, `tools/earth_check.py`):
+
+| Check | Result |
+|---|---|
+| Köppen main-group agreement | **70.7%** (area-weighted, land outside Antarctica; test floor 66%) |
+| Köppen exact-class agreement | 38.4% |
+| Log-rain correlation | 0.59; mean land rain 842 mm/yr |
+| Model Köppen shares | A 19%, B 31%, C 18%, D 25%, E 7% |
+| Inland drainage | ~22% of land (Earth ~18%) |
+| Clouds (vs ICOADS, CRU) | Sahara 17%, Southern Ocean 82%, stratocumulus decks 64–70%, ITCZ 66–69% (observed ~70–80%); sea RMS 12 points, land sunshine RMS 16 |
+| Dry winter humidity | Delhi 45%, Timbuktu 33%, Kashgar 49% (January) |
+| Overturning | 13.7 Sv: Nordic 7.0, Labrador 4.1, Ross 1.9, Weddell 0.6; none in the North Pacific |
+| Waves / tides (`coast_check.py`) | within 2× at 25 of 30 coasts / 21 of 23 |
 
 ![Earth temperature error](overview/earth_temperature_diff.jpg)
-*Model minus observed temperature on Earth (2f38e3). East Antarctica and NE Canada come out too warm.*
+*Model minus observed annual temperature on Earth (an earlier Earth world). East Antarctica and NE Canada come out too warm.*
 
-**Main weak spots:**
-- **Climate:** regional errors (monsoons, the Sahel, continental winters) and weak Southern Ocean waves.
-- **Tectonics:**
-  - plate counts that occasionally dip to 3–4 (median 8–10 at L6);
-  - slightly high land;
-  - sea level still swings ~100 m in 20 Myr with land ice and plate reorganisations;
-  - thinner continents at level 7.
-- **Basins:** generated worlds lose their closed basins over time.
-- **Ice:** time zooms glaciate generated worlds too hard.
+**Scorecard** (`docs/scorecard.jsonl`, latest row 0fd35e5, two L6 seeds over 1 Gyr):
 
-The full list is on the board: `uv run python issue-tracking/board.py list --open` (see `issue-tracking/README.md`).
+| Metric | Seed 1 | Seed 2 |
+|---|---|---|
+| Land at 1 Gyr (range over the run) | 33.7% (30.6–34.3) | 33.1% (31.9–35.8) |
+| Continental crust area | 47.7% | 46.9% |
+| Crust volume (end / start) | ×1.006 | ×1.006 |
+| Mean ocean age | 95 Myr | 63 Myr |
+| Plate speed | 4.0 cm/yr | 4.45 cm/yr |
+| Largest landmass now / max | 16% / 31% | 12% / 34% |
+| Dry (B) share of land | 39% | 33% |
+
+Plate counts (from run frames, not the scorecard): recent L6 median ~10, minimum 4; L7 seed 21 median 10, minimum 3 (PW-191).
+
+**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), continental area drift and L7's lower continents (PW-046, PW-052), closed basins on generated worlds (PW-054), land ice depth (PW-190).
+
+---
+
+## 4. Performance and costs per level
+
+Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `meta.generated_in_s`).
+
+| Level | `simulate` time | Memory | Disk per 1 Gyr run | World build | World size |
+|---|---|---|---|---|---|
+| 5 | fastest; used by `generate` and tests (no recent run timing) | small | — | seconds | ~1 MB |
+| 6 | ~6–8 min per Gyr | well under L7's (not measured) | ~0.5–0.65 GB (layers ~0.3, checkpoints 10 × 25–30 MB) | 1.5–5 s after replay | ~5 MB |
+| 7 | ~20–25 min per Gyr (up to ~35 under load) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × 110–140 MB) | 13–28 s after replay | 30–45 MB |
+| 8 | ~3–4 h per Gyr | ~3.5 GB | ~17 MB per keyframe, so use `--every 10` | world + 5 highlight zooms ~8.5 min | — |
+
+- **Slicing** replays up to 100 Myr from a checkpoint: well under a minute at L6, a few minutes at L7. The Zoom button skips the replay.
+- **Zooms:** 1–7 s each; ~11–12 MB each for 500×500 px.
+- **Time zoom:** ~4 min per 1000 kyr at L6.
+- **Scorecard:** ~11 min. `pytest`: ~30 s to a minute (`-m "not slow"` skips 11 envelope tests).
+- `NUMBA_NUM_THREADS=4` is often faster under load.
+
+---
+
+## 5. Current outputs to look at
+
+Start the viewer (`uv run python -m planet serve`) and pick these from the dropdowns. Ids come from `uv run python -m planet list`.
+
+**Showcase (2026-10-14 evening code, before the tectsea sea-level and plate-count change):** run **8571dd** (L7, seed 21, 1000 Myr), world **a08983** @ 408 Myr with highlights and zooms.
+- Landform demo zooms on a08983: f9b027 (rift), a42a15 (fold belt), 8beebd (shield), 2d06f8 (escarpment), 9b19a0 (caprock), d3b1c8 (lava plateau), 68e925 (tower karst), 2e6433 (lowland karst, poljes), e14044 (linear and star dunes), 2d1537 (transverse dunes), ee587f (cold barchans), 8373c5 (barrier islands, lagoons), dccb9c (coastal plain); 83e518 (waterfalls), 130acd (volcano), 2d60af (2000 km overview).
+- Earth world **dc3732** (clouds, ocean, seasons, model vs observed).
+- Ocean and clouds demo world **2085dc**; seasons and travel demo **67317b**.
+- Discrete volcanoes: run 39d004, world a099c6.
+- Supercontinent cycle: run 6d9dcf (seed 2, 2 Gyr), worlds ffb5bd (assembled) and 779b14 (dispersed).
+- Delta types: zooms 00975d, f81832, ce4b72 on world 0f7abd.
+- The older L6 showcase set (Earth-like A/B, water world, land-heavy, cold, hothouse) is in `docs/coordination.md` "Showcase recipes".
+
+### Demo runs (seed 3199)
+
+> **Placeholder for the coordinator.** Two new demo runs on the current code (seed 3199, one at L6 and one at L7) are being made now. Fill in: run ids, length, worlds (`--at auto`) with highlights and zooms, and what to look at in each.
+
+| Level | Run | Myr | World(s) | Zooms | Notes |
+|---|---|---|---|---|---|
+| L6 | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
+| L7 | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ |
+
+---
+
+## 6. Where things live
+
+| Path | Contents |
+|---|---|
+| `planet/__main__.py` | the CLI |
+| `planet/grid.py`, `geo.py`, `noise.py` | icosphere grid, sphere geometry, 3D Perlin noise |
+| `planet/tectonics/simulation.py` | the `Simulation`: state, the step, the world view |
+| `planet/tectonics/plates.py`, `plate_kernels.py` | rigid plates, rotations; pull/resolve kernels (subduction, collision, ridges) |
+| `planet/tectonics/motion.py` | boundaries and the force balance |
+| `planet/tectonics/mantle.py` | the B′ mantle field |
+| `planet/tectonics/events.py` | sutures, slivers, rifts, new subduction |
+| `planet/tectonics/crust.py` | crust budget, arcs, collisions, stretching, flow, coherence |
+| `planet/tectonics/isostasy.py` | crust → elevation, per-cell columns |
+| `planet/tectonics/volcanism.py` | plumes, hotspot vents, arc volcanoes, reefs |
+| `planet/tectonics/record.py` | strata and history per cell |
+| `planet/tectonics/earth.py` | global temperature, CO₂, sea level, ice sheets, erosion driver |
+| `planet/tectonics/setup.py`, `params.py`, `output.py` | the starting planet; parameters; snapshots and stats |
+| `planet/surface.py` | rocks, erosion, sediment routing, surface rock |
+| `planet/landform.py` | the 12 landform classes |
+| `planet/climate.py` | temperature, winds, jet, gyres, SST, rain, water balance, humidity, clouds, Köppen, biomes |
+| `planet/ocean.py` | salinity and the overturning |
+| `planet/hydrology.py`, `kernels.py` | rivers, lakes, erosion kernels |
+| `planet/coast.py` | waves, tides, Galloway delta weights |
+| `planet/world.py` | world finishing and file I/O |
+| `planet/timeline.py` | simulate, keyframes, report, replay, slice, `world_from_frame` |
+| `planet/generators.py` | one-shot cartoon plates (`generate`) |
+| `planet/highlights.py` | the 28 detectors, representative time |
+| `planet/zoom.py`, `zoom_kernels.py` | regional zoom and its raster kernels |
+| `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
+| `planet/timezoom.py`, `timezoom_kernels.py` | glacial time zoom |
+| `planet/store.py`, `provenance.py`, `images.py` | paths, ids, layers, checkpoints; code version; PNG writer |
+| `planet/server.py`, `api.py` | viewer server and job API |
+| `viewer/index.html`, `viewer/zoom.html` | globe viewer, zoom viewer |
+| `tools/` | calibration and diagnostics (§2.17) |
+| `tests/` | invariants, envelopes, goldens, per-subsystem tests |
+| `issue-tracking/` | the board: tickets, inbox, `board.py` |
+| `docs/` | this overview, `plan_next.md` (roadmap), `coordination.md` (worktrees, costs, recipes), `proposals/`, `review/` (investigations and images), `scorecard.jsonl` |
+
+---
+
+## 7. Glossary
+
+**Geology**
+
+| Term | Meaning |
+|---|---|
+| Airy isostasy | Crust floats on the denser mantle; thicker crust stands higher, like a thicker block of wood in water. |
+| Arc (volcanic arc) | A line of volcanoes above a subducting plate (Andes, Japan). |
+| Atoll / fringing / barrier reef | A reef hugging an island's shore; separated from it by a lagoon; a ring of reef left after the island has sunk away. |
+| Basement / cover | The crystalline crust; the sedimentary layers on top of it. |
+| Caprock | A hard layer protecting softer rock below; makes mesas, cliffs and waterfall lips. |
+| Craton / shield | The old, stable core of a continent; a shield is where it is exposed at the surface. |
+| Cuesta / hogback | A ridge with one steep and one gentle side from gently dipping hard beds; steeply dipping, a hogback. |
+| Dolomite, quartzite, tuff, evaporite | Altered limestone; recrystallised sandstone; volcanic ash rock; salt and gypsum left by evaporation. |
+| Doline / polje | A sinkhole in karst; a large flat-floored karst basin. |
+| Escarpment (great) | A long steep step from plateau to lowland along an old rifted continental margin. |
+| Exhumation | Rock brought to the surface as the rock above it erodes. |
+| Flexural wavelength | How far a plate bends around a load; sets volcano spacing along hotspot chains. |
+| Flood basalt / traps / lava plateau | Huge outpourings of lava when a plume head reaches a continent (Deccan, Siberia). |
+| Fold-and-thrust belt | Strata squeezed into parallel folds beside a mountain range. |
+| Guyot | A flat-topped seamount: an island planed by waves, then sunk. |
+| Half-graben | A basin dropped down along one tilted fault block in a rift. |
+| Hotspot / mantle plume | A column of hot mantle fixed under moving plates; leaves a chain of volcanoes (Hawaii). |
+| Inselberg | A lone rock hill rising from a plain (Uluru). |
+| Karst | Landscape dissolved out of limestone: sinkholes, caves, springs, towers. |
+| Knickpoint | A sharp step in a river's profile; a waterfall that retreats upstream. |
+| ln β | Stretching factor of rifted crust (β = original / stretched thickness). |
+| Orogen | A mountain belt made by collision. |
+| Passive margin | A continent's edge that is not a plate boundary (the Atlantic coasts). |
+| Ridge (mid-ocean) | Where plates pull apart and new ocean floor forms. |
+| Rift | Where a continent is being stretched and may split (East Africa). |
+| Slab pull / ridge push | The pull of a sinking plate edge; the push away from a ridge. |
+| Strata, unconformity | Rock layers in order; a gap where younger flat layers lie on older folded ones. |
+| Stream power | River erosion rate ∝ water flow × slope. |
+| Subduction | One plate sinking under another at a trench. |
+| Supercontinent cycle | Continents gathering into one (Pangaea) and breaking apart, every few hundred Myr. |
+| Suture | Where two colliding continents weld into one. |
+
+**Climate and ocean**
+
+| Term | Meaning |
+|---|---|
+| AMOC / overturning | The ocean's deep circulation: dense water sinks near the poles, warm surface water flows in to replace it. |
+| Aridity index | Rain / potential evaporation (P/PET); below 0.05–0.2 is hyper-arid to arid. |
+| Budyko curve | How much of the rain evaporates, given the rain and the evaporative demand. |
+| Continentality | Interiors far from the sea have hotter summers and colder winters. |
+| Gyre, western boundary current | A basin-wide ocean loop; its fast narrow western edge (Gulf Stream). |
+| Hadley / Ferrel / polar cells | The three bands of overturning air in each hemisphere that give trade winds, westerlies and polar easterlies. |
+| ITCZ | The rainy band near the equator where the trade winds meet. |
+| Jet stream, thermal wind | Fast high-altitude winds where temperature changes sharply with latitude. |
+| Köppen | A climate classification from monthly temperature and rain (A tropical, B dry, C temperate, D continental, E polar). |
+| Lapse rate | How fast air cools with height (~6.5 °C per km). |
+| Milankovitch cycles | Slow changes in Earth's orbit and tilt that pace ice ages (23, 41, 100, 405 kyr). |
+| Monsoon | A seasonal wind reversal bringing summer rain off the sea. |
+| Nye profile | The steady shape of an ice sheet: thickness grows with the square root of distance from the edge. |
+| PDD (positive degree days) | Sum of temperatures above 0 °C; measures how much snow and ice melt. |
+| PET | Potential evapotranspiration: how much water the air could evaporate. |
+| psu | Practical salinity units (≈ grams of salt per kg of seawater; ocean ~35). |
+| Rain shadow | The dry side of a mountain range, downwind of the wet side. |
+| Shallow-ice approximation | A cheap model of ice flowing downhill under its own weight. |
+| SST | Sea-surface temperature. |
+| Stratocumulus deck | Low cloud sheets over cool sea under sinking air (off California, Peru). |
+| Sv (sverdrup) | One million m³ of water per second. |
+| Tidal prism / amphidromic point | Water a bay exchanges each tide; a point where the tide range is zero. |
+| Upwelling | Cold deep water rising to the surface along coasts and the equator. |
+
+**Coasts and deserts**
+
+| Term | Meaning |
+|---|---|
+| Barchan / transverse / linear / star dune | Crescent dunes with scarce sand and one wind; ridges across one wind; ridges along two crossing winds; pyramids where winds reverse. |
+| BQART, CERC | Empirical formulas for river sediment load; for sand moved along the shore by waves. |
+| Erg | A sand sea. |
+| Fetch | The open-water distance the wind blows over, which sets wave size. |
+| Galloway triangle | Classifies deltas as river-, wave- or tide-dominated. |
+| Playa / salt pan | A dry lake bed crusted with salt. |
+
+**Procgen and this code**
+
+| Term | Meaning |
+|---|---|
+| Icosphere / Goldberg grid | The sphere tiled with hexagons and 12 pentagons. |
+| Level | How many times the icosahedron was subdivided (L7 = 164k cells). |
+| Run, keyframe, checkpoint | A simulation; a saved snapshot for the viewer (every 4 Myr); the full state for replay (every 100 Myr). |
+| World, slice | One finished moment; making one from a run. |
+| Zoom, time zoom | A fine regional landscape; 1 Myr of ice ages from one moment. |
+| World frame / plate frame | Fixed planet coordinates / each plate's own copy of the grid that rotates with it. |
+| Priority-flood | Drainage algorithm that fills pits so every cell drains to the sea or a lake. |
+| D8 | Raster flow routing: each pixel drains to its steepest of 8 neighbours. |
+| Diagnostic model | Computes a steady state from the current inputs, rather than stepping weather through time. |
+| Envelope / golden test | A plausible-range check / a hash check that output didn't change. |
+| Churn | Cells flipping state for a frame or two and back: an artefact. |
+| Representative time (`--at auto`) | The keyframe after 300 Myr closest to the run's typical land and landmass counts. |
+| Ma / Myr / kyr / Gyr | Millions of years (ago / duration), thousands of years, billions of years. |

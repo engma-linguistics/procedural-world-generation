@@ -38,7 +38,8 @@ longest rivers, the steepest big rivers and waterfalls, canyons, river mouths
 where deltas could build, fjord coasts, Mediterranean "wine country", volcanic
 arcs, hotspot islands, rifts, plateaus, rain shadows, coral coasts, the biggest
 lake, salt lakes, salt flats and inland basins, deserts, rainforests, ice
-sheets, the most varied 1000 km square and a few climate records. Worlds with
+sheets, the deepest trench, islands and archipelagos, the most varied 1000 km
+square and a few climate records. Worlds with
 July / January layers also get travel tips, each with the numbers that make it
 in its own hemisphere's season: beach destinations, ski country, mild-winter
 retreats and a year-round resort (a beach and skiing within 400 km)
@@ -61,7 +62,7 @@ uv run python -m planet report <run-id>                                         
 `-l/--level` controls grid detail: 4 = 2.5k cells, 5 = 10k (~220 km cells),
 6 = 41k (~110 km), 7 = 164k (~55 km), 8 = 655k (~28 km). `simulate` defaults to
 level 6, `generate` to level 5. Rough `simulate` times on a laptop (they vary
-with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~30-40 min
+with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~20-35 min
 per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
 ## Glacial time zoom (`planet/timezoom.py`)
@@ -174,7 +175,7 @@ returns the whole state (what a checkpoint must save).
 
 Runs are deterministic: `slice` replays from the nearest saved state at or
 before the moment asked for (`simulate` saves the full simulation state
-every 100 Myr, `--checkpoint-every`; ~23 MB each at level 6) and checks
+every 100 Myr, `--checkpoint-every`; ~25-30 MB each at level 6, ~110-140 MB at level 7) and checks
 itself against the stored keyframe. Each run records the code that made it
 (`meta.code`: git commit, dirty flag, hash of `planet/**/*.py`). If the model has
 changed since, the replay is a different planet: `slice` warns, and when the
@@ -308,13 +309,17 @@ Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
 surface_rock, sediment_cover, crust_thickness, precipitation, temperature,
 climate, ice, flow, downstream, lake_depth, lake_kind, wind_e/_n, current_e/_n,
 jet_e/_n, wave_power, tide_range, sst, sst_jul/_jan, salinity, sinking,
-dewpoint_jul/_jan, humidity_jul/_jan, cloud_jul/_jan, sunshine_jul/_jan` (the last nine worlds only), and the landform layers (`planet/landform.py`:
-`landform` (class id, legend `landforms`), `landform_age`, `strata_top`,
-`strata_top_km`, `strata_next`, `strata_dip`, `fold_wavelength`), which run
-frames and sliced worlds both carry. Not every item stores every layer: run
-frames have the wind, current and jet layers, but sliced and generated worlds
-don't (only the Earth reference world adds them; a known issue), and worlds
-add `biome`, `runoff`, `evaporation`, `pet` and the wave and tide layers. Run
+dewpoint_jul/_jan, humidity_jul/_jan, cloud_jul/_jan, sunshine_jul/_jan,
+temperature_jul/_jan, precipitation_jul/_jan, wind_jul_e/_n, wind_jan_e/_n`
+(the seasonal, sea and air layers are worlds only), and the landform layers
+(`planet/landform.py`: `landform` (class id, legend `landforms`),
+`landform_age`, `strata_top`, `strata_top_km`, `strata_next`, `strata_dip`,
+`fold_wavelength`, `rift_strain`, `glaciated_myr`), which run frames and
+sliced worlds both carry. Not every item stores every layer: run frames have
+the annual wind, current and jet layers; worlds have those plus the July /
+January winds, and add `biome`, `runoff`, `evaporation`, `pet`,
+`warm_month`, `cold_month` and the wave and tide layers. World layers are
+stored inline in the world's JSON; runs and zooms use `.bin` files. Run
 frames keep `lake_depth` (m of water) where worlds keep `lake_level` (its
 surface); `lake_kind` means the same in both. Time zooms keep a few of these
 names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
@@ -324,7 +329,7 @@ their own raster layers (`zoom.LAYER_DOC`: `water`, `discharge`,
 
 `delete` removes one item by id (`run:<id>`, `world:<id>` or `zoom:<id>`
 when a run and a world share an id); `delete --orphans` clears zooms and
-highlight caches whose world is gone. The viewer's Delete buttons do the same.
+highlight caches whose world is gone, and unfinished runs. The viewer's Delete buttons do the same.
 
 All of these are generated output (git-ignored) and reproducible from seed + settings.
 
