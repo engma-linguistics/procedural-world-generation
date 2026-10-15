@@ -338,16 +338,16 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
 
 ### 2.10 Coasts: waves, tides, delta types (`coast.py`)
 
-- **Wave power** (kW per m of coast): rays go out in 16 directions from each sea cell, up to 6000 km or the first land or sea ice. Walking back in, the sea grows under the wind along each stretch with **fetch** and storm duration (**JONSWAP**), up to a fully developed **Pierson–Moskowitz** sea, then travels on as slowly decaying **swell** that loses energy over shelves.
-- **Tide range** (m) is a three-factor proxy: connection to the open ocean (shallow straits choke it), **shelf resonance** (strongest at about a quarter tidal wavelength), and **funnelling** into narrowing bays.
+- **Wave power** (kW per m of coast): rays go out in 24 directions from each sea cell (each cell's fan turned by its own fraction of a step, so islands' shadows don't line up into streaks), up to 6000 km or the first land or sea ice. Walking back in, the sea grows under the wind along each stretch with **fetch** and storm duration (**JONSWAP**), up to a fully developed **Pierson–Moskowitz** sea, then travels on as slowly decaying **swell** that loses energy over shelves. Wind blowing off land is slowed and recovers over ~1200 km of sea, so enclosed seas (Mediterranean, Baltic, Black Sea) stay fetch- and wind-limited.
+- **Tide range** (m) is a three-factor proxy: connection to the open ocean (shallow straits choke it; only deep basins at least 6000 km across raise the full tide, while smaller deep basins behind sills, such as the Arctic Ocean, raise a small one of their own), **shelf resonance** (strongest at about a quarter tidal wavelength), and **funnelling** into narrowing bays.
 - **Delta type** (Galloway's triangle) compares three fluxes at big mouths: the river's sediment (**BQART**), wave-driven longshore transport (**CERC**) and the **tidal prism**. Their shares are the river, wave and tide weights; a weight ≥ 0.5 names the type, else "mixed".
 
-`tools/coast_check.py` on today's Earth: waves within 2× at 25 of 30 coasts, tides within 2× at 21 of 23.
+`tools/coast_check.py` on today's Earth (L6, 2026-10-15): waves within 2× at 28 of 32 coasts, tides within 2× at 24 of 25 (Arctic coasts in range).
 
 ![Wave power](overview/wave_power.jpg)
 *Wave power on 7c5adf: the westerly storm belts and their swell, with calm water in their lee.*
 
-**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); Fundy too small, no amphidromic points, Arctic tides too big (PW-076, PW-106); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
+**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); Fundy too small, no amphidromic points (PW-076); no SW-monsoon swell on India's west coast (the climate's July wind there is weak); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
 
 ### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
@@ -603,7 +603,7 @@ Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map 
 | Clouds (vs ICOADS, CRU) | Sahara 17%, Southern Ocean 82%, stratocumulus decks 64–70%, ITCZ 66–69% (observed ~70–80%); sea RMS 12 points, land sunshine RMS 16 |
 | Dry winter humidity | Delhi 45%, Timbuktu 33%, Kashgar 49% (January) |
 | Overturning | 13.7 Sv: Nordic 7.0, Labrador 4.1, Ross 1.9, Weddell 0.6; none in the North Pacific |
-| Waves / tides (`coast_check.py`) | within 2× at 25 of 30 coasts / 21 of 23 |
+| Waves / tides (`coast_check.py`) | within 2× at 28 of 32 coasts / 24 of 25 |
 | Vegetation (`veg_check.py`) | potential-vegetation agreement 62% on observed climate, 44% on the model's; land NPP 63 / 50 Pg C/yr; burned area 5.1 / 5.5 Mkm²/yr (§2.18) |
 
 ![Earth temperature error](overview/earth_temperature_diff.jpg)
