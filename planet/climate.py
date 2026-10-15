@@ -1859,8 +1859,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
             _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, tune, fb["et"])
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
+    # (the kernel's own mm/yr, for its wet-cool / dry-hot showers, use the same global mean)
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet},
+                                                          fb["et"])
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
