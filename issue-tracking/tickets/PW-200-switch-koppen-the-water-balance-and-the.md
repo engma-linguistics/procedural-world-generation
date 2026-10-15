@@ -1,4 +1,5 @@
 ---
+id: PW-200
 title: Switch koppen, the water balance and the glacier and time-zoom snow rules to climate.months
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: veg
 blocked_by: []
 relates: [PW-194]
 refs: [planet/climate.py, planet/tectonics/earth.py, planet/zoom.py, planet/timezoom.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ PW-194's builder `climate.months` (veg branch) now serves the vegetation and `pe
 Not done in PW-187 because none of these is output-neutral. Do it in one go with golden and Earth-check updates, or decide they stay separate.
 - [ ] koppen on month_rain / month_temps (earth_check before/after)
 - [ ] ice_sheets on months() degree-days, zoom/time-zoom snow on months()
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-climate-months-callers.md (found by veg).

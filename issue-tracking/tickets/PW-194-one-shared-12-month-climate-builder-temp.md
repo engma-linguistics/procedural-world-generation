@@ -2,7 +2,7 @@
 id: PW-194
 title: One shared 12-month climate builder (temperature, rain, PET, PAR, snow) for koppen, water balance, glaciers and vegetation
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-187, PW-185]
 refs: [planet/climate.py, planet/tectonics/earth.py, planet/zoom.py, docs/proposals/vegetation.md]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,5 +23,6 @@ Do: a `climate.months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud=None)
 - [ ] sim keeps cloud_jul/jan
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Merged with PW-187: climate.months; remaining callers in PW-200.
 - 2026-10-14: Status todo -> in-progress. Done inside PW-187 step 1 (worktree veg).
 - 2026-10-14: Created from inbox draft draft-climate-monthly-fields.md (found by vegprop).
