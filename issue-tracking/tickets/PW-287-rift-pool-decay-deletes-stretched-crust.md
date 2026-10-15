@@ -1,4 +1,5 @@
 ---
+id: PW-287
 title: Rift pool decay deletes stretched crust that its comment says stays in the flanks
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-tectonics
 blocked_by: []
 relates: [PW-046]
 refs: [planet/tectonics/crust.py, docs/review/audit/tectonics.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Fix (either): return the decayed share to the plate's continental cells
 that were stretched (spread over the rift flanks, which is what the comment
 says happens); or keep the deletion and book it separately
 ("rift pool lost"), with the comment corrected. Lean: return it.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-tectonics-rift-pool-decay.md (found by audit-tectonics).

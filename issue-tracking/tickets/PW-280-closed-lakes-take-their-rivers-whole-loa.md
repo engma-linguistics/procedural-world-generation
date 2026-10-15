@@ -1,4 +1,5 @@
 ---
+id: PW-280
 title: Closed lakes take their rivers' whole load even when full, piling sediment up to 1 km above the lake surface
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-surface-hydro
 blocked_by: []
 relates: [PW-054]
 refs: [planet/surface.py, docs/review/audit/surface-hydro.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,3 +24,6 @@ rest goes over its outlet. Instead it becomes a sediment mound that can dam the 
 Fix: cap the closed-lake share at the lake's summed `pit_room`. Put the excess on the lowest rim cell, or route it
 from the spill cell, so the basin opens next step. Mass stays conserved.
 - [ ] no closed-lake cell raised above its lake level by deposition; budget still closes
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-surface-hydro-closed-lake-overfill.md (found by audit-surface-hydro).

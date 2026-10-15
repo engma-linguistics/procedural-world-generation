@@ -1,4 +1,5 @@
 ---
+id: PW-273
 title: "Tides: shelf resonance held at its peak for every shelf wider than a quarter wavelength"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-coast-zoom
 blocked_by: []
 relates: [PW-076]
 refs: [planet/coast.py, tools/coast_check.py, docs/review/audit/coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,3 +24,6 @@ mean, so λ/4 is often only 150-300 km and many wide shelves are held at full re
 Fix: drop the `min` (the r term already bounds the peak) and use the shelf's mean depth along the
 coast-to-break path for λ. Re-run coast_check (Patagonia, NW Australia, Yellow Sea, Siberian shelves).
 - [ ] no clamp on kW; coast_check tide rows reported before and after
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-coast-zoom-shelf-resonance.md (found by audit-coast-zoom).

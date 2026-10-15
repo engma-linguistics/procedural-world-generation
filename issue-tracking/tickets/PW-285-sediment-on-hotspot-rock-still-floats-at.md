@@ -1,4 +1,5 @@
 ---
+id: PW-285
 title: Sediment on hotspot rock still floats at the volcano-pile rate (x1.75) beyond the PW-172 pile cap
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-tectonics
 blocked_by: []
 relates: [PW-172]
 refs: [planet/tectonics/isostasy.py, docs/review/audit/tectonics.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,3 +34,6 @@ Fix: give sediment on hotspot cells the plain K_SEA (the flexural support
 belongs to the volcanic pile, not to the mud on it). Make `iso_rate` return
 ISO_SEA for hotspot cells whose pile is past VOLCANO_PILE_KM. Golden update
 expected; no envelope change expected.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-tectonics-hotspot-sediment-iso.md (found by audit-tectonics).

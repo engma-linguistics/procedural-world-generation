@@ -1,4 +1,5 @@
 ---
+id: PW-277
 title: "Ice surface: two climates for the same ice (climate.ice_surface's 10 C vs icemass's 2 C + damping)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-ice-veg
 blocked_by: []
 relates: [PW-112, PW-226]
 refs: [planet/climate.py, planet/icemass.py, planet/tectonics/earth.py, docs/review/audit/ice-veg.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,3 +28,6 @@ compensates a warm polar base. It no longer sets the ice extent; it only sets wh
 Fix: report the ice surface's temperatures from `timezoom_kernels.climate_step`'s own outputs (t_ann, t_warm,
 t_cold at the ice's thickness, as icemass.balance already returns), and drop ice_surface's 10 C for land ice (the
 zoom's `ice_ground` inverse with it). Effect: warmer winters shown on ice-sheet interiors, Koppen still EF.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-ice-veg-two-ice-surface-climates.md (found by audit-ice-veg).

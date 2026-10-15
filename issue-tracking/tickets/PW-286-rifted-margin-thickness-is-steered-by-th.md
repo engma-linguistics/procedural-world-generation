@@ -1,4 +1,5 @@
 ---
+id: PW-286
 title: Rifted-margin thickness is steered by the global continental-area error
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-tectonics
 blocked_by: []
 relates: [PW-046]
 refs: [planet/tectonics/crust.py, docs/review/audit/tectonics.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -35,3 +38,6 @@ cells), which the area thermostat then has to remove. Check land and crust
 share over 1 Gyr at L6 (scorecard), and PW-046's drift.
 - [ ] margin thickness no longer reads `shrink`
 - [ ] L6 seeds 1/2 over 1 Gyr: crust area within the envelope, land change reported
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-tectonics-margin-steering.md (found by audit-tectonics).

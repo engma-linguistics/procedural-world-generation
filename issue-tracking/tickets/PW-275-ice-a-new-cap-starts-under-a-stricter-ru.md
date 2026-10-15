@@ -1,4 +1,5 @@
 ---
+id: PW-275
 title: "Ice: a new cap starts under a stricter rule in the run (no snow damping) than in the time zoom (LOCAL floor)"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-ice-veg
 blocked_by: []
 relates: [PW-240, PW-033]
 refs: [planet/tectonics/earth.py, planet/timezoom.py, planet/icemass.py, docs/review/audit/ice-veg.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -41,3 +44,6 @@ Options:
 - C. Leave both as they are and document the difference.
 
 Lean: B, together with PW-240's plan to lower LOCAL once Earth's inception has its own fix.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-ice-veg-new-cap-rule-run-vs-timezoom.md (found by audit-ice-veg).

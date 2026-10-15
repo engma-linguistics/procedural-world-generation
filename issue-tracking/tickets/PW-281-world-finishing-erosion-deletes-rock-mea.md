@@ -1,4 +1,5 @@
 ---
+id: PW-281
 title: World finishing erosion deletes rock (mean 46 m of land at strength 0.3) instead of depositing it
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-surface-hydro
 blocked_by: []
 relates: [PW-239]
 refs: [planet/hydrology.py, planet/world.py, docs/review/audit/surface-hydro.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Options:
   once at the end of the passes, and add it to land and coast cells (cheap). Check the PW-057 Jaccard.
 - C. Lower the default strength.
 Lean: B (sound, and matches the run). A if B costs the Jaccard.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-surface-hydro-finish-erosion-mass.md (found by audit-surface-hydro).

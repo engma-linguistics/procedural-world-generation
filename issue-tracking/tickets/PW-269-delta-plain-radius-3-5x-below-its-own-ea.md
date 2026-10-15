@@ -1,4 +1,5 @@
 ---
+id: PW-269
 title: "Delta plain radius 3-5x below its own Earth calibration: G-B and Mekong come out river-dominated"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-coast-zoom
 blocked_by: []
 relates: [PW-061]
 refs: [planet/coast.py, planet/zoom.py, tests/test_coast.py, docs/review/audit/coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -27,3 +30,6 @@ check zoom deltas 00975d/f81832/ce4b72 again. Re-derive `test_delta_types_differ
 outputs; don't widen them.
 - [ ] plain_radius_km within ~30% of the docstring's three Earth sizes
 - [ ] G-B and Mekong tide-dominated or mixed-tide with real inputs; Mississippi still river, Sao Francisco wave
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-coast-zoom-delta-radius.md (found by audit-coast-zoom).

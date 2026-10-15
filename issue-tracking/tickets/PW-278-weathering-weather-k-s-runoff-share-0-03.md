@@ -1,4 +1,5 @@
 ---
+id: PW-278
 title: "Weathering: WEATHER_K's runoff share (0.03/C) double-counts rain already in the erosion rate"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-ice-veg
 blocked_by: []
 relates: [PW-235, PW-240]
 refs: [planet/tectonics/earth.py, docs/review/audit/ice-veg.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -19,3 +22,6 @@ sink is `sim.removed x exp(WEATHER_K (T - 15))`, and `removed` is erosion, which
 
 It was raised from 0.06 in PW-235 to shorten cold eras (a metric). Set it to 0.09 and re-check PW-240's
 cold-era table: expect slightly longer and colder cold eras.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-ice-veg-weathering-runoff-twice.md (found by audit-ice-veg).

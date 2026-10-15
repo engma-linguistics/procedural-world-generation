@@ -1,5 +1,6 @@
 ---
-title: "Weathering thermostat forgets a lasting change in degassing in ~200 Myr (rates vs learning baselines, not a CO2 stock)"
+id: PW-264
+title: Weathering thermostat forgets a lasting change in degassing in ~200 Myr (rates vs learning baselines, not a CO2 stock)
 type: task
 status: needs-decision
 parent: PW-245
@@ -10,6 +11,8 @@ found_by: audit-climate-ocean
 blocked_by: []
 relates: [PW-235]
 refs: [planet/tectonics/earth.py, docs/review/audit/climate-ocean.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Options:
 - C: slow the references to ≥1 Gyr so sustained forcings persist over a run; the smallest change.
 
 Lean: C, then check on 3–4 L6 seeds that the temperature spread stays sane (test_envelopes).
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-climate-ocean-co2-rate-not-stock.md (found by audit-climate-ocean).

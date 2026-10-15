@@ -1,4 +1,5 @@
 ---
+id: PW-268
 title: "Zoom doesn't keep coarse cell means: valley carving lowers land ~60-90 m, trenches lose ~3 km"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-coast-zoom
 blocked_by: []
 relates: []
 refs: [planet/zoom.py, docs/overview.md, docs/review/audit/coast-zoom.md, "world 592f2a"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,3 +33,6 @@ outside the valley bottoms after carving); for the sea, more correction iteratio
 where coarse relief is steep. Add a test or golden stat on land-interior cell-mean bias.
 - [ ] land-interior cell-mean bias within ±20 m, RMS < ~120 m on this zoom
 - [ ] trench cells within ~500 m of their coarse depth
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-coast-zoom-cell-means.md (found by audit-coast-zoom).

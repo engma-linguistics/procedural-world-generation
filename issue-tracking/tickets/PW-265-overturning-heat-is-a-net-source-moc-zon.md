@@ -1,4 +1,5 @@
 ---
+id: PW-265
 title: "Overturning heat is a net source: moc_zonal = 0 double-counts warmth t_eq already holds (kept for +0.19 pt Köppen)"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-climate-ocean
 blocked_by: []
 relates: [PW-038, PW-013]
 refs: [planet/climate.py, planet/ocean.py, docs/review/audit/climate-ocean.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Options:
 Lean: A now, B if a later pass wants the tropics to feel it. Re-centre the global mean (curve offset, ~+0.35 °C) if needed, then re-run earth_check, the scorecard and the golden tests.
 - [ ] area-weighted SST change from the overturning ≈ 0
 - [ ] earth_check Köppen within ~0.3 pt of before
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-climate-ocean-moc-heat-not-conserved.md (found by audit-climate-ocean).

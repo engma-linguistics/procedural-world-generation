@@ -1,5 +1,6 @@
 ---
-title: "finish.orbit_dt treats ice on a bed below sea level as sea (land = bed > 0, not surface > 0)"
+id: PW-274
+title: finish.orbit_dt treats ice on a bed below sea level as sea (land = bed > 0, not surface > 0)
 type: task
 status: todo
 parent: PW-245
@@ -10,6 +11,8 @@ found_by: audit-ice-veg
 blocked_by: []
 relates: [PW-198]
 refs: [planet/finish.py, planet/timezoom.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -19,3 +22,6 @@ brightness), not the land's the time zoom used (timezoom.py: land = grounded sur
 only cells under thick ice.
 
 Fix: `land = st["elevation"] + st["ice"] > 0`.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-ice-veg-finish-orbit-land.md (found by audit-ice-veg).

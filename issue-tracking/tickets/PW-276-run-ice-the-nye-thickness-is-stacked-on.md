@@ -1,4 +1,5 @@
 ---
+id: PW-276
 title: "Run ice: the Nye thickness is stacked on the bed, so caps on high ranges reach 9 km surfaces (cause of PW-226)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-ice-veg
 blocked_by: []
 relates: [PW-226, PW-240]
 refs: [planet/tectonics/earth.py, docs/review/audit/ice-veg.md, tests/test_invariants.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,3 +33,6 @@ surface as `max(bed + margin thickness, bed_edge + Nye(d) x snow x soft)` and th
 Likely effect: high caps thinner, surfaces near 4-5 km, a bit less run ice volume (helps PW-240 a little).
 Restore test_values_sane's -95 C bound if it now holds.
 - [ ] no run ice surface far above ~5-6 km on L5/L6 seeds 2 and 11; the -95 C bound restored
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-ice-veg-nye-on-high-bed.md (found by audit-ice-veg).

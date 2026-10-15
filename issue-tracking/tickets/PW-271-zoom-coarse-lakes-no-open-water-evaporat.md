@@ -1,4 +1,5 @@
 ---
+id: PW-271
 title: "Zoom coarse lakes: no open-water evaporation; lake pixels yield land runoff"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-coast-zoom
 blocked_by: []
 relates: [PW-060]
 refs: [planet/zoom.py, planet/zoom_landforms.py, docs/review/audit/coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Fix: on coarse-lake pixels, use rain minus open-water evaporation (the `fv` loss
 basin_lakes, zoom.py:2227-2232) instead of land runoff, and subtract it from the lake's total before
 passing it on (floor at 0).
 - [ ] an open zoom lake's outflow within ~10% of the coarse lake's outflow (when the catchment is in view)
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-coast-zoom-lake-evap.md (found by audit-coast-zoom).

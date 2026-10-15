@@ -1,4 +1,5 @@
 ---
+id: PW-270
 title: "Waves: the U^5 gust factor is applied to U, overstating fetch- and duration-limited seas ~1.5-1.6x"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: audit-coast-zoom
 blocked_by: []
 relates: [PW-074, PW-075]
 refs: [planet/coast.py, tools/coast_check.py, docs/review/audit/coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Fix (simplest sound): drop GUST and average the ray power over ~5 Weibull speed 
 the growth step. Then refit U_TRADE/U_STORM once on coast_check's open-ocean rows (together with the
 L_RECOVER draft).
 - [ ] no U^5-only factor on U; coast_check rows reported before and after
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-coast-zoom-gust-moment.md (found by audit-coast-zoom).

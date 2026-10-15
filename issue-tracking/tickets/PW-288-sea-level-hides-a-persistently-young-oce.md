@@ -1,4 +1,5 @@
 ---
+id: PW-288
 title: "Sea level hides a persistently young ocean: the basin term is measured against a baseline that learns it away"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-tectonics
 blocked_by: []
 relates: [PW-051, PW-053]
 refs: [planet/tectonics/earth.py, planet/tectonics/isostasy.py, docs/review/audit/tectonics.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -70,3 +73,6 @@ Options:
 Lean B, landed together with a look at why the ocean is so young (plate
 speeds, ridge lengths), so land share doesn't just drop. C only if B's
 old-ocean lowstands look too deep.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-tectonics-sea-level-baseline.md (found by audit-tectonics).

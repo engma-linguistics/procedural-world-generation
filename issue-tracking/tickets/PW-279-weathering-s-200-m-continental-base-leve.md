@@ -1,4 +1,5 @@
 ---
+id: PW-279
 title: "Weathering's 200 m continental base level: a floor standing in for 'flat plains don't erode'"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-surface-hydro
 blocked_by: []
 relates: []
 refs: [planet/surface.py, docs/review/audit/surface-hydro.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Options:
 - B. Base 0, with the weathering rate scaled by local relief (e.g. x min(1, relief / R0)), so flat plains stop by
   themselves; retune `erosion_timescale` at L6 (scorecard land %).
 Lean: A for now (low impact); B if the land fraction is retuned anyway.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-audit-surface-hydro-base-level.md (found by audit-surface-hydro).
