@@ -98,6 +98,10 @@ def cmd_zoom(args):
           f" (coarse {s['coarse_mean_elev_m']:.0f} m)")
     print(f"  biggest river {s['max_discharge_m3s']:.0f} m3/s, {s['lakes']} lakes;"
           f" view: http://127.0.0.1:8765/viewer/zoom.html?id={m['id']}")
+    v = s.get("vegetation") or {}
+    if v.get("vegetation_pct"):
+        top = ", ".join(f"{k} {p:g}%" for k, p in list(v["vegetation_pct"].items())[:4])
+        print(f"  vegetation: {top}; trees {v['tree_cover_mean_pct']}%, wetlands {v['wetland_pct']}% of the land")
     for f in s.get("waterfalls", [])[:3]:
         print(f"  waterfall {f['height_m']:.0f} m over {f['length_km']:g} km, {f['discharge_m3s']:,.0f} m3/s"
               f"{' (lake outlet)' if f['from_lake'] else ''} at {f['lat']:.2f}, {f['lon']:.2f}")

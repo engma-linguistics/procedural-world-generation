@@ -2,7 +2,7 @@
 id: PW-200
 title: Switch koppen, the water balance and the glacier and time-zoom snow rules to climate.months
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -25,4 +25,5 @@ Not done in PW-187 because none of these is output-neutral. Do it in one go with
 - [ ] ice_sheets on months() degree-days, zoom/time-zoom snow on months()
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Overnight agent, worktree vegclim.
 - 2026-10-15: Created from inbox draft draft-climate-months-callers.md (found by veg).

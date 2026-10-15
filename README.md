@@ -52,6 +52,17 @@ prints the biggest. Click one to turn the
 globe to it and pick it for a zoom at a suggested size (`&hl=N` in the URL
 opens number N); `planet highlights --zoom N` makes those zooms ahead of time.
 
+Each zoom also carries its own vegetation (`planet/zoom_vegetation.py`): the
+world's plant model run per pixel on the zoom's terrain, so treelines follow
+the valleys and sit higher on sunny slopes, gallery forests line the rivers
+through savanna, oases the rivers through deserts, and mires gather in the
+wettest hollows. Its named type, tree cover, canopy height, leaf area, NPP
+and fire interval are stored (`zoom.load(id, decode=True)`); each plant
+type's cover can be recomputed with `zoom_vegetation.fractions(<zoom-id>)`.
+Zooms also store July / January temperature and rain, the sun on each slope
+(`radiation_index`), a topographic wetness index and the distance to the
+nearest river and the sea.
+
 Other things to try:
 
 ```sh

@@ -2,7 +2,7 @@
 id: PW-183
 title: Zoom discharge thresholds were tuned on rain-routed discharge; review them now that streams carry runoff
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-180, PW-125]
 refs: [planet/zoom.py, planet/zoom_landforms.py, "zoom:2d06f8", "zoom:130acd"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -32,4 +32,5 @@ than intended, and decide per threshold whether it is physical (keep) or
 a visual tuning (scale by ~1/3).
 
 ## Updates
+- 2026-10-15: Status todo -> done. Reviewed (vegzoom): thresholds already in mean discharge since PW-180; no change needed.
 - 2026-10-14: Created from inbox draft draft-zoom-q-thresholds-runoff.md (found by zoompolish).
