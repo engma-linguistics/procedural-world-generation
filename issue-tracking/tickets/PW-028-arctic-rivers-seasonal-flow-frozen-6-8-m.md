@@ -2,7 +2,7 @@
 id: PW-028
 title: "Arctic rivers: seasonal flow (frozen 6-8 months, spring flood)"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: hydrology
 effort: m
@@ -23,6 +23,7 @@ melt), at least as a stored "flood ratio" per cell for the zoom and deltas. Refe
 world 0f7abd (Lena-like: 2.2 Mkm², −12 °C mean, 16,800 m³/s).
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (hydro2): river floods layer, hover (flow, peak month, ratio, frozen months), river_frozen layer, floodplains sized by the flood. Delta flood-pulse tried and reverted.
 - 2026-10-15: Hydro (merged): flood_ratio/flood_month layers exist; consumers (deltas, zoom, viewer) remain.
 - 2026-10-15: Merged inbox draft draft-flood-ratio-consumers.md ("Use the rivers' seasonal flood (flood_ratio, flood_month) in deltas, the zoom and the viewer", found by hydro).
   PW-028's data side is in: worlds store `flood_ratio` (peak month's flow / mean month's,

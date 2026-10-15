@@ -1,7 +1,8 @@
 ---
-title: "Run frames store the lakes of the terrain before that step's erosion and sediment, so they disagree with the frame's own elevation"
+id: PW-239
+title: Run frames store the lakes of the terrain before that step's erosion and sediment, so they disagree with the frame's own elevation
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: hydrology
 effort: s
@@ -10,6 +11,8 @@ found_by: hydro2
 blocked_by: []
 relates: [PW-057, PW-054]
 refs: [planet/tectonics/output.py, planet/surface.py, "run 4ddb5d", "run bad074", "run 6ff364", "run 01b0f7"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -29,3 +32,7 @@ Options:
   differ only by climate and finishing.
 - C. Snapshot the elevation before erosion instead (no: the elevation is the frame's state).
 Lean: B (cheap, and what the viewer shows becomes consistent).
+
+## Updates
+- 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star): B, recompute the frame's lakes on its final terrain (~+5% run time); a frame should describe itself.
+- 2026-10-15: Created from inbox draft draft-run-frame-lakes-pre-step.md (found by hydro2).

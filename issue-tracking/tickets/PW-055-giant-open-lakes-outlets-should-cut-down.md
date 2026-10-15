@@ -2,7 +2,7 @@
 id: PW-055
 title: "Giant open lakes: outlets should cut down and drain them"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: hydrology
 effort: m
@@ -23,6 +23,7 @@ Also the v1 note "lakes are too many and too large". Morning decision 2 option C
 erosion so big rivers grade down) belongs here too.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (hydro2): incision uses max(own rain, catchment mean rain); open lakes trap sediment. Giant open-lake frames 15->3 (L6 seeds 11-13). Lowstand-stranded marine basins belong to PW-190.
 - 2026-10-15: Status in-progress -> todo. Hydro (merged): outlets cut valleys (0.1 x Q^0.7 m), lakes re-solved; giant-lake frames 13->3 at L7 seed 3199. Left: lakes in continually subsiding basins.
 - 2026-10-15: Status todo -> in-progress. Foundation round, worktree hydro.
 - 2026-10-14: Migrated. Merged: Backlog 'Giant open lakes' (owner), 'Giant shallow lakes in runs' (lakes), v1 Also noted 'Lakes are too many and too large'.
