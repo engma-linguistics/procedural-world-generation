@@ -34,10 +34,11 @@ How a cell's mix is found (equilibrium):
    share x (1 - its resistance). Grass fuels fire and fire keeps trees out,
    while closed forest is too damp to burn: forest and savanna are both
    stable over a wide range of rain, and history decides (warm starts).
+   Open grassland also carries grazers (a placeholder until fauna, PW-103:
+   GRAZE), which keep tree and shrub seedlings down.
 5. Wetlands: the flooded share of a cell (floodplains of big rivers, flat
-   wet ground, permafrost flats, lake shores) belongs to the wetland types
-   (reeds and sedges, peat moss) and to flood-tolerant trees; dryland
-   types are kept off it.
+   wet ground, permafrost flats, lake shores) is a habitat of its own for
+   the wetland types (reeds and sedges, peat moss) and flood-tolerant trees.
 6. Named types: a fixed order of rules on the mix, its structure and the
    site (classify): 56 vegetated types plus ice, rock, barren desert and
    lake. `biome` (climate.BIOMES) is now a coarse grouping of them.
