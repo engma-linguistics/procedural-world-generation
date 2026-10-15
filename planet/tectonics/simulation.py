@@ -72,6 +72,7 @@ class Simulation:
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
         "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (light for the plants)
         "removed",  # km of crust eroded per cell in the last step (feeds weathering)
+        "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
         "climate_t",  # Myr: when the climate fields were computed
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
         "precip", "p_jul", "p_jan",  # mm/yr: annual, July, January
@@ -139,6 +140,7 @@ class Simulation:
         self.veg_niche = np.zeros(6)
         self.cloud_jul = self.cloud_jan = None
         self.removed = np.zeros(n)
+        self.thermo = np.zeros(2)
         self.climate_t = 0.0
         self.temp = self.t_warm = self.t_cold = None
         self.precip = self.p_jul = self.p_jan = None
@@ -284,7 +286,9 @@ class Simulation:
         earth.reefs(self, col, dep, chem)
         col.rec[self.ice > 0, record.T_ICE] = self.t
 
-        crust.coherence(self, col)
+        trench = np.zeros(self.grid.n, bool)
+        trench[bd.sinking] = trench[bd.overriding] = True
+        crust.coherence(self, col, trench)
         born = crust.birth_and_cratons(self, col, arcky, squeezed)
         self._write_back(col, born)
         self._record_boundaries(bd, conv)

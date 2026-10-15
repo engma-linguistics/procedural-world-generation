@@ -32,6 +32,10 @@ from .plates import P_MAX
 TUFF_SHARE = 0.1  # of the new arc crust on a continent that erupts as ash and ignimbrite sheets (cover)
 GRANITE_KM = 4.0  # km of erosion since an arc went quiet that exposes its plutons (a batholith)
 RIFT_THINNING = 0.015  # per Myr: crust thinning faster than this is being rifted (record.t_rift)
+FOREARC_KM = 120.0  # km: width of the forearc (arc-trench gap) that subduction erosion grinds
+L5_KM = 240.0  # km between level-5 cells (the unit of spread widths)
+THERMO_MYR = 100.0  # Myr: the thermostats' memory of a persisting error (integral time)
+THERMO_MAX = 0.4  # at most x e^(4 x 0.4) ~ 5 from that memory
 
 
 @dataclass
@@ -55,19 +59,29 @@ def thermostats(sim):
     of continental crust, subduction erosion (removes continental
     edges) its area. Together they hold both near their targets, and so
     the average thickness, which decides how high continents stand.
+    Each answers the present error (x error^4) and, slowly, the error that
+    has persisted (integrated over THERMO_MYR, sim.thermo): with the
+    present error alone, area settled ~12% above its target (45% of the
+    surface against 40% after 1 Gyr), because the sources of new area
+    (welds, rifted margins, new arcs) outrun subduction erosion at its
+    nominal rate, and the continents' volume, held on target, was spread
+    thinner over it (PW-046, PW-052).
     Returns (arc growth factor, subduction erosion factor)."""
     p = sim.params
     frac = max(sim.w_cont.mean(), 1e-3)
     vol = max(float((sim.w_thick * sim.w_cont).mean()), 1e-3)
     target = sim.target_fraction()
-    thermostat = np.clip((target * p.continental_thickness / vol) ** 4, 0.1, 5.0)
-    shrink = np.clip((frac / target) ** 4, 0.2, 5.0)
+    err = np.log([target * p.continental_thickness / vol, frac / target])
+    sim.thermo = np.clip(sim.thermo + sim.dt / THERMO_MYR * err, -THERMO_MAX, THERMO_MAX)
+    thermostat = np.clip(np.exp(4 * (err[0] + sim.thermo[0])), 0.1, 5.0)
+    shrink = np.clip(np.exp(4 * (err[1] + sim.thermo[1])), 0.2, 5.0)
     return thermostat, shrink
 
 
-def spread(sim, src_rate, width):
+def spread(sim, src_rate, width, gap=0.0):
     """A rate at source cells, spread over a Gaussian belt `width` level-5
-    cells wide on the same plate."""
+    cells wide on the same plate; with a gap (level-5 cells), little of it
+    lands within ~gap of the source (1 - e^-(d/gap)^2)."""
     g, n = sim.grid, sim.grid.n
     src = np.flatnonzero(src_rate > 0)
     if len(src) == 0:
@@ -77,15 +91,28 @@ def spread(sim, src_rate, width):
     out = np.zeros(n)
     hit = s >= 0
     out[hit] = src_rate[s[hit]] * np.exp(-((dist[hit] / w) ** 2))
+    if gap > 0:
+        out[hit] *= 1 - np.exp(-((dist[hit] / (gap * sim.scale)) ** 2))
     return out
 
 
 def arc_growth(sim, bd, conv, thermostat):
-    """km/Myr of new arc crust per cell, behind every trench."""
+    """km/Myr of new arc crust per cell, behind every trench: the volcanic
+    front stands ~100-200 km behind the trench (the arc-trench gap), so the
+    forearc right at the trench gets little (FOREARC_KM), and subduction
+    erosion there isn't undone by the arc on the same cell.
+    The volume thermostat steers only arcs built on continents (Andean
+    arcs, which thicken what is there); island arcs on ocean floor grow at
+    the nominal rate. (Steering both made a volume shortfall build new
+    continent out of island arcs: more area instead of thicker crust, which
+    the area thermostat then wore away again at the continents' edges, and
+    the continents thinned over the run: PW-046, PW-052.)"""
     p = sim.params
+    up = bd.overriding
+    gain = np.where(sim.w_cont[up], thermostat, 1.0)
     arc_src = np.zeros(sim.grid.n)
-    np.maximum.at(arc_src, bd.overriding, p.arc_growth * sim.heat() * thermostat * bd.at_trenches(conv))
-    return spread(sim, arc_src, 1.6)
+    np.maximum.at(arc_src, up, p.arc_growth * sim.heat() * gain * bd.at_trenches(conv))
+    return spread(sim, arc_src, 1.6, FOREARC_KM / L5_KM)
 
 
 def rift_stretching(sim, bd):
@@ -180,7 +207,11 @@ def subduction_erosion(sim, bd, conv, col, shrink):
         return
     up, cv = bd.overriding, bd.at_trenches(conv)
     worn = np.zeros(n)
-    np.maximum.at(worn, up, p.subduction_erosion * cv * dt * shrink)
+    # (the rate is for a FOREARC_KM wide forearc: on a cell w km wide, x
+    # FOREARC_KM / w, so the crust and area removed per km of trench is the
+    # same at every level; per cell it halved at each finer level: PW-052)
+    km = sim.edge_len * R_KM
+    np.maximum.at(worn, up, p.subduction_erosion * cv * dt * shrink * FOREARC_KM / km)
     worn = np.minimum(worn * col.cont, col.t)
     t0 = col.t
     t = col.t = col.t - worn
@@ -313,7 +344,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
     return squeezed
 
 
-def coherence(sim, col):
+def coherence(sim, col, trench=None):
     """Crust type is coherent at the grid's scale. An ocean-floor cell
     nearly ringed by continental crust of its own plate (a one-cell inlet
     or hole, <= 2 of its neighbours oceanic) is, at 50-100 km, part of the
@@ -327,8 +358,11 @@ def coherence(sim, col):
     Why: a mosaic of one-cell inlets and shreds, left by margins, arcs and
     sampling, was carried past the world grid by the moving plates and
     showed as cells flipping between continent and deep sea every few Myr
-    (PW-108). In place on col; returns (cells made continental, cells made
-    oceanic)."""
+    (PW-108). No welds at a trench (`trench`: cells on either side of a
+    subducting edge): a notch there is the slab grinding the forearc away
+    (subduction_erosion), and welding it shut again every step made the
+    erosion thin the continent instead of shrinking it (PW-046, PW-052).
+    In place on col; returns (cells made continental, cells made oceanic)."""
     g = sim.grid
     own = sim.owner
     src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
@@ -337,6 +371,8 @@ def coherence(sim, col):
     n_cont = np.add.reduceat((same & col.cont[g.nbr_idx]).astype(np.int64), g.nbr_off[:-1])
     ring = n_same >= 5  # (not on a plate boundary)
     weld = ring & ~col.cont & (n_cont >= n_same - 2) & (col.rock != HOTSPOT)
+    if trench is not None:
+        weld &= ~trench
     shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
     if weld.any() or shred.any():
         v0 = col.t * col.cont

@@ -53,7 +53,7 @@ class Params:
     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
-    subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches
+    subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches (over a crust.FOREARC_KM wide forearc)
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)

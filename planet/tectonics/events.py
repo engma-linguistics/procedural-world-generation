@@ -248,15 +248,24 @@ def stress_cut(sim, k, cf: CellForces, rng, tries=12):
 
 
 def old_margins(sim):
-    """Per plate: mean age of the ocean floor along its passive margins
-    (coastlines where continent and ocean ride on the same plate, like
-    today's Atlantic coasts), and how many margin edges it has."""
+    """Per plate: mean age of the ocean floor along the oldest TRENCH_KM of
+    its passive margins (coastlines where continent and ocean ride on the
+    same plate, like today's Atlantic coasts), where new subduction would
+    start (margin_side), and how many margin edges it has. (The mean over
+    all its margins, young ones included, kept an old ocean from ever
+    starting to close while a young rift opened elsewhere on the plate:
+    oceans aged past 140 Myr on average and plates were few; PW-191.)"""
     a, b = sim.grid.edges[:, 0], sim.grid.edges[:, 1]
     m = (sim.owner[a] == sim.owner[b]) & (sim.w_cont[a] != sim.w_cont[b])
     ocean = np.where(sim.w_cont[a], b, a)[m]
     k = sim.owner[a][m]
     cnt = np.bincount(k, minlength=P_MAX)
-    age = np.bincount(k, sim.w_age[ocean], P_MAX) / np.maximum(cnt, 1)
+    age = np.zeros(P_MAX)
+    stretch = max(1, int(TRENCH_KM / (sim.edge_len * R_KM)))
+    for j in np.unique(k):
+        cells = np.unique(ocean[k == j])
+        ages = np.sort(sim.w_age[cells])[::-1]
+        age[j] = ages[:stretch].mean()
     return age, cnt
 
 

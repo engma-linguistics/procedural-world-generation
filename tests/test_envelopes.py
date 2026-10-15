@@ -45,9 +45,8 @@ def world(request):
 def test_land_and_crust(world):
     assert 22 <= world["land"] <= 42, world["land"]  # Earth 29
     assert 33 <= world["cont"] <= 50, world["cont"]  # Earth ~41 incl. shelves
-    # Earth ~35-40. Floor 28, not 30: since crust.coherence (PW-108) level 5
-    # sits at 28.6-30.1 km; PW-052 is to restore the thickness (PW-169 decision C).
-    assert 28 <= world["thick"] <= 42, world["thick"]
+    # Earth ~35-40. Level 5, 400 Myr: 33.5/34.4 km since PW-052 (28.6/30.1 before)
+    assert 30 <= world["thick"] <= 42, world["thick"]
 
 
 def test_relief(world):
