@@ -5,6 +5,7 @@ from planet.tectonics import Params, Simulation
 
 
 def run_sim(level=4, seed=1, myr=300.0, **params):
+    params.setdefault("flora_end", float(myr))  # as timeline.simulate: plant groups scaled to the run
     sim = Simulation(build_grid(level), seed, Params(**params), 2.0)
     sim.run(myr)
     return sim

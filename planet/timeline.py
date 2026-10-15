@@ -23,12 +23,13 @@ from __future__ import annotations
 import json
 import shutil
 import time
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 from pathlib import Path
 
 import numpy as np
 
 from . import store as S
+from . import vegetation as VEG
 from . import world as W
 from .provenance import code_version, describe
 from .geo import R_KM
@@ -43,7 +44,7 @@ from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
               "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n",
-              *LANDFORM_LAYERS)
+              *LANDFORM_LAYERS, "vegetation", "tree_cover", "npp")
 CHECKPOINT_EVERY = 100.0  # Myr
 
 
@@ -74,7 +75,8 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
             "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
             **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
-            **dict(vec_layers(grid, "jet", jet)), **landforms_of(snap)}
+            **dict(vec_layers(grid, "jet", jet)), **landforms_of(snap),
+            "vegetation": snap.vegetation, "tree_cover": 100 * snap.tree_cover, "npp": snap.npp}
 
 
 def landforms_of(snap) -> dict:
@@ -102,6 +104,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     """checkpoint_every: Myr between saved simulation states (0: none)."""
     t0 = time.time()
     grid = build_grid(level)
+    if params.flora_end <= 0:  # the plant groups' timeline is scaled to the run's length
+        params = replace(params, flora_end=float(myr))
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
@@ -145,6 +149,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  "every": stride * dt, "steps": sim.step_no, "checkpoint_every": ck_stride * dt,
                  "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
+                 "plant_groups": plant_groups(sim),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
@@ -156,6 +161,17 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     report(out)
     update_index()
     return out
+
+
+def plant_groups(sim: Simulation) -> list:
+    """When each plant group appeared in a run (vegetation.GROUPS), with its
+    window: what the viewer ticks on the time slider."""
+    p = sim.params
+    win = VEG.group_windows(p.plants_from, p.flora_end if p.flora_end > 0 else sim.t)
+    return [{"group": k + 1, "name": name, "pfts": list(codes),
+             "t": None if not np.isfinite(t) else round(float(t), 1),
+             "window": [round(a, 1), round(b, 1)]}
+            for k, ((name, codes, _), t, (a, b)) in enumerate(zip(VEG.GROUPS, sim.flora, win))]
 
 
 def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
@@ -307,14 +323,18 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
     """A complete world (climate, rivers, biomes, all layers) from a
     simulation's current state, in memory."""
     snap = sim.snapshot()
+    veg = {"nu0": sim.veg_frac, "co2": sim.co2, "unlocked": VEG.unlocked_at(sim.flora, sim.t),
+           "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
+    if sim.t < sim.params.plants_from - 1e-9:
+        veg["unlocked"] = np.zeros(VEG.NP, bool)
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
-                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap))
+                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap), veg)
 
 
 FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock",
-                "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS)
+                "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS, "tree_cover")
 
 
 def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extra) -> dict:
@@ -344,18 +364,25 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, **meta_extr
     # the exposed rock from the stored strata, by the current rule (as snapshot() does)
     exposed = surface_rock(a["rock"], a["sediment_cover"], a["strata_top"], a["strata_top_km"])
     s = fr["stats"]
+    # the vegetation's history: the keyframe's tree cover (forest or savanna), the plant groups by then
+    groups = [g.get("t") for g in m.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
+    t_fr = float(fr["t"])
+    veg = {"nu0": VEG.start_from_tree_cover(a["tree_cover"] / 100.0), "co2": s.get("co2", 0.0),
+           "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
+                        if t_fr >= params.plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
+           "groups": groups}
     return _world(grid, m["seed"], params, float(fr["t"]), a["elevation"].astype(float), a["plate"].astype(int),
                   a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
                   a["rock"], exposed, a["sediment_cover"], a["crust_thickness"].astype(float),
                   a["ice"], fr["hotspots"], vols, s["global_temp_c"] - 14.5,
                   s["sea_level_m"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                               "from_keyframe": True, **meta_extra},
-                  {k: a[k] for k in LANDFORM_LAYERS})
+                  {k: a[k] for k in LANDFORM_LAYERS}, veg)
 
 
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
-           erosion, meta_extra, landforms: dict) -> dict:
+           erosion, meta_extra, landforms: dict, veg: dict | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     rng_seed = seed * 100003 + int(at)
     # sub-cell texture: roughness the plate model can't produce at this resolution
@@ -377,7 +404,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                    dT=dT, tilt=params.tilt, ice=ice)
+                    dT=dT, tilt=params.tilt, ice=ice, veg=veg)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

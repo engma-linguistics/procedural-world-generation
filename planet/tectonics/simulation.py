@@ -64,7 +64,13 @@ class Simulation:
         "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
-        "veg",  # plant cover 0..1 per cell (0.0 before the first step)
+        "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
+        "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
+        "npp",  # g C/m2/yr per cell
+        "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
+        "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
+        "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
+        "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (light for the plants)
         "removed",  # km of crust eroded per cell in the last step (feeds weathering)
         "climate_t",  # Myr: when the climate fields were computed
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
@@ -125,6 +131,13 @@ class Simulation:
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
         self.ice = np.zeros(n)
         self.veg = 0.0
+        self.veg_frac = self.veg_lai = None
+        self.npp = np.zeros(n)
+        self.veg_type = np.zeros(n, np.uint8)
+        self.tree_cover = np.zeros(n)
+        self.flora = [float("nan")] * 6
+        self.veg_niche = np.zeros(6)
+        self.cloud_jul = self.cloud_jan = None
         self.removed = np.zeros(n)
         self.climate_t = 0.0
         self.temp = self.t_warm = self.t_cold = None

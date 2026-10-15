@@ -161,11 +161,11 @@ def test_checkpoint_resume_bit_identical(sim4_60):
     """Restoring the state saved at t and running on to t' gives exactly the
     straight run's state at t' (all arrays, events, budget, scalars)."""
     states = {}
-    sim = Simulation(sim4_60.grid, 1, Params(), 2.0)
+    sim = Simulation(sim4_60.grid, 1, Params(flora_end=60.0), 2.0)
     sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (20, 40) else None)
     assert sim_digest(sim) == sim_digest(sim4_60)
     for t, st in states.items():
-        r = Simulation.from_state(sim.grid, 1, Params(), 2.0, st)
+        r = Simulation.from_state(sim.grid, 1, Params(flora_end=60.0), 2.0, st)
         assert r.t == t
         r.run(60)
         assert sim_digest(r) == sim_digest(sim4_60), t
@@ -197,7 +197,7 @@ def test_run_layout(data_root):
         assert (out / spec["file"]).stat().st_size == np.dtype(spec["dtype"]).itemsize * np.prod(spec["shape"]), k
         assert spec["shape"] == [3, run["meta"]["cells"]]
     assert run["layers"]["ice"]["scale"] == 20 and run["layers"]["flow"]["transform"] == "log2p1"
-    assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms"}
+    assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms", "vegetation"}
     run2, arr = T.load_frames(out, ("plate", "downstream"))
     sim = run_sim(myr=8)
     assert np.array_equal(T.frame(run2, arr, "plate", 2), sim.snapshot().plate)

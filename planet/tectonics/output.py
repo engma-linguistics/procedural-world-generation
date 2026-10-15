@@ -51,6 +51,10 @@ class Snapshot:
     fold_wavelength: np.ndarray  # km (0: not folded)
     rift_strain: np.ndarray  # ln beta of the last rifting (0: never rifted)
     glaciated_myr: np.ndarray  # Myr since last under ice (landform.GLACIATED_NEVER: never)
+    # vegetation at the last climate update (vegetation.py; tectonics/earth.update_vegetation)
+    vegetation: np.ndarray  # vegetation.TYPES id (0 at sea)
+    tree_cover: np.ndarray  # 0..1
+    npp: np.ndarray  # g C/m2/yr
 
 
 def snapshot(sim) -> Snapshot:
@@ -78,7 +82,15 @@ def snapshot(sim) -> Snapshot:
         surface=surface.surface_rock(sim.w_rock, sim.w_cover, lf["strata_top"], lf["strata_top_km"]),
         **climate_now(sim),
         **lf,
+        **vegetation_now(sim),
     )
+
+
+def vegetation_now(sim) -> dict:
+    """The vegetation of the last climate update, on today's land."""
+    land = sim.w_elev > 0
+    return dict(vegetation=np.where(land, sim.veg_type, 0).astype(np.uint8),
+                tree_cover=np.where(land, sim.tree_cover, 0.0), npp=np.where(land, sim.npp, 0.0))
 
 
 def landforms_now(sim, vrows) -> dict:
@@ -134,6 +146,7 @@ def stats(sim) -> dict:
         "largest_landmass_pct": round(100 * sizes.max() / g.n, 1),
         "max_elev_m": int(sim.w_elev.max()),
         "global_temp_c": round(14.5 + sim.dT, 1),
+        "co2": round(float(sim.co2), 3),
         "sea_level_m": round(sim.sea_level, 1),
         "ice_pct": round(100 * float((sim.ice > 0).mean()), 1),
         "mean_speed_cmyr": round(float(v.mean()), 2),

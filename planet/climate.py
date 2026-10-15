@@ -1294,12 +1294,97 @@ def pet_months(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
     July (north) or January (south). Summed over the year it is the `pet`
     of water_balance (the aridity index P/PET uses it)."""
     lat = np.asarray(lat, float)
-    ra = insolation(lat, tilt)
-    m = np.arange(12)[:, None]
-    peak = np.where(lat >= 0, 6, 0)[None, :]
-    amp = 0.5 * (t_warm - t_cold)
-    t_m = np.clip(temp + amp * np.cos(2 * np.pi * (m - peak) / 12), t_cold, t_warm)
+    return _pet(insolation(lat, tilt), month_temps(lat, temp, t_warm, t_cold))
+
+
+def _pet(ra, t_m):
+    """Oudin PET, mm per month, from top-of-atmosphere sunshine ra (MJ/m2/day) and temperature t_m."""
     return np.maximum(ra / LATENT * (t_m + 5) / 100, 0) * MONTH_DAYS[:, None]
+
+
+def month_temps(lat, temp, t_warm, t_cold) -> np.ndarray:
+    """Mean temperature of each month (C, shape (12, n)): a sine between
+    the coldest and warmest month around the annual mean, peaking in July
+    (north) or January (south), clipped to [t_cold, t_warm]."""
+    m = np.arange(12)[:, None]
+    peak = np.where(np.asarray(lat) >= 0, 6, 0)[None, :]
+    amp = 0.5 * (t_warm - t_cold)
+    return np.clip(temp + amp * np.cos(2 * np.pi * (m - peak) / 12), t_cold, t_warm)
+
+
+# share of a half-year's months under a cosine peaking at its middle month
+# (Jul for Apr-Sep): (0 + .5 + .866 + 1 + .866 + .5) / 6
+_HALF_COS = (1 + 2 * np.cos(np.pi / 6) + 2 * np.cos(np.pi / 3)) / 6
+SNOW_DDF = 3.0  # mm of snow melted per positive degree-day (as earth.ICE_DDF)
+
+
+def month_rain(p_jul, p_jan) -> np.ndarray:
+    """Rain (mm) in each month, shape (12, n), from the two half-year rates
+    (mm/yr; Apr-Sep, Oct-Mar): a cosine through the year peaking in July
+    (or January, when that half is wetter), as koppen() assumes, rescaled
+    so each half-year's months add up to exactly its rate / 2."""
+    m = np.arange(12)[:, None]
+    mean = (p_jul + p_jan) / 24.0
+    a = np.clip((p_jul - p_jan) / np.maximum(p_jul + p_jan, 1e-9) / _HALF_COS, -1, 1)
+    shape = mean * (1 + a * np.cos(2 * np.pi * (m - 6) / 12))
+    jul = (m >= 3) & (m <= 8)
+    s_jul = np.maximum(shape[3:9].sum(0), 1e-12)
+    s_jan = np.maximum(shape.sum(0) - shape[3:9].sum(0), 1e-12)
+    return np.where(jul, shape * (0.5 * p_jul / s_jul), shape * (0.5 * p_jan / s_jan))
+
+
+def _erf(x):
+    """Abramowitz-Stegun 7.1.26 (|error| < 1.5e-7)."""
+    sg = np.sign(x)
+    x = np.abs(x)
+    t = 1 / (1 + 0.3275911 * x)
+    y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496735) * t + 0.254829592) * t * np.exp(-x * x)
+    return sg * y
+
+
+def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None) -> dict:
+    """The twelve months of a climate, rebuilt from what it stores (annual,
+    warmest- and coldest-month temperature, the two half-year rain rates,
+    optionally the half-years' cloud cover), shared by everything that needs
+    months (PW-194). Each value has shape (12, n):
+      t      C: month mean temperature (month_temps: a sine, as pet_months)
+      p      mm: precipitation (month_rain: half-year sums exact)
+      pet    mm: potential evaporation (Oudin; sums to water_balance's pet)
+      par    MJ/m2: photosynthetically active light at the ground: the top of
+             the atmosphere's sunshine x the share reaching the ground
+             (Angstrom-Prescott: 0.25 + 0.5 x the sunshine share, from the
+             cloud cover as climate.sunshine; 0.5 cloud without one) x 0.48
+      snow   mm: snowpack at the month's end (snow falls below 0 C, half of
+             it between -2 and +2 C, and melts SNOW_DDF mm per degree-day;
+             two years spun up from bare ground)
+      water  mm: what reaches the soil (rain + snowmelt)
+    plus gdd5 (n,): degree-days above 5 C in the year (the days of each
+    month scattered around its mean with sd 4 C)."""
+    lat = np.asarray(lat, float)
+    t_m = month_temps(lat, temp, t_warm, t_cold)
+    p_m = month_rain(p_jul, p_jan)
+    ra = insolation(lat, tilt)
+    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
+    c_jul = 0.5 if cloud_jul is None else np.asarray(cloud_jul)
+    c_jan = 0.5 if cloud_jan is None else np.asarray(cloud_jan)
+    cloud = np.where(jul, c_jul, c_jan)
+    par = 0.48 * ra * (0.25 + 0.5 * sunshine(cloud)) * MONTH_DAYS[:, None]
+    snow_share = np.clip((2.0 - t_m) / 4.0, 0, 1)
+    melt_cap = SNOW_DDF * np.maximum(t_m, 0) * MONTH_DAYS[:, None]
+    pack = np.zeros(lat.shape)
+    snow, water = np.zeros_like(t_m), np.zeros_like(t_m)
+    for _ in range(2):
+        for m in range(12):
+            pack = pack + snow_share[m] * p_m[m]
+            melt = np.minimum(pack, melt_cap[m])
+            pack = pack - melt
+            snow[m], water[m] = pack, (1 - snow_share[m]) * p_m[m] + melt
+    # degree-days above 5 C, the days scattered around each month's mean (sd
+    # 4 C, as Reeh 1991 for melt): a month averaging 5 C still has warm days
+    x = (t_m - 5.0) / 4.0
+    cdf = 0.5 * (1 + _erf(x / np.sqrt(2)))
+    gdd5 = ((4.0 / np.sqrt(2 * np.pi) * np.exp(-0.5 * x * x) + (t_m - 5.0) * cdf) * MONTH_DAYS[:, None]).sum(0)
+    return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=np.maximum(gdd5, 0.0))
 
 
 def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None) -> dict:

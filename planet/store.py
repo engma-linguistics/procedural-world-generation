@@ -222,7 +222,25 @@ LAYERS = {
     "fold_wavelength": _spec("u1", "km", "distance between fold crests (0: strata not folded)", scale=0.2),
     "rift_strain": _spec("u1", "ln beta", "stretching of the cell's last rifting (0: never rifted)", scale=0.01),
     "glaciated_myr": _spec("<u2", "Myr", "since the cell was last under ice (0: now; 9999: never)"),
+    # vegetation (vegetation.py): runs store vegetation, tree_cover and npp per keyframe; worlds all of them
+    "vegetation": _spec("u1", "id", "named vegetation type (vegetation.TYPES; legend 'vegetation')"),
+    "tree_cover": _spec("u1", "%", "tree canopy cover (each tree type's share x its canopy closure)"),
+    "plant_cover": _spec("u1", "%", "ground shaded by plants of any kind"),
+    "lai": _spec("u1", "m2/m2", "leaf area index, year's mean of the two half-years", scale=0.1),
+    "lai_jul": _spec("u1", "m2/m2", "leaf area index, July half-year (Apr-Sep)", scale=0.1),
+    "lai_jan": _spec("u1", "m2/m2", "leaf area index, January half-year (Oct-Mar)", scale=0.1),
+    "canopy_height": _spec("u1", "m", "height of the tallest layer covering >= 10% of the cell"),
+    "npp": _spec("<u2", "g C/m2/yr", "net primary productivity"),
+    "biomass": _spec("<u2", "t C/ha", "living plant carbon"),
+    "fire_return": _spec("<u2", "yr", "mean years between fires (0: none)"),
+    "stand_age": _spec("<u2", "yr", "mean time since the last stand-replacing disturbance"),
+    "pft_dominant": _spec("u1", "id", "the plant functional type with the largest cover (255: none)"),
+    "flooded": _spec("u1", "%", "share of the cell flooded part of the year (wetland habitat)"),
 }
+from .vegetation import CODES as _VEG_CODES  # noqa: E402
+
+for _c in _VEG_CODES:
+    LAYERS[f"veg_{_c}"] = _spec("u1", "%", f"cover of plant functional type {_c} (vegetation.PFTS)")
 
 
 def nbr_slot(grid, target: np.ndarray) -> np.ndarray:
@@ -342,12 +360,13 @@ def write_grid(grid) -> Path:
 
 
 def legends() -> dict:
-    """Rock, Koppen, biome and landform ids -> names and colours, as every file stores them."""
+    """Rock, Koppen, biome, landform and vegetation ids -> names and colours, as every file stores them."""
     from .climate import BIOMES, KOPPEN
     from .landform import legend
     from .surface import ROCKS
+    from .vegetation import legend as veg_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "landforms": legend(),
+            "landforms": legend(), "vegetation": veg_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 

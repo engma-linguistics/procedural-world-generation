@@ -69,6 +69,9 @@ class Params:
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # rocks
     plants_from: float = 0.0  # Myr: land plants exist from this time on (slow erosion, make coal)
+    # Myr: the run's end, for the plant groups' timeline (vegetation.group_windows);
+    # simulate sets it to the run's length, 0: 1000
+    flora_end: float = 0.0
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp

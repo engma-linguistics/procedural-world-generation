@@ -42,6 +42,16 @@ Observed temperature
     worst over high/steep terrain; fine for zonal means.
 All NOAA PSL data: "may be used and redistributed for free"; cite NOAA PSL.
 
+Potential natural vegetation (tools/veg_check.py)
+    Ramankutty & Foley (1999), "Estimating historical changes in global land
+    cover: croplands from 1700 to 1992", Global Biogeochem. Cycles 13, 997.
+    The vegetation that would be there without people, 15 classes, 5'
+    ESRI ASCII grid (0.5 MB), SAGE / University of Wisconsin:
+      https://sage-public-files.s3.amazonaws.com/global-potential-vegetation/glpotveg_5min.asc.gz
+    Mapped as each cell's most common class (earth_potveg).
+    (MODIS NPP, tree cover and GFED burned area need large downloads or an
+    Earthdata login: the vegetation check uses published global numbers.)
+
 Mapping to the grid
 -------------------
 Every ETOPO1 sample (1/6 deg) is assigned to its nearest icosphere cell with
@@ -468,6 +478,66 @@ def earth_clouds(grid) -> dict:
     out = _cloud_build(grid)
     DATA.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(f, version=CLOUD_CACHE_VERSION, **out)
+    return out
+
+
+# --------------------------------------------------------------------------
+# potential natural vegetation (the vegetation check, tools/veg_check.py)
+# --------------------------------------------------------------------------
+POTVEG_URL = "https://sage-public-files.s3.amazonaws.com/global-potential-vegetation/glpotveg_5min.asc.gz"
+POTVEG_CLASSES = [  # Ramankutty & Foley (1999), ids 1..15
+    "tropical evergreen forest/woodland", "tropical deciduous forest/woodland",
+    "temperate broadleaf evergreen forest/woodland", "temperate needleleaf evergreen forest/woodland",
+    "temperate deciduous forest/woodland", "boreal evergreen forest/woodland", "boreal deciduous forest/woodland",
+    "evergreen/deciduous mixed forest/woodland", "savanna", "grassland/steppe", "dense shrubland",
+    "open shrubland", "tundra", "desert", "polar desert/rock/ice"]
+POTVEG_CACHE_VERSION = 1
+
+
+def potveg_raw() -> dict:
+    """Ramankutty & Foley (1999) global potential natural vegetation, 5
+    arc-minute ESRI ASCII grid (0.5 MB gzipped, SAGE, University of
+    Wisconsin): dict(val (2160, 4320) uint8, 0 = water / no data, 1..15
+    POTVEG_CLASSES; lat, lon of the pixel centres)."""
+    f = DATA / "raw_potveg.npz"
+    if not f.exists():
+        DATA.mkdir(parents=True, exist_ok=True)
+        import gzip
+        txt = gzip.decompress(_get(POTVEG_URL)).decode("ascii").splitlines()
+        head = {}
+        k = 0
+        while txt[k].split()[0].lower() in ("ncols", "nrows", "xllcorner", "yllcorner", "cellsize", "nodata_value"):
+            key, v = txt[k].split()[:2]
+            head[key.lower()] = float(v)
+            k += 1
+        val = np.loadtxt(txt[k:], dtype=np.float32)
+        nod = head.get("nodata_value", -9999)
+        val = np.where((val == nod) | (val < 0) | (val > 15), 0, val).astype(np.uint8)
+        nr, nc, cs = int(head["nrows"]), int(head["ncols"]), head["cellsize"]
+        lat = head["yllcorner"] + cs * (nr - 0.5 - np.arange(nr))
+        lon = head["xllcorner"] + cs * (0.5 + np.arange(nc))
+        np.savez_compressed(f, val=val, lat=lat, lon=lon)
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_potveg(grid) -> np.ndarray:
+    """Each cell's most common (area-weighted) Ramankutty & Foley class
+    over its pixels (0: no land pixel), cached as data/earth/potveg_L{level}.npz."""
+    f = DATA / f"potveg_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == POTVEG_CACHE_VERSION and len(z["potveg"]) == grid.n:
+            return z["potveg"]
+    r = potveg_raw()
+    LA, LO = np.meshgrid(r["lat"], r["lon"], indexing="ij")
+    v = r["val"].ravel()
+    m = v > 0
+    cell = grid.locate(_unit(LA.ravel()[m], LO.ravel()[m]))
+    w = np.cos(np.radians(LA.ravel()[m]))
+    votes = np.bincount(cell * 16 + v[m], w, grid.n * 16).reshape(grid.n, 16)
+    out = np.where(votes.sum(1) > 0, np.argmax(votes, 1), 0).astype(np.uint8)
+    np.savez_compressed(f, version=POTVEG_CACHE_VERSION, potveg=out)
     return out
 
 

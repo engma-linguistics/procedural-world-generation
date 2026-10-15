@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, ocean
+from . import climate, coast, hydrology, ocean, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -58,9 +58,15 @@ def seasons(grid: Grid, c: dict) -> dict:
 
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
-           params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None) -> dict:
-    """Shared back half of the pipeline: climate -> erosion -> rivers -> biomes.
-    dT: global temperature offset from today's Earth; ice: m of land ice."""
+           params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
+           veg: dict | None = None) -> dict:
+    """Shared back half of the pipeline: climate -> erosion -> rivers ->
+    vegetation (and biomes from it). dT: global temperature offset from
+    today's Earth; ice: m of land ice; veg: the vegetation's history and
+    setting, all optional: nu0 (PFT cover fractions to start from: history
+    decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
+    PFTs that exist by then), groups (the plant groups' appearance times,
+    for the meta)."""
     t0 = t0 or time.time()
     c = climate.compute(grid, elev, dT, tilt, ice)
     if erosion > 0 and erosion_iterations > 0:
@@ -69,7 +75,12 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
-    biome = climate.biomes(elev, temp, precip, lk["wet"])
+    veg = veg or {}
+    vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
+                         c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
+                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"))
+    # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
+    biome = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
     sea = elev <= 0
     elev_m = np.round(elev).astype(int)
 
@@ -107,6 +118,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # half-years (climate.clouds, climate.sunshine)
         "cloud_jul": np.round(100 * c["cloud_jul"]).astype(int), "cloud_jan": np.round(100 * c["cloud_jan"]).astype(int),
         "sunshine_jul": np.round(c["sun_jul"], 1), "sunshine_jan": np.round(c["sun_jan"], 1),
+        # vegetation (vegetation.py): named type, structure, productivity, fire, and each PFT's cover
+        **vegetation.world_layers(vg),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
@@ -129,6 +142,10 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                    "dT": dT, "tilt": tilt, **(params or {})},
         # the overturning: Sv, sinking sites and a schematic of its loop (ocean.loop_schematic)
         "overturning": ocean.loop_schematic(grid, elev, c),
+        "vegetation": {"co2": round(float(veg.get("co2", 0.0)), 3),
+                       "pfts": [p for p, ok in zip(vegetation.CODES, vg["unlocked"]) if ok],
+                       **({"groups": veg["groups"]} if veg.get("groups") is not None else {}),
+                       "from_history": veg.get("nu0") is not None},
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
@@ -203,6 +220,7 @@ def summarize(world: dict) -> dict:
         "mean_land_elevation_m": int(elev[land].mean()) if land.any() else 0,
         "land_biomes_pct": {names[k]: round(100 * c / land.sum(), 1)
                             for k, c in sorted(enumerate(counts), key=lambda kc: -kc[1]) if c},
+        **_veg_summary(L, land),
         "lake_cells": int(L["lake"].sum()),
         **_lake_summary(g, L),
         "largest_rivers": rivers,
@@ -213,6 +231,19 @@ def summarize(world: dict) -> dict:
         from .landform import shares
         s["landform_pct"] = shares(np.asarray(L["landform"]))
     return s
+
+
+def _veg_summary(L: dict, land: np.ndarray) -> dict:
+    """Share of land per named vegetation type (the 12 largest), and the
+    land's mean tree cover and NPP."""
+    if "vegetation" not in L or not land.any():
+        return {}
+    t = np.asarray(L["vegetation"])[land]
+    cnt = np.bincount(t, minlength=len(vegetation.TYPES))
+    top = sorted(((c, k) for k, c in enumerate(cnt) if c), reverse=True)[:12]
+    return {"land_vegetation_pct": {vegetation.TYPES[k][1]: round(100 * c / land.sum(), 1) for c, k in top},
+            "tree_cover_mean_pct": round(float(np.asarray(L["tree_cover"])[land].mean()), 1),
+            "npp_mean_gc_m2": round(float(np.asarray(L["npp"])[land].mean()))}
 
 
 def _lake_summary(g: Grid, L: dict) -> dict:

@@ -3,16 +3,17 @@ CO2, sea level, the climate model, and the surface processes that run on
 its rain (erosion, rivers, sediment).
 
 State it keeps on the simulation (see Simulation.EARTH_STATE): dT, drift,
-co2, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice, veg,
-removed, the climate fields from climate.compute, the rivers (flow,
-down) and the lakes (lake_kind, lake_depth).
+co2, refs, depth_ridge, depth_ref, sea_level and its parts sea_ice / sea_tect, ice,
+the vegetation (veg, veg_frac, veg_lai, npp, veg_type, tree_cover, flora,
+veg_niche), removed, the climate fields from climate.compute, the rivers
+(flow, down) and the lakes (lake_kind, lake_depth).
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from .. import climate, hydrology, kernels, surface
+from .. import climate, hydrology, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
@@ -56,7 +57,9 @@ def global_temperature(sim, growth, newc, rng):
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.w_elev > 0
     warm = np.exp(0.06 * (sim.temp - 15.0)) if sim.temp is not None else 1.0  # chemical weathering
-    warm = warm * (1 + 0.5 * sim.veg)  # roots and soils speed it up
+    # roots and soil CO2 speed it up, in proportion to how much grows there
+    # (GEOCARB's biological weathering factor)
+    warm = warm * (1 + 0.5 * np.clip(sim.npp / 800.0, 0, 1.5))
     source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
     sink = float((sim.removed * land * warm).sum()) / sim.scale**2
     now = np.array([max(source, 1e-6), max(sink, 1e-6)])
@@ -126,7 +129,45 @@ def update_climate(sim, e):
     sim.sea_level = sim.sea_ice + sim.sea_tect
     sim.koppen = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                                 sim.p_jan, g.lat, sim.ice)
+    sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]
+    update_vegetation(sim, e)
     sim.climate_t = sim.t
+
+
+FLORA_END = 1000.0  # Myr: the plant groups' timeline when the run's end isn't known (params.flora_end = 0)
+
+
+def update_vegetation(sim, e):
+    """The vegetation in equilibrium with the climate just computed
+    (vegetation.model, the cheap variant: warm-started from the last
+    update), and the plant groups that appear (vegetation.flora_update,
+    on the niches measured at the last update). Sets veg (ground cover,
+    which slows erosion), npp (which speeds weathering), veg_frac,
+    veg_lai, veg_type, tree_cover, flora and veg_niche."""
+    p, g = sim.params, sim.grid
+    n = g.n
+    if sim.t < p.plants_from - 1e-9:
+        sim.veg, sim.npp, sim.tree_cover = np.zeros(n), np.zeros(n), np.zeros(n)
+        sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
+        return
+    end = p.flora_end if p.flora_end > 0 else FLORA_END
+    rng = np.random.default_rng([sim.seed, sim.step_no, 11])
+    sim.flora = vegetation.flora_update(sim.flora, sim.t, p.climate_every, p.plants_from, end, sim.veg_niche, rng)
+    land = e > 0
+    ice = np.where(land, sim.ice, 0.0)
+    kind = np.where(land, sim.lake_kind, 0)
+    lake = np.isin(kind, (hydrology.OPEN_LAKE, hydrology.CLOSED_LAKE))
+    v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
+                         sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
+                         co2=sim.co2, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
+                         locked_potential=True)
+    sim.veg_niche = vegetation.niches(v)
+    sim.veg_frac = v["eq"]["nu"].astype(np.float32)
+    sim.veg_lai = v["pot"]["lai"].astype(np.float32)
+    sim.veg = vegetation.ground_cover(v)
+    sim.npp = v["sm"]["npp"]
+    sim.tree_cover = v["sm"]["tree"]
+    sim.veg_type = v["types"].astype(np.uint8)
 
 
 # Ice sheets (see ice_sheets)
@@ -229,10 +270,10 @@ def erode(sim, col):
     # snowline); polar ice frozen to its bed protects it instead.
     k_mult = np.where(sim.ice > 0, np.where(sim.t_warm > -8, p.glacial_erosion, 0.3), 1.0)
     # Plants (once they exist) hold soil on wet ground; bare wet ground
-    # washes away faster. Deserts are bare either way.
+    # washes away faster (vegetation's ground cover: canopy, herbs, moss and
+    # crust). Deserts are bare either way.
     wet = np.clip(sim.precip / 800.0, 0, 1)
-    sim.veg = (sim.t >= p.plants_from) * wet * np.clip((sim.t_warm - 5) / 10, 0, 1) * (sim.w_elev > 0)
-    k_mult = k_mult * (1 + 0.6 * wet * (1 - sim.veg))
+    k_mult = k_mult * (1 + 0.6 * wet * (1 - sim.veg * (sim.w_elev > 0)))
     t0 = t
     # m of elevation per km: of what erosion takes off the top (the
     # sediment cover if there is one, else the basement), and of the
