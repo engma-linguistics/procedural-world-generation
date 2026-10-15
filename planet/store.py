@@ -671,21 +671,66 @@ def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
 
-def save_checkpoint(run_dir: Path, sim) -> Path:
+def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
     """The state, with the plates' geological record (rec, lith) zeroed
     where they own no crust (dead slots, cells their crust has left: a
     record is only read on owned cells, and written when a plate gains
     one), which keeps it from doubling the file. (The older columns can't
     be zeroed the same way: a volcano still reads the swell of a cell its
-    crust has left, volcanism.base_level.)"""
+    crust has left, volcanism.base_level.) writer: a CheckpointWriter to
+    pickle, compress and write it in the background (sim.state() is a deep
+    copy taken here, so the run can go on meanwhile)."""
     path = checkpoint_path(run_dir, sim.t)
     path.parent.mkdir(parents=True, exist_ok=True)
     state = sim.state()
+    if writer is None:
+        _write_checkpoint(path, state)
+    else:
+        writer.submit(path, state)
+    return path
+
+
+def _write_checkpoint(path: Path, state: dict):
     pl = state["plates"]
     for name in ("rec", "lith"):
         getattr(pl, name)[~pl.owned] = 0
     write_atomic(path, zlib.compress(pickle.dumps(state, protocol=5), 1))
-    return path
+
+
+class CheckpointWriter:
+    """Writes checkpoints on one background thread, one at a time (zlib and
+    the disk write release the GIL: ~0.75 s per checkpoint at level 6, ~2.4 s
+    at level 7, off the run's main thread; PW-258). Use as a context manager:
+    leaving it waits for the last write and raises its error, if any."""
+
+    def __init__(self):
+        self._thread = None
+        self._error = None
+
+    def submit(self, path: Path, state: dict):
+        self.wait()
+
+        def work():
+            try:
+                _write_checkpoint(path, state)
+            except BaseException as e:  # (raised again by wait, on the run's thread)
+                self._error = e
+        self._thread = threading.Thread(target=work, name="checkpoint", daemon=True)
+        self._thread.start()
+
+    def wait(self):
+        if self._thread is not None:
+            self._thread.join()
+            self._thread = None
+        if self._error is not None:
+            e, self._error = self._error, None
+            raise e
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.wait()
 
 
 def checkpoints(run_dir: Path) -> list[float]:

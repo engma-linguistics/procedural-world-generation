@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import numpy as np
 
+import numba
 from numba import njit, prange
 
 from . import kernels
@@ -214,7 +215,9 @@ def _coarse(grid: Grid, level: int = 3):
     return _COARSE[key]
 
 
-@njit(cache=True, parallel=True)
+BLUR_CELLS_PER_THREAD = 2500
+
+
 def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w, inv_off, inv):
     """Average f onto the coarse grid, blur it there (iters steps of
     _smooth, sk: the coarse grid's blur weights) and interpolate it back. Each fine cell counts towards all
@@ -224,29 +227,38 @@ def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w, inv_off, inv):
     shares (inv[inv_off[j]:inv_off[j + 1]], flat indices i * K + k into
     cand / w, ascending) in the order a loop over the fine cells would add
     them, so the result is bit-identical to that loop at any thread count."""
+    c = _coarse_down(f, nc, cand, w, inv_off, inv)
+    # (the coarse grid is small: each blur step's parallel loop costs more to start on many threads
+    # than it saves, ~40 us at 16 threads; one thread per ~2500 cells is about the fastest)
+    nt = numba.get_num_threads()
+    numba.set_num_threads(max(1, min(nt, nc // BLUR_CELLS_PER_THREAD)))
+    try:
+        c = _smooth(c, off, idx, sk, iters)
+    finally:
+        numba.set_num_threads(nt)
+    return _coarse_up(c, cand, w)
+
+
+@njit(cache=True, parallel=True)
+def _coarse_down(f, nc, cand, w, inv_off, inv):
     K = cand.shape[1]
-    tot = np.zeros(nc)
-    cnt = np.zeros(nc)
+    c = np.empty(nc)
     for j in prange(nc):
         st, sc = 0.0, 0.0
         for r in range(inv_off[j], inv_off[j + 1]):
             i, k = inv[r] // K, inv[r] % K
             st += w[i, k] * f[i]
             sc += w[i, k]
-        tot[j], cnt[j] = st, sc
-    c = tot / np.maximum(cnt, 1e-12)
-    g = np.empty(nc)
-    for _ in range(iters):
-        for j in prange(nc):
-            t = 0.0
-            for e in range(off[j], off[j + 1]):
-                t += sk[e] * (c[idx[e]] - c[j])
-            g[j] = c[j] + t
-        c, g = g, c
-    out = np.empty(f.shape[0])
-    for i in prange(f.shape[0]):
+        c[j] = st / max(sc, 1e-12)
+    return c
+
+
+@njit(cache=True, parallel=True)
+def _coarse_up(c, cand, w):
+    out = np.empty(cand.shape[0])
+    for i in prange(cand.shape[0]):
         o = 0.0
-        for k in range(K):
+        for k in range(cand.shape[1]):
             o += w[i, k] * c[cand[i, k]]
         out[i] = o
     return out
