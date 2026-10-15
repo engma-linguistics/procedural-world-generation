@@ -314,7 +314,7 @@ planet simulate ...`; `serve` then shows that root's runs).
   upstream runoff in cells x m/yr; times a cell's area per year = m3/s),
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
-  surface in m, same datum as `elevation`; equal to `elevation` where there's
+  surface in m to 0.1 m, same datum as `elevation`; equal to `elevation` where there's
   no lake, so `lake_level - elevation` is the water depth). Sea layers:
   `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`; `sst`,
   `sst_jul`, `sst_jan` (sea-surface temperature, C), `salinity` (psu) and
@@ -348,7 +348,7 @@ the annual wind, current and jet layers; worlds have those plus the July /
 January winds, and add `biome`, `runoff`, `evaporation`, `pet`,
 `warm_month`, `cold_month` and the wave and tide layers. World layers are
 stored inline in the world's JSON; runs and zooms use `.bin` files. Run
-frames keep `lake_depth` (m of water) where worlds keep `lake_level` (its
+frames keep `lake_depth` (m of water, stored in decimetres) where worlds keep `lake_level` (its
 surface); `lake_kind` means the same in both. Time zooms keep a few of these
 names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
 geology). Zooms have

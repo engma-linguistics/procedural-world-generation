@@ -96,7 +96,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "lake": lk["wet"].astype(int),
         # lake surface, m, same datum as "elevation" (lake_level - elevation = water depth);
         # equal to elevation where there's no lake
-        "lake_level": np.maximum(np.round(lk["level"]).astype(int), elev_m),
+        "lake_level": np.where(lk["kind"] > 0, np.maximum(np.round(lk["level"], 1), elev_m), elev_m),  # (0.1 m: shallow lakes)
         "lake_kind": lk["kind"].astype(int),  # hydrology: 0 none, 1 open (fresh), 2 closed (salt), 3 salt pan
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual

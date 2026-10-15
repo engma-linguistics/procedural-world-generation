@@ -413,9 +413,11 @@ function obsColor(ov, i, c) {
 // balances the inflow), 3 salt pan (a closed basin's dry floor). Depth: a run
 // frame stores lake_depth, a world lake_level (its surface; minus elevation =
 // depth); a world from before lake_kind has only lake (0/1, drawn as fresh).
-const LAKE_KINDS = { 1: ['fresh lake', '#4f8fcf'], 2: ['salt lake', '#4fb3a0'], 3: ['salt pan', '#efe8d8'] };
+// (fresh: a bright cyan, apart from the sea's blues; salt: pink, as brine
+// shrimp and algae colour real salt lakes, apart from the greens and blues)
+const LAKE_KINDS = { 1: ['fresh lake', '#38c8f0'], 2: ['salt lake', '#e58fbf'], 3: ['salt pan', '#efe8d8'] };
 const LAKE_COLS = Object.fromEntries(Object.entries(LAKE_KINDS).map(([k, [, c]]) => [k, new THREE.Color(c)]));
-const DEEP_LAKE = new THREE.Color('#1f4f8a');
+const DEEP_LAKE = { 1: new THREE.Color('#137fb0'), 2: new THREE.Color('#a8508a') };  // (deep water stays its kind's hue)
 // the colour layers lakes are drawn on (not rainfall or climate: their own blues and greens would read as lakes)
 const LAKE_LAYERS = new Set(['biome', 'elevation']);
 function lakeKind(i) {
@@ -433,13 +435,15 @@ function lakeColor(i, c) {
   if (!k || !LAKE_COLS[k]) return false;
   c.copy(LAKE_COLS[k]);
   const d = lakeDepth(i);
-  if (k !== 3 && d > 0) c.lerp(DEEP_LAKE, Math.min(d / 500, 1) * 0.6);
+  if (DEEP_LAKE[k] && d > 0) c.lerp(DEEP_LAKE[k], Math.min(d / 500, 1) * 0.8);
   return true;
 }
+// depth in words: whole metres from 10 m, tenths below (runs store decimetres, worlds a tenth-metre lake_level)
+const lakeDepthText = (d) => d >= 9.95 ? `~${Math.round(d)} m deep` : d >= 0.05 ? `~${d.toFixed(1)} m deep` : 'a few cm deep';
 function lakeLine(i) {
   const k = lakeKind(i), d = lakeDepth(i);
   if (!k) return null;
-  return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ~${Math.round(d)} m deep` : '');
+  return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ${lakeDepthText(d)}` : '');
 }
 
 // colour layers drawn at sea only -> their world layer
@@ -2293,7 +2297,8 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
                         jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
 
 function layersNeeded() {
-  const want = ['elevation', ...(COLOUR_NEEDS[state.layer] || [])];
+  // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer)
+  const want = ['elevation', 'lake_kind', ...(COLOUR_NEEDS[state.layer] || [])];
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
   return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
 }
