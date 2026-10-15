@@ -107,6 +107,24 @@ def cmd_zoom(args):
               f"{' (lake outlet)' if f['from_lake'] else ''} at {f['lat']:.2f}, {f['lon']:.2f}")
 
 
+def cmd_satellite(args):
+    """Adds (or redoes) the satellite view of saved worlds and zooms in place."""
+    from . import satellite as SAT
+    from . import zoom as Z
+    for ref in args.ids:
+        kind, _, rid = ref.rpartition(":")
+        kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
+        if len(kinds) != 1:
+            raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
+        if kinds[0] == "zoom":
+            print(S.rel(Z.add_satellite(rid)))
+        else:
+            path = S.find_world(rid)
+            w = W.load(path)
+            w["layers"].update(SAT.world_layers(w["grid"], w["layers"], float(w["meta"]["params"].get("tilt", 23.4))))
+            print(S.rel(W.save(w, w["name"], rid)))
+
+
 def cmd_timezoom(args):
     from . import timezoom as TZ
     out = TZ.timezoom(args.run, args.at, args.kyr, args.step, args.every, _parse_set(args.set),
@@ -262,6 +280,10 @@ def main():
     z.add_argument("--seed", type=int, default=1, help="detail noise variant")
     z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
     z.set_defaults(func=cmd_zoom)
+
+    sa = sub.add_parser("satellite", help="add or redo the satellite view of saved worlds and zooms (in place)")
+    sa.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
+    sa.set_defaults(func=cmd_satellite)
 
     h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
     h.add_argument("ref", help="world id, or run id (then --at; default: the run's end)")

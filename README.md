@@ -16,6 +16,7 @@ uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region a
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
 uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
+uv run python -m planet satellite <world-or-zoom-id>  # add / redo the true-colour satellite view in place
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
 ```
@@ -332,11 +333,15 @@ planet simulate ...`; `serve` then shows that root's runs).
   `sinking` (Sv of deep water sinking per cell), see `planet/ocean.py` (0 on
   land). Air: `dewpoint_jul/_jan` (C), `humidity_jul/_jan` (% relative
   humidity), `cloud_jul/_jan` (% cloud cover) and `sunshine_jul/_jan` (hours
-  of bright sunshine a day) for the two half-years (`climate.clouds`). World meta `overturning` has the
+  of bright sunshine a day) for the two half-years (`climate.clouds`). The satellite
+  view (`planet/satellite.py`): `sat` (each hemisphere's summer), `sat_jul`, `sat_jan`,
+  true colour as integers 0xRRGGBB. World meta `overturning` has the
   overturning's strength (`sv`, `north_sv`, `south_sv`), its sinking sites
   and a schematic of its loop (`ocean.loop_schematic`).
 - `worlds/highlights/<id>.json`: the highlights found in world `<id>` (a cache).
-- `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
+- `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom
+  (`preview.png` is the satellite view in summer, shaded, with rivers; `satellite.png`,
+  `satellite_jul.png`, `satellite_jan.png` are its unshaded true colours).
 - `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.
 
 Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
