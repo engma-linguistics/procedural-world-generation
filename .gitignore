@@ -10,3 +10,5 @@ zooms/
 !.claude/settings.json
 !.claude/hooks/
 data/
+# the server's job state (api.Jobs)
+.jobs/

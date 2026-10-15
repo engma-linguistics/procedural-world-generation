@@ -5,14 +5,16 @@ Plumes are fixed in the mantle (= world frame) while plates slide over them
 (sim.volcanoes), of two kinds:
 
 - hotspot vents: while the plate slides over a plume, a new vent opens every
-  ~50-120 km of plate motion (set by the plate's flexural wavelength). Each
+  1.5 flexural wavelengths of plate motion (params.vent_spacing; clipped to
+  GAP_KM = 60-150 km, give or take 30%: ~100 km on Hawaii-like 90 Myr
+  floor; vent_gap). Each
   is fed for as long as it sits over the plume (~1 Myr at Hawaii's speed),
   then carried off: a chain of separate volcanoes, youngest over the plume
   (Hawaii -> Midway -> Emperor seamounts).
 - arc volcanoes along subduction zones (Fuji, Rainier, the Andes' peaks).
 
 Each volcano keeps its own volume and height. Its crust goes onto the
-world grid as a narrow Gaussian (VENT_KM, ~30 km), so at level 7 (55 km
+world grid as a narrow Gaussian (VENT_KM = 25 km), so at level 7 (55 km
 cells) and finer consecutive vents stand as separate islands; at level 6
 they blur. After it dies a volcano sinks with its sea floor (thermal
 subsidence plus the plume swell decaying behind it: isostasy's base

@@ -644,7 +644,17 @@ LOOP_MIN_SV = 0.3  # sites weaker than this get no drawn loop
 LOOP_DEEP_M = 1500.0  # the deep return flow keeps to sea deeper than this
 LOOP_CHAN_LAT = 70.0  # deg: a circumpolar channel equatorward of this is where deep water wells up
 LOOP_GAP_DEG = 20.0  # deg: no deep limb from a site this far from the deep sea that leads to the upwelling
-LOOP_WEST_KM = 500.0  # ... preferring a western boundary: a step costs 1 + (km to land due west) / this
+LOOP_WEST_KM = 500.0  # ... preferring a western boundary: a step costs 1 + min(km to land due west, LOOP_WEST_CAP_KM) / this
+LOOP_WEST_CAP_KM = 3000.0  # (at most 7x a western-boundary step: enough to hug the slope, not to send
+# the limb round the far side of the planet for a western boundary)
+# The deep limb keeps to the deep sea where it can, but a basin walled in by
+# ridges or shelves still spills its dense water over the sill (the Nordic
+# seas over the Greenland-Scotland ridge, ~600-850 m): a step over sea
+# shallower than LOOP_DEEP_M costs LOOP_SILL_COST x, and over sea shallower
+# than LOOP_SILL_M LOOP_SHELF_COST x, a deep step's
+LOOP_SILL_M = 400.0
+LOOP_SILL_COST = 3.0
+LOOP_SHELF_COST = 10.0
 
 
 def _west_distance(grid: Grid, land: np.ndarray, max_km: float, min_km2: float) -> np.ndarray:
@@ -724,7 +734,8 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
           by deep water welling up in the channel (as round Antarctica).
         limb "deep": NOT modelled (the model has no deep ocean): the
           textbook path of the deep return flow, the cheapest route through
-          sea deeper than LOOP_DEEP_M preferring western boundaries, to
+          sea deeper than LOOP_DEEP_M (over sills and shelves only at a
+          cost: LOOP_SILL_COST, LOOP_SHELF_COST) preferring western boundaries, to
           where deep water comes back up: a circumpolar channel (equatorward
           of LOOP_CHAN_LAT) in the other hemisphere if there is one (the
           Southern Ocean), else the equatorial band.
@@ -744,10 +755,13 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
     n = grid.n
     chan = sea & _circumpolar(grid, sea, tune)
     chan_lat = _chan_lat(grid, chan & (np.abs(grid.lat) < LOOP_CHAN_LAT))
-    # deep limb: through deep sea, along the western boundaries
-    deep = sea & (-elev > LOOP_DEEP_M)
-    west = _west_distance(grid, ~sea, 4000.0, tune["island_km2"])
-    cost = ((1.0 + west / LOOP_WEST_KM) * np.where(-elev > 3000.0, 1.0, 1.5))[grid.nbr_idx]
+    # deep limb: through deep sea, along the western boundaries; over sills
+    # and shelves only at a cost (LOOP_SILL_COST, LOOP_SHELF_COST)
+    depth = -elev
+    deep = sea & (depth > LOOP_DEEP_M)
+    west = _west_distance(grid, ~sea, LOOP_WEST_CAP_KM, tune["island_km2"])
+    step = np.select([depth > 3000.0, depth > LOOP_DEEP_M, depth > LOOP_SILL_M], [1.0, 1.5, LOOP_SILL_COST], LOOP_SHELF_COST)
+    cost = ((1.0 + west / LOOP_WEST_KM) * step)[grid.nbr_idx]
     dest = {}
     for hemi in (1, -1):
         # (a channel between continents, as the Southern Ocean's: not a polar sea's ring round the pole)
@@ -758,7 +772,7 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
 
     def routes(key, targets):
         if key not in runs:
-            runs[key] = _paths(np.flatnonzero(targets), deep, grid.nbr_off, grid.nbr_idx, cost)
+            runs[key] = _paths(np.flatnonzero(targets), sea, grid.nbr_off, grid.nbr_idx, cost)
         return runs[key]
 
     # surface limb: from the low latitudes, riding the model's inflow

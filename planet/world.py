@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, ocean, vegetation
+from . import climate, coast, hydrology, ocean, satellite, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -104,7 +104,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "lake": lk["wet"].astype(int),
         # lake surface, m, same datum as "elevation" (lake_level - elevation = water depth);
         # equal to elevation where there's no lake
-        "lake_level": np.maximum(np.round(lk["level"]).astype(int), elev_m),
+        "lake_level": np.where(lk["kind"] > 0, np.maximum(np.round(lk["level"], 1), elev_m), elev_m),  # (0.1 m: shallow lakes)
         "lake_kind": lk["kind"].astype(int),  # hydrology: 0 none, 1 open (fresh), 2 closed (salt), 3 salt pan
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
@@ -140,6 +140,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         layers[k] = np.round(v, 2)
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
+    # the satellite view (satellite.py, PW-083): true colour, 0xRRGGBB, each hemisphere's summer / July / January
+    layers.update(satellite.world_layers(grid, layers, tilt))
 
     meta = {
         **meta,

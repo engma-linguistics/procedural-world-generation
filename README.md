@@ -16,6 +16,7 @@ uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region a
 uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
 uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
+uv run python -m planet satellite <world-or-zoom-id>  # add / redo the true-colour satellite view in place
 uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
 uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
 ```
@@ -38,12 +39,14 @@ moment on screen: the highest peak (and the highest ice-free one, when the
 top is under an ice cap), the longest mountain range, the largest and
 longest rivers, the steepest big rivers and waterfalls, canyons, river mouths
 where deltas could build, fjord coasts, Mediterranean "wine country", volcanic
-arcs, hotspot islands, rifts, plateaus, rain shadows, coral coasts, the biggest
+arcs, hotspot island chains, atoll groups, rifts, the fastest plate (at its
+leading edge), plateaus, rain shadows, coral coasts, the biggest
 lake, salt lakes, salt flats and inland basins, deserts, rainforests, ice
 sheets, the deepest trench, islands and archipelagos, the most varied 1000 km
-square and a few climate records. Worlds with
+square and a few climate records; from the vegetation, great forests, the
+great savanna, wetlands, a maquis coast and the treeline. Worlds with
 July / January layers also get travel tips, each with the numbers that make it
-in its own hemisphere's season: beach destinations, ski country, mild-winter
+in its own hemisphere's season: beach destinations, ski country, winter-sun
 retreats and a year-round resort (a beach and skiing within 400 km)
 (`planet/highlights.py`; cached in `worlds/highlights/`). On ~110 km cells a
 "waterfall" is a steep reach of river; each zoom lists its own pixel-scale
@@ -326,18 +329,22 @@ planet simulate ...`; `serve` then shows that root's runs).
   upstream runoff in cells x m/yr; times a cell's area per year = m3/s),
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
-  surface in m, same datum as `elevation`; equal to `elevation` where there's
+  surface in m to 0.1 m, same datum as `elevation`; equal to `elevation` where there's
   no lake, so `lake_level - elevation` is the water depth). Sea layers:
   `wave_power` (kW/m) and `tide_range` (m), see `planet/coast.py`; `sst`,
   `sst_jul`, `sst_jan` (sea-surface temperature, C), `salinity` (psu) and
   `sinking` (Sv of deep water sinking per cell), see `planet/ocean.py` (0 on
   land). Air: `dewpoint_jul/_jan` (C), `humidity_jul/_jan` (% relative
   humidity), `cloud_jul/_jan` (% cloud cover) and `sunshine_jul/_jan` (hours
-  of bright sunshine a day) for the two half-years (`climate.clouds`). World meta `overturning` has the
+  of bright sunshine a day) for the two half-years (`climate.clouds`). The satellite
+  view (`planet/satellite.py`): `sat` (each hemisphere's summer), `sat_jul`, `sat_jan`,
+  true colour as integers 0xRRGGBB. World meta `overturning` has the
   overturning's strength (`sv`, `north_sv`, `south_sv`), its sinking sites
   and a schematic of its loop (`ocean.loop_schematic`).
 - `worlds/highlights/<id>.json`: the highlights found in world `<id>` (a cache).
-- `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom.
+- `zooms/<id>/zoom.json`, `layers/<name>.bin`, `*.png`: a regional zoom
+  (`preview.png` is the satellite view in summer, shaded, with rivers; `satellite.png`,
+  `satellite_jul.png`, `satellite_jan.png` are its unshaded true colours).
 - `grids/L<level>.json`: grid geometry shared by all runs and worlds at that level.
 
 Runs and worlds share one vocabulary of layer names (`store.LAYERS`):
@@ -360,7 +367,7 @@ the annual wind, current and jet layers; worlds have those plus the July /
 January winds, and add `biome`, `runoff`, `evaporation`, `pet`,
 `warm_month`, `cold_month` and the wave and tide layers. World layers are
 stored inline in the world's JSON; runs and zooms use `.bin` files. Run
-frames keep `lake_depth` (m of water) where worlds keep `lake_level` (its
+frames keep `lake_depth` (m of water, stored in decimetres) where worlds keep `lake_level` (its
 surface); `lake_kind` means the same in both. Time zooms keep a few of these
 names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
 geology). Zooms have

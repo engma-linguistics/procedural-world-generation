@@ -178,6 +178,7 @@
     <label data-needs="current_e" title="Surface currents (wind-driven gyres) as streamlines: brighter = faster, chevrons show the way"><input type="checkbox" id="currents"> Ocean currents</label>
     <label data-needs="sinking" title="The thermohaline overturning: where deep water sinks (rings, sized by Sv), the warm surface inflow feeding it (the model's route) and a schematic of the deep return flow (not modelled)"><input type="checkbox" id="overturning"> Overturning (deep water)</label>
     <label data-needs="jet_e" title="Upper-level winds (~10 km up), yearly average"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
+    <label data-needs="cloud_jul" title="Clouds over the map: patches covering the season's cloud share (the cloud layer), shapes made up (noise). Best with the satellite layer."><input type="checkbox" id="clouds"> Clouds</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
     <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
     <label><input type="checkbox" id="tropics"> Equator, tropics, polar circles</label>
@@ -366,7 +367,7 @@ function obsView(layer) {
 // 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
 const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation',
                    'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint', cloud: 'cloud',
-                   sunshine: 'sunshine', 'leaf area': 'lai' };
+                   sunshine: 'sunshine', 'leaf area': 'lai', satellite: 'sat' };
 const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
@@ -381,6 +382,7 @@ function seasonalData(layer) {
 }
 function seasonUnits(layer) {
   const s = colourSeason(layer);
+  if (layer === 'satellite') return s ? `true colour in ${SEASON_NAMES[s]}` : "true colour, each hemisphere's summer (July north, January south)";
   if (!s) return UNITS[layer];
   const half = s === 'jul' ? 'Apr–Sep' : 'Oct–Mar';
   return { temperature: `°C, ${SEASON_NAMES[s]} mean`, sst: `°C sea surface, ${SEASON_NAMES[s]}`, lai: `m² of leaf per m² (LAI), ${half}`,
@@ -413,9 +415,11 @@ function obsColor(ov, i, c) {
 // balances the inflow), 3 salt pan (a closed basin's dry floor). Depth: a run
 // frame stores lake_depth, a world lake_level (its surface; minus elevation =
 // depth); a world from before lake_kind has only lake (0/1, drawn as fresh).
-const LAKE_KINDS = { 1: ['fresh lake', '#4f8fcf'], 2: ['salt lake', '#4fb3a0'], 3: ['salt pan', '#efe8d8'] };
+// (fresh: a bright cyan, apart from the sea's blues; salt: pink, as brine
+// shrimp and algae colour real salt lakes, apart from the greens and blues)
+const LAKE_KINDS = { 1: ['fresh lake', '#38c8f0'], 2: ['salt lake', '#e58fbf'], 3: ['salt pan', '#efe8d8'] };
 const LAKE_COLS = Object.fromEntries(Object.entries(LAKE_KINDS).map(([k, [, c]]) => [k, new THREE.Color(c)]));
-const DEEP_LAKE = new THREE.Color('#1f4f8a');
+const DEEP_LAKE = { 1: new THREE.Color('#137fb0'), 2: new THREE.Color('#a8508a') };  // (deep water stays its kind's hue)
 // the colour layers lakes are drawn on (not rainfall or climate: their own blues and greens would read as lakes)
 const LAKE_LAYERS = new Set(['biome', 'elevation']);
 function lakeKind(i) {
@@ -433,13 +437,15 @@ function lakeColor(i, c) {
   if (!k || !LAKE_COLS[k]) return false;
   c.copy(LAKE_COLS[k]);
   const d = lakeDepth(i);
-  if (k !== 3 && d > 0) c.lerp(DEEP_LAKE, Math.min(d / 500, 1) * 0.6);
+  if (DEEP_LAKE[k] && d > 0) c.lerp(DEEP_LAKE[k], Math.min(d / 500, 1) * 0.8);
   return true;
 }
+// depth in words: whole metres from 10 m, tenths below (runs store decimetres, worlds a tenth-metre lake_level)
+const lakeDepthText = (d) => d >= 9.95 ? `~${Math.round(d)} m deep` : d >= 0.05 ? `~${d.toFixed(1)} m deep` : 'a few cm deep';
 function lakeLine(i) {
   const k = lakeKind(i), d = lakeDepth(i);
   if (!k) return null;
-  return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ~${Math.round(d)} m deep` : '');
+  return LAKE_KINDS[k][0] + (k !== 3 && d != null ? `, ${lakeDepthText(d)}` : '');
 }
 
 // colour layers drawn at sea only -> their world layer
@@ -451,6 +457,7 @@ function cellColors(layer) {
   const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
   for (let i = 0; i < n; i++) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
+    else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'vegetation') {
@@ -515,6 +522,7 @@ function availableLayers() {
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
     hasLayer('vegetation') ? ['vegetation', 'tree cover', 'NPP'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
+  if (V.layers.sat) ls.unshift('satellite');  // true colour (satellite.py, PW-083)
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
   if (V.layers.climate) ls.push('climate');
@@ -592,6 +600,7 @@ function paint() {
   const L = V.layers, cc = V.cornerCells, globe = topo.globe;
   const col = cellColors(state.layer);
   const smooth = $('smooth').checked, ex = reliefScale();
+  const shadeMap = !globe && state.layer === 'satellite', mapZ = 2 / Math.PI;  // relief: sphere radii -> map units (1 = 90 deg)
   const nc = cc.length;
   const cornerR = new Float32Array(nc), cornerCol = smooth ? new Float32Array(3 * nc) : null;
   for (let k = 0; k < nc; k++) {
@@ -608,15 +617,32 @@ function paint() {
     const i = vCell[v], k = vCorner[v];
     const r = !globe ? 1 : (k < 0 ? 1 + ex * Math.max(L.elevation[i], 0) : cornerR[k]);
     pos[3 * v] = base[3 * v] * r; pos[3 * v + 1] = base[3 * v + 1] * r; pos[3 * v + 2] = base[3 * v + 2] * (globe ? r : 1);
+    if (shadeMap) pos[3 * v + 2] = mapZ * ((k < 0 ? 1 + ex * Math.max(L.elevation[i], 0) : cornerR[k]) - 1);
     const src = smooth && k >= 0 ? cornerCol : col, j = smooth && k >= 0 ? k : i;
     rgb[3 * v] = src[3 * j]; rgb[3 * v + 1] = src[3 * j + 1]; rgb[3 * v + 2] = src[3 * j + 2];
   }
   mesh.geometry.attributes.position.needsUpdate = true;
   mesh.geometry.attributes.color.needsUpdate = true;
   if (globe) mesh.geometry.computeVertexNormals();
+  if (shadeMap) mapHillshade(pos, rgb);
   mesh.geometry.computeBoundingSphere();
   buildOverlays();
   renderLegend();
+}
+
+// The flat map's hill shading (the satellite view; the globe has its light):
+// the relief as height, lit from the north-west 40 deg up, as the zoom's
+// hillshade, then flattened again so the overlays stay on top.
+const MAP_LIGHT = new THREE.Vector3(-Math.SQRT1_2, Math.SQRT1_2, Math.tan(40 * Math.PI / 180)).normalize();
+function mapHillshade(pos, rgb) {
+  mesh.geometry.computeVertexNormals();
+  const nr = mesh.geometry.attributes.normal.array, flat = MAP_LIGHT.z;
+  for (let v = 0; v < pos.length / 3; v++) {
+    const sh = Math.max(0, nr[3 * v] * MAP_LIGHT.x + nr[3 * v + 1] * MAP_LIGHT.y + nr[3 * v + 2] * MAP_LIGHT.z);
+    const f = 0.4 + 0.6 * sh / flat;
+    rgb[3 * v] *= f; rgb[3 * v + 1] *= f; rgb[3 * v + 2] *= f;
+    pos[3 * v + 2] = 0;
+  }
 }
 
 // cell centre position (with relief) for overlays
@@ -650,10 +676,93 @@ function plateVelocity(i) {
   const v = V.layers._plate_velocity; return v ? v[i] : null;
 }
 
+// ------------------------------------------------------------ clouds
+// The cloud overlay: an equirectangular texture whose patches cover each
+// place's cloud share (cloud_jul / cloud_jan, or their mean) of the sky.
+// The shapes are made up: fractal noise on the sphere, thresholded at the
+// local share (the noise's own distribution, so the cover comes out right).
+const CLOUD_W = 2048, CLOUD_H = 1024, cloudCache = new Map();
+function hash3(x, y, z) {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function vnoise(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const u = x - xi, v = y - yi, w = z - zi;
+  const fu = u * u * (3 - 2 * u), fv = v * v * (3 - 2 * v), fw = w * w * (3 - 2 * w);
+  const l = (a, b, t) => a + (b - a) * t;
+  return l(l(l(hash3(xi, yi, zi), hash3(xi + 1, yi, zi), fu), l(hash3(xi, yi + 1, zi), hash3(xi + 1, yi + 1, zi), fu), fv),
+           l(l(hash3(xi, yi, zi + 1), hash3(xi + 1, yi, zi + 1), fu), l(hash3(xi, yi + 1, zi + 1), hash3(xi + 1, yi + 1, zi + 1), fu), fv), fw);
+}
+function cloudTexture(season) {
+  const key = `${V.id}|${season}`;
+  if (cloudCache.has(key)) return cloudCache.get(key);
+  const L = V.layers, G = V.grid, W = CLOUD_W, H = CLOUD_H;
+  // the cloud share per texel: cells drawn as polygons, blurred
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const cx = cv.getContext('2d');
+  for (let i = 0; i < V.n; i++) {
+    const c = season ? L['cloud_' + season][i] : 0.5 * (L.cloud_jul[i] + L.cloud_jan[i]), g = Math.round(2.55 * c);
+    cx.fillStyle = `rgb(${g},${g},${g})`;
+    const lon0 = G.lon[i], cs = G.cells[i];
+    const xs = cs.map((k) => { let d = G.corner_lon[k] - lon0; d -= 360 * Math.round(d / 360); return (lon0 + d + 180) / 360 * W; });
+    const shifts = [0]; if (Math.min(...xs) < 0) shifts.push(W); if (Math.max(...xs) > W) shifts.push(-W);
+    for (const sh of shifts) {
+      cx.beginPath();
+      cs.forEach((k, j) => { const y = (90 - G.corner_lat[k]) / 180 * H; j ? cx.lineTo(xs[j] + sh, y) : cx.moveTo(xs[j] + sh, y); });
+      cx.fill();
+    }
+  }
+  const cv2 = document.createElement('canvas'); cv2.width = W; cv2.height = H;
+  const c2 = cv2.getContext('2d');
+  c2.filter = 'blur(10px)'; c2.drawImage(cv, 0, 0);
+  const share = c2.getImageData(0, 0, W, H).data;
+  // fractal noise on the sphere (stretched east-west a little, as weather bands are)
+  const nz = new Float32Array(W * H);
+  for (let r = 0; r < H; r++) {
+    const la = (90 - (r + 0.5) * 180 / H) * Math.PI / 180, cl = Math.cos(la), sl = Math.sin(la);
+    for (let q = 0; q < W; q++) {
+      const lo = ((q + 0.5) / W * 360 - 180) * Math.PI / 180;
+      const x = cl * Math.cos(lo), y = sl * 1.6, z = cl * Math.sin(lo);
+      let f = 6, a = 1, v = 0, s = 0;
+      for (let o = 0; o < 7; o++) { v += a * vnoise(x * f + 17, y * f + 31, z * f + 5); s += a; f *= 2.1; a *= 0.55; }
+      nz[r * W + q] = v / s;
+    }
+  }
+  // the noise's distribution (a sample), to threshold it at quantiles
+  const smp = []; for (let j = 0; j < nz.length; j += 97) smp.push(nz[j]);
+  smp.sort((a, b) => a - b);
+  const qf = (u) => smp[Math.min(smp.length - 1, Math.max(0, Math.floor(u * smp.length)))];
+  const img = c2.createImageData(W, H), d = img.data;
+  for (let j = 0; j < W * H; j++) {
+    const c = 0.9 * share[4 * j] / 255, t = qf(1 - c), soft = 0.06;
+    const a = Math.min(1, Math.max(0, (nz[j] - t + soft) / (2 * soft)));
+    d[4 * j] = d[4 * j + 1] = d[4 * j + 2] = 250; d[4 * j + 3] = Math.round(225 * a * a * (3 - 2 * a));
+  }
+  c2.filter = 'none'; c2.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(cv2);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  cloudCache.set(key, tex);
+  return tex;
+}
+function cloudOverlay() {
+  const s = state.season && V.layers['cloud_' + state.season] ? state.season : '';
+  const tex = cloudTexture(s), globe = state.mode === 'globe';
+  const geo = globe ? new THREE.SphereGeometry(1 + reliefScale() * 9000, 128, 64) : new THREE.PlaneGeometry(4, 2);
+  const mat = globe ? new THREE.MeshLambertMaterial({ map: tex, transparent: true, depthWrite: false })
+                    : new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+  const m = new THREE.Mesh(geo, mat);
+  if (!globe) m.position.z = 0.004;
+  m.raycast = () => {};  // (hovering picks the ground under the clouds)
+  return m;
+}
+
 function buildOverlays() {
   Object.values(overlays).forEach((o) => { group.remove(o); o.geometry.dispose(); });
   overlays = {};
   const G = V.grid, L = V.layers, globe = state.mode === 'globe';
+  if ($('clouds').checked && L.cloud_jul && L.cloud_jan) overlays.clouds = cloudOverlay();
   const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;   // skip lines across the dateline
 
   if ($('rivers').checked && L.flow && L.downstream) {
@@ -671,8 +780,9 @@ function buildOverlays() {
       if (wraps(a, b)) continue;
       (L.flow[i] >= big ? large : small).push(...a, ...b);
     }
-    overlays.rivers = lineObj(small, 0x4fb3ff);
-    overlays.riversBig = lineObj(large, 0xa8e1ff);
+    const sat = state.layer === 'satellite';  // (river water in the satellite view: dark)
+    overlays.rivers = lineObj(small, sat ? 0x2a4d63 : 0x4fb3ff, sat ? 0.7 : 1);
+    overlays.riversBig = lineObj(large, sat ? 0x24485e : 0xa8e1ff);
   }
   if ($('hotspots').checked && V.hotspots) {
     const pts = [], globe_ = globe;
@@ -1220,6 +1330,9 @@ function renderLegend() {
       return big.length ? `<span><b class="muted" style="font-weight:600">${g}:</b></span>` +
         big.map((t) => `<span title="${esc(t.text || t.name)}">${sw(t.color, '')}${t.name} ${pct(t.id)}%</span>`).join('') : '';
     }).join('') + `<span class="muted">(named vegetation types, % of land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
+  } else if (state.layer === 'satellite') {
+    el.innerHTML = `<span>${seasonUnits('satellite')}: plants by type and season, bare ground, snow, ice, lakes and sea</span>` +
+      '<span class="muted">(satellite.py; season picker: year = each hemisphere\'s summer; tick Clouds under Overlays)</span>';
   } else if (state.layer === 'plant type') {
     const p = V.pfts.find((q) => q.code === state.pft);
     el.innerHTML = `<div><div class="grad" style="background:linear-gradient(90deg,#6b675f,${p?.color || '#fff'})"></div>
@@ -1464,8 +1577,7 @@ async function startTimezoom() {
   if (job.finished) { if (V.kind === 'run' && !V.tz) renderRunSummary(); return; }
   while (job === tzJob) {
     let j;
-    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(out.job);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (V.kind === 'run' && !V.tz && !state.playing) renderRunSummary();
@@ -1531,8 +1643,7 @@ async function startFinish() {
   if (job.finished) { if (V.kind === 'run') renderRunSummary(); return; }
   while (job === finJob) {
     let j;
-    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(out.job);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (V.kind === 'run' && !state.playing) renderRunSummary();
@@ -1904,7 +2015,7 @@ seg('modeSeg', 'mode', () => {
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
 const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'overturning', 'jet',
-                     'axis', 'tropics'];
+                     'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
 function windKey() {
@@ -2015,12 +2126,23 @@ async function startZoom() {
   pollJob(out.job);
 }
 
+// a job's state from the server. While it can't be reached (restarting: its
+// jobs survive that, PW-085) keep asking, every 1.5 s for up to a minute.
+async function fetchJob(id) {
+  for (let k = 0; ; k++) {
+    try { return await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); }
+    catch (err) {
+      if (k >= 40) return { status: 'error', error: 'lost the server: ' + err.message };
+      await new Promise((ok) => setTimeout(ok, 1500));
+    }
+  }
+}
+
 async function pollJob(id) {
   const job = zoomJob;
   while (job === zoomJob) {
     let j;
-    try { const r = await fetch(`../api/jobs/${id}`, { cache: 'no-store' }); j = await r.json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(id);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') {
       job.finished = true;
@@ -2089,7 +2211,7 @@ $('hlMarks').addEventListener('change', buildHighlightMarks);
 
 // categories (planet/highlights.py CATEGORIES): a colour each, on the markers and the list,
 // and a filter (state.hlCat, '' = all; ?hlcat= in the URL)
-const HL_CATS = { landscape: '#e8b86a', water: '#5fb8ff', climate: '#8fe07a', travel: '#ff8ad8', geology: '#ff6b4a' };
+const HL_CATS = { landscape: '#e8b86a', water: '#5fb8ff', climate: '#8fe07a', travel: '#ff8ad8', geology: '#ff6b4a', vegetation: '#3ccf9a' };
 const hlColor = (f) => HL_CATS[f.category] || '#c0c0c0';
 const hlShown = (f) => !state.hlCat || f.category === state.hlCat;
 state.hlCat = '';  // (?hlcat=: applyUrlOptions)
@@ -2293,7 +2415,8 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
                         jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
 
 function layersNeeded() {
-  const want = ['elevation', ...(COLOUR_NEEDS[state.layer] || [])];
+  // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer)
+  const want = ['elevation', 'lake_kind', ...(COLOUR_NEEDS[state.layer] || [])];
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
   return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
 }
@@ -2481,7 +2604,7 @@ function applyUrlOptions() {
   if (p.get('relief')) $('relief').value = p.get('relief');
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
-  if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology  // jul | jan: the winds' half-year and the temperature / rain season
+  if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }
 const urlp = applyUrlOptions();
@@ -2530,6 +2653,18 @@ async function init() {
   if (want.startsWith('run:')) await loadRun(want.slice(4), urlp.has('t') ? +urlp.get('t') : null);
   else await loadSelection(want);
   if (urlp.has('lat') && urlp.has('lon')) { goToLatLon(+urlp.get('lat'), +urlp.get('lon')); urlp.delete('lat'); urlp.delete('lon'); }
+  // ?view=lat,lon: turn the globe there without picking a cell (screenshots)
+  if (urlp.has('view')) {  // (at once, no animation)
+    const [la, lo] = urlp.get('view').split(',').map(Number);
+    $('spin').checked = false;
+    if (state.mode !== 'globe') turnTo(la, lo);
+    else {
+      const d = camera.position.distanceTo(controls.target);
+      controls.target.set(0, 0, 0);
+      camera.position.copy(new THREE.Vector3(...unitVec(Math.max(-80, Math.min(80, la)), lo)).applyQuaternion(group.quaternion).normalize().multiplyScalar(d));
+      camera.lookAt(0, 0, 0);
+    }
+  }
 }
 $('delBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;

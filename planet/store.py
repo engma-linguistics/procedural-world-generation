@@ -181,7 +181,7 @@ LAYERS = {
     "flow": _spec("u1", "cells x m/yr", "river flow: upstream runoff (x cell area / 1 yr = m3/s)",
                   scale=1 / 16, transform="log2p1"),
     "downstream": _spec("u1", "cell", "next cell down the river, -1 none", transform="nbr_slot"),
-    "lake_depth": _spec("<u2", "m", "lake water depth (lake surface - elevation; 0 off lakes)"),
+    "lake_depth": _spec("<u2", "m", "lake water depth (lake surface - elevation; 0 off lakes), in decimetres", scale=0.1),
     "lake_kind": _spec("u1", "id", "0 none, 1 open (fresh), 2 closed (salt), 3 salt pan (hydrology)"),
     "wind_e": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, east component", scale=0.02),
     "wind_n": _spec("i1", "~1 = steady trade wind", "annual-mean surface wind, north component", scale=0.02),
@@ -237,6 +237,10 @@ LAYERS = {
     "pft_dominant": _spec("u1", "id", "the plant functional type with the largest cover (255: none)"),
     "flooded": _spec("u1", "%", "share of the cell flooded part of the year (wetland habitat)"),
 }
+# the satellite view (satellite.py): true colour as 0xRRGGBB (worlds only)
+LAYERS["sat"] = _spec("<u4", "0xRRGGBB", "true colour, each hemisphere's summer (satellite.py)")
+LAYERS["sat_jul"] = _spec("<u4", "0xRRGGBB", "true colour in July (satellite.py)")
+LAYERS["sat_jan"] = _spec("<u4", "0xRRGGBB", "true colour in January (satellite.py)")
 from .vegetation import CODES as _VEG_CODES  # noqa: E402
 
 for _c in _VEG_CODES:

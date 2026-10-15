@@ -7,7 +7,7 @@ Durable how-to for the coordinating session: worktrees, merging, the server, run
 - Iterate at level 6 (~5 min per run is fine); level 7 is the showcase default.
 - Ask about genuine judgement calls (as `needs-decision` tickets); nudge systems rather than force them. Correct the owner's wrong assumptions rather than building on them.
 - No backward compatibility: old runs, worlds and zooms can be deleted whenever a change breaks them (`uv run python -m planet delete run:<id>` / `world:` / `zoom:`, or `--orphans`). Don't keep code paths only so old runs replay.
-- Run `uv run pytest` (~30 s) before every commit that touches `planet/`. Run `uv run python tools/scorecard.py` (~6 min) after model changes, and `tools/earth_check.py` after climate changes.
+- Run `uv run pytest` (~5 min; `-m 'not slow'` skips the level-5 envelope worlds) before every commit that touches `planet/`. Run `uv run python tools/scorecard.py` (~11 min) after model changes, and `tools/earth_check.py` after climate changes.
 
 ## Parallel agents and merging
 Each agent works in its own worktree, `.claude/worktrees/<branch>`, with `data runs worlds zooms grids` symlinked to the main checkout. Agents report remaining issues as inbox drafts (`issue-tracking/inbox/draft-*.md`, see `issue-tracking/README.md`), and should merge main before reporting.
@@ -29,13 +29,13 @@ pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open
 ## Run costs (laptop, often shared with 2–4 other jobs)
 | Level | Cells | Cell size | `simulate` time | Memory / disk |
 |---|---|---|---|---|
-| 6 | 41k | ~110 km | ~6 min per Gyr | checkpoint ~23 MB (≈229 MB per Gyr) |
-| 7 | 164k | ~55 km | ~20–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4 GB per Gyr, checkpoints ~80–130 MB each |
+| 6 | 41k | ~110 km | ~5–6 min per Gyr | checkpoints ~30–35 MB each; layers ~360–390 MB per Gyr (Oct 15, with vegetation) |
+| 7 | 164k | ~55 km | ~20–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4–1.7 GB per Gyr, checkpoints ~130–165 MB each (Oct 15) |
 | 8 | 655k | ~28 km | ~3–4 h per Gyr (4.1 h for 1.2 Gyr) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
 
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac; each parallel kernel launch costs ~40–57 µs.
-- The API runs one job at a time (numba kernels aren't thread-safe; PW-084).
+- The API runs one job at a time and one computation at a time (`api.COMPUTE`: numba's workqueue layer aborts on concurrent parallel kernels; PW-084). Restarting the server keeps its jobs (`.jobs/<port>.json`; queued and running ones run again).
 - Shell gotcha: zsh doesn't split `$x` into words, so `uv run python -m planet simulate $args` passes one argument. Use an array or bash. (A level-7 verification run failed silently this way on 2026-10-14.)
 
 ## Showcase recipes

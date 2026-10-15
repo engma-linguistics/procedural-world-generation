@@ -46,7 +46,9 @@ def test_values_sane(sim4):
     assert s.w_thick.min() >= 1.0 and s.w_thick.max() <= MAX_KM
     assert (s.w_cover >= 0).all() and (s.w_cover <= s.w_thick + 1e-9).all()
     assert (s.precip >= 0).all() and s.precip.max() < 10000
-    assert -95 < s.t_cold.min() and s.t_warm.max() < 60
+    # (-110: in this run an ice cap 2.4 km thick on a 7 km range at 78 N reaches -105 C by the lapse rate alone;
+    # see the inbox draft on polar ice on high ranges)
+    assert -110 < s.t_cold.min() and s.t_warm.max() < 60
     assert (s.t_warm >= s.temp - 1e-6).all() and (s.t_cold <= s.temp + 1e-6).all()
     assert (s.w_rock < len(ROCKS)).all()
     snap = s.snapshot()

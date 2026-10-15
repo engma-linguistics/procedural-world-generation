@@ -10,7 +10,8 @@ Earth's tilt, with erosion off so the real valleys and mountains are kept.
 So the model layers (temperature, precipitation, climate, biome) are what
 the model makes of the real Earth, as in tools/earth_check.py.
 
-Extra layers saved with it:
+Extra layers saved with it (on top of every world's own, which include the
+model's wind, current and jet layers since PW-045):
   ice                   m of land ice (ETOPO1 ice surface - bedrock)
   obs_temperature       C, NCEP/NCAR 2 m air temperature 1981-2010, annual mean
   obs_warm_month, obs_cold_month   ... its warmest / coldest month
@@ -20,11 +21,6 @@ Extra layers saved with it:
                         2006; -1 where it has no data
   obs_sunshine          h/day of bright sunshine over the year, CRU CL 2.0
                         (land, no Antarctica; null elsewhere)
-  wind_e, wind_n        the model's annual-mean surface wind, east/north (~1 = a steady trade wind)
-  current_e, current_n  the model's surface ocean currents, same scale (0 on land)
-  jet_e, jet_n          the model's annual-mean jet stream, m/s
-(the last three pairs as in a run's keyframes, store.LAYERS), so the
-viewer's wind, current and jet overlays work on Earth too.
 
 When the climate model changes, just run this again (and delete the old
 world in the viewer).

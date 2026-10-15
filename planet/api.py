@@ -1,6 +1,6 @@
 """What `planet serve` does beyond static files: regional zooms requested
-from the viewer. Plain functions plus a one-job-at-a-time queue, so tests can
-drive them without a socket.
+from the viewer. Plain functions plus a one-job-at-a-time queue (Jobs, saved
+to a file so a restart keeps it), so tests can drive them without a socket.
 
   POST /api/zoom      {run, t} or {world}, plus {lat, lon, size_km, res_km,
                       seed?, iterations? (landscape-pass iterations, default 15)}
@@ -40,7 +40,12 @@ from . import world as W
 from . import zoom as Z
 
 ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
-_slicing = threading.Lock()  # the zoom worker and highlights requests may slice the same run at once
+# One computation at a time in this process: numba's parallel kernels (the
+# only threading layer available here is "workqueue") abort the process when
+# two threads launch them at once, and the job worker and highlights
+# requests (server threads) both run them. Also keeps two of them from
+# slicing the same run at once. Re-entrant: a job slices inside it.
+COMPUTE = threading.RLock()
 
 
 class BadRequest(ValueError):
@@ -117,7 +122,7 @@ def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
     keyframe (a few seconds, and exactly what the viewer shows). Runs too old
     for that are replayed from t=0 instead, which refuses if the code has
     changed since. Reuses an existing slice."""
-    with _slicing:
+    with COMPUTE:
         return _slice_run(run_ref, t, progress)
 
 
@@ -189,12 +194,17 @@ def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> d
         run_dir = S.find_run(src["run"])
         at = keyframe_t(run_dir, src["t"])
         src["t"] = at
-        world_path = find_slice(run_dir, at) if cached_only else slice_run(src["run"], at)
+        world_path = find_slice(run_dir, at)
+        if world_path is None and not cached_only:
+            world_path = slice_run(src["run"], at)
     else:
         world_path = S.find_world(src["world"])
     d = None
     if world_path is not None:
-        d = H.cached(world_path) if cached_only else H.for_world(world_path, refresh)
+        d = H.cached(world_path) if cached_only or not refresh else None
+        if d is None and not cached_only:
+            with COMPUTE:  # (waits for a running job)
+                d = H.for_world(world_path, refresh)
     out = {"source": src, "world": world_path.stem if world_path else None,
            "t_myr": src.get("t"), "features": None}
     if d is None:
@@ -297,7 +307,7 @@ def finish_job(req: dict, progress=lambda f, msg: None) -> dict:
     from . import finish as F
     r = parse_finish_request(req)
     if "timezoom" in r:
-        with _slicing:
+        with COMPUTE:
             path = F.finish_timezoom(r["timezoom"], r["kyr"], progress=progress)
     else:
         path = slice_run(r["run"], r["t"], progress)
@@ -309,21 +319,76 @@ JOBS = {"timezoom": timezoom_job, "finish": finish_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
-    """The server's job queue runs zooms, time zooms and finished worlds (req["type"])."""
-    return JOBS.get(req.get("type"), zoom_job)(req, progress)
+    """The server's job queue runs zooms, time zooms and finished worlds (req["type"]),
+    each holding COMPUTE."""
+    with COMPUTE:
+        return JOBS.get(req.get("type"), zoom_job)(req, progress)
 
 
 class Jobs:
     """Background jobs run one at a time, in submission order, on one worker
-    thread. State is kept in memory only (lost on server restart)."""
+    thread. With a path, their state is saved there (JSON, on every status
+    change and at most every SAVE_EVERY_S of progress) and read back when the
+    server starts again: finished jobs keep answering the viewer's polls, and
+    jobs that were queued or running are queued again (their outputs are
+    reused or remade; a job interrupted twice is marked failed, in case it is
+    what brought the server down). Finished jobs are forgotten after KEEP_S."""
 
-    def __init__(self, fn=any_job):
+    SAVE_EVERY_S = 2.0
+    KEEP_S = 7 * 24 * 3600.0
+
+    def __init__(self, fn=any_job, path: Path | None = None):
         self.fn = fn
+        self.path = Path(path) if path else None
         self.jobs: dict[str, dict] = {}
         self.lock = threading.Lock()
         self.q: queue.Queue = queue.Queue()
         self.ids = itertools.count(1)
         self.worker = None
+        self._saved = 0.0
+        if self.path:
+            self._load()
+
+    def _load(self):
+        try:
+            jobs = json.loads(self.path.read_text())
+        except (OSError, ValueError):
+            return
+        now, again = time.time(), []
+        for j in sorted(jobs.values(), key=lambda j: j.get("created", 0)):
+            if j.get("status") in ("done", "error"):
+                if now - j.get("finished", now) < self.KEEP_S:
+                    self.jobs[j["id"]] = j
+                continue
+            if j.get("restarts", 0) >= 1:
+                j.update(status="error", error="the server restarted twice during this job", finished=now)
+            else:
+                j.update(status="queued", progress=0.0, restarts=j.get("restarts", 0) + 1,
+                         message="queued again after a server restart")
+                again.append(j["id"])
+            self.jobs[j["id"]] = j
+        n = max((int(k.split("-")[0]) for k in self.jobs if k.split("-")[0].isdigit()), default=0)
+        self.ids = itertools.count(n + 1)
+        with self.lock:
+            self._save(force=True)
+        for jid in again:
+            self._start_worker()
+            self.q.put(jid)
+
+    def _save(self, force: bool = False):
+        """Write the jobs (call with self.lock held)."""
+        if not self.path or (not force and time.time() - self._saved < self.SAVE_EVERY_S):
+            return
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.path.with_name(f"{self.path.name}.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps(self.jobs, default=str))
+        tmp.replace(self.path)
+        self._saved = time.time()
+
+    def _start_worker(self):
+        if self.worker is None or not self.worker.is_alive():
+            self.worker = threading.Thread(target=self._loop, daemon=True)
+            self.worker.start()
 
     def submit(self, req: dict) -> str:
         key = json.dumps(req, sort_keys=True)
@@ -334,9 +399,8 @@ class Jobs:
             jid = f"{next(self.ids)}-{int(time.time()) % 100000}"
             self.jobs[jid] = {"id": jid, "key": key, "request": req, "status": "queued", "progress": 0.0,
                               "message": "waiting for the job before it", "created": time.time()}
-            if self.worker is None or not self.worker.is_alive():
-                self.worker = threading.Thread(target=self._loop, daemon=True)
-                self.worker.start()
+            self._save(force=True)
+            self._start_worker()
         self.q.put(jid)
         return jid
 
@@ -348,6 +412,7 @@ class Jobs:
     def _update(self, jid, **kw):
         with self.lock:
             self.jobs[jid].update(kw)
+            self._save(force="status" in kw)
 
     def run_one(self, jid: str):
         req = self.jobs[jid]["request"]
