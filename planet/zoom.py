@@ -381,6 +381,10 @@ BASIN_THROUGH_Q = 100.0  # m^3/s: a river this big cuts through a landform's clo
 LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big can hold a lake...
 LF_FULL_KM2 = 5.0  # ... one full to the brim (spilling) at least this big (a smaller one silts up: a flat)
 LF_LOSS_MM = 300.0  # mm/yr: a lake's net evaporation where the world has no pet / evaporation layers
+# coastal plains' barrier coasts (PW-012): wave power (kW/m) and tide range (m) between which they
+# fade in, the widest lagoon (km); marshes on land below MARSH_M m within MARSH_KM of the sea
+BARRIER_WAVE, BARRIER_TIDE, BARRIER_LAGOON_KM = (4.0, 15.0), (2.5, 4.5), 8.0
+MARSH_M, MARSH_KM = 4.0, 12.0
 
 
 def _under(surface_rock, basement, cover_km, top_km=None, next_rock=None) -> int:
@@ -1011,6 +1015,36 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             lagoon |= band | inlet
         ind_n = np.where(lagoon, np.minimum(ind_n, -0.05), ind_n)
         log(f"  lagoons: {int(lagoon.sum())} px")
+    # Coastal plains (zoom_landforms, PW-012) on wave-dominated coasts
+    # (strong waves, small tides): a barrier island 2 px wide along the
+    # coast, a lagoon behind it, tidal inlets through it here and there;
+    # not where a delta shapes the coast (it has its own barriers)
+    barrier = np.zeros(npx, bool)
+    w_cp = np.zeros(npx)
+    if "landform" in L and "wave_power" in L and "tide_range" in L:
+        cp_c = (np.asarray(L["landform"])[sel] == ZL.LF.COASTAL_PLAIN) & land_c
+        if cp_c.any():
+            # (the share of coastal plain among the land cells around: 1 along its coast)
+            f_cp, _ = ZK.gauss_interp(px, py, cx, cy, cp_c[:, None].astype(float), land_c[:, None].astype(float),
+                                      0.5 * sp)
+            w_cp = smoothstep(0.3, 0.6, np.nan_to_num(f_cp[:, 0]))
+            mv, _ = ZK.gauss_interp(px, py, cx, cy, np.column_stack([np.asarray(L["tide_range"], float)[sel],
+                                                                     np.asarray(L["wave_power"], float)[sel]]),
+                                    np.column_stack([~land_c, ~land_c]).astype(float), 0.6 * sp)
+            wW_b = (w_cp * smoothstep(*BARRIER_WAVE, np.nan_to_num(mv[:, 1]))
+                    * smoothstep(BARRIER_TIDE[1], BARRIER_TIDE[0], np.nan_to_num(mv[:, 0])) * (1 - wC))
+            if np.any(wW_b > 0.3):
+                din = ZK.inside_distance(ind_n > 0, nx, ny, False) * res  # km inside the coast
+                gate = ZK.fbm(Pk, 30.0, 2, 0.5, S + 53) / 0.17
+                bw = max(2.0 * res, 1.0)  # barrier width, km (at least 2 px)
+                vary = np.clip(0.75 + 0.45 * ZK.fbm(Pk, 50.0, 2, 0.5, S + 55) / 0.17, 0.25, 1.3)
+                lw = np.maximum(1.5 * res, BARRIER_LAGOON_KM * wW_b * vary)  # lagoon width
+                on = wW_b > 0.3
+                band = on & (din > bw + 0.1 * res) & (din <= bw + lw)
+                inlet = on & (din > 0) & (din <= bw + 0.1 * res) & (gate < -0.85)
+                barrier = on & (din > 0) & (din <= bw + 0.1 * res) & ~inlet
+                ind_n = np.where(band | inlet, np.minimum(ind_n, -0.05), ind_n)
+                log(f"  coastal plain: barrier {int(barrier.sum())} px, lagoons {int((band | inlet).sum())} px")
     land = ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ind_n)
@@ -1100,6 +1134,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                                 np.column_stack([~land_c, ~land_c]).astype(float), 0.6 * sp)
         tide_f, wave_f = np.nan_to_num(mv[:, 0]), np.nan_to_num(mv[:, 1])
     delta_floor = np.full(npx, -np.inf)  # beach ridges and levees, held as floors in the landscape pass
+    if barrier.any():  # (a coastal plain's barrier islands: a dune ridge a few metres high)
+        delta_floor = np.where(barrier & land, 2.0 + 2.5 * smoothstep(-1.0, 1.0, ZK.fbm(Pk, 6.0, 2, 0.5, S + 54) / 0.17),
+                               delta_floor)
     if deltas:
         # Tidal flats: offshore of a tide-influenced delta, a band of sea floor
         # between low and mean tide (exposed at low water), wider with the
@@ -2264,6 +2301,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     plunge = pool > 0
     h = np.where(plunge, h - pool, h)
     lake_depth = np.where(plunge, pool, lake_depth)
+    # landform overlays on the finished land (zoom_landforms: Landforms.finish):
+    # dunes, karst's dolines, towers and poljes (ponds where they reach the
+    # water table), karst streams sinking (dry valleys) and resurging
+    lf_overlay = {}
+    if lf is not None:
+        fz = lf.finish(h, {"rec": rec, "order": order, "q": discharge, "water": sea | lake | lf_lake | plunge,
+                           "ice": glacier, "active": active})
+        h, discharge, lf_overlay = fz["h"], np.where(land, fz["q"], 0.0), fz["stats"]
+        lf_lake = lf_lake | fz["pond"]
+        lake_depth = np.where(fz["pond"], fz["pond_depth"], lake_depth)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
@@ -2295,6 +2342,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     biome = np.where(bare, np.where(h > 1500, 15, np.where(precip < 250, 7, 5)), biome)
     biome = np.where(glacier, 4, biome).astype(np.uint8)
     water = np.where(sea, 1, np.where(lake | plunge | lf_lake, 2, 0)).astype(np.uint8)
+    # marshes: a coastal plain's lowest ground near the sea and its lagoons, where it is wet enough
+    d_sea = ZK.inside_distance(land, nx, ny, False) * res
+    wetland = ((water == 0) & (w_cp > 0.5) & (h < MARSH_M) & (d_sea <= MARSH_KM) & (precip > 300.0)
+               & ~glacier).astype(np.uint8)
 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
@@ -2317,6 +2368,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "landform_lakes": int(len(np.unique(ZK.label_components(lf_lake, nx, ny)[0][lf_lake]))),
         # (their closed basins by water balance: full lakes, closed lakes below the spill, dry flats, silted up)
         "landform_basins": lf_counts,
+        # (the overlays: dunes' types, karst's dolines, poljes, towers, ponds, sinking streams and springs)
+        "landform_overlay": lf_overlay,
+        "barrier_px": int(barrier.sum()), "wetland_pct": round(100 * float(wetland.mean()), 2),
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
@@ -2365,6 +2419,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "climate": clim_f,
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
+        "wetland": wetland,
     }
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
@@ -2433,6 +2488,9 @@ def preview(z: dict) -> np.ndarray:
     col = col * s
     ice = (Lr["ice"] > 0) & (water == 0)
     col = np.where(ice[..., None], col * 0.3 + np.array([235, 242, 250]) * 0.7 * (0.55 + 0.5 * shade[..., None]), col)
+    if "wetland" in Lr:  # marshes: olive green, a little darker
+        col = np.where((Lr["wetland"] > 0)[..., None], np.array([104, 128, 84.0]) * (0.75 + 0.35 * shade[..., None]),
+                       col)
     col = np.where((water == 2)[..., None], np.array([70, 130, 196.0]), col)
     if "tide_range" in Lr:  # tidal flats: sea floor above low tide (dry at low water)
         tr = Lr["tide_range"]
@@ -2499,6 +2557,7 @@ LAYER_DOC = {
     "climate": ("KOPPEN id", "Koppen class; alpine tundra/ice cap added from the fine elevation"),
     "biome": ("BIOMES id", "climate.biomes on the fine fields"),
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
+    "wetland": ("0/1", "marsh: a coastal plain's lowest wet ground near the sea and its lagoons"),
 }
 
 
