@@ -371,3 +371,243 @@ def test_landform_falls_are_listed_with_pools(esc_pair):
     assert "scarp" in kinds, kinds
     scarp = [f for f in st["waterfalls"] if f["kind"] == "scarp"]
     assert all("plunge_pool_m" in f for f in scarp)
+
+
+# ---------------------------------------------------------------------------
+# PW-148: bench levels from the whole zone; PW-167: basin lakes by water balance
+# ---------------------------------------------------------------------------
+def test_zone_levels_are_the_same_in_overlapping_zooms():
+    """A class's zone statistics (zone_stats: the bench levels' source) at a
+    planet point are the same whichever zoom asks, whatever its centre and
+    resolution."""
+    from planet.grid import build_grid
+    from planet.geo import latlon, R_KM, xyz
+    from planet import zoom_kernels as ZK
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    xk, yk = lon * 111.2, lat * 111.2
+    land = np.hypot(xk, yk) < 2000
+    n = g.n
+    L = {"landform": np.where(land, np.where(np.abs(yk) < 900, LF.CAPROCK, LF.HILLS), LF.SEA).astype(np.uint8),
+         "elevation": np.where(land, 300 + 0.2 * xk + 0.1 * yk, -3000.0),
+         "strata_top_km": np.where(land, 0.3 + 0.0002 * xk, 0.0), "strata_dip": np.zeros(n)}
+    sp = g.spacing * R_KM
+    pts = xyz(np.radians(np.array([0.3, 0.6, -0.4])), np.radians(np.array([0.2, -0.5, 0.4])))
+    got = []
+    for lat0, lon0, size in ((0.0, 0.0, 800.0), (0.5, -0.3, 400.0)):
+        fr = zoom.Frame(lat0, lon0)
+        ang = np.arccos(np.clip(g.centers @ fr.c, -1, 1)) * R_KM
+        sel = np.flatnonzero(ang < size * 0.7072 + 4 * sp)
+        cx, cy = fr.to_plane(g.centers[sel])
+        px, py = fr.to_plane(pts)
+        Z = ZL.zone_stats(g, L, LF.CAPROCK, sel, cx, cy, px, py, fr.to_plane,
+                          lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), sp)
+        ox, oy = Z["ox"], Z["oy"]
+        origin = fr.to_sphere(ox, oy)  # (the tilted beds' origin: one planet point)
+        got.append((Z, origin))
+    (a, oa), (b, ob) = got
+    for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "relief"):
+        assert np.allclose(a[key], b[key]), key
+    assert np.allclose(a["elev_local"], b["elev_local"], atol=0.5)
+    assert np.allclose(oa, ob, atol=1e-6)
+    # one zone, its levels from all its cells: the median of its elevations
+    zone = (L["landform"] == LF.CAPROCK) & (L["elevation"] > 0)
+    assert np.allclose(a["elev_p50"], np.median(L["elevation"][zone]))
+
+
+def _bowls(nx, ny, depth=(40.0, 30.0, 20.0)):
+    """A plain sloping east (2 m/km at 0.5 km px) with three round bowls in a
+    row along it, the east edge its outlet."""
+    r, c = np.mgrid[0:ny, 0:nx]
+    h = 200.0 + 1.0 * (nx - c)
+    for k, d in enumerate(depth):
+        cc = 20 + 25 * k
+        rr = np.hypot(r - ny // 2, c - cc)
+        h = h - d * np.clip(1 - rr / 9.0, 0, 1)
+    return h.ravel().astype(float)
+
+
+def test_basin_lakes_follow_the_water_balance():
+    """PW-167: closed depressions fill only where their inflow beats the
+    evaporation: wet, all three bowls are lakes to the brim, each spilling
+    into the next; dry, a closed lake below the spill or a dry flat, and the
+    streams end there."""
+    from planet import zoom_kernels as ZK
+    nx, ny, res = 100, 40, 0.5
+    h = _bowls(nx, ny)
+    outlet = np.zeros(nx * ny, bool)
+    outlet.reshape(ny, nx)[:, -1] = True
+    jit = np.zeros(nx * ny)
+    filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jit)
+    ok = ~outlet
+    can = np.ones(nx * ny)
+    loss = np.full(nx * ny, 1.0)  # m/yr
+    args = (res, nx, ny, 5.0, 2.0, 5.0)
+    src_wet = np.full(nx * ny, 2.0 * res * res)  # 2 m/yr of runoff
+    _, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, can, src_wet, loss, *args)
+    assert n["full"] == 3 and n["closed"] == n["playa"] == 0 and not sink.any(), n
+    assert np.allclose((h + depth)[lake], filled[lake])  # to the brim
+    # dry: 0.05 m/yr of runoff, 1 m/yr lost from open water: no bowl fills
+    src_dry = np.full(nx * ny, 0.05 * res * res)
+    surf, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, can, src_dry, loss, *args)
+    assert n["full"] == 0 and n["closed"] + n["playa"] == 3, n
+    assert sink.any() and np.all((surf + 1e-6 >= h))
+    assert np.all((h + depth)[lake] < filled[lake] - 1.0)  # below the spill
+    # where the class doesn't let them hold water, depressions are just filled
+    surf, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, 0 * can, src_wet, loss, *args)
+    assert not lake.any() and not sink.any() and np.allclose(surf[ok], np.maximum(h, filled)[ok])
+
+
+# ---------------------------------------------------------------------------
+# Batch 3 (PW-012): karst, dune fields, coastal plains
+# ---------------------------------------------------------------------------
+def _river_px(z, q=3.0):
+    return int(((z["layers"]["discharge"] >= q) & (z["layers"]["water"] == 0)).sum())
+
+
+@pytest.fixture(scope="module")
+def karst_trio():
+    """A wet upland (600 m) of thick limestone: temperate (doline karst) and
+    tropical (tower karst), and the same land as plain hills."""
+    w, land = _plain_world(600.0, 0.05, 0.0, precip=1300.0, thick_gy=0.0)
+    n = len(land)
+    cls = np.where(land, LF.KARST, LF.SEA)
+    lay = {"strata_top": np.full(n, 6), "strata_top_km": np.full(n, 0.8), "strata_next": np.full(n, 8)}
+    temperate = _with_landforms(w, cls, {**lay, "temperature": np.full(n, 11.0)})
+    tropical = _with_landforms(w, cls, {**lay, "temperature": np.full(n, 25.0), "precipitation": np.full(n, 1900.0)})
+    return _build(w), _build(temperate, res_km=0.5, size_km=200), _build(tropical, res_km=0.5, size_km=200)
+
+
+def test_karst_has_dolines_dry_valleys_and_springs(karst_trio):
+    """Temperate karst: dolines and poljes (closed depressions), the small
+    streams sunk underground (fewer river pixels), resurging at springs."""
+    plain, temp, trop = karst_trio
+    ov = temp["stats"]["landform_overlay"]
+    assert temp["stats"]["landforms"].get("karst", 0) > 50
+    assert ov["karst"]["dolines"] >= 20 and ov["karst"]["poljes"] >= 1, ov
+    assert ov["dry_valley_km"] > 0 and ov["springs"] >= 1, ov
+    plain_small = _build(plain_world_like(temp), res_km=0.5, size_km=200)
+    assert _river_px(temp) < 0.7 * _river_px(plain_small), (_river_px(temp), _river_px(plain_small))
+    # closed depressions: pits the drainage can't leave (dolines)
+    h = temp["layers"]["elevation"].astype(float)
+    from numpy.lib.stride_tricks import sliding_window_view as win
+    mn = win(np.pad(h, 2, mode="edge"), (5, 5)).min(axis=(2, 3))
+    pits = (h == mn) & (temp["layers"]["water"] == 0)
+    pits_p = (plain_small["layers"]["elevation"] == win(np.pad(plain_small["layers"]["elevation"], 2, mode="edge"),
+                                                          (5, 5)).min(axis=(2, 3)))
+    assert pits.sum() > 2 * max(int(pits_p.sum()), 5), (pits.sum(), pits_p.sum())
+
+
+def plain_world_like(z):
+    """The karst fixture's world without landform classes (same land)."""
+    w, _ = _plain_world(600.0, 0.05, 0.0, precip=1300.0, thick_gy=0.0)
+    return w
+
+
+def test_tropical_karst_has_towers(karst_trio):
+    """Wet tropics: tower karst, steep towers on a corrosion plain: far more
+    prominent peaks than temperate doline karst, and few dolines."""
+    plain, temp, trop = karst_trio
+    ov = trop["stats"]["landform_overlay"]["karst"]
+    assert ov["towers"] >= 20 and ov["towers"] > 3 * temp["stats"]["landform_overlay"]["karst"]["towers"], ov
+    assert _prominent_peaks(trop, 60) > 2 * max(_prominent_peaks(temp, 60), 5)
+
+
+def _dune_world(jul, jan, sand_km=0.4):
+    """A hyper-arid sandy plain (300 m) with July and January winds (east, north)."""
+    w, land = _plain_world(300.0, 0.0, 0.0, precip=40.0, thick_gy=0.0)
+    n = len(land)
+    cls = np.where(land, LF.DUNES, LF.SEA)
+    lay = {"strata_top": np.full(n, 7), "strata_top_km": np.full(n, sand_km), "strata_next": np.full(n, 8),
+           "landform_age": np.full(n, 2.0), "temperature": np.full(n, 22.0),
+           "wind_jul_e": np.full(n, jul[0]), "wind_jul_n": np.full(n, jul[1]),
+           "wind_jan_e": np.full(n, jan[0]), "wind_jan_n": np.full(n, jan[1]),
+           "wind_e": np.full(n, (jul[0] + jan[0]) / 2), "wind_n": np.full(n, (jul[1] + jan[1]) / 2)}
+    return _with_landforms(w, cls, lay)
+
+
+def _crest_axis(z):
+    """deg: the mean direction the land's slopes face (east 0, north 90),
+    sign-free (doubled angle), and its coherence."""
+    h = z["layers"]["elevation"].astype(float)[30:-30, 30:-30]
+    gy, gx = np.gradient(h, z["res"])
+    gy = -gy  # (rows run south)
+    m = np.hypot(gx, gy)
+    c, s = np.sum(m * m * np.cos(2 * np.arctan2(gy, gx))), np.sum(m * m * np.sin(2 * np.arctan2(gy, gx)))
+    return np.degrees(0.5 * np.arctan2(s, c)) % 180, np.hypot(c, s) / np.sum(m * m)
+
+
+@pytest.fixture(scope="module")
+def dune_trio():
+    kw = dict(res_km=0.5, size_km=150)
+    one = _build(_dune_world((0.8, 0.0), (0.7, 0.05)), **kw)  # westerlies all year
+    two = _build(_dune_world((0.6, 0.6), (0.6, -0.6)), **kw)  # NE-ward and SE-ward: resultant east
+    many = _build(_dune_world((0.7, 0.1), (-0.7, -0.1)), **kw)  # reversing
+    plain = _build(_plain_world(300.0, 0.0, 0.0, precip=40.0, thick_gy=0.0)[0], **kw)
+    return one, two, many, plain
+
+
+def test_dune_types_follow_the_wind(dune_trio):
+    """One wind: transverse ridges across it (slopes facing along the wind,
+    east-west); two winds at 90 deg: linear dunes along the resultant
+    (slopes facing north-south); reversing winds: star dunes."""
+    one, two, many, _ = dune_trio
+    for z in (one, two, many):
+        assert z["stats"]["landforms"].get("dunes", 0) > 50
+    t1 = one["stats"]["landform_overlay"]["dunes"]["types"]
+    t2 = two["stats"]["landform_overlay"]["dunes"]["types"]
+    t3 = many["stats"]["landform_overlay"]["dunes"]["types"]
+    assert t1["transverse_barchan"] > 0.8 and t2["linear"] > 0.6 and t3["star"] > 0.6, (t1, t2, t3)
+    a1, c1 = _crest_axis(one)
+    a2, c2 = _crest_axis(two)
+    assert min(a1, 180 - a1) < 25 and c1 > 0.2, (a1, c1)  # slopes face east/west: crests north-south
+    assert abs(a2 - 90) < 25 and c2 > 0.2, (a2, c2)  # slopes face north/south: crests east-west
+    h = one["layers"]["elevation"].astype(float)[30:-30, 30:-30]
+    from numpy.lib.stride_tricks import sliding_window_view as win
+    rel = win(np.pad(h, 4, mode="edge"), (9, 9)).max(axis=(2, 3)) - h
+    assert 20 < np.percentile(rel, 90) < 300, np.percentile(rel, 90)
+
+
+def test_dunes_keep_the_mean_level(dune_trio):
+    """Dunes sit on the land but the region's mean stays (the sand's mean
+    height is taken from under it: interdune flats a little lower)."""
+    *dunes, plain = dune_trio
+    for z in dunes:
+        a, b = z["stats"]["mean_elev_m"], plain["stats"]["mean_elev_m"]
+        assert abs(a - b) < 15, (a, b)
+
+
+@pytest.fixture(scope="module")
+def coast_pair():
+    """A low continent (the disc's edge at x ~ 2500 km) whose coast is a
+    coastal plain facing big waves and small tides, and the same coast as
+    hills."""
+    w, land = _plain_world(60.0, -0.02, 0.0, precip=1000.0, thick_gy=0.0)
+    n = len(land)
+    w["layers"]["wave_power"] = np.where(land, 0.0, 40.0)
+    w["layers"]["tide_range"] = np.where(land, 0.0, 1.0)
+    cls = np.where(land, LF.COASTAL_PLAIN, LF.SEA)
+    lay = {"strata_top": np.full(n, 7), "strata_top_km": np.full(n, 0.2), "strata_next": np.full(n, 8),
+           "landform_age": np.full(n, 2.0), "strata_dip": np.full(n, 0.05)}
+    kw = dict(res_km=0.5, size_km=200)
+    from planet.geo import latlon
+    # (south of the big rivers' mouths: their wave-built deltas have their own barriers)
+    return (zoom.build(w, -2.0, 22.2, iterations=6, log=lambda *a: None, **kw),
+            zoom.build(_with_landforms(w, cls, lay), -2.0, 22.2, iterations=6, log=lambda *a: None, **kw))
+
+
+def test_coastal_plain_has_barriers_lagoons_and_marshes(coast_pair):
+    plain, cp = coast_pair
+    st = cp["stats"]
+    assert st["landforms"].get("coastal_plain", 0) > 50
+    assert st["barrier_px"] > 50 and plain["stats"]["barrier_px"] == 0
+    assert st["wetland_pct"] > 0.2 and plain["stats"]["wetland_pct"] == 0
+    # lagoons: sea behind the barrier: more sea pixels with land on both sides of them along the rows
+    sea_cp = (cp["layers"]["water"] == 1).mean()
+    sea_pl = (plain["layers"]["water"] == 1).mean()
+    assert sea_cp > sea_pl + 0.005, (sea_cp, sea_pl)
+    # a smoother plain than the hills (most of it; the cuestas' low scarps are steep)
+    gx, gy, *_ = _grad(cp)
+    px_, py_, *_ = _grad(plain)
+    a, b = np.median(np.hypot(gx, gy)), np.median(np.hypot(px_, py_))
+    assert a < b, (a, b)

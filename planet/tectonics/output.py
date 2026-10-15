@@ -86,7 +86,8 @@ def landforms_now(sim, vrows) -> dict:
     z = np.zeros(sim.grid.n)
     return landform.classify(sim.grid, sim.t, sim.w_elev, sim.w_cont, sim.w_rock, sim.w_cover, sim.w_extra[:, MIX],
                              sim.w_rec, sim.w_lith, sim.w_age, z if sim.precip is None else sim.precip,
-                             z if sim.temp is None else sim.temp, vrows, sim.owner)
+                             z if sim.temp is None else sim.temp, vrows, sim.owner,
+                             t_warm=sim.t_warm, t_cold=sim.t_cold, tilt=sim.params.tilt)
 
 
 def lakes_now(sim) -> dict:

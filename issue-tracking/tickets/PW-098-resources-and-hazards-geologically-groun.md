@@ -22,4 +22,5 @@ of eroding sources; iron formations on ancient shields; earthquake and volcano h
 boundaries. World layers and a feature list.
 
 ## Updates
+- 2026-10-14: Owner (2026-10-14): hazards mainly matter at the finest time scale. Coordinator note: static hazard maps (earthquake zones from boundary type and convergence rate, volcanic zones from the volcano table, tsunami-exposed coasts, floodplains) are geography and cheap at any world; histories of individual events (this quake, that eruption) belong in the fine time phases (PW-103/PW-156). Low priority.
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).

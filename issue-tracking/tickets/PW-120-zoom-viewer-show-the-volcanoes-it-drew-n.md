@@ -2,7 +2,7 @@
 id: PW-120
 title: "Zoom viewer: show the volcanoes it drew (name, age, form) on hover or as markers"
 type: task
-status: todo
+status: done
 parent: PW-001
 subsystem: viewer
 effort: s
@@ -23,4 +23,5 @@ would make chains readable: which island is the youngest, which seamount is a dr
 - [ ] Markers or hover text from `stats.volcanoes` in zoom.html
 
 ## Updates
+- 2026-10-14: Status todo -> done. Volcanoes overlay in zoom.html from stats.volcanoes: ▲ red active / brown extinct / hollow blue below the sea, sized by height; card with form, kind, active or age, summit above/below the sea, height; zoom_volcanoes adds active. docs/review/zoom/130acd_relief_volcano.jpg (zoompolish).
 - 2026-10-14: Created from inbox draft draft-zoom-volcano-markers.md (found by volcanoes).

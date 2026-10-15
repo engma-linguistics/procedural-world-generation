@@ -26,5 +26,6 @@ Earth's 15.5%; 3–4 landmasses over 0.5% vs Earth's 4) and the owner is satisfi
 fragmented ties to this issue.
 
 ## Updates
+- 2026-10-14: PW-169 (owner, 2026-10-14): the coherence fix (PW-108) thinned continents and lowered land 2-6 points; retune the continental targets as part of this ticket rather than weakening coherence.
 - 2026-10-14: Added the owner's continent-size check (L6 matches Earth; L7 more fragmented).
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Crust and continents and morning_report biggest problem 4.

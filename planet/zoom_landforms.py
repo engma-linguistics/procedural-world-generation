@@ -27,12 +27,28 @@ the dispatcher (Landforms) blends what they return by the class's weight w_k:
                    A channel crossing a cliff falls over it.
   basins(cx),      0..1 per pixel: where the class's closed depressions stay
   lakes(cx)        closed (not breached, but for rivers >= zoom.BASIN_THROUGH_Q)
-                   and where they hold lakes (else they are filled flat).
+                   and where they may hold water: whether one does is its
+                   water balance's call (basin_lakes(), PW-167: full lakes
+                   spilling into the next, closed lakes below the spill, dry
+                   flats; the rest are filled flat).
+  overlay(cx, h,   metres added to the finished land after the final
+          fin)     drainage (Landforms.finish): a veneer the rivers no longer
+                   reshape (dunes; karst's dolines, poljes, towers), kept off
+                   streams >= overlay_q, mean-neutral over ~a cell; with
+                   `ponds`, its pits below the water table (the first flowing
+                   river down the drainage) hold water.
+  sinks(cx)        0..1: where streams under SINK_Q x this sink (karst; an
+                   erg's wadis): their valleys dry, the water resurging at
+                   springs where they leave the class.
   layers           (attribute) the world layers the class reads, interpolated
                    over its own cells into Ctx.prm (DERIVED: hardness of the
                    exposed and next strata, granite; DEFAULTS for layers a
                    world lacks).
-  axis             (attribute) 'band' / 'gradient': the class gets Ctx.frames,
+  zoned            (attribute) the class gets Ctx.zone (zone_stats(), PW-148):
+                   per pixel the statistics of its connected zone on the
+                   whole coarse grid, so its levels are the same in every
+                   zoom that sees it.
+  axis             (attribute) 'band' / 'gradient' / 'wind': the class gets Ctx.frames,
                    planet-fixed structural patches with their own strike
                    (build_frames): ~200 km Voronoi patches of a jittered 3D
                    lattice, the strike of each read from the coarse cells
@@ -64,9 +80,14 @@ correction weighted to where the classes are, falls over the classes' cliffs
 retreated into gorges (scarp_gorges()), and the result cut again. In the
 final drainage the classes' closed basins become lakes or flats.
 
-Levels are one per zoom (zone_level(), a class's median e*, a zone-wide
-period): flat-lying beds are horizontal, and a level that varied across the
-land faster than its rivers fall would meet them with cliffs from below.
+Levels are one per zone (PW-148): a class's connected region of cells on
+the whole coarse grid (zone_stats()), not the zoom's own pixels, so two
+overlapping zooms put each bench at the same height. Flat-lying beds are
+horizontal: a level that varied across the land faster than its rivers fall
+would meet them with cliffs from below; the caprock's and lava plateau's
+anchor and period are constant over the zone; the escarpment's e* is a
+smooth field of the zone's cells within ~ZONE_LOCAL_KM (it follows the
+margin's height along a long escarpment).
 
 Bench map (bench_map(), shared by batch 1). Anti-aliased (Landforms._bench):
 each cliff spans at least FACE_PX pixels across, and where a band is
@@ -85,24 +106,23 @@ lets the scarp retreat up it (re-entrants, crenulated scarps); a hill above
 a level in front of it becomes a mesa or butte.
 
 Batch 1 (PW-010):
-  escarpment     one band 0.8 e* deep below the escarpment cells' level e*
-                 (their median in the zoom), with a 0.75 cliff: the plateau
+  escarpment     one band 0.8 e* deep below the escarpment zone's level e*
+                 (its cells' median around), with a 0.75 cliff: the plateau
                  stays, the land in front of it steps down to a lowland
                  (Drakensberg, Western Ghats). The class rule puts the scarp at
                  its retreat distance from the rifted coast; valleys below e*
                  make the re-entrants of headward retreat, and the rivers
                  crossing it fall over it.
-  caprock        hard caps (strata_top_km, 40-400 m, at most twice the
-                 land's height above its drainage, so benches show on low
-                 land too) over soft slopes, endlessly repeated down from the
-                 85th percentile of the land: plateau, mesas, buttes and
+  caprock        hard caps (the zone's strata_top_km, 40-400 m, at most 1.5x
+                 the zone's typical relief, so benches show on low land too)
+                 over soft slopes, endlessly repeated down from the zone's
+                 85th percentile of elevation: plateau, mesas, buttes and
                  stepped benches (Grand Staircase); relief 1.5x deeper. A
                  dip (strata_dip, downhill) tilts them into asymmetric
                  cuestas (scarps facing up-dip, long dip slopes).
-  lava plateau   stacked flows: steps of ~60-150 m (a package of flows at
-                 zoom pixels; at least 0.8x the height above the drainage,
-                 and VISIBLE_PX pixels wide on the zone's median slope)
-                 under a flat top (90th percentile, relief x 0.3): stair-
+  lava plateau   stacked flows: steps of >= 110 m (a package of flows at
+                 zoom pixels; 0.65x the zone's typical relief) under a flat
+                 top (the zone's 95th percentile, relief x 0.3): stair-
                  stepped valley sides (Deccan, Columbia River).
 
 Batch 2 (PW-011), on the target and shape hooks:
@@ -120,6 +140,21 @@ Batch 2 (PW-011), on the target and shape hooks:
   shield         Shield: a flattened plain with granite domes and
                  inselbergs; recently glaciated (glaciated_myr): domes
                  ground down, rock basins with lakes.
+
+Batch 3 (PW-012), on the overlay and sinks hooks:
+  karst          Karst: small streams sink (dry valleys, springs); dolines
+                 and poljes (temperate, Dinaric) or towers on a flattened
+                 corrosion plain (wet tropics, Guilin); ponds where pits
+                 reach the water table; limestone vs dolomite (purity).
+  dune field     Dunes: an overlay on the land, type from the seasons' sand
+                 drift (sand_drift, RDP/DP): transverse ridges / barchans,
+                 linear, star; spacing and height from the sand's
+                 thickness; patches oriented by the drift ('wind' frames).
+  coastal plain  CoastalPlain: a smoothed plain sloping to the sea, rivers
+                 wandering over its micro-relief, low cuestas where its beds
+                 dip seaward (a shift by the coarse coast distance); barrier
+                 islands, lagoons and marshes on its wave-dominated coasts
+                 are drawn with the coastline (zoom.build).
 """
 
 from __future__ import annotations
@@ -153,8 +188,19 @@ class Strata:
     cliff: float | np.ndarray = 0.5
     power: float | np.ndarray = 2.0
     top_k: float | np.ndarray = 1.0
-    tilt: tuple | None = None  # (tx, ty) m/km: the bedding drops along (tx, ty)
+    tilt: tuple | None = None  # (tx, ty) m/km: the bedding drops along (tx, ty)...
+    origin: tuple = (0.0, 0.0)  # ... from (ox, oy) km (zoom plane; a planet-fixed point: the zone's own)
+    shift: np.ndarray | None = None  # m added to s (beds whose height follows a planet-fixed field)
+    amp: float | np.ndarray = 1.0  # how much of the bench map's change applies (0: the land as it is)
     face: float = 0.08  # the share of a band its cliff rises over (bench_map)
+
+    def height(self, h, px, py):
+        """The stratigraphic height s the bench map reads: h, plus the tilt
+        and shift."""
+        s = h if self.shift is None else h + self.shift
+        if self.tilt is None:
+            return s
+        return s + self.tilt[0] * (px - self.origin[0]) + self.tilt[1] * (py - self.origin[1])
 
 
 def bench_map(s, anchor, period, bands=np.inf, cliff=0.5, power=2.0, top_k=1.0, face=0.08):
@@ -200,22 +246,12 @@ class Ctx:
     relief_m: float | None = None  # its mean height above the drainage (Landforms.remap)
     frames: Frames | None = None  # structural patches (Synth.axis)
     chan: np.ndarray | None = None  # the channels (Landforms.remap)
+    zone: dict | None = None  # per pixel, its zone's statistics (Synth.zoned; zone_stats())
     cache: dict = field(default_factory=dict)
 
     def noise(self, wavelength, octaves, k):
         """fbm ~N(0, 1)-ish at `wavelength` km (seed offset k)."""
         return ZK.fbm(self.Pk, wavelength, octaves, 0.5, self.seed + k) / 0.17
-
-    def zone_level(self, h, q):
-        """The q-th percentile of h over the class's own land (weight > 0.5;
-        else wherever it weighs): one level for the whole zoom. Flat-lying
-        beds are horizontal: levels that varied across the land would tilt
-        them, and a river gentler than the tilt would meet each cliff from
-        below."""
-        on = self.land & (self.w > 0.5)
-        if on.sum() < 10:
-            on = self.land & (self.w > 0)
-        return float(np.percentile(h[on], q)) if on.any() else float(np.max(h))
 
     def zone_relief(self, h):
         """m: the class's typical height above its drainage (set by
@@ -226,14 +262,6 @@ class Ctx:
         if not on.any():
             return 50.0
         return float(np.mean(np.abs(h - self.local_top(h, 0.3 * self.sp, 0.0))[on]))
-
-    def zone_slope(self, h):
-        """m/km: the median slope of h over the class's own land."""
-        on = self.land & (self.w > 0.5)
-        if on.sum() < 10:
-            return 0.0
-        gy, gx = np.gradient(h.reshape(self.ny, self.nx), self.res)
-        return float(np.median(np.hypot(gx, gy).ravel()[on]))
 
     def local_top(self, h, radius_km, k=1.0):
         """A smooth 'interfluve level': the local mean + k standard deviations
@@ -356,6 +384,56 @@ def domes(P, cell, seed, prob, r_km, hk, aspect, rmin):
     return out
 
 
+@njit(cache=True, parallel=True)
+def blobs(P, cell, seed, prob, r_km, aspect, rmin):
+    """Features at the points of a jittered 3D lattice (spacing `cell` km;
+    each point a feature with probability prob): ellipses of radius R in
+    r_km = (lo, hi) km, elongated up to `aspect` along a random azimuth;
+    features smaller than rmin km are left out (unresolved). Per point P
+    (N, 3; km), of the feature it lies deepest in (the smallest q): q, its
+    elliptical radius / R (inf: none near), the feature's id (a hash; -1),
+    its R (km) and the angle of P around its centre (rad, in the feature's
+    own frame)."""
+    n = P.shape[0]
+    qo, ido, ro, ao = np.full(n, np.inf), np.full(n, -1, np.int64), np.zeros(n), np.zeros(n)
+    for i in prange(n):
+        r = np.sqrt(P[i, 0] ** 2 + P[i, 1] ** 2 + P[i, 2] ** 2)
+        bx, by, bz = np.floor(P[i, 0] / cell), np.floor(P[i, 1] / cell), np.floor(P[i, 2] / cell)
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                for dz in range(-1, 2):
+                    ix, iy, iz = np.int64(bx) + dx, np.int64(by) + dy, np.int64(bz) + dz
+                    h = ZK._hash(ix, iy, iz, seed)
+                    if _u01(h, 3) >= prob:
+                        continue
+                    h2 = ZK._hash(ix, iy, iz, seed + 7)
+                    R = r_km[0] + (r_km[1] - r_km[0]) * _u01(h2, 0) ** 1.5
+                    if R < rmin:
+                        continue
+                    fx = (ix + _u01(h, 0)) * cell
+                    fy = (iy + _u01(h, 1)) * cell
+                    fz = (iz + _u01(h, 2)) * cell
+                    nf = np.sqrt(fx * fx + fy * fy + fz * fz)
+                    cx_, cy_, cz_ = fx / nf, fy / nf, fz / nf
+                    ox, oy, oz = P[i, 0] - r * cx_, P[i, 1] - r * cy_, P[i, 2] - r * cz_
+                    if ox * ox + oy * oy + oz * oz > (3.0 * R * aspect) ** 2:
+                        continue
+                    ex, ey = -cy_, cx_
+                    ne = np.sqrt(ex * ex + ey * ey) + 1e-12
+                    ex, ey = ex / ne, ey / ne
+                    nx_, ny_, nz_ = -cz_ * ey, cz_ * ex, cx_ * ey - cy_ * ex
+                    a = ox * ex + oy * ey
+                    b = ox * nx_ + oy * ny_ + oz * nz_
+                    th = 6.283185307 * _u01(h2, 1)
+                    s = 1.0 + (aspect - 1.0) * _u01(h2, 2)
+                    a1 = a * np.cos(th) + b * np.sin(th)
+                    a2 = -a * np.sin(th) + b * np.cos(th)
+                    q = np.sqrt((a1 / (R * np.sqrt(s))) ** 2 + (a2 * np.sqrt(s) / R) ** 2)
+                    if q < qo[i]:
+                        qo[i], ido[i], ro[i], ao[i] = q, np.int64(h2 >> np.uint64(2)), R, np.arctan2(a2, a1)
+    return qo, ido, ro, ao
+
+
 def hashf(*ints):
     """A uniform [0, 1) per element from integer arrays (vectorised hash)."""
     h = np.zeros(np.broadcast(*ints).shape, np.uint64)
@@ -431,7 +509,8 @@ def _band_tensor(X, Y, w):
 
 # strike cues (build_frames): (kernel x cell spacing, weight) per cue and axis kind
 AXIS_CUES = {"band": {"class": (1.5, 3.0), "thick": (4.0, 0.5), "elev": (4.0, 0.5)},
-             "gradient": {"thick": (4.0, 1.0), "elev": (4.0, 1.0), "converging": (4.0, 2.0), "class": (4.0, 0.3)}}
+             "gradient": {"thick": (4.0, 1.0), "elev": (4.0, 1.0), "converging": (4.0, 2.0), "class": (4.0, 0.3)},
+             "wind": {"wind": (2.0, 1.0)}}
 
 
 def build_frames(Pk, seed, cells, ind, vals: dict, cues: dict, sp, axis: str) -> Frames:
@@ -477,6 +556,11 @@ def build_frames(Pk, seed, cells, ind, vals: dict, cues: dict, sp, axis: str) ->
             Y = (cells[m] - C[p]) @ nn[p] * R_KM
             if cue == "class":
                 acc += wt * _band_tensor(X, Y, w * ind[m])
+            elif cue == "wind":  # (the sand's resultant drift direction over the class's cells)
+                de, dn = cues["drift_e"][m], cues["drift_n"][m]
+                a, mg = np.arctan2(dn, de), w * ind[m] * np.hypot(de, dn)
+                if mg.sum() > 1e-9:
+                    acc += wt * np.array([np.sum(mg * np.cos(2 * a)), np.sum(mg * np.sin(2 * a))]) / mg.sum()
             elif cue == "converging":
                 b = cues["converging"][m] > 0
                 if (w * b).sum() >= 2.0:
@@ -503,6 +587,95 @@ def build_frames(Pk, seed, cells, ind, vals: dict, cues: dict, sp, axis: str) ->
     gap = d2 - d1
     b = PATCH_BLEND * PATCH_KM
     return Frames((k1, k2), tuple(us), tuple(vs), 0.5 * (1 - smoothstep(0, b, gap)), smoothstep(0, b, gap), out)
+
+
+# ---------------------------------------------------------------------------
+# Zones (PW-148): a class's bench levels from its whole connected zone
+# ---------------------------------------------------------------------------
+ZONE_RELIEF = (0.36, 25.0)  # the zoom's typical relief over a zone: a x its median elevation + b (m; cf. zoom's detail)
+ZONE_LOCAL_KM = 200.0  # elev_local: the zone's cells within ~this of each cell (a Gaussian's sigma)
+
+
+def _wmedian(v, w):
+    o = np.argsort(v)
+    c = np.cumsum(w[o])
+    return float(v[o][np.searchsorted(c, 0.5 * c[-1])])
+
+
+def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
+    """Per pixel, the statistics of its landform zone: the connected region
+    of class k's land cells on the whole coarse grid (not only the cells
+    around the zoom) that the nearest class-k cell belongs to. So a level
+    computed from them is the same in every zoom that sees the zone: two
+    overlapping zooms put the same bench at the same height. Keys:
+    elev_p50/p85/p95 (m), top_km (median strata_top_km), dip (median
+    strata_dip, deg), relief (ZONE_RELIEF: the zoom's typical relief
+    there, m), ox, oy (km: the zone's reference cell on the zoom plane, the
+    origin of tilted beds), id (the zone's label); and elev_local, a smooth
+    field: at each of the class's cells the median elevation of its zone's
+    cells around it (weights falling off over ZONE_LOCAL_KM), interpolated
+    onto the pixels as the class's layers are (a level that follows a long
+    escarpment's height along the margin, gently, and is still the same in
+    every zoom)."""
+    form = np.asarray(L["landform"])
+    elev = np.asarray(L["elevation"], float)
+    lab, nz = grid.components((form == k) & (elev > 0))
+    mine = np.flatnonzero(lab[sel] >= 0)
+    n = len(px)
+    out = {key: np.zeros(n) for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy",
+                                        "elev_local")}
+    out["id"] = np.full(n, -1)
+    if not len(mine):
+        return out
+    zs = np.unique(lab[sel][mine])
+    top = np.asarray(L.get("strata_top_km", np.zeros(grid.n)), float)
+    dip = np.asarray(L.get("strata_dip", np.zeros(grid.n)), float)
+    tab = {}
+    for z in zs:
+        c = np.flatnonzero(lab == z)
+        e = elev[c]
+        ref = c[np.argmin(np.arccos(np.clip(grid.centers[c] @ grid.centers[c].mean(0) / max(
+            np.linalg.norm(grid.centers[c].mean(0)), 1e-12), -1, 1)))]  # (the cell nearest the zone's centroid)
+        ox, oy = to_plane(grid.centers[[ref]])
+        p50, p85, p95 = np.percentile(e, [50, 85, 95])
+        tab[z] = (p50, p85, p95, np.median(top[c]), np.median(dip[c]), ZONE_RELIEF[0] * p50 + ZONE_RELIEF[1],
+                  float(ox[0]), float(oy[0]))
+    # each pixel: the zone of the nearest class cell around the zoom
+    ccx, ccy, cz = cx[mine], cy[mine], lab[sel][mine]
+    near = np.zeros(n, np.int64)
+    best = np.full(n, np.inf)
+    for j0 in range(0, len(ccx), 256):
+        d = (px[:, None] - ccx[None, j0:j0 + 256]) ** 2 + (py[:, None] - ccy[None, j0:j0 + 256]) ** 2
+        a = np.argmin(d, 1)
+        dm = d[np.arange(n), a]
+        better = dm < best
+        near[better], best[better] = a[better] + j0, dm[better]
+    zp = cz[near]
+    out["id"] = zp
+    loc = np.zeros(len(mine))
+    for j, c in enumerate(sel[mine]):
+        zc = np.flatnonzero(lab == lab[c])
+        d = np.arccos(np.clip(grid.centers[zc] @ grid.centers[c], -1, 1)) * R_KM
+        m = d < 3 * ZONE_LOCAL_KM
+        loc[j] = _wmedian(elev[zc][m], np.exp(-0.5 * (d[m] / ZONE_LOCAL_KM) ** 2))
+    ind = np.zeros((len(sel), 1))
+    ind[mine, 0] = 1.0
+    vals = np.zeros((len(sel), 1))
+    vals[mine, 0] = loc
+    f, _ = interp(vals, ind, 0.5 * sp)
+    out["elev_local"] = np.where(np.isfinite(f[:, 0]), f[:, 0], loc[near])
+    for i, key in enumerate(("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy")):
+        vals = np.array([tab[z][i] for z in zs])
+        out[key] = vals[np.searchsorted(zs, zp)]
+    return out
+
+
+def snap(level, period):
+    """level rounded to a whole number of periods above the sea: endless
+    benches then have the same phase whatever level a zone's top bed is
+    put at."""
+    P = np.maximum(period, 1.0)
+    return P * np.round(level / P)
 
 
 @njit(cache=True)
@@ -553,7 +726,7 @@ def lower_envelope(z, src, grad, nx, ny, res):
 GAP_GRAD, GAP_MIN_M = 400.0, 5.0  # m/km at 0.5 km pixels: the walls of a cut (see cut())
 
 
-GORGE_Q, GORGE_MIN_M = 100.0, 30.0  # m^3/s, m: a river this big falling this far over a landform's cliff...
+GORGE_Q, GORGE_MIN_M = 30.0, 30.0  # m^3/s (of runoff), m: a river this big falling this far over a landform's cliff...
 GORGE_KM, GORGE_MAX_KM, GORGE_GRAD = 3.0, 12.0, 2.0  # ... retreats into a gorge GORGE_KM sqrt(Q / 1000) long
 
 
@@ -564,7 +737,7 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
     its bed is lowered from the foot upstream for GORGE_KM x sqrt(Q / 1000
     m^3/s) km (at most GORGE_MAX_KM, and not past the next cliff up),
     rising GORGE_GRAD m/km, the fall now at the gorge's head; walls as for
-    cut(). Returns (z, number of gorges)."""
+    cut(). Returns (z, gorges: [(pixel of the fall at its head, length km)])."""
     n = nx * ny
     up = np.full(n, -1)
     o = np.argsort(q, kind="stable")
@@ -576,11 +749,11 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
     step = z - z[r1]
     cand = np.flatnonzero((q >= GORGE_Q) & (w > 0.5) & (rec >= 0) & ~fixed & (drop >= GORGE_MIN_M))
     if not len(cand):
-        return z, 0
+        return z, []
     z = z.copy()
     src = np.zeros(n, bool)
     done = np.zeros((ny, nx), bool)
-    count = 0
+    gorges = []
 
     def km(a, b):
         return res * (1.41421356 if (a % nx != b % nx and a // nx != b // nx) else 1.0)
@@ -607,11 +780,11 @@ def scarp_gorges(z, rec, q, w, nx, ny, res, fixed):
             z[a] = min(z[a], zf + GORGE_GRAD * (sa + res))
             src[a] = True
         src[foot] = True
-        count += 1
-    if count:
+        gorges.append((int(path[-1][0]), float(path[-1][1])))
+    if gorges:
         g = GAP_GRAD * min(1.0, (0.5 / res) ** 0.5)
         z = np.where(fixed, z, lower_envelope(z, src, g, nx, ny, res))
-    return z, count
+    return z, gorges
 
 
 def cut(z, rec, order, keep, nx, ny, res, fixed=None):
@@ -639,6 +812,7 @@ class Synth:
     sigma = 0.5  # x cell spacing: the Gaussian kernel its layers are interpolated with
     axis: str | None = None  # structural patches (Ctx.frames): 'band' or 'gradient' strike (build_frames)
     gaps = False  # rivers (>= GAP_Q) keep their graded beds through the shape hook's structure (water gaps)
+    zoned = False  # levels from the class's whole zone (Ctx.zone: zone_stats(), PW-148)
 
     def target(self, cx: Ctx, h: np.ndarray):
         return None
@@ -661,24 +835,41 @@ class Synth:
         """0..1 per pixel: where the class's closed depressions hold water."""
         return None
 
+    overlay_q = 3.0  # m^3/s: the overlay keeps off streams this big (and a little beside them)
+    ponds = False  # the overlay's pits below the local base level (the water table) hold water
+
+    def overlay(self, cx: Ctx, h: np.ndarray, fin: dict):
+        """Metres added to the finished land after the final drainage
+        (Landforms.finish): a veneer the rivers no longer reshape (dunes on
+        the land, dolines, towers and poljes in karst). Kept off streams of
+        overlay_q and more, and made mean-neutral over a few km (the cell
+        means stay)."""
+        return None
+
+    def sinks(self, cx: Ctx):
+        """0..1 per pixel: where streams sink underground (karst): streams
+        under SINK_Q x this carry no water at the surface (dry valleys) and
+        resurge where they leave it (springs)."""
+        return None
+
 
 class Escarpment(Synth):
-    """Great escarpment: one band below the escarpment cells' level e*,
+    """Great escarpment: one band below the escarpment zone's level e*,
     over a moderately flattened plateau."""
     layers = ("elevation",)
     line = True
+    zoned = True
     STEP = (0.8, 200.0, 1500.0)  # band height: fraction of e*, clipped to (m)
 
     def _level(self, cx):
-        """e*: the escarpment cells' level, one for the zoom (a level varying
-        along the margin faster than its rivers fall would meet them with
-        the scarp from below)."""
-        on = (cx.w > 0.5) & cx.land
-        v = cx.prm["elevation"][on] if on.any() else cx.prm["elevation"]
-        return max(float(np.median(v)), 1.0)
+        """e*: the median elevation of the escarpment zone's cells around
+        (zone_stats' elev_local: smooth, following the margin's height over
+        a few hundred km; a level varying along the margin faster than its
+        rivers fall would meet them with the scarp from below)."""
+        return np.maximum(cx.zone["elev_local"], 1.0)
 
     def _step(self, cx):
-        return float(np.clip(self.STEP[0] * self._level(cx), self.STEP[1], self.STEP[2]))
+        return np.clip(self.STEP[0] * self._level(cx), self.STEP[1], self.STEP[2])
 
     def relief(self, cx):
         return 1.2, 1.0
@@ -690,44 +881,42 @@ class Escarpment(Synth):
 class Caprock(Synth):
     """Caprock plateau, mesas, buttes and stepped benches; dipping: cuestas."""
     layers = ("strata_top_km", "strata_dip")
+    zoned = True
     CAP_M = (40.0, 400.0)  # the cap's cliff (m): strata_top_km, clipped
     CLIFF = 0.45  # the cap's share of each bench period (the rest: soft slope)
-    RELIEF = 2.0  # x the zone's height above its drainage: at most this period, so benches show on low land too
-
-    def _cap(self, cx):
-        # (one for the zoom: the bench levels lie whole periods below the
-        # anchor, so a period varying across the land would scatter them)
-        on = (cx.w > 0.5) & cx.land
-        v = cx.prm["strata_top_km"][on] if on.any() else cx.prm["strata_top_km"]
-        return float(np.clip(1000 * np.median(v), *self.CAP_M))
-
-    def relief(self, cx):
-        return 1.5, 1.5
+    RELIEF = 1.5  # x the zone's relief (zone_stats): at most this period, so benches show on low land too
+    TOP = (85, 0.25)  # the top bed: the zone's 85th percentile of elevation + 0.25 x its relief
 
     def strata(self, cx, h):
-        P = min(self._cap(cx) / self.CLIFF, max(self.RELIEF * cx.zone_relief(h), 60.0))
-        anchor = cx.zone_level(h, 85)
-        t = 1000 * np.tan(np.radians(cx.prm["strata_dip"]))  # m/km
+        # (one period and anchor per zone: the bench levels lie whole periods
+        # below the anchor, so a period varying across the land would scatter them)
+        Z = cx.zone
+        cap = np.clip(1000 * Z["top_km"], *self.CAP_M)
+        P = np.minimum(cap / self.CLIFF, np.maximum(self.RELIEF * Z["relief"], 60.0))
+        anchor = Z["elev_p85"] + self.TOP[1] * Z["relief"]
+        t = 1000 * np.tan(np.radians(Z["dip"]))  # m/km
         tilt = (t * cx.downhill[0], t * cx.downhill[1]) if np.any(t > 0.3) else None
-        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, tilt=tilt)
+        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, tilt=tilt, origin=(Z["ox"], Z["oy"]))
 
 
 class LavaPlateau(Synth):
     """Traps: stacked flows under a flat top."""
     layers = ("strata_top_km",)
-    FLOW_M = 110.0  # a flow package's step (m), at 2 km pixels
-    RELIEF = 0.8  # x the zone's height above its drainage: at least this step
-    VISIBLE_PX = 2.5  # ... and one step at least this many pixels wide on the zone's typical slope
+    zoned = True
+    FLOW_M = 110.0  # a flow package's step (m), at least
+    RELIEF = 0.65  # x the zone's relief (zone_stats): at least this step
+    TOP = 0.6  # the flat top: the zone's 95th percentile of elevation + this x its relief
 
     def relief(self, cx):
         return 1.5, 1.25
 
     def strata(self, cx, h):
         # (flows are ~10-50 m; at zoom pixels the steps seen are packages of
-        # them, at least ~ a third of the valleys' depth)
-        P = max(float(np.clip(self.FLOW_M * (cx.res / 2.0) ** 0.3, 60.0, 150.0)), self.RELIEF * cx.zone_relief(h),
-                self.VISIBLE_PX * cx.res * cx.zone_slope(h))
-        anchor = cx.zone_level(h, 90)
+        # them, a good part of the valleys' depth; where they come out
+        # narrower than a pixel or two they fade out: Landforms._bench)
+        Z = cx.zone
+        P = np.maximum(self.FLOW_M, self.RELIEF * Z["relief"])
+        anchor = Z["elev_p95"] + self.TOP * Z["relief"]
         return Strata(anchor, P, cliff=0.55, power=1.5, top_k=0.3)
 
 
@@ -817,7 +1006,7 @@ class Rift(Synth):
     patch to patch (accommodation zones), throws vary from block to block
     and die out at the patches' ends. In the target too (x TARGET), so the
     rivers run along the basins."""
-    layers = ("rift_strain", "landform_age", "elevation", "precipitation")
+    layers = ("rift_strain", "landform_age", "elevation")
     line = True
     axis = "band"
     TARGET = 0.5
@@ -862,6 +1051,7 @@ class Rift(Synth):
         env = 0.4 + 0.6 * F.edge
         g = ((1 - F.alpha) * a[0] + F.alpha * b[0]) * env
         fw = ((1 - F.alpha) * a[1] + F.alpha * b[1]) * env
+        cx.cache["floor"] = fw
         return g - fw * (h - cx.local_top(h, 4.0, 0.0))
 
     def relief(self, cx):
@@ -877,7 +1067,11 @@ class Rift(Synth):
         return np.ones(len(cx.land))
 
     def lakes(self, cx):
-        return smoothstep(600.0, 1200.0, cx.prm["precipitation"])
+        # (the half-grabens' floors; whether a basin there fills is its water
+        # balance's call: zoom_landforms.basin_lakes)
+        if "floor" not in cx.cache:
+            self._z(cx, cx.base)
+        return smoothstep(0.15, 0.4, cx.cache["floor"])
 
 
 class Shield(Synth):
@@ -932,6 +1126,239 @@ class Shield(Synth):
         return smoothstep(0.2, 0.5, self._glac(cx))
 
 
+class Karst(Synth):
+    """Karst on thick carbonate: the rain sinks into it and drains
+    underground, so the surface has few rivers. Small streams sink
+    (sinks(): Landforms.finish dries their valleys, springs where the water
+    resurges at the karst's edge or into a big river; bigger, allogenic
+    rivers cross it in gorges). The landscape is the overlay of solution
+    forms on a planet-fixed lattice, by climate (Ctx.prm temperature and
+    precipitation: tropical = TROPIC):
+      temperate (Dinaric): a plateau (relief: flat tops, steep valleys)
+        pocked with dolines (0.25-1.1 km across; down to the pixels the
+        zoom resolves) and poljes, big flat-floored closed basins (5-25 km
+        long) with steep sides;
+      wet tropics (Guilin): a corrosion plain (relief flattened) with
+        towers (0.6-2 km across, 60-250 m, steep-sided) and fewer dolines.
+    Pits below the local base level (the first flowing river or the sea
+    down the drainage: the water table) hold ponds and lakes (cenotes,
+    flooded poljes). Limestone dissolves readily; dolomite (purity 0.5)
+    makes half the forms, and sinks only the smaller streams. Towers and
+    dolines are no deeper than the carbonate is thick."""
+    layers = ("temperature", "precipitation", "strata_top_km", "purity")
+    overlay_q = 30.0  # (the streams that still flow: SINK_Q)
+    ponds = True
+    TROPIC = ((16.0, 22.0), (900.0, 1400.0))  # C, mm/yr: tower karst above these
+    DOLINE = (3.0, 0.35, (0.4, 1.3))  # lattice km, probability, radius km (the big ones: uvalas)
+    POLJE = (40.0, 0.45, (2.5, 9.0))
+    TOWER = (3.0, 0.45, (0.5, 1.2))
+    BELOW_M = 5.0  # m: dolines and polje floors reach at most this far below the water table (ponds, flooded poljes)
+
+    def _trop(self, cx):
+        return (smoothstep(*self.TROPIC[0], cx.prm["temperature"])
+                * smoothstep(*self.TROPIC[1], cx.prm["precipitation"]))
+
+    def target(self, cx, h):
+        # (the tropical corrosion plain: the sub-cell hills dissolved down to it)
+        return -0.7 * self._trop(cx) * (h - cx.local_top(h, 0.2 * cx.sp, -0.5))
+
+    def relief(self, cx):
+        on = (cx.w > 0.5) & cx.land
+        tr = float(np.mean(self._trop(cx)[on])) if on.any() else 0.0
+        return 1.5 + 1.0 * tr, 0.8 - 0.55 * tr
+
+    def sinks(self, cx):
+        return cx.prm["purity"]
+
+    def overlay(self, cx, h, fin):
+        tr = self._trop(cx)
+        pur = cx.prm["purity"]
+        thick = 1000 * np.maximum(cx.prm["strata_top_km"], 0.0)
+        res = cx.res
+        out = np.zeros(len(h))
+        st = cx.cache.setdefault("overlay_stats", {})
+        # dolines: bowls about a quarter as deep as they are wide
+        cell, prob, rr = self.DOLINE
+        q, fid, R, _ = blobs(cx.Pk, cell, np.int64(cx.seed + 461), prob, np.array(rr), 1.6, 1.0 * res)
+        on = q < 1
+        dep = 1000 * R * (0.12 + 0.2 * hashf(np.maximum(fid, 0) % 2147483647, 1))
+        dol = np.where(on, dep * (1 - np.minimum(q, 1.0) ** 2) ** 0.8, 0.0)
+        # (no deeper than half the carbonate, and mostly above the water
+        # table: the rock dissolves where the water drains down to it; a
+        # quarter of them reach it (collapse dolines, cenotes: ponds))
+        reach = self.BELOW_M * (hashf(np.maximum(fid, 0) % 2147483647, 6) < 0.25)
+        above = 0.8 * np.maximum(h - fin["base"], 0.0) + reach
+        dol = np.minimum(np.minimum(dol, 0.5 * thick), above) * pur * (1 - 0.6 * tr)
+        out -= dol
+        st["dolines"] = int(len(np.unique(fid[on & (dol > 5.0) & (cx.w > 0.5)])))
+        # poljes: flat floors (alluvium) below the land around them, steep sides
+        cell, prob, rr = self.POLJE
+        q, fid, R, _ = blobs(cx.Pk, cell, np.int64(cx.seed + 463), prob, np.array(rr), 3.0, 3.0 * res)
+        inside = smoothstep(1.0, 0.75, np.minimum(q, 2.0))
+        pol = np.zeros(len(h))
+        npol = 0
+        for f in np.unique(fid[(q < 0.9) & (cx.w > 0.5)]):
+            m = (fid == f) & (q < 1.0)
+            core = (fid == f) & (q < 0.9)
+            depth = (20.0 + 40.0 * hashf(np.array([f % 2147483647]), 2)[0])
+            floor = max(np.percentile(h[core], 20) - depth, np.percentile(fin["base"][core], 50) - self.BELOW_M)
+            pol[m] = np.minimum(floor - h[m], 0.0) * inside[m]
+            npol += 1
+        out += pol * pur * (1 - tr)
+        st["poljes"] = npol
+        # towers (fenglin): steep sides, rounded tops, on the plain
+        cell, prob, rr = self.TOWER
+        q, fid, R, _ = blobs(cx.Pk, cell, np.int64(cx.seed + 467), prob, np.array(rr), 1.4, 1.2 * res)
+        on = q < 1
+        Ht = 80.0 + 170.0 * hashf(np.maximum(fid, 0) % 2147483647, 3)
+        tow = np.where(on, Ht * (1 - np.minimum(q, 1.0) ** 8) ** 0.4, 0.0)
+        tow = np.minimum(tow, 0.8 * thick) * tr * np.sqrt(pur)
+        out += tow
+        st["towers"] = int(len(np.unique(fid[on & (tow > 30.0) & (cx.w > 0.5)])))
+        return out
+
+
+class Dunes(Synth):
+    """Dune field (erg): dunes on top of the land, their type from the wind
+    regime (sand_drift: the seasons' drift, Fryberger's RDP/DP) and the
+    sand supply (the sand's thickness, strata_top_km):
+      one wind all year (RDP/DP > ~0.8): transverse ridges across it,
+        gentle upwind (stoss) slopes and steep lee faces, broken into
+        crescentic barchans with horns pointing downwind where sand is
+        short (interdune flats between);
+      two winds at an angle (~0.25-0.75): linear (seif) dunes along the
+        resultant drift, long and parallel;
+      winds from many sides (< ~0.3): star dunes, tall peaks with arms.
+    Spacing 1-3 km (more sand: bigger and further apart), heights a few %
+    of the spacing (tens of m to ~150 m; star dunes higher). Planet-fixed
+    patches (build_frames, 'wind': each patch's axis along the drift of the
+    cells around it, its sign downwind). More arid (P / PET) and warmer: more active
+    (frozen, snowy ground holds the sand: cold ergs half as high). On the
+    finished land (an overlay: it doesn't flatten the hills under it; not
+    on steep slopes nor across rivers). Crests at least MIN_PX pixels apart
+    (the zoom draws the big dunes; spacing exaggerated up to 2x on coarse
+    zooms, fading out beyond); the sand sheet buries the small hills (the
+    target's sub-cell texture damped where there is sand)."""
+    layers = ("strata_top_km", "aridity", "temperature", "drift_e", "drift_n", "drift_ratio")
+    axis = "wind"
+    LAMBDA_KM = (1.0, 3.0)  # crest spacing, little to much sand
+    HEIGHT = (0.045, 0.05, 0.08)  # x spacing: transverse / barchan, linear, star
+    STAR = (5.0, 0.75, (1.2, 2.2))  # star dunes: lattice km, probability, radius km
+    overlay_q = 30.0  # (the rivers that cross the erg: SINK_Q; smaller wadis end in the sand)
+    SAND_KM = (0.01, 0.35)  # the sand's thickness: little .. plenty (supply 0 .. 1)
+    MIN_PX = 5.0  # crests at least this many pixels apart (finer ones exaggerated up to 2x, fading out beyond)
+
+    def _supply(self, cx):
+        return smoothstep(*self.SAND_KM, cx.prm["strata_top_km"])
+
+    def sinks(self, cx):
+        # (an ephemeral stream loses its water into the sand: it ends in the erg)
+        return np.ones(len(cx.land))
+
+    def target(self, cx, h):
+        # (the sand sheet buries the small hills: the sub-cell texture damped
+        # where there is sand; mountains and the coarse land stay)
+        return -0.6 * self._supply(cx) * (h - cx.local_top(h, 0.2 * cx.sp, 0.0))
+
+    def relief(self, cx):
+        return 1.0, 0.6
+
+    def overlay(self, cx, h, fin):
+        F, P = cx.frames, cx.frames.patch
+        res = cx.res
+        supply = self._supply(cx)
+        act = (smoothstep(0.2, 0.04, cx.prm["aridity"])  # (P / PET: the class needs < LF.DUNES_AI)
+               * (0.5 + 0.5 * smoothstep(-8.0, 2.0, cx.prm["temperature"])))
+        lam = self.LAMBDA_KM[0] + (self.LAMBDA_KM[1] - self.LAMBDA_KM[0]) * supply
+        lamd = np.maximum(lam, self.MIN_PX * res)  # (drawn at least MIN_PX pixels apart: the big dunes, draas)
+        vis = smoothstep(3.5, 2.0, lamd / lam)
+        r = cx.prm["drift_ratio"]
+        wT = smoothstep(0.7, 0.85, r)
+        wS = smoothstep(0.35, 0.15, r)
+        wL = np.clip(1.0 - wT - wS, 0.0, 1.0)
+        nw = cx.noise(8.0, 2, 471)
+        nb = cx.noise(5.0, 2, 472)
+        nl = cx.noise(25.0, 2, 473)
+        gap = 0.65 * (1 - supply)  # (little sand: crescents apart)
+        Ls = lamd * (1.5 + 4.0 * supply)  # crest segment length
+
+        def one(j):
+            p = F.k[j]
+            ax = np.radians(P["axis_deg"][p])
+            sg = np.where(np.cos(ax) * P["drift_e"][p] + np.sin(ax) * P["drift_n"][p] < 0, -1.0, 1.0)
+            v, u = sg * F.v[j], sg * F.u[j]  # (v: downwind)
+            pid = P["id"][p] % 2147483647
+            # transverse ridges / barchans: across the wind
+            su = u / Ls + 0.12 * nb + P["r1"][p]
+            si = np.floor(su)
+            wseg = su - si - 0.5
+            vb = v + 0.25 * lamd * nw + 0.4 * lamd * hashf(si.astype(np.int64), pid, 3) * (1 - supply)
+            vb = vb - 0.7 * lamd * (2 * wseg) ** 2 * (0.3 + 0.7 * (1 - supply))  # (horns downwind)
+            t = np.mod(vb / lamd + P["r0"][p], 1.0)
+            prof = np.where(t < 0.58, (t / 0.58) ** 1.4, 1.0 - smoothstep(0.58, 0.66, t))
+            seg = np.clip(1.0 - (2 * np.abs(wseg) / np.maximum(1 - gap, 0.2)) ** 2, 0.0, 1.0) ** 0.5
+            zt = prof * seg
+            # linear: along the resultant, symmetric, long
+            tl = np.mod(u / lamd + P["r2"][p] + 0.15 * nw, 1.0)
+            zl = smoothstep(0.4, 1.0, 1.0 - np.abs(2 * tl - 1)) * np.clip(0.75 + 0.45 * nl, 0.0, 1.0)
+            return zt, zl
+        a, b = one(0), one(1)
+        # (between two patches the dunes switch over a narrow, wandering seam,
+        # crests ending against it, rather than cross-hatching over the blend)
+        al = smoothstep(0.42, 0.58, F.alpha + 0.12 * cx.noise(10.0, 2, 474))
+        zt = (1 - al) * a[0] + al * b[0]
+        zl = (1 - al) * a[1] + al * b[1]
+        # star dunes: peaks with 3-5 arms
+        cell, prob, rr = self.STAR
+        q, fid, R, ang = blobs(cx.Pk, cell, np.int64(cx.seed + 475), prob, np.array(rr), 1.2, 0.6 * res)
+        k = 3.0 + np.floor(3.0 * hashf(np.maximum(fid, 0) % 2147483647, 4))
+        arm = 1.0 + 0.7 * np.cos(k * ang + 6.28 * hashf(np.maximum(fid, 0) % 2147483647, 5))
+        zs = np.clip(1.0 - q / arm, 0.0, 1.0) ** 1.6 * np.isfinite(q)
+        H = 1000.0 * lam * act * vis
+        z = H * (wT * self.HEIGHT[0] * zt + wL * self.HEIGHT[1] * zl + wS * self.HEIGHT[2] * zs * (R / 1.7))
+        # (not up steep slopes: the dunes ride on gentle ground, hills stick out)
+        gy, gx = np.gradient(h.reshape(cx.ny, cx.nx), res)
+        z = z * smoothstep(120.0, 40.0, np.hypot(gx, gy).ravel())
+        st = cx.cache.setdefault("overlay_stats", {})
+        on = (cx.w > 0.5) & cx.land
+        if on.any():
+            st["types"] = {"transverse_barchan": round(float(np.mean(wT[on])), 2),
+                           "linear": round(float(np.mean(wL[on])), 2), "star": round(float(np.mean(wS[on])), 2)}
+            st["spacing_km"] = round(float(np.mean(lam[on])), 2)
+            st["max_height_m"] = round(float(np.max(z[on])), 0)
+        return z
+
+
+class CoastalPlain(Synth):
+    """Coastal plain: a low plain sloping gently to the sea, smoothed (its
+    hills flattened in the target, shallow valleys), with a few metres of
+    micro-relief (old levees, scroll bars, beach ridges) that make its
+    rivers wander; where the young beds dip seaward (more steeply than the
+    land: a seaward-thickening wedge) and a hard bed lies over a soft one,
+    low cuestas: ridges facing inland with long gentle backs to the sea
+    (Atlantic and Gulf coastal plains). The beds' height follows the
+    distance from the coarse coast (a planet-fixed field). Barrier islands,
+    lagoons and marshes on its wave-dominated coasts are drawn with the
+    coastline (zoom.build: coastal_barriers)."""
+    layers = ("strata_dip", "hard_top", "hard_next", "coast_km")
+    zoned = True
+    CUESTA_M = 60.0  # the beds' period (m): ridges ~ 0.4 x this high
+    DIP = (2.5, 8.0)  # m/km: the beds' seaward dip
+
+    def target(self, cx, h):
+        smooth = cx.local_top(h, 0.25 * cx.sp, 0.0)
+        return -0.6 * (h - smooth) + 4.0 * cx.noise(8.0, 2, 481)
+
+    def relief(self, cx):
+        return 0.8, 0.5
+
+    def strata(self, cx, h):
+        t = np.clip(4000.0 * np.tan(np.radians(cx.prm["strata_dip"])), *self.DIP)
+        contrast = np.clip(2.0 * (cx.prm["hard_top"] - cx.prm["hard_next"]), 0.0, 1.0)
+        return Strata(cx.zone["elev_p95"], self.CUESTA_M, cliff=0.4, power=1.5, top_k=1.0, face=0.12,
+                      shift=-t * cx.prm["coast_km"], amp=contrast)
+
+
 def _dilate(m, r):
     out = m.copy()
     for dr in range(-r, r + 1):
@@ -941,6 +1368,8 @@ def _dilate(m, r):
 
 
 RELIEF_KM = 20.0  # relief hooks: the scale of d's local mean
+SINK_Q = 30.0  # m^3/s: in karst (Synth.sinks = 1) streams under this sink underground
+POND_M = 3.0  # m: an overlay's pit this far below the water table holds a pond
 GAP_Q, GAP_KM = 30.0, 2.5  # m^3/s, km: rivers this big cut water gaps this wide (Synth.gaps)
 FACE_PX, FACE_MAX = 1.2, 0.25  # a bench map's cliffs span at least FACE_PX pixels, at most FACE_MAX of a band
 FACE_SMOOTH = 1  # px: ... along the stratigraphic height smoothed over this box radius
@@ -997,22 +1426,160 @@ def drain_level(h, rec, order, channel):
     return hc
 
 
+@njit(cache=True)
+def _next_basin(rec, order, lab):
+    """Per pixel, the first closed depression (label) down its receivers
+    other than its own (-1: none before an outlet). order: outlets first."""
+    nxt = np.full(rec.shape[0], -1, np.int64)
+    for t in range(order.shape[0]):
+        i = order[t]
+        r = rec[i]
+        if r < 0:
+            continue
+        if lab[r] >= 0 and lab[r] != lab[i]:
+            nxt[i] = lab[r]
+        else:
+            nxt[i] = nxt[r]
+    return nxt
+
+
+PLAYA_SHARE = 0.25  # a dry closed basin's flat floor: at least this share of the depression
+
+
+def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_m, min_km2, full_km2):
+    """Which of a landform's closed depressions hold water, by their water
+    balance (PW-167). h: the surface; filled, rec, order: its priority flood
+    (outlets first); dep_ok: where depressions count (active land, no ice);
+    can: 0..1, where the classes let them hold water (Synth.lakes); src:
+    water each pixel yields (runoff + inflow, km^2 m/yr); loss: a lake's net
+    evaporation (open water minus the land's, m/yr). Each depression
+    (filled - h > 0.2 m) gets its own catchment's water plus what the
+    depressions above it spill (upstream first, so small ones overflow into
+    chains). A depression at least min_m deep and min_km2 big where `can`
+    holds:
+      full    inflow >= loss x its area at the spill: a lake to the brim
+              that passes the rest on (an open lake), if at least
+              full_km2 big (a smaller full one silts up: filled flat);
+      closed  else, a lake whose area A = inflow / loss (the level where
+              the depression is that big; a salt lake), if A >= min_km2;
+      playa   else a dry flat floor (PLAYA_SHARE of it) where its streams end.
+    Every other depression is filled flat (its water passes on).
+    Returns (surface: closed lakes at their level, playas at their floor,
+    full lakes and the rest filled; lake: lake pixels (bed = surface -
+    depth); depth; sink: closed lakes and playas, where rivers end; counts)."""
+    n = nx * ny
+    dep = np.where(dep_ok, filled - h, 0.0)
+    lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
+    surf = np.where(dep_ok, np.maximum(h, filled), h)
+    lake, depth, sink = np.zeros(n, bool), np.zeros(n), np.zeros(n, bool)
+    counts = {"full": 0, "closed": 0, "playa": 0, "silted": 0}
+    nb = len(sizes)
+    if not nb:
+        return surf, lake, depth, sink, counts
+    on = lab >= 0
+    L = lab[on]
+    Q = ZK.accumulate(rec, order, src)
+    qx = np.zeros(nb)
+    np.maximum.at(qx, L, Q[on])
+    nxt_px = _next_basin(rec, order, lab)
+    # each depression's exit (its pixel with the most water) and the depression below it
+    ex = np.full(nb, -1)
+    idx = np.flatnonzero(on)
+    o = np.lexsort((Q[idx], L))
+    last = np.r_[np.flatnonzero(np.diff(L[o])), len(o) - 1]
+    ex[L[o][last]] = idx[o][last]
+    below = np.where(ex >= 0, nxt_px[np.maximum(ex, 0)], -1)
+    direct = qx.copy()
+    np.add.at(direct, below[below >= 0], -qx[below >= 0])
+    area = sizes * res * res
+    dmax = np.zeros(nb)
+    np.maximum.at(dmax, L, dep[on])
+    cmean = np.bincount(L, can[on], nb) / np.maximum(sizes, 1)
+    lmean = np.bincount(L, loss[on], nb) / np.maximum(sizes, 1)
+    cand = (dmax >= min_m) & (area >= min_km2) & (cmean > 0.5)
+    spill = np.zeros(nb)
+    for b in np.argsort(qx, kind="stable"):  # upstream first
+        inflow = max(direct[b], 0.0) + spill[b]
+        out = inflow
+        if cand[b]:
+            cap = lmean[b] * area[b]
+            px_b = np.flatnonzero(lab == b)
+            if inflow >= cap:
+                if area[b] >= full_km2:
+                    lake[px_b], depth[px_b] = True, dep[px_b]
+                    counts["full"] += 1
+                else:
+                    counts["silted"] += 1
+                out = inflow - cap
+            else:
+                out = 0.0
+                hs = np.sort(h[px_b])
+                a = inflow / max(lmean[b], 1e-9)
+                if a >= min_km2:
+                    k = min(int(np.ceil(a / (res * res))), len(hs))
+                    lvl = hs[k - 1] + 1e-3
+                    w = px_b[h[px_b] < lvl]
+                    surf[px_b] = np.maximum(h[px_b], lvl)
+                    lake[w], depth[w], sink[w] = True, lvl - h[w], True
+                    counts["closed"] += 1
+                else:
+                    k = max(int(np.ceil(PLAYA_SHARE * len(hs))), 1)
+                    lvl = hs[k - 1] + 1e-3
+                    surf[px_b] = np.maximum(h[px_b], lvl)
+                    sink[px_b[h[px_b] < lvl]] = True
+                    counts["playa"] += 1
+        if below[b] >= 0:
+            spill[below[b]] += out
+    return surf, lake, depth, sink, counts
+
+
 # the classes in landform.classify's order (the first that holds wins there; here: keeps its weight)
 PRIORITY = [LF.ARC_CLASS, LF.HOTSPOT_CLASS, LF.RIFT, LF.ESCARPMENT, LF.FOLD_BELT, LF.LAVA_PLATEAU, LF.DUNES, LF.KARST,
             LF.CAPROCK, LF.COASTAL_PLAIN, LF.SHIELD, LF.HILLS, LF.SEA]
 SYNTH = {LF.ESCARPMENT: Escarpment(), LF.CAPROCK: Caprock(), LF.LAVA_PLATEAU: LavaPlateau(),
-         LF.FOLD_BELT: FoldBelt(), LF.RIFT: Rift(), LF.SHIELD: Shield()}
+         LF.FOLD_BELT: FoldBelt(), LF.RIFT: Rift(), LF.SHIELD: Shield(),
+         LF.KARST: Karst(), LF.DUNES: Dunes(), LF.COASTAL_PLAIN: CoastalPlain()}
 
 
 # per-cell columns the synthesisers read besides the world's layers, and
 # defaults for layers a world lacks (sliced before they existed)
+def sand_drift(L, sel):
+    """The sand's drift per cell (Fryberger): each season's wind u carries
+    sand ~ |u|^3 along u (the world's July and January winds; the annual
+    wind where it lacks them). Returns the resultant drift (east, north,
+    mean of the seasons' |u|^2 u) and its directional steadiness RDP / DP
+    (1: one wind all year; ~0.5: two winds at an angle; ~0: winds from
+    opposite or many sides)."""
+    pairs = [("wind_jul_e", "wind_jul_n"), ("wind_jan_e", "wind_jan_n")]
+    if not all(k in L for p in pairs for k in p):
+        pairs = [("wind_e", "wind_n")]
+    if not all(k in L for p in pairs for k in p):
+        z = np.zeros(len(sel))
+        return z, z, np.ones(len(sel))
+    de, dn, dp = np.zeros(len(sel)), np.zeros(len(sel)), np.zeros(len(sel))
+    for e, nn in pairs:
+        u, v = np.asarray(L[e], float)[sel], np.asarray(L[nn], float)[sel]
+        s2 = u * u + v * v
+        de, dn, dp = de + s2 * u / len(pairs), dn + s2 * v / len(pairs), dp + s2 ** 1.5 / len(pairs)
+    return de, dn, np.where(dp > 1e-9, np.hypot(de, dn) / np.maximum(dp, 1e-9), 1.0)
+
+
 DERIVED = {
+    # the aridity index P / PET (landform.aridity; the world's own pet layer)
+    "aridity": lambda L, sel: (np.asarray(L["precipitation"], float)[sel]
+                               / np.maximum(np.asarray(L["pet"], float)[sel] if "pet" in L else 1000.0, 1.0)),
     "hard_top": lambda L, sel: _resist(np.asarray(L["strata_top"])[sel]),
     "hard_next": lambda L, sel: _resist(np.asarray(L["strata_next"])[sel]),
     "granite": lambda L, sel: (np.asarray(L["strata_top"])[sel] == 11).astype(float),  # surface.GRANITE
+    # how readily the exposed carbonate dissolves: limestone 1, dolomite (less soluble) 0.5
+    "purity": lambda L, sel: np.select([np.asarray(L["strata_top"])[sel] == 6, np.asarray(L["strata_top"])[sel] == 14],
+                                       [1.0, 0.5], 0.0),  # surface.LIMESTONE, DOLOMITE
+    "drift_e": lambda L, sel: sand_drift(L, sel)[0],
+    "drift_n": lambda L, sel: sand_drift(L, sel)[1],
+    "drift_ratio": lambda L, sel: sand_drift(L, sel)[2],
 }
 DEFAULTS = {"rift_strain": 0.4, "glaciated_myr": LF.GLACIATED_NEVER, "crust_thickness": 35.0, "precipitation": 500.0,
-            "plate_boundary": 0.0}
+            "plate_boundary": 0.0, "temperature": 15.0}
 
 
 def _resist(rock):
@@ -1037,17 +1604,22 @@ class Landforms:
         self.ctxs = ctxs  # class id -> Ctx (with its w and prm)
 
     @classmethod
-    def build(cls, L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, seed, land, base, interp, centers):
-        """L: the world's layers; sel: the coarse cells around the region
-        (cx, cy: their projected centres, land_c: land; centers: their unit
-        vectors); interp(vals, wts, sigma): the zoom's Gaussian
-        interpolation onto the pixels."""
+    def build(cls, L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, seed, land, base, interp, grid, to_plane):
+        """L: the world's layers on `grid`; sel: the coarse cells around the
+        region (cx, cy: their projected centres, land_c: land);
+        interp(vals, wts, sigma): the zoom's Gaussian interpolation onto the
+        pixels; to_plane(unit vectors): the zoom's projection (km)."""
+        centers = grid.centers[sel]
         if "landform" not in L:
             return None
         form = np.asarray(L["landform"])[sel]
         ks = [k for k in SYNTH if np.any((form == k) & land_c)]
         if not ks:
             return None
+        if any("coast_km" in SYNTH[k].layers for k in ks):  # (km from the coarse coast, over land: planet-fixed)
+            gl = np.asarray(L["elevation"]) > 0
+            coast = gl & (np.add.reduceat((~gl)[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
+            L = {**L, "coast_km": np.minimum(LF.coast_km(grid, gl, coast), 2000.0)}
         cols, wts, spans = [], [], {}
         for k in ks:
             ind = ((form == k) & land_c).astype(float)
@@ -1092,7 +1664,11 @@ class Landforms:
             c.w = np.minimum(c.w, np.maximum(1.0 - taken, 0.0))
             taken += c.w
         cues = {"thick": _column(L, "crust_thickness", sel), "elev": np.maximum(_column(L, "elevation", sel), 0.0),
-                "converging": _column(L, "plate_boundary", sel)}
+                "converging": _column(L, "plate_boundary", sel), "drift_e": _column(L, "drift_e", sel),
+                "drift_n": _column(L, "drift_n", sel)}
+        for k, c in ctxs.items():
+            if SYNTH[k].zoned:
+                c.zone = zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp)
         for j, (k, c) in enumerate(ctxs.items()):
             if SYNTH[k].axis and np.any(c.w > 0):
                 ind = ((form == k) & land_c).astype(float)
@@ -1147,7 +1723,7 @@ class Landforms:
             w = c.w * mask
             if st is None or not np.any(w > 0):
                 continue
-            sv = z + (0.0 if st.tilt is None else st.tilt[0] * c.px + st.tilt[1] * c.py)
+            sv = st.height(z, c.px, c.py)
             # Anti-aliasing: each cliff spans at least FACE_PX pixels across
             # (steep, but not a one-pixel step that aliases into a staircase
             # along the scarp), and where a band is narrower than a couple of
@@ -1165,7 +1741,7 @@ class Landforms:
                 face, fade = np.where(c.chan, st.face, face), np.where(c.chan, 1.0, fade)
                 ss = np.where(c.chan, sv, ss)
             zk = bench_map(ss, st.anchor, st.period, st.bands, st.cliff, st.power, st.top_k, face)
-            out += w * fade * (zk - ss)
+            out += w * fade * st.amp * (zk - ss)
         return out
 
     def plateau(self, h) -> tuple:
@@ -1179,7 +1755,7 @@ class Landforms:
             st = SYNTH[k].strata(c, h)
             if st is None or not np.any(c.w > 0):
                 continue
-            sv = h + (0.0 if st.tilt is None else st.tilt[0] * c.px + st.tilt[1] * c.py)
+            sv = st.height(h, c.px, c.py)
             on = c.w * (sv >= st.anchor)
             w += on
             lvl += on * st.anchor
@@ -1260,6 +1836,70 @@ class Landforms:
                 dz = dz * gap
             z = z + w * dz
         return self._bench(z, mask)
+
+    def finish(self, h, fin) -> dict:
+        """After the final drainage (zoom.build), on the finished land
+        (fin: rec, order (outlets first), q (m^3/s), water (sea and lakes),
+        ice, active): the overlay hooks (Synth.overlay: dunes, dolines,
+        towers, poljes), each made mean-neutral over ~a cell's width (the
+        cell means stay) and kept off its streams; streams sink where the
+        classes say (Synth.sinks: karst), their valleys dry, resurging at
+        springs; the overlays' pits below the local base level hold ponds
+        (Synth.ponds). Returns h, pond (mask), pond_depth (m), q, stats."""
+        c0 = next(iter(self.ctxs.values()))
+        nx, ny, res = c0.nx, c0.ny, c0.res
+        q, rec, order = fin["q"], fin["rec"], fin["order"]
+        free = fin["active"] & ~fin["water"] & ~fin["ice"]
+        n = len(h)
+        tot, pondw, pit = np.zeros(n), np.zeros(n), np.zeros(n)
+        st = {}
+        # streams that sink (karst): under SINK_Q x the class's sinks() they carry no water at the surface
+        sk = np.zeros(n)
+        for k, c in self.ctxs.items():
+            v = SYNTH[k].sinks(c) if np.any(c.w > 0) else None
+            if v is not None:
+                sk = np.maximum(sk, c.w * v)
+        dry = free & (sk > 0.25) & (q < SINK_Q * sk) & (q > 0)
+        q2 = np.where(dry, 0.0, q)
+        if dry.any():
+            r = np.where(rec >= 0, rec, np.arange(n))
+            wet_r = ~dry[r] & (rec >= 0)
+            st["springs"] = int(np.sum(dry & wet_r & (q >= 1.0)))  # (where a sunk stream's water comes back)
+            donor_wet = np.zeros(n, bool)
+            np.logical_or.at(donor_wet, r[~dry & (q >= 1.0) & (rec >= 0)], True)
+            st["sinks"] = int(np.sum(dry & donor_wet))  # (streams flowing in that sink: swallow holes)
+            st["dry_valley_km"] = round(float(np.sum(dry & (q >= 1.0))) * res, 0)
+        flow = q2 > 0
+        # the water table: the first flowing river (or the sea, a lake) down the drainage
+        fin = {**fin, "base": drain_level(h, rec, order, (q2 >= 1.0) | (rec < 0))}
+        for k, c in self.ctxs.items():
+            if not np.any(c.w > 0):
+                continue
+            dz = SYNTH[k].overlay(c, h, fin)
+            if dz is None:
+                continue
+            near = ZK.inside_distance(~(flow & (q2 >= SYNTH[k].overlay_q)), nx, ny, False) * res
+            m = c.w * free * smoothstep(0.5 * res, max(2.0 * res, 1.5), near)
+            # (mean-neutral over ~a cell: the land under dunes and towers is
+            # lowered by their mean, around dolines raised: the cell means stay)
+            rr = max(1, int(round(0.25 * c.sp / res)))
+            wl = (m > 0).reshape(ny, nx).astype(float)
+            mean = _box_mean((m * dz).reshape(ny, nx), wl, rr).ravel()
+            tot += m * dz - np.where(m > 0, mean, 0.0)
+            if SYNTH[k].ponds:
+                pondw = np.maximum(pondw, m)
+                pit += m * np.minimum(dz, 0.0)
+            if c.cache.get("overlay_stats"):
+                st[LF.CLASSES[k][1]] = c.cache["overlay_stats"]
+        h2 = np.where(free, np.maximum(h + tot, 0.5), h)
+        pond, pdep = np.zeros(n, bool), np.zeros(n)
+        if np.any(pondw > 0.5):
+            hc = fin["base"]
+            # (a pit's floor against the water table: both before the mean-neutral shift)
+            pond = (pondw > 0.5) & free & (h + pit < hc - POND_M) & (pit < -POND_M)
+            pdep = np.where(pond, np.minimum(hc - h - pit, -pit), 0.0)
+            st["ponds"] = int(len(np.unique(ZK.label_components(pond, nx, ny)[0][pond]))) if pond.any() else 0
+        return {"h": h2, "pond": pond, "pond_depth": np.where(pond, pdep, 0.0), "q": q2, "stats": st}
 
     def stats(self) -> dict:
         """% of land pixels each class shapes (weight > 0.5), by class key."""

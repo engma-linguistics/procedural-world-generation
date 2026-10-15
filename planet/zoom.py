@@ -62,9 +62,11 @@ Pipeline
    Rivers entering at the region's edge can't drain straight back out.
 6. Landscape pass on the raster: a steady-state stream-power landscape.
    Priority flood + steepest-descent D8 routing gives a drainage network
-   and discharge Q (precipitation + inflow); walking up from the outlets
-   (sea, lakes, region edge), each pixel sits above its receiver by
-   slope = C / K * Q^-0.5 (K = surface.ROCKS erodibility): big rivers
+   and discharge Q (the world's runoff + inflow: the rivers, falls and
+   lakes); walking up from the outlets (sea, lakes, region edge), each
+   pixel sits above its receiver by slope = C / K * Qg^-0.5 (Qg: the
+   rain-weighted drainage area, which shapes a desert's wadis too;
+   K = surface.ROCKS erodibility): big rivers
    are gentle, small gullies and ridges steep, so valleys nest
    dendritically. C is a smooth field refitted each iteration so every
    ~35 km neighbourhood keeps the target's mean; the network is
@@ -94,7 +96,8 @@ Pipeline
    target surface, redrawn on the finished one.
    Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
    shapes the target (the structure the drainage organises around: fold
-   ridges, fault blocks, domes) and reshapes the finished landscape,
+   ridges, fault blocks, domes; a coastal plain or a sand sheet smoothed)
+   and reshapes the finished landscape,
    blended by smooth class weights: the relief around the drainage (flat
    interfluves over steep valley walls), the structure itself (tilted
    fault blocks over flat half-grabens, folds and hogbacks, inselbergs)
@@ -103,7 +106,15 @@ Pipeline
    rivers crossing a cliff fall over it, and the falls retreat into
    gorges. Sills across a flow path are cut through as gaps a few pixels
    wide, but not across a rift's or a scoured shield's closed basins
-   (lakes or flats in the final drainage); each coarse cell's mean is kept. A designed reach crossing
+   (in the final drainage their water balance makes them full lakes that
+   spill into the next, closed lakes below the spill, or dry flats where
+   the streams end: basin_lakes, PW-167); each coarse cell's mean is kept.
+   After the final drainage, overlays (Landforms.finish): dunes on the
+   land, karst's dolines, poljes and towers (ponds where they reach the
+   water table), karst streams sinking (dry valleys) and resurging at
+   springs. A coastal plain's wave-dominated coast gets a barrier island,
+   a lagoon and inlets with the coastline (step 3), and marshes (the
+   `wetland` layer). A designed reach crossing
    an escarpment takes its main fall at the scarp, with the plateau above
    it (the ground it must fit under is lifted: scarp_fall). Any pits
    left are filled. Falls are listed only where the drop stands out from
@@ -245,7 +256,7 @@ def _catmull_rom(p0, p1, p2, p3, n):
 # Waterfalls in the raster: from a channel carrying >= WF_MIN_Q m^3/s, the
 # biggest drop of the water surface over <= WF_STEPS pixels (and <= WF_MAX_KM)
 # downstream that is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
-WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 50.0, 30.0, 15.0, 3
+WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 20.0, 30.0, 15.0, 3  # (Q: routed runoff, PW-180)
 WF_MAX_KM = 5.0  # ... and over at most this far (at least one pixel): on coarse pixels a steep reach isn't a fall
 WF_EDGE_PX = 8  # ... and not next to the region's edge (held at the target surface: steps into it aren't falls)
 WF_CONTRAST, WF_CONTEXT_KM = 3.0, 6.0  # ... and WF_CONTRAST x steeper than the river within WF_CONTEXT_KM (see waterfalls())
@@ -378,7 +389,13 @@ SCARP_MIN_W = 0.3  # a designed reach takes its main fall at a landform scarp wh
 LF_CHANNEL_Q = 5.0  # m^3/s: landform relief (zoom_landforms) is shaped around channels carrying this much
 LF_FALL_KIND = {ZL.LF.ESCARPMENT: "scarp", ZL.LF.RIFT: "scarp", ZL.LF.CAPROCK: "bench", ZL.LF.LAVA_PLATEAU: "bench"}
 BASIN_THROUGH_Q = 100.0  # m^3/s: a river this big cuts through a landform's closed basins (rift, scoured shield)
-LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big holds a lake
+LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big can hold a lake...
+LF_FULL_KM2 = 5.0  # ... one full to the brim (spilling) at least this big (a smaller one silts up: a flat)
+LF_LOSS_MM = 300.0  # mm/yr: a lake's net evaporation where the world has no pet / evaporation layers
+# coastal plains' barrier coasts (PW-012): wave power (kW/m) and tide range (m) between which they
+# fade in, the widest lagoon (km); marshes on land below MARSH_M m within MARSH_KM of the sea
+BARRIER_WAVE, BARRIER_TIDE, BARRIER_LAGOON_KM = (4.0, 15.0), (2.5, 4.5), 8.0
+MARSH_M, MARSH_KM = 4.0, 12.0
 
 
 def _under(surface_rock, basement, cover_km, top_km=None, next_rock=None) -> int:
@@ -933,16 +950,21 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     gw, gc, own_c = (v[sel] for v in ice_ground(g, L, L.get("ice", np.zeros(g.n)).astype(float)))
     vals = np.column_stack([np.maximum(e_c, 1.0), np.minimum(e_c, -1.0), temp_c, warm,
                             L["precipitation"][sel].astype(float), ice_c, r_c, relief[sel],
-                            gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), own_c])
+                            gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), own_c,
+                            np.asarray(L["runoff"] if "runoff" in L else L["precipitation"], float)[sel]])
     wts = np.ones_like(vals)
     wts[:, 0] = land_c
     wts[:, 1] = ~land_c
+    wts[:, 11] = land_c  # (runoff: the land's; the sea's is 0)
     sig = 0.5 * sp
     fine, _ = ZK.gauss_interp(px, py, cx, cy, vals, wts, sig)
     e_land = np.nan_to_num(fine[:, 0], nan=1.0)
     e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
     t_sl, warm_sl, precip, ice, rug, rel = (fine[:, k] for k in range(2, 8))
     gw_sl, gc_sl, own_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(8, 11))
+    # what feeds the streams: the world's runoff (rain minus what the land
+    # evaporates, as its own rivers route), not the rain
+    runoff = np.clip(np.nan_to_num(fine[:, 11], nan=0.0), 0, None)
     ind, _ = ZK.gauss_interp(px, py, cx, cy, np.where(land_c, 1.0, -1.0)[:, None],
                              np.ones((len(sel), 1)), 0.42 * sp)
     ind = ind[:, 0]
@@ -1009,6 +1031,36 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             lagoon |= band | inlet
         ind_n = np.where(lagoon, np.minimum(ind_n, -0.05), ind_n)
         log(f"  lagoons: {int(lagoon.sum())} px")
+    # Coastal plains (zoom_landforms, PW-012) on wave-dominated coasts
+    # (strong waves, small tides): a barrier island 2 px wide along the
+    # coast, a lagoon behind it, tidal inlets through it here and there;
+    # not where a delta shapes the coast (it has its own barriers)
+    barrier = np.zeros(npx, bool)
+    w_cp = np.zeros(npx)
+    if "landform" in L and "wave_power" in L and "tide_range" in L:
+        cp_c = (np.asarray(L["landform"])[sel] == ZL.LF.COASTAL_PLAIN) & land_c
+        if cp_c.any():
+            # (the share of coastal plain among the land cells around: 1 along its coast)
+            f_cp, _ = ZK.gauss_interp(px, py, cx, cy, cp_c[:, None].astype(float), land_c[:, None].astype(float),
+                                      0.5 * sp)
+            w_cp = smoothstep(0.3, 0.6, np.nan_to_num(f_cp[:, 0]))
+            mv, _ = ZK.gauss_interp(px, py, cx, cy, np.column_stack([np.asarray(L["tide_range"], float)[sel],
+                                                                     np.asarray(L["wave_power"], float)[sel]]),
+                                    np.column_stack([~land_c, ~land_c]).astype(float), 0.6 * sp)
+            wW_b = (w_cp * smoothstep(*BARRIER_WAVE, np.nan_to_num(mv[:, 1]))
+                    * smoothstep(BARRIER_TIDE[1], BARRIER_TIDE[0], np.nan_to_num(mv[:, 0])) * (1 - wC))
+            if np.any(wW_b > 0.3):
+                din = ZK.inside_distance(ind_n > 0, nx, ny, False) * res  # km inside the coast
+                gate = ZK.fbm(Pk, 30.0, 2, 0.5, S + 53) / 0.17
+                bw = max(2.0 * res, 1.0)  # barrier width, km (at least 2 px)
+                vary = np.clip(0.75 + 0.45 * ZK.fbm(Pk, 50.0, 2, 0.5, S + 55) / 0.17, 0.25, 1.3)
+                lw = np.maximum(1.5 * res, BARRIER_LAGOON_KM * wW_b * vary)  # lagoon width
+                on = wW_b > 0.3
+                band = on & (din > bw + 0.1 * res) & (din <= bw + lw)
+                inlet = on & (din > 0) & (din <= bw + 0.1 * res) & (gate < -0.85)
+                barrier = on & (din > 0) & (din <= bw + 0.1 * res) & ~inlet
+                ind_n = np.where(band | inlet, np.minimum(ind_n, -0.05), ind_n)
+                log(f"  coastal plain: barrier {int(barrier.sum())} px, lagoons {int((band | inlet).sum())} px")
     land = ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ind_n)
@@ -1098,6 +1150,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                                 np.column_stack([~land_c, ~land_c]).astype(float), 0.6 * sp)
         tide_f, wave_f = np.nan_to_num(mv[:, 0]), np.nan_to_num(mv[:, 1])
     delta_floor = np.full(npx, -np.inf)  # beach ridges and levees, held as floors in the landscape pass
+    if barrier.any():  # (a coastal plain's barrier islands: a dune ridge a few metres high)
+        delta_floor = np.where(barrier & land, 2.0 + 2.5 * smoothstep(-1.0, 1.0, ZK.fbm(Pk, 6.0, 2, 0.5, S + 54) / 0.17),
+                               delta_floor)
     if deltas:
         # Tidal flats: offshore of a tide-influenced delta, a band of sea floor
         # between low and mean tide (exposed at low water), wider with the
@@ -1125,7 +1180,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- landform classes (zoom_landforms): weights, parameters, hooks ----
     lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
-                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g.centers[sel])
+                            lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g, fr.to_plane)
 
     def keep_means(z, hh, where, f=None):
         """z with each coarse cell's mean change from hh undone (a smooth
@@ -1142,7 +1197,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             z = z + f * np.nan_to_num(corr[:, 0])
         return z
 
-    n_gorges = 0  # falls over the landform classes' cliffs retreated into gorges
+    lf_gorges = []  # falls over the landform classes' cliffs retreated into gorges: (head pixel, km)
     ground_up = None  # where the classes' top beds hold the ground: (weight, level) per pixel (designed falls' fit)
     scarp = None  # single scarps (escarpments): weight, level, height per pixel
     if lf is not None:
@@ -1567,8 +1622,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ring = land & ~lake & ~edge & (ring_id >= 0)
     ring_px = [np.flatnonzero(ring & (ring_id == j)) for j in range(len(lakes))]
     lake_seq = sorted(range(len(lakes)), key=lambda j: -lakes[j]["level"])  # upstream lakes first
-    rain = precip / 1000.0 * res * res  # km^2 m/yr per pixel
-    srcq = rain + inflow
+    srcq = runoff / 1000.0 * res * res + inflow  # km^2 m/yr per pixel
+    # The landscape's shape (the stream-power grading, creep, the landform
+    # classes' valleys) follows the rain-weighted drainage area instead: a
+    # desert's wadis are cut by its rare floods, which mean runoff (~0
+    # there) doesn't measure. The pass is calibrated to the coarse heights
+    # anyway (C), so only the relative weights matter.
+    srcg = precip / 1000.0 * res * res + inflow
     Kr = ROCK_K[np.minimum(surf_f, len(ROCK_K) - 1)]
     jitter = np.random.default_rng(seed).random(npx)
     active = land & ~edge & ~lake
@@ -2050,10 +2110,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         rec, order, split_ok = reroute(rec, order)
         outs = lake_outlets(rec)
         Q, _ = route(srcq, rec, order, outs, split_ok)
+        Qg, _ = route(srcg, rec, order, outs, split_ok)
         diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
         dist = res * np.where(diag, 1.4142, 1.0)
         # coarse river courses count as carrying at least their coarse discharge
-        slope = np.minimum(C * rough * np.maximum(np.maximum(Q, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
+        slope = np.minimum(C * rough * np.maximum(np.maximum(Qg, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
         c_idx, c_val, step, flg, cliff, _, (b_idx, b_val) = place_falls(rec, Q, hprev)
         fl, cp = rims(rec, outs, step)
         was_river |= Q >= 0.3 * q_course
@@ -2073,7 +2134,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         C = C * np.clip(tmean / np.maximum(hmean, 1.0), 0.5, 2.0) ** 0.8
     glacier, ice_th = glacier_mask(h, sea | lake)  # on the finished valleys
     # soften D8 streaks and knife-edge ridges on hillslopes; keep channels sharp
-    chan = np.clip(np.log10(np.maximum(Q, 1e-3) / (50 * res * res)) / 2, 0, 1)
+    chan = np.clip(np.log10(np.maximum(Qg, 1e-3) / (50 * res * res)) / 2, 0, 1)
     cliff = _dilate(cliff.reshape(ny, nx), 2).ravel()  # falls, gorges and their walls don't creep
     kd = np.where(active & ~cliff, np.where(glacier, 0.4, KD * (1 - 0.8 * chan)), 0.0)
     # (creep rounds the hillslopes, but never lifts a stream's bed: in a deep
@@ -2101,7 +2162,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # (on the drainage of the crept surface; channels: >= LF_CHANNEL_Q)
         hf, rec_, order_ = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
         hf = np.where(active, np.maximum(h, hf), h)
-        chan_ = (Q * KM2_M_PER_YR_TO_M3S >= LF_CHANNEL_Q) | ~active
+        chan_ = (Qg * KM2_M_PER_YR_TO_M3S >= LF_CHANNEL_Q) | ~active
         q_ = ZK.accumulate(rec_, order_, srcq) * KM2_M_PER_YR_TO_M3S  # (m^3/s along this drainage)
         mask_ = where * smoothstep(wk + res, wk + 4 * res, dco)
         # (cut only inside the classes' reach: a sill where a river leaves it
@@ -2119,7 +2180,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # flow path is cut through rather than filled into a lake; the region's
         # edge, an outlet held at the target, is lowered too where land drains into it)
         # falls over the classes' cliffs retreat into gorges (PW-150)
-        h, n_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
+        h, lf_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
         h = ZL.cut(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
@@ -2145,19 +2206,27 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     # a landform's closed depressions (a rift's basins, a scoured shield's
-    # rock basins) hold lakes where the class says so (Synth.lakes): the
-    # whole depression, if it is LF_LAKE_M deep somewhere and LF_LAKE_KM2 big
-    # (smaller ones are filled flat: alluvial flats, playas)
-    lf_lake, lf_depth = np.zeros(npx, bool), np.zeros(npx)
+    # rock basins) hold water where the class lets them (Synth.lakes) and
+    # their water balance says (zoom_landforms.basin_lakes, PW-167): a lake
+    # to the brim where their inflow beats the evaporation (smaller ones
+    # spilling into the next), else a closed lake below the spill or a dry
+    # flat where the streams end; the rest are filled flat
+    lf_lake, lf_depth, lf_sink, lf_counts = np.zeros(npx, bool), np.zeros(npx), np.zeros(npx, bool), {}
     if lf is not None:
-        dep = np.where(active & ~glacier, filled - h, 0.0)
-        lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
-        if len(sizes):
-            deep = np.zeros(len(sizes), bool)
-            ok = (dep > LF_LAKE_M) & (lf.lakes() > 0.5) & (lab >= 0)
-            deep[lab[ok]] = True
-            lf_lake = (lab >= 0) & deep[np.maximum(lab, 0)] & (sizes[np.maximum(lab, 0)] * res * res >= LF_LAKE_KM2)
-            lf_depth = np.where(lf_lake, dep, 0.0)
+        if "pet" in L and "evaporation" in L:  # (open water's evaporation beyond the land's)
+            ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
+        else:
+            ls_c = np.full(len(sel), LF_LOSS_MM)
+        fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
+        fv = np.nan_to_num(fv)
+        surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
+            h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, fv[:, 0] / 1000.0, res, nx, ny,
+            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
+        h = np.where(active, surf_b, h)
+        if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
+            outlet = outlet | lf_sink
+            active = active & ~lf_sink
+            filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     rec0 = rec
@@ -2214,6 +2283,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         if "kind" in f or k not in LF_FALL_KIND:
             continue
         f["kind"], f["landform"] = LF_FALL_KIND[k], ZL.LF.CLASSES[k][1]
+        # (its gorge, if it retreated into one: the fall at the gorge's head)
+        g = [km for p, km in lf_gorges if max(abs(p // nx - f["px"][0]), abs(p % nx - f["px"][1])) <= 3]
+        f["gorge_km"] = round(max(g), 1) if g else 0.0
         foot = f["_foot"]
         if foot >= 0 and active[foot] and not lf_lake[foot]:
             pool[foot] = max(pool[foot], float(np.clip(0.6 * f["height_m"], 3.0, 60.0)))
@@ -2232,16 +2304,15 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         if any(max(abs(f["px"][0] - t["px"][0]), abs(f["px"][1] - t["px"][1])) < sep for t in top_falls):
             continue
         top_falls.append(dict(f))
-    for f in falls:
-        f.pop("_kp", None)
-    for f in top_falls:
+    for f in falls + top_falls:
         if "_kp" in f:
             f["cascades"] = [{"px": st["lip_px"], "height_m": st["height_m"]} for st in kps[f.pop("_kp")]["steps"]
                              if "lip_px" in st and st["height_m"] >= KP_MIN_STEP
                              and max(abs(st["lip_px"][0] - f["px"][0]), abs(st["lip_px"][1] - f["px"][1])) > 3]
-    all_falls = sorted(({"px": f["px"], "lat": f["lat"], "lon": f["lon"], "height_m": f["height_m"],
-                         "discharge_m3s": f["discharge_m3s"], "kind": f["kind"]} for f in falls),
-                       key=lambda f: -f["height_m"])
+    # every listed fall with what the viewer's card shows (zoom.html's Waterfalls overlay)
+    card = ("px", "lat", "lon", "height_m", "discharge_m3s", "kind", "length_km", "from_lake", "gorge_km",
+            "plunge_pool_m", "landform", "lip_resistance", "cascades")
+    all_falls = sorted(({k: f[k] for k in card if k in f} for f in falls), key=lambda f: -f["height_m"])
     h = np.where(lake, surf - depth, h)
     lake_depth = np.where(lake, depth, 0.0)
     h = np.where(lf_lake, h - lf_depth, h)  # (landform lakes: their beds)
@@ -2250,6 +2321,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     plunge = pool > 0
     h = np.where(plunge, h - pool, h)
     lake_depth = np.where(plunge, pool, lake_depth)
+    # landform overlays on the finished land (zoom_landforms: Landforms.finish):
+    # dunes, karst's dolines, towers and poljes (ponds where they reach the
+    # water table), karst streams sinking (dry valleys) and resurging
+    lf_overlay = {}
+    if lf is not None:
+        fz = lf.finish(h, {"rec": rec, "order": order, "q": discharge, "water": sea | lake | lf_lake | plunge,
+                           "ice": glacier, "active": active})
+        h, discharge, lf_overlay = fz["h"], np.where(land, fz["q"], 0.0), fz["stats"]
+        lf_lake = lf_lake | fz["pond"]
+        lake_depth = np.where(fz["pond"], fz["pond_depth"], lake_depth)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
@@ -2281,6 +2362,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     biome = np.where(bare, np.where(h > 1500, 15, np.where(precip < 250, 7, 5)), biome)
     biome = np.where(glacier, 4, biome).astype(np.uint8)
     water = np.where(sea, 1, np.where(lake | plunge | lf_lake, 2, 0)).astype(np.uint8)
+    # marshes: a coastal plain's lowest ground near the sea and its lagoons, where it is wet enough
+    d_sea = ZK.inside_distance(land, nx, ny, False) * res
+    wetland = ((water == 0) & (w_cp > 0.5) & (h < MARSH_M) & (d_sea <= MARSH_KM) & (precip > 300.0)
+               & ~glacier).astype(np.uint8)
 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
@@ -2301,6 +2386,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "lakes": int(len(np.unique(ZK.label_components(lake | lf_lake, nx, ny)[0][lake | lf_lake]))),
         # (of which in a landform class's closed basins: a rift's half-grabens, a scoured shield)
         "landform_lakes": int(len(np.unique(ZK.label_components(lf_lake, nx, ny)[0][lf_lake]))),
+        # (their closed basins by water balance: full lakes, closed lakes below the spill, dry flats, silted up)
+        "landform_basins": lf_counts,
+        # (the overlays: dunes' types, karst's dolines, poljes, towers, ponds, sinking streams and springs)
+        "landform_overlay": lf_overlay,
+        "barrier_px": int(barrier.sum()), "wetland_pct": round(100 * float(wetland.mean()), 2),
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
@@ -2331,7 +2421,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "volcanoes": vf["list"] if vf is not None else [],
         # % of the land each synthesised landform class shapes (zoom_landforms)
         "landforms": lf.stats() if lf is not None else {},
-        "landform_gorges": n_gorges,
+        "landform_gorges": len(lf_gorges),
     }
     layers = {
         "elevation": h.astype(np.float32),
@@ -2349,6 +2439,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "climate": clim_f,
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
+        "wetland": wetland,
     }
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
@@ -2381,9 +2472,9 @@ def _ramp(v, stops):
 
 
 LAND_WET = [(0, (92, 140, 78)), (300, (122, 160, 92)), (900, (176, 176, 118)), (1700, (160, 132, 96)),
-            (2600, (136, 116, 104)), (3600, (190, 186, 182)), (4800, (248, 248, 250))]
+            (2600, (136, 116, 104)), (3600, (184, 178, 170)), (4800, (224, 218, 208))]  # (bare rock: ice is tinted apart)
 LAND_DRY = [(0, (206, 188, 140)), (300, (196, 172, 124)), (900, (184, 154, 112)), (1700, (160, 128, 96)),
-            (2600, (136, 116, 104)), (3600, (190, 186, 182)), (4800, (248, 248, 250))]
+            (2600, (136, 116, 104)), (3600, (184, 178, 170)), (4800, (224, 218, 208))]  # (bare rock: ice is tinted apart)
 SEA = [(-7000, (12, 28, 70)), (-4000, (20, 48, 102)), (-1500, (34, 78, 140)), (-200, (64, 124, 182)),
        (0, (104, 164, 206))]
 
@@ -2416,7 +2507,11 @@ def preview(z: dict) -> np.ndarray:
     s = np.where((h > 0)[..., None], s, 0.75 + 0.3 * shade[..., None])
     col = col * s
     ice = (Lr["ice"] > 0) & (water == 0)
-    col = np.where(ice[..., None], col * 0.3 + np.array([235, 242, 250]) * 0.7 * (0.55 + 0.5 * shade[..., None]), col)
+    # glaciers blue-white (the high bare ground is pale rock), as zoom.html draws them
+    col = np.where(ice[..., None], col * 0.15 + np.minimum(np.array([206, 228, 250.0]) * (0.62 + 0.45 * shade[..., None]), 255) * 0.85, col)
+    if "wetland" in Lr:  # marshes: olive green, a little darker
+        col = np.where((Lr["wetland"] > 0)[..., None], np.array([104, 128, 84.0]) * (0.75 + 0.35 * shade[..., None]),
+                       col)
     col = np.where((water == 2)[..., None], np.array([70, 130, 196.0]), col)
     if "tide_range" in Lr:  # tidal flats: sea floor above low tide (dry at low water)
         tr = Lr["tide_range"]
@@ -2430,17 +2525,7 @@ def preview(z: dict) -> np.ndarray:
     for qq, r in ((3000.0 * wide, 1), (30000.0 * wide, 2)):  # big rivers are drawn wider
         a = np.maximum(a, 0.95 * (_dilate(q > qq, r) & land))
     col = col * (1 - a[..., None]) + np.array([38, 92, 178.0]) * a[..., None]
-    # waterfalls: a white-water mark at the lip and just below it (every listed fall)
-    ny, nx = h.shape
-    st = z.get("stats", {})
-    for f in st.get("falls", st.get("waterfalls", [])):
-        r0, c0 = f["px"]
-        rad = (2.0 + 0.6 * np.sqrt(f["height_m"] / 30)) * max(1.0, 1.0 / res) ** 0.5
-        k = int(np.ceil(1.2 * rad))
-        a, b, c, d = max(r0 - k, 0), min(r0 + k + 1, ny), max(c0 - k, 0), min(c0 + k + 1, nx)
-        rr, cc = np.mgrid[a:b, c:d]
-        foam = np.clip(1.2 - np.hypot(rr - r0, cc - c0) / rad, 0, 1)[..., None]
-        col[a:b, c:d] = col[a:b, c:d] * (1 - foam) + np.array([250, 252, 255.0]) * foam
+    # (waterfalls and volcanoes are the viewer's overlays, not marks baked in here: PW-181)
     return np.clip(col, 0, 255).astype(np.uint8)
 
 
@@ -2470,7 +2555,7 @@ LAYER_DOC = {
     "elevation": ("m", "ground elevation (lake beds included), sea level 0"),
     "water": ("enum", "0 land, 1 sea, 2 lake"),
     "lake_depth": ("m", "water depth in lakes (lake surface = elevation + lake_depth)"),
-    "discharge": ("m^3/s", "mean river discharge (precipitation routed downhill, plus inflow at the edges; "
+    "discharge": ("m^3/s", "mean river discharge (runoff routed downhill, plus inflow at the edges; "
                            "open lakes pass theirs on at the outlet; split among delta distributaries)"),
     "drainage_area": ("km^2", "upstream area inside the region"),
     "precipitation": ("mm/yr", "annual precipitation (interpolated from the coarse world)"),
@@ -2483,6 +2568,7 @@ LAYER_DOC = {
     "climate": ("KOPPEN id", "Koppen class; alpine tundra/ice cap added from the fine elevation"),
     "biome": ("BIOMES id", "climate.biomes on the fine fields"),
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
+    "wetland": ("0/1", "marsh: a coastal plain's lowest wet ground near the sea and its lagoons"),
 }
 
 

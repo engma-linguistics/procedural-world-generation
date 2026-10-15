@@ -1287,6 +1287,21 @@ def budyko(p, pet, w):
     return np.where(p > 0, p * (1 + x - (1 + x**w) ** (1 / w)), 0.0)
 
 
+def pet_months(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
+    """Potential evaporation (mm per month, shape (12, n)) by Oudin et al.
+    (2005): Ra/lambda*(T+5)/100, nothing below -5 C; each month's
+    temperature a sine between the coldest and warmest month, peaking in
+    July (north) or January (south). Summed over the year it is the `pet`
+    of water_balance (the aridity index P/PET uses it)."""
+    lat = np.asarray(lat, float)
+    ra = insolation(lat, tilt)
+    m = np.arange(12)[:, None]
+    peak = np.where(lat >= 0, 6, 0)[None, :]
+    amp = 0.5 * (t_warm - t_cold)
+    t_m = np.clip(temp + amp * np.cos(2 * np.pi * (m - peak) / 12), t_cold, t_warm)
+    return np.maximum(ra / LATENT * (t_m + 5) / 100, 0) * MONTH_DAYS[:, None]
+
+
 def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None) -> dict:
     """Where the rain goes: evaporation back to the air, or runoff into
     rivers (mm/yr). Per half-year, so a wet winter and a dry summer
@@ -1302,13 +1317,7 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
     Months are a sine between the coldest and warmest month, peaking in
     July (north) or January (south)."""
     tune = {**TUNE, **(tune or {})}
-    north = lat >= 0
-    ra = insolation(lat, tilt)
-    m = np.arange(12)[:, None]
-    peak = np.where(north, 6, 0)[None, :]
-    amp = 0.5 * (t_warm - t_cold)
-    t_m = np.clip(temp + amp * np.cos(2 * np.pi * (m - peak) / 12), t_cold, t_warm)
-    pet_m = np.maximum(ra / LATENT * (t_m + 5) / 100, 0) * MONTH_DAYS[:, None]  # mm per month
+    pet_m = pet_months(lat, temp, t_warm, t_cold, tilt)
     pet_jul = 2 * pet_m[3:9].sum(0)  # Apr-Sep, as a rate per year like p_jul
     pet_jan = 2 * (pet_m[:3].sum(0) + pet_m[9:].sum(0))
     # Each half-year on its own (amounts, mm), then again with what the
