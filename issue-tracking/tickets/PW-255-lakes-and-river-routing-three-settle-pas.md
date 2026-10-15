@@ -1,4 +1,5 @@
 ---
+id: PW-255
 title: "Lakes and river routing: three settle passes and ~9 priority floods per step (~15% of an L7 run)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249]
 refs: [planet/hydrology.py, planet/kernels.py, planet/surface.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Ideas, cheapest first: skip the 2nd/3rd settle pass when the lake set didn't cha
 reuse the previous route's order when only lake levels moved; a single priority flood that also
 returns the filled surface for `route`. Some change outputs slightly (check goldens / lake KPIs).
 Expected 30-50% of this bucket.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-lakes-settle-passes.md (found by gpu-explore (PW-249)).

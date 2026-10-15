@@ -1,4 +1,5 @@
 ---
+id: PW-251
 title: "Decide: update the run's climate less often (climate_every 4 -> 8 Myr) or cheaper (fewer orbit states in the ice balance)?"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249]
 refs: [planet/tectonics/earth.py, planet/icemass.py, planet/tectonics/params.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,3 +31,6 @@ candidates, but both change outputs:
 
 Lean: A until the parallel/fusion work (PW-247 drafts) is done; then measure B against the
 scorecard. It's the only single knob with a >1.3x effect on CPU.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-climate-cadence-decision.md (found by gpu-explore (PW-249)).

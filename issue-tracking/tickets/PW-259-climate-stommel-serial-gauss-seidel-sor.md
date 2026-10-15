@@ -1,4 +1,5 @@
 ---
+id: PW-259
 title: "climate._stommel: serial Gauss-Seidel/SOR is 5% of an L7 run and 8.5% of an L7 time zoom; try a faster solver"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249]
 refs: [planet/climate.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -22,3 +25,6 @@ scipy, not a dependency), a multigrid V-cycle using the existing coarse grids as
 warm-starting psi from the last climate update (fewer sweeps). Any of these changes the output
 slightly (converged vs iteration-limited psi), so this needs a check that currents/SST stay put
 (`tools/earth_check.py`) and new goldens.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-stommel-solver-sequential.md (found by gpu-explore (PW-249)).

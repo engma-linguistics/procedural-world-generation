@@ -1,4 +1,5 @@
 ---
+id: PW-253
 title: "Decide: is an optional GPU path worth a second code path, and with which backend (numba-cuda vs CuPy)?"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249, PW-247, PW-215]
 refs: [docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -46,3 +49,6 @@ Lean: **A now, D later** (B only if L8 runs or many time zooms become the main w
 fixes give most of the cheap wins; the GPU's 1.2-1.4x extra on top doesn't justify a second code
 path and its own goldens yet. If B goes ahead: numba-cuda over CuPy (closest to the existing
 kernels, cooperative launches available), fp64 kept.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-gpu-backend-decision.md (found by gpu-explore (PW-249)).

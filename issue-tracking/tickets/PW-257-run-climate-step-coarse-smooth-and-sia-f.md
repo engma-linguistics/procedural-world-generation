@@ -1,5 +1,6 @@
 ---
-title: "Run climate_step, _coarse_smooth and sia_flow in parallel on the CPU (zoom ~2x, time zoom ~1.4-2x)"
+id: PW-257
+title: Run climate_step, _coarse_smooth and sia_flow in parallel on the CPU (zoom ~2x, time zoom ~1.4-2x)
 type: task
 status: todo
 parent: PW-247
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249, PW-215]
 refs: [planet/timezoom_kernels.py, planet/climate.py, planet/icemass.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -42,3 +45,6 @@ version: 3.6 ms vs 3.3 ms at L7).
 - [ ] `_coarse_smooth`: parallel gather back to the fine grid; deterministic scatter (inverse map)
 - [ ] `sia_flow`: parallel sub-step passes with a gather for the flux update
 - [ ] before/after timings for an L6 run, a 2 km zoom and a 200 kyr time zoom
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-parallel-climate-step-and-coarse-smooth.md (found by gpu-explore (PW-249)).

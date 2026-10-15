@@ -1,4 +1,5 @@
 ---
+id: PW-254
 title: "If the GPU route is chosen: port climate._rain and the graph-stencil kernels to numba-cuda behind an optional extra"
 type: story
 status: todo
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249, PW-215]
 refs: [planet/climate.py, planet/ocean.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,3 +34,6 @@ Lessons from the prototype (scratch scripts are described in the profile report)
 - [ ] `planet[gpu]` extra (numba-cuda[cu13]); `PLANET_GPU=1` or auto-detect; CPU stays the default/reference
 - [ ] GPU goldens of their own + a test comparing GPU vs CPU fields within tolerance
 - [ ] run-to-run determinism on the GPU (PW-215) checked in tests
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-gpu-port-climate-stencils.md (found by gpu-explore (PW-249)).

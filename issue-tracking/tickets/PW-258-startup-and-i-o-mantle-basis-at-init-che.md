@@ -1,4 +1,5 @@
 ---
+id: PW-258
 title: "Startup and I/O: mantle basis at init, checkpoint writes on the main thread (~2-5% of a 100 Myr run)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249]
 refs: [planet/tectonics/mantle.py, planet/store.py, planet/timeline.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,3 +26,6 @@ pays its own. I/O inside a run: `save_checkpoint` ~0.75 s each at L6, ~2.4 s at 
 Ideas: cache `mantle.basis` (and the grid) per level on disk; write checkpoints from a background
 thread (the arrays are copied anyway); compute the snapshot's landforms only for keyframes that
 need them. Saves ~1-3% of a run, more for short jobs (a slice replays 40 Myr: init is ~10% of it).
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-startup-and-checkpoint-io.md (found by gpu-explore (PW-249)).

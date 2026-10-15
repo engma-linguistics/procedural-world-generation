@@ -1,5 +1,6 @@
 ---
-title: "ocean._coarse rebuilds the coarse grid every climate update and evicts climate._geom's cache (~4-8% of runs and time zooms)"
+id: PW-256
+title: ocean._coarse rebuilds the coarse grid every climate update and evicts climate._geom's cache (~4-8% of runs and time zooms)
 type: task
 status: todo
 parent: PW-247
@@ -10,6 +11,8 @@ found_by: gpu-explore (PW-249)
 blocked_by: []
 relates: [PW-249]
 refs: [planet/ocean.py, planet/climate.py, planet/grid.py, docs/review/gpu/profile.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ per-sea-mask part of `_coarse` separately, and key `_GEOM` so that a handful of 
 evict the main grid (or cache per level rather than per id). Outputs should be bit-identical.
 - [ ] build_grid per level cached; `_geom` / `cell_area_km2` computed once per grid per process
 - [ ] goldens unchanged; before/after timing of an L6 run and a time zoom
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-ocean-coarse-grid-cache-thrash.md (found by gpu-explore (PW-249)).
