@@ -3,7 +3,7 @@ id: PW-240
 title: "Run ice: after PW-190 still -300..-350 m in the coldest eras of seeds 2 and 11"
 type: task
 status: todo
-parent: null
+parent: PW-244
 subsystem: climate
 effort: m
 impact: med
