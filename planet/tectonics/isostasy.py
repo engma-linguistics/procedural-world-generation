@@ -95,11 +95,11 @@ def subsidence(grid, thick, cont, rec, t, flexure=0.15, sag=SAG_KM, sag_time=SAG
       final, cold height at once; this adds the hot start, so a rift's
       floor and its margins keep sinking for ~100 Myr after the stretching
       stops (sag basins over old rifts: the North Sea, Paris, Michigan;
-      passive margins' thick wedges).
+      passive margins' thick wedges). Not on crust folded since it rifted.
     thick km, cont mask, rec the geological record (record.RECORD columns),
     t Myr now."""
     from ..climate import smooth
-    from .record import RIFT_STRAIN, T_RIFT
+    from .record import RIFT_STRAIN, T_FOLD, T_RIFT
     out = np.zeros(len(thick))
     if flexure > 0:
         root = np.where(cont, ROOT * np.maximum(thick - CONT_KM, 0.0), 0.0)
@@ -108,7 +108,9 @@ def subsidence(grid, thick, cont, rec, t, flexure=0.15, sag=SAG_KM, sag_time=SAG
             out -= MOAT_MAX * np.tanh(moat / MOAT_MAX)
     if sag > 0:
         age = t - rec[:, T_RIFT].astype(float)
-        hot = cont & (age >= 0) & (age < 8 * sag_time)
+        # (crust folded since it rifted, a margin caught in a collision, has
+        # been thickened and buried again: its rift's heat no longer counts)
+        hot = cont & (age >= 0) & (age < 8 * sag_time) & (rec[:, T_FOLD] <= rec[:, T_RIFT])
         if hot.any():
             beta = np.exp(np.maximum(rec[hot, RIFT_STRAIN].astype(float), 0.0))
             f = beta / np.pi * np.sin(np.pi / beta)

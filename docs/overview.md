@@ -169,7 +169,7 @@ flowchart LR
 
 **Known limits:**
 - Plate counts can still dip for a few Myr near 4 (L7 seed 21, 1 Gyr: median 11, minimum 4, 1% of frames at ≤ 4; was median 10, minimum 3, 12% with an 84 Myr spell); a big plate rimmed by ongoing collisions is compressed across every cut and can't rift until they end (PW-191). The cycle's regularity is pinned (PW-025).
-- Continents are resolution-consistent since PW-052 (the L7 start no longer has a shelf-low, craton-free interior): L6 and L7 seeds 21/3199 at 1 Gyr have 34–36 km mean continental crust (median 36–37), crust on 40–42% of the surface and land on 31–33%. They still thin by ~1–2 km over a Gyr (the last 300 Myr: ~34 km, crust 42–43%), and mean land stands ~1150 m at L6, ~1300 m at L7 (Earth ~840 m; needs a decision, see the inbox).
+- Continents are resolution-consistent since PW-052 (the L7 start no longer has a shelf-low, craton-free interior). Since PW-238 (`continental_thickness` 37 → 35 km) and PW-054's subsidence, L6 seeds 1/2/21/3199 over 100–1000 Myr have 34 km mean continental crust, crust on 40% of the surface, land on 31% and mean land ~950 m (was 34–35 km, 41–42%, 32–33%, 1000–1100 m; Earth ~29% and ~840 m). They still thin by ~1–2 km below the target over a Gyr (the last 300 Myr: 33–34 km, crust 40–42%; PW-046).
 - Some cell churn remains along collision fronts (PW-170, PW-173, PW-174); pits in continents from old seams (PW-171); one-frame 11–18 km spikes (PW-048, PW-172).
 - Ragged ocean boundaries (PW-047); drainage switches outlet in one step when a rift opens (PW-056).
 
@@ -256,7 +256,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 **Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
 
-**Known limits:** generated worlds have too few closed basins (~9–11% of land drains inland at L6 vs ~18% on Earth; PW-054): sediment fills a closed hollow within ~10–20 Myr (two thirds of the loss; rims wearing down the rest), and nothing makes basins subside (no flexural foreland or sag basins).
+**Known limits:** closed basins (PW-054): sediment fills a closed hollow within ~10–20 Myr (two thirds of the loss; rims wearing down the rest), so only subsiding basins last (§2.4: flexural moats, thermal sag). With them, L6 seeds 1/2/21/3199 (100–1000 Myr) drain 9.5–11% of land inland (5.5–6.4% without), 17–21% of arid land (9–12%); L7 drains more (seed 3199, 100–340 Myr, a dry supercontinent: 35% of land, 46% of arid land; 23% / 35% without; Earth ~18% / roughly half), because the finer grid keeps more hollows. Back-arc and pull-apart basins and dynamic topography over cold mantle are not modelled (inbox).
 
 ### 2.6 Climate (`climate.py`)
 
@@ -344,7 +344,7 @@ On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and 
 
 **Outputs:** `flow`, `downstream`, `lake`, `lake_level` (lake surface; `lake_level − elevation` is depth), `lake_kind` (0 none, 1 fresh, 2 salt, 3 pan), `flood_ratio`, `flood_month`, `river_frozen` (worlds). Runs store `lake_depth` instead of `lake_level`.
 
-**Known limits:** run and world lakes still disagree. Finishing now keeps most of the keyframe's lakes (Jaccard overlap of lake cells with those of the keyframe under the same climate, L6, five runs: 0.31–0.89 since PW-057, 0.05–0.77 before; land draining inland now matches the keyframe's), but a run frame stores the lakes of the terrain before that step's erosion and sediment (which fills hollows to within 5 m of their spill level), and run lakes turn over within a frame or two, so a world agrees with the run frame's own lake layer on few cells (Jaccard ~0.0–0.1; see the draft on run-frame lakes). Generated worlds have too few closed basins (PW-054, §2.5).
+**Known limits:** run and world lakes still disagree. Finishing now keeps most of the keyframe's lakes (Jaccard overlap of lake cells with those of the keyframe under the same climate, L6, five runs: 0.31–0.89 since PW-057, 0.05–0.77 before; land draining inland now matches the keyframe's), but a run frame stores the lakes of the terrain before that step's erosion and sediment (which fills hollows to within 5 m of their spill level), and run lakes turn over within a frame or two, so a world agrees with the run frame's own lake layer on few cells (Jaccard ~0.0–0.1; see the draft on run-frame lakes). Closed basins on generated worlds rest on tectonic subsidence and are fewer at L6 than at L7 (PW-054, §2.5).
 
 ### 2.10 Coasts: waves, tides, delta types (`coast.py`)
 

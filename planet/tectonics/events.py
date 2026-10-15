@@ -327,6 +327,12 @@ def maybe_rift(sim, cf: CellForces, rng):
         side = rift_side(sim, k, c, t, rng, world)
         if side is None or not 0.15 < side.mean() < 0.85:
             continue
+        # (the plate's cells don't map one to one onto the world cells the
+        # cut was judged on: check the pieces the split will really make)
+        on = sim.owner == k
+        ca = int((on & np.isin(sim.w_ref, refs[side]) & sim.w_cont).sum())
+        if not piece_ok(sim, ca, int((on & sim.w_cont).sum()) - ca):
+            continue
         cont_k = cont_cells[k] >= 2 * p.rift_min_piece * g.n
         heat = float(sim.mantle[g.locate(c[None])[0]])
         new = split(sim, k, refs, world, side, toward=False)
