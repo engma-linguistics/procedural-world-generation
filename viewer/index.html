@@ -1253,7 +1253,7 @@ function renderSummary() {
     ${m.timezoom ? `<span class="muted">Finished from</span> ${m.source_run === 'earth' ? "today's Earth" : sourceLink(m.source_run, m.t_myr)}
       <span class="muted">→</span> ${timezoomLink(m.timezoom, m.timezoom_kyr)}<br>
       <span class="muted">sea level ${m.sea_level_change_m > 0 ? '+' : ''}${Math.round(m.sea_level_change_m)} m vs the time zoom's start
-      (${m.sea_level_m} m) · global mean ${m.global_temp_c} °C · land ice ${m.ice_volume_mkm3} M km³ · made ${m.created}</span><br>`
+      (${m.sea_level_m} m vs the run's reference level) · global mean ${m.global_temp_c} °C · land ice ${m.ice_volume_mkm3} M km³ · made ${m.created}</span><br>`
     : m.source_run ? `<span class="muted">From</span> ${sourceLink(m.source_run, m.t_myr)} <span class="muted">· made ${m.created}</span><br>` : ''}
     ${zoomsOf(V.id)}
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
