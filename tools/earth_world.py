@@ -21,6 +21,14 @@ model's wind, current and jet layers since PW-045):
                         2006; -1 where it has no data
   obs_sunshine          h/day of bright sunshine over the year, CRU CL 2.0
                         (land, no Antarctica; null elsewhere)
+  rock, surface_rock, sediment_cover, crust
+                        a rough geology from the terrain alone (earth_rock;
+                        no geological map is used), so the Earth world can
+                        be zoomed (PW-073): rugged high ground is a
+                        metamorphic belt, low plains and the shelves are
+                        sedimentary basins under ~2 km of cover, the rest
+                        old shield with a thin veneer; the deep sea floor
+                        is oceanic basalt
 
 When the climate model changes, just run this again (and delete the old
 world in the viewer).
@@ -38,6 +46,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from planet import climate  # noqa: E402
+from planet import surface as SF  # noqa: E402
+from planet import vegetation  # noqa: E402
 from planet import world as W  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import earth_clouds, earth_on_grid  # noqa: E402
@@ -52,6 +62,21 @@ def _with_nulls(x: np.ndarray, decimals: int = 1) -> np.ndarray:
     return np.where(np.isfinite(x), x, None).astype(object)
 
 
+def earth_rock(grid, elev: np.ndarray) -> dict:
+    """A plausible rock map of Earth from its terrain (see the module
+    docstring): what the zoom needs to draw it."""
+    rel = vegetation.relief(grid, elev)  # m to the steepest neighbour
+    land = elev > 0
+    shelf = ~land & (elev > -1000)
+    rugged = land & ((rel > 900) | (elev > 2500))
+    plain = (land & ~rugged & (elev < 400) & (rel < 250)) | shelf
+    rock = np.select([~land & ~shelf, rugged, plain], [SF.OCEAN, SF.OROGEN, SF.SEDIMENT], SF.CRATON)
+    cover = np.select([~land & ~shelf, rugged, plain], [0.3, 0.1, 2.0], 0.02)  # km
+    surf = np.where(cover >= SF.COVER_SHOWS, SF.SHALE, rock)
+    return {"rock": rock.astype(int), "surface_rock": surf.astype(int), "sediment_cover": np.round(cover, 2),
+            "crust": (land | shelf).astype(int)}
+
+
 def build(level: int = 6) -> dict:
     t0 = time.time()
     grid = build_grid(level)
@@ -61,6 +86,7 @@ def build(level: int = 6) -> dict:
     o, day = earth_clouds(grid), climate.day_hours(grid.lat, TILT)
     extra = {
         "ice": np.round(ice),
+        **earth_rock(grid, elev),
         "obs_temperature": _with_nulls(d["obs_temp"]),
         "obs_warm_month": _with_nulls(d["obs_t_warm"]),
         "obs_cold_month": _with_nulls(d["obs_t_cold"]),
