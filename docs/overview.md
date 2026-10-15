@@ -2,7 +2,7 @@
 
 *Current state as of 2026-10-14 evening (code at 382b370, after the tectsea and zoompolish merges). Every number here was checked against the code; where another doc disagrees, this one and the code win. Open work lives on the board: `uv run python issue-tracking/board.py list --open`. Tickets are cited as PW-NNN.*
 
-**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools · 2.18 vegetation) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
+**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools · 2.18 vegetation · 2.19 satellite view) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
 
 ---
 
@@ -43,7 +43,7 @@ flowchart LR
 ### What you can do with it
 
 - Watch a planet's history as an animation: plates, supercontinents assembling and breaking, ice ages, sea level.
-- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates, 60 named vegetation types (from 19 plant types: tree cover, productivity, fire return, stand age), rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range.
+- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates, 60 named vegetation types (from 19 plant types: tree cover, productivity, fire return, stand age), rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range, and a true-colour satellite view by season (§2.19).
 - Zoom into a region at a few hundred metres to a few km per pixel and get a 16-bit heightmap with named features: waterfalls with their heights, deltas with their type, volcanoes with their ages, and terrain shaped by its geology (escarpments, fold ridges, karst, dunes).
 - Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
 - Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
@@ -363,7 +363,7 @@ A **world** is one moment, finished. Four ways to get one:
 5. July / January temperature and rain (`world.seasons`);
 6. the sea (SST, salinity, sinking; the overturning in the meta), humidity, clouds and sunshine.
 
-**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~96 layers (§2.16; 32 of them vegetation); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
+**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~99 layers (§2.16; 32 of them vegetation, 3 the satellite view); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
 
 ### 2.12 Highlights (`highlights.py`)
 
@@ -421,7 +421,7 @@ Each scores as kind priority × quality (0.3–1). Travel picks use each hemisph
 
 **Falls:** `stats.falls` in `zoom.json` lists every fall ≥ 30 m on a stream ≥ 20 m³/s (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`, with gorge, cascades and plunge pool); `stats.waterfalls` keeps the 5 biggest by power. The viewer draws them as the Waterfalls overlay.
 
-**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png`, `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `temperature_jul`/`_jan`, `precipitation_jul`/`_jan`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland` (1 a coastal plain's marsh, 2 the vegetation's wetlands), `vegetation` (named type), `tree_cover`, `plant_cover`, `lai`, `canopy_height`, `npp`, `fire_return` (decision 9A: the summary layers; `zoom_vegetation.fractions(<zoom>)` recomputes each PFT's cover in ~5 s, the same numbers), `radiation_index`, `twi`, `river_dist`, `coast_dist`. Layers with an encoding in `zoom.LAYER_DOC` are stored as small integers with a scale (read them with `zoom.load(id, decode=True)`). Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays, and the vegetation's shares by type.
+**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png` (the satellite view in each hemisphere's summer, hill-shaded, with rivers), `satellite.png` / `satellite_jul.png` / `satellite_jan.png` (unshaded true colour, §2.19), `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `temperature_jul`/`_jan`, `precipitation_jul`/`_jan`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland` (1 a coastal plain's marsh, 2 the vegetation's wetlands), `vegetation` (named type), `tree_cover`, `plant_cover`, `lai`, `canopy_height`, `npp`, `fire_return` (decision 9A: the summary layers; `zoom_vegetation.fractions(<zoom>)` recomputes each PFT's cover in ~5 s, the same numbers), `radiation_index`, `twi`, `river_dist`, `coast_dist`, `cloud_jul`/`_jan` (the world's cloud cover, interpolated: the satellite view's clouds). Layers with an encoding in `zoom.LAYER_DOC` are stored as small integers with a scale (read them with `zoom.load(id, decode=True)`). Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays, and the vegetation's shares by type.
 
 ![Zoom with waterfalls](review/zoom/83e518_relief_fall.jpg)
 *Zoom 83e518 (500 km at 1 km, showcase world a08983): Waterfalls and Volcanoes overlays; the card shows a 745 m lip fall with a 4.2 km gorge.*
@@ -453,26 +453,27 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 ### 2.15 Viewer, server and CLI (`viewer/`, `server.py`, `api.py`, `__main__.py`)
 
-**CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `finish` (a world at a time zoom's kyr, or a run's time), `highlights`, `report` (re-render run.txt), `list`, `delete` (by id; `--orphans` clears zooms and caches of deleted worlds and unfinished runs), `show` (ASCII map of a world file), `serve`.
+**CLI** (`uv run python -m planet <cmd>`): `simulate`, `slice`, `generate`, `zoom`, `timezoom`, `finish` (a world at a time zoom's kyr, or a run's time), `highlights`, `satellite` (add or redo the satellite view of a saved world or zoom, in place; §2.19), `report` (re-render run.txt), `list`, `delete` (by id; `--orphans` clears zooms and caches of deleted worlds and unfinished runs), `show` (ASCII map of a world file), `serve`.
 
 **Server** (`planet serve`, port 8765): serves the viewer and the data folders, handles `DELETE` of runs, worlds and zooms, and adds `POST /api/zoom`, `POST /api/timezoom`, `POST /api/finish` (`{timezoom, kyr}` or `{run, t}` → a job whose result is `world`), `GET /api/jobs/<id>` and `GET /api/highlights`. Zoom, time-zoom and finish jobs run one at a time; job state is lost on restart (PW-085).
 
 **Globe** (`viewer/index.html`, three.js): one triangle fan per cell, with exaggerated relief, on a globe or a flat map.
 - **Runs** play as animations with an event list, plate arrows, and a time slider tinted blue in cold eras (where a time zoom will show ice ages). Layers: elevation, plates, crust age, surface rock, rock type, crust thickness, sediment, rainfall, temperature, climate, landforms, vegetation, tree cover, NPP. With a vegetation layer on, green ticks and labels above the slider mark when each plant group appeared.
-- **Worlds** add biome, precipitation, vegetation (named types, legend grouped), tree cover, plant cover, canopy height, leaf area (year / July / January), NPP, biomass, fire return, stand age, plant type (a picker for any one PFT's cover, `?layer=plant%20type&pft=BoNS`), wave power, tide range, sea temperature, salinity, humidity, dew point, cloud and sunshine. The hover card names the vegetation, its main plant types, canopy, tree cover, NPP, fire return and stand age. Temperature, rain, SST, humidity, cloud and sunshine have a year / July / January picker (`?season=jul`).
+- **Worlds** add **satellite** (true colour, §2.19; with the season picker and a **Clouds** overlay), biome, precipitation, vegetation (named types, legend grouped), tree cover, plant cover, canopy height, leaf area (year / July / January), NPP, biomass, fire return, stand age, plant type (a picker for any one PFT's cover, `?layer=plant%20type&pft=BoNS`), wave power, tide range, sea temperature, salinity, humidity, dew point, cloud and sunshine. The hover card names the vegetation, its main plant types, canopy, tree cover, NPP, fire return and stand age. Temperature, rain, SST, humidity, cloud and sunshine have a year / July / January picker (`?season=jul`). On the flat map the satellite layer is hill-shaded from the relief (the globe has its light).
 - **Overlays:** rivers, plate outlines, pentagons, plate arrows, events, hotspots, volcanoes, winds (year / July / January), ocean currents as streamlines (brighter = faster), the overturning (sinking sites, surface inflow, schematic deep return), jet stream, spin axis, tropics and polar circles.
 - **Earth world:** temperature, precipitation, climate and sunshine have a model / observed / difference switch (`?obs=diff`).
 - **Highlights** panel with category filters (`?hlcat=`, `&hl=N`).
 - **Provenance** (PW-128): a world shows the run and time it came from, linked, and its zooms; a run lists what was made from it and ticks their times above the slider.
 - **Pipeline** (PW-193): on a run frame, "Glacial time zoom from here" and "Finish world here"; on a time zoom frame, "Finish world here" (job progress in the panel, then the world opens). A finished world shows run @ Myr → time zoom + kyr (both linked); the run's tree nests finished worlds under their time zoom, and a time zoom's slider ticks them in green.
+- `?view=lat,lon` turns the globe there at once without picking a cell (for screenshots).
 - Clicking a cell copies a description (for pointing at a place); double-click or "Zoom" makes a regional zoom. The URL holds the state, e.g. `?world=a08983.json&layer=biome&mode=map`.
 
-**Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers relief, height, hillshade, rivers, rock, surface rock, climate, biome, landform, vegetation (legend by share of the land), tree cover, canopy height, NPP, fire return, leaf area, rain and temperature (year / July / January picker, `?season=`), ice, sun on slopes, wetness index and coarse cells (`?rivers=0`, `?falls=0`, `?volc=0` turn overlays off); the hover shows the pixel's vegetation, seasons and terrain indices; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
+**Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers **satellite** (true colour by season, §2.19, hill-shaded, with a **Clouds** overlay, `?clouds=1`; the default), height, hillshade, rivers, rock, surface rock, climate, biome, landform, vegetation (legend by share of the land), tree cover, canopy height, NPP, fire return, leaf area, rain and temperature (year / July / January picker, `?season=`), ice, sun on slopes, wetness index and coarse cells (`?rivers=0`, `?falls=0`, `?volc=0` turn overlays off); the hover shows the pixel's vegetation, seasons and terrain indices; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
 
 ![The viewer](overview/viewer_globe_biome.jpg)
 *The viewer on world 7c5adf: biomes, with highlights numbered (an earlier version of the panel, before categories).*
 
-**Known limits:** lake display quirks (PW-082); no vegetation / satellite view (PW-083); overturning schematic odd on some worlds (PW-154); runs lack seasonal layers, so the season picker works only on worlds and zooms (PW-107, PW-138).
+**Known limits:** lake display quirks (PW-082); overturning schematic odd on some worlds (PW-154); runs lack seasonal layers, so the season picker works only on worlds and zooms (PW-107, PW-138).
 
 ### 2.16 Store and data model (`store.py`, `timeline.py`, `provenance.py`)
 
@@ -491,7 +492,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `grids/L<n>.json` | grid geometry shared by all items at that level |
 | `worlds/index.json`, ... | indexes the viewer reads (with `source_run`, `t_myr` for provenance) |
 
-**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, the nine landform layers of §2.4, and the vegetation layers of §2.18. Run keyframes carry 35 of them; a tectonic world ~96.
+**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, the nine landform layers of §2.4, and the vegetation layers of §2.18. the satellite view's `sat`, `sat_jul`, `sat_jan` (§2.19). Run keyframes carry 35 of them; a tectonic world ~99.
 
 **Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
 
@@ -544,6 +545,23 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 *Run 732abb at 700 Myr, before flowering plants: conifer forests, moss and crust carpets; green ticks above the slider mark when each plant group appeared.*
 
 **Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
+
+### 2.19 Satellite view (`satellite.py`, PW-083)
+
+**What it does:** a true-colour picture of a world or zoom in July, January, or each hemisphere's summer ("year": July north of 10° N, January south of 10° S, blended between; what a cloud-free mosaic like Blue Marble shows). One colour function serves the globe and the zoom, mixed in linear light:
+1. **Bare ground** from the climate (dark brown humid soils, grey-brown cold ones, red semi-arid soils and yellow sand in hot deserts, grey cold deserts), tinted by the exposed rock where known (basalt dark, limestone and evaporites pale, sandstone red, an old shield laterite-red in hot dry country), sand on dune fields, grey rock above ~2500 m.
+2. **Plants:** each plant type's share × its colour, leaf-on or leaf-off that month by vegetation.py's leaf habits (summergreen: the month warmer than its threshold; raingreen: a moist soil, the month's and the two before's water against the potential evaporation; grasses: both, dormant grass straw when dry, brown when cold), over `plant_cover` of the ground. Wetlands (the flooded share) darker and olive.
+3. **Snow** from the month's snowpack (`climate.months`), cover 1 − e^(−SWE/15 mm), partly hidden by trees (evergreen crowns most: the dark winter taiga); **land ice** white, greyer-blue where it melts that month.
+4. **Water:** lakes by depth (shallow ones greenish), salt lakes turquoise, salt pans white, frozen lakes white; the sea by depth, turquoise over warm shallow (carbonate) shelves, sea ice where the month is below freezing.
+
+Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map and the zoom shade from the relief; the **Clouds** overlay thresholds made-up fractal noise at each place's cloud share for the season (`cloud_jul`/`_jan`), so the cover is the climate's and the shapes are not.
+
+**Where the colours are computed (decision):** in Python, baked into the outputs: worlds store `sat`, `sat_jul`, `sat_jan` (0xRRGGBB per cell; +3.8 MB on a 58 MB L7 world, ~0.4 s to compute), zooms `satellite*.png` (~0.3 MB each) and the `preview.png` (summer, shaded, rivers). One implementation keeps globe and zoom alike, the zoom's per-pixel plant fractions exist only at build time, and the snow needs the month-by-month climate. `planet satellite <world|zoom>` adds or redoes them in place (a zoom recomputes its fractions, ~10 s).
+
+![Satellite view](overview/satellite_view.jpg)
+*World 351f32 (L7) in July and January (snow and leaf-fall across the northern continent), the Earth world fe2af4 in July (Sahara, the green Sahel in the rains, the Congo), and zooms 64f0b6 (rainforest–savanna edge) and 3a5252 (a treeline under an ice cap in July, and in January with clouds).*
+
+**Known limits:** colours are tuned by eye, not to reflectance data; cell-scale colours on the globe show the cells (and the rain field's streaks, PW-019); clouds are a fixed pattern per world and season, not weather (PW-156); no sun glint, haze or night side.
 
 ---
 
@@ -676,6 +694,7 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/zoom.py`, `zoom_kernels.py` | regional zoom and its raster kernels |
 | `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
 | `planet/zoom_terrain.py`, `zoom_vegetation.py` | zoom terrain indices (sun on slopes, wetness, river distance); per-pixel vegetation |
+| `planet/satellite.py` | the true-colour satellite view of worlds and zooms |
 | `planet/timezoom.py`, `timezoom_kernels.py` | glacial time zoom |
 | `planet/store.py`, `provenance.py`, `images.py` | paths, ids, layers, checkpoints; code version; PNG writer |
 | `planet/server.py`, `api.py` | viewer server and job API |

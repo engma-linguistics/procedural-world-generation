@@ -148,6 +148,7 @@ from . import world as W
 from . import zoom_kernels as ZK
 from . import zoom_landforms as ZL
 from . import zoom_volcanoes as ZV
+from . import satellite as SAT
 from . import vegetation
 from . import zoom_vegetation as ZVG
 from .geo import R_KM, latlon, xyz
@@ -2382,7 +2383,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ice_l = np.where(glacier, np.maximum(ice_th, 1.0), 0).astype(np.float32)
     vz = ZVG.compute(world, fr, nx, ny, res, seed, size_km,
                      ZVG.surface(h.astype(np.float32), lake_depth.astype(np.float32), water), water, ice_l,
-                     discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log)
+                     discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log,
+                     want_fractions=True)
     veg_l, tr = vz["layers"], vz["terrain"]
     biome = vegetation.biome_of(veg_l["vegetation"], biome).astype(np.uint8)
     # wetlands: 1 a coastal plain's marsh, 2 the vegetation's (floodplains, mires, lake shores: PW-178)
@@ -2474,11 +2476,19 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "radiation_index": tr["radiation_index"], "twi": tr["twi"],
         "river_dist": np.where(land, np.minimum(tr["river_dist"], 255), 0),
         "coast_dist": np.where(land, np.minimum(tr["coast_dist"], 255), 0),
+        # cloud cover (%) of the half-years, the world's interpolated (the satellite view's clouds)
+        **({f"cloud_{s}": np.round(100 * fields[f"cloud_{s}"]) for s in ("jul", "jan")}
+           if fields.get("cloud_jul") is not None else {}),
     }
+    # the satellite view (satellite.py, PW-083), from each pixel's plant fractions
+    nu = np.zeros((vegetation.NP, nx * ny))
+    nu[:, vz["idx"]] = vz["nu"]
+    tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
+    sat = SAT.zoom_images({k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, nu, pix_lat, tilt)
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
-            "stats": stats, "coarse": coarse, "rec": rec, "kps": kps,
+            "stats": stats, "coarse": coarse, "rec": rec, "kps": kps, "satellite": sat,
             "lakes": [{"open": lk["exit"] is not None, "outlet": int(outs[j]), "n_px": int(len(lk["px"])),
                        "level": lk["level"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
                       for j, lk in enumerate(lakes)],
@@ -2532,35 +2542,31 @@ def _dilate(m: np.ndarray, r: int) -> np.ndarray:
 
 
 def preview(z: dict) -> np.ndarray:
+    """The satellite view in each hemisphere's summer (satellite.py), hill-shaded, with the rivers."""
     Lr = z["layers"]
     h, res = Lr["elevation"].astype(float), z["res"]
     water = Lr["water"]
-    col = tint(h, Lr["precipitation"])
+    col = z["satellite"]["year"].astype(float)
     shade = hillshade(np.where(water == 2, h + Lr["lake_depth"], h), res)
-    s = (0.35 + 0.85 * shade)[..., None]
-    s = np.where((h > 0)[..., None], s, 0.75 + 0.3 * shade[..., None])
+    s = np.where((water == 0)[..., None], 0.35 + 0.85 * shade[..., None], 0.9 + 0.15 * shade[..., None])
     col = col * s
-    ice = (Lr["ice"] > 0) & (water == 0)
-    # glaciers blue-white (the high bare ground is pale rock), as zoom.html draws them
-    col = np.where(ice[..., None], col * 0.15 + np.minimum(np.array([206, 228, 250.0]) * (0.62 + 0.45 * shade[..., None]), 255) * 0.85, col)
-    if "wetland" in Lr:  # marshes: olive green, a little darker
-        col = np.where((Lr["wetland"] > 0)[..., None], np.array([104, 128, 84.0]) * (0.75 + 0.35 * shade[..., None]),
-                       col)
-    col = np.where((water == 2)[..., None], np.array([70, 130, 196.0]), col)
-    if "tide_range" in Lr:  # tidal flats: sea floor above low tide (dry at low water)
+    if "tide_range" in Lr:  # tidal flats: sea floor above low tide (mud at low water)
         tr = Lr["tide_range"]
         flat = (water == 1) & (h > -0.5 * tr) & (tr > 0.8)
-        col = np.where(flat[..., None], np.array([156, 150, 122.0]) * (0.8 + 0.3 * shade[..., None]), col)
+        col = np.where(flat[..., None], col * 0.5 + np.array([112, 104, 84.0]) * 0.5, col)
     q, area = Lr["discharge"], Lr["drainage_area"]
-    land = (water == 0) & ~ice
-    riv = (area >= RIVER_MIN_AREA * max(res / 2.0, 1.0)) & (q > 3.0) & land
-    a = np.clip(0.35 + 0.25 * np.log10(np.maximum(q, 1e-9) / 30.0), 0.3, 0.95) * riv
+    land = (water == 0) & (Lr["ice"] <= 0)
+    riv = (area >= RIVER_MIN_AREA * max(res / 2.0, 1.0)) & (q > 30.0) & land
+    a = np.clip(0.25 + 0.2 * np.log10(np.maximum(q, 1e-9) / 100.0), 0.2, 0.9) * riv
     wide = (2.0 / res) ** 2  # a pixel covers less river at finer resolution
     for qq, r in ((3000.0 * wide, 1), (30000.0 * wide, 2)):  # big rivers are drawn wider
-        a = np.maximum(a, 0.95 * (_dilate(q > qq, r) & land))
-    col = col * (1 - a[..., None]) + np.array([38, 92, 178.0]) * a[..., None]
+        a = np.maximum(a, 0.9 * (_dilate(q > qq, r) & land))
+    col = col * (1 - a[..., None]) + np.array(RIVER_RGB) * a[..., None]
     # (waterfalls and volcanoes are the viewer's overlays, not marks baked in here: PW-181)
     return np.clip(col, 0, 255).astype(np.uint8)
+
+
+RIVER_RGB = (40, 72, 92)  # river water in the satellite view (as zoom.html draws it)
 
 
 def coarse_image(z: dict) -> np.ndarray:
@@ -2629,6 +2635,9 @@ LAYER_DOC = {
     "river_dist": ("px", "distance to the nearest river (>= zoom_terrain.RIVER_Q m^3/s), pixels (x res_km "
                          "for km), at most 255", {"dtype": "u1"}),
     "coast_dist": ("px", "distance to the sea, pixels, at most 255 (0 at sea)", {"dtype": "u1"}),
+    "cloud_jul": ("%", "cloud cover, July half-year (the world's, interpolated; the satellite view's clouds)",
+                  {"dtype": "u1"}),
+    "cloud_jan": ("%", "cloud cover, January half-year (the world's, interpolated)", {"dtype": "u1"}),
 }
 
 
@@ -2657,6 +2666,8 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     hi = max(hi, lo + 1)
     write_png(out / "heightmap.png", np.round((h - lo) / (hi - lo) * 65535).astype(np.uint16))
     write_png(out / "preview.png", preview(z))
+    for k, img in z["satellite"].items():
+        write_png(out / SAT_FILES[k], img)
     write_png(out / "coarse.png", coarse_image(z))
     fr: Frame = z["frame"]
     half = size_km / 2
@@ -2683,7 +2694,8 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
             "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)",
             "corners_latlon": corners,
         },
-        "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png"},
+        "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png",
+                  **{f[:-4]: f for f in SAT_FILES.values()}},
         "layers": layout,
         "heightmap": {"bits": 16, "min_m": lo, "max_m": hi,
                       "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
@@ -2696,6 +2708,41 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
     (out / "zoom.json").write_text(json.dumps(meta, indent=1))
     update_index()
     return out
+
+
+# the satellite view's images (unshaded; satellite.py's seasons -> file; zoom.json's files: name without .png)
+SAT_FILES = {"year": "satellite.png", "jul": "satellite_jul.png", "jan": "satellite_jan.png"}
+
+
+def add_satellite(ref: str | Path) -> Path:
+    """(Re)makes a saved zoom's satellite view in place (satellite.py): its
+    images, the cloud layers and the preview. Recomputes the plant fractions
+    (zoom_vegetation.fractions, ~5 s)."""
+    d = S.find_zoom(ref)
+    meta, lay = load(d, decode=True)
+    world = W.load(find_world(meta["source_world"]["id"]))
+    nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
+    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    xs = (np.arange(nx) + 0.5 - nx / 2) * res
+    ys = (ny / 2 - np.arange(ny) - 0.5) * res
+    X, Y = np.meshgrid(xs, ys)
+    lat = latlon(fr.to_sphere(X.ravel(), Y.ravel()))[0]
+    fra = ZVG.fractions(d)
+    nu = np.stack([fra[c].ravel() for c in vegetation.CODES])
+    fields = ZVG.fine_fields(world, fr, X.ravel(), Y.ravel(), meta["size_km"])
+    if fields.get("cloud_jul") is not None:
+        cl = {f"cloud_{s}": np.round(100 * fields[f"cloud_{s}"]).reshape(ny, nx) for s in ("jul", "jan")}
+        specs = {k: {**LAYER_DOC[k][2], "units": LAYER_DOC[k][0], "description": LAYER_DOC[k][1]} for k in cl}
+        meta["layers"].update(S.write_layers(d, {k: S.encode(v, specs[k]) for k, v in cl.items()}, specs))
+        lay.update(cl)
+    tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
+    sat = SAT.zoom_images(lay, nu, lat, tilt)
+    for k, img in sat.items():
+        write_png(d / SAT_FILES[k], img)
+    write_png(d / meta["files"]["preview"], preview({"layers": lay, "res": res, "satellite": sat}))
+    meta["files"].update({f[:-4]: f for f in SAT_FILES.values()})
+    (d / "zoom.json").write_text(json.dumps(meta, indent=1))
+    return d
 
 
 def load(ref: str | Path, decode: bool = False) -> tuple[dict, dict]:

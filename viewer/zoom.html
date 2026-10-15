@@ -71,6 +71,7 @@
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
   <label><input type="checkbox" id="falls" checked> Waterfalls <span class="muted" id="fallsN"></span></label>
   <label><input type="checkbox" id="volc" checked> Volcanoes <span class="muted" id="volcN"></span></label>
+  <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
 
   <h2>About this zoom</h2>
@@ -89,7 +90,7 @@
 const $ = (id) => document.getElementById(id);
 const R_KM = 6371;
 const LAYERS = [
-  ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
+  ['satellite', 'Satellite'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
   ['fire_return', 'Fire return'], ['lai', 'Leaf area'],
@@ -102,7 +103,7 @@ const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_heigh
 const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation'];
 // the temperature / rain season: '' the year, 'jul' / 'jan' the half-years (zooms with *_jul / *_jan layers)
 const SEASON_NAMES = { '': 'year', jul: 'July', jan: 'January' };
-const state = { meta: null, L: null, layer: 'relief', season: '', imgs: {}, shade: null,
+const state = { meta: null, L: null, layer: 'satellite', season: '', imgs: {}, shade: null,
   view: { s: 1, x: 0, y: 0 }, off: document.createElement('canvas') };
 const canvas = $('c'), ctx = canvas.getContext('2d');
 let START_MARK = new URLSearchParams(location.search).get('mark');  // (the first zoom loaded only)
@@ -123,7 +124,7 @@ function ramp(stops, v) {
 }
 const SEA = [[-7000, [12, 28, 70]], [-4000, [20, 48, 102]], [-1500, [34, 78, 140]], [-200, [64, 124, 182]], [0, [104, 164, 206]]];
 const RAIN = [[0, [150, 90, 40]], [250, [215, 180, 110]], [600, [190, 210, 120]], [1200, [80, 170, 110]], [2500, [30, 110, 160]], [4000, [40, 40, 140]]];
-const ICE_RGB = [206, 228, 250];  // glaciers on the relief, hillshade and height layers: blue-white
+const ICE_RGB = [206, 228, 250];  // glaciers on the hillshade and height layers: blue-white
 const ICE_T = [[0, [150, 190, 230]], [100, [190, 215, 245]], [500, [120, 160, 225]], [1500, [60, 90, 190]], [3000, [40, 40, 130]]];
 const TEMP = [[-30, [60, 40, 140]], [-10, [80, 120, 220]], [0, [190, 230, 250]], [10, [120, 200, 120]], [20, [240, 210, 90]], [30, [220, 70, 40]]];
 // vegetation and terrain ramps (the globe's colours for the vegetation layers): [value, rgb], units
@@ -192,6 +193,8 @@ async function init() {
   $('season').value = state.season;
   $('season').onchange = () => { state.season = $('season').value; render(); syncURL(); };
   $('rivers').onchange = render;
+  if (p.get('clouds') === '1') $('clouds').checked = true;
+  $('clouds').onchange = () => { render(); syncURL(); };
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
@@ -201,6 +204,7 @@ async function init() {
 function syncURL() {
   const p = new URLSearchParams({ id: state.meta.id, layer: state.layer });
   if (state.season) p.set('season', state.season);
+  if ($('clouds').checked) p.set('clouds', '1');
   history.replaceState(null, '', '?' + p);
 }
 
@@ -219,12 +223,23 @@ async function load(id) {
   }));
   state.meta = meta; state.L = L; state.imgs = {};
   for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
-  if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'relief';
+  if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'satellite';
   state.marks = markers(meta);
   hideTip();
   const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
     loadImage(base + meta.files.coarse).catch(() => null)]);
-  state.imgs.relief = rel; state.imgs.coarse = coarse;
+  state.imgs.coarse = coarse;
+  // the satellite view (planet/satellite.py): unshaded true colour, year (each hemisphere's summer), July, January
+  state.sat = {};
+  await Promise.all(Object.entries({ '': 'satellite', jul: 'satellite_jul', jan: 'satellite_jan' }).map(async ([s, f]) => {
+    const im = meta.files[f] ? await loadImage(base + meta.files[f]).catch(() => null) : null;
+    if (!im) return;
+    const cv = document.createElement('canvas'); cv.width = meta.nx; cv.height = meta.ny;
+    const cx = cv.getContext('2d'); cx.drawImage(im, 0, 0);
+    state.sat[s] = cx.getImageData(0, 0, meta.nx, meta.ny).data;
+  }));
+  state.cloudNoise = null;
+  $('cloudsRow').style.display = L.cloud_jul ? '' : 'none';
   state.shade = hillshade(L.elevation, meta.nx, meta.ny, meta.res_km);
   $('msg').textContent = '';
   about();
@@ -423,28 +438,17 @@ function render() {
   const k = state.layer;
   $('legend').innerHTML = '';
   if (k === 'landform' && !L.landform) { $('legend').innerHTML = '<span class="muted">this zoom has no landform layer (its world predates them)</span>'; return; }
-  const seasonal = (k === 'temperature' || k === 'precipitation') && L[k + '_jul'];
+  const seasonal = ((k === 'temperature' || k === 'precipitation') && L[k + '_jul']) || (k === 'satellite' && state.sat?.jul);
   $('seasonRow').style.display = seasonal ? '' : 'none';
   const sk = seasonal && state.season ? `${k}_${state.season}` : k;  // the layer the colours show
-  if (k === 'relief' || k === 'coarse') {
+  if (k === 'coarse') {
     if (state.imgs[k]) oc.drawImage(state.imgs[k], 0, 0);
-    if (k === 'relief' && state.imgs[k]) {  // glaciers blue-white, so they aren't taken for high bare ground
-      const im = oc.getImageData(0, 0, nx, ny), d = im.data, ice = L.ice, water = L.water, sh = state.shade;
-      let any = false;
-      for (let i = 0; i < n; i++) {
-        if (!(ice[i] > 0) || water[i] !== 0) continue;
-        any = true;
-        const f = 0.62 + 0.45 * sh[i];
-        for (let j = 0; j < 3; j++) d[4 * i + j] = 0.15 * d[4 * i + j] + 0.85 * Math.min(255, ICE_RGB[j] * f);
-      }
-      if (any) oc.putImageData(im, 0, 0);
-      $('legend').innerHTML = any ? `<span><span class="sw" style="background:rgb(${ICE_RGB})"></span>glacier / ice sheet</span>` : '';
-    }
-    if (k === 'coarse') $('legend').innerHTML = '<span class="muted">the source world\'s cells (nearest cell), with its big rivers</span>';
+    $('legend').innerHTML = '<span class="muted">the source world\'s cells (nearest cell), with its big rivers</span>';
     markLegend();
     draw();
     return;
   }
+  if (k === 'satellite') { satellite(oc); markLegend(); draw(); return; }
   const img = oc.createImageData(nx, ny), px = img.data;
   const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
   const overlay = $('rivers').checked;
@@ -537,6 +541,63 @@ function render() {
   }
   markLegend();
   draw();
+}
+
+// The satellite view (PW-083): the zoom's true colours (planet/satellite.py)
+// for the season, hill-shaded as the preview, rivers in river-water colour,
+// and optionally clouds: noise thresholded at each pixel's cloud share.
+const RIVER_RGB = [40, 72, 92];
+function satellite(oc) {
+  const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
+  const src = state.sat[state.season] || state.sat[''];
+  if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view: <code>planet satellite ' + m.id + '</code></span>'; return; }
+  const img = oc.createImageData(nx, ny), px = img.data, sh = state.shade, water = L.water, q = L.discharge, area = L.drainage_area;
+  const rivers = $('rivers').checked, minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
+  const cl = $('clouds').checked && L.cloud_jul ? cloudAlpha() : null;
+  for (let i = 0; i < n; i++) {
+    const f = water[i] === 0 ? 0.35 + 0.85 * sh[i] : 0.9 + 0.15 * sh[i];
+    let c = [src[4 * i] * f, src[4 * i + 1] * f, src[4 * i + 2] * f];
+    if (rivers && water[i] === 0 && !(L.ice[i] > 0) && area[i] >= minArea && q[i] > 30) {
+      const a = q[i] > 3000 * wide ? 0.9 : Math.min(0.9, Math.max(0.2, 0.25 + 0.2 * Math.log10(q[i] / 100)));
+      c = c.map((v, j) => v + (RIVER_RGB[j] - v) * a);
+    }
+    if (cl) { const a = cl[i]; c = c.map((v) => v + (248 - v) * a); }
+    px[4 * i] = c[0]; px[4 * i + 1] = c[1]; px[4 * i + 2] = c[2]; px[4 * i + 3] = 255;
+  }
+  oc.putImageData(img, 0, 0);
+  const sn = { '': "each hemisphere's summer", jul: 'July', jan: 'January' }[state.season];
+  $('legend').innerHTML = `<span>true colour, ${sn}: plants by type and season, bare ground, snow, ice, lakes and sea</span>`
+    + `<span class="muted">(planet/satellite.py${cl ? '; clouds: the cover is the climate\'s, the shapes made up' : ''})</span>`;
+}
+// clouds: fractal value noise over the zoom (km, so zooms of any size look alike), thresholded at the share
+function cloudAlpha() {
+  const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny, res = m.res_km;
+  if (!state.cloudNoise) {
+    const hash = (x, y) => { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const vn = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), u = x - xi, v = y - yi, fu = u * u * (3 - 2 * u), fv = v * v * (3 - 2 * v);
+      const a = hash(xi, yi) + (hash(xi + 1, yi) - hash(xi, yi)) * fu, b = hash(xi, yi + 1) + (hash(xi + 1, yi + 1) - hash(xi, yi + 1)) * fu;
+      return a + (b - a) * fv;
+    };
+    const nz = new Float32Array(n);
+    for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++) {
+      const x = c * res, y = r * res;
+      let f = 1 / 300, a = 1, v = 0, s = 0;
+      for (let o = 0; o < 8; o++) { v += a * vn(x * f + 11.3 * o, y * f * 1.3 + 7.1 * o); s += a; f *= 2.1; a *= 0.55; }
+      nz[r * nx + c] = v / s;
+    }
+    const smp = []; for (let j = 0; j < n; j += 13) smp.push(nz[j]);
+    smp.sort((a, b) => a - b);
+    state.cloudNoise = { nz, smp };
+  }
+  const { nz, smp } = state.cloudNoise, out = new Float32Array(n), soft = 0.06;
+  const qf = (u) => smp[Math.min(smp.length - 1, Math.max(0, Math.floor(u * smp.length)))];
+  for (let i = 0; i < n; i++) {
+    const sh = state.season ? L['cloud_' + state.season][i] : 0.5 * (L.cloud_jul[i] + L.cloud_jan[i]);
+    const t = qf(1 - 0.9 * sh / 100), a = Math.min(1, Math.max(0, (nz[i] - t + soft) / (2 * soft)));
+    out[i] = 0.88 * a * a * (3 - 2 * a);
+  }
+  return out;
 }
 
 function resetView() {

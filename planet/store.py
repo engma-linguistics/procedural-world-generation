@@ -237,6 +237,10 @@ LAYERS = {
     "pft_dominant": _spec("u1", "id", "the plant functional type with the largest cover (255: none)"),
     "flooded": _spec("u1", "%", "share of the cell flooded part of the year (wetland habitat)"),
 }
+# the satellite view (satellite.py): true colour as 0xRRGGBB (worlds only)
+LAYERS["sat"] = _spec("<u4", "0xRRGGBB", "true colour, each hemisphere's summer (satellite.py)")
+LAYERS["sat_jul"] = _spec("<u4", "0xRRGGBB", "true colour in July (satellite.py)")
+LAYERS["sat_jan"] = _spec("<u4", "0xRRGGBB", "true colour in January (satellite.py)")
 from .vegetation import CODES as _VEG_CODES  # noqa: E402
 
 for _c in _VEG_CODES:

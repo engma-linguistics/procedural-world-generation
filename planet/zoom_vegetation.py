@@ -207,7 +207,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     res_layers = dict(vegetation=out_type, tree_cover=zeros, plant_cover=zeros, lai=zeros, canopy_height=zeros,
                       npp=zeros, fire_return=zeros)
     if nv == 0:
-        return dict(layers=res_layers, terrain=tr, stats={}, idx=idx)
+        return dict(layers=res_layers, terrain=tr, stats={}, idx=idx, nu=np.zeros((V.NP, nv)))
 
     # --- the pixels' climate --------------------------------------------
     north = lat[idx] >= 0
