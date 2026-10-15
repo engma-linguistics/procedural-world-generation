@@ -166,8 +166,8 @@ flowchart LR
 **Outputs:** per keyframe the `plate`, `crust`, `crust_age`, `plate_boundary`, `crust_thickness` layers and plate velocities; the event log (collisions, sutures, rifts) in `run.json`; hotspots and volcanoes.
 
 **Known limits:**
-- L7 seed 21 still falls to 3–6 plates for 300+ Myr (PW-191); the cycle's regularity is pinned (PW-025).
-- L7 continents are ~2 km thinner and ~300 m lower than at L6 (PW-052); continental area drifts up (scorecard: ~47% continental crust after 1 Gyr against a 40% target; PW-046).
+- Plate counts can still dip for a few Myr near 4 (L7 seed 21, 1 Gyr: median 11, minimum 4, 1% of frames at ≤ 4; was median 10, minimum 3, 12% with an 84 Myr spell); a big plate rimmed by ongoing collisions is compressed across every cut and can't rift until they end (PW-191). The cycle's regularity is pinned (PW-025).
+- Continents are resolution-consistent since PW-052 (the L7 start no longer has a shelf-low, craton-free interior): L6 and L7 seeds 21/3199 at 1 Gyr have 34–36 km mean continental crust (median 36–37), crust on 40–42% of the surface and land on 31–33%. They still thin by ~1–2 km over a Gyr (the last 300 Myr: ~34 km, crust 42–43%), and mean land stands ~1150 m at L6, ~1300 m at L7 (Earth ~840 m; needs a decision, see the inbox).
 - Some cell churn remains along collision fronts (PW-170, PW-173, PW-174); pits in continents from old seams (PW-171); one-frame 11–18 km spikes (PW-048, PW-172).
 - Ragged ocean boundaries (PW-047); drainage switches outlet in one step when a rift opens (PW-056).
 
@@ -628,9 +628,9 @@ Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map 
 | Largest landmass now / max | 16% / 31% | 12% / 34% |
 | Dry (B) share of land | 39% | 33% |
 
-Plate counts (from run frames, not the scorecard): recent L6 median ~10, minimum 4; L7 seed 21 median 10, minimum 3 (PW-191).
+Plate counts (from run frames, not the scorecard): L6 median ~10, minimum 4–6; L7 seed 21 median 11, minimum 4; seed 3199 median 13, minimum 7 (foundation round, PW-191).
 
-**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), continental area drift and L7's lower continents (PW-046, PW-052), closed basins on generated worlds (PW-054), land ice depth (PW-190).
+**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), closed basins on generated worlds (PW-054), land ice depth (PW-190).
 
 ---
 
