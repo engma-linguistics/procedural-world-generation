@@ -1,4 +1,5 @@
 ---
+id: PW-291
 title: Slicing a run exactly at a checkpoint time fails the replay check (snapshot right after a checkpoint load differs)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: health-sweep
 blocked_by: []
 relates: [PW-246]
 refs: [planet/timeline.py, planet/tectonics/output.py, planet/store.py, "run:cde55b@600Myr(18.30,101.65)"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Effect: worlds can't be sliced at 100, 200, ... Myr without `--force` on some ru
 "Finish world here" at those times would fail the same way.
 - [ ] find the field (compare `snapshot()` of a fresh `from_state` with the one taken in `keep`)
 - [ ] store it in the checkpoint or rebuild it in `from_state`; a test slicing at a checkpoint time
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-health-slice-at-checkpoint-mismatch.md (found by health-sweep).

@@ -1,4 +1,5 @@
 ---
+id: PW-290
 title: The same seed is ~10 points more arid at L7 than at L6 (Koppen B 38-42% of land against 28-30%), with less tree cover
 type: task
 status: todo
@@ -9,7 +10,9 @@ impact: med
 found_by: health-sweep
 blocked_by: []
 relates: [PW-243, PW-013]
-refs: [docs/review/health/2026-10-15/report.md, tools/health.py, "run 6114bd", "run 550a5a", "run 9068cb"]
+refs: [docs/review/health/2026-10-15/report.md, tools/health.py, "run a1d3b9", "run 550a5a", "run 9068cb"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,3 +31,6 @@ L6 checks don't carry over to the L7 showcases. NPP after flowering trees is ~5%
 against 352-378 g C/m2/yr).
 - [ ] compare land rain and its latitude profile for one keyframe of seed 3199 at L6 and L7
 - [ ] find the term that depends on cell size; arid share within a few points between L6 and L7
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-health-l7-drier-than-l6.md (found by health-sweep).
