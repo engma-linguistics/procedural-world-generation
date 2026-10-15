@@ -348,6 +348,8 @@ TYPES = [
     (58, "bare rock and scree", "non-vegetated", "#8b8178", 15, ""),
     (59, "barren desert (sand or stone)", "non-vegetated", "#efe0b0", 11, "Dunes or gravel plains with no plants at all."),
     (60, "lake", "non-vegetated", "#4f8fcf", 3, ""),
+    (61, "moss and crust carpet", "archaic", "#8f9a6a", 8,
+     "Low carpets of moss, liverworts and dark microbial crust over thin soil; no grass yet, the land before flowers."),
 ]
 T = {name: i for i, name, *_ in TYPES}
 TYPE_BIOME = np.array([t[4] for t in TYPES])
@@ -947,6 +949,8 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
     put(tundra & (f["TunH"] >= 0.4) & ((mi > 1.0) | (fw > 0.15)), T["tussock and sedge tundra"])
     put(tundra & (f["TunH"] >= f["Moss"]) & grassy, T["tussock and sedge tundra"])
     put(tundra, T["dwarf-shrub and lichen tundra"])
+    # (before grasses exist: moss and crust carpets where something like them would grow)
+    put(~grassy & (f["Moss"] + f["Sph"] >= 0.25), T["moss and crust carpet"])
     put(~grassy, np.where(tc < 0, T["cold desert scrub"], T["hot desert scrub"]))
     put((f["C4G"] >= f["C3G"]) & ((mi < 0.25) | (cover < 0.4)), T["semi-desert grassland"])
     put((f["C4G"] >= f["C3G"]) & (tc >= 10), T["tropical grassland"])
