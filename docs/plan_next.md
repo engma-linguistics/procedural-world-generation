@@ -3,11 +3,14 @@
 *Updated 2026-10-14. Open work, known issues and decisions now live on the board in `issue-tracking/` (one file per ticket). This page is only the short roadmap.*
 
 ## Roadmap
-- **Discrete volcanoes (PW-001):** hotspot vents every ~50–100 km of plate motion and arc volcanoes as objects that ride their plate, carried into worlds and zooms (cones, eroded islands, atolls). Approved, at level 7.
-- **Landform classes (PW-005):** 8–12 classes (great escarpment, caprock plateau, traps, fault-block rift, fold belt, shield, …) computed from each cell's history in the run, synthesised by the zoom. This is where coarse→fine variety and taller waterfalls come from.
-- **Rain / moisture transport and the overturning follow-up (PW-013):** diagnose and fix vapour transport between basins, then remove the overturning spin-up rule; Antarctic bottom water; salinity memory in the time zoom.
-- **World finishing pass (PW-090):** run the ~1 Myr glacial time zoom from a chosen world and keep its imprint (carved valleys, moraines, lakes, sea-level marks) as the world's last phase, plus finer features for real use (rivers, soils, coasts, resources, export for games). First step: PW-091.
-- **Tectonics tuning:** the plate-count nudge (PW-024), fast sea-level swings (PW-053), low level-7 continents (PW-052), closed basins (PW-054).
+**Done on 2026-10-14:** discrete volcanoes (PW-001), landform classes and their zoom synthesis (PW-005), boundary churn (PW-108), sea-level swings (PW-053), plate-count nudge (PW-024), clouds, ocean layers, seasonal layers.
+
+**Next, in order** (owner, 2026-10-14; details in `docs/backlog.md`):
+1. **Glacial isostasy (PW-189):** ice sheets press the crust down and it rebounds after they melt.
+2. **Life and the land surface (PW-184):** soils (PW-185) and a vegetation proposal for owner review (PW-186) in parallel, then the vegetation model (PW-187) and coastal life (PW-188).
+3. **Tectonics leftovers:** L7 continents too thin and low, retuning targets (PW-052, after PW-169); interior closed basins (PW-054); late plate collapse at L7 (PW-191); ice volume too large (PW-190).
+4. **World finishing pass (PW-090),** starting with PW-091 (time zoom from a chosen world becomes the finished world); **rain and ocean (PW-013)** in parallel.
+5. **Later:** weather generator (PW-156), resources (PW-155), multiscale time with species, fantasy races and civilisation at the very end (PW-103).
 
 Defaults: level 7 for showcases, level 6 for quick large-scale tests.
 
