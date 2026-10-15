@@ -1,4 +1,5 @@
 ---
+id: PW-182
 title: Showcase world a08983 (run 8571dd) still carries the old raw-precipitation dune classes
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoompolish
 blocked_by: []
 relates: [PW-176]
 refs: [planet/landform.py, "run 8571dd", "world a08983", "zoom:ee587f"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -26,3 +29,6 @@ don't touch any cell that changes; the cold-erg zoom ee587f (59.3N) and 2
 cells near a42a15 would lose their dunes.
 - [ ] At the next showcase run (or the planned L8 + matching L7), check
   the dune share and that ee587f's area is no longer an erg.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-showcase-old-dune-classes.md (found by zoompolish).

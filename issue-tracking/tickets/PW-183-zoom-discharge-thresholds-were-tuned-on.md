@@ -1,4 +1,5 @@
 ---
+id: PW-183
 title: Zoom discharge thresholds were tuned on rain-routed discharge; review them now that streams carry runoff
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoompolish
 blocked_by: []
 relates: [PW-180, PW-125]
 refs: [planet/zoom.py, planet/zoom_landforms.py, "zoom:2d06f8", "zoom:130acd"]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -27,3 +30,6 @@ the same look: SINK_Q 30 (karst streams sinking), Dunes.overlay_q 30
 Check a karst demo and a rift basin zoom for fewer through-flowing rivers
 than intended, and decide per threshold whether it is physical (keep) or
 a visual tuning (scale by ~1/3).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-zoom-q-thresholds-runoff.md (found by zoompolish).
