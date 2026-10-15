@@ -138,7 +138,7 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
     finishing (as tools/earth_world.py, without the observations)."""
     grid = build_grid(level)
     land = state["elevation"] > 0
-    meta = {"method": "earth", "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
+    meta = {"method": "earth", "seed": 0, "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
             "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),
             "sea_level_m": round(state["sea_level"], 1)}
     return W.finish(grid, state["elevation"], {"ice": np.where(land, state["ice"], 0.0), "crust": land.astype(int)},
