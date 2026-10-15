@@ -323,7 +323,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–130 m (sd) and removed the clamp hits.
 
-**Known limits:** oceans age when plates are few (PW-051, PW-191). In long cold eras (dT −5 °C and below) the run's ice reaches Earth-LGM scale and beyond (RESULTS); the run's dT spends long eras that cold (inbox draft on cold eras).
+**Known limits:** oceans age when plates are few (PW-051, PW-191). In long cold eras the run's ice reaches Earth-LGM scale and beyond: on 4 L6 seeds × 1 Gyr (2026-10-15 code) the sea level from ice is −30 to −104 m on average and −139 to −350 m at worst (12% of seed 2's time below −250 m), against a −150/−250 m goal (inbox draft on run ice in cold eras).
 
 ### 2.9 Hydrology: rivers, lakes, deltas (`hydrology.py`, `kernels.py`)
 
@@ -470,7 +470,7 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 **Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
 
-**Known limits:** a time zoom from a run's moment still drifts at first toward a somewhat larger ice (its flowing sheets thicken and ground onto shelves; RESULTS); Earth's glaciation hinges on the snow's local damping (PW-033: too much ice in Siberia and Alaska, too little in Fennoscandia); an Eemian-like Earth start now loses most of Greenland (~7 m) and ~2 m of Antarctica in 8 kyr (PW-114: real ~2 m and ~3–5 m); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
+**Known limits:** a time zoom from a run's moment still drifts at first toward a somewhat larger ice (its flowing sheets thicken and ground onto shelves): a 150 kyr time zoom from a typical moment of 4 L6 seeds falls a further 68–144 m, from the coldest moment 56–239 m (before PW-190: 13–321 m and 234–282 m); Earth's glaciation hinges on the snow's local damping (PW-033: too much ice in Siberia and Alaska, too little in Fennoscandia); an Eemian-like Earth start now loses most of Greenland (~7 m) and ~2 m of Antarctica in 8 kyr (PW-114: real ~2 m and ~3–5 m); no real 100-kyr sawtooth (PW-030); no salinity memory, so no abrupt events (PW-018); one-cell ablation zones (PW-115); no glacial imprint kept yet (PW-037, PW-092); embedded ice ages in the main run are planned (PW-104).
 
 ### 2.15 Viewer, server and CLI (`viewer/`, `server.py`, `api.py`, `__main__.py`)
 
