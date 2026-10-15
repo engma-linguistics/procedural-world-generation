@@ -58,7 +58,12 @@ def initial_state(sim):
                         plate[cells] = np.bincount(others).argmax()
     # distance inland from the coast -> continental shelf / interior base level
     coast = np.flatnonzero(cont & np.array([not cont[g.neighbors[i]].all() for i in range(n)]))
-    dist, _ = kernels.bfs_within(coast, cont.astype(np.int64), g.nbr_off, g.nbr_idx, 50)
+    dist, _ = kernels.bfs_within(coast, cont.astype(np.int64), g.nbr_off, g.nbr_idx, int(4 * sim.scale))
+    # (the search stops a few hundred km in; everything beyond is interior.
+    # It used to stop at 50 cells, ~2700 km at level 7, and left the middle of
+    # a level-7 supercontinent as unreached 'coast': shelf-low and craton-free,
+    # so L7 continents started ~3 km thinner than L6's: PW-052)
+    dist = np.where(cont & (dist < 0), 4 * sim.scale, dist)
     texture = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=6, freq=3.0)
     # shelf: coast cells sit underwater, interiors a few hundred metres up
     inland = np.minimum(np.maximum(dist, 0) / sim.scale, 3)

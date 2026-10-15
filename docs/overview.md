@@ -105,7 +105,7 @@ The forces become torques, and a drag matrix turns them into each plate's rotati
 2. Colliding plates **suture** into one plate after 30 Myr of contact once closing is below 2 cm/yr (or anyway after 150 Myr; never within 80 Myr of rifting from each other).
 3. The assembled continent warms the mantle under itself.
 4. **Rifting** (`events.py`): for each plate ≥ 5% of the surface, 12 straight cuts are tried and each half's motion is solved. The plate splits if the halves pull apart faster than `rift_stress` (2 cm/yr), scaled up for big plates (size^¼) and down by the rock's strength along the cut. Weak lines: young sutures, orogens, thinned crust, plume swells. Cratons resist (×1.6). **Warm mantle weakens a plate** (strength ÷ (1 + 0.7 × anomaly), the PW-024 nudge), so a big plate parked over a warm upwelling breaks more readily. The winning cut is redrawn as 4 wandering rift lines and the weakest wins. At most one split per step; none at 30+ plates; pieces with 0.3–3% of the surface as continent are forbidden, so breakup gives a few big blocks.
-5. Ocean floor ages; when a passive margin's floor passes 120 Myr, a new trench can start along a ~6000 km stretch of it, and the ocean beyond starts to close.
+5. Ocean floor ages; when the oldest ~6000 km of a plate's passive margins passes 120 Myr, a new trench can start along that stretch, and the ocean beyond starts to close (PW-191: the hazard used to be read from the mean of all the plate's margins, young ones included, so old oceans rarely started closing).
 6. Slivers (< 0.15% of cells) are absorbed by the plate around them.
 
 On four L6 seeds over 2 Gyr the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. Plate counts: median 8–10, minimum 3–4 (PW-024). Not guaranteed for every seed.
@@ -166,8 +166,8 @@ flowchart LR
 **Outputs:** per keyframe the `plate`, `crust`, `crust_age`, `plate_boundary`, `crust_thickness` layers and plate velocities; the event log (collisions, sutures, rifts) in `run.json`; hotspots and volcanoes.
 
 **Known limits:**
-- L7 seed 21 still falls to 3–6 plates for 300+ Myr (PW-191); the cycle's regularity is pinned (PW-025).
-- L7 continents are ~2 km thinner and ~300 m lower than at L6 (PW-052); continental area drifts up (scorecard: ~47% continental crust after 1 Gyr against a 40% target; PW-046).
+- Plate counts can still dip for a few Myr near 4 (L7 seed 21, 1 Gyr: median 11, minimum 4, 1% of frames at ≤ 4; was median 10, minimum 3, 12% with an 84 Myr spell); a big plate rimmed by ongoing collisions is compressed across every cut and can't rift until they end (PW-191). The cycle's regularity is pinned (PW-025).
+- Continents are resolution-consistent since PW-052 (the L7 start no longer has a shelf-low, craton-free interior): L6 and L7 seeds 21/3199 at 1 Gyr have 34–36 km mean continental crust (median 36–37), crust on 40–42% of the surface and land on 31–33%. They still thin by ~1–2 km over a Gyr (the last 300 Myr: ~34 km, crust 42–43%), and mean land stands ~1150 m at L6, ~1300 m at L7 (Earth ~840 m; needs a decision, see the inbox).
 - Some cell churn remains along collision fronts (PW-170, PW-173, PW-174); pits in continents from old seams (PW-171); one-frame 11–18 km spikes (PW-048, PW-172).
 - Ragged ocean boundaries (PW-047); drainage switches outlet in one step when a rift opens (PW-056).
 
@@ -190,8 +190,8 @@ flowchart LR
 
 **Crust** (`crust.py`, `isostasy.py`):
 - **Building crust:** subduction grows **volcanic arcs**; collisions stack crust, and over-thick crust **flows** outward, widening plateaus (Tibet); rifts thin continents (down to 22 km), and the crust they lose floors the opening rift as a continuous belt of 12–18 km margin crust; hotspots build islands and flood basalts under a ~1 km swell.
-- **Crust budget:** a "thermostat" steers arc growth toward a target continental volume (40% of the surface × 37 km) and subduction erosion toward the target area.
-- **Coherence** (PW-108): a one-cell inlet of ocean floor nearly ringed by its plate's continent becomes (thin) continent, with crust flowing in from around it; a thin (< 20 km) shred of continent nearly ringed by ocean becomes ocean floor. Without it, cells flipped between continent and deep sea every few Myr (`tools/churn.py` measures it).
+- **Crust budget:** two "thermostats" steer arc growth on continents toward a target continental volume (40% of the surface × 37 km) and subduction erosion toward the target area. Each answers the present error and, over ~100 Myr, a persisting one (an integral term), so area no longer settles ~12% above target. Island arcs on ocean floor grow at the nominal rate (steering them too turned a volume shortfall into new thin continent rather than thicker continents). Arcs leave a ~120 km forearc gap at the trench (the arc–trench gap), where subduction erosion grinds the edge; its rate is per km of trench, the same at every grid level (PW-046, PW-052).
+- **Coherence** (PW-108): a one-cell inlet of ocean floor nearly ringed by its plate's continent becomes (thin) continent, with crust flowing in from around it; a thin (< 20 km) shred of continent nearly ringed by ocean becomes ocean floor. No welds at trenches (a notch there is subduction erosion at work; re-welding it every step made erosion thin continents instead of shrinking them). Without it, cells flipped between continent and deep sea every few Myr (`tools/churn.py` measures it).
 - **Elevation is isostasy:** crust floats on the mantle like wood on water (Airy isostasy). Continents stand 250 m plus 150 m per km of crust beyond 35 km. Ocean floor sinks as it cools: 2600 + 345·√age m (the half-space cooling law), at most 6400 m deep. Sediment is light (2.1 g/cm³, compacting to 2.6 with depth), so filling deep water takes ~3× its depth in sediment, as on Earth. Cover buried below 18 km becomes basement.
 - **Glacial isostasy** (PW-189, `isostasy.ice_load`): land ice presses the bed down by ρ_ice/ρ_mantle ≈ 0.28 of its thickness, spread by the lithosphere's flexure over ~150 km (a 3 km sheet: ~830 m; a one-cell cap much less). In the run it settles at once (`sim.ice_sink`, from the ice at each climate update): the keyframes' `elevation` is the pressed-down bed (it can lie below sea level under a big sheet, as Greenland's and Antarctica's do), the ice surface stands lower and warmer, and land the load pushes under the sea without ice on it is sea. Erosion, sediment, reefs and volcanoes work on the crust's own height (`w_elev`), since the dip is gone ~10 kyr after its ice. Anything that takes land as elevation > 0 sees grounded ice on a bed below sea level through `isostasy.land_view` (bed floored at 1 m, ice thinned to keep the surface). The time zoom relaxes the bed toward the same dip over a few kyr (§2.14).
 
@@ -631,9 +631,9 @@ Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map 
 | Largest landmass now / max | 16% / 31% | 12% / 34% |
 | Dry (B) share of land | 39% | 33% |
 
-Plate counts (from run frames, not the scorecard): recent L6 median ~10, minimum 4; L7 seed 21 median 10, minimum 3 (PW-191).
+Plate counts (from run frames, not the scorecard): L6 median ~10, minimum 4–6; L7 seed 21 median 11, minimum 4; seed 3199 median 13, minimum 7 (foundation round, PW-191).
 
-**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), continental area drift and L7's lower continents (PW-046, PW-052), closed basins on generated worlds (PW-054), land ice depth (PW-190).
+**Main weak spots:** moisture transport and regional rain (PW-013), polar temperatures (PW-039, PW-112), the time zoom's glaciation (PW-031, PW-033), closed basins on generated worlds (PW-054), land ice depth (PW-190).
 
 ---
 

@@ -51,7 +51,7 @@ def test_finish_at_any_kyr(tiny):
     s = tzrun["frames"][-1]["stats"]
     assert m["timezoom"] == tz.name and m["timezoom_kyr"] == t_end and m["finished"]
     assert m["source_run"] == tiny["run"].name and m["t_myr"] == 20 and m["from_keyframe"]
-    assert m["sea_level_m"] == round(s["sea_level_m"], 1) and m["global_temp_c"] == round(s["global_temp_c"], 1)
+    assert m["sea_level_m"] == round(s["sea_level_m"], 1) and abs(m["global_temp_c"] - s["global_temp_c"]) <= 0.051  # (14.5 + (x - 14.5) may round the other way)
     assert W.load(mid)["meta"]["timezoom_kyr"] == 14
     # an ice age: more ice and (the sea having fallen) more land than at the start
     w0 = W.load(start)
