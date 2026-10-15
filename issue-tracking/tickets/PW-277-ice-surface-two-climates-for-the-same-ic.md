@@ -2,7 +2,7 @@
 id: PW-277
 title: "Ice surface: two climates for the same ice (climate.ice_surface's 10 C vs icemass's 2 C + damping)"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: climate
 effort: s
@@ -30,4 +30,5 @@ t_cold at the ice's thickness, as icemass.balance already returns), and drop ice
 zoom's `ice_ground` inverse with it). Effect: warmer winters shown on ice-sheet interiors, Koppen still EF.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-ice-veg-two-ice-surface-climates.md (found by audit-ice-veg).

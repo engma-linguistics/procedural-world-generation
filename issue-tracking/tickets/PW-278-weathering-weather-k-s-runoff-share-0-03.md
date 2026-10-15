@@ -2,7 +2,7 @@
 id: PW-278
 title: "Weathering: WEATHER_K's runoff share (0.03/C) double-counts rain already in the erosion rate"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: climate
 effort: xs
@@ -24,4 +24,5 @@ It was raised from 0.06 in PW-235 to shorten cold eras (a metric). Set it to 0.0
 cold-era table: expect slightly longer and colder cold eras.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-ice-veg-weathering-runoff-twice.md (found by audit-ice-veg).

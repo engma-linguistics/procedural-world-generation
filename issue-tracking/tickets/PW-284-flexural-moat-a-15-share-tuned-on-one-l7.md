@@ -2,7 +2,7 @@
 id: PW-284
 title: "Flexural moat: a 15% share tuned on one L7 seed's closed-basin count, and only the moat half of flexure applied"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -57,5 +57,6 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-tectonics-flexure-share.md (found by audit-tectonics).

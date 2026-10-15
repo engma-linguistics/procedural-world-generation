@@ -2,7 +2,7 @@
 id: PW-288
 title: "Sea level hides a persistently young ocean: the basin term is measured against a baseline that learns it away"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -75,5 +75,6 @@ speeds, ridge lengths), so land share doesn't just drop. C only if B's
 old-ocean lowstands look too deep.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-tectonics-sea-level-baseline.md (found by audit-tectonics).

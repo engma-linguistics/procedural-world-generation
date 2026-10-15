@@ -2,7 +2,7 @@
 id: PW-272
 title: "Waves: wind recovery off land (L_RECOVER 1200 km) was doubled to fit the enclosed-sea rows"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: coast
 effort: s
@@ -30,5 +30,6 @@ B. Keep 1200 km as an explicit "enclosed-sea" fit constant and document it as su
 Lean: A. It's a bandaid, and it acts far outside the seas it was tuned for.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-land-wind-recovery.md (found by audit-coast-zoom).

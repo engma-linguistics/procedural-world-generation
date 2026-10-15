@@ -2,7 +2,7 @@
 id: PW-269
 title: "Delta plain radius 3-5x below its own Earth calibration: G-B and Mekong come out river-dominated"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: coast
 effort: s
@@ -32,4 +32,5 @@ outputs; don't widen them.
 - [ ] G-B and Mekong tide-dominated or mixed-tide with real inputs; Mississippi still river, Sao Francisco wave
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-delta-radius.md (found by audit-coast-zoom).

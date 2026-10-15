@@ -2,7 +2,7 @@
 id: PW-268
 title: "Zoom doesn't keep coarse cell means: valley carving lowers land ~60-90 m, trenches lose ~3 km"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: zoom
 effort: s
@@ -35,4 +35,5 @@ where coarse relief is steep. Add a test or golden stat on land-interior cell-me
 - [ ] trench cells within ~500 m of their coarse depth
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-cell-means.md (found by audit-coast-zoom).

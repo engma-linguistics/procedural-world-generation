@@ -2,7 +2,7 @@
 id: PW-273
 title: "Tides: shelf resonance held at its peak for every shelf wider than a quarter wavelength"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: coast
 effort: xs
@@ -26,4 +26,5 @@ coast-to-break path for λ. Re-run coast_check (Patagonia, NW Australia, Yellow 
 - [ ] no clamp on kW; coast_check tide rows reported before and after
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-shelf-resonance.md (found by audit-coast-zoom).
