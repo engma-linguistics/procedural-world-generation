@@ -1,4 +1,5 @@
 ---
+id: PW-192
 title: Stale numbers in module docstrings (volcanism, zoom_landforms, scorecard, earth_world)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: docoverview
 blocked_by: []
 relates: [PW-001, PW-011, PW-148]
 refs: [planet/tectonics/volcanism.py, planet/zoom_landforms.py, tools/scorecard.py, tools/earth_world.py, docs/coordination.md]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -40,3 +43,6 @@ read first.
   predates humidity and clouds; re-time when the machine is free.
 
 - [ ] docstrings match the constants; coordination.md numbers refreshed
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-stale-docstrings.md (found by docoverview).
