@@ -182,4 +182,5 @@ def test_run_vegetation(sim4_60):
     assert np.isfinite(sim.flora[0]) and sim.flora[0] <= 2.0
     assert ((sim.veg >= 0) & (sim.veg <= 1)).all()
     snap = sim.snapshot()
+    land = sim.land()  # (the snapshot's: also grounded ice whose bed has sunk below the sea since the last climate)
     assert (snap.vegetation[~land] == 0).all() and (snap.vegetation[land] > 0).mean() > 0.95

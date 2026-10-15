@@ -85,8 +85,11 @@ per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
 A side simulation at 500-year steps: geology frozen at one moment
 of a run, ice sheets driven by orbital (Milankovitch) cycles, with a
-degree-day mass balance, shallow-ice flow, isostasy, calving and sea level
-from the ice it holds (above flotation, plus the room under sunken beds). `timezoom earth` starts from today's Earth (ETOPO1);
+degree-day mass balance (`planet/icemass.py`, the same one the run's ice and
+the regional zoom's glaciers use, so a run's ice is close to the time zoom's
+own balance at its start), shallow-ice flow, isostasy, calving and sea level
+from the ice it holds (above flotation, plus the room under sunken beds). `timezoom earth` starts from today's Earth (ETOPO1),
+with the model's summer on the real ice sheets cooled to the observed one (`anchor=obs`);
 `--set baseline=obs` uses the observed climate plus the model's changes.
 Knobs: `--set key=value` for any `TZParams` field (e.g. `insol_k`,
 `obliquity_amp`, `phases=zero`). The viewer plays it like a run (frames in

@@ -45,7 +45,8 @@ from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
               "temperature_jul", "temperature_jan", "precipitation_jul", "precipitation_jan",
-              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n",
+              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "wind_jul_e", "wind_jul_n", "wind_jan_e",
+              "wind_jan_n", "current_e", "current_n", "jet_e", "jet_n",
               *LANDFORM_LAYERS, "vegetation", "tree_cover", "npp")
 CHECKPOINT_EVERY = 100.0  # Myr
 
@@ -80,7 +81,8 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "temperature_jul": np.where(grid.lat >= 0, snap.t_warm, snap.t_cold),
             "temperature_jan": np.where(grid.lat >= 0, snap.t_cold, snap.t_warm),
             "precipitation_jul": snap.p_jul, "precipitation_jan": snap.p_jan,
-            **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
+            **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "wind_jul", snap.wind_jul)),
+            **dict(vec_layers(grid, "wind_jan", snap.wind_jan)), **dict(vec_layers(grid, "current", snap.current)),
             **dict(vec_layers(grid, "jet", jet)), **landforms_of(snap),
             "vegetation": snap.vegetation, "tree_cover": 100 * snap.tree_cover, "npp": snap.npp}
 
@@ -348,7 +350,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     """A complete world from a stored keyframe, without replaying: exactly
     the state the viewer shows, at keyframe precision (elevation to 1 m, ice
     to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe.
-    state: {"elevation", "ice", "dT", "sea_level", "tilt"} replacing the
+    state: {"elevation", "ice", "dT", "sea_level", "tilt"} (and optionally
+    "orbit_dt", climate.compute's) replacing the
     keyframe's (a finished world at one moment of a glacial time zoom,
     finish.py: the geology is the keyframe's, the ice, bed, sea level and
     climate the time zoom's)."""
@@ -390,12 +393,13 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
                   st["ice"], fr["hotspots"], vols, st["dT"],
                   st["sea_level"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                              "from_keyframe": True, **meta_extra},
-                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"])
+                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"))
 
 
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
-           erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None) -> dict:
+           erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
+           orbit_dt: np.ndarray | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     # grounded ice on a bed below sea level (pressed down by its own load, or a marine sheet): land with
     # its bed floored at 1 m, the ice thinned to keep the surface (the world format's land is elevation > 0)
@@ -421,7 +425,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     meta["sea_level_m"] = round(sea_level, 1)
     meta["ice_bed_floored_cells"] = int(floored.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                    dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg)
+                    dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

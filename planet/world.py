@@ -59,7 +59,7 @@ def seasons(grid: Grid, c: dict) -> dict:
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
-           veg: dict | None = None) -> dict:
+           veg: dict | None = None, orbit_dt: np.ndarray | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> vegetation (and biomes from it). dT: global temperature offset from
@@ -67,10 +67,11 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
-    for the meta)."""
+    for the meta). orbit_dt: an orbit's monthly temperature anomaly
+    (climate.compute's; a finished time-zoom frame)."""
     t0 = t0 or time.time()
     veg = veg or {}
-    c = climate.compute(grid, elev, dT, tilt, ice)
+    c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
     # The vegetation feeds back on the climate (climate.compute's veg): a
     # first, cheap vegetation on the first climate, then the climate again
     # with it (on the eroded terrain, if any).
@@ -80,7 +81,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
         elev = hydrology.erode(grid, elev, c["runoff"], erosion_iterations, erosion)
-    c = climate.compute(grid, elev, dT, tilt, ice, veg=fb)
+    c = climate.compute(grid, elev, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)

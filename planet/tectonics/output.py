@@ -42,6 +42,8 @@ class Snapshot:
     koppen: np.ndarray  # climate.KOPPEN id
     ice: np.ndarray  # m of land ice
     wind: np.ndarray  # (n, 3) annual-mean surface wind, ~1 = a steady trade wind
+    wind_jul: np.ndarray  # (n, 3) ... in the July half-year (Apr-Sep)
+    wind_jan: np.ndarray  # (n, 3) ... in the January half-year (Oct-Mar)
     current: np.ndarray  # (n, 3) surface ocean current, same scale
     # landform classes and what the zoom needs to draw them (landform.py)
     landform: np.ndarray  # landform.CLASSES id
@@ -125,12 +127,13 @@ def climate_now(sim) -> dict:
         z = np.zeros(n)
         z3 = np.zeros((n, 3))
         return dict(temperature=z, t_warm=z, t_cold=z, koppen=np.full(n, climate.SEA_CLASS), ice=z,
-                    wind=z3, current=z3)
+                    wind=z3, wind_jul=z3, wind_jan=z3, current=z3)
     land = sim.land()
     k = climate.koppen(np.where(land, np.maximum(sim.bed(), 1.0), sim.bed()), sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                        sim.p_jan, sim.grid.lat, np.where(land, sim.ice, 0.0))
     return dict(temperature=sim.temp.copy(), t_warm=sim.t_warm.copy(), t_cold=sim.t_cold.copy(),
                 koppen=k, ice=np.where(land, sim.ice, 0.0), wind=sim.wind.copy(),
+                wind_jul=sim.wind_jul.copy(), wind_jan=sim.wind_jan.copy(),
                 current=np.where(land[:, None], 0.0, sim.current))
 
 

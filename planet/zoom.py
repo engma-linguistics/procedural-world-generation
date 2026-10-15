@@ -89,10 +89,10 @@ Pipeline
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, but for a little under
-   ice). Glaciers (glaciers(), PW-127) from each pixel's own climate:
-   accumulation where its summer at its own height is below the run's
-   ice_summer_temp and the snow outlasts the melt (earth.ice_sheets' rule),
-   the surplus routed down the valleys as melting tongues; outlined on the
+   ice). Glaciers (glaciers(), PW-127, PW-159) from each pixel's own climate:
+   accumulation where its snow outlasts the summer (icemass.balance, the
+   run's and time zoom's surface mass balance; under the coarse sheet with
+   its ice), the surplus routed down the valleys as melting tongues; outlined on the
    target surface, redrawn on the finished one.
    Landform classes (zoom_landforms, PW-010..012): each coarse cell's class
    shapes the target (the structure the drainage organises around: fold
@@ -142,7 +142,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, kernels
+from . import climate, coast, hydrology, icemass, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -809,35 +809,35 @@ def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> i
 
 
 # ---------------------------------------------------------------------------
-# Glaciers (PW-127): from each pixel's own climate, by earth.ice_sheets' rule
+# Glaciers (PW-127, PW-159): from each pixel's own climate, by the run's rule
 # ---------------------------------------------------------------------------
-# Accumulation where the pixel's summer, felt on the ice (lapse-corrected to
-# its own height, minus the cooling the coarse ice gives its own surface), is
-# below the run's ice_summer_temp and enough snow falls to outlast the melt
-# (earth.ICE_SNOW_MIN + ICE_DDF x positive degree-days); the cold ground
-# connected to such a pixel is ice too (polar desert fed from a snowier
-# part). From there the surplus is routed down the valleys (glacier_flow) as
-# tongues that melt (GL_DDF_ICE x degree-days of the uncapped summer, less
-# the snow) over their width as they descend, so valley glaciers reach below the
-# snowline only as narrow tongues fed from above (Franz Josef ends in
-# rainforest at ~300 m). Widths: ~0.8 km at 0.1 km3/yr water equivalent
-# (Franz Josef), ~2.6 km at the GL_F_MAX cap.
+# The surface mass balance is the run's and the time zoom's (icemass.balance),
+# on each pixel's own climate (the bare ground's summer and winter at its own
+# height, its rain): accumulation where its snow outlasts the summer on bare
+# ground (so the snowline depends on the snowfall as well as the summer,
+# PW-159), or under the coarse sheet's ice (its height and, on a big sheet,
+# its own air mass keep it colder) where connected to such a start or to the
+# coarse sheet's interior: the coarse ice's feedback applies only on the
+# sheet itself, not on the warm valley floors of an iced coarse cell. From
+# there the surplus is routed down the valleys (glacier_flow) as tongues that
+# melt as bare ice (the same balance, no ice under them) over their width as
+# they descend, so valley glaciers reach below the snowline only as narrow
+# tongues fed from above (Franz Josef ends in rainforest at ~300 m). Widths:
+# ~0.8 km at 0.1 km3/yr water equivalent (Franz Josef), ~2.6 km at the
+# GL_F_MAX cap.
 GL_W0, GL_F0, GL_W_EXP = 0.8, 1e8, 0.35  # tongue width km = W0 x (flux m3/yr / F0)^W_EXP
 GL_F_MAX = 3e9  # m3/yr: at most this enters one tongue (Bering, Malaspina: a few km3/yr; a sheet's margin loses the rest along its length)
 GL_MAX_KM = 100.0  # km: no tongue runs further below its zone (Pio XI ~64 km, Bering ~190 km in all)
-GL_DDF_ICE = 8.0  # mm water per positive degree-day on bare ice (snow: earth.ICE_DDF = 3; Braithwaite 1995)
 GL_DRAW = 0.5  # a tongue narrower than this many pixels isn't drawn
 GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EXP
 GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 
 
-def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Per coarse cell: the warmest and coldest month (C) of the bare ground
-    under any ice, and how much colder the ice keeps its own surface (C;
-    earth.ice_sheets: ICE_FEEDBACK of its height plus its white top). The
-    world's climate is on the ice surface (climate.ice_surface): this undoes
-    it (its height, its cooling, the melting that halves a positive summer)."""
-    from .tectonics.earth import ICE_FEEDBACK
+    under any ice. The world's climate is on the ice surface
+    (climate.ice_surface): this undoes it (its height, its cooling, the
+    melting that halves a positive summer)."""
     land = L["elevation"] > 0
     ice = np.where(land, ice, 0.0)
     tw = np.asarray(L.get("warm_month", L["temperature"]), float)
@@ -847,34 +847,33 @@ def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.
     up = LAPSE * ice
     gw = np.where(on, np.where(tw > 0, 2 * tw, tw) + up + cool, tw)
     gc = np.where(on, tc + up + cool, tc)
-    return gw, gc, ICE_FEEDBACK * LAPSE * ice + cool
+    return gw, gc
 
 
-def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, cold_sl, own, precip,
-             ice_c, noise, summer_max: float) -> tuple[np.ndarray, np.ndarray]:
+def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, cold_sl, cover, precip, jul,
+             ice_c, lat, noise, tilt: float = 23.4) -> tuple[np.ndarray, np.ndarray]:
     """Glacier mask and ice thickness (m) on the surface h (with its
     drainage rec, order): see GL_*. warm_sl, cold_sl: the bare ground's
-    warmest and coldest month reduced to sea level; own: the coarse ice's
-    cooling of its own surface (ice_ground); ice_c: the interpolated coarse
-    ice (m); noise: ~unit fbm; summer_max: the run's ice_summer_temp."""
-    from .tectonics.earth import ICE_DDF, ICE_MAX, ICE_SNOW_MIN, degree_days
+    warmest and coldest month reduced to sea level; cover: the coarse
+    ice's icemass.sheet_cover; precip (mm/yr) and jul, its share in the
+    April-September half; ice_c: the interpolated coarse ice (m); lat (deg);
+    noise: ~unit fbm; tilt: the planet's (the balance is the ice-age cycle's
+    average, as the run's)."""
+    from .tectonics.earth import ICE_MAX
     hl = np.maximum(h, 0)
-    raw = warm_sl - LAPSE * hl - own + GL_NOISE_C * noise
-    t_cold = np.minimum(cold_sl - LAPSE * hl - own, raw)
-    # (melting holds an ice surface's positive summer down: earth.ice_sheets)
-    t_sum = np.where(ice_c > 1, np.minimum(raw, 0.5 * np.maximum(raw, 0)), raw)
-    cold = land & ~stop & (t_sum < summer_max)
-    surplus = precip - ICE_SNOW_MIN - ICE_DDF * degree_days(t_sum, np.minimum(t_cold, t_sum))
-    lab, _ = ZK.label_components(cold, nx, ny)
+    tw = warm_sl - LAPSE * hl + GL_NOISE_C * noise
+    tc = np.minimum(cold_sl - LAPSE * hl, tw)
+    pj, pn = 2 * precip * jul, 2 * precip * (1 - jul)
+    ok = land & ~stop
+    bare, _ = icemass.balance(lat, ok, tw, tc, pj, pn, 0.0, 0.0, tilt=tilt)
+    on, _ = icemass.balance(lat, ok, tw, tc, pj, pn, ice_c, cover, tilt=tilt)
+    acc = ok & (np.where(ice_c > 1, on, bare) > 0)
+    lab, _ = ZK.label_components(acc, nx, ny)
     fed = np.zeros(int(lab.max()) + 2, bool)
-    fed[lab[cold & (surplus > 0)]] = True
-    zone = cold & fed[lab]
-    # a tongue melts at the air's summer (no cap), as bare ice (GL_DDF_ICE),
-    # and gets the share of the precipitation that falls in the months below freezing
-    mid, amp = 0.5 * (raw + t_cold), np.maximum(0.5 * (raw - t_cold), 1e-6)
-    snow = precip * np.arccos(np.clip(mid / amp, -1, 1)) / np.pi
-    melt = snow - GL_DDF_ICE * degree_days(raw, t_cold)
-    bal = np.where(zone, surplus, melt) / 1000.0
+    fed[lab[acc & ((bare > 0) | (ice_c > icemass.EDGE_H))]] = True
+    zone = acc & fed[lab]
+    # a tongue melts as bare ice, at the air's summer (no ice under it to raise it)
+    bal = np.where(zone, np.where(ice_c > 1, on, bare), bare) * 0.917  # m w.e. per yr
     flux, wid, _ = ZK.glacier_flow(rec, order, bal, zone, stop | ~land, nx, res, GL_W0, GL_F0, GL_W_EXP,
                                    GL_F_MAX, GL_MAX_KM)
     tongue = ~zone & (flux > 0) & (wid >= GL_DRAW * res)
@@ -947,12 +946,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ice_c = L.get("ice", np.zeros(g.n))[sel].astype(float)
     r_c = np.clip(r_c * np.exp(-ice_c / 500), 0.12, 1.0)
 
-    # (glaciers: the bare ground's summer and winter at sea level, and the coarse ice's own cooling)
-    gw, gc, own_c = (v[sel] for v in ice_ground(g, L, L.get("ice", np.zeros(g.n)).astype(float)))
+    # (glaciers: the bare ground's summer and winter at sea level, the coarse ice's sheet cover, the rain's
+    # share in the July half-year)
+    ice_all = L.get("ice", np.zeros(g.n)).astype(float)
+    gw, gc = (v[sel] for v in ice_ground(g, L, ice_all))
+    cov_c = icemass.sheet_cover(g, np.where(elev > 0, ice_all, 0.0))[sel]
+    if "precipitation_jul" in L and "precipitation_jan" in L:
+        pj_c, pn_c = (np.asarray(L[k], float)[sel] for k in ("precipitation_jul", "precipitation_jan"))
+        jul_c = np.where(pj_c + pn_c > 0, pj_c / np.maximum(pj_c + pn_c, 1e-9), 0.5)
+    else:
+        jul_c = np.full(len(sel), 0.5)
     vals = np.column_stack([np.maximum(e_c, 1.0), np.minimum(e_c, -1.0),
                             L["precipitation"][sel].astype(float), ice_c, r_c, relief[sel],
-                            gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), own_c,
-                            np.asarray(L["runoff"] if "runoff" in L else L["precipitation"], float)[sel]])
+                            gw + LAPSE * np.maximum(e_c, 0), gc + LAPSE * np.maximum(e_c, 0), cov_c,
+                            np.asarray(L["runoff"] if "runoff" in L else L["precipitation"], float)[sel], jul_c])
     wts = np.ones_like(vals)
     wts[:, 0] = land_c
     wts[:, 1] = ~land_c
@@ -963,7 +970,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     e_land = np.nan_to_num(fine[:, 0], nan=1.0)
     e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
     precip, ice, rug, rel = (fine[:, k] for k in range(2, 6))
-    gw_sl, gc_sl, own_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(6, 9))
+    gw_sl, gc_sl, cov_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(6, 9))
+    jul_f = np.clip(np.nan_to_num(fine[:, 10], nan=0.5), 0, 1)
     # what feeds the streams: the world's runoff (rain minus what the land
     # evaporates, as its own rivers route), not the rain
     runoff = np.clip(np.nan_to_num(fine[:, 9], nan=0.0), 0, None)
@@ -1532,12 +1540,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # outline on the target surface (lakes and the landscape pass avoid and
     # smooth it), redrawn on the finished valleys after the landscape pass
     ice_n = ZK.fbm(Pk, 0.4 * sp, _octaves(0.4 * sp, 2 * res), 0.6, S + 5) / 0.17
-    summer_max = float(world["meta"].get("params", {}).get("tectonics", {}).get("ice_summer_temp", 1.0))
+    lat_px = np.degrees(np.arcsin(np.clip(P[:, 2], -1, 1)))
+    tilt_w = float(world["meta"].get("params", {}).get("tectonics", {}).get("tilt", 23.4))
 
     def glacier_mask(hh, stop):
         _, rec_g, order_g = ZK.flood_d8(hh, outlet, nx, ny, 1e-3, jitter_g)
-        return glaciers(hh, rec_g, order_g, land, stop, nx, ny, res, gw_sl, gc_sl, own_f, precip, ice,
-                        ice_n, summer_max)
+        return glaciers(hh, rec_g, order_g, land, stop, nx, ny, res, gw_sl, gc_sl, cov_f, precip, jul_f, ice,
+                        lat_px, ice_n, tilt_w)
 
     jitter_g = np.random.default_rng(seed + 5).random(npx)
     glacier, ice_th = glacier_mask(h, sea)

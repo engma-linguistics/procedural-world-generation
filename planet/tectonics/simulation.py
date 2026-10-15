@@ -58,7 +58,8 @@ class Simulation:
     EARTH_STATE: ClassVar[tuple[str, ...]] = (
         "dT",  # C: global temperature offset from today's Earth
         "drift",  # C: its random part
-        "co2",  # smoothed log ratio of volcanic CO2 sources to weathering sinks
+        "co2",  # log ratio of volcanic CO2 sources to weathering sinks (each smoothed, against its baseline)
+        "rates",  # [source, sink] smoothed over ~10 Myr (None before the first step)
         "refs",  # slow baselines of [source, sink] (None before the first step)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
         "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
@@ -79,6 +80,7 @@ class Simulation:
         "runoff", "aet", "lake_evap",  # mm/yr
         "koppen",  # climate.KOPPEN id
         "wind", "current",  # (n, 3) annual-mean surface wind and ocean current
+        "wind_jul", "wind_jan",  # (n, 3) the half-years' surface winds (Apr-Sep, Oct-Mar)
         "flow", "down",  # rivers of the last step: flow and next cell downstream (-1 at sea)
         "lake_kind", "lake_depth",  # lakes of the last step: hydrology lake_kind, m of water
     )
@@ -126,7 +128,7 @@ class Simulation:
         self.mantle_lid = np.zeros(n)  # running average of continental cover over it
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
-        self.dT, self.drift, self.co2, self.refs = 0.0, 0.0, 0.0, None
+        self.dT, self.drift, self.co2, self.rates, self.refs = 0.0, 0.0, 0.0, None, None
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
@@ -146,6 +148,7 @@ class Simulation:
         self.precip = self.p_jul = self.p_jan = None
         self.runoff = self.aet = self.lake_evap = None
         self.koppen = self.wind = self.current = None
+        self.wind_jul = self.wind_jan = None
         self.flow = np.zeros(n)
         self.down = np.full(n, -1, np.int64)
         self.lake_kind = np.zeros(n, np.int8)

@@ -114,7 +114,7 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     ice = np.asarray(L.get("ice", np.zeros(g.n)), float)
     tw = np.asarray(L.get("warm_month", L["temperature"]), float)
     tc = np.asarray(L["cold_month"], float) if "cold_month" in L else 2 * np.asarray(L["temperature"], float) - tw
-    gw, gc, _ = ice_ground(g, L, ice)
+    gw, gc = ice_ground(g, L, ice)
     # (annual: the world's, moved with the months under ice)
     ta = np.asarray(L["temperature"], float) + 0.5 * ((gw - tw) + (gc - tc))
     prc = np.asarray(L["precipitation"], float)
