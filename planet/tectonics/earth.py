@@ -380,7 +380,7 @@ def erode(sim, col):
     # (light) sediment deposited
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
-    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock))
+    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
