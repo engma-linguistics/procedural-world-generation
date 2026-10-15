@@ -74,7 +74,7 @@ MOAT_MAX = 2500.0  # m: deepest a moat gets, smoothly (the Ganges foreland's bas
 ROOT = 1000.0 - ISO_LAND  # m of root per km of extra continental crust (Airy: the part that doesn't show)
 
 
-def subsidence(grid, thick, cont, rec, t, flexure=0.3, sag=SAG_KM, sag_time=SAG_TIME, km=FLEX_KM):
+def subsidence(grid, thick, cont, rec, t, flexure=0.15, sag=SAG_KM, sag_time=SAG_TIME, km=FLEX_KM):
     """m of tectonic subsidence (< 0) or uplift beyond local (Airy)
     isostasy, per cell (PW-054): what keeps basins sinking as they fill.
 

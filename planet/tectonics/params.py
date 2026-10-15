@@ -53,7 +53,7 @@ class Params:
     # down (flexural foreland / intermontane basins), and the thermal sag of
     # stretched lithosphere (km after infinite stretching, air-loaded) with
     # its cooling time
-    flexure: float = 0.3
+    flexure: float = 0.15
     rift_sag: float = 2.2
     sag_time: float = 63.0
     # surface (see surface.py): erosion, rivers, sediment, climate
