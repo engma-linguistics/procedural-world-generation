@@ -2,7 +2,7 @@
 id: PW-291
 title: Slicing a run exactly at a checkpoint time fails the replay check (snapshot right after a checkpoint load differs)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: store
 effort: s
@@ -33,4 +33,5 @@ Effect: worlds can't be sliced at 100, 200, ... Myr without `--force` on some ru
 - [ ] store it in the checkpoint or rebuild it in `from_state`; a test slicing at a checkpoint time
 
 ## Updates
+- 2026-10-15: Status todo -> done. Fixed: checkpoints zeroed the geological record (rec/lith) of plate cells the world view samples without owning them; the view's subsidence read them, so a replay stopped at a checkpoint differed by up to ~1.3 km in a few cells (L5 seed 1: 52-91 cells of w_rec at 180-260 Myr). store._write_checkpoint keeps the view's cells; test_checkpoint_keeps_world_view_records. Outputs unchanged (goldens pass); old checkpoints keep the problem (no backward compatibility: re-make or --force).
 - 2026-10-15: Created from inbox draft draft-health-slice-at-checkpoint-mismatch.md (found by health-sweep).
