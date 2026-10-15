@@ -2,7 +2,7 @@
 id: PW-263
 title: Portable TBB without a system libtbb (the pip "tbb" wheel isn't found by numba as is)
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-247
 subsystem: infra
 effort: s
@@ -28,4 +28,5 @@ Options:
 Lean: A. Outputs are identical under either layer (PW-215), and concurrency now comes from processes.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner (2026-10-15): ignore; system TBB where present, workqueue elsewhere (option A).
 - 2026-10-15: Created from inbox draft draft-tbb-portable.md (found by parallel).

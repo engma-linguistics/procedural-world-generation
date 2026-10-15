@@ -2,7 +2,7 @@
 id: PW-251
 title: "Decide: update the run's climate less often (climate_every 4 -> 8 Myr) or cheaper (fewer orbit states in the ice balance)?"
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-247
 subsystem: climate
 effort: s
@@ -33,4 +33,5 @@ Lean: A until the parallel/fusion work (PW-247 drafts) is done; then measure B a
 scorecard. It's the only single knob with a >1.3x effect on CPU.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner (2026-10-15): pass, option A: keep climate_every = 4 Myr. A ~30 min L7 run is fine, and multi-seed checks get their speed by running seeds a few at a time (planet/parallel.py).
 - 2026-10-15: Created from inbox draft draft-climate-cadence-decision.md (found by gpu-explore (PW-249)).

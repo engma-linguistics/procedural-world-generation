@@ -2,7 +2,7 @@
 id: PW-253
 title: "Decide: is an optional GPU path worth a second code path, and with which backend (numba-cuda vs CuPy)?"
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-244
 subsystem: infra
 effort: xs
@@ -51,4 +51,5 @@ path and its own goldens yet. If B goes ahead: numba-cuda over CuPy (closest to 
 kernels, cooperative launches available), fp64 kept.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner (2026-10-15): option A, no GPU path for now; convinced it isn't worth a second code path. Revisit only if L8 runs become routine.
 - 2026-10-15: Created from inbox draft draft-gpu-backend-decision.md (found by gpu-explore (PW-249)).

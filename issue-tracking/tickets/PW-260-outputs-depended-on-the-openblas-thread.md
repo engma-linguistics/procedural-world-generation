@@ -2,7 +2,7 @@
 id: PW-260
 title: Outputs depended on the OpenBLAS thread count; now pinned to 1 (runs made before replay differently)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: xs
@@ -25,4 +25,5 @@ Left for the coordinator:
 - [ ] Scorecard lines before the merge aren't comparable bit for bit with later ones (it's a statistical record, so this is probably fine). Note the break in `docs/scorecard.jsonl` or in coordination.md.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Fixed in PW-250's merge: one BLAS thread always (parallel.set_default_threads); goldens made at BLAS 1.
 - 2026-10-15: Created from inbox draft draft-blas-threads-change-outputs.md (found by parallel).

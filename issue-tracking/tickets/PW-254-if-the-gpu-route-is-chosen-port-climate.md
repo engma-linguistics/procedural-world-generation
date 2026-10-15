@@ -2,7 +2,7 @@
 id: PW-254
 title: "If the GPU route is chosen: port climate._rain and the graph-stencil kernels to numba-cuda behind an optional extra"
 type: story
-status: todo
+status: wontdo
 parent: PW-244
 subsystem: climate
 effort: l
@@ -36,4 +36,5 @@ Lessons from the prototype (scratch scripts are described in the profile report)
 - [ ] run-to-run determinism on the GPU (PW-215) checked in tests
 
 ## Updates
+- 2026-10-15: Status todo -> wontdo. Owner chose no GPU path (PW-253 A).
 - 2026-10-15: Created from inbox draft draft-gpu-port-climate-stencils.md (found by gpu-explore (PW-249)).

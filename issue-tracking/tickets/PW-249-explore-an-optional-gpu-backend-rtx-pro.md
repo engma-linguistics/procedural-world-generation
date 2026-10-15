@@ -2,7 +2,7 @@
 id: PW-249
 title: Explore an optional GPU backend (RTX PRO 6000, 96 GB) for the heaviest kernels
 type: task
-status: todo
+status: done
 parent: PW-244
 subsystem: infra
 effort: m
@@ -27,4 +27,5 @@ Exploration, not implementation. Use the PW-247 profile to pick the 2-3 hottest 
 Output: a short report under docs/review/gpu/ with a go/no-go per stage, and inbox drafts for the stages worth porting. Raise the choice of backend (and whether it's worth a second code path at all) as a needs-decision ticket.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Exploration done: docs/review/gpu/profile.md (merged 459faff); decision in PW-253 (no GPU path).
 - 2026-10-15: Created from inbox draft draft-gpu-backend-exploration.md (found by daniel).

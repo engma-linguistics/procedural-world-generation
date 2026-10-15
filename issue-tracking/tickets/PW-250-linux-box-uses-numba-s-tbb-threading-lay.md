@@ -2,7 +2,7 @@
 id: PW-250
 title: "Linux box uses numba's TBB threading layer: relax the API's one-computation lock (PW-084) and pin the layer"
 type: task
-status: todo
+status: done
 parent: PW-247
 subsystem: infra
 effort: s
@@ -23,4 +23,5 @@ Measured 2026-10-15: the L4 60 Myr golden digest is bit-identical under tbb (twi
 To do: make the layer explicit (`NUMBA_THREADING_LAYER` / `numba.config.THREADING_LAYER = "safe"` or `"tbb"` when available, falling back to the lock under workqueue), let the server run more than one compute job at a time when the layer allows it (a small pool, not unbounded: each job already uses all cores), and add `tbb` to the dependencies if it isn't reliably present (it appears to come from the system or a wheel here; check `uv pip list` / `ldconfig -p | grep tbb`). Test: two concurrent zoom builds through the API give the same outputs as sequential ones.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Done: process-level concurrency merged (de8e016, merge on main 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-tbb-concurrent-compute.md (found by coordinator).

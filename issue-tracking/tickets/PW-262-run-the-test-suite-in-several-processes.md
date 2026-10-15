@@ -2,7 +2,7 @@
 id: PW-262
 title: Run the test suite in several processes (pytest wall time is set by serial work)
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-247
 subsystem: infra
 effort: s
@@ -25,4 +25,5 @@ Options:
 Lean: A if commits that touch `planet/` become frequent; measure first.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner (2026-10-15): skip; ~4.6 min is fine.
 - 2026-10-15: Created from inbox draft draft-pytest-in-processes.md (found by parallel).
