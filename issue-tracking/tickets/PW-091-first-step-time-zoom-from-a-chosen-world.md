@@ -24,4 +24,5 @@ and a viewer button. Highest impact; the epic's first step. Generated worlds cur
 hard (PW-031); fix or limit that so finished worlds aren't buried in ice.
 
 ## Updates
+- 2026-10-14: Owner (2026-10-14): wanted next, together with the new UI pipeline story; the finished world must be choosable at any kyr of the time zoom, not only its end. Watch PW-031 (generated worlds glaciate too hard) and PW-189 (ice loading/rebound) since both shape what a finished world looks like.
 - 2026-10-14: Created from the owner's world-finishing epic (2026-10-14).
