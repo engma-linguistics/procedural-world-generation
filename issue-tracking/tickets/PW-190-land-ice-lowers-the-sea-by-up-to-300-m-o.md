@@ -2,7 +2,7 @@
 id: PW-190
 title: Land ice lowers the sea by up to 300+ m on some seeds (about 4x Antarctica's volume)
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-053]
 refs: [planet/tectonics/earth.py, tools/sealevel.py, planet/timezoom.py, "world 8e71fd", "run ee65aa", "world bcc894"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -39,6 +39,7 @@ ice building to ~-300 m within 40 Myr is the ice following continental drift
   brought to roughly the LGM's scale (~-150..-200 m)
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Overnight agent, worktree ice.
 - 2026-10-14: Coordinator decision (north star): option C. The run's ice rule gets an ablation zone / becomes flow-consistent here, which fixes both the too-large run ice and the time zoom's cold-era spread (8e71fd: -258 m). Until then A: cold-era finished worlds glaciate hard, as documented in overview 2.14. B (spin-up balance) skipped as a half measure.
 - 2026-10-14: Merged inbox draft draft-timezoom-cold-era-spread.md ("Time zoom: cold-era generated worlds still drop ~250 m, because the run's ice has no ablation zone", found by finish).
   After the PW-031 nudge (sea level from the water the ice holds; a run's start counted as the
