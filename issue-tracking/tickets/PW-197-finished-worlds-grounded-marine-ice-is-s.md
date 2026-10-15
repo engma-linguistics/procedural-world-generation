@@ -1,4 +1,5 @@
 ---
+id: PW-197
 title: "Finished worlds: grounded marine ice is stored as land with the bed floored at 1 m"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: finish
 blocked_by: []
 relates: [PW-091, PW-189]
 refs: [planet/finish.py, tools/earth_data.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -19,3 +22,6 @@ thick ice) at 1 m and thins the ice to keep the surface, as tools/earth_data.py 
 Antarctica. The bed shown under those cells is wrong (zooms, rock, a "lake" under the ice can't
 appear); the surface is right. meta.marine_ice_floored_cells counts them. A proper fix stores the bed as is and lets world/climate/hydrology treat
 "ice-covered, bed below sea level" as land (ties to PW-189 glacial isostasy).
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-finish-marine-ice.md (found by finish).

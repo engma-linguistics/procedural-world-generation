@@ -1,4 +1,5 @@
 ---
+id: PW-198
 title: "Finished worlds: climate ignores the frame's precession/eccentricity and the time zoom's anchor"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: finish
 blocked_by: []
 relates: [PW-091, PW-104]
 refs: [planet/finish.py, planet/climate.py]
+created: 2026-10-14
+updated: 2026-10-14
 ---
 
 ## Description
@@ -20,3 +23,6 @@ perihelion, so the frame's seasonal insolation anomaly (which the time zoom itse
 world's temperature and seasons. So a finished glacial-maximum world is a little warmer in
 summer than the time zoom frame it came from. Fix: give climate.compute an optional monthly
 insolation anomaly (timezoom.insolation vs the reference orbit) and pass it from finish.py.
+
+## Updates
+- 2026-10-14: Created from inbox draft draft-finish-orbit-climate.md (found by finish).
