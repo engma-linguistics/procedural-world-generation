@@ -68,9 +68,12 @@ A crude physical proxy, in three factors:
 2. Shelf resonance and shoaling. On a continental shelf of width W and
    depth h the tide is a standing wave; it resonates when W is near a
    quarter of the tidal wavelength sqrt(g h) x 12.42 h (~300 km on a 80 m
-   shelf): amplification 1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a
-   friction term (Bay of Fundy, Patagonia, NW Australia, the Yellow Sea).
-   Shelves far wider than that lose the tide to friction instead (Siberia).
+   shelf; h the shelf's mean depth along the path across it): amplification
+   1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a friction term (Bay of Fundy,
+   Patagonia, NW Australia, the Yellow Sea), falling back toward 1 by
+   lambda/2. Shelves far wider than that lose the tide to friction instead
+   (Siberia). W runs from the coastline to where the depth crosses the
+   shelf break, interpolated between the cells either side of it.
    Sea ice adds friction at the top of the water column (ice-ocean drag is
    comparable to bottom drag): both friction terms grow by ICE_FRIC x the
    share of the year the sea is frozen (Arctic shelves).
@@ -370,11 +373,35 @@ def _shelf_width(grid, elev, ocean):
         hops, _ = bfs_within(np.flatnonzero(off).astype(np.int64), lab, grid.nbr_off, grid.nbr_idx, 10 ** 6)
     else:
         hops = np.full(grid.n, -1)
-    W = np.where(hops > 0, hops * h, np.where(hops == 0, 0.5 * h * np.clip(SHELF_BREAK / np.maximum(depth, 1.0), 0, 1),
-                                              20 * h))
-    # the shelf's depth: the cell's own (a shelf cell), else a typical shelf
-    hs = np.clip(np.where(depth < SHELF_BREAK, depth, 100.0), 20.0, 150.0)
-    return W, hs
+    # Along each cell's path across the shelf to the break (its parents: the
+    # neighbours one hop nearer the break, averaged): the shelf's mean depth,
+    # which sets the tide's wavelength, and where between the last shelf cell
+    # and the first deep one the depth crosses SHELF_BREAK (linearly). W runs
+    # from the coastline (half a cell landward of a coast cell) to that point:
+    # (hops - 1/2 + f) cells, not hops (which overstates a one-cell shelf by
+    # half a cell, enough to move it off the quarter-wave resonance, PW-273).
+    # A deep cell: half a cell scaled by its depth; no break in reach: 20 cells.
+    dsh = np.clip(depth, 1.0, SHELF_BREAK)
+    acc = np.zeros(grid.n)  # sum of depths along the path
+    brk = np.zeros(grid.n)  # f: the break's position between the last shelf and first deep cell
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    dst = grid.nbr_idx
+    for k in range(1, int(hops.max()) + 1 if (hops > 0).any() else 1):
+        e = (hops[src] == k) & (hops[dst] == k - 1)
+        cnt = np.maximum(np.bincount(src[e], minlength=grid.n), 1)
+        at = hops == k
+        acc[at] = dsh[at] + (np.bincount(src[e], acc[dst[e]], grid.n) / cnt)[at]
+        if k == 1:
+            dd = depth[dst[e]]
+            ds = dsh[src[e]]
+            f = np.clip((SHELF_BREAK - ds) / np.maximum(dd - ds, 1.0), 0.0, 1.0)
+            brk[at] = (np.bincount(src[e], f, grid.n) / cnt)[at]
+        else:
+            brk[at] = (np.bincount(src[e], brk[dst[e]], grid.n) / cnt)[at]
+    W = np.where(hops > 0, (hops - 0.5 + brk) * h,
+                 np.where(hops == 0, 0.5 * h * np.clip(SHELF_BREAK / np.maximum(depth, 1.0), 0, 1), 20 * h))
+    hs = np.where(hops > 0, acc / np.maximum(hops, 1), np.where(depth < SHELF_BREAK, depth, 100.0))
+    return W, np.clip(hs, 20.0, SHELF_BREAK)
 
 
 def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarray | None = None):
@@ -438,7 +465,8 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     lam = np.sqrt(GRAV * hs) * T_M2 / 1000.0  # km
     kw = 2 * np.pi * W / lam
     fric = 1.0 + ICE_FRIC * (0.0 if ice_share is None else np.asarray(ice_share, float))
-    amp = 1.0 / np.sqrt(np.cos(np.minimum(kw, np.pi / 2)) ** 2 + (R_FRIC * fric) ** 2)
+    # (the linear standing wave: peaks 1/r at W = lambda/4, back to ~1 at lambda/2)
+    amp = 1.0 / np.sqrt(np.cos(kw) ** 2 + (R_FRIC * fric) ** 2)
     amp *= np.exp(-np.maximum(W - lam / 4, 0) * fric / L_SHELF_FRIC)
     # 3. funnelling
     fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR_TIDE)) ** 0.5, 0.65, 2.2)

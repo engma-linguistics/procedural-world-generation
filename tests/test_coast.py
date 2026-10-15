@@ -103,6 +103,24 @@ def test_tide_wide_shelf_vs_narrow(tide_world):
     assert 0.5 < narrow < 3.0  # an open-ocean coast: ~1-2 m
 
 
+def test_tide_shelf_resonance_falls_past_quarter_wave(tide_world):
+    """The shelf amplifies most near a quarter tidal wavelength (on the
+    shelf's mean depth) and falls back toward 1 by half a wavelength (PW-273:
+    it used to stay at its peak for any wider shelf)."""
+    g, elev = tide_world
+    _, det = coast.tide_range(g, elev, detail=True)
+    iw = _coastal(g, elev, -25, -1)
+    lam = np.sqrt(coast.GRAV * 80.0) * coast.T_M2 / 1000.0
+    # the same shelf, a quarter wavelength wider: about half a wavelength
+    dlon = 360 * (lam / 4) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
+    wide = elev.copy()
+    wide[(g.lon > -3.5 - dlon) & (g.lon <= 0) & (g.lat < -5) & (g.lat > -50)] = -80.0
+    _, det2 = coast.tide_range(g, wide, detail=True)
+    W2 = det2["shelf_km"][iw]
+    assert 0.4 * lam < W2 < 0.6 * lam, (W2, lam)
+    assert det2["shelf_amp"][iw] < 1.6 < det["shelf_amp"][iw], (det2["shelf_amp"][iw], det["shelf_amp"][iw])
+
+
 def test_tide_enclosed_sea_is_small(tide_world):
     g, elev = tide_world
     tr = coast.tide_range(g, elev)
