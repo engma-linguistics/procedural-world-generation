@@ -125,72 +125,107 @@ def _geom(grid: Grid):
         in_e = np.argsort(dst, kind="stable")
         off = np.concatenate([[0], np.cumsum(np.bincount(src, minlength=grid.n))])
         in_off = np.concatenate([[0], np.cumsum(np.bincount(dst, minlength=grid.n))])
+        # Least-squares gradient weights: the gradient g that best fits the
+        # differences to the neighbours, len_e (d_e . g) = df_e, is
+        # g = sum_e gq_e df_e with gq_e = M^-1 len_e d_e, M = sum_e len_e^2 d_e d_e^T
+        # (+ the normal, to make it invertible). It uses each edge's own length:
+        # the icosphere's cells are up to ~9% smaller or larger along the seams of
+        # the icosahedron it was built from, and a gradient taken with the mean
+        # spacing shows those seams as straight lines (in the winds, then the rain).
+        ln = np.arccos(np.clip((p[src] * p[dst]).sum(1), -1.0, 1.0)) * R_KM
+        c = ln[:, None] * d
+        M = np.zeros((grid.n, 3, 3))
+        np.add.at(M, src, c[:, :, None] * c[:, None, :])
+        M += p[:, :, None] * p[:, None, :]
+        gq = np.einsum("eij,ej->ei", np.linalg.inv(M)[src], c)
+        # Blur weights (_smooth), per neighbour in grid.nbr_idx order: a
+        # plain neighbour average drifts toward the side with more or nearer
+        # neighbours and blurs less where the cells are smaller, which on
+        # the icosphere leaves the icosahedron's seams in a blurred field's
+        # gradient. So the weights are tilted until the neighbours' weighted
+        # centre is the cell's own (a straight slope stays straight), and
+        # the cell's mixing is scaled to spread the same km^2 everywhere.
+        nsrc = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+        r = p[grid.nbr_idx] - p[nsrc]
+        r -= (r * p[nsrc]).sum(1, keepdims=True) * p[nsrc]
+        r *= R_KM
+        dg = np.diff(grid.nbr_off).astype(np.float64)
+        rr = np.zeros((grid.n, 3, 3))
+        np.add.at(rr, nsrc, r[:, :, None] * r[:, None, :] / dg[nsrc, None, None])
+        rr += p[:, :, None] * p[:, None, :]  # (the normal: makes it invertible)
+        rm = np.add.reduceat(r, grid.nbr_off[:-1], axis=0) / dg[:, None]
+        b = -np.linalg.solve(rr, rm[:, :, None])[:, :, 0]
+        wk = np.maximum(1.0 / dg[nsrc] + (b[nsrc] * r).sum(1) / dg[nsrc], 0.0)
+        wk /= np.add.reduceat(wk, grid.nbr_off[:-1])[nsrc]
+        spread = np.add.reduceat(wk * (r * r).sum(1), grid.nbr_off[:-1])
+        h = grid.spacing * R_KM
+        sk = wk * np.minimum(0.5 * h * h / spread, 0.9)[nsrc]
         if len(_GEOM) > 4:
             _GEOM.clear()
         _GEOM[key] = dict(east=east, north=north, src=src, dst=dst, d=d, deg=deg, h=grid.spacing * R_KM,
-                          out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e])
+                          out_off=off, out_e=out_e, in_off=in_off, in_e=in_e, in_src=src[in_e], gq=gq, sk=sk)
     return _GEOM[key]
 
 
 _COARSE = {}
+COARSE_R = 1.5  # coarse cells: reach of the interpolation weights (two rings of neighbours around the
+# containing cell cover it: the nearest cell three steps away is further from any point of it)
 
 
 def _coarse(grid: Grid, level: int = 3):
     """A coarser icosphere (level 3: ~900 km cells, for patterns thousands
     of km across): which coarse cell each fine cell falls in, the coarse
-    neighbours, and weights to interpolate back smoothly (the nearby coarse
-    cells, by distance). Cached."""
+    neighbours, and weights to interpolate back smoothly: the nearby coarse
+    cells, by a bell of distance, (1 - (d/r)^2)^2 out to r = COARSE_R coarse
+    cells, which is smooth at its centre and at its edge (a cone, 1 - d/r,
+    leaves kinks that the gradient of the field shows). Cached."""
     from .grid import build_grid
     key = (id(grid), grid.n, level)
     if key not in _COARSE:
         cg = build_grid(min(level, grid.level))
         cidx = cg.locate(grid.centers)
-        cand = np.zeros((grid.n, 7), np.int64)
-        ok = np.zeros((grid.n, 7), bool)
-        cand[:, 0], ok[:, 0] = cidx, True
-        deg = np.diff(cg.nbr_off)
-        for k in range(6):  # the containing coarse cell and its neighbours
-            has = deg[cidx] > k
-            cand[has, k + 1] = cg.nbr_idx[cg.nbr_off[cidx[has]] + k]
-            ok[has, k + 1] = True
+        # candidates: the containing coarse cell and two rings of neighbours around it
+        off, idx = cg.nbr_off, cg.nbr_idx
+        ring = np.full((cg.n, 19), -1, np.int64)
+        for j in range(cg.n):
+            near = {j}
+            for a in idx[off[j]:off[j + 1]]:
+                near.add(int(a))
+                near.update(int(b) for b in idx[off[a]:off[a + 1]])
+            ring[j, :len(near)] = sorted(near)
+        cand = ring[cidx]
+        ok = cand >= 0
+        cand = np.where(ok, cand, cidx[:, None])
         d = np.arccos(np.clip((cg.centers[cand] * grid.centers[:, None, :]).sum(-1), -1, 1))
-        w = np.where(ok, np.maximum(0.0, 1 - d / (1.2 * cg.spacing)), 0.0)
+        w = np.where(ok, np.maximum(0.0, 1 - (d / (COARSE_R * cg.spacing)) ** 2) ** 2, 0.0)
         w /= w.sum(1, keepdims=True)
         if len(_COARSE) > 8:
             _COARSE.clear()
         _COARSE[key] = dict(n=cg.n, cidx=cidx, off=cg.nbr_off, idx=cg.nbr_idx, cand=cand, w=w,
-                            h=cg.spacing * R_KM)
+                            h=cg.spacing * R_KM, sk=_geom(cg)["sk"])
     return _COARSE[key]
 
 
 @njit(cache=True)
-def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
-    """Average f onto the coarse grid, blur it there (iters neighbour
-    averages) and interpolate it back. The average is over the fine cells
-    in each coarse cell, or (full) weighted by the interpolation weights,
-    which is smoother: each fine cell counts towards all the coarse cells
-    near it (a nested grid's cells on a coarse cell's edge are as near to
-    the next one)."""
+def _coarse_smooth(f, cidx, nc, off, idx, sk, iters, cand, w):
+    """Average f onto the coarse grid, blur it there (iters steps of
+    _smooth, sk: the coarse grid's blur weights) and interpolate it back. Each fine cell counts towards all
+    the coarse cells near it, by the interpolation weights (a nested grid's
+    cells on a coarse cell's edge are as near to the next one)."""
     tot = np.zeros(nc)
     cnt = np.zeros(nc)
-    if full:
-        for i in range(f.shape[0]):
-            for k in range(cand.shape[1]):
-                tot[cand[i, k]] += w[i, k] * f[i]
-                cnt[cand[i, k]] += w[i, k]
-        c = tot / np.maximum(cnt, 1e-12)
-    else:
-        for i in range(f.shape[0]):
-            tot[cidx[i]] += f[i]
-            cnt[cidx[i]] += 1.0
-        c = tot / np.maximum(cnt, 1.0)
+    for i in range(f.shape[0]):
+        for k in range(cand.shape[1]):
+            tot[cand[i, k]] += w[i, k] * f[i]
+            cnt[cand[i, k]] += w[i, k]
+    c = tot / np.maximum(cnt, 1e-12)
     g = np.empty(nc)
     for _ in range(iters):
         for j in range(nc):
             t = 0.0
             for e in range(off[j], off[j + 1]):
-                t += c[idx[e]]
-            g[j] = 0.5 * c[j] + 0.5 * t / (off[j + 1] - off[j])
+                t += sk[e] * (c[idx[e]] - c[j])
+            g[j] = c[j] + t
         c[:] = g
     out = np.zeros(f.shape[0])
     for i in range(f.shape[0]):
@@ -200,23 +235,23 @@ def _coarse_smooth(f, cidx, nc, off, idx, iters, cand, w, full):
 
 
 def smooth_big(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
-    """Blur a field over thousands of km (on the coarse grid: cheap)."""
-    C = _coarse(grid)
-    iters = int(round(4 * (km / C["h"]) ** 2))
-    return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                          C["cand"], C["w"], False)
+    """Blur a field over thousands of km (smooth() does it on a coarse grid:
+    cheap)."""
+    return smooth(grid, f, km)
 
 
 @njit(cache=True, parallel=True)
-def _smooth(f, nbr_off, nbr_idx, iters, w):
+def _smooth(f, nbr_off, nbr_idx, sk, iters):
+    """iters steps of f += sum over the neighbours of sk (f_nbr - f) (sk:
+    _geom's blur weights)."""
     f = f.copy()
     g = np.empty_like(f)
     for _ in range(iters):
         for i in prange(f.shape[0]):
             s = 0.0
             for e in range(nbr_off[i], nbr_off[i + 1]):
-                s += f[nbr_idx[e]]
-            g[i] = (1 - w) * f[i] + w * s / (nbr_off[i + 1] - nbr_off[i])
+                s += sk[e] * (f[nbr_idx[e]] - f[i])
+            g[i] = f[i] + s
         f, g = g, f
     return f
 
@@ -228,26 +263,39 @@ def smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     """Blur a field over roughly `km` (Gaussian-ish sigma). A wide blur is
     done on the coarsest grid level it still spans COARSE_CELLS cells of
     (at level 6: ~580 km and up, a grid level coarser), which is ~10x
-    cheaper and the same to within ~0.5% of the field's spread. Moving the
+    cheaper and the same to within ~2% of the field's spread. Moving the
     field to that grid and back blurs it by about half a coarse cell's
-    width already, so that much is taken off the blur there."""
+    width already, so that much is taken off the blur there. The way back
+    (interpolating from the coarse cells) leaves kinks along the coarse
+    cells' edges: the field is right, but its gradient has a lattice of
+    the coarse grid's spacing in it, which the winds (pressure gradients)
+    and through them the rain used to show as diagonal streaks. So the
+    last half coarse cell of the blur is done on the fine grid, which
+    irons them out (the gradient is then within ~1.5% of a blur done all
+    on the fine grid)."""
     h = _geom(grid)["h"]
     lev = grid.level
     while lev > 0 and km >= COARSE_CELLS * h * 2 ** (grid.level - lev + 1):
         lev -= 1
+    f = np.ascontiguousarray(f, np.float64)
     if lev < grid.level:
         C = _coarse(grid, lev)
-        iters = int(round(4 * max(km**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
-        return _coarse_smooth(np.ascontiguousarray(f, np.float64), C["cidx"], C["n"], C["off"], C["idx"], iters,
-                              C["cand"], C["w"], True)
+        fine = FINE_FINISH * C["h"]
+        km_c = np.sqrt(max(km**2 - fine**2, 0.0))
+        iters = int(round(4 * max(km_c**2 - 0.5 * C["h"] ** 2, 0.0) / C["h"] ** 2))
+        f = _coarse_smooth(f, C["cidx"], C["n"], C["off"], C["idx"], C["sk"], iters, C["cand"], C["w"])
+        km = fine
     iters = int(round(4 * (km / h) ** 2))
     if iters <= 0:
-        return f.astype(np.float64)
-    return _smooth(np.ascontiguousarray(f, np.float64), grid.nbr_off, grid.nbr_idx, iters, 0.5)
+        return f.copy()
+    return _smooth(f, grid.nbr_off, grid.nbr_idx, _geom(grid)["sk"], iters)
+
+
+FINE_FINISH = 0.5  # share of a coarse cell's width of a wide blur done on the fine grid (see smooth)
 
 
 @njit(cache=True, parallel=True)
-def _gradient(f, src, dst, d, out_off, out_e, deg, h):
+def _gradient(f, src, dst, gq, out_off, out_e):
     n = out_off.shape[0] - 1
     g = np.empty((n, 3))
     for i in prange(n):
@@ -257,21 +305,20 @@ def _gradient(f, src, dst, d, out_off, out_e, deg, h):
         for k in range(out_off[i], out_off[i + 1]):
             e = out_e[k]
             df = f[dst[e]] - f[src[e]]
-            g0 += d[e, 0] * df
-            g1 += d[e, 1] * df
-            g2 += d[e, 2] * df
-        c = 2.0 / (deg[i] * h)
-        g[i, 0] = g0 * c
-        g[i, 1] = g1 * c
-        g[i, 2] = g2 * c
+            g0 += gq[e, 0] * df
+            g1 += gq[e, 1] * df
+            g2 += gq[e, 2] * df
+        g[i, 0] = g0
+        g[i, 1] = g1
+        g[i, 2] = g2
     return g
 
 
 def gradient(grid: Grid, f: np.ndarray) -> np.ndarray:
-    """Tangent gradient per cell, units of f per km."""
+    """Tangent gradient per cell, units of f per km (least squares over the
+    neighbours; see _geom)."""
     G = _geom(grid)
-    return _gradient(np.ascontiguousarray(f, np.float64), G["src"], G["dst"], G["d"], G["out_off"], G["out_e"],
-                     G["deg"], G["h"])
+    return _gradient(np.ascontiguousarray(f, np.float64), G["src"], G["dst"], G["gq"], G["out_off"], G["out_e"])
 
 
 @njit(cache=True, parallel=True)
@@ -293,6 +340,44 @@ def _out_shares(v, d, out_off, out_e, allowed):
         for k in range(out_off[i], out_off[i + 1]):
             w[out_e[k]] = w[out_e[k]] / t
     return w, tot
+
+
+@njit(cache=True, parallel=True)
+def _inflow_geom(v, d, in_off, in_e, src, out_off, out_e):
+    """Each cell's share of inflow (the sum of its upwind neighbours'
+    shares of their outflow) in a wind that blew everywhere as it does
+    there: 1 on a regular grid, but up to ~5% more or less along the
+    icosphere's seams, where the cells are arranged differently."""
+    n = in_off.shape[0] - 1
+    F = np.empty(n)
+    for i in prange(n):
+        f = 0.0
+        for k in range(in_off[i], in_off[i + 1]):
+            e = in_e[k]
+            x = max(v[i, 0] * d[e, 0] + v[i, 1] * d[e, 1] + v[i, 2] * d[e, 2], 0.0)
+            if x <= 0:
+                continue
+            j = src[e]
+            t = 0.0
+            for kk in range(out_off[j], out_off[j + 1]):
+                ee = out_e[kk]
+                t += max(v[i, 0] * d[ee, 0] + v[i, 1] * d[ee, 1] + v[i, 2] * d[ee, 2], 0.0)
+            f += x / max(t, 1e-12)
+        F[i] = f if f > 0 else 1.0
+    return F
+
+
+def inflow_weights(grid: Grid, v: np.ndarray) -> np.ndarray:
+    """Per incoming edge (in _geom's in_e order): the share of the source
+    cell's outflow along it in wind v, divided by the receiving cell's
+    _inflow_geom, so that a wind blowing the same way everywhere neither
+    piles anything up nor thins it along the icosphere's seams (which left
+    lines in the rain), while a converging wind still gathers it."""
+    G = _geom(grid)
+    v = np.ascontiguousarray(v, np.float64)
+    w, _ = _edge_weights(grid, v)
+    F = _inflow_geom(v, G["d"], G["in_off"], G["in_e"], G["src"], G["out_off"], G["out_e"])
+    return w[G["in_e"]] / F[G["dst"][G["in_e"]]]
 
 
 def _edge_weights(grid: Grid, v: np.ndarray, allowed: np.ndarray | None = None):
@@ -748,8 +833,8 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
     """Water vapour carried along the wind, for all seasons at once
     (arrays are [season, cell]). Each iteration, in each cell:
     - over the sea the air takes up water to src_q;
-    - over land it takes up what the ground evaporates: a share et of the
-      rain the place gets in an average season, because soil, groundwater
+    - over land it takes up what the ground evaporates: a share et (per
+      cell: plants recycle more) of the rain the place gets in an average season, because soil, groundwater
       and deep roots keep the wet season's water for the dry one (less where
       it is cold: warm);
     - it rains a share fex of what the air can't hold (above qs);
@@ -812,7 +897,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                     year = 0.0
                     for j in range(S):
                         year += ema[j, i]
-                    m[k, i] += et * warm[k, i] * year / S
+                    m[k, i] += et[i] * warm[k, i] * year / S
                 q = m[k, i]
                 excess = max(q - qs[k, i], 0.0)
                 rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
@@ -1079,27 +1164,29 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     t_ref = smooth(grid, zs, 800.0)
     mse_thr = t_ref + LQ * tune["rh"] * _qsat(t_ref, tune["q_k"])
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
-    out_w, _ = _edge_weights(grid, v)
+    in_w = inflow_weights(grid, v)
     move = np.clip(speed(v), 0.25, 1.0)
     warm = np.clip(t_air / 15.0, 0, 1)  # evaporation needs warmth
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
     return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, warm=warm, move=move,
-                diff=diff, out_w=out_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
+                diff=diff, in_w=in_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
                 t_air=np.where(ocean, sst, t_air))
 
 
-def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, et=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rain rate (model units) per season, [season, cell], from the inputs
     of _season_inputs for each season, the evaporation from the sea
     (same units and shape; 0 on land) and the air's water vapour (_qsat
-    units, same shape; see humidity())."""
+    units, same shape; see humidity()). et: the share of land rain that
+    evaporates back, per cell (default TUNE's et everywhere)."""
+    et = np.full(grid.n, tune["et"]) if et is None else np.ascontiguousarray(et, np.float64)
     G = _geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
     r, r_ls, up, vap = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-                    st["warm"], st["move"], st["diff"], st["out_w"][:, G["in_e"]], G["in_src"], G["in_off"], G["deg"],
+                    st["warm"], st["move"], st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
-                    tune["cv_scale"], tune["et"], tune["evap_cool"], tune["mean_mm"])
+                    tune["cv_scale"], et, tune["evap_cool"], tune["mean_mm"])
     # Storms carry their rain with them: the large-scale (frontal) rain is
     # spread over a storm's size, so e.g. the storms that brew over warm
     # coastal seas in winter rain on the east coasts even though the mean
@@ -1204,7 +1291,21 @@ TUNE = dict(
     coast=0.35,  # sea air at a coast per share of sea neighbours (sea breezes, fog)
     air_km_s=450.0,  # km over which air over land takes on the land's summer temperature
     air_km_w=900.0,  # ... its winter temperature (slower: cold ground under warm air is stable)
-    evap_cool=1.5,  # C: how much cooler rainy summers are (and hotter dry ones)
+    evap_cool=1.5,  # C: how much cooler wet summers are (and hotter dry ones) ...
+    evap_r=(0.05, 0.75),  # ... by the summer's actual / potential evaporation: hottest below, coolest above
+    # the vegetation's feedbacks (vegetation_feedbacks, albedo_warming; tuned on Earth: tools/veg_check.py)
+    veg_w=1.0,  # Budyko w per unit of woody cover ...
+    veg_w_deep=0.3,  # ... plus this per unit of deep-rooted evergreen tree cover ...
+    veg_w_ref=0.41,  # ... less Earth's land mean of the two (so Earth stays at budyko_w)
+    et_veg=0.5,  # rain recycling: et x (1 + et_veg x (LAI / et_lai - 1)) ...
+    et_lai=2.3,  # ... Earth's rain-weighted land-mean LAI (so Earth recycles as before on the whole) ...
+    et_band=0.2,  # ... within et x (1 +- et_band)
+    albedo_k=0.03,  # C per W/m2 of sunshine absorbed at the ground (local; the air mixes it away)
+    albedo_cap=2.0,  # C: the most a half-year moves either way
+    albedo_ref=0.21,  # the snow-free albedo the temperature curve stands for (Earth's land mean) ...
+    albedo_snow_ref=0.59,  # ... and with snow lying (Earth's mix of open and forest-masked snow)
+    snow_albedo=0.75,  # fresh-ish snow on open ground
+    snow_full_mm=30.0,  # mm of snowpack (water) that covers the ground
     mean_mm=1000.0,  # global mean precipitation, mm/yr (Earth ~1000)
     # evaporation and runoff (see water_balance)
     budyko_w=2.6,  # Fu's w: how readily the land gives the rain back to the air (Earth's mean ~2.6)
@@ -1387,7 +1488,8 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
     return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=np.maximum(gdd5, 0.0))
 
 
-def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None) -> dict:
+def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None,
+                  w=None) -> dict:
     """Where the rain goes: evaporation back to the air, or runoff into
     rivers (mm/yr). Per half-year, so a wet winter and a dry summer
     (Mediterranean) don't cancel out.
@@ -1399,7 +1501,10 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
       runoff    rain - aet: what feeds the rivers (Earth: ~35-40% of the
                 rain on land)
       lake_evap evaporation from open water (lakes; larger than pet)
-    Months are a sine between the coldest and warmest month, peaking in
+      aet_half, pet_half  (2, n): aet and pet in the Apr-Sep and Oct-Mar
+                half-years (amounts, mm)
+    w: Fu's w per cell (default TUNE's budyko_w; vegetation sets it in
+    compute). Months are a sine between the coldest and warmest month, peaking in
     July (north) or January (south)."""
     tune = {**TUNE, **(tune or {})}
     pet_m = pet_months(lat, temp, t_warm, t_cold, tilt)
@@ -1408,13 +1513,14 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
     # Each half-year on its own (amounts, mm), then again with what the
     # soil kept from the other half-year's surplus (snowmelt and winter rain
     # still in the ground when summer comes), up to its capacity.
-    w, cap = tune["budyko_w"], tune["soil_mm"]
+    w, cap = (tune["budyko_w"] if w is None else w), tune["soil_mm"]
     p_s, e_s = 0.5 * np.stack([p_jul, p_jan]), 0.5 * np.stack([pet_jul, pet_jan])
     kept = np.minimum(p_s - budyko(p_s, e_s, w), cap)[::-1]
-    aet = budyko(p_s + kept, e_s, w).sum(0)
+    aet_h = budyko(p_s + kept, e_s, w)
     precip = p_s.sum(0)
-    aet = np.minimum(aet, precip)
-    return dict(pet=e_s.sum(0), aet=aet, runoff=precip - aet, lake_evap=tune["open_water"] * e_s.sum(0))
+    aet = np.minimum(aet_h.sum(0), precip)
+    return dict(pet=e_s.sum(0), aet=aet, runoff=precip - aet, lake_evap=tune["open_water"] * e_s.sum(0),
+                aet_half=aet_h, pet_half=e_s)
 
 
 # --------------------------------------------------------------------------
@@ -1458,25 +1564,23 @@ SEA_CLASS = 30
 
 
 def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None):
-    """Koppen class per cell. Monthly values aren't modelled, so they're
-    estimated from the two half-years assuming a smooth (sinusoidal) annual
-    cycle of temperature and of rain."""
+    """Koppen class per cell, from the twelve months the climate implies
+    (month_temps, month_rain: as climate.months)."""
+    lat = np.asarray(lat, float)
     north = lat >= 0
-    p_sum = np.where(north, p_jul, p_jan) / 12  # monthly mean, summer half (mm)
-    p_win = np.where(north, p_jan, p_jul) / 12
-    # rain(month) = mean * (1 + a cos): the half-year means are mean*(1 +- 2a/pi),
-    # the extremes mean*(1 +- a), and where the halves meet it's the mean
-    mean = (p_sum + p_win) / 2
-    a = np.clip((p_sum - p_win) / np.maximum(p_sum + p_win, 1e-9) * np.pi / 2, -1, 1)
-    lo, hi = mean * (1 - np.abs(a)), mean * (1 + np.abs(a))
-    summer_dry = a < 0
-    dry_s, wet_s = np.where(summer_dry, lo, mean), np.where(summer_dry, mean, hi)
-    dry_w, wet_w = np.where(summer_dry, mean, lo), np.where(summer_dry, hi, mean)
-    driest = lo
+    p_m = month_rain(p_jul, p_jan)
+    t_m = month_temps(lat, temp, t_warm, t_cold)
+    # the local summer half-year: Apr-Sep in the north, Oct-Mar in the south
+    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
+    summer = np.where(north[None, :], jul, ~jul)
+    big = 1e9
+    dry_s, wet_s = np.where(summer, p_m, big).min(0), np.where(summer, p_m, -big).max(0)
+    dry_w, wet_w = np.where(summer, big, p_m).min(0), np.where(summer, -big, p_m).max(0)
+    driest = p_m.min(0)
+    p_sum = np.where(summer, p_m, 0.0).sum(0)
+    p_win = np.where(summer, 0.0, p_m).sum(0)
     P, T = p_ann, temp
-    # months above 10 C on a sinusoidal year
-    amp = np.maximum((t_warm - t_cold) / 2, 1e-6)
-    m10 = 12 * np.arccos(np.clip((10 - T) / amp, -1, 1)) / np.pi
+    m10 = (t_m >= 10).sum(0)  # months at 10 C or more
     out = np.full(len(elev), -1)
 
     def put(mask, cid):
@@ -1571,7 +1675,7 @@ def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
 
 def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             ice: np.ndarray | None = None, tune: dict | None = None, melt: np.ndarray | None = None,
-            moc_start: dict | None = None) -> dict:
+            moc_start: dict | None = None, veg: dict | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
     level; <= 0 is sea), the global temperature offset dT from today's Earth,
     axial tilt and land ice (m). melt: fresh water from shrinking ice sheets,
@@ -1608,6 +1712,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     and ground: (t_warm, t_cold, temp) of the bare ground under the ice (ice_surface
     turns them back into the ice's), moc_sites: a list of dicts per sinking site (lat, lon, sv, drho,
     area_km2, heat_pw) and moc_state, a dict to pass on as moc_start.
+    veg: the vegetation's feedbacks (vegetation.feedback: woody and deep-
+    rooted cover, LAI, albedo, snow masking; per cell, land only), or None
+    for land with an Earth-like average cover: plants give more of the rain
+    back to the air (Budyko w; rain recycling, et) and set the surface's
+    albedo (see vegetation_feedbacks).
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
     currents and sea-surface temperature -> air temperatures carried by the
@@ -1677,7 +1786,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         tracks.append(storm_track(grid, j, baro, tune))
     s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
             _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])]
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, tune)
+    fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, tune, fb["et"])
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
@@ -1686,9 +1796,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale * open_y, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
-               cover=ice_cover(grid, ice, land, tune))
+               cover=ice_cover(grid, ice, land, tune), lat=grid.lat, tilt=tilt, fb=fb)
     t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
-    wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
+    wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
 
     # The deep ocean's overturning (ocean.py): fresh water in and out of the
     # sea -> salinity -> density -> sinking where the water is densest ->
@@ -1713,7 +1823,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         sst = oc["sst"]
         t_warm, t_cold, temp, _ = _air_temps(sst=sst, **air)
         t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
-        wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune)
+        wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
     # July / January: the sea's peak months (where it is iced over most of
@@ -1774,17 +1884,78 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     return t_warm, t_cold, temp, open_w
 
 
-def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, ocean, tune):
-    """The rain's and the ice's effect on the land's temperatures. Returns
-    (t_warm, t_cold, temp) on the ice surface and the same three for the
-    bare ground under it (see ice_surface)."""
+def vegetation_feedbacks(open_land, veg, tune) -> dict:
+    """Per-cell Budyko w and rain-recycling share et from the vegetation
+    (vegetation.feedback; None: TUNE's scalars, an Earth-like average cover)
+    on ice-free land (open_land), plus what albedo_warming needs (section
+    4.1 of docs/proposals/vegetation.md):
+      w   Fu's w = budyko_w + veg_w x (woody cover + veg_w_deep x deep-rooted
+          evergreen - veg_w_ref): forests give more of their rain back to the
+          air than grass or bare ground (Zhang et al. 2001); veg_w_ref is
+          Earth's land mean, so Earth stays at ~budyko_w
+      et  the rain kernel's recycled share, et x (1 + et_veg x (LAI / et_lai
+          - 1)), held within et_band of et: leafy forest recycles more, bare
+          ground less. A nudge only, so a forest can't rain itself into
+          existence (the loop stays inside the band)."""
+    n = open_land.shape[0]
+    w = np.full(n, tune["budyko_w"])
+    et = np.full(n, tune["et"])
+    if veg is None:
+        return dict(w=w, et=et, veg=None, has=np.zeros(n, bool))
+    has = open_land
+    x = veg["woody"] + tune["veg_w_deep"] * veg["deep"] - tune["veg_w_ref"]
+    w = np.where(has, np.clip(tune["budyko_w"] + tune["veg_w"] * x, 1.5, 4.0), w)
+    b = tune["et_band"]
+    f = np.clip(1 + tune["et_veg"] * (veg["lai"] / tune["et_lai"] - 1), 1 - b, 1 + b)
+    et = np.where(has, tune["et"] * f, et)
+    return dict(w=w, et=et, veg=veg, has=has)
+
+
+def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune) -> tuple[np.ndarray, np.ndarray]:
+    """C warmer (colder) in the Apr-Sep and Oct-Mar half-years from the
+    surface's albedo against the one the temperature curve stands for
+    (section 4.2): the sunshine reaching the ground (half the top of the
+    atmosphere's) x (reference albedo - the cell's) x albedo_k, per month.
+    Snow (climate.months' snowpack; full cover from snow_full_mm) is bright
+    on open ground (snow_albedo) but mostly hidden under conifers
+    (vegetation's mask: Bonan 1992), against a reference albedo_snow_ref;
+    snow-free ground against albedo_ref. Each half-year capped at
+    +-albedo_cap."""
+    mo = months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt)
+    sc = np.clip(mo["snow"] / tune["snow_full_mm"], 0, 1)
+    a_free = veg["albedo"][None, :]
+    a_snow = veg["mask"] * a_free + (1 - veg["mask"]) * tune["snow_albedo"]
+    a = sc * a_snow + (1 - sc) * a_free
+    a_ref = sc * tune["albedo_snow_ref"] + (1 - sc) * tune["albedo_ref"]
+    sun = 0.5 * insolation(np.asarray(lat, float), tilt) * 1e6 / 86400.0  # W/m2 at the ground
+    d = tune["albedo_k"] * (a_ref - a) * sun
+    cap = tune["albedo_cap"]
+    return np.clip(d[3:9].mean(0), -cap, cap), np.clip(np.concatenate([d[:3], d[9:]]).mean(0), -cap, cap)
+
+
+def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, ocean, tune, lat, tilt, fb):
+    """The rain's, the plants' and the ice's effect on the land's
+    temperatures. Returns (t_warm, t_cold, temp) on the ice surface and the
+    same three for the bare ground under it (see ice_surface)."""
     # Wet ground and plants spend the summer sun on evaporating water rather
     # than on heating the air: rainy summers stay cooler, droughty ones and
-    # deserts get hotter (Houston vs Phoenix). (The rain kernel feels this too.)
-    p_sum = np.where(north, p_jul, p_jan)
-    dry = 1.0 - 2.0 * np.clip(np.log10(np.maximum(p_sum, 1.0) / 100.0) / 1.2, 0, 1)  # +1 desert .. -1 wet
+    # deserts get hotter (Houston vs Phoenix). How much: the summer's actual
+    # over its potential evaporation (water_balance; vegetation sets its w).
+    # (The rain kernel feels this too, from the rain alone.)
+    wb = water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+    sm = np.where(north, 0, 1)
+    idx = np.arange(sm.shape[0])
+    r = wb["aet_half"][sm, idx] / np.maximum(wb["pet_half"][sm, idx], 1e-9)
+    r0, r1 = tune["evap_r"]
+    dry = 1.0 - 2.0 * np.clip((r - r0) / (r1 - r0), 0, 1)  # +1 desert .. -1 wet
     t_warm = np.where(land, t_warm + tune["evap_cool"] * dry, t_warm)
     temp = np.where(land, temp + 0.5 * tune["evap_cool"] * dry, temp)
+    if fb["veg"] is not None:  # the surface's albedo
+        d_jul, d_jan = albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, fb["veg"], tune)
+        d_sum, d_win = np.where(north, d_jul, d_jan), np.where(north, d_jan, d_jul)
+        t_warm = np.where(fb["has"], t_warm + d_sum, t_warm)
+        t_cold = np.where(fb["has"], t_cold + d_win, t_cold)
+        temp = np.where(fb["has"], temp + 0.5 * (d_sum + d_win), temp)
     # (near the equator the rainy 'summer' can be the cooler half-year:
     # warmest and coldest are whichever is warmer and colder)
     t_warm, t_cold = np.maximum(t_warm, t_cold), np.minimum(t_warm, t_cold)

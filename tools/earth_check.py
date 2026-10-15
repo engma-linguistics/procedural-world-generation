@@ -52,7 +52,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from planet import climate, hydrology  # noqa: E402
+from planet import climate, hydrology, vegetation  # noqa: E402
 from planet import images  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools import earth_data  # noqa: E402
@@ -285,8 +285,8 @@ def run(level: int):
     grid = build_grid(level)
     d = earth_data.earth_on_grid(grid)
     t1 = time.time()
-    c = climate.compute(grid, d["elev"].astype(np.float64), dT=0.0, tilt=23.4,
-                        ice=d["ice"].astype(np.float64))
+    # (with the vegetation's feedbacks, as worlds have them)
+    c, _ = vegetation.coupled_climate(grid, d["elev"].astype(np.float64), 0.0, 23.4, d["ice"].astype(np.float64))
     t2 = time.time()
     return grid, d, c, (t1 - t0, t2 - t1)
 

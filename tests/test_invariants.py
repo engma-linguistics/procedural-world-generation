@@ -46,7 +46,9 @@ def test_values_sane(sim4):
     assert s.w_thick.min() >= 1.0 and s.w_thick.max() <= MAX_KM
     assert (s.w_cover >= 0).all() and (s.w_cover <= s.w_thick + 1e-9).all()
     assert (s.precip >= 0).all() and s.precip.max() < 10000
-    assert -95 < s.t_cold.min() and s.t_warm.max() < 60
+    # (-110: in this run an ice cap 2.4 km thick on a 7 km range at 78 N reaches -105 C by the lapse rate alone;
+    # see the inbox draft on polar ice on high ranges)
+    assert -110 < s.t_cold.min() and s.t_warm.max() < 60
     assert (s.t_warm >= s.temp - 1e-6).all() and (s.t_cold <= s.temp + 1e-6).all()
     assert (s.w_rock < len(ROCKS)).all()
     snap = s.snapshot()
@@ -112,16 +114,42 @@ def test_climate_same_on_any_thread_count(grid4):
 
 def test_coarse_smooth_matches_fine():
     """A wide blur is done on a coarser grid (climate.smooth); it should
-    match the plain neighbour-averaging blur to well under 1% of the
-    blurred field's spread."""
+    match the all-fine-grid blur to well under 1% of the blurred field's
+    spread, and its gradient (what the winds follow) to a few %: no lattice
+    of the coarse cells in it (PW-211)."""
     g = build_grid(6)
     rng = np.random.default_rng(0)
     f = np.sin(3 * np.radians(g.lat)) + np.cos(2 * np.radians(g.lon)) + rng.standard_normal(g.n)
-    h = climate._geom(g)["h"]
-    for km in (600.0, 900.0):
-        fine = climate._smooth(f, g.nbr_off, g.nbr_idx, int(round(4 * (km / h) ** 2)), 0.5)
+    G = climate._geom(g)
+    for km in (600.0, 900.0, 2000.0):
+        fine = climate._smooth(f, g.nbr_off, g.nbr_idx, G["sk"], int(round(4 * (km / G["h"]) ** 2)))
         coarse = climate.smooth(g, f, km)
         assert np.sqrt(((coarse - fine) ** 2).mean()) < 0.01 * fine.std(), km
+        gf, gc = climate.gradient(g, fine), climate.gradient(g, coarse)
+        assert np.sqrt(((gc - gf) ** 2).sum(1).mean() / (gf**2).sum(1).mean()) < 0.04, km
+
+
+def test_no_icosphere_seams():
+    """The icosphere's cells are up to ~9% larger or smaller along the
+    seams of the icosahedron it was built from. The gradient of a smooth
+    field, a blur of it, and the rain's transport in a wind blowing the same
+    way everywhere must not show them (they made straight lines in the
+    winds and rain; PW-211)."""
+    g = build_grid(6)
+    G = climate._geom(g)
+    a = np.array([0.3, -0.5, 0.8])
+    f = (g.centers @ a) ** 2 * 30
+    rough = []  # the gradient's small-scale wiggle, relative to its size (the field's own curvature at 0 km)
+    for km in (0.0, 250.0, 900.0):
+        s = climate.smooth(g, f, km) if km else f
+        gm = np.linalg.norm(climate.gradient(g, s), axis=1)
+        rough.append((gm - climate._smooth(gm, g.nbr_off, g.nbr_idx, G["sk"], 30)).std() / gm.mean())
+    assert max(rough[1:]) < 1.3 * rough[0], rough  # (a plain neighbour average: ~3x)
+    w = climate.inflow_weights(g, G["east"] + 0.5 * G["north"])
+    inflow = np.bincount(G["dst"][G["in_e"]], w, g.n)
+    # (near the equator this wind blows nearly the same way everywhere; further poleward east and north
+    # turn, a real convergence; the plain shares of the outflow are up to ~25% off)
+    assert np.abs(inflow - 1)[np.abs(g.lat) < 30].max() < 0.02
 
 
 def test_gyres_and_jet():
@@ -225,3 +253,28 @@ def test_climate_fits_ground_after_events():
 
     sim.run(300, on_step=check)
     assert not bad, bad[:10]
+
+
+def test_vegetation_feedbacks_nudge():
+    """The vegetation's feedbacks on the climate are nudges (PW-203): a
+    forested continent recycles more rain than a bare one, but the recycled
+    share stays within its band and the albedo moves each half-year by at
+    most albedo_cap."""
+    from planet import vegetation
+    g = build_grid(4)
+    elev = np.where(np.abs(g.lon) < 60, 300.0, -4000.0)
+    land = elev > 0
+    n = g.n
+    forest = dict(woody=np.ones(n), deep=np.ones(n), lai=np.full(n, 6.0), albedo=np.full(n, 0.11),
+                  mask=np.full(n, 0.75))
+    bare = vegetation.bare(n)
+    T = climate.TUNE
+    for v in (forest, bare):
+        f = climate.vegetation_feedbacks(land, v, T)
+        assert np.all(np.abs(f["et"] - T["et"]) <= T["et"] * T["et_band"] + 1e-12)
+    cf, cb = climate.compute(g, elev, veg=forest), climate.compute(g, elev, veg=bare)
+    assert cf["precip"][land].mean() > cb["precip"][land].mean()
+    assert cf["aet"][land].sum() > cb["aet"][land].sum()  # forests give more back to the air
+    c0 = climate.compute(g, elev)
+    d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
+    assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9

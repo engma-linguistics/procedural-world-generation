@@ -1079,6 +1079,55 @@ def ground_cover(v: dict) -> np.ndarray:
     return 1 - (1 - g) * (1 - 0.6 * nu[GROUNDS].sum(0))
 
 
+# Surface albedo (snow-free) of each type's canopy, and the share of lying snow
+# its canopy hides (dark trees standing out of the snow: Bonan 1992; Betts &
+# Ball 1997), for climate.compute's feedbacks (section 4.2)
+ALBEDO = {"TrBE": 0.12, "TrBR": 0.15, "TeBE": 0.13, "TeBS": 0.16, "TeNE": 0.10, "BoNE": 0.09, "BoNS": 0.13,
+          "BoBS": 0.16, "SclS": 0.16, "XerS": 0.20, "DecS": 0.17, "HthS": 0.15, "C4G": 0.19, "C3G": 0.19,
+          "TunH": 0.18, "Succ": 0.20, "Moss": 0.17, "WetH": 0.16, "Sph": 0.14}
+ALBEDO_BARE = 0.30  # bare soil, rock and sand (desert sand ~0.35-0.45, dark soil ~0.15)
+SNOW_MASK = np.where(TREES, np.where(_col("phen") == EVERGREEN, 0.75, 0.45), np.where(SHRUBS, 0.2, 0.0))
+DEEP = TREES & (_col("phen") == EVERGREEN)  # deep-rooted evergreen trees (Budyko w, section 4.1)
+
+
+def feedback(nu, lai_p) -> dict:
+    """What the climate needs from the vegetation (climate.compute's veg;
+    section 4), from the cover fractions nu (NP, n) and each type's LAI
+    lai_p (NP, n), per cell (0 where nothing grows):
+      woody   tree + shrub cover (the ground their canopies shade)
+      deep    of it, deep-rooted evergreen trees
+      lai     total leaf area index
+      albedo  snow-free surface albedo (bare ground ALBEDO_BARE)
+      mask    share of lying snow the canopies hide"""
+    nu = np.asarray(nu, np.float64)
+    lai_p = np.asarray(lai_p, np.float64)
+    closed = np.clip(lai_p / np.where(GROUNDS, 1.0, CLOSED)[:, None], 0, 1)
+    shade = nu * closed
+    cover = np.clip(shade.sum(0), 0, 1)
+    alb = np.array([ALBEDO[c] for c in CODES])
+    return dict(woody=shade[TREES | SHRUBS].sum(0), deep=shade[DEEP].sum(0), lai=(nu * lai_p).sum(0),
+                albedo=(shade * alb[:, None]).sum(0) + (1 - cover) * ALBEDO_BARE,
+                mask=np.clip((shade * SNOW_MASK[:, None]).sum(0), 0, 1))
+
+
+def coupled_climate(grid, elev, dT: float = 0.0, tilt: float = 23.4, ice=None, nu0=None, co2: float = 0.0,
+                    unlocked=None) -> tuple[dict, dict]:
+    """climate.compute with the vegetation's feedbacks, as a world gets
+    them (world.finish): the climate, a first cheap vegetation on it, then
+    the climate again with that vegetation. Returns (climate, feedback)."""
+    c = climate.compute(grid, elev, dT, tilt, ice)
+    v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
+              c["cloud_jan"], ice=ice, nu0=nu0, co2=co2, unlocked=unlocked, cheap=True)
+    fb = feedback(v["eq"]["nu"], v["pot"]["lai"])
+    return climate.compute(grid, elev, dT, tilt, ice, veg=fb), fb
+
+
+def bare(n: int) -> dict:
+    """feedback() of land with no plants (before land plants appear)."""
+    z = np.zeros(n)
+    return dict(woody=z, deep=z, lai=z, albedo=np.full(n, ALBEDO_BARE), mask=z)
+
+
 def niches(v: dict) -> np.ndarray:
     """For each group (GROUPS), the share of vegetated land where one of
     its PFTs would grow faster (net NPP per carbon) than anything there

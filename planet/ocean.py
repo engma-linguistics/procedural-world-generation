@@ -143,7 +143,7 @@ def _smooth(grid: Grid, f: np.ndarray, km: float) -> np.ndarray:
     """climate.smooth's fine-grid blur, serial (for the coarse grid)."""
     iters = int(round(4 * (km / C._geom(grid)["h"]) ** 2))
     f = np.ascontiguousarray(f, np.float64)
-    return _serial("_smooth")(f, grid.nbr_off, grid.nbr_idx, iters, 0.5) if iters > 0 else f
+    return _serial("_smooth")(f, grid.nbr_off, grid.nbr_idx, C._geom(grid)["sk"], iters) if iters > 0 else f
 
 
 @njit(cache=True)

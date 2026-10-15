@@ -243,6 +243,9 @@ Sliced and one-shot terrain then go through the shared pipeline:
    Evaporation: potential evaporation from sunshine and temperature per
    half-year (Oudin), actual evaporation from the Budyko curve (Fu), and
    runoff = rain - evaporation (~40% of the rain on land, like Earth's).
+   The vegetation feeds back: forests give more rain back to the air (Budyko
+   w, rain recycling) and their albedo (snow hidden under conifers) nudges
+   the temperatures by up to 2 C.
 2. **Erosion, rivers and lakes** (`hydrology.py`): rivers carry the runoff.
    Priority-flood drainage, flow accumulation, then stream-power erosion that
    cuts valleys (`--erosion 0` skips it). Lakes evaporate: each basin fills
