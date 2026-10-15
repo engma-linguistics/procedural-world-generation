@@ -2,7 +2,7 @@
 id: PW-154
 title: Overturning schematic - deep limbs missing or roundabout on some worlds
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-137]
 refs: [planet/ocean.py, "world 2085dc"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -32,4 +32,5 @@ first few hundred km (overflows), and weigh distance more against the western-bo
 preference. It is a schematic, so this is cosmetic.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls).
 - 2026-10-14: Created from inbox draft draft-overturning-schematic-gaps.md (found by viewerocean).

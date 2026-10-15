@@ -1,7 +1,8 @@
 ---
+id: PW-225
 title: "Zoom viewer: 'Relief' layer replaced by 'Satellite'; decide if a hypsometric relief layer is still wanted"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: viewer
 effort: xs
@@ -10,6 +11,8 @@ found_by: satview
 blocked_by: []
 relates: [PW-083]
 refs: [viewer/zoom.html, planet/zoom.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,7 @@ duplicate and was replaced by "Satellite" (the default layer; season picker, clo
 still uses `zoom.tint`).
 Options: A) leave it (lean: the satellite view, Height and Hillshade cover it); B) bring back a "Map"
 layer drawn in JS from height and rain (`zoom.tint`'s ramps), ~30 lines.
+
+## Updates
+- 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star, cheap and loses nothing): bring the hypsometric relief back as a non-default layer next to Satellite.
+- 2026-10-15: Created from inbox draft draft-satellite-zoom-relief-layer.md (found by satview).

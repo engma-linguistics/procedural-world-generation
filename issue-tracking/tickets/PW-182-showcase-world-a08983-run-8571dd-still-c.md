@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-176]
 refs: [planet/landform.py, "run 8571dd", "world a08983", "zoom:ee587f"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,4 +31,5 @@ cells near a42a15 would lose their dunes.
   the dune share and that ee587f's area is no longer an erg.
 
 ## Updates
+- 2026-10-15: Smalls: no code change needed; closes when the showcase is remade (PW-202). World a08983's zooms are cited by PW-177, PW-183 and PW-130.
 - 2026-10-14: Created from inbox draft draft-showcase-old-dune-classes.md (found by zoompolish).

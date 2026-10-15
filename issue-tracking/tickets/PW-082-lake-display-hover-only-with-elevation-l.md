@@ -2,7 +2,7 @@
 id: PW-082
 title: "Lake display: hover only with elevation loaded, confusable colours, ~0 m depths"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-020]
 refs: [viewer/index.html, planet/store.py, "run 8dc2f2"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -21,4 +21,5 @@ greens, and fresh blue is close to shallow sea. `lake_depth` is stored in whole 
 read "~0 m" (store decimetres or a log scale). Which layers draw lakes is settled in PW-020 (elevation and biome only).
 
 ## Updates
+- 2026-10-15: Status todo -> done. Merged (smalls).
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Viewer / Earth world (the layer question is decision D1, closed).
