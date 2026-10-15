@@ -9,11 +9,13 @@ removed or added crust into lower or higher ground.
 
 Erosion at a 60-240 km cell size can't resolve individual valleys, so it has
 three parts, all scaled by rock and rainfall:
-  hillslope   ground wears down in proportion to how far it stands above its
-              neighbours (Ahnert 1970: denudation ~ local relief). Steep range
-              fronts and plateau edges go fast; a plateau's flat interior and
-              broad old uplands barely change. Like a diffusion (rate ~
-              kappa * drop / spacing^2), so it's the same at any resolution.
+  hillslope   ground wears down in proportion to how steeply it stands above
+              its neighbours (Ahnert 1970: denudation ~ local relief, here
+              per km: the mean drop to the lower neighbours over the cell
+              spacing, a mean downhill slope). Steep range fronts and plateau
+              edges go fast; a plateau's flat interior and broad old uplands
+              barely change. A slope is the same at any resolution, so the
+              wear is too (PW-282: the old drop / spacing^2 doubled per level).
   weathering  everything above base level also wears down, slowly when low
               and much faster when high (dh/dt = -(h/tau)(1 + (h/h0)^2), h
               above base): high ground has deep valleys, frost and glaciers
@@ -239,11 +241,12 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     up = kernels.accumulate(down, order, land.astype(float))
     p_up = kernels.accumulate(down, order, np.where(land, precip, 0.0)) / np.maximum(up, 1.0)
     K_river = K0 * np.maximum(rain_factor(precip), rain_factor(p_up))
-    # hillslope: relax toward the neighbours (4/d^2 * mean drop is the
-    # Laplacian on this grid; exponential form can't overshoot)
+    # hillslope: ground wears down at hillslope (km/Myr) x K x its mean
+    # downhill slope (relief / d_km, m per km), in m/Myr; the exponential
+    # form can't take a cell below its lower neighbours' mean
     d_km = grid.spacing * R_KM
     relief = _relief(elev.astype(float), grid.nbr_off, grid.nbr_idx) * land
-    h = elev - relief * (1 - np.exp(-4 * hillslope * K * dt / d_km**2))
+    h = elev - relief * (1 - np.exp(-hillslope * K * dt / d_km))
     # weathering toward base level (continental interiors settle ~200 m up)
     base = np.where(cont, 200.0, 0.0)
     above = np.maximum(h - base, 0) * land

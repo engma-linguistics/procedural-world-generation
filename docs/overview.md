@@ -246,7 +246,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 
 **What it does:** wears the land down every 2 Myr step and puts the material somewhere.
 
-- **Hillslope diffusion** smooths relief (soil creep).
+- **Hillslope wear** lowers ground in proportion to its mean downhill slope to its lower neighbours (Ahnert: denudation ∝ local relief, taken per km so it is the same at any grid level, PW-282). It only lowers ground; the material joins the rivers' load.
 - **Weathering** lowers land toward a base level (200 m on continents), faster on high ground.
 - **Stream-power incision** cuts valleys at a rate ∝ √(water flow) × the drop to the next cell, where the flow is the runoff gathered from upstream. It uses Braun & Willett's implicit scheme, stable at 2 Myr steps. Its rain factor (below) is the larger of the cell's own and its catchment's mean rain, so a big river crossing a desert, or a polar-desert lake's outlet, still cuts (PW-055).
 - Erosion is scaled by rain ((P/800 mm)^0.8, clipped 0.1–2.5), ×3 under temperate (wet-based) glaciers, ×0.3 under cold ice, and is up to 1.6× faster on bare wet ground than under the vegetation's ground cover (§2.18; before plants, or plant groups, appear, rivers are flashier).
@@ -254,7 +254,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 - **Chemical and biological deposits:** reefs (limestone, up to 200 m/Myr in warm shallow water), evaporites (closed lakes and pans above 10 °C, hot dry coasts), coal (warm wet vegetated lowlands). Desert winds sort loose cover into sand where rain is under 200 mm/yr.
 - **Weathering draws down CO₂**, closing the loop with climate; roots and soil CO₂ speed it up by up to 1.75× in proportion to the vegetation's productivity (NPP, GEOCARB's biological weathering factor).
 
-**Parameters:** `hillslope` 100 km²/Myr, `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
+**Parameters:** `hillslope` 3.32 km/Myr (× slope in m/km = m/Myr), `erosion_timescale` 400 Myr, `incision` 0.0064, `glacial_erosion` 3, `alluvial` 3000 km, `fan_km` 1000 km, `accretion` 0.5, `metamorphic_depth` 18 km.
 
 **Known limits:** closed basins (PW-054): sediment fills a closed hollow within ~10–20 Myr (two thirds of the loss; rims wearing down the rest), so only subsiding basins last (§2.4: flexural moats, thermal sag). With them, L6 seeds 1/2/21/3199 (100–1000 Myr) drain 8.5–10% of land inland (5.6–7.1% without), 16.5–17.7% of arid land (10–12%); Earth ~18% of land, roughly half its arid land. L7 keeps more hollows on its finer grid: seed 3199 (100–600 Myr, mostly a dry supercontinent) drains ~20–21% with or without the subsidence (single seed, noisy; the flexure share 0.15 was chosen so L7 doesn't overshoot: 0.3 gave 48%). Back-arc and pull-apart basins and dynamic topography over cold mantle are not modelled (inbox).
 

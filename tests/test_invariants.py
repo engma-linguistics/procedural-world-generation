@@ -299,3 +299,25 @@ def test_sediment_budget_closes(monkeypatch):
         assert removed.sum() > 0
         assert dep.sum() == pytest.approx(removed.sum(), rel=1e-9)
         assert dep.min() >= -1e-12
+
+
+def test_hillslope_wear_level_consistent():
+    """The run's hillslope term is a slope law, so the same terrain wears
+    down the same at any grid level (PW-282: drop / spacing^2 doubled per level)."""
+    from planet import surface
+    from planet.geo import R_KM
+    rng = np.random.default_rng(3)
+    waves = [(v / np.linalg.norm(v), rng.uniform(0, 2 * np.pi), rng.uniform(1500, 4000))
+             for v in rng.normal(size=(12, 3))]
+    wear = []
+    for level in (4, 5):
+        g = build_grid(level)
+        h = sum(np.sin(g.centers @ v * R_KM * 2 * np.pi / lam + ph) for v, ph, lam in waves) / np.sqrt(12)
+        e = np.where(h > 0.3, 300 + 2500 * (h - 0.3), -3000.0)
+        n, land = g.n, e > 0
+        out = surface.erode(g, e, np.full(n, 35.0), np.zeros(n), np.zeros((n, len(surface.MIX_ROCKS))),
+                            np.full(n, surface.CRATON, np.uint8), land, np.full(n, 800.0), np.full(n, 300.0),
+                            np.full(n, 500.0), np.full(n, 1000.0), 2.0, Params().hillslope, 1e30, 2000.0, 0.0,
+                            2.0 ** (level - 4), np.full(n, 170.0))
+        wear.append(out[3][land].mean())
+    assert wear[1] == pytest.approx(wear[0], rel=0.15), wear
