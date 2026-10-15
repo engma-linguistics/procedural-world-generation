@@ -27,6 +27,8 @@ class Snapshot:
     cover: np.ndarray  # km of sediment on top
     thickness: np.ndarray  # km of crust
     precip: np.ndarray  # mm/yr
+    p_jul: np.ndarray  # mm/yr: the July half-year's rate (Apr-Sep)
+    p_jan: np.ndarray  # mm/yr: the January half-year's rate (Oct-Mar)
     flow: np.ndarray  # river flow (sum of upstream runoff, cells x m/yr)
     downstream: np.ndarray  # next cell down the river, -1 at the sea
     lake_kind: np.ndarray  # hydrology lake_kind: 0 none, 1 open, 2 closed (salt), 3 salt pan
@@ -74,6 +76,8 @@ def snapshot(sim) -> Snapshot:
         cover=sim.w_cover.copy(),
         thickness=sim.w_thick.copy(),
         precip=sim.precip.copy() if sim.precip is not None else np.zeros(sim.grid.n),
+        p_jul=sim.p_jul.copy() if sim.p_jul is not None else np.zeros(sim.grid.n),
+        p_jan=sim.p_jan.copy() if sim.p_jan is not None else np.zeros(sim.grid.n),
         flow=sim.flow.copy(),
         downstream=sim.down.copy(),
         **lakes_now(sim),

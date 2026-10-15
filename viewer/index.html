@@ -1295,7 +1295,9 @@ function renderLegend() {
   const ov = obsView(state.layer);
   // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
-  $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
+  // (a run's seasonal layers download when a season is picked: the picker shows if the run has them)
+  const sk = SEASONAL[state.layer] && SEASONAL[state.layer] + '_jul';
+  $('seasonRow').style.display = sk && (V.layers[sk] || (V.kind === 'run' && V.run.layers[sk])) && !ov ? '' : 'none';
   $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
   drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
@@ -2417,6 +2419,8 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer)
   const want = ['elevation', 'lake_kind', ...(COLOUR_NEEDS[state.layer] || [])];
+  // the picked season's temperature or rain (runs since PW-138 store them)
+  if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
   return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
 }

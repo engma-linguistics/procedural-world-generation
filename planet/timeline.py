@@ -43,6 +43,7 @@ from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
+              "temperature_jul", "temperature_jan", "precipitation_jul", "precipitation_jan",
               "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "current_e", "current_n", "jet_e", "jet_n",
               *LANDFORM_LAYERS, "vegetation", "tree_cover", "npp")
 CHECKPOINT_EVERY = 100.0  # Myr
@@ -74,6 +75,10 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "precipitation": snap.precip, "temperature": snap.temperature, "climate": snap.koppen,
             "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
             "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
+            # July and January as worlds have them (world.seasons; the season picker, PW-138)
+            "temperature_jul": np.where(grid.lat >= 0, snap.t_warm, snap.t_cold),
+            "temperature_jan": np.where(grid.lat >= 0, snap.t_cold, snap.t_warm),
+            "precipitation_jul": snap.p_jul, "precipitation_jan": snap.p_jan,
             **dict(vec_layers(grid, "wind", snap.wind)), **dict(vec_layers(grid, "current", snap.current)),
             **dict(vec_layers(grid, "jet", jet)), **landforms_of(snap),
             "vegetation": snap.vegetation, "tree_cover": 100 * snap.tree_cover, "npp": snap.npp}
@@ -124,7 +129,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
             jet["src"], jet["v"] = s.t_warm, jet_of(s.grid, snap)
         # encode now: at level 7, 126 float64 keyframes per layer would be ~1 GB
         for k, v in frame_values(s.grid, snap, jet["v"]).items():
-            data[k].append(S.encode(v, S.LAYERS[k], s.grid))
+            data[k].append(S.encode(v, S.run_spec(k), s.grid))
         frames.append({"t": s.t, "stats": s.stats(),
                        "omega": {k: [round(x, 6) for x in v] for k, v in snap.omega.items()},
                        "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
@@ -135,7 +140,7 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     try:
         keep(sim)
         sim.run(myr, keep)
-        layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS})
+        layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS}, {k: S.run_spec(k) for k in RUN_LAYERS})
         S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
     except BaseException:
         shutil.rmtree(out, ignore_errors=True)
