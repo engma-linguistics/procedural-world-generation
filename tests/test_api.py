@@ -3,6 +3,7 @@ fake run in a temporary data directory."""
 
 import json
 import shutil
+import time
 
 import pytest
 
@@ -131,3 +132,57 @@ def test_timezoom_job(dirs):
     with pytest.raises(SystemExit):
         api.parse_timezoom_request({"run": "nope", "t": 0})
     assert S.delete("run", res["run"])
+
+
+def test_jobs_survive_restart(tmp_path):
+    """Job state is saved; a new Jobs on the same file (a restarted server)
+    answers for finished jobs and runs again the ones that were cut off,
+    once (PW-085)."""
+    import threading
+    path = tmp_path / "jobs.json"
+    gate = threading.Event()
+
+    def slow(req, progress):
+        progress(0.5, "half")
+        if req["n"] == 2:
+            gate.wait(10)
+        return {"zoom": "z" + str(req["n"])}
+
+    a = api.Jobs(slow, path)
+    j1 = a.submit({"n": 1})
+    assert a.wait(j1)["status"] == "done"
+    j2, j3 = a.submit({"n": 2}), a.submit({"n": 3})  # j2 hangs, j3 waits behind it: the server "dies" now
+    while a.get(j2)["status"] != "running":
+        time.sleep(0.01)
+    b = api.Jobs(lambda req, progress: {"zoom": "again" + str(req["n"])}, path)
+    assert b.get(j1)["zoom"] == "z1"
+    assert b.wait(j2)["zoom"] == "again2" and b.get(j2)["restarts"] == 1
+    assert b.wait(j3)["zoom"] == "again3"
+    j4 = b.submit({"n": 4})
+    assert j4 not in (j1, j2, j3) and b.wait(j4)["status"] == "done"  # new ids don't collide with the saved ones
+    # a job cut off a second time is given up
+    jobs = json.loads(path.read_text())
+    jobs[j2].update(status="running")
+    path.write_text(json.dumps(jobs))
+    c = api.Jobs(lambda req, progress: {}, path)
+    assert c.get(j2)["status"] == "error" and "twice" in c.get(j2)["error"]
+    gate.set()
+
+
+def test_compute_lock_serialises_jobs_and_highlights():
+    """Jobs (any_job) hold api.COMPUTE, so a highlights computation in a
+    server thread waits for them (numba's workqueue layer can't run two
+    parallel kernels at once, PW-084)."""
+    import threading
+    held = []
+    api.COMPUTE.acquire()
+    try:
+        t = threading.Thread(target=lambda: held.append(api.COMPUTE.acquire(timeout=0.2)))
+        t.start()
+        t.join()
+        assert held == [False]
+    finally:
+        api.COMPUTE.release()
+    with api.COMPUTE:  # re-entrant: a job slices a run inside it
+        with api.COMPUTE:
+            pass

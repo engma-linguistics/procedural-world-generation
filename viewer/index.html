@@ -1468,8 +1468,7 @@ async function startTimezoom() {
   if (job.finished) { if (V.kind === 'run' && !V.tz) renderRunSummary(); return; }
   while (job === tzJob) {
     let j;
-    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(out.job);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (V.kind === 'run' && !V.tz && !state.playing) renderRunSummary();
@@ -1535,8 +1534,7 @@ async function startFinish() {
   if (job.finished) { if (V.kind === 'run') renderRunSummary(); return; }
   while (job === finJob) {
     let j;
-    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(out.job);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') job.finished = true;
     if (V.kind === 'run' && !state.playing) renderRunSummary();
@@ -2019,12 +2017,23 @@ async function startZoom() {
   pollJob(out.job);
 }
 
+// a job's state from the server. While it can't be reached (restarting: its
+// jobs survive that, PW-085) keep asking, every 1.5 s for up to a minute.
+async function fetchJob(id) {
+  for (let k = 0; ; k++) {
+    try { return await (await fetch(`../api/jobs/${id}`, { cache: 'no-store' })).json(); }
+    catch (err) {
+      if (k >= 40) return { status: 'error', error: 'lost the server: ' + err.message };
+      await new Promise((ok) => setTimeout(ok, 1500));
+    }
+  }
+}
+
 async function pollJob(id) {
   const job = zoomJob;
   while (job === zoomJob) {
     let j;
-    try { const r = await fetch(`../api/jobs/${id}`, { cache: 'no-store' }); j = await r.json(); }
-    catch (err) { j = { status: 'error', error: 'lost the server: ' + err.message }; }
+    j = await fetchJob(id);
     Object.assign(job, j);
     if (j.status === 'done' || j.status === 'error') {
       job.finished = true;

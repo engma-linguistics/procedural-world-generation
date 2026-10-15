@@ -35,7 +35,7 @@ pkill -f "planet serve --no-open"; nohup uv run python -m planet serve --no-open
 
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min.
 - `NUMBA_NUM_THREADS=4` is often faster under load on this 4P+4E-core Mac; each parallel kernel launch costs ~40–57 µs.
-- The API runs one job at a time (numba kernels aren't thread-safe; PW-084).
+- The API runs one job at a time and one computation at a time (`api.COMPUTE`: numba's workqueue layer aborts on concurrent parallel kernels; PW-084). Restarting the server keeps its jobs (`.jobs/<port>.json`; queued and running ones run again).
 - Shell gotcha: zsh doesn't split `$x` into words, so `uv run python -m planet simulate $args` passes one argument. Use an array or bash. (A level-7 verification run failed silently this way on 2026-10-14.)
 
 ## Showcase recipes

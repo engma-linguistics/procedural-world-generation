@@ -13,7 +13,11 @@
 
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
-serving; zooms and time zooms run one at a time on the job queue's worker.
+serving; zooms and time zooms run one at a time on the job queue's worker,
+and one computation runs at a time (api.COMPUTE: numba's parallel kernels
+can't be launched from two threads at once), so a highlights request that
+has to compute waits for a running job. Job state is kept in
+.jobs/<port>.json and survives a restart (api.Jobs).
 """
 
 from __future__ import annotations
@@ -120,7 +124,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def serve(port: int = 8765, open_browser: bool = True):
     for kind in S.KINDS:
         S.update_index(kind)
-    Handler.jobs = api.Jobs(api.any_job)
+    # job state survives a restart (per checkout and port: worktrees share the data folders)
+    Handler.jobs = api.Jobs(api.any_job, S.REPO / ".jobs" / f"{port}.json")
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
     with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
