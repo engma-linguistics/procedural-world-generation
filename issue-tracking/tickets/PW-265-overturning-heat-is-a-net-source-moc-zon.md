@@ -2,7 +2,7 @@
 id: PW-265
 title: "Overturning heat is a net source: moc_zonal = 0 double-counts warmth t_eq already holds (kept for +0.19 pt Köppen)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-245
 subsystem: ocean
 effort: s
@@ -38,4 +38,5 @@ Lean: A now, B if a later pass wants the tropics to feel it. Re-centre the globa
 - [ ] earth_check Köppen within ~0.3 pt of before
 
 ## Updates
+- 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-climate-ocean-moc-heat-not-conserved.md (found by audit-climate-ocean).

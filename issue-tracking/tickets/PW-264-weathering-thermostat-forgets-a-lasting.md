@@ -2,7 +2,7 @@
 id: PW-264
 title: Weathering thermostat forgets a lasting change in degassing in ~200 Myr (rates vs learning baselines, not a CO2 stock)
 type: task
-status: needs-decision
+status: todo
 parent: PW-245
 subsystem: climate
 effort: s
@@ -30,4 +30,5 @@ Options:
 Lean: C, then check on 3–4 L6 seeds that the temperature spread stays sane (test_envelopes).
 
 ## Updates
+- 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-climate-ocean-co2-rate-not-stock.md (found by audit-climate-ocean).
