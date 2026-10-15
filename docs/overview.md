@@ -451,6 +451,12 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 - **Bed and sea:** glacial isostasy (PW-189) as an ELRA model: the bed relaxes with a 3 kyr e-folding time (`iso_tau`) toward the run's settled dip, 0.28 × the ice thickness spread by flexure over ~150 km (`iso_ratio`, `flex_km`; `isostasy.ice_load`), and rebounds after the ice is gone; the start is settled (a run's keyframe bed is already pressed down by its ice); floating ice breaks off and marine fronts calve, as does grounded ice in water deeper than 1.5 km (`calve_depth`, PW-199); sea level falls by the sea water the ice holds / ocean area: 0.89 × the ice above flotation plus the room the sunken bed made below sea level (Goelzer et al. 2020; PW-031: ice filling a deep marine basin no longer counts in full), so coastlines and land bridges move.
 - **Climate:** fully recomputed every 10 kyr, blended and shifted in between; CO₂ drops as ice grows (~−2.5 °C at an Earth-glacial-sized ice volume) plus a small ice-albedo term; meltwater reaches the overturning. `start` (PW-031): Earth starts in an interglacial with the full caps (−2.5 and −2 °C); a run's moment is the cycle average (its ice is the mean extent, its dT already has that ice's albedo), so only `average_room` = half of each cap is left.
 
+![Bed under ice](overview/timezoom_bed_under_ice.png)
+*Time zoom 1a08e7 (L7 run 981d58, seed 3199 @ 700 Myr) at its 196 kyr glacial maximum, "bed under ice" layer: under ~3.7 km of ice the bed is pressed ~1 km down, much of it below sea level (blue), as in Antarctica.*
+
+![Rebound](overview/timezoom_rebound.png)
+*The same time zoom, bed uplift from the glacial maximum (196 kyr) to the next interglacial (222 kyr), southern hemisphere, equirectangular: red = rising, up to 2.4 cm/yr, 0.9 cm/yr on average where the ice left (Hudson Bay today: ~1 cm/yr); grey = still under ice.*
+
 **Parameters:** `--set` any `TZParams` field: `insol_k` (0.25 °C per W/m²), `obliquity_amp`, `co2_cool`, `ddf_snow/ice`, `iso_ratio`, `calving`, `phases=zero`; `baseline=obs` for Earth.
 
 **Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
