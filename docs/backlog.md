@@ -184,6 +184,10 @@ After step 3 (and a big batch of closed tickets) comes the **L8 showcase run** t
 
 **Dependencies.** PW-090 (Phase 2), PW-184 (habitats), PW-156 (finest weather).
 
+### 2.9 Moons and planet bodies: PW-216 (epic, xl / low; bottom of the backlog)
+
+**Goal.** Tides, day length and the planet body stop being Earth's fixed values (owner, 2026-10-15: not core functionality). **Stories:** PW-217, the moon recedes and the day lengthens over a run (tidal friction; the likeliest first step); PW-218, configurable moons, including more than one; PW-219, a stretch goal of its own: planets of other size, density and makeup.
+
 ---
 
 ## 3. Open tickets with no epic, by theme

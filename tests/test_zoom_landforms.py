@@ -601,7 +601,8 @@ def test_coastal_plain_has_barriers_lagoons_and_marshes(coast_pair):
     st = cp["stats"]
     assert st["landforms"].get("coastal_plain", 0) > 50
     assert st["barrier_px"] > 50 and plain["stats"]["barrier_px"] == 0
-    assert st["wetland_pct"] > 0.2 and plain["stats"]["wetland_pct"] == 0
+    # (the coastal plain's marshes; the vegetation's wetlands may be in either)
+    assert st["marsh_pct"] > 0.2 and plain["stats"]["marsh_pct"] == 0
     # lagoons: sea behind the barrier: more sea pixels with land on both sides of them along the rows
     sea_cp = (cp["layers"]["water"] == 1).mean()
     sea_pl = (plain["layers"]["water"] == 1).mean()

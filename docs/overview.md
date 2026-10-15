@@ -18,7 +18,7 @@ The physics is "toy but physical". Each process is a cheap version of a named re
 |---|---|---|---|
 | **Run** | `planet simulate` | 0.5–2 Gyr of plate tectonics, climate, rivers and erosion in 2 Myr steps. A keyframe every 4 Myr for the viewer, a full checkpoint every 100 Myr. | ~164k cells of ~55 km. ~20–25 min per Gyr. |
 | **World** | `planet slice <run> --at T` (or the viewer's Zoom button) | One moment, finished: climate with seasons, rivers, lakes, vegetation (and biomes from it), ocean, clouds, waves and tides, landform classes, volcanoes. | Seconds to a few minutes. |
-| **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes and landform-specific terrain. | 1–7 s. |
+| **Regional zoom** | `planet zoom <world> --lat --lon` | A 500×500 px landscape (250–2000 km across, 0.5–4 km/px) with valleys, lakes, deltas, waterfalls, glaciers, volcanoes, landform-specific terrain and per-pixel vegetation. | ~10–15 s. |
 | **Glacial time zoom** | `planet timezoom <run> --at T` | 1 Myr of ice ages in 500-year steps (geology frozen). | ~4 min per 1000 kyr at L6, ~30 min at L7. |
 | **Finished world** | `planet finish <timezoom> --kyr N` (or `<run> --at T`) | A world at any kyr of a time zoom: its ice, sunken bed, sea level and climate on the run's geology. | Seconds (L6) to ~1 min (L7). |
 | **Highlights** | `planet highlights <run> --at auto --zoom N` | The ~40–55 most interesting places, with pre-made zooms. | Seconds. |
@@ -48,7 +48,7 @@ flowchart LR
 - Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
 - Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
 
-**Not yet built:** soils, coastal life, resources, settlements and a game export are on the roadmap (PW-184, PW-185, PW-188, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world and run parts, not yet the zoom, the climate feedbacks or the time zoom (PW-187 steps 5–9). There is no day-scale weather yet (PW-156).
+**Not yet built:** soils, coastal life, resources, settlements and a game export are on the roadmap (PW-184, PW-185, PW-188, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world, run and zoom parts, not yet the climate feedbacks or the time zoom (PW-187 steps 6–9). There is no day-scale weather yet (PW-156).
 
 ---
 
@@ -387,9 +387,9 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 **Known limits:** canyons are weak at cell scale (PW-079).
 
-### 2.13 Regional zoom (`zoom.py`, `zoom_landforms.py`, `zoom_volcanoes.py`, `zoom_kernels.py`)
+### 2.13 Regional zoom (`zoom.py`, `zoom_landforms.py`, `zoom_volcanoes.py`, `zoom_terrain.py`, `zoom_vegetation.py`, `zoom_kernels.py`)
 
-**What it does:** turns coarse cells into a 500×500 px landscape. The CLI default is 1000 km at 2 km/px; the viewer offers 250, 500, 1000 and 2000 km (0.5–4 km/px). Every coarse cell's mean height is kept, and all noise is sampled at 3D planet positions, so overlapping zooms of one world agree. A zoom needs a world with rock and climate layers (sliced from a run). It takes 1–7 s.
+**What it does:** turns coarse cells into a 500×500 px landscape. The CLI default is 1000 km at 2 km/px; the viewer offers 250, 500, 1000 and 2000 km (0.5–4 km/px). Every coarse cell's mean height is kept, and all noise is sampled at 3D planet positions, so overlapping zooms of one world agree. A zoom needs a world with rock and climate layers (sliced from a run). It takes ~10–15 s at L7 (about 4–5 s of it the vegetation).
 
 **The passes, in order:**
 1. **Interpolate** the coarse fields onto pixels (height, temperature, rain, runoff, ice, ruggedness).
@@ -404,7 +404,9 @@ The most varied square counts named vegetation types (biomes on worlds without v
 10. **Glaciers** (PW-127) from each pixel's own climate by the main run's ice rule, lapse-corrected to the pixel's height; the surplus is routed down the valleys as tongues (~0.8 km wide at 0.1 km³/yr, at most 3 km³/yr and 100 km long) that melt on the way down. A coarse ice sheet stays one sheet with outlet tongues.
 11. **Creep**, then the **landform remap** (relief, shape, strata), sill cuts, gorges below landform falls.
 12. **Closed basins by water balance** (PW-167): runoff in against open-water evaporation, upstream first; a full lake spills into the next, else a closed lake or a dry flat.
-13. **Falls listed**, landform overlays (dunes, dolines, towers, springs), climate and biome on the fine terrain, marshes.
+13. **Falls listed**, landform overlays (dunes, dolines, towers, springs), climate on the fine terrain (the bare ground's, lapse-corrected; the ice surface's on the zoom's own glaciers, PW-160), July / January temperature and rain (PW-139), a coastal plain's marshes.
+14. **Terrain indices** (`zoom_terrain.py`, PW-196) on the finished surface: a **radiation index** per month (the day's sun on the slope's plane over flat ground's at the pixel's latitude: a 30° poleward slope at 45° gets ~0.3 of flat in winter, ~0.8 in summer), the **topographic wetness index** ln(a / tan β) from `drainage_area`, and the distances to the nearest river (≥ 1 m³/s) and the sea.
+15. **Vegetation** (`zoom_vegetation.py`, PW-214; proposal §3.7): the world's model (§2.18) run per pixel on the zoom's own terrain, warm-started from the world's cover fractions (so history keeps forest or savanna). The pixel adds: its lapse-corrected temperature (treelines, alpine belts); its slope's light and potential evaporation by month, and ±2.5 °C for sunny or shaded slopes (an equatorward slope's treeline sits ~100–200 m higher); thinner soil on steep slopes and groundwater in hollows (TWI); a river's water in a strip along its banks (0.15 km wide at 1 m³/s, +0.4 km per tenfold: gallery forest through savanna, oasis woodland in deserts); the world's flooded share given to each cell's wettest pixels (high TWI, big rivers' floodplains, patchy noise for mires) plus lake shores and coastal marshes. After the competition, each type's mean over a cell's pixels is pulled 60% of the way back to the world's by a smooth field (not where the pixel stands > 800 m off the coarse surface), and a **fire mosaic** draws each pixel's stand age from the exponential distribution of its fire interval with planet-fixed noise (~25 km patches; young stands fewer trees, more herbs and birch, lower canopy; the mean kept). `biome` becomes the named types' grouping, as on the globe.
 
 **Landform synthesis** (PW-010/011/012): each class has hooks (`target`, `relief`, `shape`, `strata`, `basins`, `lakes`, `overlay`, `sinks`), blended by smooth class weights so there are no cell seams. Bench levels come from the class's whole connected zone on the coarse grid (PW-148), and structure strikes from planet-fixed patches, so overlapping zooms agree.
 
@@ -422,7 +424,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 **Falls:** `stats.falls` in `zoom.json` lists every fall ≥ 30 m on a stream ≥ 20 m³/s (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`, with gorge, cascades and plunge pool); `stats.waterfalls` keeps the 5 biggest by power. The viewer draws them as the Waterfalls overlay.
 
-**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png`, `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland`. Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays.
+**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png`, `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `temperature_jul`/`_jan`, `precipitation_jul`/`_jan`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland` (1 a coastal plain's marsh, 2 the vegetation's wetlands), `vegetation` (named type), `tree_cover`, `plant_cover`, `lai`, `canopy_height`, `npp`, `fire_return` (decision 9A: the summary layers; `zoom_vegetation.fractions(<zoom>)` recomputes each PFT's cover in ~5 s, the same numbers), `radiation_index`, `twi`, `river_dist`, `coast_dist`. Layers with an encoding in `zoom.LAYER_DOC` are stored as small integers with a scale (read them with `zoom.load(id, decode=True)`). Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays, and the vegetation's shares by type.
 
 ![Zoom with waterfalls](review/zoom/83e518_relief_fall.jpg)
 *Zoom 83e518 (500 km at 1 km, showcase world a08983): Waterfalls and Volcanoes overlays; the card shows a 745 m lip fall with a 4.2 km gorge.*
@@ -430,9 +432,12 @@ The most varied square counts named vegetation types (biomes on worlds without v
 ![Delta types](overview/zoom_deltas.jpg)
 *Delta types in three 600 km zooms of world 0f7abd: a bird's foot into a calm sea; a smooth wave-built coast; tidal funnels with 6.6 m tides.*
 
+![Zoom vegetation](overview/zoom_vegetation.jpg)
+*Per-pixel vegetation (PW-214) in four zooms of world 351f32 (L7, run 732abb @ 1000 Myr): a rainforest–savanna edge with gallery forest along the rivers (64f0b6, 1000 km); a mountain treeline under an ice cap, higher on sunny slopes (3a5252, 500 km; at 1800–2000 m equatorward slopes hold 38% trees, poleward 20%; below 1400 m, where water limits, poleward slopes hold more); boreal taiga with palsa mires and swamp forest (3373be, 1000 km); a Mediterranean coast of maquis with woodland on the hills and along the streams (58c0ac, 500 km).*
+
 More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
-**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); continental hotspots drawn as shields, not calderas (PW-118); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers, high lake-outlet ramps and undesigned drops (PW-123, PW-124, PW-125); snowline under coarse ice ~2–3 °C off (PW-159, PW-160); dune seams (PW-177); marshes only on coastal plains (PW-178); no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
+**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); continental hotspots drawn as shields, not calderas (PW-118); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers, high lake-outlet ramps and undesigned drops (PW-123, PW-124, PW-125); snowline under coarse ice ~2–3 °C off (PW-159); dune seams (PW-177); no mangroves or salt marsh yet (PW-188); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
 
 ### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
@@ -466,12 +471,12 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 - **Pipeline** (PW-193): on a run frame, "Glacial time zoom from here" and "Finish world here"; on a time zoom frame, "Finish world here" (job progress in the panel, then the world opens). A finished world shows run @ Myr → time zoom + kyr (both linked); the run's tree nests finished worlds under their time zoom, and a time zoom's slider ticks them in green.
 - Clicking a cell copies a description (for pointing at a place); double-click or "Zoom" makes a regional zoom. The URL holds the state, e.g. `?world=a08983.json&layer=biome&mode=map`.
 
-**Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers relief, height, hillshade, rivers, rock, surface rock, climate, biome, landform, rain, temperature, ice and coarse cells; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
+**Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers relief, height, hillshade, rivers, rock, surface rock, climate, biome, landform, vegetation (legend by share of the land), tree cover, canopy height, NPP, fire return, leaf area, rain and temperature (year / July / January picker, `?season=`), ice, sun on slopes, wetness index and coarse cells (`?rivers=0`, `?falls=0`, `?volc=0` turn overlays off); the hover shows the pixel's vegetation, seasons and terrain indices; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
 
 ![The viewer](overview/viewer_globe_biome.jpg)
 *The viewer on world 7c5adf: biomes, with highlights numbered (an earlier version of the panel, before categories).*
 
-**Known limits:** no vegetation / satellite view (PW-083); runs lack seasonal layers, so the season picker works only on worlds (PW-107, PW-138); zooms lack seasonal layers (PW-139).
+**Known limits:** no vegetation / satellite view (PW-083); runs lack seasonal layers, so the season picker works only on worlds and zooms (PW-107, PW-138).
 
 ### 2.16 Store and data model (`store.py`, `timeline.py`, `provenance.py`)
 
@@ -523,7 +528,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 4. **Fire** (GlobFIRM-like): the burned share per year rises steeply with the fire season, if there is fine fuel (≥ 250 g C/m², mostly grass) and lightning (warm, showery summers). Each type loses the burned share × (1 − its resistance): grass resprouts, savanna trees mostly survive, rainforest trees and spruce don't. Grass fuels fire and closed forest doesn't burn, so **forest and savanna are both stable over a wide band of rain and history decides**: worlds start from the run's state (sliced worlds from the simulation's fractions, Zoom-button worlds from the keyframe's tree cover); a world without history (Earth, `generate`) starts from young woodland over grass.
 5. **Grazing placeholder** (decision 8, to be replaced by fauna in PW-103): open grassland (grass cover²) adds tree and shrub mortality in climates that aren't wet all year, which keeps prairies and steppes open.
 6. **Wetlands:** the flooded share of a cell (floodplains of big rivers, flat ground with more rain than evaporation, flat permafrost, lake shores; up to 75%) is a habitat of its own for reeds and sedges, peat moss and flood-tolerant trees.
-7. **Named types:** ordered rules on the mix, structure and site (BIOME4- and IGBP-like): non-vegetated (ice, lake, < 5% cover), wetland, forest (trees ≥ 60%), woodland and savanna (10–60%), sparse, shrubland, grassland; "alpine" where a cell is cold because it is high. `biome` is a coarse grouping of them. (Mangrove forest and salt marsh will come from PW-188's coastal layers; oasis woodland needs river water, the zoom's job.)
+7. **Named types:** ordered rules on the mix, structure and site (BIOME4- and IGBP-like): non-vegetated (ice, lake, < 5% cover), wetland, forest (trees ≥ 60%), woodland and savanna (10–60%), sparse, shrubland, grassland; "alpine" where a cell is cold because it is high. `biome` is a coarse grouping of them. (Mangrove forest and salt marsh will come from PW-188's coastal layers; oasis woodland needs river water: only the zoom draws it, §2.13.)
 
 **Plant groups through a run** (decision 3): six groups appear one after another (pioneer mosses and crusts; marsh plants; conifers and other non-flowering trees; flowering trees and shrubs; grasses; C4 grasses and succulents), each from 0.6× to 1.3× its Earth fraction of the span from `plants_from` to a deadline (the run's end − max(16 Myr, 5%)), with a chance per climate update proportional to its **niche** (the share of land where its types would grow faster than what is there) and a ramp to certainty at its window's end (seeded draws; `run.json` meta `plant_groups`). Before a group exists its niche is filled by a **stand-in** with widened limits and 70% efficiency: conifer forest in the tropics before flowering trees, moss and crust carpets where grass would be.
 
@@ -542,7 +547,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 ![Plant groups](review/vegetation/run_732abb_700myr_group_ticks.png)
 *Run 732abb at 700 Myr, before flowering plants: conifer forests, moss and crust carpets; green ticks above the slider mark when each plant group appeared.*
 
-**Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); the zoom still draws Whittaker biomes per pixel (step 5); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
+**Known limits:** vegetation inherits the rain field's diagonal streaks on flat interiors (PW-019; world bcc894); no climate feedbacks yet (step 6); no migration or refugia in the time zoom (step 7); the Earth world's L6 hydrology floods ~6 Mkm² of flat basins as lakes (vegetation is computed on them in `veg_check`).
 
 ---
 
@@ -674,6 +679,7 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/highlights.py` | the 35 detectors, representative time |
 | `planet/zoom.py`, `zoom_kernels.py` | regional zoom and its raster kernels |
 | `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
+| `planet/zoom_terrain.py`, `zoom_vegetation.py` | zoom terrain indices (sun on slopes, wetness, river distance); per-pixel vegetation |
 | `planet/timezoom.py`, `timezoom_kernels.py` | glacial time zoom |
 | `planet/store.py`, `provenance.py`, `images.py` | paths, ids, layers, checkpoints; code version; PNG writer |
 | `planet/server.py`, `api.py` | viewer server and job API |

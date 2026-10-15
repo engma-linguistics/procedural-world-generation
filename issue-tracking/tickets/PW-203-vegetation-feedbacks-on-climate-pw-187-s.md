@@ -2,7 +2,7 @@
 id: PW-203
 title: "Vegetation feedbacks on climate (PW-187 step 6): Budyko w and evap_cool, albedo nudge, then rain recycling"
 type: story
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: climate
 effort: m
@@ -24,4 +24,5 @@ Step 6 of the vegetation proposal (section 4.1-4.2; owner decision 6B: all three
 Re-run tools/earth_check.py, tools/veg_check.py and the scorecard after each.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Overnight agent, worktree vegclim.
 - 2026-10-15: Created from inbox draft draft-veg-climate-feedbacks.md (found by veg).

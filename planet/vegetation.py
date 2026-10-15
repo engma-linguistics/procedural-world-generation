@@ -374,21 +374,38 @@ SMAX = 5.0  # mm/day: what full soil can supply to the leaves (LPJ's Emax)
 
 
 def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None,
-         relief=None) -> dict:
+         relief=None, light=None, extra_water=None, extra_pet=None) -> dict:
     """The climate inputs of each cell: climate.months plus the envelope
     indices (tc, tw, tmin: BIOME4's absolute-minimum estimate, gdd5), the
     annual moisture index mi = P/PET, Gaussen dry months (rain under twice
     the temperature) and the soil's water capacity (thinner on steep
-    ground; relief: m to the steepest neighbour)."""
+    ground; relief: m to the steepest neighbour).
+    For zoom pixels (zoom_vegetation): light (12, n) scales each month's
+    light and potential evaporation (a slope's radiation index);
+    extra_water (n,) mm/yr reaches the soil besides the rain, evenly over
+    the year (groundwater in hollows); extra_pet (n,) adds that share of
+    each month's potential evaporation (a river's water by its banks).
+    Both count in the moisture index."""
     mo = climate.months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
+    if light is not None:
+        mo["par"], mo["pet"] = mo["par"] * light, mo["pet"] * light
+    p = 0.5 * (p_jul + p_jan)
+    pw = p  # rain plus any extra water: the moisture index's supply
+    if extra_water is not None or extra_pet is not None:
+        add = np.zeros_like(mo["water"])
+        if extra_water is not None:
+            add = add + np.asarray(extra_water, float)[None, :] * climate.MONTH_DAYS[:, None] / 365.25
+        if extra_pet is not None:
+            add = add + np.asarray(extra_pet, float)[None, :] * mo["pet"]
+        mo["water"] = mo["water"] + add
+        pw = p + add.sum(0)
     tc, tw = np.minimum(t_cold, t_warm), np.maximum(t_cold, t_warm)
     pet = mo["pet"].sum(0)
-    p = 0.5 * (p_jul + p_jan)
     dry = ((mo["p"] < 2 * mo["t"]) & (mo["t"] > 0)).sum(0)
     rel = np.zeros_like(temp) if relief is None else np.asarray(relief, float)
     steep = np.clip((rel - 500.0) / 2000.0, 0, 0.6)
     north = np.asarray(lat) >= 0
-    mi = p / np.maximum(pet, 1.0)
+    mi = pw / np.maximum(pet, 1.0)
     # fire weather: the expected share of the year the litter is dry. A month
     # (above 5 C, free of snow) is dry for sure when rain and snowmelt bring
     # under 20% of its potential evaporation, never above 100% (in between,
@@ -396,7 +413,7 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
     ratio = mo["water"] / np.maximum(mo["pet"], 1e-6)
     fire = (np.clip((1.0 - ratio) / 0.8, 0, 1) * (mo["t"] > 5) * (mo["snow"] <= 1)).sum(0) / 12.0
     return dict(mo, fire_season=fire, tc=tc, tw=tw, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
-                precip=p, pet_y=pet, mi=p / np.maximum(pet, 1.0), dry=dry, lat=np.asarray(lat, float),
+                precip=p, pet_y=pet, mi=mi, dry=dry, lat=np.asarray(lat, float),
                 cap1=np.full(len(p), TOP_MM), cap2=DEEP_MM * (1 - steep),
                 p_summer=np.where(north, p_jul, p_jan), p_winter=np.where(north, p_jan, p_jul),
                 cloud=None if cloud_jul is None else 0.5 * (np.asarray(cloud_jul) + np.asarray(cloud_jan)))
@@ -615,6 +632,16 @@ def relief(grid, elev) -> np.ndarray:
     return np.maximum.reduceat(d, grid.nbr_off[:-1])
 
 
+def floodplain(grid, elev, flow, rel=None) -> np.ndarray:
+    """The share of each cell that is a big river's floodplain or delta
+    (part of flooded(); the zoom places it along its own rivers)."""
+    rel = relief(grid, elev) if rel is None else rel
+    flat = np.clip(1 - rel / 400.0, 0, 1)
+    area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
+    q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
+    return 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
+
+
 def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     """Share of each land cell (0..0.7) under water for part of the year:
     floodplains and deltas of big rivers, flat ground with a water
@@ -623,9 +650,7 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None) -> np.ndarray:
     land = elev > 0
     rel = relief(grid, elev)
     flat = np.clip(1 - rel / 400.0, 0, 1)
-    area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
-    q = np.asarray(flow, float) * area_m2 / 3.156e7  # m3/s
-    plain = 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
+    plain = floodplain(grid, elev, flow, rel)
     # flat ground with more rain than evaporation can't drain it all (mires),
     # the more so where it is cool (slow decay builds peat that holds the water)
     mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
