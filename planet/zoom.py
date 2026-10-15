@@ -2607,8 +2607,8 @@ LAYER_DOC = {
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
     # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)
     "temperature_jul": ("C", "July mean temperature (warmest month in the north, coldest in the south), "
-                             "lapse-rate adjusted", S.LAYERS["temperature_jul"]),
-    "temperature_jan": ("C", "January mean temperature, lapse-rate adjusted", S.LAYERS["temperature_jan"]),
+                             "lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),
+    "temperature_jan": ("C", "January mean temperature, lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),
     "precipitation_jul": ("mm/yr", "precipitation in the July half-year (Apr-Sep), as a rate per year",
                           S.LAYERS["precipitation_jul"]),
     "precipitation_jan": ("mm/yr", "precipitation in the January half-year (Oct-Mar), as a rate per year",

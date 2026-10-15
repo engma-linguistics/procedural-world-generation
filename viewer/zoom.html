@@ -106,6 +106,7 @@ const state = { meta: null, L: null, layer: 'relief', season: '', imgs: {}, shad
   view: { s: 1, x: 0, y: 0 }, off: document.createElement('canvas') };
 const canvas = $('c'), ctx = canvas.getContext('2d');
 let START_MARK = new URLSearchParams(location.search).get('mark');  // (the first zoom loaded only)
+let START_PX = new URLSearchParams(location.search).get('px');
 if (window.top !== window) document.body.classList.add('embedded');
 
 // ------------------------------------------------------------ helpers
@@ -230,6 +231,13 @@ async function load(id) {
   resetView();
   render();
   syncURL();
+  // ?px=row,col fills the info panel for that pixel, as hovering it would (the first zoom loaded only)
+  const pxq = (START_PX || '').split(',').map(Number);
+  START_PX = null;
+  if (pxq.length === 2 && pxq.every(Number.isFinite)) {
+    const v = state.view;
+    hover({ clientX: v.x + (pxq[1] + 0.5) * v.s, clientY: v.y + (pxq[0] + 0.5) * v.s });
+  }
   // ?mark=fall:0 or ?mark=volcano:2 opens that marker's card (falls highest first)
   const mk = (START_MARK || '').split(':');
   START_MARK = null;

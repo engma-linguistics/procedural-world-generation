@@ -429,6 +429,9 @@ Each scores as kind priority × quality (0.3–1). Travel picks use each hemisph
 ![Delta types](overview/zoom_deltas.jpg)
 *Delta types in three 600 km zooms of world 0f7abd: a bird's foot into a calm sea; a smooth wave-built coast; tidal funnels with 6.6 m tides.*
 
+![Zoom vegetation](overview/zoom_vegetation.jpg)
+*Per-pixel vegetation (PW-214) in four zooms of world 351f32 (L7, run 732abb @ 1000 Myr): a rainforest–savanna edge with gallery forest along the rivers (64f0b6, 1000 km); a mountain treeline under an ice cap, higher on sunny slopes (3a5252, 500 km; at 1800–2000 m equatorward slopes hold 38% trees, poleward 20%; below 1400 m, where water limits, poleward slopes hold more); boreal taiga with palsa mires and swamp forest (3373be, 1000 km); a Mediterranean coast of maquis with woodland on the hills and along the streams (58c0ac, 500 km).*
+
 More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
 **Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); continental hotspots drawn as shields, not calderas (PW-118); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers, high lake-outlet ramps and undesigned drops (PW-123, PW-124, PW-125); snowline under coarse ice ~2–3 °C off (PW-159); dune seams (PW-177); no mangroves or salt marsh yet (PW-188); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).

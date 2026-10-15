@@ -69,7 +69,7 @@ RIP_W0, RIP_W1 = 0.15, 0.4  # km: riparian strip width at 1 m^3/s, and per tenfo
 RIP_SHARE = 0.9  # share of the potential evaporation a river supplies its strip
 PLAIN_Q = 100.0  # m^3/s: rivers with floodplains (on a cell: 500)
 MIRE_KM = 20.0  # km: the size of the mires' patches (noise on the wetness rank)
-FW_MAX = 0.9  # most of a pixel that is flooded
+FW_MAX = 0.75  # most of a pixel that is flooded (as of a cell: vegetation.flooded)
 FLAT_TAN = 0.02  # tan slope under which ground counts as flat for wetlands
 CORR, CORR_DZ = 0.6, 800.0  # pull towards the coarse cell's cover, faded out over this much height difference (m)
 FIRE_KM = 25.0  # km: the size of the fire mosaic's patches
@@ -363,10 +363,13 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         new_t = nu * fac
         freed = np.maximum(nu[trees].sum(0) - new_t[trees].sum(0), 0.0)
         nu = np.where(trees[:, None], new_t, nu)
-        # the freed ground: pioneers (birch, aspen) where they can grow, the rest herbs and shrubs
+        # the freed ground: in boreal forest half to pioneers (birch, aspen), the rest herbs and shrubs
         pio = np.zeros(V.NP, bool)
         pio[V.IDX["BoBS"]] = True
-        pio_ok = pot["ok"] & pio[:, None]
+        boreal = np.zeros(V.NP, bool)
+        boreal[[V.IDX[c] for c in ("BoNE", "BoNS", "BoBS")]] = True
+        bor = nu[boreal].sum(0) >= 0.5 * np.maximum(nu[trees].sum(0), 1e-9)
+        pio_ok = pot["ok"] & pio[:, None] & bor[None, :]
         n_pio = pio_ok.sum(0)
         nu = nu + np.where(pio_ok, 0.5 * freed / np.maximum(n_pio, 1), 0.0)
         rest = freed * np.where(n_pio > 0, 0.5, 1.0)
@@ -402,7 +405,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     )
     lt = np.bincount(types, minlength=len(V.TYPES))
     top = np.argsort(-lt)[:10]
-    stats = {"vegetation_pct": {V.TYPES[k][1]: round(100 * lt[k] / nv, 1) for k in top if lt[k] > 0},
+    stats = {"vegetation_pct": {V.TYPES[k][1]: round(float(100 * lt[k] / nv), 1) for k in top if lt[k] > 0},
              "tree_cover_mean_pct": round(float(100 * sm["tree"].mean()), 1),
              "npp_mean": round(float(sm["npp"].mean())),
              "wetland_pct": round(100 * float(np.isin(types, list(WETLAND_TYPES)).mean()), 2),
