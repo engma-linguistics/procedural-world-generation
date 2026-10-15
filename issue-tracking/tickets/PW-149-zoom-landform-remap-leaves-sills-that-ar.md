@@ -2,7 +2,7 @@
 id: PW-149
 title: Zoom landform remap leaves sills that are cut as narrow gorges; lava steps look stippled
 type: task
-status: todo
+status: done
 parent: PW-005
 subsystem: zoom
 effort: m
@@ -31,4 +31,5 @@ leaving the zone keeps the zone's offset until it rejoins the land around),
 and widen lava cliff faces (`Strata.face`) with the pixel size.
 
 ## Updates
+- 2026-10-14: Status todo -> done. cut(): breach cuts widened into gaps (walls at GAP_GRAD); fold structures keep big rivers graded (water gaps); bench cliffs anti-aliased (min face width, smoothed cliff line, sub-pixel bands fade; rivers keep sharp steps); lava step at least VISIBLE_PX wide. Weight propagation down channels not done.
 - 2026-10-14: Created from inbox draft draft-zoom-landform-breach-gorges.md (found by zoomland1).

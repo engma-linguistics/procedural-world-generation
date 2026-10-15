@@ -21,6 +21,11 @@ planet's geography. In order (see compute):
   latitudes), and in showers where the air near the ground is warm and
   moist enough to be unstable (tropics, summer continents). Warm air holds
   more water (~6% per C), so the tropics are wettest.
+- Clouds (a diagnostic, after the rain): deep cloud where it rains hard,
+  layer cloud along the storm tracks, low cloud over cold seas and
+  stratocumulus decks where air sinks onto cool upwelling water, cumulus
+  over summer land; clear skies under the sinking subtropical air. Sunshine
+  hours follow from them and the day length.
 - Koppen climate classes from the monthly-ish temperatures and rain.
 - Where the rain goes (water_balance): back into the air (evaporation,
   limited by the sunshine and warmth to drive it, and by the rain there is)
@@ -724,7 +729,8 @@ def humidity(q: np.ndarray, t_air: np.ndarray, tune: dict) -> tuple[np.ndarray, 
     (0.85 over the sea -> ~79%; 1 -> 84%), where the vapour comes from the
     air mass aloft, warmer than a frosty ground. And the rain model's air
     loses its water too readily over long dry stretches (it is tuned for the
-    rain, not the vapour): the driest air is held at HUMID_MIN."""
+    rain, not the vapour; vapour_mixed adds back the background it lacks):
+    the driest air is still held at HUMID_MIN."""
     x = np.maximum(q / _qsat(t_air, tune["q_k"]), HUMID_MIN)
     rh = x / (1.0 + x**4) ** 0.25
     return t_air + np.log(rh) / tune["q_k"], 100.0 * rh
@@ -831,6 +837,114 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                     mo += move[k, j] * m[k, j] * in_w[k, e]
                 moved[k, i] = mo
     return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail
+
+
+def vapour_mixed(grid: Grid, q: np.ndarray, qs: np.ndarray, t_air: np.ndarray, tune: dict) -> np.ndarray:
+    """The air's water vapour near the ground (_qsat units), from the rain
+    kernel's q, with the large-scale mixing the kernel leaves out. The
+    kernel's air rains out a little every step, so over a long dry stretch
+    (a desert or a continent in its dry winter) its vapour drains toward
+    nothing; real dry air keeps a background that eddies and the air
+    sinking from aloft bring in from the moister air around (Delhi's and
+    the Sahara's January dew points are ~-5 to +8 C, not -40). So: at least
+    vap_bg of the vapour averaged over vap_bg_km, but no more than vap_bg_cap
+    of what the air there can hold (qs: the kernel's capacity), so a cold
+    place doesn't take up its warm neighbours' water (qs: the kernel's
+    capacity of the air mass; t_air: the air near the ground, C, which over
+    an ice sheet is far colder). Used for humidity and clouds only: the
+    rain is the kernel's own."""
+    cap = tune["vap_bg_cap"] * np.minimum(qs, _qsat(t_air, tune["q_k"]))
+    bg = np.minimum(tune["vap_bg"] * smooth(grid, q, tune["vap_bg_km"]), cap)
+    return np.maximum(q, bg)
+
+
+def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.ndarray],
+           p_mm: list[np.ndarray], tune: dict) -> list[np.ndarray]:
+    """Cloud cover (0..1, the share of the sky) in each half-year: a
+    diagnostic from what the rain model knows (seasons_in: _season_inputs'
+    dicts; vap: the air's water vapour, vapour_mixed; p_mm: the half-year's
+    rain rate, mm/yr). Four kinds of cloud, overlapping at random (a sky
+    with two kinds a and b is 1 - (1 - a)(1 - b) cloudy):
+    - deep cloud where the air rises and rains: the tropical rain belt,
+      monsoon summers, wet windward slopes (cloud_deep, growing with the
+      rain above cloud_deep_mm0);
+    - layer cloud of the storms and their fronts: the storm tracks, in
+      proportion to the storminess, in moist air and not under the
+      sinking subtropical air (cloud_storm);
+    - low cloud over the sea: a base of shallow cumulus and stratus
+      (cloud_sea), more over cold water (cloud_cold: the polar seas, fog
+      off the sea-ice edge); thinner under sinking air (cloud_sink), but
+      where the air above is much warmer than the sea (a strong inversion:
+      the stability that keeps the rain kernel's showers away, its moist
+      static energy below that aloft by more than cloud_sc_c[0] C) the
+      sinking air traps a deck of stratocumulus under the inversion
+      (cloud_sc): off California, Peru, Namibia and the Canaries, over the
+      cool upwelling seas. Dry continental air from nearby land under the
+      same sinking air clears it (cloud_cont: the summer Mediterranean);
+    - over land: cloud in proportion to the air's humidity (cloud_rh:
+      winter stratus over Europe), fair-weather cumulus where the ground
+      heats moist air enough to make it unstable (cloud_cu, the summer
+      continents), thin cloud over the cold poles (cloud_polar), and the
+      sea's stratocumulus drifting over low coasts (cloud_coast). The
+      sinking subtropical air clears the land (cloud_clear), less where it
+      rains anyway (a monsoon overrides it).
+    Returns a list of (cloud cover, sunshine share of the day: sunshine()),
+    one per half-year."""
+    ocean = elev <= 0
+    pole = np.clip((np.abs(grid.lat) - 60.0) / 20.0, 0, 1)
+    landy = smooth(grid, (~ocean).astype(float), tune["cloud_cont_km"])
+    coastal = tune["cloud_coast"] * np.clip(1 - np.maximum(elev, 0) / tune["cloud_coast_m"], 0, 1)
+    out = []
+    for si, q, p in zip(seasons_in, vap, p_mm):
+        rh = np.clip(q / np.maximum(si["qs"], 1e-12), 0, 1)
+        moist = np.where(ocean, 1.0, rh)
+        sink, B = si["sink"], np.clip(si["B"], 0, 1.2)
+        inst = si["mse_t"] + LQ * q - si["mse_thr"]  # C: > 0 unstable (see _rain)
+        # (the towers' anvils spread over a few hundred km: the rain smoothed over cloud_rain_km,
+        # which also hides the rain's cell-to-cell streaks, PW-019)
+        p_s = smooth(grid, p, tune["cloud_rain_km"])
+        deep = tune["cloud_deep"] * (1 - np.exp(-np.maximum(p_s - tune["cloud_deep_mm0"], 0) / tune["cloud_deep_mm"]))
+        storm = tune["cloud_storm"] * B * np.clip(1 - sink, 0, 1) * moist ** 3
+        s0, s1 = tune["cloud_sc_c"]
+        dry = 1 - tune["cloud_cont"] * landy * sink
+        deck = tune["cloud_sc"] * np.clip((-inst - s0) / s1, 0, 1) * sink * dry
+        sea = (tune["cloud_sea"] + tune["cloud_cold"] * np.clip((20.0 - si["t_sl"]) / 20.0, -0.5, 1)
+               - tune["cloud_sink"] * sink) * dry + deck
+        sea = np.clip(sea, 0, tune["cloud_low_max"]) * (1 - tune["cloud_itcz"] * si["itcz"])
+        c0, c1 = tune["cloud_cu_c"]
+        cu = np.where(ocean, 0.0, tune["cloud_cu"] * np.clip((inst + c0) / c1, 0, 1) * np.sqrt(rh))
+        # the stratocumulus deck drifts over low coasts (the garua of Lima, the Namib's fog)
+        drift = np.clip(_nbr_mean(grid, np.where(ocean, deck, 0.0)) * coastal, 0, 1)
+        layer = np.clip(1 - (1 - tune["cloud_rh"] * rh ** 1.5 - tune["cloud_polar"] * pole) * (1 - drift), 0, 1)
+        low = np.where(ocean, sea, layer)
+        clear = np.where(ocean, 0.0, tune["cloud_clear"] * sink * np.exp(-p / tune["cloud_clear_mm"]))
+        cover = lambda k: np.clip((1 - (1 - k * deep) * (1 - k * cu) * (1 - storm) * (1 - low)) * (1 - clear), 0, 1)
+        # Showers and thunderstorms build up in the afternoon and leave sunny
+        # mornings: the convective clouds (deep and cumulus) shade only
+        # cloud_sun_conv of the day that layer cloud of the same cover would.
+        out.append((cover(1.0), sunshine(cover(tune["cloud_sun_conv"]))))
+    return out
+
+
+def day_hours(lat, tilt: float = 23.4) -> tuple[np.ndarray, np.ndarray]:
+    """Mean day length (hours from sunrise to sunset) over the July
+    (Apr-Sep) and January (Oct-Mar) half-years."""
+    phi = np.radians(np.asarray(lat, float))[None, :]
+    mid = np.cumsum(MONTH_DAYS) - MONTH_DAYS / 2
+    decl = np.radians(tilt) * np.sin(2 * np.pi * (mid - 80.0) / 365.25)[:, None]
+    h = 24.0 / np.pi * np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1, 1))  # (12, n)
+    return h[3:9].mean(0), np.concatenate([h[:3], h[9:]]).mean(0)
+
+
+SUN_CLEAR, SUN_CLOUD = 0.95, 0.9  # sunshine share of the day under a clear sky, and less per unit of cloud
+
+
+def sunshine(cloud: np.ndarray) -> np.ndarray:
+    """Share of the possible (sunrise to sunset) hours with bright sunshine
+    under cloud cover cloud (0..1; for showery skies, see clouds): roughly
+    1 - cloud, as observed (a sunshine recorder misses the low sun even in a
+    clear sky: ~0.95; London: ~70% cloud, ~35% sunshine)."""
+    return np.clip(SUN_CLEAR - SUN_CLOUD * cloud, 0, 1)
 
 
 def storminess(grid: Grid, t_sl: np.ndarray) -> np.ndarray:
@@ -968,8 +1082,10 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     out_w, _ = _edge_weights(grid, v)
     move = np.clip(speed(v), 0.25, 1.0)
     warm = np.clip(t_air / 15.0, 0, 1)  # evaporation needs warmth
+    # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
     return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, warm=warm, move=move,
-                diff=diff, out_w=out_w, B=B)
+                diff=diff, out_w=out_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
+                t_air=np.where(ocean, sst, t_air))
 
 
 def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -1019,6 +1135,34 @@ TUNE = dict(
     wtg=20.0,  # deg: the tropics' even temperature aloft reaches this far (then fades over 15 deg)
     rh_c=0.8,  # relative humidity above which the large-scale rain runs at full rate...
     rh_pow=3.0,  # ...and how fast it falls off below it
+    # humidity and clouds (vapour_mixed, clouds; diagnostics: they don't change the rain)
+    vap_bg=0.5,  # the air keeps at least this share of the vapour around it ...
+    vap_bg_km=2500.0,  # ... averaged over this far ...
+    vap_bg_cap=0.5,  # ... up to this share of what it can hold
+    cloud_deep=0.8,  # deep cloud where it rains hard (tropical rain belt, monsoons) ...
+    cloud_deep_mm0=300.0,  # ... above this rain rate (mm/yr) ...
+    cloud_deep_mm=1000.0,  # ... reaching 63% of it this much more
+    cloud_rain_km=300.0,  # km over which a rain belt's anvils spread its deep cloud
+    cloud_storm=0.45,  # layer cloud per unit of storminess (storm tracks, fronts)
+    cloud_sea=0.4,  # low cloud over the sea at 20 C (shallow cumulus, stratus) ...
+    cloud_cold=0.35,  # ... plus this much over freezing water (polar seas, sea-ice edges)
+    cloud_sink=0.25,  # ... less this under the sinking subtropical air ...
+    cloud_sc=0.7,  # ... but a stratocumulus deck where it sinks onto a strong inversion ...
+    cloud_sc_c=(4.0, 8.0),  # ... C of stability (moist static energy below that aloft): from, full over
+    cloud_cont=1.0,  # sinking dry air off the land around (cloud_cont_km) clears the sea's low cloud
+    cloud_cont_km=800.0,
+    cloud_low_max=0.85,  # the most low cloud over the sea
+    cloud_coast=1.0,  # share of the sea's stratocumulus deck that drifts over a coast (times the share of
+    # its neighbours that are sea) ...
+    cloud_coast_m=1000.0,  # ... less the higher it is, none this high (the decks are ~1 km deep)
+    cloud_itcz=0.1,  # share of the sea's low cloud the tropical rain belt's towers replace
+    cloud_rh=0.55,  # land: cloud per unit of relative humidity (^1.5) of the air mass ...
+    cloud_polar=0.25,  # ... thin cloud over the cold poles (from 60 deg, in full from 80) ...
+    cloud_cu=0.5,  # ... fair-weather cumulus where the ground makes the air unstable ...
+    cloud_cu_c=(4.0, 6.0),  # ... from this many C stable, in full over this many more
+    cloud_clear=0.5,  # share of the land's cloud the sinking subtropical air clears ...
+    cloud_clear_mm=800.0,  # ... less where it rains (e-fold mm/yr)
+    cloud_sun_conv=0.6,  # share of the day showers and cumulus shade (they build up in the afternoon)
     # winds and seasons
     ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be ...
     ice_cool_km=300.0,  # ... in full where the land this far around is all ice (a small cap sits in
@@ -1349,6 +1493,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       dew_jul, dew_jan       C: dew point of the air near the ground, July / January
                              half-year (humidity())
       rh_jul, rh_jan         %: relative humidity, July / January half-year
+      cloud_jul, cloud_jan   0..1: cloud cover, July / January half-year (clouds())
+      sun_jul, sun_jan       hours/day of bright sunshine, July / January half-year
+                             (day_hours x sunshine())
       wind_jul, wind_jan     tangent vectors, ~1 = a steady trade wind
       current                tangent vectors of the surface ocean currents
       jet_jul, jet_jan       tangent vectors, m/s: the upper-level wind (jet stream)
@@ -1434,10 +1581,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         j, baro = jet_stream(grid, t_s, tune)
         jets.append(j)
         tracks.append(storm_track(grid, j, baro, tune))
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(
-        grid, elev, [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
-                     _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])],
-        tune)
+    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
+            _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])]
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, tune)
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
@@ -1483,10 +1629,14 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     sst_m = (np.maximum(sst + swing, FREEZE), np.maximum(sst - swing, FREEZE))
     tm = 0.5 * (t_warm + t_cold)
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
+    q_jul, q_jan = (vapour_mixed(grid, q, d["qs"], d["t_air"], tune) for q, d in zip((q_jul, q_jan), s_in))
     (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(q_jul, tm + dt, tune), humidity(q_jan, tm - dt, tune)
+    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune)
+    day_jul, day_jan = day_hours(grid.lat, tilt)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
-                rh_jan=rh_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
+                rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, sun_jul=day_jul * sun_jul,
+                sun_jan=day_jan * sun_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
                 sss=oc["sss"], density=oc["density"], density_winter=oc["density_w"], overturning=oc["sinking"],
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],
                 sea_evap=sea_evap, sea_ice_growth=ice_m, moc_sites=oc["sites"],

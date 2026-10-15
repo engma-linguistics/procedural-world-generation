@@ -178,7 +178,7 @@ flowchart LR
 | shield | old (≥ 500 Myr) craton or granite exposed, not folded for 300 Myr nor rifted for 100 (Canadian Shield) | basement age |
 | hills | any other land (the zoom's graded hills and mountains) | — |
 
-With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope) and the fold wavelength (1.5 × the folded pile + 2 km).
+With each class come the zoom's parameters: the exposed stratum, its thickness and what lies under it (hard over soft makes scarps and falls), the dip (folded: 8–60° by how hard the belt was squeezed; flat: the regional slope), the fold wavelength (1.5 × the folded pile + 2 km), the stretching of the last rifting (`rift_strain`, ln β) and the time since the cell was last under ice (`glaciated_myr`).
 
 ## 4. Climate (`climate.py`, `ocean.py`)
 
@@ -204,8 +204,15 @@ With each class come the zoom's parameters: the exposed stratum, its thickness a
   - Density comes from temperature and salinity.
   - Deep water sinks where the winter sea is densest, poleward of 50° (Stommel's flow law).
   - The replacement inflow follows the currents, like the **AMOC**'s North Atlantic Drift, and warms Norway.
-  - Worlds store the sea-surface salinity and temperature (annual, July, January), the sinking per cell, and in their meta the overturning's strength in Sv with its sinking sites. The viewer's "Overturning" overlay draws the sites, the surface inflow along the model's route, and the deep return flow as a dashed **schematic** (the model has no deep ocean: a route along the deep western boundaries to the Southern Ocean or the tropics, `ocean.loop_schematic`). On Earth (world 64fc00): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1 Sv) seas and the Ross (1.9 Sv) and Weddell (0.6 Sv) seas; none in the North Pacific.
-- **Humidity:** the rain model's water vapour gives each half-year's dew point and relative humidity near the ground (`climate.humidity`; worlds store `dewpoint_jul/jan` and `humidity_jul/jan`).
+  - Worlds store the sea-surface salinity and temperature (annual, July, January), the sinking per cell, and in their meta the overturning's strength in Sv with its sinking sites. The viewer's "Overturning" overlay draws the sites, the surface inflow along the model's route, and the deep return flow as a dashed **schematic** (the model has no deep ocean: a route along the deep western boundaries to the Southern Ocean or the tropics, `ocean.loop_schematic`). On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1 Sv) seas and the Ross (1.9 Sv) and Weddell (0.6 Sv) seas; none in the North Pacific.
+- **Humidity:** the rain model's water vapour gives each half-year's dew point and relative humidity near the ground (`climate.humidity`; worlds store `dewpoint_jul/jan` and `humidity_jul/jan`). Dry air keeps a background of vapour mixed in from the air around it (`climate.vapour_mixed`; the rain model's own air drains to nothing over long dry stretches), so Delhi's and the Sahara's January air holds ~30–45%, not 15%.
+- **Clouds** (`climate.clouds`): a diagnostic cloud cover per half-year from what the rain model knows, four kinds overlapping at random:
+  - deep cloud where it rains hard (the ITCZ, monsoon summers, windward slopes);
+  - layer cloud along the storm tracks, in moist air, not under the sinking subtropical air;
+  - low cloud over the sea, more over cold water (polar seas, sea-ice edges), thinner under sinking air, except where the air sinks onto a strong inversion over cool upwelling water: a **stratocumulus deck** (California, Peru, Namibia, the Canaries), cloudy with little rain, which drifts over low coasts;
+  - over land, cloud with the air's humidity, fair-weather cumulus where the ground makes moist air unstable, thin polar cloud; the sinking subtropical air clears it (deserts).
+
+  **Sunshine** (hours a day) is the day length times the clear share of the day; showers and cumulus build up in the afternoon, so they cost less sunshine than layer cloud. Worlds store `cloud_jul/jan` (%) and `sunshine_jul/jan` (h/day). On Earth (tools/earth_check.py, vs ICOADS ship reports and CRU sunshine; world dc3732, screenshots in `docs/review/clouds/`): Sahara 17%, Southern Ocean 82%, the Sc decks 64–70%, the ITCZ 66–69% (observed ~70–80%); continental summers come out too clear and the wet tropics too gloomy, following the rain.
 - **Rain:**
   - Moisture evaporates from the sea (Clausius–Clapeyron) and is carried by the winds.
   - It rains out three ways: as **orographic rain**, which gives wet windward slopes and **rain shadows**; as **convection**; and along storm tracks.
@@ -284,7 +291,7 @@ On Earth's terrain this closes the Caspian, Aral, Tarim and Altiplano basins, an
    - biomes;
    - waves and tides;
    - July / January temperature and rain (`world.seasons`);
-   - the sea (temperature, salinity, sinking; the overturning in the meta) and humidity.
+   - the sea (temperature, salinity, sinking; the overturning in the meta), humidity, cloud cover and sunshine.
 
 The viewer's Zoom button instead builds the world straight from the keyframe in seconds. Worlds are `worlds/<id>.json` plus a `.txt` summary.
 
@@ -307,6 +314,7 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - Coarse rivers become meandering, carved valleys, and rivers entering at the edge bring their discharge.
    - Lakes take the world's level and kind. Open lakes pass their water on; closed ones keep it.
 5. **Landscape pass:** 15 iterations of steady-state stream power (slope ∝ discharge^−0.5). These **grade** rivers into smooth concave profiles.
+   - **Glaciers** (`glaciers()`, PW-127) come from each pixel's own climate, by the main run's ice rule (`earth.ice_sheets`): ice accumulates where the pixel's summer, lapse-corrected to its own height (the world's ice-surface temperatures undone to the bare ground, then the coarse ice's own cooling put back), is below `ice_summer_temp` and enough snow falls to outlast the melt; cold ground joined to such a zone is ice too. The surplus is routed down the valleys as tongues (~0.8 km wide at 0.1 km³/yr, at most 3 km³/yr and 100 km) that melt as bare ice on the way down, so glaciers reach below the snowline only as narrow tongues. A coarse ice sheet stays one sheet (its own cooling keeps its pixels cold) with outlet tongues at its margin. The outline is drawn on the target surface (lakes avoid it, the landscape pass smooths under it) and redrawn on the finished valleys; the `ice` layer is the coarse thickness in the zones, else a thickness from the flux, and the ice-sheet biome is exactly the glaciers.
 6. **Volcanoes** (`zoom_volcanoes.py`): each volcano in the world's table is drawn as its own edifice: a Gaussian shield (with rift-zone lobes, and a caldera while active) for hotspots, a steep concave stratocone for arcs. Older ones are lowered as the run says (`top_m`) and get radial valleys; planed ones are flat-topped guyots; a living reef makes a fringing or barrier reef, or an atoll ring with islets round a lagoon. Near hotspot vents on the sea floor the terrain is replaced by the vents' floor plus their cones, so the sea between two vents is sea even where the coarse cell is land. Young volcanoes keep their smooth cone through the landscape pass; older ones are carved by it.
 7. **Landform classes** (`zoom_landforms.py`): each coarse cell's landform class shapes the finished landscape through a class-dispatch registry (`SYNTH`: per class, `target` / `relief` / `strata` hooks, blended by smooth class weights, so there are no cell seams):
    - **relief** around the drainage: each pixel's height above the first channel below it is reshaped into flat interfluves over steep valley walls (channels and every flow path kept);
@@ -314,13 +322,17 @@ A zoom turns ~110 km cells into a 500×500 px landscape: 1000 km at 2 km by defa
    - **Great escarpment:** one step ~0.8 e* high below the escarpment cells' level e*: a lowland, a crenulated scarp, the plateau above. A designed reach crossing it takes its main fall at the scarp, the river on the plateau down to the lip.
    - **Caprock:** stepped benches, mesas and buttes, canyons 1.5× deeper; cuestas where the strata dip.
    - **Lava plateau:** a flat top over stair-stepped valley sides.
-   - Sills left across a flow path are cut through, and each coarse cell's mean is restored. Batches 2–3 (rifts, fold belts, shields; karst, dunes, coastal plains) plug in as further synthesisers (PW-011, PW-012).
+   - **Fold-and-thrust belt:** parallel folds a fold wavelength apart, across the shortening (strike from the thickened crust, the high ground and any converging boundary). Young belts are whaleback anticlines over synclinal valleys (Zagros); old ones are worn to hogbacks of the hard beds, closing round plunging fold noses (Valley and Ridge). The target carries the folds too, so the drainage is trellised, and big rivers cross the ridges in water gaps.
+   - **Fault-block rift:** tilted blocks 10–30 km wide bounded by faults along the rift's band of cells: a steep scarp, a gentle back-tilt, a flat sediment-filled half-graben, lakes in it where the climate is wet. The throw comes from the stretching (`rift_strain`, ln β) and the age; the blocks' facing flips between ~200 km patches (accommodation zones).
+   - **Shield:** a flattened plain with granite domes and inselbergs (steep, round-topped, 1–4 km across, 100–400 m); where the record says it was under ice lately (`glaciated_myr`), the domes are ground down and rock basins hold lakes.
+   - The structures' strikes and phases come from planet-fixed patches (a jittered lattice, each patch's strike read from the coarse cells around it), so overlapping zooms agree.
+   - Sills left across a flow path are cut through as gaps a few pixels wide (not across a rift's or scoured shield's closed basins, which become lakes or flats); falls over the classes' cliffs retreat into gorges and get plunge pools; each coarse cell's mean is restored. Cliffs are anti-aliased (at least ~1 px wide; benches narrower than ~2 px fade out). Batch 3 (karst, dunes, coastal plains) plugs in as further synthesisers (PW-012).
 8. **Knickpoint waterfalls:**
    - Grading would erase falls. So where the coarse river drops steeply (≥ 50 m of extra drop, ≥ 100 m³/s), the zoom keeps a **knickpoint**: a resistant lip, a plunge pool, and a gorge retreated upstream.
    - Heights are scaled so the plateau above never rises over the coarse ground (or a landform's plateau, at an escarpment). Big rivers get ~50–150 m falls; at an escarpment ~100–400 m.
    - The lip's rock: a top stratum ≥ 0.5 km thick holds it by itself; a thinner one is helped by a harder rock under it. Soft rock under the lip lets the gorge retreat faster (undercutting, as at Niagara).
    - The river is held at this staircase, between valley sides a few km wide, so it reaches its lips and doesn't run perched above the land beside it.
-   - `stats.waterfalls` in `zoom.json` lists the biggest, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
+   - `stats.falls` in `zoom.json` lists every fall ≥ 30 m (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`; `falls_count` counts those ≥ 30 and ≥ 100 m); `stats.waterfalls` keeps the biggest 5 for the panel, each with its reach's other falls (`cascades`). An undesigned drop is listed only where it is ≥ 3× as steep as the river around it (a steep reach isn't a fall).
 
 Each zoom writes a 16-bit `heightmap.png`, a `preview.png`, its layers (the coarse cell's `landform` class among them) and its stats (`landforms`: the share of land each synthesised class shapes).
 
@@ -349,7 +361,7 @@ Twenty-eight detectors look for places worth a visit:
 - **Water and coast:** the biggest rivers, waterfalls, deltas with their type, fjords, coral coasts, salt lakes and pans.
 - **Climate:** "wine country", rain shadows, climate records.
 - **Variety:** the most varied 1000 km square.
-- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, dry summer at sea level, a warm sea by its summer surface temperature, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 38 mm of rain, warm sea 25 °C, gentle surf".
+- **Travel** (worlds with July / January layers, each hemisphere's own summer and winter): beach destinations (a warm, sunny summer at sea level, a warm sea by its summer surface temperature, moderate waves), ski country (freezing, snowy winter slopes, not glaciated, over a town with a bearable winter), mild-winter retreats, and a year-round resort (beach and skiing within 400 km). Each says why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf".
 
 Each kind belongs to a category (landscape, water, climate, travel, geology), which the viewer filters by and colours the markers with. Each scores as kind priority × quality. Results are cached in `worlds/highlights/`. `planet highlights <run> --zoom N` pre-makes zooms of the top N.
 
@@ -363,7 +375,7 @@ Each kind belongs to a category (landscape, water, climate, travel, geology), wh
 - **Globe** (`viewer/index.html`):
   - three.js, one triangle fan per cell, with exaggerated relief on a globe or a flat map.
   - Runs play as animations with events and plate arrows.
-  - Worlds add climate, biome, wave, tide, sea temperature, salinity, humidity and dew point layers, and the overturning overlay. Ocean currents are drawn as streamlines (brighter = faster), so the gyres show as loops. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
+  - Worlds add climate, biome, wave, tide, sea temperature, salinity, humidity, dew point, cloud and sunshine layers, and the overturning overlay. Ocean currents are drawn as streamlines (brighter = faster), so the gyres show as loops. Temperature and rain have a year / July / January picker (worlds store `temperature_jul/jan` and `precipitation_jul/jan`; July is the warm month in the north, the cold one in the south), shared with the winds' season and `?season=jul`.
   - Provenance: a world shows the run and time it came from ('<run name> @ T Myr', linked), and its zooms; a run lists what was made from it (worlds with their zooms, time zooms) and ticks their times above the time slider. From the indexes (`worlds/index.json` carries `source_run`, `t_myr`).
   - Clicking a cell offers "Zoom".
   - The URL holds the state, e.g. `?world=7c5adf.json&layer=biome&mode=map`.

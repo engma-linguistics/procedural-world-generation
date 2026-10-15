@@ -204,6 +204,11 @@ LAYERS = {
     "dewpoint_jan": _spec("i1", "C", "dew point of the air near the ground, January half-year"),
     "humidity_jul": _spec("u1", "%", "relative humidity near the ground, July half-year"),
     "humidity_jan": _spec("u1", "%", "relative humidity near the ground, January half-year"),
+    "cloud_jul": _spec("u1", "%", "cloud cover (share of the sky), July half-year (climate.clouds)"),
+    "cloud_jan": _spec("u1", "%", "cloud cover (share of the sky), January half-year (climate.clouds)"),
+    "sunshine_jul": _spec("u1", "h/day", "bright sunshine, hours a day, July half-year (climate.sunshine)", scale=0.1),
+    "sunshine_jan": _spec("u1", "h/day", "bright sunshine, hours a day, January half-year (climate.sunshine)",
+                          scale=0.1),
     "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
     # landform classes and their parameters (landform.py; read from each cell's geological record)
     "landform": _spec("u1", "id", "landform class (landform.CLASSES; legend 'landforms')"),
@@ -215,6 +220,8 @@ LAYERS = {
     "strata_dip": _spec("u1", "deg", "dip of the exposed strata (folded: by the squeezing; flat: regional slope)",
                         scale=0.25),
     "fold_wavelength": _spec("u1", "km", "distance between fold crests (0: strata not folded)", scale=0.2),
+    "rift_strain": _spec("u1", "ln beta", "stretching of the cell's last rifting (0: never rifted)", scale=0.01),
+    "glaciated_myr": _spec("<u2", "Myr", "since the cell was last under ice (0: now; 9999: never)"),
 }
 
 

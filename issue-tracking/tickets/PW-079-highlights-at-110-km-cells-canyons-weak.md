@@ -10,7 +10,7 @@ impact: low
 found_by: hl2
 blocked_by: []
 relates: [PW-067]
-refs: [planet/highlights.py, "world 64fc00"]
+refs: [planet/highlights.py, "world dc3732"]
 created: 2026-10-14
 updated: 2026-10-14
 ---

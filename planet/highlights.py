@@ -73,8 +73,9 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   mean of the two), lowered when under half land.
 - travel (worlds with July / January layers; each hemisphere's own summer and
   winter, July being summer in the north): beach destination (coast with a
-  warm, dry summer at sea level, a warm sea: its summer surface temperature,
-  sst_jul / sst_jan, where the world has them; moderate waves), ski country
+  warm, sunny summer at sea level: sunshine_jul / sunshine_jan, a warm sea: its
+  summer surface temperature, sst_jul / sst_jan, where the world has them;
+  moderate waves), ski country
   (ice-free mountains freezing and snowy in winter, not glaciated, a town with
   a tolerable winter below), mild-winter retreat (low land, mild and fairly dry
   winter), year-round resort (a beach and ski country within RESORT_KM). Each
@@ -1438,7 +1439,8 @@ SEASON_LAYERS = ("temperature_jul", "temperature_jan", "precipitation_jul", "pre
 TRAVEL_SPACING_KM = 800.0  # places of one travel kind at least this far apart
 # beaches: summer air at sea level, monthly rain, sea surface, wave power
 BEACH_T = (22.0, 34.0, 28.0)  # C: min, max, best
-BEACH_MAX_RAIN = 90.0  # mm in the summer month (Nice ~15-40, Miami ~150 in its wet summer)
+BEACH_SUN = (7.0, 10.0)  # h/day of bright sunshine over the summer half-year: the least, and the best
+# (Algarve, Crete ~9.5-10, Miami ~9, Barbados ~7, London ~6)
 BEACH_MIN_SEA = 20.0  # C, the sea next to it in summer
 BEACH_WAVES = (1.0, 40.0)  # kW/m: below is a dead calm, above a storm coast (Earth's west coasts at 45-60 N)
 # skiing: winter at the slopes, snow (winter rain as water), a tolerable town below
@@ -1522,6 +1524,8 @@ def _beach_cands(ctx: _Ctx) -> list[tuple]:
     open_sea = np.zeros(ctx.n, bool)  # not a pond: a sea of at least 20 cells
     for cells in ctx.components(sea, min_cells=20):
         open_sea[cells] = True
+    if "sunshine_jul" not in L:
+        return ctx._beach
     ice = np.asarray(L["ice"], float) if "ice" in L else np.zeros(ctx.n)
     # the sea's own summer surface temperature where the world has it (sst_jul / sst_jan),
     # else the summer air over the sea
@@ -1532,19 +1536,21 @@ def _beach_cands(ctx: _Ctx) -> list[tuple]:
     # the beach is at sea level; the cell's temperature is for its mean height
     t_beach = S["t_sum"] + LAPSE * np.maximum(ctx.elev, 0)
     rain = S["p_sum"]
+    sun = np.where(S["north"], np.asarray(L["sunshine_jul"], float), np.asarray(L["sunshine_jan"], float))
     ok = (ctx.land & (n_sea > 0) & (ice <= 0) & (t_beach >= BEACH_T[0]) & (t_beach <= BEACH_T[1])
-          & (rain <= BEACH_MAX_RAIN) & (sea_t >= BEACH_MIN_SEA) & (wave >= BEACH_WAVES[0]) & (wave <= BEACH_WAVES[1]))
+          & (sun >= BEACH_SUN[0]) & (sea_t >= BEACH_MIN_SEA) & (wave >= BEACH_WAVES[0]) & (wave <= BEACH_WAVES[1]))
     rock = np.asarray(L["surface_rock"]) if "surface_rock" in L else np.zeros(ctx.n, int)
     sed, _ = _nbr_mean(ctx, np.asarray(L.get("sediment_cover", np.zeros(ctx.n)), float), open_sea)
     for i in np.flatnonzero(ok):
         q_t = float(_tri(t_beach[i], BEACH_T[0] - 2, BEACH_T[2], BEACH_T[1] + 2))
-        q_dry = 1.0 - 0.6 * float(rain[i]) / BEACH_MAX_RAIN
+        q_sun = 0.4 + 0.6 * float(np.clip((sun[i] - BEACH_SUN[0]) / (BEACH_SUN[1] - BEACH_SUN[0]), 0, 1))
         q_sea = float(np.clip((sea_t[i] - BEACH_MIN_SEA + 2) / 7, 0, 1))
         lw = np.log(wave[i])  # gentle-to-lively surf (5-20 kW/m) is best
         q_wave = float(np.clip(1 - 0.35 * max(np.log(5) - lw, lw - np.log(20), 0), 0.3, 1))
         sandy = bool(rock[i] in (3, 7) or sed[i] >= 0.5)  # sandstone / sediment ashore, or a sediment shelf
-        q = q_t * q_dry * q_sea * q_wave * (1.15 if sandy else 1.0)
-        ctx._beach.append((q, int(i), {"t_c": round(float(t_beach[i])), "rain_mm": round(float(rain[i])),
+        q = q_t * q_sun * q_sea * q_wave * (1.15 if sandy else 1.0)
+        ctx._beach.append((q, int(i), {"t_c": round(float(t_beach[i])), "sun_h": round(float(sun[i]), 1),
+                                      "rain_mm": round(float(rain[i])),
                                       "sea_c": round(float(sea_t[i])), "wave_kw_m": round(float(wave[i]), 1),
                                       "sandy": sandy, "month": _summer(ctx, int(i))}))
     return ctx._beach
@@ -1555,12 +1561,13 @@ def _surf(kw: float) -> str:
 
 
 def _beach_why(s: dict) -> str:
-    return (f"{s['month']} {s['t_c']} °C, {s['rain_mm']} mm of rain, warm sea {s['sea_c']} °C, "
+    return (f"{s['month']} {s['t_c']} °C, {s['sun_h']:.0f} h of sunshine a day, {s['rain_mm']} mm of rain, "
+            f"warm sea {s['sea_c']} °C, "
             f"{_surf(s['wave_kw_m'])} ({s['wave_kw_m']:.0f} kW/m)" + (", sandy shore" if s["sandy"] else ""))
 
 
 def beaches(ctx: _Ctx, top: int = 4) -> list[dict]:
-    """Beach destinations: coast with a warm, dry summer (the hemisphere's
+    """Beach destinations: coast with a warm, sunny summer (the hemisphere's
     own: July in the north, January in the south; air at sea level, from the
     cell's mean by the lapse rate), a warm sea next to it and moderate waves
     (not a storm coast, not a dead calm); sandstone or sediment ashore or on
@@ -1569,7 +1576,7 @@ def beaches(ctx: _Ctx, top: int = 4) -> list[dict]:
     best = kept[0][0] if kept else 1.0
     feats = []
     for rank, (q, i, s) in enumerate(kept):
-        blurb = (f"{_beach_why(s)}. A warm, dry summer on the coast: a beach holiday "
+        blurb = (f"{_beach_why(s)}. A warm, sunny summer on the coast: a beach holiday "
                  f"(like the Mediterranean or the Algarve in {s['month']}).")
         feats.append(_feature(ctx, "beach", f"Beach: {s['month']} {s['t_c']} °C, sea {s['sea_c']} °C", blurb, i, 500, s, quality=(0.85 ** rank) * (0.5 + 0.5 * q / best)))
     return feats

@@ -103,6 +103,10 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # and relative humidity (%)
         "dewpoint_jul": np.round(c["dew_jul"]).astype(int), "dewpoint_jan": np.round(c["dew_jan"]).astype(int),
         "humidity_jul": np.round(c["rh_jul"]).astype(int), "humidity_jan": np.round(c["rh_jan"]).astype(int),
+        # cloud cover (% of the sky) and bright sunshine (hours a day) in the July / January
+        # half-years (climate.clouds, climate.sunshine)
+        "cloud_jul": np.round(100 * c["cloud_jul"]).astype(int), "cloud_jan": np.round(100 * c["cloud_jan"]).astype(int),
+        "sunshine_jul": np.round(c["sun_jul"], 1), "sunshine_jan": np.round(c["sun_jan"], 1),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds

@@ -10,7 +10,7 @@ impact: low
 found_by: viewerocean
 blocked_by: []
 relates: [PW-137]
-refs: [planet/ocean.py, "world 9b8200"]
+refs: [planet/ocean.py, "world 2085dc"]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -19,9 +19,9 @@ updated: 2026-10-14
 ocean.loop_schematic draws the deep return flow as the cheapest route through sea
 deeper than 1500 m, preferring western boundaries (a step costs 1 + km to land due
 west / 500), to a circumpolar channel (equatorward of 70 deg) in the other hemisphere
-or else the equatorial band. On Earth (world 64fc00) this reads well (NADW down the
+or else the equatorial band. On Earth (world dc3732) this reads well (NADW down the
 American slope to the Southern Ocean, AABW from the Ross and Weddell seas). On the
-demo world 9b8200 (run f59dd6 @ 1000 Myr):
+demo world 2085dc (run f59dd6 @ 1000 Myr):
 - the 13.3 Sv southern site (74 S, 27 E) has no deep limb: the nearest deep sea that
   leads to the tropics is > 20 deg away (LOOP_GAP_DEG), so only the rings and the surface
   inflow show;

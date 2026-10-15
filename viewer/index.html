@@ -302,15 +302,20 @@ RAMPS['sea temperature'] = [[-2, '#3b3a8f'], [4, '#3f74c0'], [10, '#5fb6c8'], [1
 RAMPS.salinity = [[31, '#3b2a78'], [33, '#3f6fb5'], [34.2, '#8fc3d8'], [34.9, '#e9eee6'], [35.8, '#f0c870'], [37, '#d9783a'], [39, '#9e2a1e']];
 RAMPS.humidity = [[15, '#b98a4f'], [35, '#e3cf94'], [55, '#d9e7c4'], [70, '#7fc3b0'], [82, '#3f8fb0'], [95, '#244f8f']];
 RAMPS['dew point'] = [[-25, '#5b4f9a'], [-5, '#9fb0d0'], [5, '#d8e6e0'], [12, '#b9dc8a'], [17, '#f2d55e'], [21, '#ef8a3a'], [25, '#b8283a']];
+// the sky (worlds): cloud cover (% of the sky) and bright sunshine (hours a day)
+RAMPS.cloud = [[0, '#f2c14e'], [20, '#efe0a6'], [40, '#d3dade'], [60, '#a3b1bf'], [80, '#6f7f93'], [100, '#454e5e']];
+RAMPS.sunshine = [[0, '#2e3348'], [2, '#4d5674'], [4, '#8a93a6'], [6, '#d3d3c0'], [8, '#efd98a'], [10, '#f3b33d'], [12, '#e57a22'], [14, '#c4461a']];
 // model minus observed (Earth reference world): temperature in C, rainfall as log2 of the ratio
 RAMPS['temperature difference'] = [[-10, '#2b5fb3'], [-5, '#7fa8de'], [-1, '#eef1f4'], [1, '#eef1f4'], [5, '#e8956b'], [10, '#b2262b']];
 RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], [0.2, '#f0ece2'], [1, '#80cdc1'], [2, '#018571']];
+RAMPS['sunshine difference'] = [[-4, '#4d5674'], [-2, '#a3b1bf'], [-0.5, '#f0ece2'], [0.5, '#f0ece2'], [2, '#efd98a'], [4, '#e57a22']];
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
                 'ice thickness': 'm of land ice (bare land grey)', 'temperature difference': '°C, model minus observed',
                 'wave power': 'kW/m of wave crest, mean (at sea)', 'tide range': 'm, tidal range (at sea)',
                 'sea temperature': '°C sea surface, year', salinity: 'psu at the sea surface (mean 34.7)',
-                humidity: '% rel. humidity, year', 'dew point': '°C dew point, year' };
+                humidity: '% rel. humidity, year', 'dew point': '°C dew point, year',
+                cloud: '% cloud cover, year', sunshine: 'hours of bright sunshine a day, year' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -324,7 +329,8 @@ function plateColor(id, continental, out) {
 // model's and as observed (obs_* layers). state.obs picks which to colour by:
 // 'model', 'obs', or 'diff' (model minus observed). Returns null when the
 // layer on screen has no observed counterpart.
-const OBS_LAYERS = { temperature: 'obs_temperature', precipitation: 'obs_precipitation', climate: 'obs_climate' };
+const OBS_LAYERS = { temperature: 'obs_temperature', precipitation: 'obs_precipitation', climate: 'obs_climate',
+                     sunshine: 'obs_sunshine' };
 function obsView(layer) {
   if (!V || V.kind !== 'world' || !OBS_LAYERS[layer] || !V.layers[OBS_LAYERS[layer]] || state.obs === 'model') return null;
   return { layer, model: V.layers[layer], obs: V.layers[OBS_LAYERS[layer]], diff: state.obs === 'diff' };
@@ -333,7 +339,8 @@ function obsView(layer) {
 // (temperature_jul, precipitation_jan, ...). state.season ('' = the year,
 // 'jul', 'jan') is shared by the colour layers and the winds' picker (?season=).
 const SEASONAL = { temperature: 'temperature', precipitation: 'precipitation', rainfall: 'precipitation',
-                   'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint' };
+                   'sea temperature': 'sst', humidity: 'humidity', 'dew point': 'dewpoint', cloud: 'cloud',
+                   sunshine: 'sunshine' };
 const SEASON_NAMES = { jul: 'July', jan: 'January' };
 state.season = '';
 // the season the colour layer shows: '' (the year, or no seasonal layer here), 'jul' or 'jan'
@@ -351,7 +358,8 @@ function seasonUnits(layer) {
   if (!s) return UNITS[layer];
   const half = s === 'jul' ? 'Apr–Sep' : 'Oct–Mar';
   return { temperature: `°C, ${SEASON_NAMES[s]} mean`, sst: `°C sea surface, ${SEASON_NAMES[s]}`,
-           humidity: `% rel. humidity, ${half}`, dewpoint: `°C dew point, ${half}` }[SEASONAL[layer]]
+           humidity: `% rel. humidity, ${half}`, dewpoint: `°C dew point, ${half}`, cloud: `% cloud cover, ${half}`,
+           sunshine: `hours of bright sunshine a day, ${half}` }[SEASONAL[layer]]
     || `mm/yr, ${half} rate`;
 }
 function setSeason(s) {
@@ -370,6 +378,7 @@ function obsColor(ov, i, c) {
   if (!ov.diff) return ov.layer === 'climate' ? c.set(V.koppenColors[o]) : rampFns[ov.layer](o, c);
   if (ov.layer === 'temperature') return rampFns['temperature difference'](m - o, c);
   if (ov.layer === 'precipitation') return rampFns['rainfall ratio'](Math.log2((m + 50) / (o + 50)), c);  // +50: deserts
+  if (ov.layer === 'sunshine') return rampFns['sunshine difference'](m - o, c);
   return c.set(m === o ? '#3fae5a' : koppenGroup(m) === koppenGroup(o) ? '#e8c547' : '#d0453a');
 }
 
@@ -447,6 +456,10 @@ function cellColors(layer) {
       rampFns[layer](sv[i], c);
       if (elev[i] > 0) c.lerp(BARE, 0.3);
     }
+    else if (layer === 'cloud' || layer === 'sunshine') {  // land and sea (the sea a little bluer, for the coasts)
+      rampFns[layer](sv[i], c);
+      if (elev[i] <= 0) c.lerp(OCEAN, 0.25);
+    }
     else if (layer === 'rainfall') { if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](sv[i], c); }
     else if (layer !== 'elevation' && elev[i] <= 0) c.copy(OCEAN);
     else {
@@ -476,6 +489,7 @@ function availableLayers() {
   if (V.layers.sst) ls.push('sea temperature');
   if (V.layers.salinity) ls.push('salinity');
   if (V.layers.humidity) ls.push('humidity', 'dew point');
+  if (V.layers.cloud) ls.push('cloud', 'sunshine');
   return ls;
 }
 
@@ -1130,7 +1144,7 @@ function rampLegend(key, units, labels) {
 function renderLegend() {
   const el = $('legend');
   const ov = obsView(state.layer);
-  // the model / observed / difference switch: only for an Earth world's temperature, rainfall and climate
+  // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
   $('obsSeg').style.display = V.kind === 'world' && V.layers.obs_temperature && OBS_LAYERS[state.layer] ? '' : 'none';
   $('seasonRow').style.display = SEASONAL[state.layer] && V.layers[SEASONAL[state.layer] + '_jul'] && !ov ? '' : 'none';
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
@@ -1140,6 +1154,9 @@ function renderLegend() {
   } else if (ov && ov.diff && state.layer === 'temperature') {
     el.innerHTML = rampLegend('temperature difference', UNITS['temperature difference']) +
       '<span class="muted">observed: NCEP/NCAR 2 m air, 1981–2010</span>';
+  } else if (ov && ov.diff && state.layer === 'sunshine') {
+    el.innerHTML = rampLegend('sunshine difference', 'h of sunshine a day, model minus observed') +
+      '<span class="muted">observed: CRU CL 2.0 sunshine, 1961–90 (land)</span>';
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
@@ -1542,12 +1559,16 @@ function describe(i) {
     }
     if (L.humidity_jul) lines.push(`humidity: July ${L.humidity_jul[i]}% (dew point ${L.dewpoint_jul[i]} °C), ` +
       `January ${L.humidity_jan[i]}% (${L.dewpoint_jan[i]} °C)`);
+    if (L.cloud_jul) lines.push(`sky: July ${L.cloud_jul[i]}% cloud, ${L.sunshine_jul[i].toFixed(1)} h of sun a day; ` +
+      `January ${L.cloud_jan[i]}%, ${L.sunshine_jan[i].toFixed(1)} h`);
     if (L.obs_temperature) {  // the Earth reference world
       const ot = L.obs_temperature[i], op = L.obs_precipitation[i], ok = L.obs_climate[i];
       if (ot != null) lines.push(`observed: ${ot} °C` + (L.obs_cold_month[i] != null
         ? `, months ${Math.round(L.obs_cold_month[i])} to ${Math.round(L.obs_warm_month[i])} °C` : ''));
       if (op != null && L.elevation[i] > 0) lines.push(`observed rain ${Math.round(op)} mm/yr`);
       if (ok >= 0 && L.elevation[i] > 0) lines.push(`observed climate ${V.koppen[ok].code} (${V.koppen[ok].name})`);
+      const os = L.obs_sunshine?.[i];
+      if (os != null && L.elevation[i] > 0) lines.push(`observed sunshine ${os.toFixed(1)} h a day (CRU)`);
     }
   }
   if (V.tz) {  // glacial time zoom: no rock or rain layers
@@ -2029,7 +2050,7 @@ async function setWorld(w) {
   stop(); picked = null; renderZoomBox();
   const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
   const pg = prepareGrid(G);
-  for (const k of ['humidity', 'dewpoint'])  // the year's: the mean of the two half-years
+  for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,

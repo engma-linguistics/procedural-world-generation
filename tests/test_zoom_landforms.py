@@ -151,3 +151,223 @@ def test_caprock_holds_the_lip():
     assert zoom.lip_undercut(*niagara) > 1.1 > 0.7 > zoom.lip_undercut(SS, CRATON, 2.0, 0.6, GRAN)
     # without strata layers: the old rule (basement under a thin cover)
     assert zoom.lip_resistance(SS, CRATON, 0.2) == zoom.KP_RESIST[CRATON]
+
+
+# ---------------------------------------------------------------------------
+# Batch 2 (PW-011): fold belt, rift, shield; and the fixes PW-149 / PW-150
+# ---------------------------------------------------------------------------
+def _plain_world(base, gx, gy, precip=1200.0, thick_gy=0.01):
+    """A continent at `base` m rising gx, gy m/km east and north, its crust
+    thickening northward by thick_gy km/km (a collision to the north)."""
+    from planet import hydrology
+    from planet.grid import build_grid
+    from planet.geo import latlon
+    from test_zoom_water import _dist_km
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    xk, yk = lon * 111.2, lat * 111.2
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, base + gx * xk + gy * yk, -3000.0)
+    pr = np.full(g.n, precip)
+    c = {"runoff": 0.5 * pr, "aet": 0.5 * pr, "lake_evap": np.full(g.n, 300.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    land = elev > 0
+    layers = {
+        "elevation": np.round(elev), "precipitation": pr, "temperature": np.full(g.n, 18.0),
+        "warm_month": np.full(g.n, 24.0), "flow": flow, "downstream": down, "lake": lk["wet"].astype(int),
+        "rock": np.full(g.n, 4), "surface_rock": np.full(g.n, 8), "climate": np.full(g.n, 14),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(land, 2.0, 6.0),
+        "crust_thickness": 35.0 + thick_gy * yk, "plate_boundary": np.zeros(g.n),
+    }
+    return {"grid": g, "layers": layers, "meta": {"level": 5}}, land
+
+
+def _build(world, **kw):
+    kw = {"size_km": 300, "res_km": 1.0, "iterations": 6, "log": lambda *a: None, **kw}
+    return zoom.build(world, 0.0, 0.0, **kw)
+
+
+def _grad(z):
+    h = z["layers"]["elevation"].astype(float)
+    land = z["layers"]["water"] == 0
+    gy, gx = np.gradient(h, z["res"])
+    inner = np.zeros_like(land)
+    inner[30:-30, 30:-30] = True
+    return np.abs(gx)[land & inner], np.abs(gy)[land & inner], h, land & inner
+
+
+@pytest.fixture(scope="module")
+def fold_pair():
+    w, land = _plain_world(1200.0, 0.0, 0.2)
+    n = len(land)
+    cls = np.where(land, LF.FOLD_BELT, LF.SEA)
+    lay = {"fold_wavelength": np.full(n, 12.0), "strata_dip": np.full(n, 30.0), "strata_top": np.full(n, 8),
+           "strata_next": np.full(n, 7), "strata_top_km": np.full(n, 1.5)}
+    young = _with_landforms(w, cls, {**lay, "landform_age": np.full(n, 2.0)})
+    old = _with_landforms(w, cls, {**lay, "landform_age": np.full(n, 80.0)})
+    return _build(w), _build(young), _build(old)
+
+
+def test_fold_belt_ridges_follow_the_strike(fold_pair):
+    """The crust thickens northward (the shortening is north-south): the
+    folds run east-west, so the land's slopes face north and south far more
+    than east and west, as parallel ridges about a fold wavelength apart."""
+    plain, young, old = fold_pair
+    assert young["stats"]["landforms"].get("fold_belt", 0) > 50
+    for z in (young, old):
+        gx, gy, h, on = _grad(z)
+        px, py, *_ = _grad(plain)
+        assert gy.mean() > 1.5 * gx.mean() and gy.mean() / gx.mean() > 1.5 * py.mean() / px.mean(), \
+            (gy.mean(), gx.mean(), py.mean(), px.mean())
+    # young folds: ridges ~ a fold wavelength (12 km) apart down each column
+    _, _, h, on = _grad(young)
+    hc = h[30:-30, 30:-30] - h[30:-30, 30:-30].mean(0)
+    spec = np.abs(np.fft.rfft(hc, axis=0)) ** 2
+    f = np.fft.rfftfreq(hc.shape[0], d=young["res"])
+    band = spec.mean(1)
+    k = (f > 1 / 40.0) & (f < 1 / 3.0)
+    lam = 1 / f[k][np.argmax(band[k])]
+    assert 7.0 < lam < 20.0, lam
+
+
+def test_fold_belt_rivers_cut_water_gaps(fold_pair):
+    """Rivers crossing the ridges keep their graded beds (water gaps), not a
+    staircase of falls."""
+    plain, young, old = fold_pair
+    for z in (young, old):
+        assert z["stats"]["falls_count"]["100m"] <= plain["stats"]["falls_count"]["100m"] + 2
+
+
+@pytest.fixture(scope="module")
+def rift_pair():
+    w, land = _plain_world(900.0, 0.0, 0.0, precip=1200.0, thick_gy=0.0)
+    from planet.geo import latlon
+    lat, lon = latlon(w["grid"].centers)
+    n = len(land)
+    # a rift band 250 km wide, running north-south
+    cls = np.where(land, np.where(np.abs(lon * 111.2) < 125, LF.RIFT, LF.HILLS), LF.SEA)
+    lay = {"rift_strain": np.full(n, 0.6), "landform_age": np.full(n, 2.0)}
+    return _build(w), _build(_with_landforms(w, cls, lay))
+
+
+def test_rift_has_fault_blocks_along_its_axis(rift_pair):
+    """Fault scarps run along the rift (north-south): steep east- or
+    west-facing steps; between them flat basin floors (sediment) and, in a
+    wet climate, lakes in the half-grabens."""
+    plain, rift = rift_pair
+    assert rift["stats"]["landforms"].get("rift", 0) > 30
+    gx, gy, h, on = _grad(rift)
+    px, py, *_ = _grad(plain)
+    steep_x, steep_y = (gx > 150).sum(), (gy > 150).sum()
+    assert steep_x > 3 * max(steep_y, 10) and steep_x > 3 * max((px > 150).sum(), 10), (steep_x, steep_y)
+    # the half-grabens: flat floors or lakes
+    def low(z):
+        h = z["layers"]["elevation"].astype(float)
+        gy_, gx_ = np.gradient(h, z["res"])
+        return np.mean((np.hypot(gx_, gy_) < 3.0) | (z["layers"]["water"] == 2))
+    assert low(rift) > low(plain) + 0.1, (low(rift), low(plain))
+    assert rift["stats"]["landform_lakes"] >= 1
+
+
+@pytest.fixture(scope="module")
+def shield_pair():
+    w, land = _plain_world(200.0, 0.0, 0.0, precip=900.0, thick_gy=0.0)
+    n = len(land)
+    cls = np.where(land, LF.SHIELD, LF.SEA)
+    base = {"strata_top": np.full(n, 11), "strata_next": np.full(n, 11), "strata_top_km": np.zeros(n),
+            "landform_age": np.full(n, 2500.0)}
+    warm = _with_landforms(w, cls, {**base, "glaciated_myr": np.full(n, LF.GLACIATED_NEVER)})
+    ice = _with_landforms(w, cls, {**base, "glaciated_myr": np.full(n, 2.0)})
+    return _build(w), _build(warm, res_km=0.5, size_km=200), _build(ice, res_km=0.5, size_km=200)
+
+
+def _prominent_peaks(z, prom):
+    """Local maxima (7 x 7) standing `prom` m above the 21 x 21 box's 20th percentile."""
+    from numpy.lib.stride_tricks import sliding_window_view as win
+    h = z["layers"]["elevation"].astype(float)
+    pad = np.pad(h, 10, mode="edge")
+    lo = np.percentile(win(pad, (21, 21)), 20, axis=(2, 3))
+    mx = win(np.pad(h, 3, mode="edge"), (7, 7)).max(axis=(2, 3))
+    return int(((h == mx) & (h - lo > prom) & (z["layers"]["water"] == 0)).sum())
+
+
+def test_shield_has_domes_and_scoured_lakes(shield_pair):
+    """An old shield: inselbergs rise from a low plain; where it was under
+    ice lately, the domes are ground down and rock basins hold lakes."""
+    plain, warm, ice = shield_pair
+    assert warm["stats"]["landforms"].get("shield", 0) > 50
+    assert _prominent_peaks(warm, 80) >= 5 + _prominent_peaks(plain, 80) / 2, (
+        _prominent_peaks(warm, 80), _prominent_peaks(plain, 80))
+    assert _prominent_peaks(ice, 200) < _prominent_peaks(warm, 200)
+    assert ice["stats"]["landform_lakes"] >= 5 and warm["stats"]["landform_lakes"] == 0
+    wet = np.mean(ice["layers"]["water"] == 2)
+    assert 0.03 < wet < 0.3, wet  # lake-dotted, not drowned
+
+
+def test_build_frames_reads_the_strike():
+    """A patch's strike runs across the crust's thickness gradient (and along
+    a narrow class's band of cells), the same whichever zoom asks."""
+    from planet.grid import build_grid
+    from planet.geo import latlon, R_KM
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    xk, yk = lon * 111.2, lat * 111.2
+    sp = g.spacing * R_KM
+    near = np.flatnonzero(np.hypot(xk, yk) < 2000)
+    cells = g.centers[near]
+    Pk = np.ascontiguousarray(g.centers[near[:50]] * R_KM)
+    cues = {"thick": 35 + 0.01 * yk[near], "elev": np.zeros(len(near)), "converging": np.zeros(len(near))}
+    F = ZL.build_frames(Pk, 5, cells, np.ones(len(near)), {}, cues, sp, "gradient")
+    ang = np.mod(F.patch["axis_deg"], 180)
+    assert np.all(np.minimum(ang, 180 - ang) < 15), ang  # east-west
+    # a band of cells running north-south: a rift along it
+    band = (np.abs(xk[near]) < 150).astype(float)
+    cues["thick"] = np.zeros(len(near))
+    F = ZL.build_frames(Pk, 5, cells, band, {}, cues, sp, "band")
+    ang = np.mod(F.patch["axis_deg"], 180)
+    on = np.abs(np.degrees(np.arctan2(F.patch["centre"][:, 1], F.patch["centre"][:, 0])) * 111.2) < 300
+    assert on.sum() >= 2 and np.all(np.abs(ang[on] - 90) < 20), ang[on]
+
+
+def test_cut_widens_a_breach_into_a_gap():
+    """A ridge across a river is cut through as a gap a few pixels wide,
+    not a one-pixel slot (PW-149)."""
+    nx = ny = 41
+    res = 0.5
+    r, c = np.mgrid[0:ny, 0:nx]
+    h = (100.0 + 2.0 * (nx - c)).astype(float)  # sloping east
+    h = np.where(np.abs(c - 20) <= 1, h + 300.0, h).ravel()  # a ridge across it
+    rec = np.where(c.ravel() < nx - 1, np.arange(nx * ny) + 1, -1)  # every row flows east
+    order = ZK_order(rec)
+    keep = np.zeros(nx * ny, bool)
+    z = ZL.cut(h.copy(), rec, order, keep, nx, ny, res).reshape(ny, nx)
+    row = z[20]
+    assert np.all(np.diff(row) <= 0)  # the river crosses
+    # the walls of the gap: the rows beside the river (all rivers here) are cut too,
+    # and next to a lone cut pixel the land is lowered over more than one pixel
+    hh = h.reshape(ny, nx).copy()
+    rec2 = np.full(nx * ny, -1)
+    rec2[20 * nx:21 * nx - 1] = np.arange(20 * nx + 1, 21 * nx)
+    z2 = ZL.cut(hh.ravel().copy(), rec2, ZK_order(rec2), keep, nx, ny, res).reshape(ny, nx)
+    lowered = (hh - z2)[:, 20] > 5
+    assert lowered.sum() >= 3, lowered.sum()
+
+
+def ZK_order(rec):
+    from planet import zoom_kernels as ZK
+    return ZK.receiver_order(rec)
+
+
+def test_landform_falls_are_listed_with_pools(esc_pair):
+    """PW-150: every fall >= 30 m is listed (stats.falls, falls_count), the
+    top 5 summary stays; falls over the escarpment are kind 'scarp' with a
+    plunge pool at the foot."""
+    _, esc = esc_pair
+    st = esc["stats"]
+    assert len(st["waterfalls"]) <= 5 and st["falls_count"]["30m"] == len(st["falls"])
+    assert st["falls_count"]["30m"] >= len(st["waterfalls"])
+    assert all(f["height_m"] >= 30 for f in st["falls"])
+    kinds = {f["kind"] for f in st["falls"]}
+    assert "scarp" in kinds, kinds
+    scarp = [f for f in st["waterfalls"] if f["kind"] == "scarp"]
+    assert all("plunge_pool_m" in f for f in scarp)

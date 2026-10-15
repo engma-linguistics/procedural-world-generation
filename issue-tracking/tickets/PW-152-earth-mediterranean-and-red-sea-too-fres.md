@@ -10,13 +10,13 @@ impact: low
 found_by: viewerocean
 blocked_by: []
 relates: [PW-016]
-refs: [planet/ocean.py, planet/climate.py, "world 64fc00"]
+refs: [planet/ocean.py, planet/climate.py, "world dc3732"]
 created: 2026-10-14
 updated: 2026-10-14
 ---
 
 ## Description
-With salinity and SST now stored (PW-137 / PW-144), Earth (world 64fc00) shows the
+With salinity and SST now stored (PW-137 / PW-144), Earth (world dc3732) shows the
 marginal seas too fresh: Mediterranean 35.7 psu at 35 N 18 E (observed ~38.5), Red Sea
 37.4 (observed ~40), Persian Gulf 38.2 (observed ~40); and the Mediterranean too cool
 (SST 15.4 C annual, July 18.9; observed ~19-20 annual, ~26 in August). Global pattern is
