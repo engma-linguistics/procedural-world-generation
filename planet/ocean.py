@@ -547,7 +547,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     overturning is thousands of km across; ~10x cheaper). There the
     inflow's warmth is added to the sea temperature sst0 (without it) the
     way climate.sea_surface would: by the same currents, part of the
-    latitude's mean change taken off (moc_zonal).
+    latitude's mean change taken off (moc_zonal; 1: the heat stays in its band, PW-265).
     sst_of(share, t_in): the full sea-surface temperature (on grid) where a
     share of the surface water is the overturning's inflow at t_in, used
     once at the end. t_eq: the latitude's sea temperature; cur: the

@@ -150,3 +150,15 @@ def test_clouds_and_sunshine(basins):
         assert cl[east].mean() > cl[west].mean() + 0.1 and p[east].mean() < 0.6 * p[west].mean()
     # the dry winter air keeps a background of vapour (PW-151): little air sits at the floor
     assert (c["rh_jan"] <= 100 * climate.HUMID_MIN + 0.5).mean() < 0.02
+
+
+def test_overturning_moves_heat_without_making_it(basins):
+    """The overturning's inflow warms the coasts it reaches, and the rest of
+    each latitude band cools to match (PW-265): over the whole sea its
+    area-weighted warming is ~0, while it still warms some places."""
+    g, elev, c = basins
+    a = ocean.cell_area_km2(g)
+    sea = elev <= 0
+    h = c["moc_heat"]
+    assert np.abs(h[sea]).max() > 0.5
+    assert abs((h * a)[sea].sum() / a[sea].sum()) < 0.05
