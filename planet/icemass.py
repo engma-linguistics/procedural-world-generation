@@ -46,16 +46,19 @@ DDF_ICE = 8.0  # ... ice
 REFREEZE = 0.6  # share of snowmelt that refreezes in the snowpack
 PRECIP_K = 0.07  # rain ~ exp(PRECIP_K * dT) (Clausius-Clapeyron)
 SHEET_KM = 1000.0  # km: a sheet's own air mass (sheet_cover) ...
-LOCAL = 0.3  # ... and the share of the damping any bright snow gets, however small its patch
+LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
+# snow gets none: its brightness is in the climate's own snow albedo; PW-275)
 
 
 def sheet_cover(grid, ice, km: float = SHEET_KM):
-    """How much (0..1) of SUMMER_DAMP the ice surface gets: the share of
+    """How much (0..1) of SUMMER_DAMP an ice surface at each cell gets (for
+    ice only: bare ground's snow gets 0, in the run, the time zoom and the
+    zoom alike, PW-275): LOCAL plus the rest times the share of
     the surface (land and sea) within ~km under land ice (m > 1), away from
     the tropics (none within 15 deg of the equator, in full from 50 deg, as
     climate.ice_cover). Antarctica ~0.6..1 (its summer is ~11..17 C colder
     than the climate model's bare ground there), Greenland ~0.3..0.5 (~4..5 C),
-    a valley glacier or a lone cap ~0."""
+    a valley glacier or a lone cap LOCAL."""
     from . import climate
     a = climate.smooth_big(grid, (np.asarray(ice) > 1).astype(float), km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
