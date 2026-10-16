@@ -1,4 +1,5 @@
 ---
+id: PW-380
 title: "Climate: a 12-16 C seasonal swing right at the equator, so July steps by ~14 C between neighbouring cells at latitude 0"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw374-zoom-veg
 blocked_by: []
 relates: [PW-374, PW-139]
 refs: [planet/climate.py, "world bcd6c8", "zoom 369394"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -35,3 +38,6 @@ plus a small semiannual term), or compute July and January (not warmest / coldes
 one field that is continuous by construction.
 - [ ] |temperature_jul(0.1 N) - temperature_jul(0.1 S)| under ~3 C on land in a showcase world
 - [ ] earth_check equatorial seasonal amplitudes not worse
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-equatorial-seasonal-swing.md (found by pw374-zoom-veg).
