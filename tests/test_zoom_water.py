@@ -509,6 +509,29 @@ def test_escarpment_keeps_a_waterfall(falls_zoom):
     assert np.median(walls) >= 0.4 * f["height_m"], walls
 
 
+@pytest.mark.parametrize("zname", ["falls_zoom", "long_reach_zoom"])
+def test_falls_river_descends_below_them(zname, request):
+    """PW-375: below every listed fall the water's surface only goes down (no
+    step back up past a pool or the foot), and a plunge pool's water stands
+    flat at its spill: no lower than where it drains to, its bed below that."""
+    z = request.getfixturevalue(zname)
+    nx, res, Lr = z["nx"], z["res"], z["layers"]
+    ws = (Lr["elevation"] + Lr["lake_depth"]).ravel().astype(float)
+    water, depth, rec = Lr["water"].ravel(), Lr["lake_depth"].ravel(), z["rec"]
+    assert z["stats"]["falls"]
+    for f in z["stats"]["falls"]:
+        ch = zoom.ZK.chain(rec, f["px"][0] * nx + f["px"][1])[:int(f["length_km"] / res) + 15]
+        ch = ch[:np.argmax(water[ch] == 1)] if (water[ch] == 1).any() else ch  # (to the sea)
+        rise = ws[ch][None, :] - ws[ch][:, None]
+        assert np.triu(rise, 1).max(initial=0.0) < 0.5, (f, ws[ch])
+    pools = [p for f in z["stats"]["falls"] if f.get("plunge_pool_m")
+             for p in zoom.ZK.chain(rec, f["px"][0] * nx + f["px"][1])[:6] if water[p] == 2 and depth[p] > 0]
+    assert pools
+    for p in pools:
+        assert rec[p] >= 0 and ws[p] >= ws[rec[p]] - 0.5, (p, ws[p], ws[rec[p]])
+        assert Lr["elevation"].ravel()[p] < ws[rec[p]]
+
+
 def test_knickpoint_design():
     """A reach dropping 400 m over two ~110 km links on shield granite keeps
     a big share of the drop as falls; on shale less of it; a huge river
