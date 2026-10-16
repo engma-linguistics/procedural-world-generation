@@ -1197,7 +1197,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         ground = np.where(wv > 0, (1 - wv) * h + wv * ground, h)
         # the cones on it (absolute near their summits, on the ground at their edges)
         cz = vf["z"] + (1 - vf["z_abs"]) * (ground - vf["z_floor"])
-        cb = vf["bump"] + (1 - vf["bump_abs"]) * (h - vf["bump_floor"])
+        # (a continental vent's lava plain lies flat on the smooth coarse
+        # ground, filling the hollows; hills stand through it, PW-118)
+        cb = vf["bump"] + (1 - vf["bump_abs"]) * (np.where(vf["bump_flat"], base, h) - vf["bump_floor"])
         hv = np.maximum(ground, cz)
         h = np.maximum(hv, cb)
         land = np.where(wv > 0.5, h > 0, land | (h > 0.5))
