@@ -167,6 +167,7 @@ from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
 from .surface import ROCK_K
+from .tectonics.isostasy import land_view
 
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
@@ -1014,9 +1015,30 @@ def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # The refinement
 # ---------------------------------------------------------------------------
+def zoom_world(world: dict) -> dict:
+    """The world as the zoom builds on it. Worlds store the true bed, and a
+    bed below the sea under grounded ice is land (geo.is_land, PW-307); the
+    zoom's pixels are land where their ground is above the sea, so it takes
+    such a cell's bed at 1 m with its ice thinned to keep the surface
+    (isostasy.land_view): the coastline and the ice surface are the world's,
+    the bed under that ice is not drawn below the sea."""
+    L = world["layers"]
+    if "ice" not in L:
+        return world
+    e, ice, low = land_view(L["elevation"], L["ice"])
+    if not low.any():
+        return world
+    e = e.astype(np.asarray(L["elevation"]).dtype)
+    out = {**L, "elevation": e, "ice": ice}
+    if "lake_level" in L:  # (no lake under the ice: its level is the ground's)
+        out["lake_level"] = np.where(low, e, L["lake_level"])
+    return {**world, "layers": out}
+
+
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
           seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print) -> dict:
     t0 = time.time()
+    world = zoom_world(world)
     g, L = world["grid"], world["layers"]
     sp = g.spacing * R_KM  # coarse cell spacing, km
     cell_area = 4 * np.pi * R_KM**2 / g.n
@@ -3086,7 +3108,7 @@ def add_satellite(ref: str | Path) -> Path:
     (zoom_vegetation.fractions, ~5 s)."""
     d = S.find_zoom(ref)
     meta, lay = load(d, decode=True)
-    world = W.load(find_world(meta["source_world"]["id"]))
+    world = zoom_world(W.load(find_world(meta["source_world"]["id"])))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res

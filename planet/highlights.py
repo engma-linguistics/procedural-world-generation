@@ -117,7 +117,7 @@ from . import coast, kernels
 from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
-from .geo import R_KM
+from .geo import R_KM, world_land
 from .grid import Grid
 from .tectonics.volcanism import ARC as ARC_VOLCANO
 from .vegetation import T as VEG_T
@@ -175,7 +175,7 @@ class _Ctx:
         self.cell_km = g.spacing * R_KM
         self.area = 4 * np.pi * R_KM**2 / g.n  # km^2 per cell (cells are near-equal)
         self.elev = self.L["elevation"].astype(float)
-        self.land = self.elev > 0
+        self.land = world_land(self.L)  # (a bed below the sea under grounded ice is land, PW-307)
         self.a, self.b = g.edges[:, 0], g.edges[:, 1]
 
     def dist(self, i: int, idx) -> np.ndarray:

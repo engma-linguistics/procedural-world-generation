@@ -53,7 +53,7 @@ RHO_OCEAN = RHO_MANTLE - ISO_SEA / K_SEA  # 2.85
 RHO_ICE = 0.917
 ICE_SINK = RHO_ICE / RHO_MANTLE  # m the bed sinks per m of ice, once settled (~0.28)
 FLEX_KM = 150.0  # km: the lithosphere's flexure spreads an ice load over about this (Gaussian-ish sigma)
-BED_FLOOR = 1.0  # m: grounded ice on a bed at or below sea level keeps its cell land (land_view)
+BED_FLOOR = 1.0  # m: grounded ice on a bed at or below sea level keeps its cell land (land_view: the run's climate)
 
 
 def ice_load(grid, ice, ratio=ICE_SINK, km=FLEX_KM):
@@ -118,8 +118,20 @@ def subsidence(grid, thick, cont, rec, t, flexure=0.15, sag=SAG_KM, sag_time=SAG
     return out
 
 
+def grounded(elev, ice):
+    """The land ice (m) on a bed elev (m above sea level) that is grounded:
+    ice whose surface doesn't stand above the sea is afloat (thin ice at a
+    sheet's margin, on a bed its neighbours' load pressed below the sea), so
+    it is left out and the cell is sea. Worlds store the true bed with this
+    ice; geo.is_land tells their land (PW-307)."""
+    elev = np.asarray(elev, float)
+    ice = np.asarray(ice, float)
+    return np.where(elev + ice > 0, ice, 0.0)
+
+
 def land_view(elev, ice, floor=BED_FLOOR):
-    """(elev, ice, floored) for code that takes land as elevation > 0:
+    """(elev, ice, floored) for code that takes land as elevation > 0 (the
+    run's climate update; worlds store the true bed instead, grounded()):
     grounded ice on a bed at or below sea level (a bed pressed down by its
     ice, a marine ice sheet) becomes land with its bed floored at `floor` m
     and the ice thinned to keep the surface (as tools/earth_data.py does

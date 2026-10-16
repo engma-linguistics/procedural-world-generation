@@ -28,7 +28,7 @@ import numpy as np
 from . import climate, coast, coastal, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
-from .geo import R_KM, latlon, xyz
+from .geo import R_KM, is_land, latlon, world_land, xyz
 from .grid import Grid, build_grid
 
 
@@ -65,7 +65,9 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
     (its mangrove forest and salt marsh from coastal life; biomes from it). dT: global temperature offset from
-    today's Earth; ice: m of land ice; veg: the vegetation's history and
+    today's Earth; elev: the true bed, m above sea level; ice: m of
+    grounded land ice (isostasy.grounded): land is elevation > 0 or ice > 0
+    (geo.is_land: a bed below sea level under the ice is land, PW-307); veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
@@ -90,7 +92,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed)
-    sea = elev <= 0
+    land = is_land(elev, ice)
+    sea = ~land
     flood = _flood(grid, down, lk, c, sea)
     elev_m = np.round(elev).astype(int)
 
@@ -116,7 +119,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
         # wave crest, and the tidal range, m
         "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
-        "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c).mean(0)), 2),
+        "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c, ice).mean(0),
+                                                ice=ice), 2),
         # the sea (0 on land): surface temperature, annual and July / January (C), surface
         # salinity (psu) and deep water sinking (Sv per cell; ocean.py's overturning)
         **{k: np.round(np.where(sea, c[k], 0.0), 1) for k in ("sst", "sst_jul", "sst_jan")},
@@ -138,10 +142,12 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # (the monsoons), for the viewer's overlays
     from .timeline import vec_layers
     for k, v in (vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
-                 + vec_layers(grid, "current", np.where((elev > 0)[:, None], 0.0, c["current"]))
+                 + vec_layers(grid, "current", np.where(land[:, None], 0.0, c["current"]))
                  + vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"]))
                  + vec_layers(grid, "wind_jul", c["wind_jul"]) + vec_layers(grid, "wind_jan", c["wind_jan"])):
         layers[k] = np.round(v, 2)
+    if ice is not None and "ice" not in extra:  # (the layer that says where land is under the ice)
+        extra = {**extra, "ice": ice}
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
     # coastal and shallow-sea life (coastal.py, PW-188), from the layers as stored: % of each
@@ -165,7 +171,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
     layers.update(soils.world_layers(sm, soils.organic(sm, vg)))
     # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
-    layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
+    layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"], ice))
     # the satellite view (satellite.py, PW-083): true colour, 0xRRGGBB, each hemisphere's summer / July / January
     layers.update(satellite.world_layers(grid, layers, tilt))
 
@@ -177,7 +183,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "params": {"erosion": erosion, "erosion_iterations": erosion_iterations,
                    "dT": dT, "tilt": tilt, **(params or {})},
         # the overturning: Sv, sinking sites and a schematic of its loop (ocean.loop_schematic)
-        "overturning": ocean.loop_schematic(grid, elev, c),
+        "overturning": ocean.loop_schematic(grid, elev, c, ice=ice),
         "vegetation": {"co2": round(float(veg.get("co2", 0.0)), 3),
                        "pfts": [p for p, ok in zip(vegetation.CODES, vg["unlocked"]) if ok],
                        **({"groups": veg["groups"]} if veg.get("groups") is not None else {}),
@@ -225,7 +231,7 @@ def summarize(world: dict) -> dict:
     g: Grid = world["grid"]
     L = world["layers"]
     elev, biome = L["elevation"], L["biome"]
-    land = elev > 0
+    land = world_land(L)
     masses = landmasses(g, land)
     lm = np.full(g.n, "", dtype=object)
     for m in masses:
@@ -240,7 +246,7 @@ def summarize(world: dict) -> dict:
 
     # Biggest rivers: highest-flow cells that drain straight into the sea.
     flow, down = L["flow"], L["downstream"]
-    mouths = [i for i in np.flatnonzero(land) if down[i] >= 0 and elev[down[i]] <= 0]
+    mouths = [i for i in np.flatnonzero(land) if down[i] >= 0 and not land[down[i]]]
     mouths.sort(key=lambda i: -flow[i])
     rivers = []
     for i in mouths[:5]:
@@ -323,26 +329,26 @@ def ascii_map(world: dict, layer: str = "biome", width: int = 120, height: int |
     g, L = world["grid"], world["layers"]
     height = height or width // 4
     idx = nearest_cell_map(g, width, height)
-    elev = L["elevation"]
+    elev, land = L["elevation"], world_land(L)
     if layer == "biome":
         chars = {b[0]: b[2] for b in climate.BIOMES}
         grid = np.vectorize(chars.get)(L["biome"][idx])
-        river = (L["flow"] > np.quantile(L["flow"][elev > 0], 0.97)) & (elev > 0) & (L["lake"] == 0)
+        river = (L["flow"] > np.quantile(L["flow"][land], 0.97)) & land & (L["lake"] == 0)
         grid = np.where(river[idx], "|", grid)
     elif layer == "elevation":
         e = elev[idx]
         land_c = np.clip((e / 5000) * 9, 0, 9).astype(int)
-        grid = np.where(e > 0, np.array(list("123456789#"))[land_c], np.where(e < -2000, " ", "."))
+        grid = np.where(land[idx], np.array(list("123456789#"))[land_c], np.where(e < -2000, " ", "."))
     elif layer == "plate":
         alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         grid = np.array(list(alpha))[L["plate"][idx] % len(alpha)]
-        grid = np.where(elev[idx] > 0, grid, np.char.lower(grid.astype(str)))
+        grid = np.where(land[idx], grid, np.char.lower(grid.astype(str)))
     elif layer in ("temperature", "precipitation"):
         v = L[layer][idx]
         lo, hi = (-30, 30) if layer == "temperature" else (0, 3000)
         k = np.clip((v - lo) / (hi - lo) * 9, 0, 9).astype(int)
         grid = np.array(list("0123456789"))[k]
-        grid = np.where(elev[idx] > 0, grid, " ")
+        grid = np.where(land[idx], grid, " ")
     else:
         raise ValueError(f"unknown layer {layer}")
     border = "+" + "-" * width + "+"

@@ -1,10 +1,13 @@
 """A minimal pure zlib + numpy HDF5 / netCDF-4 reader for one kind of file.
 
 Written for the LGM ice cover on Zenodo (tools/earth_data.py), which is a
-netCDF-4 file with a flat root group of chunked, deflate-compressed arrays.
-Supported: superblock v2/v3, version 2 object headers, compact link messages
-in the root group, chunked layout v3 with a version 1 B-tree index, deflate
-and shuffle filters, fixed-point and floating-point little-endian types.
+netCDF-4 file with a flat root group of chunked, deflate-compressed arrays,
+and NOAA PSL's reanalysis climatologies (the same, from an older library).
+Supported: superblock v0/v2/v3, version 2 object headers, compact link
+messages in the root group, version 1 or 2 dataspaces and filter pipelines,
+chunked layout v3 with a version 1 B-tree index (and compact or contiguous
+arrays, unblocked), deflate and shuffle filters, fixed-point and
+floating-point little-endian types.
 Anything else (dense groups, other layouts, compound types, ...) raises
 ValueError. `src` is a random-access source (tools/tiff_reader.HttpRange or
 BytesSource). Data is only parsed as numbers, never executed.
@@ -47,10 +50,18 @@ def _messages(src, off: int) -> list[tuple[int, bytes]]:
 
 
 def _root_links(src) -> dict[str, int]:
-    sb = src.read(0, 48)
-    if sb[:8] != b"\x89HDF\r\n\x1a\n" or sb[8] not in (2, 3) or sb[9] != 8:
-        raise ValueError("unsupported HDF5 superblock (need v2/v3 with 8-byte offsets)")
-    root = struct.unpack("<Q", sb[36:44])[0]
+    sb = src.read(0, 96)
+    if sb[:8] != b"\x89HDF\r\n\x1a\n":
+        raise ValueError("not an HDF5 file")
+    if sb[8] in (2, 3) and sb[9] == 8:
+        root = struct.unpack("<Q", sb[36:44])[0]
+    elif sb[8] == 0 and sb[13] == 8 and sb[14] == 8:
+        # version 0 (netCDF-4 files written by older libraries, e.g. NOAA PSL's): the root
+        # group's symbol table entry holds its object header's address; the header itself
+        # may still be a version 2 one with compact links (anything else raises below)
+        root = struct.unpack("<Q", sb[64:72])[0]
+    else:
+        raise ValueError("unsupported HDF5 superblock (need v0/v2/v3 with 8-byte offsets)")
     links = {}
     for t, b in _messages(src, root):
         if t != 6:
@@ -101,7 +112,8 @@ def read_variable(src, name: str, block: int = 1, fetch_gap: int = 1 << 16) -> n
             raise ValueError(f"variable {name!r}: missing header message {t}")
     ds, dt, lay = ms[1], ms[3], ms[8]
     rank = ds[1]
-    shape = struct.unpack("<" + "Q" * rank, ds[4:4 + 8 * rank])
+    d0 = 8 if ds[0] == 1 else 4  # (dataspace v1 has 5 reserved bytes, v2 none)
+    shape = struct.unpack("<" + "Q" * rank, ds[d0:d0 + 8 * rank])
     cls, size = dt[0] & 15, struct.unpack("<I", dt[4:8])[0]
     if dt[1] & 1:
         raise ValueError("big-endian HDF5 data unsupported")
@@ -111,21 +123,36 @@ def read_variable(src, name: str, block: int = 1, fetch_gap: int = 1 << 16) -> n
         np_dt = np.dtype(f"f{size}")
     else:
         raise ValueError(f"unsupported HDF5 datatype class {cls}")
+    if lay[0] == 3 and lay[1] in (0, 1) and block == 1:  # compact / contiguous (small coordinate arrays)
+        if lay[1] == 1:
+            addr, nbytes = struct.unpack("<QQ", lay[2:18])
+            raw = src.read(addr, nbytes)
+        else:
+            nbytes = struct.unpack("<H", lay[2:4])[0]
+            raw = lay[4:4 + nbytes]
+        return np.frombuffer(raw, np_dt, int(np.prod(shape))).reshape(shape).astype(np_dt.newbyteorder("="))
     if lay[0] != 3 or lay[1] != 2:
-        raise ValueError("unsupported HDF5 layout (need chunked, layout version 3)")
+        raise ValueError("unsupported HDF5 layout (need compact, contiguous or chunked, layout version 3)")
     r1 = lay[2]
     btree = struct.unpack("<Q", lay[3:11])[0]
     cdims = struct.unpack("<" + "I" * r1, lay[11:11 + 4 * r1])[:rank]
     filters = []
     if 11 in ms:
         f = ms[11]
-        if f[0] != 2:
+        if f[0] == 2:
+            q = 2
+            for _ in range(f[1]):
+                fid, _, ncv = struct.unpack("<HHH", f[q:q + 6])  # v2: no name for ids < 256
+                q += 6 + 4 * ncv
+                filters.append(fid)
+        elif f[0] == 1:  # v1: each filter's name and client data padded to 8 bytes
+            q = 8
+            for _ in range(f[1]):
+                fid, nlen, _, ncv = struct.unpack("<HHHH", f[q:q + 8])
+                q += 8 + nlen + 4 * ncv + (4 if ncv % 2 else 0)
+                filters.append(fid)
+        else:
             raise ValueError("unsupported filter pipeline version")
-        q = 2
-        for _ in range(f[1]):
-            fid, _, ncv = struct.unpack("<HHH", f[q:q + 6])  # v2: no name for ids < 256
-            q += 6 + 4 * ncv
-            filters.append(fid)
     if any(x not in (1, 2) for x in filters):
         raise ValueError(f"unsupported HDF5 filters {filters}")
     if block > 1 and (rank != 2 or any(c % block or s % block for c, s in zip(cdims, shape))):

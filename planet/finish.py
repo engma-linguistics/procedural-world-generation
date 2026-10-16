@@ -18,10 +18,11 @@ has the surface relative to its sea level and the grounded ice to 1 m
 (timezoom.LAYERS), and its stats the sea level, the global temperature and
 the orbit. Bed = surface - ice. A chosen kyr snaps to the nearest frame.
 
-Approximations (see docs/overview.md 2.11):
-- grounded ice on a bed below sea level (marine ice sheets, deep isostatic
-  depressions) is stored as land with its bed floored at 1 m and the ice
-  thinned to keep the surface (as tools/earth_data.py does for Antarctica);
+The bed is stored as it is: grounded ice on a bed below sea level (marine
+ice sheets, deep isostatic depressions) is land by its ice (geo.is_land;
+PW-307, PW-197).
+
+Approximation (see docs/overview.md 2.11):
 - the climate gets the frame's seasonal insolation anomaly against the
   planet's mean orbit (obliquity, precession, eccentricity; timezoom.orbit_anomaly)
   and the time zoom's start-anchor cooling (Earth's) as climate.compute's
@@ -43,7 +44,8 @@ from . import store as S
 from . import timeline as T
 from . import world as W
 from .grid import build_grid
-from .tectonics.isostasy import land_view
+from .geo import is_land
+from .tectonics.isostasy import grounded
 
 
 def load_timezoom(ref: str) -> tuple[Path, dict]:
@@ -72,11 +74,10 @@ def frame_state(tz_dir: Path, i: int) -> dict:
     run, arr = T.load_frames(tz_dir, ("elevation", "ice"))
     surf = T.frame(run, arr, "elevation", i).astype(float)
     ice = T.frame(run, arr, "ice", i).astype(float)
-    bed = surf - ice  # (the true bed: below sea level under a marine sheet or a deep isostatic dip;
-    # the world's finishing floors it, isostasy.land_view)
+    bed = surf - ice  # (the true bed: below sea level under a marine sheet or a deep isostatic dip)
     s = run["frames"][i]["stats"]
     return {"elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
-            "tilt": s["obliquity"], "floored_cells": int(land_view(bed, ice)[2].sum()), "stats": s,
+            "tilt": s["obliquity"], "below_sea_cells": int(((ice > 0) & (bed <= 0)).sum()), "stats": s,
             "t": run["frames"][i]["t"]}
 
 
@@ -118,7 +119,7 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
     prov = {"timezoom": tz_id, "timezoom_name": run["name"], "timezoom_kyr": t, "finished": True,
             "sea_level_change_m": s["sea_level_change_m"], "ice_volume_mkm3": s["ice_volume_mkm3"],
             "orbit": {k: s[k] for k in ("obliquity", "eccentricity", "perihelion", "insol_65n_jul_anom")},
-            "marine_ice_floored_cells": st["floored_cells"]}
+            "ice_bed_below_sea_cells": st["below_sea_cells"]}
     state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt")}
     # (the orbit's obliquity is in its insolation anomaly: the climate keeps the planet's mean tilt, as the
     # time zoom's own)
@@ -160,12 +161,11 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
     or rock record, so only the time zoom's bed and ice go through the
     finishing (as tools/earth_world.py, without the observations)."""
     grid = build_grid(level)
-    bed, ice, _ = land_view(state["elevation"], state["ice"])
-    state = {**state, "elevation": bed, "ice": ice}
-    land = state["elevation"] > 0
+    ice = grounded(state["elevation"], state["ice"])  # (the true bed: land by its ice where that is below the sea)
+    land = is_land(state["elevation"], ice)
     meta = {"method": "earth", "seed": 0, "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
             "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),
             "sea_level_m": round(state["sea_level"], 1)}
-    return W.finish(grid, state["elevation"], {"ice": np.where(land, state["ice"], 0.0), "crust": land.astype(int)},
+    return W.finish(grid, state["elevation"], {"ice": ice, "crust": land.astype(int)},
                     meta, erosion=erosion, dT=state["dT"], tilt=state["tilt"], params={"earth": True},
-                    ice=np.where(land, state["ice"], 0.0), orbit_dt=state.get("orbit_dt"))
+                    ice=ice, orbit_dt=state.get("orbit_dt"))
