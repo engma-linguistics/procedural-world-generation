@@ -2,7 +2,7 @@
 id: PW-294
 title: "Cleanup after PW-277: climate.ice_cooling / TUNE['ice_cooling'] only feed icemass's 2 C"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: climate
 effort: xs
@@ -25,5 +25,6 @@ Tidy (climate agent's file, so not done on the ice branch): drop `ice_cooling()`
 call it "10 C colder". No output change.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (2c8092b): climate.ice_cooling / TUNE['ice_cooling'] removed; icemass.ICE_COOL = 2.0; bit-identical.
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Created from inbox draft draft-ice-cooling-cleanup.md (found by ice-fix).

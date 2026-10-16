@@ -2,7 +2,7 @@
 id: PW-292
 title: Parallel loops on small grids are launch-bound (sia_flow sub-steps, coarse blurs, _smooth at L6)
 type: task
-status: in-progress
+status: wontdo
 parent: PW-247
 subsystem: infra
 effort: s
@@ -46,6 +46,7 @@ Still launch-bound:
 - [ ] measure _smooth/_relax_along/_rain per level and thread count; cap where it helps
 
 ## Updates
+- 2026-10-15: Status in-progress -> wontdo. Measured, skipped: at 8 threads every run kernel is already fastest; a thread cap saves <0.1% of an L6 100 Myr run. sia_flow (time zoom) not measured.
 - 2026-10-15: Infra batch: measured, skipped for runs. L6, NUMBA_NUM_THREADS=8, kernels replayed on args recorded in a run (ms per call at 1/2/4/8 threads): _smooth 2.50/1.50/0.99/0.94 (~1650 calls per 100 Myr, coarse blurs included), _relax_along 19.6/12.3/7.5/6.0 (~200), _rain 351/174/105/69 (~25), ocean._carry 2.7 at any count (serial). 8 threads is the fastest for every one, so a per-kernel cap saves ~0 s of a 27.5 s L6 100 Myr run (< 0.1%, well under the 3% bar). The sia_flow item (time zoom, not the run) was not measured.
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Created from inbox draft draft-small-parallel-loops-launch-bound.md (found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).
