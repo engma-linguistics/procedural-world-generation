@@ -52,5 +52,6 @@ Lean: A plus C's convergence check (moc_iters 4 -> 8 costs ~+0.1 s per climate).
 change for the ocean owner.
 
 ## Updates
+- 2026-10-16: Option C may be done by the icehouse run-lane agent if time allows.
 - 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: A + C. Accept the drop as the shared-deep-water rule working (Antarctic shelf brine densifies deep water, the North Atlantic settles on its weaker state: AABW/NADW competition is real). Do C (the 4-iteration default isn't converged: north 11.3 Sv at 8+). B (per-hemisphere deep water) belongs with PW-016/PW-017's overturning work.
 - 2026-10-16: Created from inbox draft draft-earth-overturning-shelves.md (found by pw354-earth-bed).

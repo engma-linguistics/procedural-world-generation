@@ -2,7 +2,7 @@
 id: PW-364
 title: L5 envelope world (seed 1, 340-400 Myr) falls into a -516 m icehouse under a small, unrelated change; arid share 7.7%
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -32,4 +32,5 @@ reshuffles the history). Then PW-338 can land.
 - [ ] PW-338's patch merged with the envelope tests green, without loosening the band
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started (icehouse depth vs global temperature).
 - 2026-10-16: Created from inbox draft draft-envelope-l5-icehouse-dry.md (found by tectonics-night).
