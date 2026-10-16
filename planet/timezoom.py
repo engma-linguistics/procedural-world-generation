@@ -130,8 +130,8 @@ class TZParams:
     # ice surfaces (the surface mass balance's defaults are icemass's, shared with the run and the zoom)
     snow_h: float = M.SNOW_H  # m: perennial snow/ice this thick is bright (phased in from 0):
     summer_damp: float = M.SUMMER_DAMP  # its summer warmth (above the annual mean) is damped by this share
-    # x the sheet's cover (icemass.sheet_cover: a big sheet's own air mass; a margin or small cap little)
-    sheet_km: float = M.SHEET_KM  # (km: that air mass's size),
+    # x the surface's own share (icemass.sheet_cover; a big sheet's own air mass is in the full climate's air,
+    # icemass.air_mass, carried along the winds: PW-336),
     melt_hold: float = M.MELT_HOLD  # temperatures above 0 C are scaled by this (as climate.compute),
     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
     absorb_km: float = 600.0  # ... mixed over this scale (km; the air mass), 0 = locally (wider pulls the
@@ -488,9 +488,11 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     def full_climate(dTg):
         nonlocal t_compute
         t0 = time.time()
-        surf, _ = grounded_surface()
-        # (the overturning carries on from the last full climate's state)
-        c = climate.compute(g, surf, dT_run + dTg, tilt, melt=meltwater(t_kyr), moc_start=fields_.get("moc"))
+        surf, grounded = grounded_surface()
+        # (the overturning carries on from the last full climate's state; the air over the ice is the
+        # sheets' own, carried along the winds: ice_air)
+        c = climate.compute(g, surf, dT_run + dTg, tilt, melt=meltwater(t_kyr), moc_start=fields_.get("moc"),
+                            ice_air=np.where(grounded, H, 0.0))
         fields_["moc"] = c["moc_state"]
         fields_["moc_sv"] = (float(c["overturning"][lat >= 0].sum()), float(c["overturning"][lat < 0].sum()))
         t_compute += time.time() - t0
@@ -639,9 +641,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - fields_["s0"]) + dt_wet
         f_ice = np.clip(h_sfc / p.albedo_h, 0, 1)
         f_alb = np.clip(ice_g / p.snow_h, 0, 1)  # perennial snow is bright from the start
-        # (a sheet's summer damping: its share of the land around under ice, icemass; on ice only: bare
-        # ground's seasonal snow gets none, as the run's new-cap rule, PW-275)
-        damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g, p.sheet_km), 0.0)
+        # (the ice surface's own summer damping, icemass.sheet_cover; on ice only: bare ground's seasonal
+        # snow gets none, as the run's new-cap rule, PW-275)
+        damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g), 0.0)
 
         def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
