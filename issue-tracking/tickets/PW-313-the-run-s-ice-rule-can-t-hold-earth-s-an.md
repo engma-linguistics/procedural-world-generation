@@ -8,7 +8,7 @@ subsystem: climate
 effort: m
 impact: high
 found_by: pw308
-blocked_by: []
+blocked_by: [PW-015]
 relates: [PW-112, PW-039, PW-308, PW-033]
 refs: [planet/tectonics/earth.py, planet/icemass.py, docs/review/audit/pw308-glaciation.md]
 created: 2026-10-15

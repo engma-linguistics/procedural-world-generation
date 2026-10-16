@@ -8,7 +8,7 @@ subsystem: climate
 effort: m
 impact: high
 found_by: pw313
-blocked_by: []
+blocked_by: [PW-015]
 relates: [PW-313, PW-013, PW-308, PW-112]
 refs: [planet/climate.py, tools/ice_probe.py, docs/review/audit/pw313-polar-summers.md]
 created: 2026-10-16
