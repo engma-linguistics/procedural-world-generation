@@ -142,7 +142,12 @@ _GL_W = np.array([0.603154104342, 0.357418692438, 0.038887908515, 0.000539294706
 GUST_X = np.sqrt(_GL_V) / 0.886226925453  # speeds per unit mean (scale = 1 / Gamma(1.5))
 GUST_W = _GL_W / _GL_W.sum()
 T_STORM = 12.0  # hours a storm's wind blows over the same sea (duration-limited growth)
-LAND_SLOW, L_RECOVER = 0.5, 1200.0  # wind off land: slower by this share, recovering over this many km of sea
+# Wind blowing off land is slowed by the land's roughness (by LAND_SLOW) and
+# comes back up to speed over the sea as the marine internal boundary layer
+# grows, within a few tens of km (the land-to-water wind correction of the
+# Shore Protection Manual / Coastal Engineering Manual applies to fetches of
+# ~10-50 km; PW-272: this was 1200 km, a fit to enclosed seas)
+LAND_SLOW, L_RECOVER = 0.3, 50.0
 STORM_ZONAL = 0.5  # share of the storminess taken from the latitude belt (rest: the jet's storm tracks)
 SHELF_FRIC_KM, SHELF_FRIC_M = 250.0, 35.0  # bottom friction: e-folding km at the coast's depth scale
 # tides
