@@ -869,10 +869,16 @@ def summary(s: dict, pot: dict, eq: dict) -> dict:
                 stand_age=np.minimum(stand, 2000.0))
 
 
-def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=None, fw=None) -> np.ndarray:
+COASTAL_MIN = 0.3  # share of a cell under mangroves or salt marsh that names it so (proposal section 2.3, rule 2)
+
+
+def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=None, fw=None,
+             coastal=None) -> np.ndarray:
     """Named vegetation type (TYPES id) per cell: the first rule that holds
-    (section 2.3): non-vegetated, wetland, forest (trees >= 60%),
-    woodland and savanna (10-60%), sparse, shrubland, grassland."""
+    (section 2.3): ice and lakes, coastal (mangrove forest or salt marsh
+    over COASTAL_MIN of the cell: coastal's shares 0..1, coastal.py),
+    non-vegetated, wetland, forest (trees >= 60%), woodland and savanna
+    (10-60%), sparse, shrubland, grassland."""
     from .hydrology import CLOSED_LAKE, SALT_PAN
     nu = sm["shade"]
     n = len(elev)
@@ -901,6 +907,12 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
         put(np.asarray(ice) > 0, T["ice"])
     if lake is not None:
         put(np.asarray(lake).astype(bool), T["lake"])
+    # 2. coastal: mangroves or salt marsh between the tides (coastal.py; PW-188, PW-209)
+    if coastal is not None:
+        mang, marsh = (np.asarray(coastal.get(k, np.zeros(n)), float) for k in ("mangrove", "salt_marsh"))
+        put((mang >= COASTAL_MIN) & (mang >= marsh), T["mangrove forest"])
+        put(marsh >= COASTAL_MIN, T["salt marsh"])
+        put(mang >= COASTAL_MIN, T["mangrove forest"])
     salt = np.zeros(n, bool) if lake_kind is None else np.isin(np.asarray(lake_kind), (CLOSED_LAKE, SALT_PAN))
     put(salt & (cover < 0.4), T["salt desert scrub"])
     # 1. (next to) nothing grows
@@ -1037,14 +1049,16 @@ def biome_of(types, sea_biome) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
-          cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None) -> dict:
+          cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
     arrays (climate.compute's names; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
     stood in for, STANDINS). cheap: the run's variant (local LAI step,
     fewer competition steps). locked_potential: also compute the locked
-    PFTs' potential (for flora_update's niches). Returns a dict with the
+    PFTs' potential (for flora_update's niches). coastal: the coastal-life
+    shares (0..1) "mangrove" and "salt_marsh" (coastal.world_layers) that
+    name a cell mangrove forest or salt marsh (classify). Returns a dict with the
     site s, the potential pot, eq (nu, burned), the flooded share fw, the
     summary sm and the named types."""
     n = grid.n
@@ -1074,7 +1088,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
                  s, ice, flood_ratio)
     eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None))
     sm = summary(s, pot, eq)
-    types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw)
+    types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw, coastal)
     return dict(s=s, pot=pot, pot_all=pot_all, eq=eq, fw=fw, sm=sm, types=types, land=land, unlocked=unlocked)
 
 

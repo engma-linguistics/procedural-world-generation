@@ -25,6 +25,12 @@ the vents' floor (their sea floor, from the run) with the cones on it, so
 the sea between two vents is sea, whatever the coarse cells' means say
 (at level 6-7 a cell holds a vent and its neighbours' flanks). Elsewhere
 (arcs, continental hotspots) the cones are added to the terrain (max).
+
+A hotspot vent on a continent (floor above the sea) isn't a shield: a
+plume under stiff continental crust makes a broad basalt plain with large
+calderas (the Snake River Plain, Yellowstone), so it is drawn as an oval
+caldera with a rim and a low resurgent dome on a lava plain twice its
+radius, holding the same volume (PW-118).
 """
 
 from __future__ import annotations
@@ -43,6 +49,11 @@ MOTU_NOISE = -0.2  # ... on about 3/5 of the rim (the rest is reef flat awash)
 FORE_REEF = 700.0  # m/km: the reef front's drop
 VALLEY_KM = 6.0  # spacing of the radial valleys at the coast
 FADE = 0.8  # coarse cells over which the vents' province fades out
+# continental hotspot vents (_caldera): a lava plain PLAIN_R x the vent's
+# radius, a caldera CALDERA_R x it (oval up to CALDERA_OVAL), rim, sunk floor
+# and resurgent dome as fractions of the plain's height
+PLAIN_R, CALDERA_R, CALDERA_OVAL = 2.0, 1.0, 1.9
+CALDERA_RIM, CALDERA_DEPTH, CALDERA_DOME = 0.25, 0.5, 0.3
 
 
 def table(world: dict) -> list[dict]:
@@ -64,6 +75,8 @@ def _shore(kind, H, f):
 def form(v: dict) -> str:
     """What the volcano looks like now, in words."""
     arc = v["kind"] == ARC
+    if not arc and v["floor_m"] > 0:
+        return "active caldera" if v["active"] else "caldera on a lava plain"
     if v["active"]:
         return "active stratovolcano" if arc else "active shield volcano"
     peak = v["floor_m"] + v["height_m"]
@@ -86,7 +99,8 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
       z         the highest cone there (m; -inf off them), with z_floor (its
                 floor) and z_abs (1 near its summit, 0 at its footprint's edge)
       bump      cones elsewhere, to max() with the terrain (m; -inf off them),
-                with bump_floor and bump_abs
+                with bump_floor and bump_abs; bump_flat: a continental vent's
+                lava plain, on the smooth coarse ground (it fills the hollows)
       pin       young cones' surface, held in the landscape pass (m; nan off them)
       reef      pixels of reef carbonate (rim, lagoon, fringing flat)
       rock      surface.ROCKS id of the volcano under each pixel (0: none)
@@ -105,16 +119,20 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
     xs0, ys0 = px[0], py[0]  # pixel (0, 0) centre: west, north
     floors = []
     out = dict(province=np.zeros(npx), z=np.full(npx, -np.inf), z_floor=np.zeros(npx), z_abs=np.zeros(npx),
-               bump_floor=np.zeros(npx), bump_abs=np.zeros(npx),
+               bump_floor=np.zeros(npx), bump_abs=np.zeros(npx), bump_flat=np.zeros(npx, bool),
                bump=np.full(npx, -np.inf), pin=np.full(npx, np.nan), reef=np.zeros(npx, bool),
                rock=np.zeros(npx, np.uint8), list=[])
     S = int(seed) * 1_000_003 + 17
+    age_px = np.full(npx, np.inf)  # the age of the edifice drawn at each pixel
     for j, v in enumerate(V):
         kind, H, f, top, r = v["kind"], float(v["height_m"]), float(v["floor_m"]), float(v["top_m"]), float(v["radius_km"])
         if H < 20 or r <= 0 or not ahead[j]:
             continue
         arc = kind == ARC
+        cont = (not arc) and f > 0  # a hotspot vent on a continent: a caldera on a lava plain
         reach = r * (np.log(H / 10.0) if arc else np.sqrt(np.log(H / 10.0)))  # km to where it's 10 m high
+        if cont:
+            reach = PLAIN_R * r * 2.0  # (the plain's lobed, noisy edge, out to ~1.25 x 1.35 x 1.12 PLAIN_R r)
         reach = max(reach, v["shore_km"] + 3.0)
         if abs(vx[j]) > half + reach or abs(vy[j]) > half + reach:
             continue
@@ -140,17 +158,22 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         lobe = 0.0 if arc else np.max(np.cos(th[:, None] - arms[None, :]), 1).clip(0) ** 6
         wob = ZK.fbm(np.ascontiguousarray(Pk[win]), max(0.6 * r, 4.0), 3, 0.5, S + 63 + j % 7) / 0.17
         rho_e = rho / (1 + (0.35 if not arc else 0.0) * lobe) * (1 + 0.12 * np.clip(wob, -2, 2))
-        cone = f + H * (np.exp(-rho_e / r) if arc else np.exp(-(rho_e / r) ** 2))
+        crater = np.zeros(len(win), bool)
+        if cont:
+            relief, crater = _caldera(rho_e, dx, dy, r, H, rs)
+            cone = f + relief
+        else:
+            cone = f + H * (np.exp(-rho_e / r) if arc else np.exp(-(rho_e / r) ** 2))
         peak = f + H
         if top >= 0 and peak > 0:
             # eroded: the part above the sea lowered in proportion
             zz = np.where(cone > 0, cone * min(top / peak, 1.0), cone)
         else:
             zz = np.minimum(cone, top)  # planed flat by the waves, now sunk (or a seamount: top = peak)
-        if v["active"]:
+        if v["active"] and not cont:
             rc = max(0.08 * r, 1.0 * res) if not arc else max(0.25 * r, res)
             zz = zz - CALDERA_M[1 if arc else 0] * np.exp(-(rho / rc) ** 2)
-        elif top > 0 and v["age"] > 0.3:
+        elif top > 0 and v["age"] > 0.3 and not cont:
             # radial valleys, deeper with age: noise stretched along the radius
             sh = r * _shore(kind, H, f)
             R0 = max(sh, 6.0)
@@ -184,13 +207,18 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         # sea level matters for reefs and planed tops); toward the edge of
         # its footprint it sits on whatever ground the zoom has there
         # (zoom.py: z + (1 - abs) * (ground - floor)), so it has no step.
-        absw = _smooth(0.85 * reach, 0.35 * reach, rho)
+        absw = _smooth(0.85 * reach, 0.35 * reach, rho) if not cont else np.zeros(len(win))
         zm = np.where((cone > f + 10) | reefpx, zz, -np.inf)
         key = "z" if prov else "bump"
-        better = zm > out[key][win]
+        # (the highest edifice wins, but a younger caldera sinks into an older
+        # one's plain: the new lava doesn't fill it)
+        better = (zm > out[key][win]) | (crater & np.isfinite(zm) & (v["age"] < age_px[win]))
+        age_px[win] = np.where(better, v["age"], age_px[win])
         out[key][win] = np.where(better, zm, out[key][win])
         out[key + "_floor"][win] = np.where(better, f, out[key + "_floor"][win])
         out[key + "_abs"][win] = np.where(better, np.maximum(absw, reefpx), out[key + "_abs"][win])
+        if not prov:
+            out["bump_flat"][win] = np.where(better, cont, out["bump_flat"][win])
         on = zz > f + 30
         if v["active"] or v["age"] < PIN_MYR:
             out["pin"][win] = np.where(on, np.fmax(out["pin"][win], zz), out["pin"][win])
@@ -211,6 +239,27 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         fl, _ = ZK.gauss_interp(px[on], py[on], fx, fy, ff[:, None], np.ones((len(ff), 1)), 0.45 * sp)
         out["floor"][on] = fl[:, 0]
     return out
+
+
+def _caldera(rho_e, dx, dy, r: float, H: float, rs) -> np.ndarray:
+    """A continental hotspot vent's relief above its floor (m): a flat lava
+    plain PLAIN_R x r across holding the volume of the run's Gaussian
+    (pi r^2 H), so PLAIN_R^-2 of its height, and in it an oval caldera
+    (CALDERA_R x r, up to CALDERA_OVAL long; Yellowstone ~45 x 85 km) with
+    a raised rim, a floor sunk below the plain and a low resurgent dome.
+    Returns (relief, inside the caldera's rim)."""
+    Rp = PLAIN_R * r
+    Hp = H / PLAIN_R**2
+    plain = Hp * (1 - _smooth(0.75 * Rp, 1.25 * Rp, rho_e))
+    a = rs.uniform(0, np.pi)
+    ell = rs.uniform(1.0, CALDERA_OVAL)
+    u, w = dx * np.cos(a) + dy * np.sin(a), -dx * np.sin(a) + dy * np.cos(a)
+    Rc = CALDERA_R * r
+    rc = np.hypot(u / np.sqrt(ell), w * np.sqrt(ell))  # (the same area as a circle of Rc)
+    rim = CALDERA_RIM * Hp * np.exp(-((rc - Rc) / (0.15 * Rc)) ** 2)
+    sunk = CALDERA_DEPTH * Hp * (1 - _smooth(0.85 * Rc, Rc, rc))
+    dome = CALDERA_DOME * Hp * np.exp(-(rc / (0.3 * Rc)) ** 2)
+    return plain + rim - sunk + dome, rc < Rc
 
 
 def _smooth(e0, e1, x):

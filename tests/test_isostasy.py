@@ -30,6 +30,26 @@ def test_marginal_iso_is_the_slope_of_the_lift():
         assert np.allclose(slope, I.sediment_iso(m, r, c), rtol=1e-6)
 
 
+def test_hotspot_pile_iso_rate_is_the_slope_of_its_elevation():
+    """PW-285: a hotspot pile is held up by the plate (ISO_VOLCANO) only for
+    its first VOLCANO_PILE_KM; iso_rate (what erosion and deposition use)
+    follows elevation's slope either side of the cap, and the sediment on
+    the pile floats like any sea-floor sediment."""
+    from planet.surface import HOTSPOT
+    thick = I.OCEAN_KM + np.array([5.0, 15.0, 25.0, 40.0])
+    n = len(thick)
+    no, hot = np.zeros(n, bool), np.full(n, HOTSPOT)
+    h = 1e-3
+    def e(t):
+        return I.elevation(t, np.full(n, 50.0), no, hot, np.zeros(n), np.zeros(n))
+    slope = (e(thick + h) - e(thick - h)) / (2 * h)
+    assert np.allclose(slope, I.iso_rate(no, hot, thick))
+    assert list(I.iso_rate(no, hot, thick)) == [I.ISO_VOLCANO, I.ISO_VOLCANO, I.ISO_SEA, I.ISO_SEA]
+    sed = np.full(n, 6.0)
+    assert np.allclose(I.sediment_lift(no, hot, sed), I.sediment_lift(no, np.zeros(n), sed))
+    assert np.allclose(I.sediment_iso(no, hot, sed), I.sediment_iso(no, np.zeros(n), sed))
+
+
 # Glacial isostasy (PW-189)
 def _cap(grid, lat0, h):
     """h m of ice on every cell poleward of lat0 (north)."""

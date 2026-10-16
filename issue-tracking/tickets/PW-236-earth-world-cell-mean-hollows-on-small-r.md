@@ -2,7 +2,7 @@
 id: PW-236
 title: "Earth world: cell-mean hollows on small rivers still hold big lakes (Yakutia 223k km2, Amur 174k km2)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: hydrology
 effort: s
@@ -26,6 +26,7 @@ cells than in flat ones; a cut that also grows with the outlet cell's relief (e.
 would drain these but also cut the Great Lakes' outlets (relief 25-37 m), so it needs care.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started: river-conditioned outlet heights for the Earth world.
 - 2026-10-15: Hydro2: general fixes drain real lakes first; needs river-conditioned outlet heights for the Earth world (merged draft).
 - 2026-10-15: Merged inbox draft draft-earth-gorge-lakes.md ("Earth world: gorge rivers (Lena, Amur, Danube Iron Gates, Yangtze Three Gorges, Columbia) leave cell-mean dams and fake lakes", found by hydro2).
   Follow-up of PW-236 (not fixed). On the L6 Earth terrain the leftover fake lakes are all rivers through

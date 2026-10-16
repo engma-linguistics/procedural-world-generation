@@ -13,3 +13,5 @@ data/
 # the server's job state (api.Jobs)
 .jobs/
 .DS_Store
+# the server's gzipped copies of data files (planet/server.py)
+.gzcache/

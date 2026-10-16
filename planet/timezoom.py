@@ -37,7 +37,7 @@ Model (per 500-yr step, see simulate)
   feedback that lets ice spread); where the year's snow melts away the
   ice is bare and darker and gets more of the summer (which helps it
   melt back). Thick ice is a little colder all year (inversion, katabatic
-  winds; climate.TUNE['ice_cooling'] x albedo_share).
+  winds; ice_cool, 2 C).
 - Starting ice: taken to be in balance with the starting climate (the main
   model put it where summers stay cold; Earth's is real). Where this
   model's mass balance would melt it anyway (mostly: the climate model's
@@ -139,7 +139,7 @@ class TZParams:
     snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
     # year's snow lies, then bare: icemass)
     bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
-    albedo_share: float = M.ALBEDO_SHARE  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
+    ice_cool: float = M.ICE_COOL  # C: thick ice is this much colder all year ...
     albedo_h: float = M.ALBEDO_H  # ... in full from this thickness (m)
     edge_h: float = M.EDGE_H  # m: a margin cell's surface balance is its edge's, at most this thick
     anchor: str = "auto"  # the starting ice's climate correction (start_anchor): 'obs' (Earth: the model's
@@ -639,8 +639,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - fields_["s0"]) + dt_wet
         f_ice = np.clip(h_sfc / p.albedo_h, 0, 1)
         f_alb = np.clip(ice_g / p.snow_h, 0, 1)  # perennial snow is bright from the start
-        # (a sheet's summer damping: its share of the land around under ice, icemass)
-        damp = p.summer_damp * M.sheet_cover(g, np.where(grounded, H, 0.0), p.sheet_km)
+        # (a sheet's summer damping: its share of the land around under ice, icemass; on ice only: bare
+        # ground's seasonal snow gets none, as the run's new-cap rule, PW-275)
+        damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g, p.sheet_km), 0.0)
 
         def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
@@ -651,7 +652,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
             climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
-                         climate.TUNE["ice_cooling"] * p.albedo_share, damp, p.melt_hold, p.bare_share, p.snow_w,
+                         p.ice_cool, damp, p.melt_hold, p.bare_share, p.snow_w,
                          p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, smb, t_ann, t_warm, t_cold,
                          p_scale, f_snow)
 
@@ -819,7 +820,7 @@ def report(run_dir: Path) -> Path:
                 f"{fr[i]['stats']['sea_level_change_m']:+.0f} m", W.LEGENDS["elevation"],
                 W.ascii_map(w, "elevation", 100, 25)]
     path = run_dir / "run.txt"
-    path.write_text("\n".join(out) + "\n")
+    S.write_atomic(path, "\n".join(out) + "\n")
     return path
 
 

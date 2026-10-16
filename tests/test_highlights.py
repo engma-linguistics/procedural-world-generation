@@ -147,9 +147,15 @@ def test_coral_and_rain_shadow(gen4):
     sea = e <= 0
     coast = sea & np.isin(np.arange(g.n), g.edges[np.isin(g.edges, np.flatnonzero(~sea)).any(1)].ravel())
     e[coast] = -40
-    L["cold_month"][sea] = 24.0
+    L["reef"] = np.where(coast, 5.0, 0.0)  # % of the cell (coastal.py's layer)
+    land = e > 0
+    shore = land & np.isin(np.arange(g.n), g.edges[np.isin(g.edges, np.flatnonzero(coast)).any(1)].ravel())
+    L["mangrove"] = np.where(shore, 4.0, 0.0)
     by = check(w, H.find(w))
-    assert by["coral_coast"]["stats"]["mean_depth_m"] <= 250 and by["coral_coast"]["stats"]["length_km"] > 0
+    cc = by["coral_coast"]["stats"]
+    assert cc["mean_depth_m"] == 40 and cc["length_km"] > 0
+    assert cc["reef_km2"] > 0.04 * 4 * np.pi * R_KM ** 2 / g.n
+    assert by["mangrove_coast"]["stats"]["mangrove_km2"] > 0
     # a lone summit, wet to its east and dry to its west
     c = _inland_cell(w)
     e[_near(g, c, 4)] = np.minimum(e[_near(g, c, 4)], 500)

@@ -46,14 +46,39 @@ def test_values_sane(sim4):
     assert s.w_thick.min() >= 1.0 and s.w_thick.max() <= MAX_KM
     assert (s.w_cover >= 0).all() and (s.w_cover <= s.w_thick + 1e-9).all()
     assert (s.precip >= 0).all() and s.precip.max() < 10000
-    # (-110: in this run an ice cap 2.4 km thick on a 7 km range at 78 N reaches -105 C by the lapse rate alone;
-    # see the inbox draft on polar ice on high ranges)
-    assert -110 < s.t_cold.min() and s.t_warm.max() < 60
+    # (PW-226, PW-276: an ice sheet's surface rises from the bed at its edge, so a cap on a high range is thin)
+    assert -95 < s.t_cold.min() and s.t_warm.max() < 60
     assert (s.t_warm >= s.temp - 1e-6).all() and (s.t_cold <= s.temp + 1e-6).all()
     assert (s.w_rock < len(ROCKS)).all()
     snap = s.snapshot()
     assert (snap.koppen[land] != climate.SEA_CLASS).all()
     assert (snap.koppen[~land] == climate.SEA_CLASS).all()
+
+
+def test_ice_surface_rises_from_the_edge(sim4):
+    """PW-276: a sheet's (Nye) surface rises from the bed at its edge, so
+    raising the bed inside a sheet thins the ice there (it doesn't lift the
+    surface by the bed's rise): over ground 3 km higher the ice is at most
+    a margin's, or what stood above it before."""
+    from planet.tectonics import earth
+    from planet.tectonics.isostasy import land_view
+    s, g = sim4, sim4.grid
+    e, ice0, _ = land_view(s.w_elev - s.ice_sink, np.where(s.w_elev > 0, s.ice, 0.0))
+    land = e > 0
+    c = climate.compute(g, e, s.dT - 12.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
+    a = earth.ice_sheets(s, land, e, c["ground"], ice0)
+    iced = a > 0
+    inner = iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) == 0)
+    margin = 1.15 * earth.ICE_EDGE_M
+    assert inner.sum() >= 3 and (a[inner] > margin).any()
+    b = earth.ice_sheets(s, land, e + 3000.0 * inner, c["ground"], ice0)
+    assert np.array_equal(b > 0, iced)  # (the extent doesn't depend on the bed's height here)
+    assert (b <= a + 1e-6).all()
+    # (where ICE_MAX capped the first sheet, its thickness wasn't set by the margins, so the
+    # raised bed can keep more than a - 3000 of what the margins allow)
+    free = inner & (a < earth.ICE_MAX - 1e-6)
+    assert free.sum() >= 3
+    assert (b[free] <= np.maximum(a[free] - 3000.0, margin) + 1e-6).all()
 
 
 def test_layers_round_trip(sim4):
@@ -257,8 +282,8 @@ def test_climate_fits_ground_after_events():
 
 def test_vegetation_feedbacks_nudge():
     """The vegetation's feedbacks on the climate are nudges (PW-203): a
-    forested continent recycles more rain than a bare one, but the recycled
-    share stays within its band and the albedo moves each half-year by at
+    forested continent recycles more rain than a bare one, (through Budyko's w,
+    which stays within Fu's range), and the albedo moves each half-year by at
     most albedo_cap."""
     from planet import vegetation
     g = build_grid(4)
@@ -271,10 +296,69 @@ def test_vegetation_feedbacks_nudge():
     T = climate.TUNE
     for v in (forest, bare):
         f = climate.vegetation_feedbacks(land, v, T)
-        assert np.all(np.abs(f["et"] - T["et"]) <= T["et"] * T["et_band"] + 1e-12)
+        assert np.all((f["w"] >= 1.5) & (f["w"] <= 4.0))
     cf, cb = climate.compute(g, elev, veg=forest), climate.compute(g, elev, veg=bare)
     assert cf["precip"][land].mean() > cb["precip"][land].mean()
     assert cf["aet"][land].sum() > cb["aet"][land].sum()  # forests give more back to the air
     c0 = climate.compute(g, elev)
     d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
     assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9
+
+
+def test_sediment_budget_closes(monkeypatch):
+    """surface.erode moves rock, it doesn't make or lose it: each step's
+    deposits (land, lakes, sea) add up to what it removed, and none is
+    negative (PW-283). And a closed basin keeps only what fits: no cell
+    where rivers end is filled above the basin's spill point (PW-280)."""
+    from planet import kernels, surface
+    steps, real = [], surface.erode
+
+    def wrapped(grid, elev, *a, **kw):
+        out = real(grid, elev, *a, **kw)
+        spill = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)[0]
+        top = elev + out[4] * a[-1]  # (a[-1]: iso_dep, m per km deposited)
+        steps.append((out[3].copy(), out[4].copy(), out[7]["sink"] & (top > spill + 1.0), out[7]["sink"].sum()))
+        return out
+
+    monkeypatch.setattr(surface, "erode", wrapped)
+    run_sim(myr=100)
+    assert len(steps) >= 40
+    assert sum(s[3] for s in steps) > 50  # (closed basins to test)
+    for removed, dep, over, _ in steps:
+        assert removed.sum() > 0
+        assert dep.sum() == pytest.approx(removed.sum(), rel=1e-9)
+        assert dep.min() >= -1e-12
+        assert not over.any()
+
+
+def test_hillslope_wear_level_consistent():
+    """The run's hillslope term is a slope law, so the same terrain wears
+    down the same at any grid level (PW-282: drop / spacing^2 doubled per level)."""
+    from planet import surface
+    from planet.geo import R_KM
+    rng = np.random.default_rng(3)
+    waves = [(v / np.linalg.norm(v), rng.uniform(0, 2 * np.pi), rng.uniform(1500, 4000))
+             for v in rng.normal(size=(12, 3))]
+    wear = []
+    for level in (4, 5):
+        g = build_grid(level)
+        h = sum(np.sin(g.centers @ v * R_KM * 2 * np.pi / lam + ph) for v, ph, lam in waves) / np.sqrt(12)
+        e = np.where(h > 0.3, 300 + 2500 * (h - 0.3), -3000.0)
+        n, land = g.n, e > 0
+        out = surface.erode(g, e, np.full(n, 35.0), np.zeros(n), np.zeros((n, len(surface.MIX_ROCKS))),
+                            np.full(n, surface.CRATON, np.uint8), land, np.full(n, 800.0), np.full(n, 300.0),
+                            np.full(n, 500.0), np.full(n, 1000.0), 2.0, Params().hillslope, 1e30, 2000.0, 0.0,
+                            2.0 ** (level - 4), np.full(n, 170.0))
+        wear.append(out[3][land].mean())
+    assert wear[1] == pytest.approx(wear[0], rel=0.15), wear
+
+
+def test_kernel_budyko_matches_and_stays_finite():
+    """The rain kernel's scalar Budyko (PW-266) is water_balance's, and stays
+    finite for a trace of rain under a big potential evaporation."""
+    for p, pet, w in [(800.0, 400.0, 2.6), (300.0, 1500.0, 1.5), (50.0, 2000.0, 4.0), (2000.0, 100.0, 2.6)]:
+        assert climate._budyko1(p, pet, w) == pytest.approx(float(climate.budyko(np.array(p), np.array(pet), w)),
+                                                             rel=1e-9)
+    for p in (1e-300, 5e-324, 1e-12, 0.0):
+        e = climate._budyko1(p, 2000.0, 2.6)
+        assert np.isfinite(e) and 0.0 <= e <= p

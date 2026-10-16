@@ -11,7 +11,7 @@ the share of young (< 10 Myr) and capped-old floor, the ocean's share of the
 surface, the number of plates, and the step's events. Writes DIR/seed<N>.json.
 
 Summary, on 4 Myr samples after --skip Myr (default 0): sea level mean, sd,
-min, max; steps at the +-250 m clamp of sea_tect; the largest change of sea
+min, max; steps at the +-SEA_TECT_MAX limit of sea_tect; the largest change of sea
 level within 20 Myr; and 'land drops': episodes where land falls by 4 or more
 points of the surface within 20 Myr (consecutive flagged samples count once).
 """
@@ -24,16 +24,16 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
-from planet.tectonics import Params, Simulation  # noqa: E402
+from planet.tectonics import Params, Simulation, earth  # noqa: E402
 from planet.tectonics.isostasy import ocean_depth  # noqa: E402
 
-CLAMP = 250.0
+CLAMP = earth.SEA_TECT_MAX  # (the tanh limiter: a step "at" it is within 0.5 m)
 
 
 def sample(sim) -> dict:
