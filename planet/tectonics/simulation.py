@@ -62,7 +62,7 @@ class Simulation:
         "rates",  # [source, sink] smoothed over ~10 Myr (None before the first step)
         "refs",  # slow baselines of [source, sink] (None before the first step)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
-        "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
+        "depth_ref",  # m: the starting sea floor's mean depth, sea level 0 (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
         "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
@@ -278,7 +278,7 @@ class Simulation:
         t0 = col.t.copy()  # (volcanoes edits it in place)
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
-        crust.stretch(self, col, stretch, plume, newc, shrink)
+        crust.stretch(self, col, stretch, plume, newc, stack_add)
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment

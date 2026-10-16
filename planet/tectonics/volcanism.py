@@ -436,7 +436,7 @@ def cap_plumes(sim, col, plume, tops, cont_share=0.25):
                            sediment_km(col.cover, col.x))
     head = np.where(cont, tops[1], tops[0])
     taper = np.clip((head - as_volcano) / 1500.0, 0, 1)
-    room = np.maximum(head - as_volcano, 0) / np.where(cont, ISO_LAND, ISO_VOLCANO)
+    room = np.maximum(head - as_volcano, 0) / iso_rate(cont, np.full(len(cont), HOTSPOT), col.t)
     room = np.where(cont, np.minimum(room, np.maximum(LAVA_MAX_KM - col.x[:, LAVA], 0)), room)
     return np.minimum(plume * np.where(cont, cont_share, 1.0) * taper * dt, room) / dt
 

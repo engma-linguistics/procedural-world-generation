@@ -13,11 +13,12 @@
 
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
-serving; zooms and time zooms run one at a time on the job queue's worker,
-and one computation runs at a time (api.COMPUTE: numba's parallel kernels
-can't be launched from two threads at once), so a highlights request that
-has to compute waits for a running job. Job state is kept in
-.jobs/<port>.json and survives a restart (api.Jobs).
+serving. Zooms, time zooms and finished worlds run on the job queue, up to
+--jobs at once, each in a worker process (parallel.Pool: separate processes
+scale, threads in one process don't), so a highlights request computing in
+this process doesn't wait for them (api.COMPUTE only serialises this
+process's own computations). Job state is kept in .jobs/<port>.json and
+survives a restart (api.Jobs).
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ import webbrowser
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api
+from . import parallel as P
 from . import store as S
 
 KIND_OF = {"runs": "run", "worlds": "world", "zooms": "zoom"}
@@ -121,16 +123,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def serve(port: int = 8765, open_browser: bool = True):
+JOBS = 4  # jobs at once (worker processes) by default
+
+
+def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads: int | None = None):
+    """jobs: how many jobs run at once, each in a worker process with
+    `threads` numba threads (default: the cores shared out, at most 8)."""
     for kind in S.KINDS:
         S.update_index(kind)
+    pool = P.Pool(jobs, threads)
     # job state survives a restart (per checkout and port: worktrees share the data folders)
-    Handler.jobs = api.Jobs(api.any_job, S.REPO / ".jobs" / f"{port}.json")
+    Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs)
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
-    with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
-        url = f"http://127.0.0.1:{port}/viewer/"
-        print(f"Viewer at {url}   (data: {S.root()}; Ctrl-C to stop)")
-        if open_browser:
-            webbrowser.open(url)
-        httpd.serve_forever()
+    try:
+        with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
+            url = f"http://127.0.0.1:{port}/viewer/"
+            print(f"Viewer at {url}   (data: {S.root()}; {jobs} jobs at once, {pool.threads} threads each; "
+                  f"Ctrl-C to stop)", flush=True)
+            if open_browser:
+                webbrowser.open(url)
+            httpd.serve_forever()
+    finally:
+        pool.close(kill=True)  # (running jobs are queued again at the next start)

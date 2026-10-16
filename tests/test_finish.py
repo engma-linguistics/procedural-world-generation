@@ -89,6 +89,15 @@ def test_finished_climate_has_the_orbit(tiny):
     d = F.orbit_dt(tzrun, st)
     g = T.build_grid(tzrun["meta"]["level"])
     assert d.shape == (g.n, 12) and np.abs(d).max() > 0.5
+    # the time zoom's land mask (surface > 0: grounded ice on a bed pressed below the sea is land, PW-274)
+    m_ = tzrun["meta"]
+    p_ = TZ.TZParams(**{k: v for k, v in m_.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
+    s_ = st["stats"]
+    ref = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), m_["params"].get("tilt", 23.4),
+                           p_, st["elevation"] + st["ice"] > 0, st["ice"], phases=m_.get("orbit_phases_deg"))
+    for j, v in m_.get("anchor", []):
+        ref[j] += v
+    assert np.array_equal(d, ref)
     from planet import climate
     land = st["elevation"] > 0
     e = np.where(land, st["elevation"], np.minimum(st["elevation"], -1))

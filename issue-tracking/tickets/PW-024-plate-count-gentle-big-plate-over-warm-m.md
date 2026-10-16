@@ -10,7 +10,7 @@ impact: high
 found_by: mantle
 blocked_by: []
 relates: [PW-025]
-refs: [planet/tectonics/events.py, planet/tectonics/mantle.py, tools/supercontinent.py, docs/proposals/supercontinent_cycle.md, docs/review/overnight_runs.md, "run 9abc92"]
+refs: [planet/tectonics/events.py, planet/tectonics/mantle.py, tools/supercontinent.py, docs/review/overnight_runs.md, "run 9abc92"]
 created: 2026-10-14
 updated: 2026-10-14
 ---

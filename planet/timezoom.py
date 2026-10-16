@@ -639,8 +639,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - fields_["s0"]) + dt_wet
         f_ice = np.clip(h_sfc / p.albedo_h, 0, 1)
         f_alb = np.clip(ice_g / p.snow_h, 0, 1)  # perennial snow is bright from the start
-        # (a sheet's summer damping: its share of the land around under ice, icemass)
-        damp = p.summer_damp * M.sheet_cover(g, np.where(grounded, H, 0.0), p.sheet_km)
+        # (a sheet's summer damping: its share of the land around under ice, icemass; on ice only: bare
+        # ground's seasonal snow gets none, as the run's new-cap rule, PW-275)
+        damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g, p.sheet_km), 0.0)
 
         def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
@@ -819,7 +820,7 @@ def report(run_dir: Path) -> Path:
                 f"{fr[i]['stats']['sea_level_change_m']:+.0f} m", W.LEGENDS["elevation"],
                 W.ascii_map(w, "elevation", 100, 25)]
     path = run_dir / "run.txt"
-    path.write_text("\n".join(out) + "\n")
+    S.write_atomic(path, "\n".join(out) + "\n")
     return path
 
 

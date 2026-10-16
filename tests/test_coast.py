@@ -57,11 +57,26 @@ def test_wave_fetch_exposed_vs_sheltered(g5, monkeypatch):
     assert sheltered < 0.3 * exposed, (sheltered, exposed)
     assert lee < 0.3 * exposed, (lee, exposed)
     # the open ocean far from land: a fully developed sea for the wind, roughly
-    assert 0.3 * coast._wsat(12.0) < wp[_cell(g, 0, -120)] < 1.5 * coast._wsat(12.0)
+    # (power ~U^5, averaged over the wind's spread of speeds about its mean)
+    full = coast._wsat(12.0) * float(np.sum(coast.GUST_W * coast.GUST_X ** 5))
+    assert 0.3 * full < wp[_cell(g, 0, -120)] < 1.5 * full
 
 
-def test_wave_frozen_sea_blocks(g5):
-    """Sea ice upwind stops the waves like land."""
+def test_wind_spread_moments():
+    """The wind's Weibull (k = 2) spread of speeds: mean ~1, and the moments
+    of the growth law's regimes (U^3, U^(7/3), U^5) as for the distribution
+    (Gamma(1 + p/2) / Gamma(1.5)^p), within 1% (PW-270)."""
+    from math import gamma
+    x, w = coast.GUST_X, coast.GUST_W
+    assert abs(np.sum(w) - 1) < 1e-9 and abs(np.sum(w * x) - 1) < 0.02  # (U^0.5 in v: the least exact)
+    for p in (7 / 3, 3.0, 5.0):
+        assert abs(np.sum(w * x ** p) / (gamma(1 + p / 2) / gamma(1.5) ** p) - 1) < 0.01, p
+
+
+def test_wave_frozen_sea_blocks(g5, monkeypatch):
+    """Sea ice upwind stops the waves like land. (Long storms, so the fetch
+    limits the sea: a 12 h storm's sea is grown within ~200 km.)"""
+    monkeypatch.setattr(coast, "T_STORM", 72.0)
     g = g5
     elev = np.where((g.lon > 0) & (g.lon < 60) & (np.abs(g.lat) < 50), 300.0, -4000.0)
     U, D = np.full((2, g.n), 12.0), np.repeat(_east(g)[None], 2, 0)
@@ -103,6 +118,24 @@ def test_tide_wide_shelf_vs_narrow(tide_world):
     assert 0.5 < narrow < 3.0  # an open-ocean coast: ~1-2 m
 
 
+def test_tide_shelf_resonance_falls_past_quarter_wave(tide_world):
+    """The shelf amplifies most near a quarter tidal wavelength (on the
+    shelf's mean depth) and falls back toward 1 by half a wavelength (PW-273:
+    it used to stay at its peak for any wider shelf)."""
+    g, elev = tide_world
+    _, det = coast.tide_range(g, elev, detail=True)
+    iw = _coastal(g, elev, -25, -1)
+    lam = np.sqrt(coast.GRAV * 80.0) * coast.T_M2 / 1000.0
+    # the same shelf, a quarter wavelength wider: about half a wavelength
+    dlon = 360 * (lam / 4) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
+    wide = elev.copy()
+    wide[(g.lon > -3.5 - dlon) & (g.lon <= 0) & (g.lat < -5) & (g.lat > -50)] = -80.0
+    _, det2 = coast.tide_range(g, wide, detail=True)
+    W2 = det2["shelf_km"][iw]
+    assert 0.4 * lam < W2 < 0.6 * lam, (W2, lam)
+    assert det2["shelf_amp"][iw] < 1.6 < det["shelf_amp"][iw], (det2["shelf_amp"][iw], det["shelf_amp"][iw])
+
+
 def test_tide_enclosed_sea_is_small(tide_world):
     g, elev = tide_world
     tr = coast.tide_range(g, elev)
@@ -128,6 +161,22 @@ def test_galloway_weights():
     assert abs(0.49 * hs * hs * te - 50.0) < 2.0
 
 
+def test_plain_radius_earth():
+    """The delta plain radius meets its own Earth calibration (within 30%, at
+    the thick offshore sediment of Earth's big deltas, sf 0.5-1), and with
+    it the Galloway types of real deltas (real Q, sediment Mt/yr, waves kW/m,
+    spring tide m; PW-269)."""
+    for q, r_earth in ((2800, 150), (17000, 250), (38000, 350)):  # Nile, Mississippi, Ganges-Brahmaputra
+        for sf in (0.5, 1.0):
+            assert 0.7 < coast.plain_radius_km(q, sf) / r_earth < 1.3, (q, sf)
+    cases = {"Ganges-Brahmaputra": (38000, 1060, 6, 3.6, "tide"), "Mekong": (15000, 160, 5, 3.0, "tide"),
+             "Mississippi": (17000, 400, 3, 0.4, "river"), "Sao Francisco": (3000, 6, 10, 2.0, "wave")}
+    for name, (q, qs, wave, tide, kind) in cases.items():
+        for sf in (0.5, 1.0):
+            g = coast.galloway(qs * 1e9 / coast.SEC_PER_YR, q, wave, tide, coast.plain_radius_km(q, sf))
+            assert g["type"] == f"{kind}-dominated", (name, sf, g)
+
+
 # ---------------------------------------------------------------------------
 # Deltas in the zoom: the same river into three different seas
 # ---------------------------------------------------------------------------
@@ -144,9 +193,11 @@ def three_deltas(water_world):  # noqa: F811
     p = g.centers[i] + g.centers[down[i]]
     lat, lon = np.degrees(np.arcsin(p[2] / np.linalg.norm(p))), np.degrees(np.arctan2(p[1], p[0]))
     out = {}
+    # (a ~53,000 m^3/s river onto thick sediment: a ~350 km delta plain, so the
+    # region must be > 2 R across for the measures below)
     for name, (wave, tide) in SEAS.items():
         Lw = {**L, "wave_power": np.where(elev > 0, 0.0, wave), "tide_range": np.where(elev > 0, 0.0, tide)}
-        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=300, res_km=2,
+        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=800, res_km=5,
                                iterations=8, log=lambda *a: None)
     return out
 
