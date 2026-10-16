@@ -10,7 +10,7 @@ impact: med
 found_by: timezoom
 blocked_by: []
 relates: [PW-018, PW-037]
-refs: [planet/timezoom.py, docs/proposals/glacial_timezoom.md]
+refs: [planet/timezoom.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---

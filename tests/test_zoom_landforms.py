@@ -114,6 +114,17 @@ def test_escarpment_keeps_cell_means(esc_pair):
         assert abs(esc["stats"][k]) < abs(plain["stats"][k]) + tol, (k, plain["stats"][k], esc["stats"][k])
 
 
+def test_landform_mean_correction_spares_the_channels(esc_pair):
+    """What the landform bedding takes off a cell's mean goes back on its
+    hillslopes, never on a stream's bed (PW-125: on the channels too, it
+    lifted a bed where the classes weigh much over its foot where they weigh
+    little, a 100-600 m step)."""
+    st = esc_pair[1]["debug"]["stages"]
+    corr, chan = st["landform_mean_correction"], st["landform_channels"]
+    assert np.all(corr[chan] == 0)
+    assert np.abs(corr[~chan]).max() > 1.0  # (the hillslopes carry it)
+
+
 def test_landform_zoom_is_deterministic(esc_pair):
     _, esc = esc_pair
     w = _escarpment_world(0.3, 600)
@@ -302,6 +313,21 @@ def test_shield_has_domes_and_scoured_lakes(shield_pair):
     assert ice["stats"]["landform_lakes"] >= 5 and warm["stats"]["landform_lakes"] == 0
     wet = np.mean(ice["layers"]["water"] == 2)
     assert 0.03 < wet < 0.3, wet  # lake-dotted, not drowned
+
+
+def test_shield_domes_are_round_topped(shield_pair):
+    """The domes stand whole and round-topped above the plain: not capped
+    into tilted flat-topped slabs ringed by a cliff (a moat look in the
+    relief shading), nor cut through by the flow paths across them (PW-168)."""
+    from numpy.lib.stride_tricks import sliding_window_view as win
+    _, warm, _ = shield_pair
+    h = warm["layers"]["elevation"].astype(float)
+    lo = np.percentile(win(np.pad(h, 10, mode="edge"), (21, 21)), 20, axis=(2, 3))
+    lap = 0.25 * (h[2:, 1:-1] + h[:-2, 1:-1] + h[1:-1, 2:] + h[1:-1, :-2]) - h[1:-1, 1:-1]
+    on = ((h - lo) > 60)[1:-1, 1:-1] & (warm["layers"]["water"] == 0)[1:-1, 1:-1]
+    assert on.sum() > 1000
+    assert np.mean(lap[on] < -1.0) > 0.6  # convex (0.44 when capped)
+    assert np.mean(np.abs(lap[on]) < 0.5) < 0.25  # few flat (0.48 when capped)
 
 
 def test_build_frames_reads_the_strike():

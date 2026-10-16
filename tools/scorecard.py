@@ -1,11 +1,13 @@
 """Slow calibration scores, tracked over time (not pass/fail).
 
-    uv run python tools/scorecard.py [--myr 1000] [--seeds 1 2]
+    uv run python tools/scorecard.py [--myr 1000] [--seeds 1 2] [--jobs J]
 
 Runs (1) the climate on real Earth geography (needs data/earth, see
 earth_check.py) and (2) level-6 simulations for --myr, then appends one JSON
 line to docs/scorecard.jsonl tagged with the git commit, so you can see
-whether model changes moved things toward or away from Earth. ~11 min
+whether model changes moved things toward or away from Earth. The Earth
+climate and each seed run at once in worker processes (planet/parallel.py;
+--jobs 1: one after the other), so it takes about as long as one seed
 (the `seconds` field of each line).
 """
 
@@ -17,12 +19,12 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from planet import climate, vegetation  # noqa: E402
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
+from planet import climate, parallel, vegetation  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import koppen_agreement  # noqa: E402
 from planet.provenance import code_version  # noqa: E402
@@ -73,16 +75,24 @@ def world_scores(seed: int, myr: float) -> dict:
             "plant_groups": [None if not np.isfinite(t) else t for t in sim.flora], "track": track}
 
 
+def _job(job: tuple, progress) -> dict | None:
+    """One scorecard part, in a worker process: ("earth",) or ("world", seed, myr)."""
+    return earth_scores() if job[0] == "earth" else world_scores(*job[1:])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--myr", type=float, default=1000)
     ap.add_argument("--seeds", type=int, nargs="+", default=[1, 2])
+    ap.add_argument("--jobs", type=int, help="parts run at once (default: all of them, up to a quarter of the cores)")
+    ap.add_argument("--threads", type=int, help="numba threads per worker (default: the cores shared out, at most 8)")
     a = ap.parse_args()
     t0 = time.time()
     code = code_version()
+    jobs = [("earth",)] + [("world", s, a.myr) for s in a.seeds]
+    earth, *worlds = parallel.run(_job, jobs, a.jobs, a.threads)
     rec = {"commit": f"{code['commit']}{'+dirty' if code['dirty'] else ''}", "src": code["planet_src_sha"],
-           "date": time.strftime("%Y-%m-%d %H:%M"),
-           "earth": earth_scores(), "worlds": [world_scores(s, a.myr) for s in a.seeds]}
+           "date": time.strftime("%Y-%m-%d %H:%M"), "earth": earth, "worlds": worlds}
     rec["seconds"] = round(time.time() - t0)
     out = ROOT / "docs" / "scorecard.jsonl"
     out.parent.mkdir(exist_ok=True)

@@ -12,13 +12,13 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 DAYS = 365.25 / 12  # days per month
 SQRT2PI = math.sqrt(2 * math.pi)
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb, band, dq, f_ice, f_alb,
                  cool, damp, hold, bare_share, snow_w,
                  sigma, ddf_snow, ddf_ice, refreeze, precip_k,
@@ -53,9 +53,10 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
     Out: smb (m of ice per yr, land cells only; >0 grows ice even on bare
     ground: snow that outlasts the summer), annual mean / warmest / coldest
     month temperatures, the rain scale factor, and f_sum: the surface's
-    mean brightness (0..1) over the summer months."""
+    mean brightness (0..1) over the summer months. Cells are independent
+    (prange, no reductions across cells): the same bits at any thread count."""
     n = t_mean.shape[0]
-    for i in range(n):
+    for i in prange(n):
         peak = 3 if north[i] else 9
         b = band[i]
         osum = 0.0
@@ -113,6 +114,42 @@ def _surf(bed, H, sl, flt, j):
 
 
 @njit(cache=True)
+def _sia_receivers(active, off, idx, n):
+    """Which cells each sub-step's volume changes land on, and in what
+    order: for target cell c, the directed edges whose transfer it receives
+    (+) or gives (-), in the order a loop over `active` and each cell's edges
+    would add them up (so a parallel gather over the targets sums exactly as
+    that loop does: bit-identical, whatever the thread count). Returns
+    (targets, rec_off, rec_e, rec_give), the records of targets[t] at
+    rec_off[t]:rec_off[t + 1]."""
+    cnt = np.zeros(n, np.int64)
+    for a in range(active.shape[0]):
+        i = active[a]
+        for e in range(off[i], off[i + 1]):
+            cnt[i] += 1
+            cnt[idx[e]] += 1
+    targets = np.flatnonzero(cnt)
+    slot = np.full(n, -1, np.int64)
+    rec_off = np.zeros(targets.shape[0] + 1, np.int64)
+    for t in range(targets.shape[0]):
+        slot[targets[t]] = t
+        rec_off[t + 1] = rec_off[t] + cnt[targets[t]]
+    fill = rec_off[:-1].copy()
+    rec_e = np.empty(rec_off[-1], np.int64)
+    rec_give = np.empty(rec_off[-1], np.bool_)
+    for a in range(active.shape[0]):
+        i = active[a]
+        for e in range(off[i], off[i + 1]):
+            r = fill[slot[i]]
+            rec_e[r], rec_give[r] = e, True
+            fill[slot[i]] += 1
+            r = fill[slot[idx[e]]]
+            rec_e[r], rec_give[r] = e, False
+            fill[slot[idx[e]]] += 1
+    return targets, rec_off, rec_e, rec_give
+
+
+@njit(cache=True, parallel=True)
 def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min):
     """Shallow-ice flow for dt_total years: ice thickness diffuses with
     D = gamma H^5 |grad s|^2 (Glen's law, n = 3, no sliding), s the ice
@@ -124,17 +161,20 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
     at ~110 km cells a margin is one cliff-like step the model can't
     resolve). Outflow is limited to what a cell holds, so H stays >= 0 and
     ice is exactly conserved. Only the `active` cells (ice and a 2-cell
-    ring around it) are visited. Returns the number of sub-steps."""
+    ring around it) are visited. Returns the number of sub-steps.
+    Each pass is per cell (prange); the volume moved along each edge is
+    gathered by the cells it reaches in a fixed order (_sia_receivers), so
+    the result doesn't depend on the thread count (PW-215)."""
     na = active.shape[0]
     n = H.shape[0]
     D = np.zeros(n)
-    out = np.zeros(n)
-    dV = np.zeros(n)
+    vE = np.empty(idx.shape[0])  # volume moved along each edge this sub-step (-1: none)
+    targets, rec_off, rec_e, rec_give = _sia_receivers(active, off, idx, n)
+    nt = targets.shape[0]
     t = 0.0
     nsub = 0
     while t < dt_total - 1e-9:
-        dmax = 0.0
-        for a in range(na):
+        for a in prange(na):
             i = active[a]
             if H[i] <= 0.0:
                 D[i] = 0.0
@@ -154,51 +194,52 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
             # of slopes on all sides cancels and the ice would pile up without flowing, 10+ km; PW-199)
             g2 = max((gx * gx + gy * gy + gz * gz) / (area[i] * area[i]), down2)
             h2 = H[i] * H[i]
-            d = min(gamma * h2 * h2 * H[i] * g2, d_cap)
-            D[i] = d
-            dmax = max(dmax, d)
+            D[i] = min(gamma * h2 * h2 * H[i] * g2, d_cap)
+        dmax = 0.0
+        for a in range(na):
+            dmax = max(dmax, D[active[a]])
         if dmax <= 0.0:
             break
         dt = min(dt_total - t, cfl * d2min / dmax)
-        # outflow per cell, to limit it to what the cell holds
-        for a in range(na):
+        # each cell's outflow, limited to what the cell holds, and so what moves along each of its edges
+        for a in prange(na):
             i = active[a]
-            out[i] = 0.0
+            for e in range(off[i], off[i + 1]):
+                vE[e] = -1.0
             if H[i] <= 0.0:
                 continue
             si = _surf(bed, H, sl, flt, i)
+            out = 0.0
             for e in range(off[i], off[i + 1]):
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - _surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    out[i] += q
-        for a in range(na):
-            i = active[a]
-            if out[i] <= 0.0:
+                    out += q
+            if out <= 0.0:
                 continue
             # (written so a vanishing outflow, which can underflow to 0 for a
             # film of ice, never divides by zero)
-            need = dt * out[i]
+            need = dt * out
             held = H[i] * area[i]
             scale = 1.0 if need <= held else held / need
-            si = _surf(bed, H, sl, flt, i)
             for e in range(off[i], off[i + 1]):
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - _surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    v = q * scale * dt
-                    dV[i] -= v
-                    dV[j] += v
-        for a in range(na):
-            i = active[a]
-            if dV[i] != 0.0:
-                H[i] = max(0.0, H[i] + dV[i] / area[i])
-                dV[i] = 0.0
-            for e in range(off[i], off[i + 1]):
-                j = idx[e]
-                if dV[j] != 0.0:
-                    H[j] = max(0.0, H[j] + dV[j] / area[j])
-                    dV[j] = 0.0
+                    vE[e] = q * scale * dt
+        # every cell that gives or receives: its net change, then its thickness
+        for k in prange(nt):
+            c = targets[k]
+            dv = 0.0
+            for r in range(rec_off[k], rec_off[k + 1]):
+                v = vE[rec_e[r]]
+                if v >= 0.0:
+                    if rec_give[r]:
+                        dv -= v
+                    else:
+                        dv += v
+            if dv != 0.0:
+                H[c] = max(0.0, H[c] + dv / area[c])
         t += dt
         nsub += 1
     return nsub

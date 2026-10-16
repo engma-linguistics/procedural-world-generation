@@ -15,6 +15,14 @@ both, e.g. for tests). Under it:
   zooms/<id>/layers/<name>.bin   one layer, (ny, nx)
   grids/L<level>.json            grid geometry, shared by every run and world at that level
   {runs,worlds,zooms}/index.json what the viewer lists
+  {runs,worlds,zooms}/.locks/    lock files (lock()): one process builds a slice, zoom, ... at a time
+
+Several processes may write here at once (planet/parallel.py, the server's
+job workers, a CLI run beside the server): files are written whole to a
+temporary name and renamed into place (write_atomic), so a reader never sees
+half a file, and builds that two processes could start together (slicing
+the same run moment, the same zoom, a world's highlights, the indexes) take
+a file lock (lock()) and look again for the finished item once they hold it.
 
 Binary layers
 -------------
@@ -34,6 +42,7 @@ vocabulary of layer names shared by runs, time zooms, worlds and the viewer.
 
 from __future__ import annotations
 
+import contextlib
 import gzip
 import json
 import os
@@ -41,8 +50,14 @@ import pickle
 import re
 import secrets
 import shutil
+import threading
 import zlib
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # (Windows: no cross-process locks; the project targets Linux and macOS)
+    fcntl = None
 
 import numpy as np
 
@@ -103,6 +118,65 @@ def rel(path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Safe writes and locks between processes
+# ---------------------------------------------------------------------------
+def write_atomic(path: Path, data: str | bytes) -> Path:
+    """Writes the whole file under a temporary name in the same folder, then
+    renames it into place (os.replace is atomic): readers in other processes
+    see the old file or the new one, never a partial one. The temporary
+    name starts with a dot and ends in .tmp, so no listing glob matches it."""
+    path = Path(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        if isinstance(data, str):
+            tmp.write_text(data)
+        else:
+            tmp.write_bytes(data)
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+    return path
+
+
+_locks: dict[str, list] = {}  # lock file -> [RLock, depth, fd] (this process's holders)
+_locks_guard = threading.Lock()
+
+
+def lock_path(base_dir: Path, name: str) -> Path:
+    return Path(base_dir) / ".locks" / (re.sub(r"[^0-9A-Za-z_.-]", "_", name) + ".lock")
+
+
+@contextlib.contextmanager
+def lock(base_dir: Path, name: str):
+    """An exclusive lock named `name` under base_dir/.locks/, held across
+    processes (fcntl.flock) and threads, re-entrant within a thread. Lock
+    files are left in place (removing them would race)."""
+    path = str(lock_path(base_dir, name))
+    with _locks_guard:
+        ent = _locks.setdefault(path, [threading.RLock(), 0, None])
+    with ent[0]:  # threads of this process queue here; flock then queues processes
+        if ent[1] == 0:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
+            try:
+                if fcntl is not None:
+                    fcntl.flock(fd, fcntl.LOCK_EX)
+            except BaseException:
+                os.close(fd)
+                raise
+            ent[2] = fd
+        ent[1] += 1
+        try:
+            yield
+        finally:
+            ent[1] -= 1
+            if ent[1] == 0:
+                os.close(ent[2])  # (releases the flock)
+                ent[2] = None
+
+
+# ---------------------------------------------------------------------------
 # JSON: one top-level key per line, header keys first, so listings read a
 # few lines instead of parsing megabytes of frames or layers
 # ---------------------------------------------------------------------------
@@ -119,7 +193,7 @@ def write_json(path: Path, obj: dict) -> None:
     """obj with one top-level key per line (compact values), in obj's order."""
     lines = [f"{json.dumps(k)}: {json.dumps(v, default=jsonable, separators=(',', ':'))}"
              for k, v in obj.items()]
-    Path(path).write_text("{\n" + ",\n".join(lines) + "\n}\n")
+    write_atomic(path, "{\n" + ",\n".join(lines) + "\n}\n")
 
 
 HEADER_END = ("grid", "legend", "summary", "layers", "events", "frames")  # big keys come after the header
@@ -214,6 +288,16 @@ LAYERS = {
     "sunshine_jan": _spec("u1", "h/day", "bright sunshine, hours a day, January half-year (climate.sunshine)",
                           scale=0.1),
     "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
+    "upwelling": _spec("u1", "C", "how much upwelling cools the sea surface (climate.upwelling_cooling; 0 on land)",
+                       scale=0.1),
+    # coastal and shallow-sea life (coastal.py, PW-188; worlds): % of each cell
+    "reef": _spec("<u2", "%", "coral reef framework (sea cells)", scale=0.1),
+    "kelp": _spec("<u2", "%", "kelp forest (sea cells)", scale=0.1),
+    "seagrass": _spec("<u2", "%", "seagrass meadow (sea cells)", scale=0.1),
+    "mangrove": _spec("<u2", "%", "mangrove forest between the tides (coastal land cells)", scale=0.1),
+    "salt_marsh": _spec("<u2", "%", "salt marsh between the tides (coastal land cells)", scale=0.1),
+    "turbidity": _spec("<u2", "mg/L", "suspended sediment at the sea surface, from the rivers (0 on land)",
+                       scale=0.1),
     # landform classes and their parameters (landform.py; read from each cell's geological record)
     "landform": _spec("u1", "id", "landform class (landform.CLASSES; legend 'landforms')"),
     "landform_age": _spec("<u2", "Myr", "landform age; by class: since rifting, folding, eruption, the top "
@@ -375,10 +459,10 @@ def write_grid(grid) -> Path:
     grids_dir().mkdir(parents=True, exist_ok=True)
     lat, lon = latlon_lists(grid.centers)
     clat, clon = latlon_lists(grid.corners)
-    path.write_text(json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
-                                "corner_lon": clon, "cells": grid.cell_corners,
-                                "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
-                               separators=(",", ":")))
+    write_atomic(path, json.dumps({"level": grid.level, "lat": lat, "lon": lon, "corner_lat": clat,
+                                   "corner_lon": clon, "cells": grid.cell_corners,
+                                   "pentagons": grid.pentagons.tolist(), "nbr": grid.neighbors},
+                                  separators=(",", ":")))
     return path
 
 
@@ -388,8 +472,9 @@ def legends() -> dict:
     from .landform import legend
     from .surface import ROCKS
     from .vegetation import legend as veg_legend
+    from .zoom_coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "landforms": legend(), "vegetation": veg_legend(),
+            "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 
@@ -488,7 +573,8 @@ def delete(kind: str, item_id: str) -> list[Path]:
 def orphans() -> list[Path]:
     """Zooms whose world is gone, highlight caches of deleted worlds, and run
     folders without a run.json (a simulate that was killed)."""
-    out = [p for p in sorted(runs_dir().glob("*")) if p.is_dir() and not (p / "run.json").exists()]
+    out = [p for p in sorted(runs_dir().glob("*"))
+           if p.is_dir() and not p.name.startswith(".") and not (p / "run.json").exists()]
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
             wid = json.loads(p.read_text())["source_world"]["id"]
@@ -558,8 +644,9 @@ def update_index(kind: str) -> list[dict]:
     """Rewrites <kind>s/index.json (what the viewer lists) and returns it."""
     d = {"run": runs_dir, "world": worlds_dir, "zoom": zooms_dir}[kind]()
     d.mkdir(parents=True, exist_ok=True)
-    entries = [e for _, e in items(kind)]
-    (d / "index.json").write_text(json.dumps(entries, indent=1))
+    with lock(d, "index"):  # (the last writer has listed last: no new item is left out)
+        entries = [e for _, e in items(kind)]
+        write_atomic(d / "index.json", json.dumps(entries, indent=1))
     return entries
 
 
@@ -574,8 +661,8 @@ def volcanoes_path(run_dir: Path) -> Path:
 
 def write_volcanoes(run_dir: Path, columns, frames: list) -> Path:
     path = volcanoes_path(run_dir)
-    path.write_bytes(gzip.compress(json.dumps({"columns": list(columns), "frames": frames},
-                                              separators=(",", ":")).encode(), 6))
+    write_atomic(path, gzip.compress(json.dumps({"columns": list(columns), "frames": frames},
+                                                separators=(",", ":")).encode(), 6))
     return path
 
 
@@ -589,27 +676,111 @@ def read_volcanoes(run_dir: Path) -> dict | None:
 # Checkpoints: the full simulation state every ~100 Myr of a run
 # ---------------------------------------------------------------------------
 # A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
-# and volcano lists, events, budget), zlib-compressed, the record of the
-# plates' unowned cells zeroed (save_checkpoint). Only ever read back from our own runs/.
+# and volcano lists, events, budget), zlib-compressed, the crust of the
+# plates' unowned cells zeroed (shrink_state) and the plates' cell map stored
+# as its difference from a fresh grid.locate (pack_idx). Only ever read back
+# from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
 
-def save_checkpoint(run_dir: Path, sim) -> Path:
-    """The state, with the plates' geological record (rec, lith) zeroed
-    where they own no crust (dead slots, cells their crust has left: a
-    record is only read on owned cells, and written when a plate gains
-    one), which keeps it from doubling the file. (The older columns can't
-    be zeroed the same way: a volcano still reads the swell of a cell its
-    crust has left, volcanism.base_level.)"""
+def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
+    """The state, with the crust of plate cells nothing reads zeroed
+    (shrink_state: ~9 in 10 of the plates' cells are stale copies of crust
+    that has left, which compress badly). writer: a CheckpointWriter to
+    pickle, compress and write it in the background (sim.state() is a deep
+    copy taken here, so the run can go on meanwhile)."""
     path = checkpoint_path(run_dir, sim.t)
     path.parent.mkdir(parents=True, exist_ok=True)
     state = sim.state()
-    pl = state["plates"]
-    for name in ("rec", "lith"):
-        getattr(pl, name)[~pl.owned] = 0
-    path.write_bytes(zlib.compress(pickle.dumps(state, protocol=5), 1))
+    if writer is None:
+        _write_checkpoint(path, state, sim.grid)
+    else:
+        writer.submit(path, state, sim.grid)
     return path
+
+
+def shrink_state(state: dict) -> dict:
+    """Zeroes, in place, the crust columns (plates.CRUST) of plate cells
+    nothing reads on: cells a plate owns no crust in (dead slots, cells its
+    crust has left: a column is written in full when a plate gains a cell)
+    except those the world view samples (Simulation._world_view: a plate's
+    slot can be the view's without being owned, and the view and its
+    subsidence read it, PW-291) and the volcanoes' crust cells (re_home
+    reads a volcano's swell, volcanism.base_level). Returns state."""
+    pl = state["plates"]
+    keep = pl.owned.copy()
+    owner = state["owner"]
+    keep[owner, pl.idx[owner, np.arange(owner.size)]] = True
+    for v in state["volcanoes"]:
+        keep[v["plate"], v["ref"]] = True
+    for arr in pl.crust():
+        arr[~keep] = 0
+    return state
+
+
+def _located(plates, grid) -> np.ndarray:
+    """(P, n): each plate slot's cell under each world cell, found afresh
+    (no warm start) from its rotation."""
+    return np.stack([grid.locate(grid.centers @ q) for q in plates.Q])
+
+
+def pack_idx(state: dict, grid) -> dict:
+    """Replaces, in place, the plates' cell map idx ((P, n) int64, a rotated
+    nearest-neighbour map that zlib can't compress: ~a quarter of a
+    checkpoint) by its difference from _located (Plates.move computes it the
+    same way, but warm-started from the last step: ~all zeros). unpack_idx
+    adds it back, so the round trip is exact whatever the warm start did
+    (PW-306). Returns state."""
+    pl = state["plates"]
+    pl.idx = pl.idx - _located(pl, grid)
+    return state
+
+
+def unpack_idx(state: dict, grid) -> dict:
+    pl = state["plates"]
+    pl.idx = pl.idx + _located(pl, grid)
+    return state
+
+
+def _write_checkpoint(path: Path, state: dict, grid):
+    write_atomic(path, zlib.compress(pickle.dumps(pack_idx(shrink_state(state), grid), protocol=5), 1))
+
+
+class CheckpointWriter:
+    """Writes checkpoints on one background thread, one at a time (zlib and
+    the disk write release the GIL: ~0.75 s per checkpoint at level 6, ~2.4 s
+    at level 7, off the run's main thread; PW-258). Use as a context manager:
+    leaving it waits for the last write and raises its error, if any."""
+
+    def __init__(self):
+        self._thread = None
+        self._error = None
+
+    def submit(self, path: Path, state: dict, grid):
+        self.wait()
+
+        def work():
+            try:
+                _write_checkpoint(path, state, grid)
+            except BaseException as e:  # (raised again by wait, on the run's thread)
+                self._error = e
+        self._thread = threading.Thread(target=work, name="checkpoint", daemon=True)
+        self._thread.start()
+
+    def wait(self):
+        if self._thread is not None:
+            self._thread.join()
+            self._thread = None
+        if self._error is not None:
+            e, self._error = self._error, None
+            raise e
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.wait()
 
 
 def checkpoints(run_dir: Path) -> list[float]:
@@ -617,5 +788,10 @@ def checkpoints(run_dir: Path) -> list[float]:
     return sorted(float(p.stem) for p in (Path(run_dir) / "state").glob("*.ckpt"))
 
 
-def load_checkpoint(run_dir: Path, t: float) -> dict:
-    return pickle.loads(zlib.decompress(checkpoint_path(run_dir, t).read_bytes()))
+def load_checkpoint(run_dir: Path, t: float, grid) -> dict:
+    """The state saved at t (grid: the run's, to unpack the plates' cell map)."""
+    return read_checkpoint(checkpoint_path(run_dir, t), grid)
+
+
+def read_checkpoint(path: Path, grid) -> dict:
+    return unpack_idx(pickle.loads(zlib.decompress(Path(path).read_bytes())), grid)
