@@ -3,7 +3,7 @@ title: "Run ice: the cycle-averaged balance still mixes the orbital response wit
 type: task
 status: todo
 parent: null
-subsystem: tectonics
+subsystem: climate
 effort: xs
 impact: low
 found_by: tzbatch-2026-10-16

@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-241, PW-240, PW-276, PW-275]
 refs: [planet/timezoom.py, planet/tectonics/earth.py, docs/review/audit/fixes-ice.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Probe: tools-style script in the fix report (tzmulti.py: T.simulate then TZ.simu
 - [ ] the 150 kyr drift from any moment of L5/L6 seeds 2 and 11 within ~-150 m, or the cause named
 
 ## Updates
+- 2026-10-16: Re-measured and cause named (tzbatch; no fix merged: the cause is in the run's ice rule, planet/tectonics/earth.py, another lane; draft draft-run-ice-profile-thin.md, needs-decision). Current code, 150 kyr from 200..1000 Myr of L5 seeds 2 and 11 (in-memory sims): median end -147 m, worst -275, 5 of 10 below -150 (before this batch -137 / -284; the polar fixes made the run's cold moments icier). Pure consistency (orbit, CO2, ice albedo off) from seed 11 @ 200 Myr (dT -8): -72 m in 2 kyr, -282 in 20 kyr, then flat. Causes: (1) the run's Nye profile at 50 kPa, sampled at each cell's inner edge, is ~20% thinner than Earth's real sheets on their own extent (Antarctica 19.8 vs 25.1 Mkm3 at L6; 75 kPa gives 25.4) and than the time zoom's shallow-ice flow; the old ice thickens +53 Mkm3; (2) the thickened sheets spread up to 8 cells (427 land cells) by height-mass-balance feedback the run's edge test (330 m) leaves out. Scratch test of the run's last update: 100 kPa: -176 m; 100 kPa + cell-mean rise: -94 m. Capping the ablation zone did nothing. Mild moments drift slowly instead (seed 3199 L6 @ 736 Myr, dT -1.8: -35 m unforced, -114 m with the cycles in 150 kyr): extent growth, not the profile.
 - 2026-10-15: Created from inbox draft draft-timezoom-drift-tail.md (found by ice-fix).

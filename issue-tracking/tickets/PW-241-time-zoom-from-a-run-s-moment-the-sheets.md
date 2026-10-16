@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-190, PW-115]
 refs: [planet/tectonics/earth.py, planet/timezoom.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -28,4 +28,5 @@ shallow shelves as the time zoom's do; or a short spin-up in the time zoom. Each
 little bigger.
 
 ## Updates
+- 2026-10-16: Same cause as PW-295 (tzbatch, see its update and draft draft-run-ice-profile-thin.md): the run's 50 kPa edge-sampled profile is thinner than the time zoom's sheets (and Earth's), and the time zoom's thickened sheets spread and ground on shelves (154 shelf cells, median 630 m, on L5 seed 11 @ 200 Myr). Not fixed here (run lane). Shelf grounding also in draft draft-timezoom-marine-margins.md.
 - 2026-10-15: Created from inbox draft draft-timezoom-start-drift.md (found by icemb).
