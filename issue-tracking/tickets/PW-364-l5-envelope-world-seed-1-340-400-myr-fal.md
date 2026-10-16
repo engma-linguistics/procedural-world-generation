@@ -1,5 +1,6 @@
 ---
-title: "L5 envelope world (seed 1, 340-400 Myr) falls into a -516 m icehouse under a small, unrelated change; arid share 7.7%"
+id: PW-364
+title: L5 envelope world (seed 1, 340-400 Myr) falls into a -516 m icehouse under a small, unrelated change; arid share 7.7%
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: tectonics-night
 blocked_by: []
 relates: [PW-240, PW-338]
 refs: [tests/test_envelopes.py, docs/review/audit/tectonics-night/pw338.patch, docs/review/audit/tectonics-night/state.py, docs/review/audit/tectonics-night/drycheck.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,3 +30,6 @@ to decide: whether an icehouse that deep and long (~60 Myr) is the PW-240 proble
 whether the envelope test should keep sampling one seed's 340-400 Myr window (fragile to any change that
 reshuffles the history). Then PW-338 can land.
 - [ ] PW-338's patch merged with the envelope tests green, without loosening the band
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-envelope-l5-icehouse-dry.md (found by tectonics-night).
