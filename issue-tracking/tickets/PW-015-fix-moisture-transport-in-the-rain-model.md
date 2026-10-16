@@ -32,6 +32,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Scorecard after stage 1 merge: Earth 70.6/30.9, corr 0.617; seeds 1/2 dry 21.3/22.6%, NPP 385/342, tree cover 16.6/29.4% (seed 1 was 29.7: single 1000 Myr snapshot, health sweep 27.0 -> 26.0; checked under PW-387's agent).
 - 2026-10-16: Status in-progress -> blocked. Stage 1 (conservative physical-time transport) merged alone under the owner's relaxed bar: generated planets about as main (arid 27.8 vs 29.3%, NPP 321 vs 334, fewer giant-lake frames), Earth Koppen group unchanged, exact -1.8/-2.9 pts, land too wet (~1150 mm vs 791) and arid share 18% vs 30. The wetness is land rain efficiency (showers rain out regardless of the upper air), previously hidden by the old transport's leaks; stage 3 gating waits on PW-352. Stages 2 and A parked on branches pw015-prototype, pw015-wip, pw015-optA.
 - 2026-10-16: Merged inbox draft draft-winter-coast-eddy-flux.md ("Winter east coasts: a storm-eddy flux of boundary-layer vapour can't make winter rain without the storms' own lifting, and storminess is high in continental interiors", found by pw015-rain).
   In PW-015 option A, the boundary layer has its own storm-eddy flux, down the gradient of its own vapour:
