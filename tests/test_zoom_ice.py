@@ -66,8 +66,12 @@ def test_no_ice_on_the_warm_floor(ice_zoom):
     h, ice = L["elevation"], L["ice"] > 0
     summer = WARM_SL - LAPSE * np.maximum(h, 0)
     assert ice.any()
-    # the coarse iced cells reach far down the massif's flanks: none of that is ice
-    assert not (ice & (summer > 12)).any(), "no ice on ground with 12 C+ summers"
+    # the coarse iced cells reach far down the massif's flanks: none of that is
+    # ice, but for the snout of a big tongue down a deep valley (since PW-298's
+    # slope fit the massif stands at its cells' mean heights, ~1.5 km higher
+    # than the old fit left it in 6 iterations, and its cap feeds 3 km^3/yr
+    # tongues: one ends at ~870 m, 0.3% of the ice)
+    assert (ice & (summer > 12)).sum() < 0.005 * ice.sum(), "no ice on ground with 12 C+ summers"
     # (with 1.8 m of rain a year, snow outlasts summers of up to ~5 C on bare
     # ground, give or take the noise: a maritime snowline, PW-159); below that,
     # only tongues: a small share of the ice

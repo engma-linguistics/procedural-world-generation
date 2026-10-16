@@ -266,6 +266,68 @@ def test_steep_stream_reaching_a_flat_floor_is_not_a_fall():
     assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 400) < 1
 
 
+def test_tributary_near_a_designed_lip_is_tested_like_any_other():
+    """PW-298 (PW-319): a steep tributary joining a designed fall's river
+    within 3 px of its lip isn't exempt from the contrast test (only the
+    designed river's own water is): at 4 km, 21 of the arc zoom's 26
+    undesigned 'drops' >= 100 m were such tributaries, 1.25x as steep at
+    their last link as above it. A hanging one is still a fall."""
+    nx, ny, res = 40, 24, 4.0
+    main = 10 * nx + np.arange(nx - 1)
+    rec = np.full(nx * ny, -1)
+    rec[main] = main + 1
+    trib = np.arange(2, 10) * nx + 21  # (a stream down column 21 into the main river at row 10, 3 px from the lip)
+    rec[trib] = trib + nx
+    q = np.zeros(nx * ny)
+    q[main] = np.where(np.arange(nx - 1) < 20, 1000.0, 1050.0)
+    q[trib] = 40.0
+    ws = np.zeros((ny, nx))
+    col = np.arange(nx)
+    ws[10, :] = np.where(col <= 18, 900.0 - 0.5 * res * col, 200.0 - 0.5 * res * (col - 19))  # a 650 m designed lip
+    lip = 10 * nx + 18
+    rows = np.arange(2, 10)
+    ws[rows, 21] = 196.0 + 380.0 + 95.0 * res * (9 - rows)  # 95 m/km above, 380 m (95 m/km) at its last link
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res, designed=[lip], top=None, sep_km=0.0)
+    assert [x["px"] for x in f] == [[10, 18]], f
+    ws[rows, 21] = 196.0 + 380.0 + 5.0 * res * (9 - rows)  # hanging: 5 m/km above the same step
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res, designed=[lip], top=None, sep_km=0.0)
+    assert sorted(x["px"] for x in f) == [[9, 21], [10, 18]], f
+
+
+def test_local_base_starts_each_profile_in_its_own_cell():
+    """PW-298: the relief a cell's own slopes make is measured from where
+    its water leaves the cell (or a held point: a floor, a cap)."""
+    from planet import zoom_kernels as ZK
+    n = 6  # a chain 0 <- 1 <- ... <- 5, pixel 0 the outlet; cells {0, 1, 2} and {3, 4, 5}
+    h = np.array([0.0, 10.0, 20.0, 35.0, 50.0, 65.0])
+    rec = np.arange(n) - 1
+    order = np.arange(n)
+    fixed = np.zeros(n, bool)
+    fixed[0] = True
+    group = np.array([0, 0, 0, 1, 1, 1])
+    floor, cap = np.full(n, -np.inf), np.full(n, np.inf)
+    lb = ZK.local_base(h, rec, order, fixed, floor, cap, group)
+    assert list(lb) == [0, 0, 0, 20, 20, 20]
+    floor[4] = 45.0  # (held by a floor above its receiver: the relief starts there)
+    cap[2] = 20.0  # (a capped pixel holds itself)
+    lb = ZK.local_base(h, rec, order, fixed, floor, cap, group)
+    assert list(lb) == [0, 0, 20, 20, 45, 45]
+
+
+def test_slope_fit_keeps_the_cell_means_and_settles():
+    """PW-298: the landscape pass keeps each inland cell's mean (the fit
+    converges: its residual falls >10x and C stops growing), on the
+    escarpment world (rivers held at a staircase, a 600 m scarp). The old
+    per-pixel fit wound C up x1.5 a pass next to held courses."""
+    w = _escarpment_world(0.6, 600.0)
+    z = zoom.build(w, 0.0, 0.0, size_km=600, res_km=2.0, log=lambda *a: None)
+    fit = z["debug"]["fit"]
+    assert fit[-1][0] < 0.1 * fit[0][0], fit
+    assert fit[-1][1] < 1.2 * fit[-4][1], fit
+    st = z["stats"]
+    assert abs(st["inland_cell_mean_bias_m"]) < 15 and st["inland_cell_mean_rms_error_m"] < 40, st
+
+
 def test_zoom_reports_waterfalls(lake_zoom):
     for f in lake_zoom["stats"]["waterfalls"]:
         assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q
