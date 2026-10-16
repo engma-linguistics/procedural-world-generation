@@ -463,7 +463,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
-**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers (PW-124); one-link walls where steep tributaries meet pinned rivers on arcs (~30 drops ≥ 100 m on a 4 km arc zoom of 592f2a: the slope-fit field C winds up next to held courses, PW-319); side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); coastal reefs are a habitat, not terrain, away from volcanoes (§2.20); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
+**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no microclimate (PW-101); some perched rivers (PW-124); one-link walls where steep tributaries meet pinned rivers on arcs (~30 drops ≥ 100 m on a 4 km arc zoom of 592f2a: the slope-fit field C winds up next to held courses, PW-319); side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); coastal reefs are a habitat, not terrain, away from volcanoes (§2.20); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
 
 ### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
@@ -512,10 +512,21 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 **Zoom viewer** (`viewer/zoom.html`, also the "Regional zoom" tab): a 2D canvas with layers **satellite** (true colour by season, §2.19, hill-shaded, with a **Clouds** overlay, `?clouds=1`; the default), **relief** (hypsometric map: height tinted green to tan by the year's rain, sea by depth, hill-shaded, with marshes, lakes, tidal flats and glaciers; `zoom.tint`'s ramps, as `coarse.png`), height, hillshade, rivers, rock, surface rock, climate, biome, landform, vegetation (legend by share of the land), tree cover, canopy height, NPP, fire return, leaf area, rain and temperature (year / July / January picker, `?season=`), ice, sun on slopes, wetness index and coarse cells (`?rivers=0`, `?falls=0`, `?volc=0` turn overlays off); the hover shows the pixel's vegetation, seasons and terrain indices; glaciers tinted on the relief layers. Overlays: rivers and lakes, **Waterfalls** (▼ sized by height, biggest ringed) and **Volcanoes** (▲ active, extinct, or hollow below the sea), each with a hover card; `?mark=fall:0` opens one.
 
+**Zoom 3D view** (`viewer/zoom3d.js`, PW-072; the **3D** button next to the zoom picker, **2D** to go back): a three.js heightmap of the zoom's 500×500 heights, lit by a sun (direction and height sliders, shadows), coloured by the layer picked on the left (drawn unshaded, as on flat ground; satellite by default). A vertical exaggeration slider (default 3×), mesh detail (full, half or quarter; the colours keep full detail; a software renderer starts at a quarter without shadows), orbit / pan / zoom (drag, right-drag or arrow keys, wheel; double-click centres on a point). Water: the sea a plane at 0; lakes at their level, the shore where the ground rises through it (a pool never stands above its lowest dry neighbour); rivers ≥ 10 m³/s painted into the colours as smoothed lines widened by discharge (log scale, 0.2–1.4 px, small streams exaggerated; a width slider); each listed fall a white-water ribbon down its reach (through its plunge pool) with a pin and label (the 12 highest labelled, dimmed when the ground hides them). The panel lists the falls highest first; clicking one flies the camera to a three-quarter view up its drop and opens its card. Hovering the ground fills the info panel as in 2D. The URL keeps the view (`?view=3d&exag=3&cam=x,y,z,tx,ty,tz` in km; `&fall=N` flies to fall N, the order of `?mark=fall:N`; `&detail=2`, `&shadows=0`). It draws only when something moves; `zoom3d.bench()` in the console times frames. On the RTX PRO 6000 (headless Chrome, 1920×1080, full detail with shadows): ~0.5 ms a frame, ~1500 fps unthrottled; Chrome's software renderer (no GPU) manages 4 fps at full detail and 25 at a quarter with shadows (41 without), so any laptop GPU is comfortable. Built to take more terrains (`Tile`): a finer nested zoom (PW-129) would be a second tile at its offset; picking, ground heights and the camera already ask the finest tile under a point (its falls and lakes would come with its tile).
+
+![Zoom 3D: mountains](review/viewer/zoom3d_mountain.png)
+*Zoom e33c3d (500 km at 1 km/px, relief layer, 3×) in 3D, the highest falls labelled.*
+
+![Zoom 3D: waterfall](review/viewer/zoom3d_waterfall.png)
+*The same zoom after clicking its highest fall in the list: 588 m over 3.8 km down a rift scarp, 104 m³/s, white water down the reach.*
+
+![Zoom 3D: coast](review/viewer/zoom3d_coast.png)
+*Zoom 02734d (2000 km at 4 km/px, satellite): a coast of inlets and islands below a mountain range.*
+
 ![The viewer](overview/viewer_globe_biome.jpg)
 *The viewer on world 7c5adf: biomes, with highlights numbered (an earlier version of the panel, before categories).*
 
-**Known limits:** run keyframes keep only the annual-mean winds, so the winds' season picker works only on worlds (PW-107).
+**Known limits:** run keyframes keep only the annual-mean winds, so the winds' season picker works only on worlds (PW-107); in the zoom 3D view a fall at 1–4 km/px is a steep chute over a few pixels rather than a cliff (finer: PW-129), lakes keep their pixels' staircase in the colours, and volcanoes aren't marked; with shadows on, ANGLE's Vulkan backend on NVIDIA lost the GPU process in headless tests (Chrome's default GL / D3D backends are fine; `&shadows=0`).
 
 ### 2.16 Store and data model (`store.py`, `timeline.py`, `provenance.py`)
 
@@ -758,6 +769,7 @@ Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `me
 
 - **Vegetation:** in the run ~0.09 s per climate update at L6 (~25 s per Gyr, ~8% of a run; L6 1 Gyr took 4.6 min, L7 23 min with other jobs running); in a world 0.2 s at L6. It adds ~3 MB to an L6 world (9 → 12 MB) and ~13 MB at L7 (~58 MB), and three layers (vegetation, tree cover, NPP) to run keyframes.
 - **Soils:** worlds only, ~0.8 s at L7 (mineral pass ~0.7 s, mostly the loess sweeps; climate memory from the keyframes ~0.35 s; organic pass 0.03 s); +5.6 MB on an L7 world JSON (62 → 68 MB); L7 worlds from keyframes took 25-31 s with them (under load).
+- **Lakes and river routing** (`hydrology.lakes` + `route`, PW-255; Threadripper, 8 numba threads, load ~12-18, seed 3199, 100 Myr): L6 ~6.1 -> ~3.4 s of a ~33.5 -> ~31 s run (medians of 3 interleaved pairs); L7 37.2 -> 23.6 s of a 180 -> 166 s run (one pair). Bit-identical (radix sort of the land cells, lake order reused across `_settle`'s tries, a filled-only flood for `_bed`, Floyd's heap pop). What's left is mostly `priority_flood_to`'s heap (~60% of the bucket at L6, ~70% at L7), which must keep its exact pop order for tied (flat lake) cells.
 - **Slicing** replays up to 100 Myr from a checkpoint: well under a minute at L6, a few minutes at L7. The Zoom button skips the replay.
 - **Zooms:** 1–7 s each; ~11–12 MB each for 500×500 px.
 - **Time zoom:** ~4 min per 1000 kyr at L6.
