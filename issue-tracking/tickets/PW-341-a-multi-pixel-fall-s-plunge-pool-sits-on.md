@@ -1,4 +1,5 @@
 ---
+id: PW-341
 title: A multi-pixel fall's plunge pool sits one pixel below its lip, above most of the drop
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom3d
 blocked_by: []
 relates: [PW-072, PW-129]
 refs: [planet/zoom.py, "zoom e33c3d", "zoom 3ac681", "zoom b16fb7"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -32,3 +35,6 @@ measured to, which `waterfalls()` already has as `jj`) rather than `rec[i]`, and
 surface at the river's level there.
 - [ ] the pool of a multi-pixel fall lies below most of its drop (check e33c3d's top falls)
 - [ ] goldens regenerated if zoom outputs change
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-plunge-pool-above-drop.md (found by zoom3d).

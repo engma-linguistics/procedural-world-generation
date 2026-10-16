@@ -1,4 +1,5 @@
 ---
+id: PW-342
 title: "Zoom 3D view: volcano markers, salt lakes and glaciers' own look"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom3d
 blocked_by: []
 relates: [PW-072]
 refs: [viewer/zoom3d.js, viewer/zoom.html]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ things the 2D map shows:
   texture could paint lake pixels in the land's colour and leave the water to the lake mesh.
 - [ ] volcano pins with cards in 3D
 - [ ] salt lakes and pans coloured as in 2D
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom3d-volcanoes-salt-lakes.md (found by zoom3d).
