@@ -137,6 +137,65 @@ def test_ice_thins_to_its_end_on_land(monkeypatch, res):
     assert th[max(back, key=lambda i: h[i])] > 1.6 * th[s]
 
 
+
+def test_marine_sheet_keeps_its_sub_sea_bed():
+    """PW-356: a zoom over a marine ice sheet (a cold continent whose middle
+    carries 2.5 km of ice on a bed 500 m below the sea) draws the world's bed
+    under the ice, not the land view's 1 m: no sea there, the ice on it, each
+    cell's bed mean the world's and the ice surface as before."""
+    g = build_grid(5)
+    mid = (72.0, 10.0)
+    d0 = _dist_km(g, *mid)
+    elev = np.where(d0 < 2500, 400.0 - 0.1 * d0, -3000.0)
+    sub = d0 < 700
+    elev = np.where(sub, -500.0, elev)
+    ice = np.where(d0 < 1500, 2500.0, 0.0)
+    view = np.where(sub, 1.0, elev)
+    land = view > 0
+    precip = np.where(land, 300.0, 600.0)
+    c = {"runoff": 0.3 * precip, "aet": 0.3 * precip, "lake_evap": np.full(g.n, 100.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, view, c)
+    warm = np.where(land, -12.0, 2.0)
+    layers = {
+        "elevation": elev, "precipitation": precip, "temperature": warm - 15.0,
+        "warm_month": warm, "cold_month": warm - 30.0, "flow": flow, "downstream": down,
+        "lake": lk["wet"].astype(int), "rock": np.full(g.n, 2), "surface_rock": np.full(g.n, 2),
+        "climate": np.full(g.n, 29), "ice": ice, "sediment_cover": np.where(land, 0.2, 6.0),
+    }
+    w = {"grid": g, "layers": layers, "meta": {"level": 5}}
+
+    def build():  # (the zoom straddles the edge of the marine basin)
+        return zoom.build(w, 72.0 - 700 / 111.2, 10.0, size_km=900, res_km=3, iterations=6, log=lambda *a: None)
+
+    z = build()
+    L = z["layers"]
+    ny, nx = L["elevation"].shape
+    xs = (np.arange(nx) + 0.5 - nx / 2) * z["res"]
+    X, Y = np.meshgrid(xs, -xs)
+    own = g.locate(z["frame"].to_sphere(X.ravel(), Y.ravel())).reshape(ny, nx)
+    low = sub[own]
+    h, th, water = L["elevation"], L["ice"], L["water"]
+    assert 0.2 < low.mean() < 0.8
+    assert (water[low] == 0).all(), "no sea on the bed under the ice"
+    assert (th[low] > 0).mean() > 0.95
+    full = 4 * np.pi * R_KM**2 / g.n / z["res"] ** 2
+    cells = [c for c in np.unique(own[low]) if (own == c).sum() > 0.6 * full]
+    assert len(cells) >= 4
+    for c in cells:
+        assert abs(h[own == c].mean() + 500.0) < 15.0, (c, h[own == c].mean())
+    assert (h[low] < -300).mean() > 0.85
+    # the ice surface and the coastline: as on the land view (the bed at 1 m), which the terrain is built on
+    real = zoom.land_world
+    zoom.land_world = lambda world: (real(world)[0], np.zeros(g.n))
+    try:
+        v = build()["layers"]
+    finally:
+        zoom.land_world = real
+    assert (v["elevation"][low] > 0).all()
+    assert np.array_equal(v["water"], water) and np.array_equal(v["ice"] > 0, th > 0)
+    assert np.allclose(v["elevation"] + v["ice"], h + th, atol=0.05)
+
+
 def test_ice_layer_is_thickness(ice_zoom):
     L = ice_zoom["layers"]
     ice = L["ice"]

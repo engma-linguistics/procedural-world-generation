@@ -1015,30 +1015,34 @@ def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # The refinement
 # ---------------------------------------------------------------------------
-def zoom_world(world: dict) -> dict:
-    """The world as the zoom builds on it. Worlds store the true bed, and a
-    bed below the sea under grounded ice is land (geo.is_land, PW-307); the
-    zoom's pixels are land where their ground is above the sea, so it takes
-    such a cell's bed at 1 m with its ice thinned to keep the surface
-    (isostasy.land_view): the coastline and the ice surface are the world's,
-    the bed under that ice is not drawn below the sea."""
+def land_world(world: dict) -> tuple[dict, np.ndarray]:
+    """(the world the zoom's terrain is built on, per coarse cell how far
+    its true bed lies below that, m). Worlds store the true bed, and a bed
+    below the sea under grounded ice is land (geo.is_land, PW-307). The
+    zoom's terrain passes model land as ground above the sea (a pixel is
+    land where its ground is above it; rivers graded to it, lakes, creep),
+    so they build on the land view: such a cell's bed at 1 m, its ice
+    thinned to keep the surface (isostasy.land_view), so the coastline and
+    the ice surface are the world's. build() then sinks the bed under its
+    glaciers to the true one, the ice thickened by as much (PW-356)."""
     L = world["layers"]
     if "ice" not in L:
-        return world
+        return world, np.zeros(len(L["elevation"]))
     e, ice, low = land_view(L["elevation"], L["ice"])
     if not low.any():
-        return world
+        return world, np.zeros(len(e))
+    sunk = e - np.asarray(L["elevation"], float)
     e = e.astype(np.asarray(L["elevation"]).dtype)
     out = {**L, "elevation": e, "ice": ice}
     if "lake_level" in L:  # (no lake under the ice: its level is the ground's)
         out["lake_level"] = np.where(low, e, L["lake_level"])
-    return {**world, "layers": out}
+    return {**world, "layers": out}, sunk
 
 
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
           seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print) -> dict:
     t0 = time.time()
-    world = zoom_world(world)
+    world, sunk = land_world(world)
     g, L = world["grid"], world["layers"]
     sp = g.spacing * R_KM  # coarse cell spacing, km
     cell_area = 4 * np.pi * R_KM**2 / g.n
@@ -2762,7 +2766,32 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     wetland = np.where(marsh, 1, np.where((water == 0) & np.isin(veg_l["vegetation"], list(ZVG.WETLAND_TYPES)), 2, 0)
                        ).astype(np.uint8)
 
+    # --- the bed below the sea under grounded ice (PW-356) ------------------
+    # The terrain was built on the land view (land_world: a sub-sea bed under
+    # grounded ice at 1 m, its ice thinned to keep the surface). Under the
+    # zoom's glaciers the bed now sinks to the world's, its relief kept: by
+    # each coarse cell's depth below the view (interpolated as the coarse
+    # heights are), then each such cell's iced pixels corrected to the true
+    # bed's mean (the view's 1 m floor had let its relief only rise above
+    # it); a load's dip or a marine basin is hundreds of km wide, smooth at
+    # the zoom's scale. The ice thickens by as much, so its surface and the
+    # coastline stay. (Bare land in such a cell, rare, keeps the view's
+    # ground above the sea.)
+    sunk_c = sunk[sel]
+    e_bed = e_c - sunk_c  # the true coarse bed
+    if np.any(sunk_c > 0) and glacier.any():
+        dz, _ = ZK.gauss_interp(px, py, cx, cy, sunk_c[:, None], land_c[:, None].astype(float), 0.5 * sp)
+        hb = np.where(glacier, h - np.maximum(np.nan_to_num(dz[:, 0]), 0.0), h)
+        n_g = np.bincount(own_s, glacier, minlength=len(sel))
+        m_g = np.bincount(own_s, np.where(glacier, h, 0.0), minlength=len(sel)) / np.maximum(n_g, 1)
+        drop = np.where((sunk_c > 0) & (n_g > 0), m_g - e_bed, 0.0)  # (how far each cell's ice pixels go down)
+        for _ in range(MEAN_PASSES // 2):  # (a one-cell basin keeps its depth, as in the detail's correction)
+            hb = np.minimum(keep_means(hb, h - drop[own_s], glacier), h)
+        ice_th = np.where(glacier, ice_th + (h - hb), ice_th)
+        h = hb
+
     # --- stats -----------------------------------------------------------
+    e_c = e_bed  # (the cells' true bed)
     m_fine, cnt = cell_means(h)
     full = cnt > 0.6 * full_px
     inland_c = interior_c & full
@@ -2772,7 +2801,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "coarse_land_pct": round(100 * coarse_land_px.mean(), 1),
         "land_sea_agreement_pct": round(100 * (land == coarse_land_px).mean(), 1),
         "mean_elev_m": round(float(h.mean()), 1),
-        "coarse_mean_elev_m": round(float(elev[own].mean()), 1),
+        "coarse_mean_elev_m": round(float((elev - sunk)[own].mean()), 1),
         "mean_land_elev_m": round(float(h[land].mean()), 1) if land.any() else None,
         "cell_mean_rms_error_m": round(float(np.sqrt(np.mean((m_fine - e_c)[full] ** 2))), 1) if full.any() else None,
         "cell_mean_bias_m": round(float(np.mean((m_fine - e_c)[full])), 1) if full.any() else None,
@@ -3108,7 +3137,7 @@ def add_satellite(ref: str | Path) -> Path:
     (zoom_vegetation.fractions, ~5 s)."""
     d = S.find_zoom(ref)
     meta, lay = load(d, decode=True)
-    world = zoom_world(W.load(find_world(meta["source_world"]["id"])))
+    world = land_world(W.load(find_world(meta["source_world"]["id"])))[0]
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res

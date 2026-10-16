@@ -91,14 +91,18 @@ def test_no_shore_under_the_ice(marine):
     assert (L["tide_range"][coast] > 0).any() and (L["wave_power"][coast] > 0).any()
 
 
-def test_zoom_takes_the_marine_bed_at_one_metre(marine):
-    """The zoom's pixels are land where their ground is above the sea, so it
-    builds on the world with that bed at 1 m and the ice surface kept
-    (zoom.zoom_world); the coastline is the world's."""
-    from planet.zoom import zoom_world
+def test_zoom_builds_its_terrain_on_the_land_view(marine):
+    """The zoom's terrain passes take land as ground above the sea, so they
+    build on the world with that bed at 1 m and the ice surface kept
+    (zoom.land_world), the coastline the world's; how far each cell's true
+    bed lies below that is handed back, for the zoom to sink its bed under
+    its glaciers (PW-356, tests/test_zoom_ice.py)."""
+    from planet.zoom import land_world
     g, w, sub, d = marine
-    L, Z = w["layers"], zoom_world(w)["layers"]
+    view, sunk = land_world(w)
+    L, Z = w["layers"], view["layers"]
     assert (Z["elevation"][sub] == 1).all()
     assert np.allclose((Z["elevation"] + Z["ice"])[sub], (L["elevation"] + L["ice"])[sub])
     assert np.array_equal(Z["elevation"] > 0, world_land(L))
     assert np.array_equal(Z["elevation"][~sub], L["elevation"][~sub])
+    assert np.allclose(Z["elevation"] - sunk, L["elevation"]) and (sunk[~sub] == 0).all()
