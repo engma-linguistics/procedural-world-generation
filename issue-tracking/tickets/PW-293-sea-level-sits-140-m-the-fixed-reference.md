@@ -2,7 +2,7 @@
 id: PW-293
 title: "Sea level sits ~+140 m: the fixed reference (starting ocean, 60 Myr) is older than the model's steady ocean (~50 Myr)"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -40,6 +40,7 @@ Options:
 Lean A+B: B is a re-centring of the start, A lets the term speak.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (15a8cac): start ocean mean age 48 Myr (measured: model's steady mean floor depth after 50 Myr), ages ranked over ocean cells only, SEA_TECT_MAX 400 m. Health quick: sea level median +148 -> +15 m; land 33.5%; icehouse spells 1 -> 3. Giant-lake frames 5.2 -> 9.6% (evidence on PW-300). Write-up docs/review/audit/pw293-sea-level.md.
 - 2026-10-15: Status todo -> in-progress. Agent started with PW-309.
 - 2026-10-15: Status needs-decision -> todo. Owner 2026-10-15: A+B. The start is a convenient initial state, not a claim about early Earth; it only has to settle into realistic behaviour by ~50-100 Myr. B makes sea level 0 the model's own steady ocean, A raises SEA_TECT_MAX to ~400 m so the limiter stops shaping it. Queued after PW-308 (both touch global_temperature's sea-level block).
 - 2026-10-15: Created from inbox draft draft-tect-sea-ref-older-than-steady-state.md (found by audit-fix-tectonics).

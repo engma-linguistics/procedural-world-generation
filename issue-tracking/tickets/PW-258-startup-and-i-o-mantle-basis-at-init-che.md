@@ -2,7 +2,7 @@
 id: PW-258
 title: "Startup and I/O: mantle basis at init, checkpoint writes on the main thread (~2-5% of a 100 Myr run)"
 type: task
-status: in-progress
+status: done
 parent: PW-247
 subsystem: store
 effort: s
@@ -28,6 +28,8 @@ thread (the arrays are copied anyway); compute the snapshot's landforms only for
 need them. Saves ~1-3% of a run, more for short jobs (a slice replays 40 Myr: init is ~10% of it).
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (0d70c49): mantle.basis cached on disk (planet/tectonics/__pycache__); startup 0.46/2.2 s -> 3/11 ms per process (L6/L7).
+- 2026-10-15: Infra batch: mantle.basis cached on disk next to numba's cache (planet/tectonics/__pycache__/mantle_basis_<n>_<hash>.npy, 26 / 105 MB at L6 / L7; 0.46 / 2.2 s -> 3 / 11 ms per process; same bits). Not done: caching build_grid (0.17 / 0.42 s) and the keyframe snapshot's landforms (every keyframe stores the landform layers, so none can skip them).
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Checkpoint part done (82f4830: background CheckpointWriter, 0.46/1.8 s -> 0.02/0.08 s per checkpoint at L6/L7 on the main thread); startup remainder open.
 - 2026-10-15: Merged inbox draft draft-startup-io-remainder.md ("PW-258 remainder: checkpoints are written in the background now; init caching still open", found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).

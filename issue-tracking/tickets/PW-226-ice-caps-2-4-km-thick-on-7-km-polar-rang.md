@@ -2,7 +2,7 @@
 id: PW-226
 title: Ice caps 2.4 km thick on 7 km polar ranges give coldest months of -105 C
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: s
@@ -21,6 +21,7 @@ After merging main (2026-10-15, with the vegetation feedbacks of PW-203 and main
 Real ice surfaces stop near 4 km (Antarctica) because a thick cap on a high range flows away to its sides and has too little snow at that height. Check whether ice_sheets limits ice thickness on high ground (precipitation falling off with height, flow to the margins; PW-190 land ice depth) and restore the -95 bound if it does.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Run-lane agent started (polar summers / Antarctica).
 - 2026-10-15: Merged inbox draft draft-ice-cold-high-peaks.md ("Coldest months near -95 C on 8+ km polar-ish peaks (bare or margin-thin ice) after PW-276", found by ice-fix).
   After PW-276 (ice surface from the margin's bed) and PW-277 (one ice-surface climate) the run's ice on high
   ground is margin-thin (~350 m), so the remaining extreme surfaces are the peaks themselves. Probe over every

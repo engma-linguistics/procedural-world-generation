@@ -229,7 +229,7 @@ returns the whole state (what a checkpoint must save).
 
 Runs are deterministic: `slice` replays from the nearest saved state at or
 before the moment asked for (`simulate` saves the full simulation state
-every 100 Myr, `--checkpoint-every`; ~15 MB each at level 6, ~60 MB at level 7: the plates' stale crust is zeroed, store.shrink_state) and checks
+every 100 Myr, `--checkpoint-every`; ~12 MB each at level 6, ~45 MB at level 7: the plates' stale crust is zeroed, store.shrink_state, and their cell map is stored as its difference from a fresh grid.locate, store.pack_idx) and checks
 itself against the stored keyframe. Each run records the code that made it
 (`meta.code`: git commit, dirty flag, hash of `planet/**/*.py`). If the model has
 changed since, the replay is a different planet: `slice` warns, and when the

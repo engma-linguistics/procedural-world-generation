@@ -2,8 +2,6 @@
 simulation checkpoints, in a temporary data root."""
 
 import json
-import pickle
-import zlib
 
 import numpy as np
 import pytest
@@ -220,11 +218,21 @@ def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
     pl.owned[owner[cells], pl.idx[owner[cells], cells]] = False  # make some of the view's slots unowned
     live = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, st)
     path = tmp_path / "c.ckpt"
-    S._write_checkpoint(path, st)
-    back = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0,
-                                 pickle.loads(zlib.decompress(path.read_bytes())))
+    S._write_checkpoint(path, st, sim4_60.grid)
+    back = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, S.read_checkpoint(path, sim4_60.grid))
     assert np.array_equal(back.w_rec, live.w_rec) and np.array_equal(back.w_lith, live.w_lith)
     assert np.array_equal(back.dyn, live.dyn) and np.array_equal(back.w_elev, live.w_elev)
+
+
+def test_checkpoint_plate_idx_round_trip(tmp_path, sim4_60):
+    """The plates' cell map is stored as its difference from a fresh
+    grid.locate (~all zeros, PW-306) and read back exactly."""
+    st = sim4_60.state()
+    idx = st["plates"].idx.copy()
+    path = tmp_path / "c.ckpt"
+    S._write_checkpoint(path, st, sim4_60.grid)
+    assert (st["plates"].idx == 0).mean() > 0.99  # (what was pickled)
+    assert np.array_equal(S.read_checkpoint(path, sim4_60.grid)["plates"].idx, idx)
 
 
 def test_run_layout(data_root):
@@ -236,7 +244,7 @@ def test_run_layout(data_root):
         assert (out / spec["file"]).stat().st_size == np.dtype(spec["dtype"]).itemsize * np.prod(spec["shape"]), k
         assert spec["shape"] == [3, run["meta"]["cells"]]
     assert run["layers"]["ice"]["scale"] == 20 and run["layers"]["flow"]["transform"] == "log2p1"
-    assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms", "vegetation", "soils"}
+    assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms", "vegetation", "coastal_life", "soils"}
     run2, arr = T.load_frames(out, ("plate", "downstream"))
     sim = run_sim(myr=8)
     assert np.array_equal(T.frame(run2, arr, "plate", 2), sim.snapshot().plate)

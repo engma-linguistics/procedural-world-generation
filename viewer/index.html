@@ -59,6 +59,10 @@
   svg.schart .range { fill: rgba(124, 196, 255, .16); stroke: rgba(124, 196, 255, .35); }
   svg.schart .t0 { fill: #79b8ff; } svg.schart .t1 { fill: #dfe6f0; } svg.schart .t2 { fill: #ffad6b; }
   svg.schart .p0 { fill: #4d7fb3; } svg.schart .p1 { fill: #9aa7b8; } svg.schart .p2 { fill: #d98c4f; }
+  svg.schart .tline { fill: none; stroke: #ffad6b; stroke-width: 2; } svg.schart .tdot { fill: #ffad6b; }
+  svg.schart .pbar { fill: #4d7fb3; } svg.schart .mon:hover .pbar { fill: #6a9fd6; }
+  svg.schart .mcol { fill: transparent; } svg.schart .tlab { fill: #ffad6b; } svg.schart .rlab { fill: #79b8ff; }
+  svg.schart .rlab, svg.schart .tlab { font: 9px ui-monospace, Menlo, monospace; }
   #legend { bottom: 12px; left: 12px; max-width: 520px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
   #timeline { bottom: 12px; left: 50%; transform: translateX(-50%); width: min(720px, calc(100vw - 24px));
     display: none; align-items: center; gap: 10px; }
@@ -357,6 +361,9 @@ RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [
 // the sea and the air's moisture (worlds): sea-surface temperature (C), salinity (psu), relative humidity (%), dew point (C)
 RAMPS['sea temperature'] = [[-2, '#3b3a8f'], [4, '#3f74c0'], [10, '#5fb6c8'], [16, '#bfe3b0'], [21, '#f2d77a'], [26, '#ef8f45'], [30, '#b8282a']];
 RAMPS.salinity = [[31, '#3b2a78'], [33, '#3f6fb5'], [34.2, '#8fc3d8'], [34.9, '#e9eee6'], [35.8, '#f0c870'], [37, '#d9783a'], [39, '#9e2a1e']];
+// coastal life (worlds, coastal.py, PW-188): river mud in the sea (mg/L, log-like stops) and upwelling (C of cooling)
+RAMPS.turbidity = [[0, '#0f3a5f'], [1, '#2f6f8f'], [3, '#6fa88a'], [10, '#c9b26a'], [30, '#a8743a'], [100, '#6b4424']];
+RAMPS.upwelling = [[0, '#1d2f55'], [0.5, '#2f5f8f'], [1.5, '#3f9bb0'], [3, '#8fd19e'], [6, '#f0d36b'], [10, '#e8603c']];
 RAMPS.humidity = [[15, '#b98a4f'], [35, '#e3cf94'], [55, '#d9e7c4'], [70, '#7fc3b0'], [82, '#3f8fb0'], [95, '#244f8f']];
 RAMPS['dew point'] = [[-25, '#5b4f9a'], [-5, '#9fb0d0'], [5, '#d8e6e0'], [12, '#b9dc8a'], [17, '#f2d55e'], [21, '#ef8a3a'], [25, '#b8283a']];
 // the sky (worlds): cloud cover (% of the sky) and bright sunshine (hours a day)
@@ -405,7 +412,26 @@ const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: '
                 'soil depth': 'm of rootable soil', 'soil water': 'mm of water the soil holds for plants',
                 fertility: 'soil fertility, 0 poor to 1 rich', 'soil carbon': 'kg C/m² in the top metre',
                 peat: 'm of peat where peat lies', permafrost: '0 none, 1 sporadic, 2 discontinuous, 3 continuous',
-                loess: 'm of wind-blown silt' };
+                loess: 'm of wind-blown silt',
+                turbidity: 'mg/L of river mud at the sea surface (clear sea ~0.5; reefs need under ~10)',
+                upwelling: '°C the sea surface is cooled by upwelling (nutrients for kelp and fisheries)',
+                'coastal life': '% of the cell: the biggest habitat\'s colour, stronger = more' };
+// coastal life (coastal.py): layer, name, colour (as zoom_coastal.LIFE), sea or land
+const COASTAL = [['reef', 'coral reef', '#ff6fa8'], ['kelp', 'kelp forest', '#9a7b2a'], ['seagrass', 'seagrass meadow', '#3fbf6a'],
+                 ['mangrove', 'mangrove', '#14d2b0'], ['salt_marsh', 'salt marsh', '#e3d65a']];
+const COASTAL_COLS = Object.fromEntries(COASTAL.map(([k, , c]) => [k, new THREE.Color(c)]));
+// the habitat with the biggest share of cell i (and the share, %), or null
+function coastalTop(i) {
+  let best = null, v = 0;
+  for (const [k] of COASTAL) { const x = V.layers[k]?.[i] || 0; if (x > v) { v = x; best = k; } }
+  return best && v >= 0.5 ? [best, v] : null;
+}
+// the habitats covering at least 0.5% of cell i, as text ("coral reef 12%, seagrass 30%"), or ''
+function coastalText(i) {
+  const L = V.layers;
+  return COASTAL.filter(([k]) => (L[k]?.[i] || 0) >= 0.5)
+    .map(([k, n]) => `${n} ${L[k][i] < 10 ? L[k][i].toFixed(1) : Math.round(L[k][i])}%`).join(', ');
+}
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -512,7 +538,8 @@ function lakeLine(i) {
 }
 
 // colour layers drawn at sea only -> their world layer
-const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst' };
+const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst',
+                     turbidity: 'turbidity', upwelling: 'upwelling' };
 // fills a Float32Array(3n) with per-cell colours
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
@@ -563,7 +590,12 @@ function cellColors(layer) {
       if (elev[i] <= 0 || !L.landform[i]) c.copy(OCEAN); else c.set(V.landformColors[L.landform[i]] || '#888');
     } else if (layer === 'crust thickness') rampFns[layer](L.crust_thickness[i], c);
     else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
-    else if (layer === 'wave power' || layer === 'tide range' || layer === 'salinity' || layer === 'sea temperature') {  // at sea only
+    else if (layer === 'coastal life') {  // the biggest habitat's colour over land or sea
+      c.copy(elev[i] > 0 ? BARE : OCEAN);
+      const t = coastalTop(i);
+      if (t) c.lerp(COASTAL_COLS[t[0]], 0.25 + 0.75 * Math.min(Math.sqrt(t[1] / 30), 1));
+    }
+    else if (SEA_LAYERS[layer]) {  // at sea only
       if (elev[i] > 0) c.copy(BARE).lerp(OCEAN, 0.15);
       else rampFns[layer]((sv || L[SEA_LAYERS[layer]])[i], c);
     }
@@ -613,6 +645,8 @@ function availableLayers() {
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
   if (V.layers.salinity) ls.push('salinity');
+  if (V.layers.reef) ls.push('coastal life', 'turbidity');
+  if (V.layers.upwelling) ls.push('upwelling');
   if (V.layers.humidity) ls.push('humidity', 'dew point');
   if (V.layers.cloud) ls.push('cloud', 'sunshine');
   return ls;
@@ -1496,6 +1530,11 @@ function renderLegend() {
       const p = 100 * cnt.get(t.id) / land;
       return `<span title="${esc(`${t.wrb} / ${t.usda}: ${t.desc}`)}">${sw(t.color, '')}${t.name} ${p < 1 ? p.toFixed(1) : p.toFixed(0)}%</span>`;
     }).join('') + '<span class="muted">(soil types, % of land; hover a type for its WRB / USDA name)</span>';
+  } else if (state.layer === 'coastal life') {
+    const L = V.layers, cell = 4 * Math.PI * 6371 ** 2 / V.n / 100;
+    const km2 = (k) => { let t = 0; for (let i = 0; i < V.n; i++) t += L[k][i]; return t * cell; };
+    el.innerHTML = COASTAL.map(([k, n, c]) => sw(c, `${n} ${Math.round(km2(k)).toLocaleString()} km²`)).join('') +
+      `<span class="muted">(${UNITS['coastal life']}; reefs, kelp, seagrass at sea, mangroves and salt marsh between the tides; hover a cell for its shares)</span>`;
   } else if (state.layer === 'satellite') {
     el.innerHTML = `<span>${seasonUnits('satellite')}: plants by type and season, bare ground, snow, ice, lakes and sea</span>` +
       '<span class="muted">(satellite.py; season picker: year = each hemisphere\'s summer; tick Clouds under Overlays)</span>';
@@ -1608,6 +1647,9 @@ const LAYER_HINTS = {
   salinity: 'Sea surface salinity in psu (practical salinity units, ≈ grams of salt per kg of sea water).',
   humidity: 'Relative humidity near the ground.', 'dew point': 'Dew point: the temperature at which the air would be saturated.',
   cloud: 'Cloud cover: the share of the sky covered.', sunshine: 'Hours of bright sunshine a day.',
+  'coastal life': 'Coral reefs, kelp forests and seagrass on the shallow sea floor, mangroves and salt marsh between the tides: each cell in its biggest habitat\'s colour.',
+  turbidity: 'River mud suspended in the sea (it takes the light reefs and seagrass need).',
+  upwelling: 'Cold, nutrient-rich water welling up along coasts and the equator: how much it cools the sea.',
 };
 const HINT_HAS_UNITS = new Set(['NPP', 'biomass', 'leaf area', 'salinity', 'river floods', 'plant type']);
 function renderLayerButtons() {
@@ -2067,6 +2109,9 @@ const HINTS = {
   'last glaciated': 'When the cell was last under ice, Myr before this moment (its landforms may still show it).',
   soil: 'The soil type (WRB / USDA names in brackets), what it formed on, its rootable depth, fertility (0 poor to 1 rich), the water it holds for plants (mm), its organic carbon (kg C/m² in the top metre) and its drainage.',
   'soil, also': 'Peat thickness, permafrost and wind-blown silt (loess) where there is some.',
+  'coastal life': 'Coral reef, kelp forest and seagrass meadow (on the shallow sea floor), mangrove and salt marsh (land between the tides): the share of the cell each covers, in % (planet/coastal.py).',
+  mud: 'Suspended sediment from the rivers at the sea surface, in mg/L: clear sea ~0.5; coral reefs need it under ~10, and seagrass and kelp need the light it takes.',
+  upwelling: 'How much cold, nutrient-rich deep water welling up cools the sea surface here, in °C (feeds kelp forests and fisheries).',
 };
 function cellInfo(i) {
   const L = V.layers, G = V.grid, rows = [];
@@ -2151,6 +2196,9 @@ function cellInfo(i) {
     }
     landformRows();
     if (L.wave_power && !land) R('water', 'waves', `${L.wave_power[i].toFixed(1)} kW/m, tides ${L.tide_range[i].toFixed(1)} m`);
+    if (L.reef && coastalText(i)) R('plants', 'coastal life', coastalText(i), { sep: ': ', ess: true });
+    if (L.turbidity && !land) R('water', 'mud', `${L.turbidity[i].toFixed(1)} mg/L in the water`, { sep: ': ', extra: true });
+    if (L.upwelling && !land && L.upwelling[i] >= 0.3) R('water', 'upwelling', `cools the sea ${L.upwelling[i].toFixed(1)} °C`, { sep: ': ' });
     if (L.sst && !land) {
       R('water', 'sea', `${L.sst[i].toFixed(1)} °C (July ${L.sst_jul[i].toFixed(1)}, January ${L.sst_jan[i].toFixed(1)}), ` +
         `salinity ${L.salinity[i].toFixed(2)} psu`, { ess: true });
@@ -2258,7 +2306,7 @@ function infoBoxHtml(i) {
     (more > 0 ? `<button class="btn imore" data-act="more" title="Everything about this cell (Esc closes)">More detail (${more})…</button>` : '');
 }
 
-// the "more detail" panel: every row, by group, and a small seasons chart for worlds
+// the "more detail" panel: every row, by group, and a climograph for worlds
 let detailCell = -1;
 function openDetail(i) { detailCell = i; renderDetail(); $('detail').hidden = false; }
 function closeDetail() { detailCell = -1; $('detail').hidden = true; }
@@ -2271,9 +2319,55 @@ function renderDetail() {
     `<section><h3>${GROUPS[g]}</h3><div class="igrid">${infoRowsHtml(groups[g])}</div></section>`).join('');
   $('detailBody').innerHTML = `<div class="dhead"><b>cell ${i}</b>${V.pentagons.includes(i) ? ' (pentagon)' : ''}
       <span class="muted">· lat ${G.lat[i].toFixed(2)}, lon ${G.lon[i].toFixed(2)} · ${esc(V.name || V.id || '')}${V.kind === 'run' ? ' · t = ' + esc(timeLabel(V.t)) : ''}</span></div>
-    ${seasonChart(i)}<div class="dgrid">${secs}</div>
-    <p class="muted">Hover a dotted label for what it means and its units. ${V.kind === 'run' ? 'A run frame shows only the layers downloaded so far (the colour layers and overlays picked).' : ''}</p>`;
+    ${climograph(i) || seasonChart(i)}<div class="dgrid">${secs}</div>
+    <p class="muted">Hover a dotted label for what it means and its units. ${V.kind === 'run' ? 'A run frame shows only the layers the picture draws (the colour layer and overlays picked).' : ''}</p>`;
 }
+// A world cell's twelve months (GET /api/cell: the server runs climate.months on the cell's
+// stored climate; worlds don't store months) as a climograph: rain bars (mm in the month,
+// right axis) and the temperature line (°C, left axis). Until the months come (or with no
+// server, e.g. a dropped file) the panel shows seasonChart. Runs: no chart (their keyframes
+// don't carry what the months are built from).
+const cellMonths = new Map();  // `${world}:${cell}` -> {t, p} | 'pending' | 'failed'
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function climograph(i) {
+  if (V.kind !== 'world' || !V.id) return '';
+  const key = `${V.id}:${i}`, m = cellMonths.get(key);
+  if (!m) {
+    cellMonths.set(key, 'pending');
+    const v = V;
+    fetch(`../api/cell?world=${encodeURIComponent(V.id)}&i=${i}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d) => cellMonths.set(key, d), () => cellMonths.set(key, 'failed'))
+      .then(() => { if (V === v && detailCell === i) renderDetail(); });
+  }
+  if (!m || typeof m === 'string') return '';
+  const W = 520, H = 182, x0 = 34, x1 = W - 40, y0 = 20, y1 = 134, cw = (x1 - x0) / 12;
+  const tmin = Math.min(-10, Math.floor(Math.min(...m.t) / 10) * 10), tmax = Math.max(30, Math.ceil(Math.max(...m.t) / 10) * 10);
+  const ptop = Math.max(100, ...m.p), pstep = [25, 50, 100, 200, 250, 500, 1000, 2000].find((d) => ptop / d <= 5) || 5000;
+  const pmax = Math.ceil(ptop / pstep) * pstep;
+  const ty = (t) => y1 - (y1 - y0) * (t - tmin) / (tmax - tmin), py = (p) => y1 - (y1 - y0) * p / pmax;
+  const cx = (k) => x0 + (k + 0.5) * cw;
+  let s = `<svg class="schart" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly temperature and rain">`;
+  for (let t = tmin; t <= tmax; t += 10)
+    s += `<line x1="${x0}" x2="${x1}" y1="${ty(t)}" y2="${ty(t)}" class="${t === 0 ? 'zero' : 'grid'}"/><text x="${x0 - 4}" y="${ty(t) + 3}" class="tlab" text-anchor="end">${t}</text>`;
+  for (let p = 0; p <= pmax; p += pstep) s += `<text x="${x1 + 4}" y="${py(p) + 3}" class="rlab">${p}</text>`;
+  s += `<text x="0" y="8" class="tlab">°C</text><text x="${x1 + 4}" y="8" class="rlab">mm</text>`;
+  m.t.forEach((t, k) => {
+    const p = m.p[k];
+    s += `<g class="mon"><title>${MON[k]}: ${t.toFixed(1)} °C, ${Math.round(p)} mm</title><rect x="${x0 + k * cw}" y="${y0}" width="${cw}" height="${y1 - y0}" class="mcol"/>` +
+      `<rect x="${cx(k) - cw * 0.32}" y="${py(p)}" width="${cw * 0.64}" height="${Math.max(y1 - py(p), 0.5)}" rx="2" class="pbar"/>` +
+      `<circle cx="${cx(k)}" cy="${ty(t)}" r="3" class="tdot"/></g>`;
+    s += `<text x="${cx(k)}" y="${y1 + 11}" class="tick">${MON[k][0]}</text>`;
+  });
+  s += `<polyline points="${m.t.map((t, k) => `${cx(k)},${ty(t)}`).join(' ')}" class="tline" pointer-events="none"/>`;
+  const ext = (a, f) => a.reduce((b, x, k) => (f(x, a[b]) ? k : b), 0);
+  const hot = ext(m.t, (a, b) => a > b), cold = ext(m.t, (a, b) => a < b), wet = ext(m.p, (a, b) => a > b), dry = ext(m.p, (a, b) => a < b);
+  const tyr = m.t.reduce((a, b) => a + b, 0) / 12, pyr = m.p.reduce((a, b) => a + b, 0);
+  s += `<text x="${x0}" y="${y1 + 28}" class="plab"><tspan class="tlab">year ${tyr.toFixed(1)} °C · warmest ${MON[hot]} ${m.t[hot].toFixed(1)}, coldest ${MON[cold]} ${m.t[cold].toFixed(1)}</tspan>` +
+    `<tspan class="rlab" x="${x0}" dy="12">${Math.round(pyr)} mm a year · wettest ${MON[wet]} ${Math.round(m.p[wet])}, driest ${MON[dry]} ${Math.round(m.p[dry])} mm</tspan></text>`;
+  return s + '</svg>';
+}
+
 // July / year / January temperature and rain of a world cell, as a small SVG (worlds store
 // those three, not every month): the temperature dots on a -30..40 °C scale with the
 // coldest-warmest month range behind them, the rain as bars (rates per year)
@@ -2829,21 +2923,27 @@ function layersNeeded() {
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
-  return [...new Set(want)].filter((k) => V.run.layers[k] && !V.data[k]);
+  return [...new Set(want)].filter((k) => V.run.layers[k]);
 }
 
-// download what the current colour layer and overlays need (a no-op for worlds)
+// Download what the current colour layer and overlays need, and drop the layers
+// nothing draws any more (a run layer holds every keyframe: 40-80 MB each at L7;
+// one picked again is fetched again, gzipped by the server). A no-op for worlds.
 async function loadNeeded() {
   if (V?.kind !== 'run') return;
-  const v = V, want = layersNeeded();
+  const v = V, need = layersNeeded(), keep = new Set(need), want = need.filter((k) => !v.data[k]);
+  const drop = [...new Set([...Object.keys(v.data), ...Object.keys(v.pending)])].filter((k) => !keep.has(k));
+  for (const k of drop) { delete v.data[k]; delete v.pending[k]; delete v.bytes[k]; }
+  if (drop.length && !want.length) return setFrame(V.frame, false);  // (V.layers mustn't read the dropped ones)
   if (!want.length) return;
   $('tlabel').textContent = `loading ${want.join(', ')}…`;
   await Promise.all(want.map(async (k) => {
-    v.pending[k] ||= fetch(v.base + v.run.layers[k].file, { cache: 'no-store' }).then((r) => {
+    const p = v.pending[k] ||= fetch(v.base + v.run.layers[k].file, { cache: 'no-store' }).then((r) => {
       if (!r.ok) throw new Error(`${v.run.layers[k].file}: HTTP ${r.status}`);
       return r.arrayBuffer();
     });
-    const buf = await v.pending[k];
+    const buf = await p;
+    if (v.pending[k] !== p) return;  // dropped while it came (another layer picked meanwhile)
     v.data[k] = new TYPED[v.run.layers[k].dtype](buf);
     v.bytes[k] = buf.byteLength;
   }));

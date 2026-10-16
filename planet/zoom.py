@@ -156,6 +156,7 @@ from . import zoom_volcanoes as ZV
 from . import satellite as SAT
 from . import vegetation
 from . import zoom_vegetation as ZVG
+from . import zoom_coastal as ZCL
 from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
@@ -2522,6 +2523,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                      discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log,
                      want_fractions=True)
     veg_l, tr = vz["layers"], vz["terrain"]
+    # --- coastal and shallow-sea life (zoom_coastal, PW-188); names mangrove and salt-marsh pixels
+    cz = ZCL.place(world, fr, Pk, px, py, nx, ny, res, size_km, seed, h, water, glacier, d_sea, surf_f,
+                   vf["reef"] if vf is not None else None)
+    veg_l["vegetation"] = ZCL.name_vegetation(cz["layer"], veg_l["vegetation"])
     biome = vegetation.biome_of(veg_l["vegetation"], biome).astype(np.uint8)
     # wetlands: 1 a coastal plain's marsh, 2 the vegetation's (floodplains, mires, lake shores: PW-178)
     wetland = np.where(marsh, 1, np.where((water == 0) & np.isin(veg_l["vegetation"], list(ZVG.WETLAND_TYPES)), 2, 0)
@@ -2558,6 +2563,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "marsh_pct": round(100 * float(marsh.mean()), 2),
         # the vegetation (zoom_vegetation): % of the vegetated land by named type, mean tree cover and NPP
         "vegetation": vz["stats"],
+        # coastal and shallow-sea life (zoom_coastal): km^2 of each habitat
+        "coastal_life": cz["stats"],
         "lake_pct": round(100 * lake.mean(), 2),
         "coarse_cells": int(len(sel)),
         "coarse_river_cells": int(len(riv_ids)),
@@ -2610,6 +2617,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
         "wetland": wetland,
+        "coastal_life": cz["layer"],
         # vegetation (decision 9A: the summary layers; zoom_vegetation.fractions recomputes each type's cover)
         **veg_l,
         # terrain indices (zoom_terrain, PW-196)
@@ -2749,6 +2757,9 @@ LAYER_DOC = {
     "biome": ("BIOMES id", "coarse grouping of the vegetation types (vegetation.biome_of); sea and lakes by "
                            "climate.biomes"),
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
+    "coastal_life": ("enum", "coastal and shallow-sea life (zoom_coastal, PW-188): 0 none, 1 coral reef, 2 kelp "
+                             "forest, 3 seagrass meadow (sea); 4 mangrove, 5 salt marsh (land between the tides); "
+                             "legend 'coastal_life'"),
     "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
     # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)

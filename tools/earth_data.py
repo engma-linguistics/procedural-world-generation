@@ -702,8 +702,19 @@ def earth_glim(grid) -> np.ndarray:
 #   Shao, Y., Anhaeuser, A., Elble, T., et al., "Global Kilometer-Resolution
 #   Dataset of Boundary Conditions for Climate Simulations of the Last Glacial
 #   Maximum", Zenodo, doi:10.5281/zenodo.14506525, file ice_30s.nc (24.5 MB;
-#   variable ice_cover_boolean, 30 arc-second global grid, 1 = ice; the record's
-#   Dataset_Description.pdf says what ice-sheet reconstruction it is built from).
+#   variable ice_cover_boolean, 30 arc-second global grid, 1 = ice).
+#   Reconstruction (checked 2026-10-15 against the record's Dataset_Description.pdf,
+#   Sec. 2): the mask is NOT an independent reconstruction. It is the binary 1 degree
+#   PMIP3 LGM ice-cover map ("no ice data finer than 1 degree are available"),
+#   bilinearly interpolated to 30 arc-seconds; ice_cover_boolean then draws each
+#   pixel as ice with probability equal to that interpolated fraction. So the
+#   effective resolution is 1 degree and the extent is the PMIP3 protocol ice sheet
+#   (the PMIP3/CMIP5 LGM ice sheet is a composite of three groups' reconstructions,
+#   the ANU ice model, ICE-6G v1.02 and GLAC-1 (the PMIP3 21k ice-sheet wiki); only
+#   two cover Antarctica. Abe-Ouchi et al. 2015, Geosci. Model Dev. 8, 3621,
+#   doi:10.5194/gmd-8-3621-2015. The PDF itself does not name the members). The record has no
+#   paper DOI; cite the Zenodo dataset (Shao, Anhaeuser, Elble, Ludwig, Schlueter,
+#   Ulbrich, Williams, Xia).
 #   Licence: CC BY 4.0 (cite the dataset). netCDF-4, so read with the small HDF5
 #   reader in tools/h5_reader.py (no h5py), by range requests, and averaged
 #   30 x 30 pixels on the fly to 0.25 deg ice fractions (raw_lgm_ice.npz, ~0.3 MB).

@@ -2,7 +2,7 @@
 id: PW-303
 title: test_parallel's worker-process tests fail now and then in a full pytest run (three different tests so far)
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: infra
 effort: s
@@ -27,6 +27,7 @@ The second one looks like a race: both processes may build the zoom before eithe
 Later (main merged at 2968db4, load ~4): `test_run_in_workers` failed once in a full run with an `AssertionError: assert [...` (not captured). Its asserts include the progress messages arriving "every message, before run returns", which looks like a race between the progress queue and the results. It passed when run on its own. Three tests have now flaked, so the progress/result hand-off in `planet/parallel.py` may deliver late under contention: check that `run` drains the progress queue before it returns. These look like real ordering races, not timeouts, so I didn't paper over them with longer waits.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (5f5c772): Pool.result skipped its end-marker wait on success (return inside try with the wait in else), dropping late progress messages; api.Jobs dequeue+mark running atomic. Flake loop under load: 4/50 -> 0/40.
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: PW-312 (test_run_in_workers flaky, found by pw308) folded in: failed twice in a row in full runs on 2026-10-15, passes alone.
 - 2026-10-15: Created from inbox draft draft-climate-ocean-parallel-tests-flaky-under-load.md (found by climate-ocean).

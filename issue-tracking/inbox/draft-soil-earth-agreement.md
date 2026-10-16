@@ -9,7 +9,7 @@ impact: med
 found_by: soils
 blocked_by: []
 relates: [PW-185, PW-037, PW-132]
-refs: [planet/soils.py, tools/soil_check.py, docs/review/soils/earth_groups.png, "docs/overview.md#2.20"]
+refs: [planet/soils.py, tools/soil_check.py, docs/review/soils/earth_groups.png, "docs/overview.md#2.21"]
 ---
 
 ## Description

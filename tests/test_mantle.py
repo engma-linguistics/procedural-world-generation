@@ -105,3 +105,22 @@ def test_eddies_wander_with_the_set_size(sim):
         mantle.stir(sim, rng)
         rms.append(np.sqrt((mantle.eddies(sim) ** 2).mean()))
     assert 0.6 * sim.params.mantle_eddies < np.mean(rms[100:]) < 1.4 * sim.params.mantle_eddies
+
+
+def test_basis_disk_cache_is_bit_identical(grid4, tmp_path, monkeypatch):
+    """The harmonics read back from their file are the bits _build_basis
+    makes (PW-258), and a damaged file is rebuilt."""
+    path = tmp_path / "b.npy"
+    monkeypatch.setattr(mantle, "_cache_path", lambda grid: path)
+    monkeypatch.setattr(mantle, "_BASIS", {})
+    Y0, d0 = mantle._build_basis(grid4)
+    Y1, d1 = mantle.basis(grid4)  # built and saved
+    assert path.is_file()
+    mantle._BASIS.clear()
+    Y2, d2 = mantle.basis(grid4)  # read back
+    for Y, d in ((Y1, d1), (Y2, d2)):
+        assert Y.tobytes() == Y0.tobytes() and Y.flags.c_contiguous == Y0.flags.c_contiguous
+        assert d.dtype == d0.dtype and np.array_equal(d, d0)
+    path.write_bytes(b"junk")
+    mantle._BASIS.clear()
+    assert mantle.basis(grid4)[0].tobytes() == Y0.tobytes()

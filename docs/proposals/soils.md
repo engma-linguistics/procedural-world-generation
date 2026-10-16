@@ -1,6 +1,6 @@
 # Soils: proposal (PW-185, for owner review)
 
-**Status 2026-10-16: steps 1–5 and 8 built (`planet/soils.py`, `tools/soil_check.py`, viewer; docs/overview.md §2.20 has what was built and the Earth numbers); steps 6 (zoom), 7 (coal from peat in the run) and 9 (game attributes, satellite) not yet. Deviations from the text below: erosion rises with the slope squared plus wind deflation; lime and salt follow the present climate (memory moves W only); mollic soils also need bases; podzols need sand, or acid rock or till under conifers and heath; frozen soil = continuous permafrost; thin soils hold some water in fissured rock below.**
+**Status 2026-10-16: steps 1–5 and 8 built (`planet/soils.py`, `tools/soil_check.py`, viewer; docs/overview.md §2.21 has what was built and the Earth numbers); steps 6 (zoom), 7 (coal from peat in the run) and 9 (game attributes, satellite) not yet. Deviations from the text below: erosion rises with the slope squared plus wind deflation; lime and salt follow the present climate (memory moves W only); mollic soils also need bases; podzols need sand, or acid rock or till under conifers and heath; frozen soil = continuous permafrost; thin soils hold some water in fissured rock below.**
 
 *2026-10-15. Implemented once approved. Parent epic PW-184 (life and the land surface); it takes in PW-212 (vegetation to soils, coal from peat) and the old PW-095 (permafrost, wetlands, peat). Numbered owner decisions are in §9.*
 
