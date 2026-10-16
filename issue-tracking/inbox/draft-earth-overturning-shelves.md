@@ -1,7 +1,7 @@
 ---
-title: Earth's North Atlantic overturning falls 15 -> 10 Sv when the Antarctic ice shelves become sea
+title: "Overturning: Antarctic shelf brine sets the North Atlantic's sinking threshold (Earth 15 -> 10 Sv with the shelves as sea)"
 type: task
-status: todo
+status: needs-decision
 parent: null
 subsystem: ocean
 effort: s
@@ -13,18 +13,37 @@ refs: [planet/ocean.py, tools/earth_data.py, "docs/overview.md §2.7"]
 ---
 
 ## Description
-PW-354 made `tools/earth_data.py` take ETOPO1's floating ice shelves (Ross, Ronne-Filchner, Amery;
-~1.15 million km2, 92 L6 cells) as sea instead of land with a 1 m bed. On the L6 Earth world the
-overturning (`meta.overturning`) then falls from 16.9 to 12.6 Sv, and almost all of it in the
-north: the North Atlantic site 14.9 -> 10.0 Sv (its area 4.97 -> 4.18 million km2), while the
-southern sinking grows only 1.9 -> 2.6 Sv. The true bed alone changes nothing (16.93 Sv; measured
-by restoring the old shelf cells on the new data). Knock-ons: Norway W waves 52 -> 41 kW/m,
-Reykjavik -1.1 C, 60-70N sea -0.4 C.
+PW-354 made Earth's floating ice shelves (Ross, Ronne-Filchner, Amery; 92 L6 cells, ~0.3% of the
+sea) sea instead of land. The L6 Earth's overturning then falls 16.9 -> 12.6 Sv, the north
+14.9 -> 10.0 Sv, the south 1.9 -> 2.6 (observed AMOC ~17).
 
-The north's deep-water formation shouldn't hinge on the shelves 12,000 km away. Suspects:
-`ocean.salinity` holds the sea's area-mean salinity at S0 (adding brine-heavy shelf sea next to
-Antarctica would freshen everything else relative to it), or the density contrast is taken
-against a global mean. Check which, and whether the response is physical (more AABW does compete
-with NADW on Earth, but not by a third through the surface salinity alone).
-- [ ] find the path by which the shelves set the north's sinking (salinity normalisation, density reference)
-- [ ] decide whether it is sound; if not, fix it in the ocean model (not by putting the shelves back)
+Diagnosis (L6 Earth, `ocean.overturning` instrumented):
+- The cause is the deep-water reference. `ocean.overturning` takes one deep water per connected
+  ocean, the densest 10% (by area) of its polar sea in *both* hemispheres, less moc_mix; water
+  sinks only within moc_drho (0.3 kg/m3) of it. The new shelf seas grow brine-heavy ice and
+  are the densest water there is: the south's share of that top 10% goes 19 -> 27% and the
+  reference rises 1028.020 -> 1028.135 kg/m3. Through the spin-up's tightening gate the Nordic
+  seas' marginal cells drop out, the inflow brings less salt and heat (N Atlantic >55N:
+  SSS 35.30 -> 35.17, SST 4.0 -> 3.1 C) and the north settles on a weaker branch.
+- It is bistable, not a normalisation. With the reference held fixed from the start, old and new
+  geography give the same north (15.0 / 15.05 Sv at the new reference, SSS 35.285 / 35.282).
+  So the salinity's S0 normalisation, the fresh-water books and the rain's global renormalisation
+  contribute nothing measurable. Both 15 and ~11 Sv are steady states for the new geography,
+  and the spin-up's path picks the weaker one.
+- moc_iters = 4 isn't converged here: 8, 16 and 30 iterations give north 11.25-11.28 Sv (old
+  data: 14.87, converged by 4).
+- Per-hemisphere deep water (tried): Earth north 14.05 / south 2.48 Sv, insensitive to the
+  shelves. But generated keyframes where one hemisphere's water outweighs the other's now sink
+  in both: run 738c73 @652 18.1 -> 35.5 Sv, @300 21.5 -> 37.2. Other moments unchanged
+  (46c0b2 @500 31.9, c32ec0 @700 41.4/41.8). Run goldens move (the run's climate uses it).
+
+Options:
+A. Keep it: AABW competing with NADW is the rule's intent, and Earth sits near the threshold.
+   Accept 12.6 Sv (or ~13.8 converged) on the shelves-as-sea Earth.
+B. Each hemisphere makes its own deep water (NADW forms over denser AABW on Earth). Robust on
+   Earth, but doubles the overturning of one-sided generated worlds and lets any hemisphere's
+   densest polar water sink.
+C. Keep the shared deep water and fix the convergence (more iterations, or start the spin-up from
+   the previous climate's state): no new physics, but it doesn't address which branch is right.
+Lean: A plus C's convergence check (moc_iters 4 -> 8 costs ~+0.1 s per climate). B is a design
+change for the ocean owner.
