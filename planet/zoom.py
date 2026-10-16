@@ -203,6 +203,7 @@ DELTA_PLAIN_GROUND = (30.0, 250.0)
 FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
+BRANCH_CLIMB_M = 30.0  # m: ... nor where it stands higher than this above the delta's apex (PW-061)
 
 
 # ---------------------------------------------------------------------------
@@ -773,6 +774,35 @@ def _coast_along(ind, nx: int, ny: int, res: float, x0: float, y0: float, d, sma
     return float(smax)
 
 
+def _polyline_dist(x, y, line: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per point (x, y km): the distance to the polyline (km) and the arc
+    length along it at the nearest point."""
+    best, arc = np.full(len(x), np.inf), np.zeros(len(x))
+    s0 = 0.0
+    for a, b in zip(line[:-1], line[1:]):
+        v = b - a
+        L2 = float(v @ v)
+        t = np.clip(((x - a[0]) * v[0] + (y - a[1]) * v[1]) / max(L2, 1e-12), 0.0, 1.0)
+        d = np.hypot(a[0] + t * v[0] - x, a[1] + t * v[1] - y)
+        m = d < best
+        best[m], arc[m] = d[m], s0 + t[m] * np.sqrt(L2)
+        s0 += np.sqrt(L2)
+    return best, arc
+
+
+def _finger_axis(x0: float, y0: float, dk, tk, Lk: float, th: float, rng) -> np.ndarray:
+    """A delta finger's axis (km), from 0.3 Lk inland of the mouth (x0, y0)
+    out to its tip Lk beyond it along dk: bending away from the fan's middle
+    (th, its angle off the seaward direction) and wandering a little, as a
+    distributary's levees build out (the Mississippi's passes curve)."""
+    f = np.linspace(-0.3, 1.0, 27)
+    out = np.clip(f, 0.0, 1.0)
+    bend = (np.sign(th) * abs(rng.normal(0.06, 0.04))) if abs(th) > 0.05 else rng.normal(0.0, 0.05)
+    wob = 0.02 * np.sin(2 * np.pi * f / rng.uniform(0.5, 0.8) + rng.uniform(0, 2 * np.pi)) * out
+    off = Lk * (bend * out**2 + wob)
+    return np.column_stack([x0 + f * Lk * dk[0] + off * tk[0], y0 + f * Lk * dk[1] + off * tk[1]])
+
+
 def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> dict:
     """The delta's shape in the land/sea indicator, from its Galloway
     weights (wR, wW, wT), each part scaled by its weight so mixed deltas
@@ -822,8 +852,11 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     dl["lobe_at"] = (dl["x"] + s0 * u[0], dl["y"] + s0 * u[1])
     smooth[near] = smoothstep(1.4 * R, 0.9 * R, r[near]) * np.clip(0.85 * wW + 0.5 * wR, 0, 0.9)
     goals, kind = [], "fan"
+    dl["finger_lines"] = []
     n = dl["nb"]
-    # fingers: from the mouth out along a fan of directions
+    # fingers: from the mouth out along a fan of directions, each bending
+    # away from the fan's middle and wandering a little as it builds out
+    # (the Mississippi's passes), narrowing to its tip
     Lf = R * 1.1 * wR ** 2  # (the Mississippi's bird's foot reaches ~100 km out from a ~250 km plain)
     if Lf > 3 * res and n >= 1:
         wf = max(2.0 * res, 0.06 * R)
@@ -831,15 +864,27 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
         th = (np.linspace(-0.5, 0.5, n) if n > 1 else np.zeros(1)) * spread + rng.normal(0, 0.08, n)
         for k in range(n):
             dk = np.cos(th[k]) * u + np.sin(th[k]) * t
+            tk = np.array([-dk[1], dk[0]])
             Lk = Lf * rng.uniform(0.6, 1.1)
-            Lk += _coast_along(ind, nx, ny, res, dl["x"], dl["y"], dk, 1.5 * R)  # out from the coast
-            s = dx * dk[0] + dy * dk[1]
-            c = np.abs(dx * dk[1] - dy * dk[0])
-            f = np.exp(-(c / wf) ** 2) * smoothstep(-0.3 * Lk, 0.0, s) * smoothstep(Lk, 0.85 * Lk, s)
+            sc = _coast_along(ind, nx, ny, res, dl["x"], dl["y"], dk, 1.5 * R)
+            line = _finger_axis(dl["x"], dl["y"], dk, tk, Lk + sc, th[k], rng)
+            # (a finger builds out into the sea: none along a direction that runs on over land)
+            lc_ = np.clip(np.floor(line[:, 0] / res + nx / 2).astype(int), 0, nx - 1)
+            lr_ = np.clip(np.floor(ny / 2 - line[:, 1] / res).astype(int), 0, ny - 1)
+            if sc > 0.3 * R or np.mean(ind[(lr_ * nx + lc_)[len(line) // 4:]] > 0) > 0.4:
+                continue
+            Lk += sc  # out from the coast
+            near_k = near & (r < 1.2 * Lk + 3 * wf)
+            c, s = np.full_like(px, np.inf), np.zeros_like(px)
+            c[near_k], s[near_k] = _polyline_dist(px[near_k], py[near_k], line)
+            s -= 0.3 * Lk  # (the axis starts 0.3 Lk inland of the mouth)
+            wk_ = wf * (1.0 - 0.5 * np.clip(s / Lk, 0.0, 1.0))
+            f = np.exp(-(c / wk_) ** 2) * smoothstep(-0.3 * Lk, 0.0, s) * smoothstep(Lk, 0.85 * Lk, s)
             # land at least along the axis, wider the more the river dominates
             # (none below a river weight of ~0.4)
             keep = np.maximum(keep, 0.3 * (1.6 * wR * f - 0.6))
-            goals.append((dl["x"] + Lk * dk[0], dl["y"] + Lk * dk[1]))
+            goals.append(tuple(line[-1]))
+            dl["finger_lines"].append(line[np.searchsorted(np.linspace(-0.3, 1.0, len(line)), 0.0):])
         kind = "fingers"
     # funnels: spread along the coast either side of the mouth
     amp_t = 1.6 * wT
@@ -2069,32 +2114,37 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     def reroute(rec, order):
         """Pin the courses of reaches with falls, then apply the distributary
         receivers (each only if it leaves the network acyclic)."""
-        src, dst = pin_src, pin_dst
-        while len(src):
-            r2 = rec.copy()
-            r2[src] = dst
-            o2 = ZK.receiver_order(r2)
-            if len(o2) == npx:
-                rec, order = r2, o2
-                break
-            # a loop (a course draining back into itself): unpin the loop's pixels
-            done = np.zeros(npx, bool)
-            done[o2] = True
-            walk, i = {}, int(np.flatnonzero(~done)[0])
-            while i not in walk:
-                walk[i] = len(walk)
-                i = int(r2[i])
-            loop = list(walk)[walk[i]:]
-            keep = ~np.isin(src, loop)
-            if keep.all():
-                break
-            src, dst = src[keep], dst[keep]
+        def pin(rec, order, src, dst):
+            """rec with src -> dst pinned, but for the pixels of any loop
+            that makes (a course draining back into itself): those unpinned.
+            Returns (rec, order, all pinned?)."""
+            n0 = len(src)
+            while len(src):
+                r2 = rec.copy()
+                r2[src] = dst
+                o2 = ZK.receiver_order(r2)
+                if len(o2) == npx:
+                    return r2, o2, len(src) == n0
+                done = np.zeros(npx, bool)
+                done[o2] = True
+                walk, i = {}, int(np.flatnonzero(~done)[0])
+                while i not in walk:
+                    walk[i] = len(walk)
+                    i = int(r2[i])
+                loop = list(walk)[walk[i]:]
+                keep = ~np.isin(src, loop)
+                if keep.all():
+                    break
+                src, dst = src[keep], dst[keep]
+            return rec, order, False
+
+        rec, order, _ = pin(rec, order, pin_src, pin_dst)
         if not len(ov_src):
             return rec, order, False
-        r2 = rec.copy()
-        r2[ov_src] = ov_dst
-        o2 = ZK.receiver_order(r2)
-        return (r2, o2, True) if len(o2) == npx else (rec, order, False)
+        # (the distributaries were laid out on an earlier network: where one
+        # now closes a loop, only that loop's pixels are let go)
+        r2, o2, _ = pin(rec, order, ov_src, ov_dst)
+        return (r2, o2, True) if r2 is not rec else (rec, order, False)
 
     def route(src, rec, order, outs, split_ok, loss=None):
         """Accumulate src downstream, then pass each open lake's total on at
@@ -2131,63 +2181,131 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     def make_branches(rec0, order0):
         """Receiver overrides (src, dst) and splits for the deltas, laid out
         on the drainage network (rec0, order0) of a landscape iteration."""
-        ov, splits = {}, []
+        ov, splits, via_map = {}, [], {}  # (via_map: a finger tip's goal pixel -> the finger's axis)
+        top_z = [np.inf]  # (the highest ground a delta's branches may cross: set per delta)
         score = route(srcq, rec0, order0, lake_outlets(rec0), False, lake_loss)[0]
         assigned = np.zeros(npx, bool)
         rng = np.random.default_rng(seed + 7)
 
         # Each branch heads for its own point on the coast, spread around the
-        # main mouth: every step gets closer to its goal (so it arrives and
-        # can't loop), choosing the neighbour closest to the goal's direction
-        # plus a wandering noise angle, and keeping clear of the other
-        # branches where it can.
-        # (a river-dominated delta's channels run straighter, between their levees)
-        wander = [0.7 * (1 - 0.7 * wR_f) * ZK.fbm(Pk, 25.0, 3, 0.5, S + 41 + k) / 0.17 for k in range(2)]
+        # main mouth, along a smooth curve rasterised onto the pixels (any
+        # direction, not D8's eight): bowed to one side and wandering, less
+        # on a river-dominated delta, whose channels run straighter between
+        # their levees; a finger's branch runs on out along the finger's axis.
         coast = np.zeros(npx, bool)  # land next to the sea
         for dr, dcol in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             coast |= active & _shift(sea.reshape(ny, nx), dr, dcol, False).ravel()
         nb8 = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
 
-        def crowd(q, i):
-            """Other branches' pixels next to q (not counting i)."""
-            r0, c0 = divmod(q, nx)
-            return sum(assigned[(r0 + a) * nx + c0 + b] for a, b in nb8
-                       if 0 <= r0 + a < ny and 0 <= c0 + b < nx and (r0 + a) * nx + c0 + b != i)
+        def curve(p0, end, wr, k=0):
+            """A distributary's course (km) from p0 to end: a bow of ~N(0,
+            12%) of its length to one side and a wiggle of ~25 km wavelength."""
+            v = end - p0
+            L = float(np.hypot(*v))
+            if L < res:
+                return np.array([p0, end])
+            nrm = np.array([-v[1], v[0]]) / L
+            tt = np.linspace(0.0, 1.0, max(8, int(2 * L / res)))
+            bow = rng.normal(0.0, 0.12 * (1 + 0.6 * k)) * (1 - 0.5 * wr)  # (wider on each retry)
+            wig = 0.04 * (1 - 0.6 * wr) * np.sin(2 * np.pi * tt * L / rng.uniform(15.0, 35.0) + rng.uniform(0, 2 * np.pi))
+            off = L * (4 * bow * tt * (1 - tt) + wig * np.sin(np.pi * tt))
+            return p0 + tt[:, None] * v + off[:, None] * nrm
 
-        def toward(s0, gx, gy, nsteps, blocked):
-            """Pixels (start excluded) from s0 towards (gx, gy) km, at most
-            nsteps; on arriving at a coast pixel, one more step into the sea."""
-            out, i, seen = [], int(s0), {int(s0)}
-            mix = rng.uniform(0, 2 * np.pi)  # each branch wanders its own way
+        def walk(s0, line, nsteps, blocked):
+            """Pixels (start excluded) from s0 along the polyline (km), a
+            step at a time: towards a point a little ahead on it (so the
+            channel follows the curve in any direction), every step nearer
+            its far end (so it arrives and can't loop; the line runs on out
+            into the sea), round high ground and the other branches (joining
+            one only where that leads on to the sea, not back up its own
+            course). It stops at the sea (or a lake, the region's edge),
+            another branch, nsteps, or where it can't get on. Returns (the
+            pixels, did it run clear?)."""
+            seg = np.hypot(*np.diff(line, axis=0).T)
+            s_ = np.concatenate([[0.0], np.cumsum(seg)])
+            t_ = np.arange(0.0, s_[-1] + 1e-9, 0.5 * res)
+            pts = np.column_stack([np.interp(t_, s_, line[:, 0]), np.interp(t_, s_, line[:, 1])])
+            gx_, gy_ = pts[-1]
+            out, seen, i, j = [], {int(s0)}, int(s0), 0
+            top_ = top_z[0]
+
+            def joins(q):
+                """Does joining the branch at q lead on to the sea, not back
+                through s0 (its own upstream: a loop)?"""
+                p, n_ = int(q), 0
+                while p in ov and n_ < npx:
+                    if p == s0 or p in seen:
+                        return False
+                    p, n_ = int(ov[p]), n_ + 1
+                return p != s0 and p not in seen
+
             while len(out) < nsteps:
                 r0, c0 = divmod(i, nx)
-                d0 = np.hypot(px[i] - gx, py[i] - gy)
-                th = np.arctan2(gy - py[i], gx - px[i]) + np.cos(mix) * wander[0][i] + np.sin(mix) * wander[1][i]
+                tx, ty = pts[min(j + 4, len(pts) - 1)]  # (2 px ahead)
+                th = np.arctan2(ty - py[i], tx - px[i])
+                d0 = np.hypot(px[i] - gx_, py[i] - gy_)
                 best, bs = -1, -9.0
                 for a, b in nb8:
                     if not (0 <= r0 + a < ny and 0 <= c0 + b < nx):
                         continue
                     q = (r0 + a) * nx + c0 + b
-                    if blocked[q] or q in seen:
+                    if q in seen or blocked[q] or (assigned[q] and not joins(q)):
                         continue
-                    dq = np.hypot(px[q] - gx, py[q] - gy)
+                    if base[q] > top_ and not outlet[q]:
+                        continue  # (no climbing: a pinned channel uphill lifts its whole course above the plain)
+                    dq = np.hypot(px[q] - gx_, py[q] - gy_)
                     if len(out) < 3:  # leave the split point: on fresh ground, not much further away
                         if assigned[q] or dq > d0 + res:
                             continue
-                    elif dq >= d0 and not sea[q]:
+                    elif dq >= d0 and not outlet[q]:
                         continue
-                    sc = np.cos(np.arctan2(-a, b) - th) - (3.0 if assigned[q] else 0.3 * crowd(q, i))
-                    sc += 2.0 if (sea[q] and d0 < 1.5 * res) else 0.0
+                    sc = np.cos(np.arctan2(-a, b) - th) - (3.0 if assigned[q] else 0.0)
                     if sc > bs:
                         best, bs = q, sc
                 if best < 0:
-                    break
+                    return out, False
                 out.append(best)
                 seen.add(best)
-                if assigned[best] or outlet[best]:
-                    break
+                if assigned[best]:
+                    return out, False
+                if outlet[best]:
+                    return out, True
                 i = best
-            return out
+                w = pts[j:j + 12]
+                j += int(np.argmin(np.hypot(w[:, 0] - px[i], w[:, 1] - py[i])))
+            return out, True
+
+        def toward(s0, gx, gy, nsteps, blocked, via=None, side=0):
+            """Pixels (start excluded) along a curve from s0 towards (gx, gy)
+            km (and on along `via`, a finger's axis, if given), at most
+            nsteps, on past its end into the sea (walk). Of a few bows, the
+            first that runs clear of the other branches and the high ground,
+            else the one that gets furthest. side (-1, +1; 0: none): a
+            split's child leaves it turned ~35 deg to its own side of the fan
+            (clockwise -1), away from its sibling."""
+            p0 = np.array([px[s0], py[s0]])
+            end = np.array([gx, gy]) if via is None else np.asarray(via[0], float)
+            p1 = p0
+            if side and np.hypot(*(end - p0)) > 6 * res:
+                d_ = (end - p0) / np.hypot(*(end - p0))
+                a_ = np.radians(35.0) * side
+                p1 = p0 + 2.5 * res * np.array([d_[0] * np.cos(a_) - d_[1] * np.sin(a_),
+                                                d_[0] * np.sin(a_) + d_[1] * np.cos(a_)])
+            best = []
+            for k in range(4):
+                line = curve(p1, end, float(wR_f[s0]), k)
+                if p1 is not p0:
+                    line = np.concatenate([[p0], line])
+                if via is not None:
+                    line = np.concatenate([line, np.asarray(via[1:], float)])
+                e = line[-1] - line[-2]
+                line = np.concatenate([line, [line[-1] + 30 * res * e / max(float(np.hypot(*e)), 1e-9)]])
+                out, clear = walk(s0, line, nsteps, blocked)
+                if clear and out:
+                    return out
+                if len(out) > len(best):
+                    best = out
+            return best
 
         def commit(start, pix, blocked):
             """Pin pix as a channel after start; it ends at the sea (or a lake,
@@ -2210,26 +2328,39 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         def grow(s, goals, seg, blocked):
             """Split at pixel s into two groups of coast goals (one each if
             only two); a group heads for its goals' mean for `seg` pixels,
-            then splits again."""
+            then splits again. A branch none of whose channels reaches the
+            sea or another branch (stuck inland: high ground in the way) is
+            taken back: its open end would drain back into the delta (a
+            loop, and no distributaries at all). Returns: any kept?"""
             k0 = len(splits)
             splits.append(None)
             m = max(len(goals) // 2, 1)
             groups = [goals[:m], goals[m:]] if len(goals) > 1 else [goals]
             share = np.array([len(gp) for gp in groups], float) * rng.uniform(0.75, 1.25, len(groups))
             kids, fr_ = [], []
-            for gp, f in zip(groups, share):
+            for gi, (gp, f) in enumerate(zip(groups, share)):
                 gx, gy = np.mean([px[q] for q in gp]), np.mean([py[q] for q in gp])
-                pix = toward(s, gx, gy, npx if len(gp) == 1 else seg, blocked)
-                first, last, open_ = commit(s, pix, blocked)
-                if first < 0:
-                    continue
-                kids.append(first)
-                fr_.append(f)
-                if open_ and len(gp) > 1:
-                    grow(last, gp, seg, blocked)
+                # (turned to its side of the fan; failing that, straight off: the side may be high ground)
+                for side in dict.fromkeys(((2 * gi - 1) if len(groups) > 1 else 0, 0)):
+                    pix = toward(s, gx, gy, npx if len(gp) == 1 else seg, blocked,
+                                 via_map.get(gp[0]) if len(gp) == 1 else None, side)
+                    snap_k = (dict(ov), assigned.copy(), len(splits))
+                    first, last, open_ = commit(s, pix, blocked)
+                    if first < 0:
+                        continue
+                    if open_ and not (len(gp) > 1 and grow(last, gp, seg, blocked)):
+                        ov.clear()
+                        ov.update(snap_k[0])
+                        assigned[:] = snap_k[1]
+                        del splits[snap_k[2]:]
+                        continue
+                    kids.append(first)
+                    fr_.append(f)
+                    break
             if kids:
                 ov[s] = kids[0]
             splits[k0] = (s, kids, np.array(fr_) / max(sum(fr_), 1e-9)) if len(kids) > 1 else None
+            return bool(kids)
 
         # main upstream branch of each pixel (the one bringing the most water)
         bp = np.full(npx, -1)
@@ -2278,7 +2409,24 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             if dl["goals"]:
                 # the tips of the fingers (river) or the heads of the funnels
                 # (tide): the coast pixel nearest each, not too close to the apex
-                for gx, gy in dl["goals"]:
+                lines = dl.get("finger_lines", []) if dl["form"] == "fingers" else []
+                for k_, (gx, gy) in enumerate(dl["goals"]):
+                    if k_ < len(lines):
+                        # a finger's goal is its tip (or its last point in the
+                        # region): the branches split towards the tips, far apart;
+                        # its own branch enters the finger a tenth of the way out
+                        # (they all start from the mouth) and runs out along its axis
+                        ln_ = lines[k_]
+                        cc_ = np.floor(ln_[:, 0] / res + nx / 2).astype(int)
+                        rr_ = np.floor(ny / 2 - ln_[:, 1] / res).astype(int)
+                        ins = np.flatnonzero((cc_ >= 0) & (cc_ < nx) & (rr_ >= 0) & (rr_ < ny))
+                        j = max(len(ln_) // 10, 1)
+                        if len(ins) and ins[-1] > j:
+                            q = int(rr_[ins[-1]] * nx + cc_[ins[-1]])
+                            if q not in goals:
+                                goals.append(q)
+                                via_map[q] = ln_[j:ins[-1] + 1]
+                        continue
                     ok = cd > 0.4 * ln
                     if ok.any():
                         q = int(cp[ok][np.argmin(np.hypot(px[cp[ok]] - gx, py[cp[ok]] - gy))])
@@ -2299,6 +2447,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             # order the goals around the fan, so each split divides neighbours
             goals.sort(key=lambda q: (np.arctan2(py[q] - py[a], px[q] - px[a]) - phi + np.pi) % (2 * np.pi))
             # (the branches stay on low ground: not up into the hills beside the plain)
+            top_z[0] = max(float(base[a]), 0.0) + BRANCH_CLIMB_M  # (no branch onto ground higher than its apex, but a little)
             grow(a, goals, max(int(0.15 * ln / res), 2), blocked | (target > BRANCH_MAX_Z))
             rt = rec0.copy()
             rt[list(ov)] = list(ov.values())

@@ -68,3 +68,49 @@ levee-bound delta distributaries on the arc, perched by design):
 Fixing 1-2 means either lowering each reach's staircase to the land beside it (tapered at its head, or the river
 above gains an undesigned drop) or letting the pinned course move to the fine valley bottom where it lies lower
 within the banks' width: a design choice for the designed falls, left on the ticket with these options.
+
+## PW-061: delta branches and fingers
+
+The fans are no longer small (PW-269 made the plains 70 km x (Q/1000)^0.35); what was left was their drawing:
+
+- **Branches** were greedy D8 walks towards each goal with a little noise in the heading: ruler-straight channels in
+  the eight directions (on a river-dominated delta the noise was damped to almost nothing). Each branch now follows
+  a smooth curve to its goal, bowed to one side (~N(0, 12%) of its length, less on a river-dominated delta) with a
+  wiggle of 15-35 km wavelength: still a walk of single steps (every step nearer the course's end, round the high
+  ground and the other branches), but heading for a point 2 px ahead on the curve, so it runs in any direction. A
+  split's two children leave it turned ~35 deg to their own sides (straight off if that is high ground); a branch
+  joins another only where that leads on to the sea, not back up its own course (a loop); a branch, or a subtree,
+  that never reaches the sea is taken back (its open end drained back into the delta, and `reroute` then dropped
+  every distributary); no branch crosses ground (the smooth coarse surface) more than 30 m above its apex's.
+  `reroute` now lets go of just a loop's pixels when a distributary laid out on an earlier network closes one, as
+  it does for the falls' pinned courses.
+- **Fingers** (the bird's foot) were straight strips of constant width out from the coarse mouth, each with a
+  straight branch aimed at the coast pixel nearest its tip, which was often 100+ km along the coast when the
+  finger pointed along it. Each finger now bends gently away from the fan's middle and wanders (the Mississippi's
+  passes), narrows to half its width at the tip, and its branch enters it a tenth of the way out and follows its
+  axis to the tip; a finger along a direction that runs on over land (more than 40% of its outer part) isn't built.
+
+Zooms with deltas (seeds 1-5): drops and inland bias unchanged (4.97,-114.51: 0 / -1.9 m; 1.96,-70.44: 0.4 /
+-0.1 m; the arc: 3.6 / +0.3 m).
+
+| Zoom | mouths at sea, before | after | splits before | after |
+|---|---|---|---|---|
+| 4.97,-114.51 (two bird's feet, a wave delta) | 10.2 | 5.8 | 7.4 | 4.0 |
+| 1.96,-70.44 | 4.8 | 5.0 | 4.0 | 3.4 |
+| -9.35,-161.39 (arc, six tidal deltas) | 15.8 | 22.6 | 13.4 | 18.0 |
+
+The bird's feet lose the mouths of branches that had crossed the plain to a far coast (the ticket's misplaced
+mouths): they reach the sea through their fingers now, 1-3 of up to 4 fingers getting a channel (the others are
+cut off by the trunk's own course or high ground: inbox draft). On the arc the perched metric (PW-124) rises from
+33 to 45 river px per seed (> 100 m: 1.4 -> 1.2): more distributaries, some of them 30-90 m above the plain beside
+them, where a pinned branch's course crosses higher ground further down and the landscape pass lifts it all
+(inbox draft). `test_coast.test_delta_types_differ` holds (river reach 0.45 R beyond the coast, tide 0.34 R; tide 4
+mouths, wave 2). Tests: `test_delta_fingers_curve_and_build_out_into_the_sea`.
+
+![delta](pw061_delta.png)
+*The 39,700 m^3/s bird's foot of zoom 4.97,-114.51 (2 km pixels, seed 1), before | after: straight strips and
+eight-direction channels (one crossing 150 km of plain to the south-east coast) | curved fingers each with its
+channel.*
+
+![wave delta](pw061_wave.png)
+*Its wave-dominated delta: a channel along a row of pixels | channels that wander.*

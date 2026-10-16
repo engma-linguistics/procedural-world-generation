@@ -211,6 +211,34 @@ def test_delta_plain_and_distributaries(water_world):
     assert (coast & near & (q > 0.1 * q[near].max())).sum() >= 2
 
 
+def test_delta_fingers_curve_and_build_out_into_the_sea():
+    """PW-061: a river-dominated delta's fingers bend away from the fan's
+    middle and wander (they were straight strips), narrow to their tips, and
+    none runs along a direction that goes on over land; each finger's branch
+    follows its axis."""
+    rng = np.random.default_rng(3)
+    line = zoom._finger_axis(0.0, 0.0, np.array([1.0, 0.0]), np.array([0.0, 1.0]), 100.0, 0.4, rng)
+    assert np.allclose(line[0], [-30.0, 0.0])  # (from 0.3 Lk inland of the mouth)
+    assert line[-1][1] > 3.0 and abs(line[-1][0] - 100.0) < 5.0  # (bent to its own side of the fan)
+    d, s = zoom._polyline_dist(np.array([50.0, -30.0]), np.array([line[16][1] + 2.0, 40.0]), line)
+    assert abs(d[0] - 2.0) < 0.5 and abs(s[0] - 80.0) < 3.0 and abs(d[1] - 40.0) < 1e-6 and s[1] == 0
+    # a coast along x = 0 (sea east of it), but land again north of y = 40 km:
+    # the fingers fanning north-east, over that land, are left out
+    res, n = 2.0, 200
+    xs = (np.arange(n) + 0.5 - n / 2) * res
+    X, Y = np.meshgrid(xs, -xs)
+    px, py = X.ravel(), Y.ravel()
+    ind = np.where((px < 0) | (py > 40), 1.0, -1.0)
+    dl = {"R": 150.0, "Rl": 30.0, "wR": 1.0, "wW": 0.0, "wT": 0.0, "x": -1.0, "y": 0.0, "u": (1.0, 0.0),
+          "nb": 5, "cell": 7}
+    f = zoom._delta_forms(dl, px, py, res, np.random.default_rng(1), ind, n, n)
+    assert f["kind"] == "fingers" and 1 <= len(f["goals"]) < 5
+    for ln in dl["finger_lines"]:
+        c = np.clip(np.floor(ln[:, 0] / res + n / 2).astype(int), 0, n - 1)
+        r = np.clip(np.floor(n / 2 - ln[:, 1] / res).astype(int), 0, n - 1)
+        assert np.mean(ind[r * n + c][len(ln) // 4:] > 0) <= 0.4
+
+
 def test_no_delta_plain_on_high_ground():
     """PW-349: a big river reaching the sea down a coast whose coarse
     ground stands ~300 m and more gets no delta plain flattened to a few
