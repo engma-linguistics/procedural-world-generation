@@ -46,16 +46,43 @@
   #tip h3 { font-size: 13px; margin: 0 0 4px; }
   #tip .x { float: right; cursor: pointer; color: var(--muted); margin-left: 8px; }
   .mk { display: inline-block; vertical-align: -1px; margin-right: 4px; }
+  /* the 3D view (zoom3d.js, PW-072) */
+  #view3d { position: fixed; inset: 0; display: none; }
+  body.d3 #view3d { display: block; }
+  body.d3 #c, body.d3 #scale { display: none; }
+  .z3d-canvas { width: 100%; height: 100%; display: block; }
+  .z3d-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .z3d-fall { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+    color: #9fe3ff; font-size: 11px; text-shadow: 0 0 3px #0b2540, 0 0 2px #0b2540; }
+  .z3d-fall.big { font-size: 12px; font-weight: 600; color: #e8f6ff; background: rgba(11, 37, 64, 0.72);
+    border: 1px solid #9fe3ff; border-radius: 4px; padding: 0 4px; }
+  .z3d-fall.behind { opacity: 0.3; }
+  #p3d { display: none; bottom: 12px; right: 12px; width: 260px; max-height: calc(100vh - 330px); overflow-y: auto; }
+  body.d3 #p3d { display: block; }
+  #p3d input[type=range] { flex: 1; min-width: 0; }
+  #p3d .val { width: 34px; text-align: right; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  #fallList { margin-top: 4px; font-size: 12px; }
+  #fallList div { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
+  #fallList div:hover, #fallList div.on { background: #1d2a40; }
+  #btn3d.on { background: var(--accent); color: #06121f; }
   @media (max-width: 800px) { #info { display: none; } #legend { left: 12px; bottom: 60px; max-width: calc(100vw - 24px); } }
 </style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="view3d"></div>
 <div id="msg"></div>
 
 <div id="controls" class="panel">
   <h1>Regional Zoom</h1>
   <div class="row" style="gap:6px;display:flex"><select id="zoomSel" style="flex:1;min-width:0"></select>
+    <button id="btn3d" title="A 3D view of this zoom (heights, water, rivers, waterfalls)">3D</button>
     <button id="delBtn" title="Delete this zoom from disk">Delete</button></div>
   <div class="muted" id="srcNote" style="margin-top:4px"></div>
   <div class="muted" style="margin-top:4px">make one: on the Globe tab, click a cell and press Zoom (or double-click a cell), or
@@ -81,6 +108,22 @@
 </div>
 
 <div id="info" class="panel"><span class="muted">Hover the map.</span></div>
+<div id="p3d" class="panel">
+  <div class="row" style="justify-content:space-between;align-items:center"><b>3D view</b>
+    <span class="muted" id="fps3d" title="frames drawn per second while the view moves (it draws nothing while still)"></span>
+    <button id="back2d" title="Back to the 2D map">2D</button></div>
+  <label title="Vertical exaggeration">height &times; <input type="range" id="exag" min="1" max="10" step="0.5" value="3"><span class="val" id="exagV"></span></label>
+  <label title="Mesh detail: every pixel, or every 2nd / 4th (the colours keep full detail)">detail <select id="step3d" style="flex:1">
+    <option value="1">full (500&times;500)</option><option value="2">half</option><option value="4">quarter</option></select></label>
+  <label title="Where the sun stands (from north, clockwise)">sun from <input type="range" id="sunAz" min="0" max="360" step="5" value="315"><span class="val" id="sunAzV"></span></label>
+  <label title="The sun's height above the horizon">sun height <input type="range" id="sunEl" min="5" max="85" step="1" value="35"><span class="val" id="sunElV"></span></label>
+  <label title="River widths: log of discharge (small streams exaggerated)">river width <input type="range" id="rw3d" min="0.5" max="3" step="0.25" value="1"><span class="val" id="rw3dV"></span></label>
+  <div class="row"><label><input type="checkbox" id="shadows3d" checked> shadows</label>
+    <label title="Flat-shaded triangles"><input type="checkbox" id="facets3d"> facets</label></div>
+  <div class="muted" style="margin-top:4px">Drag to orbit, right-drag or arrow keys to pan, scroll to zoom, double-click to centre there. Colours: the layer picked on the left.</div>
+  <h2 id="fallHead">Waterfalls</h2>
+  <div id="fallList" class="muted"></div>
+</div>
 <div id="legend" class="panel"></div>
 <div id="tip" class="panel"></div>
 <div id="scale" class="panel"><span id="scaleLbl"></span><div class="bar" id="scaleBar"></div></div>
@@ -198,13 +241,94 @@ async function init() {
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
+  $('btn3d').onclick = () => (state.d3 ? exit3d() : enter3d());
+  $('back2d').onclick = exit3d;
   await load(sel.value);
+  if (p.get('view') === '3d') {
+    const cam = (p.get('cam') || '').split(',').map(Number);
+    await enter3d({ cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null,
+      fall: p.get('fall') != null ? +p.get('fall') : null, exag: +p.get('exag') || null, step: +p.get('detail') || null });
+  }
+}
+
+// ------------------------------------------------------------ the 3D view (zoom3d.js, PW-072)
+let V3 = null;
+const api3d = {
+  hoverPixel: (r, c) => hoverPx(r, c),
+  showCard: (o, ev, pin) => { if (!pinned || pin) showTip(o, ev, pin); },
+  hideCard: () => { if (!pinned) hideTip(); },
+  changed: () => syncURL(),
+  fps: (f) => { $('fps3d').textContent = `${Math.round(f)} fps`; },
+};
+async function enter3d(o = {}) {
+  if (!state.meta) return;
+  if (!V3) {
+    $('msg').textContent = 'loading the 3D view...';
+    try {
+      const mod = await import('./zoom3d.js');
+      V3 = new mod.Zoom3D($('view3d'), api3d);
+      window.zoom3d = V3;  // (for the console and headless benchmarks: zoom3d.bench())
+    } catch (e) { $('msg').textContent = 'could not load the 3D view: ' + e.message; return; }
+    $('msg').textContent = '';
+    const bind = (id, key, conv, fmtv) => {
+      const el = $(id), show = () => { if ($(id + 'V')) $(id + 'V').textContent = fmtv(V3.opts[key]); };
+      el.oninput = el.onchange = () => { V3.set(key, conv(el.type === 'checkbox' ? el.checked : el.value)); show(); syncURL(); };
+      el[el.type === 'checkbox' ? 'checked' : 'value'] = V3.opts[key]; show();
+    };
+    if (o.exag) V3.opts.exag = o.exag;
+    if ([1, 2, 4].includes(o.step)) V3.opts.step = o.step;
+    bind('exag', 'exag', Number, (v) => `${v}\u00d7`);
+    bind('step3d', 'step', Number, String);
+    bind('sunAz', 'sunAz', Number, (v) => `${v}\u00b0`);
+    bind('sunEl', 'sunEl', Number, (v) => `${v}\u00b0`);
+    bind('rw3d', 'widthMul', Number, (v) => `${v}\u00d7`);
+    bind('shadows3d', 'shadows', Boolean, String);
+    bind('facets3d', 'facets', Boolean, String);
+  }
+  state.d3 = true;
+  state.cam3d = o.cam || null;
+  document.body.classList.add('d3'); $('btn3d').classList.add('on');
+  hideTip();
+  V3.zoomId = null;  // (rebuild: the zoom may have changed while in 2D)
+  V3.start();
+  render();
+  if (o.fall != null) fly(o.fall);
+  syncURL();
+}
+function exit3d() {
+  state.d3 = false;
+  document.body.classList.remove('d3'); $('btn3d').classList.remove('on');
+  V3?.stop(); hideTip();
+  render(); syncURL();
+}
+// the falls, highest first (the order of stats.falls: ?fall=N is ?mark=fall:N in 2D)
+function fallList() {
+  const fs = state.marks.falls;
+  $('fallHead').textContent = `Waterfalls (${fs.length})`;
+  $('fallList').innerHTML = fs.length ? fs.map((f, k) => `<div data-k="${k}" title="fly there">${markIcon('fall')}<b>${fmt(f.height_m)} m</b>
+    &middot; ${fmt(f.discharge_m3s, f.discharge_m3s < 10 ? 1 : 0)} m&sup3;/s &middot; ${f.kind}${f.top ? ' &#9711;' : ''}</div>`).join('')
+    : 'none in this zoom';
+  for (const d of $('fallList').children) if (d.dataset.k) d.onclick = () => fly(+d.dataset.k);
+}
+function fly(k) {
+  const f = state.marks.falls[k];
+  if (!f) return;
+  V3.flyTo(k);
+  for (const d of $('fallList').children) d.classList.toggle('on', +d.dataset.k === k);
+  const r = $('p3d').getBoundingClientRect();
+  showTip(f, { clientX: r.left - 330, clientY: r.top - 16 }, true);
 }
 
 function syncURL() {
   const p = new URLSearchParams({ id: state.meta.id, layer: state.layer });
   if (state.season) p.set('season', state.season);
   if ($('clouds').checked) p.set('clouds', '1');
+  if (state.d3 && V3) {  // ?view=3d&exag=3&cam=x,y,z,tx,ty,tz (km), or &fall=N to fly to fall N
+    p.set('view', '3d');
+    if (V3.opts.exag !== 3) p.set('exag', V3.opts.exag);
+    if (V3.opts.step !== 1) p.set('detail', V3.opts.step);
+    if (V3.tiles.length) p.set('cam', V3.camState().join(','));
+  }
   history.replaceState(null, '', '?' + p);
 }
 
@@ -428,7 +552,36 @@ function legendFor(kind) {
     : kind === 'vegetation' ? (lg.vegetation?.types || []) : lg.rocks;
 }
 
+// the 2D map's colours of the active layer into state.off; in the 3D view also
+// handed to it, unshaded (flat ground's hillshade) and without the rivers (it
+// lights the ground itself and paints its own rivers)
 function render() {
+  if (!state.meta) return;
+  if (!state.d3) { renderLayer(); return; }
+  state.bare = true;
+  try { renderLayer(); } finally { state.bare = false; }
+  const m = state.meta, smooth = !CATEGORICAL.includes(state.layer);
+  V3.opts.rivers = $('rivers').checked;
+  if (V3.zoomId !== m.id) {
+    V3.zoomId = m.id;
+    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, colours: state.off, smooth }, state.cam3d);
+    state.cam3d = null;
+    fallList();
+  } else V3.setTexture(state.off, smooth);
+  const fl = $('falls').checked;
+  V3.labels.style.display = fl ? '' : 'none';
+  if (V3.pins) V3.pins.visible = fl;
+}
+const FLAT_SHADE = Math.sin(40 * Math.PI / 180);  // hillshade() of flat ground
+function shadeNow() {
+  if (!state.bare) return state.shade;
+  const n = state.meta.nx * state.meta.ny;
+  if (state.flat?.length !== n) state.flat = new Float32Array(n).fill(FLAT_SHADE);
+  return state.flat;
+}
+function riversNow() { return $('rivers').checked && !state.bare; }
+
+function renderLayer() {
   const m = state.meta, L = state.L;
   if (!m) return;
   for (const b of $('layerSeg').children) b.classList.toggle('on', b.dataset.v === state.layer);
@@ -451,8 +604,8 @@ function render() {
   if (k === 'satellite') { satellite(oc); markLegend(); draw(); return; }
   if (k === 'relief') { relief(oc); markLegend(); draw(); return; }
   const img = oc.createImageData(nx, ny), px = img.data;
-  const h = L.elevation, water = L.water, sh = state.shade, q = L.discharge, area = L.drainage_area;
-  const overlay = $('rivers').checked;
+  const h = L.elevation, water = L.water, sh = shadeNow(), q = L.discharge, area = L.drainage_area;
+  const overlay = riversNow();
   let lut = null, present = null;
   if (CATEGORICAL.includes(k)) {
     lut = {}; present = new Map();
@@ -552,8 +705,8 @@ function satellite(oc) {
   const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
   const src = state.sat[state.season] || state.sat[''];
   if (!src) { $('legend').innerHTML = '<span class="muted">this zoom has no satellite view: <code>planet satellite ' + m.id + '</code></span>'; return; }
-  const img = oc.createImageData(nx, ny), px = img.data, sh = state.shade, water = L.water, q = L.discharge, area = L.drainage_area;
-  const rivers = $('rivers').checked, minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
+  const img = oc.createImageData(nx, ny), px = img.data, sh = shadeNow(), water = L.water, q = L.discharge, area = L.drainage_area;
+  const rivers = riversNow(), minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
   const cl = $('clouds').checked && L.cloud_jul ? cloudAlpha() : null;
   for (let i = 0; i < n; i++) {
     const f = water[i] === 0 ? 0.35 + 0.85 * sh[i] : 0.9 + 0.15 * sh[i];
@@ -580,9 +733,9 @@ const LAND_DRY = [[0, [206, 188, 140]], [300, [196, 172, 124]], [900, [184, 154,
 const MAP_RIVER = [38, 92, 178], MARSH = [104, 128, 84], FLAT = [156, 150, 122], LAKE = [70, 130, 196];
 function relief(oc) {
   const m = state.meta, L = state.L, nx = m.nx, ny = m.ny, n = nx * ny;
-  const img = oc.createImageData(nx, ny), px = img.data, sh = state.shade, h = L.elevation, water = L.water;
+  const img = oc.createImageData(nx, ny), px = img.data, sh = shadeNow(), h = L.elevation, water = L.water;
   const q = L.discharge, area = L.drainage_area, P = L.precipitation, ice = L.ice, wl = L.wetland, tr = L.tide_range;
-  const rivers = $('rivers').checked, minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
+  const rivers = riversNow(), minArea = 500 * Math.max(m.res_km / 2, 1), wide = (2 / m.res_km) ** 2;
   let iced = false, marsh = false, flats = false;
   for (let i = 0; i < n; i++) {
     const s = sh[i], w = water[i];
@@ -693,8 +846,11 @@ function latlon(xkm, ykm) {
 function hover(ev) {
   if (!state.meta) return;
   const rc = pixelAt(ev);
-  if (!rc) { $('info').innerHTML = '<span class="muted">Hover the map.</span>'; return; }
-  const [r, c] = rc, m = state.meta, L = state.L, i = r * m.nx + c, lg = m.legend;
+  hoverPx(rc ? rc[0] : null, rc ? rc[1] : null);
+}
+function hoverPx(r, c) {
+  if (r == null) { $('info').innerHTML = '<span class="muted">Hover the map.</span>'; return; }
+  const m = state.meta, L = state.L, i = r * m.nx + c, lg = m.legend;
   const x = (c + 0.5 - m.nx / 2) * m.res_km, y = (m.ny / 2 - r - 0.5) * m.res_km;
   const [la, lo] = latlon(x, y);
   const name = (list, id) => (list.find((e) => e.id === id) || {}).name || id;
