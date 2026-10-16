@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-190, PW-203]
 refs: [planet/tectonics/earth.py, tests/test_invariants.py, planet/climate.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -21,6 +21,7 @@ After merging main (2026-10-15, with the vegetation feedbacks of PW-203 and main
 Real ice surfaces stop near 4 km (Antarctica) because a thick cap on a high range flows away to its sides and has too little snow at that height. Check whether ice_sheets limits ice thickness on high ground (precipitation falling off with height, flow to the margins; PW-190 land ice depth) and restore the -95 bound if it does.
 
 ## Updates
+- 2026-10-16: pw313 check on main 6392e18: fixed by PW-276. The -95 C bound is back in test_values_sane. Sweep L4 seeds 1-5 x 300 Myr: coldest land months -69/-80/-83/-61 C (seeds 1, 2, 4, 5) on 340-380 m caps over 5.2-6.8 km beds; thickest ice 4 km in basins. Seed 3's -114 C is sea-ice air in a deep icehouse (draft-sea-ice-air-unbounded), not a cap. Lean: done.
 - 2026-10-15: Status todo -> in-progress. Run-lane agent started (polar summers / Antarctica).
 - 2026-10-15: Merged inbox draft draft-ice-cold-high-peaks.md ("Coldest months near -95 C on 8+ km polar-ish peaks (bare or margin-thin ice) after PW-276", found by ice-fix).
   After PW-276 (ice surface from the margin's bed) and PW-277 (one ice-surface climate) the run's ice on high
