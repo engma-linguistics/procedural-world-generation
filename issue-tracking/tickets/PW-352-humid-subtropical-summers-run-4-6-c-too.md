@@ -1,4 +1,5 @@
 ---
+id: PW-352
 title: "Humid subtropical summers run 4-6 C too warm (SE China, SE USA, Pampas): any physical shower trigger then dries them"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: moisture-budget
 blocked_by: []
 relates: [PW-015, PW-305]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/proposals/moisture_transport.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ So the summers have to be right before the trigger can be made physical (proposa
 Try the summer's actual/potential evaporation as a proper surface energy split (Bowen ratio) before reaching for clouds.
 - [ ] SE China, SE USA, Pampas warmest month within ~2 C of NCEP, with dry interiors not warmer
 - [ ] re-run PW-015 step 3's trigger on top
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-humid-subtropics-summers-too-warm.md (found by moisture-budget).

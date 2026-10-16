@@ -1,4 +1,5 @@
 ---
+id: PW-353
 title: "Tibet's summer rain is a quarter of GPCC's (141 vs 531 mm/yr): the monsoon's vapour never climbs onto the plateau"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: moisture-budget
 blocked_by: []
 relates: [PW-015, PW-233]
 refs: [planet/climate.py, tools/moisture_budget.py, docs/review/moisture-budget-2026-10-16/earth_L6.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,3 +29,6 @@ What to try:
 - let part of the column's vapour cross blocked terrain (the vapour sits above the blocked layer, like PW-332's polar drift);
 - give the elevated heat source its share of the trigger (the plateau's air aloft is warmer than the latitude's).
 - [ ] Tibet Apr-Sep P within 2x of GPCC, with the Himalayan front and the Gobi not wetter
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-tibet-plateau-too-dry.md (found by moisture-budget).

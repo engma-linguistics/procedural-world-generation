@@ -1,5 +1,6 @@
 ---
-title: "earth_check and the scorecard should carry the moisture budget's headline numbers (basin E-P-R, poleward transport, rain efficiency)"
+id: PW-351
+title: earth_check and the scorecard should carry the moisture budget's headline numbers (basin E-P-R, poleward transport, rain efficiency)
 type: task
 status: todo
 parent: PW-013
@@ -10,6 +11,8 @@ found_by: moisture-budget
 blocked_by: []
 relates: [PW-015, PW-016]
 refs: [tools/moisture_budget.py, tools/earth_check.py, tools/scorecard.py, docs/proposals/moisture_transport.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Add a short block to earth_check's report and JSON, with the same keys in the sc
 
 Make it a call into moisture_budget.analyse (no second copy of the code). Mind earth_check's runtime: the probe takes ~5 s at L6.
 - [ ] earth_check prints the block; the scorecard stores it
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-earth-check-moisture-headlines.md (found by moisture-budget).

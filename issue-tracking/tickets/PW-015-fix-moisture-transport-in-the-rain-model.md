@@ -2,7 +2,7 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: todo
+status: needs-decision
 parent: PW-013
 subsystem: climate
 effort: l
@@ -32,6 +32,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Status todo -> needs-decision. Proposal ready for owner review: docs/proposals/moisture_transport.md (6 decisions with leans). Prototype on local branch pw015-prototype (tools/proto_pw015/): L6/L7 agree within ~2%, Koppen exact 32.7 -> 36%, Sahara 70 mm, Gobi 85, Australia 291; humid subtropics dry out (SE USA 294), wet tropics wetter.
 - 2026-10-16: Redesign proposed for owner review: docs/proposals/moisture_transport.md (physical-time conservative kernel, storm eddies, bulk sea evaporation, humid-column showers with an air-mass trigger, shallow heat lows; prototype numbers §4, steps with acceptance §8, decisions §9; prototype on local branch pw015-prototype).
 - 2026-10-16: Merged inbox draft draft-polar-storm-track-moisture-half.md ("High-latitude seas get half of GPCP's rain (50-70 deg, both hemispheres), and Antarctica's margins still ~half their snow: the storm tracks bring no moisture of their own", found by polar-bundle).
   After the polar bundle (PW-332's vapour wind and ice-surface lift), Earth L6 at dT 0 still has the high-latitude
