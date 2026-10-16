@@ -1209,11 +1209,28 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         oceanic, _ = ZK.gauss_interp(px, py, cx, cy, ok_c[:, None].astype(float), np.ones((len(sel), 1)), 0.35 * sp)
         oceanic = smoothstep(0.3, 0.7, np.nan_to_num(oceanic[:, 0]))
         wv = vf["province"] * oceanic * np.isfinite(vf["floor"])
-        # the vents' sea floor: the terrain lowered by as much as its coarse
-        # level stands above their floor (the coarse cells' share of the
-        # cones themselves), keeping its texture
-        ground = h - np.maximum(base - np.nan_to_num(vf["floor"], nan=-1e4), 0.0)
-        ground = np.where(wv > 0, (1 - wv) * h + wv * ground, h)
+        # the vents' sea floor: the terrain lowered by the coarse cells'
+        # share of the cones themselves (what they stand above the ground
+        # under them, averaged over each cell and interpolated as the coarse
+        # heights are), at most down to their floor, keeping its texture.
+        # Where the coarse ground stands higher than the floor plus that
+        # share (a plateau the vents built together, PW-310: an ice-capped
+        # hotspot ridge at 2-3 km over vents recorded on a -4 km floor), the
+        # rest is ground the cones stand on, not sea between them. (A cone
+        # keeps the run's summit height, so on such a plateau it stands less
+        # high above the ground, or is buried in it: its share is refitted
+        # to what stands above the lowered ground, a few times.)
+        above = np.maximum(base - np.nan_to_num(vf["floor"], nan=-1e4), 0.0)
+        ok_m = None
+        lower = np.zeros(npx)
+        for _ in range(4):
+            g_s = base - wv * lower  # (the ground under the cones, without its texture)
+            rel = vf["z"] - vf["z_floor"] - vf["z_abs"] * np.maximum(g_s - vf["z_floor"], 0.0)
+            m_cone, cnt = cell_means(np.where(np.isfinite(vf["z"]), np.maximum(rel, 0.0), 0.0))
+            ok_m = (cnt > 0.25 * full_px)[:, None].astype(float) if ok_m is None else ok_m
+            share, _ = ZK.gauss_interp(px, py, cx, cy, m_cone[:, None], ok_m, 0.5 * sp)
+            lower = np.minimum(above, np.nan_to_num(share[:, 0], nan=np.inf))
+        ground = np.where(wv > 0, h - wv * lower, h)
         # the cones on it (absolute near their summits, on the ground at their edges)
         cz = vf["z"] + (1 - vf["z_abs"]) * (ground - vf["z_floor"])
         # (a continental vent's lava plain lies flat on the smooth coarse
