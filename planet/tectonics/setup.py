@@ -17,6 +17,16 @@ from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth,
 from .plates import CMYR
 
 
+# Myr: the oldest floor of the starting ocean (mean age a third of it, 48 Myr). Measured, not derived: the
+# model's own ocean after its first 50 Myr (health --quick, 8 L6 seeds x 500 Myr, 2026-10-15) has a mean
+# floor depth of -4800 m, which this triangular start has; its own mean age is 49-52 Myr, a little older
+# for the same depth because its ages spread wider (depth is concave in age). Setup's plates can't give it:
+# their speeds are random draws the force balance replaces within ~15 Myr, and their boundaries a random
+# partition, not a ridge system (PW-293; was 180, mean 60 Myr, Earth's ~64, which set sea level 0 ~200 m of
+# floor deeper than the model keeps, so its sea sat ~+140 m).
+OCEAN_MAX_AGE = 144.0
+
+
 def initial_state(sim):
     """Fill sim.plates (and sim.owner) with the starting plates and crust."""
     g, p, pl = sim.grid, sim.params, sim.plates
@@ -71,13 +81,19 @@ def initial_state(sim):
     old_mtn = 900 * ridged(Perlin3D(int(rng.integers(2**31))), x, octaves=5, freq=2.5) * cont
     # Ocean floor ages as a steadily spreading ocean has them (patchy, as
     # smooth noise ranked): floor is made at a steady rate and subducted at
-    # any age up to ~180 Myr, so the share of floor of age a falls off
-    # linearly, p(a) ~ 1 - a/180, mean 60 Myr (Earth's ~64). An ocean
+    # any age up to OCEAN_MAX_AGE, so the share of floor of age a falls off
+    # linearly, p(a) ~ 1 - a/OCEAN_MAX_AGE, mean OCEAN_MAX_AGE / 3. An ocean
     # starting far from this would renew itself in the first ~100 Myr and
-    # move the sea by hundreds of m (PW-053).
+    # move the sea by hundreds of m (PW-053). The starting floor is also sea
+    # level 0 (earth.global_temperature), so it is the model's own steady
+    # ocean (PW-293), and ranked over the ocean's cells only, so every seed
+    # starts at the same mean depth (ranked over all cells, the continent
+    # took a patchy share and the start's mean age ran 55-65 Myr by seed).
     nz_age = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=3, freq=1.0)
-    q = (np.argsort(np.argsort(nz_age, kind="stable"), kind="stable") + 0.5) / n
-    age = 180.0 * (1 - np.sqrt(q))
+    sea = np.flatnonzero(~cont)
+    q = (np.argsort(np.argsort(nz_age[sea], kind="stable"), kind="stable") + 0.5) / len(sea)
+    age = np.zeros(n)
+    age[sea] = OCEAN_MAX_AGE * (1 - np.sqrt(q))
     elev = np.where(cont, base + old_mtn, ocean_depth(age))
     thick = np.where(cont, np.maximum(CONT_KM + (elev - 250) / ISO_LAND, BECOMES_CONT_KM + 1), OCEAN_KM)
     # What the planet's unsimulated early history leaves behind: ancient
