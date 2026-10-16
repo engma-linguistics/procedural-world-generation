@@ -305,8 +305,10 @@ const R_EARTH = 6371000;
 const CMYR = 637.1;  // rad/Myr on the unit sphere -> cm/yr
 
 // ------------------------------------------------------------ three setup
-// Diagnostic switches for the flicker hunt (PW-415), all off by default: ?logdepth=1
-// (logarithmic depth buffer), ?noaa=1 (no MSAA), ?pdb=1 (preserveDrawingBuffer: Chrome then
+// MSAA is off by default: on the owner's Chrome (Linux, NVIDIA, ANGLE on OpenGL) it made rivers
+// and marks shimmer while the view sat still, and ?noaa=1 alone cured it (PW-415; Firefox never
+// shimmered). ?aa=1 turns it back on. Other diagnostic switches, all off by default: ?logdepth=1
+// (logarithmic depth buffer), ?pdb=1 (preserveDrawingBuffer: Chrome then
 // copies the frame instead of swapping buffers), ?dpr=1 (pixel ratio), ?nodamp=1 (no orbit
 // damping), ?fixclip=1 (the old fixed near 0.01 / far 100), ?offset=1 (polygon offset pushes
 // the ground back), ?always=1 (draw every frame even when nothing changed), ?dbg=1 (a corner
@@ -314,7 +316,7 @@ const CMYR = 637.1;  // rad/Myr on the unit sphere -> cm/yr
 // backdrop blur back), ?rehover=1 (rewrite the info box on every mouse move, as before).
 const DIAG = (() => {
   const p = new URLSearchParams(location.search), on = (k) => p.get(k) === '1';
-  return { logdepth: on('logdepth'), noaa: on('noaa'), pdb: on('pdb'), dpr: p.has('dpr') ? +p.get('dpr') : 0, nodamp: on('nodamp'),
+  return { logdepth: on('logdepth'), noaa: !on('aa'), pdb: on('pdb'), dpr: p.has('dpr') ? +p.get('dpr') : 0, nodamp: on('nodamp'),
            fixclip: on('fixclip'), offset: on('offset'), always: on('always'), dbg: on('dbg'), blur: on('blur'), rehover: on('rehover'),
            n: { frames: 0, renders: 0, cam: 0, clip: 0, paints: 0, overlays: 0, uploads: 0, info: 0 } };
 })();
@@ -3580,7 +3582,7 @@ function dbgReadout(now) {
     DIAG.gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
   }
   const rate = (k) => dbgN ? ((n[k] - dbgN[k]) / dt).toFixed(0) : '-';
-  const flags = ['logdepth', 'noaa', 'pdb', 'nodamp', 'fixclip', 'offset', 'always', 'blur', 'rehover'].filter((k) => DIAG[k]).join(' ') + (DIAG.dpr ? ` dpr=${DIAG.dpr}` : '');
+  const flags = ['logdepth', 'pdb', 'nodamp', 'fixclip', 'offset', 'always', 'blur', 'rehover'].filter((k) => DIAG[k]).join(' ') + (DIAG.noaa ? '' : ' aa') + (DIAG.dpr ? ` dpr=${DIAG.dpr}` : '');
   const cv = renderer.domElement;
   dbgEl.textContent = `${DIAG.gpu}\n${gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl1'} depth ${gl.getParameter(gl.DEPTH_BITS)} bits, samples ${gl.getParameter(gl.SAMPLES)}, ` +
     `canvas ${cv.width}x${cv.height} css ${cv.clientWidth}x${cv.clientHeight} dpr ${devicePixelRatio}\n` +

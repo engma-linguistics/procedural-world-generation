@@ -31,6 +31,7 @@ console. `renderer` isn't global; `planetViewer` could expose it.
       Plate outlines are ~1 M segments, so check `planetViewer.bench()`.
 
 ## Updates
+- 2026-10-16: Owner test in Chrome (2026-10-16 night; ANGLE on OpenGL, NVIDIA RTX PRO 6000, 24-bit depth, 4 MSAA samples, dpr 1): ?noaa=1 alone cures the flicker; always/rehover/pdb don't matter. The flicker runs while the readout shows cam and renders at 60/s (the orbit-damping tail, 4-11 s after the globe stops) and stops at 0 renders. Light-blue rivers and the satellite view don't show it. The render-on-change default (890efce) shortens it but doesn't cure it. MSAA is now off by default (?aa=1 turns it back on). Awaiting the owner's look at line quality without MSAA.
 - 2026-10-16: pw415 branch: three default changes and a set of URL switches for the owner's Chrome.
   Measured headless (SwiftShader, so the flicker itself can't show there): at rest nothing in the
   scene changes from frame to frame (camera, near/far, geometry, materials all fixed), yet the old
