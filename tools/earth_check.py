@@ -364,6 +364,18 @@ def analyse(grid, d, c) -> dict:
         "gpcc": dict(mean=wmean(d["obs_precip"], w, mp), **dict(zip(["p10", "median", "p90"], wquant(d["obs_precip"], w, mp, qs)))),
         "model_all_land_excl_ant_mean": wmean(c["precip"], w, land & ~ant),
     }
+    # (as the scorecard has it: cell by cell, log(P + 10 mm))
+    ok = mp & (d["obs_precip"] > 0)
+    R["log_rain_corr"] = float(np.corrcoef(np.log(c["precip"][ok] + 10), np.log(d["obs_precip"][ok] + 10))[0, 1])
+    # rain's cell-to-cell patchiness on flat ground (PW-019): median ratio of the wetter to the drier
+    # of two neighbouring ice-free land cells, both below 500 m and within 100 m of each other
+    ea, eb = grid.edges[:, 0], grid.edges[:, 1]
+    el = d["elev"].astype(np.float64)
+    both = land[ea] & land[eb] & ~ant[ea] & (d["ice"][ea] <= 0) & (d["ice"][eb] <= 0)
+    flat = both & (el[ea] < 500) & (el[eb] < 500) & (np.abs(el[ea] - el[eb]) < 100)
+    pa, pb = np.maximum(c["precip"][ea], 1.0), np.maximum(c["precip"][eb], 1.0)
+    ratio = np.maximum(pa, pb) / np.minimum(pa, pb)
+    R["rain_nbr_ratio"] = dict(flat=float(np.median(ratio[flat])), land=float(np.median(ratio[both])))
     R["global_means"] = {
         "P_model": wmean(c["precip"], w, np.ones_like(land)),
         "P_gpcp": wmean(d["obs_gpcp"], w, np.ones_like(land)),
@@ -683,6 +695,9 @@ def report(R, times, level):
     for lab in ("model", "gpcc"):
         v = lp[lab]
         p(f"{lab:8}{v['mean']:7.0f}{v['p10']:7.0f}{v['median']:8.0f}{v['p90']:7.0f}")
+    p(f"log-rain correlation with GPCC, cell by cell (log(P + 10)): {R['log_rain_corr']:.3f}; neighbouring "
+      f"cells' rain ratio (median, wetter / drier): flat lowland {R['rain_nbr_ratio']['flat']:.3f}, all land "
+      f"{R['rain_nbr_ratio']['land']:.3f} (PW-019)")
     g = R["global_means"]
     ss = R["summer_rain_share_land"]
     p(f"global mean P: model {g['P_model']:.0f}, GPCP {g['P_gpcp']:.0f} mm/yr;  "

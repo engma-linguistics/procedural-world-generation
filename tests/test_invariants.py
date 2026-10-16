@@ -173,11 +173,17 @@ def test_no_icosphere_seams():
         gm = np.linalg.norm(climate.gradient(g, s), axis=1)
         rough.append((gm - climate._smooth(gm, g.nbr_off, g.nbr_idx, G["sk"], 30)).std() / gm.mean())
     assert max(rough[1:]) < 1.3 * rough[0], rough  # (a plain neighbour average: ~3x)
-    w = climate.inflow_weights(g, G["east"] + 0.5 * G["north"])
-    inflow = np.bincount(G["dst"][G["in_e"]], w, g.n)
-    # (near the equator this wind blows nearly the same way everywhere; further poleward east and north
-    # turn, a real convergence; the plain shares of the outflow are up to ~25% off)
-    assert np.abs(inflow - 1)[np.abs(g.lat) < 30].max() < 0.02
+    # the rain's finite-volume transport (PW-015): a wind blowing the same way everywhere carries
+    # evenly spread vapour through, piling up none along the seams. (Near the equator this wind blows
+    # nearly the same way everywhere; further poleward east and north turn, a real convergence: at
+    # 30 deg ~0.6% of the vapour crossing a cell.)
+    v = G["east"] + 0.5 * G["north"]
+    un, kd = climate.face_winds(g, [dict(v=v, B=np.zeros(g.n))], dict(eddy=0.0))
+    c_self, c_in, nbr, dt = climate._transport(g, un, 0.0 * kd)
+    F = climate._faces(g)
+    gain = c_self[0] + np.add.reduceat(c_in[:, 0], F["off"][:-1]) - 1.0  # what a step does to q = 1
+    cross = dt * climate.U_REF * np.linalg.norm(v, axis=1) / (G["h"] * 1000.0)  # share crossing a cell
+    assert np.abs(gain / cross)[np.abs(g.lat) < 30].max() < 0.02
 
 
 def test_gyres_and_jet():
