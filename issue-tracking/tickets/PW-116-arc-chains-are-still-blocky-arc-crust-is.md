@@ -33,6 +33,7 @@ What to try:
 - [ ] Re-check the shelf case: a line of volcanic islands and peaks along the arc, not blocks.
 
 ## Updates
+- 2026-10-16: Done: a cone every ~60 km between neighbouring active arc volcanoes, seated on the ground taking their volume off nearby land (arc zoom 109 -> 166 cones; drops unchanged).
 - 2026-10-16: Status in-progress -> done. Done: a cone every ~60 km between neighbouring active arc volcanoes, seated on the ground taking their volume off nearby land (arc zoom 109 -> 166 cones; drops unchanged). Shelf arc-crust blocks: new ticket.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-14: Created from inbox draft draft-arc-volcano-density.md (found by volcanoes).

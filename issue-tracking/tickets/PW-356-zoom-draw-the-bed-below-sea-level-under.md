@@ -30,6 +30,7 @@ layer from calling those pixels sea; then drop `zoom_world`.
 - [ ] `zoom_world` removed
 
 ## Updates
+- 2026-10-16: Done (8c66ff0): zoom bed under glaciers sinks to the world's true bed, ice thickens by as much (marine sheet bed +15 -> -452 m vs cell mean -476).
 - 2026-10-16: Status in-progress -> done. Done (8c66ff0): zoom bed under glaciers sinks to the world's true bed, ice thickens by as much (marine sheet bed +15 -> -452 m vs cell mean -476).
 - 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-sub-sea-bed-under-ice.md (found by pw307-world-land).
