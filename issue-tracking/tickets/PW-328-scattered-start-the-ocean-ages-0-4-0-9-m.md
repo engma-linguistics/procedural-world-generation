@@ -1,4 +1,5 @@
 ---
+id: PW-328
 title: "Scattered start: the ocean ages ~0.4-0.9 Myr per Myr in the first 100 Myr, sea falls 150-300 m"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw293
 blocked_by: []
 relates: [PW-293, PW-051, PW-191]
 refs: [planet/tectonics/setup.py, planet/tectonics/events.py, docs/review/audit/pw293-sea-level.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -22,3 +25,6 @@ every plate, so plates collide instead of spreading until sutures and rifts reor
 new floor. Check whether it settles by ~150 Myr (owner's standard: a convenient start that settles into
 realistic behaviour by 50-100 Myr) on a few L6 seeds at 500 Myr; if not, look at where setup's scattered
 continents sit relative to plate boundaries.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-scattered-start-ocean-ages.md (found by pw293).

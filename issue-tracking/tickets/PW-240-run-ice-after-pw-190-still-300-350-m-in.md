@@ -10,7 +10,7 @@ impact: med
 found_by: icemb
 blocked_by: []
 relates: [PW-190, PW-235]
-refs: [planet/icemass.py, planet/tectonics/earth.py, docs/review/health/2026-10-15/report.md, tools/health.py]
+refs: [planet/icemass.py, planet/tectonics/earth.py, docs/review/health/2026-10-15/report.md, tools/health.py, docs/review/audit/pw293-sea-level.md, docs/review/health-pw293-after/report.md]
 created: 2026-10-15
 updated: 2026-10-15
 ---
@@ -45,6 +45,15 @@ Options:
 Lean: C (smaller drift sd, ~2 C) plus B once Earth's inception has its own fix.
 
 ## Updates
+- 2026-10-15: Merged inbox draft draft-icehouse-sea-below-envelope.md ("Seed 11's 180-232 Myr icehouse: total sea level now -370 m (ice -264, basins ~-100) since the +140 m basin offset went (PW-293)", found by pw293).
+  health --quick after PW-293 (L6 seed 11, 500 Myr): the 180-232 Myr cold era (global 3.5-5 C) reaches a total
+  sea level of -370 m at 188 Myr, ice -264 m and the ocean basins ~-105 m (an old ocean during assembly); 14
+  keyframes below -200 m total or -150 m from ice, 2 sea_level spells below the health envelope's -250 m. It
+  is the same era PW-308's 1 Gyr sweep showed at -322 m of ice, so the ice depth is not new; what is new is that
+  the basins no longer add the old reference's +140 m, so the total shows it. The ice part is PW-308's /
+  PW-240's question (Earth's LGM ~-120 m; PW-240's goal -150 typical / -250 worst). Decide whether a -260 m
+  ice era at 3.5 C global is acceptable (the planet is ~11 C colder than today, colder than the LGM) or the run's
+  ice is still too deep at that temperature. No change suggested to the basin term.
 - 2026-10-15: Status todo -> done. Post-audit 1 Gyr sweep (docs/review/after-audit-2026-10-15/health): deepest ice sea level -9..-48 m on all 11 seeds (was -96..-384); no frames below -150 m. Too-deep cold eras are fixed; the opposite problem (runs barely glaciate) is a new ticket.
 - 2026-10-15: After all audit fixes (climate merge 7f9cc82, measured by the climate agent on the merged code): health --quick deepest ice sea level s11 -71, s42 -15, s3199 -12 m; no frames below -150 m. Confirm in the post-batch 1 Gyr sweep.
 - 2026-10-15: Ice fixes (PW-274..277, merged 20684ed): health --quick worst ice sea level s11 -360 -> -247, s42 -304 -> -124, s2 -174 -> -115 m; only s11 below -150 m (8.7% of frames). Climate fixes pending merge also move it.
