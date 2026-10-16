@@ -70,3 +70,62 @@ def test_zoom_sea_floor_shoals_to_the_shore_and_keeps_the_cell_means(low_coast):
     b, b0 = (z["stats"]["cell_mean_bias_m"] for z in low_coast)
     r, r0 = (z["stats"]["cell_mean_rms_error_m"] for z in low_coast)
     assert abs(b - b0) < 5 and r < r0 + 10, (b, b0, r, r0)
+
+
+def _reef_coast(shelf_km):
+    """A tropical carbonate coast (test_coastal's) whose shelf at 25 m is shelf_km wide."""
+    from test_coastal import CENTRE, _dist_km
+    from planet import surface as SF
+    from planet import world as W
+    from planet.grid import build_grid
+    g = build_grid(5)
+    d = _dist_km(g, *CENTRE)
+    elev = np.where(d < 1500, 4 + 0.6 * np.maximum(1500 - d, 0), np.where(d < 1500 + shelf_km, -25.0, -4000.0))
+    land = elev > 0
+    extra = {"rock": np.full(g.n, 3), "surface_rock": np.where(land, 8, SF.LIMESTONE),
+             "sediment_cover": np.where(land, 1.0, 2.0)}
+    return W.finish(g, elev, extra, {"method": "test", "seed": 0, "level": 5}, erosion=0.0)
+
+
+def _reef_zoom(w):
+    from test_coastal import CENTRE
+    return zoom.build(w, CENTRE[0], CENTRE[1] + 1500 / 111.0, size_km=400, res_km=2, iterations=4,
+                      log=lambda *a: None)
+
+
+@pytest.fixture(scope="module")
+def reef_coasts():
+    narrow, wide = _reef_coast(30.0), _reef_coast(150.0)
+    real = ZCL.place
+
+    def flat(*a, **k):  # (the same reefs, not raised: for the cell means)
+        r = real(*a, **k)
+        r["reef_top"] = np.full_like(r["reef_top"], np.nan)
+        return r
+
+    try:
+        ZCL.place = flat
+        wide0 = _reef_zoom(wide)
+    finally:
+        ZCL.place = real
+    return _reef_zoom(narrow), _reef_zoom(wide), wide0
+
+
+def test_reefs_are_terrain_fringing_or_barrier(reef_coasts):
+    """PW-326: reef pixels stand at a reef flat 1-3 m below the sea; a
+    narrow shelf has a fringing reef along its shore, a wide one a barrier
+    reef along its outer edge with the shelf behind it (the lagoon) a
+    little deeper; each cell keeps its mean."""
+    narrow, wide, wide0 = reef_coasts
+    for z in (narrow, wide):
+        L = z["layers"]
+        reef = L["coastal_life"] == ZCL.REEF
+        assert reef.any() and np.all(L["elevation"][reef] >= -3.0 - 1e-6) and np.all(L["elevation"][reef] <= -0.5)
+    fn, fw = narrow["stats"]["reef_forms"], wide["stats"]["reef_forms"]
+    assert fn["fringing"] > 500 and fn["barrier"] == 0, fn
+    assert fw["barrier"] > 300, fw
+    sea, reef = (wide["layers"]["water"] == 1), (wide["layers"]["coastal_life"] == ZCL.REEF)
+    lagoon = sea & ~reef & (wide0["layers"]["elevation"] > -40)
+    assert np.median(wide["layers"]["elevation"][lagoon]) < np.median(wide0["layers"]["elevation"][lagoon]) - 2
+    assert abs(wide["stats"]["cell_mean_bias_m"] - wide0["stats"]["cell_mean_bias_m"]) < 2
+    assert abs(wide["stats"]["cell_mean_rms_error_m"] - wide0["stats"]["cell_mean_rms_error_m"]) < 5

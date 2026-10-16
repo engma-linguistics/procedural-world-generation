@@ -2679,6 +2679,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- coastal and shallow-sea life (zoom_coastal, PW-188); names mangrove and salt-marsh pixels
     cz = ZCL.place(world, fr, Pk, px, py, nx, ny, res, size_km, seed, h, water, glacier, d_sea, surf_f,
                    vf["reef"] if vf is not None else None)
+    if np.isfinite(cz["reef_top"]).any():  # reefs as terrain (PW-326): each cell's mean kept on the shelf around (lagoons)
+        on_r = np.isfinite(cz["reef_top"])
+        h_r = np.where(on_r, np.maximum(h, np.nan_to_num(cz["reef_top"], nan=-1e9)), h)
+        h = keep_means(h_r, h, sea, np.where(cz["shelf"], 1.0, 0.1) * (sea & ~on_r))
+        h = np.where(sea, np.minimum(h, -0.5), h)
     veg_l["vegetation"] = ZCL.name_vegetation(cz["layer"], veg_l["vegetation"])
     biome = vegetation.biome_of(veg_l["vegetation"], biome).astype(np.uint8)
     # wetlands: 1 a coastal plain's marsh, 2 the vegetation's (floodplains, mires, lake shores: PW-178)
@@ -2718,6 +2723,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "vegetation": vz["stats"],
         # coastal and shallow-sea life (zoom_coastal): km^2 of each habitat
         "coastal_life": cz["stats"],
+        # reefs as terrain (zoom_coastal, PW-326): km^2 of fringing, barrier and patch reef flats
+        "reef_forms": cz.get("reef_forms", {}),
         "lake_pct": round(100 * lake.mean(), 2),
         # (the cells with pixels in the region; of them, coarse river cells)
         "coarse_cells": int(len(np.unique(own))),
