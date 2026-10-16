@@ -26,6 +26,19 @@ mud and the light's attenuation Kd), and the place's part, from the pixel:
               the pixel's mean, as the globe's cells), sheltered and
               muddy (coastal.intertidal_habitat), warm enough for mangroves,
               else salt marsh (the climate's part).
+The shoreface (shoreface(), PW-327, applied by zoom.build before the habitats):
+  the sea floor off a sandy or muddy shore shoals to the coast along Dean's
+  equilibrium profile h = A x^(2/3) (A = DEAN_A, fine sand) down to the
+  closure depth (Houston 1995: ~6.75 x the mean significant wave height,
+  from the pixel's wave power), then the inner shelf at SHELF_GRAD, until it
+  meets the floor interpolated from the coarse cells; a rocky shore (land
+  rising fast, or hard rock) keeps its deep water close in.
+Reefs as terrain (PW-326): the reef pixels' floor is raised to a reef flat
+  REEF_CREST_M below the sea (zoom.build keeps the cell means by deepening
+  the rest of the shelf: the lagoons): patch reefs as above, plus a
+  fringing reef along the shore of a shelf narrower than BARRIER_SHELF_KM
+  (shore to the reefs' light depth) and a barrier reef along the outer edge
+  of a wider one, each REEF_BAND_KM wide, broken by passes.
 Each pixel is one habitat or none (layer `coastal_life`, LIFE): patches
 from planet-fixed noise, so a pixel holds a habitat with the probability
 its suitability gives (overlapping zooms agree). Mangrove and salt-marsh
@@ -58,7 +71,21 @@ NEEDS = ("sst", "sst_jul", "sst_jan", "salinity", "wave_power", "tide_range", "w
 SEA_FIELDS = {"reef", "kelp_water", "seagrass_water", "mud", "kd", "tide_range", "wave_power"}
 
 
-def _window_max(a: np.ndarray, r: int) -> np.ndarray:
+REEF_CREST_M = (1.0, 3.0)  # m: a reef's flat top lies this far below the sea (the run's reefs build to -5 m; the crest higher)
+REEF_BAND_KM = 1.0  # km: fringing and barrier reefs this wide (at least a pixel)
+BARRIER_SHELF_KM = 15.0  # km: a shelf this wide (shore to the reefs' light depth) has a barrier reef at its edge
+REEF_PASS_KM = 8.0  # km: the reef bands' gaps (passes) come in patches this big ...
+REEF_BAND_COVER = 0.85  # ... the bands covering this share of a fully suitable coast
+REEF_BUDGET_KM = 20.0  # km: the bands' share of the shelf within this is taken off the patch reefs'
+DEAN_A = 0.1  # m^(1/3): Dean's (1991) profile scale for fine sand (~0.2 mm): 10 m at 1 km, 21 m at 3 km
+CLOSURE_HS = 6.75  # the closure depth over the mean annual significant wave height (Houston 1995)
+CLOSURE_M = (3.0, 25.0)  # m: ... within these
+WAVE_T = 8.0  # s: the waves' period, for their height from the power (deep water: P = rho g^2 H^2 T / 64 pi)
+SHELF_GRAD = 1.5  # m/km: the inner shelf beyond the closure depth (~1:700) ...
+SHELF_KM = 6.0  # km: ... fading into the coarse cells' floor over this far beyond it
+
+
+def window_max(a: np.ndarray, r: int) -> np.ndarray:
     """Max over a (2r+1)^2 square around each pixel (2-D a; the edges see only what's inside)."""
     out = a.copy()
     for axis in (0, 1):
@@ -97,7 +124,8 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     g, L, meta = world["grid"], world["layers"], world["meta"]
     npx = nx * ny
     if not all(k in L for k in NEEDS):  # (a world without the sea's layers: hand-made in tests)
-        return {"layer": np.zeros(npx, np.uint8), "stats": {LIFE[k][0]: 0 for k in LIFE if k}}
+        return {"layer": np.zeros(npx, np.uint8), "stats": {LIFE[k][0]: 0 for k in LIFE if k},
+                "reef_top": np.full(npx, np.nan), "shelf": np.zeros(npx, bool), "reef_forms": {}}
     pf = (meta.get("vegetation") or {}).get("pfts")
     unlocked = None if pf is None else np.array([c in pf for c in V.CODES])
     env = CL.environment(g, L, meta, unlocked)
@@ -117,21 +145,50 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     # a rocky shore: land rising ROCK_RISE within ROCK_KM, or hard rock at the shore, not muddy
     r = max(1, int(round(ROCK_KM / res)))
     hl = np.where(water == 0, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
-    rise = _window_max(hl, r).ravel()
+    rise = window_max(hl, r).ravel()
     rocky = CL.ramp(rise, *ROCK_RISE)
     if surface_rock is not None:
         hard = (np.isin(surface_rock, CL.HARD_ROCKS) & (water == 0)).reshape(ny, nx).astype(float)
-        rocky = np.maximum(rocky, CL.HARD_ROCK * _window_max(hard, r).ravel())
+        rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())
     rocky *= 1 - f["mud"]
     out = np.zeros(npx, np.uint8)
     S = int(seed) * 1_000_003 + 17 + 5_003
     u = {k: _uniform(Pk, km, res, S + 101 * k) for k, km in PATCH_KM.items()}
     # the sea floor: reefs, then kelp, then seagrass
     z_reef = np.minimum(CL.light_depth(kd, CL.REEF_LIGHT), CL.REEF_MAX_M)
-    reef = sea & (depth <= z_reef) & (u[REEF] < CL.REEF_SHARE * f["reef"])
+    shelf = sea & (depth <= z_reef)
+    # reefs as terrain (PW-326): along the shelf's own geometry, a fringing
+    # reef along the shore of a narrow shelf, a barrier reef along the outer
+    # edge of a wide one (the lagoon behind it), patch reefs in between: as
+    # many fewer as the bands take of the shelf around (REEF_BUDGET_KM), so the
+    # reefs keep the world's share
+    x_shore = np.maximum(ZK.inside_distance(sea, nx, ny, False) - 0.5, 0.0) * res
+    d_deep = ZK.inside_distance(~(sea & ~shelf), nx, ny, False) * res
+    band = max(REEF_BAND_KM, res)
+    wide = x_shore + d_deep >= BARRIER_SHELF_KM
+    u_band = _uniform(Pk, REEF_PASS_KM, res, S + 707)
+    # (a band a pixel wide on pixels coarser than it: as many of them as its area fills)
+    ok = shelf & (u_band < REEF_BAND_COVER * f["reef"] * min(1.0, REEF_BAND_KM / res))
+    fringing = ok & ~wide & (x_shore <= band)
+    barrier = ok & wide & (d_deep <= band) & (x_shore > 2 * band)
+    r_b = max(1, int(round(REEF_BUDGET_KM / res)))
+    taken = _box_mean((fringing | barrier).reshape(ny, nx).astype(float), shelf.reshape(ny, nx).astype(float),
+                      r_b).ravel()
+    patch = shelf & ~fringing & ~barrier & (u[REEF] < CL.REEF_SHARE * f["reef"] - taken)
+    reef = patch | fringing | barrier
+    volc = np.zeros(npx, bool)
     if volcano_reef is not None:
-        reef |= sea & volcano_reef & (depth <= CL.REEF_MAX_M)
+        volc = sea & volcano_reef & (depth <= CL.REEF_MAX_M)
+        reef |= volc
     out[reef] = REEF
+    # their tops: a reef flat REEF_CREST_M below the sea (the volcanoes' reefs are their own terrain)
+    top = reef & ~volc
+    crest = REEF_CREST_M[0] + (REEF_CREST_M[1] - REEF_CREST_M[0]) * _uniform(Pk, 2.0 * res, res, S + 709)
+    reef_top = np.where(top, -np.minimum(crest, depth), np.nan)
+    cell_ = res * res
+    forms = {"fringing": round(float((fringing & ~volc).sum() * cell_)),
+             "barrier": round(float((barrier & ~volc).sum() * cell_)),
+             "patch": round(float((patch & ~fringing & ~barrier & ~volc).sum() * cell_))}
     z_kelp = np.minimum(CL.light_depth(kd, CL.KELP_LIGHT), CL.KELP_MAX_M)
     kelp = sea & (out == 0) & (depth <= z_kelp) & (u[KELP] < f["kelp_water"] * rocky)
     out[kelp] = KELP
@@ -155,7 +212,73 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     out[land & (um >= pm) & (um < pm + ps)] = SALT_MARSH
     cell = res * res
     stats = {LIFE[k][0]: round(float((out == k).sum() * cell)) for k in LIFE if k}
-    return {"layer": out, "stats": stats}
+    return {"layer": out, "stats": stats, "reef_top": reef_top, "shelf": shelf, "reef_forms": forms}
+
+
+def rocky_shore(h: np.ndarray, land: np.ndarray, surface_rock: np.ndarray | None, nx: int, ny: int,
+                res: float) -> np.ndarray:
+    """0..1 per pixel: a rocky shore nearby (within ROCK_KM): land rising
+    ROCK_RISE m, or hard rock (coastal.HARD_ROCKS) at the shore."""
+    r = max(1, int(round(ROCK_KM / res)))
+    hl = np.where(land, np.maximum(h, 0.0), 0.0).reshape(ny, nx)
+    rocky = CL.ramp(window_max(hl, r).ravel(), *ROCK_RISE)
+    if surface_rock is not None:
+        hard = (np.isin(surface_rock, CL.HARD_ROCKS) & land).reshape(ny, nx).astype(float)
+        rocky = np.maximum(rocky, CL.HARD_ROCK * window_max(hard, r).ravel())
+    return rocky
+
+
+def closure(wave_kw_m: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The shoreface's closure depth (m: CLOSURE_HS x the waves' mean
+    significant height, from their power) and its distance off the shore
+    on Dean's profile (km)."""
+    hs = np.sqrt(64 * np.pi * 1000.0 * np.maximum(wave_kw_m, 0.0) / (1025.0 * 9.81**2 * WAVE_T))
+    hc = np.clip(CLOSURE_HS * hs, *CLOSURE_M)
+    return hc, (hc / DEAN_A) ** 1.5 / 1000.0
+
+
+def shoreface_depth(x_km: np.ndarray, wave_kw_m: np.ndarray) -> np.ndarray:
+    """m: the equilibrium sea floor's depth x_km off the shore: Dean's
+    profile A x^(2/3) down to the closure depth, the inner shelf beyond it."""
+    hc, xc = closure(wave_kw_m)
+    x = np.maximum(x_km, 0.0)
+    return np.where(x <= xc, DEAN_A * (1000.0 * x) ** (2 / 3), hc + SHELF_GRAD * (x - xc))
+
+
+def _box_mean(a: np.ndarray, w: np.ndarray, r: int) -> np.ndarray:
+    """Weighted mean of a over (2r+1)^2 windows (2-D a, w)."""
+    def box(v):
+        c = np.cumsum(np.pad(v, ((r + 1, r), (0, 0)), mode="edge"), 0)
+        v = c[2 * r + 1:] - c[:-2 * r - 1]
+        c = np.cumsum(np.pad(v, ((0, 0), (r + 1, r)), mode="edge"), 1)
+        return c[:, 2 * r + 1:] - c[:, :-2 * r - 1]
+    return box(a) / np.maximum(box(w), 1e-9)
+
+
+def shoreface(h: np.ndarray, sea: np.ndarray, rocky: np.ndarray, wave_kw_m: np.ndarray, nx: int, ny: int,
+              res: float, keep: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """The sea floor h with a shoreface (PW-327): no deeper than
+    shoreface_depth() at the pixel's distance from the shore (the shore
+    halfway to the nearest land pixel), out to the closure depth's distance,
+    then fading into the floor h (the coarse cells': their shelves and
+    slopes) over SHELF_KM; by 1 - the rockiness of the shore around (rocky
+    on its land pixels, averaged along the coast: a cliffed coast keeps its
+    deep water close in), and not where keep (0..1) holds the floor (the
+    volcanoes' reefs and lagoons). Returns (h, reach: 0..1, the shoreface's
+    extent, where the caller shouldn't put the cells' means back)."""
+    x = np.maximum(ZK.inside_distance(sea, nx, ny, False) - 0.5, 0.25) * res
+    z = np.minimum(-shoreface_depth(x, wave_kw_m), -0.5)
+    _, xc = closure(wave_kw_m)
+    span = max(SHELF_KM, 2 * res)
+    t = np.clip(1 - (x - xc) / span, 0.0, 1.0)
+    reach = t * t * (3 - 2 * t)
+    s2 = sea.reshape(ny, nx)
+    sp = np.pad(s2, 1)
+    coast = ~s2 & (sp[:-2, 1:-1] | sp[2:, 1:-1] | sp[1:-1, :-2] | sp[1:-1, 2:])
+    r = int(np.ceil((float(np.max(xc, initial=0.0)) + span) / res)) + 1
+    rk = _box_mean(np.where(coast, rocky.reshape(ny, nx), 0.0), coast.astype(float), r).ravel()
+    w = (1 - np.clip(rk, 0, 1)) * (1 - (0.0 if keep is None else keep)) * reach
+    return np.where(sea, h + w * np.maximum(z - h, 0.0), h), np.where(sea, reach, 0.0)
 
 
 def name_vegetation(layer: np.ndarray, vegetation: np.ndarray) -> np.ndarray:

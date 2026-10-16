@@ -2,7 +2,7 @@
 id: PW-231
 title: "Vegetation: C3/C4 grass crossover at 25 deg on observed climate (obs ~30-35); simple temperature nudges don't move it cleanly"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: surface
 effort: s
@@ -23,5 +23,7 @@ So the C3 grasses at 25-35 deg probably win on their cool-season growth (C4 is l
 - [ ] crossover 30-35 deg on the observed climate without losing potential-vegetation agreement
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done: grasses one layer, monthly growth to the better pathway (Still 2003 / Collatz 1998), C3 efficiency falls with heat, rises with CO2; crossover 25 -> 35/40 deg N/S (target 30-35; south overshoots).
+- 2026-10-16: Done on branch (vegetation batch 2026-10-16): cause was the competition, not temperature (equal growth rates, LV coexistence near 50/50); grasses now split by which pathway grows better each month, C3 quantum yield sets the monthly crossover (22 C today) and its CO2 shift. Crossover obs 30/25 -> 35/40 N/S, model 30/30 -> 35/40; agreement 59.9 -> 59.5 / 40.3 -> 40.0.
 - 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Created from inbox draft draft-c4-crossover-nudges.md (found by smalls2).

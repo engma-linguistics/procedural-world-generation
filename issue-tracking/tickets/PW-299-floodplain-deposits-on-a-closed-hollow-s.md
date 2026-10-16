@@ -2,7 +2,7 @@
 id: PW-299
 title: Floodplain deposits on a closed hollow's slopes can still raise cells above the hollow's spill point (~3% of deposition)
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: surface
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-280, PW-054]
 refs: [planet/surface.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,4 +27,5 @@ room below its spill point, as pits are; the excess carries on downstream to the
 room rule applies.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started (basins and giant lakes).
 - 2026-10-15: Created from inbox draft draft-floodplain-deposits-above-spill.md (found by surface-hydro).

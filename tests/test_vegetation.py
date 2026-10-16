@@ -184,3 +184,89 @@ def test_run_vegetation(sim4_60):
     snap = sim.snapshot()
     land = sim.land()  # (the snapshot's: also grounded ice whose bed has sunk below the sea since the last climate)
     assert (snap.vegetation[~land] == 0).all() and (snap.vegetation[land] > 0).mean() > 0.95
+
+
+# --------------------------------------------------------------------------- fire (PW-234)
+def test_fire_rate_fuel_age():
+    """fire_rate: grass fuel is ready every year (the old GlobFIRM-like rate);
+    shrubs' slowly built dead fuel adds the years to rebuild it."""
+    w = 0.1
+    assert V.fire_rate(0.0, 0.0, 0.3, w) == 0.0 and V.fire_rate(800.0, 0.0, 0.3, 0.0) == 0.0
+    assert V.fire_rate(200.0, 40.0, 0.3, w) == 0.0  # never enough fuel
+    assert np.isclose(V.fire_rate(800.0, 0.0, 0.3, w), w)  # fully fuelled grass: the weather's rate
+    assert np.isclose(V.fire_rate(V.FUEL_MIN + 0.5 * V.FUEL_SPAN, 0.0, 0.3, w), 0.5 * w)
+    # a shrubland whose fuel is mostly its own dead wood burns less often than a
+    # grassland of the same fuel (years to rebuild it), but it does burn
+    shrub = V.fire_rate(100.0, 500.0, 0.1, w)
+    assert 0 < shrub < V.fire_rate(600.0, 0.0, 0.1, w)
+    ready = -np.log(1 - (V.FUEL_MIN - 100.0) / 500.0) / 0.1
+    assert np.isclose(1 / shrub, ready + 1 / w)
+
+
+def test_mediterranean_scrub_burns_and_stays_scrub():
+    """A summer-dry climate's sclerophyll scrub of low productivity burns
+    every few decades to centuries (its fuel builds up) and stays
+    shrub-dominated."""
+    g = build_grid(3)
+    n = g.n
+    lat = np.abs(np.asarray(g.lat))
+    elev = np.random.default_rng(2).uniform(100.0, 700.0, n)
+    # hot dry summers, mild wet winters (Koppen Csa), 450 mm/yr (both hemispheres: p_jul is July's half-year)
+    north = np.asarray(g.lat) >= 0
+    p_s, p_w = np.full(n, 60.0), np.full(n, 840.0)
+    v = V.model(g, elev, np.full(n, 16.0), np.full(n, 24.0), np.full(n, 9.0), np.where(north, p_s, p_w),
+                np.where(north, p_w, p_s), 23.4, np.full(n, 0.3), np.full(n, 0.3))
+    m = (lat > 30) & (lat < 42)
+    sm, nu = v["sm"], v["eq"]["nu"]
+    assert (v["types"][m] == V.T["Mediterranean scrub (maquis, chaparral, fynbos)"]).mean() > 0.5
+    ret = sm["fire_return"][m]
+    assert 10 < np.median(ret) < 400  # (none at all before PW-234)
+    assert np.median(nu[V.IDX["SclS"], m]) > np.median((nu[V.IDX["C3G"]] + nu[V.IDX["C4G"]])[m])
+
+
+# --------------------------------------------------------------------------- C3 and C4 grasses (PW-231)
+def test_c3_quantum_yield():
+    """C3 grass's efficiency falls with temperature (photorespiration) and
+    rises with CO2; it equals C4 grass's at QY_CROSS today."""
+    ci = 0.7 * V.CA_REF
+    q = [V._q3(t, ci) for t in (10, 20, 30)]
+    assert q[0] > q[1] > q[2] > 0
+    assert V._q3(25, 2 * ci) > V._q3(25, ci) > V._q3(25, 0.5 * ci)
+    c4 = V._KP[V.C4, 0] * V._ft_np(V.QY_CROSS, *V.PFTS[V.C4]["temp"])
+    c3 = V._KP[V.C3, 0] * V._ft_np(V.QY_CROSS, *V.PFTS[V.C3]["temp"]) * V._q3(V.QY_CROSS, ci)
+    assert np.isclose(c3, c4)
+
+
+def test_c4_grass_follows_the_rain_season():
+    """Same temperatures (warm summers, cool winters), different rain
+    seasons: summer-rain grassland is mostly C4, winter-rain mostly C3
+    (Still et al. 2003)."""
+    g = build_grid(3)
+    n = g.n
+    lat = np.asarray(g.lat)
+    north = lat >= 0
+    elev = np.random.default_rng(3).uniform(100.0, 700.0, n)
+    m = (np.abs(lat) > 25) & (np.abs(lat) < 35)
+    out = {}
+    for name, (p_s, p_w) in {"summer": (700.0, 100.0), "winter": (100.0, 700.0)}.items():
+        pj, pa = np.where(north, p_s, p_w), np.where(north, p_w, p_s)
+        v = V.model(g, elev, np.full(n, 18.0), np.full(n, 26.0), np.full(n, 10.0), pj, pa, 23.4,
+                    np.full(n, 0.3), np.full(n, 0.3))
+        nu = v["eq"]["nu"]
+        c3, c4 = nu[V.C3, m], nu[V.C4, m]
+        out[name] = np.median(c4 / np.maximum(c3 + c4, 1e-9))
+    assert out["summer"] > 0.7 and out["winter"] < 0.5 and out["summer"] - out["winter"] > 0.3, out
+
+
+def test_sclerophylls_need_a_dry_summer():
+    """SclS (hard-leaved evergreen shrubs) is a summer-drought plant: it can't
+    establish where most rain falls in the warm half-year (thorn savanna,
+    steppe and forest instead), dry or humid, but it can where the summer is dry."""
+    n = 3
+    lat = np.full(n, 30.0)
+    t, tw, tc = np.full(n, 17.0), np.full(n, 25.0), np.full(n, 9.0)
+    p_jul = np.array([700.0, 80.0, 2400.0])  # dry summer-rain, dry winter-rain, humid summer-rain
+    p_jan = np.array([80.0, 700.0, 1400.0])
+    s = V.site(lat, t, tw, tc, p_jul, p_jan)
+    ok = V.envelope(s)[V.IDX["SclS"]]
+    assert list(ok) == [False, True, False]

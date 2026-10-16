@@ -2,7 +2,7 @@
 id: PW-300
 title: Giant run-frame lakes (1-3 Mkm2, some in hyperarid basins) are on the frames' own terrain, not a stale-lakes artifact
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: hydrology
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-239, PW-054, PW-284]
 refs: [planet/hydrology.py, planet/tectonics/output.py, "run 9366df", "run ef2c6a", docs/review/audit/fixes-surface-hydro.md, docs/review/audit/pw293-sea-level.md, docs/review/health-pw293-before/, docs/review/health-pw293-after/]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -31,6 +31,7 @@ appearing in one frame is a tectonics step artifact. Runs 9366df / ef2c6a are in
 (deleted before merge; rerun `tools/health.py --l6 --l7 3199 21 --myr 500` to get them back).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started (basins and giant lakes).
 - 2026-10-15: Merged inbox draft draft-giant-lakes-lower-sea.md ("Giant run-frame lakes doubled when sea level came down ~130 m (PW-293); evidence for PW-300", found by pw293).
   Evidence for PW-300 (coordinator: probably `--merge-into PW-300`). PW-293 moved the run's median sea level
   from +148 to +15 m (health --quick, 8 L6 seeds x 500 Myr, same seeds). Keyframes whose biggest lake is over

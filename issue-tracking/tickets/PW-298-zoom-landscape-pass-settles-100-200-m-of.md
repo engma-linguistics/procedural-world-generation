@@ -2,7 +2,7 @@
 id: PW-298
 title: Zoom landscape pass settles 100-200 m off the coarse cell means (C fit to box means)
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -36,6 +36,7 @@ bias +309, was +4323), where the coast taper damps the mean correction.
 - [ ] land-interior cell-mean RMS < ~120 m on 592f2a-type zooms, bias within +-20 m on a glaciated plateau
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (2df327d): C a smooth coarse-scale field, one Newton step per cell per pass on the cell's own relief (ZK.local_base); no wind-up. Falls detector no longer skips its steepness test near designed lips. 8 zooms x 5 seeds: undesigned drops >=100 m 38.8 -> 9.2; inland bias/RMS -6..+2 / 8-58 m (was -2..+63 / 18-171).
 - 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-16: PW-319 folded in: tributary one-link walls beside pinned rivers come from the C field growing ~1.5x per pass (52 -> 32,874 over 15 passes) next to low pinned courses; smoothing C cut arc drops 29 -> 22 but moved inland bias. Fix the C fit's convergence here.
 - 2026-10-15: Created from inbox draft draft-zoom-landscape-fit-offset.md (found by fix-coast-zoom).

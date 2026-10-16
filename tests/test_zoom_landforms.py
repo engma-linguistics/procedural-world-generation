@@ -523,6 +523,25 @@ def test_basin_lakes_follow_the_water_balance():
     # where the class doesn't let them hold water, depressions are just filled
     surf, lake, depth, sink, n = ZL.basin_lakes(h, filled, rec, order, ok, 0 * can, src_wet, loss, *args)
     assert not lake.any() and not sink.any() and np.allclose(surf[ok], np.maximum(h, filled)[ok])
+    # PW-340: counted on the region only (the first bowl's deepest pixel, x 20, is in; the others not),
+    # the same lakes made
+    region = (np.arange(nx * ny) % nx) < 30
+    _, lake2, _, _, n2 = ZL.basin_lakes(h, filled, rec, order, ok, can, src_wet, loss, *args, count=region)
+    _, lake, _, _, _ = ZL.basin_lakes(h, filled, rec, order, ok, can, src_wet, loss, *args)
+    assert n2["full"] == 1 and np.array_equal(lake, lake2), n2
+
+
+def test_landform_stats_count_the_region_only():
+    """PW-340: the landform shares are % of the region's land, not of the
+    halo built round it."""
+    nx = ny = 40
+    land = np.ones(nx * ny, bool)
+    col = np.arange(nx * ny) % nx
+    mk = lambda w: ZL.Ctx(nx, ny, 1.0, 50.0, None, None, None, 1, land, np.zeros(nx * ny), w=w)
+    lf = ZL.Landforms({LF.KARST: mk((col < 10).astype(float)), LF.DUNES: mk((col >= 10).astype(float))})
+    assert lf.stats() == {"karst": 25.0, "dunes": 75.0}
+    lf.set_region(col >= 20)
+    assert lf.stats() == {"karst": 0.0, "dunes": 100.0}
 
 
 # ---------------------------------------------------------------------------

@@ -152,6 +152,60 @@ def gauss_interp(px, py, cx, cy, vals, wts, sigma):
     return out, den
 
 
+@njit(cache=True, parallel=True)
+def gauss_weights(px, py, cx, cy, sigma):
+    """gauss_interp's kernel weights, once, for many interpolations of
+    changing values (the slope fit, PW-298): per point its cells within
+    3.5 sigma and their weights, as (start, cell, weight) with point p's in
+    start[p]:start[p + 1]. Apply with weighted_mean()."""
+    n = px.shape[0]
+    nc = cx.shape[0]
+    cut2 = (3.5 * sigma) ** 2
+    inv = 1.0 / (2.0 * sigma * sigma)
+    cntp = np.zeros(n, np.int64)
+    for p in prange(n):
+        k = 0
+        for c in range(nc):
+            dx = px[p] - cx[c]
+            dy = py[p] - cy[c]
+            if dx * dx + dy * dy <= cut2:
+                k += 1
+        cntp[p] = k
+    start = np.zeros(n + 1, np.int64)
+    for p in range(n):
+        start[p + 1] = start[p] + cntp[p]
+    cell = np.empty(start[n], np.int64)
+    w = np.empty(start[n])
+    for p in prange(n):
+        k = start[p]
+        for c in range(nc):
+            dx = px[p] - cx[c]
+            dy = py[p] - cy[c]
+            d2 = dx * dx + dy * dy
+            if d2 <= cut2:
+                cell[k] = c
+                w[k] = np.exp(-d2 * inv)
+                k += 1
+    return start, cell, w
+
+
+@njit(cache=True, parallel=True)
+def weighted_mean(start, cell, w, vals, wts):
+    """gauss_interp of one field (vals, wts per cell) with gauss_weights'
+    kernel: NaN where no cell contributes."""
+    n = start.shape[0] - 1
+    out = np.empty(n)
+    for p in prange(n):
+        num = 0.0
+        den = 0.0
+        for k in range(start[p], start[p + 1]):
+            ww = w[k] * wts[cell[k]]
+            num += ww * vals[cell[k]]
+            den += ww
+        out[p] = num / den if den > 1e-12 else np.nan
+    return out
+
+
 # ---------------------------------------------------------------------------
 # River valleys along coarse river polylines
 # ---------------------------------------------------------------------------
@@ -311,6 +365,30 @@ def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
             u0 = 1.0 + (lo - soft[i]) / scale[i]
             top = soft[i] + scale[i] * ((u0 * u0 * u0 + 3.0 * left / scale[i]) ** (1.0 / 3.0) - 1.0)
         h[i] = max(min(top, cap[i]), base + 0.01 * dist[i])
+
+
+@njit(cache=True)
+def local_base(h, rec, order, fixed, floor, cap, group):
+    """Per pixel, the height its profile (ZK.integrate's, on h) starts from
+    inside its own group (a coarse cell): where its water leaves the group,
+    or a held point on the way (an outlet, a floor above the receiver, a
+    capped pixel). h - local_base is the relief the group's own slopes make
+    (the landscape pass's slope fit, PW-298)."""
+    lb = h.copy()
+    for t in range(order.shape[0]):
+        i = order[t]
+        d = rec[i]
+        if fixed[i] or d < 0:
+            continue
+        if floor[i] > h[d]:
+            lb[i] = floor[i]
+        elif group[i] != group[d]:
+            lb[i] = h[d]
+        else:
+            lb[i] = lb[d]
+        if h[i] >= cap[i] - 1e-6:
+            lb[i] = h[i]
+    return lb
 
 
 @njit(cache=True)

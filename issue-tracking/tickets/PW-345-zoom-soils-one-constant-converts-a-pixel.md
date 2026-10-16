@@ -2,7 +2,7 @@
 id: PW-345
 title: "Zoom soils: one constant converts a pixel's slope to the cells' measure, but the zoom's roughness varies 4-22x"
 type: task
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: zoom
 effort: s
@@ -30,4 +30,5 @@ recalibrate one constant; (C) per zoom, scale the pixels' slopes so each cell's 
 towards the coarse cell, which the proposal avoided). Lean A unless zooms look wrong; B if 0.5 km zooms do.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 4 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-soil-slope-scale.md (found by zoom-soils).

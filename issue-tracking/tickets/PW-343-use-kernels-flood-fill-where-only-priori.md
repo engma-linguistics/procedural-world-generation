@@ -2,7 +2,7 @@
 id: PW-343
 title: Use kernels.flood_fill where only priority_flood's filled surface is used (zoom, highlights)
 type: task
-status: todo
+status: in-progress
 parent: PW-247
 subsystem: zoom
 effort: xs
@@ -25,4 +25,5 @@ only worth doing when those files are next touched; left to their owners (PW-255
 hydrology.py / kernels.py).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 4 agent started.
 - 2026-10-16: Created from inbox draft draft-flood-fill-for-filled-only-callers.md (found by pw255-lakes-speed).

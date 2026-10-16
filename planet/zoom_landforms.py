@@ -240,6 +240,11 @@ class Ctx:
     chan: np.ndarray | None = None  # the channels (Landforms.remap)
     zone: dict | None = None  # per pixel, its zone's statistics (Synth.zoned; zone_stats())
     cache: dict = field(default_factory=dict)
+    region: np.ndarray | None = None  # the zoom's region without its halo: what the stats count (PW-340)
+
+    def counted(self, m):
+        """m on the pixels the stats count (the region, not its halo)."""
+        return m if self.region is None else m & self.region
 
     def noise(self, wavelength, octaves, k):
         """fbm ~N(0, 1)-ish at `wavelength` km (seed offset k)."""
@@ -1222,20 +1227,21 @@ class Karst(Synth):
         above = 0.8 * np.maximum(h - fin["base"], 0.0) + reach
         dol = np.minimum(np.minimum(dol, 0.5 * thick), above) * pur * (1 - 0.6 * tr)
         out -= dol
-        st["dolines"] = int(len(np.unique(fid[on & (dol > 5.0) & (cx.w > 0.5)])))
+        st["dolines"] = int(len(np.unique(fid[cx.counted(on & (dol > 5.0) & (cx.w > 0.5))])))
         # poljes: flat floors (alluvium) below the land around them, steep sides
         cell, prob, rr = self.POLJE
         q, fid, R, _ = blobs(cx.Pk, cell, np.int64(cx.seed + 463), prob, np.array(rr), 3.0, 3.0 * res)
         inside = smoothstep(1.0, 0.75, np.minimum(q, 2.0))
         pol = np.zeros(len(h))
         npol = 0
+        counted = set(np.unique(fid[cx.counted((q < 0.9) & (cx.w > 0.5))]).tolist())
         for f in np.unique(fid[(q < 0.9) & (cx.w > 0.5)]):
             m = (fid == f) & (q < 1.0)
             core = (fid == f) & (q < 0.9)
             depth = (20.0 + 40.0 * hashf(np.array([f % 2147483647]), 2)[0])
             floor = max(np.percentile(h[core], 20) - depth, np.percentile(fin["base"][core], 50) - self.BELOW_M)
             pol[m] = np.minimum(floor - h[m], 0.0) * inside[m]
-            npol += 1
+            npol += int(f) in counted
         out += pol * pur * (1 - tr)
         st["poljes"] = npol
         # towers (fenglin): steep sides, rounded tops, on the plain
@@ -1246,7 +1252,7 @@ class Karst(Synth):
         tow = np.where(on, Ht * (1 - np.minimum(q, 1.0) ** 8) ** 0.4, 0.0)
         tow = np.minimum(tow, 0.8 * thick) * tr * np.sqrt(pur)
         out += tow
-        st["towers"] = int(len(np.unique(fid[on & (tow > 30.0) & (cx.w > 0.5)])))
+        st["towers"] = int(len(np.unique(fid[cx.counted(on & (tow > 30.0) & (cx.w > 0.5))])))
         return out
 
 
@@ -1352,7 +1358,7 @@ class Dunes(Synth):
         gy, gx = np.gradient(h.reshape(cx.ny, cx.nx), res)
         z = z * smoothstep(120.0, 40.0, np.hypot(gx, gy).ravel())
         st = cx.cache.setdefault("overlay_stats", {})
-        on = (cx.w > 0.5) & cx.land
+        on = cx.counted((cx.w > 0.5) & cx.land)
         if on.any():
             st["types"] = {"transverse_barchan": round(float(np.mean(wT[on])), 2),
                            "linear": round(float(np.mean(wL[on])), 2), "star": round(float(np.mean(wS[on])), 2)}
@@ -1478,7 +1484,7 @@ def _next_basin(rec, order, lab):
 PLAYA_SHARE = 0.25  # a dry closed basin's flat floor: at least this share of the depression
 
 
-def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_m, min_km2, full_km2):
+def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_m, min_km2, full_km2, count=None):
     """Which of a landform's closed depressions hold water, by their water
     balance (PW-167). h: the surface; filled, rec, order: its priority flood
     (outlets first); dep_ok: where depressions count (active land, no ice);
@@ -1498,7 +1504,8 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
     Every other depression is filled flat (its water passes on).
     Returns (surface: closed lakes at their level, playas at their floor,
     full lakes and the rest filled; lake: lake pixels (bed = surface -
-    depth); depth; sink: closed lakes and playas, where rivers end; counts)."""
+    depth); depth; sink: closed lakes and playas, where rivers end; counts, of
+    the depressions whose deepest pixel lies in `count` if given: the region)."""
     n = nx * ny
     dep = np.where(dep_ok, filled - h, 0.0)
     lab, sizes = ZK.label_components(dep > 0.2, nx, ny)
@@ -1529,6 +1536,10 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
     cmean = np.bincount(L, can[on], nb) / np.maximum(sizes, 1)
     lmean = np.bincount(L, loss[on], nb) / np.maximum(sizes, 1)
     cand = (dmax >= min_m) & (area >= min_km2) & (cmean > 0.5)
+    tally = np.ones(nb, bool)
+    if count is not None:  # (the deepest pixel of each depression)
+        o = np.lexsort((dep[idx], L))
+        tally = count[idx[o][np.r_[np.flatnonzero(np.diff(L[o])), len(o) - 1]]]
     spill = np.zeros(nb)
     for b in np.argsort(qx, kind="stable"):  # upstream first
         inflow = max(direct[b], 0.0) + spill[b]
@@ -1539,9 +1550,9 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
             if inflow >= cap:
                 if area[b] >= full_km2:
                     lake[px_b], depth[px_b] = True, dep[px_b]
-                    counts["full"] += 1
+                    counts["full"] += int(tally[b])
                 else:
-                    counts["silted"] += 1
+                    counts["silted"] += int(tally[b])
                 out = inflow - cap
             else:
                 out = 0.0
@@ -1553,13 +1564,13 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
                     w = px_b[h[px_b] < lvl]
                     surf[px_b] = np.maximum(h[px_b], lvl)
                     lake[w], depth[w], sink[w] = True, lvl - h[w], True
-                    counts["closed"] += 1
+                    counts["closed"] += int(tally[b])
                 else:
                     k = max(int(np.ceil(PLAYA_SHARE * len(hs))), 1)
                     lvl = hs[k - 1] + 1e-3
                     surf[px_b] = np.maximum(h[px_b], lvl)
                     sink[px_b[h[px_b] < lvl]] = True
-                    counts["playa"] += 1
+                    counts["playa"] += int(tally[b])
         if below[b] >= 0:
             spill[below[b]] += out
     return surf, lake, depth, sink, counts
@@ -1879,6 +1890,7 @@ class Landforms:
         (Synth.ponds). Returns h, pond (mask), pond_depth (m), q, stats."""
         c0 = next(iter(self.ctxs.values()))
         nx, ny, res = c0.nx, c0.ny, c0.res
+        cnt = c0.counted
         q, rec, order = fin["q"], fin["rec"], fin["order"]
         free = fin["active"] & ~fin["water"] & ~fin["ice"]
         n = len(h)
@@ -1895,11 +1907,11 @@ class Landforms:
         if dry.any():
             r = np.where(rec >= 0, rec, np.arange(n))
             wet_r = ~dry[r] & (rec >= 0)
-            st["springs"] = int(np.sum(dry & wet_r & (q >= 1.0)))  # (where a sunk stream's water comes back)
+            st["springs"] = int(np.sum(cnt(dry & wet_r & (q >= 1.0))))  # (where a sunk stream's water comes back)
             donor_wet = np.zeros(n, bool)
             np.logical_or.at(donor_wet, r[~dry & (q >= 1.0) & (rec >= 0)], True)
-            st["sinks"] = int(np.sum(dry & donor_wet))  # (streams flowing in that sink: swallow holes)
-            st["dry_valley_km"] = round(float(np.sum(dry & (q >= 1.0))) * res, 0)
+            st["sinks"] = int(np.sum(cnt(dry & donor_wet)))  # (streams flowing in that sink: swallow holes)
+            st["dry_valley_km"] = round(float(np.sum(cnt(dry & (q >= 1.0)))) * res, 0)
         flow = q2 > 0
         # the water table: the first flowing river (or the sea, a lake) down the drainage
         fin = {**fin, "base": drain_level(h, rec, order, (q2 >= 1.0) | (rec < 0))}
@@ -1929,11 +1941,18 @@ class Landforms:
             # (a pit's floor against the water table: both before the mean-neutral shift)
             pond = (pondw > 0.5) & free & (h + pit < hc - POND_M) & (pit < -POND_M)
             pdep = np.where(pond, np.minimum(hc - h - pit, -pit), 0.0)
-            st["ponds"] = int(len(np.unique(ZK.label_components(pond, nx, ny)[0][pond]))) if pond.any() else 0
+            st["ponds"] = int(len(np.unique(ZK.label_components(pond, nx, ny)[0][cnt(pond)]))) if pond.any() else 0
         return {"h": h2, "pond": pond, "pond_depth": np.where(pond, pdep, 0.0), "q": q2, "stats": st}
 
+    def set_region(self, region: np.ndarray):
+        """The pixels the stats count: the zoom's region, not the halo built
+        round it (PW-340)."""
+        for c in self.ctxs.values():
+            c.region = region
+
     def stats(self) -> dict:
-        """% of land pixels each class shapes (weight > 0.5), by class key."""
-        land = next(iter(self.ctxs.values())).land
+        """% of land pixels each class shapes (weight > 0.5), by class key (on the region)."""
+        c0 = next(iter(self.ctxs.values()))
+        land = c0.counted(c0.land)
         n = max(int(land.sum()), 1)
         return {LF.CLASSES[k][1]: round(100 * float(((c.w > 0.5) & land).sum()) / n, 1) for k, c in self.ctxs.items()}

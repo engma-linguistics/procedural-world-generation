@@ -74,10 +74,12 @@ Pipeline
    rain-weighted drainage area, which shapes a desert's wadis too;
    K = surface.ROCKS erodibility): big rivers
    are gentle, small gullies and ridges steep, so valleys nest
-   dendritically. C is a smooth field refitted each iteration so every
-   ~35 km neighbourhood keeps the target's mean as it was before the coarse
-   valleys were cut into it (so the valleys are cut mass-neutrally: the
-   hillslopes between them stand a little higher, PW-268); the network is
+   dendritically. C is a smooth field at the coarse cells' scale, refitted
+   each iteration (a Newton step per cell on the relief its own slopes
+   make, PW-298) so every coarse cell keeps the target's mean as it was
+   before the coarse valleys were cut into it (so the valleys are cut
+   mass-neutrally: the hillslopes between them stand a little higher,
+   PW-268); the network is
    recomputed on the new surface and the whole thing repeated (~15x).
    Lakes are outlets held at their surface, with a rim kept above the
    water except at the outlet (the shore pixel nearest the coarse lake's
@@ -192,6 +194,7 @@ def creep_kd(res: float) -> float:
 
 
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 
@@ -269,6 +272,16 @@ def find_world(ref: str) -> Path:
     return S.find_world(ref)
 
 
+def tie_jitter(Pk: np.ndarray, res: float, seed: int) -> np.ndarray:
+    """The drainage's tie-break lift (ZK.flood_d8's jitter, 0..1) per pixel,
+    planet-fixed (PW-339): noise sampled at the pixel's position on the
+    planet, varying from pixel to pixel (two octaves at 2 and 1 px), so
+    overlapping zooms of one place break their ties on flats alike. (One
+    random number per pixel index gave a zoom of another size, centre or
+    halo another drainage on its flats.)"""
+    return 0.5 + 0.5 * np.tanh(ZK.fbm(Pk, 2.0 * res, 2, 0.6, seed) / 0.25)
+
+
 def _octaves(wavelength, finest):
     """Octaves (halving the wavelength each time) until `finest` km."""
     return int(np.clip(np.ceil(np.log2(wavelength / finest)) + 1, 1, 12))
@@ -289,6 +302,7 @@ WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 20.0, 30.0, 15.0, 3  # (Q: routed
 WF_MAX_KM = 5.0  # ... and over at most this far (at least one pixel): on coarse pixels a steep reach isn't a fall
 WF_EDGE_PX = 8  # ... and not next to the built area's edge (held at the target surface; it lies in the halo, cropped off)
 WF_CONTRAST, WF_CONTEXT_KM = 3.0, 6.0  # ... and WF_CONTRAST x steeper than the river within WF_CONTEXT_KM (see waterfalls())
+WF_DESIGNED_SHARE = 0.3  # ... unless within 3 px of a designed lip on its river (carrying this share of the lip's water)
 HALO_CELLS = 0.5  # coarse cells of terrain built round the region and cropped off (at least WF_EDGE_PX, at most 1/4 of it)
 
 
@@ -364,9 +378,9 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
                        np.maximum(ws[jj] - ws[pd_], 0) / np.maximum(kd_, res))
     fixed = d0[i] > 0  # (lake outlets and designed lips are falls whatever the river around them)
     r_, c_ = np.divmod(i, nx)
-    for p in designed:
+    for p in designed:  # (on the designed river: a tributary joining it near the lip is tested like any other)
         a, b = divmod(int(p), nx)
-        fixed |= (np.abs(r_ - a) <= 3) & (np.abs(c_ - b) <= 3)
+        fixed |= (np.abs(r_ - a) <= 3) & (np.abs(c_ - b) <= 3) & (q[i] >= WF_DESIGNED_SHARE * q[int(p)])
     ok = fixed | (h / np.maximum(d, 1e-9) >= WF_CONTRAST * g_ctx)
     i, h, d, jj = i[ok], h[ok], d[ok], jj[ok]
     gw = 1000 * 9.81 * q[i] * h / 1e9
@@ -1001,6 +1015,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     P = fr.to_sphere(px, py)
     Pk = np.ascontiguousarray(P * R_KM)
     S = int(seed) * 1_000_003 + 17  # noise seed base
+    # the region without its halo: what the stats count (PW-340)
+    region = np.zeros((ny, nx), bool)
+    region[halo:halo + n_in, halo:halo + n_in] = True
+    region = region.ravel()
 
     # --- coarse cells around the region --------------------------------
     elev = L["elevation"].astype(float)
@@ -1300,6 +1318,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- landform classes (zoom_landforms): weights, parameters, hooks ----
     lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
                             lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g, fr.to_plane)
+    if lf is not None:
+        lf.set_region(region)
 
     def keep_means(z, hh, where, f=None):
         """z with each coarse cell's mean change from hh undone (a smooth
@@ -1342,7 +1362,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     kpix, s_pix, bottom = np.full(npx, -1), np.zeros(npx), np.zeros(npx, bool)  # reach with falls (index into kps) and arc length, per pixel
     riv_q = np.zeros(npx)  # coarse discharge along the coarse river courses
     carved = np.zeros(npx)  # how far the coarse rivers' valleys cut the surface down (<= 0)
-    n_rivers_in = 0
+    n_rivers_in = 0  # (into the region, PW-340; the inflow itself comes in at the built area's edge)
     river_segs = []
     polys, inflow_pts = {}, []  # warped coarse river polylines per cell; (pixel, radius px) where rivers enter
     pin_pairs = []  # (pixel, receiver) along the courses of reaches with falls
@@ -1544,7 +1564,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             sq += [q] * (m - 1)
             river_segs.append(pw)
             inside = (np.abs(pw[:, 0]) < half) & (np.abs(pw[:, 1]) < half)
-            # entering the region from outside: bring the coarse discharge in
+            in_r = (np.abs(pw[:, 0]) < size_in / 2) & (np.abs(pw[:, 1]) < size_in / 2)
+            n_rivers_in += bool(np.any(in_r[1:] & ~in_r[:-1]) and not in_r[0])
+            # entering the built area from outside: bring the coarse discharge in
             j = np.flatnonzero(inside[1:] & ~inside[:-1])
             if len(j) and not inside[0]:
                 p = pw[j[0] + 1]
@@ -1557,7 +1579,6 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                         row, col = (int(v) for v in divmod(int(pin_px[np.argmin(dk)]), nx))
                 inflow[row * nx + col] += q
                 inflow_pts.append((row * nx + col, int(min(np.ceil((w_floor + min(2500 / s_wall, 40)) / res) + 2, 30))))
-                n_rivers_in += 1
         arr = lambda v: np.ascontiguousarray(v, dtype=float)
         T, D, I = ZK.carve_segments(nx, ny, xs[0], ys[0], res, arr(ax), arr(ay), arr(bx), arr(by),
                                     arr(za), arr(zb), arr(fw), arr(wall), arr(reach))
@@ -1661,7 +1682,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         return glaciers(hh, rec_g, order_g, land, stop, nx, ny, res, gw_sl, gc_sl, cov_f, precip, jul_f, ice,
                         lat_px, ice_n, tilt_w)
 
-    jitter_g = np.random.default_rng(seed + 5).random(npx)
+    jitter_g = tie_jitter(Pk, res, S + 63)
     glacier, ice_th = glacier_mask(h, sea)
     # Lakes where the coarse world has them (a coarse lake cell is a lake
     # basin ~100 km across): outline like the coast, from a smoothed
@@ -1765,7 +1786,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # anyway (C), so only the relative weights matter.
     srcg = precip / 1000.0 * res * res + inflow
     Kr = ROCK_K[np.minimum(surf_f, len(ROCK_K) - 1)]
-    jitter = np.random.default_rng(seed).random(npx)
+    jitter = tie_jitter(Pk, res, S + 61)
     active = land & ~edge & ~lake
     idx = np.arange(npx)
     target = h.copy()
@@ -2223,18 +2244,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         return (np.array(list(ov), dtype=np.int64), np.array(list(ov.values()), dtype=np.int64),
                 [sp_ for sp_ in splits if sp_ is not None])
 
-    # Steady-state stream power: slope = C / K * Q^-m. C is a smooth field
-    # fitted so every ~35 km neighbourhood keeps the mean of the target
-    # surface as it was before the coarse valleys were cut into it (so the
-    # hillslopes between the valleys stand a little higher and each coarse
-    # cell keeps its mean: the valleys are cut mass-neutrally, PW-268); a
+    # Steady-state stream power: slope = C / K * Q^-m. C (~ the uplift rate
+    # over the rock's erodibility) is a smooth field at the coarse cells'
+    # scale, fitted so each cell keeps the mean of the target surface as it
+    # was before the coarse valleys were cut into it (so the hillslopes
+    # between the valleys stand a little higher and each coarse cell keeps
+    # its mean: the valleys are cut mass-neutrally, PW-268): fit_c(). A
     # little noise in C varies the relief from valley to valley.
     rad = max(1, int(round(0.3 * sp / res)))
     wmask = land.reshape(ny, nx).astype(float)
-    tmean = _box_mean(np.maximum(np.where(lake, target, target - carved), 0).reshape(ny, nx) * wmask, wmask,
-                      rad).ravel()
+    t_fit = np.maximum(np.where(lake, target, target - carved), 0)
+    tmean = _box_mean(t_fit.reshape(ny, nx) * wmask, wmask, rad).ravel()
     var = np.exp(0.35 * ZK.fbm(Pk, 0.25 * sp, 3, 0.5, S + 6) / 0.17)
-    C = np.full(npx, 30.0)
+    logC = np.full(npx, np.log(30.0))
+    fit_log = []  # (debug: per pass, the cells' summed |mean error| x pixels, and the largest C)
     # summits: slopes taper above `soft`, nothing above `cap`
     soft = tmean + 0.7 * amp_land
     cap = tmean + np.minimum(1.8 * amp_land, 3000.0)
@@ -2247,6 +2270,35 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         cap = np.where(pin, target + 25.0, cap)
         vpin = np.where(pin, target - 25.0, vpin)
     rough = np.where(glacier, 0.5, 1.0) * var / Kr
+
+    def fit_c(hh, rec, order, fl, cp):
+        """The slope fit's step in log C (PW-298). Per coarse cell, a Newton
+        step for h = base + C r: the factor that brings its active land's
+        mean to the target's if the relief its own slopes make scaled with C.
+        That relief is h above where each pixel's profile starts inside the
+        cell (ZK.local_base: where its water leaves the cell, or a held
+        point: an outlet, a river's floor, a capped summit, which don't
+        respond to C); what lies below that, the cells downstream make, and
+        fit for themselves. At most x FIT_STEP or / FIT_STEP a pass, spread
+        over the pixels smoothly (FIT_SIGMA of a cell). The old per-pixel
+        fit (C *= (box mean of the target / of h)^0.8, on ~20 km boxes)
+        took a pixel's whole height above the sea as its own: next to low,
+        held river courses it could never reach its box mean, wound up
+        (C x1.5 a pass, to ~30,000) and made tributaries' last links walls
+        of 400-1000 m; elsewhere it settled 100-200 m off the cell means."""
+        held = ZK.local_base(hh, rec, order, ~active, fl, cp, own_s)
+        dsum = np.bincount(own_s, np.where(active, t_fit - np.maximum(hh, 0), 0.0), minlength=len(sel))
+        rsum = np.bincount(own_s, np.where(active & (hh > 0), hh - held, 0.0), minlength=len(sel))
+        cnt = np.bincount(own_s, active, minlength=len(sel))
+        ok = (cnt > 0.1 * full_px) & (rsum > 0)
+        step = np.where(ok, np.log(np.clip((rsum + dsum) / np.maximum(rsum, 1e-9), 1 / FIT_STEP, FIT_STEP)), 0.0)
+        corr = ZK.weighted_mean(*fit_w, step, ok.astype(float))
+        fit_log.append((round(float(np.sum(np.abs(dsum[ok])))), round(float(np.exp(logC[active].max())), 1)
+                        if active.any() else 0.0))
+        return np.nan_to_num(corr)
+
+    fit_w = ZK.gauss_weights(px, py, cx, cy, FIT_SIGMA * sp)
+
     hprev = None
     was_river = bottom.copy()  # the valley bottom, and every pixel the coarse river's water has run through
     for it in range(iterations):
@@ -2266,7 +2318,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
         dist = res * np.where(diag, 1.4142, 1.0)
         # coarse river courses count as carrying at least their coarse discharge
-        slope = np.minimum(C * rough * np.maximum(np.maximum(Qg, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
+        slope = np.minimum(np.exp(logC) * rough * np.maximum(np.maximum(Qg, riv_q), 1e-3) ** -SPL_M, MAX_SLOPE)
         c_idx, c_val, step, flg, cliff, _, (b_idx, b_val) = place_falls(rec, Q, hprev)
         fl, cp = rims(rec, outs, step)
         was_river |= Q >= 0.3 * q_course
@@ -2282,8 +2334,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         h = target.copy()
         ZK.integrate(h, rec, order, slope, dist, ~active, fl, soft, 0.5 * amp_land + 1, cp)
         hprev = h
-        hmean = _box_mean(np.maximum(h, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
-        C = C * np.clip(tmean / np.maximum(hmean, 1.0), 0.5, 2.0) ** 0.8
+        if it < iterations - 1:
+            logC = logC + fit_c(h, rec, order, fl, cp)
     glacier, ice_th = glacier_mask(h, sea | lake)  # on the finished valleys
     stages = {"landscape": h.copy()}  # (debug: the height after each stage, PW-125's diagnostic)
     # soften D8 streaks and knife-edge ridges on hillslopes; keep channels sharp
@@ -2392,7 +2444,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     if lf is not None:
         surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
             h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, lake_loss, res, nx, ny,
-            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
+            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2, count=region)
         h = np.where(active, surf_b, h)
         if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
             outlet = outlet | lf_sink
@@ -2503,6 +2555,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         h, discharge, lf_overlay = fz["h"], np.where(land, fz["q"], 0.0), fz["stats"]
         lf_lake = lf_lake | fz["pond"]
         lake_depth = np.where(fz["pond"], fz["pond_depth"], lake_depth)
+    # --- shoreface (zoom_coastal, PW-327): the sea floor shoals to the shore
+    # along Dean's profile, then the inner shelf, where the shore isn't rocky;
+    # each cell's mean kept by deepening the sea floor further out
+    if sea.any():
+        rocky = ZCL.rocky_shore(h, land, surf_f, nx, ny, res)
+        hs_, reach = ZCL.shoreface(h, sea, rocky, wave_f, nx, ny, res, wv if vf is not None else None)
+        h = keep_means(hs_, h, sea, 1 - reach)
+        h = np.where(sea, np.minimum(h, -0.5), h)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
@@ -2519,6 +2579,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # (what is counted on the drainage network is counted before: the deltas' mouths)
     for d in deltas:
         d["mouths"] = _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits)
+    n_splits = int(sum(region[s_] for s_, _, _ in splits))
+    riv_cells = set(riv_ids.tolist())
     keep_px = (np.arange(halo, halo + n_in)[:, None] * nx + np.arange(halo, halo + n_in)[None, :]).ravel()
     new_px = np.full(npx, -1, np.int64)
     new_px[keep_px] = np.arange(len(keep_px))
@@ -2625,6 +2687,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- coastal and shallow-sea life (zoom_coastal, PW-188); names mangrove and salt-marsh pixels
     cz = ZCL.place(world, fr, Pk, px, py, nx, ny, res, size_km, seed, h, water, glacier, d_sea, surf_f,
                    vf["reef"] if vf is not None else None)
+    if np.isfinite(cz["reef_top"]).any():  # reefs as terrain (PW-326): each cell's mean kept on the shelf around (lagoons)
+        on_r = np.isfinite(cz["reef_top"])
+        h_r = np.where(on_r, np.maximum(h, np.nan_to_num(cz["reef_top"], nan=-1e9)), h)
+        h = keep_means(h_r, h, sea, np.where(cz["shelf"], 1.0, 0.1) * (sea & ~on_r))
+        h = np.where(sea, np.minimum(h, -0.5), h)
     veg_l["vegetation"] = ZCL.name_vegetation(cz["layer"], veg_l["vegetation"])
     biome = vegetation.biome_of(veg_l["vegetation"], biome).astype(np.uint8)
     # wetlands: 1 a coastal plain's marsh, 2 the vegetation's (floodplains, mires, lake shores: PW-178)
@@ -2664,9 +2731,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "vegetation": vz["stats"],
         # coastal and shallow-sea life (zoom_coastal): km^2 of each habitat
         "coastal_life": cz["stats"],
+        # reefs as terrain (zoom_coastal, PW-326): km^2 of fringing, barrier and patch reef flats
+        "reef_forms": cz.get("reef_forms", {}),
         "lake_pct": round(100 * lake.mean(), 2),
-        "coarse_cells": int(len(sel)),
-        "coarse_river_cells": int(len(riv_ids)),
+        # (the cells with pixels in the region; of them, coarse river cells)
+        "coarse_cells": int(len(np.unique(own))),
+        "coarse_river_cells": int(sum(int(c) in riv_cells for c in np.unique(own))),
         "rivers_entering": n_rivers_in,
         "largest_lakes": lake_info[:5],
         # Galloway weights (coast.galloway) and the shape they gave each delta
@@ -2680,7 +2750,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
                    for d in deltas],
-        "distributary_splits": len(splits),
+        "distributary_splits": n_splits,
         # the biggest pixel-scale falls (see waterfalls()), ~15 km apart; kind "lip": a knickpoint kept
         # from a steep coarse reach (see knickpoints()), with its gorge and plunge pool; "scarp" / "bench":
         # over a landform's cliff (zoom_landforms), with a plunge pool; "lake outlet"; "drop": any other
@@ -2689,7 +2759,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "falls": all_falls,
         "falls_count": {"30m": sum(f["height_m"] >= 30 for f in all_falls),
                         "100m": sum(f["height_m"] >= 100 for f in all_falls)},
-        "knickpoints": len(kps),
+        "knickpoints": sum(len(kp.get("course_px", ())) > 0 for kp in kps),  # (reaches with falls in the region)
         # the volcanoes drawn (zoom_volcanoes), with what they look like now
         "volcanoes": vf["list"] if vf is not None else [],
         # % of the land each synthesised landform class shapes (zoom_landforms)
@@ -2739,7 +2809,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
             "stats": stats, "coarse": coarse, "rec": rec_out, "kps": kps, "satellite": sat,
             "lakes": lakes_out,
-            "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift, "stages": stages},
+            "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift, "stages": stages, "fit": fit_log},
             "seconds": round(time.time() - t0, 1),
             "params": {"iterations": iterations, "river_min_flow": river_min_flow, "coarse_spacing_km": round(sp, 1)}}
 

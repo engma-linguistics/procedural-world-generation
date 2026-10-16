@@ -2,7 +2,7 @@
 id: PW-205
 title: "Vegetation on Earth: remaining misses (C4 crossover ~25 deg, boreal types 22 Mkm2, savanna in the southern Amazon fringe)"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: surface
 effort: s
@@ -23,6 +23,9 @@ After tuning (observed climate, tools/veg_check.py --png): agreement 62%, land N
 - Burned area is 92% in savanna and grassland (GFED ~70-80%): boreal and temperate forest fires are rare (fire weather needs a dry month; boreal summers rarely qualify).
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Closed: boreal area in range; southern Amazon fringe depends on the start state of history-less worlds (coordinator: keep the open start, table in docs/review/vegetation/batch-2026-10-16.md).
+- 2026-10-16: Owner decision A: keep the young-woodland start for worlds without history (table in docs/review/vegetation/batch-2026-10-16.md).
+- 2026-10-16: Vegetation batch (2026-10-16), Earth L6 observed / model climate: C4 crossover 30/25 -> 35/40 deg N/S (PW-231; model climate 30/30 -> 35/40); boreal named types 16.9 -> 16.6 / 14.5 -> 14.4 Mkm2 (in range, nothing to do); burned area 92 -> 79% in savanna and grassland (PW-234; 4.6 -> 4.3 Mkm2/yr). Southern Amazon fringe unchanged (57 of 135 potential-forest cells savanna): it is the start state of a world without history, a judgement call (inbox draft draft-veg-start-without-history.md). Agreement 60.6 -> 59.5% / 40.3 -> 40.0%.
 - 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Smalls2: boreal 20.2->16.9 Mkm2 (in range); C4 nudges tried and rejected (draft).
 - 2026-10-15: Created from inbox draft draft-veg-earth-tuning-remaining.md (found by veg).
