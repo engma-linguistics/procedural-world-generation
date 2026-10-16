@@ -175,9 +175,12 @@ class TZParams:
     flex_km: float = FLEX_KM  # ... spread over this (km, lithospheric flexure) ...
     iso_tau: float = 3.0  # ... with this e-folding time (kyr)
     calving: float = 1.0  # per yr: calving speed (m/yr) per m of water depth at a marine ice front ...
-    calve_depth: float = 1500.0  # m: ... and wherever grounded ice stands in deeper water than this, even
+    calve_depth: float = 3000.0  # m: ... and wherever grounded ice stands in deeper water than this, even
     # with no open sea beside it (a deep basin the grid can't resolve: ice flowing into it would float,
-    # break up and melt in the sea water under it, not fill it 10 km thick; PW-199)
+    # break up and melt in the sea water under it, not fill it 10 km thick; PW-199: ~4 km basins). Deeper
+    # than real grounded ice stands: Earth's deepest grounded beds are ~2.5 km (the Bentley Subglacial
+    # Trench; ETOPO1's cell means reach 1.7 km at L6, 2.3 km at L7), and at 1.5 km the true bed's
+    # deepest cells under West Antarctica's 3 km of ice calved in place from the start (PW-361)
 
 
 # --------------------------------------------------------------------------

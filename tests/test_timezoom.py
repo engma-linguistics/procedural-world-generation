@@ -128,3 +128,25 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     assert grew.any()
     assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
     assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((s["H"] - H0)[grew]) * p.iso_ratio + 20
+
+
+def test_deep_grounded_ice_stands(sim4):
+    """Thick ice grounded in deep water with no open sea beside it stands
+    (West Antarctica's true bed, ~1.7-2.3 km deep at L6-L7 under ~3 km of
+    ice, PW-361); only an unresolved basin deeper than calve_depth (PW-199's
+    ~4 km) breaks up in place."""
+    g = sim4.grid
+    src = Z.source_from_sim(sim4)
+    elev, ice = src["elev"].copy(), np.zeros(g.n)
+    nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
+    # two inland cells: their neighbours (and theirs) on land
+    inland = [i for i in range(g.n) if elev[i] > 200 and all(elev[j] > 200 and (elev[nb(j)] > 200).all() for j in nb(i))]
+    a, b = inland[0], next(i for i in inland if not set(nb(i)) & set(nb(inland[0])) and i not in nb(inland[0]))
+    for c, depth, h in ((a, 2000.0, 3200.0), (b, 4000.0, 5500.0)):
+        elev[c], ice[c] = -depth, h
+        ice[nb(c)] = 2500.0
+    src.update(elev=elev, ice=ice, dT=src["dT"] - 30.0)  # (cold: the ice neither melts nor flows much in one step)
+    r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(**NO_ORBIT))
+    H = r["state"]["H"]
+    assert H[a] > 2500, H[a]  # grounded in 2 km of water: stands
+    assert H[b] < 0.5 * 5500, H[b]  # in 4 km: breaks up in place
