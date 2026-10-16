@@ -2,13 +2,13 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: in-progress
+status: blocked
 parent: PW-013
 subsystem: climate
 effort: l
 impact: high
 found_by: daniel
-blocked_by: [PW-014]
+blocked_by: [PW-352]
 relates: [PW-019]
 refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/, docs/review/audit/pw015-handoff.md]
 created: 2026-10-14
@@ -32,6 +32,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Status in-progress -> blocked. Stage 1 (conservative physical-time transport) merged alone under the owner's relaxed bar: generated planets about as main (arid 27.8 vs 29.3%, NPP 321 vs 334, fewer giant-lake frames), Earth Koppen group unchanged, exact -1.8/-2.9 pts, land too wet (~1150 mm vs 791) and arid share 18% vs 30. The wetness is land rain efficiency (showers rain out regardless of the upper air), previously hidden by the old transport's leaks; stage 3 gating waits on PW-352. Stages 2 and A parked on branches pw015-prototype, pw015-wip, pw015-optA.
 - 2026-10-16: Merged inbox draft draft-winter-coast-eddy-flux.md ("Winter east coasts: a storm-eddy flux of boundary-layer vapour can't make winter rain without the storms' own lifting, and storminess is high in continental interiors", found by pw015-rain).
   In PW-015 option A, the boundary layer has its own storm-eddy flux, down the gradient of its own vapour:
   `storm_eddies` with `q_eddy`, K = `storm_k_bl` x B, as a velocity -K grad(Q)/Q, with Q the first phase's
