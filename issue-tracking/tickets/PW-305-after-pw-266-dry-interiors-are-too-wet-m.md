@@ -1,4 +1,5 @@
 ---
+id: PW-305
 title: "After PW-266 dry interiors are too wet: more recycled vapour feeds the showers over hot dry land (Earth's Köppen-B share of land 29% -> 20%, Kottek 30%; exact 39% -> 33%)"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: climate-ocean
 blocked_by: []
 relates: [PW-266, PW-026, PW-228, PW-290, PW-013]
 refs: [planet/climate.py, docs/review/audit/fixes-climate-ocean.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -54,3 +57,6 @@ Options:
 - E (heavier, sound): give the showers over land a boundary-layer depth. Dry, deeply mixed ground air (large `t_air` − dew point) spreads its vapour through a deeper layer, so the near-ground q that drives `inst` is diluted. Or tag the recycled vapour as a second tracer that mixes aloft. Either needs a careful pass on Earth.
 
 Lean: needs the owner. A for now; E if the deserts matter before PW-013's rain pass.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-climate-ocean-recycling-wets-dry-interiors.md (found by climate-ocean).

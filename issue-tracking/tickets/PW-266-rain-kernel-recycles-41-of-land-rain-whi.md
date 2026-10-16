@@ -2,7 +2,7 @@
 id: PW-266
 title: Rain kernel recycles 41% of land rain while the water balance evaporates 60%; the freshwater mean hides the gap
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: climate
 effort: s
@@ -33,5 +33,6 @@ Simplest sound fix: give the kernel the water balance's own per-cell evaporation
 - [ ] earth_check and veg_check re-run; regional rain (PW-228) compared before and after
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (merged 7f9cc82): the kernel evaporates the water balance's AET and takes up vapour only over open sea; fresh-water books close without the hidden subtraction. Side effect: dry interiors over-wet (Earth Kottek exact 38.9 -> 33.0%, B share 28.9 -> 20.3%); options B (vapour into moved/downwind air) tried and ruled out. Coordinator merged as option A (sound books; the remaining error is a missing process, not a fudge); follow-up needs-decision ticket from the recycling draft.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-climate-ocean-rain-recycling-vs-budyko.md (found by audit-climate-ocean).

@@ -1,4 +1,5 @@
 ---
+id: PW-304
 title: The rain kernel's vapour transport isn't mass-conservative (fresh-water residue ~1 cm/yr on L6 planets, up to 0.6 m/yr on banded test planets)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: climate-ocean
 blocked_by: []
 relates: [PW-266, PW-211]
 refs: [planet/climate.py, planet/ocean.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -27,3 +30,7 @@ Measured as the residue in m/yr over the sea, after PW-266:
 `ocean.freshwater` still removes the mean and warns above 2 cm/yr (`FW_RESIDUE`). So the pytest run prints ~160 such warnings from the L4 test planets.
 
 Fix: make the transport conservative (each cell sends its moved vapour out in shares that sum to 1, and the inflow is what its neighbours send), and give the mixing a symmetric edge form. Keep the PW-211 seam fix in some form, then re-check PW-211's rain-streak test. Then lower `FW_RESIDUE` to 1 cm/yr.
+
+## Updates
+- 2026-10-15: Coordinator: at L4 the freshwater check warns on every climate update (+2..+4.7 cm/yr over its 2 cm/yr threshold), ~450 warnings per pytest run; fixing the leak or scaling the threshold by level would quiet it.
+- 2026-10-15: Created from inbox draft draft-climate-ocean-rain-transport-leaks.md (found by climate-ocean).
