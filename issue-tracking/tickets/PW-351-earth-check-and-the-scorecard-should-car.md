@@ -2,7 +2,7 @@
 id: PW-351
 title: earth_check and the scorecard should carry the moisture budget's headline numbers (basin E-P-R, poleward transport, rain efficiency)
 type: task
-status: todo
+status: in-progress
 parent: PW-013
 subsystem: infra
 effort: s
@@ -29,4 +29,5 @@ Make it a call into moisture_budget.analyse (no second copy of the code). Mind e
 - [ ] earth_check prints the block; the scorecard stores it
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-earth-check-moisture-headlines.md (found by moisture-budget).
