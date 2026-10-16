@@ -709,9 +709,10 @@ def earth_glim(grid) -> np.ndarray:
 #   bilinearly interpolated to 30 arc-seconds; ice_cover_boolean then draws each
 #   pixel as ice with probability equal to that interpolated fraction. So the
 #   effective resolution is 1 degree and the extent is the PMIP3 protocol ice sheet
-#   (the PMIP3/CMIP5 LGM ice sheet is a blend of ICE-6G_C, GLAC-1D and MOCA/ICE-5G
-#   after Abe-Ouchi et al. 2015, Geosci. Model Dev. 8, 3621; the PDF itself does not
-#   name the members, that detail is from the PMIP3 protocol). The record has no
+#   (the PMIP3/CMIP5 LGM ice sheet is a composite of three groups' reconstructions,
+#   the ANU ice model, ICE-6G v1.02 and GLAC-1 (the PMIP3 21k ice-sheet wiki); only
+#   two cover Antarctica. Abe-Ouchi et al. 2015, Geosci. Model Dev. 8, 3621,
+#   doi:10.5194/gmd-8-3621-2015. The PDF itself does not name the members). The record has no
 #   paper DOI; cite the Zenodo dataset (Shao, Anhaeuser, Elble, Ludwig, Schlueter,
 #   Ulbrich, Williams, Xia).
 #   Licence: CC BY 4.0 (cite the dataset). netCDF-4, so read with the small HDF5
