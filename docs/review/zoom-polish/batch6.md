@@ -113,3 +113,20 @@ grading with more water). Inland bias/RMS unchanged, perched unchanged.
 Test: `test_zoom_lake_passes_on_the_coarse_lakes_outflow` (no runoff within 900 km of the test lake: it sees only
 what the rivers bring in at the edge, < 0.8 of the coarse outflow, and passes the coarse outflow on);
 `test_lake_passes_its_water_on` now allows the coarse outflow as the floor.
+
+## PW-177: dune fields (looked at, not changed)
+
+592f2a's big erg covers ~2,000 cells round 31.9,30.5 (BWk). A 250 km zoom at 0.5 km, 32.3,31.2, seed 1: transverse
+and barchan weight 0.92, linear 0.08, crest spacing 1.9 km, crests up to 134 m. The seam is as the ticket says:
+each planet-fixed ~200 km patch has its own axis and phase, and the two are switched over a narrow, wandering band,
+so the crests end against a line where their orientation jumps. Widening the band brings back the cross-hatch;
+blending the patches' coordinates instead (bent crests) stretches the spacing by the patches' offset times the
+band's gradient. Options on the ticket: A) phasor noise (oriented Gabor kernels keeping their phase; orientation
+from each pixel's drift, no patches; the dunes' profiles on its phase; network dunes where two drift modes mix,
+star arms along the wind modes), a new kernel; B) keep the patches, draw the mixed regime as crescentic-linear
+dunes and orient the star dunes' arms by the patch's axis (leaves the seams); C) accept (faint at 1-4 km). Lean:
+A if ergs should read right at 0.5 km, else C. Barchans (0.1-0.5 km) are left to a nested zoom (PW-129).
+
+![seam](pw177_seam.png)
+*Part of that zoom (0.5 km pixels, 125 x 100 km, hill-shaded from the north-west): the crests switch orientation
+along a line running from the top middle down to the right.*
