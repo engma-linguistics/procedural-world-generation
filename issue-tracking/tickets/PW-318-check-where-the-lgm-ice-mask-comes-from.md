@@ -1,4 +1,5 @@
 ---
+id: PW-318
 title: Check where the LGM ice mask comes from, and test the HDF5 reader
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: soildata
 blocked_by: []
 relates: [PW-314, PW-185]
 refs: [tools/earth_data.py, tools/h5_reader.py, tools/soil_check.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -18,3 +21,6 @@ PW-314 uses the Zenodo "Global Kilometer-Resolution Dataset of Boundary Conditio
 - `tools/h5_reader.py` (minimal HDF5/netCDF-4 reader, chunked v3 + B-tree v1 + deflate) has no unit test; `tests/test_tiff_reader.py` covers only the TIFF reader. Add one on a small netCDF-4 file if a writer is ever available offline (none is in the dependencies), or a hand-built byte string.
 - [ ] reconstruction named in `earth_data.py`
 - [ ] h5 reader test
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-lgm-mask-provenance.md (found by soildata).
