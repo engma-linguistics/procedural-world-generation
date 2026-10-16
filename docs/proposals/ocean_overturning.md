@@ -1,6 +1,6 @@
 # Ocean overturning circulation: spec and follow-up (2026-10-13/14)
 
-*Moved from `docs/plan_next.md` (Round 2 user decisions) and `docs/morning_decisions.md` item 3 on 2026-10-14. Implemented as `planet/ocean.py` (branch `ocean`). The follow-up plan (moisture transport, then removing the spin-up rule) is epic PW-013 on the board (`uv run python issue-tracking/board.py tree PW-013`).*
+*Moved from `docs/plan_next.md` (Round 2 user decisions) and `docs/morning_decisions.md` item 3 (at bdc967f) on 2026-10-14. Implemented as `planet/ocean.py` (branch `ocean`). The follow-up plan (moisture transport, then removing the spin-up rule) is epic PW-013 on the board (`uv run python issue-tracking/board.py tree PW-013`).*
 
 ## Original spec (user request, 2026-10-13)
 

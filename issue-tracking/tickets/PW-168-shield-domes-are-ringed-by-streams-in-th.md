@@ -2,7 +2,7 @@
 id: PW-168
 title: Shield domes are ringed by streams in the viewer's relief (a moat look)
 type: task
-status: in-progress
+status: done
 parent: PW-005
 subsystem: zoom
 effort: s
@@ -29,6 +29,7 @@ from a smooth pediment; or exclude dome footprints from the channel mask
 used in the landscape pass.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (6a56ed0): domes solid (Synth.solid), channel-crossed domes skipped; flat dome pixels 48%->12%.
 - 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-15: Merged inbox draft draft-shield-dome-apron-tried.md ("Shield dome moats (PW-168): a pediment apron in the target doesn't help; domes also get striped by gullies", found by smalls2).
   For PW-168 (merge into it). Tried on branch smalls2: `Shield.target` = 0.8 x max(dome, apron), the apron the same dome sites at 2x the radius with a lower, gentle profile (so the foot streams would run round a pediment). Compared hillshade crops of a 250 km, 0.5 km/px zoom at -16.75, -28.53 (world a08983) before and after: no visible change to the rings, and more domes came out striped by parallel gullies across their faces (the landscape pass incising the target's dome). Not taken. The stripes are a second artefact worth fixing with the moat: both suggest the landscape pass should not see the domes at all (mask the dome footprints out of the channel network and add the domes only in `shape`), and the drainage be deflected by a separate rule (route the streams round the footprints) instead of by the target.

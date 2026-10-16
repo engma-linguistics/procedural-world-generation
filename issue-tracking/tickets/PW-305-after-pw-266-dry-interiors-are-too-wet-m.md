@@ -2,7 +2,7 @@
 id: PW-305
 title: "After PW-266 dry interiors are too wet: more recycled vapour feeds the showers over hot dry land (Earth's Köppen-B share of land 29% -> 20%, Kottek 30%; exact 39% -> 33%)"
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-245
 subsystem: climate
 effort: m
@@ -59,6 +59,7 @@ Options:
 Lean: needs the owner. A for now; E if the deserts matter before PW-013's rain pass.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner (2026-10-15): option A, keep PW-266 as merged; no temporary fixes. The dry-interior over-wetting (Earth Koppen exact 38.9 -> 33.0%, Sahara 328 mm vs 35, Australia 837 vs 291) belongs to PW-013's rain/moisture-transport rework. E1 prototype not merged (write-up docs/review/audit/pw305-prototype.md).
 - 2026-10-15: Prototype (branch pw305-e1-mixed-layer, e104331, not merged; write-up docs/review/audit/pw305-prototype.md on the branch): E1, a dry-convective mixed layer (PET-AET heats the air; once deeper than the 2 km vapour scale height, the shower trigger sees 2 km/h of the vapour). Earth Koppen exact 33.0 -> 34.3%, B share 20.3 -> 21.9% (obs 30.1), Sahara 328 -> 294, Australia 837 -> 720 mm; Gobi and Sahel unchanged; books stay closed. A deeper steady-state layer restores the B share (30-33%) but dries SE China/SE USA (too-warm summers there): rejected. Owner to decide: merge E1 (modest, sound), or keep looking.
 - 2026-10-15: Coordinator: prototype agent started on a branch (sound route E: boundary-layer dilution or recycled-vapour tracer); owner decides from its report.
 - 2026-10-15: Created from inbox draft draft-climate-ocean-recycling-wets-dry-interiors.md (found by climate-ocean).

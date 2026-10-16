@@ -363,8 +363,28 @@ def test_lake_outlet_has_no_cliff(lake_zoom):
     o = lk["outlet"][0] * nx + lk["outlet"][1]
     ch = zoom.ZK.chain(z["rec"], o)[:6]
     km = res * np.arange(len(ch)) * 1.42
-    assert np.all(lk["level_m"] - ws[ch] <= zoom.RAPIDS_GRAD * km + 15), (lk["level_m"], ws[ch])
+    assert lk["outflow_grad_m_km"] >= zoom.RAPIDS_GRAD
+    assert np.all(lk["level_m"] - ws[ch] <= lk["outflow_grad_m_km"] * km + 15), (lk["level_m"], ws[ch])
     assert not [f for f in z["stats"]["waterfalls"] if f["from_lake"] and f["height_m"] > 30]
+
+
+def test_outflow_grad_follows_the_coarse_relief(water_world):
+    """A lake's rapids fall as steeply as its coarse outflow does: the
+    steepest mean descent from its level down its river; 3x the relief, 3x
+    the gradient (a mountain lake's outflow cascades, PW-123); closed lakes 0."""
+    g, L = water_world["grid"], water_world["layers"]
+    elev, down = L["elevation"].astype(float), L["downstream"].astype(int)
+    lab, lvl, ex = zoom.coarse_lakes(g, L, elev)
+    gr = zoom.outflow_grad(g, elev, down, lab, lvl, ex, 500.0)
+    assert np.all(gr[ex < 0] == 0) and np.all(gr[ex >= 0] > 0)
+    k = int(np.flatnonzero(ex >= 0)[0])
+    # by hand: the mean descent to the first cell below the exit
+    n = down[ex[k]]
+    s = (np.min(np.arccos(np.clip(g.centers[lab == k] @ g.centers[ex[k]], -1, 1)))
+         + np.arccos(np.clip(g.centers[ex[k]] @ g.centers[n], -1, 1))) * R_KM
+    assert gr[k] >= (lvl[k] - max(elev[n], 0)) / s - 1e-9
+    gr3 = zoom.outflow_grad(g, 3 * elev, down, lab, 3 * lvl, ex, 500.0)
+    assert np.allclose(gr3, 3 * gr)
 
 
 def test_staircase_fits_the_valley():

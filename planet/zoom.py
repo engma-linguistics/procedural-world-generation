@@ -78,8 +78,9 @@ Pipeline
    Lakes are outlets held at their surface, with a rim kept above the
    water except at the outlet (the shore pixel nearest the coarse lake's
    exit); an open lake's inflow leaves again there, and the ground below
-   the outlet (in a corridor along its river) steps down at most
-   RAPIDS_GRAD m/km (rapids, not a cliff).
+   the outlet (in a corridor along its river) steps down as fast as the
+   coarse outflow descends, at least RAPIDS_GRAD m/km (rapids, not a
+   cliff; a mountain lake's outflow cascades down its valley).
    A closed lake's smaller fragments drain to its biggest one; a fragment
    that should drain but finds no outlet becomes land (no fragment
    swallows its rivers).
@@ -639,6 +640,32 @@ def coarse_lakes(g, L: dict, elev: np.ndarray):
     return lab, lvl, exit_
 
 
+def outflow_grad(g, elev: np.ndarray, down: np.ndarray, lab: np.ndarray, lvl: np.ndarray, exit_: np.ndarray,
+                 reach_km: float) -> np.ndarray:
+    """Per coarse lake, how steeply its outflow falls in the coarse world,
+    m/km: the steepest mean descent from the lake's level to a cell on its
+    river (the exit cell, then down the `downstream` chain), over the path
+    from the nearest lake cell, up to `reach_km` along it (0 for a closed
+    lake). A lake high in the mountains drains down a steep valley; one on
+    a plain, gently."""
+    out = np.zeros(len(lvl))
+    for k, e in enumerate(exit_):
+        if e < 0:
+            continue
+        cc = np.flatnonzero(lab == k)
+        s = float(np.min(np.arccos(np.clip(g.centers[cc] @ g.centers[e], -1, 1)))) * R_KM
+        c = int(e)
+        for _ in range(64):
+            if s > 0:
+                out[k] = max(out[k], (lvl[k] - max(float(elev[c]), 0.0)) / s)
+            n = int(down[c])
+            if n < 0 or lab[n] == k or s > reach_km:
+                break
+            s += float(np.arccos(np.clip(g.centers[c] @ g.centers[n], -1, 1))) * R_KM
+            c = n
+    return out
+
+
 def _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area):
     """Big coarse river mouths in or near the region, biggest first, as dicts:
     mouth point (x, y km; between the last land cell and the sea cell),
@@ -1170,7 +1197,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         ground = np.where(wv > 0, (1 - wv) * h + wv * ground, h)
         # the cones on it (absolute near their summits, on the ground at their edges)
         cz = vf["z"] + (1 - vf["z_abs"]) * (ground - vf["z_floor"])
-        cb = vf["bump"] + (1 - vf["bump_abs"]) * (h - vf["bump_floor"])
+        # (a continental vent's lava plain lies flat on the smooth coarse
+        # ground, filling the hollows; hills stand through it, PW-118)
+        cb = vf["bump"] + (1 - vf["bump_abs"]) * (np.where(vf["bump_flat"], base, h) - vf["bump_floor"])
         hv = np.maximum(ground, cz)
         h = np.maximum(hv, cb)
         land = np.where(wv > 0.5, h > 0, land | (h > 0.5))
@@ -1251,6 +1280,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- coarse rivers -> valleys + inflow --------------------------------
     coast_cap = COAST_FLOOR_GRAD * res * ZK.inside_distance(land, nx, ny, False)  # (see z_course)
     clab, clvl, cexit = coarse_lakes(g, L, elev)
+    cgrad = outflow_grad(g, elev, down, clab, clvl, cexit, 2 * sp)  # (the rapids below each lake: rims())
     lake_c = clab >= 0
     in_sel = np.zeros(g.n, bool)
     in_sel[sel] = True
@@ -1624,7 +1654,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ex = (a, b)
             lake[pix] = True
             surf[pix] = clvl[c]
-            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c)})
+            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c),
+                          "grad": max(RAPIDS_GRAD, float(cgrad[c]))})
         # A closed lake's smaller fragments (its outline broken up by the
         # noise or the coarse mask) pass their water on to its biggest one
         # instead of swallowing their rivers (the biggest stays closed).
@@ -1741,17 +1772,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 fl[ch] = 0.5  # no rim along the outflow
                 cp[ch] = np.minimum(cp[ch], lakes[j]["level"] - 0.3)
                 # Below the sill the ground steps down gradually: the outflow
-                # lies no more than RAPIDS_GRAD * s below the lake, s km down
-                # the river (rapids), out to the first fall placed on the
-                # outflow, instead of a cliff down to a river graded up from far
-                # below. Its banks stand a little above the river beside them
+                # lies no more than G * s below the lake, s km down the river
+                # (rapids), out to the first fall placed on the outflow,
+                # instead of a cliff down to a river graded up from far below.
+                # G is the coarse outflow's own descent (outflow_grad), at
+                # least RAPIDS_GRAD: a mountain lake's outflow cascades down
+                # its valley rather than standing above it on a gentle ramp
+                # (PW-123). Its banks stand a little above the river beside them
                 # (or the water just finds a neighbour that drops away): banks().
-                lv = lakes[j]["level"] - 0.3
+                lv, gr = lakes[j]["level"] - 0.3, lakes[j]["grad"]
                 s_ch = np.concatenate([[0.0], np.cumsum(chain_km(ch))])
                 st_ = np.flatnonzero(step[ch] > 0)
-                rkm = min(lv / RAPIDS_GRAD, 150.0, s_ch[st_[0]] if len(st_) else np.inf)
+                rkm = min(lv / gr, 150.0, s_ch[st_[0]] if len(st_) else np.inf)
                 ok = s_ch <= rkm
-                fz = lv - RAPIDS_GRAD * s_ch[ok]
+                fz = lv - gr * s_ch[ok]
                 near, fz_ = banks(ch[ok], fz, True)
                 near, fz_ = np.concatenate([ch[ok], near]), np.concatenate([fz, fz_])
                 a = active[near]
@@ -2214,6 +2248,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # what leaks into the sea at the coast, is put back on the hillslopes:
     # each cell keeps its mean, PW-268)
     h = keep_means(h, h0, active & ~stream)
+    solid = np.zeros(npx, bool)  # (a shield's domes: not cut through, nor capped)
     if lf is not None:
         # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
         # finished landscape, each coarse cell's mean kept. Not on glaciers,
@@ -2239,18 +2274,24 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         keep_ = fixed_ | ((lf.basins() > 0.5) & (q_ < BASIN_THROUGH_Q) & active)
         # (the shape hooks' structures die out over a few km towards those courses: a water gap)
         mask_s = where * smoothstep(wk + res, wk + max(4 * res, 5.0), dco)
-        h = keep_means(ZL.cut(lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_),
-                              rec_, order_, keep_, nx, ny, res,
-                              fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
+        hr = lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_)
+        # (solid rock the remap raised, a shield's domes, isn't cut through:
+        # the flow paths across it pond and spill round it, PW-168)
+        solid = lf.solid() > 0.5
+        keep_ = keep_ | solid
+        h = keep_means(ZL.cut(hr, rec_, order_, keep_, nx, ny, res, fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
         # (a sill the remap, the correction or the summits' caps leave across a
         # flow path is cut through rather than filled into a lake; the region's
         # edge, an outlet held at the target, is lowered too where land drains into it)
         # falls over the classes' cliffs retreat into gorges (PW-150)
         h, lf_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
-        h = ZL.cut(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
+        # (the summits' cap is the landscape pass's: a shield's domes stand above it, PW-168)
+        h = ZL.cut(np.where(active & ~solid, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
+    h_pre = h
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
-    h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
+    h = np.where(active & ~solid, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
+    rapids_lift = np.where(rapids & ~glacier, np.maximum(h - h_pre, 0.0), 0.0)  # (debug: how far the rapids hold the ground up)
     log(f"  landscape pass: {iterations} iterations [{time.time() - t0:.1f}s]")
 
     # A lake fragment that should pass its water on but found no way out
@@ -2398,6 +2439,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                          "inflow_m3s": round(float(lake_in[j] * KM2_M_PER_YR_TO_M3S), 1),
                          "evaporation_m3s": round(float(lake_loss[lk["px"]].sum() * res * res * KM2_M_PER_YR_TO_M3S), 1),
                          "outlet": [int(outs[j] // nx), int(outs[j] % nx)] if outs[j] >= 0 else None,
+                         # (how fast its outflow's rapids step down: outflow_grad, PW-123)
+                         "outflow_grad_m_km": round(lk["grad"], 1) if outs[j] >= 0 else None,
                          "outflow_m3s": round(float(discharge[outs[j]]), 1) if outs[j] >= 0 else 0.0}
                         for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])
 
@@ -2554,9 +2597,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
             "stats": stats, "coarse": coarse, "rec": rec, "kps": kps, "satellite": sat,
             "lakes": [{"open": lk["exit"] is not None, "outlet": int(outs[j]), "n_px": int(len(lk["px"])),
-                       "level": lk["level"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
+                       "level": lk["level"], "grad": lk["grad"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
                       for j, lk in enumerate(lakes)],
-            "debug": {"pinned": pin_src, "overrides": ov_src},
+            "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift},
             "seconds": round(time.time() - t0, 1),
             "params": {"iterations": iterations, "river_min_flow": river_min_flow, "coarse_spacing_km": round(sp, 1)}}
 

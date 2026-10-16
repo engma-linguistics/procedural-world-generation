@@ -32,5 +32,6 @@ Measured as the residue in m/yr over the sea, after PW-266:
 Fix: make the transport conservative (each cell sends its moved vapour out in shares that sum to 1, and the inflow is what its neighbours send), and give the mixing a symmetric edge form. Keep the PW-211 seam fix in some form, then re-check PW-211's rain-streak test. Then lower `FW_RESIDUE` to 1 cm/yr.
 
 ## Updates
+- 2026-10-15: Docs cleanup: the after-audit 1 Gyr health sweep (8 L6 + 3 L7 seeds, main after the audit fixes) logged 402 fresh-water imbalance warnings, residue -2.0..-6.1 cm/yr (all negative; larger than the ~1 cm/yr quoted above for L6 planets). The full log is docs/review/after-audit-2026-10-15/health.log at commit 29ab7d4.
 - 2026-10-15: Coordinator: at L4 the freshwater check warns on every climate update (+2..+4.7 cm/yr over its 2 cm/yr threshold), ~450 warnings per pytest run; fixing the leak or scaling the threshold by level would quiet it.
 - 2026-10-15: Created from inbox draft draft-climate-ocean-rain-transport-leaks.md (found by climate-ocean).
