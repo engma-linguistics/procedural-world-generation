@@ -2,7 +2,7 @@
 id: PW-363
 title: "Zoom deltas: some distributaries run 30-90 m above the plain; some bird's-foot fingers get no channel"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -36,6 +36,7 @@ After PW-061 (curved distributaries and fingers, zoom batch 5), on world 592f2a'
 - [ ] every bird's-foot finger has a channel, or isn't drawn
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done: raised branches were held by floors (falls feet, coarse valley floors, cones); perched 56.2 -> 38.6 per seed, 23/24 fingers channelled.
 - 2026-10-16: Zoom batch 6: fixed in 2ad047c (both checkboxes, but one finger: inbox draft). The raised branches were held by floors, not pins: a falls reach's chain followed its river on down the distributaries at its staircase's foot, others took a coarse river's valley floor or rode over a young volcano's cone. Now the falls chain stops at the distributaries, a distributary's coarse floor is no higher than the land within 2 px, the coast ramp blends into the delta plain's height, no branch crosses a young cone. Fingers: a delta whose river hadn't found its mouth at the layout is tried again (up to 2/3 of the pass); a missed finger gets its own branch from the nearest channel; no fingers where the funnels take the branches. 592f2a 8 zooms seeds 1-5: perched 56.2 -> 38.6 per seed (arc 47.4 -> 29.8), drops 9.8 unchanged, arc mouths 21.4 -> 22.2; bird's-foot fingers channelled 23 of 24. docs/review/zoom-polish/batch6.md.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-delta-branches-raised-and-unchanneled-fingers.md (found by zoom-batch5).

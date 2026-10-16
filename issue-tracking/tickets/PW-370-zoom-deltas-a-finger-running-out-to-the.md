@@ -1,4 +1,5 @@
 ---
+id: PW-370
 title: "Zoom deltas: a finger running out to the region's edge beside its own river's inflow gets no channel"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-batch6
 blocked_by: []
 relates: [PW-363]
 refs: [planet/zoom.py, docs/review/zoom-polish/batch6.md, "world 592f2a"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,3 +25,6 @@ stops open, and its end drains back into the delta (a loop), so the branch is ta
 Try: let a delta's seaward direction ignore the sea beyond an inflow edge, or don't build a finger whose tip lies
 on a non-outlet stretch of the built area's edge (`_delta_forms` would need the inflow points).
 - [ ] every bird's-foot finger in the region has a channel, or isn't drawn (zoom 4.97,-114.51 seeds 1-5)
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-finger-toward-inflow-edge.md (found by zoom-batch6).
