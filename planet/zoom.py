@@ -920,6 +920,11 @@ GL_F_MAX = 3e9  # m3/yr: at most this enters one tongue (Bering, Malaspina: a fe
 GL_MAX_KM = 100.0  # km: no tongue runs further below its zone (Pio XI ~64 km, Bering ~190 km in all)
 GL_DRAW = 0.5  # a tongue narrower than this many pixels isn't drawn
 GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EXP
+# ... and no thicker than Nye's plastic snout, H = sqrt(L x) at x m from the
+# terminus on land, L = 2 tau / (rho g) with a yield stress tau ~100 kPa
+# (H ~150 m 1 km back, ~330 m 5 km back): a tongue thins to its end instead of
+# stopping in an ice cliff (PW-350; calving fronts in water keep their height)
+GL_NYE_M = 2 * 1.0e5 / (917.0 * 9.81)  # m (~22)
 GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 
 
@@ -974,20 +979,30 @@ def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, c
     for r in range(1, int(min(half.max(), 4.0)) + 1):
         ice |= _dilate(half >= r + 0.5, r).ravel() & land & ~stop
     th = np.clip(GL_H0 * (np.maximum(flux, 1.0) / GL_F0) ** GL_H_EXP, 20.0, ICE_MAX)
-    th = np.where(zone, np.maximum(th, ice_c), th)
+    # the snout (a tongue's, or the zone's where its outflow is too narrow to
+    # draw): Nye's profile, the mean of sqrt(L x) over each pixel's span along the flow
+    flow = zone | tongue
+    x = ZK.snout_distance(rec, order, flow, land & ~stop & ~flow, nx, res)
+    fin = np.isfinite(x)
+    a, b = 1000 * np.maximum(x[fin] - 0.5 * res, 0.0), 1000 * (x[fin] + 0.5 * res)
+    nye = np.full(len(th), np.inf)
+    nye[fin] = 2 / 3 * np.sqrt(GL_NYE_M) * (b**1.5 - a**1.5) / (b - a)
+    th = np.minimum(th, nye)
+    th = np.where(zone, np.maximum(th, ice_c), th)  # (the coarse sheet's ice is the world's)
     th = np.where(ice & ~zone & ~tongue, _spread(th, tongue, nx, ny), th)
     return ice, np.where(ice, th, 0.0)
 
 
 def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
-    """v carried a few pixels out from the pixels m (their max nearby)."""
-    a = np.where(m, v, 0.0).reshape(ny, nx)
-    out = a.copy()
+    """v carried a few pixels out from the pixels m: each pixel takes its
+    nearest (the max of the equally near; a tongue's sides take the
+    tongue's thickness beside them, so a thinned snout stays thin)."""
+    out = np.where(m, v, 0.0).reshape(ny, nx)
     for _ in range(4):
         b = out.copy()
         for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             b = np.maximum(b, _shift(out, dy, dx, 0.0))
-        out = b
+        out = np.where(out > 0, out, b)
     return out.ravel()
 
 
