@@ -1,0 +1,84 @@
+wave_power 1.7s, tide_range 0.2s
+
+WAVE POWER kW/m                      model   observed
+  Ireland W                           87.2   50-80  ~
+  Scotland NW                         75.1   40-70  ~
+  Portugal                            71.3   30-50  ~
+  Norway W                            64.1   25-45  ~
+  Iceland S                           57.2   40-70  ok
+  SW Australia                        21.0   40-70  ~
+  S Chile                             41.8   60-100  ~
+  Cape Town                           20.7   35-50  ~
+  New Zealand SW                      60.1   60-100  ok
+  Tasmania W                          36.4   50-90  ~
+  California                          47.8   25-40  ~
+  Oregon                              68.6   35-50  ~
+  British Columbia                    77.4   35-50  ~
+  US East (Hatteras)                  15.9   8-15  ~
+  Brazil NE                           14.0   8-15  ok
+  Hawaii N                               -   15-25  
+  Japan E                             16.3   8-15  ~
+  India W                              7.0   8-15  ~
+  Java S                              11.8   20-35  ~
+  Gulf of Mexico (Mississippi)         6.4   1-5  ~
+  Gulf of Mexico (Texas)               5.4   2-7  ok
+  Caribbean (Venezuela)               15.1   3-10  ~
+  Mediterranean (Nile)                16.8   2-6  XX
+  Mediterranean (Gulf of Lion)        26.9   3-8  XX
+  Baltic                              29.5   1-6  XX
+  North Sea S                         28.6   3-10  XX
+  Bay of Bengal head                  14.1   3-8  ~
+  Black Sea                           26.5   1-5  XX
+  Persian Gulf                         3.7   0.5-3  ~
+  Red Sea                              4.4   0.5-3  ~
+  Laptev (Lena delta)                  0.0   0.3-3  XX
+  Beaufort (Mackenzie)                 8.0   0.5-4  XX
+  Kara (Ob/Yenisei gulfs)              0.0   0.3-3  XX
+  in range 4/33, within 2x 24/33
+
+TIDAL RANGE m                        model   observed   (connection, shelf amp, funnel, shelf km)
+  Bay of Fundy / Gulf of Maine        2.65   4-15  ~   (0.94, 1.23, 1.15, 172)
+  Patagonia (San Julian)              2.17   6-11  XX  (0.88, 1.16, 1.07, 517)
+  NW Australia (King Sound)           4.76   6-11  ~   (0.90, 2.96, 0.89, 223)
+  Bay of Bengal head                  3.81   3-6  ok  (0.81, 2.36, 1.00, 155)
+  Gulf of Khambhat                    4.18   6-11  ~   (0.85, 1.51, 1.63, 319)
+  English Channel / St Malo           3.25   5-12  ~   (0.81, 1.42, 1.41, 339)
+  Severn / Bristol Channel            5.87   6-13  ~   (0.89, 2.33, 1.41, 381)
+  Yellow Sea (Incheon)                1.36   4-9  XX  (0.47, 1.24, 1.15, 771)
+  Gulf of California head             3.67   4-9  ~   (0.71, 1.17, 2.20, 134)
+  Alaska Cook Inlet                   4.39   5-9  ~   (0.95, 1.83, 1.26, 228)
+  Amazon mouth                        2.10   3-6  ~   (0.83, 1.26, 1.00, 243)
+  Mekong mouth                        1.60   2-4  ~   (0.32, 2.66, 0.94, 225)
+  Fly mouth (Gulf of Papua)           3.79   3-5  ok  (0.75, 1.99, 1.26, 219)
+  Open Pacific (Hawaii)                  -   0.3-1      
+  California                          1.71   1-2.2  ok  (1.00, 0.96, 0.89, 4)
+  Mediterranean (Nice)                0.21   0-0.4  ok  (0.12, 0.96, 0.94, 5)
+  Mediterranean (Nile)                0.04   0-0.5  ok  (0.02, 0.97, 0.94, 40)
+  Baltic                              0.05   0-0.2  ok  (0.03, 0.83, 1.15, 984)
+  Black Sea                           0.03   0-0.2  ok  (0.02, 0.96, 0.89, 6)
+  Gulf of Mexico (Mississippi)        0.52   0-0.6  ok  (0.28, 0.98, 0.94, 63)
+  Gulf of Mexico (Texas)              0.63   0-0.8  ok  (0.23, 1.17, 1.15, 95)
+  Caribbean (Jamaica)                 1.00   0-0.5  XX  (0.61, 0.96, 0.85, 3)
+  Red Sea                             0.04   0-1.0  ok  (0.02, 0.96, 1.15, 24)
+  Laptev (Tiksi)                      0.19   0.1-0.6  ok  (0.10, 0.84, 1.15, 563)
+  Beaufort (Mackenzie)                0.54   0.2-0.6  ok  (0.15, 1.54, 1.15, 114)
+  East Siberian (Kolyma)              0.07   0.1-0.4  ~   (0.06, 0.46, 1.15, 758)
+  in range 12/26, within 2x 22/26
+
+DELTAS                   Q m3/s Qs Mt/yr  waves  tide   river  wave  tide   model type (usually)
+  Mississippi              9410      164    4.7  1.46   0.69  0.09  0.23   river-dominated (river)
+  Nile                    43401      468   14.8  0.05   0.87  0.12  0.01   river-dominated (wave)
+  Ganges-Brahmaputra       5424      132    5.9  1.64   0.61  0.12  0.27   river-dominated (tide)
+  Mekong                   1504       32    3.0  0.28   0.66  0.27  0.07   river-dominated (tide)
+  Niger                   92946      375    6.3  2.14   0.73  0.05  0.22   river-dominated (mixed)
+  Sao Francisco            1634       14   14.5  2.19   0.15  0.68  0.16   wave-dominated (wave)
+  Senegal                  9884       55   20.6  2.04   0.32  0.52  0.16   wave-dominated (wave)
+  Fly                      2345       14    4.8  2.99   0.20  0.31  0.49   mixed tide-wave (tide)
+  Amazon                 307944     2586    9.8  1.55   0.91  0.01  0.08   river-dominated (tide)
+  Danube                    661        4   26.3  0.05   0.04  0.96  0.00   wave-dominated (wave)
+  Ebro                      522        4   24.4  0.39   0.04  0.95  0.01   wave-dominated (wave)
+  Po                        810        5   12.0  0.11   0.09  0.91  0.01   wave-dominated (river)
+  Yangtze                  1749       37   12.5  1.58   0.33  0.48  0.19   mixed wave-river (tide)
+  Mackenzie               20432       22    8.0  0.54   0.37  0.59  0.04   wave-dominated (river)
+  Orinoco                  1407       12   15.0  2.93   0.11  0.61  0.29   wave-dominated (tide)
+  Lena                     2245        9    0.0  0.19   0.94  0.00  0.06   river-dominated (river)
