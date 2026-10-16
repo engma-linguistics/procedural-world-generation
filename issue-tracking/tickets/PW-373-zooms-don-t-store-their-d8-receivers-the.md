@@ -2,7 +2,7 @@
 id: PW-373
 title: Zooms don't store their D8 receivers - the 3D view guesses the rivers' directions
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -29,4 +29,5 @@ Fix: save the final receivers as a uint8 layer (`receiver`: the D8 slot 0-7, 255
 - [ ] `receiver` layer in new zooms; zoom3d.js and zoom3d_fly.js read it
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Small fixes batch agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-receiver-layer.md (found by viewer-3d).

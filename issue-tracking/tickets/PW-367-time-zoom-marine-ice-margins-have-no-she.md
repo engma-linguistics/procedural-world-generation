@@ -2,7 +2,7 @@
 id: PW-367
 title: "Time zoom: marine ice margins have no shelves or ice streams: West Antarctica collapses unforced, shallow shelves ground"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: m
@@ -52,5 +52,6 @@ grounding-line resistance), not to a sea-level score.
 - [ ] a warm Eemian-like start can still lose it
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started (option A).
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: option A as the coordinator sees fit. Coordinator: A (cold-ocean buttressing tied to observed shelf buttressing, Fürst et al. 2016), scheduled with the next time zoom batch.
 - 2026-10-16: Created from inbox draft draft-timezoom-marine-margins.md (found by tzbatch-2026-10-16).
