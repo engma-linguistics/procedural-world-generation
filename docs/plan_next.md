@@ -29,6 +29,6 @@ Conventions, the inbox for subagents, and effort/impact definitions: `issue-trac
 - `docs/backlog.md`: the open work from the epics down, with priorities and suggested batches (snapshot 2026-10-14).
 - `docs/overview.md`: how each subsystem works.
 - `docs/coordination.md`: worktrees, merging, the server, run costs, showcase recipes.
-- `docs/proposals/`: design write-ups (glacial time zoom, ocean overturning, supercontinent cycle, the round 1–2 plan as written).
+- `docs/proposals/`: design write-ups (ocean overturning, supercontinent cycle, the round 1–2 plan as written).
 - `docs/review/`: investigations and run reviews; `docs/morning_report.md` is the record of the 2026-10-14 overnight session.
 - The old plan, with the full Known issues list as migrated, is at `git show bdc967f:docs/plan_next.md`.
