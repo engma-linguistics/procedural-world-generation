@@ -32,6 +32,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Redesign proposed for owner review: docs/proposals/moisture_transport.md (physical-time conservative kernel, storm eddies, bulk sea evaporation, humid-column showers with an air-mass trigger, shallow heat lows; prototype numbers §4, steps with acceptance §8, decisions §9; prototype on local branch pw015-prototype).
 - 2026-10-16: Merged inbox draft draft-polar-storm-track-moisture-half.md ("High-latitude seas get half of GPCP's rain (50-70 deg, both hemispheres), and Antarctica's margins still ~half their snow: the storm tracks bring no moisture of their own", found by polar-bundle).
   After the polar bundle (PW-332's vapour wind and ice-surface lift), Earth L6 at dT 0 still has the high-latitude
   seas at about half of GPCP: sea precipitation 55-60S 433 mm vs 1154, 60-65S 356 vs 861, 50-60N 561 vs 1150,
