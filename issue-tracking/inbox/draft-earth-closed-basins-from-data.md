@@ -39,3 +39,7 @@ Options:
   protected, but the closed lake they ended in, Hulun, now drains through the Argun).
 
 Lean: B, since the Earth world is a data analogue and the closures are data too.
+
+After merging main (climate PW-264..318) the base itself moved: without the outlets the
+Earth world drains 7.2% inland, the Aral is an open lake and Makgadikgadi dry; with them
+5.5%. So option B matters more on the new climate.
