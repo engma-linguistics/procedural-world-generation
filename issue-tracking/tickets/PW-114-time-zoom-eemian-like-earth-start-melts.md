@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-034]
 refs: [planet/timezoom.py, planet/icemass.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,6 +26,7 @@ seasonal lag and which months melt, and whether bare-ice margins (f_snow) respon
 Measure: tools-free probe `TZ.simulate(TZ.source_earth(6), kyr=10)`, ice volume change by region.
 
 ## Updates
+- 2026-10-16: Re-measured after the polar bundle (tzbatch): Greenland was gone in 2 kyr (summer -8.7 to +4.9 C on its ice, -3000 Gt/yr), +13 m at 8 kyr, and Greenland vanished again at most precession maxima of a 1 Myr zoom. Cause: the orbital response over bright ice mixed the absorbed shares over 600 km with the open sea counted as fully absorbing land, then scaled by the land's insol_k (Greenland 0.70 of the land's response). Fixed (timezoom.orbit_k): each surface's own response is mixed (sea 0.3, bright ice 0.2): Greenland 0.35, Antarctica 0.23. Eemian-like start now: +9.2 m at 8 kyr, Greenland +5.2 m (87% gone at 6 kyr, back to 1.9 Mkm3 at 20 kyr, 3.7 at 68), Antarctica +4.1 m, mostly West Antarctica's marine sector, which an unforced start also loses (draft draft-timezoom-marine-margins.md). Greenland still ~2.5x too sensitive: its model summer on the ice is 4.3 C colder than observed at today's orbit (the obs anchor only cools), and at L6 (133 cells) it has no cold high interior; a two-way anchor makes it collapse in 2 kyr. Run side: draft draft-run-ice-orbit-mix-sea.md.
 - 2026-10-15: Merged inbox draft draft-eemian-greenland-collapses.md ("Time zoom: an Eemian-like Earth start now loses almost all of Greenland in 8 kyr", found by icemb).
   Update to PW-114 after PW-190 (icemb). With the shared mass balance (Greenland's margins now melt in
   the full summer once their snow is gone, as observed) and `anchor=obs` (Earth's start cooling only

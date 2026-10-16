@@ -150,3 +150,23 @@ def test_deep_grounded_ice_stands(sim4):
     H = r["state"]["H"]
     assert H[a] > 2500, H[a]  # grounded in 2 km of water: stands
     assert H[b] < 0.5 * 5500, H[b]  # in 4 km: breaks up in place
+
+
+def test_orbit_response_mixes_each_surface_own(sim4):
+    """Bright ice feels the air mass around it, each surface at its own
+    response: an ice cap on an island in the open sea gets about the sea's
+    and the ice's (~0.2-0.3 of the land's), not the land's (PW-114: the old
+    mix counted the sea as fully absorbing land); bare land far from ice
+    keeps the land's full insol_k, the open sea its insol_sea share."""
+    g = sim4.grid
+    p = Z.TZParams()
+    centre = int(np.argmin(np.abs(g.lat - 70.0)))
+    d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
+    land = d < 6.0  # an island ~650 km across
+    bright = np.where(land, 1.0, 0.0)
+    k = Z.orbit_k(g, land, bright, p)
+    assert k[centre] < 0.35 * p.insol_k, k[centre] / p.insol_k
+    far = d > 60
+    assert np.allclose(k[far], p.insol_k * p.insol_sea)
+    bare = Z.orbit_k(g, land, np.zeros(g.n), p)
+    assert np.allclose(bare[land], p.insol_k)

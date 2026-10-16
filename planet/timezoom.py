@@ -134,8 +134,8 @@ class TZParams:
     # icemass.air_mass, carried along the winds: PW-336),
     melt_hold: float = M.MELT_HOLD  # temperatures above 0 C are scaled by this (as climate.compute),
     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
-    absorb_km: float = 600.0  # ... mixed over this scale (km; the air mass), 0 = locally (wider pulls the
-    # open sea's full absorption onto coastal ice: Earth's Eemian-like start then melts +25 m in 10 kyr)
+    absorb_km: float = 600.0  # ... the land's, sea's and ice's responses mixed over this scale (km; the air
+    # mass, orbit_k), 0 = locally
     snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
     # year's snow lies, then bare: icemass)
     bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
@@ -246,8 +246,8 @@ def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: T
     that the time zoom gives the orbit orb = (obliquity, eccentricity,
     perihelion) against its reference orbit (p.orbit_ref): insol_k C per
     W/m2 on land (insol_sea of that over the sea), averaged with the month
-    before (the ground lags the sun), less over bright ice (ice_absorb,
-    mixed over absorb_km). For climate.compute's orbit_dt (a finished frame,
+    before (the ground lags the sun), less over bright ice (ice_absorb),
+    mixed over absorb_km (orbit_k). For climate.compute's orbit_dt (a finished frame,
     PW-198)."""
     ref = p.orbit_ref if p.orbit_ref != "auto" else ("today" if earth else "mean")
     if ref == "today":
@@ -259,12 +259,26 @@ def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: T
     dq = insolation(*orb) - q_ref
     dq = 0.5 * (dq + np.roll(dq, 1, axis=1))
     band = np.clip(((grid.lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
-    f_snow = np.clip(np.where(land, ice, 0.0) / p.snow_h, 0, 1)
-    absorb = 1 - f_snow * (1 - p.ice_absorb)
-    if p.absorb_km > 0:
-        absorb = climate.smooth_big(grid, absorb, p.absorb_km)
-    k = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
+    k = orbit_k(grid, land, np.clip(np.where(land, ice, 0.0) / p.snow_h, 0, 1), p)
     return k[:, None] * dq[band]
+
+
+def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np.ndarray:
+    """C per W/m2 of insolation change per cell. Bare land feels insol_k,
+    the sea insol_sea of it (its deep mixed layer). Bright snow and ice
+    absorb little (ice_absorb), but the air over them brings what the land,
+    sea and ice around absorbed: their responses, each its own, mixed over
+    an air mass of absorb_km. bright: 0..1 per cell, the land's share under
+    bright snow. (Before PW-114's fix the mix was of the absorbed shares,
+    scaled by the land's insol_k: the open sea around Greenland counted as
+    fully absorbing land, Greenland took ~0.7 of the land's response instead
+    of ~0.35, and an Eemian-like orbit took its summer from -8.7 to +4.9 C,
+    melting all of it in 2 kyr.)"""
+    b = np.where(land, np.clip(bright, 0, 1), 0.0)
+    own = np.where(land, p.insol_k, p.insol_k * p.insol_sea)
+    k = own * (1 - b * (1 - p.ice_absorb))
+    mix = climate.smooth_big(grid, k, p.absorb_km) if p.absorb_km > 0 else k
+    return own * (1 - b) + b * mix
 
 
 # --------------------------------------------------------------------------
@@ -648,11 +662,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
         def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
-            # what the surroundings absorbed: the response is mixed over an air mass (absorb_km)
-            absorb = 1 - f_snow * (1 - p.ice_absorb)
-            if p.absorb_km > 0:
-                absorb = climate.smooth_big(g, absorb, p.absorb_km)
-            k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
+            # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
+            k_orb = orbit_k(g, land, f_snow, p)
             climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
                          p.ice_cool, damp, p.melt_hold, p.bare_share, p.snow_w,
