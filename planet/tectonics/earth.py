@@ -248,8 +248,10 @@ def ice_sheets(sim, land, bed, ground, old):
                  cap starts where the year's snow lasts, so the snowline
                  depends on the snowfall as well as the summer, PW-159), and
                  on ice (the old ice's own thickness, or a new margin's ~330
-                 m: its height and, on a big sheet, its own bright air mass
-                 keep it colder) connected to such a start or to old ice;
+                 m: its height and, on a big sheet, its own bright air mass,
+                 which the climate carries along the winds onto its margins
+                 (ground: the old ice's air, PW-336), keep it colder)
+                 connected to such a start or to old ice;
       ablation zone  each sheet then spreads ring by ring onto the land
                  around it, the least-melting cells first, as long as its
                  snow surplus pays for their melt (and for calving where it
