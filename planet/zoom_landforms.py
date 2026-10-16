@@ -94,8 +94,8 @@ each cliff spans at least FACE_PX pixels across, and where a band is
 narrower than BAND_MIN_PX (a steep valley side) the benches fade out rather
 than stipple it.
 ------------------------------------------
-Hard beds over soft, read along a stratigraphic height s = h + tilt.x (the
-bedding dips by `tilt` m/km; none for flat-lying strata): above `anchor` the
+Hard beds over soft, read along a stratigraphic height s = h + shift (the
+bedding dips: shift grows down-dip; none for flat-lying strata): above `anchor` the
 top bed (relief scaled by top_k: a plateau); below it `bands` benches each
 `period` m high: from the bench (the top of the bed below) a soft slope
 steepening upwards (power), then the hard bed's face, cliff x period. Below
@@ -118,7 +118,7 @@ Batch 1 (PW-010):
                  over soft slopes, endlessly repeated down from the zone's
                  85th percentile of elevation: plateau, mesas, buttes and
                  stepped benches (Grand Staircase). A
-                 dip (strata_dip, downhill) tilts them into asymmetric
+                 dip (strata_dip, down the zone's regional slope) tilts them into asymmetric
                  cuestas (scarps facing up-dip, long dip slopes).
   lava plateau   stacked flows: steps of >= 110 m (a package of flows at
                  zoom pixels; 0.65x the zone's typical relief) under a flat
@@ -188,19 +188,13 @@ class Strata:
     cliff: float | np.ndarray = 0.5
     power: float | np.ndarray = 2.0
     top_k: float | np.ndarray = 1.0
-    tilt: tuple | None = None  # (tx, ty) m/km: the bedding drops along (tx, ty)...
-    origin: tuple = (0.0, 0.0)  # ... from (ox, oy) km (zoom plane; a planet-fixed point: the zone's own)
-    shift: np.ndarray | None = None  # m added to s (beds whose height follows a planet-fixed field)
+    shift: np.ndarray | None = None  # m added to s (dipping beds: a planet-fixed field growing down-dip)
     amp: float | np.ndarray = 1.0  # how much of the bench map's change applies (0: the land as it is)
     face: float = 0.08  # the share of a band its cliff rises over (bench_map)
 
-    def height(self, h, px, py):
-        """The stratigraphic height s the bench map reads: h, plus the tilt
-        and shift."""
-        s = h if self.shift is None else h + self.shift
-        if self.tilt is None:
-            return s
-        return s + self.tilt[0] * (px - self.origin[0]) + self.tilt[1] * (py - self.origin[1])
+    def height(self, h):
+        """The stratigraphic height s the bench map reads: h, plus the shift."""
+        return h if self.shift is None else h + self.shift
 
 
 def bench_map(s, anchor, period, bands=np.inf, cliff=0.5, power=2.0, top_k=1.0, face=0.08):
@@ -239,8 +233,6 @@ class Ctx:
     seed: int  # noise seed base
     land: np.ndarray
     base: np.ndarray  # smooth coarse land elevation (m)
-    downhill: tuple  # unit vector field (dx, dy) of the coarse land's regional downhill
-    grad: np.ndarray  # m/km: the regional slope of the coarse land
     w: np.ndarray = None  # this class's weight
     prm: dict = field(default_factory=dict)  # this class's layers, interpolated over its own cells
     relief_m: float | None = None  # its mean height above the drainage (Landforms.remap)
@@ -610,8 +602,10 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     overlapping zooms put the same bench at the same height. Keys:
     elev_p50/p85/p95 (m), top_km (median strata_top_km), dip (median
     strata_dip, deg), relief (ZONE_RELIEF: the zoom's typical relief
-    there, m), ox, oy (km: the zone's reference cell on the zoom plane, the
-    origin of tilted beds), id (the zone's label); and elev_local, a smooth
+    there, m), id (the zone's label), down_dip ((n, 3): the zone's dip
+    direction, a unit vector on the planet, PW-179: the downhill of a plane
+    fitted to the zone's cells' heights, tangent at its reference cell, the
+    one nearest its centroid; 0 on a flat zone); and elev_local, a smooth
     field: at each of the class's cells the median elevation of its zone's
     cells around it (weights falling off over ZONE_LOCAL_KM), interpolated
     onto the pixels as the class's layers are (a level that follows a long
@@ -622,9 +616,9 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     lab, nz = grid.components((form == k) & (elev > 0))
     mine = np.flatnonzero(lab[sel] >= 0)
     n = len(px)
-    out = {key: np.zeros(n) for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy",
-                                        "elev_local")}
+    out = {key: np.zeros(n) for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "elev_local")}
     out["id"] = np.full(n, -1)
+    out["down_dip"] = np.zeros((n, 3))
     if not len(mine):
         return out
     zs = np.unique(lab[sel][mine])
@@ -636,10 +630,9 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
         e = elev[c]
         ref = c[np.argmin(np.arccos(np.clip(grid.centers[c] @ grid.centers[c].mean(0) / max(
             np.linalg.norm(grid.centers[c].mean(0)), 1e-12), -1, 1)))]  # (the cell nearest the zone's centroid)
-        ox, oy = to_plane(grid.centers[[ref]])
         p50, p85, p95 = np.percentile(e, [50, 85, 95])
         tab[z] = (p50, p85, p95, np.median(top[c]), np.median(dip[c]), ZONE_RELIEF[0] * p50 + ZONE_RELIEF[1],
-                  float(ox[0]), float(oy[0]))
+                  _down_dip(grid.centers[c], e, grid.centers[ref]))
     # each pixel: the zone of the nearest class cell around the zoom
     ccx, ccy, cz = cx[mine], cy[mine], lab[sel][mine]
     near = np.zeros(n, np.int64)
@@ -664,10 +657,25 @@ def zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp) -> dict:
     vals[mine, 0] = loc
     f, _ = interp(vals, ind, 0.5 * sp)
     out["elev_local"] = np.where(np.isfinite(f[:, 0]), f[:, 0], loc[near])
-    for i, key in enumerate(("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "ox", "oy")):
+    for i, key in enumerate(("elev_p50", "elev_p85", "elev_p95", "top_km", "dip", "relief", "down_dip")):
         vals = np.array([tab[z][i] for z in zs])
         out[key] = vals[np.searchsorted(zs, zp)]
     return out
+
+
+def _down_dip(pts, e, ref):
+    """Unit vector (3D, tangent at ref) down the plane fitted to heights e at
+    planet points pts (unit vectors), in the tangent plane at ref; 0 if
+    there are too few points or the plane is flat."""
+    east = np.cross([0.0, 0.0, 1.0], ref)
+    east = east / np.linalg.norm(east) if np.linalg.norm(east) > 1e-9 else np.array([0.0, 1.0, 0.0])
+    north = np.cross(ref, east)
+    if len(pts) < 3:
+        return np.zeros(3)
+    a = np.column_stack([np.ones(len(pts)), R_KM * (pts @ east), R_KM * (pts @ north)])
+    g = np.linalg.lstsq(a, e, rcond=None)[0][1:]  # m/km east, north
+    gm = float(np.hypot(*g))
+    return -(g[0] * east + g[1] * north) / gm if gm > 1e-6 else np.zeros(3)
 
 
 def snap(level, period):
@@ -899,9 +907,16 @@ class Caprock(Synth):
         cap = np.clip(1000 * Z["top_km"], *self.CAP_M)
         P = np.minimum(cap / self.CLIFF, np.maximum(self.RELIEF * Z["relief"], 60.0))
         anchor = Z["elev_p85"] + self.TOP[1] * Z["relief"]
+        # Dipping beds (cuestas): s grows by t m per km down-dip, from the
+        # zone's reference cell, along one dip direction per zone (its
+        # regional downhill, zone_stats): a plane, the same in every zoom.
+        # (Along each pixel's own downhill, measured from a reference cell
+        # maybe ~1000 km away, a downhill turning by 0.5 rad over 100 km
+        # added a tilt of t x the distance x 0.5 / 100 km: contorted beds, PW-179.)
         t = 1000 * np.tan(np.radians(Z["dip"]))  # m/km
-        tilt = (t * cx.downhill[0], t * cx.downhill[1]) if np.any(t > 0.3) else None
-        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, tilt=tilt, origin=(Z["ox"], Z["oy"]))
+        t = np.where(t > 0.3, t, 0.0)  # (near-flat beds lie flat)
+        shift = t * np.einsum("ij,ij->i", cx.Pk, Z["down_dip"]) if np.any(t > 0) else None
+        return Strata(anchor, P, cliff=self.CLIFF, power=2.0, top_k=0.5, shift=shift)
 
 
 class LavaPlateau(Synth):
@@ -1653,16 +1668,11 @@ class Landforms:
                 f[:, c0 + 1:c0 + 1 + len(names)] = interp(np.column_stack(cols[c0 + 1:c0 + 1 + len(names)]),
                                                           np.column_stack(wts[c0 + 1:c0 + 1 + len(names)]),
                                                           SYNTH[k].sigma * sp)[0]
-        # the coarse land's regional slope and its direction
-        gy, gx = np.gradient(base.reshape(ny, nx), res)
-        gx, gy = gx.ravel(), -gy.ravel()  # rows run south: d/dy (north) = -d/drow
-        g = np.hypot(gx, gy)
-        down = (-gx / np.maximum(g, 1e-9), -gy / np.maximum(g, 1e-9))
         ctxs = {}
         for j, k in enumerate(ks):
             c0, names = spans[k]
             share = np.nan_to_num(f[:, c0])
-            c = Ctx(nx, ny, res, sp, px, py, Pk, seed, land, base, down, g)
+            c = Ctx(nx, ny, res, sp, px, py, Pk, seed, land, base)
             n = c.noise(0.5 * sp, 3, 70 + j)
             lo, hi = (0.08, 0.3) if SYNTH[k].line else (0.3, 0.6)
             c.w = smoothstep(lo, hi, share + 0.12 * n) * land
@@ -1744,7 +1754,7 @@ class Landforms:
             w = c.w * mask
             if st is None or not np.any(w > 0):
                 continue
-            sv = st.height(z, c.px, c.py)
+            sv = st.height(z)
             # Anti-aliasing: each cliff spans at least FACE_PX pixels across
             # (steep, but not a one-pixel step that aliases into a staircase
             # along the scarp), and where a band is narrower than a couple of
@@ -1776,7 +1786,7 @@ class Landforms:
             st = SYNTH[k].strata(c, h)
             if st is None or not np.any(c.w > 0):
                 continue
-            sv = st.height(h, c.px, c.py)
+            sv = st.height(h)
             on = c.w * (sv >= st.anchor)
             w += on
             lvl += on * st.anchor
