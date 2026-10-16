@@ -130,6 +130,10 @@
   details.sec > summary:hover { color: var(--text); }
   details.sec h2:first-child { margin-top: 2px; }
   details.sec p { margin: 4px 0 0; }
+  .rbox { margin: 2px 0 0 18px; }
+  .rbox label { gap: 4px; }
+  .rbox input[type=range] { flex: 1; min-width: 0; }
+  .rbox .val { width: 34px; text-align: right; font: 11px ui-monospace, Menlo, monospace; color: var(--muted); }
   #tiltInset { top: 12px; left: 294px; padding: 6px 8px; font-size: 11px; text-align: center; pointer-events: none; }
   #tiltInset svg { display: block; }
   #zoomBox { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
@@ -183,6 +187,13 @@
         <button data-v="globe" class="on">Globe</button><button data-v="map">Flat map</button>
       </div>
       <button id="northUp" class="btn" title="Turn the globe so north points up, keeping the longitude (key N)">North up</button>
+    </div>
+    <label style="margin-top:6px" title="The ground at its height (ice sheets and lakes included), the sea floor under a translucent sea, lit by a low sun; the flat map becomes a relief model you can tilt (relief.js)"><input type="checkbox" id="relief3d"> 3D relief</label>
+    <div id="reliefBox" class="rbox" hidden>
+      <label title="Vertical exaggeration of the 3D relief">height &times; <input type="range" id="reliefEx" min="5" max="200" step="5" value="50"><span class="val" id="reliefExV"></span></label>
+      <label title="Where the sun shines from, on screen (counter-clockwise from the right)">sun from <input type="range" id="sunAz" min="0" max="360" step="5" value="135"><span class="val" id="sunAzV"></span></label>
+      <label title="How low the sun is: 0 = from behind you (no shadows), 90 = grazing">sun low <input type="range" id="sunEl" min="0" max="85" step="1" value="60"><span class="val" id="sunElV"></span></label>
+      <label title="Sink the sea floor to its depth under a translucent sea (trenches, ridges, shelves)"><input type="checkbox" id="seaFloor" checked> sea floor</label>
     </div>
   </details>
 
@@ -285,6 +296,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as Relief from './relief.js';
 
 const $ = (id) => document.getElementById(id);
 const R_EARTH = 6371000;
@@ -300,12 +312,18 @@ camera.position.set(0, 0.6, 3.4);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.minDistance = 1.15; controls.maxDistance = 10;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.4));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x334455, 1.4);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 camera.add(sun); sun.position.set(-1.5, 1.5, 1);
 scene.add(camera);
 const group = new THREE.Group();
 scene.add(group);
+const lights = new Relief.Lights(hemi, sun);
+// the 3D relief (relief.js): on or off, and its sea surface (one per view mode, kept across frames)
+const relief3d = () => $('relief3d').checked;
+const seaFloorOn = () => relief3d() && $('seaFloor').checked;
+let seaShell = null;
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -711,54 +729,104 @@ function buildTopology() {
            triCell, globe, perTri, posKey: null };
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(base.length), 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(base.length), 3));
+  // colours as normalized 16-bit (half the upload of floats, no banding in the dark sea ramps)
+  geo.setAttribute('color', new THREE.BufferAttribute(new Uint16Array(base.length), 3, true));
   if (!perTri) geo.setIndex(new THREE.BufferAttribute(vCell.length > 65535 ? Uint32Array.from(index) : Uint16Array.from(index), 1));
-  if (mesh) { group.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
+  if (mesh) { group.remove(mesh); mesh.geometry.dispose(); mesh.userData.mats.forEach((m) => m.dispose()); }
   // flatShading: each triangle lit by its own face normal, worked out on the GPU (the
   // same normals the old three-vertices-per-triangle mesh had, with none to compute or upload)
-  const mat = globe ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
-                    : new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  // the globe's 3D relief: smooth normals (relief.sphereNormals), from each cell's corners in order and
+  // the unit vectors of the centres and corners, while the view is still; flat shading during a replay
+  // (the normals cost ~20 ms a keyframe at L7: the replay keeps its speed)
+  const smoothRelief = globe && relief3d() && !perTri;
+  if (smoothRelief) {
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Int8Array(base.length), 3, true));  // (a quarter of floats' upload)
+    if (!V.fan) {
+      const fanStart = new Int32Array(V.n + 1);
+      for (let i = 0; i < V.n; i++) fanStart[i + 1] = fanStart[i] + G.cells[i].length;
+      const U = new Float32Array(3 * (V.n + G.corner_lat.length));
+      for (let i = 0; i < V.n; i++) U.set(unitVec(G.lat[i], G.lon[i]), 3 * i);
+      for (let k = 0; k < G.corner_lat.length; k++) U.set(unitVec(G.corner_lat[k], G.corner_lon[k]), 3 * (V.n + k));
+      V.fan = { fanStart, fanList: Int32Array.from(G.cells.flat()), U };
+    }
+  }
+  topo.smoothRelief = smoothRelief;
+  // (the flat map in 3D relief is lit too)
+  const mat = globe || relief3d() ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: !smoothRelief, side: globe ? THREE.FrontSide : THREE.DoubleSide })
+                                  : new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
   mesh = new THREE.Mesh(geo, mat);
+  mesh.userData.mats = [mat];
+  if (smoothRelief) mesh.userData.mats.push(mesh.userData.flatMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
   group.add(mesh);
+  if (seaShell) { group.remove(seaShell); seaShell.geometry.dispose(); seaShell = null; }
+  if (relief3d()) { seaShell = Relief.seaSurface(globe); group.add(seaShell); }
+  topo.relief = relief3d();
 }
 
-function reliefScale() { return +$('relief').value / R_EARTH; }
-function cellRadius(i) { return 1 + reliefScale() * Math.max(V.layers.elevation[i], 0); }
+// m -> globe radii: the Sliders' exaggeration, or the 3D relief's
+function reliefScale() { return +$(relief3d() ? 'reliefEx' : 'relief').value / R_EARTH; }
+// cell i's radius: paint's (V.R, this frame's), else from its elevation
+function cellRadius(i) { return V.R ? V.R[i] : 1 + reliefScale() * Math.max(V.layers.elevation[i], 0); }
 
 function paint() {
-  if (topo.perTri !== needsPerTri()) buildTopology();  // (the map's satellite layer: per-triangle shading)
-  const L = V.layers, cc = V.cornerCells, globe = topo.globe;
+  // (the map's satellite layer: per-triangle shading; the 3D relief: lit map, sea surface)
+  if (topo.perTri !== needsPerTri() || topo.relief !== relief3d()) buildTopology();
+  const L = V.layers, cc = V.cornerCells, globe = topo.globe, r3d = relief3d(), sea = seaFloorOn();
   const col = cellColors(state.layer);
   const smooth = $('smooth').checked, ex = reliefScale();
-  const shadeMap = !globe && state.layer === 'satellite', mapZ = 2 / Math.PI;  // relief: sphere radii -> map units (1 = 90 deg)
+  const shadeMap = !globe && !r3d && state.layer === 'satellite', mapZ = 2 / Math.PI;  // relief: sphere radii -> map units (1 = 90 deg)
   // the plain flat map has no relief: its positions are written once
-  const posKey = globe || shadeMap ? null : 'flat', writePos = posKey === null || topo.posKey !== posKey;
+  const posKey = globe || shadeMap || r3d ? null : 'flat', writePos = posKey === null || topo.posKey !== posKey;
   const n = V.n, nc = cc.length, elev = L.elevation;
   const { vCell, vSrc, cStart, cList, base } = topo, nv = vCell.length;
   // R: the relief radius of each cell centre (0..n-1), then of each corner (n..n+nc-1), the
-  // mean of the cells round it; vSrc says which one each vertex takes (as for the smooth colours)
-  const R = new Float32Array(n + nc), cornerCol = smooth ? new Float32Array(3 * (n + nc)) : null;
-  if (writePos || smooth) for (let i = 0; i < n; i++) R[i] = 1 + ex * Math.max(elev[i], 0);
-  if (writePos || smooth) for (let k = 0; k < nc; k++) {
-    const a = cStart[k], b = cStart[k + 1]; let e = 0;
-    for (let q = a; q < b; q++) e += R[cList[q]] - 1;
-    R[n + k] = 1 + e / (b - a);
-    if (smooth) for (let q = a; q < b; q++) for (let c = 0; c < 3; c++) cornerCol[3 * (n + k) + c] += col[3 * cList[q] + c] / (b - a);
+  // mean of the cells round it; vSrc says which one each vertex takes (as for the smooth colours).
+  // The 3D relief's heights: the surface (ice, lakes) and the sea floor (relief.js).
+  const cornerCol = smooth ? new Float32Array(3 * (n + nc)) : null;
+  let R = null;
+  if (writePos || smooth) {
+    if (r3d) R = topo.R = Relief.radii(topo.H = Relief.surfaceHeights(V, sea, topo.H), cStart, cList, n, ex, sea, topo.R);
+    else {
+      R = new Float32Array(n + nc);
+      for (let i = 0; i < n; i++) R[i] = 1 + ex * Math.max(elev[i], 0);
+      for (let k = 0; k < nc; k++) {
+        const a = cStart[k], b = cStart[k + 1]; let e = 0;
+        for (let q = a; q < b; q++) e += R[cList[q]] - 1;
+        R[n + k] = 1 + e / (b - a);
+      }
+    }
+    if (smooth) for (let k = 0; k < nc; k++) {
+      const a = cStart[k], b = cStart[k + 1];
+      for (let q = a; q < b; q++) for (let c = 0; c < 3; c++) cornerCol[3 * (n + k) + c] += col[3 * cList[q] + c] / (b - a);
+    }
   }
+  V.R = writePos ? R : null;  // (the overlays sit on it)
+  if (seaShell) seaShell.visible = sea;
   const pos = mesh.geometry.attributes.position.array, rgb = mesh.geometry.attributes.color.array;
   let maxR = 1;
   if (writePos) for (let v = 0; v < nv; v++) {
     const rr = R[vSrc[v]], r = globe ? rr : 1, v3 = 3 * v;
     if (rr > maxR) maxR = rr;
-    pos[v3] = base[v3] * r; pos[v3 + 1] = base[v3 + 1] * r; pos[v3 + 2] = shadeMap ? mapZ * (rr - 1) : base[v3 + 2] * r;
+    pos[v3] = base[v3] * r; pos[v3 + 1] = base[v3 + 1] * r; pos[v3 + 2] = shadeMap || r3d && !globe ? mapZ * (rr - 1) : base[v3 + 2] * r;
   }
+  // (16-bit colours: each cell's, or corner's, converted once, then copied to its vertices)
+  const u16 = (a) => { const o = new Uint16Array(a.length); for (let j = 0; j < a.length; j++) o[j] = a[j] * 65535 + 0.5; return o; };
   if (smooth) {  // corners take the mean colour of the cells round them, centres their own
     cornerCol.set(col);
-    for (let v = 0; v < nv; v++) { const j = 3 * vSrc[v], v3 = 3 * v; rgb[v3] = cornerCol[j]; rgb[v3 + 1] = cornerCol[j + 1]; rgb[v3 + 2] = cornerCol[j + 2]; }
+    const cu = u16(cornerCol);
+    for (let v = 0; v < nv; v++) { const j = 3 * vSrc[v], v3 = 3 * v; rgb[v3] = cu[j]; rgb[v3 + 1] = cu[j + 1]; rgb[v3 + 2] = cu[j + 2]; }
   } else {
-    for (let v = 0; v < nv; v++) { const j = 3 * vCell[v], v3 = 3 * v; rgb[v3] = col[j]; rgb[v3 + 1] = col[j + 1]; rgb[v3 + 2] = col[j + 2]; }
+    const cu = u16(col);
+    for (let v = 0; v < nv; v++) { const j = 3 * vCell[v], v3 = 3 * v; rgb[v3] = cu[j]; rgb[v3 + 1] = cu[j + 1]; rgb[v3 + 2] = cu[j + 2]; }
   }
   if (writePos) mesh.geometry.attributes.position.needsUpdate = true;
+  // (smooth normals while still; flat shading while a replay plays)
+  if (topo.smoothRelief) mesh.material = mesh.userData.mats[state.playing ? 1 : 0];
+  if (writePos && topo.smoothRelief && !state.playing) {
+    const F = V.fan;
+    Relief.sphereNormals(R, F.U, n, F.fanStart, F.fanList, cStart, cList, vSrc, mesh.geometry.attributes.normal.array);
+    mesh.geometry.attributes.normal.needsUpdate = true;
+  }
   mesh.geometry.attributes.color.needsUpdate = true;
   if (shadeMap) mapHillshade(pos, rgb);
   if (writePos) {
@@ -808,24 +876,25 @@ function select(a, k, lo = 0) {
 function cellPositions(lift) {
   const G = V.grid, n = V.n, out = new Float32Array(3 * n);
   if (state.mode !== 'globe') {
-    for (let i = 0; i < n; i++) { out[3 * i] = G.lon[i] / 90; out[3 * i + 1] = G.lat[i] / 90; out[3 * i + 2] = 0.002; }
+    const R = relief3d() && V.R, mz = 2 / Math.PI;  // (the 3D relief's map: on its heights)
+    for (let i = 0; i < n; i++) { out[3 * i] = G.lon[i] / 90; out[3 * i + 1] = G.lat[i] / 90; out[3 * i + 2] = 0.002 + (R ? mz * (R[i] - 1) * lift : 0); }
     return out;
   }
   if (!V.unit) {  // (the cells' unit vectors, once per grid)
     V.unit = new Float32Array(3 * n);
     for (let i = 0; i < n; i++) V.unit.set(unitVec(G.lat[i], G.lon[i]), 3 * i);
   }
-  const ex = reliefScale(), e = V.layers.elevation, u = V.unit;
+  const ex = reliefScale(), e = V.layers.elevation, u = V.unit, R = V.R;
   for (let i = 0; i < n; i++) {
-    const r = (1 + ex * Math.max(e[i], 0)) * lift;
+    const r = (R ? Math.max(R[i], 1) : 1 + ex * Math.max(e[i], 0)) * lift;
     out[3 * i] = u[3 * i] * r; out[3 * i + 1] = u[3 * i + 1] * r; out[3 * i + 2] = u[3 * i + 2] * r;
   }
   return out;
 }
 function cellPos(i, lift = 1.002) {
   const G = V.grid;
-  if (state.mode === 'globe') return unitVec(G.lat[i], G.lon[i]).map((x) => x * cellRadius(i) * lift);
-  return [G.lon[i] / 90, G.lat[i] / 90, 0.002];
+  if (state.mode === 'globe') return unitVec(G.lat[i], G.lon[i]).map((x) => x * Math.max(cellRadius(i), 1) * lift);
+  return [G.lon[i] / 90, G.lat[i] / 90, 0.002 + (relief3d() && V.R ? 2 / Math.PI * (V.R[i] - 1) : 0)];
 }
 function llPos(lat, lon, r) {
   if (state.mode === 'globe') return unitVec(lat, lon).map((x) => x * r);
@@ -1019,7 +1088,8 @@ function buildOverlays() {
     const cp = (k, i) => {
       if (globe) {
         const cs = V.cornerCells[k]; let e = 0; for (const j of cs) e += Math.max(L.elevation[j], 0);
-        return unitVec(G.corner_lat[k], G.corner_lon[k]).map((x) => x * (1 + reliefScale() * e / cs.length) * 1.001);
+        const r = topo.relief && topo.R ? topo.R[V.n + k] : 1 + reliefScale() * e / cs.length;
+        return unitVec(G.corner_lat[k], G.corner_lon[k]).map((x) => x * r * 1.001);
       }
       let d = G.corner_lon[k] - G.lon[i]; d -= 360 * Math.round(d / 360);
       return [(G.lon[i] + d) / 90, G.corner_lat[k] / 90, 0.001];
@@ -2513,9 +2583,11 @@ $('pftSel').addEventListener('change', () => {
 });
 state.obs = 'model';
 seg('obsSeg', 'obs', paint);
+// the globe turns; the flat map only pans, unless it is a 3D relief model (it tilts)
+function canRotate() { controls.enableRotate = state.mode === 'globe' || relief3d(); }
 seg('modeSeg', 'mode', () => {
   group.rotation.set(0, 0, 0);
-  controls.enableRotate = state.mode === 'globe';
+  canRotate();
   controls.reset();
   if (state.mode === 'globe') { camera.position.set(0, 0.6, 3.4); controls.target.set(0, 0, 0); } else fitMap();
   buildTopology(); paint();
@@ -2542,6 +2614,37 @@ $('layerSeason').addEventListener('change', () => {
 });
 $('relief').addEventListener('input', () => { $('reliefVal').textContent = $('relief').value + '×'; });
 $('relief').addEventListener('change', paint);
+// the 3D relief (relief.js): toggle, exaggeration, sun, sea floor; kept in the URL (&relief3d=1&ex=60&sun=135,60&sea=0)
+function reliefLabels() {
+  $('reliefBox').hidden = !relief3d();
+  $('reliefExV').textContent = $('reliefEx').value + '×';
+  $('sunAzV').textContent = $('sunAz').value + '°'; $('sunElV').textContent = $('sunEl').value + '°';
+}
+function reliefToUrl() {
+  const u = new URL(location), D = Relief.DEFAULTS;
+  for (const k of ['relief3d', 'ex', 'sun', 'sea']) u.searchParams.delete(k);
+  if (relief3d()) {
+    u.searchParams.set('relief3d', '1');
+    if (+$('reliefEx').value !== D.ex) u.searchParams.set('ex', $('reliefEx').value);
+    if (+$('sunAz').value !== D.sunAz || +$('sunEl').value !== D.sunEl) u.searchParams.set('sun', `${$('sunAz').value},${$('sunEl').value}`);
+    if (!$('seaFloor').checked) u.searchParams.set('sea', '0');
+  }
+  history.replaceState(null, '', u);
+}
+function setLights() { lights.set(relief3d(), +$('sunAz').value, +$('sunEl').value); }
+$('relief3d').addEventListener('change', () => {
+  reliefLabels(); setLights(); canRotate();
+  if (state.mode === 'map' && !relief3d()) { controls.reset(); fitMap(); }  // (flat again: face on)
+  reliefToUrl();
+  if (V) { buildTopology(); paint(); }
+});
+let reliefPending = 0;  // (the slider repaints at most once a frame)
+$('reliefEx').addEventListener('input', () => {
+  reliefLabels(); reliefToUrl();
+  if (V && !reliefPending) reliefPending = requestAnimationFrame(() => { reliefPending = 0; paint(); });
+});
+for (const id of ['sunAz', 'sunEl']) $(id).addEventListener('input', () => { reliefLabels(); setLights(); reliefToUrl(); });
+$('seaFloor').addEventListener('change', () => { reliefToUrl(); if (V) paint(); });
 $('riverQ').addEventListener('input', () => { $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land'; });
 $('riverQ').addEventListener('change', buildOverlays);
 $('riverVal').textContent = 'top ' + (100 - $('riverQ').value).toFixed(1) + '% of land';
@@ -3101,7 +3204,8 @@ function stop() {
   const was = state.playing;
   state.playing = false; $('play').innerHTML = '&#9654;';
   if (was && V?.kind === 'run') frameToUrl();
-  if (was && V && mesh && $('currents').checked) buildOverlays();  // back to streamlines
+  if (was && V && mesh && topo.smoothRelief) paint();  // (the relief's smooth normals again)
+  else if (was && V && mesh && $('currents').checked) buildOverlays();  // back to streamlines
 }
 function togglePlay() {
   if (!V || V.kind !== 'run') return;
@@ -3182,10 +3286,19 @@ addEventListener('drop', async (e) => {
 function applyUrlOptions() {
   const p = new URLSearchParams(location.search);
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
+  // (&tilt=deg: the flat map seen from the south at that angle, for screenshots of the 3D relief)
   if (p.get('layer')) state.layer = p.get('layer');
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');
+  if (p.get('relief3d') === '1') {
+    $('relief3d').checked = true;
+    if (p.get('ex')) $('reliefEx').value = p.get('ex');
+    const sn = (p.get('sun') || '').split(',').map(Number);
+    if (sn.length === 2 && sn.every(Number.isFinite)) { $('sunAz').value = sn[0]; $('sunEl').value = sn[1]; }
+    if (p.get('sea') === '0') $('seaFloor').checked = false;
+    setLights(); canRotate();
+  }
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
   if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
@@ -3194,6 +3307,7 @@ function applyUrlOptions() {
 const urlp = applyUrlOptions();
 if (urlp.get('tab') === 'zoom') showTab('zoom', urlp.get('zoom'));
 $('reliefVal').textContent = $('relief').value + '×';
+reliefLabels();
 
 async function getJSON(url) { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? r.json() : []; } catch { return []; } }
 // fills the run/world dropdown from the indexes; returns false when there's nothing
@@ -3249,6 +3363,15 @@ async function init() {
       camera.lookAt(0, 0, 0);
     }
   }
+  // ?dist=: the camera's distance from the centre; ?tilt=deg: the flat map seen from the south at that angle (screenshots)
+  const d = +urlp.get('dist') || camera.position.distanceTo(controls.target), tl = +urlp.get('tilt') || 0;
+  if (urlp.has('dist') || tl) {
+    if (state.mode === 'map') {
+      const a = THREE.MathUtils.degToRad(tl), tg = controls.target;
+      camera.position.set(tg.x, tg.y - d * Math.sin(a), d * Math.cos(a));
+    } else camera.position.setLength(d);
+    camera.lookAt(controls.target);
+  }
 }
 $('delBtn').addEventListener('click', async () => {
   const v = $('worldSel').value; if (!v) return;
@@ -3262,6 +3385,36 @@ $('delBtn').addEventListener('click', async () => {
   await init();
 });
 init().catch((err) => { $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+
+// headless timing (console: planetViewer.bench()): replay keyframes back to back, each
+// painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
+// then frames drawn with the camera turning and nothing repainted
+window.planetViewer = {
+  bench(frames = 30) {
+    const gl = renderer.getContext(), px = new Uint8Array(4), out = {};
+    const draw = () => { controls.update(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
+    if (V?.kind === 'run') {
+      stop();
+      const f0 = V.frame, nf = V.run.frames.length;
+      let tp = 0, td = 0;
+      state.playing = true;  // (as in a replay: the relief flat-shaded)
+      for (let k = 0; k < frames; k++) {
+        const t0 = performance.now(); setFrame((f0 + 1 + k) % nf); const t1 = performance.now(); draw();
+        tp += t1 - t0; td += performance.now() - t1;
+      }
+      state.playing = false;
+      const ts = performance.now(); setFrame(f0); draw();  // (a still frame: scrubbing, or the replay paused)
+      out.still_keyframe_ms = +(performance.now() - ts).toFixed(1);
+      Object.assign(out, { keyframe_ms: +((tp + td) / frames).toFixed(1), paint_ms: +(tp / frames).toFixed(1), draw_ms: +(td / frames).toFixed(2),
+                           keyframes_per_s: +(1000 * frames / (tp + td)).toFixed(1) });
+    }
+    const off = camera.position.clone().sub(controls.target), t0 = performance.now(), m = 4 * frames;
+    for (let k = 0; k < m; k++) { off.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.02); camera.position.copy(controls.target).add(off); draw(); }
+    const ms = (performance.now() - t0) / m;
+    return { ...out, still_frame_ms: +ms.toFixed(2), fps: +(1000 / ms).toFixed(0), relief: relief3d(), mode: state.mode,
+             vertices: mesh.geometry.attributes.position.count, pixels: [renderer.domElement.width, renderer.domElement.height] };
+  },
+};
 
 renderer.setAnimationLoop((now) => {
   if (state.tab === 'zoom') return;  // the globe is hidden

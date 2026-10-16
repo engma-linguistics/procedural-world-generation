@@ -2,7 +2,7 @@
 id: PW-124
 title: "Zoom: some river stretches still perched (under ice, beside other rivers)"
 type: task
-status: in-progress
+status: wontdo
 parent: null
 subsystem: zoom
 effort: m
@@ -30,6 +30,8 @@ Metric: for river pixels >= 100 m3/s, min over land (< 30 m3/s) within 2 px vs t
 within 2 px of that land pixel.
 
 ## Updates
+- 2026-10-16: Status in-progress -> wontdo. Coordinator 2026-10-16: accept for now (option B fixed one case but raised drops to 10.6-10.8 per seed). Remaining perched pixels 38.6/seed after PW-363.
+- 2026-10-16: Stopped (zoom batch 6): option B tried, not merged (a trade-off against the drops). Tried: from a third of the way through the landscape pass, unpin a falls reach's course pixel where active land off the course within the banks' width (BANK_KM, >= 2 px) lies > T below it on the iteration's surface; place_falls then follows the river. Held pinned within banks+3 px of each lip and its gorge (else the river left the plateau 2-5 px above the lip: arc seed 3's 693 m lip became a 684 m 'drop'). 592f2a's 8 zooms + plateau, seeds 1-5 (base: drops >= 100 m 9.8 per seed, perched 56.2, > 100 m 5.0): T = 30 m: drops 10.8, perched 50.8, > 100 m 3.8; T = 100 m: drops ~10.6, perched 53.4, > 100 m 2.8; lips' total height unchanged; inland bias/RMS unchanged. Case 2 is fixed outright (-2.22,-169.11 seed 4: 16 -> 0 px; the river takes the deeper fine valley and the reach settles ~100 m lower), but where the lower land is a plain or valley beside a staircase (arc -9.35,-161.39 seeds 2/3/5 at ~(314,116); 49.32,37.38 seed 2 at (131,481)) the freed river leaves the stair down a new undesigned 100-130 m drop, and the arc's own perched px hardly move (47 -> 45-48: they are case 1, side tributaries graded to the foot, and PW-363's raised distributaries, 37 of seed 2's 63). Options: (a) take B at T = 100 m (+0.8 drops per seed for -2.2 perched > 100 m px); (b) B only where the lower valley drains back to the same reach below (needs a drainage test per freed pixel); (c) accept: case 1 is the banks' design at 4 km/px, case 2 one seed of one zoom. Lean: c now, revisit after PW-363 (the arc's metric is mostly its distributaries). Patch kept out of the branch.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-16: Stopped (zoom batch 5): 41 perched pixels per seed, all on designed-fall reaches; agent lean: let the pinned course move to the fine valley bottom. Coordinator: take the lean in the next zoom batch.
 - 2026-10-16: Status in-progress -> todo. Stopped (zoom batch 5): 41 perched pixels per seed, all on designed-fall reaches; agent lean: let the pinned course move to the fine valley bottom. Coordinator: take the lean in the next zoom batch.

@@ -67,6 +67,7 @@
   body.d3 #info { top: auto; bottom: 12px; max-height: calc(100vh - 500px); overflow-y: auto; }
   #p3d input[type=range] { flex: 1; min-width: 0; }
   #p3d .val { width: 34px; text-align: right; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  #flyInfo { font: 11px ui-monospace, Menlo, monospace; min-height: 14px; }
   #fallList { margin-top: 4px; font-size: 12px; max-height: 150px; overflow-y: auto; }
   #fallList div { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
   #fallList div:hover, #fallList div.on { background: #1d2a40; }
@@ -126,6 +127,14 @@
   <label title="River widths: log of discharge (small streams exaggerated)">river width <input type="range" id="rw3d" min="0.5" max="3" step="0.25" value="1"><span class="val" id="rw3dV"></span></label>
   <div class="row"><label><input type="checkbox" id="shadows3d" checked> shadows</label>
     <label title="Flat-shaded triangles"><input type="checkbox" id="facets3d"> facets</label></div>
+  <div class="row"><label title="Glaciers shaded as ice (crevasses, snouts), the sea tinted by depth with foam at the shore, lakes by depth, rivers shimmering downstream"><input type="checkbox" id="fx3d" checked> ice and water</label>
+    <label title="The foam and the rivers' shimmer move"><input type="checkbox" id="motion3d" checked> moving</label>
+    <label title="Haze over the distance, to the horizon's colour"><input type="checkbox" id="haze3d" checked> haze</label></div>
+  <h2>Fly along a river</h2>
+  <div class="row" style="display:flex;gap:4px"><select id="river3d" style="flex:1;min-width:0" title="The zoom's biggest rivers, from head to mouth"></select>
+    <button id="fly3d" title="Follow the river downstream at low altitude, past its falls (click the view or Stop to end)">Fly</button></div>
+  <label title="Flying speed (slower past falls)">speed <input type="range" id="flySpeed3d" min="1" max="40" step="1" value="8"><span class="val" id="flySpeed3dV"></span></label>
+  <div id="flyInfo" class="muted"></div>
   <div class="muted" style="margin-top:4px">Drag to orbit, right-drag or arrow keys to pan, scroll to zoom, double-click to centre there. Colours: the layer picked on the left.</div>
   <h2 id="fallHead">Waterfalls</h2>
   <div id="fallList" class="muted"></div>
@@ -267,7 +276,9 @@ async function init() {
     const cam = (p.get('cam') || '').split(',').map(Number);
     await enter3d({ cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null,
       fall: p.get('fall') != null ? +p.get('fall') : null, exag: +p.get('exag') || null, step: +p.get('detail') || null,
-      shadows: p.get('shadows') === '0' ? false : null });
+      shadows: p.get('shadows') === '0' ? false : null,
+      // &river=N: fly along river N (the list's order); &at=0.4 from that share of the way down; &hold=1 stays there
+      river: p.get('river') != null ? +p.get('river') : null, at: +p.get('at') || 0, pause: p.get('hold') === '1' });
   }
 }
 
@@ -281,6 +292,8 @@ const api3d = {
   fps: (f) => { $('fps3d').textContent = `${Math.round(f)} fps`; },
   shadowsOff: () => { $('shadows3d').checked = false; syncURL(); },
   flyTo: (k) => fly(k),
+  // a river flight's progress line, or null when it ends
+  flying: (info) => { $('flyInfo').textContent = info || ''; $('fly3d').textContent = info ? 'Stop' : 'Fly'; },
 };
 async function enter3d(o = {}) {
   if (!state.meta) return;
@@ -307,6 +320,11 @@ async function enter3d(o = {}) {
     bind('rw3d', 'widthMul', Number, (v) => `${v}\u00d7`);
     bind('shadows3d', 'shadows', Boolean, String);
     bind('facets3d', 'facets', Boolean, String);
+    bind('fx3d', 'fx', Boolean, String);
+    bind('motion3d', 'motion', Boolean, String);
+    bind('haze3d', 'haze', Boolean, String);
+    bind('flySpeed3d', 'flySpeed', Number, (v) => `${v}`);
+    $('fly3d').onclick = () => (V3.flight ? V3.stopFlight() : V3.flyRiver(+$('river3d').value));
   }
   state.d3 = true;
   state.cam3d = o.cam || null;
@@ -316,6 +334,7 @@ async function enter3d(o = {}) {
   V3.start();
   render();
   if (o.fall != null) fly(o.fall);
+  if (o.river != null) { $('river3d').value = o.river; V3.flyRiver(o.river, { at: o.at, pause: o.pause }); }
   syncURL();
 }
 function exit3d() {
@@ -592,13 +611,15 @@ function render() {
   state.bare = true;
   try { renderLayer(); } finally { state.bare = false; }
   const m = state.meta, smooth = !CATEGORICAL.includes(state.layer);
+  const natural = ['satellite', 'relief', 'height', 'shade'].includes(state.layer);  // (the 3D view tints its glaciers as ice)
   V3.opts.rivers = $('rivers').checked;
   if (V3.zoomId !== m.id) {
     V3.zoomId = m.id;
-    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth }, state.cam3d);
+    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth, natural }, state.cam3d);
     state.cam3d = null;
     fallList();
-  } else V3.setTexture(state.off, smooth);
+    $('river3d').innerHTML = V3.riverList().map((t, k) => `<option value="${k}">${k + 1}. ${t}</option>`).join('') || '<option value="">no big rivers</option>';
+  } else V3.setTexture(state.off, smooth, natural);
   V3.showFalls($('falls').checked);
   V3.showVolc($('volc').checked);
 }
