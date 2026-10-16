@@ -1,4 +1,5 @@
 ---
+id: PW-411
 title: Fine zoom braided reaches are drawn as one smoothed thread
 type: task
 status: todo
@@ -9,7 +10,9 @@ impact: low
 found_by: pw405
 blocked_by: []
 relates: [PW-405]
-refs: [planet/zoom_fine.py, "_courses", "zoom 2b1dab (3ac681 -> 50 km @ 100 m at 1.99, -69.30, scratch)"]
+refs: [planet/zoom_fine.py, _courses, "zoom 2b1dab (3ac681 -> 50 km @ 100 m at 1.99, -69.30, scratch)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ Example: the 8,000 m^3/s river of 3ac681 at 0.09% runs as a single straight band
 Approach: in braided reaches, widen the active belt to ~3-5 w and draw 2-4 threads. Each thread is a low-amplitude, short-wavelength wander inside the belt (planet-fixed phase like the meanders), with gravel bars between them. The threads have to merge back at the reach's ends. The drainage stays on the main thread so the receiver network stays a tree.
 - [ ] Braided reaches show several threads and bars in plan view and in 3D.
 - [ ] zoom_fine.planform stays switchback-free on the main thread.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-braided-rivers.md (found by pw405).

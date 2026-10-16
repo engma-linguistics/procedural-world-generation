@@ -1,4 +1,5 @@
 ---
+id: PW-412
 title: Fine zooms have no floodplains, so most lowland rivers count as confined and barely meander
 type: task
 status: todo
@@ -9,7 +10,9 @@ impact: med
 found_by: pw405
 blocked_by: []
 relates: [PW-405, PW-404]
-refs: [planet/zoom_fine.py, "_courses", "zoom 352c76 (scratch regen, 170672 -> 3453b8 -> 25 m)"]
+refs: [planet/zoom_fine.py, _courses, "zoom 352c76 (scratch regen, 170672 -> 3453b8 -> 25 m)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ Example: 170672 -> 50 km @ 100 m (3453b8) -> 20 km @ 25 m. The 310 m^3/s river h
 Approach: along alluvial single-thread courses (the `_courses` classes), hold a flat floodplain at about bankfull level. Make it about the meander belt wide (2 x amplitude + w, at least ~10 w). The landscape pass then shapes hillslopes from the floodplain's edge. The planform's confinement test would then see the floor of a parent zoom made with this change.
 - [ ] Watch the PW-389 3x3 block means: does the floodplain's missing volume go back onto the hills, or is it a drawn feature left out like gorges? Decide which.
 - [ ] Lowland fine zooms show flat valley floors with meanders on them. Bedrock valleys stay V-shaped.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-floodplains.md (found by pw405).
