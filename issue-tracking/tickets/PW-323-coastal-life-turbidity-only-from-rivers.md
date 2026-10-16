@@ -2,7 +2,7 @@
 id: PW-323
 title: "Coastal life: turbidity only from rivers; shallow tidal shelves (Wadden, Yellow Sea, Gulf of Thailand) should be turbid from resuspension"
 type: task
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: coast
 effort: s
@@ -23,4 +23,5 @@ Sound simplest fix: a resuspension term on coastal sea cells, rising as the floo
 - [ ] Earth check: Wadden and Yellow Sea turbid (> 10 mg/L), open clear coasts unchanged
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Coast batch agent started.
 - 2026-10-15: Created from inbox draft draft-coastal-turbidity-resuspension.md (found by coastal-life).

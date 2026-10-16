@@ -2,7 +2,7 @@
 id: PW-313
 title: "The run's ice rule can't hold Earth's Antarctica at today's climate (dT 0): it decays to ~0.1% of the surface"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: m
@@ -35,5 +35,6 @@ write-up). Today's Antarctica should hold at dT 0 and grow toward the LGM's ~-12
 - [ ] Earth probe at dT 0 keeps an ice share near 3% over 8 updates
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Run-lane agent started (polar summers / Antarctica).
 - 2026-10-15: Coordinator: also owns PW-240's reopened question (merged draft there, 2026-10-15): after PW-293, seed 11's 3.5 C era reaches -264 m of ice (-370 m total). Fixing the warm polar summers will make ice grow more readily, so re-check cold-era ice depth on the same seeds (PW-240's goal: -150 m typical, -250 m worst) when this lands.
 - 2026-10-15: Created from inbox draft draft-run-ice-cannot-hold-antarctica.md (found by pw308).

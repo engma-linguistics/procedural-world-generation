@@ -2,7 +2,7 @@
 id: PW-297
 title: "Tides: macrotidal shelves (Patagonia, Yellow Sea, Khambhat, Channel) low once resonance falls off past lambda/4"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: coast
 effort: s
@@ -29,4 +29,5 @@ deepest-water route; whether the friction exponential exp(-(W - lambda/4)/L_SHEL
 the friction r already in the response. Don't bring back the clamp.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Coast batch agent started.
 - 2026-10-15: Created from inbox draft draft-tides-macrotidal-shelves-off-resonance.md (found by fix-coast-zoom).
