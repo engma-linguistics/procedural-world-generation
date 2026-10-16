@@ -26,7 +26,7 @@ def test_viewer_scripts_parse(page, tmp_path):
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-@pytest.mark.parametrize("script", ["zoom3d.js", "relief.js"])
+@pytest.mark.parametrize("script", ["zoom3d.js", "zoom3d_look.js", "zoom3d_fly.js", "relief.js"])
 def test_viewer_modules_parse(script, tmp_path):
     """The viewer's own ES modules (zoom3d.js: the zoom's 3D view, PW-072; relief.js: the globe's 3D relief)."""
     f = tmp_path / (Path(script).stem + ".mjs")

@@ -531,6 +531,17 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 ![3D relief: flat map](review/viewer/3d_map_relief.png)
 *The flat map as a tilted relief model (`&mode=map&relief3d=1&tilt=55`).*
 
+**Zoom 3D surfaces and river flights** (`viewer/zoom3d_look.js`, `viewer/zoom3d_fly.js`): a half-float data texture of the zoom's ground, ice (smoothed over a few pixels, so outlines don't show the pixels' steps), sea mask and lake depths feeds the shaders. **Glaciers** (the "ice and water" box): white to blue with thickness on the natural layers (satellite, relief, height, hillshade; elsewhere only shaded, so categorical colours stay), a sheen, crevasse bands across the flow where the ice surface steepens (spaced to the pixels, faded where finer than the screen), steep ice bluer, and grey debris on the snouts (where the ice thins downhill, not along its sides). **Sea:** tinted by depth (turquoise shelves to navy deeps, clearer in the shallows), glints off a rippled surface, foam bands moving in along the shoreline (the sea mask's edge), and drawn only where the sea is (no longer over land below sea level away from it). **Lakes:** their kind's colour, lighter in the shallows, rippled glints. **Rivers** shimmer downstream: a flow texture with the same strokes as the painted rivers, each segment coloured by its direction, advects noise along it (a two-phase flow map). "moving" animates foam and shimmer at ~30 fps while the view is still (off: it draws only when something moves). **Sky:** a dome from a pale horizon to a deeper zenith, and "haze" fades the distance to the horizon's colour. **Fly along a river:** the zoom's 12 biggest rivers (main stems traced up from where they end: the sea or the zoom's edge; listed with length, discharge and falls) can be flown head to mouth at low altitude (500 + 500 m per km/px above the water, never under a lip just ahead; looking 8 px ahead), slowing to a third within 4 km of a fall; the panel shows km flown and the next fall; dragging the view or Stop ends it (`&river=N&at=0.4&hold=1` for screenshots). Cost on the RTX PRO 6000 (headless Chrome, 1920×1080, e33c3d full detail with shadows): 0.65 ms a frame with the effects, 0.49 without (~1500 / ~2050 fps unthrottled).
+
+![Zoom 3D: glaciers](review/viewer/3d_zoom_glacier.png)
+*Zoom e33c3d (1 km/px, relief layer) in 3D: glaciers on the high summits as ice, blue with sheen and faint crevasses, against the rock.*
+
+![Zoom 3D: coast](review/viewer/3d_zoom_coast.png)
+*Zoom 02734d (4 km/px, satellite): the sea tinted by depth, foam along the shore, the haze toward the horizon.*
+
+![Zoom 3D: river flight](review/viewer/3d_zoom_fly.png)
+*Flying down river 3 of zoom e33c3d (154 km, 3 falls): the 369 m and 469 m falls ahead.*
+
 ![Zoom 3D: mountains](review/viewer/zoom3d_mountain.png)
 *Zoom e33c3d (500 km at 1 km/px, relief layer, 3×) in 3D, the highest falls labelled.*
 
