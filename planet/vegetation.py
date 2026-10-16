@@ -113,7 +113,7 @@ _ROWS = [
     ("C4G", "C4 grass", "#d8c24a", 6, HERB, HERBAL, 10, _NO, 99, _NO, 0, 22, 0.10,
      0.85, 1.20, (10, 25, 38, 50), 4.0, 25, 1, 4.0, 0, 0.7, 0, 0.3, 300, 0.10, 0.95, 2, 0.90, 1),
     ("C3G", "C3 grass and forbs", "#b5c86a", 5, HERB, HERBAL, 0, _NO, 15.5, _NO, 200, _NO, 0.15,
-     0.80, 1.10, (-2, 12, 25, 38), 4.0, 25, 1, 4.0, 0, 1.0, 0, 0.3, 300, 0.10, 0.95, 1, 0.90, 1),
+     0.80, 1.10, (-2, 12, 32, 45), 4.0, 25, 1, 4.0, 0, 1.0, 0, 0.3, 300, 0.10, 0.95, 1, 0.90, 1),
     ("TunH", "tundra graminoids and forbs", "#a9b59a", 5, HERB, SUMMERGREEN, 0, _NO, 5, _NO, 50, _NO, 0.25,
      0.95, 1.00, (-4, 6, 18, 30), 2.5, 25, 1, 3.0, 0, 1.0, 0, 0.6, 200, 0.10, 0.90, 0.3, 0.80, 1),
     ("Succ", "succulents (CAM)", "#c98a5a", 6, SHRUB, EVERGREEN, 0, 0, 99, -10, 2000, _NO, 0.02,
@@ -160,13 +160,41 @@ def _col(k):
 
 # the per-PFT numbers the kernels read, one row per PFT (column order: _K_*)
 _K_COLS = ("eps", "t0", "t1", "t2", "t3", "amin", "top", "phen", "on", "rl", "rw", "lma", "tleaf", "kt", "wet",
-           "laimax", "wue")
+           "laimax", "wue", "qy")
 EPS_SCALE = 0.8  # all efficiencies (tuned: Earth's land NPP)
+C4, C3 = IDX["C4G"], IDX["C3G"]
 _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS], float) for j in range(4)), _col("amin"),
                 _col("top"), _col("phen"), _col("on"), _col("rl"), _col("rw"), _col("lma"), _col("tleaf"),
-                _col("kt"), _col("wet"), _col("laimax"), _col("wue")], 1)
-C4 = IDX["C4G"]
-C3_PFTS = np.array([p["code"] not in ("C4G", "Succ") for p in PFTS])
+                _col("kt"), _col("wet"), _col("laimax"), _col("wue"), (np.arange(NP) == C3).astype(float)], 1)
+# C3 against C4 grasses (PW-231): the two differ only in their photosynthetic
+# pathway, and which wins a month is set by the quantum yield (Ehleringer &
+# Bjorkman 1977; Ehleringer et al. 1997): C4's is the same at any temperature,
+# C3's falls as photorespiration rises with temperature and falls with CO2,
+# as (Ci - G*) / (Ci + 2 G*) (Farquhar et al. 1980; G*, the CO2 compensation
+# point, from Bernacchi et al. 2001; Ci = 0.7 Ca). The two are equal at a
+# monthly mean of QY_CROSS (Collatz et al. 1998's C4 climate criterion, at
+# their ~350 ppm), so C3 grass's efficiency is C4 grass's there, scaled by
+# its quantum yield elsewhere (vegetation._q3; the qy column flags it).
+QY_CROSS, CA_REF = 22.0, 350.0  # C, ppm (today: the run's CO2 index 0)
+
+
+def _gstar(t):
+    """CO2 compensation point without dark respiration, ppm (Bernacchi et al. 2001)."""
+    return 42.75 * np.exp(37830.0 * (t - 25.0) / (298.15 * 8.314 * (t + 273.15)))
+
+
+def _q3(t, ci):
+    """C3 quantum yield relative to its photorespiration-free value."""
+    g = _gstar(t)
+    return (ci - g) / (ci + 2.0 * g)
+
+
+def _ft_np(t, t0, t1, t2, t3):
+    return float(np.interp(t, (t0, t1, t2, t3), (0.0, 1.0, 1.0, 0.0)))
+
+
+_KP[C3, 0] = _KP[C4, 0] * _ft_np(QY_CROSS, *PFTS[C4]["temp"]) / _q3(QY_CROSS, 0.7 * CA_REF)
+C3_PFTS = np.array([p["code"] not in ("C4G", "Succ", "C3G") for p in PFTS])  # (the generic CO2 nudge; C3G has its own)
 
 # ---------------------------------------------------------------------------
 # Plant groups that appear during a run (decision 3)
@@ -463,21 +491,23 @@ def _ft(t, t0, t1, t2, t3):
 
 
 @njit(cache=True)
-def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, out):
+def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
     """One PFT growing alone at LAI lai on cell i, two years of months
     (the first spins the soil bucket up from full). Writes into out:
     [0] NPP, [1] net (NPP - leaf and fine-root turnover), [2] GPP,
     [3] mean water-stress ratio over the leaf-on months, [4] months with
     a dry topsoil (< 30% full, above 5 C), [5] leaf-on months Apr-Sep,
-    [6] leaf-on months Oct-Mar."""
+    [6] leaf-on months Oct-Mar, [7 + m] GPP in month m (Jan..Dec)."""
     eps, t0, t1, t2, t3, amin, top, phen, on_t = kp[0], kp[1], kp[2], kp[3], kp[4], kp[5], kp[6], kp[7], kp[8]
-    rl, rw, lma, tleaf, kt, wet, wue = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16]
+    rl, rw, lma, tleaf, kt, wet, wue, qy = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16], kp[17]
     w1, w2 = cap1, cap2
     gpp = resp = asum = 0.0
     non = ndry = 0.0
     onj = ona = 0.0
     fap_full = 1.0 - np.exp(-0.5 * lai)
     half = 0.5 * amin
+    for m in range(12):
+        out[7 + m] = 0.0
     for k in range(24):
         m = k % 12
         t = T[m, i]
@@ -533,9 +563,13 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, out):
                 fw = (alpha - half) / (1.0 - half)
                 fw = min(max(fw, 0.0), 1.0)
                 g_m = eps * eff * fap * PAR[m, i] * _ft(t, t0, t1, t2, t3) * fw
+                if qy > 0:  # C3 grass: its quantum yield (QY_CROSS, _q3)
+                    gs = 42.75 * np.exp(37830.0 * (t - 25.0) / (298.15 * 8.314 * (t + 273.15)))
+                    g_m *= max((ci - gs) / (ci + 2.0 * gs), 0.0)
                 if wet == 0 and g_m > wue * dryf * aet:  # no more carbon than the water allows
                     g_m = wue * dryf * aet
                 gpp += g_m
+                out[7 + m] = g_m
                 asum += alpha
                 non += 1.0
                 if 3 <= m <= 8:
@@ -553,18 +587,19 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, out):
 
 
 @njit(parallel=True, cache=True)
-def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, mode, days, res):
+def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, mode, days, ci, grass, res, gmon):
     """Potential NPP of every viable PFT on every cell in cells, at the LAI
     that maximises its net NPP. mode 0: golden-section search over
     (0.05, laimax) (8 evaluations); mode 1: a local step around lai0 (the
     last update's LAI; 3 evaluations), the run's cheap variant. res:
-    (8, NP, n): the 7 _year outputs and the LAI."""
+    (8, NP, n): the 7 _year outputs and the LAI; gmon: (len(grass), 12, n),
+    the monthly GPP of the PFTs in grass at that LAI."""
     npft = kp.shape[0]
     gr = 0.6180339887
     for jj in prange(len(cells)):
         i = cells[jj]
-        out = np.zeros(7)
-        best = np.zeros(7)
+        out = np.zeros(19)
+        best = np.zeros(19)
         for p in range(npft):
             if not viable[p, i]:
                 continue
@@ -573,7 +608,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                 bl, bv = 0.0, -1e30
                 for f in (1.0, 0.8, 1.25):
                     x = min(max(lai0[p, i] * f, 0.05), lmax)
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
                     if out[1] > bv:
                         bv, bl = out[1], x
                         best[:] = out
@@ -581,11 +616,11 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                 a, b = 0.05, lmax
                 c = b - gr * (b - a)
                 d = a + gr * (b - a)
-                _year(kp[p], i, c, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, out)
+                _year(kp[p], i, c, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
                 fc = out[1]
                 bv, bl = fc, c
                 best[:] = out
-                _year(kp[p], i, d, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, out)
+                _year(kp[p], i, d, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
                 fd = out[1]
                 if fd > bv:
                     bv, bl = fd, d
@@ -599,7 +634,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                         a, c, fc = c, d, fd
                         d = a + gr * (b - a)
                         x = d
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
                     if x == c:
                         fc = out[1]
                     else:
@@ -610,25 +645,42 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
             for k in range(7):
                 res[k, p, i] = best[k]
             res[7, p, i] = bl
+            for j in range(len(grass)):
+                if grass[j] == p:
+                    for m in range(12):
+                        gmon[j, m, i] = best[7 + m]
 
 
 def potential(s: dict, viable: np.ndarray, eff: np.ndarray, co2: float = 0.0, lai0=None, cheap: bool = False) -> dict:
     """Potential productivity of each PFT on each cell where viable (NP, n),
     as if it grew alone (section 3.2). eff: (NP, n) efficiency multipliers
     (stand-ins). co2: the run's CO2 index nudges C3 efficiency (a mild
-    'fertilisation', +-~20%). Returns (NP, n) arrays npp, net, gpp, alpha,
-    dry (months), on_jul, on_jan (leaf-on months per half-year), lai; and
-    the drought limit applied: a PFT whose growing-season water ratio is
-    under its amin is not viable."""
+    'fertilisation', +-~20%; C3 grass through its quantum yield, _q3).
+    Returns (NP, n) arrays npp, net, gpp, alpha, dry (months), on_jul,
+    on_jan (leaf-on months per half-year), lai; c4_share (n,), the share of
+    the grasses' growth that is C4's (the better pathway takes each month);
+    and the drought limit applied: a PFT whose growing-season water ratio
+    is under its amin is not viable."""
     n = len(s["tc"])
     cells = np.flatnonzero(viable.any(0)).astype(np.int64)
     kp = _KP.copy()
-    kp[C3_PFTS, 0] *= 1.0 + 0.12 * float(np.clip(co2, -1.5, 1.5))
+    co2 = float(np.clip(co2, -1.5, 1.5))
+    kp[C3_PFTS, 0] *= 1.0 + 0.12 * co2
+    ci = 0.7 * CA_REF * 2.0 ** co2  # the CO2 index is ~log2 of CO2 against today's
     res = np.zeros((8, NP, n))
+    gmon = np.zeros((2, 12, n))
     lai = np.zeros((NP, n)) if lai0 is None else np.asarray(lai0, float)
     _potential(cells, kp, s["t"], s["water"], s["pet"], s["par"], s["cap1"], s["cap2"], viable,
-               np.asarray(eff, float), s["dryair"], lai, 1 if cheap else 0, _DAYS, res)
+               np.asarray(eff, float), s["dryair"], lai, 1 if cheap else 0, _DAYS, ci, np.array([C3, C4], np.int64),
+               res, gmon)
     out = dict(zip(("npp", "net", "gpp", "alpha", "dry", "on_jul", "on_jan", "lai"), res))
+    # the grasses' C4 share: each month's grass growth goes to the pathway that
+    # grows better that month (seasonal niches: cool- and warm-season grasses;
+    # Still et al. 2003's C4 fraction after Collatz et al. 1998)
+    g3, g4 = gmon
+    a4 = np.where(g4 > g3, g4, 0.0).sum(0)
+    a3 = np.where(g4 > g3, 0.0, g3).sum(0)
+    out["c4_share"] = np.where(a3 + a4 > 0, a4 / np.maximum(a3 + a4, 1e-12), 0.5)
     amin = _col("amin")[:, None]
     ok = viable & (out["net"] > 0) & (out["alpha"] >= amin)
     out["ok"] = ok
@@ -776,12 +828,13 @@ def fire_rate(fast, slow, kslow, weather):
 
 @njit(parallel=True, cache=True)
 def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, kslow, ign, dt, seed, diff, nbr_off, nbr_idx,
-          food, browsed, graze, out, burned):
+          food, browsed, graze, c4_share, out, burned):
     """One implicit step of the cover equations on every cell in cells:
     dnu/dt = g nu (K - sum_q C_pq nu_q) - (mort + fire (1 - resist)) nu,
     plus seeds (every viable type keeps at least `seed`) and a little
     spread from neighbours (diff). Fire from this cover's fuel (fire_rate;
-    slowf: 1 for the types whose dead fuel builds up slowly, the shrubs)."""
+    slowf: 1 for the types whose dead fuel builds up slowly, the shrubs).
+    The C3 and C4 grasses are one grass layer, split by c4_share."""
     npft = nu.shape[0]
     for jj in prange(len(cells)):
         i = cells[jj]
@@ -813,6 +866,10 @@ def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, ksl
                     m += nu[p, nbr_idx[k]]
                 v += diff * (m / (n1 - n0) - nu[p, i]) * (m > nu[p, i])
             out[p, i] = max(v, seed)
+        if ok[C3, i] and ok[C4, i]:
+            tot = out[C3, i] + out[C4, i]
+            out[C4, i] = max(tot * c4_share[i], seed)
+            out[C3, i] = max(tot * (1.0 - c4_share[i]), seed)
 
 
 def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=None, steps=None,
@@ -859,10 +916,11 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     burned = np.zeros(n)
     C, resist = _C, _col("resist")
     slowf = SHRUBS.astype(np.float64)
+    c4s = np.asarray(pot.get("c4_share", np.full(n, 0.5)), np.float64)
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
         for _ in range(count):
             _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, SLOW_FUEL * kdec, ign, float(dt), seed, diff,
-                  grid.nbr_off, grid.nbr_idx, food, browsed, graze, out, burned)
+                  grid.nbr_off, grid.nbr_idx, food, browsed, graze, c4s, out, burned)
             nu, out = out, nu
     nu = np.where(nu > 2 * seed, nu - seed, 0.0)
     tot = nu.sum(0)

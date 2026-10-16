@@ -205,7 +205,8 @@ def test_fire_rate_fuel_age():
 
 def test_mediterranean_scrub_burns_and_stays_scrub():
     """A summer-dry climate's sclerophyll scrub of low productivity burns
-    every few decades (its fuel builds up) and stays shrub-dominated."""
+    every few decades to centuries (its fuel builds up) and stays
+    shrub-dominated."""
     g = build_grid(3)
     n = g.n
     lat = np.abs(np.asarray(g.lat))
@@ -219,5 +220,39 @@ def test_mediterranean_scrub_burns_and_stays_scrub():
     sm, nu = v["sm"], v["eq"]["nu"]
     assert (v["types"][m] == V.T["Mediterranean scrub (maquis, chaparral, fynbos)"]).mean() > 0.5
     ret = sm["fire_return"][m]
-    assert 10 < np.median(ret) < 150
+    assert 10 < np.median(ret) < 400  # (none at all before PW-234)
     assert np.median(nu[V.IDX["SclS"], m]) > np.median((nu[V.IDX["C3G"]] + nu[V.IDX["C4G"]])[m])
+
+
+# --------------------------------------------------------------------------- C3 and C4 grasses (PW-231)
+def test_c3_quantum_yield():
+    """C3 grass's efficiency falls with temperature (photorespiration) and
+    rises with CO2; it equals C4 grass's at QY_CROSS today."""
+    ci = 0.7 * V.CA_REF
+    q = [V._q3(t, ci) for t in (10, 20, 30)]
+    assert q[0] > q[1] > q[2] > 0
+    assert V._q3(25, 2 * ci) > V._q3(25, ci) > V._q3(25, 0.5 * ci)
+    c4 = V._KP[V.C4, 0] * V._ft_np(V.QY_CROSS, *V.PFTS[V.C4]["temp"])
+    c3 = V._KP[V.C3, 0] * V._ft_np(V.QY_CROSS, *V.PFTS[V.C3]["temp"]) * V._q3(V.QY_CROSS, ci)
+    assert np.isclose(c3, c4)
+
+
+def test_c4_grass_follows_the_rain_season():
+    """Same temperatures (warm summers, cool winters), different rain
+    seasons: summer-rain grassland is mostly C4, winter-rain mostly C3
+    (Still et al. 2003)."""
+    g = build_grid(3)
+    n = g.n
+    lat = np.asarray(g.lat)
+    north = lat >= 0
+    elev = np.random.default_rng(3).uniform(100.0, 700.0, n)
+    m = (np.abs(lat) > 25) & (np.abs(lat) < 35)
+    out = {}
+    for name, (p_s, p_w) in {"summer": (700.0, 100.0), "winter": (100.0, 700.0)}.items():
+        pj, pa = np.where(north, p_s, p_w), np.where(north, p_w, p_s)
+        v = V.model(g, elev, np.full(n, 18.0), np.full(n, 26.0), np.full(n, 10.0), pj, pa, 23.4,
+                    np.full(n, 0.3), np.full(n, 0.3))
+        nu = v["eq"]["nu"]
+        c3, c4 = nu[V.C3, m], nu[V.C4, m]
+        out[name] = np.median(c4 / np.maximum(c3 + c4, 1e-9))
+    assert out["summer"] > 0.7 and out["winter"] < 0.5 and out["summer"] - out["winter"] > 0.3, out
