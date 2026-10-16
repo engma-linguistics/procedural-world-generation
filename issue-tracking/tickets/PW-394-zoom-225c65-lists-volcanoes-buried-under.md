@@ -1,4 +1,5 @@
 ---
+id: PW-394
 title: Zoom 225c65 lists volcanoes buried under a higher plateau
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: []
 refs: [planet/zoom_volcanoes.py, "zoom 225c65"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Found while choosing a volcano for a PW-129 fine-zoom showcase. zoom_fine
 skips such a volcano: its cone never drops below the summit, so no core
 radius is found and it doesn't fit.
 - [ ] a listed volcano's summit is at or above the zoom's ground there
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-volcanoes-buried-under-plateau.md (found by pw129-fine-zoom).

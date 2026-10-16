@@ -1,4 +1,5 @@
 ---
+id: PW-391
 title: Fine zoom rivers can carry less water than the parent's
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129]
 refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", "zoom 97b3e7"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,3 +30,6 @@ widths aren't.
 - [ ] log each entering river (parent q and where it was injected) and
       compare the children's discharge at the lip with the parent's
 - [ ] within 10% of the parent's at the lip at 50 m and 25 m
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-inflow-accounting.md (found by pw129-fine-zoom).

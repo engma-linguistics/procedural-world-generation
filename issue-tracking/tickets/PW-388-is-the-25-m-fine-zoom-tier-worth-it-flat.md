@@ -1,4 +1,5 @@
 ---
+id: PW-388
 title: Is the 25 m fine zoom tier worth it (flat canopy, little gain over 50 m)?
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129, PW-072]
 refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -37,3 +40,7 @@ Options:
 
 Lean: A now, B with the 3D tile agent; C only if B still looks flat. More
 pixels don't pay off until the gorge and reef forms are fixed at 50 m.
+
+## Updates
+- 2026-10-16: Coordinator decision: 50 m stays the finest default; 25 m (1000 px) stays available as an option. Before it is offered in the viewer, add canopy-height displacement in the 3D tile (canopy_height layer exists); sprites only if that still looks flat.
+- 2026-10-16: Created from inbox draft draft-fine-zoom-25m-tier-canopy.md (found by pw129-fine-zoom).

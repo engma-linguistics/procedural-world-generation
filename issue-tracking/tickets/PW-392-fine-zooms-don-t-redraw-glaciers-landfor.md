@@ -1,4 +1,5 @@
 ---
+id: PW-392
 title: Fine zooms don't redraw glaciers, landform overlays, deltas or reef forms
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129]
 refs: [planet/zoom_fine.py, "zoom a0097b", "zoom 652295"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,6 @@ planet/zoom_fine.py:
 Each is a separate piece of work. The reef rim is the most visible. For a
 reef or bay showcase I'd start with the reef forms (zoom_coastal.place at
 the fine scale, kept to the parent's reef pixels).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-not-redone-glaciers-landforms.md (found by pw129-fine-zoom).

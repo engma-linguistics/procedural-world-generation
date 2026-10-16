@@ -1,4 +1,5 @@
 ---
+id: PW-390
 title: Fine zoom gorges are D8 staircases with banded walls
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129]
 refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", "zoom 97b3e7"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -31,3 +34,6 @@ What I'd try:
   block means.
 - [ ] at 50 m and 25 m the gorge below the 170672 fall reads as one winding
       canyon in the satellite preview, with no banding along its walls
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-gorge-d8-banding.md (found by pw129-fine-zoom).

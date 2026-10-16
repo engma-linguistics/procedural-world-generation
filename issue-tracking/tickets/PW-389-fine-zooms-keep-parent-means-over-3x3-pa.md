@@ -1,7 +1,8 @@
 ---
+id: PW-389
 title: Fine zooms keep parent means over 3x3 parent pixels, not per pixel
 type: task
-status: needs-decision
+status: done
 parent: null
 subsystem: zoom
 effort: xs
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129]
 refs: [planet/zoom_fine.py, "zoom 97b3e7", "zoom 170672"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -36,3 +39,7 @@ Options:
 
 Lean: A. The parent's pixels are its rendering of the place, not ground truth
 at 1 km.
+
+## Updates
+- 2026-10-16: Status needs-decision -> done. Coordinator decision: accept 3x3-block means. The parent's single pixel is itself an interpolated 1 km estimate; per-pixel means rebuilt the parent's pixel staircase. The features the owner asked to keep exact (fall drops, volcano summits) are held exactly regardless.
+- 2026-10-16: Created from inbox draft draft-fine-zoom-block-means.md (found by pw129-fine-zoom).

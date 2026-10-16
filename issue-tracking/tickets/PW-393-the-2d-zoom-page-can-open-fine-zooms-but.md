@@ -1,4 +1,5 @@
 ---
+id: PW-393
 title: The 2D zoom page can open fine zooms but can't ask for one
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw129-fine-zoom
 blocked_by: []
 relates: [PW-129, PW-072]
 refs: [viewer/zoom.html, planet/api.py, planet/zoom_fine.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Missing in the 2D page:
 - a link from a child back to its parent.
 
 The 3D inset is the separate 3D-tile work.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-viewer-pick.md (found by pw129-fine-zoom).
