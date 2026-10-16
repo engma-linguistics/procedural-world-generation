@@ -2,7 +2,7 @@
 id: PW-390
 title: Fine zoom gorges are D8 staircases with banded walls
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -36,4 +36,5 @@ What I'd try:
       canyon in the satellite preview, with no banding along its walls
 
 ## Updates
+- 2026-10-16: Status todo -> done. Merged: smooth gorge path, distance cross-section, gorges out of the block means, needle cut; needles 98 -> 1 at 25 m.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-gorge-d8-banding.md (found by pw129-fine-zoom).

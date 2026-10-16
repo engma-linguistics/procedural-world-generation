@@ -1,4 +1,5 @@
 ---
+id: PW-404
 title: Fine zoom crests stay sawtoothed where the means' corrections step a parent pixel apart
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw390-fine-zoom-gorge
 blocked_by: []
 relates: [PW-129, PW-390]
 refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", docs/review/fine-zoom-gorge/]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -33,3 +36,6 @@ apply it in proportion to each pixel's height above its local base; measure stee
 rms on the chain 97b3e7 -> 3e74b0 / b3c260.
 - [ ] steepest drop > 1.5 x tan 35 on < 1% of px at 50 and 25 m, away from held features
 - [ ] block means kept to <= 20 m rms
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-sawtooth-crests.md (found by pw390-fine-zoom-gorge).

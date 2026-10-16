@@ -1,4 +1,5 @@
 ---
+id: PW-403
 title: Fine zoom tributaries crossing a gorge's walls keep their plateau beds
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw390-fine-zoom-gorge
 blocked_by: []
 relates: [PW-129, PW-390]
 refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,3 +27,6 @@ What I'd try: in zoom_fine step 4, end such a course at the gorge's rim (its pix
 become wall), list the drop from its rim pixel to the floor as a fall (kind "hanging"), and route
 its water over it.
 - [ ] no course pixel inside a gorge's walls stands more than 50 m above the walls beside it
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-zoom-hanging-tributaries.md (found by pw390-fine-zoom-gorge).
