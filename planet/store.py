@@ -674,8 +674,10 @@ def checkpoint_path(run_dir: Path, t: float) -> Path:
 def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
     """The state, with the plates' geological record (rec, lith) zeroed
     where they own no crust (dead slots, cells their crust has left: a
-    record is only read on owned cells, and written when a plate gains
-    one), which keeps it from doubling the file. (The older columns can't
+    record is written when a plate gains one), which keeps it from doubling
+    the file. Cells the world view samples keep theirs even when not owned:
+    the view (and the subsidence it drives) reads them, so zeroing them
+    moved a replayed checkpoint's elevation by up to ~1 km (PW-291). (The older columns can't
     be zeroed the same way: a volcano still reads the swell of a cell its
     crust has left, volcanism.base_level.) writer: a CheckpointWriter to
     pickle, compress and write it in the background (sim.state() is a deep
@@ -692,8 +694,11 @@ def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
 
 def _write_checkpoint(path: Path, state: dict):
     pl = state["plates"]
+    keep = pl.owned.copy()
+    owner = state["owner"]
+    keep[owner, pl.idx[owner, np.arange(owner.size)]] = True  # the world view's cells (Simulation._world_view)
     for name in ("rec", "lith"):
-        getattr(pl, name)[~pl.owned] = 0
+        getattr(pl, name)[~keep] = 0
     write_atomic(path, zlib.compress(pickle.dumps(state, protocol=5), 1))
 
 
