@@ -1,4 +1,5 @@
 ---
+id: PW-316
 title: Viewer replay at 60 fps on L7 - per-cell colour and height in data textures
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewer-replay-speed
 blocked_by: []
 relates: []
 refs: [viewer/index.html]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -22,3 +25,6 @@ To reach 60 fps: keep the mesh static and give each vertex its cell index (and c
 per-cell colour texture (n texels, 0.6 MB) and a per-cell/per-corner height texture each frame, and
 displace / colour in the vertex shader (`onBeforeCompile` on the Lambert material). Smooth colours and the
 flat map's hill shading (per-triangle, `mapHillshade`) need care. Only worth it if 25 fps feels slow.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-viewer-replay-60fps.md (found by viewer-replay-speed).

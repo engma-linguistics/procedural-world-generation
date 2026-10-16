@@ -1,4 +1,5 @@
 ---
+id: PW-315
 title: Cell detail panel - a 12-month climograph (worlds store monthly temperature and rain)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewer-replay-speed
 blocked_by: []
 relates: [PW-194]
 refs: [viewer/index.html, planet/climate.py, planet/world.py, planet/store.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,3 +28,6 @@ asks the server for one cell's months (`GET /api/cell?world=&i=`, calling `clima
 (C) port the month builder to JS (duplicated physics, would drift). Lean: B (no storage, exact, cheap).
 - [ ] the panel shows 12 months of temperature and rain for world cells
 - [ ] runs keep the current chartless panel (their keyframes don't carry the inputs)
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-viewer-cell-climograph.md (found by viewer-replay-speed).

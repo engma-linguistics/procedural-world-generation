@@ -1,4 +1,5 @@
 ---
+id: PW-317
 title: Opening an L7 run downloads ~330 MB and keeps every visited layer's frames in memory
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewer-replay-speed
 blocked_by: []
 relates: []
 refs: [viewer/index.html, planet/store.py, planet/server.py, "run a1d3b9"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ playing (the server's SimpleHTTPRequestHandler doesn't do Range; it would need a
 (B) drop a layer's buffer when it is no longer drawn (re-fetch on return); (C) gzip the .bin files on
 the wire (int8/int16 grids compress well) via a Content-Encoding the handler adds for pre-gzipped files.
 Lean: B (simple, frees memory) plus C if the first open matters. Check frame times stay ~25-30 ms.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-viewer-run-download-size.md (found by viewer-replay-speed).
