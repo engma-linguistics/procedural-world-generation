@@ -86,3 +86,54 @@ def test_no_rough_rim_at_the_zoom_edge():
     rl = _relief3(h)
     rim, ring = rl[d < 3].mean(), rl[(d >= 8) & (d < 40)].mean()
     assert rim < 1.25 * ring, (rim, ring)
+
+
+def _pk(lat, lon, n, res):
+    fr = zoom.Frame(lat, lon)
+    x = (np.arange(n) + 0.5 - n / 2) * res
+    X, Y = np.meshgrid(x, -x)
+    return np.ascontiguousarray(fr.to_sphere(X.ravel(), Y.ravel()) * zoom.R_KM), X.ravel(), Y.ravel()
+
+
+def test_drainage_tie_breaks_are_planet_fixed():
+    """PW-339: the flood's tie-break jitter is a function of the place on the
+    planet, so zooms of another size or with another halo share it where
+    they overlap (one random number per pixel index did not)."""
+    Pa, xa, ya = _pk(10.0, 20.0, 200, 1.0)
+    Pb, xb, yb = _pk(10.0, 20.0, 300, 1.0)  # (same centre, even sizes: the pixel centres coincide)
+    ja, jb = zoom.tie_jitter(Pa, 1.0, 77), zoom.tie_jitter(Pb, 1.0, 77)
+    ka = {(round(a, 3), round(b, 3)): v for a, b, v in zip(xa, ya, ja)}
+    shared = [(ka[(round(a, 3), round(b, 3))], v) for a, b, v in zip(xb, yb, jb) if (round(a, 3), round(b, 3)) in ka]
+    assert len(shared) == 200 * 200
+    u, v = np.array(shared).T
+    assert np.max(np.abs(u - v)) < 1e-9
+    assert 0 <= ja.min() and ja.max() <= 1 and np.std(ja) > 0.15  # (a spread, varying from pixel to pixel)
+    assert abs(np.corrcoef(ja.reshape(200, 200)[:, :-2].ravel(), ja.reshape(200, 200)[:, 2:].ravel())[0, 1]) < 0.5
+
+
+def test_overlapping_zooms_drain_alike_on_flats():
+    """PW-339: two zooms of one flat plain (200 and 300 km) give the same
+    receivers in their shared middle more often with the planet-fixed
+    tie-break than with one random number per pixel index (0.42 vs 0.31)."""
+    from test_zoom_landforms import _plain_world
+    w, _ = _plain_world(300.0, 0.0, 0.0)
+
+    def agree():
+        offs = []
+        for s in (200, 300):
+            z = zoom.build(w, 0.0, 0.0, size_km=s, res_km=1.0, iterations=6, log=lambda *a: None)
+            n, r = z["nx"], z["rec"]
+            i = np.arange(n * n)
+            rr, cc = np.divmod(np.where(r >= 0, r, i), n)
+            d = ((rr - i // n) * 3 + (cc - i % n)).reshape(n, n)
+            offs.append(d[n // 2 - 60:n // 2 + 60, n // 2 - 60:n // 2 + 60])
+        return float(np.mean(offs[0] == offs[1]))
+
+    fixed = agree()
+    old = zoom.tie_jitter
+    try:
+        zoom.tie_jitter = lambda Pk, res, seed: np.random.default_rng(seed).random(len(Pk))
+        by_index = agree()
+    finally:
+        zoom.tie_jitter = old
+    assert fixed > by_index + 0.05, (fixed, by_index)
