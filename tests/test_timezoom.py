@@ -117,7 +117,10 @@ def test_feedback_room(cold_src, cold_run):
 def test_bed_settles_under_the_ice(cold_src, cold_run):
     """Glacial isostasy (PW-189): the bed relaxes (iso_tau 3 kyr) toward the
     settled dip under the ice, the run's isostasy.ice_load (flexure), from a
-    start that was already settled under its own ice."""
+    start that was already settled under its own ice. A bed relaxing on
+    iso_tau under a growing load lags it by about the load of its last
+    iso_tau, so the tolerance takes the ice volume grown over the last
+    iso_tau (a share of all grown) on top of 5% of the dip."""
     from planet.tectonics.isostasy import ice_load
     s = cold_run["state"]
     g = cold_src["grid"]
@@ -129,7 +132,11 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     grew = H > H0 + 500
     assert grew.any()
     assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
-    assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((H - H0)[grew]) * p.iso_ratio + 20
+    t = [f["t"] for f in cold_run["frames"]]
+    v = [f["stats"]["ice_volume_mkm3"] for f in cold_run["frames"]]
+    lag = (v[-1] - np.interp(t[-1] - p.iso_tau, t, v)) / max(v[-1] - v[0], 1e-9)
+    tol = (0.05 + max(lag, 0.0)) * np.median((H - H0)[grew]) * p.iso_ratio + 20
+    assert np.median(np.abs(s["bed"] - want)[grew]) < tol
 
 
 def test_deep_grounded_ice_stands(sim4):

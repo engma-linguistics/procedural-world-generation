@@ -151,7 +151,9 @@ def update_climate(sim, e):
     p, g = sim.params, sim.grid
     e, ice0, _ = land_view(e - sim.ice_sink, np.where(e > 0, sim.ice, 0.0))
     land = e > 0
-    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, ice0, 0.0), veg=veg_feedback(sim))
+    c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, ice0, 0.0), veg=veg_feedback(sim),
+                        rain_start=sim.rain_state)
+    sim.rain_state = c["rain_state"]  # the next update's rain starts from it (PW-387)
     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]

@@ -53,8 +53,8 @@ def test_no_rain_from_a_dry_column():
     for d in s_in:
         d["src_q"] = np.zeros(g.n)
     a = list(climate._rain_args(g, elev, s_in, climate.TUNE, np.full((2, g.n), 1000.0)))
-    a[-1] = np.zeros((2, g.n))  # (m0: dry air)
-    r, r_ls, up, q, m = climate._rain(*a)
+    a[-3] = np.zeros((2, g.n))  # (m0: dry air)
+    r, r_ls, up, q, m, _ = climate._rain(*a)
     assert not r.any() and not up.any() and not q.any() and not m.any()
 
 

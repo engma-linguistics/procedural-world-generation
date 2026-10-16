@@ -44,15 +44,14 @@ def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
 
 def seasons(grid: Grid, c: dict) -> dict:
     """July and January temperature (C) and precipitation (mm/yr) from a
-    climate.compute result. Temperatures: the warmest month is July in the
-    north and January in the south (the model's seasons are a sine with its
-    peak there); near the equator, where the rainy half-year can be the
-    cooler one, the two may be the wrong way round by a degree or so.
+    climate.compute result. Temperatures: compute's t_jul and t_jan, its
+    warmest and coldest month as the calendar has them (July is the warmest
+    in the north and the coldest in the south, but near the equator the
+    rainy half-year can be the cooler one, and an eccentric orbit's near-sun
+    season is the same months on both sides of the equator, PW-380).
     Precipitation: each half-year's rate (Apr-Sep, Oct-Mar), as climate
     computes it."""
-    north = grid.lat >= 0
-    return {"temperature_jul": np.where(north, c["t_warm"], c["t_cold"]),
-            "temperature_jan": np.where(north, c["t_cold"], c["t_warm"]),
+    return {"temperature_jul": c["t_jul"], "temperature_jan": c["t_jan"],
             "precipitation_jul": c["p_jul"], "precipitation_jan": c["p_jan"]}
 
 

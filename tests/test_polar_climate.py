@@ -101,3 +101,22 @@ def test_ice_sheet_lifts_the_rain(g4):
     assert (top["mse_t"][on] - bed["mse_t"][on] > 20.0).all()
     sea = elev <= 0
     assert np.array_equal(bed["qs"][sea], top["qs"][sea])
+
+
+def test_july_stays_july_across_the_equator(g4):
+    """PW-380: an eccentric orbit's near-sun season is the same months on both
+    sides of the equator. Where it outweighs the tilt's seasons, warmest and
+    coldest swap there, but t_jul / t_jan (world.seasons) keep the calendar:
+    no step in July between the two sides."""
+    from planet import world
+    rng = np.random.default_rng(3)
+    elev = np.where(np.abs(g4.lat) < 30, 300.0, np.where(rng.random(g4.n) < 0.3, 500.0, -3000.0))
+    d = np.zeros((g4.n, 12))
+    d[:, 3], d[:, 9] = -8.0, 8.0  # (month 0 = April: July colder, January warmer, everywhere)
+    c = climate.compute(g4, elev, 0.0, 23.4, orbit_dt=d)
+    s = world.seasons(g4, c)
+    eq = (np.abs(g4.lat) < 6) & (elev > 0)
+    assert (s["temperature_jan"][eq] > s["temperature_jul"][eq] + 8).all()  # the orbit's January is the warm one
+    n, so = eq & (g4.lat >= 0), eq & (g4.lat < 0)
+    assert abs(s["temperature_jul"][n].mean() - s["temperature_jul"][so].mean()) < 2.0
+    assert np.array_equal(np.maximum(c["t_jul"], c["t_jan"]), c["t_warm"])

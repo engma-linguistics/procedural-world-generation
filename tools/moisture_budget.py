@@ -271,7 +271,7 @@ def probe(rec: dict, tag: np.ndarray, ntag: int) -> dict:
     a = kernel_args(rec)
     F = climate._faces(rec["grid"])
     un, kd = climate.face_winds(rec["grid"], rec["s_in"], rec["tune"])
-    out = _probe(*a, un, kd, F["ea"], F["eb"], F["L"], F["lc"], np.ascontiguousarray(tag, np.int64), int(ntag))
+    out = _probe(*a[:-2], un, kd, F["ea"], F["eb"], F["L"], F["lc"], np.ascontiguousarray(tag, np.int64), int(ntag))
     keys = ("r", "r_ls", "up", "q", "land_e", "r_ex", "r_cv", "dry", "q_before", "r_tag", "f_adv", "f_mix")
     P = dict(zip(keys, out))
     P["dt"] = a[16]
@@ -284,8 +284,8 @@ def capture(grid, elev, ice, compute=None):
     rec = {}
     orig = climate.rain
 
-    def recording(grid_, elev_, seasons_in, tune, pet, w=None, open_sea=None, ocean=None):
-        out = orig(grid_, elev_, seasons_in, tune, pet, w, open_sea, ocean)
+    def recording(grid_, elev_, seasons_in, tune, pet, w=None, open_sea=None, ocean=None, start=None):
+        out = orig(grid_, elev_, seasons_in, tune, pet, w, open_sea, ocean, start)
         rec.clear()
         rec.update(grid=grid_, elev=elev_, s_in=seasons_in, tune=tune, pet=pet, w=w, open_sea=open_sea,
                    ocean=ocean, out=out)
