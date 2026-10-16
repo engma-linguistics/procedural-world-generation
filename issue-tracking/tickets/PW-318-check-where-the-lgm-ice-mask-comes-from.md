@@ -2,7 +2,7 @@
 id: PW-318
 title: Check where the LGM ice mask comes from, and test the HDF5 reader
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: infra
 effort: xs
@@ -23,4 +23,5 @@ PW-314 uses the Zenodo "Global Kilometer-Resolution Dataset of Boundary Conditio
 - [ ] h5 reader test
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started.
 - 2026-10-15: Created from inbox draft draft-lgm-mask-provenance.md (found by soildata).
