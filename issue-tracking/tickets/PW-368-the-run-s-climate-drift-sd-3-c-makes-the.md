@@ -1,5 +1,6 @@
 ---
-title: "The run's climate drift (sd 3 C) makes the deep cold eras; PW-240's decision to narrow it (~2 C) was never applied"
+id: PW-368
+title: The run's climate drift (sd 3 C) makes the deep cold eras; PW-240's decision to narrow it (~2 C) was never applied
 type: task
 status: needs-decision
 parent: null
@@ -10,6 +11,8 @@ found_by: icehouse-depth
 blocked_by: []
 relates: [PW-240, PW-364]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/audit/icehouse-depth.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -34,3 +37,7 @@ Options:
   drift has no such feedback). A design change.
 Lean: A for now (the cold eras' depth follows geography soundly after PW-364); B if the owner finds
 -300..-500 m icehouses too frequent in the viewer. A tuned parameter, so the owner's call.
+
+## Updates
+- 2026-10-16: Coordinator: after PW-364 the deepest era is -219 m with no frame below -250 m, so lean A (leave climate_drift at 3 C) for now; tuned knob, so the owner's call. Revisit when looking at showcase runs.
+- 2026-10-16: Created from inbox draft draft-climate-drift-drives-cold-eras.md (found by icehouse-depth).

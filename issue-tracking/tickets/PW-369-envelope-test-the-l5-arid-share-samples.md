@@ -1,7 +1,8 @@
 ---
+id: PW-369
 title: "Envelope test: the L5 arid share samples one seed's 340-400 Myr window, which one cold era or flooded interval takes out of band"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: infra
 effort: xs
@@ -10,6 +11,8 @@ found_by: icehouse-depth
 blocked_by: []
 relates: [PW-364, PW-338, PW-240]
 refs: [tests/test_envelopes.py, docs/review/audit/icehouse-depth.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -32,3 +35,7 @@ Options (the band stays 12-45%):
 - C. Keep the window and add seeds until it passes (costs ~1 min per seed; still one window each).
 Lean: A. A healthy planet may spend 60 Myr dry-poor; the band asks whether its climate is plausible
 over a run, which the 100-400 Myr mean measures.
+
+## Updates
+- 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: take the lean (average the L5 arid share over 100-400 Myr; bands unchanged): a single-window test is fragile to any history reshuffle.
+- 2026-10-16: Created from inbox draft draft-envelope-dry-window.md (found by icehouse-depth).
