@@ -3,7 +3,8 @@
 Used by tools/earth_check.py to run the climate model on Earth's actual
 geography and compare it with observations.
 
-Sources (all downloaded once, then cached under data/earth/; ~25 MB total)
+Sources (all downloaded once, then cached under data/earth/; ~25 MB, plus
+~390 MB of HydroSHEDS for the Earth world's rivers)
 ---------------------------------------------------------------------------
 Elevation
     ETOPO1 Global Relief Model (Amante & Eakins 2009, NOAA NGDC,
@@ -16,6 +17,17 @@ Elevation
     (upwell redirects to the PacIOOS ERDDAP mirror, which is fine.)
     Licence: US-government public domain ("may be used and redistributed
     for free"; cite Amante & Eakins 2009).
+
+River heights (the Earth world's lakes, earth_outlets; PW-236)
+    HydroSHEDS v1 (Lehner, Verdin & Jarvis 2008, Eos 89(10), 93-94), 30"
+    global: hydrologically conditioned flow directions (hyd_glo_dir_30s,
+    83 MB) and the void-filled SRTM DEM (hyd_glo_dem_30s, 306 MB), 84 N to
+    56 S, LZW GeoTIFFs (read by _tiff, numpy + numba only):
+      https://data.hydrosheds.org/file/hydrosheds-v1-dir/hyd_glo_dir_30s.zip
+      https://data.hydrosheds.org/file/hydrosheds-v1-dem/hyd_glo_dem_30s.zip
+    Free to use with attribution (HydroSHEDS licence). Kept as downloaded
+    (raw_hydrosheds_*_30s.zip, ~390 MB, most of data/earth); only the
+    per-level hydrosheds_L{level}.npz is read once it is built (~1 min).
 
 Observed Koppen-Geiger classes
     Kottek, Grieser, Beck, Rudolf & Rubel (2006), "World Map of the
@@ -99,6 +111,7 @@ import zipfile
 from pathlib import Path
 
 import numpy as np
+from numba import njit, prange
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "earth"
@@ -479,6 +492,350 @@ def earth_clouds(grid) -> dict:
     DATA.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(f, version=CLOUD_CACHE_VERSION, **out)
     return out
+
+
+# --------------------------------------------------------------------------
+# river-conditioned outlet heights (the Earth world's lakes, PW-236)
+# --------------------------------------------------------------------------
+HYDROSHEDS_URL = "https://data.hydrosheds.org/file/hydrosheds-v1-{0}/hyd_glo_{0}_30s.zip"
+OUTLET_CACHE_VERSION = 1
+
+
+def _tiff(path: Path) -> tuple[np.ndarray, tuple[float, float, float], float | None]:
+    """The image of a tiled, LZW-compressed (or uncompressed) single-band
+    GeoTIFF inside a zip (HydroSHEDS'), its (west, north, pixel size) in
+    degrees and its no-data value. Just enough TIFF for those files (numpy
+    and numba only)."""
+    import struct
+    with zipfile.ZipFile(path) as zf:
+        raw = zf.read(next(n for n in zf.namelist() if n.endswith(".tif")))
+    bo = "<" if raw[:2] == b"II" else ">"
+    assert struct.unpack(bo + "H", raw[2:4])[0] == 42, "BigTIFF not supported"
+    off = struct.unpack(bo + "I", raw[4:8])[0]
+    sizes = {1: 1, 2: 1, 3: 2, 4: 4, 11: 4, 12: 8, 16: 8}
+    codes = {1: "B", 2: "c", 3: "H", 4: "I", 11: "f", 12: "d", 16: "Q"}
+    tags = {}
+    for k in range(struct.unpack(bo + "H", raw[off:off + 2])[0]):
+        tag, typ, cnt = struct.unpack(bo + "HHI", raw[off + 2 + 12 * k: off + 10 + 12 * k])
+        at = off + 10 + 12 * k
+        if sizes[typ] * cnt > 4:
+            at = struct.unpack(bo + "I", raw[at:at + 4])[0]
+        v = struct.unpack(f"{bo}{cnt}{codes[typ]}", raw[at:at + sizes[typ] * cnt])
+        tags[tag] = b"".join(v).decode().strip("\0") if typ == 2 else v
+    w, h, bits = tags[256][0], tags[257][0], tags[258][0]
+    tw, th = tags[322][0], tags[323][0]
+    comp, pred = tags[259][0], tags.get(317, (1,))[0]
+    assert comp in (1, 5) and pred == 1, (comp, pred)
+    kind = {1: "u", 2: "i", 3: "f"}[tags.get(339, (1,))[0]]
+    out = _untile(np.frombuffer(raw, np.uint8), np.array(tags[324], np.int64), np.array(tags[325], np.int64),
+                  w, h, tw, th, bits // 8, comp == 5)
+    img = out.view(np.dtype(f"{bo}{kind}{bits // 8}")).reshape(h, w)
+    scale, tie = tags[33550], tags[33922]
+    nodata = float(tags[42113]) if 42113 in tags else None
+    return img, (tie[3] - tie[0] * scale[0], tie[4] + tie[1] * scale[1], scale[0]), nodata
+
+
+@njit(cache=True)
+def _lzw(src, out):
+    """TIFF LZW decoding of src into out; returns the bytes written."""
+    prefix = np.full(4096, -1, np.int32)
+    suffix = np.zeros(4096, np.uint8)
+    first = np.zeros(4096, np.uint8)
+    length = np.ones(4096, np.int32)
+    for i in range(256):
+        suffix[i] = i
+        first[i] = i
+    nbits, pos, width, nxt, prev, o = src.shape[0] * 8, 0, 9, 258, -1, 0
+    while pos + width <= nbits:
+        b = pos >> 3
+        v = (np.int64(src[b]) << 16) | (np.int64(src[b + 1]) << 8 if b + 1 < src.shape[0] else 0) | \
+            (np.int64(src[b + 2]) if b + 2 < src.shape[0] else 0)
+        code = (v >> (24 - (pos & 7) - width)) & ((1 << width) - 1)
+        pos += width
+        if code == 257:
+            break
+        if code == 256:
+            width, nxt, prev = 9, 258, -1
+            continue
+        if prev >= 0:
+            if nxt >= 4096:
+                break
+            prefix[nxt] = prev
+            suffix[nxt] = first[code] if code < nxt else first[prev]
+            first[nxt] = first[prev]
+            length[nxt] = length[prev] + 1
+            nxt += 1
+        n = length[code]
+        if o + n > out.shape[0]:
+            break
+        c = code
+        for k in range(n - 1, -1, -1):
+            out[o + k] = suffix[c]
+            c = prefix[c]
+        o += n
+        prev = code
+        if nxt >= (1 << width) - 1 and width < 12:
+            width += 1
+    return o
+
+
+@njit(cache=True, parallel=True)
+def _untile(raw, offs, counts, w, h, tw, th, bps, lzw):
+    out = np.zeros(w * h * bps, np.uint8)
+    across = (w + tw - 1) // tw
+    for t in prange(offs.shape[0]):
+        buf = np.zeros(tw * th * bps, np.uint8)
+        src = raw[offs[t]:offs[t] + counts[t]]
+        if lzw:
+            _lzw(src, buf)
+        else:
+            buf[:src.shape[0]] = src[:buf.shape[0]]
+        y0, x0 = (t // across) * th, (t % across) * tw
+        for y in range(min(th, h - y0)):
+            nx = min(tw, w - x0) * bps
+            a = ((y0 + y) * w + x0) * bps
+            out[a:a + nx] = buf[y * tw * bps:y * tw * bps + nx]
+    return out
+
+
+@njit(cache=True)
+def _down(dirs, p, nx):
+    """The pixel an ESRI-coded flow direction (1 E, 2 SE, 4 S, ... 128 NE)
+    sends p's water to, -1 for none (a sink, the sea, no data)."""
+    ny = dirs.shape[0] // nx
+    d = dirs[p]
+    y, x = p // nx, p % nx
+    if d == 1:
+        x += 1
+    elif d == 2:
+        x, y = x + 1, y + 1
+    elif d == 4:
+        y += 1
+    elif d == 8:
+        x, y = x - 1, y + 1
+    elif d == 16:
+        x -= 1
+    elif d == 32:
+        x, y = x - 1, y - 1
+    elif d == 64:
+        y -= 1
+    elif d == 128:
+        x, y = x + 1, y - 1
+    else:
+        return -1
+    if y < 0 or y >= ny:
+        return -1
+    return y * nx + x % nx
+
+
+@njit(cache=True)
+def _accumulate_dirs(dirs, nx):
+    """Upstream pixels of each pixel (itself included) along the flow
+    directions, and whether its water ends inland (in a sink, dir 0, with
+    no sea pixel (255) next to it) rather than in the sea."""
+    n = dirs.shape[0]
+    indeg = np.zeros(n, np.uint8)
+    for p in range(n):
+        d = _down(dirs, p, nx)
+        if d >= 0:
+            indeg[d] += 1
+    acc = np.ones(n, np.int32)
+    queue = np.empty(n, np.int32)
+    k = 0
+    for p in range(n):
+        if indeg[p] == 0:
+            queue[k] = p
+            k += 1
+    t = 0
+    while t < k:
+        p = queue[t]
+        t += 1
+        d = _down(dirs, p, nx)
+        if d >= 0:
+            acc[d] += acc[p]
+            indeg[d] -= 1
+            if indeg[d] == 0:
+                queue[k] = d
+                k += 1
+    # the sea's edge: sinks (0) joined through other sinks to the sea (255);
+    # the rest are inland sinks
+    ny = n // nx
+    coast = np.zeros(n, np.bool_)
+    k = 0
+    for p in range(n):
+        if dirs[p] == 0:
+            y, x = p // nx, p % nx
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if not coast[p] and 0 <= y + dy < ny and dirs[(y + dy) * nx + (x + dx) % nx] == 255:
+                        coast[p] = True
+                        queue[k] = p
+                        k += 1
+    while k > 0:
+        k -= 1
+        p = queue[k]
+        y, x = p // nx, p % nx
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if 0 <= y + dy < ny:
+                    q = (y + dy) * nx + (x + dx) % nx
+                    if dirs[q] == 0 and not coast[q]:
+                        coast[q] = True
+                        queue[k] = q
+                        k += 1
+    # each pixel's water ends where its directions do (downstream first)
+    order = queue
+    k = 0
+    indeg[:] = 0
+    for p in range(n):
+        d = _down(dirs, p, nx)
+        if d >= 0:
+            indeg[d] += 1
+    for p in range(n):
+        if indeg[p] == 0:
+            order[k] = p
+            k += 1
+    t = 0
+    while t < k:
+        d = _down(dirs, order[t], nx)
+        t += 1
+        if d >= 0:
+            indeg[d] -= 1
+            if indeg[d] == 0:
+                order[k] = d
+                k += 1
+    inland = np.zeros(n, np.bool_)
+    for t in range(k - 1, -1, -1):
+        p = order[t]
+        d = _down(dirs, p, nx)
+        if d >= 0:
+            inland[p] = inland[d]
+        else:
+            inland[p] = dirs[p] == 0 and not coast[p]
+    return acc, inland
+
+
+@njit(cache=True)
+def _main_stem_heights(dirs, acc, dem, cell, nx, ncell, nodata):
+    """Per cell: its main river (the pixel with the most upstream pixels,
+    followed upstream through the biggest donor while still in the cell) is
+    traced to where it enters the cell; the lowest ground along it from
+    there up to its source is the height of the river where it enters
+    (a river doesn't run uphill, so the dams a gorge leaves in the DEM are
+    cut down to the river upstream of them). NaN where no pixel."""
+    n = dirs.shape[0]
+    ny = n // nx
+    top = np.full(ncell, -1, np.int64)
+    for p in range(n):
+        c = cell[p]
+        if c >= 0 and (top[c] < 0 or acc[p] > acc[top[c]]):
+            top[c] = p
+    out = np.full(ncell, np.nan)
+    for c in range(ncell):
+        p = top[c]
+        if p < 0:
+            continue
+        inside = True
+        low = np.inf
+        while True:
+            if inside and cell[p] != c:
+                inside = False
+            if not inside and dem[p] != nodata:
+                low = min(low, dem[p])
+            # the biggest donor
+            y, x = p // nx, p % nx
+            best, ba = -1, 0
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    yy = y + dy
+                    if (dy or dx) and 0 <= yy < ny:
+                        q = yy * nx + (x + dx) % nx
+                        if acc[q] > ba and _down(dirs, q, nx) == p:
+                            best, ba = q, acc[q]
+            if best < 0:
+                break
+            if inside and cell[best] != c and dem[p] != nodata:
+                low = min(low, dem[p])  # the entry pixel itself
+            p = best
+        if np.isfinite(low):
+            out[c] = low
+        elif dem[p] != nodata:
+            out[c] = dem[p]  # a cell whose river rises inside it: its source
+    return out
+
+
+def _outlet_build(grid) -> np.ndarray:
+    files = {}
+    for key in ("dir", "dem"):
+        f = DATA / f"raw_hydrosheds_{key}_30s.zip"
+        if not f.exists():
+            DATA.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(_get(HYDROSHEDS_URL.format(key), timeout=1800))
+        files[key] = f
+    dirs, (west, north, px), _ = _tiff(files["dir"])
+    dem, geo, nodata = _tiff(files["dem"])
+    assert dem.shape == dirs.shape and np.allclose(geo, (west, north, px))
+    ny, nx = dirs.shape
+    dirs, dem = np.ascontiguousarray(dirs).ravel(), np.ascontiguousarray(dem).ravel().astype(np.int16)
+    valid = np.isin(dirs, (1, 2, 4, 8, 16, 32, 64, 128, 0))  # (0: a sink or the river's mouth)
+    cell = np.full(ny * nx, -1, np.int32)
+    lon = west + px * (0.5 + np.arange(nx))
+    for y in range(ny):  # pixel centres -> nearest cell, a row at a time
+        m = valid[y * nx:(y + 1) * nx]
+        if m.any():
+            la = np.full(m.sum(), north - px * (y + 0.5))
+            cell[y * nx:(y + 1) * nx][m] = grid.locate(_unit(la, lon[m]))
+    acc, inland = _accumulate_dirs(dirs, nx)
+    out = _main_stem_heights(dirs, acc, dem, cell, nx, grid.n, np.int16(nodata))
+    m = cell >= 0
+    share = np.bincount(cell[m], inland[m], grid.n) / np.maximum(np.bincount(cell[m], minlength=grid.n), 1)
+    return {"river": out, "inland": share}
+
+
+def hydrosheds_rivers(grid) -> dict:
+    """Per cell, from HydroSHEDS (Lehner, Verdin & Jarvis 2008: 30"
+    hydrologically conditioned flow directions and the void-filled SRTM
+    DEM, 84 N - 56 S, ~390 MB, downloaded once):
+      river   m, the height of the cell's main river where it enters the
+              cell: the pixel with the most upstream area, followed up its
+              biggest tributary to where it comes in; its height there is
+              the lowest ground along it from there up to its source (a
+              river doesn't run uphill, so a gorge too narrow for the DEM
+              doesn't dam it). NaN where no pixel (south of 56 S).
+      inland  share of the cell's pixels whose water ends inland (in a
+              closed basin) rather than in the sea.
+    Cached as data/earth/hydrosheds_L{level}.npz."""
+    f = DATA / f"hydrosheds_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == OUTLET_CACHE_VERSION and len(z["river"]) == grid.n:
+            return {k: z[k].astype(float) for k in ("river", "inland")}
+    out = _outlet_build(grid)
+    DATA.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(f, version=OUTLET_CACHE_VERSION, **{k: v.astype(np.float32) for k, v in out.items()})
+    return out
+
+
+def earth_outlets(grid) -> np.ndarray:
+    """Each land cell's river-conditioned outlet height, m (NaN where none):
+    hydrosheds_rivers' river height, the outlet hydrology.lakes cuts a
+    river's valley down to. A cell's mean height (~100 km of ground) stands
+    as a dam where a river runs through it in a gorge narrower than the cell
+    (the Lena below Yakutia, the Amur, the Danube's Iron Gates, the
+    Yangtze's Three Gorges, the Columbia); the river itself runs at its own
+    height. The DEM has lakes at their surface, so a real lake's outlet
+    stands at its level and its basin keeps its water. None in or next to
+    a cell that drains mostly inland in HydroSHEDS: a closed basin's rim is
+    a divide inside a cell, which the river on its far side doesn't lower.
+    (ETOPO1 can't give this, even at its full 1': filled, it still dams the
+    Iron Gates at 250 m where the Danube runs at ~65.)"""
+    h = hydrosheds_rivers(grid)
+    closed = h["inland"] >= 0.5
+    near = closed.copy()
+    a, b = grid.edges[:, 0], grid.edges[:, 1]
+    near[a[closed[b]]] = True
+    near[b[closed[a]]] = True
+    return np.where((earth_on_grid(grid)["elev"] > 0) & ~near, h["river"], np.nan)
 
 
 # --------------------------------------------------------------------------

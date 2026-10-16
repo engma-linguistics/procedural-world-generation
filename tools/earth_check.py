@@ -543,9 +543,13 @@ def earth_rivers(grid, d, c, w) -> dict:
     scale = w / w.mean()  # flow in units of mean-cell x m/yr; true areas
     sq = 4 * np.pi * (6371e3) ** 2 / grid.n / 3.156e7  # mean cell x m/yr -> m3/s
 
+    # the rivers' own heights where they cross gorges narrower than a cell
+    # (HydroSHEDS, as the Earth world: PW-236), on the same lifted datum
+    outlet = earth_data.earth_outlets(grid) + lift
+
     def routed(cc):
         cc = {k2: cc[k2] * scale for k2 in ("runoff", "aet", "lake_evap")}
-        return hydrology.rivers_and_lakes(grid, elev, cc, ice)
+        return hydrology.rivers_and_lakes(grid, elev, cc, ice, outlet=outlet)
 
     flow, down, lk = routed(c)
     # the same evaporation scheme on GPCC's observed rain (model where GPCC has none)
