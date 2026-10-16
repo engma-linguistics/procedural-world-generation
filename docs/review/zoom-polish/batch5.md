@@ -51,3 +51,20 @@ rainforest), ice volume +0.6%. The 592f2a zooms: only the glaciated 49.32,37.38 
 ![tongues](pw357_tongues.png)
 *The test massif's western margin (3 km pixels), before | after: tongues cut at the run cap now go on down
 their valleys until they melt out.*
+
+## PW-124: perched rivers (measured, not changed)
+
+Per seed, over the 8 zooms: 41 perched river pixels (of ~15,000 river pixels), 4.8 of them > 100 m; 30 of the 41
+on the arc zoom -9.35,-161.39 (4 km). Under ice: 0.4 (the ticket's first case is gone); beside other rivers: none
+found. Every remaining case is on a designed-fall reach, whose course is pinned to the coarse polyline (plus ~5
+levee-bound delta distributaries on the arc, perched by design):
+
+1. at 4 km/px the banks are 2 px flat, then fall at 30 m/km (BANK_SIDE_GRAD), so land two diagonal pixels (11 km)
+   off may lie 99 m below the river: side tributaries graded to the river below the reach's falls (the arc's ~30);
+2. the pinned course runs along a valley side above a deeper fine valley (-2.22,-169.11 seed 4: 16 px, 115-160 m);
+3. a lip's gorge beside the upper reach (49.32,37.38 seed 3: a 1704 m tread, the gorge at 1266-1308 m within 2 px),
+   which is natural (Niagara's gorge beside its upper river).
+
+Fixing 1-2 means either lowering each reach's staircase to the land beside it (tapered at its head, or the river
+above gains an undesigned drop) or letting the pinned course move to the fine valley bottom where it lies lower
+within the banks' width: a design choice for the designed falls, left on the ticket with these options.
