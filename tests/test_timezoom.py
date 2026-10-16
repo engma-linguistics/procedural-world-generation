@@ -128,3 +128,69 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     assert grew.any()
     assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
     assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((s["H"] - H0)[grew]) * p.iso_ratio + 20
+
+
+def test_deep_grounded_ice_stands(sim4):
+    """Thick ice grounded in deep water with no open sea beside it stands
+    (West Antarctica's true bed, ~1.7-2.3 km deep at L6-L7 under ~3 km of
+    ice, PW-361); only an unresolved basin deeper than calve_depth (PW-199's
+    ~4 km) breaks up in place."""
+    g = sim4.grid
+    src = Z.source_from_sim(sim4)
+    elev, ice = src["elev"].copy(), np.zeros(g.n)
+    nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
+    # two inland cells: their neighbours (and theirs) on land
+    inland = [i for i in range(g.n) if elev[i] > 200 and all(elev[j] > 200 and (elev[nb(j)] > 200).all() for j in nb(i))]
+    inland.sort(key=lambda i: -abs(g.lat[i]))  # (the coldest first: the ice around shouldn't melt away and drain it)
+    a, b = inland[0], next(i for i in inland if not set(nb(i)) & set(nb(inland[0])) and i not in nb(inland[0]))
+    for c, depth, h in ((a, 2000.0, 3200.0), (b, 4000.0, 5500.0)):
+        elev[c], ice[c] = -depth, h
+        ice[nb(c)] = np.maximum(2500.0, h - depth - elev[nb(c)] + 100.0)  # (their surface above the cell's)
+    src.update(elev=elev, ice=ice, dT=src["dT"] - 30.0)  # (cold: the ice neither melts nor flows much in one step)
+    r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(**NO_ORBIT))
+    H = r["state"]["H"]
+    assert H[a] > 2500, H[a]  # grounded in 2 km of water: stands
+    assert H[b] < 0.5 * 5500, H[b]  # in 4 km: breaks up in place
+
+
+def test_orbit_response_mixes_each_surface_own(sim4):
+    """Bright ice feels the air mass around it, each surface at its own
+    response: an ice cap on an island in the open sea gets about the sea's
+    and the ice's (~0.2-0.3 of the land's), not the land's (PW-114: the old
+    mix counted the sea as fully absorbing land); bare land far from ice
+    keeps the land's full insol_k, the open sea its insol_sea share."""
+    g = sim4.grid
+    p = Z.TZParams()
+    centre = int(np.argmin(np.abs(g.lat - 70.0)))
+    d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
+    land = d < 6.0  # an island ~650 km across
+    bright = np.where(land, 1.0, 0.0)
+    k = Z.orbit_k(g, land, bright, p)
+    assert k[centre] < 0.35 * p.insol_k, k[centre] / p.insol_k
+    far = d > 60
+    assert np.allclose(k[far], p.insol_k * p.insol_sea)
+    bare = Z.orbit_k(g, land, np.zeros(g.n), p)
+    assert np.allclose(bare[land], p.insol_k)
+
+
+def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
+    """The start's climate correction of the ice surface (anchor) applies
+    where ice lies: once the starting ice has melted, its cells (and the
+    rings around them that no ice reached) have the climate of a zoom with
+    no anchor at all (PW-035)."""
+    src = dict(cold_src, ice=cold_run["state"]["H"].copy(), dT=cold_src["dT"] + 14.0)
+    fixed = dict(NO_ORBIT, co2_cool=0.0, ice_albedo=0.0, climate_every=1000.0, iso_ratio=0.0)
+    a = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="balance", anchor_max=3.0, **fixed))
+    b = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="none", **fixed))
+    cooled = a["anchor"] < -0.4
+    bare = cooled & (a["state"]["H"] < 1) & (b["state"]["H"] < 1)
+    assert bare.sum() >= 5, bare.sum()
+    # (no more than on bare land the anchor never touched: the two zooms' sea levels differ, and the
+    # land's height above them)
+    diff = np.abs(a["state"]["t_ann"] - b["state"]["t_ann"])
+    land = src["elev"] > 0
+    ref = land & (a["anchor"] == 0) & (a["state"]["H"] < 1) & (b["state"]["H"] < 1)
+    assert np.median(diff[bare]) <= np.median(diff[ref]) + 0.02, (np.median(diff[bare]), np.median(diff[ref]))
+    held = (a["state"]["H"] > 100) & cooled  # where the ice is still there, the anchor still cools it
+    if held.any():
+        assert (a["state"]["t_ann"] < b["state"]["t_ann"] - 0.3)[held].mean() > 0.5

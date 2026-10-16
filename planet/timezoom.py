@@ -38,12 +38,11 @@ Model (per 500-yr step, see simulate)
   ice is bare and darker and gets more of the summer (which helps it
   melt back). Thick ice is a little colder all year (inversion, katabatic
   winds; ice_cool, 2 C).
-- Starting ice: taken to be in balance with the starting climate (the main
-  model put it where summers stay cold; Earth's is real). Where this
-  model's mass balance would melt it anyway (mostly: the climate model's
-  ice-free summers are too warm over big polar ice sheets) the place gets
-  a fixed cooling, the smallest that lets snow outlast the summer, spread
-  a few cells beyond the ice (start_anchor).
+- Starting ice: a run's is this mass balance's own extent (earth.ice_sheets);
+  Earth's is real, and where the climate model's summer on it is warmer
+  than observed the ice surface gets a cooling to the observed summer,
+  spread a few cells beyond the ice and applied wherever ice lies there
+  (start_anchor; it leaves with the ice, PW-035).
 - Mass balance: snow (monthly, where it's below ~0 C) minus melt from
   positive degree days (timezoom_kernels.climate_step).
 - Flow: shallow-ice approximation, nonlinear diffusion with
@@ -134,8 +133,8 @@ class TZParams:
     # icemass.air_mass, carried along the winds: PW-336),
     melt_hold: float = M.MELT_HOLD  # temperatures above 0 C are scaled by this (as climate.compute),
     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
-    absorb_km: float = 600.0  # ... mixed over this scale (km; the air mass), 0 = locally (wider pulls the
-    # open sea's full absorption onto coastal ice: Earth's Eemian-like start then melts +25 m in 10 kyr)
+    absorb_km: float = 600.0  # ... the land's, sea's and ice's responses mixed over this scale (km; the air
+    # mass, orbit_k), 0 = locally
     snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
     # year's snow lies, then bare: icemass)
     bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
@@ -175,9 +174,12 @@ class TZParams:
     flex_km: float = FLEX_KM  # ... spread over this (km, lithospheric flexure) ...
     iso_tau: float = 3.0  # ... with this e-folding time (kyr)
     calving: float = 1.0  # per yr: calving speed (m/yr) per m of water depth at a marine ice front ...
-    calve_depth: float = 1500.0  # m: ... and wherever grounded ice stands in deeper water than this, even
+    calve_depth: float = 3000.0  # m: ... and wherever grounded ice stands in deeper water than this, even
     # with no open sea beside it (a deep basin the grid can't resolve: ice flowing into it would float,
-    # break up and melt in the sea water under it, not fill it 10 km thick; PW-199)
+    # break up and melt in the sea water under it, not fill it 10 km thick; PW-199: ~4 km basins). Deeper
+    # than real grounded ice stands: Earth's deepest grounded beds are ~2.5 km (the Bentley Subglacial
+    # Trench; ETOPO1's cell means reach 1.7 km at L6, 2.3 km at L7), and at 1.5 km the true bed's
+    # deepest cells under West Antarctica's 3 km of ice calved in place from the start (PW-361)
 
 
 # --------------------------------------------------------------------------
@@ -243,8 +245,8 @@ def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: T
     that the time zoom gives the orbit orb = (obliquity, eccentricity,
     perihelion) against its reference orbit (p.orbit_ref): insol_k C per
     W/m2 on land (insol_sea of that over the sea), averaged with the month
-    before (the ground lags the sun), less over bright ice (ice_absorb,
-    mixed over absorb_km). For climate.compute's orbit_dt (a finished frame,
+    before (the ground lags the sun), less over bright ice (ice_absorb),
+    mixed over absorb_km (orbit_k). For climate.compute's orbit_dt (a finished frame,
     PW-198)."""
     ref = p.orbit_ref if p.orbit_ref != "auto" else ("today" if earth else "mean")
     if ref == "today":
@@ -256,12 +258,26 @@ def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: T
     dq = insolation(*orb) - q_ref
     dq = 0.5 * (dq + np.roll(dq, 1, axis=1))
     band = np.clip(((grid.lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
-    f_snow = np.clip(np.where(land, ice, 0.0) / p.snow_h, 0, 1)
-    absorb = 1 - f_snow * (1 - p.ice_absorb)
-    if p.absorb_km > 0:
-        absorb = climate.smooth_big(grid, absorb, p.absorb_km)
-    k = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
+    k = orbit_k(grid, land, np.clip(np.where(land, ice, 0.0) / p.snow_h, 0, 1), p)
     return k[:, None] * dq[band]
+
+
+def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np.ndarray:
+    """C per W/m2 of insolation change per cell. Bare land feels insol_k,
+    the sea insol_sea of it (its deep mixed layer). Bright snow and ice
+    absorb little (ice_absorb), but the air over them brings what the land,
+    sea and ice around absorbed: their responses, each its own, mixed over
+    an air mass of absorb_km. bright: 0..1 per cell, the land's share under
+    bright snow. (Before PW-114's fix the mix was of the absorbed shares,
+    scaled by the land's insol_k: the open sea around Greenland counted as
+    fully absorbing land, Greenland took ~0.7 of the land's response instead
+    of ~0.35, and an Eemian-like orbit took its summer from -8.7 to +4.9 C,
+    melting all of it in 2 kyr.)"""
+    b = np.where(land, np.clip(bright, 0, 1), 0.0)
+    own = np.where(land, p.insol_k, p.insol_k * p.insol_sea)
+    k = own * (1 - b * (1 - p.ice_absorb))
+    mix = climate.smooth_big(grid, k, p.absorb_km) if p.absorb_km > 0 else k
+    return own * (1 - b) + b * mix
 
 
 # --------------------------------------------------------------------------
@@ -560,11 +576,16 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}
 
     i65 = int(np.argmin(np.abs(BAND_LAT - 65)))
-    anchor = np.zeros(n)  # C, fixed per-cell correction under the starting ice (see start_anchor)
+    anchor = np.zeros(n)  # C, per-cell correction of the ice surface's climate (see start_anchor)
 
     def start_anchor(year, dt_b, iced):
-        """A fixed cooling (C, all year) of the starting ice and a few rings
-        around it, for the whole time zoom (p.anchor):
+        """A cooling (C, all year) of the ice surface's climate on the
+        starting ice and a few rings around it (p.anchor). It corrects the
+        climate model over ice, so it applies where ice lies (in full from
+        snow_h): it goes with the ice when that melts back and comes back
+        where the ice readvances (PW-035: it used to cool the cell for the
+        whole time zoom, so bare ground left by the starting ice stayed
+        cooled, and ring cells were cooled before any ice reached them):
           obs      Earth: the model's warmest month on the ice (its bare
                    climate under icemass's ice surface) cooled to the
                    observed one where that is colder (the climate model's
@@ -645,12 +666,10 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
         def year(dt_b, dq_):
             # bright snow absorbs little of an insolation change, but the air over it also brings
-            # what the surroundings absorbed: the response is mixed over an air mass (absorb_km)
-            absorb = 1 - f_snow * (1 - p.ice_absorb)
-            if p.absorb_km > 0:
-                absorb = climate.smooth_big(g, absorb, p.absorb_km)
-            k_orb = np.where(land, p.insol_k, p.insol_k * p.insol_sea) * absorb
-            climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
+            # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
+            k_orb = orbit_k(g, land, f_snow, p)
+            # (the start's correction of the ice-surface climate, only where ice lies: start_anchor)
+            climate_step(land, north, fields_["t_mean"] + anchor * f_alb, fields_["half"], fields_["p_jul"],
                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
                          p.ice_cool, damp, p.melt_hold, p.bare_share, p.snow_w,
                          p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, smb, t_ann, t_warm, t_cold,
