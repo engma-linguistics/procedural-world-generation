@@ -531,7 +531,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 
 **Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
 
-**Known limits:** checkpoints are large (PW-088; the plates' cell map `idx` is now a quarter of each); replay falls back to t = 0 after code changes (PW-089); no game export yet (PW-100).
+**Known limits:** checkpoints are large (PW-088; ~12 MB at L6 after PW-131's zeroed crust and PW-306's cell map stored as its residual from `grid.locate`); replay falls back to t = 0 after code changes (PW-089); no game export yet (PW-100).
 
 ### 2.17 Tools (`tools/`, run with `PYTHONPATH=. uv run python tools/X.py`)
 
@@ -664,8 +664,8 @@ Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `me
 | Level | `simulate` time | Memory | Disk per 1 Gyr run | World build | World size |
 |---|---|---|---|---|---|
 | 5 | fastest; used by `generate` and tests (no recent run timing) | small | — | seconds | ~1 MB |
-| 6 | ~6–8 min per Gyr | well under L7's (not measured) | ~0.5–0.65 GB (layers ~0.3, checkpoints 10 × ~15 MB) | 1.5–5 s after replay | ~5 MB |
-| 7 | ~20–25 min per Gyr (up to ~35 under load) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × ~60 MB) | 13–28 s after replay | 30–45 MB |
+| 6 | ~6–8 min per Gyr | well under L7's (not measured) | ~0.5–0.65 GB (layers ~0.3, checkpoints 10 × ~12 MB) | 1.5–5 s after replay | ~5 MB |
+| 7 | ~20–25 min per Gyr (up to ~35 under load) | ~0.9 GB RSS + ~0.45 GB for the geological record | ~2.5–2.9 GB (layers ~1.5 GB, checkpoints 10 × ~45 MB) | 13–28 s after replay | 30–45 MB |
 | 8 | ~3–4 h per Gyr | ~3.5 GB | ~17 MB per keyframe, so use `--every 10` | world + 5 highlight zooms ~8.5 min | — |
 
 - **Vegetation:** in the run ~0.09 s per climate update at L6 (~25 s per Gyr, ~8% of a run; L6 1 Gyr took 4.6 min, L7 23 min with other jobs running); in a world 0.2 s at L6. It adds ~3 MB to an L6 world (9 → 12 MB) and ~13 MB at L7 (~58 MB), and three layers (vegetation, tree cover, NPP) to run keyframes.
