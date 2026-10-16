@@ -244,7 +244,8 @@ class Simulation:
         self.owner, newc = resolve(
             pl.alive, pl.idx, pl.owned, pl.age, pl.cont, pl.thick, pl.rock, pl.cover, pl.extra,
             pl.rec, pl.lith, record.blank(), self.owner, g.nbr_off, g.nbr_idx, pl.Q, g.centers, stacked)
-        cleanup_ghosts(pl.alive, pl.owned, pl.Q, g.centers, self.owner, g.raster, g.nbr_off, g.nbr_idx)
+        cleanup_ghosts(pl.alive, pl.owned, pl.Q, g.centers, self.owner, g.raster, g.nbr_off, g.nbr_idx,
+                       pl.idx, pl.cont, pl.thick, stacked)
         self._world_view()
         self.book("resolve", vol0, float((self.w_thick * self.w_cont).sum()), 1.0)
         return newc, stacked
@@ -270,7 +271,7 @@ class Simulation:
         col.t, col.x[:, LAVA] = t0, lava0
         plume = plume + vents  # (each vent capped itself)
         crust.add_arcs_and_plumes(self, col, growth, plume)
-        edges = crust.inner_edges(self, col.cont)
+        edges = crust.inner_edges(self, col.cont, bd)
         stack_add = crust.stack_collisions(self, col, stacked, edges)
         crust.accrete(self, bd, conv, col)
         crust.subduction_erosion(self, bd, conv, col, shrink)

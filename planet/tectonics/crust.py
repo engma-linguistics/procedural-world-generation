@@ -154,13 +154,27 @@ def add_arcs_and_plumes(sim, col, growth, plume):
     record.add_top(col.rec, col.lith, tuff, np.full(n, TUFF, np.uint8), sim.t)
 
 
-def inner_edges(sim, cont):
-    """Grid edges inside one continent on one plate (where crust can be
-    spread sideways): (ea, eb)."""
+def inner_edges(sim, cont, bd=None):
+    """Grid edges along which crust can be spread sideways, (ea, eb):
+    inside one continent on one plate, and (with the boundaries bd) across
+    a collision, between the two colliding continents. A collision belt is
+    one belt on both plates (the Himalaya and Tibet straddle the suture):
+    stacked crust and the flow of thick crust cross it. (Kept to one plate,
+    the crust stacked at the front could only spread back into its own
+    plate, and a front cell with few continental neighbours of its own
+    plate, a promontory, piled up to MAX_KM, 30-40 km above its neighbours
+    across the suture: single-cell spikes, and the MAX_KM cap deleted
+    their excess, ~5% of the continents' crust per Gyr on L6 seed 2;
+    PW-284, PW-046.)"""
     g = sim.grid
     ea, eb = g.edges[:, 0], g.edges[:, 1]
     both = (sim.owner[ea] == sim.owner[eb]) & cont[ea] & cont[eb]
-    return ea[both], eb[both]
+    ea, eb = ea[both], eb[both]
+    if bd is not None and bd.collision.any():
+        ca, cb = bd.a[bd.collision], bd.b[bd.collision]
+        ok = cont[ca] & cont[cb]
+        ea, eb = np.concatenate([ea, ca[ok]]), np.concatenate([eb, cb[ok]])
+    return ea, eb
 
 
 def stack_collisions(sim, col, stacked, edges):
@@ -383,8 +397,9 @@ def rifted_margin(sim, lost, col, newc):
 
 def flow_and_orogeny(sim, col, edges, stack_add):
     """Crustal flow: very thick crust is hot and weak at depth and spreads
-    sideways (Tibet is doing this now), within a continent on one plate.
-    Faster the thicker it is, which is why crust >~70 km is so rare.
+    sideways (Tibet is doing this now), within a continent on one plate
+    and across a collision (inner_edges). Faster the thicker it is, which
+    is why crust >~70 km is so rare.
     A diffusion: per-cell rates scale with 1/spacing^2, so finer grids
     take more (equally stable) substeps.
     Then collision belts are folded, faulted and metamorphosed wherever the
