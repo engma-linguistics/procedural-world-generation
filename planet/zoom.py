@@ -2555,6 +2555,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         h, discharge, lf_overlay = fz["h"], np.where(land, fz["q"], 0.0), fz["stats"]
         lf_lake = lf_lake | fz["pond"]
         lake_depth = np.where(fz["pond"], fz["pond_depth"], lake_depth)
+    # --- shoreface (zoom_coastal, PW-327): the sea floor shoals to the shore
+    # along Dean's profile, then the inner shelf, where the shore isn't rocky;
+    # each cell's mean kept by deepening the sea floor further out
+    if sea.any():
+        rocky = ZCL.rocky_shore(h, land, surf_f, nx, ny, res)
+        hs_, reach = ZCL.shoreface(h, sea, rocky, wave_f, nx, ny, res, wv if vf is not None else None)
+        h = keep_means(hs_, h, sea, 1 - reach)
+        h = np.where(sea, np.minimum(h, -0.5), h)
     area = np.where(land, area, 0.0)
     lake_info = sorted(({"area_km2": round(len(lk["px"]) * res * res), "level_m": round(lk["level"], 1),
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
