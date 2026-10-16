@@ -12,15 +12,53 @@
 // stored in metres and the tiles' group is scaled by exag / 1000, so the
 // vertical exaggeration is one scale. The first tile is the zoom; a finer
 // nested zoom (PW-129) would be a second Tile at its offset from the parent's
-// centre, drawn over it: picking, heights and markers already ask the finest
-// tile that covers a point (see Zoom3D.tileAt).
+// centre, drawn over it: picking, ground heights and the camera already ask the finest
+// tile that covers a point (see Zoom3D.tileAt); its falls, lakes and
+// texture would be built per tile as the zoom's are.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const QMIN = 10;           // m3/s: smallest river drawn
-const RIVER_RGB = '#3b77ad', FOAM_RGB = '#f2fbff';
+const RIVER_RGB = '#3b77ad';
 const SEA_RGB = 0x1d5487, LAKE_RGB = 0x3a7cb8, SKIRT_RGB = 0x3a3128;
 const SKY = 0xa9c2dc;
+// a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
+const riverPx = (q, mul = 1) => mul * Math.min(1.4, Math.max(0.2, 0.2 + 0.25 * Math.log10(Math.max(q, QMIN) / QMIN)));
+// Chaikin-smoothed polyline [[x, y, ...], ...] (ends kept; the extra values follow the nearer end)
+function chaikin(p, n = 2) {
+  for (let it = 0; it < n && p.length > 2; it++) {
+    const o = [p[0]];
+    for (let j = 0; j < p.length - 1; j++) {
+      const a = p[j], b = p[j + 1];
+      o.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1], ...a.slice(2)],
+        [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1], ...b.slice(2)]);
+    }
+    o.push(p[p.length - 1]);
+    p = o;
+  }
+  return p;
+}
+// white water: streaks down the fall (v runs downstream), more opaque in the middle
+function streaks() {
+  const cv = document.createElement('canvas'), W = 64, H = 256;
+  cv.width = W; cv.height = H;
+  const cx = cv.getContext('2d');
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let x = 0; x < W; x++) {
+    const edge = Math.sin(Math.PI * (x + 0.5) / W) ** 0.6;
+    for (let k = 0; k < 6; k++) {
+      const y = rnd() * H, len = 30 + rnd() * 90, a = (0.55 + 0.45 * rnd()) * edge;
+      const g = cx.createLinearGradient(0, y, 0, y + len);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.3, `rgba(255,255,255,${a})`); g.addColorStop(1, 'rgba(235,245,255,0)');
+      cx.fillStyle = g; cx.fillRect(x, y, 1, len); cx.fillRect(x, y - H, 1, len);
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 
 // --------------------------------------------------------------- one terrain
 class Tile {
@@ -55,7 +93,7 @@ class Tile {
   // water surface (m): lakes at their level, the sea at 0, else the ground
   ws(i) { const L = this.L; return L.water[i] === 2 ? L.elevation[i] + L.lake_depth[i] : L.water[i] === 1 ? 0 : L.elevation[i]; }
 
-  // Each river pixel's downstream neighbour (the zoom stores discharge, not
+  // Each river (and lake) pixel's downstream neighbour (the zoom stores discharge, not
   // its D8 receivers): the steepest drop in water surface among neighbours
   // that carry at least as much water (or are lake or sea), else the one
   // with the most water. Then the river lines: runs of river pixels between
@@ -67,8 +105,9 @@ class Tile {
     for (let i = 0; i < n; i++) ws[i] = this.ws(i);
     const rec = new Int32Array(n).fill(-1), isR = new Uint8Array(n);
     for (let i = 0; i < n; i++) {
-      if (water[i] !== 0 || !(q[i] >= QMIN)) continue;
-      if (area[i] >= minArea && !(ice[i] > 0)) isR[i] = 1;
+      // (lake pixels too: a fall's reach runs on through its plunge pool)
+      if (water[i] === 1 || !(q[i] >= QMIN)) continue;
+      if (water[i] === 0 && area[i] >= minArea && !(ice[i] > 0)) isR[i] = 1;
       const r = (i / nx) | 0, c = i - r * nx;
       let best = -1, bs = 0, alt = -1, aq = -1;
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
@@ -101,7 +140,7 @@ class Tile {
   }
 
   // the terrain mesh, every `step` pixels (the texture keeps full detail)
-  terrain(step, material) {
+  terrain(step, material, skirtMat) {
     const { nx, ny, L } = this, h = L.elevation;
     const ix = (m) => { const a = []; for (let k = 0; k < m - 1; k += step) a.push(k); a.push(m - 1); return a; };
     const cs = ix(nx), rs = ix(ny), W = cs.length, H = rs.length;
@@ -146,21 +185,55 @@ class Tile {
     const sg = new THREE.BufferGeometry();
     sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
     sg.setIndex(si);
-    const skirt = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: SKIRT_RGB, side: THREE.DoubleSide }));
+    const skirt = new THREE.Mesh(sg, skirtMat);
     return { mesh, skirt, triangles: idx.length / 3, base };
   }
 
-  // lake surfaces: a quad per lake pixel at its level (lakes are flat, so a lake's quads are one plane)
+  // lake surfaces: a mesh on the pixel centres' grid over every cell with a
+  // lake pixel at a corner: lake pixels at their level, the pixels round them
+  // at the level or just under their ground where that is lower. So the
+  // shore is where the ground rises through the water (not the pixels'
+  // staircase), and next to lower ground (an outlet's gorge, the foot of a
+  // fall) the surface dips under it instead of floating.
   lakes(material) {
-    const { nx, ny, res, L } = this, n = nx * ny, pos = [];
+    const { nx, ny, L } = this, n = nx * ny, h = L.elevation, water = L.water, EPS = 3;
+    const vy = new Float32Array(n).fill(NaN);
+    let any = false;
     for (let i = 0; i < n; i++) {
-      if (L.water[i] !== 2) continue;
-      const r = (i / nx) | 0, c = i - r * nx, x = this.x(c), z = this.z(r), y = this.wsA[i], e = res / 2;
-      pos.push(x - e, y, z - e, x - e, y, z + e, x + e, y, z + e, x - e, y, z - e, x + e, y, z + e, x + e, y, z - e);
+      if (water[i] !== 2) continue;
+      any = true;
+      const r = (i / nx) | 0, c = i - r * nx;
+      // (no higher than its lowest dry neighbour: a plunge pool on a fall's
+      // slope, smaller than its pixel, would otherwise hang above the ground below it)
+      let y = this.wsA[i];
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr, cc = c + dc, j = rr * nx + cc;
+        if (rr >= 0 && cc >= 0 && rr < ny && cc < nx && water[j] === 0 && h[j] < y) y = h[j];
+      }
+      vy[i] = Number.isNaN(vy[i]) ? y : Math.min(vy[i], y);
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr, cc = c + dc, j = rr * nx + cc;
+        if (rr < 0 || cc < 0 || rr >= ny || cc >= nx || water[j] === 2) continue;
+        const v = Math.min(y, h[j] - EPS);  // (sea pixels too: under their floor)
+        vy[j] = Number.isNaN(vy[j]) ? v : Math.min(vy[j], v);
+      }
     }
-    if (!pos.length) return null;
+    if (!any) return null;
+    const vid = new Int32Array(n).fill(-1), pos = [], idx = [];
+    const V = (i) => {
+      if (vid[i] < 0) { const r = (i / nx) | 0; vid[i] = pos.length / 3; pos.push(this.x(i - r * nx), vy[i], this.z(r)); }
+      return vid[i];
+    };
+    for (let r = 0; r < ny - 1; r++) for (let c = 0; c < nx - 1; c++) {
+      const a = r * nx + c, b = a + 1, d = a + nx, e = d + 1;
+      if (water[a] !== 2 && water[b] !== 2 && water[d] !== 2 && water[e] !== 2) continue;
+      // (the terrain's diagonal)
+      if (Math.abs(h[a] - h[e]) <= Math.abs(h[b] - h[d])) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
+      else idx.push(V(a), V(d), V(b), V(b), V(d), V(e));
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
     g.computeVertexNormals();
     const m = new THREE.Mesh(g, material);
     m.receiveShadow = true;
@@ -168,8 +241,8 @@ class Tile {
   }
 
   // the colour texture: the layer's nx x ny colours, scaled up, with rivers
-  // (width by discharge, log scale) and white water down each fall's reach
-  texture(colours, { smooth = true, rivers = true, widthMul = 1, falls = [] } = {}) {
+  // (width by discharge, log scale)
+  texture(colours, { smooth = true, rivers = true, widthMul = 1 } = {}) {
     const { nx, ny, L } = this, q = L.discharge;
     const S = Math.max(1, Math.min(4, Math.floor(4096 / Math.max(nx, ny))));
     const cv = document.createElement('canvas');
@@ -178,22 +251,13 @@ class Tile {
     cx.imageSmoothingEnabled = smooth;
     cx.drawImage(colours, 0, 0, cv.width, cv.height);
     const P = (i) => { const r = (i / nx) | 0; return [(i - r * nx + 0.5) * S, (r + 0.5) * S]; };
-    // width in zoom pixels: 0.25 px at 10 m3/s to 1.6 px at ~300,000 (small streams exaggerated)
-    const wpx = (v) => widthMul * Math.min(1.6, Math.max(0.25, 0.25 + 0.3 * Math.log10(Math.max(v, QMIN) / QMIN)));
+    const wpx = (v) => riverPx(v, widthMul);
     cx.lineCap = cx.lineJoin = 'round';
     const stroke = (pts, colour, extra = 0) => {
       // Chaikin-smoothed polyline (ends kept), stroked in runs of one width
       let p = pts.map((i) => [...P(i), q[i] || 0]);
       if (L.water[pts[pts.length - 1]] !== 0 && p.length > 1) p[p.length - 1][2] = p[p.length - 2][2];
-      for (let it = 0; it < 2 && p.length > 2; it++) {
-        const o = [p[0]];
-        for (let j = 0; j < p.length - 1; j++) {
-          const a = p[j], b = p[j + 1];
-          o.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1], a[2]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1], b[2]]);
-        }
-        o.push(p[p.length - 1]);
-        p = o;
-      }
+      p = chaikin(p);
       cx.strokeStyle = colour;
       let j = 0;
       while (j < p.length - 1) {
@@ -205,12 +269,44 @@ class Tile {
     };
     if (rivers) {
       for (const pts of this.lines) stroke(pts, RIVER_RGB);
-      for (const f of falls) if (f.path && f.path.length > 1) stroke(f.path, FOAM_RGB, 0.6 * S);
     }
     return cv;
   }
 
-  // a fall's reach: from its lip down the river for its drop's length (at least a pixel)
+  // white water down each fall's reach: a ribbon just above the ground, as wide
+  // as the river; v counts km downstream (the streaks' scale)
+  fallRibbons(falls, widthMul) {
+    const { nx, L } = this, pos = [], uv = [], idx = [], LIFT = 6;
+    for (const f of falls) {
+      if (!f.path || f.path.length < 2) continue;
+      const q = L.discharge[f.path[0]] || f.discharge_m3s, hw = riverPx(q, widthMul) * this.res * 0.6;
+      const p = chaikin(f.path.map((i) => [this.x(i % nx), this.z((i / nx) | 0), this.wsA[i]]), 3);
+      let v = 0;
+      const base = pos.length / 3;
+      p.forEach(([x, z, ws], j) => {
+        const a = p[Math.max(j - 1, 0)], b = p[Math.min(j + 1, p.length - 1)];
+        let dx = b[0] - a[0], dz = b[1] - a[1];
+        const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+        if (j) v += Math.hypot(x - p[j - 1][0], z - p[j - 1][1]);
+        for (const s of [-1, 1]) {
+          const X = x - s * dz * hw, Z = z + s * dx * hw;
+          pos.push(X, Math.max(this.height(X, Z), this.height(x, z), ws) + LIFT, Z);
+          uv.push((s + 1) / 2, -v / 0.6);
+        }
+        if (j) { const k = base + 2 * j; idx.push(k - 2, k - 1, k, k, k - 1, k + 1); }
+      });
+    }
+    if (!idx.length) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+
+  // a fall's reach: from its lip down the river for its drop's length (at
+  // least a pixel), through a plunge pool, not into the sea
   fallPath(f) {
     const { nx, res } = this, path = [f.px[0] * nx + f.px[1]];
     let km = 0, p = path[0];
@@ -220,7 +316,7 @@ class Tile {
       if (r < 0) break;
       km += (r % nx !== p % nx && ((r / nx) | 0) !== ((p / nx) | 0) ? 1.4142 : 1) * res;
       path.push(r); p = r;
-      if (this.L.water[r] !== 0) break;
+      if (this.L.water[r] === 1) break;
     }
     return path;
   }
@@ -238,34 +334,51 @@ export class Zoom3D {
     this.labels = document.createElement('div');
     this.labels.className = 'z3d-labels';
     host.appendChild(this.labels);
-    const R = this.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+    const R = this.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true });  // (the sea at 0 over tidal flats a metre under it, seen from 1000 km)
     R.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     R.shadowMap.enabled = true;
     R.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(SKY);
+    this.scene.fog = new THREE.Fog(SKY, 1, 2);  // (a little haze far off: set from the camera's distance in tick)
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.05, 5000);
     const C = this.controls = new OrbitControls(this.camera, cv);
     C.enableDamping = true; C.dampingFactor = 0.12;
     C.screenSpacePanning = false; C.maxPolarAngle = THREE.MathUtils.degToRad(89);
     C.zoomToCursor = true; C.minDistance = 0.3;
     C.listenToKeyEvents(window);
-    this.hemi = new THREE.HemisphereLight(0xe4eef8, 0x5b4c3c, 1.1);
-    this.sun = new THREE.DirectionalLight(0xfff2dd, 3.2);
+    this.hemi = new THREE.HemisphereLight(0xe4eef8, 0x5b4c3c, 1.0);
+    this.sun = new THREE.DirectionalLight(0xfff2dd, 2.4);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(4096, 4096);
     this.scene.add(this.hemi, this.sun, this.sun.target);
     this.group = new THREE.Group();   // terrain, lakes, sea: y in metres, scaled by exag / 1000
     this.scene.add(this.group);
-    this.pins = null;
+    this.pins = null; this.fallsOn = true;
+    this.pinMat = new THREE.LineBasicMaterial({ color: 0xe8f6ff });
+    this.skirtMat = new THREE.MeshBasicMaterial({ color: SKIRT_RGB, side: THREE.DoubleSide });
     this.terrainMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    this.seaMat = new THREE.MeshStandardMaterial({ color: SEA_RGB, transparent: true, opacity: 0.8, roughness: 0.3, metalness: 0 });
-    this.lakeMat = new THREE.MeshStandardMaterial({ color: LAKE_RGB, transparent: true, opacity: 0.88, roughness: 0.25, metalness: 0,
+    this.seaMat = new THREE.MeshStandardMaterial({ color: SEA_RGB, transparent: true, opacity: 0.8, roughness: 0.6, metalness: 0 });
+    this.fallMat = new THREE.MeshLambertMaterial({ map: streaks(), emissive: 0x7a8794, transparent: true,
+      depthWrite: false, side: THREE.DoubleSide });
+    this.lakeMat = new THREE.MeshStandardMaterial({ color: LAKE_RGB, roughness: 0.5, metalness: 0,
       polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    // a software renderer (no GPU): a quarter of the triangles, no shadows
+    const dbg = R.getContext().getExtension('WEBGL_debug_renderer_info');
+    this.gpu = dbg ? R.getContext().getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '';
+    if (/SwiftShader|llvmpipe|softpipe|Software/i.test(this.gpu)) Object.assign(this.opts, { step: 4, shadows: false });
+    this.sun.castShadow = this.opts.shadows;
     this.tiles = []; this.falls = []; this.dirty = true; this.fly = null; this.frames = 0; this.fpsT = performance.now(); this.fps = 0;
     this.running = false;
     this.events(cv);
     addEventListener('resize', () => this.resize());
+    // a GPU that drops the context (seen with shadows on NVIDIA through ANGLE's
+    // Vulkan backend): three.js restores it; carry on without shadows
+    cv.addEventListener('webglcontextrestored', () => {
+      if (this.opts.shadows) { this.set('shadows', false); this.api.shadowsOff?.(); }
+      this.dirty = true;
+    });
   }
 
   // ------------------------------------------------ building
@@ -296,9 +409,11 @@ export class Zoom3D {
     if (!t) return;
     this.group.remove(...t.objects);
     t.objects.forEach((o) => o.geometry?.dispose());
-    const { mesh, skirt, triangles } = t.terrain(this.opts.step, this.terrainMat);
+    const { mesh, skirt, triangles } = t.terrain(this.opts.step, this.terrainMat, this.skirtMat);
     const lakes = t.lakes(this.lakeMat);
-    t.objects = [mesh, skirt, ...(lakes ? [lakes] : [])];
+    const fg = t.fallRibbons(this.falls, this.opts.widthMul);
+    this.fallMesh = fg ? new THREE.Mesh(fg, this.fallMat) : null;
+    t.objects = [mesh, skirt, ...(lakes ? [lakes] : []), ...(this.fallMesh ? [this.fallMesh] : [])];
     this.group.add(...t.objects);
     this.triangles = triangles;
     this.applyExag();
@@ -307,7 +422,7 @@ export class Zoom3D {
     this.colours = colours; this.smooth = smooth;
     const t = this.tiles[0];
     if (!t) return;
-    const cv = t.texture(colours, { smooth, rivers: this.opts.rivers, widthMul: this.opts.widthMul, falls: this.falls });
+    const cv = t.texture(colours, { smooth, rivers: this.opts.rivers, widthMul: this.opts.widthMul });
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
@@ -320,7 +435,8 @@ export class Zoom3D {
     this.opts[k] = v;
     if (k === 'exag') this.applyExag();
     else if (k === 'step') this.rebuild();
-    else if (k === 'rivers' || k === 'widthMul') this.setTexture(this.colours, this.smooth);
+    else if (k === 'rivers') this.setTexture(this.colours, this.smooth);
+    else if (k === 'widthMul') { this.rebuild(); this.setTexture(this.colours, this.smooth); }
     else if (k === 'shadows') { this.sun.castShadow = v; this.renderer.shadowMap.needsUpdate = true; }
     else if (k === 'facets') { this.terrainMat.flatShading = v; this.terrainMat.needsUpdate = true; }
     this.dirty = true;
@@ -347,14 +463,13 @@ export class Zoom3D {
     const big = new Set(ranked.slice(0, 12).map((f) => f.k));
     for (const f of this.falls) {
       const x = t.x(f.px[1]), z = t.z(f.px[0]), y = Math.max(f.top_m ?? t.wsA[f.path[0]], 0) * s;
-      const ph = (big.has(f.k) ? 0.035 : 0.018) * this.size ** 0.75;
-      pos.push(x, y, z, x, y + ph, z);
-      f.anchor = new THREE.Vector3(x, y + ph, z); f.base = new THREE.Vector3(x, y, z);
+      pos.push(x, y, z, x, y, z);
+      f.base = new THREE.Vector3(x, y, z); f.anchor = f.base.clone(); f.pin = big.has(f.k) ? 0.07 : 0.035;
       const el = document.createElement('div');
       el.className = 'z3d-fall' + (big.has(f.k) ? ' big' : '') + (f.top ? ' top' : '');
       el.innerHTML = big.has(f.k) ? `&#9660; ${Math.round(f.height_m)} m` : '&#9660;';
       el.title = `waterfall ${Math.round(f.height_m)} m, ${Math.round(f.discharge_m3s)} m3/s (click: fly there)`;
-      el.onclick = (e) => { e.stopPropagation(); this.flyTo(f.k); };
+      el.onclick = (e) => { e.stopPropagation(); (this.api.flyTo || ((k) => this.flyTo(k)))(f.k); };
       el.onmouseenter = (e) => this.api.showCard(f, e, false);
       el.onmouseleave = () => this.api.hideCard(false);
       f.el = el;
@@ -362,9 +477,16 @@ export class Zoom3D {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    this.pins = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xe8f6ff }));
+    this.pins = new THREE.LineSegments(g, this.pinMat);
     this.scene.add(this.pins);
-    this.occlusionAt = 0;
+    this.showFalls(this.fallsOn);
+  }
+  // the falls' pins and labels on or off (their white water stays: it's part of the river)
+  showFalls(on) {
+    this.fallsOn = on;
+    this.labels.style.display = on ? '' : 'none';
+    if (this.pins) this.pins.visible = on;
+    this.dirty = true;
   }
 
   // ------------------------------------------------ camera
@@ -384,7 +506,7 @@ export class Zoom3D {
     const p = this.camera.position, t = this.controls.target;
     return [p.x, p.y, p.z, t.x, t.y, t.z].map((v) => +v.toFixed(2));
   }
-  // fly to fall k: look up its reach from downstream, a bit above
+  // fly to fall k: look up its reach from downstream and a little to the side, a bit above
   flyTo(k) {
     const f = this.falls.find((g) => g.k === k), t = this.tiles[0];
     if (!f) return;
@@ -392,11 +514,12 @@ export class Zoom3D {
     const a = f.path[0], b = f.path[f.path.length - 1];
     const ax = t.x(a % nx), az = t.z((a / nx) | 0), bx = t.x(b % nx), bz = t.z((b / nx) | 0);
     let dx = bx - ax, dz = bz - az;
-    const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+    const dl = Math.hypot(dx, dz) || 1, turn = 0.35;  // (rad: a three-quarter view, the drop in profile)
+    [dx, dz] = [(dx * Math.cos(turn) - dz * Math.sin(turn)) / dl, (dx * Math.sin(turn) + dz * Math.cos(turn)) / dl];
     const top = f.top_m ?? t.wsA[a], bot = f.bottom_m ?? t.wsA[b];
     const target = new THREE.Vector3((ax + bx) / 2, ((top + bot) / 2) * s, (az + bz) / 2);
-    const d = Math.max(5, 3 * (f.length_km || 1), 5 * t.res, 4 * f.height_m * s);
-    const el = THREE.MathUtils.degToRad(22);
+    const d = Math.max(6, 3.5 * (f.length_km || 1), 6 * t.res, 5 * f.height_m * s);
+    const el = THREE.MathUtils.degToRad(26);
     const pos = new THREE.Vector3(target.x + dx * d * Math.cos(el), target.y + d * Math.sin(el), target.z + dz * d * Math.cos(el));
     // (not under the ground on the way)
     pos.y = Math.max(pos.y, this.groundY(pos.x, pos.z) + 0.3);
@@ -450,6 +573,17 @@ export class Zoom3D {
       f.el.classList.toggle('behind', hidden);
     }
     this.placeLabels(W, H);
+  }
+  // pins a constant share of the view high (their length grows with the distance)
+  placePins() {
+    if (!this.pins) return;
+    const a = this.pins.geometry.attributes.position, cam = this.camera.position;
+    for (const f of this.falls) {
+      f.anchor.copy(f.base);
+      f.anchor.y += f.pin * Math.min(cam.distanceTo(f.base), this.size);
+      a.setY(2 * f.k + 1, f.anchor.y);
+    }
+    a.needsUpdate = true;
   }
   placeLabels(W, H) {
     for (const f of this.falls) {
@@ -509,7 +643,10 @@ export class Zoom3D {
       this.dirty = true; this.moved = now;
     }
     const changed = this.controls.update();
+    if (changed || this.dirty) this.tail = 10;  // (and a few frames after the last change: browsers can skip presenting one)
+    else if (this.tail > 0) { this.tail--; this.dirty = true; }
     if (!changed && !this.dirty && !force) {
+      this.frames = 0; this.fpsT = now;  // (fps counts only frames drawn while moving)
       // settled: hide the labels behind the ground, once
       if (this.moved && now - this.moved > 150) { this.moved = 0; this.occlude(); this.api.changed?.(); }
       return;
@@ -520,8 +657,10 @@ export class Zoom3D {
     if (cam.y < gy + 0.05) cam.y = gy + 0.05;
     const dist = cam.distanceTo(this.controls.target);
     this.camera.near = Math.max(0.01, dist / 400); this.camera.far = dist * 6 + 3 * this.size;
+    this.scene.fog.near = 1.3 * dist; this.scene.fog.far = 1.3 * dist + 3 * this.size;
     this.camera.updateProjectionMatrix();
     this.aimSun(dist);
+    this.placePins();
     this.renderer.render(this.scene, this.camera);
     this.placeLabels(this.renderer.domElement.clientWidth, this.renderer.domElement.clientHeight);
     this.frames++;
@@ -541,9 +680,9 @@ export class Zoom3D {
     this.sun.shadow.bias = -0.0004;
   }
   // frames per second with the camera turning: `frames` rendered back to back
-  // (gl.finish after each, so it's the GPU's time, not the display's refresh)
+  // (a pixel read back after each waits for the GPU: its time, not the display's refresh)
   bench(frames = 120) {
-    const gl = this.renderer.getContext(), C = this.controls, t0 = performance.now();
+    const gl = this.renderer.getContext(), C = this.controls, px = new Uint8Array(4), t0 = performance.now();
     const off = this.camera.position.clone().sub(C.target);
     for (let k = 0; k < frames; k++) {
       off.applyAxisAngle(new THREE.Vector3(0, 1, 0), (2 * Math.PI) / frames);
@@ -551,7 +690,7 @@ export class Zoom3D {
       this.camera.lookAt(C.target);
       this.dirty = true;
       this.tick(true);
-      gl.finish();
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
     }
     const ms = (performance.now() - t0) / frames;
     return { ms_per_frame: +ms.toFixed(2), fps: +(1000 / ms).toFixed(1), triangles: this.triangles,

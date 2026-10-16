@@ -57,11 +57,13 @@
   .z3d-fall.big { font-size: 12px; font-weight: 600; color: #e8f6ff; background: rgba(11, 37, 64, 0.72);
     border: 1px solid #9fe3ff; border-radius: 4px; padding: 0 4px; }
   .z3d-fall.behind { opacity: 0.3; }
-  #p3d { display: none; bottom: 12px; right: 12px; width: 260px; max-height: calc(100vh - 330px); overflow-y: auto; }
+  #p3d { display: none; top: 12px; right: 12px; width: 260px; }
+  body.embedded #p3d { top: 56px; }
   body.d3 #p3d { display: block; }
+  body.d3 #info { top: auto; bottom: 12px; max-height: calc(100vh - 500px); overflow-y: auto; }
   #p3d input[type=range] { flex: 1; min-width: 0; }
   #p3d .val { width: 34px; text-align: right; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
-  #fallList { margin-top: 4px; font-size: 12px; }
+  #fallList { margin-top: 4px; font-size: 12px; max-height: 150px; overflow-y: auto; }
   #fallList div { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
   #fallList div:hover, #fallList div.on { background: #1d2a40; }
   #btn3d.on { background: var(--accent); color: #06121f; }
@@ -248,7 +250,8 @@ async function init() {
   if (p.get('view') === '3d') {
     const cam = (p.get('cam') || '').split(',').map(Number);
     await enter3d({ cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null,
-      fall: p.get('fall') != null ? +p.get('fall') : null, exag: +p.get('exag') || null, step: +p.get('detail') || null });
+      fall: p.get('fall') != null ? +p.get('fall') : null, exag: +p.get('exag') || null, step: +p.get('detail') || null,
+      shadows: p.get('shadows') === '0' ? false : null });
   }
 }
 
@@ -260,6 +263,8 @@ const api3d = {
   hideCard: () => { if (!pinned) hideTip(); },
   changed: () => syncURL(),
   fps: (f) => { $('fps3d').textContent = `${Math.round(f)} fps`; },
+  shadowsOff: () => { $('shadows3d').checked = false; syncURL(); },
+  flyTo: (k) => fly(k),
 };
 async function enter3d(o = {}) {
   if (!state.meta) return;
@@ -278,6 +283,7 @@ async function enter3d(o = {}) {
     };
     if (o.exag) V3.opts.exag = o.exag;
     if ([1, 2, 4].includes(o.step)) V3.opts.step = o.step;
+    if (o.shadows === false) V3.set('shadows', false);
     bind('exag', 'exag', Number, (v) => `${v}\u00d7`);
     bind('step3d', 'step', Number, String);
     bind('sunAz', 'sunAz', Number, (v) => `${v}\u00b0`);
@@ -317,7 +323,7 @@ function fly(k) {
   V3.flyTo(k);
   for (const d of $('fallList').children) d.classList.toggle('on', +d.dataset.k === k);
   const r = $('p3d').getBoundingClientRect();
-  showTip(f, { clientX: r.left - 330, clientY: r.top - 16 }, true);
+  showTip(f, { clientX: r.left - 330, clientY: r.top }, true);
 }
 
 function syncURL() {
@@ -328,6 +334,7 @@ function syncURL() {
     p.set('view', '3d');
     if (V3.opts.exag !== 3) p.set('exag', V3.opts.exag);
     if (V3.opts.step !== 1) p.set('detail', V3.opts.step);
+    if (!V3.opts.shadows) p.set('shadows', '0');
     if (V3.tiles.length) p.set('cam', V3.camState().join(','));
   }
   history.replaceState(null, '', '?' + p);
@@ -569,9 +576,7 @@ function render() {
     state.cam3d = null;
     fallList();
   } else V3.setTexture(state.off, smooth);
-  const fl = $('falls').checked;
-  V3.labels.style.display = fl ? '' : 'none';
-  if (V3.pins) V3.pins.visible = fl;
+  V3.showFalls($('falls').checked);
 }
 const FLAT_SHADE = Math.sin(40 * Math.PI / 180);  // hillshade() of flat ground
 function shadeNow() {
