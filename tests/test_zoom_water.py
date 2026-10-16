@@ -71,6 +71,23 @@ def test_lake_passes_its_water_on(water_world, lake_zoom):
     assert lk["outflow_m3s"] >= 0.99 * q_c
 
 
+def test_receiver_layer_is_the_routing(lake_zoom):
+    """PW-373: the `receiver` layer is the landscape pass's own D8 receivers
+    (z["rec"]) as slots, and the water runs down it: discharge never shrinks
+    along a link on land (no karst sinks in this world)."""
+    L, nx = lake_zoom["layers"], lake_zoom["nx"]
+    slot = L["receiver"].ravel()
+    assert slot.dtype == np.uint8 and set(np.unique(slot)) <= set(range(8)) | {zoom.D8_NONE}
+    rec = lake_zoom["rec"]
+    np.testing.assert_array_equal(slot, zoom.d8_slots(rec, nx))
+    off = np.array([(dr, dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1) if dr or dc])
+    i = np.flatnonzero(slot != zoom.D8_NONE)
+    np.testing.assert_array_equal(i + off[slot[i], 0] * nx + off[slot[i], 1], rec[i])
+    q, land = L["discharge"].ravel(), L["water"].ravel() == 0
+    j = i[land[i] & land[rec[i]] & (q[i] > 1)]
+    assert len(j) > 100 and (q[rec[j]] >= q[j] * (1 - 1e-4)).mean() > 0.99
+
+
 @pytest.fixture(scope="module")
 def evap_lake():
     """The open lake of water_world under a hot sky: open water evaporates

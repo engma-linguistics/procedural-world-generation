@@ -40,11 +40,16 @@ import { quadSplits, meshHeight, chaikin, hugChaikin, riverNet } from '%s';
 // a river zigzagging down a gorge one pixel wide between 900 m walls, over a 200 m fall on a diagonal
 const nx = 12, ny = 14, n = nx * ny;
 const L = { elevation: new Float32Array(n).fill(900), water: new Uint8Array(n), lake_depth: new Float32Array(n),
-            discharge: new Float32Array(n), drainage_area: new Float32Array(n), ice: new Float32Array(n) };
+            discharge: new Float32Array(n), drainage_area: new Float32Array(n), ice: new Float32Array(n),
+            receiver: new Uint8Array(n).fill(255) };
 const moves = [[1, 1], [1, -1], [1, 1], [1, 0], [1, -1], [1, 0], [1, 1], [1, -1], [1, 1], [1, 0], [1, -1]];
 const heights = [700, 650, 450, 430, 425, 420, 415, 410, 405, 400, 395, 390];
 let r = 1, c = 5; const path = [r * nx + c];
-for (const [dr, dc] of moves) { r += dr; c += dc; path.push(r * nx + c); }
+for (const [dr, dc] of moves) {
+  const s = 3 * (dr + 1) + (dc + 1);
+  L.receiver[r * nx + c] = s - (s > 4);  // (the zoom's D8 slot, planet/zoom.py d8_slots)
+  r += dr; c += dc; path.push(r * nx + c);
+}
 path.forEach((i, k) => { L.elevation[i] = heights[k]; L.discharge[i] = 50 + k; L.drainage_area[i] = 1e4; });
 const { rec } = riverNet(L, nx, ny, 1, 10);
 const follows = path.slice(0, -1).every((i, k) => rec[i] === path[k + 1]);

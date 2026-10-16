@@ -97,36 +97,28 @@ export function hugChaikin(p, H, n = 2, tol = 1) {
   return out;
 }
 
+// D8 slot (the zoom's `receiver` layer, planet/zoom.py d8_slots: 0 NW, 1 N,
+// 2 NE, 3 W, 4 E, 5 SW, 6 S, 7 SE; rows run south) -> [dr, dc]; 255: none
+export const D8 = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
 // The rivers of a zoom tile (zoom3d.js's Tile.flow). Each river (and lake)
-// pixel's downstream neighbour (the zoom stores discharge, not its D8
-// receivers): the steepest drop in water surface among neighbours that carry
-// at least as much water (or are lake or sea), else the one with the most
-// water. Then the river lines: runs of river pixels between heads,
+// pixel's downstream neighbour, as the zoom's landscape pass routed the water
+// (its `receiver` layer, PW-373; a zoom without one has no rivers here: make
+// it again). Then the river lines: runs of river pixels between heads,
 // confluences and the water they end in.
-// L: {elevation, water, lake_depth, discharge, drainage_area, ice}; returns {rec, lines, ws}.
+// L: {elevation, water, lake_depth, discharge, drainage_area, ice, receiver}; returns {rec, lines, ws}.
 export function riverNet(L, nx, ny, res, qmin) {
-  const n = nx * ny, q = L.discharge, water = L.water, area = L.drainage_area, ice = L.ice;
+  const n = nx * ny, q = L.discharge, water = L.water, area = L.drainage_area, ice = L.ice, slot = L.receiver;
   const minArea = 500 * Math.max(res / 2, 1);
   const ws = new Float32Array(n);
   for (let i = 0; i < n; i++) ws[i] = water[i] === 2 ? L.elevation[i] + L.lake_depth[i] : water[i] === 1 ? 0 : L.elevation[i];
   const rec = new Int32Array(n).fill(-1), isR = new Uint8Array(n);
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; slot && i < n; i++) {
     // (lake pixels too: a fall's reach runs on through its plunge pool)
-    if (water[i] === 1 || !(q[i] >= qmin)) continue;
+    if (water[i] === 1 || !(q[i] >= qmin) || slot[i] > 7) continue;
     if (water[i] === 0 && area[i] >= minArea && !(ice[i] > 0)) isR[i] = 1;
-    const r = (i / nx) | 0, c = i - r * nx;
-    let best = -1, bs = 0, alt = -1, aq = -1;
-    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-      if (!dr && !dc) continue;
-      const rr = r + dr, cc = c + dc;
-      if (rr < 0 || cc < 0 || rr >= ny || cc >= nx) continue;
-      const j = rr * nx + cc;
-      if (water[j] === 0 && q[j] < q[i]) continue;
-      const s = (ws[i] - ws[j]) / (dr && dc ? 1.4142 : 1);
-      if (s > bs) { bs = s; best = j; }
-      if (q[j] > aq) { aq = q[j]; alt = j; }
-    }
-    rec[i] = best >= 0 ? best : alt;
+    const [dr, dc] = D8[slot[i]];
+    rec[i] = i + dr * nx + dc;
   }
   const ndon = new Uint8Array(n);
   for (let i = 0; i < n; i++) if (isR[i] && rec[i] >= 0 && isR[rec[i]]) ndon[rec[i]]++;

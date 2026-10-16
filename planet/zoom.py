@@ -1046,6 +1046,24 @@ def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, c
     return ice, np.where(ice, th, 0.0)
 
 
+D8_NONE = 255  # the receiver layer's "no receiver" (an outlet, the sea, or water leaving the zoom)
+
+
+def d8_slots(rec: np.ndarray, nx: int) -> np.ndarray:
+    """Receivers (pixel indices, -1 none) as D8 slots, uint8: the neighbour
+    (dr, dc) is slot 3 * (dr + 1) + (dc + 1), skipping the centre (0 NW, 1 N,
+    2 NE, 3 W, 4 E, 5 SW, 6 S, 7 SE; rows run south), D8_NONE without one.
+    The zoom's `receiver` layer (PW-373), as runs' nbr_slot layers."""
+    rec = np.asarray(rec, np.int64)
+    i = np.arange(len(rec))
+    has = rec >= 0
+    dr, dc = rec // nx - i // nx, rec % nx - i % nx
+    if (has & ((np.abs(dr) > 1) | (np.abs(dc) > 1) | (rec == i))).any():
+        raise ValueError("receivers must be D8 neighbours")
+    s = 3 * (dr + 1) + (dc + 1)
+    return np.where(has, s - (s > 4), D8_NONE).astype(np.uint8)
+
+
 def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
     """v carried a few pixels out from the pixels m: each pixel takes its
     nearest (the max of the equally near; a tongue's sides take the
@@ -3159,6 +3177,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "lake_kind": np.where(water == 2, np.where(lake_kind == 2, 2, 1), np.where(lake_kind == 3, 3, 0)).astype(np.uint8),
         "discharge": discharge.astype(np.float32),
         "drainage_area": area.astype(np.float32),
+        # each pixel's D8 receiver, as the landscape pass routed the water (PW-373: the 3D view's rivers)
+        "receiver": d8_slots(rec_out, nx),
         "precipitation": precip.astype(np.float32),
         "temperature": temp.astype(np.float32),
         # July and January (the interpolated cells' own, PW-374) and the half-years' rain (PW-139)
@@ -3302,6 +3322,9 @@ LAYER_DOC = {
     "discharge": ("m^3/s", "mean river discharge (runoff routed downhill, plus inflow at the edges; "
                            "open lakes pass theirs on at the outlet; split among delta distributaries)"),
     "drainage_area": ("km^2", "upstream area inside the region"),
+    "receiver": ("D8 slot", "the pixel's downstream neighbour, as the landscape pass routed the water: "
+                            "3 * (dr + 1) + (dc + 1) skipping the centre (0 NW, 1 N, 2 NE, 3 W, 4 E, 5 SW, 6 S, "
+                            "7 SE; rows run south); 255 none (an outlet, the sea, or the water leaves the zoom)"),
     "precipitation": ("mm/yr", "annual precipitation (interpolated from the coarse world)"),
     "temperature": ("C", "mean annual temperature, lapse-rate adjusted to the fine elevation"),
     "ice": ("m", "glacier ice thickness: the coarse ice in accumulation zones, else from the ice flux (glaciers())"),
