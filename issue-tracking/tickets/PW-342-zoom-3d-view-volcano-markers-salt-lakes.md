@@ -2,7 +2,7 @@
 id: PW-342
 title: "Zoom 3D view: volcano markers, salt lakes and glaciers' own look"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: viewer
 effort: s
@@ -30,4 +30,5 @@ things the 2D map shows:
 - [ ] salt lakes and pans coloured as in 2D
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-zoom3d-volcanoes-salt-lakes.md (found by zoom3d).
