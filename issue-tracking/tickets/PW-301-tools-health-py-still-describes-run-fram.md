@@ -2,7 +2,7 @@
 id: PW-301
 title: tools/health.py still describes run-frame lakes and downstream as a step stale (fixed by PW-239)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: xs
@@ -25,4 +25,5 @@ test_frame_rivers_end_in_its_own_hollows). Update the text; `real_hollows` can s
 measures can be merged into one.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Done: health.py text updated (envelope note, real_hollows docstring, report caveat).
 - 2026-10-15: Created from inbox draft draft-health-caveat-after-pw239.md (found by surface-hydro).

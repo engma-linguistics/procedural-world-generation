@@ -81,7 +81,7 @@ ENVELOPES = {
                 "tests/test_envelopes.py (12-45%); Earth ~30% (Beck et al. 2018)"),
     "inland_pct": (8, 30, 18, "land draining inland, % of ice-free land (to a closed lake, salt pan or real pit)",
                    "Earth ~18% (overview 2.9); L6 known ~9.5-11% (PW-054, PW-243). `inland_raw_pct` (not checked) "
-                   "follows the stored `downstream` to any end, as highlights does: stale by a step (PW-239)"),
+                   "follows the stored `downstream` to any end, as highlights does; since PW-239 the two agree but for ends under land ice"),
     "lake_pct": (0.2, 3.0, 1.8, "lakes, % of land",
                  "Earth ~1.8% of ice-free land (HydroLAKES, Messager et al. 2016); generated L6 worlds 0.5-1%"),
     "lake_max_mkm2": (None, GIANT_LAKE_MKM2, 0.37, "largest lake, million km2",
@@ -173,8 +173,8 @@ def inland_share(down: np.ndarray, land: np.ndarray, free: np.ndarray, real_end:
 def real_hollows(grid, elev: np.ndarray, lake_kind: np.ndarray) -> np.ndarray:
     """Cells where water can really end on this terrain: closed lakes and
     salt pans (lake_kind 2, 3), and pits with no lower or sea neighbour.
-    (A run frame's `downstream` comes from the terrain before the step's
-    erosion and deposition, PW-239, so many of its ends no longer hold water.)"""
+    (Since PW-239 a run frame's `downstream` is routed on its own terrain,
+    so this is a check that its ends do hold water.)"""
     nb_min = np.minimum.reduceat(elev[grid.nbr_idx], grid.nbr_off[:-1])
     return (lake_kind >= 2) | ((elev > 0) & (nb_min >= elev))
 
@@ -418,11 +418,10 @@ def report(manifest: dict, results: list[dict], det: dict | None, out_dir: Path,
         late = [f for f in r["frames"] if f["t"] >= SPINUP]
         md.append(f"| {r['seed']} | {r['level']} | " + " | ".join(_f(_stat_row([f[k] for f in late])[1], 1) for k in keys)
                   + " |")
-    md += ["", "Measured on the run's keyframes (no slicing). Caveats: a keyframe's lakes and `downstream` come from "
-           "the terrain before that step's erosion and deposition (PW-239), so `inland_raw_pct` (every routed end on "
-           "land, as highlights counts it) runs ~2-3x `inland_pct` (ends that are closed lakes, salt pans or real pits "
-           "on the frame's own elevation); lake shares are the run's lakes during the step. Land ice and land shares "
-           "use cells (near-equal area)."]
+    md += ["", "Measured on the run's keyframes (no slicing). A keyframe's rivers and lakes are routed on its own "
+           "terrain (PW-239), so `inland_raw_pct` (every routed end on land, as highlights counts it) and `inland_pct` "
+           "(ends that are closed lakes, salt pans or real pits) agree but for ends under land ice. Land ice and land "
+           "shares use cells (near-equal area)."]
     md += ["", "## Envelopes", "", "| metric | low | high | Earth | source |", "|---|---|---|---|---|"]
     for k, (lo, hi, earth, label, src) in ENVELOPES.items():
         md.append(f"| {label} (`{k}`) | {_f(lo)} | {_f(hi)} | {_f(earth, 2)} | {src} |")
