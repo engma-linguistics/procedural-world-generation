@@ -31,4 +31,5 @@ appearing in one frame is a tectonics step artifact. Runs 9366df / ef2c6a are in
 (deleted before merge; rerun `tools/health.py --l6 --l7 3199 21 --myr 500` to get them back).
 
 ## Updates
+- 2026-10-15: Post-audit sweep: giant lakes are now the top outliers (seed 11 L7 22% of frames with a >1 Mkm2 lake; L6 lake_max up to 6.6 Mkm2).
 - 2026-10-15: Created from inbox draft draft-giant-lakes-on-final-terrain.md (found by surface-hydro).

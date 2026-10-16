@@ -2,7 +2,7 @@
 id: PW-173
 title: New ocean floor appears in sampling gaps where plates converge
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: tectonics
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-108, PW-053]
 refs: [planet/tectonics/plate_kernels.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -29,4 +29,5 @@ kept. Effect on sea level (young floor is shallow, PW-053) is likely small
 (~6% of new floor). Decide whether worth doing for correctness.
 
 ## Updates
+- 2026-10-15: Status todo -> wontdo. As PW-174: tried on tectchurn, no gain after crust.coherence; not worth changing outputs.
 - 2026-10-14: Created from inbox draft draft-spurious-new-floor.md (found by tectchurn).

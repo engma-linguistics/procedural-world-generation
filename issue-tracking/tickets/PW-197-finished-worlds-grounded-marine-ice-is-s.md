@@ -2,7 +2,7 @@
 id: PW-197
 title: "Finished worlds: grounded marine ice is stored as land with the bed floored at 1 m"
 type: task
-status: in-progress
+status: todo
 parent: PW-090
 subsystem: timezoom
 effort: s
@@ -24,6 +24,7 @@ appear); the surface is right. meta.marine_ice_floored_cells counts them. A prop
 "ice-covered, bed below sea level" as land (ties to PW-189 glacial isostasy).
 
 ## Updates
+- 2026-10-15: Status in-progress -> todo. Bigger than estimated: the 1 m bed floor is applied in timeline._world for every world; the real scope (world-wide land = bed > 0 or grounded ice) is PW-307.
 - 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-15: Ice: runs and time-zoom frames store the true bed; worlds still floor at 1 m (no world bed layer yet).
 - 2026-10-14: Created from inbox draft draft-finish-marine-ice.md (found by finish).
