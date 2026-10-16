@@ -45,27 +45,36 @@ def initial_state(sim):
         bias = rng.uniform(-1, 1, p.n_plates)
         field_ = fbm(nz, x, octaves=5, freq=1.3) + 0.25 * bias[plate]
     cont = field_ > np.quantile(field_, 1 - sim.target_fraction())
+    # Continents ride inside plates, as on Earth, so the story starts with
+    # rifting and drifting, not collisions: each continent goes whole to
+    # whichever plate holds most of it (a supercontinent is one plate), and
+    # that plate also carries the ocean near its coast (passive margins, like
+    # the Atlantic's today; otherwise every bay belongs to some other plate
+    # and a breakup tears the coast into fingers). The scattered start used
+    # to cut its continents along the random plates' boundaries (18-31% of
+    # the boundary ran through continent, a big continent on up to 10
+    # plates): collisions everywhere, slow plates, few ridges, and an ocean
+    # that aged to 70-110 Myr and a sea 150-400 m low over 300 Myr (PW-328).
     if p.start == "supercontinent":
-        # A supercontinent is one plate: hand it to whichever plate holds
-        # most of it, so the story starts with rifting, not collisions.
-        k0 = np.bincount(plate[cont], minlength=p.n_plates).argmax()
-        # Its plate also carries the ocean near its coast (passive margins,
-        # like the Atlantic's today). Otherwise every bay belongs to some
-        # other plate and the breakup tears the coast into fingers.
-        near, _ = kernels.bfs_within(np.flatnonzero(cont), np.zeros(n, np.int64),
-                                     g.nbr_off, g.nbr_idx, int(3 * sim.scale))
-        plate = np.where(near >= 0, k0, plate)
-        # oceanic leftovers cut off from their plate join a neighbour
-        for k in range(p.n_plates):
-            lab, nl = g.components(plate == k)
-            if nl > 1:
-                sizes = np.bincount(lab[lab >= 0])
-                for piece in np.flatnonzero(sizes < sizes.max()):
-                    cells = np.flatnonzero(lab == piece)
-                    nb = np.concatenate([g.neighbors[i] for i in cells])
-                    others = plate[nb][plate[nb] != k]
-                    if len(others):
-                        plate[cells] = np.bincount(others).argmax()
+        lab = np.where(cont, 0, -1)
+    else:
+        lab, _ = g.components(cont)
+    nl = int(lab.max()) + 1
+    k_of = np.array([np.bincount(plate[lab == i], minlength=p.n_plates).argmax() for i in range(nl)], np.int64)
+    near, src = kernels.bfs_within(np.flatnonzero(cont), np.zeros(n, np.int64),
+                                   g.nbr_off, g.nbr_idx, int(3 * sim.scale))
+    plate = np.where(near >= 0, k_of[lab[np.maximum(src, 0)]], plate)
+    # oceanic leftovers cut off from their plate join a neighbour
+    for k in range(p.n_plates):
+        lab_k, nk = g.components(plate == k)
+        if nk > 1:
+            sizes = np.bincount(lab_k[lab_k >= 0])
+            for piece in np.flatnonzero(sizes < sizes.max()):
+                cells = np.flatnonzero(lab_k == piece)
+                nb = np.concatenate([g.neighbors[i] for i in cells])
+                others = plate[nb][plate[nb] != k]
+                if len(others):
+                    plate[cells] = np.bincount(others).argmax()
     # distance inland from the coast -> continental shelf / interior base level
     coast = np.flatnonzero(cont & np.array([not cont[g.neighbors[i]].all() for i in range(n)]))
     dist, _ = kernels.bfs_within(coast, cont.astype(np.int64), g.nbr_off, g.nbr_idx, int(4 * sim.scale))
@@ -123,7 +132,7 @@ def initial_state(sim):
     age = np.where(cont, np.maximum(age, 300), age)
     for k in range(p.n_plates):
         m = plate == k
-        pl.alive[k] = True
+        pl.alive[k] = m.any()  # (a plate whose cells all went to a continent's plate is gone)
         pl.owned[k] = m
         pl.cont[k] = cont & m
         pl.thick[k] = np.where(m, thick, 0)
