@@ -32,6 +32,7 @@ Owner's guidance: use Earth as a test analogue, but never chase 100% parity. Spe
 `docs/proposals/ocean_overturning.md`.
 
 ## Updates
+- 2026-10-15: Owner 2026-10-15: PW-307 (world land = bed > 0 or grounded ice, threaded through climate/hydrology/coast/zoom) is to be scheduled by this ticket: do it before, during or after the rain rework, whichever fits climate.compute's changes.
 - 2026-10-15: Coordinator (2026-10-15): now also owns PW-305's problem: after PW-266 closed the fresh-water books, hot dry interiors recycle their own rain (Earth Koppen exact 38.9 -> 33.0%, B share 28.9 -> 20.3% vs obs 30.1; Sahara 328 mm vs 35, Sahel 2007 vs 593, Australia interior 837 vs 291, Gobi 582 vs 157). Tried and not merged: vapour into moved/downwind air (B), a dry-convective mixed layer (E1: exact 34.3%), a deeper layer (dries SE China/SE USA, whose summers run 4-6 C warm). See docs/review/audit/pw305-prototype.md and fixes-climate-ocean.md. Related: PW-304 (kernel transport not mass-conservative), PW-228, PW-026, PW-290. Moved up the V1 order: next after PW-308.
 - 2026-10-15: Merged inbox draft draft-gobi-sahel-wet-not-dry-layer.md ("Earth's Gobi (587 mm vs 157) and Sahel (2015 vs 593) are wet for reasons the dry mixed layer (PW-305) doesn't reach", found by pw305-prototype).
   Probed on Earth L6 with the PW-305 prototype (kernel inputs averaged by region and half-year):

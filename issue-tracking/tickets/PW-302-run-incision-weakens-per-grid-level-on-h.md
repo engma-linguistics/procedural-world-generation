@@ -2,7 +2,7 @@
 id: PW-302
 title: Run incision weakens per grid level on headwater cells (2.2 / 1.6 / 1.1 m per step, L5 / L6 / L7)
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-245
 subsystem: surface
 effort: s
@@ -31,4 +31,5 @@ sub-cell channel term (an extra hillslope-like share for cells with little upstr
 new parameterisation to calibrate. Worth keeping in mind for PW-243's L6/L7 closed-basin gap.
 
 ## Updates
+- 2026-10-15: Status needs-decision -> wontdo. Owner 2026-10-15: leave it; the law is sound. Findings carried to PW-054.
 - 2026-10-15: Created from inbox draft draft-incision-level-consistency.md (found by surface-hydro).
