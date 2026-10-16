@@ -1,4 +1,5 @@
 ---
+id: PW-376
 title: "Zoom 3D at half / quarter detail: rivers in narrow valleys still cross ridges of the coarser mesh"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: fall-jut (PW-375)
 blocked_by: []
 relates: [PW-375, PW-072]
 refs: [viewer/zoom3d.js, viewer/zoom3d_mesh.js, "zoom:226c95"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,3 +25,6 @@ coarse mesh only takes the diagonal through two river pixels at opposite corners
 Options: lower the coarse mesh's vertices to the lowest pixel in their block along the drawn rivers (a
 river-aware decimation), or keep full-detail rows/columns along the rivers (a non-uniform mesh).
 - [ ] at `detail=4` on 226c95 the painted river below its 17 falls climbs < 20 m (measured as in PW-375)
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom3d-coarse-mesh-rivers.md (found by fall-jut (PW-375)).
