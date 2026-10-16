@@ -1,5 +1,6 @@
 ---
-title: "Waves in enclosed seas 3-5x too strong once the wind recovers off land in ~50 km (PW-272)"
+id: PW-296
+title: Waves in enclosed seas 3-5x too strong once the wind recovers off land in ~50 km (PW-272)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: fix-coast-zoom
 blocked_by: []
 relates: [PW-075, PW-272, PW-270]
 refs: [planet/coast.py, tools/coast_check.py, docs/review/audit/fixes-coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,3 +33,6 @@ hundred km at 15-25 m/s still builds a big sea. Candidates, simplest first:
   spreading may overweight them.
 Don't bring back a long L_RECOVER.
 - [ ] enclosed-sea rows within 2x at most coasts without moving the open-ocean rows
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-coast-enclosed-sea-winds.md (found by fix-coast-zoom).

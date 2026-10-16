@@ -1,4 +1,5 @@
 ---
+id: PW-297
 title: "Tides: macrotidal shelves (Patagonia, Yellow Sea, Khambhat, Channel) low once resonance falls off past lambda/4"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: fix-coast-zoom
 blocked_by: []
 relates: [PW-273, PW-076]
 refs: [planet/coast.py, tools/coast_check.py, docs/review/audit/fixes-coast-zoom.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,3 +27,6 @@ h ~100 m the model gives kW ~2.3 rad, amplification 1.2.
 To check: the same rows at L7 (shelf widths better resolved); the mean depth along the path vs the
 deepest-water route; whether the friction exponential exp(-(W - lambda/4)/L_SHELF_FRIC) double-counts
 the friction r already in the response. Don't bring back the clamp.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-tides-macrotidal-shelves-off-resonance.md (found by fix-coast-zoom).

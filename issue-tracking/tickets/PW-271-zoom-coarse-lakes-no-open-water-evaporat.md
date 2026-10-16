@@ -2,7 +2,7 @@
 id: PW-271
 title: "Zoom coarse lakes: no open-water evaporation; lake pixels yield land runoff"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: zoom
 effort: xs
@@ -27,5 +27,6 @@ passing it on (floor at 0).
 - [ ] an open zoom lake's outflow within ~10% of the coarse lake's outflow (when the catchment is in view)
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the coast-zoom fix branch (merged d4e7c90); docs/review/audit/fixes-coast-zoom.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-lake-evap.md (found by audit-coast-zoom).

@@ -2,7 +2,7 @@
 id: PW-270
 title: "Waves: the U^5 gust factor is applied to U, overstating fetch- and duration-limited seas ~1.5-1.6x"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: coast
 effort: s
@@ -31,5 +31,6 @@ L_RECOVER draft).
 - [ ] no U^5-only factor on U; coast_check rows reported before and after
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the coast-zoom fix branch (merged d4e7c90); docs/review/audit/fixes-coast-zoom.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-gust-moment.md (found by audit-coast-zoom).

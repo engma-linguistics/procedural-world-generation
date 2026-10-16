@@ -1,5 +1,6 @@
 ---
-title: "Zoom landscape pass settles 100-200 m off the coarse cell means (C fit to box means)"
+id: PW-298
+title: Zoom landscape pass settles 100-200 m off the coarse cell means (C fit to box means)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: fix-coast-zoom
 blocked_by: []
 relates: [PW-268]
 refs: [planet/zoom.py, docs/review/audit/fixes-coast-zoom.md, "world 592f2a", "world 9970c1 (fix branch, deleted)"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,3 +34,6 @@ cell means of the relief above the outlet rather than box means of absolute heig
 Also: some trench cells next to arcs/coasts still come out up to ~2 km shallow on 592f2a (p95 +2100 m;
 bias +309, was +4323), where the coast taper damps the mean correction.
 - [ ] land-interior cell-mean RMS < ~120 m on 592f2a-type zooms, bias within +-20 m on a glaciated plateau
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-landscape-fit-offset.md (found by fix-coast-zoom).
