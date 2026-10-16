@@ -2612,7 +2612,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     vz = ZVG.compute(world, fr, nx, ny, res, seed, size_km,
                      ZVG.surface(h.astype(np.float32), lake_depth.astype(np.float32), water), water, ice_l,
                      discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log,
-                     want_fractions=True)
+                     want_fractions=True, rock=surf_f, landform=form_f)  # (and the soils, PW-331)
     veg_l, tr = vz["layers"], vz["terrain"]
     # --- coastal and shallow-sea life (zoom_coastal, PW-188); names mangrove and salt-marsh pixels
     cz = ZCL.place(world, fr, Pk, px, py, nx, ny, res, size_km, seed, h, water, glacier, d_sea, surf_f,
@@ -2878,6 +2878,8 @@ LAYER_DOC = {
     "cloud_jul": ("%", "cloud cover, July half-year (the world's, interpolated; the satellite view's clouds)",
                   {"dtype": "u1"}),
     "cloud_jan": ("%", "cloud cover, January half-year (the world's, interpolated)", {"dtype": "u1"}),
+    # soils per pixel (zoom_vegetation / soils.zoom_mineral, PW-331), the world's names and encodings
+    **ZVG.SOIL_LAYER_DOC,
 }
 
 

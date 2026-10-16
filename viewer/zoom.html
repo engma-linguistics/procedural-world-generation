@@ -139,14 +139,18 @@ const LAYERS = [
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
   ['fire_return', 'Fire return'], ['lai', 'Leaf area'], ['coastal_life', 'Coastal life'],
+  ['soil', 'Soils'], ['soil_depth', 'Soil depth'], ['soil_water', 'Soil water'], ['soil_fertility', 'Fertility'],
+  ['soil_carbon', 'Soil carbon'], ['peat_depth', 'Peat'], ['permafrost', 'Permafrost'], ['loess', 'Loess'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'], ['coarse', 'Coarse cells'],
 ];
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
-  coastal_life: 'coastal_life' };
-const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life'];
+  coastal_life: 'coastal_life', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
+  soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
+  loess: 'loess' };
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil'];
 // the temperature / rain season: '' the year, 'jul' / 'jan' the half-years (zooms with *_jul / *_jan layers)
 const SEASON_NAMES = { '': 'year', jul: 'July', jan: 'January' };
 const state = { meta: null, L: null, layer: 'satellite', season: '', imgs: {}, shade: null,
@@ -183,6 +187,14 @@ const RAMPS = {
   fire_return: [[[0, [58, 42, 42]], [0.5, [232, 80, 58]], [1, [240, 154, 58]], [1.5, [242, 211, 106]], [2, [201, 214, 160]], [2.7, [143, 176, 160]], [3.5, [79, 111, 128]]], 'years between fires (log scale: 3, 10, 30, 100, 1000; grey: none)'],
   radiation_index: [[[0.4, [40, 50, 110]], [0.8, [120, 140, 190]], [1, [225, 225, 215]], [1.2, [240, 190, 90]], [1.6, [200, 80, 30]]], "the year's sunshine on the slope / flat ground (poleward slopes darker)"],
   twi: [[[4, [200, 170, 120]], [8, [225, 220, 190]], [11, [150, 200, 210]], [14, [60, 140, 200]], [18, [20, 50, 140]]], 'topographic wetness index ln(a / tan slope) (dry ridges to wet hollows)'],
+  // soils (soils.py per pixel, PW-331; the globe's ramps)
+  soil_depth: [[[0, [138, 127, 110]], [0.25, [201, 180, 138]], [0.75, [217, 194, 122]], [1.5, [168, 116, 63]], [3, [90, 58, 34]]], 'm of rootable soil'],
+  soil_water: [[[0, [239, 224, 176]], [50, [217, 207, 138]], [120, [156, 192, 122]], [200, [79, 159, 160]], [350, [31, 95, 138]]], 'mm of water the soil holds for plants'],
+  soil_fertility: [[[0, [200, 120, 90]], [0.3, [226, 196, 130]], [0.6, [160, 190, 100]], [1, [40, 110, 50]]], 'soil fertility, 0 poor to 1 rich'],
+  soil_carbon: [[[0, [239, 230, 200]], [3, [214, 194, 138]], [8, [168, 132, 79]], [15, [106, 74, 42]], [30, [58, 42, 26]], [60, [26, 18, 10]]], 'kg C/m&sup2; in the top metre'],
+  peat_depth: [[[0, [239, 230, 200]], [0.3, [185, 165, 122]], [1, [122, 90, 58]], [3, [58, 42, 26]], [8, [18, 10, 5]]], 'm of peat where peat lies'],
+  permafrost: [[[0, [232, 220, 192]], [1, [188, 208, 220]], [2, [127, 168, 200]], [3, [58, 106, 154]]], '0 none, 1 sporadic, 2 discontinuous, 3 continuous'],
+  loess: [[[0, [236, 230, 214]], [1, [230, 212, 154]], [5, [217, 180, 90]], [20, [181, 133, 47]], [60, [122, 84, 24]]], 'm of wind-blown silt'],
 };
 const DECODE = { float32: Float32Array, uint8: Uint8Array, int8: Int8Array, uint16: Uint16Array, int16: Int16Array };
 const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
@@ -557,7 +569,8 @@ function legendFor(kind) {
   const lg = state.meta.legend;
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
     : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
-    : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || []) : lg.rocks;
+    : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || [])
+    : kind === 'soil' ? (lg.soils?.types || []).map((t) => ({ ...t, text: `${t.wrb} / ${t.usda}: ${t.desc}` })) : lg.rocks;
 }
 
 // the 2D map's colours of the active layer into state.off; in the 3D view also
@@ -649,7 +662,7 @@ function renderLayer() {
     } else if (lut) {
       const e = lut[L[k][i]];
       if (wet === 1 && k !== 'rock' && k !== 'surface_rock') c = ramp(SEA, h[i]);
-      else if (k === 'vegetation' && wet === 2) c = [70, 130, 196];
+      else if ((k === 'vegetation' || k === 'soil') && wet === 2) c = [70, 130, 196];
       else { c = e ? e.rgb : [255, 0, 255]; present.set(L[k][i], (present.get(L[k][i]) || 0) + 1); const f = 0.55 + 0.5 * s; c = [c[0] * f, c[1] * f, c[2] * f]; }
     } else if (k === 'precipitation' || k === 'temperature') {
       c = ramp(k === 'precipitation' ? RAIN : TEMP, L[sk][i]);
@@ -670,7 +683,7 @@ function renderLayer() {
   }
   oc.putImageData(img, 0, 0);
   // legends
-  if (lut && k === 'vegetation') {  // named types by their share of the land, the commonest first
+  if (lut && (k === 'vegetation' || k === 'soil')) {  // named types by their share of the land, the commonest first
     const land = [...present].filter(([id]) => id > 0 && lut[id]), tot = land.reduce((a, [, n]) => a + n, 0) || 1;
     land.sort((a, b) => b[1] - a[1]);
     const shown = land.filter(([, n]) => n / tot >= 0.002).slice(0, 16), rare = land.length - shown.length;
@@ -878,6 +891,7 @@ function hoverPx(r, c) {
     <tr><td>climate</td><td>${kop.code || ''} ${kop.name || ''}</td></tr>
     <tr><td>biome</td><td>${name(lg.biomes, L.biome[i])}</td></tr>
     ${vegRows(i)}
+    ${soilRows(i)}
     ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
     <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>
@@ -895,6 +909,20 @@ function vegRows(i) {
   return `<tr><td>vegetation</td><td>${t ? t.name : '?'}</td></tr>
     <tr><td>plants</td><td>trees ${fmt(L.tree_cover[i])}%, cover ${fmt(L.plant_cover[i])}%${L.canopy_height[i] > 0 ? `, canopy ${fmt(L.canopy_height[i])} m` : ''}<br>
       NPP ${fmt(L.npp[i])} g C/m&sup2;/yr, LAI ${fmt(L.lai[i], 1)}<br>${fr > 0 ? `fires every ~${fr < 10 ? fmt(fr) : fmt(Math.round(fr / 10) * 10)} yr` : 'no fires'}</td></tr>`;
+}
+
+// the zoom's soil at pixel i (soils.py per pixel, PW-331), as the globe's hover card
+function soilRows(i) {
+  const L = state.L, lg = state.meta.legend;
+  if (!L.soil || L.water[i] !== 0 || !L.soil[i]) return '';
+  const t = (lg.soils?.types || [])[L.soil[i]] || {}, lo = L.loess[i], tex = (lg.soils?.textures || [])[L.soil_texture[i]];
+  const also = [];
+  if (L.peat_depth[i] > 0) also.push(`peat ${fmt(L.peat_depth[i], 1)} m`);
+  if (L.permafrost[i] > 0) also.push(`${(lg.soils?.permafrost || [])[L.permafrost[i]]} permafrost`);
+  if (lo > 0.05 && lo < 1) also.push(`loess ${fmt(lo, 1)} m`);
+  return `<tr><td>soil</td><td>${t.name || '?'} <span class="muted">(${t.wrb} / ${t.usda})</span>${lo >= 1 ? ` on loess ${fmt(lo)} m` : `, ${tex}`}<br>
+    ${fmt(L.soil_depth[i], 1)} m deep, fertility ${fmt(L.soil_fertility[i], 1)}, holds ${fmt(L.soil_water[i])} mm<br>
+    ${fmt(L.soil_carbon[i])} kg C/m&sup2;, ${(lg.soils?.drainage || [])[L.soil_drainage[i]]} drained${also.length ? '<br>' + also.join(', ') : ''}</td></tr>`;
 }
 
 let drag = null;
