@@ -9,7 +9,8 @@ pipeline (world.finish: climate, rivers, lakes, biomes) at dT = 0 and
 Earth's tilt, with erosion off so the real valleys and mountains are kept,
 and with the height of each cell's river from HydroSHEDS
 (earth_data.earth_outlets) as the floor of the valley it runs in, so a
-river through a gorge narrower than a cell is no dam (PW-236).
+river through a gorge narrower than a cell is no dam, and with the closed
+basins HydroSHEDS has (earth_data.earth_closed: no river leaves them) (PW-236).
 So the model layers (temperature, precipitation, climate, biome) are what
 the model makes of the real Earth, as in tools/earth_check.py.
 
@@ -53,7 +54,7 @@ from planet import surface as SF  # noqa: E402
 from planet import vegetation  # noqa: E402
 from planet import world as W  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
-from tools.earth_data import earth_clouds, earth_on_grid, earth_outlets  # noqa: E402
+from tools.earth_data import earth_closed, earth_clouds, earth_on_grid, earth_outlets  # noqa: E402
 
 NAME = "Earth (today, ETOPO1) — model vs observed"
 TILT = 23.44
@@ -106,7 +107,8 @@ def build(level: int = 6) -> dict:
                          "obs_sunshine": "CRU CL 2.0 sunshine duration (New et al. 2002), 1961-90, land"},
             "global_temp_c": 14.5, "sea_level_m": 0.0}
     world = W.finish(grid, elev, extra, meta, erosion=0.0, dT=0.0, tilt=TILT, params={"earth": True},
-                     t0=t0, ice=ice, outlet=earth_outlets(grid))
+                     t0=t0, ice=ice, outlet=earth_outlets(grid),
+                     closed=earth_closed(grid))
     world["meta"]["generated_in_s"] = round(time.time() - t0, 1)
     return world
 

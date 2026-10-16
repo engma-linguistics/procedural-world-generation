@@ -501,7 +501,7 @@ def earth_clouds(grid) -> dict:
 # river-conditioned outlet heights (the Earth world's lakes, PW-236)
 # --------------------------------------------------------------------------
 HYDROSHEDS_URL = "https://data.hydrosheds.org/file/hydrosheds-v1-{0}/hyd_glo_{0}_30s.zip"
-OUTLET_CACHE_VERSION = 1
+OUTLET_CACHE_VERSION = 3
 
 
 def _tiff(path: Path) -> tuple[np.ndarray, tuple[float, float, float], float | None]:
@@ -634,8 +634,8 @@ def _down(dirs, p, nx):
 @njit(cache=True)
 def _accumulate_dirs(dirs, nx):
     """Upstream pixels of each pixel (itself included) along the flow
-    directions, and whether its water ends inland (in a sink, dir 0, with
-    no sea pixel (255) next to it) rather than in the sea."""
+    directions, and the inland sink its water ends in (a dir-0 pixel not
+    joined through others to the sea, 255), -1 for the sea."""
     n = dirs.shape[0]
     indeg = np.zeros(n, np.uint8)
     for p in range(n):
@@ -707,15 +707,15 @@ def _accumulate_dirs(dirs, nx):
             if indeg[d] == 0:
                 order[k] = d
                 k += 1
-    inland = np.zeros(n, np.bool_)
+    sink = np.full(n, -1, np.int32)
     for t in range(k - 1, -1, -1):
         p = order[t]
         d = _down(dirs, p, nx)
         if d >= 0:
-            inland[p] = inland[d]
-        else:
-            inland[p] = dirs[p] == 0 and not coast[p]
-    return acc, inland
+            sink[p] = sink[d]
+        elif dirs[p] == 0 and not coast[p]:
+            sink[p] = p
+    return acc, sink
 
 
 @njit(cache=True)
@@ -764,7 +764,7 @@ def _main_stem_heights(dirs, acc, dem, cell, nx, ncell, nodata):
             out[c] = low
         elif dem[p] != nodata:
             out[c] = dem[p]  # a cell whose river rises inside it: its source
-    return out
+    return out, top
 
 
 def _outlet_build(grid) -> np.ndarray:
@@ -788,11 +788,23 @@ def _outlet_build(grid) -> np.ndarray:
         if m.any():
             la = np.full(m.sum(), north - px * (y + 0.5))
             cell[y * nx:(y + 1) * nx][m] = grid.locate(_unit(la, lon[m]))
-    acc, inland = _accumulate_dirs(dirs, nx)
-    out = _main_stem_heights(dirs, acc, dem, cell, nx, grid.n, np.int16(nodata))
+    acc, sink = _accumulate_dirs(dirs, nx)
+    out, top = _main_stem_heights(dirs, acc, dem, cell, nx, grid.n, np.int16(nodata))
     m = cell >= 0
-    share = np.bincount(cell[m], inland[m], grid.n) / np.maximum(np.bincount(cell[m], minlength=grid.n), 1)
-    return {"river": out, "inland": share}
+    share = np.bincount(cell[m], sink[m] >= 0, grid.n) / np.maximum(np.bincount(cell[m], minlength=grid.n), 1)
+    # each cell's closed basin: the sink most of its inland pixels end in
+    m &= sink >= 0
+    key, cnt = np.unique(cell[m].astype(np.int64) * (ny * nx) + sink[m], return_counts=True)
+    c, sk = np.divmod(key, ny * nx)
+    o = np.lexsort((-cnt, c))
+    c, sk = c[o], sk[o]
+    first = np.r_[True, c[1:] != c[:-1]]
+    basin = np.full(grid.n, -1, np.int64)
+    basin[c[first]] = sk[first]
+    # (not where the cell's main river reaches the sea: the lower Murray
+    # crosses the Mallee, whose own ground drains to sinks)
+    basin[(top >= 0) & (sink[np.maximum(top, 0)] < 0)] = -1
+    return {"river": out, "inland": share, "basin": basin}
 
 
 def hydrosheds_rivers(grid) -> dict:
@@ -806,17 +818,28 @@ def hydrosheds_rivers(grid) -> dict:
               river doesn't run uphill, so a gorge too narrow for the DEM
               doesn't dam it). NaN where no pixel (south of 56 S).
       inland  share of the cell's pixels whose water ends inland (in a
-              closed basin) rather than in the sea.
+              closed basin) rather than in the sea
+      basin   the closed basin most of those end in (its sink pixel), -1
+              where none or where the cell's main river reaches the sea
     Cached as data/earth/hydrosheds_L{level}.npz."""
     f = DATA / f"hydrosheds_L{grid.level}.npz"
     if f.exists():
         z = np.load(f)
         if int(z["version"]) == OUTLET_CACHE_VERSION and len(z["river"]) == grid.n:
-            return {k: z[k].astype(float) for k in ("river", "inland")}
+            return {k: z[k] for k in ("river", "inland", "basin")}
     out = _outlet_build(grid)
     DATA.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(f, version=OUTLET_CACHE_VERSION, **{k: v.astype(np.float32) for k, v in out.items()})
+    np.savez_compressed(f, version=OUTLET_CACHE_VERSION, **out)
     return out
+
+
+def earth_closed(grid) -> np.ndarray:
+    """Each land cell's closed basin, -1 where none: where HydroSHEDS
+    drains at least half of the cell inland and its main river too, the
+    basin (sink) most of it ends in (hydrosheds_rivers). hydrology.rivers_and_lakes keeps each one
+    closed (its `closed`)."""
+    h = hydrosheds_rivers(grid)
+    return np.where((h["inland"] >= 0.5) & (earth_on_grid(grid)["elev"] > 0), h["basin"], -1)  # (basin -1: open)
 
 
 def earth_outlets(grid) -> np.ndarray:
@@ -827,18 +850,13 @@ def earth_outlets(grid) -> np.ndarray:
     (the Lena below Yakutia, the Amur, the Danube's Iron Gates, the
     Yangtze's Three Gorges, the Columbia); the river itself runs at its own
     height. The DEM has lakes at their surface, so a real lake's outlet
-    stands at its level and its basin keeps its water. None in or next to
-    a cell that drains mostly inland in HydroSHEDS: a closed basin's rim is
-    a divide inside a cell, which the river on its far side doesn't lower.
+    stands at its level and its basin keeps its water. None in the closed
+    basins (earth_closed): their hollows are kept, and they keep their
+    water whatever their neighbours' rivers do (walled off).
     (ETOPO1 can't give this, even at its full 1': filled, it still dams the
     Iron Gates at 250 m where the Danube runs at ~65.)"""
     h = hydrosheds_rivers(grid)
-    closed = h["inland"] >= 0.5
-    near = closed.copy()
-    a, b = grid.edges[:, 0], grid.edges[:, 1]
-    near[a[closed[b]]] = True
-    near[b[closed[a]]] = True
-    return np.where((earth_on_grid(grid)["elev"] > 0) & ~near, h["river"], np.nan)
+    return np.where((earth_on_grid(grid)["elev"] > 0) & (earth_closed(grid) < 0), h["river"], np.nan)
 
 
 # --------------------------------------------------------------------------

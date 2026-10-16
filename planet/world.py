@@ -60,7 +60,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
            veg: dict | None = None, orbit_dt: np.ndarray | None = None,
-           outlet: np.ndarray | None = None) -> dict:
+           outlet: np.ndarray | None = None, closed: np.ndarray | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
@@ -70,8 +70,9 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
     for the meta). orbit_dt: an orbit's monthly temperature anomaly
-    (climate.compute's; a finished time-zoom frame). outlet: river heights
-    from finer data (hydrology.lakes'; the Earth world's)."""
+    (climate.compute's; a finished time-zoom frame). outlet, closed: river heights
+    and closed basins from finer data (hydrology.rivers_and_lakes'; the
+    Earth world's)."""
     t0 = t0 or time.time()
     veg = veg or {}
     c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
@@ -87,7 +88,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     c = climate.compute(grid, elev, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
-    flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet)
+    flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed)
     sea = elev <= 0
     flood = _flood(grid, down, lk, c, sea)
     elev_m = np.round(elev).astype(int)
