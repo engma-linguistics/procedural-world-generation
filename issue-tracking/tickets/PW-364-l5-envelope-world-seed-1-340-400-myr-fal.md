@@ -32,5 +32,6 @@ reshuffles the history). Then PW-338 can land.
 - [ ] PW-338's patch merged with the envelope tests green, without loosening the band
 
 ## Updates
+- 2026-10-16: Icehouse lane: depth is geography (continents over both poles at ~1.1 km, old ocean, drift dip -4.7 C; fixed point at dT -4 -576 m / 16%, -223 m without the carried sheet air). The 60 Myr spell at warm dT was lag: one ice pass per climate update (~20 updates to settle). Fixed on the branch: ice_sheets settles within the step with isostasy in its passes (PW-364), plus PW-365's orbit mix (Earth dT 0: 2.53% steady) and PW-360 C. Cold peaks deepen and end sooner (seed 11 same trajectory: -346 vs -160 m at 2.3-5 C). PW-338's patch applied: test_envelopes green, bands unchanged (seed 1 arid 23.0%, a chaotic re-roll; window draft). Final health --quick: deepest -219 m, none below -250. docs/review/audit/icehouse-depth.md.
 - 2026-10-16: Status todo -> in-progress. Run-lane agent started (icehouse depth vs global temperature).
 - 2026-10-16: Created from inbox draft draft-envelope-l5-icehouse-dry.md (found by tectonics-night).
