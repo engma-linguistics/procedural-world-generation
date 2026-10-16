@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as Look from './zoom3d_look.js';
 import { riverCourses, Flight } from './zoom3d_fly.js';
+import { quadSplits, meshHeight, chaikin, hugChaikin, riverNet } from './zoom3d_mesh.js';
 
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
@@ -29,20 +30,6 @@ const VOLC_PIN = { active: '#ff7a55', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 // a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
 const riverPx = (q, mul = 1) => mul * Math.min(1.4, Math.max(0.2, 0.2 + 0.25 * Math.log10(Math.max(q, QMIN) / QMIN)));
-// Chaikin-smoothed polyline [[x, y, ...], ...] (ends kept; the extra values follow the nearer end)
-function chaikin(p, n = 2) {
-  for (let it = 0; it < n && p.length > 2; it++) {
-    const o = [p[0]];
-    for (let j = 0; j < p.length - 1; j++) {
-      const a = p[j], b = p[j + 1];
-      o.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1], ...a.slice(2)],
-        [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1], ...b.slice(2)]);
-    }
-    o.push(p[p.length - 1]);
-    p = o;
-  }
-  return p;
-}
 // white water: streaks down the fall (v runs downstream), more opaque in the middle
 function streaks() {
   const cv = document.createElement('canvas'), W = 64, H = 256;
@@ -77,6 +64,8 @@ class Tile {
     for (let i = 0; i < h.length; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
     this.lo = lo; this.hi = hi;
     this.flow();
+    // each quad's diagonal: along a river where one crosses it (zoom3d_mesh.js, PW-375)
+    this.split = quadSplits(h, this.rec, this.L.discharge, this.nx, this.ny);
   }
   // pixel centre (r, c) -> scene x, z
   x(c) { return this.x0 + (c + 0.5 - this.nx / 2) * this.res; }
@@ -88,59 +77,17 @@ class Tile {
     const [r, c] = this.rc(x, z), ri = Math.round(r), ci = Math.round(c);
     return ri >= 0 && ci >= 0 && ri < this.ny && ci < this.nx ? [ri, ci] : null;
   }
-  // ground height (m), bilinear between pixel centres, as the full-detail mesh draws it
+  // ground height (m) on the full-detail mesh's triangles
   height(x, z) {
-    const [r, c] = this.rc(x, z), nx = this.nx, ny = this.ny, h = this.L.elevation;
-    const r0 = Math.min(Math.max(Math.floor(r), 0), ny - 2), c0 = Math.min(Math.max(Math.floor(c), 0), nx - 2);
-    const fr = Math.min(Math.max(r - r0, 0), 1), fc = Math.min(Math.max(c - c0, 0), 1), i = r0 * nx + c0;
-    return (h[i] * (1 - fc) + h[i + 1] * fc) * (1 - fr) + (h[i + nx] * (1 - fc) + h[i + nx + 1] * fc) * fr;
+    const [r, c] = this.rc(x, z);
+    return meshHeight(this.L.elevation, this.split, this.nx, this.ny, r, c);
   }
   // water surface (m): lakes at their level, the sea at 0, else the ground
   ws(i) { const L = this.L; return L.water[i] === 2 ? L.elevation[i] + L.lake_depth[i] : L.water[i] === 1 ? 0 : L.elevation[i]; }
 
-  // Each river (and lake) pixel's downstream neighbour (the zoom stores discharge, not
-  // its D8 receivers): the steepest drop in water surface among neighbours
-  // that carry at least as much water (or are lake or sea), else the one
-  // with the most water. Then the river lines: runs of river pixels between
-  // heads, confluences and the water they end in.
+  // the rivers: each river pixel's downstream neighbour, and the river lines (zoom3d_mesh.js)
   flow() {
-    const { nx, ny, res, L } = this, n = nx * ny, q = L.discharge, water = L.water, area = L.drainage_area, ice = L.ice;
-    const minArea = 500 * Math.max(res / 2, 1);
-    const ws = new Float32Array(n);
-    for (let i = 0; i < n; i++) ws[i] = this.ws(i);
-    const rec = new Int32Array(n).fill(-1), isR = new Uint8Array(n);
-    for (let i = 0; i < n; i++) {
-      // (lake pixels too: a fall's reach runs on through its plunge pool)
-      if (water[i] === 1 || !(q[i] >= QMIN)) continue;
-      if (water[i] === 0 && area[i] >= minArea && !(ice[i] > 0)) isR[i] = 1;
-      const r = (i / nx) | 0, c = i - r * nx;
-      let best = -1, bs = 0, alt = -1, aq = -1;
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        if (!dr && !dc) continue;
-        const rr = r + dr, cc = c + dc;
-        if (rr < 0 || cc < 0 || rr >= ny || cc >= nx) continue;
-        const j = rr * nx + cc;
-        if (water[j] === 0 && q[j] < q[i]) continue;
-        const s = (ws[i] - ws[j]) / (dr && dc ? 1.4142 : 1);
-        if (s > bs) { bs = s; best = j; }
-        if (q[j] > aq) { aq = q[j]; alt = j; }
-      }
-      rec[i] = best >= 0 ? best : alt;
-    }
-    const ndon = new Uint8Array(n);
-    for (let i = 0; i < n; i++) if (isR[i] && rec[i] >= 0 && isR[rec[i]]) ndon[rec[i]]++;
-    const lines = [];
-    for (let s = 0; s < n; s++) {
-      if (!isR[s] || ndon[s] === 1) continue;
-      const pts = [s];
-      let p = rec[s], k = 0;
-      while (p >= 0 && k++ < 4 * (nx + ny)) {
-        pts.push(p);
-        if (!isR[p] || ndon[p] !== 1) break;
-        p = rec[p];
-      }
-      if (pts.length > 1) lines.push(pts);
-    }
+    const { rec, lines, ws } = riverNet(this.L, this.nx, this.ny, this.res, QMIN);
     this.rec = rec; this.lines = lines; this.wsA = ws;
   }
 
@@ -159,9 +106,18 @@ class Tile {
     let k = 0;
     for (let a = 0; a < H - 1; a++) for (let b = 0; b < W - 1; b++) {
       const v = a * W + b;
-      // split each quad along the diagonal that follows the ground better
-      const d1 = Math.abs(pos[3 * v + 1] - pos[3 * (v + W + 1) + 1]), d2 = Math.abs(pos[3 * (v + 1) + 1] - pos[3 * (v + W) + 1]);
-      if (d1 <= d2) { idx.set([v, v + W, v + W + 1, v, v + W + 1, v + 1], k); }
+      // split each quad along a river crossing it, else the diagonal that follows the ground
+      // better (this.split; on a coarser mesh: along the river pixels at two opposite corners)
+      let ae;
+      if (step === 1) ae = this.split[rs[a] * (nx - 1) + cs[b]];
+      else {
+        const pa = rs[a] * nx + cs[b], pb = rs[a] * nx + cs[b + 1], pd = rs[a + 1] * nx + cs[b], pe = rs[a + 1] * nx + cs[b + 1];
+        const R = (i) => L.discharge[i] >= QMIN && L.water[i] !== 1;
+        if (R(pa) && R(pe) && !R(pb) && !R(pd)) ae = 1;
+        else if (R(pb) && R(pd) && !R(pa) && !R(pe)) ae = 0;
+        else ae = Math.abs(h[pa] - h[pe]) <= Math.abs(h[pb] - h[pd]) ? 1 : 0;
+      }
+      if (ae) { idx.set([v, v + W, v + W + 1, v, v + W + 1, v + 1], k); }
       else { idx.set([v, v + W, v + 1, v + 1, v + W, v + W + 1], k); }
       k += 6;
     }
@@ -244,7 +200,7 @@ class Tile {
       const a = r * nx + c, b = a + 1, d = a + nx, e = d + 1;
       if (water[a] !== 2 && water[b] !== 2 && water[d] !== 2 && water[e] !== 2) continue;
       // (the terrain's diagonal)
-      if (Math.abs(h[a] - h[e]) <= Math.abs(h[b] - h[d])) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
+      if (this.split[r * (nx - 1) + c]) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
       else idx.push(V(a), V(d), V(b), V(b), V(d), V(e));
     }
     const g = new THREE.BufferGeometry();
@@ -303,12 +259,14 @@ class Tile {
   // the river lines in canvas pixels: Chaikin-smoothed polylines [[x, y, q], ...] (ends kept)
   strokes() {
     if (this._strokes) return this._strokes;
-    const { nx, L, S } = this, q = L.discharge;
+    const { nx, ny, L, S } = this, q = L.discharge;
     const P = (i) => { const r = (i / nx) | 0; return [(i - r * nx + 0.5) * S, (r + 0.5) * S]; };
+    // (held on the valley floor where smoothing would cut a corner up its side: hugChaikin)
+    const H = (x, y) => meshHeight(L.elevation, this.split, nx, ny, y / S - 0.5, x / S - 0.5);
     return (this._strokes = this.lines.map((pts) => {
       const p = pts.map((i) => [...P(i), q[i] || 0]);
       if (L.water[pts[pts.length - 1]] !== 0 && p.length > 1) p[p.length - 1][2] = p[p.length - 2][2];
-      return chaikin(p);
+      return hugChaikin(p, H);
     }));
   }
   // the colour texture: the layer's nx x ny colours, scaled up, with rivers
@@ -361,7 +319,8 @@ class Tile {
     for (const f of falls) {
       if (!f.path || f.path.length < 2) continue;
       const q = L.discharge[f.path[0]] || f.discharge_m3s, hw = riverPx(q, widthMul) * this.res * 0.6;
-      const p = chaikin(f.path.map((i) => [this.x(i % nx), this.z((i / nx) | 0), this.wsA[i]]), 3);
+      const p = hugChaikin(f.path.map((i) => [this.x(i % nx), this.z((i / nx) | 0), this.wsA[i]]),
+        (x, z) => this.height(x, z), 3);
       let v = 0;
       const base = pos.length / 3;
       p.forEach(([x, z, ws], j) => {
