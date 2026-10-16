@@ -2,7 +2,7 @@
 id: PW-292
 title: Parallel loops on small grids are launch-bound (sia_flow sub-steps, coarse blurs, _smooth at L6)
 type: task
-status: todo
+status: in-progress
 parent: PW-247
 subsystem: infra
 effort: s
@@ -46,4 +46,5 @@ Still launch-bound:
 - [ ] measure _smooth/_relax_along/_rain per level and thread count; cap where it helps
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Created from inbox draft draft-small-parallel-loops-launch-bound.md (found by worktree-agent-abb4e9e7307244dd3 (PW-256/257)).
