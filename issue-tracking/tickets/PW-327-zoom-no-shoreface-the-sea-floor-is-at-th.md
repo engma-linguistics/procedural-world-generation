@@ -1,4 +1,5 @@
 ---
+id: PW-327
 title: "Zoom: no shoreface; the sea floor is at the coarse cell's depth a pixel off the shore (no shallows for seagrass, reefs, beaches)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: coastal-life
 blocked_by: []
 relates: [PW-188, PW-097]
 refs: [planet/zoom.py, planet/zoom_coastal.py, "run:a1d3b9@900Myr(22.13,-25.66)"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -18,3 +21,6 @@ In a zoom of run a1d3b9 @ 900 Myr (`planet finish a1d3b9 --at 900`, then a 1000 
 Fix in the zoom's coastline/sea-floor pass: blend the sea pixels near the shore toward a Dean profile from the coastline distance (inside_distance on the sea), keeping each coarse cell's mean depth (deepen the outer part slightly). Coordinate with the zoom.py owners (PW-125 creep/landscape pass), and with PW-097 (beaches vs cliffs: a steep rocky shore keeps deep water close in).
 - [ ] sea pixels within ~5 km of a sandy or muddy shore shoal to < 10 m; cell means kept
 - [ ] re-check that region: seagrass and reef pixels close to the world's shares
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-shoreface-shallows.md (found by coastal-life).
