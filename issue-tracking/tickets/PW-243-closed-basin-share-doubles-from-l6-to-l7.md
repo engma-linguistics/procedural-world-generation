@@ -31,4 +31,5 @@ whether the hollow rules can be made level-consistent (e.g. MIN_DEPTH or the
 outlet channel scaled with cell size), then retune `flexure` once.
 
 ## Updates
+- 2026-10-15: Surface fixes (PW-282 level-consistent hillslope, PW-280, PW-239): L7/L6 inland-drainage ratio 2.3 -> ~2.0 (L6 10.3 -> 7.9%, L7 23.5 -> 16.3%). Remaining: incision per level (new ticket).
 - 2026-10-15: Created from inbox draft draft-closed-basins-level-gap.md (found by tect2).

@@ -122,9 +122,11 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     run_id = S.new_id()
     out = S.runs_dir() / run_id
 
+    writer = S.CheckpointWriter()
+
     def keep(s: Simulation):
         if ck_stride and s.step_no and s.step_no % ck_stride == 0:
-            S.save_checkpoint(out, s)
+            S.save_checkpoint(out, s, writer)
         if s.step_no % stride:
             return
         snap = s.snapshot()
@@ -141,10 +143,12 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
 
     out.mkdir(parents=True, exist_ok=True)
     try:
-        keep(sim)
-        sim.run(myr, keep)
-        layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS}, {k: S.run_spec(k) for k in RUN_LAYERS})
-        S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
+        with writer:
+            keep(sim)
+            sim.run(myr, keep)
+            layers = S.write_layers(out, {k: np.stack(data[k]) for k in RUN_LAYERS},
+                                    {k: S.run_spec(k) for k in RUN_LAYERS})
+            S.write_volcanoes(out, VOLCANO_COLUMNS, vframes)
     except BaseException:
         shutil.rmtree(out, ignore_errors=True)
         raise
@@ -257,7 +261,7 @@ def report(run_dir: Path) -> Path:
         out.append(f"  {int(k):>5}  {100 * sel.mean():>5.1f}  {100 * cont[sel].mean():>12.0f}  "
                    f"{speed:>17.1f}  {compass}")
     path = run_dir / "run.txt"
-    path.write_text("\n".join(out) + "\n")
+    S.write_atomic(path, "\n".join(out) + "\n")
     return path
 
 

@@ -2,7 +2,7 @@
 id: PW-240
 title: "Run ice: after PW-190 still -300..-350 m in the coldest eras of seeds 2 and 11"
 type: task
-status: todo
+status: done
 parent: PW-244
 subsystem: climate
 effort: m
@@ -10,7 +10,7 @@ impact: med
 found_by: icemb
 blocked_by: []
 relates: [PW-190, PW-235]
-refs: [planet/icemass.py, planet/tectonics/earth.py]
+refs: [planet/icemass.py, planet/tectonics/earth.py, docs/review/health/2026-10-15/report.md, tools/health.py]
 created: 2026-10-15
 updated: 2026-10-15
 ---
@@ -45,5 +45,31 @@ Options:
 Lean: C (smaller drift sd, ~2 C) plus B once Earth's inception has its own fix.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Post-audit 1 Gyr sweep (docs/review/after-audit-2026-10-15/health): deepest ice sea level -9..-48 m on all 11 seeds (was -96..-384); no frames below -150 m. Too-deep cold eras are fixed; the opposite problem (runs barely glaciate) is a new ticket.
+- 2026-10-15: After all audit fixes (climate merge 7f9cc82, measured by the climate agent on the merged code): health --quick deepest ice sea level s11 -71, s42 -15, s3199 -12 m; no frames below -150 m. Confirm in the post-batch 1 Gyr sweep.
+- 2026-10-15: Ice fixes (PW-274..277, merged 20684ed): health --quick worst ice sea level s11 -360 -> -247, s42 -304 -> -124, s2 -174 -> -115 m; only s11 below -150 m (8.7% of frames). Climate fixes pending merge also move it.
+- 2026-10-15: Merged inbox draft draft-health-pw240-cold-eras.md ("PW-240 update: health sweep cold eras: L6 seed 11 -384 m ice sea level (1 C) when its supercontinent drops to 4 plates; seeds 2, 77, 3199 to -205..-231 m", found by health-sweep).
+  Update for PW-240. PW-246 health sweep (2026-10-15, main 6926583, default params, 1 Gyr, keyframes
+  every 4 Myr; ice sea level = -0.9 x land ice volume / ocean area, as `earth.update_climate`):
+  | seed, level | worst ice sea level | keyframes < -150 m / < -250 m (of 238) | coldest global T |
+  |---|---|---|---|
+  | 11 L6 | -384 m @ 188 Myr | 17 / 13 | 1.0 C @ 180 |
+  | 77 L6 | -231 m @ 444 | 14 / 0 | 6.1 C @ 148 |
+  | 2 L6 | -223 m @ 608 | 21 / 0 | 3.5 C @ 496 |
+  | 3199 L6 | -205 m @ 480 | 17 / 0 | 9.5 C @ 504 |
+  | 505 L6 | -154 m @ 596 | 3 / 0 | 10.9 C |
+  | 1, 21, 42 L6 | -96..-131 m | 0 | 7.3-9.0 C |
+  | 3199 / 21 / 11 L7 | -108 / -125 / -137 m | 0 | 9.4 / 9.2 / 5.4 C |
+  So L7 stays inside the -150 m goal on all three seeds, and 4 of 8 L6 seeds dip below it for 3-9% of
+  the run; only seed 11 at L6 passes -250 m. Its cold era (164-216 Myr) is a supercontinent (largest
+  landmass 32-33% of the surface) whose plate count falls to 4-5 while the CO2 index drops to -1.1..-1.2
+  (the arc/ridge source collapsing with the plates): T 8.7 C at 144 Myr -> 2.2 C at 176 -> 1.0 C at 184,
+  ice 1.6% -> 13% of the surface, ice sea level -23 -> -384 m, recovering only slowly (-320 m at 216 Myr)
+  as plates return. Total sea level (with the ocean-basin term) reaches -548 m there. The L7 run of
+  seed 11 (9068cb, kept) has the same era colder than average but milder (5.4 C at 180 Myr, -137 m),
+  with 8+ plates throughout. The L6 runs were deleted; they reproduce from seed + 6926583.
+  - [ ] decide whether a few-plate supercontinent may glaciate this far (Earth's Cryogenian did, so a
+    rare snowball-ish era may be acceptable) or whether the CO2 source should floor (volcanism not tied
+    only to spreading and arcs)
 - 2026-10-15: Status needs-decision -> todo. Coordinator decision (north star): follow the agent's lean: narrow the run's climate drift (~2 C sd) first, then lower the local snow damping once Earth's ice inception has its own fix (PW-033). For after the machine move.
 - 2026-10-15: Created from inbox draft draft-run-ice-cold-eras-still-large.md (found by icemb).

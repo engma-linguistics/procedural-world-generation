@@ -304,6 +304,21 @@ def test_shield_has_domes_and_scoured_lakes(shield_pair):
     assert 0.03 < wet < 0.3, wet  # lake-dotted, not drowned
 
 
+def test_shield_domes_are_round_topped(shield_pair):
+    """The domes stand whole and round-topped above the plain: not capped
+    into tilted flat-topped slabs ringed by a cliff (a moat look in the
+    relief shading), nor cut through by the flow paths across them (PW-168)."""
+    from numpy.lib.stride_tricks import sliding_window_view as win
+    _, warm, _ = shield_pair
+    h = warm["layers"]["elevation"].astype(float)
+    lo = np.percentile(win(np.pad(h, 10, mode="edge"), (21, 21)), 20, axis=(2, 3))
+    lap = 0.25 * (h[2:, 1:-1] + h[:-2, 1:-1] + h[1:-1, 2:] + h[1:-1, :-2]) - h[1:-1, 1:-1]
+    on = ((h - lo) > 60)[1:-1, 1:-1] & (warm["layers"]["water"] == 0)[1:-1, 1:-1]
+    assert on.sum() > 1000
+    assert np.mean(lap[on] < -1.0) > 0.6  # convex (0.44 when capped)
+    assert np.mean(np.abs(lap[on]) < 0.5) < 0.25  # few flat (0.48 when capped)
+
+
 def test_build_frames_reads_the_strike():
     """A patch's strike runs across the crust's thickness gradient (and along
     a narrow class's band of cells), the same whichever zoom asks."""

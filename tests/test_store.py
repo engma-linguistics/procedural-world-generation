@@ -2,6 +2,8 @@
 simulation checkpoints, in a temporary data root."""
 
 import json
+import pickle
+import zlib
 
 import numpy as np
 import pytest
@@ -186,6 +188,43 @@ def test_simulate_checkpoints_and_replay(data_root, sim4_60):
     # a world sliced through a checkpoint still matches the stored keyframe
     world = json.loads(T.slice_world(out, 40.0).read_text())
     assert world["meta"]["replay_matches_keyframe"] is True
+
+
+def test_shrunk_checkpoint_resumes_bit_identical(sim4_60):
+    """A checkpoint zeroes the crust of the plate cells nothing reads
+    (S.shrink_state: most of them); a run resumed from it is still exactly
+    the straight run, and the plates' owned crust is untouched (PW-131)."""
+    states = {}
+    sim = Simulation(sim4_60.grid, 1, Params(flora_end=60.0), 2.0)
+    sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (10, 30) else None)
+    for t, st in states.items():
+        pl = st["plates"]
+        before = [a[pl.owned].copy() for a in pl.crust()]
+        S.shrink_state(st)
+        assert all(np.array_equal(a[pl.owned], b) for a, b in zip(pl.crust(), before))
+        assert (pl.thick[~pl.owned] == 0).mean() > 0.8  # (most cells are stale copies)
+        r = Simulation.from_state(sim.grid, 1, Params(flora_end=60.0), 2.0, st)
+        r.run(60)
+        assert sim_digest(r) == sim_digest(sim4_60), t
+
+
+def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
+    """A checkpoint zeroes the geological record of plate cells that own no
+    crust, but not of cells the world view samples: a plate's slot can be
+    the view's without being owned, and the view (and its subsidence) reads
+    its record (PW-291: zeroing them moved a replayed checkpoint's elevation
+    by up to ~1 km, failing slices at checkpoint times)."""
+    st = sim4_60.state()
+    pl, owner = st["plates"], st["owner"]
+    cells = np.arange(0, owner.size, 7)
+    pl.owned[owner[cells], pl.idx[owner[cells], cells]] = False  # make some of the view's slots unowned
+    live = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, st)
+    path = tmp_path / "c.ckpt"
+    S._write_checkpoint(path, st)
+    back = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0,
+                                 pickle.loads(zlib.decompress(path.read_bytes())))
+    assert np.array_equal(back.w_rec, live.w_rec) and np.array_equal(back.w_lith, live.w_lith)
+    assert np.array_equal(back.dyn, live.dyn) and np.array_equal(back.w_elev, live.w_elev)
 
 
 def test_run_layout(data_root):

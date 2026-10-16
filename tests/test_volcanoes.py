@@ -78,3 +78,29 @@ def test_zoom_cones_are_separate_islands():
     assert (lagoon < 0).all() and (lagoon > -80).all()
     assert np.median(z[np.abs(r - 34) < 1]) < -800  # the reef front drops off
     assert f["list"][0]["form"] == "atoll"
+
+
+def test_continental_vent_is_a_caldera_on_a_lava_plain():
+    """A hotspot vent on a continent (floor 800 m) is drawn as a broad lava
+    plain with a caldera (rim above a sunk floor) rather than a shield,
+    holding about the shield's volume (PW-118)."""
+    fr = zoom.Frame(0.0, 0.0)
+    n, res = 200, 1.0
+    xs = (np.arange(n) + 0.5 - n / 2) * res
+    X, Y = np.meshgrid(xs, -xs)
+    px, py = X.ravel(), Y.ravel()
+    Pk = np.ascontiguousarray(fr.to_sphere(px, py) * R_KM)
+    H, r, f0 = 2400.0, 25.0, 800.0
+    w = _flat_sea_world([[0.0, 0.0, V.VENT, 0.5, 1, f0 + H, f0, H, r, 1000, 0, 0.0]])
+    f = ZV.fields(w, fr, px, py, res, 55.0, Pk, 1, n * res)
+    z = np.where(np.isfinite(f["bump"]), f["bump"], f0) - f0
+    rho = np.hypot(px, py)
+    assert f["list"][0]["form"] == "active caldera"
+    assert z.max() < 0.5 * H  # no shield summit
+    rim = z[(rho > 0.8 * r) & (rho < 1.2 * r)].max()
+    plain = np.median(z[(rho > 1.3 * r) & (rho < 1.45 * r)])
+    assert rim > plain > 0.15 * H  # a raised rim on a lava plain ...
+    assert z[rho < 0.5 * r].min() < plain  # ... round a sunk caldera floor
+    assert np.percentile(z[(rho > 1.25 * r) & (rho < 1.45 * r)], 90) - plain < 0.1 * plain  # the plain is flat
+    vol = z.sum() * res * res / 1000.0  # km^3
+    assert 0.75 < vol / (np.pi * r * r * H / 1000.0) < 1.3, vol  # (the lobed outline spreads it a little, as a shield)

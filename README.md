@@ -8,6 +8,7 @@ browser viewer.
 
 ```sh
 uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
+uv run python -m planet simulate --seed 1 2 3 4 --level 6 --jobs 4   # several seeds at once, one process each
 uv run python -m planet list                       # runs, worlds and zooms with their ids
 uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, vegetation) at 300 Myr
@@ -17,9 +18,23 @@ uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages 
 uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
 uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
 uv run python -m planet satellite <world-or-zoom-id>  # add / redo the true-colour satellite view in place
-uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/
-uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms
+uv run python -m planet serve                      # opens http://127.0.0.1:8765/viewer/ (--jobs J: jobs at once, default 4)
+uv run python -m planet highlights <run-id> --at 400 --zoom 5   # its most interesting places, + 5 zooms (built at once)
 ```
+
+Several things at once run as separate processes (`planet/parallel.py`): a
+run is mostly serial Python/numpy work, so threads inside one process barely
+help (one L6 run: 46 s at 4 numba threads, 40 s at 16 or 48), while separate
+processes scale. `--jobs J` (simulate with several seeds, `highlights
+--zoom`, `serve`, `tools/scorecard.py`) sets how many worker processes run
+at once (default: a quarter of the cores, at most the number of jobs; the
+server 4), and `--threads T` the numba threads of each (default: the cores
+shared out, at most 8). `--jobs 1` runs them one after the other in the one
+process. A process on its own uses `NUMBA_NUM_THREADS=16` (or the core count
+if lower) and one BLAS thread unless you set those variables: numpy's
+OpenBLAS otherwise starts a thread per core and spins them, ~3.5x the CPU
+for no gain. numba's threading layer is `tbb` when the TBB library loads,
+else `workqueue`. Outputs don't depend on any of this (same bytes).
 
 In the viewer, pick a run from the dropdown and press play (or space;
 arrow keys step frames). Click an event in the list to jump to it. The panel
@@ -142,10 +157,10 @@ delete the old one).
 ## Tests and calibration
 
 ```sh
-uv run pytest                    # invariants + envelope tests (~30 s)
+uv run pytest                    # invariants + envelope tests (~5 min; 4 numba threads, tests/conftest.py)
 uv run pytest -m "not slow"      # invariants only (~6 s)
 uv run python tools/earth_check.py --png earth.png   # climate, rivers and lakes on real Earth vs observations
-uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds) appended to docs/scorecard.jsonl
+uv run python tools/scorecard.py # slow scores (Earth + 1 Gyr worlds, at once: --jobs) appended to docs/scorecard.jsonl
 PYTHONPATH=. uv run python tools/veg_check.py --png veg.png   # vegetation on real Earth vs potential vegetation and published numbers
 ```
 
@@ -214,7 +229,7 @@ returns the whole state (what a checkpoint must save).
 
 Runs are deterministic: `slice` replays from the nearest saved state at or
 before the moment asked for (`simulate` saves the full simulation state
-every 100 Myr, `--checkpoint-every`; ~25-30 MB each at level 6, ~110-140 MB at level 7) and checks
+every 100 Myr, `--checkpoint-every`; ~15 MB each at level 6, ~60 MB at level 7: the plates' stale crust is zeroed, store.shrink_state) and checks
 itself against the stored keyframe. Each run records the code that made it
 (`meta.code`: git commit, dirty flag, hash of `planet/**/*.py`). If the model has
 changed since, the replay is a different planet: `slice` warns, and when the
