@@ -10,7 +10,7 @@ impact: med
 found_by: basins-lakes
 blocked_by: []
 relates: [PW-300, PW-054]
-refs: [planet/climate.py, planet/hydrology.py, docs/review/audit/basins-lakes.md]
+refs: [planet/climate.py, planet/hydrology.py, docs/review/audit/basins-lakes.md, docs/review/health-rain-before/, docs/review/health-rain-after/, planet/zoom.py, planet/world.py]
 created: 2026-10-16
 updated: 2026-10-16
 ---
@@ -42,6 +42,24 @@ sweep's giant-lake frames. The zoom's lake balance uses the same `open_water` x 
 - [ ] Earth's closed basins stay closed in earth_check
 
 ## Updates
+- 2026-10-16: Merged inbox draft draft-zoom-lakes-penman.md ("The zoom's lakes still evaporate open_water x the land's PET, the world's lakes Penman's (PW-358)", found by pw015-rain).
+  PW-358 (PW-015 branch) made the climate's `lake_evap` Penman's open-water evaporation
+  (`climate.open_water_evap`, on the clouds and the air's humidity), which the run and world lakes use.
+  `zoom.py` (~line 1906) still rebuilds a lake's loss as `TUNE["open_water"] x pet - evaporation` from the
+  world's layers, so a zoom's lakes evaporate the old Oudin x 1.2 (humid tropics ~25% more, deserts ~35%
+  less than the world's). Store the climate's `lake_evap` as a world layer (world.py) and use it in the zoom;
+  then `TUNE["open_water"]` can go.
+  - [ ] zoom lakes use the world's lake_evap; open_water removed
+- 2026-10-16: Merged inbox draft draft-pw300-after-pw358.md ("PW-300 after PW-358's Penman lakes: giant-lake frames unchanged (13.6 -> 14.7% of L6 frames)", found by pw015-rain).
+  For PW-300 (probably `--merge-into PW-300`). PW-358 (PW-015 branch, with stage 2's rain) replaced the lakes'
+  Oudin x 1.2 by Penman's open water on the climate's cloud and humidity. On Earth L6 humid lakes evaporate
+  less (Amazon floodplain 2007 -> 1487 mm, Lake Victoria 1663 -> 1217) and desert ones more (Nasser 1696 ->
+  2629, Caspian 855 -> 1417); Earth's closed basins stay closed (earth_check). But on generated planets
+  (health --quick, 8 L6 seeds x 500 Myr, frames after 50 Myr) the share of frames with a lake over 1 Mkm2 is
+  unchanged within seed noise: 13.6% -> 14.7% (per seed 16 6 14 9 10 18 22 14 -> 29 14 21 9 20 5 12 6); lakes
+  0.55 -> 0.48% of land, inland drainage 4.6 -> 6.7%. The same sweep's rain changed too (arid 29 -> 36% of
+  land), so the giant lakes' basins got drier as their humid lakes' evaporation fell. Re-check which
+  climates the giant lakes now sit in before trying more (basins-lakes write-up's replay scripts).
 - 2026-10-16: Status todo -> in-progress. With PW-015.
 - 2026-10-16: Coordinator: should use the same physics as PW-015's decision 1 (bulk/humidity-aware evaporation for open water); land with or before PW-015.
 - 2026-10-16: Created from inbox draft draft-open-water-evaporation-clouds.md (found by basins-lakes).

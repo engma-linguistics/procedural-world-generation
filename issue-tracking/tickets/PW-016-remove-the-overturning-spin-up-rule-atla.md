@@ -10,9 +10,9 @@ impact: high
 found_by: ocean
 blocked_by: [PW-015]
 relates: []
-refs: [planet/ocean.py]
+refs: [planet/ocean.py, tools/moisture_budget.py, docs/review/audit/pw015-rain.md]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,4 +26,18 @@ Also in scope: Earth gives ~11 Sv of North Atlantic sinking against an observed 
 there's no lasting off-state (after ~1 Sv hosing it recovers within 2–3 climate updates; see PW-018).
 
 ## Updates
+- 2026-10-16: Merged inbox draft draft-pw016-spin-up-status.md ("PW-016 after PW-015 stages 1-2: the spin-up rule is already inert on Earth, but the Atlantic's catchments are still too wet (E-P-R +0.20 Sv at L6)", found by pw015-rain).
+  For PW-016 (probably `--merge-into PW-016`). Tried at the end of the PW-015 lane:
+  - Earth L6 and L7 give the same overturning with `moc_spin` 6 (default), 1 (no spin-up), 30 or 0.5: 14.6
+    Sv, 13.7 in the Nordic seas, none in the Labrador sea or the North Pacific (L7 14.5 / 13.8); so on main
+    too (13.8 / 11.3). Since PW-360 the solver iterates to a steady state, which forgets how it started.
+  - On generated worlds' terrain it still picks between steady states on some: world bd9a7a 29.6 -> 26.9 Sv
+    without it (its 66N 116E site moves to 62N 84E); 592f2a, 3f6a76, fac2af within 0.3 Sv.
+  - The proposal's condition (section 7: Atlantic E-P-R >= +0.25 Sv and >= 100 mm/yr above the Pacific, at
+    L6 and L7) isn't met: L6 +0.20 Sv, -16 mm/yr (main +0.06, -26). E - P is right-signed and large (Atlantic
+    1.60 Sv vs NCEP E - GPCP P 1.13), but the Atlantic's rivers return 1.40 Sv (Dai & Trenberth ~0.55): the
+    Amazon (3755 mm vs 2335), Congo and Sahel catchments are too wet. L7's +0.71 Sv is the budget tool's
+    routing, not the model (draft-moisture-budget-l7-drainage).
+  So the rule can go only after the tropical land dries (PW-015 stage 3+, behind PW-352); or decide that a
+  rule which only selects between steady states is acceptable.
 - 2026-10-14: Created from the rain/overturning epic. Merged: Known issue 'The North Atlantic's on-state is found by a spin-up rule' and the Earth AMOC 11 vs 17 Sv figure (ocean), morning decision 3(a).

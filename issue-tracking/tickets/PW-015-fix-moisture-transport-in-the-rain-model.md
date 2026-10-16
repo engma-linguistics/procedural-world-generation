@@ -10,7 +10,7 @@ impact: high
 found_by: daniel
 blocked_by: [PW-014]
 relates: [PW-019]
-refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md]
+refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/, docs/review/audit/pw015-handoff.md]
 created: 2026-10-14
 updated: 2026-10-16
 ---
@@ -32,6 +32,56 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Merged inbox draft draft-winter-coast-eddy-flux.md ("Winter east coasts: a storm-eddy flux of boundary-layer vapour can't make winter rain without the storms' own lifting, and storminess is high in continental interiors", found by pw015-rain).
+  In PW-015 option A, the boundary layer has its own storm-eddy flux, down the gradient of its own vapour:
+  `storm_eddies` with `q_eddy`, K = `storm_k_bl` x B, as a velocity -K grad(Q)/Q, with Q the first phase's
+  boundary-layer vapour over 800 km. Measured on Earth L6 (box diagnostic, Oct-Mar):
+  - **SE USA:** the mean boundary-layer wind is offshore (2.8 E, -1.9 N m/s). The eddy velocity is +1.07 m/s
+    onshore (the saturation closure gave 0.64). q_b/qs rises 0.23 -> 0.29, but the winter rain stays ~20 mm/yr
+    (obs ~1300 rate). At that humidity the large-scale rain gate (rh/rh_c)^3 is ~0.05. Annual: SE USA +27 mm,
+    Pampas +104 (with bl_m 1 km).
+  - **Why the Gobi got wetter:** not the free troposphere and not the winter high. The extra Gobi rain falls in
+    **summer** (Apr-Sep 668 -> 814 mm/yr rate; Oct-Mar unchanged, ~25). Storminess B there is 0.70 in summer and
+    1.08 in winter, about the same as the SE USA's 1.01. That is because `storm_track` grows storms on any
+    low-level temperature contrast, including the contrasts inside a continent. The flux also wets the Gobi
+    with only the boundary layer carrying it.
+- 2026-10-16: Merged inbox draft draft-subtropics-dry-after-bulk-evaporation.md ("PW-015 stage 2 (bulk evaporation + eddies) dries the humid subtropics and generated planets; one cause fixed on the branch, two left (the one-layer column, the winter eddy flux)", found by pw015-rain).
+  PW-015 stage 2 (storm eddies + the bulk sea evaporation, commit ecffcb9) and its revision (326e482, on the
+  branch, not for merging) were measured on Earth L6/L7 and on 8 L6 seeds (docs/review/audit/pw015-rain.md
+  section 9).
+  
+  **Found and fixed on the branch:** in the cold half the vapour rode the continents' shallow cold outflow off the
+  east coasts at full strength. The revision (`rain_phases`) lets the vapour ride only part of a shallow
+  land-sea circulation: 0.53 over a winter high or a dry heat low, deeper over a wet low.
+  - SE USA 277 -> 757 mm (obs 1328), Sahel 2733 -> 1975, Australia interior 823 -> 463, Gobi 556 -> 196.
+  - Koppen 72.2 / 36.2% (main 71.0 / 32.7), log-rain corr 0.685.
+  
+  **Left:**
+  1. **The winter east coasts** (SE USA Oct-Mar PW 4.6 vs NCEP 17.4 mm, Pampas and E Australia likewise): the
+     westerlies themselves blow offshore there. The storms' eddy flux on the saturation gradient (storm_k 1.3e6
+     x B x q_k grad T over 800 km) gives only 0.3-1.2 m/s onshore; the real Gulf moisture comes in with the
+     cyclones. An eddy closure on the actual vapour's gradient helped a little (SE USA +60 mm, Pampas +120) but
+     wetted the Gobi.
+  2. **The one-layer column under the bulk formula:**
+     - The subtropical seas' columns sit at q/qs 0.5-0.6 (PW 20-30N 26 vs 33 mm), so their own rain is low:
+       20-40 deg sea P ~300-450 vs GPCP 700-1160, sea E 2056 vs 1689 at 20-30N.
+     - So the global mean's share goes to land: land P 1153 vs 791, land 50-60N 1175 vs 584, Amazon 3597 vs 2335.
+     - The ITCZ's convergent columns are near saturation, so they evaporate little (0-10 deg 1216 vs 1407).
+     - Real surface air over the sea stays at ~0.8 of saturation under a dry free troposphere, which one layer
+       can't represent (proposal decision 1, option C).
+  3. **Generated planets** (health --quick): arid 29 -> 38% of land, tree cover 27 -> 21%, NPP 334 -> 304, deeper
+     icehouses (seed 2 -491 m of ice sea level, past PW-240's -250 m).
+  
+  Options:
+  - (A) A boundary layer under the column: the bulk formula against a boundary-layer humidity kept by
+    entrainment from the column (two humidities per cell; the rain's humidity gates read the layer they act on).
+    This is decision 1's option C done properly. Cost: one more field in the kernel.
+  - (B) Keep one layer and go back to the instant refill (main's) with the storm eddies only: transport
+    -0.77 / +0.53 Sv, small gains (proposal section 4).
+  - (C) Park stage 2: merge stage 1 alone and revisit after PW-352/PW-026 (the air model's summers and winter
+    maritime air).
+  
+  Lean A, as its own small proposal: every downstream stage of PW-015 rests on the sea's evaporation.
 - 2026-10-16: Owner 2026-10-16: if this option-A batch misses the bar, step back rather than keep chasing: consider cruder approximations, partial measures or a relaxed bar. Don't chase Earth perfection.
 - 2026-10-16: Stage 1 measured alone: regresses Earth (L7 arid 24.5->17.9%, land rain 784->1152 mm vs 791 obs, exact Koppen -2.9), not merged. Stage-2 east-coast fix 326e482 helps summer but winter coasts and sea-column saturation still wrong. Next: one bounded attempt at a boundary layer under the column (option A), riding the surface wind, with an explicit success bar; if it misses, park PW-015 with the branch kept and move the run lane to PW-380.
 - 2026-10-16: Status todo -> in-progress. Run-lane agent started: implementing the approved proposal stage by stage (with PW-358).
