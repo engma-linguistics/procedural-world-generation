@@ -2,7 +2,7 @@
 id: PW-274
 title: finish.orbit_dt treats ice on a bed below sea level as sea (land = bed > 0, not surface > 0)
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: timezoom
 effort: xs
@@ -24,5 +24,6 @@ only cells under thick ice.
 Fix: `land = st["elevation"] + st["ice"] > 0`.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the ice fix branch (merged 20684ed); docs/review/audit/fixes-ice.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-ice-veg-finish-orbit-land.md (found by audit-ice-veg).

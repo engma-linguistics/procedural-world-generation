@@ -2,7 +2,7 @@
 id: PW-275
 title: "Ice: a new cap starts under a stricter rule in the run (no snow damping) than in the time zoom (LOCAL floor)"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: timezoom
 effort: s
@@ -46,6 +46,7 @@ Options:
 Lean: B, together with PW-240's plan to lower LOCAL once Earth's inception has its own fix.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the ice fix branch (merged 20684ed); docs/review/audit/fixes-ice.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-ice-veg-new-cap-rule-run-vs-timezoom.md (found by audit-ice-veg).

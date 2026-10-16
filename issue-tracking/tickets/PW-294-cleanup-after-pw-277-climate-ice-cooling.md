@@ -1,4 +1,5 @@
 ---
+id: PW-294
 title: "Cleanup after PW-277: climate.ice_cooling / TUNE['ice_cooling'] only feed icemass's 2 C"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: ice-fix
 blocked_by: []
 relates: [PW-277, PW-112]
 refs: [planet/climate.py, planet/icemass.py, planet/timezoom.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ is still used by zoom_vegetation (vegetation's ice share) only.
 Tidy (climate agent's file, so not done on the ice branch): drop `ice_cooling()`, give icemass its own
 `ICE_COOL = 2.0` C (and TZParams the same default), remove `TUNE['ice_cooling']`, and fix the docstrings that still
 call it "10 C colder". No output change.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-ice-cooling-cleanup.md (found by ice-fix).
