@@ -1,4 +1,5 @@
 ---
+id: PW-401
 title: River flights through a fine tile follow the parent's course, high above it
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: fine-zoom-3d
 blocked_by: []
 relates: [PW-129, PW-072]
 refs: [viewer/zoom3d_fly.js, viewer/zoom3d.js]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -21,3 +24,6 @@ the fine tile's resolution. But the course is still the parent's river pixels
 far above, and up to a parent pixel off, the fine river. Inside a fine tile,
 follow its own river line (Tile.lines / rec) and drop the clearance to its
 resolution, blending at the tile's edge.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-tile-river-flight.md (found by fine-zoom-3d).

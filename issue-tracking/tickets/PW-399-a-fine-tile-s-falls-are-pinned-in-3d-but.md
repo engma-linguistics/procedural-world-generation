@@ -1,4 +1,5 @@
 ---
+id: PW-399
 title: A fine tile's falls are pinned in 3D but not in the panel's waterfall list
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: fine-zoom-3d
 blocked_by: []
 relates: [PW-129, PW-072]
 refs: [viewer/zoom.html, viewer/zoom3d.js]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ list and `&fall=N` still list only the opened zoom's falls (clicking one under
 a fine tile flies to the right place, but with the parent's coarse fall data in
 the card). List the fine tiles' falls too (grouped under their zoom), and let
 `&fall=` take "<zoom>:<index>".
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-tile-falls-list.md (found by fine-zoom-3d).

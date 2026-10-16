@@ -1,4 +1,5 @@
 ---
+id: PW-400
 title: Instanced trees on 25-50 m fine tiles in the zoom 3D view (canopy displacement isn't enough)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: fine-zoom-3d
 blocked_by: []
 relates: [PW-388, PW-129, PW-072]
 refs: [viewer/zoom3d.js, "zoom b3c260", docs/review/fine-zoom-3d/canopy_25m_low_on.png, docs/review/fine-zoom-3d/canopy_25m_low_off.png]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -28,3 +31,6 @@ displaced canopy. ~100k-500k instances at 25 m in view; cheap on this GPU with
 instancing and a distance cut-off.
 - [ ] trees within ~3 km of the camera on tiles <= 50 m/px, culled beyond
 - [ ] a low-camera screenshot at 25 m that reads as forest
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fine-tile-instanced-trees.md (found by fine-zoom-3d).
