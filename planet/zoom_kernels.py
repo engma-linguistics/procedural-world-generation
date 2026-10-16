@@ -572,9 +572,12 @@ def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_
     valleys as a tongue w0 x (flux / f0)^w_exp km wide (at most f_max
     m3/yr enters a tongue, the rest is lost at the zone's margin), losing
     bal x its width x the step's length on each pixel, until nothing is left
-    or it has run max_km (from where its main feeder left the zone). stop:
-    pixels the ice can't enter (sea, lakes). Returns (flux m3/yr through
-    each pixel, 0 off the ice; width km, res in the zone; how far below the
+    or it has run max_km below the zone: from where its main feeder left the
+    zone, or from the last pixel the zone itself drains into (a tongue
+    running along the zone's margin, fed by it pixel after pixel, is the
+    zone's edge, its excess lost along that margin; PW-357). stop: pixels
+    the ice can't enter (sea, lakes). Returns (flux m3/yr through each
+    pixel, 0 off the ice; width km, res in the zone; how far below the
     zone, km)."""
     n = rec.shape[0]
     fin = np.zeros(n)
@@ -583,6 +586,7 @@ def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_
     wid = np.zeros(n)
     run = np.zeros(n)
     run_in = np.zeros(n)
+    edge_in = np.full(n, np.inf)  # (a zone pixel drains into it: this far below the zone)
     for t in range(order.shape[0] - 1, -1, -1):
         i = order[t]
         if stop[i]:
@@ -593,12 +597,13 @@ def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_
             wid[i] = res
             run[i] = 0.0
         else:
-            if f <= 0.0 or run_in[i] > max_km:
+            r_i = min(run_in[i], edge_in[i])
+            if f <= 0.0 or r_i > max_km:
                 continue
             f = min(f, f_max)
             w = w0 * (f / f0) ** w_exp
             wid[i] = w
-            run[i] = run_in[i]
+            run[i] = r_i
             f = f + bal[i] * w * res * 1e6
         flux[i] = max(f, 1e-9)  # (the snout: melted away here)
         d = rec[i]
@@ -606,6 +611,8 @@ def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_
             continue
         step = res * (1.4142135623730951 if (d % nx != i % nx and d // nx != i // nx) else 1.0)
         fin[d] += f
+        if acc[i]:
+            edge_in[d] = min(edge_in[d], step)
         if f > fbest[d]:  # (its run is the biggest feeder's)
             fbest[d] = f
             run_in[d] = run[i] + step

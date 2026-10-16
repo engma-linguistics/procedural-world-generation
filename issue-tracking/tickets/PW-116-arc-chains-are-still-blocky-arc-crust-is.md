@@ -2,7 +2,7 @@
 id: PW-116
 title: Arc chains are still blocky arc-crust islands with a few cones; real arcs have a volcano every ~50-70 km
 type: task
-status: in-progress
+status: done
 parent: PW-001
 subsystem: zoom
 effort: m
@@ -33,5 +33,6 @@ What to try:
 - [ ] Re-check the shelf case: a line of volcanic islands and peaks along the arc, not blocks.
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done: a cone every ~60 km between neighbouring active arc volcanoes, seated on the ground taking their volume off nearby land (arc zoom 109 -> 166 cones; drops unchanged). Shelf arc-crust blocks: new ticket.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-14: Created from inbox draft draft-arc-volcano-density.md (found by volcanoes).
