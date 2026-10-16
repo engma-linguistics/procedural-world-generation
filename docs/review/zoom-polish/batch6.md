@@ -75,3 +75,20 @@ Tests: `test_delta_plain_and_distributaries` (no perched distributary pixels on 
 *The arc zoom's south-eastern tidal delta (4 km pixels, seed 2; 0-200 m ramp, rivers >= 100 m^3/s in blue), before |
 after: the eastern branches ran on a light 80-90 m ridge above the plain, held at the falls reach's foot; now they
 run on the plain.*
+
+## PW-362: arc crust on a shelf (re-checked; still blocky, not changed)
+
+Active arc volcanoes over a shelf (floor -400..0 m, >= 3 sea neighbours) are rare on the current showcase worlds:
+one on 592f2a and bd9a7a, two on fac2af (the glacial lowstand, sea level -128 m). Zoom -1.467,36.085 of fac2af
+(500 km @ 1 km, seed 1): the volcanoes, the run's and PW-116's minor cones, are clean cones and small islands. The
+blocks are forearc cells without cones, between the chain and the trench: cell 52473 (+194 m mean, among -400 to
+-600 m shelf cells, the trench's -4,800 m beyond) is a 1,900 km^2 mesa, p10 / p50 / p90 382 / 1,315 / 1,631 m, flat
+at ~1,600-1,650 m with ~1,500 m cliffs within 2-3 px of its coast. Each coarse cell's mean is kept while its sea
+pixels take the interpolated shelf and trench floor, so a +194 m cell's land third must stand ~1,500 m, lifted
+evenly. Options left on the ticket: A) put a mixed cell's correction on its land by distance from the coast (a
+dome; every coast moves), B) keep part of such a cell's mean in its sea (a shallower floor round the island
+instead of the trench's depth), C) the ticket's arc ridge (doesn't apply: no cones in those cells). Lean B.
+
+![shelf](pw362_shelf.png)
+*Zoom -1.467,36.085 of fac2af (1 km pixels, 360 x 240 km shown; 0-800 m ramp, brown above): cones and small
+volcanic islands along the arc (top), the forearc mesa (left, flat at ~1,600 m) and a 100 km island (right).*
