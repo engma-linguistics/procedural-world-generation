@@ -2,7 +2,7 @@
 id: PW-317
 title: Opening an L7 run downloads ~330 MB and keeps every visited layer's frames in memory
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: viewer
 effort: m
@@ -31,4 +31,5 @@ the wire (int8/int16 grids compress well) via a Content-Encoding the handler add
 Lean: B (simple, frees memory) plus C if the first open matters. Check frame times stay ~25-30 ms.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (viewer follow-up).
 - 2026-10-15: Created from inbox draft draft-viewer-run-download-size.md (found by viewer-replay-speed).
