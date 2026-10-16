@@ -2,7 +2,7 @@
 id: PW-384
 title: Remake the kept zooms so the 3D view has their rivers (receiver layer)
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: xs
@@ -25,4 +25,5 @@ re-make via highlights `--zoom`), ~10-60 s each.
 - [ ] every kept zoom has `layers/receiver.bin`
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent remaking kept zooms in the main checkout.
 - 2026-10-16: Created from inbox draft draft-remake-zooms-for-receiver-layer.md (found by small-fixes-batch).
