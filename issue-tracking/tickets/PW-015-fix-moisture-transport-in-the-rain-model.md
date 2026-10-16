@@ -2,7 +2,7 @@
 id: PW-015
 title: Fix moisture transport in the rain model
 type: story
-status: todo
+status: in-progress
 parent: PW-013
 subsystem: climate
 effort: l
@@ -32,6 +32,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started: implementing the approved proposal stage by stage (with PW-358).
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: approved; implement as the coordinator sees fit (all six leans). Queued as the next run-physics lane after PW-344/328, together with PW-358 (open-water evaporation, same bulk/humidity physics).
 - 2026-10-16: Status todo -> needs-decision. Proposal ready for owner review: docs/proposals/moisture_transport.md (6 decisions with leans). Prototype on local branch pw015-prototype (tools/proto_pw015/): L6/L7 agree within ~2%, Koppen exact 32.7 -> 36%, Sahara 70 mm, Gobi 85, Australia 291; humid subtropics dry out (SE USA 294), wet tropics wetter.
 - 2026-10-16: Redesign proposed for owner review: docs/proposals/moisture_transport.md (physical-time conservative kernel, storm eddies, bulk sea evaporation, humid-column showers with an air-mass trigger, shallow heat lows; prototype numbers §4, steps with acceptance §8, decisions §9; prototype on local branch pw015-prototype).

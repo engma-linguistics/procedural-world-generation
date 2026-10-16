@@ -2,7 +2,7 @@
 id: PW-358
 title: Open-water evaporation ignores clouds and humidity, so wet basins stay closed and hold giant lakes
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -42,5 +42,6 @@ sweep's giant-lake frames. The zoom's lake balance uses the same `open_water` x 
 - [ ] Earth's closed basins stay closed in earth_check
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. With PW-015.
 - 2026-10-16: Coordinator: should use the same physics as PW-015's decision 1 (bulk/humidity-aware evaporation for open water); land with or before PW-015.
 - 2026-10-16: Created from inbox draft draft-open-water-evaporation-clouds.md (found by basins-lakes).
