@@ -325,11 +325,30 @@ const relief3d = () => $('relief3d').checked;
 const seaFloorOn = () => relief3d() && $('seaFloor').checked;
 let seaShell = null;
 
-const RIBBON_MATS = new Map();  // (the rivers' ribbon materials, ribbonMat: their resolution follows the window)
+const RIBBON_MATS = new Map();  // (the overlays' line materials, ribbonMat: their resolution follows the window)
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   RIBBON_MATS.forEach((m) => m.resolution.set(innerWidth, innerHeight));
+}
+// The camera's near and far planes hug what can be in view (PW-408). The depth buffer's
+// precision goes with the near plane (a step of ~d^2 / (near * 2^bits) at distance d): with
+// near fixed at 0.01, a 16-bit depth buffer (which some browsers and displays give) steps
+// ~0.014 globe radii at the default distance, more than the rivers' lift over the 3D relief
+// (~0.002-0.003) and about the marks' (~0.012), so rivers, and less often volcano and hotspot
+// marks, z-fought the ground and shimmered (with near 256x smaller headless, as 24 -> 16 bits
+// would: 20-50% of the river pixels lost and changing as the camera moves). Nothing drawn is
+// closer than half the camera's height over the highest thing on the globe (radius 1.35: the
+// axis, event markers, the relief at 200x) or the map (its relief plus 0.15).
+function fitClip() {
+  const ext = topo?.maxR || 1;
+  let h, far;
+  if (state.mode === 'globe') { const r = camera.position.length(); h = r - Math.max(1.35, ext * 1.1); far = r + 2; }
+  else { h = camera.position.z - (relief3d() ? 2 / Math.PI * Math.max(ext - 1, 0) : 0) - 0.15; far = camera.position.distanceTo(controls.target) + 6; }
+  const near = Math.max(0.01, 0.5 * h);
+  if (Math.abs(near - camera.near) > 1e-4 * near || Math.abs(far - camera.far) > 1e-3) {
+    camera.near = near; camera.far = far; camera.updateProjectionMatrix();
+  }
 }
 // Map is 4 x 2 units (lon/90, lat/90); back the camera off until all of it fits.
 function fitMap() {
@@ -834,6 +853,7 @@ function paint() {
   if (writePos) {
     // the bounding sphere (for picking and culling), without a pass over every vertex:
     // the globe is centred, of radius the highest point; the map is 4 x 2 (plus the overlap)
+    topo.maxR = maxR;  // (the highest point: fitClip)
     if (globe) mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), maxR);
     else mesh.geometry.computeBoundingSphere();
     topo.posKey = posKey;
@@ -946,9 +966,32 @@ function llPos(lat, lon, r, mapLift = 0.003) {
   return [lon / 90, lat / 90, mapLift + (relief3d() && V.R ? mapRelief(nearestCell(lat, lon)) : 0)];
 }
 
-// Line materials are shared by colour and opacity and never disposed: overlays are rebuilt
-// every replay frame, and disposing the last material of a kind makes three.js throw away
-// its shader program and link it again on the next frame.
+// The rivers and the jet's core are ribbons of triangles a fixed number of screen pixels
+// wide (three's fat lines, LineSegments2): they read better than 1-pixel lines and are drawn
+// the same on every GPU. Materials are shared by colour, opacity and width and never
+// disposed: overlays are rebuilt every replay frame, and disposing the last material of a
+// kind makes three.js throw away its shader program and link it again on the next frame.
+// Their resolution (CSS pixels) follows the window (resize).
+function ribbonMat(color, opacity, width, vertexColors = false) {
+  const key = `${color}|${opacity}|${width}|${vertexColors}`;
+  if (!RIBBON_MATS.has(key)) {
+    const m = new LineMaterial({ color, linewidth: width, transparent: opacity < 1, opacity, vertexColors });
+    m.resolution.set(innerWidth, innerHeight);
+    m.userData.shared = true; RIBBON_MATS.set(key, m);
+  }
+  return RIBBON_MATS.get(key);
+}
+// pts: segment end points (x, y, z, x, y, z per segment); cols: a colour (r, g, b) per end point
+function ribbonObj(pts, color, opacity = 1, width = 1.5, cols = null) {
+  const g = new LineSegmentsGeometry();
+  if (pts.length) { g.setPositions(pts); if (cols) g.setColors(cols); }
+  const o = new LineSegments2(g, ribbonMat(cols ? 0xffffff : color, opacity, width, !!cols));
+  o.raycast = () => {};  // (hovering picks the ground)
+  return o;
+}
+function disposeObj(o) { o.geometry?.dispose(); o.material.map?.dispose(); if (!o.material.userData.shared) o.material.dispose(); }
+// The other overlays stay 1-pixel GL lines (the plate outlines alone are ~1 M segments; fitClip
+// keeps them off the ground too); their materials are shared the same way.
 const LINE_MATS = new Map();
 function lineMat(color, opacity) {
   const key = `${color}|${opacity}`;
@@ -958,28 +1001,6 @@ function lineMat(color, opacity) {
   }
   return LINE_MATS.get(key);
 }
-// The rivers as ribbons of triangles a fixed number of screen pixels wide (three's fat lines),
-// not 1-pixel GL lines (PW-408): the owner's browser drew the GL lines differently from frame
-// to frame with the camera and the ground still (solid, then dotted, then solid), on the
-// globe and the flat map alike, while the triangles round them stayed the same to the pixel.
-// Shared like LINE_MATS (RIBBON_MATS, by resize); their resolution (CSS pixels) follows the window.
-function ribbonMat(color, opacity, width) {
-  const key = `${color}|${opacity}|${width}`;
-  if (!RIBBON_MATS.has(key)) {
-    const m = new LineMaterial({ color, linewidth: width, transparent: opacity < 1, opacity });
-    m.resolution.set(innerWidth, innerHeight);
-    m.userData.shared = true; RIBBON_MATS.set(key, m);
-  }
-  return RIBBON_MATS.get(key);
-}
-function ribbonObj(pts, color, opacity = 1, width = 1.5) {
-  const g = new LineSegmentsGeometry();
-  if (pts.length) g.setPositions(pts);
-  const o = new LineSegments2(g, ribbonMat(color, opacity, width));
-  o.raycast = () => {};  // (hovering picks the ground)
-  return o;
-}
-function disposeObj(o) { o.geometry?.dispose(); o.material.map?.dispose(); if (!o.material.userData.shared) o.material.dispose(); }
 function lineObj(pts, color, opacity = 1) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -3524,7 +3545,7 @@ init().catch((err) => { $('infoText').textContent = 'Load failed: ' + err.messag
 window.planetViewer = {
   bench(frames = 30) {
     const gl = renderer.getContext(), px = new Uint8Array(4), out = {};
-    const draw = () => { controls.update(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
+    const draw = () => { controls.update(); fitClip(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
     if (V?.kind === 'run') {
       stop();
       const f0 = V.frame, nf = V.run.frames.length;
@@ -3556,6 +3577,7 @@ renderer.setAnimationLoop((now) => {
   }
   if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
   controls.update();
+  fitClip();
   renderer.render(scene, camera);
 });
 </script>
