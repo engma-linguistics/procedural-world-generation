@@ -2,7 +2,7 @@
 id: PW-310
 title: "Zoom: round sea holes cut into land near a polar hotspot chain"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -28,4 +28,5 @@ the coarse cells are land, or take the vent's floor from the current ground. Cel
 rms in that zoom is ~1,600 m, so something there fights the means.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-round-sea-holes-73n.md (found by zoom-polish).

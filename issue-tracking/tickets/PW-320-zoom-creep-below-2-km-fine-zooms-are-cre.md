@@ -39,4 +39,5 @@ Lean: A, it is the same physics as C above 2 km; but it changes every 1 km and 0
 wants a look at hillshades first.
 
 ## Updates
+- 2026-10-15: Zoom batch 2 agent preparing hillshade pairs (current vs one diffusivity) for the owner's call; no behaviour change merged.
 - 2026-10-15: Created from inbox draft draft-zoom-creep-below-2km.md (found by pw125).

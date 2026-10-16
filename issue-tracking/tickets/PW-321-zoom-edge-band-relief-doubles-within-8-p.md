@@ -2,7 +2,7 @@
 id: PW-321
 title: "Zoom edge band: relief doubles within 8 px of the region's edge"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -29,4 +29,5 @@ a few pixels wide.
 - [ ] edge-band 3x3 relief within ~20% of the inside on the three test sites
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-edge-band-relief.md (found by pw125).

@@ -2,7 +2,7 @@
 id: PW-319
 title: "Zoom: tributaries end in 400-1000 m one-link walls beside pinned rivers (C fit peaks there)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: m
@@ -37,4 +37,5 @@ the tiled reference's p99 step on the arc.
 - [ ] drops >= 100 m on the arc zoom well under 28, with no loss of designed lips
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-c-fit-steep-links-at-pinned-courses.md (found by pw125).
