@@ -158,3 +158,25 @@ ground heights and the camera ask the finest tile under a point (`Zoom3D.tileAt`
    is cheap to make first (the viewer can make both in one job).
 3. Falls in the fine zoom: always exactly the parent's heights (lean), or re-derived from the fine
    terrain (more emergent, but a fall could then differ from the one the parent listed)?
+
+## Owner decisions (2026-10-16)
+
+1. **Sizes.** The finest view is ~25 km across, small enough for one volcano, waterfall, bay or
+   reef. Build 500 px (25 km at 50 m/px) as the default and also try 1000 px (25 km at 25 m/px)
+   to see what it buys; a 50 km view (500 px at 100 m) is also wanted.
+2. **Progressive nesting, not from a world.** Fine zooms are made from an existing zoom, and
+   further in from a fine zoom: world -> zoom (0.5-4 km/px) -> fine (50 km at 100 m) -> finer
+   (25 km at 50 or 25 m). This replaces "a fine zoom of a fine zoom is not offered": each step is
+   at most ~10-20x in resolution, so the conditioning stays honest (a 25 km box straight from a
+   1 km/px zoom would invent almost everything from 25x25 parent pixels). The conditioning must
+   therefore work for parents from 4 km down to 100 m/px.
+3. **Fixed features keep the parent's values exactly**: fall heights (lip, face, plunge pool from
+   the parent's drop) and volcanoes (summit height, crater/caldera, vents) at every level.
+
+Cost at 1000 px: 4x the pixels, so ~30-40 s per build and ~70 MB on disk; ~2 M triangles in the
+3D view (fine on this GPU). River flights through fine tiles: nice to have, not required.
+
+**Trees.** At 50 m/px a pixel is a stand of trees and a canopy texture is right; at 25 m/px a
+pixel is one to three crowns and a low 3D camera will show a smeared canopy. That is the
+threshold where canopy height (forest 20-40 m tall vs the ground) and instanced tree sprites
+start to pay off. Not in this ticket; warn the owner before the 25 m tier ships if it looks flat.
