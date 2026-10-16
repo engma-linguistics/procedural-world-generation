@@ -2,7 +2,7 @@
 id: PW-368
 title: The run's climate drift (sd 3 C) makes the deep cold eras; PW-240's decision to narrow it (~2 C) was never applied
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: climate
 effort: xs
@@ -39,5 +39,6 @@ Lean: A for now (the cold eras' depth follows geography soundly after PW-364); B
 -300..-500 m icehouses too frequent in the viewer. A tuned parameter, so the owner's call.
 
 ## Updates
+- 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: parked as a someday task (climate_drift stays 3 C).
 - 2026-10-16: Coordinator: after PW-364 the deepest era is -219 m with no frame below -250 m, so lean A (leave climate_drift at 3 C) for now; tuned knob, so the owner's call. Revisit when looking at showcase runs.
 - 2026-10-16: Created from inbox draft draft-climate-drift-drives-cold-eras.md (found by icehouse-depth).

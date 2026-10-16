@@ -17,6 +17,9 @@
 // texture would be built per tile as the zoom's are.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as Look from './zoom3d_look.js';
+import { riverCourses, Flight } from './zoom3d_fly.js';
+import { quadSplits, meshHeight, chaikin, hugChaikin, riverNet } from './zoom3d_mesh.js';
 
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
@@ -27,20 +30,6 @@ const VOLC_PIN = { active: '#ff7a55', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 // a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
 const riverPx = (q, mul = 1) => mul * Math.min(1.4, Math.max(0.2, 0.2 + 0.25 * Math.log10(Math.max(q, QMIN) / QMIN)));
-// Chaikin-smoothed polyline [[x, y, ...], ...] (ends kept; the extra values follow the nearer end)
-function chaikin(p, n = 2) {
-  for (let it = 0; it < n && p.length > 2; it++) {
-    const o = [p[0]];
-    for (let j = 0; j < p.length - 1; j++) {
-      const a = p[j], b = p[j + 1];
-      o.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1], ...a.slice(2)],
-        [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1], ...b.slice(2)]);
-    }
-    o.push(p[p.length - 1]);
-    p = o;
-  }
-  return p;
-}
 // white water: streaks down the fall (v runs downstream), more opaque in the middle
 function streaks() {
   const cv = document.createElement('canvas'), W = 64, H = 256;
@@ -75,6 +64,8 @@ class Tile {
     for (let i = 0; i < h.length; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
     this.lo = lo; this.hi = hi;
     this.flow();
+    // each quad's diagonal: along a river where one crosses it (zoom3d_mesh.js, PW-375)
+    this.split = quadSplits(h, this.rec, this.L.discharge, this.nx, this.ny);
   }
   // pixel centre (r, c) -> scene x, z
   x(c) { return this.x0 + (c + 0.5 - this.nx / 2) * this.res; }
@@ -86,59 +77,17 @@ class Tile {
     const [r, c] = this.rc(x, z), ri = Math.round(r), ci = Math.round(c);
     return ri >= 0 && ci >= 0 && ri < this.ny && ci < this.nx ? [ri, ci] : null;
   }
-  // ground height (m), bilinear between pixel centres, as the full-detail mesh draws it
+  // ground height (m) on the full-detail mesh's triangles
   height(x, z) {
-    const [r, c] = this.rc(x, z), nx = this.nx, ny = this.ny, h = this.L.elevation;
-    const r0 = Math.min(Math.max(Math.floor(r), 0), ny - 2), c0 = Math.min(Math.max(Math.floor(c), 0), nx - 2);
-    const fr = Math.min(Math.max(r - r0, 0), 1), fc = Math.min(Math.max(c - c0, 0), 1), i = r0 * nx + c0;
-    return (h[i] * (1 - fc) + h[i + 1] * fc) * (1 - fr) + (h[i + nx] * (1 - fc) + h[i + nx + 1] * fc) * fr;
+    const [r, c] = this.rc(x, z);
+    return meshHeight(this.L.elevation, this.split, this.nx, this.ny, r, c);
   }
   // water surface (m): lakes at their level, the sea at 0, else the ground
   ws(i) { const L = this.L; return L.water[i] === 2 ? L.elevation[i] + L.lake_depth[i] : L.water[i] === 1 ? 0 : L.elevation[i]; }
 
-  // Each river (and lake) pixel's downstream neighbour (the zoom stores discharge, not
-  // its D8 receivers): the steepest drop in water surface among neighbours
-  // that carry at least as much water (or are lake or sea), else the one
-  // with the most water. Then the river lines: runs of river pixels between
-  // heads, confluences and the water they end in.
+  // the rivers: each river pixel's downstream neighbour, and the river lines (zoom3d_mesh.js)
   flow() {
-    const { nx, ny, res, L } = this, n = nx * ny, q = L.discharge, water = L.water, area = L.drainage_area, ice = L.ice;
-    const minArea = 500 * Math.max(res / 2, 1);
-    const ws = new Float32Array(n);
-    for (let i = 0; i < n; i++) ws[i] = this.ws(i);
-    const rec = new Int32Array(n).fill(-1), isR = new Uint8Array(n);
-    for (let i = 0; i < n; i++) {
-      // (lake pixels too: a fall's reach runs on through its plunge pool)
-      if (water[i] === 1 || !(q[i] >= QMIN)) continue;
-      if (water[i] === 0 && area[i] >= minArea && !(ice[i] > 0)) isR[i] = 1;
-      const r = (i / nx) | 0, c = i - r * nx;
-      let best = -1, bs = 0, alt = -1, aq = -1;
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        if (!dr && !dc) continue;
-        const rr = r + dr, cc = c + dc;
-        if (rr < 0 || cc < 0 || rr >= ny || cc >= nx) continue;
-        const j = rr * nx + cc;
-        if (water[j] === 0 && q[j] < q[i]) continue;
-        const s = (ws[i] - ws[j]) / (dr && dc ? 1.4142 : 1);
-        if (s > bs) { bs = s; best = j; }
-        if (q[j] > aq) { aq = q[j]; alt = j; }
-      }
-      rec[i] = best >= 0 ? best : alt;
-    }
-    const ndon = new Uint8Array(n);
-    for (let i = 0; i < n; i++) if (isR[i] && rec[i] >= 0 && isR[rec[i]]) ndon[rec[i]]++;
-    const lines = [];
-    for (let s = 0; s < n; s++) {
-      if (!isR[s] || ndon[s] === 1) continue;
-      const pts = [s];
-      let p = rec[s], k = 0;
-      while (p >= 0 && k++ < 4 * (nx + ny)) {
-        pts.push(p);
-        if (!isR[p] || ndon[p] !== 1) break;
-        p = rec[p];
-      }
-      if (pts.length > 1) lines.push(pts);
-    }
+    const { rec, lines, ws } = riverNet(this.L, this.nx, this.ny, this.res, QMIN);
     this.rec = rec; this.lines = lines; this.wsA = ws;
   }
 
@@ -157,9 +106,18 @@ class Tile {
     let k = 0;
     for (let a = 0; a < H - 1; a++) for (let b = 0; b < W - 1; b++) {
       const v = a * W + b;
-      // split each quad along the diagonal that follows the ground better
-      const d1 = Math.abs(pos[3 * v + 1] - pos[3 * (v + W + 1) + 1]), d2 = Math.abs(pos[3 * (v + 1) + 1] - pos[3 * (v + W) + 1]);
-      if (d1 <= d2) { idx.set([v, v + W, v + W + 1, v, v + W + 1, v + 1], k); }
+      // split each quad along a river crossing it, else the diagonal that follows the ground
+      // better (this.split; on a coarser mesh: along the river pixels at two opposite corners)
+      let ae;
+      if (step === 1) ae = this.split[rs[a] * (nx - 1) + cs[b]];
+      else {
+        const pa = rs[a] * nx + cs[b], pb = rs[a] * nx + cs[b + 1], pd = rs[a + 1] * nx + cs[b], pe = rs[a + 1] * nx + cs[b + 1];
+        const R = (i) => L.discharge[i] >= QMIN && L.water[i] !== 1;
+        if (R(pa) && R(pe) && !R(pb) && !R(pd)) ae = 1;
+        else if (R(pb) && R(pd) && !R(pa) && !R(pe)) ae = 0;
+        else ae = Math.abs(h[pa] - h[pe]) <= Math.abs(h[pb] - h[pd]) ? 1 : 0;
+      }
+      if (ae) { idx.set([v, v + W, v + W + 1, v, v + W + 1, v + 1], k); }
       else { idx.set([v, v + W, v + 1, v + 1, v + W, v + W + 1], k); }
       k += 6;
     }
@@ -242,7 +200,7 @@ class Tile {
       const a = r * nx + c, b = a + 1, d = a + nx, e = d + 1;
       if (water[a] !== 2 && water[b] !== 2 && water[d] !== 2 && water[e] !== 2) continue;
       // (the terrain's diagonal)
-      if (Math.abs(h[a] - h[e]) <= Math.abs(h[b] - h[d])) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
+      if (this.split[r * (nx - 1) + c]) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
       else idx.push(V(a), V(d), V(b), V(b), V(d), V(e));
     }
     const g = new THREE.BufferGeometry();
@@ -296,37 +254,62 @@ class Tile {
     return cv;
   }
 
+  // the texture's scale: canvas pixels per zoom pixel
+  get S() { return Math.max(1, Math.min(4, Math.floor(4096 / Math.max(this.nx, this.ny)))); }
+  // the river lines in canvas pixels: Chaikin-smoothed polylines [[x, y, q], ...] (ends kept)
+  strokes() {
+    if (this._strokes) return this._strokes;
+    const { nx, ny, L, S } = this, q = L.discharge;
+    const P = (i) => { const r = (i / nx) | 0; return [(i - r * nx + 0.5) * S, (r + 0.5) * S]; };
+    // (held on the valley floor where smoothing would cut a corner up its side: hugChaikin)
+    const H = (x, y) => meshHeight(L.elevation, this.split, nx, ny, y / S - 0.5, x / S - 0.5);
+    return (this._strokes = this.lines.map((pts) => {
+      const p = pts.map((i) => [...P(i), q[i] || 0]);
+      if (L.water[pts[pts.length - 1]] !== 0 && p.length > 1) p[p.length - 1][2] = p[p.length - 2][2];
+      return hugChaikin(p, H);
+    }));
+  }
   // the colour texture: the layer's nx x ny colours, scaled up, with rivers
   // (width by discharge, log scale)
   texture(colours, { smooth = true, rivers = true, widthMul = 1 } = {}) {
-    const { nx, ny, L } = this, q = L.discharge;
-    const S = Math.max(1, Math.min(4, Math.floor(4096 / Math.max(nx, ny))));
+    const { nx, ny, S } = this;
     const cv = document.createElement('canvas');
     cv.width = nx * S; cv.height = ny * S;
     const cx = cv.getContext('2d');
     cx.imageSmoothingEnabled = smooth;
     cx.drawImage(this.landColours(colours), 0, 0, cv.width, cv.height);
-    const P = (i) => { const r = (i / nx) | 0; return [(i - r * nx + 0.5) * S, (r + 0.5) * S]; };
     const wpx = (v) => riverPx(v, widthMul);
     cx.lineCap = cx.lineJoin = 'round';
-    const stroke = (pts, colour, extra = 0) => {
-      // Chaikin-smoothed polyline (ends kept), stroked in runs of one width
-      let p = pts.map((i) => [...P(i), q[i] || 0]);
-      if (L.water[pts[pts.length - 1]] !== 0 && p.length > 1) p[p.length - 1][2] = p[p.length - 2][2];
-      p = chaikin(p);
+    // each polyline stroked in runs of one width
+    const stroke = (p, colour) => {
       cx.strokeStyle = colour;
       let j = 0;
       while (j < p.length - 1) {
-        const w = Math.round(4 * (wpx(p[j][2]) * S + extra)) / 4;
+        const w = Math.round(4 * wpx(p[j][2]) * S) / 4;
         cx.lineWidth = w; cx.beginPath(); cx.moveTo(p[j][0], p[j][1]);
-        while (j < p.length - 1 && Math.round(4 * (wpx(p[j][2]) * S + extra)) / 4 === w) { j++; cx.lineTo(p[j][0], p[j][1]); }
+        while (j < p.length - 1 && Math.round(4 * wpx(p[j][2]) * S) / 4 === w) { j++; cx.lineTo(p[j][0], p[j][1]); }
         cx.stroke();
       }
     };
-    if (rivers) {
-      for (const pts of this.lines) stroke(pts, RIVER_RGB);
-    }
+    if (rivers) for (const p of this.strokes()) stroke(p, RIVER_RGB);
     return cv;
+  }
+  // the rivers' flow texture (zoom3d_look.js): the same strokes, each segment
+  // coloured by its direction (r east, g south, b on the river), for the shimmer
+  flowTexture(widthMul = 1) {
+    const { nx, ny, S } = this, cv = Look.flowCanvas(nx * S, ny * S), cx = cv.getContext('2d');
+    cx.lineCap = 'round';
+    for (const p of this.strokes()) {
+      for (let j = 0; j < p.length - 1; j++) {
+        const a = p[j], b = p[j + 1], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+        cx.strokeStyle = `rgb(${Math.round(128 + 127 * dx / l)},${Math.round(128 + 127 * dy / l)},255)`;
+        cx.lineWidth = Math.max(1, riverPx(a[2], widthMul) * S);
+        cx.beginPath(); cx.moveTo(a[0], a[1]); cx.lineTo(b[0], b[1]); cx.stroke();
+      }
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    return tex;
   }
 
   // white water down each fall's reach: a ribbon just above the ground, as wide
@@ -336,7 +319,8 @@ class Tile {
     for (const f of falls) {
       if (!f.path || f.path.length < 2) continue;
       const q = L.discharge[f.path[0]] || f.discharge_m3s, hw = riverPx(q, widthMul) * this.res * 0.6;
-      const p = chaikin(f.path.map((i) => [this.x(i % nx), this.z((i / nx) | 0), this.wsA[i]]), 3);
+      const p = hugChaikin(f.path.map((i) => [this.x(i % nx), this.z((i / nx) | 0), this.wsA[i]]),
+        (x, z) => this.height(x, z), 3);
       let v = 0;
       const base = pos.length / 3;
       p.forEach(([x, z, ws], j) => {
@@ -383,7 +367,9 @@ export class Zoom3D {
   // host: an element to fill; api: {hoverPixel(r, c), showCard(o, ev, pin), hideCard(), changed()}
   constructor(host, api) {
     this.host = host; this.api = api;
-    this.opts = { exag: 3, step: 1, shadows: true, facets: false, sunAz: 315, sunEl: 35, rivers: true, widthMul: 1 };
+    // fx: glaciers' and water's own look (zoom3d_look.js); motion: the water moves; haze: the far view hazes over
+    this.opts = { exag: 3, step: 1, shadows: true, facets: false, sunAz: 315, sunEl: 35, rivers: true, widthMul: 1,
+                  fx: true, motion: true, haze: true, flySpeed: 8 };
     const cv = document.createElement('canvas');
     cv.className = 'z3d-canvas';
     host.appendChild(cv);
@@ -397,7 +383,9 @@ export class Zoom3D {
     R.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(SKY);
-    this.scene.fog = new THREE.Fog(SKY, 1, 2);  // (a little haze far off: set from the camera's distance in tick)
+    this.scene.fog = new THREE.Fog(Look.HORIZON, 1, 2);  // (haze far off: set from the camera's distance in tick)
+    this.sky = Look.skyDome();  // (the sky: a dome round the camera)
+    this.scene.add(this.sky);
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.05, 5000);
     const C = this.controls = new OrbitControls(this.camera, cv);
     C.enableDamping = true; C.dampingFactor = 0.12;
@@ -414,18 +402,18 @@ export class Zoom3D {
     this.pins = null; this.on = { fall: true, volcano: true }; this.marks = [];
     this.pinMat = new THREE.LineBasicMaterial({ color: 0xe8f6ff });
     this.skirtMat = new THREE.MeshBasicMaterial({ color: SKIRT_RGB, side: THREE.DoubleSide });
-    this.terrainMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    this.seaMat = new THREE.MeshStandardMaterial({ color: SEA_RGB, transparent: true, opacity: 0.8, roughness: 0.6, metalness: 0 });
+    this.terrainMat = Look.terrainMaterial();  // (glaciers and the rivers' shimmer: zoom3d_look.js)
+    this.seaMat = Look.seaMaterial();          // (tinted by depth, foam at the shore)
     this.fallMat = new THREE.MeshLambertMaterial({ map: streaks(), emissive: 0x7a8794, transparent: true,
       depthWrite: false, side: THREE.DoubleSide });
-    this.lakeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.5, metalness: 0,
-      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    this.lakeMat = Look.lakeMaterial();
     // a software renderer (no GPU): a quarter of the triangles, no shadows
     const dbg = R.getContext().getExtension('WEBGL_debug_renderer_info');
     this.gpu = dbg ? R.getContext().getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '';
     if (/SwiftShader|llvmpipe|softpipe|Software/i.test(this.gpu)) Object.assign(this.opts, { step: 4, shadows: false });
     this.sun.castShadow = this.opts.shadows;
     this.tiles = []; this.falls = []; this.dirty = true; this.fly = null; this.frames = 0; this.fpsT = performance.now(); this.fps = 0;
+    this.rivers = []; this.flight = null; this.lastAnim = 0;
     this.running = false;
     this.events(cv);
     addEventListener('resize', () => this.resize());
@@ -448,6 +436,11 @@ export class Zoom3D {
     this.tiles = [t];
     this.size = Math.max(t.w, t.d);
     this.falls = z.falls.map((f, k) => ({ ...f, k, path: t.fallPath(f) }));
+    this.stopFlight();
+    this.rivers = riverCourses(t, this.falls);  // (for "fly along a river")
+    t.dataTex?.dispose?.();
+    t.dataTex = Look.dataTexture(t);
+    t.flowTex = null;
     this.volcs = (z.volc || []).map((v, k) => ({ ...v, k }));
     const seaPx = z.L.water.some((w) => w === 1);
     this.sea = null;
@@ -459,7 +452,7 @@ export class Zoom3D {
     }
     this.colours = z.colours; this.smooth = z.smooth;
     this.rebuild();
-    this.setTexture(z.colours, z.smooth);
+    this.setTexture(z.colours, z.smooth, z.natural);
     this.home(cam);
   }
   rebuild() {
@@ -476,10 +469,17 @@ export class Zoom3D {
     this.triangles = triangles;
     this.applyExag();
   }
-  setTexture(colours, smooth) {
-    this.colours = colours; this.smooth = smooth;
+  // natural: a layer of the ground's own colours (satellite, relief, height,
+  // hillshade): the glaciers are tinted as ice; on others only shaded
+  setTexture(colours, smooth, natural = this.natural ?? true) {
+    this.colours = colours; this.smooth = smooth; this.natural = natural;
     const t = this.tiles[0];
     if (!t) return;
+    if (!t.flowTex || t.flowMul !== this.opts.widthMul) { t.flowTex?.dispose(); t.flowTex = t.flowTexture(this.opts.widthMul); t.flowMul = this.opts.widthMul; }
+    Look.bind(t, t.dataTex, t.flowTex, { terrain: this.terrainMat, sea: this.seaMat, lake: this.lakeMat });
+    const u = this.terrainMat.userData.u;
+    u.uIceTint.value = natural ? 1 : 0; u.uFx.value = this.opts.fx ? 1 : 0;
+    this.seaMat.userData.u.uFoam.value = this.opts.fx ? 1 : 0;
     const cv = t.texture(colours, { smooth, rivers: this.opts.rivers, widthMul: this.opts.widthMul });
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -497,6 +497,8 @@ export class Zoom3D {
     else if (k === 'widthMul') { this.rebuild(); this.setTexture(this.colours, this.smooth); }
     else if (k === 'shadows') { this.sun.castShadow = v; this.renderer.shadowMap.needsUpdate = true; }
     else if (k === 'facets') { this.terrainMat.flatShading = v; this.terrainMat.needsUpdate = true; }
+    else if (k === 'fx') { this.terrainMat.userData.u.uFx.value = v ? 1 : 0; this.seaMat.userData.u.uFoam.value = v ? 1 : 0; }
+    else if (k === 'flySpeed' && this.flight) this.flight.speed = v;
     this.dirty = true;
   }
   applyExag() {
@@ -613,6 +615,36 @@ export class Zoom3D {
     this.dirty = true;
   }
 
+  // fly along river k (this.rivers, biggest first) from its head; o.at: start that share of the way down,
+  // o.pause: hold there (screenshots)
+  flyRiver(k, o = {}) {
+    const c = this.rivers[k], t = this.tiles[0];
+    if (!c || !t) return;
+    this.fly = null;
+    this.flight = new Flight(t, c, { speed: this.opts.flySpeed });
+    if (o.at) this.flight.s = o.at * this.flight.len;
+    this.flight.paused = !!o.pause;
+    // start at once at the pose (no glide in from the orbit view)
+    const { pos, tgt } = this.flight.pose(this.opts.exag, (x, z) => this.groundY(x, z), t.res);
+    this.camera.position.copy(pos); this.controls.target.copy(tgt);
+    this.controls.enabled = false;
+    this.flown = null;
+    this.dirty = true;
+  }
+  stopFlight(ended = false) {
+    if (!this.flight) return;
+    this.flight = null;
+    this.controls.enabled = true;
+    this.controls.update();
+    this.api.flying?.(null, ended);
+    this.dirty = true;
+  }
+  // the rivers to fly along, as one line each
+  riverList() {
+    return this.rivers.map((c) => `${Math.round(c.length_km)} km to ${c.end}, ${Math.round(c.q).toLocaleString('en-US')} m³/s` +
+      (c.falls.length ? `, ${c.falls.length} fall${c.falls.length > 1 ? 's' : ''} (${Math.round(Math.max(...c.falls.map((f) => f.height_m)))} m)` : ''));
+  }
+
   // ------------------------------------------------ heights and picking
   tileAt(x, z) { for (let j = this.tiles.length - 1; j >= 0; j--) if (this.tiles[j].contains(x, z)) return this.tiles[j]; return null; }
   groundY(x, z) { const t = this.tileAt(x, z); return t ? t.height(x, z) * this.opts.exag / 1000 : -Infinity; }
@@ -693,7 +725,7 @@ export class Zoom3D {
         this.api.hoverPixel(px ? px[0] : null, px ? px[1] : null, t);
       });
     });
-    cv.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; this.fly = null; });
+    cv.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; this.fly = null; if (this.flight) this.stopFlight(); });
     cv.addEventListener('pointerup', () => { down = null; });
     cv.addEventListener('dblclick', (e) => {
       // double-click the ground: orbit round that point
@@ -729,23 +761,42 @@ export class Zoom3D {
       if (u >= 1) this.fly = null;
       this.dirty = true; this.moved = now;
     }
-    const changed = this.controls.update();
+    // flying down a river: the flight sets the camera (the orbit controls are off meanwhile)
+    let changed = false;
+    if (this.flight) {
+      if (!this.flight.step(now)) this.stopFlight(true);
+      else {
+        const { pos, tgt } = this.flight.pose(this.opts.exag, (x, z) => this.groundY(x, z), this.tiles[0].res);
+        // (eased: the path's kinks don't jerk the view)
+        this.camera.position.lerp(pos, 0.12); this.controls.target.lerp(tgt, 0.08);
+        this.camera.lookAt(this.controls.target);
+        this.api.flying?.(this.flight.info());
+        this.dirty = true; this.moved = now;
+      }
+    } else changed = this.controls.update();
     if (changed || this.dirty) this.tail = 10;  // (and a few frames after the last change: browsers can skip presenting one)
     else if (this.tail > 0) { this.tail--; this.dirty = true; }
-    if (!changed && !this.dirty && !force) {
+    // the water's motion (foam, shimmer): ~30 frames a second while nothing else moves
+    const anim = this.opts.motion && this.opts.fx && now - this.lastAnim > 33;
+    if (!changed && !this.dirty) {
       this.frames = 0; this.fpsT = now;  // (fps counts only frames drawn while moving)
       // settled: hide the labels behind the ground, once
       if (this.moved && now - this.moved > 150) { this.moved = 0; this.occlude(); this.api.changed?.(); }
-      return;
+      if (!anim && !force) return;
     }
+    if (this.opts.motion) Look.time.value = now / 1000;
+    this.lastAnim = now;
     this.dirty = false;
     // keep the camera above the ground
     const cam = this.camera.position, gy = this.groundY(cam.x, cam.z);
     if (cam.y < gy + 0.05) cam.y = gy + 0.05;
     const dist = cam.distanceTo(this.controls.target);
     this.camera.near = Math.max(0.01, dist / 400); this.camera.far = dist * 6 + 3 * this.size;
-    this.scene.fog.near = 1.3 * dist; this.scene.fog.far = 1.3 * dist + 3 * this.size;
+    // haze: the far view fades to the horizon's colour (aerial perspective), more with distance
+    if (this.opts.haze) { this.scene.fog.near = 0.25 * dist + 0.05 * this.size; this.scene.fog.far = 1.1 * dist + 1.6 * this.size; }
+    else { this.scene.fog.near = 1.3 * dist; this.scene.fog.far = 1.3 * dist + 3 * this.size; }
     this.camera.updateProjectionMatrix();
+    this.sky.position.copy(cam); this.sky.scale.setScalar(0.5 * (this.camera.near + this.camera.far));
     this.aimSun(dist);
     this.placePins();
     this.renderer.render(this.scene, this.camera);
