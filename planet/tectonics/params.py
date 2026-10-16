@@ -23,6 +23,10 @@ class Params:
     continental_thickness: float = 35.0  # km: the mean the volume thermostat aims for
     # forces (arbitrary units; mobility converts torque to rad/Myr)
     slab_pull: float = 1.0
+    # the mantle's resistance to a slab sinking through it, per cm/yr of
+    # convergence: an 80 Myr slab alone sinks at slab_pull / slab_drag cm/yr
+    # (its terminal speed; 0: no resistance)
+    slab_drag: float = 0.1
     ridge_push: float = 0.15
     collision_drag: float = 1.2
     mantle_noise: float = 0.2  # the random part of the basal drag (meandering)

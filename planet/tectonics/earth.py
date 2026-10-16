@@ -17,8 +17,8 @@ from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import (CARB, COAL, EVAP, MIX, SAND, elevation, ice_load, iso_rate, land_view, ocean_depth, sediment_iso,
-                       sediment_km)
+from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, elevation, ice_load, iso_rate, land_view,
+                       ocean_depth, sediment_iso, sediment_km)
 
 SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
@@ -93,22 +93,26 @@ def global_temperature(sim, growth, newc, rng):
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
-    # Halved because the extra water also pushes the sea floor down.
     # The basins' volume (depth_ridge) follows the mean depth of the floor
     # over ridge_time Myr: a real ridge system waxes and wanes over tens of
     # Myr, while the model's spreading can stop or restart within a few
-    # steps of a suture or a rift. It is measured against a slow (300 Myr)
-    # average of itself, which starts from the initial sea floor (sea
-    # level 0), so only real changes in spreading move the sea, and it
-    # levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level has
-    # spanned about -100..+250 m).
+    # steps of a suture or a rift. It is measured against a fixed reference,
+    # the starting sea floor's mean depth (setup makes it a steady-state
+    # ocean, mean age ~60 Myr: sea level 0), so a lasting change in the
+    # basins (an ocean that stays young or old) keeps the sea up or down
+    # (PW-288: a baseline that relearned the floor over 300 Myr hid a
+    # persistently young ocean). The water displaced also loads the floor,
+    # which sinks by rho_w / (rho_m - rho_w) of the water's rise, so the sea
+    # rises by (rho_m - rho_w) / rho_m ~ 0.69 of the floor's shallowing.
+    # It levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level
+    # has spanned about -100..+250 m).
     ocean = ~sim.w_cont
     depth = float(ocean_depth(sim.w_age[ocean]).mean()) if ocean.any() else 0.0
     if sim.depth_ref is None:  # the starting sea floor defines sea level 0
         sim.depth_ref = sim.depth_ridge = depth
     sim.depth_ridge += (1 - np.exp(-dt / p.ridge_time)) * (depth - sim.depth_ridge)
-    sim.depth_ref += (1 - np.exp(-dt / min(300.0, 10.0 + sim.t))) * (sim.depth_ridge - sim.depth_ref)
-    sim.sea_tect = SEA_TECT_MAX * float(np.tanh(0.5 * (sim.depth_ridge - sim.depth_ref) / SEA_TECT_MAX))
+    rise = (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (sim.depth_ridge - sim.depth_ref)
+    sim.sea_tect = SEA_TECT_MAX * float(np.tanh(rise / SEA_TECT_MAX))
     # A hotter mantle melts more at ridges: thicker, more buoyant ocean
     # crust and shallower ocean basins, so the same water stands higher
     # on the continents (one reason the young Earth was mostly sea).
@@ -385,7 +389,7 @@ def erode(sim, col):
     # (light) sediment deposited
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
-    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock))
+    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
