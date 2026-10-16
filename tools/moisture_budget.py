@@ -753,7 +753,8 @@ def headlines(R) -> dict:
 def headline_lines(H) -> list[str]:
     """headlines() as report lines (targets from docs/proposals/moisture_transport.md section 8)."""
     return [
-        f"E-P-R (Sv; + loses water; obs = NCEP E - GPCP P before runoff): Atlantic {H['atlantic_epr_sv']:+.2f} "
+        f"E-P-R (Sv; + loses water; obs = NCEP E - GPCP P before runoff, an upper bound; literature E-P-R "
+        f"Atlantic+Arctic +0.3..+0.6): Atlantic {H['atlantic_epr_sv']:+.2f} "
         f"(obs {H['atlantic_obs_ep_sv']:+.2f}), Pacific {H['pacific_epr_sv']:+.2f} (obs {H['pacific_obs_ep_sv']:+.2f}), "
         f"Indian {H['indian_epr_sv']:+.2f} (obs {H['indian_obs_ep_sv']:+.2f}); Atlantic minus Pacific "
         f"{H['atl_minus_pac_epr_mm']:+d} mm/yr per area (PW-016 needs >= +100, Atlantic >= +0.25)",
