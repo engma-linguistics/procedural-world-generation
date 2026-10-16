@@ -1,4 +1,5 @@
 ---
+id: PW-410
 title: "Zoom 3D panel: collapsible sections so short windows show the falls list without scrolling"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: worktree-agent-a3947a9de2078ba52
 blocked_by: []
 relates: [PW-409]
 refs: [viewer/zoom.html]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -18,3 +21,6 @@ After PW-409 the zoom 3D view's right pane is one flex column: the 3D panel (`#p
 Optional polish: make the render controls (height, detail, sun, river width, the checkboxes) a `<details>` section like index.html's `details.sec` (open state remembered in localStorage), so folding it brings Fly and Waterfalls up. Not needed for correctness.
 - [ ] 3D panel's render controls fold; the fold state is remembered
 - [ ] at 1366x768 embedded, with the controls folded, the falls list and the hover card are both visible without scrolling
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom3d-panel-collapsible.md (found by worktree-agent-a3947a9de2078ba52).
