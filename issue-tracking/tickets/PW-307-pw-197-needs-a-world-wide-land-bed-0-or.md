@@ -1,5 +1,6 @@
 ---
-title: "PW-197 needs a world-wide 'land = bed > 0 or grounded ice' before finish.py can store the true bed"
+id: PW-307
+title: PW-197 needs a world-wide 'land = bed > 0 or grounded ice' before finish.py can store the true bed
 type: task
 status: needs-decision
 parent: PW-090
@@ -10,6 +11,8 @@ found_by: small-store
 blocked_by: []
 relates: [PW-197, PW-189]
 refs: [planet/finish.py, planet/timeline.py, planet/world.py, planet/climate.py, planet/hydrology.py, planet/tectonics/isostasy.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Options: (a) a world `land` mask (elevation > 0 or ice > 0) threaded through wor
 hydrology/coast/zoom, then drop land_view from worlds; (b) keep the floor and add a `bed` layer
 for display only (zoom rock and sub-ice lakes still wrong). (a) is the real fix; ~half a day plus
 a climate.py touch, so best after PW-305 lands.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-world-grounded-ice-land.md (found by small-store).
