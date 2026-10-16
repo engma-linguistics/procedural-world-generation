@@ -145,3 +145,37 @@ along a line running from the top middle down to the right.*
 | -63.44,71.66 | 3.0 | 3.0 | -0.8 / 27 | -0.8 / 27 | 2.8 | 2.8 |
 | **8 zooms** | **9.8** (4-14 by seed) | **10.2** (6-14) | | | **56.2** (> 100 m: 5.0) | **38.6** (5.0) |
 | -48.48,60.12 (plateau) | 1.2 | 1.2 | +1.5 / 14 | +1.5 / 14 | 0.6 | 0.6 |
+
+## PW-362, decision B (small fixes batch, 2026-10-16)
+
+The coordinator chose B. Before the mean correction, a land cell's own sea pixels take what its mean lacks
+(`zoom.SEA_SHARE_PASSES` = 3 smooth passes, the amount per cell spread over its sea pixels weighted by how much
+land the cells round them are, so it fades out into the sea cells, which the 12 correction passes then set back
+to their own means). Tried first and dropped: counting land cells as -1 m sea floor in the sea's interpolation
+(mesa p50 1,334 -> 1,054 m only; no gain on top of the passes).
+
+| fac2af -1.467,36.085, 500 km @ 1 km, seed 1 | land p10 / p50 / p90 | sea mean | land share |
+|---|---|---|---|
+| cell 52473 (+194 m) before | 403 / 1,334 / 1,631 | -1,604 | 0.62 |
+| after | 186 / 607 / 902 | -628 | 0.62 |
+| cell 136933 (+78 m) before | 356 / 660 / 945 | -1,470 | 0.71 |
+| after | 185 / 330 / 512 | -640 | 0.71 |
+
+| 592f2a zooms (seeds 1-5) | drops before | after | inland bias / RMS before | after | mixed land cells' land lift (mean above the coarse mean, p95) before | after |
+|---|---|---|---|---|---|---|
+| 4.97,-114.51 | 0 | 0 | -2.0 / 10.2 | -2.0 / 10.1 | 120 | 76 |
+| 1.96,-70.44 | 0.4 | 0.4 | 0.0 / 32.7 | 0.1 / 32.8 | - | - |
+| 4.81,-72.18 | 1.6 | 1.6 | -2.7 / 53.6 | -2.7 / 53.6 | 283 | 283 |
+| 60.6,-40.48 | 0 | 0 | -1.6 / 8.3 | -1.9 / 8.9 | 191 | 116 |
+| 49.32,37.38 | 1.2 | 1.2 | +1.6 / 56.0 | +1.9 / 55.8 | 134 | 133 |
+| -9.35,-161.39 (arc) | 3.8 | 3.8 | +1.2 / 52.0 | +1.2 / 51.9 | 89 | 46 |
+| -2.22,-169.11 | 0.2 | 0.2 | +1.1 / 41.5 | +1.1 / 41.5 | 87 | 87 |
+| -63.44,71.66 | 3.0 | 3.0 | -0.8 / 26.6 | -0.8 / 26.4 | 446 | 200 |
+| **8 zooms** | **10.2** (6-14) | **10.2** (6-14) | | | | |
+
+("Mixed land cells": coarse land cells with 10-70% of their pixels land.) Test:
+`test_forearc_island_keeps_part_of_its_mean_in_its_sea` (land p90 953 -> ~630 m, its sea -780 -> -300 m).
+
+![sea share](pw362_sea_share.png)
+*fac2af's shelf case (1 km pixels, the whole 500 km; land 0-1,600 m green to white, hill-shaded), before | after:
+the forearc mesa (lower left) stands at ~600 m on a shelf instead of ~1,600 m out of the trench's depth.*

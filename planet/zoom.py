@@ -202,6 +202,7 @@ DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
 DELTA_PLAIN_GROUND = (30.0, 250.0)
 FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
+SEA_SHARE_PASSES = 3  # ... after a land cell's own sea pixels took what its mean lacks, up to the shore (PW-362)
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 BRANCH_CLIMB_M = 30.0  # m: ... nor where it stands higher than this above the delta's apex (PW-061)
 
@@ -1333,6 +1334,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         tot = np.bincount(own_s, hh, minlength=len(sel))
         return tot / np.maximum(cnt, 1), cnt
 
+    # A land cell whose fine coast leaves part of it sea keeps first what its mean lacks in that sea
+    # (PW-362): the sea floor round its island rises, as a shelf, towards the shore. Its sea pixels
+    # had the depth of the sea cells beyond it, a forearc's trench, and the mean correction below
+    # lifted its land as much as its sea, a mesa of 1,300-1,600 m on a +194 m cell. (Weighted by how
+    # much land the cells round a sea pixel are, ind, so it fades out into the sea cells, which the
+    # correction below then sets back to their own means; the sea stays sea: clamp.)
+    f_s = np.where(land, 0.0, np.clip(0.5 * (ind + 1.0), 0.0, 1.0)) * (1 - wC)
+    fsum = np.bincount(own_s, f_s, minlength=len(sel))
+    for _ in range(SEA_SHARE_PASSES):
+        m, cnt = cell_means(h)
+        ok_l = land_c & (cnt > 0.25 * full_px)
+        amp = np.where(ok_l & (fsum > 0.05 * cnt), np.maximum(e_c - m, 0.0) * cnt / np.maximum(fsum, 1e-9), 0.0)
+        corr, _ = ZK.gauss_interp(px, py, cx, cy, amp[:, None], ok_l[:, None].astype(float), 0.5 * sp)
+        h = clamp(h + f_s * np.nan_to_num(corr[:, 0]))
     corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n)) * (1 - wC)
     # (each pass removes only part of a residual one cell wide, e.g. a trench,
     # because the correction is smooth over half a cell: MEAN_PASSES of them)

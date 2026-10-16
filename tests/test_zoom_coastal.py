@@ -129,3 +129,37 @@ def test_reefs_are_terrain_fringing_or_barrier(reef_coasts):
     assert np.median(wide["layers"]["elevation"][lagoon]) < np.median(wide0["layers"]["elevation"][lagoon]) - 2
     assert abs(wide["stats"]["cell_mean_bias_m"] - wide0["stats"]["cell_mean_bias_m"]) < 2
     assert abs(wide["stats"]["cell_mean_rms_error_m"] - wide0["stats"]["cell_mean_rms_error_m"]) < 5
+
+
+def test_forearc_island_keeps_part_of_its_mean_in_its_sea():
+    """PW-362: a lone land cell (+194 m) between -500 m shelf cells and a -4,800 m trench. Its sea pixels
+    took the depth of the cells beyond it (the trench's), so its land stood as a mesa high enough to keep
+    the cell's mean (land p90 ~950 m here, 1,600 m on world fac2af); now its sea first takes what the mean
+    lacks, a shelf round the island, and the land stands lower (p90 ~630 m)."""
+    from planet import world as W
+    from planet.geo import R_KM, xyz
+    from planet.grid import build_grid
+    g = build_grid(5)
+    k = int(np.argmax(g.centers @ xyz(0.0, np.radians(20.0))))
+    d = np.arccos(np.clip(g.centers @ g.centers[k], -1, 1)) * R_KM
+    lon = np.degrees(np.arctan2(g.centers[:, 1], g.centers[:, 0]))
+    elev = np.where(d < 1200, np.where(np.abs(lon - 17.0) < 1.2, -4800.0, -500.0), -4000.0)
+    elev[k] = 194.0
+    land = elev > 0
+    extra = {"rock": np.full(g.n, 2), "surface_rock": np.full(g.n, 2), "sediment_cover": np.where(land, 0.1, 1.0)}
+    w = W.finish(g, elev, extra, {"method": "test", "seed": 0, "level": 5}, erosion=0.0)
+    w["layers"]["elevation"] = np.round(elev)
+    nb = elev[g.nbr_idx[g.nbr_off[k]:g.nbr_off[k + 1]]]
+    assert (nb == -4800).sum() >= 1 and (nb == -500).sum() >= 1
+    c = g.centers[k]
+    z = zoom.build(w, np.degrees(np.arcsin(c[2])), np.degrees(np.arctan2(c[1], c[0])), size_km=600, res_km=2,
+                   iterations=6, log=lambda *a: None)
+    nx, ny, res = z["nx"], z["ny"], z["res"]
+    cc, rr = np.meshgrid(np.arange(nx), np.arange(ny))
+    own = g.locate(z["frame"].to_sphere(((cc + 0.5 - nx / 2) * res).ravel(), ((ny / 2 - rr - 0.5) * res).ravel()))
+    h = z["layers"]["elevation"].ravel().astype(float)
+    on = z["layers"]["water"].ravel() == 0
+    m = own == k
+    assert 0.3 < on[m].mean() < 0.9 and h[m].mean() > 140  # (an island; the cell's mean held as before, ~170 m)
+    p90, sea = np.percentile(h[m & on], 90), h[m & ~on].mean()
+    assert p90 < 750 and sea > -450, (p90, sea)
