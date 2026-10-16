@@ -1,4 +1,5 @@
 ---
+id: PW-358
 title: Open-water evaporation ignores clouds and humidity, so wet basins stay closed and hold giant lakes
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: basins-lakes
 blocked_by: []
 relates: [PW-300, PW-054]
 refs: [planet/climate.py, planet/hydrology.py, docs/review/audit/basins-lakes.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -37,3 +40,7 @@ radiation, or at least Oudin on surface instead of top-of-atmosphere radiation f
 sweep's giant-lake frames. The zoom's lake balance uses the same `open_water` x pet (zoom.py ~1777).
 - [ ] humid-tropics open-water evaporation ~1300-1600 mm on Earth's climate
 - [ ] Earth's closed basins stay closed in earth_check
+
+## Updates
+- 2026-10-16: Coordinator: should use the same physics as PW-015's decision 1 (bulk/humidity-aware evaporation for open water); land with or before PW-015.
+- 2026-10-16: Created from inbox draft draft-open-water-evaporation-clouds.md (found by basins-lakes).

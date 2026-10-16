@@ -1,4 +1,5 @@
 ---
+id: PW-359
 title: Plate motion and resampling (resolve) make most of the run's closed-hollow volume each step
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: basins-lakes
 blocked_by: []
 relates: [PW-054, PW-300, PW-243]
 refs: [planet/tectonics/plate_kernels.py, planet/tectonics/simulation.py, docs/review/audit/basins-lakes.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -36,3 +39,6 @@ relief depends on the cell size). Worth measuring the per-step elevation change 
 from boundaries under resolve alone (should be ~0 for a rigid plate), and trying a conservative resample
 (area-weighted from the plate's frame) for elevation-carrying columns. Script:
 docs/review/audit/basins-lakes/hollow_budget.py (`python hollow_budget.py <repo> 6 <seed> 300`).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-resolve-makes-hollows.md (found by basins-lakes).

@@ -2,7 +2,7 @@
 id: PW-284
 title: "Flexural moat: a 15% share tuned on one L7 seed's closed-basin count, and only the moat half of flexure applied"
 type: task
-status: in-progress
+status: todo
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -57,6 +57,7 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-16: Status in-progress -> todo. Basins lane 2026-10-16: moat off -> inland 6.4 -> 3.7% (raw), giant lakes 8.8 -> 6.1% (within noise). Sound two-sided flexure lifts single-cell crust spikes absurdly: needs those smoothed in crust.py first. Stays todo.
 - 2026-10-16: Correction to the entry above: of the deepest giant-lake pits checked, one (seed 77 @180 Myr, -200 m in a frame) is a moat beside a single-cell spike; the others are a thinned, sediment-filled cell (seed 3199 @272) and plain 36-38 km cells (seeds 505 @424, 42 @456). Not all are moat pits.
 - 2026-10-16: Basins-lakes lane: stopped, not landed. Steps 1-2 don't single the moat out for giant lakes: flexure=0 (diagnostic, 8 L6 seeds x 500 Myr) gives giant-lake frames 8.8 -> 6.1% (seed noise ~+-2.5 points), but inland drainage 6.4 -> 3.7% (raw ends on land), so the moat is what makes most L6 closed basins. Giant lakes' cells have median dyn -10..-30 m (rims ~0), and the deepest pits in them (200-800 m) are moats beside single-cell crust spikes (e.g. a 60 km / 5.5 km cell next to 38 km neighbours). Sound two-sided flexure (share 1, volume kept, alpha from Te) still needs the load fixed first: an elastic plate holds a load narrower than its flexural width almost fully, so the grid-scale spikes would rise by nearly their whole root (the 2026-10-15 attempt: 14-40 km). Within isostasy.py the only spike-safe forms are a yield cap or an extra load smoothing, both knobs. What's needed: option A of the 2026-10-15 update in crust.py (collision stacking spreads stacked crust over the belt across both plates; crust_flow crosses the suture-to-be / acts at the grid scale) so that no single cell carries >~5 km more crust than its belt; then share 1, both halves, FLEX_KM from Te ~20-40 km (alpha ~50-100 km), recheck peaks (PW-172), inland share at L6/L7, giant lakes.
 - 2026-10-16: Status todo -> in-progress. Run-lane agent started (basins and giant lakes).
