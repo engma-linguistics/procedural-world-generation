@@ -232,13 +232,15 @@ ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
 ICE_PASSES = 200  # a sheet settles in at most this many passes (a sheet's retreat or advance is ~1 cell a pass)
 
 
-def ice_sheets(sim, land, bed, ground, old, sink=None):
+def ice_sheets(sim, land, bed, ground, old, sink=None, info=None):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
     warmer than it would on unloaded crust, PW-189); old: the ice that
     climate saw (m, on that bed); sink: m the bed is pressed down by
-    (default: old's settled load, isostasy.ice_load).
+    (default: old's settled load, isostasy.ice_load); info: a dict that
+    gets "passes", how many passes it took (2: the ice moved at most a ring
+    from old).
     The real ice comes and goes with ~100 kyr cycles and answers its
     climate within ~10-100 kyr, far inside a climate step: this is the
     extent the flowing sheets settle to under the surface mass balance
@@ -255,7 +257,10 @@ def ice_sheets(sim, land, bed, ground, old, sink=None):
     the lapse rate. (Before PW-364 a run made one pass per climate update:
     a sheet took ~20 updates, ~80 Myr, to shrink back after its cold era,
     and as long to grow into one.) The rest of the climate (the sheet's
-    carried air, its albedo, the rain) follows at the next update. The old
+    carried air, its albedo, the rain) follows at the next update, as CO2
+    does (computing it again within the step whenever margins moved cost
+    ~+80% of the climate at L5, mostly for a few margin cells shuffling).
+    The old
     ice's height still counts: a big sheet keeps itself colder than bare
     ground would be and can outlast the climate that made it (two states,
     hysteresis), but not by tens of Myr of lag."""
@@ -266,10 +271,13 @@ def ice_sheets(sim, land, bed, ground, old, sink=None):
         rise = sink - ice_load(g, ice)
         return bed + rise, tuple(t - climate.LAPSE * rise for t in ground)
 
+    info = {} if info is None else info
     ice = _ice_pass(sim, land, bed, ground, old)
     seen = [np.asarray(old) > 0, ice > 0]
+    info["passes"] = 1
     for _ in range(ICE_PASSES):
         new = _ice_pass(sim, land, *settled(ice), ice)
+        info["passes"] += 1
         on = new > 0
         if np.array_equal(on, seen[-1]) or np.array_equal(on, seen[-2]):
             return new
@@ -317,8 +325,13 @@ def _ice_pass(sim, land, bed, ground, old):
     smb0, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=tilt)
     h = np.where(old > 0, old, ICE_EDGE_M)
     cover = icemass.sheet_cover(g, old)
-    absorb = climate.smooth_big(g, 1 - np.clip(old / icemass.SNOW_H, 0, 1) * (1 - icemass.ICE_ABSORB),
-                                icemass.ABSORB_KM)
+    # (as the time zoom's orbit_k, PW-114/PW-365: the air over bright ice brings the response of the land,
+    # sea and ice around, each its own share of the land's: the sea INSOL_SEA, bright ice ICE_ABSORB; before,
+    # the open sea counted as fully absorbing land, and coastal ice felt ~2x the time zoom's orbital swing)
+    bright = np.where(land, np.clip(old / icemass.SNOW_H, 0, 1), 0.0)
+    own = np.where(land, 1.0, icemass.INSOL_SEA)
+    mix = climate.smooth_big(g, own * (1 - bright * (1 - icemass.ICE_ABSORB)), icemass.ABSORB_KM)
+    absorb = (1 - bright) + bright * mix
     smb, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, h, cover, tilt=tilt, absorb=absorb)
     acc_ok = land & (smb > 0)
     seed = np.flatnonzero(acc_ok & ((smb0 > 0) | (old > 0)))

@@ -1493,7 +1493,9 @@ TUNE = dict(
     moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean (see sea_surface; PW-265)
     moc_level=5,  # grid level the overturning is solved on (5: ~220 km cells)
     moc_spin=6.0,  # x moc_drho at the start (see ocean.solve)
-    moc_iters=4,  # damped iterations of salinity <-> overturning
+    moc_iters=4,  # damped iterations of salinity <-> overturning while the spin-up tightens, then ...
+    moc_tol=0.003,  # ... on until the inflow's share of the surface water moves by less than this (PW-360) ...
+    moc_max_iters=40,  # ... or this many in all (a cost bound)
     moc_relax=0.6,  # damping of each iteration
 )
 
