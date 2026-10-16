@@ -33,11 +33,16 @@ Steps (the proposal's 1-6):
    its falls as gorge_path; else a B-spline on the parent's chain), cut by
    the distance from it: a floor, cliff walls up to the rim, a held
    headwall above the face. Gorges are drawn features: left out of the
-   parent's means on both sides. Volcanoes keep the parent's summit
-   height (the summit core is the parent's surface, bicubic, raised or
-   lowered as one so its top is the parent's top_m): crater and vents as the
-   parent drew them. Both carry the parent's index (parent_fall,
-   parent_volcano) and a lineage back to the first zoom.
+   parent's means on both sides. Volcanoes (PW-395, zoom_fine_volcano):
+   the edifice's form below the parent's pixel scale (summit crater or
+   caldera by kind and status, radial gullies by age and rain, lava flow
+   lobes, parasitic cones) added to the parent's surface less its parent-
+   pixel means; where a coarse parent averaged the cone down far below its
+   summit, the cone stands on its floor (drawn: out of the means). The
+   summit form is held with its rim's high point at the parent's top_m,
+   the flanks kept near the edifice down to its lower flanks. Both carry
+   the parent's index (parent_fall, parent_volcano) and a lineage back to
+   the first zoom.
 5. Landscape: the zoom's steady-state stream-power profile (ZK.integrate
    on priority-flood D8 routing), slope C A^-0.5 with C refitted per 3x3 parent
    pixels to keep their mean, a channel head (below HEAD_KM2 the hillslope is
@@ -73,6 +78,7 @@ from . import store as S
 from . import world as W
 from . import zoom as Z
 from . import zoom_coastal as ZCL
+from . import zoom_fine_volcano as ZFV
 from . import zoom_kernels as ZK
 from . import zoom_vegetation as ZVG
 from . import satellite as SAT
@@ -103,9 +109,10 @@ RELAX_X = 1.25  # hillslopes cut down to this x their threshold slope to every n
 TALUS_DEG = 33.0  # apron below faces steeper than 45 degrees
 ITERATIONS = 8  # landscape passes (the parent fixes the network: fewer than a zoom's 15)
 MEAN_PASSES = 4  # final corrections keeping each parent pixel's mean
-CORE_PX = 1.5  # parent px: a volcano's summit core held at the parent's surface (and >= CORE_FINE_PX)
-CORE_FINE_PX = 8
-VOLC_CUT_M = 30.0  # m: on a cone's flanks the fine ground stays within this of the parent's cone
+CORE_FINE_PX = 3  # px: a volcano's summit form held at least this far round its vent
+VOLC_CUT_M = 30.0  # m: on a cone's flanks the fine ground stays within this of its edifice
+DRAWN_BODY = 0.3  # a cone is drawn over its parent only where its relief is at least this share of its height
+DRAWN_M = 10.0  # m: a cone drawn over its parent's surface meets it over about this (soft max)
 GORGE_WALL_DEG = (55.0, 75.0)  # a gorge's walls below a fall: soft .. rugged rock (cliffs over their talus)
 GORGE_FRAY_KM = 0.06  # km: its rims frayed by this much (spurs and alcoves)
 POOL_DEPTH = (0.15, 3.0, 60.0)  # a plunge pool without the parent's depth: share of the drop, min, max m
@@ -673,57 +680,131 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     vol_list = []
     core = np.zeros(npx, bool)
     vol_cap, vol_floor = np.full(npx, np.inf), np.full(npx, -np.inf)
+    # the volcanoes' edifices below the parent's pixel scale (PW-395, zoom_fine_volcano): their relief
+    # less its parent-pixel means, on the parent's surface; the summit form held, the flanks kept near
+    # it through the landscape pass (no closer than VOLC_CUT_M a little way down; free at the foot)
+    ed, e_w = np.zeros(npx), np.zeros(npx)
+    drawn = np.zeros(npx, bool)
+    e_cut = np.full(npx, np.inf)
+    rain_p = pa._a("precipitation") if "precipitation" in pa.L else None
+    rr_b, cc_b = rr_p[box], cc_p[box]
+    xb, yb = fr.to_plane(pa.fr.to_sphere(*pa.plane(rr_b, cc_b)))
     for k, v in enumerate(pmeta["stats"].get("volcanoes", []) or []):
         if "lat" in v:
             Pv = latlon_to_xyz(v["lat"], v["lon"])
         else:
             Pv = pa.fr.to_sphere(np.array([v["x_km"]]), np.array([v["y_km"]]))[0]
+            v = {**v, **dict(zip(("lat", "lon"), Z._latlon(Pv)))}
+        if float(v["top_m"]) <= 0.0:  # (drowned: an atoll's or a guyot's top, as the parent drew it)
+            continue
         vx, vy = fr.to_plane(Pv[None, :])
         vx, vy = float(vx[0]), float(vy[0])
-        # the cone's size from the parent's surface: where it has dropped 30% (the core, held), 60%
-        # (its body) and 90% (its foot: the landscape pass shapes the flanks within VOLC_CUT_M of it)
+        # a shield's size from the parent's surface: where it has dropped 63% (its e-folding radius)
         ang = np.linspace(0, 2 * np.pi, 16, endpoint=False)
         dist = np.arange(1, 61) * 0.5 * rp
         Pr = fr.to_sphere((vx + np.outer(dist, np.cos(ang))).ravel(), (vy + np.outer(dist, np.sin(ang))).ravel())
         prof = pa.bicubic(hp, *pa.coords(Pr)).reshape(len(dist), len(ang)).mean(1)
         fall_ = float(v["top_m"]) - prof
         hv_m = max(float(v.get("height_m", 0.0)), 1.0)
-        r30 = dist[np.argmax(fall_ >= 0.3 * hv_m)] if (fall_ >= 0.3 * hv_m).any() else dist[-1]
-        r60 = dist[np.argmax(fall_ >= 0.6 * hv_m)] if (fall_ >= 0.6 * hv_m).any() else dist[-1]
-        r90 = dist[np.argmax(fall_ >= 0.9 * hv_m)] if (fall_ >= 0.9 * hv_m).any() else dist[-1]
-        R = max(CORE_PX * rp, CORE_FINE_PX * res, float(r30))
-        if max(abs(vx), abs(vy)) > size_km / 2 - ramp - R:
+        r63 = dist[np.argmax(fall_ >= 0.63 * hv_m)] if (fall_ >= 0.63 * hv_m).any() else dist[-1]
+        rv_, cv_ = pa.coords(Pv[None, :])
+        rain = float(pa.bilinear(rain_p, rv_, cv_)[0]) if rain_p is not None else ZFV.RAIN_MM
+        # a crater the parent drew: its ring of highest ground round the vent (a stratocone's is no smaller)
+        rad = np.arange(0.0, 2.0 * rp + res, res)
+        Pq = fr.to_sphere((vx + np.outer(rad, np.cos(ang))).ravel(), (vy + np.outer(rad, np.sin(ang))).ravel())
+        ring_h = pa.bicubic(hp, *pa.coords(Pq)).reshape(len(rad), len(ang)).mean(1)
+        rim_km = float(rad[np.argmax(ring_h)]) if ring_h.max() > ring_h[0] + 10.0 else 0.0
+        r_run = hv_m / ZFV.ARC_SLOPE / 1000.0 if ZFV.kind_of(v) == "strato" else float(r63)
+        prm = ZFV.params(v, float(r63), rain, seed, rim_km, float(np.interp(3.0 * r_run, dist, prof)))
+        hold = max(prm["hold_km"], CORE_FINE_PX * res)
+        if max(abs(vx), abs(vy)) > size_km / 2 - ramp - hold:
             continue
         dv = np.hypot(px - vx, py - vy)
-        fl = dv <= max(min(float(r90), 2.5 * float(r60)), 1.5 * R)  # (a cone on a high plain never drops 90%)
-        b_fl = pa.bicubic(hp, pr[fl], pc[fl])
-        vol_cap[fl] = np.minimum(vol_cap[fl], b_fl + VOLC_CUT_M)
-        vol_floor[fl] = np.maximum(vol_floor[fl], b_fl - VOLC_CUT_M)
-        # held: the summit core at the parent's surface (raised or lowered as one to its top_m), the
-        # cone's body out to r60 at the parent's surface with half the detail (young cones keep their
-        # form; an old one's gullies are the parent's)
-        cm = dv <= max(float(r60), R)
-        base = pa.bicubic(hp, pr[cm], pc[cm])
-        # (the shift as a peak at the summit, not a lift of the core: the parent's pixel there is the
-        # mean of a 1-4 km cone top, its surface lower than the summit; lifting it all added volume
-        # the parent's means then took off the flanks round it, a moat)
-        taper = np.clip(1 - dv[cm] / R, 0, 1) ** 2
-        delta = 0.0
-        for _ in range(4):
-            delta += float(v["top_m"]) - (base + delta * taper).max()
-        hv = base + delta * taper + 0.5 * detail[cm] * np.clip((dv[cm] - R) / (0.3 * R), 0, 1)
-        on = (hv > 0) & ~(course | pool)[cm]  # (a river past the cone keeps its bed)
-        hw[np.flatnonzero(cm)[on]] = hv[on]
-        h[np.flatnonzero(cm)[on]] = hv[on]
-        land[np.flatnonzero(cm)[on]] = True
-        sea[np.flatnonzero(cm)[on]] = False
-        lake[np.flatnonzero(cm)[on]] = False
-        top_i = np.flatnonzero(cm)[int(np.argmax(np.where(on, hv, -np.inf)))]
-        hw[top_i] = float(v["top_m"])  # (exact: no rounding in the shift)
-        core |= cm & (dv <= R) & (hw > 0) & ~course  # (the core held; the body round it kept near the parent's cone)
+        if ring_h.max() > float(v["top_m"]) + VOLC_CUT_M:
+            # (the parent's ground round the vent stands above its summit: it drew no edifice there, and
+            # cutting one into its ground stood as a walled pit; left as the parent's)
+            log(f"  volcano {k}: the parent's ground stands {ring_h.max() - float(v['top_m']):.0f} m above its summit")
+            c_i = int(np.argmin(dv))
+            vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3),
+                             "summit_px": [int(c_i // nb - hb), int(c_i % nb - hb)],
+                             "vent_px": [int(c_i // nb - hb), int(c_i % nb - hb)], "summit_form": "parent's",
+                             "parent_volcano": k, "lineage": [*v.get("lineage", []), k]})
+            continue
+        reach = max(prm["reach_km"], 2 * hold)
+        sel = np.flatnonzero(dv <= reach)
+        ds = dv[sel]
+        # E less its parent-pixel means (bicubic, as the parent's surface): the parent's means kept
+        win = np.hypot(xb - vx, yb - vy) <= reach + 3 * rp
+        e_p = np.zeros(pa.ny * pa.nx)
+        e_p[np.flatnonzero(box)[win]] = ZFV.parent_view(pa, fr, rr_b[win], cc_b[win], prm, res)
+        wgt = 1.0 - Z.smoothstep(0.6 * reach, reach, ds)
+        E = ZFV.relief(P[sel], prm)
+        e_bar = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel])
+        fine_e = wgt * (E - e_bar)
+        s1 = target_f[sel] + ed[sel] + fine_e
+        # where the parent can't hold the edifice (a coarse parent's pixels average its cone down, far
+        # below its summit: more than VOLC_CUT_M below its means on its floor), the edifice stands on
+        # its floor: drawn, left out of the means (the deficit at the parent's scale: smooth). Only on
+        # the cone's body (its relief there at least DRAWN_BODY of its height): round its foot the
+        # floor is a guess (the ground there is the parent's: its valleys aren't filled)
+        if prm["kind"] != "caldera":
+            e_p[np.flatnonzero(box)[win]] += float(v["top_m"]) - prm["H"] - hp.ravel()[np.flatnonzero(box)[win]]
+            body = Z.smoothstep(0.5 * DRAWN_BODY, DRAWN_BODY, e_bar / prm["H"])
+            short = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel]) - VOLC_CUT_M
+            up = body * Z.softplus(short, DRAWN_M)  # (faded, not cut off: a cut stood as a wall)
+            drawn[sel] |= up > 2 * DRAWN_M
+            s1 = s1 + up
+        # the summit (the crater's rim, a caldera's) at top_m. Standing above it (the parent drew the
+        # summit: its rim's pixels are near top_m, and the edifice's crest sharpens them): the edifice's
+        # form toned down round the summit (its pixel means still the parent's); below it (a parent
+        # pixel's mean of a summit): raised as one, the shift fading out over a parent pixel round it
+        hs = ds <= hold
+        lift = 1.0 - Z.smoothstep(hold, hold + max(rp, hold), ds)
+        top = float(v["top_m"])
+        if s1[hs].max() > top and (s1 - fine_e * lift)[hs].max() < top:
+            lo_, hi_ = 0.0, 1.0  # (the share of the edifice's form kept at the summit)
+            for _ in range(30):
+                mid = 0.5 * (lo_ + hi_)
+                lo_, hi_ = (mid, hi_) if (s1 - (1 - mid) * fine_e * lift)[hs].max() < top else (lo_, mid)
+            s1 = s1 - (1 - lo_) * fine_e * lift
+        shift = top - s1[hs].max()
+        s1 = s1 + shift * lift
+        log(f"  volcano {k}: {prm['kind']} {prm['status']}, crater {2 * prm['crater_r']:.2f} km, summit shift "
+            f"{shift:+.0f} m, drawn over the parent {int(drawn[sel].sum())} px")
+        ed[sel] = s1 - target_f[sel]
+        e_w[sel] = np.maximum(e_w[sel], wgt)
+        f0, f1 = max(prm["free_km"][0], hold), max(prm["free_km"][1], hold + 4 * res)
+        e_cut[sel] = np.minimum(e_cut[sel], VOLC_CUT_M * Z.smoothstep(f0, f1, ds)
+                                + 1e4 * Z.smoothstep(max(0.5 * reach, f1), max(reach, 2 * f1), ds))
+        hold_i = sel[hs]
+        hold_i = hold_i[~(course | pool | gorge)[hold_i] & (target_f[hold_i] + ed[hold_i] > 0)]
+        core[hold_i] = True
+        top_i = hold_i[int(np.argmax(target_f[hold_i] + ed[hold_i]))]
+        ed[top_i] = float(v["top_m"]) - target_f[top_i]
+        c_i = int(np.argmin(dv))
         vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3),
                          "summit_px": [int(top_i // nb - hb), int(top_i % nb - hb)],
+                         "vent_px": [int(c_i // nb - hb), int(c_i % nb - hb)],
+                         "summit_form": ("caldera" if prm["caldera"] else "pit crater" if prm["kind"] == "shield"
+                                         else "crater") if prm["crater_d"] > 0 else "parent's",
+                         "crater_km": round(2 * prm["crater_r"], 2), "crater_m": round(prm["crater_d"], 0),
+                         "gully_m": round(prm["gully_m"], 0),
                          "parent_volcano": k, "lineage": [*v.get("lineage", []), k]})
+    # on the edifices: their ground, the parent's detail noise fading in only toward their feet
+    mod = (e_w > 0) & ~(course | pool | gorge) & (land | core)
+    detail = np.where(mod, (1.0 - e_w) * detail, detail)
+    he = np.where(core, target_f + ed, np.maximum(target_f + ed + detail, 0.5))
+    hw = np.where(mod, he, hw)
+    h = np.where(mod, he, h)
+    land |= mod
+    sea &= ~mod
+    lake &= ~mod
+    vol_cap = np.where(mod, he + e_cut, vol_cap)
+    vol_floor = np.where(mod, he - e_cut, vol_floor)
+    drawn &= mod
+    # (left out of the means on both sides, as a gorge: the parent pixels mostly under a drawn cone)
+    gorge_p |= np.bincount(own, drawn, minlength=pa.nx * pa.ny) > 0.5 * np.maximum(np.bincount(own, minlength=pa.nx * pa.ny), 1)
+    gorge_m = gorge | drawn
     fixed |= core | sea | lake | pool
     hw = np.where(sea, 0.0, hw)
     log(f"  conditioned on zoom {pa.id}: {len(links)} parent river links, {len(fall_list)} falls, "
@@ -769,14 +850,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     cnt_k = cnt * ~gorge_p
     cnt3k = per_block(cnt_k.astype(float))
     T3 = per_block(T_own * cnt_k) / np.maximum(cnt3k, 1)
-    cntf3 = per_block(np.bincount(own, ~gorge, minlength=nown).astype(float))
+    cntf3 = per_block(np.bincount(own, ~gorge_m, minlength=nown).astype(float))
     ok3 = (cnt3k >= 0.3 * 9 * (rp / res) ** 2) & (cntf3 >= 0.3 * cnt3)
 
     def block_gap(hw_):
         """Per parent pixel: (its block's target - fine mean) spread over the
         block's movable pixels, and their count (gorges left out)."""
         n_nf = per_block(np.bincount(own, active, minlength=nown).astype(float))
-        m3 = per_block(np.bincount(own, np.where(gorge, 0.0, ground(hw_)), minlength=nown)) / np.maximum(cntf3, 1)
+        m3 = per_block(np.bincount(own, np.where(gorge_m, 0.0, ground(hw_)), minlength=nown)) / np.maximum(cntf3, 1)
         # (spread over at least half the block: a few movable pixels among held ones took a block's
         # whole gap and stood as pillars, e.g. at a gorge's head)
         return np.where(ok3 & (n_nf >= 0.3 * cntf3), (T3 - m3) * cntf3 / np.maximum(np.maximum(n_nf, 0.5 * cntf3), 1), 0.0), n_nf
@@ -949,6 +1030,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     m3 = _box3(np.bincount(own, h, minlength=nown).reshape(pa.ny, pa.nx)).ravel() / np.maximum(c3, 1)
     t3 = _box3((T_own * cnt_o).reshape(pa.ny, pa.nx)).ravel() / np.maximum(c3, 1)
     err3 = (m3 - t3)[full3]
+    kept3 = full3 & (_box3(gorge_p.reshape(pa.ny, pa.nx).astype(float)).ravel() == 0)
+    err3k = (m3 - t3)[kept3]
     edge = np.zeros((n, n), bool)
     edge[[0, -1], :] = edge[:, [0, -1]] = True
     edge = edge.ravel() & land & ~course_c  # (the imposed river beds cut below it, as the parent's own)
@@ -964,6 +1047,10 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         "parent_mean_bias_m": round(float(err.mean()), 2) if err.size else None,
         # ... and of each 3x3 block of them (what the pass keeps: see BLOCK above)
         "parent_block_mean_rms_error_m": round(float(np.sqrt(np.mean(err3 ** 2))), 2) if err3.size else None,
+        # ... over the blocks clear of drawn features (gorges, cones the parent averaged down: both left
+        # out of the means by design)
+        "parent_block_mean_rms_error_kept_m": round(float(np.sqrt(np.mean(err3k ** 2))), 2) if err3k.size else None,
+        "drawn_cone_px": int(drawn[keep_px].sum()),
         # the edge meets the parent's surface (bicubic)
         "edge_max_error_m": round(float(np.abs(h - target)[edge].max()), 2) if edge.any() else None,
         "min_m": round(float(h.min()), 1),

@@ -221,6 +221,67 @@ def test_volcano_keeps_its_summit(parent, fine):
     assert centre < pv["top_m"] - 20
 
 
+def test_volcano_form(fine):
+    """PW-395: a summit crater (a rim round a lower floor, not a needle tip)
+    and concave flanks, steepest under the rim and no steeper than ~35
+    degrees there."""
+    z = fine[0]
+    v, = z["stats"]["volcanoes"]
+    h = z["layers"]["elevation"].astype(float)
+    res = z["res"]
+    top = v["top_m"]
+    assert v["summit_form"] == "crater" and v["crater_m"] >= 50
+    vr, vc = v["vent_px"]
+    rr, cc = np.mgrid[0:z["ny"], 0:z["nx"]]
+    d = np.hypot(rr - vr, cc - vc) * res
+    gy, gx = np.gradient(h, 1000 * res)
+    slope = np.degrees(np.arctan(np.hypot(gx, gy)))
+    Rr = v["crater_km"] / 2
+    assert h[vr, vc] < top - 0.4 * v["crater_m"]  # the crater's floor
+    # the rim: a ring standing near the summit all round, not one high pixel
+    rim = (d >= 0.8 * Rr) & (d <= 1.25 * Rr)
+    th = np.arctan2(rr - vr, cc - vc)[rim]
+    hi = h[rim] >= top - 0.5 * v["crater_m"]
+    assert len(np.unique(np.floor((th[hi] + np.pi) / (np.pi / 8)))) >= 12  # in at least 12 of 16 sectors
+    # its flanks no cliffs (the parent's cone here is gentle: the concave profile is checked on the
+    # edifice itself in test_volcano_edifices_by_kind)
+    assert np.percentile(slope[(d >= Rr + 0.2) & (d < Rr + 3.0)], 95) < 38.0
+
+
+def test_volcano_edifices_by_kind():
+    """PW-395: summit forms by kind and status, the rim at the edifice's
+    height, a concave stratocone, gullies deeper on old volcanoes."""
+    from planet import zoom_fine_volcano as ZFV
+    base = {"lat": 10.0, "lon": 20.0, "age_myr": 4.0}
+    strato = ZFV.params({**base, "kind": "arc", "form": "active stratovolcano", "status": "active",
+                         "height_m": 2000.0, "top_m": 2500.0}, None, 1000.0, 1)
+    assert strato["kind"] == "strato" and not strato["caldera"] and 0.12 <= strato["crater_r"] <= 0.6
+    assert strato["flows"] and strato["cones"] is not None
+    old = ZFV.params({**base, "kind": "arc", "form": "eroded volcanic island", "status": "extinct",
+                      "height_m": 2000.0, "top_m": 2000.0}, None, 1000.0, 1)
+    assert old["caldera"] and old["crater_r"] > strato["crater_r"] and old["gully_m"] > 2 * strato["gully_m"]
+    assert not old["flows"] and not old["cones"]
+    shield = ZFV.params({**base, "kind": "hotspot", "form": "active shield volcano", "status": "active",
+                         "height_m": 4000.0, "top_m": 4000.0}, 30.0, 1000.0, 1)
+    assert shield["caldera"] and shield["pits"]
+    # the stratocone along a radius (the volcano's own frame): rim at H, a crater, concave flanks
+    fr = Z.Frame(base["lat"], base["lon"])
+    x = np.linspace(0.0, 6.0, 601)
+    smooth = {**strato, "flows": [], "cones": [], "gully_m": 0.0}
+    E = ZFV.relief(fr.to_sphere(x, np.zeros_like(x)), smooth)
+    Rr = strato["crater_r"]
+    X, Y = np.meshgrid(np.linspace(-1, 1, 101), np.linspace(-1, 1, 101))
+    E2 = ZFV.relief(fr.to_sphere(X.ravel(), Y.ravel()), smooth)
+    assert abs(E2.max() - strato["H"]) < 10.0  # (the rim's high point: notched lower elsewhere)
+    assert E[0] < E2.max() - 0.8 * strato["crater_d"]
+    s = -np.gradient(E, 1000 * (x[1] - x[0]))
+    out = x > Rr + 0.05
+    assert np.degrees(np.arctan(s[out].max())) < 35.0
+    bands = [s[(x >= Rr + a) & (x < Rr + a + 1.0)].mean() for a in (0.1, 1.1, 2.1, 3.1)]
+    assert np.all(np.diff(bands) < 0), bands  # (slopes ease outward: concave, steepest under the rim)
+    assert np.degrees(np.arctan(bands[0])) > 20.0
+
+
 def test_edge_meets_the_parent(parent, fine):
     z = fine[0]
     s = z["stats"]
