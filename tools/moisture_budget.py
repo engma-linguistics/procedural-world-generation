@@ -273,7 +273,7 @@ def kernel_args(rec: dict) -> tuple:
     G = climate._geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in s_in])) for k in s_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
-    ocean = elev <= 0 if rec.get("ocean") is None else rec["ocean"]
+    ocean = elev <= 0 if rec.get("ocean") is None else rec["ocean"]  # (climate.compute passes its own)
     return (st["qs"], st["src_q"], ocean, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
             st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
@@ -474,12 +474,13 @@ def edge_fluxes(grid, rec, q_after):
 def analyse(grid, d, c, rec) -> dict:
     lat, lon = grid.lat, grid.lon
     area = ocean_mod.cell_area_km2(grid)
-    elev = rec["elev"]
-    sea = elev <= 0
-    land = ~sea
+    # (the land by its ice surface: the bed under the ice is the true one,
+    # below the sea in West Antarctica and central Greenland, PW-354)
     surf = d["elev"].astype(np.float64) + d["ice"].astype(np.float64)
-    basin = basins(grid, elev)
-    drain = drainage(grid, elev, surf, basin)
+    sea = ~earth_data.land_of(d)
+    land = ~sea
+    basin = basins(grid, surf)
+    drain = drainage(grid, surf, surf, basin)
     NB = len(BASINS)
     sc = mm_scale(c, rec)
     obs = observations(grid)

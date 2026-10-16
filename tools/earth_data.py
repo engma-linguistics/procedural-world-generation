@@ -75,8 +75,12 @@ Mapping to the grid
 -------------------
 Every ETOPO1 sample (1/6 deg) is assigned to its nearest icosphere cell with
 cos(lat) area weights. A sample is land if its *ice surface* height is > 0
-(so ice shelves count as land, and inland basins below sea level such as the
-Caspian count as sea). A cell is land if its land fraction >= 0.5. Then:
+and its ice isn't afloat (inland basins below sea level such as the Caspian
+count as sea). Ice is afloat where the bedrock is below the sea and the ice
+surface stands no higher than flotation's freeboard, (1 - 917/1028) x (ice
+surface - bedrock): the shelves (Ross, Ronne-Filchner, Amery; ~1.05 million
+km2 of ETOPO1's samples), which become sea of the sea floor's depth. A cell
+is land if its land fraction >= 0.5. Then:
   surface = weighted mean of the ice-surface height over the cell's land
             samples (sea cells: mean depth over sea samples, <= -1 m)
   ice     = weighted mean of (ice surface - bedrock) over land samples, i.e.
@@ -85,12 +89,13 @@ Caspian count as sea). A cell is land if its land fraction >= 0.5. Then:
             the cell's land is ice covered (else 0: the model turns any cell
             with ice > 0 into EF, which would ice over Greenland's coast)
   ice_frac  that ice-covered share of the cell's land
-  elev    = surface - ice, floored at 1 m on land cells. The model treats
+  elev    = surface - ice: the true bed (PW-354). The model treats
             `elev` as bare ground and adds `ice` itself, so elev + ice ==
             surface. Where the bedrock is below sea level (West Antarctica,
-            central Greenland) the floor keeps the cell land and `ice` is
-            reduced to keep elev + ice == surface. Approximate, but the
-            model only uses surface height (temperature) and ice > 0.
+            central Greenland) the cell is land by its ice: land is
+            geo.is_land(elev, ice) (elev > 0 or ice > 0, PW-307), never
+            elev > 0. (Before PW-354 the bed was floored at 1 m and the ice
+            thinned to keep the surface, and the shelves were land.)
 Observed fields are sampled (nearest pixel) at each cell centre:
   obs_koppen    KOPPEN id (-1 where Kottek has no land), As -> Aw
   obs_temp, obs_t_warm, obs_t_cold   NCEP 2 m, annual mean / warmest / coldest month (C),
@@ -125,7 +130,8 @@ from numba import njit, prange
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "earth"
-CACHE_VERSION = 4
+CACHE_VERSION = 5  # (5: the true bed under the ice, shelves sea; PW-354)
+RHO_I, RHO_W = 917.0, 1028.0  # ice, sea water (kg/m3; as timezoom.py)
 
 ERDDAP = [
     "https://upwell.pfeg.noaa.gov/erddap/griddap/",
@@ -341,7 +347,15 @@ def _build(grid) -> dict:
     pts = _unit(LA.ravel(), LO.ravel())
     cell = grid.locate(pts)
     b, s = b.ravel().astype(float), s.ravel().astype(float)
-    land = s > 0
+    # land: ground or grounded ice above the sea. ETOPO1's ice surface also
+    # covers the floating shelves (Ross, Ronne-Filchner...), whose "bedrock"
+    # is the sea floor beneath them; ice is afloat where its surface stands
+    # no higher than flotation's freeboard, (1 - rho_i / rho_w) x its
+    # thickness (as the time zoom's sheets, timezoom.py), and those samples
+    # are sea of the floor's depth (the climate makes its own sea ice)
+    afloat = (s > 0) & (b < 0) & (s <= (1 - RHO_I / RHO_W) * (s - b))
+    land = (s > 0) & ~afloat
+    s = np.where(afloat, b, s)
     W = np.bincount(cell, w, n)
     Wl = np.bincount(cell, w * land, n)
     frac = Wl / np.maximum(W, 1e-12)
@@ -356,10 +370,11 @@ def _build(grid) -> dict:
     # an ice cap, so only cells that are mostly ice get any
     icy = np.bincount(cell, w * land * (s - b > 10), n) / np.maximum(Wl, 1e-12)
     ice_t = np.where(is_land & (icy >= 0.5), ice_l, 0.0)
+    # the true bed under the ice (PW-354): below sea level under much of West
+    # Antarctica and central Greenland, land by its ice (geo.is_land, PW-307)
     elev = surface - ice_t
-    low = is_land & (elev < 1)
+    low = is_land & (ice_t <= 0) & (elev < 1)  # (ice-free land: a mean of heights > 0, kept above the sea)
     elev[low] = 1.0
-    ice_t[low] = np.maximum(surface[low] - 1.0, 0.0)
     # a land cell with no ETOPO samples can't happen at level <= 8 (1/6 deg
     # sampling is denser than the grid); guard anyway
     assert W.min() > 0, "cell without ETOPO samples: level too fine for the 1/6 deg cache"
@@ -428,18 +443,27 @@ def cell_areas(grid) -> np.ndarray:
     return (2 * np.arctan2(num, den)).sum(1)
 
 
-def koppen_agreement(grid, koppen, obs_koppen, elev) -> dict:
+def land_of(d: dict) -> np.ndarray:
+    """The land of earth_on_grid's dict: ground above the sea or under ice
+    (geo.is_land; the bed under the ice is the true one, below the sea in
+    West Antarctica and central Greenland: PW-354)."""
+    from planet.geo import is_land
+    return is_land(d["elev"], d["ice"])
+
+
+def koppen_agreement(grid, koppen, obs_koppen, elev, ice=None) -> dict:
     """The Earth Koppen score, one definition for earth_check, scorecard and
-    the tests: over the model's land (elev > 0) outside Antarctica (lat >
+    the tests: over the model's land (geo.is_land(elev, ice)) outside Antarctica (lat >
     -60) where Kottek has a land class, the share of the *area* (true cell
     areas) whose model class matches the observed one: "group" (main group
     A-E) and "exact" (full code), in %. "group_cells" is the unweighted
     share of cells, which the test floor and scorecard quoted before
     2026-10-14 (within ~0.1 point of "group" at level 6)."""
     from planet import climate
+    from planet.geo import is_land
     k, obs = np.asarray(koppen, int), np.asarray(obs_koppen, int)
     group = np.array([c[1][0] for c in climate.KOPPEN])
-    m = (np.asarray(elev) > 0) & (grid.lat > -60) & (obs >= 0) & (obs < len(group)) & (obs != climate.SEA_CLASS)
+    m = is_land(elev, ice) & (grid.lat > -60) & (obs >= 0) & (obs < len(group)) & (obs != climate.SEA_CLASS)
     w = cell_areas(grid)[m]
     gm, go = group[k[m]], group[obs[m]]
     return {"group": 100 * float(w[gm == go].sum() / w.sum()), "exact": 100 * float(w[k[m] == obs[m]].sum() / w.sum()),
@@ -864,7 +888,7 @@ def earth_closed(grid) -> np.ndarray:
     basin (sink) most of it ends in (hydrosheds_rivers). hydrology.rivers_and_lakes keeps each one
     closed (its `closed`)."""
     h = hydrosheds_rivers(grid)
-    return np.where((h["inland"] >= 0.5) & (earth_on_grid(grid)["elev"] > 0), h["basin"], -1)  # (basin -1: open)
+    return np.where((h["inland"] >= 0.5) & land_of(earth_on_grid(grid)), h["basin"], -1)  # (basin -1: open)
 
 
 def earth_outlets(grid) -> np.ndarray:
@@ -881,7 +905,7 @@ def earth_outlets(grid) -> np.ndarray:
     (ETOPO1 can't give this, even at its full 1': filled, it still dams the
     Iron Gates at 250 m where the Danube runs at ~65.)"""
     h = hydrosheds_rivers(grid)
-    return np.where((earth_on_grid(grid)["elev"] > 0) & (earth_closed(grid) < 0), h["river"], np.nan)
+    return np.where(land_of(earth_on_grid(grid)) & (earth_closed(grid) < 0), h["river"], np.nan)
 
 
 # --------------------------------------------------------------------------
@@ -1174,9 +1198,9 @@ def main():
     t0 = time.time()
     grid = build_grid(a.level)
     d = earth_on_grid(grid)
-    land = d["elev"] > 0
+    land = land_of(d)
     print(f"level {a.level}: {grid.n} cells, land {land.mean():.1%}, "
-          f"ice cells {(d['ice'] > 0).sum()}, max surface {d['surface'].max():.0f} m, "
+          f"ice cells {(d['ice'] > 0).sum()} ({((d['ice'] > 0) & (d['elev'] <= 0)).sum()} on a bed below the sea), max surface {d['surface'].max():.0f} m, "
           f"{time.time() - t0:.1f}s")
 
 

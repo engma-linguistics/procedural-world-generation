@@ -15,7 +15,8 @@ onto the same cells:
            so it already includes the altitude effect, like the model)
 
 All shares/means are area-weighted with the true spherical cell areas.
-"Land" for comparisons is the model's land mask (elev > 0); Kottek/GPCC
+"Land" for comparisons is the model's land mask (elev > 0 or ice > 0,
+earth_data.land_of); Kottek/GPCC
 cells that are missing (sea in their mask) are skipped. "Antarctica" means
 lat < -60.
 
@@ -296,7 +297,7 @@ def run(level: int):
 def analyse(grid, d, c) -> dict:
     lat, lon = grid.lat, grid.lon
     w = cell_areas(grid)
-    land = d["elev"] > 0
+    land = earth_data.land_of(d)
     ant = lat < -60
     k = np.asarray(c["koppen"])
     ok = d["obs_koppen"].astype(int)
@@ -313,7 +314,7 @@ def analyse(grid, d, c) -> dict:
         "peel2007_incl_ant": PEEL_2007_INCL_ANT,
     }
     m = both & ~ant
-    R["cell_agreement_excl_ant"] = earth_data.koppen_agreement(grid, k, ok, d["elev"])  # the Earth Koppen score
+    R["cell_agreement_excl_ant"] = earth_data.koppen_agreement(grid, k, ok, d["elev"], d["ice"])  # the Earth Koppen score
     conf = np.zeros((5, 5))
     for i in range(5):
         for j in range(5):
@@ -484,7 +485,7 @@ def earth_clouds(grid, d, c, w) -> dict:
     the seasonal contrasts; and dry-air humidity."""
     o = earth_data.earth_clouds(grid)
     lat, lon = grid.lat, grid.lon
-    sea = d["elev"] <= 0
+    sea = ~earth_data.land_of(d)
     days = climate.day_hours(lat, 23.4)
     cl = 0.5 * (c["cloud_jul"] + c["cloud_jan"])
     sun = 0.5 * (c["sun_jul"] / np.maximum(days[0], 1e-6) + c["sun_jan"] / np.maximum(days[1], 1e-6))
@@ -530,16 +531,16 @@ def earth_clouds(grid, d, c, w) -> dict:
 def earth_rivers(grid, d, c, w) -> dict:
     """Route runoff on Earth and compare discharges at big river mouths."""
     ice = d["ice"].astype(np.float64)
-    # Routing ground: the true mean land surface (earth_data clamps land
-    # below sea level to 1 m for the climate), and sea cells cut off from
+    # Routing ground: the true mean land surface, and sea cells cut off from
     # the world ocean (Caspian, Black Sea...) are land basins with their
-    # real beds; everything raised so that all of it stays above 0.
-    sea = d["elev"] <= 0
+    # real beds; everything raised so that all of it but the bed under the
+    # ice (land by its ice, below the sea in West Antarctica) stays above 0.
+    sea = ~earth_data.land_of(d)
     lab, k = grid.components(sea)
     big = np.argmax(np.bincount(lab[lab >= 0], minlength=k))
     inland = sea & (lab != big)
     ground = np.where(sea, d["surface"], d["surface"] - ice).astype(np.float64)
-    lift = 1.0 - min(ground[~sea | inland].min(), 0.0)
+    lift = 1.0 - min(ground[(~sea & (ice <= 0)) | inland].min(), 0.0)
     elev = np.where(sea & ~inland, ground, ground + lift)
     land = elev > 0
     scale = w / w.mean()  # flow in units of mean-cell x m/yr; true areas
@@ -795,7 +796,7 @@ def render(path, grid, d, c, width=720):
     lo = -180 + (np.arange(width) + 0.5) * 360 / width
     LA, LO = np.meshgrid(la, lo, indexing="ij")
     cell = grid.locate(earth_data._unit(LA.ravel(), LO.ravel())).reshape(h, width)
-    land = (d["elev"] > 0)[cell]
+    land = earth_data.land_of(d)[cell]
     coast = np.zeros_like(land)
     coast[:, 1:] |= land[:, 1:] != land[:, :-1]
     coast[1:, :] |= land[1:, :] != land[:-1, :]

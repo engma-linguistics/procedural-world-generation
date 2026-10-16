@@ -92,5 +92,5 @@ def test_earth_climate_score():
     g = build_grid(6)
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
     c = climate.compute(g, elev, 0.0, 23.4, ice)
-    agree = koppen_agreement(g, c["koppen"], obs, elev)["group"]
+    agree = koppen_agreement(g, c["koppen"], obs, elev, ice)["group"]
     assert agree >= 66, agree

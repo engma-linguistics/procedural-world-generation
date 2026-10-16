@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
 from planet import climate, coast, hydrology, vegetation  # noqa: E402
-from planet.geo import R_KM, xyz  # noqa: E402
+from planet.geo import R_KM, is_land, xyz  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import earth_on_grid  # noqa: E402
 
@@ -113,10 +113,10 @@ def main():
     t0 = time.time()
     wp = coast.wave_power(g, elev, c, ice)
     t1 = time.time()
-    tr, det = coast.tide_range(g, elev, detail=True, ice_share=coast.sea_ice_share(g, elev, c).mean(0))
+    tr, det = coast.tide_range(g, elev, detail=True, ice_share=coast.sea_ice_share(g, elev, c, ice).mean(0), ice=ice)
     t2 = time.time()
     print(f"wave_power {t1 - t0:.1f}s, tide_range {t2 - t1:.1f}s")
-    ocean = elev <= 0
+    ocean = ~is_land(elev, ice)
     coastal = ocean & (np.bincount(np.repeat(np.arange(g.n), np.diff(g.nbr_off)), ~ocean[g.nbr_idx], g.n) > 0)
 
     print(f"\n{'WAVE POWER kW/m':34s} {'model':>7s}   observed")
@@ -147,7 +147,7 @@ def main():
     flow, down, _ = hydrology.rivers_and_lakes(g, elev, c, ice)
     cell_area = 4 * np.pi * R_KM ** 2 / g.n
     q = flow * cell_area * 1e6 / coast.SEC_PER_YR
-    land = elev > 0
+    land = is_land(elev, ice)
     mouth = land & (down >= 0) & ~land[np.maximum(down, 0)]
     L = {"elevation": elev, "temperature": c["temp"], "ice": ice}
     print(f"\n{'DELTAS':22s} {'Q m3/s':>8s} {'Qs Mt/yr':>8s} {'waves':>6s} {'tide':>5s}   river  wave  tide   model type (usually)")
