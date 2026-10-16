@@ -3014,7 +3014,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, np.maximum(cov_f, icemass.LOCAL),
                                                    latlon(P)[0], 2 * precip * jul_f, 2 * precip * (1 - jul_f))
     pix_lat = latlon(P)[0]
-    north = pix_lat >= 0
+    north = fields["jul_warm"]  # (July is the warmer month: fine_fields, PW-374)
     clim_f = np.where(sea, SEA_CLIMATE, clim_f)
     # land the coarse map has as sea (a volcanic island in a sea cell): a
     # climate from its own temperature and rain
@@ -3161,7 +3161,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "drainage_area": area.astype(np.float32),
         "precipitation": precip.astype(np.float32),
         "temperature": temp.astype(np.float32),
-        # July and January (the warmest / coldest month by hemisphere) and the half-years' rain (PW-139)
+        # July and January (the interpolated cells' own, PW-374) and the half-years' rain (PW-139)
         "temperature_jul": np.where(north, t_warm, t_cold), "temperature_jan": np.where(north, t_cold, t_warm),
         "precipitation_jul": fields["p_jul"], "precipitation_jan": fields["p_jan"],
         "ice": np.where(glacier, np.maximum(ice_th, 1.0), 0).astype(np.float32),
@@ -3319,7 +3319,7 @@ LAYER_DOC = {
     "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
     # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)
-    "temperature_jul": ("C", "July mean temperature (warmest month in the north, coldest in the south), "
+    "temperature_jul": ("C", "July mean temperature (the cells' July interpolated, so continuous across the equator), "
                              "lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),
     "temperature_jan": ("C", "January mean temperature, lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),
     "precipitation_jul": ("mm/yr", "precipitation in the July half-year (Apr-Sep), as a rate per year",

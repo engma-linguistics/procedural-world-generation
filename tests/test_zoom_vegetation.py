@@ -122,3 +122,41 @@ def test_fractions_recomputed_match(data_root, veg_world):
     assert tot.max() <= 1.0 + 1e-6 and (tot[land] > 0).mean() > 0.9
     # stored scaled layers decode to real units
     assert lay["lai"].dtype.kind == "f" and lay["lai"].max() < 12
+
+
+# --------------------------------------------------------------------------- seasons across the equator (PW-374)
+def test_july_continuous_across_the_equator():
+    """A world whose warmest / coldest months differ by 12 C right at the
+    equator: July is warm north of it and cold south of it, so the cells'
+    July steps there. The zoom interpolates July and January themselves
+    (not the warmest month, swapped back per pixel), so its July ramps over
+    the coarse cells' blend instead of jumping on the pixel row at 0, and
+    the months the vegetation and the satellite see stay continuous."""
+    from planet import climate
+    from planet.geo import latlon
+    g = build_grid(5)
+    n = g.n
+    L = {"elevation": np.full(n, 300.0), "temperature": np.full(n, 20.0), "warm_month": np.full(n, 26.0),
+         "cold_month": np.full(n, 14.0), "precipitation": np.full(n, 1500.0), "ice": np.zeros(n)}
+    world = {"grid": g, "layers": L, "meta": {}}
+    fr = zoom.Frame(0.3, 20.0)
+    nx = ny = 250
+    res = 4.0
+    xs = (np.arange(nx) + 0.5 - nx / 2) * res
+    ys = (ny / 2 - np.arange(ny) - 0.5) * res
+    X, Y = np.meshgrid(xs, ys)
+    f = ZVG.fine_fields(world, fr, X.ravel(), Y.ravel(), nx * res)
+    jul = np.where(f["jul_warm"], f["warm_sl"], f["cold_sl"]).reshape(ny, nx)
+    lat = latlon(fr.to_sphere(X.ravel(), Y.ravel()))[0]
+    # warm in the north, cold in the south, and no row-to-row step anywhere near the swing
+    assert jul[0].mean() - jul[-1].mean() > 11  # (sea level: 26 and 14 C plus the 300 m lapse)
+    assert np.abs(np.diff(jul, axis=0)).max() < 2.0
+    # the months on the seasons the pixel has: continuous too
+    sl = ZVG.season_lat(lat, f["jul_warm"])
+    assert np.allclose(np.abs(sl), np.abs(lat))
+    p = np.full(nx * ny, 1500.0)
+    tj = climate.months(sl, f["t_sl"], f["warm_sl"], f["cold_sl"], p, p)["t"][6].reshape(ny, nx)  # July
+    assert np.abs(np.diff(tj, axis=0)).max() < 2.0
+    # (the latitude's sign alone would step by the whole swing at the equator)
+    t0 = climate.months(lat, f["t_sl"], f["warm_sl"], f["cold_sl"], p, p)["t"][6].reshape(ny, nx)
+    assert np.abs(np.diff(t0, axis=0)).max() > 4.0
