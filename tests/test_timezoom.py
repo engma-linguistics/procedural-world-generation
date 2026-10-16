@@ -194,3 +194,31 @@ def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
     held = (a["state"]["H"] > 100) & cooled  # where the ice is still there, the anchor still cools it
     if held.any():
         assert (a["state"]["t_ann"] < b["state"]["t_ann"] - 0.3)[held].mean() > 0.5
+
+
+def test_shelf_buttresses_marine_front(sim4):
+    """A marine ice front beside a sea cold enough for an ice shelf to stand
+    calves less (the shelf holds it back, PW-367); beside a warm, open sea
+    it calves as a tidewater front, buttressed or not."""
+    g = sim4.grid
+    base = Z.source_from_sim(sim4)
+    nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
+    deep = lambda i: base["elev"][i] < -500 and (base["elev"][nb(i)] < -500).all()
+
+    def kept(lat_ok, dT, buttress):
+        c = next(i for i in np.argsort(-np.abs(g.lat) if dT < 0 else np.abs(g.lat)) if lat_ok(g.lat[i]) and deep(i))
+        elev, ice = base["elev"].copy(), np.zeros(g.n)
+        elev[c], ice[c] = -600.0, 1500.0  # grounded (1.12 x 600 m floats), open sea all around
+        src = dict(base, elev=elev, ice=ice, dT=base["dT"] + dT)
+        r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(buttress=buttress, **NO_ORBIT))
+        return r["state"]["H"][c], float(r["state"]["t_ann"][nb(c)].mean())
+
+    cold, t_cold = kept(lambda la: abs(la) > 60, -25.0, 0.8)
+    cold0, _ = kept(lambda la: abs(la) > 60, -25.0, 0.0)
+    assert t_cold < Z.TZParams().shelf_cold, t_cold  # (a sea a shelf stands in)
+    assert cold > cold0 + 100, (cold, cold0)
+    warm, t_warm = kept(lambda la: abs(la) < 25, 0.0, 0.8)
+    warm0, _ = kept(lambda la: abs(la) < 25, 0.0, 0.0)
+    assert t_warm > Z.TZParams().shelf_warm, t_warm
+    assert warm == warm0
+    assert warm < cold  # (the same front beside open sea keeps less)

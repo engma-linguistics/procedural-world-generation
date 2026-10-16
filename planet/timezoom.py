@@ -55,7 +55,9 @@ Model (per 500-yr step, see simulate)
   by its ice).
 - Sea: ice that floats (thinner than 1.12x the water depth) breaks off;
   grounded ice on the sea floor calves at a rate ~ water depth where it
-  meets open water, or stands in water deeper than calve_depth. Sea level falls by the sea water the ice holds / ocean
+  meets open water (less where that sea is cold enough for an ice shelf
+  to stand and buttress it, front_buttress), or stands in water deeper
+  than calve_depth. Sea level falls by the sea water the ice holds / ocean
   area: 0.89 x the ice above flotation (ice grounded below sea level only
   replaces sea water) plus the room the sinking bed made below sea level
   (Goelzer et al. 2020), so coastlines and land bridges move with the ice.
@@ -180,6 +182,11 @@ class TZParams:
     # than real grounded ice stands: Earth's deepest grounded beds are ~2.5 km (the Bentley Subglacial
     # Trench; ETOPO1's cell means reach 1.7 km at L6, 2.3 km at L7), and at 1.5 km the true bed's
     # deepest cells under West Antarctica's 3 km of ice calved in place from the start (PW-361)
+    buttress: float = 0.8  # share of a marine front's calving an ice shelf holds back, where the sea beside
+    # it is cold enough for a shelf to stand (front_buttress, PW-367; Fürst et al. 2016: Antarctica's shelves
+    # carry most of the resistance at the grounding line, only ~13% of their area is 'passive') ...
+    shelf_warm: float = -5.0  # C: ... none where the air's annual mean over that sea is above this (Morris &
+    shelf_cold: float = -10.0  # Vaughan 2003's limit of ice-shelf viability), in full below this
 
 
 # --------------------------------------------------------------------------
@@ -278,6 +285,33 @@ def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np
     k = own * (1 - b * (1 - p.ice_absorb))
     mix = climate.smooth_big(grid, k, p.absorb_km) if p.absorb_km > 0 else k
     return own * (1 - b) + b * mix
+
+
+def front_buttress(grid: Grid, front: np.ndarray, open_sea: np.ndarray, t_air: np.ndarray,
+                   p: "TZParams") -> np.ndarray:
+    """Share (0..1) of a marine front's calving its ice shelf holds back
+    (PW-367). The model has no floating ice, but where the sea beside a
+    front is cold enough an ice shelf would stand in front of it, and a
+    shelf confined in its embayment carries most of the resistance at the
+    grounding line (Fürst et al. 2016): it holds back `buttress` of the
+    calving. Elsewhere the front calves as a tidewater glacier. A shelf
+    survives where its surface doesn't melt through in summer: observed,
+    where the air's annual mean is below ~-5 C (Morris & Vaughan 2003: the
+    Antarctic Peninsula's shelves broke up as that isotherm passed them).
+    t_air: the annual mean air temperature (C) over the sea cells, which
+    over a frozen sea is how deeply it freezes (the sea surface less how
+    far below freezing the latitude's sea would be, and the inversion over
+    its ice: the sea state ocean.open_share reads, which comes in whole
+    months and is never 0 beside today's Antarctica at L6, open 2-6 months
+    a year, as the real Ross and Amundsen seas are 2-4 months while their
+    shelves stand). The hold ramps from none at shelf_warm to full at
+    shelf_cold; each front takes the mean over its open-sea neighbours
+    (none for a front with no open sea beside it: the deep-water rule)."""
+    hold = np.where(open_sea, np.clip((p.shelf_warm - t_air) / (p.shelf_warm - p.shelf_cold), 0.0, 1.0), 0.0)
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    tot = np.bincount(src, weights=hold[grid.nbr_idx], minlength=grid.n)
+    cnt = np.bincount(src, weights=open_sea[grid.nbr_idx].astype(float), minlength=grid.n)
+    return np.where(front & (cnt > 0), p.buttress * tot / np.maximum(cnt, 1.0), 0.0)
 
 
 # --------------------------------------------------------------------------
@@ -706,7 +740,10 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             open_sea = (depth > 0) & (H <= 0)
             nb_open = np.add.reduceat(open_sea[g.nbr_idx], g.nbr_off[:-1]) > 0
             front = marine & (nb_open | (depth > p.calve_depth))
-            frac = np.exp(-p.calving * depth * dt / np.sqrt(area))
+            # (less where a shelf would stand in the cold sea beside it: PW-367; t_ann: this step's year,
+            # over the sea too)
+            held = front_buttress(g, front, open_sea, t_ann, p)
+            frac = np.exp(-p.calving * (1.0 - held) * depth * dt / np.sqrt(area))
             lost += np.where(front, H * (1 - frac), 0.0)
             H[front] *= frac[front]
         budget["calved"] += float((lost * area).sum())
