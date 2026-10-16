@@ -319,7 +319,10 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     have many). Best first by power (discharge x height), at least sep_km
     (and 3 px) apart, the first `top` (None: all), none within WF_EDGE_PX of
     the edge. Each: px (row, col), height_m, length_km, discharge_m3s,
-    power_gw, top_m, bottom_m, from_lake; _foot: the pixel below it."""
+    power_gw, top_m, bottom_m, from_lake; _foot: the pixel the drop is
+    measured to, the fall's foot (its plunge pool goes there: on a fall
+    over several pixels the one below the top has little of the drop
+    above it, PW-341)."""
     n = nx * ny
     lvl, d0 = ws.astype(float).copy(), np.zeros(n)
     for o, v in (starts or {}).items():
@@ -394,7 +397,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         out.append({"px": [r0, c0], "height_m": round(float(h[k]), 1), "length_km": round(float(d[k]), 1),
                     "discharge_m3s": round(float(q[i[k]]), 1), "power_gw": round(float(gw[k]), 3),
                     "top_m": round(float(lvl[i[k]]), 1), "bottom_m": round(float(ws[jj[k]]), 1),
-                    "from_lake": bool(d0[i[k]] > 0), "_foot": int(rec[i[k]])})
+                    "from_lake": bool(d0[i[k]] > 0), "_foot": int(jj[k])})
         if top is not None and len(out) >= top:
             break
     return out
@@ -2485,17 +2488,21 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         st["lip_px"], st["height_m"] = list(divmod(lip, nx)), round(hgt, 1)
         if hgt < KP_MIN_STEP or not active[foot]:
             continue
+        # the listed fall over this lip, if any: the pool goes at its foot,
+        # where its drop ends (below most of a fall over several pixels, PW-341)
+        r0, c0 = divmod(lip, nx)
+        f = next((f for f in falls if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3 and "kind" not in f),
+                 None)
+        if f is not None and active[f["_foot"]]:
+            foot, hgt = f["_foot"], max(hgt, f["height_m"])
         # plunge pools are roughly as deep as the fall is high, up to ~60 m (Niagara ~50 m below a 51 m fall)
         pool[foot] = max(pool[foot], float(np.clip(0.6 * hgt, 3.0, 60.0)))
-        r0, c0 = divmod(lip, nx)
-        for f in falls:
-            if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3 and "kind" not in f:
-                f.update({"kind": "lip", "gorge_km": round(float(st["gorge_km"]), 1),
-                          "lip_resistance": round(kp["resistance"], 2),
-                          "coarse_reach_drop_m": round(kp["excess_m"] + KP_GRADED * kp["reach_km"]),
-                          "coarse_reach_km": round(kp["reach_km"]), "plunge_pool_m": round(float(pool[foot]), 1),
-                          "_kp": kps.index(kp)})
-                break
+        if f is not None:
+            f.update({"kind": "lip", "gorge_km": round(float(st["gorge_km"]), 1),
+                      "lip_resistance": round(kp["resistance"], 2),
+                      "coarse_reach_drop_m": round(kp["excess_m"] + KP_GRADED * kp["reach_km"]),
+                      "coarse_reach_km": round(kp["reach_km"]), "plunge_pool_m": round(float(pool[foot]), 1),
+                      "_kp": kps.index(kp)})
     # falls over a landform's cliffs (a scarp, a bench, a fault scarp): their
     # own kind, and a plunge pool at the foot
     dom = lf.dominant() if lf is not None else np.zeros(npx, int)
