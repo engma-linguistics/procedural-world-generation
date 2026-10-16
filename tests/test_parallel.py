@@ -165,3 +165,16 @@ def test_zoom_built_twice_at_once_is_built_once(tiny):
     assert out[0] == out[1]
     assert sum("already exists" in m for m in msgs) == 1
     assert S.delete("zoom", out[0]["zoom"])
+
+
+def test_highlights_in_worker_processes(tiny):
+    """The server's highlights (PW-261): what isn't cached is sliced and
+    computed in worker processes, two worlds at once; then it is cached."""
+    from concurrent.futures import ThreadPoolExecutor
+    reqs = [{"run": "tiny02", "t": t} for t in (0, 40)]
+    with P.Pool(2, threads=2) as pool, ThreadPoolExecutor(2) as ex:
+        res = list(ex.map(lambda r: api.highlights(r, compute=pool.call), reqs))
+    assert res[0]["world"] != res[1]["world"] and all(r["features"] for r in res)
+    for req, r in zip(reqs, res):
+        again = api.highlights(req, cached_only=True)
+        assert again["world"] == r["world"] and again["features"] == r["features"]

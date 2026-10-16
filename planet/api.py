@@ -200,25 +200,37 @@ def zoom_request(source: dict, f: dict) -> dict:
     return {**source, "lat": f["lat"], "lon": f["lon"], "size_km": f["size_km"], "res_km": f["size_km"] / ZOOM_PX}
 
 
-def highlights(req: dict, cached_only: bool = False, refresh: bool = False) -> dict:
+def highlights_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """The heavy part of highlights (the server runs it in a worker process):
+    slices the run if needed ({run, t} with t a keyframe, or {world}), then
+    computes and caches the world's highlights (again if req["refresh"]).
+    Returns {"world": its path, "highlights": them}."""
+    if "run" in req:
+        world_path = slice_run(req["run"], req["t"], progress)
+    else:
+        world_path = S.find_world(req["world"])
+    with COMPUTE:  # (waits for a job running in this process)
+        d = H.for_world(world_path, bool(req.get("refresh")))
+    return {"world": str(world_path), "highlights": d}
+
+
+def highlights(req: dict, cached_only: bool = False, refresh: bool = False, compute=None) -> dict:
     """GET /api/highlights. For a run, builds the world at that keyframe
-    first if there isn't one (unless cached_only)."""
+    first if there isn't one (unless cached_only). What isn't cached is
+    computed by compute(highlights_job, req) (the server's: a worker
+    process, parallel.Pool.call; default: here)."""
     src = parse_source(req)
     if "run" in src:
         run_dir = S.find_run(src["run"])
         at = keyframe_t(run_dir, src["t"])
         src["t"] = at
         world_path = find_slice(run_dir, at)
-        if world_path is None and not cached_only:
-            world_path = slice_run(src["run"], at)
     else:
         world_path = S.find_world(src["world"])
-    d = None
-    if world_path is not None:
-        d = H.cached(world_path) if cached_only or not refresh else None
-        if d is None and not cached_only:
-            with COMPUTE:  # (waits for a running job)
-                d = H.for_world(world_path, refresh)
+    d = H.cached(world_path) if world_path is not None and (cached_only or not refresh) else None
+    if d is None and not cached_only:
+        res = (compute or (lambda fn, r: fn(r)))(highlights_job, {**src, "refresh": refresh})
+        world_path, d = Path(res["world"]), res["highlights"]
     out = {"source": src, "world": world_path.stem if world_path else None,
            "t_myr": src.get("t"), "features": None}
     if d is None:
