@@ -2,7 +2,7 @@
 id: PW-355
 title: World erosion routes water along the bed under ice, the world's rivers over the ice surface
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: hydrology
 effort: s
@@ -35,6 +35,7 @@ D. Keep PW-307's mix.
 Lean: A (one rule for the world's water, simplest), measured on an icehouse world.
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (d3648a1): erode routes over the ice surface under all ice; no-ice worlds bit-identical.
 - 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: option A (route erode over the ice surface under all ice, as rivers_and_lakes does: one rule for the world's water; the subglacial hydraulic head is dominated by the ice surface slope, so A approximates C). Measure on an icehouse world.
 - 2026-10-16: Created from inbox draft draft-erode-routing-under-ice.md (found by pw307-world-land).

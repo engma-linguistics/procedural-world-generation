@@ -1,4 +1,5 @@
 ---
+id: PW-361
 title: Check an Earth time zoom's start on the true Antarctic bed
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw354-earth-bed
 blocked_by: []
 relates: [PW-354]
 refs: [planet/timezoom.py, tools/earth_data.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,3 +25,6 @@ may unground a few cell-mean grounding-line cells that the sample-level test kep
 level and ice volume (Antarctica ~24.8 million km3 of ice now, was 22.9 with the floored bed)
 should start near today's.
 - [ ] run an L6 Earth time zoom of ~100 kyr; compare its first frames' ice extent, volume and sea level with before
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-earth-timezoom-true-bed.md (found by pw354-earth-bed).
