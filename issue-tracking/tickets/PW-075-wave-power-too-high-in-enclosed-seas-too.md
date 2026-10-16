@@ -2,7 +2,7 @@
 id: PW-075
 title: Wave power too high in enclosed seas, too low on India's west coast
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: coast
 effort: s
@@ -21,5 +21,6 @@ coast is too low (no monsoon swell). Faint straight streaks appear in the lee of
 directions).
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Coast batch agent started.
 - 2026-10-15: Smalls2: 24 ray directions with jitter, 1200 km fetch recovery; enclosed seas still high, India low from monsoon wind (drafts).
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Coast.

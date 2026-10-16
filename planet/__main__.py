@@ -278,7 +278,7 @@ def main():
     t.add_argument("--every", type=float, default=4, help="keep a viewer keyframe every N Myr")
     t.add_argument("--checkpoint-every", type=float, default=T.CHECKPOINT_EVERY,
                    help="save the full simulation state every N Myr, so slicing replays from the nearest "
-                        "one instead of t=0 (0: none; ~23 MB each at level 6)")
+                        "one instead of t=0 (0: none; ~12 MB each at level 6)")
     t.add_argument("--name", "-n")
     t.add_argument("--set", nargs="*", metavar="KEY=VALUE",
                    help="tectonics params, e.g. --set n_plates=16 start=scattered")

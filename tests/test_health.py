@@ -1,5 +1,6 @@
 """tools/health.py's measures (PW-246): one L4 keyframe, drainage ends, spells."""
 
+import copy
 import sys
 from pathlib import Path
 
@@ -28,6 +29,22 @@ def test_measure_frame(sim4):
     assert m["sea_ice_m"] <= 0 and abs(m["max_elev_km"] * 1000 - snap.elevation.max()) < 10
     assert m["inland_pct"] <= m["inland_raw_pct"]  # (real hollows only: a subset of the routed ends)
     assert set(H.ENVELOPES) <= set(m)  # every envelope has its measure
+
+
+def test_stats_land_is_the_frames_land(sim4):
+    """The run's land (sim.land(), its stats) is exactly the frame's: ground
+    above the sea in the frame's elevation (trenches included) or under
+    grounded ice. Oceanic crust whose bed is just above the sea but whose
+    trench puts the frame below it is sea in both (PW-309)."""
+    snap, st = sim4.snapshot(), sim4.stats()
+    frame_land = (snap.elevation > 0) | (snap.ice > 0)
+    assert np.array_equal(sim4.land(), frame_land)
+    assert st["land_pct"] == round(100 * frame_land.mean(), 1)
+    # the PW-309 case, made on a copy: an oceanic cell 10 m above the sea at a 300 m trench
+    s = copy.deepcopy(sim4)
+    c = int(np.flatnonzero(~s.w_cont & (s.ice <= 0))[0])
+    s.w_elev[c], s.w_trench[c], s.ice_sink[c] = 10.0, -300.0, 0.0
+    assert not s.land()[c] and s.snapshot().elevation[c] == -290.0
 
 
 def test_drainage_ends():

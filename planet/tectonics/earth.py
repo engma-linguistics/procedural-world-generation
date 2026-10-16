@@ -20,7 +20,8 @@ from . import record
 from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, elevation, ice_load, iso_rate, land_view,
                        ocean_depth, sediment_iso, sediment_km)
 
-SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
+SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward +-this (PW-293: was 250, which
+# shaped the signal; at 400 a Cretaceous-like +250 m passes at +222)
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
 WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
 # runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
@@ -97,15 +98,17 @@ def global_temperature(sim, growth, newc, rng):
     # over ridge_time Myr: a real ridge system waxes and wanes over tens of
     # Myr, while the model's spreading can stop or restart within a few
     # steps of a suture or a rift. It is measured against a fixed reference,
-    # the starting sea floor's mean depth (setup makes it a steady-state
-    # ocean, mean age ~60 Myr: sea level 0), so a lasting change in the
-    # basins (an ocean that stays young or old) keeps the sea up or down
+    # the starting sea floor's mean depth (setup makes it the model's own
+    # steady-state ocean, mean age 48 Myr, PW-293: sea level 0 is the
+    # model's mean, and excursions are breakups and assemblies), so a
+    # lasting change in the basins (an ocean that stays young or old) keeps the sea up or down
     # (PW-288: a baseline that relearned the floor over 300 Myr hid a
     # persistently young ocean). The water displaced also loads the floor,
     # which sinks by rho_w / (rho_m - rho_w) of the water's rise, so the sea
     # rises by (rho_m - rho_w) / rho_m ~ 0.69 of the floor's shallowing.
-    # It levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level
-    # has spanned about -100..+250 m).
+    # It levels off smoothly toward +-SEA_TECT_MAX, well beyond the
+    # Phanerozoic's span (about -100..+250 m), so the limiter only stops
+    # runaways and doesn't shape ordinary highstands (PW-293).
     ocean = ~sim.w_cont
     depth = float(ocean_depth(sim.w_age[ocean]).mean()) if ocean.any() else 0.0
     if sim.depth_ref is None:  # the starting sea floor defines sea level 0

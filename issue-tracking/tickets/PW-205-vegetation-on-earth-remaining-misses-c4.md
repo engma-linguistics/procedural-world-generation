@@ -2,7 +2,7 @@
 id: PW-205
 title: "Vegetation on Earth: remaining misses (C4 crossover ~25 deg, boreal types 22 Mkm2, savanna in the southern Amazon fringe)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: surface
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-187]
 refs: [tools/veg_check.py, planet/vegetation.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,5 +23,6 @@ After tuning (observed climate, tools/veg_check.py --png): agreement 62%, land N
 - Burned area is 92% in savanna and grassland (GFED ~70-80%): boreal and temperate forest fires are rare (fire weather needs a dry month; boreal summers rarely qualify).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Smalls2: boreal 20.2->16.9 Mkm2 (in range); C4 nudges tried and rejected (draft).
 - 2026-10-15: Created from inbox draft draft-veg-earth-tuning-remaining.md (found by veg).

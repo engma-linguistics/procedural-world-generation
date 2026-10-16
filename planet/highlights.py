@@ -70,8 +70,11 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   pan) regions; inland basin: the largest land area whose drainage ends in a
   closed lake or pit. Worlds without lake_kind have no closed basins; there,
   evaporite beds at the surface on dry land are "salt flats".
-- coral coast: open sea next to land, shallow (cell mean <= 250 m), coldest
-  month >= 18 C, away from big river mouths; limestone on shore is a bonus.
+- coral coast ("great reef" when it is the biggest and >= 10,000 km^2): the
+  largest connected tracts of the world's reef layer (coastal.py: warm,
+  clear, shallow sea; atoll rings included), ranked by reef area; limestone
+  on shore is noted. Mangrove coast: the largest connected stretch of
+  coastal land with mangroves (the mangrove layer), by mangrove area.
 - rain shadow: an ice-free summit >= 1500 m with land 2-4 cells away whose rain differs
   most between the two sides of a line through it (wet >= 600 mm, dry < 600
   mm, >= 3x); ranked by the ratio (up to 10) x height.
@@ -117,6 +120,7 @@ from .climate import BIOMES, KOPPEN, LAPSE
 from .geo import R_KM
 from .grid import Grid
 from .tectonics.volcanism import ARC as ARC_VOLCANO
+from .vegetation import T as VEG_T
 from .vegetation import TYPES as VEG_TYPES
 
 # cached lists are recomputed whenever this file changes
@@ -134,7 +138,7 @@ PRIORITY = {
     "driest": 37, "ice_free_peak": 99, "waterfall": 90, "canyon": 84, "varied_square": 80, "plateau": 76,
     "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
     "year_round": 74, "ski": 71, "beach": 70, "mild_winter": 67,
-    "wetland": 59, "great_forest": 57, "maquis_coast": 54, "savanna": 53, "treeline": 52,
+    "wetland": 59, "great_forest": 57, "maquis_coast": 54, "savanna": 53, "treeline": 52, "mangrove_coast": 56,
 }
 # Category per kind, for the viewer's filter and marker colours (PW-141)
 CATEGORIES = {
@@ -145,7 +149,7 @@ CATEGORIES = {
     "climate": ("desert", "rainforest", "ice_sheet", "mediterranean", "hottest", "coldest", "wettest", "driest"),
     "travel": ("beach", "ski", "mild_winter", "year_round"),
     "geology": ("volcanic_arc", "hotspot_islands", "atolls", "rift", "trench", "fastest_plate"),
-    "vegetation": ("great_forest", "savanna", "wetland", "maquis_coast", "treeline"),
+    "vegetation": ("great_forest", "savanna", "wetland", "maquis_coast", "treeline", "mangrove_coast"),
 }
 CATEGORY = {k: c for c, kinds in CATEGORIES.items() for k in kinds}
 assert set(CATEGORY) == set(PRIORITY), set(CATEGORY) ^ set(PRIORITY)
@@ -1463,54 +1467,91 @@ def _sink(ctx: _Ctx, cells) -> np.ndarray:
     return np.where(lab[cells] >= 0, first[np.maximum(lab[cells], 0)], cells)
 
 
-REEF_MIN_C, REEF_MAX_DEPTH = 18.0, 250.0  # coldest-month sea temperature, m of water (cell mean)
+REEF_CELL = 1.0  # % of a sea cell under coral reef (the world's reef layer, coastal.py) that counts it
+MANGROVE_CELL = 2.0  # % of a coastal land cell under mangroves that counts it
 
 
 def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
-    """Where reefs would grow: open sea next to land that is shallow (cell
-    mean <= REEF_MAX_DEPTH m) and warm all year (coldest month >=
-    REEF_MIN_C at the surface), away from big river mouths (mud). Limestone
-    on the shore (surface rock) is old reef, a bonus."""
+    """The biggest reef tracts (the Great Barrier Reef, the Belize reef,
+    the reefs of an island arc): connected sea cells with at least
+    REEF_CELL % of coral reef (the world's reef layer, coastal.py: warm,
+    clear, shallow water; atoll rings of the volcano table included), one-
+    cell gaps bridged, ranked by reef area. Limestone on the shore (old
+    reefs lifted onto land) is noted."""
     L = ctx.L
-    if "cold_month" not in L or not ctx.land.any():
+    if "reef" not in L:
         return []
+    share = np.asarray(L["reef"], float)
     sea = ~ctx.land
-    ocean = np.zeros(ctx.n, bool)
-    regions = ctx.components(sea)
-    if regions:
-        ocean[regions[0]] = True
-    muddy = np.zeros(ctx.n, bool)
-    if "flow" in L:
-        R = _rivers(ctx)
-        m = np.flatnonzero(R["mouth"] & (R["q"] > 3000))
-        muddy[R["down"][m]] = True
-        muddy = ctx.dilate(muddy, 1)
-    cold = np.asarray(L["cold_month"], float)
-    reef = ocean & (ctx.elev > -REEF_MAX_DEPTH) & (cold >= REEF_MIN_C) & ctx.dilate(ctx.land) & ~muddy
+    reef = sea & (share >= REEF_CELL)
     lime = ctx.land & np.isin(L["surface_rock"], (6, 14)) if "surface_rock" in L else None  # limestone, dolomite
-    out = []
-    for cells in ctx.components(reef, min_cells=3, bridge=1)[:8]:
+    cand = []
+    for cells in ctx.components(reef, min_cells=2, bridge=1)[:12]:
+        cand.append((float(share[cells].sum()) / 100 * ctx.area, cells))
+    cand.sort(key=lambda c: -c[0])
+    feats = []
+    best = cand[0][0] if cand else 1.0
+    for rank, (a, cells) in enumerate(cand[:top]):
         length, spine = ctx.spine(cells, ctx.dilate(reef) & sea)
         length += ctx.cell_km
-        shore = ctx.dilate(np.isin(np.arange(ctx.n), cells)) & ctx.land
-        lime_pct = 100 * float(lime[shore].mean()) if lime is not None and shore.any() else 0.0
-        out.append((length * (1 + lime_pct / 100), length, cells, spine, lime_pct))
-    out.sort(key=lambda x: -x[0])
-    feats = []
-    best = out[0][0] if out else 1.0
-    for rank, (s, length, cells, spine, lime_pct) in enumerate(out[:top]):
         mid = spine[len(spine) // 2]
-        t_cold, t_warm = float(cold[cells].mean()), float(np.asarray(L["warm_month"])[cells].mean())
-        depth = float(-ctx.elev[cells].mean())
+        m = np.zeros(ctx.n, bool)
+        m[cells] = True
+        shore = ctx.dilate(m) & ctx.land
+        lime_pct = 100 * float(lime[shore].mean()) if lime is not None and shore.any() else 0.0
+        if "sst_jul" in L:
+            sj, sn = (np.asarray(L[k], float)[cells] for k in ("sst_jul", "sst_jan"))
+        else:
+            sj, sn = (np.asarray(L[k], float)[cells] for k in ("warm_month", "cold_month"))
+        t_cold, t_warm = float(np.minimum(sj, sn).mean()), float(np.maximum(sj, sn).mean())
+        mud = float(np.asarray(L["turbidity"], float)[cells].mean()) if "turbidity" in L else None
         lime_txt = f" {lime_pct:.0f}% of the shore is limestone, old reefs lifted onto land." if lime_pct >= 5 else ""
-        blurb = (f"{_n(length)} km of warm, shallow, clear sea along the coast: ~{_m(depth)} deep on average, "
-                 f"{t_cold:.0f}–{t_warm:.0f} °C through the year, no big river mud. Coral reef country (like "
-                 f"the Great Barrier Reef or the Caribbean).{lime_txt} The zoom shows the shallows, not the reefs.")
-        feats.append(_feature(ctx, "coral_coast", "Coral coast", blurb, mid, zoom_size(min(length, 1000)),
-                              {"length_km": round(length), "mean_depth_m": round(depth), "sea_c_min": round(t_cold, 1),
-                               "limestone_pct": round(lime_pct)},
-                              quality=(0.8 ** rank) * (0.5 + 0.5 * s / best) * min(1, 0.4 + length / 1500),
+        title = f"{'Great reef' if rank == 0 and a >= 10000 else 'Coral coast'}: {_area(a)} of reef"
+        blurb = (f"{_area(a)} of coral reef along {_n(length)} km of warm, clear, shallow sea: "
+                 f"{t_cold:.0f}–{t_warm:.0f} °C through the year"
+                 + (f", {mud:.1f} mg/L of mud in the water" if mud is not None else "")
+                 + ". Reef flats, lagoons and channels with seagrass between the reefs (like the Great Barrier "
+                 f"Reef or the Belize reef).{lime_txt}")
+        feats.append(_feature(ctx, "coral_coast", title, blurb, mid, zoom_size(min(length, 1000)),
+                              {"reef_km2": round(a), "length_km": round(length),
+                               "mean_depth_m": round(float(-ctx.elev[cells].mean())),
+                               "sea_c_min": round(t_cold, 1), "limestone_pct": round(lime_pct)},
+                              quality=(0.8 ** rank) * (0.5 + 0.5 * a / best) * min(1, 0.4 + a / 20000),
                               path=ctx.path(spine)))
+    return feats
+
+
+def mangrove_coasts(ctx: _Ctx, top: int = 1) -> list[dict]:
+    """The biggest mangrove coast (the Sundarbans, the Niger delta, the
+    coast of Para): connected coastal land cells with at least
+    MANGROVE_CELL % of mangrove forest (the world's mangrove layer,
+    coastal.py: warm, sheltered tidal mud), one-cell gaps bridged, ranked
+    by mangrove area."""
+    L = ctx.L
+    if "mangrove" not in L:
+        return []
+    share = np.asarray(L["mangrove"], float)
+    mg = ctx.land & (share >= MANGROVE_CELL)
+    cand = [(float(share[c].sum()) / 100 * ctx.area, c) for c in ctx.components(mg, min_cells=2, bridge=1)[:12]]
+    cand.sort(key=lambda c: -c[0])
+    feats = []
+    for rank, (a, cells) in enumerate(cand[:top]):
+        m = np.zeros(ctx.n, bool)
+        m[cells] = True
+        near_sea = ctx.dilate(m) & ~ctx.land
+        tide = float(np.asarray(L["tide_range"], float)[near_sea].mean()) if "tide_range" in L and near_sea.any() else 0.0
+        mid = ctx.middle(cells)
+        tc = float(np.asarray(L["cold_month"], float)[cells].mean())
+        rain = float(np.asarray(L["precipitation"], float)[cells].mean())
+        span = ctx.span_km(cells, mid)
+        blurb = (f"{_area(a)} of mangrove forest in the tidal mud of ~{_n(span)} km of coast: tides {tide:.1f} m, "
+                 f"{_c(tc)} in the coldest month, {_n(rain)} mm of rain a year. "
+                 f"{VEG_TYPES[V_MANGROVE][5].split(' (')[0]}")
+        feats.append(_feature(ctx, "mangrove_coast", f"Mangrove coast: {_area(a)}", blurb, mid,
+                              zoom_size(min(span, 1000)),
+                              {"mangrove_km2": round(a), "tide_m": round(tide, 1), "cold_month_c": round(tc, 1),
+                               "rain_mm": round(rain)},
+                              quality=(0.85 ** rank) * min(1.0, 0.4 + a / 10000)))
     return feats
 
 
@@ -1703,6 +1744,7 @@ def most_varied(ctx: _Ctx) -> list[dict]:
 # Vegetation (worlds with the vegetation layers, vegetation.py)
 # ---------------------------------------------------------------------------
 VEG_NAME = {t[0]: t[1] for t in VEG_TYPES}
+V_MANGROVE = VEG_T["mangrove forest"]
 VEG_GROUP = {t[0]: t[2] for t in VEG_TYPES}
 FOREST_COVER = 60.0  # % tree cover: a closed forest
 SAVANNA_TYPES = (8, 9, 10)  # moist savanna woodland, dry savanna, tropical grassland
@@ -2193,7 +2235,8 @@ def year_round(ctx: _Ctx, top: int = 1) -> list[dict]:
 DETECTORS = [highest_peak, mountain_ranges, rivers, deltas, deepest_trench, fjords, mediterranean,
              volcanic_arcs, hotspot_islands, atolls, rifts, fastest_plate, lakes, inland_seas, ice_sheet, desert, rainforest,
              landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied,
-             beaches, ski_country, mild_winters, year_round, great_forests, savanna, wetlands, maquis_coast, treelines]
+             beaches, ski_country, mild_winters, year_round, great_forests, savanna, wetlands, maquis_coast, treelines,
+             mangrove_coasts]
 
 
 def _nms(ctx: _Ctx, feats: list[dict], radius_km: float) -> list[dict]:

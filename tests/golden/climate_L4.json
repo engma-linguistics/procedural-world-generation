@@ -35,6 +35,7 @@
  "t_cold": "<f8[2562]:988809ebbddd57fe5ba6",
  "t_warm": "<f8[2562]:f8b9dee347ed5ffd51ad",
  "temp": "<f8[2562]:13e1c2575797d2856af9",
+ "upwelling": "<f8[2562]:761617a1c622981b57f3",
  "wind_jan": "<f8[2562, 3]:a917f2e07162a7860d60",
  "wind_jul": "<f8[2562, 3]:442f4cdacb0beb7f6286"
 }

@@ -2,7 +2,7 @@
 id: PW-306
 title: "Checkpoints: plates.idx is now the largest field (~25%); store it as its residual from grid.locate"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: store
 effort: xs
@@ -25,5 +25,6 @@ load is exact whatever the warm start did. Needs the grid at load: `store.load_c
 t)` has none, so pass it from `timeline.replay` (outside the PW-131 batch's files).
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (a202802): plates.idx stored as residual from grid.locate; L6 checkpoint 15.3 -> 11.7 MB.
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Created from inbox draft draft-checkpoint-plate-idx.md (found by small-store).

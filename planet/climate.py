@@ -803,6 +803,33 @@ def _label(mask, nbr_off, nbr_idx):
     return lab, k
 
 
+def upwelling_cooling(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, away: np.ndarray,
+                      upwelling: float = 5.0, eq_upwelling: float = 0.0) -> np.ndarray:
+    """C by which upwelling cools the sea surface before the currents carry
+    it (sea_surface's source term; also a world layer, coastal.py's
+    nutrient supply): coastal upwelling where the wind's Ekman transport
+    pushes the surface water away from a coast (away: unit vectors pointing
+    away from the nearest land, currents()), between ~5 and ~45 deg, and,
+    with eq_upwelling, equatorial upwelling under easterlies."""
+    G = _geom(grid)
+    # Ekman transport: 90 deg to the right of the wind in the north, left in the south
+    ek = np.cross(wind_v, grid.centers) * np.sign(grid.lat)[:, None]
+    off = np.clip((ek * away).sum(1), 0, 1.5)
+    lat_ok = np.clip((np.abs(grid.lat) - 5) / 8, 0, 1) * np.clip((45 - np.abs(grid.lat)) / 8, 0, 1)
+    cold = upwelling * off * lat_ok
+    if eq_upwelling > 0:
+        # Equatorial upwelling: easterlies on the equator push the surface
+        # water apart (Ekman, to the right in the north and left in the
+        # south), and cold water wells up - but only where the warm layer is
+        # thin, near the ocean's eastern shore (the trades pile warm water up
+        # in the west): the cold tongues off Ecuador and in the Gulf of Guinea.
+        land_big = smooth_big(grid, (~ocean).astype(float), 1500.0)
+        thin = np.clip((gradient(grid, land_big) * G["east"]).sum(1) * 3000.0, 0, 1)  # land to the east
+        u_e = (wind_v * G["east"]).sum(1)
+        cold = cold + eq_upwelling * np.clip(-u_e, 0, 1) * np.exp(-(grid.lat / 6.0) ** 2) * thin
+    return cold
+
+
 def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndarray,
                 relax_km: float = 2500.0, upwelling: float = 5.0,
                 eq_upwelling: float = 0.0, tune: dict | None = None, cur=None, away=None,
@@ -821,11 +848,6 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     tune = {**TUNE, **(tune or {})}
     if cur is None:
         cur, away = currents(grid, ocean, wind_v, tune)
-    # Ekman transport: 90 deg to the right of the wind in the north, left in the south
-    ek = np.cross(wind_v, grid.centers) * np.sign(grid.lat)[:, None]
-    off = np.clip((ek * away).sum(1), 0, 1.5)
-    lat_ok = np.clip((np.abs(grid.lat) - 5) / 8, 0, 1) * np.clip((45 - np.abs(grid.lat)) / 8, 0, 1)
-    cold = upwelling * off * lat_ok
     src = G["src"]
     allowed = (ocean[src] & ocean[G["dst"]]).astype(np.float64)
     # The water gives its heat up to the air over a set time, so a fast
@@ -834,16 +856,6 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     # drift across an ocean's middle soon takes on the latitude's temperature).
     reach = relax_km * np.clip(speed(cur) / tune["cur_ref"], tune["cur_min"], tune["cur_max"])
     keep = np.exp(-G["h"] / reach)
-    if eq_upwelling > 0:
-        # Equatorial upwelling: easterlies on the equator push the surface
-        # water apart (Ekman, to the right in the north and left in the
-        # south), and cold water wells up - but only where the warm layer is
-        # thin, near the ocean's eastern shore (the trades pile warm water up
-        # in the west): the cold tongues off Ecuador and in the Gulf of Guinea.
-        land_big = smooth_big(grid, (~ocean).astype(float), 1500.0)
-        thin = np.clip((gradient(grid, land_big) * G["east"]).sum(1) * 3000.0, 0, 1)  # land to the east
-        u_e = (wind_v * G["east"]).sum(1)
-        cold = cold + eq_upwelling * np.clip(-u_e, 0, 1) * np.exp(-(grid.lat / 6.0) ** 2) * thin
     b = np.where(ocean, keep, 0.0)
     km = 1.5 * tune["cur_max"] * relax_km
     if share is not None:
@@ -857,6 +869,7 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
         d = np.where(ocean, (1 - keep) * share * (t_in - t_eq), 0.0)
         e = np.where(ocean, carry(grid, cur, d, b, km=km, diffusion=0.15, allowed=allowed), 0.0)
         return base + e - tune["moc_zonal"] * np.where(ocean, zonal_mean(grid, e, ocean), 0.0), cur
+    cold = upwelling_cooling(grid, ocean, wind_v, away, upwelling, eq_upwelling)
     a = np.where(ocean, (1 - keep) * (t_eq - cold), t_eq)
     sst = carry(grid, cur, a, b, km=km, diffusion=0.15, allowed=allowed)
     anom = np.where(ocean, sst - t_eq, 0.0)
@@ -1364,9 +1377,8 @@ TUNE = dict(
     cloud_clear_mm=800.0,  # ... less where it rains (e-fold mm/yr)
     cloud_sun_conv=0.6,  # share of the day showers and cumulus shade (they build up in the afternoon)
     # winds and seasons
-    ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be ...
-    ice_cool_km=300.0,  # ... in full where the land this far around is all ice (a small cap sits in
-    # its surroundings' air)
+    ice_cool_km=300.0,  # an ice sheet's cover (ice_cover) is the share of the land this far around
+    # under ice (a small cap sits in its surroundings' air)
     belt_shift=10.0,  # deg the tropical rain belt follows the sun at the solstice (times tilt/23.4)
     hk=0.64,  # the half-years' mean of a seasonal swing (2/pi of the peak, for a sine)
     monsoon=1.0,  # strength of the land-sea pressure winds ...
@@ -1826,6 +1838,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                              meltwater - evaporation), global mean taken off
       sea_evap               mm/yr: evaporation from the sea
       sea_ice_growth         m: sea ice frozen per winter
+      upwelling              C: how much coastal and equatorial upwelling cools the sea
+                             surface where it wells up (0 on land; upwelling_cooling)
     and ground: (t_warm, t_cold, temp) of the bare ground under the ice (ice_surface
     turns them back into the ice's), moc_sites: a list of dicts per sinking site (lat, lon, sv, drho,
     area_km2, heat_pw) and moc_state, a dict to pass on as moc_start.
@@ -1972,7 +1986,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                 sun_jan=day_jan * sun_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
                 sss=oc["sss"], density=oc["density"], density_winter=oc["density_w"], overturning=oc["sinking"],
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],
-                sea_evap=sea_evap, sea_ice_growth=ice_m, moc_sites=oc["sites"],
+                sea_evap=sea_evap, sea_ice_growth=ice_m,
+                upwelling=np.where(ocean, upwelling_cooling(grid, ocean, v_ann, away, tune["coast_up"],
+                                                            tune["eq_up"]), 0.0),
+                moc_sites=oc["sites"],
                 moc_state=oc["state"], ground=ground)
 
 
@@ -2100,8 +2117,9 @@ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, oc
 
 
 def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None = None) -> np.ndarray:
-    """How much (0..1) of ice_cooling land ice (m) gets: the share of the land
-    within ~ice_cool_km that is under ice (~1 on and around a big sheet,
+    """A land-ice sheet's cover (0..1; icemass damps its summer by SUMMER_DAMP x
+    this): the share of the land within ~ice_cool_km that is under ice (~1
+    on and around a big sheet,
     small on a lone mountain cap), and only away from the tropics, where
     long cold nights and winters let the air over the ice pool and chill
     (and where the model's sea-level summers, calibrated on ice-free land,
@@ -2113,16 +2131,6 @@ def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None =
     b = smooth(grid, land.astype(float), km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
     return np.where(ice > 0, np.clip(a / np.maximum(b, 1e-6), 0.0, 1.0) * polar, 0.0)
-
-
-def ice_cooling(ice, cover, tune=None):
-    """C: how much colder land ice (m) keeps its own surface (its white top,
-    the cold air pooling on it): in full on a big polar sheet, little on a
-    small mountain cap that sits in the warmer air around it, none in the
-    tropics (a cap like Quelccaya's is barely colder than the rock beside
-    it). cover: ice_cover."""
-    tune = TUNE if tune is None else tune
-    return tune["ice_cooling"] * (ice > 0) * cover
 
 
 def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):

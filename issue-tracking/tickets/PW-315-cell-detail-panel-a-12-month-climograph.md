@@ -2,7 +2,7 @@
 id: PW-315
 title: Cell detail panel - a 12-month climograph (worlds store monthly temperature and rain)
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -30,5 +30,6 @@ asks the server for one cell's months (`GET /api/cell?world=&i=`, calling `clima
 - [ ] runs keep the current chartless panel (their keyframes don't carry the inputs)
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (c1e3b2d): GET /api/cell (12 months from climate.months, ~7 ms warm) and a climograph in More detail for world cells.
 - 2026-10-15: Status todo -> in-progress. Agent started (viewer follow-up).
 - 2026-10-15: Created from inbox draft draft-viewer-cell-climograph.md (found by viewer-replay-speed).

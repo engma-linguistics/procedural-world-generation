@@ -2,7 +2,7 @@
 id: PW-261
 title: Server's /api/highlights still computes in the server process
 type: task
-status: in-progress
+status: done
 parent: PW-247
 subsystem: infra
 effort: s
@@ -22,5 +22,6 @@ What to try: send the computation to the server's pool (`pool.call(H.for_world, 
 - [ ] two highlights requests for different worlds compute at once, without blocking file serving
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (b606fc1): uncached highlights run as api.highlights_job in a separate two-worker pool.
 - 2026-10-15: Status todo -> in-progress. Infra batch agent started 2026-10-15 night.
 - 2026-10-15: Created from inbox draft draft-highlights-in-worker.md (found by parallel).

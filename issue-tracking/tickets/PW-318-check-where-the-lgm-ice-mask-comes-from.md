@@ -2,7 +2,7 @@
 id: PW-318
 title: Check where the LGM ice mask comes from, and test the HDF5 reader
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: xs
@@ -23,4 +23,6 @@ PW-314 uses the Zenodo "Global Kilometer-Resolution Dataset of Boundary Conditio
 - [ ] h5 reader test
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (d76a9c9): mask is the 1 deg PMIP3 LGM composite (ANU, ICE-6G v1.02, GLAC-1; Abe-Ouchi et al. 2015) resampled to 30 arcsec; recorded in earth_data.py. tests/test_h5_reader.py added.
+- 2026-10-15: Status todo -> in-progress. Agent started.
 - 2026-10-15: Created from inbox draft draft-lgm-mask-provenance.md (found by soildata).

@@ -28,6 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import soils as SOILS
 from . import store as S
 from . import vegetation as VEG
 from . import world as W
@@ -278,7 +279,7 @@ def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) ->
     made_by = m.get("code") or {}
     usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
     if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
-        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1]))
+        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
         log(f"replaying from the checkpoint at t={usable[-1]:g}")
     else:
         sim = Simulation(grid, m["seed"], params, m["dt"])
@@ -326,14 +327,16 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
                 raise ReplayMismatch(msg + ". Not saved (use --force / force=True to save it anyway).")
             print("!" * 72 + f"\nWARNING: {msg}. Saving anyway (--force).\n" + "!" * 72)
 
-    world = world_from_sim(sim, erosion, source_run=run_dir.name, source_run_name=run["name"],
+    world = world_from_sim(sim, erosion, soil_memory(run_dir, at, sim.grid, sim.velocity()),
+                           source_run=run_dir.name, source_run_name=run["name"],
                            replay_matches_keyframe=same, code=now)
     return W.save(world, f"{run['name']} @ {at:g} Myr")
 
 
-def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
+def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = None, **meta_extra) -> dict:
     """A complete world (climate, rivers, biomes, all layers) from a
-    simulation's current state, in memory."""
+    simulation's current state, in memory. memory: the run's keyframe
+    climate for the soils (soil_memory)."""
     snap = sim.snapshot()
     veg = {"nu0": sim.veg_frac, "co2": sim.co2, "unlocked": VEG.unlocked_at(sim.flora, sim.t),
            "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
@@ -342,7 +345,7 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, **meta_extra) -> dict:
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
-                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap), veg)
+                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap), veg, memory=memory)
 
 
 FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock",
@@ -397,7 +400,29 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
                   st["ice"], fr["hotspots"], vols, st["dT"],
                   st["sea_level"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                              "from_keyframe": True, **meta_extra},
-                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"))
+                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"),
+                  memory=soil_memory(run_dir, t_fr, grid, velocity))
+
+
+class _Decoded:
+    """A stored layer's frames, decoded one at a time (frames[i])."""
+
+    def __init__(self, raw, spec):
+        self.raw, self.spec, self.shape = raw, spec, raw.shape
+
+    def __getitem__(self, i):
+        return S.decode(np.asarray(self.raw[i]), self.spec)
+
+
+def soil_memory(run_dir: Path, at: float, grid: Grid, velocity: np.ndarray) -> dict | None:
+    """The run's keyframe temperature and rain averaged back from `at`, read
+    where each cell's plate carried it from (soils.climate_memory; decision
+    3B of docs/proposals/soils.md)."""
+    run, arr = load_frames(run_dir, ("temperature", "precipitation"))
+    return SOILS.climate_memory([f["t"] for f in run["frames"]],
+                                _Decoded(arr["temperature"], run["layers"]["temperature"]),
+                                _Decoded(arr["precipitation"], run["layers"]["precipitation"]), at,
+                                grid, velocity)
 
 
 # sub-cell texture: +-TEX_M of noise plus ridges on high ground, scaled by the
@@ -427,7 +452,7 @@ def texture(g: Grid, e: np.ndarray, seed: int, at: float) -> np.ndarray:
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
-           orbit_dt: np.ndarray | None = None) -> dict:
+           orbit_dt: np.ndarray | None = None, memory: dict | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     # grounded ice on a bed below sea level (pressed down by its own load, or a marine sheet): land with
     # its bed floored at 1 m, the ice thinned to keep the surface (the world format's land is elevation > 0)
@@ -447,7 +472,8 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     meta["sea_level_m"] = round(sea_level, 1)
     meta["ice_bed_floored_cells"] = int(floored.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
-                    dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt)
+                    dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt,
+                    soil_memory=memory)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

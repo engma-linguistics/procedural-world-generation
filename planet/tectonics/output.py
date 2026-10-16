@@ -68,7 +68,7 @@ def snapshot(sim) -> Snapshot:
     lf = landforms_now(sim, vrows)
     return Snapshot(
         t=sim.t,
-        elevation=np.where(sim.w_cont, sim.bed(), sim.bed() + sim.w_trench),  # (under ice: the pressed-down bed)
+        elevation=sim.bed(),  # (under ice: the pressed-down bed; trenches on oceanic crust)
         plate=sim.plates.label[sim.owner],
         continental=sim.w_cont.copy(),
         age=sim.w_age.copy(),
