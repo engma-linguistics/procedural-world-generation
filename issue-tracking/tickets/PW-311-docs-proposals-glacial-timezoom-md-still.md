@@ -2,7 +2,7 @@
 id: PW-311
 title: docs/proposals/glacial_timezoom.md still says the time zoom is view-only; PW-091 made it feed finished worlds
 type: task
-status: todo
+status: done
 parent: null
 subsystem: docs
 effort: xs
@@ -20,4 +20,5 @@ The 2026-10-13 design spec lists "**View-only:** results do not feed back into t
 - [ ] Add a one-line status note at the top of the spec (time zoom now also feeds finished worlds, PW-091; see overview §2.11 and §2.14), or fold what the open tickets need into them and delete the spec.
 
 ## Updates
+- 2026-10-15: Status todo -> done. Done: note added to the spec's View-only line.
 - 2026-10-15: Created from inbox draft draft-glacial-timezoom-proposal-view-only-outdated.md (found by docs-cleanup).

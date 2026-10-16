@@ -4,7 +4,7 @@
 
 **User's decisions:**
 - Whole planet, not regional.
-- **View-only:** results do not feed back into the main run.
+- **View-only:** results do not feed back into the main run. (Since PW-091 a time zoom does feed a *finished world*, `planet finish <timezoom> --kyr N`; see overview §2.11. The run itself is still never changed.)
 - Driven by **orbital (Milankovitch) cycles**.
 
 **Corrected premise, as told to the user:** early Earth *did* have ice ages (Pongola ~2.9 Ga, Huronian ~2.4–2.1 Ga, Snowball ~720–635 Ma). A hotter interior ≠ a hotter surface; the young Sun was dimmer. Ice ages come in "icehouse" eras, and the main run already produces warm and cold eras (`dT` from drift + CO₂ + ice–albedo). So there is no arbitrary entry point: the user picks any moment. In greenhouse eras the time zoom shows little ice; in icehouse eras, full cycles.
