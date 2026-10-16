@@ -21,8 +21,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
 const SEA_RGB = 0x1d5487, LAKE_RGB = 0x3a7cb8, SKIRT_RGB = 0x3a3128;
-// lakes by kind (1 fresh, 2 salt, 3 salt pan), as the world view's cyan / pink / white
-const LAKE_KIND_RGB = { 1: LAKE_RGB, 2: 0xc9769f, 3: 0xe9e2d0 };
+// lakes by kind (1 fresh, 2 salt: the zoom's lake_kind; its pans, 3, are white land)
+const LAKE_KIND_RGB = { 1: LAKE_RGB, 2: 0xc9769f };
 const VOLC_PIN = { active: '#ff7a55', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 // a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
@@ -65,11 +65,10 @@ function streaks() {
 
 // --------------------------------------------------------------- one terrain
 class Tile {
-  // src: {nx, ny, res_km, L: {elevation, water, lake_depth, discharge, drainage_area, ice, precipitation},
-  //       outlets: [[row, col], ...] of the biggest lakes};
+  // src: {nx, ny, res_km, L: {elevation, water, lake_depth, discharge, drainage_area, ice, lake_kind}};
   // x0, z0: its centre in scene km
   constructor(src, x0 = 0, z0 = 0) {
-    Object.assign(this, { nx: src.nx, ny: src.ny, res: src.res_km, L: src.L, x0, z0, outlets: src.outlets });
+    Object.assign(this, { nx: src.nx, ny: src.ny, res: src.res_km, L: src.L, x0, z0 });
     this.w = this.nx * this.res; this.d = this.ny * this.res;
     const h = this.L.elevation;
     let lo = Infinity, hi = -Infinity;
@@ -193,47 +192,9 @@ class Tile {
     return { mesh, skirt, triangles: idx.length / 3, base };
   }
 
-  // Each lake pixel's kind: 1 fresh, 2 salt, 3 salt pan. The zoom stores none, so a lake
-  // (a connected run of lake pixels) is salt when it is closed (no river leaves it: no
-  // river runs on away from it) in dry country (under 500 mm
-  // of rain a year, as planet/satellite.py guesses for zooms), and a pan when it is
-  // also shallow (under 1 m deep at its deepest).
+  // each lake pixel's kind: 1 fresh, 2 salt (the zoom's lake_kind layer; a zoom from before it has all fresh)
   lakeKinds() {
-    if (this._kinds) return this._kinds;
-    const { nx, ny, L } = this, n = nx * ny, water = L.water, kind = new Uint8Array(n), seen = new Uint8Array(n);
-    // (the biggest lakes' outlets are in the zoom's stats: the lake nearest one, within 3
-    // pixels, is open; a lake it spills into is not)
-    const near = new Uint8Array(n);
-    for (const o of this.outlets || []) {
-      let best = -1, bd = Infinity;
-      for (let dr = -3; dr <= 3; dr++) for (let dc = -3; dc <= 3; dc++) {
-        const rr = o[0] + dr, cc = o[1] + dc, j = rr * nx + cc, d = dr * dr + dc * dc;
-        if (rr >= 0 && cc >= 0 && rr < ny && cc < nx && water[j] === 2 && (d < bd || (d === bd && this.wsA[j] > this.wsA[best]))) { best = j; bd = d; }
-      }
-      if (best >= 0) near[best] = 1;
-    }
-    for (let s0 = 0; s0 < n; s0++) {
-      if (water[s0] !== 2 || seen[s0]) continue;
-      const comp = [s0];
-      seen[s0] = 1;
-      let open = false, rain = 0, deep = 0;
-      for (let k = 0; k < comp.length; k++) {
-        const i = comp[k], r = (i / nx) | 0, c = i - r * nx, lvl = this.wsA[i];
-        rain += L.precipitation ? L.precipitation[i] : 1e9;
-        deep = Math.max(deep, L.lake_depth[i]);
-        if (near[i]) open = true;
-        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-          const rr = r + dr, cc = c + dc, j = rr * nx + cc;
-          if (rr < 0 || cc < 0 || rr >= ny || cc >= nx) continue;
-          if (water[j] === 2) { if (!seen[j]) { seen[j] = 1; comp.push(j); } continue; }
-          // (the sea, or a river pixel round it that runs on away from it, not into it: an outlet)
-          if (water[j] === 1 || (L.discharge[j] > 0 && this.rec[j] >= 0 && water[this.rec[j]] === 0 && L.elevation[j] <= lvl + 5)) open = true;
-        }
-      }
-      const k = !open && rain / comp.length < 500 ? (deep < 1 ? 3 : 2) : 1;
-      for (const i of comp) kind[i] = k;
-    }
-    return (this._kinds = kind);
+    return this.L.lake_kind || new Uint8Array(this.nx * this.ny).fill(1);
   }
 
   // lake surfaces: a mesh on the pixel centres' grid over every cell with a
@@ -299,10 +260,13 @@ class Tile {
   // no pixel staircase shows at the shore
   landColours(colours) {
     const { nx, ny, L } = this, n = nx * ny, water = L.water;
+    const pan = this.L.lake_kind;
     const todo = new Uint8Array(n);
     let front = [];
     for (let i = 0; i < n; i++) if (water[i] === 2) { todo[i] = 1; front.push(i); }
-    if (!front.length) return colours;
+    let pans = false;
+    if (pan) for (let i = 0; i < n && !pans; i++) pans = pan[i] === 3;
+    if (!front.length && !pans) return colours;
     const cv = document.createElement('canvas');
     cv.width = nx; cv.height = ny;
     const cx = cv.getContext('2d');
@@ -323,6 +287,10 @@ class Tile {
       if (!done.length) break;  // (a lake with no land round it keeps its colour)
       for (const [i, R, G, B] of done) { d[4 * i] = R; d[4 * i + 1] = G; d[4 * i + 2] = B; todo[i] = 0; }
       front = next;
+    }
+    // salt pans (a closed basin's dry floor, on land): white-ish, over the shaded colours
+    if (pans) for (let i = 0; i < n; i++) if (pan[i] === 3 && water[i] === 0) {
+      for (let k = 0; k < 3; k++) d[4 * i + k] = 0.35 * d[4 * i + k] + 0.65 * [233, 226, 208][k];
     }
     cx.putImageData(img, 0, 0);
     return cv;

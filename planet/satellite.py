@@ -346,7 +346,7 @@ def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -
                   temp=f["temperature"].astype(float), t_warm=np.maximum(tj, tn), t_cold=np.minimum(tj, tn),
                   p_jul=f["precipitation_jul"].astype(float), p_jan=f["precipitation_jan"].astype(float),
                   nu=nu, cover=f["plant_cover"].astype(float) / 100, tree=f["tree_cover"].astype(float) / 100,
-                  ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"),
+                  ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"), lake_kind=f.get("lake_kind"),
                   wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt,
                   coastal={k: f["coastal_life"] == i for k, i in ZOOM_COASTAL.items()} if "coastal_life" in f else None)
     return {k: v.reshape(ny, nx, 3) for k, v in col.items()}

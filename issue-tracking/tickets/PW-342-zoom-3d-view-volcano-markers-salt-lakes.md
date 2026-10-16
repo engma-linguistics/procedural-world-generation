@@ -33,4 +33,4 @@ things the 2D map shows:
 ## Updates
 - 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-zoom3d-volcanoes-salt-lakes.md (found by zoom3d).
-- 2026-10-16: Done on the zoom3d branch (viewer/zoom3d.js, zoom.html): volcano pins and 2D card, lake kinds by a viewer-side rule (the zoom stores no per-pixel kind; see draft zoom-lake-kind-layer), lake pixels in land colour. Screenshot docs/review/viewer/zoom3d_volcano.png.
+- 2026-10-16: Done on the zoom3d branch (viewer/zoom3d.js, zoom.html): volcano pins and 2D card, lake kinds from a new zoom `lake_kind` layer (planet/zoom.py), lake pixels in land colour. Screenshot docs/review/viewer/zoom3d_volcano.png.

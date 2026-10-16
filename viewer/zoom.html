@@ -576,7 +576,7 @@ function render() {
   V3.opts.rivers = $('rivers').checked;
   if (V3.zoomId !== m.id) {
     V3.zoomId = m.id;
-    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, outlets: (m.stats.largest_lakes || []).map((l) => l.outlet).filter(Boolean), colours: state.off, smooth }, state.cam3d);
+    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth }, state.cam3d);
     state.cam3d = null;
     fallList();
   } else V3.setTexture(state.off, smooth);
