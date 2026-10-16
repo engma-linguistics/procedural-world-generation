@@ -57,11 +57,26 @@ def test_wave_fetch_exposed_vs_sheltered(g5, monkeypatch):
     assert sheltered < 0.3 * exposed, (sheltered, exposed)
     assert lee < 0.3 * exposed, (lee, exposed)
     # the open ocean far from land: a fully developed sea for the wind, roughly
-    assert 0.3 * coast._wsat(12.0) < wp[_cell(g, 0, -120)] < 1.5 * coast._wsat(12.0)
+    # (power ~U^5, averaged over the wind's spread of speeds about its mean)
+    full = coast._wsat(12.0) * float(np.sum(coast.GUST_W * coast.GUST_X ** 5))
+    assert 0.3 * full < wp[_cell(g, 0, -120)] < 1.5 * full
 
 
-def test_wave_frozen_sea_blocks(g5):
-    """Sea ice upwind stops the waves like land."""
+def test_wind_spread_moments():
+    """The wind's Weibull (k = 2) spread of speeds: mean ~1, and the moments
+    of the growth law's regimes (U^3, U^(7/3), U^5) as for the distribution
+    (Gamma(1 + p/2) / Gamma(1.5)^p), within 1% (PW-270)."""
+    from math import gamma
+    x, w = coast.GUST_X, coast.GUST_W
+    assert abs(np.sum(w) - 1) < 1e-9 and abs(np.sum(w * x) - 1) < 0.02  # (U^0.5 in v: the least exact)
+    for p in (7 / 3, 3.0, 5.0):
+        assert abs(np.sum(w * x ** p) / (gamma(1 + p / 2) / gamma(1.5) ** p) - 1) < 0.01, p
+
+
+def test_wave_frozen_sea_blocks(g5, monkeypatch):
+    """Sea ice upwind stops the waves like land. (Long storms, so the fetch
+    limits the sea: a 12 h storm's sea is grown within ~200 km.)"""
+    monkeypatch.setattr(coast, "T_STORM", 72.0)
     g = g5
     elev = np.where((g.lon > 0) & (g.lon < 60) & (np.abs(g.lat) < 50), 300.0, -4000.0)
     U, D = np.full((2, g.n), 12.0), np.repeat(_east(g)[None], 2, 0)
@@ -70,6 +85,28 @@ def test_wave_frozen_sea_blocks(g5):
     icy = np.repeat(((g.lon < g.lon[i] - 1.0) & (elev <= 0))[None], 2, 0)  # frozen beyond the coastal cell
     frozen = coast.wave_power_winds(g, elev, U, D, icy)
     assert frozen[i] < 0.5 * open_[i]
+
+
+def test_wave_short_open_season(g5, monkeypatch):
+    """PW-230: a sea frozen most of each half-year still makes waves in its
+    open season. Frozen 70% of the time everywhere: the waves of the open
+    sea for the other 30% (the old rule, a ray blocked wherever a half-year
+    is at least half frozen, gave none). A coast that thaws before the sea
+    upwind (open 60%, its sea 30%) gets that sea's waves for the 30% only,
+    plus, for the rest of its open time, a short-fetch sea grown on its own
+    open water (an L5 cell: ~100 km)."""
+    monkeypatch.setattr(coast, "T_STORM", 72.0)
+    g = g5
+    elev = np.where((g.lon > 0) & (g.lon < 60) & (np.abs(g.lat) < 50), 300.0, -4000.0)
+    U, D = np.full((2, g.n), 12.0), np.repeat(_east(g)[None], 2, 0)
+    open_ = coast.wave_power_winds(g, elev, U, D, np.zeros((2, g.n)))
+    i = _coastal(g, elev, 20, -1)
+    icy = np.where(elev <= 0, 0.7, 0.0)[None].repeat(2, 0)
+    short = coast.wave_power_winds(g, elev, U, D, icy)
+    assert abs(short[i] / open_[i] - 0.3) < 0.01, short[i] / open_[i]
+    icy[:, i] = 0.4
+    early = coast.wave_power_winds(g, elev, U, D, icy)
+    assert 0.3 * open_[i] < early[i] < 0.6 * open_[i], early[i] / open_[i]
 
 
 @pytest.fixture(scope="module")
@@ -103,6 +140,44 @@ def test_tide_wide_shelf_vs_narrow(tide_world):
     assert 0.5 < narrow < 3.0  # an open-ocean coast: ~1-2 m
 
 
+def test_bessel_j0():
+    """coast.bessel_j0 against tabulated values (Abramowitz & Stegun 9.1),
+    on both sides of the switch to the asymptotic form."""
+    x = np.array([0.0, 1.0, 2.0, coast.J0_ZERO, 5.0, 10.0, 11.0, 12.0, 13.0, 15.0, 30.0])
+    ref = np.array([1.0, 0.7651976866, 0.2238907791, 0.0, -0.1775967713, -0.2459357645, -0.1711903004,
+                    0.0476893108, 0.2069261024, -0.0142244728, -0.0863679835])
+    assert np.max(np.abs(coast.bessel_j0(x) - ref)) < 2e-4
+
+
+def test_tide_sloping_shelf_resonance(tide_world):
+    """The shelf amplifies most near its resonant width (the sloping shelf's
+    J0 zero, ~1.08 x a quarter wavelength on the shelf's mean depth). Past
+    it the tide falls from the peak but, shoaling into shallower water,
+    stays well above an open coast's at half a wavelength (PW-297; a flat
+    shelf's cos(kW) fell back to ~1 there), and a shelf several
+    wavelengths wide loses it to friction."""
+    g, elev = tide_world
+    _, det = coast.tide_range(g, elev, detail=True)
+    iw = _coastal(g, elev, -25, -1)
+    lam = np.sqrt(coast.GRAV * 80.0) * coast.T_M2 / 1000.0
+    amps = {}
+    for extra in (0.25, 1.5):  # the same shelf, wider by this many wavelengths
+        dlon = 360 * (extra * lam) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
+        wide = elev.copy()
+        wide[(g.lon > -3.5 - dlon) & (g.lon <= 0) & (g.lat < -5) & (g.lat > -50)] = -80.0
+        _, d2 = coast.tide_range(g, wide, detail=True)
+        amps[extra] = d2["shelf_amp"][iw]
+        if extra == 0.25:
+            assert 0.4 * lam < d2["shelf_km"][iw] < 0.6 * lam, (d2["shelf_km"][iw], lam)
+    assert 1.5 < amps[0.25] < det["shelf_amp"][iw], (amps, det["shelf_amp"][iw])
+    assert amps[1.5] < 0.6 * amps[0.25], amps
+    # the response itself: peak 1 / R_FRIC at the resonant width
+    W = np.array([0.0, 0.1, coast.J0_ZERO / (2 * np.sqrt(2) * np.pi)]) * lam  # (0.27 lam: 1.08 x lam / 4)
+    z = np.sqrt(2) * 2 * np.pi * W / lam
+    peak = 1 / np.sqrt(coast.bessel_j0(z) ** 2 + coast.R_FRIC ** 2)
+    assert abs(peak[2] - 1 / coast.R_FRIC) < 0.01 and peak[0] < 1.0 < peak[1] < peak[2], peak
+
+
 def test_tide_enclosed_sea_is_small(tide_world):
     g, elev = tide_world
     tr = coast.tide_range(g, elev)
@@ -128,6 +203,22 @@ def test_galloway_weights():
     assert abs(0.49 * hs * hs * te - 50.0) < 2.0
 
 
+def test_plain_radius_earth():
+    """The delta plain radius meets its own Earth calibration (within 30%, at
+    the thick offshore sediment of Earth's big deltas, sf 0.5-1), and with
+    it the Galloway types of real deltas (real Q, sediment Mt/yr, waves kW/m,
+    spring tide m; PW-269)."""
+    for q, r_earth in ((2800, 150), (17000, 250), (38000, 350)):  # Nile, Mississippi, Ganges-Brahmaputra
+        for sf in (0.5, 1.0):
+            assert 0.7 < coast.plain_radius_km(q, sf) / r_earth < 1.3, (q, sf)
+    cases = {"Ganges-Brahmaputra": (38000, 1060, 6, 3.6, "tide"), "Mekong": (15000, 160, 5, 3.0, "tide"),
+             "Mississippi": (17000, 400, 3, 0.4, "river"), "Sao Francisco": (3000, 6, 10, 2.0, "wave")}
+    for name, (q, qs, wave, tide, kind) in cases.items():
+        for sf in (0.5, 1.0):
+            g = coast.galloway(qs * 1e9 / coast.SEC_PER_YR, q, wave, tide, coast.plain_radius_km(q, sf))
+            assert g["type"] == f"{kind}-dominated", (name, sf, g)
+
+
 # ---------------------------------------------------------------------------
 # Deltas in the zoom: the same river into three different seas
 # ---------------------------------------------------------------------------
@@ -144,9 +235,11 @@ def three_deltas(water_world):  # noqa: F811
     p = g.centers[i] + g.centers[down[i]]
     lat, lon = np.degrees(np.arcsin(p[2] / np.linalg.norm(p))), np.degrees(np.arctan2(p[1], p[0]))
     out = {}
+    # (a ~53,000 m^3/s river onto thick sediment: a ~350 km delta plain, so the
+    # region must be > 2 R across for the measures below)
     for name, (wave, tide) in SEAS.items():
         Lw = {**L, "wave_power": np.where(elev > 0, 0.0, wave), "tide_range": np.where(elev > 0, 0.0, tide)}
-        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=300, res_km=2,
+        out[name] = zoom.build({**water_world, "layers": Lw}, float(lat), float(lon), size_km=800, res_km=5,
                                iterations=8, log=lambda *a: None)
     return out
 

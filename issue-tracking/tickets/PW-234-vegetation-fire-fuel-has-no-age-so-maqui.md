@@ -2,7 +2,7 @@
 id: PW-234
 title: "Vegetation fire: fuel has no age, so maquis and chaparral never burn (or turn to grass when they do)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: surface
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-220, PW-205, PW-187]
 refs: [planet/vegetation.py, tools/veg_check.py, "zoom:58c0ac", "world 351f32"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,4 +25,5 @@ Real shrubland and forest fires are fuel-age limited: chaparral and fynbos burn 
 - [ ] veg_check: burned share in savanna and grassland nearer 70-80%, Mediterranean counts not lower
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Created from inbox draft draft-shrubland-fire-fuel-age.md (found by smalls2).

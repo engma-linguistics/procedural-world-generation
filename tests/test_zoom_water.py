@@ -4,7 +4,7 @@ a basin that fills into an open lake, and radial rivers to the sea."""
 import numpy as np
 import pytest
 
-from planet import hydrology, zoom
+from planet import climate, hydrology, zoom
 from planet.geo import R_KM, latlon, xyz
 from planet.grid import build_grid
 
@@ -51,7 +51,58 @@ def test_lake_passes_its_water_on(lake_zoom):
     lk = lake_zoom["stats"]["largest_lakes"][0]
     assert lk["outlet"] is not None
     assert lk["inflow_m3s"] > 0
-    assert lk["inflow_m3s"] <= lk["outflow_m3s"] < 1.1 * lk["inflow_m3s"]
+    net = lk["inflow_m3s"] - lk["evaporation_m3s"]
+    assert net <= lk["outflow_m3s"] < 1.1 * net
+
+
+@pytest.fixture(scope="module")
+def evap_lake():
+    """The open lake of water_world under a hot sky: open water evaporates
+    1400 mm/yr, 800 more than the land around it (still open: its rivers
+    bring more)."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
+    elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
+    precip = np.full(g.n, 1200.0)
+    c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 1400.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
+    lake = lk["wet"]
+    assert lake.sum() >= 3 and np.all(lk["kind"][lake] == 1), "the basin should still hold an open lake"
+    out = np.flatnonzero(lake & (down >= 0) & ~lake[np.maximum(down, 0)])
+    q_coarse = float(flow[out].max() * 4 * np.pi * R_KM ** 2 / g.n * zoom.KM2_M_PER_YR_TO_M3S)
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lake.astype(int),
+        "lake_level": np.maximum(np.round(lk["level"]), np.round(elev)), "lake_kind": lk["kind"].astype(int),
+        "runoff": c["runoff"], "evaporation": c["aet"], "pet": c["lake_evap"] / climate.TUNE["open_water"],
+        "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 2),
+        "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
+    }
+    z = zoom.build({"grid": g, "layers": layers, "meta": {"level": 5}}, *LAKE_AT, size_km=1600, res_km=8,
+                   iterations=6, log=lambda *a: None)
+    return z, q_coarse
+
+
+def test_open_lake_evaporates(evap_lake):
+    """An open lake loses its open-water evaporation before passing its water
+    on, as the coarse world's lake does (PW-271): the zoom lake's outflow
+    is close to the coarse lake's (the zoom sees ~90% of its catchment)."""
+    z, q_coarse = evap_lake
+    lk = z["stats"]["largest_lakes"][0]
+    net = lk["inflow_m3s"] - lk["evaporation_m3s"]
+    assert lk["evaporation_m3s"] > 0.25 * lk["inflow_m3s"]
+    assert net <= lk["outflow_m3s"] < 1.05 * net
+    assert 0.8 < lk["outflow_m3s"] / q_coarse < 1.1, (lk, q_coarse)
+
+
+def test_zoom_keeps_inland_cell_means(lake_zoom):
+    """Each coarse land cell away from the coast keeps its mean height
+    through the valley carving and the landscape pass (PW-268: the valleys
+    lowered it 60-90 m)."""
+    st = lake_zoom["stats"]
+    assert abs(st["inland_cell_mean_bias_m"]) < 20, st
+    assert st["inland_cell_mean_rms_error_m"] < 120, st
 
 
 def test_every_lake_fragment_passes_its_water_on(lake_zoom):
@@ -193,6 +244,28 @@ def test_steep_reach_is_not_a_fall():
     assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 162) < 1
 
 
+def test_steep_stream_reaching_a_flat_floor_is_not_a_fall():
+    """A mountain stream falling 50 m/km on 4 km pixels, its last link
+    100 m/km (400 m) onto a flat valley floor: only 2x as steep as the
+    stream above it, so no fall, though the floor below is flat (PW-125:
+    pooled over both sides, the flat side halved the context and it was
+    listed). A hanging tributary, gentle above with the same 400 m step at
+    the floor, is one."""
+    nx, ny, res = 40, 24, 4.0
+    r = 10 * nx + np.arange(nx - 1)
+    rec = np.full(nx * ny, -1)
+    rec[r] = r + 1
+    q = np.zeros(nx * ny)
+    q[r] = 50.0
+    col = np.arange(nx)
+    ws = np.zeros((ny, nx))
+    ws[10, :] = np.where(col < 20, 500.0 + 50.0 * res * (19 - col), 100.0 - 0.1 * res * (col - 20))
+    assert not zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    ws[10, :] = np.where(col < 20, 500.0 + 2.0 * res * (19 - col), 100.0 - 0.1 * res * (col - 20))
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 400) < 1
+
+
 def test_zoom_reports_waterfalls(lake_zoom):
     for f in lake_zoom["stats"]["waterfalls"]:
         assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q
@@ -312,8 +385,28 @@ def test_lake_outlet_has_no_cliff(lake_zoom):
     o = lk["outlet"][0] * nx + lk["outlet"][1]
     ch = zoom.ZK.chain(z["rec"], o)[:6]
     km = res * np.arange(len(ch)) * 1.42
-    assert np.all(lk["level_m"] - ws[ch] <= zoom.RAPIDS_GRAD * km + 15), (lk["level_m"], ws[ch])
+    assert lk["outflow_grad_m_km"] >= zoom.RAPIDS_GRAD
+    assert np.all(lk["level_m"] - ws[ch] <= lk["outflow_grad_m_km"] * km + 15), (lk["level_m"], ws[ch])
     assert not [f for f in z["stats"]["waterfalls"] if f["from_lake"] and f["height_m"] > 30]
+
+
+def test_outflow_grad_follows_the_coarse_relief(water_world):
+    """A lake's rapids fall as steeply as its coarse outflow does: the
+    steepest mean descent from its level down its river; 3x the relief, 3x
+    the gradient (a mountain lake's outflow cascades, PW-123); closed lakes 0."""
+    g, L = water_world["grid"], water_world["layers"]
+    elev, down = L["elevation"].astype(float), L["downstream"].astype(int)
+    lab, lvl, ex = zoom.coarse_lakes(g, L, elev)
+    gr = zoom.outflow_grad(g, elev, down, lab, lvl, ex, 500.0)
+    assert np.all(gr[ex < 0] == 0) and np.all(gr[ex >= 0] > 0)
+    k = int(np.flatnonzero(ex >= 0)[0])
+    # by hand: the mean descent to the first cell below the exit
+    n = down[ex[k]]
+    s = (np.min(np.arccos(np.clip(g.centers[lab == k] @ g.centers[ex[k]], -1, 1)))
+         + np.arccos(np.clip(g.centers[ex[k]] @ g.centers[n], -1, 1))) * R_KM
+    assert gr[k] >= (lvl[k] - max(elev[n], 0)) / s - 1e-9
+    gr3 = zoom.outflow_grad(g, 3 * elev, down, lab, 3 * lvl, ex, 500.0)
+    assert np.allclose(gr3, 3 * gr)
 
 
 def test_staircase_fits_the_valley():

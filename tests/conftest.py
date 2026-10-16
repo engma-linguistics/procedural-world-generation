@@ -2,11 +2,18 @@
 once per test session and reused (tests must not modify them). Plain
 helpers are in helpers.py."""
 
-import pytest
+import os
 
-from planet.grid import build_grid
+# Small kernels: 4 numba threads take the same wall time as 16 or 48 (~4.7 min
+# on the Threadripper) for a third of the CPU (most of it was spinning
+# threads). Before planet is imported; outputs don't depend on it.
+os.environ.setdefault("NUMBA_NUM_THREADS", "4")
 
-from helpers import run_sim
+import pytest  # noqa: E402
+
+from planet.grid import build_grid  # noqa: E402
+
+from helpers import run_sim  # noqa: E402
 
 
 def pytest_addoption(parser):

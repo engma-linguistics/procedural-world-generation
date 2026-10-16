@@ -2,7 +2,7 @@
 id: PW-174
 title: Plate cells no world cell samples miss each step's physics
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: tectonics
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-108, PW-134]
 refs: [planet/tectonics/simulation.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,4 +31,5 @@ Worth revisiting for PW-134's record speckle (strata/cover differ cell to
 cell partly because of this). Cost: one numba pass like cleanup_ghosts.
 
 ## Updates
+- 2026-10-15: Status todo -> wontdo. Not worth an output change: the tectchurn branch tried it and measured no gain once crust.coherence was in place; a sound version needs a per-step delta kernel (small-ticket agent, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-unsampled-plate-cells.md (found by tectchurn).

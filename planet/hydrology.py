@@ -47,7 +47,10 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
     (surface.erode): through open lakes and on, ending in closed ones, so a
     closed basin's rim isn't cut by water that never leaves it (the lakes
     are worked out again every lake_every passes; 0: plain priority-flood
-    routing, every pit spilling). Returns new elevation."""
+    routing, every pit spilling). What it removes isn't deposited: a
+    display pass for sub-cell valleys on a keyframe that has already put
+    its sediment where it goes (PW-281: routing it filled the keyframe's
+    hollows and built deltas). Returns new elevation."""
     h = elev.astype(float).copy()
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)
@@ -101,7 +104,7 @@ def _bed(grid, ground, min_depth, min_slope):
         return ground
     from .ocean import cell_area_km2
     h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
-                                   cell_area_km2(grid), float(min_slope))
+                                   cell_area_km2(getattr(grid, "base", grid)), float(min_slope))
     return np.where(keep, h, priority_flood(grid, h)[0])
 
 
@@ -131,7 +134,8 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
 
 def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarray,
           lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH,
-          min_slope: float = MIN_SLOPE, channel: float | None = None) -> dict:
+          min_slope: float = MIN_SLOPE, channel: float | None = None,
+          outlet: np.ndarray | None = None) -> dict:
     """Where water stands. elev m (<= 0 is sea); runoff, actual land
     evaporation and open-water evaporation in mm/yr; no_lake: cells that
     can't hold a lake (ice sheets). A cell's elevation is its mean over
@@ -149,8 +153,14 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     (channel_depth, channel: its scale): a basin a big river flows out of
     drains down to that valley's level, so through-flowing lakes are only
     as big as the hollow below it (the outlet has cut down: PW-055); a
-    closed basin has no outflowing river and keeps its water. Returns a
-    dict of per-cell arrays:
+    closed basin has no outflowing river and keeps its water. outlet
+    (optional, m, NaN where unknown): the height of each cell's river
+    where it enters the cell, from finer data (the Earth world's,
+    earth_data.earth_outlets): a river runs no higher than that, so its
+    valley is cut down to it too (a cell's mean stands as a dam where a
+    river crosses it in a gorge narrower than the cell). Generated worlds
+    have none: their rivers cut their own valleys. Returns a dict of
+    per-cell arrays:
       wet    under a lake
       kind   NO_LAKE, OPEN_LAKE (fresh: spills, its river flows on),
              CLOSED_LAKE (salty: ends its river, evaporation balances the
@@ -176,7 +186,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
         # sea: a closed basin's rivers end in it whatever their valleys);
         # again while that changes where they run (a drained lake's floor is
         # a river's course now, a lake that spills now has an outlet to cut)
-        cut = channel * discharge(grid, flow) ** CHANNEL_B * (land & ~endorheic(down, order, sink))
+        reach = land & ~endorheic(down, order, sink)
+        cut = channel * discharge(grid, flow) ** CHANNEL_B * reach
+        if outlet is not None:  # (closed basins' too: the data's river crosses them)
+            low = land & (outlet < ground)  # (NaN compares False)
+            cut = np.where(low, np.maximum(cut, ground - np.where(low, outlet, 0.0)), cut)
         if no_lake is not None:
             cut = cut * ~no_lake
         new = np.minimum(carved, kernels.carve(ground, down, order, cut))
@@ -286,18 +300,63 @@ def _endorheic(down, order, sink):
     return end
 
 
+def walled(grid: Grid, region: np.ndarray) -> Grid:
+    """grid with only the links between cells of the same region (an int
+    per cell): no water crosses a region's edge, whatever the heights."""
+    from dataclasses import replace
+    keep = region[grid.edges[:, 0]] == region[grid.edges[:, 1]]
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    ok = region[src] == region[grid.nbr_idx]
+    off = np.concatenate([[0], np.cumsum(np.bincount(src[ok], minlength=grid.n))]).astype(grid.nbr_off.dtype)
+    idx = np.ascontiguousarray(grid.nbr_idx[ok])
+    nb = [idx[off[i]:off[i + 1]].tolist() for i in range(grid.n)]
+    w = replace(grid, edges=grid.edges[keep], nbr_off=off, nbr_idx=idx, neighbors=nb, _raster=None)
+    w.base = grid  # (its geometry: cell areas)
+    return w
+
+
 def rivers_and_lakes(grid: Grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None,
-                     channel: float | None = None):
+                     channel: float | None = None, outlet: np.ndarray | None = None,
+                     closed: np.ndarray | None = None):
     """Rivers and lakes for a climate c (climate.compute's dict). Routed
     over the ice surface where there is land ice, with no lakes on it
-    (channel: as in lakes()).
+    (channel, outlet: as in lakes()). closed (optional; the Earth
+    world's, earth_data.earth_closed): each cell's closed basin by finer
+    data (an id, -1 for none). No river crosses a basin's edge (walled()),
+    so each ends its rivers in its own lakes and pans, however the cell
+    means slope, and its lake rises no higher than its rim (its lowest
+    pass out: a wetter climate than the data's spills over it). A closed
+    basin's rim is often a divide inside a cell, or its floor too flat for
+    ~100 km cells to hold. Generated worlds have none: their closed basins
+    are their own hollows.
     Returns (flow, downstream, lakes dict); the dict also has 'endorheic':
     land that drains to a closed basin rather than the sea, and 'order':
     the cells from the outlets up (route's)."""
     land = elev > 0
     iced = land & (ice > 0) if ice is not None else np.zeros(grid.n, bool)
     surf = elev + np.where(iced, ice, 0.0) if ice is not None else elev
-    lk = lakes(grid, surf, c["runoff"], c["aet"], c["lake_evap"], iced, channel=channel)
+    if closed is not None:
+        basin = np.where(land, closed, -1)
+        a = np.concatenate([grid.edges[:, 0], grid.edges[:, 1]])
+        b = np.concatenate([grid.edges[:, 1], grid.edges[:, 0]])
+        grid = walled(grid, basin)
+        lab, k = grid.components(basin >= 0)  # (each connected piece of a basin)
+        # each piece's rim: its lowest pass out (the higher of the two cells
+        # either side; the divide, unresolved, is between them)
+        rim = np.full(k, np.inf)
+        sel = (basin[a] >= 0) & (basin[a] != basin[b])
+        np.minimum.at(rim, lab[a][sel], np.maximum(surf[a], surf[b])[sel])
+    lk = lakes(grid, surf, c["runoff"], c["aet"], c["lake_evap"], iced, channel=channel, outlet=outlet)
+    if closed is not None and k:
+        # a lake fills its basin no higher than the rim: what more its
+        # rivers bring (a wetter climate than the data's) spills over the
+        # divide and is lost
+        top = np.where(lab >= 0, rim[np.maximum(lab, 0)], np.inf)
+        dry = lk["wet"] & (surf >= top)
+        lk["wet"] &= ~dry
+        lk["kind"][dry] = NO_LAKE
+        lk["level"] = np.where(lk["wet"], np.minimum(lk["level"], top), surf)
+        lk["src"] = np.where(dry, np.where(land, c["runoff"], 0.0) / 1000.0, lk["src"])
     flow, down, order, _ = route(grid, surf, lk)
     lk["endorheic"] = endorheic(down, order, lk["sink"]) & land
     lk["level"] = np.where(lk["wet"], lk["level"], elev)  # (no lakes on the ice)

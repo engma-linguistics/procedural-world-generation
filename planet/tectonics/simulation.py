@@ -62,7 +62,7 @@ class Simulation:
         "rates",  # [source, sink] smoothed over ~10 Myr (None before the first step)
         "refs",  # slow baselines of [source, sink] (None before the first step)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
-        "depth_ref",  # m: slow baseline of depth_ridge (None before the first step)
+        "depth_ref",  # m: the starting sea floor's mean depth, sea level 0 (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
         "ice",  # m of land ice per cell
         "ice_sink",  # m the ice's load presses the bed down per cell (isostasy.ice_load; settled at once)
@@ -278,7 +278,7 @@ class Simulation:
         t0 = col.t.copy()  # (volcanoes edits it in place)
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
-        crust.stretch(self, col, stretch, plume, newc, shrink)
+        crust.stretch(self, col, stretch, plume, newc, stack_add)
         squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
 
         # weather, ice, rivers, erosion, sediment
@@ -406,10 +406,13 @@ class Simulation:
 
     # ------------------------------------------------------------- queries
     def bed(self) -> np.ndarray:
-        """m above sea level of the ground, pressed down by the ice's load
-        (w_elev is the crust's own height, which the long-term processes
-        use: the load is gone ~10 kyr after its ice)."""
-        return self.w_elev - self.ice_sink
+        """m above sea level of the ground as frames show it: pressed down
+        by the ice's load, and on oceanic crust with the trench of the last
+        step (w_elev is the crust's own height, which the long-term
+        processes use: the load is gone ~10 kyr after its ice). land(), the
+        run's stats and every frame layer read this, so they agree on what
+        is land (PW-309)."""
+        return np.where(self.w_cont, self.w_elev, self.w_elev + self.w_trench) - self.ice_sink
 
     def land(self) -> np.ndarray:
         """Land: ground above sea level, or under grounded ice (all of the
