@@ -2,7 +2,7 @@
 id: PW-362
 title: "Zoom: re-check arc crust on a shelf (blocky coarse-cell islands) now that arcs have a cone every ~60 km"
 type: task
-status: todo
+status: in-progress
 parent: PW-001
 subsystem: zoom
 effort: s
@@ -28,4 +28,5 @@ the cones' flanks and a ridge along the chain rather than spread over the cell).
 - [ ] a shelf arc zoomed and looked at; blocks or not, with an image
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-arc-crust-blocks-on-shelves.md (found by zoom-batch5).

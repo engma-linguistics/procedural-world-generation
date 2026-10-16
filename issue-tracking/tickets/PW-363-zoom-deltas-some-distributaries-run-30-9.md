@@ -2,7 +2,7 @@
 id: PW-363
 title: "Zoom deltas: some distributaries run 30-90 m above the plain; some bird's-foot fingers get no channel"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: m
@@ -36,4 +36,5 @@ After PW-061 (curved distributaries and fingers, zoom batch 5), on world 592f2a'
 - [ ] every bird's-foot finger has a channel, or isn't drawn
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-delta-branches-raised-and-unchanneled-fingers.md (found by zoom-batch5).

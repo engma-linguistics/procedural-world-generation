@@ -2,7 +2,7 @@
 id: PW-177
 title: "Dune fields: seams between drift patches, network dunes, unresolved barchans"
 type: task
-status: todo
+status: in-progress
 parent: PW-096
 subsystem: zoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-012]
 refs: [planet/zoom_landforms.py, "zoom:2d1537", "zoom:e14044", "zoom:ee587f"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,4 +30,5 @@ apart on planet-fixed ~200 km patches oriented by the sand drift. Left:
   wadis or interdune lakes) nor climb the hills' windward sides.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-14: Created from inbox draft draft-dune-detail.md (found by zoomland3).
