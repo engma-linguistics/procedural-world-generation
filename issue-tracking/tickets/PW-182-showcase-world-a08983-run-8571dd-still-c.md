@@ -2,7 +2,7 @@
 id: PW-182
 title: Showcase world a08983 (run 8571dd) still carries the old raw-precipitation dune classes
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: surface
 effort: xs
@@ -31,5 +31,6 @@ cells near a42a15 would lose their dunes.
   the dune share and that ee587f's area is no longer an erg.
 
 ## Updates
+- 2026-10-15: Status todo -> wontdo. World a08983 / run 8571dd no longer exist (Mac outputs not carried to the new machine); every new world uses the current dune classes.
 - 2026-10-15: Smalls: no code change needed; closes when the showcase is remade (PW-202). World a08983's zooms are cited by PW-177, PW-183 and PW-130.
 - 2026-10-14: Created from inbox draft draft-showcase-old-dune-classes.md (found by zoompolish).

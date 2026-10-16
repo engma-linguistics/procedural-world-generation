@@ -68,7 +68,7 @@ def snapshot(sim) -> Snapshot:
     lf = landforms_now(sim, vrows)
     return Snapshot(
         t=sim.t,
-        elevation=np.where(sim.w_cont, sim.bed(), sim.bed() + sim.w_trench),  # (under ice: the pressed-down bed)
+        elevation=sim.bed(),  # (under ice: the pressed-down bed; trenches on oceanic crust)
         plate=sim.plates.label[sim.owner],
         continental=sim.w_cont.copy(),
         age=sim.w_age.copy(),
@@ -80,9 +80,7 @@ def snapshot(sim) -> Snapshot:
         precip=sim.precip.copy() if sim.precip is not None else np.zeros(sim.grid.n),
         p_jul=sim.p_jul.copy() if sim.p_jul is not None else np.zeros(sim.grid.n),
         p_jan=sim.p_jan.copy() if sim.p_jan is not None else np.zeros(sim.grid.n),
-        flow=sim.flow.copy(),
-        downstream=sim.down.copy(),
-        **lakes_now(sim),
+        **water_now(sim),
         hotspots=[list(latlon(h["pos"])) for h in sim.hotspots],
         volcanoes=vrows,
         surface=surface.surface_rock(sim.w_rock, sim.w_cover, lf["strata_top"], lf["strata_top_km"]),
@@ -108,14 +106,22 @@ def landforms_now(sim, vrows) -> dict:
                              t_warm=sim.t_warm, t_cold=sim.t_cold, tilt=sim.params.tilt)
 
 
-def lakes_now(sim) -> dict:
-    """The lakes of the last erosion step (hydrology.lakes on the terrain
-    before it eroded). Like worlds (hydrology.rivers_and_lakes), no lakes
-    on land ice, nor on cells the step left below sea level."""
-    ok = (sim.bed() > 0) & (sim.ice <= 0)
-    kind = np.where(ok, sim.lake_kind, 0).astype(np.int8)
-    wet = (kind == hydrology.OPEN_LAKE) | (kind == hydrology.CLOSED_LAKE)
-    return dict(lake_kind=kind, lake_depth=np.where(wet, sim.lake_depth, 0.0))
+def water_now(sim) -> dict:
+    """Rivers and lakes on the frame's own terrain (PW-239): the last
+    climate's runoff and evaporation over the bed now, routed over land
+    ice with no lakes on it, as worlds are (hydrology.rivers_and_lakes).
+    (The erosion step works them out on the terrain before it eroded and
+    deposited, which this frame no longer has.) Returns flow, downstream,
+    lake_kind and lake_depth (m of water, 0 off lakes)."""
+    n = sim.grid.n
+    if sim.runoff is None:  # (before the first climate: no rivers yet)
+        return dict(flow=np.zeros(n), downstream=np.full(n, -1, np.int64), lake_kind=np.zeros(n, np.int8),
+                    lake_depth=np.zeros(n))
+    bed = sim.bed()
+    c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
+    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0))
+    return dict(flow=flow, downstream=down, lake_kind=lk["kind"].astype(np.int8),
+                lake_depth=np.where(lk["wet"], np.maximum(lk["level"] - bed, 0.0), 0.0))
 
 
 def climate_now(sim) -> dict:

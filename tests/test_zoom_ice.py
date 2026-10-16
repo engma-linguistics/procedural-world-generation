@@ -99,3 +99,29 @@ def test_ice_layer_is_thickness(ice_zoom):
     ice = L["ice"]
     assert (ice[ice > 0] >= 1).all()
     assert (L["biome"][ice > 0] == 4).all() and not ((L["biome"] == 4) & (ice <= 0)).any()
+
+
+def test_ice_surface_round_trip():
+    """PW-277: the ice surface's climate is the mass balance's own year
+    (icemass.surface, via climate.ice_surface), and a zoom recovers the bare
+    ground under the ice from it (icemass.ground_from_surface, zoom.ice_ground)."""
+    from planet import climate, icemass
+    rng = np.random.default_rng(3)
+    n = 400
+    lat = rng.uniform(-85, 85, n)
+    gc = rng.uniform(-45, 15, n)
+    gw = gc + rng.uniform(2, 40, n)
+    pj, pn = rng.uniform(50, 2000, n), rng.uniform(50, 2000, n)
+    h = rng.uniform(5, 3500, n)
+    cov = rng.uniform(icemass.LOCAL, 1, n)
+    ta, tw, tc = icemass.surface(lat, gw, gc, pj, pn, h, cov)
+    assert (tc <= ta + 1e-9).all() and (ta <= tw + 1e-9).all()
+    assert (tw <= gw - LAPSE * h + 1e-9).all()  # never warmer than the bare air at its height
+    a, b, c = climate.ice_surface(gw, gc, 0.5 * (gw + gc), h, cov, lat, pj, pn)
+    assert np.allclose(a, tw) and np.allclose(b, tc) and np.allclose(c, ta)
+    rw, rc = icemass.ground_from_surface(lat, tw, tc, pj, pn, h, cov)
+    assert np.abs(rw - gw).max() < 0.2 and np.abs(rc - gc).max() < 0.2
+    # a big sheet's own air mass keeps its summer colder than a lone cap's
+    big = icemass.surface(lat, gw, gc, pj, pn, h, np.ones(n))[1]
+    lone = icemass.surface(lat, gw, gc, pj, pn, h, np.full(n, icemass.LOCAL))[1]
+    assert (big <= lone + 1e-9).all() and (big < lone - 0.5).any()

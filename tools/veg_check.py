@@ -29,10 +29,10 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import vegetation as V  # noqa: E402
 from planet import world as W  # noqa: E402

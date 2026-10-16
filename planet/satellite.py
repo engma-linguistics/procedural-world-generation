@@ -131,6 +131,10 @@ SEA = [(0, "#2b6a80"), (20, "#1f5070"), (60, "#173d63"), (200, "#122f55"), (1000
        (6000, "#08132f")]
 SHELF_TURQUOISE = "#3aa5b0"
 SEA_ICE = "#dbe3ea"
+# coastal life (coastal.py, PW-188): reefs' pale turquoise flats, dark seagrass beds, the brown-olive kelp
+# canopy at the surface, dark mangrove forest, salt marsh (growing season, winter)
+REEF, SEAGRASS, KELP = "#7fd6cf", "#1f3a33", "#3a3a22"
+MANGROVE, SALT_MARSH = "#1e3a22", ("#6f8048", "#8f8360")
 FRESH_LAKE = [(0, "#4b6a5c"), (10, "#30566a"), (50, "#1f4062"), (300, "#142e52")]
 SALT_LAKE = [(0, "#5aa49a"), (20, "#3f8a90"), (100, "#2c6a80")]
 SALT_PAN = "#e6e0d3"
@@ -185,7 +189,7 @@ def _bare(mo, temp, elev, rock, landform) -> np.ndarray:
 
 def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_jul, p_jan, nu, cover, tree,
             ice=None, lake_kind=None, rock=None, landform=None, wet=None, tilt: float = 23.4,
-            mo: dict | None = None) -> np.ndarray:
+            mo: dict | None = None, coastal: dict | None = None) -> np.ndarray:
     """Linear-light colours (n, 3) of month (0 = January ... 11) for n places.
     water: 0 land, 1 sea, 2 lake; elev: ground (sea and lake floors
     included), m; lake_depth: m; temp, t_warm, t_cold: annual, warmest and
@@ -194,7 +198,9 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     m of land ice; lake_kind: 1 fresh, 2 salt, 3 salt pan (None: by the
     climate, salt where dry); rock: exposed rock ids (surface.ROCKS);
     landform: class ids; wet: flooded share (0..1). mo: climate.months of
-    these places, when the caller has it."""
+    these places, when the caller has it. coastal: coastal life's shares
+    (0..1; coastal.py) "reef", "kelp", "seagrass" (sea), "mangrove",
+    "salt_marsh" (land)."""
     n = len(lat)
     if mo is None:
         mo = climate.months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt)
@@ -222,6 +228,12 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     c = _mix(c, veg, np.clip(cover, 0, 1) * (nu.sum(0) > 0.01))
     if wet is not None:
         c = _mix(c, lin(WETLAND), 0.35 * np.clip(wet, 0, 1))
+    cz = {k: np.clip(np.asarray(v, float), 0, 1) for k, v in (coastal or {}).items()}
+    if "salt_marsh" in cz:  # green in the growing season, straw-brown in winter
+        sm = _mix(lin(SALT_MARSH[1]), lin(SALT_MARSH[0]), _smooth(2.0, 10.0, t_m))
+        c = _mix(c, sm, cz["salt_marsh"] * (water == 0))
+    if "mangrove" in cz:
+        c = _mix(c, lin(MANGROVE), cz["mangrove"] * (water == 0))
     # --- snow, partly hidden by trees (evergreen crowns most)
     swe = 0.5 * (mo["snow"][m - 1] + mo["snow"][m])
     evg = sum(nu[i] for i, p in enumerate(V.PFTS) if p["cls"] == V.TREE and p["phen"] == V.EVERGREEN)
@@ -255,6 +267,12 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
         carb = np.isin(np.asarray(rock), CARBONATE) if rock is not None else np.zeros(n, bool)
         shelf = (1 - _smooth(0.0, 60.0, d)) * _smooth(18.0, 25.0, temp) * np.where(carb, 0.85, 0.45)
         sc = _mix(sc, lin(SHELF_TURQUOISE), shelf)
+        # coastal life on the sea floor (seen through the water: fainter deeper down; the kelp's
+        # canopy floats at the surface)
+        vis = 1 - 0.6 * _smooth(5.0, 40.0, d)
+        for k, col, a in (("seagrass", SEAGRASS, 0.55 * vis), ("kelp", KELP, 0.6), ("reef", REEF, 0.75 * vis)):
+            if k in cz:
+                sc = _mix(sc, lin(col), a * cz[k])
         frozen = _smooth(climate.FREEZE + 1.0, climate.FREEZE - 3.0, t_m)
         sc = _mix(sc, _mix(lin(SEA_ICE), lin(SNOW), 1 - np.exp(-swe / SNOW_SWE)), frozen)
         c = np.where(sea[:, None], sc, c)
@@ -308,8 +326,13 @@ def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
                   p_jul=np.asarray(L["precipitation_jul"], float), p_jan=np.asarray(L["precipitation_jan"], float),
                   nu=nu, cover=np.asarray(L["plant_cover"], float) / 100, tree=np.asarray(L["tree_cover"], float) / 100,
                   ice=L.get("ice"), lake_kind=kind, rock=L.get("surface_rock"), landform=L.get("landform"),
-                  wet=np.asarray(L["flooded"], float) / 100 if "flooded" in L else None, tilt=tilt)
+                  wet=np.asarray(L["flooded"], float) / 100 if "flooded" in L else None, tilt=tilt,
+                  coastal={k: np.asarray(L[k], float) / 100 for k in COASTAL if k in L})
     return {WORLD_LAYERS[s]: pack(v) for s, v in col.items()}
+
+
+COASTAL = ("reef", "kelp", "seagrass", "mangrove", "salt_marsh")  # coastal.LAYERS
+ZOOM_COASTAL = {"reef": 1, "kelp": 2, "seagrass": 3, "mangrove": 4, "salt_marsh": 5}  # zoom_coastal.LIFE ids
 
 
 def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -> dict:
@@ -324,5 +347,6 @@ def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -
                   p_jul=f["precipitation_jul"].astype(float), p_jan=f["precipitation_jan"].astype(float),
                   nu=nu, cover=f["plant_cover"].astype(float) / 100, tree=f["tree_cover"].astype(float) / 100,
                   ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"),
-                  wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt)
+                  wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt,
+                  coastal={k: f["coastal_life"] == i for k, i in ZOOM_COASTAL.items()} if "coastal_life" in f else None)
     return {k: v.reshape(ny, nx, 3) for k, v in col.items()}

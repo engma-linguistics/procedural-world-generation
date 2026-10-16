@@ -10,13 +10,19 @@
                                       start a job (api.py) -> {"job": id}
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
+  GET    /api/cell?world=<id>&i=<cell>  one world cell's 12 months (cell())
+
+Big data files (.bin run layers, .json worlds and grids) go gzipped when the
+browser accepts it (Content-Encoding: gzip), compressed once and cached under
+<data root>/.gzcache (Handler.send_gzip).
 
 Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
-serving; zooms and time zooms run one at a time on the job queue's worker,
-and one computation runs at a time (api.COMPUTE: numba's parallel kernels
-can't be launched from two threads at once), so a highlights request that
-has to compute waits for a running job. Job state is kept in
+serving. Zooms, time zooms and finished worlds run on the job queue, up to
+--jobs at once, each in a worker process (parallel.Pool: separate processes
+scale, threads in one process don't). Highlights that aren't cached yet are
+computed in worker processes of their own (HIGHLIGHT_WORKERS at once, PW-261),
+so they don't wait for the jobs or for each other. Job state is kept in
 .jobs/<port>.json and survives a restart (api.Jobs).
 """
 
@@ -24,11 +30,17 @@ from __future__ import annotations
 
 import http.server
 import json
+import os
 import re
+import shutil
+import threading
 import webbrowser
+import zlib
+from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api
+from . import parallel as P
 from . import store as S
 
 KIND_OF = {"runs": "run", "worlds": "world", "zooms": "zoom"}
@@ -42,18 +54,125 @@ def delete(path: str) -> int:
     return 204 if S.delete(KIND_OF[m.group(1)], m.group(2)) else 404
 
 
-def highlights(query: str) -> tuple[dict, int]:
+def highlights(query: str, compute=None) -> tuple[dict, int]:
     """GET /api/highlights?...: (JSON body, status). Synchronous: a few
-    seconds at most (building a world from a keyframe)."""
+    seconds at L6 (building a world from a keyframe), longer at L7/L8.
+    compute: where what isn't cached is computed (api.highlights)."""
     q = dict(parse_qsl(query))
     try:
-        return api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1"), 200
+        return api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1",
+                              compute=compute), 200
     except (ValueError, api.BadRequest) as e:
         return {"error": str(e)}, 400
     except SystemExit as e:  # no such run / world
         return {"error": str(e)}, 404
     except Exception as e:  # a bug: show it in the viewer rather than drop the connection
         return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+# ---------------------------------------------------------------- /api/cell
+CELL_INPUTS = ("temperature", "warm_month", "cold_month", "precipitation_jul", "precipitation_jan",
+               "cloud_jul", "cloud_jan")  # what climate.months needs from a world
+CELL_WORLDS = 4  # worlds kept loaded (their CELL_INPUTS only: ~9 MB each at L7)
+_cell_lock = threading.Lock()
+_cell_worlds: dict = {}  # world id -> (file mtime, lat, tilt, {layer: array}), oldest first
+_grid_lat: dict = {}  # level -> cell latitudes
+
+
+def world_columns(path: Path, keys) -> dict:
+    """{layer: array} for some of a saved world's layers, parsing only their
+    lines (world.save writes one line per layer); the whole file if the
+    lines aren't there (a world edited by hand)."""
+    import numpy as np
+    keys, out = set(keys), {}
+    with open(path) as fh:
+        for line in fh:
+            m = re.match(r'  "(\w+)": ', line)
+            if m and m.group(1) in keys:
+                out[m.group(1)] = np.array(json.loads(line[m.end():].rstrip().rstrip(",")), float)
+                if len(out) == len(keys):
+                    return out
+    layers = json.loads(path.read_text())["layers"]
+    return {k: np.array(layers[k], float) for k in keys}
+
+
+def cell(query: str) -> tuple[dict, int]:
+    """GET /api/cell?world=<id>&i=<cell>: (JSON body, status). The cell's
+    twelve months, Jan..Dec, from climate.months (PW-194) on the world's
+    stored climate: t (C) and p (mm in the month). Only the one cell is
+    computed; the world's inputs stay loaded for the next cell (~1 s to read
+    an L7 world and its grid the first time, ~1 ms after)."""
+    from . import climate
+    from .grid import build_grid
+    q = dict(parse_qsl(query))
+    wid = q.get("world", "").removesuffix(".json")
+    if not S.exists("world", wid):
+        return {"error": f"no world {wid!r}"}, 404
+    try:
+        i = int(q.get("i", ""))
+    except ValueError:
+        return {"error": "i: a cell index"}, 400
+    path = S.path_of("world", wid)
+    mtime = path.stat().st_mtime_ns
+    with _cell_lock:
+        w = _cell_worlds.pop(wid, None)
+        if w is None or w[0] != mtime:  # (a world rebuilt in place is read again)
+            meta = S.read_header(path, ("meta",))["meta"]
+            if meta["level"] not in _grid_lat:
+                _grid_lat[meta["level"]] = build_grid(meta["level"]).lat
+            w = (mtime, _grid_lat[meta["level"]], meta.get("params", {}).get("tilt", 23.4),
+                 world_columns(path, CELL_INPUTS))
+        _cell_worlds[wid] = w  # (now the newest)
+        while len(_cell_worlds) > CELL_WORLDS:
+            del _cell_worlds[next(iter(_cell_worlds))]
+    _, lat, tilt, L = w
+    if not 0 <= i < len(lat):
+        return {"error": f"i: 0..{len(lat) - 1}"}, 400
+    c = {k: v[i:i + 1] for k, v in L.items()}
+    mo = climate.months(lat[i:i + 1], c["temperature"], c["warm_month"], c["cold_month"], c["precipitation_jul"],
+                        c["precipitation_jan"], tilt, c["cloud_jul"] / 100, c["cloud_jan"] / 100)
+    return {"world": wid, "i": i, "lat": round(float(lat[i]), 3),
+            "t": [round(float(x), 2) for x in mo["t"][:, 0]], "p": [round(float(x), 2) for x in mo["p"][:, 0]]}, 200
+
+
+# ---------------------------------------------------------------- gzip
+GZIP_SUFFIXES = (".bin", ".json")  # run layers, worlds, grids, run.json
+GZIP_MIN = 256 << 10  # smaller files go as they are
+# level 1: an L7 run's default layers 330 -> ~87 MB, ~1.4 s for the biggest
+# file (level 6: ~3% smaller, twice the time). An int16 elevation barely
+# shrinks (78 -> 67 MB); the int8 and mostly-zero layers 5-50x.
+GZIP_LEVEL = 1
+GZIP_DIR = ".gzcache"
+
+
+def gz_path(src: Path, st: os.stat_result) -> Path:
+    """Where src's gzipped copy is cached: <data root>/.gzcache/<its path
+    there>.<size>-<mtime>.gz (a file rewritten in place gets a new name)."""
+    rel = os.path.relpath(src, S.root())
+    return S.root() / GZIP_DIR / f"{rel}.{st.st_size}-{st.st_mtime_ns}.gz"
+
+
+def prune_gz() -> None:
+    """Drop cached copies whose file is gone or has changed (deleted runs and
+    worlds, regenerated layers)."""
+    top = S.root() / GZIP_DIR
+    for p in top.rglob("*.gz"):
+        src = S.root() / p.relative_to(top).parent / p.name.rsplit(".", 2)[0]
+        try:
+            ok = gz_path(src, src.stat()) == p
+        except OSError:
+            ok = False
+        if not ok:
+            p.unlink(missing_ok=True)
+
+
+def accepts_gzip(header: str | None) -> bool:
+    """Accept-Encoding names gzip (and not with q=0)."""
+    for a in (header or "").split(","):
+        name, *params = [x.strip() for x in a.split(";")]
+        if name == "gzip":
+            return not any(x.replace(" ", "") in ("q=0", "q=0.0", "q=0.00", "q=0.000") for x in params)
+    return False
 
 
 def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
@@ -76,6 +195,7 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     jobs: api.Jobs | None = None  # set by serve()
+    hl_pool: P.Pool | None = None  # (highlights' worker processes, set by serve())
 
     def translate_path(self, path):
         # the viewer comes from the repository, everything else from the data root
@@ -95,10 +215,59 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_gzip(self, src: Path) -> None:
+        """src gzipped: the cached copy, or compressed while it is sent (no
+        Content-Length then: HTTP/1.0 closes the connection at the end) and
+        cached for next time."""
+        cache = gz_path(src, src.stat())
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(str(src)))
+        self.send_header("Content-Encoding", "gzip")
+        if cache.exists():
+            self.send_header("Content-Length", str(cache.stat().st_size))
+            self.end_headers()
+            with open(cache, "rb") as f:
+                shutil.copyfileobj(f, self.wfile)
+            return
+        self.end_headers()
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache.with_name(f".{cache.name}.{threading.get_ident()}.tmp")
+        try:
+            with open(src, "rb") as f, open(tmp, "wb") as out:
+                z = zlib.compressobj(GZIP_LEVEL, zlib.DEFLATED, 31)  # (31: with the gzip wrapper)
+                while True:
+                    chunk = f.read(1 << 20)
+                    b = z.compress(chunk) if chunk else z.flush()
+                    out.write(b)
+                    self.wfile.write(b)
+                    if not chunk:
+                        break
+            os.replace(tmp, cache)
+        finally:
+            tmp.unlink(missing_ok=True)
+        prune_gz()
+
+    def gzippable(self) -> Path | None:
+        """The data file this GET asks for, when it should go gzipped."""
+        top = urlsplit(self.path).path.lstrip("/").split("/", 1)[0]
+        if top == "viewer" or not accepts_gzip(self.headers.get("Accept-Encoding")):
+            return None
+        p = Path(self.translate_path(self.path))
+        try:
+            ok = p.suffix in GZIP_SUFFIXES and p.is_file() and p.stat().st_size >= GZIP_MIN
+        except OSError:
+            ok = False
+        return p if ok else None
+
     def do_GET(self):
         url = urlsplit(self.path)
         if url.path == "/api/highlights":
-            return self.send_json(*highlights(url.query))
+            return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
+        if url.path == "/api/cell":
+            return self.send_json(*cell(url.query))
+        gz = self.gzippable()
+        if gz:
+            return self.send_gzip(gz)
         m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", url.path)
         if m:
             job = self.jobs.get(m.group(1))
@@ -121,16 +290,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def serve(port: int = 8765, open_browser: bool = True):
+JOBS = 4  # jobs at once (worker processes) by default
+HIGHLIGHT_WORKERS = 2  # highlights computed at once (worker processes, started when first needed)
+
+
+def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads: int | None = None):
+    """jobs: how many jobs run at once, each in a worker process with
+    `threads` numba threads (default: the cores shared out, at most 8)."""
     for kind in S.KINDS:
         S.update_index(kind)
+    pool = P.Pool(jobs, threads)
+    Handler.hl_pool = P.Pool(HIGHLIGHT_WORKERS, pool.threads)
     # job state survives a restart (per checkout and port: worktrees share the data folders)
-    Handler.jobs = api.Jobs(api.any_job, S.REPO / ".jobs" / f"{port}.json")
+    Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs)
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
-    with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
-        url = f"http://127.0.0.1:{port}/viewer/"
-        print(f"Viewer at {url}   (data: {S.root()}; Ctrl-C to stop)")
-        if open_browser:
-            webbrowser.open(url)
-        httpd.serve_forever()
+    try:
+        with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
+            url = f"http://127.0.0.1:{port}/viewer/"
+            print(f"Viewer at {url}   (data: {S.root()}; {jobs} jobs at once, {pool.threads} threads each; "
+                  f"Ctrl-C to stop)", flush=True)
+            if open_browser:
+                webbrowser.open(url)
+            httpd.serve_forever()
+    finally:
+        pool.close(kill=True)  # (running jobs are queued again at the next start)
+        Handler.hl_pool.close(kill=True)

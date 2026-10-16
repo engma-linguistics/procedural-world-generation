@@ -23,6 +23,10 @@ class Params:
     continental_thickness: float = 35.0  # km: the mean the volume thermostat aims for
     # forces (arbitrary units; mobility converts torque to rad/Myr)
     slab_pull: float = 1.0
+    # the mantle's resistance to a slab sinking through it, per cm/yr of
+    # convergence: an 80 Myr slab alone sinks at slab_pull / slab_drag cm/yr
+    # (its terminal speed; 0: no resistance)
+    slab_drag: float = 0.1
     ridge_push: float = 0.15
     collision_drag: float = 1.2
     mantle_noise: float = 0.2  # the random part of the basal drag (meandering)
@@ -57,7 +61,9 @@ class Params:
     rift_sag: float = 2.2
     sag_time: float = 63.0
     # surface (see surface.py): erosion, rivers, sediment, climate
-    hillslope: float = 100.0  # km^2/Myr: wearing-down of ground standing above its neighbours
+    # km/Myr: ground wears down this x its mean downhill slope (m/km) in m/Myr (PW-282: was 100 km^2/Myr x
+    # drop / d^2, which doubled per grid level; this is the same wear at L6, d = 120.32 km)
+    hillslope: float = 3.3245
     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts

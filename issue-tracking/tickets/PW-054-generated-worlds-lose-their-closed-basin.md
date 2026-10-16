@@ -22,6 +22,9 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-10-15: Context from PW-302 (wontdo): run stream-power incision on headwater cells falls with grid level (2.2 / 1.6 / 1.1 m per 2-Myr step at L5 / L6 / L7, synthetic continent) because finer cells resolve smaller catchments; hillslope term is level-consistent (2.5 m). Total lowering 9.4 / 8.8 / 8.3 m per step. Likely part of why L7 and L6 inland-basin shares differ; a sub-cell headwater channel term is the option if it matters here. Details: docs/review/audit/fixes-surface-hydro.md.
+- 2026-10-15: Post-audit 1 Gyr sweep: inland drainage medians L6 3.5-5.2%, L7 6.2-7.7% (Earth ~18%); part is PW-239 (frames no longer stale), part PW-280/PW-266. Still the open problem.
+- 2026-10-15: After the audit fixes: L6 inland drainage 7.3-7.9% (below the 8% envelope; Earth ~18%), L7 16.3%. Basins now pass excess load over their rims (PW-280), so they fill less from overload but drain more.
 - 2026-10-15: Status in-progress -> todo. Tect2 (merged): flexural moats beside belts and McKenzie thermal sag after rifting (isostasy.subsidence). L6 inland drainage 5.6-7.1% -> 8.4-9.9% (arid land 10-12% -> 16.5-17.7%); L7 ~20% (unchanged, already near Earth). Remaining: L6/L7 gap and back-arc/pull-apart basins (new tickets).
 - 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status in-progress -> todo. Hydro (merged): diagnosis: 2/3 of closed-hollow loss is sediment infill, 1/3 rim wear; the rest needs tectonic subsidence (flexural and sag basins) - see merged draft. Back to the tectonics queue.

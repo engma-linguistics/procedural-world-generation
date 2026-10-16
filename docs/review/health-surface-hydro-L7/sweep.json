@@ -1,0 +1,10 @@
+{
+"date": "2026-10-15 20:15",
+"workers": 2,
+"threads": 4,
+"seconds": 1076,
+"runs": [{"seed":3199,"level":7,"myr":500.0,"every":4.0,"name":"health 2026-10-15 seed 3199 L7","id":"9366df"},{"seed":21,"level":7,"myr":500.0,"every":4.0,"name":"health 2026-10-15 seed 21 L7","id":"ef2c6a"}],
+"commit": "7c12663",
+"determinism": null,
+"results": [{"id":"9366df","seed":3199,"level":7,"myr":500.0,"seconds":1074.5,"forests_from":132.0,"flowers_from":376.0,"checks":{"dT_range":9.7,"peak_frames":0,"giant_lake_frames":15.9,"volume_ratio":0.926,"sea_ice_below_150":0.0,"low_plates":0.0},"every":4.0,"determinism":false},{"id":"ef2c6a","seed":21,"level":7,"myr":500.0,"seconds":1048.3,"forests_from":136.0,"flowers_from":404.0,"checks":{"dT_range":9.3,"peak_frames":0,"giant_lake_frames":7.1,"volume_ratio":0.902,"sea_ice_below_150":0.0,"low_plates":0.0},"every":4.0,"determinism":false}]
+}
