@@ -2,7 +2,7 @@
 id: PW-335
 title: "Climate: summer air over a frozen sea is +4 C (land's carry) or -12 C (the sea's own); melting ice holds it near 0 C"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -37,6 +37,7 @@ Land it with the polar snowfall fix (PW-013, draft-antarctic-margin-snowfall), n
 - [ ] landed together with the polar snowfall fix, with the PW-313 probe re-run
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (baabbba): frozen-sea summer air max(sst+frozen+sea_half, FREEZE). 70-85N coasts within 0.8 C of NCEP; Arctic Ocean summer air -9.2 -> -0.2 C (obs 1.0); Laptev/Kara thaw, waves 0 -> 3.7/4.8 kW/m.
 - 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
 - 2026-10-16: PW-333 folded in (Arctic coastal seas ~4 C too cold in summer; Laptev/Kara never thaw: median Arctic coastal sea cell -1.2 vs 2.7 C obs, 47% never thaw; +3 C gives Laptev/Kara 5.4/4.5 kW/m of waves). Check those numbers when this lands.
 - 2026-10-16: Created from inbox draft draft-frozen-sea-summer-air.md (found by pw313).

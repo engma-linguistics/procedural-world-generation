@@ -2,13 +2,13 @@
 id: PW-313
 title: "The run's ice rule can't hold Earth's Antarctica at today's climate (dT 0): it decays to ~0.1% of the surface"
 type: task
-status: in-progress
+status: blocked
 parent: null
 subsystem: climate
 effort: m
 impact: high
 found_by: pw308
-blocked_by: []
+blocked_by: [PW-015]
 relates: [PW-112, PW-039, PW-308, PW-033]
 refs: [planet/tectonics/earth.py, planet/icemass.py, docs/review/audit/pw308-glaciation.md]
 created: 2026-10-15
@@ -35,6 +35,7 @@ write-up). Today's Antarctica should hold at dT 0 and grow toward the LGM's ~-12
 - [ ] Earth probe at dT 0 keeps an ice share near 3% over 8 updates
 
 ## Updates
+- 2026-10-16: Status in-progress -> blocked. Polar bundle merged (baabbba): probe at dT 0 holds 2.33% after 8 updates (was 0.10%), still losing ~12 margin cells/update; dT -6 -66 m (target ~-120). Remaining gap is margin snowfall from the storm tracks (PW-015). Health quick: icehouse spells on 4 seeds; seed 2 reaches -340 m at a 3.0 C global (PW-240). earth_check Koppen group 71% unchanged; 60-70N land rain 487 -> 361 (GPCC 424), now too dry.
 - 2026-10-16: Polar bundle agent started.
 - 2026-10-16: Agent (2026-10-16) found three coupled causes, none merged alone: PW-335 frozen-sea summer air, PW-336 sheet air carried along the winds (option A), PW-332 margin snowfall. Probe: base 0.10%, +A 1.18%, +A + Antarctic snow x2.5 (diagnostic) ~2.6% holds. To land as one polar-climate bundle. Write-up docs/review/audit/pw313-polar-summers.md.
 - 2026-10-16: Run lane (pw313): not fixed; nothing merged. Sound temperature fixes (frozen-sea summer air; carrying the sheet's own summer air) bring Earth's polar coasts and Antarctica's coast/WAIS within 0-4 C of observations, but the probe still decays: its losing margins are at the observed summer with ~100 mm/yr of snow (obs 100-500). With carried air + Antarctic snowfall x2.5 it holds ~2.6%. See docs/review/audit/pw313-polar-summers.md and drafts frozen-sea-summer-air, ice-sheet-air-carried (needs-decision), antarctic-margin-snowfall (PW-013).
