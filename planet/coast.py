@@ -124,8 +124,8 @@ from .kernels import walk_nearest
 
 GRAV = 9.81
 # waves
-U_TRADE = 6.5  # m/s (mean) for a climate wind vector of length 1
-U_STORM = 6.0  # m/s (mean) added at storminess 1 (a mid-latitude winter storm track)
+U_TRADE = 7.0  # m/s (mean) for a climate wind vector of length 1
+U_STORM = 7.0  # m/s (mean) added at storminess 1 (a mid-latitude winter storm track)
 N_DIR = 24  # wave ray directions
 N_DIR_TIDE = 16  # directions for the tides' openness and funnelling
 D_MAX = 6000.0  # km: the farthest swell is traced from

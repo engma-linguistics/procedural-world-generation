@@ -357,12 +357,12 @@ On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and 
 - **Tide range** (m) is a three-factor proxy: connection to the open ocean (shallow straits choke it; only deep basins at least 6000 km across raise the full tide, while smaller deep basins behind sills, such as the Arctic Ocean, raise a small one of their own), **shelf resonance** (the linear standing-wave response on the shelf's mean depth: strongest at a quarter tidal wavelength, back near 1 by half a wavelength, PW-273), and **funnelling** into narrowing bays.
 - **Delta type** (Galloway's triangle) compares three fluxes at big mouths: the river's sediment (**BQART**), wave-driven longshore transport (**CERC**) and the **tidal prism**. Their shares are the river, wave and tide weights; a weight ≥ 0.5 names the type, else "mixed". The prism floods the delta plain, whose radius grows as 70 km × (Q / 1000 m³/s)^0.35 × (0.8 + 0.6 × offshore sediment factor), capped at 350 km (Nile ~110–140 km, Mississippi ~210–265, Ganges–Brahmaputra ~275–350; PW-269): with real inputs the Ganges–Brahmaputra, Mekong and Fly come out tide-dominated, the Mississippi river- and the São Francisco wave-dominated.
 
-`tools/coast_check.py` on today's Earth (L6, 2026-10-15): waves within 2× at 28 of 32 coasts, tides within 2× at 24 of 25 (Arctic coasts in range).
+`tools/coast_check.py` on today's Earth (L6, 2026-10-15, after the physics-audit fixes PW-270/272/273): waves within 2× at 24 of 32 coasts (28 before; U_TRADE = U_STORM = 7 m/s, refitted on the 18 open-ocean coasts: rms log error 0.53, bias +0.03), but the enclosed seas (Baltic, Black Sea, Mediterranean, North Sea) 3–5× too strong; tides within 2× at 22 of 25 (24 before; Arctic coasts in range), the macrotidal shelves (Patagonia, Yellow Sea) now low: at L6 their widths are a few cells and miss the quarter-wave resonance.
 
 ![Wave power](overview/wave_power.jpg)
 *Wave power on 7c5adf: the westerly storm belts and their swell, with calm water in their lee.*
 
-**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); Fundy too small, no amphidromic points (PW-076); no SW-monsoon swell on India's west coast (the climate's July wind there is weak); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
+**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); enclosed seas' waves 3–5× too strong (their winds are the open sea's); Fundy too small, no amphidromic points (PW-076); no SW-monsoon swell on India's west coast (the climate's July wind there is weak); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
 
 ### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
