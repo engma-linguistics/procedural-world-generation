@@ -2,7 +2,7 @@
 id: PW-357
 title: Zoom glacier tongues fed along their zone's margin run to GL_MAX_KM at the flux cap, discarding the excess
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -35,4 +35,5 @@ so some ice on > 12 C ground is right; the point is that the end is set by melt,
 - [ ] the massif's big tongues end by melt (flux to ~0), not at GL_MAX_KM with the cap's flux
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-tongue-run-along-margin.md (found by zoom-batch4).

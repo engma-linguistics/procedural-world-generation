@@ -2,7 +2,7 @@
 id: PW-124
 title: "Zoom: some river stretches still perched (under ice, beside other rivers)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-068]
 refs: [planet/zoom.py, "zoom:1ef6c5", "zoom:3ea62e", "world:f724bd(54.0,-23.14)"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,4 +30,5 @@ Metric: for river pixels >= 100 m3/s, min over land (< 30 m3/s) within 2 px vs t
 within 2 px of that land pixel.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-14: Created from inbox draft draft-zoom-perched-rivers-left.md (found by zoomsmalls).

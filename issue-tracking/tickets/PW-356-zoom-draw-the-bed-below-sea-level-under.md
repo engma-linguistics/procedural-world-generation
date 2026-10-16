@@ -2,7 +2,7 @@
 id: PW-356
 title: "Zoom: draw the bed below sea level under grounded ice (it still takes it at 1 m)"
 type: task
-status: todo
+status: in-progress
 parent: PW-090
 subsystem: zoom
 effort: m
@@ -30,4 +30,5 @@ layer from calling those pixels sea; then drop `zoom_world`.
 - [ ] `zoom_world` removed
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 5 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-sub-sea-bed-under-ice.md (found by pw307-world-land).
