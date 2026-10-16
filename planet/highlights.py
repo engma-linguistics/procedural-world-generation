@@ -974,7 +974,8 @@ def _chain_hotspot_islands(ctx: _Ctx, top: int) -> list[dict]:
                  f"then {', '.join(parts)} as the plate carries them off and they sink, the oldest {vs[-1]['age']:.0f} Myr"
                  + (f"; highest {_m(peak['top_m'])}" if peak["top_m"] > 0 else "")
                  + ". Like Hawaii, Midway and the Emperor seamounts.")
-        title = (f"Island chain: {isl} islands" + (f", {atl} atolls" if atl else "")) if isl else f"Atoll chain: {atl} atolls"
+        title = (f"Island chain: {_plural(isl, 'island')}" + (f", {_plural(atl, 'atoll')}" if atl else "")) if isl \
+            else f"Atoll chain: {_plural(atl, 'atoll')}"
         path = [[round(v["lat"], 2), round(v["lon"], 2)] for v in vs]
         if len(path) > 60:
             path = [path[j] for j in np.unique(np.linspace(0, len(path) - 1, 60).round().astype(int))]
@@ -1092,7 +1093,7 @@ def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
     for gr in _tracks(vents):
         cal = sorted((vents[k] for k in gr), key=lambda v: v["age"])
         live = [v for v in cal if v["status"] != "extinct"]
-        if live:
+        if live and len(cal) >= 2:  # (a system: the plume has left more than one caldera)
             systems.append((len(live) + 0.3 * len(cal), cal, live))
     systems.sort(key=lambda s: -s[0])
     out = []
@@ -1137,7 +1138,7 @@ def stratovolcano(ctx: _Ctx) -> list[dict]:
     setting = "on a continent's edge (like the Andes)" if v["floor_m"] > 0 and ("crust" not in ctx.L or ctx.L["crust"][cell] > 0) \
         else "in an island arc (like Japan)" if v["floor_m"] > -1000 else "rising from the sea in an island arc"
     blurb = (f"{_m(v['top_m'])}: the highest active volcano, a steep stratocone of andesite and ash standing "
-             f"{_m(v['top_m'] - v['floor_m'])} above its ground, {setting}, active for {v['age']:.0f} Myr"
+             f"{_m(v['top_m'] - v['floor_m'])} above its ground, {setting}, active for {'under 1 Myr' if v['age'] < 1 else f"{v['age']:.0f} Myr"}"
              + (f"; {_plural(near, 'more active volcano')} within 300 km" if near else "")
              + ". Like Chimborazo, Ojos del Salado or Fuji.")
     return [_feature(ctx, "stratovolcano", f"Highest active volcano: {_m(v['top_m'])}", blurb, cell, 250,
@@ -1195,8 +1196,11 @@ def volcanic_field(ctx: _Ctx) -> list[dict]:
     sts = {s: int((St[near] == s).sum()) for s in ("active", "dormant", "extinct")}
     blurb = (f"Different kinds of volcano within {FIELD_KM * 2:.0f} km: "
              + ", ".join(_plural(c, t) for t, c in cnt.items() if c)
-             + f" ({', '.join(f'{c} {s}' for s, c in sts.items() if c)}): where a mantle plume rises near a "
-             "subduction arc, steep cones of sticky andesite stand beside broad basalt shields or calderas.")
+             + f" ({', '.join(f'{c} {s}' for s, c in sts.items() if c)}): "
+             + ("where a mantle plume rises near a subduction arc, steep cones of sticky andesite stand beside "
+                "broad basalt shields or calderas." if cnt["stratovolcano"] else
+                "where a plume's track runs from the sea onto a continent, broad basalt shields at sea beside "
+                "calderas on land."))
     return [_feature(ctx, "volcanic_field", f"Volcanic field: {nt} kinds of volcano", blurb, cell, 500,
                      {"types": nt, "volcanoes": nv, **{t.split()[0]: c for t, c in cnt.items()}, **sts},
                      quality=0.5 + 0.25 * (nt - 2) + 0.25 * min(nv / 8, 1))]
@@ -1778,6 +1782,11 @@ def _sea_range(ctx: _Ctx, cells) -> tuple[float, float]:
     return float(np.minimum(sj, sn).mean()), float(np.maximum(sj, sn).mean())
 
 
+def _crange(t0: float, t1: float) -> str:
+    a, b = round(t0), round(t1)
+    return f"~{a} °C" if a == b else f"{a}–{b} °C"
+
+
 def _lime_pct(ctx: _Ctx, cells) -> float:
     if "surface_rock" not in ctx.L:
         return 0.0
@@ -1798,7 +1807,7 @@ def carbonate_banks(ctx: _Ctx, top: int = 2) -> list[dict]:
         lime = _lime_pct(ctx, cells)
         depth = float(np.mean(-ctx.elev[cells]))
         blurb = (f"A shallow carbonate bank, {_area(x['area_km2'])} of sea ~{_m(depth)} deep on average, "
-                 f"{t0:.0f}–{t1:.0f} °C through the year, with {_area(reef_km2)} of coral reef along its rim and "
+                 f"{_crange(t0, t1)} through the year, with {_area(reef_km2)} of coral reef along its rim and "
                  "lime-sand shoals, lagoons and low islands on top"
                  + (f", dropping to ~{_m(x['deep_rim_m'])} all round" if x["deep_rim_m"] >= 1000 else "")
                  + (f"; {lime:.0f}% of its floor limestone" if lime >= 10 else "")
@@ -1825,7 +1834,7 @@ def barrier_reefs(ctx: _Ctx, top: int = 1) -> list[dict]:
         t0, t1 = _sea_range(ctx, cells)
         blurb = (f"{_area(reef_km2)} of coral reef in a {_n(x['length_km'])} km line along the outer shelf, "
                  f"~{_n(x['offshore_km'])} km off the coast, with a lagoon ~{_m(x['lagoon_m'])} deep behind it; "
-                 f"the sea {t0:.0f}–{t1:.0f} °C through the year. Like the Great Barrier Reef.")
+                 f"the sea {_crange(t0, t1)} through the year. Like the Great Barrier Reef.")
         out.append(_feature(ctx, "barrier_reef", f"Barrier reef: {_n(x['length_km'])} km", blurb, mid,
                             zoom_size(min(x["length_km"], 1000)),
                             {"reef_km2": round(reef_km2), "length_km": round(x["length_km"]),
