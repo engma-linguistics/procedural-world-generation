@@ -2,7 +2,7 @@
 id: PW-284
 title: "Flexural moat: a 15% share tuned on one L7 seed's closed-basin count, and only the moat half of flexure applied"
 type: task
-status: todo
+status: in-progress
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-054, PW-242]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/params.py, docs/review/audit/tectonics.md, planet/tectonics/crust.py, planet/tectonics/plate_kernels.py, "run:a1d3b9@900Myr"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -57,6 +57,7 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started (basins and giant lakes).
 - 2026-10-15: Status in-progress -> todo. Not landed: full flexure needs grid-scale crust spikes smoothed first (merged update above); stays todo.
 - 2026-10-15: Merged inbox draft draft-tect-flexure-needs-smooth-crust.md ("PW-284 lean B not landed: full two-sided flexure lifts grid-scale crust spikes to 14-40 km", found by audit-fix-tectonics).
   PW-284's approved lean (share 1, both halves of the flexure, volume kept,
