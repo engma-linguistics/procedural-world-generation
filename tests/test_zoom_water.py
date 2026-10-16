@@ -209,6 +209,17 @@ def test_delta_plain_and_distributaries(water_world):
     near = np.hypot(X - dl["mouth_km"][0], Y - dl["mouth_km"][1]) < dl["plain_radius_km"]
     assert z["stats"]["distributary_splits"] >= 1
     assert (coast & near & (q > 0.1 * q[near].max())).sum() >= 2
+    # PW-363: the distributaries run on the plain, not held 30-90 m above it
+    # (at the coarse river's valley floor): no river pixel on the plain with
+    # land within 2 px more than 30 m below every river pixel near that land
+    h, land_ = z["layers"]["elevation"], water == 0
+    riv, low = land_ & (q >= 0.05 * q[near].max()), land_ & (q < 0.01 * q[near].max())
+    from numpy.lib.stride_tricks import sliding_window_view as sw
+    minr = sw(np.pad(np.where(riv, h, 1e9), 2, constant_values=1e9), (5, 5)).min(axis=(2, 3))
+    worst = sw(np.pad(np.where(low, minr - h, -1e9), 2, constant_values=-1e9), (5, 5)).max(axis=(2, 3))
+    assert (riv & near & (worst > 30)).sum() == 0
+    # every finger drawn has a channel of its own to the sea
+    assert dl["fingers"][1] == dl["fingers"][0]
 
 
 def test_delta_fingers_curve_and_build_out_into_the_sea():
@@ -237,6 +248,11 @@ def test_delta_fingers_curve_and_build_out_into_the_sea():
         c = np.clip(np.floor(ln[:, 0] / res + n / 2).astype(int), 0, n - 1)
         r = np.clip(np.floor(n / 2 - ln[:, 1] / res).astype(int), 0, n - 1)
         assert np.mean(ind[r * n + c][len(ln) // 4:] > 0) <= 0.4
+    # PW-363: where the tide's funnels take the branches, no fingers are drawn
+    # (no branch heads for them: they stood as strips of land with no channel)
+    dl.update(wR=0.45, wT=0.55)
+    f = zoom._delta_forms(dl, px, py, res, np.random.default_rng(1), ind, n, n)
+    assert f["kind"] == "funnels" and not dl["finger_lines"] and f["keep"].max() < 0
 
 
 def test_no_delta_plain_on_high_ground():

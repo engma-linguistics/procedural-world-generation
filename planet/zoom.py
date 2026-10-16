@@ -858,7 +858,9 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     # away from the fan's middle and wandering a little as it builds out
     # (the Mississippi's passes), narrowing to its tip
     Lf = R * 1.1 * wR ** 2  # (the Mississippi's bird's foot reaches ~100 km out from a ~250 km plain)
-    if Lf > 3 * res and n >= 1:
+    # (not where the tide's funnels take the branches instead: a finger
+    # no branch heads for stood as a strip of land with no channel, PW-363)
+    if Lf > 3 * res and n >= 1 and not (1.6 * wT > 0.3 and wT >= wR):
         wf = max(2.0 * res, 0.06 * R)
         spread = np.radians(50 + 15 * min(n, 5))
         th = (np.linspace(-0.5, 0.5, n) if n > 1 else np.zeros(1)) * spread + rng.normal(0, 0.08, n)
@@ -1464,6 +1466,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- coarse rivers -> valleys + inflow --------------------------------
     coast_cap = COAST_FLOOR_GRAD * res * ZK.inside_distance(land, nx, ny, False)  # (see z_course)
+    # (on a delta plain, no higher than the plain: a coarse river's floor
+    # held above it, a falls reach's foot included, raised its distributaries
+    # 30-90 m above the plain beside them, PW-363)
+    coast_cap = np.where(wD > 0, (1 - wD) * coast_cap + wD * np.minimum(coast_cap, zD), coast_cap)
     clab, clvl, cexit = coarse_lakes(g, L, elev)
     cgrad = outflow_grad(g, elev, down, clab, clvl, cexit, 2 * sp)  # (the rapids below each lake: rims())
     lake_c = clab >= 0
@@ -2029,6 +2035,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             ch = ZK.chain(rec, int(r_k[0]))
             mine = kpix[ch] == k_
             ch = ch[:np.flatnonzero(mine)[-1] + 1]
+            # (not on into a delta's distributaries: below its apex the plain
+            # shapes the channels, PW-363)
+            ch = ch[:np.argmax(branch[ch])] if branch[ch].any() else ch
             ch = ch[active[ch]]
             if not len(ch):
                 continue
@@ -2183,15 +2192,23 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # the landscape pass has settled a bit (a third of the way through).
     ov_src = ov_dst = np.zeros(0, np.int64)
     splits = []
+    trunk_px = []  # (the main channels pinned down to each apex)
+    branch = np.zeros(npx, bool)  # the distributaries below the apexes (PW-363)
 
-    def make_branches(rec0, order0):
+    # (the distributaries laid so far: overrides, splits, pixels taken)
+    BR = {"ov": {}, "splits": [], "via": {}, "assigned": np.zeros(npx, bool), "blocked": np.zeros(npx, bool),
+          "rng": np.random.default_rng(seed + 7)}
+
+    def make_branches(rec0, order0, todo):
         """Receiver overrides (src, dst) and splits for the deltas, laid out
-        on the drainage network (rec0, order0) of a landscape iteration."""
-        ov, splits, via_map = {}, [], {}  # (via_map: a finger tip's goal pixel -> the finger's axis)
+        on the drainage network (rec0, order0) of a landscape iteration: the
+        deltas `todo` added to those laid before."""
+        ov, splits, via_map = BR["ov"], BR["splits"], BR["via"]  # (via_map: a finger tip's goal pixel -> the finger's axis)
+        reached = set()  # (the goals a branch of their own runs out to the sea at)
         top_z = [np.inf]  # (the highest ground a delta's branches may cross: set per delta)
         score = route(srcq, rec0, order0, lake_outlets(rec0), False, lake_loss)[0]
-        assigned = np.zeros(npx, bool)
-        rng = np.random.default_rng(seed + 7)
+        assigned = BR["assigned"]
+        rng = BR["rng"]
 
         # Each branch heads for its own point on the coast, spread around the
         # main mouth, along a smooth curve rasterised onto the pixels (any
@@ -2362,6 +2379,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                         continue
                     kids.append(first)
                     fr_.append(f)
+                    if len(gp) == 1 and outlet[last]:
+                        reached.add(gp[0])
                     break
             if kids:
                 ov[s] = kids[0]
@@ -2373,9 +2392,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         by_q = np.argsort(score, kind="stable")
         by_q = by_q[rec0[by_q] >= 0]
         bp[rec0[by_q]] = by_q  # the last (biggest) write wins
-        blocked = np.zeros(npx, bool)
-        for dl in deltas:
+        blocked = BR["blocked"]
+        for dl in todo:
             R = dl["R"]
+            # (stats: fingers in the region, those with a channel to the sea)
+            dl["fingers"] = [0, 0]
             r = np.hypot(px - dl["x"], py - dl["y"])
             mouth = active & (r < R) & sea[np.maximum(rec0, 0)] & (rec0 >= 0)
             if not mouth.any():
@@ -2401,9 +2422,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             trunk = up[up.index(a) + 1:]
             for c in trunk:  # pin the main channel down to the apex
                 ov[c] = rec0[c]
+            trunk_px.extend(trunk)
             assigned[[a] + trunk] = True
             blocked[[a] + trunk] = True
-            dl["apex"] = int(a)
+            dl["apex"], dl["laid"] = int(a), True
             nb = dl["nb"]  # from the Galloway weights (_deltas): waves leave few mouths, tides many
             if nb < 2:  # a single mouth: no distributaries (the trunk stays pinned)
                 continue
@@ -2454,12 +2476,65 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             goals.sort(key=lambda q: (np.arctan2(py[q] - py[a], px[q] - px[a]) - phi + np.pi) % (2 * np.pi))
             # (the branches stay on low ground: not up into the hills beside the plain)
             top_z[0] = max(float(base[a]), 0.0) + BRANCH_CLIMB_M  # (no branch onto ground higher than its apex, but a little)
-            grow(a, goals, max(int(0.15 * ln / res), 2), blocked | (target > BRANCH_MAX_Z))
+            # (nor across a young volcano held at its cone: the channel rode over it, PW-363)
+            blk = blocked | (target > BRANCH_MAX_Z) | (vpin > -np.inf)
+            grow(a, goals, max(int(0.15 * ln / res), 2), blk)
+            # A finger the split tree's branches didn't reach (the trunk's own
+            # course or high ground near the apex in the way) gets a branch of
+            # its own from the delta's channel nearest its base, splitting off
+            # there with its share of the water: else it was a strip of land
+            # with no channel (PW-363).
+            sp_src = {sp_[0] for sp_ in splits if sp_ is not None}
+            trunk_s = set(trunk)
+            for q in goals:
+                if q in reached or q not in via_map:
+                    continue
+                own = np.array([c for c in ov if c not in sp_src and (c in trunk_s or c == a or
+                                                                       np.hypot(px[c] - px[a], py[c] - py[a]) < 1.5 * R)],
+                               dtype=np.int64)
+                if not len(own):
+                    continue
+                v0 = via_map[q][0]
+                s0 = int(own[np.argmin(np.hypot(px[own] - v0[0], py[own] - v0[1]))])
+                pix = toward(s0, v0[0], v0[1], npx, blk, via_map[q], 0)
+                snap_k = (dict(ov), assigned.copy())
+                first, last, open_ = commit(s0, pix, blk)
+                # (out to the sea, or out of the region: a finger running on
+                # past its edge, into the halo, ends there)
+                ok_ = first >= 0 and ((not open_ and outlet[last]) or not region[last])
+                if ok_ and open_:  # (an open end mustn't drain back into the delta: a loop)
+                    rt = rec0.copy()
+                    rt[list(ov)] = list(ov.values())
+                    ok_ = len(ZK.receiver_order(rt)) == npx
+                if not ok_:
+                    ov.clear()
+                    ov.update(snap_k[0])
+                    assigned[:] = snap_k[1]
+                    continue
+                r0 = ov[s0] if s0 in ov else int(rec0[s0])
+                share = 1.0 / max(len(goals), 2)
+                # (before any split further down its channel: route() divides
+                # the water in this order, upstream first)
+                down_, c = set(), r0
+                while c >= 0 and c not in down_ and len(down_) < npx:
+                    down_.add(c)
+                    c = ov[c] if c in ov else int(rec0[c])
+                at = next((j for j, sp_ in enumerate(splits) if sp_ is not None and sp_[0] in down_), len(splits))
+                splits.insert(at, (s0, [r0, first], np.array([1.0 - share, share])))
+                sp_src.add(s0)
+                reached.add(q)
+            fg = [q for q in goals if q in via_map]
+            if 1.6 * dl["wR"] > 0.6:  # (none drawn as land below a river weight of ~0.4)
+                dl["fingers"] = [len(fg), sum(q in reached for q in fg)]
             rt = rec0.copy()
             rt[list(ov)] = list(ov.values())
             if len(ZK.receiver_order(rt)) < npx:  # a branch looped back: no distributaries here
-                ov, assigned, blocked = snap[0], snap[2], snap[3]
+                ov.clear()
+                ov.update(snap[0])
+                assigned[:], blocked[:] = snap[2], snap[3]
                 del splits[snap[1]:]
+                dl.pop("apex", None)
+                dl["laid"], dl["fingers"][1] = True, 0  # (not tried again)
         return (np.array(list(ov), dtype=np.int64), np.array(list(ov.values()), dtype=np.int64),
                 [sp_ for sp_ in splits if sp_ is not None])
 
@@ -2522,8 +2597,15 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     was_river = bottom.copy()  # the valley bottom, and every pixel the coarse river's water has run through
     for it in range(iterations):
         filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
-        if deltas and it == iterations // 3:  # once the network has settled a bit
-            ov_src, ov_dst, splits = make_branches(rec, order)
+        # (once the network has settled a bit; a delta whose river didn't reach
+        # its mouth yet, still finding its way through the region, is tried
+        # again on the next iterations, up to two thirds of the way)
+        todo = [dl for dl in deltas if not dl.get("laid")] if iterations // 3 <= it <= 2 * iterations // 3 else []
+        if todo:
+            ov_src, ov_dst, splits = make_branches(rec, order, todo)
+            branch[:] = False
+            branch[ov_src] = True
+            branch[np.asarray(trunk_px, dtype=np.int64)] = False
             # levees: the land along the distributaries stands a little
             # above the plain, more so on a river-dominated delta
             chan = np.zeros(npx, bool)
@@ -2544,6 +2626,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # (on a reach with falls, only in the valley bottom: a stream wandering
         # off the course isn't held up at the plateau's level)
         flc = np.where(was_river & ((kpix < 0) | bottom), z_course, -np.inf)
+        # (nor a delta's distributaries above the land beside them: held at the
+        # coarse river's valley floor, or a falls reach's foot, they ran 30-90 m
+        # above the plain the landscape pass grades beside them, PW-363)
+        if hprev is not None and branch.any():
+            g_ = np.where(active & ~branch & (Q * KM2_M_PER_YR_TO_M3S < 30.0), hprev, np.inf).reshape(ny, nx)
+            lo_ = g_.copy()
+            for dr in range(-2, 3):
+                for dc in range(-2, 3):
+                    lo_ = np.minimum(lo_, _shift(g_, dr, dc, np.inf))
+            flc[branch] = np.minimum(flc[branch], lo_.ravel()[branch] + 0.5)
         flc[c_idx] = c_val  # the river itself, on reaches with falls
         cp[c_idx] = np.minimum(cp[c_idx], c_val + 1.0)  # ... at its staircase, not above it
         np.minimum.at(cp, b_idx, b_val + 1.0)
@@ -2993,7 +3085,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
                     "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
-                    "mouths": d["mouths"],
+                    "mouths": d["mouths"], "fingers": d.get("fingers", [0, 0]),
                     "form": d["form"], "marine_layers": d["marine"],
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
