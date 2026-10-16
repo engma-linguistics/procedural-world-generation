@@ -926,7 +926,7 @@ def _budyko1(p, pet, w):
 
 @njit(cache=True, parallel=True)
 def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
-          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0):
+          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, ema0, warm):
     """Water vapour carried along the wind in physical time, for all
     seasons at once (arrays are [season, cell]). Each time step dt (s):
     - the air moves: a finite-volume transport through the cell faces
@@ -954,12 +954,15 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       + height + latent heat of its vapour: mse_t + LQ * vapour) above that
       of the air aloft (mse_thr). Wet ground is cooler and dry ground hotter
       (evap C, see compute), which feeds back on the showers.
-    It starts from the vapour m0 and runs `steps` steps toward the steady
-    state. Returns the rain per step averaged over the last quarter of the
-    steps, the large-scale part of it, the evaporation from the sea (the
-    water the air takes up over it, same units), the air's water vapour
-    left after its rain (_qsat units: 1 = saturated at 0 C), and the vapour
-    at the end. (Parallel over cells, each adding up in a fixed order; the
+    It starts from the vapour m0 and the running mean of the rain ema0
+    (zeros from cold) and runs `steps` steps toward the steady state; warm
+    (a run's earlier update: m0 and ema0 its end state) sets the land's
+    evaporation and the ground's cooling from ema0 at once instead of after
+    5 and 20 steps. Returns the rain per step averaged over the last quarter
+    of the steps, the large-scale part of it, the evaporation from the sea
+    (the water the air takes up over it, same units), the air's water
+    vapour left after its rain (_qsat units: 1 = saturated at 0 C), and the
+    vapour and the running mean of the rain at the end. (Parallel over cells, each adding up in a fixed order; the
     one sum over all cells stays serial, so the results don't depend on the
     threads.)"""
     S, n = qs.shape
@@ -967,7 +970,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
     m1 = np.empty((n, S))
     acc = np.zeros((S, n))
     acc_ls = np.zeros((S, n))
-    ema = np.zeros((S, n))  # running mean of each place's rain
+    ema = ema0.copy()  # running mean of each place's rain
     tcor = np.zeros((S, n))  # wet ground cooler, dry ground hotter (C)
     acc_up = np.zeros((S, n))  # water the air takes up over the sea (evaporation)
     acc_q = np.zeros((S, n))  # the air's water vapour after its rain (for humidity)
@@ -976,14 +979,15 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
     fex = 1.0 - np.exp(-dt / tau_ex)
     scale = 1.0
     for it in range(steps):
-        tcor_due = evap != 0 and it >= 20 and it % 10 == 0
-        if (it >= 5 and it % 5 == 0) or tcor_due:
+        tcor_due = evap != 0 and ((it >= 20 and it % 10 == 0) or (warm and it == 0))
+        land_due = (it >= 5 and it % 5 == 0) or (warm and it == 0)
+        if land_due or tcor_due:
             tot = 0.0
             for k in range(S):
                 for i in range(n):
                     tot += ema[k, i]
             scale = mean_mm * S * n / max(tot, 1e-12)  # model units -> mm/yr
-        if it >= 5 and it % 5 == 0:
+        if land_due:
             # the land's evaporation, as water_balance has it: each season's
             # amount (mm) with what the soil kept from the other season's
             # surplus, all of it at most the year's rain
@@ -1038,7 +1042,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                     acc_ls[k, i] += r_ls
                     acc_q[k, i] += q - r
         m, m1 = m1, m
-    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, np.ascontiguousarray(m.T)
+    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, np.ascontiguousarray(m.T), ema
 
 
 def vapour_mixed(grid: Grid, q: np.ndarray, qs: np.ndarray, t_air: np.ndarray, tune: dict) -> np.ndarray:
@@ -1298,6 +1302,8 @@ RATE_S = 17189.0  # s: TUNE's rain rates (base, cv, fex) are shares per this lon
 K_MIX = 2.0e5  # m2/s: the eddy mixing at full strength (the old kernel's one neighbour mix per L6 step)
 RAIN_DAYS = 20.0  # days of pseudo-time to the vapour's steady state (it rains out in ~5-10; Earth L6: the
 # regions within 1% of 60 days, the global books within 0.05% of the rain)
+RAIN_WARM_DAYS = 8.0  # ... from a run's last climate update (4 Myr before: compute's rain_start), which
+# starts near it (PW-387)
 RAIN_INIT = 0.5  # the land's air starts this share saturated (the sea's at src_q): a guess near the steady
 # state, which it doesn't change (from dry air the same takes 30 days)
 RAIN_CFL = 0.95  # the most of a cell's vapour that may leave it in one step (<= 1: no cell goes negative)
@@ -1341,8 +1347,9 @@ def _transport(grid: Grid, un: np.ndarray, kd: np.ndarray) -> tuple:
 
 
 def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None, open_sea=None,
-               ocean=None) -> tuple:
-    """rain's arguments to _rain (also tools/moisture_budget.py's)."""
+               ocean=None, start=None) -> tuple:
+    """rain's arguments to _rain (also tools/moisture_budget.py's). start:
+    an earlier call's end state (rain's), to start warm from."""
     n = grid.n
     ocean = elev <= 0 if ocean is None else ocean
     w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
@@ -1350,12 +1357,16 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
           ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr")}
     c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
-    steps = int(RAIN_DAYS * 86400.0 / dt) + 20
+    warm = start is not None and start["vap"].shape == st["qs"].shape
+    steps = int((RAIN_WARM_DAYS if warm else RAIN_DAYS) * 86400.0 / dt) + 20
     tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
+    m0 = start["vap"] if warm else np.where(ocean, st["src_q"], RAIN_INIT * st["qs"])
+    ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, c_self, c_in, nbr,
             _faces(grid)["off"], steps, dt, tau_ex, tune["rh_c"], tune["rh_pow"], tune["cv_scale"],
-            tune["evap_cool"], tune["mean_mm"], np.where(ocean, st["src_q"], RAIN_INIT * st["qs"]))
+            tune["evap_cool"], tune["mean_mm"], np.ascontiguousarray(m0, np.float64),
+            np.ascontiguousarray(ema0, np.float64), warm)
 def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[dict], tune: dict) -> np.ndarray:
     """Storms carry their rain with them: the large-scale (frontal) rain is
     spread over a storm's size, so e.g. the storms that brew over warm
@@ -1369,7 +1380,7 @@ def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[d
 
 
 def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
-         open_sea=None, ocean=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+         open_sea=None, ocean=None, start=None) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
     """Rain rate (model units) per season, [season, cell], from the inputs
     of _season_inputs for each season (v: the vapour's wind), the
     evaporation from the sea (same units and shape; 0 on land) and the
@@ -1384,9 +1395,12 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
     (default 1), the only part the air takes up water from. tune's
     mean_mm: the global mean rain the kernel's rain is scaled to (in mm,
     for the land's evaporation). ocean: default elev <= 0 (compute's: not
-    geo.is_land)."""
-    r, r_ls, up, vap, _ = _rain(*_rain_args(grid, elev, seasons_in, tune, pet, w, open_sea, ocean))
-    return storm_spread(grid, r, r_ls, seasons_in, tune), up, vap
+    geo.is_land). start: an earlier call's end state (the fourth result:
+    the kernel's vapour and running mean of the rain), to start from it and
+    run RAIN_WARM_DAYS instead of RAIN_DAYS (a run's climate updates, PW-387;
+    the outputs move by the kernel's convergence error, ~1%)."""
+    r, r_ls, up, vap, m, ema = _rain(*_rain_args(grid, elev, seasons_in, tune, pet, w, open_sea, ocean, start))
+    return storm_spread(grid, r, r_ls, seasons_in, tune), up, vap, dict(vap=m, ema=ema)
 
 
 TUNE = dict(
@@ -1872,7 +1886,7 @@ def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
 def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             ice: np.ndarray | None = None, tune: dict | None = None, melt: np.ndarray | None = None,
             moc_start: dict | None = None, veg: dict | None = None, orbit_dt: np.ndarray | None = None,
-            ice_air: np.ndarray | None = None) -> dict:
+            ice_air: np.ndarray | None = None, rain_start: dict | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
     level; <= 0 is sea unless grounded ice is on it: geo.is_land), the global
     temperature offset dT from today's Earth, axial tilt and land ice (m).
@@ -1911,7 +1925,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                              surface where it wells up (0 on land; upwelling_cooling)
     and ground: (t_warm, t_cold, temp) of the bare ground under the ice (ice_surface
     turns them back into the ice's), moc_sites: a list of dicts per sinking site (lat, lon, sv, drho,
-    area_km2, heat_pw) and moc_state, a dict to pass on as moc_start.
+    area_km2, heat_pw) and moc_state, a dict to pass on as moc_start, and
+    rain_state, the rain kernel's end state to pass on as rain_start (a
+    run's next update starts its rain from it, PW-387; default: from cold,
+    as worlds and the Earth checks do).
     veg: the vegetation's feedbacks (vegetation.feedback: woody and deep-
     rooted cover, LAI, albedo, snow masking; per cell, land only), or None
     for land with an Earth-like average cover: plants give more of the rain
@@ -2013,8 +2030,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
     pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
     open_air = open_y + tune["leads"] * (1.0 - open_y)
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet},
-                                                          pet, fb["w"], np.where(ocean, open_air, 1.0), ocean)
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan), rain_state = rain(
+        grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet}, pet, fb["w"], np.where(ocean, open_air, 1.0),
+        ocean, rain_start)
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
@@ -2072,7 +2090,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                 upwelling=np.where(ocean, upwelling_cooling(grid, ocean, v_ann, away, tune["coast_up"],
                                                             tune["eq_up"]), 0.0),
                 moc_sites=oc["sites"],
-                moc_state=oc["state"], ground=ground)
+                moc_state=oc["state"], rain_state=rain_state, ground=ground)
 
 
 def _orbit(temps, orbit_dt, north):
