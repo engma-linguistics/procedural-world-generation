@@ -20,7 +20,20 @@ def test_water_balance_limits():
     assert np.allclose(wb["runoff"] + wb["aet"], p)
     assert wb["runoff"][0] > 0.6 * p[0]
     assert wb["runoff"][1] < 0.05 * p[1]
-    assert wb["pet"][2] > wb["pet"][0] and (wb["lake_evap"] > wb["pet"]).all()
+    assert wb["pet"][2] > wb["pet"][0]
+
+
+def test_open_water_evaporation():
+    """Penman's open water (PW-358): a lake in a hot, dry, sunny climate evaporates about twice what one in
+    a humid, cloudy one of the same warmth does (Lake Nasser ~2700 mm, Lake Victoria ~1500), a cold
+    lake little, a frozen one nothing."""
+    lat = np.array([22.0, 0.0, 62.0, 75.0])
+    temp, t_warm, t_cold = (np.array([25.0, 25.0, 3.0, -20.0]), np.array([32.0, 26.0, 16.0, -5.0]),
+                            np.array([16.0, 24.0, -10.0, -32.0]))
+    rh, cloud = np.array([30.0, 85.0, 80.0, 80.0]), np.array([0.1, 0.8, 0.7, 0.6])
+    e = climate.open_water_evap(lat, temp, t_warm, t_cold, rh, rh, cloud, cloud)
+    assert 2200 < e[0] < 3600 and 1000 < e[1] < 1800 and e[0] > 1.6 * e[1]
+    assert 150 < e[2] < 700 and e[3] == 0
 
 
 def _bowl():

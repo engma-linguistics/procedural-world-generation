@@ -573,6 +573,7 @@ def earth_rivers(grid, d, c, w) -> dict:
     pn = np.where(np.isfinite(d["obs_p_jan"]), d["obs_p_jan"], c["p_jan"])
     wb = climate.water_balance(grid.lat, c["temp"], c["t_warm"], c["t_cold"], pj, pn)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
+    wb["lake_evap"] = c["lake_evap"]  # (the lakes' evaporation is the climate's, not the rain's)
     flow_o, down_o, lk_o = routed(wb)
     def at_mouth(fl, dn, gauges):
         """The biggest river within 150 km of each gauge, followed to its

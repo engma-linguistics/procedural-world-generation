@@ -1511,7 +1511,7 @@ TUNE = dict(
     # evaporation and runoff (see water_balance)
     budyko_w=2.6,  # Fu's w: how readily the land gives the rain back to the air (Earth's mean ~2.6)
     soil_mm=150.0,  # mm of water the soil holds over from one half-year to the next
-    open_water=1.2,  # open water's evaporation per unit of the land's potential evaporation
+    lake_wind=2.0,  # m/s at 2 m over lakes for open_water_evap (FAO-56's default without wind data)
     leads=0.1,  # share of a frozen sea open in leads and polynyas, which the rain model's air takes up water
     # through (winter pack ice: ~1-3% open in the central Arctic, ~5-20% in the Antarctic pack; PW-308)
     # salinity and the overturning circulation (see ocean.py)
@@ -1712,7 +1712,6 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
       aet       actual evaporation, from the Budyko curve (Fu's equation)
       runoff    rain - aet: what feeds the rivers (Earth: ~35-40% of the
                 rain on land)
-      lake_evap evaporation from open water (lakes; larger than pet)
       aet_half, pet_half  (2, n): aet and pet in the Apr-Sep and Oct-Mar
                 half-years (amounts, mm)
     w: Fu's w per cell (default TUNE's budyko_w; vegetation sets it in
@@ -1729,8 +1728,48 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
     aet_h = budyko(p_s + kept, e_s, w)
     precip = p_s.sum(0)
     aet = np.minimum(aet_h.sum(0), precip)
-    return dict(pet=e_s.sum(0), aet=aet, runoff=precip - aet, lake_evap=tune["open_water"] * e_s.sum(0),
-                aet_half=aet_h, pet_half=e_s)
+    return dict(pet=e_s.sum(0), aet=aet, runoff=precip - aet, aet_half=aet_h, pet_half=e_s)
+
+
+SIGMA_MJ = 4.903e-9  # MJ/m2/day per K^4: Stefan-Boltzmann
+PSYCHRO = 0.0665  # kPa per C: the psychrometric constant (at sea level)
+
+
+def open_water_evap(lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul, cloud_jan, tilt: float = 23.4,
+                    tune: dict | None = None) -> np.ndarray:
+    """Evaporation from open water (lakes), mm/yr, by Penman's combination
+    equation (Penman 1948; as FAO-56 sets it out): the energy the water
+    gets, Delta Rn / (Delta + gamma), plus the air's drying power, gamma
+    f(u) (e_s - e_a) / (Delta + gamma), with Penman's open-water wind
+    function f(u) = 6.43 (1 + 0.536 u2) (MJ/m2/day per kPa; u2 = lake_wind
+    m/s at 2 m). The water's temperature is the air's, month by month (a
+    sine between the coldest and warmest month); the net radiation Rn is
+    the sunshine at the ground (Angstrom: the top of the atmosphere's x
+    0.25 + 0.5 x the sunshine share, from the half-year's cloud cover, as
+    climate.months) less 6% reflected, less the net long-wave loss (FAO-56:
+    warmer, drier and clearer air loses more); e_a is the half-year's
+    humidity (rh_jul / rh_jan, %: humidity()). So a humid, cloudy tropical
+    lake evaporates ~1500 mm and a desert one ~3000 (Lake Victoria ~1500,
+    Lake Nasser ~2700), where the land's potential evaporation (Oudin, on
+    the top of the atmosphere's sunshine and the temperature alone) gives
+    both about the same (PW-358). None from a frozen lake (months below
+    0 C)."""
+    tune = {**TUNE, **(tune or {})}
+    lat = np.asarray(lat, float)
+    t = month_temps(lat, temp, t_warm, t_cold)
+    ra = insolation(lat, tilt)
+    jul = ((np.arange(12) >= 3) & (np.arange(12) <= 8))[:, None]
+    rh = np.clip(np.where(jul, rh_jul, rh_jan) / 100.0, 0.0, 1.0)
+    rs = ra * (0.25 + 0.5 * sunshine(np.where(jul, cloud_jul, cloud_jan)))
+    es = 0.6108 * np.exp(17.27 * t / (t + 237.3))
+    ea = rh * es
+    rnl = (SIGMA_MJ * (t + 273.15) ** 4 * (0.34 - 0.14 * np.sqrt(ea))
+           * (1.35 * np.clip(rs / np.maximum(0.75 * ra, 1e-9), 0, 1) - 0.35))
+    rn = np.maximum((1 - 0.06) * rs - rnl, 0.0)
+    delta = 4098.0 * es / (t + 237.3) ** 2
+    fu = 6.43 * (1 + 0.536 * tune["lake_wind"])
+    e = (delta * rn + PSYCHRO * fu * (es - ea)) / (delta + PSYCHRO) / LATENT  # mm/day
+    return (np.where(t > 0, e, 0.0) * MONTH_DAYS[:, None]).sum(0)
 
 
 # --------------------------------------------------------------------------
@@ -1913,7 +1952,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
       jet_jul, jet_jan       tangent vectors, m/s: the upper-level wind (jet stream)
       pet, aet, runoff       mm/yr: potential and actual evaporation, and what runs
                              off into rivers (0 at sea; see water_balance)
-      lake_evap              mm/yr: evaporation from open water (lakes)
+      lake_evap              mm/yr: evaporation from open water (lakes; open_water_evap; 0 at sea)
       sss                    psu: sea-surface salinity (S0 on land)
       density, density_winter  kg/m3: surface sea water, annual and coldest month
       overturning            Sv per cell: deep water sinking there
@@ -2082,6 +2121,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune,
                                                         ocean)
     day_jul, day_jan = day_hours(grid.lat, tilt)
+    # lakes: Penman's open water, on the clouds and the air's humidity (PW-358)
+    wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul,
+                                                     cloud_jan, tilt, tune), 0.0)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
                 t_jan=np.where(jul_warm, t_cold, t_warm), precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,

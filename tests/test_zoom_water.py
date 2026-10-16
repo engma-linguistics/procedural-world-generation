@@ -4,7 +4,7 @@ a basin that fills into an open lake, and radial rivers to the sea."""
 import numpy as np
 import pytest
 
-from planet import climate, hydrology, zoom
+from planet import hydrology, zoom
 from planet.geo import R_KM, latlon, xyz
 from planet.grid import build_grid
 
@@ -108,7 +108,7 @@ def evap_lake():
         "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
         "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lake.astype(int),
         "lake_level": np.maximum(np.round(lk["level"]), np.round(elev)), "lake_kind": lk["kind"].astype(int),
-        "runoff": c["runoff"], "evaporation": c["aet"], "pet": c["lake_evap"] / climate.TUNE["open_water"],
+        "runoff": c["runoff"], "evaporation": c["aet"], "lake_evap": c["lake_evap"],
         "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int), "climate": np.full(g.n, 2),
         "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
     }

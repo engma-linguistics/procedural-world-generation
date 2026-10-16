@@ -450,7 +450,7 @@ LF_FALL_KIND = {ZL.LF.ESCARPMENT: "scarp", ZL.LF.RIFT: "scarp", ZL.LF.CAPROCK: "
 BASIN_THROUGH_Q = 100.0  # m^3/s: a river this big cuts through a landform's closed basins (rift, scoured shield)
 LF_LAKE_M, LF_LAKE_KM2 = 5.0, 2.0  # a landform's closed depression this deep and big can hold a lake...
 LF_FULL_KM2 = 5.0  # ... one full to the brim (spilling) at least this big (a smaller one silts up: a flat)
-LF_LOSS_MM = 300.0  # mm/yr: a lake's net evaporation where the world has no pet / evaporation layers
+LF_LOSS_MM = 300.0  # mm/yr: a lake's net evaporation where the world has no lake_evap / evaporation layers
 # coastal plains' barrier coasts (PW-012): wave power (kW/m) and tide range (m) between which they
 # fade in, the widest lagoon (km); marshes on land below MARSH_M m within MARSH_KM of the sea
 BARRIER_WAVE, BARRIER_TIDE, BARRIER_LAGOON_KM = (4.0, 15.0), (2.5, 4.5), 8.0
@@ -1935,8 +1935,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # takes off), m/yr: a lake loses it over its area before passing its water
     # on (as the coarse world's lakes do, hydrology.lakes; PW-271), and a
     # landform basin's water balance weighs its inflow against it
-    if "pet" in L and "evaporation" in L:
-        ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
+    if "lake_evap" in L and "evaporation" in L:
+        ls_c = np.asarray(L["lake_evap"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
     else:
         ls_c = np.full(len(sel), LF_LOSS_MM)
     fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
