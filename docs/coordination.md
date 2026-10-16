@@ -124,3 +124,39 @@ Baseline after the model batches: docs/review/night-2026-10-16/ (giant-lake fram
 - *World layers lane:* PW-377 vegetation fire/NPP geography vs GFED/MOD17; PW-347 boreal fire; PW-330 soils Earth agreement; PW-329 soil climate memory; PW-206 game attributes (owner parked long-term); PW-385 time-zoom warm deep water for shelf melt.
 - *Highlights/Earth-data lane:* PW-382 done; more highlight kinds the owner may enjoy (glacial lakes, escarpments, fjords once zooms make them); PW-351 done; PW-354 done.
 - *Showcase:* PW-202 remake of the standard showcase runs after PW-015 lands (L7), plus a second ice-age showcase on post-PW-015 code.
+
+## Current state and next steps (2026-10-16 evening; supersedes the sections above where they differ)
+
+**Since the afternoon:**
+- PW-015 rain: stage 1 (conservative physical-time transport) merged alone under the owner's relaxed bar. Stage 2 and option A (boundary layer) missed the bar and are parked on branches pw015-prototype, pw015-wip and pw015-optA (handoff docs/review/audit/pw015-handoff.md). PW-015 is blocked on PW-352; rain is now a calibration pass, not a v1 gap.
+- PW-387: rain kernel warm start, L7 climate update ~2.3 s.
+- PW-380: July/January kept at the equator. The orbital swing size is PW-398, decided: damp it.
+- PW-129 nested fine zooms (planet/zoom_fine.py), with the 3D tiles (viewer/zoom3d_place.js), "Fine zoom here", resolution-based exaggeration and canopy displacement.
+- PW-390: gorges with no spires.
+- Showcases: fall 170672 -> 97b3e7 -> 3e74b0 / b3c260; volcano 193d10 -> 6ea4c1 -> bdff35; lagoon 3ac681 -> a0097b -> 652295.
+- Tests run in parallel by default (pytest-xdist, `-n 16 --dist loadscope`): ~2 min instead of 7.5. Use `-n0` for a serial run.
+- V1 reassessment: docs/review/v1-reassessment-2026-10-16.md. PW-244 rescoped with the owner (see its updates).
+- Stray test fine zoom 543568: an agent's delete was blocked by permissions. The owner decides; don't delete it on an agent's behalf.
+
+**Usage rule:** agents stay narrow and keep context lean; at ~150 tool calls they write a handoff and stop, and a fresh agent continues (memory: agent-context-usage).
+
+**Priority order (owner, 2026-10-16 evening): fixes first.**
+1. **Viewer fixes (one agent, owner-reported, high).** These come first.
+   - PW-408: rivers flicker on the globe/map, new today, likely relief depth-fighting.
+   - PW-409: layout pass. The left panel hides under the legend bar; drop "Why pentagons?"; the zoom 3D right pane overlaps.
+   - PW-407: type-to-filter box on the run/world/zoom pickers.
+   - PW-406: jet stream as a seasonal core ribbon (small; can ride along).
+2. **Fine-zoom quality (zoom lane).** These are in planet/zoom_fine.py, so do them serially, not in parallel.
+   - PW-405: river planform; no 90-degree switchbacks; straight bedrock, meandering alluvial.
+   - PW-395: volcano form (crater, gullies, no needle cone, no ring).
+   - PW-404: sawtooth crests.
+   - PW-391: inflow.
+   - PW-392: glaciers and overlays not redrawn.
+3. **V1 blockers (PW-244), in order:**
+   - Run lane: PW-358 (split the Penman lakes out of the stage 2 commit ecffcb9), then the PW-300 re-check, then **freeze run physics**, then PW-202 (remake the L7 showcases = the v1 review).
+   - World/timezoom lane: PW-037 glacial carving (great lakes, scoured shields, U-valleys, moraines, escarpments), then PW-092 landforms in zooms; PW-213 vegetation in the time zoom; PW-398 tropical orbit damping.
+   - Viewer/infra lane: PW-248 `planet make` + "New planet" button; PW-100 export with PW-099.
+4. **Targets agreed for v1:**
+   - Speed: ~30-40 min per L7 planet is fine; no optimisation work unless it nears 1 h (talk to the owner first).
+   - Reliability: the full health sweep stays inside every envelope with a little wiggle room for known outliers. A deep ice age is fine if the planet recovers.
+5. **Calibration later:** rain (PW-015/016/352), giant lakes, Earth scores.
