@@ -306,6 +306,8 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
 ![Overturning on Earth](overview/earth_overturning.jpg)
 *Overturning on Earth (`docs/review/ocean/`). Top: sinking in the Nordic and Labrador seas and off Antarctica, the inflow riding the Gulf Stream. Bottom: the warming it adds.*
 
+**Design decisions** (owner, 2026-10-13/14; original spec at `81e1d6b:docs/proposals/ocean_overturning.md`): done physically (density from SST and salinity; salinity from E-P, river runoff, sea-ice brine, ice-sheet meltwater, and in the time zoom meltwater pulses that can weaken the overturning); the ocean's warmth is added to the 50-70N band because the Koppen score preferred it (70.69% vs 70.50%); the +0.17 s per climate step (~35%) was accepted; the owner's plan is to fix moisture transport first, then remove the spin-up rule (PW-013), with Earth a test analogue and never a parity target. The rest of W Europe's winter cold error is the air model's (PW-026), not the ocean's.
+
 **Known limits:** a spin-up rule still decides the Atlantic-on / Pacific-off state (PW-016); Antarctic sinking too weak (PW-017); NE Canada and Labrador too warm (PW-038); the Gulf Stream separates too far north (PW-041); Mediterranean too fresh (PW-152); ocean layers aren't in run keyframes (PW-153).
 
 ### 2.8 Ice and sea level (`tectonics/earth.py`)

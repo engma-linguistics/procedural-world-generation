@@ -10,7 +10,7 @@ impact: high
 found_by: ocean
 blocked_by: [PW-015]
 relates: []
-refs: [planet/ocean.py, docs/proposals/ocean_overturning.md]
+refs: [planet/ocean.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---
