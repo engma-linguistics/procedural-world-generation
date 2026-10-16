@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as Look from './zoom3d_look.js';
 import { riverCourses, Flight } from './zoom3d_fly.js';
-import { quadSplits, meshHeight, chaikin, hugChaikin, riverNet } from './zoom3d_mesh.js';
+import { quadSplits, meshHeight, meshAt, coarseMesh, chaikin, hugChaikin, riverNet } from './zoom3d_mesh.js';
 
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
@@ -77,9 +77,10 @@ class Tile {
     const [r, c] = this.rc(x, z), ri = Math.round(r), ci = Math.round(c);
     return ri >= 0 && ci >= 0 && ri < this.ny && ci < this.nx ? [ri, ci] : null;
   }
-  // ground height (m) on the full-detail mesh's triangles
+  // ground height (m) on the drawn mesh's triangles (a coarser mesh's: meshAt)
   height(x, z) {
     const [r, c] = this.rc(x, z);
+    if (this.drawn) return meshAt(this.L.elevation, this.split, this.drawn, this.nx, this.ny, r, c);
     return meshHeight(this.L.elevation, this.split, this.nx, this.ny, r, c);
   }
   // water surface (m): lakes at their level, the sea at 0, else the ground
@@ -91,36 +92,25 @@ class Tile {
     this.rec = rec; this.lines = lines; this.wsA = ws;
   }
 
-  // the terrain mesh, every `step` pixels (the texture keeps full detail)
+  // the drawn rivers' pixels (kept at full detail in a coarser mesh: coarseMesh)
+  riverMask() {
+    const m = new Uint8Array(this.nx * this.ny);
+    for (const ln of this.lines) for (const i of ln) m[i] = 1;
+    return m;
+  }
+  // the terrain mesh, every `step` pixels but at full detail round the rivers
+  // (zoom3d_mesh.js coarseMesh, PW-376; the texture keeps full detail)
   terrain(step, material, skirtMat) {
     const { nx, ny, L } = this, h = L.elevation;
-    const ix = (m) => { const a = []; for (let k = 0; k < m - 1; k += step) a.push(k); a.push(m - 1); return a; };
-    const cs = ix(nx), rs = ix(ny), W = cs.length, H = rs.length;
-    const pos = new Float32Array(W * H * 3), uv = new Float32Array(W * H * 2);
-    for (let a = 0; a < H; a++) for (let b = 0; b < W; b++) {
-      const r = rs[a], c = cs[b], v = a * W + b;
-      pos[3 * v] = this.x(c); pos[3 * v + 1] = h[r * nx + c]; pos[3 * v + 2] = this.z(r);
+    const m = coarseMesh(h, this.split, this.riverMask(), nx, ny, step);
+    this.drawn = step === 1 ? null : m;
+    const nv = m.vert.length, pos = new Float32Array(nv * 3), uv = new Float32Array(nv * 2);
+    for (let v = 0; v < nv; v++) {
+      const i = m.vert[v], r = (i / nx) | 0, c = i - r * nx;
+      pos[3 * v] = this.x(c); pos[3 * v + 1] = h[i]; pos[3 * v + 2] = this.z(r);
       uv[2 * v] = (c + 0.5) / nx; uv[2 * v + 1] = 1 - (r + 0.5) / ny;
     }
-    const idx = new Uint32Array((W - 1) * (H - 1) * 6);
-    let k = 0;
-    for (let a = 0; a < H - 1; a++) for (let b = 0; b < W - 1; b++) {
-      const v = a * W + b;
-      // split each quad along a river crossing it, else the diagonal that follows the ground
-      // better (this.split; on a coarser mesh: along the river pixels at two opposite corners)
-      let ae;
-      if (step === 1) ae = this.split[rs[a] * (nx - 1) + cs[b]];
-      else {
-        const pa = rs[a] * nx + cs[b], pb = rs[a] * nx + cs[b + 1], pd = rs[a + 1] * nx + cs[b], pe = rs[a + 1] * nx + cs[b + 1];
-        const R = (i) => L.discharge[i] >= QMIN && L.water[i] !== 1;
-        if (R(pa) && R(pe) && !R(pb) && !R(pd)) ae = 1;
-        else if (R(pb) && R(pd) && !R(pa) && !R(pe)) ae = 0;
-        else ae = Math.abs(h[pa] - h[pe]) <= Math.abs(h[pb] - h[pd]) ? 1 : 0;
-      }
-      if (ae) { idx.set([v, v + W, v + W + 1, v, v + W + 1, v + 1], k); }
-      else { idx.set([v, v + W, v + 1, v + 1, v + W, v + W + 1], k); }
-      k += 6;
-    }
+    const idx = m.idx;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
@@ -130,12 +120,7 @@ class Tile {
     mesh.castShadow = mesh.receiveShadow = true;
     // the block's sides, down to a base below the deepest point (a diorama)
     const base = Math.min(this.lo, 0) - 0.08 * (this.hi - Math.min(this.lo, 0)) - 200;
-    const ring = [];
-    for (const b of cs) ring.push([rs[0], b]);
-    for (const a of rs.slice(1)) ring.push([a, cs[W - 1]]);
-    for (const b of cs.slice(0, -1).reverse()) ring.push([rs[H - 1], b]);
-    for (const a of rs.slice(1, -1).reverse()) ring.push([a, cs[0]]);
-    ring.push(ring[0]);
+    const ring = m.ring.map((v) => { const i = m.vert[v], r = (i / nx) | 0; return [r, i - r * nx]; });
     const sp = new Float32Array(ring.length * 6);
     ring.forEach(([r, c], j) => {
       const x = this.x(c), z = this.z(r);

@@ -91,3 +91,63 @@ def test_zoom3d_river_runs_down_its_gorge():
     assert o["chaikin"] > 20, o        # (plain smoothing cuts corners up the walls)
     assert o["hug"] < 2, o             # the painted line: within its 1 m tolerance
     assert abs(o["corner"] - 450) < 1e-3, o  # (pixel centres keep their heights)
+
+
+_COARSE_JS = r"""
+import { quadSplits, coarseMesh, meshAt, meshHeight } from '%s';
+// a 1 px gorge (as _GORGE_JS) across a 40 x 37 tile of rough walls, meshed at half and quarter detail
+const nx = 40, ny = 37, n = nx * ny;
+let seed = 3; const rnd = () => ((seed = (seed * 16807) %% 2147483647) / 2147483647);
+const h = Float32Array.from({ length: n }, () => 800 + 200 * rnd());
+const rec = new Int32Array(n).fill(-1), q = new Float32Array(n), keep = new Uint8Array(n);
+let r = 0, c = 7; const path = [c];
+for (let k = 0; r < ny - 1; k++) { r++; c += [1, 1, 0, -1, 0, 1, -1, 0][k %% 8]; path.push(r * nx + c); }
+path.forEach((i, k) => { h[i] = 600 - 5 * k - (k > 6 ? 150 : 0); q[i] = 50; keep[i] = 1; if (k) rec[path[k - 1]] = i; });
+const split = quadSplits(h, rec, q, nx, ny), out = {};
+for (const step of [1, 2, 4]) {
+  const m = coarseMesh(h, split, keep, nx, ny, step);
+  // a tiling: every triangle counter-clockwise from above (z south), areas summing to the tile's,
+  // every inner edge shared by exactly two triangles (no cracks, no overlaps)
+  const P = (v) => { const i = m.vert[v]; return [i %% nx, (i / nx) | 0]; };
+  let area = 0, flipped = 0; const edges = new Map();
+  for (let t = 0; t < m.idx.length; t += 3) {
+    const [a, b, d] = [P(m.idx[t]), P(m.idx[t + 1]), P(m.idx[t + 2])];
+    const s = (b[0] - a[0]) * (d[1] - a[1]) - (d[0] - a[0]) * (b[1] - a[1]);
+    if (s >= 0) flipped++;
+    area += Math.abs(s) / 2;
+    for (const [u, v] of [[m.idx[t], m.idx[t + 1]], [m.idx[t + 1], m.idx[t + 2]], [m.idx[t + 2], m.idx[t]]]) {
+      const key = Math.min(u, v) + ',' + Math.max(u, v); edges.set(key, (edges.get(key) || 0) + 1);
+    }
+  }
+  const once = [...edges.values()].filter((x) => x === 1).length, more = [...edges.values()].filter((x) => x > 2).length;
+  // the river's course on the drawn mesh: how far it climbs above its lowest point so far
+  let lo = Infinity, up = 0;
+  for (let j = 0; j < path.length - 1; j++) for (let t = 0; t < 1; t += 0.125) {
+    const a = path[j], b = path[j + 1];
+    const rr = ((a / nx) | 0) * (1 - t) + ((b / nx) | 0) * t, cc = (a %% nx) * (1 - t) + (b %% nx) * t;
+    const v = meshAt(h, split, m, nx, ny, rr, cc);
+    lo = Math.min(lo, v); up = Math.max(up, v - lo);
+  }
+  // meshAt agrees with the full mesh in a block kept at full detail, and at every vertex
+  const vOk = [...m.vert].every((i) => Math.abs(meshAt(h, split, m, nx, ny, (i / nx) | 0, i %% nx) - h[i]) < 1e-3);
+  out[step] = { area, flipped, boundary: once, ring: m.ring.length - 1, more, climb: up, vOk, tris: m.idx.length / 3 };
+}
+console.log(JSON.stringify(out));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_zoom3d_coarse_mesh_keeps_the_rivers():
+    """PW-376: at half and quarter detail the mesh keeps the blocks round the drawn rivers at full
+    detail (fans round the centre of their coarse neighbours, so no cracks), and a river in a gorge
+    one pixel wide stays on its floor instead of riding over the walls between the coarse corners."""
+    import json
+    js = _COARSE_JS % (VIEWER / "zoom3d_mesh.js").as_uri()
+    r = subprocess.run(["node", "--input-type=module", "-e", js], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    o = json.loads(r.stdout)
+    for step, s in o.items():
+        assert abs(s["area"] - 39 * 36) < 1e-6 and s["flipped"] == 0 and s["more"] == 0, (step, s)
+        assert s["boundary"] == s["ring"] and s["vOk"], (step, s)
+        assert s["climb"] < 0.01, (step, s)
+    assert o["4"]["tris"] < o["2"]["tris"] < o["1"]["tris"] == 2 * 39 * 36

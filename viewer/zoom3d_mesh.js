@@ -35,6 +35,134 @@ export function meshHeight(h, split, nx, ny, r, c) {
   return fr + fc <= 1 ? A + (B - A) * fc + (D - A) * fr : E + (D - E) * (1 - fc) + (B - E) * (1 - fr);
 }
 
+// The terrain mesh at `step` (1 full detail, 2 half, 4 quarter; zoom3d.js's
+// Tile.terrain). Coarse blocks of step x step pixels are two triangles with
+// corners on every step-th pixel, split along the diagonal the ground changes
+// least. But a river in a valley narrower than a block lies between the
+// corners, where the block is the walls' interpolation, and the painted river
+// rode up and down it (PW-376). So blocks whose pixels (edges included) hold a
+// drawn river (keep: a mask) are kept at full detail, split as the full mesh
+// (split, quadSplits), and a coarse block next to one is a fan round its centre
+// pixel through every pixel of the sides it shares with them, so the two meet
+// without cracks. Returns {vert: the pixel index of each vertex, idx: the
+// triangles (vertex indices; counter-clockwise seen from above, as three.js
+// wants with z south), ring: the boundary's vertices in order (the skirt),
+// blocks} where blocks lets meshAt find a point's triangle.
+export function coarseMesh(h, split, keep, nx, ny, step) {
+  // block corners: every step-th pixel and the last (a last block at least 2 wide, so it has a centre)
+  const ix = (m) => {
+    const a = [];
+    for (let k = 0; k < m - 1; k += step) a.push(k);
+    if (a.length > 1 && m - 1 - a[a.length - 1] < 2) a.pop();
+    a.push(m - 1);
+    return a;
+  };
+  const cs = ix(nx), rs = ix(ny), W = cs.length - 1, H = rs.length - 1;
+  // keep's pixels per block, by a summed-area table of the mask
+  const S = new Int32Array((nx + 1) * (ny + 1));
+  for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++)
+    S[(r + 1) * (nx + 1) + c + 1] = (keep[r * nx + c] ? 1 : 0) + S[r * (nx + 1) + c + 1] + S[(r + 1) * (nx + 1) + c] - S[r * (nx + 1) + c];
+  const count = (r0, r1, c0, c1) => S[(r1 + 1) * (nx + 1) + c1 + 1] - S[r0 * (nx + 1) + c1 + 1] - S[(r1 + 1) * (nx + 1) + c0] + S[r0 * (nx + 1) + c0];
+  const fine = new Uint8Array(W * H);
+  for (let a = 0; a < H; a++) for (let b = 0; b < W; b++)
+    fine[a * W + b] = step === 1 || count(rs[a], rs[a + 1], cs[b], cs[b + 1]) > 0 ? 1 : 0;
+  const isFine = (a, b) => a >= 0 && b >= 0 && a < H && b < W && fine[a * W + b] === 1;
+  const vmap = new Int32Array(nx * ny).fill(-1), vert = [];
+  const V = (r, c) => { const i = r * nx + c; if (vmap[i] < 0) { vmap[i] = vert.length; vert.push(i); } return vmap[i]; };
+  const idx = [];
+  // kind per block: 1 fine, 0 two triangles split a-e, 2 split b-d, 3 a fan (its centre pixel in centre[])
+  const kind = new Uint8Array(W * H), centre = new Int32Array(W * H).fill(-1);
+  for (let a = 0; a < H; a++) for (let b = 0; b < W; b++) {
+    const r0 = rs[a], r1 = rs[a + 1], c0 = cs[b], c1 = cs[b + 1], k = a * W + b;
+    if (fine[k]) {
+      kind[k] = 1;
+      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+        if (split[r * (nx - 1) + c]) idx.push(V(r, c), V(r + 1, c), V(r + 1, c + 1), V(r, c), V(r + 1, c + 1), V(r, c + 1));
+        else idx.push(V(r, c), V(r + 1, c), V(r, c + 1), V(r, c + 1), V(r + 1, c), V(r + 1, c + 1));
+      }
+      continue;
+    }
+    const L = isFine(a, b - 1), R = isFine(a, b + 1), T = isFine(a - 1, b), B = isFine(a + 1, b);
+    if (!(L || R || T || B)) {
+      const pa = r0 * nx + c0, pb = r0 * nx + c1, pd = r1 * nx + c0, pe = r1 * nx + c1;
+      if (Math.abs(h[pa] - h[pe]) <= Math.abs(h[pb] - h[pd])) {
+        kind[k] = 0;
+        idx.push(V(r0, c0), V(r1, c0), V(r1, c1), V(r0, c0), V(r1, c1), V(r0, c1));
+      } else {
+        kind[k] = 2;
+        idx.push(V(r0, c0), V(r1, c0), V(r0, c1), V(r0, c1), V(r1, c0), V(r1, c1));
+      }
+      continue;
+    }
+    // a fan round the centre through the block's corners and the pixels of its sides shared with fine blocks
+    kind[k] = 3;
+    const ring = fanRing(r0, r1, c0, c1, L, R, T, B);
+    const cr = (r0 + r1) >> 1, cc = (c0 + c1) >> 1, C = V(cr, cc);
+    centre[k] = cr * nx + cc;
+    for (let j = 0; j < ring.length; j++) {
+      const p = ring[j], q = ring[(j + 1) % ring.length];
+      idx.push(V(p[0], p[1]), V(q[0], q[1]), C);
+    }
+  }
+  // the boundary's vertices (the skirt's top), clockwise from the top-left as the old ring
+  const ringV = [];
+  const edge = [];
+  for (let c = 0; c < nx; c++) edge.push(c);
+  for (let r = 1; r < ny; r++) edge.push(r * nx + nx - 1);
+  for (let c = nx - 2; c >= 0; c--) edge.push((ny - 1) * nx + c);
+  for (let r = ny - 2; r > 0; r--) edge.push(r * nx);
+  for (const i of edge) if (vmap[i] >= 0) ringV.push(vmap[i]);
+  ringV.push(ringV[0]);
+  return { vert: Int32Array.from(vert), idx: Uint32Array.from(idx), ring: ringV,
+           blocks: { rs, cs, W, H, kind, centre } };
+}
+
+// a fan block's boundary [r, c], counter-clockwise from the top-left (down the west side,
+// east along the south, up the east, west along the north), with every pixel of the
+// sides whose neighbour (L, R, T, B: west, east, north, south) is at full detail
+function fanRing(r0, r1, c0, c1, L, R, T, B) {
+  const ring = [[r0, c0]];
+  if (L) for (let r = r0 + 1; r < r1; r++) ring.push([r, c0]);
+  ring.push([r1, c0]);
+  if (B) for (let c = c0 + 1; c < c1; c++) ring.push([r1, c]);
+  ring.push([r1, c1]);
+  if (R) for (let r = r1 - 1; r > r0; r--) ring.push([r, c1]);
+  ring.push([r0, c1]);
+  if (T) for (let c = c1 - 1; c > c0; c--) ring.push([r0, c]);
+  return ring;
+}
+
+// height (m) at fractional pixel (r, c) on coarseMesh's triangles (m: its result)
+export function meshAt(h, split, m, nx, ny, r, c) {
+  const { rs, cs, W, H, kind, centre } = m.blocks;
+  r = Math.min(Math.max(r, 0), ny - 1); c = Math.min(Math.max(c, 0), nx - 1);
+  const find = (a, x) => { let lo = 0, hi = a.length - 2; while (lo < hi) { const md = (lo + hi + 1) >> 1; if (a[md] <= x) lo = md; else hi = md - 1; } return lo; };
+  const a = Math.min(find(rs, r), H - 1), b = Math.min(find(cs, c), W - 1), k = a * W + b;
+  if (kind[k] === 1) return meshHeight(h, split, nx, ny, r, c);
+  const r0 = rs[a], r1 = rs[a + 1], c0 = cs[b], c1 = cs[b + 1];
+  if (kind[k] !== 3) {
+    const fr = (r - r0) / (r1 - r0), fc = (c - c0) / (c1 - c0);
+    const A = h[r0 * nx + c0], B = h[r0 * nx + c1], D = h[r1 * nx + c0], E = h[r1 * nx + c1];
+    if (kind[k] === 0) return fr >= fc ? A + (D - A) * fr + (E - D) * fc : A + (B - A) * fc + (E - B) * fr;
+    return fr + fc <= 1 ? A + (B - A) * fc + (D - A) * fr : E + (D - E) * (1 - fc) + (B - E) * (1 - fr);
+  }
+  // a fan: the triangle (centre, p, q) round the centre that holds the point
+  const ci = centre[k], cr = (ci / nx) | 0, cc = ci - cr * nx;
+  const fineAt = (aa, bb) => aa >= 0 && bb >= 0 && aa < H && bb < W && kind[aa * W + bb] === 1;
+  const ring = fanRing(r0, r1, c0, c1, fineAt(a, b - 1), fineAt(a, b + 1), fineAt(a - 1, b), fineAt(a + 1, b));
+  const hc = h[ci];
+  for (let j = 0; j < ring.length; j++) {
+    const p = ring[j], q = ring[(j + 1) % ring.length];
+    // barycentric in (c, r)
+    const x1 = p[1] - cc, y1 = p[0] - cr, x2 = q[1] - cc, y2 = q[0] - cr, x = c - cc, y = r - cr;
+    const det = x1 * y2 - x2 * y1;
+    if (Math.abs(det) < 1e-12) continue;
+    const u = (x * y2 - x2 * y) / det, v = (x1 * y - x * y1) / det;
+    if (u >= -1e-9 && v >= -1e-9 && u + v <= 1 + 1e-9) return hc + u * (h[p[0] * nx + p[1]] - hc) + v * (h[q[0] * nx + q[1]] - hc);
+  }
+  return hc;
+}
+
 // Chaikin-smoothed polyline [[x, y, ...], ...] (ends kept; the extra values follow the nearer end)
 export function chaikin(p, n = 2) {
   for (let it = 0; it < n && p.length > 2; it++) {
