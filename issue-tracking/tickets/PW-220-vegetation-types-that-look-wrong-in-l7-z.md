@@ -24,7 +24,7 @@ Zooming into world 351f32 (L7 vegetation demo) made some world-level classificat
 - [ ] each case checked against the world model and fixed or explained
 
 ## Updates
-- 2026-10-16: Vegetation batch 2026-10-16: on a new L7 world (run a1d3b9 @ 1000 Myr) smalls2's fixes hold (no heath under 400 mm, no lichen woodland with coldest month > -2 C, temperate forest within 8 deg only on 1500-1800 m highlands with tc 14-15 C). Maquis now burns (PW-234): world maquis 81 -> 127 cells, fire-free 89 -> 46%, median return 139 -> 49 yr; zoom at 32.0,-80.5 maquis 17 -> 62%, 96% burning, median 20 yr. Side effect: sclerophyll scrub spreads into steppe and woodland (draft-veg-sclerophyll-expansion-after-fuel-age.md). docs/review/vegetation/batch-2026-10-16.md
+- 2026-10-16: Vegetation batch 2026-10-16: on a new L7 world (run a1d3b9 @ 1000 Myr) smalls2's fixes hold (no heath under 400 mm, no lichen woodland with coldest month > -2 C, temperate forest within 8 deg only on 1500-1800 m highlands with tc 14-15 C). Maquis now burns (PW-234): world maquis 81 -> 127 cells, fire-free 89 -> 46%, median return 139 -> 49 yr; zoom at 32.0,-80.5 maquis 17 -> 57%, 83% burning, median 48 yr. Side effect: sclerophyll scrub spreads into steppe and woodland (draft-veg-sclerophyll-expansion-after-fuel-age.md). docs/review/vegetation/batch-2026-10-16.md
 - 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Smalls2: heath, lichen woodland, tropical-led mixed forest fixed; maquis fire left for the fuel-age draft.
 - 2026-10-15: Created from inbox draft draft-veg-type-oddities-in-zooms.md (found by vegzoom).

@@ -328,6 +328,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     nh = nv + nr
     pot = {k: np.zeros((V.NP, nh)) for k in ("npp", "net", "lai", "on_jul", "on_jan")}
     pot["ok"] = np.zeros((V.NP, nh), bool)
+    pot["c4_share"] = np.full(nh, 0.5)  # (the grasses' C4 share, vegetation.potential)
     for a in range(0, nh, CHUNK):
         b = min(a + CHUNK, nh)
         sl = base[a:b]
@@ -347,7 +348,10 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         pt = V.potential(s, viable, eff, co2)
         pt = dict(pt, npp=pt["npp"] * f_soil, net=pt["net"] * f_soil)  # (the soil's fertility, as on the globe)
         for k in pot:
-            pot[k][:, sl] = pt[k] if k != "ok" else pt["ok"] & viable
+            if k == "c4_share":
+                pot[k][sl] = pt[k]
+            else:
+                pot[k][:, sl] = pt[k] if k != "ok" else pt["ok"] & viable
         for k in one_d:
             if s.get(k) is not None:
                 s1.setdefault(k, []).append(np.asarray(s[k], float))
