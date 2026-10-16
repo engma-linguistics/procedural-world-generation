@@ -1,5 +1,6 @@
 ---
-title: The run's ice rule can't hold Earth's Antarctica at today's climate (dT 0): it decays to ~0.1% of the surface
+id: PW-313
+title: "The run's ice rule can't hold Earth's Antarctica at today's climate (dT 0): it decays to ~0.1% of the surface"
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw308
 blocked_by: []
 relates: [PW-112, PW-039, PW-308, PW-033]
 refs: [planet/tectonics/earth.py, planet/icemass.py, docs/review/audit/pw308-glaciation.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,3 +33,6 @@ surface from the new margins comes out lower (warmer), and the sheet shrinks a l
 What to try: fix the polar bare-ground summer (PW-112) first, then repeat the probe (script in the pw308
 write-up). Today's Antarctica should hold at dT 0 and grow toward the LGM's ~-120 m at around dT -6.
 - [ ] Earth probe at dT 0 keeps an ice share near 3% over 8 updates
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-run-ice-cannot-hold-antarctica.md (found by pw308).

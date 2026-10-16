@@ -2,7 +2,7 @@
 id: PW-308
 title: "After the audit fixes, runs barely glaciate: 1 Gyr deepest ice sea level -9..-48 m on 11 seeds (Earth's icehouses ~-120 m)"
 type: task
-status: in-progress
+status: done
 parent: PW-244
 subsystem: climate
 effort: m
@@ -38,5 +38,6 @@ stops ice sheets from growing. Fix it soundly: no ice-growth fudge. The target i
 run should have some icehouse spells.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (5e24aa9): PW-266 made frozen seas a vapour lid; air now takes up water through a leads/polynya share (TUNE leads=0.1) of frozen sea. 8 L6 seeds 1 Gyr: deepest ice SL -9..-48 -> -15..-322 m; icehouse spells 0 -> 8 (pre-audit 19). Antarctic snow at dT -6: -32% (C-C ~30%). Write-up docs/review/audit/pw308-glaciation.md. PW-288 sea level ruled out as the cause.
 - 2026-10-15: Status todo -> in-progress. Agent started: bisect the audit fixes on seeds 11/42/2, find the mechanism, sound fix.
 - 2026-10-15: Created from inbox draft draft-runs-rarely-glaciate.md (found by coordinator).
