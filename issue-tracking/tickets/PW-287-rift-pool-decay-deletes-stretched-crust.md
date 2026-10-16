@@ -2,7 +2,7 @@
 id: PW-287
 title: Rift pool decay deletes stretched crust that its comment says stays in the flanks
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: tectonics
 effort: xs
@@ -35,5 +35,6 @@ says happens); or keep the deletion and book it separately
 ("rift pool lost"), with the comment corrected. Lean: return it.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the tectonics fix branch (merged 4ce7706); see docs/review/audit/fixes-tectonics.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-tectonics-rift-pool-decay.md (found by audit-tectonics).
