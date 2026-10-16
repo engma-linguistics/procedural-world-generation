@@ -2,7 +2,7 @@
 id: PW-415
 title: Owner check that rivers and marks no longer flicker (PW-408 depth-precision fix)
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: viewer
 effort: xs
@@ -31,4 +31,5 @@ console. `renderer` isn't global; `planetViewer` could expose it.
       Plate outlines are ~1 M segments, so check `planetViewer.bench()`.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Owner (2026-10-16 night): Chrome still flickers after a full cache clear and restart. Firefox never flickered. No flicker while the mouse is dragging over the view. Back to in-progress.
 - 2026-10-16: Created from inbox draft draft-pw408-confirm-on-screen.md (found by pw408-river-flicker).
