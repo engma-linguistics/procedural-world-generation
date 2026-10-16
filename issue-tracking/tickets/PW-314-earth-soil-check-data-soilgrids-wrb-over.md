@@ -2,7 +2,7 @@
 id: PW-314
 title: "Earth soil check data: SoilGrids WRB overview reader, GLiM parent rock and an LGM ice mask for the Earth world"
 type: task
-status: in-progress
+status: done
 parent: PW-185
 subsystem: infra
 effort: m
@@ -24,5 +24,6 @@ Step 4 of the soils proposal (docs/proposals/soils.md section 7) needs three Ear
 Done when `tools/soil_check.py` can load all three on the Earth grid at L6 in a few seconds after the first download.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (ef4ab22): SoilGrids WRB (overview level 1, pure TIFF reader), GLiM 0.5 deg, LGM ice (Zenodo 14506525, 46.8 Mkm2); tools/soil_check.py 0.3 s cached. GLiM->ROCKS mapping note merged into PW-185 (coordinator: A now, B parent-material classes if the soil rules need it).
 - 2026-10-15: Status todo -> in-progress. Agent started (loaders + tools/soil_check.py).
 - 2026-10-15: Created from inbox draft draft-earth-soil-data.md (found by soilprop).
