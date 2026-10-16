@@ -36,6 +36,15 @@ def test_viewer_modules_parse(script, tmp_path):
     assert r.returncode == 0, f"{script}:\n{r.stderr}"
 
 
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_viewer_classic_scripts_parse(tmp_path):
+    """The classic scripts both pages load with <script src> (pickfilter.js: the pickers' filter box, PW-407)."""
+    f = tmp_path / "pickfilter.cjs"
+    f.write_text((VIEWER / "pickfilter.js").read_text())
+    r = subprocess.run(["node", "--check", str(f)], capture_output=True, text=True)
+    assert r.returncode == 0, f"pickfilter.js:\n{r.stderr}"
+
+
 _GORGE_JS = r"""
 import { quadSplits, meshHeight, chaikin, hugChaikin, riverNet } from '%s';
 // a river zigzagging down a gorge one pixel wide between 900 m walls, over a 200 m fall on a diagonal

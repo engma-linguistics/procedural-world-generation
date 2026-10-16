@@ -63,8 +63,10 @@
   svg.schart .pbar { fill: #4d7fb3; } svg.schart .mon:hover .pbar { fill: #6a9fd6; }
   svg.schart .mcol { fill: transparent; } svg.schart .tlab { fill: #ffad6b; } svg.schart .rlab { fill: #79b8ff; }
   svg.schart .rlab, svg.schart .tlab { font: 9px ui-monospace, Menlo, monospace; }
-  #legend { bottom: 12px; left: 12px; max-width: 520px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
-  #timeline { bottom: 12px; left: 50%; transform: translateX(-50%); width: min(720px, calc(100vw - 24px));
+  /* the bottom bars sit right of the control panel's column (never over it, PW-409): the legend between the
+     panel and the right-hand column, the time slider centred but never left of the panel */
+  #legend { bottom: 12px; left: 294px; max-width: min(520px, calc(100vw - 640px)); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  #timeline { bottom: 12px; left: max(294px, calc(50vw - 360px)); width: min(720px, calc(100vw - 306px));
     display: none; align-items: center; gap: 10px; }
   body.run #timeline { display: flex; }
   body.run #legend { bottom: 76px; }
@@ -167,9 +169,9 @@
   #zoomFrame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: none; z-index: 10; background: var(--bg); }
   body.zoomTab #zoomFrame { display: block; }
   body.zoomTab .panel:not(#tabs), body.zoomTab #toast { display: none !important; }
-  @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; } }
-  /* short windows: the legend moves right of the control panel so they don't overlap */
-  @media (max-height: 860px) { #legend { left: 294px; max-width: min(520px, calc(100vw - 650px)); } }
+  @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
+    #legend { left: 244px; max-width: calc(100vw - 256px); }
+    #timeline { left: 244px; width: calc(100vw - 256px); } }
 </style>
 </head>
 <body>
@@ -257,12 +259,6 @@
     </div>
   </details>
 
-  <details class="sec" data-sec="pentagons"><summary>Why pentagons?</summary>
-    <p class="muted">You can't cover a sphere with only hexagons. Euler's formula (V&minus;E+F&nbsp;=&nbsp;2)
-    forces exactly 12 pentagons into any hex-ish sphere grid, like the black patches on a football.
-    This grid is an icosahedron subdivided and turned inside out (its dual), so the 12 pentagons sit
-    where the icosahedron's 12 corners were. Tick the box under "Display" to find them.</p>
-  </details>
 </div>
 
 <!-- the right-hand column: the cell's info box on top, the summary at the bottom (one column, so they never overlap) -->
@@ -287,6 +283,7 @@
 <div id="drop">Drop world .json</div>
 <div id="toast"></div>
 
+<script src="pickfilter.js"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -3404,6 +3401,7 @@ async function loadSelection(value) {
   }
 }
 $('worldSel').addEventListener('change', (e) => loadSelection(e.target.value));
+addPickerFilter($('worldSel'), { placeholder: 'filter: run / world id or name' });  // (pickfilter.js, PW-407)
 
 // drag & drop (works even when opened as a plain file://)
 addEventListener('dragover', (e) => { e.preventDefault(); $('drop').style.display = 'flex'; });
