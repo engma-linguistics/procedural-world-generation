@@ -300,3 +300,97 @@ def test_save_index_and_delete_with_parent(data_root, parent, world):
         api.parse_zoom_request({"zoom": meta["id"], "world": wpath.stem, "lat": lat, "lon": lon})
     gone = S.delete("zoom", meta["id"])
     assert out in gone and not out.exists()
+
+
+# --- river planform (PW-405) ------------------------------------------------
+RP2, NP2 = 0.2, 150  # a 30 km parent at 200 m, its river a D8 path wandering a pixel either way
+
+
+def _river_parent(kind):
+    """(meta, layers) of a parent whose one river runs east across it as a
+    D8 path (E, E, NE, E, E, SE, ...: the pixel-scale zigzag of a parent's
+    receivers). "bedrock": 3% down a V valley in granite, 30 m^3/s;
+    "alluvial": 0.02% across a 4 km wide floodplain in shale, 400 m^3/s."""
+    moves = [(0, 1), (0, 1), (-1, 1), (0, 1), (0, 1), (1, 1)]
+    path = [(75, 0)]
+    while path[-1][1] < NP2 - 1:
+        dr, dc = moves[len(path) % len(moves)]
+        path.append((path[-1][0] + dr, path[-1][1] + dc))
+    prow = np.array([p[0] for p in path])  # (one pixel per column)
+    r, c = np.mgrid[0:NP2, 0:NP2].astype(float)
+    d = np.abs(r - prow[None, :])
+    if kind == "bedrock":
+        bed, q, rock = 1500.0 - 0.03 * 1000 * RP2 * c, 30.0, 11
+        h = bed + 40.0 * d
+    else:
+        bed, q, rock = 100.0 - 0.0002 * 1000 * RP2 * c, 400.0, 8
+        h = bed + 0.3 * np.minimum(d, 10) + 15.0 * np.maximum(d - 10, 0)
+    river = d == 0
+    slot = np.where(r < prow[None, :], 6, 1).astype(np.uint8)  # (down to the river)
+    for k, (pr_, pc_) in enumerate(path[:-1]):
+        dr, dc = path[k + 1][0] - pr_, path[k + 1][1] - pc_
+        s_ = 3 * (dr + 1) + (dc + 1)
+        slot[pr_, pc_] = s_ - (s_ > 4)
+    slot[path[-1]] = Z.D8_NONE
+    full = np.full((NP2, NP2), 1.0)
+    z0 = np.zeros((NP2, NP2))
+    layers = {
+        "elevation": h.astype(np.float32), "water": np.zeros((NP2, NP2), np.uint8), "lake_depth": z0,
+        "lake_kind": np.zeros((NP2, NP2), np.uint8), "discharge": np.where(river, q, 0.01),
+        "drainage_area": np.where(river, 2000.0, 0.04), "receiver": slot,
+        "precipitation": 900 * full, "precipitation_jul": 600 * full, "precipitation_jan": 1200 * full,
+        "temperature": 12 * full, "ice": z0, "tide_range": z0, "wave_power": z0,
+        "rock": np.full((NP2, NP2), rock, np.uint8), "surface_rock": np.full((NP2, NP2), rock, np.uint8),
+        "climate": np.full((NP2, NP2), 14, np.uint8), "biome": np.full((NP2, NP2), 3, np.uint8),
+        "landform": np.zeros((NP2, NP2), np.uint8), "wetland": np.zeros((NP2, NP2), np.uint8),
+        "coastal_life": np.zeros((NP2, NP2), np.uint8),
+    }
+    meta = {"id": f"friv{kind[:2]}", "name": "test world: river", "res_km": RP2, "nx": NP2, "ny": NP2,
+            "center": {"lat": CENTRE[0], "lon": CENTRE[1]}, "size_km": NP2 * RP2,
+            "source_world": {"id": "none", "name": "test world"},
+            "stats": {"falls": [], "waterfalls": [], "volcanoes": []}}
+    return meta, layers
+
+
+def _main_river(z, qmin):
+    """The fine zoom's main river, west to east: pixel (row, col)s and discharge."""
+    q = z["layers"]["discharge"].ravel().astype(float)
+    rec = np.asarray(z["rec"])
+    col = np.arange(len(q)) % z["nx"]
+    i = int(np.argmin(np.where(q >= qmin, col, 10 ** 9)))  # (its westmost pixel)
+    path = [i]
+    while rec[path[-1]] >= 0 and len(path) < 10 * z["nx"]:
+        path.append(int(rec[path[-1]]))
+    p = np.array(path)
+    return np.column_stack(np.divmod(p, z["nx"])).astype(float), q[p]
+
+
+@pytest.mark.parametrize("kind", ["bedrock", "alluvial"])
+def test_river_planform(world, kind):
+    """No grid-aligned zigzags from the parent's D8 path: a steep bedrock
+    river runs straight; a gentle alluvial one meanders at ~10-14 channel
+    widths, no bend tighter than ~1.5 widths (zoom_fine.planform)."""
+    parent = _river_parent(kind)
+    lat, lon = _at(parent[0], 75, 75)
+    z = ZF.build(parent, world, lat, lon, size_km=8, res_km=0.025, log=lambda *a: None)
+    pf = z["stats"]["river_planform"]
+    assert pf["river_km"] > 6 and pf["switchbacks"] == 0 and pf["sharp_pct"] == 0
+    xy, q = _main_river(z, 5.0)
+    res = z["res"]
+    k = np.arange(-4, 5)
+    g = np.exp(-0.5 * (k / 2.0) ** 2)
+    g /= g.sum()
+    sm = np.column_stack([np.convolve(xy[:, d], g, "valid") for d in (0, 1)]) * res  # (the raster's steps)
+    chord = float(np.hypot(*(sm[-1] - sm[0])))
+    length = float(np.hypot(*np.diff(sm, axis=0).T).sum())
+    assert chord > 7.0
+    if kind == "bedrock":
+        assert length / chord < 1.05
+        return
+    # meanders: sinuous, their wavelength from the crossings of the course's mean line
+    assert 1.15 < length / chord < 2.0
+    w = 4.0 * np.sqrt(np.median(q)) / 1000.0
+    y = sm[:, 0] - np.polyval(np.polyfit(sm[:, 1], sm[:, 0], 2), sm[:, 1])  # (rows off a smooth mean line)
+    flips = np.flatnonzero(np.diff(np.sign(y)) != 0)
+    wl = 2 * (sm[flips[-1], 1] - sm[flips[0], 1]) / max(len(flips) - 1, 1)
+    assert len(flips) >= 4 and 8 * w < wl < 16 * w
