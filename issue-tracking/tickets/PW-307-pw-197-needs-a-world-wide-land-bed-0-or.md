@@ -2,7 +2,7 @@
 id: PW-307
 title: PW-197 needs a world-wide 'land = bed > 0 or grounded ice' before finish.py can store the true bed
 type: task
-status: todo
+status: in-progress
 parent: PW-090
 subsystem: timezoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-197, PW-189]
 refs: [planet/finish.py, planet/timeline.py, planet/world.py, planet/climate.py, planet/hydrology.py, planet/tectonics/isostasy.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,5 +30,6 @@ for display only (zoom rock and sub-ice lakes still wrong). (a) is the real fix;
 a climate.py touch, so best after PW-305 lands.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started (option a; lands before the rain rework per the moisture proposal's decision 6), with PW-197.
 - 2026-10-15: Status needs-decision -> todo. Owner 2026-10-15: option (a), the world land mask, but later. PW-013 decides the order (before, during or after it), since both touch climate.compute.
 - 2026-10-15: Created from inbox draft draft-world-grounded-ice-land.md (found by small-store).
