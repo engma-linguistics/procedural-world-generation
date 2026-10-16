@@ -1,4 +1,5 @@
 ---
+id: PW-367
 title: "Time zoom: marine ice margins have no shelves or ice streams: West Antarctica collapses unforced, shallow shelves ground"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: tzbatch-2026-10-16
 blocked_by: []
 relates: [PW-361, PW-241, PW-295, PW-114]
 refs: [planet/timezoom.py, docs/review/timezoom/batch-2026-10-16.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -47,3 +50,6 @@ the factor to the observed buttressing (Fürst et al. 2016: Antarctic shelves ca
 grounding-line resistance), not to a sea-level score.
 - [ ] an unforced Earth time zoom keeps West Antarctica's marine sector for 20 kyr (within ~10% of its cells)
 - [ ] a warm Eemian-like start can still lose it
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-timezoom-marine-margins.md (found by tzbatch-2026-10-16).

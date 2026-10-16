@@ -1,4 +1,5 @@
 ---
+id: PW-365
 title: "Run ice: the cycle-averaged balance still mixes the orbital response with the sea counted as land"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: tzbatch-2026-10-16
 blocked_by: []
 relates: [PW-114, PW-190]
 refs: [planet/tectonics/earth.py, planet/icemass.py, planet/timezoom.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Fix: in `earth.ice_sheets`, mix the shares with the sea at its own, `np.where(la
 * (1 - ICE_ABSORB), INSOL_SEA)`, before `smooth_big`, and blend as `orbit_k` does (`absorb = (1 - b) + b x
 mix` with b the cell's brightness), or call a shared helper. One line; then re-measure `tools/ice_probe.py
 0 -6` and the time zoom drift (PW-295).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-run-ice-orbit-mix-sea.md (found by tzbatch-2026-10-16).

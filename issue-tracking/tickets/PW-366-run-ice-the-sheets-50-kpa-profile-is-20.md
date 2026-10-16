@@ -1,4 +1,5 @@
 ---
+id: PW-366
 title: "Run ice: the sheets' 50 kPa profile is ~20% thinner than Earth's real sheets and the time zoom's flow (the time zoom's start drift)"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: tzbatch-2026-10-16
 blocked_by: []
 relates: [PW-241, PW-295, PW-240, PW-190, PW-276]
 refs: [planet/tectonics/earth.py, planet/icemass.py, planet/timezoom.py, docs/review/timezoom/batch-2026-10-16.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -48,3 +51,6 @@ Options:
 - C. Keep 50 kPa and document the drift as the time zoom refining the run's thin ice.
 Lean: A with PW-240 (the cold-era climate drift) handled first or together, since A deepens exactly the
 eras PW-240 says are already too deep.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-run-ice-profile-thin.md (found by tzbatch-2026-10-16).
