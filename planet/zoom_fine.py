@@ -18,9 +18,12 @@ Steps (the proposal's 1-6):
    ~4 fine px at 3D planet positions (sibling fine zooms agree), its
    amplitude from the parent's local relief and the rock's ruggedness
    (zoom.RUGGED). Categorical layers nearest after a noisy warp.
-3. Imposed water: the parent's rivers (its `receiver` layer, PW-373) as
-   Catmull-Rom polylines through the parent pixel centres, warped by < half
-   a parent px between them, their beds on the parent's water surface;
+3. Imposed water: the parent's rivers (its `receiver` layer, PW-373), each
+   course through the parent pixel centres smoothed by a parent px (no D8
+   steps) with a gentle wander, its planform chosen per reach (PW-405,
+   _courses): alluvial single-thread reaches meander (sine-generated, ~11
+   channel widths, within their valley floor), bedrock / steep and braided
+   ones don't; their beds on the parent's water surface;
    channels as wide as hydraulic geometry says (w ~ 4 Q^0.5 m). The
    parent's lakes at their surface, outlined by the warp.
 4. Falls: each parent fall keeps the parent's drop exactly: the lip pixel
@@ -73,6 +76,7 @@ from . import zoom_coastal as ZCL
 from . import zoom_kernels as ZK
 from . import zoom_vegetation as ZVG
 from . import satellite as SAT
+from . import surface as SURF
 from .climate import LAPSE
 from .geo import R_KM, latlon
 from .images import write_png
@@ -85,7 +89,14 @@ EDGE_PX = 3  # parent px: the built area (region + halo) stays this far inside t
 HALO_PARENT_PX = 1.0  # parent px of terrain built round the region (drainage), cropped off
 RIVER_AREA_PX = 25.0  # parent rivers imposed: draining at least this many parent pixels ...
 RIVER_AREA_MIN = 1.0  # ... and at least this many km^2
-WARP_PX = 0.4  # parent px: the rivers' and categories' warp between parent pixel centres
+WARP_PX = 0.4  # parent px: the categories' warp between parent pixel centres
+SMOOTH_PX = 1.0  # parent px: a parent's river course smoothed by this (its D8 steps; PW-405)
+WANDER_PX = 0.15  # parent px: ... then wandering by up to this (bends at ~4 parent px)
+MEANDER_WL = 11.0  # an alluvial river's meander wavelength, channel widths (10-14 observed)
+MEANDER_OMEGA = 1.2  # rad: its largest swing (sine-generated: bend radius ~2.2 widths, sinuosity ~1.5)
+MEANDER_PX = (15.0, 24.0)  # px: meanders drawn from this wavelength (tightest bend ~0.2 of it), in full from 24
+SWITCHBACK_DEG = 75.0  # planform(): a river turning more than this over its chords is a switchback
+ALLUVIAL_SLOPE = 0.006  # bed slope above which a reach is bedrock / confined (x the rock's erodibility)
 HEAD_KM2 = 0.25  # km^2: draining less than this, ground is hillslope, not channel
 THRESHOLD_DEG = (26.0, 38.0)  # the hillslopes' threshold slope, soft .. rugged rock
 RELAX_X = 1.25  # hillslopes cut down to this x their threshold slope to every neighbour
@@ -361,19 +372,27 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     q_p = np.asarray(pa.L["discharge"], float).ravel()
     a_p = np.asarray(pa.L["drainage_area"], float).ravel()
     ws_flat = wsp.ravel()
-    riv_p = (a_p >= max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN)) & (wp.ravel() != 1) & (rec_p >= 0)  # (through lakes too: a course goes on)
+    # (through lakes too: a course goes on)
+    riv_all = (a_p >= max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN)) & (wp.ravel() != 1) & (rec_p >= 0)
+    for ch in chains.values():
+        riv_all[ch[:-1]] = True
+    order_q = np.argsort(q_p)
+
+    def mains(riv_):
+        um = np.full(pa.nx * pa.ny, -1)
+        for i in order_q[riv_[order_q]]:  # (ascending q: the biggest tributary wins)
+            um[rec_p[i]] = i
+        return um
+
+    # the meanders' phase down the whole parent network (planet-fixed: sibling zooms agree)
+    up_all = mains(riv_all)
+    psi_p = _river_phase(riv_all, rec_p, up_all, q_p, pa, S_ + 13)
     # only the parent pixels round the built area
     rr_p, cc_p = np.divmod(np.arange(pa.nx * pa.ny), pa.nx)
-    box = ((rr_p >= np.floor(pr.min()) - 2) & (rr_p <= np.ceil(pr.max()) + 2)
-           & (cc_p >= np.floor(pc.min()) - 2) & (cc_p <= np.ceil(pc.max()) + 2))
-    riv_p &= box
-    for ch in chains.values():
-        riv_p[ch[:-1]] = True
-    up_main = np.full(pa.nx * pa.ny, -1)
-    order_q = np.argsort(q_p)
-    for i in order_q:  # (ascending q: the biggest tributary wins)
-        if riv_p[i] and rec_p[i] >= 0:
-            up_main[rec_p[i]] = i
+    box = ((rr_p >= np.floor(pr.min()) - 5) & (rr_p <= np.ceil(pr.max()) + 5)
+           & (cc_p >= np.floor(pc.min()) - 5) & (cc_p <= np.ceil(pc.max()) + 5))
+    riv_p = riv_all & box
+    up_main = mains(riv_p)
     links = np.flatnonzero(riv_p)
     # the beds: the parent's water surface, made to fall all the way down each course (a parent's
     # receivers cross its filled pits: a course there would climb, and its water slip into another
@@ -385,34 +404,24 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         j = rec_p[i]
         if riv_p[i] and j >= 0 and j not in lips:
             bed_p[j] = min(bed_p[j], bed_p[i] - 0.01)
-    seg_pts, seg_z, seg_q, seg_a, seg_t, seg_link, seg_pin = [], [], [], [], [], [], []
-    pinned = {i for ch in chains.values() for i in (ch[0], ch[-1])}  # (a fall's lip and foot: not warped)
+    seg_pts, seg_z, seg_q, seg_a, seg_t, seg_link = [], [], [], [], [], []
     river_segs = []
-    xc_p, yc_p = pa.plane(rr_p, cc_p)
+    # the courses: smoothed, their planform chosen per reach (_courses)
+    paths_c = _courses(pa, riv_p, rec_p, up_main, q_p, bed_p, fall_links, (psi_p, up_all), hp_f, res,
+                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {})
+    log("  river courses (parent km): " + ", ".join(f"{k} {v:.1f}" for k, v in diag.items()))
     for i in links:
         j = rec_p[i]
-        if (i, j) in fall_links:  # (a gorge: drawn along its path in step 4)
+        if (i, j) in fall_links or i not in paths_c:  # (a gorge: drawn along its path in step 4)
             continue
-        a0 = up_main[i] if up_main[i] >= 0 else -1
-        b1 = rec_p[j] if (rec_p[j] >= 0 and riv_p[j]) else -1
-        p1 = np.array([xc_p[i], yc_p[i]])
-        p2 = np.array([xc_p[j], yc_p[j]])
-        p0 = np.array([xc_p[a0], yc_p[a0]]) if a0 >= 0 else 2 * p1 - p2
-        p3 = np.array([xc_p[b1], yc_p[b1]]) if b1 >= 0 else 2 * p2 - p1
-        ln = np.hypot(*(p2 - p1))
-        m = max(2, int(np.ceil(ln / (0.15 * res))))
-        t = np.linspace(0, 1, m + 1)[:, None]
-        pts = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t ** 2
-                     + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3)
+        pts = paths_c[i]
+        t = np.linspace(0.0, 1.0, len(pts))
         seg_pts.append(pts)
-        seg_t.append(t[:, 0])
-        seg_z.append(bed_p[i] + (bed_p[j] - bed_p[i]) * t[:, 0])
-        seg_q.append(np.full(m + 1, q_p[i]))
-        seg_a.append(np.full(m + 1, a_p[i]))
-        seg_link.append(np.full(m + 1, i))
-        tt_ = t[:, 0]  # (the warp fades to nothing at a fall's nodes, continuous at every node)
-        seg_pin.append((Z.smoothstep(0.0, 0.5, tt_) if i in pinned else 1.0)
-                       * (Z.smoothstep(0.0, 0.5, 1 - tt_) if j in pinned else 1.0) * np.ones(m + 1))
+        seg_t.append(t)
+        seg_z.append(bed_p[i] + (bed_p[j] - bed_p[i]) * t)
+        seg_q.append(np.full(len(pts), q_p[i]))
+        seg_a.append(np.full(len(pts), a_p[i]))
+        seg_link.append(np.full(len(pts), i))
     course = np.zeros(npx, bool)
     bed = np.full(npx, np.inf)
     c_q, c_a = np.zeros(npx), np.zeros(npx)
@@ -423,14 +432,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         tt = np.concatenate(seg_t)
         zz, qq, aa = np.concatenate(seg_z), np.concatenate(seg_q), np.concatenate(seg_a)
         ll = np.concatenate(seg_link)
-        # the courses warped (a planet-fixed field: links join; none at a fall's nodes, its lip stays put)
-        Pp = pa.fr.to_sphere(pts[:, 0], pts[:, 1])
-        bump = np.concatenate(seg_pin)
-        Ppk = np.ascontiguousarray(Pp * R_KM)
-        off_x = WARP_PX * rp * bump * np.clip(ZK.fbm(Ppk, 2 * rp, 2, 0.5, S_ + 11) / 0.17, -1.25, 1.25)
-        off_y = WARP_PX * rp * bump * np.clip(ZK.fbm(Ppk, 2 * rp, 2, 0.5, S_ + 12) / 0.17, -1.25, 1.25)
-        Pp = pa.fr.to_sphere(pts[:, 0] + off_x, pts[:, 1] + off_y)
-        fx, fy = fr.to_plane(Pp)
+        fx, fy = fr.to_plane(pa.fr.to_sphere(pts[:, 0], pts[:, 1]))
         ci = np.floor(fx / res + nb / 2).astype(int)
         ri = np.floor(nb / 2 - fy / res).astype(int)
         ok = (ci >= 0) & (ci < nb) & (ri >= 0) & (ri < nb)
@@ -445,22 +447,26 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         node_px = dict(zip(ll[at0].tolist(), k_px[at0].tolist()))
         for ch in chains.values():  # (a gorge's lip: its link is drawn in step 4)
             node_px.setdefault(ch[0], _px_of(fr, pa, ch[0], nb, res))
-        # (once a river: one that left the built area and comes back already carries its water)
-        been_in = np.zeros(len(rec_p), bool)
+        # (water that has been through the built area already: a river leaving it and coming back, or a
+        # tributary that left it and joins outside, brings in only what it gained outside)
+        q_been, a_been = np.zeros(len(rec_p)), np.zeros(len(rec_p))
         for i in order_p[::-1]:
+            if i in node_px:
+                q_been[i], a_been[i] = q_p[i], a_p[i]
             j = rec_p[i]
             if riv_p[i] and j >= 0:
-                been_in[j] |= been_in[i] or i in node_px
+                q_been[j] += q_been[i]
+                a_been[j] += a_been[i]
         for i0 in np.unique(ll[(tt == 0) & ~ok]):
             k_ = int(rec_p[i0])
-            if k_ not in node_px or been_in[i0]:  # (not the link that crosses into the built area)
+            if k_ not in node_px:  # (not the link that crosses into the built area)
                 continue
             for _ in range(int(4 * ramp / rp) + 8):
                 if k_ < 0 or not riv_p[k_]:
                     break
                 if k_ in node_px and d_edge[node_px[k_]] >= 2 * res:
-                    q_in[node_px[k_]] += q_p[i0]
-                    a_in[node_px[k_]] += a_p[i0]
+                    q_in[node_px[k_]] += max(q_p[i0] - q_been[i0], 0.0)
+                    a_in[node_px[k_]] += max(a_p[i0] - a_been[i0], 0.0)
                     break
                 k_ = int(rec_p[k_])
         # each course pixel's next pixel: after its last visit (samples ranked down the parent's network,
@@ -968,6 +974,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         "vegetation": vz["stats"],
         "lake_pct": round(100 * lake.mean(), 2),
         "parent_river_links": int(len(links)),
+        # the rivers' planform (PW-405): switchbacks, sinuosity; the courses' classes (parent km)
+        "river_planform": {**planform(rec_out, discharge, h, water, nx, res),
+                           "classes_km": {k: round(v, 1) for k, v in diag.items()}},
         "waterfalls": sorted(fall_list, key=lambda f: -f["height_m"] * f.get("discharge_m3s", 1.0))[:5],
         "falls": fall_list,
         "falls_count": {"30m": sum(f["height_m"] >= 30 for f in fall_list),
@@ -1030,6 +1039,347 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
             "params": {"iterations": ITERATIONS, "step": round(rp / res, 2), "halo_px": hb,
                        "river_area_km2": round(max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN), 3),
                        "head_km2": a_head}}
+
+
+def _meander_table():
+    """The sine-generated curve (Langbein & Leopold 1966: direction
+    omega sin(2 pi s / L) along the channel) as a lateral offset per valley
+    phase: y / lambda at phase psi (0..2 pi over one valley wavelength
+    lambda), for omega 0..1.4 rad. Returns (omegas, psi grid, table, amplitude)."""
+    om = np.linspace(0.0, 1.4, 29)
+    phi = np.linspace(0.0, 2 * np.pi, 1025)
+    psi_g = np.linspace(0.0, 2 * np.pi, 256, endpoint=False)
+    tab = np.zeros((len(om), len(psi_g)))
+    for k, w in enumerate(om):
+        dx, dy = np.cos(w * np.sin(phi)), np.sin(w * np.sin(phi))
+        x = np.r_[0.0, np.cumsum(0.5 * (dx[1:] + dx[:-1]))]
+        y = np.r_[0.0, np.cumsum(0.5 * (dy[1:] + dy[:-1]))]
+        yn = np.interp(psi_g, 2 * np.pi * x / x[-1], y / x[-1])
+        tab[k] = yn - yn.mean()
+    return om, psi_g, tab, np.abs(tab).max(1)
+
+
+_MEANDER = _meander_table()
+
+
+def _meander_y(psi: np.ndarray, omega: np.ndarray) -> np.ndarray:
+    """Lateral offset / valley wavelength of a sine-generated meander train
+    at valley phase psi with largest swing omega (rad)."""
+    om, psi_g, tab, _ = _MEANDER
+    n = len(psi_g)
+    f = np.mod(psi, 2 * np.pi) / (2 * np.pi) * n
+    i0 = np.floor(f).astype(int) % n
+    i1, tf = (i0 + 1) % n, f - np.floor(f)
+    g = np.clip(omega / om[1], 0, len(om) - 1.001)
+    k0 = np.floor(g).astype(int)
+    tk = g - k0
+    a = (1 - tf) * tab[k0, i0] + tf * tab[k0, i1]
+    b = (1 - tf) * tab[k0 + 1, i0] + tf * tab[k0 + 1, i1]
+    return (1 - tk) * a + tk * b
+
+
+def _gauss(a: np.ndarray, sigma: float) -> np.ndarray:
+    """Gaussian smoothing along axis 0 (sigma in samples), the end values
+    and their direction kept (odd reflection at both ends)."""
+    if sigma <= 0 or len(a) < 3:
+        return a.copy()
+    r = int(np.ceil(3 * sigma))
+    k = np.arange(-r, r + 1)
+    g = np.exp(-0.5 * (k / sigma) ** 2)
+    g /= g.sum()
+    m = min(r, len(a) - 1)
+    pad = np.concatenate([2 * a[:1] - a[m:0:-1], a, 2 * a[-1:] - a[-2:-m - 2:-1]])
+    if m < r:  # (a short course: pad on with its end values)
+        pad = np.concatenate([np.repeat(pad[:1], r - m, 0), pad, np.repeat(pad[-1:], r - m, 0)])
+    if a.ndim == 1:
+        return np.convolve(pad, g, "valid")
+    return np.column_stack([np.convolve(pad[:, d], g, "valid") for d in range(a.shape[1])])
+
+
+def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray,
+             bed: np.ndarray, fall_links: dict, phase: tuple, hp_f: np.ndarray, res: float,
+             parent_fine: bool, seed: int, diag: dict | None = None) -> dict:
+    """Each parent river link's course (PW-405): {link i: (k, 2) parent
+    plane km, i's node first, its receiver's last}.
+
+    The parent's course is a D8 path through its pixel centres: 45 and 90
+    degree steps, zigzags at a fine parent's pixel scale. Each course (a
+    main stem from its head to where it joins a bigger river, a fall's lip,
+    or the sea) is smoothed by SMOOTH_PX parent px: the valley-scale bends
+    stay, the pixel steps go. Its planform is then chosen per reach:
+    - alluvial (gentle bed for its rock: ALLUVIAL_SLOPE times the rock's
+      erodibility), single-thread (below ~2x the Leopold-Wolman braiding
+      slope 0.013 Q^-0.44): a sine-generated meander train of wavelength
+      MEANDER_WL channel widths (w = 4 Q^0.5 m), swing up to MEANDER_OMEGA
+      (bend radius ~2.2 widths, sinuosity ~1.5), less where its valley floor
+      (the parent's ground within a few channel depths of the bed) or the
+      valley's own bends leave it no room;
+    - steep (bedrock, confined) or braided: the smoothed course alone.
+    Meanders are drawn where this zoom resolves their wavelength
+    (MEANDER_PX) and a fine parent did not already draw them; their phase
+    runs down the parent's network from each head (phase: _river_phase and
+    the network's main upstreams; planet-fixed, so sibling zooms agree). A tributary ends on its main river's course;
+    meanders taper out at a course's ends (a fall's lip and foot stay on
+    the parent's pixel centres)."""
+    rp = pa.rp
+    nxp = pa.nx
+    ok_link = riv & (rec >= 0)
+    heads = []
+    for i in np.flatnonzero(ok_link):
+        j = int(rec[i])
+        if (i, j) in fall_links:
+            continue
+        u = up_main[i]
+        if u < 0 or not riv[u] or (int(u), int(i)) in fall_links:
+            heads.append(int(i))
+    chains = []
+    for i0 in heads:
+        ch = [i0]
+        i = i0
+        while len(ch) < 100_000:
+            j = int(rec[i])
+            ch.append(j)
+            if not riv[j] or rec[j] < 0 or up_main[j] != i or (j, int(rec[j])) in fall_links:
+                break
+            i = j
+        end_conf = riv[ch[-1]] and up_main[ch[-1]] != ch[-2]
+        key = q[ch[:-1]].max() if end_conf or len(ch) == 2 else q[ch].max()
+        chains.append((key, ch, end_conf))
+    chains.sort(key=lambda c: -c[0])
+    rr, cc = np.divmod(np.arange(nxp * pa.ny), nxp)
+    xc, yc = pa.plane(rr, cc)
+    node_pos = {}
+    out = {}
+    M = max(8, int(np.ceil(3 * rp / res)))  # samples per link (>= 18 per drawn meander wavelength)
+    lo, hi = MEANDER_PX
+    for _, ch, end_conf in chains:
+        ch = np.array(ch)
+        K = len(ch) - 1
+        P = np.column_stack([xc[ch], yc[ch]]).astype(float)
+        if end_conf and int(ch[-1]) in node_pos:
+            P[-1] = node_pos[int(ch[-1])]
+        u = np.arange(K * M + 1) / M
+        k_ = np.minimum(np.floor(u).astype(int), K - 1)
+        t_ = (u - k_)[:, None]
+        B = _gauss(P[k_] * (1 - t_) + P[k_ + 1] * t_, SMOOTH_PX * M)
+        # where in the parent's pixels it runs: a gentle planet-fixed wander (bends at a few parent px,
+        # from the rock's structure; the parent's pixels can't say), none at its ends
+        s_b = np.r_[0.0, np.cumsum(np.hypot(*np.diff(B, axis=0).T))]
+        tw = np.gradient(B, axis=0)
+        tw /= np.maximum(np.hypot(*tw.T), 1e-12)[:, None]
+        Pb = np.ascontiguousarray(pa.fr.to_sphere(B[:, 0], B[:, 1]) * R_KM)
+        wan = (WANDER_PX * rp * np.clip(ZK.fbm(Pb, 4 * rp, 2, 0.5, seed) / 0.17, -1.25, 1.25)
+               * Z.smoothstep(0.0, rp, s_b) * Z.smoothstep(0.0, rp, s_b[-1] - s_b))
+        B = B + wan[:, None] * np.column_stack([-tw[:, 1], tw[:, 0]])
+        # per node: discharge, width, wavelength (km), bed slope, rock
+        qn = np.maximum(q[ch], 0.0)
+        wn = 4.0 * np.sqrt(qn) / 1000.0
+        lam = np.maximum(MEANDER_WL * wn, 1e-4)
+        seg = np.hypot(*np.diff(P, axis=0).T)
+        ln = np.r_[seg, seg[-1:]] if K else np.zeros(1)
+        drop = np.r_[np.maximum(bed[ch[:-1]] - bed[ch[1:]], 0.0), 0.0] if K else np.zeros(1)
+        sg = max(1.5, 2.0 * float(np.median(lam)) / rp)  # (over a couple of meander wavelengths at least)
+        slope = _gauss(drop, sg) / np.maximum(1000.0 * _gauss(ln, sg), 1e-9)
+        kr = SURF.ROCK_K[np.clip(np.asarray(pa.L.get("surface_rock", pa.L.get("rock", np.zeros((1, 1))))
+                                            ).ravel()[ch].astype(int), 0, len(SURF.ROCK_K) - 1)] \
+            if ("surface_rock" in pa.L or "rock" in pa.L) else np.ones(len(ch))
+        s_hi = ALLUVIAL_SLOPE * np.clip(kr, 0.3, 2.0)
+        alluv = 1.0 - Z.smoothstep(0.25 * s_hi, s_hi, slope)
+        s_lw = 0.013 * np.maximum(qn, 1e-3) ** -0.44
+        single = 1.0 - Z.smoothstep(1.5 * s_lw, 3.0 * s_lw, slope)
+        lam_lo = np.minimum(lam, np.minimum(np.r_[lam[:1], lam[:-1]], np.r_[lam[1:], lam[-1:]]))  # (a jump in Q:
+        # none across it, its phase runs at the smaller wavelength's rate)
+        drawn = Z.smoothstep(lo, hi, lam_lo / res) * (1.0 - (Z.smoothstep(lo, hi, lam / rp) if parent_fine else 0.0))
+        om = MEANDER_OMEGA * alluv * single * drawn
+        if diag is not None:
+            for k_c, v_c in (("alluvial", alluv * single >= 0.5), ("braided", (alluv >= 0.5) & (single < 0.5)),
+                             ("bedrock", alluv < 0.5)):
+                diag[k_c] = diag.get(k_c, 0.0) + float(ln[v_c].sum())
+            diag["meanders_drawn"] = diag.get("meanders_drawn", 0.0) + float((ln * (om > 0.1)).sum())
+        # room: the valley floor's half width (where the parent's ground rises a few channel depths over
+        # the bed), and half the valley's own bend radius
+        Bn = B[::M]
+        tng = np.gradient(B, axis=0)[::M]
+        tng /= np.maximum(np.hypot(*tng.T), 1e-12)[:, None]
+        nrm = np.column_stack([-tng[:, 1], tng[:, 0]])
+        if (om > 0.02).any():
+            # (where the parent's ground beside it rises a couple of bankfull depths over the ground on its
+            # course (its bed: the parent's beds are made to fall down a course, a few m below it): the floor's
+            # half width, wherever in it the course runs)
+            rise = np.maximum(2.0, 2 * 0.27 * qn ** 0.39)
+            dd = np.linspace(0.25, max(6.0, 0.6 * float(lam.max()) / rp), 24) * rp
+            fw = np.zeros(len(ch))
+            h0 = pa.bicubic(hp_f, pa.ny / 2 - Bn[:, 1] / rp - 0.5, Bn[:, 0] / rp + nxp / 2 - 0.5)
+            for sgn in (-1.0, 1.0):
+                X = Bn[:, None, 0] + sgn * dd[None, :] * nrm[:, None, 0]
+                Y = Bn[:, None, 1] + sgn * dd[None, :] * nrm[:, None, 1]
+                hz = pa.bicubic(hp_f, (pa.ny / 2 - Y / rp - 0.5).ravel(),
+                                (X / rp + nxp / 2 - 0.5).ravel()).reshape(X.shape)
+                up_ = hz > (h0 + rise)[:, None]
+                fw += 0.5 * np.where(up_.any(1), dd[np.argmax(up_, 1)], dd[-1])
+            fw = np.maximum(fw, 0.5 * rp)  # (a floor narrower than the parent's pixel: it can't tell)
+            # (the valley's bend over a meander wavelength: its turn there / the wavelength)
+            d1 = np.diff(B, axis=0)
+            head = np.unwrap(np.arctan2(d1[:, 1], d1[:, 0]))
+            sb = np.r_[0.0, np.cumsum(np.hypot(*d1.T))]
+            sm_ = 0.5 * (sb[1:] + sb[:-1])
+            s_n = sb[::M]
+            turn = np.abs(np.interp(s_n + 0.5 * lam, sm_, head) - np.interp(s_n - 0.5 * lam, sm_, head))
+            room = np.minimum(fw - 0.5 * wn, 0.5 * lam / np.maximum(turn, 1e-9))
+            om_room = np.interp(np.maximum(room, 0.0) / lam, _MEANDER[3], _MEANDER[0])
+            if diag is not None:
+                diag["meanders_unconfined"] = (diag.get("meanders_unconfined", 0.0)
+                                               + float((ln * (om > 0.1) * (om_room >= om)).sum()))
+            # (the swing changes over a wavelength: no lone bend where one node has room; never more than
+            # the reach allows)
+            om = np.minimum(_gauss(np.minimum(om, om_room), max(1.0, float(np.median(lam / np.maximum(ln, 1e-9))))),
+                            om)  # (never into a reach too steep, or a wavelength too short, for them)
+        else:
+            om = np.zeros(len(ch))
+        # down the course: the meanders' phase, swing (tapering out at its ends) and offset
+        s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(B, axis=0).T))]
+        lam_u = np.interp(u, np.arange(K + 1), lam)
+        taper = (Z.smoothstep(0.0, 0.5, s_ / lam_u) * Z.smoothstep(0.0, 0.5, (s_[-1] - s_) / lam_u))
+        om_u = np.interp(u, np.arange(K + 1), om) * taper
+        if (om_u > 0.02).any():
+            # (the phase down the whole parent network from the course's head; where this course's main
+            # upstream isn't the network's (a bigger one outside the built area), on at its own rate)
+            psi, up_all = phase
+            dpsi = np.diff(psi[ch])
+            own_rate = up_all[ch[1:]] != ch[:-1]
+            dpsi[own_rate] = (2 * np.pi * seg / lam[:-1])[own_rate]
+            dpsi *= _gauss(seg, 2.0) / np.maximum(seg, 1e-9)  # (D8 steps: a diagonal's 1.41 evened out)
+            psi_c = psi[ch[0]] + np.r_[0.0, np.cumsum(dpsi)]
+            psi_u = np.interp(u, np.arange(K + 1), psi_c)
+            tg = np.gradient(B, axis=0)
+            tg /= np.maximum(np.hypot(*tg.T), 1e-12)[:, None]
+            off = lam_u * _meander_y(psi_u, om_u)
+            C = B + off[:, None] * np.column_stack([-tg[:, 1], tg[:, 0]])
+        else:
+            C = B
+        for k in range(K + 1):
+            node_pos.setdefault(int(ch[k]), C[k * M].copy())
+        # each link's course, sampled finely enough for the fine pixels
+        Lk = np.add.reduceat(np.r_[np.hypot(*np.diff(C, axis=0).T), 0.0], np.arange(0, K * M, M)) if K else []
+        for k in range(K):
+            m = max(2, int(np.ceil(Lk[k] / (0.15 * res))))
+            t = np.linspace(0.0, 1.0, m + 1)
+            sub = C[k * M:(k + 1) * M + 1]
+            tt = np.linspace(0.0, 1.0, M + 1)
+            out[int(ch[k])] = np.column_stack([np.interp(t, tt, sub[:, 0]), np.interp(t, tt, sub[:, 1])])
+    return out
+
+
+def _river_phase(riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray, pa: _Parent,
+                 seed: int) -> np.ndarray:
+    """Each parent river node's meander phase (rad): from a planet-fixed
+    random start at its course's head, on down its main stem by 2 pi per
+    meander wavelength (MEANDER_WL widths) of D8 length."""
+    nxp = pa.nx
+    psi = np.zeros(len(rec))
+    rr, cc = np.divmod(np.arange(len(rec)), nxp)
+    xc, yc = pa.plane(rr, cc)
+    P = np.ascontiguousarray(pa.fr.to_sphere(xc, yc) * R_KM)
+    hd = riv & (up_main < 0)
+    psi[hd] = 2 * np.pi * (0.5 + 0.5 * np.tanh(ZK.fbm(P[hd], 0.3 * pa.rp, 1, 0.5, seed) / 0.1))
+    order = ZK.receiver_order(np.where(riv, rec, -1))
+    lam = np.maximum(MEANDER_WL * 4.0 * np.sqrt(np.maximum(q, 0.0)) / 1000.0, 1e-4)
+    for i in order[::-1]:  # (headwater -> outlet)
+        j = rec[i]
+        if riv[i] and j >= 0:
+            d = pa.rp * (1.41421356 if (i % nxp != j % nxp and i // nxp != j // nxp) else 1.0)
+            if up_main[j] == i:
+                psi[j] = psi[i] + 2 * np.pi * d / lam[i]
+            elif not riv[j] or up_main[j] < 0:
+                psi[j] = psi[i]
+    return psi
+
+
+def planform(rec: np.ndarray, q: np.ndarray, h: np.ndarray, water: np.ndarray, nx: int, res: float,
+             qmin: float = 10.0, area: np.ndarray | None = None, amin: float = np.inf) -> dict:
+    """A zoom's river planform (PW-405). Its rivers (q >= qmin m^3/s, on
+    land; the 3D view's) traced down their receivers, main stem by main stem,
+    smoothed by a pixel (the raster's steps). At each point the turn between
+    the chords of l = max(3 px, 1.5 widths) before and after it: a switchback
+    turns more than SWITCHBACK_DEG there (a bend of radius under 0.8 l:
+    tighter than ~1.2 channel widths, which real bends hardly ever are (a
+    meander's tightest is ~2-2.5), or than ~2.5 px, the pixels' elbows). Sinuosity (path / chord)
+    over windows of 25 widths (about two meander wavelengths), on steep
+    (bed > 2%) and gentle (< 0.5%) reaches apart. res km/px; area, amin:
+    also the courses draining at least amin km^2 (dry ones)."""
+    rec = np.asarray(rec, np.int64)
+    q = np.asarray(q, float).ravel()
+    h = np.asarray(h, float).ravel()
+    riv = (q >= qmin) & (np.asarray(water).ravel() == 0)
+    if area is not None:
+        riv |= (np.asarray(area, float).ravel() >= amin) & (np.asarray(water).ravel() == 0)
+    up_main = np.full(len(q), -1)
+    for i in np.flatnonzero(riv)[np.argsort(q[riv])]:  # (ascending q: the biggest upstream wins)
+        if rec[i] >= 0:
+            up_main[rec[i]] = i
+    km = n_sw = 0.0
+    sharp_km = 0.0
+    turns, sin_s, sin_g, where = [], [], [], []
+    for i0 in np.flatnonzero(riv & (up_main < 0)):
+        path = [int(i0)]
+        i = int(i0)
+        while rec[i] >= 0 and len(path) < 4 * len(q):
+            j = int(rec[i])
+            path.append(j)
+            if not riv[j] or up_main[j] != i:  # (a confluence: the main stem goes on as its own path)
+                break
+            i = j
+        if len(path) < 6:
+            continue
+        p = np.array(path)
+        xy = np.column_stack([p % nx, -(p // nx)]).astype(float) * res
+        k = np.arange(-3, 4)
+        g = np.exp(-0.5 * k * k)
+        g /= g.sum()
+        pad = np.concatenate([2 * xy[0] - xy[3:0:-1], xy, 2 * xy[-1] - xy[-2:-5:-1]])  # (ends kept)
+        sm = np.column_stack([np.convolve(pad[:, d], g, "valid") for d in (0, 1)])
+        s = np.r_[0.0, np.cumsum(np.hypot(*np.diff(sm, axis=0).T))]
+        L = float(s[-1])
+        if L < 8 * res:
+            continue
+        km += L
+        ss = np.arange(0.0, L, 0.5 * res)
+        w = 4.0 * np.sqrt(np.maximum(np.interp(ss, s, q[p]), 0)) / 1000.0
+        ell = np.maximum(3 * res, 1.5 * w)
+        ok = (ss - ell >= 0) & (ss + ell <= L)
+        if ok.any():
+            s0, s1, s2 = ss[ok] - ell[ok], ss[ok], ss[ok] + ell[ok]
+            P = [np.column_stack([np.interp(t, s, sm[:, 0]), np.interp(t, s, sm[:, 1])]) for t in (s0, s1, s2)]
+            a, b = P[1] - P[0], P[2] - P[1]
+            cosv = (a * b).sum(1) / np.maximum(np.hypot(*a.T) * np.hypot(*b.T), 1e-12)
+            th = np.degrees(np.arccos(np.clip(cosv, -1, 1)))
+            turns.append(th)
+            sw = th > SWITCHBACK_DEG
+            sharp_km += 0.5 * res * sw.sum()
+            n_sw += int((sw[1:] & ~sw[:-1]).sum() + sw[0])
+            for s_sw in s1[np.r_[sw[:1], sw[1:] & ~sw[:-1]]][:20 - len(where)]:
+                where.append([int(v) for v in divmod(int(p[np.searchsorted(s, s_sw).clip(0, len(p) - 1)]), nx)])
+        W = np.maximum(25 * w, 20 * res)
+        ok = (ss - W / 2 >= 0) & (ss + W / 2 <= L)
+        if ok.any():
+            sa, sb = ss[ok] - W[ok] / 2, ss[ok] + W[ok] / 2
+            ch = np.hypot(np.interp(sb, s, sm[:, 0]) - np.interp(sa, s, sm[:, 0]),
+                          np.interp(sb, s, sm[:, 1]) - np.interp(sa, s, sm[:, 1]))
+            sin_ = W[ok] / np.maximum(ch, 1e-9)
+            slope = (np.interp(sa, s, h[p]) - np.interp(sb, s, h[p])) / (1000.0 * W[ok])
+            sin_s.append(sin_[slope > 0.02])
+            sin_g.append(sin_[slope < 0.005])
+    th = np.concatenate(turns) if turns else np.zeros(0)
+    ss_, sg_ = (np.concatenate(v) if v else np.zeros(0) for v in (sin_s, sin_g))
+    return {"river_km": round(km, 2),
+            "switchbacks": int(n_sw),
+            "switchbacks_per_km": round(n_sw / km, 3) if km else 0.0,
+            "switchback_px": where,
+            "sharp_pct": round(100 * sharp_km / km, 2) if km else 0.0,
+            "turn_p95_deg": round(float(np.percentile(th, 95)), 1) if th.size else None,
+            "sinuosity_steep": round(float(np.median(ss_)), 3) if ss_.size else None,
+            "sinuosity_gentle": round(float(np.median(sg_)), 3) if sg_.size else None,
+            "sinuosity_gentle_p90": round(float(np.percentile(sg_, 90)), 3) if sg_.size else None}
 
 
 def latlon_to_xyz(lat: float, lon: float) -> np.ndarray:

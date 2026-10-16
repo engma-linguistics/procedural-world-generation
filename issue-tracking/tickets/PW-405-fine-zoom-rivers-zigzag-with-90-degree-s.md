@@ -33,3 +33,16 @@ Fix:
 
 ## Updates
 - 2026-10-16: Created from inbox draft draft-fine-zoom-river-planform.md (found by daniel).
+- 2026-10-16: Implemented on branch worktree-agent-a77223c7eaa43cc01 (pw405).
+  - Cause: the fine course was a Catmull-Rom through the parent's D8 pixel centres, plus a 2-parent-px noise warp. A fine parent's receivers are D8 at 50-100 m, so its child zigzagged at that scale.
+  - Fix, in `zoom_fine._courses`: each parent course (main stem: head to its confluence, lip or sea) is smoothed by 1 parent px. It gets a gentle planet-fixed wander (0.15 parent px at ~4 px), and its planform is chosen per reach:
+    - Alluvial: slope under 0.6% x rock erodibility.
+    - Single-thread: under 1.5-3x the Leopold-Wolman 0.013 Q^-0.44. These reaches get a sine-generated meander train, wavelength 11 w, swing up to 1.2 rad (bend radius ~2.2 w).
+    - The swing is limited by the valley floor's half width and the valley's own bends.
+    - Meanders are drawn only where this zoom resolves them (15-24 px) and a fine parent didn't. The phase runs down the parent's whole network, so siblings agree.
+  - Bedrock/steep and braided reaches keep the smoothed course. Tributaries end on their main river's course.
+  - The river inflow check (water that already passed through the built area) is now by discharge, not a yes/no. With the wider parent box the old check dropped a 25 m^3/s river into 3e74b0 / b3c260 (relates PW-391).
+  - New `zoom_fine.planform` metric, also in stats `river_planform`. It counts switchbacks (turns over 75 degrees across chords of max(3 px, 1.5 w)) and gives sinuosity on steep and gentle reaches, plus the course classes in km.
+  - Test: `test_river_planform[bedrock|alluvial]`. The old code fails it with 9 and 7 switchbacks and a bedrock sinuosity of 1.22.
+  - Showcase numbers, q >= 10, before -> after, switchbacks/km: b3c260 2.42 -> 0, 3e74b0 1.19 -> 0. Steep sinuosity: b3c260 1.29 -> 1.02.
+  - Follow-ups (drafts): floodplains in the fine pass (lowland rivers in V valleys count as confined), braided threads, small D8 streams.
