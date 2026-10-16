@@ -2,7 +2,7 @@
 id: PW-114
 title: "Time zoom: Eemian-like Earth start melts Antarctica, not Greenland"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-034]
 refs: [planet/timezoom.py, planet/icemass.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,6 +26,7 @@ seasonal lag and which months melt, and whether bare-ice margins (f_snow) respon
 Measure: tools-free probe `TZ.simulate(TZ.source_earth(6), kyr=10)`, ice volume change by region.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Time zoom batch agent started.
 - 2026-10-15: Merged inbox draft draft-eemian-greenland-collapses.md ("Time zoom: an Eemian-like Earth start now loses almost all of Greenland in 8 kyr", found by icemb).
   Update to PW-114 after PW-190 (icemb). With the shared mass balance (Greenland's margins now melt in
   the full summer once their snow is gone, as observed) and `anchor=obs` (Earth's start cooling only

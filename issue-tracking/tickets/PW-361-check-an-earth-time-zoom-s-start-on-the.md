@@ -2,7 +2,7 @@
 id: PW-361
 title: Check an Earth time zoom's start on the true Antarctic bed
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: s
@@ -27,4 +27,5 @@ should start near today's.
 - [ ] run an L6 Earth time zoom of ~100 kyr; compare its first frames' ice extent, volume and sea level with before
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Time zoom batch agent started.
 - 2026-10-16: Created from inbox draft draft-earth-timezoom-true-bed.md (found by pw354-earth-bed).

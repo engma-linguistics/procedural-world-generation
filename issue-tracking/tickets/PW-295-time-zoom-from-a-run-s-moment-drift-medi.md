@@ -2,7 +2,7 @@
 id: PW-295
 title: "Time zoom from a run's moment: drift median smaller after PW-274..277, but a heavy tail (-286, -312 m in 150 kyr)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-241, PW-240, PW-276, PW-275]
 refs: [planet/timezoom.py, planet/tectonics/earth.py, docs/review/audit/fixes-ice.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Probe: tools-style script in the fix report (tzmulti.py: T.simulate then TZ.simu
 - [ ] the 150 kyr drift from any moment of L5/L6 seeds 2 and 11 within ~-150 m, or the cause named
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Time zoom batch agent started.
 - 2026-10-15: Created from inbox draft draft-timezoom-drift-tail.md (found by ice-fix).
