@@ -2,7 +2,7 @@
 id: PW-349
 title: "Zoom: delta plains flatten interior cells up to 800 m high, ~25 m low cell means on river-mouth zooms"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -32,4 +32,5 @@ Check the deltas' look (test_zoom_water's delta tests) and the inland bias on th
 - [ ] inland cell-mean bias within +-10 m on 4.97,-114.51 and 1.96,-70.44
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 4 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-delta-plain-cell-means.md (found by zoom-batch3).

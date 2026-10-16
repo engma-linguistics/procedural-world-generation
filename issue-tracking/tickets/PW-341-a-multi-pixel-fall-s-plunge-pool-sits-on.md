@@ -2,7 +2,7 @@
 id: PW-341
 title: A multi-pixel fall's plunge pool sits one pixel below its lip, above most of the drop
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -37,4 +37,5 @@ surface at the river's level there.
 - [ ] goldens regenerated if zoom outputs change
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 4 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-plunge-pool-above-drop.md (found by zoom3d).
