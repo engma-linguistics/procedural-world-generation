@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-004, PW-010]
 refs: [planet/zoom_volcanoes.py, planet/tectonics/volcanism.py, docs/review/zoom-polish/pw118_caldera_after.png]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,6 +24,7 @@ calderas (Yellowstone's ~70 km), rhyolite domes and only modest cones. Draw cont
 and lower their height limit in the run (`volcanism.new_vent`, hmax ~3 km now).
 
 ## Updates
+- 2026-10-16: Coordinator 2026-10-16: the new 'highest active volcano' highlight always finds 3,500 m on every world: volcanism.TOP_MAX's continental cap binds (a clamp; real continental volcanoes reach ~5.9-6.9 km: Kilimanjaro, Chimborazo, Ojos del Salado). The run height limit part of this ticket should replace the cap with a sound edifice height (e.g. relief above the local base limited by crustal strength/flank failure).
 - 2026-10-15: Zoom side done (ff02dc7): oval caldera + lava plain for above-sea hotspot vents. Run height limit in volcanism.py remains (merged draft).
 - 2026-10-15: Merged inbox draft draft-continental-vent-run-height.md ("Continental hotspot vents: the run's height limit (zoom side of PW-118 done)", found by zoom-polish).
   For PW-118 (merge into it). The zoom now draws a hotspot vent with `floor_m > 0` as an

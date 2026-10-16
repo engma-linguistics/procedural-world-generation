@@ -1,7 +1,8 @@
 ---
+id: PW-381
 title: "Dormant arc volcanoes: the run has no state between active and extinct for arcs"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 subsystem: tectonics
 effort: s
@@ -10,6 +11,8 @@ found_by: volcano-highlights
 blocked_by: []
 relates: [PW-001, PW-116]
 refs: [planet/zoom_volcanoes.py, planet/tectonics/volcanism.py, viewer/index.html, "run a1d3b9"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,7 @@ last year from one quiet for 50,000 years. Options:
   10^2-10^5 yr, and a "last eruption" age at the world's moment): dormant = active centre in a long repose.
   The run's Myr steps can't resolve it, so it would be a per-volcano random draw at slicing time, a
   made-up state, not physics.
+
+## Updates
+- 2026-10-16: Status needs-decision -> wontdo. Coordinator 2026-10-16: keep arcs active/extinct (the run's Myr steps can't tell a dormant arc cone from an active one); parked.
+- 2026-10-16: Created from inbox draft draft-arc-volcano-dormant-state.md (found by volcano-highlights).
