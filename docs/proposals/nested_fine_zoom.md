@@ -1,6 +1,6 @@
 # Nested fine zoom (PW-129): a zoom of a zoom at 100–250 m/px, shown in the 3D view
 
-Status: design (2026-10-16, viewer-3d branch). Nothing built on the Python side yet.
+Status: Python side built (2026-10-16, planet/zoom_fine.py; see "As built" at the end). The 3D tile is still to do.
 
 ## What the owner asked for
 
@@ -180,3 +180,22 @@ Cost at 1000 px: 4x the pixels, so ~30-40 s per build and ~70 MB on disk; ~2 M t
 pixel is one to three crowns and a low 3D camera will show a smeared canopy. That is the
 threshold where canopy height (forest 20-40 m tall vs the ground) and instanced tree sprites
 start to pay off. Not in this ticket; warn the owner before the 25 m tier ships if it looks flat.
+
+## As built (2026-10-16)
+
+`planet/zoom_fine.py` follows steps 1-6, with these differences (each has an inbox draft where it's a judgement call or a gap):
+- **Means over 3x3 parent pixels**, not per pixel: kept per pixel, a parent's 1-px canyon (170672) came back as a staircase of parent-pixel blocks. Block means are kept to 7-20 m rms, single pixels to 30-120 m.
+- **Rivers**: parent links draining >= max(25 parent px, 1 km2) are imposed, warped by <= 0.5 parent px (none at a fall's lip). Beds fall all the way down, and the finished drainage is routed with the courses sunk, so water follows them. A river entering from outside gets the parent's discharge once, at its first node inside the region.
+- **Falls**: lip = the parent's water surface at its lip; plunge pool surface = lip - height_m, both exact. The gorge runs along the parent's chain to its foot, walls falling from lip height by the face to the smoothed surroundings at the mouth. Ids are `parent_fall` plus a `lineage` back to the first zoom.
+- **Volcanoes**: the cone's core (the parent's surface down to a 30% drop) is held, with a peaked shift so its top is the parent's top_m exactly. Out to its foot, the landscape pass stays within 30 m of the parent's cone.
+- **Not redone**: glacier outlines, landform overlays, deltas and reef forms. These use the parent's, interpolated.
+- **Cost**: 3.5-6 s and ~21 MB per 500 px, 18 s and 83 MB at 1000 px (25 m).
+
+## Handoff (not yet done)
+
+- 3D tile: the fine zoom as an inset Tile in zoom3d (separate agent).
+- 2D page: a "fine zoom here" pick and the children's rectangles (inbox draft).
+- Gorges are D8 staircases with banded walls at 50 and 25 m (draft).
+- River inflow into children is 10-25% short at the 25 m fall (draft).
+- Glaciers, landform overlays, deltas and reef forms aren't redrawn at the fine scale (draft).
+- Decisions for the owner: 3x3-block means vs per-pixel means; whether to ship the 25 m tier (its canopy is flat) (drafts).
