@@ -194,3 +194,119 @@ def test_world_water_layers(sim4):
     r, p = np.asarray(L["runoff"]), np.asarray(L["precipitation"])
     assert (r[land] <= p[land] + 1).all() and (r >= 0).all()
     assert 0.15 < r[land].sum() / max(p[land].sum(), 1) < 0.7
+
+
+# PW-255: the lakes' and rivers' kernels were sped up without changing their
+# outputs. These pin that against the textbook versions on inputs full of
+# equal heights (flat floors, integer heights), where a different heap or
+# sort would take tied cells in another order.
+
+from numba import njit  # noqa: E402
+
+
+@njit(cache=False)
+def _ref_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
+    """priority_flood_to as first written: a binary heap with swaps."""
+    n = elev.shape[0]
+    filled = elev.copy()
+    down = np.full(n, -1, np.int64)
+    closed = np.zeros(n, np.bool_)
+    hk = np.empty(n)
+    hv = np.empty(n, np.int64)
+    size = 0
+    for i in range(n):
+        if outlet[i]:
+            closed[i] = True
+            hk[size], hv[size] = filled[i], i
+            c = size
+            size += 1
+            while c > 0 and hk[(c - 1) >> 1] > hk[c]:
+                p = (c - 1) >> 1
+                hk[p], hk[c] = hk[c], hk[p]
+                hv[p], hv[c] = hv[c], hv[p]
+                c = p
+    order = np.empty(n, np.int64)
+    k = 0
+    while size > 0:
+        z, i = hk[0], hv[0]
+        size -= 1
+        hk[0], hv[0] = hk[size], hv[size]
+        c = 0
+        while True:
+            l, r, m = 2 * c + 1, 2 * c + 2, c
+            if l < size and hk[l] < hk[m]:
+                m = l
+            if r < size and hk[r] < hk[m]:
+                m = r
+            if m == c:
+                break
+            hk[m], hk[c] = hk[c], hk[m]
+            hv[m], hv[c] = hv[c], hv[m]
+            c = m
+        order[k] = i
+        k += 1
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if not closed[j]:
+                closed[j] = True
+                if filled[j] < z + eps:
+                    filled[j] = z + eps
+                down[j] = i
+                hk[size], hv[size] = filled[j], j
+                c = size
+                size += 1
+                while c > 0 and hk[(c - 1) >> 1] > hk[c]:
+                    p = (c - 1) >> 1
+                    hk[p], hk[c] = hk[c], hk[p]
+                    hv[p], hv[c] = hv[c], hv[p]
+                    c = p
+    return filled, down, order[:k]
+
+
+def _tied_heights(g, rng, trial):
+    e = rng.integers(-3, 8, g.n).astype(float) * (100.0 if trial % 2 else 1.0)
+    if trial % 3 == 0:
+        e = np.where(e > 0, e, -50.0)  # a flat sea floor
+    return e
+
+
+def test_fast_flood_kernels_match_the_textbook_ones():
+    """The heap's pop (Floyd's), the radix sort of the land cells and the
+    queue that leaves out the sea's inner cells give the same bits as the
+    textbook heap and numpy's stable sort, ties included."""
+    for lvl in (3, 4):
+        g = build_grid(lvl)
+        rng = np.random.default_rng(lvl)
+        for trial in range(8):
+            e = _tied_heights(g, rng, trial)
+            out = (e <= 0) | (rng.random(g.n) < 0.02)
+            for eps in (0.01, 0.0, 1.0):
+                got = kernels.priority_flood_to(e, out, g.nbr_off, g.nbr_idx, eps)
+                want = _ref_flood_to(e, out, g.nbr_off, g.nbr_idx, eps)
+                for a, b in zip(got, want):
+                    assert np.array_equal(a, b)
+                assert np.array_equal(kernels.flood_fill(e, out, g.nbr_off, g.nbr_idx, eps), want[0])
+            sea = e <= 0
+            land = np.nonzero(~sea)[0]
+            assert np.array_equal(kernels._land_asc(e, sea), land[np.argsort(e[land], kind="stable")])
+            e2 = np.abs(e) + 1.0  # no sea at all: both start from the lowest cell
+            assert np.array_equal(kernels.flood_fill(e2, e2 <= 0, g.nbr_off, g.nbr_idx, 0.01),
+                                  kernels.priority_flood(e2, g.nbr_off, g.nbr_idx, 0.01)[0])
+
+
+def test_lake_order_reused_across_tries_matches_fresh_lakes():
+    """_settle works out kernels.lakes' order of the cells (lake_order) once
+    per bed and reuses it for each try's water: the same as kernels.lakes
+    from scratch."""
+    g = build_grid(4)
+    rng = np.random.default_rng(7)
+    for trial in range(6):
+        e = _tied_heights(g, rng, trial)
+        prep = kernels.lake_order(e, g.nbr_off, g.nbr_idx)
+        loss = rng.random(g.n) * 3
+        for _ in range(3):
+            src = rng.random(g.n)
+            got = kernels.lakes_on(e, g.nbr_off, g.nbr_idx, src, loss, *prep)
+            want = kernels.lakes(e, g.nbr_off, g.nbr_idx, src, loss)
+            for a, b in zip(got, want):
+                assert np.array_equal(a, b)

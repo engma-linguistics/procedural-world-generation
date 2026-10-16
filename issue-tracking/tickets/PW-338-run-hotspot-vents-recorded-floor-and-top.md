@@ -1,4 +1,5 @@
 ---
+id: PW-338
 title: "Run: hotspot vents' recorded floor and top sit km below the cells they built (73.6N ridge on 592f2a)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-batch2
 blocked_by: []
 relates: [PW-310]
 refs: [planet/tectonics/volcanism.py, "world:592f2a(73.6,121.0)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ so the plateau stays and the vents' summits are buried in it), but the two recor
 `floor` could follow its cells (the ground its neighbours built: min over its cell and neighbours, as at
 birth, each step), or the cells could lose what the vent's erosion takes. Low priority; the zoom no longer
 shows it as sea holes.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-hotspot-ridge-vents-below-their-cells.md (found by zoom-batch2).

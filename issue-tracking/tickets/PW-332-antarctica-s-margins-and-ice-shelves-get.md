@@ -2,7 +2,7 @@
 id: PW-332
 title: "Antarctica's margins and ice shelves get 20-100 mm/yr of snow (obs ~100-500): the run's ice rule can't hold them"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: m
@@ -35,4 +35,5 @@ half of the observed snow. The frozen-sea summer air fix (draft-frozen-sea-summe
 - [ ] PW-313 probe at dT 0 holds ~3% over 8 updates (with the temperature fixes) and grows toward ~-120 m at dT -6
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
 - 2026-10-16: Created from inbox draft draft-antarctic-margin-snowfall.md (found by pw313).

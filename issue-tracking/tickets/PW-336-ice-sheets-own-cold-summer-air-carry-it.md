@@ -2,7 +2,7 @@
 id: PW-336
 title: "Ice sheets' own cold summer air: carry it along the winds (katabatic) instead of a local damping?"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: m
@@ -47,5 +47,6 @@ Lean: A, landed together with the snowfall fix (draft-antarctic-margin-snowfall)
 energy balance and inversion, which no bare-ground damping captures.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
 - 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: option A (carried, air-mass weighted). B passes the probe only through an 11 C Greenland error (compensating). Land together with PW-332 (margin snowfall) and PW-335 (frozen-sea air).
 - 2026-10-16: Created from inbox draft draft-ice-sheet-air-carried.md (found by pw313).
