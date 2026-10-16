@@ -1233,7 +1233,7 @@ def flood_basalts(ctx: _Ctx, top: int = 1) -> list[dict]:
                  "a large igneous province, where a new mantle plume's head poured out lava for a few Myr, "
                  "like the Deccan Traps or the Columbia River basalts"
                  + ("" if age is None else "; erupted under 1 Myr ago" if age < 1 else f"; {age:.0f} Myr since the eruption") + ".")
-        out.append(_feature(ctx, "flood_basalt", f"Flood basalts: {_area(a)}", blurb, mid, zoom_size(min(span, 1000)),
+        out.append(_feature(ctx, "flood_basalt", f"Flood basalts: {_area(a)}", blurb, mid, min(zoom_size(span), 1000),
                             {"area_km2": round(a), "lava_plateau_pct": round(100 * float(plat.mean())),
                              **({"age_myr": round(age)} if age is not None else {})},
                             quality=(0.8 ** len(out)) * min(1.0, 0.4 + a / 500000)))
@@ -1836,7 +1836,7 @@ def barrier_reefs(ctx: _Ctx, top: int = 1) -> list[dict]:
                  f"~{_n(x['offshore_km'])} km off the coast, with a lagoon ~{_m(x['lagoon_m'])} deep behind it; "
                  f"the sea {_crange(t0, t1)} through the year. Like the Great Barrier Reef.")
         out.append(_feature(ctx, "barrier_reef", f"Barrier reef: {_n(x['length_km'])} km", blurb, mid,
-                            zoom_size(min(x["length_km"], 1000)),
+                            min(zoom_size(x["length_km"]), 1000),
                             {"reef_km2": round(reef_km2), "length_km": round(x["length_km"]),
                              "offshore_km": round(x["offshore_km"]), "lagoon_m": round(x["lagoon_m"])},
                             quality=(0.8 ** rank) * min(1.0, 0.4 + x["length_km"] / 1500), path=ctx.path(spine)))
