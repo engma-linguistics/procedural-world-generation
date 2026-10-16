@@ -50,11 +50,22 @@ file is not cached and its server refused the download):
 | Greenland (133) | -20.9 (21.3) | -14.1 (14.5) | -5.2 (5.6) | -4.0 (4.7) |
 | ice-free land | unchanged | | | |
 
+`tools/earth_check.py` against the coordinator's baseline (only these lines changed; Köppen unchanged, both
+sheets EF): Antarctica annual / coldest / warmest -32.8 / -56.3 / -9.5 -> -26.7 / -47.9 / -8.1 C (obs -35.6 /
+-47.6 / -14.9): the coldest month now right, but the annual mean +8.9 C too warm (was +2.8). Greenland -32.2 /
+-54.4 / -10.1 -> -27.5 / -48.0 / -9.2 (obs -21.4 / -33.0 / -5.0). Vostok annual -41.5 -> -35.5 (obs -50.6),
+Summit -37.7 -> -32.6 (obs -26.8). Global mean T 14.5 -> 14.7 C. The 10 C was compensating a too-warm polar
+base (PW-112, PW-039: East Antarctica ~10 C too warm); without it that bias shows on Antarctica's annual mean.
+
 Antarctic summers get warmer by ~1.5 C (the 10 C cut no longer hides PW-112's warm polar base); winters much
 closer to observed.
 
 Time zoom drift (150 kyr from 5 keyframes each of L5 seeds 2 and 11): median -94 m -> -53 m, worst -195 -> -312
 m (draft `timezoom-drift-tail`). PW-275 alone, on the same moments: 0 to +6 m (small). Earth's 150 kyr time zoom:
 -100 m -> -38 m (PW-275: Earth glaciates less, as the ticket expected; PW-033).
+
+`tools/scorecard.py` (seeds 1, 2 at 1000 Myr; end states are chaotic, so only a sanity check): seed 1 ice 0.0 ->
+1.1%, dry 32.0 -> 20.0%; seed 2 ice 3.6 -> 4.3%, dry 37.2 -> 30.4%; Earth Köppen group agreement 72% -> 71.8%.
+(Not appended to docs/scorecard.jsonl, to keep the branches mergeable.)
 
 No retunes.
