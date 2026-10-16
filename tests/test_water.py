@@ -196,71 +196,40 @@ def test_world_water_layers(sim4):
     assert 0.15 < r[land].sum() / max(p[land].sum(), 1) < 0.7
 
 
-# PW-255: the lakes' and rivers' kernels were sped up without changing their
-# outputs. These pin that against the textbook versions on inputs full of
-# equal heights (flat floors, integer heights), where a different heap or
-# sort would take tied cells in another order.
+# PW-255/344: the lakes' and rivers' kernels were sped up. These pin them
+# against textbook versions on inputs full of equal heights (flat floors,
+# integer heights), where a different heap or sort would take tied cells in
+# another order.
 
-from numba import njit  # noqa: E402
+import heapq  # noqa: E402
 
 
-@njit(cache=False)
 def _ref_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
-    """priority_flood_to as first written: a binary heap with swaps."""
+    """priority_flood_to written plainly: every outlet cell queued, ties
+    taken first come first (heapq on (height, push count, cell))."""
     n = elev.shape[0]
     filled = elev.copy()
     down = np.full(n, -1, np.int64)
-    closed = np.zeros(n, np.bool_)
-    hk = np.empty(n)
-    hv = np.empty(n, np.int64)
-    size = 0
-    for i in range(n):
-        if outlet[i]:
-            closed[i] = True
-            hk[size], hv[size] = filled[i], i
-            c = size
-            size += 1
-            while c > 0 and hk[(c - 1) >> 1] > hk[c]:
-                p = (c - 1) >> 1
-                hk[p], hk[c] = hk[c], hk[p]
-                hv[p], hv[c] = hv[c], hv[p]
-                c = p
-    order = np.empty(n, np.int64)
-    k = 0
-    while size > 0:
-        z, i = hk[0], hv[0]
-        size -= 1
-        hk[0], hv[0] = hk[size], hv[size]
-        c = 0
-        while True:
-            l, r, m = 2 * c + 1, 2 * c + 2, c
-            if l < size and hk[l] < hk[m]:
-                m = l
-            if r < size and hk[r] < hk[m]:
-                m = r
-            if m == c:
-                break
-            hk[m], hk[c] = hk[c], hk[m]
-            hv[m], hv[c] = hv[c], hv[m]
-            c = m
-        order[k] = i
-        k += 1
-        for e in range(nbr_off[i], nbr_off[i + 1]):
-            j = nbr_idx[e]
+    closed = outlet.copy()
+    q = [(filled[i], c, i) for c, i in enumerate(np.nonzero(outlet)[0])]
+    if not q:
+        i = int(np.argmin(elev))
+        closed[i] = True
+        q = [(filled[i], 0, i)]
+    heapq.heapify(q)
+    cnt = len(q)
+    order = []
+    while q:
+        z, _, i = heapq.heappop(q)
+        order.append(i)
+        for j in nbr_idx[nbr_off[i]:nbr_off[i + 1]]:
             if not closed[j]:
                 closed[j] = True
-                if filled[j] < z + eps:
-                    filled[j] = z + eps
+                filled[j] = max(filled[j], z + eps)
                 down[j] = i
-                hk[size], hv[size] = filled[j], j
-                c = size
-                size += 1
-                while c > 0 and hk[(c - 1) >> 1] > hk[c]:
-                    p = (c - 1) >> 1
-                    hk[p], hk[c] = hk[c], hk[p]
-                    hv[p], hv[c] = hv[c], hv[p]
-                    c = p
-    return filled, down, order[:k]
+                heapq.heappush(q, (filled[j], cnt, j))
+                cnt += 1
+    return filled, down, np.array(order, np.int64)
 
 
 def _tied_heights(g, rng, trial):
@@ -273,7 +242,8 @@ def _tied_heights(g, rng, trial):
 def test_fast_flood_kernels_match_the_textbook_ones():
     """The heap's pop (Floyd's), the radix sort of the land cells and the
     queue that leaves out the sea's inner cells give the same bits as the
-    textbook heap and numpy's stable sort, ties included."""
+    textbook flood (every outlet queued) and numpy's stable sort, ties
+    included."""
     for lvl in (3, 4):
         g = build_grid(lvl)
         rng = np.random.default_rng(lvl)
@@ -283,8 +253,12 @@ def test_fast_flood_kernels_match_the_textbook_ones():
             for eps in (0.01, 0.0, 1.0):
                 got = kernels.priority_flood_to(e, out, g.nbr_off, g.nbr_idx, eps)
                 want = _ref_flood_to(e, out, g.nbr_off, g.nbr_idx, eps)
-                for a, b in zip(got, want):
-                    assert np.array_equal(a, b)
+                assert np.array_equal(got[0], want[0]) and np.array_equal(got[1], want[1])
+                # the outlets that reach nothing lead the order; the rest as the full flood takes them
+                inner = out & (np.add.reduceat(~out[g.nbr_idx], g.nbr_off[:-1]) == 0)
+                ni = int(inner.sum())
+                assert np.array_equal(got[2][:ni], np.nonzero(inner)[0])
+                assert np.array_equal(got[2][ni:], want[2][~inner[want[2]]])
                 assert np.array_equal(kernels.flood_fill(e, out, g.nbr_off, g.nbr_idx, eps), want[0])
             sea = e <= 0
             land = np.nonzero(~sea)[0]

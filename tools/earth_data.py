@@ -68,8 +68,15 @@ Potential natural vegetation (tools/veg_check.py)
     ESRI ASCII grid (0.5 MB), SAGE / University of Wisconsin:
       https://sage-public-files.s3.amazonaws.com/global-potential-vegetation/glpotveg_5min.asc.gz
     Mapped as each cell's most common class (earth_potveg).
-    (MODIS NPP, tree cover and GFED burned area need large downloads or an
-    Earthdata login: the vegetation check uses published global numbers.)
+
+Vegetation observations (tools/veg_check.py; PW-204; citations at the loaders)
+    GFED4.1s burned area 2001-2015 (ORNL DAAC 1293; needs an Earthdata login,
+    so the owner's download data/earth/fire_emissions_v4_R1_1293.zip; NASA data,
+    no use restrictions): gfed_ba_raw, 0.25 deg mean annual burned fraction.
+    MODIS MOD17A3 NPP 2000-2015 mean (NTSG, University of Montana, no login;
+    NASA data): mod17_npp_raw, ~26 MB of range requests to 0.25 deg.
+    MODIS MOD44B C6.1 tree cover 2001-2015 (UHH-ICDC 0.5 deg, 16 MB zip, no
+    login; CC BY 4.0): mod44b_tree_raw.
 
 Mapping to the grid
 -------------------
@@ -966,6 +973,268 @@ def earth_potveg(grid) -> np.ndarray:
     out = np.where(votes.sum(1) > 0, np.argmax(votes, 1), 0).astype(np.uint8)
     np.savez_compressed(f, version=POTVEG_CACHE_VERSION, potveg=out)
     return out
+
+
+# GFED4.1s burned area (the vegetation check's fire numbers, PW-204)
+#   Randerson, van der Werf, Giglio, Collatz & Kasibhatla (2017), Global Fire
+#   Emissions Database, Version 4.1 (GFEDv4), ORNL DAAC, doi:10.3334/ORNLDAAC/1293.
+#   Burned area: Giglio, Randerson & van der Werf (2013), J. Geophys. Res.
+#   Biogeosci. 118, 317-328, doi:10.1002/jgrg.20042, with the small-fire boost of
+#   Randerson et al. (2012), J. Geophys. Res. 117, G04012; emissions: van der Werf
+#   et al. (2017), Earth Syst. Sci. Data 9, 697-720, doi:10.5194/essd-9-697-2017.
+#   Licence: NASA EOSDIS data (ORNL DAAC), no restrictions on use; cite the
+#   dataset DOI and the papers.
+#   Not fetched: ORNL DAAC needs an Earthdata login, so the owner downloads the
+#   dataset's zip (fire_emissions_v4_R1_1293.zip, 1.38 GB) into data/earth by hand.
+#   From it only the annual GFED4.1s_YYYY.hdf5 files (h5py, old-style groups; read
+#   with tools/h5_reader.py) of the MODIS years are extracted, one at a time, into
+#   data/earth/gfed/ and deleted once read: group burned_area/MM/burned_fraction
+#   (the share of each 0.25 deg cell burned in month MM, with small fires; 720 x
+#   1440, north to south). MCD64A1 covers 2001 onward (before: ATSR / VIRS);
+#   the zip's annual files end in 2015. Cached: the mean annual burned fraction
+#   over GFED_YEARS and each year's global total (raw_gfed_ba.npz, ~1 MB).
+GFED_ZIP = "fire_emissions_v4_R1_1293.zip"
+GFED_MEMBER = "fire_emissions_v4_R1_1293/data/GFED4.1s_{}.hdf5"
+GFED_YEARS = range(2001, 2016)
+GFED_CACHE_VERSION = 1
+
+
+def gfed_ba_raw() -> dict:
+    """GFED4.1s mean annual burned fraction: dict(ba (720, 1440) float32, the
+    share of each 0.25 deg pixel burned per year (can exceed 1 where land
+    burns more than once a year); lat (north to south), lon of the pixel
+    centres; years; total_mkm2 (len(years),), each year's global burned
+    area)."""
+    f = DATA / "raw_gfed_ba.npz"
+    if not f.exists():
+        import shutil
+        import zipfile
+        from tools.h5_reader import read_variable
+        from tools.tiff_reader import BytesSource
+        zf = DATA / GFED_ZIP
+        if not zf.exists():
+            raise SystemExit(f"GFED4.1s: download ORNL DAAC dataset 1293 (needs an Earthdata login), "
+                             f"https://doi.org/10.3334/ORNLDAAC/1293, as {zf}")
+        out_dir = DATA / "gfed"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        tot, lat, lon, totals = None, None, None, []
+        with zipfile.ZipFile(zf) as z:
+            for y in GFED_YEARS:
+                part = out_dir / f"GFED4.1s_{y}.hdf5"  # our own name, never the archive's path
+                with z.open(GFED_MEMBER.format(y)) as s, open(part, "wb") as d:
+                    shutil.copyfileobj(s, d, 1 << 22)
+                src = BytesSource(part.read_bytes())
+                yr = sum(read_variable(src, f"burned_area/{m:02d}/burned_fraction").astype(np.float64)
+                         for m in range(1, 13))
+                if lat is None:
+                    la, lo = read_variable(src, "lat"), read_variable(src, "lon")
+                    lat = la[:, 0] if la.ndim == 2 else la
+                    lon = lo[0] if lo.ndim == 2 else lo
+                del src
+                part.unlink()
+                if yr.shape != (720, 1440) or not (0 <= np.nanmin(yr) and np.nanmax(yr) < 13):
+                    raise RuntimeError(f"GFED4.1s {y}: burned_fraction is not the expected 0.25 deg monthly share")
+                yr = np.nan_to_num(yr)
+                tot = yr if tot is None else tot + yr
+                pix = (np.radians(0.25) * 6371.0) ** 2 * np.cos(np.radians(lat))[:, None]
+                totals.append(float((yr * pix).sum() / 1e6))
+        if not any(out_dir.iterdir()):
+            out_dir.rmdir()
+        np.savez_compressed(f, ba=(tot / len(GFED_YEARS)).astype(np.float32), lat=np.asarray(lat, float),
+                            lon=np.asarray(lon, float), years=np.array(list(GFED_YEARS)),
+                            total_mkm2=np.array(totals))
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_gfed(grid) -> np.ndarray:
+    """GFED4.1s mean annual burned fraction per cell (area-weighted mean over
+    the cell's 0.25 deg pixels, sea pixels count as unburned; 0 where none).
+    Cached as data/earth/gfed_L{level}.npz."""
+    f = DATA / f"gfed_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == GFED_CACHE_VERSION and len(z["ba"]) == grid.n:
+            return z["ba"]
+    r = gfed_ba_raw()
+    LA, LO = np.meshgrid(r["lat"], r["lon"], indexing="ij")
+    cell = grid.locate(_unit(LA.ravel(), LO.ravel()))
+    w = np.cos(np.radians(LA.ravel()))
+    num = np.bincount(cell, w * r["ba"].ravel(), grid.n)
+    den = np.bincount(cell, w, grid.n)
+    out = (num / np.maximum(den, 1e-12)).astype(np.float32)
+    np.savez_compressed(f, version=GFED_CACHE_VERSION, ba=out)
+    return out
+
+
+def _cell_mean(grid, r: dict, key: str) -> tuple[np.ndarray, np.ndarray]:
+    """Area-weighted (cos latitude) mean of a regular lat/lon raster's finite
+    pixels per cell, and the share of the cell's pixels that had data."""
+    LA, LO = np.meshgrid(r["lat"], r["lon"], indexing="ij")
+    v = np.asarray(r[key], np.float64).ravel()
+    cell = grid.locate(_unit(LA.ravel(), LO.ravel()))
+    w = np.cos(np.radians(LA.ravel()))
+    m = np.isfinite(v)
+    num = np.bincount(cell[m], w[m] * v[m], grid.n)
+    den = np.bincount(cell[m], w[m], grid.n)
+    allw = np.bincount(cell, w, grid.n)
+    mean = np.where(den > 0, num / np.maximum(den, 1e-12), np.nan).astype(np.float32)
+    return mean, (den / np.maximum(allw, 1e-12)).astype(np.float32)
+
+
+# MODIS MOD17A3 annual NPP (the vegetation check, PW-204)
+#   Zhao, Heinsch, Nemani & Running (2005), "Improvements of the MODIS
+#   terrestrial gross and net primary production global data set", Remote
+#   Sens. Environ. 95, 164-176, doi:10.1016/j.rse.2004.12.011; Zhao & Running
+#   (2010), Science 329, 940-943. Collection 5.5, NCEP-II meteorology, the
+#   University of Montana's NTSG mirror (no login). Licence: a NASA MODIS
+#   product, no restrictions on use (NASA Earth science data policy; the NTSG
+#   server states none); cite Zhao et al. (2005).
+#   MOD17A3_Science_NPP_mean_00_15.tif: the 2000-2015 mean, 43200 x 16800
+#   uint16 (0.1 g C/m2/yr; > 65500 water, barren, ice, urban or fill), 30 arcsec,
+#   80 N to 60 S, LZW, one row per strip (388 MB). Every NPP_STEP-th row is read
+#   by HTTP range requests (~26 MB) and averaged 30 pixels across, then two rows
+#   down, to 0.25 deg (a row subsample: fine for 1 deg cells), as raw_mod17_npp.npz.
+#   (NASA NEO's 0.1-1 deg MOD17 CSVs are gone, neo.gsfc.nasa.gov now redirects
+#   to science.nasa.gov; ILAMB's npp is CARDAMOM, a model-data fusion.)
+MOD17_URL = ("http://files.ntsg.umt.edu/data/NTSG_Products/MOD17/GeoTIFF/MOD17A3/GeoTIFF_30arcsec/"
+             "MOD17A3_Science_NPP_mean_00_15.tif")
+MOD17_TOP, MOD17_STEP = 80.0, 15
+MOD17_CACHE_VERSION = 1
+
+
+def mod17_npp_raw() -> dict:
+    """MOD17A3 mean annual NPP 2000-2015 on a 0.25 deg grid: dict(npp (560,
+    1440) float32 g C/m2/yr over the land pixels, barren and ice counted as 0,
+    NaN where none (water, fill, urban, permanent wetland); lat (north to
+    south), lon of the pixel centres; barren (560, 1440) float32, the share of
+    those land pixels MOD17 marks non-vegetated)."""
+    f = DATA / "raw_mod17_npp.npz"
+    if not f.exists():
+        from concurrent.futures import ThreadPoolExecutor
+        from tools.tiff_reader import HttpRange, read_ifds
+        DATA.mkdir(parents=True, exist_ok=True)
+        src = HttpRange(MOD17_URL)
+        ifd = read_ifds(src)[0]
+        W, H = ifd["width"], ifd["length"]
+        if (W, H, ifd["bits"], ifd.get("compression"), ifd.get("rows_per_strip")) != (43200, 16800, 16, 5, 1):
+            raise RuntimeError("MOD17 NPP GeoTIFF is not the expected 30 arcsec LZW strip raster; its layout changed")
+        if ifd.get("predictor", 1) != 1:
+            raise RuntimeError("MOD17 NPP GeoTIFF uses a predictor; unsupported")
+        rows = np.arange(MOD17_STEP // 2, H, MOD17_STEP)
+        offs, cnts = ifd["strip_offsets"], ifd["strip_counts"]
+
+        def row(i):
+            raw = np.frombuffer(src.read(int(offs[i]), int(cnts[i])), np.uint8)
+            out = np.zeros(W * 2, np.uint8)
+            if _lzw(raw, out) != W * 2:
+                raise RuntimeError(f"MOD17 row {i}: LZW decoded short")
+            return out.view("<u2")
+
+        with ThreadPoolExecutor(4) as ex:  # network-bound
+            val = np.stack(list(ex.map(row, rows)))
+        # 65534 water, 65535 fill, 65533 barren / ice, 65532 salt flats, 65531 permanent wetland,
+        # 65530 urban, 65529 unclassified (MOD17 C5 codes)
+        code = val > 65500
+        bare = (val == 65533) | (val == 65532)
+        npp = np.where(code, np.nan, val * 0.1)
+        npp = np.where(bare, 0.0, npp)  # non-vegetated land: no NPP
+        land = ~code | bare
+        k = 30
+        bx = lambda a: a.reshape(a.shape[0], W // k, k)  # noqa: E731
+        s = np.nansum(bx(npp), 2)
+        n = bx(np.isfinite(npp)).sum(2)
+        nb = bx(bare).sum(2)
+        nl = bx(land).sum(2)
+        rr = len(rows) // 2
+        s, n, nb, nl = (x[:2 * rr].reshape(rr, 2, -1).sum(1) for x in (s, n, nb, nl))
+        out = np.where(n > 0, s / np.maximum(n, 1), np.nan).astype(np.float32)
+        barren = np.where(nl > 0, nb / np.maximum(nl, 1), np.nan).astype(np.float32)
+        lat = MOD17_TOP - 0.25 * (0.5 + np.arange(rr))
+        lon = -180.0 + 0.25 * (0.5 + np.arange(W // k))
+        np.savez_compressed(f, npp=out, barren=barren, lat=lat, lon=lon, fetched_mb=src.fetched / 1e6)
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_mod17_npp(grid) -> dict:
+    """MOD17A3 NPP per cell: dict(npp (n,) float32 g C/m2/yr, NaN where no
+    data (sea, Antarctica, north of 80 N); cover (n,) the share of the cell's
+    0.25 deg pixels with data). Cached as data/earth/mod17_npp_L{level}.npz."""
+    f = DATA / f"mod17_npp_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == MOD17_CACHE_VERSION and len(z["npp"]) == grid.n:
+            return {"npp": z["npp"], "cover": z["cover"]}
+    npp, cover = _cell_mean(grid, mod17_npp_raw(), "npp")
+    np.savez_compressed(f, version=MOD17_CACHE_VERSION, npp=npp, cover=cover)
+    return {"npp": npp, "cover": cover}
+
+
+# MODIS MOD44B tree cover (the vegetation check, PW-204)
+#   Kern, S. (2022), "MODIS Collection 6.1 global yearly Forest and Vegetation
+#   Cover Fraction", ZFDM Repository, Universitaet Hamburg (UHH-ICDC),
+#   doi:10.25592/uhhfdm.11196, from DiMiceli, Sohlberg & Townsend (2022),
+#   MODIS/Terra Vegetation Continuous Fields Yearly L3 Global 250m SIN Grid
+#   V061, NASA LP DAAC, doi:10.5067/MODIS/MOD44B.061. Licence: CC BY 4.0 (cite
+#   both). One 16.4 MB zip (no login) of 22 classic netCDF files, one a year
+#   2000-2021, 0.5 deg: forestcoverfraction (int8 %, 127 = no data), the cell
+#   mean of MOD44B's percent tree cover (canopy of trees > 5 m). Read with
+#   tools/nc3_reader.py; the mean over MOD44B_YEARS cached as raw_mod44b_tree.npz.
+#   North of 62.5 N every year of this gridding has 0% tree and 100% non-vegetated
+#   cover (northern Scandinavia, most of Siberia's and Canada's taiga): an artefact
+#   of the 0.5 deg product, not MOD44B, so it is no data there (MOD44B_NORTH).
+MOD44B_URL = ("https://www.fdr.uni-hamburg.de/record/11196/files/MODIS-TERRA_C6.1__MOD44B__ForestCoverFraction"
+              "__LPDAAC__GLOBAL__0.5degree__UHAM-ICDC__2000-2021__fv0.01.nc.zip?download=1")
+MOD44B_YEARS = range(2001, 2016)  # as GFED's
+MOD44B_NORTH = 62.5
+MOD44B_CACHE_VERSION = 2
+
+
+def mod44b_tree_raw() -> dict:
+    """MOD44B tree cover, 0.5 deg: dict(tree (360, 720) float32 0..1, NaN no
+    data; lat, lon of the pixel centres (as in the file); years)."""
+    f = DATA / "raw_mod44b_tree.npz"
+    if not f.exists():
+        import io
+        import zipfile
+        from tools.nc3_reader import header, read_variable
+        DATA.mkdir(parents=True, exist_ok=True)
+        z = zipfile.ZipFile(io.BytesIO(_get(MOD44B_URL)))
+        names = {int(n.split("__")[-2][:4]): n for n in z.namelist() if n.endswith(".nc")}
+        acc, lat, lon = [], None, None
+        for y in MOD44B_YEARS:
+            d = z.read(names[y])
+            h = header(d)
+            v = read_variable(d, "forestcoverfraction", h)[0].astype(np.float32)
+            if v.shape != (360, 720) or h["vars"]["forestcoverfraction"]["attrs"].get("units") != "percent":
+                raise RuntimeError("MOD44B 0.5 deg file is not the expected percent raster; its layout changed")
+            if lat is None:
+                lat, lon = read_variable(d, "lat", h).astype(float), read_variable(d, "lon", h).astype(float)
+            v = np.where((v < 0) | (v > 100), np.nan, v / 100)
+            v[lat > MOD44B_NORTH] = np.nan
+            acc.append(v)
+        st = np.stack(acc)
+        n = np.isfinite(st).sum(0)
+        tree = np.where(n > 0, np.nansum(st, 0) / np.maximum(n, 1), np.nan)  # NaN: sea, no data any year
+        np.savez_compressed(f, tree=tree.astype(np.float32), lat=lat, lon=lon,
+                            years=np.array(list(MOD44B_YEARS)))
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_tree_cover(grid) -> dict:
+    """MOD44B tree cover per cell: dict(tree (n,) float32 0..1, NaN where no
+    data; cover (n,) the share of the cell's 0.5 deg pixels with data).
+    Cached as data/earth/mod44b_tree_L{level}.npz."""
+    f = DATA / f"mod44b_tree_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == MOD44B_CACHE_VERSION and len(z["tree"]) == grid.n:
+            return {"tree": z["tree"], "cover": z["cover"]}
+    tree, cover = _cell_mean(grid, mod44b_tree_raw(), "tree")
+    np.savez_compressed(f, version=MOD44B_CACHE_VERSION, tree=tree, cover=cover)
+    return {"tree": tree, "cover": cover}
 
 
 # --------------------------------------------------------------------------

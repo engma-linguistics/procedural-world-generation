@@ -244,32 +244,104 @@ def priority_flood(elev, nbr_off, nbr_idx, eps):
     return priority_flood_to(elev, elev <= 0, nbr_off, nbr_idx, eps)
 
 
+CELL_BITS = 26  # (a cell index fits in the low bits of a flood's queue tag: up to 67M cells, level 11)
+
+
+@njit(cache=True)
+def _fheap_push(hk, ht, size, key, tag):
+    # _heap_push for priority_flood_to: entries (height, tag), tag = push
+    # count << CELL_BITS | cell, so equal heights come off first pushed
+    # first; a strict order, so the pops don't depend on what else is queued
+    i = size
+    while i > 0:
+        p = (i - 1) >> 1
+        if hk[p] < key or (hk[p] == key and ht[p] < tag):
+            break
+        hk[i] = hk[p]
+        ht[i] = ht[p]
+        i = p
+    hk[i] = key
+    ht[i] = tag
+    return size + 1
+
+
+@njit(cache=True)
+def _fheap_pop(hk, ht, size):
+    # _heap_pop (Floyd's) on (height, tag)
+    key, tag = hk[0], ht[0]
+    size -= 1
+    if size == 0:
+        return key, tag, size
+    k, t = hk[size], ht[size]
+    i = 0
+    l = 1
+    while l < size:
+        c = l
+        r = l + 1
+        if r < size and (hk[r] < hk[l] or (hk[r] == hk[l] and ht[r] < ht[l])):
+            c = r
+        hk[i] = hk[c]
+        ht[i] = ht[c]
+        i = c
+        l = 2 * i + 1
+    while i > 0:
+        p = (i - 1) >> 1
+        if hk[p] < k or (hk[p] == k and ht[p] < t):
+            break
+        hk[i] = hk[p]
+        ht[i] = ht[p]
+        i = p
+    hk[i] = k
+    ht[i] = t
+    return key, tag, size
+
+
 @njit(cache=True)
 def priority_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
     """Priority-flood toward the cells in `outlet` (the sea, plus any
     lakes that end rivers): every other cell drains to one of them, pits
-    filled. Returns (filled, downstream, order); order runs outlet -> headwater."""
+    filled. Returns (filled, downstream, order); order runs outlet -> headwater.
+
+    Cells come off the queue lowest first, so a coastal cell drains to its
+    deepest sea neighbour (the steepest way down), and cells of equal height
+    (a lake's surface, a filled pit) first come first (Barnes et al. 2014's
+    plain queue for flats): across a flat the water takes the fewest steps
+    to where it leaves, ties by cell index. That order is strict, so the
+    outlet cells with no other kind of neighbour (the open sea, a closed
+    lake's middle), which reach nothing, needn't be queued (PW-344: ~3.6x
+    faster at L7): they lead `order`, in index order, with no downstream."""
     n = elev.shape[0]
     filled = elev.copy()
     down = np.full(n, -1, np.int64)
-    closed = np.zeros(n, np.bool_)
+    closed = outlet.copy()
     hk = np.empty(n)
-    hv = np.empty(n, np.int64)
+    ht = np.empty(n, np.int64)
+    order = np.empty(n, np.int64)
+    mask = (1 << CELL_BITS) - 1
     size = 0
-    any_ocean = False
+    cnt = 0
+    k = 0
     for i in range(n):
         if outlet[i]:
-            closed[i] = True
-            size = _heap_push(hk, hv, size, filled[i], i)
-            any_ocean = True
-    if not any_ocean:
+            edge = False
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                if not outlet[nbr_idx[e]]:
+                    edge = True
+                    break
+            if edge:
+                size = _fheap_push(hk, ht, size, filled[i], (cnt << CELL_BITS) | i)
+                cnt += 1
+            else:
+                order[k] = i
+                k += 1
+    if cnt == 0 and k == 0:
         i = np.argmin(elev)
         closed[i] = True
-        size = _heap_push(hk, hv, size, filled[i], i)
-    order = np.empty(n, np.int64)
-    k = 0
+        size = _fheap_push(hk, ht, size, filled[i], (cnt << CELL_BITS) | i)
+        cnt += 1
     while size > 0:
-        z, i, size = _heap_pop(hk, hv, size)
+        z, tag, size = _fheap_pop(hk, ht, size)
+        i = tag & mask
         order[k] = i
         k += 1
         for e in range(nbr_off[i], nbr_off[i + 1]):
@@ -279,7 +351,8 @@ def priority_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
                 if filled[j] < z + eps:
                     filled[j] = z + eps
                 down[j] = i
-                size = _heap_push(hk, hv, size, filled[j], j)
+                size = _fheap_push(hk, ht, size, filled[j], (cnt << CELL_BITS) | j)
+                cnt += 1
     return filled, down, order[:k]
 
 

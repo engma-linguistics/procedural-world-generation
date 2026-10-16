@@ -155,3 +155,73 @@ def test_old_layout(data):
     for k in data:
         got = read_variable(src, k)
         assert got.dtype == data[k].dtype and np.array_equal(got, data[k])
+
+
+def _ohdr_v1(msgs):
+    """A version 1 object header: 16-byte prefix; messages type u16, size u16, flags, 3 reserved,
+    bodies padded to 8 bytes."""
+    body = b""
+    for t, b in msgs:
+        b += b"\0" * (-len(b) % 8)
+        body += struct.pack("<HHB3x", t, len(b), 0) + b
+    return struct.pack("<BBHII", 1, 0, len(msgs), 1, len(body)) + b"\0" * 4 + body
+
+
+def build_v1(tree):
+    """Nested {name: ndarray | dict} -> bytes of a superblock-v0 file with version 1 object
+    headers and symbol-table groups (as h5py writes GFED4.1s), contiguous arrays."""
+    buf = bytearray(96)
+
+    def put(b):
+        buf.extend(b)
+        return len(buf) - len(b)
+
+    def dataset(a):
+        addr = put(a.tobytes())
+        head = {"f": b"\x11\x20", "u": b"\x10\x00", "i": b"\x10\x08"}[a.dtype.kind]
+        return put(_ohdr_v1([
+            (1, bytes([1, a.ndim, 0, 0]) + b"\0" * 4 + struct.pack("<" + "Q" * a.ndim, *a.shape)),
+            (3, head + b"\0\0" + struct.pack("<I", a.dtype.itemsize) + b"\0" * 12),
+            (8, bytes([3, 1]) + struct.pack("<QQ", addr, a.nbytes))]))
+
+    def group(members):
+        addrs = {n: group(v) if isinstance(v, dict) else dataset(v) for n, v in members.items()}
+        names, offs = b"\0" * 8, []  # heap offset 0: the empty name
+        for n in addrs:
+            offs.append(len(names))
+            names += n.encode() + b"\0"
+            names += b"\0" * (-len(names) % 8)
+        heap = put(b"HEAP" + bytes([0, 0, 0, 0]) + struct.pack("<QQQ", len(names), 2**64 - 1, len(buf) + 32))
+        put(names)
+        ents = [struct.pack("<QQII16x", o, a, 0, 0) for o, a in zip(offs, addrs.values())]
+        # two symbol nodes under a level-1 B-tree node, to exercise the walk
+        h = max(1, len(ents) // 2)
+        snods = [put(b"SNOD" + bytes([1, 0]) + struct.pack("<H", len(p)) + b"".join(p))
+                 for p in (ents[:h], ents[h:]) if p]
+        leaf = put(b"TREE" + bytes([0, 0]) + struct.pack("<H", len(snods)) + b"\xff" * 16
+                   + b"".join(struct.pack("<QQ", 0, s) for s in snods) + struct.pack("<Q", 0))
+        top = put(b"TREE" + bytes([0, 1]) + struct.pack("<H", 1) + b"\xff" * 16 + struct.pack("<QQQ", 0, leaf, 0))
+        return put(_ohdr_v1([(0x11, struct.pack("<QQ", top, heap))]))
+
+    root = group(tree)
+    sb = (b"\x89HDF\r\n\x1a\n" + bytes([0, 0, 0, 0, 0, 8, 8, 0]) + struct.pack("<HHI", 4, 16, 0)
+          + struct.pack("<QQQQ", 0, 2**64 - 1, len(buf), 2**64 - 1) + struct.pack("<QQII", 0, root, 1, 0)
+          + b"\0" * 16)
+    buf[:len(sb)] = sb
+    return bytes(buf)
+
+
+def test_symbol_table_groups():
+    """Superblock v0, version 1 object headers, nested symbol-table groups (GFED4.1s's layout)."""
+    rng = np.random.default_rng(1)
+    jan, feb = rng.random((3, 4)).astype("<f4"), rng.random((3, 4)).astype("<f4")
+    lat = np.arange(3, dtype="<f8")
+    src = BytesSource(build_v1({"burned_area": {"01": {"burned_fraction": jan}, "02": {"burned_fraction": feb}},
+                                "lat": lat}))
+    assert variables(src) == ["burned_area", "lat"]
+    assert variables(src, "burned_area") == ["01", "02"]
+    assert np.array_equal(read_variable(src, "burned_area/01/burned_fraction"), jan)
+    assert np.array_equal(read_variable(src, "burned_area/02/burned_fraction"), feb)
+    assert np.array_equal(read_variable(src, "lat"), lat)
+    with pytest.raises(KeyError):
+        read_variable(src, "burned_area/03/burned_fraction")
