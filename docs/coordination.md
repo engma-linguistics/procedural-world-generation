@@ -160,3 +160,5 @@ Baseline after the model batches: docs/review/night-2026-10-16/ (giant-lake fram
    - Speed: ~30-40 min per L7 planet is fine; no optimisation work unless it nears 1 h (talk to the owner first).
    - Reliability: the full health sweep stays inside every envelope with a little wiggle room for known outliers. A deep ice age is fine if the planet recovers.
 5. **Calibration later:** rain (PW-015/016/352), giant lakes, Earth scores.
+
+**Worktree base (found 2026-10-16 night):** agent worktrees are created from `origin/main`, which is stale because we never push (1f0fae4). Every agent prompt must start with: "First run `git merge --ff-only main` (local main, from /home/daniel/personal/repos/procedural-world-generation) in your worktree and confirm `git log -1` matches main before doing anything else."
