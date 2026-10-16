@@ -599,8 +599,13 @@ def test_dunes_keep_the_mean_level(dune_trio):
     height is taken from under it: interdune flats a little lower)."""
     *dunes, plain = dune_trio
     for z in dunes:
-        a, b = z["stats"]["mean_elev_m"], plain["stats"]["mean_elev_m"]
-        assert abs(a - b) < 15, (a, b)
+        # (against the land under them: the same zoom before its overlays. A
+        # plain world's zoom isn't quite the same land: the dune class smooths
+        # and remaps the sand sheet, and in a region smaller than a coarse
+        # cell the means are kept over the cell, halo included, PW-321)
+        a, b = z["stats"]["mean_elev_m"], float(np.mean(z["debug"]["stages"]["landform"]))
+        assert abs(a - b) < 5, (a, b)
+        assert abs(a - plain["stats"]["mean_elev_m"]) < 30
 
 
 @pytest.fixture(scope="module")

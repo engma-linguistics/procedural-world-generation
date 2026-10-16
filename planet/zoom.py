@@ -62,6 +62,10 @@ Pipeline
    Tributaries join such a reach at the staircase's level. Near the
    zoom's own coast, river floors rise at most COAST_FLOOR_GRAD m/km.
    Rivers entering at the region's edge can't drain straight back out.
+   (Steps 2-6 run on the region plus a halo of HALO_CELLS coarse cells
+   round it, cropped off before the climate: the landscape goes on past
+   the region's edge, whose pixels are outlets held at the target, so the
+   drainage near the edge isn't cut short there, PW-321.)
 6. Landscape pass on the raster: a steady-state stream-power landscape.
    Priority flood + steepest-descent D8 routing gives a drainage network
    and discharge Q (the world's runoff + inflow: the rivers, falls and
@@ -282,8 +286,9 @@ def _catmull_rom(p0, p1, p2, p3, n):
 # downstream that is >= WF_MIN_DROP m and steeper than WF_MIN_GRAD m/km on average.
 WF_MIN_Q, WF_MIN_DROP, WF_MIN_GRAD, WF_STEPS = 20.0, 30.0, 15.0, 3  # (Q: routed runoff, PW-180)
 WF_MAX_KM = 5.0  # ... and over at most this far (at least one pixel): on coarse pixels a steep reach isn't a fall
-WF_EDGE_PX = 8  # ... and not next to the region's edge (held at the target surface: steps into it aren't falls)
+WF_EDGE_PX = 8  # ... and not next to the built area's edge (held at the target surface; it lies in the halo, cropped off)
 WF_CONTRAST, WF_CONTEXT_KM = 3.0, 6.0  # ... and WF_CONTRAST x steeper than the river within WF_CONTEXT_KM (see waterfalls())
+HALO_CELLS = 0.5  # coarse cells of terrain built round the region and cropped off (at least WF_EDGE_PX, at most 1/4 of it)
 
 
 def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int, res: float,
@@ -976,8 +981,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     g, L = world["grid"], world["layers"]
     sp = g.spacing * R_KM  # coarse cell spacing, km
     cell_area = 4 * np.pi * R_KM**2 / g.n
-    nx = ny = max(16, int(round(size_km / res_km)))
-    res = size_km / nx
+    n_in = max(16, int(round(size_km / res_km)))
+    res = size_km / n_in
+    # The terrain is built with a halo round the region, cropped off before
+    # the climate (PW-321): the landscape goes on past the region's edge, so
+    # its drainage isn't cut there. (Without it the edge held at the target
+    # surface, streams near it were short, steep catchments that start or end
+    # at the edge, and the relief within ~40 km of it was ~2x the inside's.)
+    halo = min(max(WF_EDGE_PX, int(np.ceil(HALO_CELLS * sp / res))), n_in // 4)
+    size_in, size_km = size_km, (n_in + 2 * halo) * res
+    nx = ny = n_in + 2 * halo
     npx = nx * ny
     fr = Frame(lat, lon)
     xs = (np.arange(nx) + 0.5 - nx / 2) * res
@@ -1860,11 +1873,17 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # discharge is the cell's whole, and near the head of a reach, or of a
         # river rising in the region, the fine river carries much less)
         rv_c = (kpix >= 0) & (rec >= 0) & (Q >= FALLS_MIN_SHARE * q_course) & active
+        inner3 = np.zeros((ny, nx), bool)
+        inner3[3:-3, 3:-3] = True
+        inner3 = inner3.ravel()
         for k_, kp in enumerate(kps):
             # (on its pinned course if the water is there: another river in
             # the corridor, e.g. a parallel reach, mustn't be taken for it)
+            # (and not within 3 px of the region's edge, where rivers come in:
+            # a course running along the edge may drain off it there, out of
+            # the region, and the reach would be followed for a pixel or two)
             cp_ = kp["course_px"]
-            r_k = cp_[rv_c[cp_] & (kpix[cp_] == k_)]
+            r_k = cp_[rv_c[cp_] & (kpix[cp_] == k_) & inner3[cp_]]
             if not len(r_k):
                 r_k = np.flatnonzero(rv & (kpix == k_))
                 if not len(r_k):
@@ -2446,6 +2465,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         f.pop("_foot", None)
         k = f["px"][0] * nx + f["px"][1]
         f["lat"], f["lon"] = (round(v, 3) for v in _latlon(fr.to_sphere(px[[k]], py[[k]])[0]))
+    falls = [f for f in falls if halo <= min(f["px"]) and max(f["px"]) < halo + n_in]  # (not in the halo)
     # the panel's summary: the biggest by power, ~15 km apart, each with its
     # reach's other falls (cascades), which the spacing leaves off it
     top_falls, sep = [], max(6, int(round(15 / res)))
@@ -2493,6 +2513,59 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                          "outflow_grad_m_km": round(lk["grad"], 1) if outs[j] >= 0 else None,
                          "outflow_m3s": round(float(discharge[outs[j]]), 1) if outs[j] >= 0 else 0.0}
                         for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])
+
+    # --- crop the halo off -------------------------------------------------
+    # (what is counted on the drainage network is counted before: the deltas' mouths)
+    for d in deltas:
+        d["mouths"] = _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits)
+    keep_px = (np.arange(halo, halo + n_in)[:, None] * nx + np.arange(halo, halo + n_in)[None, :]).ravel()
+    new_px = np.full(npx, -1, np.int64)
+    new_px[keep_px] = np.arange(len(keep_px))
+
+    def crop(a):
+        return a[keep_px] if isinstance(a, np.ndarray) and a.shape[:1] == (npx,) else a
+
+    def crop_idx(a):
+        """Pixel indices on the cropped grid (-1: in the halo, or none)."""
+        a = np.asarray(a, np.int64)
+        return np.where(a >= 0, new_px[np.maximum(a, 0)], -1)
+
+    def shift(rc):
+        return [int(rc[0]) - halo, int(rc[1]) - halo]
+
+    def inside(rc):
+        return 0 <= rc[0] < n_in and 0 <= rc[1] < n_in
+
+    for f in all_falls + top_falls:
+        f["px"] = shift(f["px"])
+        if "cascades" in f:
+            f["cascades"] = [{**c, "px": shift(c["px"])} for c in f["cascades"] if inside(shift(c["px"]))]
+    for kp in kps:
+        if "course_px" in kp:
+            ci = crop_idx(kp["course_px"])
+            kp["course_px"], kp["course_s"] = ci[ci >= 0], kp["course_s"][ci >= 0]
+        for st in kp["steps"]:
+            if "lip_px" in st:
+                st["lip_px"] = shift(st["lip_px"])
+    for d in lake_info:
+        d["outlet"] = shift(d["outlet"]) if d["outlet"] is not None and inside(shift(d["outlet"])) else None
+    lakes_out = [{"open": lk["exit"] is not None, "outlet": int(crop_idx([outs[j]])[0]),
+                  "n_px": int((new_px[lk["px"]] >= 0).sum()), "level": lk["level"], "grad": lk["grad"],
+                  "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
+                 for j, lk in enumerate(lakes) if (new_px[lk["px"]] >= 0).any()]
+    rec_out = np.where(rec[keep_px] >= 0, crop_idx(rec[keep_px]), -1)
+    pin_src, ov_src = (a[a >= 0] for a in (crop_idx(pin_src), crop_idx(ov_src)))
+    stages = {k: crop(v) for k, v in stages.items()}
+    (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, px, py, clim_f, w_cp,
+     lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift) = (
+        crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, px, py,
+                          clim_f, w_cp, lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own,
+                          own_s, barrier, rapids_lift))
+    nx = ny = n_in
+    npx = nx * ny
+    size_km = size_in
+    if vf is not None:
+        vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_km / 2]
 
     # --- climate on the fine terrain -------------------------------------
     # The bare ground's climate (zoom_vegetation.fine_fields: under the
@@ -2586,7 +2659,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
                     "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
-                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits),
+                    "mouths": d["mouths"],
                     "form": d["form"], "marine_layers": d["marine"],
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
@@ -2645,10 +2718,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
-            "stats": stats, "coarse": coarse, "rec": rec, "kps": kps, "satellite": sat,
-            "lakes": [{"open": lk["exit"] is not None, "outlet": int(outs[j]), "n_px": int(len(lk["px"])),
-                       "level": lk["level"], "grad": lk["grad"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
-                      for j, lk in enumerate(lakes)],
+            "stats": stats, "coarse": coarse, "rec": rec_out, "kps": kps, "satellite": sat,
+            "lakes": lakes_out,
             "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift, "stages": stages},
             "seconds": round(time.time() - t0, 1),
             "params": {"iterations": iterations, "river_min_flow": river_min_flow, "coarse_spacing_km": round(sp, 1)}}
