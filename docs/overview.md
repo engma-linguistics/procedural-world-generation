@@ -643,13 +643,13 @@ A sea cell's shares are taken reef first, then kelp, then seagrass. **Vegetation
 
 | | model | observed |
 |---|---|---|
-| coral reef | 123,000 km², to 29.8° N / 30.8° S | ~250,000–285,000 km² (Spalding et al. 2001), to ~32° |
+| coral reef | 130,000 km², to 29.8° N / 30.8° S | ~250,000–285,000 km² (Spalding et al. 2001), to ~32° |
 | mangrove | 60,000 km², to 31.7° N / 24.0° S | ~138,000 km² (Giri et al. 2011), to ~32° N / 39° S |
 | salt marsh | 44,000 km², to 70.3° N / 40.8° S | ~55,000 km² mapped, likely 2–4× more (Mcowen et al. 2017) |
 | kelp | 600,000 km² | ~1.5–2 million km² of suitable rocky coast (Jayathilake & Costello 2020) |
-| seagrass | 310,000 km² | 160,000 km² mapped, ~270,000–600,000 likely (McKenzie et al. 2020); habitat models ~1.6 million |
+| seagrass | 320,000 km² | 160,000 km² mapped, ~270,000–600,000 likely (McKenzie et al. 2020); habitat models ~1.6 million |
 
-40 of 55 named places as observed (present = ≥ 1% of a cell within 250 km; 39 before PW-323): mangroves 13/14 (Sundarbans, Niger delta, Pará, Mekong, Gulf of Papua…; none in the Mediterranean, Chile, Namibia, the North Sea), seagrass 6/8 (the Wadden Sea's flats now muddy: 0.5%), salt marsh 6/9, reefs 8/13, kelp 7/11. Most misses are the model's climate and ocean, not these rules: no Benguela upwelling at the Cape (sea 23 °C in summer: no kelp), a brackish Baltic that is ocean-salty in the model (kelp there), and oceanic atolls (Maldives) that are sub-cell on ETOPO's cells, with no volcano table for Earth. Reefs are now scarce on Earth because its terrain-only rock map makes every shelf shale, so warm carbonate shelves come out muddy (GBR, Arafura, Indonesia; with carbonate on the warm shelves by the run's own reef rule, 404,000 km²; inbox draft); mangroves scarce (the cells' intertidal share is crude, and the model's coasts are dry in West Africa and Bengal). No Earth cell reaches 30% mangrove, so the named type appears in zooms, not on Earth's globe.
+39 of 55 named places as observed (present = ≥ 1% of a cell within 250 km): mangroves 13/14 (Sundarbans, Niger delta, Pará, Mekong, Gulf of Papua…; none in the Mediterranean, Chile, Namibia, the North Sea), seagrass 6/8 (the Wadden Sea's flats now muddy: 0.5%), salt marsh 6/9, reefs 7/13 (a small false reef off the Ganges mouth), kelp 7/11. Most misses are the model's climate and ocean, not these rules: no Benguela upwelling at the Cape (sea 23 °C in summer: no kelp), a brackish Baltic that is ocean-salty in the model (kelp there), and oceanic atolls (Maldives) that are sub-cell on ETOPO's cells, with no volcano table for Earth. Reefs are now scarce on Earth because its terrain-only rock map makes every shelf shale, so warm carbonate shelves come out muddy (GBR, Arafura, Indonesia; with carbonate on the warm shelves by the run's own reef rule, 404,000 km²; inbox draft); mangroves scarce (the cells' intertidal share is crude, and the model's coasts are dry in West Africa and Bengal). No Earth cell reaches 30% mangrove, so the named type appears in zooms, not on Earth's globe.
 
 ![Coastal life on Earth](review/coastal-life/earth_L6_coastal_life.png)
 *Earth (L6, the model's climate): reefs (pink), mangroves (teal), salt marsh (yellow), seagrass (green), kelp (brown), each cell by its share.*

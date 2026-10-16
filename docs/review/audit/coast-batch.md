@@ -121,7 +121,9 @@ Coastal sea cells above 10 mg/L: 1.9% → 12.6% on Earth; sea median 0.5 mg/L ei
 | seagrass | 160,000–600,000 | 1,024,176 | 1,017,340 | **309,535** |
 | places as observed (of 55) | | 39 | 39 | **40** |
 
-Per habitat, final (before): reef 8/13 (7; the Ganges mouth loses its false reefs), mangrove 13/14 (12; Guinea-Bissau now present), salt marsh 6/9 (6; Essex now present, the Sundarbans now a false positive), kelp 7/11 (7), seagrass 6/8 (7). The Wadden Sea's seagrass falls 22.5% → 0.5%; observed is a few % of Zostera beds, and the site test's 1% threshold now misses it. Shark Bay 20.7 → 4.8%, Florida Bay 23.9 → 2.3%, Torres 53.5 → 3.3%, Persian Gulf 41.7 → 7.6% (all still present).
+After merging main (PW-236's HydroSHEDS rivers in the Earth world): reef 129,564, mangrove 59,683, salt marsh 43,508, kelp 596,258, seagrass 324,378 km²; places 39 of 55, because the new Ganges mouth has a false reef again (1.8%).
+
+Per habitat, final before the merge (and main before the batch): reef 8/13 (7; the Ganges mouth loses its false reefs), mangrove 13/14 (12; Guinea-Bissau now present), salt marsh 6/9 (6; Essex now present, the Sundarbans now a false positive), kelp 7/11 (7), seagrass 6/8 (7). The Wadden Sea's seagrass falls 22.5% → 0.5%; observed is a few % of Zostera beds, and the site test's 1% threshold now misses it. Shark Bay 20.7 → 4.8%, Florida Bay 23.9 → 2.3%, Torres 53.5 → 3.3%, Persian Gulf 41.7 → 7.6% (all still present).
 
 **The reef drop is mostly Earth's rock map.** `tools/earth_world.earth_rock` makes every shelf 2 km of shale, so every warm shelf has a muddy floor. GBR 53,000 → 7,000 km² (its reef cells at a median 18 mg/L), Arafura 66,000 → 8,000, Indonesia and the Philippines 179,000 → 55,000. Real warm shelves away from rivers are carbonate sand. Diagnostic (not committed): with limestone on Earth's warm shelves by the run's own carbonate rule (annual SST ≥ reef_temp, river turbidity < 3 mg/L, above −1500 m), reef is 404,000 km² and seagrass 744,000. Draft `draft-earth-rock-map-carbonate-shelves.md`. Kelp's drop (−30%) is cold muddy shelves losing light and rockiness; the 11 kelp sites are unchanged.
 
