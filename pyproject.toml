@@ -14,8 +14,11 @@ package = false
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-xdist>=3.8.0",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "tests"]
 testpaths = ["tests"]
+# parallel by default (pytest-xdist); loadscope keeps a module's shared fixtures on one worker. -n0 for a serial run
+addopts = "-n 16 --dist loadscope"
