@@ -152,10 +152,14 @@ def land_view(elev, ice, floor=BED_FLOOR):
 #   evap  km of evaporites (salt, gypsum), coal  km of coal,
 #   sand  km of sandstone, tuff  km of volcanic ash and ignimbrite from
 #         arcs on continents; the rest of the cover is mud (shale).
+#   valley  m (not km, and not crust): how far below the cell's mean height
+#         the valley of a river that reached base level is cut, carried with
+#         the rock and slowly filled once its river stops (hydrology.lakes'
+#         valley, PW-300)
 # Columns MIX line up with surface.MIX_ROCKS. (The order the cover is
 # layered in is in tectonics.record.)
-EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand", "tuff")
-LIFT, CARB, LAVA, EVAP, COAL, SAND, TUFF = range(7)
+EXTRA = ("lift", "carb", "lava", "evap", "coal", "sand", "tuff", "valley")
+LIFT, CARB, LAVA, EVAP, COAL, SAND, TUFF, VALLEY = range(8)
 MIX = slice(1, 7)
 LAVA_MAX_KM = 3.0  # km: the thickest flood-basalt pile on a continent (Siberian Traps ~3.5, Deccan ~2; PW-133)
 

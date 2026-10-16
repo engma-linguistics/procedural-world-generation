@@ -17,7 +17,7 @@ from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, elevation, ice_load, iso_rate, land_view,
+from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
                        ocean_depth, sediment_iso, sediment_km)
 
 SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward +-this (PW-293: was 250, which
@@ -496,8 +496,11 @@ def erode(sim, col):
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
-        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep)
+        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, x[:, VALLEY])
     sim.book("erosion", t0, col.t, cont)
+    # the valleys rivers to the sea cut now, and the older ones, filling in
+    # once their river stops (hydrology.VALLEY_MYR), ride on with the rock
+    x[:, VALLEY] = np.maximum(lk["incised"], x[:, VALLEY] * np.exp(-dt / hydrology.VALLEY_MYR))
     # the basement comes up by what's worn off net (the strata: in sediments())
     col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)

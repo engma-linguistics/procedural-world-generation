@@ -286,7 +286,7 @@ def surface_rock(rock, cover, top, top_km):
 
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
-          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None):
+          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
@@ -296,11 +296,12 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     k_mult: extra erodibility factor per cell (glaciers); alluvial: km of
     gentle river course over which ~63% of the load settles on land; fan_km:
     km of deep sea floor over which ~63% of what passes the shelf settles.
+    valley: m the cells' valleys are already cut (hydrology.lakes').
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
     lakes): lakes is hydrology.lakes' dict (on the terrain before this
     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
     land = elev > 0
-    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap)
+    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley)
     flow, down, order, filled = hydrology.route(grid, elev, lk)
 
     c = np.maximum(cover, 1e-9)

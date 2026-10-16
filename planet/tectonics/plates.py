@@ -55,7 +55,7 @@ class Plates:
       cont              continental (else oceanic)
       rock              surface.ROCKS id of the basement
       cover             km of sediment on top of the basement
-      extra (P, n, 7)   isostasy.EXTRA columns
+      extra (P, n, 8)   isostasy.EXTRA columns
       rec (P, n, R)     record.RECORD columns (float32): the strata's thickness
                         and dates, and the crust's history (rift, folding, ...)
       lith (P, n, K)    record: each stratum's rock (surface.ROCKS id), top first

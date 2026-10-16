@@ -119,7 +119,8 @@ def water_now(sim) -> dict:
                     lake_depth=np.zeros(n))
     bed = sim.bed()
     c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
-    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0))
+    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0),
+                                                valley=sim.valley())
     return dict(flow=flow, downstream=down, lake_kind=lk["kind"].astype(np.int8),
                 lake_depth=np.where(lk["wet"], np.maximum(lk["level"] - bed, 0.0), 0.0))
 
