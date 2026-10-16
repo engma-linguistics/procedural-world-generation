@@ -1,4 +1,5 @@
 ---
+id: PW-321
 title: "Zoom edge band: relief doubles within 8 px of the region's edge"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw125
 blocked_by: []
 relates: [PW-125, PW-129]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw125.md, docs/review/zoom-polish/pw125_seam_interior.png]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,3 +27,6 @@ To try: let the outermost pixels drain out at the landscape's own grade (an outl
 neighbouring inside pixels rather than the target), or taper the landscape toward the target across a band
 a few pixels wide.
 - [ ] edge-band 3x3 relief within ~20% of the inside on the three test sites
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-edge-band-relief.md (found by pw125).

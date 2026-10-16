@@ -1,4 +1,5 @@
 ---
+id: PW-320
 title: "Zoom creep below 2 km: fine zooms are crept 4-16x less than physics says"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw125
 blocked_by: []
 relates: [PW-125]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw125.md, "world:592f2a(49.32,37.38)", "world:592f2a(26.74,-49.92)"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
 - C. Set the reference at 1 km instead (KD_RES_KM = 1): coarser zooms get rougher still (4 km kd /16).
 Lean: A, it is the same physics as C above 2 km; but it changes every 1 km and 0.5 km zoom's look, so it
 wants a look at hillshades first.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-creep-below-2km.md (found by pw125).

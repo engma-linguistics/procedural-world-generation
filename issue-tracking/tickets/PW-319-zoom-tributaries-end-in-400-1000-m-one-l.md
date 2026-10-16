@@ -1,4 +1,5 @@
 ---
+id: PW-319
 title: "Zoom: tributaries end in 400-1000 m one-link walls beside pinned rivers (C fit peaks there)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw125
 blocked_by: []
 relates: [PW-125, PW-298]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw125.md, "world:592f2a(-9.35,-161.39)"]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -32,3 +35,6 @@ PW-298 suggests. Then the valley's mean comes from its sides rather than from wa
 mouths. Measure with the 8 zooms of world 592f2a (`stats.falls` kind `drop` >= 100 m by stage) and
 the tiled reference's p99 step on the arc.
 - [ ] drops >= 100 m on the arc zoom well under 28, with no loss of designed lips
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-c-fit-steep-links-at-pinned-courses.md (found by pw125).
