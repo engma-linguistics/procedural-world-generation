@@ -1,4 +1,5 @@
 ---
+id: PW-346
 title: "Southern Ocean air 4-8 C too warm (60-80S), worst over the seasonal pack ice: the sea's own air ignores winter ice and the continent's outflow"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: polar-bundle
 blocked_by: []
 relates: [PW-335, PW-337, PW-017, PW-313]
 refs: [planet/climate.py, tools/earth_check.py, docs/review/audit/polar-bundle.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -40,3 +43,6 @@ year. Try: the sea's own winter air over frozen water as the carry's eq_w (land-
 letting the air over (frozen) sea take part in the carry, so a continent's outflow cools the sea beside it.
 - [ ] 60-80S sea air within ~2 C of NCEP in both months, the Arctic not worse
 - [ ] re-run the PW-313 probe and earth_check's overturning (Ross/Weddell)
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-southern-ocean-sea-air-too-warm.md (found by polar-bundle).
