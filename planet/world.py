@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, ocean, satellite, vegetation
+from . import climate, coast, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -59,7 +59,7 @@ def seasons(grid: Grid, c: dict) -> dict:
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
-           veg: dict | None = None, orbit_dt: np.ndarray | None = None) -> dict:
+           veg: dict | None = None, orbit_dt: np.ndarray | None = None, soil_memory: dict | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> vegetation (and biomes from it). dT: global temperature offset from
@@ -68,7 +68,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
     for the meta). orbit_dt: an orbit's monthly temperature anomaly
-    (climate.compute's; a finished time-zoom frame)."""
+    (climate.compute's; a finished time-zoom frame). soil_memory: the run's
+    keyframe climate for the soils (soils.climate_memory; PW-185)."""
     t0 = t0 or time.time()
     veg = veg or {}
     c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
@@ -87,9 +88,18 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
     sea = elev <= 0
     flood = _flood(grid, down, lk, c, sea)
+    # soils (soils.py, PW-185): the mineral pass before the vegetation (which uses its water capacity,
+    # fertility and permafrost), the organic pass after it
+    from .timeline import vec_layers
+    winds = [tuple(v for _, v in vec_layers(grid, "w", c[k])) for k in ("wind_jul", "wind_jan")]
+    sm = soils.mineral(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
+                       c["cloud_jan"], ice=ice, lake_kind=lk["kind"], lake=lk["wet"], flow=flow,
+                       flood_ratio=flood["flood_ratio"], winds=winds, memory=soil_memory, **soils.geology(extra))
     vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
                          c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
-                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"])
+                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
+                         soil=sm)
+    so = soils.organic(sm, vg)
     # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
     biome = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
     elev_m = np.round(elev).astype(int)
@@ -132,11 +142,12 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "sunshine_jul": np.round(c["sun_jul"], 1), "sunshine_jan": np.round(c["sun_jan"], 1),
         # vegetation (vegetation.py): named type, structure, productivity, fire, and each PFT's cover
         **vegetation.world_layers(vg),
+        # soils (soils.py): type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
+        **soils.world_layers(sm, so),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
     # (the monsoons), for the viewer's overlays
-    from .timeline import vec_layers
     for k, v in (vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
                  + vec_layers(grid, "current", np.where((elev > 0)[:, None], 0.0, c["current"]))
                  + vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"]))
