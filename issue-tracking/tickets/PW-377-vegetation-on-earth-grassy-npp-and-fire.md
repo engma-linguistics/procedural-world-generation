@@ -1,4 +1,5 @@
 ---
+id: PW-377
 title: "Vegetation on Earth: grassy NPP and fire too high in the northern subtropics, fire too low in the southern tropics (GFED4.1s, MOD17)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw204-vegdata
 blocked_by: []
 relates: [PW-347, PW-204, PW-013]
 refs: [planet/vegetation.py, tools/veg_check.py, tools/earth_data.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -19,3 +22,6 @@ tools/veg_check.py now compares with gridded GFED4.1s burned area (2001-2015) an
 - the model's grassy share of fire is 91% against GFED's 78% on the same cells (63% on potential vegetation's savanna + grassland, 70% with shrubland; GFED includes crop and deforestation fires).
 Part of it is the climate: on the model climate the bands differ more (NPP r 0.29). On the observed climate it is the vegetation: what to try: water limitation of C4 grass NPP in short wet seasons (the Sahel's 2-3 months), the fire weather's ignition in semi-arid grassland (dry lightning, fuel continuity below ~400 mm rain). Earth is a test analogue: aim for the pattern (southern savannas the main burners, arid margins little), not the numbers.
 - [ ] 15-45 N burned area within ~2x of GFED, southern tropics not below GFED by > 30%, totals still in range
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-veg-fire-npp-geography-vs-gfed-mod17.md (found by pw204-vegdata).
