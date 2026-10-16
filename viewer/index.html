@@ -16,7 +16,10 @@
      canvas would otherwise display at that size (2x too big on Retina). */
   #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
   .panel { position: fixed; background: var(--panel); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(4px); }
+    border-radius: 8px; padding: 10px 12px; }
+  /* (no backdrop-filter by default, PW-415: a blur over the WebGL canvas makes Chrome recomposite
+     the canvas under every panel repaint; at 0.92 opacity it barely showed. ?blur=1 restores it) */
+  body.blur .panel { backdrop-filter: blur(4px); }
   #controls { top: 12px; left: 12px; width: 270px; max-height: calc(100vh - 24px); overflow-y: auto; }
   /* right-hand column: the info box (top) and the summary (bottom) share it, so neither covers the other */
   #rightCol { position: fixed; top: 56px; right: 12px; bottom: 12px; width: 320px; display: flex; flex-direction: column;
@@ -303,14 +306,28 @@ const R_EARTH = 6371000;
 const CMYR = 637.1;  // rad/Myr on the unit sphere -> cm/yr
 
 // ------------------------------------------------------------ three setup
-const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// Diagnostic switches for the flicker hunt (PW-415), all off by default: ?logdepth=1
+// (logarithmic depth buffer), ?noaa=1 (no MSAA), ?pdb=1 (preserveDrawingBuffer: Chrome then
+// copies the frame instead of swapping buffers), ?dpr=1 (pixel ratio), ?nodamp=1 (no orbit
+// damping), ?fixclip=1 (the old fixed near 0.01 / far 100), ?offset=1 (polygon offset pushes
+// the ground back), ?always=1 (draw every frame even when nothing changed), ?dbg=1 (a corner
+// readout: depth bits, GPU string, near/far, per-second counters), ?blur=1 (the panels'
+// backdrop blur back), ?rehover=1 (rewrite the info box on every mouse move, as before).
+const DIAG = (() => {
+  const p = new URLSearchParams(location.search), on = (k) => p.get(k) === '1';
+  return { logdepth: on('logdepth'), noaa: on('noaa'), pdb: on('pdb'), dpr: p.has('dpr') ? +p.get('dpr') : 0, nodamp: on('nodamp'),
+           fixclip: on('fixclip'), offset: on('offset'), always: on('always'), dbg: on('dbg'), blur: on('blur'), rehover: on('rehover'),
+           n: { frames: 0, renders: 0, cam: 0, clip: 0, paints: 0, overlays: 0, uploads: 0, info: 0 } };
+})();
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: !DIAG.noaa, logarithmicDepthBuffer: DIAG.logdepth, preserveDrawingBuffer: DIAG.pdb });
+renderer.setPixelRatio(DIAG.dpr || Math.min(devicePixelRatio, 2));
+if (DIAG.blur) document.body.classList.add('blur');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0f17);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 100);
 camera.position.set(0, 0.6, 3.4);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+controls.enableDamping = !DIAG.nodamp;
 controls.minDistance = 1.15; controls.maxDistance = 10;
 const hemi = new THREE.HemisphereLight(0xffffff, 0x334455, 1.4);
 scene.add(hemi);
@@ -341,13 +358,14 @@ function resize() {
 // closer than half the camera's height over the highest thing on the globe (radius 1.35: the
 // axis, event markers, the relief at 200x) or the map (its relief plus 0.15).
 function fitClip() {
+  if (DIAG.fixclip) { if (camera.near !== 0.01 || camera.far !== 100) { camera.near = 0.01; camera.far = 100; camera.updateProjectionMatrix(); } return; }
   const ext = topo?.maxR || 1;
   let h, far;
   if (state.mode === 'globe') { const r = camera.position.length(); h = r - Math.max(1.35, ext * 1.1); far = r + 2; }
   else { h = camera.position.z - (relief3d() ? 2 / Math.PI * Math.max(ext - 1, 0) : 0) - 0.15; far = camera.position.distanceTo(controls.target) + 6; }
   const near = Math.max(0.01, 0.5 * h);
   if (Math.abs(near - camera.near) > 1e-4 * near || Math.abs(far - camera.far) > 1e-3) {
-    camera.near = near; camera.far = far; camera.updateProjectionMatrix();
+    camera.near = near; camera.far = far; camera.updateProjectionMatrix(); DIAG.n.clip++;
   }
 }
 // Map is 4 x 2 units (lon/90, lat/90); back the camera off until all of it fits.
@@ -790,6 +808,7 @@ function reliefScale() { return +$(relief3d() ? 'reliefEx' : 'relief').value / R
 function cellRadius(i) { return V.R ? V.R[i] : 1 + reliefScale() * Math.max(V.layers.elevation[i], 0); }
 
 function paint() {
+  DIAG.n.paints++;
   // (the map's satellite layer: per-triangle shading; the 3D relief: lit map, sea surface)
   if (topo.perTri !== needsPerTri() || topo.relief !== relief3d()) buildTopology();
   const L = V.layers, cc = V.cornerCells, globe = topo.globe, r3d = relief3d(), sea = seaFloorOn();
@@ -1104,6 +1123,7 @@ function cloudOverlay() {
 }
 
 function buildOverlays() {
+  DIAG.n.overlays++;
   Object.values(overlays).forEach((o) => { group.remove(o); disposeObj(o); });
   overlays = {};
   const G = V.grid, L = V.layers, globe = state.mode === 'globe';
@@ -2629,7 +2649,7 @@ function seasonChart(i) {
 
 // hover / click
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
-let hovered = -1;
+let hovered = -1, infoHtml = null;
 function updateHover() {
   if (!mesh) return;
   ray.setFromCamera(mouse, camera);
@@ -2640,8 +2660,14 @@ function updateHover() {
 function renderHover() {
   if (detailCell >= 0) renderDetail();  // (a new frame: the panel follows)
   if (picked) return;  // the info box stays on the clicked cell until it's closed
-  $('infoText').innerHTML = hovered >= 0 ? infoBoxHtml(hovered) + '<div class="muted ifoot">click: copy and pick for zooming · double-click: zoom</div>'
+  const html = hovered >= 0 ? infoBoxHtml(hovered) + '<div class="muted ifoot">click: copy and pick for zooming · double-click: zoom</div>'
     : '<span class="muted">Hover a cell. Click to copy its description and pick it for a regional zoom; double-click to zoom straight in.</span>';
+  // (only when it changes, PW-415: rewriting the same box on every mouse move, as over empty
+  // space, repainted the panel over the canvas each time, and on the owner's Chrome each
+  // such repaint flickered the rivers; ?rehover=1 rewrites it every time, for comparison)
+  if (html === infoHtml && !DIAG.rehover) return;
+  infoHtml = html; DIAG.n.info++;
+  $('infoText').innerHTML = html;
 }
 $('infoText').addEventListener('click', (e) => {
   if (e.target.dataset.act !== 'more') return;
@@ -2836,7 +2862,7 @@ function renderZoomBox() {
   let html = '';
   if (picked && V) {
     const src = zoomSource();
-    $('infoText').innerHTML = infoBoxHtml(picked.i);
+    infoHtml = null; $('infoText').innerHTML = infoBoxHtml(picked.i);
     if (detailCell >= 0) renderDetail();
     html += `<button class="x" data-act="close" title="Close (Esc)">&times;</button>
       <b>Zoom into this region</b> <span class="muted">(white square)</span><br>
@@ -3495,7 +3521,7 @@ async function openRun(id, t) {
 
 async function init() {
   if (!await fillSelector()) {
-    $('infoText').innerHTML = `No runs or worlds found.<br>Run <code>uv run python -m planet simulate</code> then
+    infoHtml = null; $('infoText').innerHTML = `No runs or worlds found.<br>Run <code>uv run python -m planet simulate</code> then
       <code>uv run python -m planet serve</code>, or drop a world .json here.`;
     return;
   }
@@ -3537,7 +3563,7 @@ $('delBtn').addEventListener('click', async () => {
   urlp.delete('run'); urlp.delete('world'); urlp.delete('t');
   await init();
 });
-init().catch((err) => { $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+init().catch((err) => { infoHtml = null; $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
 
 // headless timing (console: planetViewer.bench()): replay keyframes back to back, each
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
@@ -3569,8 +3595,72 @@ window.planetViewer = {
   },
 };
 
+// Draw only when something drawn has changed (PW-415): the camera, any object's transform,
+// visibility, geometry, attribute contents (their version), material or texture, or a light.
+// Redrawing an unchanged scene every frame bought nothing, and on the owner's Chrome the
+// idle redraws were when rivers and marks shimmered (never while the view moved).
+let sigPrev = new Float64Array(0), sigNow = new Float64Array(4096), sigN = 0;
+const sigPush = (v) => { if (sigN === sigNow.length) { const a = new Float64Array(2 * sigN); a.set(sigNow); sigNow = a; } sigNow[sigN++] = v; };
+const sigMat = (m) => { for (const v of m.elements) sigPush(v); };
+let attrPrev = new Map(), attrNow = new Map();
+function frameChanged() {
+  sigN = 0;
+  camera.updateMatrixWorld(); scene.updateMatrixWorld();
+  sigMat(camera.matrixWorld); sigMat(camera.projectionMatrix);
+  const camN = sigN;
+  sigPush(renderer.domElement.width); sigPush(renderer.domElement.height);
+  attrNow.clear();
+  scene.traverse((o) => {
+    sigPush(o.id); sigPush(o.visible ? 1 : 0);
+    if (!o.visible) return;
+    sigMat(o.matrixWorld);
+    const g = o.geometry;
+    if (g) {
+      sigPush(g.id); sigPush(g.drawRange.start); sigPush(g.drawRange.count);
+      for (const k in g.attributes) { const a = g.attributes[k], v = a.isInterleavedBufferAttribute ? a.data.version : a.version; sigPush(v); attrNow.set(a, v); }
+      if (g.index) { sigPush(g.index.version); attrNow.set(g.index, g.index.version); }
+    }
+    for (const m of [].concat(o.material || [])) {
+      sigPush(m.id); sigPush(m.version); sigPush(m.visible ? 1 : 0); sigPush(m.opacity); sigPush(m.map ? m.map.version : -1);
+      if (m.color) { sigPush(m.color.r); sigPush(m.color.g); sigPush(m.color.b); }
+      if (m.resolution) { sigPush(m.resolution.x); sigPush(m.resolution.y); }
+    }
+    if (o.isLight) { sigPush(o.intensity); sigPush(o.color.r); sigPush(o.color.g); sigPush(o.color.b); if (o.groundColor) { sigPush(o.groundColor.r); sigPush(o.groundColor.g); sigPush(o.groundColor.b); } if (o.target) for (const v of o.target.position.toArray()) sigPush(v); }
+  });
+  sigPush(scene.background?.isColor ? scene.background.getHex() : -1);
+  let same = sigN === sigPrev.length, camSame = same;
+  for (let i = 0; same && i < sigN; i++) if (sigNow[i] !== sigPrev[i]) { same = false; if (i < camN) camSame = false; }
+  if (!camSame && sigN === sigPrev.length) DIAG.n.cam++;
+  for (const [a, v] of attrNow) if (attrPrev.get(a) !== undefined && attrPrev.get(a) !== v) DIAG.n.uploads++;
+  [attrPrev, attrNow] = [attrNow, attrPrev];
+  if (!same) sigPrev = sigNow.slice(0, sigN);
+  return !same;
+}
+// ?dbg=1: a corner readout, refreshed twice a second (counters per second)
+let dbgEl = null, dbgAt = 0, dbgN = null;
+function dbgReadout(now) {
+  if (now - dbgAt < 500) return;
+  const gl = renderer.getContext(), dt = (now - dbgAt) / 1000, n = DIAG.n;
+  if (!dbgEl) {
+    dbgEl = document.createElement('div');
+    dbgEl.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99;font:11px/1.35 monospace;color:#cfe;background:rgba(0,0,0,.65);padding:4px 6px;pointer-events:none;white-space:pre';
+    document.body.appendChild(dbgEl);
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    DIAG.gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  }
+  const rate = (k) => dbgN ? ((n[k] - dbgN[k]) / dt).toFixed(0) : '-';
+  const flags = ['logdepth', 'noaa', 'pdb', 'nodamp', 'fixclip', 'offset', 'always', 'blur', 'rehover'].filter((k) => DIAG[k]).join(' ') + (DIAG.dpr ? ` dpr=${DIAG.dpr}` : '');
+  const cv = renderer.domElement;
+  dbgEl.textContent = `${DIAG.gpu}\n${gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl1'} depth ${gl.getParameter(gl.DEPTH_BITS)} bits, samples ${gl.getParameter(gl.SAMPLES)}, ` +
+    `canvas ${cv.width}x${cv.height} css ${cv.clientWidth}x${cv.clientHeight} dpr ${devicePixelRatio}\n` +
+    `near ${camera.near.toPrecision(4)} far ${camera.far.toPrecision(4)} cam ${camera.position.toArray().map((v) => v.toFixed(4)).join(',')}\n` +
+    `per s: frames ${rate('frames')} renders ${rate('renders')} cam ${rate('cam')} clip ${rate('clip')} uploads ${rate('uploads')} paints ${rate('paints')} overlays ${rate('overlays')} infobox ${rate('info')}\n` +
+    `flags: ${flags || 'none'}`;
+  dbgN = { ...n }; dbgAt = now;
+}
+window.planetViewer.diag = DIAG;
 renderer.setAnimationLoop((now) => {
-  if (state.tab === 'zoom') return;  // the globe is hidden
+  if (state.tab === 'zoom') { sigPrev = new Float64Array(0); return; }  // the globe is hidden (drawn afresh when it's back)
   if (state.playing && V?.kind === 'run' && now - lastAdvance > 1000 / +$('fps').value) {
     lastAdvance = now;
     if (V.frame >= V.run.frames.length - 1) stop(); else setFrame(V.frame + 1);
@@ -3578,7 +3668,10 @@ renderer.setAnimationLoop((now) => {
   if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
   controls.update();
   fitClip();
-  renderer.render(scene, camera);
+  if (DIAG.offset && mesh) for (const m of mesh.userData.mats) if (!m.polygonOffset) Object.assign(m, { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 4 });
+  DIAG.n.frames++;
+  if (frameChanged() || DIAG.always) { renderer.render(scene, camera); DIAG.n.renders++; }
+  if (DIAG.dbg) dbgReadout(now);
 });
 </script>
 </body>
