@@ -2,7 +2,7 @@
 id: PW-255
 title: "Lakes and river routing: three settle passes and ~9 priority floods per step (~15% of an L7 run)"
 type: task
-status: todo
+status: in-progress
 parent: PW-247
 subsystem: hydrology
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-249]
 refs: [planet/hydrology.py, planet/kernels.py, planet/surface.py, docs/review/gpu/profile.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -29,4 +29,5 @@ returns the filled surface for `route`. Some change outputs slightly (check gold
 Expected 30-50% of this bucket.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started: bit-identical speedups only.
 - 2026-10-15: Created from inbox draft draft-lakes-settle-passes.md (found by gpu-explore (PW-249)).
