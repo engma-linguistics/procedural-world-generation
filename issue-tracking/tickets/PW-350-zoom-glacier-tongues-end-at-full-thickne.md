@@ -2,7 +2,7 @@
 id: PW-350
 title: Zoom glacier tongues end at full thickness (a 360 m ice cliff at the snout)
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -32,5 +32,6 @@ the air's summer).
 - [ ] tongues thin to < ~50 m at their snout; test_zoom_ice's 12 C check back to (nearly) none
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done: land-terminating snouts thin along Nye's profile (snout 384 -> 212 m median on the test massif; ~170 m is a real snout's last-3-km mean). The test's 0.5% allowance stays: those tongues are stopped by the 100 km length cap while still fed (new ticket).
 - 2026-10-16: Status todo -> in-progress. Zoom batch 4 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-glacier-tongue-snout.md (found by zoom-batch3).

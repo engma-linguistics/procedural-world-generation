@@ -1,5 +1,6 @@
 ---
-title: "Zoom glacier tongues fed along their zone's margin run to GL_MAX_KM at the flux cap, discarding the excess"
+id: PW-357
+title: Zoom glacier tongues fed along their zone's margin run to GL_MAX_KM at the flux cap, discarding the excess
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: zoom-batch4
 blocked_by: []
 relates: [PW-350, PW-127, PW-159]
 refs: [planet/zoom_kernels.py, planet/zoom.py, tests/test_zoom_ice.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,6 @@ it)? Either changes where big tongues end; check the massif's 12 C share and the
 (-48.48, 60.12, 2000 km @ 4 km) before/after. Real outlets do end low (Franz Josef ~300 m in rainforest),
 so some ice on > 12 C ground is right; the point is that the end is set by melt, not by the cap.
 - [ ] the massif's big tongues end by melt (flux to ~0), not at GL_MAX_KM with the cap's flux
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-tongue-run-along-margin.md (found by zoom-batch4).
