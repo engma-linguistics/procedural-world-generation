@@ -1,5 +1,5 @@
 """Supercontinent-cycle diagnostics: does a world gather its continents
-together and break them up again? (docs/proposals/supercontinent_cycle.md)
+together and break them up again? (design history: f45525c:docs/proposals/supercontinent_cycle.md)
 
     uv run python tools/supercontinent.py --seed 1 [--myr 2000] [--level 6] [--out DIR] [--set k=v ...]
     uv run --with matplotlib python tools/supercontinent.py --plot DIR/seed1.json [...]

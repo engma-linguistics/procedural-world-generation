@@ -110,6 +110,8 @@ The forces become torques, and a drag matrix turns them into each plate's rotati
 
 On four L6 seeds over 2 Gyr the largest landmass passed 25% of the surface 2–4 times after the starting supercontinent, every 280–740 Myr. Plate counts: median 8–10, minimum 3–4 (PW-024). Not guaranteed for every seed.
 
+**Design decisions** (owner, 2026-10-13/14; the three-option write-up is at `f45525c:docs/proposals/supercontinent_cycle.md`): chose the breakup fix (minimum continental piece, cuts along weak old sutures) plus the emergent mantle with traction-driven rifting (B′), hotspots tied to warm mantle, and lighter sediment (2.1 g/cm³ at the surface, compacting to 2.6). Rejected: an imposed rotating mantle flow (cycles guaranteed but metronomic, continents told where to go; kept as a fallback in PW-025) and breakup-rule changes alone (would fragment less but not reassemble). Accepted: cycles need not be regular or occur in every seed.
+
 ![Supercontinent assembled](overview/supercontinent_elevation.jpg)
 *World ffb5bd (run 6d9dcf at 940 Myr), mid-assembly. The largest landmass is 24% of the surface. Numbered rings are highlights.*
 
