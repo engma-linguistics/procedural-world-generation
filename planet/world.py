@@ -115,6 +115,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "runoff": np.round(c["runoff"]).astype(int),  # mm/yr: rain minus evaporation, what feeds rivers
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
         "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
+        "lake_evap": np.round(c["lake_evap"]).astype(int),  # mm/yr, open water's (climate.open_water_evap)
         # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
         # wave crest, and the tidal range, m
         "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),

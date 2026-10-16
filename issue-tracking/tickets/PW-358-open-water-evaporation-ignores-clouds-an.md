@@ -2,7 +2,7 @@
 id: PW-358
 title: Open-water evaporation ignores clouds and humidity, so wet basins stay closed and hold giant lakes
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: climate
 effort: s
@@ -42,6 +42,7 @@ sweep's giant-lake frames. The zoom's lake balance uses the same `open_water` x 
 - [ ] Earth's closed basins stay closed in earth_check
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Landed alone on main as 909dee1 (Penman open water from ecffcb9, without stage 2's rain; worlds store lake_evap and the zoom uses it, TUNE open_water gone). Earth L6: Amazon floodplain 2005 -> 1406 mm, Victoria 1888 -> 1415, Malawi 1741 -> 1413, Chad 1830 -> 1972, Nasser 1642 -> 1921, Caspian 790 -> 975; climate scores unchanged; known closed basins stay closed. Health --quick (docs/review/health-pw358-before|after): giant-lake frames 9.7 -> 9.1% (noise), frames > 2 Mkm2 53 -> 36, mean biggest lake 0.48 -> 0.40 Mkm2, lake_max spells 32 -> 25, lakes 0.69 -> 0.63% of land, inland 4.8 -> 5.0%; one new spell, seed 11 inland 31-43% at 200-224 Myr. FOR THE PW-300 RE-CHECK: (1) the ticket's premise doesn't hold on generated planets. Replaying the main sweep's 21 giant frames on the same terrain (diag/frame_test.py) shows 11 of 21 sit under < 300 mm of rain and several in cold basins (T < 0), where Penman evaporates MORE than Oudin x 1.2; even the humid ones (seed 1 @472, P 1158, T 19) get more, not less. The biggest lake shrank ~30% (sum 80 -> 56 Mkm2), but 17 of 21 stay over 1 Mkm2. Evaporation is not what keeps them giant. (2) The lake model flips between two states (diag/frame_test_new.py, seed 11 @200-220 and main seed 42 @316/400). When higher evaporation closes a basin that used to spill, it loses its carved outlet valley (PW-055 carving only runs where rivers reach the sea) and fills its whole hollow: 0.1-1.2 Mkm2 open becomes 4.6-6.9 Mkm2 closed, with inland 2.5 -> 36-40%. A small change in evaporation sends the basin's lake to one extreme or the other. Look at that switch first, e.g. a closed basin keeping the valley its last outflow cut, or a closed lake's area limited by its hollow's depth profile, before any more evaporation tuning. (3) Re-measure with the frame_test scripts (same terrain, swap one term) rather than whole sweeps: the sweeps' giant-frame share moves by +-5 points per seed just from noise.
 - 2026-10-16: Merged inbox draft draft-zoom-lakes-penman.md ("The zoom's lakes still evaporate open_water x the land's PET, the world's lakes Penman's (PW-358)", found by pw015-rain).
   PW-358 (PW-015 branch) made the climate's `lake_evap` Penman's open-water evaporation
   (`climate.open_water_evap`, on the clouds and the air's humidity), which the run and world lakes use.

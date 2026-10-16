@@ -1,0 +1,27 @@
+s11 t=268 P 793 T 12.0: oudin: big 1.38 closed E 1049 aet 616, lakes 2.15, inland 4.8% | penman: big 0.17 open E 1094 aet 696, lakes 0.73, inland 3.5%
+s11 t=352 P 614 T 9.6: oudin: big 5.60 closed E 911 aet 451, lakes 6.30, inland 11.0% | penman: big 3.55 closed E 1075 aet 490, lakes 4.47, inland 12.2%
+s11 t=428 P 141 T 22.6: oudin: big 3.56 closed E 1731 aet 141, lakes 4.69, inland 10.1% | penman: big 2.40 closed E 2306 aet 148, lakes 3.52, inland 10.4%
+s1 t=64 P 62 T 20.9: oudin: big 3.13 closed E 1610 aet 62, lakes 3.49, inland 11.4% | penman: big 2.07 closed E 2387 aet 89, lakes 2.30, inland 11.9%
+s1 t=192 P 289 T 18.3: oudin: big 1.41 closed E 1461 aet 287, lakes 3.42, inland 15.8% | penman: big 0.96 closed E 1817 aet 699, lakes 2.79, inland 16.9%
+s1 t=472 P 1158 T 18.9: oudin: big 6.16 closed E 1523 aet 770, lakes 6.66, inland 8.4% | penman: big 4.43 closed E 1766 aet 796, lakes 5.08, inland 8.5%
+s1 t=484 P 907 T 16.7: oudin: big 5.75 closed E 1385 aet 638, lakes 6.39, inland 8.3% | penman: big 4.13 closed E 1663 aet 712, lakes 5.09, inland 8.4%
+s21 t=120 P 141 T 26.7: oudin: big 3.64 closed E 2013 aet 141, lakes 3.76, inland 8.3% | penman: big 2.37 closed E 2782 aet 66, lakes 2.61, inland 8.4%
+s2 t=184 P 992 T 13.3: oudin: big 3.84 closed E 1093 aet 649, lakes 4.47, inland 7.4% | penman: big 2.63 closed E 1223 aet 656, lakes 3.56, inland 8.6%
+s2 t=264 P 719 T 17.3: oudin: big 3.55 closed E 1307 aet 637, lakes 5.44, inland 10.1% | penman: big 2.39 closed E 1605 aet 642, lakes 4.17, inland 10.7%
+s2 t=452 P 27 T -18.2: oudin: big 7.67 closed E 151 aet 25, lakes 9.50, inland 12.5% | penman: big 1.89 closed E 298 aet 26, lakes 4.69, inland 12.8%
+s3199 t=52 P 58 T -4.2: oudin: big 8.12 closed E 472 aet 55, lakes 8.19, inland 12.5% | penman: big 4.38 closed E 736 aet 32, lakes 4.45, inland 12.5%
+s3199 t=60 P 62 T -5.8: oudin: big 8.41 closed E 424 aet 59, lakes 8.43, inland 12.7% | penman: big 4.31 closed E 693 aet 46, lakes 4.64, inland 13.8%
+s3199 t=152 P 157 T -4.4: oudin: big 1.06 closed E 467 aet 147, lakes 1.25, inland 2.6% | penman: big 0.60 closed E 695 aet 142, lakes 0.78, inland 2.6%
+s3199 t=168 P 182 T 23.9: oudin: big 1.57 closed E 1795 aet 181, lakes 2.93, inland 8.8% | penman: big 1.03 closed E 2526 aet 146, lakes 2.18, inland 8.9%
+s42 t=316 P 1481 T 25.6: oudin: big 1.95 closed E 1943 aet 844, lakes 3.16, inland 11.5% | penman: big 8.67 closed E 800 aet 431, lakes 14.34, inland 33.6%
+s42 t=400 P 493 T 7.5: oudin: big 3.61 open E 798 aet 426, lakes 5.73, inland 2.7% | penman: big 2.79 closed E 1140 aet 439, lakes 5.32, inland 10.6%
+s505 t=216 P 148 T 17.9: oudin: big 1.07 open E 1455 aet 147, lakes 1.63, inland 4.4% | penman: big 0.71 closed E 1745 aet 289, lakes 1.32, inland 6.0%
+s505 t=460 P 23 T 18.7: oudin: big 3.04 closed E 1353 aet 23, lakes 3.52, inland 15.0% | penman: big 1.93 closed E 2119 aet 19, lakes 2.42, inland 15.0%
+s77 t=80 P 1823 T 22.2: oudin: big 3.27 open E 1715 aet 872, lakes 4.38, inland 6.1% | penman: big 3.27 open E 1919 aet 872, lakes 4.15, inland 9.0%
+s77 t=160 P 47 T 17.3: oudin: big 2.84 closed E 1427 aet 47, lakes 4.07, inland 9.7% | penman: big 1.18 closed E 2525 aet 32, lakes 3.25, inland 12.3%
+s77 t=352 P 26 T -3.3: oudin: big 3.00 open E 0 aet 0, lakes 3.90, inland 7.1% | penman: big 3.00 open E 0 aet 0, lakes 3.91, inland 7.1%
+s77 t=480 P 435 T -4.3: oudin: big 0.14 open E 435 aet 277, lakes 0.88, inland 3.3% | penman: big 2.20 closed E 576 aet 175, lakes 3.35, inland 8.1%
+# new-code seed 11 (frame_test_new.py: same terrain, Oudin x 1.2 vs Penman):
+s11 t=200 P 524 T -3.0: oudin: big 0.12 open E 415 aet 261, lakes 1.51, inland 2.5% | penman: big 6.92 closed E 1600 aet 391, lakes 10.50, inland 35.9%
+s11 t=208 P 648 T 18.0: oudin: big 0.35 open E 1478 aet 637, lakes 1.83, inland 2.7% | penman: big 6.89 closed E 1695 aet 226, lakes 11.22, inland 39.0%
+s11 t=220 P 485 T -1.1: oudin: big 1.18 open E 483 aet 268, lakes 3.25, inland 2.2% | penman: big 4.57 closed E 1008 aet 131, lakes 11.59, inland 39.8%

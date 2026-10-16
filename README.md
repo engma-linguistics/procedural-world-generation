@@ -270,6 +270,8 @@ Sliced and one-shot terrain then go through the shared pipeline:
    Evaporation: potential evaporation from sunshine and temperature per
    half-year (Oudin), actual evaporation from the Budyko curve (Fu), and
    runoff = rain - evaporation (~40% of the rain on land, like Earth's).
+   Lakes evaporate by Penman's open-water equation, on the clouds and the
+   air's humidity (humid tropical lakes ~1400 mm, desert ones ~2000+).
    The vegetation feeds back: forests give more rain back to the air (Budyko
    w, rain recycling) and their albedo (snow hidden under conifers) nudges
    the temperatures by up to 2 C.
