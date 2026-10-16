@@ -71,7 +71,7 @@
   #fallList { margin-top: 4px; font-size: 12px; max-height: 150px; overflow-y: auto; }
   #fallList div { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
   #fallList div:hover, #fallList div.on { background: #1d2a40; }
-  #btn3d.on { background: var(--accent); color: #06121f; }
+  #btn3d.on, #fineHere.on { background: var(--accent); color: #06121f; }
   @media (max-width: 800px) { #info { display: none; } #legend { left: 12px; bottom: 60px; max-width: calc(100vw - 24px); } }
 </style>
 <script type="importmap">
@@ -108,6 +108,12 @@
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
 
+  <h2>Fine zooms</h2>
+  <div id="fineBox" class="muted"></div>
+  <div class="row" style="display:flex;gap:4px;margin-top:4px"><select id="fineSize" style="flex:1;min-width:0" title="The fine zoom's size and resolution (default: 50 km at 100 m in a regional zoom, 25 km at 50 m in a fine zoom)"></select>
+    <button id="fineHere" title="Then click a point on the map (or the 3D ground; shift-double-click there also works) for a finer zoom of this one around it">Fine zoom here</button></div>
+  <div id="fineJob" class="muted"></div>
+
   <h2>About this zoom</h2>
   <div id="about" class="muted">&mdash;</div>
   <p class="muted" style="margin-top:10px">Scroll to zoom, drag to pan, double-click to reset.
@@ -130,6 +136,7 @@
   <div class="row"><label title="Glaciers shaded as ice (crevasses, snouts), the sea tinted by depth with foam at the shore, lakes by depth, rivers shimmering downstream"><input type="checkbox" id="fx3d" checked> ice and water</label>
     <label title="The foam and the rivers' shimmer move"><input type="checkbox" id="motion3d" checked> moving</label>
     <label title="Haze over the distance, to the horizon's colour"><input type="checkbox" id="haze3d" checked> haze</label></div>
+  <div class="row"><label title="Forest stands up by its canopy height (the zoom's canopy_height layer, by tree cover) on tiles of 100 m/px or finer"><input type="checkbox" id="canopy3d" checked> canopy</label></div>
   <h2>Fly along a river</h2>
   <div class="row" style="display:flex;gap:4px"><select id="river3d" style="flex:1;min-width:0" title="The zoom's biggest rivers, from head to mouth"></select>
     <button id="fly3d" title="Follow the river downstream at low altitude, past its falls (click the view or Stop to end)">Fly</button></div>
@@ -222,6 +229,10 @@ function loadImage(url) {
 // ------------------------------------------------------------ loading
 async function init() {
   const idx = (await getJSON('../zooms/index.json')) || [];
+  fine.idx = idx;
+  $('fineHere').onclick = armFine;
+  $('fineSize').onchange = () => { if (fine.arm) { armFine(); armFine(); } };  // (re-armed: the new size)
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && fine.arm) armFine(); });
   const sel = $('zoomSel');
   if (!idx.length) {
     sel.innerHTML = '<option>(no zooms yet)</option>';
@@ -285,7 +296,10 @@ async function init() {
 // ------------------------------------------------------------ the 3D view (zoom3d.js, PW-072)
 let V3 = null;
 const api3d = {
-  hoverPixel: (r, c) => hoverPx(r, c),
+  // (a fine tile's pixel: its own zoom's info)
+  hoverPixel: (r, c, t) => (t && t.id !== state.meta.id && fine.data.has(t.id) ? withZoom(fine.data.get(t.id), () => hoverPx(r, c)) : hoverPx(r, c)),
+  fineHere: (ll) => postFine(ll[0], ll[1]),
+  exagChanged: (e) => { $('exag').value = e; $('exagV').textContent = `${e}\u00d7`; if (state.d3) syncURL(); },
   showCard: (o, ev, pin) => { if (!pinned || pin) showTip(o, ev, pin); },
   hideCard: () => { if (!pinned) hideTip(); },
   changed: () => syncURL(),
@@ -310,10 +324,11 @@ async function enter3d(o = {}) {
       el.oninput = el.onchange = () => { V3.set(key, conv(el.type === 'checkbox' ? el.checked : el.value)); show(); syncURL(); };
       el[el.type === 'checkbox' ? 'checked' : 'value'] = V3.opts[key]; show();
     };
-    if (o.exag) V3.opts.exag = o.exag;
+    if (o.exag) { V3.opts.exag = o.exag; V3.exagFixed = true; }  // (else by the tile looked at: zoom3d.js defaultExag)
     if ([1, 2, 4].includes(o.step)) V3.opts.step = o.step;
     if (o.shadows === false) V3.set('shadows', false);
     bind('exag', 'exag', Number, (v) => `${v}\u00d7`);
+    $('exag').addEventListener('input', () => { V3.exagFixed = true; });  // (moved by hand: it stays)
     bind('step3d', 'step', Number, String);
     bind('sunAz', 'sunAz', Number, (v) => `${v}\u00b0`);
     bind('sunEl', 'sunEl', Number, (v) => `${v}\u00b0`);
@@ -323,6 +338,7 @@ async function enter3d(o = {}) {
     bind('fx3d', 'fx', Boolean, String);
     bind('motion3d', 'motion', Boolean, String);
     bind('haze3d', 'haze', Boolean, String);
+    bind('canopy3d', 'canopy', Boolean, String);
     bind('flySpeed3d', 'flySpeed', Number, (v) => `${v}`);
     $('fly3d').onclick = () => (V3.flight ? V3.stopFlight() : V3.flyRiver(+$('river3d').value));
   }
@@ -332,7 +348,9 @@ async function enter3d(o = {}) {
   hideTip();
   V3.zoomId = null;  // (rebuild: the zoom may have changed while in 2D)
   V3.start();
+  if (fine.arm) V3.onPick = (ll) => postFine(ll[0], ll[1]);
   render();
+  fineBox();
   if (o.fall != null) fly(o.fall);
   if (o.river != null) { $('river3d').value = o.river; V3.flyRiver(o.river, { at: o.at, pause: o.pause }); }
   syncURL();
@@ -341,7 +359,7 @@ function exit3d() {
   state.d3 = false;
   document.body.classList.remove('d3'); $('btn3d').classList.remove('on');
   V3?.stop(); hideTip();
-  render(); syncURL();
+  render(); syncURL(); fineBox();
 }
 // the falls, highest first (the order of stats.falls: ?fall=N is ?mark=fall:N in 2D)
 function fallList() {
@@ -367,19 +385,23 @@ function syncURL() {
   if ($('clouds').checked) p.set('clouds', '1');
   if (state.d3 && V3) {  // ?view=3d&exag=3&cam=x,y,z,tx,ty,tz (km), or &fall=N to fly to fall N
     p.set('view', '3d');
-    if (V3.opts.exag !== 3) p.set('exag', V3.opts.exag);
+    if (V3.exagFixed) p.set('exag', V3.opts.exag);  // (else the default: by the tile looked at)
     if (V3.opts.step !== 1) p.set('detail', V3.opts.step);
     if (!V3.opts.shadows) p.set('shadows', '0');
     if (V3.tiles.length) p.set('cam', V3.camState().join(','));
+    // &fine=a,b: the fine zooms shown (none: none; 0: off); left out when the default
+    const want = [...fine.want].sort().join(','), def = [...defaultFine(state.meta.id)].sort().join(',');
+    if (!fine.on) p.set('fine', '0'); else if (want !== def) p.set('fine', want || 'none');
   }
   history.replaceState(null, '', '?' + p);
 }
 
-async function load(id) {
-  $('msg').textContent = 'loading ' + id + '...';
+// a zoom's data: {meta, L (its layers), sat, shade, imgs, marks, off (its colours' canvas), ...}, or null
+// (the fields of `state` that withZoom swaps)
+async function fetchZoom(id) {
   const base = `../zooms/${id}/`;
   const meta = await getJSON(base + 'zoom.json');
-  if (!meta) { $('msg').textContent = 'could not read ' + base + 'zoom.json'; return; }
+  if (!meta) return null;
   // one file per layer (zooms/<id>/layers/<name>.bin), all small: load them all
   const L = {};
   await Promise.all(Object.entries(meta.layers).map(async ([k, spec]) => {
@@ -388,26 +410,38 @@ async function load(id) {
     // (scaled layers: real units, store.decode)
     L[k] = sc === 1 && !of ? raw : Float32Array.from(raw, (v) => v * sc + of);
   }));
-  state.meta = meta; state.L = L; state.imgs = {};
-  for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
-  if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'satellite';
-  state.marks = markers(meta);
-  hideTip();
-  const [rel, coarse] = await Promise.all([loadImage(base + meta.files.preview).catch(() => null),
-    loadImage(base + meta.files.coarse).catch(() => null)]);
-  state.imgs.coarse = coarse;
+  const coarse = await loadImage(base + meta.files.coarse).catch(() => null);
   // the satellite view (planet/satellite.py): unshaded true colour, year (each hemisphere's summer), July, January
-  state.sat = {};
+  const sat = {};
   await Promise.all(Object.entries({ '': 'satellite', jul: 'satellite_jul', jan: 'satellite_jan' }).map(async ([s, f]) => {
     const im = meta.files[f] ? await loadImage(base + meta.files[f]).catch(() => null) : null;
     if (!im) return;
     const cv = document.createElement('canvas'); cv.width = meta.nx; cv.height = meta.ny;
     const cx = cv.getContext('2d'); cx.drawImage(im, 0, 0);
-    state.sat[s] = cx.getImageData(0, 0, meta.nx, meta.ny).data;
+    sat[s] = cx.getImageData(0, 0, meta.nx, meta.ny).data;
   }));
-  state.cloudNoise = null;
+  return { meta, L, sat, imgs: { coarse }, marks: markers(meta), shade: hillshade(L.elevation, meta.nx, meta.ny, meta.res_km),
+           off: document.createElement('canvas'), flat: null, cloudNoise: null };
+}
+// run fn with zoom data zd (fetchZoom) as the page's state (a fine zoom's colours and info), then put it back
+const ZOOM_KEYS = ['meta', 'L', 'sat', 'shade', 'imgs', 'marks', 'off', 'flat', 'cloudNoise'];
+function withZoom(zd, fn) {
+  const keep = {};
+  for (const k of ZOOM_KEYS) { keep[k] = state[k]; state[k] = zd[k]; }
+  try { return fn(); } finally { for (const k of ZOOM_KEYS) { zd[k] = state[k]; state[k] = keep[k]; } }
+}
+
+async function load(id) {
+  $('msg').textContent = 'loading ' + id + '...';
+  const zd = await fetchZoom(id);
+  if (!zd) { $('msg').textContent = `could not read ../zooms/${id}/zoom.json`; return; }
+  for (const k of ZOOM_KEYS) state[k] = zd[k];
+  const { meta, L } = zd;
+  for (const b of $('layerSeg').children) b.style.display = NEEDS[b.dataset.v] && !L[NEEDS[b.dataset.v]] ? 'none' : '';
+  if (NEEDS[state.layer] && !L[NEEDS[state.layer]]) state.layer = 'satellite';
+  hideTip();
   $('cloudsRow').style.display = L.cloud_jul ? '' : 'none';
-  state.shade = hillshade(L.elevation, meta.nx, meta.ny, meta.res_km);
+  fineLoaded();
   $('msg').textContent = '';
   about();
   resetView();
@@ -593,6 +627,212 @@ function showTip(o, ev, pin) {
 }
 function hideTip() { pinned = null; const t = $('tip'); t.style.display = 'none'; t.classList.remove('pinned'); }
 
+// ------------------------------------------------------------ fine zooms (PW-129, PW-393)
+// A zoom's fine zooms (zoom_fine.py: zooms/index.json `children`, and theirs) are outlined on the
+// 2D map and drawn as finer tiles in the 3D view (zoom3d.js setFine); "Fine zoom here" asks the
+// server for one (POST /api/zoom {zoom, lat, lon[, size_km, res_km]}) and adds it when it's done.
+// fine.want: the ones the 3D view shows (&fine=a,b; default: defaultFine), fine.on: shown at all
+const fine = { idx: [], on: true, want: new Set(), data: new Map(), loading: new Set(), job: null, arm: false, at: null, flyTo: null };
+let START_FINE = new URLSearchParams(location.search).get('fine');  // (the first zoom loaded only)
+const FINE_SIZES = [['', 'default size'], ['50,0.1', '50 km @ 100 m'], ['25,0.05', '25 km @ 50 m'],
+  ['25,0.025', '25 km @ 25 m (1000 px, for close 3D views)']];
+const zoomEntry = (id) => fine.idx.find((z) => z.id === id);
+const kids = (id) => (zoomEntry(id)?.children || []).map(zoomEntry).filter(Boolean);
+function descendants(id, depth = 1, out = []) { for (const z of kids(id)) { out.push({ z, depth }); descendants(z.id, depth + 1, out); } return out; }
+// zoom frames (planet/zoom.py Frame): the plane's x east, y north (km) of lat, lon round `center`
+function frameOf(center) {
+  const la = center.lat * Math.PI / 180, lo = center.lon * Math.PI / 180;
+  const C = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
+  let E = [-C[1], C[0], 0]; const ne = Math.hypot(E[0], E[1]); E = ne < 1e-9 ? [0, 1, 0] : [E[0] / ne, E[1] / ne, 0];
+  const N = [C[1] * E[2] - C[2] * E[1], C[2] * E[0] - C[0] * E[2], C[0] * E[1] - C[1] * E[0]];
+  return { C, E, N };
+}
+function toPlane(center, lat, lon) {
+  const { C, E, N } = frameOf(center), la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
+  const p = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const rho = Math.acos(Math.min(1, Math.max(-1, dot(p, C)))), a = dot(p, E), b = dot(p, N), s = Math.hypot(a, b);
+  const k = s > 1e-12 ? rho * R_KM / s : 0;
+  return [a * k, b * k];
+}
+// two zooms' squares overlap (b's centre in a's plane)
+function overlaps(a, b) {
+  const [x, y] = toPlane(a.center, b.center.lat, b.center.lon), h = (a.size_km + b.size_km) / 2;
+  return Math.abs(x) < h && Math.abs(y) < h;
+}
+// shown by default: at each level the children not overlapping one already picked (coarsest first), and theirs
+function defaultFine(id, out = new Set()) {
+  const picked = [];
+  for (const z of kids(id).sort((a, b) => b.res_km - a.res_km)) {
+    if (picked.some((p) => overlaps(p, z))) continue;
+    picked.push(z); out.add(z.id); defaultFine(z.id, out);
+  }
+  return out;
+}
+// id and its fine-zoom ancestors below `root` (a fine zoom shown with the tiles between)
+function chain(id, root) {
+  const out = [];
+  for (let z = zoomEntry(id); z; z = zoomEntry(z.parent_zoom)) { if (z.id === root) return out; out.unshift(z.id); }
+  return [];
+}
+// a new zoom's fine-zoom state: the URL's &fine (first zoom only), else the default
+function fineLoaded() {
+  const id = state.meta.id;
+  if (START_FINE != null) {
+    fine.on = START_FINE !== '0';
+    fine.want = new Set(START_FINE === '0' || START_FINE === 'none' ? [] : START_FINE.split(',').flatMap((f) => chain(f, id)));
+    fine.flyTo = START_FINE.split(',').filter((f) => fine.want.has(f)).pop() || null; fine.flyNow = true;
+    START_FINE = null;
+  } else { fine.want = defaultFine(id); fine.flyTo = null; }
+  $('fineOn') && ($('fineOn').checked = fine.on);
+  fineSizes(); fineBox();
+}
+// the size options a pick may take here (finer than this zoom, at most 20x, smaller than it)
+function fineSizes() {
+  const m = state.meta;
+  $('fineSize').innerHTML = FINE_SIZES.map(([v, t]) => {
+    const [s, r] = v ? v.split(',').map(Number) : [m.res_km >= 0.25 ? 50 : 25, m.res_km >= 0.25 ? 0.1 : 0.05];
+    const ok = r < m.res_km && m.res_km / r <= 20 + 1e-9 && s < m.size_km;
+    return `<option value="${v}" ${ok ? '' : 'disabled'}>${t}${v ? '' : ` (${s} km @ ${r * 1000} m)`}</option>`;
+  }).join('');
+  if ($('fineSize').selectedOptions[0]?.disabled) $('fineSize').value = '';
+}
+// the size a pick asks for now: [size_km, res_km]
+function fineSizeNow() {
+  const m = state.meta, v = $('fineSize').value;
+  return v ? v.split(',').map(Number) : [m.res_km >= 0.25 ? 50 : 25, m.res_km >= 0.25 ? 0.1 : 0.05];
+}
+// whether a fine zoom of that size round lat, lon fits inside this zoom
+function fineFits(lat, lon) {
+  const m = state.meta, [x, y] = toPlane(m.center, lat, lon), h = (m.size_km - fineSizeNow()[0]) / 2;
+  return Math.abs(x) <= h && Math.abs(y) <= h;
+}
+// the panel's list: the parent, the fine zooms (open in 2D; in 3D shown or not, fly to)
+function fineBox() {
+  const m = state.meta, pz = m.parent_zoom, ds = descendants(m.id);
+  const res = (z) => z.res_km >= 1 ? `${fmt(z.res_km, 1)} km` : `${Math.round(z.res_km * 1000)} m`;
+  const parent = pz ? `<div>in <a href="?id=${pz.id}" data-open="${pz.id}">${pz.id}</a> <span class="muted">(${res(pz)}/px${(pz.lineage || []).length > 1 ? `; from ${pz.lineage[0]}` : ''})</span></div>` : '';
+  $('fineBox').innerHTML = parent + (ds.length ? `<label title="Draw them in the 3D view, over this zoom"><input type="checkbox" id="fineOn" ${fine.on ? 'checked' : ''}> show in 3D</label>` +
+    ds.map(({ z, depth }) => `<div style="padding-left:${(depth - 1) * 14}px;display:flex;gap:4px;align-items:center">
+      <input type="checkbox" data-want="${z.id}" ${fine.want.has(z.id) ? 'checked' : ''} title="show in 3D">
+      <a href="?id=${z.id}" data-open="${z.id}">${z.id}</a> ${z.size_km} km @ ${res(z)}
+      ${fine.loading.has(z.id) ? '<span class="muted">loading</span>' : ''}
+      <button class="fineFly" data-fly="${z.id}" title="fly there (3D)" style="padding:0 5px">&#8599;</button></div>`).join('')
+    : (pz ? '' : 'none yet'));
+  for (const a of $('fineBox').querySelectorAll('[data-open]')) a.onclick = (e) => { e.preventDefault(); openZoom(a.dataset.open); };
+  if ($('fineOn')) $('fineOn').onchange = () => { fine.on = $('fineOn').checked; render(); syncURL(); };
+  for (const c of $('fineBox').querySelectorAll('[data-want]')) c.onchange = () => {
+    const id = c.dataset.want;
+    if (c.checked) { for (const f of chain(id, m.id)) fine.want.add(f); fine.flyTo = id; } else fine.want.delete(id);
+    fineBox(); render(); syncURL();
+  };
+  for (const b of $('fineBox').querySelectorAll('[data-fly]')) {
+    b.style.display = state.d3 ? '' : 'none';
+    b.onclick = () => { const id = b.dataset.fly; if (!fine.want.has(id)) { for (const f of chain(id, m.id)) fine.want.add(f); fine.on = true; fineBox(); } fine.flyTo = id; render(); syncURL(); };
+  }
+}
+function openZoom(id) {
+  if (![...$('zoomSel').options].some((o) => o.value === id)) return;
+  $('zoomSel').value = id; load(id);
+}
+// the fine zooms the 3D view should show, coarsest first
+function fineWanted() {
+  if (!fine.on || !state.meta) return [];
+  const ds = descendants(state.meta.id).map((d) => d.z.id);
+  return ds.filter((id) => fine.want.has(id));
+}
+// load the wanted ones not loaded yet (each redraws when it arrives)
+function ensureFine() {
+  for (const id of fineWanted()) if (!fine.data.has(id) && !fine.loading.has(id)) {
+    fine.loading.add(id); fineBox();
+    fetchZoom(id).then((zd) => {
+      fine.loading.delete(id);
+      if (zd) fine.data.set(id, zd);
+      fineBox();
+      if (state.d3) render();
+    });
+  }
+}
+// the 3D view's fine tiles: colours of the page's layer (as the zoom's), then the tiles (if the set changed)
+function renderFine(smooth, natural) {
+  const shown = fineWanted().filter((id) => fine.data.has(id)).map((id) => fine.data.get(id));
+  for (const zd of shown) withZoom(zd, () => { state.bare = true; try { renderLayer(); } finally { state.bare = false; } });
+  const key = shown.map((zd) => zd.meta.id).join(',');
+  if (V3.fineKey !== key) {
+    V3.setFine(shown.map((zd) => ({ id: zd.meta.id, nx: zd.meta.nx, ny: zd.meta.ny, res_km: zd.meta.res_km, center: zd.meta.center,
+      L: zd.L, falls: zd.marks.falls, volc: zd.marks.volc, colours: zd.off })));
+    V3.fineKey = key;
+    const err = Math.max(0, ...V3.tiles.slice(1).map((t) => t.placeErr || 0));
+    if (err > 0.005) console.warn(`fine tiles placed to within ${(err * 1000).toFixed(1)} m (an affine fit of the reprojection)`);
+  } else if (shown.length) V3.setTexture(state.off, smooth, natural, Object.fromEntries(shown.map((zd) => [zd.meta.id, zd.off])));
+  if (fine.flyTo && V3.tiles.some((t) => t.id === fine.flyTo)) {
+    V3.flyToTile(fine.flyTo, !!fine.flyNow); fine.flyTo = null; fine.flyNow = false;
+  }
+}
+// "Fine zoom here": the next click on the map (or the 3D ground) picks the point
+function armFine() {
+  if (fine.job && !fine.job.finished) return;
+  fine.arm = !fine.arm;
+  $('fineHere').classList.toggle('on', fine.arm);
+  $('fineJob').textContent = fine.arm ? `click a point for ${fineSizeNow()[0]} km @ ${fineSizeNow()[1] * 1000} m (Esc: cancel)` : '';
+  if (V3) V3.onPick = fine.arm ? (ll) => { fine.arm = false; $('fineHere').classList.remove('on'); postFine(ll[0], ll[1]); } : null;
+  canvas.style.cursor = fine.arm ? 'crosshair' : '';
+  draw();
+}
+function fineJobLine(text) { $('fineJob').innerHTML = text; }
+async function postFine(lat, lon) {
+  fine.arm = false; $('fineHere').classList.remove('on'); if (V3) V3.onPick = null; canvas.style.cursor = '';
+  if (!fineFits(lat, lon)) { fineJobLine(`${fmt(lat, 3)}, ${fmt(lon, 3)} is too close to this zoom's edge for ${fineSizeNow()[0]} km`); draw(); return; }
+  const parent = state.meta.id, req = { zoom: parent, lat: +lat.toFixed(4), lon: +lon.toFixed(4) };
+  if ($('fineSize').value) [req.size_km, req.res_km] = fineSizeNow();
+  const job = fine.job = { finished: false };
+  fineJobLine(`asking for a fine zoom at ${req.lat}, ${req.lon}...`);
+  let r;
+  try { r = await fetch('../api/zoom', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) }); } catch { r = null; }
+  if (!r || r.status === 404 || r.status === 501) { job.finished = true; return fineJobLine('the server has no zoom API (run it with <code>uv run python -m planet serve</code>)'); }
+  const out = await r.json().catch(() => ({}));
+  if (!r.ok) { job.finished = true; return fineJobLine(`refused: ${out.error || 'HTTP ' + r.status}`); }
+  let j = {}, lost = 0;
+  while (j.status !== 'done' && j.status !== 'error') {
+    await new Promise((ok) => setTimeout(ok, 1000));
+    try { j = await (await fetch(`../api/jobs/${out.job}`, { cache: 'no-store' })).json(); lost = 0; }
+    catch { if (++lost > 40) { j = { status: 'error', error: 'lost the server' }; } continue; }
+    fineJobLine(`fine zoom at ${req.lat}, ${req.lon}: ${j.status}${j.progress ? ` ${Math.round(100 * j.progress)}%` : ''}${j.message ? ` &middot; ${j.message}` : ''}`);
+  }
+  job.finished = true;
+  if (j.status === 'error') return fineJobLine(`failed: ${j.error || '?'}`);
+  fine.idx = (await getJSON('../zooms/index.json')) || fine.idx;
+  // (a new zoom joins the picker, after its parent)
+  const z = zoomEntry(j.zoom);
+  if (z && ![...$('zoomSel').options].some((o) => o.value === z.id)) {
+    const o = document.createElement('option');
+    o.value = z.id; o.title = z.name; o.textContent = `${z.id} · ${fmt(z.center.lat, 1)}, ${fmt(z.center.lon, 1)} · ${z.size_km} km @ ${fmt(z.res_km, 2)} km`;
+    const p = [...$('zoomSel').options].find((q) => q.value === z.parent_zoom);
+    if (p) p.after(o); else $('zoomSel').appendChild(o);
+  }
+  fineJobLine(`made fine zoom <a href="?id=${j.zoom}" data-open="${j.zoom}">${j.zoom}</a>`);
+  $('fineJob').querySelector('a').onclick = (e) => { e.preventDefault(); openZoom(j.zoom); };
+  if (state.meta.id !== parent) return;
+  for (const f of chain(j.zoom, parent)) fine.want.add(f);
+  fine.on = true; fine.flyTo = j.zoom;
+  fineBox(); draw(); syncURL();
+  if (state.d3) render();
+}
+// the fine zooms' outlines on the 2D map (deeper ones dashed), and the pick's square while armed
+function drawFine() {
+  const m = state.meta, v = state.view;
+  if (!m) return;
+  const box = (center, size, style, dash, label) => {
+    const [x, y] = toPlane(m.center, center.lat, center.lon), c = x / m.res_km + m.nx / 2, r = m.ny / 2 - y / m.res_km, h = size / 2 / m.res_km;
+    ctx.setLineDash(dash); ctx.lineWidth = 1.5; ctx.strokeStyle = style;
+    ctx.strokeRect(v.x + (c - h) * v.s, v.y + (r - h) * v.s, 2 * h * v.s, 2 * h * v.s);
+    ctx.setLineDash([]);
+    if (label) { ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = style; ctx.fillText(label, v.x + (c - h) * v.s + 3, v.y + (r - h) * v.s - 4); }
+  };
+  for (const { z, depth } of descendants(m.id)) box(z.center, z.size_km, depth > 1 ? 'rgba(255,255,255,0.6)' : '#ffffff', depth > 1 ? [4, 3] : [],
+    depth > 1 ? '' : `${z.id} · ${z.size_km} km @ ${Math.round(z.res_km * 1000)} m`);
+  if (fine.arm && fine.at) box({ lat: fine.at[0], lon: fine.at[1] }, fineSizeNow()[0], fineFits(...fine.at) ? '#7fe07f' : '#ff6b5a', [6, 3], '');
+}
+
 // ------------------------------------------------------------ rendering
 function legendFor(kind) {
   const lg = state.meta.legend;
@@ -614,12 +854,16 @@ function render() {
   const natural = ['satellite', 'relief', 'height', 'shade'].includes(state.layer);  // (the 3D view tints its glaciers as ice)
   V3.opts.rivers = $('rivers').checked;
   if (V3.zoomId !== m.id) {
-    V3.zoomId = m.id;
-    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth, natural }, state.cam3d);
+    V3.zoomId = m.id; V3.fineKey = '';
+    V3.setZoom({ id: m.id, nx: m.nx, ny: m.ny, res_km: m.res_km, center: m.center, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth, natural }, state.cam3d);
+    if (state.cam3d) fine.flyTo = null;  // (the URL's camera wins)
     state.cam3d = null;
     fallList();
     $('river3d').innerHTML = V3.riverList().map((t, k) => `<option value="${k}">${k + 1}. ${t}</option>`).join('') || '<option value="">no big rivers</option>';
   } else V3.setTexture(state.off, smooth, natural);
+  // the fine zooms' tiles (PW-129): those loaded now; the rest load and redraw
+  ensureFine();
+  renderFine(smooth, natural);
   V3.showFalls($('falls').checked);
   V3.showVolc($('volc').checked);
 }
@@ -874,6 +1118,7 @@ function draw() {
   ctx.imageSmoothingEnabled = $('smooth').checked && !CATEGORICAL.includes(state.layer);
   ctx.drawImage(state.off, v.x, v.y, v.s * m.nx, v.s * m.ny);
   ctx.strokeStyle = '#2a3446'; ctx.strokeRect(v.x - 0.5, v.y - 0.5, v.s * m.nx + 1, v.s * m.ny + 1);
+  drawFine();
   drawMarks();
   // scale bar: a round number of km about 120 px long
   const kmPerPx = m.res_km / v.s, target = 120 * kmPerPx;
@@ -965,6 +1210,11 @@ addEventListener('mousemove', (e) => {
     state.view.x = drag.vx + e.clientX - drag.x; state.view.y = drag.vy + e.clientY - drag.y; draw();
     if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 3) { drag.moved = true; if (pinned) hideTip(); }
   }
+  if (e.target === canvas && fine.arm) {  // (picking a fine zoom: its square follows the pointer)
+    const rc = pixelAt(e), m = state.meta;
+    fine.at = rc ? latlon((rc[1] + 0.5 - m.nx / 2) * m.res_km, (m.ny / 2 - rc[0] - 0.5) * m.res_km) : null;
+    if (!drag) draw();
+  }
   if (e.target === canvas) {
     hover(e);
     if (!drag && !pinned) { const o = pick(e); if (o) showTip(o, e, false); else hideTip(); }
@@ -973,6 +1223,7 @@ addEventListener('mousemove', (e) => {
 });
 canvas.addEventListener('click', (e) => {
   if (drag && drag.moved) return;
+  if (fine.arm) { const rc = pixelAt(e), m = state.meta; if (rc) postFine(...latlon((rc[1] + 0.5 - m.nx / 2) * m.res_km, (m.ny / 2 - rc[0] - 0.5) * m.res_km)); return; }
   const o = pick(e);
   if (o) showTip(o, e, true); else if (pinned) hideTip();
 });

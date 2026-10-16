@@ -12,6 +12,7 @@
 //   with glints.
 // - Sky: a dome graded from a pale horizon to a deeper zenith, and haze (fog of
 //   the horizon's colour) that thickens with distance.
+// - Holes: a tile's surfaces are cut where a finer tile is drawn (PW-129).
 //
 // Scene units as zoom3d.js: x, z in km (z south), y in metres scaled by exag / 1000.
 import * as THREE from 'three';
@@ -74,6 +75,46 @@ export function flowCanvas(w, h) {
 const shared = { uTime: { value: 0 } };
 export const time = shared.uTime;
 
+// Holes (PW-129): where a finer tile is drawn over this one, this tile's
+// terrain, sea, lakes and shadow are discarded. Each hole is the finer tile's
+// footprint as an affine map of scene (x, z) to its square (-1..1)^2: q =
+// (dot(M.xy, p), dot(M.zw, p)) + T. Up to MAX_HOLES per tile.
+export const MAX_HOLES = 6;
+const HOLES = /* glsl */ `
+uniform vec4 uHoleM[${MAX_HOLES}]; uniform vec2 uHoleT[${MAX_HOLES}]; uniform int uHoleN;
+bool z3InHole(vec2 p) {
+  for (int k = 0; k < ${MAX_HOLES}; k++) {
+    if (k >= uHoleN) break;
+    vec2 q = vec2(dot(uHoleM[k].xy, p), dot(uHoleM[k].zw, p)) + uHoleT[k];
+    if (abs(q.x) < 1.0 && abs(q.y) < 1.0) return true;
+  }
+  return false;
+}`;
+export function holeUniforms() {
+  return { uHoleM: { value: Array.from({ length: MAX_HOLES }, () => new THREE.Vector4()) },
+           uHoleT: { value: Array.from({ length: MAX_HOLES }, () => new THREE.Vector2()) }, uHoleN: { value: 0 } };
+}
+// sets a material's holes: [{M: [a, b, c, d], T: [tx, tz]}]
+export function setHoles(u, holes) {
+  const n = Math.min(holes.length, MAX_HOLES);
+  for (let k = 0; k < n; k++) { u.uHoleM.value[k].set(...holes[k].M); u.uHoleT.value[k].set(...holes[k].T); }
+  u.uHoleN.value = n;
+}
+// the shader chunks: the declarations, and the discard (vWPos: the world position)
+const holeFrag = (sh) => sh.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (z3InHole(vWPos.xz)) discard;');
+// the shadow's depth material for a tile with holes (else the hidden ground would still cast shadows)
+export function depthMaterial(u) {
+  const m = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = holeFrag(sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vWPos;\n${HOLES}`));
+  };
+  m.customProgramCacheKey = () => 'z3d-depth-holes';
+  return m;
+}
+
 // the uniforms the terrain, sea and lake shaders read
 function dataUniforms(t, tex) {
   return { uData: { value: tex }, uTexel: { value: new THREE.Vector2(1 / t.nx, 1 / t.ny) }, uRes: { value: t.res },
@@ -88,15 +129,15 @@ function dataUniforms(t, tex) {
 export function terrainMaterial() {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 });
   m.userData.u = { uData: { value: null }, uFlow: { value: null }, uTexel: { value: new THREE.Vector2(1, 1) }, uRes: { value: 1 },
-                   uIceTint: { value: 1 }, uFx: { value: 1 }, uTime: shared.uTime };
+                   uIceTint: { value: 1 }, uFx: { value: 1 }, uTime: shared.uTime, ...holeUniforms() };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+    sh.fragmentShader = holeFrag(sh.fragmentShader).replace('#include <common>', `#include <common>
 varying vec3 vWPos;
 uniform sampler2D uData, uFlow; uniform vec2 uTexel; uniform float uRes, uIceTint, uFx, uTime;
-${NOISE}`).replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+${NOISE}${HOLES}`).replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 #ifdef USE_MAP
 {
   vec4 D = texture2D(uData, vMapUv);
@@ -155,16 +196,16 @@ ${NOISE}`).replace('#include <normal_fragment_maps>', `#include <normal_fragment
 // ------------------------------------------------------------ sea
 export function seaMaterial() {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, roughness: 0.18, metalness: 0, depthWrite: false });
-  m.userData.u = { uData: { value: null }, uFoam: { value: 1 }, uRes: { value: 1 }, uTime: shared.uTime };
+  m.userData.u = { uData: { value: null }, uFoam: { value: 1 }, uRes: { value: 1 }, uTime: shared.uTime, ...holeUniforms() };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vSeaUv; varying vec3 vWPos;')
       .replace('#include <uv_vertex>', '#include <uv_vertex>\nvSeaUv = uv;')
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+    sh.fragmentShader = holeFrag(sh.fragmentShader).replace('#include <common>', `#include <common>
 varying vec2 vSeaUv; varying vec3 vWPos;
 uniform sampler2D uData; uniform float uFoam, uTime, uRes;
-${NOISE}`).replace('#include <color_fragment>', `#include <color_fragment>
+${NOISE}${HOLES}`).replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec4 D = texture2D(uData, vSeaUv);
   if (D.b < 0.3) discard;  // (no sea here: land below sea level, off the coast)
@@ -191,7 +232,7 @@ ${NOISE}`).replace('#include <color_fragment>', `#include <color_fragment>
 export function lakeMaterial() {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.2, metalness: 0,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
-  m.userData.u = { uData: { value: null }, uOrigin: { value: new THREE.Vector4(0, 0, 1, 1) }, uTime: shared.uTime };
+  m.userData.u = { uData: { value: null }, uOrigin: { value: new THREE.Vector4(0, 0, 1, 1) }, uTime: shared.uTime, ...holeUniforms() };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec4 uOrigin; varying vec2 vLakeUv; varying float vSurf; varying vec3 vWPos;')
@@ -199,10 +240,10 @@ export function lakeMaterial() {
 vLakeUv = vec2((position.x - uOrigin.x) / uOrigin.z + 0.5, 0.5 - (position.z - uOrigin.y) / uOrigin.w);
 vSurf = position.y;`)
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+    sh.fragmentShader = holeFrag(sh.fragmentShader).replace('#include <common>', `#include <common>
 varying vec2 vLakeUv; varying float vSurf; varying vec3 vWPos;
 uniform sampler2D uData; uniform float uTime;
-${NOISE}`).replace('#include <color_fragment>', `#include <color_fragment>
+${NOISE}${HOLES}`).replace('#include <color_fragment>', `#include <color_fragment>
 {
   float depth = max(vSurf - texture2D(uData, vLakeUv).r, 0.0);
   diffuseColor.rgb = mix(diffuseColor.rgb * vec3(1.15, 1.3, 1.05) + vec3(0.06, 0.08, 0.03), diffuseColor.rgb * 0.7, smoothstep(0.0, 60.0, depth));

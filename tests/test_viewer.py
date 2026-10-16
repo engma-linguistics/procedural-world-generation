@@ -2,6 +2,7 @@
 `node --check` (a syntax error, or a name declared twice, would leave the page
 blank). Skipped where node isn't installed."""
 
+import json
 import re
 import shutil
 import subprocess
@@ -26,7 +27,7 @@ def test_viewer_scripts_parse(page, tmp_path):
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
-@pytest.mark.parametrize("script", ["zoom3d.js", "zoom3d_look.js", "zoom3d_fly.js", "zoom3d_mesh.js", "relief.js"])
+@pytest.mark.parametrize("script", ["zoom3d.js", "zoom3d_look.js", "zoom3d_fly.js", "zoom3d_mesh.js", "zoom3d_place.js", "relief.js"])
 def test_viewer_modules_parse(script, tmp_path):
     """The viewer's own ES modules (zoom3d.js: the zoom's 3D view, PW-072; relief.js: the globe's 3D relief)."""
     f = tmp_path / (Path(script).stem + ".mjs")
@@ -151,3 +152,32 @@ def test_zoom3d_coarse_mesh_keeps_the_rivers():
         assert s["boundary"] == s["ring"] and s["vOk"], (step, s)
         assert s["climb"] < 0.01, (step, s)
     assert o["4"]["tris"] < o["2"]["tris"] < o["1"]["tris"] == 2 * 39 * 36
+
+
+_PLACE_JS = r"""
+import { aeFrame, latlonOf, place } from '%s';
+// a 50 km fine zoom 66.5 km east and 9.6 km south of a 1 km/px zoom's centre (as 97b3e7 in 170672)
+const root = { lat: 16.3, lon: 155.1 }, R = aeFrame(root.lat, root.lon);
+const [la, lo] = latlonOf(R.toSphere(66.5, -9.6)), F = aeFrame(la, lo);
+const pl = place({ lat: la, lon: lo }, root, 50, 50), [a, b, c, d] = pl.M;
+let miss = 0;
+for (const [x, z] of [[-25, -25], [25, 25], [10, -20], [0, 0], [-25, 25]]) {
+  const [X, Y] = R.toPlane(F.toSphere(x, -z));
+  miss = Math.max(miss, Math.hypot(a * x + b * z + pl.T[0] - X, c * x + d * z + pl.T[1] + Y));
+}
+console.log(JSON.stringify({ miss, err: pl.err, T: pl.T, same: place(root, root, 500, 500) }));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_zoom3d_fine_tile_placed_by_reprojection():
+    """A fine zoom's tile (PW-129) lands where reprojecting its pixels puts them: the
+    affine fit misses by under a metre, and a zoom in its own frame is the identity."""
+    js = _PLACE_JS % (VIEWER / "zoom3d_place.js").as_uri()
+    r = subprocess.run(["node", "--input-type=module", "-e", js], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["miss"] < 0.001 and out["err"] < 0.001
+    assert abs(out["T"][0] - 66.5) < 0.01 and abs(out["T"][1] - 9.6) < 0.01
+    s = out["same"]
+    assert abs(s["M"][0] - 1) < 1e-9 and abs(s["M"][1]) < 1e-9 and abs(s["T"][0]) < 1e-6

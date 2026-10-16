@@ -191,11 +191,18 @@ start to pay off. Not in this ticket; warn the owner before the 25 m tier ships 
 - **Not redone**: glacier outlines, landform overlays, deltas and reef forms. These use the parent's, interpolated.
 - **Cost**: 3.5-6 s and ~21 MB per 500 px, 18 s and 83 MB at 1000 px (25 m).
 
+## As built: the 3D view and the 2D pick (2026-10-16)
+
+`viewer/zoom3d.js`, `zoom3d_look.js`, `zoom3d_place.js`, `zoom.html` (summary in `docs/overview.md`, "Fine zooms in 3D and 2D"). Differences from the plan above:
+- **Placement**: one affine map per tile, fitted by least squares to the exact reprojection of a 9×9 grid of its points (each tile's group matrix), not per-vertex positions: the fit misses by 0.4 m for a 50 km tile 67 km off-centre in a 1 km zoom (`placeErr`), well under a pixel at 25 m.
+- **Hole**: the coarser tiles' terrain, sea and lake shaders discard inside the finer tile's footprint (shrunk by 0.1 fine px so no gap shows the sky), and so does the shadow pass (a depth material with the same holes); their triangles wholly inside are dropped too. The seam is a blend: the fine tile's outer 8 pixels fade into the coarser drawn surface, with a 60 m wall in its edge colours beneath.
+- **Exaggeration**: one scale for all tiles, set by the tile the camera looks at (the target) when the view opens, a tile is added or the camera flies to a tile or fall, unless set by hand: 1× on 50 m and finer, 1.5× at 100 m, 3× on regional zooms.
+- **Canopy** (PW-388 option B): built; at 50 m it reads as forest from a moderate height; at 25 m from a low camera it's a lumpy carpet, not trees (`docs/review/fine-zoom-3d/canopy_25m_low_*.png`). Trees need option C (draft).
+
 ## Handoff (not yet done)
 
-- 3D tile: the fine zoom as an inset Tile in zoom3d (separate agent).
-- 2D page: a "fine zoom here" pick and the children's rectangles (inbox draft).
-- Gorges are D8 staircases with banded walls at 50 and 25 m (draft).
+- Gorges are D8 staircases with banded walls at 50 and 25 m, spires beside the 822 m fall (being fixed in zoom_fine.py).
 - River inflow into children is 10-25% short at the 25 m fall (draft).
 - Glaciers, landform overlays, deltas and reef forms aren't redrawn at the fine scale (draft).
-- Decisions for the owner: 3x3-block means vs per-pixel means; whether to ship the 25 m tier (its canopy is flat) (drafts).
+- 3D follow-ups (drafts): instanced trees at 25 m, faint dots along the seam, fine falls missing from the panel's list, flights on the fine river's course.
+- Decisions for the owner: 3x3-block means vs per-pixel means; whether to ship the 25 m tier (PW-388).
