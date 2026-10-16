@@ -464,7 +464,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
-**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no microclimate (PW-101); some perched rivers (PW-124); ~9 undesigned drops ≥ 100 m left on the 8 showcase zooms of 592f2a (mean of 5 seeds; ~39 before PW-298, docs/review/zoom-polish/pw298.md); side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
+**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no microclimate (PW-101); some perched rivers (PW-124); ~10 undesigned drops ≥ 100 m left on the 8 showcase zooms of 592f2a (mean of 5 seeds, 4–13 by seed; ~39 before PW-298, docs/review/zoom-polish/pw298.md, batch4.md); side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
 
 ### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
