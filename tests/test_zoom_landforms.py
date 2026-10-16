@@ -114,6 +114,17 @@ def test_escarpment_keeps_cell_means(esc_pair):
         assert abs(esc["stats"][k]) < abs(plain["stats"][k]) + tol, (k, plain["stats"][k], esc["stats"][k])
 
 
+def test_landform_mean_correction_spares_the_channels(esc_pair):
+    """What the landform bedding takes off a cell's mean goes back on its
+    hillslopes, never on a stream's bed (PW-125: on the channels too, it
+    lifted a bed where the classes weigh much over its foot where they weigh
+    little, a 100-600 m step)."""
+    st = esc_pair[1]["debug"]["stages"]
+    corr, chan = st["landform_mean_correction"], st["landform_channels"]
+    assert np.all(corr[chan] == 0)
+    assert np.abs(corr[~chan]).max() > 1.0  # (the hillslopes carry it)
+
+
 def test_landform_zoom_is_deterministic(esc_pair):
     _, esc = esc_pair
     w = _escarpment_world(0.3, 600)

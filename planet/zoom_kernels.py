@@ -288,8 +288,14 @@ def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
     s_i (m per km) x dist_i (km) above its receiver (or above floor_i, if
     that is higher: lake rims, gorge rims, the floors of big rivers, with
     their falls). Above `soft` the slope tapers off (rounded summits rather
-    than absurd peaks) and nothing goes above `cap`; always a little above
-    the receiver so drainage stays intact.
+    than absurd peaks): dh/dx = s / (1 + (h - soft) / scale)^2, integrated
+    exactly along the link (u = 1 + (h - soft) / scale grows as
+    u^3 = u0^3 + 3 s x / scale), so a link that climbs past `soft` tapers
+    within itself and the profile doesn't depend on the pixel size (taken
+    at the link's base, one long steep link climbed far past `soft` at the
+    full slope and the links above it were tapered almost flat: a one-link
+    step, PW-125). Nothing goes above `cap`; always a little above the
+    receiver so drainage stays intact.
     Pixels with fixed=True (outlets, region edge) keep their height."""
     for t in range(order.shape[0]):
         i = order[t]
@@ -297,9 +303,14 @@ def integrate(h, rec, order, s, dist, fixed, floor, soft, scale, cap):
         if fixed[i] or d < 0:
             continue
         base = max(h[d], floor[i])
-        over = max(base - soft[i], 0.0) / scale[i]
-        inc = s[i] * dist[i] / ((1.0 + over) * (1.0 + over))
-        h[i] = max(min(base + inc, cap[i]), base + 0.01 * dist[i])
+        run = s[i] * dist[i]
+        top = base + run
+        if top > soft[i] and s[i] > 0:
+            lo = max(base, soft[i])  # where the taper starts, and the run left there
+            left = run - (lo - base)
+            u0 = 1.0 + (lo - soft[i]) / scale[i]
+            top = soft[i] + scale[i] * ((u0 * u0 * u0 + 3.0 * left / scale[i]) ** (1.0 / 3.0) - 1.0)
+        h[i] = max(min(top, cap[i]), base + 0.01 * dist[i])
 
 
 @njit(cache=True)

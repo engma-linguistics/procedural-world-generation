@@ -244,6 +244,28 @@ def test_steep_reach_is_not_a_fall():
     assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 162) < 1
 
 
+def test_steep_stream_reaching_a_flat_floor_is_not_a_fall():
+    """A mountain stream falling 50 m/km on 4 km pixels, its last link
+    100 m/km (400 m) onto a flat valley floor: only 2x as steep as the
+    stream above it, so no fall, though the floor below is flat (PW-125:
+    pooled over both sides, the flat side halved the context and it was
+    listed). A hanging tributary, gentle above with the same 400 m step at
+    the floor, is one."""
+    nx, ny, res = 40, 24, 4.0
+    r = 10 * nx + np.arange(nx - 1)
+    rec = np.full(nx * ny, -1)
+    rec[r] = r + 1
+    q = np.zeros(nx * ny)
+    q[r] = 50.0
+    col = np.arange(nx)
+    ws = np.zeros((ny, nx))
+    ws[10, :] = np.where(col < 20, 500.0 + 50.0 * res * (19 - col), 100.0 - 0.1 * res * (col - 20))
+    assert not zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    ws[10, :] = np.where(col < 20, 500.0 + 2.0 * res * (19 - col), 100.0 - 0.1 * res * (col - 20))
+    f = zoom.waterfalls(ws.ravel(), q, rec, nx, ny, res)
+    assert len(f) == 1 and f[0]["px"] == [10, 19] and abs(f[0]["height_m"] - 400) < 1
+
+
 def test_zoom_reports_waterfalls(lake_zoom):
     for f in lake_zoom["stats"]["waterfalls"]:
         assert f["height_m"] >= zoom.WF_MIN_DROP and f["discharge_m3s"] >= zoom.WF_MIN_Q

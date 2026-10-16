@@ -2,7 +2,7 @@
 id: PW-125
 title: "Zoom: remaining undesigned drops on mid-size streams, coarse-zoom hanging joins, edge steps"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -29,6 +29,7 @@ Measure with a per-zoom count of `waterfalls(..., top=100000)` kinds; find which
 re-routing leaves each step (the zoomsmalls report has the diagnostic approach).
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done (e503044): creep as diffusivity above 2 km (owner C) + stream mask at 2 km; remap correction on hillslopes only; exact summit taper; waterfalls() requires 3x steeper than BOTH sides (as documented). 8 zooms of 592f2a: drops >=100 m 131 -> 33. Tiled reference confirms C (range 295 vs 300 ref). Stitching: seams ~10x normal step, 0-45% stream continuity, 3-10x cost: not a stand-in. Write-up docs/review/zoom-polish/pw125.md.
 - 2026-10-15: Status todo -> in-progress. Agent working (creep scaling C + tiled-1km reference check).
 - 2026-10-15: Status needs-decision -> todo. Owner 2026-10-15: take the sound fix (C: creep step scaled by (2 km/res)^2) even if 4 km zooms look rougher. Before finalising, check against a reference: 1 km zooms tiled over part of a 4 km zoom's area, averaged to 4 km. If C's 4 km terrain matches that roughness, C is right.
 - 2026-10-15: Status in-progress -> needs-decision. Diagnosed, no code change: ~80% of 114 drops on arcs from landscape-pass steep first links below the soft summit taper; creep lift up to 470 m. Three creep fixes changed every 4 km zoom; needs owner call.
