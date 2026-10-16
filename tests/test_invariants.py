@@ -51,7 +51,7 @@ def test_values_sane(sim4):
     assert (s.t_warm >= s.temp - 1e-6).all() and (s.t_cold <= s.temp + 1e-6).all()
     assert (s.w_rock < len(ROCKS)).all()
     snap = s.snapshot()
-    land = s.land()  # (frames' land: the bed under an ice load can be below the sea, PW-309)
+    land = s.land()  # (as frames have it: oceanic crust's trench and the ice's load count, PW-309)
     assert (snap.koppen[land] != climate.SEA_CLASS).all()
     assert (snap.koppen[~land] == climate.SEA_CLASS).all()
 

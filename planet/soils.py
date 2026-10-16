@@ -342,7 +342,7 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     What needs the grid (slope, floodplains, loess, salt lakes nearby) is
     worked out here; the rest is per cell (_mineral, shared with the zoom)."""
     from . import landform as LF
-    from .vegetation import floodplain, relief
+    from .vegetation import floodplain
     n = grid.n
     elev = np.asarray(elev, float)
     ice = np.zeros(n) if ice is None else np.asarray(ice, float)
@@ -355,7 +355,7 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     glac = np.full(n, 9999.0) if glaciated_myr is None else np.asarray(glaciated_myr, float)
     cl = _climate(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
     mi = cl["mi"]
-    slope = relief(grid, elev) / (grid.spacing * R_KM)  # m per km to the steepest neighbour
+    slope = cell_slope(grid, elev)
 
     # alluvium on the big rivers' floodplains, aggrading coastal plains
     fp = floodplain(grid, elev, np.zeros(n) if flow is None else flow, None, flood_ratio)
@@ -375,6 +375,13 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     loess_m = np.where(land, loess(grid, src, trap, winds, sea | (ice > 0)), 0.0) if len(winds) else np.zeros(n)
     return _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope,
                     fp / 0.35, aggrading, loess_m, salt_near(grid, lake_kind), memory)
+
+
+def cell_slope(grid, elev) -> np.ndarray:
+    """m per km to the steepest neighbour, the sea counted at sea level: a
+    coastal lowland isn't steep for the drop to the sea floor beside it."""
+    from .vegetation import relief
+    return relief(grid, np.maximum(np.asarray(elev, float), 0.0)) / (grid.spacing * R_KM)
 
 
 def salt_near(grid, lake_kind) -> np.ndarray:
@@ -594,11 +601,13 @@ def organic(m: dict, vg: dict) -> dict:
     burned = np.clip(vg["eq"]["burned"], 0, 1)
     gain = (1 + GRASS_GAIN * grass) * (1 - 0.5 * burned * (1 - grass))
     soc = np.where(land, npp * gain / (K10 * dfac * moist), 0.0)
-    # peat on the flooded share, where the water stays (a surplus of rain)
+    # peat on the flooded share, where the water stays (a surplus of rain), but not on the
+    # active floodplain: each flood's silt buries and aerates the litter there (alluvium, not peat;
+    # peat forms in the backswamps beyond the levees)
     sat = np.clip((m["mi"] - 0.7) / 0.5, 0, 1)
     escape = PEAT_ESCAPE * (1 + 2 * nu[IDX["Sph"]])
     alpha = PEAT_ALPHA * dfac
-    m_star = npp * escape * sat / alpha  # kg C/m2 (Clymo's equilibrium)
+    m_star = npp * escape * sat * (1 - m["alluvial"]) / alpha  # kg C/m2 (Clymo's equilibrium)
     age = np.minimum(m["age_cap"], 1e9)
     peat_c = np.where(land & (fw > 0), m_star * (1 - np.exp(-alpha * age)), 0.0)
     peat_d = peat_c / PEAT_RHO

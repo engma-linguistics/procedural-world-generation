@@ -1,4 +1,5 @@
 ---
+id: PW-345
 title: "Zoom soils: one constant converts a pixel's slope to the cells' measure, but the zoom's roughness varies 4-22x"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-soils
 blocked_by: []
 relates: [PW-331, PW-185]
 refs: [planet/soils.py, tools/zoom_soil_check.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Options: (A) keep the constant (sound on average, differences are the zoom's own
 slope over a fixed baseline (e.g. the terrain smoothed to ~4 km) so it no longer depends on the resolution, then
 recalibrate one constant; (C) per zoom, scale the pixels' slopes so each cell's mean erosion matches the cell's (a pull
 towards the coarse cell, which the proposal avoided). Lean A unless zooms look wrong; B if 0.5 km zooms do.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-soil-slope-scale.md (found by zoom-soils).
