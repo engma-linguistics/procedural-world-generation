@@ -2,7 +2,7 @@
 id: PW-314
 title: "Earth soil check data: SoilGrids WRB overview reader, GLiM parent rock and an LGM ice mask for the Earth world"
 type: task
-status: todo
+status: in-progress
 parent: PW-185
 subsystem: infra
 effort: m
@@ -24,4 +24,5 @@ Step 4 of the soils proposal (docs/proposals/soils.md section 7) needs three Ear
 Done when `tools/soil_check.py` can load all three on the Earth grid at L6 in a few seconds after the first download.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (loaders + tools/soil_check.py).
 - 2026-10-15: Created from inbox draft draft-earth-soil-data.md (found by soilprop).
