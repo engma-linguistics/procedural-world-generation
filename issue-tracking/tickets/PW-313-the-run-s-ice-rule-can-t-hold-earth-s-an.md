@@ -35,6 +35,7 @@ write-up). Today's Antarctica should hold at dT 0 and grow toward the LGM's ~-12
 - [ ] Earth probe at dT 0 keeps an ice share near 3% over 8 updates
 
 ## Updates
+- 2026-10-16: Polar bundle agent started.
 - 2026-10-16: Agent (2026-10-16) found three coupled causes, none merged alone: PW-335 frozen-sea summer air, PW-336 sheet air carried along the winds (option A), PW-332 margin snowfall. Probe: base 0.10%, +A 1.18%, +A + Antarctic snow x2.5 (diagnostic) ~2.6% holds. To land as one polar-climate bundle. Write-up docs/review/audit/pw313-polar-summers.md.
 - 2026-10-16: Run lane (pw313): not fixed; nothing merged. Sound temperature fixes (frozen-sea summer air; carrying the sheet's own summer air) bring Earth's polar coasts and Antarctica's coast/WAIS within 0-4 C of observations, but the probe still decays: its losing margins are at the observed summer with ~100 mm/yr of snow (obs 100-500). With carried air + Antarctic snowfall x2.5 it holds ~2.6%. See docs/review/audit/pw313-polar-summers.md and drafts frozen-sea-summer-air, ice-sheet-air-carried (needs-decision), antarctic-margin-snowfall (PW-013).
 - 2026-10-15: Status todo -> in-progress. Run-lane agent started (polar summers / Antarctica).

@@ -1,4 +1,5 @@
 ---
+id: PW-339
 title: "Zoom drainage tie-break jitter isn't planet-fixed: drop counts and networks move with the grid"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-batch2
 blocked_by: []
 relates: [PW-319, PW-321, PW-125]
 refs: [planet/zoom.py, "world 592f2a"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -28,3 +31,6 @@ To try: sample the jitter from planet-fixed noise at the pixel's position (`ZK.f
 hash of the rounded 3D position), so overlapping zooms tie-break alike; and measure drop counts as a mean
 over a few seeds.
 - [ ] jitter planet-fixed; drop counts reported as mean +- spread over 3-5 seeds
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-drainage-jitter-not-planet-fixed.md (found by zoom-batch2).

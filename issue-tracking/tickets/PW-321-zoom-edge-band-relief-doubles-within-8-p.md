@@ -2,7 +2,7 @@
 id: PW-321
 title: "Zoom edge band: relief doubles within 8 px of the region's edge"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-125, PW-129]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw125.md, docs/review/zoom-polish/pw125_seam_interior.png]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -29,5 +29,6 @@ a few pixels wide.
 - [ ] edge-band 3x3 relief within ~20% of the inside on the three test sites
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (a3b21df): terrain built with a half-cell halo and cropped; edge/inside relief 1.90 -> 1.33 (range). Cost +5% (4 km) .. +33% (0.5 km).
 - 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-edge-band-relief.md (found by pw125).

@@ -2,7 +2,7 @@
 id: PW-337
 title: "Sea-ice air in deep icehouses reaches -114 C: the 3x frozen-sea amplification has no floor"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -29,4 +29,5 @@ off as the ice thickens), not a clamp. The land's coldest months in the same swe
 - [ ] the coldest sea-ice air in deep icehouses (L4 seeds 1-5, 300 Myr) above ~-60 C
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
 - 2026-10-16: Created from inbox draft draft-sea-ice-air-unbounded.md (found by pw313).

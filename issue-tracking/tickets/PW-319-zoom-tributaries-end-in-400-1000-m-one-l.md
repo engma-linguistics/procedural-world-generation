@@ -2,7 +2,7 @@
 id: PW-319
 title: "Zoom: tributaries end in 400-1000 m one-link walls beside pinned rivers (C fit peaks there)"
 type: task
-status: in-progress
+status: wontdo
 parent: null
 subsystem: zoom
 effort: m
@@ -37,6 +37,7 @@ the tiled reference's p99 step on the arc.
 - [ ] drops >= 100 m on the arc zoom well under 28, with no loss of designed lips
 
 ## Updates
+- 2026-10-16: Status in-progress -> wontdo. Stopped (zoom batch 2): C fit never settles (max x1.5 per pass); smoothing C helps drops but moves inland bias -25..-67 m. Coordinator: fold into PW-298.
 - 2026-10-16: Measured (zoom batch 2, after PW-321's halo; arc zoom 592f2a -9.35,-161.39 2000@4 km): the C fit winds up. C *= clip(tmean/hmean)^0.8 per pixel never converges where a box can't reach its target mean (pinned low courses, the summit taper/cap, MAX_SLOPE): over 15 iterations C's max grows ~1.5x each (52 -> 32,874), p95 45 -> 876, 2.8% of land at MAX_SLOPE, box ratio p95 still 1.11. C at the drops' lips is 2-6x C three px upstream (1211/261, 2677/423, 1922/575 ...), so the last link is a wall. Option tried: smooth log C over the fit's own box after each update (C as the smooth field the docstring describes). It stops the windup (max 3,345, still creeping; lip ~= upstream C) and takes arc drops >= 100 m 29 -> 22, max 855 -> 424 m, p99 pixel step 1286 -> 1176 m; but it moves inland cell-mean bias/RMS: arc +9/146 -> -30/156, 49.32,37.38 +41/145 -> +14/136, 1.96,-70.44 (1 km) -18/102 -> -45/122, 4.81,-72.18 (1 km) +61/154 -> -7/161; drops on the others 1/2/1 -> 1/1/2. Not merged: 22 is not 'well under 28', and the bias shifts are PW-298's metric. The remaining 22 have equal C at lip and upstream, so something else concentrates them (rock K contrasts in 'rough', floors/banks of held courses: not yet traced). Lean: fold into PW-298 as one C-fit redesign: a smooth C (fitted on cell or box means, interpolated) with an anti-windup (no update where the box can't respond: held/capped pixels out of the comparison), measured on both metrics.
 - 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-c-fit-steep-links-at-pinned-courses.md (found by pw125).
