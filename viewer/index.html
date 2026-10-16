@@ -233,7 +233,7 @@
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
     <label data-needs="current_e" title="Surface currents (wind-driven gyres) as streamlines: brighter = faster, chevrons show the way"><input type="checkbox" id="currents"> Ocean currents</label>
     <label data-needs="sinking" title="The thermohaline overturning: where deep water sinks (rings, sized by Sv), the warm surface inflow feeding it (the model's route) and a schematic of the deep return flow (not modelled)"><input type="checkbox" id="overturning"> Overturning (deep water)</label>
-    <label data-needs="jet_e" title="Upper-level winds (~10 km up), yearly average"><input type="checkbox" id="jet"> Jet stream (upper winds)</label>
+    <label data-needs="jet_e" title="The jet stream's core: where the upper wind (~10 km up) is fastest, for January and July (the season picker shows one); a day's jet meanders, these are half-year means"><input type="checkbox" id="jet"> Jet stream (seasonal core)</label>
     <label data-needs="cloud_jul" title="Clouds over the map: patches covering the season's cloud share (the cloud layer), shapes made up (noise). Best with the satellite layer."><input type="checkbox" id="clouds"> Clouds</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
     <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
@@ -293,6 +293,9 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import * as Relief from './relief.js';
 
 const $ = (id) => document.getElementById(id);
@@ -322,9 +325,30 @@ const relief3d = () => $('relief3d').checked;
 const seaFloorOn = () => relief3d() && $('seaFloor').checked;
 let seaShell = null;
 
+const RIBBON_MATS = new Map();  // (the overlays' line materials, ribbonMat: their resolution follows the window)
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  RIBBON_MATS.forEach((m) => m.resolution.set(innerWidth, innerHeight));
+}
+// The camera's near and far planes hug what can be in view (PW-408). The depth buffer's
+// precision goes with the near plane (a step of ~d^2 / (near * 2^bits) at distance d): with
+// near fixed at 0.01, a 16-bit depth buffer (which some browsers and displays give) steps
+// ~0.014 globe radii at the default distance, more than the rivers' lift over the 3D relief
+// (~0.002-0.003) and about the marks' (~0.012), so rivers, and less often volcano and hotspot
+// marks, z-fought the ground and shimmered (with near 256x smaller headless, as 24 -> 16 bits
+// would: 20-50% of the river pixels lost and changing as the camera moves). Nothing drawn is
+// closer than half the camera's height over the highest thing on the globe (radius 1.35: the
+// axis, event markers, the relief at 200x) or the map (its relief plus 0.15).
+function fitClip() {
+  const ext = topo?.maxR || 1;
+  let h, far;
+  if (state.mode === 'globe') { const r = camera.position.length(); h = r - Math.max(1.35, ext * 1.1); far = r + 2; }
+  else { h = camera.position.z - (relief3d() ? 2 / Math.PI * Math.max(ext - 1, 0) : 0) - 0.15; far = camera.position.distanceTo(controls.target) + 6; }
+  const near = Math.max(0.01, 0.5 * h);
+  if (Math.abs(near - camera.near) > 1e-4 * near || Math.abs(far - camera.far) > 1e-3) {
+    camera.near = near; camera.far = far; camera.updateProjectionMatrix();
+  }
 }
 // Map is 4 x 2 units (lon/90, lat/90); back the camera off until all of it fits.
 function fitMap() {
@@ -829,6 +853,7 @@ function paint() {
   if (writePos) {
     // the bounding sphere (for picking and culling), without a pass over every vertex:
     // the globe is centred, of radius the highest point; the map is 4 x 2 (plus the overlap)
+    topo.maxR = maxR;  // (the highest point: fitClip)
     if (globe) mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), maxR);
     else mesh.geometry.computeBoundingSphere();
     topo.posKey = posKey;
@@ -941,9 +966,32 @@ function llPos(lat, lon, r, mapLift = 0.003) {
   return [lon / 90, lat / 90, mapLift + (relief3d() && V.R ? mapRelief(nearestCell(lat, lon)) : 0)];
 }
 
-// Line materials are shared by colour and opacity and never disposed: overlays are rebuilt
-// every replay frame, and disposing the last material of a kind makes three.js throw away
-// its shader program and link it again on the next frame.
+// The rivers and the jet's core are ribbons of triangles a fixed number of screen pixels
+// wide (three's fat lines, LineSegments2): they read better than 1-pixel lines and are drawn
+// the same on every GPU. Materials are shared by colour, opacity and width and never
+// disposed: overlays are rebuilt every replay frame, and disposing the last material of a
+// kind makes three.js throw away its shader program and link it again on the next frame.
+// Their resolution (CSS pixels) follows the window (resize).
+function ribbonMat(color, opacity, width, vertexColors = false) {
+  const key = `${color}|${opacity}|${width}|${vertexColors}`;
+  if (!RIBBON_MATS.has(key)) {
+    const m = new LineMaterial({ color, linewidth: width, transparent: opacity < 1, opacity, vertexColors });
+    m.resolution.set(innerWidth, innerHeight);
+    m.userData.shared = true; RIBBON_MATS.set(key, m);
+  }
+  return RIBBON_MATS.get(key);
+}
+// pts: segment end points (x, y, z, x, y, z per segment); cols: a colour (r, g, b) per end point
+function ribbonObj(pts, color, opacity = 1, width = 1.5, cols = null) {
+  const g = new LineSegmentsGeometry();
+  if (pts.length) { g.setPositions(pts); if (cols) g.setColors(cols); }
+  const o = new LineSegments2(g, ribbonMat(cols ? 0xffffff : color, opacity, width, !!cols));
+  o.raycast = () => {};  // (hovering picks the ground)
+  return o;
+}
+function disposeObj(o) { o.geometry?.dispose(); o.material.map?.dispose(); if (!o.material.userData.shared) o.material.dispose(); }
+// The other overlays stay 1-pixel GL lines (the plate outlines alone are ~1 M segments; fitClip
+// keeps them off the ground too); their materials are shared the same way.
 const LINE_MATS = new Map();
 function lineMat(color, opacity) {
   const key = `${color}|${opacity}`;
@@ -953,7 +1001,6 @@ function lineMat(color, opacity) {
   }
   return LINE_MATS.get(key);
 }
-function disposeObj(o) { o.geometry?.dispose(); o.material.map?.dispose(); if (!o.material.userData.shared) o.material.dispose(); }
 function lineObj(pts, color, opacity = 1) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -1081,8 +1128,8 @@ function buildOverlays() {
       (flow[i] >= big ? large : small).push(pos[3 * i], pos[3 * i + 1], pos[3 * i + 2], pos[3 * d], pos[3 * d + 1], pos[3 * d + 2]);
     }
     const sat = state.layer === 'satellite';  // (river water in the satellite view: dark)
-    overlays.rivers = lineObj(small, sat ? 0x2a4d63 : 0x4fb3ff, sat ? 0.7 : 1);
-    overlays.riversBig = lineObj(large, sat ? 0x24485e : 0xa8e1ff);
+    overlays.rivers = ribbonObj(small, sat ? 0x2a4d63 : 0x4fb3ff, sat ? 0.7 : 1, 1.5);
+    overlays.riversBig = ribbonObj(large, sat ? 0x24485e : 0xa8e1ff, 1, 2.5);
   }
   if ($('hotspots').checked && V.hotspots) {
     const pts = [], globe_ = globe;
@@ -1199,7 +1246,10 @@ function buildOverlays() {
     Object.assign(overlays, overturningOverlay(V.meta.overturning, labels));
     labels.forEach((l) => mocGroup.add(l));
   }
-  if ($('jet').checked && L.jet_e) overlays.jet = flowArrows('jet_e', 'jet_n', 0xd59cff, false, 2, 2.5, 1.02);
+  if ($('jet').checked && L.jet_e) {
+    // the jet's core (PW-406): January and July (worlds store both; runs only the year's mean)
+    for (const [k] of jetSeasons()) overlays["jet" + k] = jetCore(k);
+  }
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
     const nSample = 10 * 4 ** Math.max(V.level - 2, 0) + 2;
@@ -1265,6 +1315,67 @@ function buildOverlays() {
   buildAxis();
   buildHighlightMarks();
 }
+// ------------------------------------------------------------ the jet stream's core (PW-406)
+// A weather map's jet is one meandering ribbon of fast upper wind; the stored layers are
+// half-year means, so this draws where that mean is fastest: the cells at least JET_CORE m/s
+// (or 70% of the season's peak, if it never gets there) that are the fastest across the flow
+// (no faster than them a cell spacing to either side, at right angles to the wind), each
+// joined to the next such cell downwind; bits under JET_MIN cells long are dropped. January
+// and July both, so the poleward shift in each hemisphere's summer shows; a run's keyframes
+// and older worlds have only the year's mean.
+const JET_CORE = 25, JET_MIN = 6;
+const JET_COLORS = { jan: 0x7fb2ff, jul: 0xff9a5c, '': 0xd59cff };
+function jetSeasons() {
+  const L = V.layers, both = L.jet_jul_e && L.jet_jan_e;
+  if (!both) return [['', JET_COLORS['']]];
+  const s = state.season;  // (the season picker shows one half-year; the year shows both)
+  return (s ? [s] : ['jan', 'jul']).map((k) => [k, JET_COLORS[k]]);
+}
+function jetCore(season) {
+  const L = V.layers, G = V.grid, n = V.n, nbr = G.nbr, globe = state.mode === 'globe';
+  const ke = season ? `jet_${season}_e` : 'jet_e', kn = season ? `jet_${season}_n` : 'jet_n';
+  const E = L[ke], N = L[kn], spd = new Float32Array(n);
+  let top = 0;
+  for (let i = 0; i < n; i++) { spd[i] = Math.hypot(E[i], N[i]); if (spd[i] > top) top = spd[i]; }
+  const thr = Math.min(JET_CORE, 0.7 * top), step = Math.sqrt(4 * Math.PI / n) * 180 / Math.PI;  // (a cell spacing, degrees)
+  // the cell k cell spacings from cell i along the unit (east, north) direction (de, dn)
+  const toward = (i, de, dn, k) => {
+    const la = G.lat[i] + dn * k * step, cl = Math.max(Math.cos(G.lat[i] * Math.PI / 180), 0.05);
+    return nearestCell(Math.max(-89.9, Math.min(89.9, la)), G.lon[i] + de * k * step / cl);
+  };
+  const core = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    if (spd[i] < thr) continue;
+    const ue = E[i] / spd[i], un = N[i] / spd[i];
+    core[i] = spd[toward(i, -un, ue, 1)] <= spd[i] && spd[toward(i, un, -ue, 1)] <= spd[i];
+  }
+  // each core cell to the core cell nearest one spacing downwind (or two), among that point's cell and its neighbours
+  const next = new Int32Array(n).fill(-1);
+  for (let i = 0; i < n; i++) {
+    if (!core[i]) continue;
+    const ue = E[i] / spd[i], un = N[i] / spd[i];
+    for (const k of [1, 2]) {
+      const t = toward(i, ue, un, k);
+      const c = [t, ...nbr[t]].filter((j) => core[j] && j !== i);
+      if (c.length) { next[i] = c.includes(t) ? t : c.reduce((a, b) => (spd[b] > spd[a] ? b : a)); break; }
+    }
+  }
+  // drop the short bits: the pieces joined by next (union-find), fewer than JET_MIN cells
+  const root = Int32Array.from({ length: n }, (_, i) => i);
+  const find = (i) => { while (root[i] !== i) i = root[i] = root[root[i]]; return i; };
+  for (let i = 0; i < n; i++) if (next[i] >= 0) root[find(i)] = find(next[i]);
+  const size = new Int32Array(n);
+  for (let i = 0; i < n; i++) if (core[i]) size[find(i)]++;
+  const pts = [], r = 1.02;
+  for (let i = 0; i < n; i++) {
+    if (next[i] < 0 || size[find(i)] < JET_MIN) continue;
+    const a = cellPos(i, r), b = cellPos(next[i], r);
+    if (!globe) { a[2] += 0.004; b[2] += 0.004; if (Math.abs(a[0] - b[0]) > 2) continue; }
+    pts.push(...a, ...b);
+  }
+  return ribbonObj(pts, JET_COLORS[season], 0.9, 3);
+}
+
 // ------------------------------------------------------------ ocean currents as streamlines, the overturning loop
 // Streamlines (Jobard & Lefer 1997, simplified): from evenly spread seeds,
 // trace the current both ways (midpoint steps on the sphere, the velocity
@@ -1720,7 +1831,8 @@ function renderLegend() {
     el.innerHTML += sw('#bfe0ff', '⊗ deep water sinks (Sv)') + sw('#ff8a3a', 'warm inflow (model)') +
       sw('#7f9fff', '- - deep return (schematic)') + sw('#5ff0c8', '◎ wells up');
   if ($('jet').checked && V.layers.jet_e)
-    el.innerHTML += '<span><span class="sw" style="background:#d59cff"></span>jet stream</span>';
+    for (const [k, col] of jetSeasons())
+      el.innerHTML += `<span title="Where the upper wind (~10 km up) is fastest: at least ${JET_CORE} m/s, the fastest across the flow"><span class="sw" style="background:#${col.toString(16).padStart(6, '0')}"></span>jet stream core${{ jan: ' (January)', jul: ' (July)', '': ' (year)' }[k]}</span>`;
 }
 
 // what each colour layer shows (the button's hover hint; the units from UNITS are added)
@@ -3068,7 +3180,7 @@ const COLOUR_NEEDS = {
 };
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],
-                        jet: ['jet_e', 'jet_n'], arrows: ['plate'] };
+                        jet: ['jet_e', 'jet_n', 'jet_jul_e', 'jet_jul_n', 'jet_jan_e', 'jet_jan_n'], arrows: ['plate'] };
 
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
@@ -3433,7 +3545,7 @@ init().catch((err) => { $('infoText').textContent = 'Load failed: ' + err.messag
 window.planetViewer = {
   bench(frames = 30) {
     const gl = renderer.getContext(), px = new Uint8Array(4), out = {};
-    const draw = () => { controls.update(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
+    const draw = () => { controls.update(); fitClip(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
     if (V?.kind === 'run') {
       stop();
       const f0 = V.frame, nf = V.run.frames.length;
@@ -3465,6 +3577,7 @@ renderer.setAnimationLoop((now) => {
   }
   if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
   controls.update();
+  fitClip();
   renderer.render(scene, camera);
 });
 </script>

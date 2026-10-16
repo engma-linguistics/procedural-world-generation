@@ -139,11 +139,12 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
-    # (the monsoons), for the viewer's overlays
+    # (the monsoons) and jet streams (its seasonal core, PW-406), for the viewer's overlays
     from .timeline import vec_layers
     for k, v in (vec_layers(grid, "wind", 0.5 * (c["wind_jul"] + c["wind_jan"]))
                  + vec_layers(grid, "current", np.where(land[:, None], 0.0, c["current"]))
                  + vec_layers(grid, "jet", 0.5 * (c["jet_jul"] + c["jet_jan"]))
+                 + vec_layers(grid, "jet_jul", c["jet_jul"]) + vec_layers(grid, "jet_jan", c["jet_jan"])
                  + vec_layers(grid, "wind_jul", c["wind_jul"]) + vec_layers(grid, "wind_jan", c["wind_jan"])):
         layers[k] = np.round(v, 2)
     if ice is not None and "ice" not in extra:  # (the layer that says where land is under the ice)
