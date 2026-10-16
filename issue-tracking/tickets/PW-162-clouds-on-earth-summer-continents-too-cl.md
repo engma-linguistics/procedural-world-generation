@@ -2,7 +2,7 @@
 id: PW-162
 title: "Clouds on Earth: summer continents too clear, wet tropics too gloomy, NH winter trade-wind seas too cloudy"
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: climate
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-143, PW-019]
 refs: [planet/climate.py, tools/earth_check.py, "world dc3732", docs/review/clouds/]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -36,5 +36,6 @@ mass rather than the kernel's drained vapour. Most of the rest should move with 
 - [ ] Siberia annual cloud >= 55%, Canary January <= 65%, without moving the passing regions
 
 ## Updates
+- 2026-10-16: Status todo -> wontdo. Merged into PW-232 (v1 reassessment 2026-10-16), which carries the remaining cloud biases.
 - 2026-10-15: Smalls2: land storm cloud linear in humidity (Siberia passes); trade-wind decks and wet tropics left (draft).
 - 2026-10-14: Created from inbox draft draft-cloud-regional-misses.md (found by clouds).

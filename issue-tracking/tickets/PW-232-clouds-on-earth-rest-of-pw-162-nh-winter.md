@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-162, PW-015]
 refs: [planet/climate.py, tools/earth_check.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,4 +23,5 @@ Branch smalls2 fixed PW-162's summer continents (storm cloud on land now goes wi
 - [ ] Canary January <= 65% and Hawaii January <= 70% without the summer Mediterranean clouding over
 
 ## Updates
+- 2026-10-16: Absorbs PW-162 (v1 reassessment 2026-10-16).
 - 2026-10-15: Created from inbox draft draft-clouds-winter-trades-and-tropics.md (found by smalls2).

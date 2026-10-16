@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-210, PW-026, PW-015, PW-203]
 refs: [tools/veg_check.py, tools/earth_check.py, "world b1343a"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,4 +25,5 @@ The rest is regional rain, not anything the vegetation or a small nudge can fix 
 Use veg_check's model-climate agreement as a score for the PW-013 rain work; expect most of the remaining 6 points from the Sahel/India monsoon structure and the interior winter moisture.
 
 ## Updates
+- 2026-10-16: Absorbs PW-210 (v1 reassessment 2026-10-16).
 - 2026-10-15: Created from inbox draft draft-veg-agreement-rain-gaps.md (found by vegclim).
