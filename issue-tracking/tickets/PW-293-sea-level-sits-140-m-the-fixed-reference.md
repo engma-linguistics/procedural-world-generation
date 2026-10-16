@@ -1,4 +1,5 @@
 ---
+id: PW-293
 title: "Sea level sits ~+140 m: the fixed reference (starting ocean, 60 Myr) is older than the model's steady ocean (~50 Myr)"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: audit-fix-tectonics
 blocked_by: []
 relates: [PW-288, PW-051, PW-053]
 refs: [planet/tectonics/earth.py, planet/tectonics/setup.py, docs/review/health-tectonics/report.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 - (C) Revisit the depth law (GDH1 flattening, PW-288's option C): the
   half-space law to 6400 m makes sea level ~30% more sensitive to age.
 Lean A+B: B is a re-centring of the start, A lets the term speak.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-tect-sea-ref-older-than-steady-state.md (found by audit-fix-tectonics).
