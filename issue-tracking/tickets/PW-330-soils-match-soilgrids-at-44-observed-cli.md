@@ -1,5 +1,6 @@
 ---
-title: "Soils match SoilGrids at 44% (observed climate), short of the 50% target"
+id: PW-330
+title: Soils match SoilGrids at 44% (observed climate), short of the 50% target
 type: task
 status: todo
 parent: PW-184
@@ -10,6 +11,8 @@ found_by: soils
 blocked_by: []
 relates: [PW-185, PW-037, PW-132]
 refs: [planet/soils.py, tools/soil_check.py, docs/review/soils/earth_groups.png, "docs/overview.md#2.21"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,3 +25,6 @@ refs: [planet/soils.py, tools/soil_check.py, docs/review/soils/earth_groups.png,
 - Generated worlds: the run's cover rock is ~45% sandstone (world 592f2a's strata_top), so sand and podzol rules key on it a lot; tropical red soils cover 30-40% of land on three L7 worlds (warm worlds, or W runs high).
 Ideas: a soil-age term for colluvial/young hillslopes (Cambisols), a lime-accumulation index rather than a dryness cut, a coarse parent-material class set (PW-185 GLiM note, option B) if the rock mapping limits it.
 - [ ] observed-climate agreement >= 50% with sound rules, or a documented reason why not
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-soil-earth-agreement.md (found by soils).
