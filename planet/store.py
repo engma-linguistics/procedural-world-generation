@@ -559,9 +559,32 @@ def zooms_of(world_id: str) -> list[Path]:
     return out
 
 
+def children_of(zoom_id: str) -> list[Path]:
+    """The fine zooms made from this zoom (zoom_fine: parent_zoom.id)."""
+    out = []
+    for p in sorted(zooms_dir().glob("*/zoom.json")):
+        try:
+            if (json.loads(p.read_text()).get("parent_zoom") or {}).get("id") == zoom_id:
+                out.append(p.parent)
+        except (OSError, ValueError, TypeError, AttributeError):
+            continue
+    return out
+
+
+def descendants_of(zoom_id: str) -> list[Path]:
+    """Its fine zooms, theirs, and so on (children before grandchildren)."""
+    out, todo = [], [zoom_id]
+    while todo:
+        kids = children_of(todo.pop(0))
+        out += [k for k in kids if k not in out]
+        todo += [k.name for k in kids]
+    return out
+
+
 def delete(kind: str, item_id: str) -> list[Path]:
     """Delete one run, world or zoom; returns what was removed (empty: no
-    such item). A world takes its highlights cache and its zooms with it.
+    such item). A world takes its highlights cache and its zooms with it;
+    a zoom its fine zooms (zoom_fine), theirs too.
     Runs and worlds don't cascade into each other: a world sliced from a
     run is self-contained."""
     if not exists(kind, item_id):
@@ -577,6 +600,11 @@ def delete(kind: str, item_id: str) -> list[Path]:
             shutil.rmtree(z)
             gone.append(z)
     else:
+        if kind == "zoom":
+            for z in descendants_of(item_id):
+                if z.exists():
+                    shutil.rmtree(z)
+                    gone.append(z)
         shutil.rmtree(p)
         gone.append(p)
     for k in {"run": ("run",), "world": ("world", "zoom"), "zoom": ("zoom",)}[kind]:
@@ -585,16 +613,18 @@ def delete(kind: str, item_id: str) -> list[Path]:
 
 
 def orphans() -> list[Path]:
-    """Zooms whose world is gone, highlight caches of deleted worlds, and run
-    folders without a run.json (a simulate that was killed)."""
+    """Zooms whose world (or parent zoom) is gone, highlight caches of
+    deleted worlds, and run folders without a run.json (a simulate that was
+    killed)."""
     out = [p for p in sorted(runs_dir().glob("*"))
            if p.is_dir() and not p.name.startswith(".") and not (p / "run.json").exists()]
     for p in sorted(zooms_dir().glob("*/zoom.json")):
         try:
-            wid = json.loads(p.read_text())["source_world"]["id"]
-        except (OSError, ValueError, KeyError, TypeError):
+            m = json.loads(p.read_text())
+            wid, pz = m["source_world"]["id"], (m.get("parent_zoom") or {}).get("id")
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
             continue
-        if not exists("world", wid):
+        if not exists("world", wid) or (pz and not exists("zoom", pz)):
             out.append(p.parent)
     out += [p for p in sorted((worlds_dir() / "highlights").glob("*.json")) if not exists("world", p.stem)]
     return out
@@ -633,9 +663,12 @@ def _world_item(p: Path) -> dict:
 def _zoom_item(p: Path) -> dict:
     m = json.loads(p.read_text())
     sw = m["source_world"]
-    return {"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
+    item = {"id": m["id"], "name": m["name"], "created": m["created"], "world": sw["id"],
             "world_name": sw.get("name"), "source_run": sw.get("source_run"), "t_myr": sw.get("t_myr"),
             "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]}
+    if m.get("parent_zoom"):  # a fine zoom (zoom_fine): the zoom it was made from
+        item["parent_zoom"] = m["parent_zoom"]["id"]
+    return item
 
 
 def items(kind: str) -> list[tuple[Path, dict]]:
@@ -660,6 +693,14 @@ def update_index(kind: str) -> list[dict]:
     d.mkdir(parents=True, exist_ok=True)
     with lock(d, "index"):  # (the last writer has listed last: no new item is left out)
         entries = [e for _, e in items(kind)]
+        if kind == "zoom":  # each zoom lists its fine zooms (by parent_zoom), as a world's zooms name it
+            kids = {}
+            for e in entries:
+                if e.get("parent_zoom"):
+                    kids.setdefault(e["parent_zoom"], []).append(e["id"])
+            for e in entries:
+                if e["id"] in kids:
+                    e["children"] = kids[e["id"]]
         write_atomic(d / "index.json", json.dumps(entries, indent=1))
     return entries
 

@@ -8,7 +8,7 @@ An output is kept when:
 - it is younger than --min-age hours (default 12: work in progress, fresh demos);
 - it is the Earth reference world (tools/earth_world.py);
 - it is listed with --keep;
-- it is the world of a kept zoom, or the run of a kept world.
+- it is the world of a kept zoom, the zoom a kept fine zoom was made from, or the run of a kept world.
 Everything else is out of step with the current code (no backward
 compatibility) and goes, followed by `planet delete --orphans`.
 """
@@ -49,7 +49,8 @@ def inventory() -> dict:
         items[("world", it["id"])] = dict(name=it["name"], created=it["created"],
                                           parent=("run", src) if src else None)
     for p, it in S.items("zoom"):
-        items[("zoom", it["id"])] = dict(name=it["name"], created=it["created"], parent=("world", it["world"]))
+        par = ("zoom", it["parent_zoom"]) if it.get("parent_zoom") else ("world", it["world"])  # (a fine zoom's: its zoom)
+        items[("zoom", it["id"])] = dict(name=it["name"], created=it["created"], parent=par)
     return items
 
 
@@ -79,12 +80,15 @@ def plan(min_age_h: float, keep_ids: set[str]) -> tuple[dict, dict]:
             t = created_at(it["created"])
             if t is None or now - t < timedelta(hours=min_age_h):
                 why[key] = "recent"
-    # parents of kept items (zoom -> world -> run)
-    for _ in range(2):
+    # parents of kept items (fine zoom -> zoom -> world -> run), up the whole chain
+    grew = True
+    while grew:
+        grew = False
         for key in list(why):
             par = items[key]["parent"]
             if par in items and par not in why:
                 why[par] = f"parent of {key[1]}"
+                grew = True
     return items, why
 
 

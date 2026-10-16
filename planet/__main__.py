@@ -103,7 +103,12 @@ def cmd_slice(args):
 
 def cmd_zoom(args):
     from . import zoom as Z
-    out = Z.zoom(args.world, args.lat, args.lon, args.size_km, args.res_km, args.seed, args.iterations)
+    kind, _, ref = args.world.rpartition(":")
+    if kind == "zoom" or (not kind and S.exists("zoom", ref) and not S.exists("world", ref)):
+        return _fine_zoom(args, ref)
+    size_km = 1000.0 if args.size_km is None else args.size_km
+    res_km = 2.0 if args.res_km is None else args.res_km
+    out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
     print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
@@ -119,6 +124,24 @@ def cmd_zoom(args):
     for f in s.get("waterfalls", [])[:3]:
         print(f"  waterfall {f['height_m']:.0f} m over {f['length_km']:g} km, {f['discharge_m3s']:,.0f} m3/s"
               f"{' (lake outlet)' if f['from_lake'] else ''} at {f['lat']:.2f}, {f['lon']:.2f}")
+
+
+def _fine_zoom(args, parent: str):
+    """planet zoom <zoom id>: a fine zoom (zoom_fine, PW-129) of that zoom."""
+    from . import zoom_fine as ZF
+    out = ZF.zoom(parent, args.lat, args.lon, args.size_km, args.res_km, args.seed)
+    m = json.loads((out / "zoom.json").read_text())
+    s = m["stats"]
+    print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km'] * 1000:g} m, "
+          f"in zoom {m['parent_zoom']['id']}]")
+    print(f"  land {s['land_pct']}%  elevation {s['min_m']:.0f}..{s['max_m']:.0f} m, mean {s['mean_elev_m']:.0f} m "
+          f"(parent {s['parent_mean_elev_m']:.0f} m); parent means kept to {s['parent_block_mean_rms_error_m']} m "
+          f"rms over 3x3 parent px; view: http://127.0.0.1:8765/viewer/zoom.html?id={m['id']}")
+    for f in s["falls"][:3]:
+        print(f"  fall {f['height_m']:.0f} m (parent fall {f['parent_fall']}), lip {f['top_m']:.1f} m, "
+              f"gorge {f['gorge_km']:g} km, pool {f['plunge_pool_m']:g} m deep")
+    for v in s["volcanoes"][:3]:
+        print(f"  volcano {v.get('form', '')}: summit {v['top_m']:.0f} m (parent volcano {v['parent_volcano']})")
 
 
 def cmd_satellite(args):
@@ -296,12 +319,17 @@ def main():
                     help="save the world even if the replay doesn't match the run's stored keyframe")
     sl.set_defaults(func=cmd_slice)
 
-    z = sub.add_parser("zoom", help="refine a region of a sliced world to a few km -> zooms/<id>/")
-    z.add_argument("world", help="world id, e.g. a3f9c2 (see `list`)")
+    z = sub.add_parser("zoom", help="refine a region of a sliced world to a few km -> zooms/<id>/; "
+                                    "of a zoom: a fine zoom (25-100 m/px) of part of it")
+    z.add_argument("world", help="world id, e.g. a3f9c2 (see `list`); or a zoom id (zoom:<id> if a world has it "
+                                 "too): a fine zoom nested in that zoom, at most 20x finer")
     z.add_argument("--lat", type=float, required=True, help="centre latitude")
     z.add_argument("--lon", type=float, required=True, help="centre longitude")
-    z.add_argument("--size-km", type=float, default=1000, help="side of the square region")
-    z.add_argument("--res-km", type=float, default=2, help="pixel size (1000 km / 2 km = 500x500)")
+    z.add_argument("--size-km", type=float, default=None,
+                   help="side of the square region (default 1000; fine zooms: 50 in a zoom, 25 in a fine zoom)")
+    z.add_argument("--res-km", type=float, default=None,
+                   help="pixel size (default 2: 1000 km / 2 km = 500x500; fine zooms: 0.1 in a zoom, half the "
+                        "parent's in a fine zoom; 0.025 with --size-km 25 for 1000 px)")
     z.add_argument("--seed", type=int, default=1, help="detail noise variant")
     z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
     z.set_defaults(func=cmd_zoom)

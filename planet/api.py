@@ -39,6 +39,7 @@ from . import store as S
 from . import timeline as T
 from . import world as W
 from . import zoom as Z
+from . import zoom_fine as ZF
 
 ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
 # One computation at a time in this process (re-entrant: a job slices inside
@@ -68,8 +69,10 @@ def parse_zoom_request(req: dict) -> dict:
     """Validates and fills defaults; raises BadRequest."""
     if not isinstance(req, dict):
         raise BadRequest("expected a JSON object")
-    if bool(req.get("run")) == bool(req.get("world")):
-        raise BadRequest("give either run (+ t) or world")
+    if sum(bool(req.get(k)) for k in ("run", "world", "zoom")) != 1:
+        raise BadRequest("give either run (+ t), world, or zoom (a fine zoom of that zoom)")
+    if req.get("zoom"):
+        return _parse_fine_request(req)
     out = {"lat": _num(req, "lat"), "lon": _num(req, "lon"), "size_km": _num(req, "size_km", 1000)}
     out["res_km"] = _num(req, "res_km", out["size_km"] / 500)
     out["seed"] = int(_num(req, "seed", 1))
@@ -88,6 +91,24 @@ def parse_zoom_request(req: dict) -> dict:
         out["t"] = _num(req, "t")
     else:
         out["world"] = str(req["world"]).removesuffix(".json")
+    return out
+
+
+def _parse_fine_request(req: dict) -> dict:
+    """A fine zoom (zoom_fine) of zoom `zoom`: size_km / res_km default to
+    zoom_fine.default_size of the parent's resolution; checked against the
+    parent (SystemExit: no such zoom)."""
+    pid = str(req["zoom"])
+    pmeta = json.loads((S.find_zoom(pid) / "zoom.json").read_text())
+    ds, dr = ZF.default_size(float(pmeta["res_km"]))
+    out = {"zoom": pmeta["id"], "lat": _num(req, "lat"), "lon": _num(req, "lon"), "seed": int(_num(req, "seed", 1))}
+    out["res_km"] = _num(req, "res_km", dr)
+    out["size_km"] = _num(req, "size_km", ds if out["res_km"] == dr else 500 * out["res_km"])
+    out["lon"] = (out["lon"] + 180) % 360 - 180
+    try:
+        ZF.check(pmeta, out["lat"], out["lon"], out["size_km"], out["res_km"])
+    except ValueError as e:
+        raise BadRequest(str(e)) from None
     return out
 
 
@@ -161,6 +182,8 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     """The whole request: slice a run if needed, then zoom. Returns
     {"zoom": id, "world": id}. Reuses an identical existing zoom."""
     r = parse_zoom_request(req)
+    if "zoom" in r:
+        return _fine_zoom_job(r, progress)
     if "run" in r:
         world_path = slice_run(r["run"], r["t"], lambda f, msg: progress(0.5 * f, msg))
     else:
@@ -184,6 +207,28 @@ def _build_zoom(r: dict, world_path: Path, progress) -> dict:
     out = Z.zoom(str(world_path), r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], r["iterations"], log=log)
     progress(1.0, "done")
     return {"zoom": out.name, "world": world_path.stem}
+
+
+def _fine_zoom_job(r: dict, progress) -> dict:
+    """A fine zoom of zoom r["zoom"] (zoom_fine). Returns {"zoom", "world",
+    "parent_zoom"}; reuses an identical existing one."""
+    pmeta = json.loads((S.find_zoom(r["zoom"]) / "zoom.json").read_text())
+    wid = pmeta["source_world"]["id"]
+    zid = ZF.fine_id(r["zoom"], r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"])
+    with S.lock(S.zooms_dir(), zid):
+        if S.exists("zoom", zid):
+            progress(1.0, f"zoom {zid} already exists")
+            return {"zoom": zid, "world": wid, "parent_zoom": r["zoom"]}
+        done = [0]
+
+        def log(msg):  # build() logs three stages
+            done[0] += 1
+            progress(min(done[0], 3) / 4, msg.strip())
+
+        progress(0.05, f"zooming into zoom {r['zoom']}")
+        out = ZF.zoom(r["zoom"], r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], log=log)
+        progress(1.0, "done")
+        return {"zoom": out.name, "world": wid, "parent_zoom": r["zoom"]}
 
 
 def parse_source(req: dict) -> dict:
