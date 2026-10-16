@@ -343,6 +343,13 @@ def test_island_chain_and_atolls(gen4):
     assert abs(hs[0]["lat"]) < 2 and -1 < hs[0]["lon"] < 8
     at = [f for f in feats if f["kind"] == "atolls"]
     assert len(at) == 1 and at[0]["stats"]["atolls"] == 4 and 118 < at[0]["lon"] < 127 and at[0]["category"] == "geology"
+    # an ocean-wide scatter of atolls ~280 km apart (PW-382): one archipelago at most ARCHIPELAGO_KM across, the rest "beyond"
+    ocean = [row(-10.0, -170.0 + 2.5 * k, V.ARC, 30.0, 0, -10, V.REEF) for k in range(30)]
+    w["meta"]["volcanoes"] = [[v[c] for c in V.COLUMNS] for v in ocean]
+    at = H.atolls(H._Ctx(w), top=1)
+    st = at[0]["stats"]
+    assert 4 <= st["atolls"] <= 7 and st["extent_km"] <= H.ARCHIPELAGO_KM + 100
+    assert st["atolls_beyond"] == 30 - st["atolls"] and "more atolls lie scattered beyond" in at[0]["blurb"]
 
 
 def test_fastest_plate(world4):

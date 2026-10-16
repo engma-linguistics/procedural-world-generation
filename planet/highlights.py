@@ -48,7 +48,8 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   they show (zoom_volcanoes.form), zoomed where most islands and atolls are;
   worlds without a table fall back to land of hotspot basalt on oceanic crust
   within 1500 km of a live hotspot. Atolls: the biggest group of atolls
-  (hotspot or arc, within ATOLL_LINK_KM) not already shown as a chain.
+  (hotspot or arc, linked within ATOLL_LINK_KM, cut into archipelagos at most
+  ARCHIPELAGO_KM across) not already shown as a chain.
 - fastest plate: the big plate (>= FAST_MIN_SHARE of the planet) with the
   highest mean speed, placed on its leading edge (converging boundary it
   moves towards), saying what happens there (collision, subduction,
@@ -880,7 +881,8 @@ def _extent(ctx: _Ctx, cells) -> float:
 
 CHAIN_LINK_KM = 250.0  # vents of one hotspot track are 60-195 km apart (volcanism.vent_gap)...
 CHAIN_LINK_MYR = 8.0  # ... and ~1-8 Myr apart in age (100 km at 1-10 cm/yr)
-ATOLL_LINK_KM = 300.0  # atolls this close make one group
+ATOLL_LINK_KM = 300.0  # atolls this close are one scatter...
+ARCHIPELAGO_KM = 1500.0  # ... cut into groups at most this across (Tuamotus ~1,500 km, Marshalls ~1,300, Maldives ~900)
 WINDOW_KM = 350.0  # a chain's or group's zoom: the most islands within this of its centre
 
 
@@ -987,27 +989,51 @@ def _chain_hotspot_islands(ctx: _Ctx, top: int) -> list[dict]:
     return out[:top]
 
 
+def _archipelagos(vs: list[dict], weight: np.ndarray) -> list[list[int]]:
+    """Cut a scatter of volcanoes vs (one single-linkage cluster) into groups
+    at most ARCHIPELAGO_KM across: the volcano with the most weight within
+    half that takes them all, then the same among the rest. Indices into vs,
+    heaviest first."""
+    P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
+    near = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM <= ARCHIPELAGO_KM / 2
+    left = np.ones(len(vs), bool)
+    out = []
+    while left.any():
+        k = int(np.argmax(np.where(left, (near & left[None, :]) @ weight, -1)))
+        gr = np.flatnonzero(near[k] & left)
+        out.append([int(i) for i in gr])
+        left[gr] = False
+    return out
+
+
 def atolls(ctx: _Ctx, top: int = 1) -> list[dict]:
     """Coral atoll groups: atolls (a reef ring round a lagoon where a volcano
-    sank, volcanism's reef state) of any volcano, hotspot or arc, within
-    ATOLL_LINK_KM of each other; the group with the most, with its reef-
-    fringed islands (the Tuamotus, the Marshalls, the Maldives)."""
+    sank, volcanism's reef state) of any volcano, hotspot or arc, and reef-
+    fringed islands, linked within ATOLL_LINK_KM into scatters, each cut into
+    archipelagos at most ARCHIPELAGO_KM across (_archipelagos: 300 km links
+    alone can chain an ocean's atolls together); the group with the most, with
+    its reef-fringed islands (the Tuamotus, the Marshalls, the Maldives), and
+    how many more atolls its scatter has beyond it."""
     vols = [v for v in _volcano_forms(ctx) if v["form"] == "atoll" or (v["top_m"] > 0 and "reef" in v["form"])]
     groups = []
-    for gr in _chains(ctx, [(v["lat"], v["lon"]) for v in vols], ATOLL_LINK_KM):
-        vs = [vols[k] for k in gr]
-        atl = sum(1 for v in vs if v["form"] == "atoll")
-        if atl >= 3:
-            groups.append((atl + 0.5 * (len(vs) - atl), vs, atl))
+    for scatter in _chains(ctx, [(v["lat"], v["lon"]) for v in vols], ATOLL_LINK_KM):
+        sv = [vols[k] for k in scatter]
+        w = np.array([1.0 if v["form"] == "atoll" else 0.5 for v in sv])
+        for gr in _archipelagos(sv, w):
+            vs = [sv[k] for k in gr]
+            atl = sum(1 for v in vs if v["form"] == "atoll")
+            if atl >= 3:
+                groups.append((atl + 0.5 * (len(vs) - atl), vs, atl, int((w == 1).sum()) - atl))
     groups.sort(key=lambda g: -g[0])
     taken = [f["cell"] for f in _chain_hotspot_islands(ctx, 3)]  # (an atoll chain is shown as the chain)
     out = []
-    for s, vs, atl in groups:
+    for s, vs, atl, more in groups:
         if len(out) >= top:
             break
         k, span = _best_window(ctx, vs, lambda v: v["form"] == "atoll")
         cell = int(ctx.g.locate(np.array([_unit(vs[k]["lat"], vs[k]["lon"])]))[0])
-        if taken and ctx.dist(cell, taken).min() < 600:
+        shown = taken + [f["cell"] for f in out]  # (a neighbouring group of the same scatter is no second place)
+        if shown and ctx.dist(cell, shown).min() < 600:
             continue
         rank = len(out)
         reefy = len(vs) - atl
@@ -1016,11 +1042,15 @@ def atolls(ctx: _Ctx, top: int = 1) -> list[dict]:
             near = np.flatnonzero(ctx.dilate(np.isin(np.arange(ctx.n), [cell])) & ~ctx.land)  # (the atoll's cell may be an island)
             if len(near):
                 sst = f"; the sea ~{_c(np.mean(np.asarray(ctx.L['sst'], float)[near]))}"
+        extent = _extent(ctx, ctx.g.locate(np.array([_unit(v["lat"], v["lon"]) for v in vs])))
         blurb = (f"{atl} coral atolls" + (f" and {reefy} reef-fringed islands" if reefy else "")
-                 + f" within ~{_n(_extent(ctx, ctx.g.locate(np.array([_unit(v['lat'], v['lon']) for v in vs]))))} km{sst}: "
-                 "rings of reef round lagoons where old volcanoes sank, like the Tuamotus or the Marshall Islands.")
+                 + f" within ~{_n(extent)} km{sst}: "
+                 "rings of reef round lagoons where old volcanoes sank, like the Tuamotus or the Marshall Islands"
+                 + (f"; {_plural(more, 'more atoll')} lie scattered beyond." if more > 1 else
+                    "; one more lies beyond." if more else "."))
         out.append(_feature(ctx, "atolls", f"Atolls: {atl} in a group", blurb, cell, zoom_size(span + 100),
-                            {"atolls": atl, "reef_islands": reefy}, quality=(0.8 ** rank) * (0.5 + 0.5 * min(s / 10, 1))))
+                            {"atolls": atl, "reef_islands": reefy, "extent_km": round(extent), "atolls_beyond": more},
+                            quality=(0.8 ** rank) * (0.5 + 0.5 * min(s / 10, 1))))
     return out
 
 

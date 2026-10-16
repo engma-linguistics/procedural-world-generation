@@ -426,6 +426,7 @@ Each scores as kind priority × quality (0.3–1). Travel picks use each hemisph
 | great shield volcano | the oceanic hotspot volcano standing most above its sea floor and reaching above the sea, any status (Mauna Kea: ~10 km) | 250 km |
 | volcanic field | the place with the most edifice types (stratovolcano, shield, caldera) above the sea within 250 km, at least two; ties to more states, then more volcanoes | 500 km |
 | flood basalts | land of flood basalt at the surface or the lava-plateau landform, ≥ 100,000 km² (Columbia River ~210,000, Deccan ~500,000) | its span, ≤ 1000 km |
+| atoll group | atolls and reef-fringed islands of the table linked within 300 km into a scatter, cut into archipelagos at most 1,500 km across (`ARCHIPELAGO_KM`: the Tuamotus ~1,500, the Marshalls ~1,300; the member with the most atolls within 750 km takes them, then the rest, PW-382); the one with the most atolls, saying how many more its scatter has beyond; not one already shown as an island chain | the densest 350 km, + 100 km |
 | carbonate bank | a connected warm (annual sea ≥ `reef_temp` − 1.5 °C) shallow (≤ 200 m) sea with reefs, detached: the land it touches no bigger than itself and at most half its cells on a shore (the Bahamas); a platform with two or more of the table's atolls is left to the atoll group; by area; two at most | its span |
 | barrier reef | reef cells (≥ 1%) off the coast of a landmass ≥ 100,000 km², on the outer half of its shelf (no more cell links from deeper sea than from the shore), ≥ 300 km long (the Great Barrier Reef; not reefs in the middle of a shelf sea like the Java Sea) | its middle, ≤ 1000 km |
 
@@ -433,7 +434,7 @@ The coral coast leaves a tract holding a shown barrier reef or bank to them, and
 
 The most varied square counts named vegetation types (biomes on worlds without vegetation). A world's highlights take ~1.5 s at L6 and ~4 s at L7.
 
-**Known limits:** canyons are weak at cell scale (PW-079); Earth has no volcano table, so no volcano kinds; dormant is hotspot-only (arc volcanoes: active or extinct, inbox draft); the atoll group's count spans an ocean on atoll-rich worlds (inbox draft).
+**Known limits:** canyons are weak at cell scale (PW-079); Earth has no volcano table, so no volcano kinds; dormant is hotspot-only (arc volcanoes: active or extinct, inbox draft).
 
 ### 2.13 Regional zoom (`zoom.py`, `zoom_landforms.py`, `zoom_volcanoes.py`, `zoom_terrain.py`, `zoom_vegetation.py`, `zoom_kernels.py`)
 
