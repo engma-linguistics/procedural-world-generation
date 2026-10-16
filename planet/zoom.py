@@ -1343,6 +1343,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- volcanoes (zoom_volcanoes): each one its own cone -----------------
     vf = ZV.fields(world, fr, px, py, res, sp, Pk, seed, size_km)
     vtarget = np.full(npx, np.nan)  # the volcanoes' surface, for the landscape pass
+    minor_add = np.zeros(npx)  # what the minor arc cones stand above the ground (m)
     if vf is not None:
         # (not over a continent; a pile of hotspot lava capped with reef
         # limestone counts as continental crust in the run, so it stays in)
@@ -1379,6 +1380,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         cb = vf["bump"] + (1 - vf["bump_abs"]) * (np.where(vf["bump_flat"], base, h) - vf["bump_floor"])
         hv = np.maximum(ground, cz)
         h = np.maximum(hv, cb)
+        # (a minor arc cone has no volume of its own in the coarse cells: what it
+        # stands above the ground comes off its cells' other land, below, PW-116)
+        minor_add = np.where(vf["bump_minor"] & np.isfinite(vf["bump"]), np.maximum(cb - hv, 0.0), 0.0)
         land = np.where(wv > 0.5, h > 0, land | (h > 0.5))
         h = np.where(land, np.maximum(h, 0.5), np.minimum(h, -0.5))
         on_v = (wv > 0.5) & np.isfinite(vf["z"]) | np.isfinite(vf["bump"])
@@ -1445,6 +1449,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             z = z + f * np.nan_to_num(corr[:, 0])
         return z
 
+    if minor_add.any():  # (the minor arc cones' volume off their cells' other land: see the volcanoes above)
+        h = clamp(keep_means(h, h - minor_add, land, (~np.isfinite(vtarget)).astype(float)))
     lf_gorges = []  # falls over the landform classes' cliffs retreated into gorges: (head pixel, km)
     ground_up = None  # where the classes' top beds hold the ground: (weight, level) per pixel (designed falls' fit)
     scarp = None  # single scarps (escarpments): weight, level, height per pixel

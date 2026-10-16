@@ -114,3 +114,52 @@ channel.*
 
 ![wave delta](pw061_wave.png)
 *Its wave-dominated delta: a channel along a row of pixels | channels that wander.*
+
+## PW-116: a volcano every ~60 km along active arcs
+
+The run keeps one arc volcano per `volcano_spacing` (120 km) of active arc: on 592f2a the active ones' nearest
+neighbours are 107 / 137 / 180 km apart (p10 / p50 / p90). That is the run's coarseness, not the arcs' (Java,
+Sumatra, the Aleutians: one every 50-70 km), so the zoom fills it in (option B of the ticket; option A, the run's
+spacing, is outside the zoom): `zoom_volcanoes.arc_infill` links each active arc volcano to its nearest active
+neighbour within 220 km and to the nearest on its other side (> 110 deg round: a chain, not a cluster), and puts a
+cone every ~60 km between each pair (one in a 130 km gap), up to ~6 km off the line, 0.6-0.95 of the lower one's
+height, young and active (907 cones for 598 active arc volcanoes world-wide). They are listed with `minor: true`.
+
+Unlike the run's own cones they have no volume in the coarse cells and no floor of their own (only their
+neighbours' interpolated), so they sit on the ground (no absolute summit), what they stand above it comes off
+their cells' other land (each cell's mean kept), and they aren't held smooth through the landscape pass (it
+cuts their drainage). Drawn as the run's cones were (absolute floor, pinned, adding volume), the 8 zooms had 19
+drops >= 100 m per seed instead of 9.6, 500-1000 m cliffs 10-20 km from the new cones, the arc's inland bias
++4 m and RMS 79 m: each of the three changes took part of that back.
+
+| Zoom (seeds 1-5) | volcanoes drawn | of them minor | drops | inland bias / RMS |
+|---|---|---|---|---|
+| -9.35,-161.39 (arc, 4 km) | 109 -> 166 | 57 | 3.6 -> 3.8 | +0.3 / 55 -> +1.7 / 53 |
+| -63.44,71.66 (4 km) | 103 -> 153 | 50 | 3.0 -> 3.0 | -0.9 / 24 -> -0.8 / 27 |
+| -48.48,60.12 (plateau, 4 km) | 57 -> 86 | 29 | 0.6 -> 1.2 | +1.5 / 14 -> +1.5 / 14 |
+| 1.96,-70.44 (1 km) | 15 -> 16 | 1 | 0.4 -> 0.4 | -0.1 / 33 -> -0.2 / 33 |
+
+Test: `test_zoom_fills_active_arcs_with_minor_cones`. The shelf case of the ticket (arc crust as blocky
+islands) wasn't re-checked: 592f2a's dense active arcs are on land or on deep floor (inbox draft).
+
+![arc](pw116_arc.png)
+*An island arc on a ~1.7 km deep floor, -57.6,135.5 (1 km pixels, 250 km shown), before | after: two more islands
+and a seamount along the chain.*
+
+## Drops and inland means after the batch
+
+| Zoom | drops before | after | inland bias / RMS before | after |
+|---|---|---|---|---|
+| 4.97,-114.51 | 0 | 0 | -1.9 / 10 | -1.9 / 10 |
+| 1.96,-70.44 | 0.4 | 0.4 | -0.2 / 33 | -0.2 / 33 |
+| 4.81,-72.18 | 1.6 | 1.6 | -2.7 / 54 | -2.7 / 54 |
+| 60.6,-40.48 | 0 | 0 | -1.6 / 8 | -1.6 / 8 |
+| 49.32,37.38 | 0.8 | 0.8 | +1.3 / 55 | +1.7 / 56 |
+| -9.35,-161.39 (arc) | 3.6 | 3.8 | +0.2 / 55 | +1.7 / 53 |
+| -2.22,-169.11 | 0.2 | 0.2 | +1.1 / 42 | +1.1 / 42 |
+| -63.44,71.66 | 3.0 | 3.0 | -0.9 / 24 | -0.8 / 27 |
+| **8 zooms** | **9.6** (4-13 by seed) | **9.8** (4-14) | | |
+| -48.48,60.12 (plateau) | 0.6 | 1.2 | +1.5 / 14 | +1.5 / 14 |
+
+Perched river pixels (PW-124's metric), 8 zooms per seed: 41 -> 56 (> 100 m: 4.6 -> 5.0), nearly all on the arc
+zoom: its new distributaries (PW-061) and the drainage round its new cones.
