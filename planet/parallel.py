@@ -215,27 +215,31 @@ class Pool:
                 self._ex = self._executor()
 
     def result(self, fut):
-        """fut's result, raising what fn raised; no progress callback fires
-        after this returns."""
+        """fut's result, raising what fn raised; every progress message of the
+        call has been passed on before this returns, and none after (PW-303:
+        the wait was in a try's else clause, which a return in the try
+        skips, so late messages were dropped)."""
         try:
             try:
-                return fut.result()
-            except BrokenProcessPool:
+                out = fut.result()
+            except BrokenProcessPool:  # (the worker died: no end marker is coming)
                 self._restart(fut.executor)
                 raise RuntimeError("the worker process died (out of memory or a crash)") from None
             except BaseException:
                 self._wait_end(fut.token)
                 raise
-            else:
-                self._wait_end(fut.token)
+            self._wait_end(fut.token)
+            return out
         finally:
             self._forget(fut.token)
 
     def _wait_end(self, token):
-        """Until the listener has passed on all of this call's progress messages."""
+        """Until the listener has passed on all of this call's progress
+        messages: _call sends its end marker after them, in a finally, before
+        the result, so it is always on its way when the result is in."""
         ev = self._ends.get(token)
         if ev is not None:
-            ev.wait(10)
+            ev.wait()
 
     def call(self, fn, *args, progress=None):
         """fn(*args, progress) in a worker, waiting for it."""

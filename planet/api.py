@@ -361,6 +361,7 @@ class Jobs:
         self.path = Path(path) if path else None
         self.jobs: dict[str, dict] = {}
         self.lock = threading.Lock()
+        self._take = threading.Lock()
         self.q: queue.Queue = queue.Queue()
         self.ids = itertools.count(1)
         self.n_workers = max(1, int(workers))
@@ -440,9 +441,10 @@ class Jobs:
             self.jobs[jid].update(kw)
             self._save(force="status" in kw)
 
-    def run_one(self, jid: str):
+    def run_one(self, jid: str, started: bool = False):
         req = self.jobs[jid]["request"]
-        self._update(jid, status="running", message="starting", started=time.time())
+        if not started:
+            self._update(jid, status="running", message="starting", started=time.time())
         try:
             res = self.fn(req, lambda f, msg: self._update(jid, progress=round(float(f), 3), message=msg))
             # the result's keys ("zoom", "world" or "run") are copied to the job too
@@ -452,7 +454,10 @@ class Jobs:
 
     def _loop(self):
         while True:
-            self.run_one(self.q.get())
+            with self._take:  # (taken and marked running in one step, so jobs start in submission order)
+                jid = self.q.get()
+                self._update(jid, status="running", message="starting", started=time.time())
+            self.run_one(jid, started=True)
 
     def wait(self, jid: str, timeout: float = 600) -> dict:
         t0 = time.time()
