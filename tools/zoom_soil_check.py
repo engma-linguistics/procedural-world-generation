@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
 from planet import soils as SO  # noqa: E402
-from planet import vegetation as V  # noqa: E402
 from planet import world as W  # noqa: E402
 from planet import zoom as Z  # noqa: E402
 from planet.geo import R_KM  # noqa: E402
@@ -59,7 +58,7 @@ def check(world: dict, lat: float, lon: float, size_km: float, res_km: float, pn
     w_soil = np.asarray(L["soil"], int)
     w_depth = np.asarray(L["soil_depth"], float)
     elev = np.asarray(L["elevation"], float)
-    s_cell = V.relief(g, elev) / (g.spacing * R_KM)
+    s_cell = SO.cell_slope(g, elev)  # (the soils' own: the sea at sea level)
     P_cell = np.asarray(L["precipitation"], float)
     # the pixels' terrain (as zoom_vegetation computes it)
     from planet import zoom_terrain as ZT
