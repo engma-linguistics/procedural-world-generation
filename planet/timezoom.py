@@ -38,12 +38,11 @@ Model (per 500-yr step, see simulate)
   ice is bare and darker and gets more of the summer (which helps it
   melt back). Thick ice is a little colder all year (inversion, katabatic
   winds; ice_cool, 2 C).
-- Starting ice: taken to be in balance with the starting climate (the main
-  model put it where summers stay cold; Earth's is real). Where this
-  model's mass balance would melt it anyway (mostly: the climate model's
-  ice-free summers are too warm over big polar ice sheets) the place gets
-  a fixed cooling, the smallest that lets snow outlast the summer, spread
-  a few cells beyond the ice (start_anchor).
+- Starting ice: a run's is this mass balance's own extent (earth.ice_sheets);
+  Earth's is real, and where the climate model's summer on it is warmer
+  than observed the ice surface gets a cooling to the observed summer,
+  spread a few cells beyond the ice and applied wherever ice lies there
+  (start_anchor; it leaves with the ice, PW-035).
 - Mass balance: snow (monthly, where it's below ~0 C) minus melt from
   positive degree days (timezoom_kernels.climate_step).
 - Flow: shallow-ice approximation, nonlinear diffusion with
@@ -577,11 +576,16 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}
 
     i65 = int(np.argmin(np.abs(BAND_LAT - 65)))
-    anchor = np.zeros(n)  # C, fixed per-cell correction under the starting ice (see start_anchor)
+    anchor = np.zeros(n)  # C, per-cell correction of the ice surface's climate (see start_anchor)
 
     def start_anchor(year, dt_b, iced):
-        """A fixed cooling (C, all year) of the starting ice and a few rings
-        around it, for the whole time zoom (p.anchor):
+        """A cooling (C, all year) of the ice surface's climate on the
+        starting ice and a few rings around it (p.anchor). It corrects the
+        climate model over ice, so it applies where ice lies (in full from
+        snow_h): it goes with the ice when that melts back and comes back
+        where the ice readvances (PW-035: it used to cool the cell for the
+        whole time zoom, so bare ground left by the starting ice stayed
+        cooled, and ring cells were cooled before any ice reached them):
           obs      Earth: the model's warmest month on the ice (its bare
                    climate under icemass's ice surface) cooled to the
                    observed one where that is colder (the climate model's
@@ -664,7 +668,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             # bright snow absorbs little of an insolation change, but the air over it also brings
             # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
             k_orb = orbit_k(g, land, f_snow, p)
-            climate_step(land, north, fields_["t_mean"] + anchor, fields_["half"], fields_["p_jul"],
+            # (the start's correction of the ice-surface climate, only where ice lies: start_anchor)
+            climate_step(land, north, fields_["t_mean"] + anchor * f_alb, fields_["half"], fields_["p_jul"],
                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
                          p.ice_cool, damp, p.melt_hold, p.bare_share, p.snow_w,
                          p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, smb, t_ann, t_warm, t_cold,

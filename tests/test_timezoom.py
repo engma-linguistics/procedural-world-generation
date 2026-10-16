@@ -170,3 +170,26 @@ def test_orbit_response_mixes_each_surface_own(sim4):
     assert np.allclose(k[far], p.insol_k * p.insol_sea)
     bare = Z.orbit_k(g, land, np.zeros(g.n), p)
     assert np.allclose(bare[land], p.insol_k)
+
+
+def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
+    """The start's climate correction of the ice surface (anchor) applies
+    where ice lies: once the starting ice has melted, its cells (and the
+    rings around them that no ice reached) have the climate of a zoom with
+    no anchor at all (PW-035)."""
+    src = dict(cold_src, ice=cold_run["state"]["H"].copy(), dT=cold_src["dT"] + 14.0)
+    fixed = dict(NO_ORBIT, co2_cool=0.0, ice_albedo=0.0, climate_every=1000.0, iso_ratio=0.0)
+    a = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="balance", anchor_max=3.0, **fixed))
+    b = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="none", **fixed))
+    cooled = a["anchor"] < -0.4
+    bare = cooled & (a["state"]["H"] < 1) & (b["state"]["H"] < 1)
+    assert bare.sum() >= 5, bare.sum()
+    # (no more than on bare land the anchor never touched: the two zooms' sea levels differ, and the
+    # land's height above them)
+    diff = np.abs(a["state"]["t_ann"] - b["state"]["t_ann"])
+    land = src["elev"] > 0
+    ref = land & (a["anchor"] == 0) & (a["state"]["H"] < 1) & (b["state"]["H"] < 1)
+    assert np.median(diff[bare]) <= np.median(diff[ref]) + 0.02, (np.median(diff[bare]), np.median(diff[ref]))
+    held = (a["state"]["H"] > 100) & cooled  # where the ice is still there, the anchor still cools it
+    if held.any():
+        assert (a["state"]["t_ann"] < b["state"]["t_ann"] - 0.3)[held].mean() > 0.5

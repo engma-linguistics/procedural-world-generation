@@ -100,7 +100,7 @@ def test_finished_climate_has_the_orbit(tiny):
     ref = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), m_["params"].get("tilt", 23.4),
                            p_, st["elevation"] + st["ice"] > 0, st["ice"], phases=m_.get("orbit_phases_deg"))
     for j, v in m_.get("anchor", []):
-        ref[j] += v
+        ref[j] += v * min(st["ice"][j] / p_.snow_h, 1.0)  # (where the frame has ice, PW-035)
     assert np.array_equal(d, ref)
     from planet import climate
     land = st["elevation"] > 0

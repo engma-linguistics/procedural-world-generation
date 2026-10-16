@@ -25,7 +25,7 @@ PW-307, PW-197).
 Approximation (see docs/overview.md 2.11):
 - the climate gets the frame's seasonal insolation anomaly against the
   planet's mean orbit (obliquity, precession, eccentricity; timezoom.orbit_anomaly)
-  and the time zoom's start-anchor cooling (Earth's) as climate.compute's
+  and the time zoom's start-anchor cooling (Earth's, where ice lies) as climate.compute's
   orbit_dt (PW-198), so the finished world's seasons are the time zoom's.
 
 Provenance in the world's meta: source_run, source_run_name, t_myr (the
@@ -142,7 +142,8 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
 def orbit_dt(run: dict, st: dict) -> np.ndarray:
     """climate.compute's orbit_dt for a frame (PW-198): the time zoom's
     monthly insolation anomaly at that frame's orbit, plus its start anchor
-    (C, all year, where it had one)."""
+    (C, all year, where it had one and the frame has ice, as the time zoom
+    applies it)."""
     from . import timezoom as TZ
     m = run["meta"]
     p = TZ.TZParams(**{k: v for k, v in m.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
@@ -151,8 +152,9 @@ def orbit_dt(run: dict, st: dict) -> np.ndarray:
     land = st["elevation"] + st["ice"] > 0  # (the time zoom's land: grounded ice on a sunk bed included)
     d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), m["params"].get("tilt", 23.4),
                          p, land, st["ice"], earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
+    bright = np.clip(st["ice"] / p.snow_h, 0, 1)  # (the anchor corrects the ice's climate: where ice lies, PW-035)
     for i, v in m.get("anchor", []):
-        d[i] += v
+        d[i] += v * bright[i]
     return d
 
 
