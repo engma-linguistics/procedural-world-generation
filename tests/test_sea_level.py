@@ -56,3 +56,24 @@ def test_sea_level_starts_at_zero_and_stays_near_it(grid4):
         means.append(np.mean(st))
     assert abs(np.mean(means)) < 50, means
     assert all(abs(m) < 120 for m in means), means
+
+
+def test_starting_continents_ride_inside_plates():
+    """Either start puts each continent whole on one plate, with plate
+    boundaries in the ocean (PW-328: the scattered start cut its continents
+    along random plate boundaries, so they collided instead of drifting and
+    the starting ocean hardly renewed)."""
+    g = build_grid(5)
+    a, b = g.edges[:, 0], g.edges[:, 1]
+    for start in ("scattered", "supercontinent"):
+        for seed in (1, 2):
+            s = Simulation(g, seed, Params(start=start), 2.0)
+            cont, own = s.w_cont, s.owner
+            lab, nl = g.components(cont)
+            for i in range(nl):
+                assert len(np.unique(own[lab == i])) == 1
+            bd = own[a] != own[b]
+            assert not (bd & cont[a] & cont[b]).any()
+            # (a boundary meets a coast only where two continents face each other across a narrow sea)
+            assert (bd & (cont[a] | cont[b])).sum() < 0.05 * bd.sum()
+            assert all(s.plates.owned[k].any() for k in np.flatnonzero(s.plates.alive))

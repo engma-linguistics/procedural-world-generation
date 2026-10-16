@@ -2,7 +2,7 @@
 id: PW-328
 title: "Scattered start: the ocean ages ~0.4-0.9 Myr per Myr in the first 100 Myr, sea falls 150-300 m"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: tectonics
 effort: s
@@ -27,5 +27,6 @@ realistic behaviour by 50-100 Myr) on a few L6 seeds at 500 Myr; if not, look at
 continents sit relative to plate boundaries.
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (ecdd435): scattered continents go whole to the plate holding most of each (they straddled boundaries: 18-31% of boundary length); 0-100 Myr ocean age 54 Myr, sea -25 m. The scattered regime's long-run old ocean is PW-379.
 - 2026-10-16: Status todo -> in-progress. Run-lane agent started.
 - 2026-10-15: Created from inbox draft draft-scattered-start-ocean-ages.md (found by pw293).

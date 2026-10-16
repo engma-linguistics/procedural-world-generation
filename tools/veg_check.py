@@ -15,12 +15,18 @@ Compared with:
   - potential natural vegetation (Ramankutty & Foley 1999, downloaded by
     earth_data.earth_potveg): area-weighted agreement of 7 groups, land
     outside Antarctica, wetlands and lakes left out;
-  - published global numbers (no small, login-free gridded product exists
-    for these): land NPP ~56 Pg C/yr (Field et al. 1998; MODIS MOD17 ~53),
-    approximate MOD17 zonal means (Zhao et al. 2005; read off their maps, so
-    only good to ~20%), potential biome areas, GFED4s burned area ~4-5
-    Mkm2/yr (~70% in savannas), vegetation carbon ~450-650 Pg C, the five
-    Mediterranean regions, the C3/C4 crossover (~30-35 deg, Still et al. 2003).
+  - GFED4.1s burned area (2001-2015 mean, small fires included; the owner's
+    ORNL DAAC download, earth_data.gfed_ba_raw; --no-gfed): total, the share
+    in savanna and grassland, boreal fire rotation, by latitude, by cell;
+  - MODIS MOD17A3 NPP (2000-2015 mean, NTSG mirror) and MOD44B tree cover
+    (2001-2015 mean, UHH-ICDC 0.5 deg; earth_data.mod17_npp_raw,
+    mod44b_tree_raw; --no-modis): totals on common cells, zonal means, by
+    group and cell. Both observe today's land use, the model potential vegetation;
+  - published global numbers: land NPP ~56 Pg C/yr (Field et al. 1998; MODIS
+    MOD17 ~53), approximate MOD17 zonal means (Zhao et al. 2005; read off
+    their maps, so only good to ~20%), potential biome areas, vegetation
+    carbon ~450-650 Pg C, the five Mediterranean regions, the C3/C4 crossover
+    (~30-35 deg, Still et al. 2003).
 """
 
 from __future__ import annotations
@@ -38,7 +44,8 @@ import numpy as np  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import vegetation as V  # noqa: E402
 from planet import world as W  # noqa: E402
-from tools.earth_data import POTVEG_CLASSES, cell_areas, earth_clouds, earth_on_grid, earth_potveg  # noqa: E402
+from tools.earth_data import (POTVEG_CLASSES, cell_areas, earth_clouds, earth_gfed, earth_mod17_npp,  # noqa: E402
+                              earth_on_grid, earth_potveg, earth_tree_cover, gfed_ba_raw)
 
 TILT = 23.44
 # comparison groups
@@ -98,7 +105,8 @@ def run(grid, L, obs: dict | None, geo: dict | None = None):
     return V.model(grid, L["elevation"], t, tw, tc, pj, pa, TILT, cj, ca, L["flow"], None, None, L["ice"], soil=soil)
 
 
-def report(grid, L, v, pv, area_km2, label: str) -> dict:
+def report(grid, L, v, pv, area_km2, label: str, gfed: np.ndarray | None = None,
+           sat: dict | None = None) -> dict:
     land = v["land"]
     types, sm, nu = v["types"], v["sm"], v["eq"]["nu"]
     lat, lon = grid.lat, grid.lon
@@ -115,6 +123,10 @@ def report(grid, L, v, pv, area_km2, label: str) -> dict:
     grp = np.where(types > 0, TYPE_GROUP[types], -1)
     out["burned_by_group"] = {k: round(float((burned * a)[grp == i].sum() / 1e6), 2) for i, k in enumerate(GROUPS)}
     out["group_mkm2"] = {k: float(a[grp == i].sum() / 1e6) for i, k in enumerate(GROUPS)}
+    if gfed is not None:
+        out["fire_obs"] = fire_vs_gfed(grid, types, grp, burned, gfed, pv, land, a)
+    if sat is not None:
+        out["sat_obs"] = npp_tree_vs_modis(grid, L, sm, grp, land, a, sat)
     out["forest_mkm2"] = float(a[land & (sm["tree"] >= 0.6)].sum() / 1e6)
     out["boreal_mkm2"] = float(a[np.isin(types, [37, 38, 39, 40, 41])].sum() / 1e6)
     out["savanna_grass_mkm2"] = float(a[sav].sum() / 1e6)
@@ -174,6 +186,135 @@ def report(grid, L, v, pv, area_km2, label: str) -> dict:
     return out
 
 
+BOREAL_TYPES = [37, 38, 39, 40, 41]
+
+
+def _rotation(burned, a, m):
+    """Fire rotation (yr): the area of m over the area it burns a year; and the median cell's interval."""
+    b = (burned * a)[m].sum()
+    rot = float(a[m].sum() / b) if b > 0 else float("inf")
+    med = float(np.median(1.0 / np.maximum(burned[m], 1e-6))) if m.any() else float("nan")
+    return round(min(rot, 1e5)), round(min(med, 1e5))
+
+
+def fire_vs_gfed(grid, types, grp, burned, gfed, pv, land, a) -> dict:
+    """The model's burned area against GFED4.1s (2001-2015 mean, with small fires,
+    tools/earth_data.gfed_ba_raw). GFED counts every fire, crop and deforestation
+    fires among them; the model has natural fire on potential vegetation, so its
+    shares are the comparison, not cell-by-cell parity."""
+    o = {}
+    obs = gfed * land
+    tot_m, tot_o = (burned * a)[land].sum(), (obs * a).sum()
+    o["gfed_mkm2"] = float(tot_o / 1e6)
+    raw = gfed_ba_raw()
+    o["gfed_years"] = f"{int(raw['years'][0])}-{int(raw['years'][-1])}"
+    o["gfed_range_mkm2"] = (round(float(raw["total_mkm2"].min()), 2), round(float(raw["total_mkm2"].max()), 2))
+    pvg = np.where(pv > 0, POTVEG_GROUP[pv], -1)
+    # burned share of grassy land: observed by potential vegetation's savanna + grassland (and shrubland)
+    o["gfed_share_savanna_grass_potveg"] = float((obs * a)[np.isin(pvg, [1, 2])].sum() / tot_o)
+    o["gfed_share_sav_grass_shrub_potveg"] = float((obs * a)[np.isin(pvg, [1, 2, 3])].sum() / tot_o)
+    # where the model puts savanna/grassland: GFED's share there, and the model's own
+    mg = land & np.isin(grp, [_G["savanna"], _G["grassland"]])
+    o["gfed_share_in_model_grassy"] = float((obs * a)[mg].sum() / tot_o)
+    o["model_share_in_model_grassy"] = float((burned * a)[mg].sum() / max(tot_m, 1e-12))
+    o["gfed_by_model_group"] = {k: round(float((obs * a)[grp == i].sum() / 1e6), 2) for i, k in enumerate(GROUPS)}
+    o["gfed_by_potveg_group"] = {k: round(float((obs * a)[pvg == i].sum() / 1e6), 2) for i, k in enumerate(GROUPS[:7])}
+    # boreal fire return: on the model's boreal types, and on potential vegetation's boreal forest
+    mb = land & np.isin(types, BOREAL_TYPES)
+    pb = land & np.isin(pv, [6, 7])
+    o["boreal_model"] = _rotation(burned, a, mb)
+    o["boreal_gfed_on_model_boreal"] = _rotation(gfed, a, mb)
+    o["boreal_gfed_on_potveg_boreal"] = _rotation(gfed, a, pb)
+    o["boreal_mkm2_yr"] = (round(float((burned * a)[mb].sum() / 1e6), 3), round(float((obs * a)[pb].sum() / 1e6), 3))
+    # by latitude band (Mkm2/yr), model / GFED
+    lat = grid.lat
+    o["by_lat"] = {b0: (round(float((burned * a)[land & (lat >= b0) & (lat < b0 + 15)].sum() / 1e6), 2),
+                        round(float((obs * a)[(lat >= b0) & (lat < b0 + 15)].sum() / 1e6), 2))
+                   for b0 in range(-45, 75, 15)}
+    # cell-by-cell rank correlation on land outside Antarctica
+    m = land & (lat > -60)
+    rk = lambda x: np.argsort(np.argsort(x)).astype(float)  # noqa: E731
+    o["spearman"] = float(np.corrcoef(rk(burned[m]), rk(gfed[m]))[0, 1])
+    # land burning at least every 10 / 100 years
+    o["burning_mkm2"] = {f">=1/{n}yr": (round(float(a[m & (burned >= 1 / n)].sum() / 1e6), 1),
+                                         round(float(a[m & (gfed >= 1 / n)].sum() / 1e6), 1)) for n in (10, 100)}
+    return o
+
+
+def npp_tree_vs_modis(grid, L, sm, grp, land, a, sat) -> dict:
+    """The model's NPP and tree cover against MODIS: MOD17A3 NPP (2000-2015 mean)
+    and MOD44B tree cover (2001-2015 mean; tools/earth_data). Both observe
+    today's land, fields and pastures included, against the model's potential
+    vegetation: NPP is close (crops are productive), tree cover is lower than
+    potential where forests were cleared."""
+    o = {}
+    lat = grid.lat
+    ok = land & (L["ice"] <= 0)
+    obs_n, obs_t = sat["npp"], sat["tree"]
+    mn = ok & np.isfinite(obs_n) & (sat["npp_cover"] >= 0.5)
+    o["npp_pg_common"] = (round(float((sm["npp"] * a)[mn].sum() * 1e6 / 1e15), 1),
+                          round(float((obs_n * a)[mn].sum() * 1e6 / 1e15), 1))
+    o["npp_r"] = float(np.corrcoef(sm["npp"][mn], obs_n[mn])[0, 1])
+    o["npp_bias"] = float(((sm["npp"] - obs_n) * a)[mn].sum() / a[mn].sum())
+    o["npp_zonal_mod17"] = {}
+    for s0 in range(-60, 80, 10):
+        b = mn & (lat >= s0) & (lat < s0 + 10)
+        if b.sum() > 3:
+            o["npp_zonal_mod17"][s0] = (round(float((sm["npp"] * a)[b].sum() / a[b].sum())),
+                                        round(float((obs_n * a)[b].sum() / a[b].sum())))
+    o["npp_by_group"] = {k: (round(float((sm["npp"] * a)[mn & (grp == i)].sum() / a[mn & (grp == i)].sum())),
+                             round(float((obs_n * a)[mn & (grp == i)].sum() / a[mn & (grp == i)].sum())))
+                         for i, k in enumerate(GROUPS[:7]) if (mn & (grp == i)).sum() > 3}
+    mt = ok & np.isfinite(obs_t) & (sat["tree_cover"] >= 0.5) & (lat > -60)
+    tr = sm["tree"]
+    o["tree_r"] = float(np.corrcoef(tr[mt], obs_t[mt])[0, 1])
+    o["tree_mean"] = (round(float((tr * a)[mt].sum() / a[mt].sum()), 3), round(float((obs_t * a)[mt].sum() / a[mt].sum()), 3))
+    o["tree_area_mkm2"] = (round(float((tr * a)[mt].sum() / 1e6), 1), round(float((obs_t * a)[mt].sum() / 1e6), 1))
+    o["tree_ge"] = {f">={x}": (round(float(a[mt & (tr >= x)].sum() / 1e6), 1), round(float(a[mt & (obs_t >= x)].sum() / 1e6), 1))
+                    for x in (0.1, 0.3, 0.6)}
+    o["tree_by_group"] = {k: (round(float(tr[mt & (grp == i)].mean()), 2), round(float(obs_t[mt & (grp == i)].mean()), 2))
+                          for i, k in enumerate(GROUPS[:7]) if (mt & (grp == i)).sum() > 3}
+    o["tree_zonal"] = {}
+    for s0 in range(-60, 80, 10):
+        b = mt & (lat >= s0) & (lat < s0 + 10)
+        if b.sum() > 3:
+            o["tree_zonal"][s0] = (round(float((tr * a)[b].sum() / a[b].sum()), 2),
+                                   round(float((obs_t * a)[b].sum() / a[b].sum()), 2))
+    return o
+
+
+def fmt_sat(f: dict) -> list[str]:
+    return [
+        f"  MOD17A3 NPP (2000-2015): on common land cells model {f['npp_pg_common'][0]} / MOD17 {f['npp_pg_common'][1]} "
+        f"Pg C/yr; r by cell {f['npp_r']:.2f}, mean bias {f['npp_bias']:+.0f} g C/m2/yr",
+        "    NPP by band (model / MOD17): " + ", ".join(f"{k}: {m}/{o}" for k, (m, o) in f["npp_zonal_mod17"].items()),
+        "    NPP by model group (model / MOD17): " + ", ".join(f"{k} {m}/{o}" for k, (m, o) in f["npp_by_group"].items()),
+        f"  MOD44B tree cover (2001-2015, today's land use): mean model {f['tree_mean'][0]:.2f} / MODIS {f['tree_mean'][1]:.2f}, "
+        f"canopy area {f['tree_area_mkm2'][0]} / {f['tree_area_mkm2'][1]} Mkm2; r by cell {f['tree_r']:.2f}",
+        "    land with tree cover (model/MODIS Mkm2): " + ", ".join(f"{k} {m}/{o}" for k, (m, o) in f["tree_ge"].items()),
+        "    mean tree cover by model group (model/MODIS): " + ", ".join(f"{k} {m}/{o}" for k, (m, o) in f["tree_by_group"].items()),
+        "    tree cover by band (model/MODIS): " + ", ".join(f"{k}: {m}/{o}" for k, (m, o) in f["tree_zonal"].items()),
+    ]
+
+
+def fmt_fire(f: dict) -> list[str]:
+    return [
+        f"  GFED4.1s ({f['gfed_years']}, small fires incl.): {f['gfed_mkm2']:.2f} Mkm2/yr on land cells "
+        f"(years {f['gfed_range_mkm2'][0]}-{f['gfed_range_mkm2'][1]}); rank correlation model vs GFED by cell {f['spearman']:.2f}",
+        f"    GFED share in potveg savanna+grassland {100 * f['gfed_share_savanna_grass_potveg']:.0f}% "
+        f"(+shrubland {100 * f['gfed_share_sav_grass_shrub_potveg']:.0f}%); in the model's savanna+grassland cells: "
+        f"GFED {100 * f['gfed_share_in_model_grassy']:.0f}%, model {100 * f['model_share_in_model_grassy']:.0f}%",
+        "    GFED by model group (Mkm2/yr): " + ", ".join(f"{k} {v}" for k, v in f["gfed_by_model_group"].items() if v),
+        "    GFED by potveg group (Mkm2/yr): " + ", ".join(f"{k} {v}" for k, v in f["gfed_by_potveg_group"].items() if v),
+        f"    boreal fire rotation / median interval (yr): model types {f['boreal_model'][0]} / {f['boreal_model'][1]}; "
+        f"GFED on those cells {f['boreal_gfed_on_model_boreal'][0]} / {f['boreal_gfed_on_model_boreal'][1]}; "
+        f"GFED on potveg boreal {f['boreal_gfed_on_potveg_boreal'][0]} / {f['boreal_gfed_on_potveg_boreal'][1]} "
+        f"(burned Mkm2/yr: model types {f['boreal_mkm2_yr'][0]}, GFED potveg boreal {f['boreal_mkm2_yr'][1]})",
+        "    by 15-deg band, model/GFED Mkm2/yr: " + ", ".join(f"{k}: {m}/{g}" for k, (m, g) in f["by_lat"].items()),
+        "    land burning at least (model/GFED Mkm2): " + ", ".join(f"{k} {m}/{g}" for k, (m, g) in f["burning_mkm2"].items()),
+    ]
+
+
 def fmt(r: dict) -> str:
     lo = TARGETS
     lines = [f"## {r['label']}",
@@ -182,6 +323,8 @@ def fmt(r: dict) -> str:
              f"  burned area         {r['burned_mkm2']:6.1f} Mkm2/yr      (target 2-8; GFED4s ~4-5), "
              f"{100 * r['burned_savanna_share']:.0f}% in savanna and grassland (obs ~70-80%), {r['burned_rainforest_mkm2']:.2f} in rainforest",
              "  burned by group (Mkm2/yr): " + ", ".join(f"{k} {v}" for k, v in r["burned_by_group"].items() if v),
+             *(fmt_fire(r["fire_obs"]) if "fire_obs" in r else []),
+             *(fmt_sat(r["sat_obs"]) if "sat_obs" in r else []),
              f"  forest (trees>=60%) {r['forest_mkm2']:6.1f} Mkm2         (potential ~55-60)",
              f"  boreal forest       {r['boreal_mkm2']:6.1f} Mkm2         (~12-17)",
              f"  savanna, trop. grass{r['savanna_grass_mkm2']:6.1f} Mkm2         (~20)",
@@ -232,6 +375,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--world", default=None, help="Earth world id (default: the newest Earth world)")
     ap.add_argument("--json", default=None)
+    ap.add_argument("--no-gfed", action="store_true", help="skip the GFED4.1s burned-area comparison")
+    ap.add_argument("--no-modis", action="store_true", help="skip the MOD17 NPP and MOD44B tree-cover comparison")
     ap.add_argument("--no-soil", action="store_true", help="fixed soil buckets, no soils (as before PW-185)")
     ap.add_argument("--png", default=None, help="write maps (model groups, potential vegetation, model types) "
                                                "for the observed-climate run to this file")
@@ -248,6 +393,16 @@ def main():
     t0 = time.time()
     obs = {**earth_on_grid(grid), **earth_clouds(grid)}
     pv = earth_potveg(grid)
+    gfed = None
+    if not a.no_gfed:
+        try:
+            gfed = earth_gfed(grid)
+        except SystemExit as e:  # the zip needs an Earthdata login; the check runs without it
+            print(f"(no GFED comparison: {e})")
+    sat = None
+    if not a.no_modis:
+        n, t = earth_mod17_npp(grid), earth_tree_cover(grid)
+        sat = {"npp": n["npp"], "npp_cover": n["cover"], "tree": t["tree"], "tree_cover": t["cover"]}
     area = cell_areas(grid) * 6371.0 ** 2
     geo = None
     if not a.no_soil:
@@ -256,7 +411,7 @@ def main():
     res = []
     for label, o in (("model climate", None), ("observed climate", obs)):
         v = run(grid, L, o, geo)
-        res.append(report(grid, L, v, pv, area, label))
+        res.append(report(grid, L, v, pv, area, label, gfed, sat))
         print(fmt(res[-1]))
         if a.png and o is not None:
             maps_png(grid, L, v, pv, Path(a.png))

@@ -2,9 +2,12 @@
 
 Written for the LGM ice cover on Zenodo (tools/earth_data.py), which is a
 netCDF-4 file with a flat root group of chunked, deflate-compressed arrays,
-and NOAA PSL's reanalysis climatologies (the same, from an older library).
-Supported: superblock v0/v2/v3, version 2 object headers, compact link
-messages in the root group, version 1 or 2 dataspaces and filter pipelines,
+NOAA PSL's reanalysis climatologies (the same, from an older library), and
+GFED4.1s burned area (h5py files with old-style nested groups).
+Supported: superblock v0/v2/v3, version 1 or 2 object headers, groups as
+compact link messages or symbol tables (version 1 B-tree of symbol nodes,
+local heap), nested by "/"-separated paths, version 1 or 2 dataspaces and
+filter pipelines,
 chunked layout v3 with a version 1 B-tree index (and compact or contiguous
 arrays, unblocked), deflate and shuffle filters, fixed-point and
 floating-point little-endian types.
@@ -22,48 +25,94 @@ import numpy as np
 
 
 def _messages(src, off: int) -> list[tuple[int, bytes]]:
+    """(type, body) of every message in an object header, version 1 or 2."""
     head = src.read(off, 64)
-    if head[:4] != b"OHDR" or head[4] != 2:
+    if head[:4] == b"OHDR" and head[4] == 2:
+        flags = head[5]
+        p = 6 + (16 if flags & 0x20 else 0) + (4 if flags & 0x10 else 0)
+        n = 1 << (flags & 3)
+        size = int.from_bytes(head[p:p + n], "little")
+        blocks = [(off + p + n, size)]  # (start of the messages, byte length)
+        mhead, step = 4 + (2 if flags & 4 else 0), 4
+    elif head[0] == 1:  # version 1: 16-byte prefix, 8-byte message headers, bodies padded to 8
+        blocks = [(off + 16, struct.unpack("<I", head[8:12])[0])]
+        mhead, step = 8, 8
+    else:
         raise ValueError("unsupported HDF5 object header")
-    flags = head[5]
-    p = 6 + (16 if flags & 0x20 else 0) + (4 if flags & 0x10 else 0)
-    n = 1 << (flags & 3)
-    size = int.from_bytes(head[p:p + n], "little")
-    p += n
-    blocks = [(off + p, size)]  # (start of the messages, byte length)
     out = []
     while blocks:
         a, ln = blocks.pop(0)
         buf = src.read(a, ln)
         q = 0
-        while q + 4 <= len(buf):
-            t, sz = buf[q], struct.unpack("<H", buf[q + 1:q + 3])[0]
-            q += 4 + (2 if flags & 4 else 0)
+        while q + step <= len(buf):
+            if mhead == 8:
+                t, sz, mflags = struct.unpack("<HHB", buf[q:q + 5])
+            else:
+                t, sz, mflags = buf[q], struct.unpack("<H", buf[q + 1:q + 3])[0], buf[q + 3]
+            q += mhead
             body = buf[q:q + sz]
             q += sz
-            if t == 0x10:  # continuation: a block "OCHK" ... checksum
+            if t == 0x10:  # continuation: v2 a block "OCHK" ... checksum; v1 bare messages
                 o, ln2 = struct.unpack("<QQ", body[:16])
-                blocks.append((o + 4, ln2 - 8))
+                blocks.append((o + 4, ln2 - 8) if mhead != 8 else (o, ln2))
             elif t:
+                if mflags & 2 and t in (1, 3, 8, 11):
+                    raise ValueError("shared HDF5 header messages unsupported")
                 out.append((t, body))
     return out
 
 
-def _root_links(src) -> dict[str, int]:
+def _root(src) -> int:
     sb = src.read(0, 96)
     if sb[:8] != b"\x89HDF\r\n\x1a\n":
         raise ValueError("not an HDF5 file")
     if sb[8] in (2, 3) and sb[9] == 8:
-        root = struct.unpack("<Q", sb[36:44])[0]
-    elif sb[8] == 0 and sb[13] == 8 and sb[14] == 8:
-        # version 0 (netCDF-4 files written by older libraries, e.g. NOAA PSL's): the root
-        # group's symbol table entry holds its object header's address; the header itself
-        # may still be a version 2 one with compact links (anything else raises below)
-        root = struct.unpack("<Q", sb[64:72])[0]
-    else:
-        raise ValueError("unsupported HDF5 superblock (need v0/v2/v3 with 8-byte offsets)")
+        return struct.unpack("<Q", sb[36:44])[0]
+    if sb[8] == 0 and sb[13] == 8 and sb[14] == 8:
+        # version 0 (netCDF-4 files written by older libraries, e.g. NOAA PSL's; h5py's GFED
+        # files): the root group's symbol table entry holds its object header's address
+        return struct.unpack("<Q", sb[64:72])[0]
+    raise ValueError("unsupported HDF5 superblock (need v0/v2/v3 with 8-byte offsets)")
+
+
+def _symbol_table(src, btree: int, heap: int) -> dict[str, int]:
+    """An old-style group: a version 1 B-tree (type 0) of symbol nodes, names in a local heap."""
+    h = src.read(heap, 32)
+    if h[:4] != b"HEAP" or h[4] != 0:
+        raise ValueError("unsupported HDF5 local heap")
+    hsize, _, haddr = struct.unpack("<QQQ", h[8:32])
+    names = src.read(haddr, hsize)
+    out = {}
+    todo = [btree]
+    while todo:
+        addr = todo.pop()
+        head = src.read(addr, 24)
+        if head[:4] != b"TREE" or head[4] != 0:
+            raise ValueError("unsupported HDF5 group B-tree")
+        level, used = head[5], struct.unpack("<H", head[6:8])[0]
+        body = src.read(addr + 24, used * 16 + 8)
+        kids = [struct.unpack("<Q", body[8 + 16 * i:16 + 16 * i])[0] for i in range(used)]
+        if level:
+            todo += kids
+            continue
+        for k in kids:
+            sn = src.read(k, 8)
+            if sn[:4] != b"SNOD" or sn[4] != 1:
+                raise ValueError("unsupported HDF5 symbol table node")
+            ns = struct.unpack("<H", sn[6:8])[0]
+            ents = src.read(k + 8, 40 * ns)
+            for i in range(ns):
+                noff, oh = struct.unpack("<QQ", ents[40 * i:40 * i + 16])
+                out[names[noff:names.index(b"\0", noff)].decode()] = oh
+    return out
+
+
+def _links(src, ohdr: int) -> dict[str, int]:
+    """Name -> object header address of a group's members (compact links or a symbol table)."""
     links = {}
-    for t, b in _messages(src, root):
+    for t, b in _messages(src, ohdr):
+        if t == 0x11:
+            links.update(_symbol_table(src, *struct.unpack("<QQ", b[:16])))
         if t != 6:
             continue
         fl, q = b[1], 2
@@ -76,8 +125,16 @@ def _root_links(src) -> dict[str, int]:
         q += 1 << (fl & 3)
         links[b[q:q + nl].decode()] = struct.unpack("<Q", b[q + nl:q + nl + 8])[0]
     if not links:
-        raise ValueError("no compact links in the root group (dense groups unsupported)")
+        raise ValueError("no compact links or symbol table in the group (dense groups unsupported)")
     return links
+
+
+def _resolve(src, path: str) -> int:
+    """Object header address of a "/"-separated path from the root group."""
+    addr = _root(src)
+    for part in [p for p in path.split("/") if p]:
+        addr = _links(src, addr)[part]
+    return addr
 
 
 def _chunks(src, addr: int, rank: int):
@@ -98,15 +155,16 @@ def _chunks(src, addr: int, rank: int):
             yield struct.unpack("<" + "Q" * (rank + 1), key[8:])[:rank], child, size, mask
 
 
-def variables(src) -> list[str]:
-    return sorted(_root_links(src))
+def variables(src, group: str = "") -> list[str]:
+    """The member names of a group ("" the root, or a "/"-separated path)."""
+    return sorted(_links(src, _resolve(src, group)))
 
 
 def read_variable(src, name: str, block: int = 1, fetch_gap: int = 1 << 16) -> np.ndarray:
-    """Decode a root-group variable. block > 1 averages block x block cells
+    """Decode a variable ("name" in the root group, or a "/"-separated path). block > 1 averages block x block cells
     (2-D only) while decoding, so a huge raster never exists in full; the chunk
     shape must be a multiple of block. Returns float32 when block > 1."""
-    ms = dict(_messages(src, _root_links(src)[name]))
+    ms = dict(_messages(src, _resolve(src, name)))
     for t in (1, 3, 8):
         if t not in ms:
             raise ValueError(f"variable {name!r}: missing header message {t}")

@@ -2,7 +2,7 @@
 id: PW-374
 title: "Zoom vegetation: straight, axis-aligned edges (rectangular patches) and a July/January jump at the equator"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -30,4 +30,5 @@ Separately, at the equator in 369394 `temperature_jul` and `temperature_jan` jum
 - July / January temperature continuous across the equator in a zoom that straddles it.
 
 ## Updates
+- 2026-10-16: Status todo -> done. Done (ca24e09): warm start interpolated over only half a cell, so forest edges followed coarse rows (now 0.6 cell with a fixed ~0.4-cell planet-fixed noise offset); warm/cold month swapped by hemisphere (now July and January interpolated directly, seasons from the warmer month). Equator step 500/500 -> max 4 px; rectangles gone.
 - 2026-10-16: Created from inbox draft draft-zoom-vegetation-straight-edges.md (found by iceage-showcase).
