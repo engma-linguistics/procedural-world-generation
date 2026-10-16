@@ -1,4 +1,5 @@
 ---
+id: PW-299
 title: Floodplain deposits on a closed hollow's slopes can still raise cells above the hollow's spill point (~3% of deposition)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: surface-hydro
 blocked_by: []
 relates: [PW-280, PW-054]
 refs: [planet/surface.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -22,3 +25,6 @@ but inside a closed hollow it builds the rim up and can deepen or dam the basin.
 Simplest sound fix: in a hollow (priority-flood fill above the ground), cap the floodplain keep at the cell's
 room below its spill point, as pits are; the excess carries on downstream to the basin floor, where PW-280's
 room rule applies.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-floodplain-deposits-above-spill.md (found by surface-hydro).

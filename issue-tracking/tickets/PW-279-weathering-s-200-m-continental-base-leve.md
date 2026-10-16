@@ -2,7 +2,7 @@
 id: PW-279
 title: "Weathering's 200 m continental base level: a floor standing in for 'flat plains don't erode'"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: surface
 effort: s
@@ -28,6 +28,7 @@ Options:
 Lean: A for now (low impact); B if the land fraction is retuned anyway.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. A: kept and documented (merged 4d3b46f).
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-surface-hydro-base-level.md (found by audit-surface-hydro).

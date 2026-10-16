@@ -2,7 +2,7 @@
 id: PW-281
 title: World finishing erosion deletes rock (mean 46 m of land at strength 0.3) instead of depositing it
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: hydrology
 effort: s
@@ -29,6 +29,7 @@ Options:
 Lean: B (sound, and matches the run). A if B costs the Jaccard.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Tried B (route removed rock): lake Jaccard 0.60/0.27/0.81 -> 0.37/0.00/0.55 on three L5 seeds and ~2% extra land, so per the owner-approved fallback A: documented finishing as a display pass (merged 4d3b46f).
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Status needs-decision -> todo. Owner (2026-10-15): approved the lean.
 - 2026-10-15: Created from inbox draft draft-audit-surface-hydro-finish-erosion-mass.md (found by audit-surface-hydro).

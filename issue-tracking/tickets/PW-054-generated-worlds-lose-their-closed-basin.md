@@ -22,6 +22,7 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-10-15: After the audit fixes: L6 inland drainage 7.3-7.9% (below the 8% envelope; Earth ~18%), L7 16.3%. Basins now pass excess load over their rims (PW-280), so they fill less from overload but drain more.
 - 2026-10-15: Status in-progress -> todo. Tect2 (merged): flexural moats beside belts and McKenzie thermal sag after rifting (isostasy.subsidence). L6 inland drainage 5.6-7.1% -> 8.4-9.9% (arid land 10-12% -> 16.5-17.7%); L7 ~20% (unchanged, already near Earth). Remaining: L6/L7 gap and back-arc/pull-apart basins (new tickets).
 - 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status in-progress -> todo. Hydro (merged): diagnosis: 2/3 of closed-hollow loss is sediment infill, 1/3 rim wear; the rest needs tectonic subsidence (flexural and sag basins) - see merged draft. Back to the tectonics queue.

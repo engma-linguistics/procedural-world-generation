@@ -1,4 +1,5 @@
 ---
+id: PW-301
 title: tools/health.py still describes run-frame lakes and downstream as a step stale (fixed by PW-239)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: surface-hydro
 blocked_by: []
 relates: [PW-239, PW-246]
 refs: [tools/health.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -20,3 +23,6 @@ caveat ("a keyframe's lakes and `downstream` come from the terrain before that s
 PW-239 `inland_raw_pct` and `inland_pct` should agree, apart from ends under land ice (tests/test_health.py
 test_frame_rivers_end_in_its_own_hollows). Update the text; `real_hollows` can stay as a check, or the two
 measures can be merged into one.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-health-caveat-after-pw239.md (found by surface-hydro).

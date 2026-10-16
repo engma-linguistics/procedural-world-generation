@@ -1,4 +1,5 @@
 ---
+id: PW-302
 title: Run incision weakens per grid level on headwater cells (2.2 / 1.6 / 1.1 m per step, L5 / L6 / L7)
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: surface-hydro
 blocked_by: []
 relates: [PW-282, PW-243]
 refs: [planet/surface.py, docs/review/audit/fixes-surface-hydro.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ the hillslope term. Total lowering is now 9.4 / 8.8 / 8.3 m per step (was 8.2 / 
 Options: leave it (lean: the law is sound; what differs is what the cells resolve); or give headwater cells a
 sub-cell channel term (an extra hillslope-like share for cells with little upstream area), which would be a
 new parameterisation to calibrate. Worth keeping in mind for PW-243's L6/L7 closed-basin gap.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-incision-level-consistency.md (found by surface-hydro).

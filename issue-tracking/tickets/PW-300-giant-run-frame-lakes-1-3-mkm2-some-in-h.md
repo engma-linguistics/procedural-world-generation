@@ -1,4 +1,5 @@
 ---
+id: PW-300
 title: Giant run-frame lakes (1-3 Mkm2, some in hyperarid basins) are on the frames' own terrain, not a stale-lakes artifact
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: surface-hydro
 blocked_by: []
 relates: [PW-239, PW-054, PW-284]
 refs: [planet/hydrology.py, planet/tectonics/output.py, "run 9366df", "run ef2c6a", docs/review/audit/fixes-surface-hydro.md]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -26,3 +29,6 @@ small where it is that wet). Worth checking: whether these hollows come from the
 the frame's terrain actually delivers (closed lakes under heavy rain), and whether a 1.4 km-deep 3 Mkm2 hollow
 appearing in one frame is a tectonics step artifact. Runs 9366df / ef2c6a are in the surface-hydro worktree
 (deleted before merge; rerun `tools/health.py --l6 --l7 3199 21 --myr 500` to get them back).
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-giant-lakes-on-final-terrain.md (found by surface-hydro).

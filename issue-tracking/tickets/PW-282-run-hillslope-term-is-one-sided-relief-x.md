@@ -2,7 +2,7 @@
 id: PW-282
 title: "Run hillslope term is one-sided relief x 1/d^2, not a Laplacian: doubles per grid level"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: surface
 effort: s
@@ -28,5 +28,6 @@ docstring.
 - [ ] L6 golden updated on purpose; scorecard; PW-243's L6 and L7 inland drainage remeasured
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the surface-hydro fix branch (merged 4d3b46f); docs/review/audit/fixes-surface-hydro.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-surface-hydro-hillslope-level.md (found by audit-surface-hydro).

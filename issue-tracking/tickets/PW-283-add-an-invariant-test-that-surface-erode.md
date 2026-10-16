@@ -2,7 +2,7 @@
 id: PW-283
 title: Add an invariant test that surface.erode conserves sediment (deposited = removed)
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: infra
 effort: xs
@@ -22,5 +22,6 @@ create sediment unnoticed. Add a test to test_invariants on sim4: wrap surface.e
 equal sums (rtol 1e-9) and dep >= 0.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the surface-hydro fix branch (merged 4d3b46f); docs/review/audit/fixes-surface-hydro.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-surface-hydro-sediment-test.md (found by audit-surface-hydro).

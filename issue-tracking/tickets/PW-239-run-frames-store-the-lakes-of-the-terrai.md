@@ -2,7 +2,7 @@
 id: PW-239
 title: Run frames store the lakes of the terrain before that step's erosion and sediment, so they disagree with the frame's own elevation
 type: task
-status: todo
+status: done
 parent: null
 subsystem: hydrology
 effort: s
@@ -34,6 +34,7 @@ Options:
 Lean: B (cheap, and what the viewer shows becomes consistent).
 
 ## Updates
+- 2026-10-15: Status todo -> done. Fixed (merged 4d3b46f): output.water_now computes each frame's flow, downstream and lakes on its final terrain. Inland drainage L6 9.2 -> 7.9%, L7 18.1 -> 16.3%. Giant lakes remain (on final terrain): separate ticket.
 - 2026-10-15: Merged inbox draft draft-health-pw239-downstream-stale.md ("PW-239 update: run frames' stale lakes show giant 2-7 Mkm2 salt lakes, and their `downstream` doubles inland drainage", found by health-sweep).
   Update for PW-239 (same cause: a run frame stores what `surface.erode` worked out on the terrain
   *before* the step's erosion, deposition and tectonics). Besides `lake_depth`/`lake_kind`, the
