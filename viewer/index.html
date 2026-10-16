@@ -376,6 +376,16 @@ RAMPS.biomass = [[0, '#f2ead0'], [10, '#d8d28a'], [50, '#9cc060'], [120, '#4f9a4
 RAMPS['fire return'] = [[0, '#3a2a2a'], [1, '#e8503a'], [3, '#f09a3a'], [10, '#f2d36a'], [50, '#c9d6a0'], [300, '#8fb0a0'], [3000, '#4f6f80']];
 RAMPS['stand age'] = [[0, '#f2d36a'], [20, '#c9cf8a'], [80, '#7fb05a'], [200, '#3f8a45'], [600, '#1f5a3a'], [2000, '#0f3a2a']];
 RAMPS['plant type'] = [[0, '#2a2a2a'], [100, '#ffffff']];  // (drawn in the PFT's own colour)
+// soils (worlds; soils.py, PW-185)
+RAMPS['soil depth'] = [[0, '#8a7f6e'], [0.25, '#c9b48a'], [0.75, '#d9c27a'], [1.5, '#a8743f'], [3, '#5a3a22']];
+RAMPS['soil water'] = [[0, '#efe0b0'], [50, '#d9cf8a'], [120, '#9cc07a'], [200, '#4f9fa0'], [350, '#1f5f8a']];
+RAMPS.fertility = [[0, '#d8c8a8'], [0.25, '#c9a86a'], [0.5, '#a9b85a'], [0.75, '#5f9f3a'], [1, '#1f5f22']];
+RAMPS['soil carbon'] = [[0, '#efe6c8'], [3, '#d6c28a'], [8, '#a8844f'], [15, '#6a4a2a'], [30, '#3a2a1a'], [60, '#1a120a']];
+RAMPS.peat = [[0, '#efe6c8'], [0.3, '#b9a57a'], [1, '#7a5a3a'], [3, '#3a2a1a'], [8, '#120a05']];
+RAMPS.permafrost = [[0, '#e8dcc0'], [1, '#bcd0dc'], [2, '#7fa8c8'], [3, '#3a6a9a']];
+RAMPS.loess = [[0, '#ece6d6'], [1, '#e6d49a'], [5, '#d9b45a'], [20, '#b5852f'], [60, '#7a5418']];
+const SOIL_LAYERS = { 'soil depth': 'soil_depth', 'soil water': 'soil_water', fertility: 'soil_fertility',
+                      'soil carbon': 'soil_carbon', peat: 'peat_depth', permafrost: 'permafrost', loess: 'loess' };
 const VEG_LAYERS = { 'tree cover': 'tree_cover', 'plant cover': 'plant_cover', 'canopy height': 'canopy_height',
                      NPP: 'npp', biomass: 'biomass', 'fire return': 'fire_return', 'stand age': 'stand_age' };
 const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.keys(VEG_LAYERS)]);
@@ -391,7 +401,11 @@ const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: '
                 'canopy height': 'm, tallest layer', 'leaf area': 'm² of leaf per m² (LAI), year',
                 NPP: 'g C/m²/yr net primary productivity', biomass: 't C/ha in living plants',
                 'fire return': 'years between fires (log scale; dark = never)', 'stand age': 'years since the last stand-replacing fire',
-                'plant type': '% cover of the plant type' };
+                'plant type': '% cover of the plant type',
+                'soil depth': 'm of rootable soil', 'soil water': 'mm of water the soil holds for plants',
+                fertility: 'soil fertility, 0 poor to 1 rich', 'soil carbon': 'kg C/m² in the top metre',
+                peat: 'm of peat where peat lies', permafrost: '0 none, 1 sporadic, 2 discontinuous, 3 continuous',
+                loess: 'm of wind-blown silt' };
 const rampFns = Object.fromEntries(Object.entries(RAMPS).map(([k, v]) => [k, ramp(v)]));
 const OCEAN = new THREE.Color('#1c2f4f'), CONT = new THREE.Color('#8a8478');
 const RED = new THREE.Color('#ff3b3b'), CYAN = new THREE.Color('#3bf0ff'), ICE = new THREE.Color('#f4f8fb');
@@ -519,6 +533,11 @@ function cellColors(layer) {
       else if (layer === 'fire return') { const y = L.fire_return[i]; rampFns[layer](y > 0 ? y : 3000, c); if (!y) c.copy(BARE).lerp(OCEAN, 0.1); }
       else rampFns[layer]((sv || L[VEG_LAYERS[layer]])[i], c);
     }
+    else if (layer === 'soils') {
+      if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.soilColors[L.soil[i]] || '#888');
+    } else if (SOIL_LAYERS[layer]) {
+      if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L[SOIL_LAYERS[layer]][i], c);
+    }
     else if (layer === 'bed under ice') {
       rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
       if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
@@ -588,6 +607,7 @@ function availableLayers() {
   if (V.layers.landform) ls.push('landforms');
   if (V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
                                    'fire return', 'stand age', 'plant type');
+  if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
   if (V.layers.flood_ratio) ls.push('river floods');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
@@ -1467,6 +1487,15 @@ function renderLegend() {
       return big.length ? `<span><b class="muted" style="font-weight:600">${g}:</b></span>` +
         big.map((t) => `<span title="${esc(t.text || t.name)}">${sw(t.color, '')}${t.name} ${pct(t.id)}%</span>`).join('') : '';
     }).join('') + `<span class="muted">(named vegetation types, % of land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
+  } else if (state.layer === 'soils') {
+    // the soil types present with their share of the land
+    const L = V.layers, cnt = new Map();
+    let land = 0;
+    for (let i = 0; i < V.n; i++) if (L.elevation[i] > 0) { cnt.set(L.soil[i], (cnt.get(L.soil[i]) || 0) + 1); land++; }
+    el.innerHTML = V.soilTypes.filter((t) => cnt.has(t.id)).map((t) => {
+      const p = 100 * cnt.get(t.id) / land;
+      return `<span title="${esc(`${t.wrb} / ${t.usda}: ${t.desc}`)}">${sw(t.color, '')}${t.name} ${p < 1 ? p.toFixed(1) : p.toFixed(0)}%</span>`;
+    }).join('') + '<span class="muted">(soil types, % of land; hover a type for its WRB / USDA name)</span>';
   } else if (state.layer === 'satellite') {
     el.innerHTML = `<span>${seasonUnits('satellite')}: plants by type and season, bare ground, snow, ice, lakes and sea</span>` +
       '<span class="muted">(satellite.py; season picker: year = each hemisphere\'s summer; tick Clouds under Overlays)</span>';
@@ -1564,6 +1593,14 @@ const LAYER_HINTS = {
   'fire return': 'Fire return interval: the mean number of years between fires.',
   'stand age': 'Years since the last stand-replacing fire.',
   'plant type': 'Cover of one plant functional type (PFT; pick it below).',
+  soils: 'Soil types, from parent rock, slope, surface age, climate, plants and wind-blown silt (WRB groups with player names).',
+  'soil depth': 'Rootable soil above rock: thin on steep, young or wind-scoured ground, deep on old plains and soft deposits.',
+  'soil water': 'Water the soil holds for plants down to 1.5 m (available water capacity).',
+  fertility: 'Nutrient and base status: rich on young ash, loess and alluvium, poor where old soils are leached.',
+  'soil carbon': 'Organic carbon in the top metre of soil, peat included.',
+  peat: 'Peat thickness, where peat lies (waterlogged ground where plant remains pile up).',
+  permafrost: 'Permanently frozen ground: sporadic, discontinuous or continuous.',
+  loess: 'Wind-blown silt, from deserts and glacier margins, laid down downwind.',
   'river floods': 'How seasonal the rivers are: the peak month over the mean month.',
   'wave power': 'Mean wave power per metre of wave crest (at sea).',
   'tide range': 'Tidal range: the height between high and low tide (at sea).',
@@ -1980,7 +2017,7 @@ function drawTint() {
 // "more" panel), join: appended to the previous line of the text with this separator,
 // lab: the label to show when k is empty, extra: only in the panel, not in the text }.
 // describe(i) is the text (the clipboard and the deep link) made from it.
-const GROUPS = { place: 'Place', climate: 'Climate', water: 'Water', plants: 'Plants', ground: 'Rock and landforms',
+const GROUPS = { place: 'Place', climate: 'Climate', water: 'Water', plants: 'Plants', soil: 'Soil', ground: 'Rock and landforms',
                  plates: 'Plates', observed: 'Observed (Earth)' };
 // hover hints for terms that aren't self-evident: what it is and its units
 const HINTS = {
@@ -2028,6 +2065,8 @@ const HINTS = {
   'potential evaporation': 'Potential evapotranspiration (PET): what a well-watered surface would evaporate, mm per year.',
   runoff: 'Rain minus evaporation: what feeds the rivers, mm per year.',
   'last glaciated': 'When the cell was last under ice, Myr before this moment (its landforms may still show it).',
+  soil: 'The soil type (WRB / USDA names in brackets), what it formed on, its rootable depth, fertility (0 poor to 1 rich), the water it holds for plants (mm), its organic carbon (kg C/m² in the top metre) and its drainage.',
+  'soil, also': 'Peat thickness, permafrost and wind-blown silt (loess) where there is some.',
 };
 function cellInfo(i) {
   const L = V.layers, G = V.grid, rows = [];
@@ -2077,9 +2116,24 @@ function cellInfo(i) {
       else if (L.strata_dip && L.strata_top_km[i] > 0) R('ground', '', `flat-lying, regional dip ${L.strata_dip[i].toFixed(2)}°`, { lab: 'strata dip' });
     }
   };
+  const soilRows = () => {
+    if (!L.soil || !land || !L.soil[i]) return;
+    const t = V.soilTypes[L.soil[i]];
+    if (!t) return;
+    const lo = L.loess[i], tex = V.soilTextures[L.soil_texture[i]];
+    R('soil', 'soil', `${t.name} (${t.wrb} / ${t.usda})` + (lo >= 1 ? ` on loess ${lo.toFixed(0)} m` : `, ${tex}`) +
+      ` · ${L.soil_depth[i].toFixed(1)} m deep · fertility ${L.soil_fertility[i].toFixed(1)} · holds ${L.soil_water[i]} mm` +
+      ` · ${L.soil_carbon[i].toFixed(0)} kg C/m² · ${V.soilDrainage[L.soil_drainage[i]]} drained`, { sep: ': ', ess: true });
+    const also = [];
+    if (L.peat_depth[i] > 0) also.push(`peat ${L.peat_depth[i].toFixed(1)} m`);
+    if (L.permafrost[i] > 0) also.push(`${V.soilPermafrost[L.permafrost[i]]} permafrost`);
+    if (lo > 0.05 && lo < 1) also.push(`loess ${lo.toFixed(1)} m`);
+    if (also.length) R('soil', '', also.join(', '), { lab: 'soil, also' });
+  };
   if (V.kind === 'world') {
     if (L.vegetation) vegRows();
     else R('plants', 'biome', V.biomes[L.biome[i]].name, { ess: true });
+    soilRows();
     const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
     if (s) R('climate', SEASON_NAMES[s], `${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
       ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`, { sep: ': ', ess: true });
@@ -2723,7 +2777,10 @@ function legendFields(leg) {
            landforms: leg.landforms || [], landformColors: (leg.landforms || []).map((f) => f.color),
            koppenColors: leg.koppen.map((k) => k.color), biomes: leg.biomes, biomeColors: leg.biomes.map((b) => b.color),
            vegTypes: leg.vegetation?.types || [], vegColors: (leg.vegetation?.types || []).map((t) => t.color),
-           pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [] };
+           pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [],
+           soilTypes: leg.soils?.types || [], soilColors: (leg.soils?.types || []).map((t) => t.color),
+           soilTextures: leg.soils?.textures || [], soilDrainage: leg.soils?.drainage || [],
+           soilPermafrost: leg.soils?.permafrost || [] };
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?
