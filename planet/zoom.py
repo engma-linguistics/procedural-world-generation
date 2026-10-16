@@ -1001,6 +1001,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     P = fr.to_sphere(px, py)
     Pk = np.ascontiguousarray(P * R_KM)
     S = int(seed) * 1_000_003 + 17  # noise seed base
+    # the region without its halo: what the stats count (PW-340)
+    region = np.zeros((ny, nx), bool)
+    region[halo:halo + n_in, halo:halo + n_in] = True
+    region = region.ravel()
 
     # --- coarse cells around the region --------------------------------
     elev = L["elevation"].astype(float)
@@ -1300,6 +1304,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- landform classes (zoom_landforms): weights, parameters, hooks ----
     lf = ZL.Landforms.build(L, sel, cx, cy, land_c, px, py, Pk, sp, res, nx, ny, S, land, base,
                             lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), g, fr.to_plane)
+    if lf is not None:
+        lf.set_region(region)
 
     def keep_means(z, hh, where, f=None):
         """z with each coarse cell's mean change from hh undone (a smooth
@@ -1342,7 +1348,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     kpix, s_pix, bottom = np.full(npx, -1), np.zeros(npx), np.zeros(npx, bool)  # reach with falls (index into kps) and arc length, per pixel
     riv_q = np.zeros(npx)  # coarse discharge along the coarse river courses
     carved = np.zeros(npx)  # how far the coarse rivers' valleys cut the surface down (<= 0)
-    n_rivers_in = 0
+    n_rivers_in = 0  # (into the region, PW-340; the inflow itself comes in at the built area's edge)
     river_segs = []
     polys, inflow_pts = {}, []  # warped coarse river polylines per cell; (pixel, radius px) where rivers enter
     pin_pairs = []  # (pixel, receiver) along the courses of reaches with falls
@@ -1544,7 +1550,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             sq += [q] * (m - 1)
             river_segs.append(pw)
             inside = (np.abs(pw[:, 0]) < half) & (np.abs(pw[:, 1]) < half)
-            # entering the region from outside: bring the coarse discharge in
+            in_r = (np.abs(pw[:, 0]) < size_in / 2) & (np.abs(pw[:, 1]) < size_in / 2)
+            n_rivers_in += bool(np.any(in_r[1:] & ~in_r[:-1]) and not in_r[0])
+            # entering the built area from outside: bring the coarse discharge in
             j = np.flatnonzero(inside[1:] & ~inside[:-1])
             if len(j) and not inside[0]:
                 p = pw[j[0] + 1]
@@ -1557,7 +1565,6 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                         row, col = (int(v) for v in divmod(int(pin_px[np.argmin(dk)]), nx))
                 inflow[row * nx + col] += q
                 inflow_pts.append((row * nx + col, int(min(np.ceil((w_floor + min(2500 / s_wall, 40)) / res) + 2, 30))))
-                n_rivers_in += 1
         arr = lambda v: np.ascontiguousarray(v, dtype=float)
         T, D, I = ZK.carve_segments(nx, ny, xs[0], ys[0], res, arr(ax), arr(ay), arr(bx), arr(by),
                                     arr(za), arr(zb), arr(fw), arr(wall), arr(reach))
@@ -2392,7 +2399,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     if lf is not None:
         surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
             h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, lake_loss, res, nx, ny,
-            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
+            LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2, count=region)
         h = np.where(active, surf_b, h)
         if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
             outlet = outlet | lf_sink
@@ -2519,6 +2526,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # (what is counted on the drainage network is counted before: the deltas' mouths)
     for d in deltas:
         d["mouths"] = _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits)
+    n_splits = int(sum(region[s_] for s_, _, _ in splits))
+    riv_cells = set(riv_ids.tolist())
     keep_px = (np.arange(halo, halo + n_in)[:, None] * nx + np.arange(halo, halo + n_in)[None, :]).ravel()
     new_px = np.full(npx, -1, np.int64)
     new_px[keep_px] = np.arange(len(keep_px))
@@ -2657,8 +2666,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # coastal and shallow-sea life (zoom_coastal): km^2 of each habitat
         "coastal_life": cz["stats"],
         "lake_pct": round(100 * lake.mean(), 2),
-        "coarse_cells": int(len(sel)),
-        "coarse_river_cells": int(len(riv_ids)),
+        # (the cells with pixels in the region; of them, coarse river cells)
+        "coarse_cells": int(len(np.unique(own))),
+        "coarse_river_cells": int(sum(int(c) in riv_cells for c in np.unique(own))),
         "rivers_entering": n_rivers_in,
         "largest_lakes": lake_info[:5],
         # Galloway weights (coast.galloway) and the shape they gave each delta
@@ -2672,7 +2682,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}
                    for d in deltas],
-        "distributary_splits": len(splits),
+        "distributary_splits": n_splits,
         # the biggest pixel-scale falls (see waterfalls()), ~15 km apart; kind "lip": a knickpoint kept
         # from a steep coarse reach (see knickpoints()), with its gorge and plunge pool; "scarp" / "bench":
         # over a landform's cliff (zoom_landforms), with a plunge pool; "lake outlet"; "drop": any other
@@ -2681,7 +2691,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "falls": all_falls,
         "falls_count": {"30m": sum(f["height_m"] >= 30 for f in all_falls),
                         "100m": sum(f["height_m"] >= 100 for f in all_falls)},
-        "knickpoints": len(kps),
+        "knickpoints": sum(len(kp.get("course_px", ())) > 0 for kp in kps),  # (reaches with falls in the region)
         # the volcanoes drawn (zoom_volcanoes), with what they look like now
         "volcanoes": vf["list"] if vf is not None else [],
         # % of the land each synthesised landform class shapes (zoom_landforms)
