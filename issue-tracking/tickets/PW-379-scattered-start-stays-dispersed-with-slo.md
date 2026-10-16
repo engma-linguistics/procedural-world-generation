@@ -1,7 +1,8 @@
 ---
-title: "Scattered start stays dispersed with slow plates and an old ocean (74 Myr, sea -185 m) through 500 Myr"
+id: PW-379
+title: Scattered start stays dispersed with slow plates and an old ocean (74 Myr, sea -185 m) through 500 Myr
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 subsystem: tectonics
 effort: m
@@ -10,6 +11,8 @@ found_by: run-lane (PW-328)
 blocked_by: []
 relates: [PW-328, PW-293, PW-191]
 refs: [planet/tectonics/setup.py, planet/tectonics/motion.py, planet/tectonics/events.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -42,3 +45,7 @@ Options:
   only if (B) shows the small pieces are the cause.
 Lean: A for now (scattered isn't in the recipes or the sweep); B if the owner wants scattered
 starts as a supported mode.
+
+## Updates
+- 2026-10-16: Status needs-decision -> wontdo. Coordinator 2026-10-16: accept (a start choice, not in the health sweep or showcases; a dispersed world with slow plates is a legitimate planet). Documented here.
+- 2026-10-16: Created from inbox draft draft-scattered-regime-old-ocean.md (found by run-lane (PW-328)).
