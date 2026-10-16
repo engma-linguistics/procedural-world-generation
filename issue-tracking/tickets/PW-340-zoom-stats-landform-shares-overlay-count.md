@@ -2,7 +2,7 @@
 id: PW-340
 title: "Zoom stats: landform shares, overlay counts, knickpoints and rivers entering include the halo"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: xs
@@ -26,4 +26,5 @@ share (~6% of pixels at 4 km, ~25% at 1 km, ~54% at 0.5 km). Count them on the c
 argument to `lf.stats` / the overlay counters; filter knickpoints and entries to the region).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-16: Created from inbox draft draft-zoom-stats-over-halo.md (found by zoom-batch2).
