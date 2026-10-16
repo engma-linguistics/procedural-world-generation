@@ -2,7 +2,7 @@
 id: PW-326
 title: "Zoom: reefs on continental shelves as terrain (reef crest near sea level, lagoon behind), not only as a habitat colour"
 type: task
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: zoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-188, PW-097, PW-004]
 refs: [planet/zoom_coastal.py, planet/zoom_volcanoes.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,4 +23,5 @@ Sketch: from the reef pixels and the shelf geometry, raise reef pixels toward -1
 - [ ] a barrier reef with a lagoon on a wide warm shelf; a fringing reef on a narrow one
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-reef-terrain.md (found by coastal-life).

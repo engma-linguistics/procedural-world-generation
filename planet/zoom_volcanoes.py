@@ -23,7 +23,9 @@ low islets (motu) round a lagoon. The reef front drops steeply outside.
 Near hotspot vents on the sea floor, the zoom's terrain is replaced by
 the vents' floor (their sea floor, from the run) with the cones on it, so
 the sea between two vents is sea, whatever the coarse cells' means say
-(at level 6-7 a cell holds a vent and its neighbours' flanks). Elsewhere
+(at level 6-7 a cell holds a vent and its neighbours' flanks): it is
+lowered by the cones' share of each cell's mean (zoom.py), so where the
+cells stand higher than the floor plus the cones it stays ground. Elsewhere
 (arcs, continental hotspots) the cones are added to the terrain (max).
 
 A hotspot vent on a continent (floor above the sea) isn't a shield: a

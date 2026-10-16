@@ -1,7 +1,7 @@
 """Zoom passes whose result shouldn't depend on the pixel size (PW-125): creep
 is a diffusivity, and the landscape pass's summit taper is integrated along
 each link, so a hill of a given size in km comes out alike on 2 and 4 km
-pixels."""
+pixels. Nor on where the region ends (PW-321): no rough rim at its edge."""
 
 import numpy as np
 
@@ -63,3 +63,26 @@ def test_summit_taper_does_not_depend_on_the_pixel_size():
     # ... the continuous profile: full slope up to `soft`, then u^3 = 1 + 3 s x' / scale
     x = 40.0 - 300.0 / 200.0
     assert abs(p4[40] - (300.0 + 400.0 * ((1 + 3 * 200.0 * x / 400.0) ** (1 / 3) - 1))) < 1.0
+
+
+def _relief3(h):
+    from numpy.lib.stride_tricks import sliding_window_view
+    v = sliding_window_view(np.pad(h, 1, mode="edge"), (3, 3))
+    return v.max((-1, -2)) - v.min((-1, -2))
+
+
+def test_no_rough_rim_at_the_zoom_edge():
+    """PW-321: the landscape goes on past the region's edge (a halo built and
+    cropped off), so the relief next to the edge is like the relief a little
+    further in. Held at the target surface, the edge pixels stepped into the
+    graded land: 3x3 relief ~1.5-2x within 3 px of the edge."""
+    from test_zoom_landforms import _plain_world
+    w, _ = _plain_world(1500.0, 0.3, 0.0)
+    z = zoom.build(w, 0.0, 0.0, size_km=300, res_km=1.0, iterations=6, log=lambda *a: None)
+    h = z["layers"]["elevation"].astype(float)
+    n = h.shape[0]
+    r, c = np.mgrid[0:n, 0:n]
+    d = np.minimum(np.minimum(r, n - 1 - r), np.minimum(c, n - 1 - c))
+    rl = _relief3(h)
+    rim, ring = rl[d < 3].mean(), rl[(d >= 8) & (d < 40)].mean()
+    assert rim < 1.25 * ring, (rim, ring)
