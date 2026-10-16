@@ -2,7 +2,7 @@
 id: PW-354
 title: "Earth data: store Antarctica's and Greenland's true bed now that worlds take ice as land"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: s
@@ -27,4 +27,5 @@ Needs the Earth cache rebuilt and the scorecard / earth_check re-run (Antarctica
 not move: the surface is the same).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-earth-data-true-bed.md (found by pw307-world-land).

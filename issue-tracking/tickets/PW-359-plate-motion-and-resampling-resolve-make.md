@@ -2,7 +2,7 @@
 id: PW-359
 title: Plate motion and resampling (resolve) make most of the run's closed-hollow volume each step
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: m
@@ -41,4 +41,5 @@ from boundaries under resolve alone (should be ~0 for a rigid plate), and trying
 docs/review/audit/basins-lakes/hollow_budget.py (`python hollow_budget.py <repo> 6 <seed> 300`).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.
 - 2026-10-16: Created from inbox draft draft-resolve-makes-hollows.md (found by basins-lakes).
