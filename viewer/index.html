@@ -631,6 +631,7 @@ function availableLayers() {
     hasLayer('vegetation') ? ['vegetation', 'tree cover', 'NPP'] : []);
   const ls = ['biome', 'elevation', 'temperature', 'precipitation'];
   if (V.layers.sat) ls.unshift('satellite');  // true colour (satellite.py, PW-083)
+  if (V.layers.ice) ls.push('bed under ice');
   if (V.layers.plate) ls.push('plates');
   if (V.layers.crust_age) ls.push('crust age');
   if (V.layers.climate) ls.push('climate');
@@ -2891,6 +2892,7 @@ async function setWorld(w) {
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), ...legendFields(w.legend) };
+  iceBed(V.layers);
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
 }
@@ -3011,9 +3013,10 @@ function worldVolcanoes(meta) {
   return out;
 }
 
-// Glacial isostasy (PW-189): a run's elevation is the bed, pressed down by its ice, so grounded ice
-// can sit on a bed below sea level; a time zoom's is the surface (ice included). L.bed keeps the bed,
-// and a run's elevation is floored at 1 m under grounded ice, so it reads as land everywhere (as worlds do).
+// Glacial isostasy (PW-189): a run's and a world's elevation is the bed, pressed down by its ice, so
+// grounded ice can sit on a bed below sea level (land all the same: PW-307); a time zoom's is the surface
+// (ice included). L.bed keeps the bed, and the elevation is shown floored at 1 m under grounded ice, so
+// it reads as land everywhere (the sea shading, the coasts, the land counts).
 function iceBed(L) {
   if (!L.elevation || !L.ice) return;
   const n = V.n, e = L.elevation, bed = new Float32Array(n);

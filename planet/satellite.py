@@ -48,6 +48,7 @@ import numpy as np
 
 from . import climate
 from . import vegetation as V
+from .geo import world_land
 from .surface import ROCKS
 
 SEASONS = ("jul", "jan", "year")
@@ -317,7 +318,7 @@ def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
     tw = np.asarray(L.get("warm_month", L["temperature"]), float)
     tc = np.asarray(L.get("cold_month", 2 * temp - tw), float)
     kind = np.asarray(L.get("lake_kind", np.zeros(grid.n)), int)
-    land = elev > 0
+    land = world_land(L)  # (a bed below the sea under grounded ice is land: its ice is drawn)
     lake = land & (kind > 0)
     water = np.where(~land, 1, np.where(lake, 2, 0))
     depth = np.asarray(L.get("lake_level", elev), float) - elev

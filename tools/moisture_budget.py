@@ -273,7 +273,8 @@ def kernel_args(rec: dict) -> tuple:
     G = climate._geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in s_in])) for k in s_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
-    return (st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
+    ocean = elev <= 0 if rec.get("ocean") is None else rec["ocean"]
+    return (st["qs"], st["src_q"], ocean, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
             np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
             st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
             grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
@@ -294,10 +295,11 @@ def capture(grid, elev, ice, compute=None):
     rec = {}
     orig = climate.rain
 
-    def recording(grid_, elev_, seasons_in, tune, pet, w=None, open_sea=None):
-        out = orig(grid_, elev_, seasons_in, tune, pet, w, open_sea)
+    def recording(grid_, elev_, seasons_in, tune, pet, w=None, open_sea=None, ocean=None):
+        out = orig(grid_, elev_, seasons_in, tune, pet, w, open_sea, ocean)
         rec.clear()
-        rec.update(grid=grid_, elev=elev_, s_in=seasons_in, tune=tune, pet=pet, w=w, open_sea=open_sea, out=out)
+        rec.update(grid=grid_, elev=elev_, s_in=seasons_in, tune=tune, pet=pet, w=w, open_sea=open_sea,
+                   ocean=ocean, out=out)
         return out
 
     climate.rain = recording

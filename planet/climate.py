@@ -41,7 +41,7 @@ from numba import njit, prange
 
 from . import kernels
 from . import ocean as ocean_mod
-from .geo import R_KM
+from .geo import R_KM, is_land
 from .grid import Grid
 
 LAPSE = 6.5 / 1000  # degC per metre
@@ -83,12 +83,13 @@ def season_strength(grid: Grid, tilt: float = 23.4) -> np.ndarray:
     return np.sin(np.radians(a)) * np.clip(0.65 + a / 70.0, 0, 1) * (tilt / 23.4)
 
 
-def seasons(grid: Grid, elev: np.ndarray, temp: np.ndarray, tilt: float = 23.4):
+def seasons(grid: Grid, elev: np.ndarray, temp: np.ndarray, tilt: float = 23.4, land=None):
     """First guess of the warmest- and coldest-month temperatures (used for
     the winds; compute refines them). The swing grows with latitude and
     with distance from the sea, which evens temperatures out (Vancouver: 4
-    to 18 C; Yakutsk, 62 N inland: -39 to +19). Returns (t_warm, t_cold)."""
-    land = elev > 0
+    to 18 C; Yakutsk, 62 N inland: -39 to +19). land: default elev > 0
+    (compute's: geo.is_land). Returns (t_warm, t_cold)."""
+    land = elev > 0 if land is None else land
     coast = np.flatnonzero(land & (np.add.reduceat(~land[grid.nbr_idx], grid.nbr_off[:-1]) > 0))
     hops, _ = kernels.bfs_within(coast, land.astype(np.int64), grid.nbr_off, grid.nbr_idx, 10**6)
     dist = np.where(land, np.maximum(hops, 0) * grid.spacing * R_KM + 50.0, 0.0)
@@ -1083,7 +1084,7 @@ def vapour_mixed(grid: Grid, q: np.ndarray, qs: np.ndarray, t_air: np.ndarray, t
 
 
 def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.ndarray],
-           p_mm: list[np.ndarray], tune: dict) -> list[np.ndarray]:
+           p_mm: list[np.ndarray], tune: dict, ocean=None) -> list[np.ndarray]:
     """Cloud cover (0..1, the share of the sky) in each half-year: a
     diagnostic from what the rain model knows (seasons_in: _season_inputs'
     dicts; vap: the air's water vapour, vapour_mixed; p_mm: the half-year's
@@ -1113,8 +1114,8 @@ def clouds(grid: Grid, elev: np.ndarray, seasons_in: list[dict], vap: list[np.nd
       sinking subtropical air clears the land (cloud_clear), less where it
       rains anyway (a monsoon overrides it).
     Returns a list of (cloud cover, sunshine share of the day: sunshine()),
-    one per half-year."""
-    ocean = elev <= 0
+    one per half-year. ocean: default elev <= 0 (compute's: not geo.is_land)."""
+    ocean = elev <= 0 if ocean is None else ocean
     pole = np.clip((np.abs(grid.lat) - 60.0) / 20.0, 0, 1)
     landy = smooth(grid, (~ocean).astype(float), tune["cloud_cont_km"])
     coastal = tune["cloud_coast"] * np.clip(1 - np.maximum(elev, 0) / tune["cloud_coast_m"], 0, 1)
@@ -1254,7 +1255,8 @@ def storm_track(grid: Grid, jet: np.ndarray, baro: np.ndarray, tune: dict) -> np
     return carry(grid, jet, (1 - k) * b, np.full(grid.n, k), 2 * tune["track_km"], 0.2)
 
 
-def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, track=None, surf=None) -> dict:
+def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, track=None, surf=None,
+                   ocean=None) -> dict:
     """Per-cell inputs of the rain kernel for one season (see _rain).
     elev: the ground (<= 0: sea); surf: the ground or ice surface (m;
     default elev), which t_air, the surface air temperature (C, used over
@@ -1263,8 +1265,9 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     deg the tropical rain belt is north of the equator, t_sl_season: the
     season's temperatures reduced to sea level, track: storminess along
     the jet's storm tracks (storm_track), which takes over a share
-    storm_jet of the latitude belt's storminess."""
-    ocean = elev <= 0
+    storm_jet of the latitude belt's storminess. ocean: default elev <= 0
+    (compute's: not geo.is_land)."""
+    ocean = elev <= 0 if ocean is None else ocean
     lat = grid.lat
     up = LAPSE * np.maximum(elev if surf is None else surf, 0)
     # How much water the air can hold. Clouds form in the air mass aloft,
@@ -1317,7 +1320,7 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
 
 
 def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
-         open_sea=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+         open_sea=None, ocean=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rain rate (model units) per season, [season, cell], from the inputs
     of _season_inputs for each season, the evaporation from the sea
     (same units and shape; 0 on land) and the air's water vapour (_qsat
@@ -1326,14 +1329,16 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
     budyko_w), from which the land evaporates as water_balance has it;
     open_sea: the sea's share not under sea ice (default 1), the only part
     the air takes up water from. tune's mean_mm: the global mean rain the
-    kernel's rain is scaled to (in mm, for the land's evaporation)."""
+    kernel's rain is scaled to (in mm, for the land's evaporation). ocean:
+    default elev <= 0 (compute's: not geo.is_land)."""
     n = grid.n
+    ocean = elev <= 0 if ocean is None else ocean
     w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
     open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
     G = _geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
-    r, r_ls, up, vap = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
+    r, r_ls, up, vap = _rain(st["qs"], st["src_q"], ocean, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
                     np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
                     st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
@@ -1740,7 +1745,7 @@ def koppen(elev, temp, t_warm, t_cold, p_ann, p_jul, p_jan, lat, ice=None):
         sel = mask & (out < 0)
         out[sel] = cid[sel] if np.ndim(cid) else cid
 
-    sea = elev <= 0
+    sea = ~is_land(elev, ice)  # (a bed below sea level under grounded ice is land)
     out[sea] = SEA_CLASS
     if ice is not None:
         put(ice > 0, 29)
@@ -1794,10 +1799,10 @@ BIOMES = [
 
 
 def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
-           lake: np.ndarray | None = None) -> np.ndarray:
+           lake: np.ndarray | None = None, ice: np.ndarray | None = None) -> np.ndarray:
     t, p = temp, precip
     b = np.full(len(elev), -1)
-    land = elev > 0
+    land = is_land(elev, ice)
 
     def land_rule(mask, bid):
         sel = land & mask & (b < 0)
@@ -1831,8 +1836,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             moc_start: dict | None = None, veg: dict | None = None, orbit_dt: np.ndarray | None = None,
             ice_air: np.ndarray | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
-    level; <= 0 is sea), the global temperature offset dT from today's Earth,
-    axial tilt and land ice (m). melt: fresh water from shrinking ice sheets,
+    level; <= 0 is sea unless grounded ice is on it: geo.is_land), the global
+    temperature offset dT from today's Earth, axial tilt and land ice (m).
+    melt: fresh water from shrinking ice sheets,
     m/yr per cell (on land it runs off to the sea; see ocean.py), none in
     the main run; moc_start: an earlier call's moc_state, to start the
     overturning from (see ocean.solve). Returns a dict of per-cell arrays:
@@ -1888,9 +1894,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     the sea and air temperatures."""
     tune = {**TUNE, **(tune or {})}
     n = grid.n
-    ocean = elev <= 0
-    land = ~ocean
     ice = np.zeros(n) if ice is None else ice
+    land = is_land(elev, ice)  # (a bed below sea level under grounded ice is land, PW-307)
+    ocean = ~land
     surf = elev + ice
     north = grid.lat >= 0
     sgn = np.where(north, 1, -1)
@@ -1908,7 +1914,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # conditions: a sine averages 2/pi (hk) of its peak.
     hk = tune["hk"]
     shift = hk * tune["belt_shift"] * tilt / 23.4
-    warm0, cold0 = seasons(grid, elev, temp0, tilt)
+    warm0, cold0 = seasons(grid, elev, temp0, tilt, land)
     lift = LAPSE * np.maximum(surf, 0)  # back to sea level, for pressure
     t_sl0 = np.where(ocean, t_sea_air, 0.5 * (warm0 + cold0) + lift)
     dsl = np.where(ocean, sea_half, 0.5 * (warm0 - cold0)) * sgn * hk
@@ -1956,8 +1962,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         j, baro = jet_stream(grid, t_s, tune)
         jets.append(j)
         tracks.append(storm_track(grid, j, baro, tune))
-    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf),
-            _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf)]
+    s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
+            _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
     # The air takes up water from the open sea and from the land as much as
@@ -1970,7 +1976,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
     open_air = open_y + tune["leads"] * (1.0 - open_y)
     (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet},
-                                                          pet, fb["w"], np.where(ocean, open_air, 1.0))
+                                                          pet, fb["w"], np.where(ocean, open_air, 1.0), ocean)
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
@@ -2015,7 +2021,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
     q_jul, q_jan = (vapour_mixed(grid, q, d["qs"], d["t_air"], tune) for q, d in zip((q_jul, q_jan), s_in))
     (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(q_jul, tm + dt, tune), humidity(q_jan, tm - dt, tune)
-    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune)
+    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune,
+                                                        ocean)
     day_jul, day_jan = day_hours(grid.lat, tilt)
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,

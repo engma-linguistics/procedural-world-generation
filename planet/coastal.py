@@ -92,7 +92,7 @@ from numba import njit
 from . import coast
 from . import surface as SF
 from . import vegetation as V
-from .geo import R_KM, xyz
+from .geo import R_KM, world_land, xyz
 
 # turbidity and light
 SSC_BG = 0.5  # mg/L: clear coastal water's suspended matter, away from rivers
@@ -184,7 +184,7 @@ def river_loads(grid, L: dict) -> tuple[np.ndarray, np.ndarray]:
     elev = np.asarray(L["elevation"], float)
     down = np.asarray(L["downstream"], int)
     n = grid.n
-    land = elev > 0
+    land = world_land(L)
     idx = np.arange(n)
     nxt = np.where(land & (down >= 0), down, idx)
     nxt = np.where(land[np.maximum(nxt, 0)], nxt, idx)  # the last land cell before the sea points to itself
@@ -250,7 +250,7 @@ def river_turbidity(grid, L: dict) -> np.ndarray:
     """mg/L of suspended sediment at the sea surface from the rivers (0 on
     land): their loads spread and settled (module docstring) over SSC_BG."""
     elev = np.asarray(L["elevation"], float)
-    sea = elev <= 0
+    sea = ~world_land(L)  # (a bed below the sea under grounded ice is land)
     mouths, load = river_loads(grid, L)
     src = np.zeros(grid.n)
     if len(mouths):
@@ -267,7 +267,7 @@ def bed_stress(grid, L: dict) -> np.ndarray:
     cell's floor at its mean depth (module docstring; 0 on land)."""
     from .kernels import bfs_within
     elev = np.asarray(L["elevation"], float)
-    sea = elev <= 0
+    sea = ~world_land(L)  # (a bed below the sea under grounded ice is land)
     h = np.maximum(-elev, 2.0)
     # the tidal current: continuity over the water landward of the cell (x from the
     # coastline, half a cell for a coastal cell), at most a progressive wave's
@@ -306,7 +306,7 @@ def resuspension(grid, L: dict, river_ssc: np.ndarray) -> np.ndarray:
     docstring), on a floor muddy from the rivers' mud (river_ssc, mg/L) or
     its own soft sediment. 0 on land."""
     elev = np.asarray(L["elevation"], float)
-    sea = elev <= 0
+    sea = ~world_land(L)  # (a bed below the sea under grounded ice is land)
     h = np.maximum(-elev, 2.0)
     tau = bed_stress(grid, L)
     held = np.clip(1.0 - TAU_CRIT / np.maximum(tau, 1e-9), 0.0, 1.0)
@@ -355,7 +355,7 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     (vegetation.unlocked_at; None: all). ssc: turbidity() if already known."""
     elev = np.asarray(L["elevation"], float)
     n = grid.n
-    sea = elev <= 0
+    sea = ~world_land(L)  # (a bed below the sea under grounded ice is land)
     land = ~sea
     ssc = turbidity(grid, L) if ssc is None else np.asarray(ssc, float)
     kd = KD_CLEAR + KD_SSC * ssc
@@ -366,7 +366,7 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
     up = np.asarray(L.get("upwelling", np.zeros(n)), float)
     tw = np.asarray(L["warm_month"], float)
     tc = np.asarray(L["cold_month"], float)
-    ice_y = coast.sea_ice_share(grid, elev, {"t_warm": tw, "t_cold": tc}).mean(0)
+    ice_y = coast.sea_ice_share(grid, elev, {"t_warm": tw, "t_cold": tc}, L.get("ice")).mean(0)
     wave = np.asarray(L["wave_power"], float)
     tide = np.asarray(L["tide_range"], float)
     # the coast's land: rocky (high or rugged, hard rock or fresh glacial scour, not a coastal
@@ -485,7 +485,7 @@ def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict
     cold_month, precipitation, sst, sst_jul, sst_jan, salinity, upwelling,
     wave_power, tide_range; sediment_cover, ice, landform if any)."""
     elev = np.asarray(L["elevation"], float)
-    sea = elev <= 0
+    sea = ~world_land(L)  # (a bed below the sea under grounded ice is land)
     env = environment(grid, L, meta, unlocked)
     depth = np.where(sea, -elev, 0.0)
     cs, kd = env["coastal_sea"], env["kd"]

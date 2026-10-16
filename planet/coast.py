@@ -129,7 +129,7 @@ import numpy as np
 from numba import njit, prange
 
 from . import climate
-from .geo import R_KM
+from .geo import R_KM, is_land
 from .kernels import walk_nearest
 
 GRAV = 9.81
@@ -384,15 +384,16 @@ def _season_winds(grid, elev, c, ice):
         sp = np.linalg.norm(v, axis=1)
         U.append(U_TRADE * sp + U_STORM * np.clip(tr, 0, 2))
         D.append(np.where(sp[:, None] > 1e-6, v / np.maximum(sp, 1e-6)[:, None], 0.0))
-    return np.array(U), np.array(D), sea_ice_share(grid, elev, c)
+    return np.array(U), np.array(D), sea_ice_share(grid, elev, c, ice)
 
 
-def sea_ice_share(grid, elev: np.ndarray, c: dict) -> np.ndarray:
+def sea_ice_share(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None) -> np.ndarray:
     """(2, cells): the share of each half-year (jul, jan) that a sea cell is
-    frozen (0 on land): the monthly temperature taken as a sine between the
-    coldest and warmest months, frozen below climate.FREEZE. Its annual mean
-    is the share of the year under ice."""
-    ocean = np.asarray(elev, float) <= 0
+    frozen (0 on land; ice: grounded land ice, geo.is_land): the monthly
+    temperature taken as a sine between the coldest and warmest months,
+    frozen below climate.FREEZE. Its annual mean is the share of the year
+    under ice."""
+    ocean = ~is_land(np.asarray(elev, float), ice)
     tm = 0.5 * (np.asarray(c["t_warm"], float) + np.asarray(c["t_cold"], float))
     a = np.maximum(0.5 * (np.asarray(c["t_warm"], float) - np.asarray(c["t_cold"], float)), 1e-6)
     th = np.arccos(np.clip((climate.FREEZE - tm) / a, -1.0, 1.0))  # open while |phase from the warm peak| < th
@@ -409,7 +410,7 @@ def wave_power(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None) -
     climate.compute's output for this elevation."""
     elev = np.asarray(elev, float)
     ice = np.zeros(grid.n) if ice is None else np.asarray(ice, float)
-    return wave_power_winds(grid, elev, *_season_winds(grid, elev, c, ice))
+    return wave_power_winds(grid, elev, *_season_winds(grid, elev, c, ice), ice=ice)
 
 
 # Gauss-Legendre nodes and weights on [0, 1]: the moments of a season's open water (wave_power_winds)
@@ -417,7 +418,8 @@ ICE_QX = np.array([0.5 - 0.5 * np.sqrt(0.6), 0.5, 0.5 + 0.5 * np.sqrt(0.6)])
 ICE_QW = np.array([5.0, 8.0, 5.0]) / 18.0
 
 
-def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: np.ndarray) -> np.ndarray:
+def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: np.ndarray,
+                     ice: np.ndarray | None = None) -> np.ndarray:
     """wave_power() from given winds: U (seasons, cells) effective speed m/s,
     D (seasons, cells, 3) unit direction the wind blows toward (0: calm),
     icy (seasons, cells) the share of the season the sea is frozen (or a
@@ -430,9 +432,10 @@ def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: 
     arriving over the season is the integral over those moments, each with
     the frozen sea stopping the waves like land (ICE_QX / ICE_QW: 3-point
     Gauss-Legendre). A coast open for 3 months gets the waves of a sea open
-    for those months, however icy the half-year is overall."""
+    for those months, however icy the half-year is overall. ice: grounded
+    land ice (a bed below the sea under it is land, geo.is_land)."""
     elev = np.asarray(elev, float)
-    land = elev > 0
+    land = is_land(elev, ice)
     ocean = ~land
     U, D = np.asarray(U, float), np.asarray(D, float)
     openv = np.where(land[None, :], 0.0, 1.0 - np.asarray(icy, float))
@@ -493,14 +496,16 @@ def _shelf_width(grid, elev, ocean):
     return W, np.clip(hs, 20.0, SHELF_BREAK)
 
 
-def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarray | None = None):
+def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarray | None = None,
+               ice: np.ndarray | None = None):
     """Tidal range at each ocean cell, m (0 on land). ice_share: the share
     of the year each cell is frozen (sea_ice_share(...).mean(0)), adding
-    friction on the shelf; None: no sea ice. With detail, also a dict of the
-    factors (connection, shelf amplification, funnel, shelf width km,
+    friction on the shelf; None: no sea ice. ice: grounded land ice (a bed
+    below the sea under it is land, geo.is_land). With detail, also a dict
+    of the factors (connection, shelf amplification, funnel, shelf width km,
     openness)."""
     elev = np.asarray(elev, float)
-    land = elev > 0
+    land = is_land(elev, ice)
     ocean = ~land
     n = grid.n
     h = grid.spacing * R_KM
@@ -672,12 +677,12 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     (the mean over the sea cells next to the mouth) and whether the world
     has those layers at all ("marine"; without them waves and tides count
     as 0)."""
-    from .geo import R_KM
-    elev = np.asarray(L["elevation"], float)
+    from .geo import R_KM, world_land
+    sea = ~world_land(L)
     down = np.asarray(L["downstream"], int)
     nb = grid.nbr_idx[grid.nbr_off[mouth]:grid.nbr_off[mouth + 1]]
-    wet = np.unique(np.concatenate([[down[mouth]], nb[elev[nb] <= 0]]).astype(int))
-    wet = wet[(wet >= 0) & (elev[np.maximum(wet, 0)] <= 0)]
+    wet = np.unique(np.concatenate([[down[mouth]], nb[sea[nb]]]).astype(int))
+    wet = wet[(wet >= 0) & sea[np.maximum(wet, 0)]]
     marine = "wave_power" in L and "tide_range" in L and len(wet) > 0
     wave = float(np.mean(np.asarray(L["wave_power"], float)[wet])) if marine else 0.0
     tide = float(np.mean(np.asarray(L["tide_range"], float)[wet])) if marine else 0.0

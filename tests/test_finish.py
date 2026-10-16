@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from planet import api, finish as F, store as S, timeline as T, timezoom as TZ, world as W
+from planet.geo import world_land
 from planet.tectonics import Params
 
 
@@ -58,7 +59,10 @@ def test_finish_at_any_kyr(tiny):
     w0 = W.load(start)
     assert s["sea_level_change_m"] < -1
     assert w["layers"]["ice"].sum() > w0["layers"]["ice"].sum()
-    assert (w["layers"]["elevation"] > 0).sum() >= (w0["layers"]["elevation"] > 0).sum()
+    # (land: a bed pressed below the sea under grounded ice is land too, PW-307)
+    assert world_land(w["layers"]).sum() >= world_land(w0["layers"]).sum()
+    sunk = (w["layers"]["ice"] > 0) & (w["layers"]["elevation"] <= 0)
+    assert sunk.sum() >= w["meta"]["ice_bed_below_sea_cells"]  # (erosion only lowers the bed)
     # a normal world: the usual layers, in the index with its provenance
     for k in ("biome", "flow", "lake", "temperature_jul", "rock", "landform"):
         assert k in w["layers"], k

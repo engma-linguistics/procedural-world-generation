@@ -72,7 +72,7 @@ from numba import njit
 
 from . import climate as C
 from . import kernels
-from .geo import R_KM
+from .geo import R_KM, is_land
 from .grid import Grid
 
 S0 = 34.7  # psu: the oceans' mean salinity
@@ -733,7 +733,8 @@ def _nearest(grid: Grid, cells: np.ndarray, lat: float, lon: float) -> int:
     return int(cells[np.argmax(grid.centers[cells] @ p)])
 
 
-def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = None) -> dict:
+def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = None,
+                   ice: np.ndarray | None = None) -> dict:
     """The overturning in numbers plus a schematic of its loop, for world
     meta (climate.compute's result c):
       sv, north_sv, south_sv   Sv sinking in all, and per hemisphere
@@ -758,7 +759,7 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
       note                     says which parts are schematic"""
     from . import climate as Cm
     tune = tune or Cm.TUNE
-    sea = elev <= 0
+    sea = ~is_land(elev, ice)  # (ice: grounded land ice, whose bed may be below the sea)
     sink = np.asarray(c["overturning"], float)
     out = {"sv": round(float(sink.sum()), 2), "north_sv": round(float(sink[grid.lat >= 0].sum()), 2),
            "south_sv": round(float(sink[grid.lat < 0].sum()), 2), "sites": list(c.get("moc_sites") or []),
