@@ -233,7 +233,6 @@
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
     <label data-needs="current_e" title="Surface currents (wind-driven gyres) as streamlines: brighter = faster, chevrons show the way"><input type="checkbox" id="currents"> Ocean currents</label>
     <label data-needs="sinking" title="The thermohaline overturning: where deep water sinks (rings, sized by Sv), the warm surface inflow feeding it (the model's route) and a schematic of the deep return flow (not modelled)"><input type="checkbox" id="overturning"> Overturning (deep water)</label>
-    <label data-needs="jet_e" title="The jet stream's core: where the upper wind (~10 km up) is fastest, for January and July (the season picker shows one); a day's jet meanders, these are half-year means"><input type="checkbox" id="jet"> Jet stream (seasonal core)</label>
     <label data-needs="cloud_jul" title="Clouds over the map: patches covering the season's cloud share (the cloud layer), shapes made up (noise). Best with the satellite layer."><input type="checkbox" id="clouds"> Clouds</label>
     <label id="arrowsLbl"><input type="checkbox" id="arrows"> Plate motion arrows</label>
     <label><input type="checkbox" id="axis" checked> Spin axis and tilt</label>
@@ -966,7 +965,7 @@ function llPos(lat, lon, r, mapLift = 0.003) {
   return [lon / 90, lat / 90, mapLift + (relief3d() && V.R ? mapRelief(nearestCell(lat, lon)) : 0)];
 }
 
-// The rivers and the jet's core are ribbons of triangles a fixed number of screen pixels
+// The rivers are ribbons of triangles a fixed number of screen pixels
 // wide (three's fat lines, LineSegments2): they read better than 1-pixel lines and are drawn
 // the same on every GPU. Materials are shared by colour, opacity and width and never
 // disposed: overlays are rebuilt every replay frame, and disposing the last material of a
@@ -1246,10 +1245,6 @@ function buildOverlays() {
     Object.assign(overlays, overturningOverlay(V.meta.overturning, labels));
     labels.forEach((l) => mocGroup.add(l));
   }
-  if ($('jet').checked && L.jet_e) {
-    // the jet's core (PW-406): January and July (worlds store both; runs only the year's mean)
-    for (const [k] of jetSeasons()) overlays["jet" + k] = jetCore(k);
-  }
   if ($('arrows').checked && L.plate) {
     // sample cells from a coarser level of the subdivision: ids < 10*4^(level-2)+2 are evenly spread
     const nSample = 10 * 4 ** Math.max(V.level - 2, 0) + 2;
@@ -1315,67 +1310,6 @@ function buildOverlays() {
   buildAxis();
   buildHighlightMarks();
 }
-// ------------------------------------------------------------ the jet stream's core (PW-406)
-// A weather map's jet is one meandering ribbon of fast upper wind; the stored layers are
-// half-year means, so this draws where that mean is fastest: the cells at least JET_CORE m/s
-// (or 70% of the season's peak, if it never gets there) that are the fastest across the flow
-// (no faster than them a cell spacing to either side, at right angles to the wind), each
-// joined to the next such cell downwind; bits under JET_MIN cells long are dropped. January
-// and July both, so the poleward shift in each hemisphere's summer shows; a run's keyframes
-// and older worlds have only the year's mean.
-const JET_CORE = 25, JET_MIN = 6;
-const JET_COLORS = { jan: 0x7fb2ff, jul: 0xff9a5c, '': 0xd59cff };
-function jetSeasons() {
-  const L = V.layers, both = L.jet_jul_e && L.jet_jan_e;
-  if (!both) return [['', JET_COLORS['']]];
-  const s = state.season;  // (the season picker shows one half-year; the year shows both)
-  return (s ? [s] : ['jan', 'jul']).map((k) => [k, JET_COLORS[k]]);
-}
-function jetCore(season) {
-  const L = V.layers, G = V.grid, n = V.n, nbr = G.nbr, globe = state.mode === 'globe';
-  const ke = season ? `jet_${season}_e` : 'jet_e', kn = season ? `jet_${season}_n` : 'jet_n';
-  const E = L[ke], N = L[kn], spd = new Float32Array(n);
-  let top = 0;
-  for (let i = 0; i < n; i++) { spd[i] = Math.hypot(E[i], N[i]); if (spd[i] > top) top = spd[i]; }
-  const thr = Math.min(JET_CORE, 0.7 * top), step = Math.sqrt(4 * Math.PI / n) * 180 / Math.PI;  // (a cell spacing, degrees)
-  // the cell k cell spacings from cell i along the unit (east, north) direction (de, dn)
-  const toward = (i, de, dn, k) => {
-    const la = G.lat[i] + dn * k * step, cl = Math.max(Math.cos(G.lat[i] * Math.PI / 180), 0.05);
-    return nearestCell(Math.max(-89.9, Math.min(89.9, la)), G.lon[i] + de * k * step / cl);
-  };
-  const core = new Uint8Array(n);
-  for (let i = 0; i < n; i++) {
-    if (spd[i] < thr) continue;
-    const ue = E[i] / spd[i], un = N[i] / spd[i];
-    core[i] = spd[toward(i, -un, ue, 1)] <= spd[i] && spd[toward(i, un, -ue, 1)] <= spd[i];
-  }
-  // each core cell to the core cell nearest one spacing downwind (or two), among that point's cell and its neighbours
-  const next = new Int32Array(n).fill(-1);
-  for (let i = 0; i < n; i++) {
-    if (!core[i]) continue;
-    const ue = E[i] / spd[i], un = N[i] / spd[i];
-    for (const k of [1, 2]) {
-      const t = toward(i, ue, un, k);
-      const c = [t, ...nbr[t]].filter((j) => core[j] && j !== i);
-      if (c.length) { next[i] = c.includes(t) ? t : c.reduce((a, b) => (spd[b] > spd[a] ? b : a)); break; }
-    }
-  }
-  // drop the short bits: the pieces joined by next (union-find), fewer than JET_MIN cells
-  const root = Int32Array.from({ length: n }, (_, i) => i);
-  const find = (i) => { while (root[i] !== i) i = root[i] = root[root[i]]; return i; };
-  for (let i = 0; i < n; i++) if (next[i] >= 0) root[find(i)] = find(next[i]);
-  const size = new Int32Array(n);
-  for (let i = 0; i < n; i++) if (core[i]) size[find(i)]++;
-  const pts = [], r = 1.02;
-  for (let i = 0; i < n; i++) {
-    if (next[i] < 0 || size[find(i)] < JET_MIN) continue;
-    const a = cellPos(i, r), b = cellPos(next[i], r);
-    if (!globe) { a[2] += 0.004; b[2] += 0.004; if (Math.abs(a[0] - b[0]) > 2) continue; }
-    pts.push(...a, ...b);
-  }
-  return ribbonObj(pts, JET_COLORS[season], 0.9, 3);
-}
-
 // ------------------------------------------------------------ ocean currents as streamlines, the overturning loop
 // Streamlines (Jobard & Lefer 1997, simplified): from evenly spread seeds,
 // trace the current both ways (midpoint steps on the sphere, the velocity
@@ -1830,9 +1764,6 @@ function renderLegend() {
   if ($('overturning').checked && V.kind === 'world' && V.meta.overturning)
     el.innerHTML += sw('#bfe0ff', '⊗ deep water sinks (Sv)') + sw('#ff8a3a', 'warm inflow (model)') +
       sw('#7f9fff', '- - deep return (schematic)') + sw('#5ff0c8', '◎ wells up');
-  if ($('jet').checked && V.layers.jet_e)
-    for (const [k, col] of jetSeasons())
-      el.innerHTML += `<span title="Where the upper wind (~10 km up) is fastest: at least ${JET_CORE} m/s, the fastest across the flow"><span class="sw" style="background:#${col.toString(16).padStart(6, '0')}"></span>jet stream core${{ jan: ' (January)', jul: ' (July)', '': ' (year)' }[k]}</span>`;
 }
 
 // what each colour layer shows (the button's hover hint; the units from UNITS are added)
@@ -2746,7 +2677,7 @@ seg('modeSeg', 'mode', () => {
 });
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning', 'jet',
+const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
                      'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
@@ -3180,7 +3111,7 @@ const COLOUR_NEEDS = {
 };
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],
-                        jet: ['jet_e', 'jet_n', 'jet_jul_e', 'jet_jul_n', 'jet_jan_e', 'jet_jan_n'], arrows: ['plate'] };
+                        arrows: ['plate'] };
 
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);

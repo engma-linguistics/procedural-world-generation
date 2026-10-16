@@ -25,6 +25,7 @@ Fix (viewer, no physics):
 The day-to-day meandering jet belongs to the weather generator (PW-156): add a note there that a "typical day" snapshot with Rossby waves is one of its first outputs.
 
 ## Updates
+- 2026-10-16: Owner (2026-10-16 night): drop the jet stream overlay. A real jet changes by the hour, so a Myr-scale mean is not worth drawing; a jet view waits for single-day weather (PW-156). Overlay removed from the viewer. The stored jet layers stay: they're small, and a physics test uses them. Upper-air simulation stays (coordinator's call): it places the storm tracks, rain belts and subtropical deserts.
 - 2026-10-16: Status todo -> done. The overlay is "Jet stream (seasonal core)" (`jetCore` in viewer/index.html).
   It draws ribbons (3 px) where the half-year mean upper wind is at least 25 m/s (or 70% of the season's peak) and
   no faster a cell spacing to either side across the flow, each cell joined to the next core cell downwind; pieces
