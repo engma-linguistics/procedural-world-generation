@@ -880,11 +880,7 @@ function cellPositions(lift) {
     for (let i = 0; i < n; i++) { out[3 * i] = G.lon[i] / 90; out[3 * i + 1] = G.lat[i] / 90; out[3 * i + 2] = 0.002 + (R ? mz * (R[i] - 1) * lift : 0); }
     return out;
   }
-  if (!V.unit) {  // (the cells' unit vectors, once per grid)
-    V.unit = new Float32Array(3 * n);
-    for (let i = 0; i < n; i++) V.unit.set(unitVec(G.lat[i], G.lon[i]), 3 * i);
-  }
-  const ex = reliefScale(), e = V.layers.elevation, u = V.unit, R = V.R;
+  const ex = reliefScale(), e = V.layers.elevation, u = cellUnits(), R = V.R;
   for (let i = 0; i < n; i++) {
     const r = (R ? Math.max(R[i], 1) : 1 + ex * Math.max(e[i], 0)) * lift;
     out[3 * i] = u[3 * i] * r; out[3 * i + 1] = u[3 * i + 1] * r; out[3 * i + 2] = u[3 * i + 2] * r;
@@ -896,9 +892,56 @@ function cellPos(i, lift = 1.002) {
   if (state.mode === 'globe') return unitVec(G.lat[i], G.lon[i]).map((x) => x * Math.max(cellRadius(i), 1) * lift);
   return [G.lon[i] / 90, G.lat[i] / 90, 0.002 + (relief3d() && V.R ? 2 / Math.PI * (V.R[i] - 1) : 0)];
 }
-function llPos(lat, lon, r) {
-  if (state.mode === 'globe') return unitVec(lat, lon).map((x) => x * r);
-  return [lon / 90, lat / 90, 0.003];
+// the cells' unit vectors (three.js axes), once per grid
+function cellUnits() {
+  if (!V.unit) {
+    const G = V.grid;
+    V.unit = new Float32Array(3 * V.n);
+    for (let i = 0; i < V.n; i++) V.unit.set(unitVec(G.lat[i], G.lon[i]), 3 * i);
+  }
+  return V.unit;
+}
+// the cell nearest (lat, lon): the cells hashed by their unit vectors into cubes two
+// cell spacings wide, so the nearest is in the point's cube or one next to it
+function nearestCell(lat, lon) {
+  const u = cellUnits(), n = V.n;
+  if (!V.cellHash) {
+    const h = 2 * Math.sqrt(4 * Math.PI / n), K = Math.ceil(2 / h) + 1;
+    const key = new Int32Array(n), ord = new Int32Array(n), start = new Map();
+    for (let i = 0; i < n; i++) {
+      key[i] = Math.floor((u[3 * i] + 1) / h) + K * (Math.floor((u[3 * i + 1] + 1) / h) + K * Math.floor((u[3 * i + 2] + 1) / h));
+      ord[i] = i;
+    }
+    ord.sort((a, b) => key[a] - key[b]);
+    for (let j = 0; j < n; j++) { const k = key[ord[j]]; if (!start.has(k)) start.set(k, [j, j]); start.get(k)[1] = j + 1; }
+    V.cellHash = { h, K, ord, start };
+  }
+  const { h, K, ord, start } = V.cellHash, p = unitVec(lat, lon);
+  const ix = Math.floor((p[0] + 1) / h), iy = Math.floor((p[1] + 1) / h), iz = Math.floor((p[2] + 1) / h);
+  let best = 0, bd = -2;
+  for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const se = start.get(ix + dx + K * (iy + dy + K * (iz + dz)));
+    if (!se) continue;
+    for (let j = se[0]; j < se[1]; j++) {
+      const i = ord[j], d = u[3 * i] * p[0] + u[3 * i + 1] * p[1] + u[3 * i + 2] * p[2];
+      if (d > bd) { bd = d; best = i; }
+    }
+  }
+  return best;
+}
+// the flat map's relief under cell i (the 3D relief's: map units above the sea; else 0)
+function mapRelief(i) { return relief3d() && V.R ? 2 / Math.PI * Math.max(V.R[i] - 1, 0) : 0; }
+// an overlay's point at (lat, lon), on the drawn surface (the relief, PW-372): on the globe
+// r times the radius of the nearest cell's surface (as cellPos: at least the sea's), on the
+// map just above its relief. The fixed radii the overlays used floated over the lowlands and
+// sank under high ground and ice at the 3D relief's exaggeration.
+function llPos(lat, lon, r, mapLift = 0.003) {
+  const flat = !relief3d() && !(reliefScale() > 0);
+  if (state.mode === 'globe') {
+    const R = flat ? 1 : Math.max(cellRadius(nearestCell(lat, lon)), 1);
+    return unitVec(lat, lon).map((x) => x * R * r);
+  }
+  return [lon / 90, lat / 90, mapLift + (relief3d() && V.R ? mapRelief(nearestCell(lat, lon)) : 0)];
 }
 
 // Line materials are shared by colour and opacity and never disposed: overlays are rebuilt
@@ -1199,7 +1242,7 @@ function buildOverlays() {
       if (Math.abs(e.t - t) > win) continue;
       const pts = (byKind[e.kind] ||= []);
       const r0 = globe ? 1.01 : 1, r1 = globe ? 1.2 : 1;
-      const a = llPos(e.lat, e.lon, r0), b = globe ? llPos(e.lat, e.lon, r1) : [a[0], a[1], 0.1];
+      const a = llPos(e.lat, e.lon, r0), b = globe ? llPos(e.lat, e.lon, r1) : [a[0], a[1], a[2] + 0.1];
       pts.push(...a, ...b);
       for (let k = 0; k < 24; k++) {   // ring of ~3 degrees
         const ang1 = k / 24 * 2 * Math.PI, ang2 = (k + 1) / 24 * 2 * Math.PI;
@@ -1442,7 +1485,7 @@ function overturningOverlay(meta, labels) {
     }
     if (s.sv >= 0.3) {
       const lab = labelSprite(`${s.sv.toFixed(1)} Sv`, '#cfe4ff');
-      lab.position.set(...(globe ? llPos(s.lat + rad + 1.2, s.lon, 1.03) : [s.lon / 90, (s.lat + rad + 2) / 90, 0.01]));
+      lab.position.set(...(globe ? llPos(s.lat + rad + 1.2, s.lon, 1.03) : llPos(s.lat + rad + 2, s.lon, 1, 0.01)));
       if (!globe) lab.scale.set(0.16, 0.04, 1);
       labels.push(lab);
     }
@@ -2947,7 +2990,7 @@ function buildHighlightMarks() {
       if (!wraps(p1, p2)) (paths[col] ||= []).push(...p1, ...p2);
     }
     const label = textSprite(String(f.rank), k === hlSel ? '#ffffff' : col);
-    const lp = globe ? llPos(f.lat + rad, f.lon, 1.03) : [f.lon / 90, (f.lat + rad + 1.5) / 90, 0.01];
+    const lp = globe ? llPos(f.lat + rad, f.lon, 1.03) : llPos(f.lat + rad + 1.5, f.lon, 1, 0.01);
     label.position.set(...lp);
     label.scale.setScalar(globe ? 0.075 : 0.06);
     hlGroup.add(label);
