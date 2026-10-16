@@ -32,7 +32,11 @@ model's wind, current and jet layers since PW-045):
                         metamorphic belt, low plains and the shelves are
                         sedimentary basins under ~2 km of cover, the rest
                         old shield with a thin veneer; the deep sea floor
-                        is oceanic basalt
+                        is oceanic basalt. The one exception is the warm
+                        shelves: LIMESTONE at the surface where the run's
+                        reef rule holds (earth_carbonate; PW-334), found
+                        from the world's own climate, so build() makes the
+                        world twice (the second time with that rock).
 
 When the climate model changes, just run this again (and delete the old
 world in the viewer).
@@ -50,6 +54,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
 from planet import climate  # noqa: E402
+from planet import coastal  # noqa: E402
 from planet import surface as SF  # noqa: E402
 from planet import vegetation  # noqa: E402
 from planet import world as W  # noqa: E402
@@ -58,6 +63,7 @@ from tools.earth_data import earth_closed, earth_clouds, earth_on_grid, earth_ou
 
 NAME = "Earth (today, ETOPO1) — model vs observed"
 TILT = 23.44
+REEF_MUD = 3.0  # mg/L of river mud in the sea surface that still lets a reef grow
 
 
 def _with_nulls(x: np.ndarray, decimals: int = 1) -> np.ndarray:
@@ -79,6 +85,18 @@ def earth_rock(grid, elev: np.ndarray) -> dict:
     surf = np.where(cover >= SF.COVER_SHOWS, SF.SHALE, rock)
     return {"rock": rock.astype(int), "surface_rock": surf.astype(int), "sediment_cover": np.round(cover, 2),
             "crust": (land | shelf).astype(int)}
+
+
+def earth_carbonate(grid, world: dict) -> np.ndarray:
+    """Sea cells where the run's reef rule (tectonics/earth.reefs) puts
+    carbonate: shelf above -1500 m, annual sea surface at least reef_temp,
+    and little river mud (under REEF_MUD mg/L; the run's own is a rate,
+    reef_mud, of river deposition). From a finished world's layers."""
+    L = world["layers"]
+    elev = np.asarray(L["elevation"], float)
+    river = coastal.river_turbidity(grid, L)
+    return ((elev < -5) & (elev > -1500) & (np.asarray(L["sst"], float) >= coastal.reef_temp(world["meta"]))
+            & (river < REEF_MUD))
 
 
 def build(level: int = 6) -> dict:
@@ -106,9 +124,17 @@ def build(level: int = 6) -> dict:
                          "obs_climate": "Kottek et al. 2006 Koppen-Geiger, 1951-2000 (As scored as Aw)",
                          "obs_sunshine": "CRU CL 2.0 sunshine duration (New et al. 2002), 1961-90, land"},
             "global_temp_c": 14.5, "sea_level_m": 0.0}
-    world = W.finish(grid, elev, extra, meta, erosion=0.0, dT=0.0, tilt=TILT, params={"earth": True},
-                     t0=t0, ice=ice, outlet=earth_outlets(grid),
-                     closed=earth_closed(grid))
+    outlet, closed = earth_outlets(grid), earth_closed(grid)
+
+    def make(extra):
+        return W.finish(grid, elev, extra, meta, erosion=0.0, dT=0.0, tilt=TILT, params={"earth": True},
+                        t0=t0, ice=ice, outlet=outlet, closed=closed)
+
+    # the reefs' carbonate needs the world's sea surface and rivers: a second pass with it, so that
+    # everything that reads the rock (coastal life, soils, vegetation, the zoom) sees it (PW-334)
+    reef = earth_carbonate(grid, make(extra))
+    extra["surface_rock"] = np.where(reef, SF.LIMESTONE, extra["surface_rock"])
+    world = make(extra)
     world["meta"]["generated_in_s"] = round(time.time() - t0, 1)
     return world
 

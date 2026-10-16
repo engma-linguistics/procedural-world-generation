@@ -2,7 +2,7 @@
 id: PW-014
 title: Diagnose E-P by ocean basin and vapour transport across land bridges
 type: story
-status: todo
+status: in-progress
 parent: PW-013
 subsystem: climate
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [tools/earth_check.py, planet/climate.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,4 +24,5 @@ model loses the contrast (e.g. rain falls too close to its source, too little in
 transport by the trades and westerlies).
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started: diagnosis tool + moisture-transport proposal for owner review.
 - 2026-10-14: Created from the rain/overturning epic (owner discussion 2026-10-14).

@@ -541,3 +541,23 @@ def test_a_hyperarid_zoom_has_no_rivers_of_its_own():
     wet = zoom.build(w, 5.0, 8.0, size_km=800, res_km=8, iterations=6, log=lambda *a: None)
     assert wet["layers"]["discharge"].max() > 5.0
     assert abs(z["stats"]["cell_mean_rms_error_m"] - wet["stats"]["cell_mean_rms_error_m"]) < 10
+
+
+def test_lake_kind_layer_matches_the_lakes(water_world, lake_zoom):
+    """The zoom stores each lake pixel's kind (hydrology's lake_kind): an open
+    coarse lake is fresh, the same lake marked closed is salt, and the layer
+    is non-zero exactly on the lake pixels (no landform basins here: no pans)."""
+    Lz = lake_zoom["layers"]
+    lake = Lz["water"] == 2
+    assert lake.any() and Lz["lake_kind"].dtype == np.uint8
+    assert np.all(Lz["lake_kind"][lake] == 1) and np.all(Lz["lake_kind"][~lake] == 0)
+    # the same basin closed (its water balance would keep it salty): salt
+    w = {**water_world, "layers": {**water_world["layers"]}}
+    kind = w["layers"]["lake_kind"].copy()
+    kind[kind == 1] = 2
+    w["layers"]["lake_kind"] = kind
+    z = zoom.build(w, *LAKE_AT, size_km=1600, res_km=8, iterations=6, log=lambda *a: None)
+    lk = z["layers"]["lake_kind"]
+    wet = z["layers"]["water"] == 2
+    # (all salt but the plunge pools at the falls' feet, a few pixels: always fresh)
+    assert wet.any() and np.mean(lk[wet] == 2) > 0.99 and np.all(lk[~wet] == 0)

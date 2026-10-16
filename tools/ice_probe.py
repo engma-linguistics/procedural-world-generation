@@ -9,8 +9,10 @@ starting from Earth's real ice (or none). Sea level stays fixed. A fixed
 planet, so unlike a run it isn't chaotic: a quick check of how the ice
 rule and the climate answer cooling. Prints, per climate update, the sea
 level from the ice (m), the ice share of the surface (%) and the mean / max
-thickness (m). Earth for scale: today ~3% of the surface; the last glacial
-maximum (~dT -6) ~120 m below today.
+thickness (m), and after the last update the iced cells and their mean
+snowfall (mm/yr) on Antarctica, Greenland and elsewhere (--regions). Earth
+for scale: today ~3% of the surface (Antarctica ~950 L6 cells, Greenland
+~150); the last glacial maximum (~dT -6) ~120 m below today.
 """
 
 from __future__ import annotations
@@ -36,6 +38,7 @@ def main():
     ap.add_argument("dT", type=float, nargs="+")
     ap.add_argument("--iters", type=int, default=8, help="climate updates")
     ap.add_argument("--start", choices=("earth", "none"), default="earth")
+    ap.add_argument("--regions", action="store_true", help="per region iced cells and snowfall at the end")
     a = ap.parse_args()
     src = timezoom.source_earth(6)
     g = src["grid"]
@@ -57,6 +60,15 @@ def main():
             sl = -0.9 * (ice[land] / 1000).sum() / max((~land).sum(), 1) * 1000
             rows.append(f"{sl:7.1f} m {100 * on.mean():5.2f}% {ice[on].mean() if on.any() else 0:5.0f}/{ice.max():5.0f}")
         print(f"dT {dT:+5.1f}:  " + " | ".join(rows), flush=True)
+        if a.regions:
+            ant = g.lat < -60
+            grl = (g.lat > 58) & (g.lon > -75) & (g.lon < -10)
+            out = []
+            for name, m in (("Antarctica", ant), ("Greenland", grl), ("elsewhere", ~ant & ~grl)):
+                on = m & (ice > 0)
+                snow = c["precip"][on].mean() if on.any() else 0.0
+                out.append(f"{name} {on.sum()} cells, {snow:.0f} mm/yr")
+            print("           " + ", ".join(out), flush=True)
 
 
 if __name__ == "__main__":

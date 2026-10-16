@@ -11,10 +11,14 @@ What the pixel adds to the coarse cell's climate:
    cooler (SLOPE_DT C per unit of the index in summer and winter, at most
    SLOPE_DT_MAX), so it stays moister: north-facing forest and
    south-facing grass in semi-arid mountains.
-3. Soil water from slope and position: steep slopes hold a thinner soil,
-   hollows and valley floors (high topographic wetness index) a deeper one
-   plus some groundwater (GW_SHARE of the local runoff in the wettest
-   hollows).
+3. Soil (soils.zoom_mineral, PW-331): the soils' mineral pass on the
+   pixel's own slope, floodplains and river strips, hollows (colluvium),
+   glaciers and rock gives the water the soil holds (thin on steep slopes,
+   deep in hollows and on alluvium) and a mild fertility factor on NPP, as
+   on the globe; hollows and valley floors (high topographic wetness index)
+   also get some groundwater (GW_SHARE of the local runoff in the wettest
+   hollows). The organic pass after the vegetation (soil carbon, peat, the
+   named types) gives the zoom's soil layers.
 4. Rivers: a strip along each river (RIP_W0 + RIP_W1 x log10(Q / 1 m^3/s)
    km wide) gets the river's water, up to the potential evaporation. The
    strip is a habitat of its own inside the pixel (PW-221): where it covers
@@ -57,6 +61,8 @@ from types import SimpleNamespace
 import numpy as np
 
 from . import climate
+from . import soils as SO
+from . import store as S
 from . import vegetation as V
 from . import zoom_kernels as ZK
 from . import zoom_terrain as ZT
@@ -68,9 +74,6 @@ SLOPE_DT_MAX = 2.5  # C
 GW_SHARE = 0.5  # share of the local runoff the wettest hollows get as groundwater
 TWI_REF = 0.05  # tan slope: a pixel draining only itself on this slope is the TWI baseline
 TWI_WET = (2.0, 7.0)  # TWI above the baseline: from no groundwater to full (valley floors)
-DEEP_SOIL = 0.3  # deeper subsoil in the wettest hollows (x)
-STEEP_TAN = (0.2, 0.7)  # tan slope: soil thins from here (~11 deg) to SOIL_THIN at the other (~35 deg)
-SOIL_THIN = 0.6
 RIP_W0, RIP_W1 = 0.15, 0.4  # km: riparian strip width at 1 m^3/s, and per tenfold more
 RIP_SHARE = 0.9  # share of the potential evaporation a river supplies its strip
 RIP_MIN = 0.02  # share of a pixel the strip must cover to be a habitat of its own there
@@ -176,13 +179,51 @@ def surface(elevation, lake_depth, water) -> np.ndarray:
     return np.where(water == 1, np.float32(0), np.where(water == 2, e + d, e)).astype(float)
 
 
+def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul,
+                 cloud_jan, slope, res, rock, landform, plain, strip, hollow, glacier, nx, ny, idx) -> dict:
+    """soils.zoom_mineral on the bare land pixels idx (their climate,
+    slope (tan), floodplain and river-strip shares, hollows, all (nv,)):
+    the exposed rock and landform as the zoom stores them (n,; else the
+    pixel's cell's), the cell's landform age, last glaciation and salt
+    lakes nearby, its loess interpolated (land cells), and the zoom's
+    glaciers' forefields."""
+    g, L = world["grid"], world["layers"]
+    rock = np.asarray(rock)[idx] if rock is not None else np.asarray(L.get("surface_rock", L["rock"]))[cell]
+    if landform is not None:
+        landform = np.asarray(landform)[idx]
+    elif "landform" in L:
+        landform = np.asarray(L["landform"])[cell]
+    lfa = np.asarray(L["landform_age"], float)[cell] if "landform_age" in L else None
+    glac = np.asarray(L["glaciated_myr"], float)[cell] if "glaciated_myr" in L else None
+    salt = SO.salt_near(g, L["lake_kind"])[cell] if "lake_kind" in L else np.zeros(len(idx), bool)
+    loess = np.zeros(len(idx))
+    if "loess" in L:
+        cx, cy = fr.to_plane(g.centers[sel])
+        f, _ = ZK.gauss_interp(pxv, pyv, cx, cy, np.asarray(L["loess"], float)[sel][:, None],
+                               (np.asarray(L["elevation"])[sel] > 0)[:, None].astype(float), 0.5 * g.spacing * R_KM)
+        loess = np.nan_to_num(f[:, 0])
+    ice_km = ZT.nearest(np.asarray(glacier, bool), nx, ny)[0][idx] * res
+    return SO.zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, slope, res, rock,
+                           landform, lfa, glac, plain, strip, hollow, loess, salt, ice_km)
+
+
+# the zoom's soil layers (soils.world_layers' names, stored as on the globe: store.LAYERS)
+SOIL_LAYER_DOC = {k: (S.LAYERS[k]["units"], S.LAYERS[k]["description"] + " (per pixel: soils.zoom_mineral)",
+                      {f: S.LAYERS[k][f] for f in ("dtype", "scale", "offset")})
+                  for k in ("soil", "soil_depth", "soil_texture", "soil_water", "soil_fertility", "soil_drainage",
+                            "soil_carbon", "peat_depth", "permafrost", "loess")}
+
+
 def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: float, h, water, ice, discharge,
-            area, marsh, fields: dict | None = None, log=print, want_fractions: bool = False) -> dict:
+            area, marsh, fields: dict | None = None, log=print, want_fractions: bool = False, rock=None,
+            landform=None) -> dict:
     """Vegetation of a zoom (see the module doc). h: ground (m, lake beds
     included) and water (0 land, 1 sea, 2 lake), with lake_depth folded in
     by the caller as h_surface; ice (m), discharge (m^3/s), area
     (drainage_area, km^2), marsh (a coastal plain's marsh, bool), all (n,)
-    as the zoom stores them. Returns {layers: the zoom layers, terrain:
+    as the zoom stores them; rock: the exposed rock (surface_rock) and
+    landform (the coarse cells' class), for the soils. Returns {layers: the
+    zoom layers (vegetation and soils), terrain:
     zoom_terrain.indices, stats, nu (NP, n_veg) and idx when
     want_fractions}."""
     t0 = time.time()
@@ -212,7 +253,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     out_type = np.where(sea, 0, np.where(lake, V.T["lake"], np.where(glacier, V.T["ice"], 0))).astype(np.uint8)
     zeros = np.zeros(n)
     res_layers = dict(vegetation=out_type, tree_cover=zeros, plant_cover=zeros, lai=zeros, canopy_height=zeros,
-                      npp=zeros, fire_return=zeros)
+                      npp=zeros, fire_return=zeros, **{k: zeros for k in SOIL_LAYER_DOC})
     if nv == 0:
         return dict(layers=res_layers, terrain=tr, stats={}, idx=idx, nu=np.zeros((V.NP, nv)))
 
@@ -241,13 +282,38 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     rip = np.clip((np.minimum(dist + 0.5 * res, 0.5 * width) - np.maximum(dist - 0.5 * res, -0.5 * width)) / res, 0, 1)
     rip = np.where(np.isfinite(dist), rip, 0.0)
     slope = tr["slope"][idx]
-    cap2 = V.DEEP_MM * (1 - (1 - SOIL_THIN) * np.clip((slope - STEEP_TAN[0]) / (STEEP_TAN[1] - STEEP_TAN[0]), 0, 1)) \
-        * (1 + DEEP_SOIL * wet)
     cj = fields["cloud_jul"][idx] if fields["cloud_jul"] is not None else None
     cn = fields["cloud_jan"][idx] if fields["cloud_jan"] is not None else None
     pj, pn = fields["p_jul"][idx], fields["p_jan"][idx]
     latv = lat[idx]
     nu0 = fields["nu0"][:, idx] if fields["nu0"] is not None else None
+
+    # the coarse cells (for the flooded share's and the cover's cell means)
+    sel = _sel(g, fr, size_km)
+    lut = np.full(g.n, -1)
+    lut[sel] = np.arange(len(sel))
+    cell = g.locate(P[idx])
+    own = lut[cell]
+    cnt = np.bincount(own, minlength=len(sel)).astype(float)
+    full_px = 4 * np.pi * R_KM ** 2 / g.n / res ** 2
+    cx, cy = fr.to_plane(g.centers[sel])
+    sig = 0.5 * g.spacing * R_KM
+    ok_c = (cnt > 0.25 * full_px) & (np.asarray(L["elevation"])[sel] > 0)
+    # the big rivers' floodplains: low above the river
+    flat = np.clip(1 - slope / FLAT_TAN, 0, 1)
+    hand = h[idx] - tr["river_h"][idx]  # height above the nearest river
+    # the rivers' floods (PW-028): a spring-flood or monsoon river floods
+    # more of its plain, and higher (stage ~ discharge^0.4), than a steady one
+    fs = V.flood_scale(np.asarray(L["flood_ratio"], float)[sel][np.maximum(own, 0)]) if "flood_ratio" in L else 1.0
+    big = np.clip(np.log10(np.maximum(rq * fs, 1.0) / PLAIN_Q) / 1.5, 0, 1)
+    plain = big * np.clip(1 - hand / ((2.0 + 4.0 * big) * fs ** 0.4), 0, 1) * np.maximum(flat, 0.3) * (dist < 30.0)
+
+    # --- soils, mineral pass (soils.zoom_mineral): the water the soil holds,
+    # its fertility and permafrost, for the vegetation
+    t_s = time.time()
+    sp_m = soil_mineral(world, fr, px[idx], py[idx], sel, cell, latv, temp, t_warm, t_cold, pj, pn, tilt,
+                        cj, cn, slope, res, rock, landform, plain, rip, wet, glacier, nx, ny, idx)
+    t_soil = time.time() - t_s
 
     # --- productivity, in batches -----------------------------------------
     s1 = {}
@@ -262,13 +328,15 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     nh = nv + nr
     pot = {k: np.zeros((V.NP, nh)) for k in ("npp", "net", "lai", "on_jul", "on_jan")}
     pot["ok"] = np.zeros((V.NP, nh), bool)
+    pot["c4_share"] = np.full(nh, 0.5)  # (the grasses' C4 share, vegetation.potential)
     for a in range(0, nh, CHUNK):
         b = min(a + CHUNK, nh)
         sl = base[a:b]
         s = V.site(latv[sl], temp[sl], t_warm[sl], t_cold[sl], pj[sl], pn[sl], tilt,
                    None if cj is None else cj[sl], None if cn is None else cn[sl],
                    light=ri[:, sl], extra_water=gw[sl], extra_pet=ep[a:b])
-        s["cap2"] = cap2[sl]
+        s["cap1"], s["cap2"] = sp_m["cap1"][sl], sp_m["cap2"][sl]
+        f_soil = sp_m["f_soil"][sl][None, :]
         sl = slice(a, b)
         env = V.envelope(s, co2)
         viable = env & unlocked[:, None]
@@ -278,8 +346,12 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
             viable[p_] |= extra
             eff[p_] = np.where(extra, V.STANDIN_EFF, eff[p_])
         pt = V.potential(s, viable, eff, co2)
+        pt = dict(pt, npp=pt["npp"] * f_soil, net=pt["net"] * f_soil)  # (the soil's fertility, as on the globe)
         for k in pot:
-            pot[k][:, sl] = pt[k] if k != "ok" else pt["ok"] & viable
+            if k == "c4_share":
+                pot[k][sl] = pt[k]
+            else:
+                pot[k][:, sl] = pt[k] if k != "ok" else pt["ok"] & viable
         for k in one_d:
             if s.get(k) is not None:
                 s1.setdefault(k, []).append(np.asarray(s[k], float))
@@ -288,25 +360,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     s = {k: (None if v is None else v[:nv]) for k, v in s_h.items()}  # the pixels' own (dry ground) site
 
     # --- wet ground ---------------------------------------------------------
-    # the coarse cells (for the flooded share's and the cover's cell means)
-    sel = _sel(g, fr, size_km)
-    lut = np.full(g.n, -1)
-    lut[sel] = np.arange(len(sel))
-    own = lut[g.locate(P[idx])]
-    cnt = np.bincount(own, minlength=len(sel)).astype(float)
-    full_px = 4 * np.pi * R_KM ** 2 / g.n / res ** 2
-    cx, cy = fr.to_plane(g.centers[sel])
-    sig = 0.5 * g.spacing * R_KM
-    ok_c = (cnt > 0.25 * full_px) & (np.asarray(L["elevation"])[sel] > 0)
-
-    flat = np.clip(1 - slope / FLAT_TAN, 0, 1)
     rain_mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
-    hand = h[idx] - tr["river_h"][idx]  # height above the nearest river
-    # the rivers' floods (PW-028): a spring-flood or monsoon river floods
-    # more of its plain, and higher (stage ~ discharge^0.4), than a steady one
-    fs = V.flood_scale(np.asarray(L["flood_ratio"], float)[sel][np.maximum(own, 0)]) if "flood_ratio" in L else 1.0
-    big = np.clip(np.log10(np.maximum(rq * fs, 1.0) / PLAIN_Q) / 1.5, 0, 1)
-    plain = big * np.clip(1 - hand / ((2.0 + 4.0 * big) * fs ** 0.4), 0, 1) * np.maximum(flat, 0.3) * (dist < 30.0)
     near_lake = ZT.nearest(lake, nx, ny)[0][idx] <= 1.5
     shore = 0.5 * near_lake * flat
     coast = 0.85 * np.asarray(marsh, bool)[idx]
@@ -337,7 +391,8 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     else:  # (no flooded layer: the cell formula of vegetation.flooded on the pixel's own ground)
         mire = 0.8 * np.clip((rain_mi - 0.9) / 0.6, 0, 1) * flat ** 2 * np.clip((10.0 - s["temp"]) / 10.0, 0.3, 1.0) \
             * (0.4 + 0.6 * wet)
-        perma = 0.45 * (s["temp"] < -2) * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2 * (0.5 + 0.5 * wet)
+        perma = 0.45 * V.PERMA_WET[sp_m["permafrost"]] * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2 \
+            * (0.5 + 0.5 * wet)
         fw_g = 1 - (1 - 0.8 * plain) * (1 - mire) * (1 - perma)
     fw = np.clip(1 - (1 - fw_g) * (1 - shore) * (1 - coast), 0, FW_MAX)
 
@@ -453,6 +508,12 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         canopy_height=put(sm["height"]), npp=put(sm["npp"]),
         fire_return=put(np.minimum(sm["fire_return"], 9999)),
     )
+    # --- soils, organic pass (soils.organic): soil carbon, peat and the named types, from the vegetation
+    t_s = time.time()
+    so = SO.organic(sp_m, dict(eq=dict(nu=nu, burned=burned), sm=dict(npp=sm["npp"]), fw=fw))
+    layers.update({k: put(v, np.asarray(v).dtype) for k, v in SO.world_layers(sp_m, so).items()})
+    t_soil += time.time() - t_s
+    st_ = np.bincount(so["types"], minlength=len(SO.TYPES))
     lt = np.bincount(types, minlength=len(V.TYPES))
     top = np.argsort(-lt)[:10]
     stats = {"vegetation_pct": {V.TYPES[k][1]: round(float(100 * lt[k] / nv), 1) for k in top if lt[k] > 0},
@@ -460,8 +521,15 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
              "npp_mean": round(float(sm["npp"].mean())),
              "wetland_pct": round(100 * float(np.isin(types, list(WETLAND_TYPES)).mean()), 2),
              "riparian_px": int((rip > 0.2).sum()),
-             "seconds": round(time.time() - t0, 1)}
-    log(f"  vegetation: {nv} px, trees {stats['tree_cover_mean_pct']}% [{time.time() - t0:.1f}s]")
+             "seconds": round(time.time() - t0, 1),
+             # the soils (soils.zoom_mineral, organic): % of the bare land by type, mean depth and carbon
+             "soils": {"soil_pct": {SO.TYPES[k][2]: round(float(100 * st_[k] / nv), 1)
+                                    for k in np.argsort(-st_)[:10] if st_[k] > 0},
+                       "depth_mean_m": round(float(sp_m["depth"].mean()), 2),
+                       "carbon_mean_kg_m2": round(float(so["carbon"].mean()), 1),
+                       "seconds": round(t_soil, 2)}}
+    log(f"  vegetation: {nv} px, trees {stats['tree_cover_mean_pct']}%, soils {t_soil:.2f}s "
+        f"[{time.time() - t0:.1f}s]")
     out = dict(layers=layers, terrain=tr, stats=stats, idx=idx, fw=put(fw))
     if want_fractions:
         out["nu"] = nu
@@ -481,7 +549,8 @@ def fractions(zoom_ref) -> dict:
     surf = surface(lay["elevation"].ravel(), lay["lake_depth"].ravel(), lay["water"].ravel())
     r = compute(world, fr, nx, ny, res, meta["seed"], meta["size_km"], surf, lay["water"].ravel(),
                 lay["ice"].ravel(), lay["discharge"].ravel(), lay["drainage_area"].ravel(),
-                (lay.get("wetland", np.zeros((ny, nx))) == 1).ravel(), log=lambda *a: None, want_fractions=True)
+                (lay.get("wetland", np.zeros((ny, nx))) == 1).ravel(), log=lambda *a: None, want_fractions=True,
+                rock=lay["surface_rock"].ravel(), landform=lay["landform"].ravel() if "landform" in lay else None)
     out = {}
     for p, c in enumerate(V.CODES):
         a = np.zeros(nx * ny)

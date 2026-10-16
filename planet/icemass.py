@@ -18,13 +18,18 @@ refreezes in the snowpack), then ice (DDF_ICE). On ice:
     Greenland's ablation zone ~+3..5 C in July where the tundra beside it at
     the same height has ~+8..10 C), and
   - the summer's warmth above the annual mean is damped by SUMMER_DAMP x
-    the sheet's cover (climate.ice_cover: the share of the land within
-    ~300 km under ice, away from the tropics): a big sheet makes its own
-    cold, bright air mass (Antarctica's coast stays below 0 C in summer),
-    while a margin or small cap sits in the air of the land around it.
-    Before PW-190 the damping was 0.6 everywhere on bright snow, so a sheet's
-    margin had a summer ~10 C colder than the tundra beside it and kept
-    spreading onto land with ~9 C bare summers.
+    LOCAL (sheet_cover: the bright surface's own share). A big sheet's own
+    cold, bright air mass (Antarctica's coast stays below 0 C in summer) is
+    in the climate's air: climate.compute damps the summer of the air over
+    the ice by SUMMER_DAMP x air_mass (the share of the surface within
+    ~1000 km under ice, away from the tropics) and carries it along the
+    winds onto the margins and the land beside (PW-336), while a small cap
+    sits in the air of the land around it. Before PW-190 the damping was
+    0.6 everywhere on bright snow, so a sheet's margin had a summer ~10 C
+    colder than the tundra beside it and kept spreading onto land with
+    ~9 C bare summers; before PW-336 the air mass was a local damping of
+    each ice cell, and the air reaching a sheet's margins and shelves came
+    off the bare ground's summer (+13 C over Antarctica's bed).
 """
 
 from __future__ import annotations
@@ -32,7 +37,8 @@ from __future__ import annotations
 import numpy as np
 
 SNOW_H = 20.0  # m: perennial snow / ice this thick is bright (phased in from 0)
-SUMMER_DAMP = 0.6  # share of the summer's warmth above the annual mean taken away on a big sheet (x cover)
+SUMMER_DAMP = 0.6  # share of the summer's warmth above the annual mean taken away (x sheet_cover on the ice's
+# surface, x air_mass in the air over a sheet)
 MELT_HOLD = 0.5  # temperatures above 0 C on snow / ice are scaled by this
 SNOW_W = 30.0  # mm w.e.: lying snow this deep is fully bright
 BARE_SHARE = 0.3  # bare ice keeps this share of the snow's effects
@@ -45,24 +51,36 @@ DDF_SNOW = 3.0  # mm w.e. melted per positive degree-day, snow (Braithwaite 1995
 DDF_ICE = 8.0  # ... ice
 REFREEZE = 0.6  # share of snowmelt that refreezes in the snowpack
 PRECIP_K = 0.07  # rain ~ exp(PRECIP_K * dT) (Clausius-Clapeyron)
-SHEET_KM = 1000.0  # km: a sheet's own air mass (sheet_cover) ...
+SHEET_KM = 1000.0  # km: a sheet's own air mass (air_mass) ...
 LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
 # snow gets none: its brightness is in the climate's own snow albedo; PW-275)
 
 
-def sheet_cover(grid, ice, km: float = SHEET_KM):
-    """How much (0..1) of SUMMER_DAMP an ice surface at each cell gets (for
-    ice only: bare ground's snow gets 0, in the run, the time zoom and the
-    zoom alike, PW-275): LOCAL plus the rest times the share of
-    the surface (land and sea) within ~km under land ice (m > 1), away from
-    the tropics (none within 15 deg of the equator, in full from 50 deg, as
-    climate.ice_cover). Antarctica ~0.6..1 (its summer is ~11..17 C colder
-    than the climate model's bare ground there), Greenland ~0.3..0.5 (~4..5 C),
-    a valley glacier or a lone cap LOCAL."""
+def air_mass(grid, ice, km: float = SHEET_KM):
+    """How much (0..1) of the air over each cell of land ice is the sheet's
+    own cold, bright air mass: the share of the surface (land and sea)
+    within ~km under land ice (m > 1), away from the tropics (none within
+    15 deg of the equator, in full from 50 deg, as climate.ice_cover); 0
+    off the ice. climate.compute damps that air's summer warmth by
+    SUMMER_DAMP x this and the winds carry it on (PW-336): katabatic
+    outflow, so a big sheet's margins, ice shelves and the land beside it
+    get its cold summers, a lone cap's surroundings don't. Antarctica
+    ~0.6..1, Greenland ~0.3..0.5, a valley glacier ~0."""
     from . import climate
-    a = climate.smooth_big(grid, (np.asarray(ice) > 1).astype(float), km)
+    on = np.asarray(ice) > 1
+    a = climate.smooth_big(grid, on.astype(float), km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
-    return LOCAL + (1 - LOCAL) * np.clip(a, 0.0, 1.0) * polar
+    return np.where(on, np.clip(a, 0.0, 1.0) * polar, 0.0)
+
+
+def sheet_cover(grid, ice):
+    """How much (0..1) of SUMMER_DAMP an ice surface at each cell gets on
+    top of the air it sits in (for ice only: bare ground's snow gets 0, in
+    the run, the time zoom and the zoom alike, PW-275): LOCAL, its own
+    bright surface, however small the patch. A big sheet's own air mass is
+    in the climate's air already (air_mass, carried along the winds,
+    PW-336), so it isn't counted here again."""
+    return np.full(grid.n, LOCAL)
 
 
 # The ice-age cycle a run's (and a zoom's) ice is the average over: precession at four phases x obliquity

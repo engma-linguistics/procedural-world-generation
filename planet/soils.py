@@ -338,9 +338,11 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     for Earth and generate worlds); lake_kind, lake (wet cells), flow,
     flood_ratio: rivers and lakes; winds: [(east, north)] seasonal surface
     winds; memory: climate_memory() of the run. Returns the fields the
-    vegetation reads (cap1, cap2, f_soil, permafrost) and what organic() needs."""
+    vegetation reads (cap1, cap2, f_soil, permafrost) and what organic() needs.
+    What needs the grid (slope, floodplains, loess, salt lakes nearby) is
+    worked out here; the rest is per cell (_mineral, shared with the zoom)."""
     from . import landform as LF
-    from .vegetation import floodplain, relief
+    from .vegetation import floodplain
     n = grid.n
     elev = np.asarray(elev, float)
     ice = np.zeros(n) if ice is None else np.asarray(ice, float)
@@ -351,27 +353,18 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     lfm = np.zeros(n, int) if landform is None else np.asarray(landform, int)
     lfa = np.full(n, 9999.0) if landform_age is None else np.asarray(landform_age, float)
     glac = np.full(n, 9999.0) if glaciated_myr is None else np.asarray(glaciated_myr, float)
-    temp = np.asarray(temp, float)
-    P = 0.5 * (np.asarray(p_jul, float) + np.asarray(p_jan, float))
-    mo = climate.months(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
-    pet = mo["pet"].sum(0)
-    mi = P / np.maximum(pet, 1.0)
-    dry_months = ((mo["p"] < 2 * mo["t"]) & (mo["t"] > 0)).sum(0)
-    slope = relief(grid, elev) / (grid.spacing * R_KM)  # m per km to the steepest neighbour
-    flat = slope < STEEP
+    cl = _climate(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
+    mi = cl["mi"]
+    slope = cell_slope(grid, elev)
 
-    # parent material: the rock, overridden by alluvium, loess and till where they lie
-    glaciated = glac <= TILL_MYR
-    crystalline = PARENT_FLAGS["acid"][rock] & ~PARENT_FLAGS["sandy"][rock] & (rock != 10)
-    till = land & glaciated & flat & ~crystalline  # ice scours hard rock bare, leaves till on soft lowlands
+    # alluvium on the big rivers' floodplains, aggrading coastal plains
     fp = floodplain(grid, elev, np.zeros(n) if flow is None else flow, None, flood_ratio)
     aggrading = (lfm == LF.COASTAL_PLAIN) & (lfa <= COASTAL_PLAIN_MYR)
-    alluvial = np.where(land, np.maximum(fp / 0.35, np.where(aggrading, 0.5, 0.0)), 0.0)  # share of the cell
-    alluvial = np.clip(alluvial, 0, 1)
 
     # loess: dust from dry bare ground (salt pans and dune fields most) and glacial outwash
     sea = elev <= 0
-    bare = np.clip((0.2 - mi) / 0.15, 0, 1) * (elev > 0) * (ice <= 0)
+    crystalline = _crystalline(rock)
+    bare = _bare(mi, elev, ice)
     # (hot deserts make less loess-sized silt than glaciers grind: Smalley 1995)
     src = DESERT_DUST * bare * (1 + 0.5 * (lfm == LF.DUNES)) + 1.0 * (lake_kind == SALT_PAN)
     gl_now = (ice > 0) | (glac <= TILL_MYR)
@@ -380,6 +373,65 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     src = src + 1.0 * outwash
     trap = np.clip((mi - 0.1) / 0.4, 0.0, 1.0)  # (bare ground keeps none: what settles is blown on)
     loess_m = np.where(land, loess(grid, src, trap, winds, sea | (ice > 0)), 0.0) if len(winds) else np.zeros(n)
+    return _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope,
+                    fp / 0.35, aggrading, loess_m, salt_near(grid, lake_kind), memory)
+
+
+def cell_slope(grid, elev) -> np.ndarray:
+    """m per km to the steepest neighbour, the sea counted at sea level: a
+    coastal lowland isn't steep for the drop to the sea floor beside it."""
+    from .vegetation import relief
+    return relief(grid, np.maximum(np.asarray(elev, float), 0.0)) / (grid.spacing * R_KM)
+
+
+def salt_near(grid, lake_kind) -> np.ndarray:
+    """Cells with a closed (salt) lake or salt pan in them or next to them."""
+    lake_kind = np.asarray(lake_kind, int)
+    salt = np.isin(lake_kind, (CLOSED_LAKE, SALT_PAN))
+    return salt | (np.add.reduceat(salt[grid.nbr_idx].astype(float), grid.nbr_off[:-1]) > 0)
+
+
+def _climate(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan) -> dict:
+    """The twelve months (climate.months), the year's rain P, potential
+    evaporation, moisture index P/PET and dry months."""
+    P = 0.5 * (np.asarray(p_jul, float) + np.asarray(p_jan, float))
+    mo = climate.months(lat, np.asarray(temp, float), t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
+    pet = mo["pet"].sum(0)
+    return dict(P=P, months=mo, pet=pet, mi=P / np.maximum(pet, 1.0),
+                dry_months=((mo["p"] < 2 * mo["t"]) & (mo["t"] > 0)).sum(0))
+
+
+def _crystalline(rock) -> np.ndarray:
+    """Hard acid rock (granite, gneiss: the ice scours it bare)."""
+    return PARENT_FLAGS["acid"][rock] & ~PARENT_FLAGS["sandy"][rock] & (rock != 10)
+
+
+def _bare(mi, elev, ice) -> np.ndarray:
+    """0..1: dry ground too bare to hold its dust."""
+    return np.clip((0.2 - mi) / 0.15, 0, 1) * (elev > 0) * (ice <= 0)
+
+
+def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope, alluv,
+             aggrading, loess_m, salt_near, memory=None, h_min: float = H_MIN, colluvium=None) -> dict:
+    """Pass 1 per cell or pixel (mineral() and zoom_mineral()): cl from
+    _climate; slope in the cells' measure (m per km to the steepest
+    neighbour); alluv: the floodplain's share of alluvium (0..1+), aggrading:
+    a coastal plain still aggrading; loess_m (m); salt_near: a salt lake or
+    pan in or beside it; h_min: the thinnest soil on land (m); colluvium:
+    m of soil washed down into a hollow (zoom pixels)."""
+    from . import landform as LF
+    n = len(land)
+    P, mo, pet, mi, dry_months = cl["P"], cl["months"], cl["pet"], cl["mi"], cl["dry_months"]
+    temp = np.asarray(temp, float)
+    flat = slope < STEEP
+
+    # parent material: the rock, overridden by alluvium, loess and till where they lie
+    glaciated = glac <= TILL_MYR
+    crystalline = _crystalline(rock)
+    till = land & glaciated & flat & ~crystalline  # ice scours hard rock bare, leaves till on soft lowlands
+    alluvial = np.where(land, np.maximum(alluv, np.where(aggrading, 0.5, 0.0)), 0.0)  # share of the cell
+    alluvial = np.clip(alluvial, 0, 1)
+    bare = _bare(mi, elev, ice)
     w_loess = np.clip(loess_m / 1.0, 0, 1) * (1 - alluvial)
     w_till = till * (1 - alluvial - w_loess)
     w_rock = 1 - alluvial - w_loess - w_till
@@ -398,7 +450,7 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     # depth and age (section 3.2)
     E = np.maximum(erosion_rate(slope, P, bare) * (1 - alluvial), E_MIN)
     p0 = P0_REF * np.exp(0.05 * (temp - 15.0)) * np.clip(mi, 0.05, 1.0)  # mm/yr: weathering needs water
-    h_ss = np.maximum(H0 * np.log(np.maximum(p0 / E, 1e-9)), H_MIN)
+    h_ss = np.maximum(H0 * np.log(np.maximum(p0 / E, 1e-9)), h_min)
     h_grow = H0 * np.log1p(p0 * 1e-3 * np.minimum(age_cap, 1e12) / H0)
     h_rock = np.clip(np.minimum(h_ss, h_grow), 0, H_MAX)
     tau = np.minimum(np.minimum(h_ss / (E * 1e-3), age_cap), AGE_MAX)  # yr
@@ -407,6 +459,8 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     # silt blown away as loess, the sand left as a loose sheet)
     soft = (PARENT_FLAGS["soft"][rock] | andic | (lfm == LF.DUNES) | (PARENT_FLAGS["sandy"][rock] & (bare >= 0.5)))
     h_rock = np.where(soft, np.maximum(h_rock, SOFT_M), h_rock)
+    if colluvium is not None:  # (soil washed down into a hollow: as deep as it has piled up)
+        h_rock = np.maximum(h_rock, colluvium)
     h = (w_rock * h_rock + w_loess * np.maximum(h_rock, np.minimum(loess_m, H_MAX))
          + w_till * np.maximum(h_rock, 1.5) + alluvial * 2.0)
     h = np.where(land, np.clip(h, 0, H_MAX), 0.0)
@@ -424,9 +478,7 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     tx = np.choose(np.argmax(parts, 0), [tx_rock, np.full(n, TX_SILT), np.full(n, TX_LOAM), np.full(n, TX_SILT)])
     awc = w_rock * PARENT_AWC[rock] + w_loess * AWC_SILT + w_till * AWC_TILL + alluvial * 0.5 * (AWC_SILT + AWC_LOAM)
     leached = np.exp(-np.maximum(W - W_FRESH, 0) / W_SCALE)
-    salty = land & ((lake_kind == SALT_PAN) | (lake_kind == CLOSED_LAKE)
-                    | (np.add.reduceat(np.isin(lake_kind, (CLOSED_LAKE, SALT_PAN))[grid.nbr_idx].astype(float),
-                                       grid.nbr_off[:-1]) > 0) | (PARENT_FLAGS["salty"][rock] & (mi < 1.0)))
+    salty = land & (salt_near | (PARENT_FLAGS["salty"][rock] & (mi < 1.0)))
     salty &= mi < 0.5
     fert = ((w_rock * PARENT_BASE[rock] + w_till * TILL_BASE) * leached + w_loess * LOESS_BASE * leached ** 0.5
             + alluvial * ALLUVIUM_BASE + 0.15 * andic * (W < 5))
@@ -453,6 +505,64 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
                 w_rock=w_rock, permafrost=perm, t_ground=t_ground, lake_kind=lake_kind, wet_lake=wet_lake,
                 ice=ice, cap1=np.where(land, cap1, 0.0), cap2=np.where(land, cap2, 0.0),
                 f_soil=np.where(land, (0.85 + 0.25 * fert) / F_NORM, 1.0))
+
+
+# ---------------------------------------------------------------------------
+# Zoom pixels (proposal section 5, step 6; PW-331)
+# ---------------------------------------------------------------------------
+# The same rules on a zoom's own terrain. The erosion law and the slope
+# thresholds (STEEP, the cracking clays') are in the cells' measure (m per km
+# to the steepest neighbour, ~55-110 km away), which a pixel's own slope
+# exceeds: PX_SLOPE converts (tan x 1000 / PX_SLOPE at 2 km pixels, finer
+# pixels steeper by (2 km / res)^PX_SLOPE_EXP: rough ground is self-affine),
+# measured on seven 2 km zooms of two L7 worlds (tools/zoom_soil_check.py):
+# a pixel's RMS slope is ~4-22x its cell's, and 10 puts the pixels' mean
+# erosion near the cell's in hills and on plains (cells beside a hill or the
+# sea read steeper than their own ground: their pixels erode less); the
+# exponent from 4, 2, 1 and 0.5 km zooms of one region (0.3-0.8). Soils
+# have no history, so nothing pulls the pixels back to their cell.
+PX_SLOPE, PX_SLOPE_EXP = 10.0, 0.6
+H_MIN_PX = 0.06  # m: a pixel's thinnest soil on old land (thin stony soil, not bare rock: pockets between the stones)
+PLAIN_FULL = 0.5  # a pixel whose floodplain share (zoom_vegetation) is this is all river-laid alluvium
+COLLUVIUM_M = 1.0  # m of soil washed down into the wettest hollows and slope feet
+FOREFIELD_KM, FOREFIELD_MYR = 4.0, 0.005  # ground this near a zoom glacier was under it this recently (its forefield)
+
+
+def zoom_slope(slope_tan, res_km: float) -> np.ndarray:
+    """A pixel's slope (tan) in the cells' measure (m/km, see PX_SLOPE)."""
+    return np.asarray(slope_tan, float) * 1000.0 / (PX_SLOPE * (2.0 / res_km) ** PX_SLOPE_EXP)
+
+
+def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul, cloud_jan, slope_tan,
+                 res_km: float, rock, landform, landform_age, glaciated_myr, plain, strip, hollow, loess_m,
+                 salt_near_, ice_km) -> dict:
+    """Pass 1 on a zoom's bare land pixels (no sea, lake or glacier), all
+    (n,): the pixel's own climate (lapse- and slope-corrected); slope_tan;
+    rock: the exposed rock (the zoom's surface_rock); landform,
+    landform_age, glaciated_myr: the pixel's coarse cell's; plain: the
+    share of the pixel a big river floods (zoom_vegetation), strip: the
+    share inside a smaller river's strip (alluvium too); hollow: 0..1, the
+    topographic wetness of hollows and valley floors (colluvium there);
+    loess_m: the cells' loess, interpolated; salt_near_: a salt lake or pan
+    in or beside the pixel's cell; ice_km: km to the nearest zoom glacier
+    (its forefield is freshly deglaciated). Returns mineral()'s fields."""
+    from . import landform as LF
+    n = len(temp)
+    slope = zoom_slope(slope_tan, res_km)
+    lfm = np.zeros(n, int) if landform is None else np.asarray(landform, int)
+    lfa = np.full(n, 9999.0) if landform_age is None else np.asarray(landform_age, float)
+    glac = np.full(n, 9999.0) if glaciated_myr is None else np.asarray(glaciated_myr, float)
+    glac = np.where(np.asarray(ice_km) <= FOREFIELD_KM, np.minimum(glac, FOREFIELD_MYR), glac)
+    flat = slope < STEEP
+    alluv = np.maximum(np.asarray(plain, float) / PLAIN_FULL, np.asarray(strip, float))
+    aggrading = (lfm == LF.COASTAL_PLAIN) & (lfa <= COASTAL_PLAIN_MYR) & flat
+    loess_px = np.asarray(loess_m, float) * np.clip(2.0 - slope / STEEP, 0, 1)  # (it slides off steep slopes)
+    cl = _climate(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
+    land = np.ones(n, bool)
+    zero = np.zeros(n)
+    return _mineral(cl, land, np.ones(n), zero, np.zeros(n, bool), np.zeros(n, int), np.asarray(rock, int), lfm, lfa,
+                    glac, temp, t_warm, t_cold, slope, alluv, aggrading, loess_px,
+                    np.asarray(salt_near_, bool), h_min=H_MIN_PX, colluvium=COLLUVIUM_M * np.asarray(hollow, float))
 
 
 # ---------------------------------------------------------------------------
@@ -491,11 +601,13 @@ def organic(m: dict, vg: dict) -> dict:
     burned = np.clip(vg["eq"]["burned"], 0, 1)
     gain = (1 + GRASS_GAIN * grass) * (1 - 0.5 * burned * (1 - grass))
     soc = np.where(land, npp * gain / (K10 * dfac * moist), 0.0)
-    # peat on the flooded share, where the water stays (a surplus of rain)
+    # peat on the flooded share, where the water stays (a surplus of rain), but not on the
+    # active floodplain: each flood's silt buries and aerates the litter there (alluvium, not peat;
+    # peat forms in the backswamps beyond the levees)
     sat = np.clip((m["mi"] - 0.7) / 0.5, 0, 1)
     escape = PEAT_ESCAPE * (1 + 2 * nu[IDX["Sph"]])
     alpha = PEAT_ALPHA * dfac
-    m_star = npp * escape * sat / alpha  # kg C/m2 (Clymo's equilibrium)
+    m_star = npp * escape * sat * (1 - m["alluvial"]) / alpha  # kg C/m2 (Clymo's equilibrium)
     age = np.minimum(m["age_cap"], 1e9)
     peat_c = np.where(land & (fw > 0), m_star * (1 - np.exp(-alpha * age)), 0.0)
     peat_d = peat_c / PEAT_RHO
