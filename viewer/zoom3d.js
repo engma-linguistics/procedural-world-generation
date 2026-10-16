@@ -21,6 +21,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
 const SEA_RGB = 0x1d5487, LAKE_RGB = 0x3a7cb8, SKIRT_RGB = 0x3a3128;
+// lakes by kind (1 fresh, 2 salt: the zoom's lake_kind; its pans, 3, are white land)
+const LAKE_KIND_RGB = { 1: LAKE_RGB, 2: 0xc9769f };
+const VOLC_PIN = { active: '#ff7a55', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 // a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
 const riverPx = (q, mul = 1) => mul * Math.min(1.4, Math.max(0.2, 0.2 + 0.25 * Math.log10(Math.max(q, QMIN) / QMIN)));
@@ -62,7 +65,7 @@ function streaks() {
 
 // --------------------------------------------------------------- one terrain
 class Tile {
-  // src: {nx, ny, res_km, L: {elevation, water, lake_depth, discharge, drainage_area, ice}};
+  // src: {nx, ny, res_km, L: {elevation, water, lake_depth, discharge, drainage_area, ice, lake_kind}};
   // x0, z0: its centre in scene km
   constructor(src, x0 = 0, z0 = 0) {
     Object.assign(this, { nx: src.nx, ny: src.ny, res: src.res_km, L: src.L, x0, z0 });
@@ -189,6 +192,11 @@ class Tile {
     return { mesh, skirt, triangles: idx.length / 3, base };
   }
 
+  // each lake pixel's kind: 1 fresh, 2 salt (the zoom's lake_kind layer; a zoom from before it has all fresh)
+  lakeKinds() {
+    return this.L.lake_kind || new Uint8Array(this.nx * this.ny).fill(1);
+  }
+
   // lake surfaces: a mesh on the pixel centres' grid over every cell with a
   // lake pixel at a corner: lake pixels at their level, the pixels round them
   // at the level or just under their ground where that is lower. So the
@@ -197,7 +205,7 @@ class Tile {
   // fall) the surface dips under it instead of floating.
   lakes(material) {
     const { nx, ny, L } = this, n = nx * ny, h = L.elevation, water = L.water, EPS = 3;
-    const vy = new Float32Array(n).fill(NaN);
+    const vy = new Float32Array(n).fill(NaN), vk = new Uint8Array(n), kinds = this.lakeKinds();
     let any = false;
     for (let i = 0; i < n; i++) {
       if (water[i] !== 2) continue;
@@ -211,17 +219,23 @@ class Tile {
         if (rr >= 0 && cc >= 0 && rr < ny && cc < nx && water[j] === 0 && h[j] < y) y = h[j];
       }
       vy[i] = Number.isNaN(vy[i]) ? y : Math.min(vy[i], y);
+      vk[i] = kinds[i];
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         const rr = r + dr, cc = c + dc, j = rr * nx + cc;
         if (rr < 0 || cc < 0 || rr >= ny || cc >= nx || water[j] === 2) continue;
         const v = Math.min(y, h[j] - EPS);  // (sea pixels too: under their floor)
         vy[j] = Number.isNaN(vy[j]) ? v : Math.min(vy[j], v);
+        if (!vk[j]) vk[j] = kinds[i];
       }
     }
     if (!any) return null;
-    const vid = new Int32Array(n).fill(-1), pos = [], idx = [];
+    const vid = new Int32Array(n).fill(-1), pos = [], col = [], idx = [], rgb = new THREE.Color();
     const V = (i) => {
-      if (vid[i] < 0) { const r = (i / nx) | 0; vid[i] = pos.length / 3; pos.push(this.x(i - r * nx), vy[i], this.z(r)); }
+      if (vid[i] < 0) {
+        const r = (i / nx) | 0;
+        vid[i] = pos.length / 3; pos.push(this.x(i - r * nx), vy[i], this.z(r));
+        rgb.setHex(LAKE_KIND_RGB[vk[i]] || LAKE_RGB); col.push(rgb.r, rgb.g, rgb.b);
+      }
       return vid[i];
     };
     for (let r = 0; r < ny - 1; r++) for (let c = 0; c < nx - 1; c++) {
@@ -233,11 +247,53 @@ class Tile {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     g.setIndex(idx);
     g.computeVertexNormals();
     const m = new THREE.Mesh(g, material);
     m.receiveShadow = true;
     return m;
+  }
+
+  // the layer's colours with the lake pixels painted over in the land's colour (the
+  // shore's, spread inwards ring by ring): the lake mesh alone shows the water, so
+  // no pixel staircase shows at the shore
+  landColours(colours) {
+    const { nx, ny, L } = this, n = nx * ny, water = L.water;
+    const pan = this.L.lake_kind;
+    const todo = new Uint8Array(n);
+    let front = [];
+    for (let i = 0; i < n; i++) if (water[i] === 2) { todo[i] = 1; front.push(i); }
+    let pans = false;
+    if (pan) for (let i = 0; i < n && !pans; i++) pans = pan[i] === 3;
+    if (!front.length && !pans) return colours;
+    const cv = document.createElement('canvas');
+    cv.width = nx; cv.height = ny;
+    const cx = cv.getContext('2d');
+    cx.drawImage(colours, 0, 0);
+    const img = cx.getImageData(0, 0, nx, ny), d = img.data;
+    while (front.length) {
+      const done = [], next = [];
+      for (const i of front) {
+        const r = (i / nx) | 0, c = i - r * nx;
+        let R = 0, G = 0, B = 0, k = 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          const rr = r + dr, cc = c + dc, j = rr * nx + cc;
+          if ((!dr && !dc) || rr < 0 || cc < 0 || rr >= ny || cc >= nx || todo[j] || water[j] === 1) continue;
+          R += d[4 * j]; G += d[4 * j + 1]; B += d[4 * j + 2]; k++;
+        }
+        if (k) done.push([i, R / k, G / k, B / k]); else next.push(i);
+      }
+      if (!done.length) break;  // (a lake with no land round it keeps its colour)
+      for (const [i, R, G, B] of done) { d[4 * i] = R; d[4 * i + 1] = G; d[4 * i + 2] = B; todo[i] = 0; }
+      front = next;
+    }
+    // salt pans (a closed basin's dry floor, on land): white-ish, over the shaded colours
+    if (pans) for (let i = 0; i < n; i++) if (pan[i] === 3 && water[i] === 0) {
+      for (let k = 0; k < 3; k++) d[4 * i + k] = 0.35 * d[4 * i + k] + 0.65 * [233, 226, 208][k];
+    }
+    cx.putImageData(img, 0, 0);
+    return cv;
   }
 
   // the colour texture: the layer's nx x ny colours, scaled up, with rivers
@@ -249,7 +305,7 @@ class Tile {
     cv.width = nx * S; cv.height = ny * S;
     const cx = cv.getContext('2d');
     cx.imageSmoothingEnabled = smooth;
-    cx.drawImage(colours, 0, 0, cv.width, cv.height);
+    cx.drawImage(this.landColours(colours), 0, 0, cv.width, cv.height);
     const P = (i) => { const r = (i / nx) | 0; return [(i - r * nx + 0.5) * S, (r + 0.5) * S]; };
     const wpx = (v) => riverPx(v, widthMul);
     cx.lineCap = cx.lineJoin = 'round';
@@ -355,14 +411,14 @@ export class Zoom3D {
     this.scene.add(this.hemi, this.sun, this.sun.target);
     this.group = new THREE.Group();   // terrain, lakes, sea: y in metres, scaled by exag / 1000
     this.scene.add(this.group);
-    this.pins = null; this.fallsOn = true;
+    this.pins = null; this.on = { fall: true, volcano: true }; this.marks = [];
     this.pinMat = new THREE.LineBasicMaterial({ color: 0xe8f6ff });
     this.skirtMat = new THREE.MeshBasicMaterial({ color: SKIRT_RGB, side: THREE.DoubleSide });
     this.terrainMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
     this.seaMat = new THREE.MeshStandardMaterial({ color: SEA_RGB, transparent: true, opacity: 0.8, roughness: 0.6, metalness: 0 });
     this.fallMat = new THREE.MeshLambertMaterial({ map: streaks(), emissive: 0x7a8794, transparent: true,
       depthWrite: false, side: THREE.DoubleSide });
-    this.lakeMat = new THREE.MeshStandardMaterial({ color: LAKE_RGB, roughness: 0.5, metalness: 0,
+    this.lakeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.5, metalness: 0,
       polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
     // a software renderer (no GPU): a quarter of the triangles, no shadows
     const dbg = R.getContext().getExtension('WEBGL_debug_renderer_info');
@@ -382,7 +438,8 @@ export class Zoom3D {
   }
 
   // ------------------------------------------------ building
-  // z: {nx, ny, res_km, L, falls: [{px, height_m, top_m, bottom_m, length_km, ...}], colours: canvas, smooth}
+  // z: {nx, ny, res_km, L, falls: [{px, height_m, top_m, bottom_m, length_km, ...}],
+  //     volc: [{r, c (pixel edges), top_m, height_m, active, ...}], colours: canvas, smooth}
   setZoom(z, cam) {
     for (const t of this.tiles) this.group.remove(...t.objects);
     if (this.sea) this.group.remove(this.sea);
@@ -391,6 +448,7 @@ export class Zoom3D {
     this.tiles = [t];
     this.size = Math.max(t.w, t.d);
     this.falls = z.falls.map((f, k) => ({ ...f, k, path: t.fallPath(f) }));
+    this.volcs = (z.volc || []).map((v, k) => ({ ...v, k }));
     const seaPx = z.L.water.some((w) => w === 1);
     this.sea = null;
     if (seaPx) {
@@ -452,40 +510,53 @@ export class Zoom3D {
     this.buildPins();
     this.dirty = true;
   }
-  // a pin above each fall, its label at the top
+  // a pin above each fall and volcano, its label at the top
   buildPins() {
     if (this.pins) { this.scene.remove(this.pins); this.pins.geometry.dispose(); }
     const t = this.tiles[0];
     if (!t) return;
     const s = this.opts.exag / 1000, pos = [];
     this.labels.innerHTML = '';
+    this.marks = [...this.falls.map((f) => (f.kindOf = 'fall', f)), ...this.volcs.map((v) => (v.kindOf = 'volcano', v))];
     const ranked = [...this.falls].sort((a, b) => b.height_m - a.height_m);
     const big = new Set(ranked.slice(0, 12).map((f) => f.k));
-    for (const f of this.falls) {
-      const x = t.x(f.px[1]), z = t.z(f.px[0]), y = Math.max(f.top_m ?? t.wsA[f.path[0]], 0) * s;
+    const vbig = new Set([...this.volcs].sort((a, b) => b.height_m - a.height_m).slice(0, 8).map((v) => v.k));
+    this.marks.forEach((f, pi) => {
+      const fall = f.kindOf === 'fall', isBig = (fall ? big : vbig).has(f.k);
+      let x, z, y;
+      if (fall) { x = t.x(f.px[1]); z = t.z(f.px[0]); y = Math.max(f.top_m ?? t.wsA[f.path[0]], 0) * s; }
+      else { x = t.x(f.c - 0.5); z = t.z(f.r - 0.5); y = Math.max(t.height(x, z), 0) * s; }
       pos.push(x, y, z, x, y, z);
-      f.base = new THREE.Vector3(x, y, z); f.anchor = f.base.clone(); f.pin = big.has(f.k) ? 0.07 : 0.035;
+      f.pi = pi; f.base = new THREE.Vector3(x, y, z); f.anchor = f.base.clone(); f.pin = isBig ? 0.07 : 0.035;
       const el = document.createElement('div');
-      el.className = 'z3d-fall' + (big.has(f.k) ? ' big' : '') + (f.top ? ' top' : '');
-      el.innerHTML = big.has(f.k) ? `&#9660; ${Math.round(f.height_m)} m` : '&#9660;';
-      el.title = `waterfall ${Math.round(f.height_m)} m, ${Math.round(f.discharge_m3s)} m3/s (click: fly there)`;
-      el.onclick = (e) => { e.stopPropagation(); (this.api.flyTo || ((k) => this.flyTo(k)))(f.k); };
+      el.className = `z3d-${fall ? 'fall' : 'volc'}` + (isBig ? ' big' : '') + (f.top ? ' top' : '');
+      if (fall) {
+        el.innerHTML = isBig ? `&#9660; ${Math.round(f.height_m)} m` : '&#9660;';
+        el.title = `waterfall ${Math.round(f.height_m)} m, ${Math.round(f.discharge_m3s)} m3/s (click: fly there)`;
+        el.onclick = (e) => { e.stopPropagation(); (this.api.flyTo || ((k) => this.flyTo(k)))(f.k); };
+      } else {
+        el.style.color = f.active ? VOLC_PIN.active : f.top_m < 0 ? VOLC_PIN.sea : VOLC_PIN.extinct;
+        el.innerHTML = isBig ? `&#9650; ${Math.round(f.top_m).toLocaleString('en-US')} m` : '&#9650;';
+        el.title = `${f.form || 'volcano'}, summit ${Math.round(f.top_m)} m (click: fly there)`;
+        el.onclick = (e) => { e.stopPropagation(); this.flyToVolc(f); };
+      }
       el.onmouseenter = (e) => this.api.showCard(f, e, false);
       el.onmouseleave = () => this.api.hideCard(false);
       f.el = el;
       this.labels.appendChild(el);
-    }
+    });
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     this.pins = new THREE.LineSegments(g, this.pinMat);
     this.scene.add(this.pins);
-    this.showFalls(this.fallsOn);
+    for (const k of Object.keys(this.on)) this.showMarks(k, this.on[k]);
   }
-  // the falls' pins and labels on or off (their white water stays: it's part of the river)
-  showFalls(on) {
-    this.fallsOn = on;
-    this.labels.style.display = on ? '' : 'none';
-    if (this.pins) this.pins.visible = on;
+  // the falls' (or volcanoes') pins and labels on or off (the falls' white water stays: it's part of the river)
+  showFalls(on) { this.showMarks('fall', on); }
+  showVolc(on) { this.showMarks('volcano', on); }
+  showMarks(kind, on) {
+    this.on[kind] = on;
+    for (const f of this.marks) if (f.kindOf === kind) f.el.style.display = on ? '' : 'none';
     this.dirty = true;
   }
 
@@ -528,6 +599,20 @@ export class Zoom3D {
     this.dirty = true;
   }
 
+  // fly to volcano v: look at its flank from a distance in proportion to its size
+  flyToVolc(v) {
+    const t = this.tiles[0], s = this.opts.exag / 1000;
+    if (!t) return;
+    const target = v.base.clone();
+    target.y = (Math.max(v.top_m, 0) - 0.3 * Math.max(v.height_m, 0)) * s;
+    const d = Math.max(8, 5 * t.res, 30 * Math.sqrt(Math.max(v.height_m, 0) / 1000));
+    const el = THREE.MathUtils.degToRad(26), turn = 0.35;
+    const pos = new THREE.Vector3(target.x + Math.sin(turn) * d * Math.cos(el), target.y + d * Math.sin(el), target.z + Math.cos(turn) * d * Math.cos(el));
+    pos.y = Math.max(pos.y, this.groundY(pos.x, pos.z) + 0.3);
+    this.fly = { t0: performance.now(), dur: 1400, p0: this.camera.position.clone(), q0: this.controls.target.clone(), p1: pos, q1: target };
+    this.dirty = true;
+  }
+
   // ------------------------------------------------ heights and picking
   tileAt(x, z) { for (let j = this.tiles.length - 1; j >= 0; j--) if (this.tiles[j].contains(x, z)) return this.tiles[j]; return null; }
   groundY(x, z) { const t = this.tileAt(x, z); return t ? t.height(x, z) * this.opts.exag / 1000 : -Infinity; }
@@ -559,7 +644,8 @@ export class Zoom3D {
   occlude() {
     const cam = this.camera.position, t = this.tiles[0];
     const W = this.renderer.domElement.clientWidth, H = this.renderer.domElement.clientHeight;
-    for (const f of this.falls) {
+    for (const f of this.marks) {
+      if (!this.on[f.kindOf]) continue;
       const p = f.anchor.clone().project(this.camera);
       const on = p.z < 1 && Math.abs(p.x) < 1.05 && Math.abs(p.y) < 1.05;
       let hidden = !on;
@@ -578,15 +664,16 @@ export class Zoom3D {
   placePins() {
     if (!this.pins) return;
     const a = this.pins.geometry.attributes.position, cam = this.camera.position;
-    for (const f of this.falls) {
+    for (const f of this.marks) {
       f.anchor.copy(f.base);
-      f.anchor.y += f.pin * Math.min(cam.distanceTo(f.base), this.size);
-      a.setY(2 * f.k + 1, f.anchor.y);
+      f.anchor.y += this.on[f.kindOf] ? f.pin * Math.min(cam.distanceTo(f.base), this.size) : 0;
+      a.setY(2 * f.pi + 1, f.anchor.y);
     }
     a.needsUpdate = true;
   }
   placeLabels(W, H) {
-    for (const f of this.falls) {
+    for (const f of this.marks) {
+      if (!this.on[f.kindOf]) continue;
       const p = f.anchor.clone().project(this.camera);
       const vis = p.z < 1 && Math.abs(p.x) < 1.05 && Math.abs(p.y) < 1.05;
       f.el.style.display = vis ? '' : 'none';

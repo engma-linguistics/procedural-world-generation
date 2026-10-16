@@ -1704,7 +1704,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ex = (a, b)
             lake[pix] = True
             surf[pix] = clvl[c]
-            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c),
+            lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c), "closed": ex is None,
                           "grad": max(RAPIDS_GRAD, float(cgrad[c]))})
         # A closed lake's smaller fragments (its outline broken up by the
         # noise or the coarse mask) pass their water on to its biggest one
@@ -2557,11 +2557,19 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     rec_out = np.where(rec[keep_px] >= 0, crop_idx(rec[keep_px]), -1)
     pin_src, ov_src = (a[a >= 0] for a in (crop_idx(pin_src), crop_idx(ov_src)))
     stages = {k: crop(v) for k, v in stages.items()}
+    # each lake's kind (hydrology's lake_kind: 1 open / fresh, 2 closed / salt, 3 a closed basin's dry salt pan):
+    # a coarse lake with no exit is closed; a landform basin's closed lake is salt, its playa a pan
+    lake_kind = np.zeros(npx, np.uint8)
+    for lk in lakes:
+        lake_kind[lk["px"]] = 2 if lk["closed"] else 1  # (a closed lake's fragments too)
+    lake_kind[lf_lake] = np.where(lf_sink[lf_lake], 2, 1)
+    lake_kind[lf_sink & ~lf_lake & ~lake] = 3
     (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py, clim_f, w_cp,
-     lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift) = (
+     lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift,
+     lake_kind) = (
         crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py,
                           clim_f, w_cp, lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own,
-                          own_s, barrier, rapids_lift))
+                          own_s, barrier, rapids_lift, lake_kind))
     if vf is not None:
         vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_in / 2]
         vf = {k: crop(v) for k, v in vf.items()}
@@ -2692,6 +2700,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "elevation": h.astype(np.float32),
         "water": water,
         "lake_depth": lake_depth.astype(np.float32),
+        # (lake pixels: fresh unless closed; ponds and plunge pools are fresh; pans are dry land)
+        "lake_kind": np.where(water == 2, np.where(lake_kind == 2, 2, 1), np.where(lake_kind == 3, 3, 0)).astype(np.uint8),
         "discharge": discharge.astype(np.float32),
         "drainage_area": area.astype(np.float32),
         "precipitation": precip.astype(np.float32),
@@ -2832,6 +2842,8 @@ LAYER_DOC = {
     "elevation": ("m", "ground elevation (lake beds included), sea level 0"),
     "water": ("enum", "0 land, 1 sea, 2 lake"),
     "lake_depth": ("m", "water depth in lakes (lake surface = elevation + lake_depth)"),
+    "lake_kind": ("enum", "0 none; on lake pixels 1 fresh (open), 2 salt (closed: its river ends there); "
+                          "3 a salt pan: a closed landform basin's dry floor (land)"),
     "discharge": ("m^3/s", "mean river discharge (runoff routed downhill, plus inflow at the edges; "
                            "open lakes pass theirs on at the outlet; split among delta distributaries)"),
     "drainage_area": ("km^2", "upstream area inside the region"),
