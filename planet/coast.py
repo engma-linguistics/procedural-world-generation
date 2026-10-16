@@ -24,8 +24,7 @@ Western Australia; North Atlantic swell on Ireland and Portugal).
 
 For each ocean cell, rays are traced outward over the sea in N_DIR
 directions (each cell's fan turned by its own share of a direction step,
-so the edges of islands' shadows don't line up into streaks), up to D_MAX km or the first land (or sea ice, where a half-year
-is mostly frozen). Walking
+so the edges of islands' shadows don't line up into streaks), up to D_MAX km or the first land. Walking
 back in along each ray, the sea state travelling toward the cell grows,
 using the "equivalent fetch" method, under each stretch's wind component
 along the ray (directional spreading ~cos^2 around the wind), decays as
@@ -38,9 +37,12 @@ travel away from it.
 
 Sea ice (sea_ice_share): the share of each half-year a sea cell is
 frozen, from a sine through its warmest and coldest months crossing
-climate.FREEZE. The power arriving in a half-year is scaled by the cell's
-open-water share of it, so an Arctic coast open for ~3 months gets waves
-for those months only (and its deltas lean river-dominated).
+climate.FREEZE. Frozen sea stops the waves like land. Every cell's open
+water is a window round the same warm peak, so the windows nest, and the
+power arriving in a half-year is integrated over the moments the coast
+cell is open, each with the sea that is open at that moment (PW-230): an
+Arctic coast open for ~3 months gets the waves of its open-water season
+only (and its deltas lean river-dominated).
 
 Wind speed: the climate's half-year mean winds are vectors (~1 = a steady
 trade wind, ~7 m/s). The mean wind speed is U_TRADE x |wind| + U_STORM x
@@ -218,17 +220,64 @@ def _march(c0, k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells
     return m, p0, d0
 
 
+@njit(cache=True)
+def _grow_ray(cells, m, p0, d0, land, openv, s, x, U, wdir, kfric, step_km, step_rad, l_swell, land_slow,
+              l_recover, t_storm, gx, gw):
+    """Wave power (kW/m, before the direction weight) reaching a ray's first
+    cell in season s at the moment when the sea cells open at least x of the
+    season are open (the rest frozen, stopping the waves like land), averaged
+    over the wind's spread of speeds."""
+    tot = 0.0
+    for g in range(gx.shape[0]):  # each speed of the wind's spread
+        W = 0.0
+        sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
+        for j in range(m - 1, -1, -1):
+            c = cells[j]
+            if land[c] or openv[s, c] <= x:
+                W = 0.0
+                sea_km = 0.0
+                continue
+            sea_km += step_km
+            sa = j * step_rad
+            # the waves travel inward: minus the ray's outward tangent
+            cosd = 0.0
+            for i in range(3):
+                cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
+            u = gx[g] * U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
+            grew = False
+            if cosd > 0.0 and u > 0.5:
+                fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
+                # a storm blows for only ~t_storm: the sea gets no older than that
+                # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
+                fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
+                ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
+                fs = min(fs, fd)
+                if W < ws:
+                    feq = fs * (W / ws) ** 0.75 + step_km
+                    W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
+                    grew = True
+            if not grew:
+                W *= np.exp(-step_km / l_swell)
+            W *= np.exp(-step_km * kfric[c])
+        tot += gw[g] * W
+    return tot
+
+
 @njit(cache=True, parallel=True)
-def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric, ndir, step_km, nsteps,
-               l_swell, radius, land_slow, l_recover, t_storm, gx, gw):
-    """Wave power (kW/m) arriving at each target cell, per season (see the
-    module docstring). blocked[s]: land or sea ice in season s; U[s]: mean wind
-    speed m/s, spread over speeds gx x U with weights gw (the sea grown under
-    each, the powers averaged); wdir[s]: unit wind direction (zero where calm); kfric: bottom
-    friction per km. Wind coming off land is slowed by the land's roughness
-    (by land_slow) and recovers over the sea over ~l_recover km (the marine
+def _wave_rays(targets, centers, nbr_off, nbr_idx, land, openv, U, wdir, kfric, ndir, step_km, nsteps,
+               l_swell, radius, land_slow, l_recover, t_storm, gx, gw, qx, qw):
+    """Wave power (kW/m) arriving at each target cell, per season, averaged
+    over the season (see the module docstring). openv[s]: the share of
+    season s each sea cell is open (not frozen); U[s]: mean wind speed m/s,
+    spread over speeds gx x U with weights gw (the sea grown under each, the
+    powers averaged); wdir[s]: unit wind direction (zero where calm); kfric:
+    bottom friction per km; qx, qw: quadrature nodes and weights on [0, 1]
+    over the target's open part of the season (see wave_power_winds). Wind
+    coming off land (or ice) is slowed by the land's roughness (by
+    land_slow) and recovers over the sea over ~l_recover km (the marine
     boundary layer): over a small sea the wind never gets up to speed.)"""
     ns = U.shape[0]
+    nq = qx.shape[0]
     out = np.zeros((targets.shape[0], ns))
     step_rad = step_km / radius
     wk = 4.0 / ndir  # sum over directions of cos^2 (on the downwind half) = ndir / 4
@@ -242,38 +291,22 @@ def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric
         for k in range(ndir):
             m, p0, d0 = _march(targets[t], k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells, off)
             for s in range(ns):
-                for g in range(gx.shape[0]):  # each speed of the wind's spread
-                    W = 0.0
-                    sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
-                    for j in range(m - 1, -1, -1):
-                        c = cells[j]
-                        if blocked[s, c]:
-                            W = 0.0
-                            sea_km = 0.0
-                            continue
-                        sea_km += step_km
-                        sa = j * step_rad
-                        # the waves travel inward: minus the ray's outward tangent
-                        cosd = 0.0
-                        for i in range(3):
-                            cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
-                        u = gx[g] * U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
-                        grew = False
-                        if cosd > 0.0 and u > 0.5:
-                            fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
-                            # a storm blows for only ~t_storm: the sea gets no older than that
-                            # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
-                            fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
-                            ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
-                            fs = min(fs, fd)
-                            if W < ws:
-                                feq = fs * (W / ws) ** 0.75 + step_km
-                                W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
-                                grew = True
-                        if not grew:
-                            W *= np.exp(-step_km / l_swell)
-                        W *= np.exp(-step_km * kfric[c])
-                    out[t, s] += gw[g] * wk * W
+                o_t = openv[s, targets[t]]
+                if o_t <= 0.0:
+                    continue
+                omin = 1.0  # the least open sea cell along the ray
+                for j in range(m):
+                    if not land[cells[j]] and openv[s, cells[j]] < omin:
+                        omin = openv[s, cells[j]]
+                if omin > o_t * qx[nq - 1]:  # no ice along the ray while the target is open
+                    w = _grow_ray(cells, m, p0, d0, land, openv, s, -1.0, U, wdir, kfric, step_km, step_rad,
+                                  l_swell, land_slow, l_recover, t_storm, gx, gw)
+                    out[t, s] += wk * o_t * w
+                    continue
+                for q in range(nq):
+                    w = _grow_ray(cells, m, p0, d0, land, openv, s, o_t * qx[q], U, wdir, kfric, step_km,
+                                  step_rad, l_swell, land_slow, l_recover, t_storm, gx, gw)
+                    out[t, s] += wk * o_t * qw[q] * w
     return out
 
 
@@ -355,28 +388,40 @@ def wave_power(grid, elev: np.ndarray, c: dict, ice: np.ndarray | None = None) -
     return wave_power_winds(grid, elev, *_season_winds(grid, elev, c, ice))
 
 
+# Gauss-Legendre nodes and weights on [0, 1]: the moments of a season's open water (wave_power_winds)
+ICE_QX = np.array([0.5 - 0.5 * np.sqrt(0.6), 0.5, 0.5 + 0.5 * np.sqrt(0.6)])
+ICE_QW = np.array([5.0, 8.0, 5.0]) / 18.0
+
+
 def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: np.ndarray) -> np.ndarray:
     """wave_power() from given winds: U (seasons, cells) effective speed m/s,
     D (seasons, cells, 3) unit direction the wind blows toward (0: calm),
     icy (seasons, cells) the share of the season the sea is frozen (or a
-    bool mask): mostly frozen sea (>= 0.5) stops the waves along the rays,
-    and the power arriving at a cell is scaled by its open-water share.
-    Mean over the seasons, kW/m."""
+    bool mask). Mean over the seasons, kW/m.
+
+    Sea ice (PW-230): every cell's open water is a window round the same
+    warm peak (sea_ice_share's sine), so the windows nest: a moment a share
+    x into a coast cell's open time (x uniform on [0, open share]) has
+    open exactly the sea that is open more than x of the season. The power
+    arriving over the season is the integral over those moments, each with
+    the frozen sea stopping the waves like land (ICE_QX / ICE_QW: 3-point
+    Gauss-Legendre). A coast open for 3 months gets the waves of a sea open
+    for those months, however icy the half-year is overall."""
     elev = np.asarray(elev, float)
     land = elev > 0
     ocean = ~land
     U, D = np.asarray(U, float), np.asarray(D, float)
-    icy = np.asarray(icy, float)
-    blocked = ((icy >= 0.5) | land[None, :]).astype(np.bool_)
+    openv = np.where(land[None, :], 0.0, 1.0 - np.asarray(icy, float))
     depth = np.maximum(-elev, 1.0)
     kfric = np.exp(-depth / SHELF_FRIC_M) / SHELF_FRIC_KM
     targets = np.flatnonzero(ocean)
     step = 0.45 * grid.spacing * R_KM
     nsteps = int(D_MAX / step)
-    p = _wave_rays(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, blocked, U, np.ascontiguousarray(D),
-                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0, GUST_X, GUST_W)
+    p = _wave_rays(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, openv, U, np.ascontiguousarray(D),
+                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0, GUST_X, GUST_W,
+                   ICE_QX, ICE_QW)
     out = np.zeros(grid.n)
-    out[targets] = (p * (1.0 - icy[:, targets].T)).mean(1)
+    out[targets] = p.mean(1)
     return out
 
 

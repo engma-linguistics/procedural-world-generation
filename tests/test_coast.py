@@ -87,6 +87,28 @@ def test_wave_frozen_sea_blocks(g5, monkeypatch):
     assert frozen[i] < 0.5 * open_[i]
 
 
+def test_wave_short_open_season(g5, monkeypatch):
+    """PW-230: a sea frozen most of each half-year still makes waves in its
+    open season. Frozen 70% of the time everywhere: the waves of the open
+    sea for the other 30% (the old rule, a ray blocked wherever a half-year
+    is at least half frozen, gave none). A coast that thaws before the sea
+    upwind (open 60%, its sea 30%) gets that sea's waves for the 30% only,
+    plus, for the rest of its open time, a short-fetch sea grown on its own
+    open water (an L5 cell: ~100 km)."""
+    monkeypatch.setattr(coast, "T_STORM", 72.0)
+    g = g5
+    elev = np.where((g.lon > 0) & (g.lon < 60) & (np.abs(g.lat) < 50), 300.0, -4000.0)
+    U, D = np.full((2, g.n), 12.0), np.repeat(_east(g)[None], 2, 0)
+    open_ = coast.wave_power_winds(g, elev, U, D, np.zeros((2, g.n)))
+    i = _coastal(g, elev, 20, -1)
+    icy = np.where(elev <= 0, 0.7, 0.0)[None].repeat(2, 0)
+    short = coast.wave_power_winds(g, elev, U, D, icy)
+    assert abs(short[i] / open_[i] - 0.3) < 0.01, short[i] / open_[i]
+    icy[:, i] = 0.4
+    early = coast.wave_power_winds(g, elev, U, D, icy)
+    assert 0.3 * open_[i] < early[i] < 0.6 * open_[i], early[i] / open_[i]
+
+
 @pytest.fixture(scope="module")
 def tide_world(g5):
     """A continent in a deep ocean. Its west coast has a wide, shallow shelf
