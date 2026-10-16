@@ -521,7 +521,13 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
 # sea read steeper than their own ground: their pixels erode less); the
 # exponent from 4, 2, 1 and 0.5 km zooms of one region (0.3-0.8). Soils
 # have no history, so nothing pulls the pixels back to their cell.
-PX_SLOPE, PX_SLOPE_EXP = 10.0, 0.6
+# Coarser than 2 km a pixel's slope falls more slowly, as (2 km / res)^0.3
+# (PW-345: 4 vs 2 km zooms of seven regions of an L7 world, 0-0.5, median
+# 0.27; finer, 0.4-0.9, median ~0.65): creep there is scaled so a 4 km pixel
+# is the mean of finer terrain over it (PW-125), not self-affine noise.
+# The pixel/cell ratio itself varies 4-22x with the zoom's own roughness
+# (a plain ~6x, a dry range ~13x at 1 km): the zoom's terrain, kept (PW-345 A).
+PX_SLOPE, PX_SLOPE_EXP, PX_SLOPE_EXP_COARSE = 10.0, 0.6, 0.3
 H_MIN_PX = 0.06  # m: a pixel's thinnest soil on old land (thin stony soil, not bare rock: pockets between the stones)
 PLAIN_FULL = 0.5  # a pixel whose floodplain share (zoom_vegetation) is this is all river-laid alluvium
 COLLUVIUM_M = 1.0  # m of soil washed down into the wettest hollows and slope feet
@@ -530,7 +536,8 @@ FOREFIELD_KM, FOREFIELD_MYR = 4.0, 0.005  # ground this near a zoom glacier was 
 
 def zoom_slope(slope_tan, res_km: float) -> np.ndarray:
     """A pixel's slope (tan) in the cells' measure (m/km, see PX_SLOPE)."""
-    return np.asarray(slope_tan, float) * 1000.0 / (PX_SLOPE * (2.0 / res_km) ** PX_SLOPE_EXP)
+    e = PX_SLOPE_EXP if res_km <= 2.0 else PX_SLOPE_EXP_COARSE
+    return np.asarray(slope_tan, float) * 1000.0 / (PX_SLOPE * (2.0 / res_km) ** e)
 
 
 def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul, cloud_jan, slope_tan,
