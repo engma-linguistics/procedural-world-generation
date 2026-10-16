@@ -26,8 +26,11 @@ Steps (the proposal's 1-6):
 4. Falls: each parent fall keeps the parent's drop exactly: the lip pixel
    at the parent's lip height, the next pixel down its course a plunge pool
    whose surface is the lip minus the parent's height_m, a gorge from there
-   to the parent's foot, its walls at the lip's level by the face, falling
-   to the surroundings at its mouth. Volcanoes keep the parent's summit
+   to the parent's foot along a smooth path (a fine parent's own, stored in
+   its falls as gorge_path; else a B-spline on the parent's chain), cut by
+   the distance from it: a floor, cliff walls up to the rim, a held
+   headwall above the face. Gorges are drawn features: left out of the
+   parent's means on both sides. Volcanoes keep the parent's summit
    height (the summit core is the parent's surface, bicubic, raised or
    lowered as one so its top is the parent's top_m): crater and vents as the
    parent drew them. Both carry the parent's index (parent_fall,
@@ -85,12 +88,15 @@ RIVER_AREA_MIN = 1.0  # ... and at least this many km^2
 WARP_PX = 0.4  # parent px: the rivers' and categories' warp between parent pixel centres
 HEAD_KM2 = 0.25  # km^2: draining less than this, ground is hillslope, not channel
 THRESHOLD_DEG = (26.0, 38.0)  # the hillslopes' threshold slope, soft .. rugged rock
+RELAX_X = 1.25  # hillslopes cut down to this x their threshold slope to every neighbour
 TALUS_DEG = 33.0  # apron below faces steeper than 45 degrees
 ITERATIONS = 8  # landscape passes (the parent fixes the network: fewer than a zoom's 15)
 MEAN_PASSES = 4  # final corrections keeping each parent pixel's mean
 CORE_PX = 1.5  # parent px: a volcano's summit core held at the parent's surface (and >= CORE_FINE_PX)
 CORE_FINE_PX = 8
 VOLC_CUT_M = 30.0  # m: on a cone's flanks the fine ground stays within this of the parent's cone
+GORGE_WALL_DEG = (55.0, 75.0)  # a gorge's walls below a fall: soft .. rugged rock (cliffs over their talus)
+GORGE_FRAY_KM = 0.06  # km: its rims frayed by this much (spurs and alcoves)
 POOL_DEPTH = (0.15, 3.0, 60.0)  # a plunge pool without the parent's depth: share of the drop, min, max m
 SEC_PER_YR = Z.SEC_PER_YR
 
@@ -297,12 +303,37 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     hp = np.asarray(pa.L["elevation"], float)
     wp = np.asarray(pa.L["water"])
     wsp = _wsurf(pa.L)
+    rec_p = pa.receivers()
+    # the parent's falls in the region: lip -> foot chains, and the gorge below each as a smooth
+    # path (a fine parent's own, as it drew it; else its chain's pixel centres, Catmull-Rom)
+    falls_p = pmeta["stats"].get("falls", []) or []
+    fall_links = {}  # parent link (i, j) -> fall number
+    chains, paths = {}, {}
+    gorge_p = np.zeros(pa.nx * pa.ny, bool)  # the parent's gorges: drawn features, not in the means
+    for k, f in enumerate(falls_p):
+        ch = _fall_chain(pa, rec_p, wsp, f)
+        if ch is None:
+            continue
+        r_, c_ = divmod(ch[0], pa.nx)
+        r2, c2 = divmod(ch[-1], pa.nx)
+        x1, y1 = pa.plane(np.array([r_, r2]), np.array([c_, c2]))
+        fx, fy = fr.to_plane(pa.fr.to_sphere(x1, y1))
+        lim = size_km / 2 - ramp
+        if np.abs(fx).max() > lim or np.abs(fy).max() > lim:
+            continue
+        chains[k] = ch
+        for a_, b_ in zip(ch[:-1], ch[1:]):
+            fall_links[(a_, b_)] = k
+        paths[k] = _gorge_path(pa, ch, f, S_)  # (parent plane, km)
+        gorge_p |= _parent_gorge(pa, ch, f, paths[k])
+    hp_f = _fill(hp, gorge_p.reshape(hp.shape))  # (the parent's ground with its gorges filled to their rims)
     target = pa.bicubic(hp, pr, pc)
-    smooth_t = pa.bicubic(_box3(hp) / 9, pr, pc)  # (over 3x3 parent px)
+    target_f = pa.bicubic(hp_f, pr, pc)
+    fill_t = target_f
     # local relief per parent pixel (rms difference to its 4 neighbours), the rock's ruggedness
     d2 = np.zeros_like(hp)
     for ax in (0, 1):
-        g = np.diff(hp, axis=ax)
+        g = np.diff(hp_f, axis=ax)
         pad = [(0, 0), (0, 0)]
         pad[ax] = (1, 0)
         d2 += np.pad(g * g, pad, mode="edge")
@@ -316,8 +347,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     noise = ZK.fbm(Pk, lam, Z._octaves(lam, 4 * res), 0.55, S_ + 1) / 0.17
     ridge = ZK.ridged(Pk, lam, Z._octaves(lam, 4 * res), 0.55, S_ + 2) - 0.5
     amp = np.where(target > 0, np.clip(0.35 * relief * rug, 1.0, 300.0), np.clip(0.1 * relief, 0.0, 20.0))
-    h = target + w_in * amp * ((1 - rug) * noise + rug * 1.5 * ridge)
-    detail = h - target  # (also steers the drainage of the landscape pass: no D8 grain)
+    h = target_f + w_in * amp * ((1 - rug) * noise + rug * 1.5 * ridge)
+    detail = h - target_f  # (also steers the drainage of the landscape pass: no D8 grain)
     # warp for the categorical layers (parent px)
     wr = WARP_PX * np.clip(ZK.fbm(Pk, 1.5 * rp, 3, 0.5, S_ + 3) / 0.17, -1.25, 1.25)
     wc = WARP_PX * np.clip(ZK.fbm(Pk, 1.5 * rp, 3, 0.5, S_ + 4) / 0.17, -1.25, 1.25)
@@ -327,7 +358,6 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         return pa.nearest(name, cr, cc) if name in pa.L else np.full(npx, default)
 
     # --- 3a. rivers ------------------------------------------------------
-    rec_p = pa.receivers()
     q_p = np.asarray(pa.L["discharge"], float).ravel()
     a_p = np.asarray(pa.L["drainage_area"], float).ravel()
     ws_flat = wsp.ravel()
@@ -337,25 +367,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     box = ((rr_p >= np.floor(pr.min()) - 2) & (rr_p <= np.ceil(pr.max()) + 2)
            & (cc_p >= np.floor(pc.min()) - 2) & (cc_p <= np.ceil(pc.max()) + 2))
     riv_p &= box
-    # the parent's falls in the region: lip -> foot chains
-    falls_p = pmeta["stats"].get("falls", []) or []
-    fall_links = {}  # parent link (i, j) -> fall number
-    chains = {}
-    for k, f in enumerate(falls_p):
-        ch = _fall_chain(pa, rec_p, wsp, f)
-        if ch is None:
-            continue
-        r_, c_ = divmod(ch[0], pa.nx)
-        r2, c2 = divmod(ch[-1], pa.nx)
-        x1, y1 = pa.plane(np.array([r_, r2]), np.array([c_, c2]))
-        fx, fy = fr.to_plane(pa.fr.to_sphere(x1, y1))
-        lim = size_km / 2 - ramp
-        if np.abs(fx).max() > lim or np.abs(fy).max() > lim:
-            continue
-        chains[k] = ch
+    for ch in chains.values():
         riv_p[ch[:-1]] = True
-        for a_, b_ in zip(ch[:-1], ch[1:]):
-            fall_links[(a_, b_)] = k
     up_main = np.full(pa.nx * pa.ny, -1)
     order_q = np.argsort(q_p)
     for i in order_q:  # (ascending q: the biggest tributary wins)
@@ -372,12 +385,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         j = rec_p[i]
         if riv_p[i] and j >= 0 and j not in lips:
             bed_p[j] = min(bed_p[j], bed_p[i] - 0.01)
-    seg_pts, seg_z, seg_q, seg_a, seg_fall, seg_t, seg_link, seg_pin = [], [], [], [], [], [], [], []
-    pinned = {i for ch in chains.values() for i in ch[:2]}  # (a fall's lip and the node below: not warped)
+    seg_pts, seg_z, seg_q, seg_a, seg_t, seg_link, seg_pin = [], [], [], [], [], [], []
+    pinned = {i for ch in chains.values() for i in (ch[0], ch[-1])}  # (a fall's lip and foot: not warped)
     river_segs = []
     xc_p, yc_p = pa.plane(rr_p, cc_p)
     for i in links:
         j = rec_p[i]
+        if (i, j) in fall_links:  # (a gorge: drawn along its path in step 4)
+            continue
         a0 = up_main[i] if up_main[i] >= 0 else -1
         b1 = rec_p[j] if (rec_p[j] >= 0 and riv_p[j]) else -1
         p1 = np.array([xc_p[i], yc_p[i]])
@@ -394,7 +409,6 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         seg_z.append(bed_p[i] + (bed_p[j] - bed_p[i]) * t[:, 0])
         seg_q.append(np.full(m + 1, q_p[i]))
         seg_a.append(np.full(m + 1, a_p[i]))
-        seg_fall.append(np.full(m + 1, fall_links.get((i, j), -1)))
         seg_link.append(np.full(m + 1, i))
         tt_ = t[:, 0]  # (the warp fades to nothing at a fall's nodes, continuous at every node)
         seg_pin.append((Z.smoothstep(0.0, 0.5, tt_) if i in pinned else 1.0)
@@ -408,7 +422,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         pts = np.concatenate(seg_pts)
         tt = np.concatenate(seg_t)
         zz, qq, aa = np.concatenate(seg_z), np.concatenate(seg_q), np.concatenate(seg_a)
-        ff, ll = np.concatenate(seg_fall), np.concatenate(seg_link)
+        ll = np.concatenate(seg_link)
         # the courses warped (a planet-fixed field: links join; none at a fall's nodes, its lip stays put)
         Pp = pa.fr.to_sphere(pts[:, 0], pts[:, 1])
         bump = np.concatenate(seg_pin)
@@ -421,16 +435,16 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         ri = np.floor(nb / 2 - fy / res).astype(int)
         ok = (ci >= 0) & (ci < nb) & (ri >= 0) & (ri < nb)
         k_px = ri * nb + ci
-        for s in range(2):  # fall reaches: the lip pixel at the top, every other at the foot (below)
-            sel = ok & (ff >= 0) if s else ok & (ff < 0)
-            np.minimum.at(bed, k_px[sel], zz[sel])
-            np.maximum.at(c_q, k_px[sel], qq[sel])
-            np.maximum.at(c_a, k_px[sel], aa[sel])
-            course[k_px[sel]] = True
+        np.minimum.at(bed, k_px[ok], zz[ok])
+        np.maximum.at(c_q, k_px[ok], qq[ok])
+        np.maximum.at(c_a, k_px[ok], aa[ok])
+        course[k_px[ok]] = True
         # the parent's rivers from outside the built area come in at the first node of their course
         # inside the region (not in the halo: its ring is an outlet, the water could leave again at once)
         at0 = (tt == 0) & ok
         node_px = dict(zip(ll[at0].tolist(), k_px[at0].tolist()))
+        for ch in chains.values():  # (a gorge's lip: its link is drawn in step 4)
+            node_px.setdefault(ch[0], _px_of(fr, pa, ch[0], nb, res))
         # (once a river: one that left the built area and comes back already carries its water)
         been_in = np.zeros(len(rec_p), bool)
         for i in order_p[::-1]:
@@ -529,84 +543,125 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     pool = np.zeros(npx, bool)
     pool_d = np.zeros(npx)
     fall_list = []
-    # fall reaches' fine pixels in downstream order: walk the samples of each chain
-    if chains:
-        k_all = np.where(ok, k_px, -1)
-        for k, ch in chains.items():
-            f = falls_p[k]
-            top = float(round(ws_flat[ch[0]], 2))
-            bottom = float(round(top - f["height_m"], 2))
-            sel = (ff == k) & (k_all >= 0)
-            # samples in downstream order: by link position along the chain, then t
-            pos = {a_: s_ for s_, a_ in enumerate(ch)}
-            o = np.lexsort((tt[sel], np.array([pos[int(v)] for v in ll[sel]])))
-            seq = k_all[sel][o]
-            seq = seq[np.r_[True, seq[1:] != seq[:-1]]]
-            lip = int(_px_of(fr, pa, ch[0], nb, res))
-            if lip in seq:
-                seq = seq[int(np.flatnonzero(seq == lip)[0]):]
+    # each fall: the lip at the parent's lip height, a plunge pool its drop below, and the gorge from
+    # there to the foot laid along the fall's path (not the pixels of a D8 chain: at 50 m and 25 m they
+    # were a staircase), cut by the distance from it: a floor falling evenly along it, walls rising at
+    # a cliff's gradient to the rim (the surroundings, the parent's gorge filled; at the lip's level by
+    # the face), held; the ground beyond the rim is the landscape pass's
+    gorge = np.zeros(npx, bool)  # (drawn features: kept out of the parent's means, as the parent's own)
+    g_wall, g_floor, g_out = np.zeros(npx, bool), np.zeros(npx), np.zeros((npx, 2))  # (walls: their floor
+    # and the way out from the path: cut again into the finished ground)
+    for k, ch in chains.items():
+        f = falls_p[k]
+        top = float(round(ws_flat[ch[0]], 2))
+        bottom = float(round(top - f["height_m"], 2))
+        Q = np.column_stack(fr.to_plane(pa.fr.to_sphere(paths[k][:, 0], paths[k][:, 1])))  # (fine plane, km)
+        S = np.r_[0.0, np.cumsum(np.hypot(*np.diff(Q, axis=0).T))]
+        L_ = float(S[-1])
+        lip = int(_px_of(fr, pa, ch[0], nb, res))
+        foot_ = int(_px_of(fr, pa, ch[-1], nb, res))
+        # the path's pixels, lip to foot, none twice
+        sd = np.linspace(0, L_, max(2, int(np.ceil(L_ / (0.15 * res)))) + 1)
+        qx, qy = np.interp(sd, S, Q[:, 0]), np.interp(sd, S, Q[:, 1])
+        kq = np.floor(nb / 2 - qy / res).astype(int) * nb + np.floor(qx / res + nb / 2).astype(int)
+        seq = []
+        for v in kq[np.r_[True, kq[1:] != kq[:-1]]].tolist():
+            if v in seq:
+                del seq[seq.index(v) + 1:]
             else:
-                seq = np.r_[lip, seq]
-            if len(seq) < 2:
-                continue
-            q_f = float(f.get("discharge_m3s", q_p[ch[0]]))
-            w_riv = 4.0 * np.sqrt(max(q_f, 0.0)) / 1000.0
-            ws_foot = min(float(bed_p[ch[-1]]), bottom)
-            # gorge: lip -> foot at the foot's level; the lip pixel at the top
-            gz = np.minimum(np.linspace(bottom, ws_foot, len(seq) - 1), bottom - 0.01 * np.arange(len(seq) - 1))
-            gz[0] = bottom
-            hw[seq[1:]] = gz
-            hw[lip] = top
-            course[seq] = True
-            adj = (np.abs(seq[:-1] // nb - seq[1:] // nb) <= 1) & (np.abs(seq[:-1] % nb - seq[1:] % nb) <= 1)
-            c_rec[seq[:-1][adj]] = seq[1:][adj]
-            land[seq] = True
-            # plunge pool at the face's foot
-            depth = f.get("plunge_pool_m") or float(np.clip(POOL_DEPTH[0] * f["height_m"], POOL_DEPTH[1], POOL_DEPTH[2]))
-            pr_px = max(0.5 * max(2 * w_riv, res) / res, 0.5)
-            r0, c0 = divmod(int(seq[1]), nb)
-            dd = np.hypot(row - r0, col - c0)
-            pmask = (dd <= pr_px) & (np.arange(npx) != lip) & ~sea
-            # (only below the lip's side: not the pixels upstream of it)
-            pmask &= hw <= top
-            pool |= pmask
-            pool_d = np.where(pmask, depth, pool_d)
-            hw = np.where(pmask, bottom, hw)
-            # gorge width and walls at the lip's level by the face, the surroundings' at the mouth
-            wg = max(4 * w_riv, res)
-            wall_w = max(2 * res, 0.1)
-            rs, cs = np.divmod(seq[1:], nb)
-            s_along = np.arange(1, len(seq)) / max(len(seq) - 1, 1)
-            from_g = np.full(npx, np.inf)
-            frac_g = np.zeros(npx)
-            for (r1, c1, sa) in zip(rs, cs, s_along):
-                lo_r, hi_r = max(r1 - 12, 0), min(r1 + 13, nb)
-                lo_c, hi_c = max(c1 - 12, 0), min(c1 + 13, nb)
-                rr, cc_ = np.mgrid[lo_r:hi_r, lo_c:hi_c]
-                idx = (rr * nb + cc_).ravel()
-                dk = np.hypot(rr - r1, cc_ - c1).ravel() * res
-                better = dk < from_g[idx]
-                from_g[idx[better]] = dk[better]
-                frac_g[idx[better]] = sa
-            gorge = (from_g <= 0.5 * wg) & ~course & ~pool & land
-            hw = np.where(gorge, np.interp(frac_g, s_along, gz), hw)
-            wall = (from_g > 0.5 * wg) & (from_g <= 0.5 * wg + wall_w) & ~course & ~pool & land & ~fixed
-            wall_z = top - (top - smooth_t) * np.clip(frac_g, 0, 1) ** 2  # (the surroundings, smoothed: a
-            # parent's own gorge is a staircase of its pixels)
-            hw = np.where(wall, np.maximum(wall_z, smooth_t), hw)
-            fixed |= gorge | wall | pool | course
-            foot = int(seq[-1])
-            lip_r, lip_c = divmod(lip, nb)
-            ll_ = Z._latlon(fr.to_sphere(np.array([px[lip]]), np.array([py[lip]]))[0])
-            fall_list.append({**{a: v for a, v in f.items() if a not in ("px", "lat", "lon", "foot_px", "pool_px")},
-                              "px": [lip_r - hb, lip_c - hb], "lat": round(ll_[0], 4), "lon": round(ll_[1], 4),
-                              "top_m": top, "bottom_m": bottom, "plunge_pool_m": round(float(depth), 1),
-                              # (the parent's chain, lip to foot, less the face: as the parent drew it)
-                              "gorge_km": round(max(float(np.hypot(np.diff(np.array(ch) // pa.nx), np.diff(np.array(ch) % pa.nx)).sum()) * rp - res, 0.0), 2),
-                              "pool_px": [int(seq[1]) // nb - hb, int(seq[1]) % nb - hb],
-                              "foot_px": [foot // nb - hb, foot % nb - hb],
-                              "power_gw": round(9.81e-6 * q_f * float(f["height_m"]), 3),
-                              "parent_fall": k, "lineage": [*f.get("lineage", []), k]})
+                seq.append(v)
+        seq = seq[seq.index(lip):] if lip in seq else [lip, *seq]
+        seq = np.array(seq[:seq.index(foot_) + 1] if foot_ in seq else [*seq, foot_])
+        if len(seq) < 2:
+            continue
+        q_f = float(f.get("discharge_m3s", q_p[ch[0]]))
+        w_riv = 4.0 * np.sqrt(max(q_f, 0.0)) / 1000.0
+        ws_foot = min(float(bed_p[ch[-1]]), bottom)
+        hf = max(2 * w_riv, 0.6 * res)  # the floor's half width (4 river widths, at least a pixel)
+        g_min = 1000.0 * np.tan(np.radians(GORGE_WALL_DEG[0]))  # m/km
+        margin = hf + 2.0 * (max(top - ws_foot, 0.0) + 200.0) / g_min + 2 * res
+        rs_, cs_ = np.divmod(seq, nb)
+        lo_r, hi_r = max(int(rs_.min() - margin / res), 0), min(int(rs_.max() + margin / res) + 1, nb)
+        lo_c, hi_c = max(int(cs_.min() - margin / res), 0), min(int(cs_.max() + margin / res) + 1, nb)
+        ib = (np.arange(lo_r, hi_r)[:, None] * nb + np.arange(lo_c, hi_c)[None, :]).ravel()
+        d, sp = _path_dist(px[ib], py[ib], Q, S)
+        # the face between the lip's pixel and the next; the floor from the pool on
+        s_face = float(_path_dist(np.array([0.5 * (px[lip] + px[seq[1]])]),
+                                  np.array([0.5 * (py[lip] + py[seq[1]])]), Q, S)[1][0])
+        s1 = float(_path_dist(px[seq[1:2]], py[seq[1:2]], Q, S)[1][0])
+        frac = np.clip((sp - s1) / max(L_ - s1, 1e-6), 0.0, 1.0)
+        zf = bottom + (ws_foot - bottom) * frac
+        rim = np.maximum(fill_t[ib], zf)
+        rim = np.where(rim < top, top - (top - rim) * frac ** 2, rim)
+        # walls: one rock's gradient along the gorge (the caprock's: a rock per pixel drew facets), their
+        # rims frayed into spurs and alcoves (planet-fixed noise, km scales: finer zooms agree)
+        # (its rims frayed by a smooth planet-fixed field: finer zooms fray them the same way; slow enough
+        # that a wall still climbs all the way to its rim; sampled along the path instead, it drew spokes
+        # round the inside of a bend)
+        rug_g = float(np.median(rug[ib]))
+        lam_g = 10 * GORGE_FRAY_KM
+        n1 = np.clip(ZK.fbm(Pk[ib], lam_g, 2, 0.5, S_ + 21) / 0.17, -1.25, 1.25)
+        grad = 1000.0 * np.tan(np.radians(GORGE_WALL_DEG[0] + (GORGE_WALL_DEG[1] - GORGE_WALL_DEG[0]) * rug_g))
+        e_ = d - hf
+        e_ = e_ + GORGE_FRAY_KM * n1 * Z.smoothstep(0.0, 4 * GORGE_FRAY_KM, e_)
+        cut = zf + np.maximum(e_, 0.0) * grad
+        free = (sp >= s_face) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib] & ~gorge[ib]
+        flo = free & (d <= hf)
+        wal = free & (d > hf) & (cut < rim - 0.5)
+        hw[ib[flo | wal]] = cut[flo | wal]
+        # the headwall: the ground just above the face, as far out as the walls reach, held at the rim
+        # (left to the pass, it drained over the face into the pool, was built up from the pool's level
+        # and the parent's means then stacked a block's volume on it: pillars round the lip)
+        head = ((sp < s_face) & (sp >= s_face - 2 * res) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib]
+                & ~gorge[ib] & ((d - hf) * grad < rim - bottom) & (ib != lip))
+        hw[ib[head]] = np.maximum(rim[head], top)
+        g_wall[ib[wal]] = True
+        g_floor[ib[wal]] = zf[wal]
+        sc = np.clip(sp[wal], 0.0, L_)
+        g_out[ib[wal]] = np.column_stack([px[ib[wal]] - np.interp(sc, S, Q[:, 0]),
+                                          py[ib[wal]] - np.interp(sc, S, Q[:, 1])]) / d[wal][:, None]
+        land[ib[flo]] = True
+        # the course down its floor, falling all the way
+        on = np.searchsorted(ib, seq[1:])
+        gz = np.minimum.accumulate(np.minimum(zf[on], bottom) - 1e-3 * np.arange(len(on)))
+        hw[seq[1:]] = gz
+        hw[lip] = top
+        course[seq] = True
+        land[seq] = True
+        c_rec[seq[:-1]] = seq[1:]
+        # plunge pool at the face's foot
+        depth = f.get("plunge_pool_m") or float(np.clip(POOL_DEPTH[0] * f["height_m"], POOL_DEPTH[1], POOL_DEPTH[2]))
+        pr_px = max(0.5 * max(2 * w_riv, res) / res, 0.5)
+        r0, c0 = divmod(int(seq[1]), nb)
+        pm = (np.hypot(ib // nb - r0, ib % nb - c0) <= pr_px) & (ib != lip) & ~sea[ib] & (sp >= s_face)
+        pm &= hw[ib] <= top  # (only below the lip's side: not the pixels upstream of it)
+        pmask = np.zeros(npx, bool)
+        pmask[ib[pm]] = True
+        pool |= pmask
+        pool_d = np.where(pmask, depth, pool_d)
+        hw = np.where(pmask, bottom, hw)
+        held = np.zeros(npx, bool)
+        held[ib[flo | wal | head]] = True
+        held[seq[1:]] = True
+        gorge |= held | pmask
+        fixed |= gorge | course
+        lip_r, lip_c = divmod(lip, nb)
+        ll_ = Z._latlon(fr.to_sphere(np.array([px[lip]]), np.array([py[lip]]))[0])
+        # the path as drawn (a finer zoom of this one lays its gorge along it), every pixel or so
+        ks = np.unique(np.r_[np.searchsorted(S, np.arange(0, L_, max(res, L_ / 200))), len(S) - 1])
+        Pq = fr.to_sphere(Q[ks, 0], Q[ks, 1])
+        foot = int(seq[-1])
+        fall_list.append({**{a: v for a, v in f.items() if a not in ("px", "lat", "lon", "foot_px", "pool_px")},
+                          "px": [lip_r - hb, lip_c - hb], "lat": round(ll_[0], 4), "lon": round(ll_[1], 4),
+                          "top_m": top, "bottom_m": bottom, "plunge_pool_m": round(float(depth), 1),
+                          "gorge_km": round(max(L_ - s_face, 0.0), 2),
+                          "gorge_path": [[round(float(a), 5) for a in Z._latlon(P_)] for P_ in Pq],
+                          "gorge_half_km": round(float(np.percentile(d[flo | wal], 95)) + 0.5 * res, 3)
+                          if (flo | wal).any() else round(hf, 3),
+                          "pool_px": [int(seq[1]) // nb - hb, int(seq[1]) % nb - hb],
+                          "foot_px": [foot // nb - hb, foot % nb - hb],
+                          "power_gw": round(9.81e-6 * q_f * float(f["height_m"]), 3),
+                          "parent_fall": k, "lineage": [*f.get("lineage", []), k]})
     land = ~sea & (~lake | course) & ~pool
     lake = lake & ~course
     vol_list = []
@@ -670,7 +725,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
 
     # --- 5. landscape ----------------------------------------------------
     thr = 1000.0 * np.tan(np.radians(THRESHOLD_DEG[0] + (THRESHOLD_DEG[1] - THRESHOLD_DEG[0]) * rug))  # m/km
-    gy, gx = np.gradient(np.where(wp == 0, hp, np.maximum(hp, 0)), rp)
+    gy, gx = np.gradient(np.where(wp == 0, hp_f, np.maximum(hp_f, 0)), rp)
     logC = np.log(np.maximum(_box3(np.hypot(gx, gy)).ravel() / 9 * rp, 1e-2))  # slope = grad at a parent pixel's area
     logC0 = logC.copy()  # (the fit stays within e^2.5 of it: a block of held pixels can't run it away)
     var = 0.3 * ZK.fbm(Pk, 0.5 * rp, 3, 0.5, S_ + 6) / 0.17
@@ -701,16 +756,24 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     def per_block(v):
         return _box3(v.reshape(pa.ny, pa.nx)).ravel()
 
+    # (a fall's gorge is drawn, not shaped by the pass: the parent's gorges and the fine ones are left
+    # out of the means on both sides; counted in, the fine gorge's volume, on another path than the
+    # parent's, came back as ridges along its walls)
     cnt3 = per_block(cnt.astype(float))
-    T3 = per_block(T_own * cnt) / np.maximum(cnt3, 1)
-    ok3 = cnt3 >= 0.3 * 9 * (rp / res) ** 2
+    cnt_k = cnt * ~gorge_p
+    cnt3k = per_block(cnt_k.astype(float))
+    T3 = per_block(T_own * cnt_k) / np.maximum(cnt3k, 1)
+    cntf3 = per_block(np.bincount(own, ~gorge, minlength=nown).astype(float))
+    ok3 = (cnt3k >= 0.3 * 9 * (rp / res) ** 2) & (cntf3 >= 0.3 * cnt3)
 
     def block_gap(hw_):
         """Per parent pixel: (its block's target - fine mean) spread over the
-        block's movable pixels, and their count."""
+        block's movable pixels, and their count (gorges left out)."""
         n_nf = per_block(np.bincount(own, active, minlength=nown).astype(float))
-        m3 = per_block(np.bincount(own, ground(hw_), minlength=nown)) / np.maximum(cnt3, 1)
-        return np.where(ok3 & (n_nf >= 0.3 * cnt3), (T3 - m3) * cnt3 / np.maximum(n_nf, 1), 0.0), n_nf
+        m3 = per_block(np.bincount(own, np.where(gorge, 0.0, ground(hw_)), minlength=nown)) / np.maximum(cntf3, 1)
+        # (spread over at least half the block: a few movable pixels among held ones took a block's
+        # whole gap and stood as pillars, e.g. at a gorge's head)
+        return np.where(ok3 & (n_nf >= 0.3 * cntf3), (T3 - m3) * cntf3 / np.maximum(np.maximum(n_nf, 0.5 * cntf3), 1), 0.0), n_nf
 
     def fine_of(v):
         return pa.bicubic(v.reshape(pa.ny, pa.nx), pr, pc)
@@ -738,6 +801,12 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     hw = np.where(active, hw + np.clip(0.04 * relief, 0.3, 12.0) * tex, hw)
     # talus: aprons at ~33 degrees below faces steeper than 45
     hw = _talus(hw, active, nb, res)
+    # hillslopes no steeper than their threshold: the stream-power pass caps a slope only along the
+    # flow, so two pixels draining apart stood hundreds of metres apart (needles and sawtooth crests at
+    # 50 and 25 m); cut down to RELAX_X x the threshold to every hillslope neighbour (the held
+    # features, walls and faces, stay steep), the volume put back at the blocks' scale below
+    s_max = RELAX_X * thr
+    hw = _relax(hw, active, s_max, nb, res)
     # the blocks' means: smooth corrections on the hillslopes (a cone's flanks no higher than the parent's cone)
     hw = np.where(active, np.clip(hw, vol_floor, vol_cap), hw)
     for _ in range(MEAN_PASSES):
@@ -746,9 +815,30 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # parent pixel, the base jumped at their edges and drew their outlines)
         hw = np.where(active, np.maximum(hw + fine_of(block_gap(hw)[0]), np.maximum(lb + 0.1 * (hw - lb), 0.5)), hw)
         hw = np.where(active, np.clip(hw, vol_floor, vol_cap), hw)
+        hw = _relax(hw, active, s_max, nb, res, needles=True)  # (the corrections leave no needle)
     # back to the parent's surface at the region's edge
     blend = active  # (the imposed courses keep their beds: the parent's, so the edge still meets it)
     hw = np.where(blend, w_in * hw + (1 - w_in) * np.maximum(target, 0.5), hw)
+    # the gorges' walls no higher than the ground at their rims, straight out from the path (held at
+    # the parent's surface through the pass, a rim stood as a ridge where the fine ground beyond it is
+    # a valley)
+    if g_wall.any():
+        iw = np.flatnonzero(g_wall & ~pool)
+        rim_h = np.full(len(iw), np.inf)
+        todo = np.ones(len(iw), bool)
+        for m_ in range(1, 2 * nb):
+            if not todo.any():
+                break
+            jx = px[iw] + m_ * res * g_out[iw, 0]
+            jy = py[iw] + m_ * res * g_out[iw, 1]
+            jc, jr = np.floor(jx / res + nb / 2).astype(int), np.floor(nb / 2 - jy / res).astype(int)
+            inside = (jc >= 0) & (jc < nb) & (jr >= 0) & (jr < nb)
+            j_ = np.clip(jr, 0, nb - 1) * nb + np.clip(jc, 0, nb - 1)
+            out_ = todo & inside & ~gorge[j_] & ~pool[j_]
+            rim_h[out_] = hw[j_[out_]]
+            todo &= inside & ~out_
+        hw[iw] = np.clip(rim_h, g_floor[iw], hw[iw])
+        hw = _relax(hw, g_wall & ~pool, RELAX_X * thr, nb, res, needles=True)  # (a wall's pixel left standing alone)
     log(f"  landscape pass: {ITERATIONS} iterations [{time.time() - t0:.1f}s]")
 
     # --- drainage of the finished surface --------------------------------
@@ -955,6 +1045,92 @@ def _px_of(fr, pa: _Parent, i: int, nb: int, res: float) -> int:
     return int(np.floor(nb / 2 - fy[0] / res)) * nb + int(np.floor(fx[0] / res + nb / 2))
 
 
+def _path_dist(x: np.ndarray, y: np.ndarray, Q: np.ndarray, S: np.ndarray):
+    """Distance (km) of points (x, y) from the polyline Q (k, 2), and how far
+    along it (km, S its vertices') their nearest point is: negative before
+    its start (along the first segment, extended)."""
+    d = np.full(len(x), np.inf)
+    s = np.zeros(len(x))
+    for j in range(len(Q) - 1):
+        vx, vy = Q[j + 1, 0] - Q[j, 0], Q[j + 1, 1] - Q[j, 1]
+        ln2 = vx * vx + vy * vy
+        if ln2 <= 0:
+            continue
+        t_raw = ((x - Q[j, 0]) * vx + (y - Q[j, 1]) * vy) / ln2
+        t = np.clip(t_raw, 0.0, 1.0)
+        dj = np.hypot(x - Q[j, 0] - t * vx, y - Q[j, 1] - t * vy)
+        better = dj < d
+        d = np.where(better, dj, d)
+        s = np.where(better, S[j] + (np.minimum(t_raw, 1.0) if j == 0 else t) * np.sqrt(ln2), s)
+    return d, s
+
+
+def _gorge_path(pa: _Parent, ch: list[int], f: dict, seed: int) -> np.ndarray:
+    """A fall's gorge, lip -> foot, as a smooth path in the parent's plane
+    (km, (k, 2)): a fine parent's own path, as it drew it (its ends moved to
+    the lip's and the foot's pixel centres, where the courses above and
+    below meet it); else a cubic B-spline on the chain's pixel centres (through
+    its ends only: through every centre, Catmull-Rom, it kept the D8 chain's
+    elbows), warped as the parent's rivers are (none at its ends)."""
+    r, c = np.divmod(np.asarray(ch), pa.nx)
+    P = np.column_stack(pa.plane(r, c))
+    if f.get("gorge_path"):
+        X = np.array([latlon_to_xyz(a, b) for a, b in f["gorge_path"]])
+        G = np.column_stack(pa.fr.to_plane(X))
+        far = (np.hypot(*(G - P[0]).T) > 0.5 * pa.rp) & (np.hypot(*(G - P[-1]).T) > 0.5 * pa.rp)
+        return np.vstack([P[:1], G[far], P[-1:]])
+    ext = np.vstack([2 * P[0] - P[1], P, 2 * P[-1] - P[-2]])
+    t = np.linspace(0, 1, 9)[:-1, None]
+    out = []
+    for i in range(len(P) - 1):
+        p0, p1, p2, p3 = ext[i:i + 4]
+        out.append(((1 - t) ** 3 * p0 + (3 * t ** 3 - 6 * t ** 2 + 4) * p1
+                    + (-3 * t ** 3 + 3 * t ** 2 + 3 * t + 1) * p2 + t ** 3 * p3) / 6)
+    Q = np.vstack([*out, P[-1:]])
+    S = np.r_[0.0, np.cumsum(np.hypot(*np.diff(Q, axis=0).T))]
+    taper = np.sin(np.pi * S / max(S[-1], 1e-9))
+    Pk = np.ascontiguousarray(pa.fr.to_sphere(Q[:, 0], Q[:, 1]) * R_KM)
+    amp = min(WARP_PX * pa.rp, 0.1 * S[-1])  # (a short gorge: no more than a gentle bend)
+    for ax, k in ((0, 11), (1, 12)):  # (seed: the build's; the courses' warp field)
+        Q[:, ax] += amp * taper * np.clip(ZK.fbm(Pk, 2 * pa.rp, 2, 0.5, seed + k) / 0.17, -1.25, 1.25)
+    return Q
+
+
+def _parent_gorge(pa: _Parent, ch: list[int], f: dict, path: np.ndarray) -> np.ndarray:
+    """The parent's pixels of a fall's gorge (flat mask): a fine parent's
+    floor and walls (within gorge_half_km of its path), else its chain
+    between the lip and the foot."""
+    m = np.zeros(pa.nx * pa.ny, bool)
+    half = f.get("gorge_half_km")
+    if f.get("gorge_path") and half:
+        r0, r1 = np.divmod(np.asarray(ch), pa.nx)
+        pad = int(np.ceil(half / pa.rp)) + 2
+        rr, cc = np.mgrid[max(r0.min() - pad, 0):min(r0.max() + pad + 1, pa.ny),
+                          max(r1.min() - pad, 0):min(r1.max() + pad + 1, pa.nx)]
+        x, y = pa.plane(rr.ravel(), cc.ravel())
+        S = np.r_[0.0, np.cumsum(np.hypot(*np.diff(path, axis=0).T))]
+        d, s = _path_dist(x, y, path, S)
+        sel = (d <= half) & (s > 0.5 * pa.rp)
+        m[(rr.ravel() * pa.nx + cc.ravel())[sel]] = True
+    else:
+        m[np.asarray(ch[1:-1], int)] = True
+    return m
+
+
+def _fill(h: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """h with its masked pixels filled from their neighbours, ring by ring."""
+    out, valid = h.copy(), ~mask
+    for _ in range(64):
+        if valid.all():
+            break
+        sm = _box3(np.where(valid, out, 0.0))
+        n_ = _box3(valid.astype(float))
+        new = ~valid & (n_ > 0)
+        out[new] = sm[new] / n_[new]
+        valid = valid | new
+    return out
+
+
 def _on_loops(rec: np.ndarray, stuck: np.ndarray) -> np.ndarray:
     """The pixels on receiver loops, of the `stuck` ones (on a loop or
     draining into one): Kahn's pruning of those no stuck pixel drains into."""
@@ -995,6 +1171,34 @@ def _talus(hw: np.ndarray, active: np.ndarray, nb: int, res: float) -> np.ndarra
         grow = A & ~foot & (nbm - t > H)
         H = np.where(grow, nbm - t, H)
         foot |= grow
+    return H.ravel()
+
+
+def _relax(hw: np.ndarray, active: np.ndarray, s_max: np.ndarray, nb: int, res: float, iters: int = 200,
+           needles: bool = False) -> np.ndarray:
+    """The active pixels lowered until none stands more than s_max (m/km,
+    per pixel) above any active neighbour (min-plus, to convergence); with
+    needles, only above all its neighbours (held ones too: a needle)."""
+    H = hw.reshape(nb, nb).copy()
+    A = active.reshape(nb, nb)
+    step = s_max.reshape(nb, nb) * res
+    for _ in range(iters):
+        Ha = np.where(A, H, np.inf)
+        new = H.copy() if not needles else np.full_like(H, -np.inf)
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                if dr or dc:
+                    d_ = step * (1.41421356 if dr and dc else 1.0)
+                    if needles:
+                        new = np.maximum(new, Z._shift(H, dr, dc, -np.inf) + d_)
+                    else:
+                        new = np.minimum(new, Z._shift(Ha, dr, dc, np.inf) + d_)
+        if needles:
+            new = np.minimum(H, new)
+        new = np.where(A, new, H)
+        if np.abs(new - H).max() < 0.01:
+            return new.ravel()
+        H = new
     return H.ravel()
 
 

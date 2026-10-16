@@ -7,6 +7,7 @@ on the parent's surface, a fine zoom of a fine zoom, the step limit, and
 saving / indexing / deleting with the parent."""
 
 import json
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -140,6 +141,67 @@ def test_fall_keeps_the_parents_drop(parent, fine):
     assert abs(h[pool] + ld[pool] - (f["top_m"] - f["height_m"])) < 0.01
     # and the river's water goes over it
     assert L["discharge"][tuple(f["px"])] > 0.5 * pf["discharge_m3s"]
+
+
+def _gorge_plane(z, f):
+    """A fine zoom's fall's gorge path in its pixel coordinates (row, col)."""
+    P = np.array([xyz(np.radians(a), np.radians(b)) for a, b in f["gorge_path"]])
+    x, y = z["frame"].to_plane(P)
+    return z["ny"] / 2 - y / z["res"] - 0.5, x / z["res"] + z["nx"] / 2 - 0.5
+
+
+def test_gorge_follows_a_smooth_path_with_climbing_walls(fine):
+    """PW-390: the gorge below a fall is laid along a smooth path, its floor
+    falling all the way (no stair steps) and its walls climbing from the
+    floor to the rim (no bands, ridges or trenches along them)."""
+    z = fine[0]
+    f, = z["stats"]["falls"]
+    h = z["layers"]["elevation"].astype(float)
+    res = z["res"]
+    assert f["gorge_km"] > 0.5 and len(f["gorge_path"]) >= 4 and f["gorge_half_km"] > res
+    r, c = _gorge_plane(z, f)
+    turn = np.abs(np.diff(np.unwrap(np.arctan2(np.diff(r), np.diff(c)))))
+    assert turn.max() < np.radians(30)  # (smooth: no D8 elbows)
+    # the floor: the course from the pool to the foot never climbs, and drops in no single step
+    rec = ZF._Parent.receivers(SimpleNamespace(L=z["layers"], nx=z["nx"], ny=z["ny"]))
+    i, foot = f["pool_px"][0] * z["nx"] + f["pool_px"][1], f["foot_px"][0] * z["nx"] + f["foot_px"][1]
+    path = [i]
+    while path[-1] != foot and rec[path[-1]] >= 0 and len(path) < 1000:
+        path.append(int(rec[path[-1]]))
+    assert path[-1] == foot
+    zf = (h + z["layers"]["lake_depth"].astype(float)).ravel()[path]  # (the water surface: the pool too)
+    assert np.all(np.diff(zf) <= 0.01)
+    assert -np.diff(zf).max() < 0.25 * f["height_m"]
+    # the walls: cross-sections at right angles to the path climb from the floor
+    t = np.linspace(0, 0.8 * f["gorge_half_km"] / res, 24)
+    climbs = 0
+    for k in range(1, len(r) - 2):
+        dr, dc = r[k + 1] - r[k - 1], c[k + 1] - c[k - 1]
+        nrm = np.hypot(dr, dc)
+        for sg in (1, -1):
+            rr = np.rint(r[k] - sg * dc / nrm * t).astype(int)
+            cc = np.rint(c[k] + sg * dr / nrm * t).astype(int)
+            prof = h[np.clip(rr, 0, z["ny"] - 1), np.clip(cc, 0, z["nx"] - 1)]
+            climbs += int(np.all(np.maximum.accumulate(prof) - prof < 5.0))
+    assert climbs >= 0.9 * 2 * (len(r) - 3)
+
+
+def test_no_needles(fine):
+    """No pixel stands more than 1.5 x a 35 degree slope above all its
+    neighbours (but at the fall's face)."""
+    z = fine[0]
+    h = z["layers"]["elevation"].astype(float)
+    res = 1000.0 * z["res"]
+    p = np.pad(h, 1, mode="edge")
+    gentlest = np.full_like(h, np.inf)
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr or dc:
+                gentlest = np.minimum(gentlest, (h - p[1 + dr:1 + dr + h.shape[0], 1 + dc:1 + dc + h.shape[1]])
+                                      / (res * np.hypot(dr, dc)))
+    f, = z["stats"]["falls"]
+    gentlest[f["px"][0] - 2:f["px"][0] + 3, f["px"][1] - 2:f["px"][1] + 3] = 0.0
+    assert gentlest.max() < 1.5 * np.tan(np.radians(35.0))
 
 
 def test_volcano_keeps_its_summit(parent, fine):
