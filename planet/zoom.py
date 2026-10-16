@@ -171,6 +171,21 @@ LIMESTONE = 6  # surface.ROCKS
 # landscape pass: discharge exponent of the steady-state slope, hillslope
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
+KD_RES_KM, KD_ICE = 2.0, 0.4  # km: the pixel size KD (and the ice's KD_ICE) was set at
+
+
+def creep_kd(res: float) -> float:
+    """Creep's per-step share of the way to the neighbour mean at pixel size
+    res km, for a unit KD: creep is a diffusivity (dh/dt = D lap h, the
+    discrete step D dt / res^2), so above KD_RES_KM its per-pixel step falls
+    as (KD_RES_KM / res)^2 and a hill of a given size in km rounds as much on
+    4 km pixels as on 2 km ones (PW-125: at a fixed share, 4 km zooms crept
+    4x as far in km and lifted 20-50 m^3/s stream beds 50-470 m). Finer
+    pixels keep the 2 km share for now (physically theirs would be larger:
+    docs/review/zoom-polish/pw125.md)."""
+    return min(1.0, (KD_RES_KM / res) ** 2)
+
+
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
@@ -311,8 +326,8 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         best_h, best_d, best_j = (np.where(better, a, b) for a, b in ((drop, best_h), (dist, best_d), (j, best_j)))
     keep = best_h >= WF_MIN_DROP
     i, h, d, jj = i[keep], best_h[keep], best_d[keep], best_j[keep]
-    # concentrated: steeper than the river above and below (over ~2x the
-    # fall's length, at least WF_CONTEXT_KM), by WF_CONTRAST
+    # concentrated: steeper than the river above and than the river below
+    # (each over ~2x the fall's length, at least WF_CONTEXT_KM), by WF_CONTRAST
     up = np.full(n, -1)
     o = np.argsort(q, kind="stable")
     o = o[rec[o] >= 0]
@@ -336,7 +351,11 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     L = np.maximum(2 * d, ctx)
     pu, ku = walk(i, up, float(L.max()) if len(L) else 0.0)
     pd_, kd_ = walk(jj, rec, float(L.max()) if len(L) else 0.0)
-    g_ctx = (np.maximum(ws[pu] - lvl[i], 0) + np.maximum(ws[jj] - ws[pd_], 0)) / np.maximum(ku + kd_, res)
+    # (each side on its own: pooled, a flat valley floor or main river below
+    # halved the context, and a mountain stream as steep above as at its
+    # last link, where it reaches the floor, was listed as a fall, PW-125)
+    g_ctx = np.maximum(np.maximum(ws[pu] - lvl[i], 0) / np.maximum(ku, res),
+                       np.maximum(ws[jj] - ws[pd_], 0) / np.maximum(kd_, res))
     fixed = d0[i] > 0  # (lake outlets and designed lips are falls whatever the river around them)
     r_, c_ = np.divmod(i, nx)
     for p in designed:
@@ -2229,10 +2248,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         hmean = _box_mean(np.maximum(h, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
         C = C * np.clip(tmean / np.maximum(hmean, 1.0), 0.5, 2.0) ** 0.8
     glacier, ice_th = glacier_mask(h, sea | lake)  # on the finished valleys
+    stages = {"landscape": h.copy()}  # (debug: the height after each stage, PW-125's diagnostic)
     # soften D8 streaks and knife-edge ridges on hillslopes; keep channels sharp
-    chan = np.clip(np.log10(np.maximum(Qg, 1e-3) / (50 * res * res)) / 2, 0, 1)
+    # (a channel from the drainage of 50 px, but on pixels coarser than
+    # KD_RES_KM from the area that is at KD_RES_KM, as creep's diffusivity:
+    # else a 20-50 m^3/s stream on 4 km pixels was no channel and creep
+    # lifted its bed, PW-125)
+    rch = min(res, KD_RES_KM)
+    chan = np.clip(np.log10(np.maximum(Qg, 1e-3) / (50 * rch * rch)) / 2, 0, 1)
     cliff = _dilate(cliff.reshape(ny, nx), 2).ravel()  # falls, gorges and their walls don't creep
-    kd = np.where(active & ~cliff, np.where(glacier, 0.4, KD * (1 - 0.8 * chan)), 0.0)
+    kd = creep_kd(res) * np.where(active & ~cliff, np.where(glacier, KD_ICE, KD * (1 - 0.8 * chan)), 0.0)
     # (creep rounds the hillslopes, but never lifts a stream's bed: in a deep
     # valley it would fill the channel towards its walls in places, leaving
     # steps and pits along the stream, undesigned 'falls'. Under ice it does,
@@ -2248,6 +2273,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # what leaks into the sea at the coast, is put back on the hillslopes:
     # each cell keeps its mean, PW-268)
     h = keep_means(h, h0, active & ~stream)
+    stages["creep"] = h.copy()
     solid = np.zeros(npx, bool)  # (a shield's domes: not cut through, nor capped)
     if lf is not None:
         # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
@@ -2279,7 +2305,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # the flow paths across it pond and spill round it, PW-168)
         solid = lf.solid() > 0.5
         keep_ = keep_ | solid
-        h = keep_means(ZL.cut(hr, rec_, order_, keep_, nx, ny, res, fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
+        # (each cell's mean restored on its hillslopes, as after creep: a
+        # correction on the channels too lifted a stream's bed where the
+        # classes weigh much over its foot where they weigh little, a step
+        # of 100-600 m in the stream, PW-125)
+        hc_ = ZL.cut(hr, rec_, order_, keep_, nx, ny, res, fixed_)
+        h = keep_means(hc_, h, active, np.clip(3 * lf.weight(), 0, 1) * ~chan_)
+        stages["landform_mean_correction"], stages["landform_channels"] = h - hc_, chan_
         # (a sill the remap, the correction or the summits' caps leave across a
         # flow path is cut through rather than filled into a lake; the region's
         # edge, an outlet held at the target, is lowered too where land drains into it)
@@ -2287,6 +2319,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         h, lf_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
         # (the summits' cap is the landscape pass's: a shield's domes stand above it, PW-168)
         h = ZL.cut(np.where(active & ~solid, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
+    stages["landform"] = h.copy()
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h_pre = h
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
@@ -2599,7 +2632,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             "lakes": [{"open": lk["exit"] is not None, "outlet": int(outs[j]), "n_px": int(len(lk["px"])),
                        "level": lk["level"], "grad": lk["grad"], "inflow_m3s": float(lake_in[j] * KM2_M_PER_YR_TO_M3S)}
                       for j, lk in enumerate(lakes)],
-            "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift},
+            "debug": {"pinned": pin_src, "overrides": ov_src, "rapids_lift": rapids_lift, "stages": stages},
             "seconds": round(time.time() - t0, 1),
             "params": {"iterations": iterations, "river_min_flow": river_min_flow, "coarse_spacing_km": round(sp, 1)}}
 
