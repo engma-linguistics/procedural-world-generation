@@ -1,5 +1,6 @@
 ---
-title: "Zoom glacier tongues end at full thickness (a 360 m ice cliff at the snout)"
+id: PW-350
+title: Zoom glacier tongues end at full thickness (a 360 m ice cliff at the snout)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: zoom-batch3
 blocked_by: []
 relates: [PW-127, PW-159, PW-298]
 refs: [planet/zoom.py, planet/zoom_kernels.py, tests/test_zoom_ice.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,3 +30,6 @@ the snout, rather than the flux at the pixel), and check whether this tongue sto
 GL_MAX_KM; if by the cap, the melt along it may be too small at low elevations (the bare-ice balance at
 the air's summer).
 - [ ] tongues thin to < ~50 m at their snout; test_zoom_ice's 12 C check back to (nearly) none
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-glacier-tongue-snout.md (found by zoom-batch3).

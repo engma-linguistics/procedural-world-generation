@@ -2,7 +2,7 @@
 id: PW-326
 title: "Zoom: reefs on continental shelves as terrain (reef crest near sea level, lagoon behind), not only as a habitat colour"
 type: task
-status: in-progress
+status: done
 parent: PW-184
 subsystem: zoom
 effort: m
@@ -23,5 +23,6 @@ Sketch: from the reef pixels and the shelf geometry, raise reef pixels toward -1
 - [ ] a barrier reef with a lagoon on a wide warm shelf; a fringing reef on a narrow one
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (af4b0a5): fringing/barrier/patch reefs as terrain, reef flats 1-3 m below sea, lagoon deepened to keep cell means.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-reef-terrain.md (found by coastal-life).

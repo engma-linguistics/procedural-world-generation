@@ -2,7 +2,7 @@
 id: PW-327
 title: "Zoom: no shoreface; the sea floor is at the coarse cell's depth a pixel off the shore (no shallows for seagrass, reefs, beaches)"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -23,5 +23,6 @@ Fix in the zoom's coastline/sea-floor pass: blend the sea pixels near the shore 
 - [ ] re-check that region: seagrass and reef pixels close to the world's shares
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (e7527c3): Dean profile to a wave-based closure depth near sandy shores, fading to the coarse floor over 6 km; rocky coasts keep deep water; cell means kept. Coral zoom median depth within 1.5 km 39 -> 15 m.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-shoreface-shallows.md (found by coastal-life).

@@ -1,4 +1,5 @@
 ---
+id: PW-349
 title: "Zoom: delta plains flatten interior cells up to 800 m high, ~25 m low cell means on river-mouth zooms"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-batch3
 blocked_by: []
 relates: [PW-298, PW-061]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw298.md, "world:592f2a(4.97,-114.51)", "world:592f2a(1.96,-70.44)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,3 +30,6 @@ To try: keep the plain's cells' means by putting the lost volume back on the lan
 world (a delta plain on 250-800 m coarse ground is the zoom inventing a lowland the world doesn't have).
 Check the deltas' look (test_zoom_water's delta tests) and the inland bias on the two zooms.
 - [ ] inland cell-mean bias within +-10 m on 4.97,-114.51 and 1.96,-70.44
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-delta-plain-cell-means.md (found by zoom-batch3).
