@@ -18,10 +18,11 @@ GROUP = np.array([k[1][0] for k in climate.KOPPEN])
 
 @pytest.fixture(scope="module", params=[1, 2])
 def world(request):
-    # the dry share swings a lot as continents move: average it over the last 80 Myr
-    sim, dry = run_sim(level=5, seed=request.param, myr=320), []
+    # the dry share swings a lot as continents move and cold eras come and go: average it
+    # every 20 Myr over 100-400 Myr, so one era can't take a seed out of band (PW-369)
+    sim, dry = run_sim(level=5, seed=request.param, myr=100), []
     frames = []
-    for t in (340, 360, 380, 400):
+    for t in range(100, 401, 20):
         while sim.t < t - 1e-9:  # (keyframes every 4 Myr over the last 40, for the churn)
             sim.run(sim.t + 4)
             if sim.t > 356:

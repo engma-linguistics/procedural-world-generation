@@ -2,7 +2,7 @@
 id: PW-369
 title: "Envelope test: the L5 arid share samples one seed's 340-400 Myr window, which one cold era or flooded interval takes out of band"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: xs
@@ -37,5 +37,6 @@ Lean: A. A healthy planet may spend 60 Myr dry-poor; the band asks whether its c
 over a run, which the 100-400 Myr mean measures.
 
 ## Updates
+- 2026-10-16: Status todo -> done. Done: arid share averaged every 20 Myr over 100-400 Myr (16 samples), bands unchanged; envelope tests pass (2 min).
 - 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: take the lean (average the L5 arid share over 100-400 Myr; bands unchanged): a single-window test is fragile to any history reshuffle.
 - 2026-10-16: Created from inbox draft draft-envelope-dry-window.md (found by icehouse-depth).
