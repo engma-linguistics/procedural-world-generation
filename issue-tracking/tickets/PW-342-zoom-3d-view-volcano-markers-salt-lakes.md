@@ -2,7 +2,7 @@
 id: PW-342
 title: "Zoom 3D view: volcano markers, salt lakes and glaciers' own look"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -31,6 +31,7 @@ things the 2D map shows:
 - [x] lake pixels painted in land colour in the texture
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done: 3D volcano pins with 2D cards; zoom stores lake_kind (fresh/salt/pan) used by the 3D view and satellite colours; lake pixels painted in land colour (no staircase).
 - 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-zoom3d-volcanoes-salt-lakes.md (found by zoom3d).
 - 2026-10-16: Done on the zoom3d branch (viewer/zoom3d.js, zoom.html): volcano pins and 2D card, lake kinds from a new zoom `lake_kind` layer (planet/zoom.py), lake pixels in land colour. Screenshot docs/review/viewer/zoom3d_volcano.png.
