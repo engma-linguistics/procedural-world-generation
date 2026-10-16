@@ -2,7 +2,7 @@
 id: PW-376
 title: "Zoom 3D at half / quarter detail: rivers in narrow valleys still cross ridges of the coarser mesh"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -27,5 +27,6 @@ river-aware decimation), or keep full-detail rows/columns along the rivers (a no
 - [ ] at `detail=4` on 226c95 the painted river below its 17 falls climbs < 20 m (measured as in PW-375)
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (small fixes batch).
 - 2026-10-16: Status todo -> in-progress. Small fixes batch agent started.
 - 2026-10-16: Created from inbox draft draft-zoom3d-coarse-mesh-rivers.md (found by fall-jut (PW-375)).

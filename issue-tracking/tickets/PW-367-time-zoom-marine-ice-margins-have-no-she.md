@@ -2,7 +2,7 @@
 id: PW-367
 title: "Time zoom: marine ice margins have no shelves or ice streams: West Antarctica collapses unforced, shallow shelves ground"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: timezoom
 effort: m
@@ -52,6 +52,7 @@ grounding-line resistance), not to a sea-level score.
 - [ ] a warm Eemian-like start can still lose it
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (85a7b96, 2bd5d6e): cold-ocean buttressing (0.8, Fürst 2016; air over sea < -10 C, ramp to -5 C, Morris & Vaughan 2003) plus floating shelves (thinner than flotation past the grounding line: no bed load, no sea level; Weertman spreading) and sub-shelf melt (10 m/yr per C). Earth unforced 20 kyr: WAIS keeps 136/149 marine cells, 10 shelf cells ground (was 96). +4 C Eemian: shelves break up, Amundsen keeps 24/35 at 20 kyr, 13 at 50 kyr (winter water never warms: new ticket). Unforced drift -11 m from Greenland's cold bias and Arctic margins. 1 Myr low point -24 -> -64 m.
 - 2026-10-16: Status todo -> in-progress. Agent started (option A).
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: option A as the coordinator sees fit. Coordinator: A (cold-ocean buttressing tied to observed shelf buttressing, Fürst et al. 2016), scheduled with the next time zoom batch.
 - 2026-10-16: Created from inbox draft draft-timezoom-marine-margins.md (found by tzbatch-2026-10-16).

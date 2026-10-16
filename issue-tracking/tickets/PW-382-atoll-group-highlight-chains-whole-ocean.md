@@ -2,7 +2,7 @@
 id: PW-382
 title: Atoll group highlight chains whole oceans together (124 atolls 'within ~7,400 km')
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: highlights
 effort: xs
@@ -25,6 +25,7 @@ the Tuamotus (~1,500 km). Try: count and measure only the atolls within the zoom
 - [ ] the atoll blurb's numbers describe what the zoom shows
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (small fixes batch).
 - 2026-10-16: Status todo -> in-progress. Small fixes batch agent started.
 - 2026-10-16: Small; for the next highlights batch.
 - 2026-10-16: Created from inbox draft draft-atoll-group-single-linkage.md (found by volcano-highlights).

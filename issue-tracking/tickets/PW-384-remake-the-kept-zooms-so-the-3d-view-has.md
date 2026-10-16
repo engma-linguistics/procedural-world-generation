@@ -1,4 +1,5 @@
 ---
+id: PW-384
 title: Remake the kept zooms so the 3D view has their rivers (receiver layer)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: small-fixes-batch
 blocked_by: []
 relates: [PW-373]
 refs: [planet/zoom.py, viewer/zoom3d_mesh.js, "zoom:226c95", "zoom:e33c3d", "zoom:02734d"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ no rivers and no river flights until they are made again (same world, centre, si
 Re-run them (e.g. `planet zoom <world> --lat --lon --size-km --res-km` from each zoom.json, or delete and
 re-make via highlights `--zoom`), ~10-60 s each.
 - [ ] every kept zoom has `layers/receiver.bin`
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-remake-zooms-for-receiver-layer.md (found by small-fixes-batch).

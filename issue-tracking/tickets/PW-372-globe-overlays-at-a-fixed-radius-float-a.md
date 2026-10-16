@@ -2,7 +2,7 @@
 id: PW-372
 title: Globe overlays at a fixed radius float above or sink into the 3D relief
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: viewer
 effort: s
@@ -30,5 +30,6 @@ another agent was changing the volcano and highlight overlays at the same time.
 - [ ] volcanoes, hotspots, events, zoom box and highlight marks sit on the relief on globe and map
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (small fixes batch).
 - 2026-10-16: Status todo -> in-progress. Small fixes batch agent started.
 - 2026-10-16: Created from inbox draft draft-relief-overlays-fixed-radius.md (found by viewer-3d).

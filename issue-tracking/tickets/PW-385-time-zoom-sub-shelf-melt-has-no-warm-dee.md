@@ -1,4 +1,5 @@
 ---
+id: PW-385
 title: "Time zoom: sub-shelf melt has no warm deep water to work with (Antarctica's shelves go only by the air)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw367-buttress
 blocked_by: []
 relates: [PW-367]
 refs: [planet/timezoom.py, planet/ocean.py, docs/overview.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -32,3 +35,6 @@ freezing point at depth) melting the shelves from below.
 Either belongs to the ocean lane, so this waits for its rain rework to settle.
 - [ ] a warm Eemian-like Earth start melts the Amundsen sector's shelves from below (melt > 1 m/yr) and
       today's climate doesn't
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-timezoom-shelf-ocean-heat.md (found by pw367-buttress).

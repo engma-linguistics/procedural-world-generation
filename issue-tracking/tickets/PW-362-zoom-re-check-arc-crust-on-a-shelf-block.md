@@ -2,7 +2,7 @@
 id: PW-362
 title: "Zoom: re-check arc crust on a shelf (blocky coarse-cell islands) now that arcs have a cone every ~60 km"
 type: task
-status: in-progress
+status: done
 parent: PW-001
 subsystem: zoom
 effort: s
@@ -28,6 +28,7 @@ the cones' flanks and a ridge along the chain rather than spread over the cell).
 - [ ] a shelf arc zoomed and looked at; blocks or not, with an image
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (06b1157), option B: a land cell's own sea pixels take what its mean lacks (shelf round the island); fac2af mesa land p50 1334 -> 607 m. Remaining plateau: PW-383.
 - 2026-10-16: Status todo -> in-progress. Small fixes batch agent started.
 - 2026-10-16: Status in-progress -> todo. Coordinator 2026-10-16: lean B (keep part of a forearc cell's mean in its sea instead of the trench's depth), for a later zoom batch.
 - 2026-10-16: Note to the entry above: that the summit cap flattens the mesa's top is a guess from its shape (flat at 1600-1650 m), not checked against the pass's stages.
