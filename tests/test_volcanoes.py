@@ -104,3 +104,22 @@ def test_continental_vent_is_a_caldera_on_a_lava_plain():
     assert np.percentile(z[(rho > 1.25 * r) & (rho < 1.45 * r)], 90) - plain < 0.1 * plain  # the plain is flat
     vol = z.sum() * res * res / 1000.0  # km^3
     assert 0.75 < vol / (np.pi * r * r * H / 1000.0) < 1.3, vol  # (the lobed outline spreads it a little, as a shield)
+
+
+def test_vents_on_a_plateau_they_built_leave_no_sea_holes():
+    """PW-310: hotspot vents recorded on a -4 km sea floor where the coarse
+    cells stand at 1.5 km (a ridge the vents built together, under ice on
+    592f2a): the province takes off only the cones' own share of the cells'
+    means, so the ground between them stays land, not round holes of sea."""
+    from test_zoom_landforms import _plain_world
+    lon_of = lambda x_km: float(np.degrees(x_km / R_KM))
+    bias = []
+    for vents in ([], [[0.0, lon_of(x), V.VENT, 3.0, 0, 1200, -4000, 6500, 25.0, 30000, 0, 0.0] for x in (-60.0, 60.0)]):
+        w, _ = _plain_world(1500.0, 0.0, 0.0)
+        w["meta"] = {**w["meta"], "volcano_columns": list(V.COLUMNS), "volcanoes": vents}
+        z = zoom.build(w, 0.0, 0.0, size_km=300, res_km=1.0, iterations=4, log=lambda *a: None)
+        sea = (z["layers"]["water"] == 1).mean()
+        assert sea < 0.01, sea  # (with the vents it was ~40% sea, in rings round them)
+        bias.append(z["stats"]["inland_cell_mean_bias_m"])
+    # the cells keep their means about as well as without the vents (was -1.9 km on 592f2a)
+    assert abs(bias[1] - bias[0]) < 200, bias

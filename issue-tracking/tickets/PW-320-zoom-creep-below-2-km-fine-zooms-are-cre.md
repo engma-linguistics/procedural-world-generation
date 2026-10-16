@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-125]
 refs: [planet/zoom.py, docs/review/zoom-polish/pw125.md, "world:592f2a(49.32,37.38)", "world:592f2a(26.74,-49.92)"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -39,5 +39,7 @@ Lean: A, it is the same physics as C above 2 km; but it changes every 1 km and 0
 wants a look at hillshades first.
 
 ## Updates
+- 2026-10-16: Prepared for owner (8f16f0a): docs/review/zoom-polish/pw320.md + pw320_{range,plain}_{1km,05km}.png; option A on local branch pw320-option-a (unmerged). A makes 0.5 km zooms visibly blobby; agent lean: A down to 1 km only (not built).
+- 2026-10-16: Decision prepared (zoom batch 2): docs/review/zoom-polish/pw320.md with hillshade pairs pw320_{range,plain}_{1km,05km}.png (current | A). Option A is on local branch pw320-option-a (one commit), not merged. Zooms of one place averaged to 2 km, mean |Laplacian|: range 2 km zoom 103; 1 km current 161 -> A 82; 0.5 km (vs the 2 km zoom's middle, 69) current 183 -> A 67. Plain 25; 1 km 31 -> 23; 0.5 km (vs 15) 30 -> 22. A makes resolutions agree, but 0.5 km zooms lose their pixel-scale ridges and gullies (96 steps); alternative noted: A down to 1 km only (0.5 km at the 1 km step count, 4x today's diffusivity rather than 16x). Drops on the 1 km showcase zooms 2/1 -> 3/1 (noise), cost negligible.
 - 2026-10-15: Zoom batch 2 agent preparing hillshade pairs (current vs one diffusivity) for the owner's call; no behaviour change merged.
 - 2026-10-15: Created from inbox draft draft-zoom-creep-below-2km.md (found by pw125).

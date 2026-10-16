@@ -1,7 +1,8 @@
 ---
+id: PW-336
 title: "Ice sheets' own cold summer air: carry it along the winds (katabatic) instead of a local damping?"
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 subsystem: climate
 effort: m
@@ -10,6 +11,8 @@ found_by: pw313
 blocked_by: []
 relates: [PW-313, PW-112, PW-039, PW-277, PW-190, PW-013]
 refs: [planet/climate.py, planet/icemass.py, planet/timezoom.py, docs/review/audit/pw313-polar-summers.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -42,3 +45,8 @@ Options:
 Lean: A, landed together with the snowfall fix (draft-antarctic-margin-snowfall) and the frozen-sea summer air
 (draft-frozen-sea-summer-air). The remaining Antarctic plateau error (~9 C) is the high dry plateau's own surface
 energy balance and inversion, which no bare-ground damping captures.
+
+## Updates
+- 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
+- 2026-10-16: Status needs-decision -> todo. Coordinator 2026-10-16: option A (carried, air-mass weighted). B passes the probe only through an 11 C Greenland error (compensating). Land together with PW-332 (margin snowfall) and PW-335 (frozen-sea air).
+- 2026-10-16: Created from inbox draft draft-ice-sheet-air-carried.md (found by pw313).

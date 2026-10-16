@@ -2,7 +2,7 @@
 id: PW-296
 title: Waves in enclosed seas 3-5x too strong once the wind recovers off land in ~50 km (PW-272)
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: coast
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-075, PW-272, PW-270]
 refs: [planet/coast.py, tools/coast_check.py, docs/review/audit/fixes-coast-zoom.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -35,4 +35,5 @@ Don't bring back a long L_RECOVER.
 - [ ] enclosed-sea rows within 2x at most coasts without moving the open-ocean rows
 
 ## Updates
+- 2026-10-16: Status todo -> wontdo. Folded into PW-074 (same cause: storm winds over land-locked seas; fix in the climate's surface wind).
 - 2026-10-15: Created from inbox draft draft-coast-enclosed-sea-winds.md (found by fix-coast-zoom).

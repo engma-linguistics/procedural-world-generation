@@ -1,4 +1,5 @@
 ---
+id: PW-334
 title: "Earth world: the terrain-only rock map makes every shelf shale, so warm carbonate shelves turn muddy and lose their reefs"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: coast-batch
 blocked_by: []
 relates: [PW-323, PW-188]
 refs: [tools/earth_world.py, planet/coastal.py, tools/coastal_check.py, docs/review/audit/coast-batch.md]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -19,3 +22,6 @@ Diagnostic (not committed): with LIMESTONE on Earth's shelf cells (above -1500 m
 
 Fix: in earth_rock, put LIMESTONE at the surface of the warm shelves by the run's own reef rule (the world's SST and the rivers' mud, so it needs the climate first, or a second pass in build()), rather than a carbonate map of Earth. Keep the rest of the terrain-only rock map.
 - [ ] Earth's warm shelves carbonate by the run's rule; coastal_check reef within ~2x of observed
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-earth-rock-map-carbonate-shelves.md (found by coast-batch).
