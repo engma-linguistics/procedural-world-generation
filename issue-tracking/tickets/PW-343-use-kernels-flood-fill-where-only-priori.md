@@ -1,4 +1,5 @@
 ---
+id: PW-343
 title: Use kernels.flood_fill where only priority_flood's filled surface is used (zoom, highlights)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw255-lakes-speed
 blocked_by: []
 relates: [PW-255]
 refs: [planet/kernels.py, planet/zoom.py, planet/highlights.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ the order tied cells are taken in, so the sea's inner cells needn't be queued. `
 call it (`kernels.flood_fill(elev, elev <= 0, g.nbr_off, g.nbr_idx, 0.01)`). Milliseconds per call, so
 only worth doing when those files are next touched; left to their owners (PW-255 stayed in
 hydrology.py / kernels.py).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-flood-fill-for-filled-only-callers.md (found by pw255-lakes-speed).
