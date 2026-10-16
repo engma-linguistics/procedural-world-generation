@@ -1,4 +1,5 @@
 ---
+id: PW-356
 title: "Zoom: draw the bed below sea level under grounded ice (it still takes it at 1 m)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw307-world-land
 blocked_by: []
 relates: [PW-307, PW-197, PW-189]
 refs: [planet/zoom.py, planet/tectonics/isostasy.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ land bed without the 1 m floor where the cell is iced, and keep the glacier mode
 layer from calling those pixels sea; then drop `zoom_world`.
 - [ ] a zoom over a marine sheet keeps the world's sub-sea bed under its ice, no sea pixels there
 - [ ] `zoom_world` removed
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-zoom-sub-sea-bed-under-ice.md (found by pw307-world-land).

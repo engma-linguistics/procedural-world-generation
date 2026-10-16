@@ -1,5 +1,6 @@
 ---
-title: "World erosion routes water along the bed under ice, the world's rivers over the ice surface"
+id: PW-355
+title: World erosion routes water along the bed under ice, the world's rivers over the ice surface
 type: task
 status: needs-decision
 parent: null
@@ -10,6 +11,8 @@ found_by: pw307-world-land
 blocked_by: []
 relates: [PW-307]
 refs: [planet/hydrology.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,3 +33,6 @@ C. Route by the subglacial hydraulic head, bed + 0.917 x ice (physically the wat
    under a sheet; positive wherever the ice is grounded with some margin).
 D. Keep PW-307's mix.
 Lean: A (one rule for the world's water, simplest), measured on an icehouse world.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-erode-routing-under-ice.md (found by pw307-world-land).

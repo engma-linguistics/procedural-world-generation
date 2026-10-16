@@ -1,4 +1,5 @@
 ---
+id: PW-354
 title: "Earth data: store Antarctica's and Greenland's true bed now that worlds take ice as land"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw307-world-land
 blocked_by: []
 relates: [PW-307, PW-197]
 refs: [tools/earth_data.py, tools/earth_world.py, planet/timezoom.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,3 +25,6 @@ notes the floored beds) could keep ETOPO1's bedrock. Ice shelves are counted as 
 on a sunk bed; check what ETOPO1's ice-minus-bedrock gives for the shelves before changing it.
 Needs the Earth cache rebuilt and the scorecard / earth_check re-run (Antarctica's climate should
 not move: the surface is the same).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-earth-data-true-bed.md (found by pw307-world-land).
