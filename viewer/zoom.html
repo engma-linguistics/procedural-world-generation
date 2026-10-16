@@ -56,7 +56,11 @@
     color: #9fe3ff; font-size: 11px; text-shadow: 0 0 3px #0b2540, 0 0 2px #0b2540; }
   .z3d-fall.big { font-size: 12px; font-weight: 600; color: #e8f6ff; background: rgba(11, 37, 64, 0.72);
     border: 1px solid #9fe3ff; border-radius: 4px; padding: 0 4px; }
-  .z3d-fall.behind { opacity: 0.3; }
+  .z3d-volc { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+    font-size: 11px; text-shadow: 0 0 3px #1a0a02, 0 0 2px #1a0a02; }
+  .z3d-volc.big { font-size: 12px; font-weight: 600; background: rgba(26, 12, 4, 0.72); border: 1px solid currentColor;
+    border-radius: 4px; padding: 0 4px; }
+  .z3d-fall.behind, .z3d-volc.behind { opacity: 0.3; }
   #p3d { display: none; top: 12px; right: 12px; width: 260px; }
   body.embedded #p3d { top: 56px; }
   body.d3 #p3d { display: block; }
@@ -572,11 +576,12 @@ function render() {
   V3.opts.rivers = $('rivers').checked;
   if (V3.zoomId !== m.id) {
     V3.zoomId = m.id;
-    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, colours: state.off, smooth }, state.cam3d);
+    V3.setZoom({ nx: m.nx, ny: m.ny, res_km: m.res_km, L: state.L, falls: state.marks.falls, volc: state.marks.volc, outlets: (m.stats.largest_lakes || []).map((l) => l.outlet).filter(Boolean), colours: state.off, smooth }, state.cam3d);
     state.cam3d = null;
     fallList();
   } else V3.setTexture(state.off, smooth);
   V3.showFalls($('falls').checked);
+  V3.showVolc($('volc').checked);
 }
 const FLAT_SHADE = Math.sin(40 * Math.PI / 180);  // hillshade() of flat ground
 function shadeNow() {

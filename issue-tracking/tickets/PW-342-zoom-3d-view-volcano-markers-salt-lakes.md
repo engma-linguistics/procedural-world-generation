@@ -26,9 +26,11 @@ things the 2D map shows:
 - lakes keep their pixels' staircase in the colour texture (the 2D colours paint lake
   pixels blue, bilinearly scaled), visible at 1-4 km/px next to the smooth 3D shore; the
   texture could paint lake pixels in the land's colour and leave the water to the lake mesh.
-- [ ] volcano pins with cards in 3D
-- [ ] salt lakes and pans coloured as in 2D
+- [x] volcano pins with cards in 3D
+- [x] salt lakes and pans coloured as in 2D
+- [x] lake pixels painted in land colour in the texture
 
 ## Updates
 - 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-zoom3d-volcanoes-salt-lakes.md (found by zoom3d).
+- 2026-10-16: Done on the zoom3d branch (viewer/zoom3d.js, zoom.html): volcano pins and 2D card, lake kinds by a viewer-side rule (the zoom stores no per-pixel kind; see draft zoom-lake-kind-layer), lake pixels in land colour. Screenshot docs/review/viewer/zoom3d_volcano.png.
