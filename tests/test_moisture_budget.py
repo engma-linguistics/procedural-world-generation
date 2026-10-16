@@ -36,19 +36,17 @@ def test_probe_is_the_kernel(recorded):
     assert np.allclose(P["r_tag"].sum(1), P["r"], rtol=1e-9, atol=1e-15)
 
 
-def test_edge_fluxes_close_the_budget(recorded):
-    """Northward vapour flux across a latitude circle from the kernel's edges = the sources minus
-    the rain south of it (in the kernel's own cell units), up to the transport's small residue."""
+def test_face_fluxes_close_the_budget(recorded):
+    """Northward vapour flux across a latitude circle through the kernel's faces = the sources minus
+    the rain south of it (the transport is conservative: only the steady state's drift is left)."""
     g, elev, c, rec = recorded
     P = mb.probe(rec, np.zeros(g.n, np.int64), 1)
-    F = mb.edge_fluxes(g, rec, P["q"])
-    lat, src, dst = g.lat, F["src"], F["dst"]
+    F = climate._faces(g)
+    lat, a, b = g.lat, F["ea"], F["eb"]
     for k in range(2):
-        net = P["up"][k] + P["land_e"][k] - P["r"][k]
+        net = (P["up"][k] + P["land_e"][k] - P["r"][k]) * F["A"]  # model units x m2 per step
         scale = np.abs(net).sum()
+        flux = (P["f_adv"][k] + P["f_mix"][k]) * P["dt"]
         for phi in (-30.0, 0.0, 30.0):
-            cross, back = (lat[src] < phi) & (lat[dst] >= phi), (lat[src] >= phi) & (lat[dst] < phi)
-            flux = F["adv"][k][cross].sum() + F["mix"][k][cross].sum() - F["adv"][k][back].sum()
-            south = lat < phi
-            implied = net[south].sum() + (F["res_move"][k] + F["res_mix"][k])[south].sum()
-            assert abs(flux - implied) < 0.02 * scale, (k, phi, flux, implied)
+            sgn = np.where((lat[a] < phi) & (lat[b] >= phi), 1.0, np.where((lat[b] < phi) & (lat[a] >= phi), -1.0, 0))
+            assert abs((flux * sgn).sum() - net[lat < phi].sum()) < 0.005 * scale, (k, phi)

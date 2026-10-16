@@ -20,7 +20,7 @@ model's rain bit for bit). Reports:
   inland     precipitation and column vapour along westerly and monsoon
              paths, model vs GPCC / NCEP precipitable water, by distance
              from the coast; and land rain by distance from the sea
-  residence  the vapour's rain-out time and length (iterations, hours, km)
+  residence  the vapour's rain-out time and length (days, km)
              and the recycling of land evaporation (tracers; van der Ent
              et al. 2010: 40% of land rain is land-evaporated)
   regions    the kernel's terms per region and half-year (rain parts:
@@ -37,9 +37,9 @@ patterns and the zonal/basin shape, with published numbers alongside).
 Units: model rain is scaled as climate.compute scales it (global mean
 1000 mm/yr). The kernel's vapour is in _qsat units (1 = saturated surface
 air at 0 C); it is turned into a column (mm) by one factor fitted over the
-open sea against NCEP precipitable water. One kernel iteration moves the
-air one cell at wind 1 (~7 m/s, a steady trade: U_REF), so an iteration is
-cell / U_REF of time (~4.4 h at L6, ~2.2 h at L7).
+open sea against NCEP precipitable water. The kernel runs in physical
+time (PW-015: wind 1 is climate.U_REF m/s); its rain is per time step
+(climate._rain_args' dt), the faces' fluxes in model units x m2/s.
 """
 
 from __future__ import annotations
@@ -64,7 +64,6 @@ from tools.earth_check import REGIONS  # noqa: E402
 
 R_KM = 6371.0
 SV_KM3 = 1e6 * 3.15576e7 / 1e9  # km3/yr in one Sverdrup (31,558)
-U_REF = 7.0  # m/s: wind speed 1 in the model (a steady trade wind)
 LV = 2.5e6  # J/kg: latent heat of vaporisation (NCEP's E = lhtfl / LV)
 YEAR_S = 3.15576e7
 
@@ -128,24 +127,28 @@ PROBE_REGIONS = ["Sahara", "Sahel", "Arabia", "Australia interior", "Gobi/Mongol
 # the instrumented kernel
 # --------------------------------------------------------------------------
 @njit(cache=True, parallel=True)
-def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, move, diffusion,
-           in_w, in_src, in_off, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, evap, mean_mm,
+def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+           nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0, un, kd, ea, eb, L, lc,
            tag, ntag):
     """climate._rain, line for line, plus: tracers of the vapour by where it
     evaporated (tag: per cell, 0..ntag-1; a well-mixed column, so each tracer
-    rains its share r/q of the cell's rain), and tail means of the land's
-    evaporation, the rain's parts (oversaturation, large-scale, showers),
-    the shower trigger's dry part (mse_t + tcor - mse_thr, C) and the vapour
-    before the rain. Returns (rain, rain_ls, sea uptake, vapour after rain,
-    land evaporation, rain from oversaturation, shower rain, trigger's dry
-    part, vapour before rain, rain by tracer [S, ntag, n])."""
+    is carried as the vapour is and rains its share r/q of the cell's rain),
+    and tail means of the land's evaporation, the rain's parts
+    (oversaturation, large-scale, showers), the shower trigger's dry part
+    (mse_t + tcor - mse_thr, C), the vapour before the rain and the faces'
+    fluxes (un, kd: climate.face_winds; the wind's and the eddy mixing's,
+    ea -> eb, model units x m2/s). Returns (rain, rain_ls, sea uptake,
+    vapour after rain, land evaporation, rain from oversaturation, shower
+    rain, trigger's dry part, vapour before rain, rain by tracer
+    [S, ntag, n], face flux by the wind [S, ne], by mixing [S, ne])."""
     S, n = qs.shape
-    m = src_q.copy()
+    ne = ea.shape[0]
+    m = np.ascontiguousarray(m0.T)
+    m1 = np.empty((n, S))
     acc = np.zeros((S, n))
     acc_ls = np.zeros((S, n))
     ema = np.zeros((S, n))
     tcor = np.zeros((S, n))
-    moved = np.empty((S, n))
     acc_up = np.zeros((S, n))
     acc_q = np.zeros((S, n))
     land_e = np.zeros((S, n))
@@ -154,15 +157,18 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
     acc_cv = np.zeros((S, n))
     acc_dry = np.zeros((S, n))
     acc_qb = np.zeros((S, n))
+    acc_fa = np.zeros((S, ne))
+    acc_fm = np.zeros((S, ne))
     T = np.zeros((S, ntag, n))
-    Tm = np.zeros((S, ntag, n))
+    T1 = np.zeros((S, ntag, n))
     acc_t = np.zeros((S, ntag, n))
     for k in range(S):
         for i in range(n):
-            T[k, tag[i], i] = m[k, i]
-    tail = max(iterations // 4, 1)
+            T[k, tag[i], i] = m[i, k]
+    tail = max(steps // 4, 1)
+    fex = 1.0 - np.exp(-dt / tau_ex)
     scale = 1.0
-    for it in range(iterations):
+    for it in range(steps):
         tcor_due = evap != 0 and it >= 20 and it % 10 == 0
         if (it >= 5 and it % 5 == 0) or tcor_due:
             tot = 0.0
@@ -193,50 +199,52 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
                     for k in range(S):
                         lp = np.log10(max(ema[k, i] * scale, 1.0) / 100.0) / 1.2
                         tcor[k, i] = evap * (1.0 - 2.0 * min(max(lp, 0.0), 1.0))
-        last = it >= iterations - tail
-        for k in range(S):
-            p = k - 1 if k > 0 else (S - 1 if it > 0 else -1)
-            for i in prange(n):
-                if p >= 0:
-                    t = 0.0
-                    for e in range(nbr_off[i], nbr_off[i + 1]):
-                        t += moved[p, nbr_idx[e]]
-                    m[p, i] = (1 - diffusion[p, i]) * moved[p, i] + diffusion[p, i] * t / deg[i]
-                    for g in range(ntag):
-                        t = 0.0
-                        for e in range(nbr_off[i], nbr_off[i + 1]):
-                            t += Tm[p, g, nbr_idx[e]]
-                        T[p, g, i] = (1 - diffusion[p, i]) * Tm[p, g, i] + diffusion[p, i] * t / deg[i]
+        last = it >= steps - tail
+        if last:
+            for e in prange(ne):
+                a, b = ea[e], eb[e]
+                for k in range(S):
+                    u = un[k, e]
+                    fa = (u * m[a, k] if u > 0 else u * m[b, k]) * L[e]
+                    acc_fa[k, e] += fa
+                    acc_fm[k, e] += kd[k, e] / lc[e] * (m[a, k] - m[b, k]) * L[e]
+        for i in prange(n):
+            for k in range(S):
+                q = c_self[k, i] * m[i, k]
+                for j in range(off[i], off[i + 1]):
+                    q += c_in[j, k] * m[nbr[j], k]
+                for g in range(ntag):
+                    tg = c_self[k, i] * T[k, g, i]
+                    for j in range(off[i], off[i + 1]):
+                        tg += c_in[j, k] * T[k, g, nbr[j]]
+                    T1[k, g, i] = tg
                 if ocean[i]:
-                    if src_q[k, i] > m[k, i]:
-                        up = open_sea[i] * (src_q[k, i] - m[k, i])
+                    if src_q[k, i] > q:
+                        up = open_sea[i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
-                        m[k, i] += up
-                        T[k, tag[i], i] += up
+                        q += up
+                        T1[k, tag[i], i] += up
                 else:
-                    m[k, i] += land_e[k, i]
-                    T[k, tag[i], i] += land_e[k, i]
+                    q += land_e[k, i]
+                    T1[k, tag[i], i] += land_e[k, i]
                     if last:
                         acc_le[k, i] += land_e[k, i]
-                q = m[k, i]
                 excess = max(q - qs[k, i], 0.0)
                 rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
                 rate = ls_rate[k, i] * rh**rh_pow
-                r_ls = rate * (q - excess)
+                r_ls = min(rate * dt, 1.0) * (q - excess)
                 dry = mse_t[k, i] + tcor[k, i] - mse_thr[k, i]
                 inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale  # (as _rain adds it up)
-                r_cv = 0.0
                 if inst > 0:
                     rate += cv_rate[k, i] * min(inst, 2.0)
-                    r_cv = cv_rate[k, i] * min(inst, 2.0) * (q - excess)
-                r = fex * excess + rate * (q - excess)
-                m[k, i] = q - r
+                r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+                m1[i, k] = q - r
                 ema[k, i] += 0.05 * (r - ema[k, i])
                 share = r / q if q > 0 else 0.0
                 for g in range(ntag):
-                    rg = T[k, g, i] * share
-                    T[k, g, i] -= rg
+                    rg = T1[k, g, i] * share
+                    T1[k, g, i] -= rg
                     if last:
                         acc_t[k, g, i] += rg
                 if last:
@@ -244,49 +252,30 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
                     acc_ls[k, i] += r_ls
                     acc_q[k, i] += q - r
                     acc_ex[k, i] += fex * excess
-                    acc_cv[k, i] += r_cv
+                    acc_cv[k, i] += r - fex * excess - r_ls
                     acc_dry[k, i] += dry
                     acc_qb[k, i] += q
-            for i in prange(n):
-                mo = (1 - move[k, i]) * m[k, i]
-                for e in range(in_off[i], in_off[i + 1]):
-                    j = in_src[e]
-                    mo += move[k, j] * m[k, j] * in_w[k, e]
-                moved[k, i] = mo
-                for g in range(ntag):
-                    mo = (1 - move[k, i]) * T[k, g, i]
-                    for e in range(in_off[i], in_off[i + 1]):
-                        j = in_src[e]
-                        mo += move[k, j] * T[k, g, j] * in_w[k, e]
-                    Tm[k, g, i] = mo
+        m, m1 = m1, m
+        T, T1 = T1, T
     return (acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, acc_le / tail, acc_ex / tail, acc_cv / tail,
-            acc_dry / tail, acc_qb / tail, acc_t / tail)
+            acc_dry / tail, acc_qb / tail, acc_t / tail, acc_fa / tail, acc_fm / tail)
 
 
 def kernel_args(rec: dict) -> tuple:
     """climate.rain's arguments to climate._rain, from a recorded call."""
-    grid, elev, s_in, tune, pet, w, open_sea = (rec[k] for k in ("grid", "elev", "s_in", "tune", "pet", "w",
-                                                                  "open_sea"))
-    n = grid.n
-    w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
-    open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
-    G = climate._geom(grid)
-    st = {k: np.ascontiguousarray(np.stack([d[k] for d in s_in])) for k in s_in[0]}
-    iters = int(60 * 2 ** (grid.level - 5)) + 40
-    ocean = elev <= 0 if rec.get("ocean") is None else rec["ocean"]  # (climate.compute passes its own)
-    return (st["qs"], st["src_q"], ocean, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-            np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
-            st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
-            grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
-            tune["cv_scale"], tune["evap_cool"], tune["mean_mm"])
+    return climate._rain_args(*(rec[k] for k in ("grid", "elev", "s_in", "tune", "pet", "w", "open_sea", "ocean")))
 
 
 def probe(rec: dict, tag: np.ndarray, ntag: int) -> dict:
     """Run the instrumented kernel on a recorded climate.rain call."""
     a = kernel_args(rec)
-    out = _probe(*a, np.ascontiguousarray(tag, np.int64), int(ntag))
-    keys = ("r", "r_ls", "up", "q", "land_e", "r_ex", "r_cv", "dry", "q_before", "r_tag")
-    return dict(zip(keys, out))
+    F = climate._faces(rec["grid"])
+    un, kd = climate.face_winds(rec["grid"], rec["s_in"], rec["tune"])
+    out = _probe(*a, un, kd, F["ea"], F["eb"], F["L"], F["lc"], np.ascontiguousarray(tag, np.int64), int(ntag))
+    keys = ("r", "r_ls", "up", "q", "land_e", "r_ex", "r_cv", "dry", "q_before", "r_tag", "f_adv", "f_mix")
+    P = dict(zip(keys, out))
+    P["dt"] = a[16]
+    return P
 
 
 def capture(grid, elev, ice, compute=None):
@@ -438,37 +427,13 @@ def mm_scale(c, rec) -> float:
     return float(p.mean() / max((0.5 * (r_jul + r_jan)).mean(), 1e-12))
 
 
-def edge_fluxes(grid, rec, q_after):
-    """Tail-mean vapour flux along each directed edge (in _geom's in_e order:
-    from in_src to the receiving cell), per season, in model units per
-    iteration (a cell's worth): advection by the wind plus the eddy
-    mixing's antisymmetric part. Also each cell's transport residue: what
-    the move and the mixing create or destroy (model units per iteration,
-    cell-equal and area-weighted parts)."""
-    G = climate._geom(grid)
-    a = kernel_args(rec)
-    move, diff, in_w = a[11], a[12], a[13]
-    src_in, dst_in = G["in_src"], G["dst"][G["in_e"]]
-    deg = G["deg"]
-    S = q_after.shape[0]
-    adv = np.empty((S, len(src_in)))
-    mix = np.empty((S, len(src_in)))
-    moved = np.empty_like(q_after)
-    res_move = np.empty_like(q_after)
-    res_mix = np.empty_like(q_after)
-    for k in range(S):
-        M = q_after[k]
-        adv[k] = move[k][src_in] * M[src_in] * in_w[k]
-        moved[k] = (1 - move[k]) * M + np.bincount(dst_in, adv[k], grid.n)
-        # each cell's outflow weights should sum to 1
-        res_move[k] = move[k] * M * (np.bincount(src_in, in_w[k], grid.n) - 1.0)
-        al = diff[k] / deg
-        mix[k] = 0.5 * (al[dst_in] + al[src_in]) * (moved[k][src_in] - moved[k][dst_in])
-        g = al[dst_in] * (moved[k][src_in] - moved[k][dst_in])
-        # (what the mixing gives each cell, less the antisymmetric part: each pair's flux counted
-        # once, on its edge into the cell)
-        res_mix[k] = np.bincount(dst_in, g, grid.n) - np.bincount(dst_in, mix[k], grid.n)
-    return dict(adv=adv, mix=mix, moved=moved, res_move=res_move, res_mix=res_mix, src=src_in, dst=dst_in)
+def edge_fluxes(grid, P, sc) -> dict:
+    """Tail-mean vapour flux through each face (climate._faces: from ea to
+    eb), per season, in km3/yr of water: the wind's (adv) and the eddy
+    mixing's (mix). sc: model rain units per step -> mm/yr (mm_scale)."""
+    F = climate._faces(grid)
+    k = P["dt"] * sc * 1e-12  # (model units x m2/s) -> km3/yr
+    return dict(adv=P["f_adv"] * k, mix=P["f_mix"] * k, a=F["ea"], b=F["eb"])
 
 
 def analyse(grid, d, c, rec) -> dict:
@@ -485,7 +450,6 @@ def analyse(grid, d, c, rec) -> dict:
     sc = mm_scale(c, rec)
     obs = observations(grid)
     R = dict(level=grid.level, cell_km=float(grid.spacing * R_KM))
-    h = grid.spacing * R_KM
 
     # ---- the probe: tracers by drainage basin and sea/land
     tag = np.where(sea, basin, NB + np.maximum(drain, 0))
@@ -549,41 +513,32 @@ def analyse(grid, d, c, rec) -> dict:
                          net_export_sv=[float(mat[s].sum() - mat[s, s] - (mat[:, s].sum() - mat[s, s]))
                                         for s in range(NB)])
 
-    # ---- vapour flux across drainage divides
-    F = edge_fluxes(grid, rec, P1["q"])
+    # ---- vapour flux across drainage divides (each face once, + from its a to its b)
+    F = edge_fluxes(grid, P1, sc)
+    fa, fb = F["a"], F["b"]
     sec_rows = []
     for name, a, b, a0, a1, o0, o1 in SECTIONS:
         ia, ib = BASINS.index(a), BASINS.index(b)
         win = region_mask(grid, a0, a1, o0, o1)
-        src, dst = F["src"], F["dst"]
-        ab = (dest[src] == ia) & (dest[dst] == ib) & win[src] & win[dst]
-        ba = (dest[src] == ib) & (dest[dst] == ia) & win[src] & win[dst]
-        ea = 0.5 * (area[src] + area[dst])
-        tot = []
-        for k in range(S):
-            fl = F["adv"][k] + F["mix"][k]
-            net = (fl[ab] * ea[ab]).sum() - (F["adv"][k][ba] * ea[ba]).sum()
-            # (the mixing part is antisymmetric: counted once, on the a -> b edges)
-            tot.append(net * sc * 1e-6 / SV_KM3)
-        sec_rows.append(dict(section=name, jul_sv=float(tot[0]), jan_sv=float(tot[1]),
-                             ann_sv=float(np.mean(tot)), edges=int(ab.sum())))
+        inw = win[fa] & win[fb]
+        sgn = np.where((dest[fa] == ia) & (dest[fb] == ib) & inw, 1.0,
+                       np.where((dest[fa] == ib) & (dest[fb] == ia) & inw, -1.0, 0.0))
+        tot = [float(((F["adv"][k] + F["mix"][k]) * sgn).sum() / SV_KM3) for k in range(S)]
+        sec_rows.append(dict(section=name, jul_sv=tot[0], jan_sv=tot[1], ann_sv=float(np.mean(tot)),
+                             edges=int((sgn != 0).sum())))
     R["sections"] = sec_rows
 
-    # ---- northward vapour transport across latitude circles (Sv): the kernel's edge fluxes (advection
-    # and eddy mixing apart), and what the E - P south of each circle implies, model and NCEP E - GPCP P
+    # ---- northward vapour transport across latitude circles (Sv): the kernel's face fluxes (the wind's
+    # and the eddy mixing's), and what the E - P south of each circle implies, model and NCEP E - GPCP P
     # (the observed global mean E - P taken off: NCEP's E runs high)
-    src, dst = F["src"], F["dst"]
-    ea = 0.5 * (area[src] + area[dst])
     ep_o = np.where(np.isfinite(obs["e"]), obs["e"], Eann) - np.where(np.isfinite(gp), gp, Pann)
     ep_o = ep_o - (ep_o * area).sum() / area.sum()
     ep_m = Eann - Pann
     mer = []
     for phi in range(-70, 80, 10):
-        cross = (lat[src] < phi) & (lat[dst] >= phi)
-        back = (lat[src] >= phi) & (lat[dst] < phi)
-        adv = np.mean([(F["adv"][k][cross] * ea[cross]).sum() - (F["adv"][k][back] * ea[back]).sum()
-                       for k in range(S)]) * sc * 1e-6 / SV_KM3
-        mix = np.mean([(F["mix"][k][cross] * ea[cross]).sum() for k in range(S)]) * sc * 1e-6 / SV_KM3
+        sgn = np.where((lat[fa] < phi) & (lat[fb] >= phi), 1.0, np.where((lat[fb] < phi) & (lat[fa] >= phi), -1.0, 0.0))
+        adv = np.mean([(F["adv"][k] * sgn).sum() for k in range(S)]) / SV_KM3
+        mix = np.mean([(F["mix"][k] * sgn).sum() for k in range(S)]) / SV_KM3
         south = lat < phi
         mer.append(dict(lat=phi, adv_sv=float(adv), eddy_sv=float(mix),
                         implied_sv=km3(ep_m, south) / SV_KM3, obs_implied_sv=km3(ep_o, south) / SV_KM3))
@@ -654,15 +609,16 @@ def analyse(grid, d, c, rec) -> dict:
     R["coast_distance"] = dd
 
     # ---- residence time and rain-out length, recycling
-    a_move = kernel_args(rec)[11]
+    dt = P1["dt"]
+    wind = [np.linalg.norm(s["v"], axis=1) * climate.U_REF for s in rec["s_in"]]  # m/s
     res = []
     for k, nm in enumerate(("jul", "jan")):
         qm = (q_b[k] * area).sum() / area.sum()
         rm = (P1["r"][k] * area).sum() / area.sum()
-        tau_it = qm / rm
-        mv = (a_move[k] * area).sum() / area.sum()
-        res.append(dict(season=nm, tau_iterations=float(tau_it), tau_hours=float(tau_it * h / U_REF / 3.6),
-                        length_km=float(tau_it * mv * h), move_mean=float(mv)))
+        tau_s = qm / rm * dt
+        mv = float((wind[k] * area).sum() / area.sum())
+        res.append(dict(season=nm, tau_hours=float(tau_s / 3600), length_km=float(tau_s * mv / 1000),
+                        wind_mean=mv))
     pw_o = np.nan_to_num(obs["pw"])
     ok = np.isfinite(obs["pw"]) & np.isfinite(gp)
     res_obs_days = float((pw_o * area)[ok].sum() / (gp * area)[ok].sum() * 365.25)
@@ -690,7 +646,7 @@ def analyse(grid, d, c, rec) -> dict:
                        P_obs=float((np.nan_to_num(obs_p) * area)[m & np.isfinite(obs_p)].sum()
                                    / max(area[m & np.isfinite(obs_p)].sum(), 1e-9)),
                        PW=wmean(pw_m[k]), PW_obs=wmean(np.nan_to_num((obs["pw_jul"], obs["pw_jan"])[k])),
-                       rh=wmean(q_b[k] / rec["s_in"][k]["qs"]), rainout_per_it=r_ / max(q_, 1e-12),
+                       rh=wmean(q_b[k] / rec["s_in"][k]["qs"]), rainout_per_day=r_ / max(q_, 1e-12) * 86400 / dt,
                        ex_pct=100 * wmean(P1["r_ex"][k]) / max(r_, 1e-12),
                        ls_pct=100 * wmean(P1["r_ls"][k]) / max(r_, 1e-12),
                        cv_pct=100 * wmean(P1["r_cv"][k]) / max(r_, 1e-12),
@@ -698,28 +654,23 @@ def analyse(grid, d, c, rec) -> dict:
                        evap_over_P=wmean(P1["land_e"][k]) / max(r_, 1e-12),
                        land_origin_pct=100 * wmean(rain_from_season(P1, k, NB, land_tags=True)) / max(r_, 1e-12),
                        own_region_pct=100 * wmean(tags_rain[k, 2 + k_r]) / max(r_, 1e-12),
-                       move=wmean(a_move[k]))
+                       wind=wmean(wind[k]))
             # rain efficiency (rain per unit of column vapour) relative to the observed one
             row["eff_ratio"] = (row["P"] / max(row["PW"], 1e-9)) / max(row["P_obs"] / max(row["PW_obs"], 1e-9), 1e-9)
             rr.append(row)
     R["regions"] = rr
 
-    # ---- the books: global steady-state residue and its causes (area-weighted)
+    # ---- the books: global steady-state residue (area-weighted). The transport keeps the vapour's
+    # mass exactly, so what is left is the steady state's drift over the tail
     books = []
     A = area / area.mean()
     for k, nm in enumerate(("jul", "jan")):
         src = P1["up"][k] + P1["land_e"][k]
         tot = (A * (src - P1["r"][k])).sum() / (A * P1["r"][k]).sum()
-        mv_unit = F["res_move"][k].sum() / (A * P1["r"][k]).sum()
-        mv_area = (A * (F["moved"][k] - P1["q"][k])).sum() / (A * P1["r"][k]).sum()
-        mix_area = _mix_residue_area(grid, F["moved"][k], kernel_args(rec)[12][k], A) / (A * P1["r"][k]).sum()
-        books.append(dict(season=nm, net_src_minus_rain_pct=100 * float(tot),
-                          move_share_sum_pct=100 * float(mv_unit), move_area_pct=100 * float(mv_area),
-                          mix_area_pct=100 * float(mix_area)))
+        books.append(dict(season=nm, net_src_minus_rain_pct=100 * float(tot)))
     R["books"] = books
-    R["books_note"] = ("net = (E - P)/P over the globe in the kernel's steady state; it equals -(move + mix) "
-                       "plus any drift. move_share_sum: outflow weights that don't sum to 1 (cell units); "
-                       "move_area / mix_area: the same steps' mass change with true cell areas.")
+    R["books_note"] = ("net = (E - P)/P over the globe in the kernel's steady state: the transport is "
+                       "conservative, so this is the vapour's drift over the averaging tail.")
     R["freshwater_mean_m_yr"] = float(np.mean(c.get("freshwater", np.zeros(1))))
     return R
 
@@ -770,11 +721,7 @@ def headline_lines(H) -> list[str]:
 def storm_mixed(grid, rec, r, r_ls):
     """The kernel's rain with the storms' frontal rain spread over a storm's
     size, as climate.rain does after the kernel."""
-    tune, r = rec["tune"], r.copy()
-    for k, d in enumerate(rec["s_in"]):
-        w = np.clip(tune["storm_mix"] * d["B"], 0, 0.9)
-        r[k] += w * (climate.smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
-    return r
+    return climate.storm_spread(grid, r, r_ls, rec["s_in"], rec["tune"])
 
 
 def km3_(x_mm, area_km2, mask=None) -> float:
@@ -786,14 +733,6 @@ def km3_(x_mm, area_km2, mask=None) -> float:
 def rain_from_season(P, k, NB, land_tags=True):
     """Rain in season k that evaporated from land (tracers NB..2NB-1)."""
     return P["r_tag"][k, NB:].sum(0) if land_tags else P["r_tag"][k, :NB].sum(0)
-
-
-def _mix_residue_area(grid, moved, diff, A) -> float:
-    """Area-weighted mass the eddy mixing creates in one step (model units)."""
-    deg = np.diff(grid.nbr_off).astype(np.float64)
-    nb = np.add.reduceat(moved[grid.nbr_idx], grid.nbr_off[:-1])
-    mixed = (1 - diff) * moved + diff * nb / deg
-    return float((A * (mixed - moved)).sum())
 
 
 def _decay(bins) -> dict:
@@ -872,27 +811,26 @@ def report(R) -> str:
                  f"{r['P'] / max(r['P_obs'], 1):.2f} | {r['PW']:.1f} | {r['PW_obs']:.1f} |")
     L += ["", "## Residence and recycling"]
     for r in R["residence"]["model"]:
-        L.append(f"- {r['season']}: vapour/rain {r['tau_iterations']:.1f} iterations = {r['tau_hours'] / 24:.1f} "
-                 f"days at U_REF; rain-out length {r['length_km']:.0f} km (mean move {r['move_mean']:.2f} cells/it)")
+        L.append(f"- {r['season']}: vapour/rain {r['tau_hours'] / 24:.1f} days; rain-out length "
+                 f"{r['length_km']:.0f} km (mean wind {r['wind_mean']:.1f} m/s)")
     L.append(f"- observed PW / GPCP P: {R['residence']['obs_days_pw_over_gpcp']:.1f} days")
     rc = R["recycling"]
     L.append(f"- land rain that evaporated from land: {rc['land_rain_from_land_pct']:.0f}% (obs ~40%); "
              f"land evaporation that rains on land: {rc['land_evap_rains_on_land_pct']:.0f}% (obs ~57%)")
     L += ["", "## The kernel's terms by region (rates in the half-year; trigger: showers fire when dry + LQ q > 0)",
-          ("| region | half | P | P obs | PW | PW obs | q/qs | rain/it | ex% | ls% | cv% | dry C | LQ q C | "
-           "E/P | land-origin % | own-region % | move | (P/PW) / obs |"),
+          ("| region | half | P | P obs | PW | PW obs | q/qs | rain/day | ex% | ls% | cv% | dry C | LQ q C | "
+           "E/P | land-origin % | own-region % | wind m/s | (P/PW) / obs |"),
           "|---" * 18 + "|"]
     for r in R["regions"]:
         L.append(f"| {r['region']} | {r['season']} | {r['P']:.0f} | {r['P_obs']:.0f} | {r['PW']:.1f} | "
-                 f"{r['PW_obs']:.1f} | {r['rh']:.2f} | {r['rainout_per_it']:.3f} | {r['ex_pct']:.0f} | "
+                 f"{r['PW_obs']:.1f} | {r['rh']:.2f} | {r['rainout_per_day']:.3f} | {r['ex_pct']:.0f} | "
                  f"{r['ls_pct']:.0f} | {r['cv_pct']:.0f} | {r['dry_C']:+.1f} | {r['lq_C']:.1f} | "
                  f"{r['evap_over_P']:.2f} | {r['land_origin_pct']:.0f} | {r['own_region_pct']:.0f} | "
-                 f"{r['move']:.2f} | {r['eff_ratio']:.2f} |")
+                 f"{r['wind']:.1f} | {r['eff_ratio']:.2f} |")
     L += ["", "## Books (the kernel's steady state, % of global rain)",
-          "| half | (E - P)/P | move: share sums | move: areas | mixing: areas |", "|---|---|---|---|---|"]
+          "| half | (E - P)/P |", "|---|---|"]
     for r in R["books"]:
-        L.append(f"| {r['season']} | {r['net_src_minus_rain_pct']:+.2f} | {r['move_share_sum_pct']:+.2f} | "
-                 f"{r['move_area_pct']:+.2f} | {r['mix_area_pct']:+.2f} |")
+        L.append(f"| {r['season']} | {r['net_src_minus_rain_pct']:+.3f} |")
     L.append(R["books_note"])
     return "\n".join(L)
 

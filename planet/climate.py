@@ -174,6 +174,50 @@ def _geom(grid: Grid):
     return _GEOM[key]
 
 
+def _faces(grid: Grid) -> dict:
+    """The cell faces, for the rain's finite-volume transport (PW-015):
+    each grid edge (a, b) once (grid.edges' order), with its face (the
+    great-circle arc between the two cell corners the cells share): length
+    L (m) and unit normal n at its middle, pointing from a to b; the
+    distance between the cells' centres lc (m); each cell's area A (m2);
+    and each cell's faces (CSR: off, eid) with sign sg = +1 where the cell
+    is the edge's a (a flux from a to b leaves it) and the cell beyond
+    (nbr). Cached with _geom."""
+    G = _geom(grid)
+    if "faces" not in G:
+        from .ocean import cell_area_km2
+        n = grid.n
+        ea, eb = grid.edges[:, 0].astype(np.int64), grid.edges[:, 1].astype(np.int64)
+        # each icosphere triangle is a corner of its three cells, so an edge's two
+        # corners are the two triangles it borders
+        f = grid.faces.astype(np.int64)
+        sides = np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]])
+        tri = np.tile(np.arange(len(f)), 3)
+        key = sides.min(1) * n + sides.max(1)
+        o = np.argsort(key, kind="stable")
+        key, tri = key[o], tri[o]
+        at = np.searchsorted(key, ea * n + eb)
+        c1, c2 = grid.corners[tri[at]], grid.corners[tri[at + 1]]
+        L = np.arccos(np.clip((c1 * c2).sum(1), -1, 1)) * R_KM * 1000.0
+        mid = c1 + c2
+        mid /= np.linalg.norm(mid, axis=1, keepdims=True)
+        nrm = np.cross(c2 - c1, mid)
+        nrm -= (nrm * mid).sum(1, keepdims=True) * mid
+        nrm /= np.linalg.norm(nrm, axis=1, keepdims=True)
+        p = grid.centers
+        nrm *= np.where(((p[eb] - p[ea]) * nrm).sum(1) < 0, -1.0, 1.0)[:, None]
+        lc = np.arccos(np.clip((p[ea] * p[eb]).sum(1), -1, 1)) * R_KM * 1000.0
+        cells = np.concatenate([ea, eb])
+        eid = np.tile(np.arange(len(ea), dtype=np.int64), 2)
+        sg = np.concatenate([np.ones(len(ea)), -np.ones(len(ea))])
+        o = np.argsort(cells, kind="stable")
+        off = np.concatenate([[0], np.cumsum(np.bincount(cells, minlength=n))]).astype(np.int64)
+        eid, sg = eid[o], sg[o]
+        G["faces"] = dict(ea=ea, eb=eb, L=L, n=nrm, lc=lc, A=cell_area_km2(grid) * 1e6, off=off, eid=eid, sg=sg,
+                          nbr=np.where(sg > 0, eb[eid], ea[eid]))
+    return G["faces"]
+
+
 _COARSE = {}
 COARSE_R = 1.5  # coarse cells: reach of the interpolation weights (two rings of neighbours around the
 # containing cell cover it: the nearest cell three steps away is further from any point of it)
@@ -373,69 +417,6 @@ def _out_shares(v, d, out_off, out_e, allowed):
         for k in range(out_off[i], out_off[i + 1]):
             w[out_e[k]] = w[out_e[k]] / t
     return w, tot
-
-
-@njit(cache=True, parallel=True)
-def _out_shares_face(v, src, dst, d, out_off, out_e):
-    """As _out_shares, with the wind at each edge's face (the mean of its two
-    cells' winds) rather than the sending cell's."""
-    n = out_off.shape[0] - 1
-    w = np.empty(d.shape[0])
-    for i in prange(n):
-        t = 0.0
-        for k in range(out_off[i], out_off[i + 1]):
-            e = out_e[k]
-            a, b = src[e], dst[e]
-            x = max(0.5 * ((v[a, 0] + v[b, 0]) * d[e, 0] + (v[a, 1] + v[b, 1]) * d[e, 1]
-                           + (v[a, 2] + v[b, 2]) * d[e, 2]), 0.0)
-            w[e] = x
-            t += x
-        t = max(t, 1e-12)
-        for k in range(out_off[i], out_off[i + 1]):
-            w[out_e[k]] = w[out_e[k]] / t
-    return w
-
-
-@njit(cache=True, parallel=True)
-def _inflow_geom(v, d, in_off, in_e, src, out_off, out_e):
-    """Each cell's share of inflow (the sum of its upwind neighbours'
-    shares of their outflow) in a wind that blew everywhere as it does
-    there: 1 on a regular grid, but up to ~5% more or less along the
-    icosphere's seams, where the cells are arranged differently."""
-    n = in_off.shape[0] - 1
-    F = np.empty(n)
-    for i in prange(n):
-        f = 0.0
-        for k in range(in_off[i], in_off[i + 1]):
-            e = in_e[k]
-            x = max(v[i, 0] * d[e, 0] + v[i, 1] * d[e, 1] + v[i, 2] * d[e, 2], 0.0)
-            if x <= 0:
-                continue
-            j = src[e]
-            t = 0.0
-            for kk in range(out_off[j], out_off[j + 1]):
-                ee = out_e[kk]
-                t += max(v[i, 0] * d[ee, 0] + v[i, 1] * d[ee, 1] + v[i, 2] * d[ee, 2], 0.0)
-            f += x / max(t, 1e-12)
-        F[i] = f if f > 0 else 1.0
-    return F
-
-
-def inflow_weights(grid: Grid, v: np.ndarray) -> np.ndarray:
-    """Per incoming edge (in _geom's in_e order): the share of the source
-    cell's outflow along it in wind v, divided by the receiving cell's
-    _inflow_geom, so that a wind blowing the same way everywhere neither
-    piles anything up nor thins it along the icosphere's seams (which left
-    lines in the rain), while a converging wind still gathers it. The
-    shares use the wind at each edge's face (the mean of the two cells'):
-    with the sending cell's own wind, the row of cells where two airstreams
-    meet head-on got the inflow of both neighbouring rows, twice the
-    convergence the wind has there, and a one-cell line of rain (PW-227)."""
-    G = _geom(grid)
-    v = np.ascontiguousarray(v, np.float64)
-    w = _out_shares_face(v, G["src"], G["dst"], G["d"], G["out_off"], G["out_e"])
-    F = _inflow_geom(v, G["d"], G["in_off"], G["in_e"], G["src"], G["out_off"], G["out_e"])
-    return w[G["in_e"]] / F[G["dst"][G["in_e"]]]
 
 
 def _edge_weights(grid: Grid, v: np.ndarray, allowed: np.ndarray | None = None):
@@ -944,10 +925,17 @@ def _budyko1(p, pet, w):
 
 
 @njit(cache=True, parallel=True)
-def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, move, diffusion,
-          in_w, in_src, in_off, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, evap, mean_mm):
-    """Water vapour carried along the wind, for all seasons at once
-    (arrays are [season, cell]). Each iteration, in each cell:
+def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, c_self, c_in,
+          nbr, off, steps, dt, tau_ex, rh_c, rh_pow, cv_scale, evap, mean_mm, m0):
+    """Water vapour carried along the wind in physical time, for all
+    seasons at once (arrays are [season, cell]). Each time step dt (s):
+    - the air moves: a finite-volume transport through the cell faces
+      (_transport: the upwind vapour times the face wind, plus eddy mixing
+      down the vapour's gradient across the face), as each cell keeping
+      c_self [season, cell] of its vapour and gathering c_in [slot, season]
+      of each neighbour's (nbr, CSR off: _faces'), so what leaves one cell
+      enters the next and the vapour's mass (per m2 x the cell's area) is
+      kept;
     - over the sea the air takes up water to src_q, where the sea is open
       (open_sea: the share not under sea ice);
     - over land it takes up what the ground evaporates: water_balance's
@@ -956,33 +944,38 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       as the global mean mean_mm sets them, against the potential
       evaporation pet (mm/yr in each season), so the air gets back exactly
       what the land's water balance says it gives (PW-266);
-    - it rains a share fex of what the air can't hold (above qs);
-    - plus large-scale rain (fronts, rising air), a share ls_rate of the
-      rest that needs fairly humid air (relative humidity near rh_c or more);
-    - plus showers and thunderstorms, a share cv_rate per cv_scale C of
+    - what the air can't hold (above qs) rains out on a time scale tau_ex
+      (s);
+    - plus large-scale rain (fronts, rising air) at a rate ls_rate (1/s)
+      of the rest that needs fairly humid air (relative humidity near rh_c
+      or more);
+    - plus showers and thunderstorms, at cv_rate (1/s) per cv_scale C of
       instability: the moist static energy of the air near the ground (heat
       + height + latent heat of its vapour: mse_t + LQ * vapour) above that
       of the air aloft (mse_thr). Wet ground is cooler and dry ground hotter
-      (evap C, see compute), which feeds back on the showers;
-    - then the air moves on (move: share per iteration; slow winds linger)
-      and mixes with its neighbours (diffusion: eddies, storms).
-    Returns the rain rate averaged over the last quarter of the iterations,
-    the large-scale part of it, the evaporation from the sea (the water
-    the air takes up over it, same units), and the air's water vapour left
-    after its rain (_qsat units: 1 = saturated at 0 C). (Parallel over cells; the one sum over
-    all cells stays serial, so the results don't depend on the threads.)"""
+      (evap C, see compute), which feeds back on the showers.
+    It starts from the vapour m0 and runs `steps` steps toward the steady
+    state. Returns the rain per step averaged over the last quarter of the
+    steps, the large-scale part of it, the evaporation from the sea (the
+    water the air takes up over it, same units), the air's water vapour
+    left after its rain (_qsat units: 1 = saturated at 0 C), and the vapour
+    at the end. (Parallel over cells, each adding up in a fixed order; the
+    one sum over all cells stays serial, so the results don't depend on the
+    threads.)"""
     S, n = qs.shape
-    m = src_q.copy()
+    m = np.ascontiguousarray(m0.T)  # [cell, season]: a neighbour's seasons side by side (one gather)
+    m1 = np.empty((n, S))
     acc = np.zeros((S, n))
     acc_ls = np.zeros((S, n))
     ema = np.zeros((S, n))  # running mean of each place's rain
     tcor = np.zeros((S, n))  # wet ground cooler, dry ground hotter (C)
-    moved = np.empty((S, n))
     acc_up = np.zeros((S, n))  # water the air takes up over the sea (evaporation)
     acc_q = np.zeros((S, n))  # the air's water vapour after its rain (for humidity)
-    land_e = np.zeros((S, n))  # what the land evaporates, per iteration (model units)
-    tail = max(iterations // 4, 1)
-    for it in range(iterations):
+    land_e = np.zeros((S, n))  # what the land evaporates, per step (model units)
+    tail = max(steps // 4, 1)
+    fex = 1.0 - np.exp(-dt / tau_ex)
+    scale = 1.0
+    for it in range(steps):
         tcor_due = evap != 0 and it >= 20 and it % 10 == 0
         if (it >= 5 and it % 5 == 0) or tcor_due:
             tot = 0.0
@@ -1016,52 +1009,36 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                     for k in range(S):
                         lp = np.log10(max(ema[k, i] * scale, 1.0) / 100.0) / 1.2
                         tcor[k, i] = evap * (1.0 - 2.0 * min(max(lp, 0.0), 1.0))
-        last = it >= iterations - tail
-        for k in range(S):
-            # The previous season's mixing with the neighbours (p) is done in
-            # the same pass as this season's rain: they touch different
-            # numbers, so this only saves a pass over the cells. (The last
-            # season's mixing waits for the next iteration; after the last
-            # iteration it would no longer change the rain.)
-            p = k - 1 if k > 0 else (S - 1 if it > 0 else -1)
-            for i in prange(n):
-                if p >= 0:
-                    t = 0.0
-                    for e in range(nbr_off[i], nbr_off[i + 1]):
-                        t += moved[p, nbr_idx[e]]
-                    m[p, i] = (1 - diffusion[p, i]) * moved[p, i] + diffusion[p, i] * t / deg[i]
+        last = it >= steps - tail
+        for i in prange(n):
+            for k in range(S):
+                q = c_self[k, i] * m[i, k]
+                for j in range(off[i], off[i + 1]):
+                    q += c_in[j, k] * m[nbr[j], k]
                 if ocean[i]:
-                    if src_q[k, i] > m[k, i]:
-                        up = open_sea[i] * (src_q[k, i] - m[k, i])
+                    if src_q[k, i] > q:
+                        up = open_sea[i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
-                        m[k, i] += up
+                        q += up
                 else:
-                    m[k, i] += land_e[k, i]
-                q = m[k, i]
+                    q += land_e[k, i]
                 excess = max(q - qs[k, i], 0.0)
                 rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
                 rate = ls_rate[k, i] * rh**rh_pow
-                r_ls = rate * (q - excess)
+                r_ls = min(rate * dt, 1.0) * (q - excess)
                 inst = (mse_t[k, i] + tcor[k, i] + LQ * q - mse_thr[k, i]) / cv_scale
                 if inst > 0:
                     rate += cv_rate[k, i] * min(inst, 2.0)
-                r = fex * excess + rate * (q - excess)
-                m[k, i] = q - r
+                r = fex * excess + min(rate * dt, 1.0) * (q - excess)
+                m1[i, k] = q - r
                 ema[k, i] += 0.05 * (r - ema[k, i])
                 if last:
                     acc[k, i] += r
                     acc_ls[k, i] += r_ls
                     acc_q[k, i] += q - r
-            # the air moves on: each cell keeps what stays and gathers what
-            # its upwind neighbours send it
-            for i in prange(n):
-                mo = (1 - move[k, i]) * m[k, i]
-                for e in range(in_off[i], in_off[i + 1]):
-                    j = in_src[e]
-                    mo += move[k, j] * m[k, j] * in_w[k, e]
-                moved[k, i] = mo
-    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail
+        m, m1 = m1, m
+    return acc / tail, acc_ls / tail, acc_up / tail, acc_q / tail, np.ascontiguousarray(m.T)
 
 
 def vapour_mixed(grid: Grid, q: np.ndarray, qs: np.ndarray, t_air: np.ndarray, tune: dict) -> np.ndarray:
@@ -1283,12 +1260,11 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     t_mass = np.maximum(smooth(grid, t_sl, tune["airmass_km"]), np.where(ocean, -99.0, t_sl))
     qs = np.where(ocean, _qsat(sst, tune["q_k"]), _qsat(t_mass - tune["lapse_q"] * up, tune["q_k"]))
     src_q = np.where(ocean, tune["rh"] * qs, 0.0)
-    # Storms stir moisture around (eddy mixing) and make large-scale rain,
-    # both in proportion to the storminess (~1 in a mid-latitude winter).
+    # Storms stir moisture around (eddy mixing, see rain) and make large-scale
+    # rain, both in proportion to the storminess (~1 in a mid-latitude winter).
     B = storminess(grid, t_sl_season) / 7.0
     if track is not None:
         B = (1 - tune["storm_jet"]) * B + tune["storm_jet"] * track
-    diff = np.clip(0.12 + tune["eddy"] * B, 0, 1.0)
     # The tropical rain belt (where the trade winds meet and the air rises)
     # follows the sun; ~25 deg either side of it the air sinks (the dry
     # subtropics, the trade-wind inversion); the poles are dry highs.
@@ -1311,46 +1287,106 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     t_ref = smooth(grid, zs, 800.0)
     mse_thr = t_ref + LQ * tune["rh"] * _qsat(t_ref, tune["q_k"])
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
-    in_w = inflow_weights(grid, v)
-    move = np.clip(speed(v), 0.25, 1.0)
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
-    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, move=move,
-                diff=diff, in_w=in_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
-                t_air=np.where(ocean, sst, t_air))
+    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, v=np.asarray(v, np.float64),
+                B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz, t_air=np.where(ocean, sst, t_air))
+
+
+U_REF = 7.0  # m/s: wind speed 1 (a steady trade wind)
+RATE_S = 17189.0  # s: TUNE's rain rates (base, cv, fex) are shares per this long: one step of the old per-cell
+# kernel at level 6 (its 120 km at U_REF), where they were calibrated (PW-015)
+K_MIX = 2.0e5  # m2/s: the eddy mixing at full strength (the old kernel's one neighbour mix per L6 step)
+RAIN_DAYS = 20.0  # days of pseudo-time to the vapour's steady state (it rains out in ~5-10; Earth L6: the
+# regions within 1% of 60 days, the global books within 0.05% of the rain)
+RAIN_INIT = 0.5  # the land's air starts this share saturated (the sea's at src_q): a guess near the steady
+# state, which it doesn't change (from dry air the same takes 30 days)
+RAIN_CFL = 0.95  # the most of a cell's vapour that may leave it in one step (<= 1: no cell goes negative)
+
+
+def face_winds(grid: Grid, seasons_in: list[dict], tune: dict) -> tuple[np.ndarray, np.ndarray]:
+    """The vapour's wind through each face (_faces' order; m/s, + from ea to
+    eb: the mean of the two cells' winds across the face's normal) and the
+    eddy mixing across it (m2/s), [season, face]."""
+    F = _faces(grid)
+    ea, eb = F["ea"], F["eb"]
+    S, ne = len(seasons_in), len(ea)
+    un, kd = np.empty((S, ne)), np.empty((S, ne))
+    for k, d in enumerate(seasons_in):
+        v = d["v"] * U_REF
+        un[k] = (0.5 * (v[ea] + v[eb]) * F["n"]).sum(1)
+        kd[k] = K_MIX * np.clip(0.12 + tune["eddy"] * 0.5 * (d["B"][ea] + d["B"][eb]), 0, 1)
+    return un, kd
+
+
+def _transport(grid: Grid, un: np.ndarray, kd: np.ndarray) -> tuple:
+    """The finite-volume transport as each cell's share kept (c_self) and
+    gathered from each neighbour (c_in, per slot of _faces' CSR; nbr: that
+    neighbour) in one time step dt (s), the longest at which at most
+    RAIN_CFL of any cell's vapour leaves it. A face passes on, per second,
+    (its outward wind if positive + the mixing kd / lc) x L / A of the cell's
+    vapour: the same amount the cell beyond gains, so the vapour's mass is
+    kept."""
+    F = _faces(grid)
+    n = grid.n
+    e, sg = F["eid"], F["sg"]
+    cell = np.repeat(np.arange(n), np.diff(F["off"]))
+    u_out = sg[None, :] * un[:, e]  # [season, slot]: the wind out of the cell through the face
+    mix = (kd / F["lc"])[:, e]
+    LA = (F["L"][e] / F["A"][cell])[None, :]
+    leave = (np.maximum(u_out, 0) + mix) * LA
+    gain = (np.maximum(-u_out, 0) + mix) * LA
+    out = np.stack([np.bincount(cell, leave[k], n) for k in range(len(un))])
+    dt = float(RAIN_CFL / out.max())
+    return 1.0 - dt * out, np.ascontiguousarray((dt * gain).T), F["nbr"], dt
+
+
+def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None, open_sea=None,
+               ocean=None) -> tuple:
+    """rain's arguments to _rain (also tools/moisture_budget.py's)."""
+    n = grid.n
+    ocean = elev <= 0 if ocean is None else ocean
+    w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
+    open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
+    st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
+          ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr")}
+    c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
+    steps = int(RAIN_DAYS * 86400.0 / dt) + 20
+    tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
+    return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
+            np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, c_self, c_in, nbr,
+            _faces(grid)["off"], steps, dt, tau_ex, tune["rh_c"], tune["rh_pow"], tune["cv_scale"],
+            tune["evap_cool"], tune["mean_mm"], np.where(ocean, st["src_q"], RAIN_INIT * st["qs"]))
+def storm_spread(grid: Grid, r: np.ndarray, r_ls: np.ndarray, seasons_in: list[dict], tune: dict) -> np.ndarray:
+    """Storms carry their rain with them: the large-scale (frontal) rain is
+    spread over a storm's size, so e.g. the storms that brew over warm
+    coastal seas in winter rain on the east coasts even though the mean
+    wind blows offshore there."""
+    r = r.copy()
+    for k, d in enumerate(seasons_in):
+        w = np.clip(tune["storm_mix"] * d["B"], 0, 0.9)
+        r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
+    return r
 
 
 def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
          open_sea=None, ocean=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rain rate (model units) per season, [season, cell], from the inputs
-    of _season_inputs for each season, the evaporation from the sea
-    (same units and shape; 0 on land) and the air's water vapour (_qsat
-    units, same shape; see humidity()). pet: potential evaporation (mm/yr)
-    in each season, [season, cell], and w: Fu's w per cell (default TUNE's
-    budyko_w), from which the land evaporates as water_balance has it;
-    open_sea: the sea's share not under sea ice (default 1), the only part
-    the air takes up water from. tune's mean_mm: the global mean rain the
-    kernel's rain is scaled to (in mm, for the land's evaporation). ocean:
-    default elev <= 0 (compute's: not geo.is_land)."""
-    n = grid.n
-    ocean = elev <= 0 if ocean is None else ocean
-    w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
-    open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
-    G = _geom(grid)
-    st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
-    iters = int(60 * 2 ** (grid.level - 5)) + 40
-    r, r_ls, up, vap = _rain(st["qs"], st["src_q"], ocean, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-                    np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
-                    st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
-                    grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
-                    tune["cv_scale"], tune["evap_cool"], tune["mean_mm"])
-    # Storms carry their rain with them: the large-scale (frontal) rain is
-    # spread over a storm's size, so e.g. the storms that brew over warm
-    # coastal seas in winter rain on the east coasts even though the mean
-    # wind blows offshore there.
-    for k in range(len(seasons_in)):
-        w = np.clip(tune["storm_mix"] * st["B"][k], 0, 0.9)
-        r[k] += w * (smooth(grid, r_ls[k], tune["storm_km"]) - r_ls[k])
-    return r, up, vap
+    of _season_inputs for each season (v: the vapour's wind), the
+    evaporation from the sea (same units and shape; 0 on land) and the
+    air's water vapour (_qsat units, same shape; see humidity()). The
+    vapour is carried in physical time (_rain, PW-015): wind 1 is U_REF
+    m/s, TUNE's rain rates are shares per RATE_S seconds, and the eddy
+    mixing is K_MIX m2/s x clip(0.12 + eddy x storminess, 0, 1), so a
+    planet rains the same at every grid level. pet: potential evaporation
+    (mm/yr) in each season, [season, cell], and w: Fu's w per cell
+    (default TUNE's budyko_w), from which the land evaporates as
+    water_balance has it; open_sea: the sea's share not under sea ice
+    (default 1), the only part the air takes up water from. tune's
+    mean_mm: the global mean rain the kernel's rain is scaled to (in mm,
+    for the land's evaporation). ocean: default elev <= 0 (compute's: not
+    geo.is_land)."""
+    r, r_ls, up, vap, _ = _rain(*_rain_args(grid, elev, seasons_in, tune, pet, w, open_sea, ocean))
+    return storm_spread(grid, r, r_ls, seasons_in, tune), up, vap
 
 
 TUNE = dict(
@@ -1360,17 +1396,17 @@ TUNE = dict(
     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
     # rain-making
-    fex=0.25,  # share of the oversaturated water that rains out in one cell (rest further on)
-    base=0.035,  # rain-out per cell and iteration (large-scale rain; showers: cv times this)
+    fex=0.25,  # share of the oversaturated water that rains out per RATE_S (rest further on)
+    base=0.035,  # share of the vapour that rains out per RATE_S (large-scale rain; showers: cv times this)
     bg=0.45,  # large-scale rain everywhere (fronts, drizzle), times base
     itcz_ls=0.3,  # extra large-scale rain under the tropical rain belt
     itcz_w=10.0,  # deg: half-width of the tropical rain belt
     belt_dry=0.3,  # how much the sinking subtropical air suppresses large-scale rain
     storm=0.6,  # large-scale rain from storms, per unit of storminess
-    eddy=1.0,  # how much storms stir moisture around, per unit of storminess
+    eddy=1.0,  # how much storms stir moisture around (x K_MIX), per unit of storminess
     storm_mix=1.0,  # share of the frontal rain spread over a storm's size, per unit of storminess
     storm_km=600.0,  # km: a storm's rain area
-    cv=4.0,  # showers: rain-out per cell and iteration at cv_scale C of instability, times base
+    cv=4.0,  # showers: rain-out per RATE_S at cv_scale C of instability, times base
     cv_scale=10.0,  # C of moist static energy excess for full-rate showers
     itcz_cv=1.0,  # showers are likelier under the tropical rain belt (rising air) ...
     cv_sink=0.5,  # ... and rarer under the sinking subtropical air
