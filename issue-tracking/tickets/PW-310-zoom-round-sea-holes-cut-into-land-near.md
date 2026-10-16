@@ -1,4 +1,5 @@
 ---
+id: PW-310
 title: "Zoom: round sea holes cut into land near a polar hotspot chain"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: zoom-polish
 blocked_by: []
 relates: [PW-118]
 refs: [planet/zoom.py, planet/zoom_volcanoes.py, "world:592f2a(73.6,121.0)", docs/review/zoom-polish/pw118_caldera_before.png]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -23,3 +26,6 @@ the coarse cells count as oceanic crust but stand above the sea (or under ice). 
 the vents there (floor_m < 0 but the coarse ground land?) and fade the province where
 the coarse cells are land, or take the vent's floor from the current ground. Cell-mean
 rms in that zoom is ~1,600 m, so something there fights the means.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-zoom-round-sea-holes-73n.md (found by zoom-polish).
