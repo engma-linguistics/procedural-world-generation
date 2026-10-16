@@ -2,7 +2,7 @@
 id: PW-118
 title: Continental hotspot vents are drawn as shields; they should be calderas on a lava plain
 type: task
-status: in-progress
+status: todo
 parent: PW-001
 subsystem: zoom
 effort: s
@@ -24,6 +24,7 @@ calderas (Yellowstone's ~70 km), rhyolite domes and only modest cones. Draw cont
 and lower their height limit in the run (`volcanism.new_vent`, hmax ~3 km now).
 
 ## Updates
+- 2026-10-16: Status in-progress -> todo. Zoom side done; the run's continental volcano height cap (volcanism.TOP_MAX 3,500 m) remains.
 - 2026-10-16: Coordinator 2026-10-16: the new 'highest active volcano' highlight always finds 3,500 m on every world: volcanism.TOP_MAX's continental cap binds (a clamp; real continental volcanoes reach ~5.9-6.9 km: Kilimanjaro, Chimborazo, Ojos del Salado). The run height limit part of this ticket should replace the cap with a sound edifice height (e.g. relief above the local base limited by crustal strength/flank failure).
 - 2026-10-15: Zoom side done (ff02dc7): oval caldera + lava plain for above-sea hotspot vents. Run height limit in volcanism.py remains (merged draft).
 - 2026-10-15: Merged inbox draft draft-continental-vent-run-height.md ("Continental hotspot vents: the run's height limit (zoom side of PW-118 done)", found by zoom-polish).
