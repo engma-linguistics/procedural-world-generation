@@ -1895,6 +1895,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     the main run; moc_start: an earlier call's moc_state, to start the
     overturning from (see ocean.solve). Returns a dict of per-cell arrays:
       temp, t_warm, t_cold   C: annual mean, warmest and coldest month
+      t_jul, t_jan           C: July and January (each the warmest or the coldest month,
+                             whichever it is there: world.seasons)
       precip, p_jul, p_jan   mm/yr: annual, and the rate in each half-year
       koppen                 KOPPEN id
       sst                    C: sea-surface temperature (annual)
@@ -2039,7 +2041,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
                cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
-    t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
+    t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
 
     # The deep ocean's overturning (ocean.py): fresh water in and out of the
@@ -2064,7 +2066,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     if oc["sites"]:
         sst = oc["sst"]
         t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
-        t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
+        t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
         wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
     k = koppen(elev, temp, t_warm, t_cold, precip, p_jul, p_jan, grid.lat, ice)
     wb["runoff"] = np.where(land, wb["runoff"], 0.0)
@@ -2080,7 +2082,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune,
                                                         ocean)
     day_jul, day_jan = day_hours(grid.lat, tilt)
-    return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
+    return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
+                t_jan=np.where(jul_warm, t_cold, t_warm), precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
                 rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, sun_jul=day_jul * sun_jul,
                 sun_jan=day_jan * sun_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
@@ -2231,13 +2234,18 @@ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, oc
         t_warm = np.where(fb["has"], t_warm + d_sum, t_warm)
         t_cold = np.where(fb["has"], t_cold + d_win, t_cold)
         temp = np.where(fb["has"], temp + 0.5 * (d_sum + d_win), temp)
-    # (near the equator the rainy 'summer' can be the cooler half-year:
-    # warmest and coldest are whichever is warmer and colder)
+    # (near the equator the rainy 'summer' can be the cooler half-year, and
+    # under an eccentric orbit (orbit_dt) the season of the near sun, the
+    # same month in both hemispheres, outweighs the tilt's there: warmest
+    # and coldest are whichever is warmer and colder, and jul_warm keeps
+    # which of them is July, so July and January stay continuous across the
+    # equator, PW-380)
+    jul_warm = north == (t_warm >= t_cold)
     t_warm, t_cold = np.maximum(t_warm, t_cold), np.minimum(t_warm, t_cold)
     # the bare ground under the ice: its own height, no white surface
     up = LAPSE * np.where(land, ice, 0.0)
     ground = (t_warm + up, t_cold + up, temp + up)
-    return (*ice_surface(*ground, np.where(land, ice, 0.0), cover, lat, p_jul, p_jan), ground)
+    return (*ice_surface(*ground, np.where(land, ice, 0.0), cover, lat, p_jul, p_jan), ground, jul_warm)
 
 
 def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None = None) -> np.ndarray:
