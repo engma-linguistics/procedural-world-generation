@@ -435,7 +435,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 | lava plateau | flat top over stair-stepped, deep valley sides (Deccan traps) |
 | fold-and-thrust belt | parallel folds a fold wavelength apart: whaleback anticlines when young (Zagros), hogbacks of the hard beds closing round plunging noses when old (Valley and Ridge); trellised drainage, water gaps |
 | fault-block rift | tilted blocks ~10–30 km wide: a steep fault scarp, a gentle back-tilt, a sediment-filled half-graben, lakes where the water balance fills them; throw from the stretching and age |
-| shield | a flattened plain with granite domes and inselbergs; recently glaciated shields have ground-down domes and rock-basin lakes |
+| shield | a flattened plain with granite domes and inselbergs (whole and round-topped: a dome a stream would cross is left out, flow paths pond against the others and go round, and the summits' cap doesn't flatten them, PW-168); recently glaciated shields have ground-down domes and rock-basin lakes |
 | karst | small streams sink underground and resurge at springs; temperate: dolines and poljes on a plateau; wet tropics: towers 60–250 m high (Guilin) |
 | dune field | dunes by the seasons' sand drift (Fryberger): transverse and barchan dunes with one wind, linear with two crossing winds, star dunes where winds reverse; 1–3 km apart |
 | coastal plain | a smoothed plain sloping to the sea, low inland-facing cuestas, barrier islands with lagoons on wave-dominated coasts, marshes |

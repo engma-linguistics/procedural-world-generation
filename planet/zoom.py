@@ -2248,6 +2248,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # what leaks into the sea at the coast, is put back on the hillslopes:
     # each cell keeps its mean, PW-268)
     h = keep_means(h, h0, active & ~stream)
+    solid = np.zeros(npx, bool)  # (a shield's domes: not cut through, nor capped)
     if lf is not None:
         # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
         # finished landscape, each coarse cell's mean kept. Not on glaciers,
@@ -2273,19 +2274,23 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         keep_ = fixed_ | ((lf.basins() > 0.5) & (q_ < BASIN_THROUGH_Q) & active)
         # (the shape hooks' structures die out over a few km towards those courses: a water gap)
         mask_s = where * smoothstep(wk + res, wk + max(4 * res, 5.0), dco)
-        h = keep_means(ZL.cut(lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_),
-                              rec_, order_, keep_, nx, ny, res,
-                              fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
+        hr = lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_)
+        # (solid rock the remap raised, a shield's domes, isn't cut through:
+        # the flow paths across it pond and spill round it, PW-168)
+        solid = lf.solid() > 0.5
+        keep_ = keep_ | solid
+        h = keep_means(ZL.cut(hr, rec_, order_, keep_, nx, ny, res, fixed_), h, active, np.clip(3 * lf.weight(), 0, 1))
         # (a sill the remap, the correction or the summits' caps leave across a
         # flow path is cut through rather than filled into a lake; the region's
         # edge, an outlet held at the target, is lowered too where land drains into it)
         # falls over the classes' cliffs retreat into gorges (PW-150)
         h, lf_gorges = ZL.scarp_gorges(h, rec_, q_, lf.weight(), nx, ny, res, fixed_ | ~active)
-        h = ZL.cut(np.where(active, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
+        # (the summits' cap is the landscape pass's: a shield's domes stand above it, PW-168)
+        h = ZL.cut(np.where(active & ~solid, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h_pre = h
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
-    h = np.where(active, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
+    h = np.where(active & ~solid, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake
     rapids_lift = np.where(rapids & ~glacier, np.maximum(h - h_pre, 0.0), 0.0)  # (debug: how far the rapids hold the ground up)
     log(f"  landscape pass: {iterations} iterations [{time.time() - t0:.1f}s]")
 
