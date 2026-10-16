@@ -30,5 +30,6 @@ birth, each step), or the cells could lose what the vent's erosion takes. Low pr
 shows it as sea holes.
 
 ## Updates
+- 2026-10-16: Tectonics night lane (2026-10-16): fix ready, not landed. A vent's floor follows the ground around it each step (volcanism.ground: min over its cell and neighbours, as at birth) instead of an oceanic base level from birth. L6 seed 13 0-300 Myr: vents with floor > 1 km below that ground 17.5% -> 0%; health --quick (8 L6 seeds) fine (volume 0.969, peaks <= 8.63 km, inland 4.9%). Not merged because the trajectory change sends the L5 seed-1 envelope world through a deep icehouse at ~340 Myr (ice 10%, sea -516 m) and its arid share to 7.7% (< 12%): chaotic, but a red test (draft draft-envelope-l5-icehouse-dry.md). Patch: docs/review/audit/tectonics-night/pw338.patch (code + test).
 - 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.
 - 2026-10-16: Created from inbox draft draft-hotspot-ridge-vents-below-their-cells.md (found by zoom-batch2).
