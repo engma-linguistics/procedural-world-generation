@@ -2,7 +2,7 @@
 id: PW-220
 title: "Vegetation types that look wrong in L7 zooms: heath on 200 mm plateaus, temperate forest at 3 S, maquis that never burns"
 type: task
-status: todo
+status: in-progress
 parent: PW-184
 subsystem: surface
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-187, PW-207]
 refs: [planet/vegetation.py, "world:351f32(-28.30,-16.50)", "world:351f32(-3.30,-70.83)", "zoom:58c0ac", "zoom:64f0b6"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,5 +24,6 @@ Zooming into world 351f32 (L7 vegetation demo) made some world-level classificat
 - [ ] each case checked against the world model and fixed or explained
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Smalls2: heath, lichen woodland, tropical-led mixed forest fixed; maquis fire left for the fuel-age draft.
 - 2026-10-15: Created from inbox draft draft-veg-type-oddities-in-zooms.md (found by vegzoom).
