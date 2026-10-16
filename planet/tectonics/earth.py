@@ -157,7 +157,7 @@ def update_climate(sim, e):
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
-    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0)
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
                                                            sim.p_jul, sim.p_jan)
@@ -229,21 +229,58 @@ ICE_MAX = 4000.0  # m
 ICE_CALVE = 5e4  # m2/yr: ice lost by calving per m of coast a sheet's margin reaches (~0.7 m/yr over a
 # coastal L6 cell): a sheet that reaches the sea pays for it from its snow
 ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
+ICE_PASSES = 200  # a sheet settles in at most this many passes (a sheet's retreat or advance is ~1 cell a pass)
 
 
-def ice_sheets(sim, land, bed, ground, old):
+def ice_sheets(sim, land, bed, ground, old, sink=None):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
     warmer than it would on unloaded crust, PW-189); old: the ice that
-    climate saw (m, on that bed).
+    climate saw (m, on that bed); sink: m the bed is pressed down by
+    (default: old's settled load, isostasy.ice_load).
     The real ice comes and goes with ~100 kyr cycles and answers its
-    climate within ~10 kyr, far inside a climate step: this is the extent
-    the flowing sheets settle to under the surface mass balance averaged
-    over the cycle's orbits (icemass.balance, the time zoom's own, PW-190;
-    a warm summer melts more than a cold one saves), in balance with
-    today's mountains, so an ice cap follows its range as it moves or
-    wears down.
+    climate within ~10-100 kyr, far inside a climate step: this is the
+    extent the flowing sheets settle to under the surface mass balance
+    averaged over the cycle's orbits (icemass.balance, the time zoom's own,
+    PW-190; a warm summer melts more than a cold one saves), in balance
+    with today's mountains, so an ice cap follows its range as it moves or
+    wears down. One pass (_ice_pass) moves a sheet's margin about a cell:
+    the balance of the old ice's height decides where it accumulates, and
+    the new margins' lower Nye surface is the next pass's height. So the
+    passes repeat, under this climate, until the iced cells repeat (a
+    fixed point, or a margin cell or two flickering between two passes).
+    Each pass stands on the bed as its ice presses it down (glacial
+    isostasy settles in ~10 kyr too), its bare ground warmer or colder by
+    the lapse rate. (Before PW-364 a run made one pass per climate update:
+    a sheet took ~20 updates, ~80 Myr, to shrink back after its cold era,
+    and as long to grow into one.) The rest of the climate (the sheet's
+    carried air, its albedo, the rain) follows at the next update. The old
+    ice's height still counts: a big sheet keeps itself colder than bare
+    ground would be and can outlast the climate that made it (two states,
+    hysteresis), but not by tens of Myr of lag."""
+    g = sim.grid
+    sink = ice_load(g, np.where(land, old, 0.0)) if sink is None else sink
+
+    def settled(ice):  # the bed and its bare ground under this ice's load
+        rise = sink - ice_load(g, ice)
+        return bed + rise, tuple(t - climate.LAPSE * rise for t in ground)
+
+    ice = _ice_pass(sim, land, bed, ground, old)
+    seen = [np.asarray(old) > 0, ice > 0]
+    for _ in range(ICE_PASSES):
+        new = _ice_pass(sim, land, *settled(ice), ice)
+        on = new > 0
+        if np.array_equal(on, seen[-1]) or np.array_equal(on, seen[-2]):
+            return new
+        seen = [seen[-1], on]
+        ice = new
+    return ice
+
+
+def _ice_pass(sim, land, bed, ground, old):
+    """One pass of ice_sheets: the ice under its climate given the old
+    ice's extent and height.
       accumulation  where snow outlasts the summer: on bare ground (a new
                  cap starts where the year's snow lasts, so the snowline
                  depends on the snowfall as well as the summer, PW-159), and
