@@ -49,12 +49,56 @@ _BASIS: dict[int, tuple[np.ndarray, np.ndarray]] = {}
 def basis(grid) -> tuple[np.ndarray, np.ndarray]:
     """Real spherical harmonics of degree 1..LMAX on the grid's cells,
     orthonormal on the cells (Y.T @ Y = I; cells are near-equal area), and
-    the degree of each column. Built by orthonormalising monomials
-    x^a y^b z^c degree by degree: on the sphere, the degree-d monomials
-    minus everything of lower degree span exactly the degree-d harmonics.
-    (Degree 0, the global mean, is left out: only differences matter.)"""
+    the degree of each column (_build_basis). Kept per process, and on disk
+    next to numba's cache (planet/tectonics/__pycache__, per checkout): the
+    SVDs take ~0.5 s at L6 and ~2.2 s at L7, which every run, slice or
+    worker process would pay at start (PW-258). The file's name hashes the
+    grid's cells, LMAX, numpy's version and _build_basis's code, so a
+    change to any of them builds a new one; reading it back gives the same
+    bits as building it."""
     if grid.n in _BASIS:
         return _BASIS[grid.n]
+    path = _cache_path(grid)
+    deg = np.repeat(np.arange(1, LMAX + 1), 2 * np.arange(1, LMAX + 1) + 1)
+    try:
+        Y = np.load(path)
+        if Y.shape != (grid.n, len(deg)) or Y.dtype != np.float64:
+            raise ValueError("stale")
+    except (OSError, ValueError):
+        Y, deg = _build_basis(grid)
+        _save(path, Y)
+    _BASIS[grid.n] = (Y, deg)
+    return Y, deg
+
+
+def _cache_path(grid):
+    import hashlib
+    import inspect
+    from pathlib import Path
+    h = hashlib.sha1(np.ascontiguousarray(grid.centers).tobytes())
+    h.update(f"{LMAX} {np.__version__}".encode() + inspect.getsource(_build_basis).encode())
+    return Path(__file__).parent / "__pycache__" / f"mantle_basis_{grid.n}_{h.hexdigest()[:16]}.npy"
+
+
+def _save(path, Y):
+    """Written under a temporary name, then renamed (another process may be
+    reading or writing it); a failure only costs the next process a rebuild."""
+    import os
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(tmp, "wb") as f:
+            np.save(f, Y)
+        os.replace(tmp, path)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+
+
+def _build_basis(grid) -> tuple[np.ndarray, np.ndarray]:
+    """Built by orthonormalising monomials x^a y^b z^c degree by degree: on
+    the sphere, the degree-d monomials minus everything of lower degree span
+    exactly the degree-d harmonics. (Degree 0, the global mean, is left out:
+    only differences matter.)"""
     x, y, z = grid.centers.T
     cols, degs = [np.full(grid.n, 1 / np.sqrt(grid.n))], [0]
     for d in range(1, LMAX + 1):
@@ -65,10 +109,7 @@ def basis(grid) -> tuple[np.ndarray, np.ndarray]:
         U, S, _ = np.linalg.svd(B, full_matrices=False)
         cols.extend(U[:, : 2 * d + 1].T)
         degs.extend([d] * (2 * d + 1))
-    Y = np.stack(cols[1:], 1)
-    deg = np.array(degs[1:])
-    _BASIS[grid.n] = (Y, deg)
-    return Y, deg
+    return np.stack(cols[1:], 1), np.array(degs[1:])
 
 
 def smooth(sim, f: np.ndarray, scale_km: float) -> np.ndarray:

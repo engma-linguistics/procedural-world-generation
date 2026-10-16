@@ -2,7 +2,7 @@
 id: PW-112
 title: "Climate: bare polar lowland summers far too warm (Antarctica's ground at +15 C)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: climate
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-102]
 refs: [planet/climate.py, planet/tectonics/earth.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -31,4 +31,5 @@ with evap_cool's desert term (+ for dry ground) adding more. Probe: earth_ice.py
 - [ ] Antarctica (and Greenland) hold their ice under the main-run rule on Earth geography
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Run-lane agent started (polar summers / Antarctica).
 - 2026-10-14: Created from inbox draft draft-polar-bare-ground-too-warm.md (found by climfix).

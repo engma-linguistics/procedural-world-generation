@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, ocean, satellite, vegetation
+from . import climate, coast, coastal, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, latlon, xyz
@@ -59,16 +59,18 @@ def seasons(grid: Grid, c: dict) -> dict:
 def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float = 1.0,
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
-           veg: dict | None = None, orbit_dt: np.ndarray | None = None) -> dict:
+           veg: dict | None = None, orbit_dt: np.ndarray | None = None, soil_memory: dict | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
-    rivers -> vegetation (and biomes from it). dT: global temperature offset from
+    rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
+    (its mangrove forest and salt marsh from coastal life; biomes from it). dT: global temperature offset from
     today's Earth; ice: m of land ice; veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
     for the meta). orbit_dt: an orbit's monthly temperature anomaly
-    (climate.compute's; a finished time-zoom frame)."""
+    (climate.compute's; a finished time-zoom frame). soil_memory: the run's
+    keyframe climate for the soils (soils.climate_memory; PW-185)."""
     t0 = t0 or time.time()
     veg = veg or {}
     c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
@@ -87,11 +89,6 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice)
     sea = elev <= 0
     flood = _flood(grid, down, lk, c, sea)
-    vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-                         c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
-                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"])
-    # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
-    biome = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
     elev_m = np.round(elev).astype(int)
 
     layers = {
@@ -100,7 +97,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "precipitation": np.round(precip).astype(int),
         # July and January (seasons(): the warmest/coldest month by hemisphere), whole C and mm/yr
         **{k: np.round(v).astype(int) for k, v in seasons(grid, c).items()},
-        "biome": biome,
+        "biome": None,  # (below, from the vegetation)
         "flow": np.round(flow, 2),  # river flow: upstream runoff, cells x m/yr (x cell area / 1 yr = m3/s)
         "downstream": down,
         "lake": lk["wet"].astype(int),
@@ -122,6 +119,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         **{k: np.round(np.where(sea, c[k], 0.0), 1) for k in ("sst", "sst_jul", "sst_jan")},
         "salinity": np.round(np.where(sea, c["sss"], 0.0), 2),
         "sinking": np.round(np.where(sea, c["overturning"], 0.0), 3),
+        # C by which upwelling cools the sea surface where it wells up (climate.upwelling_cooling)
+        "upwelling": np.round(np.where(sea, c["upwelling"], 0.0), 1),
         # the air's humidity near the ground in the July / January half-years: dew point (C)
         # and relative humidity (%)
         "dewpoint_jul": np.round(c["dew_jul"]).astype(int), "dewpoint_jan": np.round(c["dew_jan"]).astype(int),
@@ -130,8 +129,6 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         # half-years (climate.clouds, climate.sunshine)
         "cloud_jul": np.round(100 * c["cloud_jul"]).astype(int), "cloud_jan": np.round(100 * c["cloud_jan"]).astype(int),
         "sunshine_jul": np.round(c["sun_jul"], 1), "sunshine_jan": np.round(c["sun_jan"], 1),
-        # vegetation (vegetation.py): named type, structure, productivity, fire, and each PFT's cover
-        **vegetation.world_layers(vg),
     }
     # winds, currents (0 on land) and the jet stream as east/north components,
     # annual means of the two half-years, plus the July and January winds
@@ -144,6 +141,28 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         layers[k] = np.round(v, 2)
     for k, v in extra.items():
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
+    # coastal and shallow-sea life (coastal.py, PW-188), from the layers as stored: % of each
+    # cell, and the sea's turbidity (mg/L)
+    cl = coastal.world_layers(grid, layers, {**meta, "params": params or {}}, veg.get("unlocked"))
+    layers.update({k: np.round(100 * cl[k], 1) for k in coastal.LAYERS})
+    layers["turbidity"] = np.round(cl["turbidity"], 1)
+    # vegetation (vegetation.py): named type, structure, productivity, fire, and each PFT's
+    # cover; mangrove forest and salt marsh from the coastal layers (PW-209)
+    # soils (soils.py, PW-185): the mineral pass before the vegetation (which uses its water capacity,
+    # fertility and permafrost), the organic pass after it
+    winds = [tuple(v for _, v in vec_layers(grid, "w", c[k])) for k in ("wind_jul", "wind_jan")]
+    sm = soils.mineral(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
+                       c["cloud_jan"], ice=ice, lake_kind=lk["kind"], lake=lk["wet"], flow=flow,
+                       flood_ratio=flood["flood_ratio"], winds=winds, memory=soil_memory, **soils.geology(extra))
+    vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
+                         c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
+                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
+                         coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm)
+    layers.update(vegetation.world_layers(vg))
+    # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
+    layers.update(soils.world_layers(sm, soils.organic(sm, vg)))
+    # the coarse biomes are a grouping of the named vegetation types (sea: by depth and ice)
+    layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"]))
     # the satellite view (satellite.py, PW-083): true colour, 0xRRGGBB, each hemisphere's summer / July / January
     layers.update(satellite.world_layers(grid, layers, tilt))
 
@@ -402,8 +421,8 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
     path = S.path_of("world", file_id)
-    path.write_text(text)
-    path.with_suffix(".txt").write_text(text_report(world, summary))
+    S.write_atomic(path.with_suffix(".txt"), text_report(world, summary))
+    S.write_atomic(path, text)  # (last: a world is listed once its .json is there)
     update_index()
     return path
 

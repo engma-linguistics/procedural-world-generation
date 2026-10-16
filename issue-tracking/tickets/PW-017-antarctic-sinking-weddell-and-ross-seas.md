@@ -10,7 +10,7 @@ impact: med
 found_by: ocean
 blocked_by: []
 relates: []
-refs: [planet/ocean.py, docs/proposals/ocean_overturning.md]
+refs: [planet/ocean.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---

@@ -80,6 +80,9 @@ Observed fields are sampled (nearest pixel) at each cell centre:
                 p_jul is the Apr-Sep rate, p_jan the Oct-Mar rate (as the model)
   obs_gpcp      GPCP annual precipitation, land + ocean (mm/yr)
 
+Soils check data (SoilGrids WRB, GLiM parent rock, LGM ice; tools/soil_check.py): sources, licences and
+citations sit next to each loader below (earth_soilgrids, earth_glim, earth_lgm_ice).
+
 Usage:
   PYTHONPATH=. uv run python tools/earth_data.py [--level 6]   # build cache
   from tools.earth_data import earth_on_grid; d = earth_on_grid(grid)
@@ -538,6 +541,228 @@ def earth_potveg(grid) -> np.ndarray:
     votes = np.bincount(cell * 16 + v[m], w, grid.n * 16).reshape(grid.n, 16)
     out = np.where(votes.sum(1) > 0, np.argmax(votes, 1), 0).astype(np.uint8)
     np.savez_compressed(f, version=POTVEG_CACHE_VERSION, potveg=out)
+    return out
+
+
+# --------------------------------------------------------------------------
+# soils check (PW-314; tools/soil_check.py, docs/proposals/soils.md section 7)
+# --------------------------------------------------------------------------
+# SoilGrids 2.0 WRB most probable group
+#   Poggio, de Sousa, Ribeiro, Hengl, Heuvelink et al. (2021), "SoilGrids 2.0:
+#   producing soil information for the globe with quantified spatial
+#   uncertainty", SOIL 7, 217-240, doi:10.5194/soil-7-217-2021. ISRIC - World
+#   Soil Information. Licence: CC BY 4.0 (cite the paper and ISRIC).
+#   The 250 m product is a 172800 x 67200 byte raster (30 WRB reference soil
+#   groups, 255 = no data); its overview file is a BigTIFF of deflate-compressed
+#   128 px tiles with 4 levels (43200 x 16800, 10800 x 4200, 2700 x 1050,
+#   675 x 263). Level 1 (2 arc-minutes, ~3.7 km, 2.5 MB of tiles) is read by HTTP
+#   range requests (tools/tiff_reader.py) and cached whole, with its legend
+#   (group names from MostProbable.qml), as raw_soilgrids_wrb.npz.
+SOILGRIDS_URL = "https://files.isric.org/soilgrids/latest/data/wrb/MostProbable.vrt.ovr"
+SOILGRIDS_QML = "https://files.isric.org/soilgrids/latest/data/wrb/MostProbable.qml"
+SOILGRIDS_LEVEL = 1
+SOILGRIDS_TOP = 83.99916720  # latitude of the top edge (the VRT geotransform); x starts at -180
+SOILGRIDS_NODATA = 255
+SOILGRIDS_CACHE_VERSION = 1
+
+
+def soilgrids_wrb_raw() -> dict:
+    """SoilGrids 2.0 WRB most probable group, one overview level: dict(val
+    (4200, 10800) uint8, 255 = no data; lat, lon of the pixel centres; legend
+    (30,) str, the WRB group name for each value 0..29)."""
+    f = DATA / "raw_soilgrids_wrb.npz"
+    if not f.exists():
+        from tools.tiff_reader import HttpRange, read_ifds, read_image
+        DATA.mkdir(parents=True, exist_ok=True)
+        src = HttpRange(SOILGRIDS_URL)
+        ifd = read_ifds(src)[SOILGRIDS_LEVEL]
+        if ifd["bits"] != 8 or ifd["sample_format"] != 1:
+            raise RuntimeError("SoilGrids overview is not the expected 8-bit raster; its layout changed")
+        val = read_image(src, ifd)
+        nr, nc = val.shape
+        if not ((val <= 29) | (val == SOILGRIDS_NODATA)).all():
+            raise RuntimeError("SoilGrids overview has unexpected values; its layout changed")
+        qml = _get(SOILGRIDS_QML).decode("utf-8", "replace")
+        legend = {int(v): lab for v, lab in re.findall(r'<paletteEntry[^>]*?value="(\d+)"[^>]*?label="([^"]+)"', qml)}
+        if sorted(legend) != list(range(30)):
+            raise RuntimeError("could not read the 30 group names from MostProbable.qml")
+        dy, dx = 140.0 / nr, 360.0 / nc
+        lat = SOILGRIDS_TOP - dy * (0.5 + np.arange(nr))
+        lon = -180.0 + dx * (0.5 + np.arange(nc))
+        np.savez_compressed(f, val=val, lat=lat, lon=lon, legend=np.array([legend[i] for i in range(30)]))
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_soilgrids(grid) -> dict:
+    """SoilGrids WRB group per grid cell: the area-weighted (cos latitude) most
+    common group over the cell's pixels. dict(wrb (n,) uint8, 255 = no data
+    (sea, ice, rock outcrops SoilGrids leaves out); cover (n,) float32, the
+    share of the cell's pixels with data; legend). Cached as
+    data/earth/soilgrids_wrb_L{level}.npz."""
+    f = DATA / f"soilgrids_wrb_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == SOILGRIDS_CACHE_VERSION and len(z["wrb"]) == grid.n:
+            return {"wrb": z["wrb"], "cover": z["cover"], "legend": z["legend"]}
+    r = soilgrids_wrb_raw()
+    votes = np.zeros((grid.n, 32))
+    allw = np.zeros(grid.n)
+    lon = r["lon"]
+    for a in range(0, len(r["lat"]), 150):  # rows in bands, to keep memory low
+        v = r["val"][a:a + 150].ravel()
+        LA, LO = np.meshgrid(r["lat"][a:a + 150], lon, indexing="ij")
+        w = np.cos(np.radians(LA)).ravel()
+        cell = grid.locate(_unit(LA.ravel(), LO.ravel()))
+        allw += np.bincount(cell, w, grid.n)
+        m = v != SOILGRIDS_NODATA
+        votes += np.bincount(cell[m] * 32 + v[m], w[m], grid.n * 32).reshape(grid.n, 32)
+    tot = votes.sum(1)
+    out = np.where(tot > 0, np.argmax(votes, 1), SOILGRIDS_NODATA).astype(np.uint8)
+    cover = (tot / np.maximum(allw, 1e-12)).astype(np.float32)
+    np.savez_compressed(f, version=SOILGRIDS_CACHE_VERSION, wrb=out, cover=cover, legend=r["legend"])
+    return {"wrb": out, "cover": cover, "legend": r["legend"]}
+
+
+# GLiM parent rock
+#   Hartmann & Moosdorf (2012), "The new global lithological map database
+#   GLiM: A representation of rock properties at the Earth surface", Geochem.
+#   Geophys. Geosyst. 13, Q12004, doi:10.1029/2012GC004370. Gridded to 0.5 deg
+#   (dominant first-level class per cell; 38 kB zip), PANGAEA
+#   doi:10.1594/PANGAEA.788537. Licence: CC BY 3.0 (cite the paper and dataset).
+GLIM_URL = "https://hdl.handle.net/10013/epic.39939.d001"  # the PANGAEA zip
+GLIM_CLASSES = ["su", "vb", "ss", "pb", "sm", "sc", "va", "mt", "pa", "vi", "wb", "py", "pi", "ev", "nd", "ig"]
+# GLiM first-level class (ids 1..16, GLIM_CLASSES order; index 0 = none) -> planet.surface.ROCKS id, -1 where
+# there is no rock (water bodies, no data, ice and glaciers). A parent-rock guess for soils, not the world's
+# rock layer:
+#   su unconsolidated sediments -> sediment      vb basic volcanics    -> flood basalt
+#   ss siliciclastic sediments  -> sandstone     pb basic plutonics    -> hotspot basalt (mafic)
+#   sm mixed sediments          -> shale         sc carbonates         -> limestone
+#   va acid volcanics           -> tuff          mt metamorphics       -> metamorphic belt
+#   pa acid plutonics           -> granite       vi intermediate volc. -> arc
+#   py pyroclastics             -> tuff          pi intermediate plut. -> arc
+#   ev evaporites               -> evaporite
+GLIM_TO_ROCK = np.array([-1, 3, 13, 7, 1, 8, 6, 15, 4, 11, 2, -1, 15, 2, 9, -1, -1], np.int8)
+GLIM_CACHE_VERSION = 1
+
+
+def glim_raw() -> dict:
+    """GLiM v1.0 at 0.5 deg: dict(val (360, 720) uint8, 0 = no data / water /
+    ice, 1..16 GLIM_CLASSES; lat, lon of the pixel centres; classes)."""
+    f = DATA / "raw_glim.npz"
+    if not f.exists():
+        DATA.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(io.BytesIO(_get(GLIM_URL))) as z:
+            names = {n.lower(): n for n in z.namelist()}
+            asc = z.read(names["glim_wgs84_0point5deg.txt.asc"]).decode("ascii").splitlines()
+            cls = z.read(names["classnames.txt"]).decode("ascii")
+        got = sorted((int(i), c) for i, c in re.findall(r'^\d+;(\d+);[\d.]+;"(\w+)"', cls, re.M))
+        if [c for _, c in got] != GLIM_CLASSES:
+            raise RuntimeError(f"GLiM class names changed: {got}")
+        head, k = {}, 0
+        while asc[k].split()[0].lower() in ("ncols", "nrows", "xllcorner", "yllcorner", "cellsize", "nodata_value"):
+            key, v = asc[k].split()[:2]
+            head[key.lower()] = float(v)
+            k += 1
+        a = np.loadtxt(asc[k:], dtype=np.float32)
+        nr, nc, cs = int(head["nrows"]), int(head["ncols"]), head["cellsize"]
+        if a.shape != (nr, nc):
+            raise RuntimeError("GLiM grid shape is not what its header says")
+        val = np.where((a >= 1) & (a <= 16), a, 0).astype(np.uint8)
+        lat = head["yllcorner"] + cs * (nr - 0.5 - np.arange(nr))
+        lon = head["xllcorner"] + cs * (0.5 + np.arange(nc))
+        np.savez_compressed(f, val=val, lat=lat, lon=lon, classes=np.array(GLIM_CLASSES))
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_glim(grid) -> np.ndarray:
+    """Parent-rock id (planet.surface.ROCKS, via GLIM_TO_ROCK) per cell: the most
+    common (area-weighted) over the 0.5 deg GLiM pixels in it, -1 where it has
+    none (sea, ice, water, and cells smaller than a pixel at L8+ that hold no
+    pixel centre). Cached as data/earth/glim_L{level}.npz."""
+    f = DATA / f"glim_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == GLIM_CACHE_VERSION and len(z["rock"]) == grid.n:
+            return z["rock"]
+    r = glim_raw()
+    LA, LO = np.meshgrid(r["lat"], r["lon"], indexing="ij")
+    rock = GLIM_TO_ROCK[r["val"].astype(int)].ravel()
+    m = rock >= 0
+    cell = grid.locate(_unit(LA.ravel()[m], LO.ravel()[m]))
+    w = np.cos(np.radians(LA.ravel()[m]))
+    votes = np.bincount(cell * 16 + rock[m], w, grid.n * 16).reshape(grid.n, 16)
+    out = np.where(votes.sum(1) > 0, np.argmax(votes, 1), -1).astype(np.int8)
+    np.savez_compressed(f, version=GLIM_CACHE_VERSION, rock=out)
+    return out
+
+
+# Last Glacial Maximum ice cover (21 ka)
+#   Shao, Y., Anhaeuser, A., Elble, T., et al., "Global Kilometer-Resolution
+#   Dataset of Boundary Conditions for Climate Simulations of the Last Glacial
+#   Maximum", Zenodo, doi:10.5281/zenodo.14506525, file ice_30s.nc (24.5 MB;
+#   variable ice_cover_boolean, 30 arc-second global grid, 1 = ice).
+#   Reconstruction (checked 2026-10-15 against the record's Dataset_Description.pdf,
+#   Sec. 2): the mask is NOT an independent reconstruction. It is the binary 1 degree
+#   PMIP3 LGM ice-cover map ("no ice data finer than 1 degree are available"),
+#   bilinearly interpolated to 30 arc-seconds; ice_cover_boolean then draws each
+#   pixel as ice with probability equal to that interpolated fraction. So the
+#   effective resolution is 1 degree and the extent is the PMIP3 protocol ice sheet
+#   (the PMIP3/CMIP5 LGM ice sheet is a composite of three groups' reconstructions,
+#   the ANU ice model, ICE-6G v1.02 and GLAC-1 (the PMIP3 21k ice-sheet wiki); only
+#   two cover Antarctica. Abe-Ouchi et al. 2015, Geosci. Model Dev. 8, 3621,
+#   doi:10.5194/gmd-8-3621-2015. The PDF itself does not name the members). The record has no
+#   paper DOI; cite the Zenodo dataset (Shao, Anhaeuser, Elble, Ludwig, Schlueter,
+#   Ulbrich, Williams, Xia).
+#   Licence: CC BY 4.0 (cite the dataset). netCDF-4, so read with the small HDF5
+#   reader in tools/h5_reader.py (no h5py), by range requests, and averaged
+#   30 x 30 pixels on the fly to 0.25 deg ice fractions (raw_lgm_ice.npz, ~0.3 MB).
+#   Considered and not used: ICE-6G_C 21 ka (Peltier et al. 2015; University of
+#   Toronto data page): no licence is stated and the server's TLS chain does not
+#   verify with a stock CA store; Ehlers & Gibbard limits (Elsevier booksite
+#   shapefiles): licence unclear.
+LGM_URL = "https://zenodo.org/records/14506525/files/ice_30s.nc"
+LGM_BLOCK = 30
+LGM_CACHE_VERSION = 1
+
+
+def lgm_ice_raw() -> dict:
+    """Observed LGM (21 ka) ice cover on a 0.25 deg grid: dict(frac (720, 1440)
+    float16, the ice share of each pixel 0..1; lat (south to north), lon of the
+    pixel centres)."""
+    f = DATA / "raw_lgm_ice.npz"
+    if not f.exists():
+        from tools.h5_reader import read_variable
+        from tools.tiff_reader import BytesSource
+        DATA.mkdir(parents=True, exist_ok=True)
+        src = BytesSource(_get(LGM_URL))  # one 24.5 MB download (Zenodo throttles many small range requests)
+        frac = read_variable(src, "ice_cover_boolean", block=LGM_BLOCK)
+        lat = read_variable(src, "lat").reshape(-1, LGM_BLOCK).mean(1)
+        lon = read_variable(src, "lon").reshape(-1, LGM_BLOCK).mean(1)
+        if frac.shape != (len(lat), len(lon)) or not 0 <= frac.min() <= frac.max() <= 1:
+            raise RuntimeError("LGM ice file is not the expected 0/1 raster; its layout changed")
+        np.savez_compressed(f, frac=frac.astype(np.float16), lat=lat, lon=lon)
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_lgm_ice(grid) -> np.ndarray:
+    """Share of each cell under LGM ice (0..1, area-weighted mean of the 0.25
+    deg pixels in it). Cached as data/earth/lgm_ice_L{level}.npz."""
+    f = DATA / f"lgm_ice_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == LGM_CACHE_VERSION and len(z["ice"]) == grid.n:
+            return z["ice"]
+    r = lgm_ice_raw()
+    LA, LO = np.meshgrid(r["lat"], r["lon"], indexing="ij")
+    cell = grid.locate(_unit(LA.ravel(), LO.ravel()))
+    w = np.cos(np.radians(LA.ravel()))
+    num = np.bincount(cell, w * r["frac"].astype(np.float64).ravel(), grid.n)
+    den = np.bincount(cell, w, grid.n)
+    out = (num / np.maximum(den, 1e-12)).astype(np.float32)
+    np.savez_compressed(f, version=LGM_CACHE_VERSION, ice=out)
     return out
 
 

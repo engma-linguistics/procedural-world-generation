@@ -1,5 +1,5 @@
 """Supercontinent-cycle diagnostics: does a world gather its continents
-together and break them up again? (docs/proposals/supercontinent_cycle.md)
+together and break them up again? (design history: f45525c:docs/proposals/supercontinent_cycle.md)
 
     uv run python tools/supercontinent.py --seed 1 [--myr 2000] [--level 6] [--out DIR] [--set k=v ...]
     uv run --with matplotlib python tools/supercontinent.py --plot DIR/seed1.json [...]
@@ -25,11 +25,11 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
 from planet.tectonics.plates import CMYR  # noqa: E402

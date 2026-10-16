@@ -2,7 +2,7 @@
 id: PW-231
 title: "Vegetation: C3/C4 grass crossover at 25 deg on observed climate (obs ~30-35); simple temperature nudges don't move it cleanly"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: surface
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-205]
 refs: [planet/vegetation.py, tools/veg_check.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,4 +23,5 @@ So the C3 grasses at 25-35 deg probably win on their cool-season growth (C4 is l
 - [ ] crossover 30-35 deg on the observed climate without losing potential-vegetation agreement
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Created from inbox draft draft-c4-crossover-nudges.md (found by smalls2).

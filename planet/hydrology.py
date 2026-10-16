@@ -47,7 +47,10 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
     (surface.erode): through open lakes and on, ending in closed ones, so a
     closed basin's rim isn't cut by water that never leaves it (the lakes
     are worked out again every lake_every passes; 0: plain priority-flood
-    routing, every pit spilling). Returns new elevation."""
+    routing, every pit spilling). What it removes isn't deposited: a
+    display pass for sub-cell valleys on a keyframe that has already put
+    its sediment where it goes (PW-281: routing it filled the keyframe's
+    hollows and built deltas). Returns new elevation."""
     h = elev.astype(float).copy()
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)

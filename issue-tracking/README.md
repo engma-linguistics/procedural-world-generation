@@ -28,7 +28,7 @@ impact: med             # low | med | high (see below)
 found_by: falls2        # your branch or agent name
 blocked_by: []
 relates: []             # existing ticket ids, e.g. [PW-031]
-refs: [planet/zoom.py, "zoom 58ed13", docs/review/falls/]
+refs: [planet/zoom.py, "zoom 58ed13", docs/review/zoom/]
 ---
 
 ## Description

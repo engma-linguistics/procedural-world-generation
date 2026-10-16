@@ -10,7 +10,7 @@ impact: med
 found_by: mantle
 blocked_by: []
 relates: []
-refs: [planet/tectonics/earth.py, planet/tectonics/crust.py, tools/scorecard.py, "run:0f18a3", "run:fd1cfa"]
+refs: [planet/tectonics/earth.py, planet/tectonics/crust.py, tools/scorecard.py, "run:0f18a3", "run:fd1cfa", docs/review/health/2026-10-15/report.md, tools/health.py]
 created: 2026-10-14
 updated: 2026-10-15
 ---
@@ -21,6 +21,18 @@ volume drifts +2–5% mid-run: assembled continents have fewer subducting margin
 thermostat only partly compensates. The v1 notes had continental area at ~45% vs a 40% target.
 
 ## Updates
+- 2026-10-15: Merged inbox draft draft-health-pw046-volume.md ("PW-046 update: continental crust volume falls 3-8% over 1 Gyr on all 11 sweep runs; land and crust area now on target", found by health-sweep).
+  Update for PW-046. PW-246 health sweep (2026-10-15, main 6926583, 8 L6 + 3 L7 seeds, 1 Gyr): the
+  land and area part of this ticket looks settled, the volume part has turned into a slow loss.
+  - land: seed medians 30.8-31.5% at L6, 32.2-32.3% at L7 (Earth 29%); maxima 37.7-38.7% when assembled.
+  - continental crust area: medians 39.4-40.2% (L6), 38.8-39.0% (L7); ranges 35-44%.
+  - mean continental thickness: medians 33.9-34.9 km (L6), 34.9-35.9 km (L7); target 35 (PW-238).
+  - continental crust volume (sum of thickness over continental cells), end / start: L6 0.918 (seed 11),
+    0.925 (77, 3199), 0.934-0.936 (42, 505, 1), 0.955 (2), 0.974 (21); L7 0.933 (3199), 0.950 (21),
+    0.958 (11). Every run loses 3-8%, none gains (the ticket's mid-run +2-5% drift is gone).
+  Whether a slow loss is wanted is a judgement call (Earth's continental volume is thought roughly
+  steady or slowly growing over the last Gyr); the volume thermostat could aim at the starting volume.
+  If that's accepted, PW-046 can close.
 - 2026-10-15: Status in-progress -> todo. Tect2 (merged): rifted margins laid thicker when area is over target; area 41-42% -> 40-41%. Residual ~1-2 km thinning per Gyr remains.
 - 2026-10-15: Status todo -> in-progress. Worktree tect2.
 - 2026-10-15: Status in-progress -> todo. Tectfound (merged): island arcs out of the volume thermostat, forearc gap, level-independent erosion, no welds at trenches, integral thermostat term. Crust 48.9/46.3% -> 42.7/42.0%. Residual: ~1-2 km thinning and +2-3 points area per Gyr (merged draft).
