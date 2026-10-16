@@ -59,4 +59,5 @@ Options:
 Lean: needs the owner. A for now; E if the deserts matter before PW-013's rain pass.
 
 ## Updates
+- 2026-10-15: Coordinator: prototype agent started on a branch (sound route E: boundary-layer dilution or recycled-vapour tracer); owner decides from its report.
 - 2026-10-15: Created from inbox draft draft-climate-ocean-recycling-wets-dry-interiors.md (found by climate-ocean).

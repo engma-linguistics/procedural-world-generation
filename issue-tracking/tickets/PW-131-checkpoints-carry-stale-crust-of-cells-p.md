@@ -2,7 +2,7 @@
 id: PW-131
 title: Checkpoints carry stale crust of cells plates no longer own (~3x their size); volcanoes read it
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: store
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [planet/store.py, planet/tectonics/volcanism.py, "run 3a4f07"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -30,4 +30,5 @@ it, or nothing: forget it), then zero all unowned crust in checkpoints.
 L7 checkpoints are 90-170 MB each now (run 3a4f07: 1.4 GB for 10).
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-checkpoint-unowned-cells.md (found by landform).

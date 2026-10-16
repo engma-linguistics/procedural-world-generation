@@ -2,7 +2,7 @@
 id: PW-123
 title: "Zoom: outflow ramps of high mountain lakes stand up to ~440 m above the land"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-066]
 refs: [planet/zoom.py, "world:f724bd(72.22,1.87)", "world:f724bd(67.99,7.43)"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -25,4 +25,5 @@ coarse drop from the lake cell to its exit cell over their distance), or end the
 fall/cascade where the floor would sit far above the target.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-zoom-mountain-lake-outlet-ramps.md (found by zoomsmalls).

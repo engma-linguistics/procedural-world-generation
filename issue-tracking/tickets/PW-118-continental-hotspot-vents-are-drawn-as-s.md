@@ -2,7 +2,7 @@
 id: PW-118
 title: Continental hotspot vents are drawn as shields; they should be calderas on a lava plain
 type: task
-status: todo
+status: in-progress
 parent: PW-001
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-004, PW-010]
 refs: [planet/zoom_volcanoes.py, planet/tectonics/volcanism.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -24,4 +24,5 @@ calderas (Yellowstone's ~70 km), rhyolite domes and only modest cones. Draw cont
 and lower their height limit in the run (`volcanism.new_vent`, hmax ~3 km now).
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-continental-hotspot-calderas.md (found by volcanoes).

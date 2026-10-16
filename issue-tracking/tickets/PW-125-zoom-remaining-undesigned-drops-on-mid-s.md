@@ -2,7 +2,7 @@
 id: PW-125
 title: "Zoom: remaining undesigned drops on mid-size streams, coarse-zoom hanging joins, edge steps"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-070, PW-069]
 refs: [planet/zoom.py, "zoom:031ecf", "zoom:f2b532", "zoom:afdaf5"]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -29,4 +29,5 @@ Measure with a per-zoom count of `waterfalls(..., top=100000)` kinds; find which
 re-routing leaves each step (the zoomsmalls report has the diagnostic approach).
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started (small-ticket batch, 2026-10-15).
 - 2026-10-14: Created from inbox draft draft-zoom-remaining-undesigned-drops.md (found by zoomsmalls).
