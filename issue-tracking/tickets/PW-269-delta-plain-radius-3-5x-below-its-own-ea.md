@@ -32,6 +32,7 @@ outputs; don't widen them.
 - [ ] G-B and Mekong tide-dominated or mixed-tide with real inputs; Mississippi still river, Sao Francisco wave
 
 ## Updates
+- 2026-10-15: Coordinator check with the real tools/coast_check.py (Earth climate, after merge): Ganges-Brahmaputra and Mekong still river-dominated (obs tide). The model's Earth discharges there are low (G-B 5,424 m3/s against ~38,000 observed; Mekong 1,504 against ~15,000), so the river share wins; the radius fix itself is right. Output: docs/review/audit/coast_check_after.txt (waves within 2x 24/33, tides 22/26).
 - 2026-10-15: Status in-progress -> done. Done in the coast-zoom fix branch (merged d4e7c90); docs/review/audit/fixes-coast-zoom.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-coast-zoom-delta-radius.md (found by audit-coast-zoom).
