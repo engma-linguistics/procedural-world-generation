@@ -343,9 +343,14 @@ def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -
     ny, nx = Lz["elevation"].shape
     f = {k: np.asarray(v).ravel() for k, v in Lz.items()}
     tj, tn = f["temperature_jul"].astype(float), f["temperature_jan"].astype(float)
+    tw, tc, temp = np.maximum(tj, tn), np.minimum(tj, tn), f["temperature"].astype(float)
+    pj, pn = f["precipitation_jul"].astype(float), f["precipitation_jan"].astype(float)
+    # (the months on the seasons the pixel has: July summer where it is the
+    # warmer month, which near the equator need not follow the latitude's sign, PW-374)
+    lat = np.asarray(lat, float)
+    mo = climate.months(np.where(tj >= tn, np.abs(lat), -np.abs(lat)), temp, tw, tc, pj, pn, tilt)
     col = seasons(lat, elev=f["elevation"].astype(float), water=f["water"], lake_depth=f["lake_depth"],
-                  temp=f["temperature"].astype(float), t_warm=np.maximum(tj, tn), t_cold=np.minimum(tj, tn),
-                  p_jul=f["precipitation_jul"].astype(float), p_jan=f["precipitation_jan"].astype(float),
+                  temp=temp, t_warm=tw, t_cold=tc, p_jul=pj, p_jan=pn, mo=mo,
                   nu=nu, cover=f["plant_cover"].astype(float) / 100, tree=f["tree_cover"].astype(float) / 100,
                   ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"), lake_kind=f.get("lake_kind"),
                   wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt,

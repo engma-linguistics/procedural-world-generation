@@ -34,9 +34,11 @@ What the pixel adds to the coarse cell's climate:
    surplus (mires), flat permafrost, lake shores, a coastal plain's
    marshes (zoom: wetland 1).
 6. Competition and fire to equilibrium (vegetation.equilibrium) on the
-   pixels, warm-started from the world's fractions (Gaussian-interpolated:
-   the cell's history, forest or savanna), with seeds spreading between
-   neighbouring pixels.
+   pixels, warm-started from the world's fractions (Gaussian-interpolated
+   over NU0_SIGMA of a cell at a planet-fixed wandering offset, so the
+   cells' forest / open edges don't come out as straight lines along their
+   rows: the cell's history, forest or savanna), with seeds spreading
+   between neighbouring pixels.
 7. The pixels' mean cover of each type is pulled part of the way (CORR)
    back to the coarse cell's, by a smooth correction field, except where
    the pixel's height differs much from the coarse surface (CORR_DZ: a peak
@@ -83,6 +85,16 @@ FW_MAX = 0.75  # most of a pixel that is flooded (as of a cell: vegetation.flood
 FLAT_TAN = 0.02  # tan slope under which ground counts as flat for wetlands
 CORR, CORR_DZ = 0.6, 800.0  # pull towards the coarse cell's cover, faded out over this much height difference (m)
 FIRE_KM = 25.0  # km: the size of the fire mosaic's patches
+# The warm start (PW-374): the world's cover is mostly forest or open cell by
+# cell (the same bistability), so a half-cell kernel draws its edges along the
+# coarse cells' rows, and the pixels' competition, bistable too, keeps them
+# as ruler-straight lines and rectangles. History below a cell is unknown:
+# read it with a wider kernel, at a planet-fixed wandering offset (rough:
+# fbm down to ~8 km), so the pixels' forest / open edges meander
+NU0_SIGMA = 0.6  # the warm start's interpolation kernel, x the cell spacing
+NU0_WARP, NU0_WARP_L = 0.4, 0.7  # the offset: sd and patch size, x the cell spacing
+NU0_WARP_GAIN = 0.75  # its fbm gain (rough, so the edges meander at every scale)
+WARP_SEED = 1_000_003 * 7 + 401
 STEPS = ((10, 2.0), (50, 10.0))  # competition steps (count, years) from the warm start
 CHUNK = 40000
 SEA_W = 0.02  # weight of the sea cells in the pixels' rain and cloud (the land cells' count)  # pixels per potential-productivity batch (memory)
@@ -101,8 +113,10 @@ def _sel(g, fr, size_km: float) -> np.ndarray:
 def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float) -> dict:
     """The coarse climate the zoom's pixels need, Gaussian-interpolated as
     zoom.build does its fields (sigma half a cell): temperatures reduced to
-    sea level (annual, warmest and coldest month; on the bare ground under
-    any coarse ice, zoom.ice_ground), the July / January half-years' rain
+    sea level (annual, warmest and coldest month: July and January
+    interpolated, then the warmer of the two, with jul_warm (bool) where
+    that is July; on the bare ground under any coarse ice,
+    zoom.ice_ground), the July / January half-years' rain
     (mm/yr), cloud (0..1; None without), runoff (mm/yr, the land's), and
     the world's vegetation fractions (NP, n; land without ice; None without)."""
     from .zoom import ice_ground
@@ -120,6 +134,11 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     gw, gc = ice_ground(g, L, ice)
     # (annual: the world's, moved with the months under ice)
     ta = np.asarray(L["temperature"], float) + 0.5 * ((gw - tw) + (gc - tc))
+    # July and January, not the warmest and coldest month: those swap at the
+    # equator, so interpolating them and swapping back per pixel would put a
+    # step of the whole seasonal swing on the pixel row at latitude 0 (PW-374)
+    nc = g.lat >= 0
+    gw, gc = np.where(nc, gw, gc), np.where(nc, gc, gw)
     prc = np.asarray(L["precipitation"], float)
     pj = np.asarray(L.get("precipitation_jul", prc), float)
     pn = np.asarray(L.get("precipitation_jan", prc), float)
@@ -136,16 +155,33 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     wts[:, 7] = land_c
     fine, _ = ZK.gauss_interp(px, py, cx, cy, vals, wts, 0.5 * sp)
     fine = np.nan_to_num(fine, nan=0.0)
-    out = dict(t_sl=fine[:, 0], warm_sl=fine[:, 1], cold_sl=fine[:, 2], p_jul=np.maximum(fine[:, 3], 0),
+    jul_warm = fine[:, 1] >= fine[:, 2]
+    out = dict(t_sl=fine[:, 0], warm_sl=np.maximum(fine[:, 1], fine[:, 2]), cold_sl=np.minimum(fine[:, 1], fine[:, 2]),
+               jul_warm=jul_warm, p_jul=np.maximum(fine[:, 3], 0),
                p_jan=np.maximum(fine[:, 4], 0), cloud_jul=fine[:, 5] if has_cloud else None,
                cloud_jan=fine[:, 6] if has_cloud else None, runoff=np.maximum(fine[:, 7], 0),
                ice_cover=np.clip(fine[:, 8], 0, 1), nu0=None)
     if all(f"veg_{c}" in L for c in V.CODES):
         nu_c = np.stack([np.asarray(L[f"veg_{c}"], float)[sel] / 100 for c in V.CODES], 1)
         w = (land_c & (ice[sel] <= 0)).astype(float)
-        f, _ = ZK.gauss_interp(px, py, cx, cy, nu_c, np.repeat(w[:, None], V.NP, 1), 0.5 * sp)
+        wx, wy = history_warp(fr, px, py, sp)
+        f, _ = ZK.gauss_interp(px + wx, py + wy, cx, cy, nu_c, np.repeat(w[:, None], V.NP, 1), NU0_SIGMA * sp)
         out["nu0"] = np.nan_to_num(f.T, nan=0.0)
     return out
+
+
+def history_warp(fr, px, py, sp: float) -> tuple[np.ndarray, np.ndarray]:
+    """Where each pixel reads the world's cover from for the warm start (km,
+    added to px, py): a planet-fixed fbm offset (sd NU0_WARP cells, patches
+    ~NU0_WARP_L cells across), so overlapping zooms agree and the warm
+    start's forest / open edges wander as an unknown history would, rather
+    than tracing the coarse cells' rows (PW-374)."""
+    P = np.ascontiguousarray(fr.to_sphere(px, py) * R_KM)
+    lam = NU0_WARP_L * sp
+    octaves = max(1, int(np.ceil(np.log2(lam / 8.0))))
+    a = NU0_WARP * sp / 0.17  # (fbm / 0.17: ~unit sd)
+    return (a * ZK.fbm(P, lam, octaves, NU0_WARP_GAIN, WARP_SEED),
+            a * ZK.fbm(P, lam, octaves, NU0_WARP_GAIN, WARP_SEED + 1))
 
 
 def _neighbours(idx: np.ndarray, nx: int, ny: int) -> SimpleNamespace:
@@ -165,6 +201,19 @@ def _neighbours(idx: np.ndarray, nx: int, ny: int) -> SimpleNamespace:
     off = np.concatenate([[0], np.cumsum(cnt)]).astype(np.int64)
     flat = nb[nb >= 0].astype(np.int64)  # (row-major: each pixel's neighbours in turn)
     return SimpleNamespace(n=len(idx), nbr_off=off, nbr_idx=flat)
+
+
+def season_lat(lat, jul_warm) -> np.ndarray:
+    """The latitude whose seasons a pixel's climate has, for the month
+    models (climate.months: the warmest month is July north of the equator,
+    January south of it): the pixel's own, mirrored where its interpolated
+    July is the warmer month south of the equator or the colder one north
+    of it. That happens only within a coarse cell or so of the equator,
+    where July and January cross over smoothly (PW-374), so the months stay
+    continuous across it; the mirrored latitude's light differs by a
+    fraction of a degree."""
+    lat = np.asarray(lat, float)
+    return np.where(np.asarray(jul_warm, bool), np.abs(lat), -np.abs(lat))
 
 
 def _uniform(z):
@@ -258,7 +307,8 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         return dict(layers=res_layers, terrain=tr, stats={}, idx=idx, nu=np.zeros((V.NP, nv)))
 
     # --- the pixels' climate --------------------------------------------
-    north = lat[idx] >= 0
+    # (the seasons: July is summer where it is the warmer month, PW-374)
+    north = np.asarray(fields["jul_warm"], bool)[idx]
     temp = fields["t_sl"][idx] - LAPSE * hv
     t_warm = fields["warm_sl"][idx] - LAPSE * hv
     t_cold = fields["cold_sl"][idx] - LAPSE * hv
@@ -285,7 +335,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     cj = fields["cloud_jul"][idx] if fields["cloud_jul"] is not None else None
     cn = fields["cloud_jan"][idx] if fields["cloud_jan"] is not None else None
     pj, pn = fields["p_jul"][idx], fields["p_jan"][idx]
-    latv = lat[idx]
+    latv = season_lat(lat[idx], north)
     nu0 = fields["nu0"][:, idx] if fields["nu0"] is not None else None
 
     # the coarse cells (for the flooded share's and the cover's cell means)
