@@ -10,9 +10,9 @@ impact: high
 found_by: daniel
 blocked_by: []
 relates: [PW-030, PW-091]
-refs: [planet/timezoom.py, planet/timezoom_kernels.py, docs/proposals/glacial_timezoom.md]
+refs: [planet/timezoom.py, planet/timezoom_kernels.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 ## Description
@@ -28,6 +28,7 @@ While the time zoom runs, record what the ice leaves behind, as layers of the fi
 Glacial erosion and proglacial lakes were "not done" in the original time-zoom spec.
 
 ## Updates
+- 2026-10-15: Original time-zoom spec (db11d33:docs/proposals/glacial_timezoom.md) also listed permafrost as an optional extra; not built.
 - 2026-10-14: PW-189 owns the crustal rebound mechanism; this ticket uses it.
 - 2026-10-14: Became story 2 of the world finishing pass PW-090 (owner, 2026-10-14).
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Glacial time zoom ('Not done: glacial erosion, proglacial lakes').

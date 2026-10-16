@@ -4,7 +4,9 @@
 
 Runs planet/vegetation.py on Earth's terrain twice: on the model's own
 climate (the Earth world's layers) and on the observed climate (NCEP
-temperature, GPCC half-year rain, CRU sunshine for cloud; tools/earth_data.py).
+temperature, GPCC half-year rain, CRU sunshine for cloud; tools/earth_data.py),
+each on the soils (planet/soils.py pass 1, with GLiM rock and the LGM ice as
+tools/soil_check.py; --no-soil: the old fixed buckets).
 The gap between the two separates vegetation errors from climate errors.
 Lakes are ignored (vegetation is computed on every land cell; the L6
 Earth world floods ~6 Mkm2 of flat basins, the Amazon and Congo among them).
@@ -29,10 +31,10 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
+import numpy as np  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import vegetation as V  # noqa: E402
 from planet import world as W  # noqa: E402
@@ -70,9 +72,11 @@ TARGETS = dict(npp=(45, 70), vegc=(300, 800), burned=(2, 8), forest=(55 * 0.65, 
                tundra=(8 * 0.65, 11 * 1.35))
 
 
-def run(grid, L, obs: dict | None):
+def run(grid, L, obs: dict | None, geo: dict | None = None):
     """The vegetation model on the Earth world's model climate, or (obs) on
-    the observed one where it has data."""
+    the observed one where it has data; on the soils (pass 1, PW-185) from
+    that climate and geo (tools/soil_check.geology), or without soils (fixed
+    buckets) when geo is None."""
     t, tw, tc = L["temperature"].astype(float), L["warm_month"].astype(float), L["cold_month"].astype(float)
     pj, pa = L["precipitation_jul"].astype(float), L["precipitation_jan"].astype(float)
     cj, ca = L["cloud_jul"] / 100.0, L["cloud_jan"] / 100.0
@@ -84,7 +88,14 @@ def run(grid, L, obs: dict | None):
         pj, pa = fill(obs["obs_p_jul"], pj), fill(obs["obs_p_jan"], pa)
         cj = fill(np.clip((0.95 - obs["obs_sun_jul"]) / 0.9, 0, 1), cj)
         ca = fill(np.clip((0.95 - obs["obs_sun_jan"]) / 0.9, 0, 1), ca)
-    return V.model(grid, L["elevation"], t, tw, tc, pj, pa, TILT, cj, ca, L["flow"], None, None, L["ice"])
+    soil = None
+    if geo is not None:
+        from planet import soils as SO
+        soil = SO.mineral(grid, L["elevation"], t, tw, tc, pj, pa, TILT, cj, ca, geo["rock"],
+                          glaciated_myr=geo["glaciated_myr"], ice=L["ice"], lake_kind=L["lake_kind"], flow=L["flow"],
+                          flood_ratio=L.get("flood_ratio"),
+                          winds=[(L["wind_jul_e"], L["wind_jul_n"]), (L["wind_jan_e"], L["wind_jan_n"])])
+    return V.model(grid, L["elevation"], t, tw, tc, pj, pa, TILT, cj, ca, L["flow"], None, None, L["ice"], soil=soil)
 
 
 def report(grid, L, v, pv, area_km2, label: str) -> dict:
@@ -221,6 +232,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--world", default=None, help="Earth world id (default: the newest Earth world)")
     ap.add_argument("--json", default=None)
+    ap.add_argument("--no-soil", action="store_true", help="fixed soil buckets, no soils (as before PW-185)")
     ap.add_argument("--png", default=None, help="write maps (model groups, potential vegetation, model types) "
                                                "for the observed-climate run to this file")
     a = ap.parse_args()
@@ -237,9 +249,13 @@ def main():
     obs = {**earth_on_grid(grid), **earth_clouds(grid)}
     pv = earth_potveg(grid)
     area = cell_areas(grid) * 6371.0 ** 2
+    geo = None
+    if not a.no_soil:
+        from tools.soil_check import geology
+        geo = geology(grid, L)
     res = []
     for label, o in (("model climate", None), ("observed climate", obs)):
-        v = run(grid, L, o)
+        v = run(grid, L, o, geo)
         res.append(report(grid, L, v, pv, area, label))
         print(fmt(res[-1]))
         if a.png and o is not None:

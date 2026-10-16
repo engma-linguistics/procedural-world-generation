@@ -260,24 +260,58 @@ def arc_rock(sim, col, growth):
     return arcky
 
 
-def stretch(sim, col, rate, plume, newc, shrink=1.0):
+SQUEEZED = 0.05  # km/Myr of collision stacking that makes a cell part of a squeezed belt (flow_and_orogeny)
+
+
+def stretch(sim, col, rate, plume, newc, stack_add=None):
     """Thin stretched continental crust (rate per Myr from rift_stretching)
     down to 22 km, floor the opening rifts with what it lost
-    (rifted_margin), and mark ocean-floor plume piles as hotspot rock."""
+    (rifted_margin), and mark ocean-floor plume piles as hotspot rock.
+    Crust a collision is stacking up this step (stack_add, km) is being
+    shortened, not stretched: it isn't thinned or dated as rifting (a belt
+    cell between a collision and an opening edge was both, every step, and
+    its rift strain added up to beta ~6-9 on 80 km crust, whose thermal
+    uplift, isostasy.subsidence, put it ~2 km above its belt: PW-172's
+    one-frame 10.6 km peaks)."""
     dt, t = sim.dt, col.t
     thin = col.cont & (t > 22)
+    if stack_add is not None:
+        thin &= stack_add <= SQUEEZED * dt
     t0 = t.copy()
     t[thin] = np.maximum(22.0, t[thin] * np.exp(-rate[thin] * dt))
     record.rift(col.rec, thin & (rate > RIFT_THINNING), np.log(t0 / np.maximum(t, 1e-9)), sim.t)
     sim.book("stretch", t0, t, col.cont)
-    rifted_margin(sim, t0 - t, col, newc, shrink)
+    rifted_margin(sim, t0 - t, col, newc)
     col.rock[~col.cont & (plume * dt > 0.2)] = HOTSPOT
 
 
 MARGIN_MIN_KM = 12.0  # thinnest rifted-margin crust laid in a rift (else: ocean floor)
+POOL_MYR = 100.0  # Myr: e-folding time of a rift pool that no opening rift takes up
 
 
-def rifted_margin(sim, lost, col, newc, shrink=1.0):
+def flanks(sim, col, cont):
+    """A rift that never opens (or opens too little to take its whole pool)
+    keeps the crust stretched out of it in its own flanks: the pool decays
+    over POOL_MYR back into the plate's continental cells that rifted within
+    that time (the stretched ones, equally; none left: all its continent).
+    Crust kept, so the pool isn't a sink (PW-287: the decayed share used to
+    be deleted, ~5% of all stretched crust). Booked as "rift flanks"."""
+    pl, own = sim.plates, sim.owner
+    back = pl.rift_pool * (1 - np.exp(-sim.dt / POOL_MYR))
+    pl.rift_pool -= back
+    if not (back > 0).any():
+        return
+    rifted = cont & (sim.t - col.rec[:, record.T_RIFT] <= POOL_MYR)
+    n_rift = np.bincount(own, rifted, P_MAX)
+    n_cont = np.bincount(own, cont, P_MAX)
+    to = np.where((n_rift[own] > 0) & rifted | (n_rift[own] == 0) & cont, 1.0, 0.0)
+    n_to = np.where(n_rift > 0, n_rift, n_cont)
+    add = to * (back / np.maximum(n_to, 1))[own]
+    col.t = col.t + add
+    sim.book("rift flanks", 0, add, cont)
+
+
+def rifted_margin(sim, lost, col, newc):
     """Stretching doesn't destroy crust, it spreads it thinner over a
     wider area: the opening rift is floored by thinned continental crust
     (rifted margins: 10-25 km thick, 100-300 km wide, under 1-4 km of sea)
@@ -292,19 +326,18 @@ def rifted_margin(sim, lost, col, newc, shrink=1.0):
     cells sank to -4 km beside -2 km margin, and the plates carried the
     mosaic past the world grid as cells flipping between continent and
     deep sea every few Myr: PW-108.)
-    When the continents cover more than their target area (shrink > 1,
-    crust.thermostats) the margin is laid thicker, so the same pool makes
-    fewer cells of continent: up to rift_margin_km at shrink 2 (PW-046:
-    margins were a main source of the slow growth in area).
+    How thick a ring is laid depends only on the pool (PW-286: it used to
+    be laid thicker when the continents' area was over its target, a second
+    lever on the area thermostat's error acting through a local process;
+    the area is the subduction-erosion thermostat's alone).
     In place on col (and sim.w_age)."""
     g, p, pl = sim.grid, sim.params, sim.plates
     own = sim.owner
     cont = col.cont
     pl.rift_pool += np.bincount(own, np.maximum(lost, 0) * cont, P_MAX)
-    pl.rift_pool *= np.exp(-sim.dt / 100.0)  # a rift that never opens keeps it in its thickened flanks... eventually
+    flanks(sim, col, cont)
     if p.rift_margin_km <= 0 or not newc.any():
         return
-    min_km = MARGIN_MIN_KM + max(p.rift_margin_km - MARGIN_MIN_KM, 0.0) * float(np.clip(shrink - 1.0, 0.0, 1.0))
     src_of = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
     cand = newc & ~cont
     if not cand.any():
@@ -324,7 +357,7 @@ def rifted_margin(sim, lost, col, newc, shrink=1.0):
         for k in np.unique(own[touch]):
             cells = np.flatnonzero(touch & (own == k))
             km = min(p.rift_margin_km, pl.rift_pool[k] / len(cells))
-            if km < min_km:
+            if km < MARGIN_MIN_KM:
                 continue
             s = s_all[cells]
             col.t[cells] = km
@@ -365,7 +398,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
                    int(round(3 * sim.scale**2 * sim.heat() ** 2)))
     t = col.t = np.minimum(t, MAX_KM)
     sim.book("flow+cap", t0, t, cont)
-    squeezed = cont & (stack_add > 0.05 * dt)
+    squeezed = cont & (stack_add > SQUEEZED * dt)
     rock[squeezed & (rock != CRATON)] = OROGEN
     record.fold(col.rec, col.lith, squeezed, stack_add, col.cover, t, sim.t)
     rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN

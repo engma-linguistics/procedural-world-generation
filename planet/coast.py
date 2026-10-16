@@ -43,10 +43,16 @@ open-water share of it, so an Arctic coast open for ~3 months gets waves
 for those months only (and its deltas lean river-dominated).
 
 Wind speed: the climate's half-year mean winds are vectors (~1 = a steady
-trade wind, ~7 m/s). Wave power grows as ~U^5, so storms dominate; the
-effective wind is U_TRADE x |wind| + U_STORM x storminess along the jet's
-storm tracks (climate.storm_track, ~1 in a mid-latitude winter), in each
-half-year, averaged. Calibrated on Earth (tools/coast_check.py).
+trade wind, ~7 m/s). The mean wind speed is U_TRADE x |wind| + U_STORM x
+storminess along the jet's storm tracks (climate.storm_track, ~1 in a
+mid-latitude winter), in each half-year. The speeds spread about it as a
+Weibull (k = 2) distribution; the sea is grown under four speeds of that
+spread and the powers averaged (GUST_X, GUST_W), so a fully developed sea
+(~U^5) gets 6.1 x a steady wind's power, a fetch-limited one (~U^(7/3))
+1.43 x and a duration-limited storm sea (~U^3) 1.91 x. Wind blowing off
+land is slower by LAND_SLOW and recovers over ~L_RECOVER km of sea.
+U_TRADE and U_STORM are calibrated on the open-ocean coasts of Earth
+(tools/coast_check.py).
 
 Tidal range (world layer `tide_range`, m, mean spring-ish range)
 -----------------------------------------------------------------
@@ -68,9 +74,12 @@ A crude physical proxy, in three factors:
 2. Shelf resonance and shoaling. On a continental shelf of width W and
    depth h the tide is a standing wave; it resonates when W is near a
    quarter of the tidal wavelength sqrt(g h) x 12.42 h (~300 km on a 80 m
-   shelf): amplification 1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a
-   friction term (Bay of Fundy, Patagonia, NW Australia, the Yellow Sea).
-   Shelves far wider than that lose the tide to friction instead (Siberia).
+   shelf; h the shelf's mean depth along the path across it): amplification
+   1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a friction term (Bay of Fundy,
+   Patagonia, NW Australia, the Yellow Sea), falling back toward 1 by
+   lambda/2. Shelves far wider than that lose the tide to friction instead
+   (Siberia). W runs from the coastline to where the depth crosses the
+   shelf break, interpolated between the cells either side of it.
    Sea ice adds friction at the top of the water column (ice-ocean drag is
    comparable to bottom drag): both friction terms grow by ICE_FRIC x the
    share of the year the sea is frozen (Arctic shelves).
@@ -115,18 +124,30 @@ from .kernels import walk_nearest
 
 GRAV = 9.81
 # waves
-U_TRADE = 6.5  # m/s for a climate wind vector of length 1
-U_STORM = 6.0  # m/s added at storminess 1 (a mid-latitude winter storm track)
+U_TRADE = 7.0  # m/s (mean) for a climate wind vector of length 1
+U_STORM = 7.0  # m/s (mean) added at storminess 1 (a mid-latitude winter storm track)
 N_DIR = 24  # wave ray directions
 N_DIR_TIDE = 16  # directions for the tides' openness and funnelling
 D_MAX = 6000.0  # km: the farthest swell is traced from
 L_SWELL = 8000.0  # km: swell energy e-folding distance
-# The wind isn't steady: for a Weibull (k = 2) spread of speeds about a mean
-# U, the mean of U^5 (wave power ~ U^5) is 6.1 x U^5, as for a steady wind
-# 6.1^(1/5) = 1.43 x faster.
-GUST = 1.43
+# The wind isn't steady: its speeds spread about the mean U as a Weibull
+# (k = 2, Rayleigh) distribution. The sea is grown under each of a few
+# speeds x U and the powers averaged, so each regime of the growth law gets
+# its own moment of the spread (a fully developed sea ~U^5: 6.1 x a steady
+# wind's power; fetch-limited ~U^(7/3): 1.43; duration-limited ~U^3: 1.91;
+# PW-270). For k = 2, (U / scale)^2 is exponentially distributed, so the
+# nodes are 4-point Gauss-Laguerre's (exact for these moments to <0.3%).
+_GL_V = np.array([0.322547689619, 1.745761101158, 4.536620296921, 9.395070912301])
+_GL_W = np.array([0.603154104342, 0.357418692438, 0.038887908515, 0.000539294706])
+GUST_X = np.sqrt(_GL_V) / 0.886226925453  # speeds per unit mean (scale = 1 / Gamma(1.5))
+GUST_W = _GL_W / _GL_W.sum()
 T_STORM = 12.0  # hours a storm's wind blows over the same sea (duration-limited growth)
-LAND_SLOW, L_RECOVER = 0.5, 1200.0  # wind off land: slower by this share, recovering over this many km of sea
+# Wind blowing off land is slowed by the land's roughness (by LAND_SLOW) and
+# comes back up to speed over the sea as the marine internal boundary layer
+# grows, within a few tens of km (the land-to-water wind correction of the
+# Shore Protection Manual / Coastal Engineering Manual applies to fetches of
+# ~10-50 km; PW-272: this was 1200 km, a fit to enclosed seas)
+LAND_SLOW, L_RECOVER = 0.3, 50.0
 STORM_ZONAL = 0.5  # share of the storminess taken from the latitude belt (rest: the jet's storm tracks)
 SHELF_FRIC_KM, SHELF_FRIC_M = 250.0, 35.0  # bottom friction: e-folding km at the coast's depth scale
 # tides
@@ -199,10 +220,11 @@ def _march(c0, k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells
 
 @njit(cache=True, parallel=True)
 def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric, ndir, step_km, nsteps,
-               l_swell, radius, land_slow, l_recover, t_storm):
+               l_swell, radius, land_slow, l_recover, t_storm, gx, gw):
     """Wave power (kW/m) arriving at each target cell, per season (see the
-    module docstring). blocked[s]: land or sea ice in season s; U[s]: wind
-    speed m/s; wdir[s]: unit wind direction (zero where calm); kfric: bottom
+    module docstring). blocked[s]: land or sea ice in season s; U[s]: mean wind
+    speed m/s, spread over speeds gx x U with weights gw (the sea grown under
+    each, the powers averaged); wdir[s]: unit wind direction (zero where calm); kfric: bottom
     friction per km. Wind coming off land is slowed by the land's roughness
     (by land_slow) and recovers over the sea over ~l_recover km (the marine
     boundary layer): over a small sea the wind never gets up to speed.)"""
@@ -220,37 +242,38 @@ def _wave_rays(targets, centers, nbr_off, nbr_idx, land, blocked, U, wdir, kfric
         for k in range(ndir):
             m, p0, d0 = _march(targets[t], k, ndir, step_rad, nsteps, centers, nbr_off, nbr_idx, land, cells, off)
             for s in range(ns):
-                W = 0.0
-                sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
-                for j in range(m - 1, -1, -1):
-                    c = cells[j]
-                    if blocked[s, c]:
-                        W = 0.0
-                        sea_km = 0.0
-                        continue
-                    sea_km += step_km
-                    sa = j * step_rad
-                    # the waves travel inward: minus the ray's outward tangent
-                    cosd = 0.0
-                    for i in range(3):
-                        cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
-                    u = U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
-                    grew = False
-                    if cosd > 0.0 and u > 0.5:
-                        fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
-                        # a storm blows for only ~t_storm: the sea gets no older than that
-                        # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
-                        fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
-                        ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
-                        fs = min(fs, fd)
-                        if W < ws:
-                            feq = fs * (W / ws) ** 0.75 + step_km
-                            W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
-                            grew = True
-                    if not grew:
-                        W *= np.exp(-step_km / l_swell)
-                    W *= np.exp(-step_km * kfric[c])
-                out[t, s] += wk * W
+                for g in range(gx.shape[0]):  # each speed of the wind's spread
+                    W = 0.0
+                    sea_km = 0.0 if land[cells[m - 1]] else 1e9  # open water upwind along the ray
+                    for j in range(m - 1, -1, -1):
+                        c = cells[j]
+                        if blocked[s, c]:
+                            W = 0.0
+                            sea_km = 0.0
+                            continue
+                        sea_km += step_km
+                        sa = j * step_rad
+                        # the waves travel inward: minus the ray's outward tangent
+                        cosd = 0.0
+                        for i in range(3):
+                            cosd += wdir[s, c, i] * (np.sin(sa) * p0[i] - np.cos(sa) * d0[i])
+                        u = gx[g] * U[s, c] * (1.0 - land_slow * np.exp(-sea_km / l_recover))
+                        grew = False
+                        if cosd > 0.0 and u > 0.5:
+                            fs = 2.2e4 * u * u / GRAV / 1000.0  # km to full development
+                            # a storm blows for only ~t_storm: the sea gets no older than that
+                            # (JONSWAP: g F / U^2 = (g t / (68.8 U))^1.5)
+                            fd = (GRAV * t_storm / (68.8 * u)) ** 1.5 * u * u / GRAV / 1000.0
+                            ws = _wsat(u) * cosd * cosd * min(fd / fs, 1.0) ** (4.0 / 3.0)
+                            fs = min(fs, fd)
+                            if W < ws:
+                                feq = fs * (W / ws) ** 0.75 + step_km
+                                W = ws * min(feq / fs, 1.0) ** (4.0 / 3.0)
+                                grew = True
+                        if not grew:
+                            W *= np.exp(-step_km / l_swell)
+                        W *= np.exp(-step_km * kfric[c])
+                    out[t, s] += gw[g] * wk * W
     return out
 
 
@@ -302,7 +325,7 @@ def _season_winds(grid, elev, c, ice):
     U, D = [], []
     for v, tr in zip((c["wind_jul"], c["wind_jan"]), tracks):
         sp = np.linalg.norm(v, axis=1)
-        U.append(GUST * (U_TRADE * sp + U_STORM * np.clip(tr, 0, 2)))
+        U.append(U_TRADE * sp + U_STORM * np.clip(tr, 0, 2))
         D.append(np.where(sp[:, None] > 1e-6, v / np.maximum(sp, 1e-6)[:, None], 0.0))
     return np.array(U), np.array(D), sea_ice_share(grid, elev, c)
 
@@ -351,7 +374,7 @@ def wave_power_winds(grid, elev: np.ndarray, U: np.ndarray, D: np.ndarray, icy: 
     step = 0.45 * grid.spacing * R_KM
     nsteps = int(D_MAX / step)
     p = _wave_rays(targets, grid.centers, grid.nbr_off, grid.nbr_idx, land, blocked, U, np.ascontiguousarray(D),
-                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0)
+                   kfric, N_DIR, step, nsteps, L_SWELL, R_KM, LAND_SLOW, L_RECOVER, T_STORM * 3600.0, GUST_X, GUST_W)
     out = np.zeros(grid.n)
     out[targets] = (p * (1.0 - icy[:, targets].T)).mean(1)
     return out
@@ -370,11 +393,35 @@ def _shelf_width(grid, elev, ocean):
         hops, _ = bfs_within(np.flatnonzero(off).astype(np.int64), lab, grid.nbr_off, grid.nbr_idx, 10 ** 6)
     else:
         hops = np.full(grid.n, -1)
-    W = np.where(hops > 0, hops * h, np.where(hops == 0, 0.5 * h * np.clip(SHELF_BREAK / np.maximum(depth, 1.0), 0, 1),
-                                              20 * h))
-    # the shelf's depth: the cell's own (a shelf cell), else a typical shelf
-    hs = np.clip(np.where(depth < SHELF_BREAK, depth, 100.0), 20.0, 150.0)
-    return W, hs
+    # Along each cell's path across the shelf to the break (its parents: the
+    # neighbours one hop nearer the break, averaged): the shelf's mean depth,
+    # which sets the tide's wavelength, and where between the last shelf cell
+    # and the first deep one the depth crosses SHELF_BREAK (linearly). W runs
+    # from the coastline (half a cell landward of a coast cell) to that point:
+    # (hops - 1/2 + f) cells, not hops (which overstates a one-cell shelf by
+    # half a cell, enough to move it off the quarter-wave resonance, PW-273).
+    # A deep cell: half a cell scaled by its depth; no break in reach: 20 cells.
+    dsh = np.clip(depth, 1.0, SHELF_BREAK)
+    acc = np.zeros(grid.n)  # sum of depths along the path
+    brk = np.zeros(grid.n)  # f: the break's position between the last shelf and first deep cell
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    dst = grid.nbr_idx
+    for k in range(1, int(hops.max()) + 1 if (hops > 0).any() else 1):
+        e = (hops[src] == k) & (hops[dst] == k - 1)
+        cnt = np.maximum(np.bincount(src[e], minlength=grid.n), 1)
+        at = hops == k
+        acc[at] = dsh[at] + (np.bincount(src[e], acc[dst[e]], grid.n) / cnt)[at]
+        if k == 1:
+            dd = depth[dst[e]]
+            ds = dsh[src[e]]
+            f = np.clip((SHELF_BREAK - ds) / np.maximum(dd - ds, 1.0), 0.0, 1.0)
+            brk[at] = (np.bincount(src[e], f, grid.n) / cnt)[at]
+        else:
+            brk[at] = (np.bincount(src[e], brk[dst[e]], grid.n) / cnt)[at]
+    W = np.where(hops > 0, (hops - 0.5 + brk) * h,
+                 np.where(hops == 0, 0.5 * h * np.clip(SHELF_BREAK / np.maximum(depth, 1.0), 0, 1), 20 * h))
+    hs = np.where(hops > 0, acc / np.maximum(hops, 1), np.where(depth < SHELF_BREAK, depth, 100.0))
+    return W, np.clip(hs, 20.0, SHELF_BREAK)
 
 
 def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarray | None = None):
@@ -438,7 +485,8 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     lam = np.sqrt(GRAV * hs) * T_M2 / 1000.0  # km
     kw = 2 * np.pi * W / lam
     fric = 1.0 + ICE_FRIC * (0.0 if ice_share is None else np.asarray(ice_share, float))
-    amp = 1.0 / np.sqrt(np.cos(np.minimum(kw, np.pi / 2)) ** 2 + (R_FRIC * fric) ** 2)
+    # (the linear standing wave: peaks 1/r at W = lambda/4, back to ~1 at lambda/2)
+    amp = 1.0 / np.sqrt(np.cos(kw) ** 2 + (R_FRIC * fric) ** 2)
     amp *= np.exp(-np.maximum(W - lam / 4, 0) * fric / L_SHELF_FRIC)
     # 3. funnelling
     fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR_TIDE)) ** 0.5, 0.65, 2.2)
@@ -456,6 +504,7 @@ CHANNEL_SHARE = 0.002  # share of the delta plain that is tidal channel
 PLAIN_Z0, PLAIN_RISE = 0.8, 10.0  # m: the delta plain's height at the coast, and its rise to its edge (zoom.py)
 SED_DENSITY = 1600.0  # kg/m^3: bulk density of deposited sand (2650 x (1 - porosity 0.4))
 RIVER_DOMINANT = 0.5  # a weight at least this large names the delta's type
+PLAIN_R0, PLAIN_R_MAX = 70.0, 350.0  # km: delta plain radius at 1,000 m^3/s (sf = 1/3), and its cap
 
 
 def upstream_cells(down: np.ndarray, mouth: int) -> np.ndarray:
@@ -479,13 +528,23 @@ def river_sediment(L: dict, basin: np.ndarray, q_m3s: float, cell_area_km2: floa
     the given cells of world layers L."""
     elev = np.asarray(L["elevation"], float)[basin]
     A = len(basin) * cell_area_km2
-    relief = max(float(np.percentile(elev, 98)) / 1000.0, 0.05)  # km: the basin's high ground (robust max)
-    T = max(float(np.mean(np.asarray(L["temperature"], float)[basin])), 2.0)
+    relief = float(np.percentile(elev, 98))  # m: the basin's high ground (robust max)
+    T = float(np.mean(np.asarray(L["temperature"], float)[basin]))
     soft = float(np.mean(np.asarray(L["sediment_cover"], float)[basin] > 0.5)) if "sediment_cover" in L else 0.3
     iced = float(np.mean(np.asarray(L.get("ice", np.zeros(len(L["elevation"]))), float)[basin] > 1))
-    B = (0.6 + 1.4 * soft) * (1 + 1.0 * iced)  # lithology (soft sediment erodes easily) x glacial erosion
-    Q = q_m3s * SEC_PER_YR / 1e9  # km^3/yr
-    mt_yr = 0.0006 * B * Q ** 0.31 * A ** 0.5 * relief * T
+    return float(bqart(q_m3s, A, relief, T, soft, iced))
+
+
+def bqart(q_m3s, area_km2, relief_m, temp_c, soft, iced):
+    """BQART sediment load (kg/s; Syvitski & Milliman 2007) from the
+    discharge (m^3/s), basin area (km^2), its high ground (m), mean
+    temperature (C), the share of it on soft sediment and the share under
+    ice (arrays or scalars)."""
+    relief = np.maximum(np.asarray(relief_m, float) / 1000.0, 0.05)  # km
+    T = np.maximum(np.asarray(temp_c, float), 2.0)
+    B = (0.6 + 1.4 * np.asarray(soft, float)) * (1 + 1.0 * np.asarray(iced, float))  # lithology x glacial erosion
+    Q = np.asarray(q_m3s, float) * SEC_PER_YR / 1e9  # km^3/yr
+    mt_yr = 0.0006 * B * Q ** 0.31 * np.asarray(area_km2, float) ** 0.5 * relief * T
     return mt_yr * 1e9 / SEC_PER_YR
 
 
@@ -528,9 +587,11 @@ def galloway(qs_kgs: float, q_m3s: float, wave_kw: float, tide_m: float, plain_k
 def plain_radius_km(q_m3s: float, sf: float) -> float:
     """Radius of the delta plain a river builds (zoom.py's delta plain): grows
     with discharge and with the sediment factor sf (0..1, the coarse
-    sediment cover offshore). Earth: Nile ~150 km of plain at 2,800 m^3/s,
-    Mississippi ~250 km at 17,000, Ganges-Brahmaputra ~350 km."""
-    return float(np.clip(10.0 * (q_m3s / 100) ** 0.35 * (0.8 + 0.6 * sf), 15.0, 300.0))
+    sediment cover offshore). Calibrated on Earth's big deltas, which sit on
+    thick offshore sediment (sf ~0.5-1): Nile ~150 km of plain at 2,800 m^3/s,
+    Mississippi ~250 km at 17,000, Ganges-Brahmaputra ~350 km at 38,000
+    (this gives 110-140, 210-265 and 275-350 km)."""
+    return float(np.clip(PLAIN_R0 * (q_m3s / 1000) ** 0.35 * (0.8 + 0.6 * sf), 15.0, PLAIN_R_MAX))
 
 
 def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:

@@ -10,7 +10,7 @@ impact: high
 found_by: daniel
 blocked_by: []
 relates: [PW-005, PW-001]
-refs: [planet/timezoom.py, planet/zoom.py, planet/world.py, docs/proposals/glacial_timezoom.md]
+refs: [planet/timezoom.py, planet/zoom.py, planet/world.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---

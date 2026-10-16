@@ -846,6 +846,11 @@ class Synth:
         means stay)."""
         return None
 
+    def solid(self, cx: Ctx):
+        """0..1 per pixel, after shape(): rock the shape hook raised that
+        flow paths mustn't be cut through (they go round it), or None."""
+        return None
+
     def sinks(self, cx: Ctx):
         """0..1 per pixel: where streams sink underground (karst): streams
         under SINK_Q x this carry no water at the surface (dry valleys) and
@@ -1081,7 +1086,9 @@ class Shield(Synth):
     0.1-0.3x the radius, at most 500 m, x 0.65-1 by granite share, so
     ~100-500 m (Uluru, Sugarloaf); more on granite than on gneiss), placed on a
     planet-fixed lattice, off the streams (in the target too, so the
-    drainage goes round them). Where the record says the shield was under
+    drainage goes round them; a dome a channel would cross is left out
+    whole, and the rest are solid(): not cut through by the flow paths nor
+    flattened by the summits' cap, PW-168). Where the record says the shield was under
     ice lately (glaciated_myr, decaying over GLACIATED_MYR) it is scoured:
     the domes ground down to whalebacks, the plain knobbly with rock basins
     that hold lakes (lake-dotted, deranged drainage: Canadian Shield)."""
@@ -1111,9 +1118,14 @@ class Shield(Synth):
 
     def shape(self, cx, h):
         z = self._domes(cx)
-        if cx.chan is not None:  # (off the streams: no dome across a river)
+        if cx.chan is not None:  # (off the streams: no dome across a river, not even part of one)
             near = _dilate(cx.chan.reshape(cx.ny, cx.nx), 1).ravel()
-            z = np.where(near, 0.0, z)
+            lab, _ = ZK.label_components(z > 1.0, cx.nx, cx.ny)
+            hit = np.unique(lab[near & (lab >= 0)])
+            z = np.where(np.isin(lab, hit), 0.0, z)
+        # (the domes stand: flow paths across them aren't cut through, they
+        # pond against them and go round, PW-168)
+        cx.cache["solid"] = (z > 1.0).astype(float)
         g = self._glac(cx)
         if np.any(g > 0.05):  # scoured: rock basins and knobs
             n = cx.noise(6.0, 3, 451)
@@ -1126,6 +1138,9 @@ class Shield(Synth):
 
     def lakes(self, cx):
         return smoothstep(0.2, 0.5, self._glac(cx))
+
+    def solid(self, cx):
+        return cx.cache.get("solid")
 
 
 class Karst(Synth):
@@ -1700,6 +1715,10 @@ class Landforms:
     def lakes(self) -> np.ndarray:
         """0..1 per pixel: where closed depressions hold lakes (Synth.lakes)."""
         return self._sum("lakes")
+
+    def solid(self) -> np.ndarray:
+        """0..1 per pixel: rock the shape hooks raised that isn't cut through (Synth.solid)."""
+        return self._sum("solid")
 
     def dominant(self) -> np.ndarray:
         """The class with the most weight at each pixel (0: none above 0.5)."""

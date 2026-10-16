@@ -2,7 +2,7 @@
 id: PW-230
 title: "Laptev and Kara coasts get no waves at all: a half-year at least half frozen blocks every ray"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: coast
 effort: s
@@ -20,4 +20,5 @@ tools/coast_check.py: Laptev (Lena delta) and Kara (Ob/Yenisei gulfs) wave power
 - [ ] Laptev and Kara in 0.3-3 kW/m; Beaufort and the other rows unchanged
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Coast batch agent started.
 - 2026-10-15: Created from inbox draft draft-arctic-waves-ice-blocked.md (found by smalls2).

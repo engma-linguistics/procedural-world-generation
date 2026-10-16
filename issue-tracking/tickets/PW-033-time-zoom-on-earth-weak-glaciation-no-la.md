@@ -10,7 +10,7 @@ impact: med
 found_by: timezoom
 blocked_by: []
 relates: [PW-038]
-refs: [planet/timezoom.py, tools/earth_data.py, docs/proposals/glacial_timezoom.md, planet/icemass.py, planet/timezoom_kernels.py]
+refs: [planet/timezoom.py, tools/earth_data.py, planet/icemass.py, planet/timezoom_kernels.py]
 created: 2026-10-14
 updated: 2026-10-15
 ---

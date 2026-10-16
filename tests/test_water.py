@@ -92,6 +92,48 @@ def test_big_river_cuts_its_outlet_down():
     assert c1.sum() >= 0.6 * c0.sum() > 0  # (a few cells at the divide can drain out to a cut valley instead)
 
 
+def test_river_outlet_heights_drain_a_gorge_hollow():
+    """lakes' optional outlet (the Earth world's river heights from finer
+    data, PW-236): without it, or with none known (NaN) or none below the
+    ground, nothing changes; a river that finer data has running low
+    through the wet bowl and out through its notch (a gorge narrower than a
+    cell, whose cells' means stand as a dam) drains the bowl's lake."""
+    g, elev, basin = _bowl()
+    land = elev > 0
+    args = (g, elev, np.where(land, 1000.0, 0.0), np.full(g.n, 300.0), np.full(g.n, 1500.0))
+    base = hydrology.lakes(*args)
+    assert (base["wet"] & basin).sum() > 0
+    for outlet in (np.full(g.n, np.nan), elev + 10.0):
+        same = hydrology.lakes(*args, outlet=outlet)
+        assert all(np.array_equal(same[k], base[k]) for k in base)
+    # the river: from the bowl's floor down its route to the sea, at 450 m
+    # (below the floor, 500 m) falling 10 m a cell
+    down = hydrology.route(g, elev, base)[1]
+    outlet, i, z = np.full(g.n, np.nan), int(np.argmin(np.where(basin, elev, np.inf))), 450.0
+    while land[i]:
+        outlet[i], i, z = z, int(down[i]), z - 10.0
+    lk = hydrology.lakes(*args, outlet=outlet)
+    assert not (lk["wet"] & basin).any() and not lk["sink"].any()
+
+
+def test_closed_basins_from_data_end_their_rivers():
+    """rivers_and_lakes' optional closed (the Earth world's closed basins
+    from HydroSHEDS, PW-236): -1 everywhere changes nothing; the wet bowl
+    marked as one closed basin keeps its rivers (none reaches the sea) and
+    its lake no higher than its lowest pass out (the notch)."""
+    g, elev, basin = _bowl()
+    land = elev > 0
+    c = dict(runoff=np.where(land, 1000.0, 0.0), aet=np.full(g.n, 300.0), lake_evap=np.full(g.n, 1500.0))
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c)
+    assert not lk["endorheic"][basin].any()
+    same = hydrology.rivers_and_lakes(g, elev, c, closed=np.full(g.n, -1))
+    assert np.array_equal(same[0], flow) and all(np.array_equal(same[2][k], lk[k]) for k in lk)
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, closed=np.where(basin, 7, -1))
+    assert lk["endorheic"][basin].all() and not lk["endorheic"][land & ~basin].any()
+    rim = max(elev[basin].max(), 0)  # (the bowl's own cells are its lowest pass out at most)
+    assert (lk["level"][lk["wet"] & basin] <= rim + 1e-6).all()
+
+
 def test_closed_lake_on_a_flat_floor_is_one_lake():
     """A deep basin whose floor is flat but rough (dips a few m deep between
     low saddles): the dips are part of the floor, not pits of their own, so
