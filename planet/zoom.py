@@ -2557,16 +2557,17 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     rec_out = np.where(rec[keep_px] >= 0, crop_idx(rec[keep_px]), -1)
     pin_src, ov_src = (a[a >= 0] for a in (crop_idx(pin_src), crop_idx(ov_src)))
     stages = {k: crop(v) for k, v in stages.items()}
-    (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, px, py, clim_f, w_cp,
+    (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py, clim_f, w_cp,
      lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift) = (
-        crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, px, py,
+        crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py,
                           clim_f, w_cp, lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own,
                           own_s, barrier, rapids_lift))
+    if vf is not None:
+        vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_in / 2]
+        vf = {k: crop(v) for k, v in vf.items()}
     nx = ny = n_in
     npx = nx * ny
     size_km = size_in
-    if vf is not None:
-        vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_km / 2]
 
     # --- climate on the fine terrain -------------------------------------
     # The bare ground's climate (zoom_vegetation.fine_fields: under the
