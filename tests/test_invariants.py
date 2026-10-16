@@ -310,7 +310,8 @@ def test_sediment_budget_closes(monkeypatch):
     """surface.erode moves rock, it doesn't make or lose it: each step's
     deposits (land, lakes, sea) add up to what it removed, and none is
     negative (PW-283). And a closed basin keeps only what fits: no cell
-    where rivers end is filled above the basin's spill point (PW-280)."""
+    where rivers end is filled above the basin's spill point (PW-280), nor
+    any other cell inside a hollow by its floodplain (PW-299)."""
     from planet import kernels, surface
     steps, real = [], surface.erode
 
@@ -318,7 +319,9 @@ def test_sediment_budget_closes(monkeypatch):
         out = real(grid, elev, *a, **kw)
         spill = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)[0]
         top = elev + out[4] * a[-1]  # (a[-1]: iso_dep, m per km deposited)
-        steps.append((out[3].copy(), out[4].copy(), out[7]["sink"] & (top > spill + 1.0), out[7]["sink"].sum()))
+        hollow = (elev > 0) & (spill > elev + 1.0)  # (a deposit can't fill a cell above where it already stood)
+        steps.append((out[3].copy(), out[4].copy(), (out[7]["sink"] | hollow) & (top > np.maximum(spill, elev) + 1.0),
+                      out[7]["sink"].sum()))
         return out
 
     monkeypatch.setattr(surface, "erode", wrapped)

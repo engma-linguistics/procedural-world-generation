@@ -2,7 +2,7 @@
 id: PW-046
 title: Land fraction runs high and crust volume drifts mid-run
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/earth.py, planet/tectonics/crust.py, tools/scorecard.py, "run:0f18a3", "run:fd1cfa", docs/review/health/2026-10-15/report.md, tools/health.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -21,6 +21,7 @@ volume drifts +2–5% mid-run: assembled continents have fewer subducting margin
 thermostat only partly compensates. The v1 notes had continental area at ~45% vs a 40% target.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.
 - 2026-10-15: Merged inbox draft draft-health-pw046-volume.md ("PW-046 update: continental crust volume falls 3-8% over 1 Gyr on all 11 sweep runs; land and crust area now on target", found by health-sweep).
   Update for PW-046. PW-246 health sweep (2026-10-15, main 6926583, 8 L6 + 3 L7 seeds, 1 Gyr): the
   land and area part of this ticket looks settled, the volume part has turned into a slow loss.

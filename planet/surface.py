@@ -108,15 +108,18 @@ def _relief(h, nbr_off, nbr_idx):
 
 
 @njit(cache=True)
-def _route(down, order, sed, pit_room, pool, pool_room, is_ocean, h, d_km, drop):
+def _route(down, order, sed, pit_room, pool, pool_room, is_ocean, h, d_km, drop, fp_room):
     """Carry eroded rock (km of crust per cell) down the river network,
     headwaters first. Closed basins keep what fits; an open lake (pool >= 0,
     its id) keeps what fits anywhere in it (pool_room: km per lake), as the
     river drops its load where it slows into the lake; on gentle ground
     rivers drop some of their load (floodplains, the plains in front of
     mountain ranges): a share 1 - exp(-d_km / drop) per cell, less on steep
-    ground. Everything else ends at the ocean cell where the river meets
-    the sea."""
+    ground, up to fp_room (km per cell: inside a hollow its room below the
+    spill point, so a floodplain on a basin's slopes doesn't build its rim
+    up: PW-299; inf on open ground, where plains aggrade freely); the rest
+    runs on down to the basin's floor. Everything else ends at the ocean
+    cell where the river meets the sea."""
     n = sed.shape[0]
     dep = np.zeros(n)
     flux = sed.copy()
@@ -139,6 +142,7 @@ def _route(down, order, sed, pit_room, pool, pool_room, is_ocean, h, d_km, drop)
         if d >= 0 and not is_ocean[d] and p < 0:
             slope = max(h[i] - h[d], 0.0) / d_km  # m per km
             keep = flux[i] * (1 - np.exp(-d_km / drop)) * np.exp(-slope / 2.0)
+            keep = min(keep, max(fp_room[i] - dep[i], 0.0))
             dep[i] += keep
             flux[i] -= keep
         if d >= 0:
@@ -205,7 +209,7 @@ def _offshore(load, elev, iso, ocean, coast, nbr_off, nbr_idx, d_km, fan_km):
 BASIN_PASSES = 8  # closed basins an overflow may fill in turn on its way down (the Nile into the Nubian hollow)
 
 
-def _closed_basins(grid, elev, land, sink, lake_room, in_pool, dep, iso_dep):
+def _closed_basins(grid, elev, land, sink, lake_room, in_pool, dep, iso_dep, flood):
     """Closed basins keep what reaches them up to their room (PW-280).
     Rivers end at a closed lake or a closed basin's pit (route), so _route
     leaves all their load there. A basin holds it up to its spill point,
@@ -221,8 +225,9 @@ def _closed_basins(grid, elev, land, sink, lake_room, in_pool, dep, iso_dep):
     keeps what fits in turn), else into the sea. After BASIN_PASSES
     basins, what is still over stays on the last one's floor. Open lake
     cells (in_pool) take no share here: their room is _route's pool_room.
+    flood: (spill, pf_down) of the terrain's priority-flood (erode's).
     Returns dep (km per cell)."""
-    spill, pf_down, _ = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
+    spill, pf_down = flood
     hol, nh = grid.components(land & (spill > elev))
     at = sink & (hol >= 0) & (dep > 0)
     if not at.any():
@@ -340,9 +345,13 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     m = pool >= 0
     pool_room = np.bincount(pool[m], pit_room[m], n_pool) if n_pool else np.zeros(0)
     pool_left = pool_room.copy()
-    dep = _route(down, order, removed, pit_room, pool, pool_left, ~land, h, d_km, alluvial)
+    # a hollow's room below its spill point (as _closed_basins fills it):
+    # what a floodplain inside it may keep (PW-299)
+    spill, pf_down, _ = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)
+    fp_room = np.where(land & (spill > elev), np.maximum(spill - 5.0 - elev, 0) / iso_dep, np.inf)
+    dep = _route(down, order, removed, pit_room, pool, pool_left, ~land, h, d_km, alluvial, fp_room)
     lake_room = np.where(lk["wet"] & lk["sink"], np.maximum(lk["level"] - elev, 0) / iso_dep, 0.0)
-    dep = _closed_basins(grid, elev, land, lk["sink"], lake_room, m, dep, iso_dep)
+    dep = _closed_basins(grid, elev, land, lk["sink"], lake_room, m, dep, iso_dep, (spill, pf_down))
     if n_pool:
         share = np.bincount(pool[m], dep[m], n_pool) / np.maximum(pool_room, 1e-30)  # (<= 1)
         dep[m] = share[pool[m]] * pit_room[m]

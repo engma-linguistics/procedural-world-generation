@@ -2,7 +2,7 @@
 id: PW-338
 title: "Run: hotspot vents' recorded floor and top sit km below the cells they built (73.6N ridge on 592f2a)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: s
@@ -30,4 +30,5 @@ birth, each step), or the cells could lose what the vent's erosion takes. Low pr
 shows it as sea holes.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.
 - 2026-10-16: Created from inbox draft draft-hotspot-ridge-vents-below-their-cells.md (found by zoom-batch2).
