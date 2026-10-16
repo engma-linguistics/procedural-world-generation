@@ -2,7 +2,7 @@
 id: PW-172
 title: One-frame 11-18 km peaks are thick sediment-filled hotspot cells on ISO_VOLCANO isostasy
 type: task
-status: todo
+status: done
 parent: null
 subsystem: tectonics
 effort: s
@@ -37,6 +37,7 @@ ago. Lean A+B. Coherence (PW-108 fix) removes some of the flips that start it.
 - [ ] no frame of an L7 1 Gyr run above ~9.5 km (envelope test)
 
 ## Updates
+- 2026-10-15: Status todo -> done. Fixed in a06369c (merged 4ce7706): the 10.6 km one-frame peaks were 80 km belt cells next to an opening edge, stretched as rifting every step while stacking rebuilt them; stacked crust is no longer stretched. a1d3b9 900-950 Myr peaks 10.0 -> 8.6 km; health --quick highest peak 9.3 -> 8.4 km.
 - 2026-10-15: Health run 6114bd deleted as a bit-identical duplicate of a1d3b9 (same seed/level/code); use a1d3b9 for the 944/964/968 Myr spikes.
 - 2026-10-15: Merged inbox draft draft-health-pw172-spikes.md ("PW-172 update: one-frame 9.7-10.6 km single-cell spikes on 80 km crust in all 3 L7 seeds (health sweep)", found by health-sweep).
   Update for PW-172. PW-246 health sweep (2026-10-15, main 6926583, 1 Gyr, keyframes every 4 Myr):

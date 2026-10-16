@@ -2,7 +2,7 @@
 id: PW-285
 title: Sediment on hotspot rock still floats at the volcano-pile rate (x1.75) beyond the PW-172 pile cap
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: tectonics
 effort: xs
@@ -36,5 +36,6 @@ ISO_SEA for hotspot cells whose pile is past VOLCANO_PILE_KM. Golden update
 expected; no envelope change expected.
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the tectonics fix branch (merged 4ce7706); see docs/review/audit/fixes-tectonics.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-tectonics-hotspot-sediment-iso.md (found by audit-tectonics).

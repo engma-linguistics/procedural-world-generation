@@ -856,17 +856,18 @@ GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Per coarse cell: the warmest and coldest month (C) of the bare ground
     under any ice. The world's climate is on the ice surface
-    (climate.ice_surface): this undoes it (its height, its cooling, the
-    melting that halves a positive summer)."""
+    (climate.ice_surface): this undoes it (icemass.ground_from_surface)."""
     land = L["elevation"] > 0
     ice = np.where(land, ice, 0.0)
     tw = np.asarray(L.get("warm_month", L["temperature"]), float)
     tc = np.asarray(L["cold_month"], float) if "cold_month" in L else 2 * np.asarray(L["temperature"], float) - tw
-    on = ice > 0
-    cool = climate.ice_cooling(ice, climate.ice_cover(g, ice, land))
-    up = LAPSE * ice
-    gw = np.where(on, np.where(tw > 0, 2 * tw, tw) + up + cool, tw)
-    gc = np.where(on, tc + up + cool, tc)
+    gw, gc = tw.copy(), tc.copy()
+    i = np.flatnonzero(ice > 0)
+    if len(i):
+        p = np.asarray(L["precipitation"], float)
+        pj, pn = (np.asarray(L.get(k, p), float) for k in ("precipitation_jul", "precipitation_jan"))
+        cov = icemass.sheet_cover(g, ice)
+        gw[i], gc[i] = icemass.ground_from_surface(g.lat[i], tw[i], tc[i], pj[i], pn[i], ice[i], cov[i])
     return gw, gc
 
 
@@ -2403,8 +2404,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- climate on the fine terrain -------------------------------------
     # The bare ground's climate (zoom_vegetation.fine_fields: under the
     # coarse ice too), lapse-corrected to the pixel; on the zoom's own
-    # glaciers the ice's surface (climate.ice_surface: its thickness, and the
-    # coarse ice's white-top cooling and summer melting cap) (PW-160)
+    # glaciers the ice's surface (climate.ice_surface: its thickness and the
+    # mass balance's own year, under the coarse ice's sheet cover) (PW-160, PW-277)
     fields = ZVG.fine_fields(world, fr, px, py, size_km)
     hl = np.maximum(h, 0)
     temp = fields["t_sl"] - LAPSE * hl
@@ -2412,7 +2413,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     t_cold = fields["cold_sl"] - LAPSE * hl
     if glacier.any():
         ice_px = np.where(glacier, np.maximum(ice_th, 1.0), 0.0)
-        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, fields["ice_cover"])
+        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, np.maximum(cov_f, icemass.LOCAL),
+                                                   latlon(P)[0], 2 * precip * jul_f, 2 * precip * (1 - jul_f))
     pix_lat = latlon(P)[0]
     north = pix_lat >= 0
     clim_f = np.where(sea, SEA_CLIMATE, clim_f)

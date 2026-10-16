@@ -147,7 +147,7 @@ def orbit_dt(run: dict, st: dict) -> np.ndarray:
     p = TZ.TZParams(**{k: v for k, v in m.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
     s = st["stats"]
     grid = build_grid(m["level"])
-    land = st["elevation"] > 0
+    land = st["elevation"] + st["ice"] > 0  # (the time zoom's land: grounded ice on a sunk bed included)
     d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), m["params"].get("tilt", 23.4),
                          p, land, st["ice"], earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
     for i, v in m.get("anchor", []):

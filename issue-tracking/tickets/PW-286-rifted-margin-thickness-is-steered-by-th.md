@@ -2,7 +2,7 @@
 id: PW-286
 title: Rifted-margin thickness is steered by the global continental-area error
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -40,5 +40,6 @@ share over 1 Gyr at L6 (scorecard), and PW-046's drift.
 - [ ] L6 seeds 1/2 over 1 Gyr: crust area within the envelope, land change reported
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the tectonics fix branch (merged 4ce7706); see docs/review/audit/fixes-tectonics.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-tectonics-margin-steering.md (found by audit-tectonics).

@@ -109,9 +109,14 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     a, b, d, conv = bd.a, bd.b, bd.d, bd.conv
     F = np.zeros((g.n, 3))
     L = sim.edge_len
-    # slab pull: the sinking side is pulled toward (and under) the other plate
-    slab_a = p.slab_pull * np.clip(sim.w_age[a] / 80, 0.3, 1.5) * L
-    slab_b = p.slab_pull * np.clip(sim.w_age[b] / 80, 0.3, 1.5) * L
+    # slab pull: the sinking side is pulled toward (and under) the other
+    # plate by its slab's weight, less the mantle's resistance to the slab
+    # sinking through it (Stokes drag, ~ the sinking speed: slab_drag x the
+    # convergence), so a slab sinks no faster than its terminal speed,
+    # slab_pull x age factor / slab_drag (PW-288)
+    resist = p.slab_drag * np.clip(conv, 0, 15)
+    slab_a = (p.slab_pull * np.clip(sim.w_age[a] / 80, 0.3, 1.5) - resist) * L
+    slab_b = (p.slab_pull * np.clip(sim.w_age[b] / 80, 0.3, 1.5) - resist) * L
     np.add.at(F, a[bd.a_down], d[bd.a_down] * slab_a[bd.a_down, None])
     np.add.at(F, b[bd.b_down], -d[bd.b_down] * slab_b[bd.b_down, None])
     # ridge push: away from opening boundaries
