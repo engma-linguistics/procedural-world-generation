@@ -1,7 +1,8 @@
 ---
+id: PW-333
 title: "Climate: Arctic coastal seas' summers ~4 C too cold, so the Laptev and Kara coasts never thaw (no waves, too much sea ice)"
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: climate
 effort: m
@@ -10,6 +11,8 @@ found_by: coast-batch
 blocked_by: []
 relates: [PW-230, PW-112]
 refs: [planet/climate.py, planet/coast.py, tools/coast_check.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,7 @@ Because of this, coast_check's Laptev and Kara wave rows stay at 0.0 kW/m (obser
 What to look at: the summer sea surface over shallow Arctic shelves next to big rivers (warm river water and the shallow mixed layer warm them to +2..+8 C in August), and whether the sea cells' warm month is held near freezing by the model's sea ice or by the ocean's mixed layer. Fix in the climate, not by lowering coast's freeze threshold.
 - [ ] Arctic coastal sea cells' warmest month within ~1.5 C of observed (median)
 - [ ] coast_check Laptev and Kara waves above 0 (0.3-3 kW/m observed)
+
+## Updates
+- 2026-10-16: Status todo -> wontdo. Duplicate cause of PW-335 (frozen-sea summer air); folded in.
+- 2026-10-16: Created from inbox draft draft-arctic-coastal-sea-summers-too-cold.md (found by coast-batch).
