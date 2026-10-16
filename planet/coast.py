@@ -479,13 +479,23 @@ def river_sediment(L: dict, basin: np.ndarray, q_m3s: float, cell_area_km2: floa
     the given cells of world layers L."""
     elev = np.asarray(L["elevation"], float)[basin]
     A = len(basin) * cell_area_km2
-    relief = max(float(np.percentile(elev, 98)) / 1000.0, 0.05)  # km: the basin's high ground (robust max)
-    T = max(float(np.mean(np.asarray(L["temperature"], float)[basin])), 2.0)
+    relief = float(np.percentile(elev, 98))  # m: the basin's high ground (robust max)
+    T = float(np.mean(np.asarray(L["temperature"], float)[basin]))
     soft = float(np.mean(np.asarray(L["sediment_cover"], float)[basin] > 0.5)) if "sediment_cover" in L else 0.3
     iced = float(np.mean(np.asarray(L.get("ice", np.zeros(len(L["elevation"]))), float)[basin] > 1))
-    B = (0.6 + 1.4 * soft) * (1 + 1.0 * iced)  # lithology (soft sediment erodes easily) x glacial erosion
-    Q = q_m3s * SEC_PER_YR / 1e9  # km^3/yr
-    mt_yr = 0.0006 * B * Q ** 0.31 * A ** 0.5 * relief * T
+    return float(bqart(q_m3s, A, relief, T, soft, iced))
+
+
+def bqart(q_m3s, area_km2, relief_m, temp_c, soft, iced):
+    """BQART sediment load (kg/s; Syvitski & Milliman 2007) from the
+    discharge (m^3/s), basin area (km^2), its high ground (m), mean
+    temperature (C), the share of it on soft sediment and the share under
+    ice (arrays or scalars)."""
+    relief = np.maximum(np.asarray(relief_m, float) / 1000.0, 0.05)  # km
+    T = np.maximum(np.asarray(temp_c, float), 2.0)
+    B = (0.6 + 1.4 * np.asarray(soft, float)) * (1 + 1.0 * np.asarray(iced, float))  # lithology x glacial erosion
+    Q = np.asarray(q_m3s, float) * SEC_PER_YR / 1e9  # km^3/yr
+    mt_yr = 0.0006 * B * Q ** 0.31 * np.asarray(area_km2, float) ** 0.5 * relief * T
     return mt_yr * 1e9 / SEC_PER_YR
 
 

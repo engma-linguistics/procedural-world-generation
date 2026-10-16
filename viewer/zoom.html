@@ -93,14 +93,15 @@ const LAYERS = [
   ['satellite', 'Satellite'], ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
-  ['fire_return', 'Fire return'], ['lai', 'Leaf area'],
+  ['fire_return', 'Fire return'], ['lai', 'Leaf area'], ['coastal_life', 'Coastal life'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'], ['coarse', 'Coarse cells'],
 ];
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
-  fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform' };
-const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation'];
+  fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
+  coastal_life: 'coastal_life' };
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life'];
 // the temperature / rain season: '' the year, 'jul' / 'jan' the half-years (zooms with *_jul / *_jan layers)
 const SEASON_NAMES = { '': 'year', jul: 'July', jan: 'January' };
 const state = { meta: null, L: null, layer: 'satellite', season: '', imgs: {}, shade: null,
@@ -425,7 +426,7 @@ function legendFor(kind) {
   const lg = state.meta.legend;
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
     : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
-    : kind === 'vegetation' ? (lg.vegetation?.types || []) : lg.rocks;
+    : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || []) : lg.rocks;
 }
 
 function render() {
@@ -483,6 +484,10 @@ function render() {
         const t = Math.min(1, Math.max(0, Math.log10(q[i]) / 4.5));
         c = [40 + 60 * t, 120 + 120 * t, 200 + 55 * t].map((v, j) => c[j] + (v - c[j]) * Math.min(1, 0.35 + t));
       }
+    } else if (k === 'coastal_life') {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides
+      const v = L[k][i], e = lut[v];
+      if (v > 0 && e) { c = e.rgb; present.set(v, (present.get(v) || 0) + 1); }
+      else c = wet === 1 ? ramp(SEA, h[i]).map((x) => x * 0.7) : wet === 2 ? [70, 130, 196] : [70 + 70 * s, 68 + 70 * s, 60 + 70 * s];
     } else if (lut) {
       const e = lut[L[k][i]];
       if (wet === 1 && k !== 'rock' && k !== 'surface_rock') c = ramp(SEA, h[i]);
@@ -515,7 +520,9 @@ function render() {
       + `<span class="muted">(% of the land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
   } else if (lut) {
     $('legend').innerHTML = [...present.keys()].sort((a, b) => a - b).filter((id) => lut[id])
-      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}</span>`).join('');
+      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${k === 'coastal_life'
+        ? ` ${fmt(present.get(id) * m.res_km * m.res_km)} km&sup2;` : ''}</span>`).join('')
+      + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>' : '');
   } else if (k === 'height') {
     $('legend').innerHTML = `<span>${fmt(lo)} m</span><div class="grad" style="background:linear-gradient(90deg,#000,#fff)"></div><span>${fmt(hi)} m</span>
       <span class="muted">(same mapping as heightmap.png: ${fmt(m.heightmap.metres_per_step, 3)} m per 16-bit step)</span>`;
@@ -710,6 +717,7 @@ function hover(ev) {
     <tr><td>climate</td><td>${kop.code || ''} ${kop.name || ''}</td></tr>
     <tr><td>biome</td><td>${name(lg.biomes, L.biome[i])}</td></tr>
     ${vegRows(i)}
+    ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
     <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>
     ${L.radiation_index && L.water[i] === 0 ? `<tr><td>terrain</td><td>sun ${fmt(100 * L.radiation_index[i])}% of flat &middot; wetness ${fmt(L.twi[i], 1)}${L.river_dist[i] < 255 ? ` &middot; river ${fmt(L.river_dist[i] * m.res_km, 1)} km` : ''}</td></tr>` : ''}
