@@ -2,7 +2,7 @@
 
 *Current state as of 2026-10-14 evening (code at 382b370, after the tectsea and zoompolish merges). Every number here was checked against the code; where another doc disagrees, this one and the code win. Open work lives on the board: `uv run python issue-tracking/board.py list --open`. Tickets are cited as PW-NNN.*
 
-**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools · 2.18 vegetation · 2.19 satellite view) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
+**Contents:** 1 What it is · 2 How each subsystem works (2.1 grid · 2.2 tectonics and mantle · 2.3 volcanoes · 2.4 crust, rock record and landforms · 2.5 erosion and sediment · 2.6 climate · 2.7 ocean · 2.8 ice and sea level · 2.9 hydrology · 2.10 coasts · 2.11 worlds · 2.12 highlights · 2.13 regional zoom · 2.14 glacial time zoom · 2.15 viewer and server · 2.16 store and data model · 2.17 tools · 2.18 vegetation · 2.19 satellite view · 2.20 coastal and shallow-sea life) · 3 Calibration · 4 Performance · 5 Outputs to look at · 6 Code map · 7 Glossary
 
 ---
 
@@ -43,12 +43,12 @@ flowchart LR
 ### What you can do with it
 
 - Watch a planet's history as an animation: plates, supercontinents assembling and breaking, ice ages, sea level.
-- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates, 60 named vegetation types (from 19 plant types: tree cover, productivity, fire return, stand age), rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range, and a true-colour satellite view by season (§2.19).
+- Pick any moment and get a full world: temperature and rain for July and January, Köppen climates, 60 named vegetation types (from 19 plant types: tree cover, productivity, fire return, stand age), rivers with discharge in m³/s, lakes, salt flats, sea temperature and salinity, cloud and sunshine hours, wave power and tidal range, coral reefs, kelp, seagrass, mangroves and salt marsh (§2.20), and a true-colour satellite view by season (§2.19).
 - Zoom into a region at a few hundred metres to a few km per pixel and get a 16-bit heightmap with named features: waterfalls with their heights, deltas with their type, volcanoes with their ages, and terrain shaped by its geology (escarpments, fold ridges, karst, dunes).
 - Ask for highlights, including travel ones ("beach: July 28 °C, 10 h of sunshine, warm sea 25 °C, gentle surf").
 - Run 1 Myr of ice ages from any moment and watch glaciers advance and the coastline move.
 
-**Not yet built:** soils, coastal life, resources, settlements and a game export are on the roadmap (PW-184, PW-185, PW-188, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world, run and zoom parts and its climate feedbacks, not yet the time zoom (PW-187 steps 7–9). There is no day-scale weather yet (PW-156).
+**Not yet built:** soils, resources, settlements and a game export are on the roadmap (PW-184, PW-185, PW-155, PW-100; `docs/plan_next.md`); vegetation (§2.18) has its world, run and zoom parts and its climate feedbacks, not yet the time zoom (PW-187 steps 7–9). There is no day-scale weather yet (PW-156).
 
 ---
 
@@ -301,7 +301,7 @@ With each class come the zoom's parameters: the exposed stratum and its thicknes
   - The replacement inflow follows the surface currents, like the **AMOC**'s North Atlantic Drift, and warms the coasts it passes (a milder Norway). Its heat stays within its latitude band (the band's mean change is taken off, `moc_zonal` = 1, PW-265): the inflow's longitudes warm and the rest of the band cools a little, because the latitude curve the sea starts from was fitted to Earth's sea, overturning included. (Before, it added +0.2 °C to Earth's sea and +0.5 °C to a generated world's, about +1 °C poleward of 45°.)
   - There is no deep ocean: the deep return flow the viewer draws is a **schematic** route: the cheapest way through deep sea to a circumpolar channel in the other hemisphere (else the equator), preferring western boundaries (up to 7× cheaper per step) and crossing sills and shelves only at a cost (3× below 1500 m, 10× below 400 m), so every site gets one.
 
-**Outputs (worlds):** `sst`, `sst_jul`, `sst_jan` (°C), `salinity` (psu, annual), `sinking` (Sv per cell), `current_e/n` (annual); `meta.overturning` with the total, north and south strength in Sv, the sinking sites and the schematic paths. On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1) seas and the Ross (1.9) and Weddell (0.6) seas; none in the North Pacific. Generated worlds often show ~30 Sv (showcase a08983: 32.8 Sv).
+**Outputs (worlds):** `sst`, `sst_jul`, `sst_jan` (°C), `salinity` (psu, annual), `sinking` (Sv per cell), `upwelling` (°C of cooling where it wells up, §2.20), `current_e/n` (annual); `meta.overturning` with the total, north and south strength in Sv, the sinking sites and the schematic paths. On Earth (world dc3732): 13.7 Sv, sinking in the Nordic (7.0 Sv) and Labrador (4.1) seas and the Ross (1.9) and Weddell (0.6) seas; none in the North Pacific. Generated worlds often show ~30 Sv (showcase a08983: 32.8 Sv).
 
 ![Model currents on Earth](overview/earth_currents.jpg)
 *The model's currents and sea temperature on real Earth terrain (an earlier Earth world). Gyres, the Gulf Stream, the Kuroshio and the Antarctic Circumpolar Current emerge.*
@@ -367,7 +367,7 @@ On Earth's terrain this closes the Caspian, Aral, Tarim, Eyre, Makgadikgadi and 
 ![Wave power](overview/wave_power.jpg)
 *Wave power on 7c5adf: the westerly storm belts and their swell, with calm water in their lee.*
 
-**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); enclosed seas' waves 3–5× too strong (their winds are the open sea's); Fundy too small, no amphidromic points (PW-076); no SW-monsoon swell on India's west coast (the climate's July wind there is weak); no spits, mangroves, cliffs vs beaches yet (PW-077, PW-097).
+**Known limits:** Southern Hemisphere westerly coasts too weak and the North Atlantic too strong (PW-074, PW-075); enclosed seas' waves 3–5× too strong (their winds are the open sea's); Fundy too small, no amphidromic points (PW-076); no SW-monsoon swell on India's west coast (the climate's July wind there is weak); no spits, cliffs vs beaches yet (PW-077, PW-097); coastal life is §2.20.
 
 ### 2.11 Worlds: slicing and finishing (`timeline.py`, `world.py`)
 
@@ -380,25 +380,26 @@ A **world** is one moment, finished. Four ways to get one:
 **Finishing** (run-based worlds first get sub-cell texture, `timeline.texture`: ±180 m of noise plus ridges on high ground, scaled by the ground's slope, so steep country (≥ 1.25 m/km between cells) gets all of it and plains and plateaus 15%: PW-057):
 1. climate, then 12 erosion passes (`hydrology.erode`, strength 0.3 for slice and Zoom worlds, 1.0 for generate: stream-power cutting with rivers routed as in the run, through open lakes and ending in closed ones, and a creep that only lowers ground, toward its lower neighbours, so it doesn't fill hollows), then climate again. Finishing sharpens and lowers the keyframe's terrain without depositing what it removes (L5 run ends, strength 0.3: land 38–56 m lower on average, p99 270–425 m): it stands for sub-cell valleys the keyframe's cell means can't show, not for more erosion, and the keyframe has already put its sediment where it belongs. Routing the removed rock as the run does (PW-281 B, tried) filled the keyframe's hollows and built deltas: lake Jaccard against the keyframe 0.60/0.27/0.81 → 0.37/0.00/0.55 on three L5 seeds, inland drainage down, 2% more land; so it stays a display pass (PW-281 A);
 2. rivers and lakes;
-3. vegetation (§2.18; biomes grouped from its named types);
-4. waves and tides;
-5. July / January temperature and rain (`world.seasons`);
-6. the sea (SST, salinity, sinking; the overturning in the meta), humidity, clouds and sunshine.
+3. waves and tides;
+4. July / January temperature and rain (`world.seasons`);
+5. the sea (SST, salinity, sinking, upwelling; the overturning in the meta), humidity, clouds and sunshine;
+6. coastal and shallow-sea life (§2.20);
+7. vegetation (§2.18; mangrove forest and salt marsh named from step 6; biomes grouped from its named types).
 
-**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~99 layers (§2.16; 32 of them vegetation, 3 the satellite view); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
+**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~109 layers (§2.16; 32 of them vegetation, 7 coastal life with turbidity and upwelling, 3 the satellite view); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
 
 ### 2.12 Highlights (`highlights.py`)
 
-**What it does:** 35 detectors find 45 kinds of place worth a visit, in six categories (the viewer filters and colours by category):
+**What it does:** 36 detectors find 46 kinds of place worth a visit, in six categories (the viewer filters and colours by category):
 
 | Category | Kinds |
 |---|---|
 | landscape | highest peak (and highest ice-free peak), mountain range, plateau, canyon, fjords, rain shadow, most varied 1000 km square, continent, island, archipelago |
-| water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast |
+| water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast (the largest reef tracts of §2.20's reef layer; "great reef" from 10,000 km²) |
 | climate | desert, rainforest (the evergreen tropical forest types), ice sheet, Mediterranean "wine country" (Köppen Cs, with its vegetation), hottest, coldest, wettest, driest |
 | travel | beach destination, ski country, winter-sun retreat (mild winter, ≥ 5 h of sunshine a day), year-round resort (beach and skiing within 400 km) |
 | geology | volcanic arc, hotspot island chain (from the volcano table: islands, atolls and guyots in a row), atoll group, rift, deepest trench, fastest plate (at its leading edge: collision or subduction) |
-| vegetation | great forests (largest closed forests of different kinds), great savanna, wetlands, maquis coast, treeline (alpine and polar) |
+| vegetation | great forests (largest closed forests of different kinds), great savanna, wetlands, maquis coast, treeline (alpine and polar), mangrove coast (§2.20) |
 
 Each scores as kind priority × quality (0.3–1). Travel picks use each hemisphere's own summer and winter and say why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf". Results are cached in `worlds/highlights/<id>.json`; `--zoom N` pre-makes zooms of the top N at a suggested size.
 
@@ -446,7 +447,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 **Falls:** `stats.falls` in `zoom.json` lists every fall ≥ 30 m on a stream ≥ 20 m³/s (kind `lip`, `scarp`, `bench`, `lake outlet` or `drop`, with gorge, cascades and plunge pool); an undesigned one must be 3× as steep as the river above it and 3× as steep as the river below it (a mountain stream reaching a flat valley floor isn't a fall, a hanging valley's step is); `stats.waterfalls` keeps the 5 biggest by power. The viewer draws them as the Waterfalls overlay.
 
-**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png` (the satellite view in each hemisphere's summer, hill-shaded, with rivers), `satellite.png` / `satellite_jul.png` / `satellite_jan.png` (unshaded true colour, §2.19), `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `temperature_jul`/`_jan`, `precipitation_jul`/`_jan`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland` (1 a coastal plain's marsh, 2 the vegetation's wetlands), `vegetation` (named type), `tree_cover`, `plant_cover`, `lai`, `canopy_height`, `npp`, `fire_return` (decision 9A: the summary layers; `zoom_vegetation.fractions(<zoom>)` recomputes each PFT's cover in ~5 s, the same numbers), `radiation_index`, `twi`, `river_dist`, `coast_dist`, `cloud_jul`/`_jan` (the world's cloud cover, interpolated: the satellite view's clouds). Layers with an encoding in `zoom.LAYER_DOC` are stored as small integers with a scale (read them with `zoom.load(id, decode=True)`). Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays, and the vegetation's shares by type.
+**Outputs:** `zooms/<id>/zoom.json` (metadata, stats, legend, projection), `heightmap.png` (16-bit), `preview.png` (the satellite view in each hemisphere's summer, hill-shaded, with rivers), `satellite.png` / `satellite_jul.png` / `satellite_jan.png` (unshaded true colour, §2.19), `coarse.png`, and layers `elevation`, `water` (land/sea/lake), `lake_depth`, `discharge`, `drainage_area`, `precipitation`, `temperature`, `temperature_jul`/`_jan`, `precipitation_jul`/`_jan`, `ice`, `tide_range`, `wave_power`, `rock`, `surface_rock`, `climate`, `biome`, `landform`, `wetland` (1 a coastal plain's marsh, 2 the vegetation's wetlands), `vegetation` (named type), `tree_cover`, `plant_cover`, `lai`, `canopy_height`, `npp`, `fire_return` (decision 9A: the summary layers; `zoom_vegetation.fractions(<zoom>)` recomputes each PFT's cover in ~5 s, the same numbers), `radiation_index`, `twi`, `river_dist`, `coast_dist`, `cloud_jul`/`_jan` (the world's cloud cover, interpolated: the satellite view's clouds), `coastal_life` (§2.20: 1 reef, 2 kelp, 3 seagrass, 4 mangrove, 5 salt marsh). Layers with an encoding in `zoom.LAYER_DOC` are stored as small integers with a scale (read them with `zoom.load(id, decode=True)`). Stats include land and elevation checks against the coarse cells, rivers, lakes, deltas, falls, volcanoes, the landform shares, basins and overlays, and the vegetation's shares by type.
 
 ![Zoom with waterfalls](review/zoom/83e518_relief_fall.jpg)
 *Zoom 83e518 (500 km at 1 km, showcase world a08983): Waterfalls and Volcanoes overlays; the card shows a 745 m lip fall with a 4.2 km gorge.*
@@ -459,7 +460,7 @@ The most varied square counts named vegetation types (biomes on worlds without v
 
 More zoom images, one per landform class: `docs/review/landforms/` and `docs/review/zoom/`.
 
-**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers (PW-124); one-link walls where steep tributaries meet pinned rivers on arcs (28 drops ≥ 100 m on a 4 km arc zoom of 592f2a, PW-125's remainder); a rough rim within 8 px of a zoom's edge, and side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); no mangroves or salt marsh yet (PW-188); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
+**Known limits:** deltas small and misplaced (PW-061); arcs are still blocky islands with few cones (PW-116); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no 3D zoom view (PW-072); no microclimate (PW-101); some perched rivers (PW-124); one-link walls where steep tributaries meet pinned rivers on arcs (28 drops ≥ 100 m on a 4 km arc zoom of 592f2a, PW-125's remainder); a rough rim within 8 px of a zoom's edge, and side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); coastal reefs are a habitat, not terrain, away from volcanoes (§2.20); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094); the zoom sees only part of a big lake's catchment (PW-060).
 
 ### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
 
@@ -530,7 +531,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `grids/L<n>.json` | grid geometry shared by all items at that level |
 | `worlds/index.json`, ... | indexes the viewer reads (with `source_run`, `t_myr` for provenance) |
 
-**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, the nine landform layers of §2.4, and the vegetation layers of §2.18, and the satellite view's `sat`, `sat_jul`, `sat_jan` (§2.19). Run keyframes carry 35 of them; a tectonic world ~99.
+**Layer vocabulary** (`store.LAYERS`, shared by runs and worlds): elevation, plate, crust, crust age and thickness, plate boundary, rock, surface rock, sediment cover, temperature, precipitation, climate, ice, flow, downstream, lakes, winds, currents, jet, the seasonal, sea and air layers of §2.6–2.10, the nine landform layers of §2.4, and the vegetation layers of §2.18, the coastal-life layers of §2.20, and the satellite view's `sat`, `sat_jul`, `sat_jan` (§2.19). Run keyframes carry 35 of them; a tectonic world ~109.
 
 **Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
 
@@ -546,6 +547,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `earth_world.py` | Builds the "Earth (today, ETOPO1) — model vs observed" world for the viewer, with observed layers alongside. Re-make after climate changes. |
 | `earth_data.py` | Downloads (~25 MB, once) and maps the Earth datasets onto the grid; holds the single Köppen score `koppen_agreement`. |
 | `coast_check.py` | Waves and tides at named real coasts, and Galloway weights of real deltas. |
+| `coastal_check.py` | Coastal life on Earth (§2.20): each habitat's area and latitude limits against the literature, presence at 55 named places; `--png` map. ~20 s. |
 | `churn.py <run>` | How often continental cells flip and flip back within a few keyframes (PW-108). |
 | `sealevel.py` | Sea level and its parts (ice, basins, ocean age) per step; counts fast land drops. Runs a simulation (or reads `--run <id>`). |
 | `supercontinent.py` | Tracks the largest landmass, landmass count, mantle and rifts over 2 Gyr; reports assembly spells. Runs a simulation. |
@@ -564,7 +566,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 4. **Fire** (GlobFIRM-like): the burned share per year rises steeply with the fire season, if there is fine fuel (≥ 250 g C/m², mostly grass) and lightning (warm, showery summers). Each type loses the burned share × (1 − its resistance): grass resprouts, savanna trees mostly survive, rainforest trees and spruce don't. Grass fuels fire and closed forest doesn't burn, so **forest and savanna are both stable over a wide band of rain and history decides**: worlds start from the run's state (sliced worlds from the simulation's fractions, Zoom-button worlds from the keyframe's tree cover); a world without history (Earth, `generate`) starts from young woodland over grass.
 5. **Grazing placeholder** (decision 8, to be replaced by fauna in PW-103): open grassland (grass cover²) adds tree and shrub mortality in climates that aren't wet all year, which keeps prairies and steppes open.
 6. **Wetlands:** the flooded share of a cell (floodplains of big rivers, flat ground with more rain than evaporation, flat permafrost, lake shores; up to 75%) is a habitat of its own for reeds and sedges, peat moss and flood-tolerant trees.
-7. **Named types:** ordered rules on the mix, structure and site (BIOME4- and IGBP-like): non-vegetated (ice, lake, < 5% cover), wetland, forest (trees ≥ 60%), woodland and savanna (10–60%), sparse, shrubland, grassland; "alpine" where a cell is cold because it is high. The Mediterranean types need Köppen's summer drought (driest summer month < 40 mm and < ⅓ of the wettest winter month); sclerophyll scrub elsewhere is dry sclerophyll scrub (mallee, mulga), shrub steppe or thicket. Heath needs a moist climate (HthS: P/PET ≥ 0.5; heathland ≥ 0.7), boreal-named woodland a subarctic one (coldest month < −2 °C, warmest < 16 °C or GDD5 < 1000), and a forest in a tropical climate whose biggest share is tropical trees is tropical forest (PW-220, PW-222). `biome` is a coarse grouping of them. (Mangrove forest and salt marsh will come from PW-188's coastal layers; oasis woodland needs river water: only the zoom draws it, §2.13.)
+7. **Named types:** ordered rules on the mix, structure and site (BIOME4- and IGBP-like): non-vegetated (ice, lake, < 5% cover), wetland, forest (trees ≥ 60%), woodland and savanna (10–60%), sparse, shrubland, grassland; "alpine" where a cell is cold because it is high. The Mediterranean types need Köppen's summer drought (driest summer month < 40 mm and < ⅓ of the wettest winter month); sclerophyll scrub elsewhere is dry sclerophyll scrub (mallee, mulga), shrub steppe or thicket. Heath needs a moist climate (HthS: P/PET ≥ 0.5; heathland ≥ 0.7), boreal-named woodland a subarctic one (coldest month < −2 °C, warmest < 16 °C or GDD5 < 1000), and a forest in a tropical climate whose biggest share is tropical trees is tropical forest (PW-220, PW-222). `biome` is a coarse grouping of them. Mangrove forest and salt marsh are named where coastal life (§2.20) covers ≥ 30% of a cell (rule 2, after ice and lakes; PW-209). (Oasis woodland needs river water: only the zoom draws it, §2.13.)
 
 **Plant groups through a run** (decision 3): six groups appear one after another (pioneer mosses and crusts; marsh plants; conifers and other non-flowering trees; flowering trees and shrubs; grasses; C4 grasses and succulents), each from 0.6× to 1.3× its Earth fraction of the span from `plants_from` to a deadline (the run's end − max(16 Myr, 5%)), with a chance per climate update proportional to its **niche** (the share of land where its types would grow faster than what is there) and a ramp to certainty at its window's end (seeded draws; `run.json` meta `plant_groups`). Before a group exists its niche is filled by a **stand-in** with widened limits and 70% efficiency: conifer forest in the tropics before flowering trees, moss and crust carpets where grass would be.
 
@@ -599,6 +601,7 @@ Worlds get them from a first cheap vegetation on the first climate, then the cli
 2. **Plants:** each plant type's share × its colour, leaf-on or leaf-off that month by vegetation.py's leaf habits (summergreen: the month warmer than its threshold; raingreen: a moist soil, the month's and the two before's water against the potential evaporation; grasses: both, dormant grass straw when dry, brown when cold), over `plant_cover` of the ground. Wetlands (the flooded share) darker and olive.
 3. **Snow** from the month's snowpack (`climate.months`), cover 1 − e^(−SWE/15 mm), partly hidden by trees (evergreen crowns most: the dark winter taiga); **land ice** white, greyer-blue where it melts that month.
 4. **Water:** lakes by depth (shallow ones greenish), salt lakes turquoise, salt pans white, frozen lakes white; the sea by depth, turquoise over warm shallow (carbonate) shelves, sea ice where the month is below freezing.
+5. **Coastal life** (§2.20): reefs pale turquoise and seagrass dark through shallow water, kelp's olive-brown canopy, mangroves dark green, salt marsh green or straw by season.
 
 Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map and the zoom shade from the relief; the **Clouds** overlay thresholds made-up fractal noise at each place's cloud share for the season (`cloud_jul`/`_jan`), so the cover is the climate's and the shapes are not.
 
@@ -608,6 +611,55 @@ Hill shading and clouds are drawn by the viewer: the globe is lit, the flat map 
 *World 351f32 (L7) in July and January (snow and leaf-fall across the northern continent), the Earth world fe2af4 in July (Sahara, the green Sahel in the rains, the Congo), and zooms 64f0b6 (rainforest–savanna edge) and 3a5252 (a treeline under an ice cap in July, and in January with clouds).*
 
 **Known limits:** colours are tuned by eye, not to reflectance data; cell-scale colours on the globe show the cells (and the rain field's streaks, PW-019); clouds are a fixed pattern per world and season, not weather (PW-156); no sun glint, haze or night side.
+
+### 2.20 Coastal and shallow-sea life (`coastal.py`, `zoom_coastal.py`, PW-188)
+
+**What it does:** five habitats as world layers (% of each cell): **coral reef**, **kelp forest** and **seagrass meadow** on the shallow sea floor, **mangrove** and **salt marsh** on the land between the tides (owner decision 7B: all coastal life lives here, not in the vegetation model's PFTs). Each is a suitability from the water and the coast (0–1) times the share of the cell at the right height. A fun-tool approximation with literature limits, cited in the code; none is tuned to Earth's map.
+
+**Two new fields:**
+- **Turbidity** (`turbidity`, mg/L): each river mouth's BQART load (`coast.bqart`, as the deltas use) spreads over the sea (e-folding ~150 km) and settles at a net ~10⁻⁵ m/s (waves and tides resuspend mud many times before it stays), over 0.5 mg/L of clear water. Light falls off as e^(−Kd z), Kd = 0.06 + 0.07 × SSC per m (Kirk 2011).
+- **Upwelling** (`upwelling`, °C): how much coastal and equatorial upwelling cools the sea surface, the climate's own source term (`climate.upwelling_cooling`, now also returned by `climate.compute`): the nutrients kelp needs in warmer water.
+
+**Geometry (sub-cell):** a coastal sea cell's floor ramps from the shore to twice its mean depth (an offshore bank spreads ±50% around it); a coastal land cell's heights are exponentially distributed about its mean (much low ground, a few hills), so the share between the tides is 1 − e^(−h/elevation), h = half the tidal range + 0.3 m of set-up.
+
+| Habitat | Rule (environment × geometry) |
+|---|---|
+| coral reef | annual SST from the run's `reef_temp` − 1.5 to `reef_temp` (23.5 °C: where the run's reefs and volcanic atolls start and drown, so limestone, atolls and the layer agree), coldest month ≥ ~18 °C, warmest ≤ ~34 °C, 25–42 psu (Kleypas et al. 1999), SSC < ~10 mg/L (Rogers 1990); 25% of the floor above 10% of the surface light (a reef tract is mostly sand, rubble and seagrass between reefs), plus the living reefs of the world's volcano table (a 1 km ring round each island's shore) |
+| mangrove | coastal land between the tides; shelter halving at 8 kW/m of waves (~1.5 m), muddier (river SSC) better; frost-free: BIOME4's absolute minimum above ~−4 °C (Osland et al. 2017) and a winter sea above ~14–18 °C (Duke et al. 1998); sparser on arid coasts; once flowering trees exist (plant group 4) |
+| salt marsh | the same intertidal habitat where it is too cold for mangroves, with a growing season (warmest month above ~5 °C); once grasses exist (group 5) |
+| kelp | warmest-month SST under ~20 °C (Steneck et al. 2002), nutrients (water under ~15 °C, or upwelling ≥ 0.5–3 °C), > ~15 psu, little year-round sea ice, rocky shores (high or rugged coast, hard surface rock or fresh glacial scour, not a coastal plain, not muddy), down to 1% of the light (Lüning 1990) |
+| seagrass | > ~5 psu, a summer sea above ~4 °C, no year-round ice, sheltered (halving at 10 kW/m), soft bottoms, down to Duarte's (1991) Zc = 1.82 Kd^−1.07; flowering plants (group 4) |
+
+A sea cell's shares are taken reef first, then kelp, then seagrass. **Vegetation (PW-209):** a land cell with ≥ 30% mangrove or salt marsh is named "mangrove forest" or "salt marsh" (rule 2 of the proposal's classification, after ice and lakes). **Highlights:** the coral coast is now the largest tracts of the reef layer ("Great reef" when ≥ 10,000 km²), and a new **mangrove coast** kind (vegetation category) is the largest mangrove stretch.
+
+**Zoom** (`zoom_coastal.py`): the water's and the climate's parts are interpolated from the cells; the pixel adds its own depth (light depths as above), a rocky shore (land rising 30–150 m within 3 km, or hard rock at the shore) and, for mangroves and marsh, its share between the tides within 30 km of the sea. Each pixel is one habitat or none (layer `coastal_life`: 1 reef, 2 kelp, 3 seagrass, 4 mangrove, 5 salt marsh), as planet-fixed noise patches with the suitability as their probability; volcanic reef pixels (zoom_volcanoes) are reef. Mangrove and salt-marsh pixels name the vegetation. Stats: `coastal_life` km² per habitat.
+
+**Satellite view:** reefs pale turquoise, seagrass dark, kelp's canopy olive-brown at the surface, mangroves dark green, salt marsh green in the growing season and straw-brown in winter (by share on the globe, per pixel in the zoom).
+
+**Viewer:** globe layers "coastal life" (each cell in its biggest habitat's colour, legend with each habitat's total km²), "turbidity" and "upwelling"; hovering a cell lists its habitats' shares, mud and upwelling. Zoom layer "Coastal life" with km² per habitat; the pixel's habitat on hover.
+
+**Earth** (`tools/coastal_check.py`, L6 Earth world on the model's climate, 2026-10-15):
+
+| | model | observed |
+|---|---|---|
+| coral reef | 485,000 km², to 33.6° N / 32.2° S | ~250,000–285,000 km² (Spalding et al. 2001), to ~32° |
+| mangrove | 50,000 km², to 31.7° N / 20.2° S | ~138,000 km² (Giri et al. 2011), to ~32° N / 39° S |
+| salt marsh | 47,000 km², to 64.6° N / 52.3° S | ~55,000 km² mapped, likely 2–4× more (Mcowen et al. 2017) |
+| kelp | 840,000 km² | ~1.5–2 million km² of suitable rocky coast (Jayathilake & Costello 2020) |
+| seagrass | 1.48 million km² | 160,000 km² mapped, ~270,000–600,000 likely (McKenzie et al. 2020); habitat models ~1.6 million |
+
+41 of 55 named places as observed (present = ≥ 1% of a cell within 250 km): mangroves 13/14 (Sundarbans, Niger delta, Pará, Mekong, Gulf of Papua…; none in the Mediterranean, Chile, Namibia, the North Sea), seagrass 8/8, salt marsh 7/9, reefs 7/13, kelp 6/11. Most misses are the model's climate and ocean, not these rules: no Benguela upwelling at the Cape (sea 23 °C in summer: no kelp), a brackish Baltic that is ocean-salty in the model (kelp there), a dry Ganges carrying a tenth of its mud (reefs off the delta), and oceanic atolls (Maldives) that are sub-cell on ETOPO's cells, with no volcano table for Earth. Reefs and seagrass are generous (potential habitat, no resuspension turbidity on shallow tidal shelves), mangroves scarce (the cells' intertidal share is crude, and the model's coasts are dry in West Africa and Bengal). No Earth cell reaches 30% mangrove, so the named type appears in zooms, not on Earth's globe.
+
+![Coastal life on Earth](review/coastal-life/earth_L6_coastal_life.png)
+*Earth (L6, the model's climate): reefs (pink), mangroves (teal), salt marsh (yellow), seagrass (green), kelp (brown), each cell by its share.*
+
+![Coastal life on a generated world](review/coastal-life/world_350721_coastal_life.png)
+*World 350721 (L7, `planet finish a1d3b9 --at 900`, after flowering plants and grasses; not kept): mangroves on the tropical coasts, salt marsh in the north, reefs in a warm inland sea and along atoll chains (the volcano table's living reefs). Its highlights: "Great reef: 22,000 km² of reef" and "Mangrove coast: 11,000 km²".*
+
+![Coastal life in zooms](review/coastal-life/zooms_350721_satellite_and_life.png)
+*Zooms of world 350721 (not kept), satellite view (top) and `coastal_life` (bottom): the warm inland sea's reefs (3e362a, 1000 km; pink), a mangrove coast with its deltas (70bead, 500 km; teal), and a cold rocky coast with kelp (brown), seagrass (green) and salt marsh (yellow) (f45ba3, 500 km). The zoom's sea floor drops to the coarse cell's depth within a pixel of the shore, so it has few shallows for seagrass and reefs (inbox draft).*
+
+**Known limits:** turbidity only from rivers (shelves stirred by tides stay clear; inbox draft); reefs are a habitat colour in the zoom, not terrain, except on volcanoes (inbox draft); no coast type layer (rocky / sandy / muddy) of its own, the rocky-shore rule is internal (PW-097 would share it); salt marsh and mangroves appear only once their plant groups exist, so an early world's tidal flats are bare.
 
 ---
 
@@ -733,11 +785,12 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/vegetation.py` | plant functional types, productivity, cover competition, fire, wetlands, named types, plant groups |
 | `planet/ocean.py` | salinity and the overturning |
 | `planet/hydrology.py`, `kernels.py` | rivers, lakes, erosion kernels |
-| `planet/coast.py` | waves, tides, Galloway delta weights |
+| `planet/coast.py` | waves, tides, Galloway delta weights, BQART sediment loads |
+| `planet/coastal.py`, `zoom_coastal.py` | coastal and shallow-sea life: reefs, kelp, seagrass, mangroves, salt marsh; river turbidity; their zoom placement |
 | `planet/world.py` | world finishing and file I/O |
 | `planet/timeline.py` | simulate, keyframes, report, replay, slice, `world_from_frame` |
 | `planet/generators.py` | one-shot cartoon plates (`generate`) |
-| `planet/highlights.py` | the 35 detectors, representative time |
+| `planet/highlights.py` | the 36 detectors, representative time |
 | `planet/zoom.py`, `zoom_kernels.py` | regional zoom and its raster kernels |
 | `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
 | `planet/zoom_terrain.py`, `zoom_vegetation.py` | zoom terrain indices (sun on slopes, wetness, river distance); per-pixel vegetation |

@@ -288,6 +288,16 @@ LAYERS = {
     "sunshine_jan": _spec("u1", "h/day", "bright sunshine, hours a day, January half-year (climate.sunshine)",
                           scale=0.1),
     "tide_range": _spec("u1", "m", "tidal range at sea cells (coast.py; 0 on land)", scale=0.1),
+    "upwelling": _spec("u1", "C", "how much upwelling cools the sea surface (climate.upwelling_cooling; 0 on land)",
+                       scale=0.1),
+    # coastal and shallow-sea life (coastal.py, PW-188; worlds): % of each cell
+    "reef": _spec("<u2", "%", "coral reef framework (sea cells)", scale=0.1),
+    "kelp": _spec("<u2", "%", "kelp forest (sea cells)", scale=0.1),
+    "seagrass": _spec("<u2", "%", "seagrass meadow (sea cells)", scale=0.1),
+    "mangrove": _spec("<u2", "%", "mangrove forest between the tides (coastal land cells)", scale=0.1),
+    "salt_marsh": _spec("<u2", "%", "salt marsh between the tides (coastal land cells)", scale=0.1),
+    "turbidity": _spec("<u2", "mg/L", "suspended sediment at the sea surface, from the rivers (0 on land)",
+                       scale=0.1),
     # landform classes and their parameters (landform.py; read from each cell's geological record)
     "landform": _spec("u1", "id", "landform class (landform.CLASSES; legend 'landforms')"),
     "landform_age": _spec("<u2", "Myr", "landform age; by class: since rifting, folding, eruption, the top "
@@ -462,8 +472,9 @@ def legends() -> dict:
     from .landform import legend
     from .surface import ROCKS
     from .vegetation import legend as veg_legend
+    from .zoom_coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
-            "landforms": legend(), "vegetation": veg_legend(),
+            "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 
