@@ -51,3 +51,28 @@ PW-265 costs 0.4 points of Köppen group agreement, a little more than the ticke
 With the slower baselines (PW-264), the temperature spread stays within the envelopes (8–30 °C for the medians; dT range ≤ 25). Cold eras are mostly milder and shorter, even though PW-278's weaker thermostat should make them longer: the wetter, greener land and the slower baselines outweigh it. Seed 3199 got a deeper cold era. Less land drains inland (`inland_pct` is now below its 8% envelope on all 8 seeds): wetter land fills and overflows its closed basins (PW-054).
 
 Not measured: veg_check (it needs an Earth world in a `worlds/` store, which this worktree doesn't have), L7 (PW-290), the 1 Gyr sweep (PW-240's −384 m is from it).
+
+## After merging main (tectonics and ice fixes), and option B of the recycling draft
+I tried option B (the land's recycled vapour goes into the air that moves on, not into the local column) in two forms: added to the cell's moved air after its rain, and sent with its outflow to the downwind cells. Neither helped, so I didn't keep it:
+
+| earth_check | main | merged, no B | B: into moved | B: into outflow |
+|---|---|---|---|---|
+| Köppen group / exact (%) | 71.75 / 38.92 | 71.24 / 33.01 | 71.21 / 33.09 | 71.09 / 32.91 |
+| B share of land (%) | 28.9 | 20.3 | 20.5 | 20.6 |
+| land P mean / median (mm) | 840 / 515 | 1008 / 737 | 998 / 728 | 986 / 727 |
+| Australia interior / Gobi / Sahara (mm; obs 291 / 157 / 35) | 463 / 303 / 205 | 837 / 582 / 328 | 830 / 585 / 327 | 839 / 591 / 322 |
+
+Deserts are many cells wide, so moving the vapour one cell doesn't take it out of the desert. The extra desert rain is showers: they make 70–93% of it, and the added vapour raises the hot ground air's moist static energy. The kernel has a single vapour, so "damp the showers of recycled vapour" can't be stated as a process without a second tracer or a boundary-layer depth. Details and options are in `draft-climate-ocean-recycling-wets-dry-interiors.md` (still needs-decision).
+
+health --quick on the merged code (docs/review/health-climate-ocean; the ice fixes also act here):
+
+| (mean of per-seed medians, range) | main baseline | merged final |
+|---|---|---|
+| temp (°C) | 14.8 (12.8–16.7) | 14.9 (12.7–17.0) |
+| per-seed min / max temp (°C) | 2.2–11.1 / 18.0–23.7 | 4.5–12.4 / 18.5–23.6 |
+| dT range per run (°C) | 8.4–19.1 | 7.6–19.1 |
+| dry_pct | 36.7 (30.2–44.7) | 29.8 (24.5–38.7) |
+| inland_pct (envelope 8–30) | 10.8 (8.6–14.1) | 7.3 (5.3–9.7) |
+| trees_pct / npp | 26.9 / 356 | 27.1 / 300 |
+| deepest ice sea level, seeds 11 / 42 / 3199 (m) | −360 / −304 / −129 | −71 / −15 / −12 |
+| frames with ice SL < −150 m (any seed) | up to 15% | 0 |

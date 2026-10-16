@@ -1,5 +1,5 @@
 ---
-title: "After PW-266 the dry interiors rain on themselves: Earth's Köppen-B land share fell from 29% to 20% (Kottek 30%), exact agreement 39% to 33%"
+title: "After PW-266 dry interiors are too wet: more recycled vapour feeds the showers over hot dry land (Earth's Köppen-B share of land 29% -> 20%, Kottek 30%; exact 39% -> 33%)"
 type: task
 status: needs-decision
 parent: PW-245
@@ -13,7 +13,7 @@ refs: [planet/climate.py, docs/review/audit/fixes-climate-ocean.md]
 ---
 
 ## Description
-PW-266 made the rain kernel give the air back what Budyko's water balance evaporates. Before, it used a flat 0.5 × warm × the local rain. The water books now close (the fresh-water mean is +0.1 cm/yr on Earth, against −3.2 before). But on dry land Budyko evaporates nearly all the rain, and the kernel rains much of that vapour out again where it rose. The dry interiors now recycle their own rain:
+PW-266 made the rain kernel give the air back what Budyko's water balance evaporates. Before, it used a flat 0.5 × warm × the local rain. The water books now close (the fresh-water mean is +0.1 cm/yr on Earth, against −3.2 before). On dry land, Budyko evaporates 80–95% of the rain, while the old kernel gave back ~40%. So the deserts' air now carries about twice the vapour, and it rains much of it out again.
 
 | earth_check (L6) | main | after PW-266 | observed |
 |---|---|---|---|
@@ -27,16 +27,30 @@ PW-266 made the rain kernel give the air back what Budyko's water balance evapor
 | W Siberia | 271 | 557 | 503 |
 | Pampas group match | 4.9% | 74.4% | |
 
-On generated planets (health --quick, 8 L6 seeds, 500 Myr), the median Köppen-B share fell from 30–45% to 24–31%. The scorecard's seeds 1 and 2 at 1000 Myr fell from 32/37% to 18.5/20.7%.
+Some regions got better (Great Plains, W Siberia, SE China, SE USA, Pampas); deserts and steppes got wetter. On generated planets (health --quick, 8 L6 seeds, 500 Myr), the median B share fell from 30–45% to 24–31%.
 
-Some regions got better: Great Plains, W Siberia, SE China, SE USA and the Pampas. The deserts and steppes got wetter.
+**Tried and ruled out (2026-10-15): option B, put the recycled vapour into the air that moves on rather than the local column.** Two forms:
+- added to the cell's moved air after its rain;
+- sent with its outflow to the downwind cells.
 
-Before, the kernel's land evaporation was too low (41% vs 60%). That under-recycling hid the fact that the kernel rains out recycled vapour too readily over dry land. In reality, desert evaporation follows rare rain events, and the vapour is mixed up and carried off under the subsiding air. It doesn't fall again where it rose.
+Neither changed anything (Earth land P 1008 → 998 / 986 mm, B share 20.3 → 20.5%, Australia interior 837 → 830 / 839). Deserts are many cells wide, so moving the vapour one cell downwind doesn't take it out of the desert. The first form is the local column one step later.
+
+**Where the extra rain comes from (Earth, current code):** the desert rain is mostly showers, not large-scale rain.
+
+| region | P before → now | showers' share of the rain |
+|---|---|---|
+| Australia interior | 470 → 850 | 0.70 → 0.79 |
+| Sahara | 209 → 334 | 0.60 → 0.70 |
+| Gobi | 303 → 562 | 0.94 → 0.93 |
+
+The added vapour raises the moist static energy of the hot ground air (`mse_t + LQ·q`) above the air aloft. The kernel has no inversion over dry land apart from `cv_sink` in the subtropical belt. In reality, a deep dry convective layer mixes desert evaporation up and away, and the subsidence inversion caps the showers.
+
+The old flat `et` (0.5 × warm) under-recycled dry land, and that hid how readily the kernel turns any vapour over hot dry land into showers. I found no small change that is a sound process statement. "belt_dry should damp showers of recycled vapour" doesn't work: the kernel has one vapour, not a tagged recycled one. And `cv_sink` already damps showers in the sinking belt.
 
 Options:
-- A: keep it as is. The books close, the generated interiors are wetter (PW-026, PW-290), and Earth is off.
-- B: sound, small. Put the recycled vapour into the air that moves on rather than into the local column. For example, add the land's evaporation to `moved` (after the cell's rain) instead of to `m` before it. The water then rains downwind (Earth's continental recycling length is ~500–2000 km). This might be the smallest physical change.
-- C: re-tune the kernel's rain-out (bg, belt_dry, rh_c) on Earth to get the B share back. This is a re-tune for a score, so not recommended.
-- D: revert PW-266 to the flat share, and keep the freshwater correction.
+- A: keep it as is. The books close; generated interiors are wetter (PW-026, PW-290 helped); Earth's deserts are too wet.
+- C: re-tune the kernel's showers (cv_sink, cv_scale) on Earth to get the B share back. This is a score re-tune, so not recommended.
+- D: revert PW-266 to the flat share and keep the freshwater correction. This brings back the hidden imbalance.
+- E (heavier, sound): give the showers over land a boundary-layer depth. Dry, deeply mixed ground air (large `t_air` − dew point) spreads its vapour through a deeper layer, so the near-ground q that drives `inst` is diluted. Or tag the recycled vapour as a second tracer that mixes aloft. Either needs a careful pass on Earth.
 
-Lean: B, then re-measure earth_check and health. If B isn't enough, look at whether `belt_dry` should also damp the showers of locally recycled vapour.
+Lean: needs the owner. A for now; E if the deserts matter before PW-013's rain pass.
