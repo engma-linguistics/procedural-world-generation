@@ -35,6 +35,17 @@ def test_vents_form_spaced_chains(sim4):
         assert v["top"] <= V.TOP_MAX[0] + 1e-6
 
 
+def test_vents_stand_on_the_ground_around_them(sim4):
+    """PW-338: a hotspot vent's floor is the ground around it (its cell and
+    their neighbours), not an oceanic base level from birth (the vents of a
+    chain that built a plateau were recorded km below it). (Within the
+    climate update's sea shift after the step's volcanoes.)"""
+    vents = [v for v in sim4.volcanoes if v["kind"] == V.VENT]
+    cells = sim4.grid.locate(np.array([v["pos"] for v in vents]))
+    off = np.array([v["floor"] - V.ground(sim4, int(c)) for v, c in zip(vents, cells)])
+    assert np.abs(off).max() < 200, np.abs(off).max()
+
+
 def test_volcano_table_in_world(sim4):
     w = T.world_from_sim(sim4)
     assert w["meta"]["volcano_columns"] == list(V.COLUMNS)

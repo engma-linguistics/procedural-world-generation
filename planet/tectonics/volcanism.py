@@ -250,6 +250,14 @@ def base_level(sim, v):
     return sink + float(sim.plates.extra[k, r, LIFT]) - sim.sea_level
 
 
+def ground(sim, c):
+    """m: the ground a volcano over world cell c stands on: the lowest of
+    its cell and their neighbours (a cell's mean also holds the narrow
+    cones of earlier vents in it; a broad plateau or apron raises them all)."""
+    g = sim.grid
+    return float(sim.w_elev[np.append(g.nbr_idx[g.nbr_off[c]:g.nbr_off[c + 1]], c)].min())
+
+
 def new_vent(sim, rng, kind, k, ppos, c, vid, plume=-1, vol=0.0, life=0.0):
     """A new volcano on plate slot k at ppos (plate frame), over world cell
     c, appended to sim.volcanoes. A hotspot vent can grow until its relief
@@ -265,11 +273,7 @@ def new_vent(sim, rng, kind, k, ppos, c, vid, plume=-1, vol=0.0, life=0.0):
             min(2500.0 + 800.0 * np.sqrt(max(sim.w_age[c], 0.0)), 10500.0) * rng.uniform(0.7, 1.1)
     else:
         hmax = 0.0
-    # the ground it starts on: the lowest of its cell and their neighbours (a
-    # cell's mean also holds the narrow cones of earlier vents in it; a
-    # broad plateau or apron raises them all)
-    g = sim.grid
-    floor = float(sim.w_elev[np.append(g.nbr_idx[g.nbr_off[c]:g.nbr_off[c + 1]], c)].min())
+    floor = ground(sim, c)
     v = {"id": int(vid), "kind": kind, "plume": int(plume), "plate": int(k), "label": int(pl.label[k]),
          "ppos": np.asarray(ppos, float), "ref": int(pl.idx[k, c]), "pos": pl.Q[k] @ ppos, "born": sim.t,
          "life": float(life), "active": True, "cont": cont, "vol": 0.0, "height": 0.0, "hmax": hmax,
@@ -322,7 +326,8 @@ def re_home(sim):
 
 
 def tend(sim):
-    """End of a step: every volcano sinks with its base level, its part
+    """End of a step: every volcano sinks with its base level (a hotspot
+    vent with the ground around it, which sinks with its sea floor), its part
     above the sea erodes, and its reef grows or drowns; arc volcanoes go
     extinct after their life; old ones are forgotten.
 
@@ -355,7 +360,15 @@ def tend(sim):
                 continue
         elif age > VENT_KEEP_MYR or (v["top"] < SEAMOUNT_FORGET and age > 10 and not v["active"]):
             continue
-        v["floor"] = v["floor0"] + base_level(sim, v) - v["base0"]
+        if v["kind"] == VENT:
+            # a hotspot vent stands on the ground around it, as at birth: the
+            # lowest of its cell and their neighbours, which also rises with a
+            # plateau or apron its chain builds (PW-338: following an oceanic
+            # base level from birth, the vents of a chain that built a 2-3 km
+            # plateau were recorded on a -3..-5 km floor, as islands)
+            v["floor"] = ground(sim, c)
+        else:
+            v["floor"] = v["floor0"] + base_level(sim, v) - v["base0"]
         top = v["floor"] + v["height"] - v["eroded"]
         if v["active"]:  # fresh lava keeps resurfacing it (but its flanks still collapse)
             cut = max(top - TOP_MAX[1 if v["cont"] else 0], 0.0)
