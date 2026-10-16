@@ -45,6 +45,7 @@ Options:
 Lean: C (smaller drift sd, ~2 C) plus B once Earth's inception has its own fix.
 
 ## Updates
+- 2026-10-15: Ice fixes (PW-274..277, merged 20684ed): health --quick worst ice sea level s11 -360 -> -247, s42 -304 -> -124, s2 -174 -> -115 m; only s11 below -150 m (8.7% of frames). Climate fixes pending merge also move it.
 - 2026-10-15: Merged inbox draft draft-health-pw240-cold-eras.md ("PW-240 update: health sweep cold eras: L6 seed 11 -384 m ice sea level (1 C) when its supercontinent drops to 4 plates; seeds 2, 77, 3199 to -205..-231 m", found by health-sweep).
   Update for PW-240. PW-246 health sweep (2026-10-15, main 6926583, default params, 1 Gyr, keyframes
   every 4 Myr; ice sea level = -0.9 x land ice volume / ocean area, as `earth.update_climate`):

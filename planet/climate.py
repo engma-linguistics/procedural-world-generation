@@ -1920,7 +1920,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     precip = 0.5 * (p_jul + p_jan)
     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
-               cover=ice_cover(grid, ice, land, tune), lat=grid.lat, tilt=tilt, fb=fb)
+               cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
     t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
 
@@ -2091,7 +2091,7 @@ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, oc
     # the bare ground under the ice: its own height, no white surface
     up = LAPSE * np.where(land, ice, 0.0)
     ground = (t_warm + up, t_cold + up, temp + up)
-    return (*ice_surface(*ground, np.where(land, ice, 0.0), cover, tune), ground)
+    return (*ice_surface(*ground, np.where(land, ice, 0.0), cover, lat, p_jul, p_jan), ground)
 
 
 def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None = None) -> np.ndarray:
@@ -2120,22 +2120,32 @@ def ice_cooling(ice, cover, tune=None):
     return tune["ice_cooling"] * (ice > 0) * cover
 
 
-def ice_surface(t_warm, t_cold, temp, ice, cover, tune=None):
+def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):
     """Temperatures on top of land ice (m; 0 = bare ground), from those of
-    the bare ground under it: the ice's own height (lapse rate), and its
-    white surface. An ice sheet keeps itself cold: it reflects most of the
-    sunshine, and in summer melting holds it near 0 C however warm the air
-    (Antarctica's coast reaches ~0 C in summer, its plateau ~-30 C). So
-    once ice has formed it outlasts the climate that made it (but see
-    earth.ice_sheets: only partly). cover: ice_cover."""
-    on_ice = ice > 0
-    up = LAPSE * ice
-    t_warm, t_cold, temp = t_warm - up, t_cold - up, temp - up
-    cool = ice_cooling(ice, cover, tune)
-    temp, t_cold = temp - cool, t_cold - cool
-    t_warm = np.where(on_ice, np.minimum(t_warm - cool, 0.5 * np.maximum(t_warm - cool, 0)), t_warm)
-    # (the melting cap can hold an ice sheet's summer below what its year
-    # would average: then it's that cold all year)
-    temp = np.minimum(temp, t_warm)
-    t_cold = np.minimum(t_cold, temp)
+    the bare ground under it, by the ice's own surface mass balance year
+    (icemass.surface, PW-277: the one rule that also sets where the ice
+    is): the ice's height (lapse rate), thick ice ~2 C colder all year
+    (inversion, katabatic air), the summer's warmth damped while snow lies
+    (by a sheet's own bright air mass: cover, icemass.sheet_cover) and a
+    melting surface held near 0 C. Antarctica's coast reaches ~0 C in
+    summer, its plateau ~-30 C. The annual mean keeps the ground's own
+    offset from its months' midpoint. lat (deg), p_jul, p_jan (mm/yr: the
+    half-years' precipitation, whose snow sets how long the summer is
+    bright) per cell."""
+    from . import icemass
+    on = np.asarray(ice) > 0
+    if not on.any():
+        return t_warm, t_cold, temp
+    t_warm, t_cold, temp = (np.array(x, float) for x in (t_warm, t_cold, temp))
+    i = np.flatnonzero(on)
+    pick = (lambda x: np.broadcast_to(np.asarray(x, float), on.shape)[i])
+    ta, tw, tc = icemass.surface(pick(lat), t_warm[i], t_cold[i], pick(p_jul), pick(p_jan), pick(ice), pick(cover))
+    ta = np.clip(temp[i] + ta - 0.5 * (t_warm[i] + t_cold[i]), tc, tw)
+    t_warm[i], t_cold[i], temp[i] = tw, tc, ta
     return t_warm, t_cold, temp
+
+
+def _sheet_cover(grid: Grid, ice: np.ndarray) -> np.ndarray:
+    """icemass.sheet_cover (ice_surface's cover), zero work without ice."""
+    from .icemass import sheet_cover
+    return sheet_cover(grid, ice) if (np.asarray(ice) > 0).any() else np.zeros(grid.n)
