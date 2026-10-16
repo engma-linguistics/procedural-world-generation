@@ -340,7 +340,7 @@ PW-053 brought the sea-level spread on L6 seeds from ~126–195 m down to ~89–
 
 ### 2.9 Hydrology: rivers, lakes, deltas (`hydrology.py`, `kernels.py`)
 
-**Routing:** water drains by **priority-flood** (Barnes 2014): from the sea, cells are visited lowest first, every cell gets one downstream neighbour, and every pit fills to its spill level. **Flow accumulation** sums runoff downstream; `flow` × cell area gives discharge in m³/s.
+**Routing:** water drains by **priority-flood** (Barnes 2014): from the sea, cells are visited lowest first, every cell gets one downstream neighbour, and every pit fills to its spill level. A coastal cell drains to its deepest sea neighbour; cells of equal height (a lake's surface, a flat lowland) are taken first come first, so across a flat the water takes the fewest steps to where it leaves (PW-344). That order is strict, so only the outlets on the coast (and closed lakes' shores) are queued, not the open sea's inner cells. **Flow accumulation** sums runoff downstream; `flow` × cell area gives discharge in m³/s.
 
 **Lakes** are **fill-and-spill with evaporation**:
 1. Hollows under 20 m deep are filled first (at ~55–110 km a cell's height is a mean, and channels too small to see drain them). A wide hollow must also fall at least 0.1 m per km from rim to middle, or it is a plain that rivers cross (`MIN_SLOPE`; 1 million km² needs ~56 m).
