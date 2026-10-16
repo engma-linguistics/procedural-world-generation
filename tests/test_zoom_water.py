@@ -96,6 +96,15 @@ def test_open_lake_evaporates(evap_lake):
     assert 0.8 < lk["outflow_m3s"] / q_coarse < 1.1, (lk, q_coarse)
 
 
+def test_zoom_keeps_inland_cell_means(lake_zoom):
+    """Each coarse land cell away from the coast keeps its mean height
+    through the valley carving and the landscape pass (PW-268: the valleys
+    lowered it 60-90 m)."""
+    st = lake_zoom["stats"]
+    assert abs(st["inland_cell_mean_bias_m"]) < 20, st
+    assert st["inland_cell_mean_rms_error_m"] < 120, st
+
+
 def test_every_lake_fragment_passes_its_water_on(lake_zoom):
     """No fragment of an open lake swallows its rivers (PW-062)."""
     assert lake_zoom["lakes"]

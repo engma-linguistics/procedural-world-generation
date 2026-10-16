@@ -29,12 +29,14 @@ Pipeline
    high, craton/sediment low), thick sediment cover (basins: subdued),
    plate boundaries (convergent: high), elevation itself, and ice
    (smoothed). Then each coarse cell's mean is pulled back to its coarse
-   value (smooth correction field), so the region doesn't drift.
+   value (smooth correction fields, MEAN_PASSES of them, so a one-cell
+   trench keeps its depth), so the region doesn't drift.
    This is the *target* surface for step 6.
    Big river mouths (>= DELTA_MIN_Q) get a delta plain: within a radius R
    growing with discharge and the coarse sediment cover offshore, the
    detail is damped and the land pulled down to a few metres above the
-   sea, the sea floor shallows, and a lobe of land is pushed out to sea.
+   sea, the sea floor shallows (on the shelf, not over deep water), and a
+   lobe of land is pushed out to sea.
    Volcanoes (zoom_volcanoes): every volcano of the world's table becomes
    its own cone (shield or stratocone, eroded, planed or ringed by a reef
    as the run says); near hotspot vents on the sea floor the terrain is
@@ -69,7 +71,9 @@ Pipeline
    K = surface.ROCKS erodibility): big rivers
    are gentle, small gullies and ridges steep, so valleys nest
    dendritically. C is a smooth field refitted each iteration so every
-   ~35 km neighbourhood keeps the target's mean; the network is
+   ~35 km neighbourhood keeps the target's mean as it was before the coarse
+   valleys were cut into it (so the valleys are cut mass-neutrally: the
+   hillslopes between them stand a little higher, PW-268); the network is
    recomputed on the new surface and the whole thing repeated (~15x).
    Lakes are outlets held at their surface, with a rim kept above the
    water except at the outlet (the shore pixel nearest the coarse lake's
@@ -89,7 +93,7 @@ Pipeline
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, but for a little under
-   ice). Glaciers (glaciers(), PW-127, PW-159) from each pixel's own climate:
+   ice; what it takes off a cell's mean goes back on its hillslopes). Glaciers (glaciers(), PW-127, PW-159) from each pixel's own climate:
    accumulation where its snow outlasts the summer (icemass.balance, the
    run's and time zoom's surface mass balance; under the coarse sheet with
    its ice), the surplus routed down the valleys as melting tongues; outlined on the
@@ -167,6 +171,7 @@ LIMESTONE = 6  # surface.ROCKS
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 
 
@@ -943,6 +948,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     cx, cy = fr.to_plane(g.centers[sel])
     e_c = elev[sel]
     land_c = e_c > 0
+    # land cells away from the coast (every neighbour land too): their means are kept (stats, PW-268)
+    interior_c = land_c & (np.bincount(np.repeat(np.arange(g.n), np.diff(g.nbr_off)), elev[g.nbr_idx] <= 0, g.n)[sel] == 0)
 
     # ruggedness per coarse cell
     nb_e = np.maximum(elev, 0)
@@ -1133,7 +1140,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         return tot / np.maximum(cnt, 1), cnt
 
     corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n)) * (1 - wC)
-    for _ in range(2):
+    # (each pass removes only part of a residual one cell wide, e.g. a trench,
+    # because the correction is smooth over half a cell: MEAN_PASSES of them)
+    for _ in range(MEAN_PASSES):
         m, cnt = cell_means(h)
         ok = cnt > 0.25 * full_px
         resid = np.where(ok, e_c - m, 0.0)
@@ -1251,6 +1260,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     z_course, q_course = np.full(npx, -np.inf), np.full(npx, np.inf)
     kpix, s_pix, bottom = np.full(npx, -1), np.zeros(npx), np.zeros(npx, bool)  # reach with falls (index into kps) and arc length, per pixel
     riv_q = np.zeros(npx)  # coarse discharge along the coarse river courses
+    carved = np.zeros(npx)  # how far the coarse rivers' valleys cut the surface down (<= 0)
     n_rivers_in = 0
     river_segs = []
     polys, inflow_pts = {}, []  # warped coarse river polylines per cell; (pixel, radius px) where rivers enter
@@ -1473,8 +1483,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         on = (I >= 0) & (D < np.maximum(arr(fw)[np.maximum(I, 0)], 0.75 * res))
         riv_q = np.where(on, arr(sq)[np.maximum(I, 0)], 0.0)
         cut = land & np.isfinite(T)
+        h_uncut = h
         h = np.where(cut, smin(h, np.where(np.isfinite(T), T, 1e9), 40.0), h)
         h = clamp(h)
+        carved = np.minimum(h - h_uncut, 0.0)
         # the coarse river keeps at least its valley floor (the staircase, on
         # reaches with falls) in the landscape pass, wherever its water runs:
         # the floor of the nearest point of its polyline
@@ -2122,10 +2134,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # Steady-state stream power: slope = C / K * Q^-m. C is a smooth field
     # fitted so every ~35 km neighbourhood keeps the mean of the target
-    # surface; a little noise in C varies the relief from valley to valley.
+    # surface as it was before the coarse valleys were cut into it (so the
+    # hillslopes between the valleys stand a little higher and each coarse
+    # cell keeps its mean: the valleys are cut mass-neutrally, PW-268); a
+    # little noise in C varies the relief from valley to valley.
     rad = max(1, int(round(0.3 * sp / res)))
     wmask = land.reshape(ny, nx).astype(float)
-    tmean = _box_mean(np.maximum(target, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
+    tmean = _box_mean(np.maximum(np.where(lake, target, target - carved), 0).reshape(ny, nx) * wmask, wmask,
+                      rad).ravel()
     var = np.exp(0.35 * ZK.fbm(Pk, 0.25 * sp, 3, 0.5, S + 6) / 0.17)
     C = np.full(npx, 30.0)
     # summits: slopes taper above `soft`, nothing above `cap`
@@ -2193,6 +2209,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     for _ in range(SMOOTH_STEPS):
         hd = ZK.diffuse(h, kd, active, nx, ny)
         h = np.where(stream, np.minimum(hd, np.maximum(h, h0 + lift)), hd)
+    # (what creep moves off the hillslopes and the streams don't take up, and
+    # what leaks into the sea at the coast, is put back on the hillslopes:
+    # each cell keeps its mean, PW-268)
+    h = keep_means(h, h0, active & ~stream)
     if lf is not None:
         # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
         # finished landscape, each coarse cell's mean kept. Not on glaciers,
@@ -2432,6 +2452,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
     full = cnt > 0.6 * full_px
+    inland_c = interior_c & full
     coarse_land_px = land_all[own]
     stats = {
         "land_pct": round(100 * land.mean(), 1),
@@ -2442,6 +2463,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "mean_land_elev_m": round(float(h[land].mean()), 1) if land.any() else None,
         "cell_mean_rms_error_m": round(float(np.sqrt(np.mean((m_fine - e_c)[full] ** 2))), 1) if full.any() else None,
         "cell_mean_bias_m": round(float(np.mean((m_fine - e_c)[full])), 1) if full.any() else None,
+        "inland_cell_mean_bias_m": round(float(np.mean((m_fine - e_c)[inland_c])), 1) if inland_c.any() else None,
+        "inland_cell_mean_rms_error_m": (round(float(np.sqrt(np.mean((m_fine - e_c)[inland_c] ** 2))), 1)
+                                         if inland_c.any() else None),
         "min_m": round(float(h.min()), 1),
         "max_m": round(float(h.max()), 1),
         "max_discharge_m3s": round(float(discharge.max()), 1),
