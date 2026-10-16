@@ -1,0 +1,71 @@
+diff --git a/planet/tectonics/plate_kernels.py b/planet/tectonics/plate_kernels.py
+index 74775c6..e042e97 100644
+--- a/planet/tectonics/plate_kernels.py
++++ b/planet/tectonics/plate_kernels.py
+@@ -265,3 +265,45 @@ def cleanup_ghosts(alive, owned, Q, centers, owner, raster, nbr_off, nbr_idx, id
+                 owned[k, r] = False
+                 removed += 1
+     return removed
++
++
++@njit(cache=True)
++def unique_samples(idx, q, centers, nbr_off, nbr_idx):
++    """Make the nearest-cell map idx (world cell -> plate cell; q: the world
++    cells' centres in the plate's frame) one-to-one where it can be: of the
++    world cells that share a plate cell, the nearest keeps it and each other
++    takes the nearest of that plate cell's neighbours no world cell samples
++    (if any). A rotated copy of the grid doesn't line up with the world's,
++    so plain nearest sampling shows ~15% of the plate's cells twice and
++    hides ~7% (PW-359): a change made on the two world cells came back to
++    the plate cell only once (the last write), so a hollow filled with
++    sediment on one of them was still there the next step, and the hidden
++    cells missed the step's physics. In place on idx."""
++    n = idx.shape[0]
++    cnt = np.zeros(n, np.int64)
++    for i in range(n):
++        cnt[idx[i]] += 1
++    best = np.full(n, -1, np.int64)
++    bd = np.full(n, -2.0)
++    for i in range(n):
++        r = idx[i]
++        if cnt[r] > 1:
++            d = q[i, 0] * centers[r, 0] + q[i, 1] * centers[r, 1] + q[i, 2] * centers[r, 2]
++            if d > bd[r]:
++                bd[r] = d
++                best[r] = i
++    for i in range(n):
++        r = idx[i]
++        if cnt[r] <= 1 or best[r] == i:
++            continue
++        u, du = -1, -2.0
++        for e in range(nbr_off[r], nbr_off[r + 1]):
++            j = nbr_idx[e]
++            if cnt[j] == 0:
++                d = q[i, 0] * centers[j, 0] + q[i, 1] * centers[j, 1] + q[i, 2] * centers[j, 2]
++                if d > du:
++                    du, u = d, j
++        if u >= 0:
++            idx[i] = u
++            cnt[u] = 1
++            cnt[r] -= 1
+diff --git a/planet/tectonics/plates.py b/planet/tectonics/plates.py
+index 4822730..7486f32 100644
+--- a/planet/tectonics/plates.py
++++ b/planet/tectonics/plates.py
+@@ -115,10 +115,14 @@ class Plates:
+ 
+     def move(self, grid, dt: float):
+         """Rotate every live plate by its angular velocity, and find which of
+-        its cells lies under each world cell."""
++        its cells lies under each world cell: the nearest, one-to-one where
++        the grids allow (plate_kernels.unique_samples)."""
++        from .plate_kernels import unique_samples
+         for k in np.flatnonzero(self.alive):
+             self.Q[k] = rotation(self.omega[k] * dt) @ self.Q[k]
+-            self.idx[k] = grid.locate(grid.centers @ self.Q[k], self.idx[k])
++            q = grid.centers @ self.Q[k]
++            self.idx[k] = grid.locate(q, self.idx[k])
++            unique_samples(self.idx[k], q, grid.centers, grid.nbr_off, grid.nbr_idx)
+ 
+     def new_slot(self) -> int:
+         """Bring the first free slot to life under a fresh label, with no

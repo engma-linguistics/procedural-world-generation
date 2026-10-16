@@ -2,7 +2,7 @@
 id: PW-241
 title: "Time zoom from a run's moment: the sheets still thicken and spread onto shelves at first (~-70 m in 15 kyr in a cold era)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: m
@@ -29,4 +29,5 @@ little bigger.
 
 ## Updates
 - 2026-10-16: Same cause as PW-295 (tzbatch, see its update and draft draft-run-ice-profile-thin.md): the run's 50 kPa edge-sampled profile is thinner than the time zoom's sheets (and Earth's), and the time zoom's thickened sheets spread and ground on shelves (154 shelf cells, median 630 m, on L5 seed 11 @ 200 Myr). Not fixed here (run lane). Shelf grounding also in draft draft-timezoom-marine-margins.md.
+- 2026-10-16: Status todo -> in-progress. Time zoom batch agent started.
 - 2026-10-15: Created from inbox draft draft-timezoom-start-drift.md (found by icemb).

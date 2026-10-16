@@ -2,7 +2,7 @@
 id: PW-046
 title: Land fraction runs high and crust volume drifts mid-run
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: tectonics
 effort: m
@@ -21,6 +21,8 @@ volume drifts +2–5% mid-run: assembled continents have fewer subducting margin
 thermostat only partly compensates. The v1 notes had continental area at ~45% vs a 40% target.
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (ba5d976): setup starts continents at continental_thickness (were ~37 km vs 35), stacked crust spreads beyond its own plate before MAX_KM deletes it, cleanup_ghosts stacks hidden crust instead of deleting it. Scorecard seeds 1/2, 1 Gyr volume x0.905/0.873 -> x0.977/0.981; L6 health 0.895 -> 0.963. Coordinator: residual 2-4% (thermostat lag behind real sinks) accepted; closed.
+- 2026-10-16: Tectonics night lane (2026-10-16, docs/review/audit/tectonics-night.md): three causes fixed. (1) setup laid the continents at ~37 km against the thermostat's 35 km target (start 6% over), so every run shed 6% and the integral term wound up (thermo[0] -0.09 at 300 Myr, negative until ~750 Myr), holding arcs back while volume fell below target; setup now shifts the start to continental_thickness. (2) collision stacking could only spread into its own plate, so front cells hit MAX_KM and the cap deleted the excess (seed 2: -7.6k of -19.4k km-cells over 1 Gyr); belts now straddle the suture (crust.inner_edges). (3) cleanup_ghosts deleted continental crust hidden under a continent; now stacked (~0.5%/Gyr). Volume end/start: health 8 L6 seeds 500 Myr 0.867-0.916 -> 0.939-0.988 (mean 0.895 -> 0.963); scorecard 1 Gyr seeds 1/2 x0.905/x0.873 -> x0.977/x0.981. Remaining ~2-4% below target is the PI thermostat's lag against real sinks (subduction erosion steered by area -42k, sediment onto ocean floor -27k vs arcs +41k km-cells per Gyr, seed 2); resolve+collision net -6..-8k per Gyr is nearest-cell multiplicity (duplicated world cells each get the physics, one write survives), not a leak. Judgement: accept the lag (no stronger thermostat) and close?
 - 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.
 - 2026-10-15: Merged inbox draft draft-health-pw046-volume.md ("PW-046 update: continental crust volume falls 3-8% over 1 Gyr on all 11 sweep runs; land and crust area now on target", found by health-sweep).
   Update for PW-046. PW-246 health sweep (2026-10-15, main 6926583, 8 L6 + 3 L7 seeds, 1 Gyr): the

@@ -57,6 +57,9 @@ class Params:
     # down (flexural foreland / intermontane basins), and the thermal sag of
     # stretched lithosphere (km after infinite stretching, air-loaded) with
     # its cooling time
+    # (0.15 is a calibrated basin-making share, picked on one L7 seed's
+    # closed-basin count, not derived: the sound two-sided flexure with alpha
+    # from an elastic thickness is unstable on cells as wide as alpha, PW-284)
     flexure: float = 0.15
     rift_sag: float = 2.2
     sag_time: float = 63.0

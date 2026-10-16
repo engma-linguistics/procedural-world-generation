@@ -1,0 +1,10 @@
+{
+"date": "2026-10-16 06:15",
+"workers": 1,
+"threads": 8,
+"seconds": 596,
+"runs": [{"seed":3199,"level":7,"myr":500.0,"every":4.0,"name":"health 2026-10-16 seed 3199 L7","id":"4b0de1"}],
+"commit": "653f7e9",
+"determinism": null,
+"results": [{"id":"4b0de1","seed":3199,"level":7,"myr":500.0,"seconds":595.0,"forests_from":132.0,"flowers_from":376.0,"checks":{"dT_range":10.0,"peak_frames":0,"giant_lake_frames":10.6,"volume_ratio":0.997,"sea_ice_below_150":0.0,"low_plates":0.0},"every":4.0,"determinism":false}]
+}

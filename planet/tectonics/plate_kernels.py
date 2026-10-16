@@ -227,9 +227,13 @@ def crust_flow(t, ea, eb, k0, n_sub):
 
 
 @njit(cache=True)
-def cleanup_ghosts(alive, owned, Q, centers, owner, raster, nbr_off, nbr_idx):
+def cleanup_ghosts(alive, owned, Q, centers, owner, raster, nbr_off, nbr_idx, idx, cont, thick, stacked):
     """Delete plate crust that sits deep under another plate (a leftover of
-    nearest-neighbour sampling: a subducted cell nobody happened to 'pull')."""
+    nearest-neighbour sampling: a subducted cell nobody happened to 'pull').
+    Continental crust under continent isn't subducted, it is stacked: its
+    thickness is added to `stacked` at the world cell it sits under, as
+    resolve does with the cells it pulls (deleting it lost ~0.5% of the
+    continents' crust per Gyr, PW-046). Returns the cells removed."""
     P, n = owned.shape
     h, w = raster.shape
     q = np.empty(3)
@@ -255,6 +259,9 @@ def cleanup_ghosts(alive, owned, Q, centers, owner, raster, nbr_off, nbr_idx):
                     deep = False
                     break
             if deep:
+                o = owner[c]
+                if cont[k, r] and o >= 0 and cont[o, idx[o, c]]:
+                    stacked[c] += thick[k, r]
                 owned[k, r] = False
                 removed += 1
     return removed

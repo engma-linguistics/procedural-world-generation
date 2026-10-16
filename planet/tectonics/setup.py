@@ -106,6 +106,14 @@ def initial_state(sim):
     cover = np.where(cont, np.clip(1.5 * blanket + 0.6, 0, 3) + np.where(inland < 1, 1.5, 0), 0)
     # (sediment is lighter than crust: the same ground needs less of it)
     thick = np.where(cont, np.maximum(thick - sediment_lift(cont, rock, cover) / ISO_LAND, BECOMES_CONT_KM + 1), thick)
+    # The continents start with the mean thickness the volume thermostat
+    # holds (continental_thickness): the relief above sets the pattern, a
+    # uniform shift its mean. (The relief alone gave ~37 km, 6% more crust
+    # than the target: the run spent its first ~250 Myr shedding it, and the
+    # thermostat's integral term, wound up meanwhile, held arcs back long
+    # after, so every run lost 8-13% of its crust volume: PW-046.)
+    shift = thick[cont].mean() - p.continental_thickness
+    thick = np.where(cont, np.maximum(thick - shift, BECOMES_CONT_KM + 1), thick)
     # Continental rock ages from the unsimulated past (own random stream,
     # so adding this didn't change the rest of the set-up): shields
     # 1.5-3.5 Gyr, the belts around them 0.3-1.4 Gyr.
