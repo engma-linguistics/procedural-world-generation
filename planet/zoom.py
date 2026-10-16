@@ -153,7 +153,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, icemass, kernels
+from . import climate, coast, icemass, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -657,7 +657,8 @@ def coarse_lakes(g, L: dict, elev: np.ndarray):
     overflows into (the biggest one, if the flood found several)."""
     n = g.n
     lake = np.asarray(L.get("lake", np.zeros(n))).astype(bool)
-    level = hydrology.priority_flood(g, elev)[0]
+    e = np.asarray(elev, float)
+    level = kernels.flood_fill(e, e <= 0, g.nbr_off, g.nbr_idx, 0.01)  # (priority_flood's filled surface alone)
     if "lake_level" in L:
         lv = np.asarray(L["lake_level"], float)
         ok = np.isfinite(lv) & (lv > elev + 0.5)

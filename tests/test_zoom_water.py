@@ -471,6 +471,20 @@ def test_outflow_grad_follows_the_coarse_relief(water_world):
     assert np.allclose(gr3, 3 * gr)
 
 
+def test_coarse_lake_levels_are_the_priority_flood_spill(water_world):
+    """PW-343: without a lake_level layer the levels are the pit-filled
+    surface (kernels.flood_fill, priority_flood's filled surface alone),
+    for integer heights too."""
+    from planet import hydrology
+    g, L = water_world["grid"], dict(water_world["layers"])
+    L.pop("lake_level", None)
+    for elev in (L["elevation"].astype(float), np.round(L["elevation"]).astype(np.int64)):
+        lab, lvl, _ = zoom.coarse_lakes(g, L, elev)
+        want = hydrology.priority_flood(g, elev)[0]
+        assert len(lvl)
+        assert all(lvl[k] == np.median(want[lab == k]) for k in range(len(lvl)))
+
+
 def test_staircase_fits_the_valley():
     """The falls of a long reach whose steepest link is at its far end: the
     floor drops at the lips and stands on a plateau above each, but never
