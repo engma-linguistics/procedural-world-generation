@@ -140,22 +140,42 @@ def test_tide_wide_shelf_vs_narrow(tide_world):
     assert 0.5 < narrow < 3.0  # an open-ocean coast: ~1-2 m
 
 
-def test_tide_shelf_resonance_falls_past_quarter_wave(tide_world):
-    """The shelf amplifies most near a quarter tidal wavelength (on the
-    shelf's mean depth) and falls back toward 1 by half a wavelength (PW-273:
-    it used to stay at its peak for any wider shelf)."""
+def test_bessel_j0():
+    """coast.bessel_j0 against tabulated values (Abramowitz & Stegun 9.1),
+    on both sides of the switch to the asymptotic form."""
+    x = np.array([0.0, 1.0, 2.0, coast.J0_ZERO, 5.0, 10.0, 11.0, 12.0, 13.0, 15.0, 30.0])
+    ref = np.array([1.0, 0.7651976866, 0.2238907791, 0.0, -0.1775967713, -0.2459357645, -0.1711903004,
+                    0.0476893108, 0.2069261024, -0.0142244728, -0.0863679835])
+    assert np.max(np.abs(coast.bessel_j0(x) - ref)) < 2e-4
+
+
+def test_tide_sloping_shelf_resonance(tide_world):
+    """The shelf amplifies most near its resonant width (the sloping shelf's
+    J0 zero, ~1.08 x a quarter wavelength on the shelf's mean depth). Past
+    it the tide falls from the peak but, shoaling into shallower water,
+    stays well above an open coast's at half a wavelength (PW-297; a flat
+    shelf's cos(kW) fell back to ~1 there), and a shelf several
+    wavelengths wide loses it to friction."""
     g, elev = tide_world
     _, det = coast.tide_range(g, elev, detail=True)
     iw = _coastal(g, elev, -25, -1)
     lam = np.sqrt(coast.GRAV * 80.0) * coast.T_M2 / 1000.0
-    # the same shelf, a quarter wavelength wider: about half a wavelength
-    dlon = 360 * (lam / 4) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
-    wide = elev.copy()
-    wide[(g.lon > -3.5 - dlon) & (g.lon <= 0) & (g.lat < -5) & (g.lat > -50)] = -80.0
-    _, det2 = coast.tide_range(g, wide, detail=True)
-    W2 = det2["shelf_km"][iw]
-    assert 0.4 * lam < W2 < 0.6 * lam, (W2, lam)
-    assert det2["shelf_amp"][iw] < 1.6 < det["shelf_amp"][iw], (det2["shelf_amp"][iw], det["shelf_amp"][iw])
+    amps = {}
+    for extra in (0.25, 1.5):  # the same shelf, wider by this many wavelengths
+        dlon = 360 * (extra * lam) / (2 * np.pi * R_KM * np.cos(np.radians(25)))
+        wide = elev.copy()
+        wide[(g.lon > -3.5 - dlon) & (g.lon <= 0) & (g.lat < -5) & (g.lat > -50)] = -80.0
+        _, d2 = coast.tide_range(g, wide, detail=True)
+        amps[extra] = d2["shelf_amp"][iw]
+        if extra == 0.25:
+            assert 0.4 * lam < d2["shelf_km"][iw] < 0.6 * lam, (d2["shelf_km"][iw], lam)
+    assert 1.5 < amps[0.25] < det["shelf_amp"][iw], (amps, det["shelf_amp"][iw])
+    assert amps[1.5] < 0.6 * amps[0.25], amps
+    # the response itself: peak 1 / R_FRIC at the resonant width
+    W = np.array([0.0, 0.1, coast.J0_ZERO / (2 * np.sqrt(2) * np.pi)]) * lam  # (0.27 lam: 1.08 x lam / 4)
+    z = np.sqrt(2) * 2 * np.pi * W / lam
+    peak = 1 / np.sqrt(coast.bessel_j0(z) ** 2 + coast.R_FRIC ** 2)
+    assert abs(peak[2] - 1 / coast.R_FRIC) < 0.01 and peak[0] < 1.0 < peak[1] < peak[2], peak
 
 
 def test_tide_enclosed_sea_is_small(tide_world):

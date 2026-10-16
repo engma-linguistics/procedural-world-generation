@@ -73,15 +73,23 @@ A crude physical proxy, in three factors:
    conductance between cells is their depth (shallow straits choke it),
    decaying over ~L_TIDE km. A sea with no ocean connection at all gets
    only its own small tide, growing with its size.
-2. Shelf resonance and shoaling. On a continental shelf of width W and
-   depth h the tide is a standing wave; it resonates when W is near a
-   quarter of the tidal wavelength sqrt(g h) x 12.42 h (~300 km on a 80 m
-   shelf; h the shelf's mean depth along the path across it): amplification
-   1 / sqrt(cos^2(2 pi W / lambda) + r^2), r a friction term (Bay of Fundy,
-   Patagonia, NW Australia, the Yellow Sea), falling back toward 1 by
-   lambda/2. Shelves far wider than that lose the tide to friction instead
-   (Siberia). W runs from the coastline to where the depth crosses the
-   shelf break, interpolated between the cells either side of it.
+2. Shelf resonance and shoaling. On a continental shelf of width W the
+   tide is a standing wave. The shelf deepens from the coast to the break,
+   taken as a uniform slope (depth 2 h at the break, h the shelf's mean
+   depth along the path across it); on such a shelf the standing wave is
+   eta(x) ~ J0(2 omega sqrt(x / (g s))) (Lamb 1932, Hydrodynamics s. 186;
+   s the slope), so the amplification from the break to the coast is
+   1 / sqrt(J0(z)^2 + r^2), z = 2 omega W / sqrt(2 g h) = sqrt(2) k W (k the
+   wavenumber at depth h), r a friction term. It resonates at J0's first
+   zero (z = 2.405: W ~1.08 x a quarter wavelength sqrt(g h) x 12.42 h,
+   ~320 km on an 80 m shelf; Bay of Fundy, Patagonia, NW Australia, the
+   Yellow Sea), and past it stays well above 1 (|J0| < 0.41): the wave
+   shoals into the shallowing water as well as resonating (Green's law,
+   amplitude ~ h^-1/4), which a flat shelf's cos(k W), swinging back to 1
+   by half a wavelength, leaves out (PW-297). Shelves far wider than
+   that lose the tide to friction instead (Siberia). W runs from the
+   coastline to where the depth crosses the shelf break, interpolated
+   between the cells either side of it.
    Sea ice adds friction at the top of the water column (ice-ocean drag is
    comparable to bottom drag): both friction terms grow by ICE_FRIC x the
    share of the year the sea is frozen (Arctic shelves).
@@ -168,6 +176,22 @@ R_NEAR = 300.0  # km: the reach that counts a direction as open to the sea (funn
 SELF_KM = 5000.0  # km: a sea this wide (sqrt of its area) raises a full tide on its own
 T_M2 = 44712.0  # s: the main lunar tide's period
 ICE_FRIC = 1.0  # extra shelf friction (x R_FRIC, / L_SHELF_FRIC) under a sea frozen all year
+J0_ZERO = 2.404825557695773  # the first zero of the Bessel function J0: a sloping shelf's resonance
+
+
+def bessel_j0(x):
+    """The Bessel function J0 of x >= 0 (its power series below 12, the
+    two-term asymptotic form above: error < 2e-4)."""
+    x = np.asarray(x, float)
+    q = -0.25 * np.minimum(x, 12.0) ** 2
+    term = np.ones_like(x)
+    s = term.copy()
+    for m in range(1, 60):
+        term = term * q / (m * m)
+        s = s + term
+    big = np.maximum(x, 12.0)
+    asym = np.sqrt(2 / (np.pi * big)) * (np.cos(big - np.pi / 4) + np.sin(big - np.pi / 4) / (8 * big))
+    return np.where(x < 12.0, s, asym)
 
 
 @njit(cache=True)
@@ -528,11 +552,13 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     # 2. shelf resonance
     W, hs = _shelf_width(grid, elev, ocean)
     lam = np.sqrt(GRAV * hs) * T_M2 / 1000.0  # km
-    kw = 2 * np.pi * W / lam
+    z = np.sqrt(2.0) * 2 * np.pi * W / lam  # the sloping shelf's J0 argument (module docstring)
     fric = 1.0 + ICE_FRIC * (0.0 if ice_share is None else np.asarray(ice_share, float))
-    # (the linear standing wave: peaks 1/r at W = lambda/4, back to ~1 at lambda/2)
-    amp = 1.0 / np.sqrt(np.cos(kw) ** 2 + (R_FRIC * fric) ** 2)
-    amp *= np.exp(-np.maximum(W - lam / 4, 0) * fric / L_SHELF_FRIC)
+    # (the standing wave on a sloping shelf: peaks 1/r at J0's first zero, stays above ~2 past it
+    # until friction over the extra width takes the tide)
+    amp = 1.0 / np.sqrt(bessel_j0(z) ** 2 + (R_FRIC * fric) ** 2)
+    w_res = J0_ZERO * lam / (2 * np.sqrt(2.0) * np.pi)  # km: the resonant width
+    amp *= np.exp(-np.maximum(W - w_res, 0) * fric / L_SHELF_FRIC)
     # 3. funnelling
     fun = np.clip((0.5 / np.maximum(near, 1.0 / N_DIR_TIDE)) ** 0.5, 0.65, 2.2)
     out = np.where(ocean, R_OPEN * conn * amp * fun, 0.0)
