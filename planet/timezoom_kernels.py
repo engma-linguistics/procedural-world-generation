@@ -113,6 +113,15 @@ def _surf(bed, H, sl, flt, j):
     return max(bed[j] + H[j], sl + flt * H[j])
 
 
+@njit(cache=True, inline="always")
+def _held(bed, H, sl, flt, hold, i, j):
+    """What's left (1 - hold[i]) of cell i's flow into cell j where ice
+    would float on j (across i's grounding line), else 1."""
+    if hold[i] > 0.0 and bed[j] < sl and (1.0 - flt) * H[j] <= sl - bed[j]:
+        return 1.0 - hold[i]
+    return 1.0
+
+
 @njit(cache=True)
 def _sia_receivers(active, off, idx, n):
     """Which cells each sub-step's volume changes land on, and in what
@@ -150,7 +159,7 @@ def _sia_receivers(active, off, idx, n):
 
 
 @njit(cache=True, parallel=True)
-def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min):
+def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min, hold):
     """Shallow-ice flow for dt_total years: ice thickness diffuses with
     D = gamma H^5 |grad s|^2 (Glen's law, n = 3, no sliding), s the ice
     surface, so it flows downhill on its own surface slope and spreads under
@@ -161,7 +170,10 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
     at ~110 km cells a margin is one cliff-like step the model can't
     resolve). Outflow is limited to what a cell holds, so H stays >= 0 and
     ice is exactly conserved. Only the `active` cells (ice and a 2-cell
-    ring around it) are visited. Returns the number of sub-steps.
+    ring around it) are visited. hold (per cell, 0..1): the share of a
+    grounded front's flow across its grounding line (into cells where ice
+    floats) its ice shelf holds back (buttressing, PW-367;
+    timezoom.shelf_cover). Returns the number of sub-steps.
     Each pass is per cell (prange); the volume moved along each edge is
     gathered by the cells it reaches in a fixed order (_sia_receivers), so
     the result doesn't depend on the thread count (PW-215)."""
@@ -214,7 +226,7 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - _surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    out += q
+                    out += q * _held(bed, H, sl, flt, hold, i, j)
             if out <= 0.0:
                 continue
             # (written so a vanishing outflow, which can underflow to 0 for a
@@ -226,7 +238,7 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - _surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    vE[e] = q * scale * dt
+                    vE[e] = q * _held(bed, H, sl, flt, hold, i, j) * scale * dt
         # every cell that gives or receives: its net change, then its thickness
         for k in prange(nt):
             c = targets[k]

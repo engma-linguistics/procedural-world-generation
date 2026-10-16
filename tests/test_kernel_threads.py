@@ -66,7 +66,7 @@ def _coarse_smooth_serial(f, cidx, nc, off, idx, sk, iters, cand, w):
 
 @njit
 def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl,
-                     flt, d2min):
+                     flt, d2min, hold):
     na = active.shape[0]
     n = H.shape[0]
     D = np.zeros(n)
@@ -110,7 +110,7 @@ def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area,
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - K._surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    out[i] += q
+                    out[i] += q * K._held(bed, H, sl, flt, hold, i, j)
         for a in range(na):
             i = active[a]
             if out[i] <= 0.0:
@@ -123,7 +123,7 @@ def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area,
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - K._surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
-                    v = q * scale * dt
+                    v = q * K._held(bed, H, sl, flt, hold, i, j) * scale * dt
                     dV[i] -= v
                     dV[j] += v
         for a in range(na):
@@ -192,11 +192,12 @@ def test_sia_flow(g5):
     p = Z.TZParams()
     gamma = 2 * p.flow_a * p.enhancement * (Z.RHO_I * 9.81) ** 3 / 5
     active = np.flatnonzero(K.dilate(H > 0, g5.nbr_off, g5.nbr_idx, 2))
+    hold = np.where(rng.random(n) < 0.3, 0.8, 0.0)  # (some grounding lines buttressed, PW-367)
 
     def run(fn, H0):
         h = H0.copy()
         ns = fn(h, bed, -40.0, active, g5.nbr_off, g5.nbr_idx, G["dist"], G["elen"], G["ux"], G["uy"], G["uz"],
-                G["area"], gamma, p.d_cap, 20000.0, p.cfl, flt, G["d2min"])
+                G["area"], gamma, p.d_cap, 20000.0, p.cfl, flt, G["d2min"], hold)
         return [h, np.array([ns])]
     ref = run(_sia_flow_serial, H)
     assert ref[1][0] > 3 and not np.array_equal(ref[0], H)

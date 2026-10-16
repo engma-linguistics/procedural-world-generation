@@ -123,11 +123,13 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     g = cold_src["grid"]
     p = Z.TZParams()
     H0 = np.maximum(np.asarray(cold_src["ice"], float), 0.0)
-    want = cold_src["elev"] + ice_load(g, H0, p.iso_ratio, p.flex_km) - ice_load(g, s["H"], p.iso_ratio, p.flex_km)
-    grew = s["H"] > H0 + 500
+    flt = 1 - Z.RHO_I / Z.RHO_W
+    H = np.where(s["bed"] + s["H"] > s["sl"] + flt * s["H"], s["H"], 0.0)  # (grounded: a shelf floats, PW-367)
+    want = cold_src["elev"] + ice_load(g, H0, p.iso_ratio, p.flex_km) - ice_load(g, H, p.iso_ratio, p.flex_km)
+    grew = H > H0 + 500
     assert grew.any()
     assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
-    assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((s["H"] - H0)[grew]) * p.iso_ratio + 20
+    assert np.median(np.abs(s["bed"] - want)[grew]) < 0.1 * np.median((H - H0)[grew]) * p.iso_ratio + 20
 
 
 def test_deep_grounded_ice_stands(sim4):
@@ -197,28 +199,54 @@ def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
 
 
 def test_shelf_buttresses_marine_front(sim4):
-    """A marine ice front beside a sea cold enough for an ice shelf to stand
-    calves less (the shelf holds it back, PW-367); beside a warm, open sea
-    it calves as a tidewater front, buttressed or not."""
+    """A marine ice front with an ice shelf around it, in a sea cold enough
+    for the shelf to stand, keeps more of its ice than where the shelf
+    breaks up (it doesn't calve, and the shelf holds back its flow: PW-367);
+    the shelf floats (not in the frames' grounded ice, no sea level).
+    Beside a warm sea the shelf breaks up, so it makes no difference."""
     g = sim4.grid
     base = Z.source_from_sim(sim4)
     nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
     deep = lambda i: base["elev"][i] < -500 and (base["elev"][nb(i)] < -500).all()
+    no_shelf = dict(shelf_warm=-200.0, shelf_cold=-201.0)
 
-    def kept(lat_ok, dT, buttress):
+    def run(lat_ok, dT, **kw):
         c = next(i for i in np.argsort(-np.abs(g.lat) if dT < 0 else np.abs(g.lat)) if lat_ok(g.lat[i]) and deep(i))
         elev, ice = base["elev"].copy(), np.zeros(g.n)
-        elev[c], ice[c] = -600.0, 1500.0  # grounded (1.12 x 600 m floats), open sea all around
+        elev[c], ice[c] = -600.0, 1500.0  # grounded (1.12 x 600 m floats) ...
+        ice[nb(c)] = 300.0  # ... with a shelf all around (afloat in > 500 m of water)
         src = dict(base, elev=elev, ice=ice, dT=base["dT"] + dT)
-        r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(buttress=buttress, **NO_ORBIT))
-        return r["state"]["H"][c], float(r["state"]["t_ann"][nb(c)].mean())
+        r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(**NO_ORBIT, **kw))
+        return r, c
 
-    cold, t_cold = kept(lambda la: abs(la) > 60, -25.0, 0.8)
-    cold0, _ = kept(lambda la: abs(la) > 60, -25.0, 0.0)
-    assert t_cold < Z.TZParams().shelf_cold, t_cold  # (a sea a shelf stands in)
-    assert cold > cold0 + 100, (cold, cold0)
-    warm, t_warm = kept(lambda la: abs(la) < 25, 0.0, 0.8)
-    warm0, _ = kept(lambda la: abs(la) < 25, 0.0, 0.0)
-    assert t_warm > Z.TZParams().shelf_warm, t_warm
-    assert warm == warm0
-    assert warm < cold  # (the same front beside open sea keeps less)
+    cold, c = run(lambda la: abs(la) > 60, -25.0)
+    bare, _ = run(lambda la: abs(la) > 60, -25.0, **no_shelf)
+    st = cold["state"]
+    assert st["t_ann"][nb(c)].max() < Z.TZParams().shelf_cold  # (a sea a shelf stands in)
+    assert st["H"][c] > bare["state"]["H"][c] + 100, (st["H"][c], bare["state"]["H"][c])
+    shelf = nb(c)[st["H"][nb(c)] > 0]
+    assert len(shelf) and (cold["data"]["ice"][-1][shelf] == 0).all()  # (floating: not grounded ice)
+    assert (st["H"][shelf] * Z.RHO_I < (st["sl"] - st["bed"][shelf]) * Z.RHO_W).all()
+    # the shelf holds no sea water: the sea level is the grounded ice's alone
+    vaf = lambda H, bed, sl: (np.maximum(H - np.maximum(sl - bed, 0) * Z.RHO_W / Z.RHO_I, 0) * Z.geometry(g)["area"]).sum()
+    assert vaf(np.where(np.isin(np.arange(g.n), shelf), 0.0, st["H"]), st["bed"], st["sl"]) == vaf(st["H"], st["bed"], st["sl"])
+    warm, c2 = run(lambda la: abs(la) < 25, 0.0)
+    warm0, _ = run(lambda la: abs(la) < 25, 0.0, **no_shelf)
+    assert warm["state"]["t_ann"][nb(c2)].min() > Z.TZParams().shelf_warm
+    assert warm["state"]["H"][c2] == warm0["state"]["H"][c2]
+    assert warm["state"]["H"][c2] < st["H"][c]  # (the same front beside open sea keeps less)
+
+
+def test_shelf_spreads_and_melts():
+    """An ice shelf fed at q thins toward the steady thickness its spreading
+    (c h^4) balances, whatever it starts at, and melts away where the sea
+    under it is warm; the ice that leaves is accounted for."""
+    c = 1e-16 * (Z.RHO_I * 9.81 * (1 - Z.RHO_I / Z.RHO_W) / 4) ** 3 * 0.2 ** 3
+    h0 = np.array([0.0, 2000.0, 300.0, 300.0])
+    q = np.array([1.0, 1.0, 0.0, 0.0])
+    melt = np.array([0.0, 0.0, 0.0, 10.0])
+    h, out, gone = Z.shelf_step(h0, q, melt, c, 20000.0)
+    steady = (1.0 / c) ** 0.25
+    assert abs(h[0] - steady) < 0.05 * steady and abs(h[1] - steady) < 0.05 * steady
+    assert h[2] < 300.0 and h[3] == 0.0
+    assert np.allclose(h0 + q * 20000.0 - h - out - gone, 0.0, atol=1e-6)

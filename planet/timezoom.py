@@ -53,11 +53,15 @@ Model (per 500-yr step, see simulate)
   (tectonics.isostasy.ice_load, as the main run), and rebounds after the
   ice is gone. The start is settled (the run's bed is already pressed down
   by its ice).
-- Sea: ice that floats (thinner than 1.12x the water depth) breaks off;
-  grounded ice on the sea floor calves at a rate ~ water depth where it
-  meets open water (less where that sea is cold enough for an ice shelf
-  to stand and buttress it, front_buttress), or stands in water deeper
-  than calve_depth. Sea level falls by the sea water the ice holds / ocean
+- Sea: ice the flow carries past the grounding line is an ice shelf
+  (PW-367): it floats (no load on the bed, no sea level), spreads under
+  its own weight (Weertman 1957; confined, by the buttressing it gives)
+  to calve at its own front, melts from below where the sea's winter
+  water is above freezing, and breaks up where the air over it is too
+  warm for a shelf (shelf_viable). Grounded ice on the sea floor calves
+  at a rate ~ water depth where it faces open water (not a shelf:
+  shelf_cover, whose shelf holds back `buttress` of its flow across the
+  grounding line), or stands in water deeper than calve_depth. Sea level falls by the sea water the ice holds / ocean
   area: 0.89 x the ice above flotation (ice grounded below sea level only
   replaces sea water) plus the room the sinking bed made below sea level
   (Goelzer et al. 2020), so coastlines and land bridges move with the ice.
@@ -182,12 +186,17 @@ class TZParams:
     # than real grounded ice stands: Earth's deepest grounded beds are ~2.5 km (the Bentley Subglacial
     # Trench; ETOPO1's cell means reach 1.7 km at L6, 2.3 km at L7), and at 1.5 km the true bed's
     # deepest cells under West Antarctica's 3 km of ice calved in place from the start (PW-361)
-    buttress: float = 0.8  # share of a marine front's calving an ice shelf holds back, where the sea beside
-    # it is cold enough for a shelf to stand (front_buttress, PW-367; Fürst et al. 2016: Antarctica's shelves
-    # carry most of the resistance at the grounding line, only ~13% of their area is 'passive') ...
-    shelf_warm: float = -5.0  # C: ... none where the air's annual mean over that sea is above this (Morris &
-    shelf_cold: float = -10.0  # Vaughan 2003's limit of ice-shelf viability), in full below this
-
+    buttress: float = 0.8  # share of a grounded front's flow across its grounding line an ice shelf beside it holds
+    # back (shelf_cover, PW-367; Fürst et al. 2016: Antarctica's shelves carry most of the resistance at the
+    # grounding line, only ~13% of their area is 'passive'; Larsen B's tributaries sped up 2-8x once it broke up,
+    # Rignot et al. 2004); the same confinement slows the shelf's own spreading (x (1 - buttress)^3); a front
+    # beside a shelf doesn't calve, in full beside one this thick (m) ...
+    shelf_h: float = 100.0
+    shelf_warm: float = -5.0  # C: ... floating ice is a shelf where the air's annual mean over the sea is below this
+    shelf_cold: float = -10.0  # (in full below this; Morris & Vaughan 2003's limit of ice-shelf viability), else
+    # it breaks up; a shelf spreads under its own weight (Weertman 1957, held back by the same buttressing) ...
+    melt_k: float = 10.0  # m/yr per C: ... and melts from below where the sea is warmer than freezing (Holland
+    # et al. 2008, Jenkins et al. 2018: ~10 m/yr per degree of thermal forcing)
 
 # --------------------------------------------------------------------------
 # Orbit and insolation
@@ -287,31 +296,60 @@ def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np
     return own * (1 - b) + b * mix
 
 
-def front_buttress(grid: Grid, front: np.ndarray, open_sea: np.ndarray, t_air: np.ndarray,
-                   p: "TZParams") -> np.ndarray:
-    """Share (0..1) of a marine front's calving its ice shelf holds back
-    (PW-367). The model has no floating ice, but where the sea beside a
-    front is cold enough an ice shelf would stand in front of it, and a
-    shelf confined in its embayment carries most of the resistance at the
-    grounding line (Fürst et al. 2016): it holds back `buttress` of the
-    calving. Elsewhere the front calves as a tidewater glacier. A shelf
-    survives where its surface doesn't melt through in summer: observed,
-    where the air's annual mean is below ~-5 C (Morris & Vaughan 2003: the
-    Antarctic Peninsula's shelves broke up as that isotherm passed them).
-    t_air: the annual mean air temperature (C) over the sea cells, which
-    over a frozen sea is how deeply it freezes (the sea surface less how
-    far below freezing the latitude's sea would be, and the inversion over
-    its ice: the sea state ocean.open_share reads, which comes in whole
-    months and is never 0 beside today's Antarctica at L6, open 2-6 months
-    a year, as the real Ross and Amundsen seas are 2-4 months while their
-    shelves stand). The hold ramps from none at shelf_warm to full at
-    shelf_cold; each front takes the mean over its open-sea neighbours
-    (none for a front with no open sea beside it: the deep-water rule)."""
-    hold = np.where(open_sea, np.clip((p.shelf_warm - t_air) / (p.shelf_warm - p.shelf_cold), 0.0, 1.0), 0.0)
+def shelf_viable(t_air: np.ndarray, p: "TZParams") -> np.ndarray:
+    """Share (0..1) of floating ice that stays as an ice shelf (PW-367), by
+    the annual mean air temperature over the sea (C): a shelf survives
+    where its surface doesn't melt through in summer, observed where that
+    is below ~-5 C (Morris & Vaughan 2003: the Antarctic Peninsula's
+    shelves broke up as that isotherm passed them), in full from
+    shelf_cold. Over a frozen sea the air's annual mean is how deeply it
+    freezes (the sea state ocean.open_share reads; open_share itself comes
+    in whole months and is never 0 beside today's Antarctica at L6, open
+    2-6 months a year, as the real Ross and Amundsen seas are 2-4 months
+    while their shelves stand)."""
+    return np.clip((p.shelf_warm - t_air) / (p.shelf_warm - p.shelf_cold), 0.0, 1.0)
+
+
+def shelf_cover(grid: Grid, front: np.ndarray, sea: np.ndarray, shelf: np.ndarray, p: "TZParams") -> np.ndarray:
+    """Share (0..1) of a grounded front's sea side an ice shelf covers
+    (PW-367): the mean over its sea neighbours (open sea or shelf) of their
+    shelf ice / shelf_h (a thinner shelf counts for less); 0 off the fronts
+    and for a front with no sea beside it (the deep-water rule). Where a
+    shelf covers it, a front is not a cliff facing open water: it doesn't
+    calve, its ice crosses the grounding line into the shelf, and the
+    shelf, confined in its embayment, holds back `buttress` of that flow
+    (Fürst et al. 2016: Antarctica's shelves carry most of the resistance
+    at the grounding line). shelf: floating ice (m) per cell."""
+    w = np.where(sea, np.clip(shelf / p.shelf_h, 0.0, 1.0), 0.0)
     src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
-    tot = np.bincount(src, weights=hold[grid.nbr_idx], minlength=grid.n)
-    cnt = np.bincount(src, weights=open_sea[grid.nbr_idx].astype(float), minlength=grid.n)
-    return np.where(front & (cnt > 0), p.buttress * tot / np.maximum(cnt, 1.0), 0.0)
+    tot = np.bincount(src, weights=w[grid.nbr_idx], minlength=grid.n)
+    cnt = np.bincount(src, weights=sea[grid.nbr_idx].astype(float), minlength=grid.n)
+    return np.where(front & (cnt > 0), tot / np.maximum(cnt, 1.0), 0.0)
+
+
+def shelf_step(h0: np.ndarray, q: np.ndarray, melt: np.ndarray, c: float, dt: float, n: int = 20):
+    """An ice shelf's thickness over dt years (m): fed at q (m/yr, the
+    flow's net delivery, spread evenly over the step), thinning as it
+    spreads under its own weight at c h^4 (m/yr; Weertman 1957: strain
+    rate A (rho_i g (1 - rho_i/rho_w) h / 4)^3, the ice carried on to the
+    shelf's front, where it calves) and melting from below at `melt`
+    (m/yr). Implicit sub-steps (the spreading is stiff). Returns (h, spread,
+    melted): m of ice that left by each way."""
+    h = h0.copy()
+    out, gone = np.zeros_like(h), np.zeros_like(h)
+    k = dt / n
+    for _ in range(n):
+        x = np.maximum(h + k * q, 0.0)  # (fed first: what flows out of a cell can't exceed what it holds)
+        m = np.minimum(k * melt, x)
+        x -= m
+        gone += m
+        y = x.copy()
+        for _ in range(6):  # Newton: y + k c y^4 = x
+            y -= (y + k * c * y**4 - x) / (1.0 + 4.0 * k * c * y**3)
+        y = np.clip(y, 0.0, x)
+        out += x - y
+        h = y
+    return h, out, gone
 
 
 # --------------------------------------------------------------------------
@@ -465,6 +503,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     amp = climate.temperature(g, np.zeros(n), 0.5, 1.5)
     flt = 1 - RHO_I / RHO_W
     gamma = 2 * p.flow_a * p.enhancement * (RHO_I * 9.81) ** 3 / 5
+    # an ice shelf's spreading, h' = -c h^4 (Weertman 1957), confined by its buttressing (strain rate x (1 - K)^3)
+    c_shelf = p.flow_a * (RHO_I * 9.81 * flt / 4) ** 3 * (1 - p.buttress) ** 3
 
     # state: bedrock relative to the starting sea level, its ice-free rest
     # height (the start is taken as isostatically settled), ice, sea level
@@ -475,7 +515,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     def load(h):
         return ice_load(g, h, p.iso_ratio, p.flex_km)
 
-    bed_rest = bed + load(H)
+    bed_rest = bed + load(np.where(bed + H > flt * H, H, 0.0))  # (a shelf doesn't load it)
     sl = 0.0
     ocean_area = float(area[(elev0 <= 0) & (H <= 0)].sum())
     V0 = float((H * area).sum())
@@ -501,7 +541,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
     out = {k: [] for k in LAYERS}
     frames, series, flows = [], [], []  # flows: accumulation, ablation, calving, NH net (Gt/yr) per step
-    budget = {"smb": 0.0, "calved": 0.0}  # m3 of ice gained / lost
+    budget = {"smb": 0.0, "calved": 0.0, "shelf_melt": 0.0}  # m3 of ice gained / lost (calved: all the sea
+    # took, the shelves' melt from below included)
     n_steps = int(round(kyr / step))
     keep = max(1, int(round(every / step)))
     refresh = max(1, int(round(p.climate_every / step)))
@@ -509,6 +550,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     smb, t_ann, t_warm, t_cold, p_scale, f_snow = (np.zeros(n) for _ in range(6))  # (f_snow: summer brightness)
     nsub_total = 0
     t_compute = 0.0
+
+    def grounded_ice():
+        return np.where((H > 0) & (bed + H > sl + flt * H), H, 0.0)
 
     def grounded_surface():
         """Surface height above the current sea level (ice included where
@@ -551,7 +595,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             b = fields_["bias"]
             tw, tc, pj, pn = tw + b["t_warm"], tc + b["t_cold"], pj * b["p_jul"], pn * b["p_jan"]
         new = dict(t_mean=0.5 * (tw + tc), half=0.5 * np.maximum(tw - tc, 0), p_jul=pj, p_jan=pn,
-                   s0=np.maximum(surf, 0), dTg0=dTg)
+                   s0=np.maximum(surf, 0), dTg0=dTg, sst_w=np.minimum(c["sst_jul"], c["sst_jan"]))
         # the steps until the next refresh blend from the last one to this one, so the climate
         # (snowfall above all) changes smoothly instead of jumping at each refresh
         fields_["prev"], fields_["next"] = fields_.get("next", new), new
@@ -726,31 +770,52 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         gt = RHO_I / 1e12 / dt  # m3 per step -> Gt per yr
         H[:] = h_new
         # 2) flow
+        sea0 = (sl - bed > 0) & ~((H > 0) & (bed + H > sl + flt * H))  # open sea or shelf at the step's start
+        H_pre = H.copy()
         active = np.flatnonzero(dilate(H > 0, g.nbr_off, g.nbr_idx, 2))
         if len(active):
+            # (a shelf holds back a grounded front's flow across its grounding line as it does its calving)
+            gr0 = (H > 0) & ~sea0
+            nb_sea0 = np.add.reduceat(sea0[g.nbr_idx], g.nbr_off[:-1]) > 0
+            hold = p.buttress * shelf_cover(g, gr0 & nb_sea0, sea0, np.where(sea0, H, 0.0), p)
             nsub_total += sia_flow(H, bed, sl, active, g.nbr_off, g.nbr_idx, G["dist"], G["elen"], G["ux"],
-                                   G["uy"], G["uz"], area, gamma, p.d_cap, dt, p.cfl, flt, G["d2min"])
-        # 3) the sea: floating ice breaks off; grounded marine fronts calve
+                                   G["uy"], G["uz"], area, gamma, p.d_cap, dt, p.cfl, flt, G["d2min"], hold)
+        # 3) the sea (PW-367): the ice the flow carried past the grounding line over the step is an ice
+        # shelf: it spreads (confined by the same buttressing it gives) and melts from below where the sea
+        # is warm; what then floats stays as a shelf where the air over it lets one stand, and breaks up
+        # elsewhere; grounded marine fronts calve where they face open water
         depth = sl - bed
+        lost = np.zeros(n)
+        sea0 &= (H_pre > 0) | (H > 0)  # (the sea cells with ice in them)
+        if sea0.any():
+            q = (H - H_pre) / dt
+            # (the water under a shelf: the sea's winter surface water, which sinks under it; a cold sea's is at
+            # freezing, so its shelf hardly melts)
+            melt = p.melt_k * np.maximum(fields_["sst_w"] - climate.FREEZE, 0.0)
+            h, out_, gone = shelf_step(H_pre[sea0], q[sea0], melt[sea0], c_shelf, dt)
+            H[sea0] = h
+            lost[sea0] += out_ + gone
+            budget["shelf_melt"] += float((gone * area[sea0]).sum())
         floating = (H > 0) & (H * RHO_I < depth * RHO_W)
-        lost = np.where(floating, H, 0.0)
-        H[floating] = 0.0
-        marine = (H > 0) & (depth > 0)
+        stays = np.where(floating, shelf_viable(t_ann, p), 1.0)  # (t_ann: this step's year, over the sea too)
+        lost += H * (1.0 - stays)
+        H *= stays
+        grounded = (H > 0) & ~floating
+        marine = grounded & (depth > 0)
         if marine.any():
-            open_sea = (depth > 0) & (H <= 0)
-            nb_open = np.add.reduceat(open_sea[g.nbr_idx], g.nbr_off[:-1]) > 0
-            front = marine & (nb_open | (depth > p.calve_depth))
-            # (less where a shelf would stand in the cold sea beside it: PW-367; t_ann: this step's year,
-            # over the sea too)
-            held = front_buttress(g, front, open_sea, t_ann, p)
-            frac = np.exp(-p.calving * (1.0 - held) * depth * dt / np.sqrt(area))
+            sea = (depth > 0) & ~grounded
+            nb_sea = np.add.reduceat(sea[g.nbr_idx], g.nbr_off[:-1]) > 0
+            front = marine & (nb_sea | (depth > p.calve_depth))
+            # (a front calves only where it faces open water, not a shelf)
+            covered = shelf_cover(g, front, sea, np.where(sea, H, 0.0), p)
+            frac = np.exp(-p.calving * (1.0 - covered) * depth * dt / np.sqrt(area))
             lost += np.where(front, H * (1 - frac), 0.0)
             H[front] *= frac[front]
         budget["calved"] += float((lost * area).sum())
         flows.append((float(dv[dv > 0].sum()) * gt, float(-dv[dv < 0].sum()) * gt, float((lost * area).sum()) * gt,
                       float(dv[north].sum()) * gt))
-        # 4) isostasy
-        bed += (bed_rest - load(H) - bed) * (1 - math.exp(-step / p.iso_tau))
+        # 4) isostasy (a shelf floats: it doesn't load the bed)
+        bed += (bed_rest - load(grounded_ice()) - bed) * (1 - math.exp(-step / p.iso_tau))
         # 5) sea level from the ice volume (what the ice holds depends a little on the sea level itself)
         for _ in range(3):
             sl = -(above_flotation(sl) - Vaf0) / ocean_area
