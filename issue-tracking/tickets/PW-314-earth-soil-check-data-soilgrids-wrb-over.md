@@ -1,4 +1,5 @@
 ---
+id: PW-314
 title: "Earth soil check data: SoilGrids WRB overview reader, GLiM parent rock and an LGM ice mask for the Earth world"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: soilprop
 blocked_by: []
 relates: [PW-185, PW-132, PW-033, PW-037]
 refs: [docs/proposals/soils.md, tools/earth_data.py, tools/earth_world.py, tools/veg_check.py]
+created: 2026-10-15
+updated: 2026-10-15
 ---
 
 ## Description
@@ -19,3 +22,6 @@ Step 4 of the soils proposal (docs/proposals/soils.md section 7) needs three Ear
 - **Glaciation:** an observed Last Glacial Maximum ice mask for `glaciated_myr` ~0.02 Myr (source and licence to find; fallback: the Earth time zoom's glacial maximum, with PW-033's errors). Without it, Canada and Scandinavia count as ancient surfaces.
 
 Done when `tools/soil_check.py` can load all three on the Earth grid at L6 in a few seconds after the first download.
+
+## Updates
+- 2026-10-15: Created from inbox draft draft-earth-soil-data.md (found by soilprop).
