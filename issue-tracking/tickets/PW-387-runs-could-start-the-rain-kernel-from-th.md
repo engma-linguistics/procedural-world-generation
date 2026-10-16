@@ -2,7 +2,7 @@
 id: PW-387
 title: "Runs could start the rain kernel from the last climate update's vapour (PW-015's warm start): L7 updates 3.5 s -> ~2.5 s"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: infra
 effort: s
@@ -26,4 +26,5 @@ so store it for bit-identical replays). Outside the PW-015 lane's files.
 - [ ] L7 run update <= 1.2x main's; checkpoint replays still bit-identical
 
 ## Updates
+- 2026-10-16: Status todo -> done. Merged: warm start, L7 climate update ~2.3 s; health neutral (NPP 321->339); seed-1 tree swing is an era snapshot.
 - 2026-10-16: Created from inbox draft draft-rain-warm-start-in-runs.md (found by pw015-rain).

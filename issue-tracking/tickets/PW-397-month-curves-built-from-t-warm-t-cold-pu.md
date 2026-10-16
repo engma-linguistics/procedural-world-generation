@@ -1,5 +1,6 @@
 ---
-title: "Month curves built from t_warm/t_cold put the warm month in July (north) even where compute's jul_warm says January (equatorial land of eccentric-orbit frames)"
+id: PW-397
+title: Month curves built from t_warm/t_cold put the warm month in July (north) even where compute's jul_warm says January (equatorial land of eccentric-orbit frames)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw380-equator
 blocked_by: []
 relates: [PW-380]
 refs: [planet/climate.py, planet/world.py, planet/timeline.py, planet/vegetation.py, planet/soils.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -29,3 +32,6 @@ other). A negative amplitude then gives the right phase, as long as nothing in m
 t_warm >= t_cold. Or give months a phase flag. For the keyframes, keep jul_warm in the run's state
 next to t_warm/t_cold.
 - [ ] months()' warmest month matches t_jul/t_jan's on every cell of a finished eccentric-orbit frame
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-month-curves-phase-at-equator.md (found by pw380-equator).

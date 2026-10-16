@@ -1,7 +1,8 @@
 ---
+id: PW-398
 title: "Time zoom orbit anomaly: tropical land feels insol_k in full, so an eccentric orbit gives a 13-16 C annual swing at the equator in finished frames"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: timezoom
 effort: s
@@ -10,6 +11,8 @@ found_by: pw380-equator
 blocked_by: []
 relates: [PW-380, PW-198]
 refs: [planet/timezoom.py, planet/finish.py, "world bcd6c8", "world bd9a7a"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -35,3 +38,7 @@ What to try (judgement call for the time-zoom lane):
   That gives about +-3 C instead of +-7 C at e = 0.04. It barely touches 65N or the time zoom's ice.
 - Check: the time zoom's glacial cycle stats on its usual test seed unchanged, and the finished frame's equatorial
   land swing about 4-6 C at e ~0.04 (palaeo-model range for high-eccentricity tropics).
+
+## Updates
+- 2026-10-16: Status needs-decision -> todo. Coordinator decision: yes, damp it. Wet tropical land's seasonal response is held down by evaporation and cloud (Earth's equatorial land swings 2-5 C), so scaling the land sensitivity toward the sea's by soil moisture/rain is a sound approximation, not a clamp.
+- 2026-10-16: Created from inbox draft draft-orbit-anomaly-tropical-land.md (found by pw380-equator).

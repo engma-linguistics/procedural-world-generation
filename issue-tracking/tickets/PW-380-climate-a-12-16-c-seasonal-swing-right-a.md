@@ -2,7 +2,7 @@
 id: PW-380
 title: "Climate: a 12-16 C seasonal swing right at the equator, so July steps by ~14 C between neighbouring cells at latitude 0"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: m
@@ -40,4 +40,5 @@ one field that is continuous by construction.
 - [ ] earth_check equatorial seasonal amplitudes not worse
 
 ## Updates
+- 2026-10-16: Status todo -> done. Merged: July/January kept through the warmest/coldest sort (13.5 -> 0.7 C step at the equator). Size of the orbital swing in time-zoom frames split to the orbit-anomaly ticket.
 - 2026-10-16: Created from inbox draft draft-equatorial-seasonal-swing.md (found by pw374-zoom-veg).
