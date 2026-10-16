@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-056]
 refs: [planet/tectonics/, planet/surface.py, docs/review/rivers_lakes_deltas.md, planet/tectonics/isostasy.py, planet/hydrology.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -22,6 +22,7 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-10-16: Basins-lakes lane (health frames after 50 Myr, 500 Myr): inland drainage L6 8 seeds 4.9 -> 4.2% with PW-299 (floodplains no longer build hollow rims, so hollows fill), L7 seeds 3199/21/11 8.8 -> 6.0%. Without the flexural moat (diagnostic) L6 falls to ~3.7% (raw measure 6.4 -> 3.7). Hollow budget: plate resampling (resolve) makes most closed-hollow volume per step and erosion refills it (draft). Giant closed lakes count 10-25 Mkm2 catchments as inland; a fix for humid open-water evaporation (draft) would lower inland further. docs/review/audit/basins-lakes.md.
 - 2026-10-15: Context from PW-302 (wontdo): run stream-power incision on headwater cells falls with grid level (2.2 / 1.6 / 1.1 m per 2-Myr step at L5 / L6 / L7, synthetic continent) because finer cells resolve smaller catchments; hillslope term is level-consistent (2.5 m). Total lowering 9.4 / 8.8 / 8.3 m per step. Likely part of why L7 and L6 inland-basin shares differ; a sub-cell headwater channel term is the option if it matters here. Details: docs/review/audit/fixes-surface-hydro.md.
 - 2026-10-15: Post-audit 1 Gyr sweep: inland drainage medians L6 3.5-5.2%, L7 6.2-7.7% (Earth ~18%); part is PW-239 (frames no longer stale), part PW-280/PW-266. Still the open problem.
 - 2026-10-15: After the audit fixes: L6 inland drainage 7.3-7.9% (below the 8% envelope; Earth ~18%), L7 16.3%. Basins now pass excess load over their rims (PW-280), so they fill less from overload but drain more.

@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-054]
 refs: [planet/hydrology.py, planet/tectonics/isostasy.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -31,5 +31,6 @@ whether the hollow rules can be made level-consistent (e.g. MIN_DEPTH or the
 outlet channel scaled with cell size), then retune `flexure` once.
 
 ## Updates
+- 2026-10-16: Basins-lakes lane: L7/L6 inland ratio 1.8 -> 1.4 after PW-299 (L6 4.9 -> 4.2%, L7 3 seeds 8.8 -> 6.0%); lakes % of land L7 1.29 -> 0.52, L6 0.60 -> 0.43, so lakes are now nearly level-consistent. The gap narrowed by L7 falling, not L6 rising. docs/review/audit/basins-lakes.md.
 - 2026-10-15: Surface fixes (PW-282 level-consistent hillslope, PW-280, PW-239): L7/L6 inland-drainage ratio 2.3 -> ~2.0 (L6 10.3 -> 7.9%, L7 23.5 -> 16.3%). Remaining: incision per level (new ticket).
 - 2026-10-15: Created from inbox draft draft-closed-basins-level-gap.md (found by tect2).
