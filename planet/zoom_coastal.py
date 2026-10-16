@@ -18,10 +18,12 @@ mud and the light's attenuation Kd), and the place's part, from the pixel:
   seagrass    sea pixels above Duarte's depth limit, sheltered (the pixel's
               wave power), soft bottoms (not by a rocky shore), where no reef
               or kelp is.
-  mangrove,   land pixels within TIDAL_KM of the sea whose ground lies
-  salt marsh  between the tides (the pixel's share below half the tidal
-              range plus coastal.SETUP, its heights taken as exponentially
-              distributed about its mean, as on the globe), sheltered and
+  mangrove,   land pixels between the tides: low ground (below half the
+  salt marsh  tidal range plus coastal.SETUP and SPRING_M) within TIDAL_KM
+              of the sea and connected to it through such ground, or a
+              sub-pixel fringe on the other shore pixels (their share below
+              the high-tide line, heights exponentially distributed about
+              the pixel's mean, as the globe's cells), sheltered and
               muddy (coastal.intertidal_habitat), warm enough for mangroves,
               else salt marsh (the climate's part).
 Each pixel is one habitat or none (layer `coastal_life`, LIFE): patches
@@ -45,6 +47,7 @@ LIFE = {0: ("none", ""), 1: ("coral reef", "#ff6fa8"), 2: ("kelp forest", "#9a7b
         3: ("seagrass meadow", "#3fbf6a"), 4: ("mangrove", "#14d2b0"), 5: ("salt marsh", "#e3d65a")}
 REEF, KELP, SEAGRASS, MANGROVE, SALT_MARSH = 1, 2, 3, 4, 5
 TIDAL_KM = 30.0  # km: tidal creeks reach this far inland at most (the pixel must also lie between the tides)
+SPRING_M = 0.5  # m: spring tides and surges reach this far above the mean high-water line
 ROCK_KM = 3.0  # km: a rocky shore's land rises ...
 ROCK_RISE = (30.0, 150.0)  # ... this much within ROCK_KM (from not to fully rocky)
 PATCH_KM = {REEF: 6.0, KELP: 4.0, SEAGRASS: 8.0, MANGROVE: 3.0}  # km: the patches' size
@@ -56,13 +59,13 @@ SEA_FIELDS = {"reef", "kelp_water", "seagrass_water", "mud", "kd", "tide_range",
 
 
 def _window_max(a: np.ndarray, r: int) -> np.ndarray:
-    """Max over a (2r+1)^2 square around each pixel (2-D a)."""
+    """Max over a (2r+1)^2 square around each pixel (2-D a; the edges see only what's inside)."""
     out = a.copy()
     for axis in (0, 1):
-        src = out.copy()
-        for s in range(1, r + 1):
-            out = np.maximum(out, np.roll(src, s, axis))
-            out = np.maximum(out, np.roll(src, -s, axis))
+        src = np.pad(out, [(r, r) if k == axis else (0, 0) for k in (0, 1)], constant_values=-np.inf)
+        n = a.shape[axis]
+        for s in range(2 * r + 1):
+            out = np.maximum(out, src[s:s + n] if axis == 0 else src[:, s:s + n])
     return out
 
 
@@ -127,7 +130,7 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     z_reef = np.minimum(CL.light_depth(kd, CL.REEF_LIGHT), CL.REEF_MAX_M)
     reef = sea & (depth <= z_reef) & (u[REEF] < CL.REEF_SHARE * f["reef"])
     if volcano_reef is not None:
-        reef |= sea & volcano_reef
+        reef |= sea & volcano_reef & (depth <= CL.REEF_MAX_M)
     out[reef] = REEF
     z_kelp = np.minimum(CL.light_depth(kd, CL.KELP_LIGHT), CL.KELP_MAX_M)
     kelp = sea & (out == 0) & (depth <= z_kelp) & (u[KELP] < f["kelp_water"] * rocky)
@@ -135,9 +138,17 @@ def place(world: dict, fr, Pk: np.ndarray, px: np.ndarray, py: np.ndarray, nx: i
     seag = sea & (out == 0) & (depth <= CL.seagrass_depth(kd)) & (
         u[SEAGRASS] < f["seagrass_water"] * CL.sea_shelter(f["wave_power"], rocky))
     out[seag] = SEAGRASS
-    # between the tides: mangroves, else salt marsh
-    share = 1 - np.exp(-(0.5 * f["tide_range"] + CL.SETUP) / np.maximum(h, 0.5))
-    p = (land & (d_sea <= TIDAL_KM)) * share * CL.intertidal_habitat(f["wave_power"], f["mud"])
+    # between the tides: low ground the tide reaches from the sea (connected to it through ground
+    # below the high-tide line), and a sub-pixel fringe on the other shore pixels; mangroves, else
+    # salt marsh
+    hw = 0.5 * f["tide_range"] + CL.SETUP
+    low = land & (h <= hw + SPRING_M) & (d_sea <= TIDAL_KM)
+    lab, _ = ZK.label_components(sea | low, nx, ny)
+    flooded = low & np.isin(lab, np.unique(lab[sea]))
+    sp = np.pad(sea.reshape(ny, nx), 1)
+    shore = land & (sp[:-2, 1:-1] | sp[2:, 1:-1] | sp[1:-1, :-2] | sp[1:-1, 2:]).ravel()
+    share = np.where(flooded, 1.0, np.where(shore, 1 - np.exp(-hw / np.maximum(h, 0.5)), 0.0))
+    p = share * CL.intertidal_habitat(f["wave_power"], f["mud"])
     pm, ps = p * f["mangrove_climate"], p * f["salt_marsh_climate"]
     um = u[MANGROVE]
     out[land & (um < pm)] = MANGROVE

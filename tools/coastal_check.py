@@ -102,7 +102,7 @@ def report(grid, L) -> str:
     for k in C.LAYERS:
         sub = [r for r in res if r[1] == k]
         lines.append(f"  {k}: {sum(r[4] for r in sub)}/{len(sub)}  " + "; ".join(
-            f"{'' if r[4] else 'MISS '}{r[0]} {'yes' if r[2] else 'no'} ({r[3]:.0f}%)" for r in sub))
+            f"{'' if r[4] else 'MISS '}{r[0]} {'yes' if r[2] else 'no'} ({r[3]:.1f}%)" for r in sub))
     if "vegetation" in L:
         from planet import vegetation as V
         t = np.asarray(L["vegetation"])
@@ -117,12 +117,21 @@ def report(grid, L) -> str:
     return "\n".join(lines)
 
 
-def maps_png(grid, L, path: Path, width: int = 900) -> None:
-    """An equirectangular map: land grey, sea dark blue, each habitat in its colour by its share."""
+def maps_png(grid, L, path: Path, width: int = 900, bbox=None) -> None:
+    """An equirectangular map: land grey, sea dark blue, each habitat in its
+    colour by its share. bbox: (lat_s, lat_n, lon_w, lon_e) to show only that."""
     from planet.images import write_png
-    from planet.world import nearest_cell_map
-    h = width // 2
-    idx = nearest_cell_map(grid, width, h)
+    if bbox is None:
+        from planet.world import nearest_cell_map
+        h = width // 2
+        idx = nearest_cell_map(grid, width, h)
+    else:
+        s, n, w, e = bbox
+        h = max(1, int(round(width * (n - s) / (e - w))))
+        lat = np.radians(n - (np.arange(h) + 0.5) * (n - s) / h)
+        lon = np.radians(w + (np.arange(width) + 0.5) * (e - w) / width)
+        LON, LAT = np.meshgrid(lon, lat)
+        idx = grid.locate(xyz(LAT, LON).reshape(-1, 3)).reshape(h, width)
     elev = np.asarray(L["elevation"])[idx]
     img = np.where((elev > 0)[..., None], np.array([150, 145, 135]), np.array([20, 35, 70])).astype(float)
     cols = {"kelp": (150, 120, 30), "seagrass": (60, 200, 80), "salt_marsh": (230, 220, 60),

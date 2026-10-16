@@ -1544,7 +1544,7 @@ def mangrove_coasts(ctx: _Ctx, top: int = 1) -> list[dict]:
         rain = float(np.asarray(L["precipitation"], float)[cells].mean())
         span = ctx.span_km(cells, mid)
         blurb = (f"{_area(a)} of mangrove forest in the tidal mud of ~{_n(span)} km of coast: tides {tide:.1f} m, "
-                 f"{_c(tc)} °C in the coldest month, {_n(rain)} mm of rain a year. "
+                 f"{_c(tc)} in the coldest month, {_n(rain)} mm of rain a year. "
                  f"{VEG_TYPES[V_MANGROVE][5].split(' (')[0]}")
         feats.append(_feature(ctx, "mangrove_coast", f"Mangrove coast: {_area(a)}", blurb, mid,
                               zoom_size(min(span, 1000)),
