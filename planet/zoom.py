@@ -269,6 +269,16 @@ def find_world(ref: str) -> Path:
     return S.find_world(ref)
 
 
+def tie_jitter(Pk: np.ndarray, res: float, seed: int) -> np.ndarray:
+    """The drainage's tie-break lift (ZK.flood_d8's jitter, 0..1) per pixel,
+    planet-fixed (PW-339): noise sampled at the pixel's position on the
+    planet, varying from pixel to pixel (two octaves at 2 and 1 px), so
+    overlapping zooms of one place break their ties on flats alike. (One
+    random number per pixel index gave a zoom of another size, centre or
+    halo another drainage on its flats.)"""
+    return 0.5 + 0.5 * np.tanh(ZK.fbm(Pk, 2.0 * res, 2, 0.6, seed) / 0.25)
+
+
 def _octaves(wavelength, finest):
     """Octaves (halving the wavelength each time) until `finest` km."""
     return int(np.clip(np.ceil(np.log2(wavelength / finest)) + 1, 1, 12))
@@ -1668,7 +1678,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         return glaciers(hh, rec_g, order_g, land, stop, nx, ny, res, gw_sl, gc_sl, cov_f, precip, jul_f, ice,
                         lat_px, ice_n, tilt_w)
 
-    jitter_g = np.random.default_rng(seed + 5).random(npx)
+    jitter_g = tie_jitter(Pk, res, S + 63)
     glacier, ice_th = glacier_mask(h, sea)
     # Lakes where the coarse world has them (a coarse lake cell is a lake
     # basin ~100 km across): outline like the coast, from a smoothed
@@ -1772,7 +1782,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # anyway (C), so only the relative weights matter.
     srcg = precip / 1000.0 * res * res + inflow
     Kr = ROCK_K[np.minimum(surf_f, len(ROCK_K) - 1)]
-    jitter = np.random.default_rng(seed).random(npx)
+    jitter = tie_jitter(Pk, res, S + 61)
     active = land & ~edge & ~lake
     idx = np.arange(npx)
     target = h.copy()
