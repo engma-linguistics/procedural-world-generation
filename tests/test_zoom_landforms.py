@@ -428,17 +428,58 @@ def test_zone_levels_are_the_same_in_overlapping_zooms():
         px, py = fr.to_plane(pts)
         Z = ZL.zone_stats(g, L, LF.CAPROCK, sel, cx, cy, px, py, fr.to_plane,
                           lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), sp)
-        ox, oy = Z["ox"], Z["oy"]
-        origin = fr.to_sphere(ox, oy)  # (the tilted beds' origin: one planet point)
-        got.append((Z, origin))
-    (a, oa), (b, ob) = got
+        got.append(Z)
+    a, b = got
     for key in ("elev_p50", "elev_p85", "elev_p95", "top_km", "relief"):
         assert np.allclose(a[key], b[key]), key
     assert np.allclose(a["elev_local"], b["elev_local"], atol=0.5)
-    assert np.allclose(oa, ob, atol=1e-6)
+    # (the tilted beds' dip direction: one planet vector per zone, down the
+    # zone's plane, 300 + 0.2 x + 0.1 y: mostly west, a little south)
+    assert np.allclose(a["down_dip"], b["down_dip"], atol=1e-9)
+    d = a["down_dip"][0]
+    east, north = np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 1.0])  # (at lat 0, lon 0)
+    assert np.allclose([d @ east, d @ north], -np.array([0.2, 0.1]) / np.hypot(0.2, 0.1), atol=0.05), d
     # one zone, its levels from all its cells: the median of its elevations
     zone = (L["landform"] == LF.CAPROCK) & (L["elevation"] > 0)
     assert np.allclose(a["elev_p50"], np.median(L["elevation"][zone]))
+
+
+def test_dipping_caprock_is_a_plane_in_a_big_zone():
+    """PW-179: in a caprock zone ~3000 km across whose regional downhill turns
+    (a curved surface), the beds still dip along one direction, the zone's,
+    at the zone's dip: the stratigraphic shift over a zoom far from the
+    zone's centre is a plane (it took each pixel's own downhill, times its
+    distance from the zone's reference cell: contorted beds)."""
+    from types import SimpleNamespace
+    from planet.grid import build_grid
+    from planet.geo import latlon, R_KM
+    from planet import zoom_kernels as ZK
+    g = build_grid(5)
+    lat, lon = latlon(g.centers)
+    xk, yk = lon * 111.2, lat * 111.2
+    land = np.hypot(xk, yk) < 1600
+    n = g.n
+    elev = 300 + 0.2 * xk + 0.0003 * yk**2  # downhill west near y = 0, turning north-west / south-west off it
+    dip = 0.3  # deg: 5.2 m/km
+    L = {"landform": np.where(land, LF.CAPROCK, LF.SEA).astype(np.uint8), "elevation": np.where(land, elev, -3000.0),
+         "strata_top_km": np.full(n, 0.2), "strata_dip": np.full(n, dip)}
+    sp = g.spacing * R_KM
+    fr = zoom.Frame(8.0, 8.0)  # (~1260 km from the zone's centre)
+    xs = (np.arange(100) + 0.5 - 50) * 4.0
+    X, Y = np.meshgrid(xs, -xs)
+    px, py = X.ravel(), Y.ravel()
+    Pk = np.ascontiguousarray(fr.to_sphere(px, py) * R_KM)
+    ang = np.arccos(np.clip(g.centers @ fr.c, -1, 1)) * R_KM
+    sel = np.flatnonzero(ang < 400 * 0.7072 + 4 * sp)
+    cx, cy = fr.to_plane(g.centers[sel])
+    Z = ZL.zone_stats(g, L, LF.CAPROCK, sel, cx, cy, px, py, fr.to_plane,
+                      lambda v, w, s: ZK.gauss_interp(px, py, cx, cy, v, w, s), sp)
+    st = ZL.SYNTH[LF.CAPROCK].strata(SimpleNamespace(zone=Z, Pk=Pk), np.zeros(len(px)))
+    A = np.column_stack([np.ones(len(px)), px, py])
+    coef, *_ = np.linalg.lstsq(A, st.shift, rcond=None)
+    assert np.sqrt(np.mean((A @ coef - st.shift) ** 2)) < 1.0  # m: a plane
+    assert abs(np.hypot(*coef[1:]) - 1000 * np.tan(np.radians(dip))) < 0.2  # at the zone's dip
+    assert coef[1] < 0 and abs(coef[2]) < 0.5 * abs(coef[1])  # down-dip: west, the zone's mean downhill
 
 
 def _bowls(nx, ny, depth=(40.0, 30.0, 20.0)):
