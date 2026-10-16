@@ -2,7 +2,7 @@
 id: PW-309
 title: Run stats' land_pct counts oceanic crust with bed > 0 whose trench puts the frame's elevation below the sea
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: xs
@@ -23,4 +23,5 @@ updated: 2026-10-15
 Decide whether `stats()` (and `land()`'s users) should use the frame's elevation for oceanic crust, so the run's land and every frame's land agree.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. With PW-293.
 - 2026-10-15: Created from inbox draft draft-land-pct-trench-cells.md (found by pw305-prototype).

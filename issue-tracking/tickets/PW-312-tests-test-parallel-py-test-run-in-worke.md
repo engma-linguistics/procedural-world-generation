@@ -2,7 +2,7 @@
 id: PW-312
 title: tests/test_parallel.py::test_run_in_workers is flaky (failed twice in a row in full pytest runs, passes alone)
 type: task
-status: todo
+status: wontdo
 parent: null
 subsystem: infra
 effort: s
@@ -24,4 +24,5 @@ race: either the progress messages (`seen`) arrive after `P.run` returns, or a w
 module in a loop until it fails) and make `parallel.run` drain every progress message before it returns.
 
 ## Updates
+- 2026-10-15: Status todo -> wontdo. Duplicate of PW-303; folded in.
 - 2026-10-15: Created from inbox draft draft-flaky-test-run-in-workers.md (found by pw308).
