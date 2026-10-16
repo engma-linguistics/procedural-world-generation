@@ -2,7 +2,7 @@
 id: PW-378
 title: "veg_check tree cover: the model's tree share and MOD44B's canopy cover aren't the same quantity; no data north of 62.5 N"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 subsystem: infra
 effort: s
@@ -21,4 +21,5 @@ Reasons, not all model error: (1) MOD44B is today's land (cropland, pasture, log
 Options: (A) keep as is, read the correlation and the zonal shape only (lean); (B) compare only where potential vegetation and today's land agree (mask cropland with a land-use map, e.g. HYDE or ESA CCI, more data); (C) also fetch a source for the north of 62.5 N (Hansen GFC treecover2000 tiles, ~GBs, or MOD44B from LP DAAC with the Earthdata login) to compare the taiga.
 
 ## Updates
+- 2026-10-16: Status needs-decision -> wontdo. Coordinator 2026-10-16: A (read the correlation and zonal shape; MOD44B is today's land and canopy >5 m, the model's potential tree share).
 - 2026-10-16: Created from inbox draft draft-veg-tree-cover-metric-mod44b.md (found by pw204-vegdata).
