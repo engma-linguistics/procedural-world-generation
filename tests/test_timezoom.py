@@ -141,10 +141,11 @@ def test_deep_grounded_ice_stands(sim4):
     nb = lambda i: g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]]
     # two inland cells: their neighbours (and theirs) on land
     inland = [i for i in range(g.n) if elev[i] > 200 and all(elev[j] > 200 and (elev[nb(j)] > 200).all() for j in nb(i))]
+    inland.sort(key=lambda i: -abs(g.lat[i]))  # (the coldest first: the ice around shouldn't melt away and drain it)
     a, b = inland[0], next(i for i in inland if not set(nb(i)) & set(nb(inland[0])) and i not in nb(inland[0]))
     for c, depth, h in ((a, 2000.0, 3200.0), (b, 4000.0, 5500.0)):
         elev[c], ice[c] = -depth, h
-        ice[nb(c)] = 2500.0
+        ice[nb(c)] = np.maximum(2500.0, h - depth - elev[nb(c)] + 100.0)  # (their surface above the cell's)
     src.update(elev=elev, ice=ice, dT=src["dT"] - 30.0)  # (cold: the ice neither melts nor flows much in one step)
     r = Z.simulate(src, kyr=0.5, step=0.5, every=0.5, params=Z.TZParams(**NO_ORBIT))
     H = r["state"]["H"]
