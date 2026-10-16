@@ -20,5 +20,6 @@ A zoom over a big lake passes on only the inflow it can see (45k of 125k m³/s i
 coarse world's full lake inflow at the outlet, as already done for rivers entering at the edge.
 
 ## Updates
+- 2026-10-16: Zoom batch 6: fixed in b613824. A coarse lake's outlet (its fragment nearest the coarse exit) passes on at least the world's outflow of the lake, less what its other fragments pass on elsewhere; lakes routed upstream first along their outflows. 592f2a's 150,000 km2 lake in a 1000 km zoom: 0 -> 3,166 m3/s (world 3,177). Drops on the 8 zooms 9.8 -> 10.2 per seed (a 3,631 m plateau lake's doubled outflow cascades off the plateau). docs/review/zoom-polish/batch6.md.
 - 2026-10-16: Status todo -> in-progress. Zoom batch 6 agent started.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Rivers, lakes, sediment (zoom lakes).

@@ -130,3 +130,18 @@ A if ergs should read right at 0.5 km, else C. Barchans (0.1-0.5 km) are left to
 ![seam](pw177_seam.png)
 *Part of that zoom (0.5 km pixels, 125 x 100 km, hill-shaded from the north-west): the crests switch orientation
 along a line running from the top middle down to the right.*
+
+## Drops, inland means and perched rivers after the batch
+
+| Zoom (seeds 1-5) | drops before | after | inland bias / RMS before | after | perched before | after |
+|---|---|---|---|---|---|---|
+| 4.97,-114.51 | 0 | 0 | -1.9 / 10 | -2.0 / 10 | 0 | 0 |
+| 1.96,-70.44 | 0.4 | 0.4 | -0.2 / 33 | 0.0 / 33 | 0 | 0 |
+| 4.81,-72.18 | 1.6 | 1.6 | -2.7 / 54 | -2.7 / 54 | 0 | 0 |
+| 60.6,-40.48 | 0 | 0 | -1.6 / 8 | -1.6 / 8 | 0 | 0 |
+| 49.32,37.38 | 0.8 | 1.2 | +1.7 / 56 | +1.6 / 56 | 2.8 | 2.8 |
+| -9.35,-161.39 (arc) | 3.8 | 3.8 | +1.7 / 53 | +1.2 / 52 | 47.4 | 29.8 |
+| -2.22,-169.11 | 0.2 | 0.2 | +1.1 / 41 | +1.1 / 41 | 3.2 | 3.2 |
+| -63.44,71.66 | 3.0 | 3.0 | -0.8 / 27 | -0.8 / 27 | 2.8 | 2.8 |
+| **8 zooms** | **9.8** (4-14 by seed) | **10.2** (6-14) | | | **56.2** (> 100 m: 5.0) | **38.6** (5.0) |
+| -48.48,60.12 (plateau) | 1.2 | 1.2 | +1.5 / 14 | +1.5 / 14 | 0.6 | 0.6 |
