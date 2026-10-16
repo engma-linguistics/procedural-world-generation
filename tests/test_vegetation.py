@@ -184,3 +184,40 @@ def test_run_vegetation(sim4_60):
     snap = sim.snapshot()
     land = sim.land()  # (the snapshot's: also grounded ice whose bed has sunk below the sea since the last climate)
     assert (snap.vegetation[~land] == 0).all() and (snap.vegetation[land] > 0).mean() > 0.95
+
+
+# --------------------------------------------------------------------------- fire (PW-234)
+def test_fire_rate_fuel_age():
+    """fire_rate: grass fuel is ready every year (the old GlobFIRM-like rate);
+    shrubs' slowly built dead fuel adds the years to rebuild it."""
+    w = 0.1
+    assert V.fire_rate(0.0, 0.0, 0.3, w) == 0.0 and V.fire_rate(800.0, 0.0, 0.3, 0.0) == 0.0
+    assert V.fire_rate(200.0, 40.0, 0.3, w) == 0.0  # never enough fuel
+    assert np.isclose(V.fire_rate(800.0, 0.0, 0.3, w), w)  # fully fuelled grass: the weather's rate
+    assert np.isclose(V.fire_rate(V.FUEL_MIN + 0.5 * V.FUEL_SPAN, 0.0, 0.3, w), 0.5 * w)
+    # a shrubland whose fuel is mostly its own dead wood burns less often than a
+    # grassland of the same fuel (years to rebuild it), but it does burn
+    shrub = V.fire_rate(100.0, 500.0, 0.1, w)
+    assert 0 < shrub < V.fire_rate(600.0, 0.0, 0.1, w)
+    ready = -np.log(1 - (V.FUEL_MIN - 100.0) / 500.0) / 0.1
+    assert np.isclose(1 / shrub, ready + 1 / w)
+
+
+def test_mediterranean_scrub_burns_and_stays_scrub():
+    """A summer-dry climate's sclerophyll scrub of low productivity burns
+    every few decades (its fuel builds up) and stays shrub-dominated."""
+    g = build_grid(3)
+    n = g.n
+    lat = np.abs(np.asarray(g.lat))
+    elev = np.random.default_rng(2).uniform(100.0, 700.0, n)
+    # hot dry summers, mild wet winters (Koppen Csa), 450 mm/yr (both hemispheres: p_jul is July's half-year)
+    north = np.asarray(g.lat) >= 0
+    p_s, p_w = np.full(n, 60.0), np.full(n, 840.0)
+    v = V.model(g, elev, np.full(n, 16.0), np.full(n, 24.0), np.full(n, 9.0), np.where(north, p_s, p_w),
+                np.where(north, p_w, p_s), 23.4, np.full(n, 0.3), np.full(n, 0.3))
+    m = (lat > 30) & (lat < 42)
+    sm, nu = v["sm"], v["eq"]["nu"]
+    assert (v["types"][m] == V.T["Mediterranean scrub (maquis, chaparral, fynbos)"]).mean() > 0.5
+    ret = sm["fire_return"][m]
+    assert 10 < np.median(ret) < 150
+    assert np.median(nu[V.IDX["SclS"], m]) > np.median((nu[V.IDX["C3G"]] + nu[V.IDX["C4G"]])[m])

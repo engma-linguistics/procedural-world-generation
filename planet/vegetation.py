@@ -77,7 +77,8 @@ GROUND, HERB, SHRUB, TREE = 0, 1, 2, 3  # height class
 #     kt: transpiration per light caught (C4 and CAM save water)
 #   wet: lives only on flooded ground; flood: tolerance of flooding (0..1)
 #   carbon: g C per m2 to establish full cover; gamma: background
-#     mortality /yr; resist: share surviving a fire; hmax: height, m;
+#     mortality /yr; resist: share surviving a fire (resprouters: grass, savanna
+#     trees and sclerophyll shrubs, which keep their roots and space); hmax: height, m;
 #     litf: share of NPP that becomes fine (burnable) litter; tau: years the
 #     standing carbon lasts (biomass = NPP x tau)
 _COLS = ("code", "name", "color", "group", "cls", "phen", "on", "tc_min", "tc_max", "tmin", "gdd", "tw", "amin",
@@ -102,7 +103,7 @@ _ROWS = [
     ("BoBS", "boreal broadleaf summergreen tree", "#9ccf6a", 4, TREE, SUMMERGREEN, 5, _NO, 5, _NO, 350, _NO, 0.45,
      0.60, 1.05, (-3, 11, 24, 35), 4.5, 33, 1, 6.0, 25, 1.0, 0, 0.4, 5000, 0.030, 0.05, 20, 0.35, 12),
     ("SclS", "sclerophyll evergreen shrub", "#8a7d3a", 4, SHRUB, EVERGREEN, 0, -5, 18, _NO, 1500, _NO, 0.20,
-     0.30, 0.90, (0, 15, 30, 42), 3.5, 80, 2, 5.0, 12, 1.0, 0, 0.0, 3000, 0.030, 0.80, 4, 0.40, 8),
+     0.30, 0.90, (0, 15, 30, 42), 3.5, 80, 2, 5.0, 12, 1.0, 0, 0.0, 3000, 0.030, 0.90, 4, 0.40, 8),
     ("XerS", "xeric (desert) shrub", "#c2a970", 4, SHRUB, RAINGREEN, 0.10, -35, 99, _NO, 500, _NO, 0.05,
      0.35, 0.80, (-2, 15, 32, 45), 2.0, 60, 1, 4.0, 6, 0.8, 0, 0.0, 1500, 0.040, 0.60, 2, 0.40, 8),
     ("DecS", "cold-deciduous shrub", "#a4b06a", 4, SHRUB, SUMMERGREEN, 3, _NO, 5, _NO, 150, _NO, 0.35,
@@ -730,7 +731,15 @@ _C = _competition()
 
 
 FIRE_MAX, FIRE_MID, FIRE_WIDTH = 0.35, 0.45, 0.09
-FUEL_MIN, FUEL_SPAN = 250.0, 350.0  # g C/m2 of fine litter: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+FUEL_MIN, FUEL_SPAN = 250.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+# Fuel age (PW-234): shrubs keep their fine litter as dead twigs and leaves in
+# and under the crown, which decays like fine woody debris, about half as fast
+# as fallen leaf litter (Harmon et al. 1986: twigs k ~0.1-0.3/yr, leaves
+# ~0.3-0.7), and builds up again after a fire (Olson 1963's exponential
+# approach): chaparral, fynbos and maquis burn every ~10-60 yr, as their dead
+# fuel accumulates (Rothermel & Philpot 1973; Keeley et al. 2011), where
+# grass fuel is ready every year. fire_rate turns it into a fire interval.
+SLOW_FUEL = 0.5  # decay rate of the shrubs' dead fuel, x the litter's
 
 
 @njit(cache=True)
@@ -746,21 +755,44 @@ def globfirm(s):
     return FIRE_MAX / (1.0 + np.exp(-(s - FIRE_MID) / FIRE_WIDTH))
 
 
+@njit(cache=True)
+def fire_rate(fast, slow, kslow, weather):
+    """Burned share per year of a cell (a renewal process: the years a
+    burned patch needs to rebuild its fuel past FUEL_MIN, then the wait for
+    a fire year). fast: g C/m2 of fuel that is back every year (grass and
+    leaf litter in equilibrium with its decay); slow: the equilibrium stock
+    of the shrubs' dead fuel, which a patch regains as slow x (1 -
+    e^(-kslow age)); weather: the burned share a fully fuelled cell would
+    have (globfirm x ignition). Fuel-free or fire-free cells: 0."""
+    full = fast + slow
+    if weather <= 0.0 or full <= FUEL_MIN:
+        return 0.0
+    r = weather * min((full - FUEL_MIN) / FUEL_SPAN, 1.0)
+    ready = 0.0
+    if fast < FUEL_MIN:
+        ready = -np.log(1.0 - (FUEL_MIN - fast) / slow) / kslow
+    return 1.0 / (ready + 1.0 / r)
+
+
 @njit(parallel=True, cache=True)
-def _step(cells, nu, g, K, ok, mort, C, resist, litter, season, kdec, ign, dt, seed, diff, nbr_off, nbr_idx,
+def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, kslow, ign, dt, seed, diff, nbr_off, nbr_idx,
           food, browsed, graze, out, burned):
     """One implicit step of the cover equations on every cell in cells:
     dnu/dt = g nu (K - sum_q C_pq nu_q) - (mort + fire (1 - resist)) nu,
     plus seeds (every viable type keeps at least `seed`) and a little
-    spread from neighbours (diff). Fire from this cover's fuel."""
+    spread from neighbours (diff). Fire from this cover's fuel (fire_rate;
+    slowf: 1 for the types whose dead fuel builds up slowly, the shrubs)."""
     npft = nu.shape[0]
     for jj in prange(len(cells)):
         i = cells[jj]
-        fuel = 0.0
+        fast = 0.0
+        slow = 0.0
         for p in range(npft):
-            fuel += nu[p, i] * litter[p, i]
-        fuel /= kdec[i]
-        a = globfirm(season[i]) * min(max((fuel - FUEL_MIN) / FUEL_SPAN, 0.0), 1.0) * ign[i]
+            if slowf[p] > 0:
+                slow += nu[p, i] * litter[p, i]
+            else:
+                fast += nu[p, i] * litter[p, i]
+        a = fire_rate(fast / kdec[i], slow / kslow[i], kslow[i], globfirm(season[i]) * ign[i])
         burned[i] = a
         grass = 0.0
         for p in range(npft):
@@ -826,9 +858,10 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     out = np.zeros_like(nu)  # (zeros, not empty: _step writes only `cells`, and reads their neighbours)
     burned = np.zeros(n)
     C, resist = _C, _col("resist")
+    slowf = SHRUBS.astype(np.float64)
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
         for _ in range(count):
-            _step(cells, nu, g, K, ok, mort, C, resist, litter, season, kdec, ign, float(dt), seed, diff,
+            _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, SLOW_FUEL * kdec, ign, float(dt), seed, diff,
                   grid.nbr_off, grid.nbr_idx, food, browsed, graze, out, burned)
             nu, out = out, nu
     nu = np.where(nu > 2 * seed, nu - seed, 0.0)
