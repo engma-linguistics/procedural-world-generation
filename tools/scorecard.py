@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
 from planet import climate, parallel  # noqa: E402
+from planet.geo import is_land  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools import earth_data, moisture_budget  # noqa: E402
 from tools.earth_data import koppen_agreement  # noqa: E402
@@ -42,12 +43,12 @@ def earth_scores() -> dict | None:
     g = build_grid(6)
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
     c, rec = moisture_budget.capture(g, elev, ice)  # (the same climate, its rain kernel's inputs kept)
-    land = (elev > 0) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
+    land = is_land(elev, ice) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
     mg = GROUP[c["koppen"]]
     shares = {k: round(100 * float((mg[land] == k).mean()), 1) for k in "ABCDE"}
     p, po = c["precip"][land], e["obs_precip"][land]
     ok = np.isfinite(po) & (po > 0)
-    ka = koppen_agreement(g, c["koppen"], obs, elev)  # area-weighted, the one Earth Koppen score
+    ka = koppen_agreement(g, c["koppen"], obs, elev, ice)  # area-weighted, the one Earth Koppen score
     return {"group_agree": round(ka["group"], 1), "exact_agree": round(ka["exact"], 1),
             "shares": shares,
             "land_rain_mean": round(float(p.mean())),

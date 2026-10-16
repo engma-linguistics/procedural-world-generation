@@ -58,6 +58,7 @@ from planet import coastal  # noqa: E402
 from planet import surface as SF  # noqa: E402
 from planet import vegetation  # noqa: E402
 from planet import world as W  # noqa: E402
+from planet.geo import is_land, world_land  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.earth_data import earth_closed, earth_clouds, earth_on_grid, earth_outlets  # noqa: E402
 
@@ -72,11 +73,11 @@ def _with_nulls(x: np.ndarray, decimals: int = 1) -> np.ndarray:
     return np.where(np.isfinite(x), x, None).astype(object)
 
 
-def earth_rock(grid, elev: np.ndarray) -> dict:
+def earth_rock(grid, elev: np.ndarray, ice: np.ndarray) -> dict:
     """A plausible rock map of Earth from its terrain (see the module
     docstring): what the zoom needs to draw it."""
     rel = vegetation.relief(grid, elev)  # m to the steepest neighbour
-    land = elev > 0
+    land = is_land(elev, ice)
     shelf = ~land & (elev > -1000)
     rugged = land & ((rel > 900) | (elev > 2500))
     plain = (land & ~rugged & (elev < 400) & (rel < 250)) | shelf
@@ -95,7 +96,7 @@ def earth_carbonate(grid, world: dict) -> np.ndarray:
     L = world["layers"]
     elev = np.asarray(L["elevation"], float)
     river = coastal.river_turbidity(grid, L)
-    return ((elev < -5) & (elev > -1500) & (np.asarray(L["sst"], float) >= coastal.reef_temp(world["meta"]))
+    return (~world_land(L) & (elev < -5) & (elev > -1500) & (np.asarray(L["sst"], float) >= coastal.reef_temp(world["meta"]))
             & (river < REEF_MUD))
 
 
@@ -108,7 +109,7 @@ def build(level: int = 6) -> dict:
     o, day = earth_clouds(grid), climate.day_hours(grid.lat, TILT)
     extra = {
         "ice": np.round(ice),
-        **earth_rock(grid, elev),
+        **earth_rock(grid, elev, ice),
         "obs_temperature": _with_nulls(d["obs_temp"]),
         "obs_warm_month": _with_nulls(d["obs_t_warm"]),
         "obs_cold_month": _with_nulls(d["obs_t_cold"]),

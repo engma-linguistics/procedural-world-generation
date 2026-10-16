@@ -84,7 +84,7 @@ from . import icemass as M
 from . import store as S
 from . import timeline as T
 from . import world as W
-from .geo import R_KM
+from .geo import R_KM, is_land
 from .grid import Grid, build_grid
 from .provenance import code_version
 from .tectonics.isostasy import FLEX_KM, ICE_SINK, ice_load
@@ -362,12 +362,10 @@ def source_earth(level: int = 6) -> dict:
     grid = build_grid(level)
     d = earth_on_grid(grid)
     elev, ice = d["elev"].astype(float), d["ice"].astype(float)
-    # ETOPO1 counts the floating ice shelves (Ross, Ronne...) as land with
-    # their bed floored at 1 m (earth_data); they aren't modelled here, so
-    # they become sea (thin ice on a floored bed, low surface)
-    shelf = (ice > 0) & (elev <= 1.5) & (elev + ice < 200)
-    elev = np.where(shelf, -500.0, elev)
-    land = elev > 0
+    # (earth_data: the true bed, below the sea under much of West Antarctica
+    # and central Greenland, land by its grounded ice; the floating shelves
+    # are sea, PW-354)
+    land = is_land(elev, ice)
     return {"source_run": "earth", "source_name": "Earth (ETOPO1)", "seed": 0, "level": level, "tilt": 23.44,
             "params": {"tilt": 23.44}, "grid": grid, "at": 0.0, "elev": elev, "ice": np.where(land, ice, 0.0),
             "dT": 0.0, "sea_level": 0.0,

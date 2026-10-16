@@ -30,7 +30,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from planet import coastal as C  # noqa: E402
-from planet.geo import R_KM, xyz  # noqa: E402
+from planet.geo import R_KM, world_land, xyz  # noqa: E402
 
 OBSERVED_KM2 = {"reef": (250e3, 285e3), "mangrove": (130e3, 140e3), "salt_marsh": (55e3, 220e3),
                 "seagrass": (160e3, 600e3), "kelp": (1.5e6, 2.0e6)}
@@ -111,7 +111,7 @@ def report(grid, L) -> str:
                      f"({(t == V.T['mangrove forest']).sum() * cell:,.0f} km2), salt marsh "
                      f"{int((t == V.T['salt marsh']).sum())} cells")
     ssc = np.asarray(L["turbidity"], float)
-    sea = np.asarray(L["elevation"]) <= 0
+    sea = ~world_land(L)
     lines.append(f"turbidity (sea cells): median {np.median(ssc[sea]):.1f} mg/L, 99th pct "
                  f"{np.percentile(ssc[sea], 99):.1f}, max {ssc.max():.0f}")
     return "\n".join(lines)
@@ -132,8 +132,8 @@ def maps_png(grid, L, path: Path, width: int = 900, bbox=None) -> None:
         lon = np.radians(w + (np.arange(width) + 0.5) * (e - w) / width)
         LON, LAT = np.meshgrid(lon, lat)
         idx = grid.locate(xyz(LAT, LON).reshape(-1, 3)).reshape(h, width)
-    elev = np.asarray(L["elevation"])[idx]
-    img = np.where((elev > 0)[..., None], np.array([150, 145, 135]), np.array([20, 35, 70])).astype(float)
+    land = world_land(L)[idx]
+    img = np.where(land[..., None], np.array([150, 145, 135]), np.array([20, 35, 70])).astype(float)
     cols = {"kelp": (150, 120, 30), "seagrass": (60, 200, 80), "salt_marsh": (230, 220, 60),
             "reef": (255, 90, 160), "mangrove": (0, 255, 200)}
     for k, c in cols.items():

@@ -91,14 +91,53 @@ def test_no_shore_under_the_ice(marine):
     assert (L["tide_range"][coast] > 0).any() and (L["wave_power"][coast] > 0).any()
 
 
-def test_zoom_takes_the_marine_bed_at_one_metre(marine):
-    """The zoom's pixels are land where their ground is above the sea, so it
-    builds on the world with that bed at 1 m and the ice surface kept
-    (zoom.zoom_world); the coastline is the world's."""
-    from planet.zoom import zoom_world
+def test_zoom_builds_its_terrain_on_the_land_view(marine):
+    """The zoom's terrain passes take land as ground above the sea, so they
+    build on the world with that bed at 1 m and the ice surface kept
+    (zoom.land_world), the coastline the world's; how far each cell's true
+    bed lies below that is handed back, for the zoom to sink its bed under
+    its glaciers (PW-356, tests/test_zoom_ice.py)."""
+    from planet.zoom import land_world
     g, w, sub, d = marine
-    L, Z = w["layers"], zoom_world(w)["layers"]
+    view, sunk = land_world(w)
+    L, Z = w["layers"], view["layers"]
     assert (Z["elevation"][sub] == 1).all()
     assert np.allclose((Z["elevation"] + Z["ice"])[sub], (L["elevation"] + L["ice"])[sub])
     assert np.array_equal(Z["elevation"] > 0, world_land(L))
     assert np.array_equal(Z["elevation"][~sub], L["elevation"][~sub])
+    assert np.allclose(Z["elevation"] - sunk, L["elevation"]) and (sunk[~sub] == 0).all()
+
+
+def test_erode_routes_over_the_ice_surface(monkeypatch):
+    """PW-355: the world's erosion (hydrology.erode) routes the water over
+    the ice surface under all ice, as rivers_and_lakes does, not along the
+    bed: a bed falling east under a sheet whose surface falls west drains
+    west (and the cutting is on the bed beneath)."""
+    from planet import hydrology, kernels
+    g = build_grid(4)
+    c = xyz(np.radians(40.0), np.radians(30.0))
+    d = np.degrees(np.arccos(np.clip(g.centers @ c, -1, 1)))
+    x = (g.lon - 30.0 + 180.0) % 360.0 - 180.0  # deg east of the middle
+    elev = np.where(d < 30, 1500.0 - 40.0 * x, -3500.0)  # (all above the sea on the continent)
+    ice = np.where(d < 20, np.maximum(4000.0 + 20.0 * x - elev, 0.0), 0.0)
+    iced = ice > 0
+    assert iced.sum() > 50
+    seen = {}
+    real = kernels.stream_power
+
+    def spy(h, down, order, f):
+        seen.setdefault("down", down.copy())
+        return real(h, down, order, f)
+
+    monkeypatch.setattr(kernels, "stream_power", spy)
+    n = len(elev)
+    clim = {"runoff": np.full(n, 300.0), "aet": np.full(n, 300.0), "lake_evap": np.full(n, 1000.0)}
+    out = hydrology.erode(g, elev, clim, iterations=1, ice=ice)
+    down, surf = seen["down"], elev + ice
+    assert (down[iced] >= 0).all()
+    on = np.flatnonzero(iced)
+    # every ice cell drains down the ice surface (westward), not down the bed
+    assert (surf[down[on]] <= surf[on] + 0.05).all()
+    assert (elev[down[on]] >= elev[on]).mean() > 0.5  # (old: along the bed, ~none)
+    # the bed under the ice is what is cut (never raised)
+    assert (out <= elev + 1e-9).all() and (out[iced] < elev[iced]).any()

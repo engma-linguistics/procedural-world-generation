@@ -52,20 +52,22 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
     display pass for sub-cell valleys on a keyframe that has already put
     its sediment where it goes (PW-281: routing it filled the keyframe's
     hollows and built deltas). ice: grounded land ice; a bed below the sea
-    under it is land (geo.is_land, PW-307), and its water runs over the
-    ice's surface there (the routing takes heights <= 0 for the sea).
-    Returns new elevation."""
+    under it is land (geo.is_land, PW-307). Water routes over the ice's
+    surface wherever there is ice, as rivers_and_lakes' (one rule for the
+    world's water, PW-355; under a sheet its hydraulic head follows the ice
+    surface's slope), and the bed beneath is cut toward its downstream
+    cell's bed. Returns new elevation."""
     h = elev.astype(float).copy()
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)
     k = 0.018 * 1.6 * strength * 2 ** (grid.level - 5)
     from .surface import _relief
     iced = ice > 0 if ice is not None else None
-    below = iced & (h <= 0) if ice is not None else np.zeros(len(h), bool)  # (no cutting or creep moves these)
+    top = np.where(iced, ice, 0.0) if ice is not None else 0.0  # (the ice's thickness, 0 off it)
     lk = None
     for it in range(iterations):
         land = is_land(h, ice)
-        hr = np.where(below, h + (ice if ice is not None else 0.0), h)  # what the water runs over
+        hr = h + top  # what the water runs over: the ice surface, the ground off it
         if lake_every and it % lake_every == 0:
             lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced)
         if lk is None:

@@ -70,11 +70,12 @@ def test_no_ice_on_the_warm_floor(ice_zoom):
     # ice, but for the snout of a big tongue down a deep valley (since PW-298's
     # slope fit the massif stands at its cells' mean heights, ~1.5 km higher
     # than the old fit left it in 6 iterations, and its cap feeds 3 km^3/yr
-    # tongues: one ends at ~870 m, 0.3% of the ice). PW-350 thinned their
-    # snouts (364-573 m -> ~210 m on the last 3 km pixel) but not their reach:
-    # they end at GL_MAX_KM still carrying ~2.8 km^3/yr against -20..-30 m/yr
-    # of melt, fed along the cap's margin for most of their run (as big
-    # maritime outlets do: Franz Josef ends in rainforest), so they stay.
+    # tongues. PW-350 thinned their snouts (364-573 m -> ~210 m on the last
+    # 3 km pixel); since PW-357 they run until their melt has used up their
+    # flux (they had ended at GL_MAX_KM still carrying ~2.8 km^3/yr, the run
+    # counted along the cap's margin that fed them): 0.3% -> 0.47% of the
+    # ice on such ground, as big maritime outlets do (Franz Josef ends in
+    # rainforest), so they stay.
     assert (ice & (summer > 12)).sum() < 0.005 * ice.sum(), "no ice on ground with 12 C+ summers"
     # (with 1.8 m of rain a year, snow outlasts summers of up to ~5 C on bare
     # ground, give or take the noise: a maritime snowline, PW-159); below that,
@@ -135,6 +136,88 @@ def test_ice_thins_to_its_end_on_land(monkeypatch, res):
     s = ends[np.argmin(h[ends])]
     back = [i for i in np.flatnonzero(ice) if s in ZK.chain(rec, i)[:int(np.ceil(3 / res)) + 1]]
     assert th[max(back, key=lambda i: h[i])] > 1.6 * th[s]
+
+
+def test_tongue_along_the_zone_ends_by_melt():
+    """PW-357: a tongue running along its accumulation zone's margin, fed by
+    it pixel after pixel (here for 60 km, past the GL_F_MAX cap), counts its
+    run from the last pixel the zone drains into, not from where its first
+    feeder left the zone: it ends where its melt has used up its flux, not
+    at max_km still carrying the cap's flux."""
+    from planet import zoom_kernels as ZK
+    nx, ny, res, max_km = 200, 21, 1.0, 100.0
+    r, c = np.divmod(np.arange(nx * ny), nx)
+    zone = (r < 20) & (c < 60)  # a 20 km band along the valley, 60 km long
+    rec = np.where(r < 20, (r + 1) * nx + c, np.where(c < nx - 1, r * nx + c + 1, -1)).astype(np.int64)
+    bal = np.where(zone, 15.0, -40.0)  # m/yr w.e.
+    order = ZK.receiver_order(rec)
+    flux, wid, run = ZK.glacier_flow(rec, order, bal, zone, np.zeros(nx * ny, bool), nx, res,
+                                     zoom.GL_W0, zoom.GL_F0, zoom.GL_W_EXP, zoom.GL_F_MAX, max_km)
+    valley = np.flatnonzero((r == 20) & (flux > 0))
+    assert c[valley].max() > 60 + 10, "the tongue runs on below the zone"
+    end = valley[np.argmax(c[valley])]
+    assert flux[end] < 0.01 * zoom.GL_F_MAX, "it ends where its flux is melted away"
+    # (counted from column 59, the last pixel the zone feeds, one step below it)
+    assert run[end] < max_km and abs(run[end] - (c[end] - 58) * res) < 1e-6
+    assert flux[(r == 20) & (c == 60)] > 0.9 * zoom.GL_F_MAX  # (it leaves the margin at the cap)
+
+
+def test_marine_sheet_keeps_its_sub_sea_bed():
+    """PW-356: a zoom over a marine ice sheet (a cold continent whose middle
+    carries 2.5 km of ice on a bed 500 m below the sea) draws the world's bed
+    under the ice, not the land view's 1 m: no sea there, the ice on it, each
+    cell's bed mean the world's and the ice surface as before."""
+    g = build_grid(5)
+    mid = (72.0, 10.0)
+    d0 = _dist_km(g, *mid)
+    elev = np.where(d0 < 2500, 400.0 - 0.1 * d0, -3000.0)
+    sub = d0 < 700
+    elev = np.where(sub, -500.0, elev)
+    ice = np.where(d0 < 1500, 2500.0, 0.0)
+    view = np.where(sub, 1.0, elev)
+    land = view > 0
+    precip = np.where(land, 300.0, 600.0)
+    c = {"runoff": 0.3 * precip, "aet": 0.3 * precip, "lake_evap": np.full(g.n, 100.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, view, c)
+    warm = np.where(land, -12.0, 2.0)
+    layers = {
+        "elevation": elev, "precipitation": precip, "temperature": warm - 15.0,
+        "warm_month": warm, "cold_month": warm - 30.0, "flow": flow, "downstream": down,
+        "lake": lk["wet"].astype(int), "rock": np.full(g.n, 2), "surface_rock": np.full(g.n, 2),
+        "climate": np.full(g.n, 29), "ice": ice, "sediment_cover": np.where(land, 0.2, 6.0),
+    }
+    w = {"grid": g, "layers": layers, "meta": {"level": 5}}
+
+    def build():  # (the zoom straddles the edge of the marine basin)
+        return zoom.build(w, 72.0 - 700 / 111.2, 10.0, size_km=900, res_km=3, iterations=6, log=lambda *a: None)
+
+    z = build()
+    L = z["layers"]
+    ny, nx = L["elevation"].shape
+    xs = (np.arange(nx) + 0.5 - nx / 2) * z["res"]
+    X, Y = np.meshgrid(xs, -xs)
+    own = g.locate(z["frame"].to_sphere(X.ravel(), Y.ravel())).reshape(ny, nx)
+    low = sub[own]
+    h, th, water = L["elevation"], L["ice"], L["water"]
+    assert 0.2 < low.mean() < 0.8
+    assert (water[low] == 0).all(), "no sea on the bed under the ice"
+    assert (th[low] > 0).mean() > 0.95
+    full = 4 * np.pi * R_KM**2 / g.n / z["res"] ** 2
+    cells = [c for c in np.unique(own[low]) if (own == c).sum() > 0.6 * full]
+    assert len(cells) >= 4
+    for c in cells:
+        assert abs(h[own == c].mean() + 500.0) < 15.0, (c, h[own == c].mean())
+    assert (h[low] < -300).mean() > 0.85
+    # the ice surface and the coastline: as on the land view (the bed at 1 m), which the terrain is built on
+    real = zoom.land_world
+    zoom.land_world = lambda world: (real(world)[0], np.zeros(g.n))
+    try:
+        v = build()["layers"]
+    finally:
+        zoom.land_world = real
+    assert (v["elevation"][low] > 0).all()
+    assert np.array_equal(v["water"], water) and np.array_equal(v["ice"] > 0, th > 0)
+    assert np.allclose(v["elevation"] + v["ice"], h + th, atol=0.05)
 
 
 def test_ice_layer_is_thickness(ice_zoom):

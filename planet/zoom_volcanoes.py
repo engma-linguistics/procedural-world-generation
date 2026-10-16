@@ -41,9 +41,15 @@ import numpy as np
 
 from . import zoom_kernels as ZK
 from .geo import R_KM, xyz
-from .tectonics.volcanism import ARC, COLUMNS, DROWNED, REEF, SHORE_MAX
+from .tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, REEF, SHORE_MAX
 
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
+# minor cones along active arcs (arc_infill, PW-116)
+ARC_GAP_KM = 60.0  # km: a volcano about this often along a volcanic front (Java, Sumatra, the Aleutians: 50-70)
+ARC_LINK_KM = 220.0  # km: active arc volcanoes this close are neighbours along the chain
+ARC_LINK_DEG = 110.0  # deg: a second neighbour at least this far round from the first (the chain's other side)
+ARC_OFF_KM = 6.0  # km: the minor cones' scatter off the line between them
+ARC_MINOR = (0.6, 0.95)  # their height, of the lower of the pair (the run's spacing is its coarseness)
 CALDERA_M = (180.0, 120.0)  # depth of an active hotspot shield's caldera, an arc volcano's crater
 LAGOON_M = 35.0  # typical lagoon depth
 MOTU_M = 2.5  # height of the reef islets...
@@ -65,6 +71,60 @@ def table(world: dict) -> list[dict]:
     if not cols or list(cols) != list(COLUMNS):
         return []
     return [dict(zip(cols, r)) for r in meta.get("volcanoes") or [] if len(r) == len(cols)]
+
+
+def arc_infill(V: list[dict], seed: int) -> list[dict]:
+    """Minor cones along active arcs (PW-116). The run keeps one arc volcano
+    per volcano_spacing (120 km) of active arc; real volcanic fronts have one
+    every ~50-70 km (Java, the Aleutians), so the zoom adds cones between
+    neighbouring active arc volcanoes along the chain: each one's nearest
+    active neighbour within ARC_LINK_KM and the nearest on its other side
+    (> ARC_LINK_DEG away), a cone every ~ARC_GAP_KM between them, a little
+    off the line, a little smaller than the pair (ARC_MINOR of the lower:
+    the run's spacing is its coarseness, these stand for volcanoes like
+    its own), young and active, on the floor between them. Planet-fixed:
+    the same in overlapping zooms of one world (and seed)."""
+    idx = [j for j, v in enumerate(V) if v["kind"] == ARC and v["active"] and v["height_m"] >= 20]
+    if len(idx) < 2:
+        return []
+    P = xyz(np.radians([V[j]["lat"] for j in idx]), np.radians([V[j]["lon"] for j in idx]))
+    D = np.arccos(np.clip(P @ P.T, -1, 1)) * R_KM
+    np.fill_diagonal(D, np.inf)
+    edges = set()
+    for a in range(len(idx)):
+        nb = np.flatnonzero(D[a] < ARC_LINK_KM)
+        if not len(nb):
+            continue
+        nb = nb[np.argsort(D[a, nb])]
+        edges.add((min(a, nb[0]), max(a, nb[0])))
+        u0 = P[nb[0]] - P[a]
+        for b in nb[1:]:  # (the nearest on the other side: a chain, not a cluster)
+            u = P[b] - P[a]
+            if u @ u0 < np.cos(np.radians(ARC_LINK_DEG)) * np.linalg.norm(u) * np.linalg.norm(u0):
+                edges.add((min(a, b), max(a, b)))
+                break
+    out = []
+    for a, b in sorted(edges):
+        va, vb = V[idx[a]], V[idx[b]]
+        n = int(round(D[a, b] / ARC_GAP_KM)) - 1
+        if n < 1:
+            continue
+        rs = np.random.default_rng([int(seed), idx[a], idx[b], 116])
+        side = np.cross(P[a], P[b])
+        side /= max(np.linalg.norm(side), 1e-12)
+        for k in range(n):
+            t = (k + 1 + rs.uniform(-0.2, 0.2)) / (n + 1)
+            p = (1 - t) * P[a] + t * P[b] + side * rs.normal(0.0, ARC_OFF_KM) / R_KM
+            p /= np.linalg.norm(p)
+            H = float(round(min(va["height_m"], vb["height_m"]) * rs.uniform(*ARC_MINOR)))
+            f = float(round((1 - t) * va["floor_m"] + t * vb["floor_m"]))
+            r = H / ARC_SLOPE / 1000.0
+            out.append({"lat": float(np.degrees(np.arcsin(np.clip(p[2], -1, 1)))),
+                        "lon": float(np.degrees(np.arctan2(p[1], p[0]))), "kind": ARC,
+                        "age": float(min(va["age"], vb["age"])), "active": 1, "top_m": f + H, "floor_m": f,
+                        "height_m": H, "radius_km": r, "volume_km3": 2 * np.pi * r * r * H / 1000.0,
+                        "reef": 0, "shore_km": 0.0, "minor": True})
+    return out
 
 
 def _shore(kind, H, f):
@@ -106,10 +166,13 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
       pin       young cones' surface, held in the landscape pass (m; nan off them)
       reef      pixels of reef carbonate (rim, lagoon, fringing flat)
       rock      surface.ROCKS id of the volcano under each pixel (0: none)
+      bump_minor  the bump there is a minor arc cone (arc_infill: no volume
+                of its own in the coarse cells; zoom.py takes it off their land)
       list      the volcanoes drawn, for the zoom's stats"""
     V = table(world)
     if not V:
         return None
+    V = V + arc_infill(V, seed)  # (minor cones along the active arcs)
     lat = np.array([v["lat"] for v in V])
     lon = np.array([v["lon"] for v in V])
     P = xyz(np.radians(lat), np.radians(lon))
@@ -123,7 +186,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
     out = dict(province=np.zeros(npx), z=np.full(npx, -np.inf), z_floor=np.zeros(npx), z_abs=np.zeros(npx),
                bump_floor=np.zeros(npx), bump_abs=np.zeros(npx), bump_flat=np.zeros(npx, bool),
                bump=np.full(npx, -np.inf), pin=np.full(npx, np.nan), reef=np.zeros(npx, bool),
-               rock=np.zeros(npx, np.uint8), list=[])
+               rock=np.zeros(npx, np.uint8), bump_minor=np.zeros(npx, bool), list=[])
     S = int(seed) * 1_000_003 + 17
     age_px = np.full(npx, np.inf)  # the age of the edifice drawn at each pixel
     for j, v in enumerate(V):
@@ -209,7 +272,9 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         # sea level matters for reefs and planed tops); toward the edge of
         # its footprint it sits on whatever ground the zoom has there
         # (zoom.py: z + (1 - abs) * (ground - floor)), so it has no step.
-        absw = _smooth(0.85 * reach, 0.35 * reach, rho) if not cont else np.zeros(len(win))
+        # (a minor arc cone's floor is only its neighbours' interpolated: it sits
+        # on the ground, wherever that is, PW-116)
+        absw = _smooth(0.85 * reach, 0.35 * reach, rho) if not (cont or v.get("minor")) else np.zeros(len(win))
         zm = np.where((cone > f + 10) | reefpx, zz, -np.inf)
         key = "z" if prov else "bump"
         # (the highest edifice wins, but a younger caldera sinks into an older
@@ -220,9 +285,11 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         out[key + "_floor"][win] = np.where(better, f, out[key + "_floor"][win])
         out[key + "_abs"][win] = np.where(better, np.maximum(absw, reefpx), out[key + "_abs"][win])
         if not prov:
+            out["bump_minor"][win] = np.where(better, bool(v.get("minor")), out["bump_minor"][win])
+        if not prov:
             out["bump_flat"][win] = np.where(better, cont, out["bump_flat"][win])
         on = zz > f + 30
-        if v["active"] or v["age"] < PIN_MYR:
+        if (v["active"] or v["age"] < PIN_MYR) and not v.get("minor"):
             out["pin"][win] = np.where(on, np.fmax(out["pin"][win], zz), out["pin"][win])
         out["rock"][win] = np.where(on, 2 if arc else 1, out["rock"][win])
         out["reef"][win] |= reefpx
@@ -230,7 +297,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
             out["list"].append({"lat": v["lat"], "lon": v["lon"], "kind": "arc" if arc else "hotspot",
                                 "form": form(v), "active": bool(v["active"]), "age_myr": v["age"], "top_m": v["top_m"],
                                 "height_m": v["height_m"], "x_km": round(float(vx[j]), 1),
-                                "y_km": round(float(vy[j]), 1)})
+                                "y_km": round(float(vy[j]), 1), **({"minor": True} if v.get("minor") else {})})
     if not out["list"] and not np.isfinite(out["z"]).any() and not np.isfinite(out["bump"]).any():
         return None
     # the vents' sea floor, smoothly between them

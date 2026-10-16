@@ -2,7 +2,7 @@
 id: PW-241
 title: "Time zoom from a run's moment: the sheets still thicken and spread onto shelves at first (~-70 m in 15 kyr in a cold era)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: timezoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-190, PW-115]
 refs: [planet/tectonics/earth.py, planet/timezoom.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -28,4 +28,5 @@ shallow shelves as the time zoom's do; or a short spin-up in the time zoom. Each
 little bigger.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Time zoom batch agent started.
 - 2026-10-15: Created from inbox draft draft-timezoom-start-drift.md (found by icemb).

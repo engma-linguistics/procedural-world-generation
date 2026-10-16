@@ -80,6 +80,43 @@ def test_zoom_cones_are_separate_islands():
     assert f["list"][0]["form"] == "atoll"
 
 
+def test_zoom_fills_active_arcs_with_minor_cones():
+    """PW-116: the run keeps one arc volcano per ~120 km of active arc; the
+    zoom adds minor cones between neighbours along the chain, so a volcanic
+    front has one every ~50-70 km: on the line, lower than the pair, not to
+    a volcano 300 km off the chain nor between extinct ones."""
+    lon_of = lambda x_km: float(np.degrees(x_km / R_KM))
+    lat_of = lon_of
+    arc = lambda x, y=0.0, active=1, H=2500: [lat_of(y), lon_of(x), V.ARC, 1.0 if active else 15.0, active, H - 500,
+                                             -500, H, H / V.ARC_SLOPE / 1000, 1000, 0, 0.0]
+    rows = [arc(x) for x in (-195, -65, 65, 195)] + [arc(0, 300)] + [arc(x, -150, active=0) for x in (-60, 60)]
+    w = _flat_sea_world(rows)
+    tab = ZV.table(w)
+    minor = ZV.arc_infill(tab, 1)
+    assert len(minor) == 3  # (one in each 130 km gap of the chain, none to the far or the extinct ones)
+    for m in minor:
+        y = np.radians(m["lat"]) * R_KM
+        assert abs(y) < 25 and m["active"] and m["kind"] == V.ARC
+        assert 0.55 * 2500 <= m["height_m"] <= 0.95 * 2500 and m["floor_m"] == -500
+    xs_ = sorted(np.radians(m["lon"]) * R_KM for m in minor)
+    assert all(abs(a - b) < 30 for a, b in zip(xs_, (-130, 0, 130)))
+    # drawn as cones in the zoom, and listed
+    fr = zoom.Frame(0.0, 0.0)
+    n, res = 300, 2.0
+    xs = (np.arange(n) + 0.5 - n / 2) * res
+    X, Y = np.meshgrid(xs, -xs)
+    px, py = X.ravel(), Y.ravel()
+    Pk = np.ascontiguousarray(fr.to_sphere(px, py) * R_KM)
+    f = ZV.fields(w, fr, px, py, res, 55.0, Pk, 1, n * res)
+    assert sum(1 for v in f["list"] if v.get("minor")) == 3
+    for m in minor:
+        k = int(np.argmin(np.hypot(px - np.radians(m["lon"]) * R_KM, py - np.radians(m["lat"]) * R_KM)))
+        assert f["bump"][k] > m["floor_m"] + 0.5 * m["height_m"]
+        # (on the ground, not its interpolated floor; not held through the landscape pass;
+        # flagged, so zoom.py takes its volume off its cells' other land)
+        assert f["bump_minor"][k] and f["bump_abs"][k] == 0 and not np.isfinite(f["pin"][k])
+
+
 def test_continental_vent_is_a_caldera_on_a_lava_plain():
     """A hotspot vent on a continent (floor 800 m) is drawn as a broad lava
     plain with a caldera (rim above a sunk floor) rather than a shield,
