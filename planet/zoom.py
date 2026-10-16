@@ -153,7 +153,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, hydrology, icemass, kernels
+from . import climate, coast, icemass, kernels
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -167,6 +167,7 @@ from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
 from .surface import ROCK_K
+from .tectonics.isostasy import land_view
 
 SEC_PER_YR = 3.156e7
 KM2_M_PER_YR_TO_M3S = 1e6 / SEC_PER_YR  # discharge unit used internally -> m^3/s
@@ -194,6 +195,11 @@ def creep_kd(res: float) -> float:
 
 
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+# m: the plain (a few metres up to coast.PLAIN_Z0 + PLAIN_RISE ~11 m at its
+# edge) lies where the coarse ground is this low, fading out above (PW-349:
+# 250-800 m before, so it flattened cells standing 130-480 m to a few metres
+# and left river-mouth zooms ~25 m low inland: a lowland the world doesn't have)
+DELTA_PLAIN_GROUND = (30.0, 250.0)
 FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
@@ -319,7 +325,10 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
     have many). Best first by power (discharge x height), at least sep_km
     (and 3 px) apart, the first `top` (None: all), none within WF_EDGE_PX of
     the edge. Each: px (row, col), height_m, length_km, discharge_m3s,
-    power_gw, top_m, bottom_m, from_lake; _foot: the pixel below it."""
+    power_gw, top_m, bottom_m, from_lake; _foot: the pixel the drop is
+    measured to, the fall's foot (its plunge pool goes there: on a fall
+    over several pixels the one below the top has little of the drop
+    above it, PW-341)."""
     n = nx * ny
     lvl, d0 = ws.astype(float).copy(), np.zeros(n)
     for o, v in (starts or {}).items():
@@ -394,7 +403,7 @@ def waterfalls(ws: np.ndarray, q: np.ndarray, rec: np.ndarray, nx: int, ny: int,
         out.append({"px": [r0, c0], "height_m": round(float(h[k]), 1), "length_km": round(float(d[k]), 1),
                     "discharge_m3s": round(float(q[i[k]]), 1), "power_gw": round(float(gw[k]), 3),
                     "top_m": round(float(lvl[i[k]]), 1), "bottom_m": round(float(ws[jj[k]]), 1),
-                    "from_lake": bool(d0[i[k]] > 0), "_foot": int(rec[i[k]])})
+                    "from_lake": bool(d0[i[k]] > 0), "_foot": int(jj[k])})
         if top is not None and len(out) >= top:
             break
     return out
@@ -654,7 +663,8 @@ def coarse_lakes(g, L: dict, elev: np.ndarray):
     overflows into (the biggest one, if the flood found several)."""
     n = g.n
     lake = np.asarray(L.get("lake", np.zeros(n))).astype(bool)
-    level = hydrology.priority_flood(g, elev)[0]
+    e = np.asarray(elev, float)
+    level = kernels.flood_fill(e, e <= 0, g.nbr_off, g.nbr_idx, 0.01)  # (priority_flood's filled surface alone)
     if "lake_level" in L:
         lv = np.asarray(L["lake_level"], float)
         ok = np.isfinite(lv) & (lv > elev + 0.5)
@@ -916,6 +926,11 @@ GL_F_MAX = 3e9  # m3/yr: at most this enters one tongue (Bering, Malaspina: a fe
 GL_MAX_KM = 100.0  # km: no tongue runs further below its zone (Pio XI ~64 km, Bering ~190 km in all)
 GL_DRAW = 0.5  # a tongue narrower than this many pixels isn't drawn
 GL_H0, GL_H_EXP = 250.0, 0.25  # m: valley ice thickness ~ H0 x (flux / F0)^H_EXP
+# ... and no thicker than Nye's plastic snout, H = sqrt(L x) at x m from the
+# terminus on land, L = 2 tau / (rho g) with a yield stress tau ~100 kPa
+# (H ~150 m 1 km back, ~330 m 5 km back): a tongue thins to its end instead of
+# stopping in an ice cliff (PW-350; calving fronts in water keep their height)
+GL_NYE_M = 2 * 1.0e5 / (917.0 * 9.81)  # m (~22)
 GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 
 
@@ -970,29 +985,60 @@ def glaciers(h, rec, order, land, stop, nx: int, ny: int, res: float, warm_sl, c
     for r in range(1, int(min(half.max(), 4.0)) + 1):
         ice |= _dilate(half >= r + 0.5, r).ravel() & land & ~stop
     th = np.clip(GL_H0 * (np.maximum(flux, 1.0) / GL_F0) ** GL_H_EXP, 20.0, ICE_MAX)
-    th = np.where(zone, np.maximum(th, ice_c), th)
+    # the snout (a tongue's, or the zone's where its outflow is too narrow to
+    # draw): Nye's profile, the mean of sqrt(L x) over each pixel's span along the flow
+    flow = zone | tongue
+    x = ZK.snout_distance(rec, order, flow, land & ~stop & ~flow, nx, res)
+    fin = np.isfinite(x)
+    a, b = 1000 * np.maximum(x[fin] - 0.5 * res, 0.0), 1000 * (x[fin] + 0.5 * res)
+    nye = np.full(len(th), np.inf)
+    nye[fin] = 2 / 3 * np.sqrt(GL_NYE_M) * (b**1.5 - a**1.5) / (b - a)
+    th = np.minimum(th, nye)
+    th = np.where(zone, np.maximum(th, ice_c), th)  # (the coarse sheet's ice is the world's)
     th = np.where(ice & ~zone & ~tongue, _spread(th, tongue, nx, ny), th)
     return ice, np.where(ice, th, 0.0)
 
 
 def _spread(v: np.ndarray, m: np.ndarray, nx: int, ny: int) -> np.ndarray:
-    """v carried a few pixels out from the pixels m (their max nearby)."""
-    a = np.where(m, v, 0.0).reshape(ny, nx)
-    out = a.copy()
+    """v carried a few pixels out from the pixels m: each pixel takes its
+    nearest (the max of the equally near; a tongue's sides take the
+    tongue's thickness beside them, so a thinned snout stays thin)."""
+    out = np.where(m, v, 0.0).reshape(ny, nx)
     for _ in range(4):
         b = out.copy()
         for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             b = np.maximum(b, _shift(out, dy, dx, 0.0))
-        out = b
+        out = np.where(out > 0, out, b)
     return out.ravel()
 
 
 # ---------------------------------------------------------------------------
 # The refinement
 # ---------------------------------------------------------------------------
+def zoom_world(world: dict) -> dict:
+    """The world as the zoom builds on it. Worlds store the true bed, and a
+    bed below the sea under grounded ice is land (geo.is_land, PW-307); the
+    zoom's pixels are land where their ground is above the sea, so it takes
+    such a cell's bed at 1 m with its ice thinned to keep the surface
+    (isostasy.land_view): the coastline and the ice surface are the world's,
+    the bed under that ice is not drawn below the sea."""
+    L = world["layers"]
+    if "ice" not in L:
+        return world
+    e, ice, low = land_view(L["elevation"], L["ice"])
+    if not low.any():
+        return world
+    e = e.astype(np.asarray(L["elevation"]).dtype)
+    out = {**L, "elevation": e, "ice": ice}
+    if "lake_level" in L:  # (no lake under the ice: its level is the ground's)
+        out["lake_level"] = np.where(low, e, L["lake_level"])
+    return {**world, "layers": out}
+
+
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
           seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print) -> dict:
     t0 = time.time()
+    world = zoom_world(world)
     g, L = world["grid"], world["layers"]
     sp = g.spacing * R_KM  # coarse cell spacing, km
     cell_area = 4 * np.pi * R_KM**2 / g.n
@@ -1091,7 +1137,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     deltas = _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area)
     wD, zD, wS, zS, wC, lobe, cut, smooth_c, wR_f, wW_f = (np.zeros(npx) for _ in range(10))
     keep = np.full(npx, -9.0)
-    hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
+    hf = 1 - smoothstep(*DELTA_PLAIN_GROUND, e_land)  # a plain only on low coarse ground
     # ... and no prodelta over deep water: a delta builds out over its shelf
     # (a ~300 km plain's prodelta must not fill the trench off it)
     shelf_f = smoothstep(-1000.0, -200.0, e_sea)
@@ -1231,6 +1277,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         det = taper * amp_land * detail
         h = np.where(land, (1 - wD) * h + wD * (zD + det), (1 - wS) * h + wS * np.maximum(h, zS))
         h = clamp(h)
+        # what the plain took off an inland cell's mean goes back on its land
+        # beyond the plain (PW-349; a coastal cell's mean is left to the
+        # delta, whose lobe and channels move its coast; the correction fades
+        # out towards the coast, so it needs no clamp: clamp() isn't idempotent)
+        f_r = np.where(land, smoothstep(0.0, 0.3, ind_n), 0.0) * (1 - wD)
+        for _ in range(MEAN_PASSES):
+            m, cnt = cell_means(h)
+            ok = cnt > 0.25 * full_px
+            resid = np.where(ok & interior_c, e_c - m, 0.0)
+            if not resid.any():
+                break
+            corr, _ = ZK.gauss_interp(px, py, cx, cy, resid[:, None], ok[:, None].astype(float), 0.5 * sp)
+            h = h + f_r * np.nan_to_num(corr[:, 0])
+        h = np.where(land, np.maximum(h, 0.5), h)
     # --- volcanoes (zoom_volcanoes): each one its own cone -----------------
     vf = ZV.fields(world, fr, px, py, res, sp, Pk, seed, size_km)
     vtarget = np.full(npx, np.nan)  # the volcanoes' surface, for the landscape pass
@@ -2485,17 +2545,21 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         st["lip_px"], st["height_m"] = list(divmod(lip, nx)), round(hgt, 1)
         if hgt < KP_MIN_STEP or not active[foot]:
             continue
+        # the listed fall over this lip, if any: the pool goes at its foot,
+        # where its drop ends (below most of a fall over several pixels, PW-341)
+        r0, c0 = divmod(lip, nx)
+        f = next((f for f in falls if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3 and "kind" not in f),
+                 None)
+        if f is not None and active[f["_foot"]]:
+            foot, hgt = f["_foot"], max(hgt, f["height_m"])
         # plunge pools are roughly as deep as the fall is high, up to ~60 m (Niagara ~50 m below a 51 m fall)
         pool[foot] = max(pool[foot], float(np.clip(0.6 * hgt, 3.0, 60.0)))
-        r0, c0 = divmod(lip, nx)
-        for f in falls:
-            if max(abs(f["px"][0] - r0), abs(f["px"][1] - c0)) <= 3 and "kind" not in f:
-                f.update({"kind": "lip", "gorge_km": round(float(st["gorge_km"]), 1),
-                          "lip_resistance": round(kp["resistance"], 2),
-                          "coarse_reach_drop_m": round(kp["excess_m"] + KP_GRADED * kp["reach_km"]),
-                          "coarse_reach_km": round(kp["reach_km"]), "plunge_pool_m": round(float(pool[foot]), 1),
-                          "_kp": kps.index(kp)})
-                break
+        if f is not None:
+            f.update({"kind": "lip", "gorge_km": round(float(st["gorge_km"]), 1),
+                      "lip_resistance": round(kp["resistance"], 2),
+                      "coarse_reach_drop_m": round(kp["excess_m"] + KP_GRADED * kp["reach_km"]),
+                      "coarse_reach_km": round(kp["reach_km"]), "plunge_pool_m": round(float(pool[foot]), 1),
+                      "_kp": kps.index(kp)})
     # falls over a landform's cliffs (a scarp, a bench, a fault scarp): their
     # own kind, and a plunge pool at the foot
     dom = lf.dominant() if lf is not None else np.zeros(npx, int)
@@ -3044,7 +3108,7 @@ def add_satellite(ref: str | Path) -> Path:
     (zoom_vegetation.fractions, ~5 s)."""
     d = S.find_zoom(ref)
     meta, lay = load(d, decode=True)
-    world = W.load(find_world(meta["source_world"]["id"]))
+    world = zoom_world(W.load(find_world(meta["source_world"]["id"])))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
     xs = (np.arange(nx) + 0.5 - nx / 2) * res

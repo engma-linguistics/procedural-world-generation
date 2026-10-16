@@ -70,7 +70,11 @@ def test_no_ice_on_the_warm_floor(ice_zoom):
     # ice, but for the snout of a big tongue down a deep valley (since PW-298's
     # slope fit the massif stands at its cells' mean heights, ~1.5 km higher
     # than the old fit left it in 6 iterations, and its cap feeds 3 km^3/yr
-    # tongues: one ends at ~870 m, 0.3% of the ice)
+    # tongues: one ends at ~870 m, 0.3% of the ice). PW-350 thinned their
+    # snouts (364-573 m -> ~210 m on the last 3 km pixel) but not their reach:
+    # they end at GL_MAX_KM still carrying ~2.8 km^3/yr against -20..-30 m/yr
+    # of melt, fed along the cap's margin for most of their run (as big
+    # maritime outlets do: Franz Josef ends in rainforest), so they stay.
     assert (ice & (summer > 12)).sum() < 0.005 * ice.sum(), "no ice on ground with 12 C+ summers"
     # (with 1.8 m of rain a year, snow outlasts summers of up to ~5 C on bare
     # ground, give or take the noise: a maritime snowline, PW-159); below that,
@@ -96,6 +100,41 @@ def test_snowline_follows_snowfall(ice_zoom):
     wet, dry = line(ice_zoom["layers"]), line(_zoom(300.0)["layers"])
     assert 2.0 < wet < 7.0
     assert dry < wet - 2.0
+
+
+@pytest.mark.parametrize("res", [0.5, 1.0, 3.0])
+def test_ice_thins_to_its_end_on_land(monkeypatch, res):
+    """PW-350: where a glacier ends on land it thins to its edge along Nye's
+    plastic profile, H = sqrt(L x), instead of stopping at its full
+    thickness (an ice cliff: 364-573 m on the massif above). A wet, cold
+    mountainside down to a valley; its outflow is cut by the run cap
+    (GL_MAX_KM, set to 8 km) with most of its flux left, the case that made
+    the cliffs (at 3 km the zone's own edge, its outflow too narrow to draw).
+    The last pixel holds the profile's mean over its length (~100 m at
+    1 km, ~170 m at 3 km), the ice ~3 km back far more."""
+    from planet import zoom_kernels as ZK
+    monkeypatch.setattr(zoom, "GL_MAX_KM", 8.0)
+    n = int(round(120 / res))
+    yy, xx = np.mgrid[0:n, 0:n] * res  # km; row 0 the top of the slope
+    h = (4000.0 - 30.0 * yy + 8.0 * np.abs(xx - 60.0)).ravel()
+    land, stop = np.ones(n * n, bool), np.zeros(n * n, bool)
+    outlet = np.zeros(n * n, bool)
+    outlet[-n:] = True
+    _, rec, order = ZK.flood_d8(h, outlet, n, n, 1e-3, np.zeros(n * n))
+    f = np.ones(n * n)
+    ice, th = zoom.glaciers(h, rec, order, land, stop, n, n, res, WARM_SL * f, (WARM_SL - 12) * f, 0 * f,
+                            3000.0 * f, 0.5 * f, 0 * f, 45.0 * f, 0 * f)
+    r = np.maximum(rec, 0)
+    ends = np.flatnonzero(ice & ~ice[r])
+    assert len(ends) >= 10
+    for s in ends:
+        step = res * (1.4142 if (rec[s] % n != s % n and rec[s] // n != s // n) else 1.0)
+        a, b = 1000 * max(0.5 * step - 0.5 * res, 0), 1000 * (0.5 * step + 0.5 * res)
+        assert th[s] <= 2 / 3 * np.sqrt(zoom.GL_NYE_M) * (b**1.5 - a**1.5) / (b - a) + 1, th[s]
+    # the main valley's ice ~3 km back from its end: as thick as sqrt(L x) allows, or the flux makes it
+    s = ends[np.argmin(h[ends])]
+    back = [i for i in np.flatnonzero(ice) if s in ZK.chain(rec, i)[:int(np.ceil(3 / res)) + 1]]
+    assert th[max(back, key=lambda i: h[i])] > 1.6 * th[s]
 
 
 def test_ice_layer_is_thickness(ice_zoom):

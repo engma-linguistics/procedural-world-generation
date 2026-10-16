@@ -32,9 +32,11 @@ def _tree(chunks, rank, level=0):
     return out + struct.pack("<II", 0, 0) + b"\0" * 8 * (rank + 1)  # final key
 
 
-def build(arrays, two_level=False):
-    """arrays: {name: (ndarray, chunk shape, filter ids)} -> bytes of a superblock-v3 file."""
-    buf = bytearray(48)  # superblock, filled in last
+def build(arrays, two_level=False, old=False):
+    """arrays: {name: (ndarray, chunk shape, filter ids)} -> bytes of a superblock-v3 file.
+    old: as older netCDF-4 libraries write them (NOAA PSL's files): a version 0 superblock,
+    version 1 dataspaces and filter pipelines; a chunk shape of None stores the array contiguous."""
+    buf = bytearray(96 if old else 48)  # superblock, filled in last
 
     def put(b):
         buf.extend(b)
@@ -43,6 +45,16 @@ def build(arrays, two_level=False):
     links = []
     for name, (a, cdims, filt) in arrays.items():
         size = a.dtype.itemsize
+        rank = a.ndim
+        head = {"f": b"\x11\x20", "u": b"\x10\x00", "i": b"\x10\x08"}[a.dtype.kind]
+        space = (bytes([1, rank, 0, 0]) + b"\0" * 4 if old else bytes([2, rank, 0, 1])) \
+            + struct.pack("<" + "Q" * rank, *a.shape)
+        dtype_msg = _msg(3, head + b"\0\0" + struct.pack("<I", size) + b"\0" * 12)
+        if cdims is None:
+            addr = put(a.tobytes())
+            msgs = [_msg(1, space), dtype_msg, _msg(8, bytes([3, 1]) + struct.pack("<QQ", addr, a.nbytes))]
+            links.append((name, put(_ohdr(msgs))))
+            continue
         placed = []
         for idx in np.ndindex(*[-(-s // c) for s, c in zip(a.shape, cdims)]):
             offs = tuple(i * c for i, c in zip(idx, cdims))
@@ -55,28 +67,35 @@ def build(arrays, two_level=False):
             if 1 in filt:
                 raw = zlib.compress(raw)
             placed.append((offs, put(raw), len(raw)))
-        rank = a.ndim
         if two_level and len(placed) > 1:
             h = len(placed) // 2
             kids = [(g[0][0], put(_tree(g, rank)), 0) for g in (placed[:h], placed[h:])]
             btree = put(_tree(kids, rank, level=1))
         else:
             btree = put(_tree(placed, rank))
-        head = {"f": b"\x11\x20", "u": b"\x10\x00", "i": b"\x10\x08"}[a.dtype.kind]
-        pipe = b"".join(struct.pack("<HHH", f, 0, 1 if f == 1 else 0) + (b"\x06\0\0\0" if f == 1 else b"")
-                        for f in filt)
+        if old:  # v1: every filter has a name field (empty here) and its client data padded to 8 bytes
+            pipe = b"".join(struct.pack("<HHHH", f, 0, 0, 1 if f == 1 else 0)
+                            + (b"\x06\0\0\0" + b"\0" * 4 if f == 1 else b"") for f in filt)
+            pipe = bytes([1, len(filt)]) + b"\0" * 6 + pipe
+        else:
+            pipe = bytes([2, len(filt)]) + b"".join(struct.pack("<HHH", f, 0, 1 if f == 1 else 0)
+                                                    + (b"\x06\0\0\0" if f == 1 else b"") for f in filt)
         msgs = [
-            _msg(1, bytes([2, rank, 0, 1]) + struct.pack("<" + "Q" * rank, *a.shape)),
-            _msg(3, head + b"\0\0" + struct.pack("<I", size) + b"\0" * 12),
+            _msg(1, space), dtype_msg,
             _msg(8, bytes([3, 2, rank + 1]) + struct.pack("<Q", btree)
                  + struct.pack("<" + "I" * (rank + 1), *cdims, size)),
         ]
         if filt:
-            msgs.append(_msg(11, bytes([2, len(filt)]) + pipe))
+            msgs.append(_msg(11, pipe))
         links.append((name, put(_ohdr(msgs))))
     link_msgs = [_msg(6, bytes([1, 0, len(n)]) + n.encode() + struct.pack("<Q", addr)) for n, addr in links]
     root = put(_ohdr(link_msgs))
-    sb = b"\x89HDF\r\n\x1a\n" + bytes([3, 8, 8, 0]) + struct.pack("<QQQQ", 0, 2**64 - 1, len(buf), root)
+    if old:
+        sb = (b"\x89HDF\r\n\x1a\n" + bytes([0, 0, 0, 0, 0, 8, 8, 0]) + struct.pack("<HHI", 4, 16, 0)
+              + struct.pack("<QQQQ", 0, 2**64 - 1, len(buf), 2**64 - 1) + struct.pack("<QQII", 0, root, 0, 0)
+              + b"\0" * 16)
+    else:
+        sb = b"\x89HDF\r\n\x1a\n" + bytes([3, 8, 8, 0]) + struct.pack("<QQQQ", 0, 2**64 - 1, len(buf), root)
     buf[:len(sb)] = sb
     return bytes(buf)
 
@@ -122,3 +141,17 @@ def test_rejects_unsupported(data):
         variables(BytesSource(b"not hdf5" + f[8:]))
     with pytest.raises(KeyError):
         read_variable(BytesSource(f), "missing")
+
+
+def test_old_layout(data):
+    """Superblock v0, v1 dataspaces and filter pipelines, contiguous arrays (NOAA PSL's netCDF-4)."""
+    f = build({
+        "temp": (data["temp"], (2, 4), [2, 1]),
+        "ice": (data["ice"], (2, 2), [1]),
+        "lat": (data["lat"], None, []),  # contiguous
+    }, old=True)
+    src = BytesSource(f)
+    assert variables(src) == ["ice", "lat", "temp"]
+    for k in data:
+        got = read_variable(src, k)
+        assert got.dtype == data[k].dtype and np.array_equal(got, data[k])

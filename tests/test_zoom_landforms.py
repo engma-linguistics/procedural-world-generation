@@ -399,6 +399,25 @@ def test_landform_falls_are_listed_with_pools(esc_pair):
     assert all("plunge_pool_m" in f for f in scarp)
 
 
+def test_plunge_pool_lies_below_the_whole_fall(esc_pair):
+    """PW-341: a fall over several pixels has its plunge pool at its foot,
+    where its drop ends, not on the pixel below its top (where it hung with
+    most of the drop below it)."""
+    _, esc = esc_pair
+    L, nx = esc["layers"], esc["nx"]
+    ws = (L["elevation"] + L["lake_depth"]).ravel().astype(float)
+    pool = ((L["water"] == 2) & (L["lake_depth"] > 0)).ravel()
+    pooled = [f for f in esc["stats"]["falls"] if f.get("plunge_pool_m")]
+    long_ = [f for f in pooled if f["length_km"] > 1.5 * esc["res"]]
+    assert long_, [(f["height_m"], f["length_km"]) for f in pooled]
+    for f in pooled:
+        p = f["px"][0] * nx + f["px"][1]
+        ch = zoom.ZK.chain(esc["rec"], p)[1:6]
+        at = [c for c in ch if pool[c]]
+        assert at, f
+        assert ws[p] - ws[at[0]] >= 0.9 * f["height_m"], (f, ws[p] - ws[at[0]])
+
+
 # ---------------------------------------------------------------------------
 # PW-148: bench levels from the whole zone; PW-167: basin lakes by water balance
 # ---------------------------------------------------------------------------

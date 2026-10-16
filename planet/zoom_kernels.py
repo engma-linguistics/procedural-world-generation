@@ -610,3 +610,27 @@ def glacier_flow(rec, order, bal, acc, stop, nx, res, w0, f0, w_exp, f_max, max_
             fbest[d] = f
             run_in[d] = run[i] + step
     return flux, wid, run
+
+
+@njit(cache=True)
+def snout_distance(rec, order, ice, ends, nx, res):
+    """Distance (km) from each ice pixel's centre down its receivers to
+    where the ice ends: half a step past its last ice pixel, if that ends
+    on open ground (ends[receiver]). inf where it doesn't (it ends in
+    water or at the edge: a calving front, or ice going on out of the
+    region), and off the ice. order runs outlet -> headwater."""
+    n = rec.shape[0]
+    x = np.full(n, np.inf)
+    for t in range(order.shape[0]):
+        i = order[t]
+        if not ice[i]:
+            continue
+        d = rec[i]
+        if d < 0:
+            continue
+        step = res * (1.4142135623730951 if (d % nx != i % nx and d // nx != i // nx) else 1.0)
+        if ice[d]:
+            x[i] = x[d] + step
+        elif ends[d]:
+            x[i] = 0.5 * step
+    return x

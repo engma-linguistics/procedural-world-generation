@@ -28,6 +28,7 @@ import numpy as np
 from numba import njit
 
 from . import kernels
+from .geo import is_land
 from .grid import Grid
 
 
@@ -50,24 +51,29 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
     routing, every pit spilling). What it removes isn't deposited: a
     display pass for sub-cell valleys on a keyframe that has already put
     its sediment where it goes (PW-281: routing it filled the keyframe's
-    hollows and built deltas). Returns new elevation."""
+    hollows and built deltas). ice: grounded land ice; a bed below the sea
+    under it is land (geo.is_land, PW-307), and its water runs over the
+    ice's surface there (the routing takes heights <= 0 for the sea).
+    Returns new elevation."""
     h = elev.astype(float).copy()
     # finer cells -> more upstream cells; (tuned on rain: runoff is ~40% of
     # it, so 1/sqrt(0.4) keeps the cutting the same on average)
     k = 0.018 * 1.6 * strength * 2 ** (grid.level - 5)
     from .surface import _relief
-    iced = (h > 0) & (ice > 0) if ice is not None else None
+    iced = ice > 0 if ice is not None else None
+    below = iced & (h <= 0) if ice is not None else np.zeros(len(h), bool)  # (no cutting or creep moves these)
     lk = None
     for it in range(iterations):
-        land = h > 0
+        land = is_land(h, ice)
+        hr = np.where(below, h + (ice if ice is not None else 0.0), h)  # what the water runs over
         if lake_every and it % lake_every == 0:
-            lk = lakes(grid, h, c["runoff"], c["aet"], c["lake_evap"], iced)
+            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced)
         if lk is None:
-            _, down, order = priority_flood(grid, h)
+            _, down, order = priority_flood(grid, hr)
             flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
         else:
-            lk["bed"] = np.where(lk["wet"], lk["bed"], h)
-            flow, down, order, _ = route(grid, h, lk)
+            lk["bed"] = np.where(lk["wet"], lk["bed"], hr)
+            flow, down, order, _ = route(grid, hr, lk)
         kernels.stream_power(h, down, order, np.where(land, k * np.sqrt(np.maximum(flow, 0)), 0.0))
         # Hillslope creep, as the run's (surface.erode): land wears down toward
         # its lower neighbours; it only lowers ground, so hollows aren't filled
@@ -331,10 +337,13 @@ def rivers_and_lakes(grid: Grid, elev: np.ndarray, c: dict, ice: np.ndarray | No
     basin's rim is often a divide inside a cell, or its floor too flat for
     ~100 km cells to hold. Generated worlds have none: their closed basins
     are their own hollows.
+    ice: grounded land ice (its surface above the sea, isostasy.grounded);
+    a bed below the sea under it is land (geo.is_land, PW-307), so its
+    water runs on over the ice and doesn't end there as at a coast.
     Returns (flow, downstream, lakes dict); the dict also has 'endorheic':
     land that drains to a closed basin rather than the sea, and 'order':
     the cells from the outlets up (route's)."""
-    land = elev > 0
+    land = is_land(elev, ice)
     iced = land & (ice > 0) if ice is not None else np.zeros(grid.n, bool)
     surf = elev + np.where(iced, ice, 0.0) if ice is not None else elev
     if closed is not None:

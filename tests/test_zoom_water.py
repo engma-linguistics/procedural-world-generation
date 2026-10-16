@@ -20,7 +20,11 @@ def _dist_km(g, lat, lon):
 def water_world():
     g = build_grid(5)
     d0 = _dist_km(g, 0.0, 0.0)
-    elev = np.where(d0 < 2500, 60 + 0.3 * (2500 - d0), -3000.0)
+    # (with a coastal lowland ~250 km wide, 8-30 m, where the big river's
+    # delta plain can lie: the zoom builds one only on low coarse ground, PW-349)
+    x = 2500 - d0  # km inland
+    s = zoom.smoothstep(150.0, 450.0, x)
+    elev = np.where(d0 < 2500, (1 - s) * (8 + 0.05 * x) + s * (60 + 0.3 * x), -3000.0)
     elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
     precip = np.full(g.n, 1200.0)
     # wet enough that the basin overflows: an open lake
@@ -205,6 +209,46 @@ def test_delta_plain_and_distributaries(water_world):
     near = np.hypot(X - dl["mouth_km"][0], Y - dl["mouth_km"][1]) < dl["plain_radius_km"]
     assert z["stats"]["distributary_splits"] >= 1
     assert (coast & near & (q > 0.1 * q[near].max())).sum() >= 2
+
+
+def test_no_delta_plain_on_high_ground():
+    """PW-349: a big river reaching the sea down a coast whose coarse
+    ground stands ~300 m and more gets no delta plain flattened to a few
+    metres there (it was laid on ground up to 800 m high, and left
+    river-mouth zooms ~25 m low inland); the inland cells keep their means."""
+    g = build_grid(5)
+    d0 = _dist_km(g, 0.0, 0.0)
+    elev = np.where(d0 < 2500, 300 + 0.3 * (2500 - d0), -3000.0)
+    precip = np.full(g.n, 1200.0)
+    c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
+    flow, down, lk = hydrology.rivers_and_lakes(g, elev, c, channel=0.0)
+    layers = {
+        "elevation": np.round(elev), "precipitation": precip, "temperature": np.full(g.n, 22.0),
+        "warm_month": np.full(g.n, 26.0), "flow": flow, "downstream": down, "lake": lk["wet"].astype(int),
+        "runoff": c["runoff"], "rock": np.zeros(g.n, int), "surface_rock": np.zeros(g.n, int),
+        "climate": np.full(g.n, 2), "ice": np.zeros(g.n), "sediment_cover": np.where(elev > 0, 0.5, 6.0),
+    }
+    mouths = np.flatnonzero((elev > 0) & (down >= 0))
+    mouths = mouths[elev[down[mouths]] <= 0]
+    i = mouths[np.argmax(flow[mouths])]
+    p = g.centers[i] + g.centers[down[i]]
+    lat, lon = np.degrees(np.arcsin(p[2] / np.linalg.norm(p))), np.degrees(np.arctan2(p[1], p[0]))
+    z = zoom.build({"grid": g, "layers": layers, "meta": {"level": 5}}, float(lat), float(lon), size_km=1600,
+                   res_km=8, iterations=6, log=lambda *a: None)
+    st = z["stats"]
+    assert st["deltas"] and st["deltas"][0]["discharge_m3s"] >= 5 * zoom.DELTA_MIN_Q
+    dl = st["deltas"][0]
+    n = z["nx"]
+    xs = (np.arange(n) + 0.5 - n / 2) * z["res"]
+    X, Y = np.meshgrid(xs, -xs)
+    # inland of the mouth, 0.2-0.5 of the plain's radius up the river (not the coast either side)
+    R, u = dl["plain_radius_km"], np.array(dl["seaward"])
+    dx, dy = X - dl["mouth_km"][0], Y - dl["mouth_km"][1]
+    a, b = dx * u[0] + dy * u[1], dx * -u[1] + dy * u[0]
+    land = (z["layers"]["water"] == 0) & (a < -0.2 * R) & (a > -0.5 * R) & (np.abs(b) < 0.3 * R)
+    assert land.sum() > 50
+    assert np.median(z["layers"]["elevation"][land]) > 150
+    assert abs(st["inland_cell_mean_bias_m"]) < 10, st["inland_cell_mean_bias_m"]
 
 
 def test_waterfalls_on_a_staircase():
@@ -469,6 +513,20 @@ def test_outflow_grad_follows_the_coarse_relief(water_world):
     assert gr[k] >= (lvl[k] - max(elev[n], 0)) / s - 1e-9
     gr3 = zoom.outflow_grad(g, 3 * elev, down, lab, 3 * lvl, ex, 500.0)
     assert np.allclose(gr3, 3 * gr)
+
+
+def test_coarse_lake_levels_are_the_priority_flood_spill(water_world):
+    """PW-343: without a lake_level layer the levels are the pit-filled
+    surface (kernels.flood_fill, priority_flood's filled surface alone),
+    for integer heights too."""
+    from planet import hydrology
+    g, L = water_world["grid"], dict(water_world["layers"])
+    L.pop("lake_level", None)
+    for elev in (L["elevation"].astype(float), np.round(L["elevation"]).astype(np.int64)):
+        lab, lvl, _ = zoom.coarse_lakes(g, L, elev)
+        want = hydrology.priority_flood(g, elev)[0]
+        assert len(lvl)
+        assert all(lvl[k] == np.median(want[lab == k]) for k in range(len(lvl)))
 
 
 def test_staircase_fits_the_valley():

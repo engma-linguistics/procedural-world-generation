@@ -52,6 +52,18 @@ def test_steep_pixels_thinner_floodplains_alluvium():
     assert SO.zoom_slope(0.2, 0.5) < SO.zoom_slope(0.2, 2.0)
 
 
+def test_zoom_slope_scales_by_resolution():
+    """PW-345: the conversion is PX_SLOPE at 2 km, self-affine (x (2 / res)^0.6)
+    finer, and slower above 2 km ((2 / res)^0.3: a 4 km pixel is the mean
+    of finer terrain over it, PW-125), continuous at 2 km."""
+    s2 = SO.zoom_slope(0.1, 2.0)
+    assert np.isclose(s2, 0.1 * 1000 / SO.PX_SLOPE)
+    assert np.isclose(SO.zoom_slope(0.1, 0.5) / s2, 4.0 ** -SO.PX_SLOPE_EXP)
+    assert np.isclose(SO.zoom_slope(0.1, 4.0) / s2, 2.0 ** SO.PX_SLOPE_EXP_COARSE)
+    assert np.isclose(SO.zoom_slope(0.1, 2.0001), s2, rtol=1e-4) and np.isclose(SO.zoom_slope(0.1, 1.9999), s2, rtol=1e-4)
+    assert SO.PX_SLOPE_EXP_COARSE < SO.PX_SLOPE_EXP
+
+
 def test_glacier_forefield_is_young():
     m = _pixels(2, ice_km=np.array([1.0, 50.0]), temp=np.full(2, 4.0))
     assert m["age_cap"][0] <= SO.FOREFIELD_MYR * 1e6 + 1 and not np.isfinite(m["age_cap"][1])

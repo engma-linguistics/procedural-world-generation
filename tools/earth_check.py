@@ -281,14 +281,16 @@ def band_mask(lat, lo, hi):
 # the check
 # --------------------------------------------------------------------------
 def run(level: int):
+    from tools import moisture_budget  # (here: it imports REGIONS from this module)
     t0 = time.time()
     grid = build_grid(level)
     d = earth_data.earth_on_grid(grid)
     t1 = time.time()
     # (with the vegetation's feedbacks, as worlds have them)
-    c, _ = vegetation.coupled_climate(grid, d["elev"].astype(np.float64), 0.0, 23.4, d["ice"].astype(np.float64))
+    # (capture: the same call, with the rain kernel's inputs kept for the moisture budget's headlines)
+    c, rec = moisture_budget.capture(grid, d["elev"].astype(np.float64), d["ice"].astype(np.float64))
     t2 = time.time()
-    return grid, d, c, (t1 - t0, t2 - t1)
+    return grid, d, c, (t1 - t0, t2 - t1), rec
 
 
 def analyse(grid, d, c) -> dict:
@@ -646,7 +648,7 @@ def systematic_errors(R) -> list[str]:
 def report(R, times, level):
     L = []
     p = L.append
-    p(f"=== Earth check, level {level} (data {times[0]:.1f}s, climate {times[1]:.1f}s) ===")
+    p(f"=== Earth check, level {level} (data {times[0]:.1f}s, climate {times[1]:.1f}s, moisture budget {times[2]:.1f}s) ===")
     ks = R["koppen_shares"]
     p("\nKoppen main-group shares of land (%), model vs Kottek 2006 (same cells) and Peel 2007")
     p("                       " + "".join(f"{G:>7}" for G in GROUPS))
@@ -753,6 +755,11 @@ def report(R, times, level):
     p("dry winter air, January relative humidity: " + ", ".join(
         f"{r['name']} {r['rh_jan']}% ({r['target'][0]}-{r['target'][1]})" for r in cr["dry_air"]))
 
+    p("\nMoisture budget (tools/moisture_budget.py; PW-015's acceptance numbers):")
+    from tools import moisture_budget
+    for line in moisture_budget.headline_lines(R["moisture"]):
+        p("  " + line)
+
     p("\nLargest systematic errors (auto-ranked):")
     for s in R["systematic_errors"][:20]:
         p("  - " + s)
@@ -839,8 +846,12 @@ def main():
     ap.add_argument("--json", help="dump the key numbers as JSON")
     ap.add_argument("--width", type=int, default=720, help="PNG panel width in pixels")
     a = ap.parse_args()
-    grid, d, c, times = run(a.level)
+    grid, d, c, times, rec = run(a.level)
+    from tools import moisture_budget
     R = analyse(grid, d, c)
+    t0 = time.time()
+    R["moisture"] = moisture_budget.headlines(moisture_budget.analyse(grid, d, c, rec))
+    times = (*times, time.time() - t0)
     R["systematic_errors"] = systematic_errors(R)
     R["level"] = a.level
     print(report(R, times, a.level))

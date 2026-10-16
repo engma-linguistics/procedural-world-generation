@@ -24,8 +24,9 @@ sys.path.insert(0, str(ROOT))
 
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
-from planet import climate, parallel, vegetation  # noqa: E402
+from planet import climate, parallel  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
+from tools import earth_data, moisture_budget  # noqa: E402
 from tools.earth_data import koppen_agreement  # noqa: E402
 from planet.provenance import code_version  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
@@ -40,7 +41,7 @@ def earth_scores() -> dict | None:
     e = np.load(path)
     g = build_grid(6)
     elev, ice, obs = e["elev"].astype(float), e["ice"].astype(float), e["obs_koppen"]
-    c, _ = vegetation.coupled_climate(g, elev, 0.0, 23.4, ice)
+    c, rec = moisture_budget.capture(g, elev, ice)  # (the same climate, its rain kernel's inputs kept)
     land = (elev > 0) & (g.lat > -60) & (obs >= 0) & (obs != climate.SEA_CLASS)
     mg = GROUP[c["koppen"]]
     shares = {k: round(100 * float((mg[land] == k).mean()), 1) for k in "ABCDE"}
@@ -50,7 +51,8 @@ def earth_scores() -> dict | None:
     return {"group_agree": round(ka["group"], 1), "exact_agree": round(ka["exact"], 1),
             "shares": shares,
             "land_rain_mean": round(float(p.mean())),
-            "log_rain_corr": round(float(np.corrcoef(np.log(p[ok] + 10), np.log(po[ok] + 10))[0, 1]), 3)}
+            "log_rain_corr": round(float(np.corrcoef(np.log(p[ok] + 10), np.log(po[ok] + 10))[0, 1]), 3),
+            "moisture": moisture_budget.headlines(moisture_budget.analyse(g, earth_data.earth_on_grid(g), c, rec))}
 
 
 def world_scores(seed: int, myr: float) -> dict:

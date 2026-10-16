@@ -39,7 +39,7 @@ from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
 from .surface import _relief, surface_rock
-from .tectonics.isostasy import land_view
+from .tectonics.isostasy import grounded
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
 # the layers of a run's keyframes, in store.LAYERS' vocabulary and encodings
@@ -454,9 +454,10 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
            orbit_dt: np.ndarray | None = None, memory: dict | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
-    # grounded ice on a bed below sea level (pressed down by its own load, or a marine sheet): land with
-    # its bed floored at 1 m, the ice thinned to keep the surface (the world format's land is elevation > 0)
-    e, ice, floored = land_view(e, ice)
+    # the true bed: grounded ice on a bed below sea level (pressed down by its own load, or a marine
+    # sheet) is land by its ice (geo.is_land, PW-307); ice whose surface is below the sea is afloat
+    ice = grounded(e, ice)
+    below = (ice > 0) & (e <= 0)
     elev = texture(g, e, seed, at)
 
     extra = {"plate": plate, "crust": continental.astype(int),
@@ -470,7 +471,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
             "hotspots": hotspots, "volcanoes": volcanoes, "volcano_columns": list(VOLCANO_COLUMNS)}
     meta["global_temp_c"] = round(14.5 + dT, 1)
     meta["sea_level_m"] = round(sea_level, 1)
-    meta["ice_bed_floored_cells"] = int(floored.sum())
+    meta["ice_bed_below_sea_cells"] = int(below.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
                     dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt,
                     soil_memory=memory)

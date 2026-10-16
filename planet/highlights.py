@@ -113,11 +113,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import coast, hydrology
+from . import coast, kernels
 from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
-from .geo import R_KM
+from .geo import R_KM, world_land
 from .grid import Grid
 from .tectonics.volcanism import ARC as ARC_VOLCANO
 from .vegetation import T as VEG_T
@@ -175,12 +175,16 @@ class _Ctx:
         self.cell_km = g.spacing * R_KM
         self.area = 4 * np.pi * R_KM**2 / g.n  # km^2 per cell (cells are near-equal)
         self.elev = self.L["elevation"].astype(float)
-        self.land = self.elev > 0
+        self.land = world_land(self.L)  # (a bed below the sea under grounded ice is land, PW-307)
         self.a, self.b = g.edges[:, 0], g.edges[:, 1]
 
     def dist(self, i: int, idx) -> np.ndarray:
         """Great-circle km from cell i to cells idx."""
         return np.arccos(np.clip(self.g.centers[idx] @ self.g.centers[i], -1, 1)) * R_KM
+
+    def filled(self) -> np.ndarray:
+        """The pit-filled elevation (hydrology.priority_flood's filled surface alone)."""
+        return kernels.flood_fill(self.elev, self.elev <= 0, self.g.nbr_off, self.g.nbr_idx, 0.01)
 
     def dilate(self, mask: np.ndarray, k: int = 1) -> np.ndarray:
         m = mask.copy()
@@ -609,7 +613,7 @@ def deltas(ctx: _Ctx, top: int = 3) -> list[dict]:
 def lakes(ctx: _Ctx) -> list[dict]:
     if "lake" not in ctx.L or not ctx.L["lake"].any():
         return []
-    filled, _, _ = hydrology.priority_flood(ctx.g, ctx.elev)
+    filled = ctx.filled()
     regions = ctx.components(ctx.L["lake"] > 0, min_cells=2)
     if not regions:
         return []
@@ -1215,8 +1219,7 @@ def _water_surface(ctx: _Ctx) -> np.ndarray:
     ws = np.where(ctx.land, ctx.elev, 0.0)
     lake = ctx.land & (np.asarray(L["lake"]) > 0) if "lake" in L else np.zeros(ctx.n, bool)
     if lake.any():
-        lvl = np.asarray(L["lake_level"], float) if "lake_level" in L else \
-            hydrology.priority_flood(ctx.g, ctx.elev)[0]
+        lvl = np.asarray(L["lake_level"], float) if "lake_level" in L else ctx.filled()
         ws = np.where(lake, np.maximum(lvl, ctx.elev), ws)
     ctx._ws, ctx._lake = ws, lake
     return ws

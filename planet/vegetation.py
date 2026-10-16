@@ -55,7 +55,7 @@ import numpy as np
 from numba import njit, prange
 
 from . import climate
-from .geo import R_KM
+from .geo import R_KM, is_land
 
 # ---------------------------------------------------------------------------
 # Plant functional types
@@ -1005,7 +1005,7 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
         sel = mask & (out < 0)
         out[sel] = tid[sel] if np.ndim(tid) else tid
 
-    put(elev <= 0, 0)
+    put(~is_land(elev, ice), 0)  # (the sea; a bed below it under grounded ice is land: ice)
     if ice is not None:
         put(np.asarray(ice) > 0, T["ice"])
     if lake is not None:

@@ -234,7 +234,8 @@ def _spec(dtype, units, description, scale=1, offset=0, transform=None) -> dict:
 # for the layers they have: sliced and generated worlds don't store the
 # wind_*, current_* and jet_* layers (only runs and the Earth world do).
 LAYERS = {
-    "elevation": _spec("<i2", "m", "ground (or ice) surface above sea level"),
+    "elevation": _spec("<i2", "m", "above sea level: the ground, below any ice (runs, worlds; land where > 0 or "
+                                   "under grounded ice, geo.is_land), or the ice surface (time zooms)"),
     "plate": _spec("<u2", "id", "plate id"),
     "crust": _spec("u1", "0/1", "1 = continental crust, 0 = oceanic"),
     "crust_age": _spec("<u2", "Myr", "age of the crust (sea floor: since it formed at a ridge)"),

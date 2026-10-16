@@ -52,6 +52,13 @@ Observed temperature
     mean (T62 Gaussian grid, ~1.9 deg; Kalnay et al. 1996), ERDDAP id
     noaa_psl_4835_64f9_2242. Reanalysis, so expect ~1-2 C local biases,
     worst over high/steep terrain; fine for zonal means.
+Moisture budget (tools/moisture_budget.py)
+    NCEP/NCAR Reanalysis 1, 1991-2020 monthly long-term means of the surface
+    latent heat flux (evaporation = flux / 2.5e6 J/kg), precipitation rate and
+    precipitable water, whole netCDF-4 files (~1 MB each) from
+      https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis.derived/
+    (NC_FILES; PSL's OPeNDAP server and its ERDDAP mirrors rate-limit). A
+    reanalysis: its evaporation runs ~10% high and its E - P doesn't close.
 All NOAA PSL data: "may be used and redistributed for free"; cite NOAA PSL.
 
 Potential natural vegetation (tools/veg_check.py)
@@ -141,6 +148,16 @@ RASTERS = {
     "ncep_tcdc": ("https://psl.noaa.gov/thredds/dodsC/Datasets/ncep.reanalysis.derived/other_gauss/"
                   "tcdc.eatm.mon.ltm.1991-2020.nc", "tcdc", "[0:1:11][0:1:93][0:1:191]"),
 }
+# Whole netCDF-4 files (read with tools/h5_reader), for the moisture budget (tools/moisture_budget.py):
+# NCEP/NCAR reanalysis 1991-2020 long-term monthly means, NOAA PSL (public domain; ~1 MB each):
+# surface latent heat flux (W/m2, upward > 0: evaporation), precipitation rate (kg/m2/s) and the
+# column's precipitable water (kg/m2). (PSL's OPeNDAP server and its ERDDAP mirrors rate-limit.)
+PSL_FILES = "https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis.derived/"
+NC_FILES = {
+    "ncep_lhtfl": (PSL_FILES + "surface_gauss/lhtfl.sfc.mon.ltm.1991-2020.nc", "lhtfl"),
+    "ncep_prate": (PSL_FILES + "surface_gauss/prate.sfc.mon.ltm.1991-2020.nc", "prate"),
+    "ncep_pwat": (PSL_FILES + "surface/pr_wtr.eatm.mon.ltm.1991-2020.nc", "pr_wtr"),
+}
 CRU_SUNP_URL = "https://crudata.uea.ac.uk/cru/data/hrg/tmc/grid_10min_sunp.dat.gz"
 CLOUD_CACHE_VERSION = 1
 
@@ -187,6 +204,14 @@ def parse_dods(raw: bytes) -> list[tuple[str, np.ndarray]]:
 
 
 def _fetch_raster(key: str) -> dict:
+    if key in NC_FILES:
+        from tools.h5_reader import read_variable
+        from tools.tiff_reader import BytesSource
+        url, var = NC_FILES[key]
+        t0 = time.time()
+        src = BytesSource(_get(url))
+        print(f"  {key}: {len(src.data) / 1e6:.1f} MB from {url.split('/')[2]} in {time.time() - t0:.0f}s")
+        return {"val": read_variable(src, var), "lat": read_variable(src, "lat"), "lon": read_variable(src, "lon")}
     ds, var, idx = RASTERS[key]
     q = f"{ds}.dods?{var}{idx}".replace("[", "%5B").replace("]", "%5D")
     bases = [""] if ds.startswith("https://") else ERDDAP
