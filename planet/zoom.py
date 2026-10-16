@@ -1471,6 +1471,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # 30-90 m above the plain beside them, PW-363)
     coast_cap = np.where(wD > 0, (1 - wD) * coast_cap + wD * np.minimum(coast_cap, zD), coast_cap)
     clab, clvl, cexit = coarse_lakes(g, L, elev)
+    # each coarse lake's outflow in the world (what its lake cells pass to
+    # its exit, km^2 m/yr as the inflows): the zoom sees only the part of a
+    # big lake's catchment inside it (PW-060)
+    cqout = np.zeros(len(clvl))
+    for k_, e_ in enumerate(cexit):
+        if e_ >= 0:
+            cc_ = np.flatnonzero((clab == k_) & (down == e_))
+            cqout[k_] = float(flow[cc_].max()) * cell_area if len(cc_) else 0.0
     cgrad = outflow_grad(g, elev, down, clab, clvl, cexit, 2 * sp)  # (the rapids below each lake: rims())
     lake_c = clab >= 0
     in_sel = np.zeros(g.n, bool)
@@ -1847,7 +1855,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             lake[pix] = True
             surf[pix] = clvl[c]
             lakes.append({"px": pix, "level": float(clvl[c]), "exit": ex, "cl": int(c), "closed": ex is None,
-                          "grad": max(RAPIDS_GRAD, float(cgrad[c]))})
+                          "grad": max(RAPIDS_GRAD, float(cgrad[c])), "q_out": float(cqout[c]) if ex is not None else 0.0})
         # A closed lake's smaller fragments (its outline broken up by the
         # noise or the coarse mask) pass their water on to its biggest one
         # instead of swallowing their rivers (the biggest stays closed).
@@ -2161,18 +2169,55 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         r2, o2, _ = pin(rec, order, ov_src, ov_dst)
         return (r2, o2, True) if r2 is not rec else (rec, order, False)
 
-    def route(src, rec, order, outs, split_ok, loss=None):
+    def route(src, rec, order, outs, split_ok, loss=None, water=True):
         """Accumulate src downstream, then pass each open lake's total on at
         its outlet (less loss x its area, floored at 0: open water's
         evaporation) and divide the water at distributary splits. Returns q
-        and each lake's total inflow (its own rain included)."""
+        and each lake's total inflow (its own rain included). With water
+        (not for a drainage area), a coarse lake's outlet passes on at least
+        the world's outflow of that lake: the zoom sees only the part of a
+        big lake's catchment inside it, and only the rivers entering the
+        region bring in the rest (PW-060). The outlet is that of the lake's
+        fragment nearest its coarse exit, taken last of its level."""
         q = ZK.accumulate(rec, order, src)
         tot = np.zeros(len(lakes))
-        for j in lake_seq:
+        main = {}  # coarse lake -> its fine fragment draining to its exit
+        for j, lk in enumerate(lakes):
+            if water and outs[j] >= 0 and lk["q_out"] > 0 and not lk["closed"]:
+                d_ = np.hypot(px[outs[j]] - lk["exit"][0], py[outs[j]] - lk["exit"][1])
+                if lk["cl"] not in main or d_ < main[lk["cl"]][1]:
+                    main[lk["cl"]] = (j, d_)
+        mains = {j for j, _ in main.values()}
+        # (upstream lakes first: by the number of lakes below each, as the
+        # outflows chain; a coarse lake's fragments share one level)
+        below = {}
+        for j in range(len(lakes)):
+            if outs[j] >= 0:
+                end = ZK.chain(rec, outs[j])[-1]
+                below[j] = int(lake_id[end]) if lake[end] and lake_id[end] != j else -1
+        depth = {}
+
+        def n_below(j, hops=0):
+            if j not in depth:
+                k = below.get(j, -1)
+                depth[j] = 0 if k < 0 or hops > len(lakes) else 1 + n_below(k, hops + 1)
+            return depth[j]
+        passed = {}  # coarse lake -> what its other fragments passed on
+        for j in sorted(lake_seq, key=lambda j: (-n_below(j), -lakes[j]["level"], j in mains)):
             tot[j] = q[lakes[j]["px"]].sum()
             if outs[j] >= 0:
                 lost = 0.0 if loss is None else loss[lakes[j]["px"]].sum() * res * res
-                ZK.add_chain(q, rec, outs[j], max(tot[j] - lost, 0.0))
+                out = max(tot[j] - lost, 0.0)
+                cl_ = lakes[j]["cl"]
+                if j in mains:
+                    out = max(out, lakes[j]["q_out"] - passed.get(cl_, 0.0))
+                elif cl_ in main:  # (not one draining into the main fragment: its water is in the main's)
+                    k, hops = below.get(j, -1), 0
+                    while k >= 0 and k != main[cl_][0] and hops <= len(lakes):
+                        k, hops = below.get(k, -1), hops + 1
+                    if k != main[cl_][0]:
+                        passed[cl_] = passed.get(cl_, 0.0) + out
+                ZK.add_chain(q, rec, outs[j], out)
         if split_ok:
             for s, kids, f in splits:
                 qs = q[s]
@@ -2780,7 +2825,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ZK.settle(h, rec, order, ~active, res * np.where(diag, 1.4142, 1.0), SETTLE_M)
     outs = lake_outlets(rec)
     Q, lake_in = route(srcq, rec, order, outs, split_ok, lake_loss)
-    area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
+    area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok, water=False)
     discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
     # the designed falls: where they ended up, and a plunge pool at each foot

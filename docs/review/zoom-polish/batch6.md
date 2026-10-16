@@ -92,3 +92,24 @@ instead of the trench's depth), C) the ticket's arc ridge (doesn't apply: no con
 ![shelf](pw362_shelf.png)
 *Zoom -1.467,36.085 of fac2af (1 km pixels, 360 x 240 km shown; 0-800 m ramp, brown above): cones and small
 volcanic islands along the arc (top), the forearc mesa (left, flat at ~1,600 m) and a 100 km island (right).*
+
+## PW-060: the zoom sees only part of a big lake's catchment
+
+A zoom's lake passed on what reached it in the zoom (its own runoff, the rivers entering the region) less its
+open-water evaporation. Where the region holds only part of the lake's catchment that falls short of the world's
+outflow: 592f2a's biggest lake (150,000 km^2, 694 m; the world passes 3,177 m^3/s on), in a 1000 km zoom round it
+(seed 1), received 1,609 m^3/s and lost 4,256 to evaporation, so it passed nothing on. Now each coarse lake's
+outflow in the world (what its lake cells pass to its exit) is the least its outlet passes on: at the outlet of
+its fragment nearest the coarse exit, less what its other fragments pass on elsewhere (not those draining into
+it). The lakes are taken upstream first along the chain of their outflows (a coarse lake's fragments share one
+level, so the level alone didn't order them). The drainage area isn't touched. That lake now passes on 3,166
+m^3/s.
+
+On the 8 zooms (seeds 1-5) the lakes' outflows rise where the zoom saw less than the world: 4.81,-72.18's
+67 m lake 535-575 -> 766 m^3/s, the arc's 953 m lake 0.1 -> 35 m^3/s, 49.32,37.38's 924 m lake 0 -> 47 m^3/s and
+its 3,631 m plateau lake 23 -> 44 m^3/s. Drops 9.8 -> 10.2 per seed (49.32,37.38 seeds 3 and 5, one each; seed 3's
+is the plateau lake's doubled outflow cascading ~330 m off the plateau 2 px below its outlet: the landscape pass's
+grading with more water). Inland bias/RMS unchanged, perched unchanged.
+Test: `test_zoom_lake_passes_on_the_coarse_lakes_outflow` (no runoff within 900 km of the test lake: it sees only
+what the rivers bring in at the edge, < 0.8 of the coarse outflow, and passes the coarse outflow on);
+`test_lake_passes_its_water_on` now allows the coarse outflow as the floor.
