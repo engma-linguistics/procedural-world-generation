@@ -20,10 +20,10 @@ Files are never cached (runs get regenerated in place). Requests run on
 threads (ThreadingHTTPServer), so a slow /api/highlights doesn't block file
 serving. Zooms, time zooms and finished worlds run on the job queue, up to
 --jobs at once, each in a worker process (parallel.Pool: separate processes
-scale, threads in one process don't), so a highlights request computing in
-this process doesn't wait for them (api.COMPUTE only serialises this
-process's own computations). Job state is kept in .jobs/<port>.json and
-survives a restart (api.Jobs).
+scale, threads in one process don't). Highlights that aren't cached yet are
+computed in worker processes of their own (HIGHLIGHT_WORKERS at once, PW-261),
+so they don't wait for the jobs or for each other. Job state is kept in
+.jobs/<port>.json and survives a restart (api.Jobs).
 """
 
 from __future__ import annotations
@@ -54,12 +54,14 @@ def delete(path: str) -> int:
     return 204 if S.delete(KIND_OF[m.group(1)], m.group(2)) else 404
 
 
-def highlights(query: str) -> tuple[dict, int]:
+def highlights(query: str, compute=None) -> tuple[dict, int]:
     """GET /api/highlights?...: (JSON body, status). Synchronous: a few
-    seconds at most (building a world from a keyframe)."""
+    seconds at L6 (building a world from a keyframe), longer at L7/L8.
+    compute: where what isn't cached is computed (api.highlights)."""
     q = dict(parse_qsl(query))
     try:
-        return api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1"), 200
+        return api.highlights(q, cached_only=q.get("cached") == "1", refresh=q.get("refresh") == "1",
+                              compute=compute), 200
     except (ValueError, api.BadRequest) as e:
         return {"error": str(e)}, 400
     except SystemExit as e:  # no such run / world
@@ -193,6 +195,7 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     jobs: api.Jobs | None = None  # set by serve()
+    hl_pool: P.Pool | None = None  # (highlights' worker processes, set by serve())
 
     def translate_path(self, path):
         # the viewer comes from the repository, everything else from the data root
@@ -259,7 +262,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         url = urlsplit(self.path)
         if url.path == "/api/highlights":
-            return self.send_json(*highlights(url.query))
+            return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
         gz = self.gzippable()
@@ -288,6 +291,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 JOBS = 4  # jobs at once (worker processes) by default
+HIGHLIGHT_WORKERS = 2  # highlights computed at once (worker processes, started when first needed)
 
 
 def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads: int | None = None):
@@ -296,6 +300,7 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
     for kind in S.KINDS:
         S.update_index(kind)
     pool = P.Pool(jobs, threads)
+    Handler.hl_pool = P.Pool(HIGHLIGHT_WORKERS, pool.threads)
     # job state survives a restart (per checkout and port: worktrees share the data folders)
     Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs)
     http.server.ThreadingHTTPServer.allow_reuse_address = True
@@ -310,3 +315,4 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
             httpd.serve_forever()
     finally:
         pool.close(kill=True)  # (running jobs are queued again at the next start)
+        Handler.hl_pool.close(kill=True)

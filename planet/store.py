@@ -677,7 +677,9 @@ def read_volcanoes(run_dir: Path) -> dict | None:
 # ---------------------------------------------------------------------------
 # A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
 # and volcano lists, events, budget), zlib-compressed, the crust of the
-# plates' unowned cells zeroed (shrink_state). Only ever read back from our own runs/.
+# plates' unowned cells zeroed (shrink_state) and the plates' cell map stored
+# as its difference from a fresh grid.locate (pack_idx). Only ever read back
+# from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
@@ -692,9 +694,9 @@ def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     state = sim.state()
     if writer is None:
-        _write_checkpoint(path, state)
+        _write_checkpoint(path, state, sim.grid)
     else:
-        writer.submit(path, state)
+        writer.submit(path, state, sim.grid)
     return path
 
 
@@ -717,8 +719,32 @@ def shrink_state(state: dict) -> dict:
     return state
 
 
-def _write_checkpoint(path: Path, state: dict):
-    write_atomic(path, zlib.compress(pickle.dumps(shrink_state(state), protocol=5), 1))
+def _located(plates, grid) -> np.ndarray:
+    """(P, n): each plate slot's cell under each world cell, found afresh
+    (no warm start) from its rotation."""
+    return np.stack([grid.locate(grid.centers @ q) for q in plates.Q])
+
+
+def pack_idx(state: dict, grid) -> dict:
+    """Replaces, in place, the plates' cell map idx ((P, n) int64, a rotated
+    nearest-neighbour map that zlib can't compress: ~a quarter of a
+    checkpoint) by its difference from _located (Plates.move computes it the
+    same way, but warm-started from the last step: ~all zeros). unpack_idx
+    adds it back, so the round trip is exact whatever the warm start did
+    (PW-306). Returns state."""
+    pl = state["plates"]
+    pl.idx = pl.idx - _located(pl, grid)
+    return state
+
+
+def unpack_idx(state: dict, grid) -> dict:
+    pl = state["plates"]
+    pl.idx = pl.idx + _located(pl, grid)
+    return state
+
+
+def _write_checkpoint(path: Path, state: dict, grid):
+    write_atomic(path, zlib.compress(pickle.dumps(pack_idx(shrink_state(state), grid), protocol=5), 1))
 
 
 class CheckpointWriter:
@@ -731,12 +757,12 @@ class CheckpointWriter:
         self._thread = None
         self._error = None
 
-    def submit(self, path: Path, state: dict):
+    def submit(self, path: Path, state: dict, grid):
         self.wait()
 
         def work():
             try:
-                _write_checkpoint(path, state)
+                _write_checkpoint(path, state, grid)
             except BaseException as e:  # (raised again by wait, on the run's thread)
                 self._error = e
         self._thread = threading.Thread(target=work, name="checkpoint", daemon=True)
@@ -762,5 +788,10 @@ def checkpoints(run_dir: Path) -> list[float]:
     return sorted(float(p.stem) for p in (Path(run_dir) / "state").glob("*.ckpt"))
 
 
-def load_checkpoint(run_dir: Path, t: float) -> dict:
-    return pickle.loads(zlib.decompress(checkpoint_path(run_dir, t).read_bytes()))
+def load_checkpoint(run_dir: Path, t: float, grid) -> dict:
+    """The state saved at t (grid: the run's, to unpack the plates' cell map)."""
+    return read_checkpoint(checkpoint_path(run_dir, t), grid)
+
+
+def read_checkpoint(path: Path, grid) -> dict:
+    return unpack_idx(pickle.loads(zlib.decompress(Path(path).read_bytes())), grid)

@@ -278,7 +278,7 @@ def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) ->
     made_by = m.get("code") or {}
     usable = [t for t in S.checkpoints(run_dir) if t <= at + 1e-9]
     if use_checkpoints and usable and made_by.get("planet_src_sha") == code_version()["planet_src_sha"]:
-        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1]))
+        sim = Simulation.from_state(grid, m["seed"], params, m["dt"], S.load_checkpoint(run_dir, usable[-1], grid))
         log(f"replaying from the checkpoint at t={usable[-1]:g}")
     else:
         sim = Simulation(grid, m["seed"], params, m["dt"])

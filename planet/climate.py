@@ -1377,9 +1377,8 @@ TUNE = dict(
     cloud_clear_mm=800.0,  # ... less where it rains (e-fold mm/yr)
     cloud_sun_conv=0.6,  # share of the day showers and cumulus shade (they build up in the afternoon)
     # winds and seasons
-    ice_cooling=10.0,  # C: how much colder an ice sheet's surface is than bare ground would be ...
-    ice_cool_km=300.0,  # ... in full where the land this far around is all ice (a small cap sits in
-    # its surroundings' air)
+    ice_cool_km=300.0,  # an ice sheet's cover (ice_cover) is the share of the land this far around
+    # under ice (a small cap sits in its surroundings' air)
     belt_shift=10.0,  # deg the tropical rain belt follows the sun at the solstice (times tilt/23.4)
     hk=0.64,  # the half-years' mean of a seasonal swing (2/pi of the peak, for a sine)
     monsoon=1.0,  # strength of the land-sea pressure winds ...
@@ -2118,8 +2117,9 @@ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, oc
 
 
 def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None = None) -> np.ndarray:
-    """How much (0..1) of ice_cooling land ice (m) gets: the share of the land
-    within ~ice_cool_km that is under ice (~1 on and around a big sheet,
+    """A land-ice sheet's cover (0..1; icemass damps its summer by SUMMER_DAMP x
+    this): the share of the land within ~ice_cool_km that is under ice (~1
+    on and around a big sheet,
     small on a lone mountain cap), and only away from the tropics, where
     long cold nights and winters let the air over the ice pool and chill
     (and where the model's sea-level summers, calibrated on ice-free land,
@@ -2131,16 +2131,6 @@ def ice_cover(grid: Grid, ice: np.ndarray, land: np.ndarray, tune: dict | None =
     b = smooth(grid, land.astype(float), km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
     return np.where(ice > 0, np.clip(a / np.maximum(b, 1e-6), 0.0, 1.0) * polar, 0.0)
-
-
-def ice_cooling(ice, cover, tune=None):
-    """C: how much colder land ice (m) keeps its own surface (its white top,
-    the cold air pooling on it): in full on a big polar sheet, little on a
-    small mountain cap that sits in the warmer air around it, none in the
-    tropics (a cap like Quelccaya's is barely colder than the rock beside
-    it). cover: ice_cover."""
-    tune = TUNE if tune is None else tune
-    return tune["ice_cooling"] * (ice > 0) * cover
 
 
 def ice_surface(t_warm, t_cold, temp, ice, cover, lat, p_jul, p_jan):

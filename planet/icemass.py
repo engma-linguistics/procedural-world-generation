@@ -10,8 +10,8 @@ higher: the lapse rate). Snow falls in the months below ~0 C; positive
 degree-days (Reeh 1991, days scattered with sd PDD_SIGMA around each
 month's mean) melt the year's snow first (DDF_SNOW, a share REFREEZE of it
 refreezes in the snowpack), then ice (DDF_ICE). On ice:
-  - thick ice (ALBEDO_H) is ALBEDO_SHARE x climate.TUNE['ice_cooling'] (2 C)
-    colder all year (inversion, katabatic air);
+  - thick ice (ALBEDO_H) is ICE_COOL (2 C) colder all year (inversion,
+    katabatic air);
   - where perennial snow lies (bright: last year's snow outlasted the
     summer; bare ice keeps BARE_SHARE of this), temperatures above 0 C are
     scaled by MELT_HOLD (a melting surface holds the air over it near 0 C:
@@ -36,7 +36,7 @@ SUMMER_DAMP = 0.6  # share of the summer's warmth above the annual mean taken aw
 MELT_HOLD = 0.5  # temperatures above 0 C on snow / ice are scaled by this
 SNOW_W = 30.0  # mm w.e.: lying snow this deep is fully bright
 BARE_SHARE = 0.3  # bare ice keeps this share of the snow's effects
-ALBEDO_SHARE = 0.2  # thick ice is this x climate.TUNE['ice_cooling'] colder all year ...
+ICE_COOL = 2.0  # C: thick ice is this much colder all year (inversion, katabatic air) ...
 ALBEDO_H = 800.0  # ... in full from this thickness (m)
 EDGE_H = float(np.sqrt(2 * 50e3 / (917.0 * 9.81) * 10e3))  # m (~330): a sheet's margin (a steady Nye profile
 # with a 50 kPa yield stress, 10 km in from its edge): at ~110 km cells a margin cell's snow and melt are its edge's
@@ -141,7 +141,7 @@ def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):
     args = (land, lat >= 0, 0.5 * (t_warm + t_cold), 0.5 * np.maximum(t_warm - t_cold, 0),
             np.broadcast_to(np.asarray(p_jul, float), (n,)).copy(), np.broadcast_to(np.asarray(p_jan, float), (n,)).copy(),
             -climate.LAPSE * h + dt_wet, dt_wet)
-    rest = (f_ice, f_alb, climate.TUNE["ice_cooling"] * ALBEDO_SHARE, damp, MELT_HOLD, BARE_SHARE, SNOW_W,
+    rest = (f_ice, f_alb, ICE_COOL, damp, MELT_HOLD, BARE_SHARE, SNOW_W,
             PDD_SIGMA, DDF_SNOW, DDF_ICE, REFREEZE, PRECIP_K)
     climate_step(*args, np.zeros(n), np.zeros(n, np.int64), np.zeros((1, 12)), *rest, smb, t_ann, t_w, t_c,
                  p_scale, f_sum)
@@ -152,7 +152,7 @@ def surface(lat, t_warm, t_cold, p_jul, p_jan, h, cover):
     """(annual mean, warmest, coldest month) C on the surface of h m of land
     ice, from the bare ground's warmest and coldest month at its bed, by the
     mass balance's own year at the mean orbit (climate_step: the ice's height,
-    thick ice ALBEDO_SHARE x ice_cooling colder all year, the summer damped
+    thick ice ICE_COOL colder all year, the summer damped
     while snow lies by SUMMER_DAMP x cover (sheet_cover), a melting surface
     held near 0 C). The one ice-surface climate of the run's keyframes, the
     worlds and the zooms (climate.ice_surface), the time zoom's frames and
@@ -175,7 +175,7 @@ def ground_from_surface(lat, tw_s, tc_s, p_jul, p_jan, h, cover, iters: int = 40
     lat = np.asarray(lat, float)
     tw_s, tc_s = np.asarray(tw_s, float), np.asarray(tc_s, float)
     h = np.broadcast_to(np.asarray(h, float), lat.shape)
-    up = climate.LAPSE * h + climate.TUNE["ice_cooling"] * ALBEDO_SHARE * np.clip(h / ALBEDO_H, 0, 1)
+    up = climate.LAPSE * h + ICE_COOL * np.clip(h / ALBEDO_H, 0, 1)
 
     def solve(fn, target, lo, hi):
         for _ in range(iters):
