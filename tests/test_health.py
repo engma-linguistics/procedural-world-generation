@@ -17,7 +17,9 @@ def test_measure_frame(sim4):
     L = {k: vals[k] for k in H.MEASURE_LAYERS}
     st = sim4.stats()
     m = H.measure_frame(g, L, st)
-    assert abs(m["land_pct"] - st["land_pct"]) < 0.1
+    # (the run's land also counts grounded ice on a bed pressed below the sea; the frame's elevation doesn't)
+    sunk = 100 * float(((snap.elevation <= 0) & (snap.ice > 0)).mean())
+    assert abs(m["land_pct"] + sunk - st["land_pct"]) < 0.1
     assert abs(m["cont_pct"] - st["continental_pct"]) < 0.1
     assert m["plates"] == st["plates"] and m["temp"] == st["global_temp_c"]
     assert 20 < m["cont_km"] < 50 and 0 < m["ocean_age"] < 300
@@ -57,18 +59,24 @@ def test_spells_and_outliers():
     assert got == {("max_elev_km", 58), ("peak_frames", None)}
 
 
-def test_frame_rivers_end_in_its_own_hollows(sim4):
+def test_frame_rivers_end_in_its_own_hollows():
     """A run frame's rivers and lakes are those of its own terrain (PW-239):
     every river that ends on land ends in a closed lake, a salt pan or a
     pit of the frame's elevation (or under ice), so the raw and checked
-    inland shares agree."""
-    g, snap = sim4.grid, sim4.snapshot()
-    elev = snap.elevation.astype(float)
-    land, down = elev > 0, snap.downstream
-    end = H.drain_ends(down, land)
-    ends = np.unique(end[land & land[end]])
-    assert len(ends) > 0
-    real = H.real_hollows(g, elev, snap.lake_kind) | (snap.ice > 0)
-    assert real[ends].all(), ends[~real[ends]]
-    wet = snap.lake_depth > 0
-    assert (snap.lake_kind[wet] > 0).all() and ((snap.lake_kind == 1) | (snap.lake_kind == 2))[wet].all()
+    inland shares agree. (Frames every 20 Myr of an L4 run.)"""
+    from helpers import run_sim
+    sim = run_sim(myr=60)
+    n_ends = 0
+    for _ in range(5):
+        sim.run(sim.t + 20)
+        g, snap = sim.grid, sim.snapshot()
+        elev = snap.elevation.astype(float)
+        land, down = elev > 0, snap.downstream
+        end = H.drain_ends(down, land)
+        ends = np.unique(end[land & land[end]])
+        n_ends += len(ends)
+        real = H.real_hollows(g, elev, snap.lake_kind) | (snap.ice > 0)
+        assert real[ends].all(), (sim.t, ends[~real[ends]])
+        wet = snap.lake_depth > 0
+        assert ((snap.lake_kind == 1) | (snap.lake_kind == 2))[wet].all()
+    assert n_ends > 0

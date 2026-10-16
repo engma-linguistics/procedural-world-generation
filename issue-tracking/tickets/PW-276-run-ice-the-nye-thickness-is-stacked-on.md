@@ -2,7 +2,7 @@
 id: PW-276
 title: "Run ice: the Nye thickness is stacked on the bed, so caps on high ranges reach 9 km surfaces (cause of PW-226)"
 type: task
-status: in-progress
+status: done
 parent: PW-245
 subsystem: tectonics
 effort: s
@@ -35,5 +35,6 @@ Restore test_values_sane's -95 C bound if it now holds.
 - [ ] no run ice surface far above ~5-6 km on L5/L6 seeds 2 and 11; the -95 C bound restored
 
 ## Updates
+- 2026-10-15: Status in-progress -> done. Done in the ice fix branch (merged 20684ed); docs/review/audit/fixes-ice.md.
 - 2026-10-15: Status todo -> in-progress. Fix agent started (owner approved leans, 2026-10-15).
 - 2026-10-15: Created from inbox draft draft-audit-ice-veg-nye-on-high-bed.md (found by audit-ice-veg).

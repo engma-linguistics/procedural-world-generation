@@ -29,12 +29,14 @@ Pipeline
    high, craton/sediment low), thick sediment cover (basins: subdued),
    plate boundaries (convergent: high), elevation itself, and ice
    (smoothed). Then each coarse cell's mean is pulled back to its coarse
-   value (smooth correction field), so the region doesn't drift.
+   value (smooth correction fields, MEAN_PASSES of them, so a one-cell
+   trench keeps its depth), so the region doesn't drift.
    This is the *target* surface for step 6.
    Big river mouths (>= DELTA_MIN_Q) get a delta plain: within a radius R
    growing with discharge and the coarse sediment cover offshore, the
    detail is damped and the land pulled down to a few metres above the
-   sea, the sea floor shallows, and a lobe of land is pushed out to sea.
+   sea, the sea floor shallows (on the shelf, not over deep water), and a
+   lobe of land is pushed out to sea.
    Volcanoes (zoom_volcanoes): every volcano of the world's table becomes
    its own cone (shield or stratocone, eroded, planed or ringed by a reef
    as the run says); near hotspot vents on the sea floor the terrain is
@@ -69,7 +71,9 @@ Pipeline
    K = surface.ROCKS erodibility): big rivers
    are gentle, small gullies and ridges steep, so valleys nest
    dendritically. C is a smooth field refitted each iteration so every
-   ~35 km neighbourhood keeps the target's mean; the network is
+   ~35 km neighbourhood keeps the target's mean as it was before the coarse
+   valleys were cut into it (so the valleys are cut mass-neutrally: the
+   hillslopes between them stand a little higher, PW-268); the network is
    recomputed on the new surface and the whole thing repeated (~15x).
    Lakes are outlets held at their surface, with a rim kept above the
    water except at the outlet (the shore pixel nearest the coarse lake's
@@ -89,7 +93,7 @@ Pipeline
    hanging side valleys), and a plunge pool (a small lake) at its foot.
    Summits taper above a soft cap; hillslopes get some creep (channels
    stay sharp: creep never lifts a stream's bed, but for a little under
-   ice). Glaciers (glaciers(), PW-127, PW-159) from each pixel's own climate:
+   ice; what it takes off a cell's mean goes back on its hillslopes). Glaciers (glaciers(), PW-127, PW-159) from each pixel's own climate:
    accumulation where its snow outlasts the summer (icemass.balance, the
    run's and time zoom's surface mass balance; under the coarse sheet with
    its ice), the surplus routed down the valleys as melting tongues; outlined on the
@@ -167,6 +171,7 @@ LIMESTONE = 6  # surface.ROCKS
 # creep per smoothing step (and number of steps), steepest slope allowed
 SPL_M, KD, MAX_SLOPE, SMOOTH_STEPS = 0.5, 0.25, 450.0, 6  # MAX_SLOPE in m/km
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
 
 
@@ -796,12 +801,27 @@ def _delta_forms(dl: dict, px, py, res: float, rng, ind, nx: int, ny: int) -> di
     return {"lobe": lobe, "cut": cut, "smooth": smooth, "keep": keep, "goals": goals, "kind": kind}
 
 
-def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int) -> int:
-    """Channels of a delta reaching the sea: groups of land pixels within
-    1.6 R of the mouth that drain straight into the sea carrying >= 5% of
-    the delta's discharge."""
-    r = np.hypot(px - dl["x"], py - dl["y"])
-    out = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (r < 1.6 * dl["R"]) & (discharge >= 0.05 * dl["q"])
+def _count_mouths(dl: dict, px, py, land, rec, discharge, nx: int, ny: int, splits=()) -> int:
+    """Channels of a delta reaching the sea: groups of land pixels that drain
+    straight into the sea carrying >= 5% of the delta's discharge, among
+    those its river's water reaches from the apex (down the receivers and
+    every distributary split on the way); without an apex, those within R of
+    the mouth. (Not a disc around the mouth: a ~350 km plain's would take in
+    the neighbouring rivers' mouths.)"""
+    mouth = land & (rec >= 0) & ~land[np.maximum(rec, 0)] & (discharge >= 0.05 * dl["q"])
+    if dl.get("apex", -1) >= 0:
+        kids = {s: k for s, k, _ in splits}
+        seen = np.zeros(len(rec), bool)
+        stack = [int(dl["apex"])]
+        while stack:
+            p = stack.pop()
+            while p >= 0 and land[p] and not seen[p]:
+                seen[p] = True
+                stack += [c for c in kids.get(p, []) if c != rec[p]]
+                p = int(rec[p])
+        out = mouth & seen
+    else:
+        out = mouth & (np.hypot(px - dl["x"], py - dl["y"]) < dl["R"])
     if not out.any():
         return 0
     lab, _ = ZK.label_components(out, nx, ny)
@@ -836,17 +856,18 @@ GL_NOISE_C = 1.0  # C: shade, aspect, drift: noise on the summer, lobate margins
 def ice_ground(g, L: dict, ice: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Per coarse cell: the warmest and coldest month (C) of the bare ground
     under any ice. The world's climate is on the ice surface
-    (climate.ice_surface): this undoes it (its height, its cooling, the
-    melting that halves a positive summer)."""
+    (climate.ice_surface): this undoes it (icemass.ground_from_surface)."""
     land = L["elevation"] > 0
     ice = np.where(land, ice, 0.0)
     tw = np.asarray(L.get("warm_month", L["temperature"]), float)
     tc = np.asarray(L["cold_month"], float) if "cold_month" in L else 2 * np.asarray(L["temperature"], float) - tw
-    on = ice > 0
-    cool = climate.ice_cooling(ice, climate.ice_cover(g, ice, land))
-    up = LAPSE * ice
-    gw = np.where(on, np.where(tw > 0, 2 * tw, tw) + up + cool, tw)
-    gc = np.where(on, tc + up + cool, tc)
+    gw, gc = tw.copy(), tc.copy()
+    i = np.flatnonzero(ice > 0)
+    if len(i):
+        p = np.asarray(L["precipitation"], float)
+        pj, pn = (np.asarray(L.get(k, p), float) for k in ("precipitation_jul", "precipitation_jan"))
+        cov = icemass.sheet_cover(g, ice)
+        gw[i], gc[i] = icemass.ground_from_surface(g.lat[i], tw[i], tc[i], pj[i], pn[i], ice[i], cov[i])
     return gw, gc
 
 
@@ -928,6 +949,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     cx, cy = fr.to_plane(g.centers[sel])
     e_c = elev[sel]
     land_c = e_c > 0
+    # land cells away from the coast (every neighbour land too): their means are kept (stats, PW-268)
+    interior_c = land_c & (np.bincount(np.repeat(np.arange(g.n), np.diff(g.nbr_off)), elev[g.nbr_idx] <= 0, g.n)[sel] == 0)
 
     # ruggedness per coarse cell
     nb_e = np.maximum(elev, 0)
@@ -991,6 +1014,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     wD, zD, wS, zS, wC, lobe, cut, smooth_c, wR_f, wW_f = (np.zeros(npx) for _ in range(10))
     keep = np.full(npx, -9.0)
     hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
+    # ... and no prodelta over deep water: a delta builds out over its shelf
+    # (a ~300 km plain's prodelta must not fill the trench off it)
+    shelf_f = smoothstep(-1000.0, -200.0, e_sea)
     for j, dl in enumerate(deltas):
         R = dl["R"]
         r = np.hypot(px - dl["x"], py - dl["y"])
@@ -999,8 +1025,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         wR_f, wW_f = np.where(w > wD, dl["wR"], wR_f), np.where(w > wD, dl["wW"], wW_f)
         wD = np.maximum(wD, w)
         zS = np.where(r < 1.2 * R, np.maximum(zS, -(2.0 + 50.0 * (r / R) ** 2)), zS)
-        wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r))
-        wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r))
+        wS = np.maximum(wS, smoothstep(1.2 * R, 0.5 * R, r) * shelf_f)
+        wC = np.maximum(wC, smoothstep(1.4 * R, 0.8 * R, r) * np.where(ind > 0, hf, shelf_f))
         # its shape from the Galloway weights; the lobe lifts the land/sea
         # indicator at its centre to a little above the coast value
         f = _delta_forms(dl, px, py, res, np.random.default_rng(seed * 7919 + 101 + j), ind, nx, ny)
@@ -1115,7 +1141,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         return tot / np.maximum(cnt, 1), cnt
 
     corr_taper = np.where(land, smoothstep(0.0, 0.3, ind_n), smoothstep(0.0, 0.3, -ind_n)) * (1 - wC)
-    for _ in range(2):
+    # (each pass removes only part of a residual one cell wide, e.g. a trench,
+    # because the correction is smooth over half a cell: MEAN_PASSES of them)
+    for _ in range(MEAN_PASSES):
         m, cnt = cell_means(h)
         ok = cnt > 0.25 * full_px
         resid = np.where(ok, e_c - m, 0.0)
@@ -1179,6 +1207,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             if Wf > res:
                 flat = ~land & (dsea < Wf) & (r < 1.2 * dl["R"])
                 h = np.where(flat, np.maximum(h, -0.5 * max(dl["tide"], 0.5) * dsea / Wf - 0.05), h)
+                # (held by the hard floor of a prodelta, also where the delta faces deep water)
+                s_sea = np.where(flat, 1.5, s_sea)
                 # the funnels and creeks themselves are scoured deep by the tidal
                 # currents (flats only along their banks)
                 chan = ~land & (cut > 0.4) & (r < 1.1 * dl["R"])
@@ -1231,6 +1261,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     z_course, q_course = np.full(npx, -np.inf), np.full(npx, np.inf)
     kpix, s_pix, bottom = np.full(npx, -1), np.zeros(npx), np.zeros(npx, bool)  # reach with falls (index into kps) and arc length, per pixel
     riv_q = np.zeros(npx)  # coarse discharge along the coarse river courses
+    carved = np.zeros(npx)  # how far the coarse rivers' valleys cut the surface down (<= 0)
     n_rivers_in = 0
     river_segs = []
     polys, inflow_pts = {}, []  # warped coarse river polylines per cell; (pixel, radius px) where rivers enter
@@ -1453,8 +1484,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         on = (I >= 0) & (D < np.maximum(arr(fw)[np.maximum(I, 0)], 0.75 * res))
         riv_q = np.where(on, arr(sq)[np.maximum(I, 0)], 0.0)
         cut = land & np.isfinite(T)
+        h_uncut = h
         h = np.where(cut, smin(h, np.where(np.isfinite(T), T, 1e9), 40.0), h)
         h = clamp(h)
+        carved = np.minimum(h - h_uncut, 0.0)
         # the coarse river keeps at least its valley floor (the staircase, on
         # reaches with falls) in the landscape pass, wherever its water runs:
         # the floor of the nearest point of its polyline
@@ -1634,6 +1667,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     ring_px = [np.flatnonzero(ring & (ring_id == j)) for j in range(len(lakes))]
     lake_seq = sorted(range(len(lakes)), key=lambda j: -lakes[j]["level"])  # upstream lakes first
     srcq = runoff / 1000.0 * res * res + inflow  # km^2 m/yr per pixel
+    # open water's net evaporation (beyond the land's, which runoff already
+    # takes off), m/yr: a lake loses it over its area before passing its water
+    # on (as the coarse world's lakes do, hydrology.lakes; PW-271), and a
+    # landform basin's water balance weighs its inflow against it
+    if "pet" in L and "evaporation" in L:
+        ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
+    else:
+        ls_c = np.full(len(sel), LF_LOSS_MM)
+    fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
+    lake_loss = np.nan_to_num(fv[:, 0]) / 1000.0
     # The landscape's shape (the stream-power grading, creep, the landform
     # classes' valleys) follows the rain-weighted drainage area instead: a
     # desert's wadis are cut by its rare floods, which mean runoff (~0
@@ -1878,15 +1921,18 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         o2 = ZK.receiver_order(r2)
         return (r2, o2, True) if len(o2) == npx else (rec, order, False)
 
-    def route(src, rec, order, outs, split_ok):
+    def route(src, rec, order, outs, split_ok, loss=None):
         """Accumulate src downstream, then pass each open lake's total on at
-        its outlet and divide the water at distributary splits."""
+        its outlet (less loss x its area, floored at 0: open water's
+        evaporation) and divide the water at distributary splits. Returns q
+        and each lake's total inflow (its own rain included)."""
         q = ZK.accumulate(rec, order, src)
         tot = np.zeros(len(lakes))
         for j in lake_seq:
             tot[j] = q[lakes[j]["px"]].sum()
             if outs[j] >= 0:
-                ZK.add_chain(q, rec, outs[j], tot[j])
+                lost = 0.0 if loss is None else loss[lakes[j]["px"]].sum() * res * res
+                ZK.add_chain(q, rec, outs[j], max(tot[j] - lost, 0.0))
         if split_ok:
             for s, kids, f in splits:
                 qs = q[s]
@@ -1911,7 +1957,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         """Receiver overrides (src, dst) and splits for the deltas, laid out
         on the drainage network (rec0, order0) of a landscape iteration."""
         ov, splits = {}, []
-        score = route(srcq, rec0, order0, lake_outlets(rec0), False)[0]
+        score = route(srcq, rec0, order0, lake_outlets(rec0), False, lake_loss)[0]
         assigned = np.zeros(npx, bool)
         rng = np.random.default_rng(seed + 7)
 
@@ -2045,6 +2091,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 ov[c] = rec0[c]
             assigned[[a] + trunk] = True
             blocked[[a] + trunk] = True
+            dl["apex"] = int(a)
             nb = dl["nb"]  # from the Galloway weights (_deltas): waves leave few mouths, tides many
             if nb < 2:  # a single mouth: no distributaries (the trunk stays pinned)
                 continue
@@ -2088,10 +2135,14 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # Steady-state stream power: slope = C / K * Q^-m. C is a smooth field
     # fitted so every ~35 km neighbourhood keeps the mean of the target
-    # surface; a little noise in C varies the relief from valley to valley.
+    # surface as it was before the coarse valleys were cut into it (so the
+    # hillslopes between the valleys stand a little higher and each coarse
+    # cell keeps its mean: the valleys are cut mass-neutrally, PW-268); a
+    # little noise in C varies the relief from valley to valley.
     rad = max(1, int(round(0.3 * sp / res)))
     wmask = land.reshape(ny, nx).astype(float)
-    tmean = _box_mean(np.maximum(target, 0).reshape(ny, nx) * wmask, wmask, rad).ravel()
+    tmean = _box_mean(np.maximum(np.where(lake, target, target - carved), 0).reshape(ny, nx) * wmask, wmask,
+                      rad).ravel()
     var = np.exp(0.35 * ZK.fbm(Pk, 0.25 * sp, 3, 0.5, S + 6) / 0.17)
     C = np.full(npx, 30.0)
     # summits: slopes taper above `soft`, nothing above `cap`
@@ -2120,7 +2171,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             delta_floor = np.where(lev, np.maximum(delta_floor, zD + 0.5 + 3.0 * wR_f), delta_floor)
         rec, order, split_ok = reroute(rec, order)
         outs = lake_outlets(rec)
-        Q, _ = route(srcq, rec, order, outs, split_ok)
+        Q, _ = route(srcq, rec, order, outs, split_ok, lake_loss)
         Qg, _ = route(srcg, rec, order, outs, split_ok)
         diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
         dist = res * np.where(diag, 1.4142, 1.0)
@@ -2159,6 +2210,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     for _ in range(SMOOTH_STEPS):
         hd = ZK.diffuse(h, kd, active, nx, ny)
         h = np.where(stream, np.minimum(hd, np.maximum(h, h0 + lift)), hd)
+    # (what creep moves off the hillslopes and the streams don't take up, and
+    # what leaks into the sea at the coast, is put back on the hillslopes:
+    # each cell keeps its mean, PW-268)
+    h = keep_means(h, h0, active & ~stream)
     if lf is not None:
         # Landform bedding (zoom_landforms): benches, scarps and cliffs of the
         # finished landscape, each coarse cell's mean kept. Not on glaciers,
@@ -2224,14 +2279,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # flat where the streams end; the rest are filled flat
     lf_lake, lf_depth, lf_sink, lf_counts = np.zeros(npx, bool), np.zeros(npx), np.zeros(npx, bool), {}
     if lf is not None:
-        if "pet" in L and "evaporation" in L:  # (open water's evaporation beyond the land's)
-            ls_c = climate.TUNE["open_water"] * np.asarray(L["pet"], float)[sel] - np.asarray(L["evaporation"], float)[sel]
-        else:
-            ls_c = np.full(len(sel), LF_LOSS_MM)
-        fv, _ = ZK.gauss_interp(px, py, cx, cy, np.maximum(ls_c, 0.0)[:, None], land_c[:, None].astype(float), 0.5 * sp)
-        fv = np.nan_to_num(fv)
         surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
-            h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, fv[:, 0] / 1000.0, res, nx, ny,
+            h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, lake_loss, res, nx, ny,
             LF_LAKE_M, LF_LAKE_KM2, LF_FULL_KM2)
         h = np.where(active, surf_b, h)
         if lf_sink.any():  # (closed lakes and dry basins: their streams end there)
@@ -2256,7 +2305,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
     ZK.settle(h, rec, order, ~active, res * np.where(diag, 1.4142, 1.0), SETTLE_M)
     outs = lake_outlets(rec)
-    Q, lake_in = route(srcq, rec, order, outs, split_ok)
+    Q, lake_in = route(srcq, rec, order, outs, split_ok, lake_loss)
     area, _ = route(np.full(npx, res * res), rec, order, outs, split_ok)
     discharge = np.where(land, Q * KM2_M_PER_YR_TO_M3S, 0.0)
     ws_f = np.where(lake, surf, np.where(sea, 0.0, h))
@@ -2347,6 +2396,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                          "mean_depth_m": round(float(depth[lk["px"]].mean()), 1),
                          "max_depth_m": round(float(depth[lk["px"]].max()), 1),
                          "inflow_m3s": round(float(lake_in[j] * KM2_M_PER_YR_TO_M3S), 1),
+                         "evaporation_m3s": round(float(lake_loss[lk["px"]].sum() * res * res * KM2_M_PER_YR_TO_M3S), 1),
                          "outlet": [int(outs[j] // nx), int(outs[j] % nx)] if outs[j] >= 0 else None,
                          "outflow_m3s": round(float(discharge[outs[j]]), 1) if outs[j] >= 0 else 0.0}
                         for j, lk in enumerate(lakes)), key=lambda d: -d["area_km2"])
@@ -2354,8 +2404,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- climate on the fine terrain -------------------------------------
     # The bare ground's climate (zoom_vegetation.fine_fields: under the
     # coarse ice too), lapse-corrected to the pixel; on the zoom's own
-    # glaciers the ice's surface (climate.ice_surface: its thickness, and the
-    # coarse ice's white-top cooling and summer melting cap) (PW-160)
+    # glaciers the ice's surface (climate.ice_surface: its thickness and the
+    # mass balance's own year, under the coarse ice's sheet cover) (PW-160, PW-277)
     fields = ZVG.fine_fields(world, fr, px, py, size_km)
     hl = np.maximum(h, 0)
     temp = fields["t_sl"] - LAPSE * hl
@@ -2363,7 +2413,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     t_cold = fields["cold_sl"] - LAPSE * hl
     if glacier.any():
         ice_px = np.where(glacier, np.maximum(ice_th, 1.0), 0.0)
-        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, fields["ice_cover"])
+        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice_px, np.maximum(cov_f, icemass.LOCAL),
+                                                   latlon(P)[0], 2 * precip * jul_f, 2 * precip * (1 - jul_f))
     pix_lat = latlon(P)[0]
     north = pix_lat >= 0
     clim_f = np.where(sea, SEA_CLIMATE, clim_f)
@@ -2403,6 +2454,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # --- stats -----------------------------------------------------------
     m_fine, cnt = cell_means(h)
     full = cnt > 0.6 * full_px
+    inland_c = interior_c & full
     coarse_land_px = land_all[own]
     stats = {
         "land_pct": round(100 * land.mean(), 1),
@@ -2413,6 +2465,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "mean_land_elev_m": round(float(h[land].mean()), 1) if land.any() else None,
         "cell_mean_rms_error_m": round(float(np.sqrt(np.mean((m_fine - e_c)[full] ** 2))), 1) if full.any() else None,
         "cell_mean_bias_m": round(float(np.mean((m_fine - e_c)[full])), 1) if full.any() else None,
+        "inland_cell_mean_bias_m": round(float(np.mean((m_fine - e_c)[inland_c])), 1) if inland_c.any() else None,
+        "inland_cell_mean_rms_error_m": (round(float(np.sqrt(np.mean((m_fine - e_c)[inland_c] ** 2))), 1)
+                                         if inland_c.any() else None),
         "min_m": round(float(h.min()), 1),
         "max_m": round(float(h.max()), 1),
         "max_discharge_m3s": round(float(discharge.max()), 1),
@@ -2438,7 +2493,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                     "wave_power_kw_m": round(d["wave"], 1), "tide_range_m": round(d["tide"], 2),
                     "sediment_mt_yr": {k: round(d["gw"][f"sediment_{k}_kgs"] * coast.SEC_PER_YR / 1e9, 1)
                                        for k in ("river", "wave", "tide")},
-                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny),
+                    "mouths": _count_mouths(d, px, py, land, rec, discharge, nx, ny, splits),
                     "form": d["form"], "marine_layers": d["marine"],
                     "seaward": [round(float(v), 3) for v in d["u"]],
                     "lat_lon": [round(v, 3) for v in _latlon(fr.to_sphere(np.array([d["x"]]), np.array([d["y"]]))[0])]}

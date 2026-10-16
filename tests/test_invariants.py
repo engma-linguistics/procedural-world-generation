@@ -46,14 +46,39 @@ def test_values_sane(sim4):
     assert s.w_thick.min() >= 1.0 and s.w_thick.max() <= MAX_KM
     assert (s.w_cover >= 0).all() and (s.w_cover <= s.w_thick + 1e-9).all()
     assert (s.precip >= 0).all() and s.precip.max() < 10000
-    # (-110: in this run an ice cap 2.4 km thick on a 7 km range at 78 N reaches -105 C by the lapse rate alone;
-    # see the inbox draft on polar ice on high ranges)
-    assert -110 < s.t_cold.min() and s.t_warm.max() < 60
+    # (PW-226, PW-276: an ice sheet's surface rises from the bed at its edge, so a cap on a high range is thin)
+    assert -95 < s.t_cold.min() and s.t_warm.max() < 60
     assert (s.t_warm >= s.temp - 1e-6).all() and (s.t_cold <= s.temp + 1e-6).all()
     assert (s.w_rock < len(ROCKS)).all()
     snap = s.snapshot()
     assert (snap.koppen[land] != climate.SEA_CLASS).all()
     assert (snap.koppen[~land] == climate.SEA_CLASS).all()
+
+
+def test_ice_surface_rises_from_the_edge(sim4):
+    """PW-276: a sheet's (Nye) surface rises from the bed at its edge, so
+    raising the bed inside a sheet thins the ice there (it doesn't lift the
+    surface by the bed's rise): over ground 3 km higher the ice is at most
+    a margin's, or what stood above it before."""
+    from planet.tectonics import earth
+    from planet.tectonics.isostasy import land_view
+    s, g = sim4, sim4.grid
+    e, ice0, _ = land_view(s.w_elev - s.ice_sink, np.where(s.w_elev > 0, s.ice, 0.0))
+    land = e > 0
+    c = climate.compute(g, e, s.dT - 12.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
+    a = earth.ice_sheets(s, land, e, c["ground"], ice0)
+    iced = a > 0
+    inner = iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) == 0)
+    margin = 1.15 * earth.ICE_EDGE_M
+    assert inner.sum() >= 3 and (a[inner] > margin).any()
+    b = earth.ice_sheets(s, land, e + 3000.0 * inner, c["ground"], ice0)
+    assert np.array_equal(b > 0, iced)  # (the extent doesn't depend on the bed's height here)
+    assert (b <= a + 1e-6).all()
+    # (where ICE_MAX capped the first sheet, its thickness wasn't set by the margins, so the
+    # raised bed can keep more than a - 3000 of what the margins allow)
+    free = inner & (a < earth.ICE_MAX - 1e-6)
+    assert free.sum() >= 3
+    assert (b[free] <= np.maximum(a[free] - 3000.0, margin) + 1e-6).all()
 
 
 def test_layers_round_trip(sim4):

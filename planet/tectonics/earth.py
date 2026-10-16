@@ -17,8 +17,8 @@ from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import (CARB, COAL, EVAP, MIX, SAND, elevation, ice_load, iso_rate, land_view, ocean_depth, sediment_iso,
-                       sediment_km)
+from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, elevation, ice_load, iso_rate, land_view,
+                       ocean_depth, sediment_iso, sediment_km)
 
 SEA_TECT_MAX = 250.0  # m: the ocean basins' part of sea level levels off toward +-this
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
@@ -88,22 +88,26 @@ def global_temperature(sim, growth, newc, rng):
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
-    # Halved because the extra water also pushes the sea floor down.
     # The basins' volume (depth_ridge) follows the mean depth of the floor
     # over ridge_time Myr: a real ridge system waxes and wanes over tens of
     # Myr, while the model's spreading can stop or restart within a few
-    # steps of a suture or a rift. It is measured against a slow (300 Myr)
-    # average of itself, which starts from the initial sea floor (sea
-    # level 0), so only real changes in spreading move the sea, and it
-    # levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level has
-    # spanned about -100..+250 m).
+    # steps of a suture or a rift. It is measured against a fixed reference,
+    # the starting sea floor's mean depth (setup makes it a steady-state
+    # ocean, mean age ~60 Myr: sea level 0), so a lasting change in the
+    # basins (an ocean that stays young or old) keeps the sea up or down
+    # (PW-288: a baseline that relearned the floor over 300 Myr hid a
+    # persistently young ocean). The water displaced also loads the floor,
+    # which sinks by rho_w / (rho_m - rho_w) of the water's rise, so the sea
+    # rises by (rho_m - rho_w) / rho_m ~ 0.69 of the floor's shallowing.
+    # It levels off smoothly toward +-SEA_TECT_MAX (Phanerozoic sea level
+    # has spanned about -100..+250 m).
     ocean = ~sim.w_cont
     depth = float(ocean_depth(sim.w_age[ocean]).mean()) if ocean.any() else 0.0
     if sim.depth_ref is None:  # the starting sea floor defines sea level 0
         sim.depth_ref = sim.depth_ridge = depth
     sim.depth_ridge += (1 - np.exp(-dt / p.ridge_time)) * (depth - sim.depth_ridge)
-    sim.depth_ref += (1 - np.exp(-dt / min(300.0, 10.0 + sim.t))) * (sim.depth_ridge - sim.depth_ref)
-    sim.sea_tect = SEA_TECT_MAX * float(np.tanh(0.5 * (sim.depth_ridge - sim.depth_ref) / SEA_TECT_MAX))
+    rise = (RHO_MANTLE - RHO_WATER) / RHO_MANTLE * (sim.depth_ridge - sim.depth_ref)
+    sim.sea_tect = SEA_TECT_MAX * float(np.tanh(rise / SEA_TECT_MAX))
     # A hotter mantle melts more at ridges: thicker, more buoyant ocean
     # crust and shallower ocean basins, so the same water stands higher
     # on the continents (one reason the young Earth was mostly sea).
@@ -145,9 +149,10 @@ def update_climate(sim, e):
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
-    sim.ice = ice_sheets(sim, land, c["ground"], ice0)
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0)
     ice = np.where(land, sim.ice, 0.0)
-    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, climate.ice_cover(g, ice, land))
+    sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
+                                                           sim.p_jul, sim.p_jan)
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
     vol = (sim.ice / 1000.0).sum() * sim.cell_area * R_KM**2
     ocean_area = (~land).sum() * sim.cell_area * R_KM**2
@@ -218,7 +223,7 @@ ICE_CALVE = 5e4  # m2/yr: ice lost by calving per m of coast a sheet's margin re
 ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
 
 
-def ice_sheets(sim, land, ground, old):
+def ice_sheets(sim, land, bed, ground, old):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
@@ -244,12 +249,17 @@ def ice_sheets(sim, land, ground, old):
                  zone, a small or dry one hardly any. Cold polar desert
                  with too little snow of its own costs nothing to cover
                  (East Antarctica's plateau gets ~50 mm/yr);
-      thickness  a sheet's steady (Nye) profile: sqrt(2 tau/(rho g) x the
-                 distance in from its edge), ~330 m at the edge, ~1.9 km
-                 300 km in, ~3.3 km 1000 km in. Weakly (x accumulation^1/8,
-                 Vialov) thinner for dry sheets, and thinner for warm
-                 (temperate, softer) ice: a small tropical cap is a few
-                 hundred m (Quelccaya ~200 m)."""
+      thickness  a sheet's steady (Nye) surface: sqrt(2 tau/(rho g) x the
+                 distance in from its edge) above the bed at that edge
+                 (PW-276), ~330 m at the edge, ~1.9 km 300 km in, ~3.3 km
+                 1000 km in; the ice is that surface less the cell's own bed
+                 (bed: m above sea level, as the old ice pressed it down),
+                 at least a margin's: thinner over high ground inside the
+                 sheet (the ice drains off it; a sheet's surface stops near
+                 4 km, not at its range's height plus its profile), thicker
+                 over a basin. Weakly (x accumulation^1/8, Vialov) lower for
+                 dry sheets, and for warm (temperate, softer) ice: a small
+                 tropical cap is a few hundred m (Quelccaya ~200 m)."""
     g = sim.grid
     t_warm, t_cold, temp = ground
     old = np.where(land, old, 0.0)
@@ -270,10 +280,8 @@ def ice_sheets(sim, land, ground, old):
     if not iced.any():
         return np.zeros(g.n)
     iced = ablation_zone(sim, land, iced, smb)
-    edge = np.flatnonzero(iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) > 0))
-    hops, _ = kernels.bfs_within(edge, iced.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
-    d_m = (np.maximum(hops, 0) * g.spacing * R_KM + ICE_EDGE_KM) * 1000.0
-    h = np.sqrt(2 * ICE_TAU / (917.0 * 9.81) * d_m)
+    bed_edge, nye = sheet_surface(g, iced, bed)
+    h = np.maximum(bed_edge + nye - bed, ICE_EDGE_M)
     # per sheet: its mean snowfall and how cold its ice is
     lab, nk = kernels.components(iced, g.nbr_off, g.nbr_idx)
     k = np.maximum(lab, 0)
@@ -283,9 +291,51 @@ def ice_sheets(sim, land, ground, old):
         return (np.bincount(k, weights=f * iced, minlength=nk) / np.maximum(cnt, 1))[k]
 
     snow = np.clip((mean(sim.precip) / 300.0) ** 0.125, 0.75, 1.15)
-    own = climate.LAPSE * h + climate.ice_cooling(h, climate.ice_cover(g, np.where(iced, h, 0.0), land))
-    soft = 1.0 - 0.3 * np.clip((mean(temp - own) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
-    return np.where(iced, np.minimum(h * snow * soft, ICE_MAX), 0.0)
+    h = np.where(iced, h, 0.0)
+    _, _, t_ice = climate.ice_surface(t_warm, t_cold, temp, h, icemass.sheet_cover(g, h), lat, sim.p_jul, sim.p_jan)
+    soft = 1.0 - 0.3 * np.clip((mean(t_ice) + 20.0) / 20.0, 0, 1)  # -20 C or colder: 1; 0 C: 0.7
+    fac = snow * soft
+    surf = np.maximum(bed + ICE_EDGE_M * fac, bed_edge + nye * fac)
+    return np.where(iced, np.minimum(surf - bed, ICE_MAX), 0.0)
+
+
+def sheet_surface(g, iced, bed):
+    """(bed at the margin, Nye rise above it) per iced cell (PW-276): a
+    sheet's steady surface rises from its margin by sqrt(2 tau/(rho g) x
+    the distance in from it), and the ice drains toward whichever margin
+    keeps it lowest, so the surface is the least over the sheet's margin
+    cells (iced cells next to ground or sea without ice) of their bed plus
+    the profile at the distance (hops through the sheet) from them. On a
+    flat bed this is the nearest margin; a margin on a high ridge doesn't
+    hold the ice of the basin behind it above the basin's other, lower
+    margins. Bellman-Ford over the sheet's cells (each round carries the
+    best margin one hop further in)."""
+    n = g.n
+    off, idx = g.nbr_off, g.nbr_idx
+    k_m = 2 * ICE_TAU / (917.0 * 9.81) * g.spacing * R_KM * 1000.0  # m2 per hop
+
+    def rise(d):
+        return np.sqrt(k_m * d + 2 * ICE_TAU / (917.0 * 9.81) * ICE_EDGE_KM * 1000.0)
+
+    edge = iced & (np.add.reduceat(~iced[idx], off[:-1]) > 0)
+    src = np.repeat(np.arange(n), np.diff(off))
+    ok = iced[src] & iced[idx]
+    a, b = src[ok], idx[ok]
+    be = np.where(edge, bed, np.inf)
+    dd = np.where(edge, 0.0, np.inf)
+    v = np.where(edge, bed + rise(0.0), np.inf)
+    for _ in range(n):
+        cand = be[a] + rise(dd[a] + 1)
+        better = np.flatnonzero(cand < v[b] - 1e-6)
+        if len(better) == 0:
+            break
+        o = better[np.lexsort((cand[better], b[better]))]
+        first = np.r_[True, b[o][1:] != b[o][:-1]]
+        pick = o[first]
+        j, i = b[pick], a[pick]
+        be[j], dd[j], v[j] = be[i], dd[i] + 1, cand[pick]
+    be = np.where(iced, be, bed)
+    return be, np.where(iced, rise(np.where(iced, dd, 0.0)), 0.0)
 
 
 def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS):
@@ -380,7 +430,7 @@ def erode(sim, col):
     # (light) sediment deposited
     sed = sediment_km(cover, x)
     iso_dep = sediment_iso(cont, rock, sed)
-    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock))
+    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,

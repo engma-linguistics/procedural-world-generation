@@ -2,6 +2,8 @@
 simulation checkpoints, in a temporary data root."""
 
 import json
+import pickle
+import zlib
 
 import numpy as np
 import pytest
@@ -186,6 +188,25 @@ def test_simulate_checkpoints_and_replay(data_root, sim4_60):
     # a world sliced through a checkpoint still matches the stored keyframe
     world = json.loads(T.slice_world(out, 40.0).read_text())
     assert world["meta"]["replay_matches_keyframe"] is True
+
+
+def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
+    """A checkpoint zeroes the geological record of plate cells that own no
+    crust, but not of cells the world view samples: a plate's slot can be
+    the view's without being owned, and the view (and its subsidence) reads
+    its record (PW-291: zeroing them moved a replayed checkpoint's elevation
+    by up to ~1 km, failing slices at checkpoint times)."""
+    st = sim4_60.state()
+    pl, owner = st["plates"], st["owner"]
+    cells = np.arange(0, owner.size, 7)
+    pl.owned[owner[cells], pl.idx[owner[cells], cells]] = False  # make some of the view's slots unowned
+    live = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, st)
+    path = tmp_path / "c.ckpt"
+    S._write_checkpoint(path, st)
+    back = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0,
+                                 pickle.loads(zlib.decompress(path.read_bytes())))
+    assert np.array_equal(back.w_rec, live.w_rec) and np.array_equal(back.w_lith, live.w_lith)
+    assert np.array_equal(back.dyn, live.dyn) and np.array_equal(back.w_elev, live.w_elev)
 
 
 def test_run_layout(data_root):
