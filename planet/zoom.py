@@ -194,6 +194,11 @@ def creep_kd(res: float) -> float:
 
 
 DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
+# m: the plain (a few metres up to coast.PLAIN_Z0 + PLAIN_RISE ~11 m at its
+# edge) lies where the coarse ground is this low, fading out above (PW-349:
+# 250-800 m before, so it flattened cells standing 130-480 m to a few metres
+# and left river-mouth zooms ~25 m low inland: a lowland the world doesn't have)
+DELTA_PLAIN_GROUND = (30.0, 250.0)
 FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
@@ -1110,7 +1115,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     deltas = _deltas(g, L, sel, fr, sp, size_km, elev, flow, down, cell_area)
     wD, zD, wS, zS, wC, lobe, cut, smooth_c, wR_f, wW_f = (np.zeros(npx) for _ in range(10))
     keep = np.full(npx, -9.0)
-    hf = 1 - smoothstep(250.0, 800.0, e_land)  # no plain against high ground
+    hf = 1 - smoothstep(*DELTA_PLAIN_GROUND, e_land)  # a plain only on low coarse ground
     # ... and no prodelta over deep water: a delta builds out over its shelf
     # (a ~300 km plain's prodelta must not fill the trench off it)
     shelf_f = smoothstep(-1000.0, -200.0, e_sea)
@@ -1250,6 +1255,20 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         det = taper * amp_land * detail
         h = np.where(land, (1 - wD) * h + wD * (zD + det), (1 - wS) * h + wS * np.maximum(h, zS))
         h = clamp(h)
+        # what the plain took off an inland cell's mean goes back on its land
+        # beyond the plain (PW-349; a coastal cell's mean is left to the
+        # delta, whose lobe and channels move its coast; the correction fades
+        # out towards the coast, so it needs no clamp: clamp() isn't idempotent)
+        f_r = np.where(land, smoothstep(0.0, 0.3, ind_n), 0.0) * (1 - wD)
+        for _ in range(MEAN_PASSES):
+            m, cnt = cell_means(h)
+            ok = cnt > 0.25 * full_px
+            resid = np.where(ok & interior_c, e_c - m, 0.0)
+            if not resid.any():
+                break
+            corr, _ = ZK.gauss_interp(px, py, cx, cy, resid[:, None], ok[:, None].astype(float), 0.5 * sp)
+            h = h + f_r * np.nan_to_num(corr[:, 0])
+        h = np.where(land, np.maximum(h, 0.5), h)
     # --- volcanoes (zoom_volcanoes): each one its own cone -----------------
     vf = ZV.fields(world, fr, px, py, res, sp, Pk, seed, size_km)
     vtarget = np.full(npx, np.nan)  # the volcanoes' surface, for the landscape pass
