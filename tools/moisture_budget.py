@@ -723,6 +723,48 @@ def analyse(grid, d, c, rec) -> dict:
     return R
 
 
+def headlines(R) -> dict:
+    """The few numbers PW-015's steps are judged by, out of analyse()'s result (earth_check and the
+    scorecard store them): basin E-P-R (Sv, with NCEP E - GPCP P before runoff beside it), the
+    Atlantic-minus-Pacific E-P-R per area (mm/yr), northward vapour transport at 40S and 50N (Sv, with what
+    the E - P south of the circle implies), sea P at 50-60S (mm/yr), the rain efficiency (P/PW over the
+    observed P/PW) over the probe regions' half-years, and the kernel's mass residue (% of rain)."""
+    b = {r["basin"]: r for r in R["basins"]}
+    H = {}
+    for n in ("Atlantic", "Pacific", "Indian"):
+        H[f"{n.lower()}_epr_sv"] = round(b[n]["EPR_sv"], 3)
+        H[f"{n.lower()}_obs_ep_sv"] = round(b[n]["obs_EP_sv"], 3)
+    per_area = {n: (b[n]["EPR_sv"] * SV_KM3 / b[n]["area_mkm2"]) for n in ("Atlantic", "Pacific")}  # km3/Mkm2 = mm
+    H["atl_minus_pac_epr_mm"] = round(per_area["Atlantic"] - per_area["Pacific"])
+    mer = {r["lat"]: r for r in R["meridional"]}
+    for tag, phi in (("s40", -40), ("n50", 50)):
+        H[f"transport_{tag}_sv"] = round(mer[phi]["adv_sv"] + mer[phi]["eddy_sv"], 3)
+        H[f"transport_{tag}_implied_sv"] = round(mer[phi]["obs_implied_sv"], 3)
+    z = next(r for r in R["zonal"] if r["band"] == "-60..-50")
+    H["sea_p_50_60s_mm"], H["sea_p_50_60s_obs_mm"] = round(z["sea_P"]), round(z["sea_obs_P"])
+    eff = [(r["eff_ratio"], f"{r['region']} {r['season']}") for r in R["regions"]]
+    H["rain_eff_median"] = round(float(np.median([e for e, _ in eff])), 2)
+    w = max(eff, key=lambda e: abs(np.log(max(e[0], 1e-6))))
+    H["rain_eff_worst"], H["rain_eff_worst_where"] = round(float(w[0]), 2), w[1]
+    H["mass_residue_pct"] = [round(r["net_src_minus_rain_pct"], 2) for r in R["books"]]  # Apr-Sep, Oct-Mar
+    return H
+
+
+def headline_lines(H) -> list[str]:
+    """headlines() as report lines (targets from docs/proposals/moisture_transport.md section 8)."""
+    return [
+        f"E-P-R (Sv; + loses water; obs = NCEP E - GPCP P before runoff): Atlantic {H['atlantic_epr_sv']:+.2f} "
+        f"(obs {H['atlantic_obs_ep_sv']:+.2f}), Pacific {H['pacific_epr_sv']:+.2f} (obs {H['pacific_obs_ep_sv']:+.2f}), "
+        f"Indian {H['indian_epr_sv']:+.2f} (obs {H['indian_obs_ep_sv']:+.2f}); Atlantic minus Pacific "
+        f"{H['atl_minus_pac_epr_mm']:+d} mm/yr per area (PW-016 needs >= +100, Atlantic >= +0.25)",
+        f"northward vapour transport (Sv): 40S {H['transport_s40_sv']:+.2f} (implied {H['transport_s40_implied_sv']:+.2f}), "
+        f"50N {H['transport_n50_sv']:+.2f} (implied {H['transport_n50_implied_sv']:+.2f}); "
+        f"sea P at 50-60S {H['sea_p_50_60s_mm']} mm/yr (GPCP {H['sea_p_50_60s_obs_mm']})",
+        f"rain efficiency (P/PW over observed) in the probe regions: median {H['rain_eff_median']:.2f}, worst "
+        f"{H['rain_eff_worst']:.2f} ({H['rain_eff_worst_where']}); kernel mass residue "
+        f"{H['mass_residue_pct'][0]:+.2f} / {H['mass_residue_pct'][1]:+.2f}% of rain (Apr-Sep / Oct-Mar)"]
+
+
 def storm_mixed(grid, rec, r, r_ls):
     """The kernel's rain with the storms' frontal rain spread over a storm's
     size, as climate.rain does after the kernel."""
