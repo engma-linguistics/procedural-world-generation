@@ -324,6 +324,17 @@ LAYERS = {
     "stand_age": _spec("<u2", "yr", "mean time since the last stand-replacing disturbance"),
     "pft_dominant": _spec("u1", "id", "the plant functional type with the largest cover (255: none)"),
     "flooded": _spec("u1", "%", "share of the cell flooded part of the year (wetland habitat)"),
+    # soils (soils.py, worlds; PW-185)
+    "soil": _spec("u1", "id", "named soil type (soils.TYPES; legend 'soils')"),
+    "soil_depth": _spec("u1", "m", "rootable soil above rock or saprolite", scale=0.02),
+    "soil_texture": _spec("u1", "id", "soil texture (legend soils.textures: none, sand, loam, silt, clay, peat)"),
+    "soil_water": _spec("<u2", "mm", "water the soil holds for plants (available water x depth to 1.5 m)"),
+    "soil_fertility": _spec("u1", "0-1", "nutrient and base status", scale=0.01),
+    "soil_drainage": _spec("u1", "class", "drainage, 1 excessive .. 5 very poor (0: no soil)"),
+    "soil_carbon": _spec("u1", "kg C/m2", "organic carbon in the top metre (peat included)", scale=0.5),
+    "peat_depth": _spec("u1", "m", "peat thickness where peat lies (0: none)", scale=0.05),
+    "permafrost": _spec("u1", "class", "0 none, 1 sporadic, 2 discontinuous, 3 continuous"),
+    "loess": _spec("<u2", "m", "wind-blown silt thickness", scale=0.1),
 }
 # the satellite view (satellite.py): true colour as 0xRRGGBB (worlds only)
 # Runs store some layers more compactly than worlds and zooms (a keyframe per
@@ -467,14 +478,16 @@ def write_grid(grid) -> Path:
 
 
 def legends() -> dict:
-    """Rock, Koppen, biome, landform and vegetation ids -> names and colours, as every file stores them."""
+    """Rock, Koppen, biome, landform, vegetation and soil ids -> names and colours, as every file stores them."""
     from .climate import BIOMES, KOPPEN
     from .landform import legend
     from .surface import ROCKS
+    from .soils import legend as soil_legend
     from .vegetation import legend as veg_legend
     from .zoom_coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
+            "soils": soil_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 

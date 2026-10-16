@@ -374,7 +374,7 @@ def legend() -> dict:
 # ---------------------------------------------------------------------------
 # Site: the climate a cell offers, month by month
 # ---------------------------------------------------------------------------
-TOP_MM, DEEP_MM = 50.0, 150.0  # water the topsoil (0-0.3 m) and subsoil (0.3-1.5 m) hold (PW-185 will set them)
+TOP_MM, DEEP_MM = 50.0, 150.0  # water the topsoil (0-0.3 m) and subsoil (0.3-1.5 m) hold without soils (worlds: soils.py)
 SMAX = 5.0  # mm/day: what full soil can supply to the leaves (LPJ's Emax)
 
 
@@ -668,10 +668,15 @@ def floodplain(grid, elev, flow, rel=None, flood_ratio=None) -> np.ndarray:
     return 0.35 * np.clip(np.log10(np.maximum(q, 1.0) / 500.0) / 1.5, 0, 1) * flat
 
 
-def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None) -> np.ndarray:
+PERMA_WET = np.array([0.0, 0.3, 0.7, 1.0])  # how much of flat ground permafrost keeps from draining, by class (soils.PERMAFROST)
+
+
+def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None, permafrost=None) -> np.ndarray:
     """Share of each land cell (0..0.7) under water for part of the year:
     floodplains and deltas of big rivers, flat ground with a water
-    surplus, flat permafrost (which can't drain), and lake shores."""
+    surplus, flat permafrost (which can't drain), and lake shores.
+    permafrost: soils.mineral's class (0..3) per cell; without it, ground
+    colder than -2 C on average counts as permafrost (the run and the zoom)."""
     from .hydrology import CLOSED_LAKE, OPEN_LAKE
     land = elev > 0
     rel = relief(grid, elev)
@@ -681,7 +686,8 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None) ->
     # the more so where it is cool (slow decay builds peat that holds the water)
     mi = s["precip"] / np.maximum(s["pet_y"], 1.0)
     wet = 0.6 * np.clip((mi - 0.9) / 0.6, 0, 1) * flat ** 3 * np.clip((10.0 - s["temp"]) / 10.0, 0.3, 1.0)
-    perma = 0.35 * (s["temp"] < -2) * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2
+    pf = (s["temp"] < -2) if permafrost is None else PERMA_WET[np.asarray(permafrost, int)]
+    perma = 0.35 * pf * np.clip(s["precip"] / 400.0, 0, 1) * flat ** 2
     lk = np.isin(np.asarray(lake_kind), (OPEN_LAKE, CLOSED_LAKE))
     shore = np.zeros(grid.n)
     if lk.any():
@@ -1049,12 +1055,15 @@ def biome_of(types, sea_biome) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
-          cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None) -> dict:
+          cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
+          soil: dict | None = None) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
     arrays (climate.compute's names; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
-    stood in for, STANDINS). cheap: the run's variant (local LAI step,
+    stood in for, STANDINS). soil: soils.mineral's result (the buckets
+    cap1/cap2, the fertility factor f_soil on each stand's NPP and permafrost; PW-185), else
+    fixed buckets (TOP_MM, DEEP_MM, thinner on steep ground: the run and the zoom). cheap: the run's variant (local LAI step,
     fewer competition steps). locked_potential: also compute the locked
     PFTs' potential (for flora_update's niches). coastal: the coastal-life
     shares (0..1) "mangrove" and "salt_marsh" (coastal.world_layers) that
@@ -1070,6 +1079,8 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     unlocked = all_unlocked() if unlocked is None else np.asarray(unlocked, bool)
     rel = relief(grid, elev)
     s = site(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, rel)
+    if soil is not None:
+        s["cap1"], s["cap2"] = soil["cap1"], soil["cap2"]
     env = envelope(s, co2) & land[None, :]
     viable = env & unlocked[:, None]
     eff = np.ones((NP, n))
@@ -1083,9 +1094,12 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     else:
         viable_c = viable
     pot_all = potential(s, viable_c, eff, co2, lai0, cheap)
+    if soil is not None:  # the soil's fertility factor scales each stand's NPP (decision 6A: 0.85-1.1 on plants)
+        fs = np.asarray(soil["f_soil"], float)[None, :]
+        pot_all = dict(pot_all, npp=pot_all["npp"] * fs, net=pot_all["net"] * fs)
     pot = dict(pot_all, ok=pot_all["ok"] & viable)
     fw = flooded(grid, elev, np.zeros(n) if flow is None else flow, np.zeros(n) if lake_kind is None else lake_kind,
-                 s, ice, flood_ratio)
+                 s, ice, flood_ratio, None if soil is None else soil["permafrost"])
     eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None))
     sm = summary(s, pot, eq)
     types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw, coastal)
