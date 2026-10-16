@@ -665,21 +665,16 @@ def read_volcanoes(run_dir: Path) -> dict | None:
 # Checkpoints: the full simulation state every ~100 Myr of a run
 # ---------------------------------------------------------------------------
 # A pickle of sim.state() (tectonics.Simulation: arrays, the Plates, hotspot
-# and volcano lists, events, budget), zlib-compressed, the record of the
-# plates' unowned cells zeroed (save_checkpoint). Only ever read back from our own runs/.
+# and volcano lists, events, budget), zlib-compressed, the crust of the
+# plates' unowned cells zeroed (shrink_state). Only ever read back from our own runs/.
 def checkpoint_path(run_dir: Path, t: float) -> Path:
     return Path(run_dir) / "state" / f"{t:08.1f}.ckpt"
 
 
 def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
-    """The state, with the plates' geological record (rec, lith) zeroed
-    where they own no crust (dead slots, cells their crust has left: a
-    record is written when a plate gains one), which keeps it from doubling
-    the file. Cells the world view samples keep theirs even when not owned:
-    the view (and the subsidence it drives) reads them, so zeroing them
-    moved a replayed checkpoint's elevation by up to ~1 km (PW-291). (The older columns can't
-    be zeroed the same way: a volcano still reads the swell of a cell its
-    crust has left, volcanism.base_level.) writer: a CheckpointWriter to
+    """The state, with the crust of plate cells nothing reads zeroed
+    (shrink_state: ~9 in 10 of the plates' cells are stale copies of crust
+    that has left, which compress badly). writer: a CheckpointWriter to
     pickle, compress and write it in the background (sim.state() is a deep
     copy taken here, so the run can go on meanwhile)."""
     path = checkpoint_path(run_dir, sim.t)
@@ -692,14 +687,27 @@ def save_checkpoint(run_dir: Path, sim, writer=None) -> Path:
     return path
 
 
-def _write_checkpoint(path: Path, state: dict):
+def shrink_state(state: dict) -> dict:
+    """Zeroes, in place, the crust columns (plates.CRUST) of plate cells
+    nothing reads on: cells a plate owns no crust in (dead slots, cells its
+    crust has left: a column is written in full when a plate gains a cell)
+    except those the world view samples (Simulation._world_view: a plate's
+    slot can be the view's without being owned, and the view and its
+    subsidence read it, PW-291) and the volcanoes' crust cells (re_home
+    reads a volcano's swell, volcanism.base_level). Returns state."""
     pl = state["plates"]
     keep = pl.owned.copy()
     owner = state["owner"]
-    keep[owner, pl.idx[owner, np.arange(owner.size)]] = True  # the world view's cells (Simulation._world_view)
-    for name in ("rec", "lith"):
-        getattr(pl, name)[~keep] = 0
-    write_atomic(path, zlib.compress(pickle.dumps(state, protocol=5), 1))
+    keep[owner, pl.idx[owner, np.arange(owner.size)]] = True
+    for v in state["volcanoes"]:
+        keep[v["plate"], v["ref"]] = True
+    for arr in pl.crust():
+        arr[~keep] = 0
+    return state
+
+
+def _write_checkpoint(path: Path, state: dict):
+    write_atomic(path, zlib.compress(pickle.dumps(shrink_state(state), protocol=5), 1))
 
 
 class CheckpointWriter:

@@ -190,6 +190,24 @@ def test_simulate_checkpoints_and_replay(data_root, sim4_60):
     assert world["meta"]["replay_matches_keyframe"] is True
 
 
+def test_shrunk_checkpoint_resumes_bit_identical(sim4_60):
+    """A checkpoint zeroes the crust of the plate cells nothing reads
+    (S.shrink_state: most of them); a run resumed from it is still exactly
+    the straight run, and the plates' owned crust is untouched (PW-131)."""
+    states = {}
+    sim = Simulation(sim4_60.grid, 1, Params(flora_end=60.0), 2.0)
+    sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (10, 30) else None)
+    for t, st in states.items():
+        pl = st["plates"]
+        before = [a[pl.owned].copy() for a in pl.crust()]
+        S.shrink_state(st)
+        assert all(np.array_equal(a[pl.owned], b) for a, b in zip(pl.crust(), before))
+        assert (pl.thick[~pl.owned] == 0).mean() > 0.8  # (most cells are stale copies)
+        r = Simulation.from_state(sim.grid, 1, Params(flora_end=60.0), 2.0, st)
+        r.run(60)
+        assert sim_digest(r) == sim_digest(sim4_60), t
+
+
 def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
     """A checkpoint zeroes the geological record of plate cells that own no
     crust, but not of cells the world view samples: a plate's slot can be
