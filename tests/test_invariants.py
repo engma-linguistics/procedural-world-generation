@@ -60,19 +60,21 @@ def test_ice_surface_rises_from_the_edge(sim4):
     """PW-276: a sheet's (Nye) surface rises from the bed at its edge, so
     raising the bed inside a sheet thins the ice there (it doesn't lift the
     surface by the bed's rise): over ground 3 km higher the ice is at most
-    a margin's, or what stood above it before."""
+    a margin's, or what stood above it before. (One pass of ice_sheets: the
+    sheet's geometry for a given extent; the passes that follow would let
+    the thinner ice's balance move the extent, PW-364.)"""
     from planet.tectonics import earth
     from planet.tectonics.isostasy import land_view
     s, g = sim4, sim4.grid
     e, ice0, _ = land_view(s.w_elev - s.ice_sink, np.where(s.w_elev > 0, s.ice, 0.0))
     land = e > 0
     c = climate.compute(g, e, s.dT - 12.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
-    a = earth.ice_sheets(s, land, e, c["ground"], ice0)
+    a = earth._ice_pass(s, land, e, c["ground"], ice0)
     iced = a > 0
     inner = iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) == 0)
     margin = 1.15 * earth.ICE_EDGE_M
     assert inner.sum() >= 3 and (a[inner] > margin).any()
-    b = earth.ice_sheets(s, land, e + 3000.0 * inner, c["ground"], ice0)
+    b = earth._ice_pass(s, land, e + 3000.0 * inner, c["ground"], ice0)
     assert np.array_equal(b > 0, iced)  # (the extent doesn't depend on the bed's height here)
     assert (b <= a + 1e-6).all()
     # (where ICE_MAX capped the first sheet, its thickness wasn't set by the margins, so the

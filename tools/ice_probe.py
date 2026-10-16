@@ -1,6 +1,6 @@
 """The run's ice rule on Earth's bed at a fixed global temperature (PW-308).
 
-    uv run python tools/ice_probe.py 0 -6 -9 [--iters 8] [--start earth|none]
+    uv run python tools/ice_probe.py 0 -6 -9 [--iters 8] [--start earth|none] [--level 6]
 
 Runs earth.ice_sheets, as earth.update_climate does every climate step
 (climate.compute on the bed as the ice presses it down, glacial isostasy
@@ -39,8 +39,9 @@ def main():
     ap.add_argument("--iters", type=int, default=8, help="climate updates")
     ap.add_argument("--start", choices=("earth", "none"), default="earth")
     ap.add_argument("--regions", action="store_true", help="per region iced cells and snowfall at the end")
+    ap.add_argument("--level", type=int, default=6, help="grid level (Earth resampled onto it)")
     a = ap.parse_args()
-    src = timezoom.source_earth(6)
+    src = timezoom.source_earth(a.level)
     g = src["grid"]
     bed0 = src["elev"] + ice_load(g, src["ice"])  # (ETOPO's bed is pressed down by today's ice: unload it)
     p = Params()
@@ -55,7 +56,7 @@ def main():
             land = e > 0
             c = climate.compute(g, e, dT, p.tilt, np.where(land, ice0, 0.0))
             sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
-            ice = earth.ice_sheets(sim, land, e, c["ground"], ice0)
+            ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice))
             on = ice > 0
             sl = -0.9 * (ice[land] / 1000).sum() / max((~land).sum(), 1) * 1000
             rows.append(f"{sl:7.1f} m {100 * on.mean():5.2f}% {ice[on].mean() if on.any() else 0:5.0f}/{ice.max():5.0f}")

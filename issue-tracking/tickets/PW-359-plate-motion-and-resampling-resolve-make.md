@@ -2,7 +2,7 @@
 id: PW-359
 title: Plate motion and resampling (resolve) make most of the run's closed-hollow volume each step
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: tectonics
 effort: m
@@ -41,6 +41,7 @@ from boundaries under resolve alone (should be ~0 for a rigid plate), and trying
 docs/review/audit/basins-lakes/hollow_budget.py (`python hollow_budget.py <repo> 6 <seed> 300`).
 
 ## Updates
+- 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: coordinator's call. Coordinator: park until PW-358/PW-015 land (giant lakes now trace to open-water evaporation); then re-measure whether resampling hollows still matter before designing an interpolating world view.
 - 2026-10-16: Status in-progress -> needs-decision. Confirmed a resampling artifact (~75k km3 of lake-kept hollow re-cut per L6 step on rigid interiors). A one-to-one sampling map didn't remove it; a real fix needs an interpolating world view (design decision).
 - 2026-10-16: Tectonics night lane (2026-10-16): confirmed a resampling artifact. L6 seed 1 0-300 Myr, land cells >= 3 cells from any boundary (rigid interiors): resolve adds +75k km3 of lake-kept closed hollow per step there (hydrology._bed filter; erosion fills ~82k), while the raw hollow volume there doesn't change (-9k): the same relief, re-cut. Nearest-cell sampling of a rotated grid shows 14.8% of world cells on a duplicated plate cell and hides 7.4% of plate cells; each step a world cell sees a different arrangement, so floors filled to 5 m below spill (PW-299) come back as >= 20 m hollows. Write-back loses 4.3% of each step's gross land change (last write wins). Tried a one-to-one map (unique_samples: a duplicate takes the hidden neighbour): duplicates 14.8 -> 10.6%, lost write-back 4.3 -> 2.7% (82 -> 28 km-cells/step), but interior hollow creation unchanged (+90k): not landed (docs/review/audit/tectonics-night/pw359-unique-samples.patch). Sound fix is a design change: an interpolating (area-weighted) world view of thickness/cover with changes interpolated back (categorical columns nearest), effort m-l; needs a decision (it blurs plate fields unless only the increments are remapped). Scripts: docs/review/audit/tectonics-night/resample.py, writeback.py.
 - 2026-10-16: Status todo -> in-progress. Tectonics run-lane agent started.

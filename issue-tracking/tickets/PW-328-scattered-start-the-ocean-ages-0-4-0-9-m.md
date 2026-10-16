@@ -2,7 +2,7 @@
 id: PW-328
 title: "Scattered start: the ocean ages ~0.4-0.9 Myr per Myr in the first 100 Myr, sea falls 150-300 m"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: tectonics
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-293, PW-051, PW-191]
 refs: [planet/tectonics/setup.py, planet/tectonics/events.py, docs/review/audit/pw293-sea-level.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,4 +27,5 @@ realistic behaviour by 50-100 Myr) on a few L6 seeds at 500 Myr; if not, look at
 continents sit relative to plate boundaries.
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Run-lane agent started.
 - 2026-10-15: Created from inbox draft draft-scattered-start-ocean-ages.md (found by pw293).

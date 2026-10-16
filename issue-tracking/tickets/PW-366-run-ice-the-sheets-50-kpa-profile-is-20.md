@@ -2,7 +2,7 @@
 id: PW-366
 title: "Run ice: the sheets' 50 kPa profile is ~20% thinner than Earth's real sheets and the time zoom's flow (the time zoom's start drift)"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: climate
 effort: s
@@ -53,4 +53,6 @@ Lean: A with PW-240 (the cold-era climate drift) handled first or together, sinc
 eras PW-240 says are already too deep.
 
 ## Updates
+- 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: close enough unless cheap. Coordinator: parked; thicker sheets would deepen cold eras and need another round of ice-age sweeps. PW-295/241 (time zoom start drift) stay blocked on it.
+- 2026-10-16: Icehouse lane (PW-364): the deep cold eras come from extent, not thickness, so this pass leaves tau and the edge rise alone. On the L5 envelope world's 344 Myr geography (continents over both poles, polar land ~1.1 km high) the ice rule's fixed point at dT -4 is -578 m over 16% of the surface (mean ~2.5 km, Nye-consistent for sheets ~3x Antarctica's area); without the carried sheet air it is -85 m / 6.7%: the extent is what grows. Thicker sheets (75 kPa, or the cell-mean rise) would add ~+20-30% depth on the same extent and more through the height-mass-balance feedback (extent). Reconciling with the time zoom needs the run's new margins tested under more than an edge's 330 m (this ticket's point 2) and is best done with PW-015's margin snowfall, since both make ice grow. Note: the run's ice is now settled within each climate update (PW-364), so a run's ice is at its fixed point and a thicker profile's effect would show in full at once.
 - 2026-10-16: Created from inbox draft draft-run-ice-profile-thin.md (found by tzbatch-2026-10-16).

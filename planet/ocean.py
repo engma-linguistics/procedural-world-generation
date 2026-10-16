@@ -620,7 +620,9 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
             raise ValueError("moc_start is from a different grid")
     sst = sst_c(st)
     ov = None
-    for it in range(max(int(tune["moc_iters"]), 1)):
+    n_it = max(int(tune["moc_iters"]), 1)
+    it = 0
+    while True:
         sss, rho_w, rho_a = state(st, sst)
         # With no earlier state, the first passes let every sea that is
         # nearly dense enough sink, as if spun up from a well-mixed ocean,
@@ -628,13 +630,20 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         # two): the salt the overturning brings decides which sites keep
         # sinking.
         spin = it == 0 and start is None
-        n_sp = max(int(tune["moc_iters"]) - 2, 1)
+        n_sp = max(n_it - 2, 1)
         f = tune["moc_spin"] ** max(1.0 - it / n_sp, 0.0) if start is None else 1.0
         ov = overturning(cg, sea_c, rho_w, rho_a, sst, sss, teq_c, fresh_c, cur_c,
                          {**tune, "moc_drho": tune["moc_drho"] * f}, lid)
         a = 1.0 if spin else tune["moc_relax"]
+        step = a * (ov["share"] - st["share"])
         st = {k: st[k] + a * (ov[k] - st[k]) for k in st}
         sst = sst_c(st)
+        it += 1
+        # after the spin-up's moc_iters, on to a steady state (PW-360): until the inflow's share of the
+        # surface water moves by less than moc_tol anywhere (4 iterations left Earth's north at 10.0 Sv
+        # on its way to 11.3)
+        if it >= n_it and (np.abs(step).max() < tune["moc_tol"] or it >= tune["moc_max_iters"]):
+            break
     sss, rho_w, rho_a = state(st, sst)
     # back on the fine grid
     sst_f = sst_of(np.clip(_up(M, st["share"]), 0, 1), _up(M, st["t_in"]))

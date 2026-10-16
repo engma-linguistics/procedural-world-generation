@@ -2,7 +2,7 @@
 id: PW-365
 title: "Run ice: the cycle-averaged balance still mixes the orbital response with the sea counted as land"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: climate
 effort: xs
@@ -35,4 +35,5 @@ mix` with b the cell's brightness), or call a shared helper. One line; then re-m
 0 -6` and the time zoom drift (PW-295).
 
 ## Updates
+- 2026-10-16: Status todo -> done. Done: run's cycle-averaged balance uses orbit_k (not the sea as land). Earth probe at dT 0: 1.97% falling -> 2.53% steady.
 - 2026-10-16: Created from inbox draft draft-run-ice-orbit-mix-sea.md (found by tzbatch-2026-10-16).
