@@ -3356,6 +3356,10 @@ LAYER_DOC = {
                              "legend 'coastal_life'"),
     "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
+    "valley_floor": ("enum", "fine zooms (PW-412): 0 none; an alluvial river's valley floor: 1 floodplain, 2 its "
+                             "meander belt (where a migrating channel sweeps), 3 the channel on it"),
+    "floor_m": ("m", "fine zooms (PW-412): the valley floor's surface (under its channel too: where a migrating "
+                     "channel leaves its bed); 0 off the floors"),
     # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)
     "temperature_jul": ("C", "July mean temperature (the cells' July interpolated, so continuous across the equator), "
                              "lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),

@@ -25,7 +25,12 @@ Steps (the proposal's 1-6):
    channel widths, within their valley floor), bedrock / steep and braided
    ones don't; their beds on the parent's water surface;
    channels as wide as hydraulic geometry says (w ~ 4 Q^0.5 m). The
-   parent's lakes at their surface, outlined by the warp.
+   parent's lakes at their surface, outlined by the warp. Alluvial
+   reaches get a valley floor round their axis (zoom_fine_floodplain,
+   PW-412): ~20 channel widths wide, a little above the channel and nearly
+   flat across, its meander belt inside; held through step 5 and counted in
+   the parent's means; a fine parent's floors are kept (layers
+   valley_floor, floor_m).
 4. Falls: each parent fall keeps the parent's drop exactly: the lip pixel
    at the parent's lip height, the next pixel down its course a plunge pool
    whose surface is the lip minus the parent's height_m, a gorge from there
@@ -78,6 +83,7 @@ from . import store as S
 from . import world as W
 from . import zoom as Z
 from . import zoom_coastal as ZCL
+from . import zoom_fine_floodplain as ZFP
 from . import zoom_fine_volcano as ZFV
 from . import zoom_kernels as ZK
 from . import zoom_vegetation as ZVG
@@ -415,7 +421,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     river_segs = []
     # the courses: smoothed, their planform chosen per reach (_courses)
     paths_c = _courses(pa, riv_p, rec_p, up_main, q_p, bed_p, fall_links, (psi_p, up_all), hp_f, res,
-                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {})
+                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {}, axes := {})
     log("  river courses (parent km): " + ", ".join(f"{k} {v:.1f}" for k, v in diag.items()))
     for i in links:
         j = rec_p[i]
@@ -429,6 +435,18 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         seg_q.append(np.full(len(pts), q_p[i]))
         seg_a.append(np.full(len(pts), a_p[i]))
         seg_link.append(np.full(len(pts), i))
+    # the valley axes (PW-412): each link's samples, its floor's and meander belt's half widths
+    ax_pts, ax_hf, ax_belt, ax_z, ax_q = [], [], [], [], []
+    for i, (pts, hf_, belt_) in axes.items():
+        j = rec_p[i]
+        if (i, j) in fall_links or i not in paths_c:
+            continue
+        t = np.linspace(0.0, 1.0, len(pts))
+        ax_pts.append(pts)
+        ax_hf.append(hf_)
+        ax_belt.append(belt_)
+        ax_z.append(bed_p[i] + (bed_p[j] - bed_p[i]) * t)
+        ax_q.append(np.full(len(pts), q_p[i]))
     course = np.zeros(npx, bool)
     bed = np.full(npx, np.inf)
     c_q, c_a = np.zeros(npx), np.zeros(npx)
@@ -810,6 +828,56 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     log(f"  conditioned on zoom {pa.id}: {len(links)} parent river links, {len(fall_list)} falls, "
         f"{len(vol_list)} volcanoes, {int(lake.sum())} lake px [{time.time() - t0:.1f}s]")
 
+    # --- 4b. valley floors (PW-412, zoom_fine_floodplain) ----------------
+    # round each alluvial reach's axis: held through the landscape pass, the hillslopes shaped from
+    # their edge; counted in the parent's means (the volume cut for them goes onto the hillslopes). A
+    # parent's own floors (a fine parent's valley_floor, floor_m) are kept: its floor's level, its
+    # belts; floors are built here only for the reaches it drew none for
+    vfloor, vbelt, vf_z = np.zeros(npx, bool), np.zeros(npx, bool), np.full(npx, np.nan)
+    vf_own = np.zeros(npx, bool)  # (the floors built here; the others the parent's)
+    fp_axis_km, fp_width_w = 0.0, None
+    blocked = sea | lake | pool | gorge | mod | core | ring
+    sh_p = None
+    if "valley_floor" in pa.L and "floor_m" in pa.L:
+        vf_p = np.asarray(pa.L["valley_floor"])
+        sh_p = (vf_p > 0).astype(float)
+        sh = pa.bilinear(sh_p, pr, pc)
+        vfloor = (sh >= 0.5) & ~blocked
+        vf_z = np.where(vfloor, pa.bilinear(np.asarray(pa.L["floor_m"], float) * sh_p, pr, pc) / np.maximum(sh, 1e-9),
+                        np.nan)
+        vbelt = vfloor & (pa.bilinear(((vf_p == 2) | (vf_p == 3)).astype(float), pr, pc) >= 0.5)
+    if ax_pts:
+        apts = np.concatenate(ax_pts)
+        ahf, abelt = np.concatenate(ax_hf), np.concatenate(ax_belt)
+        az, aq = np.concatenate(ax_z), np.concatenate(ax_q)
+        fx, fy = fr.to_plane(pa.fr.to_sphere(apts[:, 0], apts[:, 1]))
+        ci = np.floor(fx / res + nb / 2).astype(int)
+        ri = np.floor(nb / 2 - fy / res).astype(int)
+        ok = (ci >= 0) & (ci < nb) & (ri >= 0) & (ri < nb) & (ahf >= res)  # (a floor at least a pixel wide)
+        if sh_p is not None:
+            ok &= pa.bilinear(sh_p, pa.ny / 2 - apts[:, 1] / rp - 0.5, apts[:, 0] / rp + pa.nx / 2 - 0.5) < 0.5
+        if ok.any():
+            cnt_p = np.bincount(own, minlength=pa.nx * pa.ny).astype(float)
+            t3_p = _box3((hp_f.ravel() * cnt_p).reshape(pa.ny, pa.nx)) / np.maximum(_box3(cnt_p.reshape(pa.ny, pa.nx)), 1)
+            t3_p = np.where(_box3(cnt_p.reshape(pa.ny, pa.nx)) > 0, t3_p, hp_f)
+            f_on, f_belt, f_z = ZFP.floors(nb, res, (ri * nb + ci)[ok], ahf[ok], abelt[ok], az[ok],
+                                           4.0 * np.sqrt(aq[ok]) / 1000.0, ZFP.depth(aq[ok]), course,
+                                           np.where(course, hw, 0.0), np.where(course, c_q, 0.0), blocked,
+                                           np.maximum(pa.bicubic(t3_p, pr, pc), target_f), 0.5 * rp)
+            vf_z = np.where(vfloor, vf_z, f_z)
+            vbelt |= f_belt & ~vfloor
+            vf_own = f_on & ~vfloor
+            vfloor |= f_on
+            ax_px = np.unique((ri * nb + ci)[ok])
+            ax_in = ax_px[(ax_px // nb >= hb) & (ax_px // nb < hb + n) & (ax_px % nb >= hb) & (ax_px % nb < hb + n)]
+            fp_axis_km = len(ax_in) * res
+            fp_width_w = float(np.median(2 * ahf[ok] / (4.0 * np.sqrt(aq[ok]) / 1000.0)))
+    on_f = vfloor & ~course
+    if on_f.any():
+        hw = np.where(on_f, w_in * vf_z + (1 - w_in) * hw, hw)
+        fixed |= on_f
+        log(f"  valley floors: {on_f.sum() * res * res:.1f} km2, meander belts {vbelt.sum() * res * res:.1f} km2")
+
     # --- 5. landscape ----------------------------------------------------
     thr = 1000.0 * np.tan(np.radians(THRESHOLD_DEG[0] + (THRESHOLD_DEG[1] - THRESHOLD_DEG[0]) * rug))  # m/km
     gy, gx = np.gradient(np.where(wp == 0, hp_f, np.maximum(hp_f, 0)), rp)
@@ -964,9 +1032,10 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     def crop(a):
         return np.asarray(a)[keep_px]
 
-    (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own, target, course_c) = (
+    (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own, target, course_c,
+     vfloor, vbelt, vf_z, vf_own) = (
         crop(a) for a in (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own,
-                          target, course))
+                          target, course, vfloor, vbelt, vf_z, vf_own))
     nx = ny = n
     npx = n * n
     water = np.where(sea, 1, np.where(lake | pool, 2, 0)).astype(np.uint8)
@@ -1032,6 +1101,23 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     err3 = (m3 - t3)[full3]
     kept3 = full3 & (_box3(gorge_p.reshape(pa.ny, pa.nx).astype(float)).ravel() == 0)
     err3k = (m3 - t3)[kept3]
+    # the valley floors (PW-412): their area, and the blocks mostly floor (too little hillslope there to
+    # take the volume cut for it: the floor's level kept, the block's mean not quite)
+    fl_c = vfloor & ~course_c & land
+    fshare = (_box3(np.bincount(own, fl_c, minlength=nown).reshape(pa.ny, pa.nx).astype(float)).ravel()
+              / np.maximum(c3, 1))
+    errf = (m3 - t3)[full3 & (fshare > 0.5)]
+    floodplain = {"floor_km2": round(float(fl_c.sum() * res * res), 2),
+                  "floor_pct": round(100 * float(fl_c.sum()) / max(int(land.sum()), 1), 2),
+                  "belt_km2": round(float((vbelt & land).sum() * res * res), 2),
+                  "axis_km": round(fp_axis_km, 1),
+                  "inherited_km2": round(float((fl_c & ~vf_own).sum() * res * res), 2),
+                  # (the floors built here: their area per km of valley axis, their design width in channel widths)
+                  "mean_width_km": round(float((fl_c & vf_own).sum() * res * res) / fp_axis_km, 3) if fp_axis_km else None,
+                  "width_w_median": round(fp_width_w, 1) if fp_width_w is not None else None,
+                  "floor_blocks": int(errf.size),
+                  "block_rms_error_m": round(float(np.sqrt(np.mean(errf ** 2))), 2) if errf.size else None,
+                  "block_bias_m": round(float(np.mean(errf)), 2) if errf.size else None}
     edge = np.zeros((n, n), bool)
     edge[[0, -1], :] = edge[:, [0, -1]] = True
     edge = edge.ravel() & land & ~course_c  # (the imposed river beds cut below it, as the parent's own)
@@ -1064,6 +1150,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # the rivers' planform (PW-405): switchbacks, sinuosity; the courses' classes (parent km)
         "river_planform": {**planform(rec_out, discharge, h, water, nx, res),
                            "classes_km": {k: round(v, 1) for k, v in diag.items()}},
+        # the alluvial valley floors and meander belts (PW-412)
+        "floodplain": floodplain,
         "waterfalls": sorted(fall_list, key=lambda f: -f["height_m"] * f.get("discharge_m3s", 1.0))[:5],
         "falls": fall_list,
         "falls_count": {"30m": sum(f["height_m"] >= 30 for f in fall_list),
@@ -1095,6 +1183,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         **({"landform": form_f} if form_f is not None else {}),
         "wetland": wetland,
         "coastal_life": cl,
+        "valley_floor": np.where(vfloor & land, np.where(course_c, 3, np.where(vbelt, 2, 1)), 0).astype(np.uint8),
+        "floor_m": np.where(vfloor & land, np.where(course_c, vf_z, h), 0.0).astype(np.float32),
         **veg_l,
         "radiation_index": tr["radiation_index"], "twi": tr["twi"],
         "river_dist": np.where(land, np.minimum(tr["river_dist"], 255), 0),
@@ -1185,7 +1275,7 @@ def _gauss(a: np.ndarray, sigma: float) -> np.ndarray:
 
 def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray,
              bed: np.ndarray, fall_links: dict, phase: tuple, hp_f: np.ndarray, res: float,
-             parent_fine: bool, seed: int, diag: dict | None = None) -> dict:
+             parent_fine: bool, seed: int, diag: dict | None = None, floor: dict | None = None) -> dict:
     """Each parent river link's course (PW-405): {link i: (k, 2) parent
     plane km, i's node first, its receiver's last}.
 
@@ -1207,7 +1297,14 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
     runs down the parent's network from each head (phase: _river_phase and
     the network's main upstreams; planet-fixed, so sibling zooms agree). A tributary ends on its main river's course;
     meanders taper out at a course's ends (a fall's lip and foot stay on
-    the parent's pixel centres)."""
+    the parent's pixel centres).
+
+    floor (PW-412): filled with each link's valley axis (the course
+    before its meanders), sampled as its course: {link i: (axis (k, 2)
+    parent plane km, floor half width km, meander belt half width km)}
+    (zoom_fine_floodplain). An alluvial reach's floor gives its meanders
+    room where the parent's own floor is narrower (a parent made without
+    floors cut a V down to its channel)."""
     rp = pa.rp
     nxp = pa.nx
     ok_link = riv & (rec >= 0)
@@ -1274,6 +1371,9 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         alluv = 1.0 - Z.smoothstep(0.25 * s_hi, s_hi, slope)
         s_lw = 0.013 * np.maximum(qn, 1e-3) ** -0.44
         single = 1.0 - Z.smoothstep(1.5 * s_lw, 3.0 * s_lw, slope)
+        # the valley floor this zoom builds round the axis (PW-412; the rock's share evened over a couple of
+        # parent px: a rock's edge isn't a step in the valley's width)
+        hf_n = ZFP.half_width(wn, alluv, _gauss(np.sqrt(np.clip(kr, 0.3, 2.0)), 2.0) ** 2)
         lam_lo = np.minimum(lam, np.minimum(np.r_[lam[:1], lam[:-1]], np.r_[lam[1:], lam[-1:]]))  # (a jump in Q:
         # none across it, its phase runs at the smaller wavelength's rate)
         drawn = Z.smoothstep(lo, hi, lam_lo / res) * (1.0 - (Z.smoothstep(lo, hi, lam / rp) if parent_fine else 0.0))
@@ -1289,6 +1389,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         tng = np.gradient(B, axis=0)[::M]
         tng /= np.maximum(np.hypot(*tng.T), 1e-12)[:, None]
         nrm = np.column_stack([-tng[:, 1], tng[:, 0]])
+        om_room = np.full(len(ch), np.inf)
         if (om > 0.02).any():
             # (where the parent's ground beside it rises a couple of bankfull depths over the ground on its
             # course (its bed: the parent's beds are made to fall down a course, a few m below it): the floor's
@@ -1305,6 +1406,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
                 up_ = hz > (h0 + rise)[:, None]
                 fw += 0.5 * np.where(up_.any(1), dd[np.argmax(up_, 1)], dd[-1])
             fw = np.maximum(fw, 0.5 * rp)  # (a floor narrower than the parent's pixel: it can't tell)
+            fw = np.maximum(fw, hf_n)  # (... or than the floor built here)
             # (the valley's bend over a meander wavelength: its turn there / the wavelength)
             d1 = np.diff(B, axis=0)
             head = np.unwrap(np.arctan2(d1[:, 1], d1[:, 0]))
@@ -1323,6 +1425,13 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
                             om)  # (never into a reach too steep, or a wavelength too short, for them)
         else:
             om = np.zeros(len(ch))
+        if floor is not None:
+            # the meander belt: the swing the reach allows (drawn here or not), BELT_X x its amplitude
+            # each side of the channel; the whole floor on a braided reach
+            om_b = MEANDER_OMEGA * alluv * single
+            om_b = np.minimum(om_b, np.maximum(om, om_room))
+            amp = lam * np.interp(om_b, _MEANDER[0], _MEANDER[3])
+            belt_n = np.where(single >= 0.5, np.minimum(hf_n, 0.5 * wn + ZFP.BELT_X * amp), hf_n)
         # down the course: the meanders' phase, swing (tapering out at its ends) and offset
         s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(B, axis=0).T))]
         lam_u = np.interp(u, np.arange(K + 1), lam)
@@ -1338,7 +1447,10 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             dpsi *= _gauss(seg, 2.0) / np.maximum(seg, 1e-9)  # (D8 steps: a diagonal's 1.41 evened out)
             psi_c = psi[ch[0]] + np.r_[0.0, np.cumsum(dpsi)]
             psi_u = np.interp(u, np.arange(K + 1), psi_c)
-            tg = np.gradient(B, axis=0)
+            # (the offsets at right angles to the axis's direction over a quarter wavelength: the axis keeps
+            # the parent's pixel steps at a fraction of a pixel, and turning a full swing with each of them
+            # drew boxy loops with right-angled corners, PW-412)
+            tg = _gauss(np.gradient(B, axis=0), max(1.0, 0.25 * float(np.median(lam)) * M / rp))
             tg /= np.maximum(np.hypot(*tg.T), 1e-12)[:, None]
             off = lam_u * _meander_y(psi_u, om_u)
             C = B + off[:, None] * np.column_stack([-tg[:, 1], tg[:, 0]])
@@ -1354,6 +1466,10 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             sub = C[k * M:(k + 1) * M + 1]
             tt = np.linspace(0.0, 1.0, M + 1)
             out[int(ch[k])] = np.column_stack([np.interp(t, tt, sub[:, 0]), np.interp(t, tt, sub[:, 1])])
+            if floor is not None:
+                ax = B[k * M:(k + 1) * M + 1]
+                floor[int(ch[k])] = (np.column_stack([np.interp(t, tt, ax[:, 0]), np.interp(t, tt, ax[:, 1])]),
+                                     hf_n[k] + (hf_n[k + 1] - hf_n[k]) * t, belt_n[k] + (belt_n[k + 1] - belt_n[k]) * t)
     return out
 
 
