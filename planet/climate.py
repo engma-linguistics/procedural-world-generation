@@ -850,8 +850,10 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
         # Where the overturning's inflow makes up a share of the surface
         # water, the water relaxes toward its temperature instead: carried
         # by the same currents, that adds (the carrying is linear) to base.
-        # Its warmth adds to the latitude's mean but for moc_zonal of it
-        # (t_eq was fitted to Earth's sea, overturning and all).
+        # Its warmth stays within its latitude band (moc_zonal = 1: the
+        # band's mean change is taken off, as for the gyres), so the
+        # overturning moves heat around rather than making it: t_eq was
+        # fitted to Earth's sea, overturning and all (PW-265).
         d = np.where(ocean, (1 - keep) * share * (t_in - t_eq), 0.0)
         e = np.where(ocean, carry(grid, cur, d, b, km=km, diffusion=0.15, allowed=allowed), 0.0)
         return base + e - tune["moc_zonal"] * np.where(ocean, zonal_mean(grid, e, ocean), 0.0), cur
@@ -893,16 +895,32 @@ HUMID_MIN = 0.15  # the lowest relative humidity humidity() reports
 LQ = 9.5  # C of moist static energy per unit of vapour (latent heat / heat capacity * 3.8 g/kg)
 
 
+@njit(cache=True)
+def _budyko1(p, pet, w):
+    """budyko() for one value."""
+    if p <= 0:
+        return 0.0
+    x = pet / p
+    if x <= 1:
+        return p * (1 + x - (1 + x**w) ** (1 / w))
+    if x > 1e8:  # (a trace of rain: it all evaporates; also keeps an infinite x out)
+        return p
+    return p * (1 + x - x * (1 + x ** -w) ** (1 / w))  # (the same, without overflow on very dry ground)
+
+
 @njit(cache=True, parallel=True)
-def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffusion, in_w,
-          in_src, in_off, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, et, evap, mean_mm):
+def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soil_mm, open_sea, move, diffusion,
+          in_w, in_src, in_off, deg, nbr_off, nbr_idx, iterations, fex, rh_c, rh_pow, cv_scale, evap, mean_mm):
     """Water vapour carried along the wind, for all seasons at once
     (arrays are [season, cell]). Each iteration, in each cell:
-    - over the sea the air takes up water to src_q;
-    - over land it takes up what the ground evaporates: a share et (per
-      cell: plants recycle more) of the rain the place gets in an average season, because soil, groundwater
-      and deep roots keep the wet season's water for the dry one (less where
-      it is cold: warm);
+    - over the sea the air takes up water to src_q, where the sea is open
+      (open_sea: the share not under sea ice);
+    - over land it takes up what the ground evaporates: water_balance's
+      actual evaporation (Budyko, Fu's w budyko_w per cell, with soil_mm
+      kept over from the other season) of the rain the place gets, in mm
+      as the global mean mean_mm sets them, against the potential
+      evaporation pet (mm/yr in each season), so the air gets back exactly
+      what the land's water balance says it gives (PW-266);
     - it rains a share fex of what the air can't hold (above qs);
     - plus large-scale rain (fronts, rising air), a share ls_rate of the
       rest that needs fairly humid air (relative humidity near rh_c or more);
@@ -927,14 +945,37 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
     moved = np.empty((S, n))
     acc_up = np.zeros((S, n))  # water the air takes up over the sea (evaporation)
     acc_q = np.zeros((S, n))  # the air's water vapour after its rain (for humidity)
+    land_e = np.zeros((S, n))  # what the land evaporates, per iteration (model units)
     tail = max(iterations // 4, 1)
     for it in range(iterations):
-        if evap != 0 and it >= 20 and it % 10 == 0:
+        tcor_due = evap != 0 and it >= 20 and it % 10 == 0
+        if (it >= 5 and it % 5 == 0) or tcor_due:
             tot = 0.0
             for k in range(S):
                 for i in range(n):
                     tot += ema[k, i]
             scale = mean_mm * S * n / max(tot, 1e-12)  # model units -> mm/yr
+        if it >= 5 and it % 5 == 0:
+            # the land's evaporation, as water_balance has it: each season's
+            # amount (mm) with what the soil kept from the other season's
+            # surplus, all of it at most the year's rain
+            for i in prange(n):
+                if not ocean[i]:
+                    aet = np.empty(S)
+                    tot_p = 0.0
+                    tot_e = 0.0
+                    for k in range(S):
+                        o = (k - 1) % S
+                        p_o = ema[o, i] * scale / S
+                        kept = min(p_o - _budyko1(p_o, pet[o, i] / S, budyko_w[i]), soil_mm)
+                        p_k = ema[k, i] * scale / S
+                        aet[k] = _budyko1(p_k + kept, pet[k, i] / S, budyko_w[i])
+                        tot_p += p_k
+                        tot_e += aet[k]
+                    f = tot_p / tot_e if tot_e > tot_p else 1.0
+                    for k in range(S):
+                        land_e[k, i] = f * aet[k] * S / scale  # back to a rate, model units
+        if tcor_due:
             for i in prange(n):
                 if not ocean[i]:
                     for k in range(S):
@@ -956,14 +997,12 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, warm, move, diffus
                     m[p, i] = (1 - diffusion[p, i]) * moved[p, i] + diffusion[p, i] * t / deg[i]
                 if ocean[i]:
                     if src_q[k, i] > m[k, i]:
+                        up = open_sea[i] * (src_q[k, i] - m[k, i])
                         if last:
-                            acc_up[k, i] += src_q[k, i] - m[k, i]
-                        m[k, i] = src_q[k, i]
+                            acc_up[k, i] += up
+                        m[k, i] += up
                 else:
-                    year = 0.0
-                    for j in range(S):
-                        year += ema[j, i]
-                    m[k, i] += et[i] * warm[k, i] * year / S
+                    m[k, i] += land_e[k, i]
                 q = m[k, i]
                 excess = max(q - qs[k, i], 0.0)
                 rh = min(q / max(qs[k, i], 1e-12) / rh_c, 1.0)
@@ -1234,27 +1273,34 @@ def _season_inputs(grid: Grid, elev, t_air, sst, v, shift, t_sl_season, tune, tr
     cv = tune["cv"] * tune["base"] * (1 + tune["itcz_cv"] * itcz) * np.clip(1 - tune["cv_sink"] * sink, 0, 1)
     in_w = inflow_weights(grid, v)
     move = np.clip(speed(v), 0.25, 1.0)
-    warm = np.clip(t_air / 15.0, 0, 1)  # evaporation needs warmth
     # (t_sl, t_ref, sink, itcz: not used by the rain kernel, but by clouds())
-    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, warm=warm, move=move,
+    return dict(qs=qs, src_q=src_q, ls=ls, cv=cv, mse_t=mse_t, mse_thr=mse_thr, move=move,
                 diff=diff, in_w=in_w, B=B, t_sl=t_sl, t_ref=t_ref, sink=sink, itcz=itcz,
                 t_air=np.where(ocean, sst, t_air))
 
 
-def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, et=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
+         open_sea=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Rain rate (model units) per season, [season, cell], from the inputs
     of _season_inputs for each season, the evaporation from the sea
     (same units and shape; 0 on land) and the air's water vapour (_qsat
-    units, same shape; see humidity()). et: the share of land rain that
-    evaporates back, per cell (default TUNE's et everywhere)."""
-    et = np.full(grid.n, tune["et"]) if et is None else np.ascontiguousarray(et, np.float64)
+    units, same shape; see humidity()). pet: potential evaporation (mm/yr)
+    in each season, [season, cell], and w: Fu's w per cell (default TUNE's
+    budyko_w), from which the land evaporates as water_balance has it;
+    open_sea: the sea's share not under sea ice (default 1), the only part
+    the air takes up water from. tune's mean_mm: the global mean rain the
+    kernel's rain is scaled to (in mm, for the land's evaporation)."""
+    n = grid.n
+    w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
+    open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
     G = _geom(grid)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in seasons_in[0]}
     iters = int(60 * 2 ** (grid.level - 5)) + 40
     r, r_ls, up, vap = _rain(st["qs"], st["src_q"], elev <= 0, st["ls"], st["cv"], st["mse_t"], st["mse_thr"],
-                    st["warm"], st["move"], st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
+                    np.ascontiguousarray(pet, np.float64), w, float(tune["soil_mm"]), open_sea, st["move"],
+                    st["diff"], st["in_w"], G["in_src"], G["in_off"], G["deg"],
                     grid.nbr_off, grid.nbr_idx, iters, tune["fex"], tune["rh_c"], tune["rh_pow"],
-                    tune["cv_scale"], et, tune["evap_cool"], tune["mean_mm"])
+                    tune["cv_scale"], tune["evap_cool"], tune["mean_mm"])
     # Storms carry their rain with them: the large-scale (frontal) rain is
     # spread over a storm's size, so e.g. the storms that brew over warm
     # coastal seas in winter rain on the east coasts even though the mean
@@ -1271,7 +1317,6 @@ TUNE = dict(
     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
-    et=0.5,  # share of land rain that evaporates back into the air (soil, plants)
     # rain-making
     fex=0.25,  # share of the oversaturated water that rains out in one cell (rest further on)
     base=0.035,  # rain-out per cell and iteration (large-scale rain; showers: cv times this)
@@ -1365,9 +1410,6 @@ TUNE = dict(
     veg_w=1.0,  # Budyko w per unit of woody cover ...
     veg_w_deep=0.3,  # ... plus this per unit of deep-rooted evergreen tree cover ...
     veg_w_ref=0.41,  # ... less Earth's land mean of the two (so Earth stays at budyko_w)
-    et_veg=0.5,  # rain recycling: et x (1 + et_veg x (LAI / et_lai - 1)) ...
-    et_lai=2.3,  # ... Earth's rain-weighted land-mean LAI (so Earth recycles as before on the whole) ...
-    et_band=0.2,  # ... within et x (1 +- et_band)
     albedo_k=0.03,  # C per W/m2 of sunshine absorbed at the ground (local; the air mixes it away)
     albedo_cap=2.0,  # C: the most a half-year moves either way
     albedo_ref=0.21,  # the snow-free albedo the temperature curve stands for (Earth's land mean) ...
@@ -1405,7 +1447,7 @@ TUNE = dict(
     moc_width=250.0,  # km: the inflow's width (for its heat loss to the air) ...
     moc_lambda=30.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature
     moc_q0=0.001,  # Sv per km of width: an inflow this strong makes up ~2/3 of the surface water
-    moc_zonal=0.0,  # share of the inflow's warmth taken off its latitude's mean (see sea_surface)
+    moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean (see sea_surface; PW-265)
     moc_level=5,  # grid level the overturning is solved on (5: ~220 km cells)
     moc_spin=6.0,  # x moc_drho at the start (see ocean.solve)
     moc_iters=4,  # damped iterations of salinity <-> overturning
@@ -1556,6 +1598,13 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
     return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=np.maximum(gdd5, 0.0))
 
 
+def pet_halves(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
+    """Potential evaporation in the Apr-Sep and Oct-Mar half-years, each as
+    a rate per year like p_jul / p_jan (mm/yr), shape (2, n)."""
+    pet_m = pet_months(lat, temp, t_warm, t_cold, tilt)
+    return np.stack([2 * pet_m[3:9].sum(0), 2 * (pet_m[:3].sum(0) + pet_m[9:].sum(0))])
+
+
 def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, tune: dict | None = None,
                   w=None) -> dict:
     """Where the rain goes: evaporation back to the air, or runoff into
@@ -1575,9 +1624,7 @@ def water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, t
     compute). Months are a sine between the coldest and warmest month, peaking in
     July (north) or January (south)."""
     tune = {**TUNE, **(tune or {})}
-    pet_m = pet_months(lat, temp, t_warm, t_cold, tilt)
-    pet_jul = 2 * pet_m[3:9].sum(0)  # Apr-Sep, as a rate per year like p_jul
-    pet_jan = 2 * (pet_m[:3].sum(0) + pet_m[9:].sum(0))
+    pet_jul, pet_jan = pet_halves(lat, temp, t_warm, t_cold, tilt)
     # Each half-year on its own (amounts, mm), then again with what the
     # soil kept from the other half-year's surplus (snowmelt and winter rain
     # still in the ground when summer comes), up to its capacity.
@@ -1783,7 +1830,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     veg: the vegetation's feedbacks (vegetation.feedback: woody and deep-
     rooted cover, LAI, albedo, snow masking; per cell, land only), or None
     for land with an Earth-like average cover: plants give more of the rain
-    back to the air (Budyko w; rain recycling, et) and set the surface's
+    back to the air (Budyko w, which the rain kernel recycles) and set the surface's
     albedo (see vegetation_feedbacks).
     orbit_dt: an orbit's temperature anomaly (C) per cell and month (n x
     12, month 0 = April; timezoom.orbit_anomaly), added to the air's
@@ -1859,14 +1906,19 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, v_jul, shift, t_sl_jul, tune, tracks[0]),
             _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
-    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, tune, fb["et"])
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
+    # The air takes up water from the open sea (not through sea ice) and
+    # from the land as much as the land's water balance evaporates (on these
+    # first-pass temperatures; the kernel's own mm/yr, for that and its
+    # wet-cool / dry-hot showers, use the same global mean as the rain).
+    open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
+    pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
+    (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet},
+                                                          pet, fb["w"], np.where(ocean, open_y, 1.0))
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
-    # (the rain model lets the air take up water over sea ice too; it doesn't)
-    open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
-    sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale * open_y, 0.0)
+    sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
                cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
     t_warm, t_cold, temp, ground = _land_finish(t_warm, t_cold, temp, **fin)
@@ -1968,30 +2020,24 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
 
 
 def vegetation_feedbacks(open_land, veg, tune) -> dict:
-    """Per-cell Budyko w and rain-recycling share et from the vegetation
-    (vegetation.feedback; None: TUNE's scalars, an Earth-like average cover)
-    on ice-free land (open_land), plus what albedo_warming needs (section
-    4.1 of docs/proposals/vegetation.md):
+    """Per-cell Budyko w from the vegetation (vegetation.feedback; None:
+    TUNE's budyko_w, an Earth-like average cover) on ice-free land
+    (open_land), plus what albedo_warming needs (section 4.1 of
+    docs/proposals/vegetation.md):
       w   Fu's w = budyko_w + veg_w x (woody cover + veg_w_deep x deep-rooted
           evergreen - veg_w_ref): forests give more of their rain back to the
           air than grass or bare ground (Zhang et al. 2001); veg_w_ref is
-          Earth's land mean, so Earth stays at ~budyko_w
-      et  the rain kernel's recycled share, et x (1 + et_veg x (LAI / et_lai
-          - 1)), held within et_band of et: leafy forest recycles more, bare
-          ground less. A nudge only, so a forest can't rain itself into
-          existence (the loop stays inside the band)."""
+          Earth's land mean, so Earth stays at ~budyko_w. The rain kernel
+          recycles what the water balance evaporates (PW-266), so this is
+          also the plants' rain recycling."""
     n = open_land.shape[0]
     w = np.full(n, tune["budyko_w"])
-    et = np.full(n, tune["et"])
     if veg is None:
-        return dict(w=w, et=et, veg=None, has=np.zeros(n, bool))
+        return dict(w=w, veg=None, has=np.zeros(n, bool))
     has = open_land
     x = veg["woody"] + tune["veg_w_deep"] * veg["deep"] - tune["veg_w_ref"]
     w = np.where(has, np.clip(tune["budyko_w"] + tune["veg_w"] * x, 1.5, 4.0), w)
-    b = tune["et_band"]
-    f = np.clip(1 + tune["et_veg"] * (veg["lai"] / tune["et_lai"] - 1), 1 - b, 1 + b)
-    et = np.where(has, tune["et"] * f, et)
-    return dict(w=w, et=et, veg=veg, has=has)
+    return dict(w=w, veg=veg, has=has)
 
 
 def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune) -> tuple[np.ndarray, np.ndarray]:

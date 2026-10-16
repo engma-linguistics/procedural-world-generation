@@ -282,8 +282,8 @@ def test_climate_fits_ground_after_events():
 
 def test_vegetation_feedbacks_nudge():
     """The vegetation's feedbacks on the climate are nudges (PW-203): a
-    forested continent recycles more rain than a bare one, but the recycled
-    share stays within its band and the albedo moves each half-year by at
+    forested continent recycles more rain than a bare one, (through Budyko's w,
+    which stays within Fu's range), and the albedo moves each half-year by at
     most albedo_cap."""
     from planet import vegetation
     g = build_grid(4)
@@ -296,7 +296,7 @@ def test_vegetation_feedbacks_nudge():
     T = climate.TUNE
     for v in (forest, bare):
         f = climate.vegetation_feedbacks(land, v, T)
-        assert np.all(np.abs(f["et"] - T["et"]) <= T["et"] * T["et_band"] + 1e-12)
+        assert np.all((f["w"] >= 1.5) & (f["w"] <= 4.0))
     cf, cb = climate.compute(g, elev, veg=forest), climate.compute(g, elev, veg=bare)
     assert cf["precip"][land].mean() > cb["precip"][land].mean()
     assert cf["aet"][land].sum() > cb["aet"][land].sum()  # forests give more back to the air
@@ -351,3 +351,14 @@ def test_hillslope_wear_level_consistent():
                             2.0 ** (level - 4), np.full(n, 170.0))
         wear.append(out[3][land].mean())
     assert wear[1] == pytest.approx(wear[0], rel=0.15), wear
+
+
+def test_kernel_budyko_matches_and_stays_finite():
+    """The rain kernel's scalar Budyko (PW-266) is water_balance's, and stays
+    finite for a trace of rain under a big potential evaporation."""
+    for p, pet, w in [(800.0, 400.0, 2.6), (300.0, 1500.0, 1.5), (50.0, 2000.0, 4.0), (2000.0, 100.0, 2.6)]:
+        assert climate._budyko1(p, pet, w) == pytest.approx(float(climate.budyko(np.array(p), np.array(pet), w)),
+                                                             rel=1e-9)
+    for p in (1e-300, 5e-324, 1e-12, 0.0):
+        e = climate._budyko1(p, 2000.0, 2.6)
+        assert np.isfinite(e) and 0.0 <= e <= p

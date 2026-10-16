@@ -67,7 +67,7 @@ def test_frame_rivers_end_in_its_own_hollows():
     from helpers import run_sim
     sim = run_sim(myr=60)
     n_ends = 0
-    for _ in range(5):
+    for _ in range(10):
         sim.run(sim.t + 20)
         g, snap = sim.grid, sim.snapshot()
         elev = snap.elevation.astype(float)

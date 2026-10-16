@@ -65,6 +65,8 @@ which keep going.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 from numba import njit
 
@@ -450,6 +452,9 @@ def salinity(grid: Grid, sea: np.ndarray, fresh: np.ndarray, cur: np.ndarray, tu
     return s + (S0 - (s * area)[sea].sum() / area[sea].sum())
 
 
+FW_RESIDUE = 0.02  # m/yr: see freshwater (the rain model's transport itself leaks ~0.5-1.6 cm/yr at L5-6)
+
+
 def freshwater(grid: Grid, sea: np.ndarray, surf: np.ndarray, precip: np.ndarray, evap: np.ndarray,
                runoff: np.ndarray, ice_m: np.ndarray, melt: np.ndarray | None, tune: dict,
                export: np.ndarray | float | None = None) -> dict:
@@ -457,7 +462,11 @@ def freshwater(grid: Grid, sea: np.ndarray, surf: np.ndarray, precip: np.ndarray
     runoff in mm/yr (runoff on land), ice_m: sea ice grown per winter (m),
     export: the share of it that drifts away (default ice_export), melt: ice-sheet meltwater (m/yr of water; on land routed like the
     rivers, at sea entering where it is). Returns the parts and the total
-    with its (global, area-weighted) mean over the sea taken off."""
+    with its (global, area-weighted) mean over the sea taken off. The rain
+    model's air takes up what the sea and the land's water balance
+    evaporate (PW-266), so without meltwater that mean is only the books'
+    small residue (the temperatures move a little after the rain): a warning
+    above FW_RESIDUE m/yr."""
     area = cell_area_km2(grid)
     ep = np.where(sea, (precip - evap) / 1000.0, 0.0)
     melt = np.zeros(grid.n) if melt is None else np.maximum(np.asarray(melt, float), 0.0)
@@ -468,7 +477,11 @@ def freshwater(grid: Grid, sea: np.ndarray, surf: np.ndarray, precip: np.ndarray
     out = ICE_FRESH * export * np.where(sea, ice_m, 0.0)
     ice = -out + _spread(grid, out * area, sea, tune["ice_km"]) / area
     tot = ep + river + melt_in + ice
-    mean = (tot * area)[sea].sum() / max(area[sea].sum(), 1e-9)
+    a_sea = max(area[sea].sum(), 1e-9)
+    mean = (tot * area)[sea].sum() / a_sea
+    residue = mean - (melt_in * area)[sea].sum() / a_sea
+    if abs(residue) > FW_RESIDUE:
+        warnings.warn(f"fresh water into the sea doesn't balance: {residue:+.4f} m/yr", RuntimeWarning, stacklevel=2)
     return dict(ep=ep, river=river, melt=melt_in, ice=ice, mean=mean, total=np.where(sea, tot - mean, 0.0))
 
 
@@ -547,7 +560,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     overturning is thousands of km across; ~10x cheaper). There the
     inflow's warmth is added to the sea temperature sst0 (without it) the
     way climate.sea_surface would: by the same currents, part of the
-    latitude's mean change taken off (moc_zonal).
+    latitude's mean change taken off (moc_zonal; 1: the heat stays in its band, PW-265).
     sst_of(share, t_in): the full sea-surface temperature (on grid) where a
     share of the surface water is the overturning's inflow at t_in, used
     once at the end. t_eq: the latitude's sea temperature; cur: the
