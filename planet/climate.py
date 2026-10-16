@@ -1421,6 +1421,8 @@ TUNE = dict(
     budyko_w=2.6,  # Fu's w: how readily the land gives the rain back to the air (Earth's mean ~2.6)
     soil_mm=150.0,  # mm of water the soil holds over from one half-year to the next
     open_water=1.2,  # open water's evaporation per unit of the land's potential evaporation
+    leads=0.1,  # share of a frozen sea open in leads and polynyas, which the rain model's air takes up water
+    # through (winter pack ice: ~1-3% open in the central Arctic, ~5-20% in the Antarctic pack; PW-308)
     # salinity and the overturning circulation (see ocean.py)
     salt_k=2.0,  # psu fresher per m/yr of net fresh water into the sea (S0 x mixing time / depth) ...
     salt_ice=4.0,  # ... x (1 + this) under year-round sea ice (the fresh lid: a halocline)
@@ -1907,14 +1909,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             _season_inputs(grid, elev, tm - dt, sst_jan, v_jan, -shift, t_sl_jan, tune, tracks[1])]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
     wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
-    # The air takes up water from the open sea (not through sea ice) and
-    # from the land as much as the land's water balance evaporates (on these
-    # first-pass temperatures; the kernel's own mm/yr, for that and its
-    # wet-cool / dry-hot showers, use the same global mean as the rain).
+    # The air takes up water from the open sea and from the land as much as
+    # the land's water balance evaporates (on these first-pass temperatures;
+    # the kernel's own mm/yr, for that and its wet-cool / dry-hot showers,
+    # use the same global mean as the rain). Pack ice is no lid: its leads
+    # and polynyas keep a share `leads` of a frozen sea open, and the very
+    # cold, dry air over them takes up water fast (PW-308).
     open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
     pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
+    open_air = open_y + tune["leads"] * (1.0 - open_y)
     (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan) = rain(grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet},
-                                                          pet, fb["w"], np.where(ocean, open_y, 1.0))
+                                                          pet, fb["w"], np.where(ocean, open_air, 1.0))
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
