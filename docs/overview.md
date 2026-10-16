@@ -762,6 +762,7 @@ Laptop timings (4P + 4E cores, often shared with other jobs; wall times from `me
 
 - **Vegetation:** in the run ~0.09 s per climate update at L6 (~25 s per Gyr, ~8% of a run; L6 1 Gyr took 4.6 min, L7 23 min with other jobs running); in a world 0.2 s at L6. It adds ~3 MB to an L6 world (9 → 12 MB) and ~13 MB at L7 (~58 MB), and three layers (vegetation, tree cover, NPP) to run keyframes.
 - **Soils:** worlds only, ~0.8 s at L7 (mineral pass ~0.7 s, mostly the loess sweeps; climate memory from the keyframes ~0.35 s; organic pass 0.03 s); +5.6 MB on an L7 world JSON (62 → 68 MB); L7 worlds from keyframes took 25-31 s with them (under load).
+- **Lakes and river routing** (`hydrology.lakes` + `route`, PW-255; Threadripper, 8 numba threads, load ~12-18, seed 3199, 100 Myr): L6 ~6.1 -> ~3.4 s of a ~33.5 -> ~31 s run (medians of 3 interleaved pairs); L7 37.2 -> 23.6 s of a 180 -> 166 s run (one pair). Bit-identical (radix sort of the land cells, lake order reused across `_settle`'s tries, a filled-only flood for `_bed`, Floyd's heap pop). What's left is mostly `priority_flood_to`'s heap (~60% of the bucket at L6, ~70% at L7), which must keep its exact pop order for tied (flat lake) cells.
 - **Slicing** replays up to 100 Myr from a checkpoint: well under a minute at L6, a few minutes at L7. The Zoom button skips the replay.
 - **Zooms:** 1–7 s each; ~11–12 MB each for 500×500 px.
 - **Time zoom:** ~4 min per 1000 kyr at L6.

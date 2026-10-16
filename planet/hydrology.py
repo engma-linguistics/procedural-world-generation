@@ -105,7 +105,7 @@ def _bed(grid, ground, min_depth, min_slope):
     from .ocean import cell_area_km2
     h, keep = kernels.fill_shallow(ground, grid.nbr_off, grid.nbr_idx, float(min_depth),
                                    cell_area_km2(getattr(grid, "base", grid)), float(min_slope))
-    return np.where(keep, h, priority_flood(grid, h)[0])
+    return np.where(keep, h, kernels.flood_fill(h, h <= 0, grid.nbr_off, grid.nbr_idx, 0.01))
 
 
 def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
@@ -119,8 +119,10 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
     (flow, down, order, sink)) of the last try."""
     extra = np.zeros(grid.n)
     bed = _bed(grid, ground, min_depth, min_slope)
+    order0 = kernels.lake_order(bed, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
     for _ in range(tries):
-        wet, open_, out_z, pit, catch, basin = kernels.lakes(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss)
+        wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss,
+                                                                *order0)
         r = (bed, wet, open_, out_z, pit, catch, basin)
         sink = land & ~open_ & (wet | pit)
         lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink, src=src - loss * wet)

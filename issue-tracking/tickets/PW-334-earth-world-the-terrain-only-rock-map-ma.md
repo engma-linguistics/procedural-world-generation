@@ -2,7 +2,7 @@
 id: PW-334
 title: "Earth world: the terrain-only rock map makes every shelf shale, so warm carbonate shelves turn muddy and lose their reefs"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: coast
 effort: s
@@ -24,4 +24,5 @@ Fix: in earth_rock, put LIMESTONE at the surface of the warm shelves by the run'
 - [ ] Earth's warm shelves carbonate by the run's rule; coastal_check reef within ~2x of observed
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Agent started.
 - 2026-10-16: Created from inbox draft draft-earth-rock-map-carbonate-shelves.md (found by coast-batch).

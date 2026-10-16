@@ -145,38 +145,96 @@ def locate(pts, guess, raster, centers, nbr_off, nbr_idx):
 
 @njit(cache=True)
 def _heap_push(hk, hv, size, key, val):
+    # (sifts a hole up rather than swapping: the same comparisons, so the
+    # same heap, and the same pop order for equal keys)
     i = size
-    hk[i] = key
-    hv[i] = val
     while i > 0:
         p = (i - 1) >> 1
-        if hk[p] <= hk[i]:
+        if hk[p] <= key:
             break
-        hk[p], hk[i] = hk[i], hk[p]
-        hv[p], hv[i] = hv[i], hv[p]
+        hk[i] = hk[p]
+        hv[i] = hv[p]
         i = p
+    hk[i] = key
+    hv[i] = val
     return size + 1
 
 
 @njit(cache=True)
 def _heap_pop(hk, hv, size):
+    # Floyd's pop: the hole goes down to a leaf along the smaller children
+    # (the left one of equals), then the last element back up above every
+    # element not smaller than it. That leaves every element where the
+    # textbook sift-down (stop at the first children not smaller) leaves it,
+    # so the pops come in the same order, equal keys included, with about
+    # half the comparisons.
     key, val = hk[0], hv[0]
     size -= 1
-    hk[0] = hk[size]
-    hv[0] = hv[size]
+    if size == 0:
+        return key, val, size
+    k, v = hk[size], hv[size]
+    hk[size] = np.inf  # (a right child past the end is never the smaller)
     i = 0
-    while True:
-        l, r, m = 2 * i + 1, 2 * i + 2, i
-        if l < size and hk[l] < hk[m]:
-            m = l
-        if r < size and hk[r] < hk[m]:
-            m = r
-        if m == i:
+    l = 1
+    while l < size:
+        c = l + (hk[l + 1] < hk[l])
+        hk[i] = hk[c]
+        hv[i] = hv[c]
+        i = c
+        l = 2 * i + 1
+    while i > 0:
+        p = (i - 1) >> 1
+        if hk[p] < k:
             break
-        hk[m], hk[i] = hk[i], hk[m]
-        hv[m], hv[i] = hv[i], hv[m]
-        i = m
+        hk[i] = hk[p]
+        hv[i] = hv[p]
+        i = p
+    hk[i] = k
+    hv[i] = v
     return key, val, size
+
+
+@njit(cache=True)
+def _land_asc(elev, sea):
+    """The cells that aren't sea in order of height, ties by index: what
+    argsort(elev, kind="mergesort") gives with the sea's cells left out
+    (every one of them must be > 0). A stable radix sort on the bits of the
+    heights (a positive float's bits sort as the float does), 11 bits a
+    pass; ~7x faster than numba's mergesort."""
+    idx = np.nonzero(~sea)[0]
+    m = idx.shape[0]
+    a = idx.copy()
+    ka = elev[idx].view(np.uint64)
+    b = np.empty_like(a)
+    kb = np.empty_like(ka)
+    cnt = np.empty(2048, np.int64)
+    mask = np.uint64(2047)
+    for p in range(6):
+        sh = np.uint64(11 * p)
+        cnt[:] = 0
+        for t in range(m):
+            cnt[(ka[t] >> sh) & mask] += 1
+        same = False  # (every height has the same digit here: nothing to do)
+        for d in range(2048):
+            if cnt[d] != 0:
+                same = cnt[d] == m
+                break
+        if same:
+            continue
+        s = 0
+        for d in range(2048):
+            c = cnt[d]
+            cnt[d] = s
+            s += c
+        for t in range(m):
+            d = (ka[t] >> sh) & mask
+            o = cnt[d]
+            cnt[d] = o + 1
+            b[o] = a[t]
+            kb[o] = ka[t]
+        a, b = b, a
+        ka, kb = kb, ka
+    return a
 
 
 @njit(cache=True)
@@ -226,6 +284,43 @@ def priority_flood_to(elev, outlet, nbr_off, nbr_idx, eps):
 
 
 @njit(cache=True)
+def flood_fill(elev, outlet, nbr_off, nbr_idx, eps):
+    """priority_flood_to(...)[0] alone: the filled surface, faster. It
+    doesn't depend on the order in which cells with the same height are
+    taken (each cell ends at max(elev, eps + its lowest neighbour's filled
+    height), whichever of them reaches it first), so the outlet cells with
+    no other kind of neighbour, which reach nothing, needn't be queued."""
+    n = elev.shape[0]
+    filled = elev.copy()
+    closed = outlet.copy()
+    hk = np.empty(n)
+    hv = np.empty(n, np.int64)
+    size = 0
+    any_outlet = False
+    for i in range(n):
+        if outlet[i]:
+            any_outlet = True
+            for e in range(nbr_off[i], nbr_off[i + 1]):
+                if not outlet[nbr_idx[e]]:
+                    size = _heap_push(hk, hv, size, filled[i], i)
+                    break
+    if not any_outlet:
+        i = np.argmin(elev)
+        closed[i] = True
+        size = _heap_push(hk, hv, size, filled[i], i)
+    while size > 0:
+        z, i, size = _heap_pop(hk, hv, size)
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[e]
+            if not closed[j]:
+                closed[j] = True
+                if filled[j] < z + eps:
+                    filled[j] = z + eps
+                size = _heap_push(hk, hv, size, filled[j], j)
+    return filled
+
+
+@njit(cache=True)
 def _root(parent, i):
     while parent[i] != i:
         parent[i] = parent[parent[i]]
@@ -258,7 +353,7 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
     sea = elev <= 0
     if not sea.any():
         sea[np.argmin(elev)] = True
-    asc = np.argsort(elev, kind="mergesort")
+    asc = _land_asc(elev, sea)
     parent = np.arange(n)
     bottom = elev.copy()  # each basin's lowest point
     size = area.astype(np.float64).copy()  # each basin's area, km^2
@@ -271,10 +366,8 @@ def fill_shallow(elev, nbr_off, nbr_idx, min_depth, area, min_slope, eps=0.01):
     roots = np.empty(16, np.int64)
     mark = np.full(n, -1, np.int64)  # cells being filled at step t (and not reached yet)
     queue = np.empty(n, np.int64)
-    for t in range(n):
+    for t in range(asc.shape[0]):
         i = asc[t]
-        if sea[i]:
-            continue
         z = elev[i]
         nr = 0
         to_sea = False
@@ -419,11 +512,21 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
     elevation at which that basin met the sea's drainage; cell is a pit
     (no lower neighbour); water reaching each cell downhill (catchment);
     the cell's basin (its root cell)."""
+    sea, rcv, asc = lake_order(elev, nbr_off, nbr_idx)
+    return lakes_on(elev, nbr_off, nbr_idx, src, loss, sea, rcv, asc)
+
+
+@njit(cache=True)
+def lake_order(elev, nbr_off, nbr_idx):
+    """What kernels.lakes needs of elev alone (so its callers can reuse it
+    for the same elev with other src, loss): (sea, rcv, asc): the sea's
+    cells, each land cell's steepest-descent receiver (-1: a pit), the land
+    cells in order of height."""
     n = elev.shape[0]
     sea = elev <= 0
     if not sea.any():
         sea[np.argmin(elev)] = True
-    # steepest descent and catchments
+    # steepest descent
     rcv = np.full(n, -1, np.int64)
     for i in range(n):
         if sea[i]:
@@ -433,11 +536,18 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
             j = nbr_idx[e]
             if elev[j] < bz:
                 bz, rcv[i] = elev[j], j
-    asc = np.argsort(elev, kind="mergesort")
+    return sea, rcv, _land_asc(elev, sea)
+
+
+@njit(cache=True)
+def lakes_on(elev, nbr_off, nbr_idx, src, loss, sea, rcv, asc):
+    """kernels.lakes with lake_order(elev)'s (sea, rcv, asc) given."""
+    n = elev.shape[0]
+    # catchments
     catch = np.where(sea, 0.0, src)
-    for t in range(n - 1, -1, -1):
+    for t in range(asc.shape[0] - 1, -1, -1):
         i = asc[t]
-        if not sea[i] and rcv[i] >= 0:
+        if rcv[i] >= 0:
             catch[rcv[i]] += catch[i]
     # flood every basin from below
     parent = np.arange(n)
@@ -452,10 +562,8 @@ def lakes(elev, nbr_off, nbr_idx, src, loss):
     wet = np.zeros(n, np.bool_)
     done = sea.copy()
     roots = np.empty(16, np.int64)
-    for t in range(n):
+    for t in range(asc.shape[0]):
         i = asc[t]
-        if sea[i]:
-            continue
         nr = 0
         to_sea = False
         for e in range(nbr_off[i], nbr_off[i + 1]):
