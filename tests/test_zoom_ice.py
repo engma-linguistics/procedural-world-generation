@@ -70,11 +70,12 @@ def test_no_ice_on_the_warm_floor(ice_zoom):
     # ice, but for the snout of a big tongue down a deep valley (since PW-298's
     # slope fit the massif stands at its cells' mean heights, ~1.5 km higher
     # than the old fit left it in 6 iterations, and its cap feeds 3 km^3/yr
-    # tongues: one ends at ~870 m, 0.3% of the ice). PW-350 thinned their
-    # snouts (364-573 m -> ~210 m on the last 3 km pixel) but not their reach:
-    # they end at GL_MAX_KM still carrying ~2.8 km^3/yr against -20..-30 m/yr
-    # of melt, fed along the cap's margin for most of their run (as big
-    # maritime outlets do: Franz Josef ends in rainforest), so they stay.
+    # tongues. PW-350 thinned their snouts (364-573 m -> ~210 m on the last
+    # 3 km pixel); since PW-357 they run until their melt has used up their
+    # flux (they had ended at GL_MAX_KM still carrying ~2.8 km^3/yr, the run
+    # counted along the cap's margin that fed them): 0.3% -> 0.47% of the
+    # ice on such ground, as big maritime outlets do (Franz Josef ends in
+    # rainforest), so they stay.
     assert (ice & (summer > 12)).sum() < 0.005 * ice.sum(), "no ice on ground with 12 C+ summers"
     # (with 1.8 m of rain a year, snow outlasts summers of up to ~5 C on bare
     # ground, give or take the noise: a maritime snowline, PW-159); below that,
@@ -136,6 +137,29 @@ def test_ice_thins_to_its_end_on_land(monkeypatch, res):
     back = [i for i in np.flatnonzero(ice) if s in ZK.chain(rec, i)[:int(np.ceil(3 / res)) + 1]]
     assert th[max(back, key=lambda i: h[i])] > 1.6 * th[s]
 
+
+def test_tongue_along_the_zone_ends_by_melt():
+    """PW-357: a tongue running along its accumulation zone's margin, fed by
+    it pixel after pixel (here for 60 km, past the GL_F_MAX cap), counts its
+    run from the last pixel the zone drains into, not from where its first
+    feeder left the zone: it ends where its melt has used up its flux, not
+    at max_km still carrying the cap's flux."""
+    from planet import zoom_kernels as ZK
+    nx, ny, res, max_km = 200, 21, 1.0, 100.0
+    r, c = np.divmod(np.arange(nx * ny), nx)
+    zone = (r < 20) & (c < 60)  # a 20 km band along the valley, 60 km long
+    rec = np.where(r < 20, (r + 1) * nx + c, np.where(c < nx - 1, r * nx + c + 1, -1)).astype(np.int64)
+    bal = np.where(zone, 15.0, -40.0)  # m/yr w.e.
+    order = ZK.receiver_order(rec)
+    flux, wid, run = ZK.glacier_flow(rec, order, bal, zone, np.zeros(nx * ny, bool), nx, res,
+                                     zoom.GL_W0, zoom.GL_F0, zoom.GL_W_EXP, zoom.GL_F_MAX, max_km)
+    valley = np.flatnonzero((r == 20) & (flux > 0))
+    assert c[valley].max() > 60 + 10, "the tongue runs on below the zone"
+    end = valley[np.argmax(c[valley])]
+    assert flux[end] < 0.01 * zoom.GL_F_MAX, "it ends where its flux is melted away"
+    # (counted from column 59, the last pixel the zone feeds, one step below it)
+    assert run[end] < max_km and abs(run[end] - (c[end] - 58) * res) < 1e-6
+    assert flux[(r == 20) & (c == 60)] > 0.9 * zoom.GL_F_MAX  # (it leaves the margin at the cap)
 
 
 def test_marine_sheet_keeps_its_sub_sea_bed():
