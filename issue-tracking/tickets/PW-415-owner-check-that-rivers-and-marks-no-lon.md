@@ -1,4 +1,5 @@
 ---
+id: PW-415
 title: Owner check that rivers and marks no longer flicker (PW-408 depth-precision fix)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw408-river-flicker
 blocked_by: []
 relates: [PW-408]
 refs: [viewer/index.html, "world 0b77f1"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,3 +29,6 @@ console. `renderer` isn't global; `planetViewer` could expose it.
       already uses it). The other suspect is the 1-px GL line path: the screencast showed only
       line pixels changing between frames. If so, move the remaining overlays to `ribbonObj`.
       Plate outlines are ~1 M segments, so check `planetViewer.bench()`.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-pw408-confirm-on-screen.md (found by pw408-river-flicker).
