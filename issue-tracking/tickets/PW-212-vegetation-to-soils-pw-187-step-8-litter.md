@@ -12,11 +12,12 @@ blocked_by: []
 relates: [PW-185, PW-187]
 refs: [planet/vegetation.py, planet/tectonics/earth.py, docs/proposals/vegetation.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
 Step 8 of the vegetation proposal (section 4.4). Available now: per-PFT potential NPP and fine-litter share (`litf`; fuel uses it), the flooded share `fw` (world layer `flooded`), stand ages. PW-185 needs litter input (= NPP in equilibrium) and the waterlogging mask; it gives back the soil water capacity (vegetation uses fixed `TOP_MM`/`DEEP_MM` = 50/150 mm, thinned on steep cells) and a fertility factor (f_soil, not yet in the LUE formula). In the run, coal still uses `sim.veg > 0.5` (ground cover) in warm wet lowlands; replace it with peat accumulation (waterlogged NPP > slow decay). Also add the proposal's `litter_c` / `soil_c` world layers once PW-185 owns soil carbon.
 
 ## Updates
+- 2026-10-16: World part done with PW-185 (litter, flooded share -> carbon, peat). Left: the run's coal from buried peat (soils proposal step 7, decision 7A: wherever sediment piles up). Run-physics lane.
 - 2026-10-15: Created from inbox draft draft-veg-soil-handoff.md (found by veg).
