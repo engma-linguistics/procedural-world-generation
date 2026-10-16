@@ -23,3 +23,13 @@ def test_viewer_scripts_parse(page, tmp_path):
         f.write_text(js)
         r = subprocess.run(["node", "--check", str(f)], capture_output=True, text=True)
         assert r.returncode == 0, f"{page} script {k}:\n{r.stderr}"
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+@pytest.mark.parametrize("script", ["zoom3d.js"])
+def test_viewer_modules_parse(script, tmp_path):
+    """The viewer's own ES modules (zoom3d.js: the zoom's 3D view, PW-072)."""
+    f = tmp_path / (Path(script).stem + ".mjs")
+    f.write_text((VIEWER / script).read_text())
+    r = subprocess.run(["node", "--check", str(f)], capture_output=True, text=True)
+    assert r.returncode == 0, f"{script}:\n{r.stderr}"

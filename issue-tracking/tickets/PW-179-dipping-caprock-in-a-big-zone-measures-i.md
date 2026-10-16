@@ -2,7 +2,7 @@
 id: PW-179
 title: Dipping caprock in a big zone measures its tilt from a far origin with a varying downhill
 type: task
-status: in-progress
+status: done
 parent: PW-005
 subsystem: zoom
 effort: s
@@ -12,7 +12,7 @@ blocked_by: [PW-147]
 relates: [PW-148]
 refs: [planet/zoom_landforms.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -30,5 +30,6 @@ tilt from a planet-fixed smooth field of bed height (as the coastal plain
 does with the coast distance).
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (567786d): each caprock zone dips one planet-fixed direction from a fitted plane.
 - 2026-10-15: Status todo -> in-progress. Zoom batch 2 agent started.
 - 2026-10-14: Created from inbox draft draft-tilted-caprock-zone-origin.md (found by zoomland3).

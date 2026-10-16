@@ -12,7 +12,7 @@ blocked_by: []
 relates: []
 refs: [viewer/index.html]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -27,4 +27,5 @@ displace / colour in the vertex shader (`onBeforeCompile` on the Lambert materia
 flat map's hill shading (per-triangle, `mapHillshade`) need care. Only worth it if 25 fps feels slow.
 
 ## Updates
+- 2026-10-16: Coordinator 2026-10-16: deferred; replay is ~23-28 keyframes/s after the speed-up, revisit only if it feels slow.
 - 2026-10-15: Created from inbox draft draft-viewer-replay-60fps.md (found by viewer-replay-speed).

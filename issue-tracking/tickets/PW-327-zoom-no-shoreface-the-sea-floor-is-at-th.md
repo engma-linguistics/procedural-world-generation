@@ -2,7 +2,7 @@
 id: PW-327
 title: "Zoom: no shoreface; the sea floor is at the coarse cell's depth a pixel off the shore (no shallows for seagrass, reefs, beaches)"
 type: task
-status: todo
+status: in-progress
 parent: null
 subsystem: zoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-188, PW-097]
 refs: [planet/zoom.py, planet/zoom_coastal.py, "run:a1d3b9@900Myr(22.13,-25.66)"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,4 +23,5 @@ Fix in the zoom's coastline/sea-floor pass: blend the sea pixels near the shore 
 - [ ] re-check that region: seagrass and reef pixels close to the world's shares
 
 ## Updates
+- 2026-10-16: Status todo -> in-progress. Zoom batch 3 agent started.
 - 2026-10-15: Created from inbox draft draft-zoom-shoreface-shallows.md (found by coastal-life).

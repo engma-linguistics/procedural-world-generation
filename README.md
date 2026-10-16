@@ -405,7 +405,8 @@ surface); `lake_kind` means the same in both. Time zooms keep a few of these
 names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
 geology). Zooms have
 their own raster layers (`zoom.LAYER_DOC`: `water`, `discharge`,
-`lake_depth`, ...).
+`lake_depth`, ..., the vegetation's summary layers and the world's ten soil
+layers per pixel, `soil` ... `loess`).
 
 `delete` removes one item by id (`run:<id>`, `world:<id>` or `zoom:<id>`
 when a run and a world share an id); `delete --orphans` clears zooms and

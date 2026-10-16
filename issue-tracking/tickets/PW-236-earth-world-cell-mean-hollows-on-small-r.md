@@ -2,7 +2,7 @@
 id: PW-236
 title: "Earth world: cell-mean hollows on small rivers still hold big lakes (Yakutia 223k km2, Amur 174k km2)"
 type: task
-status: in-progress
+status: done
 parent: null
 subsystem: hydrology
 effort: s
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-201, PW-055]
 refs: [tools/earth_world.py, planet/hydrology.py, tools/earth_data.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,6 +26,7 @@ cells than in flat ones; a cut that also grows with the outlet cell's relief (e.
 would drain these but also cut the Great Lakes' outlets (relief 25-37 m), so it needs care.
 
 ## Updates
+- 2026-10-16: Status in-progress -> done. Done (64307c3, c0b8c2e, fd0867b): Earth world takes river-conditioned outlet heights and closed basins from HydroSHEDS 30 arcsec (ETOPO gorges stay blocked even at 1'). Gorge lakes (Yakutia, Amur, Pannonia, Sichuan, Columbia, Fraser, Yukon) drain; inland share 7.2 -> 20.4% of land excl. Antarctica (HydroSHEDS ~22%); lakes 2.55 -> 0.81 Mkm2, salt pans 0.09 -> 1.5. earth_check closed basins 9 -> 21%, Yangtze 7.9k -> 18.9k m3/s. Generated worlds unchanged. Note: Lake Michigan no longer listed among surviving lakes; check on next Earth-world review.
 - 2026-10-15: Status todo -> in-progress. Agent started: river-conditioned outlet heights for the Earth world.
 - 2026-10-15: Hydro2: general fixes drain real lakes first; needs river-conditioned outlet heights for the Earth world (merged draft).
 - 2026-10-15: Merged inbox draft draft-earth-gorge-lakes.md ("Earth world: gorge rivers (Lena, Amur, Danube Iron Gates, Yangtze Three Gorges, Columbia) leave cell-mean dams and fake lakes", found by hydro2).
