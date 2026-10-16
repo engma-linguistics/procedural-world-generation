@@ -406,10 +406,13 @@ class Simulation:
 
     # ------------------------------------------------------------- queries
     def bed(self) -> np.ndarray:
-        """m above sea level of the ground, pressed down by the ice's load
-        (w_elev is the crust's own height, which the long-term processes
-        use: the load is gone ~10 kyr after its ice)."""
-        return self.w_elev - self.ice_sink
+        """m above sea level of the ground as frames show it: pressed down
+        by the ice's load, and on oceanic crust with the trench of the last
+        step (w_elev is the crust's own height, which the long-term
+        processes use: the load is gone ~10 kyr after its ice). land(), the
+        run's stats and every frame layer read this, so they agree on what
+        is land (PW-309)."""
+        return np.where(self.w_cont, self.w_elev, self.w_elev + self.w_trench) - self.ice_sink
 
     def land(self) -> np.ndarray:
         """Land: ground above sea level, or under grounded ice (all of the
