@@ -51,12 +51,24 @@ def lake_zoom(water_world):
     return zoom.build(water_world, *LAKE_AT, size_km=1600, res_km=8, iterations=6, log=lambda *a: None)
 
 
-def test_lake_passes_its_water_on(lake_zoom):
+def _coarse_outflow(L, g):
+    """The coarse lake's outflow, m^3/s: what its lake cells pass to its exit."""
+    lake, down, flow = L["lake"].astype(bool), L["downstream"], L["flow"]
+    out = np.flatnonzero(lake & (down >= 0) & ~lake[np.maximum(down, 0)])
+    return float(flow[out].max() * 4 * np.pi * R_KM ** 2 / g.n * zoom.KM2_M_PER_YR_TO_M3S)
+
+
+def test_lake_passes_its_water_on(water_world, lake_zoom):
+    """The lake passes on what reaches it less its evaporation, and at least
+    the coarse lake's outflow (PW-060: the zoom sees ~85% of this one's
+    catchment)."""
     lk = lake_zoom["stats"]["largest_lakes"][0]
     assert lk["outlet"] is not None
     assert lk["inflow_m3s"] > 0
     net = lk["inflow_m3s"] - lk["evaporation_m3s"]
-    assert net <= lk["outflow_m3s"] < 1.1 * net
+    q_c = _coarse_outflow(water_world["layers"], water_world["grid"])
+    assert net <= lk["outflow_m3s"] < 1.1 * max(net, q_c)
+    assert lk["outflow_m3s"] >= 0.99 * q_c
 
 
 @pytest.fixture(scope="module")
@@ -209,6 +221,17 @@ def test_delta_plain_and_distributaries(water_world):
     near = np.hypot(X - dl["mouth_km"][0], Y - dl["mouth_km"][1]) < dl["plain_radius_km"]
     assert z["stats"]["distributary_splits"] >= 1
     assert (coast & near & (q > 0.1 * q[near].max())).sum() >= 2
+    # PW-363: the distributaries run on the plain, not held 30-90 m above it
+    # (at the coarse river's valley floor): no river pixel on the plain with
+    # land within 2 px more than 30 m below every river pixel near that land
+    h, land_ = z["layers"]["elevation"], water == 0
+    riv, low = land_ & (q >= 0.05 * q[near].max()), land_ & (q < 0.01 * q[near].max())
+    from numpy.lib.stride_tricks import sliding_window_view as sw
+    minr = sw(np.pad(np.where(riv, h, 1e9), 2, constant_values=1e9), (5, 5)).min(axis=(2, 3))
+    worst = sw(np.pad(np.where(low, minr - h, -1e9), 2, constant_values=-1e9), (5, 5)).max(axis=(2, 3))
+    assert (riv & near & (worst > 30)).sum() == 0
+    # every finger drawn has a channel of its own to the sea
+    assert dl["fingers"][1] == dl["fingers"][0]
 
 
 def test_delta_fingers_curve_and_build_out_into_the_sea():
@@ -237,6 +260,11 @@ def test_delta_fingers_curve_and_build_out_into_the_sea():
         c = np.clip(np.floor(ln[:, 0] / res + n / 2).astype(int), 0, n - 1)
         r = np.clip(np.floor(n / 2 - ln[:, 1] / res).astype(int), 0, n - 1)
         assert np.mean(ind[r * n + c][len(ln) // 4:] > 0) <= 0.4
+    # PW-363: where the tide's funnels take the branches, no fingers are drawn
+    # (no branch heads for them: they stood as strips of land with no channel)
+    dl.update(wR=0.45, wT=0.55)
+    f = zoom._delta_forms(dl, px, py, res, np.random.default_rng(1), ind, n, n)
+    assert f["kind"] == "funnels" and not dl["finger_lines"] and f["keep"].max() < 0
 
 
 def test_no_delta_plain_on_high_ground():
@@ -647,3 +675,20 @@ def test_lake_kind_layer_matches_the_lakes(water_world, lake_zoom):
     wet = z["layers"]["water"] == 2
     # (all salt but the plunge pools at the falls' feet, a few pixels: always fresh)
     assert wet.any() and np.mean(lk[wet] == 2) > 0.99 and np.all(lk[~wet] == 0)
+
+
+def test_zoom_lake_passes_on_the_coarse_lakes_outflow(water_world):
+    """PW-060: a zoom that sees only part of a big lake's catchment (here: its
+    rain runs off on none of the zoom's own ground within 900 km of the lake,
+    so all it sees is what the rivers bring in at the edge) still passes on
+    at the lake's outlet the coarse lake's outflow, as the rivers entering
+    the region bring their coarse discharge."""
+    g, L = water_world["grid"], water_world["layers"]
+    q_c = _coarse_outflow(L, g)
+    runoff = np.where(_dist_km(g, *LAKE_AT) < 900, 0.0, L["runoff"])
+    w = {**water_world, "layers": {**L, "runoff": runoff}}
+    z = zoom.build(w, *LAKE_AT, size_km=1600, res_km=8, iterations=6, log=lambda *a: None)
+    lk = z["stats"]["largest_lakes"][0]
+    assert lk["outlet"] is not None
+    assert lk["inflow_m3s"] - lk["evaporation_m3s"] < 0.8 * q_c, (lk, q_c)  # (it sees only part)
+    assert 0.99 * q_c <= lk["outflow_m3s"] < 1.05 * q_c, (lk, q_c)
