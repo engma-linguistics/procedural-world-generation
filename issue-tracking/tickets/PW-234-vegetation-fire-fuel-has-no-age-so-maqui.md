@@ -25,6 +25,7 @@ Real shrubland and forest fires are fuel-age limited: chaparral and fynbos burn 
 - [ ] veg_check: burned share in savanna and grassland nearer 70-80%, Mediterranean counts not lower
 
 ## Updates
+- 2026-10-16: Owner decision C on the shrub expansion: SclS needs a dry summer in dry climates (P/PET < 0.65: at most half the rain in the warm half-year); humid climates keep it. Earth obs (merged code): agreement 61.4 -> 61.5%, Med cells 96 -> 127, Botswana/Zambia grassland back, mallee belt on L7 1980 -> 656 cells. Humid forest -> thicket left as draft-veg-humid-thicket-fire-feedback.md. docs/review/vegetation/batch-2026-10-16.md
 - 2026-10-16: Done on branch (vegetation batch 2026-10-16): shrubs' dead fuel decays at half the litter's rate and fire is a renewal process (fuel rebuild years + wait for a fire year); SclS fire survival 0.9. Earth obs: Mediterranean types burn every 28 yr (median; IQR 15-80), Med cells 97 -> 124, burned 79% in grassy types. Boreal fire weather left as draft-veg-boreal-fire-weather.md; shrub expansion as draft-veg-sclerophyll-expansion-after-fuel-age.md.
 - 2026-10-16: Status todo -> in-progress. Vegetation batch agent started.
 - 2026-10-15: Created from inbox draft draft-shrubland-fire-fuel-age.md (found by smalls2).

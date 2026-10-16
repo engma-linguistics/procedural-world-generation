@@ -256,3 +256,19 @@ def test_c4_grass_follows_the_rain_season():
         c3, c4 = nu[V.C3, m], nu[V.C4, m]
         out[name] = np.median(c4 / np.maximum(c3 + c4, 1e-9))
     assert out["summer"] > 0.7 and out["winter"] < 0.5 and out["summer"] - out["winter"] > 0.3, out
+
+
+def test_sclerophylls_need_a_dry_summer_in_dry_climates():
+    """SclS (hard-leaved evergreen shrubs) is a summer-drought plant: in a dry
+    climate it can't establish where most rain falls in the warm half-year
+    (thorn savanna and steppe instead), but it can where the summer is dry, and
+    in humid climates either way."""
+    n = 3
+    lat = np.full(n, 30.0)
+    t, tw, tc = np.full(n, 17.0), np.full(n, 25.0), np.full(n, 9.0)
+    p_jul = np.array([700.0, 80.0, 2400.0])  # dry summer-rain, dry winter-rain, humid summer-rain
+    p_jan = np.array([80.0, 700.0, 1400.0])
+    s = V.site(lat, t, tw, tc, p_jul, p_jan)
+    assert s["mi"][0] < V.SEMI_ARID_MI <= s["mi"][2]
+    ok = V.envelope(s)[V.IDX["SclS"]]
+    assert list(ok) == [False, True, True]

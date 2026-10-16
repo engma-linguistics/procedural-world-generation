@@ -145,6 +145,14 @@ for _p in PFTS:
     # least moisture index P/PET: heath is a plant of wet, maritime or cold-humid ground
     # (the drought limit amin can't tell: a sparse heath's own demand is met even at 100 mm)
     _p["mi_min"] = {"HthS": 0.5}.get(_p["code"], 0.0)
+    # in dry climates (P/PET < SEMI_ARID_MI), the most of the year's rain that may
+    # fall in the warm half-year: hard, evergreen sclerophyll leaves are a
+    # summer-drought adaptation (Mediterranean-type and winter- or evenly-watered
+    # dry scrub); where a dry climate's rain comes in the warm season, raingreen
+    # trees, thorn shrubs and grasses use it instead. Humid climates keep their
+    # evergreen shrubs (SclS also stands in for the laurel forests' understory).
+    _p["summer_rain_max"] = {"SclS": 0.5}.get(_p["code"], 1.0)
+SEMI_ARID_MI = 0.65  # P/PET under which sclerophylls need a dry summer (classify's dry sclerophyll scrub)
 CODES = [p["code"] for p in PFTS]
 NP = len(PFTS)
 IDX = {c: i for i, c in enumerate(CODES)}
@@ -469,7 +477,9 @@ def envelope(s: dict, co2: float = 0.0) -> np.ndarray:
         tw_min = p["tw"] + (3.0 * float(np.clip(co2, -1.5, 1.5)) if i == C4 else 0.0)
         out[i] = ((s["tc"] >= p["tc_min"]) & (s["tc"] <= p["tc_max"]) & (s["tmin"] >= p["tmin"])
                   & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]) & (s["precip"] >= p["p_min"])
-                  & (s["mi"] >= p["mi_min"]))
+                  & (s["mi"] >= p["mi_min"])
+                  & ((s["p_summer"] <= p["summer_rain_max"] * (s["p_summer"] + s["p_winter"]) + 1e-9)
+                     | (s["mi"] >= SEMI_ARID_MI)))
     return out
 
 
