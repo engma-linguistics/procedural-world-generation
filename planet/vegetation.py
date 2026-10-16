@@ -1062,7 +1062,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
     stood in for, STANDINS). soil: soils.mineral's result (the buckets
-    cap1/cap2, the fertility factor f_soil and permafrost; PW-185), else
+    cap1/cap2, the fertility factor f_soil on each stand's NPP and permafrost; PW-185), else
     fixed buckets (TOP_MM, DEEP_MM, thinner on steep ground: the run and the zoom). cheap: the run's variant (local LAI step,
     fewer competition steps). locked_potential: also compute the locked
     PFTs' potential (for flora_update's niches). coastal: the coastal-life
@@ -1083,18 +1083,20 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
         s["cap1"], s["cap2"] = soil["cap1"], soil["cap2"]
     env = envelope(s, co2) & land[None, :]
     viable = env & unlocked[:, None]
-    fs = np.ones(n) if soil is None else np.asarray(soil["f_soil"], float)  # the soil's fertility factor (decision 6A)
-    eff = np.repeat(fs[None, :], NP, 0)
+    eff = np.ones((NP, n))
     sub = standin_map(unlocked)
     for p, q in zip(*np.nonzero(sub)):
         extra = env[q] & ~env[p]
         viable[p] |= extra
-        eff[p] = np.where(extra, STANDIN_EFF * fs, eff[p])
+        eff[p] = np.where(extra, STANDIN_EFF, eff[p])
     if locked_potential:
         viable_c = viable | (env & ~unlocked[:, None])
     else:
         viable_c = viable
     pot_all = potential(s, viable_c, eff, co2, lai0, cheap)
+    if soil is not None:  # the soil's fertility factor scales each stand's NPP (decision 6A: 0.85-1.1 on plants)
+        fs = np.asarray(soil["f_soil"], float)[None, :]
+        pot_all = dict(pot_all, npp=pot_all["npp"] * fs, net=pot_all["net"] * fs)
     pot = dict(pot_all, ok=pot_all["ok"] & viable)
     fw = flooded(grid, elev, np.zeros(n) if flow is None else flow, np.zeros(n) if lake_kind is None else lake_kind,
                  s, ice, flood_ratio, None if soil is None else soil["permafrost"])
