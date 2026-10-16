@@ -361,3 +361,120 @@ def test_fastest_plate(world4):
         assert f[0]["stats"]["speed_cmyr"] >= f[0]["stats"]["next_cmyr"]
     L["plate_boundary"] = np.zeros_like(L["plate_boundary"])  # nothing converging: nothing to show
     assert not [x for x in H.find(w) if x["kind"] == "fastest_plate"]
+
+
+def _vrow(lat, lon, kind, age, active, top, floor, reef=0):
+    return dict(lat=lat, lon=lon, kind=kind, age=age, active=active, top_m=top, floor_m=floor, height_m=top - floor,
+                radius_km=25.0, volume_km3=1e4, reef=reef, shore_km=0.0)
+
+
+def _with_volcanoes(w, rows, plumes):
+    from planet.tectonics import volcanism as V
+    w["meta"] = dict(w.get("meta", {}), volcano_columns=list(V.COLUMNS), hotspots=plumes,
+                     volcanoes=[[v[c] for c in V.COLUMNS] for v in rows])
+    return w
+
+
+def test_volcano_status():
+    """zoom_volcanoes.status: active (fed now); dormant: a hotspot vent off its
+    plume but within DORMANT_KM of it; extinct otherwise (and every arc
+    volcano past its life)."""
+    from planet import zoom_volcanoes as ZV
+    from planet.tectonics import volcanism as V
+    rows = [_vrow(30, 60.0, V.VENT, 0, 1, 3000, 1500), _vrow(30, 61.2, V.VENT, 1, 0, 3000, 1500),
+            _vrow(30, 62.4, V.VENT, 2, 0, 3000, 1500), _vrow(30, 60.2, V.ARC, 9, 0, 2000, 500),
+            _vrow(30, 60.3, V.ARC, 2, 1, 2000, 500)]
+    w = _with_volcanoes({}, rows, [[30.0, 60.0]])
+    assert ZV.statuses(w) == ["active", "dormant", "extinct", "extinct", "active"]
+    assert ZV.statuses(_with_volcanoes({}, rows, [])) == ["active", "extinct", "extinct", "extinct", "active"]
+
+
+def test_volcano_kinds(gen4):
+    """A continental plume's caldera track (a supervolcano), an oceanic
+    shield 9 km tall with an arc cone beside it (a volcanic field of two
+    kinds), and two active arc cones at the same capped summit height (the
+    taller above its ground is the highest)."""
+    from planet.tectonics import volcanism as V
+    rows = [_vrow(30, 60.0 + 1.2 * k, V.VENT, k, int(k == 0), 3000, 1500) for k in range(4)]
+    rows += [_vrow(-20, -150.0, V.VENT, 0, 1, 4100, -5000), _vrow(-20, -149.0, V.VENT, 1, 0, 3000, -4800),
+             _vrow(-20, -148.0, V.ARC, 2, 1, 3200, 0), _vrow(10, 100.0, V.ARC, 2, 1, 3500, 1000),
+             _vrow(10.5, 100.5, V.ARC, 2, 1, 3500, 2000), _vrow(12, 103.0, V.ARC, 12, 0, 3900, 1000)]
+    w = _with_volcanoes(gen4, rows, [[30.0, 60.0], [-20.0, -150.0]])
+    by = check(w, H.find(w))
+    sv = by["supervolcano"]
+    assert sv["title"] == "Supervolcano (active)" and sv["category"] == "geology"
+    assert (sv["stats"]["active"], sv["stats"]["dormant"], sv["stats"]["extinct"]) == (1, 1, 2)
+    assert abs(sv["lat"] - 30) < 5 and len(sv["path"]) == 4 and "Yellowstone" in sv["blurb"]
+    st = by["stratovolcano"]["stats"]
+    assert (st["top_m"], st["relief_m"]) == (3500, 2500)  # (the extinct 3,900 m cone doesn't count)
+    sh = by["shield_volcano"]
+    assert sh["stats"]["relief_m"] == 9100 and "Everest" in sh["blurb"] and sh["stats"]["status"] == "active"
+    vf = by["volcanic_field"]["stats"]
+    assert vf["types"] == 2 and vf["stratovolcano"] == 1 and vf["shield"] == 2 and vf["dormant"] == 1
+    # the plume gone: its calderas are all extinct, no supervolcano
+    w["meta"]["hotspots"] = [[-20.0, -150.0]]
+    rows[0]["active"] = 0
+    w["meta"]["volcanoes"] = [[v[c] for c in V.COLUMNS] for v in rows]
+    assert not [f for f in H.find(w) if f["kind"] == "supervolcano"]
+
+
+def test_flood_basalts(gen4):
+    from planet import surface as SF
+    w, g = gen4, gen4["grid"]
+    L = w["layers"]
+    c = _inland_cell(w)
+    L["surface_rock"] = np.full(g.n, SF.CRATON, np.int16)
+    L["surface_rock"][_near(g, c, 1)] = SF.FLOOD_BASALT
+    fb = [f for f in H.find(w) if f["kind"] == "flood_basalt"]
+    assert len(fb) == 1 and fb[0]["cell"] in _near(g, c, 1) and fb[0]["stats"]["area_km2"] >= H.FLOOD_MIN_KM2
+    L["surface_rock"][:] = SF.CRATON
+    assert not [f for f in H.find(w) if f["kind"] == "flood_basalt"]
+
+
+def test_carbonate_bank_and_barrier_reef(gen4):
+    """A shallow warm bank in the open ocean (the Bahamas), and reefs on the
+    outer half of a big continent's shelf with a lagoon behind them (the Great
+    Barrier Reef); neither shown again as a coral coast."""
+    w, g = gen4, gen4["grid"]
+    L = w["layers"]
+    e = L["elevation"]
+    ctx = H._Ctx(w)
+    L["reef"] = np.zeros(g.n)
+    L["sst"] = np.full(g.n, 27.0)
+    to_land = H._hops(ctx, ctx.land)
+    big = ctx.components(ctx.land)[0]
+    assert len(big) * ctx.area >= H.BIG_LAND_KM2
+    # the bank: a sea cell far out and its neighbours, 30 m deep
+    far = int(np.flatnonzero(to_land >= 4)[0])
+    bank = _near(g, far, 1)
+    e[bank] = -30
+    e[_near(g, far, 2)[~np.isin(_near(g, far, 2), bank)]] = -3000
+    L["reef"][bank] = 4.0
+    # the barrier: a stretch of the big continent's coast, its coastal sea a 30 m
+    # lagoon, the next ring out a reef 20 m deep, then the deep sea
+    m = np.zeros(g.n, bool)
+    m[big] = True
+    coast = np.flatnonzero(ctx.dilate(m) & ~ctx.land & (to_land == 1))
+    c0 = int(coast[0])
+    zone = _near(g, c0, 3)
+    lagoon = zone[(to_land[zone] == 1)]
+    reef = zone[(to_land[zone] == 2)]
+    e[lagoon], e[reef] = -30, -20
+    e[zone[to_land[zone] >= 3]] = -3000
+    L["reef"][reef] = 6.0
+    ctx2 = H._Ctx(w)
+    assert H._landmass_km2(ctx2)[big[0]] >= H.BIG_LAND_KM2
+    feats = H.find(w)
+    check(w, feats)
+    cb = [f for f in feats if f["kind"] == "carbonate_bank"]
+    assert len(cb) == 1 and cb[0]["cell"] in bank and cb[0]["stats"]["depth_m"] == 30 and cb[0]["category"] == "water"
+    br = [f for f in feats if f["kind"] == "barrier_reef"]
+    assert len(br) == 1 and br[0]["cell"] in reef and br[0]["stats"]["length_km"] >= H.BARRIER_MIN_KM
+    assert br[0]["stats"]["lagoon_m"] == 30
+    assert not [f for f in feats if f["kind"] == "coral_coast"]
+    # the same reefs touching the shore are a coral coast, not a barrier reef
+    L["reef"][reef] = 0.0
+    L["reef"][lagoon] = 6.0
+    feats = H.find(w)
+    assert not [f for f in feats if f["kind"] == "barrier_reef"]
+    assert [f for f in feats if f["kind"] == "coral_coast"]

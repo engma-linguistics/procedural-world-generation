@@ -23,7 +23,7 @@ const RIVER_RGB = '#3b77ad';
 const SEA_RGB = 0x1d5487, LAKE_RGB = 0x3a7cb8, SKIRT_RGB = 0x3a3128;
 // lakes by kind (1 fresh, 2 salt: the zoom's lake_kind; its pans, 3, are white land)
 const LAKE_KIND_RGB = { 1: LAKE_RGB, 2: 0xc9769f };
-const VOLC_PIN = { active: '#ff7a55', extinct: '#d9a66a', sea: '#8fc2ff' };
+const VOLC_PIN = { active: '#ff7a55', dormant: '#ffd23f', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 // a river's drawn width in zoom pixels: 0.2 px at 10 m3/s to 1.4 px at ~600,000 (small streams exaggerated)
 const riverPx = (q, mul = 1) => mul * Math.min(1.4, Math.max(0.2, 0.2 + 0.25 * Math.log10(Math.max(q, QMIN) / QMIN)));
@@ -535,9 +535,9 @@ export class Zoom3D {
         el.title = `waterfall ${Math.round(f.height_m)} m, ${Math.round(f.discharge_m3s)} m3/s (click: fly there)`;
         el.onclick = (e) => { e.stopPropagation(); (this.api.flyTo || ((k) => this.flyTo(k)))(f.k); };
       } else {
-        el.style.color = f.active ? VOLC_PIN.active : f.top_m < 0 ? VOLC_PIN.sea : VOLC_PIN.extinct;
+        el.style.color = f.active ? VOLC_PIN.active : f.status === 'dormant' ? VOLC_PIN.dormant : f.top_m < 0 ? VOLC_PIN.sea : VOLC_PIN.extinct;
         el.innerHTML = isBig ? `&#9650; ${Math.round(f.top_m).toLocaleString('en-US')} m` : '&#9650;';
-        el.title = `${f.form || 'volcano'}, summit ${Math.round(f.top_m)} m (click: fly there)`;
+        el.title = `${f.status && f.status !== 'active' ? f.status + ' ' : ''}${f.form || 'volcano'}, summit ${Math.round(f.top_m)} m (click: fly there)`;
         el.onclick = (e) => { e.stopPropagation(); this.flyToVolc(f); };
       }
       el.onmouseenter = (e) => this.api.showCard(f, e, false);

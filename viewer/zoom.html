@@ -483,8 +483,13 @@ function markers(m) {
 }
 function fallSize(f) { return Math.min(13, 3.5 + 1.6 * Math.sqrt(f.height_m / 30)); }
 function volcSize(v) { return Math.min(12, 4 + 2.2 * Math.sqrt(Math.max(v.height_m, 0) / 1000)); }
+// status (zoom_volcanoes.status): active (fed now), dormant (a hotspot vent still over its plume's head:
+// it can erupt again), extinct; zooms made before it have only `active`
+function volcStatus(v) { return v.status || (v.active ? 'active' : 'extinct'); }
 function volcColors(v) {
-  return v.active ? ['#ff5a36', '#3a0d02'] : v.top_m < 0 ? [null, '#8fc2ff'] : ['#c08a52', '#2b1a0b'];
+  const st = volcStatus(v);
+  return st === 'active' ? ['#ff5a36', '#3a0d02'] : st === 'dormant' ? ['#ffd23f', '#3a2c02']
+    : v.top_m < 0 ? [null, '#8fc2ff'] : ['#c08a52', '#2b1a0b'];
 }
 function markIcon(kind, extra) {
   if (kind === 'fall') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,-4 L5,-4 L0,5 Z" fill="#9fe3ff" stroke="#0b2540" stroke-width="1.3"/></svg>`;
@@ -496,7 +501,8 @@ function markLegend() {
   $('fallsN').textContent = mk.falls.length ? `(${mk.falls.length})` : '(none)';
   $('volcN').textContent = mk.volc.length ? `(${mk.volc.length})` : '(none)';
   if ($('falls').checked && mk.falls.length) parts.push(`<span>${markIcon('fall')}waterfall &ge; 30 m (size: height; ringed: the biggest by power)</span>`);
-  if ($('volc').checked && mk.volc.length) parts.push(`<span>${markIcon('v', ['#ff5a36', '#3a0d02'])}active ${markIcon('v', ['#c08a52', '#2b1a0b'])}extinct ${markIcon('v', [null, '#8fc2ff'])}below the sea (volcanoes; size: height)</span>`);
+  if ($('volc').checked && mk.volc.length) parts.push(`<span>${markIcon('v', ['#ff5a36', '#3a0d02'])}active ${
+    mk.volc.some((o) => volcStatus(o) === 'dormant') ? `${markIcon('v', ['#ffd23f', '#3a2c02'])}dormant ` : ''}${markIcon('v', ['#c08a52', '#2b1a0b'])}extinct ${markIcon('v', [null, '#8fc2ff'])}below the sea (volcanoes; size: height)</span>`);
   if (parts.length) $('legend').insertAdjacentHTML('beforeend', parts.join(''));
 }
 function drawMarks() {
@@ -548,7 +554,7 @@ function cardHTML(o) {
   const kind = o.kind === 'arc' ? 'arc volcano (stratocone)' : 'hotspot volcano (shield)';
   return `<h3>${markIcon('v', volcColors(o))}${(o.form || 'volcano').replace(/^./, (c) => c.toUpperCase())}</h3><table>
     ${row('kind', kind)}
-    ${row('state', o.active ? 'active' : `extinct${o.age_myr != null ? `, ${fmt(o.age_myr)} Myr old` : ''}`)}
+    ${row('state', volcStatus(o) === 'active' ? 'active' : `${volcStatus(o) === 'dormant' ? 'dormant <span class="muted">(off its plume but still over its head: it can erupt again)</span>' : 'extinct'}${o.age_myr != null ? `, ${fmt(o.age_myr)} Myr old` : ''}`)}
     ${row('summit', o.top_m >= 0 ? `${fmt(o.top_m)} m above the sea` : `${fmt(-o.top_m)} m below the sea`)}
     ${row('height', `${fmt(o.height_m)} m above its floor`)}
     ${row('lat, lon', `${o.lat}, ${o.lon}`)}

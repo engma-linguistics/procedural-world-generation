@@ -79,6 +79,10 @@ def test_zoom_cones_are_separate_islands():
     assert z[at(-45)] > 3000 and z[at(45)] > 1500
     assert z[at(0)] < -500, z[at(0)]  # the channel between them is sea
     assert {v["form"] for v in f["list"]} == {"active shield volcano", "eroded volcanic island"}
+    assert {v["status"] for v in f["list"]} == {"active", "extinct"}  # (no live plume in the world's meta)
+    w["meta"]["hotspots"] = [[0.0, lon_of(-45)]]  # the plume under the young one: the old one 90 km off is dormant
+    f = ZV.fields(w, fr, px, py, res, 55.0, Pk, 1, n * res)
+    assert sorted(v["status"] for v in f["list"]) == ["active", "dormant"]
     # an atoll: a reef ring (some islets) round a shallow lagoon, deep water outside
     w = _flat_sea_world([row(0, 30.0, 0, -200, reef=V.REEF, shore=20.0)])
     f = ZV.fields(w, fr, px, py, res, 55.0, Pk, 1, n * res)

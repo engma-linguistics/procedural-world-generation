@@ -184,7 +184,9 @@ flowchart LR
 - **Arc volcanoes:** one per ~120 km of active subduction arc, ~2000 km³ each, active ~8 Myr (Fuji, Rainier, the Andes).
 - **Ageing:** a dead volcano sinks with its sea floor (and with the plume swell decaying behind it). Its part above the sea erodes (~10 Myr e-folding at 1500 mm/yr of rain, faster when wetter) until the waves plane it off. In water ≥ 23.5 °C (`reef_temp`) a reef keeps up with the sinking: **fringing reef → barrier reef → atoll** once the volcano is gone. Carried below 22 °C the reef drowns and the flat top sinks as a **guyot**.
 
-**Outputs:** the full volcano table in `runs/<id>/volcanoes.json.gz`, in each checkpoint and in each world (`meta.volcanoes`, columns `meta.volcano_columns`); the viewer's Hotspots and Volcanoes overlays; drawn individually by the zoom (§2.13).
+**Status** (`zoom_volcanoes.status`, for the viewer and the highlights): **active** is the run's own flag (a vent over its plume now, an arc volcano within its ~8 Myr life); **dormant** is a hotspot vent the plate has carried off its plume but still within the plume's head (`PLUME_KM`, 150 km: over hot, partly molten mantle, so it can erupt again, as Hawaii's rejuvenated volcanoes and Haleakala, or Yellowstone's older calderas); the rest are **extinct**. The run has Myr steps and no eruptions, so it can't tell a volcano that erupted last year from one quiet for 50,000 years, and an arc volcano past its life is extinct (the arc's magma moved to a new centre). On a world of run a1d3b9 (L7, seed 3199) at 380 Myr: 737 active, 4 dormant, 1666 extinct (6 of the 364 hotspot vents active, 4 dormant).
+
+**Outputs:** the full volcano table in `runs/<id>/volcanoes.json.gz`, in each checkpoint and in each world (`meta.volcanoes`, columns `meta.volcano_columns`); the viewer's Hotspots and Volcanoes overlays (active red / orange, dormant yellow, extinct islands small orange, atolls cyan; "extinct ones too" adds every other extinct one, and hovering a cell names the volcanoes in it with their status); drawn individually by the zoom (§2.13), whose markers and cards give each one's status.
 
 **Known limits:** hotspot islands are sub-cell, so at L6 (and often L7) the globe shows a bank, not land (PW-117, needs a decision); a plume head's flood basalt is capped at a 3 km pile per cell on a continent (`isostasy.LAVA_MAX_KM`; Deccan ~2 km, Siberian Traps ~3.5; PW-133); the plateau's height is mostly its swell.
 
@@ -398,21 +400,35 @@ A **world** is one moment, finished. Four ways to get one:
 
 ### 2.12 Highlights (`highlights.py`)
 
-**What it does:** 36 detectors find 46 kinds of place worth a visit, in six categories (the viewer filters and colours by category):
+**What it does:** 43 detectors find 53 kinds of place worth a visit, in six categories (the viewer filters and colours by category):
 
 | Category | Kinds |
 |---|---|
 | landscape | highest peak (and highest ice-free peak), mountain range, plateau, canyon, fjords, rain shadow, most varied 1000 km square, continent, island, archipelago |
-| water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast (the largest reef tracts of §2.20's reef layer; "great reef" from 10,000 km²) |
+| water | largest and longest river, delta (with its type), waterfall (a steep reach at cell scale), lake, inland sea, salt lake, salt pan, salt flats, inland basin, coral coast (the largest reef tracts of §2.20's reef layer; "great reef" from 10,000 km²), barrier reef, carbonate bank |
 | climate | desert, rainforest (the evergreen tropical forest types), ice sheet, Mediterranean "wine country" (Köppen Cs, with its vegetation), hottest, coldest, wettest, driest |
 | travel | beach destination, ski country, winter-sun retreat (mild winter, ≥ 5 h of sunshine a day), year-round resort (beach and skiing within 400 km) |
-| geology | volcanic arc, hotspot island chain (from the volcano table: islands, atolls and guyots in a row), atoll group, rift, deepest trench, fastest plate (at its leading edge: collision or subduction) |
+| geology | volcanic arc, hotspot island chain (from the volcano table: islands, atolls and guyots in a row), atoll group, supervolcano, highest active volcano, great shield volcano, volcanic field, flood basalts, rift, deepest trench, fastest plate (at its leading edge: collision or subduction) |
 | vegetation | great forests (largest closed forests of different kinds), great savanna, wetlands, maquis coast, treeline (alpine and polar), mangrove coast (§2.20) |
 
 Each scores as kind priority × quality (0.3–1). Travel picks use each hemisphere's own summer and winter and say why: "July 28 °C, 10 h of sunshine a day, 38 mm of rain, warm sea 25 °C, gentle surf". Results are cached in `worlds/highlights/<id>.json`; `--zoom N` pre-makes zooms of the top N at a suggested size.
 
 ![Travel highlights](review/ocean/highlights_67317b_travel_filter.jpg)
 *World 67317b, highlights filtered to the travel category.*
+
+**Volcano and reef kinds** (from the volcano table with its status, §2.3, and §2.20's reef layer; simple rules, nothing placed by hand):
+
+| Kind | Rule | Zoom |
+|---|---|---|
+| supervolcano | a plume's caldera track on a continent (Yellowstone: hotspot vents on land, drawn by the zoom as calderas on a lava plain, PW-118), linked as the island chains are, with a caldera still active or dormant; by number of calderas; two at most | the live calderas, 250–500 km |
+| highest active volcano | the active arc stratovolcano with the highest summit above the sea, then the tallest above its ground (the run caps active summits at 3.5 / 4.2 km, so ties are common) | 250 km |
+| great shield volcano | the oceanic hotspot volcano standing most above its sea floor and reaching above the sea, any status (Mauna Kea: ~10 km) | 250 km |
+| volcanic field | the place with the most edifice types (stratovolcano, shield, caldera) above the sea within 250 km, at least two; ties to more states, then more volcanoes | 500 km |
+| flood basalts | land of flood basalt at the surface or the lava-plateau landform, ≥ 100,000 km² (Columbia River ~210,000, Deccan ~500,000) | its span, ≤ 1000 km |
+| carbonate bank | a connected warm (annual sea ≥ `reef_temp` − 1.5 °C) shallow (≤ 200 m) sea with reefs, detached: the land it touches no bigger than itself and at most half its cells on a shore (the Bahamas); a platform with two or more of the table's atolls is left to the atoll group; by area; two at most | its span |
+| barrier reef | reef cells (≥ 1%) off the coast of a landmass ≥ 100,000 km², on the outer half of its shelf (no more cell links from deeper sea than from the shore), ≥ 300 km long (the Great Barrier Reef; not reefs in the middle of a shelf sea like the Java Sea) | its middle, ≤ 1000 km |
+
+The coral coast leaves a tract holding a shown barrier reef or bank to them, and is only "great reef" when it is the world's biggest tract. Found (2026-10-16, worlds not kept): run a1d3b9 (L7, seed 3199) at 380 Myr: a supervolcano with 1 active and 10 extinct calderas over 1,400 km, and a second (1 active, 1 dormant) beside a 340,000 km² flood-basalt province from a new plume; the highest active volcano 3,500 m, 2,800 m above its ground; a 6.2 km great shield; a field of 22 stratovolcanoes, 2 shields and 2 calderas; a 3,600 km barrier reef; banks of 25,000 and 19,000 km². Earth (`tools/earth_world.py`, no volcano table, so no volcano kinds): at L7 the barrier reef is the Great Barrier Reef (690 km off Queensland, ~160 km out) and the banks are the Cuyo–Calamian platform off Palawan and the Bahamas (53,000 km² each; the Bahamas has fewer reefs, its model sea 21–26 °C, a degree or two cool); at L6 the barrier reef is the southern GBR (340 km) and there is no bank (the Bahamas' cells touch Cuba's at 110 km).
 
 The most varied square counts named vegetation types (biomes on worlds without vegetation). A world's highlights take ~1.5 s at L6 and ~4 s at L7.
 

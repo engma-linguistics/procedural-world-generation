@@ -75,6 +75,21 @@ Definitions are deliberately physical and simple, on ~110 km cells:
   clear, shallow sea; atoll rings included), ranked by reef area; limestone
   on shore is noted. Mangrove coast: the largest connected stretch of
   coastal land with mangroves (the mangrove layer), by mangrove area.
+  Carbonate bank (the Bahamas): a connected warm (annual sea >= reef_temp
+  - 1.5) shallow (<= BANK_DEPTH_M) sea with reefs, detached (the land it
+  touches no bigger than itself, at most half its cells on a shore), by
+  area. Barrier reef (the Great Barrier Reef): reef cells off the coast of
+  a big landmass (>= BIG_LAND_KM2) on the outer half of its shelf (no more
+  links from deeper sea than from the shore), >= BARRIER_MIN_KM long. A
+  coral coast's tract holding a shown bank or barrier reef is left to them.
+- volcano kinds (from the volcano table, with zoom_volcanoes.status: active,
+  dormant, extinct): supervolcano, a continental plume's caldera track
+  (Yellowstone) with a caldera still active or dormant; the highest active
+  arc stratovolcano; the great shield, the oceanic hotspot volcano standing
+  most above its sea floor and above the sea (Mauna Kea); a volcanic field,
+  the place with the most edifice types (stratovolcano, shield, caldera)
+  above the sea within FIELD_KM, at least two. Flood basalts: land of flood
+  basalt or the lava-plateau landform, >= FLOOD_MIN_KM2 (the Deccan).
 - rain shadow: an ice-free summit >= 1500 m with land 2-4 cells away whose rain differs
   most between the two sides of a line through it (wet >= 600 mm, dry < 600
   mm, >= 3x); ranked by the ratio (up to 10) x height.
@@ -119,6 +134,8 @@ from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
 from .geo import R_KM, world_land
 from .grid import Grid
+from .landform import LAVA_PLATEAU
+from .surface import DOLOMITE, FLOOD_BASALT, LIMESTONE
 from .tectonics.volcanism import ARC as ARC_VOLCANO
 from .vegetation import T as VEG_T
 from .vegetation import TYPES as VEG_TYPES
@@ -139,16 +156,19 @@ PRIORITY = {
     "rain_shadow": 74, "coral_coast": 73, "salt_lake": 65, "salt_pan": 63, "salt_flats": 61, "inland_basin": 56,
     "year_round": 74, "ski": 71, "beach": 70, "mild_winter": 67,
     "wetland": 59, "great_forest": 57, "maquis_coast": 54, "savanna": 53, "treeline": 52, "mangrove_coast": 56,
+    "supervolcano": 77, "stratovolcano": 73, "shield_volcano": 72, "flood_basalt": 67, "volcanic_field": 62,
+    "barrier_reef": 76, "carbonate_bank": 74,
 }
 # Category per kind, for the viewer's filter and marker colours (PW-141)
 CATEGORIES = {
     "landscape": ("highest_peak", "ice_free_peak", "mountain_range", "plateau", "canyon", "fjords", "rain_shadow",
                   "varied_square", "continent", "island", "archipelago"),
     "water": ("largest_river", "longest_river", "delta", "waterfall", "lake", "inland_sea", "salt_lake", "salt_pan",
-              "salt_flats", "inland_basin", "coral_coast"),
+              "salt_flats", "inland_basin", "coral_coast", "barrier_reef", "carbonate_bank"),
     "climate": ("desert", "rainforest", "ice_sheet", "mediterranean", "hottest", "coldest", "wettest", "driest"),
     "travel": ("beach", "ski", "mild_winter", "year_round"),
-    "geology": ("volcanic_arc", "hotspot_islands", "atolls", "rift", "trench", "fastest_plate"),
+    "geology": ("volcanic_arc", "hotspot_islands", "atolls", "supervolcano", "stratovolcano", "shield_volcano",
+                "flood_basalt", "volcanic_field", "rift", "trench", "fastest_plate"),
     "vegetation": ("great_forest", "savanna", "wetland", "maquis_coast", "treeline", "mangrove_coast"),
 }
 CATEGORY = {k: c for c, kinds in CATEGORIES.items() for k in kinds}
@@ -866,10 +886,12 @@ WINDOW_KM = 350.0  # a chain's or group's zoom: the most islands within this of 
 
 def _volcano_forms(ctx: _Ctx) -> list[dict]:
     """The world's volcano table (zoom_volcanoes.table) with each one's form
-    (what it looks like now: island, atoll, guyot...); [] without one."""
+    (what it looks like now: island, atoll, guyot...) and status (active,
+    dormant or extinct: zoom_volcanoes.status); [] without one."""
     if getattr(ctx, "_vforms", None) is None:
-        from .zoom_volcanoes import form, table
-        ctx._vforms = [dict(v, form=form(v)) for v in table({"meta": ctx.meta})]
+        from .zoom_volcanoes import form, statuses, table
+        V = table({"meta": ctx.meta})
+        ctx._vforms = [dict(v, form=form(v), status=s) for v, s in zip(V, statuses({"meta": ctx.meta}, V))]
     return ctx._vforms
 
 
@@ -990,7 +1012,9 @@ def atolls(ctx: _Ctx, top: int = 1) -> list[dict]:
         reefy = len(vs) - atl
         sst = ""
         if "sst" in ctx.L:
-            sst = f"; the sea ~{_c(ctx.L['sst'][cell])}"
+            near = np.flatnonzero(ctx.dilate(np.isin(np.arange(ctx.n), [cell])) & ~ctx.land)  # (the atoll's cell may be an island)
+            if len(near):
+                sst = f"; the sea ~{_c(np.mean(np.asarray(ctx.L['sst'], float)[near]))}"
         blurb = (f"{atl} coral atolls" + (f" and {reefy} reef-fringed islands" if reefy else "")
                  + f" within ~{_n(_extent(ctx, ctx.g.locate(np.array([_unit(v['lat'], v['lon']) for v in vs]))))} km{sst}: "
                  "rings of reef round lagoons where old volcanoes sank, like the Tuamotus or the Marshall Islands.")
@@ -1032,6 +1056,183 @@ def hotspot_islands(ctx: _Ctx, top: int = 2) -> list[dict]:
         out.append(_feature(ctx, "hotspot_islands", "Hotspot islands" if n_islands > 1 else "Hotspot island", blurb, peak, zoom_size(length),
                             {"islands": n_islands, "length_km": round(length), "peak_m": int(ctx.elev[peak])},
                             quality=(0.8 ** rank) * (0.5 + 0.5 * min(s / 6, 1))))
+    return out
+
+
+STATUS_WORDS = {"active": "active (fed by its magma source now)",
+                "dormant": "dormant (off the plume's centre but still over its head: it can erupt again)",
+                "extinct": "extinct"}
+FLOOD_MIN_KM2 = 100000.0  # km^2: the least flood-basalt province (the Columbia River basalts: ~210,000)
+FIELD_KM = 250.0  # a volcanic field: different types of volcano within this of one (a 500 km zoom)
+
+
+def _vcell(ctx: _Ctx, v: dict) -> int:
+    return int(ctx.g.locate(np.array([_unit(v["lat"], v["lon"])]))[0])
+
+
+def _vtype(v: dict) -> str:
+    """The edifice type: arc stratovolcano, hotspot shield (at sea) or
+    caldera (a hotspot vent on a continent: zoom_volcanoes._caldera)."""
+    return "stratovolcano" if v["kind"] == ARC_VOLCANO else "caldera" if v["floor_m"] > 0 else "shield volcano"
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{('es' if word.endswith('o') else 's') if n != 1 else ''}"
+
+
+def supervolcanoes(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """A caldera system (Yellowstone): the track of a plume under a
+    continent (hotspot vents on land, zoom_volcanoes draws each as a caldera
+    on a lava plain), linked as the island chains are (_tracks), with at
+    least one caldera still active or dormant (over the plume's head).
+    Ranked by how many calderas the plume left; the zoom frames the live
+    ones, centred on the youngest."""
+    vents = [v for v in _volcano_forms(ctx) if v["kind"] != ARC_VOLCANO and v["floor_m"] > 0]
+    systems = []
+    for gr in _tracks(vents):
+        cal = sorted((vents[k] for k in gr), key=lambda v: v["age"])
+        live = [v for v in cal if v["status"] != "extinct"]
+        if live:
+            systems.append((len(live) + 0.3 * len(cal), cal, live))
+    systems.sort(key=lambda s: -s[0])
+    out = []
+    for rank, (s, cal, live) in enumerate(systems[:top]):
+        young = live[0]
+        cell = _vcell(ctx, young)
+        P = np.array([_unit(v["lat"], v["lon"]) for v in cal])
+        p0 = np.array(_unit(young["lat"], young["lon"]))
+        reach = float(np.arccos(np.clip(np.array([_unit(v["lat"], v["lon"]) for v in live]) @ p0, -1, 1)).max()) * R_KM
+        length = float(np.arccos(np.clip(P @ P.T, -1, 1)).max()) * R_KM
+        n_act = sum(v["status"] == "active" for v in live)
+        n_dor = len(live) - n_act
+        ext = [v for v in cal if v["status"] == "extinct"]
+        state = "active" if n_act else "dormant"
+        across = 2 * float(young["radius_km"])  # (zoom_volcanoes: the caldera is CALDERA_R = 1 x the vent's radius)
+        parts = ([f"{_plural(n_act, 'active caldera')} over the plume now"] if n_act else []) \
+            + ([f"{_plural(n_dor, 'dormant caldera')} still over its head (quiet, but able to erupt again)"] if n_dor else [])
+        blurb = (f"A supervolcano: a caldera system where a mantle plume rises under a continent, like Yellowstone. "
+                 f"{' and '.join(parts).capitalize()}"
+                 + (f"; behind them {_plural(len(ext), 'extinct caldera')} on the lava plain the plume left over "
+                    f"~{_n(length)} km as the plate moved on (the Snake River Plain), the oldest {ext[-1]['age']:.0f} Myr" if ext else "")
+                 + f". The youngest is ~{across:.0f} km across, a lava plain at {_m(young['top_m'])}.")
+        out.append(_feature(ctx, "supervolcano", f"Supervolcano ({state})", blurb, cell, zoom_size(reach + 4 * young["radius_km"]),
+                            {"calderas": len(cal), "active": n_act, "dormant": n_dor, "extinct": len(ext),
+                             "track_km": round(length), "top_m": round(young["top_m"]), "age_myr": young["age"]},
+                            quality=(0.8 ** rank) * (0.5 + 0.5 * min(len(cal) / 6, 1)),
+                            path=[[round(v["lat"], 2), round(v["lon"], 2)] for v in cal][:60]))
+    return out
+
+
+def stratovolcano(ctx: _Ctx) -> list[dict]:
+    """The highest active arc volcano above the sea (Chimborazo, Ojos del
+    Salado, Fuji): the highest summit, then the tallest above its ground
+    (the run caps an active summit at volcanism.TOP_MAX, so ties happen)."""
+    arcs = [v for v in _volcano_forms(ctx) if v["kind"] == ARC_VOLCANO and v["status"] == "active" and v["top_m"] > 0]
+    if not arcs:
+        return []
+    v = max(arcs, key=lambda v: (v["top_m"], v["top_m"] - v["floor_m"]))
+    cell = _vcell(ctx, v)
+    p0 = np.array(_unit(v["lat"], v["lon"]))
+    near = sum(1 for u in arcs if u is not v and np.arccos(np.clip(np.array(_unit(u["lat"], u["lon"])) @ p0, -1, 1)) * R_KM < 300)
+    setting = "on a continent's edge (like the Andes)" if v["floor_m"] > 0 and ("crust" not in ctx.L or ctx.L["crust"][cell] > 0) \
+        else "in an island arc (like Japan)" if v["floor_m"] > -1000 else "rising from the sea in an island arc"
+    blurb = (f"{_m(v['top_m'])}: the highest active volcano, a steep stratocone of andesite and ash standing "
+             f"{_m(v['top_m'] - v['floor_m'])} above its ground, {setting}, active for {v['age']:.0f} Myr"
+             + (f"; {_plural(near, 'more active volcano')} within 300 km" if near else "")
+             + ". Like Chimborazo, Ojos del Salado or Fuji.")
+    return [_feature(ctx, "stratovolcano", f"Highest active volcano: {_m(v['top_m'])}", blurb, cell, 250,
+                     {"top_m": round(v["top_m"]), "relief_m": round(v["top_m"] - v["floor_m"]), "age_myr": v["age"],
+                      "active_nearby": near}, quality=0.5 + 0.5 * min(v["top_m"] / 4000, 1))]
+
+
+def shield_volcano(ctx: _Ctx) -> list[dict]:
+    """The greatest shield volcano: the hotspot volcano on the sea floor that
+    stands the most above its floor and still reaches above the sea (Mauna
+    Kea: ~10 km from its base), any status."""
+    sh = [v for v in _volcano_forms(ctx) if v["kind"] != ARC_VOLCANO and v["floor_m"] < 0 and v["top_m"] > 0]
+    if not sh:
+        return []
+    v = max(sh, key=lambda v: v["top_m"] - v["floor_m"])
+    relief = v["top_m"] - v["floor_m"]
+    cell = _vcell(ctx, v)
+    blurb = (f"A shield volcano of runny basalt rising {_m(relief)} from the sea floor at {_m(-v['floor_m'])} deep "
+             f"to {_m(v['top_m'])} above the sea"
+             + (": taller from its base than Everest is above the sea" if relief > 8849 else "")
+             + f". {STATUS_WORDS[v['status']].capitalize()}, "
+             + ("under 1 Myr old" if v["age"] < 1 else f"{v['age']:.0f} Myr old")
+             + ". Like Mauna Kea and Mauna Loa on Hawaii.")
+    return [_feature(ctx, "shield_volcano", f"Great shield volcano: {_n(relief / 1000)} km tall", blurb, cell, 250,
+                     {"relief_m": round(relief), "top_m": round(v["top_m"]), "floor_m": round(v["floor_m"]),
+                      "status": v["status"], "age_myr": v["age"]}, quality=0.4 + 0.6 * min(relief / 9000, 1))]
+
+
+def volcanic_field(ctx: _Ctx) -> list[dict]:
+    """Volcanoes of different types side by side: the place where the most
+    edifice types (_vtype: arc stratovolcano, hotspot shield, continental
+    caldera) stand above the sea within FIELD_KM of one of them; at least
+    two types. Ties go to more states (active, dormant, extinct), then to
+    more volcanoes."""
+    vs = [v for v in _volcano_forms(ctx) if v["top_m"] > 0]
+    if len(vs) < 2:
+        return []
+    P = np.array([_unit(v["lat"], v["lon"]) for v in vs])
+    T = np.array([_vtype(v) for v in vs])
+    St = np.array([v["status"] for v in vs])
+    best = None
+    for k in range(len(vs)):
+        near = np.flatnonzero(np.arccos(np.clip(P @ P[k], -1, 1)) * R_KM <= FIELD_KM)
+        types = set(T[near])
+        if len(types) < 2:
+            continue
+        s = (len(types), len(set(St[near])), len(near))
+        if best is None or s > best[0]:
+            best = (s, k, near)
+    if best is None:
+        return []
+    (nt, ns, nv), k, near = best
+    cell = _vcell(ctx, vs[k])
+    cnt = {t: int((T[near] == t).sum()) for t in ("stratovolcano", "shield volcano", "caldera")}
+    sts = {s: int((St[near] == s).sum()) for s in ("active", "dormant", "extinct")}
+    blurb = (f"Different kinds of volcano within {FIELD_KM * 2:.0f} km: "
+             + ", ".join(_plural(c, t) for t, c in cnt.items() if c)
+             + f" ({', '.join(f'{c} {s}' for s, c in sts.items() if c)}): where a mantle plume rises near a "
+             "subduction arc, steep cones of sticky andesite stand beside broad basalt shields or calderas.")
+    return [_feature(ctx, "volcanic_field", f"Volcanic field: {nt} kinds of volcano", blurb, cell, 500,
+                     {"types": nt, "volcanoes": nv, **{t.split()[0]: c for t, c in cnt.items()}, **sts},
+                     quality=0.5 + 0.25 * (nt - 2) + 0.25 * min(nv / 8, 1))]
+
+
+def flood_basalts(ctx: _Ctx, top: int = 1) -> list[dict]:
+    """Flood-basalt provinces (large igneous provinces: the Deccan Traps,
+    the Columbia River basalts): land with flood basalt at the surface or
+    the lava-plateau landform (landform.py: TRAPS_MIN_KM of flood basalt on
+    top), one-cell gaps bridged, at least FLOOD_MIN_KM2, by area."""
+    L = ctx.L
+    if "surface_rock" not in L and "landform" not in L:
+        return []
+    m = np.zeros(ctx.n, bool)
+    if "surface_rock" in L:
+        m |= np.asarray(L["surface_rock"]) == FLOOD_BASALT
+    if "landform" in L:
+        m |= np.asarray(L["landform"]) == LAVA_PLATEAU
+    m &= ctx.land
+    out = []
+    for cells in ctx.components(m, min_cells=1, bridge=1):
+        a = len(cells) * ctx.area
+        if a < FLOOD_MIN_KM2 or len(out) >= top:
+            break
+        mid = ctx.middle(cells)
+        plat = np.asarray(L["landform"])[cells] == LAVA_PLATEAU if "landform" in L else np.zeros(len(cells), bool)
+        age = float(np.median(np.asarray(L["landform_age"], float)[cells[plat]])) if plat.any() and "landform_age" in L else None
+        span = ctx.span_km(cells, mid)
+        blurb = (f"{_area(a)} of flood basalt, lava flows piled into stepped plateaus at ~{_m(np.median(ctx.elev[cells]))}: "
+                 "a large igneous province, where a new mantle plume's head poured out lava for a few Myr, "
+                 "like the Deccan Traps or the Columbia River basalts"
+                 + ("" if age is None else "; erupted under 1 Myr ago" if age < 1 else f"; {age:.0f} Myr since the eruption") + ".")
+        out.append(_feature(ctx, "flood_basalt", f"Flood basalts: {_area(a)}", blurb, mid, zoom_size(min(span, 1000)),
+                            {"area_km2": round(a), "lava_plateau_pct": round(100 * float(plat.mean())),
+                             **({"age_myr": round(age)} if age is not None else {})},
+                            quality=(0.8 ** len(out)) * min(1.0, 0.4 + a / 500000)))
     return out
 
 
@@ -1474,13 +1675,174 @@ REEF_CELL = 1.0  # % of a sea cell under coral reef (the world's reef layer, coa
 MANGROVE_CELL = 2.0  # % of a coastal land cell under mangroves that counts it
 
 
+BANK_DEPTH_M = 200.0  # m: a shelf's or bank's top (the reefs and lime mud need light; most banks are < 20 m)
+BIG_LAND_KM2 = 100000.0  # km^2: a landmass a barrier reef's shelf belongs to (New Caledonia ~18,000 is an island's reef)
+BARRIER_MIN_KM = 300.0  # km: the least length of a barrier reef
+BANK_COASTAL = 0.5  # at most this share of a bank's cells touch land
+
+
+def _warm_shallow(ctx: _Ctx) -> np.ndarray:
+    """Shallow sea (<= BANK_DEPTH_M) warm enough for reefs and carbonate:
+    an annual sea surface of at least the run's reef_temp - 1.5 (coastal.py's
+    reef ramp starts there); else any cell with reef."""
+    from .coastal import reef_temp
+    L = ctx.L
+    sea = ~ctx.land
+    warm = np.asarray(L["sst"], float) >= reef_temp(ctx.meta) - 1.5 if "sst" in L else np.asarray(L["reef"], float) > 0
+    return sea & (-ctx.elev <= BANK_DEPTH_M) & warm
+
+
+def _landmass_km2(ctx: _Ctx) -> np.ndarray:
+    """km^2 of the landmass each land cell belongs to (0 at sea)."""
+    if getattr(ctx, "_lm", None) is None:
+        lab, k = ctx.g.components(ctx.land)
+        size = np.bincount(lab[lab >= 0], minlength=k) * ctx.area
+        ctx._lm = np.where(lab >= 0, size[np.maximum(lab, 0)], 0.0)
+    return ctx._lm
+
+
+def _hops(ctx: _Ctx, mask: np.ndarray, k: int = 8) -> np.ndarray:
+    """Cell links from each cell to the nearest of mask (k + 1 beyond k)."""
+    h = np.where(mask, 0, k + 1)
+    m = mask.copy()
+    for j in range(1, k + 1):
+        m2 = ctx.dilate(m)
+        h[m2 & ~m] = j
+        m = m2
+    return h
+
+
+def _reef_sites(ctx: _Ctx) -> dict:
+    """Carbonate banks and barrier reefs (computed once; coral_coasts leaves
+    their reef tracts to them). Each: (cells, reef km^2, extras)."""
+    if getattr(ctx, "_reefs", None) is not None:
+        return ctx._reefs
+    L = ctx.L
+    ctx._reefs = {"bank": [], "barrier": []}
+    if "reef" not in L:
+        return ctx._reefs
+    share = np.asarray(L["reef"], float)
+    shallow = _warm_shallow(ctx)
+    lm = _landmass_km2(ctx)
+    atoll_cells = [_vcell(ctx, v) for v in _volcano_forms(ctx) if v["form"] == "atoll"]
+    to_land = _hops(ctx, ctx.land)
+    to_deep = _hops(ctx, ~ctx.land & (-ctx.elev > BANK_DEPTH_M))
+    for cells in ctx.components(shallow, min_cells=2):
+        m = np.zeros(ctx.n, bool)
+        m[cells] = True
+        ring = ctx.dilate(m) & ~m
+        a = len(cells) * ctx.area
+        reef_km2 = float(share[cells].sum()) / 100 * ctx.area
+        if (share[cells] >= REEF_CELL).sum() == 0:
+            continue
+        land_next = ring & ctx.land
+        big = float(lm[land_next].max()) if land_next.any() else 0.0
+        if big <= a and (to_land[cells] == 1).mean() <= BANK_COASTAL:
+            # a bank: shallow throughout, only islands of its own on it (the Bahamas), mostly
+            # open water (not a strip round a coast);
+            # an atoll platform (two or more of the volcano table's atolls on it) is shown as atolls
+            if sum(m[c] or ring[c] for c in atoll_cells) >= 2:
+                continue
+            deep = ring & ~ctx.land
+            ctx._reefs["bank"].append((cells, reef_km2, {
+                "area_km2": a, "deep_rim_m": float(np.median(-ctx.elev[deep])) if deep.any() else 0.0}))
+        elif big >= BIG_LAND_KM2:
+            # a shelf of a big landmass: its reefs off the coast (not touching land) on the
+            # shelf's outer half (no farther from deeper sea than from the shore), so its
+            # lagoon lies behind them (the Great Barrier Reef); not reefs in the middle of
+            # a shelf sea (the Java Sea)
+            coast = ctx.dilate(ctx.land) & m
+            off = m & ~coast & (share >= REEF_CELL) & (to_deep <= to_land)
+            for rc in ctx.components(off, min_cells=2, bridge=1):
+                length, spine = ctx.spine(rc, ctx.dilate(off) & ~ctx.land)
+                length += ctx.cell_km
+                if length < BARRIER_MIN_KM:
+                    continue
+                shore = np.flatnonzero(land_next & (lm >= BIG_LAND_KM2))
+                offshore = float(np.median([ctx.dist(int(c), shore).min() for c in rc]))
+                lagoon = m & coast
+                ctx._reefs["barrier"].append((rc, float(share[rc].sum()) / 100 * ctx.area, {
+                    "length_km": length, "spine": spine, "offshore_km": offshore, "shelf_km2": a,
+                    "lagoon_m": float(np.median(-ctx.elev[lagoon])) if lagoon.any() else 0.0}))
+    ctx._reefs["bank"].sort(key=lambda s: (-len(s[0]), -s[1]))
+    ctx._reefs["barrier"].sort(key=lambda s: -s[1])
+    return ctx._reefs
+
+
+def _sea_range(ctx: _Ctx, cells) -> tuple[float, float]:
+    L = ctx.L
+    if "sst_jul" in L:
+        sj, sn = (np.asarray(L[k], float)[cells] for k in ("sst_jul", "sst_jan"))
+    else:
+        sj, sn = (np.asarray(L[k], float)[cells] for k in ("warm_month", "cold_month"))
+    return float(np.minimum(sj, sn).mean()), float(np.maximum(sj, sn).mean())
+
+
+def _lime_pct(ctx: _Ctx, cells) -> float:
+    if "surface_rock" not in ctx.L:
+        return 0.0
+    return 100 * float(np.isin(np.asarray(ctx.L["surface_rock"])[cells], (LIMESTONE, DOLOMITE)).mean())
+
+
+def carbonate_banks(ctx: _Ctx, top: int = 2) -> list[dict]:
+    """Carbonate platforms (the Bahamas): a connected warm shallow sea
+    (_warm_shallow: <= BANK_DEPTH_M, warm enough for reefs) with reefs,
+    flat-topped and detached: the land it touches is no bigger than the
+    bank itself (its own islands, not a continent's shelf) and at most
+    BANK_COASTAL of its cells touch land (not a strip round a coast). By area, then
+    reef area (a cool bank has few reefs but is a platform all the same)."""
+    out = []
+    for rank, (cells, reef_km2, x) in enumerate(_reef_sites(ctx)["bank"][:top]):
+        mid = ctx.middle(cells)
+        t0, t1 = _sea_range(ctx, cells)
+        lime = _lime_pct(ctx, cells)
+        depth = float(np.mean(-ctx.elev[cells]))
+        blurb = (f"A shallow carbonate bank, {_area(x['area_km2'])} of sea ~{_m(depth)} deep on average, "
+                 f"{t0:.0f}–{t1:.0f} °C through the year, with {_area(reef_km2)} of coral reef along its rim and "
+                 "lime-sand shoals, lagoons and low islands on top"
+                 + (f", dropping to ~{_m(x['deep_rim_m'])} all round" if x["deep_rim_m"] >= 1000 else "")
+                 + (f"; {lime:.0f}% of its floor limestone" if lime >= 10 else "")
+                 + ". Like the Bahamas banks.")
+        out.append(_feature(ctx, "carbonate_bank", f"Carbonate bank: {_area(x['area_km2'])}", blurb, mid,
+                            zoom_size(ctx.span_km(cells, mid)),
+                            {"area_km2": round(x["area_km2"]), "reef_km2": round(reef_km2), "depth_m": round(depth),
+                             "limestone_pct": round(lime)},
+                            quality=(0.8 ** rank) * min(1.0, 0.4 + x["area_km2"] / 100000)))
+    return out
+
+
+def barrier_reefs(ctx: _Ctx, top: int = 1) -> list[dict]:
+    """Barrier reefs (the Great Barrier Reef, Belize): reef cells (>=
+    REEF_CELL %) at least a cell off the coast of a big landmass (>=
+    BIG_LAND_KM2), on the outer half of its warm shelf (as near deeper sea
+    as the shore, in cell links), so the shelf's lagoon lies between them
+    and the shore; one-cell gaps bridged, >= BARRIER_MIN_KM long. By
+    reef area; zoomed on the middle of its length."""
+    out = []
+    for rank, (cells, reef_km2, x) in enumerate(_reef_sites(ctx)["barrier"][:top]):
+        spine = x["spine"]
+        mid = int(cells[np.argmin(ctx.dist(spine[len(spine) // 2], cells))])  # (a reef cell at the middle of its length)
+        t0, t1 = _sea_range(ctx, cells)
+        blurb = (f"{_area(reef_km2)} of coral reef in a {_n(x['length_km'])} km line along the outer shelf, "
+                 f"~{_n(x['offshore_km'])} km off the coast, with a lagoon ~{_m(x['lagoon_m'])} deep behind it; "
+                 f"the sea {t0:.0f}–{t1:.0f} °C through the year. Like the Great Barrier Reef.")
+        out.append(_feature(ctx, "barrier_reef", f"Barrier reef: {_n(x['length_km'])} km", blurb, mid,
+                            zoom_size(min(x["length_km"], 1000)),
+                            {"reef_km2": round(reef_km2), "length_km": round(x["length_km"]),
+                             "offshore_km": round(x["offshore_km"]), "lagoon_m": round(x["lagoon_m"])},
+                            quality=(0.8 ** rank) * min(1.0, 0.4 + x["length_km"] / 1500), path=ctx.path(spine)))
+    return out
+
+
 def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
     """The biggest reef tracts (the Great Barrier Reef, the Belize reef,
     the reefs of an island arc): connected sea cells with at least
     REEF_CELL % of coral reef (the world's reef layer, coastal.py: warm,
     clear, shallow water; atoll rings of the volcano table included), one-
     cell gaps bridged, ranked by reef area. Limestone on the shore (old
-    reefs lifted onto land) is noted."""
+    reefs lifted onto land) is noted. A tract holding the barrier reef or
+    the carbonate bank shown (barrier_reefs, carbonate_banks) is left to
+    them; "Great reef" is the world's biggest tract, when it isn't."""
     L = ctx.L
     if "reef" not in L:
         return []
@@ -1494,6 +1856,12 @@ def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
     cand.sort(key=lambda c: -c[0])
     feats = []
     best = cand[0][0] if cand else 1.0
+    sites = _reef_sites(ctx)
+    taken = np.zeros(ctx.n, bool)
+    for cells, _, _ in sites["bank"][:2] + sites["barrier"][:1]:  # (the ones carbonate_banks and barrier_reefs show)
+        taken[cells] = True
+    biggest = cand[0][1] if cand else None
+    cand = [c for c in cand if not taken[c[1]].any()]
     for rank, (a, cells) in enumerate(cand[:top]):
         length, spine = ctx.spine(cells, ctx.dilate(reef) & sea)
         length += ctx.cell_km
@@ -1509,7 +1877,7 @@ def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
         t_cold, t_warm = float(np.minimum(sj, sn).mean()), float(np.maximum(sj, sn).mean())
         mud = float(np.asarray(L["turbidity"], float)[cells].mean()) if "turbidity" in L else None
         lime_txt = f" {lime_pct:.0f}% of the shore is limestone, old reefs lifted onto land." if lime_pct >= 5 else ""
-        title = f"{'Great reef' if rank == 0 and a >= 10000 else 'Coral coast'}: {_area(a)} of reef"
+        title = f"{'Great reef' if cells is biggest and a >= 10000 else 'Coral coast'}: {_area(a)} of reef"
         blurb = (f"{_area(a)} of coral reef along {_n(length)} km of warm, clear, shallow sea: "
                  f"{t_cold:.0f}–{t_warm:.0f} °C through the year"
                  + (f", {mud:.1f} mg/L of mud in the water" if mud is not None else "")
@@ -2239,7 +2607,8 @@ DETECTORS = [highest_peak, mountain_ranges, rivers, deltas, deepest_trench, fjor
              volcanic_arcs, hotspot_islands, atolls, rifts, fastest_plate, lakes, inland_seas, ice_sheet, desert, rainforest,
              landmasses, extremes, waterfalls, canyons, salt, coral_coasts, rain_shadows, plateaus, most_varied,
              beaches, ski_country, mild_winters, year_round, great_forests, savanna, wetlands, maquis_coast, treelines,
-             mangrove_coasts]
+             mangrove_coasts, supervolcanoes, stratovolcano, shield_volcano, volcanic_field, flood_basalts,
+             carbonate_banks, barrier_reefs]
 
 
 def _nms(ctx: _Ctx, feats: list[dict], radius_km: float) -> list[dict]:

@@ -41,7 +41,7 @@ import numpy as np
 
 from . import zoom_kernels as ZK
 from .geo import R_KM, xyz
-from .tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, REEF, SHORE_MAX
+from .tectonics.volcanism import ARC, ARC_SLOPE, COLUMNS, DROWNED, PLUME_KM, REEF, SHORE_MAX
 
 PIN_MYR = 1.5  # younger volcanoes keep their smooth cone in the landscape pass
 # minor cones along active arcs (arc_infill, PW-116)
@@ -71,6 +71,47 @@ def table(world: dict) -> list[dict]:
     if not cols or list(cols) != list(COLUMNS):
         return []
     return [dict(zip(cols, r)) for r in meta.get("volcanoes") or [] if len(r) == len(cols)]
+
+
+# Status (active / dormant / extinct). The run knows two things about a
+# volcano: whether it is fed now (a hotspot vent over its plume, an arc
+# volcano within its ~8 Myr life: `active`), and where the live plumes are
+# (meta "hotspots"). It has no eruptions, only Myr steps, so "erupted in the
+# last few thousand years" can't be told from "quiet for 50,000 years": every
+# fed volcano is "active". What it can tell: a hotspot vent the plate has
+# carried off its plume but still within the plume's head (PLUME_KM, the
+# melt region and swell) sits over hot, partly molten mantle and can erupt
+# again (Hawaii's rejuvenated volcanoes, Haleakala; Yellowstone's older
+# calderas): "dormant". Farther off, or with its plume dead, it is
+# "extinct". An arc volcano past its life is extinct: the arc's magma has
+# moved to a new centre (the run has no "still on a live arc" state of its own).
+DORMANT_KM = PLUME_KM
+
+
+def plumes(world: dict) -> np.ndarray:
+    """Unit vectors of the world's live plumes (meta "hotspots": [lat, lon])."""
+    hs = (world.get("meta") or {}).get("hotspots") or []
+    if not hs:
+        return np.zeros((0, 3))
+    la, lo = np.radians(np.asarray(hs, float)[:, :2]).T
+    return xyz(la, lo)
+
+
+def status(v: dict, plume_xyz: np.ndarray) -> str:
+    """"active", "dormant" or "extinct" (see DORMANT_KM)."""
+    if v["active"]:
+        return "active"
+    if v["kind"] == ARC or not len(plume_xyz):
+        return "extinct"
+    p = xyz(np.radians(v["lat"]), np.radians(v["lon"]))
+    d = float(np.arccos(np.clip(plume_xyz @ p, -1, 1)).min()) * R_KM
+    return "dormant" if d <= DORMANT_KM else "extinct"
+
+
+def statuses(world: dict, V: list[dict] | None = None) -> list[str]:
+    """status() of each volcano of table(world) (or of V)."""
+    P = plumes(world)
+    return [status(v, P) for v in (table(world) if V is None else V)]
 
 
 def arc_infill(V: list[dict], seed: int) -> list[dict]:
@@ -168,11 +209,13 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
       rock      surface.ROCKS id of the volcano under each pixel (0: none)
       bump_minor  the bump there is a minor arc cone (arc_infill: no volume
                 of its own in the coarse cells; zoom.py takes it off their land)
-      list      the volcanoes drawn, for the zoom's stats"""
+      list      the volcanoes drawn, for the zoom's stats (with each one's status: active,
+                dormant or extinct, statuses())"""
     V = table(world)
     if not V:
         return None
     V = V + arc_infill(V, seed)  # (minor cones along the active arcs)
+    st = statuses(world, V)
     lat = np.array([v["lat"] for v in V])
     lon = np.array([v["lon"] for v in V])
     P = xyz(np.radians(lat), np.radians(lon))
@@ -295,7 +338,7 @@ def fields(world: dict, fr, px, py, res: float, sp: float, Pk, seed: int, size_k
         out["reef"][win] |= reefpx
         if abs(vx[j]) < half and abs(vy[j]) < half:
             out["list"].append({"lat": v["lat"], "lon": v["lon"], "kind": "arc" if arc else "hotspot",
-                                "form": form(v), "active": bool(v["active"]), "age_myr": v["age"], "top_m": v["top_m"],
+                                "form": form(v), "active": bool(v["active"]), "status": st[j], "age_myr": v["age"], "top_m": v["top_m"],
                                 "height_m": v["height_m"], "x_km": round(float(vx[j]), 1),
                                 "y_km": round(float(vy[j]), 1), **({"minor": True} if v.get("minor") else {})})
     if not out["list"] and not np.isfinite(out["z"]).any() and not np.isfinite(out["bump"]).any():

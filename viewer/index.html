@@ -213,6 +213,7 @@
     <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
     <label data-needs-volc="hotspots"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
     <label data-needs-volc="volcanoes"><input type="checkbox" id="volcanoes" checked> Volcanoes</label>
+    <label data-needs-volc="volcTable" title="Also the extinct volcanoes: dead arc cones, old calderas, seamounts and guyots (hover a cell to see what is in it)"><input type="checkbox" id="volcExtinct"> &nbsp;&nbsp;extinct ones too</label>
     <!-- data-needs: shown only when the run frame or world has that layer -->
     <label data-needs="wind_e"><input type="checkbox" id="winds"> Winds <span id="windYear">(yearly average)</span>
       <select id="windSeason" data-needs="wind_jul_e" style="flex: none; width: auto; padding: 1px" title="Surface winds averaged over the year, or over the July / January half-years (monsoons reverse between them)">
@@ -988,13 +989,15 @@ function buildOverlays() {
     overlays.hotspots = lineObj(pts, 0xff9f1c);
   }
   if ($('volcanoes').checked && V.volcanoes) {
-    // rows [lat, lon, kind (0 arc, 1 hotspot), mark (0 active, 1 island, 2 atoll)]; a run's
-    // keyframes list only the active ones. Triangles: red arc, orange hotspot (smaller when
-    // extinct); atolls: cyan rings.
-    const arcs = [], vents = [], atolls = [], r0 = globe ? 1.012 : 1;
+    // rows [lat, lon, kind (0 arc, 1 hotspot), mark (0 active, 1 extinct island, 2 atoll, 3 dormant,
+    // 4 other extinct)]; a run's keyframes list only the active ones. Triangles: red arc, orange
+    // hotspot (smaller when an extinct island), yellow dormant, grey-brown extinct (with "extinct
+    // ones too"); atolls: cyan rings.
+    const arcs = [], vents = [], atolls = [], dormant = [], extinct = [], r0 = globe ? 1.012 : 1;
     for (const [la, lo, kind = 0, mark = 0] of V.volcanoes) {
-      const cl = Math.max(Math.cos(la * Math.PI / 180), 0.2), s = mark ? 0.35 : 0.6;
-      const out = mark === 2 ? atolls : kind === 1 ? vents : arcs;
+      if (mark === 4 && !$('volcExtinct').checked) continue;
+      const cl = Math.max(Math.cos(la * Math.PI / 180), 0.2), s = mark === 3 ? 0.5 : mark ? 0.35 : 0.6;
+      const out = mark === 2 ? atolls : mark === 3 ? dormant : mark === 4 ? extinct : kind === 1 ? vents : arcs;
       if (mark === 2) {
         for (let k = 0; k < 8; k++) {
           const a1 = k / 8 * 2 * Math.PI, a2 = (k + 1) / 8 * 2 * Math.PI;
@@ -1009,6 +1012,8 @@ function buildOverlays() {
     overlays.volcanoes = lineObj(arcs, 0xff2d2d);
     overlays.vents = lineObj(vents, 0xffb347);
     overlays.atolls = lineObj(atolls, 0x5ff0e6);
+    overlays.dormant = lineObj(dormant, 0xffe14d);
+    overlays.extinct = lineObj(extinct, 0xb08d6a);
   }
   if ($('outlines').checked || $('pentas').checked) {
     const cp = (k, i) => {
@@ -1593,6 +1598,8 @@ function renderLegend() {
     if (has((v) => !v[2] && (v[3] || 0) !== 2)) el.innerHTML += '<span><span class="sw" style="background:#ff2d2d"></span>arc volcano</span>';
     if (has((v) => v[2] === 1 && v[3] !== 2)) el.innerHTML += '<span><span class="sw" style="background:#ffb347"></span>hotspot volcano</span>';
     if (has((v) => v[3] === 2)) el.innerHTML += '<span><span class="sw" style="background:#5ff0e6"></span>atoll</span>';
+    if (has((v) => v[3] === 3)) el.innerHTML += '<span title="A hotspot volcano carried off its plume but still over the plume\'s head (within 150 km): quiet, but it can erupt again"><span class="sw" style="background:#ffe14d"></span>dormant volcano</span>';
+    if ($('volcExtinct').checked && has((v) => v[3] === 4)) el.innerHTML += '<span><span class="sw" style="background:#b08d6a"></span>extinct volcano</span>';
   }
   if ($('winds').checked && V.layers.wind_e)
     el.innerHTML += `<span><span class="sw" style="background:#ffe08a"></span>wind${
@@ -2124,6 +2131,8 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
+  const vl = V.kind === 'world' && volcLine(i);
+  if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
   const vegRows = () => {
     if (!L.vegetation || !land) return;
     const t = V.vegTypes[L.vegetation[i]];
@@ -2513,7 +2522,7 @@ seg('modeSeg', 'mode', () => {
 });
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'winds', 'currents', 'overturning', 'jet',
+const OVERLAY_IDS = ['rivers', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning', 'jet',
                      'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
@@ -2891,7 +2900,7 @@ async function setWorld(w) {
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
-        hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), ...legendFields(w.legend) };
+        hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), volcTable: volcTable(w.meta), ...legendFields(w.legend) };
   iceBed(V.layers);
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
@@ -2996,21 +3005,53 @@ async function loadRun(dir, wantT) {
 }
 
 // A world's volcano table (tectonics.volcanism.COLUMNS) -> [lat, lon, kind, mark]
-// for the overlay: the active ones, hotspot islands and atolls (not the many
-// seamounts and extinct arc volcanoes).
-// mark: 0 active, 1 island, 2 atoll (a living reef round a sunken volcano)
+// for the overlay: the active and dormant ones, extinct hotspot islands and
+// atolls; the many other extinct ones (seamounts, guyots, dead arc cones, old
+// calderas) only with "extinct ones too".
+// mark: 0 active, 1 extinct island, 2 atoll (a living reef round a sunken volcano), 3 dormant, 4 other extinct
 function worldVolcanoes(meta) {
-  const cols = meta.volcano_columns;
-  if (!cols || !meta.volcanoes) return [];
-  const c = Object.fromEntries(cols.map((k, i) => [k, i]));
   const out = [];
-  for (const r of meta.volcanoes) {
-    if (r[c.active]) out.push([r[c.lat], r[c.lon], r[c.kind], 0]);
-    else if (r[c.kind] === 0) continue;  // (extinct arc volcanoes: too many to show)
-    else if (r[c.top_m] > 0) out.push([r[c.lat], r[c.lon], r[c.kind], 1]);
-    else if (r[c.reef] === 1) out.push([r[c.lat], r[c.lon], r[c.kind], 2]);
+  for (const v of volcTable(meta)) {
+    const m = v.status === 'active' ? 0 : v.status === 'dormant' ? 3 : v.kind === 1 && v.top_m > 0 ? 1
+      : v.top_m <= 0 && v.reef === 1 ? 2 : 4;
+    out.push([v.lat, v.lon, v.kind, m]);
   }
   return out;
+}
+// The volcano table as objects, each with its status as zoom_volcanoes.status (keep the two alike):
+// active: fed now (a hotspot vent over its plume, an arc volcano within its life); dormant: a hotspot
+// vent off its plume's centre but within DORMANT_KM (the plume's head, volcanism.PLUME_KM) of a live
+// plume, so it can erupt again; else extinct. The run has Myr steps, no eruptions: it can't tell a
+// volcano that erupted last year from one quiet for 50,000 years.
+const DORMANT_KM = 150;
+function volcTable(meta) {
+  const cols = meta.volcano_columns;
+  if (!cols || !meta.volcanoes) return [];
+  const rad = Math.PI / 180, u = (la, lo) => [Math.cos(la * rad) * Math.cos(lo * rad), Math.cos(la * rad) * Math.sin(lo * rad), Math.sin(la * rad)];
+  const P = (meta.hotspots || []).map(([la, lo]) => u(la, lo));
+  return meta.volcanoes.filter((r) => r.length === cols.length).map((r) => {
+    const v = Object.fromEntries(cols.map((k, i) => [k, r[i]]));
+    let status = v.active ? 'active' : 'extinct';
+    if (!v.active && v.kind === 1) {
+      const p = u(v.lat, v.lon);
+      if (P.some((q) => Math.acos(Math.min(1, p[0] * q[0] + p[1] * q[1] + p[2] * q[2])) * 6371 <= DORMANT_KM)) status = 'dormant';
+    }
+    return { ...v, status, type: v.kind === 0 ? 'stratovolcano' : v.floor_m > 0 ? 'caldera' : 'shield volcano' };
+  });
+}
+// the volcanoes in cell i (within ~0.6 cell spacings of its centre), for the hover card
+function volcLine(i) {
+  const T = V.volcTable;
+  if (!T?.length) return '';
+  const G = V.grid, rad = Math.PI / 180, km = (V.meta.cell_size_km || 100) * 0.6;
+  const la0 = G.lat[i] * rad, lo0 = G.lon[i] * rad;
+  const here = T.filter((v) => {
+    const c = Math.sin(la0) * Math.sin(v.lat * rad) + Math.cos(la0) * Math.cos(v.lat * rad) * Math.cos(lo0 - v.lon * rad);
+    return Math.acos(Math.min(1, c)) * 6371 <= km;
+  }).sort((a, b) => b.top_m - a.top_m);
+  const fm = (x) => Math.round(x).toLocaleString('en-US');
+  return here.slice(0, 3).map((v) => `${v.status} ${v.type}${v.top_m <= 0 ? (v.reef === 1 ? ' (an atoll now)' : ' (below the sea)') : ''}, `
+    + `summit ${fm(v.top_m)} m, ${v.age < 1 ? 'under 1' : fm(v.age)} Myr`).join('; ') + (here.length > 3 ? `; +${here.length - 3} more` : '');
 }
 
 // Glacial isostasy (PW-189): a run's and a world's elevation is the bed, pressed down by its ice, so
