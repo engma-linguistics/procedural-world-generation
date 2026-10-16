@@ -303,3 +303,51 @@ def test_vegetation_feedbacks_nudge():
     c0 = climate.compute(g, elev)
     d = climate.albedo_warming(g.lat, 23.4, c0["temp"], c0["t_warm"], c0["t_cold"], c0["p_jul"], c0["p_jan"], bare, T)
     assert max(np.abs(d[0]).max(), np.abs(d[1]).max()) <= T["albedo_cap"] + 1e-9
+
+
+def test_sediment_budget_closes(monkeypatch):
+    """surface.erode moves rock, it doesn't make or lose it: each step's
+    deposits (land, lakes, sea) add up to what it removed, and none is
+    negative (PW-283). And a closed basin keeps only what fits: no cell
+    where rivers end is filled above the basin's spill point (PW-280)."""
+    from planet import kernels, surface
+    steps, real = [], surface.erode
+
+    def wrapped(grid, elev, *a, **kw):
+        out = real(grid, elev, *a, **kw)
+        spill = kernels.priority_flood(elev.astype(float), grid.nbr_off, grid.nbr_idx, 0.01)[0]
+        top = elev + out[4] * a[-1]  # (a[-1]: iso_dep, m per km deposited)
+        steps.append((out[3].copy(), out[4].copy(), out[7]["sink"] & (top > spill + 1.0), out[7]["sink"].sum()))
+        return out
+
+    monkeypatch.setattr(surface, "erode", wrapped)
+    run_sim(myr=100)
+    assert len(steps) >= 40
+    assert sum(s[3] for s in steps) > 50  # (closed basins to test)
+    for removed, dep, over, _ in steps:
+        assert removed.sum() > 0
+        assert dep.sum() == pytest.approx(removed.sum(), rel=1e-9)
+        assert dep.min() >= -1e-12
+        assert not over.any()
+
+
+def test_hillslope_wear_level_consistent():
+    """The run's hillslope term is a slope law, so the same terrain wears
+    down the same at any grid level (PW-282: drop / spacing^2 doubled per level)."""
+    from planet import surface
+    from planet.geo import R_KM
+    rng = np.random.default_rng(3)
+    waves = [(v / np.linalg.norm(v), rng.uniform(0, 2 * np.pi), rng.uniform(1500, 4000))
+             for v in rng.normal(size=(12, 3))]
+    wear = []
+    for level in (4, 5):
+        g = build_grid(level)
+        h = sum(np.sin(g.centers @ v * R_KM * 2 * np.pi / lam + ph) for v, ph, lam in waves) / np.sqrt(12)
+        e = np.where(h > 0.3, 300 + 2500 * (h - 0.3), -3000.0)
+        n, land = g.n, e > 0
+        out = surface.erode(g, e, np.full(n, 35.0), np.zeros(n), np.zeros((n, len(surface.MIX_ROCKS))),
+                            np.full(n, surface.CRATON, np.uint8), land, np.full(n, 800.0), np.full(n, 300.0),
+                            np.full(n, 500.0), np.full(n, 1000.0), 2.0, Params().hillslope, 1e30, 2000.0, 0.0,
+                            2.0 ** (level - 4), np.full(n, 170.0))
+        wear.append(out[3][land].mean())
+    assert wear[1] == pytest.approx(wear[0], rel=0.15), wear
