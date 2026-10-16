@@ -1,4 +1,5 @@
 ---
+id: PW-371
 title: Globe paint loops miss the cache - cells are numbered coarse-level first
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewer-3d
 blocked_by: []
 relates: [PW-316]
 refs: [viewer/index.html, viewer/relief.js, planet/grid.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -26,3 +29,6 @@ the fan lists in that order (picking maps back through `triCell`). Could take th
 the ~25 keyframes/s it reaches now, and allow smooth relief shading during replay. Measure with
 `planetViewer.bench()`.
 - [ ] keyframe ms before/after on run a1d3b9 (L7), relief on and off
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-globe-cell-order-locality.md (found by viewer-3d).

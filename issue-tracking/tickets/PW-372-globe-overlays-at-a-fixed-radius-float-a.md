@@ -1,4 +1,5 @@
 ---
+id: PW-372
 title: Globe overlays at a fixed radius float above or sink into the 3D relief
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: viewer-3d
 blocked_by: []
 relates: []
 refs: [viewer/index.html, viewer/relief.js, "run a1d3b9", "world bd9a7a"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Fix: give `llPos` the relief height of the nearest cell (or of the overlay's own
 callers know) plus a small lift, as `cellPos` does. Left alone on the viewer-3d branch because
 another agent was changing the volcano and highlight overlays at the same time.
 - [ ] volcanoes, hotspots, events, zoom box and highlight marks sit on the relief on globe and map
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-relief-overlays-fixed-radius.md (found by viewer-3d).
