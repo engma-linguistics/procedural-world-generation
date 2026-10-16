@@ -2,7 +2,7 @@
 id: PW-308
 title: "After the audit fixes, runs barely glaciate: 1 Gyr deepest ice sea level -9..-48 m on 11 seeds (Earth's icehouses ~-120 m)"
 type: task
-status: todo
+status: in-progress
 parent: PW-244
 subsystem: climate
 effort: m
@@ -38,4 +38,5 @@ stops ice sheets from growing. Fix it soundly: no ice-growth fudge. The target i
 run should have some icehouse spells.
 
 ## Updates
+- 2026-10-15: Status todo -> in-progress. Agent started: bisect the audit fixes on seeds 11/42/2, find the mechanism, sound fix.
 - 2026-10-15: Created from inbox draft draft-runs-rarely-glaciate.md (found by coordinator).
