@@ -148,13 +148,25 @@ MIX = slice(1, 7)
 LAVA_MAX_KM = 3.0  # km: the thickest flood-basalt pile on a continent (Siberian Traps ~3.5, Deccan ~2; PW-133)
 
 
-def iso_rate(cont, rock):
-    """m of elevation per km of crust added or removed, per cell."""
-    return np.where(cont, ISO_LAND, np.where(rock == HOTSPOT, ISO_VOLCANO, ISO_SEA))
+def iso_rate(cont, rock, thick=None):
+    """m of elevation per km of crust added or removed, per cell (the
+    slope of elevation in thick). A hotspot pile is held up by the plate
+    only for its first VOLCANO_PILE_KM beyond ocean crust; beyond that (or
+    with thick unknown, None: within it) crust floats at ISO_SEA (PW-285)."""
+    volcano = rock == HOTSPOT
+    if thick is not None:
+        extra = np.asarray(thick, float) - OCEAN_KM
+        volcano = volcano & (extra >= 0) & (extra < VOLCANO_PILE_KM)
+    return np.where(cont, ISO_LAND, np.where(volcano, ISO_VOLCANO, ISO_SEA))
 
 
 def _k(cont, rock):
-    return np.where(cont, K_LAND, K_SEA * np.where(rock == HOTSPOT, ISO_VOLCANO / ISO_SEA, 1.0))
+    """m of elevation per km x g/cm3 of buoyancy. Sediment on a hotspot
+    pile floats like any sea-floor sediment: the plate's flexural support
+    belongs to the volcanic pile (capped in elevation), not to the mud on
+    it (PW-285: it lifted PW-172's spike cells by up to ~4 km). rock is
+    kept for the signature."""
+    return np.where(cont, K_LAND, K_SEA)
 
 
 def sediment_density(z):

@@ -62,7 +62,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            veg: dict | None = None, orbit_dt: np.ndarray | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
-    rivers -> vegetation (and biomes from it). dT: global temperature offset from
+    rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
+    (its mangrove forest and salt marsh from coastal life; biomes from it). dT: global temperature offset from
     today's Earth; ice: m of land ice; veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
     decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
@@ -411,8 +412,8 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
     path = S.path_of("world", file_id)
-    path.write_text(text)
-    path.with_suffix(".txt").write_text(text_report(world, summary))
+    S.write_atomic(path.with_suffix(".txt"), text_report(world, summary))
+    S.write_atomic(path, text)  # (last: a world is listed once its .json is there)
     update_index()
     return path
 

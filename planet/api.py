@@ -1,6 +1,7 @@
 """What `planet serve` does beyond static files: regional zooms requested
-from the viewer. Plain functions plus a one-job-at-a-time queue (Jobs, saved
-to a file so a restart keeps it), so tests can drive them without a socket.
+from the viewer. Plain functions plus a job queue (Jobs: up to `workers` jobs
+at once, in worker processes for the server, saved to a file so a restart
+keeps it), so tests can drive them without a socket.
 
   POST /api/zoom      {run, t} or {world}, plus {lat, lon, size_km, res_km,
                       seed?, iterations? (landscape-pass iterations, default 15)}
@@ -16,7 +17,7 @@ to a file so a restart keeps it), so tests can drive them without a socket.
   POST /api/timezoom  {run, t, kyr?} -> {"job": id}: a glacial time zoom
                       (timezoom.py) from the run's keyframe nearest t; the
                       job's "run" is the new run's id when done. Shares the
-                      job queue with zooms (one job at a time).
+                      job queue with zooms.
   POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished
                       world (finish.py) at the time zoom's frame nearest kyr,
                       or straight from the run's keyframe nearest t (the
@@ -40,11 +41,14 @@ from . import world as W
 from . import zoom as Z
 
 ZOOM_PX = 500  # the viewer's zooms are 500 x 500 px whatever their size
-# One computation at a time in this process: numba's parallel kernels (the
-# only threading layer available here is "workqueue") abort the process when
-# two threads launch them at once, and the job worker and highlights
-# requests (server threads) both run them. Also keeps two of them from
-# slicing the same run at once. Re-entrant: a job slices inside it.
+# One computation at a time in this process (re-entrant: a job slices inside
+# it). Under numba's workqueue threading layer (the fallback when TBB doesn't
+# load, parallel.pin_threading_layer) two threads launching parallel kernels
+# at once abort the process, and in-process jobs and highlights requests
+# (server threads) both run them. Per process only: the server's jobs run in
+# worker processes, each with its own. What two processes must not both
+# build (a slice, a zoom, a time zoom, a world's highlights) takes a file
+# lock instead (store.lock).
 COMPUTE = threading.RLock()
 
 
@@ -128,8 +132,13 @@ def slice_run(run_ref: str, t: float, progress=lambda f, msg: None) -> Path:
 
 def _slice_run(run_ref: str, t: float, progress) -> Path:
     run_dir = S.find_run(run_ref)
-    run = S.read_header(run_dir / "run.json")
     at = keyframe_t(run_dir, t)
+    with S.lock(S.runs_dir(), f"slice-{run_dir.name}-{at:g}"):  # (another process may be slicing it now)
+        return _slice_locked(run_dir, at, progress)
+
+
+def _slice_locked(run_dir: Path, at: float, progress) -> Path:
+    run = S.read_header(run_dir / "run.json")
     found = find_slice(run_dir, at)
     if found:
         progress(1.0, f"using world {found.stem} (already sliced at {at:g} Myr)")
@@ -157,9 +166,14 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     else:
         world_path = S.find_world(r["world"])
     zid = Z.zoom_id(world_path.stem, r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], r["iterations"])
-    if S.exists("zoom", zid):
-        progress(1.0, f"zoom {zid} already exists")
-        return {"zoom": zid, "world": world_path.stem}
+    with S.lock(S.zooms_dir(), zid):  # (one process builds a zoom; the others then find it)
+        if S.exists("zoom", zid):
+            progress(1.0, f"zoom {zid} already exists")
+            return {"zoom": zid, "world": world_path.stem}
+        return _build_zoom(r, world_path, progress)
+
+
+def _build_zoom(r: dict, world_path: Path, progress) -> dict:
     done = [0]
 
     def log(msg):  # build() logs four stages
@@ -264,12 +278,13 @@ def timezoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     r = parse_timezoom_request(req)
     run_dir = S.find_run(r["run"])
     run_id = S.read_header(run_dir / "run.json").get("id", run_dir.name)  # as timezoom records it
-    found = find_timezoom(run_id, r["t"], r["kyr"])
-    if found:
-        progress(1.0, f"time zoom {found} already exists")
-        return {"run": found}
-    progress(0.0, f"{r['kyr']:g} kyr of ice ages from {r['t']:g} Myr")
-    out = TZ.timezoom(str(run_dir), r["t"], r["kyr"], progress=lambda f, msg: progress(0.98 * f, msg))
+    with S.lock(S.runs_dir(), f"timezoom-{run_id}-{r['t']:g}-{r['kyr']:g}"):
+        found = find_timezoom(run_id, r["t"], r["kyr"])
+        if found:
+            progress(1.0, f"time zoom {found} already exists")
+            return {"run": found}
+        progress(0.0, f"{r['kyr']:g} kyr of ice ages from {r['t']:g} Myr")
+        out = TZ.timezoom(str(run_dir), r["t"], r["kyr"], progress=lambda f, msg: progress(0.98 * f, msg))
     progress(1.0, "done")
     return {"run": out.name}
 
@@ -320,14 +335,18 @@ JOBS = {"timezoom": timezoom_job, "finish": finish_job}
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
     """The server's job queue runs zooms, time zooms and finished worlds (req["type"]),
-    each holding COMPUTE."""
+    each holding COMPUTE (in its worker process)."""
     with COMPUTE:
         return JOBS.get(req.get("type"), zoom_job)(req, progress)
 
 
 class Jobs:
-    """Background jobs run one at a time, in submission order, on one worker
-    thread. With a path, their state is saved there (JSON, on every status
+    """Background jobs, up to `workers` at once, started in submission order
+    (one thread per slot; the server's fn runs each job in a worker process,
+    parallel.Pool.caller, so jobs don't share a process or its COMPUTE; two
+    jobs that need the same slice or zoom wait on its file lock and the
+    second reuses it). The same request while one is queued or running gets
+    that job. With a path, their state is saved there (JSON, on every status
     change and at most every SAVE_EVERY_S of progress) and read back when the
     server starts again: finished jobs keep answering the viewer's polls, and
     jobs that were queued or running are queued again (their outputs are
@@ -337,14 +356,15 @@ class Jobs:
     SAVE_EVERY_S = 2.0
     KEEP_S = 7 * 24 * 3600.0
 
-    def __init__(self, fn=any_job, path: Path | None = None):
+    def __init__(self, fn=any_job, path: Path | None = None, workers: int = 1):
         self.fn = fn
         self.path = Path(path) if path else None
         self.jobs: dict[str, dict] = {}
         self.lock = threading.Lock()
         self.q: queue.Queue = queue.Queue()
         self.ids = itertools.count(1)
-        self.worker = None
+        self.n_workers = max(1, int(workers))
+        self.workers: list[threading.Thread] = []
         self._saved = 0.0
         if self.path:
             self._load()
@@ -371,8 +391,9 @@ class Jobs:
         self.ids = itertools.count(n + 1)
         with self.lock:
             self._save(force=True)
+            if again:
+                self._start_worker()
         for jid in again:
-            self._start_worker()
             self.q.put(jid)
 
     def _save(self, force: bool = False):
@@ -386,9 +407,12 @@ class Jobs:
         self._saved = time.time()
 
     def _start_worker(self):
-        if self.worker is None or not self.worker.is_alive():
-            self.worker = threading.Thread(target=self._loop, daemon=True)
-            self.worker.start()
+        """Starts the job threads if they aren't running (call with self.lock held, or before any)."""
+        self.workers = [w for w in self.workers if w.is_alive()]
+        while len(self.workers) < self.n_workers:
+            w = threading.Thread(target=self._loop, daemon=True)
+            w.start()
+            self.workers.append(w)
 
     def submit(self, req: dict) -> str:
         key = json.dumps(req, sort_keys=True)
@@ -398,7 +422,7 @@ class Jobs:
                     return j["id"]
             jid = f"{next(self.ids)}-{int(time.time()) % 100000}"
             self.jobs[jid] = {"id": jid, "key": key, "request": req, "status": "queued", "progress": 0.0,
-                              "message": "waiting for the job before it", "created": time.time()}
+                              "message": "waiting for a free worker", "created": time.time()}
             self._save(force=True)
             self._start_worker()
         self.q.put(jid)
@@ -411,6 +435,8 @@ class Jobs:
 
     def _update(self, jid, **kw):
         with self.lock:
+            if "status" not in kw and self.jobs[jid]["status"] in ("done", "error"):
+                return  # (a late progress message from a worker process)
             self.jobs[jid].update(kw)
             self._save(force="status" in kw)
 

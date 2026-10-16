@@ -30,7 +30,7 @@ Construction
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 
 import numpy as np
 
@@ -140,6 +140,15 @@ def _subdivide(verts: np.ndarray, faces: np.ndarray) -> tuple[np.ndarray, np.nda
     new = np.stack([np.stack([a, ab, ca], 1), np.stack([b, bc, ab], 1),
                     np.stack([c, ca, bc], 1), np.stack([ab, bc, ca], 1)], 1).reshape(-1, 3)
     return np.concatenate([verts, mid]), new
+
+
+@cache
+def shared_grid(level: int) -> Grid:
+    """One Grid per level for the whole process (the coarse grids the climate
+    and the ocean work on): the caches keyed on a grid (climate._geom,
+    ocean.cell_area_km2, ...) then fill once instead of on every new copy.
+    Don't modify it."""
+    return build_grid(level)
 
 
 def build_grid(level: int = 5) -> Grid:
