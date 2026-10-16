@@ -8,7 +8,7 @@ subsystem: tectonics
 effort: s
 impact: low
 found_by: zoom-batch2
-blocked_by: []
+blocked_by: [PW-364]
 relates: [PW-310]
 refs: [planet/tectonics/volcanism.py, "world:592f2a(73.6,121.0)"]
 created: 2026-10-16
