@@ -23,6 +23,19 @@ made here or by the climate:
               water background SSC_BG. Light falls off with depth as
               e^(-Kd z), Kd = KD_CLEAR + KD_SSC x SSC (Kirk 2011: suspended
               mineral particles add ~0.05-0.1 m^-1 per mg/L).
+              Plus the bed's own mud stirred up by tides and waves
+              (resuspension(), PW-323): shallow tidal shelves are turbid
+              without big rivers (Wadden Sea, Yellow Sea, Gulf of Thailand).
+              The bed stress is the tidal current's (continuity: the water
+              landward of a point fills and empties through it, u = a omega x
+              / h, at most a progressive wave's a sqrt(g / h); quadratic drag
+              CD_TIDE) plus the waves' (orbital velocity at the bed from
+              linear theory, friction factor FW_WAVE; Soulsby 1997). Above
+              the loose mud's erosion threshold TAU_CRIT, a share 1 - TAU_CRIT
+              / tau of the bed's mobile mud (MUD_MOBILE kg/m^2, supply
+              limited: the "fluff" layer) is held in suspension through the
+              water column, on a muddy floor (river mud, or soft sediment
+              cover, not hard or carbonate rock).
 
 Geometry (sub-cell, on ~55-110 km cells): the sea floor of a sea cell next
 to land falls evenly from the shore to twice the cell's mean depth across
@@ -87,6 +100,15 @@ W_NET = 1e-5  # m/s: net settling of river mud (see the module docstring)
 PLUME_KM = 150.0  # km: e-folding distance a river's mud spreads over the sea
 KD_CLEAR = 0.06  # 1/m: light attenuation of clear coastal water (Kirk 2011: ~0.03-0.1)
 KD_SSC = 0.07  # 1/m per mg/L of suspended sediment (Kirk 2011: ~0.05-0.1)
+# resuspension by tides and waves (PW-323)
+RHO_SEA = 1025.0  # kg/m^3
+CD_TIDE = 0.0025  # quadratic drag of a tidal current on the bed (Soulsby 1997, Dynamics of Marine Sands)
+FW_WAVE = 0.02  # wave friction factor on a fine bed (Soulsby 1997: 1.39 (A / z0)^-0.52, ~0.01-0.03 on shelves)
+TAU_CRIT = 0.2  # Pa: erosion threshold of loose, freshly deposited mud (~0.1-0.2; Winterwerp & van Kesteren 2004)
+MUD_MOBILE = 0.5  # kg/m^2 of easily resuspended mud on a muddy bed (the fluff layer, ~0.1-1 kg/m^2;
+# Jago et al. 2002, J. Sea Res.; Winterwerp & van Kesteren 2004)
+HS_DEPTH = 0.5  # waves higher than this share of the depth have broken (Hs / h on shelves ~0.4-0.6)
+SOFT_COVER = (0.1, 1.0)  # km of sediment cover: from a thin veneer to a soft, muddy floor
 # coral reefs
 REEF_COLD = (16.0, 18.0)  # C, coldest month's sea surface (Kleypas et al. 1999: ~18 C, rarely 16)
 REEF_HOT = (35.0, 33.0)  # C, warmest month's (Kleypas et al. 1999: highest ~34.4 C)
@@ -224,9 +246,9 @@ def _plume(src, lam, nbr_off, nbr_idx, sea, iters, tol):
     return m
 
 
-def turbidity(grid, L: dict) -> np.ndarray:
-    """mg/L of suspended sediment at the sea surface (0 on land): the
-    rivers' loads spread and settled (module docstring) over SSC_BG."""
+def river_turbidity(grid, L: dict) -> np.ndarray:
+    """mg/L of suspended sediment at the sea surface from the rivers (0 on
+    land): their loads spread and settled (module docstring) over SSC_BG."""
     elev = np.asarray(L["elevation"], float)
     sea = elev <= 0
     mouths, load = river_loads(grid, L)
@@ -238,6 +260,66 @@ def turbidity(grid, L: dict) -> np.ndarray:
     area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
     ssc = SSC_BG + lam * m / (W_NET * area_m2) * 1e3  # kg/m^3 -> mg/L
     return np.where(sea, ssc, 0.0)
+
+
+def bed_stress(grid, L: dict) -> np.ndarray:
+    """Pa: the peak bed shear stress of the tide and the waves on each sea
+    cell's floor at its mean depth (module docstring; 0 on land)."""
+    from .kernels import bfs_within
+    elev = np.asarray(L["elevation"], float)
+    sea = elev <= 0
+    h = np.maximum(-elev, 2.0)
+    # the tidal current: continuity over the water landward of the cell (x from the
+    # coastline, half a cell for a coastal cell), at most a progressive wave's
+    hops, _ = bfs_within(np.flatnonzero(~sea).astype(np.int64), np.zeros(grid.n, np.int64),
+                         grid.nbr_off, grid.nbr_idx, 10 ** 6)
+    x = np.where(hops > 0, hops - 0.5, 1e3) * grid.spacing * R_KM * 1e3  # m (unreached: far offshore)
+    omega = 2 * np.pi / coast.T_M2
+    a = 0.5 * np.asarray(L.get("tide_range", np.zeros(grid.n)), float)
+    u_tide = a * np.minimum(omega * x / h, np.sqrt(coast.GRAV / h))
+    # the waves: orbital velocity at the bed (linear theory; Eckart's 1952 dispersion approximation)
+    hs, te = coast.hs_te(np.asarray(L.get("wave_power", np.zeros(grid.n)), float))
+    hs = np.minimum(hs, HS_DEPTH * h)
+    te = np.maximum(te, 1.0)
+    k0h = (2 * np.pi / te) ** 2 / coast.GRAV * h
+    kh = k0h / np.sqrt(np.tanh(k0h))
+    u_wave = np.pi * hs / (te * np.sinh(np.minimum(kh, 50.0)))
+    tau = RHO_SEA * (CD_TIDE * u_tide ** 2 + 0.5 * FW_WAVE * u_wave ** 2)
+    return np.where(sea, tau, 0.0)
+
+
+def soft_floor(grid, L: dict) -> np.ndarray:
+    """0..1: how muddy the sea floor's own sediment is, from its sediment
+    cover (SOFT_COVER km) and its surface rock: none on hard or carbonate
+    rock (HARD_ROCKS) or sand (SANDSTONE: too coarse to make a fluff layer).
+    0 without a sediment_cover layer (hand-made layers: only the rivers'
+    mud then)."""
+    soft = (ramp(np.asarray(L["sediment_cover"], float), *SOFT_COVER) if "sediment_cover" in L
+            else np.zeros(grid.n))
+    if "surface_rock" in L:
+        soft = soft * ~np.isin(np.asarray(L["surface_rock"]), (*HARD_ROCKS, SF.SANDSTONE))
+    return soft
+
+
+def resuspension(grid, L: dict, river_ssc: np.ndarray) -> np.ndarray:
+    """mg/L of the bed's mud held in suspension by tides and waves (module
+    docstring), on a floor muddy from the rivers' mud (river_ssc, mg/L) or
+    its own soft sediment. 0 on land."""
+    elev = np.asarray(L["elevation"], float)
+    sea = elev <= 0
+    h = np.maximum(-elev, 2.0)
+    tau = bed_stress(grid, L)
+    held = np.clip(1.0 - TAU_CRIT / np.maximum(tau, 1e-9), 0.0, 1.0)
+    mud = np.maximum(ramp(river_ssc, *MUD), soft_floor(grid, L))
+    return np.where(sea, MUD_MOBILE * mud * held / h * 1e3, 0.0)  # kg/m^3 -> mg/L
+
+
+def turbidity(grid, L: dict) -> np.ndarray:
+    """mg/L of suspended sediment at the sea surface (0 on land): the
+    rivers' mud (river_turbidity) plus the bed's stirred up by tides and
+    waves (resuspension), over SSC_BG."""
+    river = river_turbidity(grid, L)
+    return river + resuspension(grid, L, river)
 
 
 def light_depth(kd, share: float) -> np.ndarray:

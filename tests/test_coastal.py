@@ -137,6 +137,33 @@ def test_river_mud_keeps_reefs_away(g4):
     assert C.environment(g4, L, ssc=np.where(sea, C.SSC_BG, 0.0))["reef"].max() > 0.5
 
 
+def test_resuspension_on_shallow_tidal_shelves(g4):
+    """PW-323: a shallow, muddy shelf with a big tide is turbid without
+    rivers, and loses most of its seagrass; the same shelf with a small
+    tide and calm water, a hard floor, or deep water stays clear."""
+    def mud_shelf(**kw):
+        L = _layers(g4, sst=15.0, air_cold=8.0, **kw)
+        L["sediment_cover"] = np.where(L["elevation"] <= 0, 2.0, 0.5)
+        return L
+    L = mud_shelf(tide=6.0, wave=5.0, shelf_m=-10.0)
+    sea, shelf = L["elevation"] <= 0, (L["elevation"] <= 0) & (L["elevation"] > -100)
+    ssc = C.turbidity(g4, L)
+    assert np.median(ssc[shelf]) > 10, np.median(ssc[shelf])
+    assert np.all(ssc[L["elevation"] < -1000] < 1.0)  # the deep ocean: clear
+    assert np.all(ssc[~sea] == 0)
+    calm = C.turbidity(g4, mud_shelf(tide=0.3, wave=0.5, shelf_m=-10.0))
+    assert np.median(calm[shelf]) < 2.0, np.median(calm[shelf])
+    hard = mud_shelf(tide=6.0, wave=5.0, shelf_m=-10.0)
+    hard["surface_rock"] = np.full(g4.n, C.HARD_ROCKS[0])
+    assert np.median(C.turbidity(g4, hard)[shelf]) < 2.0
+    deep = mud_shelf(tide=6.0, wave=5.0, shelf_m=-150.0)  # (the tide's current still stirs a little up)
+    assert np.median(C.turbidity(g4, deep)[shelf]) < 0.3 * np.median(ssc[shelf])
+    # less light: less seagrass than on the calm shelf
+    sg = C.world_layers(g4, L)["seagrass"][shelf].sum()
+    sg_calm = C.world_layers(g4, mud_shelf(tide=0.3, wave=0.5, shelf_m=-10.0))["seagrass"][shelf].sum()
+    assert sg < 0.5 * sg_calm, (sg, sg_calm)
+
+
 def test_classifier_names_mangrove_and_salt_marsh():
     n = 4
     s = V.site(np.array([5.0, 5.0, 50.0, 50.0]), np.full(n, 26.0), np.full(n, 28.0), np.full(n, 24.0),
@@ -162,7 +189,10 @@ def coast_world():
     d = _dist_km(g, *CENTRE)
     elev = np.where(d < 1500, 4 + 0.6 * np.maximum(1500 - d, 0) ** 1.0, np.where(d < 1800, -25.0, -4000.0))
     land = elev > 0
-    extra = {"rock": np.full(g.n, 3), "surface_rock": np.full(g.n, 8), "sediment_cover": np.where(land, 1.0, 2.0)}
+    # (a carbonate shelf, as reef shelves are: its floor isn't mud the tides stir up, PW-323)
+    from planet import surface as SF
+    extra = {"rock": np.full(g.n, 3), "surface_rock": np.where(land, 8, SF.LIMESTONE),
+             "sediment_cover": np.where(land, 1.0, 2.0)}
     return W.finish(g, elev, extra, {"method": "test", "seed": 0, "level": 5}, erosion=0.0)
 
 
