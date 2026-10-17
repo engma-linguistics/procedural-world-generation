@@ -1,6 +1,6 @@
 """The time zoom from a run's moment starts close to its own balance (PW-418, PW-366): the run's ice
 rule (earth.ice_sheets, as earth.update_climate runs it) makes the sheets of a cold moment, then the time
-zoom runs 20 kyr with no forcing (no orbit, CO2 or ice albedo). Level 5, seed 2, 300 Myr, 4 C colder."""
+zoom runs 20 kyr with no forcing (no orbit, CO2 or ice albedo). Level 5, seed 1, 300 Myr (seed 2 lost most of its polar ice after PW-300), 4 C colder."""
 
 from types import SimpleNamespace
 
@@ -23,7 +23,7 @@ FLT = 1 - Z.RHO_I / Z.RHO_W
 def cold_moment():
     """A run's moment made 4 C colder, with the sheets the run's own ice rule gives that climate
     (6 climate updates from no ice; as tools/ice_probe.py)."""
-    src = Z.source_from_sim(run_sim(level=5, seed=2, myr=300))
+    src = Z.source_from_sim(run_sim(level=5, seed=1, myr=300))
     g = src["grid"]
     dT = src["dT"] - 4.0
     bed0 = src["elev"] + ice_load(g, src["ice"])
@@ -66,7 +66,7 @@ def test_ice_speeds_plausible(cold_moment):
 
 
 @pytest.mark.xfail(strict=True, reason="PW-366: the run's sheets are thinner than the time zoom's and leave "
-                   "a snow surplus (-58 m in 20 kyr here); remove this mark once that is fixed")
+                   "a snow surplus (-43 m in 20 kyr here); remove this mark once that is fixed")
 def test_unforced_start_stays_near_balance(cold_moment):
     """With no forcing, a run's sheets are already this mass balance's: sea level moves little."""
     _, r = cold_moment
