@@ -164,3 +164,5 @@ Baseline after the model batches: docs/review/night-2026-10-16/ (giant-lake fram
 **Worktree base (found 2026-10-16 night):** agent worktrees are created from `origin/main`, which is stale because we never push (1f0fae4). Every agent prompt must start with: "First run `git merge --ff-only main` (local main, from /home/daniel/personal/repos/procedural-world-generation) in your worktree and confirm `git log -1` matches main before doing anything else."
 
 **Zoom lane order update (2026-10-16 night):** after PW-395 (volcano), do PW-412 (floodplains), then PW-416 (river through time, an owner deliverable), before PW-404/391/392.
+
+**Run lane order update (2026-10-16 night):** PW-300 (running), then PW-366 (raised to high: the run's sheets vs the time zoom's ablation/calving, now the main cause of the time zoom's runaway start, PW-418/421), then freeze run physics. Glacial carving (branch pw037-carving) waits for PW-366, then re-fits glacial_k (see PW-418).

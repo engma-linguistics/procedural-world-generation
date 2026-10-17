@@ -1,4 +1,5 @@
 ---
+id: PW-422
 title: "Time zoom margins: thin films the flow leaves beyond a front hide it from the margin rule (it takes interior snow)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw418
 blocked_by: []
 relates: [PW-115, PW-418, PW-366]
 refs: [planet/timezoom.py, "run:2c2810@536Myr"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -33,3 +36,6 @@ the cell that is ablation zone), and the melt applied within the step, not once 
 inflow to a margin isn't melted until the next step). Measure with the PW-418 repro (20/50 kyr from e438c3 @ 580
 and 2c2810 @ 536) and tests/test_timezoom_consistency.py.
 - [ ] fronts behind films get a margin's balance, without a melt cascade (a cold-world dome holds)
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-timezoom-film-shielded-margins.md (found by pw418).

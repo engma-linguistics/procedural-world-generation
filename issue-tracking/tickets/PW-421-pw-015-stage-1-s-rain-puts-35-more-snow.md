@@ -1,15 +1,18 @@
 ---
+id: PW-421
 title: "PW-015 stage 1's rain puts ~35% more snow on generated sheets: the run's ice rule doubles them and the time zoom's start drift triples"
 type: task
-status: needs-decision
+status: blocked
 parent: null
 subsystem: climate
 effort: m
 impact: high
 found_by: pw418
-blocked_by: []
+blocked_by: [PW-366]
 relates: [PW-418, PW-366, PW-015, PW-241, PW-295]
 refs: [planet/climate.py, planet/tectonics/earth.py, tests/test_timezoom_consistency.py, "run:2c2810@536Myr", "commit 1416523"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -49,3 +52,7 @@ Options:
 - C. Leave the rain; accept bigger sheets in cold eras (they are the run's own ice rule's answer).
 - [ ] decide A/B/C; after A, `tests/test_timezoom_consistency.py::test_unforced_start_stays_near_balance` should pass
   (then drop its xfail) and the 20 kyr repro from 2c2810 / e438c3 should stay within ~-60 m
+
+## Updates
+- 2026-10-16: Status needs-decision -> blocked. Coordinator's decision (the owner delegates physics calls): option A. Fix PW-366 first; Earth's sheets get only +5-9% snow from the new rain, close to observed, so the rain isn't the thing to bend. Re-measure after PW-366, then close or reopen B.
+- 2026-10-16: Created from inbox draft draft-rain-stage1-snowier-sheets-time-zoom-drift.md (found by pw418).
