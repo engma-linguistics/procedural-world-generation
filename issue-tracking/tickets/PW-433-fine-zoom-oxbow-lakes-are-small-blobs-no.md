@@ -1,4 +1,5 @@
 ---
+id: PW-433
 title: Fine zoom oxbow lakes are small blobs; no scroll bars or meander scars on the floor
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw425
 blocked_by: []
 relates: [PW-425, PW-416, PW-412]
 refs: [planet/zoom_fine_meander.py, planet/zoom_fine.py, "zoom 352c76 (scratch regen)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -21,3 +24,6 @@ What I'd try:
 - scroll bars: low arcs concentric with each bend's inner bank, inside the belt.
 - [ ] oxbows read as crescents in a 25 m zoom of a 300 m^3/s river
 - [ ] block means (PW-389) and floor tests unchanged
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-oxbow-crescents-and-scroll-bars.md (found by pw425).
