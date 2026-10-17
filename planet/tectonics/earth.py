@@ -496,11 +496,13 @@ def erode(sim, col):
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
-        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, x[:, VALLEY])
+        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY])
     sim.book("erosion", t0, col.t, cont)
-    # the valleys rivers to the sea cut now, and the older ones, filling in
-    # once their river stops (hydrology.VALLEY_MYR), ride on with the rock
-    x[:, VALLEY] = np.maximum(lk["incised"], x[:, VALLEY] * np.exp(-dt / hydrology.VALLEY_MYR))
+    # the valleys rivers to the sea run in now (graded to the river they
+    # carry: a shrunken river silts up a valley too big for it), and where
+    # no such river runs any more the old ones, filling in slowly from their
+    # slopes (hydrology.VALLEY_MYR); they ride on with the rock
+    x[:, VALLEY] = np.where(lk["incised"] > 0, lk["incised"], x[:, VALLEY] * np.exp(-dt / hydrology.VALLEY_MYR))
     # the basement comes up by what's worn off net (the strata: in sediments())
     col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)

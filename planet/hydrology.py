@@ -260,6 +260,15 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
         dry = m & (lvl[np.maximum(lab, 0)] < ground)
         wet[dry], kind[dry], level[dry] = False, NO_LAKE, ground[dry]
     sink = land & closed & (wet | pit)
+    if channel > 0 and valley is not None:
+        # a dry pit that only the remembered valleys make (one its river has
+        # moved off, or that rode off with the rock) is no closed basin:
+        # rivers fill it and run on, over the cells' mean heights. (Not with
+        # outlet: the finer data's gorges and basins are real.)
+        spill = kernels.priority_flood(ground, grid.nbr_off, grid.nbr_idx, 0.01)[0]
+        valley_pit = sink & ~wet & (spill <= ground + 1.0)
+        sink &= ~valley_pit
+        kind[valley_pit & (kind == SALT_PAN)] = NO_LAKE
     return dict(wet=wet, kind=kind, level=level, sink=sink, src=src - loss * wet, bed=np.asarray(elev, float),
                 incised=incised)
 

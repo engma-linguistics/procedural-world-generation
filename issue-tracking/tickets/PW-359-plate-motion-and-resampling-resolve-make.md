@@ -2,7 +2,7 @@
 id: PW-359
 title: Plate motion and resampling (resolve) make most of the run's closed-hollow volume each step
 type: task
-status: blocked
+status: todo
 parent: null
 subsystem: tectonics
 effort: m
@@ -41,6 +41,7 @@ from boundaries under resolve alone (should be ~0 for a rigid plate), and trying
 docs/review/audit/basins-lakes/hollow_budget.py (`python hollow_budget.py <repo> 6 <seed> 300`).
 
 ## Updates
+- 2026-10-16: Status blocked -> todo. pw300: PW-358 is done and PW-300 landed outlet memory (valley column carried with the rock), which removes the basins that closed only because they lost their outlet; the closed-hollow volume resolve makes each step is untouched by it. What's left for this ticket: giant lakes in hollows that never spilled, appearing in a step or two on flat plate interiors (after PW-300 they're most of the ~4% of L6 frames with a lake over 1 Mkm2; e.g. seed 77 @ 68 Myr 2.4 Mkm2 closed under 2009 mm, seed 42 @ 436/452 3.7 Mkm2 closed, seed 11 @ 192 4.3 Mkm2; see inbox draft-fresh-hollow-closed-lakes.md). The new valley column is resampled nearest-cell like the others, so it also suffers the duplicate/hidden-cell artefact (an outlet cell hidden for a step loses its gap; _fill averages it from neighbours). Re-measure with docs/review/audit/basins-lakes/hollow_budget.py before designing the interpolating world view.
 - 2026-10-16: Status todo -> blocked. Blocked by PW-358 (lake evaporation) per the v1 reassessment: re-measure the closed-hollow volume after it lands.
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: coordinator's call. Coordinator: park until PW-358/PW-015 land (giant lakes now trace to open-water evaporation); then re-measure whether resampling hollows still matter before designing an interpolating world view.
 - 2026-10-16: Status in-progress -> needs-decision. Confirmed a resampling artifact (~75k km3 of lake-kept hollow re-cut per L6 step on rigid interiors). A one-to-one sampling map didn't remove it; a real fix needs an interpolating world view (design decision).

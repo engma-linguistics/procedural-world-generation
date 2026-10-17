@@ -46,7 +46,7 @@ from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 RUN_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock", "surface_rock",
               "sediment_cover", "crust_thickness", "precipitation", "temperature", "climate", "ice", "flow",
               "temperature_jul", "temperature_jan", "precipitation_jul", "precipitation_jan",
-              "downstream", "lake_depth", "lake_kind", "wind_e", "wind_n", "wind_jul_e", "wind_jul_n", "wind_jan_e",
+              "downstream", "lake_depth", "lake_kind", "valley", "wind_e", "wind_n", "wind_jul_e", "wind_jul_n", "wind_jan_e",
               "wind_jan_n", "current_e", "current_n", "jet_e", "jet_n",
               *LANDFORM_LAYERS, "vegetation", "tree_cover", "npp")
 CHECKPOINT_EVERY = 100.0  # Myr
@@ -77,7 +77,7 @@ def frame_values(grid: Grid, snap, jet: np.ndarray) -> dict:
             "surface_rock": snap.surface, "sediment_cover": snap.cover, "crust_thickness": snap.thickness,
             "precipitation": snap.precip, "temperature": snap.temperature, "climate": snap.koppen,
             "ice": snap.ice, "flow": snap.flow, "downstream": snap.downstream,
-            "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind,
+            "lake_depth": snap.lake_depth, "lake_kind": snap.lake_kind, "valley": snap.valley,
             # July and January as worlds have them (world.seasons; the season picker, PW-138)
             "temperature_jul": np.where(grid.lat >= 0, snap.t_warm, snap.t_cold),
             "temperature_jan": np.where(grid.lat >= 0, snap.t_cold, snap.t_warm),
@@ -345,11 +345,12 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = 
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
-                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap), veg, memory=memory)
+                  sim.dT, sim.sea_level, erosion, meta_extra, landforms_of(snap), veg, memory=memory,
+                  valley=snap.valley)
 
 
 FRAME_LAYERS = ("elevation", "plate", "crust", "crust_age", "plate_boundary", "rock",
-                "sediment_cover", "crust_thickness", "ice", *LANDFORM_LAYERS, "tree_cover")
+                "sediment_cover", "crust_thickness", "ice", "valley", *LANDFORM_LAYERS, "tree_cover")
 
 
 def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict | None = None,
@@ -401,7 +402,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
                   st["sea_level"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                              "from_keyframe": True, **meta_extra},
                   {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"),
-                  memory=soil_memory(run_dir, t_fr, grid, velocity))
+                  memory=soil_memory(run_dir, t_fr, grid, velocity), valley=a["valley"].astype(float))
 
 
 class _Decoded:
@@ -452,7 +453,8 @@ def texture(g: Grid, e: np.ndarray, seed: int, at: float) -> np.ndarray:
 def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental, boundary, age,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
-           orbit_dt: np.ndarray | None = None, memory: dict | None = None) -> dict:
+           orbit_dt: np.ndarray | None = None, memory: dict | None = None,
+           valley: np.ndarray | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     # the true bed: grounded ice on a bed below sea level (pressed down by its own load, or a marine
     # sheet) is land by its ice (geo.is_land, PW-307); ice whose surface is below the sea is afloat
@@ -474,7 +476,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     meta["ice_bed_below_sea_cells"] = int(below.sum())
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
                     dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt,
-                    soil_memory=memory)
+                    soil_memory=memory, valley=valley)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

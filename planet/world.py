@@ -59,7 +59,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            erosion_iterations: int = 12, dT: float = 0.0, tilt: float = 23.4,
            params: dict | None = None, t0: float | None = None, ice: np.ndarray | None = None,
            veg: dict | None = None, orbit_dt: np.ndarray | None = None, soil_memory: dict | None = None,
-           outlet: np.ndarray | None = None, closed: np.ndarray | None = None) -> dict:
+           outlet: np.ndarray | None = None, closed: np.ndarray | None = None,
+           valley: np.ndarray | None = None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
@@ -74,7 +75,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     (climate.compute's; a finished time-zoom frame). soil_memory: the run's
     keyframe climate for the soils (soils.climate_memory; PW-185). outlet,
     closed: river heights and closed basins from finer data
-    (hydrology.rivers_and_lakes'; the Earth world's)."""
+    (hydrology.rivers_and_lakes'; the Earth world's). valley: m the run's
+    rivers have cut each cell's valley (hydrology.lakes'; a run's worlds)."""
     t0 = t0 or time.time()
     veg = veg or {}
     c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
@@ -90,7 +92,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     c = climate.compute(grid, elev, dT, tilt, ice, veg=fb, orbit_dt=orbit_dt)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
-    flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed)
+    flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed, valley=valley)
     land = is_land(elev, ice)
     sea = ~land
     flood = _flood(grid, down, lk, c, sea)
