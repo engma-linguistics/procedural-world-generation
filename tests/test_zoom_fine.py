@@ -455,3 +455,34 @@ def test_river_planform(world, kind):
     flips = np.flatnonzero(np.diff(np.sign(y)) != 0)
     wl = 2 * (sm[flips[-1], 1] - sm[flips[0], 1]) / max(len(flips) - 1, 1)
     assert len(flips) >= 4 and 8 * w < wl < 16 * w
+
+
+@pytest.mark.parametrize("kind", ["bedrock", "alluvial"])
+def test_valley_floors(world, kind):
+    """PW-412: a gentle alluvial river gets a valley floor tens of channel
+    widths wide, nearly flat across, a little above its channel, with its
+    meanders inside; a steep bedrock river none. The parent's block means
+    are kept (the floor's volume goes onto the hillslopes)."""
+    parent = _river_parent(kind)
+    lat, lon = _at(parent[0], 75, 75)
+    z = ZF.build(parent, world, lat, lon, size_km=8, res_km=0.025, log=lambda *a: None)
+    st, vf = z["stats"], z["layers"]["valley_floor"]
+    if kind == "bedrock":
+        assert st["floodplain"]["floor_km2"] == 0 and not (vf > 0).any()
+        return
+    res, h = z["res"], z["layers"]["elevation"].astype(float)
+    xy, q = _main_river(z, 5.0)
+    w = 4.0 * np.sqrt(np.median(q)) / 1000.0
+    d_bf = 0.27 * np.median(q) ** 0.39
+    on = vf[xy[:, 0].astype(int), xy[:, 1].astype(int)]
+    assert (on == 3).mean() > 0.9  # (the channel runs on its floor)
+    for c in range(40, z["nx"] - 40, 40):  # (across the valley: the river runs west to east)
+        rows = np.flatnonzero((vf[:, c] == 1) | (vf[:, c] == 2))
+        assert len(rows) * res > 10 * w
+        fl = h[rows, c]
+        ch = h[vf[:, c] == 3, c]
+        assert np.ptp(fl) < 1.5 * d_bf  # (nearly flat: levees, the backswamp, the rise to its sides)
+        assert 0.2 * d_bf < np.median(fl) - ch.min() < 2.0 * d_bf  # (its banks: about the bankfull depth)
+    assert (vf == 2).sum() * res * res > 8 * w * 7.0  # (a meander belt along it)
+    assert st["parent_block_mean_rms_error_m"] < 2.0
+    assert st["floodplain"]["block_rms_error_m"] < 2.0
