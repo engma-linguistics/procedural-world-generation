@@ -33,6 +33,7 @@ class Snapshot:
     downstream: np.ndarray  # next cell down the river, -1 at the sea
     lake_kind: np.ndarray  # hydrology lake_kind: 0 none, 1 open, 2 closed (salt), 3 salt pan
     lake_depth: np.ndarray  # m of lake water (0 off lakes)
+    valley: np.ndarray  # m the river valleys are cut below the cells' mean height (hydrology.lakes' valley)
     hotspots: list  # [lat, lon] of each live plume
     volcanoes: list  # arc volcanoes and hotspot vents: rows of volcanism.COLUMNS
     surface: np.ndarray  # surface.ROCKS id of what's exposed (the top stratum, or the basement)
@@ -81,6 +82,7 @@ def snapshot(sim) -> Snapshot:
         p_jul=sim.p_jul.copy() if sim.p_jul is not None else np.zeros(sim.grid.n),
         p_jan=sim.p_jan.copy() if sim.p_jan is not None else np.zeros(sim.grid.n),
         **water_now(sim),
+        valley=sim.valley().copy(),
         hotspots=[list(latlon(h["pos"])) for h in sim.hotspots],
         volcanoes=vrows,
         surface=surface.surface_rock(sim.w_rock, sim.w_cover, lf["strata_top"], lf["strata_top_km"]),
@@ -119,7 +121,8 @@ def water_now(sim) -> dict:
                     lake_depth=np.zeros(n))
     bed = sim.bed()
     c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
-    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0))
+    flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, np.where(bed > 0, sim.ice, 0.0),
+                                                valley=sim.valley())
     return dict(flow=flow, downstream=down, lake_kind=lk["kind"].astype(np.int8),
                 lake_depth=np.where(lk["wet"], np.maximum(lk["level"] - bed, 0.0), 0.0))
 

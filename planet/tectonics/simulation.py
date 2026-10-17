@@ -39,7 +39,7 @@ import numpy as np
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, elevation, sediment_km, subsidence
+from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, VALLEY, elevation, sediment_km, subsidence
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve
 from .plates import Plates
@@ -416,6 +416,11 @@ class Simulation:
         run's stats and every frame layer read this, so they agree on what
         is land (PW-309)."""
         return np.where(self.w_cont, self.w_elev, self.w_elev + self.w_trench) - self.ice_sink
+
+    def valley(self) -> np.ndarray:
+        """m each cell's river valley is cut below its mean height, by the
+        rivers that reached base level there lately (hydrology.lakes' valley)."""
+        return self.w_extra[:, VALLEY]
 
     def land(self) -> np.ndarray:
         """Land: ground above sea level, or under grounded ice (all of the

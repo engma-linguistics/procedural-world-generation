@@ -258,6 +258,8 @@ LAYERS = {
     "downstream": _spec("u1", "cell", "next cell down the river, -1 none", transform="nbr_slot"),
     "lake_depth": _spec("<u2", "m", "lake water depth (lake surface - elevation; 0 off lakes), in decimetres", scale=0.1),
     "lake_kind": _spec("u1", "id", "0 none, 1 open (fresh), 2 closed (salt), 3 salt pan (hydrology)"),
+    "valley": _spec("u1", "m", "how far below the cell's mean height rivers to the sea have cut its valley, kept "
+                    "after its river stops (hydrology.lakes' valley; runs only)", scale=2),
     "flood_ratio": _spec("u1", "x", "river's peak month flow / mean month flow (hydrology.seasonal_flow; 0 at sea)",
                          scale=0.1),
     "flood_month": _spec("u1", "month", "month of the river's peak flow, 1-12 (0 at sea)"),
