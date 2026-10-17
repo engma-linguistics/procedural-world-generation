@@ -109,7 +109,8 @@ with the model's summer on the real ice sheets cooled to the observed one (`anch
 Knobs: `--set key=value` for any `TZParams` field (e.g. `insol_k`,
 `obliquity_amp`, `phases=zero`). The viewer plays it like a run (frames in
 kyr; "ice thickness" layer; the summary panel has the sea-level / ice-volume
-curve with the 65°N summer sun under it, click it to jump, and the orbit at
+curve with the summer sun under it (where the ice comes and goes; 65°N July
+dashed), click it to jump, and the orbit at
 the frame on screen); its `run.txt` has the sea-level / ice / orbit table and
 glacial events.
 

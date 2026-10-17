@@ -2,7 +2,7 @@
 id: PW-426
 title: Zoom 2D viewer can't show the fine zooms' valley floors (valley_floor, floor_m)
 type: task
-status: todo
+status: done
 parent: null
 subsystem: viewer
 effort: xs
@@ -30,3 +30,8 @@ Both are absent on coarse zooms, so hide them there, as for other fine-only laye
 
 ## Updates
 - 2026-10-16: Created from inbox draft draft-viewer-valley-floor-layer.md (found by pw412).
+- 2026-10-16: Done (viewer lane). zoom.html: "Valley floor" (categorical, legend floodplain / meander belt /
+  channel on the floor with km² each) and "Floor height" (floor_m on the floors only, ramp over the zoom's
+  floor range, hillshade elsewhere); hover row "valley floor: <class>, <m>". Hidden on zooms without the
+  layers (NEEDS), so on coarse zooms. The 3D view takes the same picker. Checked on a fresh fine zoom of
+  369394 at -2.41, -7.59 in a scratch data root (97.6 km² of floors) in 2D and 3D.

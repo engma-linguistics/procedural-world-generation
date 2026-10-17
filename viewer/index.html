@@ -1929,16 +1929,25 @@ function timezoomSummary() {
     sea level ${sign(s.sea_level_change_m)} m vs the start · ice ${s.ice_volume_mkm3} M km³ (land ice on ${s.ice_pct}% of the surface,
     thickest ${s.max_ice_m} m) · global mean ${s.global_temp_c} °C<br>
     <span class="muted">orbit:</span> obliquity ${s.obliquity.toFixed(2)}° · eccentricity ${s.eccentricity.toFixed(4)} ·
-    65°N July sun ${sign(s.insol_65n_jul_anom, 1)} W/m² <span class="muted" title="vs. ${V.tzEarth ? "today's orbit" : 'a circular orbit at the mean tilt'}; precession index e·sin(perihelion) ${s.precession_index}">(?)</span>
+    ${iceSun() ? `summer sun at ${iceSun().name} ${sign(s.insol_ice_summer_anom, 1)} W/m² · ` : ''}65°N July sun ${sign(s.insol_65n_jul_anom, 1)} W/m² <span class="muted" title="vs. ${V.tzEarth ? "today's orbit" : 'a circular orbit at the mean tilt'}; precession index e·sin(perihelion) ${s.precession_index}">(?)</span>
     ${timezoomChart()}
     ${V.tzEarth ? '' : `<span class="muted">From</span> ${sourceLink(m.source_run, m.at_myr)}<br>`}
     <span class="muted">Remake:</span> <code>uv run python -m planet timezoom ${src}${opts}</code>
     ${finishBox()}`;
 }
 
+// Where the ice comes and goes (timezoom.cycling_ice_sun, PW-428): its latitude
+// and name ("47°S"); null when that is 65 N (or the time zoom predates it)
+function iceSun() {
+  const c = V.run.meta.ice_cycle;
+  if (!c || V.run.frames[0].stats.insol_ice_summer_anom == null || Math.abs(c.lat - 65) < 3) return null;
+  return { ...c, name: `${Math.abs(c.lat).toFixed(0)}°${c.lat < 0 ? 'S' : 'N'}` };
+}
+
 // The whole time zoom at a glance: sea level (falls as the ice grows; ice
-// volume on the right axis) and, below, the summer sun at 65 N that drives
-// it. The white line is the frame on screen; click to jump.
+// volume on the right axis) and, below, the summer sun that drives it: at the
+// latitude where the ice comes and goes (dashed: 65 N July, the classic
+// index). The white line is the frame on screen; click to jump.
 const CHART = { w: 296, top: 72, sun: 24, left: 30, right: 30 };
 function timezoomChart() {
   const fr = V.run.frames, { w, top, sun, left, right } = CHART;
@@ -1947,7 +1956,9 @@ function timezoomChart() {
   const sl = fr.map((f) => f.stats.sea_level_change_m), vol = fr.map((f) => f.stats.ice_volume_mkm3);
   const hi = Math.max(...sl, 5), lo = Math.min(...sl, -5);
   const y = (v) => 4 + (hi - v) / (hi - lo) * (top - 8);
-  const ins = fr.map((f) => f.stats.insol_65n_jul_anom), im = Math.max(...ins.map(Math.abs), 1);
+  const cyc = iceSun(), i65 = fr.map((f) => f.stats.insol_65n_jul_anom);
+  const ins = cyc ? fr.map((f) => f.stats.insol_ice_summer_anom) : i65;
+  const im = Math.max(...ins.map(Math.abs), ...(cyc ? i65.map(Math.abs) : []), 1);
   const ys = (v) => top + 4 + (1 - v / im) / 2 * (sun - 6);
   const line = (vals, yf) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(ts[i]).toFixed(1)},${yf(v).toFixed(1)}`).join('');
   const iHi = sl.indexOf(Math.max(...sl)), iLo = sl.indexOf(Math.min(...sl));  // ice volume at the two extremes
@@ -1964,12 +1975,14 @@ function timezoomChart() {
     <text x="${w - right + 3}" y="${y(sl[iHi]) + 4}">${vol[iHi].toFixed(0)}</text>
     <text x="${w - right + 3}" y="${y(sl[iLo])}">${vol[iLo].toFixed(0)}</text>
     <line x1="${left}" x2="${w - right}" y1="${ys(0)}" y2="${ys(0)}" stroke="#2a3446"/>
+    ${cyc ? `<path d="${line(i65, ys)}" fill="none" stroke="#ffc864" stroke-opacity=".45" stroke-width="1" stroke-dasharray="2 2"/>` : ''}
     <path d="${line(ins, ys)}" fill="none" stroke="#ffc864" stroke-width="1"/>
     <text x="${left - 3}" y="${ys(0) + 3}" text-anchor="end">sun</text>
     <line x1="${xn}" x2="${xn}" y1="0" y2="${top + sun}" stroke="#ffffff" stroke-opacity=".85"/>
     <text x="${left}" y="${h - 1}">${t0}</text><text x="${w - right}" y="${h - 1}" text-anchor="end">${t1} kyr</text>
   </svg><div class="muted" style="font-size:11px">Blue: sea level vs the start (m, left) = ice volume (M km³, right).
-    Yellow: summer sun at 65°N, the orbital forcing. Click the chart to jump.</div>`;
+    Yellow: ${cyc ? `summer sun at ${cyc.name}, where the ice comes and goes (${cyc.area_mkm2} M km²); dashed: 65°N July`
+      : 'summer sun at 65°N'}, the orbital forcing. Click the chart to jump.</div>`;
 }
 
 // "Glacial time zoom from here" (main runs): the server runs it as a

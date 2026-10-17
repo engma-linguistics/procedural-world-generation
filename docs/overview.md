@@ -508,7 +508,7 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 **Parameters:** `--set` any `TZParams` field: `insol_k` (0.25 °C per W/m²), `obliquity_amp`, `co2_cool`, `ddf_snow/ice`, `iso_ratio`, `calving`, `buttress`, `shelf_h`, `shelf_warm/cold`, `melt_k`, `phases=zero`; `baseline=obs` for Earth.
 
-**Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the 65°N summer sun.
+**Outputs:** a run (`kind: timezoom`, time in kyr) with layers `elevation`, `ice`, `temperature`, `climate`; frame stats (sea level, ice %, overturning, orbit, summer insolation at 65°N and at the latitude of the cycling ice: meta `ice_cycle`, `cycling_ice_sun`); events (glacial maxima, interglacials). The viewer shows ice thickness and a sea-level / ice-volume curve with the summer sun where the ice comes and goes (65°N July dashed).
 
 **Design decisions** (owner, 2026-10-13; full original spec at `db11d33:docs/proposals/glacial_timezoom.md`): whole planet, not regional; never feeds back into the run itself (it does feed finished worlds, PW-091, §2.11); driven by orbital cycles. Early Earth did have ice ages (Pongola ~2.9 Ga, Huronian ~2.4-2.1 Ga, Snowball ~720-635 Ma): the young Sun was dim, so a hotter interior is not a hotter surface. Hence no arbitrary entry point: the user picks any moment, and greenhouse eras simply show little ice. Wanted but not built: glacial erosion, proglacial lakes, permafrost (PW-037, PW-030).
 

@@ -171,15 +171,20 @@ const LAYERS = [
   ['soil', 'Soils'], ['soil_depth', 'Soil depth'], ['soil_water', 'Soil water'], ['soil_fertility', 'Fertility'],
   ['soil_carbon', 'Soil carbon'], ['peat_depth', 'Peat'], ['permafrost', 'Permafrost'], ['loess', 'Loess'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
-  ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'], ['coarse', 'Coarse cells'],
+  ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'],
+  ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['coarse', 'Coarse cells'],
 ];
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
   coastal_life: 'coastal_life', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
   soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
-  loess: 'loess' };
-const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil'];
+  loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m' };  // (the last two: fine zooms only)
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor'];
+// a fine zoom's alluvial valley floors (zoom_fine_floodplain, PW-412; planet/zoom.py LAYER_DOC valley_floor)
+const VALLEY_FLOOR = [{ id: 1, name: 'floodplain', color: '#c8d77a' }, { id: 2, name: 'meander belt', color: '#e0a650' },
+  { id: 3, name: 'channel on the floor', color: '#2f6fd0' }];
+const FLOOR_M = [[0, [40, 110, 90]], [0.25, [140, 190, 110]], [0.5, [230, 220, 140]], [0.75, [210, 150, 80]], [1, [150, 80, 50]]];
 // the temperature / rain season: '' the year, 'jul' / 'jan' the half-years (zooms with *_jul / *_jan layers)
 const SEASON_NAMES = { '': 'year', jul: 'July', jan: 'January' };
 const state = { meta: null, L: null, layer: 'satellite', season: '', imgs: {}, shade: null,
@@ -849,6 +854,7 @@ function legendFor(kind) {
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
     : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
     : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || [])
+    : kind === 'valley_floor' ? VALLEY_FLOOR
     : kind === 'soil' ? (lg.soils?.types || []).map((t) => ({ ...t, text: `${t.wrb} / ${t.usda}: ${t.desc}` })) : lg.rocks;
 }
 
@@ -918,6 +924,8 @@ function renderLayer() {
   }
   let lo = Infinity, hi = -Infinity;
   if (k === 'height') for (let i = 0; i < n; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
+  const vf = L.valley_floor, fm = L.floor_m;  // (floor_m: its range on the floors)
+  if (k === 'floor_m' && vf) for (let i = 0; i < n; i++) if (vf[i] > 0) { if (fm[i] < lo) lo = fm[i]; if (fm[i] > hi) hi = fm[i]; }
   const minArea = 500 * Math.max(m.res_km / 2, 1);
   const ice = L.ice;
   let iced = false;
@@ -941,8 +949,12 @@ function renderLayer() {
         const t = Math.min(1, Math.max(0, Math.log10(q[i]) / 4.5));
         c = [40 + 60 * t, 120 + 120 * t, 200 + 55 * t].map((v, j) => c[j] + (v - c[j]) * Math.min(1, 0.35 + t));
       }
-    } else if (k === 'coastal_life') {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides
-      const v = L[k][i], e = lut[v];
+    } else if (k === 'floor_m') {  // the floor's surface, on the floors only; the rest hillshaded grey
+      const g = 40 + 120 * s;
+      c = wet === 1 ? ramp(SEA, h[i]).map((v) => v * 0.6) : wet === 2 ? [70, 130, 196] : [g, g, g];
+      if (vf && vf[i] > 0) { const t = ramp(FLOOR_M, (fm[i] - lo) / (hi - lo || 1)), f = 0.7 + 0.4 * s; c = [t[0] * f, t[1] * f, t[2] * f]; }
+    } else if (k === 'coastal_life' || k === 'valley_floor') {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides; valley floors
+      const v = L[k] ? L[k][i] : 0, e = lut[v];
       if (v > 0 && e) { c = e.rgb; present.set(v, (present.get(v) || 0) + 1); }
       else c = wet === 1 ? ramp(SEA, h[i]).map((x) => x * 0.7) : wet === 2 ? [70, 130, 196] : [70 + 70 * s, 68 + 70 * s, 60 + 70 * s];
     } else if (lut) {
@@ -977,9 +989,14 @@ function renderLayer() {
       + `<span class="muted">(% of the land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
   } else if (lut) {
     $('legend').innerHTML = [...present.keys()].sort((a, b) => a - b).filter((id) => lut[id])
-      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${k === 'coastal_life'
-        ? ` ${fmt(present.get(id) * m.res_km * m.res_km)} km&sup2;` : ''}</span>`).join('')
-      + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>' : '');
+      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${k === 'coastal_life' || k === 'valley_floor'
+        ? ` ${fmt(present.get(id) * m.res_km * m.res_km, k === 'valley_floor' ? 1 : 0)} km&sup2;` : ''}</span>`).join('')
+      + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>'
+        : k === 'valley_floor' ? `<span class="muted">${present.size ? '(an alluvial river\'s valley floor: the meander belt is where its channel sweeps)' : 'no valley floors in this zoom'}</span>` : '');
+  } else if (k === 'floor_m') {
+    const g = FLOOR_M.map(([v, c]) => `rgb(${c}) ${100 * v}%`).join(',');
+    $('legend').innerHTML = lo <= hi ? `<span>${fmt(lo)} m</span><div class="grad" style="background:linear-gradient(90deg,${g})"></div><span>${fmt(hi)} m</span>
+      <span class="muted">(the valley floor's surface; under its channel too)</span>` : '<span class="muted">no valley floors in this zoom</span>';
   } else if (k === 'height') {
     $('legend').innerHTML = `<span>${fmt(lo)} m</span><div class="grad" style="background:linear-gradient(90deg,#000,#fff)"></div><span>${fmt(hi)} m</span>
       <span class="muted">(same mapping as heightmap.png: ${fmt(m.heightmap.metres_per_step, 3)} m per 16-bit step)</span>`;
@@ -1179,6 +1196,7 @@ function hoverPx(r, c) {
     <tr><td>biome</td><td>${name(lg.biomes, L.biome[i])}</td></tr>
     ${vegRows(i)}
     ${soilRows(i)}
+    ${L.valley_floor && L.valley_floor[i] ? `<tr><td>valley floor</td><td>${name(VALLEY_FLOOR, L.valley_floor[i])}, ${fmt(L.floor_m[i])} m</td></tr>` : ''}
     ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
     <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>

@@ -493,12 +493,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     if start not in ("interglacial", "average"):
         raise SystemExit(f"start must be interglacial, average or auto, not {p.start!r}")
     room = 1.0 if start == "interglacial" else p.average_room  # share of the feedback caps left
-    if ref == "start":
-        q_ref = insolation(*orbit_at(0.0, p, tilt, ph))
-    elif ref == "today":
-        q_ref = insolation(**EARTH_TODAY)
-    else:
-        q_ref = insolation(tilt, 0.0, 0.0)
+    ref_orb = (orbit_at(0.0, p, tilt, ph) if ref == "start" else tuple(EARTH_TODAY.values()) if ref == "today"
+               else (tilt, 0.0, 0.0))
+    q_ref = insolation(*ref_orb)
     # polar amplification of a global temperature change (as climate.compute: 0.5x tropics .. 1.5x poles)
     amp = climate.temperature(g, np.zeros(n), 0.5, 1.5)
     flt = 1 - RHO_I / RHO_W
@@ -827,7 +824,8 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             else:
                 print("  " + msg, flush=True)
 
-    return {"frames": frames, "data": {k: np.stack(v) for k, v in out.items()},
+    ice_cycle = cycling_ice_sun(g, area, frames, out["ice"], ref_orb)
+    return {"frames": frames, "data": {k: np.stack(v) for k, v in out.items()}, "ice_cycle": ice_cycle,
             "series": np.array(series), "flows": np.array(flows), "params": asdict(p), "phases": ph.tolist(),
             "budget": {**budget, "V0": V0, "V_end": float((H * area).sum()), "ocean_area": ocean_area,
                        "Vaf0": Vaf0, "Vaf_end": above_flotation(sl)},
@@ -836,6 +834,30 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             "anchor": anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(t_compute, 1),
             "substeps": nsub_total}
+
+
+def cycling_ice_sun(g: Grid, area: np.ndarray, frames: list[dict], ice_frames: list, ref_orb) -> dict:
+    """Where the ice comes and goes, and the summer sun there (PW-428). The
+    cycling ice: cells iced (> 1 m) in the frame with the most ice volume but
+    not in the one with the least. Its hemisphere is the one with more of
+    that area; its latitude the area-weighted mean there (65 N when no ice
+    cycles). Adds each frame's stats["insol_ice_summer_anom"]: the mean
+    daily insolation anomaly (W/m2, against the reference orbit) of that
+    latitude's two midsummer months (Jun-Jul north, Dec-Jan south), as
+    insol_65n_jul_anom is for 65 N. Returns {lat, area_mkm2}."""
+    vol = [f["stats"]["ice_volume_mkm3"] for f in frames]
+    hi, lo = (S.decode(ice_frames[int(f(vol))], LAYERS["ice"]) for f in (np.argmax, np.argmin))
+    cyc = (hi > 1) & (lo <= 1)
+    south = float(area[cyc & (g.lat < 0)].sum()) > float(area[cyc & (g.lat >= 0)].sum())
+    sel = cyc & ((g.lat < 0) if south else (g.lat >= 0))
+    lat_c = float((g.lat[sel] * area[sel]).sum() / area[sel].sum()) if sel.any() else 65.0
+    months = [9, 10] if lat_c < 0 else [3, 4]  # (month 0 starts at the March equinox)
+    q_ref = insolation(*ref_orb, lat=np.array([lat_c]))[0, months].mean()
+    for f in frames:
+        s = f["stats"]
+        q = insolation(s["obliquity"], s["eccentricity"], s["perihelion"], lat=np.array([lat_c]))[0, months].mean()
+        s["insol_ice_summer_anom"] = round(float(q - q_ref), 1)
+    return {"lat": round(lat_c, 1), "area_mkm2": round(float(area[sel].sum()) / 1e12, 2)}
 
 
 # --------------------------------------------------------------------------
@@ -891,6 +913,7 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
                  "seed": src["seed"], "level": g.level, "cells": g.n,
                  "cell_size_km": round(g.spacing * R_KM),
                  "params": src["params"], "timezoom": res["params"], "orbit_phases_deg": res["phases"],
+                 "ice_cycle": res["ice_cycle"],  # (where the ice comes and goes: cycling_ice_sun)
                  "dT_source": round(src["dT"], 2), "sea_level_source_m": round(src["sea_level"], 1),
                  # (the start's climate correction over the ice, C per cell: start_anchor)
                  "anchor": [[int(i), round(float(res["anchor"][i]), 2)] for i in np.flatnonzero(res["anchor"])],
