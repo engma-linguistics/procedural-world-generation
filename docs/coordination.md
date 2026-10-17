@@ -176,7 +176,7 @@ No agents running; owner near the weekly limit. Owner decisions tonight: PW-030 
 **Merged today/tonight:**
 - PW-409 viewer layout, PW-407 picker filter box, PW-408 + PW-415 river flicker (MSAA off by default).
 - PW-406 jet stream overlay, then dropped by the owner (the upper-air sim stays).
-- PW-405 river planform, PW-395 volcano form, PW-412 floodplains, PW-425/424 meander trains, PW-426, PW-428.
+- PW-405 river planform, PW-395 volcano form, PW-412 floodplains, PW-425/424 meander trains, PW-426 valley-floor layers in the zoom viewer, PW-428 time zoom sunshine at the cycling ice's latitude.
 - PW-358 Penman lakes split out, PW-300 giant lakes re-check.
 - PW-418 diagnosis only: the time zoom's runaway start comes from PW-015 stage 1 (snowier sheets) plus the PW-366 run-vs-time-zoom mismatch.
 - pytest-xdist: tests run in parallel by default (`-n0` for serial).
