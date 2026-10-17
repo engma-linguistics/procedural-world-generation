@@ -1,4 +1,5 @@
 ---
+id: PW-424
 title: Full-swing meanders make a few sharp corners where they meet a valley bend
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw412
 blocked_by: []
 relates: [PW-405, PW-412]
 refs: [planet/zoom_fine.py, _courses, planform, "zoom 352c76 switchback_px (386, 406)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -20,3 +23,6 @@ The swing is already limited by half the valley's bend radius over one wavelengt
 - or shift the phase so that a valley bend falls at a crossing rather than at an apex.
 
 Low impact: 5 corners in 54 km, at 25 m/px.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-meander-sharp-bends-at-valley-bends.md (found by pw412).

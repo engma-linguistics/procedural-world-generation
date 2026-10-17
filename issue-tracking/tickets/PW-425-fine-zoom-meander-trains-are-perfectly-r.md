@@ -1,4 +1,5 @@
 ---
+id: PW-425
 title: Fine zoom meander trains are perfectly regular at full swing
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw412
 blocked_by: []
 relates: [PW-405, PW-412, PW-416, PW-094]
 refs: [planet/zoom_fine.py, _courses, _river_phase, "zoom 352c76 (scratch regen, 3453b8 -> 25 m)"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Suggested fix (planet-fixed, so sibling zooms agree):
 Keep the PW-405 test's 8-16 w mean wavelength.
 
 PW-416 (migration over time) would make trains irregular anyway. This ticket is for the static fine zoom.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-meander-trains-too-regular.md (found by pw412).

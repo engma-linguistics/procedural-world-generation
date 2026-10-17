@@ -1,4 +1,5 @@
 ---
+id: PW-426
 title: Zoom 2D viewer can't show the fine zooms' valley floors (valley_floor, floor_m)
 type: task
 status: todo
@@ -9,7 +10,9 @@ impact: low
 found_by: pw412
 blocked_by: []
 relates: [PW-412, PW-416]
-refs: [viewer/zoom.html, planet/zoom.py LAYER_DOC]
+refs: [viewer/zoom.html, "planet/zoom.py LAYER_DOC"]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -24,3 +27,6 @@ To do:
 - Optionally add `floor_m` as a continuous layer, shown only where the floor is.
 
 Both are absent on coarse zooms, so hide them there, as for other fine-only layers.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-viewer-valley-floor-layer.md (found by pw412).
