@@ -84,6 +84,7 @@ from . import world as W
 from . import zoom as Z
 from . import zoom_coastal as ZCL
 from . import zoom_fine_floodplain as ZFP
+from . import zoom_fine_meander as ZFM
 from . import zoom_fine_volcano as ZFV
 from . import zoom_kernels as ZK
 from . import zoom_vegetation as ZVG
@@ -421,7 +422,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     river_segs = []
     # the courses: smoothed, their planform chosen per reach (_courses)
     paths_c = _courses(pa, riv_p, rec_p, up_main, q_p, bed_p, fall_links, (psi_p, up_all), hp_f, res,
-                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {}, axes := {})
+                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {}, axes := {}, oxb := [])
     log("  river courses (parent km): " + ", ".join(f"{k} {v:.1f}" for k, v in diag.items()))
     for i in links:
         j = rec_p[i]
@@ -877,6 +878,38 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         hw = np.where(on_f, w_in * vf_z + (1 - w_in) * hw, hw)
         fixed |= on_f
         log(f"  valley floors: {on_f.sum() * res * res:.1f} km2, meander belts {vbelt.sum() * res * res:.1f} km2")
+    # oxbow lakes (PW-425): the cut-off loops' arcs on the floor, a little narrower than the channel, as
+    # shallow pools (their water a third of a bankfull depth below the floor, their bed a bankfull depth)
+    oxbow = np.zeros(npx, bool)
+    if oxb and on_f.any():
+        o_pts, o_w, o_q = [], [], []
+        for pts_, w_, q_ in oxb:  # (densified to a third of a pixel)
+            sg_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(pts_, axis=0).T))]
+            t_ = np.linspace(0.0, sg_[-1], max(2, int(np.ceil(sg_[-1] / (0.3 * res))) + 1))
+            o_pts.append(np.column_stack([np.interp(t_, sg_, pts_[:, 0]), np.interp(t_, sg_, pts_[:, 1])]))
+            o_w.append(np.interp(t_, sg_, w_))
+            o_q.append(np.interp(t_, sg_, q_))
+        o_pts, o_w, o_q = np.concatenate(o_pts), np.concatenate(o_w), np.concatenate(o_q)
+        fx, fy = fr.to_plane(pa.fr.to_sphere(o_pts[:, 0], o_pts[:, 1]))
+        ci0 = np.floor(fx / res + nb / 2).astype(int)
+        ri0 = np.floor(nb / 2 - fy / res).astype(int)
+        rad = np.maximum(0.4 * o_w / res, 0.5)
+        o_d = np.zeros(npx)
+        R_ = int(np.ceil(rad.max()))
+        for dr in range(-R_, R_ + 1):
+            for dc in range(-R_, R_ + 1):
+                ci, ri = ci0 + dc, ri0 + dr
+                ok = (ci >= 0) & (ci < nb) & (ri >= 0) & (ri < nb) & (dr * dr + dc * dc <= rad * rad + 0.25)
+                oxbow[ri[ok] * nb + ci[ok]] = True
+                np.maximum.at(o_d, ri[ok] * nb + ci[ok], ZFP.depth(o_q[ok]))
+        near = _box3(course.reshape(nb, nb).astype(float)).ravel() > 0  # (a pixel clear of the channel)
+        oxbow &= on_f & ~near & ~blocked & np.isfinite(vf_z)
+        if oxbow.any():
+            hw = np.where(oxbow, vf_z - 0.3 * o_d, hw)
+            pool_d = np.where(oxbow, 0.7 * o_d, pool_d)
+            pool |= oxbow
+            fixed |= oxbow
+            log(f"  oxbow lakes: {oxbow.sum() * res * res:.3f} km2")
 
     # --- 5. landscape ----------------------------------------------------
     thr = 1000.0 * np.tan(np.radians(THRESHOLD_DEG[0] + (THRESHOLD_DEG[1] - THRESHOLD_DEG[0]) * rug))  # m/km
@@ -1033,9 +1066,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         return np.asarray(a)[keep_px]
 
     (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own, target, course_c,
-     vfloor, vbelt, vf_z, vf_own) = (
+     vfloor, vbelt, vf_z, vf_own, oxbow_c) = (
         crop(a) for a in (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own,
-                          target, course, vfloor, vbelt, vf_z, vf_own))
+                          target, course, vfloor, vbelt, vf_z, vf_own, oxbow))
     nx = ny = n
     npx = n * n
     water = np.where(sea, 1, np.where(lake | pool, 2, 0)).astype(np.uint8)
@@ -1108,6 +1141,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
               / np.maximum(c3, 1))
     errf = (m3 - t3)[full3 & (fshare > 0.5)]
     floodplain = {"floor_km2": round(float(fl_c.sum() * res * res), 2),
+                  "oxbow_km2": round(float(oxbow_c.sum() * res * res), 3),
                   "floor_pct": round(100 * float(fl_c.sum()) / max(int(land.sum()), 1), 2),
                   "belt_km2": round(float((vbelt & land).sum() * res * res), 2),
                   "axis_km": round(fp_axis_km, 1),
@@ -1239,22 +1273,6 @@ def _meander_table():
 _MEANDER = _meander_table()
 
 
-def _meander_y(psi: np.ndarray, omega: np.ndarray) -> np.ndarray:
-    """Lateral offset / valley wavelength of a sine-generated meander train
-    at valley phase psi with largest swing omega (rad)."""
-    om, psi_g, tab, _ = _MEANDER
-    n = len(psi_g)
-    f = np.mod(psi, 2 * np.pi) / (2 * np.pi) * n
-    i0 = np.floor(f).astype(int) % n
-    i1, tf = (i0 + 1) % n, f - np.floor(f)
-    g = np.clip(omega / om[1], 0, len(om) - 1.001)
-    k0 = np.floor(g).astype(int)
-    tk = g - k0
-    a = (1 - tf) * tab[k0, i0] + tf * tab[k0, i1]
-    b = (1 - tf) * tab[k0 + 1, i0] + tf * tab[k0 + 1, i1]
-    return (1 - tk) * a + tk * b
-
-
 def _gauss(a: np.ndarray, sigma: float) -> np.ndarray:
     """Gaussian smoothing along axis 0 (sigma in samples), the end values
     and their direction kept (odd reflection at both ends)."""
@@ -1275,7 +1293,8 @@ def _gauss(a: np.ndarray, sigma: float) -> np.ndarray:
 
 def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray,
              bed: np.ndarray, fall_links: dict, phase: tuple, hp_f: np.ndarray, res: float,
-             parent_fine: bool, seed: int, diag: dict | None = None, floor: dict | None = None) -> dict:
+             parent_fine: bool, seed: int, diag: dict | None = None, floor: dict | None = None,
+             oxbows: list | None = None) -> dict:
     """Each parent river link's course (PW-405): {link i: (k, 2) parent
     plane km, i's node first, its receiver's last}.
 
@@ -1304,7 +1323,10 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
     parent plane km, floor half width km, meander belt half width km)}
     (zoom_fine_floodplain). An alluvial reach's floor gives its meanders
     room where the parent's own floor is narrower (a parent made without
-    floors cut a V down to its channel)."""
+    floors cut a V down to its channel).
+
+    oxbows (PW-425): filled with the cut-off loops' arcs (zoom_fine_meander):
+    [(points (k, 2) parent plane km, channel width km, discharge m^3/s)]."""
     rp = pa.rp
     nxp = pa.nx
     ok_link = riv & (rec >= 0)
@@ -1334,7 +1356,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
     xc, yc = pa.plane(rr, cc)
     node_pos = {}
     out = {}
-    M = max(8, int(np.ceil(3 * rp / res)))  # samples per link (>= 18 per drawn meander wavelength)
+    M = max(8, int(np.ceil(4 * rp / res)))  # samples per link (>= 24 per drawn meander wavelength)
     lo, hi = MEANDER_PX
     for _, ch, end_conf in chains:
         ch = np.array(ch)
@@ -1354,7 +1376,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         Pb = np.ascontiguousarray(pa.fr.to_sphere(B[:, 0], B[:, 1]) * R_KM)
         wan = (WANDER_PX * rp * np.clip(ZK.fbm(Pb, 4 * rp, 2, 0.5, seed) / 0.17, -1.25, 1.25)
                * Z.smoothstep(0.0, rp, s_b) * Z.smoothstep(0.0, rp, s_b[-1] - s_b))
-        B = B + wan[:, None] * np.column_stack([-tw[:, 1], tw[:, 0]])
+        wan = wan[:, None] * np.column_stack([-tw[:, 1], tw[:, 0]])  # (added below: none under meanders)
         # per node: discharge, width, wavelength (km), bed slope, rock
         qn = np.maximum(q[ch], 0.0)
         wn = 4.0 * np.sqrt(qn) / 1000.0
@@ -1390,6 +1412,7 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         tng /= np.maximum(np.hypot(*tng.T), 1e-12)[:, None]
         nrm = np.column_stack([-tng[:, 1], tng[:, 0]])
         om_room = np.full(len(ch), np.inf)
+        room = None
         if (om > 0.02).any():
             # (where the parent's ground beside it rises a couple of bankfull depths over the ground on its
             # course (its bed: the parent's beds are made to fall down a course, a few m below it): the floor's
@@ -1430,13 +1453,17 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             # each side of the channel; the whole floor on a braided reach
             om_b = MEANDER_OMEGA * alluv * single
             om_b = np.minimum(om_b, np.maximum(om, om_room))
-            amp = lam * np.interp(om_b, _MEANDER[0], _MEANDER[3])
-            belt_n = np.where(single >= 0.5, np.minimum(hf_n, 0.5 * wn + ZFP.BELT_X * amp), hf_n)
+            amp = lam * np.maximum(ZFP.BELT_X * np.interp(om_b, _MEANDER[0], _MEANDER[3]),
+                                   1.1 * ZFM.belt_amp(om_b, MEANDER_OMEGA))  # (its biggest bends: PW-425)
+            belt_n = np.where(single >= 0.5, np.minimum(hf_n, 0.5 * wn + amp), hf_n)
         # down the course: the meanders' phase, swing (tapering out at its ends) and offset
         s_ = np.r_[0.0, np.cumsum(np.hypot(*np.diff(B, axis=0).T))]
         lam_u = np.interp(u, np.arange(K + 1), lam)
         taper = (Z.smoothstep(0.0, 0.5, s_ / lam_u) * Z.smoothstep(0.0, 0.5, (s_[-1] - s_) / lam_u))
         om_u = np.interp(u, np.arange(K + 1), om) * taper
+        # (the wander only where no meanders are drawn: at a fine parent its bends are shorter than a meander
+        # wavelength, and its curvature on theirs made hairpins, PW-424)
+        B = B + wan * (1.0 - np.clip(om_u / (0.5 * MEANDER_OMEGA), 0.0, 1.0))[:, None]
         if (om_u > 0.02).any():
             # (the phase down the whole parent network from the course's head; where this course's main
             # upstream isn't the network's (a bigger one outside the built area), on at its own rate)
@@ -1446,14 +1473,47 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             dpsi[own_rate] = (2 * np.pi * seg / lam[:-1])[own_rate]
             dpsi *= _gauss(seg, 2.0) / np.maximum(seg, 1e-9)  # (D8 steps: a diagonal's 1.41 evened out)
             psi_c = psi[ch[0]] + np.r_[0.0, np.cumsum(dpsi)]
-            psi_u = np.interp(u, np.arange(K + 1), psi_c)
+            # (at the course's own arc length between its nodes, evened over a parent pixel: the phase's rate
+            # per km jumped at the parent's D8 links (straight 1, diagonal 1.41), and with it the bends' size)
+            psi_u = _gauss(np.interp(s_, s_[::M], psi_c), M)
             # (the offsets at right angles to the axis's direction over a quarter wavelength: the axis keeps
             # the parent's pixel steps at a fraction of a pixel, and turning a full swing with each of them
             # drew boxy loops with right-angled corners, PW-412)
             tg = _gauss(np.gradient(B, axis=0), max(1.0, 0.25 * float(np.median(lam)) * M / rp))
             tg /= np.maximum(np.hypot(*tg.T), 1e-12)[:, None]
-            off = lam_u * _meander_y(psi_u, om_u)
-            C = B + off[:, None] * np.column_stack([-tg[:, 1], tg[:, 0]])
+            nm = np.column_stack([-tg[:, 1], tg[:, 0]])
+            # each bend its own (PW-425, zoom_fine_meander: Kinoshita bends, their swing, skew, flatness and
+            # length planet-fixed noise in the phase), within the floor's room and with no neck closing; then
+            # no bend tighter than R_MIN (a loop meeting a valley bend folds on its inside: PW-424): there the
+            # swing is let down over a wavelength
+            w_u = np.interp(u, np.arange(K + 1), wn)
+            room_u = None if room is None else np.interp(u, np.arange(K + 1), np.maximum(room, 0.0))
+            r_lo = np.maximum(ZFM.R_MIN[0] * w_u, ZFM.R_MIN[1] * res)
+            ell = np.maximum(1.5 * w_u, 3.0 * res)
+            half = max(1, int(0.25 * float(np.median(lam)) * M / rp))
+            lim = np.ones(len(u))
+            for _ in range(10):
+                al, ac, _st = ZFM.train(psi_u, om_u / MEANDER_OMEGA * lim, lam_u, w_u, room_u, res,
+                                        MEANDER_OMEGA, seed)
+                C = B + al[:, None] * tg + ac[:, None] * nm
+                f = np.clip(_bend_radius(C, ell) / r_lo, 0.0, 1.0)
+                if f.min() >= 1.0:
+                    break
+                f = np.where(f < 1.0, np.clip(f, 0.6, 0.9), 1.0)
+                lim = lim * np.minimum(_gauss(_run_min(f, half), 0.5 * half), 1.0)
+            if oxbows is not None and _st["oxbow"] is not None:
+                # oxbows (PW-425): the cut-off loops' arcs, where they stand clear of the channel
+                xo, yo, msk = _st["oxbow"]
+                O = B + xo[:, None] * tg + yo[:, None] * nm
+                keep = np.zeros(len(u), bool)
+                for i in np.flatnonzero(msk):
+                    j0, j1 = max(0, i - 4 * half), min(len(u), i + 4 * half + 1)
+                    keep[i] = np.hypot(*(C[j0:j1] - O[i]).T).min() >= 0.9 * w_u[i] + 2.0 * res
+                ik = np.flatnonzero(keep)
+                q_u = np.interp(u, np.arange(K + 1), qn)
+                for r_ in np.split(ik, np.flatnonzero(np.diff(ik) > 1) + 1):
+                    if len(r_) >= 4:
+                        oxbows.append((O[r_], w_u[r_], q_u[r_]))
         else:
             C = B
         for k in range(K + 1):
@@ -1471,6 +1531,27 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
                 floor[int(ch[k])] = (np.column_stack([np.interp(t, tt, ax[:, 0]), np.interp(t, tt, ax[:, 1])]),
                                      hf_n[k] + (hf_n[k + 1] - hf_n[k]) * t, belt_n[k] + (belt_n[k + 1] - belt_n[k]) * t)
     return out
+
+
+def _bend_radius(C: np.ndarray, ell: np.ndarray) -> np.ndarray:
+    """A polyline's bend radius at each vertex: the circle through it and
+    the points ell (km, per vertex) before and after it along the line
+    (infinite where straight, and within ell of its ends)."""
+    s = np.r_[0.0, np.cumsum(np.hypot(*np.diff(C, axis=0).T))]
+    s0, s2 = np.clip(s - ell, 0.0, s[-1]), np.clip(s + ell, 0.0, s[-1])
+    P0 = np.column_stack([np.interp(s0, s, C[:, 0]), np.interp(s0, s, C[:, 1])])
+    P2 = np.column_stack([np.interp(s2, s, C[:, 0]), np.interp(s2, s, C[:, 1])])
+    a, b, c = np.hypot(*(C - P0).T), np.hypot(*(P2 - C).T), np.hypot(*(P2 - P0).T)
+    cr = np.abs((C[:, 0] - P0[:, 0]) * (P2[:, 1] - P0[:, 1]) - (C[:, 1] - P0[:, 1]) * (P2[:, 0] - P0[:, 0]))
+    R = a * b * c / np.maximum(2.0 * cr, 1e-15)
+    R[(s - ell < 0.0) | (s + ell > s[-1])] = np.inf
+    return R
+
+
+def _run_min(a: np.ndarray, half: int) -> np.ndarray:
+    """Running minimum over +-half samples."""
+    p = np.pad(a, half, mode="edge")
+    return np.lib.stride_tricks.sliding_window_view(p, 2 * half + 1).min(1)
 
 
 def _river_phase(riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray, pa: _Parent,

@@ -2,7 +2,7 @@
 id: PW-425
 title: Fine zoom meander trains are perfectly regular at full swing
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -28,4 +28,5 @@ Keep the PW-405 test's 8-16 w mean wavelength.
 PW-416 (migration over time) would make trains irregular anyway. This ticket is for the static fine zoom.
 
 ## Updates
+- 2026-10-16: Status todo -> done. Done on branch worktree-agent-a0b8d885889258e9f (pw425). New planet/zoom_fine_meander.py: Kinoshita bends (swing, skew, flatness incl. compound loops) with planet-fixed per-bend noise in the channel phase phi, a local warp of the valley phase psi (mean wavelength kept per 3 wavelengths; tight loops take less valley), caps for floor room (all bends shrink together), bend radius and necks, eased over a quarter wavelength; big loops (swing > 1.6, 50% planet-fixed) cut off, their old arc an oxbow pool on the floor (stats.floodplain.oxbow_km2). 352c76: sinuosity_gentle 1.70/1.87 -> 1.48/1.83 (median/p90), wavelengths +-20%, 2 small oxbows; block rms 1.61 -> 1.62. Handoff docs/review/audit/pw425-handoff.md (incl. what PW-416 should evolve: per-sample phi, omega, js, jf, X from ZFM.train). Follow-up draft: oxbow crescents and scroll bars.
 - 2026-10-16: Created from inbox draft draft-meander-trains-too-regular.md (found by pw412).

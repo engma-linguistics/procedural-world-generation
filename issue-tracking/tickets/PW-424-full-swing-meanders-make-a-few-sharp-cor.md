@@ -2,7 +2,7 @@
 id: PW-424
 title: Full-swing meanders make a few sharp corners where they meet a valley bend
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: s
@@ -25,4 +25,5 @@ The swing is already limited by half the valley's bend radius over one wavelengt
 Low impact: 5 corners in 54 km, at 25 m/px.
 
 ## Updates
+- 2026-10-16: Status todo -> done. Done on branch worktree-agent-a0b8d885889258e9f (pw425): 352c76 switchbacks 5 (0.096/km) -> 0 (0.000/km; pre-PW-412 0.027). Causes: per-sample steps in the swing caps (now eased), the parent-px axis wander (4 parent px bends, shorter than a meander wavelength at a fine parent; now none under drawn meanders), and loops on valley bends. A limiter in _courses lets the swing down over a quarter wavelength wherever the drawn centreline bends tighter than max(1.5 w, 2.5 px).
 - 2026-10-16: Created from inbox draft draft-meander-sharp-bends-at-valley-bends.md (found by pw412).
