@@ -1,4 +1,5 @@
 ---
+id: PW-430
 title: Giant closed lakes left after PW-300 sit in hollows that never spilled, made in a step or two on flat interiors
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw300
 blocked_by: []
 relates: [PW-300, PW-359, PW-054]
 refs: [planet/hydrology.py, planet/tectonics/plate_kernels.py, docs/review/health-pw300-after/, docs/review/health-pw300-after/diag/]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -31,3 +34,6 @@ nearest-cell resampling make most closed-hollow volume each step, in one step. S
 (an interpolating world view); the routing question in the second bullet is hydrology's.
 Probe scripts: docs/review/health-pw300-after/diag/probe.py (`probe.py <repo> <seed> <t>...`),
 hollow_origin.py (what changed under a lake between steps).
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-fresh-hollow-closed-lakes.md (found by pw300).

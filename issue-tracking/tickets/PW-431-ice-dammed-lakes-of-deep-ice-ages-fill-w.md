@@ -1,4 +1,5 @@
 ---
+id: PW-431
 title: Ice-dammed lakes of deep ice ages fill whole basins (seed 2 L6 7 Mkm2 behind an ice sheet); no flotation limit on an ice dam
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw300
 blocked_by: []
 relates: [PW-300]
 refs: [planet/hydrology.py, docs/review/health-pw300-after/, docs/review/health-pw300-after/diag/hollow_origin.py]
+created: 2026-10-16
+updated: 2026-10-16
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Missoula's floods), and they drain along the ice margin. Worth trying: the ice's
 water = bed + 0.917 x ice (or less, for warm-based margins), in the lake fill only (rivers still cross the
 ice surface). Check seed 2 @ 464-488 and seed 11 @ 184-192 with `docs/review/health-pw300-after/diag/probe.py`.
 Low priority: the deep ice ages recover, and the health sweep counts these frames under giant lakes.
+
+## Updates
+- 2026-10-16: Created from inbox draft draft-ice-dammed-giant-lakes.md (found by pw300).
