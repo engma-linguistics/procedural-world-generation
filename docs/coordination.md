@@ -168,3 +168,33 @@ Baseline after the model batches: docs/review/night-2026-10-16/ (giant-lake fram
 **Run lane order update (2026-10-16 night):** PW-300 (running), then PW-366 (raised to high: the run's sheets vs the time zoom's ablation/calving, now the main cause of the time zoom's runaway start, PW-418/421), then freeze run physics. Glacial carving (branch pw037-carving) waits for PW-366, then re-fits glacial_k (see PW-418).
 
 **Paused 2026-10-16 late night (owner near weekly limit).** No agents running. Merged tonight: PW-409/407/408(+415 MSAA off)/406 (jet overlay later dropped by owner)/405/395/358/300/412/425/424/426/428, PW-418 diagnosis. Next, in order: run lane PW-366 (high; makes tests/test_timezoom_consistency.py's strict xfail pass), then freeze run physics and PW-202; zoom lane PW-416 (river through time; see docs/review/audit/pw425-handoff.md); glacial carving (branch pw037-carving) after PW-366; owner to answer: PW-030 (real ice-age cycles) in v1? and confirm PW-415 flicker gone in Chrome (then PW-417).
+
+## Current state and next steps (2026-10-16 late night; supersedes earlier sections where they differ)
+
+No agents running; owner near the weekly limit. Owner decisions tonight: PW-030 (real ice-age cycles: slow ~80-90 kyr builds, fast terminations, swing >= 80 m) IS in v1 (high, blocked on PW-366, listed under PW-244); PW-415 Chrome flicker confirmed resolved (done); PW-417 (retire diagnostic URL switches) stays todo/low/small; PW-416 (river through time) is a nice-to-have, not v1 (low).
+
+**Merged today/tonight:**
+- PW-409 viewer layout, PW-407 picker filter box, PW-408 + PW-415 river flicker (MSAA off by default).
+- PW-406 jet stream overlay, then dropped by the owner (the upper-air sim stays).
+- PW-405 river planform, PW-395 volcano form, PW-412 floodplains, PW-425/424 meander trains, PW-426, PW-428.
+- PW-358 Penman lakes split out, PW-300 giant lakes re-check.
+- PW-418 diagnosis only: the time zoom's runaway start comes from PW-015 stage 1 (snowier sheets) plus the PW-366 run-vs-time-zoom mismatch.
+- pytest-xdist: tests run in parallel by default (`-n0` for serial).
+
+**Parked:** glacial carving on branch pw037-carving (re-fit glacial_k after PW-366; see PW-418); PW-015 stage 2 branches (pw015-prototype, pw015-wip, pw015-optA).
+
+**Rules reminders:**
+- Agent worktrees start from stale origin/main: every agent first runs `git merge --ff-only main` and confirms `git log -1` matches main.
+- Hand off at ~150 tool calls; fresh agent continues. Each agent uses its own scratchpad subdirectory.
+- Subagents write inbox drafts, never PW- ids.
+
+**Priority order by lane (v1 first):**
+- Run lane (serial): PW-366 (high; makes the strict xfail in tests/test_timezoom_consistency.py pass) -> PW-030 (v1) -> freeze run physics -> PW-202 (remake the L7 showcases = the v1 review).
+- Time-zoom lane: PW-037 carving re-fit (after PW-366), PW-213 vegetation in the time zoom, PW-398, PW-427.
+- Zoom lane (planet/zoom_fine.py, serial): PW-404, PW-391, PW-392, PW-419, PW-430 (hydrology; run lane if it changes simulate); then nice-to-haves PW-416, PW-433, PW-411, PW-413, PW-420.
+- Viewer/infra lane: PW-248 `planet make` + "New planet" button, PW-100 export with PW-099, PW-417, PW-410.
+- Calibration later: rain (PW-015/016/352), Earth scores.
+
+**Superseded:** the "Zoom lane order update" (PW-416 before PW-404) and "Run lane order update" lines above; the order here is the one to follow.
+
+**Cleanup item:** `board.py check` warns of 28 refs in open tickets to runs/worlds/zooms that no longer exist (`board.py check --refs` lists them); prune or update them.

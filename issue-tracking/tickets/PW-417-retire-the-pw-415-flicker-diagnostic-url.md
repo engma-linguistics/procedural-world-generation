@@ -8,7 +8,7 @@ subsystem: viewer
 effort: xs
 impact: low
 found_by: pw415
-blocked_by: [PW-415]
+blocked_by: []
 relates: [PW-408]
 refs: [viewer/index.html]
 created: 2026-10-16
@@ -24,4 +24,5 @@ when off) unless it's in the way.
 - [ ] the winning setting is the default; the other switches are removed; tests/test_viewer.py passes
 
 ## Updates
+- 2026-10-16: Stays todo, low, small (owner confirmed PW-415 resolved; unblocked).
 - 2026-10-16: Created from inbox draft draft-pw415-retire-flicker-switches.md (found by pw415).
