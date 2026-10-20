@@ -44,5 +44,6 @@ interglacial ice, so they should be balanced together.
 - [ ] decide
 
 ## Updates
+- 2026-10-20: pw460: built in run and zoom (branch worktree-agent-a9f64607e1a64d2e8 (246ef40), kept unmerged). Zoom: margin-only with obs baseline meets every Earth target (-82 m, Laurentide 5.65 Mkm2 to 44.9 N, interglacial ice 9.5-12.3%). Run: cold eras freeze (10-seed check 0-3/10 vs main 8/10); unforced-start consistency +17.9 to +76 m. The 408 m edge was the run's only way to deglaciate. Not merged; decision moved to PW-461.
 - 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20 (owner delegates physics): take the agent's lean. PW-460 (resolution-aware sub-cell margin) and PW-459 (insol_k from each cell's own seasonal response) are done together, in the run and the zoom, so the unforced start stays consistent; then the 10-seed check (~70% bar). Interglacial-ice bar corrected: real Earth today is ~10% of land (Antarctica + Greenland ~15 Mkm2), so ~9-12% is acceptable; the old 8-9% was the model's own value, not a target.
 - 2026-10-20: Created from inbox draft draft-subcell-margin-run-and-zoom.md (found by pw033).
