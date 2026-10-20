@@ -1,7 +1,8 @@
 ---
+id: PW-453
 title: "Physical ice-albedo rule (PW-449): no version both deepens Earth's time-zoom glacial and keeps the run's cold eras"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: climate
 effort: m
@@ -10,6 +11,8 @@ found_by: pw449
 blocked_by: []
 relates: [PW-449, PW-448, PW-438, PW-435, PW-033, PW-450, PW-030, PW-436]
 refs: [planet/tectonics/earth.py, planet/timezoom/forcing.py, planet/icemass.py, docs/review/audit/PW-449-snow-season.patch]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -110,3 +113,7 @@ marine cell: a held ice cell with bed -258 m has the sea's climate. Restricting 
 (in the patch). earth_check doesn't depend on this rule (dT = 0). Main's baseline is Koppen group 71% /
 exact 31%. The main scorecard (commit e02d7e2) has Earth group 70.6 / exact 30.9, seed 1 ice 1.1%,
 seed 2 ice 10.6%.
+
+## Updates
+- 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20: option (a). Keep main's rule; revisit (b), the snow-season rule A2 for both run and zoom (9/10 seeds), after PW-450, PW-435 and PW-033. The missing depth is where the ice grows plus the missing vegetation and dust, not the cap.
+- 2026-10-20: Created from inbox draft draft-ice-albedo-physical-rule-run-vs-zoom.md (found by pw449).
