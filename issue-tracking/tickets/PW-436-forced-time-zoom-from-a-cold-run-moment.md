@@ -1,5 +1,6 @@
 ---
-title: "Forced time zoom from a cold run moment loses ice (+41 m at 20 kyr, up to +141 m) after PW-366"
+id: PW-436
+title: Forced time zoom from a cold run moment loses ice (+41 m at 20 kyr, up to +141 m) after PW-366
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw366
 blocked_by: []
 relates: [PW-366, PW-030, PW-295, PW-241]
 refs: [planet/timezoom.py, planet/icemass.py]
+created: 2026-10-19
+updated: 2026-10-19
 ---
 
 ## Description
@@ -25,3 +28,6 @@ moment has little room left to cool but full room to warm).
 - [ ] measure the forced 150 kyr mean sea level from 3-4 cold L6 moments; find which forcing term makes the
   mean sit above the start; fix that side (no scaling to meet)
 - needed by PW-030 (real ice-age cycles start from these moments)
+
+## Updates
+- 2026-10-19: Created from inbox draft draft-forced-timezoom-loses-ice-from-run-moment.md (found by pw366).

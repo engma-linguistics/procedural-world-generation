@@ -1,5 +1,6 @@
 ---
-title: "Cold eras' sea levels deepen after PW-366's thicker run sheets (worst -368..-609 m, 3 of 4 seeds past -430)"
+id: PW-434
+title: Cold eras' sea levels deepen after PW-366's thicker run sheets (worst -368..-609 m, 3 of 4 seeds past -430)
 type: task
 status: needs-decision
 parent: null
@@ -10,6 +11,8 @@ found_by: pw366
 blocked_by: []
 relates: [PW-240, PW-366, PW-364, PW-421]
 refs: [planet/icemass.py, planet/tectonics/earth.py, tools/sealevel.py]
+created: 2026-10-19
+updated: 2026-10-19
 ---
 
 ## Description
@@ -36,3 +39,7 @@ Options:
 - C. Weaker local damping (`icemass.LOCAL` 0.3 -> 0.15) to trim the snowier margins.
 Lean: B (it addresses how often the eras happen, not the ice physics PW-366 just aligned with the time zoom).
 - [ ] decide; re-run the 4-seed table after
+
+## Updates
+- 2026-10-19: Coordinator decision 2026-10-19 (owner delegates physics): option B, a smaller climate_drift sd (~2 C). Re-run the 4-seed L6 table after.
+- 2026-10-19: Created from inbox draft draft-cold-eras-deeper-after-pw366.md (found by pw366).

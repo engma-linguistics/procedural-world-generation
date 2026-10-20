@@ -1,4 +1,5 @@
 ---
+id: PW-435
 title: "Earth time zoom's glacial is shallower after PW-366's margin fixes (150 kyr: -76 -> -33 m)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw366
 blocked_by: []
 relates: [PW-033, PW-030, PW-366, PW-422]
 refs: [planet/timezoom.py]
+created: 2026-10-19
+updated: 2026-10-19
 ---
 
 ## Description
@@ -25,3 +28,6 @@ how fast a front advances onto bare land (one ring per ~step at best, under an e
 inception (Fennoscandia, Laurentide) and the sub-cell margin of PW-115 / PW-422 are where to look.
 - [ ] Earth's 150 kyr glacial back toward -60..-120 m by physics (inception, sub-cell margins), not by tuning
   the forcing
+
+## Updates
+- 2026-10-19: Created from inbox draft draft-earth-timezoom-glacial-shallower-pw366.md (found by pw366).
