@@ -10,7 +10,7 @@ impact: low
 found_by: zoomland3
 blocked_by: []
 relates: [PW-012, PW-147]
-refs: [planet/landform.py, planet/zoom_landforms.py, "zoom:dccb9c"]
+refs: [planet/landform.py, planet/zoom_landforms.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -20,7 +20,7 @@ The record gives flat strata the regional slope as their dip (a few
 hundredths of a degree), so the zoom's CoastalPlain assumes a seaward dip
 of 2.5-8 m/km and measures it from the coarse coast. On a low plain the
 valleys cut ~30 m into beds 60 m apart, so the outcrops follow the
-contours (benches along the valley sides, V's up the valleys; zoom dccb9c)
+contours (benches along the valley sides, V's up the valleys; zoom dccb9c (deleted))
 more than they make the long inland-facing cuestas of the Gulf and
 Atlantic coastal plains, whose wedge of young beds thickens seaward
 (dips 0.1-0.5 deg, steeper the older the bed).

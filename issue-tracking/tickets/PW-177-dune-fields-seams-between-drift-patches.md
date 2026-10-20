@@ -10,7 +10,7 @@ impact: low
 found_by: zoomland3
 blocked_by: []
 relates: [PW-012]
-refs: [planet/zoom_landforms.py, "zoom:2d1537", "zoom:e14044", "zoom:ee587f"]
+refs: [planet/zoom_landforms.py]
 created: 2026-10-14
 updated: 2026-10-16
 ---
@@ -20,7 +20,7 @@ PW-012's Dunes synthesiser draws the big dunes (draas) at least 5 px
 apart on planet-fixed ~200 km patches oriented by the sand drift. Left:
 - where two patches meet the crests switch over a narrow wandering seam;
   where transverse and linear weights mix (RDP/DP ~0.75) the two patterns
-  cross-hatch (zoom 2d1537, upper right): real mixed regimes make network
+  cross-hatch (zoom 2d1537 (deleted), upper right): real mixed regimes make network
   or crescentic-linear dunes, which could be drawn instead;
 - barchans are 0.1-0.5 km: a 0.5 km zoom shows only exaggerated crescents
   (ee587f: low and faint); a nested fine zoom (PW-129) would be the place;

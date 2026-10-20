@@ -10,7 +10,7 @@ impact: med
 found_by: landform
 blocked_by: []
 relates: [PW-108, PW-009]
-refs: [planet/landform.py, planet/tectonics/simulation.py, "run 472faf (deleted; rerun seed 21 L7)"]
+refs: [planet/landform.py, planet/tectonics/simulation.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---

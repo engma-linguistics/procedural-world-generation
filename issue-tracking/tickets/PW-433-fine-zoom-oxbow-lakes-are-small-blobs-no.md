@@ -10,7 +10,7 @@ impact: low
 found_by: pw425
 blocked_by: []
 relates: [PW-425, PW-416, PW-412]
-refs: [planet/zoom_fine_meander.py, planet/zoom_fine.py, "zoom 352c76 (scratch regen)"]
+refs: [planet/zoom_fine_meander.py, planet/zoom_fine.py]
 created: 2026-10-16
 updated: 2026-10-16
 ---

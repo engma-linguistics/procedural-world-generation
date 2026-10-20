@@ -22,7 +22,7 @@ What to try: dry spells inside wet months (boreal fire weeks), e.g. the fire sea
 
 ## Updates
 - 2026-10-16: Merged inbox draft draft-veg-boreal-fire-gfed-rotation.md ("Boreal fire return: GFED4.1s gives a ~170-220 yr rotation on Earth's boreal forest, not 50-200 (update for PW-347)", found by pw204-vegdata).
-  For the coordinator to merge into PW-347 (`board.py intake --merge-into PW-347`). veg_check now measures boreal fire on gridded GFED4.1s burned area (2001-2015 mean, small fires included). L6 Earth world 7873f9, observed climate, fire rotation (area / area burned a year) and median cell interval:
+  For the coordinator to merge into PW-347 (`board.py intake --merge-into PW-347`). veg_check now measures boreal fire on gridded GFED4.1s burned area (2001-2015 mean, small fires included). L6 Earth world 7873f9 (deleted), observed climate, fire rotation (area / area burned a year) and median cell interval:
   - model's boreal types: rotation 294 yr, median 381 yr, 0.058 Mkm2/yr;
   - GFED on the same cells: rotation 166 yr, median 510 yr;
   - GFED on potential vegetation's boreal forest (Ramankutty & Foley classes 6-7): rotation 216 yr, median 561 yr, 0.04 Mkm2/yr.

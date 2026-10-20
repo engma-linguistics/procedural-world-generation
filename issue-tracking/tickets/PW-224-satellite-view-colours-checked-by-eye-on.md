@@ -10,7 +10,7 @@ impact: low
 found_by: satview
 blocked_by: []
 relates: [PW-083]
-refs: [planet/satellite.py, "world fe2af4", docs/overview/satellite_view.jpg]
+refs: [planet/satellite.py, docs/overview/satellite_view.jpg]
 created: 2026-10-15
 updated: 2026-10-15
 ---
@@ -18,7 +18,7 @@ updated: 2026-10-15
 ## Description
 The satellite view (PW-083, `planet/satellite.py`) uses hand-picked sRGB colours per plant type
 (leaf-on / leaf-off), soil, rock, snow, ice and water, tuned by eye against Blue Marble-style imagery on
-the Earth world fe2af4. It looks plausible (Sahara tan, Sahel green in July, red-tan Australia, white
+the Earth world fe2af4 (deleted). It looks plausible (Sahara tan, Sahel green in July, red-tan Australia, white
 winter Siberia with grey forest), but nothing measures it. A check could compare the Earth world's
 `sat_jul` with a downsampled Blue Marble (NASA, public domain) cell by cell on land where the model's
 vegetation agrees with potential vegetation (so climate errors don't count), and fit the palette's

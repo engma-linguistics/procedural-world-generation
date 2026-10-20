@@ -10,14 +10,14 @@ impact: low
 found_by: mantle
 blocked_by: []
 relates: []
-refs: ["run 6d9dcf", "world ffb5bd", "world 779b14", tools/supercontinent.py]
+refs: [tools/supercontinent.py]
 created: 2026-10-14
 updated: 2026-10-15
 ---
 
 ## Description
 Every L6 seed now reassembles above 25% of the surface at least twice in 2 Gyr (before, 3 of 4 never
-did; showcase run 6d9dcf, seed 2). Shortfalls: uneven cycles (seed 1 quiet from 590 to 1930 Myr),
+did; showcase run 6d9dcf (deleted), seed 2). Shortfalls: uneven cycles (seed 1 quiet from 590 to 1930 Myr),
 assemblies 400–870 Myr apart (Earth ~300–700). Option B from the decision: another round on regularity
 (stronger continental insulation, shorter mantle memory). Pinned by the owner; revisit after PW-024.
 
