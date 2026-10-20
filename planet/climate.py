@@ -2231,7 +2231,23 @@ def vegetation_feedbacks(open_land, veg, tune) -> dict:
     return dict(w=w, veg=veg, has=has)
 
 
-def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune) -> tuple[np.ndarray, np.ndarray]:
+def snow_cover(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, tune) -> np.ndarray:
+    """(12, n) 0..1: the share of the ground under lying snow each month (climate.months' snowpack; full
+    cover from snow_full_mm)."""
+    mo = months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt)
+    return np.clip(mo["snow"] / tune["snow_full_mm"], 0, 1)
+
+
+def surface_albedo(sc, veg, tune) -> np.ndarray:
+    """(12, n) the land surface's albedo each month under snow cover sc (snow_cover) and vegetation veg
+    (vegetation.feedback): lying snow is bright on open ground (snow_albedo) but mostly hidden under
+    conifers (veg's mask)."""
+    a_free = veg["albedo"][None, :]
+    a_snow = veg["mask"] * a_free + (1 - veg["mask"]) * tune["snow_albedo"]
+    return sc * a_snow + (1 - sc) * a_free
+
+
+def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune, sc=None) -> tuple[np.ndarray, np.ndarray]:
     """C warmer (colder) in the Apr-Sep and Oct-Mar half-years from the
     surface's albedo against the one the temperature curve stands for
     (section 4.2): the sunshine reaching the ground (half the top of the
@@ -2240,12 +2256,10 @@ def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune) -> 
     on open ground (snow_albedo) but mostly hidden under conifers
     (vegetation's mask: Bonan 1992), against a reference albedo_snow_ref;
     snow-free ground against albedo_ref. Each half-year capped at
-    +-albedo_cap."""
-    mo = months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt)
-    sc = np.clip(mo["snow"] / tune["snow_full_mm"], 0, 1)
-    a_free = veg["albedo"][None, :]
-    a_snow = veg["mask"] * a_free + (1 - veg["mask"]) * tune["snow_albedo"]
-    a = sc * a_snow + (1 - sc) * a_free
+    +-albedo_cap. sc: snow_cover's result, if already at hand."""
+    if sc is None:
+        sc = snow_cover(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, tune)
+    a = surface_albedo(sc, veg, tune)
     a_ref = sc * tune["albedo_snow_ref"] + (1 - sc) * tune["albedo_ref"]
     sun = 0.5 * insolation(np.asarray(lat, float), tilt) * 1e6 / 86400.0  # W/m2 at the ground
     d = tune["albedo_k"] * (a_ref - a) * sun

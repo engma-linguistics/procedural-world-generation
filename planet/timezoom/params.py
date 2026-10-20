@@ -79,6 +79,16 @@ class TZParams:
     ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py), as the change from the start's
     # ice (PW-030: before, half the run's, capped at 2 C and for a run's moment at average_room of that; the
     # run's ice surfaces have their own local climate too, so the halving had no reason)
+    # vegetation (plants.py, PW-450): the run's model grown on each full climate
+    veg: str = "on"  # 'on': it feeds back on the climate locally (as in the run: Budyko w, the surface's
+    # albedo with snow hidden under forest) and globally (its albedo's change since the start, in dTg);
+    # 'local': the local part only; 'off': none (climate.compute's Earth-like average surface)
+    veg_toa: float = 0.4  # the planet's albedo changes by this x a change of the surface's (the air's and
+    # the clouds' share of the light, both ways: Qu & Hall 2006, ~0.3-0.5 outside the tropics) ...
+    veg_lambda: float = 0.8  # ... and the climate by this many C per W/m2 of it (the fast feedbacks inside:
+    # Hansen et al. 2008 0.75; the CO2 term co2_cool implies ~0.9) ...
+    veg_lag: float = 2.0  # ... following the plants this slowly (kyr: a biome shift takes centuries to a
+    # few kyr; the plants themselves are grown afresh on each full climate)
     # the ice-age cycle (cycle.py, PW-440): between ice ages / building / ending
     cycle: str = "on"  # 'off': no cycle state (the feedbacks above alone)
     sheet_h: float = 2000.0  # m: the sheet scale is the sea-level equivalent of this much ice ...

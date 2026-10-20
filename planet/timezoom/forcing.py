@@ -70,6 +70,8 @@ class Forcing:
     def __init__(self, p: TZParams, step: float, room: float, ice_frac0: float, cycle: Cycle):
         self.p, self.step, self.room, self.ice_frac0, self.cycle = p, step, room, ice_frac0, cycle
         self.co2 = 0.0  # C, the lagged CO2 part of the global change
+        self.veg = 0.0  # C, the plants' part (plants.py), following ...
+        self.veg_target = 0.0  # ... this (set at each full climate)
 
     def co2_target(self, sl: float) -> float:
         p = self.p
@@ -83,4 +85,5 @@ class Forcing:
         cyc.step(s_no, sl)
         target = cyc.co2_target(self.co2_target(sl), sl)
         self.co2 += (1 - math.exp(-self.step / p.co2_lag)) * (target - self.co2)
-        return self.co2 - (albedo(p, ice_frac) - albedo(p, self.ice_frac0))
+        self.veg += (1 - math.exp(-self.step / p.veg_lag)) * (self.veg_target - self.veg)
+        return self.co2 + self.veg - (albedo(p, ice_frac) - albedo(p, self.ice_frac0))

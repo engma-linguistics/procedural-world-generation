@@ -8,8 +8,10 @@ from pathlib import Path
 import numpy as np
 
 from .. import timeline as T
+from .. import vegetation as VEG
 from ..geo import is_land
 from ..grid import build_grid
+from ..tectonics.params import Params
 from .params import STATIC
 
 
@@ -18,7 +20,7 @@ def source_from_run(run_dir: Path, at: float) -> dict:
     global temperature offset dT, tilt and the frozen geology at `at` Myr,
     from the stored keyframe nearest to `at` (as timeline.world_from_frame:
     no replay; ice to 20 m, dT to 0.1 C)."""
-    run, arr = T.load_frames(run_dir, ("elevation", "ice", *STATIC))
+    run, arr = T.load_frames(run_dir, ("elevation", "ice", "tree_cover", *STATIC))
     if run.get("kind") == "timezoom":
         raise SystemExit("that's a time zoom already; give its source run")
     m = run["meta"]
@@ -27,15 +29,16 @@ def source_from_run(run_dir: Path, at: float) -> dict:
         raise SystemExit(f"--at must be between {times.min():g} and {times.max():g}")
     i = int(np.argmin(np.abs(times - at)))
     fr = run["frames"][i]
-    if "sea_level_m" not in fr["stats"]:
-        raise SystemExit(f"run {run_dir.name} is too old (its keyframes have no climate)")
+    if "sea_level_m" not in fr["stats"] or "tree_cover" not in run["layers"]:
+        raise SystemExit(f"run {run_dir.name} is too old (its keyframes have no climate or vegetation)")
+    veg = T.keyframe_vegetation(m, fr, T.frame(run, arr, "tree_cover", i), Params.from_stored(m["params"]).plants_from)
     return {"source_run": run.get("id", run_dir.name), "source_name": run["name"], "seed": m["seed"],
             "level": m["level"], "tilt": m["params"].get("tilt", 23.4), "params": m["params"],
             "grid": build_grid(m["level"]), "at": float(fr["t"]),
             "elev": T.frame(run, arr, "elevation", i).astype(float),
             "ice": T.frame(run, arr, "ice", i).astype(float), "dT": fr["stats"]["global_temp_c"] - 14.5,
             "sea_level": fr["stats"]["sea_level_m"], "static": {k: T.frame(run, arr, k, i) for k in STATIC},
-            "hotspots": fr["hotspots"], "volcanoes": fr["volcanoes"]}
+            "hotspots": fr["hotspots"], "volcanoes": fr["volcanoes"], "veg": veg}
 
 
 def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
@@ -48,7 +51,9 @@ def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
             "static": {"plate": snap.plate, "crust": snap.continental, "crust_age": snap.age,
                        "plate_boundary": snap.boundary},
             "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
-            "volcanoes": T.active_volcanoes(snap.volcanoes)}
+            "volcanoes": T.active_volcanoes(snap.volcanoes),
+            "veg": None if sim.veg_frac is None else {"nu0": sim.veg_frac, "co2": float(sim.co2),
+                                                      "unlocked": VEG.unlocked_at(sim.flora, sim.t)}}
 
 
 def source_earth(level: int = 6) -> dict:

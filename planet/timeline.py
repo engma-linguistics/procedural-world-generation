@@ -187,6 +187,17 @@ def plant_groups(sim: Simulation) -> list:
             for k, ((name, codes, _), t, (a, b)) in enumerate(zip(VEG.GROUPS, sim.flora, win))]
 
 
+def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray, plants_from: float) -> dict:
+    """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
+    cover (%, forest or savanna) as a warm start, its CO2 index, and the plant groups by then."""
+    groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
+    t_fr = float(fr["t"])
+    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "co2": fr["stats"].get("co2", 0.0),
+            "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
+                         if t_fr >= plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
+            "groups": groups}
+
+
 def load_frames(run_dir: Path, names=None) -> tuple[dict, dict]:
     """(run.json, {layer: raw (frames, cells) array, memory-mapped}); decode
     a frame with frame()."""
@@ -386,13 +397,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     # the exposed rock from the stored strata, by the current rule (as snapshot() does)
     exposed = surface_rock(a["rock"], a["sediment_cover"], a["strata_top"], a["strata_top_km"])
     s = fr["stats"]
-    # the vegetation's history: the keyframe's tree cover (forest or savanna), the plant groups by then
-    groups = [g.get("t") for g in m.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
     t_fr = float(fr["t"])
-    veg = {"nu0": VEG.start_from_tree_cover(a["tree_cover"] / 100.0), "co2": s.get("co2", 0.0),
-           "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
-                        if t_fr >= params.plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
-           "groups": groups}
+    veg = keyframe_vegetation(m, fr, a["tree_cover"], params.plants_from)
     st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
     return _world(grid, m["seed"], params, float(fr["t"]), st["elevation"], a["plate"].astype(int),

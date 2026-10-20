@@ -10,6 +10,7 @@ import numpy as np
 from .. import climate
 from ..grid import Grid
 from .params import RHO_I, RHO_W, TZParams
+from .plants import Plants
 
 
 class ClimateFields:
@@ -23,6 +24,7 @@ class ClimateFields:
         self.f: dict = {}
         self.compute_s = 0.0
         self._melt_ref = {"H": H0.copy(), "t": 0.0}
+        self.plants = Plants(g, src, p, tilt, area)
 
     def __getitem__(self, key: str):
         return self.f[key]
@@ -42,17 +44,27 @@ class ClimateFields:
             return None
         return RHO_I / RHO_W * loss * (net / loss.sum()) / area / yrs
 
-    def refresh(self, t_kyr: float, dTg: float, surf: np.ndarray, grounded: np.ndarray, H: np.ndarray) -> None:
-        """A full climate on the current surface and global temperature."""
-        fields_, g = self.f, self.g
-        t0 = time.time()
-        # (the overturning carries on from the last full climate's state; the air over the ice is the
-        # sheets' own, carried along the winds: ice_air)
-        c = climate.compute(g, surf, self.dT_run + dTg, self.tilt, melt=self.meltwater(t_kyr, H),
-                            moc_start=fields_.get("moc"), ice_air=np.where(grounded, H, 0.0))
+    def refresh(self, t_kyr: float, dTg: float, surf: np.ndarray, grounded: np.ndarray, H: np.ndarray,
+                co2: float = 0.0) -> None:
+        """A full climate on the current surface and global temperature, and the plants grown on it
+        (plants.py; co2: the CO2 term of dTg, C)."""
+        fields_, g, pl = self.f, self.g, self.plants
+        melt, moc0 = self.meltwater(t_kyr, H), fields_.get("moc")
+
+        def compute(veg):
+            t0 = time.time()
+            # (the overturning carries on from the last full climate's state; the air over the ice is the
+            # sheets' own, carried along the winds: ice_air)
+            c = climate.compute(g, surf, self.dT_run + dTg, self.tilt, melt=melt, moc_start=moc0,
+                                ice_air=np.where(grounded, H, 0.0), veg=veg)
+            self.compute_s += time.time() - t0
+            return c
+
+        c = compute(pl.feedback(grounded) if pl.on else None)
+        if pl.on:
+            c = pl.step(t_kyr, c, surf, grounded, H, co2, compute)
         fields_["moc"] = c["moc_state"]
         fields_["moc_sv"] = (float(c["overturning"][g.lat >= 0].sum()), float(c["overturning"][g.lat < 0].sum()))
-        self.compute_s += time.time() - t0
         if self.p.baseline == "obs" and "bias" not in fields_:
             fields_["bias"] = self.obs_bias(c, H)
         tw, tc, pj, pn = c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"]

@@ -30,6 +30,7 @@ inception (Fennoscandia, Laurentide) and the sub-cell margin of PW-115 / PW-422 
   the forcing
 
 ## Updates
+- 2026-10-20: pw450: vegetation feedback (PW-450) deepens the Earth zoom only -42.8 -> -45.1 m (with PW-448's deep knobs -74.8 -> -86.3 m); the Laurentide margin is unchanged at ~55 N.
 - 2026-10-20: pw448: a near-linear ice albedo (draft, needs-decision) deepens Earth to -71 m in 600 kyr (-75 with co2_cool 4.0, area-mean -5.1 C), but the Laurentide stays ~2 Mkm2 with its southmost ice at ~55 N and the new ice goes to Siberia and Alaska. The rest of the depth and the geography are this ticket's and PW-033's (docs/review/audit/PW-448-diagnosis.md).
 - 2026-10-20: pw440: with PW-440's cycle Earth is unchanged (min -43 m in 600 kyr, glacials ~30 m of extra ice against the 29 m an ending needs; one ending, one backstop); the 80 m swing needs this ticket's deeper builds.
 - 2026-10-19: pw030: the run's ice-albedo rule in the time zoom deepens it to -37 m in 150 kyr (-43 m in 500 kyr). Unforced Earth with dT -3 C reaches -60 m, -5 C -137 m in 150 kyr: the glacial needs ~-4.5 C, the feedbacks give ~-1.5 C at -40 m.

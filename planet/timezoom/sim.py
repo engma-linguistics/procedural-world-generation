@@ -397,7 +397,8 @@ class _Sim:
             # climate fields: a full climate every `refresh` steps, blended in between
             if s_no % self.refresh == 0:
                 surf, grounded = self.grounded_surface()
-                F.refresh(t_kyr, dTg, surf, grounded, H)
+                F.refresh(t_kyr, dTg, surf, grounded, H, self.forcing.co2)
+                self.forcing.veg_target = F.plants.dT_target
             F.blend((s_no % self.refresh) / self.refresh)
             self.prepare_surface(dTg)
             if s_no == 0:
@@ -440,4 +441,5 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                       "p_scale": s.p_scale, "f_snow": s.f_snow, "p_ann": 0.5 * (F["p_jul"] + F["p_jan"])},
             "anchor": s.anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(F.compute_s, 1),
+            "veg_s": round(F.plants.time_s, 1), "veg": F.plants.series,
             "substeps": s.nsub_total}

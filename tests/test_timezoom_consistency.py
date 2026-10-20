@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from planet import climate, timezoom as Z
+from planet import timezoom as Z, vegetation
 from planet.timezoom import params as P
 from planet.timezoom.geometry import geometry
 from planet.tectonics import earth
@@ -35,7 +35,9 @@ def cold_moment():
     for _ in range(6):
         e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))
         land = e > 0
-        c = climate.compute(g, e, dT, src["tilt"], np.where(land, ice0, 0.0))
+        v = src["veg"]  # (as the run: the climate with its plants' feedbacks)
+        c, _ = vegetation.coupled_climate(g, e, dT, src["tilt"], np.where(land, ice0, 0.0), nu0=v["nu0"],
+                                          co2=v["co2"], unlocked=v["unlocked"])
         sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
         ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice))
     e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))

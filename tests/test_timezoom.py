@@ -27,6 +27,35 @@ def cold_run(cold_src):
     return Z.simulate(cold_src, kyr=40, step=0.5, every=2.0)
 
 
+def test_glacial_cooling_turns_forest_to_tundra_and_cools_further(sim4):
+    """PW-450: plants grown to balance with the start, then on a climate 4 C colder, lose forest toward the
+    pole; the lying snow it no longer hides brightens the ground, which cools the land (the local
+    correction) and the planet (the global term, in dTg)."""
+    from planet import climate
+    from planet.timezoom.plants import Plants
+
+    src = Z.source_from_sim(sim4)
+    g, tilt = src["grid"], src["tilt"]
+    elev, H = np.asarray(src["elev"], float), np.maximum(np.asarray(src["ice"], float), 0.0)
+    grounded = (H > 1.0) & (elev > 0)
+    surf = np.where(grounded, elev + H, elev)
+    pl = Plants(g, src, Z.TZParams(), tilt, geometry(g)["area"])
+
+    def compute(dT):
+        return lambda veg: climate.compute(g, surf, src["dT"] + dT, tilt, veg=veg)
+
+    pl.step(0.0, compute(0.0)(None), surf, grounded, H, 0.0, compute(0.0))
+    tree0 = pl.tree.copy()
+    assert pl.series[-1]["F_wm2"] == 0.0  # (the start is the reference)
+    c = compute(-4.0)(pl.feedback(grounded))
+    t0 = c["temp"].copy()
+    c = pl.step(10.0, c, surf, grounded, H, -1.0, compute(-4.0))
+    lost = (surf > 0) & ~grounded & (np.abs(g.lat) > 40) & (tree0 - pl.tree > 0.2)
+    assert lost.sum() >= 5
+    assert (c["temp"] - t0)[lost].mean() < -0.1  # the snow it hid now lies open
+    assert pl.series[-1]["F_wm2"] < 0 and pl.dT_target < 0
+
+
 def test_insolation():
     """Global annual mean = S0/4; no tilt and a circular orbit: the poles get
     nothing; Earth today: 65N midsummer ~480-520 W/m2."""

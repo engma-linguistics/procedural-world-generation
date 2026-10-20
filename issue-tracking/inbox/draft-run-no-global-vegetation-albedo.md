@@ -1,0 +1,27 @@
+---
+title: "The run's global temperature has no vegetation albedo term (the time zoom has one since PW-450)"
+type: task
+status: needs-decision
+parent: null
+subsystem: climate
+effort: s
+impact: low
+found_by: pw450
+blocked_by: []
+relates: [PW-450, PW-453]
+refs: [planet/tectonics/earth.py, planet/timezoom/plants.py]
+---
+
+## Description
+In the run (`earth.update_climate`), the vegetation feeds back on the climate only locally, through
+climate.compute's veg: Budyko w, and albedo_warming at albedo_k 0.03 C per W/m2, capped at 2 C, "the
+air mixes it away". `earth.global_temperature` has no global term for it. Since PW-450, the time zoom
+adds one: the change in the planet's albedo since the start x veg_toa 0.4 x veg_lambda 0.8 C per W/m2.
+It counts from the start, so the two agree at a zoom's start. But a run's slow vegetation changes (land
+plants appearing, the plant groups' timeline, a continent drifting under the boreal belt) have no global
+albedo effect, while the time zoom's 10-kyr changes do.
+Options: (A) leave it. The run's dT is a drift, CO2 and ice random walk, calibrated as a whole, and
+vegetation changes there are slow and mixed into the drift. (B) Add the same term to
+`global_temperature`, counted against a slow average like its CO2 terms. That would also need the cold
+eras re-measured (PW-438's table). Lean: A, unless the plant groups' arrival shows a visible warm/cold
+step that the run ought to have.
