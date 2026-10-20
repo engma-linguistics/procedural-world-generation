@@ -15,7 +15,7 @@ keeps it), so tests can drive them without a socket.
                       seconds). cached=1 only looks: features is null when
                       nothing has been computed yet.
   POST /api/timezoom  {run, t, kyr?} -> {"job": id}: a glacial time zoom
-                      (timezoom.py) from the run's keyframe nearest t; the
+                      (timezoom/) from the run's keyframe nearest t; the
                       job's "run" is the new run's id when done. Shares the
                       job queue with zooms.
   POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished

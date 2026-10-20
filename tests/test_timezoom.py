@@ -1,11 +1,15 @@
-"""Glacial time zoom (planet/timezoom.py): bookkeeping and sanity, on the
+"""Glacial time zoom (planet/timezoom/): bookkeeping and sanity, on the
 session's level-4 simulation (fast)."""
 
 import json
 import numpy as np
 import pytest
 
-from planet import timeline as T, timezoom as Z
+from planet import orbit as O, timeline as T, timezoom as Z
+from planet.timezoom import params as P
+from planet.timezoom.forcing import orbit_k
+from planet.timezoom.geometry import geometry
+from planet.timezoom.ice import shelf_step
 
 NO_ORBIT = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
 
@@ -26,12 +30,12 @@ def cold_run(cold_src):
 def test_insolation():
     """Global annual mean = S0/4; no tilt and a circular orbit: the poles get
     nothing; Earth today: 65N midsummer ~480-520 W/m2."""
-    lat = Z.BAND_LAT
+    lat = O.BAND_LAT
     w = np.cos(np.radians(lat))
-    q = Z.insolation(23.44, 0.0167, 283.0)
-    assert abs((q.mean(1) * w).sum() / w.sum() - Z.S0 / 4 * (1 / np.sqrt(1 - 0.0167**2))) < 2
-    assert Z.insolation(0.0, 0.0, 0.0, np.array([90.0, -90.0])).max() < 1e-6
-    assert 450 < Z.insolation(23.44, 0.0167, 283.0, np.array([65.0]))[0, 2:4].max() < 530
+    q = O.insolation(23.44, 0.0167, 283.0)
+    assert abs((q.mean(1) * w).sum() / w.sum() - O.S0 / 4 * (1 / np.sqrt(1 - 0.0167**2))) < 2
+    assert O.insolation(0.0, 0.0, 0.0, np.array([90.0, -90.0])).max() < 1e-6
+    assert 450 < O.insolation(23.44, 0.0167, 283.0, np.array([65.0]))[0, 2:4].max() < 530
 
 
 def test_ice_and_sea_level_bookkeeping(cold_src, cold_run):
@@ -127,7 +131,7 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     g = cold_src["grid"]
     p = Z.TZParams()
     H0 = np.maximum(np.asarray(cold_src["ice"], float), 0.0)
-    flt = 1 - Z.RHO_I / Z.RHO_W
+    flt = 1 - P.RHO_I / P.RHO_W
     H = np.where(s["bed"] + s["H"] > s["sl"] + flt * s["H"], s["H"], 0.0)  # (grounded: a shelf floats, PW-367)
     want = cold_src["elev"] + ice_load(g, H0, p.iso_ratio, p.flex_km) - ice_load(g, H, p.iso_ratio, p.flex_km)
     grew = H > H0 + 500
@@ -175,11 +179,11 @@ def test_orbit_response_mixes_each_surface_own(sim4):
     d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
     land = d < 6.0  # an island ~650 km across
     bright = np.where(land, 1.0, 0.0)
-    k = Z.orbit_k(g, land, bright, p)
+    k = orbit_k(g, land, bright, p)
     assert k[centre] < 0.35 * p.insol_k, k[centre] / p.insol_k
     far = d > 60
     assert np.allclose(k[far], p.insol_k * p.insol_sea)
-    bare = Z.orbit_k(g, land, np.zeros(g.n), p)
+    bare = orbit_k(g, land, np.zeros(g.n), p)
     assert np.allclose(bare[land], p.insol_k)
 
 
@@ -234,9 +238,9 @@ def test_shelf_buttresses_marine_front(sim4):
     assert st["H"][c] > bare["state"]["H"][c] + 100, (st["H"][c], bare["state"]["H"][c])
     shelf = nb(c)[st["H"][nb(c)] > 0]
     assert len(shelf) and (cold["data"]["ice"][-1][shelf] == 0).all()  # (floating: not grounded ice)
-    assert (st["H"][shelf] * Z.RHO_I < (st["sl"] - st["bed"][shelf]) * Z.RHO_W).all()
+    assert (st["H"][shelf] * P.RHO_I < (st["sl"] - st["bed"][shelf]) * P.RHO_W).all()
     # the shelf holds no sea water: the sea level is the grounded ice's alone
-    vaf = lambda H, bed, sl: (np.maximum(H - np.maximum(sl - bed, 0) * Z.RHO_W / Z.RHO_I, 0) * Z.geometry(g)["area"]).sum()
+    vaf = lambda H, bed, sl: (np.maximum(H - np.maximum(sl - bed, 0) * P.RHO_W / P.RHO_I, 0) * geometry(g)["area"]).sum()
     assert vaf(np.where(np.isin(np.arange(g.n), shelf), 0.0, st["H"]), st["bed"], st["sl"]) == vaf(st["H"], st["bed"], st["sl"])
     warm, c2 = run(lambda la: abs(la) < 25, 0.0)
     warm0, _ = run(lambda la: abs(la) < 25, 0.0, **no_shelf)
@@ -249,11 +253,11 @@ def test_shelf_spreads_and_melts():
     """An ice shelf fed at q thins toward the steady thickness its spreading
     (c h^4) balances, whatever it starts at, and melts away where the sea
     under it is warm; the ice that leaves is accounted for."""
-    c = 1e-16 * (Z.RHO_I * 9.81 * (1 - Z.RHO_I / Z.RHO_W) / 4) ** 3 * 0.2 ** 3
+    c = 1e-16 * (P.RHO_I * 9.81 * (1 - P.RHO_I / P.RHO_W) / 4) ** 3 * 0.2 ** 3
     h0 = np.array([0.0, 2000.0, 300.0, 300.0])
     q = np.array([1.0, 1.0, 0.0, 0.0])
     melt = np.array([0.0, 0.0, 0.0, 10.0])
-    h, out, gone = Z.shelf_step(h0, q, melt, c, 20000.0)
+    h, out, gone = shelf_step(h0, q, melt, c, 20000.0)
     steady = (1.0 / c) ** 0.25
     assert abs(h[0] - steady) < 0.05 * steady and abs(h[1] - steady) < 0.05 * steady
     assert h[2] < 300.0 and h[3] == 0.0

@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 from planet import climate, timezoom as Z
+from planet.timezoom import params as P
+from planet.timezoom.geometry import geometry
 from planet.tectonics import earth
 from planet.tectonics.isostasy import ice_load, land_view
 
@@ -16,7 +18,7 @@ from helpers import run_sim
 pytestmark = pytest.mark.slow
 UNFORCED = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean", co2_cool=0.0,
                 ice_albedo=0.0)
-FLT = 1 - Z.RHO_I / Z.RHO_W
+FLT = 1 - P.RHO_I / P.RHO_W
 
 
 @pytest.fixture(scope="module")
@@ -50,13 +52,13 @@ def test_ice_speeds_plausible(cold_moment):
     """Shallow-ice speeds (D |grad s| / H, the steepest way down) under grounded sheets: interiors
     metres to tens of m/yr, outlets up to a few km/yr."""
     src, r = cold_moment
-    g, G, p, st = src["grid"], Z.geometry(src["grid"]), Z.TZParams(), r["state"]
+    g, G, p, st = src["grid"], geometry(src["grid"]), Z.TZParams(), r["state"]
     H, bed, sl = st["H"], st["bed"], st["sl"]
     s = np.maximum(bed + H, sl + FLT * H)
     e_src = np.repeat(np.arange(g.n), np.diff(g.nbr_off))
     grad = np.zeros(g.n)
     np.maximum.at(grad, e_src, np.maximum(s[e_src] - s[g.nbr_idx], 0) / G["dist"])
-    gamma = 2 * p.flow_a * p.enhancement * (Z.RHO_I * 9.81) ** 3 / 5
+    gamma = 2 * p.flow_a * p.enhancement * (P.RHO_I * 9.81) ** 3 / 5
     D = np.minimum(gamma * H**5 * grad**2, p.d_cap)
     sheet = (H > 100) & (bed + H > sl + FLT * H)
     u = (D * grad / np.maximum(H, 1.0))[sheet]

@@ -649,7 +649,7 @@ def _run_item(p: Path) -> dict:
     m = r["meta"]
     item = {"dir": p.parent.name, "id": r.get("id", p.parent.name), "name": r["name"],
             "seed": m["seed"], "level": m["level"], "myr": m["myr"], "created": m["created"]}
-    if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom.py): time in kyr
+    if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom/): time in kyr
         item.update(kind="timezoom", source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
     return item
 

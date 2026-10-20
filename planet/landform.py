@@ -162,7 +162,7 @@ def near_volcanoes(grid, rows, keep):
     c = grid.locate(xyz(np.radians(a[:, 0]), np.radians(a[:, 1])))
     np.minimum.at(age, c, a[:, 3])
     deg = np.diff(grid.nbr_off)
-    src = np.repeat(np.arange(grid.n), deg)
+    src = grid.nbr_src
     np.minimum.at(age, grid.nbr_idx, age[src])
     return age
 
@@ -180,7 +180,7 @@ def regional_dip(grid, elev):
     over the cell spacing), the tilt flat-lying strata get from it."""
     h = np.maximum(elev, 0.0)
     deg = np.diff(grid.nbr_off)
-    src = np.repeat(np.arange(grid.n), deg)
+    src = grid.nbr_src
     drop = np.maximum(h[src] - h[grid.nbr_idx], 0)
     mean = np.bincount(src, drop, grid.n) / deg
     return np.degrees(np.arctan(mean / (grid.spacing * R_KM * 1000.0)))
@@ -199,7 +199,7 @@ def smooth(grid, cls, passes=1):
     classes (LINES) and the sea neither change nor vote."""
     nk = len(CLASSES)
     areal = (cls > SEA) & ~np.isin(cls, LINES)
-    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    src = grid.nbr_src
     for _ in range(passes):
         votes = np.zeros((grid.n, nk))
         nb = grid.nbr_idx
@@ -262,7 +262,7 @@ def classify(grid, t, elev, cont, rock, cover, mix, rec, lith, crust_age, precip
     claim(cont & stretched & (rift_age <= RIFT_MYR), RIFT, rift_age)
     coast = land & (np.add.reduceat((~land)[grid.nbr_idx], grid.nbr_off[:-1]) > 0)
     plate = np.zeros(n, np.int64) if plate is None else np.asarray(plate)
-    src = np.repeat(np.arange(n), np.diff(grid.nbr_off))
+    src = grid.nbr_src
     passive = np.add.reduceat(~land[grid.nbr_idx] & (plate[grid.nbr_idx] == plate[src]), grid.nbr_off[:-1]) > 0
     d_rift = coast_km(grid, land, coast & stretched & passive)
     w = 0.75 * grid.spacing * R_KM

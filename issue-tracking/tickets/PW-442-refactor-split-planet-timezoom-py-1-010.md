@@ -20,3 +20,4 @@ Proposed split: params, orbit/insolation, shelf, sources, the stepping loop, gla
 
 ## Updates
 - 2026-10-20: Created.
+- 2026-10-20: Phase 1 done on worktree-agent-ac03cc792f682e8a6: planet/timezoom/ package, planet/orbit.py, Grid.nbr_src/edge_dir; phase 2 (shared ice helpers, after PW-438) in inbox draft-pw442-phase2-shared-ice-helpers.md.

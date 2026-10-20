@@ -96,7 +96,7 @@ level 6, `generate` to level 5. Rough `simulate` times on a laptop (they vary
 with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~20-35 min
 per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
-## Glacial time zoom (`planet/timezoom.py`)
+## Glacial time zoom (`planet/timezoom/`)
 
 A side simulation at 500-year steps: geology frozen at one moment
 of a run, ice sheets driven by orbital (Milankovitch) cycles, with a

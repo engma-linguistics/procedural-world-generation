@@ -101,7 +101,7 @@ def cycle_dq(tilt: float) -> np.ndarray:
     the one before (the ground lags the sun). Cached per tilt."""
     key = round(float(tilt), 3)
     if key not in _CYCLE:
-        from .timezoom import insolation
+        from .orbit import insolation
         ref = insolation(tilt, 0.0, 0.0)
         out = []
         for d_obl in (-OBL_AMP / np.sqrt(2), OBL_AMP / np.sqrt(2)):
@@ -126,7 +126,7 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
     (0..1) of an insolation change the surface feels (None: from the ice
     itself, ICE_ABSORB on thick ice). Returns (smb, t_warm on the surface,
     at the mean orbit)."""
-    from .timezoom_kernels import climate_step
+    from .timezoom.kernels import climate_step
     lat = np.asarray(lat, float)
     n = len(lat)
     land = np.asarray(land, bool)
@@ -135,7 +135,7 @@ def balance(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_glob=None, til
                                                                         cover, dt_wet)
     if tilt is None:
         return smb, t_w
-    from .timezoom import BAND_DEG, BAND_LAT
+    from .orbit import BAND_DEG, BAND_LAT
     band = np.clip(((lat + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
     a = 1 - f_alb * (1 - ICE_ABSORB) if absorb is None else np.broadcast_to(np.asarray(absorb, float), (n,))
     k_orb = np.where(land, INSOL_K, INSOL_K * INSOL_SEA) * a
@@ -151,7 +151,7 @@ def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):
     """climate_step at the mean orbit: ((smb, t_ann, t_warm, t_cold), its
     arguments, the rule's constants, (f_alb, p_scale, f_sum))."""
     from . import climate
-    from .timezoom_kernels import climate_step
+    from .timezoom.kernels import climate_step
     n = len(lat)
     h = np.broadcast_to(np.asarray(h, float), (n,)).copy()
     t_warm, t_cold = np.asarray(t_warm, float), np.asarray(t_cold, float)

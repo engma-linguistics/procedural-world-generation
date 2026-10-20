@@ -138,7 +138,7 @@ from numba import njit, prange
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "earth"
 CACHE_VERSION = 5  # (5: the true bed under the ice, shelves sea; PW-354)
-RHO_I, RHO_W = 917.0, 1028.0  # ice, sea water (kg/m3; as timezoom.py)
+RHO_I, RHO_W = 917.0, 1028.0  # ice, sea water (kg/m3; as planet/timezoom/)
 
 ERDDAP = [
     "https://upwell.pfeg.noaa.gov/erddap/griddap/",
@@ -358,7 +358,7 @@ def _build(grid) -> dict:
     # covers the floating shelves (Ross, Ronne-Filchner...), whose "bedrock"
     # is the sea floor beneath them; ice is afloat where its surface stands
     # no higher than flotation's freeboard, (1 - rho_i / rho_w) x its
-    # thickness (as the time zoom's sheets, timezoom.py), and those samples
+    # thickness (as the time zoom's sheets, planet/timezoom/), and those samples
     # are sea of the floor's depth (the climate makes its own sea ice)
     afloat = (s > 0) & (b < 0) & (s <= (1 - RHO_I / RHO_W) * (s - b))
     land = (s > 0) & ~afloat

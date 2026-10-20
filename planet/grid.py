@@ -70,6 +70,19 @@ class Grid:
     def pentagons(self) -> np.ndarray:
         return _frozen(np.array([i for i, c in enumerate(self.cell_corners) if len(c) == 5]))
 
+    @cached_property
+    def nbr_src(self) -> np.ndarray:
+        """The cell each directed edge (CSR order of nbr_idx) leaves."""
+        return _frozen(np.repeat(np.arange(self.n), np.diff(self.nbr_off)))
+
+    @cached_property
+    def edge_dir(self) -> np.ndarray:
+        """Unit tangent at the source cell toward the neighbour, per directed edge (CSR order)."""
+        p, src = self.centers, self.nbr_src
+        d = p[self.nbr_idx] - p[src]
+        d -= (d * p[src]).sum(1, keepdims=True) * p[src]
+        return _frozen(d / np.linalg.norm(d, axis=1, keepdims=True))
+
     @property
     def raster(self) -> np.ndarray:
         """Coarse lat/lon -> nearest cell lookup, used to seed point location."""

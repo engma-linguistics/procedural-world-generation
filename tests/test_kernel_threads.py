@@ -7,7 +7,9 @@ import numpy as np
 import pytest
 from numba import njit
 
-from planet import climate as C, timezoom as Z, timezoom_kernels as K
+from planet import climate as C, orbit as O, timezoom as Z
+from planet.timezoom import kernels as K, params as P
+from planet.timezoom.geometry import geometry
 from planet.grid import build_grid
 
 THREADS = sorted({1, 2, numba.config.NUMBA_NUM_THREADS})
@@ -161,8 +163,8 @@ def test_climate_step(g5):
     land = rng.random(n) < 0.4
     t_warm = 25 - 0.5 * np.abs(lat) + rng.normal(0, 3, n)
     t_cold = t_warm - 5 - 0.4 * np.abs(lat)
-    band = np.clip(((lat + 90) / Z.BAND_DEG).astype(np.int64), 0, len(Z.BAND_LAT) - 1)
-    dq = rng.normal(0, 20, (len(Z.BAND_LAT), 12))
+    band = np.clip(((lat + 90) / O.BAND_DEG).astype(np.int64), 0, len(O.BAND_LAT) - 1)
+    dq = rng.normal(0, 20, (len(O.BAND_LAT), 12))
     h = np.where(land & (np.abs(lat) > 55), rng.random(n) * 2000, 0.0)
     ins = (land, lat >= 0, 0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold), rng.random(n) * 1500,
            rng.random(n) * 1500, -0.0065 * h, rng.normal(0, 1, n), rng.random(n) * 0.04, band, dq,
@@ -181,7 +183,7 @@ def test_climate_step(g5):
 def test_sia_flow(g5):
     """A few ice caps on rough ground flowing for 20 kyr: the parallel
     gather moves the same ice as the serial scatter did, to the bit."""
-    G = Z.geometry(g5)
+    G = geometry(g5)
     rng = np.random.default_rng(3)
     n = g5.n
     bed = 600 * np.sin(5 * g5.centers[:, 0]) * np.cos(4 * g5.centers[:, 1]) + rng.normal(0, 150, n)
@@ -190,9 +192,9 @@ def test_sia_flow(g5):
         d = np.arccos(np.clip(g5.centers @ g5.centers[c], -1, 1))
         H += np.maximum(0, 2500 * (1 - (d / 0.25) ** 2))
     H[rng.random(n) < 0.02] += 30  # (and some lone films, cells next to nothing)
-    flt = 1 - Z.RHO_I / Z.RHO_W
+    flt = 1 - P.RHO_I / P.RHO_W
     p = Z.TZParams()
-    gamma = 2 * p.flow_a * p.enhancement * (Z.RHO_I * 9.81) ** 3 / 5
+    gamma = 2 * p.flow_a * p.enhancement * (P.RHO_I * 9.81) ** 3 / 5
     active = np.flatnonzero(K.dilate(H > 0, g5.nbr_off, g5.nbr_idx, 2))
     hold = np.where(rng.random(n) < 0.3, 0.8, 0.0)  # (some grounding lines buttressed, PW-367)
     rate = np.zeros(n)  # (no surface mass balance: the ice is conserved)

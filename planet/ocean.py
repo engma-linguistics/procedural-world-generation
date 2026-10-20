@@ -111,15 +111,8 @@ def cell_area_km2(grid: Grid) -> np.ndarray:
 
 def _csr_dir(grid: Grid) -> np.ndarray:
     """Unit tangent direction from each cell to each neighbour, in the CSR
-    order of grid.nbr_idx (cached)."""
-    G = C._geom(grid)
-    if "csr_dir" not in G:
-        p = grid.centers
-        src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
-        d = p[grid.nbr_idx] - p[src]
-        d -= (d * p[src]).sum(1, keepdims=True) * p[src]
-        G["csr_dir"] = d / np.linalg.norm(d, axis=1, keepdims=True)
-    return G["csr_dir"]
+    order of grid.nbr_idx."""
+    return grid.edge_dir
 
 
 def _spread(grid: Grid, f: np.ndarray, sea: np.ndarray, km: float) -> np.ndarray:
@@ -331,7 +324,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # against the Labrador Current): a step costs exp(-moc_follow x the
     # current's speed its way / cur_ref) (at most e^2 less or more).
     cdir = _csr_dir(grid)
-    src = np.repeat(np.arange(n), np.diff(grid.nbr_off))
+    src = grid.nbr_src
     along = (cur[src] * cdir).sum(1) / tune["cur_ref"]
     cost = np.exp(-np.clip(tune["moc_follow"] * along, -2.0, 2.0))
     ok = sea & ~chan & (True if lid is None else ~lid)

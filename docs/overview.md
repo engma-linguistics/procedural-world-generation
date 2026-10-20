@@ -492,7 +492,9 @@ More zoom images, one per landform class: `docs/review/landforms/` and `docs/rev
 
 **Known limits:** a small coarse land cell among sea cells (a forearc cell on a shelf beside a trench) stands as a flat-topped mesa with ~1.5 km cliffs, its mean kept while its sea pixels take the trench's depth (PW-362; the arc's cones themselves are clean); no zoom below ~0.5 km/px or nested zooms (PW-071, PW-129); no microclimate (PW-101); some perched rivers (~39 river pixels per seed on those zooms, 30 of them on the arc zoom; mostly side tributaries graded to the foot of a reach's falls, PW-124); ~10 undesigned drops ≥ 100 m left on the 8 showcase zooms of 592f2a (mean of 5 seeds, 6–14 by seed; ~39 before PW-298, docs/review/zoom-polish/pw298.md, batch4.md, batch5.md, batch6.md); side-by-side zooms don't join (seams ~10× the normal pixel step, docs/review/zoom-polish/pw125.md); dune seams (PW-177); the zoom's forest–savanna edges follow the coarse rain's blobs and streaks (PW-211, PW-019), sharper than the world's but no more extensive; no meanders, terraces or fans yet (PW-094).
 
-### 2.14 Glacial time zoom (`timezoom.py`, `timezoom_kernels.py`)
+### 2.14 Glacial time zoom (`planet/timezoom/`, `planet/orbit.py`)
+
+**Code layout:** `planet/timezoom/` is a package: `params` (knobs), `sources`, `geometry`, `forcing` (orbit anomaly, CO2 and ice-albedo feedbacks: the one place per-step forcing is assembled), `fields` (full climates and their blending), `ice` (shelves, calving), `kernels` (numba), `sim` (the stepping loop as named steps), `events`, `output` (save, report), `run` (CLI entry). Orbit and insolation maths live in `planet/orbit.py`, shared with `icemass`.
 
 **What it does:** a separate simulation. Geology is frozen at one moment of a run (or today's Earth), and ice sheets evolve for 1 Myr (CLI default; the viewer offers 100, 300 or 1000 kyr, default 300) in 500-year steps, keeping a frame every 2 kyr. It never feeds back into the run, but any frame can be made into a finished world (§2.11, `planet finish`).
 
@@ -892,7 +894,7 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | `planet/zoom_landforms.py`, `zoom_volcanoes.py` | landform synthesis; volcano edifices |
 | `planet/zoom_terrain.py`, `zoom_vegetation.py` | zoom terrain indices (sun on slopes, wetness, river distance); per-pixel vegetation |
 | `planet/satellite.py` | the true-colour satellite view of worlds and zooms |
-| `planet/timezoom.py`, `timezoom_kernels.py` | glacial time zoom |
+| `planet/timezoom/` (params, sources, geometry, forcing, fields, ice, kernels, sim, events, output, run), `planet/orbit.py` | glacial time zoom; orbit and insolation (shared with `icemass`) |
 | `planet/store.py`, `provenance.py`, `images.py` | paths, ids, layers, checkpoints; code version; PNG writer |
 | `planet/server.py`, `api.py` | viewer server and job API |
 | `planet/parallel.py` | worker-process pools with thread caps (highlights zooms, server jobs, scorecard, multi-seed runs); thread defaults and numba's threading layer |
