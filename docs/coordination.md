@@ -198,3 +198,9 @@ No agents running; owner near the weekly limit. Owner decisions tonight: PW-030 
 **Superseded:** the "Zoom lane order update" (PW-416 before PW-404) and "Run lane order update" lines above; the order here is the one to follow.
 
 **Cleanup item:** `board.py check` warns of 28 refs in open tickets to runs/worlds/zooms that no longer exist (`board.py check --refs` lists them); prune or update them.
+
+## Usage rules (owner, 2026-10-19; supersede the 150-call handoff above)
+- Models: Haiku for mechanical work (stale refs, docs), Sonnet for moderately thinky work, Opus for the hard ice-age physics (PW-366, PW-030).
+- Agents hand off at ~100 tool calls. At most one physics agent plus one cheap job at a time.
+- Each agent gets its done-when criteria and a stop rule of ~5 tuning attempts. It starts long simulations in the background and reads only the summary.
+- 2026-10-19: started PW-366 (Opus, option A: 75 kPa, cell-mean rise, reconciled melt and calving) and the stale-ref cleanup (Haiku).
