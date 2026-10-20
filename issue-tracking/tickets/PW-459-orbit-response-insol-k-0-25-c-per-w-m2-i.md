@@ -1,7 +1,8 @@
 ---
+id: PW-459
 title: "Orbit response insol_k 0.25 C per W/m2 is ~3x the seasonal cycle's 0.08-0.09: precession makes glacial heartbeats"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: timezoom
 effort: l
@@ -10,6 +11,8 @@ found_by: pw033
 blocked_by: []
 relates: [PW-033, PW-435, PW-440, PW-398, PW-034, PW-114]
 refs: [planet/timezoom/params.py, planet/timezoom/forcing.py, planet/icemass.py, docs/review/audit/PW-033-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -37,3 +40,7 @@ Options:
   which deepens glacials in the other direction.
 - (b) Keep 0.25.
 - [ ] decide
+
+## Updates
+- 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20 (owner delegates physics): take the agent's lean. PW-460 (resolution-aware sub-cell margin) and PW-459 (insol_k from each cell's own seasonal response) are done together, in the run and the zoom, so the unforced start stays consistent; then the 10-seed check (~70% bar). Interglacial-ice bar corrected: real Earth today is ~10% of land (Antarctica + Greenland ~15 Mkm2), so ~9-12% is acceptable; the old 8-9% was the model's own value, not a target.
+- 2026-10-20: Created from inbox draft draft-orbit-response-from-seasons.md (found by pw033).

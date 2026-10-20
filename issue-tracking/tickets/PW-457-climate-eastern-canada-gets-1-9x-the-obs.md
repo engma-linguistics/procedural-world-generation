@@ -1,4 +1,5 @@
 ---
+id: PW-457
 title: "Climate: eastern Canada gets 1.9x the observed summer rain and 0.5x the winter's, with summers +5.5 C (Labrador snowfall 236 vs 408 mm)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw033
 blocked_by: []
 relates: [PW-033]
 refs: [planet/climate.py, docs/review/audit/PW-033-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -24,3 +27,6 @@ monsoon-like: a hot continental summer drawing in moist air, and too little wint
 is not the ocean: the Labrador Sea is close to the observed temperature.
 - [ ] Labrador's summer : winter precipitation ratio < ~2.5 and its July within ~3 C of the observed, with
   no loss on the Köppen scorecard
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-east-canada-summer-rain-winter-dry.md (found by pw033).

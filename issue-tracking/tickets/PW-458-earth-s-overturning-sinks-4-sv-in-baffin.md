@@ -1,5 +1,6 @@
 ---
-title: "Earth's overturning sinks 4 Sv in Baffin Bay; the Norwegian Sea freezes and Fennoscandia's January is 18 C too cold"
+id: PW-458
+title: Earth's overturning sinks 4 Sv in Baffin Bay; the Norwegian Sea freezes and Fennoscandia's January is 18 C too cold
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw033
 blocked_by: []
 relates: [PW-033, PW-018]
 refs: [planet/ocean.py, planet/climate.py, docs/review/audit/PW-033-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -34,3 +37,6 @@ leads and ice export?) and why the surface currents carry no NAD past ~55 N towa
 it against generated planets' overturning too.
 - [ ] Earth's NH sinking in the Nordic, Labrador and Irminger seas, ~10+ Sv; the Norwegian Sea ice-free in
   winter; Fennoscandia's January within ~5 C of the observed
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-north-atlantic-drift-missing.md (found by pw033).

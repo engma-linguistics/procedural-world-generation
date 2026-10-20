@@ -1,7 +1,8 @@
 ---
+id: PW-460
 title: "Margin cells melt as their outermost 10 km (edge_h 408 m vs the cell's ~900 m mean): sub-cell margin in run and time zoom together"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: timezoom
 effort: l
@@ -10,6 +11,8 @@ found_by: pw033
 blocked_by: []
 relates: [PW-033, PW-435, PW-115, PW-422, PW-453]
 refs: [planet/timezoom/sim.py, planet/icemass.py, planet/tectonics/earth.py, docs/review/audit/PW-033-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -39,3 +42,7 @@ Options:
 Pair it with the orbit-response decision (`draft-orbit-response-from-seasons.md`): both lift the
 interglacial ice, so they should be balanced together.
 - [ ] decide
+
+## Updates
+- 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20 (owner delegates physics): take the agent's lean. PW-460 (resolution-aware sub-cell margin) and PW-459 (insol_k from each cell's own seasonal response) are done together, in the run and the zoom, so the unforced start stays consistent; then the 10-seed check (~70% bar). Interglacial-ice bar corrected: real Earth today is ~10% of land (Antarctica + Greenland ~15 Mkm2), so ~9-12% is acceptable; the old 8-9% was the model's own value, not a target.
+- 2026-10-20: Created from inbox draft draft-subcell-margin-run-and-zoom.md (found by pw033).

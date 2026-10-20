@@ -1,4 +1,5 @@
 ---
+id: PW-456
 title: "Time zoom: the cycle's summer-sun metric (months 3-4 raw) is half a month after the mass balance's warm month (2-3); corr 0.57"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw033
 blocked_by: []
 relates: [PW-440, PW-448]
 refs: [planet/timezoom/cycle.py, planet/timezoom/events.py, planet/timezoom/sim.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -24,3 +27,6 @@ section 2). The cycle's building and ending decisions key on the late metric.
 What to try: use the same lagged warm-month (or melt-season PDD-weighted) sun in cycle.py, events.py and
 the frames. Re-check the cycle's endings and backstops on Earth.
 - [ ] one summer-sun metric shared by the kernel and the cycle
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-cycle-summer-sun-month-offset.md (found by pw033).
