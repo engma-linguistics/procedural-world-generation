@@ -222,3 +222,6 @@ No agents running. Server restarted on the latest main.
 - PW-439: the sheets' carried air may over-protect big sheets' summer margins.
 
 **Next, waiting for the owner's go:** PW-440 (time zoom, Opus) and PW-438 (run lane, cold-era depth), probably together, since both are the same CO2/ice-albedo loop.
+
+## Acceptance rule (owner, 2026-10-20)
+Multi-seed criteria pass when ~70% of seeds pass, not all; outlier worlds are allowed. Use 6-10 seeds when 4 is too few to judge. "Not worse" means the share of seeds passing doesn't drop.
