@@ -1,0 +1,344 @@
+diff --git a/planet/icemass.py b/planet/icemass.py
+index 5daa834..1e3dc72 100644
+--- a/planet/icemass.py
++++ b/planet/icemass.py
+@@ -85,6 +85,81 @@ def sheet_cover(grid, ice):
+     return np.full(grid.n, LOCAL)
+ 
+ 
++# The land ice's whiteness, as a global forcing (the run's global temperature, earth.global_temperature, and
++# the time zoom's, timezoom.forcing; PW-449). A cell of land ice reflects ALBEDO_DROP more of the sunshine it
++# gets than the bare ground under it would, but only while that ground would be bare: in the months the bare
++# ground would lie under snow anyway it is as white (its snow's brightness is the climate's own snow-albedo
++# feedback, inside the sensitivity). So each iced cell counts by the sunshine its latitude gets in the bare
++# ground's snow-free months (snowfree_sun), and the climate's sensitivity (C per W/m2) turns the lost sunshine
++# into a temperature. Ice spreading toward the equator gains per km2 (more sun, longer snow-free summers), and
++# the levelling-off comes from the climate, not the area: the colder the planet, the shorter the bare ground's
++# snow-free season, so a cold era's extra ice whitens less that wasn't white already. (Before PW-449: a tanh in
++# the iced area to 3 C, 1.5 C per 3% of the planet, which spent half its cap on today's ice.)
++ALBEDO_DROP = 0.4  # planetary albedo rise where land ice replaces snow-free ground: the surface's ~0.6 (ice
++# ~0.8, land ~0.2), ~2/3 of it at the top of the atmosphere (Köhler et al. 2010: the LGM's ~25 Mkm2 of extra
++# land ice, -3.2 W/m2, on ~7 W/m2 of snow-free sunshine)
++SNOW_RAMP = 5.0  # C: a month's bare ground goes from snow-covered to bare over this span of its mean air
++# temperature, centred on 0 C
++EARTH_ICE_SUN = 3.6  # W/m2: snow-free sunshine on the bare ground under Earth's land ice today (Antarctica,
++# Greenland, 2.8% of the surface; L6, dT = 0, bare_ground), planet mean; the climate model's dT = 0
++# is Earth's climate with that ice
++_SUN = {}
++
++
++def monthly_sun(lat, tilt: float) -> np.ndarray:
++    """(n, 12) daily-mean sunshine at the top of the atmosphere (W/m2) at each latitude in 12 equal months from
++    the March equinox, for a circular orbit."""
++    lat = np.asarray(lat, float)
++    key = (lat.size, float(tilt), hash(lat.tobytes()))
++    if key not in _SUN:
++        from .orbit import insolation
++        if len(_SUN) > 8:
++            _SUN.clear()
++        _SUN[key] = insolation(float(tilt), 0.0, 0.0, lat)
++    return _SUN[key]
++
++
++def snowfree_sun(lat, tilt: float, t_warm, t_cold) -> np.ndarray:
++    """Per cell, the annual-mean sunshine (W/m2) falling in the months its bare ground would be free of snow:
++    each month's air a sine between the coldest and warmest month's (t_warm, t_cold, C, of the bare ground),
++    warmest in mid-July (north) or January (south), bare in proportion to it over SNOW_RAMP around 0 C."""
++    lat = np.asarray(lat, float)
++    q = monthly_sun(lat, tilt)
++    k = np.arange(12)[None, :] + 0.5
++    peak = np.where(lat >= 0, 3.9, 9.9)[:, None]  # months after the March equinox
++    tw, tc = np.asarray(t_warm, float)[:, None], np.asarray(t_cold, float)[:, None]
++    t = 0.5 * (tw + tc) + 0.5 * (tw - tc) * np.cos(2 * np.pi * (k - peak) / 12)
++    return (q * np.clip(t / SNOW_RAMP + 0.5, 0.0, 1.0)).mean(axis=1)
++
++
++def sun_on_ice(lat, iced, tilt: float, t_warm, t_cold, area=None) -> float:
++    """The snow-free sunshine (snowfree_sun) on the bare ground under the iced cells, W/m2 as a mean over the
++    whole planet. t_warm, t_cold: the bare ground's (at the ice's bed), per cell; area: per cell (None: equal
++    cells)."""
++    on = np.asarray(iced, bool)
++    a = np.ones(on.size) if area is None else np.asarray(area, float)
++    if not on.any():
++        return 0.0
++    s = snowfree_sun(np.asarray(lat)[on], tilt, np.asarray(t_warm)[on], np.asarray(t_cold)[on])
++    return float((s * a[on]).sum() / a.sum())
++
++
++def bare_ground(t_warm, t_cold, air):
++    """The bare ground's warmest and coldest month without the sheets' own cold air (air: air_mass of the ice
++    the climate had; it damps the summer of the air over and beside a sheet by SUMMER_DAMP x it, PW-336), i.e.
++    the ground the ice albedo is counted against: no sheet, no sheet's air. (Undone locally: the summer is
++    t_mean + half, damped by D x half_l, so half_l = (t_warm - t_cold) / (2 - D).)"""
++    d = SUMMER_DAMP * np.asarray(air, float)
++    tw, tc = np.asarray(t_warm, float), np.asarray(t_cold, float)
++    return tw + d * np.maximum(tw - tc, 0.0) / (2.0 - d), tc
++
++
++def albedo_cooling(sensitivity: float, sun: float) -> float:
++    """C of global cooling by land ice over bare ground that would get sun W/m2 of snow-free sunshine
++    (sun_on_ice), at a climate sensitivity of this many C per W/m2."""
++    return sensitivity * ALBEDO_DROP * sun
++
++
+ # The ice-age cycle a run's (and a zoom's) ice is the average over: precession at four phases x obliquity
+ # at +-OBL_AMP/sqrt(2) (the spread of a sine), eccentricity ECC (the rms of the time zoom's), each month's
+ # insolation change against the mean orbit times INSOL_K (C per W/m2; the time zoom's insol_k, less over
+diff --git a/planet/tectonics/earth.py b/planet/tectonics/earth.py
+index 5fe9d2a..a0ce152 100644
+--- a/planet/tectonics/earth.py
++++ b/planet/tectonics/earth.py
+@@ -22,7 +22,6 @@ from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, VALLE
+ 
+ SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward +-this (PW-293: was 250, which
+ # shaped the signal; at 400 a Cretaceous-like +250 m passes at +222)
+-EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
+ WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
+ # runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
+ WEATHER_CO2 = 0.4  # silicate weathering ~ pCO2^this (GEOCARB's f(CO2) for vascular plants ~0.4, without 0.5)
+@@ -129,15 +128,13 @@ def global_temperature(sim, growth, newc, rng):
+     # on the continents (one reason the young Earth was mostly sea).
+     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
+     sim.sea_level = sim.sea_ice + sim.sea_tect
+-    ice_frac = (sim.ice > 0).mean()
+-    # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
+-    # cloudier and dimmer at high latitude, and the snow it would brighten is often white already)
+-    def albedo(f):
+-        return p.ice_albedo_max * np.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
+-
+-    # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
+-    # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
+-    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX) - (albedo(ice_frac) - albedo(EARTH_ICE))
++    # The ice's whiteness cools the planet by the sunshine it reflects while the bare ground under it would be
++    # snow-free (icemass.albedo_cooling, PW-449: by the sun where it sits and the bare ground's climate there,
++    # sim.ground, from the last climate update), counted from Earth's today (EARTH_ICE_SUN: the climate model's
++    # dT = 0 is Earth's climate with its ice; an ice-free planet is ~1 C warmer)
++    sun = 0.0 if sim.ground is None else icemass.sun_on_ice(sim.grid.lat, sim.ice > 0, p.tilt, *sim.ground)
++    albedo = icemass.albedo_cooling(p.ice_albedo, sun - icemass.EARTH_ICE_SUN)
++    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX) - albedo
+     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
+ 
+ 
+@@ -168,6 +165,8 @@ def update_climate(sim, e):
+     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
+     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
+     sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink)
++    # the bare ground's warmest and coldest month without the sheets' air (the ice albedo's snow season)
++    sim.ground = icemass.bare_ground(*c["ground"][:2], icemass.air_mass(g, np.where(land, ice0, 0.0)))
+     ice = np.where(land, sim.ice, 0.0)
+     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
+                                                            sim.p_jul, sim.p_jan)
+diff --git a/planet/tectonics/params.py b/planet/tectonics/params.py
+index 3e6698b..d6b1f63 100644
+--- a/planet/tectonics/params.py
++++ b/planet/tectonics/params.py
+@@ -81,9 +81,8 @@ class Params:
+     climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
+     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
+     co2_sensitivity: float = 3.0  # C per e-fold of volcanic CO2 output relative to weathering
+-    ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
+-    # from Earth's ice, so an ice-free planet is ~1.4 C warmer) ...
+-    ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)
++    ice_albedo: float = 0.56  # C per W/m2 of sunshine the land ice reflects (icemass.albedo_cooling): the run's
++    # own sensitivity, co2_sensitivity per 5.35 W/m2 (CO2's forcing per e-fold)
+     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
+     # rocks
+     plants_from: float = 0.0  # Myr: land plants exist from this time on (slow erosion, make coal)
+diff --git a/planet/tectonics/simulation.py b/planet/tectonics/simulation.py
+index 5845e10..ca6c03d 100644
+--- a/planet/tectonics/simulation.py
++++ b/planet/tectonics/simulation.py
+@@ -151,6 +151,7 @@ class Simulation:
+         self.climate_t = 0.0
+         self.rain_state = None
+         self.temp = self.t_warm = self.t_cold = None
++        self.ground = None  # (t_warm, t_cold) of the bare ground, ice-free (earth.update_climate)
+         self.precip = self.p_jul = self.p_jan = None
+         self.runoff = self.aet = self.lake_evap = None
+         self.koppen = self.wind = self.current = None
+diff --git a/planet/timezoom/forcing.py b/planet/timezoom/forcing.py
+index 1ad3788..4b696f4 100644
+--- a/planet/timezoom/forcing.py
++++ b/planet/timezoom/forcing.py
+@@ -12,6 +12,7 @@ import math
+ import numpy as np
+ 
+ from .. import climate
++from ..icemass import albedo_cooling
+ from ..grid import Grid
+ from ..orbit import BAND_DEG, BAND_LAT, insolation, reference_orbit
+ from .cycle import Cycle
+@@ -54,21 +55,15 @@ def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np
+     return own * (1 - b) + b * mix
+ 
+ 
+-def albedo(p: TZParams, f: float) -> float:
+-    """C of global cooling by land ice over a share f of the planet (the main run's rule, earth.py:
+-    it levels off, so a planet already icy gains less cooling from more ice)."""
+-    return p.ice_albedo_max * math.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
+-
+-
+ class Forcing:
+     """The global temperature change dTg (C, against the run's own) the ice
+-    gives: CO2 follows the ice volume (lagged), ice albedo follows its area,
++    gives: CO2 follows the ice volume (lagged), ice albedo follows the snow-free sunshine on it,
+     and in an ice age's ending (cycle.Cycle) CO2 is released.
+     room: the share of the CO2 feedback's cap left (1 for an interglacial
+-    start); ice_frac0: the start's ice area share."""
++    start)."""
+ 
+-    def __init__(self, p: TZParams, step: float, room: float, ice_frac0: float, cycle: Cycle):
+-        self.p, self.step, self.room, self.ice_frac0, self.cycle = p, step, room, ice_frac0, cycle
++    def __init__(self, p: TZParams, step: float, room: float, cycle: Cycle):
++        self.p, self.step, self.room, self.cycle = p, step, room, cycle
+         self.co2 = 0.0  # C, the lagged CO2 part of the global change
+ 
+     def co2_target(self, sl: float) -> float:
+@@ -76,11 +71,14 @@ class Forcing:
+         excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
+         return -p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * self.room))
+ 
+-    def update(self, sl: float, ice_frac: float, s_no: int = 0) -> float:
+-        """The step's dTg, from the sea level sl (m, change since the start) and the ice area share
+-        (the cycle's state steps first)."""
++    def update(self, sl: float, dsun: float | None, s_no: int = 0) -> float:
++        """The step's dTg, from the sea level sl (m, change since the start) and the change in the snow-free
++        sunshine on the ice (W/m2, _Sim.sun_change; None before the first full climate: no albedo change yet;
++        the cycle's state steps first)."""
+         p, cyc = self.p, self.cycle
+         cyc.step(s_no, sl)
+         target = cyc.co2_target(self.co2_target(sl), sl)
+         self.co2 += (1 - math.exp(-self.step / p.co2_lag)) * (target - self.co2)
+-        return self.co2 - (albedo(p, ice_frac) - albedo(p, self.ice_frac0))
++        if dsun is None:
++            return self.co2
++        return self.co2 - albedo_cooling(p.ice_albedo, dsun)
+diff --git a/planet/timezoom/params.py b/planet/timezoom/params.py
+index c939ec7..548e044 100644
+--- a/planet/timezoom/params.py
++++ b/planet/timezoom/params.py
+@@ -75,10 +75,9 @@ class TZParams:
+     # 'auto': interglacial for Earth
+     average_room: float = 0.5  # (Earth: 230 ppm on average over the last cycles, 280 interglacial, 185 glacial)
+     co2_lag: float = 3.0  # kyr: CO2 follows the ice this slowly
+-    ice_albedo: float = 1.5  # C global cooling per 3% of the planet under land ice, levelling off toward ...
+-    ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py), as the change from the start's
+-    # ice (PW-030: before, half the run's, capped at 2 C and for a run's moment at average_room of that; the
+-    # run's ice surfaces have their own local climate too, so the halving had no reason)
++    ice_albedo: float = 0.9  # C per W/m2 of sunshine the land ice reflects, as the change from the start's ice
++    # (icemass.albedo_cooling, the main run's rule, PW-449; PW-030): the time zoom's own sensitivity, co2_cool
++    # per the LGM's greenhouse forcing (CO2, CH4, N2O: -2.8 W/m2)
+     # the ice-age cycle (cycle.py, PW-440): between ice ages / building / ending
+     cycle: str = "on"  # 'off': no cycle state (the feedbacks above alone)
+     sheet_h: float = 2000.0  # m: the sheet scale is the sea-level equivalent of this much ice ...
+diff --git a/planet/timezoom/sim.py b/planet/timezoom/sim.py
+index c3c6554..8c2ca19 100644
+--- a/planet/timezoom/sim.py
++++ b/planet/timezoom/sim.py
+@@ -74,7 +74,7 @@ class _Sim:
+         self.V0 = float((self.H * self.area).sum())
+         self.bed0 = self.bed.copy()
+         self.Vaf0 = self.above_flotation(0.0)
+-        self.ice_frac0 = float((self.H > 1).mean())
++        self.ice0 = self.grounded_ice() > 1.0  # the start's ice (its albedo is in the start's climate)
+         self.dT_run = float(src["dT"])
+ 
+         # the ice-age cycle (cycle.py): its boosts act on the ice beyond the last interglacial's (ig_ice:
+@@ -84,7 +84,7 @@ class _Sim:
+         scale = p.sheet_share * float(self.area[land0].sum()) * p.sheet_h * RHO_I / RHO_W / max(self.ocean_area, 1.0)
+         self.cycle = Cycle(p, step, kyr, self.tilt, self.ph, scale)
+         self.melt_f = np.ones(n)  # per cell: the degree-day factors x this (an ice age's ending: Cycle.boost)
+-        self.forcing = Forcing(p, step, room, self.ice_frac0, self.cycle)
++        self.forcing = Forcing(p, step, room, self.cycle)
+         self.fields = ClimateFields(g, src, p, self.tilt, self.dT_run, self.area, self.H)
+ 
+         self.out = {k: [] for k in LAYERS}
+@@ -105,6 +105,21 @@ class _Sim:
+     def load(self, h):
+         return ice_load(self.g, h, self.p.iso_ratio, self.p.flex_km)
+ 
++    def sun_change(self):
++        """The change since the start in the snow-free sunshine on the bare ground under the grounded ice (> 1
++        m), W/m2 over the planet: what its albedo forcing follows (icemass.sun_on_ice). Both at the current
++        climate: the ice that was there at the start and still is counts nothing, however the climate changes
++        (its whiteness is in the start's climate and its sensitivity), and new ice counts against what the bare
++        ground would have now: its snow-free months. The bare ground's climate is at the bed, LAPSE x the
++        ice's thickness warmer than the fields' on its surface. None before the first full climate."""
++        F = self.fields
++        if "t_mean" not in F.f:
++            return None
++        up = climate.LAPSE * self.H
++        tw, tc = M.bare_ground(F["t_mean"] + F["half"] + up, F["t_mean"] - F["half"] + up, self.air)
++        now = M.sun_on_ice(self.g.lat, self.grounded_ice() > 1.0, self.tilt, tw, tc, self.area)
++        return now - M.sun_on_ice(self.g.lat, self.ice0, self.tilt, tw, tc, self.area)
++
+     def above_flotation(self, sl):
+         return above_flotation(self.H, self.bed, self.bed0, self.area, sl)
+ 
+@@ -390,7 +405,7 @@ class _Sim:
+             dq = insolation(*orb) - self.q_ref
+             if self.cycle.needs_setup(self.sl):
+                 self.cycle.setup(cycling_latitude(self.g.lat, area, (self.grounded_ice() > 1.0) & ~self.ig_ice))
+-            dTg = self.forcing.update(self.sl, float((H > 1).mean()), s_no)
++            dTg = self.forcing.update(self.sl, self.sun_change(), s_no)
+             if self.cycle.new_high:
+                 self.ig_ice = self.grounded_ice() > 1.0
+             self.cycle_boosts()
+@@ -398,6 +413,7 @@ class _Sim:
+             if s_no % self.refresh == 0:
+                 surf, grounded = self.grounded_surface()
+                 F.refresh(t_kyr, dTg, surf, grounded, H)
++                self.air = M.air_mass(self.g, np.where(grounded, H, 0.0))  # (the sheets' air the climate has)
+             F.blend((s_no % self.refresh) / self.refresh)
+             self.prepare_surface(dTg)
+             if s_no == 0:
+diff --git a/tests/test_timezoom.py b/tests/test_timezoom.py
+index 7036ade..d33418e 100644
+--- a/tests/test_timezoom.py
++++ b/tests/test_timezoom.py
+@@ -6,6 +6,7 @@ import numpy as np
+ import pytest
+ 
+ from planet import orbit as O, timeline as T, timezoom as Z
++from planet.icemass import albedo_cooling
+ from planet.timezoom import params as P
+ from planet.timezoom.forcing import orbit_k
+ from planet.timezoom.geometry import geometry
+@@ -109,10 +110,11 @@ def test_saved_run_format(cold_src, cold_run, data_root):
+ 
+ def test_feedback_room(cold_src, cold_run):
+     """A run's moment is the cycle average: only average_room of the CO2 cap
+-    is left (PW-031; the ice albedo, the run's rule, levels off by itself);
+-    'interglacial' gets it in full."""
++    is left (PW-031; the ice albedo, the run's rule, follows the ice: at most
++    the most ice the zoom holds under the equator's sun); 'interglacial' gets it in full."""
+     p = Z.TZParams()
+-    floor = -(p.average_room * p.co2_cool * p.co2_max + p.ice_albedo_max)
++    ice = max(f["stats"]["ice_pct"] for f in cold_run["frames"]) / 100
++    floor = -(p.average_room * p.co2_cool * p.co2_max + albedo_cooling(p.ice_albedo, 420.0 * ice))
+     dT = [f["stats"]["dT_global"] for f in cold_run["frames"]]
+     assert min(dT) >= floor - 0.01
+     full = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(start="interglacial"))
+@@ -205,7 +207,8 @@ def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
+     land = src["elev"] > 0
+     ref = land & (a["anchor"] == 0) & (a["state"]["H"] < 1) & (b["state"]["H"] < 1)
+     assert np.median(diff[bare]) <= np.median(diff[ref]) + 0.02, (np.median(diff[bare]), np.median(diff[ref]))
+-    held = (a["state"]["H"] > 100) & cooled  # where the ice is still there, the anchor still cools it
++    # where the ice is still there, the anchor still cools it (on land: a marine cell has the sea's climate)
++    held = (a["state"]["H"] > 100) & cooled & land
+     if held.any():
+         assert (a["state"]["t_ann"] < b["state"]["t_ann"] - 0.3)[held].mean() > 0.5
+ 
+diff --git a/tools/health.py b/tools/health.py
+index 50c6423..3c10a7f 100644
+--- a/tools/health.py
++++ b/tools/health.py
+@@ -74,7 +74,7 @@ ENVELOPES = {
+     "sea_ice_m": (-250, None, -0, "sea level from land ice, m",
+                   "Earth LGM ~-130 m; PW-240 goal -150 m typical / -250 m worst"),
+     "ice_pct": (None, 10, 3.1, "land ice, % of surface",
+-                "Earth 3.1% now (earth.EARTH_ICE), ~7-8% at the LGM"),
++                "Earth 3.1% now, ~7-8% at the LGM"),
+     "temp": (8, 30, 14.5, "global mean temperature, C",
+              "Earth 14.5 C; LGM ~8 C (Tierney et al. 2020); Phanerozoic hothouses to ~30 C (Scotese et al. 2021)"),
+     "co2": (-CO2_MAX, CO2_MAX, 0.0, "CO2 index (ln(source/sink) / WEATHER_CO2)", "the forcing's clip in earth.py (+-CO2_MAX = 3); Earth 0"),
