@@ -225,3 +225,46 @@ No agents running. Server restarted on the latest main.
 
 ## Acceptance rule (owner, 2026-10-20)
 Multi-seed criteria pass when ~70% of seeds pass, not all; outlier worlds are allowed. Use 6-10 seeds when 4 is too few to judge. "Not worse" means the share of seeds passing doesn't drop.
+
+## State before compaction (2026-10-20 evening)
+**Running:** one Opus agent on PW-460 + PW-459 together, in the run and the time zoom:
+- PW-460: resolution-aware sub-cell margin (each margin cell takes the cell's mean ice surface, not edge_h 408 m).
+- PW-459: insol_k derived from each cell's own seasons (measured 0.08-0.09 vs the 0.25 in code).
+
+Worktree branch: worktree-agent-a9f64607e1a64d2e8. Scratchpad: .../scratchpad/pw460/. Handoff, if any: docs/review/audit/PW-460-handoff.md.
+
+**It merges only if:**
+- the Earth zoom deepens (~-80 m, multi-Mkm2 Laurentide south of ~50 N);
+- the unforced-start consistency test passes;
+- at least 7/10 run seeds pass the cold-era check;
+- interglacial ice is 9-12% of land (real Earth ~10%; corrected from the old 8-9%).
+
+If the run fails while the zoom succeeds, it writes a needs-decision draft instead.
+
+**On its report:**
+1. Merge if it meets the bar (`board.py intake`, pytest, restart the server); otherwise intake its draft.
+2. Write up the ice-age state for the owner and update PW-030, PW-033, PW-435, PW-447, PW-459 and PW-460.
+
+**Owner's deadline:** this is the last ice-age implementation batch. Write up and report; chase only an obvious final cleanup, and only until the morning of 2026-10-21. If progress isn't meaningful, propose kludgier approaches (e.g. state-forced cycles) and move to other lanes.
+
+**Today's ice-age record:**
+- Merged: PW-366, PW-438 (done), PW-440 (three-mode cycle), PW-442 (timezoom package), PW-450 (time-zoom vegetation).
+- Not merged: PW-449 (wontdo; PW-453 keeps main's albedo rule for now). PW-448 and PW-033 are diagnoses (docs/review/audit/PW-448-diagnosis.md, PW-033-diagnosis.md).
+
+**Queued, not v1-blocking:**
+- PW-458: missing North Atlantic Drift; Fennoscandia's cold bias comes from it.
+- PW-457: eastern Canada's rain seasonality.
+- PW-454: glacial tropics green instead of drying.
+- PW-445 and PW-444: helper dedupe.
+- PW-446: mantle basis cache not reproducible.
+- PW-252 and PW-259: speed.
+
+**Showcases:** Earth time zoom 098d5d (with vegetation); the PW-440 cycle zooms 755514, 7d5027 and be3362.
+
+**Owner rules learned today:**
+- Haiku for mechanical work, Sonnet for moderate, Opus for ice ages.
+- Handoff at 100 calls.
+- ~70% of seeds passing is enough.
+- No replies to interim "agent waiting" notices.
+- Flag refactors, with a Haiku duplicate scan first.
+- Thresholds are planet-relative.
