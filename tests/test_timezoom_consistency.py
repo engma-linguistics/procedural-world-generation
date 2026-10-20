@@ -65,9 +65,9 @@ def test_ice_speeds_plausible(cold_moment):
     assert 500 < np.median(H[sheet]) < 3500
 
 
-@pytest.mark.xfail(strict=True, reason="PW-366: the run's sheets are thinner than the time zoom's and leave "
-                   "a snow surplus (-43 m in 20 kyr here); remove this mark once that is fixed")
 def test_unforced_start_stays_near_balance(cold_moment):
-    """With no forcing, a run's sheets are already this mass balance's: sea level moves little."""
+    """With no forcing, a run's sheets are already this mass balance's: sea level moves little (PW-366:
+    -43 m in 20 kyr here while the run's sheets were 50 kPa profiles with their margins' inner-edge rise and
+    the time zoom melted its margins before its flow)."""
     _, r = cold_moment
     assert abs(r["frames"][-1]["stats"]["sea_level_change_m"]) < 25.0

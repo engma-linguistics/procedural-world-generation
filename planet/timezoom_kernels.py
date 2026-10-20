@@ -159,7 +159,8 @@ def _sia_receivers(active, off, idx, n):
 
 
 @njit(cache=True, parallel=True)
-def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min, hold):
+def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min, hold,
+             rate, applied):
     """Shallow-ice flow for dt_total years: ice thickness diffuses with
     D = gamma H^5 |grad s|^2 (Glen's law, n = 3, no sliding), s the ice
     surface, so it flows downhill on its own surface slope and spreads under
@@ -173,7 +174,14 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
     ring around it) are visited. hold (per cell, 0..1): the share of a
     grounded front's flow across its grounding line (into cells where ice
     floats) its ice shelf holds back (buttressing, PW-367;
-    timezoom.shelf_cover). Returns the number of sub-steps.
+    timezoom.shelf_cover). rate (m/yr per cell): the surface mass
+    balance, applied to the active cells within each sub-step (not below
+    zero thickness; `applied` gets the m it changed each cell by), so a
+    margin's melt and the flow feeding it act together (PW-366: applied
+    once before the step's flow, a ~1 km margin could melt out in one
+    500-yr step, or the flow left a film of ice beyond the front that the
+    next step's balance saw as the margin, so the front cell took the
+    interior's snow, PW-422). Returns the number of sub-steps.
     Each pass is per cell (prange); the volume moved along each edge is
     gathered by the cells it reaches in a fixed order (_sia_receivers), so
     the result doesn't depend on the thread count (PW-215)."""
@@ -210,7 +218,9 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
         dmax = 0.0
         for a in range(na):
             dmax = max(dmax, D[active[a]])
-        if dmax <= 0.0:
+        if dmax <= 0.0:  # (no flow: the rest of the step's balance at once)
+            dt = dt_total - t
+            _balance(H, active, rate, applied, dt)
             break
         dt = min(dt_total - t, cfl * d2min / dmax)
         # each cell's outflow, limited to what the cell holds, and so what moves along each of its edges
@@ -252,9 +262,21 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
                         dv += v
             if dv != 0.0:
                 H[c] = max(0.0, H[c] + dv / area[c])
+        _balance(H, active, rate, applied, dt)
         t += dt
         nsub += 1
     return nsub
+
+
+@njit(cache=True, inline="always")
+def _balance(H, active, rate, applied, dt):
+    """The surface mass balance over dt years on the active cells (sia_flow)."""
+    for a in range(active.shape[0]):
+        i = active[a]
+        if rate[i] != 0.0:
+            h = max(0.0, H[i] + rate[i] * dt)
+            applied[i] += h - H[i]
+            H[i] = h
 
 
 @njit(cache=True)

@@ -224,9 +224,8 @@ def update_vegetation(sim, e):
 
 
 # Ice sheets (see ice_sheets)
-ICE_TAU = 50e3  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
-ICE_EDGE_KM = 10.0  # km: a sheet's thinnest margin counts as this far in from its edge
-ICE_EDGE_M = icemass.EDGE_H  # m: ~330, its thickness (ICE_TAU, ICE_EDGE_KM)
+ICE_TAU = icemass.SHEET_TAU  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
+ICE_EDGE_M = icemass.EDGE_H  # m: ~400, a sheet's thinnest margin (its profile 10 km in from its edge)
 ICE_MAX = 4000.0  # m
 ICE_CALVE = 5e4  # m2/yr: ice lost by calving per m of coast a sheet's margin reaches (~0.7 m/yr over a
 # coastal L6 cell): a sheet that reaches the sea pays for it from its snow
@@ -294,8 +293,10 @@ def _ice_pass(sim, land, bed, ground, old):
       accumulation  where snow outlasts the summer: on bare ground (a new
                  cap starts where the year's snow lasts, so the snowline
                  depends on the snowfall as well as the summer, PW-159), and
-                 on ice (the old ice's own thickness, or a new margin's ~330
-                 m: its height and, on a big sheet, its own bright air mass,
+                 on ice (the old ice's own thickness, or a margin's ~400 m:
+                 the old ice next to bare land and a new margin are the
+                 sheet's edge, as the time zoom's margins; its height and,
+                 on a big sheet, its own bright air mass,
                  which the climate carries along the winds onto its margins
                  (ground: the old ice's air, PW-336), keep it colder)
                  connected to such a start or to old ice;
@@ -308,8 +309,9 @@ def _ice_pass(sim, land, bed, ground, old):
                  (East Antarctica's plateau gets ~50 mm/yr);
       thickness  a sheet's steady (Nye) surface: sqrt(2 tau/(rho g) x the
                  distance in from its edge) above the bed at that edge
-                 (PW-276), ~330 m at the edge, ~1.9 km 300 km in, ~3.3 km
-                 1000 km in; the ice is that surface less the cell's own bed
+                 (PW-276; tau 75 kPa, PW-366), each cell its mean over the
+                 cell (~800 m on a margin cell at L6), ~2 km 300 km in,
+                 ~3.7 km 1000 km in; the ice is that surface less the cell's own bed
                  (bed: m above sea level, as the old ice pressed it down),
                  at least a margin's: thinner over high ground inside the
                  sheet (the ice drains off it; a sheet's surface stops near
@@ -325,7 +327,11 @@ def _ice_pass(sim, land, bed, ground, old):
     # average over the ice-age cycle's orbits (bright ice feels less of them, mixed over the air around)
     tilt = sim.params.tilt
     smb0, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=tilt)
-    h = np.where(old > 0, old, ICE_EDGE_M)
+    # (a margin cell, old ice next to bare land, is a slope from the bare edge up to its inner neighbour: its
+    # snow and melt are its edge's, as the time zoom's margins (PW-366); at the cell-mean rise, ~800 m at L6,
+    # its own thickness would keep it as cold as the interior and the sheet would creep a ring a pass)
+    bare_nb = np.add.reduceat((land & (old <= 0))[g.nbr_idx], g.nbr_off[:-1]) > 0
+    h = np.where(old > 0, np.where(bare_nb, np.minimum(old, ICE_EDGE_M), old), ICE_EDGE_M)
     cover = icemass.sheet_cover(g, old)
     # (as the time zoom's orbit_k, PW-114/PW-365: the air over bright ice brings the response of the land,
     # sea and ice around, each its own share of the land's: the sea INSOL_SEA, bright ice ICE_ABSORB; before,
@@ -364,7 +370,8 @@ def _ice_pass(sim, land, bed, ground, old):
 def sheet_surface(g, iced, bed):
     """(bed at the margin, Nye rise above it) per iced cell (PW-276): a
     sheet's steady surface rises from its margin by sqrt(2 tau/(rho g) x
-    the distance in from it), and the ice drains toward whichever margin
+    the distance in from it) (each cell: its mean over the cell, from d to
+    d + 1 hops in, d its hops from the margin cells), and the ice drains toward whichever margin
     keeps it lowest, so the surface is the least over the sheet's margin
     cells (iced cells next to ground or sea without ice) of their bed plus
     the profile at the distance (hops through the sheet) from them. On a
@@ -377,7 +384,11 @@ def sheet_surface(g, iced, bed):
     k_m = 2 * ICE_TAU / (917.0 * 9.81) * g.spacing * R_KM * 1000.0  # m2 per hop
 
     def rise(d):
-        return np.sqrt(k_m * d + 2 * ICE_TAU / (917.0 * 9.81) * ICE_EDGE_KM * 1000.0)
+        # the profile's mean over the cell, which spans d..d+1 hops in from the edge (PW-366: its inner
+        # edge's value left a margin cell ~340 m at L6, the profile's mean over it ~740 m at 50 kPa)
+        d = np.asarray(d, float)
+        dd = np.where(np.isfinite(d), d, 0.0)  # (cells no margin has reached yet: inf)
+        return np.where(np.isfinite(d), (2.0 / 3.0) * np.sqrt(k_m) * ((dd + 1.0) ** 1.5 - dd ** 1.5), np.inf)
 
     edge = iced & (np.add.reduceat(~iced[idx], off[:-1]) > 0)
     src = np.repeat(np.arange(n), np.diff(off))

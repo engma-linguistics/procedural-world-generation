@@ -1,0 +1,27 @@
+---
+title: "Forced time zoom from a cold run moment loses ice (+41 m at 20 kyr, up to +141 m) after PW-366"
+type: task
+status: todo
+parent: null
+subsystem: timezoom
+effort: s
+impact: med
+found_by: pw366
+blocked_by: []
+relates: [PW-366, PW-030, PW-295, PW-241]
+refs: [planet/timezoom.py, planet/icemass.py]
+---
+
+## Description
+After PW-366 the unforced time zoom stays near a run's start (L6 seed 2 @ 580 Myr: +7 m at 20 kyr, +13 m at
+50 kyr). With the default forcing (orbit, CO2, ice albedo; `start=average`), the same moment (sea level
+-593 m, 134 Mkm3) rises: +41 m at 20 kyr, +45 at 50, +133 at 100, +68 at 150 kyr (max +141, never below the
+start; ice 134 -> 111 Mkm3). On the old code's moment (64 Mkm3) the new time zoom gives -40 / -70 / +36 /
++107 m (min -78, max +113). The run's ice is the extent under the balance averaged over the cycle's orbits
+(icemass.cycle_dq: obliquity +-0.85, eccentricity 0.03), so a forced time zoom should swing around its start,
+not sit above it. Suspects: the time zoom's real eccentricity/obliquity amplitudes larger than cycle_dq's
+(melt is convex, so more spread means less ice), and `average_room` for CO2 / ice albedo (an already-cold
+moment has little room left to cool but full room to warm).
+- [ ] measure the forced 150 kyr mean sea level from 3-4 cold L6 moments; find which forcing term makes the
+  mean sit above the start; fix that side (no scaling to meet)
+- needed by PW-030 (real ice-age cycles start from these moments)

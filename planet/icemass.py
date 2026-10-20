@@ -44,8 +44,10 @@ SNOW_W = 30.0  # mm w.e.: lying snow this deep is fully bright
 BARE_SHARE = 0.3  # bare ice keeps this share of the snow's effects
 ICE_COOL = 2.0  # C: thick ice is this much colder all year (inversion, katabatic air) ...
 ALBEDO_H = 800.0  # ... in full from this thickness (m)
-EDGE_H = float(np.sqrt(2 * 50e3 / (917.0 * 9.81) * 10e3))  # m (~330): a sheet's margin (a steady Nye profile
-# with a 50 kPa yield stress, 10 km in from its edge): at ~110 km cells a margin cell's snow and melt are its edge's
+SHEET_TAU = 75e3  # Pa: yield stress of ice, sets a sheet's steady (Nye) profile (PW-366: Antarctica's real extent
+# and bed hold ETOPO1's 25 Mkm3 at ~75 kPa, 50 kPa gave 20; real sheets fit ~70-100 kPa)
+EDGE_H = float(np.sqrt(2 * SHEET_TAU / (917.0 * 9.81) * 10e3))  # m (~400): a sheet's margin (its Nye profile 10 km
+# in from its edge): at ~110 km cells a margin cell's snow and melt are its edge's
 PDD_SIGMA = 5.0  # C: day-to-day spread of temperature around the monthly mean
 DDF_SNOW = 3.0  # mm w.e. melted per positive degree-day, snow (Braithwaite 1995)
 DDF_ICE = 8.0  # ... ice
