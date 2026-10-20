@@ -30,4 +30,5 @@ inception (Fennoscandia, Laurentide) and the sub-cell margin of PW-115 / PW-422 
   the forcing
 
 ## Updates
+- 2026-10-19: pw030: the run's ice-albedo rule in the time zoom deepens it to -37 m in 150 kyr (-43 m in 500 kyr). Unforced Earth with dT -3 C reaches -60 m, -5 C -137 m in 150 kyr: the glacial needs ~-4.5 C, the feedbacks give ~-1.5 C at -40 m.
 - 2026-10-19: Created from inbox draft draft-earth-timezoom-glacial-shallower-pw366.md (found by pw366).

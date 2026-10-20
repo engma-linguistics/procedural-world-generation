@@ -30,4 +30,5 @@ moment has little room left to cool but full room to warm).
 - needed by PW-030 (real ice-age cycles start from these moments)
 
 ## Updates
+- 2026-10-19: pw030 measured it (docs/review/audit/PW-030-handoff.md): on new L6 runs the unforced drift is itself large and moment-dependent (seed 2 @ 580 +40 m, seed 11 @ 400 -67 m at 150 kyr); the CO2 + albedo loop amplifies it ~2.5x to a branch (+210 / -150 m); the orbit alone loses ice by rectification (fast melt, slower regrowth; seed 2 @ 580 eccentricity alone +142 m). The albedo side's room asymmetry (+2 vs -1 C) is gone with the run's tanh rule (PW-030); drift unchanged within 5 m.
 - 2026-10-19: Created from inbox draft draft-forced-timezoom-loses-ice-from-run-moment.md (found by pw366).
