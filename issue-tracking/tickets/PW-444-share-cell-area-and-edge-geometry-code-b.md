@@ -1,4 +1,5 @@
 ---
+id: PW-444
 title: Share cell-area and edge-geometry code between grid, climate, ocean and the time zoom
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw442
 blocked_by: []
 relates: [PW-442]
 refs: [planet/grid.py, planet/ocean.py, planet/climate.py, planet/timezoom/geometry.py, planet/landform.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -19,3 +22,6 @@ PW-442 added `Grid.nbr_src` (the cell each CSR edge leaves) and `Grid.edge_dir` 
 - [ ] **Edge geometry in `climate.py`** (`_geom` l.142 directed-edge distance and tangent; `_faces` l.201/209 corner side length and centre-edge length): the same quantities as `timezoom/geometry.py` dist/elen. Not touched (PW-438 edits climate). `Grid.edge_dir` is the same expression as `_geom`'s tangent.
 - [ ] **Neighbour means**: `timezoom/ice.py shelf_cover` (weighted by sea, bincount over CSR neighbours), `ocean._coarse/_down` (sea share over coarse cells) and `landform.regional_dip` (neighbour mean via bincount) are near duplicates; a `nbr_mean(grid, values, weights)` in `grid.py` could serve all three. Different divisors, so not bit-identical by default.
 - [ ] More `np.repeat(np.arange(n), np.diff(nbr_off))` sites to switch to `grid.nbr_src`: hydrology.py:352, store.py:375, climate.py:155/617, coast.py:479/539, zoom.py:1147/1152, soils.py:200.
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-pw442-grid-geometry-dupes.md (found by pw442).
