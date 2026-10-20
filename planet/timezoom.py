@@ -760,23 +760,44 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         if s_no == n_steps:
             break
         dt = step * 1000.0  # yr
-        # 1) mass balance (not below zero thickness)
-        h_new = np.where(land, np.maximum(H + smb * dt, 0.0), H)
-        dv = (h_new - H) * area
-        budget["smb"] += float(dv.sum())
+        # 1) mass balance (not below zero thickness) and 2) flow: on the ice and the rings around it the
+        # balance acts within the flow's sub-steps (sia_flow), so a margin's melt and the flow that feeds it
+        # act together; elsewhere (bare ground, a new snow cap) at once
         gt = RHO_I / 1e12 / dt  # m3 per step -> Gt per yr
+        near = dilate(H > 0, g.nbr_off, g.nbr_idx, 2)
+        active = np.flatnonzero(near)
+        rate = np.where(land, smb, 0.0)
+        # the bare land beside a sheet: the ice the flow brings onto it over the step is the sheet's new edge,
+        # bright and edge_h high (as the main run tests a new margin, earth.ablation_zone), not bare ground
+        # (PW-366: as bare ground's dark, low surface it melted as it arrived and the sheets couldn't advance)
+        front = bare_land & dilate(ice_g > 1.0, g.nbr_off, g.nbr_idx, 1)
+        if front.any():
+            fi = np.flatnonzero(front)
+            sub = [np.zeros(len(fi)) for _ in range(6)]
+            climate_step(land[fi], north[fi], (fields_["t_mean"] + anchor)[fi], fields_["half"][fi],
+                         fields_["p_jul"][fi], fields_["p_jan"][fi], dt_base[fi] - climate.LAPSE * p.edge_h,
+                         dt_wet[fi], orbit_k(g, land, f_snow, p)[fi], band[fi], dq,
+                         np.full(len(fi), min(p.edge_h / p.albedo_h, 1.0)), np.ones(len(fi)), p.ice_cool,
+                         p.summer_damp * M.sheet_cover(g, np.ones(n))[fi], p.melt_hold,
+                         p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub)
+            rate[fi] = sub[0]
+        h_new = np.where(land & ~near, np.maximum(H + smb * dt, 0.0), H)
+        dv = (h_new - H) * area
         H[:] = h_new
-        # 2) flow
         sea0 = (sl - bed > 0) & ~((H > 0) & (bed + H > sl + flt * H))  # open sea or shelf at the step's start
         H_pre = H.copy()
-        active = np.flatnonzero(dilate(H > 0, g.nbr_off, g.nbr_idx, 2))
         if len(active):
             # (a shelf holds back a grounded front's flow across its grounding line as it does its calving)
             gr0 = (H > 0) & ~sea0
             nb_sea0 = np.add.reduceat(sea0[g.nbr_idx], g.nbr_off[:-1]) > 0
             hold = p.buttress * shelf_cover(g, gr0 & nb_sea0, sea0, np.where(sea0, H, 0.0), p)
+            applied = np.zeros(n)
             nsub_total += sia_flow(H, bed, sl, active, g.nbr_off, g.nbr_idx, G["dist"], G["elen"], G["ux"],
-                                   G["uy"], G["uz"], area, gamma, p.d_cap, dt, p.cfl, flt, G["d2min"], hold)
+                                   G["uy"], G["uz"], area, gamma, p.d_cap, dt, p.cfl, flt, G["d2min"], hold,
+                                   rate, applied)
+            dv += applied * area
+            H_pre += applied  # (the shelf's inflow below is the flow's alone)
+        budget["smb"] += float(dv.sum())
         # 3) the sea (PW-367): the ice the flow carried past the grounding line over the step is an ice
         # shelf: it spreads (confined by the same buttressing it gives) and melts from below where the sea
         # is warm; what then floats stays as a shelf where the air over it lets one stand, and breaks up

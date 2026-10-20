@@ -1,0 +1,27 @@
+---
+title: "Earth time zoom's glacial is shallower after PW-366's margin fixes (150 kyr: -76 -> -33 m)"
+type: task
+status: todo
+parent: null
+subsystem: timezoom
+effort: m
+impact: med
+found_by: pw366
+blocked_by: []
+relates: [PW-033, PW-030, PW-366, PW-422]
+refs: [planet/timezoom.py]
+---
+
+## Description
+PW-366 applies the time zoom's mass balance within the flow's sub-steps and gives bare land beside a sheet a
+new edge's balance (bright, `edge_h` high). Before, the flow left a film of ice beyond each front for a step,
+which hid the front from the margin rule (PW-422), so fronts took the interior's snow and advanced. Earth L6
+default time zoom (`source_earth(6)`, default params), sea level change:
+- old (4ce59df): 20 kyr -7, 50 kyr -16, 100 kyr -36, 150 kyr -76 m (ice 28 -> 60 Mkm3)
+- new: 20 kyr -8, 50 kyr 0, 100 kyr -5, 150 kyr -18 m, deepest -33 m at 108 kyr (ice 28 -> 36 Mkm3)
+- unforced 20 kyr: old -7, new -7 m.
+Observed LGM ~-120 m. Part of the old glacial came from the film flaw; the remaining growth is now limited by
+how fast a front advances onto bare land (one ring per ~step at best, under an edge's balance). PW-033's
+inception (Fennoscandia, Laurentide) and the sub-cell margin of PW-115 / PW-422 are where to look.
+- [ ] Earth's 150 kyr glacial back toward -60..-120 m by physics (inception, sub-cell margins), not by tuning
+  the forcing
