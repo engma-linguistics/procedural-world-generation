@@ -53,6 +53,13 @@ def sample(sim) -> dict:
         "old": round(100 * float((age > 117).mean()), 2) if age.size else 0.0,
         "ocean": round(100 * float(ocean.mean()), 2),
         "plates": int(sim.plates.alive.sum()),
+        # the global temperature's parts (earth.global_temperature, PW-438)
+        "dT": round(float(sim.dT), 2),
+        "drift": round(float(sim.drift), 2),
+        "co2": round(float(sim.co2), 3),
+        "src": round(float(sim.rates[0] / sim.refs[0]), 3) if sim.rates is not None else 1.0,
+        "sink": round(float(sim.rates[1] / sim.refs[1]), 3) if sim.rates is not None else 1.0,
+        "ice_frac": round(100 * float((sim.ice > 0).mean()), 2),
     }
 
 
@@ -94,7 +101,11 @@ def stats(d, skip: float = 0.0, every: float = 4.0, window: float = 20.0, drop: 
            "sl_min": round(float(s.min())), "sl_max": round(float(s.max())),
            "swing20": round(float(swing)), "land_drops": drops,
            "drop_times": [float(x) for x in t[flag & np.concatenate([[True], ~flag[:-1]])]],
-           "land_min": float(L.min()), "land_max": float(L.max())}
+           "land_min": float(L.min()), "land_max": float(L.max()),
+           }
+    # the cold eras' depth (PW-240/434/438): sea level from ice when recorded, else the total
+    si = np.array([r["ice"] for r in tr]) if "ice" in tr[0] else s
+    out["below150"], out["below430"] = round(100 * float((si < -150).mean()), 1), round(100 * float((si < -430).mean()), 1)
     if "tect" in tr[0]:
         te = np.array([r["tect"] for r in tr])
         out["clamp"] = int((np.abs(te) >= CLAMP - 0.5).sum())
@@ -115,7 +126,7 @@ def line(d, skip=0.0) -> str:
     extra = (f"; clamp {st['clamp']} samples, tect sd {st['tect_sd']}, ice mean {st['ice_mean']} (min {st['ice_min']}),"
              f" ocean age {st['age_mean']}+-{st['age_sd']}") if "clamp" in st else ""
     return (f"{name} L{d['level']} (>= {skip:g} Myr): sea level {st['sl_mean']}+-{st['sl_sd']} m"
-            f" [{st['sl_min']}, {st['sl_max']}], 20-Myr swing max {st['swing20']} m, land {st['land_min']}-{st['land_max']}%,"
+            f" [{st['sl_min']}, {st['sl_max']}], below -150 / -430 m {st['below150']}% / {st['below430']}%, 20-Myr swing max {st['swing20']} m, land {st['land_min']}-{st['land_max']}%,"
             f" 4-pt land drops {st['land_drops']} {st['drop_times']}{extra}; plates median {st.get('plates_median')}"
             f" min {st.get('plates_min')}")
 

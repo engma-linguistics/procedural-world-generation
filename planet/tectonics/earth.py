@@ -25,6 +25,8 @@ SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
 WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
 # runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
+WEATHER_CO2 = 0.4  # silicate weathering ~ pCO2^this (GEOCARB's f(CO2) for vascular plants ~0.4, without 0.5)
+CO2_MAX = 3.0  # e-folds of CO2 the log forcing is counted to (+-; ~20x / 0.05x today's)
 REF_MYR = 1000.0  # Myr: the CO2 source's and sink's baselines learn over this (200 before PW-264)
 
 
@@ -73,24 +75,30 @@ def global_temperature(sim, growth, newc, rng):
     source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
     # (not under land ice: glaciers grind their beds fast, but the rock flour hardly weathers chemically
     # in the cold, and counting it made a cold era draw down more CO2 the more ice it grew)
-    sink = float((sim.removed * (land & (sim.ice <= 0)) * warm).sum()) / sim.scale**2
-    now = np.array([max(source, 1e-6), max(sink, 1e-6)])
-    # the noisy per-step rates, smoothed over ~10 Myr (before the logs: a log of a noisy rate averages
-    # below the log of its mean, which used to bias the CO2 index low, ~-0.3 on average)
-    c = 1 - np.exp(-dt / 10.0)
-    sim.rates = now.copy() if sim.rates is None else sim.rates + c * (now - sim.rates)
-    if sim.refs is None:
-        sim.refs = sim.rates.copy()
-    # The baselines learn slowly (REF_MYR), so a lasting change in degassing
-    # or weathering keeps warming or cooling for most of a run, as a CO2
-    # stock would, rather than fading in ~200 Myr (PW-264). (They learn fast
-    # at first: the made-up starting state isn't an equilibrium, and
-    # shouldn't jolt the climate; until REF_MYR they are about the mean
-    # since the start.)
-    b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
-    sim.refs = sim.refs + b * (sim.rates - sim.refs)
-    rel = sim.rates / sim.refs
-    sim.co2 = float(np.log(rel[0]) - np.log(rel[1]))
+    sink = float((sim.weathered * land * warm).sum()) / sim.scale**2
+    if sink > 0.0:  # (the first step: nothing has eroded yet; the rates start from the first real ones)
+        now = np.array([max(source, 1e-6), sink])
+        # the noisy per-step rates, smoothed over ~10 Myr (before the logs: a log of a noisy rate averages
+        # below the log of its mean, which used to bias the CO2 index low, ~-0.3 on average)
+        c = 1 - np.exp(-dt / 10.0)
+        sim.rates = now.copy() if sim.rates is None else sim.rates + c * (now - sim.rates)
+        if sim.refs is None:
+            sim.refs = sim.rates.copy()
+        # The baselines learn slowly (REF_MYR), so a lasting change in degassing
+        # or weathering keeps warming or cooling for most of a run, as a CO2
+        # stock would, rather than fading in ~200 Myr (PW-264). (They learn fast
+        # at first: the made-up starting state isn't an equilibrium, and
+        # shouldn't jolt the climate; until REF_MYR they are about the mean
+        # since the start.)
+        b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
+        sim.refs = sim.refs + b * (sim.rates - sim.refs)
+        rel = sim.rates / sim.refs
+        # CO2 settles where weathering, which also grows with CO2 itself (~pCO2^WEATHER_CO2: carbonic acid in
+        # soils, GEOCARB's f(CO2)), takes up what the volcanoes give: ln pCO2 = ln(source / sink) / WEATHER_CO2.
+        # A weathering deficit (ice, cold and dryness, with the outgassing going on) so raises CO2 1 /
+        # WEATHER_CO2 times further than the bare ratio did (PW-438: the ratio left cold eras too little room
+        # to rise and end them; Earth's snowball recoveries took ~100x today's CO2)
+        sim.co2 = float(np.log(rel[0]) - np.log(rel[1])) / WEATHER_CO2
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
@@ -129,7 +137,7 @@ def global_temperature(sim, growth, newc, rng):
 
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -1.5, 1.5) - (albedo(ice_frac) - albedo(EARTH_ICE))
+    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX) - (albedo(ice_frac) - albedo(EARTH_ICE))
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
@@ -507,7 +515,8 @@ def erode(sim, col):
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk = surface.erode(
         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
-        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY])
+        p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
+        base_rise=max(-float(sim.sea_ice), 0.0))
     sim.book("erosion", t0, col.t, cont)
     # the valleys rivers to the sea run in now (graded to the river they
     # carry: a shrunken river silts up a valley too big for it), and where
@@ -517,6 +526,10 @@ def erode(sim, col):
     # the basement comes up by what's worn off net (the strata: in sediments())
     col.eroded_cover = np.clip(sim.removed, 0, np.maximum(cover, 0))
     col.rec[:, record.EXHUMED] = np.maximum(col.rec[:, record.EXHUMED] + sim.removed - dep, 0)
+    # what bare ground lost, for the weathering sink: masked by the ice this erosion ran under (the next
+    # step's sink sees the ice after a climate update; ground the ice left in it counted its glacial
+    # erosion, the 3x buzzsaw, as weathering, PW-438)
+    sim.weathered = np.where(sim.ice > 0, 0.0, sim.removed)
     sim.lake_kind, sim.lake_depth = lk["kind"], lk["depth"]
     return dep, lk["kind"]
 
