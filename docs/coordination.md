@@ -204,3 +204,21 @@ No agents running; owner near the weekly limit. Owner decisions tonight: PW-030 
 - Agents hand off at ~100 tool calls. At most one physics agent plus one cheap job at a time.
 - Each agent gets its done-when criteria and a stop rule of ~5 tuning attempts. It starts long simulations in the background and reads only the summary.
 - 2026-10-19: started PW-366 (Opus, option A: 75 kPa, cell-mean rise, reconciled melt and calving) and the stale-ref cleanup (Haiku).
+
+## Morning note (2026-10-20)
+No agents running. Server restarted on the latest main.
+
+**Landed overnight:**
+- PW-366 done. The run's sheets use 75 kPa with the cell-mean rise, and the time zoom's balance acts within its flow sub-steps. The unforced time-zoom start now holds: L6 drift went from -231 m to +7 m at 20 kyr, and the strict xfail passes.
+- PW-030 partial (eed6a3a). The time zoom's ice-albedo feedback now uses the run's rule; Earth's swing went 43 -> 48 m. Real cycles were **not** achieved in 5 attempts. Proglacial lakes and dust were built but had no effect and are not merged; the patch is in docs/review/audit/PW-030/. Full write-up: docs/review/audit/PW-030-handoff.md.
+- Stale-ref cleanup (28 refs in 20 open tickets).
+
+**Not merged:** the PW-434 climate-drift sd 3 -> 2. It reshuffled which seed goes deep instead of fixing it.
+
+**Diagnosis:**
+- Cold eras run deeper since PW-366 (3 of 4 L6 seeds below -430 m for 5-7% of the time; worst -609 m). That comes from the ice-albedo/CO2 loop, not the drift size: PW-438.
+- Time zoom: the CO2 + ice-albedo loop amplifies any drift about 2.5x onto one of two branches. On the cold branch CO2 is clipped and the ice area is saturated, so glacials never end: PW-440, high, needs-decision; agent lean is CO2 that follows the lagged temperature.
+- The orbit alone loses ice (fast melt, slow regrowth). A 1.8x stronger orbital response did give 70-100 m cycles, but it melts Earth's interglacial ice away, so the sensitivity must depend on the glacial state.
+- PW-439: the sheets' carried air may over-protect big sheets' summer margins.
+
+**Next, waiting for the owner's go:** PW-440 (time zoom, Opus) and PW-438 (run lane, cold-era depth), probably together, since both are the same CO2/ice-albedo loop.

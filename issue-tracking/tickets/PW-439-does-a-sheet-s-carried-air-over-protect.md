@@ -1,5 +1,6 @@
 ---
-title: "Does a sheet's carried air over-protect big glacial sheets' summer margins? (suspected PW-030 stabiliser)"
+id: PW-439
+title: Does a sheet's carried air over-protect big glacial sheets' summer margins? (suspected PW-030 stabiliser)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw030
 blocked_by: []
 relates: [PW-030, PW-336]
 refs: [planet/icemass.py, planet/climate.py, docs/review/audit/PW-030-handoff.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -25,3 +28,6 @@ an Earth LGM margin estimate (southern Laurentide July ~10-15 C at the ice edge)
 latitude or onshore-wind dependence of the carried air would be physics, not a fudge.
 - [ ] numbers for the damping on glacial margins vs Antarctica's coast
 - [ ] if changed: PW-030's metrics rerun (handoff's three L6 moments and Earth)
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-sheet-air-protects-glacial-margins.md (found by pw030).

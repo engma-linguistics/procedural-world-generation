@@ -1,4 +1,5 @@
 ---
+id: PW-440
 title: "Time zoom: the cold feedback branch is rigid (CO2 clipped, ice area saturated), so glacials never terminate"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw030
 blocked_by: []
 relates: [PW-030, PW-436, PW-031]
 refs: [planet/timezoom.py, docs/review/audit/PW-030-handoff.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Options:
   may be over-protected in summer.
 Lean: B, with A's smooth saturation, tested on the handoff's three L6 moments and Earth before anything
 else; the target metrics are PW-030's.
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-timezoom-cold-branch-rigid.md (found by pw030).
