@@ -1,4 +1,5 @@
 ---
+id: PW-446
 title: The cached mantle basis can differ from a fresh build (up to 0.063), changing runs
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw440
 blocked_by: []
 relates: []
 refs: [planet/tectonics/mantle.py, tests/test_envelopes.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -24,3 +27,6 @@ doesn't change). Fix: write atomically (temp + rename) and make the build determ
 against a stored digest); the bad file is kept in the pw440 session scratchpad (`pw440/oldbasis/`).
 - [ ] two builds of the basis under different thread counts and concurrent load are bit-identical
 - [ ] the cache file is written atomically
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-mantle-basis-cache-not-reproducible.md (found by pw440).

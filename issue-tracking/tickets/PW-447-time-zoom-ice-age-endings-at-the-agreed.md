@@ -1,4 +1,5 @@
 ---
+id: PW-447
 title: "Time zoom: ice-age endings at the agreed strength are slow (30-75 kyr) and stall on cold extra ice"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw440
 blocked_by: []
 relates: [PW-440, PW-030, PW-436, PW-435]
 refs: [planet/timezoom/cycle.py, planet/timezoom/sim.py, docs/review/audit/PW-440-handoff.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
 - C. Make a stalled ending's leftover part of the interglacial (tried: ratchets the cold drift, s400
   mean -117 m), not recommended.
 - [ ] decide; then s400 and Earth endings <= ~15 kyr with swing >= 80 m
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-timezoom-ending-strength.md (found by pw440).
