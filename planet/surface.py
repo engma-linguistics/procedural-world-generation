@@ -286,7 +286,8 @@ def surface_rock(rock, cover, top, top_km):
 
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
-          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None):
+          incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None,
+          base_rise=0.0):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
@@ -297,6 +298,8 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     gentle river course over which ~63% of the load settles on land; fan_km:
     km of deep sea floor over which ~63% of what passes the shelf settles.
     valley: m the cells' valleys are already cut (hydrology.lakes').
+    base_rise: m the continents' base level stands above the sea (the run's
+    ice: how far it has lowered the sea).
     Returns (thick, cover, mix, removed_km, deposited_km, flow, downstream,
     lakes): lakes is hydrology.lakes' dict (on the terrain before this
     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
@@ -320,8 +323,12 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     d_km = grid.spacing * R_KM
     relief = _relief(elev.astype(float), grid.nbr_off, grid.nbr_idx) * land
     h = elev - relief * (1 - np.exp(-hillslope * K * dt / d_km))
-    # weathering toward base level (continental interiors settle ~200 m up)
-    base = np.where(cont, 200.0, 0.0)
+    # weathering toward base level (continental interiors settle ~200 m up). The height above it stands in
+    # for relief (PW-279), so it is counted from the sea without the ice's fall (base_rise): a glacial
+    # lowstand lifts every plain against the sea but steepens no interior slope (its rivers' new reach to
+    # the shore is stream power's below); counting it made a cold era's plains wear down ~5x faster and the
+    # weathering sink rise as the planet cooled (PW-438)
+    base = np.where(cont, 200.0 + base_rise, 0.0)
     above = np.maximum(h - base, 0) * land
     h = h - above * (1 - np.exp(-K * dt / tau * (1 + (above / h0) ** 2)))
     # river incision toward the next cell downstream (implicit, unconditionally stable)
