@@ -29,7 +29,7 @@ Model (per 500-yr step, see simulate)
   change and the orbital anomaly. Global temperature
   follows the ice: CO2 drops as ice grows (~ -2.5 C at an Earth-LGM-sized
   ice volume, then saturates) and new ice sheets reflect sunlight (a
-  smaller version of the main run's ice_albedo rule, capped). Rain scales
+  main run's ice_albedo rule, as the change from the start). Rain scales
   ~ exp(0.07 dT) with the global and orbital changes (climate.compute
   already dries the air over high domes).
 - Ice surfaces: perennial snow is bright, so its summer warmth is damped
@@ -157,14 +157,16 @@ class TZParams:
     co2_cool: float = 2.5  # C global cooling per 120 m of sea level locked in extra ice (CO2 drawdown) ...
     co2_max: float = 1.0  # ... saturating at this many times that (glacial CO2 bottoms out, Earth ~180 ppm)
     start: str = "auto"  # where the start sits in the ice-age cycle: 'interglacial' (Earth today: the CO2
-    # and ice-albedo feedbacks have their full room to a glacial maximum) or 'average' (a run's moment:
+    # feedback has its full room to a glacial maximum) or 'average' (a run's moment:
     # its ice is the mean extent over the cycles and its dT already has that ice's albedo and part of
-    # the glacial CO2 drop, so only average_room of each cap is left); 'auto': interglacial for Earth
+    # the glacial CO2 drop, so only average_room of its cap is left; the ice albedo levels off by itself);
+    # 'auto': interglacial for Earth
     average_room: float = 0.5  # (Earth: 230 ppm on average over the last cycles, 280 interglacial, 185 glacial)
     co2_lag: float = 3.0  # kyr: CO2 follows the ice this slowly
-    ice_albedo: float = 0.75  # C global cooling per 3% of the surface newly under ice (the local
-    # effect is already in the ice surface's own climate; the main run uses 1.5 for both) ...
-    ice_albedo_max: float = 2.0  # ... at most this many C
+    ice_albedo: float = 1.5  # C global cooling per 3% of the planet under land ice, levelling off toward ...
+    ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py), as the change from the start's
+    # ice (PW-030: before, half the run's, capped at 2 C and for a run's moment at average_room of that; the
+    # run's ice surfaces have their own local climate too, so the halving had no reason)
     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
     # mass balance
     pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean
@@ -533,6 +535,11 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
 
     Vaf0 = above_flotation(0.0)
     ice_frac0 = float((H > 1).mean())
+
+    def albedo(f):
+        """C of global cooling by land ice over a share f of the planet (the main run's rule, earth.py:
+        it levels off, so a planet already icy gains less cooling from more ice)."""
+        return p.ice_albedo_max * math.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
     dT_run = float(src["dT"])
     co2 = 0.0  # C, the lagged CO2 part of the global change
 
@@ -715,8 +722,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
         # global temperature: CO2 follows the ice volume (lagged), ice albedo follows its area
         excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
         co2 += (1 - math.exp(-step / p.co2_lag)) * (-p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * room)) - co2)
-        dTg = co2 - float(np.clip(p.ice_albedo * ((H > 1).mean() - ice_frac0) / 0.03, -p.ice_albedo_max,
-                                  p.ice_albedo_max * room))
+        dTg = co2 - (albedo(float((H > 1).mean())) - albedo(ice_frac0))
         if s_no % refresh == 0:
             full_climate(dTg)
         blend((s_no % refresh) / refresh)

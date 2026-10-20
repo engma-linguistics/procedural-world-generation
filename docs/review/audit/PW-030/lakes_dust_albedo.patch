@@ -1,0 +1,147 @@
+diff --git a/planet/timezoom.py b/planet/timezoom.py
+index 8939ebe..57203ce 100644
+--- a/planet/timezoom.py
++++ b/planet/timezoom.py
+@@ -139,6 +139,10 @@ class TZParams:
+     # icemass.air_mass, carried along the winds: PW-336),
+     melt_hold: float = M.MELT_HOLD  # temperatures above 0 C are scaled by this (as climate.compute),
+     ice_absorb: float = 0.2  # and it feels this share of an insolation change (it absorbs little) ...
++    dust_albedo: float = 0.1  # glacial dust darkens snow and ice by this much (albedo) ... (Krinner et al. 2006:
++    # 0.05-0.1 on the LGM's northern sheets' ablation zones; 0 = off)
++    dust_land: float = 0.035  # ... once new land this big (share of the surface) lies bare (Earth's LGM shelves) ...
++    dust_dt: float = 4.0  # ... or the planet is this much colder than at the start (dry, windy, bare: 0 = off)
+     absorb_km: float = 600.0  # ... the land's, sea's and ice's responses mixed over this scale (km; the air
+     # mass, orbit_k), 0 = locally
+     snow_w: float = M.SNOW_W  # mm w.e.: lying snow this deep is fully bright (the surface is bright while the
+@@ -162,9 +166,9 @@ class TZParams:
+     # the glacial CO2 drop, so only average_room of each cap is left); 'auto': interglacial for Earth
+     average_room: float = 0.5  # (Earth: 230 ppm on average over the last cycles, 280 interglacial, 185 glacial)
+     co2_lag: float = 3.0  # kyr: CO2 follows the ice this slowly
+-    ice_albedo: float = 0.75  # C global cooling per 3% of the surface newly under ice (the local
+-    # effect is already in the ice surface's own climate; the main run uses 1.5 for both) ...
+-    ice_albedo_max: float = 2.0  # ... at most this many C
++    ice_albedo: float = 1.5  # C global cooling per 3% of the planet under land ice, levelling off toward ...
++    ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py's albedo; PW-030: before, half
++    # of it, capped at 2 C and at average_room of that for a run's moment), as the change from the start's ice
+     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
+     # mass balance
+     pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean
+@@ -195,6 +199,9 @@ class TZParams:
+     shelf_warm: float = -5.0  # C: ... floating ice is a shelf where the air's annual mean over the sea is below this
+     shelf_cold: float = -10.0  # (in full below this; Morris & Vaughan 2003's limit of ice-shelf viability), else
+     # it breaks up; a shelf spreads under its own weight (Weertman 1957, held back by the same buttressing) ...
++    lake_calving: float = 0.25  # per yr: calving speed (m/yr) per m of water at a land margin standing in a
++    # proglacial lake (simulate's 3b; lake fronts calve roughly ten times slower than tidewater ones at the same
++    # depth, Warren & Kirkbride 2003, Benn et al. 2007; here a quarter of `calving`, itself low for the grid)
+     melt_k: float = 10.0  # m/yr per C: ... and melts from below where the sea is warmer than freezing (Holland
+     # et al. 2008, Jenkins et al. 2018: ~10 m/yr per degree of thermal forcing)
+ 
+@@ -278,7 +285,7 @@ def orbit_anomaly(grid: Grid, orb: tuple[float, float, float], tilt: float, p: T
+     return k[:, None] * dq[band]
+ 
+ 
+-def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np.ndarray:
++def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams, absorb: float | None = None) -> np.ndarray:
+     """C per W/m2 of insolation change per cell. Bare land feels insol_k,
+     the sea insol_sea of it (its deep mixed layer). Bright snow and ice
+     absorb little (ice_absorb), but the air over them brings what the land,
+@@ -291,7 +298,7 @@ def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np
+     melting all of it in 2 kyr.)"""
+     b = np.where(land, np.clip(bright, 0, 1), 0.0)
+     own = np.where(land, p.insol_k, p.insol_k * p.insol_sea)
+-    k = own * (1 - b * (1 - p.ice_absorb))
++    k = own * (1 - b * (1 - (p.ice_absorb if absorb is None else absorb)))
+     mix = climate.smooth_big(grid, k, p.absorb_km) if p.absorb_km > 0 else k
+     return own * (1 - b) + b * mix
+ 
+@@ -518,6 +525,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+     V0 = float((H * area).sum())
+ 
+     bed0 = bed.copy()
++    sea_start = (elev0 <= 0) & (H <= 0)  # the start's sea (glacial dust: the shelves a falling sea lays bare)
+ 
+     def above_flotation(sl_):
+         """m3 of water equivalent the ice takes from the sea (the usual
+@@ -533,12 +541,16 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+ 
+     Vaf0 = above_flotation(0.0)
+     ice_frac0 = float((H > 1).mean())
++
++    def albedo(f):
++        """C of global cooling by land ice over a share f of the planet (the main run's rule)."""
++        return p.ice_albedo_max * math.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
+     dT_run = float(src["dT"])
+     co2 = 0.0  # C, the lagged CO2 part of the global change
+ 
+     out = {k: [] for k in LAYERS}
+     frames, series, flows = [], [], []  # flows: accumulation, ablation, calving, NH net (Gt/yr) per step
+-    budget = {"smb": 0.0, "calved": 0.0, "shelf_melt": 0.0}  # m3 of ice gained / lost (calved: all the sea
++    budget = {"smb": 0.0, "calved": 0.0, "shelf_melt": 0.0, "lake": 0.0}  # m3 of ice gained / lost (calved: all the sea
+     # took, the shelves' melt from below included)
+     n_steps = int(round(kyr / step))
+     keep = max(1, int(round(every / step)))
+@@ -715,8 +727,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+         # global temperature: CO2 follows the ice volume (lagged), ice albedo follows its area
+         excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
+         co2 += (1 - math.exp(-step / p.co2_lag)) * (-p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * room)) - co2)
+-        dTg = co2 - float(np.clip(p.ice_albedo * ((H > 1).mean() - ice_frac0) / 0.03, -p.ice_albedo_max,
+-                                  p.ice_albedo_max * room))
++        dTg = co2 - (albedo((H > 1).mean()) - albedo(ice_frac0))
+         if s_no % refresh == 0:
+             full_climate(dTg)
+         blend((s_no % refresh) / refresh)
+@@ -738,11 +749,20 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+         # (the ice surface's own summer damping, icemass.sheet_cover; on ice only: bare ground's seasonal
+         # snow gets none, as the run's new-cap rule, PW-275)
+         damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g), 0.0)
++        # glacial dust (PW-030; Krinner et al. 2006, Ganopolski et al. 2010): the shelves a falling sea lays
++        # bare are dry, windy dust sources, and the dust darkens the snow and ice (by dust_albedo when as much
++        # new land is bare as Earth's ~3.5% of the surface at the LGM): dusty snow absorbs more of the sun,
++        # its summer is damped less (the snow's albedo contrast with bare ground, ~0.6, shrinks) and it
++        # feels more of an insolation rise, so a deep, long glacial meets the next summer-sun peak dirty
++        shelf = float(area[land & (ice_g <= 1.0) & sea_start].sum()) / area.sum()
++        d_alb = p.dust_albedo * min(max(shelf / p.dust_land, -dTg / p.dust_dt if p.dust_dt > 0 else 0.0), 1.0)
++        absorb = p.ice_absorb + d_alb
++        damp *= 1.0 - d_alb / 0.6
+ 
+         def year(dt_b, dq_):
+             # bright snow absorbs little of an insolation change, but the air over it also brings
+             # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
+-            k_orb = orbit_k(g, land, f_snow, p)
++            k_orb = orbit_k(g, land, f_snow, p, absorb)
+             # (the start's correction of the ice-surface climate, only where ice lies: start_anchor)
+             climate_step(land, north, fields_["t_mean"] + anchor * f_alb, fields_["half"], fields_["p_jul"],
+                          fields_["p_jan"], dt_b, dt_wet, k_orb, band, dq_, f_ice, f_alb,
+@@ -776,9 +796,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+             sub = [np.zeros(len(fi)) for _ in range(6)]
+             climate_step(land[fi], north[fi], (fields_["t_mean"] + anchor)[fi], fields_["half"][fi],
+                          fields_["p_jul"][fi], fields_["p_jan"][fi], dt_base[fi] - climate.LAPSE * p.edge_h,
+-                         dt_wet[fi], orbit_k(g, land, f_snow, p)[fi], band[fi], dq,
++                         dt_wet[fi], orbit_k(g, land, f_snow, p, absorb)[fi], band[fi], dq,
+                          np.full(len(fi), min(p.edge_h / p.albedo_h, 1.0)), np.ones(len(fi)), p.ice_cool,
+-                         p.summer_damp * M.sheet_cover(g, np.ones(n))[fi], p.melt_hold,
++                         p.summer_damp * (1.0 - d_alb / 0.6) * M.sheet_cover(g, np.ones(n))[fi], p.melt_hold,
+                          p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub)
+             rate[fi] = sub[0]
+         h_new = np.where(land & ~near, np.maximum(H + smb * dt, 0.0), H)
+@@ -829,6 +849,20 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
+             frac = np.exp(-p.calving * (1.0 - covered) * depth * dt / np.sqrt(area))
+             lost += np.where(front, H * (1 - frac), 0.0)
+             H[front] *= frac[front]
++        # 3b) proglacial lakes (Pollard 1983): melt water ponds against a land margin wherever the bed under
++        # it lies below the land beyond (the lowest bare neighbour: the lake's spill point), above all in the
++        # moat a big sheet has pressed down, which rebounds only after the ice has gone: a big sheet retreating
++        # over its own depression stands in deep water and calves; a small one hardly presses its bed down
++        if p.lake_calving > 0:
++            bare = (bed > sl) & ~grounded & (H <= 1.0)
++            spill = np.minimum.reduceat(np.where(bare, bed, np.inf)[g.nbr_idx], g.nbr_off[:-1])
++            shore = grounded & (H > 1.0) & np.isfinite(spill) & (spill > sl)
++            lake = np.where(shore, np.maximum(spill - np.maximum(bed, sl), 0.0), 0.0)
++            if lake.any():
++                frac = np.exp(-p.lake_calving * lake * dt / np.sqrt(area))
++                lost += H * (1 - frac)
++                budget["lake"] += float((H * (1 - frac) * area).sum())
++                H *= frac
+         budget["calved"] += float((lost * area).sum())
+         flows.append((float(dv[dv > 0].sum()) * gt, float(-dv[dv < 0].sum()) * gt, float((lost * area).sum()) * gt,
+                       float(dv[north].sum()) * gt))

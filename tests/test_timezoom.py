@@ -104,12 +104,13 @@ def test_saved_run_format(cold_src, cold_run, data_root):
 
 
 def test_feedback_room(cold_src, cold_run):
-    """A run's moment is the cycle average: only average_room of the CO2 and
-    ice-albedo caps is left (PW-031); 'interglacial' gets them in full."""
+    """A run's moment is the cycle average: only average_room of the CO2 cap
+    is left (PW-031; the ice albedo, the run's rule, levels off by itself);
+    'interglacial' gets it in full."""
     p = Z.TZParams()
-    floor = -(p.co2_cool * p.co2_max + p.ice_albedo_max)
+    floor = -(p.average_room * p.co2_cool * p.co2_max + p.ice_albedo_max)
     dT = [f["stats"]["dT_global"] for f in cold_run["frames"]]
-    assert min(dT) >= p.average_room * floor - 0.01
+    assert min(dT) >= floor - 0.01
     full = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(start="interglacial"))
     assert min(f["stats"]["dT_global"] for f in full["frames"]) <= min(dT)
 
