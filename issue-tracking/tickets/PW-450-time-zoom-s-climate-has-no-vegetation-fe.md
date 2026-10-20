@@ -1,4 +1,5 @@
 ---
+id: PW-450
 title: "Time zoom's climate has no vegetation feedback (veg=None): no forest-to-tundra snow albedo in glacials"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw448
 blocked_by: []
 relates: [PW-448, PW-033, PW-435]
 refs: [planet/timezoom/fields.py, planet/climate.py, planet/tectonics/earth.py, docs/review/audit/PW-448-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Doing it needs `vegetation.model` at each full-climate refresh (flow, lakes and 
 cheap warm-started variant). Measure its regional effect on Keewatin, Labrador and Fennoscandia summers
 before wiring it into the mass balance.
 - [ ] vegetation feedback in the time zoom's full climate, its glacial effect measured
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-timezoom-no-vegetation-feedback.md (found by pw448).

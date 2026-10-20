@@ -1,7 +1,8 @@
 ---
+id: PW-449
 title: "Ice-albedo levelling-off counts today's ice in Earth's LGM change: 2.8 -> 8% iced gives 1.3 C, not ~2.6"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: climate
 effort: m
@@ -10,6 +11,8 @@ found_by: pw448
 blocked_by: []
 relates: [PW-448, PW-435, PW-447, PW-030, PW-438]
 refs: [planet/tectonics/earth.py, planet/timezoom/forcing.py, planet/timezoom/params.py, docs/review/audit/PW-448-diagnosis.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -34,3 +37,7 @@ Options:
   a run's moment would no longer sit at the zoom's balance in the same way (PW-436).
 - C. Leave it. The glacial stays ~-43 m.
 - [ ] decide; then re-measure Earth (depth, interglacial 8-9% of land, endings) and one cold run moment
+
+## Updates
+- 2026-10-20: Status needs-decision -> todo. Coordinator decision 2026-10-20 (owner delegates physics): option A. Re-anchor the levelling-off in the shared rule, run and time zoom together, in the run lane right after PW-438 lands. Condition: the run's 4-seed L6 cold-era table (PW-438) must not get worse; a stronger ice-albedo slope could deepen the run's cold eras, so measure it.
+- 2026-10-20: Created from inbox draft draft-ice-albedo-levelling-off-misanchored.md (found by pw448).
