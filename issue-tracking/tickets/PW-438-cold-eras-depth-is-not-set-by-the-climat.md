@@ -35,6 +35,7 @@ excursion in the deepest eras (seed 11 / 2), then pick between a smaller `ice_al
 - [ ] decide; re-run the 4-seed table after
 
 ## Updates
+- 2026-10-20: Merged 152bcd4 (coordinator 2026-10-20): base-level and weathering-mask fixes plus CO2-dependent weathering. 3 of 4 seeds are inside the -430 m bar. Stays open for seed 11 and the longer cold time; see PW-452 and PW-451.
 - 2026-10-20: Merged attempt 3 (base level, weathering mask, CO2-dependent weathering): (1) the weathering-to-base-level term counted height from the current sea, so a glacial lowstand lifted every plain (`base_rise` in `surface.erode`); (2) the weathering sink counted glacial erosion on ground the ice left during the update (`sim.weathered`, masked by the ice the erosion ran under); (3) GEOCARB f(CO2) ~ pCO2^0.4 (`WEATHER_CO2`, co2 = ln(source/sink)/0.4), forcing clip widened from +-1.5 to `CO2_MAX` = 3, rates and baselines start at the first real erosion. L6 1 Gyr, sea level from ice (worst / % of time below -430 m / % below -150 m):
 
   | seed | before | after |
