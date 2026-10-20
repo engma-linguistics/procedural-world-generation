@@ -2,7 +2,7 @@
 id: PW-450
 title: "Time zoom's climate has no vegetation feedback (veg=None): no forest-to-tundra snow albedo in glacials"
 type: task
-status: todo
+status: done
 parent: null
 subsystem: timezoom
 effort: l
@@ -28,5 +28,6 @@ before wiring it into the mass balance.
 - [ ] vegetation feedback in the time zoom's full climate, its glacial effect measured
 
 ## Updates
+- 2026-10-20: Status todo -> done. Merged ec36451 (coordinator 2026-10-20): the run's vegetation in the time zoom, with local and global terms. Earth -42.8 -> -45.1 m, no backstop. The term is ~0 at the deepest because the tropics green (new ticket).
 - 2026-10-20: pw450: the time zoom grows the run's vegetation (planet/timezoom/plants.py: cheap model per full climate, in balance at the start; local feedback as the run's plus a global albedo term from the start, `veg` on/local/off). Earth zoom -42.8 -> -45.1 m, backstops 1 -> 0, interglacial ice 8.7-9.8% of land, Laurentide unchanged (1.6 Mkm2, 54.9 N); saved 098d5d. The term is ~0 at the zoom's deepest (-0.02 C; 45-90 N -0.07..-0.12 W/m2 cancelled by greener tropics) and -0.32 W/m2 at a prescribed -6 C (LGM -1.1): docs/review/audit/PW-450-vegetation.md. Tropics' wrong sign: inbox draft draft-glacial-tropics-green-not-dry.md. Runtime +11%.
 - 2026-10-20: Created from inbox draft draft-timezoom-no-vegetation-feedback.md (found by pw448).

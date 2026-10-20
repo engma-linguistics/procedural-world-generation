@@ -1,5 +1,6 @@
 ---
-title: "A colder climate greens the model's dry tropics, so glacial vegetation darkens them (Earth's LGM dried and browned them)"
+id: PW-454
+title: A colder climate greens the model's dry tropics, so glacial vegetation darkens them (Earth's LGM dried and browned them)
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: pw450
 blocked_by: []
 relates: [PW-450, PW-448, PW-435]
 refs: [planet/vegetation.py, planet/climate.py, planet/timezoom/plants.py, docs/review/audit/PW-450-vegetation.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -39,3 +42,6 @@ cooling, too.) Then check the plants' CO2 response against LPJ-type sensitivitie
 models, so the cold eras need re-measuring as well.
 - [ ] at a prescribed -6 C, tropical tree cover falls (or at least doesn't rise), and the vegetation
   term reaches ~-0.6..-1.1 W/m2
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-glacial-tropics-green-not-dry.md (found by pw450).

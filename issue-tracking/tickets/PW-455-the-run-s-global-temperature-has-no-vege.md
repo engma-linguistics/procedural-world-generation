@@ -1,5 +1,6 @@
 ---
-title: "The run's global temperature has no vegetation albedo term (the time zoom has one since PW-450)"
+id: PW-455
+title: The run's global temperature has no vegetation albedo term (the time zoom has one since PW-450)
 type: task
 status: needs-decision
 parent: null
@@ -10,6 +11,8 @@ found_by: pw450
 blocked_by: []
 relates: [PW-450, PW-453]
 refs: [planet/tectonics/earth.py, planet/timezoom/plants.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -25,3 +28,6 @@ vegetation changes there are slow and mixed into the drift. (B) Add the same ter
 `global_temperature`, counted against a slow average like its CO2 terms. That would also need the cold
 eras re-measured (PW-438's table). Lean: A, unless the plant groups' arrival shows a visible warm/cold
 step that the run ought to have.
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-run-no-global-vegetation-albedo.md (found by pw450).
