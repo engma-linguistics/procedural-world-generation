@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-038]
 refs: [planet/timezoom.py, tools/earth_data.py, planet/icemass.py, planet/timezoom_kernels.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-20
 ---
 
 ## Description
@@ -23,6 +23,7 @@ Fennoscandian ice. Calibration target (from the spec): Laurentide/Fennoscandian-
 the cold peaks over ~150 kyr.
 
 ## Updates
+- 2026-10-20: pw033: diagnosis in docs/review/audit/PW-033-diagnosis.md, no fix merged. The glacials are precession heartbeats (300 -> 314 -> 326 kyr: +3 -> -45 -> -12 m), and no sheet survives a warm half-cycle. Ranked: (1) margin cells melt at edge_h 408 m against the cell's ~900 m Nye mean (edge_h 900: -98 m; with baseline=obs a 5.0 Mkm2 Laurentide to 46.6 N), but it is shared with the run and the zoom alone breaks the consistency test (-46 m); (2) insol_k 0.25 is ~3x the seasons' 0.08-0.09 C per W/m2 (0.10: -62 m); (3) the overturning sinks 4 Sv in Baffin Bay, the Norwegian Sea freezes, and Fennoscandia is -18 C in January (its ice is a cold-bias artefact); (4) E Canada is winter-dry and summer-warm (Labrador snowfall 236 vs 408 mm). Mass-balance physics (DDF 3/8, refreeze, Ohmura-consistent snowline) and Hudson Bay are fine. Needs-decision drafts for (1) and (2), climate/ocean drafts for (3) and (4).
 - 2026-10-15: Merged inbox draft draft-earth-glaciation-hinges-on-snow-damping.md ("Time zoom on Earth: glaciation hinges on the lying snow's local damping (too much Siberia/Alaska, too little Fennoscandia)", found by icemb).
   Since PW-190 (icemb) the run, the time zoom and the zoom share one surface mass balance
   (`icemass.py`): while the year's snow lies, the summer's warmth above the annual mean is damped by

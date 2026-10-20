@@ -1,0 +1,41 @@
+---
+title: "Margin cells melt as their outermost 10 km (edge_h 408 m vs the cell's ~900 m mean): sub-cell margin in run and time zoom together"
+type: task
+status: needs-decision
+parent: null
+subsystem: timezoom
+effort: l
+impact: high
+found_by: pw033
+blocked_by: []
+relates: [PW-033, PW-435, PW-115, PW-422, PW-453]
+refs: [planet/timezoom/sim.py, planet/icemass.py, planet/tectonics/earth.py, docs/review/audit/PW-033-diagnosis.md]
+---
+
+## Description
+A margin cell (grounded ice next to bare land) takes the balance of a surface `edge_h` = `icemass.EDGE_H` =
+408 m high. That is the 75 kPa Nye profile 10 km in from the edge. Across a whole L6 cell (~110 km) the
+profile rises to 1354 m, and the cell's area-mean surface is ~900 m: ~3 C colder at 6.5 C/km. So a sheet's
+outer cell melts as if all of it were its outermost 10 km, and the ablation zone is one cell of all-melt
+(PW-115). The run uses the same height (`earth.ICE_EDGE_M`).
+
+Measured, Earth L6 time zoom, 600 kyr (docs/review/audit/PW-033-diagnosis.md section 4):
+- main: -45 m, Laurentide at most 1.7 Mkm2 (south 54 N), interglacial ice 8.7-9.8% of land.
+- `edge_h=900` (margins and fronts): -98 m, 5 endings, 0 backstops, interglacial ice 9.7-13.3%.
+  Margins only: -65 m. Fronts only: -73 m.
+- `baseline=obs` + `edge_h=900`: -71 m, **Laurentide 5.0 Mkm2 reaching 46.6 N** (> 2 Mkm2 for 60% of the
+  time), Hudson Bay grounded across, Fennoscandia 0.75 Mkm2. This is the first LGM-like geography.
+- **The zoom alone can't change it:** the unforced cold moment of `tests/test_timezoom_consistency.py`
+  drifts -46 m in 20 kyr with `edge_h=900` (main -17, bar 25 m), because the run's sheets are the 408 m
+  rule's equilibrium.
+
+Options:
+- (a) A resolution-aware sub-cell margin in both run and zoom: the margin's balance averaged over the Nye
+  ramp across the cell (2-point quadrature at 0.46 and 0.89 x the profile at the cell width, or the 2/3
+  mean height). This needs the run's 10-seed cold-era check (pw449 `runN.sh`, bar ~70%) and a look at
+  PW-422's creeping margins. Lean.
+- (b) Keep 408 m and accept the pulse-like glacials.
+- (c) Zoom-only: no; it breaks the run-zoom consistency.
+Pair it with the orbit-response decision (`draft-orbit-response-from-seasons.md`): both lift the
+interglacial ice, so they should be balanced together.
+- [ ] decide
