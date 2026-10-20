@@ -10,7 +10,7 @@ impact: med
 found_by: tectchurn
 blocked_by: []
 relates: [PW-108]
-refs: [planet/tectonics/plate_kernels.py, tools/churn.py, "run:abcdac", "run:11ca32"]
+refs: [planet/tectonics/plate_kernels.py, tools/churn.py]
 created: 2026-10-14
 updated: 2026-10-15
 ---
@@ -26,7 +26,7 @@ deletes the loser's sampled cell and stacks its thickness; the loser's
 unsampled cells survive as ghosts within a cell of the front
 (`cleanup_ghosts` only removes 'deep' ones) and win cells back when the front
 wobbles; gaps behind a wobbling front become new ocean floor (age 0) inside
-the belt (seen in run 428083, cell 110673: 5349 m, 68 km -> oceanic, 19 km,
+the belt (seen in run 428083 (deleted), cell 110673: 5349 m, 68 km -> oceanic, 19 km,
 age 2 within 4 Myr). Try: delete a ghost wherever it would lose to the cell's
 owner by resolve's rules (stacking continental ghosts onto the winner), and
 fill gaps whose plates don't diverge from the neighbours (see the draft on

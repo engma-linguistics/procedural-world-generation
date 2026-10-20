@@ -10,7 +10,7 @@ impact: med
 found_by: veg
 blocked_by: []
 relates: [PW-187]
-refs: ["run 8571dd", "run e0e21e", "run ee65aa", "world dc3732"]
+refs: []
 created: 2026-10-15
 updated: 2026-10-15
 ---

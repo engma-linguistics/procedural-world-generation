@@ -10,7 +10,7 @@ impact: high
 found_by: ocean
 blocked_by: []
 relates: [PW-022]
-refs: [planet/climate.py, tools/earth_check.py, "world 2f38e3", "plan_next@bdc967f: Known issues → Climate"]
+refs: [planet/climate.py, tools/earth_check.py, "plan_next@bdc967f: Known issues → Climate"]
 created: 2026-10-14
 updated: 2026-10-14
 ---

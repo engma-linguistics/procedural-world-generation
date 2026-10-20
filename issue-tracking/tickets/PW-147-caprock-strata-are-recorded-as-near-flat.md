@@ -10,7 +10,7 @@ impact: low
 found_by: zoomland1
 blocked_by: []
 relates: [PW-010, PW-009]
-refs: [planet/landform.py, planet/zoom_landforms.py, "world 800c99"]
+refs: [planet/landform.py, planet/zoom_landforms.py]
 created: 2026-10-14
 updated: 2026-10-14
 ---
@@ -18,7 +18,7 @@ updated: 2026-10-14
 ## Description
 The zoom turns dipping caprock into asymmetric cuestas (zoom_landforms
 Caprock: the benches tilted by strata_dip along the regional downhill;
-tested on a synthetic dip), but on world 800c99 caprock cells' strata_dip is
+tested on a synthetic dip), but on world 800c99 (deleted) caprock cells' strata_dip is
 0.001-0.03 deg (median 0.006): flat strata get the regional slope of the
 coarse land (landform.regional_dip), which is tiny at 55 km cells. Real
 cuestas (Niagara ~0.3-0.5 deg, Paris Basin, Cotswolds) come from gentle
