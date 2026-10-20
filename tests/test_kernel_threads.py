@@ -171,13 +171,15 @@ def test_climate_step(g5):
            np.clip(h / 500, 0, 1), np.clip(h / 50, 0, 1), 5.0, rng.random(n) * 0.5, 0.3, 0.4, 300.0,
            4.5, 3.0, 8.0, 0.4, 0.07)
 
+    mf = 1 + rng.random(n)
+
     def run(fn):
         outs = [np.zeros(n) for _ in range(6)]
-        fn(*ins, *outs)
+        fn(*ins, *outs, mf)
         return outs
-    ref = run(njit(K.climate_step.py_func))
+    ref = run(njit(K.climate_melt.py_func))
     assert (ref[0] != 0).any() and (ref[5] > 0).any()
-    _same(_at_threads(lambda: run(K.climate_step)), ref)
+    _same(_at_threads(lambda: run(K.climate_melt)), ref)
 
 
 def test_sia_flow(g5):

@@ -79,6 +79,21 @@ class TZParams:
     ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py), as the change from the start's
     # ice (PW-030: before, half the run's, capped at 2 C and for a run's moment at average_room of that; the
     # run's ice surfaces have their own local climate too, so the halving had no reason)
+    # the ice-age cycle (cycle.py, PW-440): between ice ages / building / ending
+    cycle: str = "on"  # 'off': no cycle state (the feedbacks above alone)
+    sheet_h: float = 2000.0  # m: the sheet scale is the sea-level equivalent of this much ice ...
+    sheet_share: float = 0.1  # ... over this share of the planet's land
+    build_q: float = 0.4  # building starts when the summer sun falls below this percentile of its series
+    end_min: float = 0.4  # an ending needs this much extra ice (x the sheet scale) ...
+    bar_hi: float = 0.95  # ... and a summer sun above a bar falling from this percentile ...
+    bar_lo: float = 0.6  # ... to this one at ...
+    glacial_kyr: float = 100.0  # ... this age (the orbit's short eccentricity period)
+    backstop: float = 2.0  # x glacial_kyr: past this age the next sunshine peak ends the glacial (counted)
+    end_e: float = 0.1  # an ending runs until the extra ice is below this (x the sheet scale)
+    cycle_tau: float = 3.0  # kyr: the ending's boosts ramp in this fast
+    melt_max: float = 1.8  # the extra ice's degree-day factors, at most this x ...
+    calve_max: float = 2.0  # ... its marine fronts' calving x this ...
+    release: float = 0.9  # ... and a CO2 release of this x co2_cool (Earth ~90 ppm), up to the interglacial's
     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
     # mass balance
     pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean

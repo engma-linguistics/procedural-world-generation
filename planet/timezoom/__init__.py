@@ -78,7 +78,8 @@ Package layout
 params     constants, the per-frame layers, TZParams (the knobs)
 sources    source_from_run / source_from_sim / source_earth
 geometry   cell areas and edge lengths for the finite volumes
-forcing    orbit_anomaly / orbit_k, and Forcing: the global dT from CO2 and ice albedo (PW-440 hooks in here)
+forcing    orbit_anomaly / orbit_k, and Forcing: the global dT from CO2 and ice albedo (the ice-age cycle steps in it)
+cycle      the ice-age cycle (PW-440): between ice ages / building / ending, and the ending's boosts
 fields     ClimateFields: the full climates, blended between refreshes
 ice        ice shelves, calving fronts, ice above flotation
 kernels    numba: the year's mass balance (climate_step), shallow-ice flow (sia_flow)

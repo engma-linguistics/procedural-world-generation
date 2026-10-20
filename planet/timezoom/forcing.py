@@ -14,6 +14,7 @@ import numpy as np
 from .. import climate
 from ..grid import Grid
 from ..orbit import BAND_DEG, BAND_LAT, insolation, reference_orbit
+from .cycle import Cycle
 from .params import TZParams
 
 
@@ -61,18 +62,25 @@ def albedo(p: TZParams, f: float) -> float:
 
 class Forcing:
     """The global temperature change dTg (C, against the run's own) the ice
-    gives: CO2 follows the ice volume (lagged), ice albedo follows its area.
+    gives: CO2 follows the ice volume (lagged), ice albedo follows its area,
+    and in an ice age's ending (cycle.Cycle) CO2 is released.
     room: the share of the CO2 feedback's cap left (1 for an interglacial
     start); ice_frac0: the start's ice area share."""
 
-    def __init__(self, p: TZParams, step: float, room: float, ice_frac0: float):
-        self.p, self.step, self.room, self.ice_frac0 = p, step, room, ice_frac0
+    def __init__(self, p: TZParams, step: float, room: float, ice_frac0: float, cycle: Cycle):
+        self.p, self.step, self.room, self.ice_frac0, self.cycle = p, step, room, ice_frac0, cycle
         self.co2 = 0.0  # C, the lagged CO2 part of the global change
 
-    def update(self, sl: float, ice_frac: float) -> float:
-        """The step's dTg, from the sea level sl (m, change since the start) and the ice area share."""
+    def co2_target(self, sl: float) -> float:
         p = self.p
         excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
-        self.co2 += (1 - math.exp(-self.step / p.co2_lag)) * (
-            -p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * self.room)) - self.co2)
+        return -p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * self.room))
+
+    def update(self, sl: float, ice_frac: float, s_no: int = 0) -> float:
+        """The step's dTg, from the sea level sl (m, change since the start) and the ice area share
+        (the cycle's state steps first)."""
+        p, cyc = self.p, self.cycle
+        cyc.step(s_no, sl)
+        target = cyc.co2_target(self.co2_target(sl), sl)
+        self.co2 += (1 - math.exp(-self.step / p.co2_lag)) * (target - self.co2)
         return self.co2 - (albedo(p, ice_frac) - albedo(p, self.ice_frac0))
