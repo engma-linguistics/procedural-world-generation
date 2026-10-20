@@ -35,5 +35,15 @@ excursion in the deepest eras (seed 11 / 2), then pick between a smaller `ice_al
 - [ ] decide; re-run the 4-seed table after
 
 ## Updates
+- 2026-10-20: Merged attempt 3 (base level, weathering mask, CO2-dependent weathering): (1) the weathering-to-base-level term counted height from the current sea, so a glacial lowstand lifted every plain (`base_rise` in `surface.erode`); (2) the weathering sink counted glacial erosion on ground the ice left during the update (`sim.weathered`, masked by the ice the erosion ran under); (3) GEOCARB f(CO2) ~ pCO2^0.4 (`WEATHER_CO2`, co2 = ln(source/sink)/0.4), forcing clip widened from +-1.5 to `CO2_MAX` = 3, rates and baselines start at the first real erosion. L6 1 Gyr, sea level from ice (worst / % of time below -430 m / % below -150 m):
+
+  | seed | before | after |
+  |---|---|---|
+  | 3199 | -368 / 0% / 19% | -386 / 0% / 31% |
+  | 11 | -609 / 7.2% / 18% | -569 / 5.2% / 37% |
+  | 2 | -542 / 5.2% / 26% | -404 / 0% / 22% |
+  | 21 | -510 / 5.2% / 17% | -393 / 0% / 11% |
+
+  Net improvement, two parts are bug fixes. Stays open: seed 11 still spends 5.2% below -430 m, and the time below -150 m rose on 3199 and 11. Follow-ups: drafts draft-ice-extent-at-dt-4.md and draft-cold-era-weathering-sink-composition.md. Goldens updated for the changed sim.
 - 2026-10-20: Owner/coordinator 2026-10-20: separate from the time zoom's cycle work. Idea to try here if it pans out in the time zoom (PW-440): CO2 headroom, i.e. CO2 must not sit at its floor in cold eras, so it can still rise and end them. A clipped CO2 leaves no feedback to recover with.
 - 2026-10-19: Created from inbox draft draft-cold-eras-ice-albedo-feedback.md (found by pw434).

@@ -73,7 +73,8 @@ class Simulation:
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
         "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (light for the plants)
-        "removed",  # km of crust eroded per cell in the last step (feeds weathering)
+        "removed",  # km of crust eroded per cell in the last step
+        "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
         "climate_t",  # Myr: when the climate fields were computed
         "rain_state",  # the rain kernel's end state at that update (climate.compute's; None before the first)
@@ -145,6 +146,7 @@ class Simulation:
         self.veg_niche = np.zeros(6)
         self.cloud_jul = self.cloud_jan = None
         self.removed = np.zeros(n)
+        self.weathered = np.zeros(n)
         self.thermo = np.zeros(2)
         self.climate_t = 0.0
         self.rain_state = None
