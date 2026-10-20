@@ -1,0 +1,38 @@
+---
+id: PW-438
+title: Cold eras' depth is not set by the climate drift sd; look at the ice-albedo / CO2 feedback instead
+type: task
+status: needs-decision
+parent: null
+subsystem: climate
+effort: m
+impact: high
+found_by: pw434
+blocked_by: []
+relates: [PW-434, PW-240, PW-366, PW-364]
+refs: [planet/tectonics/earth.py, planet/tectonics/params.py, planet/icemass.py, tools/sealevel.py]
+created: 2026-10-19
+updated: 2026-10-19
+---
+
+## Description
+PW-434 option B (a smaller `climate_drift` sd) did not bring the 4 L6 seeds under the ~-430 m bar. L6, 1 Gyr,
+`tools/sealevel.py`, sea level from ice on 4 Myr samples (mean / worst / share below -150 m / below -430 m):
+
+| seed | sd 3.0 (PW-366) | sd 2.0 | sd 1.6 | sd 2.0, drift time 15 Myr |
+|---|---|---|---|---|
+| 3199 | -82 / -368 / 19% / 0% | -68 / -518 / 14% / 4% | -19 / -66 / 0% / 0% | -30 / -227 / 3% / 0% |
+| 11 | -92 / -609 / 18% / 7% | -107 / -446 / 25% / 3% | -134 / -511 / 31% / 7% | -108 / -521 / 18% / 5% |
+| 2 | -112 / -542 / 25% / 5% | -124 / -570 / 37% / 4% | -77 / -500 / 18% / 2% | -103 / -475 / 25% / 8% |
+| 21 | -75 / -510 / 17% / 5% | -17 / -109 / 0% / 0% | -58 / -294 / 13% / 0% | -102 / -681 / 15% / 12% |
+
+The result is chaotic per seed (a changed sd reshuffles which seed goes deep) and seed 11 is as deep at sd 1.6 as
+at 3.0, so the deep eras are not driven by the drift's amplitude: once a planet dips, the ice-albedo feedback and
+the thicker PW-366 sheets carry it to -450..-600 m regardless. A stronger thermostat would have to act on that
+feedback: `ice_albedo` / `ice_albedo_max`, the weathering thermostat's strength (WEATHER_K), or option C
+(`icemass.LOCAL` 0.3 -> 0.15). Lean: look at how far the albedo feedback drives dT below the drift's own
+excursion in the deepest eras (seed 11 / 2), then pick between a smaller `ice_albedo_max` and option C.
+- [ ] decide; re-run the 4-seed table after
+
+## Updates
+- 2026-10-19: Created from inbox draft draft-cold-eras-ice-albedo-feedback.md (found by pw434).

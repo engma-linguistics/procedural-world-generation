@@ -41,5 +41,7 @@ Lean: B (it addresses how often the eras happen, not the ice physics PW-366 just
 - [ ] decide; re-run the 4-seed table after
 
 ## Updates
+- 2026-10-19: Coordinator 2026-10-19: sd 2.0 not merged. It reshuffles which seed goes deep rather than fixing it (no clear net gain); the branch commit 4263f74 is dropped. Next try is the ice-albedo side, in the new ticket from the agent's draft, after PW-030 lands (run lane serial).
+- 2026-10-19: Option B tried (pw434): sd 2.0 default now, but it does NOT meet the target (share below -430 m 4/3/4/0% vs 0/7/5/5% at sd 3; worst -518/-446/-570/-109 m); sd 1.6 and sd 2.0 + 15 Myr drift time were no better (table in inbox draft cold-eras-ice-albedo-feedback). The deep eras are fed by the ice-albedo feedback, not the drift's size.
 - 2026-10-19: Coordinator decision 2026-10-19 (owner delegates physics): option B, a smaller climate_drift sd (~2 C). Re-run the 4-seed L6 table after.
 - 2026-10-19: Created from inbox draft draft-cold-eras-deeper-after-pw366.md (found by pw366).
