@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-434, PW-240, PW-366, PW-364]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, planet/icemass.py, tools/sealevel.py]
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 ---
 
 ## Description
@@ -35,4 +35,5 @@ excursion in the deepest eras (seed 11 / 2), then pick between a smaller `ice_al
 - [ ] decide; re-run the 4-seed table after
 
 ## Updates
+- 2026-10-20: Owner/coordinator 2026-10-20: separate from the time zoom's cycle work. Idea to try here if it pans out in the time zoom (PW-440): CO2 headroom, i.e. CO2 must not sit at its floor in cold eras, so it can still rise and end them. A clipped CO2 leaves no feedback to recover with.
 - 2026-10-19: Created from inbox draft draft-cold-eras-ice-albedo-feedback.md (found by pw434).

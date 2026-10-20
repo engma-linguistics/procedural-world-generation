@@ -2,7 +2,7 @@
 id: PW-440
 title: "Time zoom: the cold feedback branch is rigid (CO2 clipped, ice area saturated), so glacials never terminate"
 type: task
-status: needs-decision
+status: todo
 parent: null
 subsystem: timezoom
 effort: m
@@ -38,4 +38,5 @@ Lean: B, with A's smooth saturation, tested on the handoff's three L6 moments an
 else; the target metrics are PW-030's.
 
 ## Updates
+- 2026-10-20: Status needs-decision -> todo. Owner decision 2026-10-20: a three-mode cycle (Paillard 1998 / Huybers 2011): between ice ages, building, ending, with hysteresis (once an ending starts it runs to completion). An ending starts when the ice is big enough AND a summer-sunshine peak beats a bar that falls with the glacial's age; the orbit picks the timing and nothing forces a length. Inside an ending: (1) melt sensitivity rises smoothly with the extra ice, 1.0x between ice ages up to ~1.8x for big sheets; (2) CO2 release of +80-100 ppm over ~5-10 kyr (fixes the clipped-CO2 lock); (3) faster calving for marine-based ice. Thresholds come from each planet's own sunshine range. Backstop: past ~2x a typical length, the next peak ends it; log how often it fires. Done: swing >= 80 m, slow builds and fast endings, Earth's interglacial ice unchanged (~8-9% of land), unforced start still holds. Sea-ice starvation parked as PW-441. Follows the PW-442 refactor.
 - 2026-10-20: Created from inbox draft draft-timezoom-cold-branch-rigid.md (found by pw030).
