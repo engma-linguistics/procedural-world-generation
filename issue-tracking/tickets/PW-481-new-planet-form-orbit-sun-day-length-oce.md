@@ -1,5 +1,6 @@
 ---
-title: New planet form: orbit, sun, day length, ocean fraction, atmosphere and planet size are not parameters yet
+id: PW-481
+title: "New planet form: orbit, sun, day length, ocean fraction, atmosphere and planet size are not parameters yet"
 type: story
 status: todo
 parent: PW-244
@@ -10,6 +11,8 @@ found_by: agent-make-ui
 blocked_by: []
 relates: [PW-472, PW-248, PW-443]
 refs: [planet/make.py, planet/tectonics/params.py, planet/orbit.py, viewer/start.js]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Not configurable at all (listed in the form under "Not configurable yet", `make.
 Each is a real piece of model work, and several interact with PW-443 (planet-relative thresholds: weird worlds post-v1). Suggested order if wanted: star brightness + orbit radius as one "insolation" parameter, water inventory, day length, then size.
 - [ ] each new parameter added to `tectonics.Params` (or a planet-level params object) and to `make.SETTINGS`, with range and help text
 - [ ] `UNSUPPORTED` shrinks accordingly
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-make-settings-gaps.md (found by agent-make-ui).

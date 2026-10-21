@@ -1,4 +1,5 @@
 ---
+id: PW-480
 title: planet make jobs cannot be cancelled and restart from scratch after a server restart
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: agent-make-ui
 blocked_by: []
 relates: [PW-248, PW-472]
 refs: [planet/make.py, planet/api.py, planet/server.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -18,3 +21,6 @@ refs: [planet/make.py, planet/api.py, planet/server.py]
 - **Cancel:** there is no way to stop a job from the viewer (no `DELETE /api/jobs/<id>`; the pool worker would have to be killed, `parallel.Pool`). A wrong L7 submit costs 30 minutes of a worker slot.
 - [ ] make resumes at the first missing stage after a restart
 - [ ] a Cancel button on the progress panel (and the start-screen banner), partial outputs kept or removed as the owner prefers (partial planets are listed in the gallery meanwhile)
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-make-resume-cancel.md (found by agent-make-ui).
