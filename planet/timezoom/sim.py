@@ -82,7 +82,9 @@ class _Sim:
 
         self.fields = ClimateFields(g, src, p, self.tilt, self.dT_run, self.area, self.H)
 
+        self.fields.plants.every = every
         self.out = {k: [] for k in LAYERS}
+        self.open_land: list = []  # per frame: ice-free land (the plants' cover shows only there)
         self.frames, self.series, self.flows = [], [], []  # flows: accumulation, ablation, calving, NH net (Gt/yr) per step
         self.budget = {"smb": 0.0, "calved": 0.0, "shelf_melt": 0.0}  # m3 of ice gained / lost (calved: all the sea
         # took, the shelves' melt from below included)
@@ -253,6 +255,7 @@ class _Sim:
         for name, v in (("elevation", surf), ("ice", ice), ("temperature", self.t_ann), ("climate", k),
                         ("glacial_erosion", self.cut), ("glacial_till", self.till)):
             self.out[name].append(S.encode(v, LAYERS[name]))
+        self.open_land.append((surf > 0) & (ice <= 0))
         vol = float((self.H * self.area).sum())
         self.frames.append({"t": round(t_kyr, 3), "stats": self.stats(t_kyr, surf, ice, vol, orb, dq65, dTg)})
 
@@ -275,6 +278,7 @@ class _Sim:
                 "insol_65n_jul_anom": round(dq65, 1), "dT_global": round(dTg, 2),
                 "ice_age": NAMES[self.index.modes[self.s_no]] if self.index else NAMES[0],
                 "glacial_index": round(self.forcing.I, 3),
+                **({"co2": round(F.plants.co2_index(self.forcing.co2), 3)} if F.plants.on else {}),
                 "overturning_north_sv": round(F["moc_sv"][0], 1),
                 "overturning_south_sv": round(F["moc_sv"][1], 1),
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}
@@ -479,9 +483,19 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     s = _Sim(src, kyr, step, every, p)
     s.run(progress, t_start)
     H, area, F = s.H, s.area, s.fields
+    data = {k: np.stack(v) for k, v in s.out.items() if v}
+    if F.plants.on:
+        F.plants.finish(s.n_steps * step)
+        tc = F.plants.tree_at
+        data["tree_cover"] = np.stack([np.where(m, tc.get(f["t"], 0), 0).astype(np.uint8)
+                                       for f, m in zip(s.frames, s.open_land)])
+    veg_glacial = {}
+    if F.plants.on:
+        I = np.array([f["stats"]["glacial_index"] for f in s.frames])
+        veg_glacial = F.plants.glacial_bands(data["tree_cover"], np.stack(s.open_land), I, s.g.lat)
     ice_cycle = cycling_ice_sun(s.g, area, s.frames, s.out["ice"], s.ref_orb)
     cyc = {**s.index.summary(), **s.glacial}
-    return {"frames": s.frames, "data": {k: np.stack(v) for k, v in s.out.items()}, "ice_cycle": ice_cycle, "cycle": cyc,
+    return {"frames": s.frames, "data": data, "ice_cycle": ice_cycle, "cycle": cyc,
             "series": np.array(s.series), "flows": np.array(s.flows), "params": asdict(p), "phases": s.ph.tolist(),
             "budget": {**s.budget, "V0": s.V0, "V_end": float((H * area).sum()), "ocean_area": s.ocean_area,
                        "Vaf0": s.Vaf0, "Vaf_end": s.above_flotation(s.sl)},
@@ -491,5 +505,5 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                       "slide_km": s.slide_km},
             "anchor": s.anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(F.compute_s, 1),
-            "veg_s": round(F.plants.time_s, 1), "veg": F.plants.series,
+            "veg_s": round(F.plants.time_s, 1), "veg": F.plants.series, "veg_glacial": veg_glacial,
             "substeps": s.nsub_total}

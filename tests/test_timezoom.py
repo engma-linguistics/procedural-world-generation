@@ -362,3 +362,15 @@ def test_shelf_spreads_and_melts():
     assert abs(h[0] - steady) < 0.05 * steady and abs(h[1] - steady) < 0.05 * steady
     assert h[2] < 300.0 and h[3] == 0.0
     assert np.allclose(h0 + q * 20000.0 - h - out - gone, 0.0, atol=1e-6)
+
+
+def test_frames_carry_the_migrating_tree_cover(cold_run, cold_src):
+    """PW-213: every frame has the tree cover (%), only on ice-free land; the speed limit changes only the plants."""
+    tc = cold_run["data"]["tree_cover"]
+    nf, n = len(cold_run["frames"]), cold_src["grid"].n
+    assert tc.shape == (nf, n) and tc.dtype == np.uint8 and tc.max() <= 100 and tc.max() > 0
+    assert (tc[cold_run["data"]["ice"] > 0] == 0).all()
+    assert all(f["stats"]["co2"] is not None for f in cold_run["frames"])
+    free = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(veg_speed=0.0))
+    assert np.array_equal(free["data"]["ice"], cold_run["data"]["ice"])  # (the ice and climate are the same)
+    assert np.array_equal(free["data"]["tree_cover"][0], tc[0])

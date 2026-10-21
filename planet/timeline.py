@@ -405,6 +405,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     veg = keyframe_vegetation(m, fr, a["tree_cover"], params.plants_from)
     st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
+    if st.get("veg"):  # a time zoom's plants (finish.py): its cover and CO2 instead of the keyframe's
+        veg = {**veg, **st["veg"]}
     cover, landforms, glacial = a["sediment_cover"], {k: a[k] for k in LANDFORM_LAYERS}, st.get("glacial")
     if glacial is not None:
         # a time zoom's glacial imprint (PW-037): the ice stripped cover and dropped till (km here), so
