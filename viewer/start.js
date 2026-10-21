@@ -2,6 +2,7 @@
 // grouped by what they came from: planet/family.py) and a "New planet" form that starts planet/make.py's
 // chain as a server job (POST /api/make) and follows its progress. Shown by index.html when the address
 // names nothing to open; opening anything is a plain navigation (?run=, ?world=, ?world=&tab=zoom&zoom=).
+import { createGlobePicker } from './globepick.js';
 import { cancelJob, deleteNode, esc, fmtDuration, getPlanets, injectCss, kindName, nodeWhen, openUrl, postJob, primaryNode, trackJob, treeHtml } from './planets.js';
 
 const CSS = `
@@ -17,6 +18,11 @@ const CSS = `
 #start .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 #start .card:hover { border-color: var(--accent); }
 #start .card .pic { cursor: pointer; }
+#start .card .pl-thumb { object-fit: contain; }
+#start .views { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+#start .views .lbl { color: var(--muted); font-size: 12px; }
+#start .views button { background: #111827; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+#start .views button[aria-pressed=true] { background: var(--accent); color: #06121f; border-color: var(--accent); }
 #start .card .nm { font-weight: 600; overflow-wrap: anywhere; }
 #start .card .meta { color: var(--muted); font-size: 12px; }
 #start .chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -68,7 +74,9 @@ export async function showStart() {
   el.id = 'start';
   el.innerHTML = `<div class="wrap"><header><h1>Planet Viewer</h1>
     <div class="seg" id="stTabs"><button data-tab="gallery" class="on">Planets</button><button data-tab="new">New planet</button></div></header>
-    <div id="stBanner"></div><section id="stGallery"></section><section id="stNew" hidden></section></div>`;
+    <div id="stBanner"></div><section id="stGallery"><div class="views" hidden>
+      <span class="lbl">Show</span><button data-view="globe" aria-pressed="true">Globe</button><button data-view="list" aria-pressed="true">Map list</button></div>
+      <div id="stGlobe"></div><div id="stList"></div></section><section id="stNew" hidden></section></div>`;
   document.body.append(el);
   const $ = (s) => el.querySelector(s);
   let planets = [];
@@ -81,21 +89,40 @@ export async function showStart() {
   $('#stTabs').addEventListener('click', (e) => e.target.dataset.tab && tab(e.target.dataset.tab));
 
   // ------------------------------------------------------------ gallery
+  // which views are on (the globe picker, the list of Equal Earth maps), remembered per browser
+  const VIEW_KEY = 'planet.startViews';
+  const views = { globe: true, list: true };
+  try { Object.assign(views, JSON.parse(localStorage.getItem(VIEW_KEY) || '{}')); } catch { /* private window */ }
+  const saveViews = () => { try { localStorage.setItem(VIEW_KEY, JSON.stringify(views)); } catch { /* private window */ } };
+  const metaOf = (p) => [p.seed != null && `seed ${p.seed}`, p.level != null && `L${p.level}`, p.myr && `${p.myr} Myr`, (p.updated || '').slice(0, 10)].filter(Boolean).join(' · ');
+  const picker = createGlobePicker($('#stGlobe'), () => planets, (p) => openUrl(p, primaryNode(p)), metaOf);
+  function applyViews() {
+    $('#stList').hidden = !views.list;
+    $('#stGallery .views').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(!!views[b.dataset.view])));
+    if (views.globe && planets.length) { picker.show(); picker.refresh(); } else picker.hide();
+  }
+  $('#stGallery .views').addEventListener('click', (e) => {
+    const v = e.target.dataset.view;
+    if (!v) return;
+    views[v] = !views[v]; saveViews(); applyViews();
+  });
   async function loadGallery() {
-    $('#stGallery').innerHTML = '<div class="empty">Loading...</div>';
+    $('#stList').innerHTML = '<div class="empty">Loading...</div>';
     planets = await getPlanets();
     drawGallery();
   }
   function drawGallery() {
+    $('#stGallery .views').hidden = !planets.length;
+    applyViews();
     if (!planets.length) {
-      $('#stGallery').innerHTML = `<div class="empty">No planets yet. <button class="pl-btn primary" data-act="new">Make the first one</button>
+      $('#stList').innerHTML = `<div class="empty">No planets yet. <button class="pl-btn primary" data-act="new">Make the first one</button>
         <p>Or from a terminal: <code>uv run python -m planet make --seed 1</code>. You can also drop a world .json on this page's viewer.</p></div>`;
       return;
     }
-    $('#stGallery').innerHTML = `<div class="grid">${planets.map((p, i) => {
+    $('#stList').innerHTML = `<div class="grid">${planets.map((p, i) => {
       const c = p.counts, chips = [c.timezoom && `${c.timezoom} time zoom${c.timezoom > 1 ? 's' : ''}`, c.world && `${c.world} world${c.world > 1 ? 's' : ''}`,
         (c.zoom + c.fine) && `${c.zoom + c.fine} zoom${c.zoom + c.fine > 1 ? 's' : ''}`].filter(Boolean);
-      const meta = [p.seed != null && `seed ${p.seed}`, p.level != null && `L${p.level}`, p.myr && `${p.myr} Myr`, (p.updated || '').slice(0, 10)].filter(Boolean).join(' · ');
+      const meta = metaOf(p);
       return `<div class="card" data-i="${i}"><div class="pic" data-act="open"><img class="pl-thumb" src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
         <div class="nm">${esc(p.name)}</div><div class="meta">${esc(meta)}${p.run ? '' : ' · run deleted'}</div>
         <div class="chips">${chips.map((x) => `<span class="chip">${x}</span>`).join('')}</div>

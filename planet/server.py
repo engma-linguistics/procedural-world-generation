@@ -10,7 +10,7 @@
                                       start a job (api.py; make.py: seed to finished world) -> {"job": id}
   DELETE /api/jobs/<id>               cancel a queued or running job (api.Jobs.cancel)
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
-  GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py)
+  GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
@@ -302,7 +302,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*make_estimate(url.query))
         if url.path == "/api/thumb":
             q = dict(parse_qsl(url.query))
-            png = thumbs.thumb(q.get("kind", ""), q.get("id", ""))
+            w = q.get("w", "")
+            png = thumbs.thumb(q.get("kind", ""), q.get("id", ""), q.get("proj", "equal-earth"), int(w) if w.isdigit() else thumbs.W)
             if png is None:
                 return self.send_error(404)
             body = png.read_bytes()
