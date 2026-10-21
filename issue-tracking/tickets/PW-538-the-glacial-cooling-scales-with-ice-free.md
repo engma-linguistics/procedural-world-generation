@@ -1,9 +1,10 @@
 ---
+id: PW-538
 title: The glacial cooling scales with ice-free snowline land, so a run moment with its ice already down gets almost none
 type: task
 status: needs-decision
 parent: PW-470
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: worktree-agent-a1bb68a84d5003e9b (PW-536)
 blocked_by: []
 relates: [PW-536, PW-471, PW-436, PW-435]
 refs: [planet/timezoom/cycle.py, planet/timezoom/sim.py, "time zoom ae8f75", "time zoom 7ec3fe", "time zoom e9d59c", "run bf5ee9 @ 864 Myr"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Lean: A, with the start drift (PW-436) fixed first, since a diagnostic 5 C cooli
 +1 m against -8 m for the interglacial pick: the start drift and the weak sheet response (PW-435) still swamp it.
 - [ ] After a fix, `finish.now_kyr(F.load_timezoom(<zoom of bf5ee9 @ 864 Myr>)[1], 'glacial')` picks a clearly lower sea level than 'interglacial'.
 - [ ] Earth's zoom keeps cycles 98-109 kyr and maxima -86..-104 m.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-glacial-cooling-share-excludes-iced-land.md (found by worktree-agent-a1bb68a84d5003e9b (PW-536)).

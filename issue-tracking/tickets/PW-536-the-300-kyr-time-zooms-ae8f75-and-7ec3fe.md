@@ -2,7 +2,7 @@
 id: PW-536
 title: The 300 kyr time zooms ae8f75 and 7ec3fe show no sea-level swing with the ice index
 type: task
-status: todo
+status: done
 parent: PW-244
 milestone: v1
 subsystem: timezoom
@@ -37,6 +37,7 @@ the ice volume per frame against sea_level_change_m for both zooms.
 - [ ] After a fix, `planet finish <tz> --now glacial` picks a lower sea level than the interglacial pick.
 
 ## Updates
+- 2026-10-21: Status todo -> done. Explained (merged b96af07): bookkeeping correct; the moment's glacial cooling is 0.49 C because little ice-free land sits poleward of its snowline. Calibration call moved to PW-538 (ice epic, v2).
 - 2026-10-21: Created from inbox draft draft-timezoom-sealevel-decoupled-300kyr.md (found by worktree-agent-a7b485e309b6e3a74 (PW-493 now-pick check)).
 - 2026-10-21: Diagnosed (worktree-agent-a1bb68a84d5003e9b); no bookkeeping or wiring bug, so no code change. Documented reason, draft filed under PW-470 (`draft-glacial-cooling-share-excludes-iced-land.md`).
   - Bookkeeping is right: on ae8f75 corr(sea level, ice_sea_equiv) is -1.00 by construction (`sl = -(above_flotation - Vaf0) / ocean_area`, 11.2 Mkm3 of sea-water equivalent = +33 m over a 340 Mkm2 ocean), and the reference is the zoom's own start (sea_level_change_m 0 at t=0), the same for the Earth zoom.
