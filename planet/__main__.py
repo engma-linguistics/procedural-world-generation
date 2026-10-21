@@ -197,6 +197,14 @@ def cmd_finish(args):
           f"  view: http://127.0.0.1:8765/viewer/?world={path.name}")
 
 
+def cmd_export(args):
+    from . import export as X
+    rng = tuple(args.height_range) if args.height_range else None
+    out = X.export(args.ref, args.out, res=args.res, tile=args.tile, overlap=args.overlap, cube=args.cube,
+                   raw=args.raw, height_range=rng, river_min=args.river_min, highlights=not args.no_highlights)
+    print(out)
+
+
 def cmd_report(args):
     print(S.rel(T.report(S.find_run(args.run))))
 
@@ -365,6 +373,22 @@ def main():
     fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
     fi.set_defaults(func=cmd_finish)
+
+    ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
+                                       "class maps, GeoJSON features, manifest.json -> exports/<id>/")
+    ex.add_argument("ref", help="world or zoom id (world:<id> / zoom:<id> when ambiguous)")
+    ex.add_argument("--out", "-o", help="output directory (default: <data root>/exports/<id>)")
+    ex.add_argument("--res", type=float, help="world: raster width in px (height = width / 2; default 2048); "
+                                              "zoom: km per pixel (a multiple of the native one; default native)")
+    ex.add_argument("--tile", type=int, default=1024, help="tile size in px (0: one file per layer; default 1024)")
+    ex.add_argument("--overlap", type=int, default=0, help="px shared by neighbouring tiles (1 for 2^n+1 terrain tiles)")
+    ex.add_argument("--cube", type=int, default=0, metavar="N", help="world: also N x N px on each of 6 cube faces")
+    ex.add_argument("--raw", action="store_true", help="heights as raw little-endian .r16 instead of 16-bit PNG")
+    ex.add_argument("--height-range", type=float, nargs=2, metavar=("LO", "HI"),
+                    help="metres mapped to 0..65535 (default: the data's own range)")
+    ex.add_argument("--river-min", type=float, metavar="M3S", help="smallest river kept as a line, m3/s")
+    ex.add_argument("--no-highlights", action="store_true", help="leave out the world's highlights (worlds: skips computing them)")
+    ex.set_defaults(func=cmd_export)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")
