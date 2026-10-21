@@ -1,8 +1,10 @@
 ---
+id: PW-539
 title: Rivers in a one-pixel gorge draw as a pixel staircase in the zoom 3D view
 type: task
 status: todo
-parent: null
+parent: PW-516
+milestone: v2
 subsystem: viewer
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: pw537
 blocked_by: []
 relates: [PW-537]
 refs: [viewer/zoom3d.js, viewer/zoom3d_mesh.js, "zoom 60b7e1"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -19,3 +23,6 @@ Tried in PW-537: pre-smoothing the path with a [1 2 1]/4 filter before Chaikin c
 
 Options: (a) carve the zoom's terrain along a smoothed river course so the floor itself is smooth (zoom side; fits PW-488, the fine-zoom staircase); (b) draw the river as a ribbon mesh draped on the ground, with the gorge floor re-sampled on the smoothed line (viewer side, larger).
 - [ ] the river in 60b7e1 below the upper pool turns less than ~1.5x the straight-line bearing change, without riding up the valley sides
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-zoom3d-river-staircase.md (found by pw537).
