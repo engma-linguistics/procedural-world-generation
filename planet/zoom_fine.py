@@ -67,7 +67,8 @@ Steps (the proposal's 1-6):
    soils (zoom_vegetation), the satellite view.
 
 Not redone at this scale (inbox drafts): a delta's plain, coast and barriers (the parent's, interpolated;
-its distributaries are carried), the parent's coastline steps.
+its distributaries are carried). The shore itself is drawn at this scale (PW-488): the parent's ground sampled
+through a fractal displacement near its coast (COAST_PX), so no parent-pixel staircase.
 
 Output: an ordinary zoom directory (zoom.load, the 2D viewer) with a
 "parent_zoom" block in zoom.json ({id, res_km, offset_km, rect_px}) and the
@@ -108,6 +109,7 @@ HALO_PARENT_PX = 1.0  # parent px of terrain built round the region (drainage), 
 RIVER_AREA_PX = 25.0  # parent rivers imposed: draining at least this many parent pixels ...
 RIVER_AREA_MIN = 1.0  # ... and at least this many km^2
 WARP_PX = 0.4  # parent px: the categories' warp between parent pixel centres
+COAST_PX = 0.38  # parent px: the shore's fractal displacement (PW-488), largest octave
 SMOOTH_PX = 1.0  # parent px: a parent's river course smoothed by this (its D8 steps; PW-405)
 WANDER_PX = 0.15  # parent px: ... then wandering by up to this (bends at ~4 parent px)
 MEANDER_WL = 11.0  # an alluvial river's meander wavelength, channel widths (10-14 observed)
@@ -359,8 +361,20 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         paths[k] = _gorge_path(pa, ch, f, S_)  # (parent plane, km)
         gorge_p |= _parent_gorge(pa, ch, f, paths[k])
     hp_f = _fill(hp, gorge_p.reshape(hp.shape))  # (the parent's ground with its gorges filled to their rims)
-    target = pa.bicubic(hp, pr, pc)
-    target_f = pa.bicubic(hp_f, pr, pc)
+    # the shore drawn at this scale (PW-488): the parent's ground sampled through a fractal displacement that
+    # is only on near its coast (zero mean, bounded: the land share and the islands stay), so the coast is
+    # not the parent's pixel outline but a refined curve with bays, headlands, inlets and islets
+    cpx = (wp != 1).astype(float)
+    edge_p = (_box3(cpx) % 9 != 0).astype(float)  # (a parent pixel with land and sea in its 3x3)
+    wcoast = np.clip(1.6 * pa.bilinear(_box3(edge_p) / 9.0, pr, pc), 0.0, 1.0) * w_in
+    lam_c = 2.0 * rp
+    oct_c = Z._octaves(lam_c, 3 * res)
+    dr_c = ZK.fbm(Pk, lam_c, oct_c, 0.62, S_ + 21) / 0.17
+    dc_c = ZK.fbm(Pk, lam_c, oct_c, 0.62, S_ + 22) / 0.17
+    amp_c = COAST_PX * wcoast
+    prc, pcc = pr + amp_c * np.clip(dr_c, -1.5, 1.5), pc + amp_c * np.clip(dc_c, -1.5, 1.5)
+    target = pa.bicubic(hp, prc, pcc)
+    target_f = pa.bicubic(hp_f, prc, pcc)
     fill_t = target_f
     # local relief per parent pixel (rms difference to its 4 neighbours), the rock's ruggedness
     d2 = np.zeros_like(hp)
