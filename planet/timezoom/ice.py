@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from .. import icemass as M
 from ..grid import Grid
 from .params import RHO_I, RHO_W, TZParams
 
@@ -19,7 +20,7 @@ def shelf_viable(t_air: np.ndarray, p: "TZParams") -> np.ndarray:
     in whole months and is never 0 beside today's Antarctica at L6, open
     2-6 months a year, as the real Ross and Amundsen seas are 2-4 months
     while their shelves stand)."""
-    return np.clip((p.shelf_warm - t_air) / (p.shelf_warm - p.shelf_cold), 0.0, 1.0)
+    return M.shelf_viable(t_air, p.shelf_warm, p.shelf_cold)
 
 
 def shelf_cover(grid: Grid, front: np.ndarray, sea: np.ndarray, shelf: np.ndarray, p: "TZParams") -> np.ndarray:

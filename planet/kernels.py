@@ -786,18 +786,21 @@ def accumulate(down, order, rain):
 
 
 @njit(cache=True)
-def carve(h, down, order, cut):
+def carve(h, down, order, cut, eps=0.01):
     """h with each cell lowered by cut (m) where its river runs in a valley
     below the cell's mean height, but never below the next cell downstream
-    as carved (a valley floor doesn't climb toward the sea, nor dig a pit).
-    order runs outlet -> headwater."""
+    as carved, plus eps (a valley floor doesn't climb toward the sea, nor
+    dig a pit, nor go flat: a floor cut level with the cell below it has no
+    lower neighbour, and the lakes' routing took it for a pit of its own,
+    ending its river beside the basin it runs into, PW-515). order runs
+    outlet -> headwater."""
     out = h.copy()
     for t in range(order.shape[0]):
         i = order[t]
         d = down[i]
         if d < 0 or cut[i] <= 0:
             continue
-        floor = max(out[d], 0.5 if h[i] > 0 else h[i])
+        floor = max(out[d] + eps, 0.5 if h[i] > 0 else h[i])
         out[i] = min(h[i], max(h[i] - cut[i], floor))
     return out
 

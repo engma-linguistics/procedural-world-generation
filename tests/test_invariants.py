@@ -66,15 +66,17 @@ def test_ice_surface_rises_from_the_edge(sim4):
     from planet.tectonics import earth
     from planet.tectonics.isostasy import land_view
     s, g = sim4, sim4.grid
-    e, ice0, _ = land_view(s.w_elev - s.ice_sink, np.where(s.w_elev > 0, s.ice, 0.0))
+    bed = s.w_elev - s.ice_sink
+    e, ice0, _ = land_view(bed, np.where(s.w_elev > 0, s.ice, 0.0))
     land = e > 0
     c = climate.compute(g, e, s.dT - 12.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
-    a = earth._ice_pass(s, land, e, c["ground"], ice0)
+    marine = earth.marine_view(bed, c)
+    a = earth._ice_pass(s, land, e, c["ground"], ice0, marine)
     iced = a > 0
     inner = iced & (np.add.reduceat(~iced[g.nbr_idx], g.nbr_off[:-1]) == 0)
     margin = 1.15 * earth.ICE_EDGE_M
     assert inner.sum() >= 3 and (a[inner] > margin).any()
-    b = earth._ice_pass(s, land, e + 3000.0 * inner, c["ground"], ice0)
+    b = earth._ice_pass(s, land, e + 3000.0 * inner, c["ground"], ice0, marine)
     assert np.array_equal(b > 0, iced)  # (the extent doesn't depend on the bed's height here)
     assert (b <= a + 1e-6).all()
     # (where ICE_MAX capped the first sheet, its thickness wasn't set by the margins, so the
