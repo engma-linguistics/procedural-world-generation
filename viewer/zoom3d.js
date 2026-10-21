@@ -397,7 +397,10 @@ class Tile {
         if (j) v += Math.hypot(x - p[j - 1][0], z - p[j - 1][1]);
         for (const s of [-1, 1]) {
           const X = x - s * dz * hw, Z = z + s * dx * hw;
-          pos.push(X, Math.max(this.height(X, Z), this.height(x, z), ws) + LIFT, Z);
+          // (on the ground, not at the water level carried between the lip and the foot: that hung in the air
+          // across a drop, PW-517; ws stays only as a floor where the ground is below its own water, a lake)
+          const g = Math.max(this.height(X, Z), this.height(x, z));
+          pos.push(X, (this.L.water[this.nearestPx(x, z)] ? Math.max(g, ws) : g) + LIFT, Z);
           uv.push((s + 1) / 2, -v / 0.6);
         }
         if (j) { const k = base + 2 * j; idx.push(k - 2, k - 1, k, k, k - 1, k + 1); }
@@ -410,6 +413,13 @@ class Tile {
     g.setIndex(idx);
     g.computeVertexNormals();
     return g;
+  }
+
+  // the pixel nearest a scene point (x, z), for the layers read there
+  nearestPx(x, z) {
+    const c = Math.min(Math.max(Math.round((x - this.x(0)) / (this.x(1) - this.x(0))), 0), this.nx - 1);
+    const r = Math.min(Math.max(Math.round((z - this.z(0)) / (this.z(1) - this.z(0))), 0), this.ny - 1);
+    return r * this.nx + c;
   }
 
   // a fall's reach: from its lip down the river for its drop's length (at

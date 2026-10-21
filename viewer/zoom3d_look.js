@@ -142,6 +142,22 @@ ${NOISE}${HOLES}`).replace('#include <normal_fragment_maps>', `#include <normal_
 {
   vec4 D = texture2D(uData, vMapUv);
   float ice = D.g;
+  // steep faces: the colour map is laid on from above, so a near-vertical face is a few texels stretched
+  // into vertical streaks (PW-517). There the map's colour gives way to bare rock: its own hue, greyed,
+  // broken up by noise taken from the sides (triplanar), so no streak survives
+  {
+    vec3 nW = normalize(cross(dFdx(vWPos), dFdy(vWPos)));
+    float steep = 1.0 - smoothstep(0.35, 0.7, abs(nW.y));
+    if (steep > 0.01) {
+      vec3 w = pow(abs(nW), vec3(4.0)); w /= (w.x + w.y + w.z);
+      float k = 1.0 / max(uRes, 0.01);
+      float tri = w.x * z3Fbm(vWPos.zy * k * 6.0) + w.z * z3Fbm(vWPos.xy * k * 6.0) + w.y * z3Fbm(vWPos.xz * k * 6.0);
+      vec3 c0 = diffuseColor.rgb;
+      float lum = dot(c0, vec3(0.3, 0.55, 0.15));
+      vec3 rock = mix(vec3(lum), c0, 0.35) * (0.62 + 0.75 * tri);
+      diffuseColor.rgb = mix(c0, rock, steep);
+    }
+  }
   if (ice > 0.5 && uFx > 0.5) {
     // the ice surface's slope (m/m) and downhill direction (x east, z south) (the
     // ground is the ice surface: the zoom's heights include its glaciers), and
