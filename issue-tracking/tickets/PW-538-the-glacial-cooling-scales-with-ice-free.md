@@ -38,4 +38,5 @@ Lean: A, with the start drift (PW-436) fixed first, since a diagnostic 5 C cooli
 - [ ] Earth's zoom keeps cycles 98-109 kyr and maxima -86..-104 m.
 
 ## Updates
+- 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-21: Created from inbox draft draft-glacial-cooling-share-excludes-iced-land.md (found by worktree-agent-a1bb68a84d5003e9b (PW-536)).

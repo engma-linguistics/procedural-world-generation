@@ -4,7 +4,7 @@ title: The rain kernel's vapour transport isn't mass-conservative (fresh-water r
 type: task
 status: todo
 parent: PW-245
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-266, PW-211]
 refs: [planet/climate.py, planet/ocean.py]
 created: 2026-10-15
-updated: 2026-10-16
+updated: 2026-10-21
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Measured as the residue in m/yr over the sea, after PW-266:
 Fix: make the transport conservative (each cell sends its moved vapour out in shares that sum to 1, and the inflow is what its neighbours send), and give the mixing a symmetric edge form. Keep the PW-211 seam fix in some form, then re-check PW-211's rain-streak test. Then lower `FW_RESIDUE` to 1 cm/yr.
 
 ## Updates
+- 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-16: Merged inbox draft draft-pw304-land-books-residue.md ("PW-304 after PW-015: the transport is conservative; the residue left (L4 -1..-4 cm/yr) is the land books' (storm spread, first-pass PET)", found by pw015-rain).
   For PW-304 (probably `--merge-into PW-304`). PW-015 stage 1's finite-volume transport keeps the vapour's
   mass exactly: the kernel's steady-state residue is -0.01..-0.08% of rain at L6 (main -0.14 / -0.66%),

@@ -2,7 +2,7 @@
 id: PW-037
 title: Glacial imprint layers recorded during the time zoom
 type: story
-status: todo
+status: done
 parent: PW-090
 milestone: v1
 subsystem: timezoom
@@ -29,6 +29,7 @@ While the time zoom runs, record what the ice leaves behind, as layers of the fi
 Glacial erosion and proglacial lakes were "not done" in the original time-zoom spec.
 
 ## Updates
+- 2026-10-21: Status todo -> done. Closed for v1 (2026-10-21): max ice, erosion, till, outwash, loess and rebound are recorded; moraines etc. drawn by zoom_glacial (PW-092). Proglacial and ice-dammed lakes moved to a v2 ticket.
 - 2026-10-21: Outwash plains and loess are drawn in the regional zoom from the margin and the drainage (pw092, PW-092), not recorded as layers in the time zoom. The time zoom's volume balance (erosion = till + outwash + loess) is still open in PW-497.
 - 2026-10-21: Glacial erosion, till and moraines, ice_max and the imprint in finished worlds are on main's time zoom (pw037-port, PW-491; docs/review/audit/PW-037-handoff.md, docs/proposals/glacial_carving.md). Showcase: time zoom e9d59c, world f6e955. Still open here: outwash plains and loess, proglacial lakes, permafrost (drafts filed).
 - 2026-10-15: Original time-zoom spec (db11d33:docs/proposals/glacial_timezoom.md) also listed permafrost as an optional extra; not built.

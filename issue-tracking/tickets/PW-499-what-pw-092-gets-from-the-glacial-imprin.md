@@ -4,7 +4,7 @@ title: What PW-092 gets from the glacial imprint, and what it still lacks (ice f
 type: task
 status: todo
 parent: PW-092
-milestone: v1
+milestone: v2
 subsystem: zoom
 effort: s
 impact: med
@@ -36,4 +36,5 @@ Overlap: the zoom's rivers (`zoom_fine.py`, being edited on another branch) will
 and lakes on deglaciated ground in finished worlds; nothing in PW-037 touches that file.
 
 ## Updates
+- 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-21: Created from inbox draft draft-zoom-inputs-from-glacial-imprint.md (found by pw037).
