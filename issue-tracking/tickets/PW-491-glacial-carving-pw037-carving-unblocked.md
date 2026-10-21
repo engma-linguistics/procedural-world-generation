@@ -4,7 +4,7 @@ title: "Glacial carving (pw037-carving): unblocked for Earth zooms by the glacia
 type: task
 status: done
 parent: PW-037
-milestone: null
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high
