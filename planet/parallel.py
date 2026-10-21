@@ -124,9 +124,26 @@ def _thread_caps(threads: int):
 _queue = None
 
 
-def _init(q):
+def _exit_with_parent(parent: int, every: float = 1.0):
+    """Watchdog: this worker exits once its parent is gone (PW-543: a killed
+    parent left idle workers behind, reparented to init). Polls getppid
+    rather than PR_SET_PDEATHSIG, which fires when the parent's *thread*
+    that spawned the worker ends (workers are spawned from server threads)."""
+    import time
+
+    def watch():
+        while os.getppid() == parent:
+            time.sleep(every)
+        os._exit(1)
+
+    threading.Thread(target=watch, daemon=True, name="parent-watchdog").start()
+
+
+def _init(q, parent=None):
     global _queue
     _queue = q
+    if parent is not None:
+        _exit_with_parent(parent)
     pin_threading_layer()
 
 
@@ -161,7 +178,7 @@ class Pool:
         self._listener.start()
 
     def _executor(self):
-        return ProcessPoolExecutor(self.workers, mp_context=self._ctx, initializer=_init, initargs=(self._q,))
+        return ProcessPoolExecutor(self.workers, mp_context=self._ctx, initializer=_init, initargs=(self._q, os.getpid()))
 
     def _listen(self):
         while True:

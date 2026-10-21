@@ -350,13 +350,13 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
     for kind in S.KINDS:
         S.update_index(kind)
     pool = P.Pool(jobs, threads)
-    Handler.hl_pool = P.Pool(HIGHLIGHT_WORKERS, pool.threads)
-    # job state survives a restart (per checkout and port: worktrees share the data folders)
-    Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs,
-                            contexts=True)
-    http.server.ThreadingHTTPServer.allow_reuse_address = True
-    http.server.ThreadingHTTPServer.daemon_threads = True
     try:
+        Handler.hl_pool = P.Pool(HIGHLIGHT_WORKERS, pool.threads)
+        # job state survives a restart (per checkout and port: worktrees share the data folders)
+        Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs,
+                                contexts=True)
+        http.server.ThreadingHTTPServer.allow_reuse_address = True
+        http.server.ThreadingHTTPServer.daemon_threads = True
         with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
             url = f"http://127.0.0.1:{port}/viewer/"
             print(f"Viewer at {url}   (data: {S.root()}; {jobs} jobs at once, {pool.threads} threads each; "
@@ -365,5 +365,8 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
                 webbrowser.open(url)
             httpd.serve_forever()
     finally:
-        pool.close(kill=True)  # (running jobs are queued again at the next start)
-        Handler.hl_pool.close(kill=True)
+        try:
+            pool.close(kill=True)  # (running jobs are queued again at the next start)
+        finally:
+            if Handler.hl_pool:
+                Handler.hl_pool.close(kill=True)
