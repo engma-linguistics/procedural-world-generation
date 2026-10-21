@@ -1,4 +1,5 @@
 ---
+id: PW-555
 title: "Ice ages v2 plan: honest margins that deglaciate in the zoom first, then one ice model (run cold eras from short zoom integrations) vs a sheet-wide budget, decided by a spike"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: ice-v2-review
 blocked_by: []
 relates: [PW-470, PW-526, PW-514, PW-461, PW-462, PW-464, PW-465, PW-467, PW-469, PW-459, PW-460, PW-538, PW-496, PW-030, PW-549]
 refs: [docs/review/ice-v2-review.md, docs/review/audit/ice-framing-deep-dive.md, docs/review/audit/PW-514-batch.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -48,3 +51,6 @@ PW-538's cooling share, re-applying PW-460/459, the cold-era depth bar, Earth's 
 rules.
 - [ ] owner picks the approach and the cost budget
 - [ ] stage 0 tickets cut (PW-467 tool, moment suite, ice/basin split in health, hysteresis probe)
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-ice-v2-plan.md (found by ice-v2-review).
