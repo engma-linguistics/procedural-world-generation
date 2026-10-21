@@ -1,8 +1,8 @@
 """Climate forcing of the time zoom: the orbit's temperature anomaly, and the
-global feedbacks (CO2 and ice albedo) that follow the ice.
+global temperature change of the glacial index (cycle.py) and the plants.
 
-PW-440's ice-age cycle hooks in here: Forcing.update is the one place per
-step where the global temperature change is assembled.
+Forcing.update is the one place per step where the global temperature change
+is assembled.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import numpy as np
 from .. import climate
 from ..grid import Grid
 from ..orbit import BAND_DEG, BAND_LAT, insolation, reference_orbit
-from .cycle import Cycle
+from .cycle import Index
 from .params import TZParams
 
 
@@ -54,36 +54,26 @@ def orbit_k(grid: Grid, land: np.ndarray, bright: np.ndarray, p: TZParams) -> np
     return own * (1 - b) + b * mix
 
 
-def albedo(p: TZParams, f: float) -> float:
-    """C of global cooling by land ice over a share f of the planet (the main run's rule, earth.py:
-    it levels off, so a planet already icy gains less cooling from more ice)."""
-    return p.ice_albedo_max * math.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
-
-
 class Forcing:
-    """The global temperature change dTg (C, against the run's own) the ice
-    gives: CO2 follows the ice volume (lagged), ice albedo follows its area,
-    and in an ice age's ending (cycle.Cycle) CO2 is released.
-    room: the share of the CO2 feedback's cap left (1 for an interglacial
-    start); ice_frac0: the start's ice area share."""
+    """The global temperature change dTg (C, against the run's own): the glacial index's cooling
+    (-I x cool, cycle.py; it stands for the ice-age cycle's CO2 and ice-albedo feedbacks, so the zoom
+    has none of its own) plus the plants' (plants.py). Until the index is set up (after the first
+    full climate, sim._Sim.setup_index) I is 0."""
 
-    def __init__(self, p: TZParams, step: float, room: float, ice_frac0: float, cycle: Cycle):
-        self.p, self.step, self.room, self.ice_frac0, self.cycle = p, step, room, ice_frac0, cycle
-        self.co2 = 0.0  # C, the lagged CO2 part of the global change
+    def __init__(self, p: TZParams, step: float):
+        self.p, self.step = p, step
+        self.index: Index | None = None
+        self.cool = 0.0  # C: the glacial maximum's global cooling
+        self.I = 0.0
+        self.co2 = 0.0  # C, the CO2 part of the index's cooling (co2_share: for the plants' CO2)
         self.veg = 0.0  # C, the plants' part (plants.py), following ...
         self.veg_target = 0.0  # ... this (set at each full climate)
 
-    def co2_target(self, sl: float) -> float:
+    def update(self, s_no: int) -> float:
+        """The step's dTg."""
         p = self.p
-        excess = -sl / 120.0  # 1 = an Earth-LGM-sized extra ice volume
-        return -p.co2_cool * float(np.clip(excess, -0.5, p.co2_max * self.room))
-
-    def update(self, sl: float, ice_frac: float, s_no: int = 0) -> float:
-        """The step's dTg, from the sea level sl (m, change since the start) and the ice area share
-        (the cycle's state steps first)."""
-        p, cyc = self.p, self.cycle
-        cyc.step(s_no, sl)
-        target = cyc.co2_target(self.co2_target(sl), sl)
-        self.co2 += (1 - math.exp(-self.step / p.co2_lag)) * (target - self.co2)
+        self.I = 0.0 if self.index is None else float(self.index.I[s_no])
+        glacial = -self.I * self.cool
+        self.co2 = p.co2_share * glacial
         self.veg += (1 - math.exp(-self.step / p.veg_lag)) * (self.veg_target - self.veg)
-        return self.co2 + self.veg - (albedo(p, ice_frac) - albedo(p, self.ice_frac0))
+        return glacial + self.veg

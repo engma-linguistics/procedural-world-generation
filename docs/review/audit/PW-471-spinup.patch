@@ -1,0 +1,57 @@
+--- planet/timezoom/sim.py	2026-10-20 22:12:17.223395284 -0400
++++ planet/timezoom/sim.py	2026-10-20 22:12:05.793428474 -0400
+@@ -14,7 +14,7 @@
+ 
+ import math
+ import time
+-from dataclasses import asdict
++from dataclasses import asdict, replace
+ 
+ import numpy as np
+ 
+@@ -412,6 +412,21 @@
+                     print("  " + msg, flush=True)
+ 
+ 
++def spin_up(src: dict, step: float, p: TZParams) -> tuple[dict, dict]:
++    """A run's moment settled into the time zoom's own interglacial: spin_kyr of the zoom at I = 0 and the
++    mean orbit, unrecorded; the zoom then starts from that ice, bed and sea level (the zoom as a window on
++    its own cycle, PW-462: the run's ice rule has no calving or shelves, so its marine ice isn't the zoom's
++    balance, PW-436). Earth's ice is observed and kept by the anchor: no spin-up. Returns the source and
++    {kyr, sea_level_m: the spin-up's sea level change (+: the zoom holds less ice than the run)}."""
++    if p.spin_kyr <= 0 or src["source_run"] == "earth":
++        return src, {"kyr": 0.0, "sea_level_m": 0.0}
++    q = replace(p, index="off", obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
++    s = _Sim(src, p.spin_kyr, step, p.spin_kyr, q)
++    s.run(False, time.time())
++    out = dict(src, elev=s.bed - s.sl, ice=s.H.copy(), sea_level=src["sea_level"] + s.sl)
++    return out, {"kyr": p.spin_kyr, "sea_level_m": round(s.sl, 1)}
++
++
+ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2.0,
+              params: TZParams | None = None, progress=False) -> dict:
+     """Run the time zoom in memory. progress: True prints a line every 5%,
+@@ -420,11 +435,12 @@
+     sea level / ice volume / orbit, "params", "runtime_s"}."""
+     t_start = time.time()
+     p = params or TZParams()
++    src, spin = spin_up(src, step, p)
+     s = _Sim(src, kyr, step, every, p)
+     s.run(progress, t_start)
+     H, area, F = s.H, s.area, s.fields
+     ice_cycle = cycling_ice_sun(s.g, area, s.frames, s.out["ice"], s.ref_orb)
+-    cyc = {**s.index.summary(), **s.glacial}
++    cyc = {**s.index.summary(), **s.glacial, "spin_up": spin}
+     return {"frames": s.frames, "data": {k: np.stack(v) for k, v in s.out.items()}, "ice_cycle": ice_cycle, "cycle": cyc,
+             "series": np.array(s.series), "flows": np.array(s.flows), "params": asdict(p), "phases": s.ph.tolist(),
+             "budget": {**s.budget, "V0": s.V0, "V_end": float((H * area).sum()), "ocean_area": s.ocean_area,
+--- planet/timezoom/params.py	2026-10-20 22:12:17.223495114 -0400
++++ planet/timezoom/params.py	2026-10-20 22:12:26.316462772 -0400
+@@ -87,6 +87,7 @@
+     backstop: float = 2.0  # x glacial_kyr: past this age the next sunshine peak ends the glacial (counted)
+     sheet_h: float = 2000.0  # m: the glacial maximum's sea-level target (a diagnostic) is this much ice over the
+     # land poleward of the snowline
++    spin_kyr: float = 40.0  # a run's moment first settles this long (kyr) at I = 0 and the mean orbit (sim.spin_up)
+     # vegetation (plants.py, PW-450): the run's model grown on each full climate
+     veg: str = "on"  # 'on': it feeds back on the climate locally (as in the run: Budyko w, the surface's
+     # albedo with snow hidden under forest) and globally (its albedo's change since the start, in dTg);

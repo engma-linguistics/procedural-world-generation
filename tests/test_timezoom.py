@@ -136,16 +136,16 @@ def test_saved_run_format(cold_src, cold_run, data_root):
         T.slice_world(out, 0.0)
 
 
-def test_feedback_room(cold_src, cold_run):
-    """A run's moment is the cycle average: only average_room of the CO2 cap
-    is left (PW-031; the ice albedo, the run's rule, levels off by itself);
-    'interglacial' gets it in full."""
-    p = Z.TZParams()
-    floor = -(p.average_room * p.co2_cool * p.co2_max + p.ice_albedo_max)
-    dT = [f["stats"]["dT_global"] for f in cold_run["frames"]]
-    assert min(dT) >= floor - 0.01
-    full = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(start="interglacial"))
-    assert min(f["stats"]["dT_global"] for f in full["frames"]) <= min(dT)
+def test_glacial_index_cooling(cold_src, cold_run):
+    """The zoom's global change is the glacial index's (cycle.py) plus the plants': -I x the cooling, which
+    scales with the land poleward of the snowline (and is reported with its sea-level target)."""
+    c = cold_run["cycle"]
+    assert c["cooling_c"] > 0 and c["target_m"] > 0 and 0 < c["snowline_land_share"] < 1
+    for f in cold_run["frames"]:
+        s = f["stats"]
+        assert 0.0 <= s["glacial_index"] <= 1.0 and s["dT_global"] <= -s["glacial_index"] * c["cooling_c"] + 1.0
+    off = Z.simulate(cold_src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(index="off", veg="local"))
+    assert all(f["stats"]["dT_global"] == 0.0 and f["stats"]["glacial_index"] == 0.0 for f in off["frames"])
 
 
 def test_bed_settles_under_the_ice(cold_src, cold_run):
@@ -222,7 +222,7 @@ def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
     rings around them that no ice reached) have the climate of a zoom with
     no anchor at all (PW-035)."""
     src = dict(cold_src, ice=cold_run["state"]["H"].copy(), dT=cold_src["dT"] + 14.0)
-    fixed = dict(NO_ORBIT, co2_cool=0.0, ice_albedo=0.0, climate_every=1000.0, iso_ratio=0.0)
+    fixed = dict(NO_ORBIT, index="off", climate_every=1000.0, iso_ratio=0.0)
     a = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="balance", anchor_max=3.0, **fixed))
     b = Z.simulate(src, kyr=10, step=0.5, every=2.0, params=Z.TZParams(anchor="none", **fixed))
     cooled = a["anchor"] < -0.4

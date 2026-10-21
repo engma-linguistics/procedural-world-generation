@@ -1,6 +1,6 @@
 """The time zoom from a run's moment starts close to its own balance (PW-418, PW-366): the run's ice
 rule (earth.ice_sheets, as earth.update_climate runs it) makes the sheets of a cold moment, then the time
-zoom runs 20 kyr with no forcing (no orbit, CO2 or ice albedo). Level 5, seed 1, 300 Myr (seed 2 lost most of its polar ice after PW-300), 4 C colder."""
+zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, seed 1, 300 Myr (seed 2 lost most of its polar ice after PW-300), 4 C colder."""
 
 from types import SimpleNamespace
 
@@ -16,8 +16,7 @@ from planet.tectonics.isostasy import ice_load, land_view
 from helpers import run_sim
 
 pytestmark = pytest.mark.slow
-UNFORCED = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean", co2_cool=0.0,
-                ice_albedo=0.0)
+UNFORCED = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
 FLT = 1 - P.RHO_I / P.RHO_W
 
 
@@ -69,9 +68,11 @@ def test_ice_speeds_plausible(cold_moment):
     assert 500 < np.median(H[sheet]) < 3500
 
 
-def test_unforced_start_stays_near_balance(cold_moment):
-    """With no forcing, a run's sheets are already this mass balance's: sea level moves little (PW-366:
-    -43 m in 20 kyr here while the run's sheets were 50 kPa profiles with their margins' inner-edge rise and
-    the time zoom melted its margins before its flow)."""
+def test_ice_at_index_zero_is_the_runs(cold_moment):
+    """At I = 0 (an interglacial: the run's own climate) the zoom keeps the run's ice: with no orbital swing
+    the default index never builds, and sea level moves little (PW-366: -43 m in 20 kyr here while the
+    run's sheets were 50 kPa profiles with their margins' inner-edge rise and the time zoom melted its
+    margins before its flow; PW-471: the index replaced the CO2 and ice-albedo feedbacks)."""
     _, r = cold_moment
+    assert all(f["stats"]["glacial_index"] == 0.0 for f in r["frames"])
     assert abs(r["frames"][-1]["stats"]["sea_level_change_m"]) < 25.0

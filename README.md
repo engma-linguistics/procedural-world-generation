@@ -135,11 +135,13 @@ frame (server job `POST /api/finish {timezoom, kyr}` or `{run, t}`), then the
 world opens; the run's "Made from this run" tree lists time zooms with their
 finished worlds, and a time zoom's slider has a green tick for each.
 
-The feedbacks: CO₂ drawdown and ice albedo grow with the extra ice. A run's
-moment is taken as the cycle average (its ice is the mean extent; its dT
-already holds that ice's albedo), so only `average_room` (half) of their caps
-is left; Earth starts in an interglacial with the full room (`--set
-start=interglacial|average`).
+The ice ages are scripted (PW-471, the glacial index method): an index I(t)
+from 0 (interglacial: the run's own climate) to 1 (glacial maximum) builds
+over ~70-90 kyr and ends in 8 kyr at a summer-sunshine peak of the planet's
+own orbit, and the zoom's climate is I x the glacial cooling colder
+(polar-amplified). The cooling is 6.5 °C for Earth's share of land poleward
+of its snowline and in proportion elsewhere (`--set glacial_dt=4` sets it by
+hand, `index=off` keeps I at 0). The ice physics draws the sheets.
 
 ## Earth reference world
 

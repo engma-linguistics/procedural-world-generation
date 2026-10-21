@@ -2,7 +2,7 @@
 
 simulate() builds a _Sim and runs, per step:
 
-  1. forcing:   orbit -> insolation anomaly; Forcing.update -> global dT
+  1. forcing:   orbit -> insolation anomaly; Forcing.update -> global dT (the glacial index's cooling)
   2. climate:   a full climate every climate_every kyr, blended in between
   3. surface:   the ice surface's climate (prepare_surface), one year of mass balance (year)
   4. record:    a frame every `every` kyr
@@ -24,13 +24,13 @@ from .. import store as S
 from ..grid import Grid
 from ..orbit import BAND_DEG, BAND_LAT, insolation, orbit_at, orbit_phases, reference_orbit
 from ..tectonics.isostasy import ice_load
-from .cycle import NAMES, Cycle, cycling_latitude
+from .cycle import NAMES, Index, cooling, cycling_latitude, snowline_land
 from .events import cycling_ice_sun
 from .fields import ClimateFields
 from .forcing import Forcing, orbit_k
 from .geometry import geometry
 from .ice import above_flotation, shelf_cover, shelf_step, shelf_viable
-from .kernels import climate_melt, dilate, sia_flow
+from .kernels import climate_step, dilate, sia_flow
 from .params import LAYERS, RHO_I, RHO_W, TZParams
 
 
@@ -50,10 +50,6 @@ class _Sim:
         self.tilt = float(src["tilt"])
         earth = src["source_run"] == "earth"
         self.ph = orbit_phases(p, int(src["seed"]) * 1000 + int(round(src["at"])), earth)
-        start = p.start if p.start != "auto" else ("interglacial" if earth else "average")
-        if start not in ("interglacial", "average"):
-            raise SystemExit(f"start must be interglacial, average or auto, not {p.start!r}")
-        room = 1.0 if start == "interglacial" else p.average_room  # share of the feedback caps left
         self.ref_orb = reference_orbit(p, self.tilt, self.ph, earth)
         self.q_ref = insolation(*self.ref_orb)
         # polar amplification of a global temperature change (as climate.compute: 0.5x tropics .. 1.5x poles)
@@ -74,17 +70,8 @@ class _Sim:
         self.V0 = float((self.H * self.area).sum())
         self.bed0 = self.bed.copy()
         self.Vaf0 = self.above_flotation(0.0)
-        self.ice_frac0 = float((self.H > 1).mean())
         self.dT_run = float(src["dT"])
 
-        # the ice-age cycle (cycle.py): its boosts act on the ice beyond the last interglacial's (ig_ice:
-        # the grounded ice at the highest sea level outside an ice age; the start's at first)
-        self.ig_ice = self.H > 1.0
-        land0 = (elev0 > 0) | self.ig_ice
-        scale = p.sheet_share * float(self.area[land0].sum()) * p.sheet_h * RHO_I / RHO_W / max(self.ocean_area, 1.0)
-        self.cycle = Cycle(p, step, kyr, self.tilt, self.ph, scale)
-        self.melt_f = np.ones(n)  # per cell: the degree-day factors x this (an ice age's ending: Cycle.boost)
-        self.forcing = Forcing(p, step, room, self.ice_frac0, self.cycle)
         self.fields = ClimateFields(g, src, p, self.tilt, self.dT_run, self.area, self.H)
 
         self.out = {k: [] for k in LAYERS}
@@ -92,6 +79,11 @@ class _Sim:
         self.budget = {"smb": 0.0, "calved": 0.0, "shelf_melt": 0.0}  # m3 of ice gained / lost (calved: all the sea
         # took, the shelves' melt from below included)
         self.n_steps = int(round(kyr / step))
+        # the glacial index (cycle.py): set up after the first full climate (setup_index); I is 0 until then
+        self.forcing = Forcing(p, step)
+        self.index: Index | None = None
+        self.glacial: dict = {}
+        self.s_no = 0
         self.keep = max(1, int(round(every / step)))
         self.refresh = max(1, int(round(p.climate_every / step)))
         # the year's results (climate_step's outputs; f_snow: summer brightness)
@@ -152,23 +144,28 @@ class _Sim:
         p, F = self.p, self.fields
         # bright snow absorbs little of an insolation change, but the air over it also brings
         # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
-        k_orb = orbit_k(self.g, self.land, self.f_snow, p)
+        self.k_orb = k_orb = orbit_k(self.g, self.land, self.f_snow, p)  # (also the new front's, new_ice_rates)
         # (the start's correction of the ice-surface climate, only where ice lies: start_anchor)
-        climate_melt(self.land, self.north, F["t_mean"] + self.anchor * self.f_alb, F["half"], F["p_jul"],
+        climate_step(self.land, self.north, F["t_mean"] + self.anchor * self.f_alb, F["half"], F["p_jul"],
                      F["p_jan"], dt_b, self.dt_wet, k_orb, self.band, dq_, self.f_ice, self.f_alb,
                      p.ice_cool, self.damp, p.melt_hold, p.bare_share, p.snow_w,
                      p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, self.smb, self.t_ann,
-                     self.t_warm, self.t_cold, self.p_scale, self.f_snow, self.melt_f)
+                     self.t_warm, self.t_cold, self.p_scale, self.f_snow)
 
-    def cycle_boosts(self) -> None:
-        """In an ice age's ending (cycle.py): the extra ice (beyond the last interglacial's footprint,
-        ig_ice) melts up to melt_max x faster per degree-day, smoothly with the extra ice (Cycle.boost);
-        1 elsewhere."""
-        c = self.cycle
-        self.melt_f[:] = 1.0
-        if c.r > 0.0:  # (on the extra ice and the bare land its front moves onto)
-            extra = dilate(self.H > 1.0, self.g.nbr_off, self.g.nbr_idx, 1) & ~self.ig_ice
-            self.melt_f[extra] = c.boost(self.p.melt_max, self.sl)
+    def setup_index(self) -> None:
+        """The glacial index (cycle.py) from the first full climate: the land poleward of the planet's
+        snowline sets the cycling latitude (whose summer sun paces the index), the glacial cooling and the
+        glacial maximum's sea-level target (a diagnostic: sheet_h of ice over that land)."""
+        p, g, F, area = self.p, self.g, self.fields, self.area
+        surf, grounded = self.grounded_surface()
+        t_sl = F["t_mean"] + climate.LAPSE * np.maximum(surf, 0)
+        cold = snowline_land(surf > 0, np.where(grounded, self.H, 0.0), t_sl)
+        share = float(area[cold].sum() / area.sum())
+        self.index = Index(p, self.step, self.n_steps, self.tilt, self.ph, cycling_latitude(g.lat, area, cold))
+        self.forcing.index, self.forcing.cool = self.index, cooling(p, share)
+        target = p.sheet_h * RHO_I / RHO_W * float(area[cold].sum()) / max(self.ocean_area, 1.0)
+        self.glacial = {"snowline_land_share": round(share, 4), "cooling_c": round(self.forcing.cool, 2),
+                        "target_m": round(target, 1)}
 
     def start_anchor(self, iced) -> np.ndarray:
         """A cooling (C, all year) of the ice surface's climate on the
@@ -259,7 +256,8 @@ class _Sim:
                 "obliquity": round(orb[0], 3), "eccentricity": round(orb[1], 4),
                 "perihelion": round(orb[2], 1), "precession_index": round(orb[1] * math.sin(math.radians(orb[2])), 4),
                 "insol_65n_jul_anom": round(dq65, 1), "dT_global": round(dTg, 2),
-                "ice_age": NAMES[self.cycle.mode],
+                "ice_age": NAMES[self.index.modes[self.s_no]] if self.index else NAMES[0],
+                "glacial_index": round(self.forcing.I, 3),
                 "overturning_north_sv": round(F["moc_sv"][0], 1),
                 "overturning_south_sv": round(F["moc_sv"][1], 1),
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}
@@ -281,13 +279,12 @@ class _Sim:
         if front.any():
             fi = np.flatnonzero(front)
             sub = [np.zeros(len(fi)) for _ in range(6)]
-            climate_melt(land[fi], north[fi], (F["t_mean"] + self.anchor)[fi], F["half"][fi],
+            climate_step(land[fi], north[fi], (F["t_mean"] + self.anchor)[fi], F["half"][fi],
                          F["p_jul"][fi], F["p_jan"][fi], self.dt_base[fi] - climate.LAPSE * p.edge_h,
-                         self.dt_wet[fi], orbit_k(g, land, self.f_snow, p)[fi], band[fi], dq,
+                         self.dt_wet[fi], self.k_orb[fi], band[fi], dq,
                          np.full(len(fi), min(p.edge_h / p.albedo_h, 1.0)), np.ones(len(fi)), p.ice_cool,
                          p.summer_damp * M.sheet_cover(g, np.ones(n))[fi], p.melt_hold,
-                         p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub,
-                         self.melt_f[fi])
+                         p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub)
             rate[fi] = sub[0]
         return rate, near, active
 
@@ -346,10 +343,7 @@ class _Sim:
             front = marine & (nb_sea | (depth > p.calve_depth))
             # (a front calves only where it faces open water, not a shelf)
             covered = shelf_cover(g, front, sea, np.where(sea, H, 0.0), p)
-            calving = p.calving
-            if self.cycle.r > 0.0:  # (an ice age's ending: the extra ice's marine fronts calve faster, cycle.py)
-                calving = np.where(self.ig_ice, p.calving, p.calving * self.cycle.boost(p.calve_max, self.sl))
-            frac = np.exp(-calving * (1.0 - covered) * depth * dt / np.sqrt(area))
+            frac = np.exp(-p.calving * (1.0 - covered) * depth * dt / np.sqrt(area))
             lost += np.where(front, H * (1 - frac), 0.0)
             H[front] *= frac[front]
         self.budget["calved"] += float((lost * area).sum())
@@ -384,21 +378,19 @@ class _Sim:
         H, area = self.H, self.area
         for s_no in range(self.n_steps + 1):
             t_kyr = s_no * step
-            # forcing: the orbit's insolation anomaly, and the global temperature change (CO2 and ice albedo
-            # follow the ice; the ice-age cycle, cycle.py, steps in Forcing.update)
+            self.s_no = s_no
+            # forcing: the orbit's insolation anomaly, and the global temperature change (the glacial index's
+            # cooling, cycle.py, and the plants')
             orb = orbit_at(t_kyr, p, self.tilt, self.ph)
             dq = insolation(*orb) - self.q_ref
-            if self.cycle.needs_setup(self.sl):
-                self.cycle.setup(cycling_latitude(self.g.lat, area, (self.grounded_ice() > 1.0) & ~self.ig_ice))
-            dTg = self.forcing.update(self.sl, float((H > 1).mean()), s_no)
-            if self.cycle.new_high:
-                self.ig_ice = self.grounded_ice() > 1.0
-            self.cycle_boosts()
+            dTg = self.forcing.update(s_no)
             # climate fields: a full climate every `refresh` steps, blended in between
             if s_no % self.refresh == 0:
                 surf, grounded = self.grounded_surface()
                 F.refresh(t_kyr, dTg, surf, grounded, H, self.forcing.co2)
                 self.forcing.veg_target = F.plants.dT_target
+                if self.index is None:
+                    self.setup_index()
             F.blend((s_no % self.refresh) / self.refresh)
             self.prepare_surface(dTg)
             if s_no == 0:
@@ -432,7 +424,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
     s.run(progress, t_start)
     H, area, F = s.H, s.area, s.fields
     ice_cycle = cycling_ice_sun(s.g, area, s.frames, s.out["ice"], s.ref_orb)
-    cyc = s.cycle.summary()
+    cyc = {**s.index.summary(), **s.glacial}
     return {"frames": s.frames, "data": {k: np.stack(v) for k, v in s.out.items()}, "ice_cycle": ice_cycle, "cycle": cyc,
             "series": np.array(s.series), "flows": np.array(s.flows), "params": asdict(p), "phases": s.ph.tolist(),
             "budget": {**s.budget, "V0": s.V0, "V_end": float((H * area).sum()), "ocean_area": s.ocean_area,
