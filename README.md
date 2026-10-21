@@ -96,6 +96,29 @@ level 6, `generate` to level 5. Rough `simulate` times on a laptop (they vary
 with load): level 6 ~3 min per 500 Myr (~6 min per Gyr), level 7 ~20-35 min
 per Gyr, level 8 hours (~4 h for 1.2 Gyr on a shared machine).
 
+## Game export (`planet export`, `planet/export.py`, PW-100)
+
+```bash
+uv run python -m planet export <world-or-zoom-id> [--out DIR] [--res N] [--tile 1024] [--overlap 0] [--cube N] [--raw]
+uv run python -m planet export 592f2a --res 4096 --cube 1024     # a world: equirectangular + six cube faces -> exports/592f2a/
+uv run python -m planet export zoom:f99af0 --tile 512 --overlap 1 --raw   # a zoom on its native grid, 2^n+1 raw tiles
+```
+
+From Python: `planet.export.export(ref, out, res=..., tile=..., cube=..., raw=...)` returns the directory (nothing in it needs the server).
+The output is one folder, read through `manifest.json` (units, scale, sea level, projection, every layer's tiles, provenance ids):
+
+| File | What |
+|---|---|
+| `heightmap` | 16-bit greyscale PNG (or raw little-endian `.r16` with `--raw`), ground height: `m = min_m + v / 65535 * (max_m - min_m)`; the manifest gives `min_m`, `max_m`, `metres_per_step` and `sea_level_value` (the value of 0 m). Same mapping as a zoom's `heightmap.png`; `--height-range LO HI` fixes it. A world's heights are its true bed (under ice too); sea level is 0 m |
+| `ice_thickness` | 16-bit, metres of land ice on the ground (surface = ground + ice) |
+| `water` | 8-bit ids: 0 land, 1 sea, 2 lake |
+| `biome`, `vegetation`, `rock` | 8-bit class ids; names and colours in `legend.json` |
+| `splat_0`, `splat_1` | RGBA8 weights of 8 materials (rock sand soil grass \| forest wetland tundra snow), summing to 255 on land and 0 on water. Rules, not simulation (`export.splat_weights`: slope, cover, rain, temperature, ice), a starting point for an engine's terrain layers |
+| `features.geojson` | lon/lat (WGS84): `river` lines (from the routing; `--river-min` m3/s), `lake`, `volcano` (status, form, summit), `waterfall` and `delta` (zooms), `highlight` (the world's highlights; inside the zoom's square for a zoom, if cached). Points carry `elevation_m`. A river crossing the antimeridian has longitudes past 180 |
+| `features_local.geojson` | zooms only: the same in metres `[x east, y north, z ground height]` from the zoom's centre (its azimuthal-equidistant frame; the `crs` member names it) |
+
+Layouts (`manifest.layouts`): a **world** is an equirectangular raster (`--res` = width in px, default 2048, height half of it; `deg_per_px`, row 0 north, column 0 at -180) and optionally the six faces of a cube (`--cube N`, gnomonic; `layouts.cube` gives each face's axis and image directions, files under `cube/<face>/`); a **zoom** keeps its native grid (`--res` = km per pixel, a multiple of the native one by block averaging; rivers always follow the native routing). Layers are cut into `--tile` px tiles (`<layer>/<layer>_x<i>_y<j>.png`, none if the raster fits); `--overlap 1` shares an edge pixel between neighbours for engines that want 2^n + 1 terrain tiles. Each layer lists its files with their pixel offsets. New layers (PW-099's passes and harbours, PW-206's game attributes) are added as manifest entries and feature kinds, so importers need not change.
+
 ## Glacial time zoom (`planet/timezoom/`)
 
 A side simulation at 500-year steps: geology frozen at one moment

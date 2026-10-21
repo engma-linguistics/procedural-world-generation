@@ -603,7 +603,7 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 
 **Replay and code changes:** a slice replays from the nearest checkpoint; if the model changed since the run, the replay is a different planet and `slice` refuses to save it. There is no backward compatibility: old outputs are deleted when a change breaks them (`planet delete`, `tools/cleanup_outputs.py`).
 
-**Known limits:** checkpoints are large (PW-088; ~12 MB at L6 after PW-131's zeroed crust and PW-306's cell map stored as its residual from `grid.locate`); replay falls back to t = 0 after code changes (PW-089); no game export yet (PW-100).
+**Known limits:** checkpoints are large (PW-088; ~12 MB at L6 after PW-131's zeroed crust and PW-306's cell map stored as its residual from `grid.locate`); replay falls back to t = 0 after code changes (PW-089); game export is `planet export` (`export.py`, README: 16-bit height tiles, splat and class maps, GeoJSON features, manifest.json; PW-100).
 
 ### 2.17 Tools (`tools/`, run with `PYTHONPATH=. uv run python tools/X.py`)
 
