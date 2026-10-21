@@ -151,6 +151,9 @@ def test_family_and_thumbs_of_a_made_planet(made):
         png = thumbs.thumb(kind, i)
         assert png and png.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
         assert thumbs.thumb(kind, i) == png  # cached
+    eq = thumbs.thumb("world", out["world"], "equirect", 512)  # the globe picker's texture (PW-546)
+    assert eq and eq != thumbs.thumb("world", out["world"]) and thumbs.thumb("world", out["world"]) is not None
+    assert thumbs.thumb("world", out["world"], "mollweide") is None and thumbs.thumb("world", out["world"], width=77) is None
     assert thumbs.thumb("world", "nope") is None and thumbs.thumb("zoom", out["zooms"][0]) is None
     assert thumbs.thumb("run", "../etc") is None
 
