@@ -81,7 +81,8 @@ def test_trough_is_lowered_u_shaped_and_scales_with_the_erosion():
     axis = nx // 2
     wall = row[axis + 1:axis + 6] - row[axis]
     assert np.all(np.diff(wall) >= -1e-6)
-    assert wall[4] - wall[3] > 2.0 * (wall[1] - wall[0]) + 1e-6  # steeper further out: a floor, then a wall
+    # (the trough opens only as wide as its depth asks: a wall steeper than the valley's V (25 m / px), then the V again)
+    assert wall[1] - wall[0] > 25.0 + 1.0 and wall[4] - wall[3] <= 25.0 + 1e-6
 
 
 def test_a_trough_that_reaches_the_sea_is_flooded():
@@ -100,3 +101,23 @@ def test_a_trough_that_reaches_the_sea_is_flooded():
     assert not drowned[r < 20].any()  # (the head of the valley stays dry land)
     # without a connection to the sea nothing is flooded
     assert not g.drown(cx, z, np.zeros(nx * ny, bool)).any()
+
+
+def test_trough_width_follows_its_depth_and_a_moraine_dams_a_stream():
+    nx, ny, res, r, c, h, rec, order, chan, q = _valley(res=0.5)
+    g = ZG.Glaciated()
+    cx = _ctx(nx, ny, res, h, rec, order, chan, q, 60.0)
+    dz = g.shape(cx, h)
+    trunk, t, x, w_t, ok, delta, wh, _ = cx.cache["trough_geom"]
+    on = chan & (r > 5) & (r < ny - 5)
+    # the rim-to-rim width is a few times the depth (the floor lowering plus the valley's relief up to the rim)
+    wd = 2000.0 * wh[on] / np.maximum(delta[on], 1.0)
+    assert np.all(wd > 1.0) and np.median(wd) < 7.0
+    # the ice margin crosses the valley halfway: across the stream the belt is one unbroken ridge, a dam
+    cx2 = _ctx(nx, ny, res, h, rec, order, chan, q, 60.0)
+    cx2.prm["iced"] = np.where(r < ny // 2, 1.0, 0.0) * 1.0
+    g.shape(cx2, h)
+    mor = cx2.cache["mor"]
+    belt = mor.reshape(ny, nx)
+    assert belt[:, nx // 2].max() >= ZG.DAM_M[0] * 0.8
+    assert g.lakes(cx2).reshape(ny, nx)[ny // 2 - 3, nx // 2] > 0.5  # (lakes may form behind it, up the valley)

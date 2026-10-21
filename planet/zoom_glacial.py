@@ -22,7 +22,7 @@ are the ones the ice reached, plus a ring round them (select()). Its pieces:
               under bigger trunks, modulated along the valley (rock bars and
               overdeepened basins: adverse slopes, so basins stay closed and
               hold lakes), and the walls pulled into a U (a flat floor, a
-              power-law wall, P_WALL) of width growing with the trunk. A
+              power-law wall, P_WALL) as wide as 3-5 x its depth (W_D_MID, more under a bigger flux: PW-510). A
               side valley is not lowered with it: it ends hanging above the
               trough (a waterfall in the final drainage). Where a trough
               floor ends below the sea and joins it, it is drowned: a fjord
@@ -32,13 +32,15 @@ are the ones the ice reached, plus a ring round them (select()). Its pieces:
               an arete.
   moraines    ridges along the margin: where the smooth share of iced cells
               passes 0.5 (the terminal belt) and 0.85 (a recessional one),
-              lobed, as high as the till says; across a valley they dam a
-              lake (basins(), lakes()).
+              lobed, as high as the till says; across a stream one unbroken
+              ridge 20-60 m high (a dam: the lake forms behind it, basins(), lakes()).
+              Where the ice's margin is out of view, belts at ice-thickness contours.
   drumlins    mounds elongated along the ice's flow (the surface slope of the
               bed + ice_max, DERIVED per cell: ice_flow()) on the till plains
               inside the margin (an overlay, after the drainage), plus kettle
               pits on outwash and moraine (ponds where they reach the water
               table).
+  eskers      sinuous ridges from the margin's proglacial streams back up the ice's flow.
   outwash     down the proglacial rivers from the margin (the drainage
               traced downstream from it), a gravel plain of up to
               OUTWASH_MAX_M thinning over OUTWASH_KM; the valley floor
@@ -62,14 +64,26 @@ DELTA_PER_M = 8.0  # trough floor lowering per metre of the cell-mean erosion (s
 DELTA_MAX = 1300.0  # m
 P_WALL = 1.7  # the trough wall's power law (2: a parabola)
 WH_KM = 2.2  # half-width (km) of a trough under a trunk of QT; grows as (q / QT)^0.2
-WH_MAX_KM = 6.0
+WH_MAX_KM = 8.0
+WMIN_PX = 0.5  # the narrowest trough half-width, in pixels: one pixel across, the least a pixel grid can draw
+ICE_FRAC = 0.6  # a trough floor is lowered by at most this share of the thickest ice
+W_D_MID = (3.0, 5.0)  # rim-to-rim width over depth of a trough under a small / a big flux
 E_FULL_M = (6.0, 35.0)  # the cell-mean erosion (m) under which a trunk is hardly lowered, and from which fully
+DEPTH_RANGE_M = (200.0, 1500.0)  # rim-to-floor depth of real fjords and U-valleys (water depth 200-800 m; Sognefjord ~1300 m below sea)
+W_D_RANGE = (2.5, 6.0)  # rim-to-rim width over depth of U-valleys: roughly 3-5
+TROUGH_MIN_M = 100.0  # the floor lowering from which a trunk counts as a trough in the calibration
+Q_DAM = 4.0  # m^3/s: a stream this big that a moraine belt crosses is dammed by it (an unbroken ridge)
+DAM_M = (20.0, 60.0)  # a moraine dam's crest above the valley floor
+ESKER_KM = (25.0, 90.0)  # length of an esker traced back up the ice's flow from the margin
+ESKER_M = (6.0, 18.0)
+RECESS_ICE_M = (1100.0, 1900.0)  # thickness contours (m) of the thickest ice where the retreat paused
+KETTLE_MAX_M = 40.0
 CIRQUE_CELL_KM = 9.0
 OUTWASH_MAX_M = 45.0
 OUTWASH_KM = 90.0  # e-folding distance of the outwash downstream
 LOESS_PEAK_M = 12.0
 LOESS_KM = 40.0
-FORM = {"trough": 1, "cirque": 2, "moraine": 3, "drumlin": 4, "outwash": 5, "loess": 6, "fjord": 7, "lake": 8}
+FORM = {"trough": 1, "cirque": 2, "moraine": 3, "drumlin": 4, "outwash": 5, "loess": 6, "fjord": 7, "lake": 8, "esker": 9, "kettle": 10}
 
 
 def ice_flow(grid, L) -> dict:
@@ -149,6 +163,51 @@ def _components(mask, nx, ny, count_in, min_px=1):
     return int(np.sum(inside >= min_px))
 
 
+def trough_metrics(cx_cache, h, nx, ny, res, region) -> dict:
+    """Depth and width of the troughs measured on the finished ground (PW-510): per trunk pixel in the
+    region, the depth is the rim (median height at 0.9-1.3 half-widths from it) above its floor, the
+    width is the trough's rim-to-rim width, 2 half-widths. The share (of the trunk length) within the
+    literature: rim-to-floor depth DEPTH_RANGE_M and width/depth W_D_RANGE; and the percentiles."""
+    tg = cx_cache.get("trough_geom")
+    if tg is None:
+        return {}
+    trunk, t, x, w_t, ok, delta, wh_f, _ = tg
+    wr_ = np.maximum(w_t, res)
+    ann = ok & (x >= 0.9 * wr_) & (x <= 1.45 * wr_)
+    n = nx * ny
+    cnt = trunk & region
+    ids = np.flatnonzero(cnt)
+    if len(ids) < 5:
+        return {}
+    pix = np.flatnonzero(ann)
+    own = t[pix]
+    o = np.lexsort((h[pix], own))
+    own_s, h_s = own[o], h[pix][o]
+    starts = np.r_[0, np.flatnonzero(np.diff(own_s)) + 1]
+    ends = np.r_[starts[1:], len(own_s)]
+    med = np.full(n, np.nan)
+    ok_n = (ends - starts) >= 2
+    mid = starts + (ends - starts) // 2
+    med[own_s[starts]] = np.where(ok_n, h_s[mid], np.nan)
+    rim = med[ids]
+    d = rim - h[ids]
+    w = 2.0 * w_t[ids]  # km
+    good = np.isfinite(d) & (d > 0) & (delta[ids] >= TROUGH_MIN_M)  # (a trough: the ice lowered the floor this much)
+    d, w = d[good], w[good]
+    if len(d) < 5:
+        return {}
+    wd = 1000.0 * w / d
+    inr = (d >= DEPTH_RANGE_M[0]) & (d <= DEPTH_RANGE_M[1]) & (wd >= W_D_RANGE[0]) & (wd <= W_D_RANGE[1])
+    fl = w <= 2.0 * WMIN_PX * res * 1.001  # (at the narrowest a pixel grid draws: its width can't follow its depth)
+    pc = lambda a: [round(float(v), 1) for v in np.percentile(a, [10, 50, 90])]  # noqa: E731
+    return {"tr_n": int(len(d)), "tr_depth_m_p10_50_90": pc(d), "tr_width_km_p10_50_90": pc(w), "tr_w_over_d_p10_50_90": pc(wd),
+            "tr_depth_ok_pct": round(100.0 * float(np.mean((d >= DEPTH_RANGE_M[0]) & (d <= DEPTH_RANGE_M[1]))), 0),
+            "tr_wd_ok_pct": round(100.0 * float(np.mean((wd >= W_D_RANGE[0]) & (wd <= W_D_RANGE[1]))), 0),
+            "tr_resolved_in_range_pct": (round(100.0 * float(np.mean(inr[~fl])), 0) if (~fl).any() else None),
+            "tr_at_pixel_floor_pct": round(100.0 * float(np.mean(fl)), 0),
+            "tr_in_range_pct": round(100.0 * float(np.mean(inr)), 0)}
+
+
 class Glaciated(Synth):
     """The ice's landforms (module docstring)."""
     layers = ("glacial_erosion", "glacial_till", "ice_max", "iced", "ice_fe", "ice_fn", "wind_e", "wind_n")
@@ -177,11 +236,52 @@ class Glaciated(Synth):
                       "wx": p["wind_e"], "wy": p["wind_n"]}
         return c["f"]
 
-    def _margin(self, cx, G, level):
-        """Signed km from the margin contour G = level (positive inside the ice)."""
+    def _margin(self, cx, G, level, gmin=0.004):
+        """Signed km from the contour G = level (positive inside the ice; gmin: the smallest slope, per km)."""
         gy, gx = np.gradient(G.reshape(cx.ny, cx.nx), cx.res)
-        gm = np.maximum(np.hypot(gx, gy).ravel(), 0.004)  # (per km: ~ 1 / a cell's reach)
+        gm = np.maximum(np.hypot(gx, gy).ravel(), gmin)  # (per km: ~ 1 / a cell's reach)
         return (G - level) / gm
+
+    def _open_width(self, cx, h, trunk, t, x, okl, delta, kwd):
+        """Half-width (km) of each trunk pixel's trough and the relief of its rim above the floor (m): the
+        trough opens until its rim-to-rim width is kwd x its depth (the floor lowering plus the valley's relief
+        up to the rim, read from the ground at the candidate widths): the width follows the depth (PW-510)."""
+        res = cx.res
+        cands = np.unique(np.maximum(res * np.array([WMIN_PX, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0]), 0.5))
+        cands = cands[cands <= WH_MAX_KM + 1e-9]
+        n = len(h)
+        ids = np.flatnonzero(trunk)
+        rel = []
+        for w in cands:
+            wr_ = max(w, res)  # (the ring can't be nearer than a pixel)
+            sel = okl & (x >= 0.9 * wr_) & (x <= 1.45 * wr_)
+            cnt = np.bincount(t[sel], minlength=n)[ids]
+            sm = np.bincount(t[sel], h[sel], minlength=n)[ids]
+            r = np.where(cnt >= 2, sm / np.maximum(cnt, 1) - h[ids], np.nan)
+            rel.append(np.maximum(r, 0.0))
+        rel = np.array(rel)
+        for j in range(1, len(cands)):  # (no ground measured there: the narrower one's)
+            rel[j] = np.where(np.isnan(rel[j]), rel[j - 1], rel[j])
+        rel = np.where(np.isnan(rel), float(np.clip(cx.zone_relief(h), 150.0, 600.0)), rel)
+        rel = np.maximum.accumulate(rel, axis=0)
+        D = delta[ids][None, :] + rel
+        g = 2000.0 * cands[:, None] - kwd[ids][None, :] * D  # (>= 0: wide enough)
+        first = np.argmax(g >= 0, axis=0)
+        none = ~(g >= 0).any(axis=0)
+        j1 = first
+        j0 = np.maximum(first - 1, 0)
+        cols = np.arange(len(ids))
+        g0, g1 = g[j0, cols], g[j1, cols]
+        fr = np.where(j1 > j0, np.clip(-g0 / np.maximum(g1 - g0, 1e-9), 0.0, 1.0), 1.0)
+        wsel = cands[j0] + fr * (cands[j1] - cands[j0])
+        wsel = np.where(none, cands[-1], wsel)
+        rsel = rel[j0, cols] + fr * (rel[j1, cols] - rel[j0, cols])
+        rsel = np.where(none, rel[-1], rsel)
+        wh = np.zeros(n)
+        rl = np.zeros(n)
+        wh[ids] = wsel
+        rl[ids] = rsel
+        return wh, rl
 
     # -- the shape hook: troughs, cirques, moraines, outwash, loess ------------
     def shape(self, cx, h):
@@ -199,22 +299,25 @@ class Glaciated(Synth):
         if trunk.any():
             nz = cx.noise(14.0, 2, 461)  # along the valley: bars and overdeepened basins
             big = np.clip(np.log(np.maximum(q, QT) / QT) / np.log(8.0), 0.0, 1.0)
-            delta = (np.minimum(DELTA_PER_M * E, DELTA_MAX) * smoothstep(*E_FULL_M, E) * (0.45 + 0.55 * big)
-                     * np.clip(0.8 + 0.55 * nz, 0.15, 1.3))
-            wh = np.clip(WH_KM * (np.maximum(q, QT) / QT) ** 0.2, 1.6 * res, WH_MAX_KM)
+            F = f["F"]
+            delta = (np.minimum(np.minimum(DELTA_PER_M * E, DELTA_MAX), ICE_FRAC * F) * smoothstep(*E_FULL_M, E)
+                     * (0.45 + 0.55 * big) * np.clip(0.8 + 0.55 * nz, 0.15, 1.3))
+            kwd = W_D_MID[0] + (W_D_MID[1] - W_D_MID[0]) * big  # (a bigger flux: a wider trough for its depth)
             idx, dpx = nearest_feature(trunk, nx, ny)
             ok = idx >= 0
             t = np.maximum(idx, 0)
             x = dpx * res
-            relief = float(np.clip(cx.zone_relief(h), 150.0, 1200.0))
-            d_t, w_t, f_t = delta[t], wh[t], h[t]
+            wh_f, rel_f = self._open_width(cx, h, trunk, t, x, ok & land, delta, kwd)
+            wh, relief_t = wh_f, rel_f
+            d_t, w_t, f_t, r_t = delta[t], wh[t], h[t], relief_t[t]
             xf = 0.35 * w_t
-            s_ = (d_t + relief) / np.maximum(w_t - xf, 1e-6) ** P_WALL
+            s_ = (d_t + r_t) / np.maximum(w_t - xf, 1e-6) ** P_WALL
             target = f_t - d_t + s_ * np.maximum(x - xf, 0.0) ** P_WALL
             reach = 1.0 - smoothstep(0.9, 1.15, x / np.maximum(w_t, 1e-6))
             dz_t = np.where(ok & land, (np.minimum(target, h) - h) * reach, 0.0)
             dz += dz_t
             zone = ok & land & (x <= 1.1 * w_t) & (dz_t < -2.0)
+            cx.cache["trough_geom"] = (trunk, t, x, w_t, ok, delta, wh_f, None)
             cx.cache["floor"] = ok & (x <= 0.8 * w_t)  # (what the sea may flood: the trough's floor and lower walls)
             st["trough_km"] = round(float(np.sum(cx.counted(trunk))) * res, 0)
             st["trough_floor_lowering_m"] = round(float(np.percentile(d_t[trunk], 90)), 0)
@@ -240,10 +343,20 @@ class Glaciated(Synth):
         hum = 0.75 + 0.25 * cx.noise(4.0, 2, 482)
         wr = max(3.5, 1.5 * res)
         mor = np.zeros(len(h))
-        for lvl, k in ((0.5, 1.0), (0.85, 0.5)):
-            m = self._margin(cx, G, lvl)
+        strm = (q >= Q_DAM) & land
+        damw = 1.0 - smoothstep(wr, 3.0 * wr, ZK.inside_distance(~strm, nx, ny, False) * res) if strm.any() else np.zeros(len(h))
+        # the margin (G = 0.5 the terminal belt, 0.85 a recessional one), and where a sheet never ended in view, the
+        # retreat's stands at ice-thickness contours (the margin pulls back up the thickness gradient)
+        lev = [(G, lvl, k, 0.004, 1.0) for lvl, k in ((0.5, 1.0), (0.85, 0.5))]
+        lev += [(f["F"], fl, 0.5, 0.5, 1.0) for fl in RECESS_ICE_M]
+        for fld, lvl, k, gmin, _ in lev:
+            m = self._margin(cx, fld, lvl, gmin)
             ht = np.clip(6.0 + 2.0 * T, 6.0, 80.0)
-            mor = np.maximum(mor, k * ht * np.exp(-0.5 * (m / wr) ** 2) * lob * hum)
+            belt = k * np.exp(-0.5 * (m / wr) ** 2)
+            mor = np.maximum(mor, belt * ht * lob * hum)
+            # across a stream the belt is one unbroken ridge, high enough to hold the water back: a dam
+            dam = belt * np.clip(ht, *DAM_M) * (0.85 + 0.15 * hum)
+            mor = np.maximum(mor, dam * damw)
         mor = mor * land * smoothstep(0.1, 0.4, G)
         dz += mor
         cx.cache["mor"] = mor
@@ -296,6 +409,12 @@ class Glaciated(Synth):
         form[zone] = FORM["trough"]
         form[cirq] = FORM["cirque"]
         cx.cache["form"] = form
+        cx.cache["src"] = src
+        lc = cx.counted(land)
+        st["iced_pct"] = round(100.0 * float(np.mean(G[lc] > 0.5)), 0) if lc.any() else 0.0
+        st["F_p5_50_95"] = [round(float(v)) for v in np.percentile(f["F"][lc], [5, 50, 95])] if lc.any() else []
+        st["margin_pct"] = round(100.0 * float(np.mean((G[lc] > 0.15) & (G[lc] < 0.85))), 0) if lc.any() else 0.0
+        st["dam_px"] = int(np.sum(cx.counted(strm & (mor > 15.0))))
         st["moraine_belts"] = _components(cx.cache["zone_moraine"] & (mor > 8.0), nx, ny, cx.counted(np.ones(len(h), bool)), max(3, int(10.0 / res)))
         st["outwash_km2"] = round(float(np.sum(cx.counted(plain))) * res * res, 0)
         st["loess_km2"] = round(float(np.sum(cx.counted(lo >= 2.0))) * res * res, 0)
@@ -308,7 +427,12 @@ class Glaciated(Synth):
         return None if np.isscalar(z) else z.astype(float)
 
     def lakes(self, cx):
-        return self.basins(cx)
+        """Where closed depressions may hold water: the troughs and moraine zone, and all the country
+        inside the margin (a lake behind a moraine dam lies up the valley, beyond the ridge's zone)."""
+        z = self.basins(cx)
+        if z is None:
+            return None
+        return np.maximum(z, smoothstep(0.35, 0.5, self._f(cx)["G"]))
 
     # -- the sea floods a trough that joins it: a fjord --------------------------------
     def drown(self, cx, h, sea):
@@ -321,6 +445,45 @@ class Glaciated(Synth):
         lab, _ = ZK.label_components(cand | sea, cx.nx, cx.ny)
         wet = np.unique(lab[sea & (lab >= 0)])
         return cand & np.isin(lab, wet)
+
+    def _eskers(self, cx, fin, h):
+        """0..1 on the pixels of the eskers: from the proglacial streams at the margin (one per ~25 km of
+        it), back up the ice's flow (ux, uy) over ESKER_KM, wandering, fading out up-ice."""
+        src = cx.cache.get("src")
+        f = self._f(cx)
+        if src is None or not src.any() or not (f["dir"] > 0.3).any():
+            return None
+        nx, ny, res = cx.nx, cx.ny, cx.res
+        cand = np.flatnonzero(src & (fin["q"] >= 2.0) & (f["dir"] > 0.3) & (f["G"] > 0.45) & cx.land)
+        if not len(cand):
+            return None
+        B = max(2, int(round(25.0 / res)))
+        blk = (cand // nx // B) * 100000 + (cand % nx) // B
+        o = np.lexsort((-fin["q"][cand], blk))
+        first = np.r_[True, np.diff(blk[o]) != 0]
+        seeds = cand[o][first]
+        rng = np.random.default_rng(int(cx.seed) + 497)
+        ux, uy, G = f["ux"], f["uy"], f["G"]
+        out = np.zeros(nx * ny)
+        for s0 in seeds:
+            L = rng.uniform(*ESKER_KM)
+            r, c = float(s0 // nx), float(s0 % nx)
+            ang = None
+            n = int(L / (0.7 * res))
+            for i in range(n):
+                ri, ci = int(round(r)), int(round(c))
+                if ri < 1 or ci < 1 or ri >= ny - 1 or ci >= nx - 1:
+                    break
+                j = ri * nx + ci
+                if G[j] < 0.5 or not cx.land[j]:
+                    break
+                a0 = np.arctan2(-uy[j], -ux[j])  # (up-ice; rows run south)
+                ang = a0 if ang is None else ang + 0.5 * np.arctan2(np.sin(a0 - ang), np.cos(a0 - ang))
+                ang += rng.normal(0.0, 0.35)
+                out[j] = max(out[j], 1.0 - float(smoothstep(0.6, 1.0, i / max(n, 1))))
+                r -= 0.7 * np.sin(ang)
+                c += 0.7 * np.cos(ang)
+        return out if out.any() else None
 
     # -- the overlay after the final drainage: drumlins and kettles -----------------------
     def overlay(self, cx, h, fin):
@@ -349,10 +512,23 @@ class Glaciated(Synth):
             out += zone * amp * np.maximum(streak - 0.3, 0.0)
             cx.cache["drum"] = zone > 0.5
             st["drumlin_km2"] = round(float(np.sum(cx.counted(zone > 0.5))) * res * res, 0)
-        # kettles: pits on outwash and moraine
-        pitz = np.maximum(smoothstep(2.0, 10.0, cx.cache.get("tout", 0.0) if not np.isscalar(cx.cache.get("tout", 0.0)) else np.zeros(len(h))),
-                          smoothstep(8.0, 30.0, cx.cache.get("mor", np.zeros(len(h)))))
+        # kettles: pits where buried ice melted out of outwash and moraine, as deep as the deposit stands above the
+        # water table (so they hold ponds there), up to KETTLE_MAX_M
+        tout = cx.cache.get("tout", 0.0)
+        tout = np.zeros(len(h)) if np.isscalar(tout) else tout
+        pitz = np.maximum(smoothstep(2.0, 10.0, tout), smoothstep(8.0, 30.0, cx.cache.get("mor", np.zeros(len(h)))))
         if pitz.max() > 0.2:
-            qk, _, Rk, _ = ZL.blobs(cx.Pk, 7.0, np.int64(cx.seed + 495), 0.35, np.array([0.8, 2.5]), 1.3, 1.0 * res)
-            out -= pitz * np.where(qk < 1.0, np.clip(9.0 * Rk, 6.0, 25.0) * (1 - np.minimum(qk, 1.0) ** 2), 0.0)
+            qk, _, Rk, _ = ZL.blobs(cx.Pk, 6.0, np.int64(cx.seed + 495), 0.5, np.array([1.0, 3.0]), 1.3, 1.0 * res)
+            above = np.maximum(h - fin["base"], 0.0)
+            deep = np.clip(above + 5.0 + 4.0 * Rk, 6.0, KETTLE_MAX_M)
+            pit = pitz * np.where(qk < 1.0, deep * (1 - np.minimum(qk, 1.0) ** 2), 0.0)
+            out -= pit
+            cx.cache["kettle"] = pit > 4.0
+            st["kettles"] = _components(pit > 4.0, nx, ny, cx.counted(np.ones(len(h), bool)), 1)
+        # eskers: sinuous ridges of the subglacial streams, traced back up the ice's flow from the margin's outwash
+        esk = self._eskers(cx, fin, h)
+        if esk is not None:
+            out += esk * np.clip(ESKER_M[0] + 0.25 * T, *ESKER_M)
+            cx.cache["esker"] = esk > 0.3
+            st["esker_km"] = round(float(np.sum(cx.counted(esk > 0.3))) * res, 0)
         return out

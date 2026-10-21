@@ -2019,6 +2019,10 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
     drum = g.cache.get("drum")
     if drum is not None:
         form[drum & (form == 0)] = FM["drumlin"]
+    for nm in ("esker", "kettle"):
+        m_ = g.cache.get(nm)
+        if m_ is not None:
+            form[m_] = FM[nm]
     st = dict(g.cache.get("stats", {}))
     st.update(g.cache.get("overlay_stats", {}))
     cnt = region
@@ -2030,6 +2034,7 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
         st["fjords"] = len(ids)
         st["fjord_max_depth_m"] = round(max(depth), 0) if depth else 0
         st["fjord_mean_depth_m"] = round(float(np.mean(depth)), 0) if depth else 0
+        st["fjord_depth_in_range_pct"] = round(100.0 * float(np.mean([200.0 <= v <= 1500.0 for v in depth])), 0) if depth else 0
         st["fjord_area_km2"] = round(float(fj.sum()) * res * res, 0)
     else:
         st["fjords"] = 0
@@ -2039,6 +2044,8 @@ def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
     for nm, z in (("trough_lakes", zt), ("moraine_lakes", zm & ~zt)):
         m = lake & near(z)
         st[nm] = int(len(np.unique(ZK.label_components(m, nx, ny)[0][m & cnt]))) if (m & cnt).any() else 0
+    from .zoom_glacial import trough_metrics
+    st.update(trough_metrics(g.cache, h, nx, ny, res, cnt))
     form[lake & (near(zt) | near(zm))] = FM["lake"]
     form[fjord] = FM["fjord"]
     return form, g.cache.get("loess", np.zeros(n)), st

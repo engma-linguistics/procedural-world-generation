@@ -22,3 +22,4 @@ The trough constants are physical estimates, not fits: floor lowering = 8 x the 
 
 ## Updates
 - 2026-10-21: Created from inbox draft draft-glacial-zoom-calibration.md (found by pw092).
+- 2026-10-21: Built on branch worktree-agent-a6325323c9d1c4305: width follows depth (3-5 x), floor lowering capped by the ice thickness. 1 km Norway 82% of troughs in range, 2 km 57% (pixel floor), Baltic 66%, Ungava 0% (shield: 180 m deep troughs, below the fjord range). Fjord depths 80-83% in 200-1500 m (Norway). Needs a merge.
