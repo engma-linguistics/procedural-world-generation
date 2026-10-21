@@ -150,6 +150,13 @@ def test_zoom_and_world_analyses_run_on_partial_inputs():
     assert tab["net"].n == el.size
 
 
+def test_inland_zoom_still_has_every_class_map():
+    """PW-545: a zoom with no sea used to lack the harbour map, and the viewer (which indexes it) failed to load it."""
+    el = np.linspace(500, 20, 40 * 30).reshape(40, 30)
+    out, _ = HU.analyse_zoom({"elevation": el, "water": np.zeros(el.shape, np.uint8)}, 2.0)
+    assert out["harbour"].shape == el.shape and out["harbour"].dtype == np.uint8 and not out["harbour"].any()
+
+
 def test_finished_world_carries_the_layers_and_they_are_what_the_export_recomputes():
     from planet import world as W
     w = W.generate("plates", seed=2, level=4)
