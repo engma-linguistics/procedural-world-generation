@@ -1,5 +1,6 @@
 ---
-title: Game export: engine presets and the attributes of PW-099 and PW-206
+id: PW-475
+title: "Game export: engine presets and the attributes of PW-099 and PW-206"
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: export
 blocked_by: []
 relates: [PW-100, PW-099, PW-206]
 refs: [planet/export.py, README.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -22,3 +25,6 @@ hazards): add them as `layouts.<name>.layers` entries and feature kinds (`pass`,
 `resource`) when those tickets land; nothing in the store holds passes or resources yet, so the export
 has none. The splat rules (`export.splat_weights`) are simple; PW-206's vegetation attributes would
 replace them.
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-export-engine-presets-fields.md (found by export).

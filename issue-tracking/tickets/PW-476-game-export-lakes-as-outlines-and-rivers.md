@@ -1,5 +1,6 @@
 ---
-title: Game export: lakes as outlines and rivers with width or order
+id: PW-476
+title: "Game export: lakes as outlines and rivers with width or order"
 type: task
 status: todo
 parent: null
@@ -10,6 +11,8 @@ found_by: export
 blocked_by: []
 relates: [PW-100]
 refs: [planet/export.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -21,3 +24,6 @@ are already there; this is tracing and a property. Also: rivers crossing the ant
 past 180 (unwrapped); split them into two lines if an importer needs strict RFC 7946.
 - [ ] lake polygons in `features.geojson` and `features_local.geojson`
 - [ ] per-vertex discharge or an order property on river lines
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-export-lake-polygons-river-order.md (found by export).
