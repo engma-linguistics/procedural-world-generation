@@ -154,6 +154,45 @@ def test_check_rejects_bad_fields(root, capsys):
     assert check(root) == 0
 
 
+def test_milestone_filters_counts_and_check(root, capsys):
+    new(root, "Planned", "s", "med", "zoom", "--milestone", "v2")
+    new(root, "Unscheduled")
+    new(root, "Done planned", "xs", "low", "zoom", "--milestone", "v2")
+    run(root, "update", "PW-003", "fixed", "--status", "done")
+    capsys.readouterr()
+    run(root, "list", "--milestone", "v2")
+    out = capsys.readouterr().out
+    assert "PW-001" in out and "PW-003" in out and "PW-002" not in out
+    run(root, "next", "--milestone", "v2")
+    out = capsys.readouterr().out
+    assert "PW-001" in out and "PW-003" not in out  # done tickets are not next
+    run(root, "tree", "--milestone", "v2")
+    out = capsys.readouterr().out
+    assert "PW-001" in out and "PW-002" not in out
+    run(root, "milestones")
+    rows = {ln.split()[0]: ln.split()[1:4] for ln in capsys.readouterr().out.splitlines()[1:5]}
+    assert rows == {"v1": ["0", "0", "0"], "v2": ["1", "1", "2"], "later": ["0", "0", "0"],
+                    "unscheduled": ["1", "0", "1"]}
+    run(root, "milestones", "v2")
+    assert "Open in v2 (1):" in capsys.readouterr().out
+    assert check(root) == 0
+    path = next((root / "tickets").glob("PW-001-*.md"))
+    path.write_text(path.read_text().replace("milestone: v2", "milestone: v9"))
+    assert check(root) == 1
+    assert "bad milestone 'v9'" in capsys.readouterr().out
+
+
+def test_intake_milestone_defaults_to_null(root):
+    draft(root, "draft-plain.md", title="No milestone line")
+    p = draft(root, "draft-later.md", title="Later one")
+    p.write_text(p.read_text().replace("parent: null\n", "parent: null\nmilestone: later\n"))
+    run(root, "intake")
+    by_title = {t["title"]: t for t in tickets(root).values()}
+    assert by_title["Later one"]["milestone"] == "later"
+    assert by_title["No milestone line"]["milestone"] is None
+    assert check(root) == 0
+
+
 def test_check_parent_rank(root, capsys):
     new(root, "A task")
     run(root, "new", "--type", "story", "--title", "Story", "--subsystem", "zoom", "--effort", "m",

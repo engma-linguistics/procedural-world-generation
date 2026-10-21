@@ -4,6 +4,7 @@ title: tests/test_parallel.py::test_run_in_workers is flaky (failed twice in a r
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: infra
 effort: s
 impact: low

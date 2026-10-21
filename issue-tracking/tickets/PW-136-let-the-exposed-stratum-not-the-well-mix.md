@@ -4,6 +4,7 @@ title: Let the exposed stratum, not the well-mixed cover, set surface rock and e
 type: task
 status: todo
 parent: PW-005
+milestone: null
 subsystem: surface
 effort: m
 impact: med

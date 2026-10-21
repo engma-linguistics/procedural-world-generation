@@ -4,6 +4,7 @@ title: Vegetation game attributes, satellite colours and export fields (PW-187 s
 type: task
 status: todo
 parent: PW-184
+milestone: v2
 subsystem: viewer
 effort: m
 impact: low

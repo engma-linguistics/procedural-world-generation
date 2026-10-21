@@ -4,6 +4,7 @@ title: "Zoom 3D at half / quarter detail: rivers in narrow valleys still cross r
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

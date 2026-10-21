@@ -4,6 +4,7 @@ title: "Cleanup after PW-277: climate.ice_cooling / TUNE['ice_cooling'] only fee
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: xs
 impact: low

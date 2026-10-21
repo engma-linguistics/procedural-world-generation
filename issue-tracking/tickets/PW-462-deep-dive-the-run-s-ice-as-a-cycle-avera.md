@@ -4,6 +4,7 @@ title: "Deep dive: the run's ice as a cycle average and the time zoom as a windo
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high

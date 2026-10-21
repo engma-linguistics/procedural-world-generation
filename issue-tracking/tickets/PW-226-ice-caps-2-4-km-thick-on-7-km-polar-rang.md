@@ -4,6 +4,7 @@ title: Ice caps 2.4 km thick on 7 km polar ranges give coldest months of -105 C
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: tectonics
 effort: s
 impact: low

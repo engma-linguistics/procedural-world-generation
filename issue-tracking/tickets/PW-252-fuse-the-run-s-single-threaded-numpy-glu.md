@@ -4,6 +4,7 @@ title: Fuse the run's single-threaded numpy glue into parallel numba kernels (~4
 type: task
 status: todo
 parent: PW-247
+milestone: v2
 subsystem: infra
 effort: l
 impact: high

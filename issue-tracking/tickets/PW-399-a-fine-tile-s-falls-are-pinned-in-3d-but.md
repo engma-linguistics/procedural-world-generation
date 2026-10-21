@@ -4,6 +4,7 @@ title: A fine tile's falls are pinned in 3D but not in the panel's waterfall lis
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

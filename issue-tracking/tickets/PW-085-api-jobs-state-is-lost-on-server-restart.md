@@ -4,6 +4,7 @@ title: api.Jobs state is lost on server restart
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: infra
 effort: s
 impact: low

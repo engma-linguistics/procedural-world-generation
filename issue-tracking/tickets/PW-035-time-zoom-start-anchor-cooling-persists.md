@@ -4,6 +4,7 @@ title: "Time zoom: start-anchor cooling persists after the starting ice is gone"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: timezoom
 effort: m
 impact: low

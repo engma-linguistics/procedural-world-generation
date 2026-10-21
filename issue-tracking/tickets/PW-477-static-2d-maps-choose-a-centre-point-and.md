@@ -4,6 +4,7 @@ title: "Static 2D maps: choose a centre point and a projection (equirectangular,
 type: task
 status: todo
 parent: PW-244
+milestone: v1
 subsystem: store
 effort: m
 impact: med

@@ -4,6 +4,7 @@ title: "Highlights from vegetation: great forests, savannas, wetlands, Mediterra
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: highlights
 effort: s
 impact: low

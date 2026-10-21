@@ -4,6 +4,7 @@ title: "Tides: shelf resonance held at its peak for every shelf wider than a qua
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: coast
 effort: xs
 impact: low

@@ -4,6 +4,7 @@ title: "Weathering thermostat: long cold eras (-9 to -17 C) should recover via s
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med

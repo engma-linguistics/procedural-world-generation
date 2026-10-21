@@ -4,6 +4,7 @@ title: Zoom draws separate volcanic cones, eroded old islands and atolls
 type: story
 status: done
 parent: PW-001
+milestone: null
 subsystem: zoom
 effort: l
 impact: high

@@ -4,6 +4,7 @@ title: "Waves: wind recovery off land (L_RECOVER 1200 km) was doubled to fit the
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: coast
 effort: s
 impact: med

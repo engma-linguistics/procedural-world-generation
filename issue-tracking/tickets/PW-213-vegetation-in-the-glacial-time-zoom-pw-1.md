@@ -4,6 +4,7 @@ title: "Vegetation in the glacial time zoom (PW-187 step 7): dynamic cover with 
 type: story
 status: todo
 parent: PW-184
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

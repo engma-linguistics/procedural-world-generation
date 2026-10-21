@@ -4,6 +4,7 @@ title: test_parallel's worker-process tests fail now and then in a full pytest r
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: infra
 effort: s
 impact: low

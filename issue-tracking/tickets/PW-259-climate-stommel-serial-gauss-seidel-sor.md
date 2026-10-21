@@ -4,6 +4,7 @@ title: "climate._stommel: serial Gauss-Seidel/SOR is 5% of an L7 run and 8.5% of
 type: task
 status: todo
 parent: PW-247
+milestone: v2
 subsystem: climate
 effort: m
 impact: low

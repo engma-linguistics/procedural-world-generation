@@ -4,6 +4,7 @@ title: "Climate: a 12-16 C seasonal swing right at the equator, so July steps by
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med

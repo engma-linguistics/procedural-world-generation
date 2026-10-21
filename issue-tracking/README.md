@@ -22,6 +22,7 @@ title: Zoom falls lose their step when the river leaves the region
 type: task              # epic | story | task
 status: todo            # todo, or needs-decision for a judgement call
 parent: null            # an epic/story id, e.g. PW-012, or null
+milestone: null         # v1, v2, later, or null (unscheduled); may be left out of a draft
 subsystem: zoom         # tectonics surface climate ocean hydrology coast zoom timezoom highlights viewer store infra docs
 effort: s               # xs <30 min, s <2 h, m ~half a day, l a day or more, xl multi-agent project
 impact: med             # low | med | high (see below)
@@ -51,7 +52,7 @@ uv run python issue-tracking/board.py intake --merge-into PW-031 draft-x.md     
 uv run python issue-tracking/board.py intake                             # number the rest: PW-NNN, into tickets/
 ```
 
-Triage duplicates with `--reject` or `--merge-into` first, then run plain `intake`. It gives each draft the next `PW-NNN` id (in filename order), adds `created`/`updated` and a "Created from inbox draft" update, moves it to `tickets/`, and validates it. Drafts that fail validation stay in the inbox with their errors. Commit the result. On main, the coordinator may also create tickets directly with `board.py new`.
+Triage duplicates with `--reject` or `--merge-into` first, then run plain `intake`. It gives each draft the next `PW-NNN` id (in filename order), adds `created`/`updated` and a "Created from inbox draft" update, moves it to `tickets/`, and validates it. A draft without a `milestone` line becomes unscheduled (`milestone: null`). Drafts that fail validation stay in the inbox with their errors. Commit the result. On main, the coordinator may also create tickets directly with `board.py new`.
 
 ## Ticket format
 
@@ -62,6 +63,7 @@ title: Rivers in the zoom run perched above the land beside them
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med
@@ -83,9 +85,12 @@ What and why, with enough detail to act on. Edit in place as understanding chang
 
 ## Fields
 
-The 14 fields above are the complete schema; `check` rejects unknown and missing ones. No assignees, priorities, labels or due dates. To add a field, add it to `FIELDS` in `board.py` and document it here first.
+The 15 fields above are the complete schema; `check` rejects unknown and missing ones. No assignees, priorities, labels or due dates. To add a field, add it to `FIELDS` in `board.py` and document it here first.
 
 - `type`: epic → story → task. A parent must rank above its child (a task may sit directly under an epic). `parent` is optional: most tickets have none. Epics are for real multi-ticket projects, not for grouping a subsystem (that's what `subsystem` is for).
+- `milestone`: `v1`, `v2`, `later`, or `null` (unscheduled, the default). It says which release a ticket is planned for. Milestones are not inherited: each ticket carries its own value, whatever its parent says. Drafts may omit it (intake makes it null). Use `board.py milestones [v1]` for counts and open tickets.
+
+PW-244 is v1's written definition: the epic describes what v1 has to deliver, and its children are the work that does it. `milestone` decides membership. A ticket under PW-244 can be set to `v2` (PW-247, the speed pass, is one), and a v1 ticket need not sit under PW-244. Read PW-244 for the meaning of v1; read `milestone` for what is in it.
 - `status`: `todo`, `in-progress`, `blocked` (only with `blocked_by` filled in), `needs-decision`, `done`, `wontdo`. A `needs-decision` ticket's Description gives the options and the coordinator's lean; Daniel's answer goes in Updates, then the status moves on.
 - `subsystem`: tectonics, surface (erosion, sediment, rock), climate, ocean, hydrology (rivers, lakes), coast (waves, tides, deltas), zoom, timezoom, highlights, viewer, store (run/world/zoom files, checkpoints), infra (server, API, tests, tools, performance), docs.
 - `effort`, in agent time: **xs** under 30 min; **s** under 2 h; **m** about half a day; **l** about a day or more; **xl** a multi-agent project (usually an epic).
@@ -119,11 +124,13 @@ Run from the repo root:
 uv run python issue-tracking/board.py next [--subsystem zoom] [--limit 15]   # todo/in-progress, unblocked, effort asc then impact desc
 uv run python issue-tracking/board.py decisions [--brief]                     # needs-decision tickets with their options
 uv run python issue-tracking/board.py morning [--hours 24]                    # markdown digest: decisions + recent updates by subsystem
-uv run python issue-tracking/board.py list --open --subsystem climate         # filters: --status --type --parent --subsystem --effort --impact
-uv run python issue-tracking/board.py tree [PW-002] [--open]                  # epics with children, then parentless tickets by subsystem
+uv run python issue-tracking/board.py list --open --subsystem climate         # filters: --status --type --parent --subsystem --effort --impact --milestone
+uv run python issue-tracking/board.py next --milestone v1                     # the same filter works on next and tree
+uv run python issue-tracking/board.py tree [PW-002] [--open] [--milestone v1] # epics with children, then parentless tickets by subsystem
+uv run python issue-tracking/board.py milestones [v1]                         # open/done counts per milestone; with one, its open tickets
 uv run python issue-tracking/board.py show PW-014                             # ticket + computed blocks/related-by/children
 uv run python issue-tracking/board.py new --type task --title "..." --subsystem zoom --effort s --impact med \
-    [--found-by coordinator] [--parent PW-002] [--status needs-decision] [--desc "..."] [--ref X] [--relates PW-1] [--blocked-by PW-2]
+    [--found-by coordinator] [--parent PW-002] [--milestone v2] [--status needs-decision] [--desc "..."] [--ref X] [--relates PW-1] [--blocked-by PW-2]
 uv run python issue-tracking/board.py update PW-014 "Fixed in a1b2c3d." [--status done]
 uv run python issue-tracking/board.py intake ...                              # see above
 uv run python issue-tracking/board.py check [--refs]                          # validate tickets and inbox drafts (--refs: list dangling run/world/zoom refs)
@@ -133,7 +140,7 @@ uv run python issue-tracking/board.py check [--refs]                          # 
 
 ## Validation
 
-`check` enforces the exact field set; valid type, status, subsystem, effort and impact values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
+`check` enforces the exact field set; valid type, status, subsystem, effort, impact and milestone values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
 
 Frontmatter is a small YAML subset (one `key: value` per line, flow lists `[a, "b c"]`, `#` comments), parsed by `board.py` itself, so it needs no dependencies.
 

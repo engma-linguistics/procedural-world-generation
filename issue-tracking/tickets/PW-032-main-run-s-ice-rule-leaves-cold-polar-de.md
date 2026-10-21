@@ -4,6 +4,7 @@ title: Main run's ice rule leaves cold polar deserts bare
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med

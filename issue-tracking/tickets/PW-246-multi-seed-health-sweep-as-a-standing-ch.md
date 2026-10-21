@@ -4,6 +4,7 @@ title: Multi-seed health sweep as a standing check (L6 x ~8 seeds, L7 x 3)
 type: story
 status: done
 parent: PW-244
+milestone: v1
 subsystem: infra
 effort: m
 impact: high

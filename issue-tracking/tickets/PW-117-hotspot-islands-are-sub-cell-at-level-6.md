@@ -4,6 +4,7 @@ title: "Hotspot islands are sub-cell: at level 6 (and half the time at 7) the gr
 type: task
 status: done
 parent: PW-001
+milestone: null
 subsystem: tectonics
 effort: s
 impact: med

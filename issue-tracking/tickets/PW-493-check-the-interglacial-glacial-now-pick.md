@@ -4,6 +4,7 @@ title: Check the interglacial / glacial "now" pick on real L6 time zooms (and of
 type: task
 status: todo
 parent: PW-244
+milestone: v1
 subsystem: timezoom
 effort: xs
 impact: low

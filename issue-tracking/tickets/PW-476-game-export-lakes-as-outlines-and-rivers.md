@@ -4,6 +4,7 @@ title: "Game export: lakes as outlines and rivers with width or order"
 type: task
 status: todo
 parent: null
+milestone: v1
 subsystem: store
 effort: s
 impact: low

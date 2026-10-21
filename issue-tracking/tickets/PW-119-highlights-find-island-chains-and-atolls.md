@@ -4,6 +4,7 @@ title: "Highlights: find island chains and atolls from the volcano table"
 type: task
 status: done
 parent: PW-001
+milestone: null
 subsystem: highlights
 effort: s
 impact: low

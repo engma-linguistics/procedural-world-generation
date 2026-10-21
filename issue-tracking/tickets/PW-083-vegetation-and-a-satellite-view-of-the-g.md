@@ -4,6 +4,7 @@ title: Vegetation and a 'satellite view' of the globe and zooms
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: l
 impact: high

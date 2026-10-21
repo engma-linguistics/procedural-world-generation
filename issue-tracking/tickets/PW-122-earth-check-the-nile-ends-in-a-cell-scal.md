@@ -4,6 +4,7 @@ title: "Earth check: the Nile ends in a cell-scale pit in Nubia instead of reach
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: hydrology
 effort: m
 impact: low

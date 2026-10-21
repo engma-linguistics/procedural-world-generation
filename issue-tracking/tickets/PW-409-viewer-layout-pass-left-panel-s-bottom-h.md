@@ -4,6 +4,7 @@ title: "Viewer layout pass: left panel's bottom hidden under the legend bar; zoo
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: high

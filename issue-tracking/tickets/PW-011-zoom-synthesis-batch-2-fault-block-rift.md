@@ -4,6 +4,7 @@ title: "Zoom synthesis batch 2: fault-block rift, fold-and-thrust belt, shield d
 type: story
 status: done
 parent: PW-005
+milestone: null
 subsystem: zoom
 effort: l
 impact: med

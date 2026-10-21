@@ -4,6 +4,7 @@ title: "Waves: the U^5 gust factor is applied to U, overstating fetch- and durat
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: coast
 effort: s
 impact: med

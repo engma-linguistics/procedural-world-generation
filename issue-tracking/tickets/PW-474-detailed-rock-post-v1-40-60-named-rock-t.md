@@ -4,6 +4,7 @@ title: "Detailed rock (post-v1): ~40-60 named rock types and a dig-down rock col
 type: task
 status: todo
 parent: PW-155
+milestone: v2
 subsystem: surface
 effort: m
 impact: med

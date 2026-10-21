@@ -4,6 +4,7 @@ title: "Zoom coarse lakes: no open-water evaporation; lake pixels yield land run
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: zoom
 effort: xs
 impact: low

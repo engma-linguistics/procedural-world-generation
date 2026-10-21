@@ -4,6 +4,7 @@ title: "V1: a reliable, finished, usable planet from a seed"
 type: epic
 status: todo
 parent: null
+milestone: v1
 subsystem: infra
 effort: xl
 impact: high

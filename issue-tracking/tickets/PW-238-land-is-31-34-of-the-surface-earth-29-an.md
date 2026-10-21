@@ -4,6 +4,7 @@ title: "Land is 31-34% of the surface (Earth 29%) and stands high: lower a conti
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: tectonics
 effort: s
 impact: med

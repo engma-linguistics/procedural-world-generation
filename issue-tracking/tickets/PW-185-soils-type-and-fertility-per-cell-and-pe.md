@@ -4,6 +4,7 @@ title: "Soils: type and fertility per cell and per zoom pixel from rock, climate
 type: story
 status: done
 parent: PW-184
+milestone: null
 subsystem: surface
 effort: m
 impact: high

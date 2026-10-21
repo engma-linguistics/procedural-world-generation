@@ -4,6 +4,7 @@ title: "Zoom 3D view: low-poly three.js heightmap with water and rivers"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: high

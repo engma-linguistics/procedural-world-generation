@@ -4,6 +4,7 @@ title: Check an Earth time zoom's start on the true Antarctic bed
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low

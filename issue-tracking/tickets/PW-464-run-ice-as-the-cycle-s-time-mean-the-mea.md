@@ -4,6 +4,7 @@ title: "Run ice as the cycle's time mean: the mean of each cycle state's own ext
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: tectonics
 effort: l
 impact: high

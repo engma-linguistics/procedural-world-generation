@@ -4,6 +4,7 @@ title: "Margin cells melt as their outermost 10 km (edge_h 408 m vs the cell's ~
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: l
 impact: high

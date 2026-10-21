@@ -4,6 +4,7 @@ title: "Export for game use: heightmap tiles, splat maps, feature GeoJSON"
 type: story
 status: done
 parent: PW-090
+milestone: null
 subsystem: store
 effort: m
 impact: high

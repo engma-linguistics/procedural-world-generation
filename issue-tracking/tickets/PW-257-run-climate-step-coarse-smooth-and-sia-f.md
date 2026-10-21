@@ -4,6 +4,7 @@ title: Run climate_step, _coarse_smooth and sia_flow in parallel on the CPU (zoo
 type: task
 status: done
 parent: PW-247
+milestone: v2
 subsystem: climate
 effort: s
 impact: high

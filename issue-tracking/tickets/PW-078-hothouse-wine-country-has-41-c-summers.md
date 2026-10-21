@@ -4,6 +4,7 @@ title: Hothouse 'wine country' has 41 °C summers
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: highlights
 effort: xs
 impact: low

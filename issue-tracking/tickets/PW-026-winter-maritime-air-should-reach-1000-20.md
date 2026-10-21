@@ -4,6 +4,7 @@ title: Winter maritime air should reach 1000-2000 km inland under westerlies
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: high

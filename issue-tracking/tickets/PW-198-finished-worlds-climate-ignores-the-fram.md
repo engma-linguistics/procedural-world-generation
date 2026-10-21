@@ -4,6 +4,7 @@ title: "Finished worlds: climate ignores the frame's precession/eccentricity and
 type: task
 status: done
 parent: PW-090
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low

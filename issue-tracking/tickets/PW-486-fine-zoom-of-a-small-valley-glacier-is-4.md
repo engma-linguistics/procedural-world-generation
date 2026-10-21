@@ -4,6 +4,7 @@ title: Fine zoom of a small valley glacier is 40% bigger than its parent's ice
 type: task
 status: todo
 parent: null
+milestone: v1
 subsystem: zoom
 effort: s
 impact: low

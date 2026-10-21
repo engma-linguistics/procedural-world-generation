@@ -4,6 +4,7 @@ title: Pits in continents (2+ km below their continental neighbours), from old o
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med

@@ -4,6 +4,7 @@ title: Globe paint loops miss the cache - cells are numbered coarse-level first
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: low

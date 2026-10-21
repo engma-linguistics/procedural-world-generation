@@ -4,6 +4,7 @@ title: Wave power too high in enclosed seas, too low on India's west coast
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: coast
 effort: s
 impact: low

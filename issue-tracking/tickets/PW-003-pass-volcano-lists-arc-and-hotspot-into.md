@@ -4,6 +4,7 @@ title: Pass volcano lists (arc and hotspot) into worlds and zooms
 type: story
 status: done
 parent: PW-001
+milestone: null
 subsystem: store
 effort: m
 impact: med

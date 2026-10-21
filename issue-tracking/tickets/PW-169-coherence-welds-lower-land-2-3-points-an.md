@@ -4,6 +4,7 @@ title: Coherence welds lower land ~2-3 points and thin the continents (more thin
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: tectonics
 effort: s
 impact: med

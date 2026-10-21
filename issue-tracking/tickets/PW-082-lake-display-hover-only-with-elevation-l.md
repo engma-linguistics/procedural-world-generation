@@ -4,6 +4,7 @@ title: "Lake display: hover only with elevation loaded, confusable colours, ~0 m
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

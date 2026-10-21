@@ -4,6 +4,7 @@ title: "Per-cell stratigraphy: ordered record of the top few layers"
 type: story
 status: done
 parent: PW-005
+milestone: null
 subsystem: surface
 effort: l
 impact: high

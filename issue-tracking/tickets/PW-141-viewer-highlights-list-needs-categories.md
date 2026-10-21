@@ -4,6 +4,7 @@ title: Viewer highlights list needs categories (55 places in one list)
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

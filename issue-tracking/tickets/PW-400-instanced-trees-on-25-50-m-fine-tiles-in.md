@@ -4,6 +4,7 @@ title: Instanced trees on 25-50 m fine tiles in the zoom 3D view (canopy displac
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: med

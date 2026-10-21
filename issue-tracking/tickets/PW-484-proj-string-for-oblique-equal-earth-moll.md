@@ -4,6 +4,7 @@ title: PROJ string for oblique Equal Earth / Mollweide / equirect export maps (o
 type: task
 status: todo
 parent: null
+milestone: v1
 subsystem: store
 effort: xs
 impact: low

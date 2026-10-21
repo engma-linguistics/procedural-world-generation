@@ -4,6 +4,7 @@ title: "One-command and one-button flow: seed to finished world with sensible de
 type: story
 status: done
 parent: PW-244
+milestone: v1
 subsystem: viewer
 effort: m
 impact: med

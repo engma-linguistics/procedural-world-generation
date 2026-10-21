@@ -4,6 +4,7 @@ title: Generated worlds lose their closed basins over time
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: l
 impact: high

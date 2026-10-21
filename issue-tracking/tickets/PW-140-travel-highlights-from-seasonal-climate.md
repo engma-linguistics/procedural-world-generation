@@ -4,6 +4,7 @@ title: "Travel highlights from seasonal climate: beach destinations, ski country
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: highlights
 effort: s
 impact: med

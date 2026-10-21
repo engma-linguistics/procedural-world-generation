@@ -4,6 +4,7 @@ title: Cell detail panel - a 12-month climograph (worlds store monthly temperatu
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

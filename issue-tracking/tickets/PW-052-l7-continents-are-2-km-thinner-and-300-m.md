@@ -4,6 +4,7 @@ title: L7 continents are ~2 km thinner and ~300 m lower than at L6
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: high

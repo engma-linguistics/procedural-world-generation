@@ -4,6 +4,7 @@ title: Store humidity and sea-surface temperature per season on worlds
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: s
 impact: med

@@ -4,6 +4,7 @@ title: Caprock strata are recorded as near-flat, so the zoom never makes cuestas
 type: task
 status: todo
 parent: PW-005
+milestone: null
 subsystem: surface
 effort: m
 impact: low

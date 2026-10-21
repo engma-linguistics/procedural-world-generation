@@ -4,6 +4,7 @@ title: "Human-use layers: navigable rivers, harbours, passes, fertile land, fres
 type: story
 status: todo
 parent: PW-090
+milestone: v1
 subsystem: surface
 effort: m
 impact: med

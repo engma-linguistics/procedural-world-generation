@@ -4,6 +4,7 @@ title: "Finer zooms: 100-250 m pixels for small areas"
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

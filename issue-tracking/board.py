@@ -2,15 +2,16 @@
 
 Usage (from the repo root):
     uv run python issue-tracking/board.py list [--open] [--status S] [--type T] [--parent ID]
-                                           [--subsystem X] [--effort E] [--impact I]
-    uv run python issue-tracking/board.py next [--subsystem X] [--limit N]
+                                           [--subsystem X] [--effort E] [--impact I] [--milestone M]
+    uv run python issue-tracking/board.py next [--subsystem X] [--milestone M] [--limit N]
     uv run python issue-tracking/board.py decisions [--brief]
     uv run python issue-tracking/board.py morning [--hours 24]
-    uv run python issue-tracking/board.py tree [ID] [--open]
+    uv run python issue-tracking/board.py tree [ID] [--open] [--milestone M]
+    uv run python issue-tracking/board.py milestones [MILESTONE]
     uv run python issue-tracking/board.py show ID
     uv run python issue-tracking/board.py new --type T --title "..." --subsystem X --effort E --impact I
-                                          [--found-by WHO] [--parent ID] [--status S] [--desc "..."]
-                                          [--ref R]... [--relates ID]... [--blocked-by ID]...
+                                          [--found-by WHO] [--parent ID] [--milestone M] [--status S]
+                                          [--desc "..."] [--ref R]... [--relates ID]... [--blocked-by ID]...
     uv run python issue-tracking/board.py update ID "message" [--status S]
     uv run python issue-tracking/board.py intake [--list] [FILE...]
     uv run python issue-tracking/board.py intake --reject FILE "reason"
@@ -34,10 +35,11 @@ SUBSYSTEMS = ["tectonics", "surface", "climate", "ocean", "hydrology", "coast", 
               "highlights", "viewer", "store", "infra", "docs"]
 EFFORTS = ["xs", "s", "m", "l", "xl"]  # ascending
 IMPACTS = ["low", "med", "high"]  # ascending
+MILESTONES = ["v1", "v2", "later"]  # or null: unscheduled
 LINK_FIELDS = ["blocked_by", "relates"]
 LIST_FIELDS = LINK_FIELDS + ["refs"]
-FIELDS = ["id", "title", "type", "status", "parent", "subsystem", "effort", "impact", "found_by",
-          "blocked_by", "relates", "refs", "created", "updated"]  # the complete schema
+FIELDS = ["id", "title", "type", "status", "parent", "milestone", "subsystem", "effort", "impact",
+          "found_by", "blocked_by", "relates", "refs", "created", "updated"]  # the complete schema
 DRAFT_FIELDS = [f for f in FIELDS if f not in ("id", "created", "updated")]
 ID_RE = re.compile(rf"^{PREFIX}-\d{{3,}}$")
 UPDATE_RE = re.compile(r"^- \d{4}-\d{2}-\d{2}: \S")
@@ -235,8 +237,9 @@ def problems_for(t, tickets, draft=False):
         if k not in allowed:
             hint = " (drafts get id/created/updated at intake)" if draft and k in FIELDS else ""
             p(f"unknown field {k!r}{hint} (allowed: {', '.join(allowed)})")
+    optional = {"milestone"} if draft else set()  # intake defaults a draft's missing milestone to null
     for k in allowed:
-        if k not in keys:
+        if k not in keys and k not in optional:
             p(f"missing field {k!r}")
 
     tid = t.get("id")
@@ -248,6 +251,8 @@ def problems_for(t, tickets, draft=False):
                                 ("effort", EFFORTS), ("impact", IMPACTS)):
         if t.get(field) not in allowed_vals:
             p(f"bad {field} {t.get(field)!r} (allowed: {', '.join(allowed_vals)})")
+    if t.get("milestone") is not None and t.get("milestone") not in MILESTONES:
+        p(f"bad milestone {t.get('milestone')!r} (allowed: {', '.join(MILESTONES)}, or null = unscheduled)")
     if not isinstance(t.get("found_by"), str) or not t["found_by"].strip():
         p("found_by must name the branch, agent or user (non-empty text)")
 
@@ -349,12 +354,13 @@ def cmd_list(b, tickets, args):
             continue
         if any(v and t.get(f) != v for f, v in (("status", args.status), ("type", args.type),
                                                 ("parent", args.parent), ("subsystem", args.subsystem),
-                                                ("effort", args.effort), ("impact", args.impact))):
+                                                ("effort", args.effort), ("impact", args.impact),
+                                                ("milestone", args.milestone))):
             continue
         print(line(t))
 
 
-def rank_next(tickets, subsystem=None):
+def rank_next(tickets, subsystem=None, milestone=None):
     """Actionable tickets (todo / in-progress, not epics, no open blocker),
     cheapest and most valuable first: effort ascending, then impact
     descending, then id."""
@@ -362,14 +368,15 @@ def rank_next(tickets, subsystem=None):
         return all(tickets.get(x, {}).get("status") in CLOSED for x in t["blocked_by"])
     ts = [t for t in tickets.values()
           if t["status"] in ("todo", "in-progress") and t["type"] != "epic" and unblocked(t)
-          and (not subsystem or t.get("subsystem") == subsystem)]
+          and (not subsystem or t.get("subsystem") == subsystem)
+          and (not milestone or t.get("milestone") == milestone)]
     return sorted(ts, key=lambda t: (EFFORTS.index(t["effort"]) if t.get("effort") in EFFORTS else 99,
                                      -(IMPACTS.index(t["impact"]) if t.get("impact") in IMPACTS else -1),
                                      id_num(t["id"])))
 
 
 def cmd_next(b, tickets, args):
-    ts = rank_next(tickets, args.subsystem)
+    ts = rank_next(tickets, args.subsystem, args.milestone)
     for t in ts[:args.limit] if args.limit else ts:
         print(line(t))
 
@@ -412,29 +419,49 @@ def cmd_morning(b, tickets, args):
 
 
 def cmd_tree(b, tickets, args):
-    visited = set()
+    visited, out = set(), []
 
     def walk(t, depth):
         if (args.open and t["status"] in CLOSED) or t["id"] in visited:
             return
+        if args.milestone and t.get("milestone") != args.milestone:
+            # not shown, but a matching child is still shown at this depth
+            for c in children_of(tickets, t["id"]):
+                walk(c, depth)
+            return
         visited.add(t["id"])
-        print("    " * depth + line(t))
+        out.append("    " * depth + line(t))
         for c in children_of(tickets, t["id"]):
             walk(c, depth + 1)
 
     if args.id:
         walk(get(tickets, args.id), 0)
-        return
-    roots = [t for t in tickets.values() if not t.get("parent") or t["parent"] not in tickets]
-    for t in by_id(r for r in roots if r["type"] == "epic"):
-        walk(t, 0)
-    loose = [r for r in roots if r["type"] != "epic" and not (args.open and r["status"] in CLOSED)]
-    for sub in SUBSYSTEMS:
-        ts = [t for t in loose if t.get("subsystem") == sub]
-        if ts:
-            print(f"\n({sub}, no parent)")
-            for t in by_id(ts):
+    else:
+        roots = [t for t in tickets.values() if not t.get("parent") or t["parent"] not in tickets]
+        for t in by_id(r for r in roots if r["type"] == "epic"):
+            walk(t, 0)
+        loose = [r for r in roots if r["type"] != "epic" and not (args.open and r["status"] in CLOSED)]
+        for sub in SUBSYSTEMS:
+            n = len(out)
+            for t in by_id(t for t in loose if t.get("subsystem") == sub):
                 walk(t, 0)
+            if len(out) > n:
+                out.insert(n, f"\n({sub}, no parent)")
+    for ln in out:
+        print(ln)
+
+
+def cmd_milestones(b, tickets, args):
+    print(f"{'milestone':<12} {'open':>5} {'done':>5} {'total':>6}   (done = done or wontdo)")
+    for label, m in [(m, m) for m in MILESTONES] + [("unscheduled", None)]:
+        ts = [t for t in tickets.values() if t.get("milestone") == m]
+        opn = sum(1 for t in ts if t["status"] not in CLOSED)
+        print(f"{label:<12} {opn:>5} {len(ts) - opn:>5} {len(ts):>6}")
+    if args.milestone:
+        ts = by_id(t for t in tickets.values() if t.get("milestone") == args.milestone and t["status"] not in CLOSED)
+        print(f"\nOpen in {args.milestone} ({len(ts)}):")
+        for t in ts:
+            print(line(t))
 
 
 def cmd_show(b, tickets, args):
@@ -479,7 +506,7 @@ def cmd_new(b, tickets, args):
     if args.parent:
         args.parent = get(tickets, args.parent)["id"]
     meta = {"title": args.title, "type": args.type, "status": args.status, "parent": args.parent,
-            "subsystem": args.subsystem, "effort": args.effort, "impact": args.impact,
+            "milestone": args.milestone, "subsystem": args.subsystem, "effort": args.effort, "impact": args.impact,
             "found_by": args.found_by, "blocked_by": args.blocked_by, "relates": args.relates, "refs": args.ref}
     path, probs = create(b, tickets, meta, new_body(args.desc, "Created."))
     if probs:
@@ -510,6 +537,7 @@ def cmd_update(b, tickets, args):
 def read_draft(path):
     t = read_ticket(path)
     t.setdefault("id", None)
+    t.setdefault("milestone", None)
     return t
 
 
@@ -663,9 +691,11 @@ def main(argv=None):
     s.add_argument("--subsystem", choices=SUBSYSTEMS)
     s.add_argument("--effort", choices=EFFORTS)
     s.add_argument("--impact", choices=IMPACTS)
+    s.add_argument("--milestone", choices=MILESTONES)
 
     s = sub.add_parser("next", help="actionable tickets, effort ascending then impact descending")
     s.add_argument("--subsystem", choices=SUBSYSTEMS)
+    s.add_argument("--milestone", choices=MILESTONES)
     s.add_argument("--limit", type=int)
 
     s = sub.add_parser("decisions", help="needs-decision tickets with their descriptions")
@@ -677,6 +707,10 @@ def main(argv=None):
     s = sub.add_parser("tree", help="hierarchy view")
     s.add_argument("id", nargs="?")
     s.add_argument("--open", action="store_true", help="hide done/wontdo")
+    s.add_argument("--milestone", choices=MILESTONES, help="show only tickets in this milestone")
+
+    s = sub.add_parser("milestones", help="counts per milestone; with a milestone, its open tickets")
+    s.add_argument("milestone", nargs="?", choices=MILESTONES)
 
     s = sub.add_parser("show", help="one ticket plus computed links and children")
     s.add_argument("id")
@@ -689,6 +723,7 @@ def main(argv=None):
     s.add_argument("--impact", choices=IMPACTS, required=True)
     s.add_argument("--found-by", default="coordinator")
     s.add_argument("--parent")
+    s.add_argument("--milestone", choices=MILESTONES, help="v1, v2 or later (default: unscheduled)")
     s.add_argument("--status", choices=STATUSES, default="todo")
     s.add_argument("--desc")
     s.add_argument("--ref", action="append", default=[])
@@ -715,7 +750,7 @@ def main(argv=None):
     b = Board(args.root)
     tickets, args.load_errors = b.load(strict=args.cmd != "check")
     {"list": cmd_list, "next": cmd_next, "decisions": cmd_decisions, "morning": cmd_morning,
-     "tree": cmd_tree, "show": cmd_show, "new": cmd_new, "update": cmd_update,
+     "tree": cmd_tree, "milestones": cmd_milestones, "show": cmd_show, "new": cmd_new, "update": cmd_update,
      "intake": cmd_intake, "check": cmd_check}[args.cmd](b, tickets, args)
 
 

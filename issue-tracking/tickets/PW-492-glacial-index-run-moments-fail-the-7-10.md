@@ -4,6 +4,7 @@ title: "Glacial index: run moments fail the 7/10 bar because their ice at I = 0 
 type: task
 status: done
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high

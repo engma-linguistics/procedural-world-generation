@@ -4,6 +4,7 @@ title: "Zoom vegetation: riparian strips are a share of the pixel's water, not a
 type: task
 status: done
 parent: PW-184
+milestone: null
 subsystem: zoom
 effort: m
 impact: low

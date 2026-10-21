@@ -4,6 +4,7 @@ title: Run the test suite in several processes (pytest wall time is set by seria
 type: task
 status: wontdo
 parent: PW-247
+milestone: v2
 subsystem: infra
 effort: s
 impact: low

@@ -4,6 +4,7 @@ title: Add an invariant test that surface.erode conserves sediment (deposited = 
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: infra
 effort: xs
 impact: low

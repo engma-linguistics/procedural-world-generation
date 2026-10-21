@@ -4,6 +4,7 @@ title: "Linux box uses numba's TBB threading layer: relax the API's one-computat
 type: task
 status: done
 parent: PW-247
+milestone: v2
 subsystem: infra
 effort: s
 impact: med

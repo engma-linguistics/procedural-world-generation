@@ -4,6 +4,7 @@ title: Rain is patchy cell to cell on flat ground, with diagonal streaks
 type: task
 status: todo
 parent: PW-013
+milestone: null
 subsystem: climate
 effort: m
 impact: med

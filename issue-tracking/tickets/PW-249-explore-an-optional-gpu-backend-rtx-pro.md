@@ -4,6 +4,7 @@ title: Explore an optional GPU backend (RTX PRO 6000, 96 GB) for the heaviest ke
 type: task
 status: done
 parent: PW-244
+milestone: v1
 subsystem: infra
 effort: m
 impact: med

@@ -4,6 +4,7 @@ title: ocean._coarse rebuilds the coarse grid every climate update and evicts cl
 type: task
 status: done
 parent: PW-247
+milestone: v2
 subsystem: ocean
 effort: s
 impact: med

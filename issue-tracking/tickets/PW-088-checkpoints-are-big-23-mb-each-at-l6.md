@@ -4,6 +4,7 @@ title: Checkpoints are big (~23 MB each at L6)
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: store
 effort: m
 impact: low

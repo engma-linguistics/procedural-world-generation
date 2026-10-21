@@ -4,6 +4,7 @@ title: Sediment compaction isn't remembered after uplift
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: surface
 effort: m
 impact: low

@@ -4,6 +4,7 @@ title: Cold-era timeline tint is stripy
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: xs
 impact: low

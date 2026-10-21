@@ -4,6 +4,7 @@ title: "planet make: which moment of the time zoom is 'now' (glacial, interglaci
 type: story
 status: done
 parent: PW-244
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med

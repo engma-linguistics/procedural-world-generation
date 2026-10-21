@@ -4,6 +4,7 @@ title: "Regional zooms: July / January temperature and rain layers (season picke
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

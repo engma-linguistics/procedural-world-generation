@@ -4,6 +4,7 @@ title: Parallel loops on small grids are launch-bound (sia_flow sub-steps, coars
 type: task
 status: wontdo
 parent: PW-247
+milestone: v2
 subsystem: infra
 effort: s
 impact: low

@@ -4,6 +4,7 @@ title: Nested fine zoom (~100-250 m/px) of a small area of a zoom, for close-up 
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

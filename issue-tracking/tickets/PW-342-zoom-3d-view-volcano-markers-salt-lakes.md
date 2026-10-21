@@ -4,6 +4,7 @@ title: "Zoom 3D view: volcano markers, salt lakes and glaciers' own look"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

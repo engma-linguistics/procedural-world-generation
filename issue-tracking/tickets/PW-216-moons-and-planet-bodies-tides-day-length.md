@@ -4,6 +4,7 @@ title: "Moons and planet bodies: tides, day length and planet size beyond Earth'
 type: epic
 status: todo
 parent: null
+milestone: later
 subsystem: coast
 effort: xl
 impact: low

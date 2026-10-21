@@ -4,6 +4,7 @@ title: "Vegetation proposal: a set of vegetation types (owner: >=30, <<2000) as 
 type: story
 status: done
 parent: PW-184
+milestone: null
 subsystem: surface
 effort: s
 impact: high

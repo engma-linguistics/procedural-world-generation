@@ -4,6 +4,7 @@ title: Coarse zoom 193d10 holds its volcano ~950 m below top_m; fine zooms draw 
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

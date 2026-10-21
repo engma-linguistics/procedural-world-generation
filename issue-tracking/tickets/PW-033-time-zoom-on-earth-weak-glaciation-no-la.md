@@ -4,6 +4,7 @@ title: "Time zoom on Earth: weak glaciation, no Laurentide or Fennoscandian ice"
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: l
 impact: med

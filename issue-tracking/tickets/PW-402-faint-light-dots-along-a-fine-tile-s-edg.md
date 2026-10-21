@@ -4,6 +4,7 @@ title: Faint light dots along a fine tile's edge in the zoom 3D view
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

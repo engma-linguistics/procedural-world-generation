@@ -4,6 +4,7 @@ title: Closed lakes take their rivers' whole load even when full, piling sedimen
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: surface
 effort: s
 impact: med

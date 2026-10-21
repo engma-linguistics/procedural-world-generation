@@ -4,6 +4,7 @@ title: Opening an L7 run downloads ~330 MB and keeps every visited layer's frame
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: med

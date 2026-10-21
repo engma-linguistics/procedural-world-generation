@@ -4,6 +4,7 @@ title: "Zoom temperature layer: ice-free pixels next to coarse ice inherit the i
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

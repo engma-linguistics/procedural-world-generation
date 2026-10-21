@@ -4,6 +4,7 @@ title: Half the dune-field cells are cold polar deserts (a 1100-cell erg at 59N,
 type: task
 status: done
 parent: PW-005
+milestone: null
 subsystem: surface
 effort: s
 impact: med

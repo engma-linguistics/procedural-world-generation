@@ -4,6 +4,7 @@ title: "Zoom: coarse zooms and small streams report undesigned drops"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

@@ -4,6 +4,7 @@ title: "Zoom soils: one constant converts a pixel's slope to the cells' measure,
 type: task
 status: done
 parent: PW-184
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

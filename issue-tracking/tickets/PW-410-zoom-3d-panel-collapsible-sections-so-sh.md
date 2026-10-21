@@ -4,6 +4,7 @@ title: "Zoom 3D panel: collapsible sections so short windows show the falls list
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

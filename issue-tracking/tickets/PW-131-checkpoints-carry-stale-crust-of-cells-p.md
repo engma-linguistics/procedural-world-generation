@@ -4,6 +4,7 @@ title: Checkpoints carry stale crust of cells plates no longer own (~3x their si
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: store
 effort: s
 impact: low

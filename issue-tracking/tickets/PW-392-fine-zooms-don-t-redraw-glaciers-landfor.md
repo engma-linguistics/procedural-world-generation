@@ -4,6 +4,7 @@ title: Fine zooms don't redraw glaciers, landform overlays, deltas or reef forms
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

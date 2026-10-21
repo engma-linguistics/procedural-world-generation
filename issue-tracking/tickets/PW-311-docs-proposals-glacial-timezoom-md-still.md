@@ -4,6 +4,7 @@ title: docs/proposals/glacial_timezoom.md still says the time zoom is view-only;
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: docs
 effort: xs
 impact: low

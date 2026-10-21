@@ -4,6 +4,7 @@ title: Record the fold strike (shortening direction) so fold belts don't guess i
 type: task
 status: todo
 parent: PW-005
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med

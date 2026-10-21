@@ -4,6 +4,7 @@ title: "Decide: update the run's climate less often (climate_every 4 -> 8 Myr) o
 type: task
 status: wontdo
 parent: PW-247
+milestone: v2
 subsystem: climate
 effort: s
 impact: med

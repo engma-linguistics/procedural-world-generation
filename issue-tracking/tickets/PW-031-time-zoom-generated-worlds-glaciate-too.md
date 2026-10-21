@@ -4,6 +4,7 @@ title: "Time zoom: generated worlds glaciate too hard"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: timezoom
 effort: m
 impact: high

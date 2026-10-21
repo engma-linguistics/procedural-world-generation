@@ -4,6 +4,7 @@ title: Remove the overturning spin-up rule; Atlantic on and Pacific off by thems
 type: story
 status: todo
 parent: PW-013
+milestone: null
 subsystem: ocean
 effort: m
 impact: high

@@ -4,6 +4,7 @@ title: "Weather generator: days-scale animated weather (clouds, storms, hurrican
 type: epic
 status: todo
 parent: null
+milestone: v2
 subsystem: climate
 effort: l
 impact: med

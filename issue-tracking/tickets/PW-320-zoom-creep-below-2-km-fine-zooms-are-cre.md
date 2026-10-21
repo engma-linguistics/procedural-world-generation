@@ -4,6 +4,7 @@ title: "Zoom creep below 2 km: fine zooms are crept 4-16x less than physics says
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: med

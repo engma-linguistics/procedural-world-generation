@@ -4,6 +4,7 @@ title: "Ice ages done properly (parked until post-v1): run ice as a cycle averag
 type: epic
 status: todo
 parent: null
+milestone: v2
 subsystem: timezoom
 effort: xl
 impact: high

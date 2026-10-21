@@ -4,6 +4,7 @@ title: Plate motion and resampling (resolve) make most of the run's closed-hollo
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med

@@ -4,6 +4,7 @@ title: Zoom sees only part of a big lake's catchment
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: low

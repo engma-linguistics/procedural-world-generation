@@ -4,6 +4,7 @@ title: "Zoom edge band: relief doubles within 8 px of the region's edge"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

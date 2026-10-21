@@ -4,6 +4,7 @@ title: Fine zoom braided reaches are drawn as one smoothed thread
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: low

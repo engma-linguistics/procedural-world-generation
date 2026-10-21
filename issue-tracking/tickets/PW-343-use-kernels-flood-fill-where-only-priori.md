@@ -4,6 +4,7 @@ title: Use kernels.flood_fill where only priority_flood's filled surface is used
 type: task
 status: done
 parent: PW-247
+milestone: v2
 subsystem: zoom
 effort: xs
 impact: low

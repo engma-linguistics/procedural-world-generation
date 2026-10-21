@@ -4,6 +4,7 @@ title: "Configurable moons: size, distance, density, and more than one moon"
 type: story
 status: todo
 parent: PW-216
+milestone: later
 subsystem: coast
 effort: m
 impact: low

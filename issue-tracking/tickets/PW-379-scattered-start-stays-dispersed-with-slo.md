@@ -4,6 +4,7 @@ title: Scattered start stays dispersed with slow plates and an old ocean (74 Myr
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: low

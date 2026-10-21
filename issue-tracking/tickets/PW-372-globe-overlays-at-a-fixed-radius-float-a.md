@@ -4,6 +4,7 @@ title: Globe overlays at a fixed radius float above or sink into the 3D relief
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

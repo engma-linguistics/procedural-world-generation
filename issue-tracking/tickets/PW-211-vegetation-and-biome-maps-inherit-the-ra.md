@@ -4,6 +4,7 @@ title: Vegetation and biome maps inherit the rain field's diagonal streaks on fl
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: climate
 effort: s
 impact: med

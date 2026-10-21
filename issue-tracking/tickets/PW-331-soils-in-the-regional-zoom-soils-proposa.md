@@ -4,6 +4,7 @@ title: "Soils in the regional zoom (soils proposal step 6): per-pixel passes aro
 type: task
 status: done
 parent: PW-184
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

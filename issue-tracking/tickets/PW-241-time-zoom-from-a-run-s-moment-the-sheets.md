@@ -4,6 +4,7 @@ title: "Time zoom from a run's moment: the sheets still thicken and spread onto 
 type: task
 status: blocked
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: low

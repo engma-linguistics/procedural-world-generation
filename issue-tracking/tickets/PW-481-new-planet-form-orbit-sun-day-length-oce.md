@@ -4,6 +4,7 @@ title: "New planet form: orbit, sun, day length, ocean fraction, atmosphere and 
 type: story
 status: todo
 parent: PW-244
+milestone: v2
 subsystem: climate
 effort: l
 impact: med

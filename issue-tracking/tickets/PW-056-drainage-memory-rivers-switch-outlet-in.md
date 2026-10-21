@@ -4,6 +4,7 @@ title: "Drainage memory: rivers switch outlet in one step when a rift opens"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: hydrology
 effort: l
 impact: low

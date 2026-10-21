@@ -4,6 +4,7 @@ title: Time zooms made before glacial carving can't be finished; re-run the show
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: timezoom
 effort: s
 impact: med

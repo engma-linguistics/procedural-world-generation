@@ -4,6 +4,7 @@ title: The Earth world can't be zoomed (no rock layers)
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

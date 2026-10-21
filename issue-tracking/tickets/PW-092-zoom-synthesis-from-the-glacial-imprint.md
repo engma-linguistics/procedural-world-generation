@@ -4,6 +4,7 @@ title: Zoom synthesis from the glacial imprint
 type: story
 status: todo
 parent: PW-090
+milestone: v1
 subsystem: zoom
 effort: l
 impact: high

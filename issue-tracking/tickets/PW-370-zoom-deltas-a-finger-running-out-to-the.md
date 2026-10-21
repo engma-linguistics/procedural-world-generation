@@ -4,6 +4,7 @@ title: "Zoom deltas: a finger running out to the region's edge beside its own ri
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

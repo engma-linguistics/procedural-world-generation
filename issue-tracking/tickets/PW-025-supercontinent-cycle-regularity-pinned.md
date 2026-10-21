@@ -4,6 +4,7 @@ title: Supercontinent cycle regularity (pinned)
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: l
 impact: low

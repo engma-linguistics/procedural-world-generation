@@ -4,6 +4,7 @@ title: Fine zoom inherits the parent's smooth arc-rock hills with no fine detail
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

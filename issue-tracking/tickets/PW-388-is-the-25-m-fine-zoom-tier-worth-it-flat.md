@@ -4,6 +4,7 @@ title: Is the 25 m fine zoom tier worth it (flat canopy, little gain over 50 m)?
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: med

@@ -4,6 +4,7 @@ title: Replace the vegetation's grazing placeholder with fauna (PW-103)
 type: task
 status: todo
 parent: null
+milestone: v2
 subsystem: surface
 effort: s
 impact: low

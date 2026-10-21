@@ -4,6 +4,7 @@ title: "Clouds on temperature (PW-143 phase 2): replace evap_cool with cloud sha
 type: task
 status: done
 parent: PW-013
+milestone: null
 subsystem: climate
 effort: m
 impact: low

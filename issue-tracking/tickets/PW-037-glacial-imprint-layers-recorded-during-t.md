@@ -4,6 +4,7 @@ title: Glacial imprint layers recorded during the time zoom
 type: story
 status: todo
 parent: PW-090
+milestone: v1
 subsystem: timezoom
 effort: l
 impact: high

@@ -4,6 +4,7 @@ title: "Pipeline in the UI: run (pick a Myr) -> time zoom (pick a kyr) -> finish
 type: story
 status: done
 parent: PW-090
+milestone: null
 subsystem: viewer
 effort: m
 impact: high

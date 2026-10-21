@@ -4,6 +4,7 @@ title: "World navigator: 'make from here' covers time zoom, finish and highlight
 type: task
 status: todo
 parent: PW-244
+milestone: v1
 subsystem: viewer
 effort: m
 impact: med

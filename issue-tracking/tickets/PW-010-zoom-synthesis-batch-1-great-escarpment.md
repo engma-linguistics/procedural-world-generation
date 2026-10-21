@@ -4,6 +4,7 @@ title: "Zoom synthesis batch 1: great escarpment, caprock plateau/cuestas, lava 
 type: story
 status: done
 parent: PW-005
+milestone: null
 subsystem: zoom
 effort: l
 impact: high

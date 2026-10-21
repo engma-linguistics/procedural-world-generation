@@ -4,6 +4,7 @@ title: "The globe view is unusable at phone width: the control panel covers the 
 type: task
 status: todo
 parent: PW-244
+milestone: v2
 subsystem: viewer
 effort: m
 impact: low

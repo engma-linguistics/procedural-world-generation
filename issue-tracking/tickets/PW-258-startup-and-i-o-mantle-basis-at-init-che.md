@@ -4,6 +4,7 @@ title: "Startup and I/O: mantle basis at init, checkpoint writes on the main thr
 type: task
 status: done
 parent: PW-247
+milestone: v2
 subsystem: store
 effort: s
 impact: low

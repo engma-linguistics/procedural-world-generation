@@ -4,6 +4,7 @@ title: Sediment on hotspot rock still floats at the volcano-pile rate (x1.75) be
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: tectonics
 effort: xs
 impact: low

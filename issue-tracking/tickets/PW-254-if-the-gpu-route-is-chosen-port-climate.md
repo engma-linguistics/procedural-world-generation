@@ -4,6 +4,7 @@ title: "If the GPU route is chosen: port climate._rain and the graph-stencil ker
 type: story
 status: wontdo
 parent: PW-244
+milestone: v1
 subsystem: climate
 effort: l
 impact: med

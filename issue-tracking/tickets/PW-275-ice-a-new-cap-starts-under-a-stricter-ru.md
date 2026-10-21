@@ -4,6 +4,7 @@ title: "Ice: a new cap starts under a stricter rule in the run (no snow damping)
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med

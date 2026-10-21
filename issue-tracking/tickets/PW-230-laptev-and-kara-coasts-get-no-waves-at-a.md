@@ -4,6 +4,7 @@ title: "Laptev and Kara coasts get no waves at all: a half-year at least half fr
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: coast
 effort: s
 impact: low

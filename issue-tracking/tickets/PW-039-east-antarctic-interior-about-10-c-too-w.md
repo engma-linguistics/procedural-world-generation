@@ -4,6 +4,7 @@ title: East Antarctic interior about 10 °C too warm
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med

@@ -4,6 +4,7 @@ title: Satellite clouds are a fixed noise pattern; give them weather-like shapes
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: low

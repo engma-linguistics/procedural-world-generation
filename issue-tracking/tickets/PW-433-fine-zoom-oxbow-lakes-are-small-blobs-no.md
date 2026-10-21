@@ -4,6 +4,7 @@ title: Fine zoom oxbow lakes are small blobs; no scroll bars or meander scars on
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: low

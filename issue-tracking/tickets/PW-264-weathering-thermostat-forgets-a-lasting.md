@@ -4,6 +4,7 @@ title: Weathering thermostat forgets a lasting change in degassing in ~200 Myr (
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: climate
 effort: s
 impact: low

@@ -4,6 +4,7 @@ title: Rift pool decay deletes stretched crust that its comment says stays in th
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: tectonics
 effort: xs
 impact: low

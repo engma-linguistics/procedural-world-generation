@@ -4,6 +4,7 @@ title: Resources and hazards, geologically grounded
 type: story
 status: todo
 parent: PW-090
+milestone: v2
 subsystem: surface
 effort: l
 impact: med

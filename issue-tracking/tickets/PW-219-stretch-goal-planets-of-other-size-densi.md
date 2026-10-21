@@ -4,6 +4,7 @@ title: "Stretch goal: planets of other size, density and makeup (gravity, heat f
 type: story
 status: todo
 parent: PW-216
+milestone: later
 subsystem: tectonics
 effort: xl
 impact: low

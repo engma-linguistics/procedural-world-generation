@@ -4,6 +4,7 @@ title: Per-cell records (and rock, cover) flicker frame to frame as the world gr
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med

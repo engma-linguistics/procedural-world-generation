@@ -4,6 +4,7 @@ title: Shield domes are ringed by streams in the viewer's relief (a moat look)
 type: task
 status: done
 parent: PW-005
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

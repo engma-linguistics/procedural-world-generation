@@ -4,6 +4,7 @@ title: "Plate count: gentle 'big plate over warm mantle splits' nudge"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: high

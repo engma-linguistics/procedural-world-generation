@@ -4,6 +4,7 @@ title: Continental hotspot vents are drawn as shields; they should be calderas o
 type: task
 status: todo
 parent: PW-001
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

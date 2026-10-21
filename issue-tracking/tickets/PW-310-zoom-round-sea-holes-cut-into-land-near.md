@@ -4,6 +4,7 @@ title: "Zoom: round sea holes cut into land near a polar hotspot chain"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

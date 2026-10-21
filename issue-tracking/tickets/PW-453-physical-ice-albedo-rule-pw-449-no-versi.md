@@ -4,6 +4,7 @@ title: "Physical ice-albedo rule (PW-449): no version both deepens Earth's time-
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: climate
 effort: m
 impact: high

@@ -4,6 +4,7 @@ title: "Zoom viewer: show glaciers on the relief and hillshade layers"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: xs
 impact: med

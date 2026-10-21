@@ -4,6 +4,7 @@ title: "Resources layer: ores, coal, gems, building stone (Dwarf Fortress-style)
 type: epic
 status: todo
 parent: null
+milestone: v2
 subsystem: surface
 effort: xl
 impact: med

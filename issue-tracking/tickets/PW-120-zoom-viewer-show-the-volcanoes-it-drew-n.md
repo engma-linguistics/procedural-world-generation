@@ -4,6 +4,7 @@ title: "Zoom viewer: show the volcanoes it drew (name, age, form) on hover or as
 type: task
 status: done
 parent: PW-001
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

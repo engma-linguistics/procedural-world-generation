@@ -4,6 +4,7 @@ title: The 2D zoom page can open fine zooms but can't ask for one
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: med

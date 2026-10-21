@@ -4,6 +4,7 @@ title: Fine zoom reef area is ~60% of the parent's (patches and bands drawn insi
 type: task
 status: needs-decision
 parent: null
+milestone: v1
 subsystem: zoom
 effort: s
 impact: low

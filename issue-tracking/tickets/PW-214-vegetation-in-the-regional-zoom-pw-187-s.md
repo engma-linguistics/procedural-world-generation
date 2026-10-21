@@ -4,6 +4,7 @@ title: "Vegetation in the regional zoom (PW-187 step 5): per-pixel equilibrium, 
 type: story
 status: done
 parent: PW-184
+milestone: null
 subsystem: zoom
 effort: m
 impact: high

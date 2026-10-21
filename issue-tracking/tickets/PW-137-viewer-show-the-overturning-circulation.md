@@ -4,6 +4,7 @@ title: "Viewer: show the overturning circulation (AMOC-style) and make gyres leg
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: med

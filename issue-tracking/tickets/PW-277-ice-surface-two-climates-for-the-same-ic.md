@@ -4,6 +4,7 @@ title: "Ice surface: two climates for the same ice (climate.ice_surface's 10 C v
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: climate
 effort: s
 impact: low

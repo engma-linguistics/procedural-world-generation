@@ -4,6 +4,7 @@ title: planet make jobs cannot be cancelled and restart from scratch after a ser
 type: task
 status: todo
 parent: PW-244
+milestone: v1
 subsystem: infra
 effort: s
 impact: med

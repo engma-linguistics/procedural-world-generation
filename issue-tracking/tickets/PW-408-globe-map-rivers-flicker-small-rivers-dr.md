@@ -4,6 +4,7 @@ title: "Globe/map rivers flicker: small rivers draw as shimmering dotted lines (
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: high

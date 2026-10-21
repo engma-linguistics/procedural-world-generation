@@ -4,6 +4,7 @@ title: "Time zoom viewer: the 65N July sunshine curve misleads when the cycling 
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: s
 impact: low

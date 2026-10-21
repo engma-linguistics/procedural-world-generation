@@ -4,6 +4,7 @@ title: Fine zooms inherit the parent coast and islands as 1 km pixel staircases
 type: task
 status: todo
 parent: null
+milestone: v1
 subsystem: zoom
 effort: m
 impact: med

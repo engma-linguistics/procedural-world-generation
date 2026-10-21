@@ -4,6 +4,7 @@ title: Satellite view colours checked by eye only; calibrate against real imager
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: viewer
 effort: m
 impact: low

@@ -4,6 +4,7 @@ title: "Zoom: remaining undesigned drops on mid-size streams, coarse-zoom hangin
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

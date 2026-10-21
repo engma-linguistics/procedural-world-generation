@@ -4,6 +4,7 @@ title: "Speed pass: profile and optimise the run, world finishing, zooms and the
 type: story
 status: todo
 parent: PW-244
+milestone: v2
 subsystem: infra
 effort: l
 impact: high

@@ -4,6 +4,7 @@ title: "Highlights at 110 km cells: canyons weak, some picks off on Earth"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: highlights
 effort: m
 impact: low

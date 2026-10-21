@@ -4,6 +4,7 @@ title: "Time zoom: sub-shelf melt has no warm deep water to work with (Antarctic
 type: task
 status: todo
 parent: PW-470
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: low

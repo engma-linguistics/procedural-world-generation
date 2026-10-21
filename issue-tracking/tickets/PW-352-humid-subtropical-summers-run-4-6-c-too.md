@@ -4,6 +4,7 @@ title: "Humid subtropical summers run 4-6 C too warm (SE China, SE USA, Pampas):
 type: task
 status: todo
 parent: PW-013
+milestone: null
 subsystem: climate
 effort: m
 impact: med

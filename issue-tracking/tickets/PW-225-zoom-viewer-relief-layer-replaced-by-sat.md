@@ -4,6 +4,7 @@ title: "Zoom viewer: 'Relief' layer replaced by 'Satellite'; decide if a hypsome
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: xs
 impact: low

@@ -4,6 +4,7 @@ title: "Zoom: small uphill steps on delta trunks"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

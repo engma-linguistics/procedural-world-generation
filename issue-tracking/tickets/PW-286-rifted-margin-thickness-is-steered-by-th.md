@@ -4,6 +4,7 @@ title: Rifted-margin thickness is steered by the global continental-area error
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: tectonics
 effort: s
 impact: med

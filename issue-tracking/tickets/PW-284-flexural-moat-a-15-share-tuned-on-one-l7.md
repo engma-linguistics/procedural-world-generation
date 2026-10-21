@@ -4,6 +4,7 @@ title: "Flexural moat: a 15% share tuned on one L7 seed's closed-basin count, an
 type: task
 status: todo
 parent: PW-245
+milestone: v1
 subsystem: tectonics
 effort: s
 impact: med

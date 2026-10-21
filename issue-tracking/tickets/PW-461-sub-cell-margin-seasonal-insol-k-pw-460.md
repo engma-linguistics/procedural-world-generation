@@ -4,6 +4,7 @@ title: "Sub-cell margin + seasonal insol_k (PW-460/459) deepen the zoom but free
 type: task
 status: needs-decision
 parent: PW-470
+milestone: v2
 subsystem: tectonics
 effort: l
 impact: high

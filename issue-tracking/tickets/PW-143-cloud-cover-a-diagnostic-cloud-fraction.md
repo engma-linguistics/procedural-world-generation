@@ -4,6 +4,7 @@ title: "Cloud cover: a diagnostic cloud fraction per season (and its effect on s
 type: task
 status: done
 parent: PW-013
+milestone: null
 subsystem: climate
 effort: m
 impact: med

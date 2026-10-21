@@ -4,6 +4,7 @@ title: "Earth time zooms carve uniform rock (no rock record): use GLiM lithology
 type: task
 status: todo
 parent: PW-037
+milestone: null
 subsystem: timezoom
 effort: s
 impact: low

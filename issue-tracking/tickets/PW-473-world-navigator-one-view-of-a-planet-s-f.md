@@ -4,6 +4,7 @@ title: "World navigator: one view of a planet's family, from the tectonic run th
 type: story
 status: done
 parent: PW-244
+milestone: v1
 subsystem: viewer
 effort: m
 impact: high

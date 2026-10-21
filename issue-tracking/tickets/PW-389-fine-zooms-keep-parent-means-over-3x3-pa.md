@@ -4,6 +4,7 @@ title: Fine zooms keep parent means over 3x3 parent pixels, not per pixel
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: xs
 impact: med

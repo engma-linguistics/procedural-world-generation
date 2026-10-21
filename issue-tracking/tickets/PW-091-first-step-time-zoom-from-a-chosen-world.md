@@ -4,6 +4,7 @@ title: "First step: time zoom from a chosen world, feeding a finished world"
 type: story
 status: done
 parent: PW-090
+milestone: null
 subsystem: timezoom
 effort: l
 impact: high

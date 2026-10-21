@@ -4,6 +4,7 @@ title: "Giant open lakes: outlets should cut down and drain them"
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: hydrology
 effort: m
 impact: high

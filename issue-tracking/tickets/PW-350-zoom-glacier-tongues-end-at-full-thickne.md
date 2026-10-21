@@ -4,6 +4,7 @@ title: Zoom glacier tongues end at full thickness (a 360 m ice cliff at the snou
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: s
 impact: low

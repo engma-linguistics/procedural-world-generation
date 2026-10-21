@@ -4,6 +4,7 @@ title: Waves in enclosed seas 3-5x too strong once the wind recovers off land in
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: coast
 effort: m
 impact: med

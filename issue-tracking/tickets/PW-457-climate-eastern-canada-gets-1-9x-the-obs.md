@@ -4,6 +4,7 @@ title: "Climate: eastern Canada gets 1.9x the observed summer rain and 0.5x the 
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med

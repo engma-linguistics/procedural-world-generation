@@ -4,6 +4,7 @@ title: "Vegetation fire: fuel has no age, so maquis and chaparral never burn (or
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: surface
 effort: m
 impact: low

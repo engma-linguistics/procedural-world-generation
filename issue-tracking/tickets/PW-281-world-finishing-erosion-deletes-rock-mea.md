@@ -4,6 +4,7 @@ title: World finishing erosion deletes rock (mean 46 m of land at strength 0.3) 
 type: task
 status: done
 parent: PW-245
+milestone: v1
 subsystem: hydrology
 effort: s
 impact: low

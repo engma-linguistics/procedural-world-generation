@@ -4,6 +4,7 @@ title: "Decision: add equator_temp / pole_temp knobs?"
 type: task
 status: wontdo
 parent: null
+milestone: null
 subsystem: climate
 effort: xs
 impact: low

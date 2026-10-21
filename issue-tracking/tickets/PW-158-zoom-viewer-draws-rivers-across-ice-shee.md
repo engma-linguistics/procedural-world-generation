@@ -4,6 +4,7 @@ title: Zoom viewer draws rivers across ice sheets
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: viewer
 effort: xs
 impact: low

@@ -4,6 +4,7 @@ title: "Weird worlds (way post-v1): frozen, hypervolcanic, partly molten, hyperf
 type: epic
 status: todo
 parent: null
+milestone: later
 subsystem: docs
 effort: xl
 impact: low

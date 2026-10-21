@@ -4,6 +4,7 @@ title: "Remaining churn at converging boundaries: plate ownership flickers along
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: tectonics
 effort: m
 impact: med

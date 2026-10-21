@@ -4,6 +4,7 @@ title: "Zoom vegetation: straight, axis-aligned edges (rectangular patches) and 
 type: task
 status: done
 parent: null
+milestone: null
 subsystem: zoom
 effort: m
 impact: med

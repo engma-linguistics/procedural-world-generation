@@ -4,6 +4,7 @@ title: Fine-zoom towers and dolines show short hatched stripes at some edges
 type: task
 status: todo
 parent: null
+milestone: v1
 subsystem: zoom
 effort: xs
 impact: low
