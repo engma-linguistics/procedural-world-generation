@@ -1,4 +1,5 @@
 ---
+id: PW-536
 title: The 300 kyr time zooms ae8f75 and 7ec3fe show no sea-level swing with the ice index
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: worktree-agent-a7b485e309b6e3a74 (PW-493 now-pick check)
 blocked_by: []
 relates: [PW-493, PW-030, PW-366]
 refs: [planet/finish.py, "time zoom ae8f75", "time zoom 7ec3fe", "time zoom e9d59c"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -32,3 +35,6 @@ the ice volume per frame against sea_level_change_m for both zooms.
 - [ ] Explain the zero correlation on ae8f75 (the ice volume and sea-level series per frame).
 - [ ] Either a fix (folded into the owning ticket, PW-030/PW-366 area) or a documented reason.
 - [ ] After a fix, `planet finish <tz> --now glacial` picks a lower sea level than the interglacial pick.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-timezoom-sealevel-decoupled-300kyr.md (found by worktree-agent-a7b485e309b6e3a74 (PW-493 now-pick check)).

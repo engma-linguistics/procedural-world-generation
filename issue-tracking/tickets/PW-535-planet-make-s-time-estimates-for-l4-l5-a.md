@@ -1,9 +1,10 @@
 ---
+id: PW-535
 title: planet make's time estimates for L4, L5 and L8 are still scaled, not measured
 type: task
 status: todo
 parent: PW-244
-milestone: null
+milestone: v2
 subsystem: infra
 effort: s
 impact: low
@@ -11,6 +12,8 @@ found_by: worktree-agent-a7b485e309b6e3a74 (PW-478 calibration)
 blocked_by: []
 relates: [PW-478]
 refs: [planet/make.py, docs/coordination.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -28,3 +31,6 @@ also be worth one timing each.
 - [ ] L5 run timed on the owner's machine; RUN_S_PER_GYR[5] refit.
 - [ ] L4 run timed again warm (the first run may include numba start-up).
 - [ ] L8 run timed or the row kept with its note.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-make-estimate-unmeasured-levels.md (found by worktree-agent-a7b485e309b6e3a74 (PW-478 calibration)).
