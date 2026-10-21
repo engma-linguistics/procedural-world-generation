@@ -19,7 +19,8 @@ Writes into one directory (default: <data root>/exports/<id>/):
   splat_0*, splat_1*.png   RGBA8 material weights, 8 materials in all (sum 255
                    on land, 0 on water); derived from tree/plant cover, ice,
                    slope, climate and wetland by simple rules (splat_weights)
-  features.geojson         lon/lat points and lines
+  features.geojson         lon/lat points, lines (rivers with Strahler order, width, per-vertex
+                   discharge) and polygons (lake outlines)
   features_local.geojson   (zooms) the same in metres from the zoom's centre,
                    with the ground height as z
 
@@ -162,6 +163,7 @@ def river_lines(nxt: np.ndarray, q: np.ndarray, active: np.ndarray) -> list[dict
     nxt = np.where(active & (nxt >= 0) & (nxt < n), nxt, -1)
     act_next = np.where(nxt >= 0, np.where(active[np.maximum(nxt, 0)], nxt, -1), -1)
     indeg = np.bincount(act_next[act_next >= 0], minlength=n)
+    order = strahler_order(act_next, active)
     out = []
     for s in np.flatnonzero(active & (indeg != 1)):
         nodes = [int(s)]
@@ -175,9 +177,101 @@ def river_lines(nxt: np.ndarray, q: np.ndarray, active: np.ndarray) -> list[dict
                 break
             cur = nx
         if len(nodes) > 1:
-            out.append({"nodes": np.array(nodes), "q": float(q[nodes[:-1]].max())})
+            out.append({"nodes": np.array(nodes), "q": float(q[nodes[:-1]].max()), "q_nodes": q[nodes].astype(float),
+                        "order": int(order[s])})
     return out
 
+
+def strahler_order(act_next: np.ndarray, active: np.ndarray) -> np.ndarray:
+    """Strahler stream order per node of a river forest (act_next: the next active node
+    downstream or -1; active: nodes in a river). Sources are 1; where two or more streams of the
+    highest incoming order meet the order goes up by one, otherwise it is that highest order.
+    Processed in rounds from the sources down (nodes in a cycle, which a routing graph does not
+    have, would stay 1)."""
+    n = len(act_next)
+    order = np.ones(n, int)
+    rem = np.bincount(act_next[act_next >= 0], minlength=n)  # children not yet processed
+    mx = np.zeros(n, int)  # highest order among processed children
+    cnt = np.zeros(n, int)  # how many children have it
+    ready = np.flatnonzero(active & (rem == 0))
+    while len(ready):
+        order[ready] = np.where(mx[ready] == 0, 1, mx[ready] + (cnt[ready] >= 2))
+        has = act_next[ready] >= 0
+        c, p = ready[has], act_next[ready[has]]
+        if not len(c):
+            break
+        o = order[c]
+        up = np.unique(p)
+        old = mx[up].copy()
+        np.maximum.at(mx, p, o)
+        cnt[up[mx[up] > old]] = 0
+        np.add.at(cnt, p[o == mx[p]], 1)
+        np.add.at(rem, p, -1)
+        ready = up[rem[up] == 0]
+    return order
+
+
+def river_width_m(q) -> np.ndarray:
+    """Bankfull width from discharge, w = 7.2 Q^0.5 (Leopold-Maddock-style hydraulic geometry;
+    the Rhine at Cologne, ~2,200 m3/s, comes out near 340 m). A guide for drawing, not a survey."""
+    return 7.2 * np.sqrt(np.maximum(np.asarray(q, float), 0.0))
+
+
+def _river_props(r: dict, pts: np.ndarray, qd: int) -> dict:
+    """GeoJSON properties of a river line: peak discharge, Strahler order, bankfull width at the
+    peak, and the discharge at each vertex (the river widens along the line as tributaries join)."""
+    return {"discharge_m3s": round(r["q"], qd) if qd else round(r["q"]), "strahler": r["order"],
+            "width_m": round(float(river_width_m(r["q"])), 1), "length_km": round(_path_km(pts), 2),
+            "vertex_discharge_m3s": [round(float(v), qd) if qd else round(float(v)) for v in r["q_nodes"]]}
+
+
+# ---------------------------------------------------------------------------
+# Lake outlines
+# ---------------------------------------------------------------------------
+def boundary_rings(a: np.ndarray, b: np.ndarray) -> list[list[int]]:
+    """Closed rings (vertex ids, first not repeated) from the boundary edges (a[i], b[i]) of a
+    region made of cells: every vertex has two boundary edges, four where two cells touch at a
+    corner (the walk then just takes the next unused edge there)."""
+    adj: dict[int, list[int]] = {}
+    for i, (u, v) in enumerate(zip(a.tolist(), b.tolist())):
+        adj.setdefault(u, []).append(i)
+        adj.setdefault(v, []).append(i)
+    used = np.zeros(len(a), bool)
+    rings = []
+    for i0 in range(len(a)):
+        if used[i0]:
+            continue
+        ring, cur, ei = [int(a[i0])], int(b[i0]), i0
+        used[i0] = True
+        while cur != ring[0]:
+            ring.append(cur)
+            nxt = next((j for j in adj[cur] if not used[j]), None)
+            if nxt is None:
+                break
+            used[nxt] = True
+            cur = int(b[nxt] if a[nxt] == cur else a[nxt])
+        if len(ring) >= 3:
+            rings.append(ring)
+    return rings
+
+
+def lake_polygon(rings_ll: list[np.ndarray]) -> list[np.ndarray]:
+    """GeoJSON-ready rings (lon, lat) from boundary rings of (lat, lon): longitudes unwrapped
+    (no jump over the antimeridian), the largest ring is the shore (counter-clockwise) and the
+    rest are islands (clockwise holes), each closed by repeating its first vertex."""
+    out = []
+    for ll in rings_ll:
+        lon = np.degrees(np.unwrap(np.radians(ll[:, 1])))
+        xy = np.stack([lon * np.cos(np.radians(ll[:, 0].mean())), ll[:, 0]], 1)
+        area = 0.5 * float(np.sum(xy[:, 0] * np.roll(xy[:, 1], -1) - np.roll(xy[:, 0], -1) * xy[:, 1]))
+        out.append((abs(area), area, np.stack([ll[:, 0], lon], 1)))
+    out.sort(key=lambda t: -t[0])
+    rings = []
+    for k, (_, area, ll) in enumerate(out):
+        if (area > 0) != (k == 0):  # outer CCW, holes CW (RFC 7946)
+            ll = ll[::-1]
+        rings.append(np.vstack([ll, ll[:1]]))
+    return rings
 
 def _path_km(ll: np.ndarray) -> float:
     p = xyz(np.radians(ll[:, 0]), np.radians(ll[:, 1]))
@@ -322,6 +416,10 @@ class Features:
     def line(self, kind, latlon_arr, **props):
         self.items.append((kind, "LineString", np.asarray(latlon_arr, float), props))
 
+    def polygon(self, kind, rings_latlon, **props):
+        """A polygon: closed rings of (lat, lon), the first the outer ring, the rest holes."""
+        self.items.append((kind, "Polygon", [np.asarray(r, float) for r in rings_latlon], props))
+
     def projected(self, name: str, proj: PJ.Projection, in_map, cut: float) -> dict:
         """The features in the map's plane: coordinates [x, y(, z ground height)] in metres
         (planet-radius sphere, x east, y north of the projection's centre). Points off the
@@ -330,6 +428,21 @@ class Features:
         feats, kept, dropped = [], 0, 0
         Rm = R_KM * 1000
         for n, (kind, gt, ll, props) in enumerate(self.items):
+            if gt == "Polygon":  # kept whole where its shore is on the map, else left out
+                rings = []
+                for r in ll:
+                    x, y = proj.forward(r[:, 0], r[:, 1])
+                    x, y = x * Rm, y * Rm
+                    if not (np.isfinite(x) & in_map(x, y)).all() or (np.hypot(np.diff(x), np.diff(y)) > cut).any():
+                        rings = None
+                        break
+                    rings.append([[round(float(a), 1), round(float(b), 1)] for a, b in zip(x, y)])
+                if rings is None:
+                    dropped += 1
+                else:
+                    feats.append(_feature({"type": "Polygon", "coordinates": rings}, {"kind": kind, **_clean(props)}, f"{kind}-{n}"))
+                    kept += 1
+                continue
             x, y = proj.forward(ll[:, 0], ll[:, 1])
             x, y = x * Rm, y * Rm
             ok = np.isfinite(x) & in_map(x, y)
@@ -373,6 +486,16 @@ class Features:
     def collections(self, name: str, local_name: str | None = None):
         geo, loc = [], []
         for n, (kind, gt, ll, props) in enumerate(self.items):
+            if gt == "Polygon":
+                p = {"kind": kind, **_clean(props)}
+                geo.append(_feature({"type": gt, "coordinates": [[_round((lo, la)) for la, lo in r] for r in ll]}, p, f"{kind}-{n}"))
+                if self.local:
+                    rings = []
+                    for r in ll:
+                        x, y = self.local(r[:, 0], r[:, 1])
+                        rings.append([[round(float(a * 1000), 1), round(float(b * 1000), 1)] for a, b in zip(x, y)])
+                    loc.append(_feature({"type": gt, "coordinates": rings}, p, f"{kind}-{n}"))
+                continue
             z = self.elevation(ll[:, 0], ll[:, 1]) if self.elevation else None
             p = {"kind": kind, **_clean(props)}
             if z is not None and gt == "Point":
@@ -500,7 +623,7 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
         for r in river_lines(np.asarray(L["downstream"]), q, active):
             pts = ll[r["nodes"]]
             pts[:, 1] = np.degrees(np.unwrap(np.radians(pts[:, 1])))  # (no jump over the antimeridian)
-            feats.line("river", pts, discharge_m3s=round(r["q"]), length_km=round(_path_km(pts)))
+            feats.line("river", pts, **_river_props(r, pts, 0))
     if "lake" in L or "lake_kind" in L:
         lake = np.asarray(L["lake"] if "lake" in L else L["lake_kind"]) > 0
         comps, n = grid.components(lake)
@@ -516,7 +639,18 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
             if "lake_kind" in L:
                 kd = np.bincount(np.asarray(L["lake_kind"])[cells].astype(int)).argmax()
                 props["lake_kind"] = kinds.get(int(kd), "fresh")
-            feats.point("lake", float(la), float(lo), **props)
+            props["centroid_lat_lon"] = [round(float(la), 4), round(float(lo), 4)]
+            # outline: the cell edges not shared with another cell of the lake
+            cc = np.array([(c[i], c[(i + 1) % len(c)]) for k_ in cells for c in (grid.cell_corners[k_],) for i in range(len(c))])
+            e = np.sort(cc, 1)
+            key = e[:, 0] * len(grid.corners) + e[:, 1]
+            uk, first, cntk = np.unique(key, return_index=True, return_counts=True)
+            edge = e[first[cntk == 1]]
+            rings = [np.stack(latlon(grid.corners[np.array(r)]), 1) for r in boundary_rings(edge[:, 0], edge[:, 1])]
+            if rings:
+                feats.polygon("lake", lake_polygon(rings), **props)
+            else:
+                feats.point("lake", float(la), float(lo), **props)
     if hu_tab:
         ll_all = np.stack([lat, lon], 1)
         _human_use_features(feats, hu_tab, lambda idx: ll_all[np.asarray(idx)].copy(), "world",
@@ -831,7 +965,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         for r in river_lines(nxt, q, active):
             pts = pix_ll(r["nodes"], w0, h0, nat)
             pts[:, 1] = np.degrees(np.unwrap(np.radians(pts[:, 1])))
-            feats.line("river", pts, discharge_m3s=round(r["q"], 1), length_km=round(_path_km(pts), 2))
+            feats.line("river", pts, **_river_props(r, pts, 1))
     st = meta.get("stats", {})
     for fl in st.get("falls", []):
         feats.point("waterfall", fl["lat"], fl["lon"], height_m=fl["height_m"], discharge_m3s=fl["discharge_m3s"],
@@ -845,7 +979,7 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         la, lo_ = dl["lat_lon"]
         feats.point("delta", la, lo_, delta_type=dl["type"], discharge_m3s=dl["discharge_m3s"],
                     plain_radius_km=dl["plain_radius_km"], weights=dl["weights"])
-    _zoom_lakes(feats, A, nx, ny, r_km, pix_ll)
+    _zoom_lakes(feats, A, nx, ny, r_km, pix_ll, fr)
     h0, w0 = L["elevation"].shape
     _human_use_features(feats, hu_tab, lambda idx: pix_ll(np.asarray(idx), w0, h0, nat), "zoom", max(5 * nat, 10.0))
     if with_highlights:
@@ -869,8 +1003,8 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         "sea_level_m": 0.0}
 
 
-def _zoom_lakes(feats: Features, A: dict, nx: int, ny: int, r_km: float, pix_ll) -> None:
-    """One point per lake: the centroid of each connected group of lake pixels."""
+def _zoom_lakes(feats: Features, A: dict, nx: int, ny: int, r_km: float, pix_ll, fr_) -> None:
+    """One polygon per lake (a connected group of lake pixels), with its centroid as a property."""
     if "water" not in A or not (A["water"] == 2).any():
         return
     from collections import deque
@@ -898,7 +1032,34 @@ def _zoom_lakes(feats: Features, A: dict, nx: int, ny: int, r_km: float, pix_ll)
         if "lake_kind" in A:
             props["lake_kind"] = {1: "fresh", 2: "salt", 3: "salt pan"}.get(int(np.bincount(
                 A["lake_kind"].ravel()[cells].astype(int)).argmax()), "fresh")
-        feats.point("lake", float(mid[0]), float(mid[1]), **props)
+        props["centroid_lat_lon"] = [round(float(mid[0]), 4), round(float(mid[1]), 4)]
+        # outline: pixel edges between a lake pixel and anything else (vertex id = row * (nx + 1) + col
+        # of the pixel corner), straight runs merged
+        r0_, c0_ = rows.min() - 1, cols.min() - 1
+        loc = np.zeros((rows.max() - r0_ + 2, cols.max() - c0_ + 2), bool)
+        loc[rows - r0_, cols - c0_] = True
+        W = nx + 1
+        ea, eb = [], []
+        for (rr, cc) in zip(*np.nonzero(loc[1:, 1:-1] != loc[:-1, 1:-1])):  # horizontal edge above pixel row rr+1
+            v = (rr + 1 + r0_) * W + (cc + 1 + c0_)
+            ea.append(v)
+            eb.append(v + 1)
+        for (rr, cc) in zip(*np.nonzero(loc[1:-1, 1:] != loc[1:-1, :-1])):  # vertical edge left of pixel col cc+1
+            v = (rr + 1 + r0_) * W + (cc + 1 + c0_)
+            ea.append(v)
+            eb.append(v + W)
+        rings = []
+        for ring in boundary_rings(np.array(ea), np.array(eb)):
+            rc = np.array(np.divmod(ring, W)).T
+            d1, d2 = rc - np.roll(rc, 1, 0), np.roll(rc, -1, 0) - rc
+            keep = (d1 != d2).any(1)  # drop vertices on a straight run
+            rc = rc[keep] if keep.sum() >= 3 else rc
+            xs, ys = (rc[:, 1] - nx / 2) * r_km, (ny / 2 - rc[:, 0]) * r_km
+            rings.append(np.stack(latlon(fr_.to_sphere(xs, ys)), 1))
+        if rings:
+            feats.polygon("lake", lake_polygon(rings), **props)
+        else:
+            feats.point("lake", float(mid[0]), float(mid[1]), **props)
 
 
 def _zoom_highlights(feats: Features, meta: dict, fr, ground, to_xy) -> None:

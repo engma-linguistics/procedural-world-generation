@@ -114,5 +114,10 @@ def test_parse():
 def test_proj_strings():
     assert "+proj=laea +lat_0=10 +lon_0=20" in PJ.Projection("laea", 10, 20).proj_string()
     assert PJ.Projection("mollweide", 0, 30).proj_string().startswith("+proj=moll +lon_0=30")
-    assert PJ.Projection("equal-earth", 45, 0).proj_string() is None
-    assert "oblique" in PJ.Projection("equal-earth", 45, 0).describe()["proj_note"]
+    # oblique: ob_tran strings, parameters verified against pyproj (round trip ~1e-9 m, PW-484)
+    s = PJ.Projection("equal-earth", 40, -100).proj_string()
+    assert s.startswith("+proj=ob_tran +o_proj=eqearth +o_lat_p=50 +o_lon_p=0 +lon_0=-100 ")
+    s = PJ.Projection("mollweide", -30, 70).proj_string()
+    assert s.startswith("+proj=ob_tran +o_proj=moll +o_lat_p=60 +o_lon_p=180 +lon_0=-110 ")
+    assert "+o_proj=eqc" in PJ.Projection("equirect", 10, 179).proj_string()
+    assert PJ.Projection("equal-earth", 45, 0).describe()["proj_note"] is None

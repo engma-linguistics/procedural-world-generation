@@ -181,7 +181,14 @@ class Projection:
             p = {"laea": "laea", "aeqd": "aeqd", "stereo": "stere", "ortho": "ortho"}[n]
             return f"+proj={p} +lat_0={self.lat0:g} +lon_0={self.lon0:g} {R}"
         if abs(self.lat0) > 1e-9:
-            return None
+            # Oblique: ob_tran puts the rotated pole at (lat 90 - lat0, lon lon0), so the centre
+            # lands on 0N 0E with north up. In the southern hemisphere the same rotation is
+            # o_lon_p = 180 with lon_0 shifted by 180. Verified against pyproj to ~1e-9 m.
+            o = {"equirect": "eqc", "equal-earth": "eqearth", "mollweide": "moll"}[n]
+            north = self.lat0 > 0
+            lon_0 = self.lon0 if north else ((self.lon0 + 360) % 360) - 180
+            return (f"+proj=ob_tran +o_proj={o} +o_lat_p={90 - abs(self.lat0):.12g} "
+                    f"+o_lon_p={0 if north else 180} +lon_0={lon_0:.12g} {R}")
         p = {"equirect": "eqc +lat_ts=0 +lat_0=0", "equal-earth": "eqearth", "mollweide": "moll"}[n]
         return f"+proj={p} +lon_0={self.lon0:g} {R}"
 
@@ -191,8 +198,7 @@ class Projection:
                                   "note": "local = frame @ world unit vector (world: x through 0N 0E, y 90E, z north); "
                                           "then the standard formula with the centre at 0N 0E, north up"},
                 "proj": self.proj_string(),
-                "proj_note": None if self.proj_string() else "oblique aspect has no plain PROJ string; "
-                                                             "use oblique_frame"}
+                "proj_note": None if self.proj_string() else "no PROJ equivalent; use oblique_frame"}
 
 
 # ---------------------------------------------------------------------------
