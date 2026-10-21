@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-461, PW-460, PW-459, PW-436, PW-462]
 refs: [planet/tectonics/earth.py, planet/timezoom/ice.py, planet/timezoom/sim.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -44,4 +44,5 @@ PW-460/459 code, and the 10-seed cold-era check.
 - [ ] main's 10-seed cold-era check does not get worse
 
 ## Updates
+- 2026-10-21: Side lane done (branch worktree-agent-af748cc6ffa533997 (c720d92), kept unmerged; write-up docs/review/audit/PW-465-side-lane.md). The loss is ice flowing off the coast into deep water and leaving as shelves (70-85%), not calving. Fix icemass.coast_loss: drift at I=0 within 25 m on 9/10 moments (main 4/10); cold-era check 8 -> 7/10 (seed 7 -362 -> -745 m); Earth unchanged; run +39% wall time; one health test fails. Parked; decision PW-514.
 - 2026-10-20: Created from inbox draft draft-run-ice-marine-budget.md (found by pw462).

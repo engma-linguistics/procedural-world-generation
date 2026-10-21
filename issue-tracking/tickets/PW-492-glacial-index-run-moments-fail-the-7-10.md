@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-471, PW-436, PW-461, PW-462, PW-470]
 refs: [docs/review/audit/PW-471-handoff.md, docs/review/audit/PW-471-spinup.patch, planet/timezoom/cycle.py, planet/timezoom/sim.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -61,5 +61,6 @@ Lean: (C) now for v1 (the index is no worse than main on run moments and fixes E
 real fix, scheduled in the run lane; (B) only if the showcases need run moments before (A).
 
 ## Updates
+- 2026-10-21: PW-465 side lane: the marine budget fixes the start drift (9/10), but the index bar is still 2/10 (moments glaciate too deep or have tiny targets). See PW-514.
 - 2026-10-20: Status needs-decision -> done. Owner 2026-10-20: option C. Ship as is; the v1 run-moment bar becomes 'cycles at ~100 kyr without runaway' (all 10 pass). Option A (run's coastal ice pays calving and shelf melt, PW-465) is post-v1 under PW-470.
 - 2026-10-20: Created from inbox draft draft-glacial-index-run-moment-drift.md (found by pw471).
