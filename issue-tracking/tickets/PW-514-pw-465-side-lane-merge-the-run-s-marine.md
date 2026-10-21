@@ -2,7 +2,7 @@
 id: PW-514
 title: "PW-465 side lane: merge the run's marine ice budget (coast_loss)? It fixes the I = 0 drift (9/10) but the 10-seed cold-era check drops 8/10 -> 7/10"
 type: task
-status: in-progress
+status: needs-decision
 parent: PW-470
 milestone: v2
 subsystem: tectonics
@@ -56,5 +56,6 @@ Lean: (B). It is the right physics and it does what PW-465 asked, but it moves t
 matters once the time zoom's run-moment bar is back on the table.
 
 ## Updates
+- 2026-10-21: Option B batch failed (branch worktree-agent-ae1d70b30254180ac, ae9906a): cold eras 1/10, Earth maxima -141..-182 m, interglacial ice 16-20%. Cost cut works (+4% wall; hunks in b74f2c0). Next decision in PW-526. Write-up docs/review/audit/PW-514-batch.md.
 - 2026-10-21: Owner 2026-10-21: option B. Work continues in a side worktree: PW-464 (cycle mean) with PW-465's coast_loss and PW-460/459 re-applied together, judged as one batch, merged together if it holds up.
 - 2026-10-21: Created from inbox draft draft-pw465-merge-decision.md (found by pw465).
