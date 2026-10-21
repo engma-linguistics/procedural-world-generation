@@ -1,4 +1,5 @@
 ---
+id: PW-550
 title: "`--at auto` slices worlds at extreme sea level: 4 of 8 v1 batch worlds sit at -269..-369 m"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: pw548
 blocked_by: []
 relates: [PW-434, PW-202]
 refs: [planet/highlights.py, docs/review/health/2026-10-21-batch/report.md, "worlds dad91b c00ebf 91448a 3e0b0a"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -18,3 +21,6 @@ refs: [planet/highlights.py, docs/review/health/2026-10-21-batch/report.md, "wor
 Try: add sea level (and ice % / largest lake) to the distance that picks the time, or skip keyframes outside the health envelopes (-250..300 m, ice <= 10%, largest lake <= 1 Mkm2) when a keyframe inside them exists.
 - [ ] `--at auto` avoids keyframes outside the sea-level envelope when any other keyframe qualifies
 - [ ] re-measure the batch worlds' slice moments
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-batch-worlds-sliced-at-extreme-sea-level.md (found by pw548).
