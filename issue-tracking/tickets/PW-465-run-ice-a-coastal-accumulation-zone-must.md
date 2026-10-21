@@ -44,5 +44,6 @@ PW-460/459 code, and the 10-seed cold-era check.
 - [ ] main's 10-seed cold-era check does not get worse
 
 ## Updates
+- 2026-10-21: coast_loss with the cost cut is ready on branch worktree-agent-a9ef586c8f7c30585 (PW-514 option A, docs/review/audit/PW-514-option-a.md). Cold eras 8/10, drift 5/10 on fresh moments (main 4/10; the side lane's 9/10 doesn't reproduce on the new trajectory: draft-coast-loss-iced-moment-drift.md).
 - 2026-10-21: Side lane done (branch worktree-agent-af748cc6ffa533997 (c720d92), kept unmerged; write-up docs/review/audit/PW-465-side-lane.md). The loss is ice flowing off the coast into deep water and leaving as shelves (70-85%), not calving. Fix icemass.coast_loss: drift at I=0 within 25 m on 9/10 moments (main 4/10); cold-era check 8 -> 7/10 (seed 7 -362 -> -745 m); Earth unchanged; run +39% wall time; one health test fails. Parked; decision PW-514.
 - 2026-10-20: Created from inbox draft draft-run-ice-marine-budget.md (found by pw462).
