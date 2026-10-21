@@ -139,7 +139,7 @@
   .rbox label { gap: 4px; }
   .rbox input[type=range] { flex: 1; min-width: 0; }
   .rbox .val { width: 34px; text-align: right; font: 11px ui-monospace, Menlo, monospace; color: var(--muted); }
-  #tiltInset { top: 12px; left: 294px; padding: 6px 8px; font-size: 11px; text-align: center; pointer-events: none; }
+  #tiltInset { top: 62px; left: 294px; padding: 6px 8px; font-size: 11px; text-align: center; pointer-events: none; }
   #tiltInset svg { display: block; }
   #zoomBox { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
     font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -171,7 +171,7 @@
   #tabs { top: 12px; right: 12px; padding: 4px; z-index: 20; }
   #zoomFrame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; display: none; z-index: 10; background: var(--bg); }
   body.zoomTab #zoomFrame { display: block; }
-  body.zoomTab .panel:not(#tabs), body.zoomTab #toast { display: none !important; }
+  body.zoomTab .panel:not(#tabs):not(#navBar):not(#navTree), body.zoomTab #toast { display: none !important; }
   @media (max-width: 700px) { #info, #summary, #tiltInset { display: none; } #controls { width: 220px; }
     #legend { left: 244px; max-width: calc(100vw - 256px); }
     #timeline { left: 244px; width: calc(100vw - 256px); } }
@@ -299,6 +299,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import * as Relief from './relief.js';
+import { createNavigator } from './navigator.js';
 
 const $ = (id) => document.getElementById(id);
 const R_EARTH = 6371000;
@@ -1331,6 +1332,7 @@ function buildOverlays() {
   Object.values(overlays).forEach((o) => group.add(o));
   buildAxis();
   buildHighlightMarks();
+  buildZoomOutlines();
 }
 // ------------------------------------------------------------ ocean currents as streamlines, the overturning loop
 // Streamlines (Jobard & Lefer 1997, simplified): from evenly spread seeds,
@@ -2204,8 +2206,9 @@ async function openWorld(file) {
 // after something new was made: re-read the indexes, redraw what lists them
 async function refreshIndex() {
   await fillSelector();
+  navUi?.refresh();
   if (!V) return;
-  renderSummary(); drawMarks();
+  renderSummary(); drawMarks(); buildZoomOutlines();
 }
 
 // ------------------------------------------------------------ cold eras on the timeline
@@ -2629,6 +2632,8 @@ let downAt = null;
 renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downAt || hovered < 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
+  const zo = !picked && outlineAt(hovered);  // the edge of a zoom already made: open it (click inside to zoom elsewhere)
+  if (zo) { toast(`Opening zoom ${zo.id}`); showTab('zoom', zo.id); return; }
   const txt = `${refOf(hovered)} ${V.name}: ` + describe(hovered).join(', ') + ` ${linkOf(hovered)}`;
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
   pickCell(hovered);
@@ -3098,8 +3103,85 @@ function showTab(tab, zoomId) {
   if (tab === 'zoom') u.searchParams.set('tab', 'zoom'); else u.searchParams.delete('tab');
   if (zoomId) u.searchParams.set('zoom', zoomId);
   history.replaceState(null, '', u);
+  navSync();
 }
 $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
+
+// ------------------------------------------------------------ world navigator (PW-473, navigator.js)
+// A bar with the provenance chain of what is on screen and the planet's family tree; it opens things
+// through navOpen and learns what is on screen through navSync (called when a run, a world or the tab changes).
+let navUi = null;
+function navView() {
+  if (state.tab === 'zoom') { const z = new URLSearchParams(location.search).get('zoom'); if (z) return { kind: 'zoom', id: z }; }
+  if (!V) return null;
+  if (V.kind === 'run') return { kind: V.tz ? 'timezoom' : 'run', id: V.dir, t: V.t };
+  return V.id ? { kind: 'world', id: V.id } : null;
+}
+function navSync() { navUi?.set(navView()); }
+async function navOpen(n, planet, t) {
+  await fillSelector();
+  if (state.tab === 'zoom' && n.kind !== 'zoom') showTab('globe');
+  if (n.kind === 'run' || n.kind === 'timezoom') await openRun(n.id, t);
+  else if (n.kind === 'world') await openWorld(n.file);
+  else {
+    if (!(V?.kind === 'world' && V.id === n.world)) {
+      const w = planet.nodes.find((x) => x.key === 'world:' + n.world);
+      if (w) await openWorld(w.file);
+    }
+    showTab('zoom', n.id);
+  }
+}
+navUi = createNavigator({ openNode: navOpen, findHighlights: () => fetchHighlights(false) });
+
+// The squares of the zooms already made of what is on screen (a world, or the world made from this run
+// frame), clickable on their edge: a click there opens that zoom instead of picking a cell.
+const zoomOutlines = new THREE.Group();
+group.add(zoomOutlines);
+function zoomsOnScreen() {
+  if (!V) return [];
+  const worlds = V.kind === 'world' ? [V.id] : V.tz ? [] : IDX.worlds.filter((w) => w.source_run === V.dir && w.t_myr === V.t && !w.timezoom).map((w) => w.id);
+  return IDX.zooms.filter((z) => worlds.includes(z.world) && !z.parent_zoom && z.center);
+}
+function wideSprite(text, color) {  // (a label of a few words: textSprite's canvas is square)
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  const g = cv.getContext('2d');
+  g.font = 'bold 32px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 128, 34);
+  g.fillStyle = color; g.fillText(text, 128, 34);
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
+}
+function buildZoomOutlines() {
+  zoomOutlines.children.forEach(disposeObj);
+  zoomOutlines.clear();
+  const globe = state.mode === 'globe', r0 = globe ? 1.012 : 1;
+  const wraps = (a, b) => !globe && Math.abs(a[0] - b[0]) > 2;
+  for (const z of zoomsOnScreen()) {
+    const { lat, lon } = z.center, h = z.size_km / 2 / 111.2, cl = Math.max(Math.cos(lat * Math.PI / 180), 0.1), pts = [];
+    const corners = [[-h, -h], [-h, h], [h, h], [h, -h], [-h, -h]];
+    for (let c = 0; c < 4; c++) for (let k = 0; k < 8; k++) {
+      const [a0, b0] = corners[c], [a1, b1] = corners[c + 1];
+      const f = (t) => llPos(lat + a0 + (a1 - a0) * t, lon + (b0 + (b1 - b0) * t) / cl, r0);
+      const p1 = f(k / 8), p2 = f((k + 1) / 8);
+      if (!wraps(p1, p2)) pts.push(...p1, ...p2);
+    }
+    zoomOutlines.add(lineObj(pts, 0x7cc4ff, 0.9));
+    const label = wideSprite(`${z.id} · ${z.size_km} km`, '#7cc4ff');
+    label.position.set(...(globe ? llPos(lat + h + 0.6, lon, 1.03) : llPos(lat + h + 1.5, lon, 1, 0.01)));
+    label.scale.set(globe ? 0.13 : 0.1, globe ? 0.0325 : 0.025, 1);
+    zoomOutlines.add(label);
+  }
+}
+// the zoom whose outline (its edge, a generous band) is at cell i, if any
+function outlineAt(i) {
+  const lat = V.grid.lat[i], lon = V.grid.lon[i];
+  for (const z of zoomsOnScreen()) {
+    const h = z.size_km / 2 / 111.2, cl = Math.max(Math.cos(z.center.lat * Math.PI / 180), 0.1);
+    const dy = Math.abs(lat - z.center.lat), dx = Math.abs(((lon - z.center.lon + 540) % 360) - 180) * cl;
+    const m = Math.max(dy, dx) / h;
+    if (m >= 0.75 && m <= 1.15) return z;
+  }
+  return null;
+}
 
 // ------------------------------------------------------------ loading
 // The legends (rock, Köppen and biome ids -> names and colours) come with every run and world.
@@ -3131,6 +3213,7 @@ async function setWorld(w) {
   iceBed(V.layers);
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
+  navSync();
 }
 
 // ------------------------------------------------------------ run layers
@@ -3229,6 +3312,7 @@ async function loadRun(dir, wantT) {
   await loadNeeded();
   setFrame(f, false);
   buildTopology(); paint(); renderRunSummary(); drawTint(); drawMarks();
+  navSync();
 }
 
 // A world's volcano table (tectonics.volcanism.COLUMNS) -> [lat, lon, kind, mark]
@@ -3316,6 +3400,7 @@ function setFrame(f, repaint = true) {
   V.volcanoes = r.frames[f].volcanoes;
   $('frame').value = f;
   $('tlabel').textContent = timeLabel(V.t);
+  navUi?.time(V.t);
   // (the cell under the pointer stays the one it was: no new ray through the globe each frame)
   if (repaint) { paint(); renderRunSummary(); renderHover(); if (picked) renderZoomBox(); }
   if (!state.playing) frameToUrl();  // (while playing: when it stops)
@@ -3509,7 +3594,15 @@ $('delBtn').addEventListener('click', async () => {
   urlp.delete('run'); urlp.delete('world'); urlp.delete('t');
   await init();
 });
-init().catch((err) => { infoHtml = null; $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+// With nothing in the address to open, the start screen (start.js, PW-472): the planets made so far and a
+// New planet form. It opens things by reloading with ?run= / ?world= / ?world=&tab=zoom&zoom=.
+const startScreen = !['run', 'world', 'tab', 'zoom'].some((k) => urlp.has(k));
+if (startScreen) {
+  navBarHide();
+  import('./start.js').then((m) => m.showStart()).then((s) => { if (location.hash === '#new') s.tab('new'); })
+    .catch((err) => { console.error(err); document.body.insertAdjacentHTML('beforeend', `<div class="panel" style="top:60px;left:12px">Start screen failed: ${esc(err.message)}</div>`); });
+} else init().catch((err) => { infoHtml = null; $('infoText').textContent = 'Load failed: ' + err.message; console.error(err); });
+function navBarHide() { $('navBar')?.setAttribute('hidden', ''); }
 
 // headless timing (console: planetViewer.bench()): replay keyframes back to back, each
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
