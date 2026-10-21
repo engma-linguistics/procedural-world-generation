@@ -1,4 +1,5 @@
 ---
+id: PW-463
 title: "Cold-era health bars: state them as cycle means and add the cycle's glacial and interglacial bounds to tools/sealevel.py"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-438, PW-452, PW-461]
 refs: [tools/health.py, tools/sealevel.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -27,3 +30,6 @@ the cycle mean (draft-run-ice-cycle-mean.md):
   the worst glacial maximum, so a seed whose mean passes but whose glacials reach -700 m is visible.
 - The ~70% seed bar stays the owner's.
 - [ ] reference texts updated; bounds printed
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-cold-era-bars-as-cycle-mean.md (found by pw462).

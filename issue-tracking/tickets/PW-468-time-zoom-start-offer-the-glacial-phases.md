@@ -1,4 +1,5 @@
 ---
+id: PW-468
 title: "Time zoom start: offer the glacial phases available at a moment (on: interglacial / building / glacial maximum / ending; off) in the API and viewer"
 type: story
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-429]
 refs: [planet/api.py, planet/server.py, viewer/index.html, planet/timezoom/run.py, planet/timezoom/sim.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -32,3 +35,6 @@ Proposal (needs draft-tz-window-spinup.md first; then cheap):
   available phases when the request's isn't. `find_timezoom` keys on it. The viewer shows a small picker
   with only the available ones, and the summary names the phase the window started in.
 - [ ] api + server + viewer picker; tests for the request parsing and the phase selection on the L4 icehouse
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-tz-phase-picker.md (found by pw462).

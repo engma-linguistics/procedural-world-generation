@@ -1,4 +1,5 @@
 ---
+id: PW-467
 title: "Time zoom vs run: measure the zoom's time-mean ice against the run's (tool + slow test), the acceptance metric for the cycle-average framing"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-436, PW-366, PW-461]
 refs: [tests/test_timezoom_consistency.py, planet/timezoom/sim.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Build the measurement first, so every later ice-age change is judged by it:
   in 20 kyr" (both the warmest and the coldest state).
 - [ ] tool prints the table for the 5 moments; numbers go in the deep-dive doc
 - [ ] slow test in place (xfail strict on main)
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-tz-mean-matches-run-check.md (found by pw462).

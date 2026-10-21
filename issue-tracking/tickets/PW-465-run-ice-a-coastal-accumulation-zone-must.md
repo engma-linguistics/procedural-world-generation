@@ -1,4 +1,5 @@
 ---
+id: PW-465
 title: "Run ice: a coastal accumulation zone must pay the zoom's calving and shelf losses (the run keeps ~100 m of marine ice the time zoom loses at once)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-461, PW-460, PW-459, PW-436, PW-462]
 refs: [planet/tectonics/earth.py, planet/timezoom/ice.py, planet/timezoom/sim.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -38,3 +41,6 @@ its coasts too. Measure with the tz_mean tool (draft-tz-mean-matches-run-check.m
 PW-460/459 code, and the 10-seed cold-era check.
 - [ ] on the branch code, the L5 fixture's forced zoom mean within 25 m of the run's (today +101 m)
 - [ ] main's 10-seed cold-era check does not get worse
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-run-ice-marine-budget.md (found by pw462).

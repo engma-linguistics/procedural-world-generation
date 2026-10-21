@@ -1,4 +1,5 @@
 ---
+id: PW-464
 title: "Run ice as the cycle's time mean: the mean of each cycle state's own extent (orbit x the cycle's global swing), with only the persistent ice carried between steps"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-461, PW-460, PW-459, PW-436, PW-452, PW-104]
 refs: [planet/tectonics/earth.py, planet/icemass.py, planet/timezoom/forcing.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -56,3 +59,6 @@ marine budget rebalance them; the bars become cycle means (draft-cold-era-bars-a
 - [ ] tz_mean: |zoom mean - run| <= max(15 m, 0.25 x swing) on >= 4 of 5 moments
 - [ ] 10-seed cold-era check >= 7/10 with the bars as cycle means
 - [ ] cost of a climate update's ice <= 2x today's
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-run-ice-cycle-mean.md (found by pw462).

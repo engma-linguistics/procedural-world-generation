@@ -1,4 +1,5 @@
 ---
+id: PW-469
 title: "Time zoom as a window: spin up from the run's state, then start wherever the orbit puts the cycle; the cycle's interglacial footprint and the feedbacks' reference from the run's mean"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-436, PW-447, PW-030, PW-429]
 refs: [planet/timezoom/sim.py, planet/timezoom/cycle.py, planet/timezoom/forcing.py, planet/orbit.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -41,3 +44,6 @@ spin-up.
 - [ ] spin-up in `_Sim` (knob `spinup`, kyr; 0 = today's behaviour for tests)
 - [ ] cycle footprint and feedback references from the run / spin-up
 - [ ] phase at start reported; tz_mean table re-measured
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-tz-window-spinup.md (found by pw462).

@@ -1,4 +1,5 @@
 ---
+id: PW-466
 title: "Time zoom: show an icehouse era starting or ending (the run's dT trend across the window, at the step where the run's cycle switches on or off)"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw462
 blocked_by: []
 relates: [PW-462, PW-104]
 refs: [planet/timezoom/fields.py, planet/timezoom/sim.py, planet/tectonics/earth.py, docs/review/audit/ice-framing-deep-dive.md]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -30,3 +33,6 @@ What it takes:
   the Eocene-Oligocene and ~0.5 Myr for the Northern Hemisphere at 2.7 Ma). Expect "the first glacials
   appear and deepen" rather than a switch. Lower priority than the window and the run's mean.
 - [ ] base dT trend in the zoom; era_start / era_end offered by the phase picker (draft-tz-phase-picker.md)
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-tz-era-start-end.md (found by pw462).
