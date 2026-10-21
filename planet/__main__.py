@@ -264,6 +264,43 @@ def cmd_highlights(args):
                                          f"-> http://127.0.0.1:8765/viewer/zoom.html?id={r['zoom']}", flush=True))
 
 
+def cmd_make(args):
+    """planet make: simulate, pick a moment, time zoom, finish, highlights, zooms (make.py)."""
+    from . import api, make as M
+    req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr,
+           "set": _parse_set(args.set), "timezoom": args.timezoom, "finish": args.finish,
+           "highlights": args.highlights, "zooms": args.zooms, "name": args.name}
+    req = {k: v for k, v in req.items() if v is not None}
+    try:
+        spec = M.parse_make_request(req)
+    except api.BadRequest as e:
+        raise SystemExit(f"ERROR: {e}")
+    req["seed"] = spec["seed"]  # (a random one is fixed now, so it is printed and used)
+    plan = M.estimate(spec)
+    print(f"planet make: seed {spec['seed']}, preset {spec['preset']}, level {spec['level']}, {spec['myr']:g} Myr"
+          + (f", {spec['kyr']:g} kyr time zoom" if spec["timezoom"] else "") + f"; params {spec['set'] or 'default'}")
+    for s in plan["stages"]:
+        print(f"  {s['label']:<40} ~{s['s'] / 60:.1f} min" if s["s"] >= 90 else f"  {s['label']:<40} ~{s['s']:.0f} s")
+    print(f"  total ~{plan['total_s'] / 60:.1f} min (a typical machine, see docs/coordination.md)", flush=True)
+    if args.dry_run:
+        return
+    last = [-1.0]
+
+    def progress(f, msg):  # (at most a line per 3%, the stage changes in between are not lost: they cross a step)
+        if f - last[0] >= 0.03 or f >= 1.0:
+            last[0] = f
+            print(f"[{100 * f:3.0f}%] {msg}", flush=True)
+    try:
+        out = M.make(req, progress)
+    except RuntimeError as e:
+        raise SystemExit(f"ERROR: {e}")
+    print(json.dumps(out))
+    if out.get("world"):
+        print(f"view: http://127.0.0.1:8765/viewer/?world={out['world']}.json")
+    elif out.get("timezoom"):
+        print(f"view: http://127.0.0.1:8765/viewer/?run={out['timezoom']}")
+
+
 def cmd_serve(args):
     from .server import serve
     serve(args.port, open_browser=not args.no_open, jobs=args.jobs, threads=args.threads)
@@ -365,6 +402,25 @@ def main():
     fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
     fi.set_defaults(func=cmd_finish)
+
+    from .make import DEFAULTS as MD, PRESETS
+    mk = sub.add_parser("make", help="seed to finished world in one command: simulate, pick a moment, time zoom, "
+                                     "finish, highlights, a few zooms")
+    mk.add_argument("--seed", "-s", type=int, help="default: random (printed)")
+    mk.add_argument("--preset", "-p", choices=list(PRESETS), default="earthlike",
+                    help="the showcase recipes of docs/coordination.md (" + "; ".join(
+                        f"{k}: {v['label']}, {v['myr']} Myr" for k, v in PRESETS.items()) + ")")
+    mk.add_argument("--level", "-l", type=int, help=f"grid level (default {MD['level']}; 6 quick, 7 showcase)")
+    mk.add_argument("--myr", type=float, help="length of the tectonic run (default: the preset's)")
+    mk.add_argument("--kyr", type=float, help=f"length of the glacial time zoom (default {MD['kyr']})")
+    mk.add_argument("--set", nargs="*", metavar="KEY=VALUE", help="tectonics params on top of the preset, e.g. --set n_plates=8")
+    mk.add_argument("--timezoom", action=argparse.BooleanOptionalAction, help="the ice-age time zoom (default on)")
+    mk.add_argument("--finish", action=argparse.BooleanOptionalAction, help="make the finished world (default on)")
+    mk.add_argument("--highlights", action=argparse.BooleanOptionalAction, help="find the world's highlights (default on)")
+    mk.add_argument("--zooms", type=int, metavar="N", help=f"regional zooms of the top N highlights (default {MD['zooms']})")
+    mk.add_argument("--name", "-n")
+    mk.add_argument("--dry-run", action="store_true", help="print the plan and the time estimate only")
+    mk.set_defaults(func=cmd_make)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
     rp.add_argument("run")

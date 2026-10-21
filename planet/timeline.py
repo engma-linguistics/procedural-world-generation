@@ -109,8 +109,9 @@ def make_params(overrides: dict) -> Params:
 
 
 def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: str,
-             params: Params, checkpoint_every: float = CHECKPOINT_EVERY) -> Path:
-    """checkpoint_every: Myr between saved simulation states (0: none)."""
+             params: Params, checkpoint_every: float = CHECKPOINT_EVERY, progress=None) -> Path:
+    """checkpoint_every: Myr between saved simulation states (0: none).
+    progress(fraction of myr done): called at every keyframe."""
     t0 = time.time()
     grid = build_grid(level)
     if params.flora_end <= 0:  # the plant groups' timeline is scaled to the run's length
@@ -141,6 +142,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                        "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
                        "volcanoes": active_volcanoes(snap.volcanoes)})
         vframes.append(snap.volcanoes)
+        if progress:
+            progress(min(1.0, s.t / myr))
 
     out.mkdir(parents=True, exist_ok=True)
     try:

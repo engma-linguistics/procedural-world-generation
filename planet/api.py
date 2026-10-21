@@ -18,6 +18,10 @@ keeps it), so tests can drive them without a socket.
                       (timezoom/) from the run's keyframe nearest t; the
                       job's "run" is the new run's id when done. Shares the
                       job queue with zooms.
+  POST /api/make      {seed?, preset?, level?, myr?, set?, timezoom?, kyr?, finish?, highlights?,
+                      zooms?, name?} -> {"job": id}: the whole chain (make.py); the job's "run",
+                      "timezoom", "world" and "zooms" are what it made. GET /api/make/options and
+                      /api/make/estimate?... describe the form and the expected time.
   POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished
                       world (finish.py) at the time zoom's frame nearest kyr,
                       or straight from the run's keyframe nearest t (the
@@ -387,7 +391,13 @@ def finish_job(req: dict, progress=lambda f, msg: None) -> dict:
     return {"world": path.stem}
 
 
-JOBS = {"timezoom": timezoom_job, "finish": finish_job}
+def make_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/make's work (make.make): seed to finished world. {"run", "timezoom", "world", "zooms"}."""
+    from . import make
+    return make.make(req, progress)
+
+
+JOBS = {"timezoom": timezoom_job, "finish": finish_job, "make": make_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
