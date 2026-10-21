@@ -48,7 +48,7 @@ Jobs (zooms, time zooms, finished worlds) run `--jobs J` at a time (default 4), 
 - Shell gotcha: zsh doesn't split `$x` into words, so `uv run python -m planet simulate $args` passes one argument. Use an array or bash. (A level-7 verification run failed silently this way on 2026-10-14.)
 
 ## Showcase recipes
-All `--every 4` (L8: `--every 10`), default params except as listed. The same seeds don't give the same geography after physics changes, so pick world times afresh, at a representative moment, not the most dispersed one: `planet slice <run> --at auto` (or `highlights <run> --at auto`) picks the keyframe after 300 Myr whose land %, largest landmass and landmass count are jointly nearest the run's medians (`highlights.representative_time`). For a deliberately assembled or dispersed world, give the time.
+All `--every 4` (L8: `--every 10`), default params except as listed. The same seeds don't give the same geography after physics changes, so pick world times afresh, at a representative moment, not the most dispersed one: `planet slice <run> --at auto` (or `highlights <run> --at auto`) picks the keyframe after 300 Myr whose land %, largest landmass, landmass count and total sea level are jointly nearest the run's own medians (`highlights.representative_time`). For a deliberately assembled or dispersed world, give the time.
 
 | Name | seed | Myr | `--set` | Current L6 run (2026-10-14) | Worlds |
 |---|---|---|---|---|---|

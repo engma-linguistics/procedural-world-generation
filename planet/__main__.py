@@ -88,8 +88,9 @@ def _resolve_at(run_dir, at):
     """'auto' -> highlights.representative_time of the run (printed)."""
     if at != "auto":
         return at
-    t = H.representative_time(json.loads((Path(run_dir) / "run.json").read_text())["frames"])
-    print(f"representative moment: {t:g} Myr", flush=True)
+    frames = json.loads((Path(run_dir) / "run.json").read_text())["frames"]
+    t = H.representative_time(frames)
+    print(f"representative moment: {t:g} Myr {H.representative_note(frames, t)}".rstrip(), flush=True)
     return t
 
 

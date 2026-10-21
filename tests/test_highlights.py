@@ -202,6 +202,24 @@ def test_representative_time():
     assert H.representative_time(frames[:6]) >= 100 / 3
 
 
+def test_representative_time_sea_level():
+    # identical geography every frame except sea level; the run's own typical level is -200 m
+    # (planet-relative, not Earth's), so the -380 m trough and +100 m peak lose to a frame near -200
+    def fr(t, sl):
+        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": 15, "landmasses": 20, "sea_level_m": sl}}
+    frames = [fr(t, -200 + (t % 3 - 1) * 10) for t in range(0, 300, 20)]
+    frames += [fr(300, -380), fr(320, -205), fr(340, 100), fr(360, -195), fr(380, -210), fr(400, -380)]
+    t = H.representative_time(frames)
+    assert t in (320, 360, 380) and H.representative_time(frames) == t  # deterministic
+    assert "NOTE" not in H.representative_note(frames, t)
+    # nothing near the median in sea level is a nudge, not a veto: a frame is still returned and flagged
+    assert "NOTE" in H.representative_note(frames, 300)
+    # old runs without sea_level_m still work
+    for f in frames:
+        del f["stats"]["sea_level_m"]
+    assert H.representative_time(frames) >= 300 and H.representative_note(frames, 320) == ""
+
+
 def test_cli_at_auto():
     from planet.__main__ import _at
     assert _at("auto") == "auto" and _at("120") == 120.0

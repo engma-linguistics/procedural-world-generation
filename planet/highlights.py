@@ -2685,23 +2685,53 @@ def find(world: dict) -> list[dict]:
 REPRESENTATIVE_AFTER_MYR = 300.0
 
 
+SEA_LEVEL_MIN_SCALE_M = 40.0  # floor on the sea-level scale: a run with a steady sea level isn't over-penalised for wobbles
+
+
 def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR) -> float:
     """The keyframe time most typical of a run's mature geography: after
     `after_myr` (once the start-up has settled; the last two thirds for a
-    shorter run), the frame whose land %, largest landmass % and log of the
-    landmass count are jointly closest to that stretch's medians, each
-    measured in its interquartile ranges. Neither the most dispersed nor the
-    most assembled moment, which is what a showcase world should be."""
+    shorter run), the frame whose land %, largest landmass %, log of the
+    landmass count and total sea level are jointly closest to that stretch's
+    medians, each measured in its interquartile ranges. Neither the most
+    dispersed nor the most assembled moment, nor one in a cold-era sea-level
+    trough, which is what a showcase world should be. The sea-level term is
+    relative to the run's own median (a nudge: when no frame near it fits the
+    other criteria, the nearest overall wins); runs without `sea_level_m`
+    skip it."""
     end = frames[-1]["t"]
     start = after_myr if end > after_myr else end / 3
     late = [f for f in frames if f["t"] >= start] or frames[-1:]
-    x = np.array([[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
-                   np.log(1 + f["stats"]["landmasses"])] for f in late], float)
+    cols = [[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
+             np.log(1 + f["stats"]["landmasses"])] for f in late]
+    if all("sea_level_m" in f["stats"] for f in late):
+        for c, f in zip(cols, late):
+            c.append(f["stats"]["sea_level_m"])
+    x = np.array(cols, float)
     med = np.median(x, 0)
     q1, q3 = np.percentile(x, [25, 75], 0)
     scale = np.maximum(q3 - q1, 1e-6 + 0.05 * np.abs(med))
+    if x.shape[1] == 4:
+        scale[3] = max(scale[3], SEA_LEVEL_MIN_SCALE_M)
     d = np.sqrt((((x - med) / scale) ** 2).sum(1))
     return float(late[int(np.argmin(d))]["t"])
+
+
+def representative_note(frames: list[dict], t: float) -> str:
+    """One line on the picked frame's total sea level against the run's median
+    (after 300 Myr), flagging a pick well outside the run's typical band."""
+    start = REPRESENTATIVE_AFTER_MYR if frames[-1]["t"] > REPRESENTATIVE_AFTER_MYR else frames[-1]["t"] / 3
+    sl = [f["stats"]["sea_level_m"] for f in frames if f["t"] >= start and "sea_level_m" in f["stats"]]
+    f = next((f for f in frames if f["t"] == t), None)
+    if not sl or f is None or "sea_level_m" not in f["stats"]:
+        return ""
+    med = float(np.median(sl))
+    q1, q3 = np.percentile(sl, [25, 75])
+    here = f["stats"]["sea_level_m"]
+    note = f"(sea level {here:.0f} m; run median {med:.0f} m)"
+    if abs(here - med) > max(q3 - q1, SEA_LEVEL_MIN_SCALE_M):
+        note += " NOTE: no frame near the run's typical sea level fits the other criteria; best available taken"
+    return note
 
 
 # ---------------------------------------------------------------------------
