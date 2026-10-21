@@ -2,7 +2,7 @@
 id: PW-482
 title: "World navigator: 'make from here' covers time zoom, finish and highlights only; zoom, fine zoom and highlight zooms still need the old flows"
 type: task
-status: todo
+status: done
 parent: PW-244
 subsystem: viewer
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-473, PW-472]
 refs: [viewer/navigator.js, viewer/index.html, viewer/zoom.html]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -26,4 +26,5 @@ What the navigator (PW-473) does today: provenance chain with thumbnails, a Fami
 - [ ] tree actions: zoom region (needs a picker), top N highlight zooms, kyr choice
 
 ## Updates
+- 2026-10-21: Status todo -> done. Done on branch worktree-agent-a0fc90d9213631395: tree actions Zoom a region (typed or picked lat/lon + size), Fine zoom on every zoom, Zoom the top N highlights (new POST /api/highlight-zooms), time zoom kyr choice, Cancel. Remaining gaps in an inbox draft (navigator-gaps-left).
 - 2026-10-20: Created from inbox draft draft-navigator-from-here-gaps.md (found by agent-make-ui).
