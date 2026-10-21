@@ -79,13 +79,15 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     rivers have cut each cell's valley (hydrology.lakes'; a run's worlds)."""
     t0 = t0 or time.time()
     veg = veg or {}
+    # (a time zoom's plants, PW-213: the trees stay where they are and the rest settles on this climate)
+    held = dict(migrate=vegetation.HELD, steps=vegetation.HELD_STEPS) if veg.get("held") else {}
     c = climate.compute(grid, elev, dT, tilt, ice, orbit_dt=orbit_dt)
     # The vegetation feeds back on the climate (climate.compute's veg): a
     # first, cheap vegetation on the first climate, then the climate again
     # with it (on the eroded terrain, if any).
     v0 = vegetation.model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt,
                           c["cloud_jul"], c["cloud_jan"], ice=ice, nu0=veg.get("nu0"), co2=veg.get("co2", 0.0),
-                          unlocked=veg.get("unlocked"), cheap=True)
+                          unlocked=veg.get("unlocked"), cheap=True, **held)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
         elev = hydrology.erode(grid, elev, c, erosion_iterations, erosion, ice=ice)
@@ -169,7 +171,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
                          c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
                          co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
-                         coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm)
+                         coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm, **held)
     layers.update(vegetation.world_layers(vg))
     # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
     layers.update(soils.world_layers(sm, soils.organic(sm, vg)))

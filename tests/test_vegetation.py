@@ -270,3 +270,40 @@ def test_sclerophylls_need_a_dry_summer():
     s = V.site(lat, t, tw, tc, p_jul, p_jan)
     ok = V.envelope(s)[V.IDX["SclS"]]
     assert list(ok) == [False, True, False]
+
+
+# --------------------------------------------------------------------------- migration (PW-213)
+def _hops(g, start):
+    """Cells' graph distance from the start cells."""
+    d = np.full(g.n, -1)
+    d[start] = 0
+    front = np.asarray(start)
+    k = 0
+    while len(front):
+        k += 1
+        nb = np.unique(np.concatenate([g.nbr_idx[g.nbr_off[i]:g.nbr_off[i + 1]] for i in front]))
+        front = nb[d[nb] < 0]
+        d[front] = k
+    return d
+
+
+def test_trees_spread_one_cell_per_step_and_stay_put():
+    """PW-213: with the trees migration-limited a stand takes new ground only beside its own stands (one cell
+    per step); without, seeds make forest everywhere at once; held, it doesn't spread at all."""
+    g = build_grid(4)
+    n = g.n
+    t = np.full(n, 16.0)
+    args = (g, np.full(n, 100.0), t, t + 6, t - 6, np.full(n, 1200.0), np.full(n, 1200.0))
+    start = np.flatnonzero(g.lat > 70)
+    nu0 = V.start_from_tree_cover(np.where(g.lat > 70, 0.8, 0.0))
+    free = V.model(*args, nu0=V.start_from_tree_cover(np.zeros(n)), cheap=True)
+    assert (free["sm"]["tree"] > 0.3).mean() > 0.8  # (nothing keeps it from being forest)
+    hops = _hops(g, start)
+    for steps in (1, 3):
+        v = V.model(*args, nu0=nu0, cheap=True, steps=((steps, 480.0),), migrate=V.SPREAD, substeps=12)
+        tree, seeds = v["eq"]["nu"][V.TREES].sum(0), v["eq"]["nu_raw"][V.TREES].sum(0)
+        assert (tree[start] > 0.3).all()
+        assert seeds[hops > steps].max() == 0, steps  # (not even a seed beyond one cell per step)
+        assert tree[hops == steps].max() > 0.3  # (and the stand on the new ground grows up within the step)
+    held = V.model(*args, nu0=nu0, cheap=True, steps=V.HELD_STEPS, migrate=V.HELD)
+    assert held["eq"]["nu"][V.TREES].sum(0)[hops > 0].max() == 0

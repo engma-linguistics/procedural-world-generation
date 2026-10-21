@@ -130,7 +130,13 @@ def frame_state(tz_dir: Path, i: int) -> dict:
     ice = T.frame(run, arr, "ice", i).astype(float)
     bed = surf - ice  # (the true bed: below sea level under a marine sheet or a deep isostatic dip)
     s = run["frames"][i]["stats"]
-    return {"elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
+    # the plants of that frame (PW-213): its tree cover, the trees held where they stand (world.finish: held)
+    veg = None
+    if "tree_cover" in run["layers"]:
+        tree = T.frame(run, S.read_layers(tz_dir, run["layers"], ("tree_cover",)), "tree_cover", i)
+        veg = {"nu0": vegetation.start_from_tree_cover(np.asarray(tree, float) / 100.0), "held": True,
+               **({"co2": s["co2"]} if "co2" in s else {})}
+    return {"veg": veg, "elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
             "tilt": s["obliquity"], "below_sea_cells": int(((ice > 0) & (bed <= 0)).sum()), "stats": s,
             "t": run["frames"][i]["t"], "glacial": glacial_imprint(tz_dir, i)}
 
@@ -189,7 +195,7 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
             "sea_level_change_m": s["sea_level_change_m"], "ice_volume_mkm3": s["ice_volume_mkm3"],
             "orbit": {k: s[k] for k in ("obliquity", "eccentricity", "perihelion", "insol_65n_jul_anom")},
             "ice_bed_below_sea_cells": st["below_sea_cells"]}
-    state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt", "glacial")}
+    state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt", "glacial", "veg")}
     # (the orbit's obliquity is in its insolation anomaly: the climate keeps the planet's mean tilt, as the
     # time zoom's own)
     state["tilt"] = float(m["params"].get("tilt", 23.44 if m["source_run"] == "earth" else 23.4))
@@ -259,4 +265,4 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
                                                "crust": land.astype(int),
                                                **{k: gl[k] for k in T.GLACIAL_LAYERS if k in gl}},
                     meta, erosion=erosion, dT=state["dT"], tilt=state["tilt"], params={"earth": True},
-                    ice=ice, orbit_dt=state.get("orbit_dt"))
+                    ice=ice, orbit_dt=state.get("orbit_dt"), veg=state.get("veg"))

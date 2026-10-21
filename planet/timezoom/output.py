@@ -24,9 +24,10 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
     run_id = S.new_id()
     out = S.path_of("run", run_id)
     nf = len(res["frames"])
-    arrays = {**{k: res["data"][k] for k in LAYERS},
+    arrays = {**{k: res["data"][k] for k in LAYERS if k in res["data"]},
               **{k: S.encode(np.asarray(src["static"][k])[None, :], S.LAYERS[k]) for k in STATIC}}
-    layers = S.write_layers(out, arrays, {**LAYERS, **{k: S.LAYERS[k] for k in STATIC}})
+    layers = S.write_layers(out, arrays, {**{k: v for k, v in LAYERS.items() if k in arrays},
+                                          **{k: S.LAYERS[k] for k in STATIC}})
     S.write_grid(g)
     for fr in res["frames"]:
         fr.update(omega={}, hotspots=src["hotspots"], volcanoes=src["volcanoes"])
@@ -47,6 +48,8 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
                  "ice_age_cycle": res["cycle"],
                  # (the plants' feedback at each full climate: W/m2 and C, by latitude belt, plants.py)
                  "vegetation": res.get("veg", []),
+                 # (the forest by latitude at the glacial maxima and in the interglacials, and the refugia)
+                 "vegetation_glacial": res.get("veg_glacial", {}),
                  "dT_source": round(src["dT"], 2), "sea_level_source_m": round(src["sea_level"], 1),
                  # (the start's climate correction over the ice, C per cell: start_anchor)
                  "anchor": [[int(i), round(float(res["anchor"][i]), 2)] for i in np.flatnonzero(res["anchor"])],
@@ -89,6 +92,14 @@ def report(run_dir: Path) -> Path:
         out += [f"  ending at t={x['t']:>7.1f} kyr after {x['age_kyr']:g} kyr at I={x['I']:g}, "
                 f"{x.get('kyr', '-')} kyr long" + (" (backstop)" if x.get("backstop") else "")
                 for x in c["endings"]] or ["  (no endings)"]
+    vg = m.get("vegetation_glacial") or {}
+    if vg:
+        out += ["", "## Forest (tree cover share of the ice-free land) by latitude, PW-213"]
+        for k, v in vg.items():
+            out.append(f"  {k} ({v['frames']} frames): " + "  ".join(f"{b}: {x}" for b, x in v["forest_share_by_lat"].items()))
+            if "refugia_cells" in v:
+                out.append(f"  refugia (poleward of 40 deg, 30% trees through every glacial-maximum frame): "
+                           f"{v['refugia_cells']} cells, {v['refugia_mkm2']} Mkm2")
     out += ["", "## Over time (sea level relative to the start)",
             "    t(kyr)  sea(m)  ice_vol(Mkm3)  ice%  global_T  obliq   ecc     e*sin(w)  65N_Jul_anom(W/m2)"]
     pick = np.unique(np.linspace(0, len(fr) - 1, min(len(fr), 51)).round().astype(int))

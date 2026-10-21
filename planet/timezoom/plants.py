@@ -13,22 +13,31 @@ earth.update_vegetation) grown on each full climate, warm-started from the last,
 
 At the start the plants are grown to balance with the start climate (the full model, then the climate
 again with them, then the cheap model), so an unforced zoom's plants and climate stay where they are.
+Migration (PW-213): beside that, a second cover follows the same potentials in real years (the run's
+cover equations, stepped one cell per step: vegetation._step's mig), so that a tree takes new ground only
+beside a stand of its own, at p.veg_speed (m/yr; the step is one cell over it), and keeps its seeds only where
+it still is. It is what the frames store (tree_cover) and a finished world starts from. It does not
+feed back on the climate (that stays the first cover's: PW-471's glacial index and the ice are parked), and it
+is grown over the 10 kyr before each full climate, on that climate's potentials; its frames wait for it.
 The rivers' floodplains aren't modelled here (no flow: the wetland share comes from the lakes-free ground).
 """
 
 from __future__ import annotations
 
+import math
 import time
 
 import numpy as np
 
 from .. import climate
 from .. import vegetation as V
+from ..geo import R_KM
 from ..grid import Grid
 from ..tectonics.params import Params
 from .params import TZParams
 
 # latitude belts of the diagnostics (deg; north to south)
+SUBSTEPS = 12  # (a migration step of ~500 yr in this many, so a young stand grows up in it: vegetation.equilibrium)
 BELTS = ((60, 90), (45, 60), (30, 45), (-30, 30), (-90, -30))
 
 
@@ -64,6 +73,11 @@ class Plants:
         self.dT_target = 0.0  # C: the global term's target (Forcing.veg)
         self.series: list = []
         self.time_s = 0.0
+        self.every = 2.0  # kyr between frames (sim sets it)
+        self.mig = None  # the migrating cover's state (NP, n, with the seeds), at t_last
+        self.t_last = 0.0
+        self.tree_at: dict = {}  # frame t (kyr) -> its tree cover (%, uint8), before the ice and sea masks
+        self._last = None
         self.sun = climate.insolation(g.lat, tilt) * 1e6 / 86400.0  # W/m2 at the top of the atmosphere
 
     @property
@@ -80,11 +94,78 @@ class Plants:
         t0 = time.time()
         v = V.model(self.g, surf, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], self.tilt,
                     c["cloud_jul"], c["cloud_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
-                    co2=self.co2_0 + co2_c / self.co2_sens, unlocked=self.unlocked, cheap=not full)
+                    co2=self.co2_index(co2_c), unlocked=self.unlocked, cheap=not full)
         self.nu, self.lai = v["eq"]["nu"], v["pot"]["lai"]
+        self._last = v
         self.raw = V.feedback(self.nu, self.lai)
         self.tree = v["sm"]["tree"]
         self.time_s += time.time() - t0
+
+    @staticmethod
+    def pct(pot: dict, nu: np.ndarray) -> np.ndarray:
+        return np.round(100 * V.tree_cover(pot, nu)).astype(np.uint8)
+
+    def frame_times(self, t0: float, t1: float) -> list:
+        """The frames' times in (t0, t1]."""
+        e = self.every
+        return [round(i * e, 3) for i in range(int(math.floor(t0 / e + 1e-9)) + 1, int(math.floor(t1 / e + 1e-9)) + 1)]
+
+    def migrate(self, t1: float) -> None:
+        """The migrating cover from t_last to t1 on the potentials just grown (self._last), keeping the tree
+        cover at the frames in between."""
+        t0, v = self.t_last, self._last
+        self.t_last = t1
+        if t1 <= t0:
+            return
+        times = self.frame_times(t0, t1)
+        if self.p.veg_speed <= 0:  # (no limit: each frame is the balance with the climate)
+            for f in times:
+                self.tree_at[f] = self.pct(v["pot"], v["eq"]["nu"])
+            self.mig = v["eq"]["nu_raw"]
+            return
+        t = time.time()
+        n = max(1, round((t1 - t0) * 1000.0 / (self.g.spacing * R_KM * 1000.0 / self.p.veg_speed)))
+        dt = (t1 - t0) * 1000.0 / n  # yr
+        ks = sorted({min(n, max(1, round((f - t0) * 1000.0 / dt))) for f in times})
+        eq = V.equilibrium(self.g, v["s"], v["pot"], v["fw"], v["land"], self.mig, steps=((n, dt),), migrate=V.SPREAD,
+                           snaps=set(ks), substeps=SUBSTEPS)
+        by_k = dict(zip(ks, eq["snaps"]))
+        for f in times:
+            self.tree_at[f] = self.pct(v["pot"], by_k[min(n, max(1, round((f - t0) * 1000.0 / dt)))])
+        self.mig = eq["nu_raw"]
+        self.mig_s = getattr(self, "mig_s", 0.0) + time.time() - t
+        self.time_s += time.time() - t
+
+    def glacial_bands(self, tree: np.ndarray, open_: np.ndarray, I: np.ndarray, lat: np.ndarray) -> dict:
+        """The forest share of the ice-free land by latitude band at the glacial maxima (index within 0.15 of
+        the highest, and over 0.5) and in the interglacials (index under 0.05), and the refugia (PW-103): the
+        cells poleward of 40 deg that kept 30% tree cover through every frame of the glacial maxima."""
+        area, out = self.area, {}
+        for name, sel in (("glacial", (I >= max(I.max() - 0.15, 0.5))), ("interglacial", I <= 0.05)):
+            idx = np.flatnonzero(sel)
+            if not len(idx):
+                continue
+            bands = {}
+            for a, b in ((60, 90), (50, 60), (40, 50), (30, 40), (15, 30), (-15, 15), (-40, -15), (-90, -40)):
+                m = (lat >= a) & (lat < b)
+                num = sum(float((tree[i] / 100.0 * area)[m & open_[i]].sum()) for i in idx)
+                den = sum(float(area[m & open_[i]].sum()) for i in idx)
+                bands[f"{a}..{b}"] = round(num / den, 3) if den else None
+            out[name] = {"frames": int(len(idx)), "forest_share_by_lat": bands}
+            if name == "glacial":
+                keep = (np.abs(lat) >= 40) & (tree[idx] >= 30).all(0) & open_[idx].all(0)
+                out[name]["refugia_cells"] = int(keep.sum())
+                out[name]["refugia_mkm2"] = round(float(area[keep].sum()) / 1e12, 2)
+        return out
+
+    def finish(self, t_end: float) -> None:
+        """The frames after the last full climate: the same potentials carried on to the end."""
+        if self._last is not None:
+            self.migrate(t_end)
+
+    def co2_index(self, co2_c: float) -> float:
+        """The CO2 index the plants feel (the run's, as the model takes it) at the CO2 term co2_c of dTg."""
+        return self.co2_0 + co2_c / self.co2_sens
 
     def correct(self, c: dict, open_: np.ndarray, old: dict | None) -> None:
         """The climate c (computed with the plants old) given the current plants' albedo warming instead
@@ -110,6 +191,8 @@ class Plants:
         if self.raw is None:  # the start: the full model, the climate again with it, then the cheap one
             self.land0 = surf > 0
             self.grow(c, surf, H_g, co2_c, full=True)
+            self.mig, self.t_last = self._last["eq"]["nu_raw"], t_kyr
+            self.tree_at[round(t_kyr, 3)] = self.pct(self._last["pot"], self._last["eq"]["nu"])
             c = compute(self.feedback(grounded))
             old = self.raw
             self.grow(c, surf, H_g, co2_c)
@@ -118,6 +201,7 @@ class Plants:
         else:
             old = self.raw
             self.grow(c, surf, H_g, co2_c)
+            self.migrate(t_kyr)
             self.correct(c, open_, _where(grounded, self.neutral, old))
         self.measure(t_kyr, c, open_)
         return c

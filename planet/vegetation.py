@@ -832,15 +832,22 @@ def fire_rate(fast, slow, kslow, weather):
     return 1.0 / (ready + 1.0 / r)
 
 
+MIGRATE_PRESENT = 0.03  # cover (with the seed) of an established stand that can seed its neighbours
+
+
 @njit(parallel=True, cache=True)
 def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, kslow, ign, dt, seed, diff, nbr_off, nbr_idx,
-          food, browsed, graze, c4_share, out, burned):
+          food, browsed, graze, c4_share, mig, src, out, burned):
     """One implicit step of the cover equations on every cell in cells:
     dnu/dt = g nu (K - sum_q C_pq nu_q) - (mort + fire (1 - resist)) nu,
     plus seeds (every viable type keeps at least `seed`) and a little
     spread from neighbours (diff). Fire from this cover's fuel (fire_rate;
     slowf: 1 for the types whose dead fuel builds up slowly, the shrubs).
-    The C3 and C4 grasses are one grass layer, split by c4_share."""
+    The C3 and C4 grasses are one grass layer, split by c4_share.
+    mig (per type; the time zoom's and the finished world's, PW-213): 0 seeds everywhere; 1 keeps its seeds
+    only where the type already is and takes new ground only beside a neighbour with an established stand
+    (MIGRATE_PRESENT in src: the stands as they were when the step began), at most one cell per step; 2 only stays
+    where it is."""
     npft = nu.shape[0]
     for jj in prange(len(cells)):
         i = cells[jj]
@@ -871,20 +878,54 @@ def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, ksl
                 for k in range(n0, n1):
                     m += nu[p, nbr_idx[k]]
                 v += diff * (m / (n1 - n0) - nu[p, i]) * (m > nu[p, i])
-            out[p, i] = max(v, seed)
+            if mig[p] > 0:
+                here = nu[p, i] > 0.0
+                if not here and mig[p] == 1:
+                    for k in range(n0, n1):
+                        if src[p, nbr_idx[k]] > MIGRATE_PRESENT:
+                            here = True
+                            break
+                out[p, i] = max(v, seed) if here else 0.0
+            else:
+                out[p, i] = max(v, seed)
         if ok[C3, i] and ok[C4, i]:
             tot = out[C3, i] + out[C4, i]
+            if tot <= 0.0:
+                continue
             out[C4, i] = max(tot * c4_share[i], seed)
             out[C3, i] = max(tot * (1.0 - c4_share[i]), seed)
 
 
+@njit(parallel=True, cache=True)
+def _merge(cells, nu, out, tol, act):
+    """After a whole step from nu into out: the cells it changed by more than tol are marked in act and
+    both arrays hold their old state there (to take the step again in shorter ones); elsewhere both hold the step's result."""
+    for jj in prange(len(cells)):
+        i = cells[jj]
+        d = 0.0
+        for p in range(nu.shape[0]):
+            d = max(d, abs(out[p, i] - nu[p, i]))
+        if d > tol:
+            act[i] = True
+            for p in range(nu.shape[0]):
+                out[p, i] = nu[p, i]
+        else:
+            for p in range(nu.shape[0]):
+                nu[p, i] = out[p, i]
+
+
 def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=None, steps=None,
-                diff: float = 0.02) -> dict:
+                diff: float = 0.02, migrate=None, snaps=(), substeps: int = 1) -> dict:
     """The cover fractions (NP, n) in equilibrium with the climate (section
     3.3), warm-started from nu0 (the previous state: history decides
     between forest and savanna), with fire. steps: list of (count, dt in
     years); default 30 x 2 yr then 40 x 10 yr. Returns nu (fractions, the
-    seeds taken off), burned (share per year), and the growth rates."""
+    seeds taken off), burned (share per year), and the growth rates.
+    migrate (PW-213): None, or per type 0/1/2 (see _step): the types that spread cell by cell from where they
+    are (or stay) instead of being seeded everywhere; nu0 is then the previous call's nu_raw (with the seeds,
+    so a type that is still in a cell stays) or a stand map (0 = not there); substeps: each step is this many
+    shorter ones (the implicit step caps a young stand's growth per step, so a long step grows it too slowly),
+    migration seeing the stands as the step began; snaps: step counts (cumulative over steps) after which the cover is also returned, in snaps."""
     n = grid.n
     ok = pot["ok"] & land[None, :] & ((_col("wet")[:, None] == 0) | (fw[None, :] > 0.01))
     cells = np.flatnonzero(ok.any(0)).astype(np.int64)
@@ -917,21 +958,40 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
         nt = np.maximum((ok & TREES[:, None]).sum(0), 1)
         nh = np.maximum((ok & HERBS[:, None]).sum(0), 1)
         nu0 = np.where(TREES[:, None], START["trees"] / nt, np.where(HERBS[:, None], START["herbs"] / nh, 0.0))
-    nu = np.where(ok, np.maximum(np.asarray(nu0, float), seed), 0.0)
+    mig = np.zeros(NP, np.uint8) if migrate is None else np.asarray(migrate, np.uint8)
+    nu0 = np.asarray(nu0, float)
+    nu = np.where(ok, np.where(mig[:, None] > 0, nu0, np.maximum(nu0, seed)), 0.0)
     out = np.zeros_like(nu)  # (zeros, not empty: _step writes only `cells`, and reads their neighbours)
     burned = np.zeros(n)
     C, resist = _C, _col("resist")
     slowf = SHRUBS.astype(np.float64)
     c4s = np.asarray(pot.get("c4_share", np.full(n, 0.5)), np.float64)
+    def strip(x):
+        x = np.where(x > 2 * seed, x - seed, 0.0)
+        return np.where(x.sum(0) > 1, x / np.maximum(x.sum(0), 1e-9), x)
+    snapped, k = [], 0
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
         for _ in range(count):
-            _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, SLOW_FUEL * kdec, ign, float(dt), seed, diff,
-                  grid.nbr_off, grid.nbr_idx, food, browsed, graze, c4s, out, burned)
-            nu, out = out, nu
-    nu = np.where(nu > 2 * seed, nu - seed, 0.0)
-    tot = nu.sum(0)
-    nu = np.where(tot > 1, nu / np.maximum(tot, 1e-9), nu)
-    return dict(nu=nu, burned=np.where(land, burned, 0.0), g=g, season=season)
+            args = (g, K, ok, mort, C, resist, litter, slowf, season, kdec, SLOW_FUEL * kdec, ign)
+            nbr = (seed, diff, grid.nbr_off, grid.nbr_idx, food, browsed, graze, c4s, mig)
+            if substeps <= 1:
+                _step(cells, nu, *args, float(dt), *nbr, nu, out, burned)
+                nu, out = out, nu
+            else:
+                # one whole step finds the cells that change (the rest take its result); those take the step
+                # in `substeps` shorter ones, migration seeing the stands as the step began
+                src = nu.copy()
+                _step(cells, nu, *args, float(dt), *nbr, src, out, burned)
+                act = np.zeros(n, np.bool_)
+                _merge(cells, nu, out, 0.002, act)
+                sub = np.flatnonzero(act)
+                for _s in range(substeps):
+                    _step(sub, nu, *args, float(dt) / substeps, *nbr, src, out, burned)
+                    nu, out = out, nu
+            k += 1
+            if k in snaps:
+                snapped.append(strip(nu))
+    return dict(nu=strip(nu), nu_raw=nu, snaps=snapped, burned=np.where(land, burned, 0.0), g=g, season=season)
 
 
 # ---------------------------------------------------------------------------
@@ -970,6 +1030,11 @@ def summary(s: dict, pot: dict, eq: dict) -> dict:
                 ground=shade[GROUNDS].sum(0), shade=shade, lai=lai, lai_jul=l_jul, lai_jan=l_jan, npp=npp, biomass=biomass,
                 height=height, fire_return=np.where(b > 1e-4, 1.0 / np.maximum(b, 1e-9), 0.0),
                 stand_age=np.minimum(stand, 2000.0))
+
+
+def tree_cover(pot: dict, nu: np.ndarray) -> np.ndarray:
+    """summary()['tree'] alone: the ground the trees' canopies shade (0..1), for cover fractions nu."""
+    return (nu[TREES] * np.clip(pot["lai"][TREES] / CLOSED, 0, 1)).sum(0)
 
 
 COASTAL_MIN = 0.3  # share of a cell under mangroves or salt marsh that names it so (proposal section 2.3, rule 2)
@@ -1153,7 +1218,7 @@ def biome_of(types, sea_biome) -> np.ndarray:
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
           cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
-          soil: dict | None = None) -> dict:
+          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
     arrays (climate.compute's names; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
@@ -1197,10 +1262,19 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     pot = dict(pot_all, ok=pot_all["ok"] & viable)
     fw = flooded(grid, elev, np.zeros(n) if flow is None else flow, np.zeros(n) if lake_kind is None else lake_kind,
                  s, ice, flood_ratio, None if soil is None else soil["permafrost"])
-    eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None))
+    eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None), migrate=migrate, snaps=snaps, substeps=substeps)
     sm = summary(s, pot, eq)
     types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw, coastal)
     return dict(s=s, pot=pot, pot_all=pot_all, eq=eq, fw=fw, sm=sm, types=types, land=land, unlocked=unlocked)
+
+
+# Migration (PW-213): the trees are the slow spreaders (100-500 m/yr after the ice; shrubs and herbs seed
+# fast on the time scale of a frame, 2 kyr), so only they are limited to ground beside their own stands
+# (SPREAD: the time zoom's cover) or to the ground they hold (HELD: a finished world, which then runs
+# HELD_STEPS to settle on its own climate: ~2 kyr, so a front doesn't move on).
+SPREAD = TREES.astype(np.uint8)
+HELD = 2 * SPREAD
+HELD_STEPS = ((8, 250.0),)
 
 
 def start_from_tree_cover(tree) -> np.ndarray:

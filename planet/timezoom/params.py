@@ -22,6 +22,8 @@ LAYERS = {  # per frame: store.LAYERS names and encodings, as runs
     # the glacial imprint so far (PW-037; the elevation already has it): m of bed eroded, m of till dropped
     "glacial_erosion": S.LAYERS["glacial_erosion"],
     "glacial_till": S.LAYERS["glacial_till"],
+    # the tree cover of the migrating plants (plants.py, PW-213), under the ice and sea of its frame; only with veg on
+    "tree_cover": S.LAYERS["tree_cover"],
 }
 STATIC = ("plate", "crust", "crust_age", "plate_boundary")  # stored once
 
@@ -98,6 +100,8 @@ class TZParams:
     # the clouds' share of the light, both ways: Qu & Hall 2006, ~0.3-0.5 outside the tropics) ...
     veg_lambda: float = 0.8  # ... and the climate by this many C per W/m2 of it (the fast feedbacks inside:
     # Hansen et al. 2008 0.75) ...
+    veg_speed: float = 250.0  # m/yr: how fast the plants take new ground (the frames' cover, plants.py: migration;
+    # trees spread 100-500 m/yr after the ice, Davis & Shaw 2001; ~1 L6 cell per 480 yr); 0 = at once, in balance
     veg_lag: float = 2.0  # ... following the plants this slowly (kyr: a biome shift takes centuries to a
     # few kyr; the plants themselves are grown afresh on each full climate)
     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
