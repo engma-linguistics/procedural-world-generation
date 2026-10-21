@@ -2,7 +2,7 @@
 id: PW-473
 title: "World navigator: one view of a planet's family, from the tectonic run through time zooms and finished worlds to regional and fine zooms"
 type: story
-status: todo
+status: done
 parent: PW-244
 subsystem: viewer
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-248]
 refs: [planet/viewer/index.html, planet/viewer/zoom.html, planet/store.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -23,5 +23,6 @@ Owner 2026-10-20: a better way to see a world from tectonic to time-zoomed to fi
 - Builds on store provenance (planet/provenance.py, store.py). Read what links already exist and add any missing parent ids as needed.
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 2026-10-20 (coordinator); follow-ups PW-478..483.
 - 2026-10-20: Built on branch worktree-agent-a37d9b944587e6d92 (not merged): viewer/navigator.js: a bar with the provenance chain (thumbnails, click to jump; ancestors open at the child's moment) over the globe and the Regional zoom tab, a Family tree drop-down, "make from here" (time zoom, finish, highlights) on /api/timezoom and /api/finish, zoom outlines on the globe with a clickable edge. The store already recorded every parent link (source_run, timezoom, world, parent_zoom); no new fields. The slider's existing ticks stay as the timeline markers. Gaps: draft-navigator-from-here-gaps.
 - 2026-10-20: Created.

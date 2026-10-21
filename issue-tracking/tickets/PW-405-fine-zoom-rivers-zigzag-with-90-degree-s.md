@@ -2,7 +2,7 @@
 id: PW-405
 title: Fine zoom rivers zigzag with 90-degree switchbacks every ~100 m; planform should follow slope, confinement and sediment
 type: task
-status: todo
+status: done
 parent: null
 subsystem: zoom
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-129, PW-390, PW-391, PW-403]
 refs: [planet/zoom_fine.py, viewer/zoom3d.js]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-21
 ---
 
 ## Description
@@ -32,6 +32,7 @@ Fix:
 - Test: sinuosity and minimum bend radius (>= ~2-3 widths) per planform class.
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 59dea9e (2026-10-16); closed by coordinator 2026-10-21. Check it in the PW-202 showcase remake, since the old zooms are being deleted.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-river-planform.md (found by daniel).
 - 2026-10-16: Implemented on branch worktree-agent-a77223c7eaa43cc01 (pw405).
   - Cause: the fine course was a Catmull-Rom through the parent's D8 pixel centres, plus a 2-parent-px noise warp. A fine parent's receivers are D8 at 50-100 m, so its child zigzagged at that scale.

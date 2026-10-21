@@ -2,7 +2,7 @@
 id: PW-472
 title: "Start screen: on load, browse and open existing runs, worlds and zooms, or make a new planet with a settings form"
 type: story
-status: todo
+status: done
 parent: PW-244
 subsystem: viewer
 effort: m
@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-248]
 refs: [planet/viewer/index.html, planet/server.py, planet/api.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -27,5 +27,6 @@ Owner 2026-10-20. When the viewer opens, it shows a start screen instead of drop
 - Works at phone width; no backward compatibility with old stores needed.
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 2026-10-20 (coordinator); follow-ups PW-478..483.
 - 2026-10-20: Built on branch worktree-agent-a37d9b944587e6d92 (not merged): viewer/start.js (gallery of planets with thumbnails, seed/level/length/date, open, family list, delete with confirm; New planet form with presets, seed + random, level 5/6/7, length, stage checkboxes, the 7 tectonics settings the code honours, live time estimate, job progress that survives a reload), planet/family.py (/api/planets), planet/thumbs.py (/api/thumb). Checked in headless Chrome at 1200 and 390 px. Configurable today: n_plates, start, continental_fraction, continental_start, heat_start, tilt, climate_offset; gaps in draft-make-settings-gaps. Other drafts: viewer-phone-layout (the old globe UI), make-resume-cancel.
 - 2026-10-20: Created.
