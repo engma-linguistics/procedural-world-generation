@@ -22,5 +22,6 @@ Health check of the existing v1 batch runs (runs 9b685e 0ecb0d 865ea0 3ff3f3 111
 - [ ] decide whether the envelope (-250 m) or the model is wrong; Phanerozoic range is -130..+250 m
 
 ## Updates
+- 2026-10-21: Owner 2026-10-21: leave the first ~100 Myr (warm-up) out of the sea-level band.
 - 2026-10-21: Measured with PW-514 option A (docs/review/audit/PW-514-option-a.md, 10 L6 1 Gyr seeds): the deep ends are mostly the ocean-basin term, which tracks the floor's mean age (corr -0.87..-0.97 on every seed). The floor ages from ~50 Myr (the 48 Myr reference) to 61-130 Myr by 1 Gyr. coast_loss makes the ice part milder (median end -27 m against -100) and doesn't touch the basin term. Main end median -328 m (4/10 below -370), branch -113 m (3/10).
 - 2026-10-21: Created from inbox draft draft-batch-sea-level-ends-deep.md (found by pw548).

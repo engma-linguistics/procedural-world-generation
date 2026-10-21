@@ -53,5 +53,6 @@ rules.
 - [ ] stage 0 tickets cut (PW-467 tool, moment suite, ice/basin split in health, hysteresis probe)
 
 ## Updates
+- 2026-10-21: Owner 2026-10-21: the first ~100 Myr of a run is warm-up while the coupled systems settle; it shouldn't count toward success bars.
 - 2026-10-21: Status needs-decision -> in-progress. Owner 2026-10-21: plan approved as described. Prefers option 2 (the run runs the zoom's ice model in cold eras), extra run time fine. Agrees with all nine leans in the review. Work proceeds on a v2 ice worktree, merging main as things land. Owner also asks: (1) revisit the success criteria: they're anchored on Earth's last glacial, but the record has snowball Earths (Cryogenian) and hothouses (PETM); deep, long ice ages are fine if a planet can come out of them. (2) What are the base assumptions, and which might be off? (3) An optional generation-time lever: the longer a deep ice age lasts, the harder the systems nudge toward recovery, easing off as the planet recovers. (4) Build measuring tools first; runs may take far longer and use much more storage if that helps debugging.
 - 2026-10-21: Created from inbox draft draft-ice-v2-plan.md (found by ice-v2-review).
