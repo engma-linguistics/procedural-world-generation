@@ -163,6 +163,24 @@ def cmd_satellite(args):
             print(S.rel(W.save(w, w["name"], rid)))
 
 
+def cmd_humanuse(args):
+    """Adds (or redoes) the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms in place."""
+    from . import humanuse as HU
+    from . import zoom as Z
+    for ref in args.ids:
+        kind, _, rid = ref.rpartition(":")
+        kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
+        if len(kinds) != 1:
+            raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
+        if kinds[0] == "zoom":
+            print(S.rel(Z.add_humanuse(rid)))
+        else:
+            path = S.find_world(rid)
+            w = W.load(path)
+            w["layers"].update(HU.world_layers(w["grid"], w["layers"]))
+            print(S.rel(W.save(w, w["name"], rid)))
+
+
 def cmd_timezoom(args):
     from . import timezoom as TZ
     out = TZ.timezoom(args.run, args.at, args.kyr, args.step, args.every, _parse_set(args.set),
@@ -390,6 +408,10 @@ def main():
     sa = sub.add_parser("satellite", help="add or redo the satellite view of saved worlds and zooms (in place)")
     sa.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     sa.set_defaults(func=cmd_satellite)
+
+    hu = sub.add_parser("humanuse", help="add or redo the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms (in place)")
+    hu.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
+    hu.set_defaults(func=cmd_humanuse)
 
     h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
     h.add_argument("ref", help="world id, or run id (then --at; default: the run's end)")

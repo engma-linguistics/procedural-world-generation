@@ -2,7 +2,7 @@
 id: PW-505
 title: "Viewer: show the human-use layers (navigable rivers, harbours, passes, farmland, fresh water)"
 type: task
-status: todo
+status: done
 parent: PW-099
 milestone: v1
 subsystem: viewer
@@ -23,4 +23,5 @@ PW-099 stores five class-map layers with every finished world and zoom (`river_n
 - [ ] older worlds have no stored layers: the viewer shows nothing for them (or the API computes them with `humanuse.analyse_world`)
 
 ## Updates
+- 2026-10-21: Status todo -> done. Done: five layers as buttons on the globe (colour maps; ribbons for navigable rivers, markers for harbours and passes under Overlays), 2D map (projmap.drawFeatures), zoom tab (class maps, harbour/pass/spring markers, hover rows); planet humanuse backfills old worlds and zooms. Verified on 577526 + zooms 66c45e, 21703a (backfilled copy). Follow-up draft: humanuse-3d-markers-backfill.
 - 2026-10-21: Created from inbox draft draft-humanuse-viewer-layers.md (found by humanuse).

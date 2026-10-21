@@ -200,12 +200,48 @@ export function drawMap(canvas, proj, width, extentKm, colors, nearest, opt = {}
     for (const line of graticule(proj, g, graticuleStep(extentKm))) { ctx.moveTo(line[0][0], line[0][1]); for (let k = 1; k < line.length; k++) ctx.lineTo(line[k][0], line[k][1]); }
     ctx.stroke();
   }
+  if (opt.features) drawFeatures(ctx, proj, g, opt.features);
   if (opt.marker) {  // a small cross at the centre
     const s = Math.max(5, g.width / 150);
     ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, g.width / 800);
     ctx.beginPath(); ctx.moveTo(g.width / 2 - s, g.height / 2); ctx.lineTo(g.width / 2 + s, g.height / 2); ctx.moveTo(g.width / 2, g.height / 2 - s); ctx.lineTo(g.width / 2, g.height / 2 + s); ctx.stroke();
   }
   return g;
+}
+
+// Lines and markers over the map (PW-505: the human-use layers). feats: {lines: [{pts: [[lat, lon], ...], color, width}],
+// marks: [{lat, lon, shape: 'diamond' | 'hourglass', color, size}]}; width and size in px of a map 1000 px wide
+// (scaled with the map). Whatever the projection shows nothing of, or jumps over (the seam), is left out.
+export function drawFeatures(ctx, proj, g, feats) {
+  const k = g.width / 1000, p = [0, 0, 0], q = [0, 0];
+  const px = (la, lo) => {
+    const cl = Math.cos(la * rad);
+    p[0] = cl * Math.cos(lo * rad); p[1] = cl * Math.sin(lo * rad); p[2] = Math.sin(la * rad);
+    return proj.forward(p, q) ? [(q[0] + g.hw) / g.step, (g.hh - q[1]) / g.step] : null;
+  };
+  const lim = g.width / 4;  // a segment longer than this on the map crosses the seam
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const halo of [true, false]) {
+    for (const l of feats.lines || []) {
+      const a = px(...l.pts[0]), b = px(...l.pts[1]);
+      if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) > lim) continue;
+      ctx.strokeStyle = halo ? 'rgba(0,0,0,0.55)' : l.color; ctx.lineWidth = Math.max(1, (l.width + (halo ? 1.6 : 0)) * k);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+    for (const m of feats.marks || []) {
+      const c = px(m.lat, m.lon);
+      if (!c) continue;
+      const s = Math.max(3, m.size * k);
+      ctx.strokeStyle = halo ? 'rgba(0,0,0,0.7)' : m.color; ctx.lineWidth = Math.max(1, (halo ? 3.2 : 1.8) * Math.sqrt(k));
+      ctx.beginPath();
+      if (m.shape === 'hourglass') {
+        ctx.moveTo(c[0] - s, c[1] - s); ctx.lineTo(c[0] + s, c[1] - s); ctx.lineTo(c[0] - s, c[1] + s); ctx.lineTo(c[0] + s, c[1] + s); ctx.closePath();
+      } else {
+        ctx.moveTo(c[0], c[1] - s); ctx.lineTo(c[0] + s, c[1]); ctx.lineTo(c[0], c[1] + s); ctx.lineTo(c[0] - s, c[1]); ctx.closePath();
+      }
+      ctx.stroke();
+    }
+  }
 }
 
 // pixel (px, py) of the map -> {lat, lon} or null

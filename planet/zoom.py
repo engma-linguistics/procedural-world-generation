@@ -3519,6 +3519,23 @@ def add_satellite(ref: str | Path) -> Path:
     return d
 
 
+def add_humanuse(ref: str | Path) -> Path:
+    """(Re)makes a saved zoom's human-use layers in place (humanuse.py, PW-099): the class maps and the legend."""
+    d = S.find_zoom(ref)
+    meta, lay = load(d, decode=True)
+    nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
+    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    new = HU.zoom_layers(lay, res, HU.falls_pixels(meta.get("stats", {}).get("falls", []), fr, nx, ny, res))
+    specs = {}
+    for k in new:
+        units, desc, *enc = LAYER_DOC[k]
+        specs[k] = {**(enc[0] if enc else {"dtype": "u1"}), "units": units, "description": desc}
+    meta["layers"].update(S.write_layers(d, {k: S.encode(v, specs[k]) for k, v in new.items()}, specs))
+    meta.setdefault("legend", {})["human_use"] = HU.legend()
+    S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
+    return d
+
+
 def load(ref: str | Path, decode: bool = False) -> tuple[dict, dict]:
     """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it);
     raw as stored, or in real units with decode (scaled layers: float)."""
