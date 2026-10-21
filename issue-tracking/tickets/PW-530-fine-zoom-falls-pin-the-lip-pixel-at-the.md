@@ -1,8 +1,9 @@
 ---
+id: PW-530
 title: Fine-zoom falls pin the lip pixel at the parent's lip height, so a horseshoe cannot recess the river's own crest
 type: task
 status: todo
-parent: null
+parent: PW-516
 milestone: v2
 subsystem: zoom
 effort: m
@@ -11,6 +12,8 @@ found_by: pw522
 blocked_by: []
 relates: [PW-522, PW-516]
 refs: [planet/zoom_fine.py, planet/zoom_falls.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -22,3 +25,6 @@ into the upstream channel and the parent's lip pixel moved back by the recess), 
 course's bed lowered to meet it; that moves the parent's fall, so it needs a decision on how far a
 fine zoom may move a parent's lip.
 - [ ] move the lip up the course by the recess, with the bed above it graded into it
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-fine-fall-lip-notch.md (found by pw522).

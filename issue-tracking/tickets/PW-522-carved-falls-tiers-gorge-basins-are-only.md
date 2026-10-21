@@ -2,7 +2,7 @@
 id: PW-522
 title: Carved falls (tiers, gorge, basins) are only drawn at the base zoom's pixel scale; fine zooms need the same form at 25-50 m
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: zoom
@@ -27,4 +27,5 @@ GORGE_WALL_DEG), which keeps the parent's drop and draws the gorge but not the t
 - [ ] amphitheatre round the plunge basin, ledges in the face from strata (Angel, Gocta)
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 5f87dfa: fine zooms draw the base zoom's tiers (tiers_m) with ledges, pools, stepped gorge walls. d48cb6: 4 tiers, 4 pools. Horseshoe faint (PW-530).
 - 2026-10-21: Created from inbox draft draft-fall-carving-fine-zoom.md (found by pw517).

@@ -2,7 +2,7 @@
 id: PW-521
 title: Landscape pass leaves perfectly flat filled basins on high ground that spill over a rim into a deep valley
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: zoom
@@ -28,4 +28,5 @@ instead be a lake (zoom_landforms basin_lakes) or drained by the gorge.
 - [ ] list flat filled areas > 50 km2 over 500 m above their outlet in the showcase zooms
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 5f87dfa: ZK.grade_fills grades filled flats above 100 m to 2 m/km toward the outlet. Owner's spot 195 -> 5 km2 of dead-flat high land. Lake-shore shelves remain (PW-531).
 - 2026-10-21: Created from inbox draft draft-drainage-flat-basin-spill.md (found by pw517).
