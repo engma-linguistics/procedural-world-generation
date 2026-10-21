@@ -55,15 +55,19 @@ Steps (the proposal's 1-6):
    texture, talus aprons under faces steeper than 45 degrees. Within one
    parent pixel of the region's edge the result blends back to the target,
    so the edge meets the parent's surface (the 3D inset needs no stitching).
-6. Climate (the world's, as the parent: zoom_vegetation.fine_fields, lapse
-   corrected to the fine ground; the parent's rain), the parent's ice
-   (its surface kept over the fine ground), vegetation and soils
-   (zoom_vegetation), coastal life (the parent's, warped), the satellite
-   view.
+6. Forms at this scale (PW-392, zoom_fine_forms; each reuses the regional zoom's code and keeps the
+   parent's say): glaciers (zoom.glaciers on the fine ground, the parent's ice as the coarse ice: new ice
+   only within a parent pixel of the parent's, its ice kept, its surface the least the fine ice stands to),
+   the karst and dune overlays (zoom_landforms.Landforms.finish, the lineage's seed: only the part below
+   the parent's pixels, each pixel's mean kept), the volcanoes' reefs (zoom_volcanoes.fields on the fine
+   pixels: atoll rims with their islets, fringing flats) and the coastal life (zoom_coastal.place on the
+   fine shore and sea floor, each habitat kept to the parent's; reef flats raised, the lagoons deepened to
+   keep each parent pixel's mean). Then the climate (the world's, as the parent: zoom_vegetation.fine_fields,
+   lapse corrected to the fine ground, the ice's surface on glaciers; the parent's rain), vegetation and
+   soils (zoom_vegetation), the satellite view.
 
-Not redone at this scale (inbox drafts): glacier outlines (the parent's
-ice, bilinear), landform overlays (dolines, dunes), deltas and reef forms
-(as the parent drew them, interpolated).
+Not redone at this scale (inbox drafts): a delta's plain, coast and barriers (the parent's, interpolated;
+its distributaries are carried), the parent's coastline steps.
 
 Output: an ordinary zoom directory (zoom.load, the 2D viewer) with a
 "parent_zoom" block in zoom.json ({id, res_km, offset_km, rect_px}) and the
@@ -78,12 +82,13 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, vegetation
+from . import climate, icemass, vegetation
 from . import store as S
 from . import world as W
 from . import zoom as Z
 from . import zoom_coastal as ZCL
 from . import zoom_fine_floodplain as ZFP
+from . import zoom_fine_forms as ZFF
 from . import zoom_fine_meander as ZFM
 from . import zoom_fine_volcano as ZFV
 from . import zoom_kernels as ZK
@@ -304,6 +309,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     nb = n + 2 * hb
     npx = nb * nb
     S_ = 1_000_003 * seed + 517
+    rseed = ZFF.root_seed(pmeta, seed)  # (the lineage's first zoom's seed: planet-fixed forms agree at every level)
+    S_root = 1_000_003 * rseed + 17
     world = Z.land_world(world)[0]
 
     # --- 1. projection ---------------------------------------------------
@@ -1056,6 +1063,30 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     h = ground(hw)
     lake_depth = np.where(lake, level - lake_ground, np.where(pool, pool_d, 0.0))
 
+    # --- glaciers and landform overlays at this scale (PW-392, zoom_fine_forms) ----------
+    # (on the finished ground and its drainage, as the regional zoom: glaciers from each pixel's own
+    # climate with the parent's ice as the coarse ice, then the karst and dune overlays, sub-parent-pixel)
+    precip_b = (np.maximum(pa.bilinear("precipitation", pr, pc), 0.0) if "precipitation" in pa.L
+                else 0.5 * (fields_b["p_jul"] + fields_b["p_jan"]))
+    for k_, name in (("p_jul", "precipitation_jul"), ("p_jan", "precipitation_jan")):
+        if name in pa.L:
+            fields_b[k_] = np.maximum(pa.bilinear(name, pr, pc), 0.0)
+    glacier_b, ice_th_b = ZFF.glaciers(world, pa, pr, pc, Pk, P, h, land, sea, ring, nb, res, fields_b, S_root,
+                                       precip_b)
+    glacier_b &= land
+    region_b = ~((row < hb) | (row >= hb + n) | (col < hb) | (col >= hb + n))
+    pond = np.zeros(npx, bool)
+    pond_depth = np.zeros(npx)
+    lf_overlay = {}
+    ov = ZFF.landform_overlay(world, fr, pa, pr, pc, own, Pk, px, py, nb, res, S_root, h, land, rec, order,
+                              discharge, ~land | pool, glacier_b, land & ~fixed & ~pool & ~vfloor & ~gorge & ~g_wall,
+                              region_b)
+    if ov is not None:
+        h = ov["h"]
+        discharge = np.where(land, ov["q"], discharge)
+        pond, pond_depth, lf_overlay = ov["pond"], ov["pond_depth"], ov["stats"]
+        log(f"  landform overlays {lf_overlay} [{time.time() - t0:.1f}s]")
+
     # --- crop the halo ---------------------------------------------------
     keep_px = ((row >= hb) & (row < hb + n) & (col >= hb) & (col < hb + n))
     new = np.full(npx, -1)
@@ -1066,19 +1097,19 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         return np.asarray(a)[keep_px]
 
     (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own, target, course_c,
-     vfloor, vbelt, vf_z, vf_own, oxbow_c) = (
+     vfloor, vbelt, vf_z, vf_own, oxbow_c, glacier_c, ice_th_c, pond, pond_depth) = (
         crop(a) for a in (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own,
-                          target, course, vfloor, vbelt, vf_z, vf_own, oxbow))
+                          target, course, vfloor, vbelt, vf_z, vf_own, oxbow, glacier_b, ice_th_b, pond, pond_depth))
     nx = ny = n
     npx = n * n
+    lake = lake | pond  # (karst ponds: pits below the water table)
+    lake_depth = np.where(pond, pond_depth, lake_depth)
     water = np.where(sea, 1, np.where(lake | pool, 2, 0)).astype(np.uint8)
     land = water == 0
 
     # --- 6. ice, climate, life -------------------------------------------
-    ice_p = np.asarray(pa.L.get("ice", np.zeros_like(hp)), float)
-    glacier = land & (pa.bilinear((ice_p > 0).astype(float), pr, pc) > 0.5)
-    ice_surf = pa.bilinear(np.where(ice_p > 0, hp + ice_p, hp), pr, pc)
-    ice = np.where(glacier, np.maximum(ice_surf - h, 1.0), 0.0)
+    glacier = land & glacier_c  # (zoom_fine_forms.glaciers: the fine valleys' own, from the fine climate)
+    ice = np.where(glacier, np.maximum(ice_th_c, 1.0), 0.0)
     P = fr.to_sphere(px, py)
     pix_lat = latlon(P)[0]
     fields = {k: (None if v is None else np.asarray(v)[..., keep_px]) for k, v in fields_b.items()}
@@ -1087,13 +1118,30 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
             fields[k_] = np.maximum(pa.bilinear(name, pr, pc), 0.0)
     precip = (np.maximum(pa.bilinear("precipitation", pr, pc), 0.0) if "precipitation" in pa.L
               else 0.5 * (fields["p_jul"] + fields["p_jan"]))
-    hl = np.maximum(h + ice, 0)
+    # (the bare ground's climate, lapse-corrected; on the zoom's glaciers the ice's surface, as the regional zoom)
+    hl = np.maximum(h, 0)
     temp = fields["t_sl"] - LAPSE * hl
     t_warm = fields["warm_sl"] - LAPSE * hl
     t_cold = fields["cold_sl"] - LAPSE * hl
+    if glacier.any():
+        jul_f = fields["p_jul"] / np.maximum(fields["p_jul"] + fields["p_jan"], 1e-9)
+        t_warm, t_cold, temp = climate.ice_surface(t_warm, t_cold, temp, ice, np.full(npx, icemass.LOCAL), pix_lat,
+                                                   2 * precip * jul_f, 2 * precip * (1 - jul_f))
     north = fields["jul_warm"]
     rock_f = cat("rock").astype(np.uint8)
     surf_f = cat("surface_rock").astype(np.uint8)
+    # the volcanoes' reefs (rims and their islets, fringing flats) drawn at this scale, then the coastal life
+    # kept to the parent's habitats, the reef flats raised and the lagoons deepened (PW-392)
+    vr = ZFF.volcano_reefs(world, fr, px, py, nx, res, Pk, rseed)
+    if vr is not None:
+        h = np.where(vr["reef"], vr["h"], h)
+        water = np.where(vr["reef"], np.where(vr["h"] > 0, 0, 1), water).astype(np.uint8)
+        sea, land = water == 1, water == 0
+        surf_f = np.where(vr["reef"], Z.LIMESTONE, surf_f).astype(np.uint8)
+    cz = ZFF.coastal(world, fr, pa, pr, pc, own, Pk, px, py, nx, res, rseed, h, water, glacier, surf_f,
+                     None if vr is None else vr["reef"])
+    cl = cz["layer"].astype(np.uint8)
+    h = cz["h"]  # (the reef flats raised, the lagoons round them deepened: each parent pixel's mean kept)
     form_f = cat("landform").astype(np.uint8) if "landform" in pa.L else None
     clim_f = cat("climate", Z.SEA_CLIMATE).astype(np.uint8)
     clim_f = np.where(sea, Z.SEA_CLIMATE, clim_f)
@@ -1112,7 +1160,6 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
                      discharge.astype(np.float32), area.astype(np.float32), marsh, fields=fields, log=log,
                      want_fractions=True, rock=surf_f, landform=form_f)
     veg_l, tr = vz["layers"], vz["terrain"]
-    cl = cat("coastal_life").astype(np.uint8)
     cl = np.where(sea, np.where(np.isin(cl, (1, 2, 3)), cl, 0),
                   np.where(land & np.isin(cl, (4, 5)) & (h < 5.0), cl, 0)).astype(np.uint8)
     veg_l["vegetation"] = ZCL.name_vegetation(cl, veg_l["vegetation"])
@@ -1191,6 +1238,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         "falls_count": {"30m": sum(f["height_m"] >= 30 for f in fall_list),
                         "100m": sum(f["height_m"] >= 100 for f in fall_list)},
         "volcanoes": vol_list,
+        "glacier_km2": round(float(glacier.sum() * res * res), 2),
+        "landform_overlay": lf_overlay,
+        "reef_forms": cz["reef_forms"],
         "coastal_life": {k: round(float((cl == v).sum() * res * res), 2)
                          for k, v in (("coral_reef", 1), ("kelp", 2), ("seagrass", 3), ("mangrove", 4),
                                       ("salt_marsh", 5)) if (cl == v).any()},
@@ -1247,7 +1297,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
             "layers": {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()},
             "stats": stats, "coarse": coarse, "rec": rec_out, "satellite": sat, "parent": parent_block,
             "seconds": round(time.time() - t0, 1),
-            "params": {"iterations": ITERATIONS, "step": round(rp / res, 2), "halo_px": hb,
+            "params": {"root_seed": rseed, "iterations": ITERATIONS, "step": round(rp / res, 2), "halo_px": hb,
                        "river_area_km2": round(max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN), 3),
                        "head_km2": a_head}}
 

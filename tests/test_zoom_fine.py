@@ -486,3 +486,36 @@ def test_valley_floors(world, kind):
     assert (vf == 2).sum() * res * res > 8 * w * 7.0  # (a meander belt along it)
     assert st["parent_block_mean_rms_error_m"] < 2.0
     assert st["floodplain"]["block_rms_error_m"] < 2.0
+
+
+def test_forms_stats_and_lineage_seed(fine):
+    """PW-392: the fine pass reports its glaciers, landform overlays and reef forms, and the seed of the lineage's
+    first zoom (the planet-fixed forms agree at every level)."""
+    z = fine[0]
+    s = z["stats"]
+    assert s["glacier_km2"] == 0.0 and s["landform_overlay"] == {} and not any(s["reef_forms"].values())
+    assert z["params"]["root_seed"] == 1
+
+
+def test_subpixel_takes_each_parent_pixels_mean_off(parent):
+    """zoom_fine_forms.subpixel: a change's part the parent's pixels can't hold has zero mean in each of them."""
+    from planet import zoom_fine_forms as ZFF
+    meta, layers = parent
+    pa = ZF._Parent(meta, {k: np.asarray(v) for k, v in layers.items()})
+    lat, lon = _at(meta, 48, 53)
+    fr = Z.Frame(lat, lon)
+    n, res = 100, 0.1
+    xs = (np.arange(n) + 0.5 - n / 2) * res
+    X, Y = np.meshgrid(xs, (n / 2 - np.arange(n) - 0.5) * res)
+    P = fr.to_sphere(X.ravel(), Y.ravel())
+    pr, pc = pa.coords(P)
+    own = pa.index(pr, pc)
+    rng = np.random.default_rng(3)
+    dz = 40.0 * rng.standard_normal(n * n) + 25.0 * (np.hypot(X.ravel(), Y.ravel()) < 3)  # (a hump the pixels hold)
+    out = ZFF.subpixel(dz, np.ones(n * n, bool), pa, own, pr, pc)
+    cnt = np.bincount(own, minlength=pa.nx * pa.ny)
+    mean = np.bincount(own, out, minlength=pa.nx * pa.ny) / np.maximum(cnt, 1)
+    full = cnt >= 90
+    assert full.sum() >= 4
+    assert np.abs(mean[full]).max() < 3.0  # (of 40 m of noise: the smooth part is gone)
+    assert out.std() > 30.0  # ... the sub-pixel noise stays

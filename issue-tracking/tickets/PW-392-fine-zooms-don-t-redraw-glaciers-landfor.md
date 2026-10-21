@@ -35,4 +35,5 @@ reef or bay showcase I'd start with the reef forms (zoom_coastal.place at
 the fine scale, kept to the parent's reef pixels).
 
 ## Updates
+- 2026-10-20: Done in branch worktree-agent-aec8c3931c71791a9 (planet/zoom_fine_forms.py): glaciers via zoom.glaciers on the fine ground (parent ice kept; ice sheets 424 vs 422 km3 parent, was 409), karst/dune overlays via Landforms.finish (lineage seed `params.root_seed`, sub-parent-pixel part only; 7b0911 435 towers, db513c dunes 52 m), volcano reefs via zoom_volcanoes.fields and coastal life via zoom_coastal.place at the fine scale (a0097b: smooth bands, patches and an atoll ring; 327 km2 reef vs parent 535, 485 before). Deltas: the 25-px threshold isn't binding (all distributaries already carried in 5 parents); plain/coast forms filed as drafts, with parent coast steps, reef share, glacier margin and karst hatching. Measured in a scratch store; tests pass; goldens unchanged.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-not-redone-glaciers-landforms.md (found by pw129-fine-zoom).
