@@ -35,7 +35,7 @@ Definitions are deliberately physical and simple, on ~110 km cells:
 - fjord coast: ice-free coast (where the glaciers have gone) that is steep
   (mountains >= 800 m within ~2 cells of the sea), with cool summers (warmest
   month 0..12 C) and enough snow (>= 400 mm/yr) to have fed glaciers. The
-  zoom doesn't carve fjords.
+  zoom floods the glacial troughs of a finished world's imprint into fjords.
 - Mediterranean ("wine country"): Koppen Csa/Csb land below 1500 m with a
   warmest month <= 30 C (a hothouse Cs at 40 C is correct but no vineyard);
   hillier is better.
@@ -812,7 +812,7 @@ def fjords(ctx: _Ctx, top: int = 2) -> list[dict]:
         ice_txt = "; glaciers still on the mountains above it" if icefrac > 0.5 else \
             "; some glaciers left on the mountains" if icefrac > 0.1 else ""
         blurb = (f"{_n(length)} km of steep, cold coast: mountains of ~{_m(relief)} within ~200 km of the sea, "
-                 f"summers ~{summer:.0f} °C{ice_txt}. Glacier-carved fjord country (the zoom doesn't carve the fjords themselves).")
+                 f"summers ~{summer:.0f} °C{ice_txt}. Glacier-carved fjord country.")
         out.append(_feature(ctx, "fjords", "Fjord coast", blurb, mid, 1000,
                             {"length_km": round(length), "mean_relief_m": round(relief), "summer_c": round(summer, 1),
                              "ice_pct": round(100 * icefrac)},
