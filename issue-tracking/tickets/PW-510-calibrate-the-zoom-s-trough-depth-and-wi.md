@@ -2,7 +2,7 @@
 id: PW-510
 title: Calibrate the zoom's trough depth and width against real fjords and U-valleys
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: zoom
@@ -21,5 +21,6 @@ The trough constants are physical estimates, not fits: floor lowering = 8 x the 
 - [ ] fjord width, length and depth percentiles for Norway vs. the real ones, constants nudged (not forced)
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 470b935: width/depth 3-5 by flux, depth capped 0.6 x ice. 82% in range at 1 km/px, 78-86% for resolved troughs; pooled 66% because 2 km/px widths hit the pixel floor (PW-520). Accepted as done: the shortfall is resolution, not the model.
 - 2026-10-21: Created from inbox draft draft-glacial-zoom-calibration.md (found by pw092).
 - 2026-10-21: Built on branch worktree-agent-a6325323c9d1c4305: width follows depth (3-5 x), floor lowering capped by the ice thickness. 1 km Norway 82% of troughs in range, 2 km 57% (pixel floor), Baltic 66%, Ungava 0% (shield: 180 m deep troughs, below the fjord range). Fjord depths 80-83% in 200-1500 m (Norway). Needs a merge.
