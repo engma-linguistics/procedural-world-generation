@@ -11,6 +11,7 @@ from .. import timeline as T
 from .. import vegetation as VEG
 from ..geo import is_land
 from ..grid import build_grid
+from ..surface import COVER_SHOWS, ROCK_K, surface_rock
 from ..tectonics.params import Params
 from .params import STATIC
 
@@ -20,7 +21,7 @@ def source_from_run(run_dir: Path, at: float) -> dict:
     global temperature offset dT, tilt and the frozen geology at `at` Myr,
     from the stored keyframe nearest to `at` (as timeline.world_from_frame:
     no replay; ice to 20 m, dT to 0.1 C)."""
-    run, arr = T.load_frames(run_dir, ("elevation", "ice", "tree_cover", *STATIC))
+    run, arr = T.load_frames(run_dir, ("elevation", "ice", "tree_cover", *STATIC, *ROCK_LAYERS))
     if run.get("kind") == "timezoom":
         raise SystemExit("that's a time zoom already; give its source run")
     m = run["meta"]
@@ -38,7 +39,23 @@ def source_from_run(run_dir: Path, at: float) -> dict:
             "elev": T.frame(run, arr, "elevation", i).astype(float),
             "ice": T.frame(run, arr, "ice", i).astype(float), "dT": fr["stats"]["global_temp_c"] - 14.5,
             "sea_level": fr["stats"]["sea_level_m"], "static": {k: T.frame(run, arr, k, i) for k in STATIC},
+            "bedrock": bedrock(*(T.frame(run, arr, k, i) for k in ROCK_LAYERS)),
             "hotspots": fr["hotspots"], "volcanoes": fr["volcanoes"], "veg": veg}
+
+
+ROCK_LAYERS = ("rock", "sediment_cover", "strata_top", "strata_top_km")
+
+
+def bedrock(rock, cover, top, top_km) -> dict:
+    """What the ice erodes (PW-037): the cover's thickness (m) and the
+    erodibility (surface.ROCK_K) of what's exposed while it lasts (its top
+    stratum) and of the basement under it, which shows once the ice has
+    stripped the cover to less than COVER_SHOWS."""
+    rock = np.asarray(rock).astype(int)
+    cover = np.asarray(cover, float)
+    return {"cover_m": 1000.0 * cover,
+            "erod_cover": ROCK_K[surface_rock(rock, np.full(len(rock), 2 * COVER_SHOWS), top, top_km)],
+            "erod_base": ROCK_K[rock]}
 
 
 def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
@@ -50,6 +67,9 @@ def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
             "sea_level": float(sim.sea_level),
             "static": {"plate": snap.plate, "crust": snap.continental, "crust_age": snap.age,
                        "plate_boundary": snap.boundary},
+            "bedrock": {"cover_m": 1000.0 * np.asarray(snap.cover, float),
+                        "erod_cover": ROCK_K[np.where(snap.cover > COVER_SHOWS, snap.surface, 3)],
+                        "erod_base": ROCK_K[np.asarray(snap.rock).astype(int)]},
             "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
             "volcanoes": T.active_volcanoes(snap.volcanoes),
             "veg": None if sim.veg_frac is None else {"nu0": sim.veg_frac, "co2": float(sim.co2),
