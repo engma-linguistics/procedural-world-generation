@@ -203,6 +203,8 @@ DELTA_MIN_Q = 1500.0  # m^3/s at a coarse river mouth for a delta plain
 # and left river-mouth zooms ~25 m low inland: a lowland the world doesn't have)
 DELTA_PLAIN_GROUND = (30.0, 250.0)
 FIT_STEP, FIT_SIGMA = 4.0, 0.35  # the landscape pass's slope fit: C changes at most x4 a pass, smooth over 0.35 cells
+FLOOR_MIN_M = 100.0  # m: lower flats are plains (deltas, coastal fill)
+FLOOR_SLOPE, FLOOR_MAX_SHARE = 2.0, 0.5  # m/km a filled basin's floor falls to its exit, at most this share of its fill depth (PW-521)
 MEAN_PASSES = 12  # smooth corrections that pull each coarse cell's mean back to its coarse height
 SEA_SHARE_PASSES = 3  # ... after a land cell's own sea pixels took what its mean lacks, up to the shore (PW-362)
 BRANCH_MAX_Z = 250.0  # m: distributaries aren't laid out where the target surface is higher than this
@@ -2674,6 +2676,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     fit_w = ZK.gauss_weights(px, py, cx, cy, FIT_SIGMA * sp)
 
     hprev = None
+    course = np.zeros(npx, bool)  # (the designed falls' courses, once the landscape pass has laid them)
+    c_idx = np.zeros(0, np.int64)
     was_river = bottom.copy()  # the valley bottom, and every pixel the coarse river's water has run through
     for it in range(iterations):
         filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
@@ -2847,6 +2851,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # spilling into the next), else a closed lake below the spill or a dry
     # flat where the streams end; the rest are filled flat
     lf_lake, lf_depth, lf_sink, lf_counts = np.zeros(npx, bool), np.zeros(npx), np.zeros(npx, bool), {}
+    h_pre_fill = h.copy()
     if lf is not None:
         surf_b, lf_lake, lf_depth, lf_sink, lf_counts = ZL.basin_lakes(
             h, filled, rec, order, active & ~glacier, lf.lakes(), srcq, lake_loss, res, nx, ny,
@@ -2858,6 +2863,16 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     h = np.where(active, np.maximum(h, filled), h)  # no pits left: everything drains
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+    # the flats that filling left are not land: a basin on high ground is a valley floor falling to its
+    # exit (alluvial fill), the outlet cut into its rim (PW-521)
+    flats = active & ~lf_lake & ~lf_sink & (h - h_pre_fill > 0.2) & (h > FLOOR_MIN_M)
+    protect = ring | rapids | course
+    protect[c_idx] = True
+    protect = _dilate(protect.reshape(ny, nx), 4).ravel()
+    if flats.any():
+        h, g_px, g_cut = ZK.grade_fills(h, h_pre_fill, flats, rec, order, outlet, active, protect, nx, res, FLOOR_SLOPE, FLOOR_MAX_SHARE)
+        log(f"  {int(flats.sum())} px of filled flats graded to valley floors ({FLOOR_SLOPE:g} m/km), {int(g_cut.sum())} px of outlet notch")
+        filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
     rec0 = rec
     rec, order, split_ok = reroute(rec, order)
     # The pinned courses (reaches with falls, delta trunks and distributaries)
@@ -2946,9 +2961,15 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             f["cascades"] = [{"px": st["lip_px"], "height_m": st["height_m"]} for st in kps[f.pop("_kp")]["steps"]
                              if "lip_px" in st and st["height_m"] >= KP_MIN_STEP
                              and max(abs(st["lip_px"][0] - f["px"][0]), abs(st["lip_px"][1] - f["px"][1])) > 3]
+    # the tiers the carve gave the run a fall belongs to (a finer zoom splits the fall's drop the same way)
+    for f in falls + top_falls:
+        near = [c for c in falls_carved if max(abs(c["px"][0] - f["px"][0]), abs(c["px"][1] - f["px"][1])) <= max(4, int(8 / res))]
+        if near:
+            c = min(near, key=lambda c: max(abs(c["px"][0] - f["px"][0]), abs(c["px"][1] - f["px"][1])))
+            f["tiers_m"] = c["tier_m"]
     # every listed fall with what the viewer's card shows (zoom.html's Waterfalls overlay)
     card = ("px", "lat", "lon", "height_m", "discharge_m3s", "kind", "length_km", "from_lake", "gorge_km",
-            "plunge_pool_m", "landform", "lip_resistance", "cascades")
+            "plunge_pool_m", "landform", "lip_resistance", "cascades", "tiers_m")
     all_falls = sorted(({k: f[k] for k in card if k in f} for f in falls), key=lambda f: -f["height_m"])
     h = np.where(lake, surf - depth, h)
     lake_depth = np.where(lake, depth, 0.0)

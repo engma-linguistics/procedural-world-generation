@@ -92,6 +92,7 @@ from . import zoom_fine_floodplain as ZFP
 from . import zoom_fine_forms as ZFF
 from . import zoom_fine_meander as ZFM
 from . import zoom_fine_volcano as ZFV
+from . import zoom_falls as ZFL
 from . import zoom_kernels as ZK
 from . import zoom_vegetation as ZVG
 from . import satellite as SAT
@@ -604,6 +605,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     gorge = np.zeros(npx, bool)  # (drawn features: kept out of the parent's means, as the parent's own)
     g_wall, g_floor, g_out = np.zeros(npx, bool), np.zeros(npx), np.zeros((npx, 2))  # (walls: their floor
     # and the way out from the path: cut again into the finished ground)
+    sc_relief = float(np.clip(np.percentile(hp[hp > 0], 99) if (hp > 0).any() else ZFL.EARTH_RELIEF_M, 1500.0, 12000.0)) / ZFL.EARTH_RELIEF_M
     for k, ch in chains.items():
         f = falls_p[k]
         top = float(round(ws_flat[ch[0]], 2))
@@ -642,8 +644,17 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         s_face = float(_path_dist(np.array([0.5 * (px[lip] + px[seq[1]])]),
                                   np.array([0.5 * (py[lip] + py[seq[1]])]), Q, S)[1][0])
         s1 = float(_path_dist(px[seq[1:2]], py[seq[1:2]], Q, S)[1][0])
-        frac = np.clip((sp - s1) / max(L_ - s1, 1e-6), 0.0, 1.0)
-        zf = bottom + (ws_foot - bottom) * frac
+        # the floor: the parent's drop split into tiers (the parent's own, kept in proportion) with ledged
+        # faces, rapids between and a pool at each foot; the whole staircase held back downstream at the
+        # flanks, so its crests curve into a horseshoe round the gorge's head (zoom_falls.fine_profile, horseshoe; PW-522)
+        tiers = ZFL.tier_plan(top - bottom, sc_relief, f.get("tiers_m"))
+        rng_f = np.random.default_rng(S_ + 7919 * k + 5)
+        ks_, kz_, foots = ZFL.fine_profile(top, bottom, tiers, s_face, rng_f, 0.9 * max(L_ - s_face, 4 * res))
+        rcs, R0, T_h = ZFL.horseshoe(d, tiers[0], hf + (top - bottom) / (1000.0 * np.tan(np.radians(65.0))))
+        sp_e = sp - rcs
+        zf = np.where(sp_e <= ks_[-1], np.interp(sp_e, ks_, kz_),
+                      bottom + (ws_foot - bottom) * np.clip((sp_e - ks_[-1]) / max(L_ - ks_[-1], 1e-6), 0.0, 1.0))
+        frac = np.clip((sp_e - ks_[1]) / max(L_ - ks_[1], 1e-6), 0.0, 1.0)
         rim = np.maximum(fill_t[ib], zf)
         rim = np.where(rim < top, top - (top - rim) * frac ** 2, rim)
         # walls: one rock's gradient along the gorge (the caprock's: a rock per pixel drew facets), their
@@ -657,15 +668,24 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         grad = 1000.0 * np.tan(np.radians(GORGE_WALL_DEG[0] + (GORGE_WALL_DEG[1] - GORGE_WALL_DEG[0]) * rug_g))
         e_ = d - hf
         e_ = e_ + GORGE_FRAY_KM * n1 * Z.smoothstep(0.0, 4 * GORGE_FRAY_KM, e_)
-        cut = zf + np.maximum(e_, 0.0) * grad
-        free = (sp >= s_face) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib] & ~gorge[ib]
+        # round each tier's foot the walls open out (an amphitheatre: gentler scree-and-talus slopes), and
+        # they stand in benches (strata: harder beds hold a ledge, softer ones step back)
+        bowl = np.zeros(len(ib))
+        for s_f, _, t_ in foots:
+            bowl = np.maximum(bowl, np.exp(-((sp_e - s_f) / (0.05 + 2.0 * t_ / 1000.0)) ** 2))
+        u_ = np.maximum(e_, 0.0) * grad * (1.0 - 0.45 * bowl)
+        B_ = float(np.clip(tiers[0] / 3.0, 15.0, 80.0)) * (1.0 + 0.3 * n1)
+        q_ = u_ / B_
+        u_ = B_ * (np.floor(q_) + Z.smoothstep(0.55, 1.0, q_ - np.floor(q_)))
+        cut = zf + u_
+        free = (sp_e >= s_face) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib] & ~gorge[ib]
         flo = free & (d <= hf)
         wal = free & (d > hf) & (cut < rim - 0.5)
         hw[ib[flo | wal]] = cut[flo | wal]
         # the headwall: the ground just above the face, as far out as the walls reach, held at the rim
         # (left to the pass, it drained over the face into the pool, was built up from the pool's level
         # and the parent's means then stacked a block's volume on it: pillars round the lip)
-        head = ((sp < s_face) & (sp >= s_face - 2 * res) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib]
+        head = ((sp_e < s_face) & (sp_e >= s_face - 2 * res) & ~course[ib] & ~sea[ib] & ~lake[ib] & ~ring[ib]
                 & ~gorge[ib] & ((d - hf) * grad < rim - bottom) & (ib != lip))
         hw[ib[head]] = np.maximum(rim[head], top)
         g_wall[ib[wal]] = True
@@ -676,27 +696,34 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         land[ib[flo]] = True
         # the course down its floor, falling all the way
         on = np.searchsorted(ib, seq[1:])
-        gz = np.minimum.accumulate(np.minimum(zf[on], bottom) - 1e-3 * np.arange(len(on)))
+        gz = np.minimum.accumulate(np.minimum(zf[on], top) - 1e-3 * np.arange(len(on)))
         hw[seq[1:]] = gz
         hw[lip] = top
         course[seq] = True
         land[seq] = True
         c_rec[seq[:-1]] = seq[1:]
-        # plunge pool at the face's foot
+        # a plunge pool at the foot of each tier (the last: the parent's pool and depth), its water at the
+        # tier's foot; at the river
         depth = f.get("plunge_pool_m") or float(np.clip(POOL_DEPTH[0] * f["height_m"], POOL_DEPTH[1], POOL_DEPTH[2]))
-        pr_px = max(0.5 * max(2 * w_riv, res) / res, 0.5)
-        r0, c0 = divmod(int(seq[1]), nb)
-        pm = (np.hypot(ib // nb - r0, ib % nb - c0) <= pr_px) & (ib != lip) & ~sea[ib] & (sp >= s_face)
-        pm &= hw[ib] <= top  # (only below the lip's side: not the pixels upstream of it)
-        pmask = np.zeros(npx, bool)
-        pmask[ib[pm]] = True
-        pool |= pmask
-        pool_d = np.where(pmask, depth, pool_d)
-        hw = np.where(pmask, bottom, hw)
+        pool_ctr = int(seq[1])
+        for j_, (s_f, z_f, t_) in enumerate(foots):
+            sa = float(np.clip(s_f, 0.0, L_))
+            cx_, cy_ = float(np.interp(sa, S, Q[:, 0])), float(np.interp(sa, S, Q[:, 1]))
+            pr_km = max(ZFL.POOL_RADIUS_FRAC * t_ / 1000.0, 0.5 * max(2 * w_riv, res), 0.8 * res)
+            dd_ = np.hypot(px[ib] - cx_, py[ib] - cy_)
+            pm = (dd_ <= pr_km) & (ib != lip) & ~sea[ib]
+            pm &= hw[ib] <= top + 1e-6
+            pmask = np.zeros(npx, bool)
+            pmask[ib[pm]] = True
+            dp_ = depth if j_ == len(foots) - 1 else float(np.clip(0.3 * t_, 3.0, 40.0))
+            pool |= pmask
+            pool_d = np.where(pmask, dp_, pool_d)
+            hw = np.where(pmask, z_f if j_ < len(foots) - 1 else bottom, hw)
+            pool_ctr = int(seq[np.argmin(np.hypot(px[seq] - cx_, py[seq] - cy_))])
         held = np.zeros(npx, bool)
         held[ib[flo | wal | head]] = True
         held[seq[1:]] = True
-        gorge |= held | pmask
+        gorge |= held | pool
         fixed |= gorge | course
         lip_r, lip_c = divmod(lip, nb)
         ll_ = Z._latlon(fr.to_sphere(np.array([px[lip]]), np.array([py[lip]]))[0])
@@ -711,7 +738,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
                           "gorge_path": [[round(float(a), 5) for a in Z._latlon(P_)] for P_ in Pq],
                           "gorge_half_km": round(float(np.percentile(d[flo | wal], 95)) + 0.5 * res, 3)
                           if (flo | wal).any() else round(hf, 3),
-                          "pool_px": [int(seq[1]) // nb - hb, int(seq[1]) % nb - hb],
+                          "pool_px": [pool_ctr // nb - hb, pool_ctr % nb - hb],
+                          "tiers_m": [round(float(t_), 1) for t_ in tiers], "recess_m": round(1000.0 * R0, 1),
+                          "foots": [[round(float(a), 3), round(float(b), 1)] for a, b, _ in foots],
                           "foot_px": [foot // nb - hb, foot % nb - hb],
                           "power_gw": round(9.81e-6 * q_f * float(f["height_m"]), 3),
                           "parent_fall": k, "lineage": [*f.get("lineage", []), k]})
