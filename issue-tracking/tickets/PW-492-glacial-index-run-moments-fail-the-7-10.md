@@ -2,8 +2,8 @@
 id: PW-492
 title: "Glacial index: run moments fail the 7/10 bar because their ice at I = 0 isn't the zoom's balance"
 type: task
-status: needs-decision
-parent: PW-244
+status: done
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: high
@@ -60,4 +60,5 @@ Lean: (C) now for v1 (the index is no worse than main on run moments and fixes E
 real fix, scheduled in the run lane; (B) only if the showcases need run moments before (A).
 
 ## Updates
+- 2026-10-20: Status needs-decision -> done. Owner 2026-10-20: option C. Ship as is; the v1 run-moment bar becomes 'cycles at ~100 kyr without runaway' (all 10 pass). Option A (run's coastal ice pays calving and shelf melt, PW-465) is post-v1 under PW-470.
 - 2026-10-20: Created from inbox draft draft-glacial-index-run-moment-drift.md (found by pw471).
