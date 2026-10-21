@@ -194,7 +194,7 @@ export async function showStart() {
     if (!opt) { box.innerHTML = '<div class="pl-err">The server has no make API. Restart it: uv run python -m planet serve</div>'; return; }
     const D = opt.defaults, byKey = Object.fromEntries(opt.settings.map((s) => [s.key, s]));
     const S = { preset: opt.default_preset, seed: Math.floor(Math.random() * 1e6), level: D.level, myr: opt.presets[opt.default_preset].myr,
-      timezoom: D.timezoom, kyr: D.kyr, now: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, vals: {} };
+      timezoom: D.timezoom, kyr: D.kyr, now: D.now, nowKey: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, vals: {} };
     const eff = (k) => (k in opt.presets[S.preset].set ? opt.presets[S.preset].set[k] : byKey[k].default);  // value without the user's change
     const cur = (k) => (k in S.vals ? S.vals[k] : eff(k));
     const levelNote = { 5: 'tiny, for testing', 6: 'quick', 7: 'showcase' };
@@ -212,7 +212,8 @@ export async function showStart() {
         <label class="ck"><input type="checkbox" id="fTz"><span>Ice-age time zoom from a typical moment of the run</span>
           <select id="fKyr" style="width:auto;flex:none">${[100, 300, 1000].map((k) => `<option value="${k}">${k} kyr</option>`).join('')}</select></label>
         <label class="ck"><input type="checkbox" id="fFinish"><span>Finished world (climate, rivers, lakes, biomes) <span style="color:var(--muted)">at a typical moment of the run without a time zoom, or at:</span></span>
-          <select id="fNow" style="width:auto;flex:none" title="Which moment of the ice-age cycle is the planet's present">${opt.nows.map((w) => `<option value="${w.key}">${esc(w.label)}</option>`).join('')}</select></label>
+          <select id="fNow" style="width:auto;flex:none" title="Which moment of the ice-age cycle is the planet's present">${opt.nows.map((w) => `<option value="${w.key}">${esc(w.label)}</option>`).join('')}</select>
+          or <input id="fNowKyr" type="number" min="0" step="1" placeholder="kyr" title="A specific kyr of the time zoom (overrides the choice above)" style="width:90px"> kyr</label>
         <label class="ck"><input type="checkbox" id="fHl"><span>Highlights (the most interesting places)</span></label>
         <label class="ck"><span>Regional zooms of the top highlights:</span> <select id="fZooms" style="width:auto;flex:none">${[0, 2, 4, 6].map((k) => `<option value="${k}">${k}</option>`).join('')}</select></label></fieldset>
       <fieldset><legend>Planet settings</legend><div id="fSettings">${opt.settings.map((s) => `<div class="f"><label for="s_${s.key}">${esc(s.label)}</label>${
@@ -231,7 +232,8 @@ export async function showStart() {
       box.querySelectorAll('#fLevel button').forEach((b) => b.classList.toggle('on', +b.dataset.l === S.level));
       q('#fLevelHp').textContent = `${opt.levels.find((l) => l.level === S.level).cells.toLocaleString()} cells; a run takes about ${fmtDuration(opt.levels.find((l) => l.level === S.level).run_s_per_gyr)} per Gyr.`;
       q('#fTz').checked = S.timezoom; q('#fKyr').value = S.kyr; q('#fKyr').disabled = !S.timezoom;
-      q('#fFinish').checked = S.finish; q('#fNow').value = S.now; q('#fNow').disabled = !S.finish || !S.timezoom; q('#fHl').checked = S.highlights && S.finish; q('#fHl').disabled = !S.finish;
+      q('#fFinish').checked = S.finish; q('#fNow').value = S.nowKey; q('#fNow').disabled = !S.finish || !S.timezoom;
+      q('#fNowKyr').value = typeof S.now === 'number' ? S.now : ''; q('#fNowKyr').max = S.kyr; q('#fNowKyr').disabled = !S.finish || !S.timezoom;q('#fHl').checked = S.highlights && S.finish; q('#fHl').disabled = !S.finish;
       q('#fZooms').value = S.zooms; q('#fZooms').disabled = !S.finish || !S.highlights;
       for (const s of opt.settings) { const i = q('#s_' + s.key); i.value = cur(s.key); i.style.borderColor = s.key in S.vals ? 'var(--accent)' : ''; }
       estimate();
@@ -266,7 +268,8 @@ export async function showStart() {
       else if (t.id === 'fMyr') { S.myr = +t.value; q('#fMyrV').textContent = `${S.myr} Myr`; }
       else if (t.id === 'fTz') S.timezoom = t.checked;
       else if (t.id === 'fKyr') S.kyr = +t.value;
-      else if (t.id === 'fNow') S.now = t.value;
+      else if (t.id === 'fNow') { S.nowKey = t.value; S.now = t.value; q('#fNowKyr').value = ''; }
+      else if (t.id === 'fNowKyr') S.now = t.value === '' ? S.nowKey : +t.value;  // (the server checks the range)
       else if (t.id === 'fFinish') S.finish = t.checked;
       else if (t.id === 'fHl') S.highlights = t.checked;
       else if (t.id === 'fZooms') S.zooms = +t.value;

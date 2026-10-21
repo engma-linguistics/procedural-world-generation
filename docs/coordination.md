@@ -31,8 +31,8 @@ Jobs (zooms, time zooms, finished worlds) run `--jobs J` at a time (default 4), 
 ## Run costs (the table: the Mac laptop, often shared with 2–4 other jobs; the Threadripper numbers are below it)
 | Level | Cells | Cell size | `simulate` time | Memory / disk |
 |---|---|---|---|---|
-| 6 | 41k | ~110 km | ~5–6 min per Gyr | checkpoints ~12 MB each (PW-131, PW-306: seed 1 @ 200 Myr 15.3 -> 11.7 MB); layers ~360–390 MB per Gyr (Oct 15, with vegetation) |
-| 7 | 164k | ~55 km | ~20–40 min per Gyr (~1.8 s/Myr under load) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4–1.7 GB per Gyr, checkpoints ~45 MB each (PW-306 estimate from L6's share; ~60 after PW-131, ~140 before) |
+| 6 | 41k | ~110 km | ~11–13 min per Gyr (store runs 705–802 s/Gyr; 659 s in the Oct 15 sweep under load; ~260 s/Gyr on the idle Threadripper) | checkpoints ~12 MB each (PW-131, PW-306: seed 1 @ 200 Myr 15.3 -> 11.7 MB); layers ~360–390 MB per Gyr (Oct 15, with vegetation) |
+| 7 | 164k | ~55 km | ~50 min per Gyr (Oct 15 sweep: 3 seeds at 2965–3038 s, 11 workers at once; the earlier ~20–40 min was idle) | ~0.9 GB RSS (+~0.45 GB of plate arrays for the geological record since landform); layers ~1.4–1.7 GB per Gyr, checkpoints ~45 MB each (PW-306 estimate from L6's share; ~60 after PW-131, ~140 before) |
 | 8 | 655k | ~28 km | ~3–4 h per Gyr (4.1 h for 1.2 Gyr) | ~3.5 GB RAM; ~17 MB per frame, so use `--every 10`; 3.9 GB on disk |
 
 - At level 8, a world plus 5 highlight zooms takes ~8.5 min (Mac, zooms one after the other).
