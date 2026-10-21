@@ -185,10 +185,7 @@ def test_export_world(world, data_root, tmp_path):
     kinds = {f["properties"]["kind"] for f in geo["features"]}
     assert {"river", "lake", "volcano"} <= kinds
     for f in geo["features"]:
-        pts = [f["geometry"]["coordinates"]] if f["geometry"]["type"] == "Point" else f["geometry"]["coordinates"]
-        if f["geometry"]["type"] == "Polygon":
-            pts = [p for ring in pts for p in ring]
-        assert all(-90 <= p[1] <= 90 and -361 <= p[0] <= 361 for p in pts)
+        assert all(-90 <= p[1] <= 90 and -180 <= p[0] <= 180 for p in _positions(f["geometry"]["coordinates"]))
     v = next(f for f in geo["features"] if f["properties"]["kind"] == "volcano")
     assert v["geometry"]["coordinates"] == [20.0, 10.0] and v["properties"]["status"] == "active"
     r = [f for f in geo["features"] if f["properties"]["kind"] == "river"]
@@ -351,3 +348,75 @@ def test_export_zoom_projected(zoom, data_root, tmp_path):
     assert (h[~cov] == 0).all()
     fm = json.loads((out / "features_map.geojson").read_text())
     assert any(f["properties"]["kind"] == "river" for f in fm["features"])
+
+
+def _positions(c):
+    """Every [lon, lat] position in a GeoJSON coordinates member, at any nesting depth."""
+    if isinstance(c[0], (int, float)):
+        yield c
+    else:
+        for x in c:
+            yield from _positions(x)
+
+
+def _all_lons(geo):
+    """Every longitude in a FeatureCollection's geometries."""
+    for f in geo["features"]:
+        for p in _positions(f["geometry"]["coordinates"]):
+            yield p[0]
+
+
+def test_antimeridian_river_splits_into_multilinestring():
+    # unwrapped longitudes 170 -> 190 (across 180), latitude 10 -> 20; discharge 10, 30, 50, 70
+    f = X.Features()
+    ll = np.stack([np.array([10.0, 12.0, 18.0, 20.0]), np.array([170.0, 175.0, 185.0, 190.0])], 1)
+    f.line("river", ll, **X._river_props(
+        {"q": 70.0, "order": 2, "nodes": [0, 1, 2, 3], "q_nodes": [10.0, 30.0, 50.0, 70.0]}, ll, 0))
+    geo = f.collections("t")[0]
+    feat = geo["features"][0]
+    g = feat["geometry"]
+    assert g["type"] == "MultiLineString" and len(g["coordinates"]) == 2
+    a, b = g["coordinates"]
+    # crossing at lon 180 between (175, 12) and (185, 18): lat 15; each part ends/starts there
+    assert a == [[170.0, 10.0], [175.0, 12.0], [180.0, 15.0]]
+    assert b == [[-180.0, 15.0], [-175.0, 18.0], [-170.0, 20.0]]
+    # per-part discharge lists align with each part's vertices (crossing value interpolated: 40)
+    assert feat["properties"]["vertex_discharge_m3s"] == [[10, 30, 40], [40, 50, 70]]
+    assert all(-180 <= x <= 180 for x in _all_lons(geo))
+
+
+def test_river_not_crossing_stays_linestring():
+    f = X.Features()
+    ll = np.array([[10.0, 100.0], [11.0, 110.0], [12.0, 120.0]])
+    f.line("river", ll, **X._river_props(
+        {"q": 5.0, "order": 1, "nodes": [0, 1, 2], "q_nodes": [1.0, 3.0, 5.0]}, ll, 1))
+    feat = f.collections("t")[0]["features"][0]
+    assert feat["geometry"]["type"] == "LineString"
+    assert feat["properties"]["vertex_discharge_m3s"] == [1.0, 3.0, 5.0]
+
+
+def test_antimeridian_lake_splits_into_multipolygon():
+    # a lake from lon 175 to 185 (unwrapped), lat -5..5, with an island from 179 to 181 straddling too
+    outer = [(-5, 175), (-5, 185), (5, 185), (5, 175)]
+    hole = [(-1, 179), (-1, 181), (1, 181), (1, 179)]
+    rings = [np.array(outer + outer[:1], float), np.array(hole + hole[:1], float)]
+    f = X.Features()
+    f.polygon("lake", X.lake_polygon(rings), area_km2=1)
+    geo = f.collections("t")[0]
+    g = geo["features"][0]["geometry"]
+    assert g["type"] == "MultiPolygon" and len(g["coordinates"]) == 2
+    areas = []
+    for poly in g["coordinates"]:
+        ring = np.array(poly[0])
+        assert (ring[0] == ring[-1]).all()
+        areas.append(0.5 * np.sum(ring[:-1, 0] * ring[1:, 1] - ring[1:, 0] * ring[:-1, 1]))
+    # the two halves are the same size, both counter-clockwise shells
+    assert abs(areas[0] - areas[1]) < 1e-6 and all(a > 0 for a in areas)
+    assert all(-180 <= x <= 180 for x in _all_lons(geo))
+
+
+def test_lake_away_from_antimeridian_unchanged():
+    f = X.Features()
+    f.polygon("lake", X.lake_polygon([np.array([(0, 10), (0, 20), (5, 20), (5, 10), (0, 10)], float)]))
+    g = f.collections("t")[0]["features"][0]["geometry"]
+    assert g["type"] == "Polygon" and g["coordinates"][0][0] == [10.0, 0.0]
