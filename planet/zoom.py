@@ -164,6 +164,7 @@ from . import satellite as SAT
 from . import vegetation
 from . import zoom_vegetation as ZVG
 from . import zoom_coastal as ZCL
+from . import zoom_falls as ZFL
 from .geo import R_KM, latlon, xyz
 from .images import write_png
 from .climate import LAPSE
@@ -2832,6 +2833,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
 
     # --- final drainage --------------------------------------------------
     filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+    # tall drops become carved falls: tiers, a gorge retreated up into the plateau, walls round the lip
+    # and a funnel round the foot (zoom_falls, PW-517); the drainage is found again on the carved ground
+    h, falls_carved, tier_pools = ZFL.carve(h, filled, rec, order, active & ~glacier, srcq * KM2_M_PER_YR_TO_M3S, nx, ny, res, S)
+    if falls_carved:
+        filled, rec, order = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+        log(f"  {len(falls_carved)} tall falls carved (tiers, gorge, walls): "
+            + ", ".join(f"{f['drop_m']:.0f} m in {f['tiers']}" for f in falls_carved[:4]))
     # a landform's closed depressions (a rift's basins, a scoured shield's
     # rock basins) hold water where the class lets them (Synth.lakes) and
     # their water balance says (zoom_landforms.basin_lakes, PW-167): a lake
@@ -2877,6 +2885,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                        {int(o): lakes[j]["level"] for j, o in enumerate(outs) if o >= 0},
                        designed=[lp for lp, _, _ in lips], top=None, sep_km=0.0)
     pool = np.zeros(npx)
+    for p_, d_ in tier_pools:  # (the basins below the carved falls' tiers)
+        if active[p_]:
+            pool[p_] = max(pool[p_], d_)
     for lip, st, kp in lips:
         foot = int(rec[lip])
         hgt = float(ws_f[lip] - ws_f[foot])
