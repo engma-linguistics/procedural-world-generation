@@ -1,8 +1,10 @@
 ---
+id: PW-544
 title: Flat basin floors and landform-lake shores still dead flat after the shore apron (PW-531)
 type: task
 status: todo
-parent: null
+parent: PW-516
+milestone: v2
 subsystem: zoom
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: pw531
 blocked_by: []
 relates: [PW-531, PW-521]
 refs: [planet/zoom.py, "zoom f24fda (Costa Rica, 18 iterations)", "zoom 9213a8", "zoom 4f65aa"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -23,3 +27,6 @@ with slope under 1 m/km from 8002 km2 to 1554 km2. What is left there, and elsew
 - A beach strip 1-3 px wide along the big lake's shore (intended), and river valley floors above SHORE_RIVER_Q.
 - [ ] decide whether landform lakes should get the same grade (the apron works from `lakes`' pixel lists and
   `ZK.raise_to_run`), and whether the SW basin is a pan that may stay flat (a salt pan is legitimately flat)
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-flat-basin-and-landform-lake-shores.md (found by pw531).
