@@ -22,4 +22,5 @@ updated: 2026-10-20
 - [ ] The New planet form has no "specific kyr" choice (CLI and API do); add one if wanted.
 
 ## Updates
+- 2026-10-20: Coordinator checked on Earth zoom 6d0ed0 (600 kyr): interglacial -> 512 kyr (index 0.00, -14 m), glacial -> 594 kyr (index 0.89, -104 m), end -> 600. The pick works on a real zoom; left open only for the form's kyr choice and a 300 kyr check.
 - 2026-10-20: Created from inbox draft draft-now-pick-real-zoom-check.md (found by pw479).
