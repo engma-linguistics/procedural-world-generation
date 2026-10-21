@@ -475,6 +475,7 @@ async function load(id) {
   resetView();
   render();
   syncURL();
+  if (parent !== window) parent.postMessage({ zoomOpen: id }, location.origin);  // (index.html's family bar follows the zoom picked here, PW-540)
   // ?px=row,col fills the info panel for that pixel, as hovering it would (the first zoom loaded only)
   const pxq = (START_PX || '').split(',').map(Number);
   START_PX = null;
