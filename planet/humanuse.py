@@ -518,6 +518,7 @@ def analyse_world(grid, L: dict) -> tuple[dict, dict]:
     sea = ~land
     cnt = np.bincount(net.ea, weights=land[net.eb], minlength=n) + np.bincount(net.eb, weights=land[net.ea], minlength=n)
     near = sea & (cnt > 0)
+    out["harbour"] = np.zeros(n, np.uint8)  # always present, all 0 on a planet without a coast, so every consumer can index it
     if near.any():
         cells = np.flatnonzero(near)
         fe, reach = fetch_world(grid, land, cells)
@@ -604,6 +605,7 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
         tab["nav"] = {"cls": cls, "q": q, "grad": grad, "open": openm, "conn": conn}
     sea = water == 1
     near = _coast_nodes(net, land, 3)
+    out["harbour"] = np.zeros((ny, nx), np.uint8)  # always present (all 0 for an inland zoom): the viewer indexes it unconditionally
     if near.any():
         pix = np.flatnonzero(near)
         fe, reach = fetch_raster(land.reshape(ny, nx), pix, res_km, 50.0)
