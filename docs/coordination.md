@@ -268,3 +268,22 @@ If the run fails while the zoom succeeds, it writes a needs-decision draft inste
 - No replies to interim "agent waiting" notices.
 - Flag refactors, with a Haiku duplicate scan first.
 - Thresholds are planet-relative.
+
+## State 2026-10-21 (early morning)
+- **Ice ages are parked** under epic PW-470 until after v1. v1 uses the glacial index (PW-471, merged); run moments ship as is (PW-492 option C).
+- **Unmerged ice branches kept for later:**
+  - `worktree-agent-a9f64607e1a64d2e8`: PW-460/459.
+  - `worktree-agent-af748cc6ffa533997`: PW-465 coast_loss. Decision PW-514; write-up docs/review/audit/PW-465-side-lane.md.
+- **Merged overnight:**
+  - export (PW-100) and projections (PW-477), with the 2D map in the viewer;
+  - `planet make`, start screen and navigator, cancel/resume (PW-248/472/473/480/482);
+  - fine-zoom redraws (PW-392);
+  - glacial carving (PW-037/491/418);
+  - the "now" pick (PW-479);
+  - glacial landscapes in zooms (PW-092);
+  - human-use layers (PW-099);
+  - the board's milestone field.
+- **Store:** cleaned by the owner. Current showcases: time zoom e9d59c (Earth, carving), finished world 577526 (420 kyr, with rock), zooms 66c45e and 0de6eb (Norway), 21703a (Baltic margin), 4f65aa (Ungava).
+- **Owner review pending:** docs/review/v2-proposal.md (17 epics; five decisions flagged at the end).
+- **Next v1 work:** PW-213 (vegetation in the time zoom), PW-512 (moraine lakes), PW-505 (human-use layers in the viewer), PW-488 (fine-zoom coast staircase), then PW-202 (showcase remake + health sweep) and the final calibration pass.
+- `board.py milestones v1` lists what's open.
