@@ -1,9 +1,10 @@
 ---
+id: PW-529
 title: Marine fans at the Ross and Amery fronts still reach 300-410 m
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: xs
 impact: low
@@ -11,6 +12,8 @@ found_by: pw497
 blocked_by: []
 relates: [PW-495]
 refs: [planet/timezoom/deposit.py, planet/timezoom/params.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -21,3 +24,6 @@ rough 300 m is met by the other cells; going further would need a longer length 
 (a longer fan_km_r) or a slope-limited relaxation of the till on the floor. Real trough-mouth fans are 1-4 km thick
 over ~2.6 Myr, so 400 m in 0.6 Myr is not out of range.
 - [ ] decide whether 411 m is acceptable; if not, a critical-slope relaxation of the sea-floor till
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-marine-fan-still-300m-at-ross.md (found by pw497).

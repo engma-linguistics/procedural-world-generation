@@ -2,7 +2,7 @@
 id: PW-497
 title: Outwash plains and loess from the time zoom's glacial imprint
 type: task
-status: todo
+status: done
 parent: PW-037
 milestone: v1
 subsystem: timezoom
@@ -33,5 +33,6 @@ What to try:
 - [ ] volume conserved (erosion = till + outwash + loess + debris in the ice)
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 6e4379f: outwash (0.025 R downslope) and loess (0.05 R downwind) as frame layers, carried to finish, soils and zooms. Earth Laurentide/Mississippi analogue missing because the zoom's ice doesn't reach there (PW-527, ice-parked).
 - 2026-10-21: Done on branch worktree-agent-af1b31d54c1ac1c9d (pw497): time zoom layers glacial_outwash and glacial_loess (conserved with till and the debris in the ice), finished worlds add the loess to soils' loess, zooms (zoom_glacial) take outwash and loess from them. Limited by the Earth time zoom's ice extent: see draft-earth-timezoom-ice-misses-loess-lands. Desert loess and dryness: draft-loess-from-deserts-and-dryness.
 - 2026-10-21: Created from inbox draft draft-glacial-outwash-and-loess.md (found by pw037).

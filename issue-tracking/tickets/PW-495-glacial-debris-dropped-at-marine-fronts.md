@@ -2,7 +2,7 @@
 id: PW-495
 title: Glacial debris dropped at marine fronts piles up in one sea cell (no fan spreading)
 type: task
-status: todo
+status: done
 parent: PW-037
 milestone: v1
 subsystem: timezoom
@@ -30,5 +30,6 @@ and send a small share far off as ice-rafted debris. Keep the volume conserved.
 - [ ] no sea cell gets more than ~300 m of till in 600 kyr on Earth L6; volume still conserved
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 6e4379f: mass-conserving marine fan (0.08 R). Ross/Amery peaks 411 m remain (PW-529).
 - 2026-10-21: Fan spreading done on branch worktree-agent-af1b31d54c1ac1c9d (pw497): planet/timezoom/deposit.py, fan_km_r 0.08 R, fan_flat 1000 m. Earth L6 600 kyr: thickest sea-floor till 411 m (was 540-640), 4 cells above 300 m (Ross, Amery), none above 2.4x its neighbours' mean, volume conserved. Remainder in draft-marine-fan-still-300m-at-ross.
 - 2026-10-21: Created from inbox draft draft-glacial-debris-piles-at-marine-fronts.md (found by pw037-port).

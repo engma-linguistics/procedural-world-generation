@@ -1,16 +1,19 @@
 ---
+id: PW-528
 title: Loess only comes from outwash plains, wet or dry, not from deserts
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: low
 found_by: pw497
 blocked_by: []
 relates: [PW-497, PW-096]
-refs: [planet/timezoom/sim.py (drop), planet/timezoom/deposit.py]
+refs: ["planet/timezoom/sim.py (drop)", planet/timezoom/deposit.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -21,3 +24,6 @@ not the glacial anticyclone's katabatic winds, which the grid does not resolve.
 What to try: scale the lift by a dryness term from the frame's precipitation and vegetation; add a
 source from the world's desert/dune cells; keep the volume bookkeeping (loess layer, rock_isostasy).
 - [ ] loess also downwind of the Sahara / Gobi analogue
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-loess-from-deserts-and-dryness.md (found by pw497).
