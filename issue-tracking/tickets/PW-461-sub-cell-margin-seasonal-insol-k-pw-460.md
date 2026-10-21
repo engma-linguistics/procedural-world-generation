@@ -3,7 +3,7 @@ id: PW-461
 title: "Sub-cell margin + seasonal insol_k (PW-460/459) deepen the zoom but freeze the run's cold eras (1/10 seeds): the run needs a way to deglaciate"
 type: task
 status: needs-decision
-parent: null
+parent: PW-470
 subsystem: tectonics
 effort: l
 impact: high

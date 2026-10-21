@@ -3,7 +3,7 @@ id: PW-436
 title: Forced time zoom from a cold run moment loses ice (+41 m at 20 kyr, up to +141 m) after PW-366
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: s
 impact: med

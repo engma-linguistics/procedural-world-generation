@@ -3,7 +3,7 @@ id: PW-441
 title: "Time zoom: sea ice starves the sheets of snow (Gildor & Tziperman sea-ice switch); maybe-someday"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: low

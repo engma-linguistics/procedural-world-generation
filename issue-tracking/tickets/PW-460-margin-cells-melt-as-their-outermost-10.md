@@ -3,7 +3,7 @@ id: PW-460
 title: "Margin cells melt as their outermost 10 km (edge_h 408 m vs the cell's ~900 m mean): sub-cell margin in run and time zoom together"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: l
 impact: high

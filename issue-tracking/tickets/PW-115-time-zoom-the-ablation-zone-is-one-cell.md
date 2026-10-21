@@ -3,7 +3,7 @@ id: PW-115
 title: "Time zoom: the ablation zone is one cell wide (sub-cell melt at margins)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: low

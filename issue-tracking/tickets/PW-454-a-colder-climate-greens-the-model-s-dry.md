@@ -3,7 +3,7 @@ id: PW-454
 title: A colder climate greens the model's dry tropics, so glacial vegetation darkens them (Earth's LGM dried and browned them)
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: climate
 effort: m
 impact: med

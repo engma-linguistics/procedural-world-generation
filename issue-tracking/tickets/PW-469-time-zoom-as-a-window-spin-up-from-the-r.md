@@ -3,7 +3,7 @@ id: PW-469
 title: "Time zoom as a window: spin up from the run's state, then start wherever the orbit puts the cycle; the cycle's interglacial footprint and the feedbacks' reference from the run's mean"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: high

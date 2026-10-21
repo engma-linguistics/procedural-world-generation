@@ -3,7 +3,7 @@ id: PW-468
 title: "Time zoom start: offer the glacial phases available at a moment (on: interglacial / building / glacial maximum / ending; off) in the API and viewer"
 type: story
 status: todo
-parent: null
+parent: PW-470
 subsystem: viewer
 effort: m
 impact: med

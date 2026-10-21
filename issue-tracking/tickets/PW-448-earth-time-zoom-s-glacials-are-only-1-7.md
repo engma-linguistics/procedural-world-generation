@@ -3,7 +3,7 @@ id: PW-448
 title: Earth time zoom's glacials are only ~1.7 C colder (real LGM ~5-6 C), so no Laurentide sheet south of ~60 N
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: high

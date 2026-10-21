@@ -3,7 +3,7 @@ id: PW-437
 title: "PW-422 (film-shielded margins): re-measure after PW-366's in-sub-step balance and front-edge balance"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: xs
 impact: low

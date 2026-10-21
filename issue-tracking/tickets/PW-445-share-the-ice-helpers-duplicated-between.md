@@ -3,7 +3,7 @@ id: PW-445
 title: Share the ice helpers duplicated between the time zoom, icemass and tectonics/earth (after PW-438 merges)
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: med

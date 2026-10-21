@@ -3,7 +3,7 @@ id: PW-295
 title: "Time zoom from a run's moment: drift median smaller after PW-274..277, but a heavy tail (-286, -312 m in 150 kyr)"
 type: task
 status: blocked
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: med

@@ -3,7 +3,7 @@ id: PW-447
 title: "Time zoom: ice-age endings at the agreed strength are slow (30-75 kyr) and stall on cold extra ice"
 type: task
 status: needs-decision
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: high

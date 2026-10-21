@@ -3,7 +3,7 @@ id: PW-465
 title: "Run ice: a coastal accumulation zone must pay the zoom's calving and shelf losses (the run keeps ~100 m of marine ice the time zoom loses at once)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: tectonics
 effort: m
 impact: high

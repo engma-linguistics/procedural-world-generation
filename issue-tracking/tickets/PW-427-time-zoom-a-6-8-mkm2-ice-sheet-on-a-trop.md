@@ -3,7 +3,7 @@ id: PW-427
 title: "Time zoom: a 6.8 Mkm2 ice sheet on a tropical plateau (080df3, 0-15S, 2.6 km thick) and 1-2.8 Mkm2 of tropical ice in cold moments"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: s
 impact: med

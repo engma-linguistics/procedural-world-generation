@@ -3,7 +3,7 @@ id: PW-466
 title: "Time zoom: show an icehouse era starting or ending (the run's dT trend across the window, at the step where the run's cycle switches on or off)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: low

@@ -3,7 +3,7 @@ id: PW-398
 title: "Time zoom orbit anomaly: tropical land feels insol_k in full, so an eccentric orbit gives a 13-16 C annual swing at the equator in finished frames"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: s
 impact: med

@@ -3,7 +3,7 @@ id: PW-455
 title: The run's global temperature has no vegetation albedo term (the time zoom has one since PW-450)
 type: task
 status: needs-decision
-parent: null
+parent: PW-470
 subsystem: climate
 effort: s
 impact: low

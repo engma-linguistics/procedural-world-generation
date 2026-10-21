@@ -3,7 +3,7 @@ id: PW-422
 title: "Time zoom margins: thin films the flow leaves beyond a front hide it from the margin rule (it takes interior snow)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: med

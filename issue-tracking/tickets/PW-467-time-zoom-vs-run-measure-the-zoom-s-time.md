@@ -3,7 +3,7 @@ id: PW-467
 title: "Time zoom vs run: measure the zoom's time-mean ice against the run's (tool + slow test), the acceptance metric for the cycle-average framing"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: s
 impact: high

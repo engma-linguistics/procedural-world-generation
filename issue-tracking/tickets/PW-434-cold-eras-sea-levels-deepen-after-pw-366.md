@@ -3,7 +3,7 @@ id: PW-434
 title: Cold eras' sea levels deepen after PW-366's thicker run sheets (worst -368..-609 m, 3 of 4 seeds past -430)
 type: task
 status: needs-decision
-parent: null
+parent: PW-470
 subsystem: climate
 effort: m
 impact: high

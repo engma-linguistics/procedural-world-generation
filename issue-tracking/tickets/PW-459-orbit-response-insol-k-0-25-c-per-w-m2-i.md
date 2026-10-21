@@ -3,7 +3,7 @@ id: PW-459
 title: "Orbit response insol_k 0.25 C per W/m2 is ~3x the seasonal cycle's 0.08-0.09: precession makes glacial heartbeats"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: l
 impact: high

@@ -3,7 +3,7 @@ id: PW-241
 title: "Time zoom from a run's moment: the sheets still thicken and spread onto shelves at first (~-70 m in 15 kyr in a cold era)"
 type: task
 status: blocked
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: low

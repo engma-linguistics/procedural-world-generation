@@ -3,7 +3,7 @@ id: PW-451
 title: Emerging shelves and wet orogenic mountains are 40-60% of the cold-era weathering sink
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: tectonics
 effort: m
 impact: med

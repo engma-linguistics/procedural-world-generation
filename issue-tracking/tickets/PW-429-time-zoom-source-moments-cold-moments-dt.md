@@ -3,7 +3,7 @@ id: PW-429
 title: "Time zoom source moments: cold moments (dT -4 to -7) never reach a real interglacial; hint toward moderately cold moments with free high-latitude land"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: xs
 impact: low

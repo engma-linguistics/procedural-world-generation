@@ -3,7 +3,7 @@ id: PW-456
 title: "Time zoom: the cycle's summer-sun metric (months 3-4 raw) is half a month after the mass balance's warm month (2-3); corr 0.57"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: s
 impact: low

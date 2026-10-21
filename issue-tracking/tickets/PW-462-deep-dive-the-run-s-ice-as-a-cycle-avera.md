@@ -3,7 +3,7 @@ id: PW-462
 title: "Deep dive: the run's ice as a cycle average and the time zoom as a window that can start in any glacial phase (or an era's start or end)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: high

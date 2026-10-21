@@ -3,7 +3,7 @@ id: PW-453
 title: "Physical ice-albedo rule (PW-449): no version both deepens Earth's time-zoom glacial and keeps the run's cold eras"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: climate
 effort: m
 impact: high

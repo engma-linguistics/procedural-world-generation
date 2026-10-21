@@ -3,7 +3,7 @@ id: PW-030
 title: "Time zoom: no real 100-kyr sawtooth"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: l
 impact: high
@@ -21,6 +21,7 @@ there are no terminations. They need mechanisms not modelled yet: a CO₂ rise i
 proglacial lakes, dust darkening the ice, and the overturning/meltwater coupling (PW-018).
 
 ## Updates
+- 2026-10-20: Owner 2026-10-20: moved out of v1 into the parked epic PW-470; v1 uses PW-471's kludge.
 - 2026-10-20: pw460: PW-460/459 not merged (run cold eras freeze, PW-461). Ice-age physics time-boxed by the owner to the morning of 2026-10-21; after that, kludge route or park.
 - 2026-10-20: pw440: PW-440's cycle merged on its branch (docs/review/audit/PW-440-handoff.md): ~100-kyr pacing on the cold moment s400 (power 0.33, swings 30-104 m) but slow, stalling endings; v1 target still open, behind PW-436 (drift), PW-435 (Earth depth) and the ending-strength decision (draft).
 - 2026-10-19: pw030 (5 attempts, target not met; docs/review/audit/PW-030-handoff.md): merged the run's ice-albedo rule in the time zoom (Earth deepest in 150 kyr -33 -> -37 m, 500 kyr -37 -> -43; run moments within a few m). Proglacial-lake calving and glacial dust (shelf and cooling sources) built and measured: no effect, not merged (patch in docs/review/audit/PW-030/). Cause: a run's moment drifts to one of two feedback branches and heartbeats; the cold branch's CO2 is clipped and its area saturated, so it never terminates; only a ~1.8x orbital response (insol_k 0.45) cycles (s400 swings 69-103 m, terminations 17-28 kyr; Earth 98 m, 100-kyr power 0.36) but it melts Earth's interglacial Antarctica. Drafts: cold-branch rigidity (needs-decision), sheet air over glacial margins.

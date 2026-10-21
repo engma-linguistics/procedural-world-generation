@@ -3,7 +3,7 @@ id: PW-464
 title: "Run ice as the cycle's time mean: the mean of each cycle state's own extent (orbit x the cycle's global swing), with only the persistent ice carried between steps"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: tectonics
 effort: l
 impact: high

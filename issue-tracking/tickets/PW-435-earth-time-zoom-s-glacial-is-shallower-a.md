@@ -3,7 +3,7 @@ id: PW-435
 title: "Earth time zoom's glacial is shallower after PW-366's margin fixes (150 kyr: -76 -> -33 m)"
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: timezoom
 effort: m
 impact: med

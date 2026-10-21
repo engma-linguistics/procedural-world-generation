@@ -3,7 +3,7 @@ id: PW-439
 title: Does a sheet's carried air over-protect big glacial sheets' summer margins? (suspected PW-030 stabiliser)
 type: task
 status: todo
-parent: null
+parent: PW-470
 subsystem: climate
 effort: m
 impact: med
