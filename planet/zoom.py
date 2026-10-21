@@ -2775,10 +2775,11 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # closed basins of a rift or a scoured shield, but for the big rivers
         # crossing them: those depressions are filled flat or hold lakes)
         fixed_ = ((mask_ <= 0) & ~(edge & land)) | (lf.weight() < 0.02)
-        keep_ = fixed_ | ((lf.basins() > 0.5) & (q_ < BASIN_THROUGH_Q) & active)
         # (the shape hooks' structures die out over a few km towards those courses: a water gap)
         mask_s = where * smoothstep(wk + res, wk + max(4 * res, 5.0), dco)
         hr = lf.remap(hf, mask_, rec_, order_, chan_, mask_s, q_)
+        # (after the remap: the glacial class's basins, overdeepened troughs and moraine dams, come from it)
+        keep_ = fixed_ | ((lf.basins() > 0.5) & (q_ < BASIN_THROUGH_Q) & active)
         # (solid rock the remap raised, a shield's domes, isn't cut through:
         # the flow paths across it pond and spill round it, PW-168)
         solid = lf.solid() > 0.5
@@ -2798,6 +2799,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         # (the summits' cap is the landscape pass's: a shield's domes stand above it, PW-168)
         h = ZL.cut(np.where(active & ~solid, np.minimum(h, cp), h), rec_, order_, keep_, nx, ny, res, fixed_)
     stages["landform"] = h.copy()
+    # fjords: a glacial trough carved below the sea that joins it is flooded (zoom_glacial); it is sea from here on
+    fjord = np.zeros(npx, bool)
+    if lf is not None:
+        fjord = lf.drown(h, sea) & active
+        if fjord.any():
+            land, sea = land & ~fjord, sea | fjord
+            active, outlet = active & ~fjord, outlet | fjord
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
     h_pre = h
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
@@ -3019,12 +3027,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         lake_kind[lk["px"]] = 2 if lk["closed"] else 1  # (a closed lake's fragments too)
     lake_kind[lf_lake] = np.where(lf_sink[lf_lake], 2, 1)
     lake_kind[lf_sink & ~lf_lake & ~lake] = 3
+    glac_form, glac_loess, glac_stats = ZL.glacial_layers(lf, h, fjord, lf_lake, region, nx, ny, res)
     (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py, clim_f, w_cp,
      lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift,
-     lake_kind) = (
+     lake_kind, glac_form, glac_loess) = (
         crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py,
                           clim_f, w_cp, lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own,
-                          own_s, barrier, rapids_lift, lake_kind))
+                          own_s, barrier, rapids_lift, lake_kind, glac_form, glac_loess))
     if vf is not None:
         vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_in / 2]
         vf = {k: crop(v) for k, v in vf.items()}
@@ -3143,6 +3152,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "landform_basins": lf_counts,
         # (the overlays: dunes' types, karst's dolines, poljes, towers, ponds, sinking streams and springs)
         "landform_overlay": lf_overlay,
+        # (the glacial landforms, zoom_glacial: troughs, fjords, cirques, moraine belts, outwash, loess, lakes)
+        "glacial": glac_stats,
         "barrier_px": int(barrier.sum()), "wetland_pct": round(100 * float((wetland > 0).mean()), 2),
         "marsh_pct": round(100 * float(marsh.mean()), 2),
         # the vegetation (zoom_vegetation): % of the vegetated land by named type, mean tree cover and NPP
@@ -3207,6 +3218,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         "climate": clim_f,
         "biome": biome,
         **({"landform": form_f} if form_f is not None else {}),
+        **({"glacial_form": glac_form, "loess": glac_loess.astype(np.float32)} if glac_stats else {}),
         "wetland": wetland,
         "coastal_life": cz["layer"],
         # vegetation (decision 9A: the summary layers; zoom_vegetation.fractions recomputes each type's cover)
@@ -3351,6 +3363,10 @@ LAYER_DOC = {
     "biome": ("BIOMES id", "coarse grouping of the vegetation types (vegetation.biome_of); sea and lakes by "
                            "climate.biomes"),
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
+    "glacial_form": ("enum", "what the ice left (zoom_glacial, PW-092): 0 none; 1 trough (U-valley), 2 cirque, "
+                             "3 moraine belt, 4 drumlin field, 5 outwash plain, 6 loess blanket (>= 2 m), "
+                             "7 fjord (a trough the sea floods), 8 overdeepened or moraine-dammed lake"),
+    "loess": ("m", "wind-blown silt thickness: downwind of the glacial outwash (zoom_glacial; the ground under it is softened)"),
     "coastal_life": ("enum", "coastal and shallow-sea life (zoom_coastal, PW-188): 0 none, 1 coral reef, 2 kelp "
                              "forest, 3 seagrass meadow (sea); 4 mangrove, 5 salt marsh (land between the tides); "
                              "legend 'coastal_life'"),

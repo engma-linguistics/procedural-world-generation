@@ -48,6 +48,8 @@ from . import timeline as T
 from . import world as W
 from .grid import build_grid
 from .geo import is_land
+from . import surface as SF
+from . import vegetation
 from .tectonics.isostasy import grounded
 
 
@@ -225,6 +227,23 @@ def orbit_dt(run: dict, st: dict) -> np.ndarray:
     return d
 
 
+def earth_rock(grid, elev: np.ndarray, ice: np.ndarray) -> dict:
+    """A plausible rock map of Earth from its terrain (no geological map is
+    used): rugged high ground is a metamorphic belt, low plains and the shelves
+    sedimentary basins, the rest old shield; what the zoom needs to draw it.
+    (tools/earth_world.py's Earth world has the same; PW-494: GLiM instead.)"""
+    rel = vegetation.relief(grid, elev)  # m to the steepest neighbour
+    land = is_land(elev, ice)
+    shelf = ~land & (elev > -1000)
+    rugged = land & ((rel > 900) | (elev > 2500))
+    plain = (land & ~rugged & (elev < 400) & (rel < 250)) | shelf
+    rock = np.select([~land & ~shelf, rugged, plain], [SF.OCEAN, SF.OROGEN, SF.SEDIMENT], SF.CRATON)
+    cover = np.select([~land & ~shelf, rugged, plain], [0.3, 0.1, 2.0], 0.02)  # km
+    surf = np.where(cover >= SF.COVER_SHOWS, SF.SHALE, rock)
+    return {"rock": rock.astype(int), "surface_rock": surf.astype(int), "sediment_cover": np.round(cover, 2),
+            "crust": (land | shelf).astype(int)}
+
+
 def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> dict:
     """A finished world of an Earth time zoom: the real terrain has no plates
     or rock record, so only the time zoom's bed and ice go through the
@@ -236,7 +255,8 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
             "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),
             "sea_level_m": round(state["sea_level"], 1)}
     gl = state.get("glacial") or {}
-    return W.finish(grid, state["elevation"], {"ice": ice, "crust": land.astype(int),
+    return W.finish(grid, state["elevation"], {"ice": ice, **earth_rock(grid, state["elevation"], ice),
+                                               "crust": land.astype(int),
                                                **{k: gl[k] for k in T.GLACIAL_LAYERS if k in gl}},
                     meta, erosion=erosion, dT=state["dT"], tilt=state["tilt"], params={"earth": True},
                     ice=ice, orbit_dt=state.get("orbit_dt"))

@@ -55,6 +55,7 @@ import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, pl
 import numpy as np  # noqa: E402
 from planet import climate  # noqa: E402
 from planet import coastal  # noqa: E402
+from planet.finish import earth_rock  # noqa: E402
 from planet import surface as SF  # noqa: E402
 from planet import vegetation  # noqa: E402
 from planet import world as W  # noqa: E402
@@ -71,21 +72,6 @@ def _with_nulls(x: np.ndarray, decimals: int = 1) -> np.ndarray:
     """Rounded, with NaN as None (null in the JSON: no observation)."""
     x = np.round(np.asarray(x, float), decimals)
     return np.where(np.isfinite(x), x, None).astype(object)
-
-
-def earth_rock(grid, elev: np.ndarray, ice: np.ndarray) -> dict:
-    """A plausible rock map of Earth from its terrain (see the module
-    docstring): what the zoom needs to draw it."""
-    rel = vegetation.relief(grid, elev)  # m to the steepest neighbour
-    land = is_land(elev, ice)
-    shelf = ~land & (elev > -1000)
-    rugged = land & ((rel > 900) | (elev > 2500))
-    plain = (land & ~rugged & (elev < 400) & (rel < 250)) | shelf
-    rock = np.select([~land & ~shelf, rugged, plain], [SF.OCEAN, SF.OROGEN, SF.SEDIMENT], SF.CRATON)
-    cover = np.select([~land & ~shelf, rugged, plain], [0.3, 0.1, 2.0], 0.02)  # km
-    surf = np.where(cover >= SF.COVER_SHOWS, SF.SHALE, rock)
-    return {"rock": rock.astype(int), "surface_rock": surf.astype(int), "sediment_cover": np.round(cover, 2),
-            "crust": (land | shelf).astype(int)}
 
 
 def earth_carbonate(grid, world: dict) -> np.ndarray:

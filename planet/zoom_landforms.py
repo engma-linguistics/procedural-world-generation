@@ -238,6 +238,9 @@ class Ctx:
     relief_m: float | None = None  # its mean height above the drainage (Landforms.remap)
     frames: Frames | None = None  # structural patches (Synth.axis)
     chan: np.ndarray | None = None  # the channels (Landforms.remap)
+    rec: np.ndarray | None = None  # the drainage the remap runs on: receivers, order (outlets first), m^3/s
+    order: np.ndarray | None = None
+    q: np.ndarray | None = None
     zone: dict | None = None  # per pixel, its zone's statistics (Synth.zoned; zone_stats())
     cache: dict = field(default_factory=dict)
     region: np.ndarray | None = None  # the zoom's region without its halo: what the stats count (PW-340)
@@ -826,6 +829,18 @@ class Synth:
     axis: str | None = None  # structural patches (Ctx.frames): 'band' or 'gradient' strike (build_frames)
     gaps = False  # rivers (>= GAP_Q) keep their graded beds through the shape hook's structure (water gaps)
     zoned = False  # levels from the class's whole zone (Ctx.zone: zone_stats(), PW-148)
+
+    def select(self, L, sel, form, land_c, grid):
+        """The coarse cells (a bool per cell of `sel`) the class lives on: by default the ones
+        landform.classify gave it (`form`); a class of its own (Glaciated) reads other layers."""
+        return None if self.cls is None else (form == self.cls) & land_c
+
+    cls = None  # the landform class id it is the synthesiser of (SYNTH sets it)
+
+    def drown(self, cx: Ctx, h: np.ndarray, sea: np.ndarray):
+        """A bool per pixel: land the class carved below the sea that the sea floods (a fjord),
+        after the remap (Landforms.drown)."""
+        return None
 
     def target(self, cx: Ctx, h: np.ndarray):
         return None
@@ -1577,6 +1592,7 @@ def basin_lakes(h, filled, rec, order, dep_ok, can, src, loss, res, nx, ny, min_
 
 
 # the classes in landform.classify's order (the first that holds wins there; here: keeps its weight)
+GLACIATED = 20  # the class id of the glacial landforms (zoom_glacial): no coarse landform class, read from the imprint
 PRIORITY = [LF.ARC_CLASS, LF.HOTSPOT_CLASS, LF.RIFT, LF.ESCARPMENT, LF.FOLD_BELT, LF.LAVA_PLATEAU, LF.DUNES, LF.KARST,
             LF.CAPROCK, LF.COASTAL_PLAIN, LF.SHIELD, LF.HILLS, LF.SEA]
 SYNTH = {LF.ESCARPMENT: Escarpment(), LF.CAPROCK: Caprock(), LF.LAVA_PLATEAU: LavaPlateau(),
@@ -1622,7 +1638,22 @@ DERIVED = {
     "drift_ratio": lambda L, sel: sand_drift(L, sel)[2],
 }
 DEFAULTS = {"rift_strain": 0.4, "glaciated_myr": LF.GLACIATED_NEVER, "crust_thickness": 35.0, "precipitation": 500.0,
-            "plate_boundary": 0.0, "temperature": 15.0}
+            "plate_boundary": 0.0, "temperature": 15.0,
+            "wind_e": 1.0, "wind_n": 0.0}
+
+
+# the glacial landforms (zoom_glacial): a class of their own, read from the world's glacial imprint
+DERIVED["iced"] = lambda L, sel: (np.asarray(L["ice_max"], float)[sel] >= 25.0).astype(float)
+for _k, _syn in SYNTH.items():
+    _syn.cls = _k
+from .zoom_glacial import Glaciated, ice_flow  # noqa: E402  (zoom_glacial imports this module: import this one first)
+
+SYNTH[GLACIATED] = Glaciated()
+
+
+def _cname(k):
+    """A class's key in the stats."""
+    return "glacial" if k == GLACIATED else LF.CLASSES[k][1]
 
 
 def _resist(rock):
@@ -1653,10 +1684,11 @@ class Landforms:
         interp(vals, wts, sigma): the zoom's Gaussian interpolation onto the
         pixels; to_plane(unit vectors): the zoom's projection (km)."""
         centers = grid.centers[sel]
-        if "landform" not in L:
-            return None
-        form = np.asarray(L["landform"])[sel]
-        ks = [k for k in SYNTH if np.any((form == k) & land_c)]
+        form = np.asarray(L["landform"])[sel] if "landform" in L else np.full(len(sel), -1)
+        if "glacial_erosion" in L and "ice_max" in L:  # (the ice's flow, for the glacial class)
+            L = {**L, **ice_flow(grid, L)}
+        masks = {k: SYNTH[k].select(L, sel, form, land_c, grid) for k in SYNTH}
+        ks = [k for k in SYNTH if masks[k] is not None and np.any(masks[k])]
         if not ks:
             return None
         if any("coast_km" in SYNTH[k].layers for k in ks):  # (km from the coarse coast, over land: planet-fixed)
@@ -1665,7 +1697,7 @@ class Landforms:
             L = {**L, "coast_km": np.minimum(LF.coast_km(grid, gl, coast), 2000.0)}
         cols, wts, spans = [], [], {}
         for k in ks:
-            ind = ((form == k) & land_c).astype(float)
+            ind = masks[k].astype(float)
             spans[k] = (len(cols), SYNTH[k].layers)
             cols.append(ind)
             wts.append(np.ones_like(ind))
@@ -1697,7 +1729,7 @@ class Landforms:
         # its weight: a narrow escarpment or rift isn't diluted by the fold
         # belt or shield beside it)
         taken = np.zeros(len(px))
-        for k in sorted(ctxs, key=PRIORITY.index):
+        for k in sorted((k for k in ctxs if k in PRIORITY), key=PRIORITY.index):  # (the glacial class overlays the rest)
             c = ctxs[k]
             c.w = np.minimum(c.w, np.maximum(1.0 - taken, 0.0))
             taken += c.w
@@ -1709,7 +1741,7 @@ class Landforms:
                 c.zone = zone_stats(grid, L, k, sel, cx, cy, px, py, to_plane, interp, sp)
         for j, (k, c) in enumerate(ctxs.items()):
             if SYNTH[k].axis and np.any(c.w > 0):
-                ind = ((form == k) & land_c).astype(float)
+                ind = masks[k].astype(float)
                 c.frames = build_frames(Pk, seed + 1009 * k, centers, ind,
                                         {name: _column(L, name, sel) for name in SYNTH[k].layers}, cues, sp,
                                         SYNTH[k].axis)
@@ -1743,7 +1775,9 @@ class Landforms:
 
     def dominant(self) -> np.ndarray:
         """The class with the most weight at each pixel (0: none above 0.5)."""
-        ks = list(self.ctxs)
+        ks = [k for k in self.ctxs if k in PRIORITY]
+        if not ks:
+            return np.zeros(len(next(iter(self.ctxs.values())).land), int)
         w = np.stack([self.ctxs[k].w for k in ks])
         best = np.argmax(w, 0)
         return np.where(w.max(0) > 0.5, np.array(ks)[best], 0)
@@ -1861,7 +1895,7 @@ class Landforms:
         # the shape hooks: fault blocks, folds, domes, on the reshaped surface
         gap = None
         for k, c in self.ctxs.items():
-            c.chan = channel
+            c.chan, c.rec, c.order, c.q = channel, rec, order, q
             w = c.w * (mask if mask_shape is None else mask_shape)
             if not np.any(w > 0):
                 continue
@@ -1933,7 +1967,7 @@ class Landforms:
                 pondw = np.maximum(pondw, m)
                 pit += m * np.minimum(dz, 0.0)
             if c.cache.get("overlay_stats"):
-                st[LF.CLASSES[k][1]] = c.cache["overlay_stats"]
+                st[_cname(k)] = c.cache["overlay_stats"]
         h2 = np.where(free, np.maximum(h + tot, 0.5), h)
         pond, pdep = np.zeros(n, bool), np.zeros(n)
         if np.any(pondw > 0.5):
@@ -1943,6 +1977,20 @@ class Landforms:
             pdep = np.where(pond, np.minimum(hc - h - pit, -pit), 0.0)
             st["ponds"] = int(len(np.unique(ZK.label_components(pond, nx, ny)[0][cnt(pond)]))) if pond.any() else 0
         return {"h": h2, "pond": pond, "pond_depth": np.where(pond, pdep, 0.0), "q": q2, "stats": st}
+
+    def drown(self, h, sea):
+        """Land the classes carved below the sea and the sea floods (Synth.drown): fjords."""
+        out = np.zeros(len(h), bool)
+        for k, c in self.ctxs.items():
+            if np.any(c.w > 0):
+                m = SYNTH[k].drown(c, h, sea)
+                if m is not None:
+                    out |= m & (c.w > 0.3)
+        return out
+
+    def glacial(self):
+        """The glacial class's Ctx (or None): its cached fields and stats (zoom_glacial)."""
+        return self.ctxs.get(GLACIATED)
 
     def set_region(self, region: np.ndarray):
         """The pixels the stats count: the zoom's region, not the halo built
@@ -1955,4 +2003,47 @@ class Landforms:
         c0 = next(iter(self.ctxs.values()))
         land = c0.counted(c0.land)
         n = max(int(land.sum()), 1)
-        return {LF.CLASSES[k][1]: round(100 * float(((c.w > 0.5) & land).sum()) / n, 1) for k, c in self.ctxs.items()}
+        return {_cname(k): round(100 * float(((c.w > 0.5) & land).sum()) / n, 1) for k, c in self.ctxs.items()}
+
+
+def glacial_layers(lf, h, fjord, lake, region, nx, ny, res):
+    """(glacial_form (uint8), loess (m), stats) of the zoom, from the glacial class (zoom_glacial) and the
+    finished ground: the forms it drew, the fjords (flooded troughs), and the lakes in its overdeepened
+    basins and behind its moraines. ({} stats: the zoom has no glacial class.)"""
+    n = nx * ny
+    g = lf.glacial() if lf is not None else None
+    if g is None or "form" not in g.cache:
+        return np.zeros(n, np.uint8), np.zeros(n), {}
+    FM = _glacial_forms()
+    form = g.cache["form"].copy()
+    drum = g.cache.get("drum")
+    if drum is not None:
+        form[drum & (form == 0)] = FM["drumlin"]
+    st = dict(g.cache.get("stats", {}))
+    st.update(g.cache.get("overlay_stats", {}))
+    cnt = region
+    fj = fjord & cnt
+    if fj.any():
+        lab, sizes = ZK.label_components(fjord, nx, ny)
+        ids = [i for i in np.unique(lab[fj]) if np.sum(fj & (lab == i)) >= 3]
+        depth = [float(-h[(lab == i)].min()) for i in ids]
+        st["fjords"] = len(ids)
+        st["fjord_max_depth_m"] = round(max(depth), 0) if depth else 0
+        st["fjord_mean_depth_m"] = round(float(np.mean(depth)), 0) if depth else 0
+        st["fjord_area_km2"] = round(float(fj.sum()) * res * res, 0)
+    else:
+        st["fjords"] = 0
+    zt = g.cache.get("zone_trough", np.zeros(n, bool))
+    zm = g.cache.get("zone_moraine", np.zeros(n, bool))
+    near = lambda z: _dilate(z.reshape(ny, nx), 2).ravel()  # noqa: E731
+    for nm, z in (("trough_lakes", zt), ("moraine_lakes", zm & ~zt)):
+        m = lake & near(z)
+        st[nm] = int(len(np.unique(ZK.label_components(m, nx, ny)[0][m & cnt]))) if (m & cnt).any() else 0
+    form[lake & (near(zt) | near(zm))] = FM["lake"]
+    form[fjord] = FM["fjord"]
+    return form, g.cache.get("loess", np.zeros(n)), st
+
+
+def _glacial_forms():
+    from .zoom_glacial import FORM
+    return FORM
