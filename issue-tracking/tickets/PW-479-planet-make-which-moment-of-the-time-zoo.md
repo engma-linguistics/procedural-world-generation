@@ -25,4 +25,5 @@ Options:
 Lean: B with `end` as the default, C once the owner has looked at a few. The sea-level and ice numbers differ a lot between the two, so this changes how a made planet looks (ice caps, coasts); that is why it is a decision.
 
 ## Updates
+- 2026-10-20: Coordinator 2026-10-20: lean, once PW-471's glacial index lands: default 'now' = the latest interglacial peak (like Earth today), with a glacial-maximum option in make and the start form. Decide when PW-471 merges.
 - 2026-10-20: Created from inbox draft draft-make-glacial-now.md (found by agent-make-ui).
