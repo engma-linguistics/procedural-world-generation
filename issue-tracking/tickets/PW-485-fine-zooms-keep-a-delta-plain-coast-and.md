@@ -1,4 +1,5 @@
 ---
+id: PW-485
 title: Fine zooms keep a delta plain, coast and barriers as the parent drew them
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw392-fine-forms
 blocked_by: []
 relates: [PW-392, PW-129]
 refs: [planet/zoom_fine.py, planet/zoom.py, "zoom 38e327 in bdeca9"]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -17,3 +20,6 @@ PW-392 said a fine zoom imposes the parent's distributaries only where they drai
 
 What is still the parent's, interpolated, is the delta's own forms: the lobe and finger shape, prodelta, tidal flats, beach ridges and barriers (`zoom._deltas`, `_delta_forms`, delta_floor in zoom.build, interleaved with the drainage). At 100 m a finger or barrier a parent pixel wide is a 10-pixel blocky band. Redrawing needs those forms factored out of zoom.build (they use the Galloway weights in the parent's stats["deltas"]) and drawn on the fine pixels, kept to the parent's coast like the reefs.
 - [ ] fine delta lobes, barriers and tidal flats drawn from the parent's delta record at the fine scale, parent pixel means kept
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-fine-zoom-delta-plain-not-redrawn.md (found by pw392-fine-forms).
