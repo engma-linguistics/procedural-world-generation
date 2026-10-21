@@ -44,4 +44,5 @@ Done when:
 - it flags anything that makes this framing a dead end.
 
 ## Updates
+- 2026-10-20: pw462: deep dive in docs/review/audit/ice-framing-deep-dive.md. Zoom-as-window holds: every icy run moment starts at an edge of its zoom's range (time means -68..+137 m off the run), so test the window mean, not start drift. Run-as-cycle-mean only half holds: on main the run is the cycle's interglacial edge on moderate moments (L5 fixture: run -19 m, 8 orbital states' own equilibria mean -83, zoom mean -87), but on deep moments (L6 s11@400 -252 m) the states agree with the run and the zoom's +94 m mean is ~40 m rule/budget gap (unforced) + 20 orbit + 30 feedback reference. The PW-460/459 freeze is not averaging (all states -340..-371 m; zoom sheds +101 m): marine budget. Ranked drafts: tz-mean check (s), run marine budget (m), run cycle-state mean with the feedback swing (l), re-apply PW-460/459 (m), zoom spin-up window (m), phase picker (m), bars wording (xs), era start/end (m).
 - 2026-10-20: Created from inbox draft draft-ice-as-cycle-average-framing.md (found by daniel).
