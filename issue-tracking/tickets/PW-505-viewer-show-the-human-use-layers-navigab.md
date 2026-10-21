@@ -1,8 +1,10 @@
 ---
-title: Viewer: show the human-use layers (navigable rivers, harbours, passes, farmland, fresh water)
+id: PW-505
+title: "Viewer: show the human-use layers (navigable rivers, harbours, passes, farmland, fresh water)"
 type: task
 status: todo
 parent: PW-099
+milestone: v1
 subsystem: viewer
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: humanuse
 blocked_by: []
 relates: [PW-099]
 refs: [planet/humanuse.py, viewer/index.html, viewer/zoom.html]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -17,3 +21,6 @@ PW-099 stores five class-map layers with every finished world and zoom (`river_n
 - [ ] world viewer: five class-map entries coloured from the legend, hover-card lines
 - [ ] zoom viewer: the same; springs and passes as markers
 - [ ] older worlds have no stored layers: the viewer shows nothing for them (or the API computes them with `humanuse.analyse_world`)
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-humanuse-viewer-layers.md (found by humanuse).
