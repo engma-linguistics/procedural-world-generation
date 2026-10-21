@@ -264,6 +264,42 @@ def softplus(x, s):
     return s * np.logaddexp(0, x / s)
 
 
+def shore_apron(h, lake, lakes, free, held, held_px, rec, order, q, nx, ny, res):
+    """Grade the plain beside each big lake up from its shore (PW-531; SHORE_*
+    constants): within the lake's reach, every land pixel that isn't a river
+    stands at least SHORE_GRAD m/km above its receiver (ZK.raise_to_run, so
+    drainage and the lake's level are untouched; the ground that is already
+    steeper stays as it is), after a beach a couple of pixels wide. `free`
+    pixels may change; the `held` ones and `held_px` (rims, rapids, designed
+    courses) don't, and the grade fades in 2 px from them and out towards
+    the reach's edge. Returns (h, pixels raised)."""
+    npx = nx * ny
+    hold = held.copy()
+    hold[held_px] = True
+    dh = ZK.inside_distance(~hold, nx, ny, False) * res  # km from the held pixels
+    grade, best = np.zeros(npx), np.full(npx, np.inf)
+    for lk in lakes:
+        area = len(lk["px"]) * res * res
+        if area < SHORE_MIN_KM2:
+            continue
+        reach = min(0.6 * np.sqrt(area), SHORE_MAX_KM)
+        m = np.zeros(npx, bool)
+        m[lk["px"]] = True
+        d = ZK.inside_distance(~m, nx, ny, False) * res  # km to this lake
+        zone = free & (d < reach) & (d < best) & (q < SHORE_RIVER_Q)
+        w = (0.65 + 0.35 * np.clip((reach - d) / (0.25 * reach), 0.0, 1.0)) * smoothstep(0.0, 2.0 * res, dh) * smoothstep(SHORE_BEACH_KM, SHORE_BEACH_KM + 2 * res, d)
+        grade = np.where(zone, SHORE_GRAD * w, grade)
+        best = np.where(zone, d, best)
+    if not (grade > 0).any():
+        return h, 0
+    idx = np.arange(npx)
+    diag = (rec >= 0) & ((rec % nx) != (idx % nx)) & ((rec // nx) != (idx // nx))
+    run0 = SHORE_GRAD * res * np.where(diag, 1.4142, 1.0)
+    run = grade / SHORE_GRAD * run0
+    out = ZK.raise_to_run(h, rec, order, run, run0 * 1.1 / SHORE_GRAD)  # (a ramp's tail keeps just over 1 m/km)
+    return out, int((out > h + 1e-6).sum())
+
+
 def smin(a, b, k):
     """Polynomial smooth minimum (rounded crease where a and b cross)."""
     hh = np.clip(k - np.abs(a - b), 0, None) / k
@@ -442,6 +478,13 @@ KP_SHARE, KP_MAX_H, KP_MIN_STEP = 0.55, 1000.0, 8.0
 KP_RESIST = ZL.RESIST
 COAST_FLOOR_GRAD = 2.0  # m/km: a river's valley floor rises no faster than this from the coast
 RAPIDS_GRAD = 2.0  # m/km: a lake's outflow steps down no faster than this below its outlet (and any fall there)
+# A big lake's shore (PW-531). The slope fit holds each coarse cell's mean, and the cell beside a lake lies only
+# tens of metres above it, so the fit leaves a plain of ~1 m/km tens of km wide. Land within a lake's reach is
+# graded to rise at least SHORE_GRAD from the water after a beach (shore_apron).
+SHORE_MIN_KM2 = 150.0  # lakes at least this big (km2); the reach is 0.6 x sqrt(area) km, at most SHORE_MAX_KM
+SHORE_MAX_KM = 40.0
+SHORE_GRAD, SHORE_BEACH_KM = 2.0, 1.0  # m/km, km
+SHORE_RIVER_Q = 20.0  # m^3/s: rivers this big keep their own (valley floor) grade
 FALLS_MIN_SHARE = 0.05  # a reach's falls are placed from where its pinned course carries this share of the coarse discharge
 SETTLE_M = 10.0  # m: an uphill step along a pinned course up to this high is evened out, a bigger one unpinned
 BANK_KM, BANK_SIDE_GRAD = 4.0, 30.0  # held river courses: banks this wide (km, >= 2 px), then falling off (m/km)
@@ -2813,6 +2856,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
             land, sea = land & ~fjord, sea | fjord
             active, outlet = active & ~fjord, outlet | fjord
     h = np.where(active, np.maximum(h, 0.5), h)  # creep mustn't pull the coast below the sea
+    if lakes:
+        _, rec_s, order_s = ZK.flood_d8(h, outlet, nx, ny, 1e-3, jitter)
+        q_s = ZK.accumulate(rec_s, order_s, srcq) * KM2_M_PER_YR_TO_M3S
+        h, shore_px = shore_apron(h, lake, lakes, active & ~glacier & ~solid, ring | rapids, c_idx,
+                                  rec_s, order_s, q_s, nx, ny, res)
+        if shore_px:
+            log(f"  {shore_px} px of lake shore graded up from the water (PW-531)")
     h_pre = h
     h = np.where(ring | rapids, np.maximum(h, fl), h)  # nor the rims below their lake, nor its outflow's rapids
     h = np.where(active & ~solid, np.minimum(h, cp), h)  # nor lift a lake's outflow above the lake

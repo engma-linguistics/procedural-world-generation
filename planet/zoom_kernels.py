@@ -644,6 +644,27 @@ def snout_distance(rec, order, ice, ends, nx, res):
 
 
 @njit(cache=True)
+def raise_to_run(h, rec, order, run, tail):
+    """Walking outlet -> headwater, lift each pixel with run > 0 to at least
+    run (m) above its receiver's new height; nothing is lowered, so the lift
+    reaches upstream only as far as the ground lies below that ramp, and
+    past a ramp's end (run 0) a pixel is lifted tail m above a raised
+    receiver (PW-531: lake shores)."""
+    out = h.copy()
+    for t in range(order.shape[0]):
+        i = order[t]
+        d = rec[i]
+        if d < 0:
+            continue
+        if run[i] > 0.0:
+            if out[d] + run[i] > out[i]:
+                out[i] = out[d] + run[i]
+        elif out[d] > h[d] and out[d] + tail[i] > out[i]:
+            out[i] = out[d] + tail[i]  # (past the ramp's edge: a lifted receiver mustn't dam it)
+    return out
+
+
+@njit(cache=True)
 def grade_fills(h, h0, flat, rec, order, outlet, active, protect, nx, res, slope, max_share):
     """Tilt the flat floors that depression filling left (PW-521). h: the
     ground with the flats in it, h0: before they were filled, flat: their
