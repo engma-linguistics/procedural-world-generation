@@ -4,7 +4,7 @@ title: Earth finished worlds carry a rough terrain-derived rock map and no landf
 type: task
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: low

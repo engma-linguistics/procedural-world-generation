@@ -4,7 +4,7 @@ title: Glacial forms at fine scale, and in small-glacier mountains (Alps, Patago
 type: story
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: zoom
 effort: l
 impact: med
