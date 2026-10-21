@@ -22,4 +22,5 @@ Owner 2026-10-20: a static 2D map should be centrable on any point of the globe,
 - No new heavy dependency without need; pure numpy forward/inverse formulas are fine (pyproj only if it already exists in the env).
 
 ## Updates
+- 2026-10-20: Export part done on branch worktree-agent-a007f54365b6fcec5: `planet export --projection/--center/--extent` (worlds and zooms; planet/projection.py pure numpy; layouts.map, coverage layer + nodata, features_map.geojson; README). Viewer part still open (2D map mode with the same choices, click-to-centre; planet/projection.py has the forward/inverse formulas, JS would need a port or a /api endpoint).
 - 2026-10-20: Created.

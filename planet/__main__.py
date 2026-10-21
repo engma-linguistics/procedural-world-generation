@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import highlights as H
 from . import parallel as P
+from . import projection as PJ
 from . import store as S
 from . import timeline as T
 from . import world as W
@@ -201,7 +202,8 @@ def cmd_export(args):
     from . import export as X
     rng = tuple(args.height_range) if args.height_range else None
     out = X.export(args.ref, args.out, res=args.res, tile=args.tile, overlap=args.overlap, cube=args.cube,
-                   raw=args.raw, height_range=rng, river_min=args.river_min, highlights=not args.no_highlights)
+                   raw=args.raw, height_range=rng, river_min=args.river_min, highlights=not args.no_highlights,
+                   projection=args.projection, center=args.center, extent=args.extent)
     print(out)
 
 
@@ -388,6 +390,12 @@ def main():
                     help="metres mapped to 0..65535 (default: the data's own range)")
     ex.add_argument("--river-min", type=float, metavar="M3S", help="smallest river kept as a line, m3/s")
     ex.add_argument("--no-highlights", action="store_true", help="leave out the world's highlights (worlds: skips computing them)")
+    ex.add_argument("--projection", choices=PJ.NAMES, help="a 2D map in this projection instead of the plain layout "
+                    "(equirect, equal-earth, mollweide, laea, aeqd, ortho, stereo); every raster layer and the features use it")
+    ex.add_argument("--center", metavar="LAT,LON", help="map centre in degrees (default 0,0; a zoom's own centre); the "
+                    "whole-world projections are used obliquely, so any latitude can be centred")
+    ex.add_argument("--extent", metavar="SIZE", help="a regional map: 2000km, 3000x2000km, 30deg or 40x20deg wide x high "
+                    "(arc degrees) around the centre (default: the whole projection; a zoom's square)")
     ex.set_defaults(func=cmd_export)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")

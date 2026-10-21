@@ -229,3 +229,78 @@ def test_export_zoom_coarser_and_errors(zoom, data_root, tmp_path):
         X.export("tz1", tmp_path / "z3", cube=32, highlights=False, log=quiet)
     with pytest.raises(SystemExit):
         X.export("nope", tmp_path / "z4", log=quiet)
+
+
+# --- projected maps (PW-477) -------------------------------------------------
+@pytest.mark.parametrize("proj", ["equirect", "equal-earth", "mollweide", "laea", "aeqd", "ortho", "stereo"])
+def test_export_world_projected(world, data_root, tmp_path, proj):
+    from planet import projection as PJ
+    from planet import world as W
+    out = X.export("tw1", tmp_path / proj, res=96, tile=0, projection=proj, center="35,-100", highlights=False,
+                   log=quiet)
+    m = json.loads((out / "manifest.json").read_text())
+    lay = m["layouts"]["map"]
+    assert "equirect" not in m["layouts"] and lay["projection"] == proj and lay["center"] == {"lat": 35.0, "lon": -100.0}
+    shape = (lay["height"], lay["width"])
+    cov = assemble(lay["layers"]["coverage"], out, shape) > 0
+    hm = lay["layers"]["heightmap"]
+    h = assemble(hm, out, shape)
+    water = assemble(lay["layers"]["water"], out, shape)
+    assert lay["nodata"]["heights"] == 0 and hm["nodata"] == 0 and lay["nodata"]["ids"] == X.NODATA_ID
+    assert (h[~cov] == 0).all() and (h[cov] >= 1).all()
+    assert (water[~cov] == X.NODATA_ID).all() and (water[cov] < 3).all()
+    if proj != "ortho" and proj != "stereo":
+        assert 0.5 < cov.mean() <= 1.0
+    # the centre pixel sees the centre point: smooth heights are near the nearest cell's (level-4 cells ~700 km)
+    g = PJ.pixel_grid(PJ.Projection(proj, 35, -100), 96)
+    mid = g["pts"].reshape(shape + (3,))[shape[0] // 2, shape[1] // 2]
+    wd = W.load(S.find("world", "tw1"))
+    near = wd["grid"].locate(mid[None])[0]
+    e = hm["min_m"] + h[shape[0] // 2, shape[1] // 2] / 65535 * (hm["max_m"] - hm["min_m"])
+    assert abs(e - wd["layers"]["elevation"][near]) < 900
+    fm = json.loads((out / "features_map.geojson").read_text())
+    assert fm["units"] == "m" and m["features"]["map_geojson"] == "features_map.geojson"
+    for f in fm["features"]:
+        pts = [f["geometry"]["coordinates"]] if f["geometry"]["type"] == "Point" else f["geometry"]["coordinates"]
+        if f["geometry"]["type"] == "MultiLineString":
+            pts = [p for r in pts for p in r]
+        assert all(abs(p[0]) <= lay["x_range_m"][1] + 1 and abs(p[1]) <= lay["y_range_m"][1] + 1 for p in pts)
+
+
+def test_export_world_regional_extent_and_classes(world, data_root, tmp_path):
+    out = X.export("tw1", tmp_path / "r", res=40, tile=0, projection="laea", center="10,20", extent="3000km",
+                   highlights=False, log=quiet)
+    m = json.loads((out / "manifest.json").read_text())
+    lay = m["layouts"]["map"]
+    assert (lay["width"], lay["height"]) == (40, 40) and lay["extent_km"] == [3000.0, 3000.0]
+    assert lay["x_range_m"][1] == pytest.approx(1.5e6) and "+proj=laea +lat_0=10 +lon_0=20" in lay["proj"]
+    assert assemble(lay["layers"]["coverage"], out, (40, 40)).all()
+    bio = assemble(lay["layers"]["biome"], out, (40, 40))
+    assert set(np.unique(bio)) <= {0, 9}  # class maps are looked up, never blended
+    f = json.loads((out / "features_map.geojson").read_text())["features"]
+    v = next(f_ for f_ in f if f_["properties"]["kind"] == "volcano")
+    assert v["geometry"]["coordinates"][:2] == pytest.approx([0, 0], abs=1)  # (10N 20E is the centre)
+    assert m["provenance"]["args"]["projection"]["projection"] == "laea"
+    with pytest.raises(SystemExit):
+        X.export("tw1", tmp_path / "bad", projection="ortho", center="95,0", highlights=False, log=quiet)
+    with pytest.raises(SystemExit):
+        X.export("tw1", tmp_path / "bad2", extent="10 furlongs", highlights=False, log=quiet)
+
+
+def test_export_zoom_projected(zoom, data_root, tmp_path):
+    layers, res = zoom
+    out = X.export("tz1", tmp_path / "zp", projection="aeqd", tile=0, highlights=False, log=quiet)
+    m = json.loads((out / "manifest.json").read_text())
+    lay = m["layouts"]["map"]
+    assert (lay["width"], lay["height"]) == (60, 60) and lay["projection"] == "aeqd"
+    cov = assemble(lay["layers"]["coverage"], out, (60, 60)) > 0
+    hm = lay["layers"]["heightmap"]
+    h = assemble(hm, out, (60, 60))
+    e = hm["min_m"] + h / 65535 * (hm["max_m"] - hm["min_m"])
+    # the 120 x 80 km zoom fills 40 of the 60 rows of its 120 km square map; the rest is nodata
+    assert cov[10:50].mean() > 0.95 and not cov[:8].any() and not cov[52:].any()
+    rows, cols = np.nonzero(cov[10:50])
+    assert np.abs(e[10:50][rows, cols] - layers["elevation"][rows, cols]).max() < 30
+    assert (h[~cov] == 0).all()
+    fm = json.loads((out / "features_map.geojson").read_text())
+    assert any(f["properties"]["kind"] == "river" for f in fm["features"])

@@ -20,6 +20,14 @@ Writes into one directory (default: <data root>/exports/<id>/):
   features_local.geojson   (zooms) the same in metres from the zoom's centre,
                    with the ground height as z
 
+Projected maps (PW-477): --projection {equirect, equal-earth, mollweide, laea, aeqd,
+ortho, stereo}, --center lat,lon (any latitude: the whole-world projections are used
+obliquely) and --extent (e.g. 2000km, 30deg, 3000x2000km) replace the layout by one
+square-pixel map "layouts.map" (planet/projection.py): heights blend smoothly, class
+maps take the nearest cell, pixels off the globe / outline / extent are nodata (a
+`coverage` layer, heights 0, ids 255; the manifest says so), and features_map.geojson
+holds the features in map metres.
+
 Layouts: a world is resampled to an equirectangular raster (--res = width in
 px, height = width / 2) and optionally the six faces of a cube (--cube N,
 gnomonic); a zoom keeps its native grid (--res = km per pixel, a multiple of
@@ -40,6 +48,7 @@ from pathlib import Path
 import numpy as np
 
 from . import hydrology
+from . import projection as PJ
 from . import store as S
 from . import world as W
 from .geo import R_KM, is_land, latlon, xyz
@@ -214,41 +223,60 @@ class Writer:
         return files
 
 
-def _u16(v: np.ndarray, lo: float, hi: float) -> np.ndarray:
-    return np.round(np.clip((v - lo) / (hi - lo), 0, 1) * 65535).astype(np.uint16)
+def _u16(v: np.ndarray, lo: float, hi: float, valid: np.ndarray | None = None) -> np.ndarray:
+    """16-bit encoding; with `valid` (a projected map), pixels outside it are 0 = nodata and
+    data are at least 1 (a cost of one step at the bottom of the range)."""
+    q = np.round(np.clip(np.nan_to_num(v - lo) / (hi - lo), 0, 1) * 65535).astype(np.uint16)
+    return q if valid is None else np.where(valid, np.maximum(q, 1), 0).astype(np.uint16)
 
 
-def _write_products(w: Writer, P: dict, lo: float, hi: float, folder: str = "") -> dict:
+NODATA_ID = 255  # (class-map ids in a projected map: off-globe pixels)
+
+
+def _write_products(w: Writer, P: dict, lo: float, hi: float, folder: str = "", valid: np.ndarray | None = None) -> dict:
     """Writes the layers of one layout; P: elevation, ice, water, biome,
-    vegetation, rock, splat (ny, nx, 8). Returns the manifest's layers."""
+    vegetation, rock, splat (ny, nx, 8). `valid` (ny, nx bool): the pixels a
+    projected map covers; the others are nodata (heights 0, ids 255, splat all
+    0, plus a `coverage` layer). Returns the manifest's layers."""
     layers = {}
+    nd = {} if valid is None else {"nodata": 0}
     h16 = {"format": "uint16", "elev_m": "min_m + value / 65535 * (max_m - min_m)"}
     layers["heightmap"] = {"kind": "height", "bits": 16, "units": "m", "min_m": lo, "max_m": hi,
                            "metres_per_step": round((hi - lo) / 65535, 4),
                            "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
                            "description": "ground height (the true bed under ice) above sea level; " + h16["elev_m"],
-                           "files": w.write("heightmap", _u16(P["elevation"], lo, hi), folder)}
-    if P.get("ice") is not None and np.nanmax(P["ice"]) > 0:
-        top = float(np.ceil(np.nanmax(P["ice"])))
+                           **nd, "files": w.write("heightmap", _u16(P["elevation"], lo, hi, valid), folder)}
+    ice_ok = P.get("ice") is not None and (valid is None or valid.any())
+    if ice_ok and np.nanmax(P["ice"] if valid is None else P["ice"][valid]) > 0:
+        top = float(np.ceil(np.nanmax(P["ice"] if valid is None else P["ice"][valid])))
         layers["ice_thickness"] = {"kind": "height", "bits": 16, "units": "m", "min_m": 0.0, "max_m": top,
                                    "metres_per_step": round(top / 65535, 4),
                                    "description": "land ice thickness; surface = ground + ice",
-                                   "files": w.write("ice_thickness", _u16(P["ice"], 0, top), folder)}
+                                   **nd, "files": w.write("ice_thickness", _u16(P["ice"], 0, top, valid), folder)}
     ids = {"water": ("water", "0 land, 1 sea, 2 lake"), "biome": ("biome", "climate.BIOMES id"),
            "vegetation": ("vegetation", "named vegetation type id (vegetation.TYPES)"),
            "rock": ("rock", "exposed rock id (surface.ROCKS)")}
     for k, (leg, desc) in ids.items():
         if P.get(k) is not None:
+            ids = np.clip(P[k], 0, NODATA_ID - 1).astype(np.uint8)
+            if valid is not None:
+                ids = np.where(valid, ids, NODATA_ID).astype(np.uint8)
             layers[k] = {"kind": "ids", "bits": 8, "legend": leg, "description": desc,
-                         "files": w.write(k, np.clip(P[k], 0, 255).astype(np.uint8), folder)}
+                         **({} if valid is None else {"nodata": NODATA_ID}), "files": w.write(k, ids, folder)}
     if P.get("splat") is not None:
         for i in range(2):
             layers[f"splat_{i}"] = {"kind": "rgba", "bits": 8, "legend": "splat",
                                     "channels": [SPLAT[4 * i + c][0] for c in range(4)],
                                     "description": "material weights, R G B A = " + ", ".join(
                                         SPLAT[4 * i + c][0] for c in range(4)),
-                                    "files": w.write(f"splat_{i}", np.ascontiguousarray(P["splat"][..., 4 * i:4 * i + 4]),
-                                                     folder)}
+                                    **({} if valid is None else {"nodata": "all four channels 0 (also 0 on water)"}),
+                                    "files": w.write(f"splat_{i}", np.ascontiguousarray(
+                                        P["splat"][..., 4 * i:4 * i + 4] * (1 if valid is None else valid[..., None])),
+                                        folder)}
+    if valid is not None:
+        layers["coverage"] = {"kind": "ids", "bits": 8, "description": "255 where the map covers the planet, 0 off it "
+                              "(off the globe / outline, or outside --extent): the nodata pixels of every layer",
+                              "files": w.write("coverage", np.where(valid, 255, 0).astype(np.uint8), folder)}
     return layers
 
 
@@ -284,6 +312,54 @@ class Features:
 
     def line(self, kind, latlon_arr, **props):
         self.items.append((kind, "LineString", np.asarray(latlon_arr, float), props))
+
+    def projected(self, name: str, proj: PJ.Projection, in_map, cut: float) -> dict:
+        """The features in the map's plane: coordinates [x, y(, z ground height)] in metres
+        (planet-radius sphere, x east, y north of the projection's centre). Points off the
+        map are left out; lines are cut where they leave it or jump across a seam (more
+        than `cut` metres between vertices), and become MultiLineStrings."""
+        feats, kept, dropped = [], 0, 0
+        Rm = R_KM * 1000
+        for n, (kind, gt, ll, props) in enumerate(self.items):
+            x, y = proj.forward(ll[:, 0], ll[:, 1])
+            x, y = x * Rm, y * Rm
+            ok = np.isfinite(x) & in_map(x, y)
+            z = self.elevation(ll[:, 0], ll[:, 1]) if self.elevation else None
+            p = {"kind": kind, **_clean(props)}
+            if z is not None and gt == "Point":
+                p["elevation_m"] = round(float(z[0]), 1)
+
+            def c3(i):
+                return [round(float(x[i]), 1), round(float(y[i]), 1)] + ([round(float(z[i]), 1)] if z is not None else [])
+            if gt == "Point":
+                if ok[0]:
+                    feats.append(_feature({"type": "Point", "coordinates": c3(0)}, p, f"{kind}-{n}"))
+                    kept += 1
+                else:
+                    dropped += 1
+                continue
+            runs, cur = [], []
+            for i in range(len(x)):
+                if ok[i] and cur and np.hypot(x[i] - x[cur[-1]], y[i] - y[cur[-1]]) > cut:
+                    runs.append(cur)
+                    cur = []
+                if ok[i]:
+                    cur.append(i)
+                elif cur:
+                    runs.append(cur)
+                    cur = []
+            runs.append(cur)
+            runs = [[c3(i) for i in r] for r in runs if len(r) > 1]
+            if not runs:
+                dropped += 1
+                continue
+            geom = ({"type": "LineString", "coordinates": runs[0]} if len(runs) == 1
+                    else {"type": "MultiLineString", "coordinates": runs})
+            feats.append(_feature(geom, p, f"{kind}-{n}"))
+            kept += 1
+        return _collection(name, feats, {"units": "m", "crs": {"type": "name", "properties": {"name": "map:" + proj.name}},
+                                         "note": "coordinates [x east, y north(, z ground height)] in metres on the map plane; "
+                                                 "features off the map are left out"})
 
     def collections(self, name: str, local_name: str | None = None):
         geo, loc = [], []
@@ -384,29 +460,92 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
     return feats
 
 
+# ---------------------------------------------------------------------------
+# Projected maps (PW-477)
+# ---------------------------------------------------------------------------
+class MapView:
+    """A projection, its pixel grid and what the manifest says about it."""
+
+    def __init__(self, projection: str, center, extent, width: int):
+        self.extent = None if extent is None else PJ.parse_extent(extent)
+        self.proj = PJ.Projection(projection, *PJ.parse_center(center))
+        self.g = PJ.pixel_grid(self.proj, width, self.extent)
+        self.shape = (self.g["height"], self.g["width"])
+        self.valid = self.g["valid"]
+        if not self.valid.any():
+            raise SystemExit(f"--projection {projection} --center {self.proj.lat0:g},{self.proj.lon0:g}"
+                             + (f" --extent {extent}" if extent else "") + " covers none of the planet")
+        self.m_px = self.g["step"] * R_KM * 1000
+
+    def pixel_m(self):
+        return PJ.pixel_size_m(self.g["pts"], self.valid, self.shape)
+
+    def in_map(self, x, y):
+        """Which of the plane points (m) fall on the map: inside its rectangle and projection domain."""
+        Rm = R_KM * 1000
+        ok = (np.abs(x) <= self.g["hw"] * Rm) & (np.abs(y) <= self.g["hh"] * Rm)
+        return ok & self.proj.unproject(np.where(ok, x, 0) / Rm, np.where(ok, y, 0) / Rm)[1]
+
+    def seam_m(self):
+        return 0.5 * 2 * self.proj.full_extent()[0] * R_KM * 1000
+
+    def layout(self, tile, overlap, layers, **more) -> dict:
+        Rm, g = R_KM * 1000, self.g
+        d = self.proj.describe()
+        return {"type": "map_projection", "projection": self.proj.name, "center": d["center"],
+                "proj": d["proj"], **({"proj_note": d["proj_note"]} if d["proj_note"] else {}),
+                "oblique_frame": d["oblique_frame"], "sphere_radius_m": Rm,
+                "extent_km": None if self.extent is None else list(self.extent),
+                "extent": "given" if self.extent else "whole projection",
+                "width": g["width"], "height": g["height"], "m_per_px": round(self.m_px, 2),
+                "x_range_m": [-g["hw"] * Rm, g["hw"] * Rm], "y_range_m": [-g["hh"] * Rm, g["hh"] * Rm],
+                "row0": "north (up on the map)", "col0": "west (left)",
+                "pixel_x_m": "x_range_m[0] + (col + 0.5) * m_per_px   (east of the projection centre)",
+                "pixel_y_m": "y_range_m[1] - (row + 0.5) * m_per_px   (north of the projection centre)",
+                "nodata": {"rule": "pixels the projection does not show (off the globe or outline) or outside the extent",
+                           "coverage_layer": "coverage (255 on the map, 0 off it)",
+                           "heights": 0, "ids": NODATA_ID, "splat": "all channels 0"},
+                "tile": tile, "overlap": overlap, "layers": layers, **more}
+
+
+def _log_map(log, mv: MapView):
+    log(f"  {mv.proj.name} map centred {mv.proj.lat0:g},{mv.proj.lon0:g}: {mv.shape[1]}x{mv.shape[0]} px, "
+        f"{mv.m_px / 1000:.1f} km/px, {100 * mv.valid.mean():.0f}% covered")
+
+
 def export_world(path: Path, out: Path, res: int | None, tile: int, overlap: int, cube: int, raw: bool,
-                 height_range, river_min: float | None, with_highlights: bool, log) -> dict:
+                 height_range, river_min: float | None, with_highlights: bool, log, mv_args=None) -> dict:
     world = W.load(path)
     meta = world["meta"]
     width = int(res or WORLD_WIDTH)
-    height = max(width // 2, 1)
     wr = Writer(out, tile, overlap, raw)
-    lon = -180 + (np.arange(width) + 0.5) * 360 / width
-    lat = 90 - (np.arange(height) + 0.5) * 180 / height
-    LON, LAT = np.meshgrid(np.radians(lon), np.radians(lat))
-    pts = xyz(LAT.ravel(), LON.ravel())
-    dy = R_KM * 1000 * np.radians(180 / height)
-    dx = np.maximum(R_KM * 1000 * np.cos(np.radians(lat)) * np.radians(360 / width), 1.0)[:, None]
-    log(f"  equirectangular {width}x{height}")
-    P = _world_rasters(world, pts, (height, width), dx, dy)
-    lo, hi = _height_range(P["elevation"], height_range)
-    layouts = {"equirect": {
-        "type": "equirectangular", "width": width, "height": height, "deg_per_px": 360 / width,
-        "m_per_px_equator": round(2 * np.pi * R_KM * 1000 / width, 1), "m_per_px_meridian": round(dy, 1),
-        "lon_range": [-180, 180], "lat_range": [-90, 90], "row0": "north", "col0": "west (-180)",
-        "pixel_lon": "-180 + (col + 0.5) * deg_per_px", "pixel_lat": "90 - (row + 0.5) * deg_per_px",
-        "tile": tile, "overlap": overlap,
-        "layers": _write_products(wr, P, lo, hi)}}
+    mv = valid = None
+    if mv_args:
+        mv = MapView(mv_args["projection"], mv_args["center"], mv_args["extent"], width)
+        valid, (height, width) = mv.valid, mv.shape
+        _log_map(log, mv)
+        dx, dy = mv.pixel_m()
+        P = _world_rasters(world, mv.g["pts"], mv.shape, dx, dy)
+        lo, hi = _height_range(P["elevation"], height_range, valid)
+        layouts = {"map": mv.layout(tile, overlap, _write_products(wr, P, lo, hi, valid=valid))}
+    else:
+        height = max(width // 2, 1)
+        lon = -180 + (np.arange(width) + 0.5) * 360 / width
+        lat = 90 - (np.arange(height) + 0.5) * 180 / height
+        LON, LAT = np.meshgrid(np.radians(lon), np.radians(lat))
+        pts = xyz(LAT.ravel(), LON.ravel())
+        dy = R_KM * 1000 * np.radians(180 / height)
+        dx = np.maximum(R_KM * 1000 * np.cos(np.radians(lat)) * np.radians(360 / width), 1.0)[:, None]
+        log(f"  equirectangular {width}x{height}")
+        P = _world_rasters(world, pts, (height, width), dx, dy)
+        lo, hi = _height_range(P["elevation"], height_range)
+        layouts = {"equirect": {
+            "type": "equirectangular", "width": width, "height": height, "deg_per_px": 360 / width,
+            "m_per_px_equator": round(2 * np.pi * R_KM * 1000 / width, 1), "m_per_px_meridian": round(dy, 1),
+            "lon_range": [-180, 180], "lat_range": [-90, 90], "row0": "north", "col0": "west (-180)",
+            "pixel_lon": "-180 + (col + 0.5) * deg_per_px", "pixel_lat": "90 - (row + 0.5) * deg_per_px",
+            "tile": tile, "overlap": overlap,
+            "layers": _write_products(wr, P, lo, hi)}}
     if cube:
         log(f"  cube faces {cube}x{cube}")
         s = (np.arange(cube) + 0.5) / cube * 2 - 1
@@ -431,12 +570,30 @@ def export_world(path: Path, out: Path, res: int | None, tile: int, overlap: int
     geo, = feats.collections(f"{path.stem} features")
     (out / "features.geojson").write_text(json.dumps(geo))
     counts = _kind_counts(feats)
-    return {"kind": "world", "id": path.stem, "layouts": layouts, "height": (lo, hi), "features": {
-        "geojson": "features.geojson", "counts": counts, "crs": "WGS84 lon/lat, degrees; point elevation_m = ground height"},
+    fe = {"geojson": "features.geojson", "counts": counts, "crs": "WGS84 lon/lat, degrees; point elevation_m = ground height"}
+    if mv:
+        fe.update(_projected_features(feats, mv, f"{path.stem} features (map)", out))
+    return {"kind": "world", "id": path.stem, "layouts": layouts, "height": (lo, hi), "features": fe,
         "source": {"world": {"id": path.stem, "name": world.get("name"), "source_run": meta.get("source_run"),
                              "t_myr": meta.get("t_myr"), "level": meta.get("level"), "seed": meta.get("seed"),
                              "created": meta.get("created")}},
         "sea_level_m": 0.0, "eustatic_sea_level_m": meta.get("sea_level_m"), "global_temp_c": meta.get("global_temp_c")}
+
+
+def _projected_features(feats: Features, mv: MapView, name: str, out: Path) -> dict:
+    col = feats.projected(name, mv.proj, mv.in_map, mv.seam_m())
+    (out / "features_map.geojson").write_text(json.dumps(col))
+    return {"map_geojson": "features_map.geojson",
+            "map_crs": f"{mv.proj.name} map plane, metres [x east, y north(, z ground height)] from the projection centre "
+                       f"(see layouts.map); {len(col['features'])} of {len(feats.items)} features fall on the map",
+            "map_counts": _kind_counts_of(col["features"])}
+
+
+def _kind_counts_of(features: list) -> dict:
+    c: dict = {}
+    for f in features:
+        c[f["properties"]["kind"]] = c.get(f["properties"]["kind"], 0) + 1
+    return c
 
 
 def _kind_counts(feats: Features) -> dict:
@@ -446,7 +603,9 @@ def _kind_counts(feats: Features) -> dict:
     return c
 
 
-def _height_range(elev: np.ndarray, rng) -> tuple[float, float]:
+def _height_range(elev: np.ndarray, rng, valid: np.ndarray | None = None) -> tuple[float, float]:
+    if valid is not None:
+        elev = elev[valid]
     if rng:
         lo, hi = float(rng[0]), float(rng[1])
     else:
@@ -467,12 +626,50 @@ def _block(a: np.ndarray, f: int, categorical: bool) -> np.ndarray:
     return a.reshape(ny // f, f, nx // f, f).mean((1, 3))
 
 
+def _resample_zoom(A: dict, fr, pts: np.ndarray, shape: tuple, r_km: float, cat) -> dict:
+    """The zoom's rasters (pixel size r_km, centred on the frame `fr`) at the unit vectors
+    `pts`: bilinear for continuous fields, nearest for class maps. Returns the fields and
+    `valid`, the pixels inside the zoom's square."""
+    ny, nx = next(iter(A.values())).shape
+    x, y = fr.to_plane(pts)
+    col, row = x / r_km + nx / 2 - 0.5, ny / 2 - 0.5 - y / r_km
+    valid = (col >= -0.5) & (col <= nx - 0.5) & (row >= -0.5) & (row <= ny - 0.5) & (pts @ fr.c > 0)
+    col, row = np.clip(col, 0, nx - 1), np.clip(row, 0, ny - 1)
+    c0, r0 = np.minimum(col.astype(int), max(nx - 2, 0)), np.minimum(row.astype(int), max(ny - 2, 0))
+    c1, r1 = np.minimum(c0 + 1, nx - 1), np.minimum(r0 + 1, ny - 1)
+    fc, fr_ = col - c0, row - r0
+    cn, rn = np.rint(col).astype(int), np.rint(row).astype(int)
+    out = {}
+    for k, a in A.items():
+        if k in cat or a.dtype.kind not in "fc":
+            v = a[rn, cn]
+        else:
+            a = np.asarray(a, float)
+            v = (a[r0, c0] * (1 - fc) + a[r0, c1] * fc) * (1 - fr_) + (a[r1, c0] * (1 - fc) + a[r1, c1] * fc) * fr_
+        out[k] = v.reshape(shape)
+    return out, valid.reshape(shape)
+
+
+def _zoom_products(A: dict, r_dx, r_dy) -> dict:
+    """The layers to write from a zoom's (possibly resampled) rasters."""
+    el = A["elevation"].astype(float)
+    water = A.get("water", np.where(el > 0, 0, 1)).astype(np.uint8)
+    P = {"elevation": el, "ice": A.get("ice"), "water": water, "biome": A.get("biome"),
+         "vegetation": A.get("vegetation"), "rock": A.get("surface_rock")}
+    if "tree_cover" in A:
+        P["splat"] = splat_weights(
+            slope_deg(el, r_dx, r_dy), np.asarray(A.get("ice", 0 * el), float),
+            A["tree_cover"] / 100, A.get("plant_cover", A["tree_cover"]) / 100, A.get("precipitation", 800 + 0 * el),
+            A.get("temperature", 10 + 0 * el), (A["wetland"] > 0).astype(float) if "wetland" in A else 0 * el, water)
+    return P
+
+
 def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, raw: bool, height_range,
-                river_min: float | None, with_highlights: bool, log) -> dict:
+                river_min: float | None, with_highlights: bool, log, mv_args=None) -> dict:
     from . import zoom as Z
     meta, L = Z.load(d, decode=True)
     nat = float(meta["res_km"])
-    f = max(int(round((res or nat) / nat)), 1)
+    f = 1 if mv_args else max(int(round((res or nat) / nat)), 1)
     cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland")
     A = {k: _block(np.asarray(v), f, k in cat) for k, v in L.items()
          if np.asarray(v).ndim == 2}
@@ -480,23 +677,32 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     r_km = nat * f
     log(f"  native grid, {nx}x{ny} px at {r_km:g} km" + (f" (block {f}x{f})" if f > 1 else ""))
     el = A["elevation"].astype(float)
-    water = A.get("water", np.where(el > 0, 0, 1)).astype(np.uint8)
-    P = {"elevation": el, "ice": A.get("ice"), "water": water, "biome": A.get("biome"),
-         "vegetation": A.get("vegetation"), "rock": A.get("surface_rock")}
-    if "tree_cover" in A:
-        P["splat"] = splat_weights(
-            slope_deg(el, r_km * 1000, r_km * 1000), np.asarray(A.get("ice", 0 * el), float),
-            A["tree_cover"] / 100, A.get("plant_cover", A["tree_cover"]) / 100, A.get("precipitation", 800 + 0 * el),
-            A.get("temperature", 10 + 0 * el), (A["wetland"] > 0).astype(float) if "wetland" in A else 0 * el, water)
-    lo, hi = _height_range(el, height_range)
     wr = Writer(out, tile, overlap, raw)
-    layout = {"type": "azimuthal_equidistant_native", "width": nx, "height": ny, "m_per_px": r_km * 1000,
-              "native_m_per_px": nat * 1000, "size_km": meta["size_km"], "row0": "north", "col0": "west",
-              "pixel_x_m": "(col + 0.5 - width/2) * m_per_px   (east of centre)",
-              "pixel_y_m": "(height/2 - row - 0.5) * m_per_px   (north of centre)",
-              "tile": tile, "overlap": overlap, "layers": _write_products(wr, P, lo, hi)}
-    # features
     fr = Z.Frame(meta["center"]["lat"], meta["center"]["lon"])
+    mv = None
+    if mv_args:  # a projected map: resample the native grid onto the map's pixels
+        out_km = float(res or nat)
+        ext = mv_args["extent"] or (meta["size_km"], meta["size_km"])
+        center = mv_args["center"] or (meta["center"]["lat"], meta["center"]["lon"])
+        mv = MapView(mv_args["projection"], center, ext, int(round(ext[0] / out_km)))
+        _log_map(log, mv)
+        Am, inside = _resample_zoom(A, fr, mv.g["pts"], mv.shape, r_km, cat)
+        valid = mv.valid & inside
+        dx, dy = mv.pixel_m()
+        P = _zoom_products(Am, dx, dy)
+        lo, hi = _height_range(P["elevation"], height_range, valid)
+        layout = mv.layout(tile, overlap, _write_products(wr, P, lo, hi, valid=valid), size_km=meta["size_km"],
+                           note="pixels outside the zoom's square are nodata")
+        mv.valid = valid
+    else:
+        P = _zoom_products(A, r_km * 1000, r_km * 1000)
+        lo, hi = _height_range(el, height_range)
+        layout = {"type": "azimuthal_equidistant_native", "width": nx, "height": ny, "m_per_px": r_km * 1000,
+                  "native_m_per_px": nat * 1000, "size_km": meta["size_km"], "row0": "north", "col0": "west",
+                  "pixel_x_m": "(col + 0.5 - width/2) * m_per_px   (east of centre)",
+                  "pixel_y_m": "(height/2 - row - 0.5) * m_per_px   (north of centre)",
+                  "tile": tile, "overlap": overlap, "layers": _write_products(wr, P, lo, hi)}
+    # features
     def to_xy(la, lo_):
         return fr.to_plane(xyz(np.radians(np.asarray(la)), np.radians(np.asarray(lo_))))
 
@@ -555,10 +761,12 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     (out / "features.geojson").write_text(json.dumps(geo))
     (out / "features_local.geojson").write_text(json.dumps(loc))
     sw = meta["source_world"]
-    return {"kind": "zoom", "id": meta["id"], "layouts": {"native": layout}, "height": (lo, hi), "features": {
-        "geojson": "features.geojson", "local_geojson": "features_local.geojson", "counts": _kind_counts(feats),
-        "crs": "WGS84 lon/lat, degrees; point elevation_m = ground height",
-        "local_crs": local.crs + ", metres"},
+    fe = {"geojson": "features.geojson", "local_geojson": "features_local.geojson", "counts": _kind_counts(feats),
+          "crs": "WGS84 lon/lat, degrees; point elevation_m = ground height", "local_crs": local.crs + ", metres"}
+    if mv:
+        fe.update(_projected_features(feats, mv, f"{meta['id']} features (map)", out))
+    return {"kind": "zoom", "id": meta["id"], "layouts": {"map" if mv else "native": layout}, "height": (lo, hi),
+            "features": fe,
         "source": {"zoom": {"id": meta["id"], "name": meta.get("name"), "created": meta.get("created"),
                             "seed": meta.get("seed"), "center": meta["center"], "size_km": meta["size_km"],
                             "res_km": nat, "params": meta.get("params"), "format": meta.get("format")},
@@ -639,10 +847,24 @@ def resolve(ref: str) -> tuple[str, Path]:
 
 def export(ref: str, out: str | Path | None = None, *, res: float | None = None, tile: int = TILE, overlap: int = 0,
            cube: int = 0, raw: bool = False, height_range: tuple[float, float] | None = None,
-           river_min: float | None = None, highlights: bool = True, log=print) -> Path:
+           river_min: float | None = None, highlights: bool = True, projection: str | None = None,
+           center=None, extent=None, log=print) -> Path:
     """Exports a world or zoom (id, 'world:<id>' / 'zoom:<id>') to the directory `out`
-    (default: <data root>/exports/<id>); returns it. See the module docstring."""
+    (default: <data root>/exports/<id>); returns it. projection / center ('lat,lon') /
+    extent ('2000km', '30deg', '3000x2000km') make a projected map (PW-477); any one of
+    them does (equirect for a world, aeqd for a zoom, by default). See the module docstring."""
     kind, path = resolve(ref)
+    mv_args = None
+    if projection or center is not None or extent is not None:
+        projection = projection or ("equirect" if kind == "world" else "aeqd")
+        if projection not in PJ.NAMES:
+            raise SystemExit(f"--projection {projection!r}: one of {', '.join(PJ.NAMES)}")
+        try:
+            center = PJ.parse_center(center) if center is not None else (0.0, 0.0) if kind == "world" else None
+            extent = PJ.parse_extent(extent) if extent is not None else None
+        except ValueError as e:
+            raise SystemExit(str(e)) from None
+        mv_args = {"projection": projection, "center": center, "extent": extent}
     if kind == "zoom" and cube:
         raise SystemExit("--cube is for worlds; a zoom keeps its native grid")
     item = path.stem if kind == "world" else path.name
@@ -652,9 +874,10 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
     log(f"exporting {kind} {item} -> {out}")
     args = (tile, overlap)
     if kind == "world":
-        r = export_world(path, out, int(res) if res else None, *args, cube, raw, height_range, river_min, highlights, log)
+        r = export_world(path, out, int(res) if res else None, *args, cube, raw, height_range, river_min, highlights, log,
+                         mv_args)
     else:
-        r = export_zoom(path, out, res, *args, raw, height_range, river_min, highlights, log)
+        r = export_zoom(path, out, res, *args, raw, height_range, river_min, highlights, log, mv_args)
     lo, hi = r.pop("height")
     legend = S.legends()
     leg = {"water": list(WATER), "biome": legend["biomes"], "vegetation": legend["vegetation"]["types"],
@@ -670,7 +893,8 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
         "scale": {"planet_radius_km": R_KM, "vertical_exaggeration": 1.0},
         "height_range_m": [lo, hi], "legend": "legend.json",
         "provenance": {"exporter": code_version(), "args": {"res": res, "tile": tile, "overlap": overlap, "cube": cube,
-                                                            "raw": raw, "river_min_m3s": river_min}},
+                                                            "raw": raw, "river_min_m3s": river_min,
+                                                            "projection": mv_args}},
         "reserved": "Further layers (PW-099 human-use layers, PW-206 game attributes) are added as new entries of "
                     "layouts.<name>.layers and new feature kinds, not new top-level keys.",
     }
