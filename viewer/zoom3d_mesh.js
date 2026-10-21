@@ -264,3 +264,81 @@ export function riverNet(L, nx, ny, res, qmin) {
   }
   return { rec, lines, ws };
 }
+
+// The lakes' water (zoom3d.js's Tile.lakes, PW-537): each lake, a 4-connected
+// set of lake pixels, is ONE flat surface at its level (the mean of its pixels'
+// elevation + depth), clipped by the drawn terrain: the same triangles
+// quadSplits chose, cut where the ground rises through the level, so the shore
+// is the ground's own contour (no pixel staircase, no spikes) and nothing floats
+// over dry ground. A dry neighbour lower than the level (a lake's outlet, the
+// foot of a fall: where the water would run on) ends the water half way to it,
+// with a short wall of water down to the ground there instead of a tilted skirt.
+// h: ground heights (lake pixels: the bed); water: 2 on lake pixels; depth: lake_depth;
+// kind: per-pixel lake kind or null. Returns {pos: top triangles' vertices [c, y, r] (c, r in
+// fractional pixels), kind: per vertex, wall: the walls' triangles [c, y, r], levels: [{level, px}]}.
+export function lakeSurfaces(h, water, depth, split, nx, ny, kind = null) {
+  const n = nx * ny, lab = new Int32Array(n);
+  const levels = [], pos = [], kinds = [], wall = [];
+  const sum = [], cnt = [];
+  let k = 0;
+  for (let s = 0; s < n; s++) {
+    if (water[s] !== 2 || lab[s]) continue;
+    k++; lab[s] = k; sum.push(0); cnt.push(0);
+    const st = [s];
+    while (st.length) {
+      const i = st.pop(), r = (i / nx) | 0, c = i - r * nx;
+      sum[k - 1] += h[i] + (depth[i] || 0); cnt[k - 1]++;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const rr = r + dr, cc = c + dc, j = rr * nx + cc;
+        if (rr >= 0 && cc >= 0 && rr < ny && cc < nx && water[j] === 2 && !lab[j]) { lab[j] = k; st.push(j); }
+      }
+    }
+  }
+  if (!k) return null;
+  const Z = sum.map((v, j) => v / cnt[j]);
+  const seen = new Map();  // cell -> lakes that already drew it
+  for (let s = 0; s < n; s++) {
+    if (!lab[s]) continue;
+    const r0 = (s / nx) | 0, c0 = s - r0 * nx, id = lab[s];
+    for (let dr = -1; dr <= 0; dr++) for (let dc = -1; dc <= 0; dc++) {
+      const r = r0 + dr, c = c0 + dc;
+      if (r < 0 || c < 0 || r >= ny - 1 || c >= nx - 1) continue;
+      const key = (r * (nx - 1) + c) * 4096 + id;
+      if (seen.has(key)) continue;
+      seen.set(key, 1);
+      const z = Z[id - 1], a = r * nx + c, px = [a, a + 1, a + nx, a + nx + 1];
+      // f: how far the level stands over each corner's ground (> 0 wet); a lower dry corner is cut at the half way
+      let fm = 0;
+      for (const i of px) if (lab[i] === id) fm = Math.max(fm, z - h[i], 0.05);
+      const f = {}, g = {};
+      for (const i of px) {
+        g[i] = h[i];
+        f[i] = lab[i] === id ? Math.max(z - h[i], 0.05) : h[i] > z ? z - h[i] : -fm;
+      }
+      const [A, B, D, E] = px, tris = split[r * (nx - 1) + c] ? [[A, D, E], [A, E, B]] : [[A, D, B], [B, D, E]];
+      for (const t of tris) {
+        // clip the triangle to f > 0 (Sutherland-Hodgman on one plane)
+        const V = t.map((i) => ({ c: i % nx, r: (i / nx) | 0, f: f[i], g: g[i], k: lab[i] === id ? (kind ? kind[i] : 1) : -1 }));
+        const out = [];
+        for (let j = 0; j < 3; j++) {
+          const p = V[j], q = V[(j + 1) % 3];
+          if (p.f > 0) out.push({ ...p, cut: false });
+          if ((p.f > 0) !== (q.f > 0)) {
+            const u = p.f / (p.f - q.f);
+            out.push({ c: p.c + u * (q.c - p.c), r: p.r + u * (q.r - p.r), f: 0, g: p.g + u * (q.g - p.g), k: p.k >= 0 ? p.k : q.k, cut: true });
+          }
+        }
+        if (out.length < 3) continue;
+        const kk = V.find((v) => v.k >= 0)?.k ?? 1;
+        for (let j = 1; j < out.length - 1; j++) for (const p of [out[0], out[j], out[j + 1]]) { pos.push(p.c, z, p.r); kinds.push(kk); }
+        // the cut's wall, where the ground there is below the level
+        const cuts = out.filter((p) => p.cut);
+        if (cuts.length === 2 && (cuts[0].g < z - 0.05 || cuts[1].g < z - 0.05)) {
+          const [p, q] = cuts;
+          wall.push(p.c, z, p.r, q.c, z, q.r, q.c, Math.min(q.g, z), q.r, p.c, z, p.r, q.c, Math.min(q.g, z), q.r, p.c, Math.min(p.g, z), p.r);
+        }
+      }
+    }
+  }
+  return { pos, kind: kinds, wall, levels: Z.map((level, j) => ({ level, px: cnt[j] })) };
+}

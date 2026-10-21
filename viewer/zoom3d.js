@@ -24,7 +24,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as Look from './zoom3d_look.js';
 import { riverCourses, Flight } from './zoom3d_fly.js';
 import { aeFrame, latlonOf, place } from './zoom3d_place.js';
-import { quadSplits, meshHeight, meshAt, coarseMesh, chaikin, hugChaikin, riverNet } from './zoom3d_mesh.js';
+import { quadSplits, meshHeight, meshAt, coarseMesh, chaikin, hugChaikin, riverNet, lakeSurfaces } from './zoom3d_mesh.js';
 
 const QMIN = 10;           // m3/s: smallest river drawn
 const RIVER_RGB = '#3b77ad';
@@ -222,58 +222,25 @@ class Tile {
     return this.L.lake_kind || new Uint8Array(this.nx * this.ny).fill(1);
   }
 
-  // lake surfaces: a mesh on the pixel centres' grid over every cell with a
-  // lake pixel at a corner: lake pixels at their level, the pixels round them
-  // at the level or just under their ground where that is lower. So the
-  // shore is where the ground rises through the water (not the pixels'
-  // staircase), and next to lower ground (an outlet's gorge, the foot of a
-  // fall) the surface dips under it instead of floating.
+  // lake surfaces (zoom3d_mesh.js lakeSurfaces, PW-537): one flat surface per lake at its
+  // level, clipped by the drawn terrain's triangles, so the shore is the ground's own contour
+  // and a lake on a slope stays level instead of tilting with the ground
   lakes(material) {
-    const { nx, ny, L } = this, n = nx * ny, h = L.elevation, water = L.water, EPS = 3;
-    const vy = new Float32Array(n).fill(NaN), vk = new Uint8Array(n), kinds = this.lakeKinds();
-    let any = false;
-    for (let i = 0; i < n; i++) {
-      if (water[i] !== 2) continue;
-      any = true;
-      const r = (i / nx) | 0, c = i - r * nx;
-      // (no higher than its lowest dry neighbour: a plunge pool on a fall's
-      // slope, smaller than its pixel, would otherwise hang above the ground below it)
-      let y = this.wsA[i];
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        const rr = r + dr, cc = c + dc, j = rr * nx + cc;
-        if (rr >= 0 && cc >= 0 && rr < ny && cc < nx && water[j] === 0 && h[j] < y) y = h[j];
-      }
-      vy[i] = Number.isNaN(vy[i]) ? y : Math.min(vy[i], y);
-      vk[i] = kinds[i];
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        const rr = r + dr, cc = c + dc, j = rr * nx + cc;
-        if (rr < 0 || cc < 0 || rr >= ny || cc >= nx || water[j] === 2) continue;
-        const v = Math.min(y, h[j] - EPS);  // (sea pixels too: under their floor)
-        vy[j] = Number.isNaN(vy[j]) ? v : Math.min(vy[j], v);
-        if (!vk[j]) vk[j] = kinds[i];
-      }
-    }
-    if (!any) return null;
-    const vid = new Int32Array(n).fill(-1), pos = [], col = [], idx = [], rgb = new THREE.Color();
-    const V = (i) => {
-      if (vid[i] < 0) {
-        const r = (i / nx) | 0;
-        vid[i] = pos.length / 3; pos.push(this.x(i - r * nx), vy[i], this.z(r));
-        rgb.setHex(LAKE_KIND_RGB[vk[i]] || LAKE_RGB); col.push(rgb.r, rgb.g, rgb.b);
-      }
-      return vid[i];
-    };
-    for (let r = 0; r < ny - 1; r++) for (let c = 0; c < nx - 1; c++) {
-      const a = r * nx + c, b = a + 1, d = a + nx, e = d + 1;
-      if (water[a] !== 2 && water[b] !== 2 && water[d] !== 2 && water[e] !== 2) continue;
-      // (the terrain's diagonal)
-      if (this.split[r * (nx - 1) + c]) idx.push(V(a), V(d), V(e), V(a), V(e), V(b));
-      else idx.push(V(a), V(d), V(b), V(b), V(d), V(e));
+    const { nx, ny, L } = this;
+    const S = lakeSurfaces(L.elevation, L.water, L.lake_depth, this.split, nx, ny, this.lakeKinds());
+    if (!S || !S.pos.length) return null;
+    this.lakeLevels = S.levels;
+    const nv = S.pos.length / 3, nw = S.wall.length / 3, pos = new Float32Array(3 * (nv + nw)), col = new Float32Array(3 * (nv + nw));
+    const rgb = new THREE.Color();
+    for (let v = 0; v < nv + nw; v++) {
+      const [c, y, r] = v < nv ? S.pos.slice(3 * v, 3 * v + 3) : S.wall.slice(3 * (v - nv), 3 * (v - nv) + 3);
+      pos[3 * v] = this.x(c); pos[3 * v + 1] = y; pos[3 * v + 2] = this.z(r);
+      rgb.setHex(LAKE_KIND_RGB[v < nv ? S.kind[v] : 1] || LAKE_RGB);
+      col[3 * v] = rgb.r; col[3 * v + 1] = rgb.g; col[3 * v + 2] = rgb.b;
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    g.setIndex(idx);
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     g.computeVertexNormals();
     const m = new THREE.Mesh(g, material);
     m.receiveShadow = true;
