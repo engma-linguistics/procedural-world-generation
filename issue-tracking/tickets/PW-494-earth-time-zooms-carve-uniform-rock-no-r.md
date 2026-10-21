@@ -1,4 +1,5 @@
 ---
+id: PW-494
 title: "Earth time zooms carve uniform rock (no rock record): use GLiM lithology for erodibility"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw037-port
 blocked_by: []
 relates: [PW-037]
 refs: [planet/timezoom/sources.py, tools/earth_data.py, data/earth/glim_L6.npz]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -20,3 +23,6 @@ makes the Great Lakes and Hudson Bay (soft Paleozoic rock beside the shield) can
 - map its classes to `surface.ROCK_K` as `erod_base` (crystalline ~0.3, carbonates and shales 1-1.6);
 - take the sediment cover from the unconsolidated classes.
 - [ ] Earth zoom: erosion on the Canadian and Baltic shields is lower than on the Paleozoic platforms beside them
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-earth-timezoom-erodibility.md (found by pw037-port).

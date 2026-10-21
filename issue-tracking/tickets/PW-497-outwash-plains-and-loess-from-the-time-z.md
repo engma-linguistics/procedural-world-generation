@@ -1,4 +1,5 @@
 ---
+id: PW-497
 title: Outwash plains and loess from the time zoom's glacial imprint
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw037
 blocked_by: []
 relates: [PW-037, PW-096, PW-092]
 refs: [planet/timezoom/sim.py, planet/finish.py, docs/proposals/glacial_carving.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -27,3 +30,6 @@ What to try:
   under thick loess.
 - [ ] outwash plains below long-lived margins in a 1 Myr time zoom; loess sheets downwind of them
 - [ ] volume conserved (erosion = till + outwash + loess + debris in the ice)
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-glacial-outwash-and-loess.md (found by pw037).

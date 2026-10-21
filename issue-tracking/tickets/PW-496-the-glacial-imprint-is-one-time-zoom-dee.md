@@ -1,4 +1,5 @@
 ---
+id: PW-496
 title: The glacial imprint is one time zoom deep, not an icehouse era deep
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw037
 blocked_by: []
 relates: [PW-037, PW-092, PW-104]
 refs: [planet/timezoom/sim.py, planet/finish.py, docs/proposals/glacial_carving.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options:
 - C. Embedded ice ages in the main run (PW-104) carve as they go; the time zoom only adds the last Myr.
 
 Lean: A now, C as the real fix; B is a cheap visual boost if the owner wants Great Lakes before PW-104.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-glacial-imprint-depth-only-one-myr.md (found by pw037).

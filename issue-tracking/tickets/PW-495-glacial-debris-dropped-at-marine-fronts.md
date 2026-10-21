@@ -1,4 +1,5 @@
 ---
+id: PW-495
 title: Glacial debris dropped at marine fronts piles up in one sea cell (no fan spreading)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw037-port
 blocked_by: []
 relates: [PW-037]
 refs: [planet/timezoom/sim.py, docs/review/audit/PW-037-handoff.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Ice-rafted debris spreads further still.
 What to try: spread what the sea takes down the sea floor's steepest descent over a few cells (~200-300 km),
 and send a small share far off as ice-rafted debris. Keep the volume conserved.
 - [ ] no sea cell gets more than ~300 m of till in 600 kyr on Earth L6; volume still conserved
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-glacial-debris-piles-at-marine-fronts.md (found by pw037-port).

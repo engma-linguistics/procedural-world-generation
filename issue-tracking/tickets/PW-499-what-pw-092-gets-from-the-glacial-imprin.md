@@ -1,4 +1,5 @@
 ---
+id: PW-499
 title: What PW-092 gets from the glacial imprint, and what it still lacks (ice flow direction)
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw037
 blocked_by: []
 relates: [PW-092, PW-037, PW-005]
 refs: [planet/finish.py, planet/timeline.py, planet/zoom.py, planet/zoom_landforms.py, docs/proposals/glacial_carving.md]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Missing for oriented forms (drumlins, flutes, fjords along the flow, U-valleys a
 
 Overlap: the zoom's rivers (`zoom_fine.py`, being edited on another branch) will meet more closed basins
 and lakes on deglaciated ground in finished worlds; nothing in PW-037 touches that file.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-zoom-inputs-from-glacial-imprint.md (found by pw037).
