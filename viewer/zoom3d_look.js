@@ -247,7 +247,7 @@ ${NOISE}${HOLES}`).replace('#include <color_fragment>', `#include <color_fragmen
 // (vertex colours: the kind's; lighter and greener in the shallows)
 export function lakeMaterial() {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.2, metalness: 0,
-    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2, side: THREE.DoubleSide });
   m.userData.u = { uData: { value: null }, uOrigin: { value: new THREE.Vector4(0, 0, 1, 1) }, uTime: shared.uTime, ...holeUniforms() };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, m.userData.u);

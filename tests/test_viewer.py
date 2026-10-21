@@ -191,3 +191,43 @@ def test_zoom3d_fine_tile_placed_by_reprojection():
     assert abs(out["T"][0] - 66.5) < 0.01 and abs(out["T"][1] - 9.6) < 0.01
     s = out["same"]
     assert abs(s["M"][0] - 1) < 1e-9 and abs(s["M"][1]) < 1e-9 and abs(s["T"][0]) < 1e-6
+
+
+_LAKE_JS = r"""
+import { lakeSurfaces, quadSplits, meshHeight } from '%s';
+// a 20 x 20 slope (rising 30 m per pixel to the east) with a 2 x 1 lake basin dug in it
+const nx = 20, ny = 20, n = nx * ny;
+const h = Float32Array.from({ length: n }, (_, i) => 30 * (i %% nx));
+const water = new Uint8Array(n), depth = new Float32Array(n);
+for (const [r, c] of [[10, 10], [10, 11]]) { water[r * nx + c] = 2; depth[r * nx + c] = 40; h[r * nx + c] -= 40; }
+// (the two pixels' stored levels differ by the slope, 300 and 330 m: the lake takes their mean)
+const rec = new Int32Array(n).fill(-1), q = new Float32Array(n);
+const split = quadSplits(h, rec, q, nx, ny);
+const S = lakeSurfaces(h, water, depth, split, nx, ny, null);
+const ys = new Set(); let outside = 0, above = 0;
+for (let t = 0; t < S.pos.length; t += 3) {
+  ys.add(S.pos[t + 1].toFixed(3));
+  const c = S.pos[t], r = S.pos[t + 2];
+  if (Math.abs(r - 10) > 1.0001 || c < 9 || c > 12) outside++;
+}
+// at the shore the ground meets the level (no water over ground above the level)
+for (let t = 0; t < S.pos.length; t += 9) {
+  const cx = (S.pos[t] + S.pos[t + 3] + S.pos[t + 6]) / 3, cy = (S.pos[t + 2] + S.pos[t + 5] + S.pos[t + 8]) / 3;
+  if (meshHeight(h, split, nx, ny, cy, cx) > S.pos[t + 1] + 1e-3) above++;
+}
+console.log(JSON.stringify({ levels: S.levels.length, ys: [...ys], outside, above, tris: S.pos.length / 9 }));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_zoom3d_lake_is_one_flat_clipped_surface():
+    """PW-537: a lake on a slope is ONE flat surface at its level (not tilting with the ground), cut
+    where the ground rises through it, and it has no water away from its own pixels."""
+    import json
+    js = _LAKE_JS % (VIEWER / "zoom3d_mesh.js").as_uri()
+    r = subprocess.run(["node", "--input-type=module", "-e", js], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    o = json.loads(r.stdout)
+    assert o["levels"] == 1 and len(o["ys"]) == 1, o   # one lake, one level
+    assert o["outside"] == 0 and o["tris"] > 0, o      # no orphan water
+    assert o["above"] == 0, o                          # nowhere over higher ground

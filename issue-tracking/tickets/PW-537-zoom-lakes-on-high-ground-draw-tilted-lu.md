@@ -21,3 +21,4 @@ Owner 2026-10-21, zoom 60b7e1 (world 28442c, 1 km/px), 3D view: small lakes up o
 
 ## Updates
 - 2026-10-21: Created.
+- 2026-10-21: Diagnosed (pw537 branch). The stored level is per pixel (elevation + lake_depth, equal within ~3 m over a lake; the lakes in 60b7e1 are 1-px plunge pools in a steep cascade, each its own level). The viewer, not the data, made the tilt: each lake pixel's vertex was lowered to its lowest dry neighbour and the ring of neighbours put at ground-3 m (a tent over the slope, spikes at the shore, slivers where the ring of one pool reached the next). Fixed in the viewer: `lakeSurfaces` (zoom3d_mesh.js) makes one flat surface per 4-connected lake, clipped by the drawn terrain triangles. River staircase: not cheap, see the inbox draft.
