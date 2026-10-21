@@ -13,6 +13,9 @@ Writes into one directory (default: <data root>/exports/<id>/):
   ice_thickness*   16-bit, the same way: m of land ice on the ground
   water*.png       8-bit ids: 0 land, 1 sea, 2 lake
   biome*, vegetation*, rock*.png   8-bit class ids (legend.json)
+  river_nav*, harbour*, pass*, fertile*, fresh_water*.png   8-bit human-use class ids
+                   (PW-099, humanuse.py; legend.json); features.geojson gets the kinds
+                   navigable_river, harbour, pass, spring and (worlds) fertile_land
   splat_0*, splat_1*.png   RGBA8 material weights, 8 materials in all (sum 255
                    on land, 0 on water); derived from tree/plant cover, ice,
                    slope, climate and wetland by simple rules (splat_weights)
@@ -35,8 +38,7 @@ the native one by block averaging). Big rasters are cut into --tile px tiles
 (--overlap px shared between neighbours: use 1 for 2^n + 1 terrain tiles).
 
 Layers are a registry (manifest layouts.<name>.layers): later layers
-(PW-099's passes and harbours, PW-206's game attributes) add entries and
-feature kinds without changing the format.
+(PW-206's game attributes) add entries and feature kinds without changing the format.
 """
 
 from __future__ import annotations
@@ -47,6 +49,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import humanuse as HU
 from . import hydrology
 from . import projection as PJ
 from . import store as S
@@ -255,7 +258,13 @@ def _write_products(w: Writer, P: dict, lo: float, hi: float, folder: str = "", 
                                    **nd, "files": w.write("ice_thickness", _u16(P["ice"], 0, top, valid), folder)}
     ids = {"water": ("water", "0 land, 1 sea, 2 lake"), "biome": ("biome", "climate.BIOMES id"),
            "vegetation": ("vegetation", "named vegetation type id (vegetation.TYPES)"),
-           "rock": ("rock", "exposed rock id (surface.ROCKS)")}
+           "rock": ("rock", "exposed rock id (surface.ROCKS)"),
+           # human-use class maps (humanuse.py, PW-099); the legend is legend.json's key of the same name
+           "river_nav": ("river_nav", "navigable rivers: 0 no, 1 small boats, 2 barges, 3 sea-going"),
+           "harbour": ("harbour", "natural harbours at sea: 0 none, 1 anchorage, 2 harbour, 3 fine harbour"),
+           "pass": ("pass", "mountain pass at the saddle: 1 open most of the year, 2 seasonal, 3 snow-bound"),
+           "fertile": ("fertile", "farmland: 0 not arable .. 4 prime"),
+           "fresh_water": ("fresh_water", "reach of perennial fresh water: 3 on site .. 0 none")}
     for k, (leg, desc) in ids.items():
         if P.get(k) is not None:
             ids = np.clip(P[k], 0, NODATA_ID - 1).astype(np.uint8)
@@ -402,6 +411,9 @@ def _world_rasters(world: dict, pts: np.ndarray, shape: tuple, dx_m, dy_m) -> di
     for k, src in (("biome", "biome"), ("vegetation", "vegetation"), ("rock", "surface_rock")):
         if src in L:
             P[k] = sm.nearest(L[src]).reshape(ny, nx)
+    for k in HU.CLASS_MAPS:
+        if k in L:
+            P[k] = sm.nearest(L[k]).reshape(ny, nx)
     if "tree_cover" in L:
         P["splat"] = splat_weights(slope_deg(elev, dx_m, dy_m), ice, smooth("tree_cover") / 100,
                                    smooth("plant_cover") / 100, smooth("precipitation", 800), smooth("temperature", 10),
@@ -409,7 +421,73 @@ def _world_rasters(world: dict, pts: np.ndarray, shape: tuple, dx_m, dy_m) -> di
     return P
 
 
-def _world_features(world: dict, path: Path, river_min: float, with_highlights: bool) -> Features:
+def _greedy(order: np.ndarray, ll: np.ndarray, min_km: float) -> list[int]:
+    """Indices into `order` (best first) kept so that no two are within min_km (great circle) of each other."""
+    p = xyz(np.radians(ll[:, 0]), np.radians(ll[:, 1]))
+    kept: list[int] = []
+    for i in range(len(order)):
+        if not kept or (np.arccos(np.clip(p[kept] @ p[i], -1, 1)) * R_KM >= min_km).all():
+            kept.append(i)
+    return kept
+
+
+def _human_use_features(feats: Features, tab: dict, node_ll, kind: str, min_km: float, grid=None, L=None) -> None:
+    """Feature kinds of humanuse.py (PW-099): navigable_river (lines), harbour, pass, spring, fertile_land (points).
+    node_ll: node ids -> (lat, lon) array; min_km: how close two points of one kind may be."""
+    net = tab["net"]
+    names = {1: "small boats", 2: "barges", 3: "sea-going"}
+    if "nav" in tab:
+        nv = tab["nav"]
+        lines = river_lines(net.nxt, nv["q"], nv["cls"] > 0)
+
+        def km_of(seg):
+            return round(_path_km(node_ll(seg)), 1)
+        for r in HU.nav_reaches(lines, nv["cls"], nv["q"], nv["grad"], nv["open"], nv["conn"], km_of):
+            pts = node_ll(r["nodes"])
+            pts[:, 1] = np.degrees(np.unwrap(np.radians(pts[:, 1])))
+            feats.line("navigable_river", pts, nav_class=names[r["cls"]], class_id=r["cls"], length_km=r["length_km"],
+                       discharge_m3s=[round(r["q_min"], 1), round(r["q_max"], 1)],
+                       gradient_m_per_km=round(r["gradient_m_per_km"], 2), open_months=r["open_months"],
+                       reaches_sea=r["to_sea"])
+    if "harbour" in tab:
+        h = tab["harbour"]
+        idx = np.flatnonzero(h["cls"] > 0)
+        idx = idx[np.lexsort((-h["shelter"][idx], -h["cls"][idx]))]
+        if len(idx):
+            ll = node_ll(idx)
+            for i in _greedy(idx, ll, min_km):
+                n = idx[i]
+                feats.point("harbour", float(ll[i, 0]), float(ll[i, 1]), harbour_class=["", "anchorage", "harbour", "fine harbour"][h["cls"][n]],
+                            class_id=int(h["cls"][n]), setting="estuary" if h["q_mouth"][n] >= HU.ESTUARY_Q else "bay",
+                            depth_m=round(float(h["depth"][n])), fetch_km=round(float(h["fetch_km"][n])),
+                            shelter=round(float(h["shelter"][n]), 2), sea_ice_months=round(float(h["ice_months"][n]), 1),
+                            river_m3s=round(float(h["q_mouth"][n])) if h["q_mouth"][n] > 0 else None)
+    for p in tab.get("passes", []):
+        la, lo = node_ll(np.array([p["node"]]))[0]
+        feats.point("pass", float(la), float(lo), pass_class=["", "open", "seasonal", "snow-bound"][HU.pass_class(p["open_months"])],
+                    class_id=HU.pass_class(p["open_months"]), height_m=round(p["height"]), open_months=p["open_months"],
+                    basin_km2=[round(p["area_a"]), round(p["area_b"])])
+    sp = tab.get("springs")
+    if sp is not None and len(sp):
+        ll = node_ll(sp)
+        for i in _greedy(sp, ll, min_km):
+            feats.point("spring", float(ll[i, 0]), float(ll[i, 1]))
+    if kind == "world" and grid is not None and L is not None and "fertile" in L:
+        comp, n = grid.components(np.asarray(L["fertile"]) >= 3)
+        score = np.asarray(L["fertile_score"], float) / 100
+        area = 4 * np.pi * R_KM**2 / grid.n
+        for k in range(n):
+            cells = np.flatnonzero(comp == k)
+            if len(cells) < 3:
+                continue
+            c = grid.centers[cells].mean(0)
+            la, lo = latlon(c / np.linalg.norm(c))
+            feats.point("fertile_land", float(la), float(lo), area_km2=round(len(cells) * area),
+                        mean_score=round(float(score[cells].mean()), 2),
+                        prime_share=round(float((np.asarray(L["fertile"])[cells] == 4).mean()), 2))
+
+
+def _world_features(world: dict, path: Path, river_min: float, with_highlights: bool, hu_tab: dict | None = None) -> Features:
     L, grid, meta = world["layers"], world["grid"], world["meta"]
     el = np.asarray(L["elevation"], float)
     ice = np.asarray(L.get("ice", np.zeros_like(el)), float)
@@ -439,6 +517,10 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
                 kd = np.bincount(np.asarray(L["lake_kind"])[cells].astype(int)).argmax()
                 props["lake_kind"] = kinds.get(int(kd), "fresh")
             feats.point("lake", float(la), float(lo), **props)
+    if hu_tab:
+        ll_all = np.stack([lat, lon], 1)
+        _human_use_features(feats, hu_tab, lambda idx: ll_all[np.asarray(idx)].copy(), "world",
+                            3 * grid.spacing * R_KM, grid, L)
     from . import zoom_volcanoes as ZV
     vols = ZV.table(world)
     if vols:
@@ -517,6 +599,9 @@ def export_world(path: Path, out: Path, res: int | None, tile: int, overlap: int
                  height_range, river_min: float | None, with_highlights: bool, log, mv_args=None) -> dict:
     world = W.load(path)
     meta = world["meta"]
+    hu, hu_tab = HU.analyse_world(world["grid"], world["layers"])  # (a stored layer wins; older worlds have none)
+    for k, v in hu.items():
+        world["layers"].setdefault(k, v)
     width = int(res or WORLD_WIDTH)
     wr = Writer(out, tile, overlap, raw)
     mv = valid = None
@@ -566,7 +651,7 @@ def export_world(path: Path, out: Path, res: int | None, tile: int, overlap: int
                            "z_axis": "north pole; x through (0N, 0E), y through (0N, 90E)",
                            "layers_by_face": faces}
     feats = _world_features(world, path, river_min if river_min is not None else RIVER_MIN_M3S["world"],
-                            with_highlights)
+                            with_highlights, hu_tab)
     geo, = feats.collections(f"{path.stem} features")
     (out / "features.geojson").write_text(json.dumps(geo))
     counts = _kind_counts(feats)
@@ -655,7 +740,8 @@ def _zoom_products(A: dict, r_dx, r_dy) -> dict:
     el = A["elevation"].astype(float)
     water = A.get("water", np.where(el > 0, 0, 1)).astype(np.uint8)
     P = {"elevation": el, "ice": A.get("ice"), "water": water, "biome": A.get("biome"),
-         "vegetation": A.get("vegetation"), "rock": A.get("surface_rock")}
+         "vegetation": A.get("vegetation"), "rock": A.get("surface_rock"),
+         **{k: A[k] for k in HU.CLASS_MAPS if k in A}}
     if "tree_cover" in A:
         P["splat"] = splat_weights(
             slope_deg(el, r_dx, r_dy), np.asarray(A.get("ice", 0 * el), float),
@@ -670,7 +756,12 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     meta, L = Z.load(d, decode=True)
     nat = float(meta["res_km"])
     f = 1 if mv_args else max(int(round((res or nat) / nat)), 1)
-    cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland")
+    cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland", *HU.CLASS_MAPS, "spring")
+    hu, hu_tab = HU.analyse_zoom(L, nat, HU.falls_pixels(meta.get("stats", {}).get("falls", []),
+                                                        Z.Frame(meta["center"]["lat"], meta["center"]["lon"]),
+                                                        meta["nx"], meta["ny"], nat))
+    for k, v in hu.items():  # (a stored layer wins; older zooms have none)
+        L.setdefault(k, v)
     A = {k: _block(np.asarray(v), f, k in cat) for k, v in L.items()
          if np.asarray(v).ndim == 2}
     ny, nx = A["elevation"].shape
@@ -755,6 +846,8 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
         feats.point("delta", la, lo_, delta_type=dl["type"], discharge_m3s=dl["discharge_m3s"],
                     plain_radius_km=dl["plain_radius_km"], weights=dl["weights"])
     _zoom_lakes(feats, A, nx, ny, r_km, pix_ll)
+    h0, w0 = L["elevation"].shape
+    _human_use_features(feats, hu_tab, lambda idx: pix_ll(np.asarray(idx), w0, h0, nat), "zoom", max(5 * nat, 10.0))
     if with_highlights:
         _zoom_highlights(feats, meta, fr, ground, to_xy)
     geo, loc = feats.collections(f"{meta['id']} features", f"{meta['id']} features (local)")
@@ -881,7 +974,7 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
     lo, hi = r.pop("height")
     legend = S.legends()
     leg = {"water": list(WATER), "biome": legend["biomes"], "vegetation": legend["vegetation"]["types"],
-           "rock": legend["rocks"],
+           "rock": legend["rocks"], **legend["human_use"],
            "splat": [{"channel": i, "file": f"splat_{i // 4}", "component": "RGBA"[i % 4], "name": n, "color": c}
                      for i, (n, c) in enumerate(SPLAT)]}
     (out / "legend.json").write_text(json.dumps(leg, indent=1))
@@ -895,7 +988,10 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
         "provenance": {"exporter": code_version(), "args": {"res": res, "tile": tile, "overlap": overlap, "cube": cube,
                                                             "raw": raw, "river_min_m3s": river_min,
                                                             "projection": mv_args}},
-        "reserved": "Further layers (PW-099 human-use layers, PW-206 game attributes) are added as new entries of "
+        "human_use": "PW-099 (humanuse.py): class-map layers river_nav, harbour, pass, fertile, fresh_water (legend.json "
+                     "has each one's ids) and feature kinds navigable_river (lines), harbour, pass, spring, "
+                     "fertile_land (worlds) in features.geojson. Derived from the simulation's fields, not new physics.",
+        "reserved": "Further layers (PW-206 game attributes) are added as new entries of "
                     "layouts.<name>.layers and new feature kinds, not new top-level keys.",
     }
     (out / "manifest.json").write_text(json.dumps(_clean(manifest), indent=1))

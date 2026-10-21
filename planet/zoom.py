@@ -154,6 +154,7 @@ from pathlib import Path
 import numpy as np
 
 from . import climate, coast, icemass, kernels
+from . import humanuse as HU
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -3219,6 +3220,10 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         **({f"cloud_{s}": np.round(100 * fields[f"cloud_{s}"]) for s in ("jul", "jan")}
            if fields.get("cloud_jul") is not None else {}),
     }
+    # human-use layers (humanuse.py, PW-099): navigable rivers, harbours, passes, farmland, fresh water
+    layers.update({k: v.ravel() for k, v in HU.zoom_layers(
+        {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, res,
+        HU.falls_pixels(stats.get("falls", []), fr, nx, ny, res)).items()})
     # the satellite view (satellite.py, PW-083), from each pixel's plant fractions
     nu = np.zeros((vegetation.NP, nx * ny))
     nu[:, vz["idx"]] = vz["nu"]
@@ -3389,6 +3394,8 @@ LAYER_DOC = {
     "cloud_jan": ("%", "cloud cover, January half-year (the world's, interpolated)", {"dtype": "u1"}),
     # soils per pixel (zoom_vegetation / soils.zoom_mineral, PW-331), the world's names and encodings
     **ZVG.SOIL_LAYER_DOC,
+    # human-use layers (humanuse.py, PW-099)
+    **HU.zoom_layer_doc(),
 }
 
 

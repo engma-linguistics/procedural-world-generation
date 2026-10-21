@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, coastal, hydrology, ocean, satellite, soils, vegetation
+from . import climate, coast, coastal, humanuse, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, is_land, latlon, world_land, xyz
@@ -177,6 +177,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     layers["biome"] = vegetation.biome_of(vg["types"], climate.biomes(elev, temp, precip, lk["wet"], ice))
     # the satellite view (satellite.py, PW-083): true colour, 0xRRGGBB, each hemisphere's summer / July / January
     layers.update(satellite.world_layers(grid, layers, tilt))
+    # human-use layers (humanuse.py, PW-099): navigable rivers, harbours, passes, farmland, fresh water
+    layers.update(humanuse.world_layers(grid, layers))
 
     meta = {
         **meta,
