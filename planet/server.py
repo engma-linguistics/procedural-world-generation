@@ -6,8 +6,11 @@
   DELETE /runs/<id>, /worlds/<id>, /zooms/<id>
                                       delete one item (store.delete; a world
                                       takes its zooms and highlights with it)
-  POST   /api/zoom, /api/timezoom, /api/finish
-                                      start a job (api.py) -> {"job": id}
+  POST   /api/zoom, /api/timezoom, /api/finish, /api/make
+                                      start a job (api.py; make.py: seed to finished world) -> {"job": id}
+  GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
+  GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py)
+  GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/cell?world=<id>&i=<cell>  one world cell's 12 months (cell())
@@ -39,7 +42,7 @@ import zlib
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
-from . import api
+from . import api, family, make, thumbs
 from . import parallel as P
 from . import store as S
 
@@ -51,7 +54,28 @@ def delete(path: str) -> int:
     m = re.fullmatch(r"/(runs|worlds|zooms)/([0-9a-zA-Z_-]+?)(?:\.json)?", path)
     if not m:
         return 400
-    return 204 if S.delete(KIND_OF[m.group(1)], m.group(2)) else 404
+    gone = S.delete(KIND_OF[m.group(1)], m.group(2))
+    for p in (S.root() / thumbs.CACHE).glob(f"{KIND_OF[m.group(1)]}-{m.group(2)}-*.png"):
+        p.unlink(missing_ok=True)
+    return 204 if gone else 404
+
+
+def make_query(query: str) -> dict:
+    """GET /api/make/estimate's query string as a make request (?seed=&preset=&level=&myr=&kyr=&timezoom=1&zooms=4...)."""
+    q = dict(parse_qsl(query))
+    req = {k: q[k] for k in ("seed", "preset", "level", "myr", "kyr", "zooms") if q.get(k) not in (None, "")}
+    for k in ("timezoom", "finish", "highlights"):
+        if k in q:
+            req[k] = q[k] not in ("0", "false", "")
+    return req
+
+
+def make_estimate(query: str) -> tuple[dict, int]:
+    try:
+        spec = make.parse_make_request(make_query(query))
+    except (ValueError, api.BadRequest) as e:
+        return {"error": str(e)}, 400
+    return {"spec": spec, **make.estimate(spec)}, 200
 
 
 def highlights(query: str, compute=None) -> tuple[dict, int]:
@@ -180,7 +204,9 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
     (so a bad one fails at once), then queues it."""
     try:
         req = json.loads(body or b"{}")
-        if path == "/api/zoom":
+        if path == "/api/make":
+            req = make.parse_make_request(req)
+        elif path == "/api/zoom":
             api.parse_zoom_request(req)
         elif path == "/api/finish":  # kyr snaps to a frame, t to a keyframe
             req = api.parse_finish_request(req)
@@ -265,6 +291,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
+        if url.path == "/api/planets":
+            return self.send_json({"planets": family.planets()})
+        if url.path == "/api/make/options":
+            return self.send_json(make.options())
+        if url.path == "/api/make/estimate":
+            return self.send_json(*make_estimate(url.query))
+        if url.path == "/api/thumb":
+            q = dict(parse_qsl(url.query))
+            png = thumbs.thumb(q.get("kind", ""), q.get("id", ""))
+            if png is None:
+                return self.send_error(404)
+            body = png.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         gz = self.gzippable()
         if gz:
             return self.send_gzip(gz)
@@ -275,7 +318,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish"):
+        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
 

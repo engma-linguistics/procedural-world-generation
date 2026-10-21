@@ -14,5 +14,7 @@ data/
 # the server's job state (api.Jobs)
 .jobs/
 .DS_Store
+# small previews for the start screen (planet/thumbs.py)
+.thumbs/
 # the server's gzipped copies of data files (planet/server.py)
 .gzcache/
