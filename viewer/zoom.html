@@ -110,6 +110,9 @@
   <label><input type="checkbox" id="rivers" checked> Rivers and lakes (on map layers)</label>
   <label><input type="checkbox" id="falls" checked> Waterfalls <span class="muted" id="fallsN"></span></label>
   <label><input type="checkbox" id="volc" checked> Volcanoes <span class="muted" id="volcN"></span></label>
+  <label title="Natural harbours (diamonds, bigger and redder = better), one per stretch of coast (humanuse.py)"><input type="checkbox" id="harb"> Harbours <span class="muted" id="harbN"></span></label>
+  <label title="The saddle on each divide between drainage basins (bow-ties, coloured by the months it is open)"><input type="checkbox" id="passm"> Mountain passes <span class="muted" id="passN"></span></label>
+  <label title="Springs at the foot of wetter high ground in dry country"><input type="checkbox" id="spring"> Springs <span class="muted" id="springN"></span></label>
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
 
@@ -170,6 +173,7 @@ const LAYERS = [
   ['fire_return', 'Fire return'], ['lai', 'Leaf area'], ['coastal_life', 'Coastal life'],
   ['soil', 'Soils'], ['soil_depth', 'Soil depth'], ['soil_water', 'Soil water'], ['soil_fertility', 'Fertility'],
   ['soil_carbon', 'Soil carbon'], ['peat_depth', 'Peat'], ['permafrost', 'Permafrost'], ['loess', 'Loess'],
+  ['river_nav', 'Navigable rivers'], ['harbour', 'Harbours'], ['pass', 'Passes'], ['fertile', 'Farmland'], ['fresh_water', 'Fresh water'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'],
   ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['coarse', 'Coarse cells'],
@@ -179,8 +183,15 @@ const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_heigh
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
   coastal_life: 'coastal_life', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
   soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
-  loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m' };  // (the last two: fine zooms only)
-const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor'];
+  loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m',
+  river_nav: 'river_nav', harbour: 'harbour', pass: 'pass', fertile: 'fertile', fresh_water: 'fresh_water' };  // (the last two: fine zooms only)
+// the human-use class maps (humanuse.py, PW-099/505), coloured from legend.human_use; the first three show only their classes
+// over plain ground, the other two cover the land
+const HU_SPARSE = ['river_nav', 'harbour', 'pass'], HU_AREA = ['fertile', 'fresh_water'];
+const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours at the coast', pass: 'mountain passes: how long they are open',
+  fertile: 'farmland', fresh_water: 'fresh water within reach' };
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor',
+  ...HU_SPARSE, ...HU_AREA];
 // a fine zoom's alluvial valley floors (zoom_fine_floodplain, PW-412; planet/zoom.py LAYER_DOC valley_floor)
 const VALLEY_FLOOR = [{ id: 1, name: 'floodplain', color: '#c8d77a' }, { id: 2, name: 'meander belt', color: '#e0a650' },
   { id: 3, name: 'channel on the floor', color: '#2f6fd0' }];
@@ -287,6 +298,7 @@ async function init() {
   $('layerSeg').onclick = (e) => { if (e.target.dataset.v) { state.layer = e.target.dataset.v; render(); syncURL(); } };
   if (p.get('season') in SEASON_NAMES) state.season = p.get('season');
   for (const o of ['rivers', 'falls', 'volc']) if (p.get(o) === '0') $(o).checked = false;  // e.g. ?rivers=0
+  for (const o of ['harb', 'passm', 'spring']) if (p.get(o) === '1') $(o).checked = true;  // e.g. ?harb=1
   $('season').value = state.season;
   $('season').onchange = () => { state.season = $('season').value; render(); syncURL(); };
   $('rivers').onchange = render;
@@ -294,6 +306,7 @@ async function init() {
   $('clouds').onchange = () => { render(); syncURL(); };
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
+  for (const o of ['harb', 'passm', 'spring']) $(o).onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
   $('btn3d').onclick = () => (state.d3 ? exit3d() : enter3d());
   $('back2d').onclick = exit3d;
@@ -435,7 +448,7 @@ async function fetchZoom(id) {
     const cx = cv.getContext('2d'); cx.drawImage(im, 0, 0);
     sat[s] = cx.getImageData(0, 0, meta.nx, meta.ny).data;
   }));
-  return { meta, L, sat, imgs: { coarse }, marks: markers(meta), shade: hillshade(L.elevation, meta.nx, meta.ny, meta.res_km),
+  return { meta, L, sat, imgs: { coarse }, marks: markers(meta, L), shade: hillshade(L.elevation, meta.nx, meta.ny, meta.res_km),
            off: document.createElement('canvas'), flat: null, cloudNoise: null };
 }
 // run fn with zoom data zd (fetchZoom) as the page's state (a fine zoom's colours and info), then put it back
@@ -537,7 +550,7 @@ const FALL_KIND = {
   scarp: 'over a landform scarp', bench: 'over a hard bed (bench)',
   'lake outlet': 'at a lake outlet', drop: 'a steep step in the river',
 };
-function markers(m) {
+function markers(m, L) {
   const st = m.stats || {}, res = m.res_km, nx = m.nx, ny = m.ny;
   const top = new Set((st.waterfalls || []).map((w) => `${w.px[0]},${w.px[1]}`));
   const byPx = new Map((st.waterfalls || []).map((w) => [`${w.px[0]},${w.px[1]}`, w]));
@@ -547,7 +560,38 @@ function markers(m) {
   });
   const volc = (st.volcanoes || []).map((v) => ({ ...v, kindOf: 'volcano', active: v.active ?? /^active/.test(v.form || ''),
     c: v.x_km / res + nx / 2, r: ny / 2 - v.y_km / res }));
-  return { falls, volc };
+  return { falls, volc, ...huMarkers(m, L) };
+}
+// harbours, passes and springs from the human-use class maps (humanuse.py): the best harbour pixel and one spring per
+// stretch of coast / ground (cells of about 20 km), every pass saddle
+function huMarkers(m, L) {
+  const out = { harb: [], passm: [], spring: [] };
+  if (!L || !L.river_nav) return out;
+  const nx = m.nx, ny = m.ny, cell = Math.max(4, Math.round(20 / m.res_km)), best = new Map(), sp = new Map();
+  for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++) {
+    const i = r * nx + c, key = Math.floor(r / cell) * 100000 + Math.floor(c / cell);
+    if (L.harbour[i] > 0 && (!best.has(key) || L.harbour[i] > L.harbour[best.get(key)])) best.set(key, i);
+    if (L.pass[i] > 0) out.passm.push({ kindOf: 'pass', cls: L.pass[i], height: L.pass_height[i], r: r + 0.5, c: c + 0.5 });
+    if (L.spring[i] > 0 && !sp.has(key)) sp.set(key, i);
+  }
+  for (const i of best.values()) out.harb.push({ kindOf: 'harbour', cls: L.harbour[i], r: Math.floor(i / nx) + 0.5, c: (i % nx) + 0.5 });
+  for (const i of sp.values()) out.spring.push({ kindOf: 'spring', r: Math.floor(i / nx) + 0.5, c: (i % nx) + 0.5 });
+  return out;
+}
+const HU_MARK_SIZE = { harbour: (o) => 3.5 + 1.5 * o.cls, pass: () => 6, spring: () => 3.5 };
+const huMarkColor = (kind, cls) => {
+  const e = (state.meta.legend.human_use?.[kind] || [])[cls];
+  return e && e.color.length <= 7 ? e.color : '#ffffff';
+};
+// a marker kind is shown when its overlay is ticked or its layer is the one picked
+const huShow = (id, layer) => $(id).checked || state.layer === layer;
+function huPath(g, o, x, y) {
+  const s = HU_MARK_SIZE[o.kindOf](o);
+  g.beginPath();
+  if (o.kindOf === 'harbour') { g.moveTo(x, y - s); g.lineTo(x + s, y); g.lineTo(x, y + s); g.lineTo(x - s, y); g.closePath(); }
+  else if (o.kindOf === 'pass') { g.moveTo(x - s, y - s); g.lineTo(x + s, y - s); g.lineTo(x - s, y + s); g.lineTo(x + s, y + s); g.closePath(); }
+  else g.arc(x, y, s, 0, 2 * Math.PI);
+  return s;
 }
 function fallSize(f) { return Math.min(13, 3.5 + 1.6 * Math.sqrt(f.height_m / 30)); }
 function volcSize(v) { return Math.min(12, 4 + 2.2 * Math.sqrt(Math.max(v.height_m, 0) / 1000)); }
@@ -560,6 +604,9 @@ function volcColors(v) {
     : v.top_m < 0 ? [null, '#8fc2ff'] : ['#c08a52', '#2b1a0b'];
 }
 function markIcon(kind, extra) {
+  if (kind === 'harbour') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M0,-5 L5,0 L0,5 L-5,0 Z" fill="${extra}" stroke="#0b0b0b" stroke-width="1.3"/></svg>`;
+  if (kind === 'pass') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,-5 L5,-5 L-5,5 L5,5 Z" fill="${extra}" stroke="#0b0b0b" stroke-width="1.3"/></svg>`;
+  if (kind === 'spring') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><circle r="4" fill="#5fd0ff" stroke="#0b2540" stroke-width="1.3"/></svg>`;
   if (kind === 'fall') return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,-4 L5,-4 L0,5 Z" fill="#9fe3ff" stroke="#0b2540" stroke-width="1.3"/></svg>`;
   const [f, s] = extra;
   return `<svg class="mk" width="12" height="12" viewBox="-6 -6 12 12"><path d="M-5,4.5 L5,4.5 L0,-5 Z" fill="${f || 'none'}" stroke="${s}" stroke-width="1.3"/></svg>`;
@@ -571,6 +618,13 @@ function markLegend() {
   if ($('falls').checked && mk.falls.length) parts.push(`<span>${markIcon('fall')}waterfall &ge; 30 m (size: height; ringed: the biggest by power)</span>`);
   if ($('volc').checked && mk.volc.length) parts.push(`<span>${markIcon('v', ['#ff5a36', '#3a0d02'])}active ${
     mk.volc.some((o) => volcStatus(o) === 'dormant') ? `${markIcon('v', ['#ffd23f', '#3a2c02'])}dormant ` : ''}${markIcon('v', ['#c08a52', '#2b1a0b'])}extinct ${markIcon('v', [null, '#8fc2ff'])}below the sea (volcanoes; size: height)</span>`);
+  for (const [id, lay, key, kind, N] of [['harb', 'harbour', 'harb', 'harbour', 'harbN'], ['passm', 'pass', 'passm', 'pass', 'passN'], ['spring', 'fresh_water', 'spring', 'spring', 'springN']]) {
+    $(N).textContent = (mk[key] || []).length ? `(${mk[key].length})` : '(none)';
+    if (!huShow(id, lay) || !(mk[key] || []).length) continue;
+    if (kind === 'spring') parts.push(`<span>${markIcon('spring')}spring (foot of wetter high ground in dry country)</span>`);
+    else parts.push(`<span>${(state.meta.legend.human_use?.[kind] || []).filter((e) => e.id > 0 && e.color.length <= 7 && (mk[key] || []).some((o) => o.cls === e.id))
+      .map((e) => `${markIcon(kind, e.color)}${e.name}`).join(' ')} <span class="muted">(${kind === 'harbour' ? 'harbours' : 'passes'})</span></span>`);
+  }
   if (parts.length) $('legend').insertAdjacentHTML('beforeend', parts.join(''));
 }
 function drawMarks() {
@@ -583,6 +637,15 @@ function drawMarks() {
     ctx.beginPath(); ctx.moveTo(x - s, y + 0.8 * s); ctx.lineTo(x + s, y + 0.8 * s); ctx.lineTo(x, y - s); ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     ctx.lineWidth = fill ? 1.3 : 2; ctx.strokeStyle = stroke; ctx.stroke();
+  }
+  for (const [id, lay, key] of [['harb', 'harbour', 'harb'], ['passm', 'pass', 'passm'], ['spring', 'fresh_water', 'spring']]) {
+    if (!huShow(id, lay)) continue;
+    for (const o of mk[key] || []) {
+      const x = X(o.c), y = Y(o.r);
+      huPath(ctx, o, x, y);
+      ctx.fillStyle = o.kindOf === 'spring' ? '#5fd0ff' : huMarkColor(o.kindOf, o.cls); ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = o.kindOf === 'spring' ? '#0b2540' : '#0b0b0b'; ctx.stroke();
+    }
   }
   if ($('falls').checked) for (const f of mk.falls) {
     const s = fallSize(f), x = X(f.c), y = Y(f.r);
@@ -600,11 +663,24 @@ function pick(ev) {
     if (d <= s + 4 && d < bd) { bd = d; best = o; }
   };
   if ($('falls').checked) for (const f of mk.falls) test(f, fallSize(f));
+  for (const [id, lay, key] of [['harb', 'harbour', 'harb'], ['passm', 'pass', 'passm'], ['spring', 'fresh_water', 'spring']])
+    if (huShow(id, lay)) for (const o of mk[key] || []) test(o, HU_MARK_SIZE[o.kindOf](o));
   if ($('volc').checked) for (const o of mk.volc) test(o, volcSize(o));
   return best;
 }
 function cardHTML(o) {
   const row = (k, val) => `<tr><td>${k}</td><td>${val}</td></tr>`;
+  if (o.kindOf === 'harbour' || o.kindOf === 'pass' || o.kindOf === 'spring') {
+    const m = state.meta, L = state.L, i = Math.floor(o.r) * m.nx + Math.floor(o.c), hu = m.legend.human_use || {};
+    const [la, lo] = latlon((o.c - m.nx / 2) * m.res_km, (m.ny / 2 - o.r) * m.res_km);
+    const nm = (k, v) => (hu[k]?.[v] || {}).name;
+    const ll = row('lat, lon', `${fmt(la, 3)}, ${fmt(lo, 3)}`);
+    if (o.kindOf === 'harbour') return `<h3>${markIcon('harbour', huMarkColor('harbour', o.cls))}Harbour: ${nm('harbour', o.cls)}</h3><table>
+      ${row('class', `${o.cls} of 3: ${nm('harbour', o.cls)}`)}${ll}</table>`;
+    if (o.kindOf === 'pass') return `<h3>${markIcon('pass', huMarkColor('pass', o.cls))}Mountain pass, ${fmt(o.height)} m</h3><table>
+      ${row('open', nm('pass', o.cls))}${row('height', `${fmt(o.height)} m, the saddle on the divide`)}${ll}</table>`;
+    return `<h3>${markIcon('spring')}Springs</h3><table>${row('where', 'the foot of wetter high ground, in dry country')}${ll}</table>`;
+  }
   if (o.kindOf === 'fall') {
     const casc = o.cascades || [];
     return `<h3>${markIcon('fall')}Waterfall, ${fmt(o.height_m)} m</h3><table>
@@ -855,6 +931,7 @@ function legendFor(kind) {
     : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
     : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || [])
     : kind === 'valley_floor' ? VALLEY_FLOOR
+    : HU_SPARSE.includes(kind) || HU_AREA.includes(kind) ? (lg.human_use?.[kind] || []).filter((e) => e.color.length <= 7)
     : kind === 'soil' ? (lg.soils?.types || []).map((t) => ({ ...t, text: `${t.wrb} / ${t.usda}: ${t.desc}` })) : lg.rocks;
 }
 
@@ -953,14 +1030,14 @@ function renderLayer() {
       const g = 40 + 120 * s;
       c = wet === 1 ? ramp(SEA, h[i]).map((v) => v * 0.6) : wet === 2 ? [70, 130, 196] : [g, g, g];
       if (vf && vf[i] > 0) { const t = ramp(FLOOR_M, (fm[i] - lo) / (hi - lo || 1)), f = 0.7 + 0.4 * s; c = [t[0] * f, t[1] * f, t[2] * f]; }
-    } else if (k === 'coastal_life' || k === 'valley_floor') {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides; valley floors
+    } else if (k === 'coastal_life' || k === 'valley_floor' || HU_SPARSE.includes(k)) {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides; valley floors
       const v = L[k] ? L[k][i] : 0, e = lut[v];
       if (v > 0 && e) { c = e.rgb; present.set(v, (present.get(v) || 0) + 1); }
       else c = wet === 1 ? ramp(SEA, h[i]).map((x) => x * 0.7) : wet === 2 ? [70, 130, 196] : [70 + 70 * s, 68 + 70 * s, 60 + 70 * s];
     } else if (lut) {
       const e = lut[L[k][i]];
       if (wet === 1 && k !== 'rock' && k !== 'surface_rock') c = ramp(SEA, h[i]);
-      else if ((k === 'vegetation' || k === 'soil') && wet === 2) c = [70, 130, 196];
+      else if ((k === 'vegetation' || k === 'soil' || HU_AREA.includes(k)) && wet === 2) c = [70, 130, 196];
       else { c = e ? e.rgb : [255, 0, 255]; present.set(L[k][i], (present.get(L[k][i]) || 0) + 1); const f = 0.55 + 0.5 * s; c = [c[0] * f, c[1] * f, c[2] * f]; }
     } else if (k === 'precipitation' || k === 'temperature') {
       c = ramp(k === 'precipitation' ? RAIN : TEMP, L[sk][i]);
@@ -975,7 +1052,7 @@ function renderLayer() {
         const f = 0.62 + 0.45 * s; c = [c[0] * f, c[1] * f, c[2] * f];
       }
     }
-    if (overlay && lut && wet === 0 && !onIce && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
+    if (overlay && lut && k !== 'river_nav' && wet === 0 && !onIce && area[i] >= minArea && q[i] > 3) c = [38, 92, 178];
     if (overlay && lut && wet === 2) c = [70, 130, 196];
     px[4 * i] = c[0]; px[4 * i + 1] = c[1]; px[4 * i + 2] = c[2]; px[4 * i + 3] = 255;
   }
@@ -990,7 +1067,9 @@ function renderLayer() {
   } else if (lut) {
     $('legend').innerHTML = [...present.keys()].sort((a, b) => a - b).filter((id) => lut[id])
       .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${k === 'coastal_life' || k === 'valley_floor'
-        ? ` ${fmt(present.get(id) * m.res_km * m.res_km, k === 'valley_floor' ? 1 : 0)} km&sup2;` : ''}</span>`).join('')
+        ? ` ${fmt(present.get(id) * m.res_km * m.res_km, k === 'valley_floor' ? 1 : 0)} km&sup2;`
+        : k === 'river_nav' ? ` ~${fmt(present.get(id) * m.res_km)} km` : ''}</span>`).join('')
+      + (HU_TEXT[k] ? `<span class="muted">(${HU_TEXT[k]}${k === 'harbour' ? '; diamonds under Overlays' : k === 'pass' ? '; bow-ties under Overlays' : ''}; hover a pixel for details)</span>` : '')
       + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>'
         : k === 'valley_floor' ? `<span class="muted">${present.size ? '(an alluvial river\'s valley floor: the meander belt is where its channel sweeps)' : 'no valley floors in this zoom'}</span>` : '');
   } else if (k === 'floor_m') {
@@ -1197,12 +1276,28 @@ function hoverPx(r, c) {
     ${vegRows(i)}
     ${soilRows(i)}
     ${L.valley_floor && L.valley_floor[i] ? `<tr><td>valley floor</td><td>${name(VALLEY_FLOOR, L.valley_floor[i])}, ${fmt(L.floor_m[i])} m</td></tr>` : ''}
+    ${huRows(i)}
     ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
     <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>
     ${L.radiation_index && L.water[i] === 0 ? `<tr><td>terrain</td><td>sun ${fmt(100 * L.radiation_index[i])}% of flat &middot; wetness ${fmt(L.twi[i], 1)}${L.river_dist[i] < 255 ? ` &middot; river ${fmt(L.river_dist[i] * m.res_km, 1)} km` : ''}</td></tr>` : ''}
     <tr><td>river</td><td>${L.water[i] === 0 ? `${fmt(L.discharge[i], L.discharge[i] < 10 ? 1 : 0)} m&sup3;/s, ${fmt(L.drainage_area[i])} km&sup2;` : '-'}</td></tr>
   </table>`;
+}
+
+// the zoom's human-use classes at pixel i (humanuse.py)
+function huRows(i) {
+  const L = state.L, hu = state.meta.legend.human_use;
+  if (!L.river_nav || !hu) return '';
+  const nm = (k) => (hu[k]?.[L[k][i]] || {}).name, w = L.water[i], rows = [];
+  if (w !== 1 && L.river_nav[i]) rows.push(['navigable', nm('river_nav')]);
+  if (w === 1 && L.harbour[i]) rows.push(['harbour', nm('harbour')]);
+  if (L.pass[i]) rows.push(['mountain pass', `${fmt(L.pass_height[i])} m, ${nm('pass')}`]);
+  if (w === 0) {
+    rows.push(['farmland', `${nm('fertile')} <span class="muted">(score ${fmt(L.fertile_score[i], 2)})</span>`]);
+    rows.push(['fresh water', `${nm('fresh_water')}${L.fresh_km[i] > 0 ? `, ${fmt(L.fresh_km[i], 1)} km away` : ''}${L.spring[i] ? ', springs here' : ''}`]);
+  }
+  return rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 }
 
 // the zoom's vegetation at pixel i: named type, structure, productivity, fire (zoom_vegetation)
