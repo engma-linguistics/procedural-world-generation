@@ -2,7 +2,7 @@
 id: PW-484
 title: PROJ string for oblique Equal Earth / Mollweide / equirect export maps (ob_tran)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: store
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-477, PW-100]
 refs: [planet/projection.py, planet/export.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## Description
@@ -21,4 +21,5 @@ updated: 2026-10-20
 - [ ] oblique proj string emitted and checked against pyproj for a few centres
 
 ## Updates
+- 2026-10-21: Status todo -> done. Done: ob_tran strings for oblique equirect/equal-earth/mollweide: +o_lat_p=90-|lat0|, +o_lon_p=0 (north) or 180 (south, lon_0 shifted by 180), +lon_0=lon0. Verified against pyproj (throwaway uv --with, not a dependency) over 3 projections x 9 latitudes (-90..90) x 5 longitudes, 200 points each, forward and inverse: worst error 1.5e-7 m (limit 1 px = ~17 km at 2048 px wide). Parameters tested in tests/test_projection.py.
 - 2026-10-20: Created from inbox draft draft-export-oblique-proj-string.md (found by pw477-export).

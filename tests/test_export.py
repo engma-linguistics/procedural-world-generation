@@ -88,6 +88,46 @@ def test_river_lines_join_at_confluences():
     assert {tuple(r["nodes"]): r["q"] for r in lines}[(2, 3, 4)] == 3.0
 
 
+def test_strahler_and_river_properties():
+    # 0,1 -> 4; 2,3 -> 5; 4,5 -> 6 -> 7 (sea); 8 -> 6 (a first-order stream joining an order-2 river)
+    nxt = np.array([4, 4, 5, 5, 6, 6, 7, -1, 6])
+    act = np.array([1, 1, 1, 1, 1, 1, 1, 0, 1], bool)
+    assert X.strahler_order(np.array([4, 4, 5, 5, 6, 6, -1, -1, 6]), act).tolist() == [1, 1, 1, 1, 2, 2, 3, 1, 1]
+    q = np.array([1.0, 2, 3, 4, 5, 6, 12, 0, 1])
+    lines = {tuple(r["nodes"]): r for r in X.river_lines(nxt, q, act)}
+    r = lines[(6, 7)]
+    assert r["order"] == 3 and r["q_nodes"].tolist() == [12, 0]
+    props = X._river_props(r, np.array([[0.0, 0.0], [0.0, 1.0]]), 0)
+    assert props["strahler"] == 3 and props["vertex_discharge_m3s"] == [12, 0]
+    assert props["width_m"] == pytest.approx(7.2 * np.sqrt(12), abs=0.1)
+    assert lines[(8, 6)]["order"] == 1
+
+
+def test_lake_rings_with_island():
+    # a 4x4 block of pixel corners (W = 5): lake = 3x3 pixels with the middle one an island
+    W = 5
+    m = np.ones((3, 3), bool)
+    m[1, 1] = False
+    p = np.pad(m, 1)
+    ea, eb = [], []
+    for r, c in zip(*np.nonzero(p[1:, 1:-1] != p[:-1, 1:-1])):
+        v = (r + 0) * W + c
+        ea.append(v), eb.append(v + 1)
+    for r, c in zip(*np.nonzero(p[1:-1, 1:] != p[1:-1, :-1])):
+        v = r * W + c
+        ea.append(v), eb.append(v + W)
+    rings = X.boundary_rings(np.array(ea), np.array(eb))
+    assert sorted(len(r) for r in rings) == [4 * 1, 4 * 3] or sorted(len(r) for r in rings) == [4, 12]
+    ll = [np.array([(r // W * 0.1, r % W * 0.1) for r in ring]) for ring in rings]
+    poly = X.lake_polygon(ll)
+    assert len(poly) == 2 and all((q[0] == q[-1]).all() for q in poly)
+    # shore counter-clockwise, island clockwise
+    def area(q):
+        x, y = q[:, 1], q[:, 0]
+        return 0.5 * np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y)
+    assert area(poly[0][:-1]) > 0 > area(poly[1][:-1])
+
+
 @pytest.fixture
 def world(data_root):
     g = build_grid(4)
@@ -146,6 +186,8 @@ def test_export_world(world, data_root, tmp_path):
     assert {"river", "lake", "volcano"} <= kinds
     for f in geo["features"]:
         pts = [f["geometry"]["coordinates"]] if f["geometry"]["type"] == "Point" else f["geometry"]["coordinates"]
+        if f["geometry"]["type"] == "Polygon":
+            pts = [p for ring in pts for p in ring]
         assert all(-90 <= p[1] <= 90 and -361 <= p[0] <= 361 for p in pts)
     v = next(f for f in geo["features"] if f["properties"]["kind"] == "volcano")
     assert v["geometry"]["coordinates"] == [20.0, 10.0] and v["properties"]["status"] == "active"
@@ -214,6 +256,11 @@ def test_export_zoom(zoom, data_root, tmp_path):
     assert {"river", "lake", "waterfall"} <= {f["properties"]["kind"] for f in loc["features"]}
     lake = next(f for f in loc["features"] if f["properties"]["kind"] == "lake")
     assert lake["properties"]["area_km2"] == 9 * res**2 and lake["properties"]["max_depth_m"] == 4.0
+    assert lake["geometry"]["type"] == "Polygon" and len(lake["geometry"]["coordinates"]) == 1
+    ring = np.array(lake["geometry"]["coordinates"][0])  # the 3x3 pixel lake, straight runs merged: a square
+    assert len(ring) == 5 and (ring[0] == ring[-1]).all()
+    assert np.allclose(np.ptp(ring[:, :2], axis=0), 3 * res * 1000, atol=5)
+    assert riv[0]["properties"]["strahler"] == 1 and len(riv[0]["properties"]["vertex_discharge_m3s"]) == 49
     geo = json.loads((out / "features.geojson").read_text())
     fall = next(f for f in geo["features"] if f["properties"]["kind"] == "waterfall")
     assert fall["geometry"]["coordinates"] == [20.1, 10.1] and "elevation_m" in fall["properties"]
@@ -262,7 +309,7 @@ def test_export_world_projected(world, data_root, tmp_path, proj):
     assert fm["units"] == "m" and m["features"]["map_geojson"] == "features_map.geojson"
     for f in fm["features"]:
         pts = [f["geometry"]["coordinates"]] if f["geometry"]["type"] == "Point" else f["geometry"]["coordinates"]
-        if f["geometry"]["type"] == "MultiLineString":
+        if f["geometry"]["type"] in ("MultiLineString", "Polygon"):
             pts = [p for r in pts for p in r]
         assert all(abs(p[0]) <= lay["x_range_m"][1] + 1 and abs(p[1]) <= lay["y_range_m"][1] + 1 for p in pts)
 
