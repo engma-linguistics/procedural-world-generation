@@ -72,7 +72,9 @@ class ClimateFields:
             b = fields_["bias"]
             tw, tc, pj, pn = tw + b["t_warm"], tc + b["t_cold"], pj * b["p_jul"], pn * b["p_jan"]
         new = dict(t_mean=0.5 * (tw + tc), half=0.5 * np.maximum(tw - tc, 0), p_jul=pj, p_jan=pn,
-                   s0=np.maximum(surf, 0), dTg0=dTg, sst_w=np.minimum(c["sst_jul"], c["sst_jan"]))
+                   s0=np.maximum(surf, 0), dTg0=dTg, sst_w=np.minimum(c["sst_jul"], c["sst_jan"]),
+                   # (the cold half-year's wind, the dust's: January in the north, July in the south)
+                   wind_w=np.where((g.lat >= 0)[:, None], c["wind_jan"], c["wind_jul"]))
         # the steps until the next refresh blend from the last one to this one, so the climate
         # (snowfall above all) changes smoothly instead of jumping at each refresh
         fields_["prev"], fields_["next"] = fields_.get("next", new), new

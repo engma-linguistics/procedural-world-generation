@@ -29,6 +29,7 @@ from .events import cycling_ice_sun
 from .fields import ClimateFields
 from .forcing import Forcing, orbit_k
 from .geometry import geometry
+from .deposit import Deposits
 from .ice import above_flotation, shelf_cover, shelf_step, shelf_viable
 from .kernels import climate_step, dilate, glacial_erosion, sia_flow
 from ..surface import COVER_SHOWS
@@ -76,7 +77,8 @@ class _Sim:
         # dropped within the flow, the thawed share of the bed; kyr the bed was thawed under the ice, km it slid
         self.rock = src.get("bedrock") or {"cover_m": np.zeros(n), "erod_cover": np.ones(n), "erod_base": np.ones(n)}
         (self.cut, self.till, self.debris, self.rock_iso, self.cut_step, self.u_dt, self.ul_dt, self.w_dt,
-         self.dropped, self.wet, self.wet_kyr, self.slide_km) = (np.zeros(n) for _ in range(12))
+         self.dropped, self.wet, self.wet_kyr, self.slide_km, self.outwash, self.loess) = (np.zeros(n) for _ in range(14))
+        self.dep = Deposits(g, self.G, self.area, p)
         self.Vaf0 = self.above_flotation(0.0)
         self.dT_run = float(src["dT"])
 
@@ -109,14 +111,39 @@ class _Sim:
 
     def above_flotation(self, sl):
         # (the reference bed moves with the carving: a deeper basin isn't sea water the ice holds)
-        ref = self.bed0 + self.till - self.cut + self.rock_iso if self.p.carving else self.bed0
+        ref = self.bed0 + self.till + self.outwash + self.loess - self.cut + self.rock_iso if self.p.carving else self.bed0
         return above_flotation(self.H, self.bed, ref, self.area, sl)
 
-    def drop(self, x) -> None:
-        """Debris x (m per cell) melts out of the ice onto the bed as till (already out of `debris`)."""
-        self.till += x
+    def lay(self, layer: np.ndarray, x) -> None:
+        """x (m per cell) of rock laid down on the bed, into the layer (till, outwash, loess)."""
+        layer += x
         self.bed += x
         self.bed_rest += x
+
+    def drop(self, x) -> None:
+        """Debris x (m per cell) comes out of the ice (already out of `debris`): in the sea it spreads down the
+        sea floor as a fan (PW-495); on land the share `outwash_share` goes on in the meltwater over the bare
+        ground, its silt on in the wind (PW-497; deposit.py), the rest lies there as till. Volume conserved."""
+        if not x.any():
+            return
+        p, dep, bed = self.p, self.dep, self.bed
+        sea = bed < self.sl
+        xs = np.where(sea, x, 0.0)
+        xl = x - xs
+        self.lay(self.till, dep.fan(xs, bed, self.sl) if xs.any() else xs)
+        if not xl.any():
+            return
+        ow = p.outwash_share * xl
+        self.lay(self.till, xl - ow)
+        bare = (self.H <= 0.0) & ~sea
+        o = dep.outwash(ow, bed, bare)
+        silt = np.where(bare & ~sea, p.silt_share * o, 0.0)
+        wind = self.fields.f.get("wind_w")
+        if wind is None:
+            silt = np.zeros(self.n)
+        lo = dep.wind(silt, wind) if silt.any() else silt
+        self.lay(self.outwash, o - silt)
+        self.lay(self.loess, lo)
 
     def grounded_ice(self):
         H, bed = self.H, self.bed
@@ -253,7 +280,8 @@ class _Sim:
         k = climate.koppen(surf, self.t_ann, self.t_warm, self.t_cold, precip, F["p_jul"] * self.p_scale,
                            F["p_jan"] * self.p_scale, self.g.lat, np.where(land, ice, 0.0))
         for name, v in (("elevation", surf), ("ice", ice), ("temperature", self.t_ann), ("climate", k),
-                        ("glacial_erosion", self.cut), ("glacial_till", self.till)):
+                        ("glacial_erosion", self.cut), ("glacial_till", self.till),
+                        ("glacial_outwash", self.outwash), ("glacial_loess", self.loess)):
             self.out[name].append(S.encode(v, LAYERS[name]))
         self.open_land.append((surf > 0) & (ice <= 0))
         vol = float((self.H * self.area).sum())
@@ -345,7 +373,7 @@ class _Sim:
         """2b) glacial carving (PW-037): the sliding ice erodes its bed (the cover, and till laid down before,
         while they last; then the basement) and takes the rock along (kernels.glacial_erosion)."""
         p, g, rock = self.p, self.g, self.rock
-        soft = rock["cover_m"] + self.till - self.cut > 1000.0 * COVER_SHOWS
+        soft = rock["cover_m"] + self.till + self.outwash + self.loess - self.cut > 1000.0 * COVER_SHOWS
         glacial_erosion(self.H, self.bed, self.sl, self.flt, active, g.nbr_off, g.nbr_idx, self.ul_dt, self.w_dt, self.t_ann,
                         np.maximum(self.smb, 0.0), p.geo_flux, p.slide_share,
                         np.where(soft, rock["erod_cover"], rock["erod_base"]), p.glacial_k, p.glacial_l, p.adverse,
@@ -360,7 +388,7 @@ class _Sim:
 
     def rock_isostasy(self) -> None:
         """The lithosphere's settled response to the rock the ice moved (relaxing like the ice load's)."""
-        new = climate.smooth(self.g, self.p.rock_ratio * (self.cut - self.till), self.p.flex_km)
+        new = climate.smooth(self.g, self.p.rock_ratio * (self.cut - self.till - self.outwash - self.loess), self.p.flex_km)
         self.bed_rest += new - self.rock_iso
         self.rock_iso[:] = new
 
@@ -501,7 +529,7 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
                        "Vaf0": s.Vaf0, "Vaf_end": s.above_flotation(s.sl)},
             "state": {"H": H, "bed": s.bed, "sl": s.sl, "smb": s.smb, "t_warm": s.t_warm, "t_ann": s.t_ann,
                       "p_scale": s.p_scale, "f_snow": s.f_snow, "p_ann": 0.5 * (F["p_jul"] + F["p_jan"]),
-                      "cut": s.cut, "till": s.till, "debris": s.debris, "rock_iso": s.rock_iso, "wet_kyr": s.wet_kyr,
+                      "cut": s.cut, "till": s.till, "outwash": s.outwash, "loess": s.loess, "debris": s.debris, "rock_iso": s.rock_iso, "wet_kyr": s.wet_kyr,
                       "slide_km": s.slide_km},
             "anchor": s.anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(F.compute_s, 1),

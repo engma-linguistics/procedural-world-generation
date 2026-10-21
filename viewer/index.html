@@ -441,6 +441,8 @@ RAMPS['tide range'] = [[0, '#1d2f55'], [0.5, '#2c5d8a'], [1.5, '#3f9bb0'], [3, '
 RAMPS['river floods'] = [[1, '#2f5f8f'], [1.5, '#4f9fb0'], [2, '#9fd0a0'], [3, '#f0d36b'], [4.5, '#ef8a3a'], [7, '#b8283a']];
 // the glacial imprint of a time zoom (PW-037): m of bed the ice eroded, m of till and moraine it dropped
 RAMPS['glacial erosion'] = [[0, '#f4f1ea'], [5, '#e9d9b8'], [30, '#e0a96d'], [100, '#cc6b3d'], [300, '#9c2f2a'], [1000, '#4a1020']];
+RAMPS['glacial outwash'] = [[0, '#f4f1ea'], [1, '#f1e3b5'], [5, '#e0c26a'], [15, '#c99a2e'], [40, '#8a5a12']];
+RAMPS['glacial loess'] = [[0, '#f4f1ea'], [0.5, '#f3e9c0'], [2, '#e8cf7a'], [6, '#d1a63a'], [15, '#9a6b14']];
 RAMPS['glacial till'] = [[0, '#f4f1ea'], [5, '#dfe8c8'], [20, '#a9cc86'], [60, '#5fa05a'], [150, '#2f6f45'], [400, '#123f2a']];
 RAMPS['bed under ice'] = RAMPS.elevation;  // (runs, time zooms: the bed pressed down by the ice, PW-189)
 RAMPS['ice thickness'] = [[0, '#f4f8fb'], [500, '#cfe3f2'], [1500, '#94bde0'], [2500, '#5d8fcb'], [3500, '#3b5fae'], [4500, '#2b2f7a']];
@@ -568,7 +570,7 @@ const VEG_VIEWS = new Set(['vegetation', 'plant type', 'leaf area', ...Object.ke
 const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: 'mm/yr', rainfall: 'mm/yr',
                 'crust age': 'Myr (sea floor)', 'crust thickness': 'km of crust', sediment: 'km of sediment on top',
                 'ice thickness': 'm of land ice (bare land grey)', 'glacial erosion': 'm of bed the ice has eroded so far (time zoom)',
-                'glacial till': 'm of till and moraine the ice has dropped so far (time zoom)', 'bed under ice': 'm, the ground with the ice taken off (pressed down by its load; ice faintly outlined)', 'temperature difference': '°C, model minus observed',
+                'glacial till': 'm of till and moraine the ice has dropped so far (time zoom)', 'glacial outwash': 'm of outwash (sandur) the meltwater has laid down so far (time zoom)', 'glacial loess': 'm of loess the wind has laid down so far (time zoom)', 'bed under ice': 'm, the ground with the ice taken off (pressed down by its load; ice faintly outlined)', 'temperature difference': '°C, model minus observed',
                 'navigable rivers': 'class: 1 small boats, 2 barges, 3 sea-going', harbours: 'class: 1 anchorage, 2 harbour, 3 fine harbour',
                 passes: 'class: open most of the year, seasonal, snow-bound', farmland: 'class: 0 not arable .. 4 prime',
                 'fresh water': 'class: 0 none .. 3 on site',
@@ -766,6 +768,8 @@ function cellColors(layer) {
     else if (layer === 'sediment') rampFns[layer](L.sediment_cover[i], c);
     else if (layer === 'glacial erosion') rampFns[layer](L.glacial_erosion[i], c);
     else if (layer === 'glacial till') rampFns[layer](L.glacial_till[i], c);
+    else if (layer === 'glacial outwash') rampFns[layer](L.glacial_outwash[i], c);
+    else if (layer === 'glacial loess') rampFns[layer](L.glacial_loess[i], c);
     else if (layer === 'coastal life') {  // the biggest habitat's colour over land or sea
       c.copy(elev[i] > 0 ? BARE : OCEAN);
       const t = coastalTop(i);
@@ -801,7 +805,7 @@ function cellColors(layer) {
 function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
-    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till'] : [], hasLayer('tree_cover') ? ['tree cover'] : []);
+    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -815,7 +819,7 @@ function availableLayers() {
   if (V.layers.surface_rock) ls.push('surface rock');
   if (V.layers.rock) ls.push('rock type', 'crust thickness', 'sediment');
   if (V.layers.landform) ls.push('landforms');
-  if (V.layers.glacial_erosion) ls.push('glacial erosion', 'glacial till');
+  if (V.layers.glacial_erosion) ls.push('glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess');
   if (V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
                                    'fire return', 'stand age', 'plant type');
   if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
@@ -3457,7 +3461,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'],
+  'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
 };

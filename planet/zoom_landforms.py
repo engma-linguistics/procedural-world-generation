@@ -1639,7 +1639,7 @@ DERIVED = {
 }
 DEFAULTS = {"rift_strain": 0.4, "glaciated_myr": LF.GLACIATED_NEVER, "crust_thickness": 35.0, "precipitation": 500.0,
             "plate_boundary": 0.0, "temperature": 15.0,
-            "wind_e": 1.0, "wind_n": 0.0}
+            "wind_e": 1.0, "wind_n": 0.0, "glacial_outwash": 0.0, "glacial_loess": 0.0}
 
 
 # the glacial landforms (zoom_glacial): a class of their own, read from the world's glacial imprint

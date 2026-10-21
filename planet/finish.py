@@ -149,10 +149,12 @@ def glacial_imprint(tz_dir: Path, i: int) -> dict:
     if "glacial_erosion" not in run["layers"]:
         raise SystemExit(f"time zoom {tz_dir.name} was made before glacial carving (PW-037); run it again "
                          f"(its remake line is in its run.txt)")
-    run, arr = T.load_frames(tz_dir, ("ice", "glacial_erosion", "glacial_till"))
+    run, arr = T.load_frames(tz_dir, ("ice", "glacial_erosion", "glacial_till", "glacial_outwash", "glacial_loess"))
     ice_max = np.asarray(arr["ice"][: i + 1]).max(0).astype(float)  # (1 m steps, as stored)
     return {"glacial_erosion": T.frame(run, arr, "glacial_erosion", i).astype(float),
             "glacial_till": T.frame(run, arr, "glacial_till", i).astype(float),
+            "glacial_outwash": T.frame(run, arr, "glacial_outwash", i).astype(float),
+            "glacial_loess": T.frame(run, arr, "glacial_loess", i).astype(float),
             "ice_max": ice_max, "glaciated": ice_max > 0}
 
 

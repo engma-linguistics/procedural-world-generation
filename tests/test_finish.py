@@ -197,7 +197,7 @@ def test_finished_world_carries_the_glacial_imprint(tiny):
     i = len(run["frames"]) - 1
     w = W.load(F.finish_timezoom(tz.name))
     L = w["layers"]
-    for k in ("glacial_erosion", "glacial_till", "ice_max"):
+    for k in ("glacial_erosion", "glacial_till", "glacial_outwash", "glacial_loess", "ice_max"):
         assert k in L, k
     want = T.frame(run, arr, "glacial_erosion", i)
     assert np.abs(L["glacial_erosion"] - want).max() < 0.01 and want.max() > 0  # (worlds round to the cm)
