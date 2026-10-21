@@ -26,8 +26,10 @@ from __future__ import annotations
 
 import json
 import secrets
+from pathlib import Path
 
 from . import api
+from . import store as S
 from . import highlights as H
 from .finish import NOWS
 
@@ -178,9 +180,27 @@ def options() -> dict:
             "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
 
 
-def make(req: dict, progress=lambda f, msg: None) -> dict:
+def _load_state(state, spec: dict) -> dict:
+    """What an earlier try of this same job finished (the file `state`, make's own record):
+    {"run", "t_myr", "timezoom", "world"}, each only if it is still on disk."""
+    try:
+        d = json.loads(Path(state).read_text())
+    except (OSError, ValueError, TypeError):
+        return {}
+    out = d.get("out") or {}
+    if d.get("spec") != json.loads(json.dumps(spec)) or not S.exists("run", out.get("run", "")):
+        return {}
+    have = {"timezoom": "run", "world": "world"}
+    return {k: v for k, v in out.items() if k not in have or S.exists(have[k], v)}
+
+
+def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = False) -> dict:
     """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "t_myr"};
-    only what was made. progress(fraction, message). A failure names the stage and what exists so far."""
+    only what was made. progress(fraction, message). A failure names the stage and what exists so far.
+    state: a file the finished stages are recorded in (the server's make jobs); with resume, a run,
+    time zoom or world an earlier try of the same request finished is reused, not made again (a server
+    restart, PW-480: the simulation itself cannot resume, so a restart during it starts it over).
+    api.Cancelled (raised by a progress report once the job is cancelled) passes through: what finished stays."""
     from . import timeline as T
     spec = parse_make_request(req)
     plan = estimate(spec)
@@ -190,7 +210,11 @@ def make(req: dict, progress=lambda f, msg: None) -> dict:
     for s in plan["stages"]:
         start[s["key"]] = (acc / total, s["s"] / total)
         acc += s["s"]
-    out: dict = {}
+    out: dict = _load_state(state, spec) if state and resume else {}
+
+    def save():
+        if state:
+            Path(state).write_text(json.dumps({"spec": spec, "out": out}))
 
     hi = [0.0]  # (a stage's own fractions may restart or overshoot: the bar only moves forward)
 
@@ -204,27 +228,39 @@ def make(req: dict, progress=lambda f, msg: None) -> dict:
 
     stage = "simulate"
     try:
-        params = T.make_params(spec["set"])
-        p = prog("simulate")
-        p(0.0, f"simulating {spec['myr']:g} Myr at level {spec['level']} (seed {spec['seed']})")
-        run_dir = T.simulate(spec["seed"], spec["level"], spec["myr"], DT, EVERY, spec["name"], params,
-                             progress=lambda f: p(f, f"tectonics: {f * spec['myr']:.0f} of {spec['myr']:g} Myr"))
-        run_id = json.loads((run_dir / "run.json").read_text())["id"]
-        out["run"] = run_id
-        run = json.loads((run_dir / "run.json").read_text())
-        t = H.representative_time(run["frames"])
-        out["t_myr"] = t
-        prog("simulate")(1.0, f"run {run_id} done; representative moment {t:g} Myr")
+        if "run" in out:  # (an earlier try finished the run)
+            run_id, t = out["run"], out["t_myr"]
+            prog("simulate")(1.0, f"run {run_id} already made; representative moment {t:g} Myr")
+        else:
+            params = T.make_params(spec["set"])
+            p = prog("simulate")
+            p(0.0, f"simulating {spec['myr']:g} Myr at level {spec['level']} (seed {spec['seed']})")
+            run_dir = T.simulate(spec["seed"], spec["level"], spec["myr"], DT, EVERY, spec["name"], params,
+                                 progress=lambda f: p(f, f"tectonics: {f * spec['myr']:.0f} of {spec['myr']:g} Myr"))
+            run = json.loads((run_dir / "run.json").read_text())
+            run_id = out["run"] = run["id"]
+            t = out["t_myr"] = H.representative_time(run["frames"])
+            save()
+            prog("simulate")(1.0, f"run {run_id} done; representative moment {t:g} Myr")
 
         tz_id = None
         if spec["timezoom"]:
             stage = "timezoom"
-            tz = api.timezoom_job({"type": "timezoom", "run": run_id, "t": t, "kyr": spec["kyr"]}, prog("timezoom"))
-            tz_id = out["timezoom"] = tz["run"]
+            if "timezoom" in out:
+                prog("timezoom")(1.0, f"time zoom {out['timezoom']} already made")
+            else:
+                tz = api.timezoom_job({"type": "timezoom", "run": run_id, "t": t, "kyr": spec["kyr"]}, prog("timezoom"))
+                out["timezoom"] = tz["run"]
+                save()
+            tz_id = out["timezoom"]
         if spec["finish"]:
             stage = "world"
-            req = {"type": "finish", "timezoom": tz_id, "now": spec["now"]} if tz_id else {"type": "finish", "run": run_id, "t": t}
-            out["world"] = api.finish_job(req, prog("world"))["world"]
+            if "world" in out:
+                prog("world")(1.0, f"world {out['world']} already made")
+            else:
+                req = {"type": "finish", "timezoom": tz_id, "now": spec["now"]} if tz_id else {"type": "finish", "run": run_id, "t": t}
+                out["world"] = api.finish_job(req, prog("world"))["world"]
+                save()
         if spec["highlights"]:
             stage = "highlights"
             prog("highlights")(0.0, "looking over the world for interesting places")
@@ -233,13 +269,9 @@ def make(req: dict, progress=lambda f, msg: None) -> dict:
             prog("highlights")(1.0, f"{out['highlights']} highlights")
         if spec["zooms"]:
             stage = "zooms"
-            picks = H.pick_zooms(hl["features"], spec["zooms"])
-            out["zooms"] = []
-            for k, f in enumerate(picks):
-                sub = prog("zooms")
-                z = api.zoom_job(api.zoom_request({"world": out["world"]}, f),
-                                 lambda fr, msg, k=k: sub((k + fr) / len(picks), f"zoom {k + 1}/{len(picks)}: {f['title']}"))
-                out["zooms"].append(z["zoom"])
+            out["zooms"] = api.zoom_highlights(out["world"], hl["features"], spec["zooms"], prog("zooms"))
+    except api.Cancelled:
+        raise
     except (Exception, SystemExit) as e:
         made = ", ".join(f"{k} {v}" for k, v in out.items() if k in ("run", "timezoom", "world")) or "nothing"
         raise RuntimeError(f"{stage} failed: {e or type(e).__name__} (made so far: {made})") from e
