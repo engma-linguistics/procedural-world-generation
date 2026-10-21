@@ -1,4 +1,5 @@
 ---
+id: PW-492
 title: "Glacial index: run moments fail the 7/10 bar because their ice at I = 0 isn't the zoom's balance"
 type: task
 status: needs-decision
@@ -10,6 +11,8 @@ found_by: pw471
 blocked_by: []
 relates: [PW-471, PW-436, PW-461, PW-462, PW-470]
 refs: [docs/review/audit/PW-471-handoff.md, docs/review/audit/PW-471-spinup.patch, planet/timezoom/cycle.py, planet/timezoom/sim.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -55,3 +58,6 @@ Options:
 
 Lean: (C) now for v1 (the index is no worse than main on run moments and fixes Earth), with (A) as the
 real fix, scheduled in the run lane; (B) only if the showcases need run moments before (A).
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-glacial-index-run-moment-drift.md (found by pw471).

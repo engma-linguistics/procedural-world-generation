@@ -1,4 +1,5 @@
 ---
+id: PW-491
 title: "Glacial carving (pw037-carving): unblocked for Earth zooms by the glacial index, still blocked on drifting run moments"
 type: task
 status: todo
@@ -10,6 +11,8 @@ found_by: pw471
 blocked_by: []
 relates: [PW-418, PW-471, PW-436]
 refs: [docs/review/audit/PW-471-handoff.md, docs/review/audit/pw037-handoff.md, planet/timezoom/cycle.py]
+created: 2026-10-20
+updated: 2026-10-20
 ---
 
 ## Description
@@ -30,3 +33,6 @@ needs-decision draft on run-moment drift), and carving calibrated there would ca
 - [ ] rebase pw037-carving on PW-471 (not merged; the branch touches sia_flow and the shelves)
 - [ ] recalibrate the sliding speed on an Earth L6 zoom; erosion under the ice of order 10-100 m per Myr
 - [ ] decide whether carving waits for the run-moment drift fix or ships Earth/run-in-balance only
+
+## Updates
+- 2026-10-20: Created from inbox draft draft-carving-after-glacial-index.md (found by pw471).
