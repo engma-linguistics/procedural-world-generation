@@ -3,8 +3,8 @@ id: PW-487
 title: Fine-zoom towers and dolines show short hatched stripes at some edges
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-516
+milestone: v2
 subsystem: zoom
 effort: xs
 impact: low

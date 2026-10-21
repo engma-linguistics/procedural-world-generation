@@ -3,8 +3,8 @@ id: PW-485
 title: Fine zooms keep a delta plain, coast and barriers as the parent drew them
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-516
+milestone: v2
 subsystem: zoom
 effort: l
 impact: low

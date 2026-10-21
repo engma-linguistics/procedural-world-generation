@@ -3,8 +3,8 @@ id: PW-489
 title: Fine zoom reef area is ~60% of the parent's (patches and bands drawn inside the parent's reef pixels)
 type: task
 status: needs-decision
-parent: null
-milestone: v1
+parent: PW-516
+milestone: v2
 subsystem: zoom
 effort: s
 impact: low

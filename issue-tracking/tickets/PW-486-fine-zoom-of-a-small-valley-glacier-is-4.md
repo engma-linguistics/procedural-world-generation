@@ -3,8 +3,8 @@ id: PW-486
 title: Fine zoom of a small valley glacier is 40% bigger than its parent's ice
 type: task
 status: todo
-parent: null
-milestone: v1
+parent: PW-516
+milestone: v2
 subsystem: zoom
 effort: s
 impact: low
