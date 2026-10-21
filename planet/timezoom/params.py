@@ -65,20 +65,28 @@ class TZParams:
     # 'auto': obs for Earth, none for a run
     anchor_max: float = 15.0  # C: largest cooling ...
     anchor_rings: int = 3  # ... spread this many cells beyond the ice
-    # global feedbacks
-    co2_cool: float = 2.5  # C global cooling per 120 m of sea level locked in extra ice (CO2 drawdown) ...
-    co2_max: float = 1.0  # ... saturating at this many times that (glacial CO2 bottoms out, Earth ~180 ppm)
-    start: str = "auto"  # where the start sits in the ice-age cycle: 'interglacial' (Earth today: the CO2
-    # feedback has its full room to a glacial maximum) or 'average' (a run's moment:
-    # its ice is the mean extent over the cycles and its dT already has that ice's albedo and part of
-    # the glacial CO2 drop, so only average_room of its cap is left; the ice albedo levels off by itself);
-    # 'auto': interglacial for Earth
-    average_room: float = 0.5  # (Earth: 230 ppm on average over the last cycles, 280 interglacial, 185 glacial)
-    co2_lag: float = 3.0  # kyr: CO2 follows the ice this slowly
-    ice_albedo: float = 1.5  # C global cooling per 3% of the planet under land ice, levelling off toward ...
-    ice_albedo_max: float = 3.0  # ... this many C: the main run's rule (earth.py), as the change from the start's
-    # ice (PW-030: before, half the run's, capped at 2 C and for a run's moment at average_room of that; the
-    # run's ice surfaces have their own local climate too, so the halving had no reason)
+    # the glacial index (cycle.py, PW-471): the ice-age cycle as a scripted cooling paced by the orbit; it stands
+    # for the cycle's CO2 and ice-albedo feedbacks, so the zoom has none of its own
+    index: str = "on"  # 'off': I stays 0 (the run's climate, with the orbit's own anomaly only)
+    glacial_cool: float = 6.5  # C global cooling at a glacial maximum (Earth's LGM 4.5-6 C) for a planet with ...
+    glacial_f: float = 0.035  # ... this share of its surface ice-free land poleward of its snowline (Earth's at L6,
+    # cycle.snowline_land), in proportion to the planet's own share ...
+    glacial_cap: float = 1.6  # ... at most this x glacial_cool
+    glacial_dt: float = -1.0  # C: the glacial maximum's cooling set by hand (>= 0), instead of the above
+    co2_share: float = 0.5  # the share of that cooling that is CO2 (for the plants' CO2; Earth's LGM ~half)
+    build_kyr: float = 36.0  # kyr: a glacial takes I toward 1 with this e-folding time ...
+    build_orb: float = 0.5  # ... faster in a weak summer and slower in a strong one: 1 +- this per half the
+    # summer sun's 10-90 percentile spread from its median
+    ig_kyr: float = 10.0  # an interglacial (I = 0) lasts at least this long (kyr) ...
+    build_q: float = 0.4  # ... then building starts when the summer sun falls below this percentile of its series
+    end_min: float = 0.85  # an ending needs I at least this ...
+    bar_hi: float = 0.95  # ... and a summer sun above a bar falling from this percentile ...
+    bar_lo: float = 0.6  # ... to this one at ...
+    glacial_kyr: float = 100.0  # ... this age (the orbit's short eccentricity period)
+    end_kyr: float = 8.0  # an ending takes I back to 0 in this long (kyr)
+    backstop: float = 2.0  # x glacial_kyr: past this age the next sunshine peak ends the glacial (counted)
+    sheet_h: float = 2000.0  # m: the glacial maximum's sea-level target (a diagnostic) is this much ice over the
+    # land poleward of the snowline
     # vegetation (plants.py, PW-450): the run's model grown on each full climate
     veg: str = "on"  # 'on': it feeds back on the climate locally (as in the run: Budyko w, the surface's
     # albedo with snow hidden under forest) and globally (its albedo's change since the start, in dTg);
@@ -86,24 +94,9 @@ class TZParams:
     veg_toa: float = 0.4  # the planet's albedo changes by this x a change of the surface's (the air's and
     # the clouds' share of the light, both ways: Qu & Hall 2006, ~0.3-0.5 outside the tropics) ...
     veg_lambda: float = 0.8  # ... and the climate by this many C per W/m2 of it (the fast feedbacks inside:
-    # Hansen et al. 2008 0.75; the CO2 term co2_cool implies ~0.9) ...
+    # Hansen et al. 2008 0.75) ...
     veg_lag: float = 2.0  # ... following the plants this slowly (kyr: a biome shift takes centuries to a
     # few kyr; the plants themselves are grown afresh on each full climate)
-    # the ice-age cycle (cycle.py, PW-440): between ice ages / building / ending
-    cycle: str = "on"  # 'off': no cycle state (the feedbacks above alone)
-    sheet_h: float = 2000.0  # m: the sheet scale is the sea-level equivalent of this much ice ...
-    sheet_share: float = 0.1  # ... over this share of the planet's land
-    build_q: float = 0.4  # building starts when the summer sun falls below this percentile of its series
-    end_min: float = 0.4  # an ending needs this much extra ice (x the sheet scale) ...
-    bar_hi: float = 0.95  # ... and a summer sun above a bar falling from this percentile ...
-    bar_lo: float = 0.6  # ... to this one at ...
-    glacial_kyr: float = 100.0  # ... this age (the orbit's short eccentricity period)
-    backstop: float = 2.0  # x glacial_kyr: past this age the next sunshine peak ends the glacial (counted)
-    end_e: float = 0.1  # an ending runs until the extra ice is below this (x the sheet scale)
-    cycle_tau: float = 3.0  # kyr: the ending's boosts ramp in this fast
-    melt_max: float = 1.8  # the extra ice's degree-day factors, at most this x ...
-    calve_max: float = 2.0  # ... its marine fronts' calving x this ...
-    release: float = 0.9  # ... and a CO2 release of this x co2_cool (Earth ~90 ppm), up to the interglacial's
     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
     # mass balance
     pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean

@@ -26,10 +26,14 @@ Model (per 500-yr step, see simulate)
   between the stored fields (blended from the previous full climate to the
   newest over the interval, so they change smoothly, ~climate_every late)
   are shifted by the lapse rate over the changed surface, the global
-  change and the orbital anomaly. Global temperature
-  follows the ice: CO2 drops as ice grows (~ -2.5 C at an Earth-LGM-sized
-  ice volume, then saturates) and new ice sheets reflect sunlight (a
-  main run's ice_albedo rule, as the change from the start). Rain scales
+  change and the orbital anomaly. The global temperature is scripted by
+  the glacial index (cycle.py, PW-471; Greve 1997, Marshall et al. 2002):
+  I(t) from 0 (interglacial: the run's climate) to 1 (glacial maximum),
+  a ~100 kyr sawtooth paced by the summer sun at the latitude of the land
+  poleward of the planet's snowline, and dT = -I x the glacial cooling
+  (6.5 C for Earth's share of such land, in proportion elsewhere). It
+  stands for the ice-age cycle's CO2 and ice-albedo feedbacks, so the
+  zoom has none of its own; the ice physics below draws the sheets. Rain scales
   ~ exp(0.07 dT) with the global and orbital changes (climate.compute
   already dries the air over high domes).
 - Ice surfaces: perennial snow is bright, so its summer warmth is damped
@@ -78,8 +82,8 @@ Package layout
 params     constants, the per-frame layers, TZParams (the knobs)
 sources    source_from_run / source_from_sim / source_earth
 geometry   cell areas and edge lengths for the finite volumes
-forcing    orbit_anomaly / orbit_k, and Forcing: the global dT from CO2 and ice albedo (the ice-age cycle steps in it)
-cycle      the ice-age cycle (PW-440): between ice ages / building / ending, and the ending's boosts
+forcing    orbit_anomaly / orbit_k, and Forcing: the global dT (the glacial index's and the plants')
+cycle      the glacial index (PW-471): between ice ages / building / ending, and the glacial cooling
 fields     ClimateFields: the full climates, blended between refreshes
 ice        ice shelves, calving fronts, ice above flotation
 kernels    numba: the year's mass balance (climate_step), shallow-ice flow (sia_flow)

@@ -40,5 +40,6 @@ Done when (a):
 - Run time no worse than today's.
 
 ## Updates
+- 2026-10-20: Built on branch worktree-agent-a2654c606a2f1d32a (agent pw471): the glacial index is the time zoom's only mode (cycle.py; CO2/ice-albedo feedbacks and the PW-440 boosts removed). Earth L6 600 kyr passes: cycles 98-109 kyr, maxima -86..-104 m, endings 57-76 m in 15 kyr, interglacial ice 9.1-12.2% of land, Laurentide to 42.5 N; showcase 6d0ed0; run time as main. Earth needs glacial_cool 6.5 C (above the LGM's 4.5-6; PW-435). Run moments fail 7/10 (0/10; 3/10 with a spin-up): their ice at I = 0 isn't the zoom's balance (PW-436); stop rule reached, needs-decision draft draft-glacial-index-run-moment-drift.md. Handoff: docs/review/audit/PW-471-handoff.md.
 - 2026-10-20: Status needs-decision -> todo. Owner 2026-10-20: accepted option (a), the glacial index as described.
 - 2026-10-20: Created.

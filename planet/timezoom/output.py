@@ -43,8 +43,8 @@ def save(res: dict, src: dict, kyr: float, step: float, every: float, name: str 
                  "cell_size_km": round(g.spacing * R_KM),
                  "params": src["params"], "timezoom": res["params"], "orbit_phases_deg": res["phases"],
                  "ice_cycle": res["ice_cycle"],  # (where the ice comes and goes: cycling_ice_sun)
-                 # (the ice-age cycle's state: its builds, endings and backstops, cycle.py)
-                 "ice_age_cycle": {k: v for k, v in res["cycle"].items() if k != "modes"},
+                 # (the glacial index: its builds, endings, cooling and sea-level target, cycle.py)
+                 "ice_age_cycle": res["cycle"],
                  # (the plants' feedback at each full climate: W/m2 and C, by latitude belt, plants.py)
                  "vegetation": res.get("veg", []),
                  "dT_source": round(src["dT"], 2), "sea_level_source_m": round(src["sea_level"], 1),
@@ -83,12 +83,12 @@ def report(run_dir: Path) -> Path:
             for e in run["events"]] or ["  (none)"]
     c = m.get("ice_age_cycle") or {}
     if c.get("on"):
-        out += ["", f"## Ice-age cycle (cycling ice at {c['lat']} deg, sheet scale {c['scale_m']} m, "
-                f"backstop fired {c['backstops']}x)"]
-        out += [f"  ending at t={x['t']:>7.1f} kyr after {x['age_kyr']:g} kyr, {x['extra_m']:g} m of extra ice, "
-                f"{x.get('kyr', '-')} kyr long"
-                + (f", stalled with {x['stalled_m']:g} m left" if "stalled_m" in x else "")
-                + (" (backstop)" if x.get("backstop") else "") for x in c["endings"]] or ["  (no endings)"]
+        out += ["", f"## Glacial index (paced by the summer sun at {c['lat']} deg; glacial maximum "
+                f"{c['cooling_c']:g} C cooler, sea-level target -{c['target_m']:g} m; land poleward of the snowline "
+                f"{100 * c['snowline_land_share']:.1f}% of the planet; backstop fired {c['backstops']}x)"]
+        out += [f"  ending at t={x['t']:>7.1f} kyr after {x['age_kyr']:g} kyr at I={x['I']:g}, "
+                f"{x.get('kyr', '-')} kyr long" + (" (backstop)" if x.get("backstop") else "")
+                for x in c["endings"]] or ["  (no endings)"]
     out += ["", "## Over time (sea level relative to the start)",
             "    t(kyr)  sea(m)  ice_vol(Mkm3)  ice%  global_T  obliq   ecc     e*sin(w)  65N_Jul_anom(W/m2)"]
     pick = np.unique(np.linspace(0, len(fr) - 1, min(len(fr), 51)).round().astype(int))

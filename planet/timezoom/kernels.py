@@ -18,21 +18,11 @@ DAYS = 365.25 / 12  # days per month
 SQRT2PI = math.sqrt(2 * math.pi)
 
 
+@njit(cache=True, parallel=True)
 def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb, band, dq, f_ice, f_alb,
                  cool, damp, hold, bare_share, snow_w,
                  sigma, ddf_snow, ddf_ice, refreeze, precip_k,
                  smb, t_ann, t_warm, t_cold, p_scale, f_sum):
-    """climate_melt with no change to the melt (melt_f 1 everywhere): icemass's and the time zoom's year."""
-    climate_melt(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb, band, dq, f_ice, f_alb,
-                 cool, damp, hold, bare_share, snow_w, sigma, ddf_snow, ddf_ice, refreeze, precip_k,
-                 smb, t_ann, t_warm, t_cold, p_scale, f_sum, np.ones(t_mean.shape[0]))
-
-
-@njit(cache=True, parallel=True)
-def climate_melt(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb, band, dq, f_ice, f_alb,
-                 cool, damp, hold, bare_share, snow_w,
-                 sigma, ddf_snow, ddf_ice, refreeze, precip_k,
-                 smb, t_ann, t_warm, t_cold, p_scale, f_sum, melt_f):
     """One (orbit-averaged) year at every cell (icemass describes the rule).
 
     Each month m (0 = the month after the March equinox) has the
@@ -63,9 +53,7 @@ def climate_melt(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
     Out: smb (m of ice per yr, land cells only; >0 grows ice even on bare
     ground: snow that outlasts the summer), annual mean / warmest / coldest
     month temperatures, the rain scale factor, and f_sum: the surface's
-    mean brightness (0..1) over the summer months. melt_f: per cell, the
-    degree-day factors x this (1: as icemass; an ice age's ending, PW-440:
-    more on the extra ice). Cells are independent
+    mean brightness (0..1) over the summer months. Cells are independent
     (prange, no reductions across cells): the same bits at any thread count."""
     n = t_mean.shape[0]
     for i in prange(n):
@@ -106,11 +94,11 @@ def climate_melt(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
                 lying += fall
                 x = t / sigma
                 pdd = DAYS * (sigma / SQRT2PI * math.exp(-0.5 * x * x) + 0.5 * t * math.erfc(-x / math.sqrt(2.0)))
-                ds = ddf_snow * melt_f[i]
+                ds = ddf_snow
                 melt = min(lying, ds * pdd)
                 lying -= melt
                 lost += (1.0 - refreeze) * melt
-                ice_melt += ddf_ice * melt_f[i] * (pdd - melt / ds)
+                ice_melt += ddf_ice * (pdd - melt / ds)
         t_ann[i], t_warm[i], t_cold[i] = tsum / 12.0, tmax, tmin
         f_sum[i] = fs / max(ns, 1)
         if land[i]:

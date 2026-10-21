@@ -1,102 +1,101 @@
-"""The time zoom's ice-age cycle (planet/timezoom/cycle.py, PW-440): its state machine on a made-up sea
-level, and on sim4's icehouse moment (level 4, fast): out of the way between ice ages, and an ending
-melts the ice back faster than without it."""
+"""The glacial index (planet/timezoom/cycle.py, PW-471): its shape on the planet's own orbit, and the
+time zoom's response to it on sim4's icehouse moment (level 4, fast)."""
 
 import numpy as np
 import pytest
 
 from planet import orbit as O, timezoom as Z
-from planet.timezoom.cycle import BETWEEN, BUILDING, ENDING, Cycle
+from planet.timezoom.cycle import BETWEEN, BUILDING, ENDING, Index, cooling
 
 STEP = 0.5
+NO_ORBIT = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
 
 
-def _cycle(**kw):
+def _index(seed=None, tilt=23.44, lat=65.0, kyr=1500.0, **kw):
     p = Z.TZParams(**kw)
-    c = Cycle(p, STEP, 600.0, 23.44, O.orbit_phases(p, 0, earth=True), scale_m=70.0)
-    c.setup(65.0)
-    return c, p
+    ph = O.orbit_phases(p, 0, earth=True) if seed is None else O.orbit_phases(p, seed, earth=False)
+    return Index(p, STEP, int(kyr / STEP), tilt, ph, lat), p
 
 
-def _feed(c, sl, until=None):
-    """Step the cycle through sl (m per step, continuing its step count); stop early at mode `until`."""
-    for x in sl:
-        c.step(len(c.modes), float(x))
-        if c.modes[-1] == until:
-            break
-    return np.array(c.modes)
+@pytest.mark.parametrize("seed, tilt, lat", [(None, 23.44, 65.0), (11400, 23.4, 63.0), (2620, 23.4, -60.0),
+                                             (3500, 20.0, 58.0), (5260, 28.0, 55.0)])
+def test_index_is_a_100_kyr_sawtooth(seed, tilt, lat):
+    """On Earth's orbit and seeded ones: cycles of ~100 kyr (80-120 on Earth's; a seeded orbit sometimes
+    skips a precession peak), each a slow build (> 60 kyr) and a fast
+    ending (end_kyr), between 0 and 1; the start is an interglacial."""
+    ix, p = _index(seed, tilt, lat)
+    s = ix.summary()
+    assert ix.I[0] == 0.0 and ix.I.min() >= 0.0 and ix.I.max() <= 1.0
+    assert len(s["endings"]) >= 12 and s["backstops"] == 0
+    c = np.array(s["cycle_kyr"])
+    assert 90.0 <= np.median(c) <= 115.0 and c.min() >= 80.0 and c.max() <= (120.0 if seed is None else 140.0), c
+    for e in s["endings"][:-1]:
+        assert e["age_kyr"] > 60.0 and e["I"] >= p.end_min
+        assert e["kyr"] <= p.end_kyr + STEP
+    # the shape: I rises in small steps and falls in big ones (1/end_kyr per kyr)
+    d = np.diff(ix.I)
+    assert d.max() < 0.25 * STEP / p.end_kyr * 4 and np.isclose(d.min(), -STEP / p.end_kyr)
+    assert (d[ix.modes[1:] == BUILDING] >= 0).all() and (ix.I[ix.modes == BETWEEN] == 0).all()
 
 
-def test_ending_needs_big_ice_and_a_sunshine_peak():
-    """A slow build: building starts at a low of the summer sun, the ending only once the extra ice
-    passes end_min AND the sun beats the bar (which falls with the glacial's age); then hysteresis: it
-    runs on through small regrowth until the ice is back near the interglacial level."""
-    c, p = _cycle()
-    n = int(400 / STEP)
-    t = np.arange(n) * STEP
-    sl = -0.8 * t  # 0.8 m/kyr of growth: no ending can come before end_min x 70 m = 28 m, at 35 kyr
-    modes = _feed(c, sl, until=ENDING)
-    assert modes[0] == BETWEEN and BUILDING in modes and modes[-1] == ENDING
-    e = c.endings[0]
-    i = int(round(e["t"] / STEP))
-    assert e["extra_m"] >= p.end_min * 70.0 - 1e-6
-    assert c.q[i] >= c.q_lo  # (the bar never falls below bar_lo)
-    assert not e["backstop"]
-    # hysteresis: from the glacial's level the ice melts, regrows 10 m, melts on: still one ending
-    lvl = sl[i]
-    back = np.concatenate([np.linspace(lvl, lvl * 0.6, 20), np.linspace(lvl * 0.6, lvl * 0.7, 10),
-                           np.linspace(lvl * 0.7, 0, 30)])
-    modes = _feed(c, back)
-    tail = modes[i:]
-    assert len(c.endings) == 1 and tail[0] == ENDING and tail[-1] == BETWEEN and (np.diff(tail) <= 0).all()
-    assert c.endings[0]["kyr"] < 30.0
-    assert c.backstops == 0
+def test_endings_come_at_sunshine_peaks():
+    """An ending starts when I is high and the summer sun beats a bar that falls with the glacial's age
+    (Huybers 2011), within the planet's own percentiles."""
+    ix, p = _index()
+    for e in ix.endings:
+        assert ix.q_lo - 1e-9 <= e["bar"] <= ix.q_hi + 1e-9 and e["sun"] >= e["bar"] and not e["backstop"]
+        i = int(round(e["t"] / STEP))
+        assert ix.modes[i] == BUILDING and ix.modes[i + 1] == ENDING
 
 
-def test_no_ending_without_big_ice():
-    """Ice that stays under end_min never ends by the sun; past backstop x glacial_kyr the next peak
-    ends it (counted)."""
-    c, p = _cycle()
-    n = int(560 / STEP)
-    sl = -np.minimum(np.arange(n) * STEP * 0.5, 20.0)  # 20 m of extra ice at most (< 28 m)
-    _feed(c, sl)
-    assert c.backstops >= 1 and all(x["backstop"] for x in c.endings)
-    assert all(x["age_kyr"] > p.backstop * p.glacial_kyr for x in c.endings)
+def test_no_orbit_or_off_means_no_ice_age():
+    """An orbit with no swing never builds (all its percentiles are one value); index=off neither."""
+    ix, _ = _index(**NO_ORBIT)
+    assert (ix.I == 0).all() and not ix.endings
+    ix, _ = _index(index="off")
+    assert (ix.I == 0).all() and not ix.builds
 
 
-def test_off_or_between_is_unchanged():
-    c, _ = _cycle(cycle="off")
-    _feed(c, -np.arange(400) * 0.5)
-    assert set(c.modes) == {BETWEEN} and c.r == 0.0 and c.boost(1.8, -100.0) == 1.0
-    assert c.co2_target(-1.0, -100.0) == -1.0
+def test_cooling_is_planet_relative():
+    """glacial_cool at Earth's share of land poleward of the snowline, in proportion, capped; or by hand."""
+    p = Z.TZParams()
+    assert cooling(p, p.glacial_f) == pytest.approx(p.glacial_cool)
+    assert cooling(p, 0.5 * p.glacial_f) == pytest.approx(0.5 * p.glacial_cool)
+    assert cooling(p, 0.0) == 0.0 and cooling(p, 10 * p.glacial_f) == pytest.approx(p.glacial_cap * p.glacial_cool)
+    assert cooling(Z.TZParams(glacial_dt=2.0), p.glacial_f) == 2.0
 
 
 @pytest.fixture(scope="module")
 def icehouse(sim4):
-    """sim4's moment 8 C colder, 240 kyr with and without the cycle."""
+    """sim4's moment 4 C colder, 200 kyr with the index (6 C at a glacial maximum, by hand: L4's planet is
+    small) and without it; the plants local only, so dT_global is the index's alone."""
     src = Z.source_from_sim(sim4)
-    src["dT"] = src["dT"] - 8.0
-    return [Z.simulate(src, kyr=240, step=STEP, every=10.0, params=Z.TZParams(cycle=c)) for c in ("on", "off")]
+    src["dT"] = src["dT"] - 4.0
+    kw = dict(veg="local", phases="0,90,0,90")
+    return [Z.simulate(src, kyr=200, step=STEP, every=2.0, params=Z.TZParams(index=i, glacial_dt=6.0, **kw))
+            for i in ("on", "off")]
 
 
-def test_cycle_stays_out_of_the_way_until_an_ending(icehouse):
-    """Between ice ages and while building, the time zoom is exactly as without the cycle."""
+def test_zoom_climate_follows_the_index(icehouse):
+    """dT_global = -I x the glacial cooling (no CO2 or ice-albedo feedback of the zoom's own)."""
     on, off = icehouse
-    ends = on["cycle"]["endings"]
-    assert ends, "no ending: the test moment no longer glaciates enough"
-    i = int(round(ends[0]["t"] / STEP))
-    assert np.array_equal(on["series"][:i], off["series"][:i])
-    assert not np.array_equal(on["series"], off["series"])
+    dT = np.array([f["stats"]["dT_global"] for f in on["frames"]])
+    I = np.array([f["stats"]["glacial_index"] for f in on["frames"]])
+    assert on["cycle"]["cooling_c"] == 6.0 and I.max() > 0.8
+    assert np.allclose(dT, -6.0 * I, atol=0.01)
+    assert all(f["stats"]["dT_global"] == 0.0 for f in off["frames"])
 
 
-def test_ending_melts_back_faster(icehouse):
-    """In the 20 kyr after they start, endings give back more ice than the same sunshine peaks do
-    without the cycle."""
+def test_glacials_grow_ice_and_endings_melt_it_fast(icehouse):
+    """The ice follows the index: lower seas at a glacial maximum than without it, and an ending gives
+    back most of the glacial's extra ice within 15 kyr."""
     on, off = icehouse
-    d = []
-    for e in on["cycle"]["endings"]:
-        i, j = int(round(e["t"] / STEP)), int(round((e["t"] + 20) / STEP))
-        if j < len(on["series"]):
-            d.append((on["series"][j, 1] - on["series"][i, 1]) - (off["series"][j, 1] - off["series"][i, 1]))
-    print("ending rise vs no cycle, m:", np.round(d, 1))
-    assert d and np.mean(d) > 2.0
+    t = np.array([f["t"] for f in on["frames"]])
+    sl_on = np.array([f["stats"]["sea_level_change_m"] for f in on["frames"]])
+    sl_off = np.array([f["stats"]["sea_level_change_m"] for f in off["frames"]])
+    e = on["cycle"]["endings"][0]
+    i, j = np.searchsorted(t, e["t"]), np.searchsorted(t, e["t"] + 15.0)
+    extra = sl_off[i] - sl_on[i]
+    print("glacial extra ice (m):", round(extra, 1), "left after 15 kyr:", round(sl_off[j] - sl_on[j], 1))
+    assert extra > 10.0
+    assert sl_off[j] - sl_on[j] < 0.5 * extra
