@@ -1,4 +1,5 @@
 ---
+id: PW-553
 title: "Zoom page fine pick: client edge test is a square approximation; 3D hover ignores edge room"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: agent-a9583a91061f51486
 blocked_by: []
 relates: [PW-552]
 refs: [viewer/zoom.html, planet/zoom_fine.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -23,3 +26,6 @@ then falls back to a coarser host (or is refused).
 - [ ] Either expose the position check (e.g. `GET /api/fine-rules?...&lat=&lon=&size_km=&res_km=` calling `check()`), or
       mirror the 3x3 projection in JS and cover it with a test against `check()`.
 - [ ] 3D hover: show the same "too close to the edge" hint as the 2D map.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-fine-pick-fit-check.md (found by agent-a9583a91061f51486).
