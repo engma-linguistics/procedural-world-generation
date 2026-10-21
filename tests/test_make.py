@@ -220,3 +220,25 @@ def test_make_is_a_job(made):
     res = jobs.wait(j)
     assert res["status"] == "done" and res["world"] == "w" and seen[0]["type"] == "make"
     assert api.JOBS["make"] is api.make_job
+
+
+def test_highlight_zooms_job(made):
+    """POST /api/highlight-zooms' work: the top highlights' zooms; the same ones `make` made are reused."""
+    out, _ = made
+    res = api.highlight_zooms_job({"type": "hlzooms", "world": out["world"], "n": 1})
+    assert res["zooms"] == out["zooms"] and res["zoom"] == out["zooms"][0] and res["world"] == out["world"]
+    assert api.JOBS["hlzooms"] is api.highlight_zooms_job
+
+
+def test_http_cancel_route(made, http_get, monkeypatch):
+    gate = threading.Event()
+    jobs = api.Jobs(lambda req, progress: (gate.wait(10), {"zoom": "z"})[1])
+    monkeypatch.setattr(server.Handler, "jobs", jobs)
+    a, b = jobs.submit({"n": 1}), jobs.submit({"n": 2})
+    st, _, body = http_get("DELETE", f"/api/jobs/{b}")
+    assert st == 200 and json.loads(body)["cancelled"] is True
+    st, _, body = http_get("GET", f"/api/jobs/{b}")
+    assert json.loads(body)["error"] == "cancelled"
+    assert http_get("DELETE", "/api/jobs/nope")[0] == 404
+    gate.set()
+    jobs.wait(a)

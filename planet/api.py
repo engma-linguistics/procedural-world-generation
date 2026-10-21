@@ -22,6 +22,12 @@ keeps it), so tests can drive them without a socket.
                       zooms?, now?, name?} -> {"job": id}: the whole chain (make.py); the job's "run",
                       "timezoom", "world" and "zooms" are what it made. GET /api/make/options and
                       /api/make/estimate?... describe the form and the expected time.
+  POST /api/highlight-zooms  {world, n?} -> {"job": id}: regional zooms of the world's top n highlights
+                      (highlights.pick_zooms, what `planet highlights --zoom N` makes; n default 4); the
+                      job's "zooms" are their ids and "zoom" the first.
+  DELETE /api/jobs/<id>  cancels a queued or running job (a worker stops at its next progress report;
+                      what a make job already finished is kept, the unfinished stage's partial output is
+                      removed). A server restart resumes a make job at its first unfinished stage.
   POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished
                       world (finish.py) at the time zoom's frame nearest kyr,
                       or straight from the run's keyframe nearest t (the
@@ -33,7 +39,9 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import queue
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -394,19 +402,69 @@ def finish_job(req: dict, progress=lambda f, msg: None) -> dict:
     return {"world": path.stem}
 
 
-def make_job(req: dict, progress=lambda f, msg: None) -> dict:
-    """POST /api/make's work (make.make): seed to finished world. {"run", "timezoom", "world", "zooms"}."""
+class Cancelled(Exception):
+    """A job was cancelled (DELETE /api/jobs/<id>): raised by a progress report in the worker."""
+
+
+def parse_highlight_zooms_request(req: dict) -> dict:
+    if not isinstance(req, dict) or not req.get("world"):
+        raise BadRequest("give a world")
+    n = int(_num(req, "n", 4))
+    if not 1 <= n <= 12:
+        raise BadRequest("n must be within 1..12")
+    world = str(req["world"]).removesuffix(".json")
+    S.find_world(world)  # (SystemExit: no such world)
+    return {"type": "hlzooms", "world": world, "n": n}
+
+
+def zoom_highlights(world: str, features: list[dict], n: int, progress=lambda f, msg: None) -> list[str]:
+    """Regional zooms (the viewer's: zoom_request) of the top n zoomable highlights; the zoom ids."""
+    picks = H.pick_zooms(features, n)
+    out = []
+    for k, f in enumerate(picks):
+        z = zoom_job(zoom_request({"world": world}, f),
+                     lambda fr, msg, k=k, f=f: progress((k + fr) / len(picks), f"zoom {k + 1}/{len(picks)}: {f['title']}"))
+        out.append(z["zoom"])
+    return out
+
+
+def highlight_zooms_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/highlight-zooms: the world's highlights (cached or computed), then zooms of the top n."""
+    r = parse_highlight_zooms_request(req)
+    progress(0.0, "looking over the world for interesting places")
+    hl = highlights({"world": r["world"]})
+    zooms = zoom_highlights(r["world"], hl["features"], r["n"], lambda f, msg: progress(0.05 + 0.95 * f, msg))
+    return {"world": r["world"], "zooms": zooms, **({"zoom": zooms[0]} if zooms else {})}
+
+
+def make_job(req: dict, progress=lambda f, msg: None, ctx: dict | None = None) -> dict:
+    """POST /api/make's work (make.make): seed to finished world. {"run", "timezoom", "world", "zooms"}.
+    ctx: {"state": a file the stages finished so far are kept in, "resume": use it (a restarted job)}."""
     from . import make
-    return make.make(req, progress)
+    return make.make(req, progress, state=(ctx or {}).get("state"), resume=bool((ctx or {}).get("resume")))
 
 
-JOBS = {"timezoom": timezoom_job, "finish": finish_job, "make": make_job}
+JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
     """The server's job queue runs zooms, time zooms and finished worlds (req["type"]),
-    each holding COMPUTE (in its worker process)."""
+    each holding COMPUTE (in its worker process). req["_job"] (added by Jobs) is {"cancel": a flag
+    file (once it exists, the next progress report raises Cancelled), "state" and "resume": make's}."""
+    ctx = req.get("_job") or {}
+    if ctx:
+        req = {k: v for k, v in req.items() if k != "_job"}
+    flag = ctx.get("cancel")
+    if flag:
+        report = progress
+
+        def progress(f, msg):  # (the same, but stops a cancelled job)
+            if os.path.exists(flag):
+                raise Cancelled("cancelled")
+            report(f, msg)
     with COMPUTE:
+        if req.get("type") == "make":
+            return make_job(req, progress, ctx)
         return JOBS.get(req.get("type"), zoom_job)(req, progress)
 
 
@@ -421,13 +479,19 @@ class Jobs:
     server starts again: finished jobs keep answering the viewer's polls, and
     jobs that were queued or running are queued again (their outputs are
     reused or remade; a job interrupted twice is marked failed, in case it is
-    what brought the server down). Finished jobs are forgotten after KEEP_S."""
+    what brought the server down). Finished jobs are forgotten after KEEP_S.
+
+    contexts=True (the server's) gives each job's request a "_job" entry, {"cancel", "state",
+    "resume"} (any_job): cancel(jid) then stops a running job at its next progress report, and a make
+    job queued again after a restart carries on from the stages it finished (make.make)."""
 
     SAVE_EVERY_S = 2.0
     KEEP_S = 7 * 24 * 3600.0
 
-    def __init__(self, fn=any_job, path: Path | None = None, workers: int = 1):
+    def __init__(self, fn=any_job, path: Path | None = None, workers: int = 1, contexts: bool = False):
         self.fn = fn
+        self.contexts = contexts
+        self._dir: Path | None = None  # (the cancel flags and make states, made when first needed)
         self.path = Path(path) if path else None
         self.jobs: dict[str, dict] = {}
         self.lock = threading.Lock()
@@ -454,7 +518,7 @@ class Jobs:
             if j.get("restarts", 0) >= 1:
                 j.update(status="error", error="the server restarted twice during this job", finished=now)
             else:
-                j.update(status="queued", progress=0.0, restarts=j.get("restarts", 0) + 1,
+                j.update(status="queued", progress=0.0, restarts=j.get("restarts", 0) + 1, resume=True,
                          message="queued again after a server restart")
                 again.append(j["id"])
             self.jobs[j["id"]] = j
@@ -506,26 +570,65 @@ class Jobs:
 
     def _update(self, jid, **kw):
         with self.lock:
-            if "status" not in kw and self.jobs[jid]["status"] in ("done", "error"):
-                return  # (a late progress message from a worker process)
-            self.jobs[jid].update(kw)
+            j = self.jobs[jid]
+            if j["status"] in ("done", "error") and ("status" not in kw or j.get("cancelled")):
+                return  # (a late progress message from a worker process, or the end of a cancelled job)
+            j.update(kw)
             self._save(force="status" in kw)
+
+    def _files(self, jid: str) -> dict:
+        """{"cancel": flag file, "state": make's state file} of a job (in a folder beside the jobs file)."""
+        if self._dir is None:
+            self._dir = self.path.with_suffix(".d") if self.path else Path(tempfile.mkdtemp(prefix="planet-jobs-"))
+            self._dir.mkdir(parents=True, exist_ok=True)
+        return {"cancel": str(self._dir / f"{jid}.cancel"), "state": str(self._dir / f"{jid}.state.json")}
+
+    def cancel(self, jid: str) -> dict | None:
+        """DELETE /api/jobs/<id>: a queued job never starts; a running one stops at its next progress
+        report (the job shows as cancelled at once; its worker is free again when it has stopped).
+        None: no such job; {"cancelled": False}: it had finished already."""
+        with self.lock:
+            j = self.jobs.get(jid)
+            if j is None:
+                return None
+            if j["status"] in ("done", "error"):
+                return {"id": jid, "status": j["status"], "cancelled": False}
+            running = j["status"] == "running"
+            j.update(status="error", error="cancelled", cancelled=True, message="cancelled", finished=time.time())
+            self._save(force=True)
+        if running and self.contexts:
+            Path(self._files(jid)["cancel"]).touch()
+        return {"id": jid, "status": "error", "cancelled": True}
 
     def run_one(self, jid: str, started: bool = False):
         req = self.jobs[jid]["request"]
         if not started:
             self._update(jid, status="running", message="starting", started=time.time())
+        ctx = None
+        if self.contexts:
+            ctx = self._files(jid)
+            Path(ctx["cancel"]).unlink(missing_ok=True)
+            ctx["resume"] = bool(self.jobs[jid].get("resume"))
         try:
-            res = self.fn(req, lambda f, msg: self._update(jid, progress=round(float(f), 3), message=msg))
+            res = self.fn({**req, "_job": ctx} if ctx else req,
+                          lambda f, msg: self._update(jid, progress=round(float(f), 3), message=msg))
             # the result's keys ("zoom", "world" or "run") are copied to the job too
             self._update(jid, **res, status="done", progress=1.0, result=res, finished=time.time())
+        except Cancelled:
+            self._update(jid, status="error", error="cancelled", cancelled=True, finished=time.time())
         except (Exception, SystemExit) as e:  # zoom/slice raise SystemExit for bad input
             self._update(jid, status="error", error=str(e) or type(e).__name__, finished=time.time())
+        finally:
+            if ctx:
+                Path(ctx["cancel"]).unlink(missing_ok=True)
+                Path(ctx["state"]).unlink(missing_ok=True)  # (not reached when the process dies: that is what resumes)
 
     def _loop(self):
         while True:
             with self._take:  # (taken and marked running in one step, so jobs start in submission order)
                 jid = self.q.get()
+                if self.jobs[jid]["status"] != "queued":
+                    continue  # (cancelled while it waited)
                 self._update(jid, status="running", message="starting", started=time.time())
             self.run_one(jid, started=True)
 

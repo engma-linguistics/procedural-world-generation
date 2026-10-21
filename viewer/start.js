@@ -2,7 +2,7 @@
 // grouped by what they came from: planet/family.py) and a "New planet" form that starts planet/make.py's
 // chain as a server job (POST /api/make) and follows its progress. Shown by index.html when the address
 // names nothing to open; opening anything is a plain navigation (?run=, ?world=, ?world=&tab=zoom&zoom=).
-import { deleteNode, esc, fmtDuration, getPlanets, injectCss, kindName, nodeWhen, openUrl, postJob, primaryNode, trackJob, treeHtml } from './planets.js';
+import { cancelJob, deleteNode, esc, fmtDuration, getPlanets, injectCss, kindName, nodeWhen, openUrl, postJob, primaryNode, trackJob, treeHtml } from './planets.js';
 
 const CSS = `
 #start { position: fixed; inset: 0; z-index: 40; overflow-y: auto; background: var(--bg); color: var(--text); }
@@ -144,18 +144,28 @@ export async function showStart() {
   }
 
   // ------------------------------------------------------------ a running make job (survives a reload)
+  let followed = null;  // the make job on screen (its Cancel button)
+  el.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-act=cancel]');
+    if (!b || !followed) return;
+    b.disabled = true; b.textContent = 'Cancelling...';
+    await cancelJob(followed);  // (the next poll shows it as cancelled)
+  });
   async function follow(jobId) {
     store.set({ job: jobId });
+    followed = jobId;
     const view = $('#stBanner');
     const res = await trackJob(jobId, (j) => {
       const pct = Math.round(100 * (j.progress || 0));
       view.innerHTML = `<div class="banner"><b>Making a planet</b> <span class="muted">${esc(j.request?.name || '')}</span><br>
         <span class="muted">${esc(j.message || j.status)}</span><div class="pl-bar"><div style="width:${pct}%"></div></div>
-        ${j.status === 'error' ? `<span class="pl-err">${esc(j.error)}</span>` : ''}</div>`;
+        ${j.status === 'error' ? (j.cancelled ? '<span class="muted">Cancelled. What was already finished is kept.</span>' : `<span class="pl-err">${esc(j.error)}</span>`)
+          : j.status === 'done' ? '' : '<button class="pl-btn sm danger" data-act="cancel" title="Stop this job; what it already finished is kept">Cancel</button>'}</div>`;
       const f = el.querySelector('#fmProgress');
       if (f) f.innerHTML = progressHtml(j);
     });
     store.set(null);
+    followed = null;
     if (res.status === 'done') {
       const r = res.result || {};
       view.innerHTML = `<div class="banner"><b>Planet made.</b> ${r.world ? `<a href="?world=${r.world}.json">Open the world</a> · ` : ''}
@@ -167,9 +177,10 @@ export async function showStart() {
   }
   const progressHtml = (j) => {
     const pct = Math.round(100 * (j.progress || 0)), r = j.result || {};
-    return `<div class="est"><b>${j.status === 'done' ? 'Done' : j.status === 'error' ? 'Failed' : 'Making'}</b>
+    return `<div class="est"><b>${j.status === 'done' ? 'Done' : j.cancelled ? 'Cancelled' : j.status === 'error' ? 'Failed' : 'Making'}</b>
       <div class="pl-bar"><div style="width:${pct}%"></div></div><div class="muted">${esc(j.message || j.status)}</div>
-      ${j.status === 'error' ? `<div class="pl-err">${esc(j.error)}</div>` : ''}
+      ${j.status === 'error' && !j.cancelled ? `<div class="pl-err">${esc(j.error)}</div>` : ''}
+      ${j.status === 'error' ? '' : j.status === 'done' ? '' : '<div style="margin-top:4px"><button type="button" class="pl-btn sm danger" data-act="cancel" title="Stop this job; what it already finished is kept">Cancel</button></div>'}
       ${j.status === 'done' ? `<div style="margin-top:6px">${r.world ? `<a class="pl-btn primary" href="?world=${r.world}.json">Open the world</a> ` : ''}
         ${!r.world && r.timezoom ? `<a class="pl-btn primary" href="?run=${r.timezoom}">Open the time zoom</a> ` : ''}
         ${r.run ? `<a class="pl-btn" href="?run=${r.run}">Open the run</a>` : ''}</div>` : ''}</div>`;

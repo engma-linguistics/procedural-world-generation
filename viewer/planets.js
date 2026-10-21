@@ -118,6 +118,11 @@ export async function trackJob(id, onUpdate, every = 1500) {
   }
 }
 
+// stops a queued or running job (DELETE /api/jobs/<id>); what a make job already finished stays
+export async function cancelJob(id) {
+  try { const r = await fetch(`../api/jobs/${id}`, { method: 'DELETE' }); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
 export const fmtDuration = (s) => (s < 90 ? `${Math.max(1, Math.round(s))} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`);
 
 export async function deleteNode(n) {

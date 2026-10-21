@@ -6,8 +6,9 @@
   DELETE /runs/<id>, /worlds/<id>, /zooms/<id>
                                       delete one item (store.delete; a world
                                       takes its zooms and highlights with it)
-  POST   /api/zoom, /api/timezoom, /api/finish, /api/make
+  POST   /api/zoom, /api/timezoom, /api/finish, /api/make, /api/highlight-zooms
                                       start a job (api.py; make.py: seed to finished world) -> {"job": id}
+  DELETE /api/jobs/<id>               cancel a queued or running job (api.Jobs.cancel)
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
@@ -208,6 +209,8 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
             req = make.parse_make_request(req)
         elif path == "/api/zoom":
             api.parse_zoom_request(req)
+        elif path == "/api/highlight-zooms":
+            req = api.parse_highlight_zooms_request(req)
         elif path == "/api/finish":  # kyr snaps to a frame, t to a keyframe
             req = api.parse_finish_request(req)
         else:  # t snaps to a keyframe
@@ -318,11 +321,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make"):
+        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
 
     def do_DELETE(self):
+        m = re.fullmatch(r"/api/jobs/([0-9a-zA-Z_-]+)", urlsplit(self.path).path)
+        if m:  # cancel a job
+            out = self.jobs.cancel(m.group(1))
+            return self.send_json(out if out else {"error": "no such job"}, 200 if out else 404)
         code = delete(self.path)
         if code == 400:
             return self.send_error(400, "expected /runs/<id>, /worlds/<id> or /zooms/<id>")
@@ -345,7 +352,8 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
     pool = P.Pool(jobs, threads)
     Handler.hl_pool = P.Pool(HIGHLIGHT_WORKERS, pool.threads)
     # job state survives a restart (per checkout and port: worktrees share the data folders)
-    Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs)
+    Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs,
+                            contexts=True)
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     http.server.ThreadingHTTPServer.daemon_threads = True
     try:
