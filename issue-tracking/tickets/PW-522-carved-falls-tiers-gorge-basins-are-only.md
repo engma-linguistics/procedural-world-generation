@@ -1,9 +1,10 @@
 ---
+id: PW-522
 title: Carved falls (tiers, gorge, basins) are only drawn at the base zoom's pixel scale; fine zooms need the same form at 25-50 m
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v1
 subsystem: zoom
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: pw517
 blocked_by: []
 relates: [PW-517, PW-516, PW-399]
 refs: [planet/zoom_falls.py, planet/zoom_fine.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -22,3 +25,6 @@ GORGE_WALL_DEG), which keeps the parent's drop and draws the gorge but not the t
 - [ ] fine zoom splits each parent fall's drop over the parent's tiers (the base zoom now lists them in `stats.falls[].cascades`)
 - [ ] horseshoe lip: lip pixels recessed at the river, flanks held downstream, from the retreat of a notch (Niagara, Kaieteur)
 - [ ] amphitheatre round the plunge basin, ledges in the face from strata (Angel, Gocta)
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-fall-carving-fine-zoom.md (found by pw517).

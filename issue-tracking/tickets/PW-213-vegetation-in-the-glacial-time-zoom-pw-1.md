@@ -2,7 +2,7 @@
 id: PW-213
 title: "Vegetation in the glacial time zoom (PW-187 step 7): dynamic cover with migration, refugia, frames; finished worlds start from it"
 type: story
-status: todo
+status: done
 parent: PW-184
 milestone: v1
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-187, PW-091]
 refs: [planet/vegetation.py, planet/timezoom.py, planet/finish.py, docs/proposals/vegetation.md]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-21
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Step 7 of the vegetation proposal (section 3.5). `vegetation.equilibrium` alread
 Today a finished world (PW-091, finish.py via timeline.world_from_frame with a state) starts its vegetation from the source run's keyframe tree cover and re-equilibrates to the time zoom's climate; with step 7 it should start from the time zoom's own vegetation at that kyr and not re-equilibrate (keeping the disequilibrium).
 
 ## Updates
+- 2026-10-21: Status todo -> done. Merged 0d4cc3d: migrating tree cover in time zoom frames; finish starts from it (r=0.93).
 - 2026-10-15: Created from inbox draft draft-veg-timezoom-dynamics.md (found by veg).

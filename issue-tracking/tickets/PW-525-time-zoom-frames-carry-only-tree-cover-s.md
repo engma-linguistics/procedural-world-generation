@@ -1,9 +1,10 @@
 ---
+id: PW-525
 title: Time zoom frames carry only tree cover; shrubs, herbs and the named type are not stored or migration-limited
 type: task
 status: todo
 parent: PW-184
-milestone: later
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: low
@@ -11,6 +12,8 @@ found_by: pw213
 blocked_by: []
 relates: [PW-213, PW-103]
 refs: [planet/timezoom/plants.py, planet/finish.py, planet/vegetation.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -26,3 +29,6 @@ finished world starts from the trees alone (the rest re-settles in `HELD_STEPS`)
   PW-103 needs cells that kept forest while their neighbours lost it.
 Try: migration-limit the shrubs (faster than trees), refresh the potential of newly open cells at the frame,
 store `plant_cover`, and record the refugia properly.
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-veg-timezoom-frames-detail.md (found by pw213).

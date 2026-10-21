@@ -1,9 +1,10 @@
 ---
+id: PW-521
 title: Landscape pass leaves perfectly flat filled basins on high ground that spill over a rim into a deep valley
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v1
 subsystem: zoom
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: pw517
 blocked_by: []
 relates: [PW-517]
 refs: [planet/zoom.py, "zoom 91486c at (107, 256)"]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -23,3 +26,6 @@ mountain would have been drained by headward incision long before, or be a lake 
 the pass fills it flat (the pit fill in the final drainage, `h = max(h, filled)`) and whether the basin should
 instead be a lake (zoom_landforms basin_lakes) or drained by the gorge.
 - [ ] list flat filled areas > 50 km2 over 500 m above their outlet in the showcase zooms
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-drainage-flat-basin-spill.md (found by pw517).
