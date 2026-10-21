@@ -2,7 +2,7 @@
 id: PW-471
 title: "V1 ice ages by a glacial index: the planet's orbit paces a scripted cold-warm curve, the time zoom's ice physics draws the sheets"
 type: task
-status: needs-decision
+status: todo
 parent: PW-244
 subsystem: timezoom
 effort: m
@@ -40,4 +40,5 @@ Done when (a):
 - Run time no worse than today's.
 
 ## Updates
+- 2026-10-20: Status needs-decision -> todo. Owner 2026-10-20: accepted option (a), the glacial index as described.
 - 2026-10-20: Created.
