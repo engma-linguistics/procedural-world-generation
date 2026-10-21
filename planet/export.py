@@ -403,6 +403,95 @@ def _clean(o):
     return json.loads(json.dumps(o, default=S.jsonable))
 
 
+# Lines and polygons that cross the antimeridian (PW-533). Coordinates come in (lon, lat) with
+# longitudes possibly unwrapped past +-180; they leave as RFC 7946 section 3.1.9 wants: split at
+# the 180th meridian, both sides with the exact +-180 endpoint.
+PER_VERTEX_KEYS = ("vertex_discharge_m3s",)  # per-vertex lists in river properties
+
+
+def _window(lon):
+    """The 360-degree window [-180, 180) + 360k a longitude falls in: k."""
+    return np.floor((np.asarray(lon, float) + 180.0) / 360.0).astype(int)
+
+
+def _antimeridian_line(lonlat, per_vertex):
+    """Parts of a line: [(coords [[lon, lat], ...] with lon in [-180, 180], {key: values})].
+    One part unless the line crosses the antimeridian; then a part ends and the next begins at
+    the crossing (latitude interpolated, lon exactly +-180). Per-vertex values interpolate
+    linearly the same way (the crossing vertex is in both parts)."""
+    lon, lat = lonlat[:, 0], lonlat[:, 1]
+    win = _window(lon)
+    keys = list(per_vertex)
+    V = {k: np.asarray(per_vertex[k], float) for k in keys}
+    segs = [(int(win[0]), [])]
+    for i in range(len(lon)):
+        if i and win[i] != win[i - 1]:
+            K = max(win[i], win[i - 1])
+            b = 360.0 * K - 180.0  # the meridian crossed, unwrapped
+            t = (b - lon[i - 1]) / (lon[i] - lon[i - 1])
+            lat_c = lat[i - 1] + t * (lat[i] - lat[i - 1])
+            vc = {k: V[k][i - 1] + t * (V[k][i] - V[k][i - 1]) for k in keys}
+            segs[-1][1].append((b - 360.0 * win[i - 1], lat_c, vc))
+            segs.append((int(win[i]), [(b - 360.0 * win[i], lat_c, vc)]))
+        segs[-1][1].append((lon[i] - 360.0 * win[i], lat[i], {k: V[k][i] for k in keys}))
+    parts = []
+    for _, pts in segs:
+        if len(pts) < 2:
+            continue
+        coords = [_round((x, y)) for x, y, _ in pts]
+        vals = {}
+        for k in keys:
+            orig = per_vertex[k]
+            as_int = all(isinstance(v, int) for v in orig)
+            vals[k] = [round(float(v[k])) if as_int else round(float(v[k]), 1) for _, _, v in pts]
+        parts.append((coords, vals))
+    return parts
+
+
+def _clip_halfplane(ring, x0, keep_ge):
+    """Sutherland-Hodgman against the meridian lon = x0 (open ring of (lon, lat))."""
+    out, m = [], len(ring)
+    inside = (lambda x: x >= x0) if keep_ge else (lambda x: x <= x0)
+    for i in range(m):
+        p, q = ring[i], ring[(i + 1) % m]
+        pin, qin = inside(p[0]), inside(q[0])
+        if pin:
+            out.append(p)
+        if pin != qin:
+            t = (x0 - p[0]) / (q[0] - p[0])
+            c = p + t * (q - p)
+            c[0] = x0
+            out.append(c)
+    return np.array(out).reshape(-1, 2)
+
+
+def _antimeridian_polygons(rings):
+    """Rings (closed, (lon, lat), outer first, holes after; longitudes may run past +-180) as
+    polygons [[ring, ...], ...] with lon in [-180, 180]: one polygon, or several where the
+    outline crosses the antimeridian (the pieces are clipped against the meridian, so a shared
+    edge runs along it; a hole crossing it is cut the same way)."""
+    opened = [np.asarray(r, float)[:-1] for r in rings]
+    lon_all = np.concatenate([r[:, 0] for r in opened])
+    polys = []
+    for k in range(int(_window(lon_all.min())), int(_window(lon_all.max())) + 1):
+        x0, x1 = 360.0 * k - 180.0, 360.0 * k + 180.0
+        clipped = [_clip_halfplane(_clip_halfplane(r, x0, True), x1, False) for r in opened]
+        if len(clipped[0]) < 3 or not abs(_area(clipped[0])) > 1e-12:
+            continue
+        poly = []
+        for c in clipped:
+            if len(c) >= 3 and abs(_area(c)) > 1e-12:
+                c = c - np.array([360.0 * k, 0.0])
+                poly.append([_round(p) for p in np.vstack([c, c[:1]])])
+        polys.append(poly)
+    return polys
+
+
+def _area(ring):
+    x, y = ring[:, 0], ring[:, 1]
+    return 0.5 * float(np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y))
+
+
 class Features:
     """Collects point and line features with lat/lon (and optional metre) coordinates."""
 
@@ -488,7 +577,11 @@ class Features:
         for n, (kind, gt, ll, props) in enumerate(self.items):
             if gt == "Polygon":
                 p = {"kind": kind, **_clean(props)}
-                geo.append(_feature({"type": gt, "coordinates": [[_round((lo, la)) for la, lo in r] for r in ll]}, p, f"{kind}-{n}"))
+                polys = _antimeridian_polygons([np.asarray(r, float)[:, ::-1] for r in ll])
+                if polys:
+                    geom = ({"type": "Polygon", "coordinates": polys[0]} if len(polys) == 1
+                            else {"type": "MultiPolygon", "coordinates": polys})
+                    geo.append(_feature(geom, p, f"{kind}-{n}"))
                 if self.local:
                     rings = []
                     for r in ll:
@@ -500,8 +593,20 @@ class Features:
             p = {"kind": kind, **_clean(props)}
             if z is not None and gt == "Point":
                 p["elevation_m"] = round(float(z[0]), 1)
-            coords = [_round((lo, la)) for la, lo in ll]
-            geo.append(_feature({"type": gt, "coordinates": coords[0] if gt == "Point" else coords}, p, f"{kind}-{n}"))
+            if gt == "Point":
+                geo.append(_feature({"type": gt, "coordinates": _round((ll[0, 1], ll[0, 0]))}, p, f"{kind}-{n}"))
+            else:  # a line: one part, or a MultiLineString cut at the antimeridian
+                parts = _antimeridian_line(ll[:, ::-1], {k: props[k] for k in PER_VERTEX_KEYS if k in props})
+                if not parts:
+                    continue
+                if len(parts) == 1:
+                    geom = {"type": "LineString", "coordinates": parts[0][0]}
+                    p.update({k: v for k, v in parts[0][1].items()})
+                else:
+                    geom = {"type": "MultiLineString", "coordinates": [c for c, _ in parts]}
+                    for k in parts[0][1] if parts else ():
+                        p[k] = [v[k] for _, v in parts]
+                geo.append(_feature(geom, p, f"{kind}-{n}"))
             if self.local:
                 x, y = self.local(ll[:, 0], ll[:, 1])
                 c = [[round(float(a * 1000), 1), round(float(b * 1000), 1), round(float(zz), 1)]
