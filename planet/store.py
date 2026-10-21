@@ -324,6 +324,10 @@ LAYERS = {
                              transform="log2p1"),
     "glacial_till": _spec("u1", "m", "till and moraine the ice has dropped so far (glacial time zoom)",
                           scale=1 / 16, transform="log2p1"),
+    "glacial_outwash": _spec("u1", "m", "outwash (sandur) the meltwater has laid down so far (glacial time zoom)",
+                             scale=1 / 16, transform="log2p1"),
+    "glacial_loess": _spec("u1", "m", "loess the wind has laid down so far (glacial time zoom)", scale=1 / 16,
+                           transform="log2p1"),
     "ice_max": _spec("<u2", "m", "thickest the land ice has been in the glacial time zoom so far"),
     # vegetation (vegetation.py): runs store vegetation, tree_cover and npp per keyframe; worlds all of them
     "vegetation": _spec("u1", "id", "named vegetation type (vegetation.TYPES; legend 'vegetation')"),

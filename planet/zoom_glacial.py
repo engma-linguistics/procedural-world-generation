@@ -210,7 +210,7 @@ def trough_metrics(cx_cache, h, nx, ny, res, region) -> dict:
 
 class Glaciated(Synth):
     """The ice's landforms (module docstring)."""
-    layers = ("glacial_erosion", "glacial_till", "ice_max", "iced", "ice_fe", "ice_fn", "wind_e", "wind_n")
+    layers = ("glacial_erosion", "glacial_till", "glacial_outwash", "glacial_loess", "ice_max", "iced", "ice_fe", "ice_fn", "wind_e", "wind_n")
     ponds = True  # kettle pits that reach the water table hold ponds
     overlay_q = 3.0
 
@@ -230,6 +230,8 @@ class Glaciated(Synth):
             fe, fn = p["ice_fe"], p["ice_fn"]
             nrm = np.hypot(fe, fn)
             c["f"] = {"E": np.maximum(p["glacial_erosion"], 0.0), "T": np.maximum(p["glacial_till"], 0.0),
+                      "O": np.maximum(p.get("glacial_outwash", 0.0 * p["ice_max"]), 0.0),
+                      "LO": np.maximum(p.get("glacial_loess", 0.0 * p["ice_max"]), 0.0),
                       "F": np.maximum(p["ice_max"], 0.0), "G": np.clip(p["iced"], 0.0, 1.0),
                       "ux": np.where(nrm > 0.05, fe / np.maximum(nrm, 1e-9), 0.0),
                       "uy": np.where(nrm > 0.05, fn / np.maximum(nrm, 1e-9), 0.0), "dir": np.clip(nrm, 0, 1),
@@ -363,11 +365,12 @@ class Glaciated(Synth):
         cx.cache["zone_moraine"] = mor > 0.35 * np.maximum(mor.max(), 1e-6) if mor.max() > 5 else np.zeros(len(h), bool)
         # outwash ------------------------------------------------------------------
         m50 = self._margin(cx, G, 0.5)
-        src = land & (np.abs(m50) <= max(2.0 * wr, 1.5 * res)) & (T + E > 1.0)
+        O, LO = f["O"], f["LO"]  # (the time zoom's own outwash and loess, m, PW-497)
+        src = land & ((np.abs(m50) <= max(2.0 * wr, 1.5 * res)) | (O > 1.0)) & (T + E + O > 1.0)
         tout = np.zeros(len(h))
         if src.any() and cx.chan is not None:
             dd = downstream_dist(cx.rec, cx.order, src, nx, res)
-            t0 = np.clip(8.0 + 1.2 * T, 8.0, OUTWASH_MAX_M)
+            t0 = np.clip(8.0 + 1.2 * T + 1.5 * O, 8.0, OUTWASH_MAX_M)
             tch = np.where(cx.chan & np.isfinite(dd) & (dd > 0.0), t0 * np.exp(-dd / OUTWASH_KM), 0.0)
             tl = ZL.drain_level(tch, cx.rec, cx.order, cx.chan)  # (each hillslope pixel: its channel's)
             idx2, dpx2 = nearest_feature(cx.chan & (tch > 0.5), nx, ny)
@@ -381,7 +384,7 @@ class Glaciated(Synth):
         plain = tout > 2.0
         # loess ----------------------------------------------------------------------
         lo = np.zeros(len(h))
-        if plain.any():
+        if plain.any() or LO.max() > 1.0:
             wx, wy = f["wx"], f["wy"]
             sp_ = np.hypot(wx, wy)
             ux, uy = np.where(sp_ > 0.05, wx / np.maximum(sp_, 1e-9), 1.0), np.where(sp_ > 0.05, wy / np.maximum(sp_, 1e-9), 0.0)
@@ -397,6 +400,7 @@ class Glaciated(Synth):
                 nrm += wgt
             lo = LOESS_PEAK_M * acc / nrm * 2.2
             lo = np.minimum(lo, LOESS_PEAK_M) * land
+            lo = np.maximum(lo * (plain.any()), LO * land)  # (the world's loess sheet where it has one)
             soft = smoothstep(1.0, 6.0, lo)
             rb = max(1, int(round(3.0 / res)))
             dz += soft * (_land_blur(h + dz, land, nx, ny, rb) - (h + dz)) * land

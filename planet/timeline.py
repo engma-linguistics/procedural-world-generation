@@ -411,7 +411,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     if glacial is not None:
         # a time zoom's glacial imprint (PW-037): the ice stripped cover and dropped till (km here), so
         # a scoured shield shows its basement; ground the ice reached was glaciated just now
-        cover = np.maximum(cover + (glacial["glacial_till"] - glacial["glacial_erosion"]) / 1000.0, 0.0)
+        cover = np.maximum(cover + (glacial["glacial_till"] + glacial["glacial_outwash"] + glacial["glacial_loess"]
+                                  - glacial["glacial_erosion"]) / 1000.0, 0.0)
         exposed = surface_rock(a["rock"], cover, a["strata_top"], a["strata_top_km"])
         landforms["glaciated_myr"] = np.where(glacial["glaciated"], 0, landforms["glaciated_myr"])
     return _world(grid, m["seed"], params, float(fr["t"]), st["elevation"], a["plate"].astype(int),
@@ -504,7 +505,7 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
                     soil_memory=memory, valley=valley)
 
 
-GLACIAL_LAYERS = ("glacial_erosion", "glacial_till", "ice_max")  # a finished world's glacial imprint (PW-037)
+GLACIAL_LAYERS = ("glacial_erosion", "glacial_till", "glacial_outwash", "glacial_loess", "ice_max")  # a finished world's glacial imprint (PW-037)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

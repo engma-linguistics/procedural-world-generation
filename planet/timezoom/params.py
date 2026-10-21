@@ -22,6 +22,8 @@ LAYERS = {  # per frame: store.LAYERS names and encodings, as runs
     # the glacial imprint so far (PW-037; the elevation already has it): m of bed eroded, m of till dropped
     "glacial_erosion": S.LAYERS["glacial_erosion"],
     "glacial_till": S.LAYERS["glacial_till"],
+    "glacial_outwash": S.LAYERS["glacial_outwash"],
+    "glacial_loess": S.LAYERS["glacial_loess"],
     # the tree cover of the migrating plants (plants.py, PW-213), under the ice and sea of its frame; only with veg on
     "tree_cover": S.LAYERS["tree_cover"],
 }
@@ -149,5 +151,12 @@ class TZParams:
     geo_flux: float = 0.065  # W/m2: geothermal heat into the ice's base (Robin's column: is the bed thawed?)
     adverse: float = 1.5  # no erosion where the bed rises downstream > this x the ice surface falls
     # (supercooling, Alley et al. 2003: the bound on an overdeepened basin)
+    # where the debris goes (deposit.py; e-folding lengths as shares of the planet's radius, 0.04 = 255 km on Earth)
+    fan_km_r: float = 0.08  # debris dropped in the sea spreads down the sea floor: a grounding-zone fan (PW-495)
+    fan_flat: float = 1000.0  # m: ... over every sea neighbour no more than this above it (debris flows spill over a rim)
+    outwash_share: float = 0.5  # of the debris melted out on land, the share that goes on in the meltwater (PW-497) ...
+    outwash_km_r: float = 0.025  # ... down the bare ground as a sandur, falling off over this length ...
+    silt_share: float = 0.5  # ... its silt (glacial flour) is lifted off the plain ...
+    loess_km_r: float = 0.05  # ... and carried downwind (the cold season's wind) over this length as loess
     rock_ratio: float = 0.82  # the bed rises by this x the net rock removed (rho_rock / rho_mantle), spread
     # by flexure over flex_km and relaxing with iso_tau like the ice load

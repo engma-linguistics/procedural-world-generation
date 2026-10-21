@@ -404,3 +404,35 @@ def glacial_erosion(H, bed, sl, flt, active, off, idx, uacc, wacc, t_s, acc, geo
         if jd >= 0 and bed[jd] - bed[i] > adverse * best:
             continue
         cut[i] = k_g * erod[i] * ub ** l_exp * dt
+
+
+@njit(cache=True)
+def hop_scatter(m, off, idx, w, keep, hops, out):
+    """Spread the amounts m (any conserved quantity per cell, e.g. m3) over
+    up to `hops` hops along the directed edges: at each hop a cell lays
+    down the share `keep` where it is and passes the rest to its neighbours
+    in proportion to the edge weights w (>= 0); a cell with no weight
+    (a sink, the end of a route) lays down all it holds, and so does the
+    last hop. Adds to out; sum(out) = sum(m)."""
+    n = m.shape[0]
+    cur = m.copy()
+    nxt = np.zeros(n)
+    for h in range(hops):
+        nxt[:] = 0.0
+        last = h == hops - 1
+        for i in range(n):
+            c = cur[i]
+            if c <= 0.0:
+                continue
+            s = 0.0
+            for e in range(off[i], off[i + 1]):
+                s += w[e]
+            if s <= 0.0 or last:
+                out[i] += c
+                continue
+            out[i] += keep * c
+            r = (1.0 - keep) * c / s
+            for e in range(off[i], off[i + 1]):
+                if w[e] > 0.0:
+                    nxt[idx[e]] += r * w[e]
+        cur, nxt = nxt, cur

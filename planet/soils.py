@@ -331,7 +331,7 @@ def _remembered(mem: dict, age_yr, temp, precip):
 # ---------------------------------------------------------------------------
 def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=None, cloud_jan=None,
             rock=None, landform=None, landform_age=None, glaciated_myr=None, ice=None, lake_kind=None,
-            lake=None, flow=None, flood_ratio=None, winds=(), memory: dict | None = None) -> dict:
+            lake=None, flow=None, flood_ratio=None, winds=(), memory: dict | None = None, glacial_loess=None) -> dict:
     """Soils pass 1 (section 3), from geology and climate only. rock: the
     parent rock per cell (surface.ROCKS ids: the exposed stratum); landform,
     landform_age, glaciated_myr: the run's record (landform.LAYERS; absent
@@ -340,7 +340,9 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     winds; memory: climate_memory() of the run. Returns the fields the
     vegetation reads (cap1, cap2, f_soil, permafrost) and what organic() needs.
     What needs the grid (slope, floodplains, loess, salt lakes nearby) is
-    worked out here; the rest is per cell (_mineral, shared with the zoom)."""
+    worked out here; the rest is per cell (_mineral, shared with the zoom).
+    glacial_loess (m): a glacial time zoom's own loess (timezoom.deposit), which replaces the outwash
+    proxy below (silt beside today's ice) and adds to the desert dust."""
     from . import landform as LF
     from .vegetation import floodplain
     n = grid.n
@@ -370,9 +372,12 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
     gl_now = (ice > 0) | (glac <= TILL_MYR)
     nbr_gl = np.add.reduceat(gl_now[grid.nbr_idx].astype(float), grid.nbr_off[:-1]) > 0
     outwash = (elev > 0) & (ice <= 0) & ~gl_now & nbr_gl & ~crystalline
-    src = src + 1.0 * outwash
+    if glacial_loess is None:
+        src = src + 1.0 * outwash
     trap = np.clip((mi - 0.1) / 0.4, 0.0, 1.0)  # (bare ground keeps none: what settles is blown on)
     loess_m = np.where(land, loess(grid, src, trap, winds, sea | (ice > 0)), 0.0) if len(winds) else np.zeros(n)
+    if glacial_loess is not None:
+        loess_m = loess_m + np.where(land, np.asarray(glacial_loess, float), 0.0)
     return _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, temp, t_warm, t_cold, slope,
                     fp / 0.35, aggrading, loess_m, salt_near(grid, lake_kind), memory)
 
@@ -714,4 +719,4 @@ def geology(extra: dict) -> dict:
     rock = extra.get("strata_top", extra.get("surface_rock", extra.get("rock")))
     return {"rock": None if rock is None else np.asarray(rock, int),
             "landform": extra.get("landform"), "landform_age": extra.get("landform_age"),
-            "glaciated_myr": extra.get("glaciated_myr")}
+            "glaciated_myr": extra.get("glaciated_myr"), "glacial_loess": extra.get("glacial_loess")}

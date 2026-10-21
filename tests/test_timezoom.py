@@ -185,6 +185,7 @@ def test_carving_conserves_rock(cold_src, cold_run):
     s, g = cold_run["state"], cold_src["grid"]
     area = geometry(g)["area"]
     cut, till, debris = (s[k] for k in ("cut", "till", "debris"))
+    till = till + s["outwash"] + s["loess"]  # (what the ice took ends as till, outwash or loess, PW-497)
     assert (cut >= 0).all() and (till >= 0).all() and (debris >= 0).all()
     vol = (cut * area).sum()
     assert vol > 0
@@ -193,10 +194,43 @@ def test_carving_conserves_rock(cold_src, cold_run):
     assert (s["slide_km"] > 0).any()
     # (grounded ice at some step: the frames every 2 kyr miss ice that grounded and calved in between)
     iced = (cold_run["data"]["ice"] > 0).any(0) | (s["wet_kyr"] > 0)
-    near = dilate(iced, g.nbr_off, g.nbr_idx, 2)
+    near = dilate(iced, g.nbr_off, g.nbr_idx, 6)  # (the fan, the meltwater and the wind carry debris a few cells; L4 cells are 480 km)
     assert not (till > 0.1)[~near].any()
     e = cold_run["data"]["glacial_erosion"].astype(int)
     assert (np.diff(e, axis=0) >= 0).all() and e[-1].max() > 0
+
+
+def test_debris_routing(cold_src):
+    """deposit.py: a fan, a sandur and loess spread a point source over several cells (planet-relative
+    lengths), the volume exactly conserved, the sea's fan not reaching land, the wind's only downwind."""
+    from planet.timezoom.deposit import Deposits
+    g = cold_src["grid"]
+    G = geometry(g)
+    area = G["area"]
+    d = Deposits(g, G, area, Z.TZParams())
+    i = int(np.argmin(np.abs(g.lat - 45) + np.abs(g.lon - 10)))
+    x = np.zeros(g.n)
+    x[i] = 100.0
+    bed = -500.0 + 300.0 * np.sin(g.lat / 20.0)  # a sloping floor
+    fan = d.fan(x, bed, 0.0)
+    assert abs((fan * area).sum() - (x * area).sum()) < 1e-9 * (x * area).sum()
+    assert (fan > 1.0).sum() >= 3 and fan.max() < 0.7 * x[i]  # spread over cells, not piled in one
+    land = bed.copy()
+    land[g.lat > 60] = 500.0  # land to the north: the sea's fan stays in the sea
+    assert d.fan(x, land, 0.0)[g.lat > 60].sum() == 0
+    wind = np.zeros((g.n, 3))
+    wind += 5.0 * G_east(g)
+    lo = d.wind(x, wind)
+    assert abs((lo * area).sum() - (x * area).sum()) < 1e-9 * (x * area).sum()
+    shift = (lo * ((g.centers - g.centers[i]) @ G_east(g)[i])).sum() / lo.sum()
+    assert shift > 0.0  # (its centroid is east of the source: downwind)
+    ow = d.outwash(x, bed + 1000.0 * (g.lat), np.ones(g.n, bool))
+    assert abs((ow * area).sum() - (x * area).sum()) < 1e-9 * (x * area).sum()
+
+
+def G_east(g):
+    from planet.climate import _geom
+    return _geom(g)["east"]
 
 
 def test_no_carving(cold_src):
