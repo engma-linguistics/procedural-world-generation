@@ -7,7 +7,7 @@ simulate() builds a _Sim and runs, per step:
   3. surface:   the ice surface's climate (prepare_surface), one year of mass balance (year)
   4. record:    a frame every `every` kyr
   5. dynamics:  new-ice balance (new_ice_rates), balance + flow (balance_and_flow),
-                the sea (sea: shelves, calving), isostasy, sea level
+                glacial carving (carve), the sea (sea: shelves, calving), isostasy, sea level
 """
 
 from __future__ import annotations
@@ -30,7 +30,8 @@ from .fields import ClimateFields
 from .forcing import Forcing, orbit_k
 from .geometry import geometry
 from .ice import above_flotation, shelf_cover, shelf_step, shelf_viable
-from .kernels import climate_step, dilate, sia_flow
+from .kernels import climate_step, dilate, glacial_erosion, sia_flow
+from ..surface import COVER_SHOWS
 from .params import LAYERS, RHO_I, RHO_W, TZParams
 
 
@@ -69,6 +70,13 @@ class _Sim:
         self.ocean_area = float(self.area[(elev0 <= 0) & (self.H <= 0)].sum())
         self.V0 = float((self.H * self.area).sum())
         self.bed0 = self.bed.copy()
+        # glacial carving (PW-037): m of bed eroded and of till dropped so far, the debris in the ice (m of
+        # rock per cell), the bed's settled response to the net rock removed (m, flexure); per step: the
+        # erosion, sia_flow's speed x time (m; raw and at most the bed's yield stress), the debris melt
+        # dropped within the flow, the thawed share of the bed; kyr the bed was thawed under the ice, km it slid
+        self.rock = src.get("bedrock") or {"cover_m": np.zeros(n), "erod_cover": np.ones(n), "erod_base": np.ones(n)}
+        (self.cut, self.till, self.debris, self.rock_iso, self.cut_step, self.u_dt, self.ul_dt, self.w_dt,
+         self.dropped, self.wet, self.wet_kyr, self.slide_km) = (np.zeros(n) for _ in range(12))
         self.Vaf0 = self.above_flotation(0.0)
         self.dT_run = float(src["dT"])
 
@@ -98,7 +106,15 @@ class _Sim:
         return ice_load(self.g, h, self.p.iso_ratio, self.p.flex_km)
 
     def above_flotation(self, sl):
-        return above_flotation(self.H, self.bed, self.bed0, self.area, sl)
+        # (the reference bed moves with the carving: a deeper basin isn't sea water the ice holds)
+        ref = self.bed0 + self.till - self.cut + self.rock_iso if self.p.carving else self.bed0
+        return above_flotation(self.H, self.bed, ref, self.area, sl)
+
+    def drop(self, x) -> None:
+        """Debris x (m per cell) melts out of the ice onto the bed as till (already out of `debris`)."""
+        self.till += x
+        self.bed += x
+        self.bed_rest += x
 
     def grounded_ice(self):
         H, bed = self.H, self.bed
@@ -234,7 +250,8 @@ class _Sim:
         precip = 0.5 * (F["p_jul"] + F["p_jan"]) * self.p_scale
         k = climate.koppen(surf, self.t_ann, self.t_warm, self.t_cold, precip, F["p_jul"] * self.p_scale,
                            F["p_jan"] * self.p_scale, self.g.lat, np.where(land, ice, 0.0))
-        for name, v in (("elevation", surf), ("ice", ice), ("temperature", self.t_ann), ("climate", k)):
+        for name, v in (("elevation", surf), ("ice", ice), ("temperature", self.t_ann), ("climate", k),
+                        ("glacial_erosion", self.cut), ("glacial_till", self.till)):
             self.out[name].append(S.encode(v, LAYERS[name]))
         vol = float((self.H * self.area).sum())
         self.frames.append({"t": round(t_kyr, 3), "stats": self.stats(t_kyr, surf, ice, vol, orb, dq65, dTg)})
@@ -305,13 +322,43 @@ class _Sim:
             nb_sea0 = np.add.reduceat(sea0[g.nbr_idx], g.nbr_off[:-1]) > 0
             hold = p.buttress * shelf_cover(g, gr0 & nb_sea0, sea0, np.where(sea0, H, 0.0), p)
             applied = np.zeros(self.n)
+            self.u_dt[:] = 0.0
+            self.ul_dt[:] = 0.0
+            self.w_dt[:] = 0.0
+            self.dropped[:] = 0.0
             self.nsub_total += sia_flow(H, bed, sl, active, g.nbr_off, g.nbr_idx, G["dist"], G["elen"], G["ux"],
                                         G["uy"], G["uz"], area, self.gamma, p.d_cap, dt, p.cfl, flt, G["d2min"],
-                                        hold, rate, applied)
+                                        hold, rate, applied, self.debris, self.u_dt, self.ul_dt, self.w_dt, p.tau_y,
+                                        self.dropped)
+            if p.carving:
+                self.drop(self.dropped)
             dv += applied * area
             H_pre += applied  # (the shelf's inflow below is the flow's alone)
         self.budget["smb"] += float(dv.sum())
         return dv, sea0, H_pre
+
+    def carve(self, active, dt) -> None:
+        """2b) glacial carving (PW-037): the sliding ice erodes its bed (the cover, and till laid down before,
+        while they last; then the basement) and takes the rock along (kernels.glacial_erosion)."""
+        p, g, rock = self.p, self.g, self.rock
+        soft = rock["cover_m"] + self.till - self.cut > 1000.0 * COVER_SHOWS
+        glacial_erosion(self.H, self.bed, self.sl, self.flt, active, g.nbr_off, g.nbr_idx, self.ul_dt, self.w_dt, self.t_ann,
+                        np.maximum(self.smb, 0.0), p.geo_flux, p.slide_share,
+                        np.where(soft, rock["erod_cover"], rock["erod_base"]), p.glacial_k, p.glacial_l, p.adverse,
+                        dt, p.calve_depth, self.cut_step, self.wet)
+        e = self.cut_step[active]
+        self.cut[active] += e
+        self.debris[active] += e
+        self.bed[active] -= e
+        self.bed_rest[active] -= e
+        self.wet_kyr[active] += self.wet[active] * self.step
+        self.slide_km[active] += p.slide_share * self.wet[active] * self.ul_dt[active] / 1000.0
+
+    def rock_isostasy(self) -> None:
+        """The lithosphere's settled response to the rock the ice moved (relaxing like the ice load's)."""
+        new = climate.smooth(self.g, self.p.rock_ratio * (self.cut - self.till), self.p.flex_km)
+        self.bed_rest += new - self.rock_iso
+        self.rock_iso[:] = new
 
     def sea(self, sea0, H_pre, dt):
         """3) the sea (PW-367): the ice the flow carried past the grounding line over the step is an ice
@@ -321,6 +368,7 @@ class _Sim:
         g, p, H, bed, area, F = self.g, self.p, self.H, self.bed, self.area, self.fields
         depth = self.sl - bed
         lost = np.zeros(self.n)
+        H3 = H.copy()  # (the debris in ice the sea takes, by melt, break-up or calving, drops to the sea floor there)
         sea0 &= (H_pre > 0) | (H > 0)  # (the sea cells with ice in them)
         if sea0.any():
             q = (H - H_pre) / dt
@@ -346,6 +394,10 @@ class _Sim:
             frac = np.exp(-p.calving * (1.0 - covered) * depth * dt / np.sqrt(area))
             lost += np.where(front, H * (1 - frac), 0.0)
             H[front] *= frac[front]
+        if p.carving:
+            x = np.where(H < H3, self.debris * (1.0 - H / np.maximum(H3, 1e-9)), 0.0)
+            self.debris -= x
+            self.drop(x)
         self.budget["calved"] += float((lost * area).sum())
         return lost
 
@@ -364,6 +416,8 @@ class _Sim:
         gt = RHO_I / 1e12 / dt  # m3 per step -> Gt per yr
         rate, near, active = self.new_ice_rates(dq, dt)
         dv, sea0, H_pre = self.balance_and_flow(rate, near, active, dt)
+        if self.p.carving and len(active):
+            self.carve(active, dt)
         lost = self.sea(sea0, H_pre, dt)
         area = self.area
         self.flows.append((float(dv[dv > 0].sum()) * gt, float(-dv[dv < 0].sum()) * gt,
@@ -388,6 +442,8 @@ class _Sim:
             if s_no % self.refresh == 0:
                 surf, grounded = self.grounded_surface()
                 F.refresh(t_kyr, dTg, surf, grounded, H, self.forcing.co2)
+                if p.carving and s_no:
+                    self.rock_isostasy()
                 self.forcing.veg_target = F.plants.dT_target
                 if self.index is None:
                     self.setup_index()
@@ -430,7 +486,9 @@ def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2
             "budget": {**s.budget, "V0": s.V0, "V_end": float((H * area).sum()), "ocean_area": s.ocean_area,
                        "Vaf0": s.Vaf0, "Vaf_end": s.above_flotation(s.sl)},
             "state": {"H": H, "bed": s.bed, "sl": s.sl, "smb": s.smb, "t_warm": s.t_warm, "t_ann": s.t_ann,
-                      "p_scale": s.p_scale, "f_snow": s.f_snow, "p_ann": 0.5 * (F["p_jul"] + F["p_jan"])},
+                      "p_scale": s.p_scale, "f_snow": s.f_snow, "p_ann": 0.5 * (F["p_jul"] + F["p_jan"]),
+                      "cut": s.cut, "till": s.till, "debris": s.debris, "rock_iso": s.rock_iso, "wet_kyr": s.wet_kyr,
+                      "slide_km": s.slide_km},
             "anchor": s.anchor.copy(),
             "runtime_s": round(time.time() - t_start, 1), "compute_s": round(F.compute_s, 1),
             "veg_s": round(F.plants.time_s, 1), "veg": F.plants.series,

@@ -317,6 +317,12 @@ LAYERS = {
     "fold_wavelength": _spec("u1", "km", "distance between fold crests (0: strata not folded)", scale=0.2),
     "rift_strain": _spec("u1", "ln beta", "stretching of the cell's last rifting (0: never rifted)", scale=0.01),
     "glaciated_myr": _spec("<u2", "Myr", "since the cell was last under ice (0: now; 9999: never)"),
+    # the glacial imprint of a time zoom (PW-037): per frame there, and in its finished worlds
+    "glacial_erosion": _spec("u1", "m", "bed the ice has eroded so far (glacial time zoom)", scale=1 / 16,
+                             transform="log2p1"),
+    "glacial_till": _spec("u1", "m", "till and moraine the ice has dropped so far (glacial time zoom)",
+                          scale=1 / 16, transform="log2p1"),
+    "ice_max": _spec("<u2", "m", "thickest the land ice has been in the glacial time zoom so far"),
     # vegetation (vegetation.py): runs store vegetation, tree_cover and npp per keyframe; worlds all of them
     "vegetation": _spec("u1", "id", "named vegetation type (vegetation.TYPES; legend 'vegetation')"),
     "tree_cover": _spec("u1", "%", "tree canopy cover (each tree type's share x its canopy closure)"),

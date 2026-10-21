@@ -161,7 +161,7 @@ def _sia_receivers(active, off, idx, n):
 
 @njit(cache=True, parallel=True)
 def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, d_cap, dt_total, cfl, flt, d2min, hold,
-             rate, applied):
+             rate, applied, B, U, UL, W, tau_y, drop):
     """Shallow-ice flow for dt_total years: ice thickness diffuses with
     D = gamma H^5 |grad s|^2 (Glen's law, n = 3, no sliding), s the ice
     surface, so it flows downhill on its own surface slope and spreads under
@@ -185,11 +185,27 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
     interior's snow, PW-422). Returns the number of sub-steps.
     Each pass is per cell (prange); the volume moved along each edge is
     gathered by the cells it reaches in a fixed order (_sia_receivers), so
-    the result doesn't depend on the thread count (PW-215)."""
+    the result doesn't depend on the thread count (PW-215).
+
+    Glacial debris (PW-037): B (m of rock per cell, carried in the ice)
+    moves with the ice, each transfer taking the share of the cell's debris
+    that it takes of the cell's ice; where the balance thins the ice, the
+    melted share of its debris is dropped (into `drop`, m). U (m) adds up
+    the depth-averaged speed D |grad s| / H times each sub-step's length
+    (U / dt_total: the step's mean, m/yr), and UL the same speed at a basal
+    shear stress (rho g H |grad s|) of at most tau_y (Pa): the shallow-ice
+    speed goes as tau^3 H, so where tau passes tau_y it is x (tau_y / tau)^3
+    (glacial_erosion: a bed holds at most its yield stress), and W (Pa m)
+    the work the flow does on its bed, that stress x that speed x time (the
+    heat of sliding and of the shearing near the bed, W / dt_total / yr: W/m2)."""
     na = active.shape[0]
     n = H.shape[0]
     D = np.zeros(n)
     vE = np.empty(idx.shape[0])  # volume moved along each edge this sub-step (-1: none)
+    bE = np.zeros(idx.shape[0])  # debris moved with it (m3)
+    spd = np.zeros(n)
+    lim = np.zeros(n)
+    tbc = np.zeros(n)
     targets, rec_off, rec_e, rec_give = _sia_receivers(active, off, idx, n)
     nt = targets.shape[0]
     t = 0.0
@@ -199,6 +215,8 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
             i = active[a]
             if H[i] <= 0.0:
                 D[i] = 0.0
+                spd[i] = 0.0
+                lim[i] = 0.0
                 continue
             si = _surf(bed, H, sl, flt, i)
             gx, gy, gz = 0.0, 0.0, 0.0
@@ -216,12 +234,17 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
             g2 = max((gx * gx + gy * gy + gz * gz) / (area[i] * area[i]), down2)
             h2 = H[i] * H[i]
             D[i] = min(gamma * h2 * h2 * H[i] * g2, d_cap)
+            gs = math.sqrt(g2)
+            spd[i] = D[i] * gs / H[i]
+            tb = RHO_G * H[i] * gs
+            lim[i] = spd[i] if tb <= tau_y else spd[i] * (tau_y / tb) ** 3
+            tbc[i] = min(tb, tau_y)
         dmax = 0.0
         for a in range(na):
             dmax = max(dmax, D[active[a]])
         if dmax <= 0.0:  # (no flow: the rest of the step's balance at once)
             dt = dt_total - t
-            _balance(H, active, rate, applied, dt)
+            _balance(H, active, rate, applied, dt, B, drop)
             break
         dt = min(dt_total - t, cfl * d2min / dmax)
         # each cell's outflow, limited to what the cell holds, and so what moves along each of its edges
@@ -245,37 +268,53 @@ def sia_flow(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area, gamma, 
             need = dt * out
             held = H[i] * area[i]
             scale = 1.0 if need <= held else held / need
+            U[i] += dt * spd[i]
+            UL[i] += dt * lim[i]
+            W[i] += dt * lim[i] * tbc[i]
+            rock = B[i] * area[i]  # m3 of debris in the cell
             for e in range(off[i], off[i + 1]):
                 j = idx[e]
                 q = 0.5 * (D[i] + D[j]) * (si - _surf(bed, H, sl, flt, j)) * elen[e] / dist[e]
                 if q > 0.0:
                     vE[e] = q * _held(bed, H, sl, flt, hold, i, j) * scale * dt
+                    # (the debris: its share of the ice; a film of ice never overflows)
+                    bE[e] = rock * min(vE[e] / held, 1.0) if rock > 0.0 and held > 0.0 else 0.0
         # every cell that gives or receives: its net change, then its thickness
         for k in prange(nt):
             c = targets[k]
             dv = 0.0
+            db = 0.0
             for r in range(rec_off[k], rec_off[k + 1]):
                 v = vE[rec_e[r]]
                 if v >= 0.0:
                     if rec_give[r]:
                         dv -= v
+                        db -= bE[rec_e[r]]
                     else:
                         dv += v
+                        db += bE[rec_e[r]]
             if dv != 0.0:
                 H[c] = max(0.0, H[c] + dv / area[c])
-        _balance(H, active, rate, applied, dt)
+            if db != 0.0:
+                B[c] = max(0.0, B[c] + db / area[c])
+        _balance(H, active, rate, applied, dt, B, drop)
         t += dt
         nsub += 1
     return nsub
 
 
 @njit(cache=True, inline="always")
-def _balance(H, active, rate, applied, dt):
-    """The surface mass balance over dt years on the active cells (sia_flow)."""
+def _balance(H, active, rate, applied, dt, B, drop):
+    """The surface mass balance over dt years on the active cells (sia_flow);
+    melt drops its share of the column's debris B into drop."""
     for a in range(active.shape[0]):
         i = active[a]
         if rate[i] != 0.0:
             h = max(0.0, H[i] + rate[i] * dt)
+            if h < H[i] and B[i] > 0.0:
+                x = B[i] * (1.0 - h / H[i])
+                B[i] -= x
+                drop[i] += x
             applied[i] += h - H[i]
             H[i] = h
 
@@ -292,3 +331,76 @@ def dilate(mask, off, idx, rings):
                     new[idx[e]] = True
         m = new
     return m
+
+
+RHO_G = 917.0 * 9.81  # ice's weight per m3 (N)
+YEAR_S = 3.15576e7  # s per yr
+K_ICE = 2.1  # W/m/K, ice's thermal conductivity
+KAPPA_ICE = 36.0  # m2/yr, its thermal diffusivity (1.15e-6 m2/s)
+PMP = 8.7e-4  # C per m of ice: the pressure-melting point's fall (air-saturated ice)
+
+
+@njit(cache=True, inline="always")
+def thawed(h, t_s, acc, geo):
+    """Share (0..1) of a column's bed at the melting point: Robin's (1955)
+    steady column with geothermal flux geo (W/m2) under an accumulation
+    rate acc (m/yr of ice; snow sinking through the ice carries the
+    surface's cold down), pure conduction where acc <= 0; the base is
+    t_s + (geo/k) L (sqrt(pi)/2) erf(h/L) warm, L = sqrt(2 kappa h / acc).
+    A 2 C ramp below the melting point (-PMP h) to frozen."""
+    g = geo / K_ICE  # C per m
+    if acc > 1e-6:
+        L = math.sqrt(2.0 * KAPPA_ICE * h / acc)
+        rise = g * L * 0.886226925 * math.erf(h / L)
+    else:
+        rise = g * h
+    return min(max(1.0 + (t_s + rise + PMP * h) / 2.0, 0.0), 1.0)
+
+
+@njit(cache=True)
+def glacial_erosion(H, bed, sl, flt, active, off, idx, uacc, wacc, t_s, acc, geo, slide, erod, k_g, l_exp,
+                    adverse, dt, deep, cut, wet):
+    """Glacial erosion over a step of dt years (PW-037), m of bed per cell
+    into cut: k_g x erod x ub^l_exp x dt (Hallet's abrasion law), on
+    grounded ice, and the thawed share of each grounded cell's bed into wet.
+    ub (m/yr), the sliding speed: slide x the shallow-ice speed at a basal
+    shear stress of at most the bed's yield stress (uacc / dt: the step's
+    mean, sia_flow's UL) x the thawed share of the bed. A bed holds at
+    most its yield stress (Nye's plastic bed, ~100 kPa; ice sheets' basal
+    stresses are 50-150 kPa, Cuffey & Paterson 2010), so where the
+    shallow-ice slope asks more (the grid's cliff-like margins, a
+    collapsing or surging sheet) the ice slides as at the yield stress, and
+    the rest of its fall is unresolved margin, not faster abrasion. The bed
+    is thawed (thawed: t_s the ice surface's annual mean, C; acc the
+    accumulation, m/yr) by the geothermal flux geo (W/m2) and the flow's
+    own heat at its bed (wacc / dt: sia_flow's W, Pa m/yr; the heat of
+    sliding and of the shear near the bed, Cuffey & Paterson 2010 ch. 9:
+    ~0.1-1 W/m2 under fast ice, so fast outlets are warm-based and slow
+    cold domes frozen). Where
+    the bed rises toward the ice's way down (its surface's steepest
+    descent) more steeply than `adverse` x the surface falls, meltwater
+    flowing up out of the basin supercools and freezes (Alley et al. 2003),
+    so the basin stops deepening: the bound on an overdeepening. Not on a
+    bed deeper than `deep` below the sea (the time zoom calves such ice at
+    once: calve_depth, PW-199)."""
+    for a in range(active.shape[0]):
+        i = active[a]
+        cut[i] = 0.0
+        wet[i] = 0.0
+        if H[i] <= 1.0 or bed[i] + H[i] <= sl + flt * H[i] or sl - bed[i] > deep:
+            continue
+        wet[i] = thawed(H[i], t_s[i], acc[i], geo + wacc[i] / dt / YEAR_S)
+        if uacc[i] <= 0.0 or wet[i] <= 0.0:
+            continue
+        ub = slide * uacc[i] / dt * wet[i]
+        si = _surf(bed, H, sl, flt, i)
+        best = 0.0
+        jd = -1
+        for e in range(off[i], off[i + 1]):
+            fall = si - _surf(bed, H, sl, flt, idx[e])
+            if fall > best:
+                best = fall
+                jd = idx[e]
+        if jd >= 0 and bed[jd] - bed[i] > adverse * best:
+            continue
+        cut[i] = k_g * erod[i] * ub ** l_exp * dt

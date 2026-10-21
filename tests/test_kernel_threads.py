@@ -74,6 +74,7 @@ def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area,
     D = np.zeros(n)
     out = np.zeros(n)
     dV = np.zeros(n)
+    nob = np.zeros(n)  # (no debris)
     t = 0.0
     nsub = 0
     while t < dt_total - 1e-9:
@@ -100,7 +101,7 @@ def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area,
             D[i] = d
             dmax = max(dmax, d)
         if dmax <= 0.0:
-            K._balance(H, active, rate, applied, dt_total - t)
+            K._balance(H, active, rate, applied, dt_total - t, nob, nob)
             break
         dt = min(dt_total - t, cfl * d2min / dmax)
         for a in range(na):
@@ -139,7 +140,7 @@ def _sia_flow_serial(H, bed, sl, active, off, idx, dist, elen, ux, uy, uz, area,
                 if dV[j] != 0.0:
                     H[j] = max(0.0, H[j] + dV[j] / area[j])
                     dV[j] = 0.0
-        K._balance(H, active, rate, applied, dt)
+        K._balance(H, active, rate, applied, dt, nob, nob)
         t += dt
         nsub += 1
     return nsub
@@ -202,9 +203,33 @@ def test_sia_flow(g5):
     def run(fn, H0):
         h = H0.copy()
         ns = fn(h, bed, -40.0, active, g5.nbr_off, g5.nbr_idx, G["dist"], G["elen"], G["ux"], G["uy"], G["uz"],
-                G["area"], gamma, p.d_cap, 20000.0, p.cfl, flt, G["d2min"], hold, rate, np.zeros(n))
+                G["area"], gamma, p.d_cap, 20000.0, p.cfl, flt, G["d2min"], hold, rate, np.zeros(n),
+                *extra)
         return [h, np.array([ns])]
+    extra = ()
     ref = run(_sia_flow_serial, H)
     assert ref[1][0] > 3 and not np.array_equal(ref[0], H)
     assert abs((ref[0] * G["area"]).sum() / (H * G["area"]).sum() - 1) < 1e-12  # (ice conserved)
-    _same(_at_threads(lambda: run(K.sia_flow, H)), ref)
+    # glacial debris carried with the ice, its speeds and the melt's drop (PW-037)
+    B0 = 0.01 * H
+
+    def run_debris(H0, rate_):
+        h, B, U, UL, Wk, drop = H0.copy(), B0.copy(), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
+        ns = K.sia_flow(h, bed, -40.0, active, g5.nbr_off, g5.nbr_idx, G["dist"], G["elen"], G["ux"], G["uy"],
+                        G["uz"], G["area"], gamma, p.d_cap, 20000.0, p.cfl, flt, G["d2min"], hold, rate_, np.zeros(n),
+                        B, U, UL, Wk, 2e4, drop)  # (a low yield stress, so some cells are past it)
+        return [h, np.array([ns]), B, U, UL, drop, Wk]
+    outs = _at_threads(lambda: run_debris(H, rate))
+    _same([o[:2] for o in outs], ref)
+    _same(outs, outs[0])
+    B, U, UL = outs[0][2:5]
+    assert abs((B * G["area"]).sum() / (B0 * G["area"]).sum() - 1) < 1e-9 and not np.array_equal(B, B0)
+    assert (U > 0).any() and (UL <= U + 1e-9).all() and (UL < U).any()
+    Wk = outs[0][6]
+    assert (Wk >= 0).all() and (Wk <= 2e4 * UL * (1 + 1e-9)).all() and (Wk > 0).any()  # (stress <= the yield)
+    # melt everywhere: what the debris loses is what drops, and the ice that melts away leaves all of it
+    melt = np.full(n, -0.05)
+    h, _, B, _, _, drop, _ = _at_threads(lambda: run_debris(H, melt))[0]
+    tot = lambda x: (x * G["area"]).sum()
+    assert abs((tot(B) + tot(drop)) / tot(B0) - 1) < 1e-9 and tot(drop) > 0
+    assert (B[h <= 0] == 0).all()

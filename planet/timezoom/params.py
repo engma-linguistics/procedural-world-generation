@@ -19,6 +19,9 @@ LAYERS = {  # per frame: store.LAYERS names and encodings, as runs
     "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
     "temperature": S.LAYERS["temperature"],  # C, annual mean
     "climate": S.LAYERS["climate"],  # climate.KOPPEN id
+    # the glacial imprint so far (PW-037; the elevation already has it): m of bed eroded, m of till dropped
+    "glacial_erosion": S.LAYERS["glacial_erosion"],
+    "glacial_till": S.LAYERS["glacial_till"],
 }
 STATIC = ("plate", "crust", "crust_age", "plate_boundary")  # stored once
 
@@ -129,3 +132,18 @@ class TZParams:
     # it breaks up; a shelf spreads under its own weight (Weertman 1957, held back by the same buttressing) ...
     melt_k: float = 10.0  # m/yr per C: ... and melts from below where the sea is warmer than freezing (Holland
     # et al. 2008, Jenkins et al. 2018: ~10 m/yr per degree of thermal forcing)
+    # glacial erosion (PW-037, docs/proposals/glacial_carving.md)
+    carving: bool = True  # the ice erodes its bed, carries the debris and drops it where it melts
+    glacial_k: float = 4e-6  # erosion (m/yr) = glacial_k x erodibility (surface.ROCK_K) x sliding speed (m/yr)
+    glacial_l: float = 1.0  # ^ this (Hallet 1979's abrasion law). glacial_k: at this model's cell-mean speeds,
+    # the observed range (Hallet et al. 1996, Koppes et al. 2015): ~0.01-0.3 mm/yr under slow or cold-based
+    # sheets, ~1 mm/yr at 250 m/yr of sliding, ~5 mm/yr under the fastest outlets
+    slide_share: float = 0.5  # share of a thawed bed's ice speed that is sliding ...
+    tau_y: float = 1.0e5  # Pa: ... at a basal shear stress of at most this, the bed's yield stress (Nye's plastic
+    # bed; ice sheets' basal stresses are 50-150 kPa, Cuffey & Paterson 2010): where the grid's slope asks more,
+    # the extra fall is an unresolved margin, not faster sliding (the speed goes as tau^3)
+    geo_flux: float = 0.065  # W/m2: geothermal heat into the ice's base (Robin's column: is the bed thawed?)
+    adverse: float = 1.5  # no erosion where the bed rises downstream > this x the ice surface falls
+    # (supercooling, Alley et al. 2003: the bound on an overdeepened basin)
+    rock_ratio: float = 0.82  # the bed rises by this x the net rock removed (rho_rock / rho_mantle), spread
+    # by flexure over flex_km and relaxing with iso_tau like the ice load

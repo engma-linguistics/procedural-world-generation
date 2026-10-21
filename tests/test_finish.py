@@ -137,3 +137,24 @@ def test_finish_api(tiny):
     m = api.world_header(S.find_world(res["world"]))["meta"]
     assert m["t_myr"] == 20 and not m.get("timezoom") and seen[-1] == 1.0
     assert api.find_slice(tiny["run"], 20.0).stem == res["world"]
+
+
+def test_finished_world_carries_the_glacial_imprint(tiny):
+    """PW-037: a finished world has the time zoom's glacial imprint up to its
+    frame (erosion, till, the thickest ice so far), its ground under that
+    ice counts as just glaciated, and the cover lost what the ice stripped."""
+    tz = tiny["tz"]
+    run, arr = T.load_frames(tz, ("glacial_erosion", "ice"))
+    i = len(run["frames"]) - 1
+    w = W.load(F.finish_timezoom(tz.name))
+    L = w["layers"]
+    for k in ("glacial_erosion", "glacial_till", "ice_max"):
+        assert k in L, k
+    want = T.frame(run, arr, "glacial_erosion", i)
+    assert np.abs(L["glacial_erosion"] - want).max() < 0.01 and want.max() > 0  # (worlds round to the cm)
+    ice_max = np.asarray(arr["ice"]).max(0)
+    assert np.array_equal(L["ice_max"], ice_max)
+    assert (L["glaciated_myr"][ice_max > 0] == 0).all()
+    plain = T.world_from_frame(tiny["run"], 20.0)["layers"]
+    stripped = L["glacial_erosion"] > L["glacial_till"] + 1
+    assert (L["sediment_cover"][stripped] <= plain["sediment_cover"][stripped] + 1e-9).all()

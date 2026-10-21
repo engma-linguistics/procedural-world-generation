@@ -69,11 +69,23 @@ Model (per 500-yr step, see simulate)
   area: 0.89 x the ice above flotation (ice grounded below sea level only
   replaces sea water) plus the room the sinking bed made below sea level
   (Goelzer et al. 2020), so coastlines and land bridges move with the ice.
+- Glacial carving (PW-037, docs/proposals/glacial_carving.md; carving=False
+  turns it off): where the bed is thawed (Robin's steady column: geothermal
+  heat and the flow's own heat at its bed against the cold the accumulating
+  snow carries down) the ice slides (slide_share of its speed, taken at a
+  basal stress of at most the bed's yield stress tau_y) and abrades its bed,
+  glacial_k x the rock's erodibility x the sliding speed: the cover and old
+  till first, then the basement. A basin stops deepening where its bed
+  rises toward the ice's way out more steeply than `adverse` x the surface
+  falls (supercooling). The rock rides in the ice (sia_flow) and is dropped
+  as till where the ice melts or the sea takes it; the lithosphere answers
+  the rock moved (rock_ratio, flexure). The ice flows on the carved bed.
 
 Output: runs/<id>/ in the run format (timeline.py, store.py) so the viewer
 plays it, with time in kyr since the start and run["kind"] = meta["kind"] =
 "timezoom". Per-frame layers: elevation (surface incl. ice, relative to
-that frame's sea level), ice, temperature, climate. plate / crust /
+that frame's sea level), ice, temperature, climate, and the glacial
+imprint so far (glacial_erosion, glacial_till). plate / crust /
 crust_age / plate_boundary are stored once (shape [1, cells]): geology is frozen.
 Frame stats carry sea level, ice volume and the orbit.
 
@@ -86,7 +98,8 @@ forcing    orbit_anomaly / orbit_k, and Forcing: the global dT (the glacial inde
 cycle      the glacial index (PW-471): between ice ages / building / ending, and the glacial cooling
 fields     ClimateFields: the full climates, blended between refreshes
 ice        ice shelves, calving fronts, ice above flotation
-kernels    numba: the year's mass balance (climate_step), shallow-ice flow (sia_flow)
+kernels    numba: the year's mass balance (climate_step), shallow-ice flow (sia_flow),
+           glacial erosion (thawed, glacial_erosion)
 sim        simulate(): the stepping loop, one named function per step
 events     glacial events, the cycling ice's summer sun
 output     save, report

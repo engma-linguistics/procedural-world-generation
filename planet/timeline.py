@@ -373,7 +373,8 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     the state the viewer shows, at keyframe precision (elevation to 1 m, ice
     to 20 m, thickness to 1 km). `at` snaps to the nearest keyframe.
     state: {"elevation", "ice", "dT", "sea_level", "tilt"} (and optionally
-    "orbit_dt", climate.compute's) replacing the
+    "orbit_dt", climate.compute's, and "glacial", a time zoom's glacial
+    imprint, finish.glacial_imprint) replacing the
     keyframe's (a finished world at one moment of a glacial time zoom,
     finish.py: the geology is the keyframe's, the ice, bed, sea level and
     climate the time zoom's)."""
@@ -404,14 +405,22 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     veg = keyframe_vegetation(m, fr, a["tree_cover"], params.plants_from)
     st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
+    cover, landforms, glacial = a["sediment_cover"], {k: a[k] for k in LANDFORM_LAYERS}, st.get("glacial")
+    if glacial is not None:
+        # a time zoom's glacial imprint (PW-037): the ice stripped cover and dropped till (km here), so
+        # a scoured shield shows its basement; ground the ice reached was glaciated just now
+        cover = np.maximum(cover + (glacial["glacial_till"] - glacial["glacial_erosion"]) / 1000.0, 0.0)
+        exposed = surface_rock(a["rock"], cover, a["strata_top"], a["strata_top_km"])
+        landforms["glaciated_myr"] = np.where(glacial["glaciated"], 0, landforms["glaciated_myr"])
     return _world(grid, m["seed"], params, float(fr["t"]), st["elevation"], a["plate"].astype(int),
                   a["crust"].astype(bool), a["plate_boundary"].astype(int), a["crust_age"].astype(float), velocity,
-                  a["rock"], exposed, a["sediment_cover"], a["crust_thickness"].astype(float),
+                  a["rock"], exposed, cover, a["crust_thickness"].astype(float),
                   st["ice"], fr["hotspots"], vols, st["dT"],
                   st["sea_level"], erosion, {"source_run": run_dir.name, "source_run_name": run["name"],
                                              "from_keyframe": True, **meta_extra},
-                  {k: a[k] for k in LANDFORM_LAYERS}, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"),
-                  memory=soil_memory(run_dir, t_fr, grid, velocity), valley=a["valley"].astype(float))
+                  landforms, veg, tilt=st["tilt"], orbit_dt=st.get("orbit_dt"),
+                  memory=soil_memory(run_dir, t_fr, grid, velocity), valley=a["valley"].astype(float),
+                  glacial=glacial)
 
 
 class _Decoded:
@@ -441,12 +450,15 @@ def soil_memory(run_dir: Path, at: float, grid: Grid, velocity: np.ndarray) -> d
 TEX_M, TEX_FULL, TEX_FLAT = 180.0, 1.25, 0.15
 
 
-def texture(g: Grid, e: np.ndarray, seed: int, at: float) -> np.ndarray:
+def texture(g: Grid, e: np.ndarray, seed: int, at: float, scour: np.ndarray | None = None) -> np.ndarray:
     """The keyframe's cell-mean heights e with sub-cell texture: roughness the
     plate model can't produce at this resolution. Plains and plateaus stay
     flat and mountains get rough (PW-057: uniform +-180 m bumps, and ridges
     on every high plateau, made new hollows, so the world's lakes weren't
-    the run's)."""
+    the run's). scour: m of bed a time zoom's ice eroded (PW-037); the
+    ice planes the bumps (exp(-scour / TEX_M) of them stay: eroding about
+    their height takes most of them off), not the mountains' ridges (valley
+    glaciers sharpen those)."""
     rng_seed = seed * 100003 + int(at)
     tex = fbm(Perlin3D(rng_seed), g.centers, octaves=6, freq=6.0)
     rough = ridged(Perlin3D(rng_seed + 1), g.centers, octaves=5, freq=5.0)
@@ -455,7 +467,8 @@ def texture(g: Grid, e: np.ndarray, seed: int, at: float) -> np.ndarray:
     deg = np.diff(g.nbr_off)
     slope = 0.5 * (slope + np.add.reduceat(slope[g.nbr_idx], g.nbr_off[:-1]) / deg)
     scale = np.clip(slope / TEX_FULL, TEX_FLAT, 1.0)
-    elev = e + scale * (TEX_M * tex * (e > 0) + mountains * 900 * (rough - 0.45))
+    plane = 1.0 if scour is None else np.exp(-np.maximum(scour, 0.0) / TEX_M)
+    elev = e + scale * (TEX_M * tex * (e > 0) * plane + mountains * 900 * (rough - 0.45))
     return np.where((e > 0) & (elev <= 0), 5.0, elev)  # texture shouldn't drown coasts
 
 
@@ -463,19 +476,20 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
            v, rock, surface_rock, cover, thickness, ice, hotspots, volcanoes, dT, sea_level,
            erosion, meta_extra, landforms: dict, veg: dict | None = None, tilt: float | None = None,
            orbit_dt: np.ndarray | None = None, memory: dict | None = None,
-           valley: np.ndarray | None = None) -> dict:
+           valley: np.ndarray | None = None, glacial: dict | None = None) -> dict:
     m = {"seed": seed, "level": g.level, "params": asdict(params)}
     # the true bed: grounded ice on a bed below sea level (pressed down by its own load, or a marine
     # sheet) is land by its ice (geo.is_land, PW-307); ice whose surface is below the sea is afloat
     ice = grounded(e, ice)
     below = (ice > 0) & (e <= 0)
-    elev = texture(g, e, seed, at)
+    elev = texture(g, e, seed, at, None if glacial is None else glacial["glacial_erosion"])
 
     extra = {"plate": plate, "crust": continental.astype(int),
              "plate_boundary": boundary.astype(int), "crust_age": np.round(age),
              "plate_speed": np.linalg.norm(v, axis=1) * CMYR, "_plate_velocity": v,
              "rock": rock.astype(int), "surface_rock": surface_rock.astype(int), "sediment_cover": cover,
              "crust_thickness": thickness, "ice": ice,
+             **({k: glacial[k] for k in GLACIAL_LAYERS} if glacial is not None else {}),
              **{k: np.asarray(v).astype(int if S.LAYERS[k]["dtype"] in ("u1", "<u2") and S.LAYERS[k]["scale"] == 1
                                         else float) for k, v in landforms.items()}}
     meta = {"method": "tectonics", "seed": seed, "level": g.level, **meta_extra, "t_myr": at,
@@ -486,6 +500,9 @@ def _world(g: Grid, seed: int, params: Params, at: float, e, plate, continental,
     return W.finish(g, elev, extra, meta, erosion=erosion, params={"tectonics": m["params"]},
                     dT=dT, tilt=params.tilt if tilt is None else tilt, ice=ice, veg=veg, orbit_dt=orbit_dt,
                     soil_memory=memory, valley=valley)
+
+
+GLACIAL_LAYERS = ("glacial_erosion", "glacial_till", "ice_max")  # a finished world's glacial imprint (PW-037)
 
 
 def _not_timezoom(run: dict, run_dir: Path):

@@ -12,7 +12,7 @@ blocked_by: []
 relates: [PW-030, PW-091]
 refs: [planet/timezoom.py, planet/timezoom_kernels.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-21
 ---
 
 ## Description
@@ -28,6 +28,7 @@ While the time zoom runs, record what the ice leaves behind, as layers of the fi
 Glacial erosion and proglacial lakes were "not done" in the original time-zoom spec.
 
 ## Updates
+- 2026-10-21: Glacial erosion, till and moraines, ice_max and the imprint in finished worlds are on main's time zoom (pw037-port, PW-491; docs/review/audit/PW-037-handoff.md, docs/proposals/glacial_carving.md). Showcase: time zoom e9d59c, world f6e955. Still open here: outwash plains and loess, proglacial lakes, permafrost (drafts filed).
 - 2026-10-15: Original time-zoom spec (db11d33:docs/proposals/glacial_timezoom.md) also listed permafrost as an optional extra; not built.
 - 2026-10-14: PW-189 owns the crustal rebound mechanism; this ticket uses it.
 - 2026-10-14: Became story 2 of the world finishing pass PW-090 (owner, 2026-10-14).

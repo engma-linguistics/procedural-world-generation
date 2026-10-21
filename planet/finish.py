@@ -11,7 +11,10 @@ temperature are the time zoom's at the chosen kyr, and climate, rivers,
 lakes, biomes, sea and coasts are computed on them by the usual finishing
 (world.finish). So an ice-age moment gets its ice sheets, the bed pressed
 down under them, the lowered sea with its land bridges, proglacial lakes
-where the ice dams the drainage, and the colder climate.
+where the ice dams the drainage, and the colder climate. The glacial
+imprint up to that frame comes along (PW-037, glacial_imprint): the bed is
+the carved one, and the world gets glacial_erosion, glacial_till and
+ice_max (timeline.world_from_frame: cover, texture, glaciated_myr).
 
 What the time zoom stores is enough (no re-run): each frame (every 2 kyr)
 has the surface relative to its sea level and the grounded ice to 1 m
@@ -78,7 +81,22 @@ def frame_state(tz_dir: Path, i: int) -> dict:
     s = run["frames"][i]["stats"]
     return {"elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
             "tilt": s["obliquity"], "below_sea_cells": int(((ice > 0) & (bed <= 0)).sum()), "stats": s,
-            "t": run["frames"][i]["t"]}
+            "t": run["frames"][i]["t"], "glacial": glacial_imprint(tz_dir, i)}
+
+
+def glacial_imprint(tz_dir: Path, i: int) -> dict:
+    """The time zoom's glacial imprint up to frame i (PW-037): m of bed eroded
+    and of till dropped (the frame's bed already has both), the thickest
+    the land ice has been (m) and where it has been (frames every ~2 kyr)."""
+    run, arr = T.load_frames(tz_dir, ())
+    if "glacial_erosion" not in run["layers"]:
+        raise SystemExit(f"time zoom {tz_dir.name} was made before glacial carving (PW-037); run it again "
+                         f"(its remake line is in its run.txt)")
+    run, arr = T.load_frames(tz_dir, ("ice", "glacial_erosion", "glacial_till"))
+    ice_max = np.asarray(arr["ice"][: i + 1]).max(0).astype(float)  # (1 m steps, as stored)
+    return {"glacial_erosion": T.frame(run, arr, "glacial_erosion", i).astype(float),
+            "glacial_till": T.frame(run, arr, "glacial_till", i).astype(float),
+            "ice_max": ice_max, "glaciated": ice_max > 0}
 
 
 def find_finished(tz_id: str, t_kyr: float) -> Path | None:
@@ -120,7 +138,7 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
             "sea_level_change_m": s["sea_level_change_m"], "ice_volume_mkm3": s["ice_volume_mkm3"],
             "orbit": {k: s[k] for k in ("obliquity", "eccentricity", "perihelion", "insol_65n_jul_anom")},
             "ice_bed_below_sea_cells": st["below_sea_cells"]}
-    state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt")}
+    state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt", "glacial")}
     # (the orbit's obliquity is in its insolation anomaly: the climate keeps the planet's mean tilt, as the
     # time zoom's own)
     state["tilt"] = float(m["params"].get("tilt", 23.44 if m["source_run"] == "earth" else 23.4))
@@ -168,6 +186,8 @@ def _earth_world(level: int, state: dict, prov: dict, erosion: float = 0.0) -> d
     meta = {"method": "earth", "seed": 0, "level": level, "source_run": "earth", "source_run_name": "Earth (ETOPO1)",
             "t_myr": 0.0, **prov, "global_temp_c": round(14.5 + state["dT"], 1),
             "sea_level_m": round(state["sea_level"], 1)}
-    return W.finish(grid, state["elevation"], {"ice": ice, "crust": land.astype(int)},
+    gl = state.get("glacial") or {}
+    return W.finish(grid, state["elevation"], {"ice": ice, "crust": land.astype(int),
+                                               **{k: gl[k] for k in T.GLACIAL_LAYERS if k in gl}},
                     meta, erosion=erosion, dT=state["dT"], tilt=state["tilt"], params={"earth": True},
                     ice=ice, orbit_dt=state.get("orbit_dt"))

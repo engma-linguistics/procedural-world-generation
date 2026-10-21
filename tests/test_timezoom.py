@@ -165,12 +165,83 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     want = cold_src["elev"] + ice_load(g, H0, p.iso_ratio, p.flex_km) - ice_load(g, H, p.iso_ratio, p.flex_km)
     grew = H > H0 + 500
     assert grew.any()
-    assert (s["bed"][grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
+    bed = s["bed"] + s["cut"] - s["till"] - s["rock_iso"]  # (the bed without the glacial carving, PW-037)
+    assert (bed[grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
     t = [f["t"] for f in cold_run["frames"]]
     v = [f["stats"]["ice_volume_mkm3"] for f in cold_run["frames"]]
     lag = (v[-1] - np.interp(t[-1] - p.iso_tau, t, v)) / max(v[-1] - v[0], 1e-9)
     tol = (0.05 + max(lag, 0.0)) * np.median((H - H0)[grew]) * p.iso_ratio + 20
-    assert np.median(np.abs(s["bed"] - want)[grew]) < tol
+    assert np.median(np.abs(bed - want)[grew]) < tol
+
+
+# --------------------------------------------------------------------------
+# Glacial carving (PW-037)
+# --------------------------------------------------------------------------
+def test_carving_conserves_rock(cold_src, cold_run):
+    """What the ice erodes is carried in it or dropped as till (volume
+    conserved); it erodes only under a thawed bed; till lies under or beside
+    where ice has been; the stored imprint grows frame by frame."""
+    from planet.timezoom.kernels import dilate
+    s, g = cold_run["state"], cold_src["grid"]
+    area = geometry(g)["area"]
+    cut, till, debris = (s[k] for k in ("cut", "till", "debris"))
+    assert (cut >= 0).all() and (till >= 0).all() and (debris >= 0).all()
+    vol = (cut * area).sum()
+    assert vol > 0
+    assert abs(vol - ((till + debris) * area).sum()) < 1e-9 * vol
+    assert not (cut > 0)[s["wet_kyr"] <= 0].any()  # only under a thawed bed
+    assert (s["slide_km"] > 0).any()
+    # (grounded ice at some step: the frames every 2 kyr miss ice that grounded and calved in between)
+    iced = (cold_run["data"]["ice"] > 0).any(0) | (s["wet_kyr"] > 0)
+    near = dilate(iced, g.nbr_off, g.nbr_idx, 2)
+    assert not (till > 0.1)[~near].any()
+    e = cold_run["data"]["glacial_erosion"].astype(int)
+    assert (np.diff(e, axis=0) >= 0).all() and e[-1].max() > 0
+
+
+def test_no_carving(cold_src):
+    """carving=False leaves the bed to the ice load alone (no imprint)."""
+    r = Z.simulate(cold_src, kyr=6, step=0.5, every=2.0, params=Z.TZParams(carving=False))
+    assert not r["state"]["cut"].any() and not r["state"]["till"].any()
+    assert not r["data"]["glacial_erosion"].any()
+
+
+def test_thawed_bed():
+    """Robin's column: a thin or temperate column is thawed, a thick one
+    under a very cold surface frozen; snow sinking through the ice
+    (accumulation) keeps the bed colder; geothermal heat, or the flow's own
+    heat at the bed, thaws it."""
+    from planet.timezoom.kernels import thawed
+    assert thawed(300.0, -2.0, 0.0, 0.065) == 1.0
+    assert thawed(1000.0, -45.0, 0.05, 0.065) == 0.0
+    assert thawed(3000.0, -30.0, 0.0, 0.065) == 1.0  # conduction alone: 93 C warmer at the bed
+    assert thawed(3000.0, -30.0, 0.3, 0.065) < thawed(3000.0, -30.0, 0.0, 0.065)
+    assert thawed(1000.0, -25.0, 0.3, 0.065) < 1.0 == thawed(1000.0, -25.0, 0.3, 0.065 + 0.3)  # (fast ice's heat)
+
+
+def test_glacial_erosion_rule():
+    """Erosion = k x erodibility x sliding speed; a basin stops deepening
+    where the bed rises toward the ice's way out more than `adverse` x the
+    surface falls (supercooling); a frozen bed doesn't erode."""
+    from planet.timezoom.kernels import glacial_erosion
+    # three cells in a row, 0 - 1 - 2; the ice flows from 0 to 2
+    off = np.array([0, 1, 3, 4])
+    idx = np.array([1, 0, 2, 1])
+    H = np.array([1500.0, 1400.0, 1000.0])
+    act = np.arange(3)
+    k, dt = 4e-6, 500.0
+    u = np.full(3, 100.0) * dt  # (speed x time)
+    w = np.zeros(3)
+    acc, erod = np.zeros(3), np.ones(3)
+    for bed2, ts, deepens in ((-100.0, -1.0, True), (300.0, -1.0, False), (-100.0, -60.0, False)):
+        bed = np.array([200.0, 0.0, bed2])  # cell 1's way down is cell 2 (its surface: 1000 + bed2)
+        cut, wet = np.zeros(3), np.zeros(3)
+        glacial_erosion(H, bed, -1e4, 0.1, act, off, idx, u, w, np.full(3, ts), acc, 0.065, 0.5, erod, k, 1.0, 1.5,
+                        dt, 1500.0, cut, wet)
+        assert (wet == 1.0).all() == (ts > -10)
+        assert (cut[1] > 0) == deepens, (bed2, ts)
+        if deepens:
+            assert cut[1] == pytest.approx(k * 0.5 * 100.0 * dt)
 
 
 def test_deep_grounded_ice_stands(sim4):
