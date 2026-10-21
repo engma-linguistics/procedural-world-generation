@@ -32,13 +32,14 @@ def cold_moment():
                           precip=None, p_jul=None, p_jan=None)
     ice = np.zeros(g.n)
     for _ in range(6):
-        e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))
+        bed = bed0 - ice_load(g, ice)
+        e, ice0, _ = land_view(bed, np.where(bed0 > 0, ice, 0.0))
         land = e > 0
         v = src["veg"]  # (as the run: the climate with its plants' feedbacks)
         c, _ = vegetation.coupled_climate(g, e, dT, src["tilt"], np.where(land, ice0, 0.0), nu0=v["nu0"],
                                           co2=v["co2"], unlocked=v["unlocked"])
         sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
-        ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice))
+        ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice), marine=earth.marine_view(bed, c))
     e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))
     src = dict(src, elev=e, ice=ice0, dT=dT)
     return src, Z.simulate(src, 20.0, 0.5, 2.0, Z.TZParams(**UNFORCED))

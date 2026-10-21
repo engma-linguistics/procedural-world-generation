@@ -52,11 +52,12 @@ def main():
         sim = SimpleNamespace(grid=g, params=p, cell_area=cell, precip=None, p_jul=None, p_jan=None)
         rows = []
         for _ in range(a.iters):
-            e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))
+            bed = bed0 - ice_load(g, ice)
+            e, ice0, _ = land_view(bed, np.where(bed0 > 0, ice, 0.0))
             land = e > 0
             c = climate.compute(g, e, dT, p.tilt, np.where(land, ice0, 0.0))
             sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
-            ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice))
+            ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice), marine=earth.marine_view(bed, c))
             on = ice > 0
             sl = -0.9 * (ice[land] / 1000).sum() / max((~land).sum(), 1) * 1000
             rows.append(f"{sl:7.1f} m {100 * on.mean():5.2f}% {ice[on].mean() if on.any() else 0:5.0f}/{ice.max():5.0f}")

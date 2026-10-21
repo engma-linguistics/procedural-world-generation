@@ -2,7 +2,7 @@
 id: PW-515
 title: A run frame's river can end on a cell 5 m above a neighbouring salt pan (test_frame_rivers_end_in_its_own_hollows)
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v2
 subsystem: hydrology
@@ -28,4 +28,5 @@ elevation disagree by a few metres at a pan's edge. Passes on main today.
 - [ ] the test passes on the PW-465 branch
 
 ## Updates
+- 2026-10-21: Status todo -> done. Fixed on branch worktree-agent-a9ef586c8f7c30585: kernels.carve cut a valley floor level with the next cell downstream (floor = out[d]); the flat made a false pit beside the pan. The floor now stays 0.01 m above it, as priority_flood does. Test unchanged and passing.
 - 2026-10-21: Created from inbox draft draft-river-end-beside-salt-pan.md (found by pw465).

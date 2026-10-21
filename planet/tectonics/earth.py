@@ -157,7 +157,8 @@ def update_climate(sim, e):
     pushes below the sea without ice on it is sea. Grounded ice on a bed
     below sea level stays land (isostasy.land_view)."""
     p, g = sim.params, sim.grid
-    e, ice0, _ = land_view(e - sim.ice_sink, np.where(e > 0, sim.ice, 0.0))
+    bed = e - sim.ice_sink
+    e, ice0, _ = land_view(bed, np.where(e > 0, sim.ice, 0.0))
     land = e > 0
     c = climate.compute(g, e, sim.dT, p.tilt, np.where(land, ice0, 0.0), veg=veg_feedback(sim),
                         rain_start=sim.rain_state)
@@ -167,7 +168,7 @@ def update_climate(sim, e):
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
-    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink)
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, marine=marine_view(bed, c))
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
                                                            sim.p_jul, sim.p_jan)
@@ -235,13 +236,24 @@ def update_vegetation(sim, e):
 ICE_TAU = icemass.SHEET_TAU  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
 ICE_EDGE_M = icemass.EDGE_H  # m: ~400, a sheet's thinnest margin (its profile 10 km in from its edge)
 ICE_MAX = 4000.0  # m
-ICE_CALVE = 5e4  # m2/yr: ice lost by calving per m of coast a sheet's margin reaches (~0.7 m/yr over a
-# coastal L6 cell): a sheet that reaches the sea pays for it from its snow
 ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
+PASS_TOL = 0.002  # ... once the iced cells repeat but for this share of them (a few margin cells flickering)
 ICE_PASSES = 200  # a sheet settles in at most this many passes (a sheet's retreat or advance is ~1 cell a pass)
 
 
-def ice_sheets(sim, land, bed, ground, old, sink=None, info=None):
+def marine_view(bed, c):
+    """The sea's side of the ice sheets (PW-465), for the time zoom's calving
+    and shelf rules (icemass.coast_loss): the water's depth (m; under the
+    marine beds land_view floors too), the air's annual mean (C) and the
+    melt under an ice shelf (m/yr: MELT_K x the winter sea's warmth above
+    freezing, as the time zoom's). bed: the true bed (m above sea level,
+    pressed down by the ice); c: climate.compute's result."""
+    sst_w = np.minimum(c["sst_jul"], c["sst_jan"])
+    return {"depth": np.maximum(-np.asarray(bed, float), 0.0), "t_air": c["temp"],
+            "melt": icemass.MELT_K * np.maximum(sst_w - climate.FREEZE, 0.0)}
+
+
+def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     """Land ice (m) for the climate just computed. ground: (t_warm, t_cold,
     temp) of the bare ground (climate.compute's, as if there were no ice,
     on the bed as the old ice pressed it down: a sheet sits lower and
@@ -281,21 +293,36 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None):
         return bed + rise, tuple(t - climate.LAPSE * rise for t in ground)
 
     info = {} if info is None else info
-    ice = _ice_pass(sim, land, bed, ground, old)
+    # (once per fixed point, on the bed the old ice pressed down, not every pass (PW-514: +39% wall
+    # otherwise): what the sea takes from each coastal cell, and where a new cap can start (snow
+    # outlasting the summer on bare ground); the passes' settling moves the bed by tens of m at most)
+    kw = {"cost": coast_cost(sim, land, bed, marine), "start": _start(sim, land, ground)}
+    ice = _ice_pass(sim, land, bed, ground, old, marine, **kw)
     seen = [np.asarray(old) > 0, ice > 0]
     info["passes"] = 1
     for _ in range(ICE_PASSES):
-        new = _ice_pass(sim, land, *settled(ice), ice)
+        new = _ice_pass(sim, land, *settled(ice), ice, marine, **kw)
         info["passes"] += 1
         on = new > 0
-        if np.array_equal(on, seen[-1]) or np.array_equal(on, seen[-2]):
+        # (settled: as one of the last two passes but for a few margin cells shuffling; PW-514: with
+        # coast_loss, exact repeats took ~21 passes per update against ~3.5 before)
+        tol = max(2, int(PASS_TOL * on.sum()))
+        if (on != seen[-1]).sum() <= tol or (on != seen[-2]).sum() <= tol:
             return new
         seen = [seen[-1], on]
         ice = new
     return ice
 
 
-def _ice_pass(sim, land, bed, ground, old):
+def _start(sim, land, ground):
+    """Where a new cap can start: snow outlasting the summer on bare ground,
+    on average over the ice-age cycle's orbits (icemass.balance at no ice)."""
+    smb0, _ = icemass.balance(sim.grid.lat, land, ground[0], ground[1], sim.p_jul, sim.p_jan, 0.0, 0.0,
+                              tilt=sim.params.tilt)
+    return smb0 > 0
+
+
+def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None):
     """One pass of ice_sheets: the ice under its climate given the old
     ice's extent and height.
       accumulation  where snow outlasts the summer: on bare ground (a new
@@ -310,8 +337,10 @@ def _ice_pass(sim, land, bed, ground, old):
                  connected to such a start or to old ice;
       ablation zone  each sheet then spreads ring by ring onto the land
                  around it, the least-melting cells first, as long as its
-                 snow surplus pays for their melt (and for calving where it
-                 reaches the sea): a big snowy sheet has a wide ablation
+                 snow surplus pays for their melt (and for what the sea
+                 takes where it reaches the sea, the time zoom's flow onto
+                 shelves and calving, which the accumulation zone pays too,
+                 PW-465): a big snowy sheet has a wide ablation
                  zone, a small or dry one hardly any. Cold polar desert
                  with too little snow of its own costs nothing to cover
                  (East Antarctica's plateau gets ~50 mm/yr);
@@ -334,7 +363,7 @@ def _ice_pass(sim, land, bed, ground, old):
     # snow that outlasts the summer on bare ground, and on ice (the old ice, or a new margin's), on
     # average over the ice-age cycle's orbits (bright ice feels less of them, mixed over the air around)
     tilt = sim.params.tilt
-    smb0, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=tilt)
+    start = _start(sim, land, ground) if start is None else start
     # (a margin cell, old ice next to bare land, is a slope from the bare edge up to its inner neighbour: its
     # snow and melt are its edge's, as the time zoom's margins (PW-366); at the cell-mean rise, ~800 m at L6,
     # its own thickness would keep it as cold as the interior and the sheet would creep a ring a pass)
@@ -350,12 +379,12 @@ def _ice_pass(sim, land, bed, ground, old):
     absorb = (1 - bright) + bright * mix
     smb, _ = icemass.balance(lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, h, cover, tilt=tilt, absorb=absorb)
     acc_ok = land & (smb > 0)
-    seed = np.flatnonzero(acc_ok & ((smb0 > 0) | (old > 0)))
+    seed = np.flatnonzero(acc_ok & (start | (old > 0)))
     hops, _ = kernels.bfs_within(seed, acc_ok.astype(np.int64), g.nbr_off, g.nbr_idx, 10**6)
     iced = acc_ok & (hops >= 0)
     if not iced.any():
         return np.zeros(g.n)
-    iced = ablation_zone(sim, land, iced, smb)
+    iced = ablation_zone(sim, land, iced, smb, cost=coast_cost(sim, land, bed, marine) if cost is None else cost)
     bed_edge, nye = sheet_surface(g, iced, bed)
     h = np.maximum(bed_edge + nye - bed, ICE_EDGE_M)
     # per sheet: its mean snowfall and how cold its ice is
@@ -419,19 +448,68 @@ def sheet_surface(g, iced, bed):
     return be, np.where(iced, rise(np.where(iced, dd, 0.0)), 0.0)
 
 
-def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS):
+def coast_cost(sim, land, bed, marine):
+    """m/yr per land cell: the ice it would lose to the sea beside it as a
+    sheet's margin (icemass.coast_loss: the time zoom's flow across the coast,
+    shelves and calving, PW-465), at a margin cell's Nye thickness (the
+    profile's mean over the cell, as sheet_surface gives it on a flat bed).
+    Its surface is on the true bed (a marine bed land_view floored stands
+    `depth` below the sea: the time zoom sees the run's ice there). Also
+    the cells whose margin ice would float or stands deeper than
+    CALVE_DEPTH (the time zoom loses them at once)."""
+    from ..timezoom.geometry import geometry
+    g = sim.grid
+    G = geometry(g)
+    k_m = 2 * ICE_TAU / (917.0 * 9.81) * g.spacing * R_KM * 1000.0
+    h = (2.0 / 3.0) * np.sqrt(k_m)
+    depth = marine["depth"]
+    true_bed = np.where(land & (depth > 0), -depth, bed)
+    lost = land & (depth > 0) & ((depth * icemass.RHO_W > h * icemass.RHO_I) | (depth > icemass.CALVE_DEPTH))
+    sea = ~land | lost
+    src, dst = g.nbr_src, g.nbr_idx
+    side = land[src] & ~lost[src] & sea[dst]
+    i, j = src[side], dst[side]
+    q = icemass.coast_loss(np.full(len(i), h), true_bed[i] + h, depth[j], G["dist"][side], G["elen"][side],
+                           marine["t_air"][j], marine["melt"][j], G["area"][j])
+    return np.bincount(i, weights=q, minlength=g.n) / G["area"], lost
+
+
+def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS, *, cost):
     """Spread each sheet (a connected accumulation zone) ring by ring onto
     the land around it, the cheapest cells first (melt: -smb under a
-    margin's ice; plus calving where the sea is next to them), while its
-    snow surplus (its smb > 0, less its own calving) pays for them. iced:
-    the accumulation zones (in place)."""
+    margin's ice; plus what the sea takes where it is next to them,
+    coast_cost), while its snow surplus (its smb > 0, less what the sea
+    takes from it) pays for them. First (PW-465) the sea's own toll on the
+    accumulation zones, as the time zoom charges it: margin cells that would
+    float go, and a sheet whose snow can't pay for its coast gives up its
+    dearest coastal cells (their loss less their own snow) until it can;
+    before, a coastal accumulation zone paid nothing for its coast and the
+    time zoom shed ~20-100 m of the run's ice in 50 kyr. iced: the
+    accumulation zones (in place); cost: coast_cost's (m/yr, lost)."""
     g = sim.grid
-    area = sim.cell_area * (R_KM * 1000.0) ** 2
-    width = g.spacing * R_KM * 1000.0
     off, idx = g.nbr_off, g.nbr_idx
     src = np.repeat(np.arange(g.n), np.diff(off))
-    sea_nb = np.add.reduceat((~land)[idx], off[:-1])
-    calve = ICE_CALVE * width * np.minimum(sea_nb, 3) / 2.0 / area
+    calve, lost = cost
+    iced &= ~lost
+    land = land & ~lost
+    for _ in range(rings):
+        lab, nk = kernels.components(iced, off, idx)
+        k = np.maximum(lab, 0)
+        budget = np.bincount(k, weights=np.where(iced, smb - calve, 0.0), minlength=nk)
+        short = np.flatnonzero(iced & (budget[k] < 0) & (calve > 0))
+        if len(short) == 0:
+            break
+        gain = calve[short] - smb[short]  # (what dropping the cell saves its sheet)
+        short, gain = short[gain > 0], gain[gain > 0]
+        if len(short) == 0:
+            break
+        o = np.lexsort((-gain, k[short]))
+        short, gain = short[o], gain[o]
+        cum = np.cumsum(gain)
+        ks = k[short]
+        start = np.searchsorted(ks, ks, side="left")
+        before = cum - gain - np.where(start > 0, cum[start - 1], 0.0)
+        iced[short[before < -budget[ks]]] = False  # (each sheet: its dearest cells until the rest pays)
     cost = np.maximum(-smb, 0.0) + calve
     lab, nk = kernels.components(iced, off, idx)
     budget = np.bincount(np.maximum(lab, 0), weights=np.where(iced, smb - calve, 0.0), minlength=nk)

@@ -57,6 +57,57 @@ SHEET_KM = 1000.0  # km: a sheet's own air mass (air_mass) ...
 LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
 # snow gets none: its brightness is in the climate's own snow albedo; PW-275)
 
+# The sea's side of a sheet (PW-367), the time zoom's (TZParams take these as defaults) and the run's
+# (coast_loss, PW-465): see TZParams for the sources.
+RHO_I, RHO_W = 917.0, 1028.0
+FLOW_A = 1e-16  # Pa^-3 yr^-1: Glen's rate factor (~-10 C ice) ...
+ENHANCEMENT = 3.0  # ... times this (also stands in for sliding)
+D_CAP = 3e8  # m2/yr: cap on the ice diffusivity (unresolved steep margins)
+CALVING = 1.0  # per yr: calving speed (m/yr) per m of water depth at a marine ice front
+CALVE_DEPTH = 3000.0  # m: grounded ice in deeper water than this calves in place
+BUTTRESS = 0.8  # share of a front's flow across its grounding line an ice shelf beside it holds back
+SHELF_WARM = -5.0  # C: floating ice is a shelf where the air's annual mean over the sea is below this ...
+SHELF_COLD = -10.0  # ... in full below this
+MELT_K = 10.0  # m/yr per C: a shelf melts from below where the sea is warmer than freezing
+
+
+def shelf_viable(t_air, warm: float = SHELF_WARM, cold: float = SHELF_COLD):
+    """Share (0..1) of floating ice that stays as an ice shelf, by the
+    annual mean air temperature over the sea (C): Morris & Vaughan 2003's
+    ~-5 C limit (timezoom.ice.shelf_viable has the story)."""
+    return np.clip((warm - np.asarray(t_air, float)) / (warm - cold), 0.0, 1.0)
+
+
+def coast_loss(h, s, depth, dist, elen, t_air, melt, area):
+    """The ice a sheet loses to the sea per coastal cell (m3/yr), by the time
+    zoom's rules on the run's still geometry (PW-465). Per side of an iced
+    cell facing the sea (arrays per side: h, the cell's ice (m); s, its
+    surface above the sea (m); depth, the water's depth beyond (m); dist,
+    elen: the side's centre distance and length (m); t_air: the air's annual
+    mean over that sea (C); melt: the sea's melt under a shelf there
+    (MELT_K x its warmth above freezing, m/yr); area: the sea cell's area):
+    the shallow-ice flow across the side (D = gamma h^5 |grad s|^2, capped,
+    the sea's side D = 0, so half of it, as timezoom.kernels.sia_flow's
+    Mahaffy mean on its first step from the coast). Where the water is deep
+    enough for that ice to float, it is an ice shelf or breaks up: the flow
+    leaves the sheet (a shelf spreads, calves and melts away whatever it is
+    fed), less what a standing shelf holds back (BUTTRESS, where the air
+    lets one stand and the sea's melt under one cell of it doesn't outrun
+    the flow). Where it would ground, the sheet's front stands in the
+    shallow sea and calves (CALVING x depth x h), at most what flows there.
+    Measured in a time zoom from the run's ice at I = 0 (L6, 4 moments, 50
+    kyr): the sea beside the sheets takes ~1-2e5 m2/yr per m of coast from
+    deep water and ~1e3-5e4 from shallow, where the run used to charge 5e4
+    everywhere and nothing to a sheet's accumulation zone."""
+    gamma = 2 * FLOW_A * ENHANCEMENT * (RHO_I * 9.81) ** 3 / 5
+    slope = np.maximum(s, 0.0) / dist
+    q = 0.5 * np.minimum(gamma * h ** 5 * slope ** 2, D_CAP) * slope * elen  # m3/yr
+    floats = depth * RHO_W > h * RHO_I
+    shelf = shelf_viable(t_air) * (melt * area < q)
+    deep = q * (1.0 - BUTTRESS * shelf)
+    shallow = np.minimum(CALVING * depth * h * elen, q)
+    return np.where(floats, deep, shallow)
+
 
 def air_mass(grid, ice, km: float = SHEET_KM):
     """How much (0..1) of the air over each cell of land ice is the sheet's
