@@ -197,25 +197,23 @@
       </div>
       <button id="northUp" class="btn" title="Turn the globe so north points up, keeping the longitude (key N)">North up</button>
     </div>
+    <div id="flatOpts" class="rbox" hidden>
+      <label title="How the flat map is drawn. Equirectangular is the live map (overlays, hill shading, 3D relief); the others redraw the layer in that projection, without overlays">projection <select id="projSel"></select></label>
+      <div id="projBox" hidden>
+        <label title="How much ground the map shows (a square this many km across), or the whole projection">extent <select id="projExt"><option value="">whole projection</option></select></label>
+        <div class="muted" id="projCentre"></div>
+        <label><input type="checkbox" id="projGrid" checked> graticule</label>
+        <div class="row" style="margin-top:4px"><button class="btn" id="projPick" title="Centre on the cell picked on the globe">Centre on picked cell</button>
+          <button class="btn" id="projPng" title="Save the map as a PNG">Download PNG</button></div>
+        <div class="muted">Click the map to centre it there.</div>
+      </div>
+    </div>
     <label style="margin-top:6px" title="The ground at its height (ice sheets and lakes included), the sea floor under a translucent sea, lit by a low sun; the flat map becomes a relief model you can tilt (relief.js)"><input type="checkbox" id="relief3d"> 3D relief</label>
     <div id="reliefBox" class="rbox" hidden>
       <label title="Vertical exaggeration of the 3D relief">height &times; <input type="range" id="reliefEx" min="5" max="200" step="5" value="50"><span class="val" id="reliefExV"></span></label>
       <label title="Where the sun shines from, on screen (counter-clockwise from the right)">sun from <input type="range" id="sunAz" min="0" max="360" step="5" value="135"><span class="val" id="sunAzV"></span></label>
       <label title="How low the sun is: 0 = from behind you (no shadows), 90 = grazing">sun low <input type="range" id="sunEl" min="0" max="85" step="1" value="60"><span class="val" id="sunElV"></span></label>
       <label title="Sink the sea floor to its depth under a translucent sea (trenches, ridges, shelves)"><input type="checkbox" id="seaFloor" checked> sea floor</label>
-    </div>
-  </details>
-
-  <details class="sec" data-sec="proj" id="projSec"><summary>Map projection</summary>
-    <label title="Draw what is on the globe (the layer chosen under Colour by) as a flat map in the projection below"><input type="checkbox" id="projOn"> 2D map</label>
-    <div id="projBox" class="rbox" hidden>
-      <label>projection <select id="projSel"></select></label>
-      <label title="How much ground the map shows (a square this many km across), or the whole projection">extent <select id="projExt"><option value="">whole projection</option></select></label>
-      <div class="muted" id="projCentre"></div>
-      <label><input type="checkbox" id="projGrid" checked> graticule</label>
-      <div class="row" style="margin-top:4px"><button class="btn" id="projPick" title="Centre on the cell picked on the globe">Centre on picked cell</button>
-        <button class="btn" id="projPng" title="Save the map as a PNG">Download PNG</button></div>
-      <div class="muted">Click the map to centre it there.</div>
     </div>
   </details>
 
@@ -2866,6 +2864,7 @@ seg('modeSeg', 'mode', () => {
   canRotate();
   controls.reset();
   if (state.mode === 'globe') { camera.position.set(0, 0.6, 3.4); controls.target.set(0, 0, 0); } else fitMap();
+  syncProj();
   buildTopology(); paint();
 });
 // ------------------------------------------------------------ the 2D map (PW-477, projmap.js)
@@ -2891,17 +2890,28 @@ function drawProj() {
   proj.p = p;
   $('projCentre').textContent = `centre ${fmtLL(proj.lat, proj.lon)}`;
 }
-function setProj(on) {
-  proj.on = on;
-  $('projOn').checked = on;
-  $('projBox').hidden = !on;
-  if (on) $("projSec").open = true;
-  $('projView').hidden = !on;
-  if (on) {
-    if (picked && proj.lat === 0 && proj.lon === 0) { proj.lat = picked.lat; proj.lon = picked.lon; }
-    $('projSel').value = proj.name; $('projExt').value = proj.ext || '';
+// One control: Flat map's projection. The live three.js map is the equirectangular one (overlays, hill
+// shading, 3D relief); any other projection is the canvas drawn over it. Only in Flat map, never over the
+// globe, and 3D relief (a three.js model) takes the live map back whatever the projection.
+function syncProj() {
+  const flat = state.mode === 'map', canvas = flat && proj.name !== 'equirect' && !relief3d();
+  const was = proj.on;
+  proj.on = canvas;
+  $('flatOpts').hidden = !flat;
+  $('projSel').value = proj.name;
+  $('projSel').disabled = relief3d();
+  $('projSel').title = relief3d() ? 'The 3D relief is the equirectangular map; untick 3D relief to use another projection' : '';
+  $('projBox').hidden = !canvas;
+  $('projView').hidden = !canvas;
+  if (canvas) {
+    if (!was && picked && proj.lat === 0 && proj.lon === 0) { proj.lat = picked.lat; proj.lon = picked.lon; }
+    $('projExt').value = proj.ext || '';
     if (V) { if (!lastColors) lastColors = cellColors(state.layer); drawProj(); }
-  } else { hovered = -1; renderHover(); }
+  } else if (was) { hovered = -1; renderHover(); }
+  const u = new URL(location);
+  ['mode', 'proj', 'map2d'].forEach((k) => u.searchParams.delete(k));
+  if (flat) { u.searchParams.set('mode', 'map'); if (proj.name !== 'equirect') u.searchParams.set('proj', proj.name); }
+  history.replaceState(null, '', u);
 }
 function projCell(e) {
   if (!proj.grid) return null;
@@ -2909,8 +2919,7 @@ function projCell(e) {
   const ll = PM.pixelToLatLon(proj.p, proj.grid, (e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height);
   return ll && { ...ll, cell: nearestCellU([ll.p[0], ll.p[2], -ll.p[1]]) };
 }
-$('projOn').addEventListener('change', (e) => setProj(e.target.checked));
-$('projSel').addEventListener('change', (e) => { proj.name = e.target.value; drawProj(); });
+$('projSel').addEventListener('change', (e) => { proj.name = e.target.value; syncProj(); });
 $('projExt').addEventListener('change', (e) => { proj.ext = e.target.value ? +e.target.value : null; drawProj(); });
 $('projGrid').addEventListener('change', drawProj);
 $('projPick').addEventListener('click', () => { if (!picked) return toast('Pick a cell on the globe first'); proj.lat = picked.lat; proj.lon = picked.lon; drawProj(); });
@@ -2938,16 +2947,17 @@ $('projPng').addEventListener('click', () => {
   });
 }
 addEventListener('resize', () => { if (proj.on) drawProj(); });
-// ?map2d=laea&center=48.5,-2&extent=2000 opens the map (screenshots, links)
+// ?mode=map&proj=laea&center=48.5,-2&extent=2000 opens the map (screenshots, links; map2d= is the old name of proj=)
 function applyProjUrl() {
-  const q = new URLSearchParams(location.search), nm = q.get('map2d');
-  if (!nm || !PM.NAMES.includes(nm)) return;
+  const q = new URLSearchParams(location.search), nm = q.get('proj') || q.get('map2d');
+  if (!nm || !PM.NAMES.includes(nm)) { syncProj(); return; }
+  state.mode = 'map'; [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === 'map')); canRotate();
   proj.name = nm;
   const c = (q.get('center') || '').split(',').map(Number);
   if (c.length === 2 && c.every(Number.isFinite)) { proj.lat = Math.max(-90, Math.min(90, c[0])); proj.lon = c[1]; }
   proj.ext = +q.get('extent') || null;
   $('projGrid').checked = q.get('grid') !== '0';
-  setProj(true);
+  syncProj();
 }
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
@@ -2992,7 +3002,7 @@ function setLights() { lights.set(relief3d(), +$('sunAz').value, +$('sunEl').val
 $('relief3d').addEventListener('change', () => {
   reliefLabels(); setLights(); canRotate();
   if (state.mode === 'map' && !relief3d()) { controls.reset(); fitMap(); }  // (flat again: face on)
-  reliefToUrl();
+  reliefToUrl(); syncProj();
   if (V) { buildTopology(); paint(); }
 });
 let reliefPending = 0;  // (the slider repaints at most once a frame)
