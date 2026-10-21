@@ -9,6 +9,7 @@ browser viewer.
 ```sh
 uv run python -m planet make --seed 7              # everything: 1 Gyr run (L6, ~6 min), ice-age time zoom, finished world, highlights, 4 zooms
 uv run python -m planet make --seed 7 --preset cold --level 7 --zooms 6   # a showcase recipe; --dry-run shows the plan and time estimate
+uv run python -m planet make --seed 7 --now glacial   # the world's "now": interglacial (default), glacial, end, or a kyr
 uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
 uv run python -m planet simulate --seed 1 2 3 4 --level 6 --jobs 4   # several seeds at once, one process each
 uv run python -m planet list                       # runs, worlds and zooms with their ids
@@ -165,7 +166,17 @@ and the kyr. `planet finish <run-id> --at T` is the same without the ice
 ages: the world straight from the keyframe (what the viewer's Zoom button
 builds). In the viewer: "Finish world here" on a run frame or a time zoom
 frame (server job `POST /api/finish {timezoom, kyr}` or `{run, t}`), then the
-world opens; the run's "Made from this run" tree lists time zooms with their
+world opens;
+**which moment is "now"** (PW-479): `planet make --now interglacial|glacial|end|<kyr>`
+(the New planet form's select, `/api/make`'s `now`, and `planet finish --now`;
+`POST /api/finish {timezoom, now}`). The default is the latest interglacial
+peak of the time zoom, like Earth today: it reads the glacial index each frame
+stores (`stats.glacial_index`) and takes, in the last stretch with I <= 0.05
+after one full cycle (I past 0.5 and back), the frame with the highest sea level.
+`glacial` is the lowest sea level in the last stretch within 0.2 of the highest
+index. On a zoom too short for a full cycle, `interglacial` falls back to its end
+and `glacial` to its lowest sea level (the navigator offers "Finish at the
+interglacial" and "Finish at the glacial maximum" next to "Finish at its end"); the run's "Made from this run" tree lists time zooms with their
 finished worlds, and a time zoom's slider has a green tick for each.
 
 The ice ages are scripted (PW-471, the glacial index method): an index I(t)

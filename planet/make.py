@@ -7,8 +7,8 @@ The chain, each stage optional after the first:
   simulate       a tectonic run (T.simulate) of `myr` Myr at `level`
   timezoom       ~`kyr` kyr of ice ages from the run's representative moment
                  (highlights.representative_time), api.timezoom_job
-  world          the finished world: the time zoom's last frame
-                 (finish.finish_timezoom), or, without a time zoom, the run's
+  world          the finished world: the time zoom's frame for `now` (the latest
+                 interglacial by default, finish.now_kyr; finish.finish_timezoom), or, without a time zoom, the run's
                  keyframe at the representative moment (api.slice_run)
   highlights     the world's interesting places (api.highlights)
   zooms          regional zooms of the top N highlights (api.zoom_job)
@@ -29,6 +29,7 @@ import secrets
 
 from . import api
 from . import highlights as H
+from .finish import NOWS
 
 LEVELS = (4, 5, 6, 7, 8)
 # seconds per Gyr of tectonic run, per grid level (docs/coordination.md run costs: L6 ~5-6 min,
@@ -77,12 +78,14 @@ SETTINGS = [
 UNSUPPORTED = ["orbit (distance, eccentricity)", "star brightness", "day length", "ocean fraction / water inventory",
                "atmosphere (pressure, CO2 level)", "planet size / gravity"]
 
-DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "timezoom": True, "finish": True, "highlights": True, "zooms": 4}
+NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},
+               {"key": "glacial", "label": "Glacial maximum"}, {"key": "end", "label": "End of the time zoom"}]
+DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4}
 
 
 def parse_make_request(req: dict) -> dict:
     """Validates a make request and fills defaults. Raises api.BadRequest.
-    {seed, preset, level, myr, set, timezoom, kyr, finish, highlights, zooms, name}"""
+    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name}"""
     from dataclasses import fields
     from .tectonics import Params
     if not isinstance(req, dict):
@@ -102,6 +105,16 @@ def parse_make_request(req: dict) -> dict:
     out["kyr"] = api._num(req, "kyr", DEFAULTS["kyr"])
     if not 1 <= out["kyr"] <= 2000:
         raise api.BadRequest("kyr must be within 1..2000")
+    now = req.get("now")
+    now = DEFAULTS["now"] if now in (None, "") else now
+    if now not in NOWS:
+        try:
+            now = float(now)
+        except (TypeError, ValueError):
+            raise api.BadRequest(f"now must be one of {list(NOWS)} or a kyr") from None
+        if not 0 <= now <= out["kyr"]:
+            raise api.BadRequest(f"now must be within 0..{out['kyr']:g} kyr (the time zoom)")
+    out["now"] = now
     for k in ("timezoom", "finish", "highlights"):
         out[k] = bool(req.get(k, DEFAULTS[k]))
     out["zooms"] = int(api._num(req, "zooms", DEFAULTS["zooms"]))
@@ -162,7 +175,7 @@ def options() -> dict:
     settings = [{**s, "default": d[s["key"]]} for s in SETTINGS]
     return {"presets": {k: {**v, "set": dict(v["set"])} for k, v in PRESETS.items()}, "default_preset": DEFAULT_PRESET,
             "settings": settings, "levels": [{"level": L, "cells": 10 * 4 ** L + 2, "run_s_per_gyr": RUN_S_PER_GYR[L]} for L in LEVELS],
-            "defaults": DEFAULTS, "unsupported": UNSUPPORTED}
+            "defaults": DEFAULTS, "nows": NOW_CHOICES, "unsupported": UNSUPPORTED}
 
 
 def make(req: dict, progress=lambda f, msg: None) -> dict:
@@ -210,7 +223,7 @@ def make(req: dict, progress=lambda f, msg: None) -> dict:
             tz_id = out["timezoom"] = tz["run"]
         if spec["finish"]:
             stage = "world"
-            req = {"type": "finish", "timezoom": tz_id} if tz_id else {"type": "finish", "run": run_id, "t": t}
+            req = {"type": "finish", "timezoom": tz_id, "now": spec["now"]} if tz_id else {"type": "finish", "run": run_id, "t": t}
             out["world"] = api.finish_job(req, prog("world"))["world"]
         if spec["highlights"]:
             stage = "highlights"

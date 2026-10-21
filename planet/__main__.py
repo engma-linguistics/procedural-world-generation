@@ -182,7 +182,13 @@ def cmd_finish(args):
     if run.get("kind") == "timezoom":
         if args.at is not None:
             raise SystemExit("--at is for a run; for a time zoom give --kyr")
-        path = F.finish_timezoom(args.ref, args.kyr, args.erosion, progress=lambda f, msg: print("  " + msg, flush=True))
+        kyr = args.kyr
+        if args.now:
+            if kyr is not None:
+                raise SystemExit("give --kyr or --now, not both")
+            kyr, why = F.now_kyr(F.load_timezoom(args.ref)[1], args.now)
+            print(f"  now = {why}: {kyr:g} kyr", flush=True)
+        path = F.finish_timezoom(args.ref, kyr, args.erosion, progress=lambda f, msg: print("  " + msg, flush=True))
     else:
         if args.at is None or args.kyr is not None:
             raise SystemExit("a run is finished at a time: give --at T (Myr, or 'auto'), not --kyr")
@@ -277,7 +283,7 @@ def cmd_highlights(args):
 def cmd_make(args):
     """planet make: simulate, pick a moment, time zoom, finish, highlights, zooms (make.py)."""
     from . import api, make as M
-    req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr,
+    req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr, "now": args.now,
            "set": _parse_set(args.set), "timezoom": args.timezoom, "finish": args.finish,
            "highlights": args.highlights, "zooms": args.zooms, "name": args.name}
     req = {k: v for k, v in req.items() if v is not None}
@@ -288,7 +294,7 @@ def cmd_make(args):
     req["seed"] = spec["seed"]  # (a random one is fixed now, so it is printed and used)
     plan = M.estimate(spec)
     print(f"planet make: seed {spec['seed']}, preset {spec['preset']}, level {spec['level']}, {spec['myr']:g} Myr"
-          + (f", {spec['kyr']:g} kyr time zoom" if spec["timezoom"] else "") + f"; params {spec['set'] or 'default'}")
+          + (f", {spec['kyr']:g} kyr time zoom, now = {spec['now']}" if spec["timezoom"] else "") + f"; params {spec['set'] or 'default'}")
     for s in plan["stages"]:
         print(f"  {s['label']:<40} ~{s['s'] / 60:.1f} min" if s["s"] >= 90 else f"  {s['label']:<40} ~{s['s']:.0f} s")
     print(f"  total ~{plan['total_s'] / 60:.1f} min (a typical machine, see docs/coordination.md)", flush=True)
@@ -409,6 +415,7 @@ def main():
     fi = sub.add_parser("finish", help="a finished world at one kyr of a glacial time zoom (or at a run time) -> worlds/<id>.json")
     fi.add_argument("ref", help="time zoom id (then --kyr, default its end), or a run id (then --at)")
     fi.add_argument("--kyr", type=float, help="the time zoom's moment, kyr since its start (nearest stored frame)")
+    fi.add_argument("--now", metavar="WHEN", help="instead of --kyr: interglacial (the latest peak), glacial (the glacial maximum) or end")
     fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
     fi.set_defaults(func=cmd_finish)
@@ -445,6 +452,8 @@ def main():
     mk.add_argument("--level", "-l", type=int, help=f"grid level (default {MD['level']}; 6 quick, 7 showcase)")
     mk.add_argument("--myr", type=float, help="length of the tectonic run (default: the preset's)")
     mk.add_argument("--kyr", type=float, help=f"length of the glacial time zoom (default {MD['kyr']})")
+    mk.add_argument("--now", metavar="WHEN", help="the finished world's moment of the time zoom: interglacial (default, the latest "
+                    "peak, like Earth today), glacial (the glacial maximum), end, or a kyr from its start")
     mk.add_argument("--set", nargs="*", metavar="KEY=VALUE", help="tectonics params on top of the preset, e.g. --set n_plates=8")
     mk.add_argument("--timezoom", action=argparse.BooleanOptionalAction, help="the ice-age time zoom (default on)")
     mk.add_argument("--finish", action=argparse.BooleanOptionalAction, help="make the finished world (default on)")

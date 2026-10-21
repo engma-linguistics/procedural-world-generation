@@ -19,7 +19,7 @@ keeps it), so tests can drive them without a socket.
                       job's "run" is the new run's id when done. Shares the
                       job queue with zooms.
   POST /api/make      {seed?, preset?, level?, myr?, set?, timezoom?, kyr?, finish?, highlights?,
-                      zooms?, name?} -> {"job": id}: the whole chain (make.py); the job's "run",
+                      zooms?, now?, name?} -> {"job": id}: the whole chain (make.py); the job's "run",
                       "timezoom", "world" and "zooms" are what it made. GET /api/make/options and
                       /api/make/estimate?... describe the form and the expected time.
   POST /api/finish    {timezoom, kyr} or {run, t} -> {"job": id}: a finished
@@ -351,7 +351,7 @@ def timezoom_job(req: dict, progress=lambda f, msg: None) -> dict:
 
 
 def parse_finish_request(req: dict) -> dict:
-    """{timezoom, kyr} or {run, t}, checked: the time zoom exists and kyr is
+    """{timezoom, kyr | now} or {run, t}, checked (now: interglacial, glacial, end or a kyr, finish.now_kyr): the time zoom exists and kyr is
     within it (snapped to its nearest frame), or the run is a main run and t
     snaps to its nearest keyframe. Raises BadRequest, or SystemExit for an
     unknown id."""
@@ -365,8 +365,11 @@ def parse_finish_request(req: dict) -> dict:
             if "not a glacial time zoom" in str(e):
                 raise BadRequest(str(e)) from None
             raise
-        kyr = _num(req, "kyr", run["frames"][-1]["t"])
         try:
+            if req.get("now") not in (None, ""):  # (PW-479: interglacial | glacial | end | a kyr)
+                kyr = F.now_kyr(run, req["now"])[0]
+            else:
+                kyr = _num(req, "kyr", run["frames"][-1]["t"])
             i = F.frame_index(run, kyr)
         except SystemExit as e:
             raise BadRequest(str(e)) from None

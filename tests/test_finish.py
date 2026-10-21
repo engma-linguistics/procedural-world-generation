@@ -137,3 +137,52 @@ def test_finish_api(tiny):
     m = api.world_header(S.find_world(res["world"]))["meta"]
     assert m["t_myr"] == 20 and not m.get("timezoom") and seen[-1] == 1.0
     assert api.find_slice(tiny["run"], 20.0).stem == res["world"]
+
+
+# ---------------------------------------------------------------- which moment is "now" (PW-479)
+def _fake_run(index, sl=None):
+    """A time zoom's run.json with only what now_kyr reads: frames every 2 kyr with a glacial index."""
+    sl = sl if sl is not None else [-100 * i for i in index]
+    return {"frames": [{"t": 2.0 * k, "stats": {"glacial_index": float(i), "sea_level_change_m": float(s)}}
+                       for k, (i, s) in enumerate(zip(index, sl))]}
+
+
+def test_now_interglacial_is_the_latest_peak_after_a_full_cycle():
+    # interglacial (0 0), a glacial (up to 1), an ending, interglacial (0 0 0 0, sea level still rising), a second glacial
+    idx = [0, 0, .3, .8, 1, 1, .5, 0, 0, 0, 0, .4, .9, 1]
+    sl = [0, 0, -30, -80, -100, -100, -50, 0, 5, 12, 10, -40, -90, -100]
+    run = _fake_run(idx, sl)
+    kyr, why = F.now_kyr(run, "interglacial")
+    assert kyr == 18.0 and "interglacial" in why  # the highest sea level of the stretch after the first cycle
+    assert F.now_kyr(run, "glacial")[0] == 26.0 and F.now_kyr(run, "end")[0] == 26.0
+    assert F.now_kyr(run, 9.0)[0] in (8.0, 10.0) and F.now_kyr(run, "14")[0] == 14.0
+
+
+def test_now_falls_back_on_short_zooms():
+    # never completes a cycle: the interglacial falls back to the end; the glacial takes the lowest sea level
+    run = _fake_run([0, 0, .2, .6, .9])
+    kyr, why = F.now_kyr(run, "interglacial")
+    assert kyr == 8.0 and "no full" in why
+    assert F.now_kyr(run, "glacial")[0] == 8.0
+    flat = _fake_run([0, 0, 0, 0], [0, -3, 2, -1])  # never glacial at all
+    assert F.now_kyr(flat, "glacial")[0] == 2.0 and F.now_kyr(flat, "interglacial")[0] == 6.0
+
+
+def test_now_errors():
+    with pytest.raises(SystemExit, match="now must be"):
+        F.now_kyr(_fake_run([0, 1]), "sometime")
+    with pytest.raises(SystemExit, match="glacial index"):
+        F.now_kyr({"frames": [{"t": 0, "stats": {}}]}, "glacial")
+    with pytest.raises(SystemExit, match="kyr must be"):
+        F.now_kyr(_fake_run([0, 1]), 99)
+
+
+def test_finish_api_takes_now(tiny):
+    tz = tiny["tz"]
+    run = json.loads((tz / "run.json").read_text())
+    want = F.now_kyr(run, "glacial")[0]
+    r = api.parse_finish_request({"timezoom": tz.name, "now": "glacial"})
+    assert r["kyr"] == want
+    assert api.parse_finish_request({"timezoom": tz.name, "now": "end"})["kyr"] == run["frames"][-1]["t"]
+    with pytest.raises(api.BadRequest, match="now must be"):
+        api.parse_finish_request({"timezoom": tz.name, "now": "later"})

@@ -67,6 +67,55 @@ def frame_index(run: dict, kyr: float | None) -> int:
     return int(np.argmin(np.abs(times - kyr)))
 
 
+NOWS = ("interglacial", "glacial", "end")
+LOW_I = 0.05   # (an interglacial: the glacial index this low)
+
+
+def now_kyr(run: dict, now) -> tuple[float, str]:
+    """(kyr, why): the time zoom's frame for a "now" (PW-479). `now` is "end" (the last frame), a number
+    (kyr, snapped to a frame), "interglacial" or "glacial".
+
+    interglacial: like Earth today. The last stretch of frames with the glacial index I (stored in each
+    frame's stats) at or below LOW_I that comes after one full cycle (I has gone past 0.5 and back); in it
+    the frame with the most melted ice (highest sea_level_change_m). Without a completed cycle (a short
+    zoom) it falls back to the end.
+    glacial: the last stretch with I within 0.2 of the zoom's highest; in it the lowest sea level. A zoom
+    that never got glacial (I max < 0.1) takes its lowest sea level overall."""
+    fr = run["frames"]
+    t = np.array([f["t"] for f in fr], float)
+    if isinstance(now, (int, float)) or str(now).replace(".", "", 1).lstrip("-").isdigit():
+        k = float(now)
+        return float(t[frame_index(run, k)]), f"{k:g} kyr"
+    if now == "end":
+        return float(t[-1]), "the end of the time zoom"
+    if now not in NOWS:
+        raise SystemExit(f"now must be one of {list(NOWS)} or a kyr, not {now!r}")
+    if any("glacial_index" not in f["stats"] for f in fr):
+        raise SystemExit("this time zoom has no glacial index per frame (made before PW-471); remake it or give a kyr")
+    I = np.array([f["stats"]["glacial_index"] for f in fr], float)
+    sl = np.array([f["stats"]["sea_level_change_m"] for f in fr], float)
+
+    def runs(mask):  # [(first, last)] of the consecutive True frames
+        idx = np.flatnonzero(mask)
+        return [(g[0], g[-1]) for g in np.split(idx, np.flatnonzero(np.diff(idx) > 1) + 1) if len(g)]
+    if now == "glacial":
+        if I.max() < 0.1:
+            i = int(np.argmin(sl))
+            return float(t[i]), "no glaciation in this time zoom: its lowest sea level"
+        a, b = runs(I >= I.max() - 0.2)[-1]
+        i = a + int(np.argmin(sl[a:b + 1]))
+        return float(t[i]), f"the glacial maximum (index {I[i]:.2f}, sea level {sl[i]:+.0f} m)"
+    up = np.flatnonzero(I > 0.5)
+    if len(up):  # (after the first frame past 0.5 and back under it: one full cycle)
+        back = np.flatnonzero((I <= 0.5) & (np.arange(len(I)) > up[0]))
+        after = [(a, b) for a, b in runs(I <= LOW_I) if len(back) and b >= back[0]]
+        if after:
+            a, b = after[-1]
+            i = a + int(np.argmax(sl[a:b + 1]))
+            return float(t[i]), f"the latest interglacial (index {I[i]:.2f}, sea level {sl[i]:+.0f} m)"
+    return float(t[-1]), "no full glacial cycle in this time zoom yet: its end"
+
+
 def frame_state(tz_dir: Path, i: int) -> dict:
     """The state a finished world needs from frame i of a time zoom: bed and
     ice (m, relative to that frame's sea level), dT (global temperature

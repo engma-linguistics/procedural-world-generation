@@ -25,6 +25,19 @@ def test_parse_defaults_and_preset():
     assert c["myr"] == 300 and c["set"] == {"tilt": 20.0, "climate_offset": -6}
 
 
+def test_parse_now():
+    assert make.parse_make_request({"seed": 1})["now"] == "interglacial"  # the default (PW-479)
+    assert make.parse_make_request({"now": "glacial"})["now"] == "glacial"
+    assert make.parse_make_request({"now": "end"})["now"] == "end"
+    assert make.parse_make_request({"now": "120", "kyr": 300})["now"] == 120.0
+    for bad in ("sometime", 400, -1):
+        with pytest.raises(api.BadRequest):
+            make.parse_make_request({"now": bad, "kyr": 300})
+    assert [w["key"] for w in make.options()["nows"]] == ["interglacial", "glacial", "end"]
+    assert make.options()["defaults"]["now"] == "interglacial"
+    assert server.make_query("seed=1&now=glacial")["now"] == "glacial"
+
+
 def test_parse_random_seed_and_dependencies():
     assert isinstance(make.parse_make_request({})["seed"], int)
     r = make.parse_make_request({"seed": 1, "finish": False, "zooms": 3})
@@ -76,6 +89,15 @@ def test_cli_dry_run(capsys, monkeypatch):
     assert "time zoom" not in out and "regional zoom" not in out
 
 
+def test_cli_now(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["planet", "make", "--seed", "5", "--level", "5", "--now", "glacial", "--dry-run"])
+    cli.main()
+    assert "now = glacial" in capsys.readouterr().out
+    monkeypatch.setattr(sys, "argv", ["planet", "make", "--seed", "5", "--now", "never", "--dry-run"])
+    with pytest.raises(SystemExit, match="now must be"):
+        cli.main()
+
+
 def test_cli_rejects_bad_settings(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["planet", "make", "--seed", "5", "--set", "n_plates=1", "--dry-run"])
     with pytest.raises(SystemExit, match="n_plates"):
@@ -101,6 +123,9 @@ def test_make_chain(made):
     assert len(out["zooms"]) == 1 and S.exists("zoom", out["zooms"][0])
     w = S.read_header(S.find_world(out["world"]), ("meta",))["meta"]
     assert w["timezoom"] == out["timezoom"] and w["source_run"] == out["run"]
+    from planet import finish as F  # (the default now: the interglacial pick, or the end of a zoom too short for a cycle)
+    tz_run = json.loads((S.find_run(out["timezoom"]) / "run.json").read_text())
+    assert w["timezoom_kyr"] == F.now_kyr(tz_run, "interglacial")[0]
     fr = [f for f, _ in log]
     assert fr == sorted(fr) and fr[-1] == 1.0 and fr[0] < 0.1  # progress only goes forward
     assert any("zoom 1/1" in m for _, m in log)

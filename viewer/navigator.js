@@ -78,7 +78,9 @@ export function createNavigator(host) {
       return `<button class="pl-btn sm" data-do="timezoom" ${dis} title="300 kyr of ice ages from ${view.t} Myr">Time zoom from here</button>
         <button class="pl-btn sm" data-do="finishRun" ${dis} title="The full world at this keyframe">Finish world here</button>`;
     if (n.kind === 'timezoom')
-      return `<button class="pl-btn sm" data-do="finishTz" data-id="${esc(n.id)}" ${dis}>Finish ${here ? `at +${view.t} kyr` : 'at its end'}</button>`;
+      return `<button class="pl-btn sm" data-do="finishTz" data-id="${esc(n.id)}" ${dis}>Finish ${here ? `at +${view.t} kyr` : 'at its end'}</button>
+        <button class="pl-btn sm" data-do="finishIg" data-id="${esc(n.id)}" ${dis} title="The latest interglacial peak of the time zoom, like Earth today">Finish at the interglacial</button>
+        <button class="pl-btn sm" data-do="finishGl" data-id="${esc(n.id)}" ${dis} title="The time zoom's last glacial maximum: lowest sea level, biggest ice sheets">Finish at the glacial maximum</button>`;
     if (n.kind === 'world' && here)
       return '<button class="pl-btn sm" data-do="highlights">Find highlights</button> <span class="sub">then click the globe to zoom a region</span>';
     return '';
@@ -123,6 +125,10 @@ export function createNavigator(host) {
     if (d === 'highlights') { tree.hidden = true; return host.findHighlights(); }
     if (d === 'timezoom') return start('timezoom', { run: view.id, t: view.t, kyr: 300 }, `Time zoom from ${view.t} Myr`, 'timezoom');
     if (d === 'finishRun') return start('finish', { run: view.id, t: view.t }, `World at ${view.t} Myr`, 'world');
+    if (d === 'finishIg' || d === 'finishGl') {
+      const ig = d === 'finishIg';
+      return start('finish', { timezoom: e.target.dataset.id, now: ig ? 'interglacial' : 'glacial' }, ig ? 'World at the interglacial' : 'World at the glacial maximum', 'world');
+    }
     if (d === 'finishTz') {
       const same = view.kind === 'timezoom' && view.id === e.target.dataset.id;
       return start('finish', same ? { timezoom: view.id, kyr: view.t } : { timezoom: e.target.dataset.id }, same ? `World at +${view.t} kyr` : 'World at the end of the time zoom', 'world');
