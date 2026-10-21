@@ -641,3 +641,80 @@ def snout_distance(rec, order, ice, ends, nx, res):
         elif ends[d]:
             x[i] = 0.5 * step
     return x
+
+
+@njit(cache=True)
+def grade_fills(h, h0, flat, rec, order, outlet, active, protect, nx, res, slope, max_share):
+    """Tilt the flat floors that depression filling left (PW-521). h: the
+    ground with the flats in it, h0: before they were filled, flat: their
+    pixels, protect: pixels never lowered (designed courses and lake rims), rec/order: the drainage on h (outlet -> headwater). Each flat
+    (pixels of one level draining out through one pixel) becomes a valley
+    floor falling `slope` m/km to its exit, the level at its far end kept
+    (the rim is there): the exit is lowered by slope x the flat's length (at
+    most max_share of its depth) and the outlet notch cut into the rim and
+    the ground below it, at the same slope, until the ground is lower anyway
+    (headward incision drained the basin). Only ever lowers h; returns
+    (h, the pixels of the graded floors, the exit pixels that were cut)."""
+    n = h.shape[0]
+    root = np.full(n, -1, np.int64)
+    d = np.zeros(n)
+    dmax = np.zeros(n)
+    dep = np.zeros(n)
+    for t in range(order.shape[0]):
+        i = order[t]
+        if not flat[i]:
+            continue
+        p = rec[i]
+        if p >= 0 and flat[p] and abs(h[p] - h[i]) < 0.5 and root[p] >= 0:
+            root[i] = root[p]
+            diag = (p // nx != i // nx) and (p % nx != i % nx)
+            d[i] = d[p] + res * (1.4142135623730951 if diag else 1.0)
+        else:
+            root[i] = i
+            d[i] = 0.0
+        r = root[i]
+        if d[i] > dmax[r]:
+            dmax[r] = d[i]
+        if h[i] - h0[i] > dep[r]:
+            dep[r] = h[i] - h0[i]
+    out = h.copy()
+    graded = np.zeros(n, np.bool_)
+    cut = np.zeros(n, np.bool_)
+    for i in range(n):
+        r = root[i]
+        if r < 0:
+            continue
+        D = dmax[r]
+        if D <= 0.0:
+            continue
+        drop = min(slope * D, max_share * dep[r])
+        if drop <= 0.0:
+            continue
+        s = drop / D
+        z = h[r] - s * (D - d[i])
+        z = max(z, 0.5)
+        if protect[i]:
+            continue
+        if z < out[i] and z > h0[i]:
+            out[i] = z
+            graded[i] = True
+        elif z <= h0[i]:
+            out[i] = h0[i]
+            graded[i] = True
+        if i == r:
+            # the notch: from the exit down, at the same slope, until the ground is lower anyway
+            zt = h[r] - drop
+            q = rec[r]
+            dist = 0.0
+            steps = 0
+            while q >= 0 and not outlet[q] and active[q] and not protect[q] and steps < 400:
+                diag = (q // nx != r // nx) and (q % nx != r % nx)
+                dist += res * (1.4142135623730951 if (diag and steps == 0) else 1.0)
+                zq = max(zt - s * dist, 0.5)
+                if out[q] <= zq:
+                    break
+                out[q] = zq
+                cut[q] = True
+                q = rec[q]
+                steps += 1
+    return out, graded, cut

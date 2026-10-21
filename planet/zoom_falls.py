@@ -44,6 +44,88 @@ WALL_SLOPE = (0.55, 1.1)  # m/m of the walls' cones: soft .. hard tier (29 .. 48
 MAX_FALLS = 12
 
 
+def tier_plan(D, sc, given=None):
+    """The steps (m, the lip's first) a drop of D m is split into: each at most TIER_M x sc, the next
+    TIER_SHARE x the one above, together TIER_FRAC of the drop (the rest is rapids between them).
+    given: the steps the coarser zoom already placed; kept in proportion, rescaled to this drop."""
+    if given is not None and len(given):
+        g = np.asarray(given, float)
+        return TIER_FRAC * D * g / g.sum()
+    n_t = int(np.clip(np.ceil(TIER_FRAC * D / (TIER_M * sc)), 1, 6))
+    w = TIER_SHARE ** np.arange(n_t)
+    return TIER_FRAC * D * w / w.sum()
+
+
+FACE_DEG = (74.0, 86.0)  # a tier's face: near vertical rock, in sub-steps with ledges between
+RAPID_GRAD = 0.3         # m/m of the rapids between tiers
+LEDGE_FRAC = 0.2         # a ledge between a face's sub-steps: this much of the sub-step's height long
+RECESS_FRAC = 0.9        # a horseshoe lip's centre is cut back this much of the first tier's height (m per m), 15 .. 500 m
+POOL_RADIUS_FRAC = 0.12  # a tier's plunge pool: radius as a share of the tier's height (at least the river's)
+
+
+def fine_profile(top, bottom, tiers, s0, rng, room_km):
+    """The floor of a fall at a fine zoom's scale, along the river from the lip (s = 0, km): the
+    knots (s, z) of tiers split into 1-3 sub-steps (a face of near-vertical rock with ledges
+    between, irregular), each followed by rapids, ending at `bottom` exactly (the parent's drop is
+    kept) at room_km: the parent's fall spans its whole gorge, so the rapids take the length the
+    faces leave. Returns (s, z, foots) with foots = [(s, z, tier m)] (the foot of each tier)."""
+    H = top - bottom
+    tiers = np.asarray(tiers, float)
+    n = len(tiers)
+    rap = max(H - tiers.sum(), 0.0)
+    pieces = []  # per tier: (ds km, dz m) of its sub-steps and ledges
+    for t in tiers:
+        k = int(np.clip(np.ceil(t / 120.0), 1, 3))
+        fr = rng.dirichlet(np.full(k, 3.0)) * t
+        pc = []
+        for q, f_ in enumerate(fr):
+            pc.append((f_ / np.tan(np.radians(rng.uniform(*FACE_DEG))) / 1000.0, f_))
+            if q < k - 1:  # a ledge: nearly level, a little back-tilted
+                led = LEDGE_FRAC * f_ / 1000.0 * rng.uniform(0.5, 1.5)
+                pc.append((led, 0.04 * led * 1000.0))
+        pieces.append(pc)
+    fixed = s0 + sum(ds for pc in pieces for ds, _ in pc)
+    avail = max(room_km - fixed, 0.25 * room_km)
+    gaps = max(n - 1, 1)  # (rapids lie between the tiers; the last tier's foot is the parent's pool, at `bottom`)
+    wts = tiers[:gaps] ** 0.5
+    ln = avail * wts / wts.sum() if rap > 0 else np.zeros(gaps)
+    ks, kz, foots = [0.0, s0], [top, top], []
+    s, z = s0, top
+    if n == 1 and rap > 0:  # (a lone tier: a rapids reach above its face)
+        s += ln[0]
+        z -= rap
+        ks.append(s), kz.append(z)
+    for j, pc in enumerate(pieces):
+        for ds, dz in pc:
+            s += ds
+            z -= dz
+            ks.append(s), kz.append(z)
+        foots.append([s, z, float(tiers[j])])
+        if j < n - 1:
+            s += ln[j]
+            z -= rap / (n - 1)
+            ks.append(s), kz.append(z)
+    ks, kz = np.array(ks), np.array(kz)
+    if ks[-1] > room_km:  # a short gorge: the whole stepped reach squeezed into it
+        f = room_km / ks[-1]
+        ks = ks * f
+        for ft in foots:
+            ft[0] *= f
+    g = H / max(top - kz[-1], 1e-9)  # (the ledges' tilt took a little: the drop is the parent's exactly)
+    kz = top - (top - kz) * g
+    return ks, kz, [(a, top - (top - b) * g, c) for a, b, c in foots]
+
+
+def horseshoe(d_km, t1_m, half_km):
+    """How far downstream (km) a lip's crest is held at lateral distance d from the river: none at the
+    river (the lip itself), RECESS x the first tier's height at the flanks, from half_km (the gorge's
+    half width at the lip) x 1.3 out: the crest curves round the head of the gorge, centre upstream,
+    flanks downstream (Niagara's horseshoe, Kaieteur's bowl). Returns (lag(d), R0, T)."""
+    R0 = float(np.clip(RECESS_FRAC * t1_m, 15.0, 500.0)) / 1000.0
+    T = 1.3 * half_km
+    return R0 * np.clip((d_km / T) ** 2, 0.0, 1.0), R0, T
+
+
 def _accumulate(rec, order, src):
     acc = src.copy()
     for i in order[::-1]:
@@ -132,9 +214,8 @@ def carve(h, hfill, rec, order, active, q_src, nx, ny, res, seed=0):
         # profile from the foot (k = 0) up to the head (k = M - 1): rapids rising evenly...
         k = np.arange(M)[::-1].astype(float)  # (pix order is head -> foot: index 0 is the head)
         # tiers
-        n_t = int(np.clip(np.ceil(TIER_FRAC * D / (TIER_M * sc)), 1, 6))
-        w = TIER_SHARE ** np.arange(n_t)
-        steps = TIER_FRAC * D * w / w.sum()
+        steps = tier_plan(D, sc)
+        n_t = len(steps)
         # tier positions along the chain (index from the head): the lip's tier at the old lip
         # (len(up) in head -> foot order), the others spread below it over the old run and
         # the foot's reach
