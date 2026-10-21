@@ -3370,7 +3370,7 @@ LAYER_DOC = {
     "landform": ("landform id", "landform class of the coarse cell (landform.CLASSES; legend 'landforms')"),
     "glacial_form": ("enum", "what the ice left (zoom_glacial, PW-092): 0 none; 1 trough (U-valley), 2 cirque, "
                              "3 moraine belt, 4 drumlin field, 5 outwash plain, 6 loess blanket (>= 2 m), "
-                             "7 fjord (a trough the sea floods), 8 overdeepened or moraine-dammed lake"),
+                             "7 fjord (a trough the sea floods), 8 overdeepened or moraine-dammed lake, 9 esker, 10 kettle pit"),
     "loess": ("m", "wind-blown silt thickness: downwind of the glacial outwash (zoom_glacial; the ground under it is softened)"),
     "coastal_life": ("enum", "coastal and shallow-sea life (zoom_coastal, PW-188): 0 none, 1 coral reef, 2 kelp "
                              "forest, 3 seagrass meadow (sea); 4 mangrove, 5 salt marsh (land between the tides); "

@@ -23,3 +23,4 @@ What to try: raise moraine dams across valleys to a height that survives (a cont
 
 ## Updates
 - 2026-10-21: Created from inbox draft draft-glacial-zoom-moraine-lakes.md (found by pw092).
+- 2026-10-21: Built on branch worktree-agent-a6325323c9d1c4305: moraine dams across streams, lakes() open inside the margin, recessional belts at thickness contours, kettles to the water table, eskers. Baltic 34 moraine-dammed lakes (zoom 9213a8), Ungava 9 (a44e9f), Norway 12-13, Patagonia 8, Alps 3. Needs a merge.
