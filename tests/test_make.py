@@ -71,7 +71,7 @@ def test_estimate_follows_the_stages():
     assert [s["key"] for s in full["stages"]] == ["simulate", "timezoom", "world", "highlights", "zooms"]
     assert abs(sum(s["s"] for s in full["stages"]) - full["total_s"]) < 0.5
     sim = full["stages"][0]["s"]
-    assert 4 * 60 < sim < 8 * 60  # L6: ~5-6 min per Gyr (docs/coordination.md)
+    assert 10 * 60 < sim < 14 * 60  # L6: 659-802 s per Gyr measured on this machine (PW-478)
     short = make.estimate(make.parse_make_request({"seed": 1, "level": 6, "timezoom": False, "highlights": False,
                                                    "zooms": 0}))
     assert [s["key"] for s in short["stages"]] == ["simulate", "world"]

@@ -19,7 +19,8 @@ PRESETS (the showcase recipes of docs/coordination.md). `options()` is what
 GET /api/make/options serves to the form. Orbit, sun strength, day length,
 ocean fraction and water inventory are not parameters yet (draft-make-settings-gaps).
 
-Time estimates (`estimate`) come from the run-cost table in docs/coordination.md.
+Time estimates (`estimate`) come from the fitted stage costs below (PW-478; the run-cost table in
+docs/coordination.md has the same numbers).
 """
 
 from __future__ import annotations
@@ -34,14 +35,21 @@ from . import highlights as H
 from .finish import NOWS
 
 LEVELS = (4, 5, 6, 7, 8)
-# seconds per Gyr of tectonic run, per grid level (docs/coordination.md run costs: L6 ~5-6 min,
-# L7 ~20-40 min; L5 and L4 scaled by cell count; L8 3-4 h). Under load these are a lower bound.
-RUN_S_PER_GYR = {4: 25, 5: 80, 6: 330, 7: 1800, 8: 12600}
-# seconds per kyr of glacial time zoom (speed pass: 100 kyr = 10 s at L6, 31 s at L7)
-TZ_S_PER_KYR = {4: 0.01, 5: 0.03, 6: 0.1, 7: 0.31, 8: 1.2}
-FINISH_S = {4: 2, 5: 3, 6: 6, 7: 20, 8: 80}   # finishing / slicing one world
-HIGHLIGHTS_S = {4: 3, 5: 5, 6: 10, 7: 40, 8: 150}
-ZOOM_S = {4: 4, 5: 4, 6: 5, 7: 7, 8: 12}      # one 1000 km regional zoom
+# Stage costs, fitted to the store's own timings (PW-478). Measured: L6 runs (2 store runs of 2 Gyr:
+# 705 and 802 s/Gyr; health sweep 2026-10-15, 8 L6 seeds of 1 Gyr: median 659 s), L7 runs (3 sweep
+# seeds of 1 Gyr: median 3028 s, 11 workers at once), time zooms (3 store runs: 0.21 s/kyr pooled),
+# worlds' finish (3: mean 7.3 s), highlights (2: 1.2 s), regional zooms (500 px, 1000 km @ 2 km:
+# median 15 s over 12; 25-50 km: 5 s). Levels with no measurement are scaled from the nearest
+# measured one: L4 is one 100 Myr run (23 s, fixed start-up cost included), L5 is interpolated between
+# L4 and L6, L7 -> L8 by the cell count (x4), and the time zoom and zoom ratios L6 -> L7 come from the
+# speed pass (100 kyr 10.0 -> 30.8 s; zoom 4.85 -> 6.9 s, idle Threadripper). Measured under load
+# (2-63 load average): treat as "about", the machine's load moves them by 2x.
+RUN_S_PER_GYR = {4: 230, 5: 400, 6: 705, 7: 3010, 8: 12000}
+# seconds per kyr of glacial time zoom
+TZ_S_PER_KYR = {4: 0.07, 5: 0.12, 6: 0.21, 7: 0.65, 8: 2.6}
+FINISH_S = {4: 1, 5: 2, 6: 7, 7: 29, 8: 117}   # finishing / slicing one world
+HIGHLIGHTS_S = {4: 0.3, 5: 0.5, 6: 1.2, 7: 4.8, 8: 19}
+ZOOM_S = {4: 8, 5: 11, 6: 15, 7: 21, 8: 30}   # one regional zoom (500 px); 25-50 km zooms run ~1/3 of this
 DT, EVERY = 2.0, 4.0                          # the simulate defaults
 
 # The showcase recipes (docs/coordination.md), as presets. `set` are tectonics.Params overrides.
