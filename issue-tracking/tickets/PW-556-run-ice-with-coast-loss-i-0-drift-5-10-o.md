@@ -1,4 +1,5 @@
 ---
+id: PW-556
 title: "Run ice with coast_loss: I = 0 drift 5/10 on the merged code's run moments (side lane 9/10); heavily iced moments miss by 40-90 m both ways"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: pw514a
 blocked_by: []
 relates: [PW-465, PW-514, PW-492, PW-513]
 refs: [docs/review/audit/PW-514-option-a.md, planet/tectonics/earth.py, planet/icemass.py]
+created: 2026-10-21
+updated: 2026-10-21
 ---
 
 ## Description
@@ -27,3 +30,6 @@ which side of the rule is off on big sheets (PW-513's fixed margin thickness is 
 moments for the bar.
 - [ ] the flux split for the two worst moments
 - [ ] the drift bar measured on 20 moments
+
+## Updates
+- 2026-10-21: Created from inbox draft draft-coast-loss-iced-moment-drift.md (found by pw514a).

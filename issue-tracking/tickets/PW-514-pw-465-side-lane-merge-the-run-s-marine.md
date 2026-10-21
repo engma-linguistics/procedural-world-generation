@@ -2,7 +2,7 @@
 id: PW-514
 title: "PW-465 side lane: merge the run's marine ice budget (coast_loss)? It fixes the I = 0 drift (9/10) but the 10-seed cold-era check drops 8/10 -> 7/10"
 type: task
-status: in-progress
+status: done
 parent: PW-470
 milestone: v2
 subsystem: tectonics
@@ -56,6 +56,7 @@ Lean: (B). It is the right physics and it does what PW-465 asked, but it moves t
 matters once the time zoom's run-moment bar is back on the table.
 
 ## Updates
+- 2026-10-21: Status in-progress -> done. Merged to main 2026-10-21 (option A: coast_loss + cost cut; docs/review/audit/PW-514-option-a.md).
 - 2026-10-21: Status needs-decision -> in-progress. Option A built on branch worktree-agent-a9ef586c8f7c30585 (docs/review/audit/PW-514-option-a.md): coast_loss + the cost cut only, plus PW-515's cause fixed (kernels.carve). Cold eras 8/10 (main 8/10), Earth zoom bit-identical, drift 5/10 (main 4/10), climate update cheaper than main (fixed states 19-25 s vs 33-63 s), pytest passes (golden sim_L4 regenerated for the carve fix). Meets the bar; ready to merge.
 - 2026-10-21: Owner 2026-10-21: option A after all (coast_loss + the cost cut from b74f2c0), judged on its own.
 - 2026-10-21: Option B batch failed (branch worktree-agent-ae1d70b30254180ac, ae9906a): cold eras 1/10, Earth maxima -141..-182 m, interglacial ice 16-20%. Cost cut works (+4% wall; hunks in b74f2c0). Next decision in PW-526. Write-up docs/review/audit/PW-514-batch.md.
