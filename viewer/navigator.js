@@ -15,6 +15,7 @@ const CSS = `
 #navBar .crumb:hover { background: #1d2738; }
 #navBar .crumb.cur { border-color: var(--accent); background: #223652; }
 #navBar .crumb img { width: 36px; height: 18px; object-fit: cover; border-radius: 3px; background: #111827; }
+#navBar .nsel { flex: none; margin-left: 6px; padding: 1px 4px; font-size: 11px; background: #111827; color: var(--text); border: 1px solid var(--border); border-radius: 4px; }
 #navBar .sep { color: var(--muted); flex: none; }
 #navBar [hidden] { display: none; }
 #navTree .zf { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 3px; font-size: 11px; }
@@ -77,6 +78,15 @@ export function createNavigator(host) {
       return `${i ? '<span class="sep">&rsaquo;</span>' : ''}<div class="crumb${n === cur ? ' cur' : ''}" data-key="${esc(n.key)}" data-t="${t ?? ''}" title="${esc(kindName(n) + ' ' + n.id + ': ' + nodeWhen(n))}">
         <img src="${esc(n.thumb)}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(short(n, view))}</span></div>`;
     }).join('');
+    // the other zooms next to and under the one on screen (thumbnails are in the Family tree)
+    const zs = (list) => list.filter((x) => x.kind === 'zoom' || x.kind === 'fine').sort((a, b) => a.created.localeCompare(b.created));
+    const opt = (x, mark) => `<option value="${esc(x.key)}"${mark ? ' selected' : ''}>${esc(x.id)} · ${x.size_km} km</option>`;
+    const sibs = cur.kind === 'zoom' || cur.kind === 'fine' ? zs(p.nodes.filter((x) => x.parent === cur.parent)) : [];
+    const kids = zs(p.nodes.filter((x) => x.parent === cur.key));
+    crumbs.innerHTML += (sibs.length > 1 ? `<select class="pl-btn sm nsel" data-pick="sib" title="The other zooms at this level">
+        <option value="">${sibs.length - 1} sibling${sibs.length === 2 ? '' : 's'}</option>${sibs.filter((x) => x !== cur).map((x) => opt(x)).join('')}</select>` : '')
+      + (kids.length ? `<select class="pl-btn sm nsel" data-pick="kid" title="Zooms made inside this one">
+        <option value="">${kids.length} inside</option>${kids.map((x) => opt(x)).join('')}</select>` : '');
     crumbs.querySelector('.cur')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
@@ -150,6 +160,7 @@ export function createNavigator(host) {
     if (e.target.dataset.act === 'cancelJob') return doCancel();
     if (e.target.dataset.act === 'tree') { tree.hidden = !tree.hidden; if (!tree.hidden) { renderTree(); refresh(true); } }
   });
+  bar.addEventListener('change', (e) => { if (e.target.dataset.pick && e.target.value) open(e.target.value, null); });
   tree.addEventListener('click', (e) => {
     const o = e.target.dataset.open;
     if (o) return open(o, null);

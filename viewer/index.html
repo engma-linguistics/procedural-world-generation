@@ -3319,6 +3319,7 @@ function buildHighlightMarks() {
 
 // ------------------------------------------------------------ tabs: globe | regional zoom (zoom.html in an iframe)
 state.tab = 'globe';
+let fromPop = false;
 function showTab(tab, zoomId) {
   state.tab = tab;
   document.body.classList.toggle('zoomTab', tab === 'zoom');
@@ -3328,12 +3329,14 @@ function showTab(tab, zoomId) {
     // reloaded every time, so zooms made since show up in its list
     const q = new URLSearchParams(zoomId ? { id: zoomId } : {});
     if (V?.kind === 'run') q.set('run', V.dir); else if (V?.id) q.set('world', V.id);
-    $('zoomFrame').src = 'zoom.html?' + q;
+    const fw = $('zoomFrame').contentWindow;  // (location.replace: reloading by .src would add a back-button step of its own)
+    if ($('zoomFrame').getAttribute('src')) fw.location.replace('zoom.html?' + q); else $('zoomFrame').src = 'zoom.html?' + q;
   }
   const u = new URL(location);
   if (tab === 'zoom') u.searchParams.set('tab', 'zoom'); else u.searchParams.delete('tab');
+  const newZoom = zoomId && zoomId !== new URLSearchParams(location.search).get('zoom');
   if (zoomId) u.searchParams.set('zoom', zoomId);
-  history.replaceState(null, '', u);
+  history[newZoom && !fromPop ? 'pushState' : 'replaceState'](null, '', u);  // (a new zoom is a step for the back button)
   navSync();
 }
 $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
@@ -3362,6 +3365,21 @@ async function navOpen(n, planet, t) {
     showTab('zoom', n.id);
   }
 }
+// the zoom tab's page tells which zoom it shows (picked in its own list, or a fine zoom opened there)
+addEventListener('message', (e) => {
+  if (e.origin !== location.origin || e.source !== $('zoomFrame').contentWindow || !e.data?.zoomOpen || state.tab !== 'zoom') return;
+  const u = new URL(location);
+  if (u.searchParams.get('zoom') === e.data.zoomOpen) return;
+  u.searchParams.set('zoom', e.data.zoomOpen);
+  history.pushState(null, '', u);
+  navSync();
+});
+// back / forward: show what the address says
+addEventListener('popstate', () => {
+  const q = new URLSearchParams(location.search);
+  fromPop = true;
+  try { if (q.get('tab') === 'zoom') showTab('zoom', q.get('zoom')); else showTab('globe'); } finally { fromPop = false; }
+});
 navUi = createNavigator({ openNode: navOpen, findHighlights: () => fetchHighlights(false), zoomSource: () => (V ? zoomSource() : null), picked: () => picked });
 
 // The squares of the zooms already made of what is on screen (a world, or the world made from this run
