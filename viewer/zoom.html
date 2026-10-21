@@ -118,8 +118,8 @@
 
   <h2>Fine zooms</h2>
   <div id="fineBox" class="muted"></div>
-  <div class="row" style="display:flex;gap:4px;margin-top:4px"><select id="fineSize" style="flex:1;min-width:0" title="The fine zoom's size and resolution (default: 50 km at 100 m in a regional zoom, 25 km at 50 m in a fine zoom)"></select>
-    <button id="fineHere" title="Then click a point on the map (or the 3D ground; shift-double-click there also works) for a finer zoom of this one around it">Fine zoom here</button></div>
+  <div class="row" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"><select id="fineSize" style="flex:1 1 100%;min-width:0" title="The fine zoom's size and resolution (the server's rules for this zoom's resolution)"></select>
+    <button id="fineHere" title="Then click a point on the map (or the 3D ground; shift-double-click there also works) for a finer zoom around it; on a fine zoom shown there, the new one nests in the finest shown under the point">Fine zoom here</button></div>
   <div id="fineJob" class="muted"></div>
 
   <h2>About this zoom</h2>
@@ -257,7 +257,7 @@ async function init() {
   const idx = (await getJSON('../zooms/index.json')) || [];
   fine.idx = idx;
   $('fineHere').onclick = armFine;
-  $('fineSize').onchange = () => { if (fine.arm) { armFine(); armFine(); } };  // (re-armed: the new size)
+  $('fineSize').onchange = () => { if (fine.arm) { fineHint(fine.at && fineHost(...fine.at) || null); draw(); } };
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && fine.arm) armFine(); });
   const sel = $('zoomSel');
   if (!idx.length) {
@@ -325,7 +325,7 @@ async function init() {
 let V3 = null;
 const api3d = {
   // (a fine tile's pixel: its own zoom's info)
-  hoverPixel: (r, c, t) => (t && t.id !== state.meta.id && fine.data.has(t.id) ? withZoom(fine.data.get(t.id), () => hoverPx(r, c)) : hoverPx(r, c)),
+  hoverPixel: (r, c, t) => (fine.arm && t && hoverHost3d(t.id), t &&t.id !== state.meta.id && fine.data.has(t.id) ? withZoom(fine.data.get(t.id), () => hoverPx(r, c)) : hoverPx(r, c)),
   fineHere: (ll) => postFine(ll[0], ll[1]),
   exagChanged: (e) => { $('exag').value = e; $('exagV').textContent = `${e}\u00d7`; if (state.d3) syncURL(); },
   showCard: (o, ev, pin) => { if (!pinned || pin) showTip(o, ev, pin); },
@@ -726,8 +726,20 @@ function hideTip() { pinned = null; const t = $('tip'); t.style.display = 'none'
 // fine.want: the ones the 3D view shows (&fine=a,b; default: defaultFine), fine.on: shown at all
 const fine = { idx: [], on: true, want: new Set(), data: new Map(), loading: new Set(), job: null, arm: false, at: null, flyTo: null };
 let START_FINE = new URLSearchParams(location.search).get('fine');  // (the first zoom loaded only)
-const FINE_SIZES = [['', 'default size'], ['50,0.1', '50 km @ 100 m'], ['25,0.05', '25 km @ 50 m'],
-  ['25,0.025', '25 km @ 25 m (1000 px, for close 3D views)']];
+// The size rules are the server's (zoom_fine.size_options, GET /api/fine-rules?res_km=): per parent
+// resolution its default and the sizes it accepts (PW-552). fine.rules: max_step, edge_px, ...
+// fine.sizes: String(res_km) -> {default, options:[{size_km, res_km, default}]}
+fine.rules = null; fine.sizes = new Map(); fine.menuId = null;
+async function loadFineSizes(resList) {
+  for (const r of new Set(resList)) {
+    const k = String(r);
+    if (fine.sizes.has(k)) continue;
+    let out = null;
+    try { const x = await fetch(`../api/fine-rules?res_km=${r}`, { cache: 'no-store' }); if (x.ok) out = await x.json(); } catch { /* no API */ }
+    if (out && !fine.rules) fine.rules = out;
+    fine.sizes.set(k, out?.sizes || { default: null, options: [] });
+  }
+}
 const zoomEntry = (id) => fine.idx.find((z) => z.id === id);
 const kids = (id) => (zoomEntry(id)?.children || []).map(zoomEntry).filter(Boolean);
 function descendants(id, depth = 1, out = []) { for (const z of kids(id)) { out.push({ z, depth }); descendants(z.id, depth + 1, out); } return out; }
@@ -776,27 +788,74 @@ function fineLoaded() {
     START_FINE = null;
   } else { fine.want = defaultFine(id); fine.flyTo = null; }
   $('fineOn') && ($('fineOn').checked = fine.on);
-  fineSizes(); fineBox();
+  fineSizes(pageZoom()); fineBox();
+  const id0 = state.meta.id;  // (the sizes come from the server: the menus fill when they arrive)
+  loadFineSizes([state.meta.res_km, ...descendants(id0).map((d) => d.z.res_km)]).then(() => {
+    if (state.meta?.id === id0) { fineSizes(pageZoom()); draw(); }
+  });
 }
-// the size options a pick may take here (finer than this zoom, at most 20x, smaller than it)
-function fineSizes() {
-  const m = state.meta;
-  $('fineSize').innerHTML = FINE_SIZES.map(([v, t]) => {
-    const [s, r] = v ? v.split(',').map(Number) : [m.res_km >= 0.25 ? 50 : 25, m.res_km >= 0.25 ? 0.1 : 0.05];
-    const ok = r < m.res_km && m.res_km / r <= 20 + 1e-9 && s < m.size_km;
-    return `<option value="${v}" ${ok ? '' : 'disabled'}>${t}${v ? '' : ` (${s} km @ ${r * 1000} m)`}</option>`;
-  }).join('');
-  if ($('fineSize').selectedOptions[0]?.disabled) $('fineSize').value = '';
+const pageZoom = () => { const m = state.meta; return { id: m.id, center: m.center, size_km: m.size_km, res_km: m.res_km }; };
+const sizeVal = (s, r) => `${s},${r}`;
+const resText = (r) => (r >= 1 ? `${+r.toFixed(2)} km` : `${+(r * 1000).toFixed(1)} m`);
+const sizeText = (s, r) => `${+s.toFixed(1)} km @ ${resText(r)}`;
+// the size menu for a fine zoom of `z` (the page's zoom, or a fine zoom shown in it): the server's
+// default first, then the sizes it accepts for this parent that fit inside it (never one it would refuse).
+// The pick is kept if `z` offers it too.
+function fineSizes(z) {
+  const sel = $('fineSize'), old = sel.value, sz = fine.sizes.get(String(z.res_km));
+  fine.menuId = z.id;
+  const note = fine.rules ? '' : ' (no server)';
+  if (!sz || !sz.options.length) { sel.innerHTML = `<option value="">no finer zoom of ${z.id} possible${note}</option>`; sel.disabled = true; return; }
+  sel.disabled = false;
+  const opts = sz.options.filter((o) => o.size_km < z.size_km);
+  sel.innerHTML = `<option value="">default: ${sizeText(sz.default.size_km, sz.default.res_km)}</option>` +
+    opts.filter((o) => !o.default).map((o) => `<option value="${sizeVal(o.size_km, o.res_km)}">${sizeText(o.size_km, o.res_km)}${o.size_km / o.res_km > 800 ? ' (1000 px, for close 3D views)' : ''}</option>`).join('');
+  sel.value = old; if (sel.value !== old) sel.value = '';
+  sel.title = `Size and resolution of the fine zoom, nested in ${z.id} (${sizeText(z.size_km, z.res_km)}); the default is the server's for a ${resText(z.res_km)}/px parent`;
 }
-// the size a pick asks for now: [size_km, res_km]
-function fineSizeNow() {
-  const m = state.meta, v = $('fineSize').value;
-  return v ? v.split(',').map(Number) : [m.res_km >= 0.25 ? 50 : 25, m.res_km >= 0.25 ? 0.1 : 0.05];
+// the size a pick in `z` asks for: [size_km, res_km, isDefault] (the menu's pick if z offers it, else z's default)
+function fineSizeFor(z) {
+  const sz = fine.sizes.get(String(z.res_km)), v = $('fineSize').value;
+  if (!sz || !sz.options.length) return null;
+  if (v && sz.options.some((o) => !o.default && sizeVal(o.size_km, o.res_km) === v && o.size_km < z.size_km)) return [...v.split(',').map(Number), false];
+  return [sz.default.size_km, sz.default.res_km, true];
 }
-// whether a fine zoom of that size round lat, lon fits inside this zoom
-function fineFits(lat, lon) {
-  const m = state.meta, [x, y] = toPlane(m.center, lat, lon), h = (m.size_km - fineSizeNow()[0]) / 2;
+// whether a fine zoom of size [s, r] round lat, lon fits inside zoom z (as zoom_fine.check: the zoom's edge
+// margin plus the halo it builds round the region)
+function fineFitsIn(z, lat, lon, [s, r]) {
+  const R = fine.rules || { edge_px: 3, halo_parent_px: 1 }, rp = z.res_km;
+  const margin = R.edge_px * rp + (Math.ceil(R.halo_parent_px * rp / r) + 2) * r, [x, y] = toPlane(z.center, lat, lon), h = (z.size_km - s) / 2 - margin;
   return Math.abs(x) <= h && Math.abs(y) <= h;
+}
+// the zooms a pick may nest in at lat, lon, finest first: the page's zoom and the fine zooms shown on it
+// (2D: those outlined on the map; 3D: those with a tile) that hold the point and take fine zooms
+function fineHosts(lat, lon) {
+  const shown = state.d3 ? new Set(fineWanted()) : null;
+  const zs = [pageZoom(), ...descendants(state.meta.id).map((d) => d.z).filter((z) => !shown || shown.has(z.id))];
+  return zs.filter((z) => { const [x, y] = toPlane(z.center, lat, lon); return Math.abs(x) <= z.size_km / 2 && Math.abs(y) <= z.size_km / 2 && fineSizeFor(z); })
+    .sort((a, b) => a.res_km - b.res_km);
+}
+// where a pick at lat, lon goes: {z, size:[s, r, isDefault], fits}: the finest zoom there that takes the
+// size (and has room for it), else the finest one (not fitting)
+function fineHost(lat, lon) {
+  const hs = fineHosts(lat, lon).map((z) => ({ z, size: fineSizeFor(z) }));
+  for (const h of hs) if (fineFitsIn(h.z, lat, lon, h.size)) return { ...h, fits: true };
+  return hs.length ? { ...hs[0], fits: false } : null;
+}
+// picking in 3D: the tile under the pointer is the zoom a pick there nests in (as fineHost, minus the edge test)
+function hoverHost3d(tileId) {
+  const z = tileId === state.meta.id ? pageZoom() : zoomEntry(tileId), size = z && fineSizeFor(z);
+  if (!size) return;
+  if (z.id !== fine.menuId) fineSizes(z);
+  fineHint({ z, size: fineSizeFor(z), fits: true });
+}
+// the hint while picking: the size and which zoom it nests in
+function fineHint(h) {
+  const m = state.meta, nested = h && h.z.id !== m.id;
+  $('fineJob').innerHTML = !fine.arm ? '' : !h
+    ? `click a point for a fine zoom of ${m.id} (Esc: cancel)`
+    : `click a point for ${sizeText(h.size[0], h.size[1])}, nested in ${nested ? `<b>${h.z.id}</b> (${sizeText(h.z.size_km, h.z.res_km)})` : m.id}${h.fits ? '' : ' &mdash; too close to its edge'} (Esc: cancel)`;
+  if (state.d3 && fine.arm) $('fineJob').innerHTML += '<br>nests in the finest shown fine zoom under the point';
 }
 // the panel's list: the parent, the fine zooms (open in 2D; in 3D shown or not, fly to)
 function fineBox() {
@@ -865,7 +924,8 @@ function armFine() {
   if (fine.job && !fine.job.finished) return;
   fine.arm = !fine.arm;
   $('fineHere').classList.toggle('on', fine.arm);
-  $('fineJob').textContent = fine.arm ? `click a point for ${fineSizeNow()[0]} km @ ${fineSizeNow()[1] * 1000} m (Esc: cancel)` : '';
+  if (fine.arm) { fine.at = null; fineSizes(pageZoom()); }
+  fineHint(null);
   if (V3) V3.onPick = fine.arm ? (ll) => { fine.arm = false; $('fineHere').classList.remove('on'); postFine(ll[0], ll[1]); } : null;
   canvas.style.cursor = fine.arm ? 'crosshair' : '';
   draw();
@@ -873,11 +933,13 @@ function armFine() {
 function fineJobLine(text) { $('fineJob').innerHTML = text; }
 async function postFine(lat, lon) {
   fine.arm = false; $('fineHere').classList.remove('on'); if (V3) V3.onPick = null; canvas.style.cursor = '';
-  if (!fineFits(lat, lon)) { fineJobLine(`${fmt(lat, 3)}, ${fmt(lon, 3)} is too close to this zoom's edge for ${fineSizeNow()[0]} km`); draw(); return; }
-  const parent = state.meta.id, req = { zoom: parent, lat: +lat.toFixed(4), lon: +lon.toFixed(4) };
-  if ($('fineSize').value) [req.size_km, req.res_km] = fineSizeNow();
+  const host = fineHost(lat, lon), pageId = state.meta.id;
+  if (!host) { fineJobLine(`no zoom here takes a fine zoom (${state.meta.id}: ${fine.rules ? 'too coarse or too fine' : 'no server API'})`); draw(); return; }
+  if (!host.fits) { fineJobLine(`${fmt(lat, 3)}, ${fmt(lon, 3)} is too close to ${host.z.id}'s edge for ${host.size[0]} km`); draw(); return; }
+  const parent = host.z.id, req = { zoom: parent, lat: +lat.toFixed(4), lon: +lon.toFixed(4) };
+  if (!host.size[2]) [req.size_km, req.res_km] = host.size;
   const job = fine.job = { finished: false };
-  fineJobLine(`asking for a fine zoom at ${req.lat}, ${req.lon}...`);
+  fineJobLine(`asking for ${sizeText(host.size[0], host.size[1])} at ${req.lat}, ${req.lon}, nested in ${parent}...`);
   let r;
   try { r = await fetch('../api/zoom', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) }); } catch { r = null; }
   if (!r || r.status === 404 || r.status === 501) { job.finished = true; return fineJobLine('the server has no zoom API (run it with <code>uv run python -m planet serve</code>)'); }
@@ -893,6 +955,7 @@ async function postFine(lat, lon) {
   job.finished = true;
   if (j.status === 'error') return fineJobLine(`failed: ${j.error || '?'}`);
   fine.idx = (await getJSON('../zooms/index.json')) || fine.idx;
+  await loadFineSizes(fine.idx.map((z) => z.res_km));  // (the new zoom may be a parent in turn)
   // (a new zoom joins the picker, after its parent)
   const z = zoomEntry(j.zoom);
   if (z && ![...$('zoomSel').options].some((o) => o.value === z.id)) {
@@ -903,8 +966,8 @@ async function postFine(lat, lon) {
   }
   fineJobLine(`made fine zoom <a href="?id=${j.zoom}" data-open="${j.zoom}">${j.zoom}</a>`);
   $('fineJob').querySelector('a').onclick = (e) => { e.preventDefault(); openZoom(j.zoom); };
-  if (state.meta.id !== parent) return;
-  for (const f of chain(j.zoom, parent)) fine.want.add(f);
+  if (state.meta.id !== pageId) return;
+  for (const f of chain(j.zoom, pageId)) fine.want.add(f);
   fine.on = true; fine.flyTo = j.zoom;
   fineBox(); draw(); syncURL();
   if (state.d3) render();
@@ -922,7 +985,8 @@ function drawFine() {
   };
   for (const { z, depth } of descendants(m.id)) box(z.center, z.size_km, depth > 1 ? 'rgba(255,255,255,0.6)' : '#ffffff', depth > 1 ? [4, 3] : [],
     depth > 1 ? '' : `${z.id} · ${z.size_km} km @ ${Math.round(z.res_km * 1000)} m`);
-  if (fine.arm && fine.at) box({ lat: fine.at[0], lon: fine.at[1] }, fineSizeNow()[0], fineFits(...fine.at) ? '#7fe07f' : '#ff6b5a', [6, 3], '');
+  const h = fine.arm && fine.at && fineHost(...fine.at);
+  if (h) box({ lat: fine.at[0], lon: fine.at[1] }, h.size[0], h.fits ? '#7fe07f' : '#ff6b5a', [6, 3], '');
 }
 
 // ------------------------------------------------------------ rendering
@@ -1337,6 +1401,9 @@ addEventListener('mousemove', (e) => {
   if (e.target === canvas && fine.arm) {  // (picking a fine zoom: its square follows the pointer)
     const rc = pixelAt(e), m = state.meta;
     fine.at = rc ? latlon((rc[1] + 0.5 - m.nx / 2) * m.res_km, (m.ny / 2 - rc[0] - 0.5) * m.res_km) : null;
+    const h = fine.at && fineHost(...fine.at);  // (the menu follows the zoom it would nest in)
+    if (h && h.z.id !== fine.menuId) fineSizes(h.z);
+    fineHint(h || null);
     if (!drag) draw();
   }
   if (e.target === canvas) {

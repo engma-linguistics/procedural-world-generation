@@ -146,6 +146,33 @@ def default_size(parent_res: float) -> tuple[float, float]:
     return 500 * res, res
 
 
+NICE_RES_KM = (0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.2, 0.4, 0.5, 1.0, 2.0)  # the resolutions a size menu offers
+
+
+def rules() -> dict:
+    """The request rules, for the viewer's size menu (GET /api/fine-rules)."""
+    return {"max_step": MAX_STEP, "min_step": MIN_STEP, "parent_res": list(PARENT_RES), "max_px": MAX_PX,
+            "edge_px": EDGE_PX, "halo_parent_px": HALO_PARENT_PX}
+
+
+def size_options(parent_res: float) -> dict:
+    """What a fine zoom of a parent at parent_res km/px may be: {"default": {size_km, res_km}, "options":
+    [{size_km, res_km, default}]} (finest first), every option one check() accepts (apart from where it
+    sits in the parent); options empty when the parent is no parent for fine zooms."""
+    ds, dr = default_size(parent_res)
+    opts = []
+    if PARENT_RES[0] - 1e-9 <= parent_res <= PARENT_RES[1] + 1e-9:
+        for r in sorted({*NICE_RES_KM, dr}):
+            step = parent_res / r
+            if step > MAX_STEP * (1 + 1e-6) or step < MIN_STEP * (1 - 1e-6):
+                continue
+            s = ds if abs(r - dr) < 1e-9 else max(500 * r, min(25.0, 1000 * r))
+            if not 32 <= round(s / r) <= MAX_PX:
+                continue
+            opts.append({"size_km": round(s, 4), "res_km": r, "default": abs(r - dr) < 1e-9})
+    return {"default": {"size_km": ds, "res_km": dr}, "options": opts}
+
+
 def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float) -> None:
     """Raises ValueError (with what to do instead) for a request the
     conditioning can't honour: a parent too coarse or too fine, a step over

@@ -519,3 +519,18 @@ def test_subpixel_takes_each_parent_pixels_mean_off(parent):
     assert full.sum() >= 4
     assert np.abs(mean[full]).max() < 3.0  # (of 40 m of noise: the smooth part is gone)
     assert out.std() > 30.0  # ... the sub-pixel noise stays
+
+
+def test_size_menu_matches_check():
+    """PW-552: the viewer's size menu (zoom_fine.size_options, GET /api/fine-rules) offers only sizes
+    check() accepts, includes the server default, and offers something finer in every 2-4 km zoom and in a 200 m fine zoom."""
+    for rp in (4.0, 2.0, 1.0, 0.4, 0.25, 0.2, 0.1):
+        out = ZF.size_options(rp)
+        assert out["default"] == dict(zip(("size_km", "res_km"), ZF.default_size(rp)))
+        assert out["options"], rp
+        assert sum(o["default"] for o in out["options"]) == 1
+        pm = {"id": "p", "res_km": rp, "center": {"lat": 0, "lon": 0}, "nx": 4000, "ny": 4000}
+        for o in out["options"]:
+            ZF.check(pm, 0.0, 0.0, o["size_km"], o["res_km"])
+    assert not ZF.size_options(0.05)["options"] and not ZF.size_options(8.0)["options"]
+    assert ZF.rules()["max_step"] == ZF.MAX_STEP and ZF.rules()["parent_res"] == list(ZF.PARENT_RES)

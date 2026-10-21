@@ -44,6 +44,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api, family, make, thumbs
+from . import zoom_fine as ZF
 from . import parallel as P
 from . import store as S
 
@@ -294,6 +295,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
+        if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom_fine): the viewer's size menu
+            q = dict(parse_qsl(url.query))
+            try:
+                res = float(q["res_km"]) if "res_km" in q else None
+            except ValueError:
+                return self.send_json({"error": "res_km must be a number"}, 400)
+            return self.send_json({**ZF.rules(), **({"sizes": ZF.size_options(res)} if res else {})})
         if url.path == "/api/planets":
             return self.send_json({"planets": family.planets()})
         if url.path == "/api/make/options":

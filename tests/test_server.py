@@ -82,3 +82,12 @@ def test_cell_months(http_root):
     assert get(f"/api/cell?world={wid}&i={len(lat)}")[0] == 400
     assert get(f"/api/cell?world={wid}&i=x")[0] == 400
     assert get("/api/cell?world=nope&i=0")[0] == 404
+
+
+def test_fine_rules(http_root):
+    _, get = http_root
+    status, _, body = get("/api/fine-rules?res_km=4")
+    out = json.loads(body)
+    assert status == 200 and out["max_step"] == 20 and out["sizes"]["default"] == {"size_km": 100.0, "res_km": 0.2}
+    assert "sizes" not in json.loads(get("/api/fine-rules")[2])
+    assert get("/api/fine-rules?res_km=x")[0] == 400
