@@ -44,4 +44,5 @@ Iceland. Generated worlds with a polar sea beyond their sinking site have the sa
 - [ ] Fennoscandia's coldest month within ±6 C
 
 ## Updates
+- 2026-10-22: 2026-10-22 merged after 3 attempts (lanes A7-A9): slope current, frozen zone from the overturning's own ice, inflow salinity mixes like its temperature, straits by cross-section (moc_sill removed), Arctic branch under the ice lid. Fennoscandia coldest month -8.9 -> -6.5 C; Nordic Seas -8.3 -> -3.1; Barents still frozen (inflow arrives 3 C too cold); Iceland -12.4 -> -11.6. Weak southern worlds recover (dad91b 0.87 -> 2.36 Sv). Bar missed; merged as a mechanism improvement.
 - 2026-10-22: Created from inbox draft draft-nordic-winter-barents-frozen.md (found by base-climate-laneA6).

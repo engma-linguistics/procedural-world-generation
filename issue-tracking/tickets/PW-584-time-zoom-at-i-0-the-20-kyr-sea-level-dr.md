@@ -1,9 +1,10 @@
 ---
+id: PW-584
 title: "Time zoom at I = 0: the 20 kyr sea-level drift ranges from -0.1 to -29 m over plausible L5 worlds, so the 25 m bound of test_ice_at_index_zero_is_the_runs sits inside the spread"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-470
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: base-climate-laneA9
 blocked_by: []
 relates: [PW-366, PW-471, PW-418]
 refs: [tests/test_timezoom_consistency.py, docs/review/base-climate/stages.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -40,3 +43,6 @@ happens to be under 25 m.
 
 - [ ] find what grows ice at I = 0 on seed 7 (the zoom's balance against the run's ice rule), or rule that the bound
   is per-world and widen the test to several seeds
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-timezoom-index-zero-drift-spread.md (found by base-climate-laneA9).

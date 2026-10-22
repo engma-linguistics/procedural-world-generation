@@ -1,4 +1,5 @@
 ---
+id: PW-583
 title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the inflow now reaches and sinks there (1.4 Sv) but arrives at -0.5 to +1.5 C, against ~4-6 C observed; Iceland -11.6 against the -7.8 bar"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneA7, base-climate-laneA8, base-climate-laneA9
 blocked_by: []
 relates: [PW-582, PW-575, PW-458, PW-579]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA9/]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -52,3 +55,6 @@ Options:
 
 - [ ] rule A / B / C (PW-582's three attempts are used)
 - [ ] Iceland's regression (-10.6 -> -11.6): accept or chase with A
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-barents-still-frozen-after-pw582.md (found by base-climate-laneA7, base-climate-laneA8, base-climate-laneA9).
