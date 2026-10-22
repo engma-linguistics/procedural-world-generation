@@ -49,5 +49,6 @@ mechanisms and proposes a staged plan (its section 4). Decisions for the owner:
 - [ ] the owner picks the order and the stop bars
 
 ## Updates
+- 2026-10-22: 2026-10-22 checkpoint (lane A10, on the PW-579 base climate): the ice lane's honest zoom rules still fail the L4 endings test (102 of 93.5 m left after 15 kyr); tz_earth interglacial ice 12.4-13.7% (fails either way); dt0 today's ice 1.37x. Points back at the ice-surface air (PW-569/439). Re-run after stage 3.
 - 2026-10-22: Status needs-decision -> in-progress. Owner 2026-10-22: plan order approved. Coordinator runs two lanes in parallel: lane A = stages 1-3 serially (overturning PW-458, sea air PW-346, summer heat PW-352/457/573), then the checkpoint; lane B = stage 4 starting with the weathering law (PW-574), then PW-558, PW-559, PW-564.
 - 2026-10-22: Created from inbox draft draft-base-climate-plan-order.md (found by base-climate-review).

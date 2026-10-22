@@ -2,7 +2,7 @@
 id: PW-579
 title: A small brine pocket sets a polar sea's deep water and gates out the rest (dad91b's south 4.5 → 0.9 Sv)
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: ocean
@@ -59,4 +59,5 @@ Lean: A or B. Ocean / stage-1 code, so for the coordinator's ruling and the next
 - [ ] check Earth's Weddell and Ross under the chosen option (PW-017)
 
 ## Updates
+- 2026-10-22: Status needs-decision -> done. 2026-10-22 merged (lane A10): entrainment, moc_entrain 1.5; reference = lighter of the old and the pocket/open-sea mix. Earth S 2.51 -> 5.94 Sv, N 14.4 Sv (92% open polar); Fennoscandia coldest month -6.0 (meets +-6). dad91b stays 2.5 Sv: its dense shelf water is behind straits (new ticket).
 - 2026-10-22: Created from inbox draft draft-dad91b-southern-sinking-weakening.md (found by laneA5 (stage 2b + PW-578, merge pass)).

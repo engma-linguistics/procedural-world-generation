@@ -1,15 +1,19 @@
 ---
+id: PW-585
 title: "dad91b's southern sinking (2.5 Sv) is now set by the straits: its densest polar water sits behind passages too small for the inflow"
 type: task
 status: needs-decision
+parent: PW-470
+milestone: v1
 subsystem: ocean
 effort: s
 impact: low
 found_by: base-climate-laneA10
-parent: null
 blocked_by: []
 relates: [PW-579, PW-582]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -29,3 +33,6 @@ Options:
 
 Lean: A for v2. B is a real mechanism, but it matters for one world in 9.
 - [ ] rule A or B
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-dad91b-south-is-straits.md (found by base-climate-laneA10).
