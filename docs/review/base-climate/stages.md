@@ -714,3 +714,72 @@ and weaken by ~1–2 Sv, as fresher inflow should. dad91b's south is PW-579's.
 These are single chaotic snapshots. NPP falls on both seeds by 10–17%, and ice rises on both.
 
 Attempts used on PW-582: 2 of 3. The handoff is `handoff-A8.md`.
+
+## PW-582, attempt 3 of 3 (lane A9): straits by geometry and the Arctic branch
+
+**Result: an improvement overall that misses the bar. Merge-ready apart from the scorecard line, which follows in its own commit.**
+- Fennoscandia −8.2 → **−6.5** (bar ±6), the Nordic Seas box −5.5 → −3.1, and the Norwegian coast's sea air 1.4 → **3.4 C**
+  (NCEP ~3.5). The Barents is still frozen (−13.7 → −13.3). Iceland is worse, −10.6 → −11.6 (bar −7.8).
+- `uv run pytest -q`: 568 passed. The goldens are regenerated on purpose.
+- Attempt 2's salinity mixing stays in (coordinator's ruling 2).
+- **Harness change (coordinator's ruling 1):** `test_timezoom_consistency`'s `cold_moment` no longer rides on seed 4's
+  chaotic 300 Myr run. It takes the first of seeds 4–11 whose cold moment meets a stated precondition:
+  - the run's sea level within 150 m;
+  - ≥ 2 Sv of overturning in each hemisphere;
+  - ≥ 25% land poleward of 60° in one hemisphere, where sheets can grow. Sheets are not part of the precondition,
+    so `test_cold_moment_has_sheets` stays a real check.
+
+  Every assertion is unchanged, including the 25 m bound. Control: the three tests pass on main's code, on attempt 2
+  and on attempt 3. `draft-timezoom-index-zero-test-chaotic.md` is deleted.
+  The same seeds show the I = 0 drift ranges from −0.1 to −29 m on plausible worlds (seed 7: −29.1). So the bound sits
+  inside the spread, which is a property of the time zoom (`draft-timezoom-index-zero-drift-spread.md`).
+
+Outputs are in `laneA9/`: `*_a3.txt` after, and `*_head.txt` before (attempt 2 with main merged in).
+
+### What changed (`planet/ocean.py`; `moc_sill` removed)
+1. **A strait is a passage too small for the inflow** (`_straits`, `_narrowest`).
+   - The inflow is a layer `moc_layer_m` deep and `moc_width` wide. It can't pass where the sea's narrowest
+     cross-section is smaller than its own. The cross-section is the smallest of three great-circle chords through
+     the cell, each walked both ways to land, counting each cell's width × sea fraction × min(depth, layer).
+   - So a wide shelf sea is told from a narrow strait by geometry, with no depth picked by hand. It uses no new
+     constant.
+   - On Earth's L5 overturning grid (need 125 km²): Bering 7, Hudson Strait 36, Nares 35, Davis 120 and the Baltic 22
+     stay shut. The Barents (129–153), Denmark Strait 145, Faroe–Shetland 175 and Fram 211 are open.
+2. **The Arctic branch.**
+   - Where the inflow meets the year-round ice lid, it dives under it rather than stopping. Its routes end at the
+     lid's edge (`_paths`' new `through` mask), and nothing more is exchanged there.
+   - The water there is the winter water of the open sea it came through. Where that is dense enough it sinks at the
+     lid's edge, under the same gate and flow law as the open sea.
+   - The deep-water reference is still taken from the open sea. The lid's surface share stays 0.
+   - So the inflow carries on past the open sea's own sinking toward the lid, as the Barents branch does toward the
+     St Anna Trough.
+
+### The bars (Earth L6)
+| line | attempt 2 + main (`*_head`) | attempt 3 (`*_a3`) |
+|---|---|---|
+| Fennoscandia coldest-month bias (bar ±6) | −8.2 | **−6.5** |
+| Iceland (bar: no worse than −7.8) | −10.6 | −11.6 |
+| Nordic Seas / Barents coldest-month bias | −5.5 / −13.7 | **−3.1** / −13.3 |
+| Kola / Karelia | −13.9 | −13.6 |
+| Norwegian coast sea air (NCEP ~+3.5); open in winter; SST | +1.4; 100%; 2.4 | **+3.4**; 100%; 3.8 |
+| Nordic / Barents-Kara / Irminger / Labrador / Baffin (Sv) | 4.02 / 0 / 1.53 / 1.77 / 2.42 | 5.29 / 1.37 / 2.01 / 2.42 / 0.31 |
+| Earth NH Sv, open polar share; SH | 10.21, 73%; 2.43 | **11.91, 91%**; 2.51 |
+| Labrador Sea / Baffin Bay; Baffin Bay; Hudson Bay | +6.2; +6.3; +7.6 | **−0.5; +1.4**; +7.5 |
+| log-rain r / Köppen group / exact | 0.622 / 70 / 31 | 0.622 / 71 / 31 |
+
+**Generated worlds**, NH / SH Sv (before → after): 119973 16.0/16.6 → 15.9/16.4, 28442c 17.3/16.0 → 17.0/15.8,
+607540 16.3/13.9 → 16.4/13.9, 81aced 15.0/12.0 → 14.9/11.5, 7082f5 8.1/8.2 → 8.1/**15.1**, d14b89 16.3/18.4 →
+15.9/18.3, a5a387 9.5/15.9 → 10.0/15.9, dad91b 13.7/0.87 → 13.7/**2.36**, c00ebf 12.0/7.1 → 11.9/**11.9**. All sink in both
+hemispheres. Southern shelf seas that used to count as straits now feed their sinking.
+
+### Why the Barents is still frozen (`draft-barents-still-frozen-after-pw582.md`, updated)
+- The inflow now reaches and sinks in the Barents (share 0.6–0.9, 1.4 Sv). But it arrives at −0.4 to +1.4 C, against
+  4–6 C observed. The Norwegian Atlantic Current is already ~3 C too cold at 70–72N.
+- The hemisphere's capped sinking is spread over every gated cell of the Nordic basin by area. So the transport left
+  along the slope by 72N is small, and it gives its heat up within a few cells.
+- The lid-edge sinking is small (~0.01–0.02 Sv per cell).
+- Iceland: the Irminger branch arrives 3–4 C colder as the sinking moves north and east.
+- The draft's options: the sinking's distribution within a capped hemisphere, the form of the inflow's heat loss, or
+  parking the Barents until the winds' stage.
+
+Attempts used on PW-582: 3 of 3.

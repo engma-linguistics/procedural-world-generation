@@ -1,5 +1,5 @@
 ---
-title: "PW-582 attempt 1: the Barents stays frozen (-13.7 C) because it never sinks, so no inflow is routed to it; Iceland -10.3 against the -7.8 bar"
+title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the inflow now reaches and sinks there (1.4 Sv) but arrives at -0.5 to +1.5 C, against ~4-6 C observed; Iceland -11.6 against the -7.8 bar"
 type: task
 status: needs-decision
 parent: PW-470
@@ -7,67 +7,48 @@ milestone: v2
 subsystem: ocean
 effort: l
 impact: high
-found_by: base-climate-laneA7, base-climate-laneA8
+found_by: base-climate-laneA7, base-climate-laneA8, base-climate-laneA9
 blocked_by: []
-relates: [PW-582, PW-575, PW-458]
-refs: [planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA7/]
+relates: [PW-582, PW-575, PW-458, PW-579]
+refs: [planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA9/]
 ---
 
 ## Description
-Lane A7's PW-582 attempt 1 (stages.md, "PW-582") makes the inflow follow the polar seas' slope and lets the lid be the
-ice the overturning itself leaves. The Nordic Seas' coldest month goes -8.3 -> -4.2 C bias, Fennoscandia -8.9 -> -7.9,
-Iceland -12.4 -> -10.3, the Norwegian coast's sea air -0.7 -> +2.0 C (NCEP ~+3.5). **The Barents doesn't move
-(-13.7).**
+PW-582 used all three attempts (stages.md, "PW-582, attempt 3 of 3"). Attempt 3 built both fixes the lane A8 draft
+identified:
+- **Straits by geometry** (`ocean._straits`): the inflow can't pass where the sea's narrowest cross-section, down to
+  the layer's depth, is smaller than its own (`moc_width` x `moc_layer_m`). `moc_sill` is gone. The Barents opens
+  (narrowest section 129-153 km2 against 125), while Bering (7), Hudson Strait (36), Nares (35) and Davis (120) stay shut.
+- **The Arctic branch**: the inflow dives under the year-round ice where it meets it and can sink at the lid's edge
+  with the winter water of the open sea it came through.
 
-Why, measured on Earth L6 (`scratchpad/laneA7/nordic.py` maps):
-- The inflow is routed only to cells that sink (`ocean._route` from the sinking). The Barents' winter water is
-  ~0.5 kg/m3 lighter than the Nordic Seas' (salinity 34.8 against 35.6-36.1), so it is gated out at every spin-up
-  width tried (`moc_drho` 0.6, `moc_iters` 12). It is light because it isn't fed: a lock.
-- On Earth the Barents is salty (~35.0) because the Atlantic water goes there anyway, and its cooled water is among
-  the Arctic's densest.
-- The model's Nordic inflow is also too salty (35.6-36.1 against ~35.2): `_along` relaxes the inflow's temperature
-  toward the latitude's but never its salinity (no lateral mixing), which widens the Barents' density gap.
+Earth L6 after: Barents / Kara sinking 0 -> 1.37 Sv, Nordic 4.0 -> 5.3, Baffin 2.4 -> 0.3, NH 10.2 -> 11.9 Sv at 91%
+open polar sea. Fennoscandia -8.2 -> -6.5 (bar +-6), the Nordic Seas -5.5 -> -3.1, the Norwegian coast's sea air
+1.4 -> 3.4 C (NCEP ~3.5). **But the Barents stays frozen (-13.7 -> -13.3), and Iceland is worse (-10.6 -> -11.6).**
 
-Tried and dropped:
-- **Knudsen's exchange** for the sea under the lid (Q_in = F S_out / (S_in - S_out), routed to the lid's edge). It gives
-  0.8 Sv on Earth (the lid's net fresh water is 0.05 Sv; the real Arctic takes in ~3 Sv). It warms the Fram side by
-  ~1 C but enters the Barents only at its mouth. With a meltwater pulse it scales up unbounded (the real exchange is
-  limited by the straits' hydraulics), and it broke `test_timezoom_cycle::test_glacials_grow_ice_and_endings_melt_it_fast`
-  (57 m against 46). Its code is in `scratchpad/laneA7/exp_pw582.diff`.
-- A thermal-wind (baroclinic) steering of the inflow: ~0.03 m/s, no effect.
+Why, from the maps (`scratchpad/laneA9/nordic.py`, Earth L6):
+- The inflow reaches the Barents (share 0.6-0.9) but its temperature falls from ~3 C off northern Norway (72N 6E)
+  to 1.4 at the Barents' mouth and -0.4 at 38E. Observed: ~6-7 C off Norway, 4-6 C into the Barents. The Norwegian
+  Atlantic Current is already ~3 C too cold at 70-72N.
+- Each 220 km cell gives up heat as an exchange of ~0.4 Sv (`moc_lambda` 30 W/m2/C over `moc_width`). The transport
+  along the path falls fast because the hemisphere's sinking, capped at `moc_k` x its density difference, is spread
+  over every gated cell of the Nordic Seas by area. So little transport is left by 72N, and it cools within a few
+  cells.
+- The lid-edge sinking is small (~0.01-0.02 Sv per cell). The open water next to the lid is lighter than the
+  deep-water reference by the time it gets there.
+- Iceland: the Irminger branch west of Iceland arrives 3-4 C colder (t_in at 64N 30-40W 9 -> 4-5 C), because the
+  sinking moved north and east (Nordic and Barents up, Baffin down).
 
 Options:
-- A: the inflow's salinity mixes with the water it passes (as its temperature does), so the Nordic water is
-  realistic and the Barents' gap shrinks (it may then sink and feed itself). This weakens the overturning everywhere,
-  so it needs the stage-1 bars re-checked.
-- B: water-mass transformation along the path: a site sinks no more than its winter heat loss can turn the inflow
-  into deep water (Walin 1982), and the rest goes on downstream. Its numbers on Earth are at the edge of binding.
-- C: accept the Barents as frozen until the winds' stage (its cold high keeps the winds offshore).
+- A: the sinking's distribution within a capped hemisphere. Today the cap scales every gated cell the same, so the
+  transport is spread thin over the whole Nordic basin. Weighting by the water each cell actually receives (sinking
+  where the inflow can feed it) would keep more transport along the boundary current. That is a mechanism question
+  for the overturning's flow law, not a constant.
+- B: the inflow's heat loss: `moc_lambda` exchanges with the latitude's sea temperature, not with the winter air
+  over the inflow. Check its form against the observed heat loss of the Norwegian Atlantic Current (~5 C over
+  ~1500 km at ~7 Sv).
+- C: park the Barents until the winds' stage (its cold high), and accept Iceland's -11.6 as a cost of sounder
+  routing.
 
-Ruled (coordinator): A, then B if still short.
-
-## Attempt 2 (lane A8): A landed, B measured, the lock is elsewhere
-- **A** (the inflow's salinity relaxes toward the water it passes at its temperature's rate): the Nordic inflow is
-  now 35.0-35.5 psu (was 35.6-36.1). The Nordic site barely moves (4.09 -> 4.02 Sv; Irminger and Labrador +0.8) but the Nordic box gets colder
-  (-4.2 -> -5.5). **The Barents doesn't move (-13.7)**, even though its winter water is now as dense as the
-  Nordic Seas' (coarse grid, 1028.2-1028.4 against 1028.0-1028.2).
-- **B** (a site sinks no more than its heat loss can turn the arriving inflow into deep water): with the model's own
-  air-sea exchange (`moc_lambda` x (t_in - t_eq) over the cell), and even counting the inflow cooled all the way to
-  freezing, it binds on 4 of 85 northern sinking cells (0.38 Sv of 10.1; `scratchpad/laneA8/walin.py`). It would move
-  almost nothing, so it was not written.
-- **What locks the Barents** (`scratchpad/laneA8/nordic.py`, `depth.py` maps, Earth L6):
-  1. `moc_sill` (300 m) treats the Barents shelf as a strait. On the L5 overturning grid the Barents is 230-300 m
-     deep east of 30E (the Bear Island Trough 300-400 m), so it is `lid_d` and the inflow can't enter it at all.
-     The rule was meant for Bering (40 m on that grid). Hudson Strait (216 m) is cut the same way.
-  2. With the sill at 150 m (an experiment, not a fix) the inflow does reach the SW Barents (share 0.6-0.9) and it
-     sinks there, but it arrives at -0.4 to +1 C (observed ~4-6 C at 20-33E), so the Barents stays frozen (-13.6).
-     The branch only carries what sinks in the Barents itself (~1 Sv), so `_along` cools it within a cell or two.
-     On Earth the Barents branch (~2 Sv) mostly flows on into the Arctic and sinks there (St Anna Trough).
-  Sill 150 m with A: Fennoscandia -7.5, Iceland -8.9, Nordic -3.2, Barents -13.6.
-- So the mechanism still missing is the ticket's own lead: the inflow past the sinking site, continuing poleward
-  into a lidded Arctic where it becomes intermediate/deep water under the ice. The routing only sends water to
-  cells that sink. And a shelf sea needs telling apart from a strait.
-
-- [ ] rule: attempt 3 on (1) a shelf sea vs a strait for `moc_sill` and (2) an Arctic branch that sinks under the
-  lid (the Atlantic layer), or park the Barents (option C)
-- [ ] the Barents' coldest month within ~6 C of NCEP; Iceland no worse than -7.8
+- [ ] rule A / B / C (PW-582's three attempts are used)
+- [ ] Iceland's regression (-10.6 -> -11.6): accept or chase with A

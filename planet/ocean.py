@@ -46,9 +46,12 @@ planet:
    along the cheapest sea routes, riding the currents that go its way (Gulf
    Stream, North Atlantic Drift) and, in the polar seas, the sea floor's
    slope (a boundary current round the basin), routed like rivers run
-   backwards. It can't pass straits shallower than moc_sill, nor come up
-   under sea ice that lasts most of the year (the ice its own warmth
-   leaves), nor cross a latitude that is sea all the way round (with no
+   backwards. It can't pass a strait whose cross-section is smaller than
+   its own (moc_width x moc_layer_m: Bering, but not the wide Barents
+   shelf), nor come up under sea ice that lasts most of the year (the ice
+   its own warmth leaves): it dives under that lid where it meets it, and
+   sinks there if the open sea's winter water it brings is dense enough
+   (the Arctic branch). Nor can it cross a latitude that is sea all the way round (with no
    coast, a circumpolar channel can't hold up a north-south surface flow:
    beyond one, as round Antarctica, deep water wells up to replace it). It
    is a layer hundreds of metres deep: it gives its heat up to the air only
@@ -220,9 +223,10 @@ def open_share(sst: np.ndarray, frozen: np.ndarray, half: np.ndarray) -> np.ndar
 
 
 @njit(cache=True)
-def _paths(sources, ok, nbr_off, nbr_idx, cost):
+def _paths(sources, ok, nbr_off, nbr_idx, cost, through):
     """Cheapest routes from the sources over the cells in ok (Dijkstra):
-    cost per CSR edge (from a cell to that neighbour). Returns (cost to
+    cost per CSR edge (from a cell to that neighbour); cells where through
+    is False are reached but not passed through. Returns (cost to
     reach each cell, inf where unreached; the cell each is reached from,
     -1 at the sources; the source each route starts at)."""
     n = ok.shape[0]
@@ -239,7 +243,7 @@ def _paths(sources, ok, nbr_off, nbr_idx, cost):
         size = kernels._heap_push(hk, hv, size, 0.0, s)
     while size > 0:
         d, i, size = kernels._heap_pop(hk, hv, size)
-        if d > dist[i]:
+        if d > dist[i] or not through[i]:
             continue
         for e in range(nbr_off[i], nbr_off[i + 1]):
             j = nbr_idx[e]
@@ -252,6 +256,69 @@ def _paths(sources, ok, nbr_off, nbr_idx, cost):
                 root[j] = root[i]
                 size = kernels._heap_push(hk, hv, size, nd, j)
     return dist, par, root
+
+
+@njit(cache=True)
+def _narrowest(centers, nbr_off, nbr_idx, sea, section, need, max_steps):
+    """Per sea cell: the smallest cross-section (sum of `section` over the
+    cells crossed) of the sea along the great circles through it in three
+    directions 60 deg apart, walked both ways until land; a walk stops
+    once the sum reaches `need` (it is then no strait), or after max_steps
+    cells each way (a cost bound)."""
+    n = centers.shape[0]
+    out = np.full(n, np.inf)
+    for i in range(n):
+        if not sea[i]:
+            continue
+        c0 = centers[i]
+        e = np.array([-c0[1], c0[0], 0.0])
+        if e[0] * e[0] + e[1] * e[1] < 1e-12:
+            e = np.array([1.0, 0.0, 0.0])
+        e /= np.sqrt((e * e).sum())
+        nth = np.cross(c0, e)
+        best = np.inf
+        for a in range(3):
+            ang = a * np.pi / 3.0
+            u = np.cos(ang) * e + np.sin(ang) * nth
+            nrm = np.cross(c0, u)
+            tot = section[i]
+            for sgn in (1.0, -1.0):
+                k = i
+                for _ in range(max_steps):
+                    if tot >= need:
+                        break
+                    t = sgn * np.cross(nrm, centers[k])
+                    jb, sb = -1, -np.inf
+                    for q in range(nbr_off[k], nbr_off[k + 1]):
+                        j = nbr_idx[q]
+                        d = centers[j] - centers[k]
+                        s = (d * t).sum() - abs((centers[j] * nrm).sum())
+                        if s > sb:
+                            sb, jb = s, j
+                    if jb < 0 or not sea[jb]:
+                        break
+                    k = jb
+                    tot += section[k]
+            best = min(best, tot)
+            if best < need:
+                break
+        out[i] = best
+    return out
+
+
+def _straits(grid: Grid, sea: np.ndarray, sea_frac: np.ndarray, depth: np.ndarray, tune: dict) -> np.ndarray:
+    """Sea cells in a passage too small for the overturning's inflow: a
+    layer moc_layer_m deep and moc_width wide can't pass where the sea's
+    narrowest cross-section, counted down to the layer's depth, is smaller
+    than its own (moc_width x moc_layer_m). So a narrow, shallow strait
+    (Bering, ~85 km x 50 m; Hudson Strait) shuts it out, while a wide shelf
+    sea of the same depth (the Barents, ~1000 km x 200-400 m), or a
+    narrow but deep strait (Fram, Denmark Strait), lets it through. Each
+    cell is a cell's width (h) of sea_frac sea down to min(depth, layer)."""
+    h = C._geom(grid)["h"]
+    sec = np.where(sea, h * sea_frac * np.clip(depth, 0.0, tune["moc_layer_m"]) / 1000.0, 0.0)  # km2
+    need = tune["moc_width"] * tune["moc_layer_m"] / 1000.0
+    return sea & (_narrowest(grid.centers, grid.nbr_off, grid.nbr_idx, sea, sec, need, 40) < need)
 
 
 @njit(cache=True)
@@ -272,7 +339,7 @@ def _route(order, par, sink):
 def _along(order, par, Q, tgt, x0, rate, dil):
     """A property of the inflowing water along its routes, from its
     sources (x0 there) on: each cell, it relaxes toward tgt by
-    exp(-rate / Q) (Q: the transport through the cell, m3/s) and is diluted
+    exp(-rate / Q) (rate per cell, m3/s; Q: the transport through it) and is diluted
     by dil / Q (dil: fresh water added over the route's width there, m3/s)."""
     x = x0.copy()
     for k in range(order.shape[0] - 1, -1, -1):
@@ -281,7 +348,7 @@ def _along(order, par, Q, tgt, x0, rate, dil):
         if p < 0:
             continue
         q = max(Q[i], 1e-9)
-        x[i] = tgt[i] + (x[p] - tgt[i]) * np.exp(-rate / q) - x[p] * min(dil[i] / q, 0.5)
+        x[i] = tgt[i] + (x[p] - tgt[i]) * np.exp(-rate[i] / q) - x[p] * min(dil[i] / q, 0.5)
     return x
 
 
@@ -304,13 +371,16 @@ def _slope_current(grid: Grid, sea: np.ndarray, depth: np.ndarray, tune: dict) -
 
 def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarray, sst: np.ndarray,
                 sss: np.ndarray, t_eq: np.ndarray, fresh: np.ndarray, cur: np.ndarray, tune: dict,
-                lid: np.ndarray | None = None, depth: np.ndarray | None = None) -> dict:
+                lid: np.ndarray | None = None, depth: np.ndarray | None = None,
+                ice_lid: np.ndarray | None = None) -> dict:
     """Sinking, its strength and the surface inflow feeding it (steps 4-6).
     rho_w, rho_a: winter and annual surface density; sst, sss: the surface
     now; t_eq: the latitude's sea temperature (what the inflow gives its
     heat up toward); fresh: net fresh water (m/yr); cur: the (wind-driven)
-    currents, which the inflow follows; lid: cells the inflow can't reach at
-    the surface (shallow straits, the fresh lid under year-round sea ice).
+    currents, which the inflow follows; lid: cells the inflow can't reach
+    (straits too small for it); ice_lid: the fresh lid under year-round sea
+    ice, which the inflow dives under where it meets it and can sink below
+    (the Arctic branch) but doesn't come up through.
     Returns sinking (Sv per cell), inflow (Sv per cell width, spread), share
     (0..1: how much of the surface water is the inflow), t_in, s_in (its
     temperature and salinity), rho_deep (the deep water's density, per cell
@@ -351,8 +421,19 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     along = (cur[src] * cdir).sum(1) / tune["cur_ref"]
     cost = np.exp(-np.clip(tune["moc_follow"] * along, -2.0, 2.0))
     ok = sea & ~chan & (True if lid is None else ~lid)
-    d_low, par, root = _paths(low[ok[low]], ok, grid.nbr_off, grid.nbr_idx, cost)
+    # The Arctic branch (PW-582): where the inflow meets the year-round ice
+    # it dives under the fresh lid (the Atlantic layer) rather than
+    # stopping. Its water there is the winter water of the open sea it came
+    # through, cooled and salted by that sea's winter (the Barents' water
+    # going on into the Arctic, St Anna Trough): where that is dense enough
+    # it sinks at the lid's edge as the open sea's does, so the inflow
+    # carries on past the open sea's own sinking toward it. Under the lid
+    # nothing more is exchanged, so the routes end at its edge.
+    under = np.zeros(n, np.bool_) if ice_lid is None else ice_lid & ok
+    d_low, par, root = _paths(low[ok[low]], ok, grid.nbr_off, grid.nbr_idx, cost, ok & ~under)
     reach = np.isfinite(d_low)
+    edge = under & reach & (par >= 0)
+    rs = np.where(edge, rs[np.maximum(par, 0)], np.where(under, -np.inf, rs))
     # (beyond a channel: the channel's water is what wells up and is drawn in)
     rho_up = (area * ra)[chan].sum() / area[chan].sum() if chan.any() else 0.0
     # (an isolated polar sea with no low latitudes and no channel: no overturning)
@@ -370,16 +451,19 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     drho = tune["moc_drho"]
     hemis = (grid.lat > 0, grid.lat <= 0)
     for c, hm in ((c, hm) for c in np.flatnonzero(big) for hm in hemis):
-        m = (lab == c) & hm & (polar > 0) & (reach | (chan.any() & ~chan & (lat > _chan_lat(grid, chan))))
-        if not m.any():
+        m = ((lab == c) & hm & (polar > 0) & (reach | (chan.any() & ~chan & (lat > _chan_lat(grid, chan))))
+             & (~under | edge))
+        mo = m & ~under
+        if not mo.any():
             continue
         # the deep water: a mix of the densest water there is (its densest
-        # moc_top share of the polar sea, by area), made lighter by mixing on
-        # its way down (moc_mix)
-        o = np.argsort(rs[m])[::-1]
-        cum = np.cumsum(area[m][o])
+        # moc_top share of the polar sea, by area, at the surface: not the
+        # lid's edge, whose water is its open neighbour's), made lighter by
+        # mixing on its way down (moc_mix)
+        o = np.argsort(rs[mo])[::-1]
+        cum = np.cumsum(area[mo][o])
         top = o[: np.searchsorted(cum, tune["moc_top"] * cum[-1]) + 1]
-        ref = (rs[m][top] * area[m][top]).sum() / area[m][top].sum() - tune["moc_mix"]
+        ref = (rs[mo][top] * area[mo][top]).sum() / area[mo][top].sum() - tune["moc_mix"]
         gate = np.clip((rs[m] - ref + drho) / drho, 0, 1) ** tune["moc_pow"] * polar[m]
         # Stommel's flow law: sinking ~ the density difference that drives it
         dr = np.maximum(rs[m] - np.where(reach[m], ra[np.maximum(root[m], 0)], rho_up), 0.0)
@@ -443,9 +527,9 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     Tr = _route(order, par, sinking)
     Q = Tr * SV
     hw = h * 1000.0 * tune["moc_width"] * 1000.0  # m2: the route's area per cell
-    mix = tune["moc_lambda"] * hw / 4.1e6  # m3/s per cell
+    mix = np.where(under, 0.0, tune["moc_lambda"] * hw / 4.1e6)  # m3/s per cell (none under the ice lid)
     t_in = _along(order, par, Q, t_eq, sst, mix, np.zeros(n))
-    s_in = _along(order, par, Q, sss, sss, mix, np.maximum(fresh, 0.0) / 3.156e7 * hw)
+    s_in = _along(order, par, Q, sss, sss, mix, np.where(under, 0.0, np.maximum(fresh, 0.0)) / 3.156e7 * hw)
     # spread over the route's width; where it carries more than ~moc_q0 Sv
     # per km of width, the surface water is mostly the inflow
     norm = np.maximum(_smooth(grid, sea.astype(float), tune["moc_km"]), 1e-6)
@@ -456,7 +540,8 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     out["inflow"] = Ts
     # (in the subtropical gyres the gyre itself is the warm current; the
     # inflow's own warmth shows once it has left them, ~10 deg on)
-    out["share"] = (1.0 - np.exp(-Ts / h / tune["moc_q0"])) * np.clip((lat - tune["moc_src_lat"]) / 10.0, 0, 1)
+    out["share"] = np.where(under, 0.0, (1.0 - np.exp(-Ts / h / tune["moc_q0"]))
+                            * np.clip((lat - tune["moc_src_lat"]) / 10.0, 0, 1))
     return out
 
 
@@ -626,13 +711,14 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     iced_c = None
     cur_c = np.where(sea_c[:, None], dn(cur), 0.0)
     # The inflow is a layer hundreds of m deep: it can't pass a strait
-    # shallower than moc_sill (Bering), and where the sea is iced over most
+    # too small for it (_straits: Bering, not the Barents), and where the sea is iced over most
     # of the year it dives under the fresh surface layer (the Arctic
     # halocline). That ice is the one the overturning's own warmth leaves,
     # found again each iteration (from the first guess's sea, without the
     # inflow, a sea the inflow would keep open stayed shut to it: PW-582).
-    lid_d = np.zeros(cg.n, bool) if depth is None else dn(depth) < tune["moc_sill"]
-    lid = lid_d
+    frac_c = M["cnt"] / np.maximum(np.bincount(M["cidx"], minlength=cg.n), 1)
+    lid_d = np.zeros(cg.n, bool) if depth is None else _straits(cg, sea_c, frac_c, dn(depth), tune)
+    ice_lid = None
     depth_c = None if depth is None else dn(depth)
     brine = S0 * ICE_FRESH * np.where(sea_c, ice_c, 0.0) / tune["brine_m"]
     # how the sea surface takes up a change of the temperature it relaxes to (as climate.sea_surface)
@@ -672,7 +758,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         if frozen_c is not None:
             # (0..1: how much of the year the sea is iced over; a lid where most of it)
             iced_c = np.where(sea_c, np.clip(1.0 - 2.0 * open_share(sst, frozen_c, half_c), 0.0, 1.0), 0.0)
-            lid = lid_d | (iced_c > 0.5)
+            ice_lid = iced_c > 0.5
         sss, rho_w, rho_a = state(st, sst)
         # With no earlier state, the first passes let every sea that is
         # nearly dense enough sink, as if spun up from a well-mixed ocean,
@@ -683,7 +769,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         n_sp = max(n_it - 2, 1)
         f = tune["moc_spin"] ** max(1.0 - it / n_sp, 0.0) if start is None else 1.0
         ov = overturning(cg, sea_c, rho_w, rho_a, sst, sss, teq_c, fresh_c, cur_c,
-                         {**tune, "moc_drho": tune["moc_drho"] * f}, lid, depth_c)
+                         {**tune, "moc_drho": tune["moc_drho"] * f}, lid_d, depth_c, ice_lid)
         a = 1.0 if spin else tune["moc_relax"]
         step = a * (ov["share"] - st["share"])
         st = {k: st[k] + a * (ov[k] - st[k]) for k in st}
@@ -858,7 +944,7 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
 
     def routes(key, targets):
         if key not in runs:
-            runs[key] = _paths(np.flatnonzero(targets), sea, grid.nbr_off, grid.nbr_idx, cost)
+            runs[key] = _paths(np.flatnonzero(targets), sea, grid.nbr_off, grid.nbr_idx, cost, sea)
         return runs[key]
 
     # surface limb: from the low latitudes, riding the model's inflow
@@ -867,7 +953,7 @@ def loop_schematic(grid: Grid, elev: np.ndarray, c: dict, tune: dict | None = No
     s_cost = (1.0 / (0.05 + np.clip(infl / max(ref, 1e-12), 0, 1)))[grid.nbr_idx]
     low = sea & (np.abs(grid.lat) < tune["moc_src_lat"])
     s_ok = sea & ~chan
-    s_dist, s_par, _ = _paths(np.flatnonzero(low), s_ok, grid.nbr_off, grid.nbr_idx, s_cost)
+    s_dist, s_par, _ = _paths(np.flatnonzero(low), s_ok, grid.nbr_off, grid.nbr_idx, s_cost, s_ok)
     up_kind = set()
     for k, s in enumerate(out["sites"]):
         if s["sv"] < LOOP_MIN_SV:
