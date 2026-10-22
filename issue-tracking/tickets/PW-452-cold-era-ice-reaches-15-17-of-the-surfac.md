@@ -4,7 +4,7 @@ title: Cold-era ice reaches 15-17% of the surface at only dT -4, so the sea fall
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: high

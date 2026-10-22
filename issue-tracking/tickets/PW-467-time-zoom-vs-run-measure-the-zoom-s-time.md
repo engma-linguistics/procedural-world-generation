@@ -4,7 +4,7 @@ title: "Time zoom vs run: measure the zoom's time-mean ice against the run's (to
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: high

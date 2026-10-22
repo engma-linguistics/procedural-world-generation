@@ -4,7 +4,7 @@ title: "Time zoom: ice-age endings at the agreed strength are slow (30-75 kyr) a
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high

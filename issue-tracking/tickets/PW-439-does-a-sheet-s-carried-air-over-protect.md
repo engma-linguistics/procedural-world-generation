@@ -4,7 +4,7 @@ title: Does a sheet's carried air over-protect big glacial sheets' summer margin
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: med

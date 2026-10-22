@@ -4,7 +4,7 @@ title: "Ice ages v2 plan: honest margins that deglaciate in the zoom first, then
 type: task
 status: in-progress
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high

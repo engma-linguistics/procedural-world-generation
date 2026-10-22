@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-013, PW-184, PW-100, PW-090, PW-358, PW-202, PW-037, PW-092, PW-213, PW-248, PW-099, PW-392, PW-405, PW-030]
 refs: []
 created: 2026-10-15
-updated: 2026-10-20
+updated: 2026-10-22
 ---
 
 ## Description
 Owner and coordinator agreed (2026-10-15). V1 = pick a seed and a few settings and, in reasonable time, reliably get a finished planet at a chosen moment: plausible and mutually consistent geology, climate, water, ice and life; browsable from globe to km-scale region; data usable outside the viewer. Gaps, in rough priority: (1) remake the showcase on current code and review it (PW-202); (2) health: a physics audit for weird or wrong shortcuts, and a multi-seed health sweep as a standing check; (3) climate fidelity, mainly rain (epic PW-013); (4) the run's ice in cold eras (PW-240); (5) life layer complete: soils, coastal life, vegetation in the time zoom (epic PW-184); (6) speed: an optimisation pass, not only a faster machine; (7) a one-command/one-button seed-to-finished-world flow; (8) export (PW-100); (9) a calibration re-tune once the physics settles. Deliberately not V1: resources PW-155, weather PW-156, hazards PW-098, species/civilisation PW-103, moons PW-216, game attributes PW-206.
 
 ## Updates
+- 2026-10-22: Owner 2026-10-22: the sim-physics work (ice, rain, winds, base climate: epic PW-470) stays under v1; v1 is an arbitrary point and nothing is released yet.
 - 2026-10-20: Owner 2026-10-20: ice-age physics parked until post-v1 under epic PW-470 (PW-030 and the rest). V1 ice ages come from a kludge instead: PW-471 (glacial index, needs-decision). Added the start screen PW-472 and the world navigator PW-473 to v1.
 - 2026-10-16: Owner decision 2026-10-16 late night: PW-030 (real ice-age cycles) is in v1; it follows PW-366 in the run lane, before freezing run physics.
 - 2026-10-16: Reliability target agreed with owner: the full health sweep (8 L6 + 3 L7 seeds, 1 Gyr) stays inside every envelope, with a little wiggle room for known outliers. A deep ice age is fine if the planet recovers (judge excursions by recovery, not by single frames). Speed: ~30-40 min per L7 planet is fine.

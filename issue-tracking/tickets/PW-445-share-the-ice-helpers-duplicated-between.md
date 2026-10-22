@@ -4,7 +4,7 @@ title: Share the ice helpers duplicated between the time zoom, icemass and tecto
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

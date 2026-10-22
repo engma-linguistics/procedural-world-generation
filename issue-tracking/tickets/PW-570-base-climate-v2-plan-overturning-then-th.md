@@ -4,7 +4,7 @@ title: "Base-climate v2 plan: overturning, then the sea's air, then summer heat,
 type: task
 status: in-progress
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: xs
 impact: high

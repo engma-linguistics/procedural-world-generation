@@ -4,7 +4,7 @@ title: "Fennoscandia's winter is still 15 C too cold with the Norwegian Sea open
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: l
 impact: high

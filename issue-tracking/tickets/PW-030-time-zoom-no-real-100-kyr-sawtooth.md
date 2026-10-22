@@ -4,7 +4,7 @@ title: "Time zoom: no real 100-kyr sawtooth"
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: l
 impact: high

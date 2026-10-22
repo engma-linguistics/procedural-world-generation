@@ -4,7 +4,7 @@ title: "Time zoom source moments: cold moments (dT -4 to -7) never reach a real 
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: xs
 impact: low

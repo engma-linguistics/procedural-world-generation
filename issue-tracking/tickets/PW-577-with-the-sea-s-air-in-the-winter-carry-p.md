@@ -4,7 +4,7 @@ title: With the sea's air in the winter carry, PW-575's offshore Nordic winds ch
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: med

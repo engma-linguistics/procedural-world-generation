@@ -2,9 +2,9 @@
 id: PW-560
 title: Adopt the whole-history ice-age criteria (recovery, icehouse share, depth floor, hot eras end; 300 Myr spin-up) in place of the LGM-anchored depth bar
 type: task
-status: needs-decision
+status: done
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: xs
 impact: high
@@ -28,4 +28,5 @@ Lean: A; keep printing the old bar beside the new one until stage 3. tools/ice_c
 tools/health.py shows both columns.
 
 ## Updates
+- 2026-10-22: Status needs-decision -> done. Owner 2026-10-22: adopted. Owner's general principle: as the sim becomes more technically sound and simulates more of what it should, individual regressions are expected and teach us what else to fix, add or remove.
 - 2026-10-22: Created from inbox draft draft-ice-criteria-v2.md (found by ice-v2-stage0).

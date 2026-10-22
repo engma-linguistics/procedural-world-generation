@@ -4,7 +4,7 @@ title: Earth time zoom's glacials are only ~1.7 C colder (real LGM ~5-6 C), so n
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high

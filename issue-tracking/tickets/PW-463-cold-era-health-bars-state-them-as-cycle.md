@@ -4,7 +4,7 @@ title: "Cold-era health bars: state them as cycle means and add the cycle's glac
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: infra
 effort: xs
 impact: low

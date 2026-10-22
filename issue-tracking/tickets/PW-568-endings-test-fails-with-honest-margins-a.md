@@ -4,7 +4,7 @@ title: "Endings test fails with honest margins at L4 and at L5: the margin holds
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med

@@ -4,7 +4,7 @@ title: A finished world from a stage-1 time zoom frame takes the run's ice-surfa
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: low

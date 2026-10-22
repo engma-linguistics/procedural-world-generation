@@ -4,7 +4,7 @@ title: "Time zoom: the ablation zone is one cell wide (sub-cell melt at margins)
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: low

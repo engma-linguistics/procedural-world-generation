@@ -4,7 +4,7 @@ title: "Optional generation-time ice-age recovery lever: a push on real mechanis
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: med
