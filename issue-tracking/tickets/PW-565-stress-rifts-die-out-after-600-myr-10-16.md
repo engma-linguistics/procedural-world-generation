@@ -1,9 +1,10 @@
 ---
+id: PW-565
 title: Stress rifts die out after ~600 Myr (10-16 per 200 Myr -> 1-5), so ridges shorten and the floor ages to 75-120 Myr
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v2
 subsystem: tectonics
 effort: l
 impact: med
@@ -11,6 +12,8 @@ found_by: pw549
 blocked_by: []
 relates: [PW-549, PW-051, PW-024, PW-191]
 refs: [planet/tectonics/events.py, planet/tectonics/motion.py, docs/review/audit/pw549-sea-level.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -35,3 +38,6 @@ age, because slab-driven plates run at their slab's terminal speed (slab_pull / 
 set, and the deficit is in ridge length, not speed.
 - [ ] find why stress rifting stops after the first breakup; measure rifts per 200 Myr over 2 Gyr
 - [ ] the floor's mean age over 300-2000 Myr stays within ~50-80 Myr on ~70% of seeds
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stress-rifts-die-out-late.md (found by pw549).
