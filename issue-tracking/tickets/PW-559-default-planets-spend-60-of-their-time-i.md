@@ -1,4 +1,5 @@
 ---
+id: PW-559
 title: "Default planets spend ~60% of their time in an icehouse (Earth ~10-30%): dT 0 is today's icehouse Earth and the thermostat steers back to it"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555]
 refs: [docs/review/ice-v2/checkpoint-0.md, docs/review/ice-v2-criteria.md, planet/tectonics/earth.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
 - C: keep icy defaults (a style choice: ice ages are a feature), and widen N3.
 Lean: B together with the carbon stock, with A as a quick test on the 10 seeds first. Owner's call on whether
 icy-by-default is wanted.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-default-climate-icier-than-earth.md (found by ice-v2-stage0).

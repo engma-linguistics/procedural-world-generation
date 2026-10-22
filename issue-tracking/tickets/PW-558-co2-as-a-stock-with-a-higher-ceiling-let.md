@@ -1,4 +1,5 @@
 ---
+id: PW-558
 title: "CO2 as a stock with a higher ceiling: let volcanic CO2 pile up under the ice (snowball exits need 40-400x, the clip is 20x)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555, PW-438]
 refs: [planet/tectonics/earth.py, docs/review/ice-v2-criteria.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
 Lean: A, in the serial run lane after PW-555 stage 3 (it interacts with the ice model's deglaciation; judging it
 before B2 is fixed repeats PW-438's lesson: the thermostat can't undo a rigid fixed point). Measure with
 tools/ice_diag.py on the 10 seeds against tools/ice_criteria.py's new bars.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-co2-carbon-stock.md (found by ice-v2-stage0).

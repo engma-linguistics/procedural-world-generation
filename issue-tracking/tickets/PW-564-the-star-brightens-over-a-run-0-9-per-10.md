@@ -1,4 +1,5 @@
 ---
+id: PW-564
 title: "The star brightens over a run (~0.9% per 100 Myr for a Sun-like star): a slow, planet-relative term in dT; optional variable star"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555]
 refs: [planet/orbit.py, planet/tectonics/earth.py, docs/review/ice-v2-criteria.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -24,3 +27,6 @@ the recovery/onset lever can use: real luminosity trends are far too slow to swi
 scales, so a "solar help" lever is a world-builder control unless the star is set up as variable.
 - [ ] term in global_temperature, off by default until measured
 - [ ] 10-seed 2 Gyr L6 check: CO2 index trends down, icehouse share within N3
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stellar-brightening.md (found by ice-v2-stage0).

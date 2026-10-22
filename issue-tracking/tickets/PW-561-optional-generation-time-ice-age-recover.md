@@ -1,4 +1,5 @@
 ---
+id: PW-561
 title: "Optional generation-time ice-age recovery lever: a push on real mechanisms that grows with a cold era's depth and length and eases as the planet recovers"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555]
 refs: [docs/review/ice-v2-criteria.md, planet/tectonics/earth.py, planet/tectonics/diag.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -30,3 +33,6 @@ section 4:
 - [ ] lever built behind `recovery` (0 = bit-identical)
 - [ ] 10-seed L6 check at 0.3 and 1: N1 passes on >= 9/10 at 1 without hothouse overshoot (N4)
 - [ ] viewer band and New-planet option
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-ice-recovery-lever.md (found by ice-v2-stage0).

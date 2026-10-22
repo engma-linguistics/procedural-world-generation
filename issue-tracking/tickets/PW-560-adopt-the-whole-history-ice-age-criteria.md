@@ -1,5 +1,6 @@
 ---
-title: "Adopt the whole-history ice-age criteria (recovery, icehouse share, depth floor, hot eras end; 300 Myr spin-up) in place of the LGM-anchored depth bar"
+id: PW-560
+title: Adopt the whole-history ice-age criteria (recovery, icehouse share, depth floor, hot eras end; 300 Myr spin-up) in place of the LGM-anchored depth bar
 type: task
 status: needs-decision
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555, PW-434, PW-449]
 refs: [docs/review/ice-v2-criteria.md, tools/ice_criteria.py, docs/review/ice-v2/checkpoint-0.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -23,3 +26,6 @@ after high-latitude ice. >= 70% of seeds pass. The zoom bars (Earth cycles, PW-4
 recovery) stay. Options: A adopt as written; B adopt with different numbers (say which); C keep the old bar.
 Lean: A; keep printing the old bar beside the new one until stage 3. tools/ice_criteria.py implements both, and
 tools/health.py shows both columns.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-ice-criteria-v2.md (found by ice-v2-stage0).

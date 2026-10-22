@@ -1,4 +1,5 @@
 ---
+id: PW-562
 title: "Ice-onset check (low-latitude ice only after high-latitude ice) needs a height cut: tropical plateau ice trips it on every run"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555]
 refs: [planet/tectonics/diag.py, tools/ice_criteria.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -20,3 +23,6 @@ updates, at any dT; even at dT +16 in the hysteresis probe). Record the lowest l
 ~1000 m (sheet ice, not mountain caps) in diag.py and use it in the check. Also: the run keeps 1-4% of its land iced
 on plateaus at every dT it reaches; whether that much tropical high ice is right is worth a look (Earth's tropical
 glaciers are ~0.003% of land).
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-onset-check-height-cut.md (found by ice-v2-stage0).

@@ -1,5 +1,6 @@
 ---
-title: "One rain-vs-temperature rule for the run (exp(0.03 dT)) and the time zoom (exp(0.07 dT)); measure the cold-era moisture brake"
+id: PW-563
+title: One rain-vs-temperature rule for the run (exp(0.03 dT)) and the time zoom (exp(0.07 dT)); measure the cold-era moisture brake
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: ice-v2-stage0
 blocked_by: []
 relates: [PW-555, PW-308]
 refs: [planet/climate.py, planet/icemass.py, tools/ice_probe.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -21,3 +24,6 @@ models then see different snow for the same cooling (the zoom ~4%/C more), which
 running the zoom's ice core). Also: the global renormalisation sends the remaining rain to whatever sea is open, so
 the self-starving brake of a deep era (Chandler & Sohl 2000) is weaker than in a GCM. Measure first with
 `tools/ice_probe.py --stair` (snow on ice, snow gain vs dT; checkpoint 0 has Earth's), then pick one rule.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-rain-vs-temperature-run-zoom.md (found by ice-v2-stage0).
