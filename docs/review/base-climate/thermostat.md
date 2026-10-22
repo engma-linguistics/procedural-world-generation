@@ -137,3 +137,71 @@ elasticity of only 0.32–0.36.
 More attempts at this law (a different C, or a Michaelis–Menten form) can't fix either cause, so I stopped after one
 and wrote the decision up as a draft (`issue-tracking/inbox/draft-thermostat-cause-is-bookkeeping.md`). The code is
 back to the old law. Stage 0's tools stay, and the run is bit-identical to main.
+
+
+## Stage 2: CO2 as a stock (PW-558, PW-576 option C), lane B second agent
+
+Owner's decision (PW-576 C): build CO2 as a stock, with a reference set once from the planet's own start balance
+(PW-559 B). Judge "the CO2 term runs against dT" on the drift. Treat ~0.35-0.5 C/C as close enough.
+
+**The code** (`planet/tectonics/earth.py`):
+- `co2_stock`: dX/dt = (s − w X^0.4) / CO2_TAU, with X the stock (~pCO2) against the reference. Its steady state is
+  the old ratio rule.
+  - CO2_TAU = 0.4 Myr: the ocean-atmosphere carbon over the outgassing. The feedback's e-folding near the reference
+    is ~1 Myr.
+  - Backward-Euler substeps, solved by Newton's method in ln X. They are stable at any step length.
+  - With no sink, X grows at s / CO2_TAU, without a ceiling.
+- The 10 Myr smoothing of the rates is gone. The stock's own response replaces it. The CO2 index now jitters
+  ~0.2 per step (was 0.05); dT's step-to-step sd goes 0.43 → 0.37-0.42 C.
+- The forcing levels off smoothly (tanh) toward ±CO2_MAX = 6 e-folds. The old hard clip at 3 is gone.
+- The references learn over 100 Myr until REF_FREEZE = 300 Myr, then are kept.
+- `tools/ice_diag.py`:
+  - the gain is also computed with each series' 200 Myr running mean taken out (`co2_hp`). A kept reference lets
+    slow trends move the CO2 term, and over 700 Myr those trends line up with the drift's slowest wander by
+    chance;
+  - the band is now 0.35-0.9;
+  - the summary prints the deep eras again: a stray `return` had hidden them.
+- Tests: `tests/test_co2_stock.py`.
+
+**Why the first-100-Myr reference the ticket proposed can't work.** The planet's own start isn't in balance:
+- ln(source/sink) falls by 0.7-1.1 e-folds over the first 100-200 Myr on every seed;
+- the erosion supply rises ~e-fold as the made-up start's low relief builds up (5 → 20-30 m/Myr);
+- a reference from then would cool every planet by ~5 C.
+
+So the balance is taken at the end of the spin-up.
+
+### Results (10 seeds, L6, 1 Gyr, judged after 300 Myr; main = 2684f2b with lane A's stages merged)
+
+| | main | att. 1: kept at 300 Myr | att. 2: kept once erosion settles | att. 3: att. 1 + relief term |
+|---|---|---|---|---|
+| CO2 answer, trends out, median C/C | +0.22 | **+0.44** | +0.32 | see handoff-B |
+| in 0.35-0.9 | 2/10 | **7/10** | 4/10 | |
+| CO2 term against drift-made dT | 8/10 | **10/10** | 10/10 | |
+| N1-N4 pass | 5/10 | 5/10 | 5/10 | |
+| icehouse share, median (in 15-45%) | 58% (3) | 66% (1) | 58% (2) | |
+| mean dT after 300 Myr, median | −1.4 | −0.9 | −0.9 | |
+| fails | deep eras 192-276 Myr (2, 13, 99, 3199); share | deep eras 156-340 Myr (2, 5, 11); share (13, 3199) | share 77-93% (1, 13, 99); 5% (21); icehouse 316 Myr (2) | |
+
+**Attempt 1** (references kept from 300 Myr):
+- The thermostat reaches the bar: 7/10 in band, median +0.44, and on every seed the CO2 term runs against the
+  drift-made dT.
+- But the deep eras on seeds 5, 7 and 13 have the sink 1.4-1.8× above its reference. CO2 is *drawn down* inside
+  the cold era (index −1.2..−1.6). The erosion supply keeps rising after 300 Myr, by +0.3-0.6 e-folds by 1 Gyr: the
+  relief is still building. A kept reference turns that into a lasting cooling.
+- Two 2 Gyr runs (seeds 5 and 13) show the supply levelling off only at ~500-700 Myr, then creeping on.
+
+**Attempt 2** (references learnt until the ice-free land's erosion rate grows by less than 10% per 100 Myr):
+- The references were kept only at 376-846 Myr. For most of the judged window they were still learning over
+  100 Myr, so the brake weakened again (median +0.32).
+- The deep eras did end (N1 fails on one seed only, by 14 Myr). The failures moved to the icehouse share (N3).
+
+**Attempt 3** (attempt 1, plus a relief term):
+- The ice-free land's erosion rate is measured against its own 200 Myr mean (`RELIEF_MYR`).
+- The ice-free share, the temperature factor and the plants stay measured against the kept balance.
+- So the cold era's deficit from ice and cold is kept, while the relief's slow build-up doesn't drift the climate.
+- The cost: the runoff part of the brake (~0.018 per C of 0.05-0.08) is partly forgotten over long eras.
+- The sweep was running when the coordinator paused the machine; see `handoff-B.md`.
+
+**What remains is mostly N3, the icehouse share: the set point's job (PW-559).** Every attempt leaves the
+median icehouse share at 58-66%. The stock fixes the brake; it can't move the planet's mean state, because dT = 0 is
+today's icehouse Earth. The relief spin-up is a surface/setup issue (inbox draft `draft-relief-spinup-erosion-rise`).

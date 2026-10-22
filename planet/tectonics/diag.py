@@ -5,9 +5,9 @@ simulation's state, never changes it and draws no random numbers, so a run with 
 to one without (tests/test_ice_diag.py). It records:
 
 - every step (`steps`): the global temperature's parts (earth.global_temperature): dT, its target and
-  the terms in it (the drift, the CO2 term as it is counted, clipped at +-CO2_MAX, and what it would be
-  unclipped, the ice albedo term, the offset), the CO2 index, the volcanic source and the weathering
-  sink against their slow baselines, the share of the land under ice (which doesn't weather), sea
+  the terms in it (the drift, the CO2 term as it is counted, levelling off toward +-CO2_MAX, and what it would be
+  without that, the ice albedo term, the offset), the CO2 index, the volcanic source and the weathering
+  sink against their references, the share of the land under ice (which doesn't weather), sea
   level and its two parts (the ice's, sea_ice, and the ocean basins', sea_tect), the iced share;
 - every climate update (`updates`): the global climate (mean temperature, rain, rain on the ice,
   frozen sea share, the land poleward of the snowline), how many passes the ice's fixed point took,
@@ -51,13 +51,14 @@ class Recorder:
         weathering sink (model units), the iced share it counted, the CO2 term as counted (clipped)
         and the ice albedo term (C, negative = cooling), and the target dT relaxes toward."""
         p = sim.params
-        rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)
+        rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)  # (the sink before the relief term)
         self._pending = {
             "t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "target": round(float(target), 3),
             "drift": round(float(sim.drift), 3), "co2": round(float(sim.co2), 3), "co2_term": round(float(co2_term), 3),
             "co2_term_free": round(p.co2_sensitivity * float(sim.co2), 3), "albedo_term": round(float(albedo_term), 3),
             "offset": p.climate_offset, "source_raw": float(source), "sink_raw": float(sink),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
+            "relief": round(float(sim.ref_rate[0] / sim.ref_rate[1]), 4) if getattr(sim, "ref_rate", None) is not None else 1.0,
             **self._sink_parts(sim)}
 
     @staticmethod

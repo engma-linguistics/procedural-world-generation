@@ -58,9 +58,10 @@ class Simulation:
     EARTH_STATE: ClassVar[tuple[str, ...]] = (
         "dT",  # C: global temperature offset from today's Earth
         "drift",  # C: its random part
-        "co2",  # log ratio of volcanic CO2 sources to weathering sinks (each smoothed, against its baseline)
-        "rates",  # [source, sink] smoothed over ~10 Myr (None before the first step)
-        "refs",  # slow baselines of [source, sink] (None before the first step)
+        "co2",  # ln of the CO2 stock against the reference balance (earth.co2_stock)
+        "rates",  # [source, sink] of the last step (None before the first step)
+        "refs",  # the reference [source, sink]: learnt until earth.REF_FREEZE, then kept (None before the first step)
+        "ref_rate",  # the ice-free land's erosion rate over earth.RELIEF_MYR, and its value at REF_FREEZE (None before)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
         "depth_ref",  # m: the starting sea floor's mean depth, sea level 0 (None before the first step)
         "sea_level", "sea_ice", "sea_tect",  # m: sea level = ice part + ocean-basin part
@@ -132,6 +133,7 @@ class Simulation:
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
         self.dT, self.drift, self.co2, self.rates, self.refs = 0.0, 0.0, 0.0, None, None
+        self.ref_rate = None
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
