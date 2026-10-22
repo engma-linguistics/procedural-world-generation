@@ -437,3 +437,70 @@ These are single chaotic snapshots. Their dry share is now above stage 1's.
 **earth_check:** before is `stage2b/ec_a2.txt` (stage 2b as landed); after is `pw578/earth_check_after.txt`.
 
 Attempts used on PW-578: 2 of 3. The handoff is `handoff-A4.md`.
+
+## Stage 2b, step 3: the merge pass (lane A5)
+
+**Result: merge-ready.** `uv run pytest -q` passes in full (568), with no test changed. The goldens are regenerated
+on purpose, because the overturning's cap changes. Earth's rain and Köppen are unchanged from step 2: log-rain r 0.619,
+group 69.6%, exact 30%. The stage-1 and stage-2 bars hold. Outputs are in `laneA5/`.
+
+### What changed (two mechanism fixes, following the coordinator's rulings)
+1. **The overturning's cap** (`ocean.overturning`; for `test_meltwater_weakens_the_overturning`).
+   - Before, each sea / hemisphere's cell was capped at `moc_k` × the sinking-weighted mean of (sinking water −
+     replacing water). A meltwater pulse that shuts the densest site moves the weight to the other sites, so that mean,
+     and the cap with it, could *rise*. That is why the test was a tie at the cap (+0.001 Sv).
+   - Now the cap is `moc_k` × (the polar box's densest water, its densest `moc_top` share before mixing = ref +
+     `moc_mix`, − the replacing water, sinking-weighted). This is Stommel's two boxes. Fresh water can only make the
+     densest water lighter.
+   - The two-basin fixture's north goes 20.83 → 20.74 Sv under the melt. It also passes under the sea-swing
+     perturbations that flipped the old one (own ± 0.3 s / + 0.5 C).
+   - A first try used the mixed deep water (ref, without + `moc_mix`). It lowered the caps ~5% and flipped
+     `test_timezoom_cycle::test_glacials_grow_ice_and_endings_melt_it_fast` (the L4 glacial's extra ice went 84 → 56 m,
+     with 47 m left 15 kyr after the ending). The polar box's own water is also the more faithful Stommel quantity, and
+     with it the timezoom test passes (54 m, 2.3 m left). But note it as a sensitivity: the time zoom's ice ages react
+     strongly to a few % of overturning.
+   - Earth's caps don't bind (NH 10.1 Sv against a cap of ~15), so Earth is unchanged.
+2. **Valley-floor alluvium in the zoom's soils** (`soils.valley_floor`, used by `zoom_mineral`; for
+   `test_zoom_soil_layers`).
+   - A pixel's alluvium share came from the riparian strip (0.15 + 0.4 log10 Q km) and the flooded share. The
+     flooded share is a log ramp of absolute discharge (100 → 3160 m3/s) and doesn't depend on the pixel's size.
+   - With both on a log of Q, a 300–1000 m3/s river's own 3 km pixels sat at alluvial 0.4–0.6, the edge of ALLUVIUM.
+     An 8% drop in rain tipped them to ACRISOL / LUVISOL.
+   - Now a river's valley floor also counts: the fine zoom's own width law (`zoom_fine_floodplain.half_width`:
+     `FLOOR_W` channel widths, w = 4 Q^0.5 m, × √erodibility), narrowing to none on steep ground (`STEEP`), as the
+     pixel's overlap with it. It is a power of the flow, so 8% less rain narrows it ~4%.
+   - The fixture's floodplain wet share: 0.488 → 0.559 (main 0.519). By discharge class, 1000–3000 m3/s goes 0.57 →
+     0.75, and 300–500 m3/s stays 0.25 (a 1.4 km floor on a 3 km pixel isn't the pixel's main soil).
+   - Elsewhere in the zoom little moves: river-laid alluvium 0.5 → 0.7% of the zoom, and every other class within 0.1
+     point.
+
+### dad91b's southern sinking (4.5 → 3.2 → 0.9 Sv): diagnosed, not changed
+Stage 2's sea ice works as designed. The hemmed-in southern bays (76% land poleward of 50S) grow ~1.4 m of ice a year
+(main 0.9). They keep its brine, so a few cells turn very dense: the densest 10% poleward of 60S is 1029.2 against
+1028.4 kg/m3, while the area mean is unchanged at 1027.0. Those cells set the deep-water reference, and the gate shuts
+off the rest of the open polar sea. The strength law is proportional to area, so the small pocket gives ~1 Sv.
+
+Whether a dense shelf pocket should be area-limited (on Earth, AABW forms in small polynyas but entrains its way to
+~10 Sv) is a mechanism question. It goes to `draft-dad91b-southern-sinking-weakening.md` (needs-decision; options:
+entrainment, a whole-sea reference, or accept).
+
+### The bars (`laneA5/overturning_after.txt`, `climate_bias_after.txt`, `earth_check_after.txt`)
+- **Earth:** identical to step 2. NH 10.22 Sv, 72% in open polar seas; the Norwegian coast is 100% open; SH 2.38 Sv.
+  `climate_bias` and `earth_check` are byte-identical apart from timings. Log-rain r 0.619, group 69.6.
+- **Generated worlds**, NH / SH Sv (step 2 → now): 119973 16.9/16.8 → 17.5/17.5, 28442c 16.9/17.3 → 17.4/18.0,
+  607540 16.0/15.9 → 16.6/16.5, 81aced 16.9/14.3 (same), 7082f5 7.5/6.7 (same), d14b89 16.2/18.2 → 16.7/19.0,
+  a5a387 8.2/16.5 → 8.2/17.0, dad91b 14.6/0.89 → 15.3/0.88, c00ebf 8.9/9.6 (same). All nine sink in both
+  hemispheres; the open polar shares are unchanged.
+
+**Scorecard** (`docs/scorecard.jsonl`, commit 628fbd8, L6, 1000 Myr):
+- Earth: group 69.6 / exact 30.0, log-rain 0.62;
+- seed 1: dry 20.2% / ice 1.8 / NPP 350 / trees 22.2 (step 2: 25.7 / 0.0 / 361 / 25.0);
+- seed 2: dry 20.7% / ice 2.0 / NPP 366 / trees 26.2 (step 2: 25.3 / 4.2 / 300 / 20.8).
+
+These are single chaotic snapshots, inside the spread seen before.
+
+### Left open
+- `draft-dad91b-southern-sinking-weakening.md` (rewritten with the diagnosis; needs-decision).
+- `draft-stage2b-koppen-group-d-to-e.md` (unchanged: the cold coasts' summers, D → E).
+- `draft-stage2b-landed-rain-regression.md` is resolved by step 2 (r 0.619) and can be closed at intake.
+- The two knife-edge drafts (meltwater, zoom soils) are removed: both are fixed above.
