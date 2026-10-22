@@ -1,5 +1,6 @@
 ---
-title: "Sea ice from the land's air works (Hudson Bay -19, southern ice +5%), but the rain kernel is calibrated on the old uniform sea swing and regresses (log-rain 0.617 -> 0.533)"
+id: PW-578
+title: Sea ice from the land's air works (Hudson Bay -19, southern ice +5%), but the rain kernel is calibrated on the old uniform sea swing and regresses (log-rain 0.617 -> 0.533)
 type: task
 status: needs-decision
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: base-climate-laneA2
 blocked_by: []
 relates: [PW-346, PW-570, PW-015, PW-575, PW-017]
 refs: [planet/climate.py, docs/review/base-climate/stages.md, docs/review/base-climate/stage2/attempt2.patch, tools/climate_bias.py, tools/earth_check.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -64,3 +67,6 @@ Lean: B, then A. Giving the air and the rain two different seasonal SSTs for the
 but it is a split, not a mechanism.
 
 - [ ] the stage-2 bars (stages.md) pass, with earth_check's log-rain correlation and Köppen group not worse than main
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-sea-swing-from-land-air-vs-rain.md (found by base-climate-laneA2).

@@ -1,5 +1,6 @@
 ---
-title: "With the sea's air in the winter carry, PW-575's offshore Nordic winds chill the open Norwegian Sea (air -4.4 vs +3.5 C), and Baffin Bay's summer runs +8.7 C"
+id: PW-577
+title: With the sea's air in the winter carry, PW-575's offshore Nordic winds chill the open Norwegian Sea (air -4.4 vs +3.5 C), and Baffin Bay's summer runs +8.7 C
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: base-climate-laneA2
 blocked_by: []
 relates: [PW-575, PW-346, PW-458]
 refs: [planet/climate.py, docs/review/base-climate/stage2/attempt2.patch, docs/review/base-climate/stages.md, tools/climate_bias.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -35,3 +38,6 @@ effects for whoever lands the sea's air in the carry (see `draft-sea-swing-from-
 
 - [ ] Norwegian Sea winter air within ~3 C of NCEP with the sea's air in the carry
 - [ ] Baffin Bay's warmest month within 3 C
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-sea-air-carry-offshore-and-baffin-summer.md (found by base-climate-laneA2).
