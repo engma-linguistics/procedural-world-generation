@@ -1,4 +1,5 @@
 ---
+id: PW-576
 title: "The thermostat's weakness is its bookkeeping, not erosion: the saturating weathering law (PW-574 A) doesn't help; fix it with the CO2 stock and a fixed start reference instead"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneB
 blocked_by: []
 relates: [PW-574, PW-558, PW-559, PW-564, PW-572, PW-561]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py, docs/review/base-climate/thermostat.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -66,3 +69,6 @@ The bar change in C is the owner's call:
 - "close enough" becomes the sink's own answer, ~0.35–0.5 C/C, instead of the written 0.7.
 - [ ] owner picks A, B or C
 - [ ] if B or C: lane B builds the stock and the start reference, then measures the 10 seeds with `ice_diag --summary`
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-thermostat-cause-is-bookkeeping.md (found by base-climate-laneB).
