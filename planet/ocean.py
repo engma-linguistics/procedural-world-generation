@@ -448,6 +448,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     lab, k = kernels.components(sea, grid.nbr_off, grid.nbr_idx)
     big = np.bincount(lab[sea], area[sea], k) >= tune["moc_sea_km2"]
     deep = np.zeros(n)
+    top_rho = np.zeros(n)
     drho = tune["moc_drho"]
     hemis = (grid.lat > 0, grid.lat <= 0)
     for c, hm in ((c, hm) for c in np.flatnonzero(big) for hm in hemis):
@@ -463,12 +464,36 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
         o = np.argsort(rs[mo])[::-1]
         cum = np.cumsum(area[mo][o])
         top = o[: np.searchsorted(cum, tune["moc_top"] * cum[-1]) + 1]
-        ref = (rs[mo][top] * area[mo][top]).sum() / area[mo][top].sum() - tune["moc_mix"]
+        rho_top = (rs[mo][top] * area[mo][top]).sum() / area[mo][top].sum()
+        ref0 = rho_top - tune["moc_mix"]
+        # Entrainment (PW-579): where the densest water is a small pocket far
+        # denser than the polar sea around it (brine-salted shelf water by a
+        # polynya), it cascades down the slope and draws in the water it
+        # passes, moc_entrain times its own volume (overflows and Antarctic
+        # shelf water grow 2-3x on their way down: Denmark Strait ~3 -> 5-6 Sv,
+        # Weddell shelf water ~1-2 -> 4-5 Sv). The deep water it forms is the
+        # mix, rho_d = (rho_top + E rho_a) / (1 + E) with the open polar sea's
+        # mean rho_a: lighter than the pocket less its ordinary mixing, so the
+        # rest of the open sea within moc_drho of it sinks too, and the
+        # pocket's own sinking carries its entrained water with it. Where the
+        # densest water is only a little denser than the rest (by less than
+        # moc_mix x (1 + E) / E), its ordinary mixing already brings it to the
+        # deep water's density and nothing changes.
+        e_ = tune["moc_entrain"]
+        pw = area[mo] * polar[mo]
+        rho_amb = (rs[mo] * pw).sum() / pw.sum()
+        rho_d = (rho_top + e_ * rho_amb) / (1.0 + e_)
+        ref = min(ref0, rho_d)
         gate = np.clip((rs[m] - ref + drho) / drho, 0, 1) ** tune["moc_pow"] * polar[m]
         # Stommel's flow law: sinking ~ the density difference that drives it
         dr = np.maximum(rs[m] - np.where(reach[m], ra[np.maximum(root[m], 0)], rho_up), 0.0)
-        sinking[m] = tune["moc"] * gate * dr * area[m] / 1e6
+        # (the pocket: water denser than the deep water would be with its ordinary mixing alone; q how much
+        # the entrainment lowers the deep water beyond that, 0..1 per moc_mix)
+        q = np.clip((ref0 - rho_d) / tune["moc_mix"], 0.0, 1.0)
+        pocket = np.clip((rs[m] - ref0) / tune["moc_mix"], 0.0, 1.0)
+        sinking[m] = tune["moc"] * gate * dr * area[m] / 1e6 * (1.0 + e_ * q * pocket)
         deep[(lab == c) & hm] = ref
+        top_rho[(lab == c) & hm] = rho_top
     out["rho_deep"] = deep
     if not sinking.any():
         return out
@@ -478,7 +503,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # 1991): each sea's overturning cell in each hemisphere carries at most
     # moc_k Sv per kg/m3 of its density difference: the polar box's dense
     # water (its densest moc_top share, before it mixes on the way down:
-    # ref + moc_mix) against the water replacing it (the low box, by where it
+    # rho_top) against the water replacing it (the low box, by where it
     # sinks). Not the sinking water's own density weighted by the sinking: a
     # fresh pulse that shuts the densest site off moves the weight to the
     # other sites, and that mean could rise; the densest water can only get
@@ -492,7 +517,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
                 continue
             psi = sinking[cells].sum()
             rho_rep = (sinking[cells] * rep[cells]).sum() / psi
-            cap = tune["moc_k"] * max(deep[cells[0]] + tune["moc_mix"] - rho_rep, 0.0)
+            cap = tune["moc_k"] * max(top_rho[cells[0]] - rho_rep, 0.0)
             if psi > cap:
                 sinking[cells] *= cap / psi
     # diagnostics per connected sinking area

@@ -1582,6 +1582,8 @@ TUNE = dict(
     moc_z=2000.0,  # m: depth at which the waters' densities are compared for sinking
     moc_top=0.1,  # the deep water is the densest water of this share of the polar sea (by area) ...
     moc_mix=0.5,  # ... less this (kg/m3: it mixes on its way down)
+    moc_entrain=1.5,  # ... and a pocket far denser than the polar sea around it draws in this many times its
+    # own volume of that sea's water as it cascades down (overflows, Antarctic shelf water: 2-3x; PW-579)
     moc_drho=0.3,  # kg/m3: water this much lighter than the deep water can't sink ...
     moc_pow=3.0,  # ... and the sinking grows as (excess / moc_drho)^moc_pow up to its density
     moc_lat=50.0,  # deg: deep water forms poleward of this (fully 10 deg further)

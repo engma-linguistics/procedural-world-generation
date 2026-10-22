@@ -790,3 +790,51 @@ hemispheres. Southern shelf seas that used to count as straits now feed their si
 These are single chaotic snapshots. Seed 2's ice at 13% is the outlier to watch.
 
 Attempts used on PW-582: 3 of 3. The handoff is `handoff-A9.md`.
+
+## PW-579: entrainment below a dense pocket (lane A10), attempt 1 of 3
+
+**Result: Earth's south 2.51 → 5.94 Sv (Weddell 1.13 → 2.23, Ross 0.73 → 1.39). dad91b's south is unchanged (2.36 →
+2.49), and that is geography, not the pocket.** `uv run pytest -q` passes (568); goldens regenerated on purpose.
+Outputs: `laneA10/*_main.txt` (before, main f3767ad) and `*_e579.txt` (after).
+
+### Measured first (main)
+- The 8 other generated worlds' south is 11.5–18.3 Sv. dad91b 2.36, Earth 2.51 (27% in open sea).
+- Earth's south is the pocket case of the ticket: the water that sinks averages 1029.9 kg/m3 against the open polar
+  sea's 1027.4, over 1.5 of 34 Mkm2. The densest 10% set the deep water at 1028.7, which gates the rest of the
+  open polar sea out.
+- dad91b's south is no longer the pocket case. Since PW-582's straits, its densest pocket (1029.6) is behind
+  passages too small for the inflow, so it isn't part of the polar sea the inflow reaches. The reachable polar sea
+  is 79 L5 cells (~3.8 Mkm2). Its densest 10% (1028.27) are only 0.8 kg/m3 above its mean (1027.47). Its sinking is
+  2.6 Sv against a cap of 13 Sv. This is the ticket's option C (a hemmed-in polar sea with little open water makes
+  little deep water), and it now comes from the geometry of the straits.
+
+### What changed (`planet/ocean.py`, `moc_entrain` new)
+- The plume entrains the open polar sea's water: the deep water is ρ_d = (ρ_top + E ρ_a) / (1 + E), where ρ_top is
+  the densest `moc_top` share as before and ρ_a is the open polar sea's polar-weighted mean.
+  - The reference is min(ρ_top − `moc_mix`, ρ_d). So a sea where the densest water is less than `moc_mix` (1 + E) / E
+    (0.83 kg/m3) above the rest is unchanged. Where it is more, the open sea within `moc_drho` of ρ_d sinks too.
+  - The pocket's own sinking (water denser than ρ_top − `moc_mix`) carries its entrained water: × (1 + E q), with q
+    how far the entrainment lowers the deep water beyond its ordinary mixing (0..1 per `moc_mix`).
+  - The per-sea cap is on ρ_top against the water replacing it, which is what it was before (deep + `moc_mix`).
+- E = `moc_entrain` = 1.5 is a new constant: overflows and Antarctic shelf water grow 2–3× on their way down
+  (Denmark Strait ~3 → 5–6 Sv, Weddell shelf water ~1–2 → 4–5 Sv).
+
+### The bars
+| line | main | PW-579 |
+|---|---|---|
+| Earth SH Sv (Weddell / Ross); open share | 2.51 (1.13 / 0.73); 27% | **5.94 (2.23 / 1.39)**; 45% |
+| Earth NH Sv, open polar share (bar 8–20, ≥ 70%) | 11.91, 91% | 14.41, 92% |
+| Nordic / Barents-Kara / Irminger / Labrador / Baffin (Sv) | 5.29 / 1.37 / 2.01 / 2.42 / 0.31 | 6.41 / 1.61 / 2.52 / 2.82 / 0.41 |
+| Fennoscandia coldest month (bar ±6) | −6.5 | **−6.0** |
+| Iceland; Nordic Seas; Barents | −11.6; −3.1; −13.3 | −10.1; −1.5; −13.1 |
+| Southern Ocean 60–70S winter (bar ±4) | −3.7 | −3.6 |
+| log-rain r / Köppen group / exact | 0.622 / 71 / 31 | 0.622 / 70 / 31 |
+
+- Generated worlds' SH: unchanged within 0.01 Sv except 81aced 11.5 → 12.8 and dad91b 2.36 → 2.49. NH unchanged within 0.1 Sv.
+- The Köppen group moves 71 → 70 at the rounding edge (the scorecard has the decimals).
+- `test_meltwater_weakens_the_overturning` and the time zoom's cycle test pass unchanged.
+
+**Closing PW-579?** Earth's south is now plausible (bottom water formation is ~5–10 Sv including entrainment). Every
+generated world sinks a few Sv or more in the south. dad91b is the low end at 2.5 Sv, for the geographic reason above.
+I'd close the ticket on option A with these numbers. If dad91b's 2.5 Sv is too little for a world with a hemmed-in
+polar sea, that's a separate question about straits (`draft-dad91b-south-is-straits.md`).
