@@ -344,6 +344,6 @@ So stage 2b is **not merge-ready while these three fail**, unless the coordinato
 | seed 1: dry / ice / NPP / trees | 20.0 / 0.5 / 419 / 16.9 | 13.5 / 1.7 / 379 / 19.6 |
 | seed 2: dry / ice / NPP / trees | 15.4 / 9.1 / 267 / 20.8 | 9.9 / 9.7 / 263 / 25.2 |
 
-The seeds are single chaotic snapshots (stage 1 showed same-commit spreads larger than these), but both are drier-
-share down 5–6 points, in line with Earth's arid share falling. (The line's `src` hash includes rain-bisection
+The seeds are single chaotic snapshots (stage 1 showed same-commit spreads larger than these), but in both the dry share
+falls 5–6 points, in line with Earth's arid share falling. (The line's `src` hash includes rain-bisection
 switches that were in the working tree, off by default; the outputs are f1e1600's.)
