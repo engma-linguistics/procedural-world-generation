@@ -504,3 +504,74 @@ These are single chaotic snapshots, inside the spread seen before.
 - `draft-stage2b-koppen-group-d-to-e.md` (unchanged: the cold coasts' summers, D → E).
 - `draft-stage2b-landed-rain-regression.md` is resolved by step 2 (r 0.619) and can be closed at intake.
 - The two knife-edge drafts (meltwater, zoom soils) are removed: both are fixed above.
+
+## PW-575: the winter winds (lane A6)
+
+**Result: a large improvement, but the bar is not met.** Fennoscandia's coldest month goes −11.9 → −8.9 C against
+NCEP (bar ±6), and the Nordic Seas box doesn't move (−8.0 → −8.3). The rest of the cold is in the sea north of 72N,
+not in the winds (`issue-tracking/inbox/draft-nordic-winter-barents-frozen.md`). Rain, Köppen and the stage-1 and
+stage-2 bars hold. `uv run pytest -q` passes with the tests unchanged; the goldens are regenerated on purpose.
+Outputs are in `laneA6/` (`*_main.txt` is 564350b, `*_pw575.txt` is this branch).
+
+### What was found
+- **Taking the winds from the finished temperatures doesn't fix them** (attempt 1, the handoff's lead). With
+  `monsoon_wind` fed NCEP's own January temperatures, the Norwegian Sea's wind is still offshore (E −0.15, N −0.14).
+  The cause is the fixed three-cell belts: at 62–72N `wind()` is the polar cell's equatorward drift (N −0.23) at every
+  longitude, and the capped land-sea part can't undo it. Re-running `monsoon_wind` on the finished climate also costs
+  the rain (r 0.619 → 0.551), because every land-sea wind moves.
+- **The maritime air didn't get far enough inland.** Along 53N the coldest month fell from +7 C over the Atlantic to
+  −0.1 on Ireland's first cell and −5 over the North Sea. The winter carry relaxed toward the land's own winter over a
+  fixed 900 km, whatever the wind. Fitting NCEP's January from Ireland to Moscow gives an e-folding of ~3500 km in
+  Europe's westerlies.
+
+### What changed (`planet/climate.py`; attempt 2)
+1. **The wind belts follow the air masses** (`front_shift`). Poleward of 30–50 deg, a cell takes the belts of the
+   latitude whose zonal-mean sea-level air (smoothed over 900 km) is as warm as its own. A warm polar sea in winter pulls
+   the westerlies north over it (the Icelandic low's south-westerlies onto Norway), and a cold continent lets the polar
+   air south. This runs once, after the overturning, on the finished air. The land-sea part stays the first guess's.
+   The rain keeps the first guess's winds, as it already doesn't see the overturning. The Norwegian coast's January
+   wind goes E +0.03 → +0.39.
+2. **The winter air over land relaxes in time** (`_winter_air`). The air mass, `air_m` deep (new TUNE: 1000 m, to
+   ~850 hPa), loses heat to space at the existing `ice_b`: τ = ρ c_p `air_m` / `ice_b` ≈ 4 days. It reaches U × τ inland:
+   ~2400 km in a steady westerly and a few hundred km in a calm high.
+   - Ground higher than `air_m` cuts the carried air off. Without that, Pacific air crossed the Rockies and the Hudson Bay
+     lowlands went +5.5 → +7.9 C.
+   - That slow relaxation is the stable case: warm air over colder ground. Air colder than the land's own winter is
+     heated from below and relaxes as fast as in summer (`air_km_s`). Without this, a synthetic equatorial land's July
+     differed 2.7 C across the equator (`test_july_stays_july_across_the_equator`, < 2).
+   - `air_km_w` now only sets how far land air reaches over the sea (`land_air`).
+
+Tried and dropped (switches in `.../scratchpad/laneA6/exp_switches.diff`): front_shift before the rain (r 0.611);
+re-deriving the currents from the new winds (no change north of 72N); two wind iterations (same as one).
+Sensitivity to `air_m` (Fennoscandia / Hudson Bay lowlands coldest-month bias): 800 m −11.2 / +5.0, 1000 m
+−8.9 / +5.5, 1250 m −7.3 / +6.7.
+
+### The bars (Earth L6)
+| line | main 564350b | after |
+|---|---|---|
+| Fennoscandia coldest month (bar ±6) | −11.9 | **−8.9** (Norway coast −9.0 → −4.1, obs −5.2; Sweden −19.6 → −14.1, obs −8.3; Finland −23.2 → −22.2, obs −10.8) |
+| Norwegian Sea January wind E / N | −0.18 / −0.13 (offshore) | +0.26 / +0.06 (onshore) |
+| Norwegian coast sea air (NCEP ~+3.5); open in winter | −3.5; 100% | −0.7; 100% |
+| Nordic Seas / Barents coldest-month bias | −8.0 / −13.7 | −8.3 / −13.8 (frozen north of 72N) |
+| log-rain r / Köppen group / exact | 0.619 / 69.6 / 30.0 | **0.622 / 70.3 / 30.8** |
+| cities exact / group / wrong | 29 / 29 / 20 | 32 / 29 / 17 |
+| Earth NH Sv, open polar share; SH | 10.22, 72%; 2.38 | 10.08, 71%; 2.42 |
+| Hudson / Baffin / Okhotsk coldest month | −18.9 / −20.0 / −6.5 | −19.8 / −21.0 / −7.3 |
+| southern sea-ice proxy (NCEP 20.2) / north (16.8) | 21.8 / 18.7 | 21.6 / 18.5 |
+| Labrador / Hudson Bay lowlands coldest-month bias (±6) | +3.7 / +5.5 | +3.1 / +5.3 |
+| Antarctic pack bias | −2.1 | −1.4 |
+| coasts 40–65N: sea to the west / to the east, coldest bias | −3.1 / +2.8 | −2.0 / +3.0 |
+| SH coastal seasonal range (NCEP 9.6) | 16.3 | 14.3 |
+
+City winters (coldest month, model / obs): London −3.2 → +1.6 / 4.7, Paris −2.2 → +2.8 / 2.4, Moscow −16.8 → −13.2 /
+−9.6, Stockholm −14.3 → −8.9 / −2.7, Nuuk −24.7 → −18.3 / −19.2.
+
+**Worse:** Iceland −7.8 → −12.4 (the new winds bring it the frozen Denmark Strait's air, see the Barents draft),
+Canadian Rockies −4.7 → −7.6 and Tibet −5.4 → −4.1 (the mountain cut-off,
+`draft-air-relaxation-in-time-summer-and-mountains.md`), Greenland ice −11.8 → −12.4.
+
+**Generated worlds**, NH / SH Sv (main → after): within ±0.2 Sv on all nine (119973 17.5/17.5, 28442c 17.4/18.0,
+607540 16.6/16.5, 81aced 16.6/14.2, 7082f5 7.5/6.6, d14b89 16.7/19.0, a5a387 8.3/16.9, dad91b 15.3/0.87, c00ebf
+8.9/9.4). All sink in both hemispheres; dad91b's south is PW-579's.
+
+Attempts used on PW-575: 2 of 3. The handoff is `handoff-A6.md`.
