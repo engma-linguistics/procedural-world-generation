@@ -112,4 +112,25 @@ and stage 2's (PW-346, the sea air over the pack ice), not this stage's.
 - Small cooling elsewhere from `moc_zonal` (the inflow's extra warmth taken off its latitude's mean): London's
   coldest month −2.2 → −2.5, Pacific NW −0.3, W Europe −0.1 C.
 
-**Tests and scorecard:** see the end of this section.
+**Tests:** `uv run pytest -q` passes (568). The goldens were updated on purpose: the climate and the 60 Myr
+simulation both change through the overturning.
+
+**Scorecard** (`docs/scorecard.jsonl`, commit 4a6ff95, L6, 1000 Myr; against the last lines for 04be51c):
+
+| | 04be51c | 04be51c+dirty | 4a6ff95 |
+|---|---|---|---|
+| Earth Köppen group / exact | 70.6 / 30.9 | 70.6 / 30.9 | 70.6 / 30.9 |
+| Earth log-rain correlation | 0.617 | 0.617 | 0.617 |
+| seed 1: dry / ice / NPP / trees | 14.2 / 1.4 / 356 / 29.8 | 18.2 / 1.1 / 344 / 21.7 | 20.0 / 0.5 / 419 / 16.9 |
+| seed 2: dry / ice / NPP / trees | 24.4 / 1.1 / 341 / 21.7 | 16.8 / 8.8 / 273 / 21.9 | 15.4 / 9.1 / 267 / 20.8 |
+
+- Earth's scores don't move. The overturning changes temperatures only at high northern latitudes, and the rain
+  doesn't see it.
+- The seeds are single 1 Gyr snapshots of chaotic runs. The two lines on the same commit 04be51c already differ by
+  more than this change: seed 2's ice 1.1 against 8.8%, seed 1's trees 29.8 against 21.7%. This line is inside that
+  spread.
+
+### Left for later (inbox drafts)
+- `draft-nordic-winter-winds-offshore.md`: Fennoscandia's winter is still 14.7 C too cold. The winter winds over the
+  Nordic Seas blow offshore, and the air's winds never see the sea's own warmth. For stage 2 or its own ticket.
+- `draft-sea-evaporation-bulk-exchange.md` (updated): the bulk sea-air exchange is parked for PW-015.
