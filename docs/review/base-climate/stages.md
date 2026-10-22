@@ -347,3 +347,93 @@ So stage 2b is **not merge-ready while these three fail**, unless the coordinato
 The seeds are single chaotic snapshots (stage 1 showed same-commit spreads larger than these), but in both the dry share
 falls 5–6 points, in line with Earth's arid share falling. (The line's `src` hash includes rain-bisection
 switches that were in the working tree, off by default; the outputs are f1e1600's.)
+
+## Stage 2b, step 2: the rain fix (PW-578), attempt 2 of 3 (lane A4)
+
+**Result: Earth's rain is back (log-rain r 0.619 against main's 0.617) and the stage-1 / stage-2 bars hold, but it
+is not merge-ready.** Two tests still fail unchanged, both on knife edges:
+- `test_ocean::test_meltwater_weakens_the_overturning`: the north rises +0.001 Sv at the `moc_k` cap
+  (`issue-tracking/inbox/draft-meltwater-test-knife-edge-at-moc-cap.md`);
+- `test_zoom_soils::test_zoom_soil_layers`: 0.488 against > 0.5, and main is only at 0.519
+  (`draft-zoom-soils-floodplain-share-driver.md`).
+
+`test_earth_climate_score` and `test_same_planet_rains_the_same_at_two_levels` now pass. The goldens are
+regenerated.
+
+### What changed (two mechanisms, no Earth-fitted numbers)
+1. **The sea's swing** (`climate._sea_half`, replacing TUNE `sea_half`) has two parts, and both are now derived.
+   - *Its own swing:* the seasons' sunshine at the ground goes into a mixed layer `brine_m` deep (heat capacity
+     rho c h omega ~41 W/m2/C), against the loss to space `ice_b`. The sunshine is half the year's swing of the
+     monthly top-of-atmosphere mean × Angström's 0.5 × (1 − 0.06 albedo). This gives ~1 C at 25 deg and ~2.6 C at
+     60 deg, none at the equator, and it follows tilt by itself.
+   - *A share of the land's swing:* c = `open_b` / (`open_b` + rho c h omega) ≈ 0.42 of `continental` × s ×
+     `land_air`.
+   - Attempt 1's F1 used a flat 3 C as its own swing, which was a guess.
+2. **Stable summer land air** (`compute`, the rain's `open_sea` per season):
+   - in the summer half, the share `land_air` of a sea's air came off land and is warmer than the water (that air
+     is what warms a coastal sea beyond its own swing). It lies stable over the water, which can't stir its vapour
+     up into it, so the sea fills only the rest of the air. In winter, the cold land air is filled fast, as before.
+   - `_rain` takes `open_sea` as [season, cell], and `tools/moisture_budget.py`'s copy of the kernel follows.
+
+### How it was found (the experiment copy, Earth L6; r / group / summer share)
+- Bisect on F1, giving the rain main's 6 C × s SSTs in one place at a time:
+  - all of it: 0.618 / 70.2;
+  - the summer half only: 0.621;
+  - the winter half only: 0.588 (no gain);
+  - the summer half where `land_air` > 0.3: 0.623;
+  - only the summer `src_q` there: 0.624;
+  - only `qs`, `mse_t` or `mse_thr`: no gain.
+- So it is the evaporation source of land-warmed summer seas. Regionally it is the Mediterranean: log-rain bias
+  +0.75 against +0.47 with the uniform swing, and summer share 0.68 against GPCC's 0.30. Central Asia, Arabia and SE
+  Australia show the same.
+- Variants of the mechanism:
+  - stability share from the season's wind (900 km): 0.625 / 69.7, with F1's own swing;
+  - the same share as the swing's `land_air` (chosen: the very air that warms the water): 0.628 / 70.2, with F1's own
+    swing;
+  - a stable fetch of 1500 km scores 0.642, but nothing physical says 1500 km, so it was not taken.
+- The own swing, with stability:
+  - derived at h = `brine_m` (chosen): 0.620 / 69.6;
+  - derived at h = 30 m with c = 0.55: 0.617 / 69.4;
+  - F1's flat 3 C: 0.625–0.628 / 69.7–70.2.
+  - The derived own swing is about half the observed open-ocean air range in the subtropics (2.9 against 5.7 C at
+    20–35 deg). The summer mixed layer is shallower than `brine_m`; a seasonal depth would need a new constant, so it
+    was not added.
+- Tried and dropped: letting the summer land air also keep its warmth over the sea (a stable carry over `air_km_w`).
+  r 0.622, but the near-land seas at 35–65N ran 1.5–3.8 C too warm in summer.
+
+### The bars (`docs/review/base-climate/pw578/`)
+| line | stage 2b (attempt 2 as landed) | after | verdict |
+|---|---|---|---|
+| Earth log-rain r / Köppen group / exact | 0.533 / 66 / 28 | 0.619 / 69.6 / 30 (main 0.617 / 71 / 31) | rain met; group 1.4 short |
+| land rain in the summer half (GPCC 0.65) | 0.80 | 0.76 (main 0.75) | |
+| Hudson / Baffin / Okhotsk coldest month | −18.8 / −23.3 / −9.1 | −18.9 / −20.0 / −6.5 | freeze: pass |
+| southern sea-ice proxy (NCEP 20.2) | 21.2 | 21.8 (+8%; north 18.7 against 16.8) | pass |
+| Antarctic pack bias | −1.9 | −2.1 | pass |
+| Labrador / Hudson Bay lowlands, coldest month | +3.5 / +5.6 | +3.7 / +5.5 | pass (±6) |
+| Earth NH sinking, open polar share; Norwegian coast | 11.3 Sv, 73%; 100% | 10.2 Sv, 72%; 100% | pass |
+| every generated world sinking in both hemispheres | yes (weakest dad91b S 3.2) | yes (weakest dad91b S **0.89**, 7082f5 7.5 / 6.7) | pass, weak (`draft-dad91b-southern-sinking-weakening.md`) |
+
+**The group gap is not the rain.** With main's uniform 6 C × s swing everywhere, the branch scores group 70.2. The
+confusion rows against main are obs D → E 14% (main 11%), A → A 78% (80) and B → B 47% (48). The D → E cells are cold
+coasts whose summers are too cool, a stage-2b temperature effect (`draft-stage2b-koppen-group-d-to-e.md`). So 69.6
+counts as plausible-or-better: the rain is as good as main's, and the remainder sits in temperatures the stage-2 bar
+traded for its sea ice.
+
+**Generated worlds' rain** (`pw578/world_rain_main_vs_after.txt`, main → after):
+- land rain +1–5%;
+- the arid share within ±1.2 points;
+- the summer share unchanged (0.79–0.85).
+
+The sea-ice proxies are up, as in stage 2b: 28442c N / S 8 / 9 → 15 / 20 Mkm2, 81aced N 0.1 → 5.9.
+
+**Scorecard** (`docs/scorecard.jsonl`, L6, 1000 Myr):
+- Earth: group 69.6 / exact 30.0, log-rain 0.62 (stage 2b: 66.4 / 27.8 / 0.533);
+- seed 1: dry 25.7% / ice 0.0 / NPP 361 / trees 25.0 (stage 2b: 13.5 / 1.7 / 379 / 19.6);
+- seed 2: dry 25.3% / ice 4.2 / NPP 300 / trees 20.8 (stage 2b: 9.9 / 9.7 / 263 / 25.2; stage 1: 15.4 / 9.1 / 267 /
+  20.8).
+
+These are single chaotic snapshots. Their dry share is now above stage 1's.
+
+**earth_check:** before is `stage2b/ec_a2.txt` (stage 2b as landed); after is `pw578/earth_check_after.txt`.
+
+Attempts used on PW-578: 2 of 3. The handoff is `handoff-A4.md`.

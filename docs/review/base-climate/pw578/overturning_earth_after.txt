@@ -1,0 +1,11 @@
+=== overturning: Earth L6, dT +0.0 (5 s) ===
+  NH sinking 10.22 Sv, heat 0.898 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  72%
+  SH sinking  2.38 Sv, heat 0.000 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  27%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    69.1   -13.8   6.01  5.057   0.531   2232090      361.8  0.81
+    67.7   -60.6   4.08  5.282   0.367   1430248      361.8  0.51
+   -78.8   -47.2   1.46  3.259   0.000    829674      361.8  0.40
+   -80.7  -164.2   1.03  3.805   0.000    572495      361.8  0.44
+  by sea (Sv): Nordic Seas 4.45, Irminger / Iceland S 1.29, Labrador Sea 1.37, Baffin Bay 2.69, Weddell 1.07, Ross 0.70, Southern Ocean (all) 2.38
+  Norwegian coast sea (62-72N 5W-15E): open in winter 100% of area, coldest-month SST 1.7 C, sea air -3.5 C (NCEP ~+3.5)
+  Fennoscandia (ice-free land): coldest month -20.3 vs -8.5 (-11.9), warmest 7.7 vs 14.0 (-6.2)

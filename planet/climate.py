@@ -935,8 +935,9 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       of each neighbour's (nbr, CSR off: _faces'), so what leaves one cell
       enters the next and the vapour's mass (per m2 x the cell's area) is
       kept;
-    - over the sea the air takes up water to src_q, where the sea is open
-      (open_sea: the share not under sea ice);
+    - over the sea the air takes up water to src_q, the share open_sea
+      [season, cell] of it (the share not under sea ice, less the stable
+      summer air off land: compute);
     - over land it takes up what the ground evaporates: water_balance's
       actual evaporation (Budyko, Fu's w budyko_w per cell, with soil_mm
       kept over from the other season) of the rain the place gets, in mm
@@ -1020,7 +1021,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                     q += c_in[j, k] * m[nbr[j], k]
                 if ocean[i]:
                     if src_q[k, i] > q:
-                        up = open_sea[i] * (src_q[k, i] - q)
+                        up = open_sea[k, i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
                         q += up
@@ -1352,7 +1353,8 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     n = grid.n
     ocean = elev <= 0 if ocean is None else ocean
     w = np.full(n, tune["budyko_w"]) if w is None else np.ascontiguousarray(np.broadcast_to(w, (n,)), np.float64)
-    open_sea = np.ones(n) if open_sea is None else np.ascontiguousarray(open_sea, np.float64)
+    open_sea = np.ones(n) if open_sea is None else np.asarray(open_sea, np.float64)
+    open_sea = np.ascontiguousarray(np.broadcast_to(open_sea, (len(seasons_in), n)), np.float64)
     st = {k: np.ascontiguousarray(np.stack([d[k] for d in seasons_in])) for k in
           ("qs", "src_q", "ls", "cv", "mse_t", "mse_thr")}
     c_self, c_in, nbr, dt = _transport(grid, *face_winds(grid, seasons_in, tune))
@@ -1390,8 +1392,10 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
     planet rains the same at every grid level. pet: potential evaporation
     (mm/yr) in each season, [season, cell], and w: Fu's w per cell
     (default TUNE's budyko_w), from which the land evaporates as
-    water_balance has it; open_sea: the sea's share not under sea ice
-    (default 1), the only part the air takes up water from. tune's
+    water_balance has it; open_sea: the share of the sea's air it fills
+    (default 1; per cell, or [season, cell]): the share not under sea ice,
+    the only part the air takes up water from, less the stable land air of
+    a summer (compute). tune's
     mean_mm: the global mean rain the kernel's rain is scaled to (in mm,
     for the land's evaporation). ocean: default elev <= 0 (compute's: not
     geo.is_land). start: an earlier call's end state (the fourth result:
@@ -1490,8 +1494,6 @@ TUNE = dict(
     cur_max=3.0,
     # temperature
     continental=24.0,  # C: seasonal half-swing of land left to itself (times season strength)
-    sea_half=1.9,  # C: the sea's own seasonal half-swing (times season strength), plus continental x the
-    # share of its air that came off land (compute)
     coast=0.35,  # sea air at a coast per share of sea neighbours (sea breezes, fog)
     air_km_s=450.0,  # km over which air over land takes on the land's summer temperature
     air_km_w=900.0,  # ... its winter temperature (slower: cold ground under warm air is stable)
@@ -1530,7 +1532,8 @@ TUNE = dict(
     ice_export=0.25,  # share of the winter's sea ice that drifts away to melt elsewhere (all of it
     # where the winter wind blows off the coast) ...
     ice_km=800.0,  # ... spread over this far
-    brine_m=50.0,  # m: depth of the winter mixed layer the brine of new sea ice mixes into
+    brine_m=50.0,  # m: depth of the winter mixed layer the brine of new sea ice mixes into (and the seasons' heat:
+    # _sea_half)
     moc=0.65,  # Sv sinking per kg/m3 of density difference (sinking - water replacing it) per 1e6 km2
     moc_k=3.0,  # Sv per kg/m3: the most one sinking site turns over (see ocean.overturning)
     moc_z=2000.0,  # m: depth at which the waters' densities are compared for sinking
@@ -2015,17 +2018,14 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_sea_air = sea_temperature(grid, eq - 0.8, pole + 2.9)
     t_sea = np.maximum(t_sea_air, FREEZE)
     s = season_strength(grid, tilt)
-    # The sea's seasonal swing: its own (sea_half: a mixed layer under the
-    # sun's seasons) plus the land's (continental) times the share of the
-    # air over it that came off land within ~air_km_w on the prevailing
-    # winds. The air off a continent drives the water's seasons: a sea
-    # downwind of land swings far more than an ocean the westerlies cross
-    # without meeting land (the Southern Ocean's ~2 C, the North Pacific's
-    # ~5; a bay inside a continent most of all).
+    # The sea's seasonal swing (_sea_half): its own, under the sun's
+    # seasons, plus a share of the land's, where the air over it came off
+    # land (land_air: the share of it that did, within ~air_km_w on the
+    # prevailing winds).
     h = _geom(grid)["h"]
     land_air = carry(grid, wind(grid, 0.0), land.astype(float), np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
                      4 * tune["air_km_w"], 0.25)
-    sea_half = s * (tune["sea_half"] + tune["continental"] * land_air)
+    sea_half = _sea_half(grid.lat, tilt, s, land_air, tune)
 
     # Winds for each half-year (Apr-Sep 'jul', Oct-Mar 'jan'). Rain is a
     # half-year mean, so the winds and rain use the half-years' mean
@@ -2093,10 +2093,17 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # cold, dry air over them takes up water fast (PW-308).
     open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
     pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
-    open_air = open_y + tune["leads"] * (1.0 - open_y)
+    # In the summer half the air that came off land (land_air) is warmer
+    # than the sea it crosses (that air is what warms a coastal sea beyond
+    # its own swing, _sea_half): it lies stable over the cooler water, which
+    # can't stir its vapour up into it, so the sea fills only the rest of
+    # the air (PW-578). In winter the land's air is colder than the water,
+    # and the sea fills it fast.
+    open_air = np.where(ocean, open_y + tune["leads"] * (1.0 - open_y), 1.0)
+    calm = np.where(ocean, 1.0 - land_air, 1.0)
+    open_k = np.stack([open_air * np.where(north, calm, 1.0), open_air * np.where(north, 1.0, calm)])
     (r_jul, r_jan), (e_jul, e_jan), (q_jul, q_jan), rain_state = rain(
-        grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet}, pet, fb["w"], np.where(ocean, open_air, 1.0),
-        ocean, rain_start)
+        grid, elev, s_in, {**tune, "mean_mm": tune["mean_mm"] * wet}, pet, fb["w"], open_k, ocean, rain_start)
     scale = tune["mean_mm"] * wet / max(0.5 * (r_jul + r_jan).mean(), 1e-12)
     p_jul, p_jan = np.clip(r_jul * scale, 0, 8000), np.clip(r_jan * scale, 0, 8000)
     precip = 0.5 * (p_jul + p_jan)
@@ -2228,6 +2235,34 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     t_warm = np.where(ocean, sea_sum, t_warm)
     temp = 0.5 * (t_warm + t_cold)
     return t_warm, t_cold, temp, open_w
+
+
+RHO_C_SEA = 4.1e6  # J/m3 per C: sea water's heat capacity
+YEAR_S = 365.25 * 86400.0
+SEA_ALBEDO = 0.06
+SUN_SURFACE = 0.5  # share of the top-of-atmosphere sunshine that reaches the ground (Angstrom's 0.25 + 0.5 x
+# sunshine, at half the day sunny)
+
+
+def _sea_half(lat, tilt, s, land_air, tune):
+    """The sea's seasonal half-swing (C): its own plus a share of the land's.
+    Its own: the seasons' sunshine (half the year's swing of the monthly
+    mean at the ground, after the sea's albedo) into the mixed layer
+    (brine_m deep), a heat capacity rho c h omega (~41 W/m2 per C at 50 m)
+    against which the loss to space (ice_b) hardly counts: ~1-2.5 C, more
+    toward the poles, and none at the equator. The land's: where the air
+    over the sea came off land (land_air), it pulls the water toward the
+    land's own swing (continental x season strength) by the air-sea
+    exchange open_b against the mixed layer's heat capacity: c = open_b /
+    (open_b + rho c h omega) ~0.42. So a sea downwind of land swings far
+    more than an ocean the westerlies cross without meeting land, and a bay
+    inside a continent most of all. (The winter air's own cold over the sea
+    is carried separately: _winter_air.)"""
+    ra = insolation(lat, tilt) * (1e6 / 86400.0)  # W/m2, (12, n)
+    cap = RHO_C_SEA * tune["brine_m"] * 2 * np.pi / YEAR_S
+    own = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0)) / np.hypot(cap, tune["ice_b"])
+    c = tune["open_b"] / (tune["open_b"] + cap)
+    return own + c * tune["continental"] * s * land_air
 
 
 def _summer_half(sst, half, half_w):

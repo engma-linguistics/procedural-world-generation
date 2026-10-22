@@ -1,0 +1,20 @@
+pkg /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/laneA3/mainpkg/planet/__init__.py
+pkg /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-abd090ca6a312a9ce/planet/__init__.py
+119973: land P   1124 mm (p10/50/90 157/815/2526), arid 31.1%, summer share 0.84, T land  15.4, sea-ice proxy N/S 26.4/21.5 Mkm2
+119973: land P   1143 mm (p10/50/90 153/828/2557), arid 30.4%, summer share 0.85, T land  15.3, sea-ice proxy N/S 32.5/28.1 Mkm2
+28442c: land P   1268 mm (p10/50/90 122/1067/2760), arid 22.7%, summer share 0.81, T land  15.5, sea-ice proxy N/S 8.3/8.9 Mkm2
+28442c: land P   1292 mm (p10/50/90 123/1088/2827), arid 22.7%, summer share 0.81, T land  15.4, sea-ice proxy N/S 14.9/20.0 Mkm2
+607540: land P    987 mm (p10/50/90 54/688/2421), arid 38.2%, summer share 0.85, T land  14.9, sea-ice proxy N/S 28.3/29.1 Mkm2
+607540: land P   1005 mm (p10/50/90 50/716/2468), arid 37.1%, summer share 0.85, T land  14.8, sea-ice proxy N/S 34.5/36.1 Mkm2
+81aced: land P   1237 mm (p10/50/90 206/1052/2568), arid 20.9%, summer share 0.84, T land  15.6, sea-ice proxy N/S 0.1/11.8 Mkm2
+81aced: land P   1261 mm (p10/50/90 204/1101/2598), arid 20.1%, summer share 0.84, T land  15.6, sea-ice proxy N/S 5.9/19.0 Mkm2
+7082f5: land P   1029 mm (p10/50/90 73/840/2359), arid 28.1%, summer share 0.85, T land  13.4, sea-ice proxy N/S 29.3/12.0 Mkm2
+7082f5: land P   1049 mm (p10/50/90 72/862/2384), arid 27.1%, summer share 0.85, T land  13.3, sea-ice proxy N/S 38.4/14.5 Mkm2
+d14b89: land P   1208 mm (p10/50/90 63/1032/2591), arid 27.9%, summer share 0.79, T land  16.0, sea-ice proxy N/S 27.0/17.6 Mkm2
+d14b89: land P   1232 mm (p10/50/90 66/1071/2642), arid 27.7%, summer share 0.79, T land  16.0, sea-ice proxy N/S 31.0/24.6 Mkm2
+a5a387: land P   1331 mm (p10/50/90 254/1154/2573), arid 12.2%, summer share 0.81, T land  12.8, sea-ice proxy N/S 12.7/14.8 Mkm2
+a5a387: land P   1353 mm (p10/50/90 239/1187/2595), arid 12.6%, summer share 0.82, T land  12.8, sea-ice proxy N/S 15.1/19.2 Mkm2
+dad91b: land P   1035 mm (p10/50/90 102/877/2271), arid 23.6%, summer share 0.83, T land  12.4, sea-ice proxy N/S 31.9/10.2 Mkm2
+dad91b: land P   1063 mm (p10/50/90 101/927/2325), arid 22.4%, summer share 0.84, T land  12.4, sea-ice proxy N/S 35.3/12.8 Mkm2
+c00ebf: land P   1164 mm (p10/50/90 152/998/2294), arid 18.3%, summer share 0.83, T land  13.4, sea-ice proxy N/S 39.1/30.2 Mkm2
+c00ebf: land P   1185 mm (p10/50/90 151/995/2372), arid 18.4%, summer share 0.83, T land  13.4, sea-ice proxy N/S 42.1/34.0 Mkm2
