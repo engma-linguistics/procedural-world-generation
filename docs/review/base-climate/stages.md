@@ -574,4 +574,11 @@ Canadian Rockies −4.7 → −7.6 and Tibet −5.4 → −4.1 (the mountain cut
 607540 16.6/16.5, 81aced 16.6/14.2, 7082f5 7.5/6.6, d14b89 16.7/19.0, a5a387 8.3/16.9, dad91b 15.3/0.87, c00ebf
 8.9/9.4). All sink in both hemispheres; dad91b's south is PW-579's.
 
+**Scorecard** (`docs/scorecard.jsonl`, commit abe4838, L6, 1000 Myr; against 628fbd8, lane A5):
+- Earth: group 69.6 → 70.3, exact 30.0 → 30.8, log-rain 0.62 → 0.622;
+- seed 1: dry 20.2 → 20.1% / ice 1.8 → 3.1 / NPP 350 → 331 / trees 22.2 → 17.9;
+- seed 2: dry 20.7 → 22.6% / ice 2.0 → 0.7 / NPP 366 → 385 / trees 26.2 → 19.8.
+
+These are single chaotic snapshots, inside the spread seen before. Tree cover falls on both, by 4–6 points.
+
 Attempts used on PW-575: 2 of 3. The handoff is `handoff-A6.md`.

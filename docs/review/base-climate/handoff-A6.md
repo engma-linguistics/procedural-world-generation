@@ -1,7 +1,7 @@
-# Lane A handoff A6 (2026-10-22, ~90 tool calls)
+# Lane A handoff A6 (2026-10-22, ~100 tool calls)
 
 ## State of the branch
-- Main 564350b is merged in. PW-575 (step 1) is on this branch: see stages.md, "PW-575: the winter winds (lane A6)".
+- Main 564350b is merged in. PW-575 (step 1) is commit abe4838 on this branch (pytest passes, goldens regenerated, scorecard line added): see stages.md, "PW-575: the winter winds (lane A6)".
   Its bar is **not** met (Fennoscandia −8.9 C against ±6; the Nordic Seas box unchanged), for reasons that lie in the
   ocean north of 72N (`issue-tracking/inbox/draft-nordic-winter-barents-frozen.md`). The coordinator rules whether
   it merges as an improvement.
