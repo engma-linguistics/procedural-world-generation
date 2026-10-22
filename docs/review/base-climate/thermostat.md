@@ -215,3 +215,136 @@ So the balance is taken at the end of the spin-up.
 
 **What remains.** Attempts 1-2 left the median icehouse share at 58-66%; attempt 3's relief term brings it to 35%. The stock fixes the brake; it can't move the planet's mean state, because dT = 0 is
 today's icehouse Earth. The relief spin-up is a surface/setup issue (inbox draft `draft-relief-spinup-erosion-rise`).
+
+
+## Stage 3: the mature start (PW-576 follow-up), lane B third agent
+
+Owner's request: start the planet as one that has already run a long time, then compare attempt 1 (reference set
+once, no relief term) against attempt 3 (with the relief term) on it. The owner decides; nothing merges before.
+
+### What spins up on the old start (10 L6 seeds, 1 Gyr; value / its 300-1000 Myr mean, seed median)
+
+| | 0 | 8 | 40 | 90 | 190 | 290 | 390 | 590 | 980 Myr |
+|---|---|---|---|---|---|---|---|---|---|
+| ice-free land's erosion | 0.18 | 0.24 | 0.26 | 0.26 | 0.75 | 0.91 | 0.82 | 0.95 | 0.96 |
+| continental thickness sd (9.5 km) | 0.17 | 0.18 | 0.37 | 0.59 | 1.08 | 1.01 | 1.02 | 0.98 | 1.02 |
+| land elevation p90 (1.7 km) | 0.36 | 0.36 | 0.34 | 0.18 | 1.18 | 1.19 | 0.98 | 1.04 | 0.90 |
+| land above 2 km (7.4%) | 0.00 | 0.00 | 0.00 | 0.00 | 1.37 | 1.30 | 1.00 | 1.03 | 0.85 |
+| sediment cover on land (2.1 km) | 0.29 | 0.30 | 0.28 | 0.25 | 0.31 | 0.45 | 0.62 | 0.94 | 1.42 |
+| ocean floor mean age (64 Myr) | 0.85 | 0.93 | 0.86 | 0.55 | 1.01 | 0.84 | 0.82 | 1.13 | 1.14 |
+
+- The made-up start was a low plain: thickness sd 1.6 km against the long run's 9.5, and no ground above 2 km. Its
+  ice-free land eroded at ~25% of the later rate until the first collisions (~150-200 Myr).
+- Only ~53% of long-run land carries sediment cover, but the start blanketed 98% of it.
+- Already settled at the start: crust volume, land share, ocean age (PW-549), the mantle lid.
+- What moves on both starts, and is the planet's history rather than spin-up:
+  - the first breakup's highstand at ~90 Myr (sea +170-270 m, ocean age 0.55);
+  - rock make-up (belts 1.8 → 0.8, arcs 0 → 1.3 of the long-run share over the whole run: crust growth);
+  - sediment still piling up at 1 Gyr (land cover 1.4×, sea floor 1.2×).
+- The long-run thickness distribution is steady from 300 Myr (sd 9.4-9.7 km at 300, 600 and 1000 Myr). Its top
+  tenth is old crust well inside the continents: 60-70% shield rock, and 70-90% of it more than 5 cells from any
+  converging boundary. Worn, high old belts and plateaus linger, as the erosion law intends.
+
+### The change (planet/tectonics/setup.py)
+- The start's own pattern (coast low, interiors up, ridged old belts highest) is ranked, and the ranking takes the
+  long-run thickness percentiles (`MATURE_Q`/`MATURE_DTHICK`). These were measured on the run's own continents over
+  300-1000 Myr, as PW-549 did for the ocean: thin stretched margins with sediment wedges, lowlands, high belts.
+- The cover follows the same ranking (`MATURE_COVER`, the long run's median per tenth). It is thick in margins and
+  basins, patchy on uplands, and mostly bare on the highest ground.
+- The thickness is now the whole column, cover included, as measured. The shift to `continental_thickness` is
+  repeated so the 21 km floor doesn't leave it off target.
+- Start (seeds 1, 13): land 32% (long run 33%), land/continent 0.80 (0.77-0.83), land elevation p50/p90/p99
+  476/1890/4864 m (458-567 / 1640-2070 / 4091-4530).
+- Attempts:
+  1. As above (kept).
+  2. The pattern smoothed over its neighbours before ranking: cell-scale relief at the start drops from 2.1× to
+     1.45× the long run's. Erosion over 0-150 Myr fell to 0.6-0.85×, with 4/10 seeds within 20% (attempt 1: 6/10).
+     Reverted: the sharper start relief wears off within ~40 Myr and was helping.
+  3. Not used.
+
+### The bar: erosion and relief at their long-run level within ~100 Myr
+Ice-free land's erosion per 50 Myr window, seed median, against its 300-1000 Myr mean. Comparison sweeps, main
+5c4c0fd:
+
+| | 0-50 | 50-100 | 100-150 | 150-200 | 200-300 | 300-400 | seeds within 20% at 50-150 |
+|---|---|---|---|---|---|---|---|
+| main (old start) | 0.24 | 0.23 | 0.31 | 0.62 | 0.79 | 0.79 | 0/10 |
+| mature, (a) | 0.89 | 0.73 | 0.67 | 0.83 | 0.84 | 0.83 | 3/10 |
+| mature, (b) | 0.93 | 0.78 | 0.70 | 0.84 | 0.85 | 0.84 | 4/10 |
+
+(Attempt 1's probe, on main 2684f2b-era climate, had 6/10.)
+- The creep is gone: from the first step, erosion sits near its 200-400 Myr level (~0.84; the late mean is higher
+  because erosion still creeps up ~15% to 1 Gyr on every start).
+- What's left is a dip to ~0.7 at 50-150 Myr. The starting belts wear down before the first collisions (~150 Myr)
+  while the breakup's highstand floods the lowlands. That is the supercontinent's breakup phase; single late
+  windows dip as low (0.62-0.72) between collisions.
+- So the bar is met in the sense the owner asked for (no 200-600 Myr creep), but not "within 20% on every seed".
+- The relief (cell scale) starts 1.5-1.8× its long-run value and is there by ~40 Myr. The thickness sd starts at
+  0.9× and stays at 0.75-0.85× until the first collisions.
+
+### The comparison (10 L6 seeds, 1 Gyr; all five sweeps on main 5c4c0fd, before PW-582)
+
+Judged after 300 Myr:
+
+| | N1-N4 pass | icehouse share median (seeds in 15-45%) | CO2 answer, trends out, median C/C | in 0.35-0.9 | against drift-made dT | mean dT median | fails |
+|---|---|---|---|---|---|---|---|
+| main (no stock) | 3/10 | 70% (1) | +0.28 | 3/10 | 10/10 | −0.7 | deep eras 160-216 Myr (2, 99); icehouses 304-516 Myr; share 74-83% |
+| old start, (a) attempt 1 | 4/10 | 66% (0) | +0.34 | 3/10 | 10/10 | −1.5 | deep eras 156-248 Myr on 6 seeds (1, 2, 13, 42, 99, 3199) |
+| old start, (b) attempt 3 | **9/10** | **40% (5)** | **+0.40** | **5/10** | 9/10 | +1.2 | icehouse 324 Myr (1) |
+| **mature, (a) attempt 1** | **8/10** | **43% (5)** | +0.21 | 3/10 | 9/10 | +0.8 | deep era 200 Myr and share 82% (2); deep era 176 Myr (3199) |
+| mature, (b) attempt 3 | 6/10 | 41% (3) | +0.13 | 1/10 | 7/10 | +1.2 | share 2% (5, 21), 76-85% (2, 99); icehouse 420 Myr (99) |
+
+Judged after 500 Myr (same runs):
+
+| | N1-N4 | share (15-45%) | CO2 answer | in band | against dT | mean dT |
+|---|---|---|---|---|---|---|
+| main | 3/10 | 73% (1) | +0.21 | 1/10 | 10/10 | −0.8 |
+| old, (a) | 4/10 | 76% (0) | +0.21 | 3/10 | 10/10 | −1.8 |
+| old, (b) | 9/10 | 34% (5) | +0.44 | 6/10 | 8/10 | +1.6 |
+| mature, (a) | 8/10 | 47% (4) | +0.16 | 3/10 | 9/10 | +0.8 |
+| mature, (b) | 6/10 | 47% (2) | +0.12 | 1/10 | 8/10 | +1.6 |
+
+Wall times (10 seeds in parallel, 2 numba threads each, ~20 cores): main 980 s, old (a) 921 s, old (b) 883 s,
+mature (a) 910 s, mature (b) 924 s. Probe sweeps: old start 788 s, mature attempt 1 816 s, attempt 2 857 s.
+(The old start's attempts 1 and 3 on main 2684f2b, from stage 2: 5/10 and 8/10, share 66% (1) and 35% (5),
+CO2 +0.44 and +0.28.)
+
+What it says:
+- **The mature start makes (a) pass the multi-seed bar.** 8/10 against 4/10 on the old start, with the share median
+  at 43% and 5 seeds in 15-45%. The relief's creep was what made (a)'s deep eras: they're gone on 8 seeds.
+- **The relief term now hurts.** On the mature start (b) is worse than (a): 6/10, with two planets almost ice-free
+  (2%) and two stuck cold. With no real creep left to forget, the term forgets real changes in erosion.
+- **But (a)'s thermostat answer fell**, +0.34 → +0.21 C/C (3/10 in band either way). I haven't found why.
+  - One seed's answer is good to ±0.1, so some of this is noise.
+  - It may also be real: the mature start's erosion comes more from the high belts and less from the runoff over
+    the lowlands, so the supply answers warmth less.
+  - It needs the sink's parts per seed (supply /C, temperature factor /C), which I didn't get to. Inbox draft.
+- **The owner's rule says (a).** The mature start makes (a) good enough on N1-N4 and the share. The CO2 answer is
+  the open question.
+
+### Settling times and the warm-up (owner's question)
+Per seed, a quantity counts as settled from the last time its 50 Myr mean leaves its own 500-975 Myr range (5-95%,
+plus a small pad). That also counts natural wander, so the dT and sea-level times (500-800 Myr on every start) are
+mostly the drift and the Wilson cycle, not spin-up.
+
+Median (80th percentile), Myr:
+
+| | erosion | relief | thickness sd | land cover | ocean age | land share | CO2 index | dT |
+|---|---|---|---|---|---|---|---|---|
+| old start (probe) | 405 (432) | 355 (440) | 170 (344) | 445 (482) | 395 (428) | 435 (484) | 380 (828) | 595 (786) |
+| mature (probe, attempt 1) | 165 (402) | 220 (438) | 160 (304) | 50 (66) | 265 (440) | 135 (446) | 270 (452) | 630 (872) |
+| main (5c4c0fd sweep) | 240 (476) | | | | | 300 (384) | 225 (442) | 515 (822) |
+| mature (a) (sweep) | 425 (484) | | | | | 60 (434) | 240 (426) | 755 (902) |
+
+(The sweeps' erosion "settles" late on the mature start because of the 50-150 Myr dip and the late creep; the
+window table above is the clearer view.)
+
+Recommendation, for the owner to decide:
+- **The warm-up can stay at 300 Myr on the mature start.** Its surface transient is over by ~50 Myr (cover) to
+  ~150 Myr (the breakup dip). The first breakup's highstand peaks at ~90 Myr and ends by ~200. The CO2 references
+  learn until REF_FREEZE = 300.
+- Judging after 500 Myr doesn't change any verdict above (N1-N4 counts are identical for every sweep), and it
+  halves the judged sample, which makes the CO2 answers noisier.
+- On the old start, 400-500 Myr would be the honest warm-up: erosion, relief and cover settle at ~350-450 Myr.
+- **Default run length: 1 Gyr.** At 500 Myr (`simulate`'s default), a 300 Myr warm-up leaves 200 judged Myr, a
+  single icehouse or two.
