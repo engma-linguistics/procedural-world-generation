@@ -7,7 +7,7 @@
 
 Runs a simulation in memory (nothing goes to the store) with tectonics/diag.Recorder switched on, which
 reads the run's state without changing it (the run is bit-identical to one without). Writes
-DIR/seed<N>_L<l>.json.gz: per step the global temperature's parts (drift, CO2 term clipped and unclipped,
+DIR/seed<N>_L<l>.json.gz: per step the global temperature's parts (drift, CO2 term as counted and without levelling off,
 ice albedo term, target), the CO2 source and sink against their baselines, sea level with its ice and
 ocean-basin parts, the iced land; per climate update every sheet's budget (snow gained, melt, what the
 sea takes, net), the frozen-sea share, the rain on the ice and the snowline land. --fields also writes
@@ -16,7 +16,7 @@ DIR/seed<N>_L<l>_fields.npz (ice, mass balance, warm month, rain per update, flo
 tools/tz_mean.py and tools/ice_probe.py --source.
 
 The summary prints the whole-history criteria (tools/ice_criteria.py: old and new bars) and, for each
-deep cold era, what held it: the mean CO2 term (and how much the clip at CO2_MAX withheld), the ice albedo
+deep cold era, what held it: the mean CO2 term (and how much its levelling off toward CO2_MAX withheld), the ice albedo
 term, the drift, the sheets' net budget, and the volume of sheets the rule kept in deficit.
 """
 
@@ -38,6 +38,7 @@ import numpy as np  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from planet.tectonics import Params, Simulation  # noqa: E402
 from planet.tectonics.diag import Recorder  # noqa: E402
+from planet.tectonics.earth import CO2_MAX  # noqa: E402
 from tools import ice_criteria as C  # noqa: E402
 
 
@@ -96,7 +97,7 @@ def eras(d: dict, below: float = C.DEEP) -> list[dict]:
              "dT": m("dT_end"), "drift": m("drift"), "co2": m("co2"), "co2_term": m("co2_term"),
              "co2_withheld": round(m("co2_term_free") - m("co2_term"), 2), "albedo": m("albedo_term"),
              "sink": m("sink"), "src": m("src"), "iced_land": m("iced_land"),
-             "clipped_pct": round(100 * float(np.mean([abs(r["co2"]) >= 3.0 for r in rows])), 0)}
+             "clipped_pct": round(100 * float(np.mean([abs(r["co2"]) >= CO2_MAX / 2 for r in rows])), 0)}
         if us:
             e["net"] = round(float(np.mean([u["budget"]["net"] for u in us])), 3)
             e["deficit_vol"] = round(float(np.mean([u["budget"]["deficit_vol_m"] for u in us])))
@@ -107,7 +108,9 @@ def eras(d: dict, below: float = C.DEEP) -> list[dict]:
     return out
 
 
-FB_BAND = (0.4, 0.9)  # C of CO2 warming per C of cooling: the thermostat's bar (PW-574)
+FB_BAND = (0.35, 0.9)  # C of CO2 warming per C of cooling: the thermostat's bar (PW-574; owner 2026-10-22, PW-576 C:
+# ~0.35-0.5 is close enough, the sink's own answer)
+TREND_MYR = 200.0  # Myr: the running mean taken out of every series for the high-passed gain
 
 
 def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
@@ -148,7 +151,18 @@ def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
     cd = float(np.cov(dT, drift)[0, 1])
     iv = lambda y: float(np.cov(y[ok], drift[ok])[0, 1]) / cd
     lrel = np.log(f("sink"))
-    inst = {"g": round(iv(ln["sink"]), 4), "fb": round(sens * iv(ln["sink"]) / WEATHER_CO2, 2),
+    # The same with each series' TREND_MYR running mean taken out: a kept reference lets a slow trend (the start's
+    # relief building up, a drifting source) move the CO2 term, and over ~700 Myr such a trend lines up with the
+    # drift's slowest wander by chance; the high-passed answer is the thermostat's on the drift's own time scale.
+    n = max(1, int(round(TREND_MYR / 2 / max(float(np.median(np.diff(f("t")))), 1e-9))))
+    def hp(y):
+        pad = np.r_[np.full(n, y[:n].mean()), y, np.full(n, y[-n:].mean())]
+        return y - np.convolve(pad, np.ones(2 * n + 1) / (2 * n + 1), "same")[n:-n]
+    dh = hp(drift)
+    cdh = float(np.cov(hp(dT)[ok], dh[ok])[0, 1])
+    ivh = lambda y: float(np.cov(hp(y)[ok], dh[ok])[0, 1]) / cdh
+    inst = {"co2_hp": round(-ivh(co2t), 2), "fb_hp": round(sens * ivh(ln["sink"]) / WEATHER_CO2, 2),
+            "g": round(iv(ln["sink"]), 4), "fb": round(sens * iv(ln["sink"]) / WEATHER_CO2, 2),
             "fb_rel": round(sens * iv(lrel) / WEATHER_CO2, 2), "co2": round(-iv(co2t), 2),
             "parts": {k: round(iv(v), 4) for k, v in ln.items() if k not in ("sink", "area")}}
     return {"iv": inst, "g": round(g, 4), "fb": round(sens * g / WEATHER_CO2, 2), "g_raw": round(slope(ln["sink"]), 4),
@@ -165,9 +179,10 @@ def gain_line(k: dict | None) -> str:
     pa = " ".join(f"{a} {v:+.3f}" for a, v in k["parts"].items())
     v = k["iv"]
     pv = " ".join(f"{a} {x:+.3f}" for a, x in v["parts"].items())
-    return (f"thermostat (on the drift) CO2 {v['co2']:+.2f} C per C of cooling "
-            f"{'ok' if FB_BAND[0] <= v['co2'] <= FB_BAND[1] else 'F'}; the sink answers {v['g']:+.3f}/C ({pv}) = fb "
-            f"{v['fb']:+.2f}, {v['fb_rel']:+.2f} after the smoothing and baselines\n"
+    return (f"thermostat (on the drift, {TREND_MYR:g} Myr trends out) CO2 {v['co2_hp']:+.2f} C per C of cooling "
+            f"{'ok' if FB_BAND[0] <= v['co2_hp'] <= FB_BAND[1] else 'F'} (sink fb {v['fb_hp']:+.2f}); with the trends"
+            f" CO2 {v['co2']:+.2f}; the sink answers {v['g']:+.3f}/C ({pv}) = fb "
+            f"{v['fb']:+.2f}, {v['fb_rel']:+.2f} against the references\n"
             f"      regressions: fb {k['fb']:+.2f} C/C"
             f" (d ln sink/dT {k['g']:+.3f} with land fixed, {k['g_raw']:+.3f} raw; per part {pa}; local T {k['T_local']:.2f}"
             f"/C of dT), dT/drift {k['dT_drift']:.2f}, corr(CO2 term, dT) {k['corr']:+.2f} ({k['corr_src']:+.2f} without"
@@ -180,13 +195,13 @@ def summary(path):
     print(C.line(Path(path).name.split(".")[0], r))
     k = gain(d)
     print("    " + gain_line(k))
-    return r, k
     for e in eras(d):
         print(f"    era {e['t0']:g}-{e['t1']:g} ({e['myr']:g} Myr) worst {e['worst']} m: dT {e['dT']:+.1f} = drift "
-              f"{e['drift']:+.1f} + CO2 {e['co2_term']:+.1f} (index {e['co2']:+.2f}, clipped {e['clipped_pct']:g}% of"
+              f"{e['drift']:+.1f} + CO2 {e['co2_term']:+.1f} (index {e['co2']:+.2f}, beyond CO2_MAX / 2 {e['clipped_pct']:g}% of"
               f" steps, withheld {e['co2_withheld']:+.1f}) + albedo {e['albedo']:+.1f}; sink x{e['sink']} src x{e['src']},"
               f" iced land {100 * e['iced_land']:.0f}%; sheets net {e.get('net')} m/kyr, in deficit {e.get('deficit_vol')} m;"
               f" frozen sea {e.get('sea_frozen')}, snow on ice {e.get('precip_ice')} mm, ice to {e.get('lat_min')} deg")
+    return r, k
 
 
 def plot(path):
@@ -206,11 +221,11 @@ def plot(path):
     ax[1].plot(t, f("dT_end"), label="dT", color="black")
     ax[1].plot(t, f("drift"), label="drift", color="#888888", lw=0.8)
     ax[1].plot(t, f("co2_term"), label="CO2 term (counted)", color="#d08a1a")
-    ax[1].plot(t, f("co2_term_free"), label="CO2 term (unclipped)", color="#d08a1a", lw=0.6, ls=":")
+    ax[1].plot(t, f("co2_term_free"), label="CO2 term (without levelling off)", color="#d08a1a", lw=0.6, ls=":")
     ax[1].plot(t, f("albedo_term"), label="ice albedo term", color="#2a6fdb", lw=0.8)
     ax[1].set_ylabel("C"); ax[1].legend(loc="lower left", fontsize=8, ncol=3)
-    ax[2].semilogy(t, np.maximum(f("sink"), 1e-3), label="weathering sink / baseline", color="#3a9a4a")
-    ax[2].semilogy(t, np.maximum(f("src"), 1e-3), label="volcanic source / baseline", color="#b04040")
+    ax[2].semilogy(t, np.maximum(f("sink"), 1e-3), label="weathering sink / reference", color="#3a9a4a")
+    ax[2].semilogy(t, np.maximum(f("src"), 1e-3), label="volcanic source / reference", color="#b04040")
     ax[2].legend(loc="lower left", fontsize=8)
     up = [u for u in d["updates"] if "budget" in u]
     if up:
@@ -246,8 +261,8 @@ def main():
     ks = [k for _, k in rows if k is not None]
     if len(rows) > 1:
         print(f"{len(rows)} runs: criteria N1-N4 pass on {sum(r['pass'] for r, _ in rows)}"
-              + (f"; thermostat fb in {FB_BAND[0]:g}-{FB_BAND[1]:g} C/C on {sum(FB_BAND[0] <= k['iv']['co2'] <= FB_BAND[1] for k in ks)}"
-                 f" of {len(ks)} (median {np.median([k['iv']['co2'] for k in ks]):+.2f}; the sink's own fb {np.median([k['iv']['fb'] for k in ks]):+.2f}), CO2 term against drift-made dT on {sum(k['iv']['co2'] > 0 for k in ks)}, corr(CO2 term, dT) < 0 on"
+              + (f"; thermostat fb (trends out) in {FB_BAND[0]:g}-{FB_BAND[1]:g} C/C on {sum(FB_BAND[0] <= k['iv']['co2_hp'] <= FB_BAND[1] for k in ks)}"
+                 f" of {len(ks)} (median {np.median([k['iv']['co2_hp'] for k in ks]):+.2f}, with trends {np.median([k['iv']['co2'] for k in ks]):+.2f}; the sink's own fb {np.median([k['iv']['fb_hp'] for k in ks]):+.2f}), CO2 term against drift-made dT on {sum(k['iv']['co2_hp'] > 0 for k in ks)}, corr(CO2 term, dT) < 0 on"
                  f" {sum(k['corr'] < 0 for k in ks)} (without the source {sum(k['corr_src'] < 0 for k in ks)})" if ks else ""))
     for p in a.plot or []:
         plot(p)

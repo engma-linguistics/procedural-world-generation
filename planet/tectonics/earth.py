@@ -26,8 +26,19 @@ EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica an
 WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
 # runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
 WEATHER_CO2 = 0.4  # silicate weathering ~ pCO2^this (GEOCARB's f(CO2) for vascular plants ~0.4, without 0.5)
-CO2_MAX = 3.0  # e-folds of CO2 the log forcing is counted to (+-; ~20x / 0.05x today's)
-REF_MYR = 1000.0  # Myr: the CO2 source's and sink's baselines learn over this (200 before PW-264)
+CO2_MAX = 6.0  # e-folds of CO2 the log forcing levels off toward (+-; smoothly, tanh: ~400x / 0.0025x the
+# reference; snowball exits needed ~40-400x, 3.6-6 e-folds, Caldeira & Kasting 1992, Hoffman et al. 2017; was a hard
+# clip at 3, PW-558)
+CO2_TAU = 0.4  # Myr: the CO2 stock's residence time at the reference, ocean-atmosphere carbon over outgassing
+# (~40,000 GtC over ~0.1 GtC/yr; the weathering feedback's e-folding, CO2_TAU / WEATHER_CO2 ~1 Myr, is Earth's
+# few hundred kyr to ~1 Myr: Archer et al. 2009, Colbourn et al. 2015)
+REF_MYR = 100.0  # Myr: during the spin-up, the source's and sink's references follow the planet's rates over this
+REF_FREEZE = 300.0  # Myr: then they are kept (PW-558/559 B): the planet's own balance once the made-up start has
+# settled, the same spin-up the criteria skip
+RELIEF_MYR = 200.0  # Myr: ...except the erosion rate of the ice-free land, which is measured against its own mean over
+# this. The made-up start's low relief builds up for 200-600 Myr by seed (~5 -> 20-30 m/Myr), and more slowly after
+# (PW-576 stage 1): against a kept reference that rise alone drew CO2 down by 1-1.5 e-folds and made 150-340 Myr
+# deep eras. The ice-free share, the temperature factor and the plants stay measured against the kept balance.
 
 
 def heat(p, t: float) -> float:
@@ -62,17 +73,49 @@ def weathering(sim, land):
     return supply * (warm * plants), supply, warm, plants
 
 
+def co2_stock(co2, s, w, dt, steps=4):
+    """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (~pCO2) relative to the reference; s the
+    volcanic source and w the weathering sink, each against its reference. Weathering also grows with CO2
+    itself (~pCO2^WEATHER_CO2: carbonic acid in soils, GEOCARB's f(CO2)), so
+        dX/dt = (s - w X^WEATHER_CO2) / CO2_TAU.
+    Its steady state is X^WEATHER_CO2 = s / w (the old ratio rule: a weathering deficit raises CO2 1 /
+    WEATHER_CO2 times further than the bare ratio). CO2_TAU is far below a step, so X is about there each
+    step, except where the sink is nearly gone (ice over the weathering land): then X grows at s / CO2_TAU, as
+    outgassing piled CO2 up under the Cryogenian ice. Backward Euler substeps (stable at any step); each
+    solves X + c1 X^a = c0 by Newton's method in ln X from above (the function is convex and increasing)."""
+    a, h = WEATHER_CO2, dt / steps
+    x = float(np.exp(co2))
+    for _ in range(steps):
+        c1, c0 = h * w / CO2_TAU, x + h * s / CO2_TAU
+        u = np.log(c0)
+        for _ in range(40):
+            eu, eau = np.exp(u), c1 * np.exp(a * u)
+            du = (eu + eau - c0) / (eu + a * eau)
+            u -= du
+            if abs(du) < 1e-10:
+                break
+        x = float(np.exp(u))
+    return float(np.log(x))
+
+
+def co2_term(p, co2):
+    """The CO2 stock's warming, C: co2_sensitivity per e-fold, levelling off smoothly toward +-CO2_MAX
+    e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar and grows less beyond)."""
+    return p.co2_sensitivity * CO2_MAX * float(np.tanh(co2 / CO2_MAX))
+
+
 def global_temperature(sim, growth, newc, rng):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Three things move it, slowly (tens of Myr):
       drift      a random walk that keeps returning toward 0 (all the
                  carbon-cycle and ocean details this model doesn't have)
-      CO2        volcanism at ridges and arcs adds it (warming); fresh
-                 rock weathering in warm, wet mountains removes it
-                 (cooling, e.g. the Himalaya since 40 Ma). Each is measured
-                 against its own slow average, so only changes count. A
-                 cold or icy planet weathers slower (the weathering
-                 thermostat), so CO2 rises and warms it back
+      CO2        a stock (co2_stock): volcanism at ridges and arcs adds
+                 it (warming); fresh rock weathering in warm, wet mountains
+                 removes it (cooling, e.g. the Himalaya since 40 Ma). Each
+                 is measured against the planet's own balance once its
+                 start has settled (REF_FREEZE), so lasting changes keep
+                 counting (but the relief's slow build-up, RELIEF_MYR). A cold or icy planet weathers slower (the
+                 weathering thermostat), so CO2 piles up and warms it back
       ice        ice sheets reflect sunlight (cooling feedback)
     Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
     Permo-Carboniferous, today) between long greenhouse ones.
@@ -83,30 +126,28 @@ def global_temperature(sim, growth, newc, rng):
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
     source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
-    sink = float(weathering(sim, land)[0].sum()) / sim.scale**2
-    if sink > 0.0:  # (the first step: nothing has eroded yet; the rates start from the first real ones)
+    w, supply, _, _ = weathering(sim, land)
+    sink = float(w.sum()) / sim.scale**2
+    if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
         now = np.array([max(source, 1e-6), sink])
-        # the noisy per-step rates, smoothed over ~10 Myr (before the logs: a log of a noisy rate averages
-        # below the log of its mean, which used to bias the CO2 index low, ~-0.3 on average)
-        c = 1 - np.exp(-dt / 10.0)
-        sim.rates = now.copy() if sim.rates is None else sim.rates + c * (now - sim.rates)
+        sim.rates = now
         if sim.refs is None:
-            sim.refs = sim.rates.copy()
-        # The baselines learn slowly (REF_MYR), so a lasting change in degassing
-        # or weathering keeps warming or cooling for most of a run, as a CO2
-        # stock would, rather than fading in ~200 Myr (PW-264). (They learn fast
-        # at first: the made-up starting state isn't an equilibrium, and
-        # shouldn't jolt the climate; until REF_MYR they are about the mean
-        # since the start.)
-        b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
-        sim.refs = sim.refs + b * (sim.rates - sim.refs)
-        rel = sim.rates / sim.refs
-        # CO2 settles where weathering, which also grows with CO2 itself (~pCO2^WEATHER_CO2: carbonic acid in
-        # soils, GEOCARB's f(CO2)), takes up what the volcanoes give: ln pCO2 = ln(source / sink) / WEATHER_CO2.
-        # A weathering deficit (ice, cold and dryness, with the outgassing going on) so raises CO2 1 /
-        # WEATHER_CO2 times further than the bare ratio did (PW-438: the ratio left cold eras too little room
-        # to rise and end them; Earth's snowball recoveries took ~100x today's CO2)
-        sim.co2 = float(np.log(rel[0]) - np.log(rel[1])) / WEATHER_CO2
+            sim.refs = now.copy()
+        # The references: the planet's own balance of outgassing against weathering, followed while the made-up
+        # start settles (its relief builds up) and then kept for the rest of the run (PW-558, PW-559 B). Kept, they let a long cold era's
+        # weathering deficit go on piling up CO2 (and a long surplus go on drawing it down), as a real carbon
+        # stock does, where baselines that relearned took both up within a few hundred Myr (PW-576).
+        free = max(int((land & (sim.ice <= 0)).sum()), 1)
+        rate = float(supply.sum()) / free  # the ice-free land's mean erosion (relief, and the runoff over it)
+        r = 1 - np.exp(-dt / min(RELIEF_MYR, 10.0 + sim.t))
+        sim.ref_rate = np.array([rate, rate]) if sim.ref_rate is None else sim.ref_rate + np.array([r, 0.0]) * (
+            rate - sim.ref_rate)
+        if sim.t < REF_FREEZE:
+            b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
+            sim.refs = sim.refs + b * (now - sim.refs)
+            sim.ref_rate[1] = sim.ref_rate[0]  # (the relief the kept balance had)
+        relief = sim.ref_rate[0] / sim.ref_rate[1]
+        sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / (sim.refs[1] * relief), dt)
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
@@ -145,9 +186,9 @@ def global_temperature(sim, growth, newc, rng):
 
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX) - (albedo(ice_frac) - albedo(EARTH_ICE))
+    target = sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
-        sim.diag.temperature(sim, source, sink, ice_frac, p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX),
+        sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
                              -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 

@@ -81,7 +81,7 @@ ENVELOPES = {
                 "Earth 3.1% now (earth.EARTH_ICE), ~7-8% at the LGM"),
     "temp": (8, 30, 14.5, "global mean temperature, C",
              "Earth 14.5 C; LGM ~8 C (Tierney et al. 2020); Phanerozoic hothouses to ~30 C (Scotese et al. 2021)"),
-    "co2": (-CO2_MAX, CO2_MAX, 0.0, "CO2 index (ln(source/sink) / WEATHER_CO2)", "the forcing's clip in earth.py (+-CO2_MAX = 3); Earth 0"),
+    "co2": (-CO2_MAX, CO2_MAX, 0.0, "CO2 index (ln of the CO2 stock against the reference balance)", "where the forcing levels off in earth.py (+-CO2_MAX = 6 e-folds); Earth 0"),
     "dry_pct": (12, 45, 30, "arid (Koppen B), % of land",
                 "tests/test_envelopes.py (12-45%); Earth ~30% (Beck et al. 2018)"),
     "inland_pct": (8, 30, 18, "land draining inland, % of ice-free land (to a closed lake, salt pan or real pit)",
