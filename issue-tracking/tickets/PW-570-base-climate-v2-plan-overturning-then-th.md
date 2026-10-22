@@ -2,7 +2,7 @@
 id: PW-570
 title: "Base-climate v2 plan: overturning, then the sea's air, then summer heat, then the thermostat (set point and star after it)"
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -49,4 +49,5 @@ mechanisms and proposes a staged plan (its section 4). Decisions for the owner:
 - [ ] the owner picks the order and the stop bars
 
 ## Updates
+- 2026-10-22: Status needs-decision -> in-progress. Owner 2026-10-22: plan order approved. Coordinator runs two lanes in parallel: lane A = stages 1-3 serially (overturning PW-458, sea air PW-346, summer heat PW-352/457/573), then the checkpoint; lane B = stage 4 starting with the weathering law (PW-574), then PW-558, PW-559, PW-564.
 - 2026-10-22: Created from inbox draft draft-base-climate-plan-order.md (found by base-climate-review).

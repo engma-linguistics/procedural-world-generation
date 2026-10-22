@@ -2,7 +2,7 @@
 id: PW-574
 title: "The weathering sink barely answers temperature (0.02 per C against 0.09): the CO2 feedback is ~0.14 C per C of cooling, ~5x weaker than written"
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -45,4 +45,5 @@ PW-558's stock alone doesn't change the steady-state gain: the ratio rule is the
 PW-559 and PW-564, in that order.
 
 ## Updates
+- 2026-10-22: Status needs-decision -> in-progress. Owner 2026-10-22: option A, as a smooth saturating law: extra erosion counts for less and less until it effectively stops (rubber-banding / exponential drop-off), no hard cutoff. Option B rejected: cold-era erosion is a point of having ice ages.
 - 2026-10-22: Created from inbox draft draft-weathering-sink-barely-answers-temperature.md (found by base-climate-review).
