@@ -921,3 +921,60 @@ pytest plugin `laneA10/checkpoint/honest.py`, and to `tz_earth.py` through `--se
 - That is the outcome the review expected (section 4): it confirms that the ice-surface air (PW-569 / PW-439) is
   what holds the ice. So the checkpoint goes back to the ice lane.
 - Stage 3 isn't in this base climate yet, so the checkpoint should be re-run once it merges.
+
+## Stage 3, attempt 3 of 3 (lane A11): not merged. The fetch breaks the endings test; a green candidate without it
+
+The code is not on the branch. Files in `laneA11/`:
+- `stage3_attempt2_toggles.diff`: attempt 2 with env toggles S3_REACH / S3_FETCH / S3_SPLIT / S3_MTN, plus S3_FBASE.
+- `stage3_attempt3_candidate.diff`: the green candidate.
+- Probe tables and diagnostic tools are in `tools/`.
+
+### Which mechanism breaks `test_glacials_grow_ice_and_endings_melt_it_fast` (extra / left after 15 kyr; bar left < extra / 2)
+| variant | extra / left |
+|---|---|
+| main | 97 / 25 (83 / 24 on a rerun: the zoom is chaotic at the ULP level) |
+| attempt 2 | 59 / 64 (F) |
+| no per-time reach | 40 / 14 |
+| no fetch | 27 / 2.6 (51 / 4.6) |
+| no split | 37 / 12 |
+| no mountain rule | 75 / 21 |
+| attempt 2 at −3.8 / −3.9 / −4.1 C | 78 / 68, 65 / 68, 41 / 36 (F) |
+| main at −3.9 / −4.1 / −4.2 C | pass |
+| attempt 2 with `sheet_air=cold` / `surface_air=fetch` / `summer_damp=0` | 78 / 69, 88 / 86, 110 / 103 (F) |
+
+- Not a knife edge, and not the ice-surface rules (PW-569 / PW-439): none of them rescues attempt 2, and main passes
+  under all of them.
+- Why it fails: the glacial's extra ice moves poleward.
+  - At the ending, main's NH extra is at 45–65N, which melts. Attempt 2's is at 65–90N and 55–90S, which doesn't.
+  - 115 of 135 km-sum left after the ending lie poleward of 60.
+  - Most of it lies where the no-index run's mass balance is negative, so the sheets' own height and albedo hold it.
+- At L4 (~450 km cells) nearly all land is a coast for a 1-day fetch, so the fetch takes the continental swing off
+  the polar lands.
+- The fetch also has a physics flaw. `t_land + half_l × fetch` falls below the arriving summer sea air at low fetch,
+  so summer land cools the sea's air, which is most of W Europe's −3.3.
+  - The sound form is `sea_in + fetch × (land_full − sea_in)` (`stage3_probe_fetch_from_sea_air.txt`):
+    W Europe −2.2, Fennoscandia −5.1, r 0.621.
+  - But the SH range is 13.0 (1.35×), and the endings test is worse (90 / 82).
+  - Details: `issue-tracking/inbox/draft-stage3-fetch-moves-l4-glacial-ice-poleward.md`.
+
+### The green candidate (no fetch), measured
+- **What it contains:**
+  - the per-time reach and the mountain rule (PW-581);
+  - the energy split, re-referenced to the model's own PET. The curve's H is the sunshine under `cloud_ref` less
+    `ef_ref` (0.61, Earth ice-free land 20–60 summer AET/PET without the split) × the PET's latent heat;
+  - the humidity floor fix.
+- **Why the split changed:** without the fetch, attempt 2's Priestley–Taylor reference warmed cold lands, and
+  `test_cold_moment_has_sheets` fell to 0.51% (bar 1%).
+- **Tests:** `uv run pytest -q` gives 565 passed. The goldens are not regenerated (not merged). Endings 36 / −0.2.
+- **Tool outputs:** `earth_check_s3a3.txt`, `climate_bias_s3a3.txt` and `overturning_s3a3.txt` (before the floor
+  fix, which moves only floor cells). The "before" files are `laneA10/*_e579.txt`.
+- **Earth L6 against main:**
+  - rain r 0.622 → 0.626, group 70.5 → 70.4;
+  - Fennoscandia −5.2 → −3.6, Alaska −2.8 → +0.6, W Europe −0.2, Canadian Rockies Tc −7.7 → −6.8;
+  - humid boxes within 0–2 C of main's (SE USA +4.8 unchanged);
+  - SH coastal range 14.3 → 14.7, Tasmania +6.9 → +8.5, Keewatin −0.4 → +3.9;
+  - obs E → model D 6% → 26%. By latitude band, though, 60–80N E shares move toward observed.
+- Stage 3's own bars are not met, and the result is mixed rather than better overall. So it isn't merged.
+  The decision is in `issue-tracking/inbox/draft-stage3-after-three-attempts.md` (lean: redesign the fetch first).
+- The scorecard and the checkpoint (`ckpt.sh`) were not re-run: nothing changed in the base climate on the branch,
+  so the PW-579 checkpoint above stands.
