@@ -48,6 +48,7 @@ from planet.geo import R_KM  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 from tools.scorecard import GROUP  # noqa: E402  (Koppen class -> main group letter)
 from planet.tectonics.earth import CO2_MAX  # noqa: E402
+from tools import ice_criteria  # noqa: E402
 
 L6_SEEDS = [1, 2, 11, 21, 3199, 42, 77, 505]  # 21: plate collapse; 2, 11: cold eras; 1, 3199: references
 L7_SEEDS = [3199, 21, 11]
@@ -73,6 +74,9 @@ ENVELOPES = {
                   "Phanerozoic ~-130 (LGM) .. +250 m (earth.py; Haq & Schutter 2008); -250: PW-240's hard goal"),
     "sea_ice_m": (-250, None, -0, "sea level from land ice, m",
                   "Earth LGM ~-130 m; PW-240 goal -150 m typical / -250 m worst"),
+    "sea_tect_m": (-250, 300, 0, "sea level from the ocean basins, m (the other part of sea_level)",
+                   "PW-293/549: the floor's mean depth against the start's; Phanerozoic ~-100..+250 m without the "
+                   "ice (Haq & Schutter 2008; Mueller et al. 2008)"),
     "ice_pct": (None, 10, 3.1, "land ice, % of surface",
                 "Earth 3.1% now (earth.EARTH_ICE), ~7-8% at the LGM"),
     "temp": (8, 30, 14.5, "global mean temperature, C",
@@ -97,7 +101,7 @@ ENVELOPES = {
     "largest_pct": (5, 35, 16.6, "largest landmass, % of surface",
                     "Afro-Eurasia 16.6%; a Pangaea ~30% (scorecard largest_max)"),
 }
-SPINUP = 50.0  # Myr: the made-up starting state settles (hollows fill, rivers form); measured, not flagged
+SPINUP = 300.0  # Myr: the warm-up, not judged (owner 2026-10-21: the coupled systems settle; was 50, for hollows and rivers)
 GATED = {"trees_pct": 3, "npp": 4}  # measured once that plant group exists (+ 20 Myr): forests; flowering trees
 # per-run checks: (low, high, Earth, label, source)
 RUN_ENVELOPES = {
@@ -213,7 +217,11 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
         "ocean_age": round(float(age[~cont].mean()), 1) if (~cont).any() else 0.0,
         "speed": float(stats["mean_speed_cmyr"]),
         "sea_level": float(stats["sea_level_m"]),
-        "sea_ice_m": round(-0.9 * vol_ice / ocean_km2 * 1000.0, 1),  # as earth.update_climate's sea_ice
+        # (its two parts, PW-555: the run's own when its frame stats have them, else the ice's from the ice
+        # layer as earth.update_climate counts it and the basins' as the rest)
+        "sea_ice_m": float(stats["sea_ice_m"]) if "sea_ice_m" in stats else round(-0.9 * vol_ice / ocean_km2 * 1000.0, 1),
+        "sea_tect_m": float(stats["sea_tect_m"]) if "sea_tect_m" in stats else
+        round(float(stats["sea_level_m"]) + 0.9 * vol_ice / ocean_km2 * 1000.0, 1),
         "ice_pct": float(stats["ice_pct"]),
         "temp": float(stats["global_temp_c"]),
         "co2": float(stats["co2"]),
@@ -291,6 +299,13 @@ def measure_run(run_dir: Path) -> dict:
         "sea_ice_below_150": round(100 * sum(f["sea_ice_m"] < -150 for f in late) / nf, 1),
         "low_plates": round(100 * sum(f["plates"] <= 4 for f in late) / nf, 1),
     }
+    # the whole-history ice-age criteria (PW-555, tools/ice_criteria.py: its own 100 Myr spin-up)
+    track = [{"t": f["t"], "ice": f["sea_ice_m"], "tect": f["sea_tect_m"], "dT": f["temp"] - 14.5,
+              "ice_frac": f["ice_pct"], "land": f["land_pct"]} for f in frames]
+    ice = ice_criteria.evaluate({"track": track})
+    checks["ice_old"] = "ok" if ice["old"]["pass"] else "F"
+    checks["ice_new"] = "ok" if ice["pass"] else "F: " + "; ".join(ice["fails"])
+    checks["icehouse_pct"] = ice["icehouse"]["share_pct"]
     return {"id": run["id"], "seed": m["seed"], "level": m["level"], "myr": m["myr"],
             "seconds": m.get("generated_in_s"), "forests_from": gates["trees_pct"], "flowers_from": gates["npp"],
             "checks": checks, "frames": frames}
@@ -405,13 +420,15 @@ def report(manifest: dict, results: list[dict], det: dict | None, out_dir: Path,
           f"simulations {manifest['seconds'] / 60:.1f} min wall{manifest.get('load_note', '')}. "
           "Made by `tools/health.py` (PW-246).", ""]
     md += ["## Runs", "", "| seed | L | Myr | run | sim s | trees / flowering trees from | dT range C | peaks > 9.5 km | "
-           "giant-lake frames % | crust volume end/start | ice SL < -150 m % | <= 4 plates % |",
-           "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+           "giant-lake frames % | crust volume end/start | ice SL < -150 m % | <= 4 plates % | ice bar old | "
+           "ice bar new (ice-v2-criteria.md) | icehouse % |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in sweep:
         c = r["checks"]
         md.append(f"| {r['seed']} | {r['level']} | {r['myr']:g} | {r['id']} | {_f(r['seconds'], 0)} | "
                   f"{_f(r['forests_from'], 0)} / {_f(r['flowers_from'], 0)} | {c['dT_range']} | {c['peak_frames']} | {c['giant_lake_frames']} | "
-                  f"{c['volume_ratio']} | {c['sea_ice_below_150']} | {c['low_plates']} |")
+                  f"{c['volume_ratio']} | {c['sea_ice_below_150']} | {c['low_plates']} | {c.get('ice_old', '')} | "
+                  f"{c.get('ice_new', '')} | {c.get('icehouse_pct', '')} |")
     keys = list(ENVELOPES)
     md += ["", f"## Medians by seed (after {SPINUP:g} Myr; tree cover after forests, NPP after flowering trees appear)", "",
            "| seed | L | " + " | ".join(keys) + " |", "|---|---|" + "---|" * len(keys)]

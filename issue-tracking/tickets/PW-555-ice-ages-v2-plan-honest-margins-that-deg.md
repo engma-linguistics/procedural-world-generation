@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-470, PW-526, PW-514, PW-461, PW-462, PW-464, PW-465, PW-467, PW-469, PW-459, PW-460, PW-538, PW-496, PW-030, PW-549]
 refs: [docs/review/ice-v2-review.md, docs/review/audit/ice-framing-deep-dive.md, docs/review/audit/PW-514-batch.md]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-22
 ---
 
 ## Description
@@ -53,6 +53,7 @@ rules.
 - [ ] stage 0 tickets cut (PW-467 tool, moment suite, ice/basin split in health, hysteresis probe)
 
 ## Updates
+- 2026-10-22: Stage 0 done on branch worktree-agent-abf55f5e1e8b62d98: criteria doc docs/review/ice-v2-criteria.md (Earth's record, base assumptions A0-C5, new whole-history bars, recovery lever design), tools (tectonics/diag.py + ice_diag, ice_criteria, tz_mean, ice_probe --stair, sea_ice_m/sea_tect_m in stats and health; no output change), checkpoint 0 in docs/review/ice-v2/checkpoint-0.md: old bar 8/10, new 5/10; icehouse share median 62%; CO2 clip never reached, the thermostat barely answers cold eras; deep-era sheets in snow surplus; window mean 2/6; Earth items blocked by a failed Koppen download. Drafts in the inbox. Handoff docs/review/ice-v2/handoff.md.
 - 2026-10-21: Owner 2026-10-21: the first ~100 Myr of a run is warm-up while the coupled systems settle; it shouldn't count toward success bars.
 - 2026-10-21: Status needs-decision -> in-progress. Owner 2026-10-21: plan approved as described. Prefers option 2 (the run runs the zoom's ice model in cold eras), extra run time fine. Agrees with all nine leans in the review. Work proceeds on a v2 ice worktree, merging main as things land. Owner also asks: (1) revisit the success criteria: they're anchored on Earth's last glacial, but the record has snowball Earths (Cryogenian) and hothouses (PETM); deep, long ice ages are fine if a planet can come out of them. (2) What are the base assumptions, and which might be off? (3) An optional generation-time lever: the longer a deep ice age lasts, the harder the systems nudge toward recovery, easing off as the planet recovers. (4) Build measuring tools first; runs may take far longer and use much more storage if that helps debugging.
 - 2026-10-21: Created from inbox draft draft-ice-v2-plan.md (found by ice-v2-review).

@@ -85,6 +85,9 @@ def from_run(run_id: str) -> dict:
     d = json.loads((ROOT / "runs" / run_id / "run.json").read_text())
     tr = [{"t": f["t"], "land": f["stats"]["land_pct"], "sl": f["stats"]["sea_level_m"],
            "plates": f["stats"]["plates"]} for f in d["frames"]]
+    if all("sea_ice_m" in f["stats"] for f in d["frames"]):  # (runs since PW-555 store the two parts)
+        for r, f in zip(tr, d["frames"]):
+            r["ice"], r["tect"] = f["stats"]["sea_ice_m"], f["stats"]["sea_tect_m"]
     return {"seed": d["meta"].get("seed"), "run": run_id, "level": d["meta"].get("level"), "track": tr, "events": []}
 
 
@@ -106,7 +109,7 @@ def stats(d, skip: float = 0.0, every: float = 4.0, window: float = 20.0, drop: 
     # the cold eras' depth (PW-240/434/438): sea level from ice when recorded, else the total
     si = np.array([r["ice"] for r in tr]) if "ice" in tr[0] else s
     out["below150"], out["below430"] = round(100 * float((si < -150).mean()), 1), round(100 * float((si < -430).mean()), 1)
-    if "tect" in tr[0]:
+    if "tect" in tr[0] and "age" in tr[0]:
         te = np.array([r["tect"] for r in tr])
         out["clamp"] = int((np.abs(te) >= CLAMP - 0.5).sum())
         out["tect_sd"] = round(float(te.std()))

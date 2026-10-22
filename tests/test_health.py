@@ -58,9 +58,10 @@ def test_drainage_ends():
 
 
 def test_spells_and_outliers():
-    ts = [0, 50, 54, 58, 62, 66, 70, 74]
+    s0 = H.SPINUP
+    ts = [0] + [s0 + 4 * i for i in range(7)]
     vals = [99, 1, 9, 9, 1, 12, 1, 1]  # (t=0: spin-up, not flagged)
-    assert H.windows(ts, vals, 0, 5) == [{"t0": 54, "t1": 66, "frames": 3, "worst": 12}]  # one frame between: joined
+    assert H.windows(ts, vals, 0, 5) == [{"t0": s0 + 4, "t1": s0 + 16, "frames": 3, "worst": 12}]  # one between: joined
     vals[5:7] = [1, 12]
     assert len(H.windows(ts, vals, 0, 5)) == 2  # two between: two spells
     assert H.out_of(3, 0, 5) == 0 and H.out_of(-2, 0, None) == -2 and H.out_of(7, None, 5) == 2
@@ -73,7 +74,7 @@ def test_spells_and_outliers():
          "checks": {"dT_range": 3, "peak_frames": 1, "giant_lake_frames": 0, "volume_ratio": 1.0,
                     "sea_ice_below_150": 0, "low_plates": 0}}
     got = {(o["metric"], o["t0"]) for o in H.outliers(r)}
-    assert got == {("max_elev_km", 58), ("peak_frames", None)}
+    assert got == {("max_elev_km", s0 + 8), ("peak_frames", None)}
 
 
 def test_frame_rivers_end_in_its_own_hollows():

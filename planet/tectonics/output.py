@@ -164,6 +164,9 @@ def stats(sim) -> dict:
         "global_temp_c": round(14.5 + sim.dT, 1),
         "co2": round(float(sim.co2), 3),
         "sea_level_m": round(sim.sea_level, 1),
+        # (its two parts, PW-555: the land ice's and the ocean basins'; judge cold eras on the first)
+        "sea_ice_m": round(float(sim.sea_ice), 1),
+        "sea_tect_m": round(float(sim.sea_tect), 1),
         "ice_pct": round(100 * float((sim.ice > 0).mean()), 1),
         "mean_speed_cmyr": round(float(v.mean()), 2),
         "max_speed_cmyr": round(float(v.max()), 2),

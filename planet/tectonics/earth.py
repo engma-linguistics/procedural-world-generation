@@ -138,6 +138,9 @@ def global_temperature(sim, growth, newc, rng):
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
     target = sim.drift + p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX) - (albedo(ice_frac) - albedo(EARTH_ICE))
+    if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
+        sim.diag.temperature(sim, source, sink, ice_frac, p.co2_sensitivity * np.clip(sim.co2, -CO2_MAX, CO2_MAX),
+                             -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
@@ -168,7 +171,8 @@ def update_climate(sim, e):
     sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
-    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, marine=marine_view(bed, c))
+    marine, info = marine_view(bed, c), {}
+    sim.ice = ice_sheets(sim, land, e, c["ground"], ice0, sim.ice_sink, info, marine=marine)
     ice = np.where(land, sim.ice, 0.0)
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice), g.lat,
                                                            sim.p_jul, sim.p_jan)
@@ -177,6 +181,8 @@ def update_climate(sim, e):
     ocean_area = (~land).sum() * sim.cell_area * R_KM**2
     sim.sea_ice = -0.9 * vol / max(ocean_area, 1.0) * 1000.0
     sim.sea_level = sim.sea_ice + sim.sea_tect
+    if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
+        sim.diag.climate_update(sim, land, e, c, marine, info)
     sim.koppen = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                                 sim.p_jan, g.lat, sim.ice)
     sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]

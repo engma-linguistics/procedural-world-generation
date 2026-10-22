@@ -18,3 +18,6 @@ data/
 .thumbs/
 # the server's gzipped copies of data files (planet/server.py)
 .gzcache/
+# tools/ice_diag.py --moments output (tools/tz_mean.py suite), regenerable
+ice_v2_moments/
+ice_diag_out/
