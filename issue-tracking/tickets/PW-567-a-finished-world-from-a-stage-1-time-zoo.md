@@ -1,5 +1,6 @@
 ---
-title: "A finished world from a stage-1 time zoom frame takes the run's ice-surface climate, not the zoom's (sheet air, local terms)"
+id: PW-567
+title: A finished world from a stage-1 time zoom frame takes the run's ice-surface climate, not the zoom's (sheet air, local terms)
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: ice-v2-stage1
 blocked_by: []
 relates: [PW-555, PW-198]
 refs: [planet/finish.py, planet/climate.py, planet/timezoom/params.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -20,3 +23,6 @@ seasonal response, but the finished world's climate (climate.compute with the fr
 still counts all the ice's air and the local terms on top, so a world's ice-surface summers are a few C
 colder than the zoom's own frame. Close when the run takes the same rules (stage 3), or pass the zoom's
 rules through finish if stage 3 is far off.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-finished-world-ice-climate-from-zoom-rules.md (found by ice-v2-stage1).

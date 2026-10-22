@@ -1,4 +1,5 @@
 ---
+id: PW-569
 title: "Time zoom: the ice rule makes Greenland's surface summer ~4 C colder than observed (the local damping and ice_cool on top of the sheet's air)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: ice-v2-stage1
 blocked_by: []
 relates: [PW-555, PW-439, PW-336, PW-039, PW-460]
 refs: [planet/icemass.py, planet/timezoom/sim.py, docs/review/ice-v2/stage-1.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -38,3 +41,6 @@ the observed warm month on the north and east margins (81 N -4.6 vs -0.5 C; 77 N
 ~0-2.5 C in the southwest. The ramp's geometry matches RACMO's ice surface and its quadrature is exact enough, so
 the margin's remaining surplus is its air: this ticket. The start anchor only cools, so it can't take this out on
 Earth (and a two-sided anchor would hide a rule every planet has). It is what keeps Greenland's front advancing at dT 0.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-zoom-ice-surface-too-cold-on-greenland.md (found by ice-v2-stage1).

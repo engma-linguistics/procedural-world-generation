@@ -1,4 +1,5 @@
 ---
+id: PW-566
 title: "Time zoom with honest margins: Earth at dT 0 grows 3-4 Mkm2 of ice in the first weak summer and keeps it (the interglacial-ice floor)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: ice-v2-stage1
 blocked_by: []
 relates: [PW-555, PW-460, PW-459, PW-115, PW-366]
 refs: [planet/timezoom/sim.py, planet/icemass.py, docs/review/ice-v2/stage-1.md, docs/review/ice-v2-criteria.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -57,3 +60,6 @@ draft-zoom-ice-surface-too-cold-on-greenland). Interglacials 11.4-13.1% (bar 9-1
 - [x] Earth zoom, index off: today's ice within 20% of its area for 100 kyr (1.17 max)
 - [ ] ... coming and going with the orbit (flat at +15%)
 - [x] Greenland's margin balance against an observed SMB (RACMO2.3p3, cached)
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-earth-zoom-does-not-hold-todays-ice-at-dt0.md (found by ice-v2-stage1).

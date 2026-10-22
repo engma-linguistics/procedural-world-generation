@@ -1,4 +1,5 @@
 ---
+id: PW-568
 title: "Endings test fails with honest margins at L4 and at L5: the margin holds the ice, not the 440 km cells"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: ice-v2-stage1
 blocked_by: []
 relates: [PW-555, PW-460, PW-115]
 refs: [tests/test_timezoom_cycle.py, planet/icemass.py, docs/review/ice-v2/stage-1.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Don't loosen it or move it.
 
 Stage 1c (front=ramp): extra 78.2 m, left 83.4 after 15 kyr: still fails, test unchanged. The honest front makes this
 glacial bigger, not smaller, and the ending still holds it (draft-earth-zoom-does-not-hold-todays-ice-at-dt0).
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-l4-ending-test-with-honest-margins.md (found by ice-v2-stage1).
