@@ -57,4 +57,5 @@ Options:
 - [ ] Iceland's regression (-10.6 -> -11.6): accept or chase with A
 
 ## Updates
+- 2026-10-22: Coordinator 2026-10-22: parked (option C) after PW-582's three attempts; revisit after stage 3 and with the winds. Lean for later: option A (how sinking is spread within a capped hemisphere).
 - 2026-10-22: Created from inbox draft draft-barents-still-frozen-after-pw582.md (found by base-climate-laneA7, base-climate-laneA8, base-climate-laneA9).
