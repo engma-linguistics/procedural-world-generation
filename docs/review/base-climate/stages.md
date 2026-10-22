@@ -782,4 +782,11 @@ hemispheres. Southern shelf seas that used to count as straits now feed their si
 - The draft's options: the sinking's distribution within a capped hemisphere, the form of the inflow's heat loss, or
   parking the Barents until the winds' stage.
 
-Attempts used on PW-582: 3 of 3.
+**Scorecard** (`docs/scorecard.jsonl`, commit 17335b3, L6, 1000 Myr; against fb332ca, attempt 2):
+- Earth: group 70.3 → 70.5, exact 30.8 → 31.0, log-rain 0.622 unchanged;
+- seed 1: dry 16.7 → 21.8% / ice 5.6 → 6.3 / NPP 292 → 311 / trees 27.2 → 15.5;
+- seed 2: dry 24.9 → 12.3% / ice 2.2 → **13.0** / NPP 320 → 245 / trees 18.0 → 21.8.
+
+These are single chaotic snapshots. Seed 2's ice at 13% is the outlier to watch.
+
+Attempts used on PW-582: 3 of 3. The handoff is `handoff-A9.md`.
