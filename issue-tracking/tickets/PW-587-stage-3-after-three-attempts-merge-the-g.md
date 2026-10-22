@@ -1,8 +1,10 @@
 ---
+id: PW-587
 title: "Stage 3 after three attempts: merge the green candidate without the fetch, or redesign the fetch first?"
 type: task
 status: needs-decision
-parent: null
+parent: PW-470
+milestone: v1
 subsystem: climate
 effort: m
 impact: high
@@ -10,6 +12,8 @@ found_by: base-climate-laneA11
 blocked_by: []
 relates: [PW-352, PW-457, PW-573, PW-581, PW-580, PW-570]
 refs: [docs/review/base-climate/stages.md, docs/review/base-climate/laneA11/stage3_attempt3_candidate.diff]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -55,3 +59,6 @@ Options:
 
 Lean: B. A doesn't clearly improve things overall under the owner's principle, and the fetch is what stage 3 was for
 (PW-573). The fetch redesign is one more focused attempt, with the toggles and diagnostics in `laneA11/tools/`.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stage3-after-three-attempts.md (found by base-climate-laneA11).

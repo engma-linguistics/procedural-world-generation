@@ -1,8 +1,10 @@
 ---
-title: "climate.humidity reports RH a hair under HUMID_MIN at the floor (the soft saturation is applied after the floor)"
+id: PW-586
+title: climate.humidity reports RH a hair under HUMID_MIN at the floor (the soft saturation is applied after the floor)
 type: task
 status: todo
-parent: null
+parent: PW-470
+milestone: v1
 subsystem: climate
 effort: xs
 impact: low
@@ -10,6 +12,8 @@ found_by: base-climate-laneA11
 blocked_by: []
 relates: [PW-352]
 refs: [planet/climate.py, tests/test_ocean.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -21,3 +25,6 @@ it (basins fixture). The fix, measured on lane A11's candidate: `rh = max(x / (1
 after the soft saturation. It's in `laneA11/stage3_attempt3_candidate.diff`. It matters only together with stage 3,
 so fold it into stage 3's merge.
 - [ ] floor applied after the soft saturation
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-humidity-floor-under-humid-min.md (found by base-climate-laneA11).

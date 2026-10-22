@@ -1,8 +1,10 @@
 ---
-title: "Stage 3's fetch (PW-573) breaks the L4 endings test by moving the glacial's extra ice to polar cells, not through the ice-surface rules"
+id: PW-588
+title: Stage 3's fetch (PW-573) breaks the L4 endings test by moving the glacial's extra ice to polar cells, not through the ice-surface rules
 type: task
 status: todo
-parent: null
+parent: PW-470
+milestone: v1
 subsystem: climate
 effort: m
 impact: high
@@ -10,6 +12,8 @@ found_by: base-climate-laneA11
 blocked_by: []
 relates: [PW-573, PW-352, PW-581, PW-580, PW-569, PW-439, PW-568]
 refs: [planet/climate.py, tests/test_timezoom_cycle.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA11/]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -59,3 +63,6 @@ What to try:
   L4 grid doesn't make every land a coast.
 - Re-run the toggles (`laneA11/tools/endiag.py`, `rd.sh`, `eq.py`).
 - [ ] the fetch, in a form that keeps snow-free summer land at or above the arriving sea air, passes the L4 endings test
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stage3-fetch-moves-l4-glacial-ice-poleward.md (found by base-climate-laneA11).
