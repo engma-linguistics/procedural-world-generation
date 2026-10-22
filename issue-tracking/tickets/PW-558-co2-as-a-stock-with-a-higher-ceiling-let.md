@@ -4,7 +4,7 @@ title: "CO2 as a stock with a higher ceiling: let volcanic CO2 pile up under the
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: high

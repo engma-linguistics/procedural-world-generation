@@ -4,7 +4,7 @@ title: "The thermostat's weakness is its bookkeeping, not erosion: the saturatin
 type: task
 status: in-progress
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: high

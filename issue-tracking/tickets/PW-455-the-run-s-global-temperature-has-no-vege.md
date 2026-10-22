@@ -4,7 +4,7 @@ title: The run's global temperature has no vegetation albedo term (the time zoom
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: s
 impact: low

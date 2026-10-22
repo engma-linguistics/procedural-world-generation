@@ -4,7 +4,7 @@ title: "Time zoom: a 6.8 Mkm2 ice sheet on a tropical plateau (080df3, 0-15S, 2.
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med

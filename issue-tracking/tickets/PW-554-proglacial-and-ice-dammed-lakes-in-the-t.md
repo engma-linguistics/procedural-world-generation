@@ -4,7 +4,7 @@ title: Proglacial and ice-dammed lakes in the time zoom (left from PW-037)
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

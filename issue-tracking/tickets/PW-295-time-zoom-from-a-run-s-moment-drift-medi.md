@@ -4,7 +4,7 @@ title: "Time zoom from a run's moment: drift median smaller after PW-274..277, b
 type: task
 status: blocked
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

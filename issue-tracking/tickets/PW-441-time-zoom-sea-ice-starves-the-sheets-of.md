@@ -4,7 +4,7 @@ title: "Time zoom: sea ice starves the sheets of snow (Gildor & Tziperman sea-ic
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: low

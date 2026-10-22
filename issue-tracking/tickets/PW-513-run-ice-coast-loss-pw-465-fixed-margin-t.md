@@ -4,7 +4,7 @@ title: "Run ice coast_loss (PW-465): fixed margin thickness, cheap shallow coast
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med

@@ -4,7 +4,7 @@ title: "PW-422 (film-shielded margins): re-measure after PW-366's in-sub-step ba
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: xs
 impact: low

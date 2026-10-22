@@ -4,7 +4,7 @@ title: "Time zoom start: offer the glacial phases available at a moment (on: int
 type: story
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: viewer
 effort: m
 impact: med

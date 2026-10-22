@@ -4,7 +4,7 @@ title: "Time zoom with honest margins: Earth at dT 0 grows 3-4 Mkm2 of ice in th
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high

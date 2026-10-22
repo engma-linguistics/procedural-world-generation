@@ -4,7 +4,7 @@ title: A colder climate greens the model's dry tropics, so glacial vegetation da
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: med

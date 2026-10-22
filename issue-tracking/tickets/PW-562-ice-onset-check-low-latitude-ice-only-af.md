@@ -4,7 +4,7 @@ title: "Ice-onset check (low-latitude ice only after high-latitude ice) needs a 
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: xs
 impact: low

@@ -4,7 +4,7 @@ title: Embedded ice-age episodes in the main run (default on, at most 3 per run)
 type: story
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: l
 impact: med

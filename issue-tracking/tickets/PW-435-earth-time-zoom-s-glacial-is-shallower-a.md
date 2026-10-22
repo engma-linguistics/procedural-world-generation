@@ -4,7 +4,7 @@ title: "Earth time zoom's glacial is shallower after PW-366's margin fixes (150 
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

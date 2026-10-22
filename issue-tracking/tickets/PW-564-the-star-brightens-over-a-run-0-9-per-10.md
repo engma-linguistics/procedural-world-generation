@@ -4,7 +4,7 @@ title: "The star brightens over a run (~0.9% per 100 Myr for a Sun-like star): a
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: s
 impact: med

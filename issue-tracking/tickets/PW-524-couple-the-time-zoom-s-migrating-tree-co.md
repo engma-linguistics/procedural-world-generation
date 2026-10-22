@@ -4,7 +4,7 @@ title: Couple the time zoom's migrating tree cover to the climate (albedo, Budyk
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: low

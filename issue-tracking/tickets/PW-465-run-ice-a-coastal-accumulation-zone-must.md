@@ -4,7 +4,7 @@ title: "Run ice: a coastal accumulation zone must pay the zoom's calving and she
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: high

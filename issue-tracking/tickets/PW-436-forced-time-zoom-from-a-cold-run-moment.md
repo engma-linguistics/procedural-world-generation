@@ -4,7 +4,7 @@ title: Forced time zoom from a cold run moment loses ice (+41 m at 20 kyr, up to
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med

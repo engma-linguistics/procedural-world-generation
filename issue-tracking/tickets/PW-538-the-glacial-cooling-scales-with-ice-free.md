@@ -4,7 +4,7 @@ title: The glacial cooling scales with ice-free snowline land, so a run moment w
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

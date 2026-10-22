@@ -4,7 +4,7 @@ title: Earth time zoom puts no ice, hence no outwash or loess, on the Great Lake
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: med

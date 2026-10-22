@@ -4,7 +4,7 @@ title: "Time zoom: the cycle's summer-sun metric (months 3-4 raw) is half a mont
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: low

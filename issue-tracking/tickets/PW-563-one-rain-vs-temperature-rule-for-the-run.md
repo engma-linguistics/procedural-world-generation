@@ -4,7 +4,7 @@ title: One rain-vs-temperature rule for the run (exp(0.03 dT)) and the time zoom
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: s
 impact: med

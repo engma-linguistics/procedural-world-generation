@@ -4,7 +4,7 @@ title: "Time zoom as a window: spin up from the run's state, then start wherever
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high

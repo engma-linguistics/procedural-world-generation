@@ -4,7 +4,7 @@ title: "Run ice with coast_loss: I = 0 drift 5/10 on the merged code's run momen
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med

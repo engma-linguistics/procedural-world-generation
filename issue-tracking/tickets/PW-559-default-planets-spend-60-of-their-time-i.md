@@ -4,7 +4,7 @@ title: "Default planets spend ~60% of their time in an icehouse (Earth ~10-30%):
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: s
 impact: high

@@ -4,7 +4,7 @@ title: "Time zoom: the ice rule makes Greenland's surface summer ~4 C colder tha
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: timezoom
 effort: m
 impact: high
