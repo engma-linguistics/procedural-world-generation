@@ -107,10 +107,80 @@ def eras(d: dict, below: float = C.DEEP) -> list[dict]:
     return out
 
 
+FB_BAND = (0.4, 0.9)  # C of CO2 warming per C of cooling: the thermostat's bar (PW-574)
+
+
+def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
+    """The CO2 thermostat's gain after the spin-up (PW-572), by regression over the steps:
+      g          d ln(sink)/dT, holding the land share fixed (sea level and tectonics move the land
+                 independently of the climate; the review's thermo2): how hard the sink answers warmth
+      fb         the CO2 warming per C of cooling it gives: co2_sensitivity x g / WEATHER_CO2
+      g_raw      the same slope without the land control
+      parts      d ln(part)/dT of each part of the sink (they add up to g_raw): the erosion supply from the
+                 ice-free land, the temperature factor, the plant factor (and the saturation's efficiency,
+                 sink / supply, if logged); the ice-free land's area is shown beside them (it is in the supply)
+      dT_drift   d dT / d drift: how much of the random drift reaches dT (1 = no brake)
+      corr       corr(CO2 term, dT): negative = the CO2 term pushes against dT
+      corr_src   the same with the volcanic source's part taken out (CO2 term and dT regressed on ln src)
+    None for runs recorded before the sink's parts were logged."""
+    from planet.tectonics import Params
+    from planet.tectonics.earth import WEATHER_CO2
+    st = [r for r in d["steps"] if r["t"] >= spinup and r.get("w_supply") and r.get("sink_raw", 0) > 0]
+    if len(st) < 20 or "w_temp" not in st[0]:
+        return None
+    f = lambda k: np.array([r[k] if r.get(k) is not None else np.nan for r in st], float)
+    dT, land, co2t, drift = f("dT"), f("land"), f("co2_term"), f("drift")
+    ok = np.isfinite(f("w_temp")) & np.isfinite(f("w_plant"))
+    ln = {"sink": np.log(f("sink_raw")), "area": np.log(f("w_area")), "supply": np.log(f("w_supply")),
+          "temp": np.log(f("w_temp")), "plant": np.log(f("w_plant"))}
+    if "w_eff" in st[0]:
+        ln["eff"] = np.log(f("w_eff"))
+    one = np.ones(ok.sum())
+    slope = lambda y: float(np.polyfit(dT[ok], y[ok], 1)[0])
+    g = float(np.linalg.lstsq(np.c_[dT[ok], land[ok], one], ln["sink"][ok], rcond=None)[0][0])
+    sens = d.get("params", {}).get("co2_sensitivity", Params().co2_sensitivity)
+    lsrc = np.log(f("src"))[ok]
+    res_c = co2t[ok] - np.polyval(np.polyfit(lsrc, co2t[ok], 1), lsrc)
+    res_t = dT[ok] - np.polyval(np.polyfit(lsrc, dT[ok], 1), lsrc)
+    # Instrumented on the drift. The drift is random and knows nothing of the geography, whereas the regressions
+    # above mix the gain with the thermostat's own answer to geography (a sink on cold ground lowers the sink,
+    # raises CO2 and warms the planet: a negative correlation by construction). iv(y) = cov(y, drift) / cov(dT, drift).
+    cd = float(np.cov(dT, drift)[0, 1])
+    iv = lambda y: float(np.cov(y[ok], drift[ok])[0, 1]) / cd
+    lrel = np.log(f("sink"))
+    inst = {"g": round(iv(ln["sink"]), 4), "fb": round(sens * iv(ln["sink"]) / WEATHER_CO2, 2),
+            "fb_rel": round(sens * iv(lrel) / WEATHER_CO2, 2), "co2": round(-iv(co2t), 2),
+            "parts": {k: round(iv(v), 4) for k, v in ln.items() if k not in ("sink", "area")}}
+    return {"iv": inst, "g": round(g, 4), "fb": round(sens * g / WEATHER_CO2, 2), "g_raw": round(slope(ln["sink"]), 4),
+            "parts": {k: round(slope(v), 4) for k, v in ln.items() if k != "sink"},
+            "dT_drift": round(float(np.polyfit(drift, dT, 1)[0]), 2),
+            "corr": round(float(np.corrcoef(co2t, dT)[0, 1]), 2),
+            "corr_src": round(float(np.corrcoef(res_c, res_t)[0, 1]), 2),
+            "T_local": round(slope(f("w_T")), 2), "rate": round(float(np.nanmedian(f("w_rate"))), 4)}
+
+
+def gain_line(k: dict | None) -> str:
+    if k is None:
+        return "thermostat -- (no sink parts in this file; re-run with the current ice_diag)"
+    pa = " ".join(f"{a} {v:+.3f}" for a, v in k["parts"].items())
+    v = k["iv"]
+    pv = " ".join(f"{a} {x:+.3f}" for a, x in v["parts"].items())
+    return (f"thermostat (on the drift) CO2 {v['co2']:+.2f} C per C of cooling "
+            f"{'ok' if FB_BAND[0] <= v['co2'] <= FB_BAND[1] else 'F'}; the sink answers {v['g']:+.3f}/C ({pv}) = fb "
+            f"{v['fb']:+.2f}, {v['fb_rel']:+.2f} after the smoothing and baselines\n"
+            f"      regressions: fb {k['fb']:+.2f} C/C"
+            f" (d ln sink/dT {k['g']:+.3f} with land fixed, {k['g_raw']:+.3f} raw; per part {pa}; local T {k['T_local']:.2f}"
+            f"/C of dT), dT/drift {k['dT_drift']:.2f}, corr(CO2 term, dT) {k['corr']:+.2f} ({k['corr_src']:+.2f} without"
+            f" the source), median erosion {1000 * k['rate']:.1f} m/Myr")
+
+
 def summary(path):
     d = C.load(path)
     r = C.evaluate(d)
     print(C.line(Path(path).name.split(".")[0], r))
+    k = gain(d)
+    print("    " + gain_line(k))
+    return r, k
     for e in eras(d):
         print(f"    era {e['t0']:g}-{e['t1']:g} ({e['myr']:g} Myr) worst {e['worst']} m: dT {e['dT']:+.1f} = drift "
               f"{e['drift']:+.1f} + CO2 {e['co2_term']:+.1f} (index {e['co2']:+.2f}, clipped {e['clipped_pct']:g}% of"
@@ -172,8 +242,13 @@ def main():
     ap.add_argument("--summary", nargs="*")
     ap.add_argument("--plot", nargs="*")
     a = ap.parse_args()
-    for p in a.summary or []:
-        summary(p)
+    rows = [summary(p) for p in a.summary or []]
+    ks = [k for _, k in rows if k is not None]
+    if len(rows) > 1:
+        print(f"{len(rows)} runs: criteria N1-N4 pass on {sum(r['pass'] for r, _ in rows)}"
+              + (f"; thermostat fb in {FB_BAND[0]:g}-{FB_BAND[1]:g} C/C on {sum(FB_BAND[0] <= k['iv']['co2'] <= FB_BAND[1] for k in ks)}"
+                 f" of {len(ks)} (median {np.median([k['iv']['co2'] for k in ks]):+.2f}; the sink's own fb {np.median([k['iv']['fb'] for k in ks]):+.2f}), CO2 term against drift-made dT on {sum(k['iv']['co2'] > 0 for k in ks)}, corr(CO2 term, dT) < 0 on"
+                 f" {sum(k['corr'] < 0 for k in ks)} (without the source {sum(k['corr_src'] < 0 for k in ks)})" if ks else ""))
     for p in a.plot or []:
         plot(p)
     out = Path(a.out)
