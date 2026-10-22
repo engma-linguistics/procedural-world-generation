@@ -313,3 +313,37 @@ Better on land: Fennoscandia's coldest month −14.7 → −12.2 C bias; Alaska 
 | dad91b | 1035 → 1081 | 23.6 → 21.5% | 0.83 → 0.86 | 31.9 / 10.2 → 34.0 / 13.0 |
 
 The same direction as on Earth, smaller: a little wetter, 2–4 points less arid, the rain a little more in summer.
+
+### Tests: three fail, all downstream of the rain
+`uv run pytest -q`: 563 passed, 5 failed. Two are the goldens, refreshed on purpose (`--update-golden`: the climate
+and the 60 Myr simulation change through the sea's swing). The other three are not loosened:
+- `test_envelopes.py::test_earth_climate_score`: Köppen group 65.7 against its floor of 66 (the accepted regression);
+- `test_rain_transport.py::test_same_planet_rains_the_same_at_two_levels`: the synthetic continent's inland rain
+  differs 5.02% between L5 and L6, against 5% (main 3.0%). Both levels' inland rain falls ~10% while its temperatures
+  don't move, so it is the rain's sensitivity to the sea's swing, not a new resolution dependence in the swing;
+- `test_zoom_soils.py::test_zoom_soil_layers`: the big rivers' floodplains in the fixture zoom are 48% alluvium,
+  gley or peat, against > 50%.
+
+So stage 2b is **not merge-ready while these three fail**, unless the coordinator rules they may wait for the rain fix
+(PW-578), which should bring back the first two.
+
+### PW-578, first look (`issue-tracking/inbox/draft-stage2b-landed-rain-regression.md`)
+- Bisected by giving one rain input at a time main's 6 C × s SSTs: the sea's evaporation source (`qs` / `src_q`)
+  recovers 0.533 → 0.598. The showers' `mse_t` and the air aloft's `mse_thr` recover nothing.
+- The cause: the water takes the land air's whole swing. Beside land (20–50 deg, `land_air` > 0.5) the half-year
+  SST range is 16–22 C against NCEP's air range of 10–17, and the open oceans at 20–50 deg swing 1.8–2.6 against
+  5.7–6.0. The coastal seas' too-warm summers feed the summer monsoons next to them.
+- So it is a wrong mechanism: the air over the sea and the water under it need their own swings.
+
+### Scorecard (`docs/scorecard.jsonl`, commit f1e1600, L6, 1000 Myr; against 4a6ff95, stage 1)
+
+| | 4a6ff95 | f1e1600 |
+|---|---|---|
+| Earth Köppen group / exact | 70.6 / 30.9 | 66.4 / 27.8 |
+| Earth log-rain correlation | 0.617 | 0.533 |
+| seed 1: dry / ice / NPP / trees | 20.0 / 0.5 / 419 / 16.9 | 13.5 / 1.7 / 379 / 19.6 |
+| seed 2: dry / ice / NPP / trees | 15.4 / 9.1 / 267 / 20.8 | 9.9 / 9.7 / 263 / 25.2 |
+
+The seeds are single chaotic snapshots (stage 1 showed same-commit spreads larger than these), but both are drier-
+share down 5–6 points, in line with Earth's arid share falling. (The line's `src` hash includes rain-bisection
+switches that were in the working tree, off by default; the outputs are f1e1600's.)
