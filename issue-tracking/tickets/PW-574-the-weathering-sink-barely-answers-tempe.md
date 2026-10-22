@@ -1,4 +1,5 @@
 ---
+id: PW-574
 title: "The weathering sink barely answers temperature (0.02 per C against 0.09): the CO2 feedback is ~0.14 C per C of cooling, ~5x weaker than written"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-review
 blocked_by: []
 relates: [PW-558, PW-559, PW-438, PW-564, PW-368, PW-561]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py, docs/review/base-climate-review.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -40,3 +43,6 @@ PW-558's stock alone doesn't change the steady-state gain: the ratio rule is the
 
 **Done when** the feedback is 0.4–0.9 C per C and the CO2 term runs against dT on ≥ 7 of 10 seeds. Then PW-558,
 PW-559 and PW-564, in that order.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-weathering-sink-barely-answers-temperature.md (found by base-climate-review).

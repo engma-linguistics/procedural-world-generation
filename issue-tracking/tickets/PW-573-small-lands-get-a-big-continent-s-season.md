@@ -1,4 +1,5 @@
 ---
+id: PW-573
 title: "Small lands get a big continent's seasons: Southern Hemisphere coasts' seasonal range 16.5 vs 9.6 C, summers +4-6 C (Patagonia +6.4)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-review
 blocked_by: []
 relates: [PW-352, PW-026]
 refs: [planet/climate.py, tools/climate_bias.py, docs/review/base-climate-review.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -37,3 +40,6 @@ the margins hot summers.
 together with PW-352's energy split.
 
 - [ ] the SH coastal seasonal range within 1.3× NCEP's; the NH continentality rows within 2 C of now
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-small-lands-big-continent-seasons.md (found by base-climate-review).

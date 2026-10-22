@@ -1,4 +1,5 @@
 ---
+id: PW-572
 title: "Two missing measurements: an overturning report (sites, Sv, heat, basin openness) and the thermostat's gain in ice_diag --summary"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-review
 blocked_by: []
 relates: [PW-458, PW-016, PW-558]
 refs: [tools/climate_bias.py, tools/ice_diag.py, tools/earth_check.py, docs/review/base-climate-review.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Stage 0 of the base-climate review.
 - The review's scratch scripts (`bc/thermo.py`, `thermo2.py`) did a rough version of this from the existing json.
 
 - [ ] both print with one command each; a baseline row for main in `docs/review/base-climate-review.md`
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-overturning-and-thermostat-reports.md (found by base-climate-review).

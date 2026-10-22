@@ -1,4 +1,5 @@
 ---
+id: PW-570
 title: "Base-climate v2 plan: overturning, then the sea's air, then summer heat, then the thermostat (set point and star after it)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-review
 blocked_by: []
 relates: [PW-458, PW-346, PW-352, PW-457, PW-558, PW-559, PW-564, PW-568, PW-569, PW-555]
 refs: [docs/review/base-climate-review.md, tools/climate_bias.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -44,3 +47,6 @@ mechanisms and proposes a staged plan (its section 4). Decisions for the owner:
    - icehouse share 15–45% on ~70% of seeds.
 
 - [ ] the owner picks the order and the stop bars
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-base-climate-plan-order.md (found by base-climate-review).

@@ -1,4 +1,5 @@
 ---
+id: PW-571
 title: "earth_check: the point table's Kott column and the region table's Kottek code read Am for nearly every place"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-review
 blocked_by: []
 relates: []
 refs: [tools/earth_check.py]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -23,3 +26,6 @@ The lookup in `analyse` seems to read the wrong array or id map. The points use 
 regions use `top(np.maximum(ok, 0), rk)`.
 
 Fix it, then check it against a few cities whose codes are known: Cairo BWh, London Cfb, Moscow Dfb.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-earth-check-kottek-column.md (found by base-climate-review).
