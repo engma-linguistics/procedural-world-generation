@@ -1459,6 +1459,76 @@ def earth_lgm_ice(grid) -> np.ndarray:
     return out
 
 
+# Greenland's observed surface mass balance (the time zoom's margin balance check, PW-555 stage 1c)
+#   The regional climate model RACMO2.3p3 at 11 km, monthly SMB September 2000 - December 2018: van Dalum, C.,
+#   van de Berg, W. J. and van den Broeke, M. R. (2020), Zenodo, doi:10.5281/zenodo.4013856, the data of
+#   van Dalum et al., "Impact of updated radiative transfer scheme in RACMO2.3p3 on the surface mass and
+#   energy budget of the Greenland ice sheet" (The Cryosphere, 2021). Files smb_monthlyS_Rp3_GRL_200009_201812.nc
+#   (16 MB; smb, kg m-2 per month) and GRL_11km-topography_icemask.nc (3 MB; Topography m, IceMask the
+#   fractional ice of each 11 km pixel, Promicemask the PROMICE ice classes, gridarea km2, lat, lon).
+#   Licence: CC BY 4.0 (cite the dataset). netCDF-4 (read with tools/h5_reader, a dense root group) and
+#   classic netCDF (tools/nc3_reader). Cached as raw_racmo_grl_smb.npz (the 2001-2018 annual mean, ~1 MB).
+#   2001-2018 is warmer than the late 20th century (more melt), so its ablation zone is somewhat wider than
+#   the climate the model is calibrated to; a check on the margin, not a calibration target.
+RACMO_URL = "https://zenodo.org/api/records/4013856/files/"
+RACMO_SMB, RACMO_TOPO = "smb_monthlyS_Rp3_GRL_200009_201812.nc", "GRL_11km-topography_icemask.nc"
+RACMO_YEARS = (2001, 2018)
+RACMO_CACHE_VERSION = 1
+
+
+def racmo_greenland_raw() -> dict:
+    """RACMO2.3p3's Greenland SMB on its 11 km grid: dict(smb (327, 326) float32, mm w.e./yr, the 2001-2018
+    mean; ice, the fractional ice mask; promice, the PROMICE ice classes; topo (m); area (km2); lat, lon)."""
+    f = DATA / "raw_racmo_grl_smb.npz"
+    if not f.exists():
+        from tools import h5_reader, nc3_reader
+        from tools.tiff_reader import BytesSource
+        DATA.mkdir(parents=True, exist_ok=True)
+        src = BytesSource(_get(RACMO_URL + RACMO_SMB + "/content"))
+        smb = h5_reader.read_variable(src, "smb")
+        t = h5_reader.read_variable(src, "time")  # days since 1950-01-01, mid-month
+        year = 1950 + (t + 0.5) / 365.2425
+        use = (year >= RACMO_YEARS[0]) & (year < RACMO_YEARS[1] + 1)
+        n_yr = RACMO_YEARS[1] - RACMO_YEARS[0] + 1
+        if smb.ndim != 4 or use.sum() != 12 * n_yr:
+            raise RuntimeError("RACMO SMB file is not the expected monthly series; its layout changed")
+        annual = smb[use, 0].astype(np.float64).sum(0) / n_yr
+        topo = _get(RACMO_URL + RACMO_TOPO + "/content")
+        h = nc3_reader.header(topo)
+        get = lambda k: nc3_reader.read_variable(topo, k, h).astype(np.float64)  # noqa: E731
+        out = {"smb": annual, "ice": get("IceMask"), "promice": get("Promicemask"), "topo": get("Topography"),
+               "area": get("gridarea"), "lat": get("lat"), "lon": get("lon")}
+        if out["ice"].shape != annual.shape:
+            raise RuntimeError("RACMO topography file doesn't match the SMB grid")
+        np.savez_compressed(f, **{k: v.astype(np.float32) for k, v in out.items()})
+    z = np.load(f)
+    return {k: z[k] for k in z.files}
+
+
+def earth_greenland_smb(grid) -> dict:
+    """RACMO2.3p3's Greenland and its peripheral glaciers' SMB per cell: dict(smb, m of ice per year, the mean
+    over the cell's iced 11 km pixels (NaN where the cell has none); ice, the cell's iced share of the
+    pixels in it (NaN outside RACMO's domain)). Cached as data/earth/racmo_grl_L{level}.npz."""
+    f = DATA / f"racmo_grl_L{grid.level}.npz"
+    if f.exists():
+        z = np.load(f)
+        if int(z["version"]) == RACMO_CACHE_VERSION and len(z["smb"]) == grid.n:
+            return {"smb": z["smb"], "ice": z["ice"]}
+    r = racmo_greenland_raw()
+    ok = (np.abs(r["lat"]) <= 90) & np.isfinite(r["smb"]) & (r["area"] > 0)
+    cell = grid.locate(_unit(r["lat"][ok].astype(float), r["lon"][ok].astype(float)))
+    a, ice, smb = r["area"][ok].astype(float), np.clip(r["ice"][ok].astype(float), 0, 1), r["smb"][ok].astype(float)
+    on = ice >= 0.5
+    den = np.bincount(cell, a, grid.n)
+    wi = np.bincount(cell, a * on, grid.n)
+    ws = np.bincount(cell, a * on * smb, grid.n)
+    rho_i = 917.0
+    out = {"smb": np.where(wi > 0, ws / np.maximum(wi, 1e-12) / rho_i, np.nan).astype(np.float32),
+           "ice": np.where(den > 0, np.bincount(cell, a * ice, grid.n) / np.maximum(den, 1e-12), np.nan).astype(np.float32)}
+    np.savez_compressed(f, version=RACMO_CACHE_VERSION, **out)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--level", type=int, default=6)

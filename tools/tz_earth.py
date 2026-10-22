@@ -1,6 +1,6 @@
 """The Earth time zoom's ice-age bars (PW-555 stage 1; docs/review/ice-v2-criteria.md section 3.4).
 
-    uv run python tools/tz_earth.py [--kyr 600] [--level 6] [--set k=v ...] [--json OUT] [--npz OUT]
+    uv run python tools/tz_earth.py [--kyr 600] [--level 6] [--dt0] [--set k=v ...] [--json OUT] [--npz OUT]
 
 Runs the default forced time zoom of today's Earth (the glacial index on, real ice with anchor=obs) in
 memory (nothing is written to the store) and checks the zoom bars:
@@ -11,6 +11,12 @@ memory (nothing is written to the store) and checks the zoom bars:
     interglacial level being the highest sea level in the 40 kyr after the previous ending (the start
     for the first glacial);
   - interglacial ice 9-12% of the land (the iced share of land at each interglacial's highest sea level).
+With --dt0, the yardstick instead (PW-555 stage 1c; the criteria's recovery bar): the same zoom with the index off
+(today's climate, only the orbit swinging) for 100 kyr. Today's ice should come and go with the orbit within 20% of
+its area and not run away. Reported: the grounded iced area against the start's over time (its range, the worst
+frame, the last 20 kyr), where the extra and the lost ice sit at the end, and how the area's change follows the
+summer sun at 65 N after the first 20 kyr (corr(dA/dt, dq65) < 0: the ice shrinks in strong summers and grows in
+weak ones).
 Also reported: the Laurentide at the deepest frame (North American grounded ice: its area, south of 50 N,
 and its southernmost latitude), the backstops and the zoom's budget. Keep PLANET_DATA unset for Earth
 (its cache sits under the repository's data/earth).
@@ -89,6 +95,59 @@ def evaluate(res: dict, grid) -> dict:
     return out
 
 
+DT0_BAR = 0.2  # today's ice within 20% of its area at dT 0
+_GRL = lambda la, lo: (la > 59) & (lo > -75) & (lo < -10)  # noqa: E731
+REGIONS = {  # (lat, lon) boxes for the yardstick's breakdown
+    "Greenland": _GRL,
+    "Arctic Canada": lambda la, lo: (la > 66) & (lo > -125) & (lo < -60) & ~_GRL(la, lo),
+    "N America": lambda la, lo: (la > 25) & (la <= 66) & (lo > -170) & (lo < -50) & ~_GRL(la, lo),
+    "Eurasia": lambda la, lo: (la > 25) & ((lo > -10) | (lo < -170)),
+    "Antarctica": lambda la, lo: la < -60,
+}
+
+
+def evaluate_dt0(res: dict, grid) -> dict:
+    """The yardstick (--dt0): today's ice at dT 0 with only the orbit swinging."""
+    fr = res["frames"]
+    ft = np.array([f["t"] for f in fr])
+    area = np.array([f["stats"]["ice_pct"] for f in fr])
+    dq = np.array([f["stats"]["insol_65n_jul_anom"] for f in fr])
+    r = area / area[0]
+    cell = 4 * np.pi * 6371.0 ** 2 / grid.n / 1e6
+    i0 = S.decode(res["data"]["ice"][0], LAYERS["ice"]).astype(float) > 1
+    i1 = S.decode(res["data"]["ice"][-1], LAYERS["ice"]).astype(float) > 1
+    where, known = {}, np.zeros(grid.n, bool)
+    for name, f in REGIONS.items():
+        m = f(grid.lat, grid.lon)
+        known |= m
+        where[name] = (round(float((i1 & ~i0 & m).sum() * cell), 2), round(float((i0 & ~i1 & m).sum() * cell), 2))
+    where["other"] = (round(float((i1 & ~i0 & ~known).sum() * cell), 2),
+                      round(float((i0 & ~i1 & ~known).sum() * cell), 2))
+    da = np.gradient(area, ft)
+    late = ft >= ft[-1] - 20
+    worst = int(np.argmax(np.abs(r - 1)))
+    out = {"start_mkm2": round(float(i0.sum() * cell), 2), "ratio_min": round(float(r.min()), 3),
+           "ratio_max": round(float(r.max()), 3), "worst_t": float(ft[worst]),
+           "ratio_last20": round(float(r[late].mean()), 3), "ratio_end": round(float(r[-1]), 3),
+           # (after the first 20 kyr: the start's own adjustment isn't the orbit's)
+           "corr_dA_dq65": round(float(np.corrcoef(da[ft >= 20], dq[ft >= 20])[0, 1]), 2),
+           "series": [(float(t), round(float(x), 3)) for t, x in zip(ft[::8], r[::8])],
+           "extra_lost_mkm2": where, "runtime_s": res["runtime_s"]}
+    out["pass"] = {"within_20pct": bool(np.all(np.abs(r - 1) <= DT0_BAR)),
+                   "follows_orbit": out["corr_dA_dq65"] < 0}
+    return out
+
+
+def summary_dt0(r: dict) -> str:
+    ok = " ".join(f"{k} {'ok' if v else 'F'}" for k, v in r["pass"].items())
+    ser = " ".join(f"{t:.0f}:{x:.2f}" for t, x in r["series"])
+    wh = ", ".join(f"{k} +{a}/-{b}" for k, (a, b) in r["extra_lost_mkm2"].items())
+    return (f"dT 0: today's ice {r['start_mkm2']} Mkm2; area/start {r['ratio_min']}..{r['ratio_max']} (worst at "
+            f"{r['worst_t']:.0f} kyr), last 20 kyr {r['ratio_last20']}, end {r['ratio_end']}; corr(dA/dt, dq65) "
+            f"{r['corr_dA_dq65']} | {r['runtime_s']:.0f} s\n  series {ser}\n  at the end, extra/lost Mkm2: {wh}\n"
+            f"  bars: {ok}")
+
+
 def summary(r: dict) -> str:
     gl = "; ".join(f"{g['max_m']:+.0f} m @ {g['max_t']:.0f} (back {g.get('give_back')})" for g in r["glacials"])
     ok = " ".join(f"{k} {'ok' if v else 'F'}" for k, v in r["pass"].items())
@@ -99,9 +158,45 @@ def summary(r: dict) -> str:
             f"budget {r['budget_m']} | {r['runtime_s']:.0f} s\n  bars: {ok}")
 
 
+def greenland(src, p) -> str:
+    """The zoom's year at the start (Earth today, its anchor) on Greenland's margin, inland and front cells
+    against RACMO2.3p3's 2001-2018 SMB (tools/earth_data.earth_greenland_smb: the cell mean, its bare part
+    counted 0, and its iced share), in m of ice per year."""
+    from tools.earth_data import earth_greenland_smb
+    from planet.timezoom.sim import _Sim
+    g = src["grid"]
+    obs = earth_greenland_smb(g)
+    s = _Sim(src, 1.0, 0.5, 2.0, p)
+    surf, grounded = s.grounded_surface()
+    s.fields.refresh(0.0, 0.0, surf, grounded, s.H, 0.0)
+    s.fields.blend(0.0)
+    s.prepare_surface(0.0)
+    s.f_snow[:] = s.f_alb
+    s.anchor[:] = s.start_anchor(s.ice_g > 1)
+    s.prepare_surface(0.0)
+    z = np.zeros_like(s.q_ref)
+    s.year(s.dt_base, z)
+    rate, _, _ = s.new_ice_rates(z, 500.0)
+    iced = s.ice_g > 1
+    mar = np.zeros(g.n, bool)
+    mar[s.margin] = True
+    cov = REGIONS["Greenland"](g.lat, g.lon) & np.isfinite(obs["ice"]) & (obs["ice"] > 0.05) | \
+        REGIONS["Greenland"](g.lat, g.lon) & iced & np.isfinite(obs["ice"])
+    cmean = np.nan_to_num(obs["smb"]) * np.nan_to_num(obs["ice"])
+    front = s.land & ~iced & (np.add.reduceat(iced[g.nbr_idx], g.nbr_off[:-1]) > 0)
+    rows = []
+    for name, m, zv in (("margin", cov & iced & mar, s.smb), ("inland", cov & iced & ~mar, s.smb),
+                        ("front", cov & front, rate)):
+        rows.append(f"{name} ({m.sum()} cells): zoom {zv[m].mean():+.2f}, RACMO {cmean[m].mean():+.2f} "
+                    f"(iced share {np.nanmean(obs['ice'][m]):.2f})")
+    return "Greenland, m of ice per year: " + "; ".join(rows)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--kyr", type=float, default=600.0)
+    ap.add_argument("--kyr", type=float, default=None, help="default 600, 100 with --dt0")
+    ap.add_argument("--dt0", action="store_true", help="the yardstick: index off, today's ice held at dT 0")
+    ap.add_argument("--greenland", action="store_true", help="only Greenland's margin balance against RACMO2.3p3")
     ap.add_argument("--level", type=int, default=6)
     ap.add_argument("--set", nargs="*", default=[])
     ap.add_argument("--json")
@@ -112,11 +207,17 @@ def main():
         k, v = kv.split("=", 1)
         f = Z.TZParams.__dataclass_fields__[k]
         sets[k] = v if f.type == "str" else (int(v) if f.type == "int" else float(v))
+    if a.dt0:
+        sets["index"] = "off"
+    kyr = a.kyr if a.kyr is not None else (100.0 if a.dt0 else 600.0)
     src = Z.source_earth(a.level)
-    res = Z.simulate(src, a.kyr, 0.5, 2.0, Z.TZParams(**sets))
-    r = evaluate(res, src["grid"])
+    if a.greenland:
+        print(greenland(src, Z.TZParams(**sets)))
+        return
+    res = Z.simulate(src, kyr, 0.5, 2.0, Z.TZParams(**sets))
+    r = (evaluate_dt0 if a.dt0 else evaluate)(res, src["grid"])
     r["params"] = sets
-    print(summary(r), flush=True)
+    print((summary_dt0 if a.dt0 else summary)(r), flush=True)
     if a.json:
         Path(a.json).write_text(json.dumps(r, indent=1))
     if a.npz:

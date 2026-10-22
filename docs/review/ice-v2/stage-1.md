@@ -217,3 +217,96 @@ floor. Moving the test to L5 wouldn't make it pass; it stays at L4, unchanged an
 Not passing: Earth meets cycles, maxima, give-back and cooling at 5.5 C; the interglacial ice (11.8–15.5%), the
 window mean with area (3/5), the L4 test and the recovery bar fail. Both stop rules have been hit (the air lever
 after 3 attempts, the base climate on its decisive form). Not ready to merge.
+
+## Stage 1c (2026-10-22, branch `worktree-agent-a339320374f6026c2`, stage 1b and main merged)
+A new lever under the stop rule (3 attempts): the margin balance at today's climate. Scratch: session scratchpad
+`icev2s1c/` (`series.py` the dT-0 area and sun frame by frame, `growth.py` how the extra ice came (flow onto the front
+or a cap in place, land or marine bed), `grlsmb.py` RACMO natively and cell by cell, `capprobe.py` bare land whose
+snow outlasts the summer, `diagdt0.py` the yardstick with a diagnostic switch patched in, job files and logs).
+
+### The yardstick and the reference
+- `tools/tz_earth.py --dt0`: the Earth zoom with the index off for 100 kyr (today's climate, the orbit swinging):
+  today's iced area against the start's (range, worst frame, last 20 kyr), where the extra and lost ice sit, and
+  corr(dA/dt, dq65) after 20 kyr. Bars: every frame within 20% (the criteria's recovery bar) and the ice following
+  the orbit (corr < 0). ~25 s.
+- **Observed SMB: RACMO2.3p3, 11 km, 2001-2018** (van Dalum et al., Zenodo 4013856, CC BY 4.0), cached once as
+  `data/earth/raw_racmo_grl_smb.npz` (`tools/earth_data.py`: `racmo_greenland_raw`, `earth_greenland_smb`;
+  `tools/h5_reader.py` now reads dense netCDF-4 groups). `tools/tz_earth.py --greenland`: the zoom's year at the
+  start on Greenland's margin, inland and front cells against it.
+- What RACMO says (natively, `grlsmb.py native`): the ice sheet's SMB +366 Gt/yr; ablation (SMB < 0) on 11.6% of it;
+  by distance from the ice edge, mean m of ice/yr: 0-11 km −0.29, 11-22 −0.01, 22-33 +0.12, 44-55 +0.27, 88-110 +0.36.
+  **The outer 110 km strip's mean is +0.15, the outer 55 km's +0.01**: the handoff's "a 110 km margin strip about nil
+  or negative" was too strong. By elevation −1.2 (0-200 m), −0.6 (600 m), −0.14 (1000 m), +0.06 (1200 m), +0.4 above
+  1600 m.
+- **Cell by cell at L6 (120 km)**: margin cells zoom +0.21 vs RACMO −0.02 (cell mean, iced share 0.83 vs the zoom's
+  f 0.72); inland +0.28 vs +0.29; Greenland +448 vs +375 Gt/yr. The ramp's mean surface matches RACMO's ice surface
+  (within ~100-200 m cell by cell); the margin's warm month is 2-5 C colder than observed on the north and east
+  margins (e.g. 81 N: −4.6 vs −0.5; 77 N: −5.2 vs −0.9), where the anchor can't help (it only cools).
+
+### Before (stage 1b defaults)
+Yardstick: area/start 1.00..1.30 (worst at 14 kyr), last 20 kyr 1.24; the ice grows +5% in the first 4 kyr under the
+strongest summer of the run (dq65 +49 W/m2) and +14% by 8 kyr: a drift of the start, not an orbit response. At 30 kyr
+(`growth.py`) the extra 3.9 Mkm2 came by flow onto the front 2.2 (half of it onto marine beds) and as caps grown in
+place 1.65 (Eurasia's mountains 0.66 at ~1600 m, Arctic Canada 0.47 at ~300 m). Main's zoom rules: 0.86..1.34.
+
+### The three suspects (one change at a time, on the yardstick)
+| attempt | change | Greenland's cells (zoom vs RACMO) | yardstick area/start | verdict |
+|---|---|---|---|---|
+| (a) | the ramp's quadrature exact (`ramp_n=8`, 8 points in sqrt(x), the outer edge sampled down to 0.1% of the width) | margin +0.21 → +0.20 | 1.29 (1.30) | **no effect**: not a cause; `ramp_n=0` stays default |
+| (b) | **the front as the ramp's outermost 10 km** (`front=ramp`, kept) | front cells' rate +0.26 → −0.08 (RACMO's outer 11 km −0.29; `--greenland` front cells' cell mean +0.03 vs +0.02) | **1.17, last 20 kyr 1.16** | **kept**: passes the 20% bar |
+| (c) | caps in place (diagnostic: no cap starts on bare land) | | 1.09 (Eurasia 0.72 → 0.02, N America 0.12 → 0) | **the cause is the base climate**, not the full-cell rule |
+
+(b): bare land the flow reaches was a bright edge 408 m high with all of the ice surface's local terms (ice_cool,
+the summer damping), while every other ice cell gets them on the share of its air that has come over ice (stage 1b's
+`fetch`): the new front was colder than the margin behind it, an accumulation zone. Now it is the sheet's outermost
+10 km of ramp (0..408 m), sampled like a margin's ramp, with the same `fetch` share. 5 km instead of 10: 1.15 (not
+taken: 10 km is the edge's definition, EDGE_H). The run keeps its rule (`RUN_RULE` gets `front=edge`).
+(c): the bare land whose snow outlasts the summer at the start (`capprobe.py`) is 0.72 Mkm2, where the zoom's warm
+month is below the observed: Eurasia −0.9 vs +3.2 C (at ~2500 m), N America +0.5 vs +2.2, the Andes/Tibet +0.6 vs
++4.2, Arctic Canada −0.6 vs +0.4. With `baseline=obs` it is 0.22 and Eurasia's extra goes 0.72 → 0.12. A hypsometric
+cap fraction would hide a cold base climate, and for onset it adds snow (the cell's upper part keeps it), so it isn't
+taken: (c) is the base climate (review root cause 5), already at its stop rule.
+Also measured: grounded ice beside open sea as a margin too (`diagdt0.py seamar`): 1.17, no effect.
+
+### After (stage 1c defaults: ramp, seasons, cold, fetch, front=ramp)
+Yardstick: **area/start 1.00..1.17, last 20 kyr 1.16: within 20% (the recovery bar passes)**, but the area doesn't come
+and go with the orbit (flat at +15% after 16 kyr; corr > 0). The extra at 100 kyr: Greenland +0.85, Arctic Canada
++0.83 (both mostly the front advancing, about half on marine beds), Eurasia +0.72 (caps, the base bias), N America
++0.12; Antarctica −0.37/+0.15. With `baseline=obs`: 1.17 (Greenland +1.12, Antarctica +0.59/−0.12).
+
+Checkpoint 1c, Earth L6, 600 kyr (`tools/tz_earth.py`):
+
+| cooling | maxima m | give-back (≥ 0.6) | interglacial ice % land (9–12) | Laurentide | bars failing |
+|---|---|---|---|---|---|
+| 5.5 C | −49..−82 | 0.51–0.84 | 11.4–13.1 | 7.0 Mkm2 to 48.1 N | maxima, give-back, ig |
+| 6.0 C | −58..−93 | 0.55–0.85 | 11.6–13.0 | 7.8 to 43.9 N | maxima, give-back, ig |
+
+Cycles 98.5–108.5 kyr, no backstops. The honest front makes the glacials shallower (the Laurentide 9.2 → 7.0 Mkm2 at
+5.5 C): the depth bar now needs more than 6 C. The interglacials move from 11.8–15.5% to 11.4–13.1%.
+
+The moment suite (`tools/tz_mean.py`, 400 kyr; mean after 100 kyr vs the run's ice, tol; area ratio, bar 25%), with
+the two moments added to reach the criteria's 7 (the fixture on the new main, L5; seed 1 @ 540, moderate):
+
+| moment | run ice | stage 1b | **stage 1c** |
+|---|---|---|---|
+| s5 @ 420 (deep) | −468 m | +69 (19) F, 0.96 | +75 (20) F, 0.93 |
+| s1 @ 780 (deep) | −326 m | +2 ok, 1.05 | +10 ok, 1.02 |
+| s2 @ 660 (moderate) | −140 m | +14 ok, 0.94 | +14 ok, 0.93 |
+| s3199 @ 900 (mild) | −93 m | −2 ok, 1.15 | +6 ok, 1.02 |
+| s21 @ 620 (warm) | −5 m | −2 ok, 1.27 F | −2 ok, **1.12 ok** |
+| fixture L5 (new main, warm) | −4 m | | −105 (32) F, ×18 F |
+| s1 @ 540 (moderate) | −183 m | | +26 (15) F, 0.93 |
+| **mean and area** | | 3/5 | **4/7** (bar ≥ 5 of 7) |
+
+The deep and moderate moments all start at the 97th–100th percentile of their zoom's range and lose ice; the fixture's
+nearly ice-free run grows 105 m of honest-margin ice. Both are the run's ice against the zoom's rules (stage 3).
+
+The L4 endings test (unchanged): extra 78.2 m, 83.4 left after 15 kyr (bar < 39): **fails** (stage 1b: 60.7, 62.5).
+
+### Stage 1 status after 1c
+Not passing. Passes: cycles, cooling ≤ 6 C, the recovery bar (today's ice within 20% at dT 0). Fails: maxima (−49..−93
+at ≤ 6 C), give-back (0.51–0.55 on the first glacial), interglacial ice 11.4–13.1%, the window mean with area (4/7), the
+L4 test. The margin lever's three attempts are spent: (a) no effect, (b) kept, (c) the base climate. What's left at dT 0
+is Greenland's and Arctic Canada's front advancing (the margin cells +0.21 vs RACMO −0.02, their summer 2-5 C too
+cold on the north and east margins: the ice-surface air, stage 1b's lever) and the mountain caps (the base climate).
+Not ready to merge.

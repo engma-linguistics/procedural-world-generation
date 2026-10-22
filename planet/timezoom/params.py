@@ -85,6 +85,14 @@ class TZParams:
     # ramp across the part of the cell its ice covers (icemass.margin_ramp, PW-460; ~900 m mean at ~110 km cells);
     # 'edge': its edge's, at most edge_h thick (the run's rule: earth.ICE_EDGE_M), for the run/zoom rule check
     # until the run takes the ramp (PW-555 stage 3)
+    ramp_n: int = 0  # the ramp's quadrature (icemass.ramp_rule): 0, 2-point Gauss-Legendre in x; n > 0, n points in
+    # sqrt(x) (PW-555 stage 1c: 8 points move Earth's Greenland margins by 0.01 m/yr, the yardstick by 0.01: not a cause)
+    front: str = "ramp"  # bare land the flow reaches (new_ice_rates): 'ramp', the sheet's outermost edge_km of its
+    # ramp (0 to edge_h high), sampled like a margin's ramp (ramp_rule) with the ice surface's own effects on the
+    # share of its air that has come over ice (surface_share), as every other ice cell (PW-555 stage 1c: Earth
+    # today, Greenland's front cells +0.26 -> -0.08 m/yr, RACMO2.3p3's outer 11 km -0.29; the dT-0 ice +30% -> +16%);
+    # 'edge', a bright edge edge_h high with all of them (PW-366; the run's new-margin rule until its own stage)
+    edge_km: float = 10.0
     edge_h: float = M.EDGE_H  # m: a sheet's edge (its Nye profile 10 km in): bare land the flow reaches is a new
     # edge this high, and 'edge' margins at most this thick
     anchor: str = "auto"  # the starting ice's climate correction (start_anchor): 'obs' (Earth: the model's

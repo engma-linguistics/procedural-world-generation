@@ -349,6 +349,15 @@ def test_margin_ramp_scales_with_cells():
     assert 0.6 * icemass.EDGE_H < 0.5 * (h10[0, 0] + h10[1, 0]) < 0.8 * icemass.EDGE_H
 
 
+def test_ramp_rule_means_the_nye_ramp():
+    """The ramp's quadrature (icemass.ramp_rule) takes the Nye ramp's mean height, 2/3 of its top: the
+    default 2 points in x to 1%, n points in sqrt(x) exactly; the outer edge is sampled lower with more points."""
+    for n, tol in ((0, 0.01), (2, 1e-9), (8, 1e-9)):
+        x, w = icemass.ramp_rule(n)
+        assert abs(w.sum() - 1) < 1e-12 and abs((w * np.sqrt(x)).sum() - 2 / 3) < tol
+    assert icemass.ramp_rule(8)[0].min() < 0.01 < icemass.ramp_rule(0)[0].min()
+
+
 def test_sheet_air_comes_from_its_frozen_summers(sim4):
     """A sheet's carried cold air (icemass.air_mass) comes from the share of its summer its surface stays
     frozen (cold_share, the degree-day rule's spread): a melting margin can't chill the air below it."""

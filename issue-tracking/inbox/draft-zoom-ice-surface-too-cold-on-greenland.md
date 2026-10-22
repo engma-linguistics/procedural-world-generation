@@ -31,3 +31,10 @@ Stage 1b (2026-10-22): `surface_air=fetch` (the local terms on the share of the 
 observed mean −2.1 includes its bare part), inland to −6.2 (obs −4.9), and Antarctica to +3.3 C too warm (from +4.9).
 The first check is met. Earth's interglacial ice doesn't move (11.8–15.5%): the cause is the dT-0 floor
 (draft-earth-zoom-does-not-hold-todays-ice-at-dt0), so the second check moves there.
+
+Stage 1c (PW-555): against RACMO2.3p3's observed SMB (`tools/tz_earth.py --greenland`) the zoom's Greenland margin
+cells are +0.21 m/yr vs -0.02 observed, its inland right (+0.28 vs +0.29), and the margin summers are 2-5 C below
+the observed warm month on the north and east margins (81 N -4.6 vs -0.5 C; 77 N -5.2 vs -0.9; 73 N -8.1 vs -4.7),
+~0-2.5 C in the southwest. The ramp's geometry matches RACMO's ice surface and its quadrature is exact enough, so
+the margin's remaining surplus is its air: this ticket. The start anchor only cools, so it can't take this out on
+Earth (and a two-sided anchor would hide a rule every planet has). It is what keeps Greenland's front advancing at dT 0.

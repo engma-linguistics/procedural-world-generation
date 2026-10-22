@@ -35,3 +35,6 @@ TZParams; L5 = the same recipe at level 5, seed 1, 300 Myr):
   (draft-earth-zoom-does-not-hold-todays-ice-at-dt0).
 Decision: keep the test at L4 unchanged (lean), and let it pass once the margin balance does (the dT-0 draft).
 Don't loosen it or move it.
+
+Stage 1c (front=ramp): extra 78.2 m, left 83.4 after 15 kyr: still fails, test unchanged. The honest front makes this
+glacial bigger, not smaller, and the ending still holds it (draft-earth-zoom-does-not-hold-todays-ice-at-dt0).

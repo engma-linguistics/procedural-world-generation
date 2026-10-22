@@ -169,7 +169,19 @@ def sheet_cover(grid, ice):
 _NODES = np.array([0.5 - 0.5 / np.sqrt(3.0), 0.5 + 0.5 / np.sqrt(3.0)])  # 2-point Gauss-Legendre on 0..1
 
 
-def margin_ramp(H, width_m: float):
+def ramp_rule(n: int = 0):
+    """Quadrature (nodes on 0..1 of the iced width, weights) for a margin's ramp mean: n = 0, 2-point
+    Gauss-Legendre in x (equal weights); n > 0, n-point Gauss-Legendre in u = sqrt(x) with the weight 2u
+    (the ramp's height is linear in u, so the outer edge's strong melt is sampled as finely as the rest)."""
+    if n <= 0:
+        return _NODES, np.full(2, 0.5)
+    t, w = np.polynomial.legendre.leggauss(n)
+    u = 0.5 * (t + 1.0)
+    w = w * u
+    return u ** 2, w / w.sum()
+
+
+def margin_ramp(H, width_m: float, n: int = 0):
     """A margin cell (ice next to bare land) as the part of its width the
     sheet's edge covers (PW-460): its ice H (m, the cell's mean) is a Nye
     ramp sqrt(2 tau/(rho g) x) rising from the edge (x = 0) across an iced
@@ -186,7 +198,8 @@ def margin_ramp(H, width_m: float):
     H = np.maximum(np.atleast_1d(np.asarray(H, float)), 0.0)
     top = np.sqrt(2 * SHEET_TAU / (917.0 * 9.81) * width_m)
     f = np.clip(H / (2.0 / 3.0 * top), 0.0, 1.0) ** (2.0 / 3.0)
-    return f, top * np.sqrt(f)[None, :] * np.sqrt(_NODES)[:, None]
+    x, _ = ramp_rule(n)
+    return f, top * np.sqrt(f)[None, :] * np.sqrt(x)[:, None]
 
 
 # The orbit's effect on a month's temperature (PW-459): each cell responds to an insolation change as it does

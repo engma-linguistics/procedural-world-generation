@@ -20,7 +20,7 @@ UNFORCED = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit
 # The run's margin, orbit and air rules (EDGE_H margins, INSOL_K, all ice's air, the ice's own effects on top): the zoom took the honest ones first (PW-555 stage
 # 1: margin_ramp, the seasons' response); the run takes them in stage 3. Until then this checks the rest of the
 # shared rule (the balance, the Nye profile, the marine budget) with the run's own margins and orbit.
-RUN_RULE = dict(margin="edge", orbit_resp="run", sheet_air="all", surface_air="all")
+RUN_RULE = dict(margin="edge", front="edge", orbit_resp="run", sheet_air="all", surface_air="all")
 FLT = 1 - P.RHO_I / P.RHO_W
 
 

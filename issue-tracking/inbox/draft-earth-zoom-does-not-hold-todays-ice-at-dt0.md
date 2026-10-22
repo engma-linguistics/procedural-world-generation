@@ -44,3 +44,16 @@ both hit their stop rules: the owner's call.
 - [ ] Earth zoom, index off: today's ice within 20% of its area for 100 kyr, coming and going with the orbit
 - [ ] Greenland's margin balance against an observed SMB
 - [ ] then interglacial ice 9-12% (tools/tz_earth.py) and the L4 endings test
+
+Stage 1c (2026-10-22, PW-555; stage-1.md "Stage 1c"): yardstick `tools/tz_earth.py --dt0`, reference RACMO2.3p3
+(`tools/tz_earth.py --greenland`). RACMO's outer 110 km strip of Greenland is +0.15 m/yr (the outer 55 km +0.01), so a
+margin cell near nil is right; the L6 margin cells are -0.02 in RACMO against +0.21 in the zoom (inland +0.29 vs
++0.28). Suspects: (a) the ramp's quadrature: no effect (1.30 -> 1.29); (b) the front as the ramp's outer 10 km with the
+fetch share (front=ramp, kept): 1.30 -> 1.17, within 20%; (c) the caps grown in place are the base climate's cold
+mountains (Eurasia -0.9 vs +3.2 C observed; gone with baseline=obs), not the full-cell rule. What's left: the area
+stays +15% and doesn't follow the orbit; Greenland +0.85 and Arctic Canada +0.83 Mkm2 by the front advancing (half
+on marine beds), with Greenland's N and E margins 2-5 C too cold in summer (the ice-surface air, see
+draft-zoom-ice-surface-too-cold-on-greenland). Interglacials 11.4-13.1% (bar 9-12).
+- [x] Earth zoom, index off: today's ice within 20% of its area for 100 kyr (1.17 max)
+- [ ] ... coming and going with the orbit (flat at +15%)
+- [x] Greenland's margin balance against an observed SMB (RACMO2.3p3, cached)
