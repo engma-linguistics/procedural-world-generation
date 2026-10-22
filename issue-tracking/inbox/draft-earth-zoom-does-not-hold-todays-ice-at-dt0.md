@@ -1,0 +1,46 @@
+---
+title: "Time zoom with honest margins: Earth at dT 0 grows 3-4 Mkm2 of ice in the first weak summer and keeps it (the interglacial-ice floor)"
+type: task
+status: needs-decision
+parent: PW-470
+milestone: v2
+subsystem: timezoom
+effort: m
+impact: high
+found_by: ice-v2-stage1
+blocked_by: []
+relates: [PW-555, PW-460, PW-459, PW-115, PW-366]
+refs: [planet/timezoom/sim.py, planet/icemass.py, docs/review/ice-v2/stage-1.md, docs/review/ice-v2-criteria.md]
+---
+
+## Description
+Stage 1b (PW-555; stage-1.md, "The interglacial ice isn't a deglaciation failure"). Earth L6 time zoom, index off
+(today's climate, only the orbit swinging), Mkm2 of grounded ice (today 14.1 = 9.6% of land):
+
+| t (kyr) | 2 (Eemian-like summer) | 14 (weak) | 46 (strong) | 200 |
+|---|---|---|---|---|
+| stage-1b defaults | 14.6 | 18.3 | 16.9 | 18.6 (12.6%) |
+| baseline=obs | | 16.5 (t 20) | 17.2 (t 100) | 17.6 (12.0%) |
+| main's zoom rules | 12.7 | 18.9 | 13.9 (9.5%) | |
+
+With the old rules (408 m edge, 0.25 orbit gain) the ice comes and goes with the orbit. With honest margins it grows
+in the first weak summer and the next strong summer doesn't take it back, a precession-scale hysteresis at today's
+climate. Every interglacial of the index-on zoom lands on that floor (11.8-15.5% of land, bar 9-12), and the
+recovery bar (today's ice held within 20% at dT 0) fails (+20..+32%). The start anchor isn't it (anchor=none and
+anchor_rings=0 give the same), and removing the base bias (baseline=obs) only lowers it to ~12%.
+Where (t 46): the Canadian Arctic islands ~0.8 Mkm2 (observed warm month +1..+2 C at 300 m), Greenland's coastal
+strip and shelf ~1.0 (half marine-grounded; it spreads 0.4 Mkm2 within 2 kyr under an Eemian orbit), mountains
+(Alaska, Coast Mountains, Andes, Tibet) ~0.5, Scandinavia 0.2 (base bias).
+Greenland's margin cells have a balance of +0.20 m/yr today in the zoom (scratch `termprobe.py`). An ablation zone
+50-150 km wide should make a 110 km margin strip's mean about nil or negative.
+Suspects, in the order to measure:
+- the ramp's lower quadrature point (0.21 of the iced width, ~620 m at L6) never samples the outer edge;
+- the front rule (bare land the flow reaches becomes a bright edge 408 m high, PW-366);
+- a cell iced in full once its mean balance is positive (no sub-cell cover for caps on near-threshold land);
+- the degree-day factors on bare ice.
+Needs an observed surface mass balance for Greenland (e.g. RACMO or MAR, binned by distance from the margin) as the
+check. Also the next lever for PW-555 stage 1, after the air lever (3 attempts) and the base climate (baseline=obs)
+both hit their stop rules: the owner's call.
+- [ ] Earth zoom, index off: today's ice within 20% of its area for 100 kyr, coming and going with the orbit
+- [ ] Greenland's margin balance against an observed SMB
+- [ ] then interglacial ice 9-12% (tools/tz_earth.py) and the L4 endings test

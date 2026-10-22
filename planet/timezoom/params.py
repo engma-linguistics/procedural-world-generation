@@ -73,11 +73,14 @@ class TZParams:
     # 'cold', from the share of each ice cell's summer its surface stays frozen (icemass.cold_share: an ablating
     # surface sits at the melting point and can't chill the air below it; PW-439, PW-555 stage 1); 'all': from
     # all the ice (the run's rule until its own stage)
-    surface_air: str = "rest"  # the ice surface's own effects on its air (ice_cool's inversion and the summer
-    # damping of its bright surface, summer_damp x icemass.LOCAL): 'rest', on the share of the air that isn't
-    # the sheets' carried air mass already (1 - icemass.air_mass: a big sheet's air is its surface's, cooled and
-    # damped in climate.compute, PW-336, so they aren't counted twice; a lone cap gets them in full); 'all': on
-    # top of it (the run's rule until its own stage; Earth's Greenland then sits ~4 C below its observed summer)
+    surface_air: str = "fetch"  # the ice surface's own effects on its air (ice_cool's inversion and the summer
+    # damping of its bright surface, summer_damp x icemass.LOCAL): 'fetch', on the share of the air touching it
+    # that has come over ice for its last surface_km (icemass.surface_share: air off the bare land or open sea
+    # beside a margin or a small sheet hasn't cooled to the ice's yet; Antarctica's interior gets ~0.75-1 of
+    # them, Greenland's ~0.5, its margins ~0.35; PW-555 stage 1: Earth today's Greenland margins -6.1 -> -3.9 C,
+    # obs ~-2.7 on their ice, inland -8.0 -> -6.2, obs -4.9; Antarctica +4.9 -> +3.3 C too warm, its base bias);
+    # 'all': all of them on every ice cell (the run's rule until its own stage; Greenland ~4 C below observed)
+    surface_km: float = M.SURFACE_KM  # km: 'fetch''s scale (icemass.surface_share)
     margin: str = "ramp"  # a margin cell's (ice next to bare land) surface balance: 'ramp', over the sheet's Nye
     # ramp across the part of the cell its ice covers (icemass.margin_ramp, PW-460; ~900 m mean at ~110 km cells);
     # 'edge': its edge's, at most edge_h thick (the run's rule: earth.ICE_EDGE_M), for the run/zoom rule check

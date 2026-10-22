@@ -1,5 +1,5 @@
 ---
-title: "Endings test at L4 fails with honest margins: a ~440 km margin cell's Nye ramp is a 1.2-2.6 km dome"
+title: "Endings test fails with honest margins at L4 and at L5: the margin holds the ice, not the 440 km cells"
 type: task
 status: needs-decision
 parent: PW-470
@@ -14,15 +14,24 @@ refs: [tests/test_timezoom_cycle.py, planet/icemass.py, docs/review/ice-v2/stage
 ---
 
 ## Description
-`test_timezoom_cycle::test_glacials_grow_ice_and_endings_melt_it_fast` (sim4, L4, 4 C colder, 6 C glacial
-by hand) fails on the stage-1 branch: the first ending keeps 25 of 29 m after 15 kyr (bar: under half).
-`icemass.margin_ramp` is grid-relative, so at L4 a margin cell's ramp quadrature heights are 1.2 / 2.6 km:
-the margin is as cold as a dome. The same moment gives back 0.67 with the 408 m edge and 0.60 with no
-carried sheet air (`tzdiag.py`, stage-1 scratch). Earth at L6 passes the same bar (0.64–0.91).
-Options:
-- A: keep the test at L4 and make the margin physics pass there too (the lever in stage 1's handoff).
-- B: move the test to L5 (~220 km cells), the coarsest grid where honest margins are meant to work; a
-  slower fixture (~20 s).
-- C: both: B now, A as the physics allows.
-Lean: A first (it's within stage 1's remaining attempt); B only if L4 is shown to be a resolution limit, not
-a physics gap. Don't loosen the bar.
+`test_timezoom_cycle::test_glacials_grow_ice_and_endings_melt_it_fast` (sim4, L4, 4 C colder, 6 C glacial by hand)
+fails on the ice v2 lane. On the new main (after PW-549) the first ending keeps 62.5 of 60.7 m after 15 kyr (bar:
+under half). The stage-1 handoff's "25 of 29 m" was measured on the old main.
+
+Evidence (stage-1.md, "The L4 endings test"; scratch `icev2s1b/endtest.py` reproduces the test on any source and any
+TZParams; L5 = the same recipe at level 5, seed 1, 300 Myr):
+
+| rules | L4 left share | L5 left share |
+|---|---|---|
+| stage 1b defaults (ramp, seasons, cold, fetch) | 1.03 F | 0.83 F |
+| stage 1 (surface_air=rest) | 0.98 F | 0.81 F |
+| stage 1b, margin=edge | 0.36 ok | |
+| main's zoom rules (edge, run k, all, all) | | 0.46 ok |
+
+- It fails at L5 with the same bar, by nearly as much. Moving the test to L5 (option B) wouldn't make it pass.
+- The ramp's two-point quadrature isn't the cause: against the exact mean over the ramp it is within 0.03-0.18 m/yr
+  at L4 and 0.04-0.12 at L5 (`quadprobe.py`).
+- So it is no resolution limit. The honest margin holds this planet's ice, and Earth's zoom shows the same at dT 0
+  (draft-earth-zoom-does-not-hold-todays-ice-at-dt0).
+Decision: keep the test at L4 unchanged (lean), and let it pass once the margin balance does (the dT-0 draft).
+Don't loosen it or move it.

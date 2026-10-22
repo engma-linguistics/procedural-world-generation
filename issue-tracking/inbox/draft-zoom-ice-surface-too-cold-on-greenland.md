@@ -23,5 +23,11 @@ interior goes +6 C too warm (base bias PW-039) and Earth's glacials go too shall
 only cools, so it never corrected Greenland. This cold bias is what keeps honest-margin sheets from
 retreating (stage 1: the carried air is the measured cause; Earth interglacials keep 12–15% of land iced
 against 9–12).
-- [ ] Greenland's margins within ~1.5 C of observed in the zoom's year, Antarctica not worse than +2 C
+- [x] Greenland's margins within ~1.5 C of observed in the zoom's year, Antarctica not worse than +2 C (stage 1b, fetch)
 - [ ] Earth zoom interglacial ice 9–12% of land at a cooling ≤ 6 C (tools/tz_earth.py)
+
+Stage 1b (2026-10-22): `surface_air=fetch` (the local terms on the share of the air that has come over ice within
+500 km, icemass.surface_share) takes Greenland's margins to −3.9 C (their ice part observed ~−2.7: the cell's
+observed mean −2.1 includes its bare part), inland to −6.2 (obs −4.9), and Antarctica to +3.3 C too warm (from +4.9).
+The first check is met. Earth's interglacial ice doesn't move (11.8–15.5%): the cause is the dT-0 floor
+(draft-earth-zoom-does-not-hold-todays-ice-at-dt0), so the second check moves there.

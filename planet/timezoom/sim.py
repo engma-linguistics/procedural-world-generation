@@ -60,8 +60,8 @@ class _Sim:
         self.width = g.spacing * R_KM * 1000.0  # m: a cell's width (a margin's ramp, icemass.margin_ramp)
         if p.margin not in ("ramp", "edge"):
             raise SystemExit(f"margin must be ramp or edge, not {p.margin!r}")
-        if p.surface_air not in ("rest", "all"):
-            raise SystemExit(f"surface_air must be rest or all, not {p.surface_air!r}")
+        if p.surface_air not in ("fetch", "all"):
+            raise SystemExit(f"surface_air must be fetch or all, not {p.surface_air!r}")
         if p.sheet_air not in ("cold", "all"):
             raise SystemExit(f"sheet_air must be cold or all, not {p.sheet_air!r}")
         self.margin = np.zeros(0, np.int64)  # the margin cells (prepare_surface) ...
@@ -202,8 +202,11 @@ class _Sim:
         # (the ice surface's own summer damping, icemass.sheet_cover; on ice only: bare ground's seasonal
         # snow gets none, as the run's new-cap rule, PW-275)
         self.damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g), 0.0)
-        self.own_air = 1.0 - np.clip(F["air"], 0.0, 1.0) if p.surface_air == "rest" else np.ones(self.n)
-        self.f_ice *= self.own_air  # (... on the air that isn't the sheets' own already)
+        if p.surface_air == "fetch":
+            self.own_air = M.surface_share(g, self.H, p.surface_km)
+        else:
+            self.own_air = np.ones(self.n)
+        self.f_ice *= self.own_air  # (... on the share of the air that has come over ice: surface_share)
         self.damp *= self.own_air
 
     def year(self, dt_b, dq_) -> None:

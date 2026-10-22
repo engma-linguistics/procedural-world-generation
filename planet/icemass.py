@@ -56,6 +56,8 @@ PRECIP_K = 0.07  # rain ~ exp(PRECIP_K * dT) (Clausius-Clapeyron)
 SHEET_KM = 1000.0  # km: a sheet's own air mass (air_mass) ...
 LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
 # snow gets none: its brightness is in the climate's own snow albedo; PW-275)
+SURFACE_KM = 500.0  # km: the fetch over which the air touching an ice surface takes on the ice's own effects
+# (surface_share; ~a day's travel at ~6 m/s, the time a surface layer takes to adjust to a new surface)
 
 # The sea's side of a sheet (PW-367), the time zoom's (TZParams take these as defaults) and the run's
 # (coast_loss, PW-465): see TZParams for the sources.
@@ -138,6 +140,20 @@ def cold_share(t_warm, sigma: float = PDD_SIGMA):
     at 0 C, ~0.16 at +5 C (for air_mass's cold)."""
     from .climate import _erf
     return 0.5 * (1.0 - _erf(np.asarray(t_warm, float) / (sigma * np.sqrt(2.0))))
+
+
+def surface_share(grid, ice, km: float = SURFACE_KM):
+    """How much (0..1) of the air touching each cell's ice surface has come
+    over ice for its last ~km (the iced share of the surface within ~km,
+    land or sea ice, m > 1): the share that takes on the ice surface's own
+    effects (ice_cool's inversion, the summer damping of its bright surface).
+    Air off the bare land or open sea beside a margin or a small sheet is
+    replaced before its surface layer cools to the ice's (the time zoom's,
+    PW-555 stage 1). Antarctica's interior ~0.75..1, Greenland's ~0.5,
+    its margins ~0.35, a small cap less."""
+    from . import climate
+    on = (np.asarray(ice) > 1).astype(float)
+    return np.clip(climate.smooth_big(grid, on, km), 0.0, 1.0)
 
 
 def sheet_cover(grid, ice):

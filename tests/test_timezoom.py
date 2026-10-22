@@ -363,6 +363,19 @@ def test_sheet_air_comes_from_its_frozen_summers(sim4):
     assert (half <= full + 1e-12).all() and half[centre] < full[centre] and (half[ice == 0] == 0).all()
 
 
+def test_ice_surface_air_grows_with_its_fetch_over_ice(sim4):
+    """The ice surface's own effects act on the share of its air that has come over ice (icemass.surface_share,
+    surface_air 'fetch'): most of it inside a big sheet, less at its edge, less on a small cap."""
+    g = sim4.grid
+    centre = int(np.argmin(np.abs(g.lat - 70.0)))
+    d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
+    big = icemass.surface_share(g, np.where(d < 30.0, 2000.0, 0.0))
+    cap = icemass.surface_share(g, np.where(d < 3.0, 500.0, 0.0))  # (one L4 cell)
+    assert ((big >= 0) & (big <= 1)).all() and big[centre] > 0.9
+    edge = (d > 26.0) & (d < 30.0)
+    assert big[edge].mean() < big[centre] - 0.2 and cap[centre] < 0.6
+
+
 def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):
     """The start's climate correction of the ice surface (anchor) applies
     where ice lies: once the starting ice has melted, its cells (and the
