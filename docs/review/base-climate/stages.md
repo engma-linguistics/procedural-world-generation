@@ -650,3 +650,60 @@ a5a387 8.3/16.9 → 9.4/17.0, dad91b 15.3/0.87 → 15.6/0.96, c00ebf 8.9/9.4 →
 - `draft-run-lakes-test-chaotic.md` (needs-decision): the chaotic lakes test that blocks the merge.
 
 Attempts used on PW-582: 1 of 3. The handoff is `handoff-A7.md`.
+
+## PW-582, attempt 2 of 3 (lane A8): the inflow's salinity mixes on its way
+
+**Result: a mechanism fix with small regressions; the bar is not met and it is not merge-ready.**
+- The Barents doesn't move (−13.7). Fennoscandia −7.9 → −8.2 (bar ±6), Iceland −10.3 → −10.6 (bar −7.8), the Nordic
+  Seas box −4.2 → −5.5.
+- Earth's north is healthier on the stage-1 bar: 9.78 → 10.21 Sv, open polar share 70% → **73%**.
+- `uv run pytest -q`: one test fails unchanged, `test_timezoom_consistency::test_ice_at_index_zero_is_the_runs`
+  (−26.0 m against 25). Its fixture is a 300 Myr L5 run, and the change gives a different world (6 plates against 13,
+  sea level −314 m against +5), so the failure says nothing about the change
+  (`issue-tracking/inbox/draft-timezoom-index-zero-test-chaotic.md`, needs-decision). The goldens are regenerated
+  on purpose.
+- **Harness change (coordinator's ruling 1):** `test_store::test_run_lakes` searches 60 steps for a frame with lakes
+  instead of 20. Every assertion is unchanged; it passes. `draft-run-lakes-test-chaotic.md` is deleted.
+
+Outputs are in `laneA8/` (`*_smix.txt`); the before files are `laneA7/*_pw582.txt`.
+
+### What changed (`planet/ocean.py`, one line)
+The inflow's temperature relaxes toward the latitude's sea temperature at `moc_lambda` over `moc_width` (~0.4 Sv per
+220 km cell). That exchange with the surrounding water carried heat but not salt, so the Nordic inflow kept the
+subtropics' 35.6–36.1 psu (observed ~35.2). Its salinity now relaxes toward the surface water it passes at the same
+rate. As a lateral eddy diffusivity over `moc_layer_m` and `moc_width` that is ~1000 m²/s, inside the ~500–2000 m²/s
+observed for boundary currents. No new constant. The Nordic inflow is now 35.0–35.5 psu.
+
+### Option B, measured and not written
+A site can sink no more than its heat loss turns the arriving inflow into deep water (Walin 1982). With the model's
+own air-sea exchange, even cooling the inflow all the way to freezing, the cap binds on 4 of 85 northern sinking
+cells, 0.38 Sv of 10.1 (`scratchpad/laneA8/walin.py`). It would change almost nothing.
+
+### What locks the Barents (`draft-barents-still-frozen-after-pw582.md`, updated)
+1. `moc_sill` (300 m) makes the Barents shelf (230–300 m on the L5 grid east of 30E) a strait the inflow can't
+   enter. The rule is meant for Bering (40 m on that grid).
+2. Let in (sill 150 m, an experiment), the inflow reaches the SW Barents but arrives at −0.4 to +1 C (observed
+   4–6 C), because its branch carries only what sinks in the Barents (~1 Sv) and cools within a cell or two. On
+   Earth that branch flows on into the Arctic and sinks there.
+   With sill 150 m and this change: Fennoscandia −7.5, Iceland −8.9, Nordic −3.2, the Barents −13.6.
+
+### The bars (Earth L6)
+| line | attempt 1 (ee0cc87) | attempt 2 |
+|---|---|---|
+| Fennoscandia coldest-month bias (bar ±6) | −7.9 | −8.2 |
+| Iceland (bar: no worse than −7.8) | −10.3 | −10.6 |
+| Nordic Seas / Barents coldest-month bias | −4.2 / −13.7 | −5.5 / −13.7 |
+| Norwegian coast sea air (NCEP ~+3.5); open in winter; SST | +2.0; 100%; 2.7 | +1.4; 100%; 2.4 |
+| Nordic / Irminger / Labrador / Baffin (Sv) | 4.09 / 1.16 / 1.38 / 2.70 | 4.02 / 1.53 / 1.77 / 2.42 |
+| Earth NH Sv, open polar share; SH | 9.78, 70%; 2.42 | **10.21, 73%**; 2.43 |
+| log-rain r / Köppen group / exact; cities | 0.622 / 70 / 31; 32/29/17 | 0.622 / 70 / 31; 32/29/17 |
+| Labrador Sea / Baffin Bay; Hudson Bay | +5.8; +7.6 | +6.2; +7.6 |
+
+Reykjavik −10.2 → −10.3 (obs −2.3), Nuuk −21.3 → −20.6 (obs −19.2).
+
+**Generated worlds**, NH / SH Sv (attempt 1 → 2): 119973 17.5/18.0 → 16.0/16.6, 28442c 18.7/17.6 → 17.3/16.0,
+607540 17.6/16.6 → 16.3/13.9, 81aced 18.5/13.6 → 15.0/12.0, 7082f5 7.5/6.8 → 8.1/8.2, d14b89 16.5/18.7 → 16.3/18.4,
+a5a387 9.4/17.0 → 9.5/15.9, dad91b 15.6/0.96 → 13.7/0.87, c00ebf 13.4/6.5 → 12.0/7.1. All sink in both hemispheres
+and weaken by ~1–2 Sv, as fresher inflow should. dad91b's south is PW-579's.
+
+Attempts used on PW-582: 2 of 3.

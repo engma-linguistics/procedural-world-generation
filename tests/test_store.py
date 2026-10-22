@@ -47,7 +47,7 @@ def test_run_lakes(sim4):
     from planet import hydrology as H
     from planet.tectonics import Simulation
     sim = sim4
-    for _ in range(20):  # (on 2.5k cells lakes come and go: step a copy on until there are some)
+    for _ in range(60):  # (on 2.5k cells lakes come and go: step a copy on until there are some)
         if (sim.snapshot().lake_kind > 0).any():
             break
         if sim is sim4:

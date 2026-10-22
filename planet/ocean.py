@@ -433,11 +433,19 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # All sites' routes at once. The inflow is a layer hundreds of m deep: it
     # gives its heat up to the air (moc_lambda W/m2 per C over moc_width km)
     # only slowly, and the rain and rivers on its way barely dilute it.
+    # Its temperature's relaxation is taken as an exchange of water with the
+    # sea it passes, and that exchange carries salt as well as heat: the
+    # inflow's salinity relaxes toward the surface water's at the same rate
+    # (PW-582; ~0.4 Sv per 220 km cell, as a lateral eddy diffusivity of
+    # ~1000 m2/s over moc_layer_m and moc_width, within the ~500-2000 m2/s
+    # observed for boundary currents). Without it the Nordic inflow kept the
+    # subtropics' 35.6-36.1 psu against the ~35.2 observed.
     Tr = _route(order, par, sinking)
     Q = Tr * SV
     hw = h * 1000.0 * tune["moc_width"] * 1000.0  # m2: the route's area per cell
-    t_in = _along(order, par, Q, t_eq, sst, tune["moc_lambda"] * hw / 4.1e6, np.zeros(n))
-    s_in = _along(order, par, Q, sss, sss, 0.0, np.maximum(fresh, 0.0) / 3.156e7 * hw)
+    mix = tune["moc_lambda"] * hw / 4.1e6  # m3/s per cell
+    t_in = _along(order, par, Q, t_eq, sst, mix, np.zeros(n))
+    s_in = _along(order, par, Q, sss, sss, mix, np.maximum(fresh, 0.0) / 3.156e7 * hw)
     # spread over the route's width; where it carries more than ~moc_q0 Sv
     # per km of width, the surface water is mostly the inflow
     norm = np.maximum(_smooth(grid, sea.astype(float), tune["moc_km"]), 1e-6)
