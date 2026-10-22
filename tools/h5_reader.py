@@ -107,25 +107,78 @@ def _symbol_table(src, btree: int, heap: int) -> dict[str, int]:
     return out
 
 
+def _link(b: bytes, links: dict, q: int = 0) -> int:
+    """Parse one link message at b[q:] into links (hard links only); returns its length."""
+    fl, q0 = b[q + 1], q
+    q += 2
+    soft = bool(fl & 8 and b[q] != 0)
+    q += 1 if fl & 8 else 0
+    q += 8 if fl & 4 else 0
+    q += 1 if fl & 0x10 else 0
+    nl = int.from_bytes(b[q:q + (1 << (fl & 3))], "little")
+    q += 1 << (fl & 3)
+    if soft:  # soft / external link: a 2-byte length, then its value
+        return q + nl + 2 + int.from_bytes(b[q + nl:q + nl + 2], "little") - q0
+    links[b[q:q + nl].decode()] = struct.unpack("<Q", b[q + nl:q + nl + 8])[0]
+    return q + nl + 8 - q0
+
+
+def _dense_links(src, heap: int) -> dict[str, int]:
+    """A new-style dense group (link info message): its link messages are the managed objects of a fractal
+    heap, read block by block in order (a freshly written file's objects are packed from each block's start)."""
+    h = src.read(heap, 160)
+    if h[:4] != b"FRHP" or h[4] != 0:
+        raise ValueError("unsupported HDF5 fractal heap")
+    flags = h[9]
+    if struct.unpack("<H", h[7:9])[0]:
+        raise ValueError("filtered HDF5 fractal heaps unsupported")
+    width = struct.unpack("<H", h[110:112])[0]
+    start, max_direct = struct.unpack("<QQ", h[112:128])
+    off_bytes = (struct.unpack("<H", h[128:130])[0] + 7) // 8
+    root, rows = struct.unpack("<Q", h[132:140])[0], struct.unpack("<H", h[140:142])[0]
+    head = 5 + 8 + off_bytes + (4 if flags & 2 else 0)
+    blocks = []
+    if rows == 0:
+        blocks.append((root, start))
+    else:
+        ib = src.read(root, 5 + 8 + off_bytes + 8 * width * rows)
+        if ib[:4] != b"FHIB":
+            raise ValueError("unsupported HDF5 fractal heap indirect block")
+        p = 5 + 8 + off_bytes
+        for r in range(rows):
+            size = start * (1 << max(r - 1, 0))
+            if size > max_direct:
+                break  # (nested indirect blocks: not needed for a group's few links)
+            for _ in range(width):
+                a = struct.unpack("<Q", ib[p:p + 8])[0]
+                p += 8
+                if a != 0xFFFFFFFFFFFFFFFF:
+                    blocks.append((a, size))
+    links = {}
+    for addr, size in blocks:
+        b = src.read(addr, size)
+        if b[:4] != b"FHDB":
+            raise ValueError("unsupported HDF5 fractal heap direct block")
+        q = head
+        while q < size - 4 and b[q] == 1:  # (link message version 1; free space is zeros)
+            q += _link(b, links, q)
+    return links
+
+
 def _links(src, ohdr: int) -> dict[str, int]:
-    """Name -> object header address of a group's members (compact links or a symbol table)."""
+    """Name -> object header address of a group's members (compact links, a symbol table or a dense group)."""
     links = {}
     for t, b in _messages(src, ohdr):
         if t == 0x11:
             links.update(_symbol_table(src, *struct.unpack("<QQ", b[:16])))
-        if t != 6:
-            continue
-        fl, q = b[1], 2
-        if fl & 8 and b[q] != 0:
-            continue  # soft / external link
-        q += 1 if fl & 8 else 0
-        q += 8 if fl & 4 else 0
-        q += 1 if fl & 0x10 else 0
-        nl = int.from_bytes(b[q:q + (1 << (fl & 3))], "little")
-        q += 1 << (fl & 3)
-        links[b[q:q + nl].decode()] = struct.unpack("<Q", b[q + nl:q + nl + 8])[0]
+        if t == 2:  # link info: a dense group's fractal heap
+            heap = struct.unpack("<Q", b[2 + (8 if b[1] & 1 else 0):][:8])[0]
+            if heap != 0xFFFFFFFFFFFFFFFF:
+                links.update(_dense_links(src, heap))
+        if t == 6:
+            _link(b, links)
     if not links:
-        raise ValueError("no compact links or symbol table in the group (dense groups unsupported)")
+        raise ValueError("no links in the group")
     return links
 
 

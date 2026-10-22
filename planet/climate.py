@@ -1925,7 +1925,8 @@ def biomes(elev: np.ndarray, temp: np.ndarray, precip: np.ndarray,
 def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
             ice: np.ndarray | None = None, tune: dict | None = None, melt: np.ndarray | None = None,
             moc_start: dict | None = None, veg: dict | None = None, orbit_dt: np.ndarray | None = None,
-            ice_air: np.ndarray | None = None, rain_start: dict | None = None) -> dict:
+            ice_air: np.ndarray | None = None, rain_start: dict | None = None,
+            ice_cold: np.ndarray | None = None) -> dict:
     """The whole climate for one moment: elevation (m above the current sea
     level; <= 0 is sea unless grounded ice is on it: geo.is_land), the global
     temperature offset dT from today's Earth, axial tilt and land ice (m).
@@ -1982,6 +1983,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     ice_air: the land ice (m) whose own cold air the winds carry (default
     ice; the time zoom passes its ice here with elevation as the ice's
     surface and no ice, since its own surface rule takes the ice's year).
+    ice_cold: the share (0..1) of each ice cell's summer its surface stays
+    frozen (icemass.cold_share; None: all of it), the share of its air that
+    is the sheet's cold air (icemass.air_mass; the time zoom's).
     Order: a first guess of temperatures by latitude, height and distance
     from the sea -> seasonal winds from the land-sea contrast -> ocean
     currents and sea-surface temperature -> air temperatures carried by the
@@ -2042,7 +2046,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # default `ice`; the time zoom's elevation already has its ice on, and it passes that ice here)
     ice_air = np.where(land, ice, 0.0) if ice_air is None else np.where(land, ice_air, 0.0)
     from .icemass import air_mass
-    damp_air = air_mass(grid, ice_air) if (ice_air > 1).any() else np.zeros(n)
+    damp_air = air_mass(grid, ice_air, cold=ice_cold) if (ice_air > 1).any() else np.zeros(n)
     air = dict(grid=grid, ocean=ocean, temp0=temp0, lift=lift, t_sea_air=t_sea_air, t_sea=t_sea, s=s,
                sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air)
     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)

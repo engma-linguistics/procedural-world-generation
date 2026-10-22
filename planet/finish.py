@@ -227,8 +227,16 @@ def orbit_dt(run: dict, st: dict) -> np.ndarray:
     s = st["stats"]
     grid = build_grid(m["level"])
     land = st["elevation"] + st["ice"] > 0  # (the time zoom's land: grounded ice on a sunk bed included)
-    d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), m["params"].get("tilt", 23.4),
-                         p, land, st["ice"], earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
+    tilt = m["params"].get("tilt", 23.4)
+    own = None
+    if p.orbit_resp == "seasons":  # (each cell's own response to the orbit, its seasons', PW-459: from the frame's
+        # climate at the mean orbit, the bare ground's under its ice)
+        from . import climate, icemass
+        gw, gc, _ = climate.compute(grid, st["elevation"] + st["ice"], st["dT"], tilt,
+                                    np.where(land, st["ice"], 0.0))["ground"]
+        own = icemass.seasonal_k(grid.lat, gw, gc, tilt)
+    d = TZ.orbit_anomaly(grid, (s["obliquity"], s["eccentricity"], s["perihelion"]), tilt,
+                         p, land, st["ice"], own, earth=m["source_run"] == "earth", phases=m.get("orbit_phases_deg"))
     bright = np.clip(st["ice"] / p.snow_h, 0, 1)  # (the anchor corrects the ice's climate: where ice lies, PW-035)
     for i, v in m.get("anchor", []):
         d[i] += v * bright[i]
