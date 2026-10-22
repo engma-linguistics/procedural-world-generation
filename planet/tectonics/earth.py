@@ -46,6 +46,22 @@ def target_fraction(p, t: float) -> float:
         -t / p.continental_growth)
 
 
+def weathering(sim, land):
+    """The silicate weathering sink per cell (model units: km of rock per step, times the factors) and
+    its parts, for global_temperature and the diagnostics: (sink, supply, temperature factor, plant
+    factor). The supply is what bare ground lost to erosion (sim.weathered: not under land ice, where
+    glaciers grind their beds fast but the rock flour hardly weathers chemically in the cold, and
+    counting it made a cold era draw down more CO2 the more ice it grew)."""
+    supply = sim.weathered * land
+    # chemical weathering: faster when warm (and so wetter); the weathering thermostat (Walker et al.
+    # 1981): a cold planet weathers slower, CO2 builds up and warms it back (PW-235)
+    warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else np.ones_like(supply)
+    # roots and soil CO2 speed it up, in proportion to how much grows there
+    # (GEOCARB's biological weathering factor)
+    plants = 1 + 0.5 * np.clip(sim.npp / 800.0, 0, 1.5)
+    return supply * (warm * plants), supply, warm, plants
+
+
 def global_temperature(sim, growth, newc, rng):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Three things move it, slowly (tens of Myr):
@@ -66,16 +82,8 @@ def global_temperature(sim, growth, newc, rng):
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
-    # chemical weathering: faster when warm (and so wetter); the weathering thermostat (Walker et al.
-    # 1981): a cold planet weathers slower, CO2 builds up and warms it back (PW-235)
-    warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else 1.0
-    # roots and soil CO2 speed it up, in proportion to how much grows there
-    # (GEOCARB's biological weathering factor)
-    warm = warm * (1 + 0.5 * np.clip(sim.npp / 800.0, 0, 1.5))
     source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
-    # (not under land ice: glaciers grind their beds fast, but the rock flour hardly weathers chemically
-    # in the cold, and counting it made a cold era draw down more CO2 the more ice it grew)
-    sink = float((sim.weathered * land * warm).sum()) / sim.scale**2
+    sink = float(weathering(sim, land)[0].sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the rates start from the first real ones)
         now = np.array([max(source, 1e-6), sink])
         # the noisy per-step rates, smoothed over ~10 Myr (before the logs: a log of a noisy rate averages

@@ -57,7 +57,29 @@ class Recorder:
             "drift": round(float(sim.drift), 3), "co2": round(float(sim.co2), 3), "co2_term": round(float(co2_term), 3),
             "co2_term_free": round(p.co2_sensitivity * float(sim.co2), 3), "albedo_term": round(float(albedo_term), 3),
             "offset": p.climate_offset, "source_raw": float(source), "sink_raw": float(sink),
-            "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4)}
+            "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
+            **self._sink_parts(sim)}
+
+    @staticmethod
+    def _sink_parts(sim) -> dict:
+        """The weathering sink split into its parts (PW-572), so that sink = supply x temperature factor x
+        plant factor exactly: the ice-free land's share of the surface (w_area), the erosion supply from
+        it (w_supply, model units, as sink_raw), the supply-weighted plant factor (w_plant) and the
+        temperature factor weighted by supply and plants (w_temp); and, to see what the factors read, the
+        supply-weighted local temperature (w_T, C) and runoff (w_q, mm/yr) and the mean erosion rate of
+        the eroding land (w_rate, km/Myr = mm/yr)."""
+        from . import earth
+        land = sim.land()
+        w, supply, warm, plants = earth.weathering(sim, land)
+        s, sp = float(supply.sum()), float((supply * plants).sum())
+        free = land & (sim.ice <= 0)
+        out = {"w_area": round(float(free.mean()), 4), "w_supply": s / sim.scale**2,
+               "w_plant": round(sp / s, 4) if s > 0 else None, "w_temp": round(float(w.sum()) / sp, 4) if sp > 0 else None}
+        if s > 0 and sim.temp is not None:
+            out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
+            out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
+        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)
+        return out
 
     def step(self, sim) -> None:
         """At the end of each step (the caller's on_step): the step's temperature record plus the
