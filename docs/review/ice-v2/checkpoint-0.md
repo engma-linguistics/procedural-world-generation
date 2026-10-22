@@ -151,3 +151,33 @@ interglacial edge and the zoom grows 116 m. Cycles are 86–116 kyr everywhere, 
 - **The default planet is icier than Earth's long-run history:** dT 0 is today's icehouse Earth, and the thermostat
   pulls back toward its own mean, so a default planet spends ~60% of its time in an icehouse (Earth ~10–30%). That is
   base assumption A0 in the criteria. Whether that's a bug or a preference is the owner's call (draft).
+
+## Addendum (stage 1 lane, 2026-10-22): the Earth items, measured on main 4f36c68
+
+Run from a worktree with the Earth cache symlinked (`data -> main checkout's data/`). New tool
+`tools/tz_earth.py` (the Earth zoom bars: cycles, maxima, give-back within 15 kyr, interglacial ice share
+of land, the Laurentide). L6, 600 kyr, index on, real ice with `anchor=obs`; an interglacial cut off by the
+zoom's end isn't counted.
+
+| Earth zoom (main) | cooling | cycles kyr | glacial maxima m | give-back in 15 kyr | interglacial ice % of land | Laurentide at max | bars failed |
+|---|---|---|---|---|---|---|---|
+| default | 6.49 C | 98.5–108.5 | −84 .. −104 | 0.65–0.89 | 9.1–11.9 | 8.2 Mkm2 to 42.5 N | cooling > 6 C |
+| `glacial_cool=6` | 5.99 | same | −73 .. −89 | 0.68–0.90 | 9.1–11.7 | 8.0 to 42.7 N | maxima (−73 m) |
+| `baseline=obs` | 5.55 | 93.5–113 | −50 .. −64 | 0.27–0.78 | 9.4–11.4 | 7.9 to 48.1 N | maxima, give-back |
+| `baseline=obs glacial_cool=6` | 5.13 | same | −43 .. −60 | 0.22–0.80 | 9.4–11.2 | 7.8 to 47.7 N | maxima, give-back |
+
+So on main Earth meets every bar only at 6.5 C (the over-ask the review wants gone); at 6 C its first
+glacial is −73 m. `tools/tz_mean.py earth` (400 kyr): mean −43 m after 100 kyr against the start (tol 28;
+Earth starts at its interglacial edge, as expected for a real interglacial start, not a run's mean).
+
+**Earth hysteresis staircase on main** (`tools/ice_probe.py --stair 0 -2 ... -12 ... 6 --iters 3`, the run's
+ice rule on today's Earth):
+
+| dT | 0 | −4 | −8 | −12 | −8 back | −4 back | 0 back | +2 | +4 | +6 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ice sea level m | −50 | −79 | −182 | −255 | −245 | −195 | **−141** | −79 | −48 | −1 |
+| iced % of land | 8.0 | 13.5 | 30.8 | 41.9 | 39.6 | 31.6 | **23.3** | 12.5 | 7.0 | 0.3 |
+
+Today's ice holds at dT 0 (8.0% of land; the bar's 20%). The cold leg's extra ice doesn't go: back at dT 0
+the planet keeps −141 m: 91 m of the cold era's extra 205 m is left (56% gone), against the bar's ≥ 80% gone within 2
+updates; the cold leg's ice goes only at dT +4..+6 C. That's the run rule's hysteresis (stage 3's job).
