@@ -706,4 +706,11 @@ Reykjavik −10.2 → −10.3 (obs −2.3), Nuuk −21.3 → −20.6 (obs −19.
 a5a387 9.4/17.0 → 9.5/15.9, dad91b 15.6/0.96 → 13.7/0.87, c00ebf 13.4/6.5 → 12.0/7.1. All sink in both hemispheres
 and weaken by ~1–2 Sv, as fresher inflow should. dad91b's south is PW-579's.
 
-Attempts used on PW-582: 2 of 3.
+**Scorecard** (`docs/scorecard.jsonl`, commit fb332ca, L6, 1000 Myr; against abe4838, PW-575, since attempt 1 had none):
+- Earth: group 70.3, exact 30.8, log-rain 0.622, all unchanged;
+- seed 1: dry 20.1 → 16.7% / ice 3.1 → 5.6 / NPP 331 → 292 / trees 17.9 → 27.2;
+- seed 2: dry 22.6 → 24.9% / ice 0.7 → 2.2 / NPP 385 → 320 / trees 19.8 → 18.0.
+
+These are single chaotic snapshots. NPP falls on both seeds by 10–17%, and ice rises on both.
+
+Attempts used on PW-582: 2 of 3. The handoff is `handoff-A8.md`.
