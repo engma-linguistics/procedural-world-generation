@@ -174,13 +174,13 @@ So the balance is taken at the end of the spin-up.
 
 | | main | att. 1: kept at 300 Myr | att. 2: kept once erosion settles | att. 3: att. 1 + relief term |
 |---|---|---|---|---|
-| CO2 answer, trends out, median C/C | +0.22 | **+0.44** | +0.32 | see handoff-B |
-| in 0.35-0.9 | 2/10 | **7/10** | 4/10 | |
-| CO2 term against drift-made dT | 8/10 | **10/10** | 10/10 | |
-| N1-N4 pass | 5/10 | 5/10 | 5/10 | |
-| icehouse share, median (in 15-45%) | 58% (3) | 66% (1) | 58% (2) | |
-| mean dT after 300 Myr, median | −1.4 | −0.9 | −0.9 | |
-| fails | deep eras 192-276 Myr (2, 13, 99, 3199); share | deep eras 156-340 Myr (2, 5, 11); share (13, 3199) | share 77-93% (1, 13, 99); 5% (21); icehouse 316 Myr (2) | |
+| CO2 answer, trends out, median C/C | +0.22 | **+0.44** | +0.32 | +0.28 |
+| in 0.35-0.9 | 2/10 | **7/10** | 4/10 | 3/10 |
+| CO2 term against drift-made dT | 8/10 | **10/10** | 10/10 | 10/10 |
+| N1-N4 pass | 5/10 | 5/10 | 5/10 | **8/10** |
+| icehouse share, median (in 15-45%) | 58% (3) | 66% (1) | 58% (2) | **35% (5)** |
+| mean dT after 300 Myr, median | −1.4 | −0.9 | −0.9 | +0.9 |
+| fails | deep eras 192-276 Myr (2, 13, 99, 3199); share | deep eras 156-340 Myr (2, 5, 11); share (13, 3199) | share 77-93% (1, 13, 99); 5% (21); icehouse 316 Myr (2) | icehouse 304 Myr (42); share 2% (7) |
 
 **Attempt 1** (references kept from 300 Myr):
 - The thermostat reaches the bar: 7/10 in band, median +0.44, and on every seed the CO2 term runs against the
@@ -200,8 +200,18 @@ So the balance is taken at the end of the spin-up.
 - The ice-free share, the temperature factor and the plants stay measured against the kept balance.
 - So the cold era's deficit from ice and cold is kept, while the relief's slow build-up doesn't drift the climate.
 - The cost: the runoff part of the brake (~0.018 per C of 0.05-0.08) is partly forgotten over long eras.
-- The sweep was running when the coordinator paused the machine; see `handoff-B.md`.
+- **Result:**
+  - N1-N4 pass on 8/10, the multi-seed bar. Every deep era ends; the longest is 128 Myr (seed 42).
+  - The icehouse share's median is 35%, with 5/10 seeds in 15-45%. Seeds 7, 21 and 5 are too warm (2%, 8%, 14%);
+    seed 42 has an icehouse of 304 Myr.
+  - The CO2 answer is +0.28 C/C median with the trends out (+0.30 with them), 3/10 in 0.35-0.9. It runs against
+    drift-made dT on 10/10 seeds.
+- The thermostat lands a little under the owner's "close enough" (0.35). Its spread is ±0.1 per seed from 17
+  independent drift samples, and per seed the sink's own fb is 0.0-1.2 (median 0.41).
+- The planets now run warm. The mean dT after 300 Myr is +0.9, and the CO2 index rises late on 7/10 seeds: the source
+  creeps up (+0.3-0.5 e-folds over 2 Gyr), and the relief term forgets part of the sink's rise.
+- So the set point (PW-559) may only need to be small, or none, on this stock. Judge that on its own sweep.
+- Results: `laneB2/stock3/` in the session scratch.
 
-**What remains is mostly N3, the icehouse share: the set point's job (PW-559).** Every attempt leaves the
-median icehouse share at 58-66%. The stock fixes the brake; it can't move the planet's mean state, because dT = 0 is
+**What remains.** Attempts 1-2 left the median icehouse share at 58-66%; attempt 3's relief term brings it to 35%. The stock fixes the brake; it can't move the planet's mean state, because dT = 0 is
 today's icehouse Earth. The relief spin-up is a surface/setup issue (inbox draft `draft-relief-spinup-erosion-rise`).

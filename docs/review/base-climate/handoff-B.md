@@ -1,7 +1,6 @@
 # Base-climate lane B: handoff (stage 2, the CO2 stock), 2026-10-22
 
-Branch `worktree-agent-adf7ab7eab37416aa`, merged with main at 2684f2b. **Nothing is committed yet.** The working
-tree holds attempt 3 of the stock. Read `thermostat.md` section "Stage 2" first.
+Branch `worktree-agent-adf7ab7eab37416aa`, merged with main at 2684f2b. Attempt 3 of the stock is committed (WIP fb04857 plus the results commit). Read `thermostat.md` section "Stage 2" first.
 
 ## State
 - Code (uncommitted):
@@ -25,19 +24,36 @@ tree holds attempt 3 of the stock. Read `thermostat.md` section "Stage 2" first.
     attempt 1's code).
 - Not yet run: `tools/scorecard.py`, `tools/health.py` on the sweep, the commit.
 
-## Deciding on attempt 3 (the stage's last attempt)
-- **Merge-ready if:**
-  - the trends-out CO2 answer has a median ≥ ~0.35 and the term runs against drift-made dT on ≥ 8/10;
-  - the deep eras end: N1 fails on ≤ 2 seeds.
+## Attempt 3's result (sweep finished after the pause; committed)
 
-  N3 (the share) is expected to fail. That is PW-559's job, the next stage.
-  Then: update the golden, run scorecard and health, fill the attempt 3 column in thermostat.md, and commit with the
-  owner's identity and trailers.
-- **If it doesn't pass:** attempt 1's code (REF_FREEZE alone, no relief term) is the cleanest "set once" stock, and
-  its thermostat passes; its deep eras come from the relief spin-up (the inbox draft). Write a needs-decision draft:
-  - A: attempt 1 + fix the start's relief (surface lane);
-  - B: attempt 3's relief term;
-  - C: attempt 2's settling freeze.
+| seed | N1-N4 | icehouse % | deep longest Myr | CO2 answer C/C | sink fb | mean dT |
+|---|---|---|---|---|---|---|
+| 1 | ok | 37 | 100 | +0.10 | 0.30 | +0.6 |
+| 2 | ok | 49 | 68 | +0.14 | 0.34 | −0.3 |
+| 5 | ok | 14 | 0 | −0.01 | 0.48 | +2.6 |
+| 7 | F (share 2%) | 2 | 0 | +0.41 | 0.68 | +5.4 |
+| 11 | ok | 34 | 0 | +0.58 | 0.60 | +1.2 |
+| 13 | ok | 39 | 40 | +0.21 | 0.21 | +0.2 |
+| 21 | ok | 8 | 0 | +0.50 | 0.01 | +4.0 |
+| 42 | F (icehouse 304 Myr) | 47 | 128 | −0.07 | 0.31 | +0.1 |
+| 99 | ok | 37 | 0 | +0.77 | 1.06 | +0.5 |
+| 3199 | ok | 33 | 0 | +0.39 | 1.16 | +2.2 |
+| **median** | **8/10** | **35** (5 in 15-45) | | +0.30 (trends out +0.28; 3/10 in band) | 0.41 | +0.9 |
+
+(The per-seed CO2 answer here is with the trends in; the summary's trends-out median is +0.28. Against drift-made
+dT: 10/10.)
+
+What the next agent does:
+1. Golden update, scorecard and health on `laneB2/stock3`.
+2. Then the merge.
+
+The owner should see:
+- the relief term departs from "set once";
+- the thermostat sits at ~0.3 C/C, a little under "close enough";
+- the share bar holds on 5/10 seeds (the bar asks ~7/10), with three planets too warm.
+
+PW-559 now looks like it needs, if anything, a *spread* fix rather than a warmer set point; measure it before
+building one.
 
 ## Next stages
 - **PW-559 (set point).** Every attempt leaves the icehouse share at a median of 58-66%, with only 1-3 seeds in
