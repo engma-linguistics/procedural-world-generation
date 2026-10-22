@@ -1,0 +1,207 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index de0f374..5a29520 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1536,7 +1536,14 @@ TUNE = dict(
+     # temperature
+     continental=24.0,  # C: seasonal half-swing of land left to itself (times season strength)
+     coast=0.35,  # sea air at a coast per share of sea neighbours (sea breezes, fog)
+-    air_km_s=450.0,  # km over which air over land takes on the land's summer temperature
++    sum_tau=86400.0,  # s: the summer air's memory over land: the sunlit, convective boundary layer takes up the
++    # ground's heat in about a day (its daily cycle), so the air reaches U x this inland before it is the land's
++    # (~450 km in a 5 m/s wind), and the land's own seasonal swing needs as long over land to build up (PW-573)
++    sum_h=1500.0,  # m: ... the depth of that boundary layer, which the day's sensible heat warms (encroachment:
++    # h = sqrt(2 H tau / (rho c_p gamma)) ~1500 m for ~80 W/m2 into a free troposphere of ~5 K/km)
++    ef_ref=0.52,  # the summer's evaporation / ground sunshine the temperature curve stands for, as a share of a
++    # wet surface's at that temperature (Priestley-Taylor's 1.26 x s / (s + gamma)) ...
++    cloud_ref=0.63,  # ... and its summer cloud cover (Earth's ice-free land 20-60 deg, as albedo_ref)
+     air_km_w=900.0,  # km: how far the air that came off land reaches over the sea (_sea_half's land_air)
+     air_m=1000.0,  # m: the depth of the winter air mass over land (to ~850 hPa, which the storms mix): its heat
+     # capacity against ice_b sets how long it keeps the sea's warmth over land; higher ground cuts it off
+@@ -1547,8 +1554,8 @@ TUNE = dict(
+     # seasonal sunshine for its ~24 C half-swing; perennial ice ~3 m: 1/6 of the way to the water, a 1 m pack 1/3)
+     open_b=30.0,  # W/m2 per C: the heat open water gives the cold air over it (turbulent and longwave; leads,
+     # polynyas and the open part of a freezing sea: a pack 15% open keeps its air ~10 C nearer the water's)
+-    evap_cool=1.5,  # C: how much cooler wet summers are (and hotter dry ones) ...
+-    evap_r=(0.05, 0.75),  # ... by the summer's actual / potential evaporation: hottest below, coolest above
++    evap_cool=1.5,  # C: how much cooler wet summers are (and hotter dry ones), for the rain kernel's own showers
++    # (the temperatures' own: _summer_split)
+     # the vegetation's feedbacks (vegetation_feedbacks, albedo_warming; tuned on Earth: tools/veg_check.py)
+     veg_w=1.0,  # Budyko w per unit of woody cover ...
+     veg_w_deep=0.3,  # ... plus this per unit of deep-rooted evergreen tree cover ...
+@@ -2154,6 +2161,18 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     sea_evap = np.where(ocean, 0.5 * (e_jul + e_jan) * scale, 0.0)
+     fin = dict(land=land, north=north, p_jul=p_jul, p_jan=p_jan, ice=ice, ocean=ocean, tune=tune,
+                cover=_sheet_cover(grid, np.where(land, ice, 0.0)), lat=grid.lat, tilt=tilt, fb=fb)
++    qm_jul, qm_jan = (vapour_mixed(grid, q, d_["qs"], d_["t_air"], tune) for q, d_ in zip((q_jul, q_jan), s_in))
++    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [qm_jul, qm_jan], [p_jul, p_jan], tune,
++                                                        ocean)
++    # The summer's surface energy split (_summer_split): with the rain, the
++    # clouds and the evaporation known, the land's summer air is warmed by
++    # the sensible heat the ground has left, so cloudy, wet summers stay
++    # cooler and sunny, dry ones get hotter. (The rain came before, on the
++    # first pass's temperatures.)
++    wb0 = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
++    air["d_sum"] = np.where(land & (ice <= 0), _summer_split(grid.lat, tilt, north, wb0["aet_half"],
++                                                             np.where(north, cloud_jul, cloud_jan), t_warm, tune), 0.0)
++    t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
+     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
+     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+ 
+@@ -2211,10 +2230,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+              np.maximum(sst - swing * np.where(north, half_w, sum_half), FREEZE))
+     tm = 0.5 * (t_warm + t_cold)
+     dt = hk * (np.where(north, t_warm, t_cold) - tm)
+-    q_jul, q_jan = (vapour_mixed(grid, q, d["qs"], d["t_air"], tune) for q, d in zip((q_jul, q_jan), s_in))
+-    (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(q_jul, tm + dt, tune), humidity(q_jan, tm - dt, tune)
+-    (cloud_jul, sun_jul), (cloud_jan, sun_jan) = clouds(grid, elev, s_in, [q_jul, q_jan], [p_jul, p_jan], tune,
+-                                                        ocean)
++    (dew_jul, rh_jul), (dew_jan, rh_jan) = humidity(qm_jul, tm + dt, tune), humidity(qm_jan, tm - dt, tune)
+     day_jul, day_jan = day_hours(grid.lat, tilt)
+     # lakes: Penman's open water, on the clouds and the air's humidity (PW-358)
+     wb["lake_evap"] = np.where(land, open_water_evap(grid.lat, temp, t_warm, t_cold, rh_jul, rh_jan, cloud_jul,
+@@ -2245,7 +2261,7 @@ def _orbit(temps, orbit_dt, north):
+ 
+ 
+ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune, damp_air,
+-               half_w=None):
++               half_w=None, d_sum=None):
+     """Each place takes on the temperature of the air the wind brings it.
+     Air over land drifts toward the land's own temperature for the
+     season (land holds little heat: hot summers, cold winters) over a few
+@@ -2275,11 +2291,22 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
+     t_land = temp0 + lift  # (carried at sea level; heights are taken off after)
+     frozen = np.minimum(t_sea_air - t_sea, 0)  # how far below freezing the latitude's sea would be
+     sea_sum = np.maximum(sst + frozen + _summer_half(sst, sea_half, half_w), FREEZE)
+-    land_sum = t_land + half_l * (1.0 - SUMMER_DAMP * damp_air)
+-    eq_s = np.where(ocean, sea_sum, land_sum)
+     h = _geom(grid)["h"]
+-    k_s = np.where(ocean, 0.0, np.exp(-h / tune["air_km_s"]))
+-    t_warm = carry(grid, v_sum, (1 - k_s) * eq_s, k_s, 4 * tune["air_km_s"], 0.25)
++    # The summer air relaxes toward the land's summer in time (sum_tau),
++    # not over a fixed distance: it reaches U x sum_tau inland. And the
++    # land's own swing (half_l, a big continent's) builds up only as long
++    # as the air has been over land: fetch is the share of its last
++    # ~sum_tau that the air spent over land (it fades over the sea as
++    # fast). So a narrow land in a steady wind keeps much of the sea's
++    # summer (Patagonia, New Zealand), and a continent's interior has its
++    # full swing (PW-573).
++    km_s = _summer_km(v_sum, h, tune)
++    k_s = np.exp(-h / km_s)
++    fetch = carry(grid, v_sum, (1 - k_s) * (~ocean), k_s, 4 * float(np.max(km_s)), 0.25)
++    land_sum = t_land + half_l * fetch * (1.0 - SUMMER_DAMP * damp_air) + (0.0 if d_sum is None else d_sum)
++    eq_s = np.where(ocean, sea_sum, land_sum)
++    k_s = np.where(ocean, 0.0, k_s)
++    t_warm = carry(grid, v_sum, (1 - k_s) * eq_s, k_s, 4 * float(np.max(km_s)), 0.25)
+     t_cold, open_w = _winter_air(grid, ocean, sst, t_land, half_l, half_w, sea_sum, v_win, h, tune, lift)
+     # right at a coast the sea's air mixes in anyway (sea breezes, fog; on land)
+     sea_n, open_n = _nbr_mean(grid, ocean.astype(float)), _nbr_mean(grid, open_w)
+@@ -2346,7 +2373,7 @@ def _winter_air(grid, ocean, sst, t_land, half_l, half_w, t_sum, v_win, h, tune,
+     is the stable case, warm air over colder ground; air colder than the
+     land's own winter (the trades' sea air reaching a tropical land) is heated
+     from below, mixes, and takes the land's temperature as fast as in summer
+-    (air_km_s). Over open water it relaxes toward the water's winter surface,
++    (_summer_km). Over open water it relaxes toward the water's winter surface,
+     faster (air_km_sea: the boundary layer takes up the water's heat). Over
+     a frozen sea it relaxes as over land, toward the land's winter, warmed by
+     the heat the water below conducts up through the ice: k_ice / h of the
+@@ -2371,8 +2398,8 @@ def _winter_air(grid, ocean, sst, t_land, half_l, half_w, t_sum, v_win, h, tune,
+     cut = np.maximum(z - tune["air_m"], 0.0) / tune["air_m"]
+     k_stable = np.exp(-h / air_km - cut)
+     # (air colder than the land's own winter is heated from below: it mixes and
+-    # takes the land's temperature as fast as in summer, air_km_s)
+-    k_mixed = np.exp(-h / tune["air_km_s"] - cut)
++    # takes the land's temperature as fast as in summer, _summer_km)
++    k_mixed = np.exp(-h / _summer_km(v_win, h, tune) - cut)
+     k_l = k_stable
+     k_o = np.exp(-h / tune["air_km_sea"])
+     t_lw = t_land - half_l  # land left to itself
+@@ -2393,9 +2420,61 @@ def _winter_air(grid, ocean, sst, t_land, half_l, half_w, t_sum, v_win, h, tune,
+         k_l = st * k_stable + (1 - st) * k_mixed
+         k = np.where(ocean, open_w * k_o + (1 - open_w) * k_l, k_l)
+         t_cold = carry(grid, v_win, (1 - k) * eq, k, 3 * float(air_km.max()), 0.25)
++    if (cut > 0).any():
++        # On the high ground itself the air is lifted over it, not cut off:
++        # it keeps what the wind brought (PW-581). The cut-off is for the air
++        # it passes on, so the cold pooled beyond the range stays.
++        k0 = st * np.exp(-h / air_km) + (1 - st) * np.exp(-h / _summer_km(v_win, h, tune))
++        up = _upstream(grid, v_win, t_cold)
++        hi = ~ocean & (cut > 0)
++        t_cold = np.where(hi, (1 - k0) * t_lw + k0 * up, t_cold)
+     return t_cold, open_w
+ 
+ 
++def _summer_km(v, h, tune):
++    """km: how far the summer air (and the winter air heated from below) reaches over land before it is the
++    land's: the wind's speed x sum_tau, but at least a cell (a cell's air is the mean over its width, so its
++    upwind half is still mostly its upwind neighbour's)."""
++    return np.maximum(U_REF * speed(v) * tune["sum_tau"] / 1000.0, h)
++
++
++def _upstream(grid, v, x):
++    """The flow-weighted mean of x over the cells upstream of each cell along v (its own value where none)."""
++    G = _geom(grid)
++    out_w, _ = _edge_weights(grid, v)
++    w_in = out_w[G["in_e"]]
++    dst = np.repeat(np.arange(grid.n), np.diff(G["in_off"]))
++    num = np.bincount(dst, w_in * x[G["in_src"]], grid.n)
++    den = np.bincount(dst, w_in, grid.n)
++    return np.where(den > 1e-9, num / np.maximum(den, 1e-12), x)
++
++
++def _summer_split(lat, tilt, north, aet_half, cloud_sum, t_sum, tune):
++    """C warmer (colder) the land's summer air is from its surface energy
++    split: the sunshine reaching the ground in the summer half (under its
++    clouds, sunshine; the curve's albedo) less what evaporation takes
++    (aet_half's summer half, in W/m2) is the sensible heat H that warms
++    the boundary layer (sum_h deep) over the air's day (sum_tau), against
++    the H the temperature curve stands for (cloud_ref, and ef_ref of a wet
++    surface's evaporative share at the summer's temperature t_sum,
++    Priestley-Taylor's 1.26 s / (s + gamma): a cold summer evaporates
++    little even when wet, so its small evaporation warms nothing). So a cloudy, wet summer is cooler than the curve's (Houston, the
++    Yangtze) and a sunny, dry one hotter (Phoenix); this replaces the
++    +-evap_cool table."""
++    S = insolation(np.asarray(lat, float), tilt) * 1e6 / 86400.0
++    s_sum = np.where(north, S[3:9].mean(0), np.concatenate([S[:3], S[9:]]).mean(0))
++    ground = (1 - tune["albedo_ref"]) * s_sum
++    sw = ground * (0.25 + 0.5 * sunshine(cloud_sum))
++    sw_ref = ground * (0.25 + 0.5 * sunshine(np.full_like(cloud_sum, tune["cloud_ref"])))
++    i = np.arange(len(lat))
++    le = aet_half[np.where(north, 0, 1), i] * LATENT * 1e6 / (0.5 * YEAR_S)
++    tc = np.clip(t_sum, -30.0, 45.0)
++    es = 0.6108 * np.exp(17.27 * tc / (tc + 237.3))  # kPa
++    s_ = 4098.0 * es / (tc + 237.3) ** 2  # kPa per C
++    wet = np.minimum(1.26 * s_ / (s_ + 0.066), 1.0)
++    return tune["sum_tau"] / (RHO_C_AIR * tune["sum_h"]) * ((sw - le) - (1 - tune["ef_ref"] * wet) * sw_ref)
++
++
+ def vegetation_feedbacks(open_land, veg, tune) -> dict:
+     """Per-cell Budyko w from the vegetation (vegetation.feedback; None:
+     TUNE's budyko_w, an Earth-like average cover) on ice-free land
+@@ -2454,22 +2533,10 @@ def albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, veg, tune, sc=
+ 
+ 
+ def _land_finish(t_warm, t_cold, temp, land, north, p_jul, p_jan, ice, cover, ocean, tune, lat, tilt, fb):
+-    """The rain's, the plants' and the ice's effect on the land's
+-    temperatures. Returns (t_warm, t_cold, temp) on the ice surface and the
+-    same three for the bare ground under it (see ice_surface)."""
+-    # Wet ground and plants spend the summer sun on evaporating water rather
+-    # than on heating the air: rainy summers stay cooler, droughty ones and
+-    # deserts get hotter (Houston vs Phoenix). How much: the summer's actual
+-    # over its potential evaporation (water_balance; vegetation sets its w).
+-    # (The rain kernel feels this too, from the rain alone.)
+-    wb = water_balance(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+-    sm = np.where(north, 0, 1)
+-    idx = np.arange(sm.shape[0])
+-    r = wb["aet_half"][sm, idx] / np.maximum(wb["pet_half"][sm, idx], 1e-9)
+-    r0, r1 = tune["evap_r"]
+-    dry = 1.0 - 2.0 * np.clip((r - r0) / (r1 - r0), 0, 1)  # +1 desert .. -1 wet
+-    t_warm = np.where(land, t_warm + tune["evap_cool"] * dry, t_warm)
+-    temp = np.where(land, temp + 0.5 * tune["evap_cool"] * dry, temp)
++    """The plants' and the ice's effect on the land's temperatures (the
++    rain's, through the summer's evaporation, is in the air already:
++    _summer_split). Returns (t_warm, t_cold, temp) on the ice surface and
++    the same three for the bare ground under it (see ice_surface)."""
+     if fb["veg"] is not None:  # the surface's albedo
+         d_jul, d_jan = albedo_warming(lat, tilt, temp, t_warm, t_cold, p_jul, p_jan, fb["veg"], tune)
+         d_sum, d_win = np.where(north, d_jul, d_jan), np.where(north, d_jan, d_jul)

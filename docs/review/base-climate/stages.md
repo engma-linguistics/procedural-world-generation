@@ -838,3 +838,64 @@ Outputs: `laneA10/*_main.txt` (before, main f3767ad) and `*_e579.txt` (after).
 generated world sinks a few Sv or more in the south. dad91b is the low end at 2.5 Sv, for the geographic reason above.
 I'd close the ticket on option A with these numbers. If dad91b's 2.5 Sv is too little for a world with a hemmed-in
 polar sea, that's a separate question about straits (`draft-dad91b-south-is-straits.md`).
+
+## Stage 3: summer heat (PW-352, PW-457, PW-573, PW-581), attempts 1 and 2 of 3 (lane A10)
+
+**Not merged: both attempts fail a time-zoom test.** The code is not on the branch. Attempt 2's diff (on de1a6a0) is
+`laneA10/stage3_attempt2.diff`. Probe tables (`p3.py`, Earth L6): `laneA10/stage3_probe_main.txt` (before),
+`stage3_probe_sweep.txt` (the τ / depth sweep), `stage3_probe_attempt2.txt` (after). The `*_s3a1.txt` tool outputs are
+attempt 1.
+
+### What it does (three mechanisms; one summer time scale, `sum_tau` = 1 day, replaces `air_km_s`)
+1. **Summer carry per time (PW-581 part 1).** The summer air reaches U × `sum_tau` over land, at least a cell (~450 km
+   at 5 m/s, which was `air_km_s`). The winter's mixed (heated-from-below) branch uses the same reach.
+2. **Fetch (PW-573).** The land's own swing (`half_l`, a big continent's) builds up only while the air is over land.
+   `fetch` is the share of the air's last ~`sum_tau` it spent over land, carried on the summer wind and fading over the
+   sea just as fast, and `land_sum = t_land + half_l × fetch`. A narrow land in a steady wind then keeps much of the
+   sea's summer.
+3. **Surface energy split (PW-352 / PW-457), in place of the ±`evap_cool` table in `_land_finish`.**
+   - The summer half's ground sunshine, under the model's own clouds, less the latent heat of the summer's AET, is the
+     sensible heat H. H warms a `sum_h` = 1500 m boundary layer over `sum_tau`. 1500 m is the encroachment depth for
+     ~80 W/m2 into ~5 K/km.
+   - That is measured against the H the curve stands for: `cloud_ref` 0.63, and `ef_ref` 0.52 × Priestley–Taylor's wet
+     share at the summer's temperature. Without the temperature term (attempt 1, `ef_ref` 0.46 flat), cold lands with
+     little evaporation were warmed: Keewatin, Alaska, and the time zoom's cold-moment sheets.
+   - The clouds are computed once, right after the rain. The air temperatures are re-run with the split before the
+     first land finish.
+4. **Mountains (PW-581 part 2).** On ground above `air_m`, the cell keeps the carried winter air: its own winter is
+   relaxed from its upwind neighbours' air, without the cut. The cut-off still applies to the air it passes on, so the
+   prairies' cold pool stays.
+
+### The bars (Earth L6; main → attempt 2)
+| bar | main | attempt 2 |
+|---|---|---|
+| humid warmest month within 2.5 C: SE USA / SE China / Great Lakes / Labrador / HB lowlands | +4.8 / +4.9 / +6.1 / +4.2 / +5.6 | **+2.8 / +2.7** / +4.1 / +3.5 / +5.2 |
+| ... NE USA / E Australia / Pampas | +6.0 / +4.4 / +5.6 | +3.0 / **+1.8** / +4.8 |
+| dry interiors no more than 2 C colder: Great Plains / C Asia / Mongolia / Aus. interior / Sahara / Arabia | +0.2 / −2.3 / −1.5 / −0.4 / −0.2 / −4.0 | +0.2 / −2.1 / −0.1 / −1.8 / +2.2 / −0.6 |
+| SH coastal range within 1.3× (NCEP 9.6) | 14.3 (1.49×) | **12.3 (1.28×)** |
+| SH 150–400 / 400–800 km (NCEP 14.1 / 17.6) | 20.0 / 24.5 | 17.2 / 24.5 |
+| Patagonia / NZ / Tasmania warmest month | +6.0 / +2.3 / +6.9 | **+2.5 / +0.2** / +6.3 |
+| NH continentality rows within 2 C (0–150 … >1500 km) | −1.8 / +0.6 / +1.3 / +0.2 / +0.5 | −1.5 / +0.4 / +1.0 / +0.5 / +2.1 |
+| summer-half rain where obs < 300 mm, N / S (obs 167 / 200) | 660 / 1623 | **566 / 1276** |
+| W Europe warmest month | +0.4 | **−3.3** |
+| Fennoscandia warmest / coldest (stage-1 bars ±3 / ±6) | −5.2 / −6.0 | −6.7 / −6.2 |
+| Keewatin / Alaska warmest | −0.4 / −2.8 | +4.0 / 0.0 |
+| mountain coldest month: Canadian Rockies / Tibet / Alps (PW-581: ±6) | −7.7 / −4.1 / −3.3 | −7.0 / −4.2 / −2.4 |
+| log-rain r / Köppen group / exact | 0.622 / 70.5 / 30.9 | 0.619 / 69.9 / 29.9 |
+
+### Why not merged
+- **Attempt 1** (`ef_ref` flat, the reach floor half a cell) failed two tests:
+  - `test_sheet_air_is_carried`: the margin cooled 0.38 C, against the bar of 0.5. On L4 the margin's slow wind gave a
+    reach under half a cell. The reach floor is now one cell (a cell's air is the mean over its width), and the margin
+    cools 1.3 C.
+  - `test_cold_moment_has_sheets`: sheets at 0.88% against the 1% bar. Cold lands with little evaporation were warmed;
+    attempt 2's temperature-dependent reference fixes that.
+- **Attempt 2** fails `test_timezoom_cycle::test_glacials_grow_ice_and_endings_melt_it_fast`. The glacial's extra ice
+  is 58.9 m, and 15 kyr after the ending 63.6 m is left (bar < 29.4). Main passes it.
+  - Likely: the fetch takes summer heat off coastal and narrow lands, which are where the zoom's ice margins melt.
+  - This is the L4 endings knife edge that lane A5 already noted. Not yet diagnosed.
+- The W Europe regression (+0.4 → −3.3) shows a bias the fetch exposes rather than causes. The near-land seas' summer
+  air is too cold (North Sea / Biscay −3.8, NE Atlantic 45–55N −2.3: PW-580). Before, the land's full continental
+  swing hid that.
+
+One attempt is left. Notes for it are in `handoff-A10.md`.
