@@ -45,8 +45,12 @@ class TZParams:
     # 100k and 405k eccentricity phases (deg)
     orbit_ref: str = "auto"  # anomalies against 'mean' (tilt, circular orbit), 'start' (the orbit at t=0)
     # or 'today' (Earth's, which the climate model is calibrated to); 'auto': 'today' for Earth, else 'mean'
-    insol_k: float = 0.25  # C per W/m2 of insolation change, on land (month by month, ~2 weeks' lag)
-    insol_sea: float = 0.3  # share of that over the sea (deep mixed layer)
+    orbit_resp: str = "seasons"  # each cell's response to an insolation change (C per W/m2, month by month,
+    # ~2 weeks' lag; forcing.own_k): 'seasons', its own seasons' (icemass.seasonal_k: precession and obliquity
+    # change the same annual harmonic of the sun as the seasons; ~0.08-0.09 on mid- and high-latitude land, ~0.02
+    # at sea; PW-459), x insol_gain; 'run': the run's rule (icemass.INSOL_K 0.25 on land, INSOL_SEA 0.3 of it at
+    # sea, ~3x the seasons'), for the run/zoom rule check until the run takes the seasons' rule (PW-555 stage 3)
+    insol_gain: float = 1.0
     # climate
     climate_every: float = 10.0  # kyr between full climate.compute calls
     baseline: str = "model"  # Earth only: 'obs' = observed climate + the model's changes from today
@@ -65,7 +69,21 @@ class TZParams:
     bare_share: float = M.BARE_SHARE  # bare ice keeps this share of the snow's effects
     ice_cool: float = M.ICE_COOL  # C: thick ice is this much colder all year ...
     albedo_h: float = M.ALBEDO_H  # ... in full from this thickness (m)
-    edge_h: float = M.EDGE_H  # m: a margin cell's surface balance is its edge's, at most this thick
+    sheet_air: str = "cold"  # the air the sheets make (climate.compute's ice_air, icemass.air_mass, PW-336):
+    # 'cold', from the share of each ice cell's summer its surface stays frozen (icemass.cold_share: an ablating
+    # surface sits at the melting point and can't chill the air below it; PW-439, PW-555 stage 1); 'all': from
+    # all the ice (the run's rule until its own stage)
+    surface_air: str = "rest"  # the ice surface's own effects on its air (ice_cool's inversion and the summer
+    # damping of its bright surface, summer_damp x icemass.LOCAL): 'rest', on the share of the air that isn't
+    # the sheets' carried air mass already (1 - icemass.air_mass: a big sheet's air is its surface's, cooled and
+    # damped in climate.compute, PW-336, so they aren't counted twice; a lone cap gets them in full); 'all': on
+    # top of it (the run's rule until its own stage; Earth's Greenland then sits ~4 C below its observed summer)
+    margin: str = "ramp"  # a margin cell's (ice next to bare land) surface balance: 'ramp', over the sheet's Nye
+    # ramp across the part of the cell its ice covers (icemass.margin_ramp, PW-460; ~900 m mean at ~110 km cells);
+    # 'edge': its edge's, at most edge_h thick (the run's rule: earth.ICE_EDGE_M), for the run/zoom rule check
+    # until the run takes the ramp (PW-555 stage 3)
+    edge_h: float = M.EDGE_H  # m: a sheet's edge (its Nye profile 10 km in): bare land the flow reaches is a new
+    # edge this high, and 'edge' margins at most this thick
     anchor: str = "auto"  # the starting ice's climate correction (start_anchor): 'obs' (Earth: the model's
     # summer on the ice cooled to the observed one), 'balance' (the smallest cooling that keeps each starting
     # ice cell from melting), 'none' (a run's ice is the same mass balance's mean-orbit extent already);

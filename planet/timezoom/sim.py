@@ -21,13 +21,14 @@ import numpy as np
 from .. import climate
 from .. import icemass as M
 from .. import store as S
+from ..geo import R_KM
 from ..grid import Grid
 from ..orbit import BAND_DEG, BAND_LAT, insolation, orbit_at, orbit_phases, reference_orbit
 from ..tectonics.isostasy import ice_load
 from .cycle import NAMES, Index, cooling, cycling_latitude, snowline_land
 from .events import cycling_ice_sun
 from .fields import ClimateFields
-from .forcing import Forcing, orbit_k
+from .forcing import Forcing, orbit_k, own_k
 from .geometry import geometry
 from .deposit import Deposits
 from .ice import above_flotation, shelf_cover, shelf_step, shelf_viable
@@ -56,6 +57,15 @@ class _Sim:
         self.q_ref = insolation(*self.ref_orb)
         # polar amplification of a global temperature change (as climate.compute: 0.5x tropics .. 1.5x poles)
         self.amp = climate.temperature(g, np.zeros(n), 0.5, 1.5)
+        self.width = g.spacing * R_KM * 1000.0  # m: a cell's width (a margin's ramp, icemass.margin_ramp)
+        if p.margin not in ("ramp", "edge"):
+            raise SystemExit(f"margin must be ramp or edge, not {p.margin!r}")
+        if p.surface_air not in ("rest", "all"):
+            raise SystemExit(f"surface_air must be rest or all, not {p.surface_air!r}")
+        if p.sheet_air not in ("cold", "all"):
+            raise SystemExit(f"sheet_air must be cold or all, not {p.sheet_air!r}")
+        self.margin = np.zeros(0, np.int64)  # the margin cells (prepare_surface) ...
+        self.m_f, self.m_h2, self.m_dh = np.zeros(0), np.zeros(0), np.zeros(0)  # ... their ramp (margin_ramp)
         self.flt = 1 - RHO_I / RHO_W
         self.gamma = 2 * p.flow_a * p.enhancement * (RHO_I * 9.81) ** 3 / 5
         # an ice shelf's spreading, h' = -c h^4 (Weertman 1957), confined by its buttressing (strain rate x (1 - K)^3)
@@ -167,35 +177,60 @@ class _Sim:
         land = surf > 0
         self.land = land
         self.dt_wet = self.amp * (dTg - F["dTg0"])
-        # A margin cell (ice next to ice-free land) is a slope from the bare edge up to its inner
-        # neighbour: its snow and melt are those of the sheet's edge (edge_h thick, as the main run's
-        # margins), not of its mean thickness (~1 km at ~110 km cells, the grid's cliff-like margin),
-        # which would keep it as cold as the interior and let the sheet creep onto warm land.
+        # A margin cell (ice next to ice-free land) is the sheet's edge ramping up across the part of the
+        # cell its ice covers (margin 'ramp': icemass.margin_ramp, PW-460): its snow and melt are the
+        # ramp's, at two heights on it (year), not its mean thickness's (the grid's cliff-like margin,
+        # which would keep it as cold as the interior and let the sheet creep onto warm land), nor its
+        # outermost 10 km's ('edge', the run's rule until PW-555 stage 3: the whole ~110 km cell melts as
+        # its edge, edge_h thick, PW-115)
         ice_g = np.where(grounded, H, 0.0)
         self.ice_g = ice_g
         self.bare_land = land & (ice_g <= 1.0)
         margin = (ice_g > 1.0) & (np.add.reduceat(self.bare_land[g.nbr_idx], g.nbr_off[:-1]) > 0)
-        h_sfc = np.where(margin, np.minimum(ice_g, p.edge_h), ice_g)
-        surf_eff = np.where(margin, surf - (ice_g - h_sfc), surf)
+        h_sfc = ice_g.copy()
+        if p.margin == "ramp":
+            self.margin = np.flatnonzero(margin)
+            self.m_f, hq = M.margin_ramp(ice_g[self.margin], self.width)
+            self.m_h2, self.m_dh = hq[1], hq[1] - hq[0]
+            h_sfc[self.margin] = hq[0]
+        else:
+            h_sfc = np.where(margin, np.minimum(ice_g, p.edge_h), ice_g)
+        surf_eff = surf - (ice_g - h_sfc)
         self.dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - F["s0"]) + self.dt_wet
         self.f_ice = np.clip(h_sfc / p.albedo_h, 0, 1)
         self.f_alb = np.clip(ice_g / p.snow_h, 0, 1)  # perennial snow is bright from the start
         # (the ice surface's own summer damping, icemass.sheet_cover; on ice only: bare ground's seasonal
         # snow gets none, as the run's new-cap rule, PW-275)
         self.damp = p.summer_damp * np.where(ice_g > 1.0, M.sheet_cover(g, ice_g), 0.0)
+        self.own_air = 1.0 - np.clip(F["air"], 0.0, 1.0) if p.surface_air == "rest" else np.ones(self.n)
+        self.f_ice *= self.own_air  # (... on the air that isn't the sheets' own already)
+        self.damp *= self.own_air
 
     def year(self, dt_b, dq_) -> None:
         """One (orbit-averaged) year of the surface mass balance and temperatures at every cell."""
         p, F = self.p, self.fields
         # bright snow absorbs little of an insolation change, but the air over it also brings
         # what the surroundings absorbed: the response is mixed over an air mass (orbit_k)
-        self.k_orb = k_orb = orbit_k(self.g, self.land, self.f_snow, p)  # (also the new front's, new_ice_rates)
+        own = own_k(p, self.land, F.f.get("k_own"))
+        self.k_orb = k_orb = orbit_k(self.g, own, self.land, self.f_snow, p)  # (also the new front's, new_ice_rates)
         # (the start's correction of the ice-surface climate, only where ice lies: start_anchor)
-        climate_step(self.land, self.north, F["t_mean"] + self.anchor * self.f_alb, F["half"], F["p_jul"],
+        t_mean = F["t_mean"] + self.anchor * self.f_alb
+        climate_step(self.land, self.north, t_mean, F["half"], F["p_jul"],
                      F["p_jan"], dt_b, self.dt_wet, k_orb, self.band, dq_, self.f_ice, self.f_alb,
                      p.ice_cool, self.damp, p.melt_hold, p.bare_share, p.snow_w,
                      p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, self.smb, self.t_ann,
                      self.t_warm, self.t_cold, self.p_scale, self.f_snow)
+        m = self.margin
+        if len(m):  # the margins' ramp: its upper quadrature point too, the cell's share f of it iced
+            out = [np.zeros(len(m)) for _ in range(6)]
+            climate_step(self.land[m], self.north[m], t_mean[m], F["half"][m], F["p_jul"][m], F["p_jan"][m],
+                         dt_b[m] - climate.LAPSE * self.m_dh, self.dt_wet[m], k_orb[m], self.band[m], dq_,
+                         np.clip(self.m_h2 / p.albedo_h, 0, 1) * self.own_air[m], self.f_alb[m], p.ice_cool, self.damp[m],
+                         p.melt_hold, p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze,
+                         p.precip_k, *out)
+            self.smb[m] = self.m_f * 0.5 * (self.smb[m] + out[0])
+            for a, o in zip((self.t_ann, self.t_warm, self.t_cold, self.p_scale, self.f_snow), out[1:]):
+                a[m] = 0.5 * (a[m] + o)
 
     def setup_index(self) -> None:
         """The glacial index (cycle.py) from the first full climate: the land poleward of the planet's
@@ -323,7 +358,8 @@ class _Sim:
         rate = np.where(land, self.smb, 0.0)
         # the bare land beside a sheet: the ice the flow brings onto it over the step is the sheet's new edge,
         # bright and edge_h high (as the main run tests a new margin, earth.ablation_zone), not bare ground
-        # (PW-366: as bare ground's dark, low surface it melted as it arrived and the sheets couldn't advance)
+        # (PW-366: as bare ground's dark, low surface it melted as it arrived and the sheets couldn't advance);
+        # once it covers part of the cell it is a margin (its ramp, PW-460)
         front = self.bare_land & dilate(self.ice_g > 1.0, g.nbr_off, g.nbr_idx, 1)
         if front.any():
             fi = np.flatnonzero(front)
@@ -473,7 +509,10 @@ class _Sim:
             # climate fields: a full climate every `refresh` steps, blended in between
             if s_no % self.refresh == 0:
                 surf, grounded = self.grounded_surface()
-                F.refresh(t_kyr, dTg, surf, grounded, H, self.forcing.co2)
+                # (the sheets' cold air comes from the frozen share of their summers: the last year's
+                # surface; the first climate, before any year, counts all the ice, as the run's)
+                cold = M.cold_share(self.t_warm) if p.sheet_air == "cold" and s_no else None
+                F.refresh(t_kyr, dTg, surf, grounded, H, self.forcing.co2, cold)
                 if p.carving and s_no:
                     self.rock_isostasy()
                 self.forcing.veg_target = F.plants.dT_target

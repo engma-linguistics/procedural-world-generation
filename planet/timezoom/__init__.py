@@ -18,7 +18,7 @@ Model (per 500-yr step, see simulate)
   (100 and 405 kyr terms) and the precession of the perihelion (23 kyr)
   set the insolation of every latitude and month (Berger 1978 formulas).
   The change against a reference orbit becomes a monthly temperature
-  anomaly (insol_k C per W/m2 on land, less over the sea), so precession
+  anomaly (each cell's own seasonal response, C per W/m2: icemass.seasonal_k), so precession
   moves the warmth between the seasons and hemispheres, obliquity between
   the poles and tropics.
 - Climate: a full climate.compute every climate_every kyr on the current

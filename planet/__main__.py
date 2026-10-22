@@ -432,7 +432,7 @@ def main():
     tz.add_argument("--level", "-l", type=int, default=6, help="grid level (earth only; runs use their own)")
     tz.add_argument("--name", "-n")
     tz.add_argument("--set", nargs="*", metavar="KEY=VALUE",
-                    help="timezoom.TZParams knobs, e.g. --set insol_k=0.2 phases=zero")
+                    help="timezoom.TZParams knobs, e.g. --set insol_gain=0.8 phases=zero")
     tz.set_defaults(func=cmd_timezoom)
 
     fi = sub.add_parser("finish", help="a finished world at one kyr of a glacial time zoom (or at a run time) -> worlds/<id>.json")

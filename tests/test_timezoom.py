@@ -5,9 +5,9 @@ import json
 import numpy as np
 import pytest
 
-from planet import orbit as O, timeline as T, timezoom as Z
+from planet import icemass, orbit as O, timeline as T, timezoom as Z
 from planet.timezoom import params as P
-from planet.timezoom.forcing import orbit_k
+from planet.timezoom.forcing import orbit_k, own_k
 from planet.timezoom.geometry import geometry
 from planet.timezoom.ice import shelf_step
 
@@ -306,19 +306,61 @@ def test_orbit_response_mixes_each_surface_own(sim4):
     response: an ice cap on an island in the open sea gets about the sea's
     and the ice's (~0.2-0.3 of the land's), not the land's (PW-114: the old
     mix counted the sea as fully absorbing land); bare land far from ice
-    keeps the land's full insol_k, the open sea its insol_sea share."""
+    keeps its own response, the open sea its own."""
     g = sim4.grid
     p = Z.TZParams()
     centre = int(np.argmin(np.abs(g.lat - 70.0)))
     d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
     land = d < 6.0  # an island ~650 km across
     bright = np.where(land, 1.0, 0.0)
-    k = orbit_k(g, land, bright, p)
-    assert k[centre] < 0.35 * p.insol_k, k[centre] / p.insol_k
+    kl, ks = 0.085, 0.025  # (C per W/m2: about Earth's high-latitude land and sea seasons, icemass.seasonal_k)
+    own = own_k(p, land, np.where(land, kl, ks))
+    k = orbit_k(g, own, land, bright, p)
+    assert k[centre] < 0.35 * kl, k[centre] / kl
     far = d > 60
-    assert np.allclose(k[far], p.insol_k * p.insol_sea)
-    bare = orbit_k(g, land, np.zeros(g.n), p)
-    assert np.allclose(bare[land], p.insol_k)
+    assert np.allclose(k[far], ks)
+    bare = orbit_k(g, own, land, np.zeros(g.n), p)
+    assert np.allclose(bare[land], kl)
+    # (the run's rule, for the run/zoom check: icemass.INSOL_K on land, INSOL_SEA of it at sea)
+    run = own_k(Z.TZParams(orbit_resp="run"), land, None)
+    assert np.allclose(run[land], icemass.INSOL_K) and np.allclose(run[far], icemass.INSOL_K * icemass.INSOL_SEA)
+
+
+def test_seasonal_k_is_the_seasons_response():
+    """Each cell's response to the orbit is its seasons' (PW-459): its warmest - coldest month per the
+    lagged sun's seasonal range, the range floored near the equator."""
+    rng = icemass.sun_range(23.44)
+    assert 450 < rng.max() < 560 and rng.min() < 80  # (W/m2: polar ~520, equator ~30, a half-yearly cycle)
+    lat = np.array([65.0, 65.0, 0.0])
+    k = icemass.seasonal_k(lat, np.array([15.0, 4.0, 27.0]), np.array([-25.0, -4.0, 25.0]), 23.44)
+    assert 0.07 < k[0] < 0.1 and k[1] < 0.3 * k[0]  # (a continental interior's 40 C, a maritime 8 C)
+    assert k[2] < 0.02  # (2 C at the equator over the floored range, not over its ~30 W/m2)
+
+
+def test_margin_ramp_scales_with_cells():
+    """A margin cell's balance heights are its edge's Nye ramp across the iced part of the cell (PW-460):
+    ~110 km cells iced across have ~620 / ~1200 m, a thin margin covers part of its cell, a 10 km cell's
+    ramp is the old ~400 m edge."""
+    f, h = icemass.margin_ramp(np.array([2000.0, 900.0, 100.0]), 110e3)
+    assert f[0] == 1.0 and 0.99 < f[1] <= 1.0 and 0.15 < f[2] < 0.3
+    assert 580 < h[0, 0] < 660 and 1150 < h[1, 0] < 1250
+    assert h[1, 2] > 100.0  # (the iced part of a thin margin is thicker than the cell's mean)
+    _, h10 = icemass.margin_ramp(np.array([1e4]), 10e3)
+    assert 0.6 * icemass.EDGE_H < 0.5 * (h10[0, 0] + h10[1, 0]) < 0.8 * icemass.EDGE_H
+
+
+def test_sheet_air_comes_from_its_frozen_summers(sim4):
+    """A sheet's carried cold air (icemass.air_mass) comes from the share of its summer its surface stays
+    frozen (cold_share, the degree-day rule's spread): a melting margin can't chill the air below it."""
+    assert icemass.cold_share(np.array([-5.0, 0.0, 5.0])) == pytest.approx([0.841, 0.5, 0.159], abs=0.002)
+    g = sim4.grid
+    centre = int(np.argmin(np.abs(g.lat - 70.0)))
+    d = np.degrees(np.arccos(np.clip(g.centers @ g.centers[centre], -1, 1)))
+    ice = np.where(d < 15.0, 2000.0, 0.0)
+    full = icemass.air_mass(g, ice)
+    assert np.array_equal(full, icemass.air_mass(g, ice, cold=np.ones(g.n)))
+    half = icemass.air_mass(g, ice, cold=np.where(d < 10.0, 1.0, 0.0))  # (its outer ring melting)
+    assert (half <= full + 1e-12).all() and half[centre] < full[centre] and (half[ice == 0] == 0).all()
 
 
 def test_start_anchor_leaves_with_the_ice(cold_src, cold_run):

@@ -109,21 +109,35 @@ def coast_loss(h, s, depth, dist, elen, t_air, melt, area):
     return np.where(floats, deep, shallow)
 
 
-def air_mass(grid, ice, km: float = SHEET_KM):
+def air_mass(grid, ice, km: float = SHEET_KM, cold=None):
     """How much (0..1) of the air over each cell of land ice is the sheet's
     own cold, bright air mass: the share of the surface (land and sea)
     within ~km under land ice (m > 1), away from the tropics (none within
     15 deg of the equator, in full from 50 deg, as climate.ice_cover); 0
-    off the ice. climate.compute damps that air's summer warmth by
+    off the ice. cold (0..1 per cell, None: 1): the share of each ice
+    cell's summer its surface stays frozen (cold_share): an ablating
+    surface sits at the melting point and can't chill the air below it, so
+    only the frozen share of a sheet makes its cold air (the time zoom's,
+    PW-555 stage 1; the run counts all its ice until its own stage). climate.compute damps that air's summer warmth by
     SUMMER_DAMP x this and the winds carry it on (PW-336): katabatic
     outflow, so a big sheet's margins, ice shelves and the land beside it
     get its cold summers, a lone cap's surroundings don't. Antarctica
     ~0.6..1, Greenland ~0.3..0.5, a valley glacier ~0."""
     from . import climate
     on = np.asarray(ice) > 1
-    a = climate.smooth_big(grid, on.astype(float), km)
+    src = on.astype(float) if cold is None else np.where(on, np.clip(cold, 0.0, 1.0), 0.0)
+    a = climate.smooth_big(grid, src, km)
     polar = np.clip((np.abs(grid.lat) - 15.0) / 35.0, 0.0, 1.0)
     return np.where(on, np.clip(a, 0.0, 1.0) * polar, 0.0)
+
+
+def cold_share(t_warm, sigma: float = PDD_SIGMA):
+    """The share (0..1) of the warmest month's days an ice surface stays
+    below freezing, its days scattered with sd sigma around the month's
+    mean t_warm (C; the degree-day rule's own spread): ~0.84 at -5 C, 0.5
+    at 0 C, ~0.16 at +5 C (for air_mass's cold)."""
+    from .climate import _erf
+    return 0.5 * (1.0 - _erf(np.asarray(t_warm, float) / (sigma * np.sqrt(2.0))))
 
 
 def sheet_cover(grid, ice):
@@ -134,6 +148,67 @@ def sheet_cover(grid, ice):
     in the climate's air already (air_mass, carried along the winds,
     PW-336), so it isn't counted here again."""
     return np.full(grid.n, LOCAL)
+
+
+_NODES = np.array([0.5 - 0.5 / np.sqrt(3.0), 0.5 + 0.5 / np.sqrt(3.0)])  # 2-point Gauss-Legendre on 0..1
+
+
+def margin_ramp(H, width_m: float):
+    """A margin cell (ice next to bare land) as the part of its width the
+    sheet's edge covers (PW-460): its ice H (m, the cell's mean) is a Nye
+    ramp sqrt(2 tau/(rho g) x) rising from the edge (x = 0) across an iced
+    share f of the cell (width_m wide), so H = f x the ramp's mean over it
+    (2/3 of its top); a cell with at least the full width's mean (~900 m at
+    ~110 km cells) is iced across (f = 1). Returns (f, the ramp's height at
+    the two quadrature points of its iced part, shape (2, n)): the cell's
+    balance is f x the mean of the balance at those heights (the lower,
+    outer part melts faster than the mean height would). Grid-relative: on
+    finer cells the ramp is lower (~400 m at 10 km, EDGE_H). The time zoom's
+    margins (PW-555 stage 1; the run keeps EDGE_H until its own stage: before
+    PW-460 a margin cell's balance was its edge's at any cell size, so a
+    ~110 km cell melted as if all of it were its outermost 10 km, PW-115)."""
+    H = np.maximum(np.atleast_1d(np.asarray(H, float)), 0.0)
+    top = np.sqrt(2 * SHEET_TAU / (917.0 * 9.81) * width_m)
+    f = np.clip(H / (2.0 / 3.0 * top), 0.0, 1.0) ** (2.0 / 3.0)
+    return f, top * np.sqrt(f)[None, :] * np.sqrt(_NODES)[:, None]
+
+
+# The orbit's effect on a month's temperature (PW-459): each cell responds to an insolation change as it does
+# to the seasons (precession and obliquity change the same annual harmonic of the sun as the seasons do): its
+# own warmest - coldest month per the lagged sun's seasonal range at its latitude (seasonal_k; Earth ~0.08-0.09
+# C per W/m2 on mid- and high-latitude land, ~0.02 over the sea's deep mixed layer). Near the equator the
+# sun's annual range is small (its cycle is half-yearly): the range counts as at least SUN_FLOOR of the
+# planet's largest. The time zoom's rule (PW-555 stage 1); the run's cycle average (balance) keeps INSOL_K
+# until its own stage.
+SUN_FLOOR = 0.25
+_SUN = {}
+
+
+def sun_range(tilt: float) -> np.ndarray:
+    """Per latitude band (orbit.BAND_LAT): the seasonal range (W/m2) of the
+    top-of-atmosphere sun at the mean (circular) orbit, each month averaged
+    with the one before (the ground lags the sun, as cycle_dq). Cached."""
+    key = round(float(tilt), 3)
+    if key not in _SUN:
+        from .orbit import insolation
+        q = insolation(tilt, 0.0, 0.0)
+        q = 0.5 * (q + np.roll(q, 1, axis=1))
+        _SUN[key] = q.max(axis=1) - q.min(axis=1)
+    return _SUN[key]
+
+
+def seasonal_k(lat, t_warm, t_cold, tilt: float) -> np.ndarray:
+    """C per W/m2 of insolation change per cell: its own seasonal swing
+    (t_warm - t_cold, the bare ground's or the sea's) per the sun's
+    (sun_range, at least SUN_FLOOR of the largest band's). Continental
+    interiors respond most, coasts less, the sea ~a quarter of the land
+    (its mixed layer): from the climate itself, not a calibrated constant
+    (INSOL_K: 0.25 on land, 0.3 of that at sea, ~3x the seasons')."""
+    from .orbit import BAND_DEG, BAND_LAT
+    rng = sun_range(tilt)
+    band = np.clip(((np.asarray(lat, float) + 90) / BAND_DEG).astype(np.int64), 0, len(BAND_LAT) - 1)
+    r = np.maximum(rng[band], max(SUN_FLOOR * float(rng.max()), 1.0))
+    return np.maximum(np.asarray(t_warm, float) - np.asarray(t_cold, float), 0.0) / r
 
 
 # The ice-age cycle a run's (and a zoom's) ice is the average over: precession at four phases x obliquity

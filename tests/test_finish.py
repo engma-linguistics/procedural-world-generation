@@ -6,7 +6,7 @@ import json
 import numpy as np
 import pytest
 
-from planet import api, finish as F, store as S, timeline as T, timezoom as TZ, world as W
+from planet import api, climate as CL, finish as F, icemass, store as S, timeline as T, timezoom as TZ, world as W
 from planet.geo import world_land
 from planet.tectonics import Params
 
@@ -97,8 +97,12 @@ def test_finished_climate_has_the_orbit(tiny):
     m_ = tzrun["meta"]
     p_ = TZ.TZParams(**{k: v for k, v in m_.get("timezoom", {}).items() if k in TZ.TZParams.__dataclass_fields__})
     s_ = st["stats"]
-    ref = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), m_["params"].get("tilt", 23.4),
-                           p_, st["elevation"] + st["ice"] > 0, st["ice"], phases=m_.get("orbit_phases_deg"))
+    tilt_ = m_["params"].get("tilt", 23.4)
+    land_ = st["elevation"] + st["ice"] > 0
+    gw, gc, _ = CL.compute(g, st["elevation"] + st["ice"], st["dT"], tilt_, np.where(land_, st["ice"], 0.0))["ground"]
+    ref = TZ.orbit_anomaly(g, (s_["obliquity"], s_["eccentricity"], s_["perihelion"]), tilt_,
+                           p_, land_, st["ice"], icemass.seasonal_k(g.lat, gw, gc, tilt_),
+                           phases=m_.get("orbit_phases_deg"))
     for j, v in m_.get("anchor", []):
         ref[j] += v * min(st["ice"][j] / p_.snow_h, 1.0)  # (where the frame has ice, PW-035)
     assert np.array_equal(d, ref)
