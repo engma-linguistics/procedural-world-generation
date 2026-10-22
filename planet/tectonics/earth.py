@@ -35,7 +35,7 @@ CO2_TAU = 0.4  # Myr: the CO2 stock's residence time at the reference, ocean-atm
 REF_MYR = 100.0  # Myr: during the spin-up, the source's and sink's references follow the planet's rates over this
 REF_FREEZE = 300.0  # Myr: then they are kept (PW-558/559 B): the planet's own balance once the made-up start has
 # settled, the same spin-up the criteria skip
-RELIEF_MYR = 200.0  # Myr: ...except the erosion rate of the ice-free land, which is measured against its own mean over
+# params.co2_relief_myr (200 Myr; 0 = off): ...except the erosion rate of the ice-free land, which is measured against its own mean over
 # this. The made-up start's low relief builds up for 200-600 Myr by seed (~5 -> 20-30 m/Myr), and more slowly after
 # (PW-576 stage 1): against a kept reference that rise alone drew CO2 down by 1-1.5 e-folds and made 150-340 Myr
 # deep eras. The ice-free share, the temperature factor and the plants stay measured against the kept balance.
@@ -114,7 +114,7 @@ def global_temperature(sim, growth, newc, rng):
                  removes it (cooling, e.g. the Himalaya since 40 Ma). Each
                  is measured against the planet's own balance once its
                  start has settled (REF_FREEZE), so lasting changes keep
-                 counting (but the relief's slow build-up, RELIEF_MYR). A cold or icy planet weathers slower (the
+                 counting (but the relief's slow build-up, params.co2_relief_myr). A cold or icy planet weathers slower (the
                  weathering thermostat), so CO2 piles up and warms it back
       ice        ice sheets reflect sunlight (cooling feedback)
     Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
@@ -139,14 +139,14 @@ def global_temperature(sim, growth, newc, rng):
         # stock does, where baselines that relearned took both up within a few hundred Myr (PW-576).
         free = max(int((land & (sim.ice <= 0)).sum()), 1)
         rate = float(supply.sum()) / free  # the ice-free land's mean erosion (relief, and the runoff over it)
-        r = 1 - np.exp(-dt / min(RELIEF_MYR, 10.0 + sim.t))
+        r = 1 - np.exp(-dt / min(p.co2_relief_myr, 10.0 + sim.t)) if p.co2_relief_myr > 0 else 0.0
         sim.ref_rate = np.array([rate, rate]) if sim.ref_rate is None else sim.ref_rate + np.array([r, 0.0]) * (
             rate - sim.ref_rate)
         if sim.t < REF_FREEZE:
             b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
             sim.refs = sim.refs + b * (now - sim.refs)
             sim.ref_rate[1] = sim.ref_rate[0]  # (the relief the kept balance had)
-        relief = sim.ref_rate[0] / sim.ref_rate[1]
+        relief = sim.ref_rate[0] / sim.ref_rate[1] if p.co2_relief_myr > 0 else 1.0
         sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / (sim.refs[1] * relief), dt)
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room

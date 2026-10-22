@@ -39,7 +39,7 @@ def test_forcing_levels_off_smoothly():
 
 
 def test_references_are_kept_after_the_spin_up():
-    """The source and sink references stop learning at REF_FREEZE; only the relief term goes on (RELIEF_MYR)."""
+    """The source and sink references stop learning at REF_FREEZE; only the relief term goes on (params.co2_relief_myr)."""
     from planet.grid import build_grid
     from planet.tectonics import Params, Simulation
     s = Simulation(build_grid(3), 1, Params(), 2.0)
@@ -47,3 +47,12 @@ def test_references_are_kept_after_the_spin_up():
     ref, kept = s.refs.copy(), s.ref_rate[1]
     s.run(s.t + 20)
     assert np.array_equal(s.refs, ref) and s.ref_rate[1] == kept and s.ref_rate[0] != kept
+
+
+def test_relief_term_off():
+    """co2_relief_myr = 0: the erosion rate's reference is kept with the others (the reference set once)."""
+    from planet.grid import build_grid
+    from planet.tectonics import Params, Simulation
+    s = Simulation(build_grid(3), 1, Params(co2_relief_myr=0.0), 2.0)
+    s.run(earth.REF_FREEZE + 20)
+    assert s.ref_rate[0] == s.ref_rate[1]
