@@ -246,3 +246,70 @@ temporary split, not a mechanism, so it is not kept.
   first.
 - `draft-sea-air-carry-offshore-and-baffin-summer.md`. Once the sea's air takes part in the carry, PW-575's offshore
   Nordic winds chill the open Norwegian Sea, and Baffin Bay's summer runs hot. Both are for the same stage.
+
+## Stage 2b: attempt 2 landed (owner's order, 2026-10-22)
+
+**The order.** The owner doesn't want a correct mechanism held back because a downstream kernel was fitted to the
+old, wrong one. So stage 2's attempt 2 lands as it is, with its rain and Köppen regression accepted for now and
+recorded exactly below. The rain is fixed next, on its own (PW-578), and the winds after that (PW-575, which also
+owns the colder Nordic Seas this brings, PW-577).
+
+**What changed:** `stage2/attempt2.patch`, re-applied on main 2684f2b without changes (it applied cleanly), plus the
+`_air_temps` docstring brought up to date. The mechanism is the one in "Attempt 2" above:
+- the winter air is carried over the sea as well as the land (`_winter_air`; new TUNE `air_km_sea`, `k_ice`,
+  `ice_b`, `open_b`);
+- the sea's seasonal swing is its own (`sea_half` 6 → 1.9 C × s) plus `continental × land_air`;
+- a freezing sea's summer half-swing loses the winter's freezing deficit (`_summer_half`);
+- the old sea-ice inversion (`INVERSION_MAX`) is gone: the air over the ice comes from the carry.
+
+### The bar (Earth L6; `stage2b/climate_bias_*.txt`, `stage2b/overturning_*.txt`)
+
+| bar line | main | after | verdict |
+|---|---|---|---|
+| Hudson Bay / Baffin Bay / Okhotsk coldest month (NCEP −27.5 / −30.2 / −9.3) | −5.4 / −11.2 / +1.6 | −18.8 / −23.3 / −9.1 | freeze: pass |
+| southern winter sea-ice proxy (NCEP 20.2 Mkm2) | 15.0 (−26%) | 21.2 (+5%) | pass |
+| Antarctic pack 65–75S coldest-month bias | +12.7 | −1.9 | pass |
+| Labrador / Hudson Bay lowlands coldest-month bias | +3.1 / +5.4 | +3.5 / +5.6 | pass (±6) |
+| Earth NH sinking, share in open polar seas | 9.51 Sv, 71% | 11.30 Sv, 73% | pass |
+| Norwegian coast open in winter | 100% | 100% | pass |
+| every generated world sinking in both hemispheres | yes | yes (weakest dad91b S 3.2 Sv) | pass |
+
+Hudson Bay is still 8.7 C too warm in its coldest month, but it now freezes and is plausibly cold. The northern
+proxy is 19.7 against 16.8 Mkm2 (+17%).
+
+The generated worlds, NH / SH Sv (open polar share), stage 1 → after:
+119973 16.2/16.3 → 17.0/16.6 (98/92%), 28442c 16.0/16.9 → 17.2/17.1 (90/92%), 607540 15.6/14.7 → 16.2/15.8 (99/95%),
+81aced 16.1/14.1 → 17.7/14.4 (88/98%), 7082f5 14.2/11.0 → 12.3/8.7 (81/93%), d14b89 15.7/17.6 → 16.5/18.5 (95/90%),
+a5a387 7.9/15.0 → 10.8/16.7 (**62**/91%), dad91b 14.7/4.5 → 15.4/**3.2** (94/34%), c00ebf 12.6/12.8 → 9.6/8.1
+(69/75%). The open-polar share falls on a5a387 (82 → 62%) and c00ebf's north (88 → 69%); both still sink in both
+hemispheres.
+
+### Accepted for now: what gets worse (`stage2b/earth_check_main.txt` → `stage2b/earth_check_a2.txt`)
+
+| earth_check | main | after |
+|---|---|---|
+| log-rain correlation with GPCC | 0.617 | **0.533** |
+| Köppen main group / exact (cell by cell) | 71% / 31% | **66% / 28%** |
+| Köppen B (arid) share of land, excl. Antarctica (Kottek 30.1) | 18.0% | 15.6% |
+| A / C / D / E shares | 20.9 / 25.0 / 26.4 / 9.7 | 19.3 / 28.3 / 26.7 / 10.1 |
+| cities exact / group only / wrong group | 32 / 29 / 17 | 25 / 34 / 19 |
+| share of land rain in the local summer half (GPCC 0.65) | 0.75 | 0.80 |
+| runoff / rain | 0.47 | 0.46 |
+| summer rain, N land 35–65 deg where observed < 300 mm | 610 mm | 794 mm (obs 167) |
+| summer rain, S land 35–65 deg, 300–700 mm class | 1417 mm | 2143 mm (obs 480) |
+
+Also worse (PW-577, for the winds' stage): the Nordic Seas' coldest month −4.7 → −10.4 C (NCEP −1.8), the Barents
+Sea −18.3 → −24.5 (−10.8), the Norwegian coast's sea air +0.6 → −4.4 (NCEP ~+3.5); Baffin Bay's warmest month
+3.0 → 10.3 C (NCEP 1.6).
+Better on land: Fennoscandia's coldest month −14.7 → −12.2 C bias; Alaska / Yukon −12.0 → −10.7; Taymyr −4.4 →
+−2.3; the Greenland rim −3.2 → +0.9.
+
+**Generated worlds, land rain** (`climate.compute` on the stored geography, main → after; ice-free land):
+
+| world | land P (mm) | arid share | summer-half share | sea-ice proxy N / S (Mkm2) |
+|---|---|---|---|---|
+| 119973 | 1124 → 1146 | 31.1 → 27.0% | 0.84 → 0.87 | 26.4 / 21.5 → 31.8 / 28.0 |
+| 7082f5 | 1029 → 1051 | 28.1 → 26.1% | 0.85 → 0.86 | 29.3 / 12.0 → 36.1 / 14.0 |
+| dad91b | 1035 → 1081 | 23.6 → 21.5% | 0.83 → 0.86 | 31.9 / 10.2 → 34.0 / 13.0 |
+
+The same direction as on Earth, smaller: a little wetter, 2–4 points less arid, the rain a little more in summer.
