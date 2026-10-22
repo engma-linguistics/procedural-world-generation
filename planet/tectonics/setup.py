@@ -17,14 +17,17 @@ from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth,
 from .plates import CMYR
 
 
-# Myr: the oldest floor of the starting ocean (mean age a third of it, 48 Myr). Measured, not derived: the
-# model's own ocean after its first 50 Myr (health --quick, 8 L6 seeds x 500 Myr, 2026-10-15) has a mean
-# floor depth of -4800 m, which this triangular start has; its own mean age is 49-52 Myr, a little older
-# for the same depth because its ages spread wider (depth is concave in age). Setup's plates can't give it:
-# their speeds are random draws the force balance replaces within ~15 Myr, and their boundaries a random
-# partition, not a ridge system (PW-293; was 180, mean 60 Myr, Earth's ~64, which set sea level 0 ~200 m of
-# floor deeper than the model keeps, so its sea sat ~+140 m).
-OCEAN_MAX_AGE = 144.0
+# Myr: the oldest floor of the starting ocean (mean age a third of it, 54 Myr). Measured, not derived: sea
+# level 0 is the floor's mean depth after the first step (earth.global_temperature), and it should be the
+# model's own long-run ocean. Over 300-1000 Myr (after the warm-up; 10 L6 seeds, 2026-10-21, PW-549) that
+# ocean's mean floor depth is -4962 m (mean age 62 Myr); this start reads -4968..-4977 m after its first
+# 2 Myr step.
+# Setup's plates can't give it: their speeds are random draws the force balance replaces within ~15 Myr, and
+# their boundaries a random partition, not a ridge system. (PW-293 measured it over the first 500 Myr: 144,
+# mean 48 Myr, -4853 m after one step. That window is mostly the starting supercontinent's breakup, when
+# rifting is two to three times as frequent as later and the floor young, so the later ocean read
+# -100..-350 m of sea; PW-549. Before PW-293: 180, mean 60, ranked over all cells.)
+OCEAN_MAX_AGE = 162.0
 
 
 def initial_state(sim):

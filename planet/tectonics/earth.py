@@ -107,7 +107,7 @@ def global_temperature(sim, growth, newc, rng):
     # Myr, while the model's spreading can stop or restart within a few
     # steps of a suture or a rift. It is measured against a fixed reference,
     # the starting sea floor's mean depth (setup makes it the model's own
-    # steady-state ocean, mean age 48 Myr, PW-293: sea level 0 is the
+    # long-run ocean, mean age 54 Myr at the start, PW-293, PW-549: sea level 0 is the
     # model's mean, and excursions are breakups and assemblies), so a
     # lasting change in the basins (an ocean that stays young or old) keeps the sea up or down
     # (PW-288: a baseline that relearned the floor over 300 Myr hid a

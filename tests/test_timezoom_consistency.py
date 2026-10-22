@@ -1,6 +1,6 @@
 """The time zoom from a run's moment starts close to its own balance (PW-418, PW-366): the run's ice
 rule (earth.ice_sheets, as earth.update_climate runs it) makes the sheets of a cold moment, then the time
-zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, seed 1, 300 Myr (seed 2 lost most of its polar ice after PW-300), 4 C colder."""
+zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, seed 4, 300 Myr (seed 2 lost most of its polar ice after PW-300, seed 1 after PW-549), 4 C colder."""
 
 from types import SimpleNamespace
 
@@ -24,7 +24,7 @@ FLT = 1 - P.RHO_I / P.RHO_W
 def cold_moment():
     """A run's moment made 4 C colder, with the sheets the run's own ice rule gives that climate
     (6 climate updates from no ice; as tools/ice_probe.py)."""
-    src = Z.source_from_sim(run_sim(level=5, seed=1, myr=300))
+    src = Z.source_from_sim(run_sim(level=5, seed=4, myr=300))
     g = src["grid"]
     dT = src["dT"] - 4.0
     bed0 = src["elev"] + ice_load(g, src["ice"])
