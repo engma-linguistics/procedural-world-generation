@@ -936,8 +936,9 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       of each neighbour's (nbr, CSR off: _faces'), so what leaves one cell
       enters the next and the vapour's mass (per m2 x the cell's area) is
       kept;
-    - over the sea the air takes up water to src_q, where the sea is open
-      (open_sea: the share not under sea ice);
+    - over the sea the air takes up open_sea [season, cell] of its
+      deficit to src_q per step (_rain_args: a bulk exchange over a fetch,
+      where the sea isn't under sea ice);
     - over land it takes up what the ground evaporates: water_balance's
       actual evaporation (Budyko, Fu's w budyko_w per cell, with soil_mm
       kept over from the other season) of the rain the place gets, in mm
@@ -1021,7 +1022,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                     q += c_in[j, k] * m[nbr[j], k]
                 if ocean[i]:
                     if src_q[k, i] > q:
-                        up = open_sea[i] * (src_q[k, i] - q)
+                        up = open_sea[k, i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
                         q += up
@@ -1360,6 +1361,12 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     warm = start is not None and start["vap"].shape == st["qs"].shape
     steps = int((RAIN_WARM_DAYS if warm else RAIN_DAYS) * 86400.0 / dt) + 20
     tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
+    # The sea gives the air its water at a bulk rate, not at once: the boundary layer's vapour relaxes toward
+    # src_q at C_E x the wind / its depth, i.e. over a fetch of sea_fetch_km (e-folding), where the sea is
+    # open (open_sea: the share not under sea ice). Per step dt: the share of the deficit taken up.
+    spd = np.stack([np.maximum(np.linalg.norm(d["v"], axis=1) * U_REF, tune["sea_wind_min"]) for d in seasons_in])
+    open_sea = np.ascontiguousarray(1.0 - np.exp(-np.clip(open_sea, 0.0, 1.0)[None, :] * spd * dt
+                                                  / (tune["sea_fetch_km"] * 1000.0)))
     m0 = start["vap"] if warm else np.where(ocean, st["src_q"], RAIN_INIT * st["qs"])
     ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
@@ -1405,7 +1412,9 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
 
 TUNE = dict(
     # moisture
-    rh=0.85,  # sea air's humidity relative to saturation at the sea surface
+    rh=0.85,  # sea air's humidity relative to saturation at the sea surface, which the air takes up toward ...
+    sea_fetch_km=770.0,  # ... over this fetch (e-folding: a ~1 km boundary layer / C_E ~1.3e-3; PW-458)
+    sea_wind_min=3.0,  # m/s: ... at this wind at least (gusts and convection stir the calmest air)
     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
@@ -1547,6 +1556,7 @@ TUNE = dict(
     moc_tol=0.003,  # ... on until the inflow's share of the surface water moves by less than this (PW-360) ...
     moc_max_iters=40,  # ... or this many in all (a cost bound)
     moc_relax=0.6,  # damping of each iteration
+    x_ref_hemi=0.0,  # EXPERIMENT (lane A): each hemisphere's polar sea sets its own deep water
 )
 
 

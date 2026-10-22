@@ -340,8 +340,9 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     big = np.bincount(lab[sea], area[sea], k) >= tune["moc_sea_km2"]
     deep = np.zeros(n)
     drho = tune["moc_drho"]
-    for c in np.flatnonzero(big):
-        m = (lab == c) & (polar > 0) & (reach | (chan.any() & ~chan & (lat > _chan_lat(grid, chan))))
+    hemis = (np.sign(grid.lat) > 0, np.sign(grid.lat) <= 0) if tune.get("x_ref_hemi", 0) else (np.ones(n, bool),)
+    for c, hm in ((c, hm) for c in np.flatnonzero(big) for hm in hemis):
+        m = (lab == c) & hm & (polar > 0) & (reach | (chan.any() & ~chan & (lat > _chan_lat(grid, chan))))
         if not m.any():
             continue
         # the deep water: a mix of the densest water there is (its densest
@@ -355,7 +356,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
         # Stommel's flow law: sinking ~ the density difference that drives it
         dr = np.maximum(rs[m] - np.where(reach[m], ra[np.maximum(root[m], 0)], rho_up), 0.0)
         sinking[m] = tune["moc"] * gate * dr * area[m] / 1e6
-        deep[lab == c] = ref
+        deep[(lab == c) & hm] = ref
     out["rho_deep"] = deep
     if not sinking.any():
         return out
