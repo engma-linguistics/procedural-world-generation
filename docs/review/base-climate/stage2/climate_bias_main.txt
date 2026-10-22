@@ -1,0 +1,64 @@
+=== base-climate biases for ice, Earth L6, model dT +0.0 (2 s) ===
+
+1. Ice regions (model - observed; T C vs NCEP 2 m, P mm/yr vs GPCC/GPCP)
+region                           kind         n  elev |     Tw    obs  bias |     Tc    obs  bias |      T  bias |     P  Pobs ratio
+Labrador / Quebec N              land        90   348 |   15.9   11.3  +4.6 |  -19.8  -22.9  +3.1 |   -1.9  +3.4 |   957   680  1.41
+Hudson Bay lowlands              land        55   196 |   21.0   15.4  +5.6 |  -15.6  -20.9  +5.4 |    2.7  +4.9 |   886   622  1.42
+Keewatin / Nunavut               land        64   172 |   12.1   10.6  +1.5 |  -28.0  -31.2  +3.2 |   -7.9  +3.8 |   378   254  1.49
+Arctic Canada islands            land        78   343 |    2.6    1.6  +1.0 |  -34.3  -34.7  +0.5 |  -15.8  +2.4 |   320   147  2.17
+Baffin Island                    land        37   356 |    5.8    3.2  +2.6 |  -30.7  -32.6  +1.9 |  -12.5  +1.1 |   426   324  1.31
+Alaska / Yukon                   land       107   699 |    8.7   10.0  -1.3 |  -31.3  -19.3 -12.0 |  -11.3  -4.7 |   460   443  1.04
+Canadian Rockies                 land        66  1030 |   14.2   12.8  +1.4 |  -17.1  -11.9  -5.1 |   -1.4  -0.9 |  1209   571  2.12
+Great Lakes / Midwest            land       146   293 |   25.9   20.0  +5.9 |   -7.3   -9.9  +2.6 |    9.3  +3.7 |  1491   879  1.70
+Fennoscandia                     land        98   314 |    9.0   14.0  -4.9 |  -23.2   -8.5 -14.7 |   -7.1  -8.4 |   455   729  0.62
+Kola / Karelia                   land        34   149 |   10.5   14.6  -4.1 |  -27.4  -11.5 -15.9 |   -8.4  -8.6 |   360   560  0.64
+Svalbard / Franz Josef           all land     4   429 |   -1.7    0.1  -1.9 |  -36.1  -18.9 -17.2 |  -18.9  -8.9 |   285   279  1.02
+Iceland                          all land     7   545 |    6.2    7.4  -1.2 |  -11.6   -2.7  -8.9 |   -2.7  -3.9 |   363  1061  0.34
+Taymyr / Putorana                land        87   301 |   10.4   10.6  -0.2 |  -32.9  -28.4  -4.4 |  -11.2  +0.6 |   243   327  0.75
+Alps                             land        28   874 |   18.9   17.2  +1.7 |   -5.8   -2.5  -3.3 |    6.6  -0.3 |  1318  1086  1.21
+Tibet                            land        66  4959 |    0.8    3.8  -2.9 |  -26.9  -21.5  -5.4 |  -13.0  -3.8 |    70   296  0.24
+Patagonia                        all land    78   539 |   17.9   11.6  +6.4 |   -2.2    0.4  -2.6 |    7.9  +1.9 |   899   773  1.16
+Greenland rim (bare)             land        82   517 |    4.4    2.6  +1.8 |  -29.8  -26.6  -3.2 |  -12.7  -0.4 |   390   419  0.93
+Greenland ice                    ice        133  2005 |   -8.5   -4.2  -4.3 |  -46.0  -32.1 -13.9 |  -26.6  -6.2 |   327   334  0.98
+Antarctic coast ice (<1500 m)    ice<1500   302   810 |   -5.0   -6.3  +1.2 |  -38.7  -31.1  -7.6 |  -21.2  -0.3 |   nan   nan   nan
+Antarctic plateau (>2500 m)      ice>2500   424  3130 |  -19.3  -21.3  +2.0 |  -55.3  -58.5  +3.2 |  -36.7  +9.0 |   nan   nan   nan
+Southern Ocean 60-70S            sea       1354 -3729 |    5.3    0.7  +4.6 |   -5.8  -14.5  +8.7 |   -0.2  +5.9 |   322   723  0.45
+Arctic Ocean >75N                sea        584 -1715 |   -0.3    1.0  -1.2 |  -26.7  -28.4  +1.7 |  -14.7  +0.2 |   157   241  0.65
+Labrador Sea / Baffin Bay        sea        140 -1505 |    5.8    5.3  +0.5 |   -2.3  -16.9 +14.6 |   -0.3  +4.3 |   314   828  0.38
+Nordic Seas                      sea        166 -1687 |    6.5    7.9  -1.4 |   -4.7   -1.8  -2.9 |   -1.6  -3.8 |   298   966  0.31
+Barents Sea                      sea        115  -198 |    1.5    4.7  -3.2 |  -18.3  -10.8  -7.4 |   -9.3  -6.0 |   211   564  0.37
+Hudson Bay                       sea         76  -104 |    4.8    7.9  -3.1 |   -5.4  -27.5 +22.1 |   -0.3  +7.5 |   289   544  0.53
+Baffin Bay                       sea         49  -868 |    3.0    1.6  +1.4 |  -11.2  -30.2 +19.0 |   -6.8  +6.1 |   204   319  0.64
+Sea of Okhotsk                   sea        137 -1148 |   11.0   13.3  -2.3 |    1.6   -9.3 +10.8 |    6.3  +4.4 |   888   887  1.00
+Antarctic pack 65-75S            sea        761 -2972 |    3.5   -0.6  +4.0 |  -10.2  -22.9 +12.7 |   -3.5  +7.9 |   276   496  0.56
+
+2. Continentality: seasonal range (warmest - coldest month) of ice-free land poleward of 35 deg, by distance from the sea
+hemi         km     n |  range    obs | Tw bias Tc bias
+N         0-150   814 |   26.9   26.4 |    -1.7    -2.2
+N       150-400   961 |   33.2   30.8 |    +0.4    -2.0
+N       400-800  1118 |   35.6   33.7 |    +1.1    -0.9
+N      800-1500   803 |   34.7   34.7 |    -0.2    -0.2
+N         >1500   642 |   33.5   33.4 |    -0.3    -0.4
+S         0-150    93 |   16.5    9.6 |    +4.7    -2.2
+S       150-400    82 |   22.2   14.1 |    +5.8    -2.3
+S       400-800    18 |   23.7   17.6 |    +4.5    -1.6
+
+3. Coasts 40-65 N (ice-free land within 600 km of a sea along its parallel)
+  sea to the west (only)   n  351  coldest  -10.8 vs   -6.8 (-4.0)   warmest  15.1 vs  17.4 (-2.3)
+  sea to the east (only)   n  347  coldest  -14.1 vs  -17.1 (+3.1)   warmest  19.5 vs  16.5 (+3.0)
+  both                     n  261  coldest  -10.4 vs   -7.4 (-3.0)   warmest  13.4 vs  15.1 (-1.7)
+  neither (interior)       n 2114  coldest  -16.2 vs  -15.7 (-0.4)   warmest  19.0 vs  18.5 (+0.6)
+
+4. Summer heat by observed summer-half rain (ice-free land 35-65 deg)
+  N     0-300 mm  n  611  warmest month bias  -2.3 C   summer rain   610 vs   167
+  N   300-700 mm  n 1688  warmest month bias  -0.5 C   summer rain  1026 vs   524
+  N  700-1200 mm  n 1144  warmest month bias  +1.9 C   summer rain  1642 vs   895
+  N     >1200 mm  n  208  warmest month bias  +2.4 C   summer rain  2229 vs  1455
+  S     0-300 mm  n   60  warmest month bias  +6.0 C   summer rain  1292 vs   200
+  S   300-700 mm  n   57  warmest month bias  +5.3 C   summer rain  1417 vs   480
+  S  700-1200 mm  n   42  warmest month bias  +4.6 C   summer rain  1539 vs   940
+  S     >1200 mm  n   34  warmest month bias  +4.0 C   summer rain  1365 vs  1987
+
+5. Winter sea-ice proxy (sea whose coldest month < -5 C), Mkm2
+  N: model  14.2  NCEP  16.8
+  S: model  15.0  NCEP  20.2

@@ -134,3 +134,115 @@ simulation both change through the overturning.
 - `draft-nordic-winter-winds-offshore.md`: Fennoscandia's winter is still 14.7 C too cold. The winter winds over the
   Nordic Seas blow offshore, and the air's winds never see the sea's own warmth. For stage 2 or its own ticket.
 - `draft-sea-evaporation-bulk-exchange.md` (updated): the bulk sea-air exchange is parked for PW-015.
+
+## Stage 2: the sea's air and the sea ice (PW-346, broadened)
+
+**Bar** (the coordinator's brief):
+- Hudson Bay, Baffin Bay and Okhotsk freeze in winter where cold air comes off the land, and Hudson Bay's coldest
+  month is plausibly cold;
+- southern winter sea ice within ±25% of observed;
+- the Antarctic pack's winter air no longer ~9 C too warm;
+- Labrador and Hudson Bay lowland winters within ±6 C;
+- stage 1 doesn't regress: NH 8–20 Sv, ≥ 70% in open polar seas, the Norwegian coast open in winter, every generated
+  world sinking in both hemispheres.
+
+**Result: the bar does not pass in a mergeable form. Three attempts, nothing merged into `planet/`.**
+- Attempt 2 meets every bar line above.
+- But it costs the rain: earth_check's log-rain correlation goes 0.617 → 0.533, Köppen group 71 → 66%, cities exact
+  32 → 25.
+- The cause is that the rain kernel is very sensitive to the sea's half-year SSTs (see below).
+- The code is kept as a patch, `stage2/attempt2.patch` (it applies on b6d707b). The judgement call is in
+  `issue-tracking/inbox/draft-sea-swing-from-land-air-vs-rain.md`.
+- This branch adds four sea rows to `tools/climate_bias.py`: Hudson Bay, Baffin Bay, the Sea of Okhotsk and the
+  Antarctic pack at 65–75S.
+
+### Main (b6d707b, stage 1 merged), Earth L6, coldest month, model / NCEP (`stage2/climate_bias_main.txt`)
+
+| sea | model | NCEP | bias |
+|---|---|---|---|
+| Hudson Bay | −5.4 | −27.5 | +22.1 |
+| Baffin Bay | −11.2 | −30.2 | +19.0 |
+| Sea of Okhotsk | +1.6 | −9.3 | +10.8 |
+| Southern Ocean 60–70S | −5.8 | −14.5 | +8.7 |
+| Antarctic pack 65–75S | −10.2 | −22.9 | +12.7 |
+| winter sea-ice proxy N / S (Mkm2) | 14.2 / 15.0 | 16.8 / 20.2 | −15% / −26% |
+
+### Attempt 1: the sea's winter air in the carry (`stage2/climate_bias_attempt1.txt`)
+What changed, in a new `climate._winter_air`:
+- The winter carry runs over land and sea alike.
+- Over open water the air relaxes toward the water over `air_km_sea` (300 km: the boundary layer's depth over the bulk
+  heat-transfer coefficient).
+- Over a frozen sea it relaxes as over land, toward the land's own winter. The heat that the water conducts up through
+  the ice warms it: `k_ice / h` (h is the winter's growth, `ocean.ice_growth`) against `ice_b` (3.5 W/m2/C), the
+  winter air's loss to space. The open part of a freezing sea adds `open_b` (30 W/m2/C).
+- The water's winter cools further where the air over it is colder than the water ("chill", by `half_w / half_l`).
+
+Results:
+- Hudson Bay −18.8 (bias +8.7), Baffin −24.3 (+5.9), Okhotsk −6.6 (+2.6). The Arctic Ocean stays within 2.5 C.
+- But the Southern Ocean overshoots: 60–70S comes out −20.9 (bias −6.4). The southern proxy is 29.2 against 20.2
+  (+45%), and the edge is at 55–60S (7.4 Mkm2 there against 2.1).
+- The band diagnosis shows why. With main's swing, the water's own winter at 55–65S (`sst − 6 C × s`) is already at
+  freezing. On main that was harmless, because the sea's air was pinned to its water. Once the freeze sets the air,
+  it isn't.
+- The observed 2 m air over the open Southern Ocean swings about ±2 C × s, against main's 6. The North Pacific and
+  North Atlantic swing about 6–7.
+
+### Attempt 2: the sea's seasonal swing from the land's air (`stage2/attempt2.patch`, `stage2/climate_bias_attempt2.txt`)
+On top of attempt 1, without the chill:
+- `sea_half` (the water's own swing) goes 6 → 1.9.
+- Each sea cell gets `s × (sea_half + continental × land_air)`. `land_air` is the share of its air that came off land
+  within `air_km_w` on the prevailing winds: a carry of a land indicator, with no new parameter.
+- Against the observed sea-air swing, `land_air` correlates at 0.67 (35–65 deg). It is ~0.04 over the open Southern
+  Ocean and ~0.17–0.38 over the northern seas.
+- The summer half loses the winter's freezing deficit (`_summer_half`). The cold that grew the ice goes into melting it.
+
+| | main | attempt 2 | NCEP |
+|---|---|---|---|
+| Hudson Bay coldest | −5.4 | **−18.8** | −27.5 |
+| Baffin Bay coldest | −11.2 | **−23.3** | −30.2 |
+| Sea of Okhotsk coldest | +1.6 | **−9.1** | −9.3 |
+| Southern Ocean 60–70S coldest | −5.8 | **−18.4** (−4.0) | −14.5 |
+| Antarctic pack 65–75S coldest | −10.2 | **−24.9** (−1.9) | −22.9 |
+| winter sea-ice proxy N / S | 14.2 / 15.0 | **19.7 / 21.2** (+17% / +5%) | 16.8 / 20.2 |
+| Labrador / Hudson Bay lowlands coldest bias | +3.1 / +5.4 | +3.5 / +5.6 | |
+| Southern Ocean 60–70S warmest bias | +4.6 | +0.9 | |
+| Fennoscandia coldest bias | −14.7 | −12.2 | |
+
+The overturning (`tools/overturning_report.py`, same nine worlds as stage 1):
+
+| | main | attempt 2 |
+|---|---|---|
+| Earth NH | 9.51 Sv, 71% open polar | 11.30 Sv, 73% |
+| Earth SH | 2.33 Sv | 4.09 Sv (Weddell 1.13, Ross 0.96) |
+| Norwegian coast open in winter | 100% | 100% (SST +1.5, but its air −4.4 against +0.6) |
+| generated NH / SH Sv | | 119973 17.0/16.6, 28442c 17.2/17.1, 607540 16.2/15.8, 81aced 17.7/14.4, 7082f5 12.3/8.7, d14b89 16.5/18.5, a5a387 10.8/16.7, dad91b 15.4/**3.2**, c00ebf 9.6/8.1 |
+
+Every world still sinks in both hemispheres. The weakest is dad91b's south, 4.5 → 3.2 Sv.
+
+**Why attempt 2 isn't merged** (`stage2/earth_check_attempt2.txt` against `stage2/earth_check_main.txt`):
+- The rain: log-rain correlation 0.617 → 0.533. The summer share of land rain is 0.75 → 0.80 (GPCC 0.65). The SH
+  subtropical and Patagonian summer rain goes up 40–50%.
+- Köppen: group 71 → 66%, exact 31 → 28%; cities 32 / 29 / 17 → 25 / 34 / 19.
+- Bisected by giving the winds and the rain kernel main's swing back (a test only):
+  - the winds alone recover 0.533 → 0.556;
+  - the winds and the rain's half-year SSTs together recover 0.616 and group 70%.
+  - So the rain kernel (PW-015's) is calibrated on the old, uniform ±6 C × s sea, and the sea-ice fix can't land
+    without retuning it.
+- Also worse in attempt 2:
+  - Nordic Seas coldest month −10.4 against −1.8 (main −4.7), and the Norwegian Sea's air −4.4. With the sea's air in
+    the carry, the offshore winter wind of PW-575 now blows the land's cold over the open sea.
+  - Baffin Bay's summer +8.7 C. Its swing is large (land air), and the winter half is damped by the overturning while
+    the summer half isn't.
+  - The 60–70N land's warmest month: −3.7 against −1.0.
+
+### Attempt 3
+Attempt 3 was the bisection above: the winds and the rain on main's swing while the air and the ice used the new one.
+It recovers the rain. But it gives one sea two seasonal SSTs, one for the air and one for the rain. That is a
+temporary split, not a mechanism, so it is not kept.
+
+### Left for later (inbox drafts)
+- `draft-sea-swing-from-land-air-vs-rain.md` (needs-decision). Land the land-air sea swing together with a
+  re-calibration of the rain kernel to its half-year SSTs (with PW-015), or find the rain kernel's SST sensitivity
+  first.
+- `draft-sea-air-carry-offshore-and-baffin-summer.md`. Once the sea's air takes part in the carry, PW-575's offshore
+  Nordic winds chill the open Norwegian Sea, and Baffin Bay's summer runs hot. Both are for the same stage.

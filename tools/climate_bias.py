@@ -72,6 +72,11 @@ ICE_REGIONS = [
     ("Labrador Sea / Baffin Bay", 55, 75, -70, -45, "sea"),
     ("Nordic Seas", 62, 78, -20, 20, "sea"),
     ("Barents Sea", 68, 80, 20, 60, "sea"),
+    # enclosed and leeward seas, which freeze from the land's winter air (PW-346)
+    ("Hudson Bay", 51, 64, -95, -77, "sea"),
+    ("Baffin Bay", 68, 78, -78, -55, "sea"),
+    ("Sea of Okhotsk", 45, 60, 135, 157, "sea"),
+    ("Antarctic pack 65-75S", -75, -65, -180, 180, "sea"),
 ]
 
 
