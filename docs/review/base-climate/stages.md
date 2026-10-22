@@ -582,3 +582,71 @@ Canadian Rockies −4.7 → −7.6 and Tibet −5.4 → −4.1 (the mountain cut
 These are single chaotic snapshots, inside the spread seen before. Tree cover falls on both, by 4–6 points.
 
 Attempts used on PW-575: 2 of 3. The handoff is `handoff-A6.md`.
+
+## PW-582: the Atlantic inflow past the sinking site (lane A7), attempt 1 of 3
+
+**Result: an improvement, but not merge-ready and the bar is not met.**
+- The Nordic Seas and Iceland improve. Fennoscandia is −7.9 C (bar ±6). The Barents doesn't move (−13.7), and
+  Iceland is −10.3 against the −7.8 bar.
+- `uv run pytest -q`: one test fails unchanged, `test_store::test_run_lakes`. Lakes in that chaotic L4 run are
+  1–4 cells, and the first now appears at step 25 against the 20 allowed
+  (`issue-tracking/inbox/draft-run-lakes-test-chaotic.md`). Every other test passes, and the goldens are regenerated
+  on purpose.
+- The scorecard was not run.
+
+Outputs are in `laneA7/` (`*_pw582.txt`). The before files are `laneA6/*_pw575.txt`, because main's `planet/` is
+PW-575's.
+
+### What was found
+- The inflow is routed only to cells that sink. The Barents' winter water is ~0.5 kg/m3 lighter than the Nordic
+  Seas', because its salinity is 34.8 against 35.6–36.1. So it never sinks and is never fed, which is a lock.
+- The lid ("the inflow dives under year-round ice") came from the *first guess's* sea, without the overturning's
+  warmth. It was any sea iced for more than ~9 months of that guess, so a sea the inflow would keep open stayed shut
+  to it.
+- The inflow's route crossed the open Greenland Sea to the sinking site rather than following Norway's slope. The
+  wind-driven currents at 70–76N run westward, and nothing steered the inflow along the slope.
+
+### What changed (`planet/ocean.py`)
+1. **The inflow follows the polar seas' slope** (`_slope_current`).
+   - In a polar sea the overturning's inflow is a buoyant boundary current round the basin (Spall 2004). It follows
+     the depth contours with the shallow side on its right in the north (on its left in the south).
+   - Its route cost treats this as a current of `cur_ref` where the floor drops by about `moc_layer_m` across a cell,
+     poleward of `moc_lat` (fully 10 deg on). It adds no new constant.
+   - It is kept out of the subtropics, where the western boundary currents run the other way. Applied everywhere, it
+     warmed the British Isles box by 4.6 C and flipped the meltwater test's two-basin state.
+2. **The lid is the ice the overturning leaves** (`solve`). The lid is recomputed each iteration from the current
+   coarse SST (with the inflow's warmth), with the same `open_share` rule. `solve` takes `frozen` instead of a
+   precomputed `iced`.
+
+Tried and dropped (`scratchpad/laneA7/exp_pw582.diff`):
+- Knudsen's exchange for the sea under the lid. It gives 0.8 Sv on Earth, and +1 C in the Nordic box. It is unbounded
+  under a meltwater pulse, and it broke `test_glacials_grow_ice_and_endings_melt_it_fast` (57 m against 46).
+- A thermal-wind steering of the inflow (~0.03 m/s, no effect).
+- A wider spin-up gate (`moc_drho` 0.6, `moc_iters` 12): the Barents still doesn't sink.
+
+### The bar (Earth L6; `laneA7/climate_bias_pw582.txt`, `overturning_pw582.txt`, `earth_check_pw582.txt`)
+| line | main (PW-575) | after |
+|---|---|---|
+| Fennoscandia coldest-month bias (bar ±6) | −8.9 | **−7.9** |
+| Kola / Karelia | −14.0 | −13.9 |
+| Iceland (bar: no worse than −7.8) | −12.4 | **−10.3** |
+| Nordic Seas coldest-month bias | −8.3 | **−4.2** |
+| Barents Sea coldest-month bias | −13.8 | −13.7 (still frozen) |
+| Norwegian coast sea air (NCEP ~+3.5); open in winter | −0.7; 100% | **+2.0**; 100% (SST 2.7) |
+| Labrador Sea / Baffin Bay; Baffin Bay; Hudson Bay | +7.7; +9.2; +7.7 | +5.8; +6.1; +7.6 |
+| Earth NH Sv, open polar share; SH | 10.08, 71%; 2.42 | 9.78, 70%; 2.42 |
+| log-rain r / Köppen group / exact; cities | 0.622 / 70 / 31; 32/29/17 | 0.622 / 70 / 31; 32/29/17 |
+
+City winters (coldest month, model / obs): Reykjavik −12.4 → −10.2 / −2.3, Stockholm −8.9 → −8.6 / −2.7, London
+1.6 → 1.7 / 4.7, Nuuk −18.3 → −21.3 / −19.2.
+
+**Generated worlds**, NH / SH Sv (PW-575 → after): 119973 17.5/17.5 → 17.5/18.0, 28442c 17.4/18.0 → 18.7/17.6,
+607540 16.6/16.5 → 17.6/16.6, 81aced 16.6/14.2 → 18.5/13.6, 7082f5 7.5/6.6 → 7.5/6.8, d14b89 16.7/19.0 → 16.5/18.7,
+a5a387 8.3/16.9 → 9.4/17.0, dad91b 15.3/0.87 → 15.6/0.96, c00ebf 8.9/9.4 → 13.4/6.5. All sink in both hemispheres.
+
+### Left open
+- `draft-barents-still-frozen-after-pw582.md` (needs-decision): the Barents lock, and options for the second attempt
+  (the inflow's salinity mixing on its way, or a heat-limited transformation).
+- `draft-run-lakes-test-chaotic.md` (needs-decision): the chaotic lakes test that blocks the merge.
+
+Attempts used on PW-582: 1 of 3. The handoff is `handoff-A7.md`.

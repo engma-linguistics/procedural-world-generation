@@ -44,9 +44,11 @@ planet:
    (as in the zonally averaged model of Wright & Stocker 1991).
 6. The inflow: the water replacing what sinks comes from the low latitudes
    along the cheapest sea routes, riding the currents that go its way (Gulf
-   Stream, North Atlantic Drift), routed like rivers run backwards. It
-   can't pass straits shallower than moc_sill, nor come up under year-round
-   sea ice, nor cross a latitude that is sea all the way round (with no
+   Stream, North Atlantic Drift) and, in the polar seas, the sea floor's
+   slope (a boundary current round the basin), routed like rivers run
+   backwards. It can't pass straits shallower than moc_sill, nor come up
+   under sea ice that lasts most of the year (the ice its own warmth
+   leaves), nor cross a latitude that is sea all the way round (with no
    coast, a circumpolar channel can't hold up a north-south surface flow:
    beyond one, as round Antarctica, deep water wells up to replace it). It
    is a layer hundreds of metres deep: it gives its heat up to the air only
@@ -283,9 +285,26 @@ def _along(order, par, Q, tgt, x0, rate, dil):
     return x
 
 
+def _slope_current(grid: Grid, sea: np.ndarray, depth: np.ndarray, tune: dict) -> np.ndarray:
+    """How the overturning's inflow, a layer moc_layer_m deep, is steered along the sea floor's
+    slope in a polar sea (PW-582). There it is a buoyant boundary current going round the basin
+    (Spall 2004): it follows the depth contours (f/H) with the shallow side on its right in the
+    north, on its left in the south, as the Norwegian Atlantic Current follows Norway's slope on
+    towards the Barents and Spitsbergen. Taken as a current of cur_ref where the floor drops by
+    about the layer's depth across a cell (1 - 1/e of it), fully where by much more; poleward of
+    moc_lat, fully 10 deg on (as the sinking). (In the subtropical gyres the western boundary
+    currents run the other way round, with the coast on their left: not this.)"""
+    dd = C.gradient(grid, np.where(sea, np.maximum(depth, 0.0), 0.0))  # m per km, toward deeper water
+    mag = np.linalg.norm(dd, axis=1)
+    w = 1.0 - np.exp(-mag * C._geom(grid)["h"] / tune["moc_layer_m"])
+    w *= np.clip((np.abs(grid.lat) - tune["moc_lat"]) / 10.0, 0, 1)
+    t = -np.cross(grid.centers, dd) / np.maximum(mag, 1e-9)[:, None]
+    return np.where(sea[:, None], tune["cur_ref"] * (w * np.sign(grid.lat))[:, None] * t, 0.0)
+
+
 def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarray, sst: np.ndarray,
                 sss: np.ndarray, t_eq: np.ndarray, fresh: np.ndarray, cur: np.ndarray, tune: dict,
-                lid: np.ndarray | None = None) -> dict:
+                lid: np.ndarray | None = None, depth: np.ndarray | None = None) -> dict:
     """Sinking, its strength and the surface inflow feeding it (steps 4-6).
     rho_w, rho_a: winter and annual surface density; sst, sss: the surface
     now; t_eq: the latitude's sea temperature (what the inflow gives its
@@ -326,6 +345,9 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # current's speed its way / cur_ref) (at most e^2 less or more).
     cdir = _csr_dir(grid)
     src = grid.nbr_src
+    # It is a layer hundreds of m deep, so it also follows the sea floor's slope (_slope_current).
+    if depth is not None:
+        cur = cur + _slope_current(grid, sea, depth, tune)
     along = (cur[src] * cdir).sum(1) / tune["cur_ref"]
     cost = np.exp(-np.clip(tune["moc_follow"] * along, -2.0, 2.0))
     ok = sea & ~chan & (True if lid is None else ~lid)
@@ -564,7 +586,8 @@ def _up(M: dict, fc: np.ndarray) -> np.ndarray:
 
 def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarray, cur: np.ndarray,
           fresh: np.ndarray, ice_m: np.ndarray, sea_half: np.ndarray, tune: dict,
-          start: dict | None = None, iced: np.ndarray | None = None, depth: np.ndarray | None = None) -> dict:
+          start: dict | None = None, frozen: np.ndarray | None = None,
+          depth: np.ndarray | None = None) -> dict:
     """Salinity, density and the overturning together, to a steady state
     (moc_iters damped iterations), on a coarser grid (moc_level: the
     overturning is thousands of km across; ~10x cheaper). There the
@@ -576,7 +599,9 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     once at the end. t_eq: the latitude's sea temperature; cur: the
     currents; fresh: net fresh water (m/yr, freshwater()'s total); ice_m:
     sea ice grown per winter (m); sea_half: the sea's seasonal half-swing
-    (C); iced: how perennial the sea ice is (0..1); depth: sea depth (m).
+    (C); frozen: how far below freezing the latitude's sea would be (C, <= 0;
+    see open_share), from which the sea ice is found on the overturning's
+    own sea temperatures each iteration; depth: sea depth (m).
     start: an earlier call's moc_state to begin from (picks the state when
     several are stable; same grid). Returns sss, density
     (annual), density_w (winter), sinking (Sv per cell), inflow, state,
@@ -589,16 +614,18 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         return _down(M, sea, f)
 
     fresh_c, ice_c, half_c, teq_c, sst0_c = dn(fresh), dn(ice_m), dn(sea_half), dn(t_eq), dn(sst0)
-    iced_c = None if iced is None else dn(iced)
+    frozen_c = None if frozen is None else dn(frozen)
+    iced_c = None
     cur_c = np.where(sea_c[:, None], dn(cur), 0.0)
     # The inflow is a layer hundreds of m deep: it can't pass a strait
-    # shallower than moc_sill (Bering), and where the sea is iced over all
-    # year it dives under the fresh surface layer (the Arctic halocline).
-    lid = np.zeros(cg.n, bool)
-    if depth is not None:
-        lid |= dn(depth) < tune["moc_sill"]
-    if iced_c is not None:
-        lid |= iced_c > 0.5
+    # shallower than moc_sill (Bering), and where the sea is iced over most
+    # of the year it dives under the fresh surface layer (the Arctic
+    # halocline). That ice is the one the overturning's own warmth leaves,
+    # found again each iteration (from the first guess's sea, without the
+    # inflow, a sea the inflow would keep open stayed shut to it: PW-582).
+    lid_d = np.zeros(cg.n, bool) if depth is None else dn(depth) < tune["moc_sill"]
+    lid = lid_d
+    depth_c = None if depth is None else dn(depth)
     brine = S0 * ICE_FRESH * np.where(sea_c, ice_c, 0.0) / tune["brine_m"]
     # how the sea surface takes up a change of the temperature it relaxes to (as climate.sea_surface)
     reach = tune.get("relax_km", 2500.0) * np.clip(C.speed(cur_c) / tune["cur_ref"], tune["cur_min"], tune["cur_max"])
@@ -634,6 +661,10 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     n_it = max(int(tune["moc_iters"]), 1)
     it = 0
     while True:
+        if frozen_c is not None:
+            # (0..1: how much of the year the sea is iced over; a lid where most of it)
+            iced_c = np.where(sea_c, np.clip(1.0 - 2.0 * open_share(sst, frozen_c, half_c), 0.0, 1.0), 0.0)
+            lid = lid_d | (iced_c > 0.5)
         sss, rho_w, rho_a = state(st, sst)
         # With no earlier state, the first passes let every sea that is
         # nearly dense enough sink, as if spun up from a well-mixed ocean,
@@ -644,7 +675,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         n_sp = max(n_it - 2, 1)
         f = tune["moc_spin"] ** max(1.0 - it / n_sp, 0.0) if start is None else 1.0
         ov = overturning(cg, sea_c, rho_w, rho_a, sst, sss, teq_c, fresh_c, cur_c,
-                         {**tune, "moc_drho": tune["moc_drho"] * f}, lid)
+                         {**tune, "moc_drho": tune["moc_drho"] * f}, lid, depth_c)
         a = 1.0 if spin else tune["moc_relax"]
         step = a * (ov["share"] - st["share"])
         st = {k: st[k] + a * (ov[k] - st[k]) for k in st}

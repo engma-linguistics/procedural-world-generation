@@ -2174,7 +2174,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
                               tune, export)
     oc = ocean_mod.solve(grid, ocean, sst_of, sst0, t_sea, cur, fw["total"], ice_m, sea_half, tune, moc_start,
-                         np.where(ocean, np.clip(1.0 - 2.0 * open_y, 0.0, 1.0), 0.0), -elev)
+                         np.where(ocean, np.minimum(t_sea_air - t_sea, 0.0), 0.0), -elev)
     half_w = sea_half
     if oc["sites"]:
         sst = oc["sst"]
