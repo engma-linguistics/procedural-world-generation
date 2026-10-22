@@ -2,7 +2,7 @@
 id: PW-458
 title: Earth's overturning sinks 4 Sv in Baffin Bay; the Norwegian Sea freezes and Fennoscandia's January is 18 C too cold
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: ocean
@@ -40,6 +40,7 @@ it against generated planets' overturning too.
   winter; Fennoscandia's January within ~5 C of the observed
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 base-climate lane A stage 1 merged (attempt 3): each hemisphere makes its own deep water; the inflow's deep layer damps the sea's winter (moc_layer_m 500). Earth L6 NH 5.1 -> 9.5 Sv, 71% in open polar seas, Baffin 28%, Norwegian coast open all winter; all 9 generated worlds sink in both hemispheres (7082f5's north 0 -> 14.2). Fennoscandia January still -14.7 C (winds, new ticket). docs/review/base-climate/stages.md.
 - 2026-10-22: Merged inbox draft draft-overturning-flipped-by-rain-kernel.md ("PW-458 bisect: PW-015 stage 1's rain kernel (1416523) moved Earth's NH sinking from 11 Sv in the Greenland Sea to 4.9 Sv in Baffin Bay", found by base-climate-review).
   For PW-458 (probably `--merge-into PW-458`).
   

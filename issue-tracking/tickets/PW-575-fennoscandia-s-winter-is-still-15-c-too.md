@@ -1,8 +1,10 @@
 ---
+id: PW-575
 title: "Fennoscandia's winter is still 15 C too cold with the Norwegian Sea open: the winter winds over the Nordic Seas blow offshore, and the air's winds never see the sea's own warmth"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: l
 impact: high
@@ -10,6 +12,8 @@ found_by: base-climate-laneA
 blocked_by: []
 relates: [PW-458, PW-346, PW-570, PW-015]
 refs: [planet/climate.py, tools/overturning_report.py, docs/review/base-climate/stages.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -51,3 +55,6 @@ model units):
 Generated planets have the same gap wherever a warm current or an overturning reaches a polar sea.
 - [ ] Fennoscandia's coldest month within ±6 C of NCEP on Earth L6, with the Norwegian Sea still open in winter
 - [ ] the winter wind over a warm polar sea onshore on its continent's coast
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-nordic-winter-winds-offshore.md (found by base-climate-laneA).
