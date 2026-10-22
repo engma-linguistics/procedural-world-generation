@@ -26,11 +26,12 @@ FLT = 1 - P.RHO_I / P.RHO_W
 
 @pytest.fixture(scope="module")
 def cold_moment():
-    """A run's moment made 4 C colder, with the sheets the run's own ice rule gives that climate
+    """A run's moment made 4 C colder than an icehouse moment (its own dT, or -2 C if it is warmer: the
+    moment itself may be a greenhouse; the test was written on an icehouse moment at -1.8 C), with the sheets the run's own ice rule gives that climate
     (6 climate updates from no ice; as tools/ice_probe.py)."""
     src = Z.source_from_sim(run_sim(level=5, seed=4, myr=300))
     g = src["grid"]
-    dT = src["dT"] - 4.0
+    dT = min(src["dT"], -2.0) - 4.0
     bed0 = src["elev"] + ice_load(g, src["ice"])
     sim = SimpleNamespace(grid=g, params=SimpleNamespace(tilt=src["tilt"]), cell_area=4 * np.pi / g.n,
                           precip=None, p_jul=None, p_jan=None)

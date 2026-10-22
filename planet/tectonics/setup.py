@@ -150,8 +150,9 @@ def initial_state(sim):
     # than the target: the run spent its first ~250 Myr shedding it, and the
     # thermostat's integral term, wound up meanwhile, held arcs back long
     # after, so every run lost 8-13% of its crust volume: PW-046.)
-    shift = thick[cont].mean() - p.continental_thickness
-    thick = np.where(cont, np.maximum(thick - shift, BECOMES_CONT_KM + 1), thick)
+    for _ in range(4):  # (a few times: the floor takes back part of each shift on the thinnest margins)
+        shift = thick[cont].mean() - p.continental_thickness
+        thick = np.where(cont, np.maximum(thick - shift, BECOMES_CONT_KM + 1), thick)
     # Continental rock ages from the unsimulated past (own random stream,
     # so adding this didn't change the rest of the set-up): shields
     # 1.5-3.5 Gyr, the belts around them 0.3-1.4 Gyr.
