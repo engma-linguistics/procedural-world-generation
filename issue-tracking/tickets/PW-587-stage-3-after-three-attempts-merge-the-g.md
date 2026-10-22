@@ -2,7 +2,7 @@
 id: PW-587
 title: "Stage 3 after three attempts: merge the green candidate without the fetch, or redesign the fetch first?"
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -61,4 +61,5 @@ Lean: B. A doesn't clearly improve things overall under the owner's principle, a
 (PW-573). The fetch redesign is one more focused attempt, with the toggles and diagnostics in `laneA11/tools/`.
 
 ## Updates
+- 2026-10-22: Status needs-decision -> in-progress. Coordinator 2026-10-22: option B. Redesign the fetch to build from the arriving sea air on a land-width scale, then land stage 3 together; fix PW-586 alongside.
 - 2026-10-22: Created from inbox draft draft-stage3-after-three-attempts.md (found by base-climate-laneA11).
