@@ -33,7 +33,7 @@ For PW-015 (probably `--merge-into PW-015`), and found while working PW-458 (lan
 - That makes Baffin Bay salty (35.2 psu without the overturning), and its brine water the densest in the north. This
   is part of why Earth's overturning sinks in Baffin Bay (PW-458).
 
-**Tried (uncommitted on lane A's branch).**
+**Tried on lane A's branch (commit a11776e; reverted: main's instant fill is back).**
 - A bulk exchange: per step, `1 − exp(−open × wind × dt / sea_fetch_km)` of the deficit is taken up.
   `sea_fetch_km` = 770 (a ~1 km boundary layer / C_E 1.3e-3) and `sea_wind_min` = 3 m/s.
 - Earth L6, HEAD → bulk exchange:
@@ -52,8 +52,12 @@ For PW-015 (probably `--merge-into PW-015`), and found while working PW-458 (lan
     - the Sahel and East Africa wetter (×4 → ×5).
 - **Generated L6 worlds:** two of three (28442c, 607540) lose their northern overturning (16 → 0 Sv). The shared
   deep-water reference makes the hemispheres compete (see handoff-A).
+- **After stage 1's per-hemisphere deep water** (PW-458, `ocean.overturning`), the exchange no longer helps the
+  overturning. On Earth it is **weaker** with it: 7.2 Sv with the fetch against 13.1 with the instant fill, since the
+  Nordic Seas are gated out. World 7082f5 is 6.6 against 14.6 Sv
+  (`docs/review/base-climate/stages.md`, stage 1). So the exchange is now only a rain question.
 
-**Verdict.** It isn't merge-ready as it stands: the rain is mixed, and the overturning tips on generated worlds. The
+**Verdict (parked by lane A, attempt 3).** It isn't merge-ready as it stands: the rain is mixed, and the overturning tips on generated worlds. The
 mechanism is right, though: sea evaporation should be a bulk exchange, and the leads' uptake should be per unit of
 time. What's open:
 - with the exchange, the target humidity `rh` (0.85 of saturation at the sea surface) no longer stands for the
@@ -62,4 +66,5 @@ time. What's open:
   the coasts.
 
 - [ ] sea evaporation as a bulk exchange, with the rain no worse overall on earth_check and on a few L6 seeds
-- [ ] re-check the overturning (`tools/overturning_report.py`) on Earth and on generated worlds
+- [ ] re-check the overturning (`tools/overturning_report.py`) on Earth and on generated worlds: the stage-1 bar
+  (8–20 Sv in the north, ≥ 70% of it in open polar seas, the Norwegian coast open in winter) must still hold

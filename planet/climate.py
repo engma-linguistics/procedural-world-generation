@@ -936,9 +936,8 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
       of each neighbour's (nbr, CSR off: _faces'), so what leaves one cell
       enters the next and the vapour's mass (per m2 x the cell's area) is
       kept;
-    - over the sea the air takes up open_sea [season, cell] of its
-      deficit to src_q per step (_rain_args: a bulk exchange over a fetch,
-      where the sea isn't under sea ice);
+    - over the sea the air takes up water to src_q, where the sea is open
+      (open_sea: the share not under sea ice);
     - over land it takes up what the ground evaporates: water_balance's
       actual evaporation (Budyko, Fu's w budyko_w per cell, with soil_mm
       kept over from the other season) of the rain the place gets, in mm
@@ -1022,7 +1021,7 @@ def _rain(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, soi
                     q += c_in[j, k] * m[nbr[j], k]
                 if ocean[i]:
                     if src_q[k, i] > q:
-                        up = open_sea[k, i] * (src_q[k, i] - q)
+                        up = open_sea[i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
                         q += up
@@ -1361,12 +1360,6 @@ def _rain_args(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None
     warm = start is not None and start["vap"].shape == st["qs"].shape
     steps = int((RAIN_WARM_DAYS if warm else RAIN_DAYS) * 86400.0 / dt) + 20
     tau_ex = -RATE_S / np.log(1.0 - tune["fex"])
-    # The sea gives the air its water at a bulk rate, not at once: the boundary layer's vapour relaxes toward
-    # src_q at C_E x the wind / its depth, i.e. over a fetch of sea_fetch_km (e-folding), where the sea is
-    # open (open_sea: the share not under sea ice). Per step dt: the share of the deficit taken up.
-    spd = np.stack([np.maximum(np.linalg.norm(d["v"], axis=1) * U_REF, tune["sea_wind_min"]) for d in seasons_in])
-    open_sea = np.ascontiguousarray(1.0 - np.exp(-np.clip(open_sea, 0.0, 1.0)[None, :] * spd * dt
-                                                  / (tune["sea_fetch_km"] * 1000.0)))
     m0 = start["vap"] if warm else np.where(ocean, st["src_q"], RAIN_INIT * st["qs"])
     ema0 = start["ema"] if warm else np.zeros_like(st["qs"])
     return (st["qs"], st["src_q"], ocean, st["ls"] / RATE_S, st["cv"] / RATE_S, st["mse_t"], st["mse_thr"],
@@ -1412,9 +1405,7 @@ def rain(grid: Grid, elev, seasons_in: list[dict], tune: dict, pet, w=None,
 
 TUNE = dict(
     # moisture
-    rh=0.85,  # sea air's humidity relative to saturation at the sea surface, which the air takes up toward ...
-    sea_fetch_km=770.0,  # ... over this fetch (e-folding: a ~1 km boundary layer / C_E ~1.3e-3; PW-458)
-    sea_wind_min=3.0,  # m/s: ... at this wind at least (gusts and convection stir the calmest air)
+    rh=0.85,  # sea air's humidity relative to saturation at the sea surface
     q_k=0.06,  # per C: how much more water warm air holds (Clausius-Clapeyron ~0.07)
     lapse_q=0.5,  # share of the cooling with height that wrings water out of rising air
     airmass_km=800.0,  # km over which the air mass aloft evens out the ground's temperatures
@@ -1549,6 +1540,7 @@ TUNE = dict(
     moc_width=250.0,  # km: the inflow's width (for its heat loss to the air) ...
     moc_lambda=30.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature
     moc_q0=0.001,  # Sv per km of width: an inflow this strong makes up ~2/3 of the surface water
+    moc_layer_m=500.0,  # m: the inflow layer's depth, which winter convection mixes into (ocean.winter_half)
     moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean (see sea_surface; PW-265)
     moc_level=5,  # grid level the overturning is solved on (5: ~220 km cells)
     moc_spin=6.0,  # x moc_drho at the start (see ocean.solve)
@@ -1556,7 +1548,6 @@ TUNE = dict(
     moc_tol=0.003,  # ... on until the inflow's share of the surface water moves by less than this (PW-360) ...
     moc_max_iters=40,  # ... or this many in all (a cost bound)
     moc_relax=0.6,  # damping of each iteration
-    x_ref_hemi=0.0,  # EXPERIMENT (lane A): each hemisphere's polar sea sets its own deep water
 )
 
 
@@ -2116,8 +2107,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                               tune, export)
     oc = ocean_mod.solve(grid, ocean, sst_of, sst0, t_sea, cur, fw["total"], ice_m, sea_half, tune, moc_start,
                          np.where(ocean, np.clip(1.0 - 2.0 * open_y, 0.0, 1.0), 0.0), -elev)
+    half_w = sea_half
     if oc["sites"]:
         sst = oc["sst"]
+        # where the surface water is the overturning's deep inflow, its winter cools less (ocean.winter_half)
+        half_w = air["half_w"] = ocean_mod.winter_half(sea_half, oc["share"], tune)
         t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
         t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
         wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
@@ -2126,8 +2120,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # July / January: the sea's peak months (where it is iced over most of
     # the year, the summer's heat goes into melting the ice: a smaller
     # swing), and the half-years' humidity
-    swing = sgn * sea_half * np.clip((sst - FREEZE) / 4.0, 0.1, 1.0)
-    sst_m = (np.maximum(sst + swing, FREEZE), np.maximum(sst - swing, FREEZE))
+    swing = sgn * np.clip((sst - FREEZE) / 4.0, 0.1, 1.0)
+    # (July is the north's summer and the south's winter)
+    sst_m = (np.maximum(sst + swing * np.where(north, sea_half, half_w), FREEZE),
+             np.maximum(sst - swing * np.where(north, half_w, sea_half), FREEZE))
     tm = 0.5 * (t_warm + t_cold)
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
     q_jul, q_jan = (vapour_mixed(grid, q, d["qs"], d["t_air"], tune) for q, d in zip((q_jul, q_jan), s_in))
@@ -2163,7 +2159,8 @@ def _orbit(temps, orbit_dt, north):
     return (t_warm + np.where(north, jul, jan), t_cold + np.where(north, jan, jul), temp + d.mean(1), open_w)
 
 
-def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune, damp_air):
+def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune, damp_air,
+               half_w=None):
     """Each place takes on the temperature of the air the wind brings it.
     Air over land drifts toward the land's own temperature for the
     season (land holds little heat: hot summers, cold winters) over a few
@@ -2181,16 +2178,20 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     damp_air (icemass.air_mass: how much of the air around is the sheet's),
     and the winds carry it on (katabatic outflow onto its margins, ice
     shelves and the land beyond; PW-336).
+    half_w: the sea's winter half-swing, where it differs from its summer
+    one sea_half (ocean.winter_half: less where the overturning's deep
+    inflow makes up the surface water).
     Returns (t_warm, t_cold, temp, open water in winter 0..1)."""
     from .icemass import SUMMER_DAMP
+    half_w = sea_half if half_w is None else half_w
     half_l = tune["continental"] * s + 0.3  # land left to itself
     t_land = temp0 + lift  # (carried at sea level; heights are taken off after)
-    open_w = ocean * np.clip((sst - sea_half - FREEZE) / 2.0, 0, 1)  # open water in winter
+    open_w = ocean * np.clip((sst - half_w - FREEZE) / 2.0, 0, 1)  # open water in winter
     frozen = np.minimum(t_sea_air - t_sea, 0)  # how far below freezing the latitude's sea would be
     sea_sum = np.maximum(sst + frozen + sea_half, FREEZE)
     land_sum = t_land + half_l * (1.0 - SUMMER_DAMP * damp_air)
     eq_s = np.where(ocean, sea_sum, land_sum)
-    eq_w = np.where(ocean, open_w * (sst - sea_half) + (1 - open_w) * (t_land - half_l), t_land - half_l)
+    eq_w = np.where(ocean, open_w * (sst - half_w) + (1 - open_w) * (t_land - half_l), t_land - half_l)
     h = _geom(grid)["h"]
     k_s = np.where(ocean, 0.0, np.exp(-h / tune["air_km_s"]))
     k_w = np.where(ocean, 0.0, np.exp(-h / tune["air_km_w"]))
@@ -2220,7 +2221,7 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
     t_ice = frozen + inv
     temp = np.where(ocean, sst + t_ice, temp)
     t_warm = np.where(ocean, sea_sum, t_warm)
-    t_cold = np.where(ocean, sst - sea_half + frozen + 1.75 * inv, t_cold)
+    t_cold = np.where(ocean, sst - half_w + frozen + 1.75 * inv, t_cold)
     return t_warm, t_cold, temp, open_w
 
 

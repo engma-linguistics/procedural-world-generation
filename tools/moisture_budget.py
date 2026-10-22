@@ -220,7 +220,7 @@ def _probe(qs, src_q, ocean, ls_rate, cv_rate, mse_t, mse_thr, pet, budyko_w, so
                     T1[k, g, i] = tg
                 if ocean[i]:
                     if src_q[k, i] > q:
-                        up = open_sea[k, i] * (src_q[k, i] - q)
+                        up = open_sea[i] * (src_q[k, i] - q)
                         if last:
                             acc_up[k, i] += up
                         q += up

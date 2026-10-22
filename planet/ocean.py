@@ -294,7 +294,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     Returns sinking (Sv per cell), inflow (Sv per cell width, spread), share
     (0..1: how much of the surface water is the inflow), t_in, s_in (its
     temperature and salinity), rho_deep (the deep water's density, per cell
-    of each sea, at moc_z), sites (list of dicts per connected sinking area: lat, lon, sv, drho
+    of each sea and hemisphere, at moc_z), sites (list of dicts per connected sinking area: lat, lon, sv, drho
     (kg/m3, sinking water minus the water feeding it), area_km2, heat_pw)."""
     n = grid.n
     area = cell_area_km2(grid)
@@ -336,11 +336,16 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # Each sea that isn't connected to the others has its own deep water; a
     # small one (an inland sea) has none to speak of. Water can sink where
     # it is within moc_drho of that deep water's density (fully at it).
+    # Each hemisphere's polar sea makes its own: the deep water a polar sea
+    # forms fills its own side of the ocean first (as North Atlantic and
+    # Antarctic bottom water both form on Earth), so one hemisphere's denser
+    # water doesn't shut the other's sinking off (with one reference per
+    # ocean the hemispheres competed, winner takes all: PW-458).
     lab, k = kernels.components(sea, grid.nbr_off, grid.nbr_idx)
     big = np.bincount(lab[sea], area[sea], k) >= tune["moc_sea_km2"]
     deep = np.zeros(n)
     drho = tune["moc_drho"]
-    hemis = (np.sign(grid.lat) > 0, np.sign(grid.lat) <= 0) if tune.get("x_ref_hemi", 0) else (np.ones(n, bool),)
+    hemis = (grid.lat > 0, grid.lat <= 0)
     for c, hm in ((c, hm) for c in np.flatnonzero(big) for hm in hemis):
         m = (lab == c) & hm & (polar > 0) & (reach | (chan.any() & ~chan & (lat > _chan_lat(grid, chan))))
         if not m.any():
@@ -602,7 +607,8 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         # (which water sinks deepest is decided deep down: compared at moc_z)
         sss = salinity(cg, sea_c, fresh_c, cur_c, tune, iced_c, st["share"], st["s_in"], out_w, warm.get("S"))
         warm["S"] = sss
-        rho_w = density(np.maximum(sst - half_c, C.FREEZE), sss + brine, tune["moc_z"])
+        rho_w = density(np.maximum(sst - winter_half(half_c, st["share"], tune), C.FREEZE), sss + brine,
+                        tune["moc_z"])
         return sss, rho_w, density(sst, sss, tune["moc_z"])
 
     nc = cg.n
@@ -647,10 +653,23 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     brine_f = S0 * ICE_FRESH * np.where(sea, ice_m, 0.0) / tune["brine_m"]
     sink_f = _up(M, ov["sinking"]) * sea
     sink_f *= ov["sinking"].sum() / max(sink_f.sum(), 1e-12)  # (same total)
+    share_f = np.where(sea, np.clip(_up(M, st["share"]), 0, 1), 0.0)
     return dict(sss=sss_f, density=density(sst_f, sss_f),
-                density_w=density(np.maximum(sst_f - sea_half, C.FREEZE), sss_f + brine_f),
-                sinking=sink_f, inflow=_up(M, ov["inflow"]) * sea, state=st,
+                density_w=density(np.maximum(sst_f - winter_half(sea_half, share_f, tune), C.FREEZE),
+                                  sss_f + brine_f),
+                sinking=sink_f, inflow=_up(M, ov["inflow"]) * sea, share=share_f, state=st,
                 sites=ov["sites"], sst=sst_f)
+
+
+def winter_half(sea_half: np.ndarray, share: np.ndarray, tune: dict) -> np.ndarray:
+    """The sea's winter half-swing (C) where a share of the surface water is
+    the overturning's inflow. The inflow is a layer moc_layer_m deep (the
+    Atlantic Water under the Nordic Seas, ~500-800 m), and winter convection
+    mixes down into it: the winter's heat loss is spread over that layer
+    instead of the ordinary winter mixed layer (brine_m), so the surface
+    cools by brine_m / moc_layer_m as much. The summer's warming sits in a
+    shallow layer on top and is left as it is."""
+    return sea_half * (1.0 - share * (1.0 - tune["brine_m"] / tune["moc_layer_m"]))
 
 
 # ---------------------------------------------------------------------------

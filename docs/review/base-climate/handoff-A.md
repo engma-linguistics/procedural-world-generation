@@ -1,5 +1,9 @@
 # Lane A handoff (2026-10-22, second session, ~100 tool calls)
 
+> **Superseded (third session, attempt 3).** Stage 1 passed its bar with a per-hemisphere deep water and the
+> inflow's damped winter. The bulk exchange was reverted and parked, and `x_ref_hemi` is now the default without a
+> switch. See `stages.md`, stage 1. This note is kept as the record of attempts 1–2.
+
 Lane A is base-climate stages 1–3 and then the checkpoint. **Stage 1 (PW-458) has not passed.** Attempts 1 and 2 of
 3 are used.
 - Attempt 1 was the factor separation plus the step-consistent uptake through sea ice.
