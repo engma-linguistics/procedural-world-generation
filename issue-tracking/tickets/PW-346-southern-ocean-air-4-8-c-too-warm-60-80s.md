@@ -2,7 +2,7 @@
 id: PW-346
 title: "Southern Ocean air 4-8 C too warm (60-80S), worst over the seasonal pack ice: the sea's own air ignores winter ice and the continent's outflow"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: climate
@@ -46,6 +46,7 @@ letting the air over (frozen) sea take part in the carry, so a continent's outfl
 - [ ] re-run the PW-313 probe and earth_check's overturning (Ross/Weddell)
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 merged (stage 2b, lanes A3-A5): sea's winter air carried; derived sea swing; stable summer land air over coastal seas; overturning cap from densest water; valley-floor alluvium. Earth: Hudson Bay -18.9, Okhotsk -6.5 C coldest month; S sea ice +8%; rain r 0.619; Koppen group 69.6%.
 - 2026-10-22: 2026-10-22 lane A stage 2: 3 attempts, nothing merged. Attempt 2 (sea's winter air carried; sea swing = own + land air share; ice melt eats the summer) meets the stage bar (Hudson Bay -5.4 -> -18.8 C, S pack bias +12.7 -> -1.9, sea ice +17%/+5%, stage 1 holds) but worsens rain/Koppen (log-rain r 0.617 -> 0.533) because the rain kernel is tuned to the old uniform sea swing. Patch kept: docs/review/base-climate/stage2/attempt2.patch. Next: PW-575 winds, then the rain-kernel diagnosis (PW-577).
 - 2026-10-22: Merged inbox draft draft-sea-air-only-knows-its-water.md ("The sea's air only knows its own water: Hudson Bay, Baffin Bay and Okhotsk stay open in winter (Hudson Bay -5 vs -28 C), like the Antarctic pack (PW-346)", found by base-climate-review).
   For PW-346 (probably `--merge-into PW-346`). It is the same cause as PW-346's, beyond the Southern Ocean.

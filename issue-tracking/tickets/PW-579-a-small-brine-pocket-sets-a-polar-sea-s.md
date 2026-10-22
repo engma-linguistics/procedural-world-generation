@@ -1,8 +1,10 @@
 ---
+id: PW-579
 title: A small brine pocket sets a polar sea's deep water and gates out the rest (dad91b's south 4.5 → 0.9 Sv)
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: ocean
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: laneA5 (stage 2b + PW-578, merge pass)
 blocked_by: []
 relates: [PW-578, PW-458, PW-346, PW-017]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md, "world dad91b"]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -53,3 +57,6 @@ Options:
 Lean: A or B. Ocean / stage-1 code, so for the coordinator's ruling and the next ocean pass, not this merge.
 - [ ] rule on A / B / C
 - [ ] check Earth's Weddell and Ross under the chosen option (PW-017)
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-dad91b-southern-sinking-weakening.md (found by laneA5 (stage 2b + PW-578, merge pass)).

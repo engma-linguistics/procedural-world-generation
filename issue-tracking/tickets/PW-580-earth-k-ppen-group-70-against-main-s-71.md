@@ -1,8 +1,10 @@
 ---
+id: PW-580
 title: Earth Köppen group 70% against main's 71% after PW-578; the gap is stage 2b's temperatures (D→E, A→C), not the rain
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: climate
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: laneA4 (PW-578 attempt 2)
 blocked_by: []
 relates: [PW-578, PW-346, PW-577]
 refs: [planet/climate.py, docs/review/base-climate/pw578/earth_check_after.txt, docs/review/base-climate/stage2b/ec_main.txt]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -25,3 +29,6 @@ against NCEP (`seaswing` bins, land_air > 0.3) and winters ~4 C too cold. Stage 
 One idea tried and dropped: letting the summer land air keep its warmth over the sea (a stable carry over
 air_km_w). It warmed the 35–65N near-land seas 1.5–3.8 C too much.
 - [ ] find why the high-latitude near-land seas' summer air is too cold, without the overshoot
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stage2b-koppen-group-d-to-e.md (found by laneA4 (PW-578 attempt 2)).
