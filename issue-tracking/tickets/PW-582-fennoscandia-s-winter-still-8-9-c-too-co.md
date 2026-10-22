@@ -1,4 +1,5 @@
 ---
+id: PW-582
 title: "Fennoscandia's winter still 8.9 C too cold after PW-575's winds: the Barents and the northern Greenland Sea freeze (no Atlantic water past the sinking site), and Iceland sits in their cold"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA6
 blocked_by: []
 relates: [PW-575, PW-577, PW-458, PW-026]
 refs: [planet/climate.py, planet/ocean.py, tools/climate_bias.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA6/]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -39,3 +42,6 @@ Iceland. Generated worlds with a polar sea beyond their sinking site have the sa
 
 - [ ] the Barents Sea's coldest month within ~6 C of NCEP, the Norwegian Sea still open
 - [ ] Fennoscandia's coldest month within ±6 C
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-nordic-winter-barents-frozen.md (found by base-climate-laneA6).

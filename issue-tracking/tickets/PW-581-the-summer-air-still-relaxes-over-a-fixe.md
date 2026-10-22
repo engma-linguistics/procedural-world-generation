@@ -1,5 +1,6 @@
 ---
-title: "The summer air still relaxes over a fixed 450 km while the winter's is now per time (PW-575); mountain cells' own winters run cold (Canadian Rockies −4.7 → −7.6 C)"
+id: PW-581
+title: The summer air still relaxes over a fixed 450 km while the winter's is now per time (PW-575); mountain cells' own winters run cold (Canadian Rockies −4.7 → −7.6 C)
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: base-climate-laneA6
 blocked_by: []
 relates: [PW-575, PW-352, PW-573, PW-026]
 refs: [planet/climate.py, tools/climate_bias.py, docs/review/base-climate/stages.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -32,3 +35,6 @@ PW-575 (lane A6) made the winter air over land relax toward the land's own winte
 
 - [ ] the summer carry per time (stage 3), the SH coastal range within 1.3× NCEP
 - [ ] mountain cells' winters within ±6 C without losing the prairies' cold pool
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-air-relaxation-in-time-summer-and-mountains.md (found by base-climate-laneA6).

@@ -57,4 +57,5 @@ Generated planets have the same gap wherever a warm current or an overturning re
 - [ ] the winter wind over a warm polar sea onshore on its continent's coast
 
 ## Updates
+- 2026-10-22: 2026-10-22 merged (lane A6, attempt 2): wind belts follow the air masses (front_shift); winter air over land relaxes in time (air_m 1000 m). Fennoscandia coldest-month bias -11.9 -> -8.9 C (bar +-6 not met: Barents/N Greenland Sea freeze, new ticket); Norwegian Sea winds now onshore; London +1.6, Stockholm -8.9; rain r 0.622, Koppen 70.3. Merged as a mechanism improvement (owner principle).
 - 2026-10-22: Created from inbox draft draft-nordic-winter-winds-offshore.md (found by base-climate-laneA).
