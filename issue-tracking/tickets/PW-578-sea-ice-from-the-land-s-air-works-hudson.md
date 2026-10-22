@@ -69,4 +69,5 @@ but it is a split, not a mechanism.
 - [ ] the stage-2 bars (stages.md) pass, with earth_check's log-rain correlation and Köppen group not worse than main
 
 ## Updates
+- 2026-10-22: Owner 2026-10-22: land the stage-2 mechanism first, with the rain/Koppen regression accepted temporarily, then fix the rain separately; avoid local optima where a fitted kernel blocks a correct mechanism.
 - 2026-10-22: Created from inbox draft draft-sea-swing-from-land-air-vs-rain.md (found by base-climate-laneA2).

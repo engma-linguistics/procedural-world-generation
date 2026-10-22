@@ -2,7 +2,7 @@
 id: PW-576
 title: "The thermostat's weakness is its bookkeeping, not erosion: the saturating weathering law (PW-574 A) doesn't help; fix it with the CO2 stock and a fixed start reference instead"
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -71,4 +71,5 @@ The bar change in C is the owner's call:
 - [ ] if B or C: lane B builds the stock and the start reference, then measures the 10 seeds with `ice_diag --summary`
 
 ## Updates
+- 2026-10-22: Status needs-decision -> in-progress. Owner 2026-10-22: option C. Build CO2 as a stock (PW-558) with a fixed reference set once from the planet's own start balance (PW-559 B); judge 'runs against dT' against the drift; accept ~0.35-0.5 C/C as close enough rather than tuning sensitivity to 0.7.
 - 2026-10-22: Created from inbox draft draft-thermostat-cause-is-bookkeeping.md (found by base-climate-laneB).
