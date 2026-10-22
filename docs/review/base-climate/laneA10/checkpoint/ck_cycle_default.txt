@@ -1,0 +1,11 @@
+bringing up nodes...
+bringing up nodes...
+
+..........
+=============================== warnings summary ===============================
+tests/test_timezoom_cycle.py::test_zoom_climate_follows_the_index
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-ac30545d37de94be9/planet/climate.py:2175: RuntimeWarning: fresh water into the sea doesn't balance: -0.0267 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+10 passed, 1 warning in 24.74s

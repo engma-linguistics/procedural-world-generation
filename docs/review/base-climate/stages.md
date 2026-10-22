@@ -899,3 +899,25 @@ attempt 1.
   swing hid that.
 
 One attempt is left. Notes for it are in `handoff-A10.md`.
+
+## Checkpoint (PW-570 step 4): the zoom's honest rules on the base climate after PW-579 (lane A10)
+
+This is measured only. The defaults are unchanged. The honest rules are `orbit_resp=seasons`, `sheet_air=cold`,
+`surface_air=fetch`, `margin=ramp` and `front=ramp`. They were applied to the tests as TZParams defaults through the
+pytest plugin `laneA10/checkpoint/honest.py`, and to `tz_earth.py` through `--set`. Outputs are in
+`laneA10/checkpoint/`.
+
+| check | defaults | honest rules |
+|---|---|---|
+| `tests/test_timezoom_cycle.py` (incl. the L4 endings test, PW-568) | 10 passed | **9 passed, 1 failed**: endings, extra 93.5 m, 102.1 m left after 15 kyr (bar < 46.7) |
+| `tz_earth.py`: maxima (≤ −80 m at ≤ 6 C) | −86 … −100 m ok | −74 … −101 m (one glacial at −74: F) |
+| ... give-back ≥ 0.6 | 0.73–0.96 ok | 0.62–0.88 ok |
+| ... interglacial ice 9–12% | 9.3–12.1 (F, at 12.1) | 12.4–13.7 (F) |
+| ... cooling ≤ 6 C | 6.21 (F) | 6.21 (F) |
+| `tz_earth.py --dt0` (within 20%, follows the orbit) | not re-run | area up to 1.37× (F); corr −0.25 (follows: ok) |
+
+- The L4 endings test still fails under the honest rules, and the Earth bars move only a little: give-back holds,
+  while the interglacial ice and the dT-0 growth are worse.
+- That is the outcome the review expected (section 4): it confirms that the ice-surface air (PW-569 / PW-439) is
+  what holds the ice. So the checkpoint goes back to the ice lane.
+- Stage 3 isn't in this base climate yet, so the checkpoint should be re-run once it merges.
