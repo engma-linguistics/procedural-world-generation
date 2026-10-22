@@ -40,7 +40,8 @@ planet:
 5. Strength: Stommel's flow law (his two-box model, 1961): sinking ~ moc x
    the density difference between the sinking water and the water that
    replaces it x the area; each sea's cell in each hemisphere at most moc_k
-   Sv per kg/m3 (as in the zonally averaged model of Wright & Stocker 1991).
+   Sv per kg/m3 of its densest water's density over the water replacing it
+   (as in the zonally averaged model of Wright & Stocker 1991).
 6. The inflow: the water replacing what sinks comes from the low latitudes
    along the cheapest sea routes, riding the currents that go its way (Gulf
    Stream, North Atlantic Drift), routed like rivers run backwards. It
@@ -369,13 +370,23 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     # the deep return flow is limited by the ocean's size, not the sinking
     # area's (Stommel's two boxes; as zonally averaged, Wright & Stocker
     # 1991): each sea's overturning cell in each hemisphere carries at most
-    # moc_k Sv per kg/m3 of its density difference.
-    dr_all = np.maximum(rs - np.where(reach, ra[np.maximum(root, 0)], rho_up), 0.0)
+    # moc_k Sv per kg/m3 of its density difference: the polar box's dense
+    # water (its densest moc_top share, before it mixes on the way down:
+    # ref + moc_mix) against the water replacing it (the low box, by where it
+    # sinks). Not the sinking water's own density weighted by the sinking: a
+    # fresh pulse that shuts the densest site off moves the weight to the
+    # other sites, and that mean could rise; the densest water can only get
+    # lighter (PW-578).
+    rep = np.where(reach, ra[np.maximum(root, 0)], rho_up)
+    dr_all = np.maximum(rs - rep, 0.0)
     for c in np.flatnonzero(big):
         for h_ in (1.0, -1.0):
             cells = np.flatnonzero((lab == c) & (np.sign(grid.lat) == h_) & (sinking > 0))
+            if not len(cells):
+                continue
             psi = sinking[cells].sum()
-            cap = tune["moc_k"] * (sinking[cells] * dr_all[cells]).sum() / max(psi, 1e-12)
+            rho_rep = (sinking[cells] * rep[cells]).sum() / psi
+            cap = tune["moc_k"] * max(deep[cells[0]] + tune["moc_mix"] - rho_rep, 0.0)
             if psi > cap:
                 sinking[cells] *= cap / psi
     # diagnostics per connected sinking area

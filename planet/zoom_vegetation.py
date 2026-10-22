@@ -229,9 +229,11 @@ def surface(elevation, lake_depth, water) -> np.ndarray:
 
 
 def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul,
-                 cloud_jan, slope, res, rock, landform, plain, strip, hollow, glacier, nx, ny, idx) -> dict:
+                 cloud_jan, slope, res, rock, landform, plain, strip, hollow, glacier, nx, ny, idx,
+                 river_q=None, river_km=None) -> dict:
     """soils.zoom_mineral on the bare land pixels idx (their climate,
-    slope (tan), floodplain and river-strip shares, hollows, all (nv,)):
+    slope (tan), floodplain and river-strip shares, hollows, the nearest
+    river's discharge and km to it, all (nv,)):
     the exposed rock and landform as the zoom stores them (n,; else the
     pixel's cell's), the cell's landform age, last glaciation and salt
     lakes nearby, its loess interpolated (land cells), and the zoom's
@@ -253,7 +255,7 @@ def soil_mineral(world: dict, fr, pxv, pyv, sel, cell, lat, temp, t_warm, t_cold
         loess = np.nan_to_num(f[:, 0])
     ice_km = ZT.nearest(np.asarray(glacier, bool), nx, ny)[0][idx] * res
     return SO.zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, slope, res, rock,
-                           landform, lfa, glac, plain, strip, hollow, loess, salt, ice_km)
+                           landform, lfa, glac, plain, strip, hollow, loess, salt, ice_km, river_q, river_km)
 
 
 # the zoom's soil layers (soils.world_layers' names, stored as on the globe: store.LAYERS)
@@ -362,7 +364,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     # its fertility and permafrost, for the vegetation
     t_s = time.time()
     sp_m = soil_mineral(world, fr, px[idx], py[idx], sel, cell, latv, temp, t_warm, t_cold, pj, pn, tilt,
-                        cj, cn, slope, res, rock, landform, plain, rip, wet, glacier, nx, ny, idx)
+                        cj, cn, slope, res, rock, landform, plain, rip, wet, glacier, nx, ny, idx, rq, dist)
     t_soil = time.time() - t_s
 
     # --- productivity, in batches -----------------------------------------

@@ -539,6 +539,28 @@ COLLUVIUM_M = 1.0  # m of soil washed down into the wettest hollows and slope fe
 FOREFIELD_KM, FOREFIELD_MYR = 4.0, 0.005  # ground this near a zoom glacier was under it this recently (its forefield)
 
 
+def valley_floor(river_q, river_km, slope, rock, res_km: float) -> np.ndarray | float:
+    """The share of each pixel on its nearest river's valley floor: the
+    alluvium the river has laid down as it swings across it (fluvisols). Its
+    width is the fine zoom's (zoom_fine_floodplain.half_width: FLOOR_W
+    channel widths, w = 4 Q^0.5 m, x sqrt of the rock's erodibility),
+    narrowing to none on steep ground (slope in the cells' measure, m/km; a
+    gorge keeps no floor). It grows with the channel, a power of the flow,
+    not with the flow's log, so a big river's own pixels are its floor
+    whatever the rain (PW-578: the riparian strip and the flooded share alone
+    put a 300-1000 m^3/s river's pixels on the edge of alluvium)."""
+    if river_q is None:
+        return 0.0
+    from .surface import ROCK_K
+    from .zoom_fine_floodplain import half_width
+    d = np.abs(np.asarray(river_km, float))
+    k = ROCK_K[np.clip(np.asarray(rock, int), 0, len(ROCK_K) - 1)]
+    w_km = 4.0 * np.sqrt(np.maximum(np.asarray(river_q, float), 0.0)) / 1000.0
+    hw = half_width(w_km, np.clip(1.0 - np.asarray(slope, float) / STEEP, 0, 1), k)
+    share = (np.minimum(d + 0.5 * res_km, hw) - np.maximum(d - 0.5 * res_km, -hw)) / res_km
+    return np.where(np.isfinite(d), np.clip(share, 0, 1), 0.0)
+
+
 def zoom_slope(slope_tan, res_km: float) -> np.ndarray:
     """A pixel's slope (tan) in the cells' measure (m/km, see PX_SLOPE)."""
     e = PX_SLOPE_EXP if res_km <= 2.0 else PX_SLOPE_EXP_COARSE
@@ -547,7 +569,7 @@ def zoom_slope(slope_tan, res_km: float) -> np.ndarray:
 
 def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul, cloud_jan, slope_tan,
                  res_km: float, rock, landform, landform_age, glaciated_myr, plain, strip, hollow, loess_m,
-                 salt_near_, ice_km) -> dict:
+                 salt_near_, ice_km, river_q=None, river_km=None) -> dict:
     """Pass 1 on a zoom's bare land pixels (no sea, lake or glacier), all
     (n,): the pixel's own climate (lapse- and slope-corrected); slope_tan;
     rock: the exposed rock (the zoom's surface_rock); landform,
@@ -557,7 +579,10 @@ def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul
     topographic wetness of hollows and valley floors (colluvium there);
     loess_m: the cells' loess, interpolated; salt_near_: a salt lake or pan
     in or beside the pixel's cell; ice_km: km to the nearest zoom glacier
-    (its forefield is freshly deglaciated). Returns mineral()'s fields."""
+    (its forefield is freshly deglaciated); river_q, river_km: the nearest
+    river's discharge (m^3/s) and the km to its centre line (inf without
+    one): the river's valley floor, which it has built of its own silt, is
+    alluvium too. Returns mineral()'s fields."""
     from . import landform as LF
     n = len(temp)
     slope = zoom_slope(slope_tan, res_km)
@@ -567,6 +592,7 @@ def zoom_mineral(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float, cloud_jul
     glac = np.where(np.asarray(ice_km) <= FOREFIELD_KM, np.minimum(glac, FOREFIELD_MYR), glac)
     flat = slope < STEEP
     alluv = np.maximum(np.asarray(plain, float) / PLAIN_FULL, np.asarray(strip, float))
+    alluv = np.maximum(alluv, valley_floor(river_q, river_km, slope, rock, res_km))
     aggrading = (lfm == LF.COASTAL_PLAIN) & (lfa <= COASTAL_PLAIN_MYR) & flat
     loess_px = np.asarray(loess_m, float) * np.clip(2.0 - slope / STEEP, 0, 1)  # (it slides off steep slopes)
     cl = _climate(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan)
