@@ -1,6 +1,8 @@
 """The time zoom from a run's moment starts close to its own balance (PW-418, PW-366): the run's ice
 rule (earth.ice_sheets, as earth.update_climate runs it) makes the sheets of a cold moment, then the time
-zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, seed 4, 300 Myr (seed 2 lost most of its polar ice after PW-300, seed 1 after PW-549), 4 C colder."""
+zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, 300 Myr, 4 C
+colder; the first seed from 4 on whose moment is a plausible world with polar land (see SEEDS: the run is chaotic,
+so the seed used to be re-picked by hand: seed 2 lost most of its polar ice after PW-300, seed 1 after PW-549)."""
 
 from types import SimpleNamespace
 
@@ -24,14 +26,24 @@ RUN_RULE = dict(margin="edge", front="edge", orbit_resp="run", sheet_air="all", 
 FLT = 1 - P.RHO_I / P.RHO_W
 
 
-@pytest.fixture(scope="module")
-def cold_moment():
-    """A run's moment made 4 C colder than an icehouse moment (its own dT, or -2 C if it is warmer: the
-    moment itself may be a greenhouse; the test was written on an icehouse moment at -1.8 C), with the sheets the run's own ice rule gives that climate
-    (6 climate updates from no ice; as tools/ice_probe.py)."""
-    src = Z.source_from_sim(run_sim(level=5, seed=4, myr=300))
+# The source: a 300 Myr L5 run, whose climate feeds back on its tectonics and erosion, so any climate change
+# gives another world (PW-582 attempt 2 turned seed 4 into 6 plates at -314 m of sea level). The property under
+# test (at I = 0 the zoom keeps the run's ice) needs an ordinary world with polar land, not a particular one:
+# the first of SEEDS whose cold moment meets the precondition below, so the fixture tracks the current code
+# without riding on one chaotic world.
+SEEDS = tuple(range(4, 16))  # (was 4-11; on the mature start, PW-576, none of those met it)
+SL_MAX = 150.0  # m: the run's sea level within this of today's
+MOC_MIN = 2.0  # Sv: the cold climate overturns in both hemispheres
+POLAR_LAND = 0.25  # land's share of the cap poleward of 60 deg, in at least one hemisphere (where sheets can grow)
+SHEETS_MIN = 0.01  # share of the surface under > 1 m of ice in the cold moment (else the drift test proves nothing;
+# a 300 Myr moment can be a greenhouse that 4 C of cooling leaves ice-free)
+
+
+def _cold(src):
+    """src made 4 C colder, with the sheets the run's own ice rule gives that climate
+    (6 climate updates from no ice; as tools/ice_probe.py); and the last update's climate."""
     g = src["grid"]
-    dT = min(src["dT"], -2.0) - 4.0
+    dT = src["dT"] - 4.0
     bed0 = src["elev"] + ice_load(g, src["ice"])
     sim = SimpleNamespace(grid=g, params=SimpleNamespace(tilt=src["tilt"]), cell_area=4 * np.pi / g.n,
                           precip=None, p_jul=None, p_jan=None)
@@ -46,13 +58,33 @@ def cold_moment():
         sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
         ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice), marine=earth.marine_view(bed, c))
     e, ice0, _ = land_view(bed0 - ice_load(g, ice), np.where(bed0 > 0, ice, 0.0))
-    src = dict(src, elev=e, ice=ice0, dT=dT)
+    return dict(src, elev=e, ice=ice0, dT=dT), c
+
+
+def _plausible(src, c):
+    """The precondition: a plausible sea level, an overturning in both hemispheres, polar land and sheets."""
+    lat, land = src["grid"].lat, src["elev"] > 0
+    sink = np.where(land, 0.0, c["overturning"])
+    cap = max(land[lat > 60].mean(), land[lat < -60].mean())
+    return (abs(src["sea_level"]) <= SL_MAX and sink[lat > 0].sum() >= MOC_MIN and sink[lat < 0].sum() >= MOC_MIN
+            and cap >= POLAR_LAND and (src["ice"] > 1).mean() > SHEETS_MIN)
+
+
+@pytest.fixture(scope="module")
+def cold_moment():
+    """A run's moment made 4 C colder (_cold), the first of SEEDS that meets _plausible's precondition."""
+    for seed in SEEDS:
+        src, c = _cold(Z.source_from_sim(run_sim(level=5, seed=seed, myr=300)))
+        if _plausible(src, c):
+            break
+    else:
+        pytest.fail(f"no seed of {SEEDS} gives a plausible source")
     return src, Z.simulate(src, 20.0, 0.5, 2.0, Z.TZParams(**UNFORCED, **RUN_RULE))
 
 
 def test_cold_moment_has_sheets(cold_moment):
     src, _ = cold_moment
-    assert (src["ice"] > 1).mean() > 0.01  # (else the drift test below proves nothing)
+    assert (src["ice"] > 1).mean() > SHEETS_MIN  # (else the drift test below proves nothing; _plausible's too)
 
 
 def test_ice_speeds_plausible(cold_moment):

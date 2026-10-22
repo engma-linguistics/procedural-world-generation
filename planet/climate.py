@@ -1589,8 +1589,7 @@ TUNE = dict(
     moc_sea_km2=1.0e6,  # km2: a sea smaller than this (cut off from the others) has no deep water of its own
     moc_src_lat=25.0,  # deg: the water replacing what sinks comes from equatorward of this ...
     moc_follow=3.0,  # ... riding the currents (a step costs exp(-this x the current's speed its way / cur_ref))
-    moc_sill=300.0,  # m: it can't pass straits shallower than this
-    moc_width=250.0,  # km: the inflow's width (for its heat loss to the air) ...
+    moc_width=250.0,  # km: the inflow's width (for its heat loss to the air, and the straits it can pass) ...
     moc_lambda=30.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature
     moc_q0=0.001,  # Sv per km of width: an inflow this strong makes up ~2/3 of the surface water
     moc_layer_m=500.0,  # m: the inflow layer's depth, which winter convection mixes into (ocean.winter_half)
@@ -2174,7 +2173,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
                               tune, export)
     oc = ocean_mod.solve(grid, ocean, sst_of, sst0, t_sea, cur, fw["total"], ice_m, sea_half, tune, moc_start,
-                         np.where(ocean, np.clip(1.0 - 2.0 * open_y, 0.0, 1.0), 0.0), -elev)
+                         np.where(ocean, np.minimum(t_sea_air - t_sea, 0.0), 0.0), -elev)
     half_w = sea_half
     if oc["sites"]:
         sst = oc["sst"]
