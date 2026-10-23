@@ -2,7 +2,7 @@
 id: PW-587
 title: "Stage 3 after three attempts: merge the green candidate without the fetch, or redesign the fetch first?"
 type: task
-status: in-progress
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -61,5 +61,6 @@ Lean: B. A doesn't clearly improve things overall under the owner's principle, a
 (PW-573). The fetch redesign is one more focused attempt, with the toggles and diagnostics in `laneA11/tools/`.
 
 ## Updates
+- 2026-10-22: Status in-progress -> done. 2026-10-22 stage 3 merged (lane A12): summer fetch from the arriving sea air on distance scales (fetch_km 1000, fetch_h 3500), per-time reach, PET-referenced energy split, mountain rule, humidity floor. Humid summers +5-6 -> +2-4 C; SH coastal range 1.29x (pass); dry-region summer rain down; r 0.620. W Europe / Fennoscandia summers worse via too-cold near-land NH SST (new ticket). Merged under the owner's principle.
 - 2026-10-22: Status needs-decision -> in-progress. Coordinator 2026-10-22: option B. Redesign the fetch to build from the arriving sea air on a land-width scale, then land stage 3 together; fix PW-586 alongside.
 - 2026-10-22: Created from inbox draft draft-stage3-after-three-attempts.md (found by base-climate-laneA11).

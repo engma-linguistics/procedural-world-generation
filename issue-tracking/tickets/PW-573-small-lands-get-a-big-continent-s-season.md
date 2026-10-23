@@ -2,7 +2,7 @@
 id: PW-573
 title: "Small lands get a big continent's seasons: Southern Hemisphere coasts' seasonal range 16.5 vs 9.6 C, summers +4-6 C (Patagonia +6.4)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: climate
@@ -42,4 +42,5 @@ together with PW-352's energy split.
 - [ ] the SH coastal seasonal range within 1.3× NCEP's; the NH continentality rows within 2 C of now
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 stage 3 merged (lane A12): summer fetch from the arriving sea air on distance scales (fetch_km 1000, fetch_h 3500), per-time reach, PET-referenced energy split, mountain rule, humidity floor. Humid summers +5-6 -> +2-4 C; SH coastal range 1.29x (pass); dry-region summer rain down; r 0.620. W Europe / Fennoscandia summers worse via too-cold near-land NH SST (new ticket). Merged under the owner's principle.
 - 2026-10-22: Created from inbox draft draft-small-lands-big-continent-seasons.md (found by base-climate-review).

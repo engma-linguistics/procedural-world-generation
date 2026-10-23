@@ -2,7 +2,7 @@
 id: PW-586
 title: climate.humidity reports RH a hair under HUMID_MIN at the floor (the soft saturation is applied after the floor)
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -27,4 +27,5 @@ so fold it into stage 3's merge.
 - [ ] floor applied after the soft saturation
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 stage 3 merged (lane A12): summer fetch from the arriving sea air on distance scales (fetch_km 1000, fetch_h 3500), per-time reach, PET-referenced energy split, mountain rule, humidity floor. Humid summers +5-6 -> +2-4 C; SH coastal range 1.29x (pass); dry-region summer rain down; r 0.620. W Europe / Fennoscandia summers worse via too-cold near-land NH SST (new ticket). Merged under the owner's principle.
 - 2026-10-22: Created from inbox draft draft-humidity-floor-under-humid-min.md (found by base-climate-laneA11).

@@ -1,4 +1,5 @@
 ---
+id: PW-590
 title: "Stage 3's fetch cools the ice sheets' summer air: Greenland ice warmest month -4.2 -> -6.6 C, Antarctic plateau +2.1 -> -0.4"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneA12
 blocked_by: []
 relates: [PW-573, PW-336, PW-569]
 refs: [planet/climate.py, docs/review/base-climate/laneA12/climate_bias_s3b.txt]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
 
 Lean: A for now. The time-zoom endings test passes with A (58 / 1.4 m; bar left < extra / 2), and the ice lane
 (PW-569 / PW-439) owns the sheet's surface air.
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-stage3-fetch-cools-ice-sheet-summers.md (found by base-climate-laneA12).

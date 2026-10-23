@@ -1,4 +1,5 @@
 ---
+id: PW-589
 title: "The sea's summer air the fetch builds on is 2-6 C too cold off W Europe, Scandinavia and Alaska and 2-5 C too warm in the SH: the annual SST, not the swing"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA12
 blocked_by: []
 relates: [PW-580, PW-573, PW-587]
 refs: [planet/climate.py, planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA12/]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -43,3 +46,6 @@ What to try: find why the near-land NH seas' annual SST is so cold. Candidates a
 `_summer_half` deficit on enclosed seas, and the sea-ice lid. Stage 3 is complete without this. This is what keeps W
 Europe and Fennoscandia under main's.
 - [ ] NE Atlantic, North Sea and Gulf of Alaska summer sea air within 2 C of NCEP, without warming the Tasman further
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-near-land-sea-summer-air-cold-north-warm-south.md (found by base-climate-laneA12).

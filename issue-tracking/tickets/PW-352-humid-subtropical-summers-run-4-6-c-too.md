@@ -2,7 +2,7 @@
 id: PW-352
 title: "Humid subtropical summers run 4-6 C too warm (SE China, SE USA, Pampas): any physical shower trigger then dries them"
 type: task
-status: todo
+status: done
 parent: PW-013
 milestone: null
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-015, PW-305]
 refs: [planet/climate.py, tools/earth_check.py, tools/moisture_budget.py, docs/proposals/moisture_transport.md, docs/review/audit/pw015-rain.md]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-22
 ---
 
 ## Description
@@ -31,6 +31,7 @@ Try the summer's actual/potential evaporation as a proper surface energy split (
 - [ ] re-run PW-015 step 3's trigger on top
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 stage 3 merged (lane A12): summer fetch from the arriving sea air on distance scales (fetch_km 1000, fetch_h 3500), per-time reach, PET-referenced energy split, mountain rule, humidity floor. Humid summers +5-6 -> +2-4 C; SH coastal range 1.29x (pass); dry-region summer rain down; r 0.620. W Europe / Fennoscandia summers worse via too-cold near-land NH SST (new ticket). Merged under the owner's principle.
 - 2026-10-16: Merged inbox draft draft-east-coast-summers-first-pass.md ("Humid east coasts' summers are warm in the first-pass air temperatures, not from the evaporative split (PW-352 diagnosis); PW-015 stage 3 waits on it", found by pw015-rain).
   For PW-352 (probably `--merge-into PW-352`). Earth L6 on the PW-015 branch (stages 1-2), warmest month:
   first pass (`_air_temps`, before the rain) / final (`_land_finish`) / NCEP, with the summer's AET/PET:
