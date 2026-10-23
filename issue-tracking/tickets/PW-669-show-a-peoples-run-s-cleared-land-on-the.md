@@ -25,3 +25,4 @@ What to try: when a world is opened, look for a peoples run on it (`meta.world` 
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-anthro-tint-world-satellite.md (found by anthro).
+- 2026-10-24: Built on branch worktree-agent-a122f80e88075aac4 (zoompeoples). A finished world looks for its newest peoples run (`runs/index.json` entries with `phase: lineages` and `world` = the world id; `&peoples=RUN` picks one, `&peoples=0` none), reads its `anthro_*.bin` layers on the fly (nothing written into the world) and tints `satellite`, `vegetation` and `biome` with `anthroTint`; a "show cleared land" checkbox and the run's numbers sit in the world summary, the legend names the run, and hover gives the cell's land use. Screenshots docs/review/lineages/anthro-world-1df1c3-satellite-{tinted,wild}.png. Left: more views, a run picker (draft-world-anthro-tint-more-views).

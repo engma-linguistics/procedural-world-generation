@@ -111,7 +111,7 @@ def cmd_zoom(args):
         return _fine_zoom(args, ref)
     size_km = 1000.0 if args.size_km is None else args.size_km
     res_km = 2.0 if args.res_km is None else args.res_km
-    out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations)
+    out = Z.zoom(ref, args.lat, args.lon, size_km, res_km, args.seed, args.iterations, peoples=args.peoples)
     m = json.loads((out / "zoom.json").read_text())
     s = m["stats"]
     print(f"{S.rel(out)}/  [{m['generated_in_s']}s, {m['nx']}x{m['ny']} px @ {m['res_km']:g} km]")
@@ -499,6 +499,10 @@ def main():
                         "parent's in a fine zoom; 0.025 with --size-km 25 for 1000 px)")
     z.add_argument("--seed", type=int, default=1, help="detail noise variant")
     z.add_argument("--iterations", type=int, default=15, help="drainage-network iterations of the landscape pass")
+    z.add_argument("--peoples", metavar="RUN", default=None,
+                   help="a peoples run of this world (planet lineages; planet landuse RUN): the zoom's plants follow "
+                        "its cleared land (fields, pasture, burned grass, managed woods, villages); a zoom of its own "
+                        "(zoom_peoples.py, PW-667); without it the zoom is as it always was")
     z.set_defaults(func=cmd_zoom)
 
     sa = sub.add_parser("satellite", help="add or redo the satellite view of saved worlds and zooms (in place)")

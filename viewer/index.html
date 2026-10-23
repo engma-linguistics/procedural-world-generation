@@ -883,6 +883,7 @@ function peoplesColor(layer, i, c) {
 // 'land use' layer, and as a tint on the vegetation colours (tree cover, vegetation, satellite) where land is
 // cleared (state.anthro, the panel's checkbox; &anthro=0 turns it off). Only the last frame (the present) shows it.
 const ANTHRO_TINTED = new Set(['tree cover', 'vegetation', 'satellite']);
+const WORLD_TINTED = new Set(['vegetation', 'satellite', 'biome']);  // (a finished world, PW-669)
 const A_CROP = new THREE.Color('#f0b429'), A_PAST = new THREE.Color('#b9d36a'), A_BURN = new THREE.Color('#c98a3c'),
   A_MAN = new THREE.Color('#2d6a4a'), A_TOWN = new THREE.Color('#9c3b2a');
 function anthroLoad() {
@@ -891,10 +892,44 @@ function anthroLoad() {
   Promise.all(Object.entries(a.layers).map(([k, s]) => fetch(`../runs/${id}/${s.file}`).then((r) => r.arrayBuffer())
     .then((b) => { V.anthro[k] = new Uint8Array(b); }))).then(() => { if (V.run.id === id) { V.anthroReady = id; paint(); } }).catch(() => {});
 }
+// A finished world with a peoples run (run.meta.world = the world id): the run's overlay tints the world's own
+// satellite, vegetation and biome colours (PW-669). Newest peoples run, or &peoples=RUN (&peoples=0: none). The
+// cells are the run's cells; the layers are read on the fly and nothing is written into the world.
+async function worldAnthroLoad() {
+  const v = V;
+  v.wAnthro = null; v.wAnthroRun = null;
+  const want = new URLSearchParams(location.search).get('peoples');
+  if (want === '0' || v.kind !== 'world' || !v.id) return;
+  const cands = (IDX?.runs || []).filter((r) => r.phase === 'lineages' && r.world === v.id && (!want || r.dir === want || r.id === want))
+    .sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  for (const r of cands) {
+    try {
+      const run = await (await fetch(`../runs/${r.dir}/run.json`, { cache: 'no-store' })).json();
+      const a = run.meta?.anthro;
+      if (!a || run.meta.cells !== v.n) continue;
+      const A = {};
+      await Promise.all(Object.entries(a.layers).map(([k, s]) => fetch(`../runs/${r.dir}/${s.file}`).then((x) => x.arrayBuffer())
+        .then((b) => { A[k] = new Uint8Array(b); })));
+      if (V !== v) return;
+      v.wAnthro = A; v.wAnthroRun = { id: r.id, dir: r.dir, name: r.name, anthro: a };
+      renderSummary(); renderLegend(); paint();
+      return;
+    } catch (err) { console.warn('peoples run', r.dir, err); }
+  }
+}
+const worldAnthroOn = () => !!(V?.kind === 'world' && V.wAnthro && state.anthro !== false);
+function worldAnthroPanel() {
+  const r = V.wAnthroRun;
+  if (!r) return '';
+  const s = r.anthro.summary;
+  return `<div style="margin-top:4px"><label title="Tint the satellite, vegetation and biome colours where the peoples of run ${r.id} have cleared, grazed, burned or cut the land (read from the run; nothing is written into the world)."><input type="checkbox" data-anthro ${state.anthro !== false ? 'checked' : ''}> show cleared land</label>
+    <span class="muted">· peoples run <a href="?run=${r.dir}">${r.id}</a>: cropland ${s.cropland_mkm2} Mkm² (${(100 * s.cropland_share_of_fertile).toFixed(1)}% of the ${s.fertile_mkm2} Mkm² farmland), pasture ${s.pasture_mkm2}, burned grass ${s.burned_mkm2}, managed woods ${s.managed_mkm2}</span></div>`;
+}
 // the present's overlay is ready and this frame is the present (the last)
 const anthroOn = () => !!(V.run?.meta?.anthro && V.anthroReady === V.run.id && V.frame === V.run.frames.length - 1);
+const anthroSrc = () => (V.kind === 'world' ? V.wAnthro : V.anthro);
 function anthroTint(i, c) {
-  const A = V.anthro, cr = A.crop[i] / 100, pa = A.pasture[i] / 100, bu = A.burned[i] / 100, ma = A.managed[i] / 100;
+  const A = anthroSrc(), cr = A.crop[i] / 100, pa = A.pasture[i] / 100, bu = A.burned[i] / 100, ma = A.managed[i] / 100;
   if (cr + pa + bu + ma <= 0.004) return c;
   c.lerp(A_PAST, Math.min(0.85, 1.6 * Math.sqrt(pa))).lerp(A_BURN, Math.min(0.85, 2.5 * Math.sqrt(bu)));
   c.lerp(A_MAN, Math.min(0.5, 2 * ma)).lerp(A_CROP, Math.min(0.95, 2.2 * Math.sqrt(cr)));
@@ -912,8 +947,8 @@ function landUseColor(i, c) {
   return c;
 }
 function anthroRows(i, R) {
-  if (!anthroOn()) return;
-  const A = V.anthro, d = 2 ** (A.people[i] * V.run.meta.anthro.layers.people.scale) - 1;
+  if (V.kind !== 'world' && !anthroOn()) return;
+  const A = anthroSrc(), d = 2 ** (A.people[i] * (V.kind === 'world' ? V.wAnthroRun.anthro : V.run.meta.anthro).layers.people.scale) - 1;
   const bits = [['cropland', A.crop[i]], ['pasture', A.pasture[i]], ['burned grass', A.burned[i]], ['managed woods', A.managed[i]]]
     .filter(([, v]) => v >= 1).map(([k, v]) => `${k} ${v}%`);
   R('place', '', `${d >= 0.1 ? `${d < 10 ? d.toFixed(1) : Math.round(d)} people/km²` : 'unsettled'}${bits.length ? ': ' + bits.join(', ') : ''}`,
@@ -927,7 +962,9 @@ function anthroPanel() {
     <div class="muted" style="max-width:340px">cropland ${s.cropland_mkm2} Mkm² (${(100 * s.cropland_share_of_fertile).toFixed(1)}% of ${s.fertile_mkm2} Mkm² farmland), pasture ${s.pasture_mkm2}, burned grass ${s.burned_mkm2}, managed woods ${s.managed_mkm2}; trees ${s.tree_before_mkm2} → ${s.tree_after_mkm2} Mkm² (−${(100 * s.forest_lost_share).toFixed(1)}%)</div></div>`;
 }
 document.addEventListener('change', (e) => {
-  if (!e.target.matches?.('[data-anthro]') || !V?.run?.meta?.anthro) return;
+  if (!e.target.matches?.('[data-anthro]')) return;
+  if (V?.kind === 'world' && V.wAnthro) { state.anthro = e.target.checked; paint(); renderLegend(); return; }
+  if (!V?.run?.meta?.anthro) return;
   state.anthro = e.target.checked;
   paint(); buildOverlays(); renderRunSummary();
 });
@@ -982,7 +1019,7 @@ function cellColors(layer) {
   const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
   const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
   if (V.run?.meta?.anthro && V.anthroFor !== V.run.id) anthroLoad();  // (peoples change the land, PW-662)
-  const tint = state.anthro !== false && ANTHRO_TINTED.has(layer) && anthroOn();
+  const tint = state.anthro !== false && (ANTHRO_TINTED.has(layer) && anthroOn() || WORLD_TINTED.has(layer) && worldAnthroOn());
   for (let i = 0; i < n; i++) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
@@ -2240,6 +2277,9 @@ function renderLegend() {
     if (has((v) => v[3] === 3)) el.innerHTML += '<span title="A hotspot volcano carried off its plume but still over the plume\'s head (within 150 km): quiet, but it can erupt again"><span class="sw" style="background:#ffe14d"></span>dormant volcano</span>';
     if ($('volcExtinct').checked && has((v) => v[3] === 4)) el.innerHTML += '<span><span class="sw" style="background:#b08d6a"></span>extinct volcano</span>';
   }
+  if (worldAnthroOn() && WORLD_TINTED.has(state.layer))
+    el.innerHTML += sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') + sw('#c98a3c', 'burned grass') + sw('#2d6a4a', 'managed woods') +
+      `<span class="muted">(cleared land of peoples run ${V.wAnthroRun.id}, tinted over the wild colours)</span>`;
   if ($('winds').checked && V.layers.wind_e)
     el.innerHTML += `<span><span class="sw" style="background:#ffe08a"></span>wind${
       { wind_jul: ' (July)', wind_jan: ' (January)' }[windKey()] || ''}</span>`;
@@ -2357,6 +2397,7 @@ function renderSummary() {
       (${m.sea_level_m} m vs the run's reference level) · global mean ${m.global_temp_c} °C · land ice ${m.ice_volume_mkm3} M km³ · made ${m.created}</span><br>`
     : m.source_run ? `<span class="muted">From</span> ${sourceLink(m.source_run, m.t_myr)} <span class="muted">· made ${m.created}</span><br>` : ''}
     ${zoomsOf(V.id)}
+    ${worldAnthroPanel()}
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
@@ -2870,6 +2911,7 @@ function cellInfo(i) {
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
   if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); anthroRows(i, R); }
+  if (V.kind === 'world' && V.wAnthro && state.anthro !== false) anthroRows(i, R);
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
   const vegRows = () => {
@@ -3911,6 +3953,7 @@ async function setWorld(w) {
   document.title = `${w.name} · Planet Viewer`;
   renderLayerButtons(); renderSummary(); buildTopology(); paint();
   navSync();
+  worldAnthroLoad();  // (peoples change the land on a finished world, PW-669)
 }
 
 // ------------------------------------------------------------ run layers

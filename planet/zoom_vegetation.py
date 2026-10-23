@@ -603,10 +603,20 @@ def fractions(zoom_ref) -> dict:
                 lay["ice"].ravel(), lay["discharge"].ravel(), lay["drainage_area"].ravel(),
                 (lay.get("wetland", np.zeros((ny, nx))) == 1).ravel(), log=lambda *a: None, want_fractions=True,
                 rock=lay["surface_rock"].ravel(), landform=lay["landform"].ravel() if "landform" in lay else None)
+    nu = np.zeros((V.NP, nx * ny))
+    nu[:, r["idx"]] = r["nu"]
+    veg = r["layers"]["vegetation"]
+    if meta.get("peoples"):  # a zoom made with a peoples run's land use (zoom_peoples, PW-667): redone on the wild plants
+        from . import zoom_peoples as ZP
+        A = ZP.load(meta["peoples"]["run"], meta["source_world"]["id"])
+        ref = {k: np.asarray(lay[k]).ravel() for k in ("elevation", "water", "ice", "temperature", "precipitation",
+                                                      "fertile_score", "harbour", "pass", "river_dist", "coast_dist")}
+        ref.update({k: np.asarray(v).ravel() for k, v in r["layers"].items()})
+        from .zoom import land_world
+        pe = ZP.apply(land_world(world)[0], fr, nx, ny, res, meta["size_km"], A, ref, nu, meta["seed"])
+        nu, veg = pe["nu"], pe["layers"]["vegetation"]
     out = {}
     for p, c in enumerate(V.CODES):
-        a = np.zeros(nx * ny)
-        a[r["idx"]] = r["nu"][p]
-        out[c] = a.reshape(ny, nx)
-    out["vegetation"] = r["layers"]["vegetation"].reshape(ny, nx)
+        out[c] = nu[p].reshape(ny, nx)
+    out["vegetation"] = veg.reshape(ny, nx)
     return out
