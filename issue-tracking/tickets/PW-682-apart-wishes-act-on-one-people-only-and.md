@@ -21,3 +21,4 @@ updated: 2026-10-23
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-apart-wish-is-one-directional.md (found by pw677).
+- 2026-10-24: fill2: 'apart' now cuts both peoples and is scored against the niche baseline (share of a's habitat within 330 km of b's habitat); uncontested pairs are left out of the average. 36 of 37 D&D pairs are contested; scores within 0.03 of the old ones. 'near' unchanged (draft: near-wish-weak-against-narrow-habitat). See docs/proposals/lineages.md, 'Filling the land'.

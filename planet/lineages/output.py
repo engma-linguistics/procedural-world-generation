@@ -281,8 +281,11 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
                                                    for z in pres["mixing_zones"][:12]] or ["  (none)"]
     L += ["", "## Neighbours at the present"] + [f"  {lid}: {', '.join(v['neighbours'])}" for lid, v in pres["lines"].items()]
     if pres["wishes"]:
-        L += ["", f"## Wishes (score {pres['wish_score']}; tries {pres.get('tries')})"]
-        L += [f"  {w['a']} {w['want']} {w.get('b') or ''}: {w['score']}" for w in pres["wishes"]]
+        L += ["", f"## Wishes (score {pres['wish_score']} over {pres.get('wishes_counted')} counted of {len(pres['wishes'])}; "
+                  f"every wish with 'apart' as 1 - closeness: {pres.get('wish_score_raw')}; tries {pres.get('tries')})"]
+        L += [f"  {w['a']} {w['want']} {w.get('b') or ''}: {w['score']}"
+              + (f" (niches alone would put {w['baseline']:.0%} of a's habitat near b's" + ("" if w.get("contested", True) else "; not counted") + ")"
+                 if "baseline" in w else "") for w in pres["wishes"]]
     L += ["", "## Present day"] + ascii_present(h, res)
     path = out / "run.txt"
     S.write_atomic(path, "\n".join(L) + "\n")

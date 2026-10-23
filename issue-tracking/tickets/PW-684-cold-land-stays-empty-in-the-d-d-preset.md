@@ -22,3 +22,4 @@ After PW-677, the habitable land (some people's K >= 0.25) that is still empty a
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-polar-peoples-and-cold-land.md (found by pw677).
+- 2026-10-24: fill2: human_arctic group (30 kyr, -14..8 C, sea share 0.5), groups keep arising after their origin, and pioneers settle empty country. Land below 5 C unpeopled (4 seeds, means): 1df1c3 72% -> 36%, 3e9e7d 62% -> 14%; kept runs 9819bb 33%, 9ecac6 5.6%. 1df1c3 is still above 25% on average (behind-ice enclaves: draft-empty-enclaves-behind-ice-and-ranges).
