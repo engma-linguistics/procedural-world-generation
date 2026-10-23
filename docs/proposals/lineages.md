@@ -159,3 +159,21 @@ Place wishes score half "how much of that kind of place the line holds" (half of
 
 ### Output additions
 `meta.lineages[].reached` (present-day landmass → first arrival: when, how, gap), `crossings`, `story` (game-ready sentences); `meta.present.mixing` (area, land share, corridor/closed shares), `landmasses` (held share), `empty_continents`, `lost`, `stories`. Viewer: origins and centroid tracks on the globe (overlay "Peoples' origins and tracks"), a `peoples overlay` layer (templates, contact hybrids), the hover card's peoples rows (this frame; every people's share at the present), the story of a picked people in the panel. Server: `POST /api/lineages` is a job (`api.lineages_job`), polled at `/api/jobs/<id>`; peoples and recent runs nest under their time zoom in the family tree.
+
+## Lane 3 additions (2026-10-23)
+
+- **Speed.** L7 is ~4x faster with the same outputs: 265 s → 63 s a try on 1144ce, side by side. How:
+  - The spread visits only the front: the neighbours of the cells that changed in the pass before.
+  - Competition is summed in numba over a line's rivals, on the cells where it can hold ground (K ≥ EST).
+  - The habitat is worked out on land cells only.
+  - Neighbour reductions use `reduceat`.
+  - Island chains are tagged only when named.
+- **Near wishes** (`History._wish_near`). A near wish:
+  - pulls the habitat toward the other people's border, ×(1 + 0.5 w) just outside its range, e-folding over 300 km (`NEAR_KM`), not into it;
+  - pulls whichever origin comes second toward the other people, ×(1 + 2 w), e-folding over 1000 km;
+  - halves the competition between the two (`NEAR_TOLERANCE`).
+
+  The near score counts a's range within 330 km of b's (`NEAR_SCORE_KM`) at any grid level.
+- **Shelf corridors.** Land of a glacial or recent epoch that is sea at the present has a contact value of at least 0.7 (`crossing.SHELF_CONTACT`).
+- **Best of N** takes 0.05 off a try's score for each living line it lost (`LOST_PENALTY`).
+- Showcase: `docs/review/lineages/showcase-3.md`.
