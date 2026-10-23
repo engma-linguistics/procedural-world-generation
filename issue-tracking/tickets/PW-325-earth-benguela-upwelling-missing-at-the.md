@@ -2,7 +2,7 @@
 id: PW-325
 title: "Earth: Benguela upwelling missing at the Cape (summer sea ~23 C off Cape Town; observed ~15-18)"
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: null
 subsystem: ocean
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/climate.py, tools/coastal_check.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ On the L6 Earth world the sea cells off Cape Town and the Cape west coast (32-35
 - [ ] Cape west coast summer SST <= 19 C on the Earth world, other upwelling coasts unchanged
 
 ## Updates
+- 2026-10-23: Status todo -> wontdo. Closed as an Earth-only miss (PW-597 triage, coordinator, 2026-10-23): one coast (Cape Town) misses Benguela cooling while California and Peru get theirs, no wrong mechanism identified, and Earth is a plausibility anchor, not a target. If upwelling is found missing on generated planets' eastern-boundary coasts, open a new inbox draft for the mechanism.
 - 2026-10-15: Created from inbox draft draft-earth-benguela-upwelling-weak.md (found by coastal-life).

@@ -10,10 +10,10 @@ effort: xs
 impact: low
 found_by: icehouse-depth
 blocked_by: []
-relates: [PW-240, PW-364]
+relates: [PW-240, PW-364, PW-584]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/audit/icehouse-depth.md]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -40,6 +40,7 @@ Lean: A for now (the cold eras' depth follows geography soundly after PW-364); B
 -300..-500 m icehouses too frequent in the viewer. A tuned parameter, so the owner's call.
 
 ## Updates
+- 2026-10-23: PW-597 triage (2026-10-23): kept. PW-584 (time-zoom drift spread at I = 0) does not cover this: it concerns the 20 kyr sea-level drift of the time zoom over plausible worlds and a test bound, while this ticket is the run's own climate drift (sd 3 C) that makes the deep cold eras. PW-584 added to relates.
 - 2026-10-16: Parked per owner (v1 reassessment 2026-10-16); impact set low so board next stops offering it.
 - 2026-10-16: Status needs-decision -> todo. Owner 2026-10-16: parked as a someday task (climate_drift stays 3 C).
 - 2026-10-16: Coordinator: after PW-364 the deepest era is -219 m with no frame below -250 m, so lean A (leave climate_drift at 3 C) for now; tuned knob, so the owner's call. Revisit when looking at showcase runs.

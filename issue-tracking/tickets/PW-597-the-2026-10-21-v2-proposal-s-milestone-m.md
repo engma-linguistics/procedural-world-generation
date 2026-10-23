@@ -2,7 +2,7 @@
 id: PW-597
 title: The 2026-10-21 v2 proposal's milestone moves, merges and drops were never applied to the board
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: docs
@@ -42,4 +42,5 @@ Options: A) accept all and apply with `board.py update`; B) go through them sele
 - [ ] each item above applied or explicitly rejected
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Applied by the board-triage lane under coordinator decisions (owner deferred board placement 2026-10-23); each ticket was read first. MERGED/SUPERSEDED (survivor Updates carry the unique content, the merged ticket is wontdo with a reason): PW-432 -> PW-054; PW-498 -> PW-202; PW-033 -> PW-448 (PW-460 added to its relates); PW-332 -> PW-313; PW-115 superseded by PW-460; PW-219 -> PW-481 (its scope already lists planet size and gravity). PW-421 closed done (PW-366 re-measure met: L6 seed-2 drift -231 -> +7 m). PW-417 left open with a note (PW-415 is done but the DIAG switches are still in viewer/index.html). MOVED INTO v1: PW-508, PW-446, PW-348, PW-503; rain PW-015/016 (and their parent PW-013) set v1; ice subtree PW-470 and children left as they are (v1; its children PW-581/582/583 and done ones were already v2). V2: PW-103, PW-490, PW-156, PW-207, PW-494, PW-206 were already v2 (unchanged); PW-212/330/329/347 (PW-347 now parented to PW-184), PW-184, PW-097 (coastal detail; the coastal-life tickets under PW-184 are done), PW-502 and PW-443 set v2 (443 kept, not wontdo). PW-368 kept, related to PW-584 (it does not cover the run's climate drift). WONTDO: PW-325 (Earth-only Benguela miss). KEPT: PW-152 and PW-324 (they point at enclosed-sea salinity mechanism). PW-284: audit-concern Update added, status unchanged (v2). PW-304: v2 -> v1, impact low -> med. Cosmetic: PW-021's dangling ref now says (removed earlier); PW-162's note left as is because docs/review/clouds/ did exist at d32f7fa.
 - 2026-10-23: Created from inbox draft draft-v2-proposal-unapplied-triage.md (found by docs-cleanup).

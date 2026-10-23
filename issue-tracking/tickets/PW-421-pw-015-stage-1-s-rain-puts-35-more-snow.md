@@ -2,7 +2,7 @@
 id: PW-421
 title: "PW-015 stage 1's rain puts ~35% more snow on generated sheets: the run's ice rule doubles them and the time zoom's start drift triples"
 type: task
-status: blocked
+status: done
 parent: null
 milestone: null
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: [PW-366]
 relates: [PW-418, PW-366, PW-015, PW-241, PW-295]
 refs: [planet/climate.py, planet/tectonics/earth.py, tests/test_timezoom_consistency.py, "run:2c2810@536Myr", "commit 1416523"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -55,5 +55,6 @@ Options:
   (then drop its xfail) and the 20 kyr repro from 2c2810 / e438c3 should stay within ~-60 m
 
 ## Updates
+- 2026-10-23: Status blocked -> done. Closed (PW-597 triage, 2026-10-23): the condition was met. Option A was taken and PW-366 is done (7fbf3b6, 2026-10-19): on the same probe (L6 seed 2 @ 580, unforced, 20 kyr) the drift went from -231 m (old run, old code; -314 m in this ticket's table) to +7 m (+13 m at 50 kyr), L5 seed 1 -43 -> -2 m, and the strict xfail in tests/test_timezoom_consistency.py was removed. The time zoom's start now sits near its balance whatever the rain, and Earth's sheets get only +5-9% snow from stage 1, so option B (bend the rain) is not pursued; the deeper cold eras that PW-366 brought are tracked in PW-434.
 - 2026-10-16: Status needs-decision -> blocked. Coordinator's decision (the owner delegates physics calls): option A. Fix PW-366 first; Earth's sheets get only +5-9% snow from the new rain, close to observed, so the rain isn't the thing to bend. Re-measure after PW-366, then close or reopen B.
 - 2026-10-16: Created from inbox draft draft-rain-stage1-snowier-sheets-time-zoom-drift.md (found by pw418).

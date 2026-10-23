@@ -2,7 +2,7 @@
 id: PW-432
 title: PW-300's valley memory lowers lake share and inland drainage a little (lakes 0.43 -> 0.34% of land, inland 3.8 -> 3.4%); evidence for PW-054
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: null
 subsystem: hydrology
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-054, PW-300]
 refs: [docs/review/health-pw358-after/, docs/review/health-pw300-after/]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,4 +28,5 @@ cut); the run still makes few (PW-054). A variant that kept the deepest valley e
 (not graded to the river now) lowered lakes to 0.25% and inland to 2.0%: not landed.
 
 ## Updates
+- 2026-10-23: Status todo -> wontdo. Closed as a duplicate: its evidence is carried into PW-054's Updates (PW-597 triage, 2026-10-23).
 - 2026-10-16: Created from inbox draft draft-pw300-lakes-inland-lower.md (found by pw300).

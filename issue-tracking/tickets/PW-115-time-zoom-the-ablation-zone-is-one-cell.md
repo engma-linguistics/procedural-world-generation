@@ -2,7 +2,7 @@
 id: PW-115
 title: "Time zoom: the ablation zone is one cell wide (sub-cell melt at margins)"
 type: task
-status: todo
+status: wontdo
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-036]
 refs: [planet/timezoom.py, planet/timezoom_kernels.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,4 +28,5 @@ ablating cells away from the margin and the ablation area ratio (Greenland today
 - [ ] ablating ice not confined to margin cells; ablation area ratio reported in the run's stats
 
 ## Updates
+- 2026-10-23: Status todo -> wontdo. Closed as superseded by PW-460 (sub-cell margin in run and time zoom together), which carries the measurements and the ablation-area-ratio check (PW-597 triage, 2026-10-23).
 - 2026-10-14: Created from inbox draft draft-timezoom-one-cell-ablation-zone.md (found by climfix).

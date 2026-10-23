@@ -4,7 +4,7 @@ title: A restart during the tectonic simulation of a make job still starts the s
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: tectonics
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-480, PW-248]
 refs: [planet/timeline.py, planet/make.py, planet/store.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,4 +23,5 @@ Check first how much of the keyframe history the checkpoints can regenerate; if 
 - [ ] a killed L5 make resumes mid-run and the finished run is identical to an uninterrupted one (golden-style check)
 
 ## Updates
+- 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): a real bug in a v1 feature (a make-job restart redoes the tectonic simulation).
 - 2026-10-21: Created from inbox draft draft-simulate-resume-checkpoint.md (found by viewer-batch).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-054, PW-242]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/params.py, docs/review/audit/tectonics.md, planet/tectonics/crust.py, planet/tectonics/plate_kernels.py, "run:a1d3b9@900Myr"]
 created: 2026-10-15
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -58,6 +58,7 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-23: Audit concern restated (PW-597 triage, 2026-10-23): the flexural moat's 15% share was tuned on one L7 seed's closed-basin count and only the moat half of flexure is applied, i.e. metric-chasing under the audit rule. Status left unchanged; milestone stays v2.
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-16: Status in-progress -> todo. Spike source fixed (collision belts straddle the suture: spikes >15 km over neighbours 59 -> 10). Sound flexure (alpha 66 km, Te 30 km) not landed: cells are as wide as alpha, so one-cell loads are held up (27 km peaks). Options and patch on the ticket; the 0.15 share documented as calibrated.
 - 2026-10-16: Tectonics night lane (2026-10-16): spike source fixed: stacked crust and crust flow now cross collision boundaries (crust.inner_edges); spikes > 15 km above their continental neighbours, L6 seed 1 0-400 Myr samples every 20 Myr: 59 (44 on a converging boundary, at ~78 km) -> 10 (none > 20 km); health peaks mean-of-maxima 8.53 -> 8.03 km. Sound flexure (share 1, both halves, volume kept, alpha from Te 30 km = 66 km) still NOT viable: on cells as wide as alpha (L6 120 km, L7 60 km) every one-cell load is held up by most of its root, not just collision spikes: a moat beside a lifted cell fills with up to 18 km of sediment (cover counts as crust), becomes a one-cell load and rises in turn (checkerboard instability): L6 seed 1 max elevation 27 km by 140 Myr, 792 spikes. Driving crust flow by the flexed height (gravitational collapse, stable explicit cap) did not stop it at the rate law's speed. Patch: docs/review/audit/tectonics-night/flexure-attempt.patch. Options: (A) a cell-averaged plate response (the deflection of a load spread uniformly over a cell, so the grid scale is mostly compensated; derivable but needs care per level); (B) keep the 0.15 moat as an honest calibrated share (done: params note); (C) drop the moat. Lean B for now, A as a later m-l task.

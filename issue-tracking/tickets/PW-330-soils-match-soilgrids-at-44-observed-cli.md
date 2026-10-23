@@ -4,7 +4,7 @@ title: Soils match SoilGrids at 44% (observed climate), short of the 50% target
 type: task
 status: todo
 parent: PW-184
-milestone: null
+milestone: v2
 subsystem: surface
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-185, PW-037, PW-132]
 refs: [planet/soils.py, tools/soil_check.py, docs/review/soils/earth_groups.png, "docs/overview.md#2.21"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,4 +28,5 @@ Ideas: a soil-age term for colluvial/young hillslopes (Cambisols), a lime-accumu
 - [ ] observed-climate agreement >= 50% with sound rules, or a documented reason why not
 
 ## Updates
+- 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): soils stay under PW-184 in v2.
 - 2026-10-16: Created from inbox draft draft-soil-earth-agreement.md (found by soils).
