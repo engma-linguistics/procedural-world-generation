@@ -20,4 +20,5 @@ updated: 2026-10-23
 Owner (2026-10-24): one switch for how a world is peopled and furnished. Real-world mode: humans only (the tree's human line and its groups), real resources, Earth's domesticable animals and crops. Fantasy mode: the D&D tree (or a custom one), the fantasy resources (PW-607), non-Earth domestications (PW-691) and, later, magic. Stored on the world or run, honoured by planet lineages, resources, domestication and the viewer's toggles.
 
 ## Updates
+- 2026-10-23: Owner (2026-10-24): default mode: fantasy (the D&D preset); real-world mode is the switch.
 - 2026-10-23: Created.
