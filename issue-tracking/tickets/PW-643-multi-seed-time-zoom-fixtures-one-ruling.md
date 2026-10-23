@@ -2,7 +2,7 @@
 id: PW-643
 title: "Multi-seed time-zoom fixtures (one ruling for PW-623, PW-638, PW-640): ready on a branch; main stays green, three deliberate breaks fail clearly; but the forest test stays red on both held branches (12 and 16 of 24), and a 70% bar sits close to main's own pass rate"
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -76,6 +76,7 @@ Branch `worktree-agent-acfa88d756b0677df` (on main 86d3806) holds the coordinato
 - [ ] (if A/B) the index-is-zero invariant at 100% rather than under the rate bar?
 
 ## Updates
+- 2026-10-23: Status todo -> done. Adopted (merged fdb0d7c): L4 forest/endings at 50%, index-zero on every plausible seed, MIN_SHEETED 5. Breaks fail (2/24, 2/21, 0/13); main green on 3 draws; held branches: A22 and step 2 green on both draws, A20 red on sheets (4 of 8) on one draw.
 - 2026-10-23: Rulings applied on branch worktree-agent-ad946bcdcf3b84ccf (d62890d, tests only): the L4 tests at 50% (seeds.PASS_RATE_L4), the L5 drift tests at 70%, MIN_SHEETED 5. Index-zero choice: the index-is-zero assertion at 100% on every plausible seed (the index is the orbit's alone, so one world breaking it is a real break, never a lottery), the sea-level drift at 70% on the sheeted seeds. Main green on 3 draws (climate_offset 0 / +0.001 / -0.001): forest 19/21, 13/18, 14/18 eligible; endings 18, 19, 19 of 24 (bar 12); sheeted 7, 10, 5 (need 5: the -0.001 draw sits on the bar). Held-branch table and the breaks: docs/review/tests/multiseed-fixtures.md (handoff-rulings.md while the lane was paused).
 - 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: adopt A with B's change: the L4 multi-seed tests at ~50% (lottery-proof against main's measured ~70% rates); MIN_SHEETED as proposed. A20's forest result as a physics question: answered by lane A21 (PW-640: lottery, same mean F over 240 worlds).
 - 2026-10-23: Lane A21: main's true pass rates are ~72% (forest) and ~69% (endings), so a 70% bar on 24 seeds is itself a lottery (main red in 3 of 4 re-rolled draws). Bars must sit well below the measured rate (~50%), or use more seeds, or rule-based eligibility (PW-644).

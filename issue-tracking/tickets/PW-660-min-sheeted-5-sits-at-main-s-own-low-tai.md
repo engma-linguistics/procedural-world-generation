@@ -1,7 +1,8 @@
 ---
+id: PW-660
 title: "MIN_SHEETED = 5 sits at main's own low tail: re-rolled draws give 7, 10 and 5 sheeted cold moments, so one more unlucky draw turns test_cold_moment_has_sheets red on main"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: tests-multiseed-rulings
 blocked_by: []
 relates: [PW-643, PW-623]
 refs: [tests/test_timezoom_consistency.py, docs/review/tests/multiseed-fixtures.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,3 +35,7 @@ Options:
 - C: 4.
 - Lean: B. It keeps "enough worlds for the drift tests" without lowering the bar.
 - [ ] A / B / C
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (owner's harness rule: a wider search window with assertions unchanged is OK): widen the L5 cold-moment window (more plausible seeds) so main sits well above MIN_SHEETED = 5; MIN_SHEETED and every assertion unchanged. Do it in the next physics lane before merging A20.
+- 2026-10-23: Created from inbox draft draft-min-sheeted-at-mains-tail.md (found by tests-multiseed-rulings).

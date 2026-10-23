@@ -1,4 +1,5 @@
 ---
+id: PW-658
 title: "The forest test's eligibility rule (a season of snow under the boreal forest) separates only moderately: 80% of eligible worlds pass, 41% of ineligible ones"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: tests-multiseed-rulings
 blocked_by: []
 relates: [PW-645, PW-643, PW-450]
 refs: [tests/test_timezoom.py, docs/review/tests/multiseed-fixtures.md, docs/review/tests/eligibility.txt]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,3 +35,6 @@ A physically sharper rule would compare the two parts of the premise, both read 
 - the darkening that greening the low-latitude bare ground could give.
 
 It would have no arbitrary number, but it needs care so that it doesn't amount to computing F.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-forest-eligibility-sharper-rule.md (found by tests-multiseed-rulings).

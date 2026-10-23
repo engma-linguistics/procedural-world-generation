@@ -2,7 +2,7 @@
 id: PW-645
 title: "The forest-to-tundra test (F < 0 under glacial cooling) holds on snowy worlds but not warm ones: main's own null draws give 16 of 24 on seeds 1-24 (bar 17), so A20's 12 and main's 20 are the spread's tails, not a physics signal"
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -60,6 +60,7 @@ snow 0.16.
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-23: Status todo -> done. Adopted: eligible when the start's forest poleward of 40 deg lies under snow at least a season of the year (tree-weighted snow cover >= 3/12).
 - 2026-10-23: Option A applied (branch worktree-agent-ad946bcdcf3b84ccf, d62890d): a world is eligible when the start's forest poleward of 40 deg lies under snow at least a season of the year (tree-weighted mean of the start's snow_cover >= 3/12; the only number is 'a season'), checked after the start step and before any assertion, never from F. Main's 120 L4 worlds: 78/98 eligible pass, 9/22 ineligible; 18-21 of 24 eligible per draw. Bar 50% of the eligible. Sharper rule / eligible floor: inbox drafts (parent PW-649).
 - 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: option A, eligibility by a rule on the world (rules needn't fire where their prerequisites aren't there).
 - 2026-10-23: Created from inbox draft draft-forest-test-premise-is-planet-dependent.md (found by base-climate-laneA21).
