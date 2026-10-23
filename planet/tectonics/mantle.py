@@ -38,6 +38,7 @@ regions most (volcanism.hotspots).
 from __future__ import annotations
 
 import numpy as np
+from numba import njit
 
 from ..geo import R_KM
 
@@ -51,9 +52,10 @@ def basis(grid) -> tuple[np.ndarray, np.ndarray]:
     orthonormal on the cells (Y.T @ Y = I; cells are near-equal area), and
     the degree of each column (_build_basis). Kept per process, and on disk
     next to numba's cache (planet/tectonics/__pycache__, per checkout): the
-    SVDs take ~0.5 s at L6 and ~2.2 s at L7, which every run, slice or
-    worker process would pay at start (PW-258). The file's name hashes the
-    grid's cells, LMAX, numpy's version and _build_basis's code, so a
+    orthonormalisation takes ~1 s at L7, which every run, slice or worker
+    process would pay at start (PW-258). The build is deterministic (PW-693),
+    so every checkout's file holds the same bits. The file's name hashes the
+    grid's cells, LMAX, numpy's version and the build's code, so a
     change to any of them builds a new one; reading it back gives the same
     bits as building it."""
     if grid.n in _BASIS:
@@ -76,7 +78,7 @@ def _cache_path(grid):
     import inspect
     from pathlib import Path
     h = hashlib.sha1(np.ascontiguousarray(grid.centers).tobytes())
-    h.update(f"{LMAX} {np.__version__}".encode() + inspect.getsource(_build_basis).encode())
+    h.update(f"{LMAX} {np.__version__}".encode() + (inspect.getsource(_build_basis) + inspect.getsource(_orthonormalise.py_func)).encode())
     return Path(__file__).parent / "__pycache__" / f"mantle_basis_{grid.n}_{h.hexdigest()[:16]}.npy"
 
 
@@ -95,21 +97,72 @@ def _save(path, Y):
 
 
 def _build_basis(grid) -> tuple[np.ndarray, np.ndarray]:
-    """Built by orthonormalising monomials x^a y^b z^c degree by degree: on
-    the sphere, the degree-d monomials minus everything of lower degree span
-    exactly the degree-d harmonics. (Degree 0, the global mean, is left out:
-    only differences matter.)"""
-    x, y, z = grid.centers.T
-    cols, degs = [np.full(grid.n, 1 / np.sqrt(grid.n))], [0]
+    """The real spherical harmonics, by definition (PW-693): degree d,
+    order m = 0, then cos and sin of m = 1..d, each N_dm P_d^m(z) x
+    Re/Im((x + iy)^m) (no Condon-Shortley sign), from the Legendre
+    recurrence in z and products of x, y only (no trig, no SVD: an SVD's
+    columns are arbitrary within a degree, so the eddies on them depended on
+    which LAPACK answer a process got). Then made exactly orthonormal on the
+    cells (they are near-equal area) by modified Gram-Schmidt in this order,
+    after the cells' mean (degree 0, left out: only differences matter), in
+    a sequential compiled loop: the same bits under any thread count or load."""
+    x, y, z = (np.ascontiguousarray(c, dtype=np.float64) for c in grid.centers.T)
+    cols, degs = [], []
+    C, S = [np.ones_like(x)], [np.zeros_like(x)]  # Re, Im (x + iy)^m
+    for m in range(1, LMAX + 1):
+        C.append(x * C[-1] - y * S[-1])
+        S.append(x * S[-1] + y * C[-2])
+    Q = {}  # P_d^m(z) / sin^m(theta), a polynomial in z
+    for m in range(LMAX + 1):
+        Q[m, m] = np.full_like(z, float(np.prod(np.arange(1, 2 * m, 2))))
+        if m + 1 <= LMAX:
+            Q[m + 1, m] = (2 * m + 1) * z * Q[m, m]
+        for d in range(m + 2, LMAX + 1):
+            Q[d, m] = ((2 * d - 1) * z * Q[d - 1, m] - (d + m - 1) * Q[d - 2, m]) / (d - m)
     for d in range(1, LMAX + 1):
-        B = np.stack([x**a * y**b * z ** (d - a - b) for a in range(d + 1) for b in range(d + 1 - a)], 1)
-        Q = np.stack(cols, 1)
+        for m in range(d + 1):
+            f = np.prod(np.arange(d - m + 1, d + m + 1, dtype=float))  # (d+m)!/(d-m)!
+            N = np.sqrt((2 * d + 1) * (1 if m == 0 else 2) / f / grid.n)
+            cols.append(N * Q[d, m] * C[m])
+            degs.append(d)
+            if m:
+                cols.append(N * Q[d, m] * S[m])
+                degs.append(d)
+    Yt = np.stack(cols)  # (columns, cells): each column contiguous
+    _orthonormalise(Yt)
+    return np.ascontiguousarray(Yt.T), np.array(degs)
+
+
+@njit(cache=True)
+def _orthonormalise(Y):
+    """In place on Y (columns, cells): each column, in order, made orthogonal
+    to the cells' mean and to the columns before it (twice, for round-off),
+    then unit length. Plain sequential sums, so the result is fixed by the
+    input's bits."""
+    k, n = Y.shape
+    c = 1.0 / np.sqrt(n)
+    for j in range(k):
+        v = Y[j]
         for _ in range(2):
-            B -= Q @ (Q.T @ B)
-        U, S, _ = np.linalg.svd(B, full_matrices=False)
-        cols.extend(U[:, : 2 * d + 1].T)
-        degs.extend([d] * (2 * d + 1))
-    return np.stack(cols[1:], 1), np.array(degs[1:])
+            s = 0.0
+            for i in range(n):
+                s += v[i]
+            s *= c
+            for i in range(n):
+                v[i] -= s * c
+            for q in range(j):
+                u = Y[q]
+                s = 0.0
+                for i in range(n):
+                    s += u[i] * v[i]
+                for i in range(n):
+                    v[i] -= s * u[i]
+        s = 0.0
+        for i in range(n):
+            s += v[i] * v[i]
+        s = 1.0 / np.sqrt(s)
+        for i in range(n):
+            v[i] *= s
 
 
 def smooth(sim, f: np.ndarray, scale_km: float) -> np.ndarray:

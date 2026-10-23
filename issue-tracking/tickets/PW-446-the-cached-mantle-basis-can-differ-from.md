@@ -2,7 +2,7 @@
 id: PW-446
 title: The cached mantle basis can differ from a fresh build (up to 0.063), changing runs
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1
 subsystem: tectonics
@@ -30,5 +30,6 @@ against a stored digest); the bad file is kept in the pw440 session scratchpad (
 - [ ] the cache file is written atomically
 
 ## Updates
+- 2026-10-23: Status todo -> done. Lane v1-finish step 1 (with PW-693): the build is deterministic (canonical harmonics + sequential Gram-Schmidt, no LAPACK); two builds under 1 and 24 threads and six concurrent builds are bit-identical (test_basis_is_canonical checks 1 vs 8 threads in subprocesses); the cache was already written atomically (temp + os.replace, PW-258) and the key now hashes the orthonormaliser too.
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): a real bug in a v1 feature (the cached mantle basis differs from a fresh build).
 - 2026-10-20: Created from inbox draft draft-mantle-basis-cache-not-reproducible.md (found by pw440).

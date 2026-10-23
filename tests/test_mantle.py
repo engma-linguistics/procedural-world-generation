@@ -124,3 +124,29 @@ def test_basis_disk_cache_is_bit_identical(grid4, tmp_path, monkeypatch):
     path.write_bytes(b"junk")
     mantle._BASIS.clear()
     assert mantle.basis(grid4)[0].tobytes() == Y0.tobytes()
+
+
+def test_basis_is_canonical(grid4):
+    """The basis is the real spherical harmonics, by definition (PW-693):
+    every build in every checkout gives the same bits, under any thread
+    count. The digest pins the L4 build; degree 1 is z, x, y (the
+    orthonormalisation on near-equal-area cells barely moves a column)."""
+    import hashlib
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    Y, deg = mantle._build_basis(grid4)
+    assert hashlib.md5(Y.tobytes()).hexdigest() == "ede56f0c9efa158f75db3a058019e5da"
+    x, y, z = grid4.centers.T
+    for col, f in zip(Y[:, :3].T, (z, x, y)):
+        assert np.corrcoef(col, f)[0, 1] > 0.99999
+    code = ("import hashlib; from planet.grid import build_grid; from planet.tectonics import mantle; "
+            "print(hashlib.md5(mantle._build_basis(build_grid(4))[0].tobytes()).hexdigest())")
+    digests = set()
+    for th in ("1", "8"):
+        env = dict(os.environ, OMP_NUM_THREADS=th, OPENBLAS_NUM_THREADS=th, NUMBA_NUM_THREADS=th, MKL_NUM_THREADS=th)
+        out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True,
+                             cwd=Path(__file__).parent.parent)
+        digests.add(out.stdout.split()[-1])
+    assert digests == {hashlib.md5(Y.tobytes()).hexdigest()}
