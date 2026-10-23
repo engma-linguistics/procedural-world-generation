@@ -76,4 +76,5 @@ Branch `worktree-agent-acfa88d756b0677df` (on main 86d3806) holds the coordinato
 - [ ] (if A/B) the index-is-zero invariant at 100% rather than under the rate bar?
 
 ## Updates
+- 2026-10-23: Lane A21: main's true pass rates are ~72% (forest) and ~69% (endings), so a 70% bar on 24 seeds is itself a lottery (main red in 3 of 4 re-rolled draws). Bars must sit well below the measured rate (~50%), or use more seeds, or rule-based eligibility (PW-644).
 - 2026-10-23: Created from inbox draft draft-multiseed-fixtures.md (found by tests-multiseed).
