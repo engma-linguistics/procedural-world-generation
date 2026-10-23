@@ -2,7 +2,7 @@
 id: PW-591
 title: "Stage 3 with the redesigned fetch is green and meets the SH-range and rain bars, but humid summers stay +3-4 C and W Europe/Fennoscandia are below main's: merge?"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -57,4 +57,5 @@ Options:
 Lean: A.
 
 ## Updates
+- 2026-10-22: Status needs-decision -> done. Coordinator 2026-10-22: option A, merged.
 - 2026-10-22: Created from inbox draft draft-stage3-fetch-merge-with-bar-misses.md (found by base-climate-laneA12).

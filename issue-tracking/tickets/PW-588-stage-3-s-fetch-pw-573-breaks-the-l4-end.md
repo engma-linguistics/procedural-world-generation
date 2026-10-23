@@ -2,7 +2,7 @@
 id: PW-588
 title: Stage 3's fetch (PW-573) breaks the L4 endings test by moving the glacial's extra ice to polar cells, not through the ice-surface rules
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -65,4 +65,5 @@ What to try:
 - [ ] the fetch, in a form that keeps snow-free summer land at or above the arriving sea air, passes the L4 endings test
 
 ## Updates
+- 2026-10-22: Status todo -> done. Resolved by the redesigned fetch (lane A12): L4 endings test 57.7/1.4 m, robust at -3.9/-4.1 C.
 - 2026-10-22: Created from inbox draft draft-stage3-fetch-moves-l4-glacial-ice-poleward.md (found by base-climate-laneA11).
