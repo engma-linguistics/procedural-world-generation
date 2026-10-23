@@ -226,6 +226,9 @@
     <!-- the plant functional type the 'plant type' layer shows (?pft=) -->
     <label id="pftRow" style="margin-top:6px;display:none" title="Cover of one plant functional type: where are the larches?">
       plant type <select id="pftSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
+    <!-- the resource the 'resource' layer shows (resources.py, PW-155; ?res=) -->
+    <label id="resRow" style="margin-top:6px;display:none" title="Likelihood of one resource per cell, from the deposit model in its tooltip">
+      resource <select id="resSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
     <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
       season <select id="layerSeason" style="flex: none; width: auto; padding: 1px">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
@@ -245,6 +248,7 @@
     <label data-needs="harbour" title="Natural harbours at the coast: diamonds, bigger and redder = better (anchorage, harbour, fine harbour)"><input type="checkbox" id="huHarbours"> Harbours</label>
     <label data-needs="pass" title="Mountain passes: bow-ties on the divides, coloured by how long they are open"><input type="checkbox" id="huPasses"> Mountain passes</label>
     <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
+    <label data-needs-volc="peopleTracks" title="Peoples runs: where each people arose (a ring) and the track of its range's centre up to this frame (a picked people only, if one is picked in the peoples panel)"><input type="checkbox" id="peopleTracks" checked> Peoples' origins and tracks</label>
     <label data-needs-volc="hotspots"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
     <label data-needs-volc="volcanoes"><input type="checkbox" id="volcanoes" checked> Volcanoes</label>
     <label data-needs-volc="volcTable" title="Also the extinct volcanoes: dead arc cones, old calderas, seamounts and guyots (hover a cell to see what is in it)"><input type="checkbox" id="volcExtinct"> &nbsp;&nbsp;extinct ones too</label>
@@ -494,6 +498,71 @@ function huColor(layer, i, c) {
   if (col && k !== 'river_nav' && (k === 'harbour' ? !land : land)) c.copy(col); else c.copy(land ? BARE : OCEAN);
   if (k === 'river_nav' && land) c.multiplyScalar(0.7);  // (darker ground, so the ribbons stand out)
 }
+// resources (resources.py, PW-155): 'resources' = the most likely metal/gem/energy/salt resource per cell (faded by
+// its likelihood), 'resource' = one resource's likelihood (picker resSel, ?res=), 'building stone' = the best stone
+const RES_LAYERS = new Set(['resources', 'resource', 'building stone']);
+state.res = 'porphyry_cu';
+function resInfo(key) { return V.resLeg?.resources.find((r) => r.key === key); }
+function resColor(layer, i, c) {
+  const L = V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
+  if (layer === 'building stone') {
+    const e = V.resLeg.stone[L.stone[i]];
+    if (land && e && L.stone[i]) c.set(e.color); else c.copy(land ? BARE : OCEAN);
+    return;
+  }
+  const base = land ? BARE : OCEAN;
+  if (layer === 'resources') {
+    const id = L.resource[i], r = id ? V.resLeg.resources[id - 1] : null;
+    if (!r) { c.copy(base); return; }
+    const v = (L['res_' + r.key]?.[i] || 0);
+    c.copy(base).lerp(new THREE.Color(r.color), 0.35 + 0.65 * Math.min(1, v));
+    return;
+  }
+  const r = resInfo(state.res), v = r ? (L['res_' + r.key]?.[i] || 0) : 0;
+  c.copy(base).multiplyScalar(0.8).lerp(new THREE.Color(r?.color || '#fff'), Math.sqrt(Math.min(1, v)));
+}
+function resLegend(layer, sw) {
+  const L = V.layers, R = V.resLeg;
+  if (layer === 'building stone') {
+    const present = new Set(L.stone);
+    return R.stone.filter((e) => e.id && present.has(e.id)).map((e) => sw(e.color, e.name)).join('') +
+      '<span class="muted">(the best stone exposed: rock at the surface, hardness; folded limestone = marble, folded shale = slate)</span>';
+  }
+  if (layer === 'resources') {
+    const cnt = new Map();
+    for (let i = 0; i < V.n; i++) if (L.resource[i]) cnt.set(L.resource[i], (cnt.get(L.resource[i]) || 0) + 1);
+    return [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => R.resources[id - 1])
+      .map((r) => `<span title="${esc(r.model)}">${sw(r.color, esc(r.name))}</span>`).join('') +
+      '<span class="muted">(the most likely resource per cell, brighter = likelier; coarse likelihoods from the run\'s history, not surveyed deposits; hover for the top three)</span>';
+  }
+  const r = resInfo(state.res);
+  return `<div><div class="grad" style="background:linear-gradient(90deg,#55524c,${r?.color || '#fff'})"></div>
+    <div class="row" style="justify-content:space-between;width:260px"><span>0</span><span class="muted">likelihood</span><span>1</span></div></div>
+    <span>${r ? esc(r.name) : '?'}</span><span class="muted">(${r ? esc(r.model) : ''})</span>`;
+}
+function resRows(L, i, land, R) {
+  if (!L.resource || !V.resLeg) return;
+  const top = V.resLeg.resources.map((r) => [r, L['res_' + r.key]?.[i] || 0]).filter(([, v]) => v >= 0.15)
+    .sort((a, b) => b[1] - a[1]);
+  const real = top.filter(([r]) => r.group !== 'fantasy').slice(0, 3), fan = top.filter(([r]) => r.group === 'fantasy');
+  if (real.length) R('ground', 'resources', real.map(([r, v]) => `${r.name} ${v.toFixed(2)}` +
+    (r.key === 'coal' && L.coal_rank?.[i] ? ` (${['', 'lignite', 'bituminous', 'anthracite'][L.coal_rank[i]]})` : '')).join(' · ') +
+    (L.resource[i] && L.res_depth ? `; the first at ~${Math.round(L.res_depth[i])} m` : ''), { sep: ': ', ess: true });
+  if (fan.length) R('ground', 'fantasy', fan.map(([r, v]) => `${r.name} ${v.toFixed(2)}`).join(' · '), { sep: ': ' });
+  if (land && L.stone && L.stone[i]) R('ground', 'building stone', V.resLeg.stone[L.stone[i]].name, { sep: ': ' });
+}
+function fillRes() {
+  if (!V?.resLeg) return;
+  if (!resInfo(state.res)) state.res = V.resLeg.resources[0].key;
+  const groups = [...new Set(V.resLeg.resources.map((r) => r.group))];
+  $('resSel').innerHTML = groups.map((g) => `<optgroup label="${g}">` + V.resLeg.resources.filter((r) => r.group === g)
+    .map((r) => `<option value="${r.key}" title="${esc(r.model)}"${r.key === state.res ? ' selected' : ''}>${esc(r.name)}</option>`).join('') + '</optgroup>').join('');
+}
+$('resSel').addEventListener('change', () => {
+  state.res = $('resSel').value;
+  const u = new URL(location); u.searchParams.set('res', state.res); history.replaceState(null, '', u);
+  paint(); updateHover();
+});
 const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours: shelter and depth at the coast',
                   pass: 'mountain passes: how long they are open', fertile: 'farmland', fresh_water: 'fresh water within reach' };
 function huSwatches(k) {
@@ -714,6 +783,62 @@ function lakeLine(i) {
 const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst',
                      turbidity: 'turbidity', upwelling: 'upwelling' };
 // fills a Float32Array(3n) with per-cell colours
+// Peoples (planet/lineages/, meta.phase 'lineages'): the leading people's colour, paler where it holds
+// less of the land, whitened where two or more mix; 'peoples mix' counts them. A picked line
+// (state.people, from the panel) shows only its own range.
+const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
+function peoplesColor(layer, i, c) {
+  const L = V.layers, elev = L.elevation;
+  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  const lines = V.run.meta.lineages || [];
+  if (layer === 'peoples overlay') {  // templates (tieflings...) and contact hybrids (half-elves...): the strongest
+    const o = L.peoples_overlay?.[i];
+    if (o == null || o === 255 || !lines[o]) return c.copy(NOBODY).lerp(c.set(lines[L.peoples[i]]?.color || '#5a5a52'), 0.25);
+    return c.set(lines[o].color);
+  }
+  if (layer === 'peoples mix') { const m = L.peoples_mix[i]; return m ? c.setHSL(0.75 - 0.12 * Math.min(m, 6), 0.7, 0.35 + 0.06 * m) : c.copy(NOBODY); }
+  const d = L.peoples[i];
+  if (d === 255 || !lines[d]) return c.copy(NOBODY);
+  if (state.people != null && d !== state.people) return c.copy(NOBODY).lerp(c.set(lines[d].color), 0.15);
+  c.set(lines[d].color).lerp(NOBODY, 0.55 * (1 - (L.peoples_share ? L.peoples_share[i] : 100) / 100));
+  if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
+  return c;
+}
+function peoplesPanel() {
+  const m = V.run.meta, lines = m.lineages || [], s = V.run.frames[V.frame].stats.peoples || {};
+  const kids = {}; lines.forEach((l) => (l.parents || []).forEach((p) => (kids[p] = kids[p] || []).push(l)));
+  const fmt = (a) => (a >= 1000 ? `${+(a / 1000).toFixed(1)} Myr` : a >= 1 ? `${+a.toFixed(1)} kyr` : `${Math.round(a * 1000)} yr`);
+  const row = (l, depth) => {
+    const alive = s[l.id] != null, o = l.origin_place;
+    const kind = l.origin === 'split' ? '' : ` <span class="muted">(${l.origin}${l.parents?.length && l.origin !== 'split' ? ' of ' + l.parents.join(' + ') : ''})</span>`;
+    return `<div style="padding:1px 0 1px ${6 + 12 * depth}px;cursor:pointer;opacity:${alive ? 1 : 0.5}" data-people="${l.index}"
+      title="${esc(l.story || (o ? `from ${o.lat}, ${o.lon} at ${fmt(o.ago_kyr)} ago: ${o.why}` : 'not yet / never appeared'))}">
+      <span style="display:inline-block;width:10px;height:10px;background:${l.color};margin-right:4px"></span>${esc(l.name)}${kind}
+      <span class="muted">${fmt(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${fmt(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}</span></div>`;
+  };
+  const seen = new Set(), out = [];
+  const walk = (l, d) => { if (seen.has(l.id)) return; seen.add(l.id); out.push(row(l, d));
+    (kids[l.id] || []).filter((k) => k.origin === 'split').forEach((k) => walk(k, d + 1)); };
+  lines.filter((l) => l.origin !== 'split').forEach((l) => walk(l, 0));
+  const p = m.present || {}, zones = (p.mixing_zones || []).slice(0, 5).map((z) => `${z.lines.join(', ')} <span class="muted">(${z.area_mkm2} Mkm² near ${z.lat}, ${z.lon})</span>`);
+  return `<div class="tzBox"><b>Peoples</b> <span class="muted">(${esc(m.tree_name || '')}; click one to show only its range;
+    <a href="lineages.html?tree=${encodeURIComponent((m.tree_file || '').split('/').pop().replace(/\.(toml|json)$/, '') || 'dnd')}&world=${m.world || ''}">edit the tree</a>)</span>
+    ${state.people != null ? `<div><a href="#" data-people="-1">show all</a></div>` : ''}${out.join('')}
+    ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b> <span class="muted">${p.mixing ? `${p.mixing.area_mkm2} Mkm² (${Math.round(100 * p.mixing.land_share)}% of the land; corridors ${Math.round(100 * (p.mixing.in_corridors || 0))}% mixed, closed country ${Math.round(100 * (p.mixing.in_closed || 0))}%)` : ''}</span><br>${zones.join('<br>')}</div>` : ''}
+    ${p.empty_continents?.length ? `<div class="muted">nobody on ${p.empty_continents.join(', ')}</div>` : ''}
+    ${state.people != null && lines[state.people]?.story ? `<div style="margin-top:4px;max-width:340px">${esc(lines[state.people].story)}</div>` : ''}
+    ${p.wishes?.length ? `<div style="margin-top:4px"><b>Wishes</b> <span class="muted">(score ${p.wish_score}; tries ${(p.tries || []).join(', ')})</span><br>${p.wishes.map((w) => `${w.a} ${w.want} ${w.b || ''}: ${w.score}`).join(' · ')}</div>` : ''}</div>`;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.('[data-people]');
+  if (!el || !V?.run?.meta?.lineages) return;
+  e.preventDefault();
+  const k = +el.dataset.people;
+  state.people = k < 0 || state.people === k ? null : k;
+  paint(); buildOverlays(); renderRunSummary();
+});
+
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
   const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
@@ -723,6 +848,7 @@ function cellColors(layer) {
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
+    else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay') peoplesColor(layer, i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -739,6 +865,7 @@ function cellColors(layer) {
       if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L[SOIL_LAYERS[layer]][i], c);
     }
     else if (HU_LAYERS[layer]) huColor(layer, i, c);
+    else if (RES_LAYERS.has(layer)) resColor(layer, i, c);
     else if (layer === 'bed under ice') {
       rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
       if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
@@ -803,7 +930,8 @@ function cellColors(layer) {
 function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
-    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : []);
+    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
+    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -823,6 +951,7 @@ function availableLayers() {
   if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
   if (V.layers.flood_ratio) ls.push('river floods');
   for (const [name, k] of Object.entries(HU_LAYERS)) if (V.layers[k] && V.humanUse?.[k]) ls.push(name);
+  if (V.layers.resource && V.resLeg) ls.push('resources', 'resource', 'building stone');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
@@ -1247,6 +1376,38 @@ function cloudOverlay() {
   return m;
 }
 
+// Peoples runs (planet/lineages/): a ring at each people's origin, and the track of its range's
+// centre (meta.lineages[].track: [kyr ago, lat, lon, Mkm²] per stored frame) up to this frame, in its colour
+function peopleOverlays(globe, wraps) {
+  const lines = V.peopleTracks, now = -(V.run.frames[V.frame]?.t ?? 0), pts = [], cols = [], rings = [], rcols = [];
+  const c = new THREE.Color(), r0 = globe ? 1.014 : 1, D = Math.PI / 180;
+  const llv = (la, lo) => [Math.cos(la * D) * Math.cos(lo * D), Math.cos(la * D) * Math.sin(lo * D), Math.sin(la * D)];
+  for (const l of lines) {
+    if (l.overlay || (state.people != null && l.index !== state.people)) continue;
+    c.set(l.color);
+    const o = l.origin_place;
+    if (o && o.ago_kyr >= now - 1e-6) {
+      const cl = Math.max(Math.cos(o.lat * Math.PI / 180), 0.2);
+      for (let k = 0; k < 20; k++) {
+        const a1 = k / 20 * 2 * Math.PI, a2 = (k + 1) / 20 * 2 * Math.PI;
+        const p1 = llPos(o.lat + 2 * Math.sin(a1), o.lon + 2 * Math.cos(a1) / cl, r0), p2 = llPos(o.lat + 2 * Math.sin(a2), o.lon + 2 * Math.cos(a2) / cl, r0);
+        if (!wraps(p1, p2)) { rings.push(...p1, ...p2); rcols.push(c.r, c.g, c.b, c.r, c.g, c.b); }
+      }
+    }
+    const tr = (l.track || []).filter((x) => x[0] >= now - 1e-6);
+    for (let k = 1; k < tr.length; k++) {  // (a few steps along the great circle between stored centres)
+      const a = llv(tr[k - 1][1], tr[k - 1][2]), b = llv(tr[k][1], tr[k][2]);
+      let prev = null;
+      for (let s = 0; s <= 6; s++) {
+        const v = a.map((x, j) => x * (1 - s / 6) + b[j] * (s / 6)), n = Math.hypot(...v) || 1;
+        const p = llPos(Math.asin(v[2] / n) * 180 / Math.PI, Math.atan2(v[1], v[0]) * 180 / Math.PI, r0);
+        if (prev && !wraps(prev, p)) { pts.push(...prev, ...p); cols.push(c.r, c.g, c.b, c.r, c.g, c.b); }
+        prev = p;
+      }
+    }
+  }
+  return { peopleRings: ribbonObj(rings, 0xffffff, 1, 2.5, rcols), peopleTracks: ribbonObj(pts, 0xffffff, 0.9, 2, cols) };
+}
 function buildOverlays() {
   DIAG.n.overlays++;
   Object.values(overlays).forEach((o) => { group.remove(o); disposeObj(o); });
@@ -1277,6 +1438,7 @@ function buildOverlays() {
     overlays.riversBig = ribbonObj(large, sat ? 0x24485e : 0xa8e1ff, 1, 2.5);
   }
   if (V.humanUse?.river_nav) Object.assign(overlays, huOverlays(globe, wraps));
+  if ($('peopleTracks')?.checked && V.peopleTracks?.length) Object.assign(overlays, peopleOverlays(globe, wraps));
   if ($('hotspots').checked && V.hotspots) {
     const pts = [], globe_ = globe;
     for (const [la, lo] of V.hotspots) {
@@ -1797,6 +1959,7 @@ function renderLegend() {
   const sk = SEASONAL[state.layer] && SEASONAL[state.layer] + '_jul';
   $('seasonRow').style.display = sk && (V.layers[sk] || (V.kind === 'run' && V.run.layers[sk])) && !ov ? '' : 'none';
   $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
+  $('resRow').style.display = state.layer === 'resource' && V.resLeg ? '' : 'none';
   drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
   if (ov && ov.diff && state.layer === 'climate') {
@@ -1811,6 +1974,15 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
+  } else if (state.layer === 'peoples' || state.layer === 'peoples mix') {
+    // the peoples present in this frame (planet/lineages/), by the land they lead
+    const L = V.layers, lines = V.run.meta.lineages || [], cnt = new Map();
+    if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
+    else {
+      for (let i = 0; i < V.n; i++) { const d = L.peoples?.[i]; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
+      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
+        sw('#5a5a52', 'nobody') + '<span class="muted">(whitened: mixed)</span>';
+    }
   } else if (state.layer === 'vegetation') {
     // the named types present, grouped (forest, savanna, desert, ...), with their share of the land
     const L = V.layers, cnt = new Map();
@@ -1875,6 +2047,8 @@ function renderLegend() {
     el.innerHTML = V.koppen.filter((k) => present.has(k.id) && k.code !== '-')
       .map((k) => `<span title="${k.name}"><span class="sw" style="background:${k.color}"></span>${k.code} ${k.name}</span>`).join('') +
       `<span class="muted">(Köppen climate classes${ov ? ', observed: Kottek et al. 2006; grey = no data' : ''})</span>`;
+  } else if (RES_LAYERS.has(state.layer)) {
+    el.innerHTML = resLegend(state.layer, sw);
   } else if (HU_LAYERS[state.layer]) {
     const k = HU_LAYERS[state.layer];
     el.innerHTML = huSwatches(k) + `<span class="muted">(${{ river_nav: 'ribbons follow the rivers; also under Overlays', harbour: 'diamonds mark them; also under Overlays',
@@ -1974,6 +2148,7 @@ const LAYER_HINTS = {
 const HINT_HAS_UNITS = new Set(['NPP', 'biomass', 'leaf area', 'salinity', 'river floods', 'plant type']);
 function renderLayerButtons() {
   fillPfts();
+  fillRes();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) state.layer = layers[0];
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
@@ -1984,6 +2159,7 @@ function renderLayerButtons() {
   document.body.classList.toggle('run', V.kind === 'run');
   document.querySelectorAll('.worldOnly').forEach((e) => (e.style.display = V.kind === 'world' ? '' : 'none'));
   document.querySelectorAll('.runOnly').forEach((e) => (e.style.display = V.kind === 'run' ? '' : 'none'));
+  V.peopleTracks = V.run?.meta?.phase === 'lineages' ? V.run.meta.lineages : null;
   document.querySelectorAll('[data-needs-volc]').forEach((e) => (e.style.display = V[e.dataset.needsVolc]?.length ? '' : 'none'));
 }
 
@@ -2051,10 +2227,35 @@ function renderRunSummary() {
 // today's Earth), with the geology frozen. Its summary has the sea-level curve.
 function timeLabel(t) {
   if (!V.tz) return `${t} Myr`;
+  if (V.run.meta.phase) return agoLabel(t);  // recent pass and lineages (planet/lineages/): kyr before the present
   return V.tzEarth ? `+${t} kyr from today` : `+${t} kyr`;
 }
 
+// Recent passes and lineage histories (planet/lineages/, docs/proposals/lineages.md) are time-zoom
+// runs with meta.phase and time in kyr before the present (t <= 0).
+function agoLabel(t) {
+  const a = -t;
+  if (a <= 0) return 'present';
+  if (a >= 1000) return `${+(a / 1000).toFixed(a >= 10000 ? 0 : 1)} Myr ago`;
+  return a >= 10 ? `${+a.toFixed(1)} kyr ago` : `${Math.round(a * 1000)} years ago`;
+}
+function phaseSummary() {
+  const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
+  const sign = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d);
+  const what = m.phase === 'recent' ? `recent pass (${m.kyr} kyr at ${m.step_kyr * 1000}-year steps)` : 'peoples and their history';
+  const tzl = m.timezoom ? `<a href="?run=${m.timezoom}&t=${m.now_kyr}" data-run="${m.timezoom}" data-t="${m.now_kyr}">time zoom ${m.timezoom} @ +${m.now_kyr} kyr</a>` : '';
+  const remake = m.phase === 'recent' ? `uv run python -m planet recent ${m.timezoom} --now ${m.now_kyr} --kyr ${m.kyr}`
+    : `uv run python -m planet lineages ${m.world || m.timezoom} --tree ${m.tree_file || '<tree.toml>'}`;
+  const stat = s.sea_level_change_m != null ? `sea level ${sign(s.sea_level_change_m)} m vs the time zoom's start · land ice on ${s.ice_pct}% of the surface` : '';
+  return `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${what} · ${m.cells} cells · made ${m.created}</span><br>
+    <b>${agoLabel(V.t)}</b>${s.variability_c != null ? ` · centennial anomaly ${sign(s.variability_c, 2)} °C` : ''}<br>${stat}<br>
+    ${m.phase === 'lineages' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
+    <span class="muted">Present = </span>${tzl}${m.world ? ` (finished world <a href="?world=${m.world}.json" data-world="${m.world}.json">${m.world}</a>)` : ''}<br>
+    <span class="muted">Remake:</span> <code>${remake}</code>`;
+}
+
 function timezoomSummary() {
+  if (V.run.meta.phase) return phaseSummary();
   const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
   const when = V.tzEarth ? `<b>+${V.t} kyr</b> from today's Earth`
     : `<b>+${V.t} kyr</b> after ${m.source_name} @ ${m.at_myr} Myr`;
@@ -2447,6 +2648,24 @@ const HINTS = {
   mud: 'Suspended sediment from the rivers at the sea surface, in mg/L: clear sea ~0.5; coral reefs need it under ~10, and seagrass and kelp need the light it takes.',
   upwelling: 'How much cold, nutrient-rich deep water welling up cools the sea surface here, in °C (feeds kelp forests and fisheries).',
 };
+// the hover card's peoples rows: this frame's leading people (its share, how many mix), the overlay
+// (template / contact hybrid), and every people's share here at the present (layers/presence_present.bin)
+function peoplesRows(i, R) {
+  const L = V.layers, m = V.run.meta, lines = m.lineages || [], d = L.peoples[i], o = L.peoples_overlay?.[i];
+  const mixn = L.peoples_mix?.[i] || 0;
+  R('place', '', d !== 255 && lines[d] ? `${lines[d].name} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
+    { lab: 'peoples (this frame)', ess: true });
+  if (o != null && o !== 255 && lines[o]) R('place', '', `${lines[o].name}`, { lab: 'among them', ess: true });
+  const pp = m.presence_present;
+  if (pp && V.presence === undefined && V.presenceFor !== V.run.id) {
+    V.presenceFor = V.run.id;
+    fetch(`../runs/${V.run.id}/${pp.file}`).then((r) => r.arrayBuffer()).then((b) => { V.presence = new Uint8Array(b); }).catch(() => {});
+  }
+  if (V.presence && V.presenceFor === V.run.id) {
+    const n = pp.shape[1], here = lines.map((l, k) => [V.presence[k * n + i], l]).filter(([v]) => v >= 12).sort((a, b) => b[0] - a[0]);
+    R('place', '', here.length ? here.map(([v, l]) => `${l.name} ${v}%`).join(', ') : 'nobody', { lab: 'at the present', ess: true });
+  }
+}
 function cellInfo(i) {
   const L = V.layers, G = V.grid, rows = [];
   const R = (g, k, v, o = {}) => rows.push({ g, k, v: String(v), sep: o.sep ?? ' ', ess: !!o.ess, join: o.join, lab: o.lab, extra: o.extra });
@@ -2457,6 +2676,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) peoplesRows(i, R);
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
   const vegRows = () => {
@@ -2525,6 +2745,7 @@ function cellInfo(i) {
     else R('plants', 'biome', V.biomes[L.biome[i]].name, { ess: true });
     soilRows();
     humanRows();
+    resRows(L, i, land, R);
     const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
     if (s) R('climate', SEASON_NAMES[s], `${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
       ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`, { sep: ': ', ess: true });
@@ -2961,7 +3182,7 @@ function applyProjUrl() {
 }
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
+const OVERLAY_IDS = ['peopleTracks', 'rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
                      'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
@@ -3452,7 +3673,7 @@ function legendFields(leg) {
            pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [],
            soilTypes: leg.soils?.types || [], soilColors: (leg.soils?.types || []).map((t) => t.color),
            soilTextures: leg.soils?.textures || [], soilDrainage: leg.soils?.drainage || [],
-           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {} };
+           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, resLeg: leg.resources || null };
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?
@@ -3489,6 +3710,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
+  peoples: ['peoples', 'peoples_mix', 'peoples_share'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -3771,6 +3993,7 @@ function applyUrlOptions() {
   }
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
+  if (p.get('res')) state.res = p.get('res');
   if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }

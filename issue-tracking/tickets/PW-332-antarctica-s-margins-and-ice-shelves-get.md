@@ -2,7 +2,7 @@
 id: PW-332
 title: "Antarctica's margins and ice shelves get 20-100 mm/yr of snow (obs ~100-500): the run's ice rule can't hold them"
 type: task
-status: blocked
+status: wontdo
 parent: null
 milestone: null
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: [PW-015]
 relates: [PW-313, PW-013, PW-308, PW-112]
 refs: [planet/climate.py, tools/ice_probe.py, docs/review/audit/pw313-polar-summers.md]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -36,6 +36,7 @@ half of the observed snow. The frozen-sea summer air fix (draft-frozen-sea-summe
 - [ ] PW-313 probe at dT 0 holds ~3% over 8 updates (with the temperature fixes) and grows toward ~-120 m at dT -6
 
 ## Updates
+- 2026-10-23: Status blocked -> wontdo. Closed as a duplicate: merged into PW-313 (same Antarctic margin-snow gap); its numbers and acceptance criteria are in PW-313's Updates (PW-597 triage, 2026-10-23).
 - 2026-10-16: Status in-progress -> blocked. Partly fixed in baabbba (vapour no longer rides the polar cell's equatorward surface drift; rain lift uses the ice surface): Antarctic land 70-80S 77 -> 158 mm (GPCP 210), Greenland 207 -> 304 (375). Margins still ~half of GPCP: storm-track moisture over 55-65S seas at 0.4 of GPCP, owned by PW-015 (merged draft there).
 - 2026-10-16: Status todo -> in-progress. Polar bundle agent started.
 - 2026-10-16: Created from inbox draft draft-antarctic-margin-snowfall.md (found by pw313).

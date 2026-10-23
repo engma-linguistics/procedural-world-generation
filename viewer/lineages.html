@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peoples editor · Planet Viewer</title>
+<style>
+  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid;
+         grid-template-columns: 1fr 380px; grid-template-rows: auto 1fr auto; height: 100vh; }
+  header { grid-column: 1 / 3; padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  header b { font-size: 15px; margin-right: 8px; }
+  #tl { overflow: auto; position: relative; }
+  #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
+  footer { grid-column: 1 / 3; border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
+  button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
+  button { cursor: pointer; } button:hover { border-color: var(--acc); }
+  input[type=number] { width: 70px; } input.wide { width: 100%; }
+  label { display: block; margin: 5px 0 2px; color: var(--muted); }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); } .err { color: var(--err); }
+  .trait { display: inline-block; margin: 2px 8px 2px 0; color: var(--text); }
+  svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
+  .bar { cursor: grab; } .sel rect.bg { fill: #233047; }
+  h3 { margin: 12px 0 4px; font-size: 13px; }
+  .wish { display: flex; gap: 4px; margin: 3px 0; } .wish select, .wish input { padding: 2px 4px; }
+  a { color: var(--acc); }
+</style>
+</head>
+<body>
+<header>
+  <b>Peoples editor</b>
+  <select id="trees" title="presets and saved trees"></select>
+  <button id="load">Load</button>
+  <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
+  <button id="save">Save</button>
+  <button id="download">Download JSON</button>
+  <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
+  <span style="flex:1"></span>
+  <span class="muted">world</span><input id="world" size="8" placeholder="world id">
+  <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8">
+  <button id="run">Run on world</button>
+  <span id="status" class="muted"></span>
+</header>
+<div id="tl"><svg id="svg"></svg></div>
+<div id="side"></div>
+<footer>Time runs left to right, Myr to the present, on a log scale (the three scales: tectonic run, glacial time zoom,
+  recent pass). Drag a bar's left end to move when the line appears; click a bar to edit it. Origins:
+  <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> · <span style="color:#c79bff">arrival (from outside)</span> ·
+  <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>. Switching a line off: its split children
+  re-parent to its parent (or become roots); its hybrids and templates go with it. Saved trees: <code>&lt;data&gt;/lineage_trees/</code>;
+  CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.</footer>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ORIGIN_COL = { split: '#9fd18b', root: '#e3c26b', arrival: '#c79bff', hybrid: '#ff9d6b', template: '#ff6b9a' };
+const TRAITS = ['flies', 'swims', 'coastal', 'seafaring', 'agricultural', 'nomadic', 'mountain', 'hardy', 'insular', 'cosmopolitan', 'subterranean'];
+const PLACES = ['coast', 'island', 'island_chain', 'mountain', 'lowland', 'inland', 'forest', 'open', 'wetland', 'jungle', 'steppe', 'desert', 'tundra'];  // (spec.PLACES)
+const WANTS = ['near', 'apart', ...PLACES];
+let T = null, sel = null, result = null;  // the raw tree (the input's shape), the selected id, a run's meta
+const q = new URLSearchParams(location.search);
+
+// times: "8 Myr" / "450 kyr" / "12000 yr" / a bare number (kyr) -> kyr (as planet/lineages/spec.parse_ago)
+function kyrOf(v) {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return v;
+  const m = String(v).trim().match(/^([0-9.eE+-]+)\s*(myr|ma|mya|kyr|ka|kya|yr|y|years?|bp)?/i);
+  if (!m) return null;
+  const x = +m[1], u = (m[2] || 'kyr').toLowerCase();
+  return ['myr', 'ma', 'mya'].includes(u) ? x * 1000 : ['yr', 'y', 'year', 'years', 'bp'].includes(u) ? x / 1000 : x;
+}
+function fmt(k) {
+  if (k >= 1000) return `${+(k / 1000).toFixed(k >= 10000 ? 0 : 2)} Myr`;
+  if (k >= 1) return `${+k.toFixed(k >= 100 ? 0 : 1)} kyr`;
+  return `${Math.round(k * 1000)} yr`;
+}
+const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.parent ? [r.parent] : [];
+const originOf = (r) => r.origin || (parentsOf(r).length ? 'split' : 'root');
+const byId = () => Object.fromEntries(T.lineage.map((r) => [r.id, r]));
+
+// what switching lines off does (as spec.parse): which lines go, who re-parents
+function effective() {
+  const ids = byId(), off = new Set(T.lineage.filter((r) => r.enabled === false).map((r) => r.id));
+  let ch = true;
+  while (ch) { ch = false; for (const r of T.lineage) if (!off.has(r.id) && ['hybrid', 'template'].includes(originOf(r)) && parentsOf(r).some((p) => off.has(p))) { off.add(r.id); ch = true; } }
+  const parent = {};
+  for (const r of T.lineage) {
+    if (originOf(r) !== 'split') continue;
+    let p = ids[parentsOf(r)[0]];
+    while (p && off.has(p.id) && originOf(p) === 'split') p = ids[parentsOf(p)[0]];
+    parent[r.id] = p && !off.has(p.id) ? p.id : null;
+  }
+  return { off, parent };
+}
+
+// ---- the timeline ------------------------------------------------------------------------------
+const W0 = 190, ROW = 22, TOP = 34;
+const LMIN = Math.log10(0.05), LMAX = Math.log10(20000);  // 50 yr .. 20 Myr
+let WIDTH = 900;
+const xOf = (kyr) => W0 + (1 - (Math.log10(Math.max(kyr, 0.05)) - LMIN) / (LMAX - LMIN)) * (WIDTH - W0 - 20);
+const kyrAt = (x) => 10 ** (LMIN + (1 - (x - W0) / (WIDTH - W0 - 20)) * (LMAX - LMIN));
+
+function order() {  // depth-first by split edges, roots and arrivals by age
+  const kids = {}, out = [], seen = new Set();
+  for (const r of T.lineage) if (originOf(r) === 'split') (kids[parentsOf(r)[0]] = kids[parentsOf(r)[0]] || []).push(r);
+  const walk = (r, d) => { if (seen.has(r.id)) return; seen.add(r.id); out.push([r, d]);
+    (kids[r.id] || []).sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((k) => walk(k, d + 1)); };
+  T.lineage.filter((r) => originOf(r) !== 'split' && !['hybrid', 'template'].includes(originOf(r)))
+    .sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((r) => walk(r, 0));
+  T.lineage.filter((r) => ['hybrid', 'template'].includes(originOf(r))).sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((r) => walk(r, 0));
+  T.lineage.forEach((r) => walk(r, 0));
+  return out;
+}
+
+function drawTimeline() {
+  WIDTH = Math.max(700, $('tl').clientWidth - 4);
+  const rows = order(), eff = effective(), svg = $('svg'), H = TOP + rows.length * ROW + 10;
+  svg.setAttribute('width', WIDTH); svg.setAttribute('height', H);
+  const y = {}; rows.forEach(([r], i) => (y[r.id] = TOP + i * ROW + ROW / 2));
+  let s = '<g class="axis">';
+  for (const k of [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000]) {
+    s += `<line x1="${xOf(k)}" x2="${xOf(k)}" y1="${TOP - 6}" y2="${H}" stroke="#1f2836"/><text x="${xOf(k)}" y="${TOP - 10}" text-anchor="middle">${fmt(k)}</text>`;
+  }
+  const band = (a, b, name, col) => `<rect x="${xOf(a)}" y="2" width="${xOf(b) - xOf(a)}" height="12" fill="${col}" opacity=".35"/><text x="${(xOf(a) + xOf(b)) / 2}" y="12" text-anchor="middle">${name}</text>`;
+  s += band(20000, 300, 'tectonic run (Myr keyframes)', '#3b4d6b') + band(300, 30, 'glacial time zoom (kyr)', '#2f5a5a') + band(30, 0.05, 'recent pass (centuries)', '#5a4a2f');
+  s += '</g>';
+  const ids = byId();
+  rows.forEach(([r, d], i) => {
+    const yy = y[r.id], off = eff.off.has(r.id), o = originOf(r), a = kyrOf(r.at) ?? 1, ex = kyrOf(r.extinct);
+    const col = r.color || ORIGIN_COL[o] || '#aaa';
+    const res = result?.lineages?.find((l) => l.id === r.id);
+    s += `<g class="bar${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.3 : 1}">
+      <rect class="bg" x="0" y="${yy - ROW / 2}" width="${WIDTH}" height="${ROW}" fill="transparent"/>
+      <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
+      <rect x="${xOf(a)}" y="${yy - 5}" width="${Math.max(2, xOf(ex ?? 0.05) - xOf(a))}" height="10" rx="3" fill="${col}" opacity="${o === 'template' ? 0.55 : 0.9}"
+        ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
+      <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
+      ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
+      ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
+    </g>`;
+    const ps = o === 'split' ? [eff.parent[r.id]].filter(Boolean) : parentsOf(r);
+    for (const p of ps) if (y[p] != null) {
+      s += `<path d="M${xOf(a)},${y[p]} L${xOf(a)},${yy}" stroke="${ORIGIN_COL[o]}" stroke-width="1.2" fill="none" opacity="${off ? 0.25 : 0.8}"
+        ${o !== 'split' ? 'stroke-dasharray="3 2"' : ''}/>`;
+    }
+  });
+  svg.innerHTML = s;
+}
+
+// drag a bar's left end to move its time (kept after its parents and before its children)
+let drag = null;
+$('svg').addEventListener('mousedown', (e) => {
+  const g = e.target.closest('.grip');
+  if (g) { drag = g.dataset.id; e.preventDefault(); return; }
+  const b = e.target.closest('.bar');
+  if (b) { sel = b.dataset.id; drawTimeline(); drawSide(); }
+});
+window.addEventListener('mousemove', (e) => {
+  if (!drag) return;
+  const r = byId()[drag], ids = byId(), box = $('svg').getBoundingClientRect();
+  let k = kyrAt(e.clientX - box.left);
+  const pmin = Math.min(...parentsOf(r).map((p) => kyrOf(ids[p]?.at) ?? 1e9), 1e9);
+  const kids = T.lineage.filter((x) => parentsOf(x).includes(r.id)).map((x) => kyrOf(x.at));
+  const cmax = Math.max(...kids, kyrOf(r.extinct) ?? 0, 0);
+  k = Math.min(Math.max(k, cmax * 1.02 + 1e-4), pmin * 0.98);
+  const nice = k >= 1000 ? `${+(k / 1000).toPrecision(2)} Myr` : k >= 1 ? `${+k.toPrecision(2)} kyr` : `${Math.round(k * 1000 / 50) * 50} yr`;
+  r.at = nice;
+  drawTimeline();
+  if (sel === drag) drawSide();
+});
+window.addEventListener('mouseup', () => { if (drag) { sel = drag; drag = null; drawSide(); } });
+window.addEventListener('resize', drawTimeline);
+
+// ---- the side panel ----------------------------------------------------------------------------
+function field(label, html) { return `<label>${label}</label>${html}`; }
+function drawSide() {
+  const side = $('side');
+  const r = sel && byId()[sel];
+  let h = `<div class="row"><button id="add">+ Add a people</button>${r ? '<button id="addChild">+ Branch from this</button><button id="del">Delete</button>' : ''}</div>`;
+  if (r) {
+    const o = originOf(r), eff = effective(), res = result?.lineages?.find((l) => l.id === r.id);
+    const ids = T.lineage.map((x) => x.id).filter((x) => x !== r.id);
+    h += `<h3>${esc(r.name || r.id)}</h3>
+      <div class="row"><label class="trait"><input type="checkbox" data-k="enabled" ${r.enabled === false ? '' : 'checked'}> enabled</label>
+        <label class="trait"><input type="checkbox" data-k="persists" ${r.persists ? 'checked' : ''}> persists after its splits</label></div>
+      ${eff.off.has(r.id) && r.enabled !== false ? '<div class="muted">off because a parent is off</div>' : ''}
+      ${field('id', `<input class="wide" data-k="id" value="${esc(r.id)}">`)}
+      ${field('name', `<input class="wide" data-k="name" value="${esc(r.name || '')}">`)}
+      <div class="row">${field('origin', `<select data-k="origin">${Object.keys(ORIGIN_COL).map((x) => `<option ${x === o ? 'selected' : ''}>${x}</option>`).join('')}</select>`)}
+        ${field('at (ago)', `<input data-k="at" size="9" value="${esc(r.at)}">`)}
+        ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
+      ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="parents" ${o === 'split' ? '' : 'multiple size="4"'} class="wide">
+        ${ids.map((x) => `<option ${parentsOf(r).includes(x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
+      ${o === 'arrival' ? `<div class="row">${field('arrives at lat', `<input type="number" data-k="place.0" value="${r.place?.[0] ?? ''}">`)}${field('lon', `<input type="number" data-k="place.1" value="${r.place?.[1] ?? ''}">`)}<span class="muted">(empty: best habitat, near any hybrid partner)</span></div>` : ''}
+      ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>` : ''}
+      ${['hybrid', 'template'].includes(o) ? `<div class="row">${field('share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
+      <div class="row">${field('temperature °C', `<input type="number" data-k="temp_c.0" value="${r.temp_c?.[0] ?? ''}"> – <input type="number" data-k="temp_c.1" value="${r.temp_c?.[1] ?? ''}">`)}</div>
+      <div class="row">${field('rain mm/yr', `<input type="number" data-k="rain_mm.0" value="${r.rain_mm?.[0] ?? ''}"> – <input type="number" data-k="rain_mm.1" value="${r.rain_mm?.[1] ?? ''}">`)}</div>
+      <div class="muted">empty fields are inherited from the first parent</div>
+      ${field('prefers (Köppen codes or groups, places: ' + PLACES.join(', ') + ')', `<input class="wide" data-k="prefers" value="${esc((r.prefers || []).join(', '))}">`)}
+      ${field('avoids', `<input class="wide" data-k="avoids" value="${esc((r.avoids || []).join(', '))}">`)}
+      ${field('traits', TRAITS.map((t) => `<label class="trait"><input type="checkbox" data-trait="${t}" ${(r.traits || []).includes(t) ? 'checked' : ''}> ${t}</label>`).join(''))}
+      ${field('colour', `<input type="color" data-k="color" value="${r.color || '#888888'}">`)}
+      ${res ? `<h3>Last run</h3><div>${res.origin_place ? `from ${res.origin_place.lat}, ${res.origin_place.lon}, ${fmt(res.origin_place.ago_kyr)} ago: ${esc(res.origin_place.why)}` : 'never appeared'}<br>
+        ${result.present?.lines?.[r.id] ? `now ${result.present.lines[r.id].area_mkm2} Mkm² in ${result.present.lines[r.id].patches} patch(es); neighbours ${Object.keys(result.present.lines[r.id].neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${fmt(res.ended_kyr)} ago` : 'absent at the present'}</div>` : ''}`;
+  }
+  h += `<h3>Wishes (soft)</h3>${(T.wish || []).map((w, i) => `<div class="wish" data-w="${i}">
+      <select data-wk="a">${T.lineage.map((x) => `<option ${x.id === w.a ? 'selected' : ''}>${x.id}</option>`).join('')}</select>
+      <select data-wk="want">${WANTS.map((x) => `<option ${x === w.want ? 'selected' : ''}>${x}</option>`).join('')}</select>
+      <select data-wk="b"><option value="">—</option>${T.lineage.map((x) => `<option ${x.id === w.b ? 'selected' : ''}>${x.id}</option>`).join('')}</select>
+      <input type="number" step="0.1" data-wk="weight" value="${w.weight ?? 1}" style="width:50px"><button data-wdel="${i}">×</button></div>`).join('')}
+    <button id="addWish">+ wish</button>
+    <h3>Tree</h3><div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
+    ${result ? `<h3>Result</h3><a href="index.html?run=${result.id}&layer=peoples" target="_blank">open run ${result.id} on the globe</a>${result.present?.wish_score != null ? ` · wish score ${result.present.wish_score}` : ''}` : ''}`;
+  side.innerHTML = h;
+}
+
+$('side').addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.dataset.m) { T.meta = T.meta || {}; T.meta[el.dataset.m] = el.type === 'number' ? +el.value : el.value; return; }
+  if (el.dataset.wk) { const w = T.wish[+el.closest('.wish').dataset.w]; w[el.dataset.wk] = el.dataset.wk === 'weight' ? +el.value : el.value || undefined; return; }
+  const r = byId()[sel];
+  if (!r) return;
+  if (el.dataset.trait) {
+    const t = new Set(r.traits || []); el.checked ? t.add(el.dataset.trait) : t.delete(el.dataset.trait); r.traits = [...t];
+  } else if (el.dataset.k) {
+    const k = el.dataset.k;
+    if (k.includes('.')) {
+      const [a, i] = k.split('.'); r[a] = r[a] ? [...r[a]] : ['', ''];
+      r[a][+i] = el.value === '' ? '' : +el.value;
+      if (r[a].every((v) => v === '')) delete r[a];
+    } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
+    else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
+    else if (k === 'prefers' || k === 'avoids') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (k === 'share' || k === 'sites') r[k] = +el.value;
+    else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
+    else if (k === 'id') {
+      const old = r.id; r.id = el.value.trim();
+      for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
+      for (const w of T.wish || []) { if (w.a === old) w.a = r.id; if (w.b === old) w.b = r.id; }
+      sel = r.id;
+    } else r[k] = el.value;
+    if (k === 'origin') { delete r.parent; if (['root', 'arrival'].includes(r.origin)) delete r.parents; }
+  }
+  drawTimeline(); drawSide();
+});
+$('side').addEventListener('click', (e) => {
+  const id = e.target.id;
+  if (id === 'add' || id === 'addChild') {
+    let n = 1; while (byId()[`custom_${n}`]) n++;
+    const par = id === 'addChild' ? byId()[sel] : null;
+    const r = { id: `custom_${n}`, name: `new people ${n}`, custom: true, origin: par ? 'split' : 'arrival',
+                at: par ? fmt(Math.max(0.2, (kyrOf(par.at) || 10) / 3)) : '10 kyr', ...(par ? { parents: [par.id] } : {}) };
+    T.lineage.push(r); sel = r.id;
+  } else if (id === 'del' && sel) {
+    const r = byId()[sel];
+    if (T.lineage.some((x) => parentsOf(x).includes(sel)) && !confirm(`${sel} has descendants; delete anyway? (switching it off keeps them)`)) return;
+    T.lineage = T.lineage.filter((x) => x !== r); sel = null;
+  } else if (id === 'addWish') (T.wish = T.wish || []).push({ a: T.lineage[0].id, want: 'near', b: T.lineage[1]?.id, weight: 1 });
+  else if (e.target.dataset.wdel != null) T.wish.splice(+e.target.dataset.wdel, 1);
+  else return;
+  drawTimeline(); drawSide();
+});
+
+// ---- load, save, run ---------------------------------------------------------------------------
+const status = (msg, err) => { $('status').innerHTML = err ? `<span class="err">${esc(msg)}</span>` : esc(msg); };
+async function listTrees(pick) {
+  try {
+    const r = await (await fetch('../api/lineage-trees')).json();
+    $('trees').innerHTML = r.trees.map((t) => `<option value="${t.name}" ${t.name === pick ? 'selected' : ''}>${t.name} (${t.kind})</option>`).join('');
+  } catch { status('no server API: load or download files only', true); }
+}
+async function loadTree(name) {
+  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`);
+  const j = await r.json();
+  if (!r.ok) return status(j.error || r.status, true);
+  T = j; T.wish = T.wish || []; sel = null; $('saveName').value = name === 'dnd' ? 'my-peoples' : name;
+  drawTimeline(); drawSide(); status(`loaded ${name}: ${T.lineage.length} peoples`);
+}
+$('load').onclick = () => loadTree($('trees').value);
+$('save').onclick = async () => {
+  const name = $('saveName').value.trim();
+  const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`, { method: 'POST', body: JSON.stringify(T) });
+  const j = await r.json();
+  if (!r.ok) return status(j.error, true);
+  status(`saved ${name}`); listTrees(name);
+};
+$('download').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(T, null, 1)], { type: 'application/json' }));
+  a.download = `${$('saveName').value.trim() || 'peoples'}.json`; a.click();
+};
+$('upload').onchange = async (e) => {
+  try { T = JSON.parse(await e.target.files[0].text()); T.wish = T.wish || []; sel = null; drawTimeline(); drawSide(); status('loaded file'); }
+  catch (err) { status(`not a tree: ${err}`, true); }
+};
+$('run').onclick = async () => {
+  const world = $('world').value.trim();
+  if (!world) return status('give a finished world id', true);
+  status('running… (~20 s a try at L6)');
+  $('run').disabled = true;
+  try {
+    const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ world, raw: T, tries: +$('tries').value }) });
+    const j = await r.json();
+    if (!r.ok) return status(j.error, true);
+    // queued on the server's job queue: poll it
+    for (;;) {
+      await new Promise(res => setTimeout(res, 1500));
+      const s = await (await fetch(`../api/jobs/${j.job}`, { cache: 'no-store' })).json();
+      if (s.status === 'error') return status(s.error, true);
+      if (s.status === 'done') { await showResult(s.run); break; }
+      status(`${s.status}: ${Math.round(100 * (s.progress || 0))}% ${s.message || ''}`);
+    }
+  } finally { $('run').disabled = false; }
+};
+async function showResult(id) {
+  const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
+  result = { id, ...run.meta };
+  status(`run ${id} done`);
+  drawTimeline(); drawSide();
+}
+
+(async () => {
+  await listTrees(q.get('tree') || 'dnd');
+  if (q.get('world')) $('world').value = q.get('world');
+  await loadTree(q.get('tree') || 'dnd').catch(() => status('could not load the tree', true));
+  if (q.get('run')) await showResult(q.get('run'));
+})();
+</script>
+</body>
+</html>

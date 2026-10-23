@@ -4,7 +4,7 @@ title: "Soils' climate memory barely matters: soil ages (h/E) are under ~3 Myr"
 type: task
 status: todo
 parent: PW-184
-milestone: null
+milestone: v2
 subsystem: surface
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-185]
 refs: [planet/soils.py, planet/timeline.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Decision 3B (average the run's keyframe climate over each soil's age, so relic l
 Option: a separate weathering-profile age (saprolite depth / E, uncapped by the 3 m soil) for W on old flat surfaces, so relic deep weathering shows; needs a look at how far Ferralsols then spread. Lime and salt deliberately follow the present climate (they wash out within ~1e4-1e5 yr).
 
 ## Updates
+- 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): soils stay under PW-184 in v2.
 - 2026-10-16: Created from inbox draft draft-soil-climate-memory-weak.md (found by soils).

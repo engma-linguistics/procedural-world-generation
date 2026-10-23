@@ -291,6 +291,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url = urlsplit(self.path)
+        if self.lineages_api("GET"):
+            return
         if url.path == "/api/highlights":
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/cell":
@@ -329,7 +331,43 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(job if job else {"error": "no such job"}, 200 if job else 404)
         return super().do_GET()
 
+    def lineages_api(self, method: str) -> bool:
+        """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-trees, GET or POST
+        /api/lineage-tree?name=N (the tree as JSON; POST validates and saves it), POST /api/lineages
+        {world | timezoom, tree | raw, tries} (queued on the job queue like a time zoom, ~20 s a try at L6;
+        answers {job}; GET /api/jobs/<id> has its progress, and {run} when done)."""
+        url = urlsplit(self.path)
+        if not url.path.startswith("/api/lineage"):
+            return False
+        from .lineages import run as LR
+        q = dict(parse_qsl(url.query))
+        try:
+            if method == "GET" and url.path == "/api/lineage-trees":
+                self.send_json({"trees": [{k: v for k, v in t.items() if k != "file"} for t in LR.list_trees()]})
+            elif method == "GET" and url.path == "/api/lineage-tree":
+                self.send_json(LR.read_raw(q.get("name", "")))
+            elif method == "POST" and url.path in ("/api/lineage-tree", "/api/lineages"):
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                if url.path == "/api/lineage-tree":
+                    LR.save_raw(q.get("name", ""), body)
+                    self.send_json({"saved": q.get("name")})
+                else:
+                    try:
+                        req = api.parse_lineages_request(body)
+                    except api.BadRequest as e:
+                        return self.send_json({"error": str(e)}, 400) or True
+                    self.send_json({"job": self.jobs.submit(req)})
+            else:
+                self.send_error(404)
+        except (ValueError, KeyError) as e:
+            self.send_json({"error": str(e)}, 400)
+        except (FileNotFoundError, SystemExit) as e:
+            self.send_json({"error": str(e)}, 404)
+        return True
+
     def do_POST(self):
+        if self.lineages_api("POST"):
+            return
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))

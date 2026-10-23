@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-152]
 refs: [planet/ocean.py, tools/coastal_check.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ On the L6 Earth world (`tools/earth_world.build(6)`, code of 2026-10-15) the Bal
 - [ ] Baltic proper < 15 psu on the Earth world, Black Sea brackish (~18), without upsetting the open ocean
 
 ## Updates
+- 2026-10-23: PW-597 triage (2026-10-23): kept, not wontdo. Enclosed seas don't build up their own salinity anomaly (mirror of PW-152), which would also hit generated worlds' coastal life; the Baltic is only the test case.
 - 2026-10-15: Created from inbox draft draft-earth-baltic-too-salty.md (found by coastal-life).

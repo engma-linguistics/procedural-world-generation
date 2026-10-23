@@ -4,16 +4,16 @@ title: The rain kernel's vapour transport isn't mass-conservative (fresh-water r
 type: task
 status: todo
 parent: PW-245
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: s
-impact: low
+impact: med
 found_by: climate-ocean
 blocked_by: []
 relates: [PW-266, PW-211]
 refs: [planet/climate.py, planet/ocean.py]
 created: 2026-10-15
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,6 +33,7 @@ Measured as the residue in m/yr over the sea, after PW-266:
 Fix: make the transport conservative (each cell sends its moved vapour out in shares that sum to 1, and the inflow is what its neighbours send), and give the mixing a symmetric edge form. Keep the PW-211 seam fix in some form, then re-check PW-211's rain-streak test. Then lower `FW_RESIDUE` to 1 cm/yr.
 
 ## Updates
+- 2026-10-23: Milestone v2 -> v1 and impact low -> med (PW-597 triage, coordinator, 2026-10-23): the kernel's vapour transport is not mass-conservative (fresh-water residue ~1 cm/yr on L6 planets, up to 0.6 m/yr on banded test planets), a real v1 bug.
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-16: Merged inbox draft draft-pw304-land-books-residue.md ("PW-304 after PW-015: the transport is conservative; the residue left (L4 -1..-4 cm/yr) is the land books' (storm spread, first-pass PET)", found by pw015-rain).
   For PW-304 (probably `--merge-into PW-304`). PW-015 stage 1's finite-volume transport keeps the vapour's
@@ -45,6 +46,6 @@ Fix: make the transport conservative (each cell sends its moved vapour out in sh
   water balance's runoff the final temperatures'. FW_RESIDUE stays at 2 cm/yr until those close.
   - [ ] land evaporation in the kernel and runoff in the water balance from the same rain and PET
   - [ ] then FW_RESIDUE 1 cm/yr
-- 2026-10-15: Docs cleanup: the after-audit 1 Gyr health sweep (8 L6 + 3 L7 seeds, main after the audit fixes) logged 402 fresh-water imbalance warnings, residue -2.0..-6.1 cm/yr (all negative; larger than the ~1 cm/yr quoted above for L6 planets). The full log is docs/review/after-audit-2026-10-15/health.log at commit 29ab7d4.
+- 2026-10-15: Docs cleanup: the after-audit 1 Gyr health sweep (8 L6 + 3 L7 seeds, main after the audit fixes) logged 402 fresh-water imbalance warnings, residue -2.0..-6.1 cm/yr (all negative; larger than the ~1 cm/yr quoted above for L6 planets). The full log is docs/review/after-audit-2026-10-15/health.log (removed; see git d32f7fa) at commit 29ab7d4.
 - 2026-10-15: Coordinator: at L4 the freshwater check warns on every climate update (+2..+4.7 cm/yr over its 2 cm/yr threshold), ~450 warnings per pytest run; fixing the leak or scaling the threshold by level would quiet it.
 - 2026-10-15: Created from inbox draft draft-climate-ocean-rain-transport-leaks.md (found by climate-ocean).

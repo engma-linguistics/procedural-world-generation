@@ -4,7 +4,7 @@ title: Remove the overturning spin-up rule; Atlantic on and Pacific off by thems
 type: story
 status: todo
 parent: PW-013
-milestone: null
+milestone: v1
 subsystem: ocean
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-015]
 relates: []
 refs: [planet/ocean.py, tools/moisture_budget.py, docs/review/audit/pw015-rain.md]
 created: 2026-10-14
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,6 +27,7 @@ Also in scope: Earth gives ~11 Sv of North Atlantic sinking against an observed 
 there's no lasting off-state (after ~1 Sv hosing it recovers within 2–3 climate updates; see PW-018).
 
 ## Updates
+- 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
 - 2026-10-16: Merged inbox draft draft-pw016-spin-up-status.md ("PW-016 after PW-015 stages 1-2: the spin-up rule is already inert on Earth, but the Atlantic's catchments are still too wet (E-P-R +0.20 Sv at L6)", found by pw015-rain).
   For PW-016 (probably `--merge-into PW-016`). Tried at the end of the PW-015 lane:
   - Earth L6 and L7 give the same overturning with `moc_spin` 6 (default), 1 (no spin-up), 30 or 0.5: 14.6

@@ -4,7 +4,7 @@ title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the i
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: ocean
 effort: l
 impact: high

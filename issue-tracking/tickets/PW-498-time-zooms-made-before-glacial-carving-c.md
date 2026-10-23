@@ -2,7 +2,7 @@
 id: PW-498
 title: Time zooms made before glacial carving can't be finished; re-run the showcase ones
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: null
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-037, PW-091, PW-479]
 refs: [planet/finish.py, "run 6d0ed0", "run 098d5d", "run 080df3", "run 86c513", "run 755514", "run 7d5027", "run 98ee98", "run be3362"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ their showcase worlds again, and delete the rest (`planet delete`). PW-037's own
 - [ ] showcase time zooms re-run with carving; finished worlds remade; old zooms deleted
 
 ## Updates
+- 2026-10-23: Status todo -> wontdo. Closed as a duplicate: folded into PW-202 (the v1 showcase remake), which carries the old-zoom list and the clean-up (PW-597 triage, 2026-10-23).
 - 2026-10-21: Created from inbox draft draft-rerun-time-zooms-for-carving.md (found by pw037-port).

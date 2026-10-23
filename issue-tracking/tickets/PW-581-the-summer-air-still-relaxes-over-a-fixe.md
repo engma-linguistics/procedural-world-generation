@@ -4,7 +4,7 @@ title: The summer air still relaxes over a fixed 450 km while the winter's is no
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: m
 impact: med

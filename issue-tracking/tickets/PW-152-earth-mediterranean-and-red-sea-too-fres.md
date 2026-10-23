@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-016]
 refs: [planet/ocean.py, planet/climate.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,4 +28,5 @@ regardless of the sill. Matters for a Mediterranean outflow analogue and for whi
 marginal seas could make deep water on other worlds.
 
 ## Updates
+- 2026-10-23: PW-597 triage (2026-10-23): kept, not wontdo. It points at a mechanism (the coarse overturning grid mixes narrow seas with the open ocean through their straits; salinity is relaxed regardless of the sill), not only an Earth miss. Mirror of PW-324.
 - 2026-10-14: Created from inbox draft draft-med-sea-salinity.md (found by viewerocean).

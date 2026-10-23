@@ -3,8 +3,8 @@ id: PW-347
 title: "Vegetation fire: boreal forest burns every ~380 yr (observed ~50-200); short fire seasons get little from GlobFIRM's curve"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-184
+milestone: v2
 subsystem: surface
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-234, PW-205]
 refs: [planet/vegetation.py, tools/veg_check.py, tools/earth_data.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,6 +22,7 @@ What to try: dry spells inside wet months (boreal fire weeks), e.g. the fire sea
 - [ ] boreal fire return ~50-200 yr on Earth's observed climate, savanna and grassland numbers unchanged
 
 ## Updates
+- 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): vegetation fire is v2 fun work; now under PW-184.
 - 2026-10-16: Merged inbox draft draft-veg-boreal-fire-gfed-rotation.md ("Boreal fire return: GFED4.1s gives a ~170-220 yr rotation on Earth's boreal forest, not 50-200 (update for PW-347)", found by pw204-vegdata).
   For the coordinator to merge into PW-347 (`board.py intake --merge-into PW-347`). veg_check now measures boreal fire on gridded GFED4.1s burned area (2001-2015 mean, small fires included). L6 Earth world 7873f9 (deleted), observed climate, fire rotation (area / area burned a year) and median cell interval:
   - model's boreal types: rotation 294 yr, median 381 yr, 0.058 Mkm2/yr;

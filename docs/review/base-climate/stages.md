@@ -1167,3 +1167,79 @@ Files in `laneA13/`:
 
 The defaults stay green and slightly closer on every bar. The honest rules are still red on the endings test and
 the Earth zoom's bars, as in the stage-3 checkpoint: that still points to the ice lane (PW-569 / PW-439).
+
+## PW-593: the sea's summer swing from the wind (lane A14), attempt 1 of 3: not merged
+
+**Not merged. The wind-set summer layer does what PW-593 asked in the NH. The model's summer winds are the wrong
+way round between the hemispheres, so it breaks the SH, rain r and the SH coastal range.** The code is not on the
+branch. Its toggles (`ml_wind`, `land_fetch`) are in `laneA14/pw593_attempt1_toggles.diff`. The decision is in
+`issue-tracking/inbox/draft-summer-mixed-layer-needs-seasonal-winds.md` (lean: winds first).
+
+Files in `laneA14/`:
+- `wind.py` / `wind_base.txt`: per box, the summer and winter wind speed, the storminess, the summer sunshine Q,
+  the Monin-Obukhov depth, and the sea's half-swing split into summer and winter sides;
+- `ev.py` / `ev2.py` and their `ev*_base.txt`: offline variants;
+- `p3.py` / `p3_attempt1.txt`: lane A12's stage-3 probe plus the sea-swing rows;
+- `*_before.txt`: main's earth_check, climate_bias and overturning_report.
+
+### Measured first (main)
+- **The model's summer winds don't have the contrast the mechanism needs.**
+  - `v_sum` is 8.7 m/s over the NE Pacific (obs ~6-7) and 7.9 over the NE Atlantic.
+  - Off Patagonia it is 3.1 (obs ~8-10), the Tasman 3.5 and the Agulhas 2.3.
+  - Band 40-50: N 7.3, S 6.4.
+- **Why:**
+  - `wind()`'s westerly belt has one strength in both seasons and hemispheres. The belts alone give 6.2-7.0 m/s at
+    all three.
+  - `monsoon_wind`'s land-sea part slows the SH coasts (Patagonia 6.4 → 3.1) and speeds the NE Pacific (6.2 → 8.7).
+  - The summer storminess (`storm_track`) is about equal too: 0.68 at 40-50N, 0.75 at 40-50S.
+- **The SH coasts' excess swing isn't the layer's depth.** Off Patagonia `sea_half` is 5.7, of which ~3.5 is the
+  land part. That part is a big continent's swing, whatever the land's width
+  (`draft-sea-swing-land-part-is-a-big-continents.md`).
+- **The NE Atlantic's small air swing is half the winter side.** Its sst − Tc is 1.0 against Tw − sst 2.5: that is
+  the overturning's winter damping (PW-592), not the summer layer.
+- **PW-592 and PW-594 don't share the mechanism.** The Tasman's +4.7 summer is the gyre's +5 annual (PW-594), and
+  the open NH sea's warmth is the overturning's (PW-592).
+
+### What was tried (`ml_wind`; `land_fetch`)
+- `_summer_layer`: h = u*^3 / (kappa g alpha Q / rho c), clipped to [`light_m` 20, `brine_m` 50] m.
+  - u* comes from the bulk stress (C_D 1.3e-3) on the summer wind.
+  - Q is `_sea_half`'s summer sunshine.
+  - alpha is `ocean.density`'s thermal expansion at the summer SST.
+  - It sets the summer side of the swing only (`sea_half_s`); the winter side keeps `brine_m` and the overturning's
+    damping.
+- `land_fetch`: the land carried onto the sea in `land_air` is weighted by `_summer_fetch`'s share,
+  sum_h / fetch_h + (1 − that) × the land within `fetch_km`.
+
+### The bars (Earth L6; main → `ml_wind` / `land_fetch` / both; `p3_attempt1.txt`)
+| bar | main | ml_wind | land_fetch | both |
+|---|---|---|---|---|
+| W Europe warmest (no worse than pre-stage-3's +0.4) | −1.2 | **−0.1** | −1.9 | −1.0 |
+| sea swing within 1.5x: near N / near S / open N / open S | 52 / 54 / 10 / 43% | **69** / 40 / **35** / 66% | 43 / **66** / 8 / 43% | 67 / 45 / 34 / 69% |
+| half-swing NE Atl / Norw / NE Pac (obs 3.2 / 4.0 / 3.9) | 1.7 / 1.8 / 2.0 | 1.9 / 4.0 / 2.2 | 1.7 / 1.6 / 2.0 | 1.9 / 3.8 / 2.2 |
+| half-swing Pat / Tasman / Agulhas (obs 3.7 / 2.7 / 2.4) | 6.2 / 3.7 / 3.6 | 8.7 / 5.6 / 5.3 | 4.9 / 3.1 / 3.1 | 7.0 / 4.8 / 4.7 |
+| log-rain r ≥ 0.617 | 0.620 | **0.598** | **0.613** | **0.591** |
+| SH coastal range ≤ 12.5 (stage 3) | 12.4 | **14.6** | 11.6 | **13.5** |
+| Fennoscandia / Iceland / Tasmania warmest | −3.9 / +3.2 / +6.0 | −0.7 / +8.2 / +8.9 | −4.2 / +1.4 / +5.5 | −1.3 / +5.7 / +8.1 |
+| humid warmest: SE USA / Labrador / Pampas | +3.7 / +3.2 / +4.2 | +4.7 / +5.2 / +5.2 | +3.2 / +3.3 / +3.7 | +4.1 / +5.1 / +4.6 |
+
+- Offline (`ev_base.txt`, `ev2_base.txt`), nothing rescued it:
+  - floors of 10 or 20 m;
+  - the Monin-Obukhov factor doubled;
+  - a storminess term in the stirring wind (|U|² + (k × track × U_REF)²).
+  - The NE Pacific stays ~50 m deep under its 8.7 m/s, and the calm SH coasts always reach the floor.
+- Offline, a flat 20 m layer scores like the wind-set one: 59% and 58% of the 20-65 sea rows within 1.5x, against
+  main's 37%. So what
+  `ml_wind` gains in the NH is a shallower layer overall, not the wind's pattern.
+- So neither is merged:
+  - `ml_wind` fails rain r and the SH coastal range;
+  - `land_fetch` fails rain r and W Europe.
+- One sound path is left: summer westerlies by season and hemisphere, then the saved layer on top
+  (draft option A).
+
+### Tests and the checkpoint
+- Main: `uv run pytest -q` gives 568 passed (`laneA14/` before-run). Nothing in `planet/` changed on the branch, so
+  the after-run equals the before-run, and the PW-589 checkpoint (`laneA13/checkpoint/`) stands. `ckpt.sh` was not
+  re-run.
+- The scorecard's before-run was stopped part-way by the coordinator's pause (the owner needed the machine quiet).
+  Main's climate is unchanged since PW-589, so lane A13's line (`964a132+dirty`: Earth group 69.9, r 0.62) is
+  still main's.

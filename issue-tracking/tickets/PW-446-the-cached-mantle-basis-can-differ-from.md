@@ -4,7 +4,7 @@ title: The cached mantle basis can differ from a fresh build (up to 0.063), chan
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: tectonics
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/mantle.py, tests/test_envelopes.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,4 +30,5 @@ against a stored digest); the bad file is kept in the pw440 session scratchpad (
 - [ ] the cache file is written atomically
 
 ## Updates
+- 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): a real bug in a v1 feature (the cached mantle basis differs from a fresh build).
 - 2026-10-20: Created from inbox draft draft-mantle-basis-cache-not-reproducible.md (found by pw440).

@@ -75,8 +75,11 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
             continue
         p = home(r.get("source_run"), r["dir"], r["name"], r)
         parent = f"run:{root_of(r['source_run'])}" if root_of(r.get("source_run")) else None
+        if r.get("phase") and run_by.get(r.get("timezoom")):  # a recent pass / peoples run: under its time zoom
+            parent = f"run:{run_by[r['timezoom']]['dir']}"
         p["nodes"].append({"key": f"run:{r['dir']}", "kind": "timezoom", "id": r["dir"], "name": r["name"], "parent": parent,
                            "created": r["created"], "at_myr": r["at_myr"], "kyr": r["kyr"], "level": r["level"],
+                           **({"phase": r["phase"], "world": r.get("world")} if r.get("phase") else {}),
                            "thumb": THUMB.format(kind="run", id=r["dir"])})
         where[f"run:{r['dir']}"] = p["key"]
         if p["key"] == "earth":

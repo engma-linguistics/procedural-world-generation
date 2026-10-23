@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-472, PW-248, PW-443]
 refs: [planet/make.py, planet/tectonics/params.py, planet/orbit.py, viewer/start.js]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,4 +32,5 @@ Each is a real piece of model work, and several interact with PW-443 (planet-rel
 - [ ] `UNSUPPORTED` shrinks accordingly
 
 ## Updates
+- 2026-10-23: Merged PW-219 (closed as duplicate; PW-597 triage): this ticket's scope already lists planet size and gravity as the last parameter in its suggested order. PW-219's content for that step: radius, mean density and makeup other than Earth's change gravity (mountain heights, isostasy, erosion), internal heat and so plate speed and volcanism, the grid's km per cell, atmosphere and ocean scaling, and climate (Coriolis with day length). It needs a review of every Earth constant hard-coded across planet/ before anything else; more guesswork-heavy than the moons; effort for that step alone was xl.
 - 2026-10-20: Created from inbox draft draft-make-settings-gaps.md (found by agent-make-ui).

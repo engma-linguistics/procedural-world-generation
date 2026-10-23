@@ -1,0 +1,128 @@
+           main (50 m)
+   NE Atl h 50 sw 1.7/3.2 Tw-1.2
+   Biscay-N Sea h 50 sw 5.4/5.5 Tw-2.4
+   Norw Sea h 50 sw 1.8/4.0 Tw-0.6
+   G Alaska h 50 sw 3.7/4.9 Tw-4.2
+   NE Pac h 50 sw 2.0/3.9 Tw-4.1
+   NW Pac h 50 sw 2.4/7.1 Tw-1.5
+   N Pac 30-40 h 50 sw 1.5/4.2 Tw-5.1
+   Pat h 50 sw 6.2/3.7 Tw+3.0
+   Tasman h 50 sw 3.7/2.7 Tw+4.7
+   Chile h 50 sw 2.1/2.3 Tw-0.6
+   Agulhas h 50 sw 3.6/2.4 Tw+2.4
+   S Ind 40-50 h 50 sw 2.1/1.9 Tw+0.8
+   S Oc 50-60 h 50 sw 3.3/2.1 Tw+2.1
+   S Pac 30-40 h 50 sw 1.6/3.2 Tw-2.7
+   | sea 20-65 swing within 1.5x: 37%
+         MO vec hmin10
+   NE Atl h 44 sw 1.9/3.2 Tw-0.8
+   Biscay-N Sea h 29 sw 7.0/5.5 Tw+0.8
+   Norw Sea h 16 sw 5.6/4.0 Tw+7.0
+   G Alaska h 22 sw 6.3/4.9 Tw+1.0
+   NE Pac h 50 sw 2.0/3.9 Tw-4.1
+   NW Pac h 29 sw 3.8/7.1 Tw+1.4
+   N Pac 30-40 h 12 sw 4.3/4.2 Tw+0.4
+   Pat h 10 sw11.5/3.7 Tw+13.7
+   Tasman h 10 sw 8.0/2.7 Tw+13.1
+   Chile h 36 sw 2.5/2.3 Tw+0.3
+   Agulhas h 10 sw 7.5/2.4 Tw+10.1
+   S Ind 40-50 h 43 sw 2.4/1.9 Tw+1.5
+   S Oc 50-60 h 34 sw 4.4/2.1 Tw+4.2
+   S Pac 30-40 h 12 sw 4.3/3.2 Tw+2.7
+   | sea 20-65 swing within 1.5x: 50%
+      MO vec 2x hmin10
+   NE Atl h 36 sw 2.2/3.2 Tw-0.2
+   Biscay-N Sea h 24 sw 7.7/5.5 Tw+2.2
+   Norw Sea h 13 sw 6.0/4.0 Tw+7.9
+   G Alaska h 18 sw 6.8/4.9 Tw+2.1
+   NE Pac h 49 sw 2.1/3.9 Tw-4.0
+   NW Pac h 25 sw 4.1/7.1 Tw+1.9
+   N Pac 30-40 h 11 sw 4.4/4.2 Tw+0.7
+   Pat h 10 sw11.6/3.7 Tw+14.0
+   Tasman h 10 sw 8.0/2.7 Tw+13.1
+   Chile h 29 sw 2.9/2.3 Tw+1.1
+   Agulhas h 10 sw 7.5/2.4 Tw+10.1
+   S Ind 40-50 h 39 sw 2.6/1.9 Tw+1.8
+   S Oc 50-60 h 28 sw 4.9/2.1 Tw+5.2
+   S Pac 30-40 h 11 sw 4.5/3.2 Tw+3.0
+   | sea 20-65 swing within 1.5x: 48%
+         MO vec hmin20
+   NE Atl h 44 sw 1.9/3.2 Tw-0.8
+   Biscay-N Sea h 30 sw 6.8/5.5 Tw+0.5
+   Norw Sea h 21 sw 3.8/4.0 Tw+3.5
+   G Alaska h 26 sw 5.3/4.9 Tw-0.9
+   NE Pac h 50 sw 2.0/3.9 Tw-4.1
+   NW Pac h 32 sw 3.2/7.1 Tw+0.1
+   N Pac 30-40 h 21 sw 2.8/4.2 Tw-2.7
+   Pat h 20 sw 8.7/3.7 Tw+8.1
+   Tasman h 20 sw 5.6/2.7 Tw+8.4
+   Chile h 36 sw 2.5/2.3 Tw+0.3
+   Agulhas h 20 sw 5.3/2.4 Tw+5.8
+   S Ind 40-50 h 43 sw 2.3/1.9 Tw+1.3
+   S Oc 50-60 h 35 sw 4.1/2.1 Tw+3.7
+   S Pac 30-40 h 20 sw 2.8/3.2 Tw-0.2
+   | sea 20-65 swing within 1.5x: 58%
+      MO vec 2x hmin20
+   NE Atl h 36 sw 2.2/3.2 Tw-0.2
+   Biscay-N Sea h 25 sw 7.5/5.5 Tw+1.7
+   Norw Sea h 20 sw 3.9/4.0 Tw+3.7
+   G Alaska h 23 sw 5.6/4.9 Tw-0.4
+   NE Pac h 49 sw 2.1/3.9 Tw-4.0
+   NW Pac h 29 sw 3.4/7.1 Tw+0.4
+   N Pac 30-40 h 20 sw 2.8/4.2 Tw-2.6
+   Pat h 20 sw 8.7/3.7 Tw+8.1
+   Tasman h 20 sw 5.6/2.7 Tw+8.4
+   Chile h 29 sw 2.9/2.3 Tw+1.1
+   Agulhas h 20 sw 5.3/2.4 Tw+5.8
+   S Ind 40-50 h 40 sw 2.5/1.9 Tw+1.6
+   S Oc 50-60 h 30 sw 4.4/2.1 Tw+4.3
+   S Pac 30-40 h 20 sw 2.9/3.2 Tw-0.2
+   | sea 20-65 swing within 1.5x: 58%
+             flat 20 m
+   NE Atl h 20 sw 3.5/3.2 Tw+2.3
+   Biscay-N Sea h 20 sw 8.2/5.5 Tw+3.2
+   Norw Sea h 20 sw 4.0/4.0 Tw+3.8
+   G Alaska h 20 sw 5.8/4.9 Tw+0.1
+   NE Pac h 20 sw 3.6/3.9 Tw-0.9
+   NW Pac h 20 sw 4.0/7.1 Tw+1.7
+   N Pac 30-40 h 20 sw 2.8/4.2 Tw-2.6
+   Pat h 20 sw 8.7/3.7 Tw+8.1
+   Tasman h 20 sw 5.6/2.7 Tw+8.4
+   Chile h 20 sw 3.6/2.3 Tw+2.6
+   Agulhas h 20 sw 5.3/2.4 Tw+5.8
+   S Ind 40-50 h 20 sw 3.7/1.9 Tw+4.0
+   S Oc 50-60 h 20 sw 5.2/2.1 Tw+5.9
+   S Pac 30-40 h 20 sw 2.9/3.2 Tw-0.2
+   | sea 20-65 swing within 1.5x: 59%
+             flat 30 m
+   NE Atl h 30 sw 2.5/3.2 Tw+0.4
+   Biscay-N Sea h 30 sw 6.8/5.5 Tw+0.4
+   Norw Sea h 30 sw 2.8/4.0 Tw+1.4
+   G Alaska h 30 sw 4.7/4.9 Tw-2.2
+   NE Pac h 30 sw 2.7/3.9 Tw-2.6
+   NW Pac h 30 sw 3.2/7.1 Tw-0.0
+   N Pac 30-40 h 30 sw 2.1/4.2 Tw-4.0
+   Pat h 30 sw 7.4/3.7 Tw+5.5
+   Tasman h 30 sw 4.6/2.7 Tw+6.4
+   Chile h 30 sw 2.8/2.3 Tw+0.9
+   Agulhas h 30 sw 4.4/2.4 Tw+4.0
+   S Ind 40-50 h 30 sw 2.8/1.9 Tw+2.2
+   S Oc 50-60 h 30 sw 4.2/2.1 Tw+3.8
+   S Pac 30-40 h 30 sw 2.2/3.2 Tw-1.6
+   | sea 20-65 swing within 1.5x: 51%
+             flat 40 m
+   NE Atl h 40 sw 2.0/3.2 Tw-0.6
+   Biscay-N Sea h 40 sw 6.0/5.5 Tw-1.3
+   Norw Sea h 40 sw 2.2/4.0 Tw+0.1
+   G Alaska h 40 sw 4.1/4.9 Tw-3.4
+   NE Pac h 40 sw 2.3/3.9 Tw-3.5
+   NW Pac h 40 sw 2.7/7.1 Tw-0.9
+   N Pac 30-40 h 40 sw 1.7/4.2 Tw-4.7
+   Pat h 40 sw 6.6/3.7 Tw+4.0
+   Tasman h 40 sw 4.1/2.7 Tw+5.4
+   Chile h 40 sw 2.3/2.3 Tw-0.0
+   Agulhas h 40 sw 3.9/2.4 Tw+3.0
+   S Ind 40-50 h 40 sw 2.3/1.9 Tw+1.3
+   S Oc 50-60 h 40 sw 3.6/2.1 Tw+2.7
+   S Pac 30-40 h 40 sw 1.8/3.2 Tw-2.3
+   | sea 20-65 swing within 1.5x: 40%

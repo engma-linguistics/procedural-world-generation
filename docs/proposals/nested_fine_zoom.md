@@ -202,7 +202,7 @@ start to pay off. Not in this ticket; warn the owner before the 25 m tier ships 
 
 ## Handoff (not yet done)
 
-- Gorges: done (PW-390, 2026-10-16): smooth path, distance cross-section, out of the means; showcase chain 170672 -> 97b3e7 (100 m) -> 3e74b0 (50 m), b3c260 (25 m, also a child of 97b3e7) rebuilt in place; before/after in `docs/review/fine-zoom-gorge/` (`*_face.png`, `*_gorge.png`: 3D at 1x; `before_<id>.png`/`after_<id>.png`: satellite | hillshade). Left: sawtooth crests away from the gorge (mean corrections a parent pixel apart; draft), the river line in 3D still zigzags along D8 receivers on the gorge floor (viewer).
+- Gorges: done (PW-390, 2026-10-16): smooth path, distance cross-section, out of the means; showcase chain 170672 -> 97b3e7 (100 m) -> 3e74b0 (50 m), b3c260 (25 m, also a child of 97b3e7) rebuilt in place; before/after in `docs/review/fine-zoom-gorge/ (removed; see git d32f7fa)` (`*_face.png`, `*_gorge.png`: 3D at 1x; `before_<id>.png`/`after_<id>.png`: satellite | hillshade). Left: sawtooth crests away from the gorge (mean corrections a parent pixel apart; draft), the river line in 3D still zigzags along D8 receivers on the gorge floor (viewer).
 - River inflow into children is 10-25% short at the 25 m fall (draft).
 - Glaciers, landform overlays, deltas and reef forms aren't redrawn at the fine scale (draft).
 - 3D follow-ups (drafts): instanced trees at 25 m, faint dots along the seam, fine falls missing from the panel's list, flights on the fine river's course.
