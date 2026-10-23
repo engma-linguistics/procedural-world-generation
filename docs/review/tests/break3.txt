@@ -1,0 +1,53 @@
+356c356
+<             return new
+---
+359c359
+<     return ice
+---
+bringing up nodes...
+bringing up nodes...
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_________________________ test_cold_moment_has_sheets __________________________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/ms/wt_main/.venv/bin/python
+cold_moments = [(26, ({'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 26, 'level': 5, ...}, {'frames': [{'t': 0.... 'cycle': {'on': True, 'lat': 69.7, 'sun': {'build': 430.7, 'lo': 430.7, 'hi': 430.7}, 'builds': [], ...}, ...})), ...]
+tests/test_timezoom_consistency.py:117: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+----------------------------- Captured stdout call -----------------------------
+cold moments with sheets: 0 of 13 plausible
+  seed  26: none  {'run_dT': 1.935942752450189, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  30: none  {'run_dT': -0.218814936003278, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  37: none  {'run_dT': 1.344117412010963, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  38: none  {'run_dT': 4.873549472014396, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  39: none  {'run_dT': 1.3571599634517506, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  41: none  {'run_dT': 4.9304753730945325, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  42: none  {'run_dT': 6.356580627518005, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  43: none  {'run_dT': -0.37826889707429484, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  44: none  {'run_dT': 6.893547375236467, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  45: none  {'run_dT': -0.5842883830714124, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  46: none  {'run_dT': -1.0286781172369752, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  49: none  {'run_dT': 7.786645645715255, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+  seed  50: none  {'run_dT': 4.071468620651614, 'sheets_pct': 0.0, 'error': 'assert np.float64(0.0) > 0.01'}
+__________________________ test_ice_speeds_plausible ___________________________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/ms/wt_main/.venv/bin/python
+cold_moments = [(26, ({'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 26, 'level': 5, ...}, {'frames': [{'t': 0.... 'cycle': {'on': True, 'lat': 69.7, 'sun': {'build': 430.7, 'lo': 430.7, 'hi': 430.7}, 'builds': [], ...}, ...})), ...]
+tests/test_timezoom_consistency.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+name = 'ice speeds plausible', rows = [], rate = 0.7
+tests/seeds.py:85: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ice speeds plausible: 0 of 0 seeds pass (bar 0)
+______________________ test_ice_at_index_zero_is_the_runs ______________________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/ms/wt_main/.venv/bin/python
+cold_moments = [(26, ({'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 26, 'level': 5, ...}, {'frames': [{'t': 0.... 'cycle': {'on': True, 'lat': 69.7, 'sun': {'build': 430.7, 'lo': 430.7, 'hi': 430.7}, 'builds': [], ...}, ...})), ...]
+tests/test_timezoom_consistency.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+name = 'ice at index zero', rows = [], rate = 0.7
+tests/seeds.py:85: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ice at index zero: 0 of 0 seeds pass (bar 0)
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_consistency.py::test_cold_moment_has_sheets - Asse...
+FAILED tests/test_timezoom_consistency.py::test_ice_speeds_plausible - Assert...
+FAILED tests/test_timezoom_consistency.py::test_ice_at_index_zero_is_the_runs
+3 failed in 234.29s (0:03:54)
