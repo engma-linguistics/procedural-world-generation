@@ -37,3 +37,5 @@ The values are first guesses:
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-lineages-corridor-tuning.md (found by lineages-lane-2).
+- 2026-10-23: Lineages lane 3 addressed the shelf item. Exposed continental shelf at a low stand (land in a glacial or recent epoch, sea at the present) now gets a contact value of at least 0.7 (crossing.SHELF_CONTACT), standing for the coastal plains and lower river courses missing from the present-day flow field. Deep epochs still have no rivers: the plates have moved since.
+  - Plains (0.5) and rivers (0.9) are left unchanged. The L7 showcase (showcase-3.md) mixes 11-21% of the land: 21-42% in corridors, 6-17% in closed land. Nothing there argues for a change, so the decision stays open.

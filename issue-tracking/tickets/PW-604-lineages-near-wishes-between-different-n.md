@@ -28,3 +28,11 @@ Lean: B. It is small and still only a nudge.
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-lineages-near-wishes-after-exclusion.md (found by lineages-lane-2).
+- 2026-10-23: Lineages lane 3 built lean B, widened. A near wish now:
+  - pulls the habitat toward the other's border (x(1 + 0.5 w) just outside its range, e-folding over 300 km; not into it, which under exclusion let the wisher displace the other);
+  - pulls whichever origin comes second toward the other (x(1 + 2 w), e-folding over 1000 km);
+  - halves the competition between the two.
+
+  The near score now uses 330 km at any level. Before, it was 3 cells, which is 165 km at L7.
+  - Results, best of 2, before -> after: goblin near orc 0.00 -> 0.11 / 0.00 / 0.19 / 0.70 on 1144ce / 31926a / 91448a / 3e0b0a, and 0.00 -> 1.00 on 119973. Hobgoblin near goblin 0.33 / 0.14 / 0.09 / 0.36 / 0.05 -> 1.00 / 0.26 / 1.00 / 0.54 / 0.96. Overall 0.64 / 0.56 / 0.59 / 0.58 / 0.49 -> 0.73 / 0.56 / 0.73 / 0.62 / 0.74. Table in docs/review/lineages/showcase-3.md.
+  - Goblin-orc stays low where the preset's rainforest and cold-steppe niches have no shared country. See inbox draft-lineages-goblin-orc-niches.
