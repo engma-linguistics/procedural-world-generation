@@ -339,6 +339,21 @@ from today's Earth, °C). There are no `equator_temp`/`pole_temp` knobs:
 `climate.compute` derives the equator and pole temperatures from `dT` and
 `tilt`, and the generator fails on any `--set` key it doesn't know.
 
+## Peoples, resources and coasts in the viewer
+
+- **Peoples** (`planet/lineages/`): open any finished world (or its time zoom), click **Peoples** in the bar at the top
+  of the viewer. The panel lists the world's peoples runs (click one to open it with the peoples layer on),
+  **Make peoples... (edit tree)** (opens `lineages.html?world=<id>&tree=dnd`, the editor) and **Run D&D peoples** (queues
+  the stock tree as a job, as `POST /api/lineages`, and opens the result when it finishes). Peoples need the time zoom the
+  world was finished from; if it was deleted the panel says so.
+- **The editor**: the **Peoples editor** link in the same bar (or `viewer/lineages.html`). Without `?world=` it has a
+  picker of finished worlds whose time zoom is still stored; after **Run on world** an **Open on the globe** link opens
+  the run with `layer=peoples`. A bar ends where the spec ends the line (at its last living split unless it persists, at
+  its extinction, or at the computed end after a run).
+- **Resources and coasts**: the same panel shows whether the world on screen has its `res_*` / `coast_type` layers and, if
+  not, **Add resources** / **Add coasts** (`POST /api/enrich {world, what: resources | coast}`, a queued job running
+  `planet resources` / `planet coast`; the world is rewritten in place and reopened).
+
 ## Waves, tides and delta types (`planet/coast.py`)
 
 Every world gets two marine layers on its sea cells (0 on land):

@@ -38,10 +38,11 @@
   <button id="download">Download JSON</button>
   <label class="trait" style="margin:0"><input type="file" id="upload" accept=".json" style="width:170px"></label>
   <span style="flex:1"></span>
-  <span class="muted">world</span><input id="world" size="8" placeholder="world id">
+  <a href="index.html" title="Back to the globe viewer">Viewer</a>
+  <span class="muted">world</span><select id="world" title="Finished worlds whose time zoom is still stored (peoples run on the ice-age history)"></select>
   <span class="muted">tries</span><input id="tries" type="number" value="3" min="1" max="8">
   <button id="run">Run on world</button>
-  <span id="status" class="muted"></span>
+  <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
 </header>
 <div id="tl"><svg id="svg"></svg></div>
 <div id="side"></div>
@@ -117,6 +118,17 @@ function order() {  // depth-first by split edges, roots and arrivals by age
   return out;
 }
 
+// where a bar ends (spec.py): an extinct line at its extinction; a line that does not persist, at the start of its last
+// living split child (PW-599); after a run, the computed end (meta.lineages[].ended_kyr) wins; else the present (null)
+function endOf(r, eff, res) {
+  if (res && result?.lineages) return res.ended_kyr ?? kyrOf(r.extinct);
+  const ex = kyrOf(r.extinct);
+  if (ex != null) return ex;
+  if (r.persists || ['hybrid', 'template'].includes(originOf(r))) return null;
+  const kids = T.lineage.filter((x) => originOf(x) === 'split' && eff.parent[x.id] === r.id && !eff.off.has(x.id) && kyrOf(x.extinct) == null)
+    .map((x) => kyrOf(x.at));
+  return kids.length ? Math.min(...kids) : null;
+}
 function drawTimeline() {
   WIDTH = Math.max(700, $('tl').clientWidth - 4);
   const rows = order(), eff = effective(), svg = $('svg'), H = TOP + rows.length * ROW + 10;
@@ -134,10 +146,11 @@ function drawTimeline() {
     const yy = y[r.id], off = eff.off.has(r.id), o = originOf(r), a = kyrOf(r.at) ?? 1, ex = kyrOf(r.extinct);
     const col = r.color || ORIGIN_COL[o] || '#aaa';
     const res = result?.lineages?.find((l) => l.id === r.id);
+    const end = endOf(r, eff, res);  // kyr ago where the bar stops (null: runs to the present)
     s += `<g class="bar${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.3 : 1}">
       <rect class="bg" x="0" y="${yy - ROW / 2}" width="${WIDTH}" height="${ROW}" fill="transparent"/>
       <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
-      <rect x="${xOf(a)}" y="${yy - 5}" width="${Math.max(2, xOf(ex ?? 0.05) - xOf(a))}" height="10" rx="3" fill="${col}" opacity="${o === 'template' ? 0.55 : 0.9}"
+      <rect x="${xOf(a)}" y="${yy - 5}" width="${Math.max(2, xOf(end ?? 0.05) - xOf(a))}" height="10" rx="3" fill="${col}" opacity="${o === 'template' ? 0.55 : 0.9}"
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
       ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
@@ -308,12 +321,14 @@ $('upload').onchange = async (e) => {
   catch (err) { status(`not a tree: ${err}`, true); }
 };
 $('run').onclick = async () => {
-  const world = $('world').value.trim();
-  if (!world) return status('give a finished world id', true);
+  const ref = $('world').value;
+  if (!ref) return status('pick a finished world (none has its time zoom stored: make a time zoom and finish a world from it in the viewer)', true);
+  const target = ref.startsWith('tz:') ? { timezoom: ref.slice(3) } : { world: ref };
+  $('globe').hidden = true;
   status('running… (~20 s a try at L6)');
   $('run').disabled = true;
   try {
-    const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ world, raw: T, tries: +$('tries').value }) });
+    const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
     const j = await r.json();
     if (!r.ok) return status(j.error, true);
     // queued on the server's job queue: poll it
@@ -330,12 +345,30 @@ async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
   result = { id, ...run.meta };
   status(`run ${id} done`);
+  const g = $('globe');
+  g.href = `index.html?run=${encodeURIComponent(id)}&layer=peoples`; g.hidden = false;
   drawTimeline(); drawSide();
 }
 
+// the world picker: finished worlds (from the store's index) whose time zoom is still stored, newest first;
+// ?world= / ?timezoom= name one that is not listed (the server then says why it cannot run)
+async function listWorlds() {
+  const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };
+  const [worlds, runs] = await Promise.all([get('../worlds/index.json'), get('../runs/index.json')]);
+  const tzs = new Set(runs.filter((r) => r.kind === 'timezoom' && !r.phase).map((r) => r.dir));
+  const have = new Set(runs.filter((r) => r.phase === 'lineages').map((r) => r.world));
+  const ok = worlds.filter((w) => w.timezoom && tzs.has(w.timezoom)).sort((a, b) => b.created.localeCompare(a.created));
+  const opts = ok.map((w) => `<option value="${esc(w.id)}">${esc(w.id)} · ${esc(w.name)}${have.has(w.id) ? ' (has peoples)' : ''}</option>`);
+  const want = q.get('world'), tz = q.get('timezoom');
+  if (want && !ok.some((w) => w.id === want)) opts.unshift(`<option value="${esc(want)}">${esc(want)} (not runnable?)</option>`);
+  if (tz) opts.unshift(`<option value="tz:${esc(tz)}">time zoom ${esc(tz)}</option>`);
+  $('world').innerHTML = (opts.length ? '' : '<option value="">(no finished world with its time zoom)</option>') + opts.join('');
+  if (want) $('world').value = want;
+  if (tz) $('world').value = 'tz:' + tz;
+}
 (async () => {
   await listTrees(q.get('tree') || 'dnd');
-  if (q.get('world')) $('world').value = q.get('world');
+  await listWorlds();
   await loadTree(q.get('tree') || 'dnd').catch(() => status('could not load the tree', true));
   if (q.get('run')) await showResult(q.get('run'));
 })();

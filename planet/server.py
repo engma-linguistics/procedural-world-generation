@@ -212,6 +212,8 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
             api.parse_zoom_request(req)
         elif path == "/api/highlight-zooms":
             req = api.parse_highlight_zooms_request(req)
+        elif path == "/api/enrich":  # resource / coast layers added to a saved world
+            req = api.parse_enrich_request(req)
         elif path == "/api/finish":  # kyr snaps to a frame, t to a keyframe
             req = api.parse_finish_request(req)
         else:  # t snaps to a keyframe
@@ -368,7 +370,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.lineages_api("POST"):
             return
-        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms"):
+        if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
+                         "/api/enrich"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
 

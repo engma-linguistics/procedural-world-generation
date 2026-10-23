@@ -93,7 +93,7 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
             parent = f"run:{root_of(w['source_run'])}"
         p["nodes"].append({"key": f"world:{w['id']}", "kind": "world", "id": w["id"], "file": w["file"], "name": w["name"],
                            "parent": parent, "created": w["created"], "t_myr": w.get("t_myr"),
-                           "timezoom_kyr": w.get("timezoom_kyr"), "sea_level_change_m": w.get("sea_level_change_m"),
+                           "timezoom": w.get("timezoom"), "timezoom_kyr": w.get("timezoom_kyr"), "sea_level_change_m": w.get("sea_level_change_m"),
                            "level": w.get("level"), "thumb": THUMB.format(kind="world", id=w["id"])})
         where[f"world:{w['id']}"] = p["key"]
     world_ids = {w["id"] for w in worlds}

@@ -24,6 +24,8 @@ const CSS = `
 #navBar .job { font-size: 11px; color: var(--muted); flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #navTree { top: 56px; left: 294px; width: min(460px, calc(100vw - 306px)); max-height: calc(100vh - 140px); overflow-y: auto; z-index: 21; }
 #navTree[hidden], #navBar[hidden] { display: none; }
+#navTree .pp { margin: 8px 0; padding-top: 6px; border-top: 1px solid var(--border); font-size: 12px; }
+#navTree .pplist { margin: 3px 0 0; padding-left: 18px; }
 #navTree h3 { margin: 0 0 6px; font-size: 13px; }
 @media (max-width: 700px) {
   #navBar { left: 12px; right: 12px; top: 60px; }
@@ -38,8 +40,9 @@ export function createNavigator(host) {
   const st = document.createElement('style'); st.textContent = CSS; document.head.append(st);
   const bar = document.createElement('div');
   bar.id = 'navBar'; bar.className = 'panel';
-  bar.innerHTML = `<a class="btn" href="./" title="All planets, and make a new one">Planets</a><div class="crumbs"></div><span class="job"></span>
+  bar.innerHTML = `<a class="btn" href="./" title="All planets, and make a new one">Planets</a><button class="btn" data-act="peoples" title="Peoples on this world: open one, edit the tree, run the D&amp;D peoples; add resources and coasts">Peoples &#9662;</button><div class="crumbs"></div><span class="job"></span>
     <button class="btn" data-act="cancelJob" hidden title="Stop the job that is running">Cancel</button>
+    <a class="btn" href="lineages.html" title="The peoples editor: draw a tree of peoples and run it on a finished world">Peoples editor</a>
     <button class="btn" data-act="tree" title="The whole family of this planet: what was made from what">Family &#9662;</button>`;
   const tree = document.createElement('div');
   tree.id = 'navTree'; tree.className = 'panel'; tree.hidden = true;
@@ -47,9 +50,12 @@ export function createNavigator(host) {
   const crumbs = bar.querySelector('.crumbs'), jobEl = bar.querySelector('.job');
   let planets = [], fetched = 0, job = null, view = null;
   const cancelBtn = bar.querySelector('[data-act=cancelJob]');
+  let mode = 'family';  // what the drop-down shows: the family tree, or the peoples of what is on screen
   const forms = {};  // per node: what is typed in its zoom form (the tree redraws while a job runs)
   const SIZES = [250, 500, 1000, 2000, 4000];
-  if (new URLSearchParams(location.search).get('navtree') === '1') tree.hidden = false;  // (?navtree=1: the family open, for screenshots)
+  // (?navtree=1: the family open, ?navtree=peoples: the peoples panel open, for screenshots)
+  const nt = new URLSearchParams(location.search).get('navtree');
+  if (nt === '1' || nt === 'peoples') { tree.hidden = false; if (nt === 'peoples') mode = 'peoples'; }
 
   const keyOf = (v) => (!v ? null : v.kind === 'world' ? `world:${v.id}` : v.kind === 'zoom' ? `zoom:${v.id}` : `run:${v.id}`);
   function find(key) {
@@ -130,8 +136,52 @@ export function createNavigator(host) {
       size <input data-f="size" value="${f.size ?? ''}" placeholder="default" title="km across; empty: the default for this zoom"> km
       <button class="pl-btn sm" data-do="fineZoom" data-id="${esc(n.id)}" ${dis}>Zoom in</button></div>`;
   }
+  // ---- peoples (planet/lineages/), and the resource and coast layers a world may lack
+  // target: the world (or time zoom) peoples run on, for what is on screen
+  function peoplesTarget(p, cur) {
+    if (!cur) return null;
+    const byKey = (k) => p.nodes.find((x) => x.key === k);
+    if (cur.kind === 'world') return cur;
+    if (cur.phase) return (cur.world && byKey('world:' + cur.world)) || byKey(cur.parent) || null;
+    if (cur.kind === 'timezoom') return cur;
+    if (cur.kind === 'zoom' || cur.kind === 'fine') return byKey('world:' + cur.world) || null;
+    return null;
+  }
+  function peoplesBlock(p, t) {
+    const isW = t.kind === 'world', dis = busy() ? 'disabled' : '';
+    const tzId = isW ? t.timezoom : t.id;
+    const tzOk = !!tzId && p.nodes.some((x) => x.key === 'run:' + tzId && x.kind === 'timezoom');
+    const runs = p.nodes.filter((x) => x.phase === 'lineages' && (isW ? x.world === t.id : x.parent === t.key))
+      .sort((a, b) => b.created.localeCompare(a.created));
+    const ref = isW ? `world=${esc(t.id)}` : `timezoom=${esc(t.id)}`;
+    const why = !tzId ? 'This world was not finished from a time zoom, so there is no ice-age history to run peoples on. Finish one from a time zoom first.'
+      : !tzOk ? `The time zoom this world was finished from (${esc(tzId)}) has been deleted; peoples need it. Make a new time zoom and finish a world from it.` : '';
+    return `<div class="pp"><b>Peoples</b> on ${isW ? 'world' : 'time zoom'} ${esc(t.id)}:
+      ${runs.length ? `<ul class="pplist">${runs.map((r) => `<li><a href="#" data-open="${esc(r.key)}" title="Open it with the peoples layer on">${esc(r.name)}</a>
+        <span class="muted">${esc(r.created.slice(0, 16))}</span></li>`).join('')}</ul>` : '<div class="muted">No peoples runs yet.</div>'}
+      <div style="margin-top:4px"><a class="pl-btn sm" href="lineages.html?${ref}&tree=dnd" title="Open the editor on the D&amp;D tree: move lines, switch peoples off, add wishes; then Run on world">Make peoples&hellip; (edit tree)</a>
+        <button class="pl-btn sm" data-do="peoples" data-kind="${isW ? 'world' : 'timezoom'}" data-id="${esc(t.id)}" ${dis}${tzOk ? '' : ' disabled'}
+          title="${tzOk ? 'Queue the stock D&amp;D tree on this ' + (isW ? 'world' : 'time zoom') + ' (about 20 s a try at level 6) and open it when done' : esc(why)}">Run D&amp;D peoples</button></div>
+      ${why ? `<div class="muted" style="margin-top:3px">${why}</div>` : ''}</div>`;
+  }
+  function layersBlock() {
+    const l = host.layers?.();
+    if (!l) return '';
+    const dis = busy() ? 'disabled' : '', row = (what, name, has) => `<div>${name}: ${has ? '<span class="muted">present</span>'
+      : `<span class="muted">missing</span> <button class="pl-btn sm" data-do="enrich" data-what="${what}" data-id="${esc(l.world)}" ${dis}>Add ${name}</button>`}</div>`;
+    return `<div class="pp"><b>Layers of world ${esc(l.world)}</b>${row('resources', 'resources', l.resources)}${row('coast', 'coasts', l.coast)}
+      <div class="muted">Same as <code>planet resources</code> / <code>planet coast</code>; the world is rewritten in place and reopened.</div></div>`;
+  }
+  function renderPeoples(p, cur) {
+    const t = peoplesTarget(p, cur);
+    tree.innerHTML = `<h3>Peoples, resources and coasts</h3>${jobHtml()}
+      ${t ? peoplesBlock(p, t) : '<div class="muted pp">Peoples run on a finished world or a time zoom. Open one (the Family list has them), or make a time zoom from a run and finish a world from it.</div>'}
+      ${layersBlock()}
+      <div class="pp"><a class="pl-btn sm" href="lineages.html">Open the peoples editor</a> <span class="muted">(pick any finished world there)</span></div>`;
+  }
   function renderTree() {
-    const [p] = find(keyOf(view));
+    const [p, cur] = find(keyOf(view));
+    if (p && mode === 'peoples') return renderPeoples(p, cur);
     if (!p) { tree.innerHTML = '<span class="muted">Nothing known about this view yet (a world dropped from a file, or not saved).</span>'; return; }
     const c = p.counts;
     tree.innerHTML = `<h3>${esc(p.name)}</h3><div class="muted" style="font-size:12px;margin-bottom:6px">${p.nodes.length} things: 1 run, ${c.timezoom} time zoom${c.timezoom === 1 ? '' : 's'},
@@ -162,7 +212,13 @@ export function createNavigator(host) {
     const c = e.target.closest('.crumb');
     if (c) return open(c.dataset.key, c.dataset.t);
     if (e.target.dataset.act === 'cancelJob') return doCancel();
-    if (e.target.dataset.act === 'tree') { tree.hidden = !tree.hidden; if (!tree.hidden) { renderTree(); refresh(true); } }
+    const act = e.target.dataset.act;
+    if (act === 'tree' || act === 'peoples') {
+      const m = act === 'tree' ? 'family' : 'peoples';
+      tree.hidden = !tree.hidden && mode === m;  // (the other button switches the content instead of closing)
+      mode = m;
+      if (!tree.hidden) { renderTree(); refresh(true); }
+    }
   });
   bar.addEventListener('change', (e) => { if (e.target.dataset.pick && e.target.value) open(e.target.value, null); });
   tree.addEventListener('click', (e) => {
@@ -173,6 +229,11 @@ export function createNavigator(host) {
     if (d === 'cancel') return doCancel();
     if (d === 'usePicked') { const pk = host.picked?.(); if (pk) { Object.assign(forms[e.target.dataset.key] ||= {}, { lat: pk.lat, lon: pk.lon }); renderTree(); } return; }
     if (d === 'zoomRegion' || d === 'fineZoom') return zoomFromForm(e.target, d);
+    if (d === 'peoples') {
+      const w = e.target.dataset.kind === 'world';
+      return start('lineages', { [w ? 'world' : 'timezoom']: e.target.dataset.id, tree: 'dnd' }, `D&D peoples on ${e.target.dataset.id}`, 'run');
+    }
+    if (d === 'enrich') return start('enrich', { world: e.target.dataset.id, what: e.target.dataset.what }, `Add ${e.target.dataset.what === 'coast' ? 'coasts' : 'resources'} to ${e.target.dataset.id}`, 'world');
     if (d === 'hlZooms') {
       const k = e.target.parentElement.querySelector('[data-hln]'), n = +k.value;
       return start('highlight-zooms', { world: e.target.dataset.id, n }, `Zoom the top ${n} highlights`, 'zoom');
