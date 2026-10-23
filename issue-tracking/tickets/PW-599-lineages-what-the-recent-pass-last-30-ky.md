@@ -2,7 +2,7 @@
 id: PW-599
 title: "Lineages: what the recent pass (last ~30 kyr at century steps) simulates"
 type: task
-status: needs-decision
+status: todo
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -27,4 +27,5 @@ Options:
 Lean A now, C if the peoples' rain-driven habitat looks wrong on review. The episode rate (1 per 6 kyr gave 12 on one seed) may want tuning down.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): option C: interpolation + variability plus a full climate.compute every 2 kyr on the interpolated surface.
 - 2026-10-23: Created from inbox draft draft-lineages-recent-physics.md (found by lineages-lane).

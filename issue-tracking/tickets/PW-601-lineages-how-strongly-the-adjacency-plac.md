@@ -2,7 +2,7 @@
 id: PW-601
 title: "Lineages: how strongly the adjacency/place wishes act; competition and mixing strength"
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -24,4 +24,5 @@ Options: A (built, lean) nudges + best of N, a wish can fail and says so; B stro
 Related tuning (no decision needed unless the owner disagrees): competition alpha = 1.15 x niche overlap x kinship (cap 0.97); late mixing drops it 60% from `mixing_start` (3 kyr ago) to the present; at p >= 0.25 mixing zones still come out large (45 Mkm2 on one tropical continent before the alpha raise). Review the mixing zone sizes on a showcase world.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Owner (2026-10-24): as built: nudges + best of N; a wish may fail and says so.
 - 2026-10-23: Created from inbox draft draft-lineages-wish-strength.md (found by lineages-lane).

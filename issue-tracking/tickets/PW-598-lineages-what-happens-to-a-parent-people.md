@@ -2,7 +2,7 @@
 id: PW-598
 title: "Lineages: what happens to a parent people at a split, and what switching one off does"
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -26,4 +26,5 @@ Built on the leans below (each a small swap in history.py / spec.py):
 Lean: keep A and the built rules.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Owner (2026-10-24): as built: the parent ends after its last child appears; persists keeps it.
 - 2026-10-23: Created from inbox draft draft-lineages-parent-split.md (found by lineages-lane).

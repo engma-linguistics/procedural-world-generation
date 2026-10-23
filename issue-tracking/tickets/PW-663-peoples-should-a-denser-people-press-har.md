@@ -2,7 +2,7 @@
 id: PW-663
 title: "Peoples: should a denser people press harder on its neighbours (DENSITY_PUSH), and how hard?"
 type: task
-status: needs-decision
+status: done
 parent: PW-649
 milestone: v2
 subsystem: timezoom
@@ -49,4 +49,5 @@ Lean: A. The giants need some push to stay off contested land without the old st
 stronger hands the world to the humans.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Owner (2026-10-24): as built. Crowding out should read as coexistence and/or pressing away, not killing off: foragers were mostly outcompeted and absorbed (e.g. Corded Ware herders beside still-extant hunter-gatherers). Later epics turn it into warfare, integration, coexistence or forced migration (PW-661).
 - 2026-10-23: Created from inbox draft draft-peoples-density-push.md (found by peoples-workbench-lane).

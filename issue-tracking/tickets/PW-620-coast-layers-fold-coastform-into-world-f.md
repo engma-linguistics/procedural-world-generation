@@ -2,7 +2,7 @@
 id: PW-620
 title: "Coast layers: fold coastform into world.finish, or keep them an add-on (planet coast)?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-097
 milestone: v2
 subsystem: coast
@@ -27,4 +27,5 @@ worlds therefore lack them until someone runs the command.
 Lean: A, once the owner has looked at the classes in the viewer (docs/review/coast_detail/).
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): A: coast-form layers at the end of world.finish.
 - 2026-10-23: Created from inbox draft draft-coast-layers-in-finish.md (found by coast-detail).
