@@ -2,7 +2,7 @@
 id: PW-615
 title: "Resources: coal maps still speckled after smoothing the traced cover (cell-to-cell trace noise)"
 type: task
-status: todo
+status: done
 parent: PW-155
 milestone: v2
 subsystem: surface
@@ -30,5 +30,6 @@ The keyframe flicker itself is PW-134.
       not grow
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (44c50c9): plate/crust-coherent neighbourhood vote on the traced column; isolated coal cells 17-24% -> 2-4%.
 - 2026-10-23: polish1 lane: a spatial pass in history(). Each column summary is filtered over its neighbours on the same plate and crust today: a per-lithology majority vote, with kept values pulled halfway to the holders' mean. Isolated coal cells: 17-24% -> 2-4% on 1144ce, 119973, 81aced and 91448a. Coal's share of land at >= 0.5 does not grow: 3.71->3.41, 2.69->2.31, 4.74->4.44, 1.34->0.91. A plain mean grew it 8-34% and a median shrank it ~50%, so both were dropped. Oil and gas fell ~25%. docs/review/polish/polish-1.md.
 - 2026-10-23: Created from inbox draft draft-resources-coal-speckle-residual.md (found by resources2).

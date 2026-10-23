@@ -1,4 +1,5 @@
 ---
+id: PW-641
 title: "Zoom shore forms: flats too coarse at 2 km/px, wave direction from the wind, one lowstand, no cliff terrain"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: polish1
 blocked_by: []
 relates: [PW-621, PW-097]
 refs: [planet/zoom_shoreforms.py, planet/zoom_coast.py, docs/review/polish/polish-1.md, "zoom bc40a3", "zoom 9d7c44"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,3 +33,6 @@ with D8 channels and drowned lowstand reefs, as the zoom layer `shore_form`. Wha
 - **Cliffs as terrain** (a steep step at cliff shores, behind `--terrain`) are not built.
 - [ ] channels form branching networks on a 1 km macrotidal zoom
 - [ ] drift follows a stored wave direction where swell dominates
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-shoreforms-followups.md (found by polish1).
