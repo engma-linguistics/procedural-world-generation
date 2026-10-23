@@ -35,7 +35,8 @@ FLT = 1 - P.RHO_I / P.RHO_W
 # without riding on one chaotic world. Of those, the ones with sheets (> 1% of cells under > 1 m: else the drift
 # tests prove nothing) are the drift tests' worlds; each drift test asks seeds.PASS_RATE of them to pass (the
 # index-is-zero invariant: every plausible seed).
-SEEDS = tuple(range(25, 51))  # (lane A16's scan window; 14 of them are plausible on main 86d3806, 7 with sheets)
+SEEDS = tuple(range(25, 76))  # (lane A16's scan window 25-50, widened by PW-660 so main sits well above MIN_SHEETED
+# on re-rolled draws: 25-50 gave 7, 10 and 5 sheeted on main 9b30887)
 MIN_SHEETED = 5  # plausible seeds with sheets the window must give (so a 70% bar on them tolerates one world;
 # PW-643 ruling: kept at 5)
 SL_MAX = 150.0  # m: the run's sea level within this of today's
