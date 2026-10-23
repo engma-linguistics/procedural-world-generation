@@ -65,4 +65,5 @@ Options:
 - [ ] the endings test crossed (`laneA16/xzoom.sh`) on step 2's climate
 
 ## Updates
+- 2026-10-23: Lane A18: the endings-test failure on step 2 is run chaos (climate swap: step-2 climate passes on the step-1 world, step-1 climate fails on the step-2 world); cold source worlds fail on both trees (PW-632). Europe's regression is step 2 cutting the shelf seas' swing on top of their cold bias (PW-592); no summer-layer mechanism found to undo it; shelf-depth layer probe in PW-633. Step 2 stays a diff (docs/review/base-climate/laneA17/step2_stable_summer.diff).
 - 2026-10-23: Created from inbox draft draft-stable-summer-off-land-air.md (found by base-climate-laneA17).

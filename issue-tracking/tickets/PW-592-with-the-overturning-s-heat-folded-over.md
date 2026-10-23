@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-589, PW-583, PW-458]
 refs: [planet/ocean.py, planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt, docs/review/base-climate/laneA13/climate_bias_a1.txt]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -38,4 +38,5 @@ month −13.1 → −12.3), so its too-cold inflow stays PW-583's.
 - [ ] NH open sea 45–65N within 2 C without losing the band means
 
 ## Updates
+- 2026-10-23: Lane A18: the North Sea's annual SST is 6.8 vs observed air ~10.5, about 3 C too cold already before PW-627; the overturning's heat reaching it is +1.4..+1.8 vs +3.6 in the NE Atlantic. First candidate for PW-592 (shelf seas starved of Atlantic heat).
 - 2026-10-22: Created from inbox draft draft-nh-open-sea-and-inflow-winters-too-warm.md (found by base-climate-laneA13).
