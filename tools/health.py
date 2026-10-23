@@ -302,10 +302,13 @@ def measure_run(run_dir: Path) -> dict:
     # the whole-history ice-age criteria (PW-555, tools/ice_criteria.py: its own 100 Myr spin-up)
     track = [{"t": f["t"], "ice": f["sea_ice_m"], "tect": f["sea_tect_m"], "dT": f["temp"] - 14.5,
               "ice_frac": f["ice_pct"], "land": f["land_pct"]} for f in frames]
-    ice = ice_criteria.evaluate({"track": track})
-    checks["ice_old"] = "ok" if ice["old"]["pass"] else "F"
-    checks["ice_new"] = "ok" if ice["pass"] else "F: " + "; ".join(ice["fails"])
-    checks["icehouse_pct"] = ice["icehouse"]["share_pct"]
+    if track and track[-1]["t"] >= ice_criteria.SPINUP:
+        ice = ice_criteria.evaluate({"track": track})
+        checks["ice_old"] = "ok" if ice["old"]["pass"] else "F"
+        checks["ice_new"] = "ok" if ice["pass"] else "F: " + "; ".join(ice["fails"])
+        checks["icehouse_pct"] = ice["icehouse"]["share_pct"]
+    else:  # a run shorter than the spin-up (the determinism re-run) has nothing to judge
+        checks["ice_old"] = checks["ice_new"] = checks["icehouse_pct"] = None
     return {"id": run["id"], "seed": m["seed"], "level": m["level"], "myr": m["myr"],
             "seconds": m.get("generated_in_s"), "forests_from": gates["trees_pct"], "flowers_from": gates["npp"],
             "checks": checks, "frames": frames}

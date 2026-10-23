@@ -422,4 +422,10 @@ The split reproduces every seed to within 0.05 C/C (0.09 on one):
 - `tools/scorecard.py` (3cd2aef): Earth group agreement 69.9% (exact 32.1%), as main's 964a132 entry. Seeds 1 and 2
   at 1 Gyr: land 30.9% and 33.1%, ice 0.9% and 0.4%, dry 19.6% and 26.8%. Crust volume x0.968 and x0.939, against
   x0.988 and x0.966 on 964a132: the mature start's thin margins (draft-relief-spinup-erosion-rise).
-- `tools/health.py`: see below.
+- `tools/health.py` (full sweep, 8 L6 + 3 L7 seeds, 1 Gyr, on 4032a41; `docs/review/health/2026-10-23-pw576/`):
+  determinism identical. The PW-555 ice bar passes on 5 of 11 runs (L6 seeds 1, 2, 21, 3199, 42); icehouse share
+  median 43% (14-95%); the fails are icehouses too long or too common (L6 seeds 11, 77, 505; all three L7 seeds:
+  3199 95%, 11 81%, 21 a 164 Myr deep era). Crust volume x0.94-1.02. Ice below -150 m sea level: 0-44% of the run.
+  On a par with or better than main's state before this lane (2/10 seeds in the icehouse band, PW-559); the share
+  question stays with draft-icehouse-share-split-on-main. (The sweep's first measuring pass crashed on the short
+  determinism re-run, which ends before the 300 Myr spin-up: `health.py` now skips the ice criteria for such runs.)
