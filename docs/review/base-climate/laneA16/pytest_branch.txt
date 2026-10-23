@@ -1,0 +1,30 @@
+
+tests/test_envelopes.py::test_land_and_crust[1]
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: +0.0205 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: -0.0284 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: -0.0228 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: +0.0211 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: +0.0208 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a34e43ec48de2d53e/planet/climate.py:2267: RuntimeWarning: fresh water into the sea doesn't balance: +0.0235 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_consistency.py::test_cold_moment_has_sheets - asse...
+FAILED tests/test_timezoom_consistency.py::test_ice_speeds_plausible - assert...
+2 failed, 583 passed, 82 warnings in 737.79s (0:12:17)
