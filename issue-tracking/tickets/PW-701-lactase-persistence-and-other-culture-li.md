@@ -1,7 +1,8 @@
 ---
+id: PW-701
 title: Lactase persistence (and other culture-linked body traits) in the preset sit on herder groups; decide group-level vs people-level
 type: task
-status: needs-decision
+status: todo
 parent: PW-694
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: horses-senses
 blocked_by: []
 relates: [PW-694, PW-692, PW-665]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/spec.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -20,3 +23,7 @@ Options:
 - B: put it on the people at a population share (a `milk` fraction 0..1 instead of a bool), set by how much of the people herds.
 - C: keep bools, set `milk = true` on `human` itself.
 Lean: A for now (nothing reads it yet), B when PW-692 starts, since lactase persistence is a share of a population (~35% of humans on Earth), not a switch.
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: keep the bool on herder groups for now; once PW-689 per-cell composition lands, make lactase persistence a share that mixes with the peoples in a cell (as real persistence is a population frequency).
+- 2026-10-23: Created from inbox draft draft-lactase-body-trait-on-groups-or-peoples.md (found by horses-senses).
