@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .. import store as S
 from . import recent as R
+from . import land as LD
 from . import spec as SP
 from .history import simulate
 from .output import save
@@ -65,7 +66,11 @@ def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recen
         name: str | None = None, progress=lambda f, msg: None) -> Path:
     tz, now0, world = R.resolve(ref)
     ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr), world_ref=world)
-    h, res, pres = simulate(tree, ps, tries, progress)
+    goods = None
+    if world and tree.uses:
+        progress(0.0, "the land's goods (game attributes, resources, coasts)")
+        goods = LD.goods(world)
+    h, res, pres = simulate(tree, ps, tries, progress, goods=goods)
     return save(h, res, pres, world=world, name=name)
 
 

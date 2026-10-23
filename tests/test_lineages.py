@@ -310,3 +310,69 @@ def test_near_wish_pulls_toward_a_shared_border(faketz):
     h.p[ia][b] = 0.8
     mo = h._wish_near(tree.lines["b"], origin=True)  # (either people of the wish, at its origin)
     assert mo[d == 1].min() > 2 and np.allclose(mo[b], 1.0)
+
+
+def test_contact_hybrid_lingers_when_its_parents_part(faketz):
+    """PW-613: a contact hybrid grows where its parents meet, fades where they no longer do, and where they
+    last met it lives on as a small people of its own (shown on the peoples layer there)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr"}]}
+    tree = SP.parse(raw)
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    ia, ib, k = h.idx["a"], h.idx["b"], h.idx["ab"]
+    h.p = np.zeros((3, g.n))
+    h.active = {"a": True, "b": True, "ab": True}
+    h._last_meet, h._apart, h._lingered, h.events = {}, set(), set(), []
+    h._linger = np.zeros((3, g.n), bool)
+    land = ps.fields(0.0, variability=False)["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    zone = H.rings(cell, land, 1, g.nbr_off, g.nbr_idx)
+    K = np.where(land, 0.9, 0.0)
+    step = H.Step(10.0, 1.0, "recent", True, None)
+    h.p[ia][zone] = h.p[ib][zone] = 0.6
+    h._hybrid(tree.lines["ab"], k, K, step)
+    assert np.allclose(h.p[k][zone], 0.6) and not h._linger[k].any()
+    h.p[ib][:] = h.p[ia][:] = 0.0  # the parents part (both moved away)
+    for _ in range(60):  # 60 kyr: the linger has faded (LINGER_KYR), the last meeting place holds
+        h._hybrid(tree.lines["ab"], k, K, step)
+    held = h.p[k] >= H.EST
+    assert held[zone].all() and h._linger[k][zone].all() and (h.p[k][zone] >= 0.9 * H.LINGER_MIN - 1e-9).all()
+    assert [e["kind"] for e in h.events] == ["lingers"]
+    f = h._frame(step, {"land": land})
+    assert (f["peoples"][zone] == k).all()  # (its own people there, not an overlay)
+
+
+def test_land_use_moves_a_people_toward_its_goods(faketz):
+    """[[use]]: a line's habitat is x(1 - pull + pull G) over the goods its traits look for, normalised to a
+    mean of 1 over its own country; avoided goods cut; in the deep epochs the land use is off, and before
+    the Holocene only the geology counts."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1, "land_pull": 0.5},
+           "lineage": [{"id": "dw", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "traits": ["miner"]},
+                       {"id": "hu", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000],
+                        "traits": ["seafaring"]}],
+           "use": [{"by": "miner", "good": "gold"}, {"by": "seafaring", "good": "nav_hazard", "weight": -1},
+                   {"by": "seafaring", "good": "fertile", "weight": 0.5}]}
+    tree = SP.parse(raw)
+    assert SP.parse(SP.to_raw(tree)).uses == tree.uses
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "use": [{"by": "miner", "good": "unobtainium"}]})
+    g = build_grid(LEVEL)
+    land = ps.fields(0.0, variability=False)["land"]
+    gold = np.where(land & (g.lat > 0), 1.0, 0.0)
+    goods = {"gold": gold, "nav_hazard": np.where(land & (g.lon > 0), 1.0, 0.0), "fertile": np.zeros(g.n)}
+    h = H.History(tree, ps, 1, goods=goods)
+    m = h._land_mult(tree.lines["dw"], True)
+    hab = H.capacity(tree.lines["dw"], *h._pres) > 0.25
+    assert abs(m[hab].mean() - 1) < 1e-9 and m[gold > 0].min() > 1.2 * m[land & (gold == 0)].max()
+    mh = h._land_mult(tree.lines["hu"], True)
+    assert mh[land & (g.lon > 0)].max() < mh[land & (g.lon <= 0)].min()  # (avoids the hazards)
+    assert np.isscalar(h._land_mult(tree.lines["hu"], False)) or np.allclose(h._land_mult(tree.lines["hu"], False), 1)
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(g, env)
+    deep = H.Step(500.0, 1.0, "deep", True, None)
+    assert np.allclose(h._K(tree.lines["dw"], env, tags, deep), H.capacity(tree.lines["dw"], env, tags))
