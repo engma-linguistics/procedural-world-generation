@@ -51,3 +51,31 @@ exactly: the merged tree's sweeps are identical, seed for seed, to A23's `health
 fails: 0. Earth L6 (dT 0) is unchanged by the merge (`main/earth`, `step2/earth`): rain log-r 0.630, W Europe
 warmest 17.1 vs 18.0 (-0.9), SH coastal range 12.5, North Sea annual SST 6.9, NH sinking 13.86 Sv (90% open polar),
 Norwegian coast open in winter 100%.
+
+## Step 3: merge A20 shelf air (PW-592), head a1462d3
+
+Conflicts: `docs/review/base-climate/stages.md` (both sides appended a section: kept both) and
+`tests/golden/sim_L4_s1_60myr.json` (regenerated on purpose with `--update-golden`: A20's and A23's output changes
+together; `climate_L4.json` as A20 had it, which the regeneration reproduced unchanged). Full `pytest -q`: 603
+passed in 570 s.
+
+| draw | forest (bar) | endings (bar 12) | sheeted (need 5) | speeds | index zero | ice at index zero | result |
+|---|---|---|---|---|---|---|---|
+| +0.001 | 16 / 22 (11) | 21 / 24 | 18 of 25 | 18 / 18 | 25 / 25 | 16 / 18 (13) | 38 passed |
+| -0.001 | 15 / 22 (11) | 22 / 24 | 15 of 24 | 15 / 15 | 24 / 24 | 13 / 15 (11) | 38 passed |
+
+Health (main -> step 2 -> step 3):
+
+| sweep | pooled % kf < -150 m | seeds > 10% | old bar F | new bar F | icehouse % median / mean |
+|---|---|---|---|---|---|
+| defaults | 4.2 -> 8.6 -> 7.6 | 2 -> 2 -> 2 (21, 505) | 0 -> 0 -> 1 (seed 11) | 4 -> 3 -> 1 | 17.6 / 28.7 -> 22.6 / 34.3 -> 30.4 / 32.4 |
+| 101-108 | 3.4 -> 3.2 -> 7.3 | 1 -> 1 -> 2 (103, 107) | 0 -> 0 -> 1 (seed 107, icehouse 100%) | 2 -> 3 -> 5 | 27.4 / 30.6 -> 34.3 / 41.2 -> 42.1 / 39.2 |
+
+Mean over the two sets: 3.8 (main), 5.9 (step 2), 7.45 (step 3). These are single chaotic 500 Myr runs, and which
+seeds go deep moves at every step (main 2, 42, 103; step 2 1, 77, 105; step 3 21, 505, 103, 107). The old ice bar
+fails on 2 of 16 after A20 (0 before). Recorded, not a stop: the tests and Earth bars are green (draft
+`draft-health-drift-after-shelf-air.md`).
+
+Earth L6 (`step3/earth`): North Sea annual SST 6.9 -> 8.5, W Europe warmest 17.1 -> 17.6 vs 18.0 (-0.9 -> -0.4), so
+C left A20's gains as A20 measured them. Rain log-r 0.630, SH coastal range 12.5 (<= 12.5). The overturning on Earth
+is unchanged: NH sinking 13.86 Sv (8-20), 90% in open polar seas (>= 70%), Norwegian coast open in winter 100%.
