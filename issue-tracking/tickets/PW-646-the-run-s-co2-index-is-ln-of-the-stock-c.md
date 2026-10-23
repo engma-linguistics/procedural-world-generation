@@ -45,5 +45,6 @@ Options:
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-23: Lane A23 (held branch worktree-agent-ae88fd143d96f879f, 7d6fc18, on A22): C implemented. pCO2 = 350 x e^co2 ppm; co2_sensitivity now 3 C per doubling; plants read ppm everywhere. Earth glacial max 171 ppm. With A22: health pooled keyframes below -150 m 13.4% -> 5.9% (main 3.8), old ice-bar fails 4 -> 0. Side effect: sink-side changes (PW-636's NPP weathering) move dT ~29% more. Waits on PW-643's adopted fixtures (single-seed cold-moment test flips).
 - 2026-10-23: Owner 2026-10-24: the coordinator's call; explore C (carry a real pCO2 in ppm from the stock) first; if it makes things wildly off, take A for now and revisit later.
 - 2026-10-23: Created from inbox draft draft-co2-index-units-ln-or-log2.md (found by base-climate-laneA22).
