@@ -1,0 +1,310 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index 07031f6..f41de53 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -34,6 +34,7 @@ planet's geography. In order (see compute):
+ 
+ from __future__ import annotations
+ 
++import os
+ import numpy as np
+ 
+ import numba
+@@ -499,7 +500,7 @@ def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
+ TRADE_ROUND = 3.0  # deg
+ 
+ 
+-def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.ndarray:
++def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None, belt=1.0) -> np.ndarray:
+     """The planet-wide three-cell pattern, the same at every longitude
+     (unless front moves it, below):
+     easterly trade winds below ~30 deg, westerlies from 30 to 60, polar
+@@ -508,7 +509,9 @@ def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.
+     much (they stay strong at 45-60 deg in winter, which is what brings the
+     sea's mild air deep into Europe). front: deg added to each cell's
+     latitude for the bands outside the tropics (front_shift: they sit where
+-    the air masses are, not at fixed latitudes)."""
++    the air masses are, not at fixed latitudes). belt: the westerlies'
++    strength, per cell or one number (westerly_belt: each season's and
++    hemisphere's own, from its baroclinicity)."""
+     G = _geom(grid)
+     lat = _wind_lat(grid, shift, front)
+     a = np.abs(lat)
+@@ -520,7 +523,7 @@ def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.
+     # convergence, where |lat| has a corner: the speed had a one-cell dip there,
+     # where the air lingered and rained more; PW-227)
+     au = np.where(a < TRADE_ROUND, a * a / (2 * TRADE_ROUND) + TRADE_ROUND / 2, a)
+-    ue = (-0.9 * np.exp(-((au - 12) / 14) ** 2) + 1.0 * np.exp(-((au - 48) / 15) ** 2)
++    ue = (-0.9 * np.exp(-((au - 12) / 14) ** 2) + belt * np.exp(-((au - 48) / 15) ** 2)
+           - 0.4 * np.exp(-((a - 78) / 10) ** 2))[:, None]
+     un = (-0.3 * np.sin(np.radians(6 * np.minimum(a, 90))))[:, None]
+     return ue * G["east"] + un * hemi * G["north"]
+@@ -583,8 +586,57 @@ def polar_drift(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None)
+     return (un * np.sign(lat))[:, None] * G["north"]
+ 
+ 
++BELT_LAT = (30.0, 65.0)  # deg: the mid-latitudes whose baroclinicity drives the eddy-driven westerlies
++
++
++def westerly_belt(grid: Grid, t_jul: np.ndarray, t_jan: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
++    """The westerlies' strength (wind()'s belt) in each half-year, per cell:
++    each hemisphere's own in each season. The surface westerlies are
++    eddy-driven: the storms that grow on the mid-latitudes' poleward
++    temperature contrast carry the westerly momentum down to the ground,
++    and the jet they drive scales with that contrast (the thermal wind).
++    So the belt follows each season's and hemisphere's zonal-mean
++    contrast (storminess, the zonal mean jet_stream's thermal wind is built
++    on) over BELT_LAT, relative to the planet's own mean of the four (both
++    seasons, both hemispheres): a planet with no seasons keeps one belt,
++    and the mean strength stays the one the winds are measured in (U_REF).
++    On Earth a weak northern summer (the continents warm, the contrast
++    halves) and strong westerlies all year round the cold Antarctic.
++    t_jul / t_jan: the half-years' temperatures reduced to sea level, C."""
++    a = np.abs(grid.lat)
++    mid = (a >= BELT_LAT[0]) & (a <= BELT_LAT[1])
++    north = grid.lat >= 0
++    g = {}
++    for k, t in (("jul", t_jul), ("jan", t_jan)):
++        st = storminess(grid, t)
++        g[k] = [float(st[mid & h].mean()) if (mid & h).any() else 0.0 for h in (north, ~north)]
++    ref = np.mean(g["jul"] + g["jan"])
++    if ref <= 1e-9:
++        return np.ones(grid.n), np.ones(grid.n)
++    return tuple(np.where(north, g[k][0], g[k][1]) / ref for k in ("jul", "jan"))
++
++
++def low_column(grid: Grid, land: np.ndarray, tune: dict) -> np.ndarray:
++    """How much of the air column over each cell its ground's warmth or cold
++    reaches (0..1), which is what sets the pressure of a thermal low or
++    high (hydrostatic: the column's mean temperature). The boundary layer
++    (sum_h) takes on any land's heat within a day; the air above it, up to
++    the depth a continent's heat low reaches (fetch_h), only as much as the
++    land within the synoptic scale (fetch_km) is land (as _summer_fetch).
++    So a narrow land in the westerlies (Patagonia, Tasmania, New Zealand)
++    makes only a shallow low and a continent's interior a deep one. The
++    sea's own column: 1."""
++    bl = tune["sum_h"] / tune["fetch_h"]
++    cont = np.clip(smooth(grid, land.astype(float), tune["fetch_km"]), 0.0, 1.0)
++    if tune["x_col"] in (2, 4):
++        reach = np.clip(smooth(grid, land.astype(float), U_REF * tune["sum_tau"] / 1000.0), 0.0, 1.0)
++        return np.where(land, bl * reach + (1 - bl) * cont, 1.0)
++    return np.where(land, bl + (1 - bl) * cont, 1.0)
++
++
+ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1.0, big: float = 0.0,
+-                 big_km: float = 2000.0, front: np.ndarray | None = None):
++                 big_km: float = 2000.0, front: np.ndarray | None = None, belt=1.0,
++                 column: np.ndarray | None = None):
+     """Zonal bands plus the winds made by land-sea temperature contrasts.
+     Air over ground warmer than its latitude's average rises (low pressure),
+     over cooler ground it sinks (high pressure). Away from the equator the
+@@ -598,9 +650,13 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     big_km, which reaches out over the neighbouring oceans (the summer heat
+     of all of Asia pulls the monsoon across the Indian Ocean). t_sl:
+     surface temperature reduced to sea level, C. front: the bands'
+-    displacement (wind(), front_shift). Returns (wind, warmth):
++    displacement (wind(), front_shift); belt: the westerlies' strength
++    (westerly_belt). column: how much of the air column the ground's
++    warmth reaches (low_column; default all of it). Returns (wind, warmth):
+     warmth is the smoothed temperature excess, C (>0: rising air)."""
+     anom = t_sl - zonal_mean(grid, t_sl)
++    if column is not None:
++        anom = anom * column
+     warmth = smooth(grid, anom, 900.0)
+     if big > 0:
+         warmth = warmth + big * smooth_big(grid, anom, big_km)
+@@ -616,7 +672,7 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
+     m = np.linalg.norm(v, axis=1, keepdims=True)
+     cap = 0.7 * strength * np.clip((65 - np.abs(grid.lat)) / 25, 0.3, 1)[:, None]
+     v = v * np.minimum(1, cap / np.maximum(m, 1e-9))
+-    return wind(grid, shift, front) + v, warmth
++    return wind(grid, shift, front, belt) + v, warmth
+ 
+ 
+ def speed(v):
+@@ -1516,6 +1572,8 @@ TUNE = dict(
+     monsoon=1.0,  # strength of the land-sea pressure winds ...
+     big=1.5,  # ... and of their continent-wide part
+     big_km=2000.0,  # km: the scale of that part
++    x_belt=float(os.environ.get("X_BELT", 0)),  # PW-596 probe: 1 = westerlies by season and hemisphere, 2 = also the rain's
++    x_col=float(os.environ.get("X_COL", 0)),  # PW-596 probe: 1 = the thermal lows' column (low_column), 2 = with the reach
+     eq_up=15.0,  # C: equatorial upwelling (cold tongues) under a full trade wind
+     coast_up=10.0,  # C: coastal upwelling where a full wind pushes the surface water offshore (the slow
+     # eastern-boundary currents bring little cold of their own: Peru and Namibia are cold from below)
+@@ -1597,6 +1655,9 @@ TUNE = dict(
+     ice_km=800.0,  # ... spread over this far
+     brine_m=50.0,  # m: depth of the winter mixed layer the brine of new sea ice mixes into (and the seasons' heat:
+     # _sea_half)
++    ml_wind=0.0,  # PW-593 probe: 1 = the sea's summer swing goes into a wind-set summer layer (_summer_layer)
++    light_m=20.0,  # m: ... at least the depth sunlight heats (clear sea water's e-folding for visible light)
++    land_fetch=0.0,  # PW-593 probe: 1 = the land's share of the sea's swing is the fetched land air's (_summer_fetch)
+     moc=0.65,  # Sv sinking per kg/m3 of density difference (sinking - water replacing it) per 1e6 km2
+     moc_k=3.0,  # Sv per kg/m3: the most one sinking site turns over (see ocean.overturning)
+     moc_z=2000.0,  # m: depth at which the waters' densities are compared for sinking
+@@ -2088,7 +2149,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # land (land_air: the share of it that did, within ~air_km_w on the
+     # prevailing winds).
+     h = _geom(grid)["h"]
+-    land_air = carry(grid, wind(grid, 0.0), land.astype(float), np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
++    src = land.astype(float) * (low_column(grid, land, tune) if tune["x_col"] >= 3 else 1.0)
++    land_air = carry(grid, wind(grid, 0.0), src, np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
+                      4 * tune["air_km_w"], 0.25)
+     sea_half = _sea_half(grid.lat, tilt, s, land_air, tune)
+ 
+@@ -2102,8 +2164,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     t_sl0 = np.where(ocean, t_sea_air, 0.5 * (warm0 + cold0) + lift)
+     dsl = np.where(ocean, sea_half, 0.5 * (warm0 - cold0)) * sgn * hk
+     t_sl_jul, t_sl_jan = t_sl0 + dsl, t_sl0 - dsl
+-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"])
+-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"])
++    col = low_column(grid, land, tune) if tune["x_col"] else None
++    b_jul, b_jan = westerly_belt(grid, t_sl_jul, t_sl_jan) if tune["x_belt"] else (1.0, 1.0)
++    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jul, col)
++    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jan, col)
+     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
+     v_ann = 0.5 * (v_jul + v_jan)
+     # the rain's wind: the water vapour rides above the polar inversion, not
+@@ -2124,6 +2188,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     sst0 = sst = np.maximum(raw0, FREEZE)
+     v_sum = np.where(north[:, None], v_jul, v_jan)  # each hemisphere's summer wind
+     v_win = np.where(north[:, None], v_jan, v_jul)
++    sea_half_s = sea_half
++    if tune["ml_wind"]:
++        sea_half_s = _sea_half(grid.lat, tilt, s, land_air, tune,
++                               _summer_layer(grid.lat, tilt, v_sum, sst + sea_half, tune))
+     lift = LAPSE * np.maximum(surf, 0)
+     # the air over land ice is the sheet's own (icemass.air_mass; ice_air: the ice whose air it is, by
+     # default `ice`; the time zoom's elevation already has its ice on, and it passes that ice here)
+@@ -2131,21 +2199,31 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     from .icemass import air_mass
+     damp_air = air_mass(grid, ice_air, cold=ice_cold) if (ice_air > 1).any() else np.zeros(n)
+     air = dict(grid=grid, ocean=ocean, temp0=temp0, lift=lift, t_sea_air=t_sea_air, t_sea=t_sea, s=s,
+-               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air)
++               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air, sea_half_s=sea_half_s)
+     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
+ 
+     # rain in each half-year, from its mean conditions
+     tm = 0.5 * (t_warm + t_cold)
+     dt = hk * (np.where(north, t_warm, t_cold) - tm)
+-    sum_half = _summer_half(sst, sea_half, sea_half)
++    sum_half = _summer_half(sst, sea_half_s, sea_half)
+     sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -sea_half), FREEZE)
+     sst_jan = np.maximum(sst + hk * np.where(north, -sea_half, sum_half), FREEZE)
+     # the jet stream over each half-year's temperatures steers its storms
+     jets, tracks = [], []
+-    for t_s in season_temps(grid, surf, t_warm, t_cold, hk):
++    t_ss = season_temps(grid, surf, t_warm, t_cold, hk)
++    for t_s in t_ss:
+         j, baro = jet_stream(grid, t_s, tune)
+         jets.append(j)
+         tracks.append(storm_track(grid, j, baro, tune))
++    if tune["x_belt"] == 2:
++        # the rain's westerlies on the same seasons' contrast as the jets that steer its storms
++        rb_jul, rb_jan = westerly_belt(grid, *t_ss)
++        wr_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, rb_jul,
++                                 col)
++        wr_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, rb_jan,
++                                 col)
++        vq_jul = deflect(grid, wr_jul - polar_drift(grid, shift), surf, tune)
++        vq_jan = deflect(grid, wr_jan - polar_drift(grid, -shift), surf, tune)
+     s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
+             _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
+     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
+@@ -2225,11 +2303,16 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # overturning.)
+     t_sj, t_sn = season_temps(grid, surf, t_warm, t_cold, hk)
+     f_jul, f_jan = front_shift(grid, t_sj), front_shift(grid, t_sn)
+-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul)
+-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan)
++    if tune["x_belt"]:
++        b_jul, b_jan = westerly_belt(grid, t_sj, t_sn)
++    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul, b_jul, col)
++    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan, b_jan, col)
+     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
+     air["v_sum"] = np.where(north[:, None], v_jul, v_jan)
+     air["v_win"] = np.where(north[:, None], v_jan, v_jul)
++    if tune["ml_wind"] == 2:  # the summer layer under the final summer winds
++        sea_half_s = air["sea_half_s"] = _sea_half(grid.lat, tilt, s, land_air, tune,
++                                                   _summer_layer(grid.lat, tilt, air["v_sum"], sst + sea_half, tune))
+     t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
+     t_warm, t_cold, temp, ground, jul_warm = _land_finish(t_warm, t_cold, temp, **fin)
+     wb = water_balance(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, tune, fb["w"])
+@@ -2240,7 +2323,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # swing), and the half-years' humidity
+     swing = sgn * np.clip((sst - FREEZE) / 4.0, 0.1, 1.0)
+     # (July is the north's summer and the south's winter)
+-    sum_half = _summer_half(sst, sea_half, half_w)
++    sum_half = _summer_half(sst, sea_half_s, half_w)
+     sst_m = (np.maximum(sst + swing * np.where(north, sum_half, half_w), FREEZE),
+              np.maximum(sst - swing * np.where(north, half_w, sum_half), FREEZE))
+     tm = 0.5 * (t_warm + t_cold)
+@@ -2276,7 +2359,7 @@ def _orbit(temps, orbit_dt, north):
+ 
+ 
+ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune, damp_air,
+-               half_w=None, d_sum=None):
++               half_w=None, d_sum=None, sea_half_s=None):
+     """Each place takes on the temperature of the air the wind brings it.
+     Air over land drifts toward the land's own temperature for the
+     season (land holds little heat: hot summers, cold winters) over a few
+@@ -2302,10 +2385,11 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
+     Returns (t_warm, t_cold, temp, open water in winter 0..1)."""
+     from .icemass import SUMMER_DAMP
+     half_w = sea_half if half_w is None else half_w
++    sea_half_s = sea_half if sea_half_s is None else sea_half_s
+     half_l = tune["continental"] * s + 0.3  # land left to itself
+     t_land = temp0 + lift  # (carried at sea level; heights are taken off after)
+     frozen = np.minimum(t_sea_air - t_sea, 0)  # how far below freezing the latitude's sea would be
+-    sea_sum = np.maximum(sst + frozen + _summer_half(sst, sea_half, half_w), FREEZE)
++    sea_sum = np.maximum(sst + frozen + _summer_half(sst, sea_half_s, half_w), FREEZE)
+     h = _geom(grid)["h"]
+     # The summer air relaxes toward the land's summer in time (sum_tau),
+     # not over a fixed distance: it reaches U x sum_tau inland (PW-581),
+@@ -2346,7 +2430,7 @@ SUN_SURFACE = 0.5  # share of the top-of-atmosphere sunshine that reaches the gr
+ # sunshine, at half the day sunny)
+ 
+ 
+-def _sea_half(lat, tilt, s, land_air, tune):
++def _sea_half(lat, tilt, s, land_air, tune, depth=None):
+     """The sea's seasonal half-swing (C): its own plus a share of the land's.
+     Its own: the seasons' sunshine (half the year's swing of the monthly
+     mean at the ground, after the sea's albedo) into the mixed layer
+@@ -2361,12 +2445,37 @@ def _sea_half(lat, tilt, s, land_air, tune):
+     inside a continent most of all. (The winter air's own cold over the sea
+     is carried separately: _winter_air.)"""
+     ra = insolation(lat, tilt) * (1e6 / 86400.0)  # W/m2, (12, n)
+-    cap = RHO_C_SEA * tune["brine_m"] * 2 * np.pi / YEAR_S
++    cap = RHO_C_SEA * (tune["brine_m"] if depth is None else depth) * 2 * np.pi / YEAR_S
+     own = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0)) / np.hypot(cap, tune["ice_b"])
+     c = tune["open_b"] / (tune["open_b"] + cap)
+     return own + c * tune["continental"] * s * land_air
+ 
+ 
++SEA_DRAG = 1.3e-3  # the sea surface's drag coefficient (bulk formula, ~10 m wind)
++KARMAN = 0.4
++
++
++def _summer_layer(lat, tilt, v_sum, t_sum, tune):
++    """m: the summer mixed layer's depth (PW-593 probe), the Monin-Obukhov
++    depth u*^3 / (kappa B): how deep the summer wind's stirring reaches
++    against the buoyancy the summer's heating puts into the top. u*: the
++    water's friction velocity from the wind stress rho_a C_D U^2; B = g
++    alpha Q / (rho c), Q the summer's extra sunshine at the ground (as
++    _sea_half), alpha the water's thermal expansion at its summer
++    temperature (ocean.density: cold water barely stratifies, so a cold
++    sea mixes deeper). At least light_m (the sunlight heats that deep
++    whatever the wind), at most the winter layer (brine_m)."""
++    from .ocean import RHO0
++    u = U_REF * speed(v_sum)
++    ust3 = (1.2 * SEA_DRAG / RHO0 * u * u) ** 1.5
++    ra = insolation(lat, tilt) * (1e6 / 86400.0)
++    q = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0))
++    ta = np.clip(t_sum, FREEZE, 35.0) - 10.0
++    alpha = 0.1655 * (1.0 + 0.05952 * ta) / RHO0
++    b = 9.81 * np.maximum(alpha, 1e-6) * q / RHO_C_SEA
++    return np.clip(ust3 / (KARMAN * np.maximum(b, 1e-12)), tune["light_m"], tune["brine_m"])
++
++
+ def _summer_half(sst, half, half_w):
+     """The sea's summer half-swing: half, less the winter's freezing deficit
+     (how far the water's winter, sst - half_w, would fall below freezing).
