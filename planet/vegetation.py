@@ -798,6 +798,16 @@ FUEL_MIN, FUEL_SPAN = 250.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MI
 # fuel accumulates (Rothermel & Philpot 1973; Keeley et al. 2011), where
 # grass fuel is ready every year. fire_rate turns it into a fire interval.
 SLOW_FUEL = 0.5  # decay rate of the shrubs' dead fuel, x the litter's
+# Crown fire (PW-347): GlobFIRM's steep curve is the curing of a grass layer,
+# which needs months of drought; evergreen needleleaf stands carry fire in
+# their own resinous, retained foliage and the dry moss and needle bed under
+# it, on any run of fire weather, so they add a burned share that rises in
+# step with the fire season: CROWN_FIRE a year for a fully conifer cell dry
+# all year, x ignition. With 1-2 dry months that is ~1/200 yr, the
+# stand-replacing crown fires of the taiga (Stocks et al. 2002: Canada's
+# boreal fire cycle ~50-500 yr, shortest in the dry continental interior).
+CROWN_FIRE = 0.08
+CROWN = np.isin(np.array(CODES), ("TeNE", "BoNE")).astype(np.float64)
 
 
 @njit(cache=True)
@@ -836,13 +846,14 @@ MIGRATE_PRESENT = 0.03  # cover (with the seed) of an established stand that can
 
 
 @njit(parallel=True, cache=True)
-def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, kslow, ign, dt, seed, diff, nbr_off, nbr_idx,
+def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, crown, season, kdec, kslow, ign, dt, seed, diff, nbr_off, nbr_idx,
           food, browsed, graze, c4_share, mig, src, out, burned):
     """One implicit step of the cover equations on every cell in cells:
     dnu/dt = g nu (K - sum_q C_pq nu_q) - (mort + fire (1 - resist)) nu,
     plus seeds (every viable type keeps at least `seed`) and a little
     spread from neighbours (diff). Fire from this cover's fuel (fire_rate;
-    slowf: 1 for the types whose dead fuel builds up slowly, the shrubs).
+    slowf: 1 for the types whose dead fuel builds up slowly, the shrubs;
+    crown: 1 for the types that carry crown fire, CROWN_FIRE x season x their cover).
     The C3 and C4 grasses are one grass layer, split by c4_share.
     mig (per type; the time zoom's and the finished world's, PW-213): 0 seeds everywhere; 1 keeps its seeds
     only where the type already is and takes new ground only beside a neighbour with an established stand
@@ -853,12 +864,15 @@ def _step(cells, nu, g, K, ok, mort, C, resist, litter, slowf, season, kdec, ksl
         i = cells[jj]
         fast = 0.0
         slow = 0.0
+        cc = 0.0
         for p in range(npft):
+            cc += crown[p] * nu[p, i]
             if slowf[p] > 0:
                 slow += nu[p, i] * litter[p, i]
             else:
                 fast += nu[p, i] * litter[p, i]
-        a = fire_rate(fast / kdec[i], slow / kslow[i], kslow[i], globfirm(season[i]) * ign[i])
+        wx = (globfirm(season[i]) + CROWN_FIRE * season[i] * min(cc, 1.0)) * ign[i]
+        a = fire_rate(fast / kdec[i], slow / kslow[i], kslow[i], wx)
         burned[i] = a
         grass = 0.0
         for p in range(npft):
@@ -915,7 +929,7 @@ def _merge(cells, nu, out, tol, act):
 
 
 def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=None, steps=None,
-                diff: float = 0.02, migrate=None, snaps=(), substeps: int = 1) -> dict:
+                diff: float = 0.02, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
     """The cover fractions (NP, n) in equilibrium with the climate (section
     3.3), warm-started from nu0 (the previous state: history decides
     between forest and savanna), with fire. steps: list of (count, dt in
@@ -925,7 +939,9 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     are (or stay) instead of being seeded everywhere; nu0 is then the previous call's nu_raw (with the seeds,
     so a type that is still in a cell stays) or a stand map (0 = not there); substeps: each step is this many
     shorter ones (the implicit step caps a young stand's growth per step, so a long step grows it too slowly),
-    migration seeing the stands as the step began; snaps: step counts (cumulative over steps) after which the cover is also returned, in snaps."""
+    migration seeing the stands as the step began; snaps: step counts (cumulative over steps) after which the cover is also returned, in snaps.
+    crown: the conifers' crown fire (CROWN_FIRE; the simulation's climate steps leave it off for now, so runs keep
+    their pre-PW-347 fire until the run physics take it up)."""
     n = grid.n
     ok = pot["ok"] & land[None, :] & ((_col("wet")[:, None] == 0) | (fw[None, :] > 0.01))
     cells = np.flatnonzero(ok.any(0)).astype(np.int64)
@@ -972,7 +988,7 @@ def equilibrium(grid, s: dict, pot: dict, fw: np.ndarray, land: np.ndarray, nu0=
     snapped, k = [], 0
     for count, dt in steps or ((30, 2.0), (150, 10.0)):
         for _ in range(count):
-            args = (g, K, ok, mort, C, resist, litter, slowf, season, kdec, SLOW_FUEL * kdec, ign)
+            args = (g, K, ok, mort, C, resist, litter, slowf, CROWN if crown else 0.0 * CROWN, season, kdec, SLOW_FUEL * kdec, ign)
             nbr = (seed, diff, grid.nbr_off, grid.nbr_idx, food, browsed, graze, c4s, mig)
             if substeps <= 1:
                 _step(cells, nu, *args, float(dt), *nbr, nu, out, burned)
@@ -1218,7 +1234,7 @@ def biome_of(types, sea_biome) -> np.ndarray:
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
           cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
-          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1) -> dict:
+          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
     arrays (climate.compute's names; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
@@ -1262,7 +1278,8 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     pot = dict(pot_all, ok=pot_all["ok"] & viable)
     fw = flooded(grid, elev, np.zeros(n) if flow is None else flow, np.zeros(n) if lake_kind is None else lake_kind,
                  s, ice, flood_ratio, None if soil is None else soil["permafrost"])
-    eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None), migrate=migrate, snaps=snaps, substeps=substeps)
+    eq = equilibrium(grid, s, pot, fw, land, nu0, steps or (((25, 10.0),) if cheap else None), migrate=migrate, snaps=snaps,
+                     substeps=substeps, crown=crown)
     sm = summary(s, pot, eq)
     types = classify(s, eq, sm, elev, ice, lake, lake_kind, fw, coastal)
     return dict(s=s, pot=pot, pot_all=pot_all, eq=eq, fw=fw, sm=sm, types=types, land=land, unlocked=unlocked)
