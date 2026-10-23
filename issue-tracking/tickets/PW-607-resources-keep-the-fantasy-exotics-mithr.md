@@ -1,5 +1,6 @@
 ---
-title: Resources: keep the fantasy exotics (mithril-, adamant-like, star-iron) and add ley/arrival-site crystals?
+id: PW-607
+title: "Resources: keep the fantasy exotics (mithril-, adamant-like, star-iron) and add ley/arrival-site crystals?"
 type: task
 status: needs-decision
 parent: PW-155
@@ -11,6 +12,8 @@ found_by: resources
 blocked_by: []
 relates: [PW-155]
 refs: [planet/resources.py, docs/proposals/resources.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Options: **A.** keep as is, off by default nowhere (now); **B.** hide them behin
 worlds (yes/no).
 
 Lean: **A**, and yes to the lineage crystals later (small: a likelihood around arrival sites).
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-fantasy.md (found by resources).

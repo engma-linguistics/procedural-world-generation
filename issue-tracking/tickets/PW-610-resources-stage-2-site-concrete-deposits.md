@@ -1,5 +1,6 @@
 ---
-title: Resources stage 2: site concrete deposits (points, seams, placers) in regional zooms
+id: PW-610
+title: "Resources stage 2: site concrete deposits (points, seams, placers) in regional zooms"
 type: task
 status: todo
 parent: PW-155
@@ -11,6 +12,8 @@ found_by: resources
 blocked_by: []
 relates: [PW-155]
 refs: [planet/resources.py, planet/zoom.py, viewer/zoom.html, docs/proposals/resources.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ table, draw as markers with a legend and hover in zoom.html; add to export featu
 - [ ] zoom_resources.py with per-model siting rules; deterministic per zoom
 - [ ] zoom.html markers, legend, hover; export features
 - [ ] screenshots on a porphyry arc, a coal basin and a placer river
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-zoom-siting.md (found by resources).

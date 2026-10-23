@@ -1,5 +1,6 @@
 ---
-title: Resources: BIF and diamond rules use Earth's absolute geological clocks (1.8 / 2.5 Gyr)
+id: PW-605
+title: "Resources: BIF and diamond rules use Earth's absolute geological clocks (1.8 / 2.5 Gyr)"
 type: task
 status: needs-decision
 parent: PW-155
@@ -11,6 +12,8 @@ found_by: resources
 blocked_by: []
 relates: [PW-155, PW-443]
 refs: [planet/resources.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,3 +27,6 @@ own oldest crust (the oldest 30% of crust ages); **C.** make the oxygenation tim
 (weird-worlds work, PW-443).
 
 Lean: **A** for v2, **C** with PW-443.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-clocks.md (found by resources).

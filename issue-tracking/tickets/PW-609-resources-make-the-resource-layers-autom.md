@@ -1,5 +1,6 @@
 ---
-title: Resources: make the resource layers automatically when a world is saved from a run?
+id: PW-609
+title: "Resources: make the resource layers automatically when a world is saved from a run?"
 type: task
 status: needs-decision
 parent: PW-155
@@ -11,6 +12,8 @@ found_by: resources
 blocked_by: []
 relates: [PW-155]
 refs: [planet/resources.py, planet/timeline.py, docs/proposals/resources.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Options:
 
 Lean: **B** once the owner has looked at the maps (docs/review/resources/), since they are a v2 headline
 feature and the cost is small.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-when.md (found by resources).

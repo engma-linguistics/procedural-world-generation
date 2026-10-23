@@ -1,5 +1,6 @@
 ---
-title: Resources: what the run could record so resources need fewer proxies (for the run-physics lane)
+id: PW-608
+title: "Resources: what the run could record so resources need fewer proxies (for the run-physics lane)"
 type: task
 status: todo
 parent: PW-155
@@ -11,6 +12,8 @@ found_by: resources
 blocked_by: []
 relates: [PW-155, PW-212, PW-134, PW-474]
 refs: [planet/resources.py, planet/tectonics/record.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,3 +33,6 @@ run could replace cheaply, as record fields riding with the crust (no new time-s
 5. The column inherits the keyframes' 0.1 km cover quantisation and the frame-to-frame flicker (PW-134):
    coal maps come out speckled.
 Meanwhile the proxies stay; none of this blocks stage 1 or 2.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-run-record.md (found by resources).
