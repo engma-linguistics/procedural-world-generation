@@ -1680,3 +1680,135 @@ terminations is warm subsurface water at the fronts, and the zoom has none (PW-3
   - The zoom: glacials only -56 / -62 / -73 / -70 / -69 / -74 m (base -79..-98), give-back 0.66-0.84.
   So a uniform rise in calving costs Earth ~20 m of glacial. The marine loss would have to grow at the endings
   themselves, through the ocean's warmth, not everywhere: `draft-marine-fronts-no-ocean-melt.md`.
+
+## PW-644: low CO2 is what shrinks a glacial's tropical forest (lane A22)
+
+**The water balance is not the cause. The tropics green under cooling because the plants' respiration falls (Q10
+2), and the CO2 the zoom lowers barely reached the plants. The CO2 index only nudged C3 light-use efficiency by 12%
+per unit, with no effect on water use. The fix gives every C3 plant Farquhar's light-limited quantum yield against
+today's, the way C3 grass already had it, and gives every plant a water-use efficiency that scales with Ca (Ci/Ca
+held constant). At index 0 nothing changes, so today's Earth is identical. At Earth's time-zoom glacial maximum the
+tropical forest share now falls (-15..15 deg: 0.44 -> 0.51 on main, 0.43 -> 0.28 here). The low-latitude
+darkening at the zoom's glacial CO2 goes from +0.21 to -0.03 W/m2. In the forest test's milder setting (-4 C,
+index -1/3) it only drops, from +0.118 to +0.092 on seeds 1-24. The run uses the same plant code, so `simulate`
+outputs change: health is mixed (see below).**
+
+Branch `worktree-agent-ac50a7a56279c5017`: main 69db596, plus PW-643's harness (8f090f8, its own commit), plus
+the fix. Files in `laneA22/` (README.md lists them).
+
+### Where the greening came from (Earth L4, `lowlat.py`, `lowlat_split.py`; main)
+Tree area at |lat| < 15 deg, against 13.8 Mkm2 at the start; the forest test's setting is -4 C (about -2 C in the
+tropics):
+
+| case | tree, Mkm2 |
+|---|---|
+| cooled climate, CO2 0 | 18.0 |
+| cooled temperatures, the start's rain | 19.4 |
+| ... with the start's PET (only what acts inside the plants) | 17.8 |
+| cooled PET only | 14.7 |
+| cooled rain only (-7% there; PET -7% too, so P/PET stays 1.52) | 13.2 |
+| CO2 index -1/3 only, main's code | 12.3 |
+
+- **Mechanism:** the plants' own temperature response does most of it. The tropical trees' growth curve is flat over
+  20-32 C, so what changes is maintenance respiration, 2^((t-20)/10). Trees, with their wood respiration, gain
+  ~15% NPP from 2 C of cooling.
+  - Real respiration acclimates. Draft: `draft-respiration-has-no-thermal-acclimation.md`.
+  - The rain falls as much as the PET does, so the water balance is neutral.
+- **CO2:** on main, -1/3 of index costs C3 trees 4% of their efficiency. The light-limited quantum yield,
+  (Ci - G*) / (Ci + 2 G*), gives 12% at 27 C, in line with FACE (beta ~0.55). In the wet tropics the water-use
+  part hardly matters, but it caps GPP in the drylands.
+
+### The fix (`planet/vegetation.py`)
+- C3_PFTS (every type but C4 grass, CAM and C3 grass) take qy = 2: g_m x q3(t, Ci) / q3(t, Ci_ref). This replaces
+  `1 + 0.12 co2` on eps.
+- `wue` x 2^co2 for every plant.
+- The C4 envelope shift and C3 grass's own quantum yield are unchanged. Nothing changes at co2 = 0, and the
+  climate golden is unchanged.
+
+### Earth (the plausibility anchor)
+**`tools/tz_earth.py --level 6`** (600 kyr). It now prints the forest share of open land by band.
+
+| band | main, interglacial -> glacial max | A22 |
+|---|---|---|
+| 60..90 | 0.27 -> 0.03 | 0.26 -> 0.01 |
+| 50..60 | 0.70 -> 0.39 | 0.69 -> 0.34 |
+| 40..50 | 0.64 -> 0.54 | 0.64 -> 0.51 |
+| 30..40 | 0.20 -> **0.26** | 0.20 -> 0.19 |
+| 15..30 | 0.07 -> 0.09 | 0.07 -> 0.07 |
+| -15..15 | 0.44 -> **0.51** | 0.43 -> **0.28** |
+| -40..-15 | 0.12 -> 0.17 | 0.12 -> 0.17 |
+| -90..-40 | 0.65 -> 0.39 | 0.64 -> 0.36 |
+
+- **The ice-age bars, main -> A22:**
+  - cycles 98-109 kyr on both;
+  - maxima -79..-98 m -> -80..-101 m (the maxima bar F -> ok);
+  - cooling 6.22 C on both (F as before);
+  - endings give back 0.67-0.87, ok;
+  - interglacial ice 9.9-13.0% (F as before);
+  - Laurentide 10.7 Mkm2 to 38 N.
+- **The southern subtropics still green** (-40..-15: 0.12 -> 0.17). That is the cooler, lower-PET dry woodland. Some
+  of the LGM's southern drylands were wetter and some drier, so this is left as it is.
+- **Biome areas at the zoom's glacial maximum** (`lowlat_*_glacial.txt`, L4, -6.22 C, index -1.04; |lat| < 15):
+  - forest: 15.1 -> 18.7 Mkm2 on main, 15.1 -> **8.2** here;
+  - savanna and grass: 13.7 -> 9.9 on main, 13.7 -> **20.6** here (LGM: rainforest reduced, savanna expanded).
+  - Below 40 deg: F +0.210 -> **-0.027** W/m2.
+  - Over all land: F +0.157 -> -0.150. Cold desert and steppe spread poleward of 40, 0.2 -> 6.9 Mkm2.
+- **Earth in the forest test's setting** (`fearth_a22_L*.txt`; A21's on main):
+  - F: -0.194 -> -0.250 (L4), -0.243 -> -0.305 (L6);
+  - below 40, snow-free: +0.096 -> +0.056, +0.120 -> +0.075;
+  - trees below 40: +1.95 -> +0.94, +2.35 -> +0.91 Mkm2.
+
+### Multi-seed (seeds 1-24, the harness's draw and two null draws at climate_offset +-0.001 C; bar 17)
+| | main (A21) | A22 |
+|---|---|---|
+| forest: draw / +0.001 / -0.001 | 20 / 16 / 16 | **20 / 20 / 19** |
+| endings: draw / +0.001 / -0.001 | 18 / 19 / 19 | 19 / 22 / 22 |
+| L5 cold moment, eps 0: plausible, sheeted (need 5), speeds, index 0 | 14, 7, 7/7, 7/7 | 13, 10, 8/10, 9/10 |
+| L5 cold moment, eps +0.001 | 13, 10, 10/10, 9/10 | 9, 5, 5/5, 5/5 |
+
+Every bar passes on every draw.
+
+**F's parts over the 72 worlds** (`a22pool.txt`, W/m2, main -> A22):
+- F -0.050 -> -0.098;
+- below 40 deg, snow-free: +0.118 -> +0.092;
+- boreal loss over snow -0.152 -> -0.159;
+- trees below 40: +1.82 -> +1.02 Mkm2.
+
+The test's CO2 term is -1 C at -4 C, a quarter share, where the zoom uses half (co2_share 0.5). At that mild CO2
+the respiration term still wins below 40 deg.
+
+### Run physics (`simulate` changes: the run's plants use the same code)
+The runs' CO2 index in the store spans -1.33 .. +0.98 (5-95%, median -0.31), so their plants change.
+
+`tools/health.py --quick` (8 L6 seeds, 500 Myr, main export against this branch, same session):
+- outlier spells: 72 -> 67;
+- new ice bar fails: 4 -> 2;
+- old ice bar fails: 0 -> 2 (seeds 1, 11);
+- frames with ice sea level below -150 m: seeds 2/42/77 at 12/12/10% on main, seeds 1/2/11 at **29/20/16%** here;
+- determinism identical;
+- median NPP per seed 278-412 -> 253-425; tree cover 26-38% -> 24-40%.
+
+Lower CO2 now means fewer trees and a brighter land, so cold eras may run deeper. That is a real feedback, but 29%
+of seed 1's frames past -150 m is above PW-240's 10% bar. It is one sweep of a chaotic system and needs a second
+draw before anyone reads it as a trend.
+
+### Tests
+- With the harness: `pytest -q`, 601 passed.
+- Main's single-seed tests on this `planet/` (an export): 598 passed and 3 failed, all on the single seeds' new
+  worlds:
+  - `test_glacials_grow_ice_and_endings_melt_it_fast`: seed 1's left_m 27 against 17; seed 1 is one of the 5 of
+    24 that fail;
+  - `test_cold_moment_has_sheets`: the first plausible seed has 0.1% ice;
+  - `test_ice_speeds_plausible`: median 158 against 100.
+- The sim golden was regenerated on purpose (`tests/golden/sim_L4_s1_60myr.json`); the climate golden is
+  unchanged.
+
+**Ready?** On the mechanism, yes: it is planet-relative physics with no new knobs, and Earth today is unchanged.
+On the tests, only with PW-643's harness (or re-picked single seeds). On the run physics, the health sweep's
+deeper cold spells want a second look by the coordinator before merge.
+
+Drafts:
+- `draft-respiration-has-no-thermal-acclimation.md`;
+- `draft-tropical-forest-area-hypersensitive.md` (a 20% CO2 drop takes the tropical forest from 15 to 9 Mkm2 at
+  today's climate);
+- `draft-co2-index-units-ln-or-log2.md` (needs-decision).

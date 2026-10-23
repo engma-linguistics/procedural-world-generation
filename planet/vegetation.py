@@ -199,7 +199,14 @@ def _ft_np(t, t0, t1, t2, t3):
 
 
 _KP[C3, 0] = _KP[C4, 0] * _ft_np(QY_CROSS, *PFTS[C4]["temp"]) / _q3(QY_CROSS, 0.7 * CA_REF)
-C3_PFTS = np.array([p["code"] not in ("C4G", "Succ", "C3G") for p in PFTS])  # (the generic CO2 nudge; C3G has its own)
+# The other C3 plants (trees, shrubs, herbs, moss: all but C4 grass, CAM succulents and C3 grass, which has its
+# own) feel CO2 through the same quantum yield, as today's times its ratio to today's at that month's temperature
+# (qy column 2; PW-644): 1 at the CO2 index 0, so their efficiencies stay as tuned on Earth today. A glacial's low
+# CO2 costs them most where it is hot (photorespiration), which is why C4 grassland spread through the tropics at
+# the LGM (Ehleringer et al. 1997; Collatz et al. 1998).
+C3_PFTS = np.array([p["code"] not in ("C4G", "Succ", "C3G") for p in PFTS])
+_KP[C3_PFTS, 17] = 2.0
+CI_REF = 0.7 * CA_REF
 
 # ---------------------------------------------------------------------------
 # Plant groups that appear during a run (decision 3)
@@ -569,9 +576,12 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
                 fw = (alpha - half) / (1.0 - half)
                 fw = min(max(fw, 0.0), 1.0)
                 g_m = eps * eff * fap * PAR[m, i] * _ft(t, t0, t1, t2, t3) * fw
-                if qy > 0:  # C3 grass: its quantum yield (QY_CROSS, _q3)
+                if qy > 0:  # C3 plants: their quantum yield (QY_CROSS, _q3; C3_PFTS: against today's)
                     gs = 42.75 * np.exp(37830.0 * (t - 25.0) / (298.15 * 8.314 * (t + 273.15)))
-                    g_m *= max((ci - gs) / (ci + 2.0 * gs), 0.0)
+                    q = max((ci - gs) / (ci + 2.0 * gs), 0.0)
+                    if qy > 1.5:
+                        q /= (CI_REF - gs) / (CI_REF + 2.0 * gs)
+                    g_m *= q
                 if wet == 0 and g_m > wue * dryf * aet:  # no more carbon than the water allows
                     g_m = wue * dryf * aet
                 gpp += g_m
@@ -660,8 +670,13 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
 def potential(s: dict, viable: np.ndarray, eff: np.ndarray, co2: float = 0.0, lai0=None, cheap: bool = False) -> dict:
     """Potential productivity of each PFT on each cell where viable (NP, n),
     as if it grew alone (section 3.2). eff: (NP, n) efficiency multipliers
-    (stand-ins). co2: the run's CO2 index nudges C3 efficiency (a mild
-    'fertilisation', +-~20%; C3 grass through its quantum yield, _q3).
+    (stand-ins). co2: the run's CO2 index (~log2 of CO2 against today's) sets
+    the C3 plants' light-use efficiency through their quantum yield (_q3:
+    C3 grass's own, the other C3 types' against today's) and every plant's
+    water-use efficiency: carbon gained per water transpired is
+    Ca (1 - Ci/Ca) / (1.6 VPD), and Ci/Ca stays near constant (Wong et al.
+    1979), so it scales with Ca (PW-644). In a glacial's low CO2 the
+    stomata open wider for the same carbon and the plants run dry sooner.
     Returns (NP, n) arrays npp, net, gpp, alpha, dry (months), on_jul,
     on_jan (leaf-on months per half-year), lai; c4_share (n,), the share of
     the grasses' growth that is C4's (the better pathway takes each month);
@@ -671,8 +686,8 @@ def potential(s: dict, viable: np.ndarray, eff: np.ndarray, co2: float = 0.0, la
     cells = np.flatnonzero(viable.any(0)).astype(np.int64)
     kp = _KP.copy()
     co2 = float(np.clip(co2, -1.5, 1.5))
-    kp[C3_PFTS, 0] *= 1.0 + 0.12 * co2
-    ci = 0.7 * CA_REF * 2.0 ** co2  # the CO2 index is ~log2 of CO2 against today's
+    ci = CI_REF * 2.0 ** co2  # the CO2 index is ~log2 of CO2 against today's
+    kp[:, 16] *= 2.0 ** co2  # water-use efficiency ~ Ca
     res = np.zeros((8, NP, n))
     gmon = np.zeros((2, 12, n))
     lai = np.zeros((NP, n)) if lai0 is None else np.asarray(lai0, float)

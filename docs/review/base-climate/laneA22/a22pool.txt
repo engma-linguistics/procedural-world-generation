@@ -1,0 +1,24 @@
+main passes: main 20/24 main_eps 16/24 main_epsm 16/24
+A22 passes: a22 20/24 a22_eps 20/24 a22_epsm 19/24
+
+mean over 72 worlds        main      A22
+F                        -0.050   -0.098
+F_all_lo_free            +0.118   +0.092
+F_all_lo_snow            -0.001   -0.002
+F_all_hi_snow            -0.164   -0.173
+F_all_hi_free            -0.003   -0.015
+F_loss_snow              -0.152   -0.159
+F_gain_free              +0.089   +0.068
+F_rest_free              +0.068   +0.057
+dtree_lo40               +1.823   +1.017
+dtree_hi40               -5.466   -5.860
+run_dT                   +4.530   +4.085
+snow0_land               +0.128   +0.120
+tree0_lo40              +11.570  +13.442
+tree0_hi50              +17.682  +16.480
+co2                      +0.529   +0.389
+
+per draw, F below 40 deg (snow-free) and F, main / A22:
+  fdiag_a22        lo +0.116 / +0.088   F -0.069 / -0.103
+  fdiag_a22_eps    lo +0.120 / +0.090   F -0.036 / -0.105
+  fdiag_a22_epsm   lo +0.117 / +0.099   F -0.045 / -0.086

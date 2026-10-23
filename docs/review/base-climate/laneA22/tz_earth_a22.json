@@ -1,0 +1,119 @@
+{
+ "cooling_c": 6.22,
+ "cycle_kyr": [
+  108.5,
+  98.5,
+  107.5,
+  99.5,
+  107.0
+ ],
+ "backstops": 0,
+ "glacials": [
+  {
+   "end_t": 79.0,
+   "max_t": 68.0,
+   "max_m": -81.7,
+   "ig_before_m": 0.0,
+   "back_15kyr_m": 57.8,
+   "give_back": 0.71
+  },
+  {
+   "end_t": 187.5,
+   "max_t": 154.0,
+   "max_m": -80.1,
+   "ig_before_m": -18.7,
+   "back_15kyr_m": 50.7,
+   "give_back": 0.83
+  },
+  {
+   "end_t": 286.0,
+   "max_t": 270.0,
+   "max_m": -101.0,
+   "ig_before_m": -3.0,
+   "back_15kyr_m": 83.6,
+   "give_back": 0.85
+  },
+  {
+   "end_t": 393.5,
+   "max_t": 386.0,
+   "max_m": -95.9,
+   "ig_before_m": -9.6,
+   "back_15kyr_m": 57.7,
+   "give_back": 0.67
+  },
+  {
+   "end_t": 493.0,
+   "max_t": 478.0,
+   "max_m": -98.5,
+   "ig_before_m": -5.8,
+   "back_15kyr_m": 68.7,
+   "give_back": 0.74
+  },
+  {
+   "end_t": 600.0,
+   "max_t": 592.0,
+   "max_m": -97.8,
+   "ig_before_m": -19.1
+  }
+ ],
+ "interglacial_ice_pct": [
+  12.3,
+  9.9,
+  11.7,
+  10.4,
+  13.0
+ ],
+ "start_ice_pct": 9.6,
+ "min_m": -101.0,
+ "mean_m": -45.1,
+ "laurentide": {
+  "t": 270.0,
+  "min_lat": 38.0,
+  "south_50_mkm2": 1.58,
+  "area_mkm2": 10.72
+ },
+ "budget_m": {
+  "smb": 8360.3,
+  "calved": 8280.3,
+  "shelf_melt": 1457.8
+ },
+ "runtime_s": 112.0,
+ "pass": {
+  "cycles": true,
+  "maxima": true,
+  "cooling": false,
+  "give_back": true,
+  "ig_ice": false
+ },
+ "params": {},
+ "veg_glacial": {
+  "glacial": {
+   "frames": 83,
+   "forest_share_by_lat": {
+    "60..90": 0.011,
+    "50..60": 0.337,
+    "40..50": 0.511,
+    "30..40": 0.194,
+    "15..30": 0.071,
+    "-15..15": 0.279,
+    "-40..-15": 0.169,
+    "-90..-40": 0.36
+   },
+   "refugia_cells": 1046,
+   "refugia_mkm2": 12.73
+  },
+  "interglacial": {
+   "frames": 59,
+   "forest_share_by_lat": {
+    "60..90": 0.263,
+    "50..60": 0.693,
+    "40..50": 0.643,
+    "30..40": 0.196,
+    "15..30": 0.068,
+    "-15..15": 0.428,
+    "-40..-15": 0.121,
+    "-90..-40": 0.64
+   }
+  }
+ }
+}
