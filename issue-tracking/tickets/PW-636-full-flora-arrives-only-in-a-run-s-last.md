@@ -40,5 +40,6 @@ level is fixed or if late-run geography turns out atypical.
 - [ ] owner picks an option
 
 ## Updates
+- 2026-10-23: Held branch worktree-agent-a7d7d62cbdfbcd691 (a3128cc): FLORA_PACE 0.8, C4 at ~0.68 of the run, 63-92 candidate frames. Health quick deepens icehouses (29 -> 43%); to be re-measured on top of PW-646 C (which amplifies sink-side changes ~29%) and PW-643's harness. Merge order: A20, then A22+C, then this.
 - 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: option 2, compress the flora timeline under the presumption that a world's starting point is much earlier: C4 grasses and succulents at ~66% of the run instead of ~94%, the other groups earlier in proportion. Changes simulate outputs: serial physics lane.
 - 2026-10-23: Created from inbox draft draft-flora-arrives-late-in-runs.md (found by pw634-bug-hunt).

@@ -1,4 +1,5 @@
 ---
+id: PW-655
 title: "Lineages preset: how strongly should the true giants be bound to their country? (pull 0.85, strict)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-preset-lane
 blocked_by: []
 relates: [PW-635]
 refs: [planet/lineages/samples/dnd.toml, planet/lineages/history.py, "run e8cc18"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
 - **C:** a per-line population-density or roaming-area knob, the owner's later idea. Rarity would come from density rather than from cutting the habitat. That is for the later lane.
 
 Frost giants are the largest of the giants: polar land has few rivals.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-giant-land-use-strength.md (found by lineages-preset-lane).
