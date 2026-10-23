@@ -2,7 +2,7 @@
 id: PW-347
 title: "Vegetation fire: boreal forest burns every ~380 yr (observed ~50-200); short fire seasons get little from GlobFIRM's curve"
 type: task
-status: todo
+status: done
 parent: PW-184
 milestone: v2
 subsystem: surface
@@ -22,6 +22,7 @@ What to try: dry spells inside wet months (boreal fire weeks), e.g. the fire sea
 - [ ] boreal fire return ~50-200 yr on Earth's observed climate, savanna and grassland numbers unchanged
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (12e8922): crown fire for evergreen conifer stands; Earth boreal rotation 294 -> 218 yr (GFED 166-216), savanna/grassland unchanged. Off in runs (crown=False in tectonics/earth.py) until the run-physics lane takes it: PW-631.
 - 2026-10-23: soilveg lane 2: crown fire for evergreen needleleaf stands (`vegetation.CROWN_FIRE` 0.08 x fire season x their cover x ignition, added to GlobFIRM's grass-curing curve in `_step`). Earth L6 490f1c, observed climate (tools/veg_check.py): boreal rotation / median interval 294 / 382 -> 218 / 286 yr (GFED on those cells 170 / 526, on potveg boreal 216 / 561); savanna 3.82 -> 3.80, grassland 1.32 -> 1.32 Mkm2/yr, total 5.6 -> 5.7, 91 -> 90% in savanna+grassland; potveg agreement 62.1 -> 62.0%; forest >= 60% trees 46.2 -> 43.7 Mkm2. Model climate: boreal rotation 612 -> 464 yr. A dry-spell term (random rain days) was tried first and dropped (boreal 294 -> 240 yr only, temperate burning +15-30%). Follow-ups: inbox draft-veg-crown-fire-followups.md.
 - 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): vegetation fire is v2 fun work; now under PW-184.
 - 2026-10-16: Merged inbox draft draft-veg-boreal-fire-gfed-rotation.md ("Boreal fire return: GFED4.1s gives a ~170-220 yr rotation on Earth's boreal forest, not 50-200 (update for PW-347)", found by pw204-vegdata).

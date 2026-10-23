@@ -2,7 +2,7 @@
 id: PW-330
 title: Soils match SoilGrids at 44% (observed climate), short of the 50% target
 type: task
-status: todo
+status: done
 parent: PW-184
 milestone: v2
 subsystem: surface
@@ -28,6 +28,7 @@ Ideas: a soil-age term for colluvial/young hillslopes (Cambisols), a lime-accumu
 - [ ] observed-climate agreement >= 50% with sound rules, or a documented reason why not
 
 ## Updates
+- 2026-10-23: Status todo -> done. 45.0% on observed climate with documented reasons (PW-628, accepted by the coordinator); salt soils 5.0 -> 1.0%, blown sand only on flat ground, desert group 21.6 -> 17.9%.
 - 2026-10-23: soilveg lane 2: salt soils only in the cell holding the salt lake or pan (`soils.salt_near` no longer spreads to the neighbours: salt 5.0 -> 1.0% of land, SoilGrids 1.1%); blown sand (deflated or dry sandy ground, and its loose 1 m) only on flat ground (`SAND_SLOPE` 3 m/km). Earth observed: desert group 21.6 -> 17.9% (SoilGrids 14.6), young 12.2 -> 14.6% (21.9), thin 6.5 -> 6.9% (8.2); agreement 45.0 -> 45.0% (model climate 32.9 -> 32.7%). The rest has no signal at L6: inbox draft-soil-agreement-remaining.md (needs-decision). Map: docs/review/soilveg/earth_soils_pw330.png.
 - 2026-10-23: Milestone null/later -> v2 (PW-597 triage, coordinator, 2026-10-23): soils stay under PW-184 in v2.
 - 2026-10-16: Created from inbox draft draft-soil-earth-agreement.md (found by soils).
