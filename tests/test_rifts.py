@@ -85,7 +85,7 @@ def test_crust_being_stacked_is_not_rifted():
     stack = np.where(np.arange(n) % 2 == 0, 1.0, 0.0)  # km stacked this step on every other cell
     t0, rift0 = col.t.copy(), col.rec[:, record.T_RIFT].copy()
     crust.stretch(s, col, np.full(n, 0.05), np.zeros(n), np.zeros(n, bool), stack_add=stack)
-    thin = s.w_cont & (t0 > 22)
+    thin = s.w_cont & (t0 * np.exp(-0.05 * s.dt) > 22)  # (room to thin a whole step above stretch's 22 km floor)
     squeezed, free = thin & (stack > 0), thin & (stack == 0)
     assert squeezed.any() and free.any()
     assert np.array_equal(col.t[squeezed], t0[squeezed])

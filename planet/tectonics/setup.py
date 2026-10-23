@@ -13,7 +13,7 @@ from .. import kernels
 from ..noise import Perlin3D, fbm, ridged
 from ..surface import CRATON, OCEAN, OROGEN, SHALE
 from . import record
-from .isostasy import BECOMES_CONT_KM, CONT_KM, ISO_LAND, OCEAN_KM, ocean_depth, sediment_lift
+from .isostasy import BECOMES_CONT_KM, CONT_KM, OCEAN_KM
 from .plates import CMYR
 
 
@@ -28,6 +28,22 @@ from .plates import CMYR
 # rifting is two to three times as frequent as later and the floor young, so the later ocean read
 # -100..-350 m of sea; PW-549. Before PW-293: 180, mean 60, ranked over all cells.)
 OCEAN_MAX_AGE = 162.0
+
+# The continents start mature: with the relief and the sediment a run's continents have once it has settled, not a
+# made-up low plain that the first collisions take 200-600 Myr to raise (the ice-free land then eroded at ~25% of
+# its later rate, and the CO2 thermostat's kept balance read the rise as a lasting cooling: PW-576). Measured, not
+# derived, like OCEAN_MAX_AGE: the run's own continents over 300-1000 Myr (snapshots at 300, 600 and 1000 Myr of
+# 10 L6 seeds, 2026-10-22), where the distribution is already steady (sd 9.4-9.7 km at each time).
+# Percentiles (MATURE_Q) of the continental crust's thickness about its mean, km: thin stretched margins and their
+# sediment wedges below, old high belts and plateaus above (the top 10% stand ~1.7-7 km up; they are old crust
+# inside the continents, 70-90% of it more than 5 cells from any converging boundary, which the slow wear of high
+# old ground leaves standing).
+MATURE_Q = np.array([0, 1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100], float)
+MATURE_DTHICK = np.array([-34.8, -22.6, -20.9, -17.8, -14.0, -6.6, -2.0, 0.0, 1.0, 2.1, 3.4, 5.3, 9.7, 15.4, 22.9,
+                          26.9, 49.1])
+# ...and the median sediment cover, km, in each tenth of that thickness ranking (thinnest first): rivers carry the
+# high ground's sediment to the low, so the margins' wedges are thick and the highest tenths mostly bare rock.
+MATURE_COVER = np.array([16.8, 12.75, 7.91, 1.19, 0.44, 0.21, 0.14, 0.03, 0.0, 0.0])
 
 
 def initial_state(sim):
@@ -106,26 +122,37 @@ def initial_state(sim):
     q = (np.argsort(np.argsort(nz_age[sea], kind="stable"), kind="stable") + 0.5) / len(sea)
     age = np.zeros(n)
     age[sea] = OCEAN_MAX_AGE * (1 - np.sqrt(q))
-    elev = np.where(cont, base + old_mtn, ocean_depth(age))
-    thick = np.where(cont, np.maximum(CONT_KM + (elev - 250) / ISO_LAND, BECOMES_CONT_KM + 1), OCEAN_KM)
+    # The continents' pattern: low at the coast, a few hundred m up inland, old belts along the ridged noise. Its
+    # ranking takes the long-run run's thickness distribution (MATURE_DTHICK): the coast's thin stretched margins,
+    # the interiors' lowlands, the belts' highlands.
+    pattern = base + old_mtn
+    rank = np.zeros(n)
+    cc = np.flatnonzero(cont)
+    rank[cc] = (np.argsort(np.argsort(pattern[cc], kind="stable"), kind="stable") + 0.5) / len(cc)
+    dthick = np.interp(100 * rank, MATURE_Q, MATURE_DTHICK)
+    thick = np.where(cont, np.maximum(CONT_KM + dthick, BECOMES_CONT_KM + 1), OCEAN_KM)
     # What the planet's unsimulated early history leaves behind: ancient
     # cratons deep inside the continents, wrapped in old mountain belts,
-    # partly under a blanket of flat-lying sediment.
+    # partly under a blanket of flat-lying sediment: thick in the margins'
+    # wedges and the lowlands' basins, patchy on the uplands, and gone from
+    # most of the highest ground (MATURE_COVER, by the same ranking).
     core = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=2.0)
     craton = cont & (dist >= 2 * sim.scale) & (core > -0.05)
     rock = np.where(craton, CRATON, np.where(cont, OROGEN, OCEAN)).astype(np.uint8)
     blanket = fbm(Perlin3D(int(rng.integers(2**31))), x, octaves=4, freq=3.0)
-    cover = np.where(cont, np.clip(1.5 * blanket + 0.6, 0, 3) + np.where(inland < 1, 1.5, 0), 0)
-    # (sediment is lighter than crust: the same ground needs less of it)
-    thick = np.where(cont, np.maximum(thick - sediment_lift(cont, rock, cover) / ISO_LAND, BECOMES_CONT_KM + 1), thick)
+    level = np.interp(rank, (np.arange(10) + 0.5) / 10, MATURE_COVER)
+    cover = np.where(cont, np.minimum(level * np.clip(1 + 3 * blanket, 0, 2), 0.8 * thick), 0)
+    # (the thickness above is the whole column, cover included, as the run's measured one is; its sediment's
+    # lightness, isostasy.sediment_lift, is part of the height it gives)
     # The continents start with the mean thickness the volume thermostat
-    # holds (continental_thickness): the relief above sets the pattern, a
-    # uniform shift its mean. (The relief alone gave ~37 km, 6% more crust
+    # holds (continental_thickness): the ranking above sets the pattern, a
+    # uniform shift its mean. (The old made-up relief gave ~37 km, 6% more crust
     # than the target: the run spent its first ~250 Myr shedding it, and the
     # thermostat's integral term, wound up meanwhile, held arcs back long
     # after, so every run lost 8-13% of its crust volume: PW-046.)
-    shift = thick[cont].mean() - p.continental_thickness
-    thick = np.where(cont, np.maximum(thick - shift, BECOMES_CONT_KM + 1), thick)
+    for _ in range(4):  # (a few times: the floor takes back part of each shift on the thinnest margins)
+        shift = thick[cont].mean() - p.continental_thickness
+        thick = np.where(cont, np.maximum(thick - shift, BECOMES_CONT_KM + 1), thick)
     # Continental rock ages from the unsimulated past (own random stream,
     # so adding this didn't change the rest of the set-up): shields
     # 1.5-3.5 Gyr, the belts around them 0.3-1.4 Gyr.
