@@ -2051,10 +2051,35 @@ function renderRunSummary() {
 // today's Earth), with the geology frozen. Its summary has the sea-level curve.
 function timeLabel(t) {
   if (!V.tz) return `${t} Myr`;
+  if (V.run.meta.phase) return agoLabel(t);  // recent pass and lineages (planet/lineages/): kyr before the present
   return V.tzEarth ? `+${t} kyr from today` : `+${t} kyr`;
 }
 
+// Recent passes and lineage histories (planet/lineages/, docs/proposals/lineages.md) are time-zoom
+// runs with meta.phase and time in kyr before the present (t <= 0).
+function agoLabel(t) {
+  const a = -t;
+  if (a <= 0) return 'present';
+  if (a >= 1000) return `${+(a / 1000).toFixed(a >= 10000 ? 0 : 1)} Myr ago`;
+  return a >= 10 ? `${+a.toFixed(1)} kyr ago` : `${Math.round(a * 1000)} years ago`;
+}
+function phaseSummary() {
+  const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
+  const sign = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d);
+  const what = m.phase === 'recent' ? `recent pass (${m.kyr} kyr at ${m.step_kyr * 1000}-year steps)` : 'peoples and their history';
+  const tzl = m.timezoom ? `<a href="?run=${m.timezoom}&t=${m.now_kyr}" data-run="${m.timezoom}" data-t="${m.now_kyr}">time zoom ${m.timezoom} @ +${m.now_kyr} kyr</a>` : '';
+  const remake = m.phase === 'recent' ? `uv run python -m planet recent ${m.timezoom} --now ${m.now_kyr} --kyr ${m.kyr}`
+    : `uv run python -m planet lineages ${m.world || m.timezoom} --tree ${m.tree_file || '<tree.toml>'}`;
+  const stat = s.sea_level_change_m != null ? `sea level ${sign(s.sea_level_change_m)} m vs the time zoom's start · land ice on ${s.ice_pct}% of the surface` : '';
+  return `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${what} · ${m.cells} cells · made ${m.created}</span><br>
+    <b>${agoLabel(V.t)}</b>${s.variability_c != null ? ` · centennial anomaly ${sign(s.variability_c, 2)} °C` : ''}<br>${stat}<br>
+    ${m.phase === 'lineages' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
+    <span class="muted">Present = </span>${tzl}${m.world ? ` (finished world <a href="?world=${m.world}.json" data-world="${m.world}.json">${m.world}</a>)` : ''}<br>
+    <span class="muted">Remake:</span> <code>${remake}</code>`;
+}
+
 function timezoomSummary() {
+  if (V.run.meta.phase) return phaseSummary();
   const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
   const when = V.tzEarth ? `<b>+${V.t} kyr</b> from today's Earth`
     : `<b>+${V.t} kyr</b> after ${m.source_name} @ ${m.at_myr} Myr`;
