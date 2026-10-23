@@ -30,4 +30,14 @@ The lineages lane works around it rather than stretching noise: a living good on
 - [ ] grazing on the L7 steppes comparable to 119973's
 
 ## Updates
+- 2026-10-23: Root cause found (bug-hunt lane): not stale worlds and not a vegetation bug. Each world's PFTs
+  are exactly `vegetation.unlocked_at(run plant_groups, t)` with current code: the plant groups appear late in a
+  run (flowering trees/shrubs at ~0.73, grasses ~0.85, C4 ~0.94 of the span; 1 Gyr runs reach full flora at
+  772-876 Myr), and `highlights.representative_time` (`--at auto`, `planet make`) ignored them, picking 308-748 Myr.
+  Fix: `representative_time(..., plant_groups=)` picks only among frames once the last group has appeared
+  (medians still the whole stretch's); make and `--at auto` pass the run's groups. simulate outputs unchanged.
+  Worlds with <19 PFTs (need re-slicing at a new pick, coordinator): 6 PFTs 1144ce 3e0b0a 31926a 7082f5 81aced
+  a5a387 c00ebf 28442c; 17 (no C4G/Succ) 91448a 607540. New picks: 1112ef 844, 6a0029 896, 396621 936,
+  f9e085 960, 172922 996, 343058 956, 2b0b65 920, 0ecb0d 856, bf5ee9 1636 Myr. Trade-off filed as a draft
+  (draft-flora-arrives-late-in-runs.md).
 - 2026-10-23: Created from inbox draft draft-l7-worlds-have-no-grasses.md (found by lineages-lane-4).
