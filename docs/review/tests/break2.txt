@@ -1,0 +1,47 @@
+219c219
+<         dF = np.where(open_ & self.land0, -self.p.veg_toa * (da * self.sun).mean(0), 0.0)  # W/m2 per cell
+---
+bringing up nodes...
+bringing up nodes...
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_glacial_cooling_turns_forest_to_tundra_and_cools_further _________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/ms/wt_main/.venv/bin/python
+sources4 = [(1, {'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 1, 'level': 4, ...}), (2, {'source_run': 'si... 'level': 4, ...}), (6, {'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 6, 'level': 4, ...}), ...]
+tests/test_timezoom.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+name = 'forest to tundra'
+rows = [(1, False, {'run_dT': 5.100946447190564, 'lost': 48, 'cooling': -0.3171518185535533, 'F_wm2': 0.038, ...}), (2, False.....}), (6, False, {'run_dT': 7.939506564624834, 'lost': 43, 'cooling': -0.32095635972549696, 'F_wm2': 0.006, ...}), ...]
+rate = 0.7
+tests/seeds.py:85: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+----------------------------- Captured stdout call -----------------------------
+forest to tundra: 4 of 24 seeds pass (bar 17)
+  seed   1: FAIL  run_dT=5.1  lost=48  cooling=-0.317  F_wm2=0.038  dT_target=0.0301
+  seed   2: FAIL  run_dT=3.23  lost=73  cooling=-0.308  F_wm2=0.163  dT_target=0.131
+  seed   3: FAIL  run_dT=4.32  lost=68  cooling=-0.383  F_wm2=0.207  dT_target=0.165
+  seed   4: FAIL  run_dT=4.38  lost=51  cooling=-0.381  F_wm2=0.119  dT_target=0.0949
+  seed   5: pass  run_dT=12.3  lost=12  cooling=-0.267  F_wm2=-0.221  dT_target=-0.177
+  seed   6: FAIL  run_dT=7.94  lost=43  cooling=-0.321  F_wm2=0.006  dT_target=0.00453
+  seed   7: FAIL  run_dT=0.745  lost=78  cooling=-0.348  F_wm2=0.218  dT_target=0.174
+  seed   8: FAIL  run_dT=1.37  lost=51  cooling=-0.427  F_wm2=0.184  dT_target=0.147
+  seed   9: FAIL  run_dT=1.85  lost=45  cooling=-0.333  F_wm2=0.009  dT_target=0.00754
+  seed  10: FAIL  run_dT=3.09  lost=63  cooling=-0.31  F_wm2=0.045  dT_target=0.0364
+  seed  11: pass  run_dT=6.23  lost=35  cooling=-0.277  F_wm2=-0.025  dT_target=-0.0196
+  seed  12: FAIL  run_dT=4.01  lost=77  cooling=-0.278  F_wm2=0.08  dT_target=0.0642
+  seed  13: FAIL  run_dT=-2.06  lost=67  cooling=-0.35  F_wm2=0.195  dT_target=0.156
+  seed  14: FAIL  run_dT=3.63  lost=48  cooling=-0.264  F_wm2=0.038  dT_target=0.0302
+  seed  15: pass  run_dT=10.6  lost=20  cooling=-0.204  F_wm2=-0.181  dT_target=-0.145
+  seed  16: pass  run_dT=6.06  lost=17  cooling=-0.321  F_wm2=-0.096  dT_target=-0.0768
+  seed  17: FAIL  run_dT=3.27  lost=82  cooling=-0.229  F_wm2=0.131  dT_target=0.105
+  seed  18: FAIL  run_dT=4.06  lost=58  cooling=-0.259  F_wm2=0.104  dT_target=0.0836
+  seed  19: FAIL  run_dT=0.994  lost=59  cooling=-0.384  F_wm2=0.163  dT_target=0.13
+  seed  20: FAIL  run_dT=3.32  lost=45  cooling=-0.311  F_wm2=0.064  dT_target=0.0513
+  seed  21: FAIL  run_dT=4.32  lost=79  cooling=-0.302  F_wm2=0.099  dT_target=0.0795
+  seed  22: FAIL  run_dT=8.3  lost=46  cooling=-0.28  F_wm2=0.026  dT_target=0.0207
+  seed  23: FAIL  run_dT=6.69  lost=39  cooling=-0.333  F_wm2=0.079  dT_target=0.0631
+  seed  24: FAIL  run_dT=2.92  lost=78  cooling=-0.327  F_wm2=0.217  dT_target=0.174
+----------------------------- Captured stderr call -----------------------------
+=========================== short test summary info ============================
+FAILED tests/test_timezoom.py::test_glacial_cooling_turns_forest_to_tundra_and_cools_further
+1 failed in 49.00s

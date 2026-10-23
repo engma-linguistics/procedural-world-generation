@@ -1,0 +1,46 @@
+117c117
+<                 x = max(x - step / p.end_kyr, 0.0)
+---
+bringing up nodes...
+bringing up nodes...
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_glacials_grow_ice_and_endings_melt_it_fast ________________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/ms/wt_main/.venv/bin/python
+sources4 = [(1, {'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 1, 'level': 4, ...}), (2, {'source_run': 'si... 'level': 4, ...}), (6, {'source_run': 'sim', 'source_name': 'in-memory simulation', 'seed': 6, 'level': 4, ...}), ...]
+tests/test_timezoom_cycle.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+name = 'glacial endings'
+rows = [(1, False, {'run_dT': 5.100946447190564, 'ending_kyr': 78.5, 'extra_m': 51.400000000000006, 'left_m': 27.52}), (2, Fa... 'left_m': 6.55}), (6, True, {'run_dT': 7.939506564624834, 'ending_kyr': 79.0, 'extra_m': 21.52, 'left_m': 6.14}), ...]
+rate = 0.7
+tests/seeds.py:85: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+----------------------------- Captured stdout call -----------------------------
+glacial endings: 2 of 24 seeds pass (bar 17)
+  seed   1: FAIL  run_dT=5.1  ending_kyr=78.5  extra_m=51.4  left_m=27.5
+  seed   2: FAIL  run_dT=3.23  ending_kyr=79  extra_m=87.2  left_m=88.9
+  seed   3: FAIL  run_dT=4.32  ending_kyr=79  extra_m=79.7  left_m=67
+  seed   4: FAIL  run_dT=4.38  ending_kyr=79  extra_m=43.2  left_m=45.4
+  seed   5: FAIL  run_dT=12.3  ending_kyr=79.5  extra_m=3.79  left_m=6.55
+  seed   6: pass  run_dT=7.94  ending_kyr=79  extra_m=21.5  left_m=6.14
+  seed   7: FAIL  run_dT=0.745  ending_kyr=79  extra_m=132  left_m=160
+  seed   8: FAIL  run_dT=1.37  ending_kyr=78  extra_m=70.5  left_m=86.6
+  seed   9: FAIL  run_dT=1.85  ending_kyr=79  extra_m=44.6  left_m=56.1
+  seed  10: FAIL  run_dT=3.09  ending_kyr=77.5  extra_m=55.9  left_m=72.9
+  seed  11: FAIL  run_dT=6.23  ending_kyr=79  extra_m=26.9  left_m=16.4
+  seed  12: FAIL  run_dT=4.01  ending_kyr=79  extra_m=87.7  left_m=59
+  seed  13: FAIL  run_dT=-2.06  ending_kyr=78  extra_m=107  left_m=140
+  seed  14: FAIL  run_dT=3.63  ending_kyr=79  extra_m=36.3  left_m=22.9
+  seed  15: FAIL  run_dT=10.6  ending_kyr=79.5  extra_m=7.95  left_m=8.67
+  seed  16: FAIL  run_dT=6.06  ending_kyr=79  extra_m=6.52  left_m=5.09
+  seed  17: pass  run_dT=3.27  ending_kyr=79  extra_m=66.8  left_m=21.7
+  seed  18: FAIL  run_dT=4.06  ending_kyr=78  extra_m=33.3  left_m=44.5
+  seed  19: FAIL  run_dT=0.994  ending_kyr=79  extra_m=43.4  left_m=48.2
+  seed  20: FAIL  run_dT=3.32  ending_kyr=79  extra_m=42  left_m=58.4
+  seed  21: FAIL  run_dT=4.32  ending_kyr=77.5  extra_m=76.4  left_m=70
+  seed  22: FAIL  run_dT=8.3  ending_kyr=79.5  extra_m=29.2  left_m=31.9
+  seed  23: FAIL  run_dT=6.69  ending_kyr=77.5  extra_m=23.7  left_m=28.3
+  seed  24: FAIL  run_dT=2.92  ending_kyr=78.5  extra_m=81.8  left_m=58.4
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+1 failed in 79.09s (0:01:19)
