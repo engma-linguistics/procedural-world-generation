@@ -1,7 +1,74 @@
-# Multi-seed time-zoom fixtures (proposal for PW-623, PW-638, PW-640)
+# Multi-seed time-zoom fixtures (PW-623, PW-638, PW-640; adopted by PW-643 and PW-645)
 
-Branch `worktree-agent-acfa88d756b0677df`, on main 86d3806. **Not merged: the owner decides** (inbox draft
-`draft-multiseed-fixtures.md`). Only `tests/` changes. No assertion or threshold inside a per-seed check changed.
+The owner's rulings of 2026-10-24 are applied on branch `worktree-agent-ad946bcdcf3b84ccf` (main 9b30887 plus the
+proposal branch `worktree-agent-acfa88d756b0677df`). The next section covers what changed and the new measurements.
+The sections after it are the original proposal, kept as written. Where they say 70% for the L4 tests, or that every
+seed is eligible for the forest test, the adopted rules below replace them.
+
+## Adopted (rulings of 2026-10-24)
+
+**The rules (code in `tests/seeds.py`, `tests/test_timezoom.py`, `tests/test_timezoom_cycle.py`,
+`tests/test_timezoom_consistency.py`). Every per-seed assertion is unchanged.**
+
+- **L4 bar (PW-643):** `PASS_RATE_L4 = 0.5` for the forest-to-tundra and endings tests. The bar is ceil(0.5 n) of the
+  n eligible seeds. Main's measured rates are about 72% (forest, all worlds) and 69% (endings), so a re-rolled draw of
+  main stays green. The deliberate breaks give 0-4 of 24.
+- **L5 drift tests:** `PASS_RATE = 0.7` on the plausible seeds with sheets, as proposed. `MIN_SHEETED = 5` is kept.
+- **Index zero (my call, per the owner's delegation):** `test_ice_at_index_zero_is_the_runs` now makes two checks.
+  - `glacial_index == 0` on every frame, at **rate 1.0 on every plausible seed**, sheets or not. With no orbital
+    swing, `cycle.Index` returns before it builds anything (`span < 1e-3`), so the index depends on the orbit alone,
+    not on the world's draw. If one world breaks it, that is a real break, not bad luck, and it no longer hides under
+    a 70% bar.
+  - The sea level's drift (`abs(...) < 25`) is a property of the world. It is checked at 70% on the sheeted seeds, as
+    before.
+- **Forest eligibility (PW-645, option A):** a seed is eligible when the start's forest poleward of 40 deg (the test's
+  own band) lies under snow at least **a season of the year**. The measure is `_boreal_snow`: the tree-weighted mean
+  over that forest of the start's `climate.snow_cover`, averaged over the 12 months, with `SEASON = 3/12`.
+  - It is the owner's suggestion, "boreal forest over seasonal snow", made exact. The only number is "a season", a
+    quarter of the year.
+  - It is the planet's own snow and forest, so it is planet-relative.
+  - It is read right after the start step, before the cooling and before any assertion. It never reads F.
+  - An ineligible seed raises `seeds.Ineligible` and is listed as `n/a`, not counted.
+- **`PW_SEED_OFFSET`:** builds every multi-seed run with `climate_offset` set to that many C. It is lane A21's null
+  re-roll, used for the draws below. It is 0 in the suite.
+
+**Why this eligibility rule** (`eligibility_metrics.py`, `eligibility_table.py`, `eligibility.txt`; main's 120 L4
+worlds: seeds 1-24 in three draws, plus seeds 25-72):
+
+| rule | eligible pass | ineligible pass | number in it |
+|---|---|---|---|
+| boreal forest under snow >= a season (adopted) | 78 / 98 | 9 / 22 | a season (3/12) |
+| snow cover on open land >= 0.12 (A21) | 56 / 60 | 31 / 60 | 0.12, fitted |
+| run dT <= +5 C | 73 / 85 | 14 / 35 | +5, fitted, not planet-relative |
+
+The adopted rule separates less sharply than A21's snow cover. It is the only one whose number is not fitted to the
+outcome. At a 50% bar on the 17-21 eligible seeds per draw, its ~80% eligible pass rate is far from the bar (draft
+`draft-forest-eligibility-sharper-rule.md` for a sharper, still number-free rule).
+
+**Main 9b30887 + these tests, three draws of the worlds** (the three modules, `-n 2`, `PW_SEED_WORKERS=4`):
+
+| draw (climate_offset) | forest (eligible; bar) | endings (bar 12) | sheeted (need 5) | speeds | index 0 (all plausible) | drift | verdict |
+|---|---|---|---|---|---|---|---|
+| 0 | 19 / 21 (11) | 18 / 24 | 7 of 14 | 7 / 7 | 14 / 14 | 7 / 7 | green |
+| +0.001 | 13 / 18 (9) | 19 / 24 | 10 of 13 | 10 / 10 | 13 / 13 | 9 / 10 | green |
+| -0.001 | 14 / 18 (9) | 19 / 24 | 5 of 10 | 5 / 5 | 10 / 10 | 5 / 5 | green |
+
+The -0.001 draw's sheeted count sits exactly on `MIN_SHEETED` (draft `draft-min-sheeted-at-mains-tail.md`).
+
+**Held physics branches** (each is main + the branch's `planet/` diff + these tests; 2 draws):
+
+@@HELD@@
+
+**Regression demonstration** (`breaks.sh` on an export of this branch; `break1.txt`-`break3.txt`):
+
+@@BREAKS@@
+
+**Suite:** @@SUITE@@
+
+# The original proposal
+
+Branch `worktree-agent-acfa88d756b0677df`, on main 86d3806. Only `tests/` changes. No assertion or threshold inside a
+per-seed check changed.
 
 ## What it does
 
