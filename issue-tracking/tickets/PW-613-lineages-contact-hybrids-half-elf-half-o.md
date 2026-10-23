@@ -1,4 +1,5 @@
 ---
+id: PW-613
 title: "Lineages: contact hybrids (half-elf, half-orc) are lost when their parents stop meeting"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane-3
 blocked_by: []
 relates: [PW-598]
 refs: [planet/lineages/history.py, "peoples runs 3cf7fe (1144ce), 5cdd4a (3e0b0a)"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Options:
 - C: a stronger lost penalty, or more tries.
 
 Lean: B. A half-elf people that outlives the contact is plausible and game-useful.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-contact-hybrids-lost.md (found by lineages-lane-3).

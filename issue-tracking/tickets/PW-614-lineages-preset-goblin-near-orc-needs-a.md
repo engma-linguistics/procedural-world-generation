@@ -1,4 +1,5 @@
 ---
+id: PW-614
 title: "Lineages preset: 'goblin near orc' needs a shared country; the dnd niches have none"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane-3
 blocked_by: []
 relates: [PW-604, PW-601]
 refs: [planet/lineages/samples/dnd.toml, docs/review/lineages/showcase-3.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Options:
 - C: widen the goblins' rain range down to ~800 mm, so they can live in seasonal forest next to steppe.
 
 Lean: B. It matches the usual D&D pairing of hobgoblin and orc armies, and geography meets it without forcing.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-goblin-orc-niches.md (found by lineages-lane-3).
