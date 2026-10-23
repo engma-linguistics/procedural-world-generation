@@ -213,7 +213,7 @@ def _bare(mo, temp, elev, rock, landform, soil=None) -> np.ndarray:
 
 def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_jul, p_jan, nu, cover, tree,
             ice=None, lake_kind=None, rock=None, landform=None, wet=None, soil=None, tilt: float = 23.4,
-            mo: dict | None = None, coastal: dict | None = None) -> np.ndarray:
+            mo: dict | None = None, coastal: dict | None = None, landuse: dict | None = None) -> np.ndarray:
     """Linear-light colours (n, 3) of month (0 = January ... 11) for n places.
     water: 0 land, 1 sea, 2 lake; elev: ground (sea and lake floors
     included), m; lake_depth: m; temp, t_warm, t_cold: annual, warmest and
@@ -224,7 +224,8 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     landform: class ids; soil: soils.TYPES ids (bare ground takes their colour); wet: flooded share (0..1). mo: climate.months of
     these places, when the caller has it. coastal: coastal life's shares
     (0..1; coastal.py) "reef", "kelp", "seagrass" (sea), "mangrove",
-    "salt_marsh" (land)."""
+    "salt_marsh" (land). landuse: the peoples' land use of a zoom (zoom_peoples.py, PW-667): "use" (ids 0 wild, 1
+    cropland, 2 pasture, 3 burned grass, 4 managed woods, 5 settlement) and "tone" (0..1 per field parcel)."""
     n = len(lat)
     if mo is None:
         mo = climate.months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt)
@@ -250,6 +251,8 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
             col = _mix(dormant, green, g[i])
         veg += (nu[i] / tot)[:, None] * col
     c = _mix(c, veg, np.clip(cover, 0, 1) * (nu.sum(0) > 0.01))
+    if landuse is not None:
+        c = _landuse(c, landuse, g, cold, t_m, water)
     if wet is not None:
         c = _mix(c, lin(WETLAND), 0.35 * np.clip(wet, 0, 1))
     cz = {k: np.clip(np.asarray(v, float), 0, 1) for k, v in (coastal or {}).items()}
@@ -300,6 +303,32 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
         frozen = _smooth(climate.FREEZE + 1.0, climate.FREEZE - 3.0, t_m)
         sc = _mix(sc, _mix(lin(SEA_ICE), lin(SNOW), 1 - np.exp(-swe / SNOW_SWE)), frozen)
         c = np.where(sea[:, None], sc, c)
+    return c
+
+
+# the peoples' land use on a zoom (zoom_peoples.py, PW-667): fields (plough, crop, stubble), pasture, burned ground, villages
+FIELD = {"plough": "#8c6d4b", "crop": "#a3b24a", "ripe": "#d3b45c"}
+PASTURE_COL = ("#8f9a5a", "#a9bf62")  # (dormant, growing)
+BURNED_COL = "#a98a52"
+TOWN_COL = "#8d7b6a"
+
+
+def _landuse(c, lu, g, cold, t_m, water):
+    """Linear-light colours c with the cleared land painted over the plants: fields in patches (a parcel's tone: the
+    crop's stage, ploughed earth to green to ripe, winter-bare in the cold), pasture, burned grass and village ground."""
+    use, tone = np.asarray(lu["use"]), np.asarray(lu["tone"], float)
+    gc = g[V.IDX["C3G"]]  # (the growing season of grass)
+    plough = np.broadcast_to(lin(FIELD["plough"]), c.shape)
+    crop = _mix(plough, np.broadcast_to(lin(FIELD["crop"]), c.shape), _smooth(0.2, 0.55, tone))  # (each parcel's own stage)
+    crop = _mix(crop, np.broadcast_to(lin(FIELD["ripe"]), c.shape), _smooth(0.7, 0.85, tone))
+    field = _mix(_mix(plough, lin(COLD_DORMANT), 0.4), crop, _smooth(0.1, 0.6, gc))  # (the season: bare earth and stubble in the off season)
+    field = _mix(field, lin(COLD_DORMANT), 0.5 * cold)
+    past = _mix(np.broadcast_to(lin(PASTURE_COL[0]), c.shape), np.broadcast_to(lin(PASTURE_COL[1]), c.shape), gc)
+    past = _mix(past, lin(COLD_DORMANT), 0.5 * cold)
+    land = water == 0
+    for k, col, a in ((1, field, 0.85), (2, past, 0.40), (3, np.broadcast_to(lin(BURNED_COL), c.shape), 0.65),
+                      (5, np.broadcast_to(lin(TOWN_COL), c.shape), 0.7)):
+        c = _mix(c, col, a * ((use == k) & land))
     return c
 
 
@@ -359,7 +388,16 @@ COASTAL = ("reef", "kelp", "seagrass", "mangrove", "salt_marsh")  # coastal.LAYE
 ZOOM_COASTAL = {"reef": 1, "kelp": 2, "seagrass": 3, "mangrove": 4, "salt_marsh": 5}  # zoom_coastal.LIFE ids
 
 
-def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -> dict:
+def parcel_tone(ny: int, nx: int, res_km: float, parcel_km: float = 3.0) -> np.ndarray:
+    """0..1 per pixel, a fixed pseudo-random value for each parcel (square block of ~parcel_km): the patchwork of fields."""
+    k = max(1, int(round(parcel_km / res_km)))
+    r, q = np.meshgrid(np.arange(ny) // k, np.arange(nx) // k, indexing="ij")
+    h = (r * 73856093 ^ q * 19349663 ^ 0x5bd1e995) & 0xFFFFFFFF
+    h = ((h ^ (h >> 15)) * 2246822519) & 0xFFFFFFFF
+    return ((h ^ (h >> 13)) & 0xFFFF).astype(float).ravel() / 65535.0
+
+
+def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4, res_km: float = 1.0) -> dict:
     """{'jul', 'jan', 'year'}: (ny, nx, 3) uint8 unshaded colours of a zoom.
     Lz: its layers (real units; (ny, nx)); nu (NP, ny*nx): the per-pixel
     plant fractions (zoom_vegetation); lat (ny*nx,)."""
@@ -377,5 +415,6 @@ def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -
                   nu=nu, cover=f["plant_cover"].astype(float) / 100, tree=f["tree_cover"].astype(float) / 100,
                   ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"), soil=f.get("soil"), lake_kind=f.get("lake_kind"),
                   wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt,
-                  coastal={k: f["coastal_life"] == i for k, i in ZOOM_COASTAL.items()} if "coastal_life" in f else None)
+                  coastal={k: f["coastal_life"] == i for k, i in ZOOM_COASTAL.items()} if "coastal_life" in f else None,
+                  landuse={"use": f["land_use"], "tone": parcel_tone(ny, nx, res_km)} if "land_use" in f else None)
     return {k: v.reshape(ny, nx, 3) for k, v in col.items()}

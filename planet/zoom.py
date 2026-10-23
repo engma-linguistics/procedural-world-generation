@@ -164,6 +164,7 @@ from . import zoom_volcanoes as ZV
 from . import satellite as SAT
 from . import vegetation
 from . import zoom_vegetation as ZVG
+from . import zoom_peoples as ZP
 from . import zoom_coastal as ZCL
 from . import zoom_falls as ZFL
 from .geo import R_KM, latlon, xyz
@@ -1154,7 +1155,7 @@ def land_world(world: dict) -> tuple[dict, np.ndarray]:
 
 
 def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0,
-          seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print) -> dict:
+          seed: int = 1, iterations: int = 15, river_min_flow: float = 3.0, log=print, peoples: dict | None = None) -> dict:
     t0 = time.time()
     world, sunk = land_world(world)
     g, L = world["grid"], world["layers"]
@@ -3319,6 +3320,17 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     layers.update({k: v.ravel() for k, v in HU.zoom_layers(
         {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, res,
         HU.falls_pixels(stats.get("falls", []), fr, nx, ny, res)).items()})
+    # the peoples' land use (zoom_peoples, PW-667), an optional overlay: only with a peoples run (zoom(peoples=RUN))
+    peo = None
+    if peoples is not None:
+        nu_w = np.zeros((vegetation.NP, nx * ny))
+        nu_w[:, vz["idx"]] = vz["nu"]
+        peo = ZP.apply(world, fr, nx, ny, res, size_km, peoples, {k: np.asarray(v).ravel() for k, v in layers.items()}, nu_w, seed)
+        layers.update(peo["layers"])
+        layers["biome"] = vegetation.biome_of(layers["vegetation"], layers["biome"]).astype(np.uint8)
+        layers["land_use"] = peo["land_use"]
+        stats["peoples"] = peo["stats"]
+        vz["nu"] = peo["nu"][:, vz["idx"]]
     # the satellite view (satellite.py, PW-083), from each pixel's plant fractions
     nu = np.zeros((vegetation.NP, nx * ny))
     nu[:, vz["idx"]] = vz["nu"]
@@ -3326,7 +3338,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     # game attributes of the plants and soils (gameattrs.py, PW-206), from the same per-pixel fractions
     layers.update({k: v.ravel() for k, v in GA.zoom_layers(
         {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, res, pix_lat, nu, tilt).items()})
-    sat = SAT.zoom_images({k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, nu, pix_lat, tilt)
+    sat = SAT.zoom_images({k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, nu, pix_lat, tilt, res)
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "layers": {k: v.reshape(ny, nx) for k, v in layers.items()},
@@ -3463,6 +3475,8 @@ LAYER_DOC = {
                              "legend 'coastal_life'"),
     "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
+    "land_use": ("enum", "peoples' land use (zoom_peoples, PW-667; only on a zoom made with a peoples run): 0 wild, "
+                         "1 cropland, 2 pasture, 3 burned grass, 4 managed woods, 5 settlement; legend 'land_use'"),
     "valley_floor": ("enum", "fine zooms (PW-412): 0 none; an alluvial river's valley floor: 1 floodplain, 2 its "
                              "meander belt (where a migrating channel sweeps), 3 the channel on it"),
     "floor_m": ("m", "fine zooms (PW-412): the valley floor's surface (under its channel too: where a migrating "
@@ -3504,17 +3518,19 @@ LAYER_DOC = {
 
 
 def zoom_id(world_id: str, lat: float, lon: float, size_km: float, res_km: float, seed: int,
-            iterations: int = 15) -> str:
+            iterations: int = 15, peoples: str | None = None) -> str:
     key = f"{world_id}|{lat:.4f}|{lon:.4f}|{size_km:g}|{res_km:g}|{seed}"
     if iterations != 15:  # the default keeps the ids it always had
         key += f"|it{iterations}"
+    if peoples:  # (a zoom with a peoples run's land use is another zoom)
+        key += f"|peoples{peoples}"
     return hashlib.sha1(key.encode()).hexdigest()[:6]
 
 
 def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km: float, res_km: float,
-         seed: int, iterations: int = 15) -> Path:
+         seed: int, iterations: int = 15, peoples: str | None = None) -> Path:
     world_id = world_path.stem
-    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations)
+    zid = zoom_id(world_id, lat, lon, size_km, res_km, seed, iterations, peoples)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
     specs, arrays = {}, {}
@@ -3563,7 +3579,8 @@ def save(z: dict, world_path: Path, world: dict, lat: float, lon: float, size_km
                       "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
                       "formula": "elev_m = min_m + value / 65535 * (max_m - min_m)",
                       "metres_per_step": round((hi - lo) / 65535, 4)},
-        "legend": S.legends(),
+        "legend": {**S.legends(), **({"land_use": ZP.legend()} if peoples else {})},
+        **({"peoples": {"run": peoples, **z["stats"]["peoples"]}} if peoples else {}),
         "params": z["params"],
         "stats": z["stats"],
     }
@@ -3598,7 +3615,7 @@ def add_satellite(ref: str | Path) -> Path:
         meta["layers"].update(S.write_layers(d, {k: S.encode(v, specs[k]) for k, v in cl.items()}, specs))
         lay.update(cl)
     tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
-    sat = SAT.zoom_images(lay, nu, lat, tilt)
+    sat = SAT.zoom_images(lay, nu, lat, tilt, res)
     for k, img in sat.items():
         write_png(d / SAT_FILES[k], img)
     write_png(d / meta["files"]["preview"], preview({"layers": lay, "res": res, "satellite": sat}))
@@ -3666,7 +3683,7 @@ def update_index():
 
 
 def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km: float = 2.0, seed: int = 1,
-         iterations: int = 15, log=print) -> Path:
+         iterations: int = 15, log=print, peoples: str | None = None) -> Path:
     if not -90 <= lat <= 90:
         raise SystemExit("--lat must be within -90..90")
     if not 10 <= size_km <= 5000:
@@ -3678,6 +3695,9 @@ def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km
     if "rock" not in world["layers"]:
         raise SystemExit("this world has no rock/climate layers; zoom needs a world sliced from a tectonic run")
     lon = (lon + 180) % 360 - 180
-    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log)
-    with S.lock(S.zooms_dir(), zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations)):
-        return save(z, path, world, lat, lon, size_km, res_km, seed, iterations)  # (one writer per zoom folder)
+    A = ZP.load(peoples, path.stem) if peoples else None  # (a peoples run of this world: its land use, PW-667)
+    if A:
+        peoples = A["id"]
+    z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A)
+    with S.lock(S.zooms_dir(), zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples)):
+        return save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples)  # (one writer per zoom folder)

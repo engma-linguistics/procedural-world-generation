@@ -180,14 +180,14 @@ const LAYERS = [
   ['fuel', 'Fuel'], ['building', 'Building ground'], ['mud_months', 'Mud season'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'],
-  ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['coarse', 'Coarse cells'],
+  ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['land_use', 'Peoples\' land'], ['coarse', 'Coarse cells'],
 ];
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
   coastal_life: 'coastal_life', coast_type: 'coast_type', barrier_island: 'barrier_island', shore_form: 'shore_form', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
   soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
-  loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m',
+  loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m', land_use: 'land_use',
   river_nav: 'river_nav', harbour: 'harbour', pass: 'pass', fertile: 'fertile', fresh_water: 'fresh_water',
   travel: 'travel', sightline: 'sightline', grazing: 'grazing', foraging: 'foraging', timber: 'timber', fuel: 'fuel',
   building: 'building', mud_months: 'mud_months' };  // (the last two: fine zooms only)
@@ -197,7 +197,7 @@ const HU_SPARSE = ['river_nav', 'harbour', 'pass'], HU_AREA = ['fertile', 'fresh
 const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours at the coast', pass: 'mountain passes: how long they are open',
   fertile: 'farmland', fresh_water: 'fresh water within reach' };
 const COAST_SPARSE = ['coast_type', 'barrier_island', 'shore_form'];  // (zoom_coast.py, PW-097: the shore's form; barrier islands, lagoons, inlets)
-const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor', ...COAST_SPARSE,
+const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor', 'land_use', ...COAST_SPARSE,
   ...HU_SPARSE, ...HU_AREA];
 // a fine zoom's alluvial valley floors (zoom_fine_floodplain, PW-412; planet/zoom.py LAYER_DOC valley_floor)
 const VALLEY_FLOOR = [{ id: 1, name: 'floodplain', color: '#c8d77a' }, { id: 2, name: 'meander belt', color: '#e0a650' },
@@ -1113,7 +1113,7 @@ function legendFor(kind) {
   return kind === 'climate' ? lg.koppen.map((k) => ({ id: k.id, name: `${k.code} ${k.name}`, color: k.color }))
     : kind === 'biome' ? lg.biomes : kind === 'landform' ? (lg.landforms || [])
     : kind === 'vegetation' ? (lg.vegetation?.types || []) : kind === 'coastal_life' ? (lg.coastal_life || [])
-    : kind === 'valley_floor' ? VALLEY_FLOOR
+    : kind === 'valley_floor' ? VALLEY_FLOOR : kind === 'land_use' ? (lg.land_use || [])
     : kind === 'coast_type' ? (lg.coast || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
     : kind === 'barrier_island' ? (lg.barrier_island || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
     : kind === 'shore_form' ? (lg.shore_form || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
@@ -1216,7 +1216,7 @@ function renderLayer() {
       const g = 40 + 120 * s;
       c = wet === 1 ? ramp(SEA, h[i]).map((v) => v * 0.6) : wet === 2 ? [70, 130, 196] : [g, g, g];
       if (vf && vf[i] > 0) { const t = ramp(FLOOR_M, (fm[i] - lo) / (hi - lo || 1)), f = 0.7 + 0.4 * s; c = [t[0] * f, t[1] * f, t[2] * f]; }
-    } else if (k === 'coastal_life' || k === 'valley_floor' || HU_SPARSE.includes(k) || COAST_SPARSE.includes(k)) {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides; valley floors
+    } else if (k === 'coastal_life' || k === 'valley_floor' || k === 'land_use' || HU_SPARSE.includes(k) || COAST_SPARSE.includes(k)) {  // coral reef, kelp, seagrass at sea; mangrove, salt marsh between the tides; valley floors
       const v = L[k] ? L[k][i] : 0, e = lut[v];
       if (v > 0 && e) { c = e.rgb; present.set(v, (present.get(v) || 0) + 1); }
       else c = wet === 1 ? ramp(SEA, h[i]).map((x) => x * 0.7) : wet === 2 ? [70, 130, 196] : [70 + 70 * s, 68 + 70 * s, 60 + 70 * s];
@@ -1252,13 +1252,14 @@ function renderLayer() {
       + `<span class="muted">(% of the land${rare ? `; ${rare} rarer types not listed` : ''})</span>`;
   } else if (lut) {
     $('legend').innerHTML = [...present.keys()].sort((a, b) => a - b).filter((id) => lut[id])
-      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${COAST_SPARSE.includes(k) ? ` ${fmt(present.get(id) * (k === 'coast_type' ? m.res_km : m.res_km * m.res_km))} ${k === 'coast_type' ? 'km' : 'km&sup2;'}` : ''}${k === 'coastal_life' || k === 'valley_floor'
+      .map((id) => `<span><span class="sw" style="background:${lut[id].color}"></span>${lut[id].name}${COAST_SPARSE.includes(k) ? ` ${fmt(present.get(id) * (k === 'coast_type' ? m.res_km : m.res_km * m.res_km))} ${k === 'coast_type' ? 'km' : 'km&sup2;'}` : ''}${k === 'coastal_life' || k === 'valley_floor' || k === 'land_use'
         ? ` ${fmt(present.get(id) * m.res_km * m.res_km, k === 'valley_floor' ? 1 : 0)} km&sup2;`
         : k === 'river_nav' ? ` ~${fmt(present.get(id) * m.res_km)} km` : ''}</span>`).join('')
       + (HU_TEXT[k] ? `<span class="muted">(${HU_TEXT[k]}${k === 'harbour' ? '; diamonds under Overlays' : k === 'pass' ? '; bow-ties under Overlays' : ''}; hover a pixel for details)</span>` : '')
       + (k === 'coast_type' ? '<span class="muted">(the shore\'s form, from the world\'s coast classes and the zoom\'s own relief, waves, rock and coastal life: zoom_coast.py; km of band)</span>'
         : k === 'barrier_island' ? '<span class="muted">(sand islands off low barrier coasts, lagoons behind, tidal inlets between: zoom_coast.py)</span>'
         : k === 'shore_form' ? '<span class="muted">(spits built by longshore drift, beach-ridge plains, tidal flats and their channels, reefs drowned since the last lowstand: zoom_shoreforms.py)</span>' : '')
+      + (k === 'land_use' ? `<span class="muted">(the cleared land of peoples run ${state.meta.peoples?.run || ''}: fields on flat fertile ground and along rivers, pasture round them, burned grass, managed woods, villages at water; zoom_peoples.py)</span>` : '')
       + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>'
         : k === 'valley_floor' ? `<span class="muted">${present.size ? '(an alluvial river\'s valley floor: the meander belt is where its channel sweeps)' : 'no valley floors in this zoom'}</span>` : '');
   } else if (k === 'floor_m') {
