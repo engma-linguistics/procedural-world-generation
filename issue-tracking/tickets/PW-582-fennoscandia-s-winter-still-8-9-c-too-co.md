@@ -4,7 +4,7 @@ title: "Fennoscandia's winter still 8.9 C too cold after PW-575's winds: the Bar
 type: task
 status: todo
 parent: PW-470
-milestone: v2
+milestone: v1
 subsystem: climate
 effort: l
 impact: high
