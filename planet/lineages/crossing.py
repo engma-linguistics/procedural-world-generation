@@ -68,8 +68,13 @@ def modes(line: SP.Lineage, ago_kyr: float) -> list[tuple[str, float, float]]:
     return out
 
 
-def corridor(tags: dict, env: dict, flow: np.ndarray | None) -> np.ndarray:
-    """Contact value 0..1 per land cell: how easily peoples meet and live side by side there."""
+SHELF_CONTACT = 0.7  # exposed continental shelf at a low stand: flat coastal plain crossed by the rivers' lower courses
+
+
+def corridor(tags: dict, env: dict, flow: np.ndarray | None, shelf: np.ndarray | None = None) -> np.ndarray:
+    """Contact value 0..1 per land cell: how easily peoples meet and live side by side there.
+    shelf: land of this epoch that is sea at the present (the world's river field, the present's,
+    has no rivers there; the exposed shelves were low plains crossed by them: Doggerland, Beringia, Sunda)."""
     land = tags["land"]
     rain = env["precipitation"]
     trees = env.get("tree_cover", np.zeros(len(rain)))
@@ -83,6 +88,8 @@ def corridor(tags: dict, env: dict, flow: np.ndarray | None) -> np.ndarray:
         thr = np.quantile(f[land], 0.92)
         river = land & (f >= max(thr, 1e-9))
         c = np.where(river, np.maximum(c, 0.9), c)
+    if shelf is not None:
+        c = np.where(shelf & land, np.maximum(c, SHELF_CONTACT), c)
     c = np.where(trees >= 60, np.minimum(c, np.where(river | tags["coast"], 0.6, 0.25)), c)  # deep forest
     c = np.where((rain < 200) & ~river, np.minimum(c, 0.2), c)  # desert away from water
     c = np.where(tags["mountain"], np.minimum(c, np.where(river, 0.4, 0.15)), c)  # basins behind ranges

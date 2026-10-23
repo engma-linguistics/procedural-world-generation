@@ -281,3 +281,32 @@ def test_front_only_spread_equals_the_full_sweep():
         a = H.spread(p.copy(), room, enter, elev, rk, sea, land, g.nbr_off, g.nbr_idx, passes)
         b = _spread_full_sweep(p, room, enter, elev, rk, sea, land, g.nbr_off, g.nbr_idx, passes)
         assert np.array_equal(a, b)
+
+
+def test_near_wish_pulls_toward_a_shared_border(faketz):
+    """A 'near' wish pulls the habitat toward the other's border (not into its range), pulls either
+    people's origin toward the other, and the two compete less with each other."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}],
+           "wish": [{"a": "a", "b": "b", "want": "near"}]}
+    tree = SP.parse(raw)
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    ia, ib = h.idx["a"], h.idx["b"]
+    assert h.alpha[ia, ib] < H.niche_overlap(tree.lines["a"], tree.lines["b"], tree)
+    h.p = np.zeros((2, g.n))
+    h.active = {"a": True, "b": True}
+    land = ps.fields(0.0, variability=False)["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    b = H.rings(cell, land, 2, g.nbr_off, g.nbr_idx)
+    h.p[ib][b] = 0.8
+    m = h._wish_near(tree.lines["a"])
+    d = H.graph_dist(b, 100, g.nbr_off, g.nbr_idx)
+    assert np.allclose(m[b], 1.0)  # not into b's range
+    assert m[d == 1].min() > 1.4 and m[d >= 2].max() < m[d == 1].min()  # (falls off: 300 km is under a cell here)
+    h.p[ib][:] = 0
+    h.p[ia][b] = 0.8
+    mo = h._wish_near(tree.lines["b"], origin=True)  # (either people of the wish, at its origin)
+    assert mo[d == 1].min() > 2 and np.allclose(mo[b], 1.0)

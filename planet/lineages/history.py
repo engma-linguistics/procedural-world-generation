@@ -17,7 +17,7 @@ from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
 from .crossing import Crossings, corridor
-from .spread import EST, nearest_label, rings, rivals_load, spread
+from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
@@ -27,6 +27,11 @@ MIX_DROP = 0.6  # competition falls by this share by the present (from mixing_st
 ALPHA_CLOSED = 1.4  # competition in closed country (contact 0), whatever the niches: over 1, the larger excludes
 TAU_KYR = 1.0  # a people held above its competitive room declines toward it with this e-folding time
 REFUGE_MKM2 = 0.5  # ...more slowly as its range shrinks toward this (last refuges hold out: no line is pushed out)
+NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0.5 w) at the other's border, e-folding 300 km
+NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
+NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
+LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
+NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c",
            "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
@@ -213,6 +218,13 @@ class History:
                     i, j = self.idx[a.id], self.idx[b.id]
                     self.terr[i, j] = max(0.0, ALPHA_CLOSED - self.alpha[i, j]) * same_way(a, b)
         # each line's rivals: the lines whose presence enters its competition
+        for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
+            if w.want == "near" and w.a in self.idx and w.b in self.idx:
+                i, j = self.idx[w.a], self.idx[w.b]
+                f = 1 - NEAR_TOLERANCE * min(w.weight, 1.0)
+                for x, y in ((i, j), (j, i)):
+                    self.alpha[x, y] *= f
+                    self.terr[x, y] *= f
         self._chains = needs_chains(tree)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
@@ -306,7 +318,7 @@ class History:
         noise = self._noise()
         why = "habitat"
         if line.origin in ("root", "arrival"):
-            score = K * self._place_mult(line, tags) * noise
+            score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * noise
             if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
                 for h in self.tree.lines.values():
                     if h.origin == "hybrid" and line.id in h.parents:
@@ -337,7 +349,7 @@ class History:
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
             near = self._dilate(P, 4) & tags["land"]
             score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, 0)) * self._place_mult(line, tags) \
-                * self._wish_near(line) * noise * (K > 2 * EST)  # (where the founders can live)
+                * self._wish_near(line, origin=True) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
             cell = int(np.argmax(score))
@@ -398,12 +410,30 @@ class History:
                             "text": f"{line.label()} {verb[line.origin]} ({why})", "lat": self.origins[line.id]["lat"],
                             "lon": self.origins[line.id]["lon"]})
 
-    def _wish_near(self, line):
+    def _wish_near(self, line, origin=False):
+        """Adjacency wishes as a habitat (or, at an origin, a placement) multiplier.
+
+        near: a pull toward the other people's range that falls off with the distance from it,
+        x(1 + NEAR_RANGE w e^(-d / NEAR_KM)) on the habitat outside the other's range (the country
+        along its border suits the line better, against third peoples: the ranges close up to a
+        shared border instead of one people pushing into or spreading thinly inside the other's;
+        the two also compete less, NEAR_TOLERANCE, so neither displaces the other there) and x(1 + NEAR_ORIGIN w e^(-d / NEAR_ORIGIN_KM))
+        on an origin's score (a split arises on the side of its parent's range facing the other;
+        either people of the wish, whichever comes second). apart: x(1 - 0.6 w p_other) as before."""
         m = np.ones(self.grid.n)
+        g = self.grid
         for w in self.tree.wishes:
-            if w.a == line.id and w.b and self.active.get(w.b):
-                pb = self._smooth(self.p[self.idx[w.b]])
-                m = m * ((1 + w.weight * pb) if w.want == "near" else (1 - 0.6 * min(w.weight, 1) * pb))
+            other = w.b if w.a == line.id else w.a if (origin and w.b == line.id and w.want == "near") else None
+            if not other or not self.active.get(other):
+                continue
+            po = self.p[self.idx[other]]
+            if w.want == "near":
+                L = (NEAR_ORIGIN_KM if origin else NEAR_KM) / self.cell_km
+                d = graph_dist(po > EST, int(np.ceil(3 * L)), g.nbr_off, g.nbr_idx)
+                pull = np.where(d >= 1, np.exp(-(d - 1) / L), 0.0)  # (outside its range: not into it)
+                m = m * (1 + (NEAR_ORIGIN if origin else NEAR_RANGE) * w.weight * pull)
+            else:
+                m = m * (1 - 0.6 * min(w.weight, 1) * self._smooth(po))
         return m
 
     def _dilate(self, m, r):
@@ -453,7 +483,9 @@ class History:
         for si, step in enumerate(self.steps):
             env = step.get()
             tags = _tags(g, env, self._chains)
-            tags["corridor"] = corr = corridor(tags, env, self.flow if step.epoch != "deep" else None)
+            deep = step.epoch == "deep"  # (the plates have moved since: no present rivers or shelves then)
+            tags["corridor"] = corr = corridor(tags, env, None if deep else self.flow,
+                                               None if deep else env["land"] & (self.cross.label < 0))
             Ks = {}
             # events due by this step, oldest first (lines older than the history start at its first step)
             for l in L:
@@ -698,7 +730,7 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
         else:
             b = P[h.idx[w.b]] >= EST
             near = b.copy()
-            for _ in range(3):  # within 3 cells of b
+            for _ in range(max(1, int(round(NEAR_SCORE_KM / h.cell_km)))):  # within NEAR_SCORE_KM of b
                 near = near | _nbr(np.logical_or, near[g.nbr_idx], g)
             close = float(near[a].mean()) if b.any() else 0.0
             s = min(1.0, 2.5 * close) if w.want == "near" else 1.0 - close
@@ -707,7 +739,8 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
 
 
 def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: None) -> tuple[History, dict, dict]:
-    """Best of `tries` seeds by the wishes' score (one try without wishes)."""
+    """Best of `tries` seeds by the wishes' score, less LOST_PENALTY per living line lost (e.g. a contact
+    hybrid whose parents no longer meet); one try without wishes."""
     best = None
     n = tries if tree.wishes else 1
     scores = []
@@ -717,7 +750,8 @@ def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: 
         pres = present_summary(h, res["present"])
         sc = pres["wish_score"] if pres["wish_score"] is not None else 0.0
         scores.append(round(sc, 3))
-        if best is None or sc > best[2]["wish_score"] + 1e-9:
-            best = (h, res, pres)
+        key = sc - LOST_PENALTY * len(pres["lost"])  # (a try that keeps every living line is preferred)
+        if best is None or key > best[3] + 1e-9:
+            best = (h, res, pres, key)
     best[2]["tries"] = scores
-    return best
+    return best[:3]

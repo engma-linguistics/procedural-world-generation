@@ -141,3 +141,29 @@ def rivals_load(p, rows, a, t, idx, contact):
     for x in range(m):
         qa[x] += (1.0 - contact[x]) * qt[x]
     return qa
+
+
+@njit(cache=True)
+def graph_dist(mask, maxd, nbr_off, nbr_idx):
+    """Graph steps from the mask cells (0 on them), over land and sea alike; -1 beyond maxd."""
+    n = mask.shape[0]
+    d = np.full(n, -1, np.int64)
+    q = np.empty(n, np.int64)
+    h, t = 0, 0
+    for i in range(n):
+        if mask[i]:
+            d[i] = 0
+            q[t] = i
+            t += 1
+    while h < t:
+        i = q[h]
+        h += 1
+        if d[i] >= maxd:
+            continue
+        for k in range(nbr_off[i], nbr_off[i + 1]):
+            j = nbr_idx[k]
+            if d[j] < 0:
+                d[j] = d[i] + 1
+                q[t] = j
+                t += 1
+    return d
