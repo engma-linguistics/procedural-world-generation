@@ -1060,3 +1060,20 @@ Variants measured and dropped:
   - Seed 1 at 1 Gyr: ice 0.8 → 6.9%, dry 22.7 → 27.9%.
   - Seed 2: ice 4.7 → 1.8%.
   - The seeds' tectonics differ run to run at 1 Gyr, so these are noise-level, not attributable.
+
+### Checkpoint (PW-570 step 4) on stage 3 (`laneA12/checkpoint/`; measured only, the defaults are unchanged)
+| check | defaults: after PW-579 → stage 3 | honest rules: after PW-579 → stage 3 |
+|---|---|---|
+| `tests/test_timezoom_cycle.py` | 10 passed → **10 passed** | 9 passed, 1 failed → 9 passed, 1 failed (endings: 93.5 / 102.1 → 42.9 / 42.7 m) |
+| `tz_earth.py` maxima (≤ −80 m at ≤ 6 C) | −86 … −100 ok → −88 … −104 ok | −74 … −101 F → −80 … −96 F (one at −80) |
+| ... give-back ≥ 0.6 | 0.73–0.96 ok → 0.65–0.87 ok | 0.62–0.88 ok → 0.45–0.81 F |
+| ... interglacial ice 9–12% | 9.3–12.1 F → 9.8–13.3 F | 12.4–13.7 F → 13.4–14.9 F |
+| ... cooling ≤ 6 C | 6.21 F → 6.55 F | 6.21 F → 6.55 F |
+| `tz_earth.py --dt0` (area within 20%, follows the orbit) | not run | 1.37×, corr −0.25 → 1.36×, corr 0.02 (follows: F) |
+
+- Under the zoom's defaults, stage 3 keeps every cycle test green and the Earth maxima and give-back in their bars.
+- Its cooler polar summers add ~1% interglacial ice and 0.34 C of cooling.
+- Under the honest rules, the L4 endings test is still red, but much closer (43 / 43 against 94 / 102).
+- The Earth zoom's honest give-back and interglacial ice are worse, and the dT-0 run no longer follows the orbit.
+- That agrees with the earlier checkpoint: what holds the ice under the honest rules is the ice-surface air
+  (PW-569 / PW-439), which now meets cooler polar summers. So it goes back to the ice lane.

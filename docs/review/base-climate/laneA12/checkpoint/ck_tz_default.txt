@@ -1,0 +1,2 @@
+cooling 6.55 C | cycles [108.0, 99.0, 107.5, 99.5, 107.0] | glacials -91 m @ 68 (back 0.76); -88 m @ 154 (back 0.65); -103 m @ 270 (back 0.87); -94 m @ 386 (back 0.73); -104 m @ 478 (back 0.78); -104 m @ 592 (back None) | interglacial ice [12.2, 9.8, 11.6, 10.2, 13.3]% of land (start 9.6) | Laurentide 10.73 Mkm2 to 37.9 N (1.59 south of 50 N) | backstops 0 | budget {'smb': 8632.8, 'calved': 8548.2, 'shelf_melt': 1272.0} | 144 s
+  bars: cycles ok maxima ok cooling F give_back ok ig_ice F
