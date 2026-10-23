@@ -220,6 +220,25 @@ def test_representative_time_sea_level():
     assert H.representative_time(frames) >= 300 and H.representative_note(frames, 320) == ""
 
 
+def test_representative_time_waits_for_full_flora():
+    # PW-634: the most typical frame (360) predates the grasses; with the run's plant groups the pick
+    # is the most typical frame once the last group has appeared, so the world has every plant type
+    from planet import vegetation as V
+
+    def fr(t, big):
+        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": big, "landmasses": 20}}
+    frames = [fr(t, 15) for t in range(0, 300, 20)]
+    frames += [fr(300, 5), fr(320, 10), fr(340, 14), fr(360, 15), fr(380, 25), fr(400, 18), fr(420, 28)]
+    assert H.representative_time(frames) == 360
+    groups = [{"t": 2.0}, {"t": 40.0}, {"t": 150.0}, {"t": 330.0}, {"t": 370.0}, {"t": 395.0}]
+    t = H.representative_time(frames, plant_groups=groups)
+    assert t == 400 and V.unlocked_at([g["t"] for g in groups], t).all()
+    # a group that never appeared is ignored; full flora only after the last frame: the last frame
+    assert H.representative_time(frames, plant_groups=[{"t": 2.0}, {"t": None}]) == 360
+    assert H.representative_time(frames, plant_groups=[{"t": 2.0}, {"t": 900.0}]) == 420
+    assert H.flora_complete_myr(None) is None and H.flora_complete_myr([1.0, None, 7.0]) == 7.0
+
+
 def test_cli_at_auto():
     from planet.__main__ import _at
     assert _at("auto") == "auto" and _at("120") == 120.0

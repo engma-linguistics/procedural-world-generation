@@ -2688,7 +2688,17 @@ REPRESENTATIVE_AFTER_MYR = 300.0
 SEA_LEVEL_MIN_SCALE_M = 40.0  # floor on the sea-level scale: a run with a steady sea level isn't over-penalised for wobbles
 
 
-def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR) -> float:
+def flora_complete_myr(plant_groups) -> float | None:
+    """When a run's last plant group appeared (run.json meta.plant_groups, as
+    timeline.plant_groups writes it, or plain times; None entries: never),
+    i.e. from when a slice has every plant type; None without the groups."""
+    ts = [g.get("t") if isinstance(g, dict) else g for g in plant_groups or []]
+    ts = [float(t) for t in ts if t is not None and np.isfinite(t)]
+    return max(ts) if ts else None
+
+
+def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR,
+                        plant_groups=None) -> float:
     """The keyframe time most typical of a run's mature geography: after
     `after_myr` (once the start-up has settled; the last two thirds for a
     shorter run), the frame whose land %, largest landmass %, log of the
@@ -2698,7 +2708,10 @@ def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AF
     trough, which is what a showcase world should be. The sea-level term is
     relative to the run's own median (a nudge: when no frame near it fits the
     other criteria, the nearest overall wins); runs without `sea_level_m`
-    skip it."""
+    skip it. plant_groups (the run's meta.plant_groups): the pick is limited
+    to frames once the last plant group has appeared (flora_complete_myr), so
+    a showcase world has grasses, shrubs and flowering trees (PW-634); the
+    medians are still the whole stretch's. No such frame: the latest one."""
     end = frames[-1]["t"]
     start = after_myr if end > after_myr else end / 3
     late = [f for f in frames if f["t"] >= start] or frames[-1:]
@@ -2714,6 +2727,12 @@ def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AF
     if x.shape[1] == 4:
         scale[3] = max(scale[3], SEA_LEVEL_MIN_SCALE_M)
     d = np.sqrt((((x - med) / scale) ** 2).sum(1))
+    t_full = flora_complete_myr(plant_groups)
+    if t_full is not None:
+        ok = np.array([f["t"] >= t_full - 1e-9 for f in late])
+        if not ok.any():
+            return float(frames[-1]["t"])
+        d = np.where(ok, d, np.inf)
     return float(late[int(np.argmin(d))]["t"])
 
 

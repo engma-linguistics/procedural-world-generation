@@ -247,7 +247,7 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
                                  progress=lambda f: p(f, f"tectonics: {f * spec['myr']:.0f} of {spec['myr']:g} Myr"))
             run = json.loads((run_dir / "run.json").read_text())
             run_id = out["run"] = run["id"]
-            t = out["t_myr"] = H.representative_time(run["frames"])
+            t = out["t_myr"] = H.representative_time(run["frames"], plant_groups=run["meta"].get("plant_groups"))
             save()
             prog("simulate")(1.0, f"run {run_id} done; representative moment {t:g} Myr")
 
