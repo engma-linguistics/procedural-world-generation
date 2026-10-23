@@ -2,7 +2,7 @@
 id: PW-566
 title: "Time zoom with honest margins: Earth at dT 0 grows 3-4 Mkm2 of ice in the first weak summer and keeps it (the interglacial-ice floor)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -62,5 +62,6 @@ draft-zoom-ice-surface-too-cold-on-greenland). Interglacials 11.4-13.1% (bar 9-1
 - [x] Greenland's margin balance against an observed SMB (RACMO2.3p3, cached)
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-earth-zoom-does-not-hold-todays-ice-at-dt0.md (found by ice-v2-stage1).

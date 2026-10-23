@@ -2,7 +2,7 @@
 id: PW-568
 title: "Endings test fails with honest margins at L4 and at L5: the margin holds the ice, not the 440 km cells"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -43,5 +43,6 @@ Stage 1c (front=ramp): extra 78.2 m, left 83.4 after 15 kyr: still fails, test u
 glacial bigger, not smaller, and the ending still holds it (draft-earth-zoom-does-not-hold-todays-ice-at-dt0).
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-l4-ending-test-with-honest-margins.md (found by ice-v2-stage1).

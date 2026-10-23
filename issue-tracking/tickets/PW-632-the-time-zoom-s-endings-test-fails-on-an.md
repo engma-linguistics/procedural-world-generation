@@ -2,7 +2,7 @@
 id: PW-632
 title: "The time zoom's endings test fails on any climate when sim4's run happens to end cold: on step 2 of PW-627 the L4 seed-1 world is colder (run dT 2.67 vs 5.10), and the endings leave 59% of the glacial's extra ice after 15 kyr; over seeds 1-9 both trees fail on their coldest worlds"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -66,5 +66,6 @@ Options:
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): superseded: the cold-moment and endings fixtures are multi-seed with a pass-rate bar (PW-643, owner A) and eligibility by rule (PW-645); red single draws are no longer a merge decision.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-endings-test-fails-on-cold-source-worlds.md (found by base-climate-laneA18).

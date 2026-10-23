@@ -2,7 +2,7 @@
 id: PW-635
 title: "Lineages land use: how strongly should the world's goods shape the peoples' ranges (land_pull)?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -40,4 +40,5 @@ Options:
 Lean: A for now. Revisit with C if the owner wants some goods (mines) to bite harder than others (forests).
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): C, per-use strength: each [[use]] row's weight sets its own pull, so mines or volcanoes can bite harder than forests.
 - 2026-10-23: Created from inbox draft draft-lineages-land-pull-strength.md (found by lineages-lane-4).

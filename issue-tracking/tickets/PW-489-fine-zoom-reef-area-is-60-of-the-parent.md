@@ -2,7 +2,7 @@
 id: PW-489
 title: Fine zoom reef area is ~60% of the parent's (patches and bands drawn inside the parent's reef pixels)
 type: task
-status: needs-decision
+status: done
 parent: PW-516
 milestone: v2
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-392]
 refs: [planet/zoom_fine_forms.py, "zoom a0097b in 3ac681"]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ After PW-392 a0097b has 327 km2 of coral reef against the parent 3ac681's 535 in
 - [ ] decide (a) or (b)
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): (a): leave it; the fine zoom's drawing is the better statement of the parent's reef pixels.
 - 2026-10-20: Created from inbox draft draft-fine-zoom-reef-share-below-parent.md (found by pw392-fine-forms).

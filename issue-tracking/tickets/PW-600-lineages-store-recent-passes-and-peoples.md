@@ -2,7 +2,7 @@
 id: PW-600
 title: "Lineages: store recent passes and peoples as time-zoom-kind runs, or a kind of their own?"
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: store
@@ -23,4 +23,5 @@ Options: A (built, lean) keep the phase runs, and nest them under their time zoo
 - [ ] if A: family.py nests phase runs under meta.timezoom (or meta.world), navigator labels them "recent pass" / "peoples"
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): A as built (phase runs nested under their time zoom/world in family.py); store design is the coordinator's call.
 - 2026-10-23: Created from inbox draft draft-lineages-store-kind.md (found by lineages-lane).

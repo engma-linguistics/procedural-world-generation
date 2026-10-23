@@ -2,7 +2,7 @@
 id: PW-538
 title: The glacial cooling scales with ice-free snowline land, so a run moment with its ice already down gets almost none
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -38,6 +38,7 @@ Lean: A, with the start drift (PW-436) fixed first, since a diagnostic 5 C cooli
 - [ ] Earth's zoom keeps cycles 98-109 kyr and maxima -86..-104 m.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-21: Created from inbox draft draft-glacial-cooling-share-excludes-iced-land.md (found by worktree-agent-a1bb68a84d5003e9b (PW-536)).
