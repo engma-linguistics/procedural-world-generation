@@ -2,7 +2,7 @@
 id: PW-604
 title: "Lineages: 'near' wishes between different-niche peoples fail more often now that ranges are distinct"
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -27,6 +27,7 @@ Options:
 Lean: B. It is small and still only a nudge.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Built in lineages lane 3 (54115ea): near-wish habitat and origin pulls, eased competition, distance-based score, lost-line penalty. The residual goblin-near-orc niche clash is PW-613/614.
 - 2026-10-23: Created from inbox draft draft-lineages-near-wishes-after-exclusion.md (found by lineages-lane-2).
 - 2026-10-23: Lineages lane 3 built lean B, widened. A near wish now:
   - pulls the habitat toward the other's border (x(1 + 0.5 w) just outside its range, e-folding over 300 km; not into it, which under exclusion let the wisher displace the other);
