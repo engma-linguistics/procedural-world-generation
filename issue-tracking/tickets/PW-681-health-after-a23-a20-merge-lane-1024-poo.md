@@ -35,4 +35,5 @@ changes move dT ~29% more). Before more sink-side physics lands, measure whether
 - [ ] a verdict: chaos or signal, and which ticket owns it
 
 ## Updates
+- 2026-10-23: Thermostat lane 1024 (in progress): seeds 201-216, A20 shelf air -> + PW-627: pooled deep share 11.0 +- 4.4 -> 9.8 +- 4.0%, icehouse +2.9 +- 10.1 points; no deepening on a fresh set, so the 101-108 jump at merge-1024 step 4 looks like those worlds' draw. 52f25a9, A22+A23 and PW-636 on 201-216 still to run. docs/review/base-climate/thermostat-1024/handoff.md.
 - 2026-10-23: Created from inbox draft draft-health-drift-after-shelf-air.md (found by merge-1024).

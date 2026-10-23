@@ -41,5 +41,6 @@ band, icehouse median 54%).
 - [ ] ice_diag --summary on the 10 seeds at 3 C per doubling, recorded in thermostat.md, with the CO2 answer and the icehouse share
 
 ## Updates
+- 2026-10-23: Thermostat lane 1024 (in progress): ice_diag on the 10 seeds, main (PW-627): CO2 answer +0.24 C/C trends out, 2/10 in band, sink's own fb +0.43, source +0.17; c13b567 (before PW-627): +0.42, 5/10, sink fb +0.59 (A23's expected ~0.5). The climate's static sink sensitivity is the same on both trees (Earth and 3 L5 moments, to 1%), so the drop is the runs' or chaos. docs/review/base-climate/thermostat-1024/handoff.md.
 - 2026-10-23: Merge lane 1024, step 4 (main + A23 real pCO2 + A20 shelf air + PW-627): health --quick pooled keyframes with ice sea level below -150 m, main 4.2 / 3.4%, step 4 4.4 / 20.1% (defaults / 101-108); 5 of 8 seeds of 101-108 deep, median icehouse 57%, old ice bar fails 3 of 16 (main 0). The thermostat's gain is the next lever. docs/review/base-climate/merge-1024/.
 - 2026-10-23: Created from inbox draft draft-thermostat-gain-at-3c-per-doubling.md (found by base-climate-laneA23).

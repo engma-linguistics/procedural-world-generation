@@ -83,3 +83,10 @@ merge-1024's step 5 golden). The branch's draft `draft-earlier-flora-deepens-ice
   34.0 / 33.2%, ice 1.1 / 1.9%, dry 27.5 / 21.2%, crust volume x0.992 / x0.967, land NPP 361 / 391, C4 at 720 / 712 Myr.
 
 Green to merge.
+
+## Step 3: PW-681 / PW-653 (in progress; nothing built)
+
+Measured so far, and what is left, in `handoff.md` (raw numbers in `step3/`). In short: the 201-216 seed set shows no
+deepening from PW-627 (deep share 11.0 +- 4.4 -> 9.8 +- 4.0%). The thermostat at 3 C per doubling answers +0.24 C/C
+on main (2/10 in band; the sink's own fb +0.43) against +0.42 (5/10; fb +0.59) before PW-627, though the climate's
+own sink sensitivity on fixed geography is the same on both trees to 1%.
