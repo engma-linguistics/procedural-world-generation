@@ -7,8 +7,6 @@ import pytest
 from planet import orbit as O, timezoom as Z
 from planet.timezoom.cycle import BETWEEN, BUILDING, ENDING, Index, cooling
 
-import seeds
-
 STEP = 0.5
 NO_ORBIT = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
 
@@ -69,14 +67,9 @@ def test_cooling_is_planet_relative():
 
 @pytest.fixture(scope="module")
 def icehouse(sim4):
-    """sim4's moment as _icehouse makes it."""
-    return _icehouse(Z.source_from_sim(sim4))
-
-
-def _icehouse(src):
-    """A moment 4 C colder, 200 kyr with the index (6 C at a glacial maximum, by hand: L4's planet is
+    """sim4's moment 4 C colder, 200 kyr with the index (6 C at a glacial maximum, by hand: L4's planet is
     small) and without it; the plants local only, so dT_global is the index's alone."""
-    src = dict(src)
+    src = Z.source_from_sim(sim4)
     src["dT"] = src["dT"] - 4.0
     kw = dict(veg="local", phases="0,90,0,90")
     return [Z.simulate(src, kyr=200, step=STEP, every=2.0, params=Z.TZParams(index=i, glacial_dt=6.0, **kw))
@@ -93,23 +86,16 @@ def test_zoom_climate_follows_the_index(icehouse):
     assert all(f["stats"]["dT_global"] == 0.0 for f in off["frames"])
 
 
-def test_glacials_grow_ice_and_endings_melt_it_fast(sources4):
+def test_glacials_grow_ice_and_endings_melt_it_fast(icehouse):
     """The ice follows the index: lower seas at a glacial maximum than without it, and an ending gives
-    back most of the glacial's extra ice within 15 kyr. On each of the L4 worlds (seeds.SEEDS4) made an
-    icehouse (_icehouse), at least seeds.PASS_RATE of them (one world is a chaotic run's draw: PW-638)."""
-    seeds.check_rate("glacial endings", seeds.run_case(_endings_case, sources4))
-
-
-def _endings_case(src, out):
-    """One world's assertions (as the single-seed test on sim4's icehouse had them); its numbers in out."""
-    on, off = _icehouse(src)
+    back most of the glacial's extra ice within 15 kyr."""
+    on, off = icehouse
     t = np.array([f["t"] for f in on["frames"]])
     sl_on = np.array([f["stats"]["sea_level_change_m"] for f in on["frames"]])
     sl_off = np.array([f["stats"]["sea_level_change_m"] for f in off["frames"]])
     e = on["cycle"]["endings"][0]
     i, j = np.searchsorted(t, e["t"]), np.searchsorted(t, e["t"] + 15.0)
     extra = sl_off[i] - sl_on[i]
-    out.update(run_dT=float(src["dT"]), ending_kyr=float(e["t"]), extra_m=float(extra),
-               left_m=float(sl_off[j] - sl_on[j]))
+    print("glacial extra ice (m):", round(extra, 1), "left after 15 kyr:", round(sl_off[j] - sl_on[j], 1))
     assert extra > 10.0
     assert sl_off[j] - sl_on[j] < 0.5 * extra

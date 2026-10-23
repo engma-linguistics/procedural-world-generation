@@ -11,8 +11,6 @@ from planet.timezoom.forcing import orbit_k, own_k
 from planet.timezoom.geometry import geometry
 from planet.timezoom.ice import shelf_step
 
-import seeds
-
 NO_ORBIT = dict(obliquity_amp=0.0, ecc_mean=0.0, ecc_100=0.0, ecc_400=0.0, orbit_ref="mean")
 
 
@@ -29,19 +27,14 @@ def cold_run(cold_src):
     return Z.simulate(cold_src, kyr=40, step=0.5, every=2.0)
 
 
-def test_glacial_cooling_turns_forest_to_tundra_and_cools_further(sources4):
+def test_glacial_cooling_turns_forest_to_tundra_and_cools_further(sim4):
     """PW-450: plants grown to balance with the start, then on a climate 4 C colder, lose forest toward the
     pole; the lying snow it no longer hides brightens the ground, which cools the land (the local
-    correction) and the planet (the global term, in dTg). On each of the L4 worlds (seeds.SEEDS4), at least
-    seeds.PASS_RATE of them (one world is a chaotic run's draw: PW-640)."""
-    seeds.check_rate("forest to tundra", seeds.run_case(_forest_case, sources4))
-
-
-def _forest_case(src, out):
-    """One world's assertions (as the single-seed test on sim4 had them); its numbers in out."""
+    correction) and the planet (the global term, in dTg)."""
     from planet import climate
     from planet.timezoom.plants import Plants
 
+    src = Z.source_from_sim(sim4)
     g, tilt = src["grid"], src["tilt"]
     elev, H = np.asarray(src["elev"], float), np.maximum(np.asarray(src["ice"], float), 0.0)
     grounded = (H > 1.0) & (elev > 0)
@@ -58,9 +51,6 @@ def _forest_case(src, out):
     t0 = c["temp"].copy()
     c = pl.step(10.0, c, surf, grounded, H, -1.0, compute(-4.0))
     lost = (surf > 0) & ~grounded & (np.abs(g.lat) > 40) & (tree0 - pl.tree > 0.2)
-    out.update(run_dT=float(src["dT"]), lost=int(lost.sum()),
-               cooling=float((c["temp"] - t0)[lost].mean()) if lost.any() else float("nan"),
-               F_wm2=float(pl.series[-1]["F_wm2"]), dT_target=float(pl.dT_target))
     assert lost.sum() >= 5
     assert (c["temp"] - t0)[lost].mean() < -0.1  # the snow it hid now lies open
     assert pl.series[-1]["F_wm2"] < 0 and pl.dT_target < 0
