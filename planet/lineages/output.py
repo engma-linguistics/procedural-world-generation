@@ -110,7 +110,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     S.write_json(out / "run.json", {
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
-                 "tree_name": h.tree.name, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
+                 "tree_name": h.tree.name, "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "horses": pres["horses"],
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
@@ -294,6 +294,7 @@ def stories(h: History, pres: dict) -> dict[str, str]:
 def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L = [f"# Peoples {out.name}: {h.tree.name}", f"present = time zoom {h.ps.run['id']} @ {h.ps.now:g} kyr; tree "
          f"{h.tree.source or '(inline)'}; seed {h.seed}; tries {pres.get('tries')}; {h.runtime:.1f} s", ""]
+    L.append(f"target era: {h.tree.era} (a setting only: the technology tree, PW-675, will read it; the history is not run past the present)")
     if h.tree.disabled:
         L.append(f"switched off: {', '.join(h.tree.disabled)}")
     if h.goods is not None:
@@ -353,7 +354,7 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L += ["", "## Neighbours at the present"] + [f"  {lid}: {', '.join(v['neighbours'])}" for lid, v in pres["lines"].items()]
     if pres["wishes"]:
         L += ["", f"## Wishes (score {pres['wish_score']} over {pres.get('wishes_counted')} counted of {len(pres['wishes'])}; "
-                  f"every wish with 'apart' as 1 - closeness: {pres.get('wish_score_raw')}; tries {pres.get('tries')})"]
+                  f"every wish, uncontested ones too: {pres.get('wish_score_raw')}; tries {pres.get('tries')})"]
         L += [f"  {w['a']} {w['want']} {w.get('b') or ''}: {w['score']}"
               + (f" (niches alone would put {w['baseline']:.0%} of a's habitat near b's" + ("" if w.get("contested", True) else "; not counted") + ")"
                  if "baseline" in w else "") for w in pres["wishes"]]

@@ -363,6 +363,7 @@ function drawSide() {
   }
   h += `<h3>Tree</h3><div class="row"><label class="trait" title="Wild horses from the land, a taming homeland and date, and riding spreading with the peoples who take it up (horses.py)"><input type="checkbox" data-m="horses" ${T.meta?.horses === false ? '' : 'checked'}> horses</label>${field('horses tamed ~ (ago)', `<input data-m="horses_at" size="7" placeholder="5.5 kyr" value="${esc(T.meta?.horses_at || '')}">`)}</div>
     <div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
+    <div class="row">${field('target era', `<select data-m="era" title="The era the peoples' present is meant to be: population, spread, mixing and technology around it. A placeholder setting stored with the tree and the run; nothing reads it yet. The technology tree (epic PW-675, v3) will, and the history is not run forward past the present for it.">${['stone age', 'bronze age', 'classical', 'medieval', 'renaissance', 'industrial'].map((e) => `<option${(T.meta?.era || 'renaissance') === e ? ' selected' : ''}>${e}</option>`).join('')}</select>`)} <span class="muted" title="Placeholder: the technology tree (PW-675) will read it">(placeholder, not yet used)</span></div>
     <div class="muted">Land use and its pull: the Places tab; all wishes: the Wishes tab.</div>`;
   side.innerHTML = h;
 }

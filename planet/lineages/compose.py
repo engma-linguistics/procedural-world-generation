@@ -1,6 +1,7 @@
 """Who lives in a cell, as a composition (PW-689): the leading people's share, the second's, and an 'other' rest.
 
-Presence (history.py) says which peoples hold ground in a cell; this says how they share it. Not a recipe: the
+Presence (history.py) says which peoples hold ground in a cell; this says how they share it, as shares of the
+cell's people (presence x density, PW-703), so a dense people beside a sparse one is most of the heads. Not a recipe: the
 shares come out of who reaches the cell (their presence there) and who will live with whom (the cohabitation
 matrix: each people's openness, the wishes' near/apart, defaults). Before the late mixing (`mixing_start`,
 ~3 kyr ago) peoples barely intermingle, so a cell is mostly its leader's; the later, the more a cell's other
@@ -61,9 +62,10 @@ def reach(g, Pw: np.ndarray, suit: np.ndarray, corr: np.ndarray, open_land: np.n
     return out
 
 
-def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: float, freq=None) -> dict:
+def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: float, freq=None, dens=None) -> dict:
     """Pw (lines x cells): each native people's presence (groups folded into their people); Pr: the same with the
-    reach added (reach()). ramp 0..1: how far the late mixing has come. Returns uint8 layers: mix_lead_share, mix_second (index; 255 none), mix_second_share,
+    reach added (reach()). ramp 0..1: how far the late mixing has come. dens (per line, people/km2 at full
+    habitat; None: all alike): the shares are shares of the cell's people, so presence is weighted by density (PW-703). Returns uint8 layers: mix_lead_share, mix_second (index; 255 none), mix_second_share,
     mix_other_share (percent of the cell, summing to 100 where anyone lives; the leader is argmax Pw, the layer
     peoples_whole), and, per `freq` ({trait: line x cells share of the line}), body_<trait> (% of the cell)."""
     n, N = Pw.shape
@@ -81,6 +83,8 @@ def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: flo
     rho = EARLY * (1 - ramp) + ramp * H[lead].T  # (lines x cells): how readily each lives beside the leader
     rho[lead, np.arange(len(cells))] = 1.0
     W = P * rho
+    if dens is not None:
+        W = W * np.asarray(dens, float)[:, None]  # heads, not ground held: 12/km2 farmers beside 2/km2 foragers count 6:1
     tot = W.sum(0)
     a = W[lead, np.arange(len(cells))] / tot
     W2 = W.copy()

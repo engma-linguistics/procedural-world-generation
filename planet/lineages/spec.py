@@ -280,7 +280,8 @@ class Wish:
 class Use:
     """A way of life looking for a good in the land: lines with trait (or preferred place, or the line whose id
     is) `by` favour (weight > 0) or avoid (< 0) the world's `good` (land.GOODS) in their habitat; `pull`
-    (0..1, default meta.land_pull) how strongly; `strict`: the habitat off the goods is cut by the pull,
+    (0..1, default meta.land_pull) how strongly; the use's own strength is pull x min(weight, 1) (PW-635: a weight of
+    0.5 pulls half as hard as a weight of 1, so mines can bite harder than forests); `strict`: the habitat off the goods is cut by the pull,
     not renormalised to a mean of 1 over the line's country (history._land_mult)."""
     by: str
     good: str
@@ -288,6 +289,11 @@ class Use:
     pull: float | None = None
     strict: bool = False
 
+
+ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
+ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present. A PLACEHOLDER (PW-690): nothing reads it yet; the
+# technology tree (epic PW-675, v3) will, to say how far population, spread, mixing and technology climb by the present.
+# The history is not run forward past the present for it.
 
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 
@@ -303,6 +309,7 @@ class Tree:
     disabled: list[str] = field(default_factory=list)  # lines switched off (enabled = false) and those that went with them
     uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
     land_pull: float = LAND_PULL
+    era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     horses: bool = True  # meta.horses: wild horses, their taming and riding (horses.py); false: none
     horses_at: float | None = None  # meta.horses_at: the anchor time of the taming, kyr ago (None: horses.ANCHOR_KYR)
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
@@ -317,11 +324,21 @@ class Tree:
     def _uses_by(self, l: Lineage) -> list[Use]:
         return [u for u in self.uses if u.by in l.traits or u.by in l.prefers or u.by == l.id]
 
+    def pulls_of(self, l: Lineage) -> dict[str, float]:
+        """Per favoured good, how strongly it moves a line: the row's pull (meta.land_pull unless given) x
+        min(weight, 1), the strongest row where several name the good (PW-635: the weight is the use's own strength)."""
+        out: dict[str, float] = {}
+        for u in self._uses_by(l):
+            if u.weight > 0:
+                p = (self.land_pull if u.pull is None else u.pull) * min(u.weight, 1.0)
+                out[u.good] = max(out.get(u.good, 0.0), p)
+        return out
+
     def pull_of(self, l: Lineage) -> float:
-        """How strongly a line's land use acts: the strongest pull of its favoured goods (meta.land_pull unless
-        a [[use]] gives its own)."""
-        ps = [self.land_pull if u.pull is None else u.pull for u in self._uses_by(l) if u.weight > 0]
-        return max(ps) if ps else self.land_pull
+        """How strongly a line's land use acts at most: the strongest per-good pull (pulls_of); meta.land_pull
+        for a line with no favoured good."""
+        ps = self.pulls_of(l)
+        return max(ps.values()) if ps else self.land_pull
 
     def strict_of(self, l: Lineage) -> bool:
         """Whether any of a line's favoured goods is a strict use (no renormalising of its land use)."""
@@ -556,6 +573,9 @@ def parse(raw: dict) -> Tree:
     t.horses = bool(meta.get("horses", True))
     t.horses_at = parse_ago(meta["horses_at"]) if meta.get("horses_at") not in (None, "") else None
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
+    t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
+    if t.era not in ERAS:
+        raise ValueError(f"meta.era must be one of {list(ERAS)}")
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
@@ -597,7 +617,7 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "viable_pop": t.viable_pop, "horses": t.horses,
+                     "era": t.era, "viable_pop": t.viable_pop, "horses": t.horses,
                      **({"horses_at": f"{t.horses_at:g} kyr"} if t.horses_at is not None else {})},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

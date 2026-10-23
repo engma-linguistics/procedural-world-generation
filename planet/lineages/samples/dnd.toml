@@ -21,6 +21,7 @@
 name = "D&D peoples (preset)"
 seed = 7
 mixing_start = "3 kyr"
+era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). A PLACEHOLDER: stored, not yet read; the technology tree (PW-675) will use it. The history is not run past the present.
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
@@ -896,7 +897,7 @@ weight = 1.0
 # (0..1, default meta.land_pull) says how strongly that use moves the line (it takes its strongest pull);
 # strict = true cuts the habitat off those goods instead of renormalising it to a mean of 1. Each good is 0..1 against the world's own best; ores and coasts reach
 # one cell ring inland. A line's habitat is x(1 - pull + pull G), G the best of its goods there
-# (by weight / its largest weight). Farmland, pasture and the coast count from 10 kyr ago (today's climate and sea
+# (each at its own pull: the row's pull x min(weight, 1), so a weight of 0.5 pulls half as hard as 1; PW-635). Farmland, pasture and the coast count from 10 kyr ago (today's climate and sea
 # level), the geology (ores, stone) in the ice ages too.
 [[use]]
 by = "agricultural"
@@ -924,32 +925,32 @@ weight = 0.5
 [[use]]
 by = "miner"
 good = "gold"
-weight = 0.6
+weight = 1.0
 
 [[use]]
 by = "miner"
 good = "iron"
-weight = 0.4
+weight = 0.7
 
 [[use]]
 by = "miner"
 good = "gems"
-weight = 0.4
+weight = 0.7
 
 [[use]]
 by = "miner"
 good = "mithril"
-weight = 0.6
+weight = 1.0
 
 [[use]]
 by = "subterranean"
 good = "stone"
-weight = 0.3
+weight = 1.0
 
 [[use]]
 by = "subterranean"
 good = "metal"
-weight = 0.3
+weight = 1.0
 
 [[use]]
 by = "seafaring"
@@ -963,12 +964,12 @@ weight = -0.7
 [[use]]
 by = "coastal"
 good = "coral"
-weight = 0.7
+weight = 1.0
 
 [[use]]
 by = "coastal"
 good = "lagoon"
-weight = 0.7
+weight = 1.0
 
 [[use]]
 by = "wetland"
@@ -978,12 +979,12 @@ weight = 0.5
 [[use]]
 by = "flies"
 good = "cliff"
-weight = 0.6
+weight = 1.0
 
 [[use]]
 by = "flies"
 good = "seabirds"
-weight = 0.6
+weight = 1.0
 
 # the true giants: each greatly prefers its own kind of country (pull 0.7). They are few because they are
 # sparse (density 0.005-0.01 per km²: a band of 25 roams 2,500-5,000 km²), not because their habitat is cut:

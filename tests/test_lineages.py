@@ -692,3 +692,34 @@ def test_no_wild_range_no_taming(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
     assert pres["horses"]["tamed"] == [] and pres["horses"]["never"] and not h.horses.rd.any()
+
+
+def test_composition_is_by_heads_not_ground_held():
+    from planet.lineages import compose as CP
+    t = SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}, {"id": "b", "origin": "root", "at": "9 kyr"}]})
+    lines = t.order()
+    H_ = CP.cohabitation(t, lines, {l.id: k for k, l in enumerate(lines)})
+    Pw = np.array([[0.8], [0.8]])  # equal ground held
+    even = CP.compose(Pw, Pw, H_, 1.0, 0.12)
+    dense = CP.compose(Pw, Pw, H_, 1.0, 0.12, dens=np.array([1.0, 6.0]))
+    assert abs(int(even["mix_lead_share"][0]) - 100 * 1 / (1 + H_[0, 1])) <= 1
+    assert dense["mix_second_share"][0] > dense["mix_lead_share"][0]  # b has six times the heads per km2: it outweighs a
+    assert dense["mix_lead_share"][0] < even["mix_lead_share"][0]
+
+
+def test_era_is_a_validated_placeholder_setting():
+    raw = {"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}]}
+    assert SP.parse(raw).era == "renaissance"
+    t = SP.parse({**raw, "meta": {"era": "Bronze Age"}})
+    assert t.era == "bronze age" and SP.parse(SP.to_raw(t)).era == "bronze age"
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"era": "space age"}})
+
+
+def test_a_use_pulls_in_proportion_to_its_weight():
+    raw = {"meta": {"land_pull": 0.5}, "lineage": [{"id": "a", "origin": "root", "at": "9 kyr", "traits": ["miner"]}],
+           "use": [{"by": "a", "good": "gold", "weight": 1.0}, {"by": "a", "good": "timber", "weight": 0.5},
+                   {"by": "a", "good": "iron", "weight": 1.0, "pull": 0.8}]}
+    t = SP.parse(raw)
+    assert t.pulls_of(t.lines["a"]) == {"gold": 0.5, "timber": 0.25, "iron": 0.8}
+    assert t.pull_of(t.lines["a"]) == 0.8

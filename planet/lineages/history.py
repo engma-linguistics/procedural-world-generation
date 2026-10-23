@@ -35,7 +35,7 @@ NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0
 NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
-APART_CONTESTED = 0.1  # an 'apart' wish counts when the two niches would put at least this share of a's habitat near b's
+APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches would put at least this share of a's habitat near b's
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
@@ -901,7 +901,7 @@ class History:
 
     def _land_mult(self, l, holocene: bool) -> np.ndarray | float:
         """What the line's way of life looks for in the land (spec [[use]]; land.goods): x(1 - pull + pull G),
-        G the best of its favoured goods here (each by weight / the largest weight), normalised to a mean of 1
+        G the best of its favoured goods here (each at its own pull, spec.Tree.pulls_of), normalised to a mean of 1
         over its country unless a use is strict; x(1 - pull |w| g) per
         avoided good. Before HOLOCENE_KYR only the geology (ores, stone) counts: the farmland, pasture,
         forests and coasts are today's. A line with no favoured good of an epoch is left as it is then."""
@@ -910,13 +910,13 @@ class History:
         m = self._land_m.get(key)
         if m is None:
             uses = [(g, w) for g, w in self.tree.uses_of(l) if g in self.goods and (holocene or GOODS[g][1])]
-            pull = self.tree.pull_of(l)
+            pulls = self.tree.pulls_of(l)  # (per good: pull x min(weight, 1), PW-635)
+            pos = [(g, pulls[g]) for g, w in uses if w > 0 and pulls.get(g, 0) > 0]
+            pull = max((p for _, p in pos), default=self.tree.land_pull)
             m = 1.0
-            pos = [(g, w) for g, w in uses if w > 0]
-            if pos and pull > 0:
-                wmax = max(w for _, w in pos)
-                G = np.max([min(w / wmax, 1.0) * self.goods[g] for g, w in pos], axis=0)
-                m = (1 - pull) + pull * G
+            if pos:
+                G = np.max([p * self.goods[g] for g, p in pos], axis=0)
+                m = (1 - pull) + G
                 # over the line's own country (today's habitat) the mean is 1: the goods move a people within
                 # its niche, toward the farmland or the mines, without making it a weaker people overall
                 # (a rare good, a coral coast, lifts its few places rather than cutting everywhere else)
@@ -930,7 +930,7 @@ class History:
                     m = m / max(float(m[hab].mean()) if hab.any() else 1.0, 1 - pull)
             for g, w in uses:
                 if w < 0:
-                    m = m * (1 - pull * min(-w, 1.0) * self.goods[g])
+                    m = m * (1 - self.tree.pull_of(l) * min(-w, 1.0) * self.goods[g])
             self._land_m[key] = m
         return m
 
@@ -958,7 +958,7 @@ class History:
         ramp = self._mix_ramp(step.ago)
         land = env["land"] & ~(env["ice"] > 0.5) if "ice" in env else env["land"]
         Pr = CP.reach(self.grid, Pw, self._suit(), self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land, ramp, EST)
-        comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq)
+        comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens)
         pop = land & (whole < 255)
         two = pop & (comp["mix_second_share"] >= COMPOSITION_TWO_PCT)
         cstats = {"land_cells": int(land.sum()), "peopled_cells": int(pop.sum()),
@@ -1154,6 +1154,14 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
             close = float(near[a].mean()) if b.any() else 0.0
             if w.want == "near":
                 s = min(1.0, 2.5 * close)
+                # (PW-699: as 'apart', a 'near' wish counts only where the two niches can reach each other)
+                base = _niche_closeness(h, w, tags)
+                if base < APART_CONTESTED:
+                    out.append({**vars(w), "score": round(s, 3), "baseline": round(base, 3), "contested": False, "raw": round(s, 3),
+                                "note": "niches rarely meet: not counted"})
+                    continue
+                out.append({**vars(w), "score": round(s, 3), "baseline": round(base, 3), "contested": True, "raw": round(s, 3)})
+                continue
             else:
                 # apart: against what the niches alone would give (the share of a's habitat within reach of b's
                 # habitat, both before competition); a pair whose niches hardly meet has nothing to keep apart
