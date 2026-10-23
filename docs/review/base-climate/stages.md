@@ -1940,3 +1940,117 @@ gain should be measured with `ice_diag --summary` on the 10 seeds (draft filed).
 
 The cost is a wider pCO2 range in the runs: 5% of keyframes are under ~140 ppm, where tropical forest gives way to
 savanna.
+
+## PW-592: the shelf seas take the air the wind brings (lane A20)
+
+**The shelf seas' cold was the target they relaxed to, not a shortage of the overturning's heat. Every sea cell
+relaxed toward the latitude's mean sea temperature `t_eq`, but a shelf sea is set by the air over it, because the
+shelf break keeps the currents off. With that rule (`_shelf_air`, committed at 1d076ad) the North Sea's annual SST
+goes 6.9 -> 8.5 and W Europe's warmest month -1.0 -> -0.4. Rain r, the SH coastal range, and the overturning on Earth
+and the 9 worlds are unchanged. Three fixture tests go red on the run's chaos (crossed:
+`draft-shelf-air-turns-sim4-fixtures-red.md`, needs-decision). A17's step 2 on top still regresses Europe: -0.4 ->
+-1.6, and -1.3 with PW-633's layer.**
+
+Branch `worktree-agent-a2b66e784ed5186c3`, main 59b83d7 + 1d076ad. Files in `laneA20/` (README.md lists them).
+
+### What was found (`shelfdiag.py`, `eumap.py`; Earth L6, SST minus NCEP's annual air, which it should exceed by ~1 C)
+| box | depth | t_eq | gyre carry | moc heat | inflow share | SST - air |
+|---|---|---|---|---|---|---|
+| NE Atl 45-55N 25-6W | 3765 | 8.5 | +1.0 | +3.2 | 0.43 | -0.0 |
+| Rockall 55-62N | 1348 | 3.1 | +2.1 | +6.9 | 0.99 | **+2.6** |
+| North Sea 51-58N | 37 | 5.2 | +0.3 | +1.4 | 0.17 | **-3.0** |
+| Channel / Irish Sea | 94 | 7.5 | +1.4 | -0.0 | 0.14 | -2.7 |
+| Baltic | 52 | 2.9 | -0.4 | -0.2 | 0.16 | -4.3 |
+| Biscay 43-48N | 754 | 11.0 | +0.3 | -0.2 | 0.00 | -3.0 |
+| Barents | 242 | -1.8 | -0.1 | +0.4 | 0.51 | +0.2 |
+| Yellow / E China Sea | 64 | 18.8 | +2.7 | -0.1 | 0.05 | **+4.3** |
+| Patagonian shelf | 117 | 11.1 | +0.6 | -0.5 | 0.00 | +0.5 |
+
+- Not every shelf is starved. The Yellow Sea is 4.3 C too warm: the Kuroshio's carry reaches it, while its real
+  water is set by the winter monsoon's air. The Barents and the Patagonian shelf are about right. What the shelves
+  share is that the model's water ignores the air over them. Each sea cell relaxes toward `t_eq`, the latitude's
+  mean, plus what the currents carry. So the North Sea, behind Britain, gets the latitude's mean, not the
+  Atlantic air that crosses Britain.
+- The overturning's inflow sits in a narrow trunk west of 15W. Its share saturates within a few km of width, so
+  `moc_km` sets the width. East of 15W south of 50N it is 0, so Biscay (deep, not a shelf) and the whole eastern
+  Atlantic at 42-50N are 2-3 C too cold, and Rockall is 2.6 too warm. That is PW-592's open-sea part, not a
+  shelf effect: `draft-ne-atlantic-inflow-trunk-too-narrow.md`.
+- Tried and dropped: PW-582's slope current acting from 25 / 35 / 40 deg instead of `moc_lat`. The trunk doesn't move
+  onto Europe's margin. It only warms (Rockall +3.3).
+
+### What changed (`climate._shelf_air`, `_open_air`; no new constant)
+- The currents carry the water's anomaly in a layer `moc_layer_m` deep (the inflow, the thermocline). The shelf
+  break steers geostrophic flow along the depth contours, so only depth / `moc_layer_m` of that anomaly comes onto
+  a shelf. This is the depth count `_straits` already uses.
+- The rest of the column takes on the air the wind brings. Off land, that is the land's annual air at sea level, as
+  the water feels it (`_open_air`: the months' sine, clipped at freezing, since sea ice keeps the colder air off the
+  water). Over sea it is the water's own. It is carried along the annual wind like `land_air` (4 x `air_km_w`).
+- It is not kept to each band's mean: the heat is the air's, not moved round the ocean.
+- It is applied after the overturning, like the overturning's warmth: the rain and the sinking don't see it.
+- Two forms were dropped:
+  - the annual land air unclipped: it froze Hudson Bay, sea warmest -3.4 -> -6.0;
+  - the winter clipped at freezing in a plain mean: Okhotsk annual +2.6 -> +3.8, Keewatin warmest +0.4 -> +2.1.
+
+### The bars (Earth L6; main 59b83d7 = `laneA17/*_step1.txt` -> branch `laneA20/*_branch3.txt`)
+| bar | main | branch |
+|---|---|---|
+| rain log-r (>= 0.617) | 0.630 | 0.630 |
+| Köppen exact / group; cities wrong | 33 / 71; 19 | 34 / 71; 19 (London annual 9.7 -> 10.3, obs 10.5; Stockholm 3.7 -> 4.5, obs 6.2; Shanghai 20.5 -> 18.8, obs 15.7) |
+| SH coastal range 0-150 km (<= 12.5) | 12.5 | 12.5 |
+| N coastal range 0-150 / 150-400 km bias | -1.1 / -0.8 | -0.8 / -0.7 |
+| North Sea annual SST (obs air 10.0); sea warmest bias; half-swing (obs 5.9) | 6.9; -2.4; 6.2 | **8.5; -0.8**; 6.4 |
+| sea warmest: NE Atl / Biscay-N Sea / Labrador Sea | -1.3 / -2.5 / +2.8 | -1.2 / **-1.4** / +2.8 |
+| W Europe warmest | -1.0 | **-0.4** |
+| Fennoscandia warmest / coldest | -3.8 / -2.9 | **-3.2 / -2.2** |
+| Iceland warmest / coldest | +3.4 / -2.6 | +3.1 / -2.9 |
+| Labrador / HB lowlands / Keewatin warmest | +4.3 / +4.0 / +0.4 | +4.2 / +4.2 / +1.1 |
+| sea, annual bias: Hudson Bay / Okhotsk / Barents / Nordic | +0.1 / +2.6 / -8.6 / +1.6 | +1.0 / +2.5 / -8.6 / +1.6 |
+| Hudson Bay sea warmest | -3.4 | -1.9 |
+| sea swing within 1.5x near N / near S | 52 / 55% | 54 / 54% |
+| Earth NH Sv (open polar %) / SH Sv; Norwegian coast open, winter sea air | 13.86 (90) / 5.61; 100%, 6.4 | 13.86 (90) / 5.61; 100%, 6.5 |
+| 9 worlds: all sink in both hemispheres; lowest | yes; dad91b S 2.85 | identical |
+
+Still open: the Baltic (-4.3 -> -4.2) follows the model's own cold Scandinavian land air, and the Yellow / E China
+Sea is still +3.6 (from +4.3).
+
+### PW-627's step 2 on top (`step2_on_branch.diff`, `p3_step2_branch.txt`, `seabox_step2_branch.txt`)
+| | main | main + step 2 | branch | branch + step 2 | + PW-633's shelf layer |
+|---|---|---|---|---|---|
+| W Europe warmest | -1.0 | -2.1 | -0.4 | **-1.6** | -1.3 |
+| Biscay-N Sea sea warmest | -2.5 | -5.4 | -1.4 | -4.6 | -4.1 |
+| North Sea annual SST; half-swing (obs 5.9) | 6.9; 6.2 | 6.8; 4.3 | 8.5; 6.4 | 7.9; 4.6 | 7.8; 5.0 |
+| rain log-r | 0.630 | 0.649 | 0.630 | 0.649 | 0.653 |
+| near-N swing within 1.5x | 52% | 33% | 54% | 34% | 36% |
+
+The regression doesn't close. The shelf rule lifts both trees by ~0.5, but step 2 still costs W Europe -1.2.
+Step 2 cuts the shelf seas' summer half, and annual warmth doesn't restore that. With PW-633's layer it is -0.9.
+The North Sea's annual SST under step 2 is still ~2 C below its air (step 2's chill), so its bigger winter half
+still ices it. Step 2 stays a diff. What is left of Europe's summer is PW-593's summer layer, plus the eastern
+Atlantic's cold (the new trunk draft).
+
+### Tests (`uv run pytest -q`, `pytest_branch.txt`)
+Goldens regenerated on purpose (`climate_L4`, `sim_L4_s1_60myr`). 593 pass and 3 fail, all on fixtures that are a
+chaotic run's draw, with no fixture or assertion touched:
+- `test_glacial_cooling_turns_forest_to_tundra_and_cools_further`: F +0.079 W/m2 (bar < 0). Crossed with
+  `xforest.py`: main's world passes with either climate (F -0.038 / -0.023); the branch's world fails with either
+  (+0.082 / +0.079). sim4 drew a colder world (run dT +5.10 -> +2.01). The endings test passes on it.
+- `test_cold_moment_has_sheets`, `test_ice_at_index_zero_is_the_runs`: the first plausible seed is now 29 (0.28% under
+  sheets; sea level change 26.6 m > 25). This is PW-623's lottery.
+
+### Health (`tools/health.py --quick`, 8 L6 seeds, 500 Myr, 2 workers x 2 threads each tree; `health_{main,branch}/report.md`)
+| | main 59b83d7 | branch 1d076ad |
+|---|---|---|
+| outlier spells | 72 | **59** |
+| seeds with ice sea level below -150 m for >10% of the run | 2 (2 11.8%, 42 11.8%) | 2 (1 11.8%, 77 15.7%) |
+| plate-collapse spells (<= 4 plates) | 0 | 0 |
+| seeds with giant-lake frames > 5% | 4 (11 27.5, 77 9.8, 2 7.8, 505 7.8) | 4 (42 17.6, 21 15.7, 2 11.8, 3199 9.8) |
+| new ice bar (icehouse 5-70%) fails | 4 (21 0%, 3199 0%, 77 84%, 505 4%) | **3** (2 0%, 21 0%, 77 82%) |
+| old ice bar fails | 0 | 1 (11) |
+| icehouse share, median seed | ~18% | ~18% |
+| determinism | bit-identical | bit-identical |
+
+Main's own sweep reproduces lane A17's step-1 sweep exactly. These are single chaotic 500 Myr runs and no
+direction holds across the rows: no worse than main.
+
+**Ready to merge?** The mechanism, yes. Main would go red on the three fixture tests above, which the
+world's chaos decides (owner: the draft's option A or B).
