@@ -57,13 +57,22 @@ The -0.001 draw's sheeted count sits exactly on `MIN_SHEETED` (draft `draft-min-
 
 **Held physics branches** (each is main + the branch's `planet/` diff + these tests; 2 draws):
 
-@@HELD@@
+| tree | draw | counts | result |
+|---|---|---|---|
+| A20 a1462d3 (shelf air) | 0 | cold moments with sheets: 4 of 8 plausible; forest to tundra: 11 of 17 eligible seeds pass (bar 9; 7 not eligible); glacial endings: 20 of 24 eligible seeds pass (bar 12; 0 not eligible); ice speeds plausible: 3 of 4 eligible seeds pass (bar 3; 0 not eligible); ice at index zero: 3 of 4 eligible seeds pass (bar 3; 0 not eligible) | 1 failed, 4 passed in 706.68s |
+| A20 a1462d3 (shelf air) | +0.001 | forest to tundra: 16 of 20 eligible seeds pass (bar 10; 4 not eligible); glacial endings: 18 of 24 eligible seeds pass (bar 12; 0 not eligible); cold moments with sheets: 7 of 15 plausible; ice speeds plausible: 7 of 7 eligible seeds pass (bar 5; 0 not eligible); ice at index zero: 6 of 7 eligible seeds pass (bar 5; 0 not eligible) | 5 passed in 5437.48s |
+| A22 2bc750b (glacial tropics) | 0 | forest to tundra: 18 of 18 eligible seeds pass (bar 9; 6 not eligible); glacial endings: 19 of 24 eligible seeds pass (bar 12; 0 not eligible); cold moments with sheets: 5 of 9 plausible; ice speeds plausible: 5 of 5 eligible seeds pass (bar 4; 0 not eligible); ice at index zero: 5 of 5 eligible seeds pass (bar 4; 0 not eligible) | 5 passed in 5466.80s |
+| A22 2bc750b (glacial tropics) | +0.001 | forest to tundra: 17 of 17 eligible seeds pass (bar 9; 7 not eligible); glacial endings: 22 of 24 eligible seeds pass (bar 12; 0 not eligible); cold moments with sheets: 10 of 13 plausible; ice speeds plausible: 8 of 10 eligible seeds pass (bar 7; 0 not eligible); ice at index zero: 9 of 10 eligible seeds pass (bar 7; 0 not eligible) | 5 passed in 542.89s |
+| main + step2_stable_summer.diff | 0 | forest to tundra: 13 of 17 eligible seeds pass (bar 9; 7 not eligible); glacial endings: 21 of 24 eligible seeds pass (bar 12; 0 not eligible); cold moments with sheets: 6 of 13 plausible; ice speeds plausible: 6 of 6 eligible seeds pass (bar 5; 0 not eligible); ice at index zero: 6 of 6 eligible seeds pass (bar 5; 0 not eligible) | 5 passed in 530.76s |
+| main + step2_stable_summer.diff | +0.001 | forest to tundra: 16 of 22 eligible seeds pass (bar 11; 2 not eligible); glacial endings: 22 of 24 eligible seeds pass (bar 12; 0 not eligible); cold moments with sheets: 7 of 10 plausible; ice speeds plausible: 5 of 7 eligible seeds pass (bar 5; 0 not eligible); ice at index zero: 7 of 7 eligible seeds pass (bar 5; 0 not eligible) | 5 passed in 445.91s |
 
 **Regression demonstration** (`breaks.sh` on an export of this branch; `break1.txt`-`break3.txt`):
 
-@@BREAKS@@
+- Break 1 (glacial index never ends): glacial endings: 2 of 24 eligible seeds pass (bar 12; 0 not eligible) -> 1 failed in 196.49s
+- Break 2 (forest term's sign flipped): forest to tundra: 2 of 21 eligible seeds pass (bar 11; 3 not eligible) -> 1 failed in 96.71s
+- Break 3 (run's ice rule grows no ice): cold moments with sheets: 0 of 13 plausible; ice speeds plausible: 0 of 0 eligible seeds pass (bar 0; 0 not eligible); ice at index zero: 0 of 0 eligible seeds pass (bar 0; 0 not eligible) -> 3 failed in 339.00s
 
-**Suite:** @@SUITE@@
+**Suite:** 601 passed, 87 warnings in 268.26s (0:04:28) exit 0 in 269 s (full `pytest -q`, 16 workers, machine otherwise loaded)
 
 # The original proposal
 
