@@ -2,7 +2,7 @@
 id: PW-206
 title: Vegetation game attributes, satellite colours and export fields (PW-187 step 9)
 type: task
-status: todo
+status: done
 parent: PW-184
 milestone: v2
 subsystem: viewer
@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-187, PW-083, PW-100]
 refs: [planet/vegetation.py, viewer/index.html, docs/proposals/vegetation.md]
 created: 2026-10-15
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
 Step 9 of the vegetation proposal (section 8.2, decision 11A: computed continuously from layers, the per-type table as fallback text). The named types already carry a game-facing line (`vegetation.TYPES`, legend `vegetation.types[].text`; the viewer shows it as the legend tooltip). Still to do: travel cost, visibility, forage, timber, fuel, water, fire season, hazards and seasonal look from tree_cover, canopy_height, stand_age, lai_jul/jan, npp, flooded, fire_return; a hover-card line; the satellite view (PW-083: colour = sum of PFT cover x PFT colour x seasonal LAI greenness + bare soil and snow; lai_jul/jan exist); export fields for PW-100.
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (393f718): planet/gameattrs.py, 11 game layers on worlds and zooms, viewer 'For players' hover, export layers, soil satellite colours. Follow-ups PW-624.
 - 2026-10-16: Parked per owner (v1 reassessment 2026-10-16); impact set low so board next stops offering it.
 - 2026-10-16: Soils proposal step 9 (soil game attributes, satellite soil colours) belongs here.
 - 2026-10-15: Owner (2026-10-15): focus is the simulation, not game use yet. Impact lowered to low; parked behind the simulation work. The satellite view (true-colour from vegetation, PW-083) is a display of the simulation and stays separate from this.

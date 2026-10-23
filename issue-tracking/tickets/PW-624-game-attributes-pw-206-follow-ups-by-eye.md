@@ -1,4 +1,5 @@
 ---
+id: PW-624
 title: "Game attributes (PW-206) follow-ups: by-eye scales, a fauna placeholder hazard, zoom travel at sea"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: soilveg
 blocked_by: []
 relates: [PW-206, PW-103, PW-100]
 refs: [planet/gameattrs.py, viewer/index.html, viewer/zoom.html, "world 607540", "zoom 4f54cb"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,6 @@ PW-206's game attributes (`planet/gameattrs.py`) are built; what is left from it
 - Export: no feature kinds yet (e.g. impassable bog polygons, best timber stands); the layers are rasters only.
 - [ ] mask sea in the zoom viewer's game ramps
 - [ ] replace the crocodile placeholder when PW-103 lands
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-game-attrs-followups.md (found by soilveg).
