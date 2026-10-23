@@ -1,4 +1,5 @@
 ---
+id: PW-685
 title: Viewer repaint writes 1.15 M vertices of position and colour per frame; a per-cell colour texture would cut the upload
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: perf679
 blocked_by: []
 relates: [PW-679]
-refs: [viewer/index.html, "paint()", docs/review/lineages/perf-679.md]
+refs: [viewer/index.html, paint(), docs/review/lineages/perf-679.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Options: (A) a per-cell colour in a float texture sampled in the vertex shader b
 texture; (B) the same for the radius, so positions need no rewrite either; (C) leave it, since 16-20 ms is a replay of
 ~50 fps before drawing. Do (A)+(B) only if the owner still feels the replay is heavy after PW-679; it touches paint, the
 overlays that sit on `V.R`, and picking (`topo.triStart`, `pickGlobeCell` read the position array).
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-viewer-paint-cell-colour-texture.md (found by perf679).

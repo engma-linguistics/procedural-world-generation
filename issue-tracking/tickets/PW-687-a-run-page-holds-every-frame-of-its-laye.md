@@ -1,4 +1,5 @@
 ---
+id: PW-687
 title: A run page holds every frame of its layers (216 MB resident on a peoples run)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: perf679
 blocked_by: []
 relates: [PW-679]
 refs: [viewer/index.html, planet/server.py, "run 7bc9ed", docs/review/lineages/perf-679.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,3 +30,6 @@ A with a 5-frame window, prefetching in the scrub direction. Replay speed is the
 its ~20 ms step.
 - [ ] opening a peoples run transfers well under 20 MB
 - [ ] scrubbing and replay stay as smooth as now
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-viewer-run-layers-per-frame.md (found by perf679).
