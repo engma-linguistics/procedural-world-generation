@@ -416,7 +416,10 @@ The split reproduces every seed to within 0.05 C/C (0.09 on one):
 - So it was chance at 17 independent drift samples per seed, not a mechanism. Not a bug either.
 - Scripts: `laneB4/decomp.py` and `laneB4/lag.py` in the session scratch.
 
-### Checks
-- `uv run pytest -q`: 573 pass.
-- `tools/overturning_report.py --earth`: identical to main.
-- `tools/scorecard.py` and `tools/health.py`: see below.
+### Checks (after merging main 82e759f, PW-589; the sweep above is on c1b2229, before it)
+- `uv run pytest -q`: 573 pass; the golden was regenerated after the merge.
+- `tools/overturning_report.py --earth`: identical to main 82e759f.
+- `tools/scorecard.py` (3cd2aef): Earth group agreement 69.9% (exact 32.1%), as main's 964a132 entry. Seeds 1 and 2
+  at 1 Gyr: land 30.9% and 33.1%, ice 0.9% and 0.4%, dry 19.6% and 26.8%. Crust volume x0.968 and x0.939, against
+  x0.988 and x0.966 on 964a132: the mature start's thin margins (draft-relief-spinup-erosion-rise).
+- `tools/health.py`: see below.

@@ -24,7 +24,7 @@ sediment cover (thermostat.md, Stage 3). The ice-free land's erosion now starts 
   are within 20% at 50-150 Myr.
 - **Sediment keeps piling up through the whole run**, on both starts: land cover 1.4× and sea-floor cover 1.2× their
   300-1000 Myr means by 1 Gyr. There's no steady state to start from. The sea floor starts with no sediment.
-- **Crust volume end/start in the scorecard**: x0.981 and x0.949 (seeds 1 and 2), against x0.995 and x1.021 on main.
+- **Crust volume end/start in the scorecard**: x0.981 and x0.949 (seeds 1 and 2), against x0.995 and x1.021 on main (5c4c0fd era); after landing on 82e759f, x0.968 and x0.939 against main 964a132's x0.988 and x0.966.
   The start has thin margins at the 21 km floor and more sediment, which the volume thermostat (PW-046) may lose
   faster.
 - [ ] decide whether the breakup dip needs anything (it may be the planet's own history)
