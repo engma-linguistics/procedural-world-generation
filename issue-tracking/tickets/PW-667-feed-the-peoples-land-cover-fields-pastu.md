@@ -29,6 +29,7 @@ Keep it opt-in, written as a second vegetation layer or a flag on the zoom, so w
 - [ ] a zoom made without a peoples run is unchanged
 
 ## Updates
+- 2026-10-23: Fix (coordinator, 2026-10-24): fertile_score is stored as a percent and was read as 0..1, so FERT_MIN never applied and fertility swamped the village sites (villages ignored rivers). Now /100; villages are drawn weighted without replacement. Demo zoom 859e74 predates the fix and should be remade.
 - 2026-10-23: Status todo -> done. Merged (7219756): planet zoom --peoples RUN; demo zoom 859e74 (1df1c3, run d489d0). Follow-ups PW-672..674.
 - 2026-10-23: Created from inbox draft draft-anthro-feedback-zoom-plants.md (found by anthro).
 - 2026-10-24: Built as an opt-in overlay (planet/zoom_peoples.py): `planet zoom WORLD --lat --lon [--size-km --res-km] --peoples RUN`. It is a zoom of its own (id carries the run), with a `land_use` layer (wild, cropland, pasture, burned grass, managed woods, settlement), `meta.peoples` and a viewer layer "Peoples' land"; the plants (nu), tree and plant cover, leaf area, npp, canopy height, fire return, vegetation type and biome follow it, and the satellite paints fields in parcels, pasture, burned ground and villages. A zoom without --peoples is byte-identical (checked: layers and pngs of 7e4258 against the base code). Demo zoom 859e74 (world 1df1c3, run d489d0, -36, 104, 1000 km @ 2 km); screenshots docs/review/lineages/anthro-zoom-*.png. Left as drafts: fine zooms, the viewer/API, soils and named types.

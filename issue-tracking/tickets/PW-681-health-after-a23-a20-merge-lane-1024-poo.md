@@ -1,4 +1,5 @@
 ---
+id: PW-681
 title: "Health after A23 + A20 (merge lane 1024): pooled keyframes with ice sea level below -150 m go 3.8% -> 5.9% -> 7.45%, old ice bar fails 0 -> 2 of 16"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: merge-1024
 blocked_by: []
 relates: [PW-592, PW-646, PW-611, PW-653]
 refs: [docs/review/base-climate/merge-1024/, tools/health.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,3 +33,6 @@ changes move dT ~29% more). Before more sink-side physics lands, measure whether
 (PW-611 / PW-653), not to a fix on the shelf rule.
 - [ ] health on a third seed set (e.g. 201-208) for main and the merged tree
 - [ ] a verdict: chaos or signal, and which ticket owns it
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-health-drift-after-shelf-air.md (found by merge-1024).

@@ -61,8 +61,8 @@ def test_land_use_follows_the_run_where_the_ground_allows(plain, settled):
     crop = lu == ZP.CROP
     assert 0.05 < crop[land].mean() < 0.30, "cropland: some of the 30% the run asks for (ground that can't be ploughed is spared)"
     # fields lie on the better and flatter ground than the land's average
-    assert L["fertile_score"][crop].mean() > L["fertile_score"][land].mean() + 0.02
-    gy, gx = np.gradient(np.where(land, L["elevation"], 0.0), 3000.0)
+    assert L["fertile_score"][crop].mean() > L["fertile_score"][land].mean() + 2  # (percent)
+    gy, gx = np.gradient(np.where(L["water"] == 0, L["elevation"], 0.0), 3000.0)  # (the ground, ice-covered too, as the code reads it)
     assert np.hypot(gx, gy)[crop].max() < ZP.SLOPE_CROP + 1e-9
     # villages are a few of the pixels, nearer rivers than the land is
     town = lu == ZP.TOWN

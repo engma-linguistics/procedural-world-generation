@@ -1,4 +1,5 @@
 ---
+id: PW-680
 title: "test_bed_settles_under_the_ice rides on one chaotic world (sim4): PW-636's FLORA_PACE 0.8 turns it red at 47.1 m against a 46.2 m tolerance"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: merge-1024
 blocked_by: []
 relates: [PW-636, PW-623, PW-638, PW-640, PW-643]
 refs: [tests/test_timezoom.py, tests/seeds.py, docs/review/base-climate/merge-1024/]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -31,3 +34,6 @@ Options:
   late in the 40 kyr) before choosing.
 - Lean: A, after a quick C check, because the margin is 2% and the world is chaotic.
 - [ ] A / B / C
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-bed-settles-single-world.md (found by merge-1024).

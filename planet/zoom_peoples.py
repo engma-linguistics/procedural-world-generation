@@ -141,7 +141,7 @@ def apply(world: dict, fr, nx: int, ny: int, res: float, size_km: float, A: dict
     gy, gx = np.gradient(np.where(water == 0, h, 0.0).reshape(ny, nx), res * 1000.0)
     slope = np.hypot(gx, gy).ravel()
     flat = np.clip(1 - slope / 0.12, 0, 1)
-    fert = np.round(np.asarray(lay["fertile_score"], float), 2)
+    fert = np.asarray(lay["fertile_score"], float) / 100.0  # (stored as a percent, humanuse.py)
     rd = np.minimum(np.asarray(lay["river_dist"], float), 255) * res
     river = np.exp(-rd / 6.0)
     Pk = np.ascontiguousarray(P * R_KM)
@@ -168,9 +168,11 @@ def apply(world: dict, fr, nx: int, ny: int, res: float, size_km: float, A: dict
     ok_town = ok & (dens >= MIN_DENSITY) & (slope < 0.3)
     w_sum = np.bincount(own[ok_town], site[ok_town], minlength=g.n)[own]
     cap = np.minimum(n_vil, TOWN_MAX * n_land)
-    # (a village at random, more likely at a good site: a scatter of dots, not a ribbon along every river)
+    # (a village at random, more likely at a good site: a scatter of dots, not a ribbon along every river; drawn
+    # without replacement, weighted by site (key u^(1/w)), so the weights hold where villages fill most of the room)
     rnd = np.random.default_rng(S0 + 7).random(n)
-    town = ok_town & (rnd < cap * site / np.maximum(w_sum, 1e-9))
+    key = np.log(np.maximum(rnd, 1e-300)) / site
+    town = _select(key, ok_town, own, cap / np.maximum(n_land, 1.0), n_land)
     # pasture: open gentle ground round the fields
     near_f = _blur((crop | town).astype(float), ny, nx, max(1, int(round(8.0 / res))))
     rest = ok & ~crop & ~town
