@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555, PW-438]
 refs: [planet/tectonics/earth.py, docs/review/ice-v2-criteria.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,4 +32,5 @@ before B2 is fixed repeats PW-438's lesson: the thermostat can't undo a rigid fi
 tools/ice_diag.py on the 10 seeds against tools/ice_criteria.py's new bars.
 
 ## Updates
+- 2026-10-23: PW-576 merged (mature start + set-once CO2 stock); re-judge against docs/review/health/2026-10-23-pw576.
 - 2026-10-22: Created from inbox draft draft-co2-carbon-stock.md (found by ice-v2-stage0).

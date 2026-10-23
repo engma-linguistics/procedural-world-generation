@@ -2,7 +2,7 @@
 id: PW-576
 title: "The thermostat's weakness is its bookkeeping, not erosion: the saturating weathering law (PW-574 A) doesn't help; fix it with the CO2 stock and a fixed start reference instead"
 type: task
-status: in-progress
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-574, PW-558, PW-559, PW-564, PW-572, PW-561]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py, docs/review/base-climate/thermostat.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -71,6 +71,7 @@ The bar change in C is the owner's call:
 - [ ] if B or C: lane B builds the stock and the start reference, then measures the 10 seeds with `ice_diag --summary`
 
 ## Updates
+- 2026-10-23: Status in-progress -> done. Merged (lane B4, 4032a41 + bc01b26): mature start (planet/tectonics/setup.py), CO2 stock with references set once at REF_FREEZE 300 Myr, relief term removed, simulate default 1000 Myr. Full health sweep docs/review/health/2026-10-23-pw576: determinism identical, PW-555 ice bar 5/11, icehouse share median 43%. Follow-ups PW-611 (icehouse share split), PW-612 (spin-up erosion rise).
 - 2026-10-22: Owner 2026-10-22: mature start + option (a) 'set once' (no relief term); keep the 300 Myr warm-up; simulate's default run becomes 1 Gyr.
 - 2026-10-22: 2026-10-22 attempts 1-3 done (branch worktree-agent-adf7ab7eab37416aa). Owner: first give planets a mature start (relief and anything else that spins up), then compare attempt 1 (set once) against attempt 3 (relief term) on it; owner sees both before anything merges. If the mature start doesn't help appreciably, take attempt 3.
 - 2026-10-22: Status needs-decision -> in-progress. Owner 2026-10-22: option C. Build CO2 as a stock (PW-558) with a fixed reference set once from the planet's own start balance (PW-559 B); judge 'runs against dT' against the drift; accept ~0.35-0.5 C/C as close enough rather than tuning sensitivity to 0.7.

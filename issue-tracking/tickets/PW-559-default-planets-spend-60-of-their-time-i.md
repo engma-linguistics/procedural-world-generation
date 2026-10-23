@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555]
 refs: [docs/review/ice-v2/checkpoint-0.md, docs/review/ice-v2-criteria.md, planet/tectonics/earth.py]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,4 +32,5 @@ Lean: B together with the carbon stock, with A as a quick test on the 10 seeds f
 icy-by-default is wanted.
 
 ## Updates
+- 2026-10-23: After PW-576 (CO2 stock, mature start): full sweep icehouse share median 43% (14-95%), ice bar passes on 5/11 runs (was 2/10 in band). Too-long/too-common icehouses on L6 seeds 11, 77, 505 and all three L7 seeds. See PW-611.
 - 2026-10-22: Created from inbox draft draft-default-climate-icier-than-earth.md (found by ice-v2-stage0).

@@ -1,4 +1,5 @@
 ---
+id: PW-611
 title: "Mature start + CO2 stock (a) on current main: the icehouse share splits the seeds (six at 51-69%, four at 11-38%); main's climate now holds ice ~0.5-1 C warmer"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneB4
 blocked_by: []
 relates: [PW-559, PW-576, PW-555]
 refs: [docs/review/base-climate/thermostat.md, planet/tectonics/earth.py, tools/ice_criteria.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Options:
 Lean: C first, as a measurement: the ice-vs-dT curve on main against 5c4c0fd at a fixed moment. Then B, but only if
 the cause is a sound mechanism and the share still sits high.
 - [ ] owner picks A, B or C
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-icehouse-share-split-on-main.md (found by base-climate-laneB4).

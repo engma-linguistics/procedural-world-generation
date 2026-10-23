@@ -1,4 +1,5 @@
 ---
+id: PW-612
 title: "Mature start: what still moves early (the breakup's erosion dip, sediment that keeps piling up, a little crust volume)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneB3
 blocked_by: []
 relates: [PW-558, PW-576, PW-559, PW-549]
 refs: [planet/tectonics/setup.py, docs/review/base-climate/thermostat.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -29,3 +32,6 @@ sediment cover (thermostat.md, Stage 3). The ice-free land's erosion now starts 
   faster.
 - [ ] decide whether the breakup dip needs anything (it may be the planet's own history)
 - [ ] check the volume ratio on more seeds; if it's the start's margins, look at subduction erosion of thin crust
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-relief-spinup-erosion-rise.md (found by base-climate-laneB3).
