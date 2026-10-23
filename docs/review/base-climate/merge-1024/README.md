@@ -28,3 +28,26 @@ Harness only: `SEEDS` in tests/test_timezoom_consistency.py. MIN_SHEETED, `_plau
 On 25-50 main gave 7 / 10 / 5. The module took ~13 min wall per draw with the three draws side by side
 (`PW_SEED_WORKERS=6`, `-n 2`). Full `pytest -q`: 603 passed in 541 s, with a health sweep running alongside (the
 earlier 268 s was measured with the 25-50 window on a less loaded machine); the module is the suite's long pole.
+
+## Step 2: merge A22 + A23 (PW-644, PW-646 C), head 83b2036
+
+Clean merge (no conflicts, goldens as the branch had them). Full `pytest -q`: 603 passed in 589 s. The three
+time-zoom modules on the re-rolled draws:
+
+| draw | forest (bar) | endings (bar 12) | sheeted (need 5) | speeds | index zero | ice at index zero | result |
+|---|---|---|---|---|---|---|---|
+| +0.001 | 14 / 18 (9) | 18 / 24 | 12 of 26 | 12 / 12 | 26 / 26 | 11 / 12 (9) | 38 passed |
+| -0.001 | 17 / 18 (9) | 17 / 24 | 14 of 24 | 14 / 14 | 24 / 24 | 13 / 14 (10) | 38 passed |
+
+Health (same session as main's):
+
+| sweep | pooled % kf < -150 m | seeds > 10% | old bar F | new bar F | icehouse % median / mean |
+|---|---|---|---|---|---|
+| defaults | 4.2 -> 8.6 | 2 -> 2 (1, 77) | 0 -> 0 | 4 -> 3 | 17.6 / 28.7 -> 22.6 / 34.3 |
+| 101-108 | 3.4 -> 3.2 | 1 -> 1 (105) | 0 -> 0 | 2 -> 3 | 27.4 / 30.6 -> 34.3 / 41.2 |
+
+A23's "3.8% main vs 5.9%" is the mean over both sets: (4.2 + 3.4) / 2 = 3.8 and (8.6 + 3.2) / 2 = 5.9. Confirmed
+exactly: the merged tree's sweeps are identical, seed for seed, to A23's `health_c` and `health2_c`. Old ice-bar
+fails: 0. Earth L6 (dT 0) is unchanged by the merge (`main/earth`, `step2/earth`): rain log-r 0.630, W Europe
+warmest 17.1 vs 18.0 (-0.9), SH coastal range 12.5, North Sea annual SST 6.9, NH sinking 13.86 Sv (90% open polar),
+Norwegian coast open in winter 100%.
