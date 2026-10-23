@@ -2,7 +2,7 @@
 id: PW-636
 title: Full flora arrives only in a run's last ~15-25%, so showcase moments are squeezed to its end
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: surface
@@ -40,6 +40,7 @@ level is fixed or if late-run geography turns out atypical.
 - [ ] owner picks an option
 
 ## Updates
+- 2026-10-23: Status todo -> done. Landed in main via thermostat lane 1024 (a99cd2c, merged with fd21d15): FLORA_PACE 0.8; health no signal (12.3 -> 12.0% pooled deep share, 16 seeds).
 - 2026-10-23: Thermostat lane 1024 step 2: fd7c174 re-applied on main + PW-680's fixed bed test. 611 passed; health (16 seeds) pooled deep share 12.3 -> 12.0%, icehouse +1.5 +- 9.3 points paired (no signal); golden regenerated; scorecard Earth 71.1%. Green to merge. docs/review/base-climate/thermostat-1024/.
 - 2026-10-23: Merge lane 1024 step 5: red on test_bed_settles_under_the_ice (47.1 m vs 46.2 m tolerance, one world, both re-rolled draws); not merged, held on PW-680. Branch worktree-agent-a7d7d62cbdfbcd691 kept.
 - 2026-10-23: Held branch worktree-agent-a7d7d62cbdfbcd691 (a3128cc): FLORA_PACE 0.8, C4 at ~0.68 of the run, 63-92 candidate frames. Health quick deepens icehouses (29 -> 43%); to be re-measured on top of PW-646 C (which amplifies sink-side changes ~29%) and PW-643's harness. Merge order: A20, then A22+C, then this.
