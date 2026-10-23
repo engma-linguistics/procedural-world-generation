@@ -1243,3 +1243,117 @@ Files in `laneA14/`:
 - The scorecard's before-run was stopped part-way by the coordinator's pause (the owner needed the machine quiet).
   Main's climate is unchanged since PW-589, so lane A13's line (`964a132+dirty`: Earth group 69.9, r 0.62) is
   still main's.
+
+## PW-596 option A: the winds first (lane A15)
+
+**Steps 1 and 2 pass their Earth bars and improve rain and Köppen. They break two time-zoom ice tests, so merging
+needs a ruling (`issue-tracking/inbox/draft-pw596-winds-break-timezoom-ice-tests.md`, lean: merge, fix the ice
+next). Step 3, PW-593's summer layer on the new winds, still fails rain r and the SH coastal range. It is not on
+the branch (`draft-sh-coastal-summer-winds-still-calm.md`).**
+
+Files in `laneA15/`:
+- `wdiag.py`: the summer wind per box, split into the belts, the 900 km land-sea part and the big part, plus each
+  season's contrast. Outputs `wind_before.txt` (main) and `wind_after.txt`.
+- `patag.py`: the SH summer's first-guess anomalies and wind parts at the SH coasts.
+- `p3.py`, the stage-3 probe, run per variant (`p3/p3_b{belt}_c{column}[_ml].txt`, toggles in
+  `pw596_probe_toggles.diff`).
+- `*_step1.txt`: step 1 alone. `*_after.txt`: steps 1+2, the branch. Main's are lane A14's `*_before.txt`
+  (planet/ is unchanged since).
+
+### What changed (`planet/climate.py`)
+1. **`westerly_belt`: the westerlies by season and hemisphere.**
+   - The surface westerlies are eddy-driven: they scale with the mid-latitudes' poleward temperature contrast (the
+     thermal wind). So `wind()`'s westerly term is multiplied, in each half-year and hemisphere, by that season's
+     zonal-mean contrast over 30–65 deg (`storminess`, the zonal mean `jet_stream` is built on).
+   - It is relative to the planet's own mean of the four. A planet without seasons keeps one belt, and the mean
+     stays U_REF's calibration.
+   - The first-guess winds use the first guess's contrast; the final (front-shifted) winds use the finished air's.
+   - On Earth (finished air), C per 1000 km: N summer 5.1, N winter 8.0, S summer 6.4, S winter 8.2. So the belts
+     are N 0.75 / 1.17 and S 0.91 / 1.17.
+   - Linear in the contrast, with no fitted exponent. Observed NH zonal-mean surface westerlies go roughly
+     summer/winter 0.6–0.7, about the contrast's ratio.
+2. **`low_column`: thermal lows as deep as the land's air column.**
+   - A thermal low's or high's pressure is hydrostatic, so it is the column's mean temperature anomaly.
+   - The land's anomaly is weighted by sum_h / fetch_h + (1 − that) × the land within fetch_km, the same rule
+     and constants as `_summer_fetch`.
+   - So narrow lands and continents' coasts make shallow lows, and continental interiors deep ones. No new
+     constant.
+
+### Narrow lands (task 2): the land's own low was not the cause
+- The column cuts Patagonia's own low (anomaly +1.0 C). Off Patagonia, though, the summer winds go 3.1 → 3.4 m/s
+  only.
+- What slows them is the **sea's** first-guess anomaly offshore, +1.9 C: `_sea_half`'s land part gives the sea
+  a big continent's swing whatever the land's width.
+- Weighting that land part by the column as well (`X_COL=3`) gives:
+  - Patagonia's half-swing 6.1 → 4.8 and the SH coastal range 11.5;
+  - but W Europe warmest −1.5 and near-land NH swing within 1.5x 43%.
+  - So it is not merged (draft).
+- Tasman and Agulhas are calm because `front_shift` reads their too-warm SST (PW-594) as a lower latitude.
+
+### The bars (Earth L6; main → step 1 → steps 1+2)
+| bar | main | step 1 (belts) | steps 1+2 (branch) |
+|---|---|---|---|
+| log-rain r ≥ 0.617 | 0.620 | 0.617 | **0.631** |
+| Köppen exact / group (cells) | 32 / 70 | 33 / 70 | **34 / 71** |
+| cities exact / group / wrong | 30 / 28 / 20 | 33 / 26 / 19 | 32 / 27 / 19 |
+| SH coastal range 0–150 km ≤ 12.5 (NCEP 9.6) | 12.4 | 12.3 | 12.3 |
+| W Europe warmest (pre-stage-3 +0.4) | −1.2 | −0.9 | −0.9 |
+| Fennoscandia warmest / coldest (PW-575) | −3.9 / −4.5 | −3.7 / −3.0 | −3.7 / **−2.8** |
+| Kola coldest / Iceland coldest | −13.5 / −3.7 | −12.6 / −2.7 | −12.4 / −2.3 |
+| coasts 40–65N with the sea to the west only: coldest / warmest (PW-026) | −1.1 / −3.2 | −0.7 / −2.7 | −0.7 / −2.8 |
+| Labrador / Quebec warmest | +3.2 | +4.3 | **+4.0** (worse) |
+| SH land 150–400 / 400–800 km warmest | +1.6 / +0.5 | +1.7 / +0.5 | +2.1 / +1.6 (worse) |
+| Pampas warmest, summer rain (obs 1349) | +4.2, 1677 | +4.1, 1745 | +5.6, 1126 |
+| E Australia summer rain (obs 765) | 2369 | 2383 | 1881 |
+| winter sea ice N / S (NCEP 16.8 / 20.2) | 16.8 / 23.3 | – | 16.7 / 23.2 |
+
+Summer winds (m/s; obs as in PW-596):
+
+| | main | branch |
+|---|---|---|
+| NE Pac / NE Atl | 8.7 / 7.9 | 7.2 / 6.6 |
+| band 40–55 N / S | 7.3 / 6.5 | 6.2 / 6.2 |
+| winter 40–55 N / S | 8.3 / 6.6 | 9.2 / 7.7 |
+| off Patagonia / Tasman / Agulhas | 3.1 / 3.5 / 2.3 | 3.4 / 3.2 / 2.0 |
+
+- The NH summer is fixed, and the SH now matches the NH in summer instead of trailing it.
+- Not met: "SH faster than NH" and "SH coasts not under ~5 m/s" (see the draft).
+
+**Stage 1 holds** (`overturning_after.txt`):
+- Earth NH 13.86 → 13.98 Sv, 90% in open polar seas; the Norwegian coast 100% open; SH 5.66 → 5.58.
+- The nine worlds are within −1.0 … +0.8 Sv per hemisphere, and all sink in both.
+- Step 1 alone moved c00ebf's south 11.9 → 8.0 and dad91b's 2.0 → 4.9. With the column these come back to 11.6
+  and 2.9.
+
+### Step 3: PW-593's summer layer on the new winds (`p3/*_ml*.txt`)
+| | main + ml_wind | branch + ml_wind (first-pass winds) | branch + ml_wind on the final winds |
+|---|---|---|---|
+| rain r ≥ 0.617 | 0.598 | 0.607 | 0.607 |
+| SH coastal range ≤ 12.5 | 14.6 | 14.7 | 14.7 |
+| W Europe warmest | −0.1 | +0.8 | +1.6 |
+| near-land swing within 1.5x N / S | 69 / 40% | 70 / 40% | 75 / 39% |
+| half-swing NE Atl / Pat / Tasman (obs 3.2 / 3.7 / 2.7) | 1.9 / 8.7 / 5.6 | 2.0 / 8.6 / 5.6 | 2.8 / 8.6 / 5.6 |
+
+It still fails, for the same reason as in A14: the SH coasts' summer winds are still ~3 m/s.
+
+### Tests and health
+- `uv run pytest -q`: 566 passed, 2 failed, with the goldens updated on purpose (climate and 60 Myr simulation
+  change through the winds). The failures are the time zoom's ice tests; assertions unchanged:
+  - `test_glacials_grow_ice_and_endings_melt_it_fast`, extra / left m (main 71.8 / 11.7): step 1 8.5 / –, branch
+    38.2 / 21.2.
+  - `test_cold_moment_has_sheets`: 0.72% of cells under ice (bar > 1%). It passes on main and with step 1 alone.
+- `tools/health.py --quick` (8 L6 seeds, 500 Myr; `laneA15/health_before.md` on d32f7fa, `health_after.md` on
+  the branch). **The runs grow more ice:**
+  - outlier spells 54 → 61;
+  - seeds with sea level below −150 m from ice for more than 10% of the run: 2 → 5 (42 25 → 49%, 77 0 → 61%,
+    1 10 → 29%, 21 0 → 24%, 2 16 → 20%);
+  - the new ice bar fails on 5 → 3 seeds (77 icehouse 100%, 42 86%, 3199 73%);
+  - giant-lake frames: seed 1 0 → 18%, 77 0 → 14%, 21 10 → 6%.
+  - These are single chaotic 500 Myr runs. But the drift is one way: more and deeper glaciation in the run, while
+    the time zoom's glacial grows less. Both are the ice lane's fitted rules (PW-471's v1 kludge) meeting the new
+    winds. That is recorded in `draft-pw596-winds-break-timezoom-ice-tests.md`.
+
+**Ready to merge? Not on my own call.** On Earth the change is better on every bar it was given (rain r, Köppen,
+W Europe, Fennoscandia's winter, stage 1), and it is the mechanism PW-596 asked for. But it turns two time-zoom
+tests red and makes the health sweep's ice-age outliers worse. Under the "global, not local, optimum" rule that is
+the coordinator's ruling (the draft's option A), not a lane's.
