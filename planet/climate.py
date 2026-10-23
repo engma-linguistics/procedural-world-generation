@@ -44,6 +44,17 @@ from . import ocean as ocean_mod
 from .geo import R_KM, is_land
 from .grid import Grid
 
+PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
+# 320-370 ppm; the plants' "today", vegetation.CA_REF). A run's CO2 stock is ln X against the planet's own balance
+# once its start has settled (tectonics/earth.py), and that balance holds dT = 0 (no drift, no ice beyond Earth's),
+# so X = 1 is this pCO2 (PW-646).
+
+
+def pco2(co2: float) -> float:
+    """The CO2 stock co2 (ln X, X against its reference) as a partial pressure, ppm: what plants and the
+    temperature term both read (PW-646)."""
+    return PCO2_REF * float(np.exp(co2))
+
 LAPSE = 6.5 / 1000  # degC per metre
 FREEZE = -1.8  # C: sea water freezes
 
@@ -946,7 +957,7 @@ def upwelling_cooling(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, away: n
 def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndarray,
                 relax_km: float = 2500.0, upwelling: float = 5.0,
                 eq_upwelling: float = 0.0, tune: dict | None = None, cur=None, away=None,
-                share=None, t_in=None, base=None) -> tuple[np.ndarray, np.ndarray]:
+                share=None, t_in=None, base=None, chill=None) -> tuple[np.ndarray, np.ndarray]:
     """Sea-surface temperature: the latitude's temperature t_eq, moved by the
     currents (warm water poleward along the western side of each ocean, cold
     water toward the equator along the eastern side), plus coastal upwelling
@@ -956,7 +967,9 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
     already known; share, t_in, base: where the overturning's inflow makes
     up a share of the surface water, its temperature (see ocean.py), and
     this function's sst without it: then the inflow's warmth is added to
-    base. Returns (sst, current)."""
+    base. chill: C the air off land takes from the water over the year
+    beyond what it gives back (compute's, from _sea_half), a cooling at the
+    surface like upwelling's. Returns (sst, current)."""
     G = _geom(grid)
     tune = {**TUNE, **(tune or {})}
     if cur is None:
@@ -989,6 +1002,8 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
         e = np.where(ocean, carry(grid, cur, d, b, km=km, diffusion=0.15, allowed=allowed), 0.0)
         return base + e - tune["moc_zonal"] * np.where(ocean, zonal_mean(grid, e, ocean, fold=True), 0.0), cur
     cold = upwelling_cooling(grid, ocean, wind_v, away, upwelling, eq_upwelling)
+    if chill is not None:
+        cold = cold + chill
     a = np.where(ocean, (1 - keep) * (t_eq - cold), t_eq)
     sst = carry(grid, cur, a, b, km=km, diffusion=0.15, allowed=allowed)
     anom = np.where(ocean, sst - t_eq, 0.0)
@@ -2157,7 +2172,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     h = _geom(grid)["h"]
     land_air = carry(grid, wind(grid, 0.0), land.astype(float), np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
                      4 * tune["air_km_w"], 0.25)
-    sea_half = _sea_half(grid.lat, tilt, s, land_air, tune)
+    sea_half, sea_half_w = _sea_half(grid.lat, tilt, s, land_air, tune, t_sea)
+    # The land's air takes more of the water's heat in winter than it gives
+    # it in summer, so the water's year is that much colder: hk x half the
+    # difference, a cooling at the surface the currents carry like upwelling's
+    chill = 0.5 * tune["hk"] * (sea_half_w - sea_half)
 
     # Winds for each half-year (Apr-Sep 'jul', Oct-Mar 'jan'). Rain is a
     # half-year mean, so the winds and rain use the half-years' mean
@@ -2167,8 +2186,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     warm0, cold0 = seasons(grid, elev, temp0, tilt, land)
     lift = LAPSE * np.maximum(surf, 0)  # back to sea level, for pressure
     t_sl0 = np.where(ocean, t_sea_air, 0.5 * (warm0 + cold0) + lift)
-    dsl = np.where(ocean, sea_half, 0.5 * (warm0 - cold0)) * sgn * hk
-    t_sl_jul, t_sl_jan = t_sl0 + dsl, t_sl0 - dsl
+    half_jul = np.where(ocean, np.where(north, sea_half, sea_half_w), 0.5 * (warm0 - cold0))
+    half_jan = np.where(ocean, np.where(north, sea_half_w, sea_half), 0.5 * (warm0 - cold0))
+    t_sl0 = t_sl0 - np.where(ocean, chill, 0.0)
+    t_sl_jul, t_sl_jan = t_sl0 + sgn * hk * half_jul, t_sl0 - sgn * hk * half_jan
     # the westerlies by season and hemisphere, from the first guess's contrast (westerly_belt); the land's
     # lows and highs as deep as its air column's warmth (low_column)
     col = low_column(grid, land, tune)
@@ -2185,7 +2206,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     cur, away = currents(grid, ocean, v_ann, tune)
 
     raw0, _ = sea_surface(grid, ocean, t_sea, v_ann, upwelling=tune["coast_up"], eq_upwelling=tune["eq_up"],
-                          tune=tune, cur=cur, away=away)
+                          tune=tune, cur=cur, away=away, chill=chill)
 
     def sst_of(share, t_in):  # (with the overturning's inflow)
         t, _ = sea_surface(grid, ocean, t_sea, v_ann, tune=tune, cur=cur, away=away, share=share, t_in=t_in,
@@ -2202,15 +2223,15 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     from .icemass import air_mass
     damp_air = air_mass(grid, ice_air, cold=ice_cold) if (ice_air > 1).any() else np.zeros(n)
     air = dict(grid=grid, ocean=ocean, temp0=temp0, lift=lift, t_sea_air=t_sea_air, t_sea=t_sea, s=s,
-               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air)
+               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air, half_w=sea_half_w)
     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
 
     # rain in each half-year, from its mean conditions
     tm = 0.5 * (t_warm + t_cold)
     dt = hk * (np.where(north, t_warm, t_cold) - tm)
-    sum_half = _summer_half(sst, sea_half, sea_half)
-    sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -sea_half), FREEZE)
-    sst_jan = np.maximum(sst + hk * np.where(north, -sea_half, sum_half), FREEZE)
+    sum_half = _summer_half(sst, sea_half, sea_half_w)
+    sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -sea_half_w), FREEZE)
+    sst_jan = np.maximum(sst + hk * np.where(north, -sea_half_w, sum_half), FREEZE)
     # the jet stream over each half-year's temperatures steers its storms
     jets, tracks = [], []
     for t_s in season_temps(grid, surf, t_warm, t_cold, hk):
@@ -2227,7 +2248,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # use the same global mean as the rain). Pack ice is no lid: its leads
     # and polynyas keep a share `leads` of a frozen sea open, and the very
     # cold, dry air over them takes up water fast (PW-308).
-    open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half)
+    open_y = ocean_mod.open_share(sst, np.minimum(t_sea_air - t_sea, 0.0), sea_half_w)
     pet = pet_halves(grid.lat, temp, t_warm, t_cold, tilt)
     # In the summer half the air that came off land (land_air) is warmer
     # than the sea it crosses (that air is what warms a coastal sea beyond
@@ -2279,15 +2300,19 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     export = tune["ice_export"] + (1 - tune["ice_export"]) * off
     fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
                               tune, export)
-    oc = ocean_mod.solve(grid, ocean, sst_of, sst0, t_sea, cur, fw["total"], ice_m, sea_half, tune, moc_start,
+    oc = ocean_mod.solve(grid, ocean, sst_of, sst0, t_sea, cur, fw["total"], ice_m, sea_half_w, tune, moc_start,
                          np.where(ocean, np.minimum(t_sea_air - t_sea, 0.0), 0.0), -elev)
-    half_w = sea_half
+    half_w = sea_half_w
     if oc["sites"]:
         sst = oc["sst"]
         # where the surface water is the overturning's deep inflow, its winter cools less (ocean.winter_half)
-        half_w = air["half_w"] = ocean_mod.winter_half(sea_half, oc["share"], tune)
+        half_w = air["half_w"] = ocean_mod.winter_half(sea_half_w, oc["share"], tune)
         t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
         t_warm, t_cold, temp, _, _ = _land_finish(t_warm, t_cold, temp, **fin)
+    # A shelf sea's water is the air's more than the currents' (_shelf_air): the North Sea's and the Baltic's
+    # winters are the Atlantic air's that crossed Britain and Denmark, the Yellow Sea's the monsoon's off China.
+    # (After the overturning, like its warmth: the rain and the sinking don't see it.)
+    sst = _shelf_air(grid, ocean, sst, t_sea, v_ann, -elev, _open_air(t_warm + lift, t_cold + lift), tune)
     # The wind belts follow the air masses (front_shift): with the finished
     # air, a warm polar sea pulls the westerlies north over it and a cold
     # continent lets the polar air south. The land-sea winds stay the first
@@ -2419,7 +2444,37 @@ SUN_SURFACE = 0.5  # share of the top-of-atmosphere sunshine that reaches the gr
 # sunshine, at half the day sunny)
 
 
-def _sea_half(lat, tilt, s, land_air, tune):
+def _open_air(t_warm, t_cold):
+    """The year's mean of the air as a sea's water feels it: the months'
+    sine between t_cold and t_warm, but no colder than freezing, since the
+    sea's ice keeps the colder air off the water."""
+    m, amp = 0.5 * (t_warm + t_cold), np.maximum(0.5 * (t_warm - t_cold), 1e-6)
+    th = np.arcsin(np.clip((FREEZE - m) / amp, -1.0, 1.0))
+    return FREEZE + ((m - FREEZE) * (np.pi - 2 * th) + 2 * amp * np.cos(th)) / (2 * np.pi)
+
+
+def _shelf_air(grid, ocean, sst, t_eq, v, depth, t_air, tune):
+    """The sea temperature on the shelves (PW-592). The currents carry the
+    water's warmth (or cold) in a layer moc_layer_m deep (the overturning's
+    inflow, the gyres' thermocline), and the shelf break steers them along
+    it (geostrophic flow follows the depth contours), so on a shelf only
+    depth / moc_layer_m of their anomaly (sst - t_eq) comes onto it. The rest
+    of a shallow column's temperature is the air's: it takes on the air the
+    wind brings, which is the land's (t_air: its annual air at sea level as
+    the water feels it, _open_air) where that came off land, and the
+    water's own over the sea it crossed. So the
+    North Sea gets the Atlantic air that crossed Britain instead of the
+    latitude's mean, and the Yellow Sea the monsoon air off China; the deep
+    sea next to them is left as it was. Not kept to each band's mean: the
+    heat is the air's, not moved round the ocean."""
+    anom = np.where(ocean, sst - t_eq, 0.0)
+    f = np.where(ocean, np.clip(1.0 - np.maximum(depth, 0.0) / tune["moc_layer_m"], 0.0, 1.0), 0.0)
+    a = np.where(ocean, (1.0 - f) * anom, t_air - t_eq)
+    z = carry(grid, v, a, f, 4 * tune["air_km_w"], 0.25)
+    return np.where(ocean, np.maximum(t_eq + z, FREEZE), sst)
+
+
+def _sea_half(lat, tilt, s, land_air, tune, t_sea=None):
     """The sea's seasonal half-swing (C): its own plus a share of the land's.
     Its own: the seasons' sunshine (half the year's swing of the monthly
     mean at the ground, after the sea's albedo) into the mixed layer
@@ -2428,16 +2483,29 @@ def _sea_half(lat, tilt, s, land_air, tune):
     toward the poles, and none at the equator. The land's: where the air
     over the sea came off land (land_air), it pulls the water toward the
     land's own swing (continental x season strength) by the air-sea
-    exchange open_b against the mixed layer's heat capacity: c = open_b /
-    (open_b + rho c h omega) ~0.42. So a sea downwind of land swings far
-    more than an ocean the westerlies cross without meeting land, and a bay
-    inside a continent most of all. (The winter air's own cold over the sea
-    is carried separately: _winter_air.)"""
+    exchange against the mixed layer's heat capacity. In winter the land's
+    air is colder than the water: heated from below, it churns, and takes
+    the water's heat at open_b (c = open_b / (open_b + rho c h omega) ~0.42).
+    In summer it is warmer than the water and lies stable over it (as it
+    does for the vapour, PW-578): no turbulence carries its heat down, only
+    its longwave (4 sigma T^3 at the water's temperature t_sea, ~5 W/m2 per
+    C: c ~0.12). So a sea downwind of land swings far more than an ocean
+    the westerlies cross without meeting land, and a bay inside a continent
+    most of all, mostly in its winter (PW-595). (The winter air's own cold
+    over the sea is carried separately: _winter_air.)
+    Returns (summer half-swing, winter half-swing)."""
     ra = insolation(lat, tilt) * (1e6 / 86400.0)  # W/m2, (12, n)
     cap = RHO_C_SEA * tune["brine_m"] * 2 * np.pi / YEAR_S
     own = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0)) / np.hypot(cap, tune["ice_b"])
     c = tune["open_b"] / (tune["open_b"] + cap)
-    return own + c * tune["continental"] * s * land_air
+    t = 15.0 if t_sea is None else t_sea
+    lw = 4 * SIGMA_SB * (np.maximum(t, FREEZE) + 273.15) ** 3
+    c_s = lw / (lw + cap)
+    land = tune["continental"] * s * land_air
+    return own + c_s * land, own + c * land
+
+
+SIGMA_SB = 5.67e-8  # W/m2/K4
 
 
 def _summer_half(sst, half, half_w):

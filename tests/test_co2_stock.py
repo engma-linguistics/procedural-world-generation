@@ -33,8 +33,8 @@ def test_stock_is_stable_at_long_steps():
 def test_forcing_levels_off_smoothly():
     class P:
         co2_sensitivity = 3.0
-    assert np.isclose(earth.co2_term(P, 0.5), 1.5, rtol=0.01)
-    assert earth.co2_term(P, 50.0) < 3.0 * earth.CO2_MAX + 1e-9
+    assert np.isclose(earth.co2_term(P, np.log(2.0)), 3.0, rtol=0.01)  # co2_sensitivity per doubling (PW-646)
+    assert earth.co2_term(P, 50.0) < 3.0 / np.log(2.0) * earth.CO2_MAX + 1e-9
     assert earth.co2_term(P, -1.0) == -earth.co2_term(P, 1.0)
 
 

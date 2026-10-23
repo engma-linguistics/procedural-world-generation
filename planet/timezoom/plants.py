@@ -61,9 +61,9 @@ class Plants:
         self.g, self.p, self.tilt, self.area = g, p, tilt, area
         v = src.get("veg") or {}
         self.nu, self.lai = v.get("nu0"), None
-        self.co2_0 = float(v.get("co2", 0.0))
+        self.pco2_0 = float(v.get("pco2", V.CA_REF))  # ppm: the run's (climate.pco2) at the zoom's start
         self.unlocked = v.get("unlocked")
-        # the run's CO2 index is its temperature term over co2_sensitivity (earth.global_temperature)
+        # the CO2 part of dTg warms by co2_sensitivity per doubling, as the run's (earth.co2_term)
         self.co2_sens = float(src.get("params", {}).get("co2_sensitivity", Params().co2_sensitivity))
         self.tune = climate.TUNE
         self.neutral = neutral(g.n, self.tune)
@@ -94,7 +94,7 @@ class Plants:
         t0 = time.time()
         v = V.model(self.g, surf, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], self.tilt,
                     c["cloud_jul"], c["cloud_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
-                    co2=self.co2_index(co2_c), unlocked=self.unlocked, cheap=not full)
+                    pco2=self.pco2(co2_c), unlocked=self.unlocked, cheap=not full)
         self.nu, self.lai = v["eq"]["nu"], v["pot"]["lai"]
         self._last = v
         self.raw = V.feedback(self.nu, self.lai)
@@ -163,9 +163,10 @@ class Plants:
         if self._last is not None:
             self.migrate(t_end)
 
-    def co2_index(self, co2_c: float) -> float:
-        """The CO2 index the plants feel (the run's, as the model takes it) at the CO2 term co2_c of dTg."""
-        return self.co2_0 + co2_c / self.co2_sens
+    def pco2(self, co2_c: float) -> float:
+        """The CO2 the plants feel, ppm, at the CO2 term co2_c (C) of dTg: the run's, co2_c / co2_sensitivity
+        doublings away (PW-646)."""
+        return self.pco2_0 * 2.0 ** (co2_c / self.co2_sens)
 
     def correct(self, c: dict, open_: np.ndarray, old: dict | None) -> None:
         """The climate c (computed with the plants old) given the current plants' albedo warming instead

@@ -1,0 +1,51 @@
+health: 9 runs, 2 workers x 2 threads
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: +0.0253 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0213 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0245 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0230 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0216 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0255 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0296 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0217 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0203 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+  [    461s] health 2026-10-23 seed 2 L6: run 1377c8 (1/9)
+  [    490s] health 2026-10-23 seed 1 L6: run aee5a1 (2/9)
+  [    946s] health 2026-10-23 seed 21 L6: run dd1f33 (3/9)
+  [   1071s] health 2026-10-23 seed 11 L6: run d6a78a (4/9)
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0242 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+  [   1486s] health 2026-10-23 seed 3199 L6: run 981b0c (5/9)
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0220 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+  [   1622s] health 2026-10-23 seed 42 L6: run ef5a4a (6/9)
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: -0.0234 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+  [   2014s] health 2026-10-23 seed 77 L6: run 6536e9 (7/9)
+  [   2088s] health 2026-10-23 seed 505 L6: run 44129e (8/9)
+/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: +0.0253 m/yr
+  fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+  [   2098s] health 2026-10-23 seed 1 L6 determinism: run 7513e3 (9/9)
+health: simulations 2099 s, measures 5 s -> /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a2b66e784ed5186c3/docs/review/base-climate/laneA20/health_branch/report.md
+  seed 42 L6 giant_lake_frames: 17.6 (whole run)
+  seed 21 L6 giant_lake_frames: 15.7 (whole run)
+  seed 2 L6 giant_lake_frames: 11.8 (whole run)
+  seed 21 L6 lake_max_mkm2: 5.554 (312-340 Myr (6 frames))
+  seed 2 L6 lake_max_mkm2: 5.292 (396-412 Myr (4 frames))
+  seed 3199 L6 giant_lake_frames: 9.8 (whole run)
+  seed 2 L6 lake_max_mkm2: 5.404 (376-376 Myr (1 frames))
+  seed 21 L6 lake_max_mkm2: 4.981 (356-356 Myr (1 frames))
+  seed 77 L6 sea_ice_below_150: 15.7 (whole run)
+  seed 3199 L6 lake_max_mkm2: 2.515 (388-388 Myr (1 frames))
+  seed 3199 L6 lake_max_mkm2: 2.266 (496-500 Myr (2 frames))
+  seed 11 L6 lake_max_mkm2: 2.179 (300-304 Myr (2 frames))
+  determinism: identical
+  deleted the L6 runs (kept L7: )

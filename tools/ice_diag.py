@@ -117,7 +117,7 @@ def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
     """The CO2 thermostat's gain after the spin-up (PW-572), by regression over the steps:
       g          d ln(sink)/dT, holding the land share fixed (sea level and tectonics move the land
                  independently of the climate; the review's thermo2): how hard the sink answers warmth
-      fb         the CO2 warming per C of cooling it gives: co2_sensitivity x g / WEATHER_CO2
+      fb         the CO2 warming per C of cooling it gives: co2_sensitivity / ln 2 x g / WEATHER_CO2
       g_raw      the same slope without the land control
       parts      d ln(part)/dT of each part of the sink (they add up to g_raw): the erosion supply from the
                  ice-free land, the temperature factor, the plant factor (and the saturation's efficiency,
@@ -141,7 +141,7 @@ def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
     one = np.ones(ok.sum())
     slope = lambda y: float(np.polyfit(dT[ok], y[ok], 1)[0])
     g = float(np.linalg.lstsq(np.c_[dT[ok], land[ok], one], ln["sink"][ok], rcond=None)[0][0])
-    sens = d.get("params", {}).get("co2_sensitivity", Params().co2_sensitivity)
+    sens = d.get("params", {}).get("co2_sensitivity", Params().co2_sensitivity) / np.log(2.0)  # C per e-fold
     lsrc = np.log(f("src"))[ok]
     res_c = co2t[ok] - np.polyval(np.polyfit(lsrc, co2t[ok], 1), lsrc)
     res_t = dT[ok] - np.polyval(np.polyfit(lsrc, dT[ok], 1), lsrc)

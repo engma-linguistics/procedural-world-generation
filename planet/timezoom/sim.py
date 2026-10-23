@@ -351,7 +351,7 @@ class _Sim:
                 "insol_65n_jul_anom": round(dq65, 1), "dT_global": round(dTg, 2),
                 "ice_age": NAMES[self.index.modes[self.s_no]] if self.index else NAMES[0],
                 "glacial_index": round(self.forcing.I, 3),
-                **({"co2": round(F.plants.co2_index(self.forcing.co2), 3)} if F.plants.on else {}),
+                **({"pco2": round(F.plants.pco2(self.forcing.co2), 1)} if F.plants.on else {}),
                 "overturning_north_sv": round(F["moc_sv"][0], 1),
                 "overturning_south_sv": round(F["moc_sv"][1], 1),
                 "mean_speed_cmyr": 0, "max_speed_cmyr": 0}

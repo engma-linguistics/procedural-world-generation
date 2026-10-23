@@ -1,0 +1,31 @@
+Earth L4, dT -4.0, CO2 index -0.333
+[ref] F below 40: +0.000 W/m2, all land: +0.000
+    0-15 P  2168 PET  1431 mi 1.51 tree 13.84 herb 0.33 bare 0.17 | forest 15.05 sav+grass 13.68 desert  0.00 Mkm2 | F +0.000
+   15-30 P   632 PET  1335 mi 0.47 tree  0.82 herb 0.46 bare 0.48 | forest  0.98 sav+grass 24.94 desert  8.46 Mkm2 | F +0.000
+   30-40 P   404 PET   903 mi 0.45 tree  2.27 herb 0.34 bare 0.41 | forest  3.45 sav+grass 12.93 desert  0.81 Mkm2 | F +0.000
+   40-90 P   703 PET   441 mi 1.60 tree 25.59 herb 0.13 bare 0.15 | forest 33.23 sav+grass  3.77 desert  0.21 Mkm2 | F +0.000
+[all] F below 40: +0.116 W/m2, all land: +0.081
+    0-15 P  2014 PET  1326 mi 1.52 tree 14.87 herb 0.32 bare 0.14 | forest 16.98 sav+grass 11.56 desert  0.19 Mkm2 | F +0.059
+   15-30 P   607 PET  1214 mi 0.50 tree  1.39 herb 0.45 bare 0.47 | forest  2.02 sav+grass 24.36 desert  7.81 Mkm2 | F +0.036
+   30-40 P   400 PET   773 mi 0.52 tree  3.13 herb 0.30 bare 0.40 | forest  4.50 sav+grass 10.67 desert  1.79 Mkm2 | F +0.021
+   40-90 P   566 PET   329 mi 1.72 tree 19.44 herb 0.13 bare 0.19 | forest 26.84 sav+grass  1.97 desert  0.58 Mkm2 | F -0.034
+[cool] F below 40: +0.211 W/m2, all land: +0.191
+    0-15 P  2014 PET  1326 mi 1.52 tree 17.99 herb 0.22 bare 0.14 | forest 20.33 sav+grass  8.21 desert  0.19 Mkm2 | F +0.139
+   15-30 P   607 PET  1214 mi 0.50 tree  1.61 herb 0.45 bare 0.47 | forest  2.61 sav+grass 23.98 desert  7.61 Mkm2 | F +0.041
+   30-40 P   400 PET   773 mi 0.52 tree  3.24 herb 0.32 bare 0.38 | forest  4.51 sav+grass 10.85 desert  1.61 Mkm2 | F +0.031
+   40-90 P   566 PET   329 mi 1.72 tree 19.86 herb 0.13 bare 0.16 | forest 27.40 sav+grass  1.78 desert  0.39 Mkm2 | F -0.020
+[temp] F below 40: +0.243 W/m2, all land: +0.227
+    0-15 P  2168 PET  1326 mi 1.63 tree 19.38 herb 0.18 bare 0.13 | forest 22.07 sav+grass  6.48 desert  0.19 Mkm2 | F +0.177
+   15-30 P   632 PET  1214 mi 0.52 tree  1.82 herb 0.44 bare 0.47 | forest  3.44 sav+grass 23.32 desert  7.44 Mkm2 | F +0.041
+   30-40 P   404 PET   773 mi 0.52 tree  3.20 herb 0.30 bare 0.39 | forest  4.27 sav+grass 11.29 desert  1.40 Mkm2 | F +0.025
+   40-90 P   703 PET   329 mi 2.14 tree 19.81 herb 0.14 bare 0.17 | forest 27.22 sav+grass  1.59 desert  0.58 Mkm2 | F -0.017
+[rain] F below 40: -0.023 W/m2, all land: -0.060
+    0-15 P  2014 PET  1431 mi 1.41 tree 13.20 herb 0.35 bare 0.18 | forest 14.16 sav+grass 14.57 desert  0.00 Mkm2 | F -0.015
+   15-30 P   607 PET  1335 mi 0.46 tree  0.73 herb 0.47 bare 0.48 | forest  0.78 sav+grass 24.93 desert  8.68 Mkm2 | F -0.003
+   30-40 P   400 PET   903 mi 0.44 tree  2.16 herb 0.35 bare 0.41 | forest  3.03 sav+grass 12.56 desert  1.60 Mkm2 | F -0.005
+   40-90 P   566 PET   441 mi 1.28 tree 23.81 herb 0.15 bare 0.17 | forest 32.86 sav+grass  3.96 desert  0.21 Mkm2 | F -0.037
+[co2] F below 40: -0.131 W/m2, all land: -0.145
+    0-15 P  2168 PET  1431 mi 1.51 tree  9.15 herb 0.48 bare 0.19 | forest  8.96 sav+grass 19.77 desert  0.00 Mkm2 | F -0.111
+   15-30 P   632 PET  1335 mi 0.47 tree  0.65 herb 0.46 bare 0.49 | forest  0.78 sav+grass 25.15 desert  8.46 Mkm2 | F -0.009
+   30-40 P   404 PET   903 mi 0.45 tree  2.14 herb 0.34 bare 0.43 | forest  2.82 sav+grass 12.60 desert  1.77 Mkm2 | F -0.010
+   40-90 P   703 PET   441 mi 1.60 tree 24.94 herb 0.13 bare 0.17 | forest 32.46 sav+grass  3.96 desert  0.21 Mkm2 | F -0.014

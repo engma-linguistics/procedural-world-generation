@@ -65,6 +65,7 @@ Options:
 - [ ] the endings test crossed (`laneA16/xzoom.sh`) on step 2's climate
 
 ## Updates
+- 2026-10-23: Merge lane 1024, step 4: the diff on main + A22/A23 + A20, A17's change lines exactly (A20's PW-633 shelf_probe left out). Tests green on three draws. Earth L6: rain log-r 0.649, SH coastal 12.2, W Europe warmest -1.4 (from -0.4 on shelf air), North Sea annual SST 8.5 to 7.9. Health pooled keyframes below -150 m: 7.6 to 4.4% (defaults), 7.3 to 20.1% (101-108); old ice bar fails 2 to 3 of 16. Deeper icehouses, recorded on PW-653. docs/review/base-climate/merge-1024/.
 - 2026-10-23: Multi-seed lane (PW-643): step 2 passes forest 16/24 (borderline), endings 21/24, sheets 6 of 13.
 - 2026-10-23: Lane A20: on the shelf-air branch, step 2 gives W Europe warmest -1.6 (vs -0.4 without), Biscay-North Sea summer -4.6; with PW-633's layer -1.3 / -4.1; rain r 0.649 (0.653). Still a diff.
 - 2026-10-23: Lane A18: the endings-test failure on step 2 is run chaos (climate swap: step-2 climate passes on the step-1 world, step-1 climate fails on the step-2 world); cold source worlds fail on both trees (PW-632). Europe's regression is step 2 cutting the shelf seas' swing on top of their cold bias (PW-592); no summer-layer mechanism found to undo it; shelf-depth layer probe in PW-633. Step 2 stays a diff (docs/review/base-climate/laneA17/step2_stable_summer.diff).

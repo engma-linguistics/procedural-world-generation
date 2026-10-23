@@ -1680,3 +1680,377 @@ terminations is warm subsurface water at the fronts, and the zoom has none (PW-3
   - The zoom: glacials only -56 / -62 / -73 / -70 / -69 / -74 m (base -79..-98), give-back 0.66-0.84.
   So a uniform rise in calving costs Earth ~20 m of glacial. The marine loss would have to grow at the endings
   themselves, through the ocean's warmth, not everywhere: `draft-marine-fronts-no-ocean-melt.md`.
+
+## PW-644: low CO2 is what shrinks a glacial's tropical forest (lane A22)
+
+**The water balance is not the cause. The tropics green under cooling because the plants' respiration falls (Q10
+2), and the CO2 the zoom lowers barely reached the plants. The CO2 index only nudged C3 light-use efficiency by 12%
+per unit, with no effect on water use. The fix gives every C3 plant Farquhar's light-limited quantum yield against
+today's, the way C3 grass already had it, and gives every plant a water-use efficiency that scales with Ca (Ci/Ca
+held constant). At index 0 nothing changes, so today's Earth is identical. At Earth's time-zoom glacial maximum the
+tropical forest share now falls (-15..15 deg: 0.44 -> 0.51 on main, 0.43 -> 0.28 here). The low-latitude
+darkening at the zoom's glacial CO2 goes from +0.21 to -0.03 W/m2. In the forest test's milder setting (-4 C,
+index -1/3) it only drops, from +0.118 to +0.092 on seeds 1-24. The run uses the same plant code, so `simulate`
+outputs change: health is mixed (see below).**
+
+Branch `worktree-agent-ac50a7a56279c5017`: main 69db596, plus PW-643's harness (8f090f8, its own commit), plus
+the fix. Files in `laneA22/` (README.md lists them).
+
+### Where the greening came from (Earth L4, `lowlat.py`, `lowlat_split.py`; main)
+Tree area at |lat| < 15 deg, against 13.8 Mkm2 at the start; the forest test's setting is -4 C (about -2 C in the
+tropics):
+
+| case | tree, Mkm2 |
+|---|---|
+| cooled climate, CO2 0 | 18.0 |
+| cooled temperatures, the start's rain | 19.4 |
+| ... with the start's PET (only what acts inside the plants) | 17.8 |
+| cooled PET only | 14.7 |
+| cooled rain only (-7% there; PET -7% too, so P/PET stays 1.52) | 13.2 |
+| CO2 index -1/3 only, main's code | 12.3 |
+
+- **Mechanism:** the plants' own temperature response does most of it. The tropical trees' growth curve is flat over
+  20-32 C, so what changes is maintenance respiration, 2^((t-20)/10). Trees, with their wood respiration, gain
+  ~15% NPP from 2 C of cooling.
+  - Real respiration acclimates. Draft: `draft-respiration-has-no-thermal-acclimation.md`.
+  - The rain falls as much as the PET does, so the water balance is neutral.
+- **CO2:** on main, -1/3 of index costs C3 trees 4% of their efficiency. The light-limited quantum yield,
+  (Ci - G*) / (Ci + 2 G*), gives 12% at 27 C, in line with FACE (beta ~0.55). In the wet tropics the water-use
+  part hardly matters, but it caps GPP in the drylands.
+
+### The fix (`planet/vegetation.py`)
+- C3_PFTS (every type but C4 grass, CAM and C3 grass) take qy = 2: g_m x q3(t, Ci) / q3(t, Ci_ref). This replaces
+  `1 + 0.12 co2` on eps.
+- `wue` x 2^co2 for every plant.
+- The C4 envelope shift and C3 grass's own quantum yield are unchanged. Nothing changes at co2 = 0, and the
+  climate golden is unchanged.
+
+### Earth (the plausibility anchor)
+**`tools/tz_earth.py --level 6`** (600 kyr). It now prints the forest share of open land by band.
+
+| band | main, interglacial -> glacial max | A22 |
+|---|---|---|
+| 60..90 | 0.27 -> 0.03 | 0.26 -> 0.01 |
+| 50..60 | 0.70 -> 0.39 | 0.69 -> 0.34 |
+| 40..50 | 0.64 -> 0.54 | 0.64 -> 0.51 |
+| 30..40 | 0.20 -> **0.26** | 0.20 -> 0.19 |
+| 15..30 | 0.07 -> 0.09 | 0.07 -> 0.07 |
+| -15..15 | 0.44 -> **0.51** | 0.43 -> **0.28** |
+| -40..-15 | 0.12 -> 0.17 | 0.12 -> 0.17 |
+| -90..-40 | 0.65 -> 0.39 | 0.64 -> 0.36 |
+
+- **The ice-age bars, main -> A22:**
+  - cycles 98-109 kyr on both;
+  - maxima -79..-98 m -> -80..-101 m (the maxima bar F -> ok);
+  - cooling 6.22 C on both (F as before);
+  - endings give back 0.67-0.87, ok;
+  - interglacial ice 9.9-13.0% (F as before);
+  - Laurentide 10.7 Mkm2 to 38 N.
+- **The southern subtropics still green** (-40..-15: 0.12 -> 0.17). That is the cooler, lower-PET dry woodland. Some
+  of the LGM's southern drylands were wetter and some drier, so this is left as it is.
+- **Biome areas at the zoom's glacial maximum** (`lowlat_*_glacial.txt`, L4, -6.22 C, index -1.04; |lat| < 15):
+  - forest: 15.1 -> 18.7 Mkm2 on main, 15.1 -> **8.2** here;
+  - savanna and grass: 13.7 -> 9.9 on main, 13.7 -> **20.6** here (LGM: rainforest reduced, savanna expanded).
+  - Below 40 deg: F +0.210 -> **-0.027** W/m2.
+  - Over all land: F +0.157 -> -0.150. Cold desert and steppe spread poleward of 40, 0.2 -> 6.9 Mkm2.
+- **Earth in the forest test's setting** (`fearth_a22_L*.txt`; A21's on main):
+  - F: -0.194 -> -0.250 (L4), -0.243 -> -0.305 (L6);
+  - below 40, snow-free: +0.096 -> +0.056, +0.120 -> +0.075;
+  - trees below 40: +1.95 -> +0.94, +2.35 -> +0.91 Mkm2.
+
+### Multi-seed (seeds 1-24, the harness's draw and two null draws at climate_offset +-0.001 C; bar 17)
+| | main (A21) | A22 |
+|---|---|---|
+| forest: draw / +0.001 / -0.001 | 20 / 16 / 16 | **20 / 20 / 19** |
+| endings: draw / +0.001 / -0.001 | 18 / 19 / 19 | 19 / 22 / 22 |
+| L5 cold moment, eps 0: plausible, sheeted (need 5), speeds, index 0 | 14, 7, 7/7, 7/7 | 13, 10, 8/10, 9/10 |
+| L5 cold moment, eps +0.001 | 13, 10, 10/10, 9/10 | 9, 5, 5/5, 5/5 |
+
+Every bar passes on every draw.
+
+**F's parts over the 72 worlds** (`a22pool.txt`, W/m2, main -> A22):
+- F -0.050 -> -0.098;
+- below 40 deg, snow-free: +0.118 -> +0.092;
+- boreal loss over snow -0.152 -> -0.159;
+- trees below 40: +1.82 -> +1.02 Mkm2.
+
+The test's CO2 term is -1 C at -4 C, a quarter share, where the zoom uses half (co2_share 0.5). At that mild CO2
+the respiration term still wins below 40 deg.
+
+### Run physics (`simulate` changes: the run's plants use the same code)
+The runs' CO2 index in the store spans -1.33 .. +0.98 (5-95%, median -0.31), so their plants change.
+
+`tools/health.py --quick` (8 L6 seeds, 500 Myr, main export against this branch, same session):
+- outlier spells: 72 -> 67;
+- new ice bar fails: 4 -> 2;
+- old ice bar fails: 0 -> 2 (seeds 1, 11);
+- frames with ice sea level below -150 m: seeds 2/42/77 at 12/12/10% on main, seeds 1/2/11 at **29/20/16%** here;
+- determinism identical;
+- median NPP per seed 278-412 -> 253-425; tree cover 26-38% -> 24-40%.
+
+Lower CO2 now means fewer trees and a brighter land, so cold eras may run deeper. That is a real feedback, but 29%
+of seed 1's frames past -150 m is above PW-240's 10% bar. It is one sweep of a chaotic system and needs a second
+draw before anyone reads it as a trend.
+
+### Tests
+- With the harness: `pytest -q`, 601 passed.
+- Main's single-seed tests on this `planet/` (an export): 598 passed and 3 failed, all on the single seeds' new
+  worlds:
+  - `test_glacials_grow_ice_and_endings_melt_it_fast`: seed 1's left_m 27 against 17; seed 1 is one of the 5 of
+    24 that fail;
+  - `test_cold_moment_has_sheets`: the first plausible seed has 0.1% ice;
+  - `test_ice_speeds_plausible`: median 158 against 100.
+- The sim golden was regenerated on purpose (`tests/golden/sim_L4_s1_60myr.json`); the climate golden is
+  unchanged.
+
+**Ready?** On the mechanism, yes: it is planet-relative physics with no new knobs, and Earth today is unchanged.
+On the tests, only with PW-643's harness (or re-picked single seeds). On the run physics, the health sweep's
+deeper cold spells want a second look by the coordinator before merge.
+
+Drafts:
+- `draft-respiration-has-no-thermal-acclimation.md`;
+- `draft-tropical-forest-area-hypersensitive.md` (a 20% CO2 drop takes the tropical forest from 15 to 9 Mkm2 at
+  today's climate);
+- `draft-co2-index-units-ln-or-log2.md` (needs-decision).
+
+## PW-646 option C: the run carries a real pCO2 (lane A23)
+Branch on main 9b30887 + lane A22 (PW-644, 3e2a10a; its harness cherry-pick 89cc49c reverted). Scripts and outputs
+are in `laneA23/` (README there).
+
+### What changed
+- `climate.pco2(co2) = PCO2_REF x e^co2`, with `PCO2_REF` = 350 ppm.
+  - The stock's reference (X = 1) is the planet's own balance at REF_FREEZE. That balance holds the climate model's
+    dT = 0, which is Earth's climate as its data show it (~1960-2000, 320-370 ppm). It is also the plants' "today"
+    (`vegetation.CA_REF`, which they were tuned at), so no new number.
+- `co2_sensitivity` is now **3 C per doubling** of pCO2 (Earth's equilibrium sensitivity, AR6 2.5-4; the ice's
+  albedo is its own term). It was 3 C per e-fold, 2.1 C per doubling. `earth.co2_term` divides by ln 2; the param's
+  value is unchanged.
+- The plants take pCO2 in ppm (`vegetation.envelope/potential/model/coupled_climate(pco2=)`):
+  - Ci = 0.7 Ca;
+  - WUE ~ Ca;
+  - C4's warmth threshold moves 3 C per doubling.
+  - They are held within `CO2_RANGE` = 1.5 doublings of CA_REF (124-990 ppm, the old clip).
+- The run hands them `climate.pco2(sim.co2)`; frames and world meta store `pco2` (ppm); `co2` (ln X) stays in the
+  run's stats for the thermostat's tools.
+- The time zoom's plants feel `pco2_0 x 2^(co2_c / co2_sensitivity)`, where co2_c is the CO2 part of dTg. So
+  plants and temperature read one quantity in the run and in the zoom.
+- `ice_diag`'s fb and `diag`'s co2_term_free use the per-e-fold sensitivity.
+
+### Question 1: reference and sensitivity (`co2_choices.txt`)
+Earth's zoom at its glacial maximum (CO2 term -3.11 C):
+
+| reading | per doubling | ppm |
+|---|---|---|
+| A (log2, as A22) | (3 per e-fold) | 171 |
+| B (ln, 3 C per e-fold) | 2.08 | 124 (at the clip) |
+| **C (ppm, 3 C per doubling, ref 350)** | 3 | **171** |
+| C, ref 280 | 3 | 136 |
+| C, 4 C per doubling | 4 | 204 |
+
+- C with Earth's sensitivity gives the same plants as A for any given CO2 term in C. A's log2 reading *was* 3 C per
+  doubling, as far as the plants could tell.
+- What C changes is the run: an e-fold of the stock now warms 4.33 C, not 3.
+- 171 ppm against the LGM's 185-190 is plausible. The glacial / interglacial ratio, 0.49 against Earth's 0.68, is
+  off: `co2_share` 0.5 is about twice CO2's own share (27% at 3 C per doubling). It cancels with the 350 ppm
+  interglacial. Draft filed (`draft-co2-share-overstates-glacial-co2.md`).
+
+### Question 2: Earth's zoom, the run's ppm, the low tail
+- `tz_earth --level 6` (`tz_earth_c.txt`) matches A22's to rounding:
+  - cycles 98-108 kyr;
+  - glacials -80..-101 m;
+  - give-back 0.67-0.85;
+  - interglacial ice 9.9-13.1%;
+  - forest by band, interglacial -> glacial maximum: 60-90 N 0.26->0.01, |lat|<15 0.43->0.28, 50-60 N
+    0.69->0.34.
+
+  The bars are the same as A22's: cooling F and ig_ice F on both.
+- The run's pCO2, 5/50/95% of keyframes:
+
+  | sweep | index | ppm (as the plants read it) | < 150 ppm | < 124 ppm |
+  |---|---|---|---|---|
+  | A22, draw 1 | -0.95 / +0.18 / +1.31 | 182 / 397 / 869 | 2.0% | 0.6% |
+  | C, draw 1 | -0.90 / +0.28 / +1.36 | 142 / 461 / 1370 | 5.6% | 3.4% |
+  | C, draw 2 | | 131 / 388 / 1019 | 8.0% | 4.5% |
+
+  - The stock's ln X spread hardly narrows: the stronger temperature term damps it only ~10%.
+  - So, read as ppm, the plants' range widens on both sides.
+  - The old store's index 5/50/95% (-1.25 / -0.20 / +0.97) would be 100 (held at 124) / 286 / 923 ppm.
+- Hot-month C3 failures (`lowtail_L6.txt`, Earth's plants grown at each pCO2):
+  - Share of growing land cell-months with q3 = 0 (Ci <= G*, which takes a monthly mean above 39.5 C at 124 ppm):
+    0.04% at dT 0 and 0.29% at dT +3.
+  - Share with q3 under a quarter of today's: 2.9% / 4.5% at 124 ppm, 0.35% / 1.1% at 150 ppm, 0 at 171 ppm and
+    above.
+  - Outright failures are negligible. The real cost of the low tail is the forest's area (PW-648's knife edge):
+    the forest biome goes 56 -> 35 Mkm2 at 171 ppm and 9 Mkm2 at 124 ppm (dT 0), with savanna and grass taking over.
+
+    That is the same in A and C for the same CO2 term. Under C, the run reaches it more often (3-4.5% of keyframes
+    at the clip, against 0.6%).
+
+### Question 3: does C change A22's deeper icehouses? (`htable.txt`)
+`health.py --quick`, the same 8 + 8 seeds. Main and A22 are lane A22's sweeps; `planet/` on main is unchanged since
+then.
+
+| | main | A22 | A22 + C |
+|---|---|---|---|
+| draw 1 (defaults): seeds > 10% of keyframes below -150 m | 2 (2, 42; 77 9.8%) | 3 (1 29%, 2 20%, 11 16%) | 2 (1 39%, 77 20%) |
+| draw 1: old / new ice bar F | 0 / 4 | 2 / 2 | 0 / 3 |
+| draw 1: median icehouse % | 18 | 41 | 23 |
+| draw 2 (101-108): seeds > 10% below -150 m | 1 (103 28%) | 3 (103 14%, 107 55%, 108 80%) | 1 (105 22%) |
+| draw 2: old / new ice bar F | 0 / 2 | 2 / 4 | 0 / 3 |
+| draw 2: median icehouse % | 27 | 29 | 34 |
+| pooled: mean % of keyframes below -150 m | 3.8 | 13.4 | 5.9 |
+| pooled: old / new ice bar F | 0 / 6 | 4 / 6 | 0 / 6 |
+
+- C takes the deep-ice frames most of the way back to main: 3 seeds over 10% in 16, as on main, against A22's 6.
+- No old-bar fails, against A22's 4.
+- Determinism is bit-identical.
+- Single seeds still swing; draw 2's second half was re-reported from its runs (`--manifest`) after a pause stopped
+  the sweep.
+
+Why the thermostat answers differently, per C of CO2 term:
+- The plants are the same as A's.
+- The stock's answer per C of cooling, fb = sensitivity per e-fold x g / WEATHER_CO2 (g ~0.047 per C, PW-576), goes
+  from 0.35 to 0.51 C/C.
+- A non-CO2 cooling's equilibrium (the plants' albedo, A22) is damped by 1 / (1 + fb): 11% less than before.
+- A sink-side change (more NPP weathering, as in PW-636's flora; mountains) moves dT by -sensitivity / WEATHER_CO2
+  / (1 + fb) per unit of ln sink: 29% more than before.
+- A cold era's piled-up CO2 also warms 1.44x more per e-fold, which shortens deep spells. That is the channel the
+  health numbers show.
+
+So C brakes A22's plant–albedo deepening and amplifies PW-636's weathering drawdown in dT. The thermostat's new
+gain should be measured with `ice_diag --summary` on the 10 seeds (draft filed).
+
+### Tests
+- `pytest -q` (-n 4): 599 passed, 2 failed.
+  - The sim golden changed on purpose; it is regenerated.
+  - `test_timezoom_consistency.py::test_cold_moment_has_sheets` is a single-seed fixture flip. The first plausible
+    seed now has 0.42% ice against its 1% precondition. A22 saw it flip too. It is not counted, and PW-643's
+    multi-seed fixtures replace it.
+- Changed for the API only:
+  - `test_co2_stock`'s forcing check (now per doubling);
+  - `test_timezoom`'s stats key (`pco2`);
+  - `test_timezoom_consistency`'s `pco2=` keyword.
+
+**Verdict: C.** It is sound, not wildly off:
+- Earth's glacial lands at 171 ppm;
+- Earth's zoom is unchanged from A22;
+- today's plants are unchanged (350 ppm at index 0);
+- outright C3 failures are negligible;
+- the run's deep icehouses come back to main's level.
+
+The cost is a wider pCO2 range in the runs: 5% of keyframes are under ~140 ppm, where tropical forest gives way to
+savanna.
+
+## PW-592: the shelf seas take the air the wind brings (lane A20)
+
+**The shelf seas' cold was the target they relaxed to, not a shortage of the overturning's heat. Every sea cell
+relaxed toward the latitude's mean sea temperature `t_eq`, but a shelf sea is set by the air over it, because the
+shelf break keeps the currents off. With that rule (`_shelf_air`, committed at 1d076ad) the North Sea's annual SST
+goes 6.9 -> 8.5 and W Europe's warmest month -1.0 -> -0.4. Rain r, the SH coastal range, and the overturning on Earth
+and the 9 worlds are unchanged. Three fixture tests go red on the run's chaos (crossed:
+`draft-shelf-air-turns-sim4-fixtures-red.md`, needs-decision). A17's step 2 on top still regresses Europe: -0.4 ->
+-1.6, and -1.3 with PW-633's layer.**
+
+Branch `worktree-agent-a2b66e784ed5186c3`, main 59b83d7 + 1d076ad. Files in `laneA20/` (README.md lists them).
+
+### What was found (`shelfdiag.py`, `eumap.py`; Earth L6, SST minus NCEP's annual air, which it should exceed by ~1 C)
+| box | depth | t_eq | gyre carry | moc heat | inflow share | SST - air |
+|---|---|---|---|---|---|---|
+| NE Atl 45-55N 25-6W | 3765 | 8.5 | +1.0 | +3.2 | 0.43 | -0.0 |
+| Rockall 55-62N | 1348 | 3.1 | +2.1 | +6.9 | 0.99 | **+2.6** |
+| North Sea 51-58N | 37 | 5.2 | +0.3 | +1.4 | 0.17 | **-3.0** |
+| Channel / Irish Sea | 94 | 7.5 | +1.4 | -0.0 | 0.14 | -2.7 |
+| Baltic | 52 | 2.9 | -0.4 | -0.2 | 0.16 | -4.3 |
+| Biscay 43-48N | 754 | 11.0 | +0.3 | -0.2 | 0.00 | -3.0 |
+| Barents | 242 | -1.8 | -0.1 | +0.4 | 0.51 | +0.2 |
+| Yellow / E China Sea | 64 | 18.8 | +2.7 | -0.1 | 0.05 | **+4.3** |
+| Patagonian shelf | 117 | 11.1 | +0.6 | -0.5 | 0.00 | +0.5 |
+
+- Not every shelf is starved. The Yellow Sea is 4.3 C too warm: the Kuroshio's carry reaches it, while its real
+  water is set by the winter monsoon's air. The Barents and the Patagonian shelf are about right. What the shelves
+  share is that the model's water ignores the air over them. Each sea cell relaxes toward `t_eq`, the latitude's
+  mean, plus what the currents carry. So the North Sea, behind Britain, gets the latitude's mean, not the
+  Atlantic air that crosses Britain.
+- The overturning's inflow sits in a narrow trunk west of 15W. Its share saturates within a few km of width, so
+  `moc_km` sets the width. East of 15W south of 50N it is 0, so Biscay (deep, not a shelf) and the whole eastern
+  Atlantic at 42-50N are 2-3 C too cold, and Rockall is 2.6 too warm. That is PW-592's open-sea part, not a
+  shelf effect: `draft-ne-atlantic-inflow-trunk-too-narrow.md`.
+- Tried and dropped: PW-582's slope current acting from 25 / 35 / 40 deg instead of `moc_lat`. The trunk doesn't move
+  onto Europe's margin. It only warms (Rockall +3.3).
+
+### What changed (`climate._shelf_air`, `_open_air`; no new constant)
+- The currents carry the water's anomaly in a layer `moc_layer_m` deep (the inflow, the thermocline). The shelf
+  break steers geostrophic flow along the depth contours, so only depth / `moc_layer_m` of that anomaly comes onto
+  a shelf. This is the depth count `_straits` already uses.
+- The rest of the column takes on the air the wind brings. Off land, that is the land's annual air at sea level, as
+  the water feels it (`_open_air`: the months' sine, clipped at freezing, since sea ice keeps the colder air off the
+  water). Over sea it is the water's own. It is carried along the annual wind like `land_air` (4 x `air_km_w`).
+- It is not kept to each band's mean: the heat is the air's, not moved round the ocean.
+- It is applied after the overturning, like the overturning's warmth: the rain and the sinking don't see it.
+- Two forms were dropped:
+  - the annual land air unclipped: it froze Hudson Bay, sea warmest -3.4 -> -6.0;
+  - the winter clipped at freezing in a plain mean: Okhotsk annual +2.6 -> +3.8, Keewatin warmest +0.4 -> +2.1.
+
+### The bars (Earth L6; main 59b83d7 = `laneA17/*_step1.txt` -> branch `laneA20/*_branch3.txt`)
+| bar | main | branch |
+|---|---|---|
+| rain log-r (>= 0.617) | 0.630 | 0.630 |
+| Köppen exact / group; cities wrong | 33 / 71; 19 | 34 / 71; 19 (London annual 9.7 -> 10.3, obs 10.5; Stockholm 3.7 -> 4.5, obs 6.2; Shanghai 20.5 -> 18.8, obs 15.7) |
+| SH coastal range 0-150 km (<= 12.5) | 12.5 | 12.5 |
+| N coastal range 0-150 / 150-400 km bias | -1.1 / -0.8 | -0.8 / -0.7 |
+| North Sea annual SST (obs air 10.0); sea warmest bias; half-swing (obs 5.9) | 6.9; -2.4; 6.2 | **8.5; -0.8**; 6.4 |
+| sea warmest: NE Atl / Biscay-N Sea / Labrador Sea | -1.3 / -2.5 / +2.8 | -1.2 / **-1.4** / +2.8 |
+| W Europe warmest | -1.0 | **-0.4** |
+| Fennoscandia warmest / coldest | -3.8 / -2.9 | **-3.2 / -2.2** |
+| Iceland warmest / coldest | +3.4 / -2.6 | +3.1 / -2.9 |
+| Labrador / HB lowlands / Keewatin warmest | +4.3 / +4.0 / +0.4 | +4.2 / +4.2 / +1.1 |
+| sea, annual bias: Hudson Bay / Okhotsk / Barents / Nordic | +0.1 / +2.6 / -8.6 / +1.6 | +1.0 / +2.5 / -8.6 / +1.6 |
+| Hudson Bay sea warmest | -3.4 | -1.9 |
+| sea swing within 1.5x near N / near S | 52 / 55% | 54 / 54% |
+| Earth NH Sv (open polar %) / SH Sv; Norwegian coast open, winter sea air | 13.86 (90) / 5.61; 100%, 6.4 | 13.86 (90) / 5.61; 100%, 6.5 |
+| 9 worlds: all sink in both hemispheres; lowest | yes; dad91b S 2.85 | identical |
+
+Still open: the Baltic (-4.3 -> -4.2) follows the model's own cold Scandinavian land air, and the Yellow / E China
+Sea is still +3.6 (from +4.3).
+
+### PW-627's step 2 on top (`step2_on_branch.diff`, `p3_step2_branch.txt`, `seabox_step2_branch.txt`)
+| | main | main + step 2 | branch | branch + step 2 | + PW-633's shelf layer |
+|---|---|---|---|---|---|
+| W Europe warmest | -1.0 | -2.1 | -0.4 | **-1.6** | -1.3 |
+| Biscay-N Sea sea warmest | -2.5 | -5.4 | -1.4 | -4.6 | -4.1 |
+| North Sea annual SST; half-swing (obs 5.9) | 6.9; 6.2 | 6.8; 4.3 | 8.5; 6.4 | 7.9; 4.6 | 7.8; 5.0 |
+| rain log-r | 0.630 | 0.649 | 0.630 | 0.649 | 0.653 |
+| near-N swing within 1.5x | 52% | 33% | 54% | 34% | 36% |
+
+The regression doesn't close. The shelf rule lifts both trees by ~0.5, but step 2 still costs W Europe -1.2.
+Step 2 cuts the shelf seas' summer half, and annual warmth doesn't restore that. With PW-633's layer it is -0.9.
+The North Sea's annual SST under step 2 is still ~2 C below its air (step 2's chill), so its bigger winter half
+still ices it. Step 2 stays a diff. What is left of Europe's summer is PW-593's summer layer, plus the eastern
+Atlantic's cold (the new trunk draft).
+
+### Tests (`uv run pytest -q`, `pytest_branch.txt`)
+Goldens regenerated on purpose (`climate_L4`, `sim_L4_s1_60myr`). 593 pass and 3 fail, all on fixtures that are a
+chaotic run's draw, with no fixture or assertion touched:
+- `test_glacial_cooling_turns_forest_to_tundra_and_cools_further`: F +0.079 W/m2 (bar < 0). Crossed with
+  `xforest.py`: main's world passes with either climate (F -0.038 / -0.023); the branch's world fails with either
+  (+0.082 / +0.079). sim4 drew a colder world (run dT +5.10 -> +2.01). The endings test passes on it.
+- `test_cold_moment_has_sheets`, `test_ice_at_index_zero_is_the_runs`: the first plausible seed is now 29 (0.28% under
+  sheets; sea level change 26.6 m > 25). This is PW-623's lottery.
+
+### Health (`tools/health.py --quick`, 8 L6 seeds, 500 Myr, 2 workers x 2 threads each tree; `health_{main,branch}/report.md`)
+| | main 59b83d7 | branch 1d076ad |
+|---|---|---|
+| outlier spells | 72 | **59** |
+| seeds with ice sea level below -150 m for >10% of the run | 2 (2 11.8%, 42 11.8%) | 2 (1 11.8%, 77 15.7%) |
+| plate-collapse spells (<= 4 plates) | 0 | 0 |
+| seeds with giant-lake frames > 5% | 4 (11 27.5, 77 9.8, 2 7.8, 505 7.8) | 4 (42 17.6, 21 15.7, 2 11.8, 3199 9.8) |
+| new ice bar (icehouse 5-70%) fails | 4 (21 0%, 3199 0%, 77 84%, 505 4%) | **3** (2 0%, 21 0%, 77 82%) |
+| old ice bar fails | 0 | 1 (11) |
+| icehouse share, median seed | ~18% | ~18% |
+| determinism | bit-identical | bit-identical |
+
+Main's own sweep reproduces lane A17's step-1 sweep exactly. These are single chaotic 500 Myr runs and no
+direction holds across the rows: no worse than main.
+
+**Ready to merge?** The mechanism, yes. Main would go red on the three fixture tests above, which the
+world's chaos decides (owner: the draft's option A or B).

@@ -500,7 +500,7 @@ def test_frames_carry_the_migrating_tree_cover(cold_run, cold_src):
     nf, n = len(cold_run["frames"]), cold_src["grid"].n
     assert tc.shape == (nf, n) and tc.dtype == np.uint8 and tc.max() <= 100 and tc.max() > 0
     assert (tc[cold_run["data"]["ice"] > 0] == 0).all()
-    assert all(f["stats"]["co2"] is not None for f in cold_run["frames"])
+    assert all(f["stats"]["pco2"] is not None for f in cold_run["frames"])
     free = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(veg_speed=0.0))
     assert np.array_equal(free["data"]["ice"], cold_run["data"]["ice"])  # (the ice and climate are the same)
     assert np.array_equal(free["data"]["tree_cover"][0], tc[0])

@@ -288,7 +288,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     g, L, meta = world["grid"], world["layers"], world.get("meta", {})
     tilt = float(meta.get("params", {}).get("tilt", 23.4))
     vm = meta.get("vegetation", {})
-    co2 = float(vm.get("co2", 0.0))
+    pco2 = float(vm.get("pco2", V.CA_REF))
     unlocked = np.array([c in vm["pfts"] for c in V.CODES]) if "pfts" in vm else V.all_unlocked()
     if fields is None:
         fields = fine_fields(world, fr, px, py, size_km)
@@ -390,14 +390,14 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
         s["cap1"], s["cap2"] = sp_m["cap1"][sl], sp_m["cap2"][sl]
         f_soil = sp_m["f_soil"][sl][None, :]
         sl = slice(a, b)
-        env = V.envelope(s, co2)
+        env = V.envelope(s, pco2)
         viable = env & unlocked[:, None]
         eff = np.ones((V.NP, b - a))
         for p_, q_ in zip(*np.nonzero(V.standin_map(unlocked))):
             extra = env[q_] & ~env[p_]
             viable[p_] |= extra
             eff[p_] = np.where(extra, V.STANDIN_EFF, eff[p_])
-        pt = V.potential(s, viable, eff, co2)
+        pt = V.potential(s, viable, eff, pco2)
         pt = dict(pt, npp=pt["npp"] * f_soil, net=pt["net"] * f_soil)  # (the soil's fertility, as on the globe)
         for k in pot:
             if k == "c4_share":
