@@ -4,7 +4,7 @@ title: "Time zoom vs run: measure the zoom's time-mean ice against the run's (to
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-462, PW-436, PW-366, PW-461]
 refs: [tests/test_timezoom_consistency.py, planet/timezoom/sim.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -42,4 +42,5 @@ Build the measurement first, so every later ice-age change is judged by it:
 - [ ] slow test in place (xfail strict on main)
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-tz-mean-matches-run-check.md (found by pw462).

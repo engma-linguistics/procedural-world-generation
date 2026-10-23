@@ -4,7 +4,7 @@ title: "Time zoom start: offer the glacial phases available at a moment (on: int
 type: story
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: viewer
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-462, PW-429]
 refs: [planet/api.py, planet/server.py, viewer/index.html, planet/timezoom/run.py, planet/timezoom/sim.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -38,4 +38,5 @@ Proposal (needs draft-tz-window-spinup.md first; then cheap):
 - [ ] api + server + viewer picker; tests for the request parsing and the phase selection on the L4 icehouse
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-tz-phase-picker.md (found by pw462).

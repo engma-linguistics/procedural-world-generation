@@ -4,7 +4,7 @@ title: "The sea's summer swing is too small in the NH (NE Atlantic 1.7 vs 3.2 C,
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-589, PW-580, PW-573]
 refs: [planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt, docs/review/base-climate/stages.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -48,4 +48,5 @@ test, the lakes).
 - [ ] W Europe's warmest month no worse than +0.4; NE Atlantic / NE Pacific summer sea air within 2 C
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-sea-summer-swing-wind-mixed-layer.md (found by base-climate-laneA13).

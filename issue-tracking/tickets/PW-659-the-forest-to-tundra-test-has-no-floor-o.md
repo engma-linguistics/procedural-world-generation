@@ -4,7 +4,7 @@ title: "The forest-to-tundra test has no floor on how many worlds are eligible: 
 type: task
 status: todo
 parent: PW-649
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -30,4 +30,5 @@ Good enough for now. For the quality pass, decide one of these:
 - or print a warning when the eligible count drops well below main's 18-21.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-forest-test-eligible-floor.md (found by tests-multiseed-rulings).

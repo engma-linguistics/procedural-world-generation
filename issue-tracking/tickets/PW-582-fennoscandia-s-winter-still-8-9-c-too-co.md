@@ -4,7 +4,7 @@ title: "Fennoscandia's winter still 8.9 C too cold after PW-575's winds: the Bar
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-575, PW-577, PW-458, PW-026]
 refs: [planet/climate.py, planet/ocean.py, tools/climate_bias.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA6/]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -44,5 +44,6 @@ Iceland. Generated worlds with a polar sea beyond their sinking site have the sa
 - [ ] Fennoscandia's coldest month within ±6 C
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: 2026-10-22 merged after 3 attempts (lanes A7-A9): slope current, frozen zone from the overturning's own ice, inflow salinity mixes like its temperature, straits by cross-section (moc_sill removed), Arctic branch under the ice lid. Fennoscandia coldest month -8.9 -> -6.5 C; Nordic Seas -8.3 -> -3.1; Barents still frozen (inflow arrives 3 C too cold); Iceland -12.4 -> -11.6. Weak southern worlds recover (dad91b 0.87 -> 2.36 Sv). Bar missed; merged as a mechanism improvement.
 - 2026-10-22: Created from inbox draft draft-nordic-winter-barents-frozen.md (found by base-climate-laneA6).

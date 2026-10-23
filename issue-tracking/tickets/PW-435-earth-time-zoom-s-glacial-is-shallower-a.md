@@ -4,7 +4,7 @@ title: "Earth time zoom's glacial is shallower after PW-366's margin fixes (150 
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-033, PW-030, PW-366, PW-422]
 refs: [planet/timezoom.py]
 created: 2026-10-19
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -31,6 +31,7 @@ inception (Fennoscandia, Laurentide) and the sub-cell margin of PW-115 / PW-422 
   the forcing
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: pw460: main's Earth zoom is -45 m (obs -31 m); the PW-460 margin reaches -82 m in the zoom but cannot merge until the run can deglaciate (PW-461).
 - 2026-10-20: pw033: the depth is limited by glacials that are precession pulses. Real-sized margins (edge_h 900, shared with the run: draft) give -98 m, insol_k 0.10 gives -62 m; both lift the interglacial ice above 9% (docs/review/audit/PW-033-diagnosis.md).
 - 2026-10-20: pw450: vegetation feedback (PW-450) deepens the Earth zoom only -42.8 -> -45.1 m (with PW-448's deep knobs -74.8 -> -86.3 m); the Laurentide margin is unchanged at ~55 N.

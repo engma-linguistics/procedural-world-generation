@@ -4,7 +4,7 @@ title: "The land's share of the sea's seasonal swing (_sea_half) is a big contin
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: s
 impact: med
@@ -38,4 +38,5 @@ once the winds allow that (see the draft on the summer mixed layer and the seaso
       the NE Atlantic's own swing; rain r ≥ 0.617
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-sea-swing-land-part-is-a-big-continents.md (found by base-climate-laneA14).

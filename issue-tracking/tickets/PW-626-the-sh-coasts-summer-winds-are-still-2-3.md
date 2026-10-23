@@ -4,7 +4,7 @@ title: "The SH coasts' summer winds are still 2-3.5 m/s after PW-596 (Patagonia 
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: high
@@ -88,4 +88,5 @@ Summer winds (m/s) A16 branch -> step 1 (New Zealand walls the gyres) -> step 2 
   `monsoon_wind`'s 900 km part over land narrower than the smoothing.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-sh-coastal-summer-winds-still-calm.md (found by base-climate-laneA15).

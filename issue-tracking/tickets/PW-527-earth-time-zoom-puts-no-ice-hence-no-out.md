@@ -4,7 +4,7 @@ title: Earth time zoom puts no ice, hence no outwash or loess, on the Great Lake
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-497, PW-037, PW-033, PW-435]
 refs: [planet/timezoom/deposit.py, planet/timezoom/sim.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,5 +28,6 @@ PW-033 / PW-435 territory (ice-age physics, parked).
       of them (Earth: central Europe and the Mississippi valley, 5-30 m locally)
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Coordinator: PW-471's acceptance had the Laurentide reaching 42.5 N at glacial maxima; check whether this is a frame-sampling difference (final frame vs max) or a real regression before anything else.
 - 2026-10-21: Created from inbox draft draft-earth-timezoom-ice-misses-loess-lands.md (found by pw497).

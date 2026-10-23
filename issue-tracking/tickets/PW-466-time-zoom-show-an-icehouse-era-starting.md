@@ -4,7 +4,7 @@ title: "Time zoom: show an icehouse era starting or ending (the run's dT trend a
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-462, PW-104]
 refs: [planet/timezoom/fields.py, planet/timezoom/sim.py, planet/tectonics/earth.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -36,4 +36,5 @@ What it takes:
 - [ ] base dT trend in the zoom; era_start / era_end offered by the phase picker (draft-tz-phase-picker.md)
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-tz-era-start-end.md (found by pw462).

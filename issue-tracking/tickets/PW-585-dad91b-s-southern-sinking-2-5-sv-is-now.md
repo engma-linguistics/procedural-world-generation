@@ -4,7 +4,7 @@ title: "dad91b's southern sinking (2.5 Sv) is now set by the straits: its denses
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-579, PW-582]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -35,4 +35,5 @@ Lean: A for v2. B is a real mechanism, but it matters for one world in 9.
 - [ ] rule A or B
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-dad91b-south-is-straits.md (found by base-climate-laneA10).

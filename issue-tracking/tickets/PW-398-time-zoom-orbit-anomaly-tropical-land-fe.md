@@ -4,7 +4,7 @@ title: "Time zoom orbit anomaly: tropical land feels insol_k in full, so an ecce
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-380, PW-198]
 refs: [planet/timezoom.py, planet/finish.py, "world bcd6c8", "world bd9a7a"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -41,5 +41,6 @@ What to try (judgement call for the time-zoom lane):
   land swing about 4-6 C at e ~0.04 (palaeo-model range for high-eccentricity tropics).
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-16: Status needs-decision -> todo. Coordinator decision: yes, damp it. Wet tropical land's seasonal response is held down by evaporation and cloud (Earth's equatorial land swings 2-5 C), so scaling the land sensitivity toward the sea's by soil moisture/rain is a sound approximation, not a clamp.
 - 2026-10-16: Created from inbox draft draft-orbit-anomaly-tropical-land.md (found by pw380-equator).

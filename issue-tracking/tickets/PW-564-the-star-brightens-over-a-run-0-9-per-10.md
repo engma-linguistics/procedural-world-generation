@@ -4,7 +4,7 @@ title: "The star brightens over a run (~0.9% per 100 Myr for a Sun-like star): a
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555]
 refs: [planet/orbit.py, planet/tectonics/earth.py, docs/review/ice-v2-criteria.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -29,4 +29,5 @@ scales, so a "solar help" lever is a world-builder control unless the star is se
 - [ ] 10-seed 2 Gyr L6 check: CO2 index trends down, icehouse share within N3
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-stellar-brightening.md (found by ice-v2-stage0).

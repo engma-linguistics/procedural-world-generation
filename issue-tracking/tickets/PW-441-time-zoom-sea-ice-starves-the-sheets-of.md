@@ -4,7 +4,7 @@ title: "Time zoom: sea ice starves the sheets of snow (Gildor & Tziperman sea-ic
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,11 +13,12 @@ blocked_by: []
 relates: [PW-030, PW-440]
 refs: [planet/timezoom.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
 Parking lot, not v1 (owner 2026-10-20). When sea ice is wide, it cuts off the moisture that feeds the ice sheets, so they stop growing; that gives a plateau-then-collapse shape on its own. Possible later complement to, or replacement for, PW-440's falling termination bar.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created.

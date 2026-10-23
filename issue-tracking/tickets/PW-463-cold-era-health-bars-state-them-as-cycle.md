@@ -4,7 +4,7 @@ title: "Cold-era health bars: state them as cycle means and add the cycle's glac
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: infra
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-462, PW-438, PW-452, PW-461]
 refs: [tools/health.py, tools/sealevel.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,4 +33,5 @@ the cycle mean (draft-run-ice-cycle-mean.md):
 - [ ] reference texts updated; bounds printed
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-cold-era-bars-as-cycle-mean.md (found by pw462).

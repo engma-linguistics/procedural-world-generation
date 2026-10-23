@@ -4,7 +4,7 @@ title: Remove the overturning spin-up rule; Atlantic on and Pacific off by thems
 type: story
 status: todo
 parent: PW-013
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: m
 impact: high
@@ -27,6 +27,7 @@ Also in scope: Earth gives ~11 Sv of North Atlantic sinking against an observed 
 there's no lasting off-state (after ~1 Sv hosing it recovers within 2–3 climate updates; see PW-018).
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
 - 2026-10-16: Merged inbox draft draft-pw016-spin-up-status.md ("PW-016 after PW-015 stages 1-2: the spin-up rule is already inert on Earth, but the Atlantic's catchments are still too wet (E-P-R +0.20 Sv at L6)", found by pw015-rain).
   For PW-016 (probably `--merge-into PW-016`). Tried at the end of the PW-015 lane:

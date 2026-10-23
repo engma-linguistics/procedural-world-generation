@@ -4,7 +4,7 @@ title: A finished world from a stage-1 time zoom frame takes the run's ice-surfa
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555, PW-198]
 refs: [planet/finish.py, planet/climate.py, planet/timezoom/params.py]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,4 +25,5 @@ colder than the zoom's own frame. Close when the run takes the same rules (stage
 rules through finish if stage 3 is far off.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-finished-world-ice-climate-from-zoom-rules.md (found by ice-v2-stage1).

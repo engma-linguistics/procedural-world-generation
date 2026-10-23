@@ -4,7 +4,7 @@ title: "Time zoom source moments: cold moments (dT -4 to -7) never reach a real 
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -13,11 +13,12 @@ blocked_by: []
 relates: [PW-030]
 refs: []
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
 From the 2026-10-16 analysis: time zooms from deep icehouse moments sit in a permanent glacial state (interglacials still ice 17-25% of land). For Earth-like ice ages, the run/time zoom picker could hint at moderately cold moments where high-latitude land is mostly ice-free at the start.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-16: Created.

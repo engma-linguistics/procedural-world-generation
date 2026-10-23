@@ -4,7 +4,7 @@ title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the i
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-582, PW-575, PW-458, PW-579]
 refs: [planet/ocean.py, docs/review/base-climate/stages.md, docs/review/base-climate/laneA9/]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -57,5 +57,6 @@ Options:
 - [ ] Iceland's regression (-10.6 -> -11.6): accept or chase with A
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Coordinator 2026-10-22: parked (option C) after PW-582's three attempts; revisit after stage 3 and with the winds. Lean for later: option A (how sinking is spread within a capped hemisphere).
 - 2026-10-22: Created from inbox draft draft-barents-still-frozen-after-pw582.md (found by base-climate-laneA7, base-climate-laneA8, base-climate-laneA9).

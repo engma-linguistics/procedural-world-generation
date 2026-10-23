@@ -4,7 +4,7 @@ title: "Mature start + CO2 stock (a) on current main: the icehouse share splits 
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: med
@@ -41,4 +41,5 @@ the cause is a sound mechanism and the share still sits high.
 - [ ] owner picks A, B or C
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-icehouse-share-split-on-main.md (found by base-climate-laneB4).

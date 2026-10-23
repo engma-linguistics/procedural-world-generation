@@ -4,7 +4,7 @@ title: "Default planets spend ~60% of their time in an icehouse (Earth ~10-30%):
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: high
@@ -32,5 +32,6 @@ Lean: B together with the carbon stock, with A as a quick test on the 10 seeds f
 icy-by-default is wanted.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: After PW-576 (CO2 stock, mature start): full sweep icehouse share median 43% (14-95%), ice bar passes on 5/11 runs (was 2/10 in band). Too-long/too-common icehouses on L6 seeds 11, 77, 505 and all three L7 seeds. See PW-611.
 - 2026-10-22: Created from inbox draft draft-default-climate-icier-than-earth.md (found by ice-v2-stage0).

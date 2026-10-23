@@ -4,7 +4,7 @@ title: Fix moisture transport in the rain model
 type: story
 status: blocked
 parent: PW-013
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: l
 impact: high
@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22.
 - 2026-10-22: Merged inbox draft draft-sea-evaporation-bulk-exchange.md ("Rain kernel: the sea fills the air to src_q instantly each step; a bulk exchange over a fetch moves the overturning and the rain a lot", found by base-climate-laneA).
   For PW-015 (probably `--merge-into PW-015`), and found while working PW-458 (lane A, stage 1).

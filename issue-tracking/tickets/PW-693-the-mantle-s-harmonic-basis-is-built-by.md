@@ -1,8 +1,9 @@
 ---
+id: PW-693
 title: "The mantle's harmonic basis is built by an SVD whose columns are arbitrary within a degree, and it is cached per checkout: a checkout whose cache was built differently runs other worlds from the same code"
 type: task
 status: todo
-parent: null
+parent: PW-244
 milestone: v1
 subsystem: tectonics
 effort: s
@@ -11,6 +12,8 @@ found_by: thermostat-1024
 blocked_by: []
 relates: [PW-680, PW-643]
 refs: [planet/tectonics/mantle.py, docs/review/base-climate/thermostat-1024/]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -40,3 +43,6 @@ It changes every run (the eddies' field), so the goldens and every stored baseli
 physics lane, merged on its own. Until then a lane can copy the main checkout's `mantle_basis_*.npy` into its tree
 (this lane did).
 - [ ] canonical basis; goldens regenerated; health and Earth re-baselined
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-mantle-basis-cache-picks-the-world.md (found by thermostat-1024).

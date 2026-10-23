@@ -4,7 +4,7 @@ title: "PW-632 option A measured: on the failing cold worlds the glacial's lefto
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high
@@ -80,4 +80,5 @@ frontal melt.
 - [ ] owner picks A2 / B / C
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-pw632-option-a-held-branch.md (found by base-climate-laneA19).

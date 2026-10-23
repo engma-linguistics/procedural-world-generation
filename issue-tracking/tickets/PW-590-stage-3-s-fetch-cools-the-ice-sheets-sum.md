@@ -4,7 +4,7 @@ title: "Stage 3's fetch cools the ice sheets' summer air: Greenland ice warmest 
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-573, PW-336, PW-569]
 refs: [planet/climate.py, docs/review/base-climate/laneA12/climate_bias_s3b.txt]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -43,4 +43,5 @@ Lean: A for now. The time-zoom endings test passes with A (58 / 1.4 m; bar left 
 (PW-569 / PW-439) owns the sheet's surface air.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-stage3-fetch-cools-ice-sheet-summers.md (found by base-climate-laneA12).

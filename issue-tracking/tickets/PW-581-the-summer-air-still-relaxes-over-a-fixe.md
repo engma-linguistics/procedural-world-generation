@@ -4,7 +4,7 @@ title: The summer air still relaxes over a fixed 450 km while the winter's is no
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-575, PW-352, PW-573, PW-026]
 refs: [planet/climate.py, tools/climate_bias.py, docs/review/base-climate/stages.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -37,4 +37,5 @@ PW-575 (lane A6) made the winter air over land relax toward the land's own winte
 - [ ] mountain cells' winters within ±6 C without losing the prairies' cold pool
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-air-relaxation-in-time-summer-and-mountains.md (found by base-climate-laneA6).

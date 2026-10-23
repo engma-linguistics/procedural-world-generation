@@ -4,7 +4,7 @@ title: "Ice-onset check (low-latitude ice only after high-latitude ice) needs a 
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555]
 refs: [planet/tectonics/diag.py, tools/ice_criteria.py]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,4 +25,5 @@ on plateaus at every dT it reaches; whether that much tropical high ice is right
 glaciers are ~0.003% of land).
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-onset-check-height-cut.md (found by ice-v2-stage0).

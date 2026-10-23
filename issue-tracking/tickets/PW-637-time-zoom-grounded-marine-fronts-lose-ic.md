@@ -4,7 +4,7 @@ title: "Time zoom: grounded marine fronts lose ice only by the depth calving law
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: l
 impact: med
@@ -44,4 +44,5 @@ forcing and the front's summer meltwater discharge.
 - [ ] Earth's glacials still -80 m or deeper.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-marine-fronts-no-ocean-melt.md (found by base-climate-laneA19).

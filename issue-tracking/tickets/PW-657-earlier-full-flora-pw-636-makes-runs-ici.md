@@ -4,7 +4,7 @@ title: "Earlier full flora (PW-636) makes runs icier: icehouse share 29 -> 43%, 
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: m
 impact: med
@@ -47,4 +47,5 @@ Options:
 - [ ] owner/thermostat lane picks; re-measure on the multi-seed harness
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-earlier-flora-deepens-ice.md (found by pw636-flora-pace).

@@ -4,7 +4,7 @@ title: Rain / moisture transport, and the ocean-overturning follow-up
 type: epic
 status: todo
 parent: null
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: xl
 impact: high
@@ -32,6 +32,7 @@ Owner's guidance: use Earth as a test analogue, but never chase 100% parity. Ori
 `81e1d6b:docs/proposals/ocean_overturning.md` (in git history).
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): rain is v1; the owner put sim-physics work back under v1 on 2026-10-22. PW-013 is the parent of PW-015/016.
 - 2026-10-15: From the overturning spec (81e1d6b:docs/proposals/ocean_overturning.md): the overturning's temperature pass does not feed back into rain (one extra temperature pass, no rain recompute) - revisit once moisture transport is fixed. The ocean's extra warmth is added to the 50-70N band (moc_zonal = 0), chosen because the Koppen score preferred it (70.69% vs 70.50% with half taken off the band); recheck if the band changes.
 - 2026-10-15: Owner 2026-10-15: PW-307 (world land = bed > 0 or grounded ice, threaded through climate/hydrology/coast/zoom) is to be scheduled by this ticket: do it before, during or after the rain rework, whichever fits climate.compute's changes.

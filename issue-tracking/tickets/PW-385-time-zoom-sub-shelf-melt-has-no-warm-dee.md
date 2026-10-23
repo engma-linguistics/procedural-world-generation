@@ -4,7 +4,7 @@ title: "Time zoom: sub-shelf melt has no warm deep water to work with (Antarctic
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-367]
 refs: [planet/timezoom.py, planet/ocean.py, docs/overview.md]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -38,4 +38,5 @@ Either belongs to the ocean lane, so this waits for its rain rework to settle.
       today's climate doesn't
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-16: Created from inbox draft draft-timezoom-shelf-ocean-heat.md (found by pw367-buttress).

@@ -4,7 +4,7 @@ title: "The NE Atlantic's warmth sits in a narrow inflow trunk west of 15W: Rock
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: ocean
 effort: m
 impact: med
@@ -40,4 +40,5 @@ Candidates:
   1 holding
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-ne-atlantic-inflow-trunk-too-narrow.md (found by base-climate-laneA20).

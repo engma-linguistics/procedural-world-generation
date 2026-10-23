@@ -4,7 +4,7 @@ title: The run's global temperature has no vegetation albedo term (the time zoom
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-450, PW-453]
 refs: [planet/tectonics/earth.py, planet/timezoom/plants.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -31,4 +31,5 @@ eras re-measured (PW-438's table). Lean: A, unless the plant groups' arrival sho
 step that the run ought to have.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-run-no-global-vegetation-albedo.md (found by pw450).

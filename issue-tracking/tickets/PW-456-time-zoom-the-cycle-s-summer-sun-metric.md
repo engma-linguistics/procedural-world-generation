@@ -4,7 +4,7 @@ title: "Time zoom: the cycle's summer-sun metric (months 3-4 raw) is half a mont
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-440, PW-448]
 refs: [planet/timezoom/cycle.py, planet/timezoom/events.py, planet/timezoom/sim.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,4 +30,5 @@ the frames. Re-check the cycle's endings and backstops on Earth.
 - [ ] one summer-sun metric shared by the kernel and the cycle
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-cycle-summer-sun-month-offset.md (found by pw033).

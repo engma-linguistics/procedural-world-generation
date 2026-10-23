@@ -4,7 +4,7 @@ title: "PW-422 (film-shielded margins): re-measure after PW-366's in-sub-step ba
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-422, PW-366, PW-115]
 refs: [planet/timezoom.py, planet/timezoom_kernels.py]
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ Mkm3 in 10 kyr). Probably merge into PW-422 and close it if the dome holds.
 - [ ] re-run PW-422's film count and dome test on the merged code
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-19: Created from inbox draft draft-pw422-remeasure-after-pw366.md (found by pw366).

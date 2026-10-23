@@ -4,7 +4,7 @@ title: "Time zoom: ice-age endings at the agreed strength are slow (30-75 kyr) a
 type: task
 status: needs-decision
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-440, PW-030, PW-436, PW-435]
 refs: [planet/timezoom/cycle.py, planet/timezoom/sim.py, docs/review/audit/PW-440-handoff.md]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,5 +33,6 @@ Options:
 - [ ] decide; then s400 and Earth endings <= ~15 kyr with swing >= 80 m
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: pw460: with the PW-460 margin the zoom's endings rise to 5-7 per 600 kyr on Earth with 0 backstops, against main's 2 (obs: 2 backstops). Depends on PW-461.
 - 2026-10-20: Created from inbox draft draft-timezoom-ending-strength.md (found by pw440).

@@ -4,7 +4,7 @@ title: "Time zoom at I = 0: the 20 kyr sea-level drift ranges from -0.1 to -29 m
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-366, PW-471, PW-418]
 refs: [tests/test_timezoom_consistency.py, docs/review/base-climate/stages.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -45,4 +45,5 @@ happens to be under 25 m.
   is per-world and widen the test to several seeds
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-timezoom-index-zero-drift-spread.md (found by base-climate-laneA9).

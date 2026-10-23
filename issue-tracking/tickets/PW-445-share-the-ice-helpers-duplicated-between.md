@@ -4,7 +4,7 @@ title: Share the ice helpers duplicated between the time zoom, icemass and tecto
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-442, PW-438, PW-440]
 refs: [planet/icemass.py, planet/tectonics/earth.py, planet/timezoom/forcing.py, planet/timezoom/kernels.py, planet/timezoom/ice.py, planet/zoom.py, planet/climate.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -29,4 +29,5 @@ PW-442 split `planet/timezoom.py` into a package without touching the run's clim
 PW-442 also left `icemass.py` importing `climate_step` from `planet.timezoom.kernels`; when the PDD helper moves, consider putting `climate_step` itself in `icemass.py` (it is "icemass's rule", per its docstring), so the dependency runs time zoom -> icemass only.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-pw442-phase2-shared-ice-helpers.md (found by pw442).

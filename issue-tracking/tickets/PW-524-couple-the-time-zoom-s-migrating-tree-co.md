@@ -4,7 +4,7 @@ title: Couple the time zoom's migrating tree cover to the climate (albedo, Budyk
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: later
 subsystem: timezoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-213, PW-450, PW-471]
 refs: [planet/timezoom/plants.py, planet/vegetation.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,4 +26,5 @@ Kohler LGM albedo number and the ice volume, and decide whether the balance cove
 - [ ] ice volume and sea level of Earth 600 kyr compared before and after
 
 ## Updates
+- 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Created from inbox draft draft-veg-migration-feedback.md (found by pw213).

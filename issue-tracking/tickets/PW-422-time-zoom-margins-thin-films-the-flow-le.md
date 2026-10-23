@@ -4,7 +4,7 @@ title: "Time zoom margins: thin films the flow leaves beyond a front hide it fro
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-115, PW-418, PW-366]
 refs: [planet/timezoom.py, "run:2c2810@536Myr"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -39,4 +39,5 @@ and 2c2810 @ 536) and tests/test_timezoom_consistency.py.
 - [ ] fronts behind films get a margin's balance, without a melt cascade (a cold-world dome holds)
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-16: Created from inbox draft draft-timezoom-film-shielded-margins.md (found by pw418).

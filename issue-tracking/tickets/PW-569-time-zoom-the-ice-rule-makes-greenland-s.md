@@ -4,7 +4,7 @@ title: "Time zoom: the ice rule makes Greenland's surface summer ~4 C colder tha
 type: task
 status: todo
 parent: PW-470
-milestone: v1
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-555, PW-439, PW-336, PW-039, PW-460]
 refs: [planet/icemass.py, planet/timezoom/sim.py, docs/review/ice-v2/stage-1.md]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -43,4 +43,5 @@ the margin's remaining surplus is its air: this ticket. The start anchor only co
 Earth (and a two-sided anchor would hide a rule every planet has). It is what keeps Greenland's front advancing at dT 0.
 
 ## Updates
+- 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-zoom-ice-surface-too-cold-on-greenland.md (found by ice-v2-stage1).
