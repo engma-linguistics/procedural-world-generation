@@ -1,0 +1,29 @@
+---
+title: "Resources: zoom deposits only by command; not in the 3D view; fine zooms don't inherit them"
+type: task
+status: needs-decision
+parent: PW-155
+milestone: v2
+subsystem: zoom
+effort: m
+impact: med
+found_by: resources2
+blocked_by: []
+relates: [PW-609, PW-610]
+refs: [planet/zoom_resources.py, viewer/zoom.html, viewer/zoom3d.js, planet/zoom_fine.py]
+---
+
+## Description
+Stage 2 sites deposits in a saved regional zoom with `planet resources zoom:<id>`, which writes them to
+zoom.json under `resources`. The siting takes 0.2-1.5 s. On top of that comes the world's history pass, 6-9 s
+at L7, which could be cached per world. There are three gaps:
+1. When deposits are made. A: by command only (now). B: at every zoom build, which adds ~10 s at L7 unless
+   the history is cached on the world (PW-609's option B would do that). C: lazily, by the viewer or server
+   the first time the zoom is opened. Lean B, after PW-609 is decided: both depend on storing the history's
+   per-cell outputs with the world.
+2. The 3D view (zoom3d.js) draws no deposits. Markers like the volcano and waterfall ones would do.
+3. Fine zooms (zoom_fine.py) neither inherit their parent's deposits nor refine them: veins and seams as
+   lines, placers on the meander belt via valley_floor. zoom_resources already uses valley_floor when a
+   zoom has it.
+Lean: B for gap 1. Then gap 3: inherit the points that fall inside, and re-site at the fine resolution with
+the same seeds.

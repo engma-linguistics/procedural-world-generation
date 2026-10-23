@@ -183,10 +183,21 @@ def cmd_humanuse(args):
 
 
 def cmd_resources(args):
-    """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place."""
+    """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place, or sites concrete
+    deposits in saved zooms (PW-610: zoom_resources.py; the world is not written)."""
     from . import resources as RS
+    from . import zoom_resources as ZR
     for ref in args.ids:
-        print(S.rel(RS.add_to_world(ref, use_history=not args.no_history)))
+        kind, _, rid = ref.rpartition(":")
+        kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
+        if len(kinds) != 1:
+            raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
+        if kinds[0] == "zoom":
+            d = ZR.add_to_zoom(rid)
+            print(S.rel(d))
+            print("\n".join(ZR.text_lines(json.loads((d / "zoom.json").read_text())["resources"])))
+        else:
+            print(S.rel(RS.add_to_world(rid, use_history=not args.no_history)))
 
 
 def cmd_timezoom(args):
@@ -443,8 +454,9 @@ def main():
     hu.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     hu.set_defaults(func=cmd_humanuse)
     rs = sub.add_parser("resources", help="add or redo the resource layers (ores, coal, oil, salt, gems, stone; "
-                                          "coarse likelihoods from the run's history) of saved worlds (in place)")
-    rs.add_argument("ids", nargs="+", help="world ids")
+                                          "coarse likelihoods from the run's history) of saved worlds, or site "
+                                          "concrete deposits in saved zooms (in place)")
+    rs.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     rs.add_argument("--no-history", action="store_true", help="from the world's own layers only (no run keyframes)")
     rs.set_defaults(func=cmd_resources)
 
