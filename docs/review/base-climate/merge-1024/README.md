@@ -109,3 +109,46 @@ Mean over both sets: 3.8 / 5.9 / 7.45 / **12.25**. On 101-108 step 4 gives clear
 deep, median icehouse 57%). The tests are green, the Earth bars hold, and the mechanism is physical, so step 4 stays
 by the owner's principle. The icehouse depth belongs to the thermostat (PW-611 / PW-653). Recorded on PW-627 and
 PW-653.
+
+## Step 5: PW-636 earlier flora (FLORA_PACE 0.8), head adddbae (a3128cc + a draft move): NOT KEPT
+
+Merged as 0646532 (conflicts: PW-636's Updates, both entries kept; the golden regenerated), measured, then the
+branch was reset to step 4 (641ce4f). Results in `step5_not_kept/`.
+
+**Tests: red.** Full `pytest -q`: 1 failed, 602 passed (672 s). `tests/test_timezoom.py::test_bed_settles_under_the_ice`
+fails at `median |bed - want| = 47.1 m < tol 46.2 m`. It is a single-world test (sim4, L4 seed 1, made 8 C colder),
+so it fails the same way on the +0.001 and -0.001 runs (the offset only re-rolls the multi-seed fixtures). Every
+multi-seed test is green:
+
+| draw | forest (bar) | endings (bar 12) | sheeted (need 5) | speeds | index zero | ice at index zero |
+|---|---|---|---|---|---|---|
+| +0.001 | 18 / 21 (11) | 21 / 24 | 15 of 19 | 13 / 15 (11) | 19 / 19 | 14 / 15 (11) |
+| -0.001 | 19 / 19 (10) | 22 / 24 | 9 of 17 | 9 / 9 (7) | 17 / 17 | 8 / 9 (7) |
+
+Health (step 4 -> step 5):
+
+| sweep | pooled % kf < -150 m | seeds > 10% | old bar F | new bar F | icehouse % median / mean |
+|---|---|---|---|---|---|
+| defaults | 4.4 -> **17.4** | 1 -> 3 (11, 42, 77 at 88%) | 1 -> 0 | 2 -> 5 | 35.3 / 33.3 -> 53.0 / 46.1 |
+| 101-108 | 20.1 -> 6.6 | 5 -> 1 (103) | 2 -> 1 | 3 -> 4 | 56.9 / 53.2 -> 42.2 / 43.4 |
+
+Pooled over the two sets the deep share is flat (12.25 -> 12.0%) and old-bar fails fall (3 -> 1). The defaults run
+much deeper and 101-108 shallower, so this is not a clear deepening over the two sets. The health stop rule
+therefore does not fire, but the red test does. Earth L6 is unchanged by step 5 (`step5_not_kept/earth`).
+
+The failure is a single chaotic world's margin (47.1 against 46.2), the class PW-623/638/640 moved to multi-seed
+fixtures. Converting this test is a harness change that needs a decision, and loosening its tolerance is not
+allowed: draft `draft-bed-settles-single-world.md`. PW-636 waits until that is settled.
+
+## Summary
+
+| step | tests (single run) | draws +0.001 / -0.001 | health pooled % kf < -150 m (defaults / 101-108; old bar F) | Earth bars |
+|---|---|---|---|---|
+| main 52f25a9 | - | - | 4.2 / 3.4; 0 | log-r 0.630, SH coastal 12.5, W Eur warmest -0.9, N Sea SST 6.9, NH 13.86 Sv 90% open, Norway open |
+| 1 PW-660 window 25-75 | 603 passed | sheeted 15 / 12 (draw 0: 13); all green | (harness only) | - |
+| 2 A22 + A23 | 603 passed | green / green | 8.6 / 3.2; 0 (A23's 3.8 -> 5.9 confirmed) | unchanged |
+| 3 A20 shelf air | 603 passed | green / green | 7.6 / 7.3; 2 | N Sea 8.5, W Eur -0.4; rest unchanged |
+| 4 PW-627 | 603 passed | green / green | 4.4 / 20.1; 3 | log-r 0.649, SH 12.2, W Eur -1.4, N Sea 7.9, NH 13.64 Sv 89%, Norway open |
+| 5 PW-636 (not kept) | 1 failed (bed settles, sim4) | 1 failed each (same test) | 17.4 / 6.6; 1 | unchanged from 4 |
+
+The last green step is 4: branch head 641ce4f plus this write-up.
