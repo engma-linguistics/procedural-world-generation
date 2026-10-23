@@ -184,9 +184,12 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     """Glacial isostasy (PW-189): the bed relaxes (iso_tau 3 kyr) toward the
     settled dip under the ice, the run's isostasy.ice_load (flexure), from a
     start that was already settled under its own ice. A bed relaxing on
-    iso_tau under a growing load lags it by about the load of its last
-    iso_tau, so the tolerance takes the ice volume grown over the last
-    iso_tau (a share of all grown) on top of 5% of the dip."""
+    iso_tau under a changing load lags it by about the load change of its
+    last iso_tau, so the tolerance takes each cell's own load change over
+    the last iso_tau (the frames' grounded ice; median over the cells) on
+    top of 5% of the dip. (The lag is the cell's, not the sheet's net
+    volume: ice that moves within a sheet of steady volume still leaves
+    its beds lagging, PW-680.)"""
     from planet.tectonics.isostasy import ice_load
     s = cold_run["state"]
     g = cold_src["grid"]
@@ -199,10 +202,14 @@ def test_bed_settles_under_the_ice(cold_src, cold_run):
     assert grew.any()
     bed = s["bed"] + s["cut"] - s["till"] - s["rock_iso"]  # (the bed without the glacial carving, PW-037)
     assert (bed[grew] < cold_src["elev"][grew]).all()  # pressed down where the ice grew
-    t = [f["t"] for f in cold_run["frames"]]
-    v = [f["stats"]["ice_volume_mkm3"] for f in cold_run["frames"]]
-    lag = (v[-1] - np.interp(t[-1] - p.iso_tau, t, v)) / max(v[-1] - v[0], 1e-9)
-    tol = (0.05 + max(lag, 0.0)) * np.median((H - H0)[grew]) * p.iso_ratio + 20
+    t = np.array([f["t"] for f in cold_run["frames"]])
+    ice = np.asarray(cold_run["data"]["ice"], float)  # (each frame's grounded ice: the bed's load)
+    tb = t[-1] - p.iso_tau
+    k = int(np.searchsorted(t, tb)) - 1
+    w = (tb - t[k]) / (t[k + 1] - t[k])
+    load_then = (1 - w) * ice_load(g, ice[k], p.iso_ratio, p.flex_km) + w * ice_load(g, ice[k + 1], p.iso_ratio, p.flex_km)
+    lag = np.median(np.abs(ice_load(g, ice[-1], p.iso_ratio, p.flex_km) - load_then)[grew])
+    tol = 0.05 * np.median((H - H0)[grew]) * p.iso_ratio + lag + 20
     assert np.median(np.abs(bed - want)[grew]) < tol
 
 

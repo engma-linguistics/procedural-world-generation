@@ -1,0 +1,25 @@
+seed   1: n  110 dip  501.7 err   19.4 | old tol   45.1 (lag share -0.020) pass | new tol   66.6 (cell lag  21.5) pass | pressed True
+seed   2: n  158 dip  540.1 err   18.3 | old tol  108.1 (lag share +0.113) pass | new tol   68.5 (cell lag  21.5) pass | pressed True
+seed   3: n  121 dip  566.5 err   28.4 | old tol  104.6 (lag share +0.099) pass | new tol   78.8 (cell lag  30.4) pass | pressed True
+seed   4: n  148 dip  617.8 err   35.6 | old tol   90.1 (lag share +0.063) pass | new tol   98.6 (cell lag  47.7) pass | pressed True
+seed   5: n   40 dip  514.1 err   53.4 | old tol  149.4 (lag share +0.202) pass | new tol  101.6 (cell lag  55.9) pass | pressed True
+seed   6: n   53 dip  422.4 err   80.9 | old tol  184.8 (lag share +0.340) pass | new tol  150.3 (cell lag 109.2) pass | pressed True
+seed   7: n   97 dip  570.7 err   13.3 | old tol  105.6 (lag share +0.100) pass | new tol   64.1 (cell lag  15.6) pass | pressed True
+seed   8: n  151 dip  621.2 err   26.9 | old tol   79.9 (lag share +0.046) pass | new tol   75.2 (cell lag  24.2) pass | pressed True
+seed   9: n    4 dip  267.3 err  116.0 | old tol   33.4 (lag share -1.792) FAIL | new tol  189.3 (cell lag 155.9) pass | pressed True
+seed  10: n  130 dip  460.6 err   45.8 | old tol  112.3 (lag share +0.150) pass | new tol   88.7 (cell lag  45.7) pass | pressed True
+seed  11: n  135 dip  535.4 err   14.2 | old tol   77.6 (lag share +0.057) pass | new tol   63.9 (cell lag  17.1) pass | pressed True
+seed  12: n   34 dip  501.5 err   16.3 | old tol  104.8 (lag share +0.119) pass | new tol   78.6 (cell lag  33.5) pass | pressed True
+seed  13: n  204 dip  674.8 err   18.5 | old tol   95.2 (lag share +0.061) pass | new tol   75.3 (cell lag  21.6) pass | pressed True
+seed  14: n   68 dip  367.5 err   12.6 | old tol   38.4 (lag share -0.138) pass | new tol   50.4 (cell lag  12.0) pass | pressed True
+seed  15: n   38 dip  391.0 err   27.4 | old tol   45.4 (lag share +0.015) pass | new tol   61.8 (cell lag  22.2) pass | pressed True
+seed  16: n  127 dip  502.3 err   26.8 | old tol  123.0 (lag share +0.155) pass | new tol   73.6 (cell lag  28.5) pass | pressed True
+seed  17: n   70 dip  501.8 err   15.5 | old tol  125.1 (lag share +0.160) pass | new tol   67.9 (cell lag  22.8) pass | pressed True
+seed  18: n  135 dip  611.2 err   57.5 | old tol  162.5 (lag share +0.183) pass | new tol  118.6 (cell lag  68.1) pass | pressed True
+seed  19: n  148 dip  530.4 err   19.4 | old tol   87.2 (lag share +0.077) pass | new tol   68.6 (cell lag  22.1) pass | pressed True
+seed  20: n  141 dip  499.4 err   30.2 | old tol  100.0 (lag share +0.110) pass | new tol   82.3 (cell lag  37.4) pass | pressed True
+seed  21: n   59 dip  337.8 err  134.5 | old tol  206.7 (lag share +0.503) pass | new tol  222.1 (cell lag 185.2) pass | pressed True
+seed  22: n   87 dip  462.3 err   44.8 | old tol   43.1 (lag share -0.044) FAIL | new tol   94.4 (cell lag  51.3) pass | pressed True
+seed  23: n   86 dip  475.8 err   21.7 | old tol   43.8 (lag share -0.011) pass | new tol   76.9 (cell lag  33.1) pass | pressed True
+seed  24: n  217 dip  506.9 err   18.3 | old tol   67.9 (lag share +0.045) pass | new tol   66.2 (cell lag  20.8) pass | pressed True
+eligible 24 of 24; old pass 22, new pass 24
