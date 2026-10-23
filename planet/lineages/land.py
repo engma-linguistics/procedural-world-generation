@@ -53,13 +53,29 @@ GOODS = {
     "cliff": ("sea cliffs", False),
     "seabirds": ("seabird cliffs", False),
     "seals": ("seal haul-outs", False),
+    # terrain and fire (the giants' countries; the terrain is today's, valid through the ice ages too)
+    "volcanic": ("volcanoes and young volcanic ground", True),
+    "hills": ("rolling hill country", True),
+    "peaks": ("high peaks", True),
+    "frost": ("frozen ground and ice margins", False),
+    "storm_coast": ("storm-beaten coasts", False),
 }
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
-DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral"}
+DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
+             "volcanic"}
 _ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe",),
          "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"), "gems": ("diamond", "gem_meta"),
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
 LIVING = ("fertile", "grazing", "foraging", "timber", "fuel", "building")  # scaled to the world's best
+AREA = ("hills", "peaks", "frost", "storm_coast")  # already 0..1 per cell and area-like: no reach inland
+# volcanic: an active volcano's cell 1, an extinct one exp(-age / VOLCANO_MYR); young arc / hotspot ground
+# (landform, within a cell of a volcano younger than YOUNG_MYR) at least YOUNG_GROUND
+VOLCANO_MYR, YOUNG_MYR, YOUNG_GROUND = 3.0, 5.0, 0.5
+# hills: rolling country, the steepest rise to a neighbour HILL_SLOPE m per km (up / full / full / gone),
+# on ground HILL_ELEV m (rising, full, full, gone): moderate relief under the mountains (history._tags 'mountain')
+HILL_SLOPE = (1.5, 3.5, 10.0, 14.0)
+HILL_ELEV = (100.0, 300.0, 1400.0, 1900.0)
+PEAK_ELEV = (2000.0, 3500.0)  # peaks: ground from the first height rising to full at the second
 MISSING_SHARE = 0.02  # a living good on less than this share of the land (at 1/10 of its scale) is missing
 _CACHE: dict = {}
 
@@ -102,7 +118,34 @@ def _layers(world_ref: str):
     if "coast_type" not in L:
         L.update(CF.world_layers(g, L, m))
         made.append("coast forms")
+    L["_meta"] = m  # (the volcano table)
     return g, L, made
+
+
+def _window(x, edges):
+    """0 below edges[0], rising to 1 at edges[1], 1 to edges[2], falling to 0 at edges[3]."""
+    a, b, c, d = edges
+    return np.clip(np.minimum((x - a) / (b - a), (d - x) / (d - c)), 0, 1)
+
+
+def _volcanic(g, L, land) -> np.ndarray:
+    """Volcanoes on land from the world's volcano table (meta, tectonics.volcanism.COLUMNS): active 1,
+    extinct exp(-age / VOLCANO_MYR); young arc and hotspot ground (landform) at least YOUNG_GROUND."""
+    from ..geo import xyz
+    from ..landform import ARC_CLASS, HOTSPOT_CLASS
+    m = L.get("_meta") or {}
+    out = np.zeros(g.n)
+    vol, cols = m.get("volcanoes") or [], m.get("volcano_columns") or []
+    if vol and all(k in cols for k in ("lat", "lon", "age", "active")):
+        v = np.asarray(vol, float)
+        val = np.where(v[:, cols.index("active")] > 0, 1.0, np.exp(-v[:, cols.index("age")] / VOLCANO_MYR))
+        cell = g.locate(xyz(np.radians(v[:, cols.index("lat")]), np.radians(v[:, cols.index("lon")])))
+        np.maximum.at(out, cell, val)
+    if "landform" in L:
+        lf = np.asarray(L["landform"]).astype(int)
+        young = np.asarray(L.get("landform_age", np.zeros(g.n)), float) <= YOUNG_MYR
+        out = np.maximum(out, YOUNG_GROUND * (np.isin(lf, (ARC_CLASS, HOTSPOT_CLASS)) & young))
+    return out * land
 
 
 def goods(world_ref: str | None) -> dict | None:
@@ -139,6 +182,16 @@ def goods(world_ref: str | None) -> dict | None:
     raw["mangrove"] = (ct == CF.KEYS["mangrove"]).astype(float)
     raw["cliff"] = np.maximum(np.isin(ct, (CF.KEYS["cliff"], CF.KEYS["fjord"])).astype(float), f("cliff"))
     raw["seabirds"], raw["seals"] = f("seabirds"), f("seals")
+    raw["volcanic"] = _volcanic(g, L, land)
+    elev = f("elevation")
+    rise = _nbr(g, np.maximum, np.abs(elev[g.nbr_idx] - elev[g.nbr_src])) / (g.spacing * R_KM)
+    raw["hills"] = _window(rise, HILL_SLOPE) * _window(elev, HILL_ELEV)
+    raw["peaks"] = np.clip((elev - PEAK_ELEV[0]) / (PEAK_ELEV[1] - PEAK_ELEV[0]), 0, 1)
+    ice = f("ice") > 0
+    ice_edge = ~ice & _nbr(g, np.logical_or, ice[g.nbr_idx])
+    raw["frost"] = np.maximum(np.clip(f("permafrost") / 3.0, 0, 1), 0.8 * ice_edge) * ~ice
+    wp = np.where(sea, f("wave_power"), 0.0)
+    raw["storm_coast"] = np.where(coast, _rel(_nbr(g, np.maximum, wp[g.nbr_idx]), coast), 0.0)
     out, missing = {}, []
     for k, v in raw.items():
         v = np.where(land, v, 0.0)
@@ -147,6 +200,8 @@ def goods(world_ref: str | None) -> dict | None:
             continue
         if k in LIVING:
             out[k] = _rel(v, land)
+        elif k in AREA:
+            out[k] = v
         else:  # (likelihoods and classes: already 0..1; point-like, so they reach the country around)
             out[k] = np.where(land, _reach(g, v), 0.0)
     out["_raw"] = {k: np.where(land, v, 0.0) for k, v in raw.items()}

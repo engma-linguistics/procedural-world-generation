@@ -16,6 +16,7 @@ from .. import timeline as T
 from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
+from . import land as LD
 from .crossing import Crossings, corridor
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
@@ -51,9 +52,10 @@ class Step:
     stats: dict = field(default_factory=dict)
 
 
-def _tags(grid, env: dict, chains: bool = True) -> dict:
+def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = None) -> dict:
     """Place tags of an epoch (PLACES) and Köppen ids, shared by every line (island_chain only if `chains`:
-    the costliest tag, needed only when a wish or a line names it)."""
+    the costliest tag, needed only when a wish or a line names it; volcanic from the world's volcanic good,
+    land.goods, where given: none in the deep epochs, whose volcanoes were elsewhere)."""
     land = env["land"] & ~(env["ice"] > 0.5)
     sea = ~env["land"]
     ni, src = grid.nbr_idx, grid.nbr_src
@@ -83,8 +85,11 @@ def _tags(grid, env: dict, chains: bool = True) -> dict:
             lo_, hi_ = np.where(through, l2, lo_), np.where(through, h2, hi_)
         chain = island & (lo_ != hi_)
     farm = land & _isin(cl, SP.GROUPS["temperate"] + [2, 20, 24]) & (rain > 500) & (elev < 1000)
+    hills = land & ~mountain & (LD._window(dh / (grid.spacing * R_KM), LD.HILL_SLOPE) * LD._window(elev, LD.HILL_ELEV) >= 0.5)
+    volc = land & (volcanic >= 0.5) if volcanic is not None else np.zeros(grid.n, bool)
     return {"farmland": farm, "jungle": land & _isin(cl, [0, 1]), "steppe": land & _isin(cl, [5, 6]),
             "desert": land & _isin(cl, [3, 4]), "tundra": land & (cl == 28), "island_chain": chain,
+            "hills": hills, "volcanic": volc,
             "land": land, "coast": land & sea_nbr, "island": island, "mountain": mountain,
             "lowland": land & (elev < 500), "inland": land & ~sea_nbr, "forest": land & (trees >= 35),
             "open": land & (trees < 20) & (rain > 200), "wetland": land & (elev < 300) & (rain > 1600),
@@ -493,8 +498,8 @@ class History:
         t0 = time.time()
         for si, step in enumerate(self.steps):
             env = step.get()
-            tags = _tags(g, env, self._chains)
-            deep = step.epoch == "deep"  # (the plates have moved since: no present rivers or shelves then)
+            deep = step.epoch == "deep"
+            tags = _tags(g, env, self._chains, self._volcanic(deep))  # (the plates have moved since: no present rivers or shelves then)
             tags["corridor"] = corr = corridor(tags, env, None if deep else self.flow,
                                                None if deep else env["land"] & (self.cross.label < 0))
             Ks = {}
@@ -661,9 +666,14 @@ class History:
                 K = K * max(0.0, (step.ago - l.extinct_kyr) / span)
         return np.clip(K, 0, 1)
 
+    def _volcanic(self, deep: bool = False):
+        """The world's volcanic good for the volcanic place tag (None without a world, and in the deep epochs)."""
+        return None if deep or self.goods is None else self.goods.get("volcanic")
+
     def _land_mult(self, l, holocene: bool) -> np.ndarray | float:
         """What the line's way of life looks for in the land (spec [[use]]; land.goods): x(1 - pull + pull G),
-        G the best of its favoured goods here (each by weight / the largest weight); x(1 - pull |w| g) per
+        G the best of its favoured goods here (each by weight / the largest weight), normalised to a mean of 1
+        over its country unless a use is strict; x(1 - pull |w| g) per
         avoided good. Before HOLOCENE_KYR only the geology (ores, stone) counts: the farmland, pasture,
         forests and coasts are today's. A line with no favoured good of an epoch is left as it is then."""
         from .land import GOODS
@@ -671,7 +681,7 @@ class History:
         m = self._land_m.get(key)
         if m is None:
             uses = [(g, w) for g, w in self.tree.uses_of(l) if g in self.goods and (holocene or GOODS[g][1])]
-            pull = self.tree.land_pull
+            pull = self.tree.pull_of(l)
             m = 1.0
             pos = [(g, w) for g, w in uses if w > 0]
             if pos and pull > 0:
@@ -683,9 +693,12 @@ class History:
                 # (a rare good, a coral coast, lifts its few places rather than cutting everywhere else)
                 if self._pres is None:
                     env = self.steps[-1].get()
-                    self._pres = (env, _tags(self.grid, env, self._chains))
-                hab = capacity(l, *self._pres) > 0.25
-                m = m / max(float(m[hab].mean()) if hab.any() else 1.0, 1 - pull)
+                    self._pres = (env, _tags(self.grid, env, self._chains, self._volcanic()))
+                # (unless strict: a people bound to its country, the giants to their volcanoes and peaks,
+                # keeps only 1 - pull of its habitat off it)
+                if not self.tree.strict_of(l):
+                    hab = capacity(l, *self._pres) > 0.25
+                    m = m / max(float(m[hab].mean()) if hab.any() else 1.0, 1 - pull)
             for g, w in uses:
                 if w < 0:
                     m = m * (1 - pull * min(-w, 1.0) * self.goods[g])
@@ -750,7 +763,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     natives = np.array([not l.overlay for l in h.lines])
     mix = (np.where(natives[:, None], P, 0) >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
-    tags = _tags(g, env, h._chains)
+    tags = _tags(g, env, h._chains, h._volcanic())
     corr = corridor(tags, env, h.flow)
     land = tags["land"]
     out["mixing"] = {"area_mkm2": round(float(mix.sum() * h.cell_mkm2), 2),
@@ -789,7 +802,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
 def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dict]:
     g = h.grid
     if tags is None:
-        tags = _tags(g, h.steps[-1].get(), h._chains)
+        tags = _tags(g, h.steps[-1].get(), h._chains, h._volcanic())
     out = []
     for w in h.tree.wishes:
         a = P[h.idx[w.a]] >= EST

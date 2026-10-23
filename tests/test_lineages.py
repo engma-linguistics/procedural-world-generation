@@ -133,7 +133,8 @@ def test_spec_parses_the_dag_and_the_preset():
     assert SP.parse_ago("8 Myr") == 8000 and SP.parse_ago("12000 yr") == 12 and SP.parse_ago(450) == 450
     assert SP.parse(SP.to_raw(t)).lines.keys() == t.lines.keys()
     dnd = SP.load(LR.SAMPLES / "dnd.toml")
-    assert {"elf", "human", "half_elf", "tiefling", "kobold", "aarakocra", "titan"} <= dnd.lines.keys()
+    assert {"elf", "human", "half_elf", "tiefling", "kobold", "aarakocra", "leonin", "tabaxi", "storm_giant", "cloud_giant",
+            "frost_giant", "fire_giant", "hill_giant"} <= dnd.lines.keys()
     with pytest.raises(ValueError):
         SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"},
                               {"id": "y", "parents": ["x"], "at": "2 kyr"}]})  # child older than parent
@@ -376,3 +377,32 @@ def test_land_use_moves_a_people_toward_its_goods(faketz):
     tags = H._tags(g, env)
     deep = H.Step(500.0, 1.0, "deep", True, None)
     assert np.allclose(h._K(tree.lines["dw"], env, tags, deep), H.capacity(tree.lines["dw"], env, tags))
+
+
+def test_a_use_can_name_a_line_and_its_own_pull(faketz):
+    """[[use]] by a line's id applies to that line only; its pull overrides meta.land_pull (the strongest
+    pull of a line's favoured goods); the volcanic and hills place tags exist (volcanic only with goods)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1, "land_pull": 0.5},
+           "lineage": [{"id": "fire", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "other", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}],
+           "use": [{"by": "fire", "good": "volcanic", "pull": 0.9}]}
+    tree = SP.parse(raw)
+    assert SP.parse(SP.to_raw(tree)).uses == tree.uses
+    assert tree.uses_of(tree.lines["other"]) == [] and tree.pull_of(tree.lines["fire"]) == 0.9
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "use": [{"by": "fire", "good": "volcanic", "pull": 2}]})
+    g = build_grid(LEVEL)
+    env = ps.fields(0.0, variability=False)
+    land = env["land"]
+    volc = np.where(land & (g.lat > 0), 1.0, 0.0)
+    h = H.History(tree, ps, 1, goods={"volcanic": volc})
+    m = h._land_mult(tree.lines["fire"], True)
+    assert m[volc > 0].min() > 5 * m[land & (volc == 0)].max()  # (1 - 0.9 + 0.9) / (1 - 0.9) = 10
+    strict = SP.parse({**raw, "use": [{"by": "fire", "good": "volcanic", "pull": 0.9, "strict": True}]})
+    assert SP.parse(SP.to_raw(strict)).uses == strict.uses and strict.strict_of(strict.lines["fire"])
+    ms = H.History(strict, ps, 1, goods={"volcanic": volc})._land_mult(strict.lines["fire"], True)
+    assert np.allclose(ms[land & (volc == 0)], 0.1) and np.allclose(ms[volc > 0], 1.0)  # (not renormalised)
+    tags = H._tags(g, env, False, h._volcanic())
+    assert (tags["volcanic"] == (tags["land"] & (volc > 0))).all() and not H._tags(g, env)["volcanic"].any()
+    assert not (tags["hills"] & tags["mountain"]).any() and not (tags["hills"] & ~tags["land"]).any()
