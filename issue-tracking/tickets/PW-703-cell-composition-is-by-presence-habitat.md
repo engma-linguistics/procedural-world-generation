@@ -1,7 +1,8 @@
 ---
-title: "Cell composition is by presence (habitat held), not by head count; a dense people looks smaller than it is"
+id: PW-703
+title: Cell composition is by presence (habitat held), not by head count; a dense people looks smaller than it is
 type: task
-status: needs-decision
+status: todo
 parent: PW-689
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun-composition
 blocked_by: []
 relates: [PW-689, PW-663, PW-701]
 refs: [planet/lineages/compose.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,7 @@ Options:
 - C: both layers (ground and heads), the hover shows heads.
 
 Lean: B for the hover and the body shares when the cuisine pass (PW-692) needs head counts; A stays for the colour layer.
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: yes, weight shares by head count (presence x density); the owner's '50% one people' reads as people, not area.
+- 2026-10-23: Created from inbox draft draft-composition-by-numbers-not-presence.md (found by fun-composition).

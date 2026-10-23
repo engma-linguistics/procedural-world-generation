@@ -1,7 +1,8 @@
 ---
-title: "Per-cell composition is a reading of the presence; should cohabitation also feed the competition (wish score, empty land)?"
+id: PW-704
+title: Per-cell composition is a reading of the presence; should cohabitation also feed the competition (wish score, empty land)?
 type: task
-status: needs-decision
+status: todo
 parent: PW-689
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun-composition
 blocked_by: []
 relates: [PW-689, PW-663, PW-682]
 refs: [planet/lineages/compose.py, planet/lineages/history.py, docs/proposals/lineages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,7 @@ Options:
 - C: leave it at A until the zooms place the pockets (the composition then sets how many settlements of each people a zoom draws).
 
 Lean: A now, C next; B only if the owner finds the globe's mixing too weak after the zooms use it.
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: keep composition a reading for now; feeding it into competition belongs with PW-663/PW-661's coexist-or-press-away pass and needs re-rolled draws.
+- 2026-10-23: Created from inbox draft draft-composition-feeds-competition.md (found by fun-composition).
