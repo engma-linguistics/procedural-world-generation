@@ -4,16 +4,16 @@ title: The Earth reference world has no geological record, so no landform classe
 type: task
 status: todo
 parent: PW-005
-milestone: null
+milestone: later
 subsystem: surface
 effort: m
 impact: low
 found_by: landform
 blocked_by: []
-relates: [PW-009]
+relates: [PW-009, PW-649]
 refs: [tools/earth_world.py, planet/landform.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ ages) and known LIPs, mapped onto `tectonics.record` columns. Only worth it
 if an Earth comparison of the class shares becomes a calibration target.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Created from inbox draft draft-earth-world-landforms.md (found by landform).

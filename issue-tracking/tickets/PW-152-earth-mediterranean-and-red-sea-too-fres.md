@@ -3,8 +3,8 @@ id: PW-152
 title: "Earth: Mediterranean and Red Sea too fresh and cool (salinity 35.7 / 37.4 psu)"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: ocean
 effort: m
 impact: low
@@ -28,5 +28,6 @@ regardless of the sill. Matters for a Mediterranean outflow analogue and for whi
 marginal seas could make deep water on other worlds.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: PW-597 triage (2026-10-23): kept, not wontdo. It points at a mechanism (the coarse overturning grid mixes narrow seas with the open ocean through their straits; salinity is relaxed regardless of the sill), not only an Earth miss. Mirror of PW-324.
 - 2026-10-14: Created from inbox draft draft-med-sea-salinity.md (found by viewerocean).

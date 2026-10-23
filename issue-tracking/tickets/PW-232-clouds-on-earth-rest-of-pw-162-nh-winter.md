@@ -4,16 +4,16 @@ title: "Clouds on Earth, rest of PW-162: NH winter trade-wind decks too cloudy, 
 type: task
 status: todo
 parent: PW-013
-milestone: null
+milestone: later
 subsystem: climate
 effort: m
 impact: low
 found_by: smalls2
 blocked_by: []
-relates: [PW-162, PW-015]
+relates: [PW-162, PW-015, PW-649]
 refs: [planet/climate.py, tools/earth_check.py]
 created: 2026-10-15
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,5 +24,6 @@ Branch smalls2 fixed PW-162's summer continents (storm cloud on land now goes wi
 - [ ] Canary January <= 65% and Hawaii January <= 70% without the summer Mediterranean clouding over
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Absorbs PW-162 (v1 reassessment 2026-10-16).
 - 2026-10-15: Created from inbox draft draft-clouds-winter-trades-and-tropics.md (found by smalls2).

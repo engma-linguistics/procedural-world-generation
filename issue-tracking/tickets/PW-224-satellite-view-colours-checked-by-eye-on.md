@@ -3,8 +3,8 @@ id: PW-224
 title: Satellite view colours checked by eye only; calibrate against real imagery
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-083]
 refs: [planet/satellite.py, docs/overview/satellite_view.jpg]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ leaf-on colours, soil colours and the snow cover scale (SNOW_SWE) to it.
 - [ ] a `tools/` check printing mean colour error by biome group, and a refit of the palette
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-15: Created from inbox draft draft-satellite-palette-check.md (found by satview).

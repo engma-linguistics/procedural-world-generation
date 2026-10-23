@@ -3,8 +3,8 @@ id: PW-079
 title: "Highlights at 110 km cells: canyons weak, some picks off on Earth"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: highlights
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-067]
 refs: [planet/highlights.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,4 +24,5 @@ the Pannonian basin closed); the Caspian is below sea level, so it's the "landlo
 limits; level 7 may help.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Migrated from plan_next@bdc967f: Known issues → Highlights.

@@ -3,8 +3,8 @@ id: PW-371
 title: Globe paint loops miss the cache - cells are numbered coarse-level first
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-316]
 refs: [viewer/index.html, viewer/relief.js, planet/grid.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -32,4 +32,5 @@ the ~25 keyframes/s it reaches now, and allow smooth relief shading during repla
 - [ ] keyframe ms before/after on run a1d3b9 (L7), relief on and off
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-globe-cell-order-locality.md (found by viewer-3d).

@@ -3,8 +3,8 @@ id: PW-153
 title: Ocean layers (salinity, sinking, SST) and the overturning strength in run keyframes
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: store
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-137, PW-144]
 refs: [planet/timeline.py, planet/tectonics/output.py, planet/tectonics/earth.py, planet/store.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,4 +33,5 @@ sinking keyframes are probably not worth it; SST maybe as i1 (whole C).
 - [ ] decide on per-cell keyframe layers (likely no)
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Created from inbox draft draft-ocean-layers-in-keyframes.md (found by viewerocean).

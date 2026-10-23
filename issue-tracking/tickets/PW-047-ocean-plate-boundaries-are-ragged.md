@@ -3,8 +3,8 @@ id: PW-047
 title: Ocean plate boundaries are ragged
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [planet/tectonics/plate_kernels.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,4 +22,5 @@ transform offsets. Seen on the v1 worlds; not re-checked since B′. Check on a 
 layer (e.g. world 7c5adf (deleted)) before working on it.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Migrated from plan_next@bdc967f Also noted and plan_next@bdc967f: Known issues → Crust and continents.

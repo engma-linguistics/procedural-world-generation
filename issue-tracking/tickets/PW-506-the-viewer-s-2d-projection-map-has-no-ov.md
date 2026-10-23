@@ -3,8 +3,8 @@ id: PW-506
 title: The viewer's 2D projection map has no overlays, relief shading or zoom-tab version
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-477]
 refs: [viewer/projmap.js, "viewer/index.html (drawProj)"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ The 2D map mode (PW-477, viewer/projmap.js) paints the current layer's flat cell
 - [ ] smooth colours at regional extents
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-map2d-overlays.md (found by viewer-batch).

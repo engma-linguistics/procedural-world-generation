@@ -10,10 +10,10 @@ effort: s
 impact: low
 found_by: worktree-agent-a7b485e309b6e3a74 (PW-478 calibration)
 blocked_by: []
-relates: [PW-478]
+relates: [PW-478, PW-649]
 refs: [planet/make.py, docs/coordination.md]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,4 +33,5 @@ also be worth one timing each.
 - [ ] L8 run timed or the row kept with its note.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-make-estimate-unmeasured-levels.md (found by worktree-agent-a7b485e309b6e3a74 (PW-478 calibration)).

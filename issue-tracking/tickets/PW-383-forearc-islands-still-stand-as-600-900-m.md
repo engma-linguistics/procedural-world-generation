@@ -4,16 +4,16 @@ title: Forearc islands still stand as ~600-900 m plateaus with steep edges after
 type: task
 status: todo
 parent: PW-001
-milestone: null
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
 found_by: small-fixes-batch
 blocked_by: []
-relates: [PW-362]
+relates: [PW-362, PW-649]
 refs: [planet/zoom.py, docs/review/zoom-polish/batch6.md, docs/review/zoom-polish/pw362_sea_share.png, "world fac2af"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ by distance from its coast (a dome rather than a lift), which moves every coast'
 - [ ] look at the island in the 3D view; decide whether A is wanted
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-forearc-island-plateau-after-sea-share.md (found by small-fixes-batch).

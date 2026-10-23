@@ -10,7 +10,7 @@ effort: m
 impact: low
 found_by: polish1
 blocked_by: []
-relates: [PW-621, PW-097]
+relates: [PW-621, PW-097, PW-649]
 refs: [planet/zoom_shoreforms.py, planet/zoom_coast.py, docs/review/polish/polish-1.md, "zoom bc40a3", "zoom 9d7c44"]
 created: 2026-10-23
 updated: 2026-10-23
@@ -35,4 +35,5 @@ with D8 channels and drowned lowstand reefs, as the zoom layer `shore_form`. Wha
 - [ ] drift follows a stored wave direction where swell dominates
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-shoreforms-followups.md (found by polish1).

@@ -3,8 +3,8 @@ id: PW-411
 title: Fine zoom braided reaches are drawn as one smoothed thread
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-405]
 refs: [planet/zoom_fine.py, _courses]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,4 +26,5 @@ Approach: in braided reaches, widen the active belt to ~3-5 w and draw 2-4 threa
 - [ ] zoom_fine.planform stays switchback-free on the main thread.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-braided-rivers.md (found by pw405).

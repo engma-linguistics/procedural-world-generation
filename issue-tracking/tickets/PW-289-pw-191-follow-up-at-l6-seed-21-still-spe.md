@@ -3,8 +3,8 @@ id: PW-289
 title: "PW-191 follow-up: at L6, seed 21 still spends 6% of its run at 3-4 plates (636-716 Myr), seed 11 2.5% (its cold era)"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-191, PW-240]
 refs: [docs/review/health/2026-10-15/report.md, tools/health.py]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ known L6 tail rather than a regression; it matters mostly through the CO2/cold-e
 deleted; they reproduce from seed + 6926583.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-15: Created from inbox draft draft-health-l6-seed21-few-plates.md (found by health-sweep).

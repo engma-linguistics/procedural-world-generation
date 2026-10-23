@@ -3,7 +3,7 @@ id: PW-520
 title: Zoom trough widths hit the one-pixel floor at 2 km/px, so width/depth can't follow the depth
 type: task
 status: todo
-parent: null
+parent: PW-649
 milestone: later
 subsystem: zoom
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-510, PW-092]
 refs: [planet/zoom_glacial.py, "zoom b6d6d7", "zoom aa113a"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ PW-510 made a glacial trough open until its rim-to-rim width is 3-5 x its depth 
 - [ ] fine zoom of Norway: >= 70% of troughs in range, tr_at_pixel_floor_pct < 30
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-glacial-trough-pixel-floor.md (found by pw512).

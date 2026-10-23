@@ -10,7 +10,7 @@ effort: s
 impact: low
 found_by: humanuse
 blocked_by: []
-relates: [PW-099]
+relates: [PW-099, PW-649]
 refs: [planet/humanuse.py, planet/zoom.py]
 created: 2026-10-21
 updated: 2026-10-23
@@ -21,5 +21,6 @@ updated: 2026-10-23
 - [ ] time a 2000 x 2000 and a 4096 x 4096 zoom build with and without the layers
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Milestone null -> v1 (PW-597 triage, coordinator, 2026-10-23): a real bug in a v1 feature (humanuse on a zoom builds edge lists for every pixel).
 - 2026-10-21: Created from inbox draft draft-humanuse-large-zoom-cost.md (found by humanuse).

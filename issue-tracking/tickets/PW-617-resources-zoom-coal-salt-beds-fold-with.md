@@ -10,7 +10,7 @@ effort: m
 impact: low
 found_by: resources2
 blocked_by: []
-relates: [PW-610]
+relates: [PW-610, PW-649]
 refs: [planet/zoom_resources.py, planet/zoom_landforms.py]
 created: 2026-10-23
 updated: 2026-10-23
@@ -28,4 +28,5 @@ regional dip, so a bed outcrops only where valleys cut down to it.
 - [ ] coal outcrop belts in a fold-belt zoom follow its ridges' strike
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-resources-zoom-bed-geometry.md (found by resources2).

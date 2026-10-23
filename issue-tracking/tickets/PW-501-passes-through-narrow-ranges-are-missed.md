@@ -4,16 +4,16 @@ title: Passes through narrow ranges are missed at world scale (Pyrenees, Caucasu
 type: task
 status: todo
 parent: PW-099
-milestone: null
+milestone: later
 subsystem: surface
 effort: s
 impact: low
 found_by: humanuse
 blocked_by: []
-relates: [PW-099]
+relates: [PW-099, PW-649]
 refs: [planet/humanuse.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ updated: 2026-10-21
 - [ ] decide: accept (world passes are only the big ones) or add the saddle rule
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-humanuse-coarse-passes.md (found by humanuse).

@@ -3,8 +3,8 @@ id: PW-316
 title: Viewer replay at 60 fps on L7 - per-cell colour and height in data textures
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [viewer/index.html]
 created: 2026-10-15
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,5 +28,6 @@ displace / colour in the vertex shader (`onBeforeCompile` on the Lambert materia
 flat map's hill shading (per-triangle, `mapHillshade`) need care. Only worth it if 25 fps feels slow.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Coordinator 2026-10-16: deferred; replay is ~23-28 keyframes/s after the speed-up, revisit only if it feels slow.
 - 2026-10-15: Created from inbox draft draft-viewer-replay-60fps.md (found by viewer-replay-speed).

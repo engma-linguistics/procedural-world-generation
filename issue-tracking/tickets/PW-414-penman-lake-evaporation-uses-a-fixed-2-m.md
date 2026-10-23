@@ -3,8 +3,8 @@ id: PW-414
 title: Penman lake evaporation uses a fixed 2 m/s wind, sea-level pressure and air temperature for the water
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-358, PW-300]
 refs: [planet/climate.py, docs/review/health-pw358-after/diag/lake_probe.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,4 +33,5 @@ giant lakes are held mainly by the open/closed switch of the outlet carving, not
 - [ ] model wind (and optionally elevation pressure) in open_water_evap; Earth lake probe re-run
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-penman-lakes-wind-height-storage.md (found by pw358).

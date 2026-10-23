@@ -3,8 +3,8 @@ id: PW-322
 title: Run elevation layers barely gzip (78 -> 67 MB); byte-planed or delta-coded int16 layers would
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: store
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-317]
 refs: [planet/store.py, planet/server.py, viewer/index.html, "run a1d3b9"]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,4 +30,5 @@ needs a prefix sum when seeking; (C) leave it (local use is fine: 1.3 s to first
 Measure the gzip size and the replay ms per keyframe before choosing. Note the server's `.gzcache` (git-ignored, under the data root) holds ~380 MB per fully visited L7 run; copies are pruned only when their file changes or goes.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-15: Created from inbox draft draft-run-layer-byte-shuffle.md (found by viewer-download-climograph).

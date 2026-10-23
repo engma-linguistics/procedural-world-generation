@@ -10,10 +10,10 @@ effort: xs
 impact: low
 found_by: pw392-fine-forms
 blocked_by: []
-relates: [PW-392]
+relates: [PW-392, PW-649]
 refs: [planet/zoom_fine_forms.py, planet/zoom_landforms.py, "zoom 7b0911 in dff894"]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ updated: 2026-10-20
 - [ ] no striping at tower edges in a hillshade of 7b0911
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-20: Created from inbox draft draft-fine-zoom-karst-tower-hatching.md (found by pw392-fine-forms).

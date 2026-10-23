@@ -10,10 +10,10 @@ effort: m
 impact: low
 found_by: pw531
 blocked_by: []
-relates: [PW-531, PW-521]
+relates: [PW-531, PW-521, PW-649]
 refs: [planet/zoom.py, "zoom f24fda (Costa Rica, 18 iterations)", "zoom 9213a8", "zoom 4f65aa"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -29,4 +29,5 @@ with slope under 1 m/km from 8002 km2 to 1554 km2. What is left there, and elsew
   `ZK.raise_to_run`), and whether the SW basin is a pan that may stay flat (a salt pan is legitimately flat)
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-flat-basin-and-landform-lake-shores.md (found by pw531).

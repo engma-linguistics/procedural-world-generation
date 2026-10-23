@@ -3,7 +3,7 @@ id: PW-509
 title: Earth finished worlds carry a rough terrain-derived rock map and no landform classes
 type: task
 status: todo
-parent: null
+parent: PW-649
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-494, PW-092]
 refs: [planet/finish.py, tools/earth_world.py, "world 577526"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ A finished Earth world had no `rock` layers at all, so no regional zoom could be
 - [ ] Earth zooms get GLiM rock and landform classes (karst, dunes, fold belts)
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-earth-finished-world-geology.md (found by pw092).

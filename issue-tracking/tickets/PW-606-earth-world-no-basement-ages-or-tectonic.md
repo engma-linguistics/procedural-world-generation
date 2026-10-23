@@ -10,7 +10,7 @@ effort: m
 impact: low
 found_by: resources
 blocked_by: []
-relates: [PW-132, PW-155]
+relates: [PW-132, PW-155, PW-649]
 refs: [tools/resources_check.py, tools/earth_data.py]
 created: 2026-10-23
 updated: 2026-10-23
@@ -26,4 +26,5 @@ compilation) and present plate boundaries in earth_data would make those checkab
 anchor only).
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-resources-earth-ages.md (found by resources).

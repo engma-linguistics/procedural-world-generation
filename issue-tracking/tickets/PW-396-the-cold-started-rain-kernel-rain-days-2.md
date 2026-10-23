@@ -3,8 +3,8 @@ id: PW-396
 title: The cold-started rain kernel (RAIN_DAYS 20) is 2.5-10% off its steady state on generated planets' land, so worlds and the run's warm-started rain differ by that much
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: climate
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-387, PW-015]
 refs: [planet/climate.py, docs/review/audit/pw387_warm_check.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -35,4 +35,5 @@ Measuring script: docs/review/audit/pw387_warm_check.py (`uv run python docs/rev
 - [ ] cold-start land L1 against a 60-day reference <= ~1.5% on Earth and on two generated planets
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-cold-rain-kernel-not-converged.md (found by pw387-warm-start).

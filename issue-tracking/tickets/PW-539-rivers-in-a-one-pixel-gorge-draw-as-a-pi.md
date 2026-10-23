@@ -10,10 +10,10 @@ effort: s
 impact: low
 found_by: pw537
 blocked_by: []
-relates: [PW-537]
+relates: [PW-537, PW-649]
 refs: [viewer/zoom3d.js, viewer/zoom3d_mesh.js, "zoom 60b7e1"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,4 +25,5 @@ Options: (a) carve the zoom's terrain along a smoothed river course so the floor
 - [ ] the river in 60b7e1 below the upper pool turns less than ~1.5x the straight-line bearing change, without riding up the valley sides
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-zoom3d-river-staircase.md (found by pw537).

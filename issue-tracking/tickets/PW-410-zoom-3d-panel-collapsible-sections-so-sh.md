@@ -3,8 +3,8 @@ id: PW-410
 title: "Zoom 3D panel: collapsible sections so short windows show the falls list without scrolling"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-409]
 refs: [viewer/zoom.html]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,4 +24,5 @@ Optional polish: make the render controls (height, detail, sun, river width, the
 - [ ] at 1366x768 embedded, with the controls folded, the falls list and the hover card are both visible without scrolling
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-zoom3d-panel-collapsible.md (found by worktree-agent-a3947a9de2078ba52).

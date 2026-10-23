@@ -3,8 +3,8 @@ id: PW-500
 title: "Job cancel is cooperative: a worker busy in a long kernel only stops at its next progress report"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: infra
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-480]
 refs: [planet/api.py, planet/parallel.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,4 +22,5 @@ Options: (A) leave it; (B) give cancellable jobs (make at L6+) a process of thei
 - [ ] measure the longest gap between progress reports per stage at L6/L7
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-cancel-hard-stop.md (found by viewer-batch).

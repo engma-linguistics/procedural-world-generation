@@ -4,16 +4,16 @@ title: "River navigability uses the mean discharge: add low-water month and tida
 type: task
 status: todo
 parent: PW-099
-milestone: null
+milestone: later
 subsystem: hydrology
 effort: s
 impact: low
 found_by: humanuse
 blocked_by: []
-relates: [PW-099, PW-028]
+relates: [PW-099, PW-028, PW-649]
 refs: [planet/humanuse.py, "world f6e955"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,4 +22,5 @@ updated: 2026-10-21
 - [ ] sea-going up the tidal reach of a river whose mouth has a tide range above ~2 m and a gradient under 0.1 m/km
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-humanuse-navigation-low-water-tides.md (found by humanuse).

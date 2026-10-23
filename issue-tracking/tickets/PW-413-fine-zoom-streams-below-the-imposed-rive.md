@@ -3,8 +3,8 @@ id: PW-413
 title: Fine zoom streams below the imposed-river threshold are still D8 paths on the landscape pass
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-405, PW-390]
 refs: [planet/zoom_fine.py, viewer/zoom3d_mesh.js]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,4 +22,5 @@ PW-405 smooths the imposed courses: the parent's rivers draining at least max(25
 What to try (only if the owner sees it): route the finished surface with a D-infinity or multiple-flow-direction method for the river line only. Or lower the imposed threshold for fine parents, so that more of the network is drawn as smoothed courses.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-small-streams-d8.md (found by pw405).

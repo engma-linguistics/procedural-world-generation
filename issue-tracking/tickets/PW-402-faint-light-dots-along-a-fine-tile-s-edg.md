@@ -3,8 +3,8 @@ id: PW-402
 title: Faint light dots along a fine tile's edge in the zoom 3D view
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-129]
 refs: [viewer/zoom3d.js, viewer/zoom3d_look.js, "zoom 170672", docs/review/fine-zoom-3d/waterfall_chain_50m_1x.png]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -29,4 +29,5 @@ behind them. Check from far and close with the Height layer (each tile
 coloured by its own range, so the seam is easy to find).
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-tile-seam-dots.md (found by fine-zoom-3d).

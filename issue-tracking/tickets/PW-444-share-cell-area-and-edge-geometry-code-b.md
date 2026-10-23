@@ -3,8 +3,8 @@ id: PW-444
 title: Share cell-area and edge-geometry code between grid, climate, ocean and the time zoom
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: infra
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-442]
 refs: [planet/grid.py, planet/ocean.py, planet/climate.py, planet/timezoom/geometry.py, planet/landform.py]
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,4 +25,5 @@ PW-442 added `Grid.nbr_src` (the cell each CSR edge leaves) and `Grid.edge_dir` 
 - [ ] More `np.repeat(np.arange(n), np.diff(nbr_off))` sites to switch to `grid.nbr_src`: hydrology.py:352, store.py:375, climate.py:155/617, coast.py:479/539, zoom.py:1147/1152, soils.py:200.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-20: Created from inbox draft draft-pw442-grid-geometry-dupes.md (found by pw442).

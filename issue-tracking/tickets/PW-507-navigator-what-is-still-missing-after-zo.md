@@ -3,8 +3,8 @@ id: PW-507
 title: "Navigator: what is still missing after zoom, fine zoom and top-N highlight zooms"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-482, PW-473]
 refs: [viewer/navigator.js, viewer/index.html]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,4 +26,5 @@ PW-482 added "Zoom a region" (typed or picked lat/lon, size), "Fine zoom" on eve
 - The fine zoom form's size field is free text; the server's check (`zoom_fine.check`) only answers after the POST. The allowed range could come from `GET /api/...` or be computed in JS.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-navigator-gaps-left.md (found by viewer-batch).

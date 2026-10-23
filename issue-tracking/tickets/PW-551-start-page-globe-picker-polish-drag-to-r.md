@@ -3,8 +3,8 @@ id: PW-551
 title: Start-page globe picker polish (drag to rotate, lighting, higher-res texture)
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-546]
 refs: [viewer/globepick.js, planet/thumbs.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ PW-546 shipped the globe picker with a flat-shaded sphere (MeshBasicMaterial), a
 - [ ] honour `prefers-reduced-motion` (no auto-rotation)
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-start-globe-polish.md (found by pw546).

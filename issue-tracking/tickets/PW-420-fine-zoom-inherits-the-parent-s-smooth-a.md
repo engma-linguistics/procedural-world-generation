@@ -3,8 +3,8 @@ id: PW-420
 title: Fine zoom inherits the parent's smooth arc-rock hills with no fine detail (a0097b)
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-395]
 refs: [planet/zoom_fine.py, "zoom a0097b"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ near its 1 m floor, and whether the hills are held (fixed) or clamped.
 - [ ] hills of 40-400 m in a fine zoom show sub-parent-pixel relief (ridges, valleys) like other land
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-fine-zoom-smooth-inherited-hills.md (found by pw395-volcano-form).

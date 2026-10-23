@@ -3,8 +3,8 @@ id: PW-386
 title: tools/moisture_budget.py at L7 routes ~0.5 Sv of the Atlantic's rivers into 'Med+inland'
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: infra
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-016, PW-014]
 refs: [tools/moisture_budget.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,4 +26,5 @@ inland. Check which rivers, and route cut-off sea cells to the basin of the ocea
 - [ ] Atlantic river input within ~10% between L6 and L7
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-moisture-budget-l7-drainage.md (found by pw015-rain).

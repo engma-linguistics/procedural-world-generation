@@ -3,8 +3,8 @@ id: PW-223
 title: Satellite clouds are a fixed noise pattern; give them weather-like shapes
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: viewer
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-083, PW-156]
 refs: [viewer/index.html, viewer/zoom.html]
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,4 +26,5 @@ and smaller cells over warm land; or wait for day-scale weather (PW-156) and dra
 The zoom's clouds use separate noise from the globe's (they don't line up with the globe's patches).
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-15: Created from inbox draft draft-satellite-clouds-weather.md (found by satview).

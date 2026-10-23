@@ -3,7 +3,7 @@ id: PW-519
 title: Recessional moraine belts at ice-thickness contours are a heuristic; use the deglaciation history
 type: task
 status: todo
-parent: null
+parent: PW-649
 milestone: later
 subsystem: zoom
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-512, PW-499, PW-470]
 refs: [planet/zoom_glacial.py, "zoom a44e9f", "zoom 9213a8"]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Where a sheet's margin is out of view (Ungava a44e9f is 100% iced), the zoom put
 - [ ] belts follow the retreat contours; Ungava still shows >= 3 moraine-dammed lakes
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-glacial-recessional-moraine-contours.md (found by pw512).

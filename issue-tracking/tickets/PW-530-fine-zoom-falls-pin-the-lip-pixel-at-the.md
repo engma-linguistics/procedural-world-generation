@@ -10,10 +10,10 @@ effort: m
 impact: low
 found_by: pw522
 blocked_by: []
-relates: [PW-522, PW-516]
+relates: [PW-522, PW-516, PW-649]
 refs: [planet/zoom_fine.py, planet/zoom_falls.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ fine zoom may move a parent's lip.
 - [ ] move the lip up the course by the recess, with the bed above it graded into it
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-fine-fall-lip-notch.md (found by pw522).

@@ -3,8 +3,8 @@ id: PW-433
 title: Fine zoom oxbow lakes are small blobs; no scroll bars or meander scars on the floor
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: zoom
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-425, PW-416, PW-412]
 refs: [planet/zoom_fine_meander.py, planet/zoom_fine.py]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,4 +27,5 @@ What I'd try:
 - [ ] block means (PW-389) and floor tests unchanged
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-oxbow-crescents-and-scroll-bars.md (found by pw425).

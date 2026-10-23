@@ -3,8 +3,8 @@ id: PW-370
 title: "Zoom deltas: a finger running out to the region's edge beside its own river's inflow gets no channel"
 type: task
 status: todo
-parent: null
-milestone: null
+parent: PW-649
+milestone: later
 subsystem: zoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-363]
 refs: [planet/zoom.py, docs/review/zoom-polish/batch6.md, "world 592f2a"]
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,4 +28,5 @@ on a non-outlet stretch of the built area's edge (`_delta_forms` would need the 
 - [ ] every bird's-foot finger in the region has a channel, or isn't drawn (zoom 4.97,-114.51 seeds 1-5)
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-16: Created from inbox draft draft-zoom-finger-toward-inflow-edge.md (found by zoom-batch6).

@@ -10,7 +10,7 @@ effort: s
 impact: med
 found_by: audit-tectonics
 blocked_by: []
-relates: [PW-054, PW-242]
+relates: [PW-054, PW-242, PW-649]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/params.py, docs/review/audit/tectonics.md, planet/tectonics/crust.py, planet/tectonics/plate_kernels.py, "run:a1d3b9@900Myr"]
 created: 2026-10-15
 updated: 2026-10-23
@@ -58,6 +58,7 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Audit concern restated (PW-597 triage, 2026-10-23): the flexural moat's 15% share was tuned on one L7 seed's closed-basin count and only the moat half of flexure is applied, i.e. metric-chasing under the audit rule. Status left unchanged; milestone stays v2.
 - 2026-10-21: Owner 2026-10-21: moved to v2.
 - 2026-10-16: Status in-progress -> todo. Spike source fixed (collision belts straddle the suture: spikes >15 km over neighbours 59 -> 10). Sound flexure (alpha 66 km, Te 30 km) not landed: cells are as wide as alpha, so one-cell loads are held up (27 km peaks). Options and patch on the ticket; the 0.15 share documented as calibrated.

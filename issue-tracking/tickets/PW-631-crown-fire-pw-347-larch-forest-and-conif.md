@@ -10,7 +10,7 @@ effort: s
 impact: low
 found_by: soilveg2
 blocked_by: []
-relates: [PW-347, PW-234]
+relates: [PW-347, PW-234, PW-649]
 refs: [planet/vegetation.py, tools/veg_check.py]
 created: 2026-10-23
 updated: 2026-10-23
@@ -24,4 +24,5 @@ PW-347 added a crown-fire burned share for evergreen needleleaf stands (`vegetat
 - A dry-spell term (rain days at random, (1 - f)^4) was tried first and dropped: boreal months already count 30-50% dry from their rain/evaporation ratio, so it moved boreal fire only 294 -> 240 yr while adding temperate burning (30-45 N +15-30%).
 
 ## Updates
+- 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Created from inbox draft draft-veg-crown-fire-followups.md (found by soilveg2).
