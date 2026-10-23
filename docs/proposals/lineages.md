@@ -240,3 +240,75 @@ Place wishes score half "how much of that kind of place the line holds" (half of
 - **`[[use]]` changes.** `by` may name one line's id, and an optional `pull` (0..1) overrides `meta.land_pull`; a line takes the strongest pull of its favoured goods. `strict = true` cuts the habitat off the goods to 1 − pull instead of renormalising it to a mean of 1. The preset gives each true giant its own good at pull 0.85, strict. On run e8cc18 (1df1c3) the giants hold 0.01–3.7 Mkm² each (frost giants the most); humans hold ~20.
 - **New wishes:** leonin on open country; frost giants apart from fire giants.
 
+
+## Workbench lane (2026-10-24): demography, explorers and seafarers, the multi-tab workbench (PW-650)
+
+The owner: giants far fewer, with larger roaming areas; some peoples insular, some exploratory; landmasses with
+few or no peoples found by the explorers and seafarers ("not 'no dwarves sail the seas', but a smaller
+proportion"); peoples as a multi-tab thing of their own.
+
+### Four knobs per people (`spec.DEMOGRAPHY`, `Lineage.demo`)
+Each can be given on a `[[lineage]]`; left out, a split inherits its parent's given value, else the value comes
+from the traits (the strongest among them; `insular` sets exploration and insularity whatever else).
+
+| knob | meaning | default (no traits) | from traits |
+|---|---|---|---|
+| `density` (or `band_km2`) | people per km² of full habitat; a band of 25 roams 25 / density km² | 2 | agricultural 10, coastal / miner / subterranean 3, nomadic / flies 0.6 |
+| `explore` 0..1 | how readily the frontier pushes into marginal land and over the sea | 0.5 | seafaring / nomadic / cosmopolitan 0.7, flies 0.65, subterranean 0.35, insular 0.25 |
+| `sea_share` 0..1 | the share of the frontier that tries water crossings | 0.03 | seafaring 0.6, swims 0.4, coastal 0.3 |
+| `insularity` 0..1 | resistance to mixing and to leaving home | 0.5 | insular 0.85, cosmopolitan 0.2 |
+
+`speed_kmyr` stays the expansion rate (km/yr of frontier; `expansion_kmyr` is accepted as a synonym).
+
+What they do (all cheap, on the existing frontier model):
+- **density**:
+  - **numbers**: a people's population is Σ presence × density × cell area (`History.population`). An overlay is its share of its hosts' people. Per people and per present-day landmass, in `meta.present.lines[id].population` and `by_landmass`, and per stored frame in `stats.population`.
+  - **viable population**: a separate patch of a people's land with fewer than `meta.viable_pop` (500) people fades, e-folding 2 kyr (`History._viable`, looked at about once a kyr). The largest patch is exempt: a people's last land is the refuge logic's. So a sparse people needs a big piece of good country to hold a land at all. Giants at 0.005–0.01 /km² need ~0.1–0.2 Mkm² of full habitat; humans need a few cells.
+  - **competition**: the competition a line feels from a rival is × (the rival's density / its own)^0.1, within 0.7..1.4 (`DENSITY_PUSH`). Mild on purpose: at ^0.25, within 0.5..2, the elves and orcs lost most of their land to the humans in single tries on 1df1c3.
+- **explore**:
+  - into marginal land (K < 0.3) the spread's pressure keeps a + (1 − a) K / 0.3, with a = 0.25 + 0.5 explore. It was 0.5 for everyone, which is the default explore of 0.5;
+  - every long-crossing way but the drift raft is × 2 explore × (1.25 − 0.5 insularity) (`crossing.hop_mult`).
+- **sea_share**:
+  - boats (the crossing way `seafaring`, `spec.BOATS`): rate 1 /kyr × share / 0.6, reach from 300 km (share 0) to 1500 km (0.6 or more), from 6 kyr ago. Humans at 0.6 sail as the old `seafaring` trait did. Dwarves at 0.05 put to sea ~12× less often and less far, but not never;
+  - short hops over straits from 3 kyr ago, for a share ≥ 0.2: sea factor 0.75 × (share / 0.6)^0.5.
+  - The `seafaring` trait's movement knob (`late_sea`) is gone: the trait now sets the share (0.6) and still names the harbour use.
+- **insularity**:
+  - the late relaxing of competition is × 2 (1 − insularity). This replaces the `insular` and `cosmopolitan` traits' `mix` knob: 0.85 → 0.3 (was 0.2), 0.2 → 1.6, 0.5 → 1;
+  - the long crossings, as above.
+
+### Landmasses: discovery and numbers
+Per present-day landmass, `meta.present.landmasses[]`:
+- `discovered`: the first native people there, its origin included (`by`, `ago_kyr`, `how`, `gap_km`);
+- `settled_by`: the first of today's peoples, since the stems found most land in deep time;
+- `arrivals`: the first 12 arrivals;
+- `population`: per people.
+
+`run.txt` gains "Numbers at the present" and "Landmasses: who found them first". `meta.present.ascii` holds the present-day map (letters per people) for the workbench.
+
+### The preset
+| people | density /km² | explore | sea share | insularity |
+|---|---|---|---|---|
+| true giants (stem, hill, cloud, storm, frost, fire) | 0.005–0.01 | 0.3 (storm 0.45) | 0.02 (storm 0.5) | 0.85 |
+| goliaths, firbolgs | 0.15, 0.3 | 0.4, 0.3 | – | 0.7, 0.8 |
+| humans, halflings | 10, 12 | 0.55, 0.35 | 0.6, 0.1 | 0.3, 0.4 |
+| elves, sea elves, drow | 1, 1.5, 2 | 0.8, 0.8, 0.4 | 0.3, 0.85, 0.02 | 0.7, 0.7, 0.9 |
+| dwarves, gnomes | 4, 3 | 0.35, 0.5 | 0.05, 0.1 | 0.75, – |
+| tortles, tritons | 1, 1 | 0.7, 0.6 | 0.8, 0.9 | –, 0.8 |
+| goblins, hobgoblins, bugbears, kobolds | 5, 4, 0.8, 4 | –, 0.6, 0.4, – | – | – |
+
+PW-655: the giants' uses are now pull 0.7, not strict. The giants are rare through density (numbers in the hundreds to thousands) and the viable population (one land each), not a cut habitat.
+
+### The workbench (`viewer/lineages.html`, same URL; tabs keep `#tree`, `#peoples`, `#places`, `#wishes`, `#results`)
+- **Tree & timeline**: the editor as before, with a Demography block in the side panel.
+- **Peoples**: a table of every line: on/off, origin, time, habitat, prefers, traits, density / band km², expansion, explore, sea share, insularity, and the last run's population, area and patches. Empty fields show the value used (from the traits or the parent) in grey; headings sort.
+- **Places & land use**: the `[[use]]` table (by, good, weight, pull, strict, which peoples it applies to), the land pull, the goods and place tags, and the last run's homeland notes.
+- **Wishes**: the wishes with the last run's score per wish.
+- **Results**: pick any peoples run. It shows:
+  - totals;
+  - peoples today (population, density, area, patches, main lands);
+  - a discovery timeline (log time, a dot per arrival) and table per landmass;
+  - the present-day map (coloured letters);
+  - mixing zones, wish scores, stories (with numbers);
+  - links to the globe and to `run.txt`.
+
+No server change: the page uses the existing `/api/lineage-tree(s)`, `/api/lineages` and the store's `runs/index.json`.

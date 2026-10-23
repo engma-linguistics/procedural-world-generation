@@ -212,7 +212,12 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     monkeypatch.setitem(SP.HOPS, "swims", (1.0, 8000.0, None))  # (level 3 cells are ~900 km: a long-range swimmer)
     got = cr.hop(swimmer, p, K, K, env, tags, 100.0, 4000.0, rng, H.EST)
     assert any(island[c] for c, _, _ in got)
-    assert C.modes(walker, 1.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    # (before the boats, a walker only drifts; after, a small share of its frontier sails, PW-650)
+    assert C.modes(walker, 10.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    assert C.modes(SP.Lineage("w0", sea_share=0.0), 1.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    boat = dict((w, (r, L)) for w, r, L in C.modes(walker, 1.0))["seafaring"]
+    sailor = dict((w, (r, L)) for w, r, L in C.modes(SP.Lineage("s", traits=["seafaring"]), 1.0))["seafaring"]
+    assert boat[0] < 0.1 * sailor[0] and boat[1] < sailor[1]
     hits = sum(any(island[c] for c, _, _ in cr.hop(walker, p, K, K, env, tags, 1.0, 0.1, rng, H.EST)) for _ in range(50))
     assert hits == 0
 
@@ -406,3 +411,40 @@ def test_a_use_can_name_a_line_and_its_own_pull(faketz):
     tags = H._tags(g, env, False, h._volcanic())
     assert (tags["volcanic"] == (tags["land"] & (volc > 0))).all() and not H._tags(g, env)["volcanic"].any()
     assert not (tags["hills"] & tags["mountain"]).any() and not (tags["hills"] & ~tags["land"]).any()
+
+
+def test_demography_defaults_inheritance_and_numbers(faketz):
+    """PW-650: the four knobs come from the traits unless given, a split inherits what its parent was given;
+    a sparse people's small separate patch fades below the viable population (its largest never does);
+    the population is presence x density x area, and each landmass says who found it first."""
+    from planet.lineages import crossing as C
+    raw = {"meta": {"name": "d", "seed": 1, "viable_pop": 500},
+           "lineage": [{"id": "g", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000],
+                        "density": 1e-5, "traits": ["insular"]},
+                       {"id": "g2", "parents": ["g"], "at": "10 kyr"},
+                       {"id": "f", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000],
+                        "traits": ["agricultural", "seafaring"], "band_km2": 2.5}]}
+    t = SP.parse(raw)
+    assert t.lines["g2"].demo("density") == 1e-5 and t.lines["g"].demo("insularity") == SP.DEMOGRAPHY["insular"]["insularity"]
+    assert t.lines["f"].demo("density") == 10.0 and t.lines["f"].demo("sea_share") == 0.6
+    assert SP.parse(SP.to_raw(t)).lines["g2"].density == 1e-5
+    assert C.hop_mult(t.lines["f"]) > 2 * C.hop_mult(t.lines["g"])
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "sea_share": 2}]})
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(t, ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    h.faded = {}
+    env = ps.fields(0.0, variability=False)
+    k = h.idx["g"]
+    big = env["land"] & (np.abs(h.grid.lon) < 50)
+    small = env["land"] & (h.grid.lon < -100) & (h.grid.lon > -140)  # the fake island
+    h.p[k][big | small] = 0.5
+    h._viable(t.lines["g"], k, 4.0, None)
+    assert (h.p[k][big] == 0.5).all() and not (h.p[k][small] > 0).any()
+    pop = h.population(k)
+    assert abs(pop.sum() - 0.5 * big.sum() * 1e-5 * h.cell_mkm2 * 1e6) < 1e-6 * pop.sum()
+    _, _, pres = H.simulate(t, ps, tries=1)
+    assert pres["lines"]["f"]["population"] > 100 * pres["lines"].get("g2", {"population": 1})["population"]
+    first = [m for m in pres["landmasses"] if m["discovered"]]
+    assert first and all(m["discovered"]["by"] in t.lines for m in first)

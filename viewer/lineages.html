@@ -3,34 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Peoples editor · Planet Viewer</title>
+<title>Peoples workbench · Planet Viewer</title>
 <style>
-  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; }
+  :root { --bg: #0e1218; --panel: #161c25; --line: #2a3446; --text: #dde3ea; --muted: #8b97a8; --acc: #7cc4ff; --err: #ff7b7b; --ok: #9fd18b; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; display: grid;
-         grid-template-columns: 1fr 380px; grid-template-rows: auto 1fr auto; height: 100vh; }
-  header { grid-column: 1 / 3; padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+         grid-template-rows: auto auto 1fr auto; height: 100vh; }
+  header { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   header b { font-size: 15px; margin-right: 8px; }
+  nav { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  nav button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 7px 14px; color: var(--muted); }
+  nav button.on { color: var(--text); border-bottom-color: var(--acc); }
+  main { overflow: hidden; min-height: 0; }
+  .tab { display: none; height: 100%; overflow: auto; padding: 10px 12px; }
+  .tab.on { display: block; }
+  #tab-tree.on { display: grid; grid-template-columns: 1fr 380px; padding: 0; }
   #tl { overflow: auto; position: relative; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
-  footer { grid-column: 1 / 3; border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
   button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
   button { cursor: pointer; } button:hover { border-color: var(--acc); }
   input[type=number] { width: 70px; } input.wide { width: 100%; }
   label { display: block; margin: 5px 0 2px; color: var(--muted); }
   .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .muted { color: var(--muted); } .err { color: var(--err); }
+  .muted { color: var(--muted); } .err { color: var(--err); } .ok { color: var(--ok); }
   .trait { display: inline-block; margin: 2px 8px 2px 0; color: var(--text); }
   svg text { fill: var(--text); font-size: 11px; } svg .axis text { fill: var(--muted); }
   .bar { cursor: grab; } .sel rect.bg { fill: #233047; }
-  h3 { margin: 12px 0 4px; font-size: 13px; }
-  .wish { display: flex; gap: 4px; margin: 3px 0; } .wish select, .wish input { padding: 2px 4px; }
+  h3 { margin: 12px 0 4px; font-size: 13px; } h2 { font-size: 14px; margin: 4px 0 8px; }
   a { color: var(--acc); }
+  table.t { border-collapse: collapse; font-size: 12px; }
+  table.t th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; color: var(--muted); padding: 4px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.t td { padding: 2px 5px; border-bottom: 1px solid #1c2430; vertical-align: top; }
+  table.t tr.off td { opacity: .4; }
+  table.t td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.t input[type=number] { width: 62px; padding: 2px 4px; } table.t input.s { width: 48px; } table.t input.txt { width: 150px; padding: 2px 4px; }
+  table.t select { padding: 2px 4px; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .kpi { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
+  .kpi div b { display: block; font-size: 17px; } .kpi div span { color: var(--muted); font-size: 11px; }
+  pre.map { font: 10px/10px ui-monospace, monospace; margin: 0; letter-spacing: 0; background: #0a1a2a; padding: 6px; display: inline-block; }
+  .bars { display: inline-block; height: 8px; background: var(--acc); opacity: .7; vertical-align: middle; border-radius: 2px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } #tab-tree.on { grid-template-columns: 1fr; } }
+  .hint { max-width: 900px; color: var(--muted); margin: 0 0 8px; }
 </style>
 </head>
 <body>
 <header>
-  <b>Peoples editor</b>
+  <b>Peoples workbench</b>
   <select id="trees" title="presets and saved trees"></select>
   <button id="load">Load</button>
   <span class="muted">save as</span><input id="saveName" size="14" placeholder="my-peoples">
@@ -44,30 +67,46 @@
   <button id="run">Run on world</button>
   <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
 </header>
-<div id="tl"><svg id="svg"></svg></div>
-<div id="side"></div>
-<footer>Time runs left to right, Myr to the present, on a log scale (the three scales: tectonic run, glacial time zoom,
-  recent pass). Drag a bar's left end to move when the line appears; click a bar to edit it. Origins:
-  <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> · <span style="color:#c79bff">arrival (from outside)</span> ·
-  <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>. Switching a line off: its split children
-  re-parent to its parent (or become roots); its hybrids and templates go with it. Saved trees: <code>&lt;data&gt;/lineage_trees/</code>;
-  CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.</footer>
+<nav id="tabs">
+  <button data-tab="tree">Tree &amp; timeline</button>
+  <button data-tab="peoples">Peoples</button>
+  <button data-tab="places">Places &amp; land use</button>
+  <button data-tab="wishes">Wishes</button>
+  <button data-tab="results">Results</button>
+</nav>
+<main>
+  <section class="tab" id="tab-tree"><div id="tl"><svg id="svg"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-peoples"></section>
+  <section class="tab" id="tab-places"></section>
+  <section class="tab" id="tab-wishes"></section>
+  <section class="tab" id="tab-results"></section>
+</main>
+<footer id="foot"></footer>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ORIGIN_COL = { split: '#9fd18b', root: '#e3c26b', arrival: '#c79bff', hybrid: '#ff9d6b', template: '#ff6b9a' };
+// (mirrors of planet/lineages/spec.py TRAITS, PLACES, DEMOGRAPHY and land.py GOODS)
 const TRAITS = ['flies', 'swims', 'coastal', 'seafaring', 'agricultural', 'nomadic', 'mountain', 'hardy', 'insular', 'cosmopolitan', 'subterranean', 'miner'];
-const PLACES = ['coast', 'island', 'island_chain', 'mountain', 'lowland', 'inland', 'forest', 'open', 'wetland', 'jungle', 'steppe', 'desert', 'tundra'];  // (spec.PLACES)
+const PLACES = ['coast', 'island', 'island_chain', 'mountain', 'lowland', 'inland', 'forest', 'open', 'wetland', 'jungle', 'steppe', 'desert', 'tundra', 'volcanic', 'hills'];
 const WANTS = ['near', 'apart', ...PLACES];
-const GOODS = ['fertile', 'grazing', 'foraging', 'timber', 'fuel', 'building', 'stone', 'metal', 'gold', 'iron', 'copper', 'tin', 'gems',
-               'mithril', 'coal', 'harbour', 'nav_hazard', 'coral', 'lagoon', 'mangrove', 'cliff', 'seabirds', 'seals'];  // (lineages/land.py GOODS)
-const USE_BY = [...TRAITS, ...PLACES, 'rainforest', 'savanna', 'tropical', 'temperate'];
-let T = null, sel = null, result = null;  // the raw tree (the input's shape), the selected id, a run's meta
+const GOODS = { fertile: 'farmland', grazing: 'pasture', foraging: 'wild food', timber: 'timber', fuel: 'firewood', building: 'firm building ground',
+  stone: 'good building stone', metal: 'metal ores', gold: 'gold', iron: 'iron', copper: 'copper', tin: 'tin', gems: 'gems', mithril: 'mithril and adamant',
+  coal: 'coal', harbour: 'natural harbours', nav_hazard: 'reefs, shoals, sea ice offshore', coral: 'coral coast', lagoon: 'lagoons', mangrove: 'mangrove coast',
+  cliff: 'sea cliffs', seabirds: 'seabird cliffs', seals: 'seal haul-outs', volcanic: 'volcanoes, young volcanic ground', hills: 'rolling hill country',
+  peaks: 'high peaks', frost: 'frozen ground, ice margins', storm_coast: 'storm-beaten coasts' };
+const GROUPS = ['tropical', 'rainforest', 'savanna', 'arid', 'desert', 'steppe', 'mediterranean', 'temperate', 'subtropical', 'oceanic', 'continental', 'subarctic', 'polar', 'tundra'];
+const BAND = 25;
+const DEMO_DEFAULT = { density: 2.0, explore: 0.5, sea_share: 0.03, insularity: 0.5 };
+const DEMOGRAPHY = { agricultural: { density: 10 }, nomadic: { density: 0.6, explore: 0.7 }, subterranean: { density: 3, explore: 0.35 },
+  miner: { density: 3 }, flies: { density: 0.6, explore: 0.65 }, seafaring: { sea_share: 0.6, explore: 0.7 }, swims: { sea_share: 0.4 },
+  coastal: { sea_share: 0.3, density: 3 }, cosmopolitan: { insularity: 0.2, explore: 0.7 }, insular: { insularity: 0.85, explore: 0.25 } };
+const DEMO_KEYS = Object.keys(DEMO_DEFAULT);
+let T = null, sel = null, result = null;  // the raw tree (the input's shape), the selected id, a run's meta (+ id)
 const q = new URLSearchParams(location.search);
 
-// times: "8 Myr" / "450 kyr" / "12000 yr" / a bare number (kyr) -> kyr (as planet/lineages/spec.parse_ago)
-function kyrOf(v) {
+function kyrOf(v) {  // "8 Myr" / "450 kyr" / "12000 yr" / a bare number (kyr) -> kyr (spec.parse_ago)
   if (v == null || v === '') return null;
   if (typeof v === 'number') return v;
   const m = String(v).trim().match(/^([0-9.eE+-]+)\s*(myr|ma|mya|kyr|ka|kya|yr|y|years?|bp)?/i);
@@ -80,12 +119,42 @@ function fmt(k) {
   if (k >= 1) return `${+k.toFixed(k >= 100 ? 0 : 1)} kyr`;
   return `${Math.round(k * 1000)} yr`;
 }
+const num = (n) => n >= 1e6 ? `${+(n / 1e6).toPrecision(2)} M` : n >= 1e3 ? `${+(n / 1e3).toPrecision(2)} k` : `${Math.round(n)}`;
 const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.parent ? [r.parent] : [];
 const originOf = (r) => r.origin || (parentsOf(r).length ? 'split' : 'root');
 const byId = () => Object.fromEntries(T.lineage.map((r) => [r.id, r]));
 
-// what switching lines off does (as spec.parse): which lines go, who re-parents
-function effective() {
+// what a line inherits (spec.parse: anything left out comes from the first parent; hybrids merge traits)
+function inherited(r, key, seen = new Set()) {
+  if (r[key] != null && r[key] !== '') return r[key];
+  if (seen.has(r.id)) return undefined;
+  seen.add(r.id);
+  const ps = parentsOf(r).map((p) => byId()[p]).filter(Boolean);
+  if (!ps.length) return undefined;
+  if (key === 'traits' && originOf(r) === 'hybrid') return [...new Set(ps.flatMap((p) => inherited(p, 'traits', seen) || []))].sort();
+  if (DEMO_KEYS.includes(key) && originOf(r) !== 'split') return undefined;  // (only splits inherit demography)
+  return inherited(ps[0], key, seen);
+}
+function demography(traits) {  // spec.demography
+  const out = { ...DEMO_DEFAULT };
+  for (const k of DEMO_KEYS) {
+    const vals = traits.filter((t) => t !== 'insular' && DEMOGRAPHY[t]?.[k] != null).map((t) => DEMOGRAPHY[t][k]);
+    if (vals.length) out[k] = k === 'insularity' ? Math.min(...vals) : Math.max(...vals);
+    if (traits.includes('insular') && DEMOGRAPHY.insular[k] != null) out[k] = DEMOGRAPHY.insular[k];
+  }
+  return out;
+}
+function demoOf(r) {  // the value a line runs with, and whether it was given on it ('own'), inherited or from traits
+  const tr = inherited(r, 'traits') || [], d = demography(tr), out = {};
+  for (const k of DEMO_KEYS) {
+    if (r[k] != null && r[k] !== '') out[k] = [+r[k], 'own'];
+    else { const v = inherited(r, k); out[k] = v != null ? [+v, 'inherited'] : [d[k], 'traits']; }
+  }
+  if ((r.density == null || r.density === '') && r.band_km2) out.density = [BAND / +r.band_km2, 'own'];
+  return out;
+}
+
+function effective() {  // what switching lines off does (spec.parse): which lines go, who re-parents
   const ids = byId(), off = new Set(T.lineage.filter((r) => r.enabled === false).map((r) => r.id));
   let ch = true;
   while (ch) { ch = false; for (const r of T.lineage) if (!off.has(r.id) && ['hybrid', 'template'].includes(originOf(r)) && parentsOf(r).some((p) => off.has(p))) { off.add(r.id); ch = true; } }
@@ -98,14 +167,48 @@ function effective() {
   }
   return { off, parent };
 }
+const resLine = (id) => result?.lineages?.find((l) => l.id === id);
+const resPres = (id) => result?.present?.lines?.[id];
+const colorOf = (r) => resLine(r.id)?.color || r.color || ORIGIN_COL[originOf(r)] || '#aaa';
 
-// ---- the timeline ------------------------------------------------------------------------------
+// ---- tabs ----------------------------------------------------------------------------------------
+const FOOT = {
+  tree: `Time runs left to right, Myr to the present, on a log scale (tectonic run, glacial time zoom, recent pass). Drag a bar's left end to move when
+    the line appears; click a bar to edit it. Origins: <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> ·
+    <span style="color:#c79bff">arrival</span> · <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>.
+    Switching a line off: its split children re-parent to its parent; its hybrids and templates go with it.`,
+  peoples: `Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
+    habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
+  places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
+  wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
+  results: 'From a peoples run (meta.present). Numbers are presence x density x area: rough, for a game, not a census.',
+};
+let tab = (location.hash || '#tree').slice(1);
+function showTab(t) {
+  if (!FOOT[t]) t = 'tree';
+  tab = t;
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('on', s.id === `tab-${t}`));
+  $('foot').innerHTML = FOOT[t] + ' Saved trees: <code>&lt;data&gt;/lineage_trees/</code>; CLI: <code>uv run python -m planet lineages &lt;world&gt; --tree &lt;name&gt;</code>.';
+  history.replaceState(null, '', `${location.search}#${t}`);
+  redraw();
+}
+$('tabs').onclick = (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); };
+function redraw() {
+  if (!T) return;
+  if (tab === 'tree') { drawTimeline(); drawSide(); }
+  else if (tab === 'peoples') drawPeoples();
+  else if (tab === 'places') drawPlaces();
+  else if (tab === 'wishes') drawWishes();
+  else drawResults();
+}
+
+// ---- tab 1: the timeline ---------------------------------------------------------------------------
 const W0 = 190, ROW = 22, TOP = 34;
 const LMIN = Math.log10(0.05), LMAX = Math.log10(20000);  // 50 yr .. 20 Myr
 let WIDTH = 900;
 const xOf = (kyr) => W0 + (1 - (Math.log10(Math.max(kyr, 0.05)) - LMIN) / (LMAX - LMIN)) * (WIDTH - W0 - 20);
 const kyrAt = (x) => 10 ** (LMIN + (1 - (x - W0) / (WIDTH - W0 - 20)) * (LMAX - LMIN));
-
 function order() {  // depth-first by split edges, roots and arrivals by age
   const kids = {}, out = [], seen = new Set();
   for (const r of T.lineage) if (originOf(r) === 'split') (kids[parentsOf(r)[0]] = kids[parentsOf(r)[0]] || []).push(r);
@@ -117,9 +220,8 @@ function order() {  // depth-first by split edges, roots and arrivals by age
   T.lineage.forEach((r) => walk(r, 0));
   return out;
 }
-
-// where a bar ends (spec.py): an extinct line at its extinction; a line that does not persist, at the start of its last
-// living split child (PW-599); after a run, the computed end (meta.lineages[].ended_kyr) wins; else the present (null)
+// where a bar ends (spec.py): an extinct line at its extinction; a line that does not persist, at its last living split child;
+// after a run, the computed end (meta.lineages[].ended_kyr) wins; else the present (null)
 function endOf(r, eff, res) {
   if (res && result?.lineages) return res.ended_kyr ?? kyrOf(r.extinct);
   const ex = kyrOf(r.extinct);
@@ -141,12 +243,11 @@ function drawTimeline() {
   const band = (a, b, name, col) => `<rect x="${xOf(a)}" y="2" width="${xOf(b) - xOf(a)}" height="12" fill="${col}" opacity=".35"/><text x="${(xOf(a) + xOf(b)) / 2}" y="12" text-anchor="middle">${name}</text>`;
   s += band(20000, 300, 'tectonic run (Myr keyframes)', '#3b4d6b') + band(300, 30, 'glacial time zoom (kyr)', '#2f5a5a') + band(30, 0.05, 'recent pass (centuries)', '#5a4a2f');
   s += '</g>';
-  const ids = byId();
-  rows.forEach(([r, d], i) => {
+  rows.forEach(([r, d]) => {
     const yy = y[r.id], off = eff.off.has(r.id), o = originOf(r), a = kyrOf(r.at) ?? 1, ex = kyrOf(r.extinct);
     const col = r.color || ORIGIN_COL[o] || '#aaa';
-    const res = result?.lineages?.find((l) => l.id === r.id);
-    const end = endOf(r, eff, res);  // kyr ago where the bar stops (null: runs to the present)
+    const res = resLine(r.id);
+    const end = endOf(r, eff, res);
     s += `<g class="bar${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.3 : 1}">
       <rect class="bg" x="0" y="${yy - ROW / 2}" width="${WIDTH}" height="${ROW}" fill="transparent"/>
       <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
@@ -164,8 +265,6 @@ function drawTimeline() {
   });
   svg.innerHTML = s;
 }
-
-// drag a bar's left end to move its time (kept after its parents and before its children)
 let drag = null;
 $('svg').addEventListener('mousedown', (e) => {
   const g = e.target.closest('.grip');
@@ -181,22 +280,25 @@ window.addEventListener('mousemove', (e) => {
   const kids = T.lineage.filter((x) => parentsOf(x).includes(r.id)).map((x) => kyrOf(x.at));
   const cmax = Math.max(...kids, kyrOf(r.extinct) ?? 0, 0);
   k = Math.min(Math.max(k, cmax * 1.02 + 1e-4), pmin * 0.98);
-  const nice = k >= 1000 ? `${+(k / 1000).toPrecision(2)} Myr` : k >= 1 ? `${+k.toPrecision(2)} kyr` : `${Math.round(k * 1000 / 50) * 50} yr`;
-  r.at = nice;
+  r.at = k >= 1000 ? `${+(k / 1000).toPrecision(2)} Myr` : k >= 1 ? `${+k.toPrecision(2)} kyr` : `${Math.round(k * 1000 / 50) * 50} yr`;
   drawTimeline();
   if (sel === drag) drawSide();
 });
 window.addEventListener('mouseup', () => { if (drag) { sel = drag; drag = null; drawSide(); } });
-window.addEventListener('resize', drawTimeline);
+window.addEventListener('resize', () => { if (tab === 'tree') drawTimeline(); });
 
-// ---- the side panel ----------------------------------------------------------------------------
 function field(label, html) { return `<label>${label}</label>${html}`; }
+const demoInput = (r, k, step, w = 62) => {
+  const [v, how] = demoOf(r)[k];
+  return `<input type="number" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" style="width:${w}px" value="${r[k] ?? ''}"
+    placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : `${+v.toPrecision(3)} (${how}); type to set`}">`;
+};
 function drawSide() {
   const side = $('side');
   const r = sel && byId()[sel];
   let h = `<div class="row"><button id="add">+ Add a people</button>${r ? '<button id="addChild">+ Branch from this</button><button id="del">Delete</button>' : ''}</div>`;
   if (r) {
-    const o = originOf(r), eff = effective(), res = result?.lineages?.find((l) => l.id === r.id);
+    const o = originOf(r), eff = effective(), res = resLine(r.id), p = resPres(r.id);
     const ids = T.lineage.map((x) => x.id).filter((x) => x !== r.id);
     h += `<h3>${esc(r.name || r.id)}</h3>
       <div class="row"><label class="trait"><input type="checkbox" data-k="enabled" ${r.enabled === false ? '' : 'checked'}> enabled</label>
@@ -209,7 +311,7 @@ function drawSide() {
         ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
       ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="parents" ${o === 'split' ? '' : 'multiple size="4"'} class="wide">
         ${ids.map((x) => `<option ${parentsOf(r).includes(x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
-      ${o === 'arrival' ? `<div class="row">${field('arrives at lat', `<input type="number" data-k="place.0" value="${r.place?.[0] ?? ''}">`)}${field('lon', `<input type="number" data-k="place.1" value="${r.place?.[1] ?? ''}">`)}<span class="muted">(empty: best habitat, near any hybrid partner)</span></div>` : ''}
+      ${o === 'arrival' ? `<div class="row">${field('arrives at lat', `<input type="number" data-k="place.0" value="${r.place?.[0] ?? ''}">`)}${field('lon', `<input type="number" data-k="place.1" value="${r.place?.[1] ?? ''}">`)}<span class="muted">(empty: best habitat, near any hybrid partner; a place on an empty continent peoples it)</span></div>` : ''}
       ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>` : ''}
       ${['hybrid', 'template'].includes(o) ? `<div class="row">${field('share of the hosts', `<input type="number" step="0.01" data-k="share" value="${r.share ?? 0.1}">`)}${o === 'template' ? field('sites', `<input type="number" data-k="sites" value="${r.sites ?? 3}">`) : ''}</div>` : ''}
       <div class="row">${field('temperature °C', `<input type="number" data-k="temp_c.0" value="${r.temp_c?.[0] ?? ''}"> – <input type="number" data-k="temp_c.1" value="${r.temp_c?.[1] ?? ''}">`)}</div>
@@ -218,58 +320,66 @@ function drawSide() {
       ${field('prefers (Köppen codes or groups, places: ' + PLACES.join(', ') + ')', `<input class="wide" data-k="prefers" value="${esc((r.prefers || []).join(', '))}">`)}
       ${field('avoids', `<input class="wide" data-k="avoids" value="${esc((r.avoids || []).join(', '))}">`)}
       ${field('traits', TRAITS.map((t) => `<label class="trait"><input type="checkbox" data-trait="${t}" ${(r.traits || []).includes(t) ? 'checked' : ''}> ${t}</label>`).join(''))}
+      <h3>Demography (grey: from traits or parent)</h3>
+      <div class="row">${field('density /km²', demoInput(r, 'density', 'any'))}${field('expansion km/yr', `<input type="number" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}">`)}</div>
+      <div class="row">${field('explore', demoInput(r, 'explore', 0.05, 55))}${field('sea share', demoInput(r, 'sea_share', 0.05, 55))}${field('insularity', demoInput(r, 'insularity', 0.05, 55))}</div>
       ${field('colour', `<input type="color" data-k="color" value="${r.color || '#888888'}">`)}
       ${res ? `<h3>Last run</h3><div>${res.origin_place ? `from ${res.origin_place.lat}, ${res.origin_place.lon}, ${fmt(res.origin_place.ago_kyr)} ago: ${esc(res.origin_place.why)}` : 'never appeared'}<br>
-        ${result.present?.lines?.[r.id] ? `now ${result.present.lines[r.id].area_mkm2} Mkm² in ${result.present.lines[r.id].patches} patch(es); neighbours ${Object.keys(result.present.lines[r.id].neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${fmt(res.ended_kyr)} ago` : 'absent at the present'}</div>` : ''}`;
+        ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${fmt(res.ended_kyr)} ago` : 'absent at the present'}</div>
+        ${res.story ? `<div class="muted" style="margin-top:4px">${esc(res.story)}</div>` : ''}` : ''}`;
   }
-  h += `<h3>Wishes (soft)</h3>${(T.wish || []).map((w, i) => `<div class="wish" data-w="${i}">
-      <select data-wk="a">${T.lineage.map((x) => `<option ${x.id === w.a ? 'selected' : ''}>${x.id}</option>`).join('')}</select>
-      <select data-wk="want">${WANTS.map((x) => `<option ${x === w.want ? 'selected' : ''}>${x}</option>`).join('')}</select>
-      <select data-wk="b"><option value="">—</option>${T.lineage.map((x) => `<option ${x.id === w.b ? 'selected' : ''}>${x.id}</option>`).join('')}</select>
-      <input type="number" step="0.1" data-wk="weight" value="${w.weight ?? 1}" style="width:50px"><button data-wdel="${i}">×</button></div>`).join('')}
-    <button id="addWish">+ wish</button>
-    <h3>Land use (trait or place → what it looks for in the land; − avoids)</h3>${(T.use || []).map((u, i) => `<div class="wish" data-u="${i}">
-      <select data-uk="by">${[...new Set([u.by, ...USE_BY])].map((x) => `<option ${x === u.by ? 'selected' : ''}>${x}</option>`).join('')}</select>
-      <select data-uk="good">${GOODS.map((x) => `<option ${x === u.good ? 'selected' : ''}>${x}</option>`).join('')}</select>
-      <input type="number" step="0.1" data-uk="weight" value="${u.weight ?? 1}" style="width:50px"><button data-udel="${i}">×</button></div>`).join('')}
-    <button id="addUse">+ use</button>
-    <h3>Tree</h3><div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}${field('land pull', `<input type="number" step="0.05" min="0" max="1" data-m="land_pull" value="${T.meta?.land_pull ?? 0.5}" style="width:55px">`)}</div>
-    ${result ? `<h3>Result</h3><a href="index.html?run=${result.id}&layer=peoples" target="_blank">open run ${result.id} on the globe</a>${result.present?.wish_score != null ? ` · wish score ${result.present.wish_score}` : ''}` : ''}`;
+  h += `<h3>Tree</h3><div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
+    <div class="muted">Land use and its pull: the Places tab; wishes: the Wishes tab.</div>`;
   side.innerHTML = h;
 }
 
-$('side').addEventListener('change', (e) => {
-  const el = e.target;
-  if (el.dataset.m) { T.meta = T.meta || {}; T.meta[el.dataset.m] = el.type === 'number' ? +el.value : el.value; return; }
-  if (el.dataset.wk) { const w = T.wish[+el.closest('.wish').dataset.w]; w[el.dataset.wk] = el.dataset.wk === 'weight' ? +el.value : el.value || undefined; return; }
-  if (el.dataset.uk) { const u = T.use[+el.closest('.wish').dataset.u]; u[el.dataset.uk] = el.dataset.uk === 'weight' ? +el.value : el.value; return; }
-  const r = byId()[sel];
-  if (!r) return;
+// shared edit handling: a field with data-k edits line data-id (or the selected line); data-m the tree's meta
+function editLine(r, el) {
+  const k = el.dataset.k;
   if (el.dataset.trait) {
-    const t = new Set(r.traits || []); el.checked ? t.add(el.dataset.trait) : t.delete(el.dataset.trait); r.traits = [...t];
-  } else if (el.dataset.k) {
-    const k = el.dataset.k;
-    if (k.includes('.')) {
-      const [a, i] = k.split('.'); r[a] = r[a] ? [...r[a]] : ['', ''];
-      r[a][+i] = el.value === '' ? '' : +el.value;
-      if (r[a].every((v) => v === '')) delete r[a];
-    } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
-    else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
-    else if (k === 'prefers' || k === 'avoids') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
-    else if (k === 'share' || k === 'sites') r[k] = +el.value;
-    else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
-    else if (k === 'id') {
-      const old = r.id; r.id = el.value.trim();
-      for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
-      for (const w of T.wish || []) { if (w.a === old) w.a = r.id; if (w.b === old) w.b = r.id; }
-      sel = r.id;
-    } else r[k] = el.value;
-    if (k === 'origin') { delete r.parent; if (['root', 'arrival'].includes(r.origin)) delete r.parents; }
+    const t = new Set(r.traits || inherited(r, 'traits') || []); el.checked ? t.add(el.dataset.trait) : t.delete(el.dataset.trait); r.traits = [...t];
+    return;
   }
-  drawTimeline(); drawSide();
-});
-$('side').addEventListener('click', (e) => {
-  const id = e.target.id;
+  if (k.includes('.')) {
+    const [a, i] = k.split('.'); r[a] = r[a] ? [...r[a]] : ['', ''];
+    r[a][+i] = el.value === '' ? '' : +el.value;
+    if (r[a].every((v) => v === '')) delete r[a];
+  } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
+  else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
+  else if (k === 'prefers' || k === 'avoids' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+  else if (['share', 'sites', 'speed_kmyr', ...DEMO_KEYS, 'band_km2'].includes(k)) {
+    if (el.value === '') delete r[k]; else r[k] = +el.value;
+    if (k === 'band_km2' && el.value !== '') { r.density = +(BAND / +el.value).toPrecision(3); delete r.band_km2; }
+  } else if (k === 'extinct') { if (el.value.trim()) r.extinct = el.value.trim(); else delete r.extinct; }
+  else if (k === 'id') {
+    const old = r.id; r.id = el.value.trim();
+    for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
+    for (const w of T.wish || []) { if (w.a === old) w.a = r.id; if (w.b === old) w.b = r.id; }
+    for (const u of T.use || []) if (u.by === old) u.by = r.id;
+    if (sel === old) sel = r.id;
+  } else r[k] = el.value;
+  if (k === 'origin') { delete r.parent; if (['root', 'arrival'].includes(r.origin)) delete r.parents; }
+}
+function onChange(e) {
+  const el = e.target;
+  if (el.dataset.m) { T.meta = T.meta || {}; T.meta[el.dataset.m] = el.type === 'number' ? (el.value === '' ? undefined : +el.value) : el.value; redraw(); return; }
+  if (el.dataset.wk) { const w = T.wish[+el.closest('[data-w]').dataset.w]; w[el.dataset.wk] = el.dataset.wk === 'weight' ? +el.value : el.value || undefined; redraw(); return; }
+  if (el.dataset.uk) {
+    const u = T.use[+el.closest('[data-u]').dataset.u], k = el.dataset.uk;
+    if (k === 'weight') u.weight = +el.value;
+    else if (k === 'pull') { if (el.value === '') delete u.pull; else u.pull = +el.value; }
+    else if (k === 'strict') { if (el.checked) u.strict = true; else delete u.strict; }
+    else u[k] = el.value;
+    redraw(); return;
+  }
+  const id = el.closest('[data-id]')?.dataset.id || sel, r = id && byId()[id];
+  if (!r || !(el.dataset.k || el.dataset.trait)) return;
+  editLine(r, el);
+  redraw();
+}
+document.querySelector('main').addEventListener('change', onChange);
+document.querySelector('main').addEventListener('click', (e) => {
+  const id = e.target.id, d = e.target.dataset;
   if (id === 'add' || id === 'addChild') {
     let n = 1; while (byId()[`custom_${n}`]) n++;
     const par = id === 'addChild' ? byId()[sel] : null;
@@ -281,14 +391,185 @@ $('side').addEventListener('click', (e) => {
     if (T.lineage.some((x) => parentsOf(x).includes(sel)) && !confirm(`${sel} has descendants; delete anyway? (switching it off keeps them)`)) return;
     T.lineage = T.lineage.filter((x) => x !== r); sel = null;
   } else if (id === 'addWish') (T.wish = T.wish || []).push({ a: T.lineage[0].id, want: 'near', b: T.lineage[1]?.id, weight: 1 });
-  else if (e.target.dataset.wdel != null) T.wish.splice(+e.target.dataset.wdel, 1);
+  else if (d.wdel != null) T.wish.splice(+d.wdel, 1);
   else if (id === 'addUse') (T.use = T.use || []).push({ by: 'agricultural', good: 'fertile', weight: 1 });
-  else if (e.target.dataset.udel != null) T.use.splice(+e.target.dataset.udel, 1);
+  else if (d.udel != null) T.use.splice(+d.udel, 1);
+  else if (d.pick != null) { sel = d.pick; showTab('tree'); return; }
+  else if (d.sort != null) { peopleSort = peopleSort === d.sort ? `-${d.sort}` : d.sort; }
   else return;
-  drawTimeline(); drawSide();
+  redraw();
 });
 
-// ---- load, save, run ---------------------------------------------------------------------------
+// ---- tab 2: the peoples table ---------------------------------------------------------------------
+let peopleSort = '';
+function drawPeoples() {
+  const eff = effective();
+  let rows = order().map(([r, d]) => ({ r, d, dm: demoOf(r), p: resPres(r.id) }));
+  if (peopleSort) {
+    const k = peopleSort.replace('-', ''), s = peopleSort.startsWith('-') ? -1 : 1;
+    const v = (x) => k === 'pop' ? x.p?.population ?? -1 : k === 'area' ? x.p?.area_mkm2 ?? -1 : x.dm[k]?.[0] ?? 0;
+    rows.sort((a, b) => s * (v(b) - v(a)));
+  }
+  const th = (k, label, tip) => `<th ${k ? `data-sort="${k}" style="cursor:pointer"` : ''} title="${esc(tip || '')}">${label}${peopleSort.replace('-', '') === k && k ? (peopleSort.startsWith('-') ? ' ▴' : ' ▾') : ''}</th>`;
+  const val = (r, k, step, cls = '') => { const [v, how] = demoOf(r)[k];
+    return `<input type="number" class="${cls}" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
+  let h = `<p class="hint">Each people's demography and movement. Giants are sparse (a band roams thousands of km²) and insular; farmers dense; seafarers
+    and explorers find the empty lands first. Click a name to open it in the tree; click a numeric heading to sort. ${result ? `Last run: <b>${esc(result.id)}</b> (${esc(result.world || '')}).` : 'Run on a world to fill population and area.'}</p>
+    <div class="row" style="margin-bottom:6px">${field('viable population (a separate patch with fewer fades)', `<input type="number" step="50" data-m="viable_pop" value="${T.meta?.viable_pop ?? ''}" placeholder="500">`)}</div>
+    <table class="t"><tr><th>on</th><th>people</th><th>origin</th><th>at</th><th>temp °C</th><th>rain mm</th><th>prefers</th><th>traits</th>
+    ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
+    ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
+    ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th></tr>`;
+  for (const { r, d, dm, p } of rows) {
+    const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [];
+    const t = r.temp_c ?? inherited(r, 'temp_c'), rn = r.rain_mm ?? inherited(r, 'rain_mm'), pf = r.prefers ?? inherited(r, 'prefers') ?? [];
+    h += `<tr data-id="${esc(r.id)}" class="${off ? 'off' : ''}">
+      <td><input type="checkbox" data-k="enabled" ${r.enabled === false ? '' : 'checked'}></td>
+      <td style="white-space:nowrap;padding-left:${5 + 8 * Math.min(d, 6)}px"><span class="sw" style="background:${colorOf(r)}"></span><a href="#" data-pick="${esc(r.id)}">${esc(r.name || r.id)}</a></td>
+      <td>${o}</td><td><input class="s" data-k="at" value="${esc(r.at)}" style="width:62px"></td>
+      <td class="muted">${t ? `${t[0]}…${t[1]}` : ''}</td><td class="muted">${rn ? `${rn[0]}…${rn[1]}` : ''}</td>
+      <td><input class="txt" data-k="prefers" value="${esc((r.prefers ?? []).join(', '))}" placeholder="${esc(pf.join(', '))}"></td>
+      <td><input class="txt" data-k="traits" value="${esc((r.traits ?? []).join(', '))}" placeholder="${esc(tr.join(', '))}"></td>
+      <td>${val(r, 'density', 'any')}</td>
+      <td><input type="number" data-k="band_km2" step="any" min="1" placeholder="${+(BAND / dm.density[0]).toPrecision(3)}" title="km² a band of ${BAND} roams (sets density)"></td>
+      <td><input type="number" class="s" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}"></td>
+      <td>${val(r, 'explore', 0.05, 's')}</td><td>${val(r, 'sea_share', 0.05, 's')}</td><td>${val(r, 'insularity', 0.05, 's')}</td>
+      <td class="n">${p?.population != null ? num(p.population) : ''}</td><td class="n">${p ? p.area_mkm2 : ''}</td><td class="n">${p ? p.patches : ''}</td></tr>`;
+  }
+  $('tab-peoples').innerHTML = h + '</table>';
+}
+
+// ---- tab 3: places and land use ---------------------------------------------------------------------
+function usesOf(u) {  // the lines a use applies to (spec.Tree._uses_by)
+  return T.lineage.filter((r) => (r.traits ?? inherited(r, 'traits') ?? []).includes(u.by) || (r.prefers ?? inherited(r, 'prefers') ?? []).includes(u.by) || r.id === u.by);
+}
+function drawPlaces() {
+  const by = [...new Set([...TRAITS, ...PLACES, ...GROUPS])];
+  let h = `<div class="cols"><div><h2>Land use</h2><p class="hint">A line's habitat is x(1 − pull + pull G), G the best of its favoured goods in the cell (by weight ÷ its
+    largest weight), renormalised to a mean of 1 over its country unless strict (strict: cut off its goods, not lifted back). Negative weight: avoids. Living goods
+    (farmland, pasture, forest, coasts) count from 10 kyr ago; the geology also in the ice ages.</p>
+    <div class="row" style="margin-bottom:6px">${field('land pull (default for every use)', `<input type="number" step="0.05" min="0" max="1" data-m="land_pull" value="${T.meta?.land_pull ?? 0.5}">`)}</div>
+    <table class="t"><tr><th>by (trait, place, climate or a line)</th><th>good</th><th>weight</th><th>pull</th><th>strict</th><th>applies to</th><th></th></tr>`;
+  (T.use || []).forEach((u, i) => {
+    const who = usesOf(u).map((r) => r.name || r.id);
+    h += `<tr data-u="${i}"><td><select data-uk="by">${[...new Set([u.by, ...by, ...T.lineage.map((r) => r.id)])].map((x) => `<option ${x === u.by ? 'selected' : ''}>${x}</option>`).join('')}</select></td>
+      <td><select data-uk="good">${Object.keys(GOODS).map((x) => `<option ${x === u.good ? 'selected' : ''} title="${GOODS[x]}">${x}</option>`).join('')}</select></td>
+      <td><input type="number" step="0.1" data-uk="weight" value="${u.weight ?? 1}" style="width:55px"></td>
+      <td><input type="number" step="0.05" min="0" max="1" data-uk="pull" value="${u.pull ?? ''}" placeholder="${T.meta?.land_pull ?? 0.5}" style="width:55px"></td>
+      <td><input type="checkbox" data-uk="strict" ${u.strict ? 'checked' : ''}></td>
+      <td class="muted" style="max-width:280px">${esc(who.join(', ') || '(none)')}</td><td><button data-udel="${i}">×</button></td></tr>`;
+  });
+  h += `</table><button id="addUse" style="margin-top:6px">+ use</button></div><div><h2>Goods</h2><table class="t"><tr><th>good</th><th>what</th><th>looked for by</th></tr>`;
+  for (const [g, what] of Object.entries(GOODS)) {
+    const us = (T.use || []).filter((u) => u.good === g);
+    h += `<tr><td>${g}</td><td class="muted">${what}</td><td>${esc(us.map((u) => `${u.by}${u.weight < 0 ? ' (avoids)' : ''}`).join(', '))}</td></tr>`;
+  }
+  h += `</table><h2 style="margin-top:12px">Place tags (prefers, avoids, place wishes)</h2><div class="muted">${PLACES.join(' · ')}</div>
+    <h2 style="margin-top:12px">Climate groups</h2><div class="muted">${GROUPS.join(' · ')} — or Köppen codes (Af, Cfb, ET…)</div>`;
+  if (result?.present?.homeland) {
+    h += '<h2 style="margin-top:12px">Last run: what the land gives each people</h2>';
+    for (const [lid, notes] of Object.entries(result.present.homeland)) h += `<div style="margin:3px 0"><b>${esc(byId()[lid]?.name || lid)}</b>: <span class="muted">${esc(notes.join('; '))}</span></div>`;
+  }
+  $('tab-places').innerHTML = h + '</div></div>';
+}
+
+// ---- tab 4: wishes ---------------------------------------------------------------------------------
+function drawWishes() {
+  const sc = result?.present?.wishes || [];
+  let h = `<p class="hint">near / apart: two peoples; a place kind (island, coast, mountain, jungle, steppe, open, volcanic…): one people. Weight scales the nudge
+    and the wish's share of the score. Best of N tries keeps the run with the highest weighted score (less a penalty per living people lost).</p>
+    <table class="t"><tr><th>people a</th><th>wants</th><th>people b</th><th>weight</th><th>last score</th><th></th></tr>`;
+  (T.wish || []).forEach((w, i) => {
+    const s = sc.find((x) => x.a === w.a && x.want === w.want && (x.b || null) === (w.b || null));
+    h += `<tr data-w="${i}"><td><select data-wk="a">${T.lineage.map((x) => `<option ${x.id === w.a ? 'selected' : ''}>${x.id}</option>`).join('')}</select></td>
+      <td><select data-wk="want">${WANTS.map((x) => `<option ${x === w.want ? 'selected' : ''}>${x}</option>`).join('')}</select></td>
+      <td><select data-wk="b"><option value="">—</option>${T.lineage.map((x) => `<option ${x.id === w.b ? 'selected' : ''}>${x.id}</option>`).join('')}</select></td>
+      <td><input type="number" step="0.1" data-wk="weight" value="${w.weight ?? 1}" style="width:55px"></td>
+      <td>${s ? `<span class="bars" style="width:${Math.round(60 * s.score)}px"></span> ${s.score}${s.note ? ` <span class="muted">${esc(s.note)}</span>` : ''}` : ''}</td>
+      <td><button data-wdel="${i}">×</button></td></tr>`;
+  });
+  h += `</table><button id="addWish" style="margin-top:6px">+ wish</button>
+    ${result?.present?.wish_score != null ? `<p>Last run ${esc(result.id)}: score <b>${result.present.wish_score}</b>; tries ${esc(JSON.stringify(result.present.tries || []))}</p>` : ''}`;
+  $('tab-wishes').innerHTML = h;
+}
+
+// ---- tab 5: results ----------------------------------------------------------------------------------
+let peoplesRuns = [];
+function drawResults() {
+  const el = $('tab-results');
+  const pick = `<div class="row" style="margin-bottom:8px"><span class="muted">peoples run</span><select id="resRun">${peoplesRuns.length ? '' : '<option value="">(none)</option>'}
+    ${peoplesRuns.map((r) => `<option value="${esc(r.dir)}" ${r.dir === result?.id ? 'selected' : ''}>${esc(r.dir)} · ${esc(r.world || '')} · ${esc(r.created || '')}</option>`).join('')}</select>
+    ${result ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=peoples" target="_blank">open ${esc(result.id)} on the globe</a>
+    <a href="../runs/${encodeURIComponent(result.id)}/run.txt" target="_blank">report (run.txt)</a>` : ''}</div>`;
+  if (!result) { el.innerHTML = pick + '<p class="muted">Run the tree on a world, or pick a peoples run.</p>'; return; }
+  const P = result.present || {}, lines = result.lineages || [], L = Object.fromEntries(lines.map((l) => [l.id, l]));
+  const nm = (id) => esc(L[id]?.name || id), sw = (id) => `<span class="sw" style="background:${L[id]?.color || '#888'}"></span>`;
+  const living = Object.entries(P.lines || {}).sort((a, b) => (b[1].population ?? 0) - (a[1].population ?? 0));
+  const total = living.filter(([id]) => !L[id]?.overlay).reduce((s, [, v]) => s + (v.population ?? 0), 0);
+  const lms = (P.landmasses || []), lmName = (k) => lms.find((m) => String(m.rank) === String(k))?.name || `landmass ${k}`;
+  let h = pick + `<div class="kpi"><div><b>${num(total)}</b><span>people (natives)</span></div><div><b>${living.length}</b><span>peoples living</span></div>
+    <div><b>${P.wish_score ?? '–'}</b><span>wish score (tries ${esc((P.tries || []).join(', '))})</span></div>
+    <div><b>${P.mixing?.area_mkm2 ?? '–'} Mkm²</b><span>mixed land (${Math.round(100 * (P.mixing?.land_share ?? 0))}%)</span></div>
+    <div><b>${(P.empty_continents || []).length}</b><span>empty continents</span></div><div><b>${(P.lost || []).length}</b><span>lost peoples</span></div>
+    <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
+  // population table
+  const maxPop = Math.max(1, ...living.map(([, v]) => v.population ?? 0));
+  h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th></th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
+  for (const [id, v] of living) {
+    const lands = Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
+    h += `<tr><td style="white-space:nowrap">${sw(id)}${nm(id)}${v.overlay ? ' <span class="muted">(overlay)</span>' : ''}</td><td class="n">${num(v.population ?? 0)}</td>
+      <td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + (v.population ?? 0)) / Math.log10(1 + maxPop)))}px"></span></td>
+      <td class="n">${v.density ?? ''}</td><td class="n">${v.area_mkm2}</td><td class="n">${v.patches}${v.faded_patches ? ` <span class="muted" title="times a small patch was fading below the viable population (patches x checks, about one a kyr)">(fades ${v.faded_patches})</span>` : ''}</td>
+      <td class="muted">${lands}</td></tr>`;
+  }
+  h += '</table>';
+  if (P.lost?.length) h += `<p class="err">lost: ${P.lost.map(nm).join(', ')}</p>`;
+  // discovery timeline
+  h += `</div><div><h2>Landmasses: who found them, and when</h2>${discoverySvg(lms, L)}<table class="t"><tr><th>landmass</th><th>held</th><th>first</th><th>when</th><th>how</th><th>first of today's peoples</th><th>then</th></tr>`;
+  for (const m of lms.filter((m) => m.area_mkm2 >= 0.05).slice(0, 18)) {
+    const d = m.discovered;
+    h += `<tr><td>${esc(m.name.replace(/^the /, ''))}</td><td class="n">${Math.round(100 * m.held_share)}%</td>
+      <td style="white-space:nowrap">${d ? sw(d.by) + nm(d.by) : '<span class="err">nobody</span>'}</td><td class="n">${d ? fmt(d.ago_kyr) : ''}</td>
+      <td class="muted">${d ? esc(d.how) + (d.gap_km ? ` ${d.gap_km} km` : '') : ''}</td>
+      <td style="white-space:nowrap">${m.settled_by ? `${sw(m.settled_by.by)}${nm(m.settled_by.by)} ${fmt(m.settled_by.ago_kyr)} <span class="muted">${esc(m.settled_by.how)}${m.settled_by.gap_km ? ` ${m.settled_by.gap_km} km` : ''}</span>` : ''}</td>
+      <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${L[a.by]?.name || a.by} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
+  }
+  h += '</table></div></div>';
+  // the map
+  if (P.ascii?.rows) {
+    const col = Object.fromEntries(Object.entries(P.ascii.letters).map(([ch, id]) => [ch, L[id]?.color || '#ccc']));
+    const rows = P.ascii.rows.map((row) => [...row].map((c) => c === ' ' ? ' ' : c === '.' ? '<span style="color:#556">·</span>' : c === '#' ? '<span style="color:#cde">#</span>'
+      : c === '+' ? '<span style="color:#fff">+</span>' : `<span style="color:${col[c] || '#ccc'}">${esc(c)}</span>`).join('')).join('\n');
+    h += `<h2>Present day <span class="muted">(each letter a people in its colour; + mixed, · unpeopled land, # ice)</span></h2><pre class="map">${rows}</pre>`;
+  }
+  // mixing, wishes
+  h += `<div class="cols"><div><h2>Mixing zones</h2><table class="t"><tr><th>Mkm²</th><th>where</th><th>peoples</th></tr>
+    ${(P.mixing_zones || []).slice(0, 12).map((z) => `<tr><td class="n">${z.area_mkm2}</td><td class="muted">${z.lat}, ${z.lon}</td><td>${z.lines.map(nm).join(', ')}</td></tr>`).join('')}</table></div>
+    <div><h2>Wishes</h2><table class="t">${(P.wishes || []).map((w) => `<tr><td>${nm(w.a)} ${esc(w.want)} ${w.b ? nm(w.b) : ''}</td><td><span class="bars" style="width:${Math.round(60 * w.score)}px"></span> ${w.score}</td></tr>`).join('')}</table></div></div>`;
+  // stories
+  h += `<h2>Stories</h2><div class="cards">${lines.filter((l) => l.story).map((l) => `<div class="card"><b>${sw(l.id)}${esc(l.name)}</b>
+    <div class="muted" style="font-size:11px">${l.leaf ? 'lives today' : l.ended_kyr != null ? `gone ${fmt(l.ended_kyr)} ago` : ''} · ${esc(Object.entries(l.demography || {}).map(([k, v]) => `${k} ${v}`).join(', '))}</div>
+    <div style="margin-top:4px">${esc(l.story)}</div></div>`).join('')}</div>`;
+  el.innerHTML = h;
+  $('resRun').onchange = (e) => e.target.value && showResult(e.target.value);
+}
+function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger
+  const rows = lms.filter((m) => m.area_mkm2 >= 0.3 && m.arrivals?.length).slice(0, 12);
+  if (!rows.length) return '';
+  const W = 560, X0 = 150, RH = 18, H = 24 + rows.length * RH;
+  const lo = Math.log10(0.1), hi = Math.log10(20000), x = (k) => X0 + (1 - (Math.log10(Math.max(k, 0.1)) - lo) / (hi - lo)) * (W - X0 - 10);
+  let s = `<svg width="${W}" height="${H}" style="display:block;margin-bottom:6px"><g class="axis">`;
+  for (const k of [1, 10, 100, 1000, 10000]) s += `<line x1="${x(k)}" x2="${x(k)}" y1="14" y2="${H}" stroke="#1f2836"/><text x="${x(k)}" y="11" text-anchor="middle">${fmt(k)}</text>`;
+  s += '</g>';
+  rows.forEach((m, i) => {
+    const y = 24 + i * RH;
+    s += `<text x="4" y="${y + 4}">${esc(m.name.replace(/^the /, '').replace(/ \(.*\)$/, '').slice(0, 24))}</text>`;
+    m.arrivals.forEach((a, j) => { s += `<circle cx="${x(a.ago_kyr)}" cy="${y}" r="${j ? 3 : 5}" fill="${L[a.by]?.color || '#888'}" opacity="${j ? 0.8 : 1}" ${j ? '' : 'stroke="#fff"'}><title>${esc(L[a.by]?.name || a.by)} ${fmt(a.ago_kyr)} ago (${esc(a.how)})</title></circle>`; });
+  });
+  return s + '</svg>';
+}
+
+// ---- load, save, run -----------------------------------------------------------------------------------
 const status = (msg, err) => { $('status').innerHTML = err ? `<span class="err">${esc(msg)}</span>` : esc(msg); };
 async function listTrees(pick) {
   try {
@@ -300,8 +581,8 @@ async function loadTree(name) {
   const r = await fetch(`../api/lineage-tree?name=${encodeURIComponent(name)}`);
   const j = await r.json();
   if (!r.ok) return status(j.error || r.status, true);
-  T = j; T.wish = T.wish || []; sel = null; $('saveName').value = name === 'dnd' ? 'my-peoples' : name;
-  drawTimeline(); drawSide(); status(`loaded ${name}: ${T.lineage.length} peoples`);
+  T = j; T.wish = T.wish || []; T.use = T.use || []; sel = null; $('saveName').value = name === 'dnd' ? 'my-peoples' : name;
+  redraw(); status(`loaded ${name}: ${T.lineage.length} peoples`);
 }
 $('load').onclick = () => loadTree($('trees').value);
 $('save').onclick = async () => {
@@ -317,7 +598,7 @@ $('download').onclick = () => {
   a.download = `${$('saveName').value.trim() || 'peoples'}.json`; a.click();
 };
 $('upload').onchange = async (e) => {
-  try { T = JSON.parse(await e.target.files[0].text()); T.wish = T.wish || []; sel = null; drawTimeline(); drawSide(); status('loaded file'); }
+  try { T = JSON.parse(await e.target.files[0].text()); T.wish = T.wish || []; T.use = T.use || []; sel = null; redraw(); status('loaded file'); }
   catch (err) { status(`not a tree: ${err}`, true); }
 };
 $('run').onclick = async () => {
@@ -325,18 +606,17 @@ $('run').onclick = async () => {
   if (!ref) return status('pick a finished world (none has its time zoom stored: make a time zoom and finish a world from it in the viewer)', true);
   const target = ref.startsWith('tz:') ? { timezoom: ref.slice(3) } : { world: ref };
   $('globe').hidden = true;
-  status('running… (~20 s a try at L6)');
+  status('running… (~20 s a try at L6, ~1 min at L7)');
   $('run').disabled = true;
   try {
     const r = await fetch('../api/lineages', { method: 'POST', body: JSON.stringify({ ...target, raw: T, tries: +$('tries').value }) });
     const j = await r.json();
     if (!r.ok) return status(j.error, true);
-    // queued on the server's job queue: poll it
-    for (;;) {
-      await new Promise(res => setTimeout(res, 1500));
+    for (;;) {  // queued on the server's job queue: poll it
+      await new Promise((res) => setTimeout(res, 1500));
       const s = await (await fetch(`../api/jobs/${j.job}`, { cache: 'no-store' })).json();
       if (s.status === 'error') return status(s.error, true);
-      if (s.status === 'done') { await showResult(s.run); break; }
+      if (s.status === 'done') { await listWorlds(); await showResult(s.run); showTab('results'); break; }
       status(`${s.status}: ${Math.round(100 * (s.progress || 0))}% ${s.message || ''}`);
     }
   } finally { $('run').disabled = false; }
@@ -344,25 +624,26 @@ $('run').onclick = async () => {
 async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
   result = { id, ...run.meta };
-  status(`run ${id} done`);
+  status(`run ${id}`);
   const g = $('globe');
   g.href = `index.html?run=${encodeURIComponent(id)}&layer=peoples`; g.hidden = false;
-  drawTimeline(); drawSide();
+  redraw();
 }
-
-// the world picker: finished worlds (from the store's index) whose time zoom is still stored, newest first;
-// ?world= / ?timezoom= name one that is not listed (the server then says why it cannot run)
+// the world picker: finished worlds whose time zoom is still stored, newest first; ?world= / ?timezoom= name one not listed
 async function listWorlds() {
   const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };
   const [worlds, runs] = await Promise.all([get('../worlds/index.json'), get('../runs/index.json')]);
   const tzs = new Set(runs.filter((r) => r.kind === 'timezoom' && !r.phase).map((r) => r.dir));
-  const have = new Set(runs.filter((r) => r.phase === 'lineages').map((r) => r.world));
+  peoplesRuns = runs.filter((r) => r.phase === 'lineages').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const have = new Set(peoplesRuns.map((r) => r.world));
   const ok = worlds.filter((w) => w.timezoom && tzs.has(w.timezoom)).sort((a, b) => b.created.localeCompare(a.created));
   const opts = ok.map((w) => `<option value="${esc(w.id)}">${esc(w.id)} · ${esc(w.name)}${have.has(w.id) ? ' (has peoples)' : ''}</option>`);
   const want = q.get('world'), tz = q.get('timezoom');
   if (want && !ok.some((w) => w.id === want)) opts.unshift(`<option value="${esc(want)}">${esc(want)} (not runnable?)</option>`);
   if (tz) opts.unshift(`<option value="tz:${esc(tz)}">time zoom ${esc(tz)}</option>`);
+  const cur = $('world').value;
   $('world').innerHTML = (opts.length ? '' : '<option value="">(no finished world with its time zoom)</option>') + opts.join('');
+  if (cur) $('world').value = cur;
   if (want) $('world').value = want;
   if (tz) $('world').value = 'tz:' + tz;
 }
@@ -371,6 +652,8 @@ async function listWorlds() {
   await listWorlds();
   await loadTree(q.get('tree') || 'dnd').catch(() => status('could not load the tree', true));
   if (q.get('run')) await showResult(q.get('run'));
+  if (q.get('sel') && byId()[q.get('sel')]) sel = q.get('sel');  // (?sel=<id>: open a line in the tree's side panel)
+  showTab(tab);
 })();
 </script>
 </body>

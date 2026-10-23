@@ -17,7 +17,7 @@ from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
 from . import land as LD
-from .crossing import Crossings, corridor
+from .crossing import Crossings, corridor, short_hop
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
@@ -36,6 +36,13 @@ NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within 
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
+DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x (its density / one's own)^0.1, within
+# 0.7..1.4: numbers tell a little where peoples share land (farmers at 10 /km² press on foragers at 2 x1.17; giants
+# at 0.005 dent others' room x0.7 and feel theirs x1.4). Mild: at 0.25, 0.5..2, the elves and orcs lost
+# most of their land to the humans in single tries on 1df1c3
+EXPLORE_MARGIN = (0.25, 0.5)  # into marginal land (K < 0.3) the spread keeps a + (1 - a) K / 0.3, a = [0] + [1] x explore
+MVP_TAU_KYR = 2.0  # a separate patch of a people with fewer than meta.viable_pop people fades with this e-folding time
+MVP_EVERY_KYR = 1.0  # (looked at about this often; a people's largest patch is never faded: its refuges hold)
 PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c",
            "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
@@ -229,6 +236,11 @@ class History:
                 if a.id != b.id and not a.overlay and not b.overlay:
                     i, j = self.idx[a.id], self.idx[b.id]
                     self.terr[i, j] = max(0.0, ALPHA_CLOSED - self.alpha[i, j]) * same_way(a, b)
+        # numbers: a denser rival weighs more (DENSITY_PUSH)
+        self.dens = np.array([l.demo("density") for l in self.lines])
+        push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
+        self.alpha *= push
+        self.terr *= push
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:
@@ -486,6 +498,8 @@ class History:
         self.started, self.ended = {}, {}
         self.crossings_n: dict[str, int] = {}
         self._hop_dt = np.zeros(len(L))
+        self._mvp_dt = np.zeros(len(L))
+        self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
         self._last_meet: dict[str, np.ndarray] = {}  # contact hybrids: where their parents last met
@@ -572,15 +586,18 @@ class History:
                 if passes > 0:
                     sea = l.trait("sea", 0.0)
                     if step.ago <= SP.LATE_SEA_KYR:
-                        sea = max(sea, l.trait("late_sea", 0.0))
+                        sea = max(sea, short_hop(l))
                     relief = l.trait("relief", 0.6)
                     ice = env["ice"] > 0.5
-                    enter = np.where(ice, 0.6 if "flies" in l.traits else 0.3, 0.5 + 0.5 * np.minimum(1, K / 0.3))
+                    # into marginal land (K < 0.3) the pressure keeps a + (1 - a) K / 0.3, a = 0.25 + 0.5 explore:
+                    # explorers push into poor country, homebodies stay in good
+                    a0 = EXPLORE_MARGIN[0] + EXPLORE_MARGIN[1] * l.demo("explore")
+                    enter = np.where(ice, 0.6 if "flies" in l.traits else 0.3, a0 + (1 - a0) * np.minimum(1, K / 0.3))
                     land_any = env["land"]
                     spread(self.p[k], room, enter, tags["elev"], relief, sea, land_any, g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
                 if not l.overlay:
                     how = "overland" if step.epoch == "deep" else "land bridge" if l.trait("sea", 0.0) == 0 and not (
-                        step.ago <= SP.LATE_SEA_KYR and l.trait("late_sea", 0.0)) else "strait"
+                        step.ago <= SP.LATE_SEA_KYR and short_hop(l)) else "strait"
                     self.cross.note(l.id, self.p[k] >= EST, step.ago, how, self.events, l.label())
                     # long crossings, looked at about once a kyr (the chance is per kyr; centuries add up)
                     self._hop_dt[k] += step.dt
@@ -594,6 +611,11 @@ class History:
                         self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
                         self.crossings_n[l.id] = self.crossings_n.get(l.id, 0) + 1
                         self.cross.note(l.id, blob, step.ago, way, self.events, l.label(), gap)
+                if not l.overlay:
+                    self._mvp_dt[k] += step.dt
+                    if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:
+                        self._viable(l, k, self._mvp_dt[k], step)
+                        self._mvp_dt[k] = 0.0
                 if not l.overlay and l.extinct_kyr is None and l.id in self._living and (self.p[k] >= EST).sum() < 3 \
                         and K.max() > 2 * EST:
                     # a line given as living at the present isn't lost: at its lowest it holds out in a refuge,
@@ -618,6 +640,43 @@ class History:
                 progress(si / nsteps, f"step {si}/{nsteps} ({step.epoch}, {step.ago:g} kyr ago)")
         self.runtime = time.time() - t0
         return {"frames": frames, "present": self.p.copy()}
+
+    def _viable(self, l, k, dt, step):
+        """A separate patch of the people's land holding fewer than tree.viable_pop people fades (e-folding
+        MVP_TAU_KYR): a sparse people (a band roaming thousands of km²) needs a large piece of good country to
+        hold a land. Only for lines sparse enough that the viable number needs more than 2 cells; never the
+        largest patch (a people's last land is the refuge logic's)."""
+        mvp = self.tree.viable_pop
+        area = self.cell_mkm2 * 1e6
+        if mvp <= 0 or mvp / (self.dens[k] * area * 0.5) <= 2:
+            return
+        held = self.p[k] >= EST
+        if not held.any():
+            return
+        lab, n = self.grid.components(held)
+        if n < 2:
+            return
+        pop = np.bincount(lab[held], weights=self.p[k][held] * self.dens[k] * area, minlength=n)
+        small = pop < mvp
+        small[int(np.argmax(pop))] = False
+        if not small.any():
+            return
+        sel = held & small[np.maximum(lab, 0)]
+        self.p[k][sel] *= np.exp(-dt / MVP_TAU_KYR)
+        self.p[k][self.p[k] < EST] = 0
+        self.faded[l.id] = self.faded.get(l.id, 0) + int(small.sum())
+
+    def population(self, k: int, P: np.ndarray | None = None) -> np.ndarray:
+        """People per cell of line k: presence x density x cell area. An overlay (template, contact hybrid) is
+        its share of its hosts' people where it is, except where a contact hybrid lives on as a people of its own."""
+        P = self.p if P is None else P
+        l, area = self.lines[k], self.cell_mkm2 * 1e6
+        x = np.where(P[k] >= EST, P[k], 0.0)
+        if not l.overlay:
+            return x * self.dens[k] * area
+        hosts = sum(np.where(P[self.idx[q]] >= EST, P[self.idx[q]], 0.0) * self.dens[self.idx[q]] for q in l.parents)
+        own = self._linger[k]
+        return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * hosts * area)
 
     def _hybrid(self, l, k, K, step):
         """A contact hybrid: where its parents meet it is a share of their people (and grows with the contact);
@@ -710,7 +769,8 @@ class History:
         return 0.0 if ago >= ms or ms <= 0 else 1 - ago / ms
 
     def _mixf(self, l):
-        return l.trait("mix", 1.0)
+        """How much the late mixing relaxes a line's competition: 2 (1 - insularity) (1 at 0.5; spec.DEMOGRAPHY)."""
+        return 2.0 * (1.0 - l.demo("insularity"))
 
     def _frame(self, step, env) -> dict:
         natives = np.array([not l.overlay for l in self.lines])
@@ -722,6 +782,7 @@ class History:
         ov = np.where(O.max(0) >= EST, O.argmax(0), 255).astype(np.uint8)
         areas = {l.id: round(float((self.p[k] >= EST).sum() * self.cell_mkm2), 2)
                  for k, l in enumerate(self.lines) if self.active[l.id]}
+        pops = {l.id: int(self.population(k).sum()) for k, l in enumerate(self.lines) if self.active[l.id]}
         for l in self.lines:
             k = self.idx[l.id]
             sel = self.p[k] >= EST
@@ -729,10 +790,11 @@ class History:
                 v = (self.grid.centers[sel] * self.p[k][sel, None]).sum(0)
                 v /= np.linalg.norm(v) or 1
                 self.tracks[l.id].append([round(step.ago, 3), round(float(np.degrees(np.arcsin(v[2]))), 2),
-                                          round(float(np.degrees(np.arctan2(v[1], v[0]))), 2), areas.get(l.id, 0)])
+                                          round(float(np.degrees(np.arctan2(v[1], v[0]))), 2), areas.get(l.id, 0),
+                                          pops.get(l.id, 0)])
         return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "peoples_mix": mixn,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
-                "peoples_overlay": ov, "stats": {**step.stats, "peoples": areas}}
+                "peoples_overlay": ov, "stats": {**step.stats, "peoples": areas, "population": pops}}
 
 
 # -- the present ------------------------------------------------------------------------------------
@@ -760,6 +822,16 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                               "neighbours": dict(sorted(nb.items(), key=lambda x: -x[1])[:8]), "overlay": l.overlay}
         if l.overlay and l.origin == "hybrid":  # (the land it holds as a people of its own, its parents apart)
             out["lines"][l.id]["own_mkm2"] = round(float((h._linger[k] & sel).sum() * h.cell_mkm2), 2)
+        # numbers: the people (presence x density x area), by present-day landmass
+        pc = h.population(k, P)
+        lm = h.cross.label
+        by = np.bincount(lm[(lm >= 0) & (pc > 0)], weights=pc[(lm >= 0) & (pc > 0)], minlength=len(h.cross.names))
+        top = np.argsort(-by)[:6]
+        d = l.demos()
+        out["lines"][l.id].update(population=int(pc.sum()), density=round(d["density"], 4),
+                                  band_km2=round(SP.BAND / d["density"], 1),
+                                  by_landmass={str(int(m)): int(by[m]) for m in top if by[m] >= 1},
+                                  faded_patches=h.faded.get(l.id, 0))
     natives = np.array([not l.overlay for l in h.lines])
     mix = (np.where(natives[:, None], P, 0) >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
@@ -778,6 +850,19 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                           if ((lm == nm["rank"]) & land).any() else 0.0}
                          for nm in h.cross.names if nm["area_mkm2"] >= 0.05][:30]
     out["empty_continents"] = [nm["name"] for nm in out["landmasses"] if nm["kind"] == "continent" and nm["held_share"] < 0.05]
+    # who found each landmass first (any native people, at its origin or on arrival), and who came after
+    for nm in out["landmasses"]:
+        arr = sorted(((r["ago_kyr"], lid, r) for lid, got in h.cross.reached.items()
+                      for m, r in got.items() if m == nm["rank"] and not h.tree.lines[lid].overlay), key=lambda x: -x[0])
+        nm["discovered"] = ({"by": arr[0][1], "ago_kyr": arr[0][0], "how": arr[0][2]["how"],
+                             **({"gap_km": arr[0][2]["gap_km"]} if "gap_km" in arr[0][2] else {})} if arr else None)
+        # (the first of today's peoples to get there: the stems found most land in deep time)
+        now = [x for x in arr if x[1] in out["lines"]]
+        nm["settled_by"] = ({"by": now[0][1], "ago_kyr": now[0][0], "how": now[0][2]["how"],
+                             **({"gap_km": now[0][2]["gap_km"]} if "gap_km" in now[0][2] else {})} if now else None)
+        nm["arrivals"] = [{"by": lid, "ago_kyr": a, "how": r["how"]} for a, lid, r in arr[:12]]
+        nm["population"] = {lid: v["by_landmass"][str(nm["rank"])] for lid, v in out["lines"].items()
+                            if str(nm["rank"]) in v.get("by_landmass", {})}
     lab, n = g.components(mix)
     for z in range(n):
         sel = lab == z

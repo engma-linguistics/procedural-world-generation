@@ -28,35 +28,85 @@ from pathlib import Path
 # movement and behaviour (docs/proposals/lineages.md section 2). sea: share of the carried
 # pressure kept per sea cell crossed (0: can't cross; establishment needs spread.EST, so 0.55 ~ 3 cells);
 # relief: share kept per 1000 m climbed between cells is exp(-relief) (walkers 0.6); speed: x the base
-# speed; late_sea: sea factor from LATE_SEA_KYR ago (boats); the rest are habitat or late-mixing knobs.
+# speed; the rest are habitat knobs. How dense, exploring, seafaring and insular a people is: DEMOGRAPHY.
 TRAITS = {
     "flies": {"sea": 0.72, "relief": 0.0},
     "swims": {"sea": 0.55, "coast": 0.15},
     "coastal": {"coast": 0.6},
-    "seafaring": {"late_sea": 0.75},
+    "seafaring": {},  # (boats: its sea share, DEMOGRAPHY)
     "agricultural": {"farm": 1.0},
     "nomadic": {"speed": 2.0, "open": 0.3},
     "mountain": {"relief": 0.0, "mountain": 0.5},
     "hardy": {"widen": 1.25},
-    "insular": {"mix": 0.2},
-    "cosmopolitan": {"mix": 1.6},
+    "insular": {},  # (insularity and exploration: DEMOGRAPHY)
+    "cosmopolitan": {},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
-LATE_SEA_KYR = 3.0
+LATE_SEA_KYR = 3.0  # short sea hops by boat (the spread's sea factor) from then, for a sea share >= SHORT_HOP_SHARE
+SHORT_HOP_SHARE = 0.2
 # long sea crossings (crossing.py): way -> (rate per kyr at a zero gap, length scale km, only since kyr ago).
 # The chance a line reaches a landmass it doesn't hold in a step of dt kyr is 1 - exp(-dt x sum over its
 # ways of rate x exp(-gap / L)) x the landing's habitat. 'raft' is everyone's (drift rafts, storms: monkeys
 # across the young Atlantic, lemurs to Madagascar): a few hundred km once in a few Myr. Coastal foragers'
-# canoes (Sahul ~60 kyr ago, ~100 km gaps), swimmers and fliers reach further; seafarers with boats
-# (the Lapita / Polynesian voyages, 1000s of km) only late.
+# canoes (Sahul ~60 kyr ago, ~100 km gaps), swimmers and fliers reach further. Every way but the raft is
+# x the line's will to explore and leave home (crossing.modes).
 HOPS = {
     "raft": (3e-4, 150.0, None),
     "coastal": (0.01, 250.0, None),
     "swims": (0.05, 400.0, None),
     "flies": (0.05, 700.0, None),
-    "seafaring": (1.0, 1500.0, 6.0),
 }
+# boats (the way 'seafaring'): the share of a people's frontier that takes to the sea (sea_share) sets the
+# rate, BOATS[0] x share / BOATS_FULL per kyr, and the reach, from BOATS[1] km at share 0 to BOATS[2] km at
+# BOATS_FULL, from BOATS[3] kyr ago (the Lapita / Polynesian voyages, 1000s of km). A seafaring people
+# (share 0.6) sails as the old 'seafaring' way did (1 /kyr, 1500 km); dwarves (0.05) put to sea ~12x less
+# often and less far, but not never.
+BOATS = (1.0, 300.0, 1500.0, 6.0)
+BOATS_FULL = 0.6
+
+# demography and movement, per people (PW-650): each can be given in the spec; else it comes from the traits
+# (the strongest value among its traits; 'insular' sets exploration and insularity whatever else).
+# density: people per km² of full habitat (K = 1); a people's number is the sum of presence x density x area.
+#   Also: a separate patch with fewer than meta.viable_pop people fades (history.MVP_TAU_KYR), so a sparse people
+#   (giants: a band roaming thousands of km²) needs a large piece of good country to hold a land at all; and
+#   in competition a denser people weighs more (history.DENSITY_PUSH: farmers press on foragers; giants
+#   barely dent anyone's room, and anyone dents theirs).
+# explore 0..1: how readily the frontier pushes into marginal land and over the sea (long crossings x 2 explore).
+# sea_share 0..1: the share of the frontier that tries water crossings (BOATS; short hops over straits from
+#   LATE_SEA_KYR at >= SHORT_HOP_SHARE).
+# insularity 0..1: resistance to mixing (the late relaxing of competition x 2 (1 - insularity)) and to leaving
+#   home (long crossings x (1.25 - 0.5 insularity)).
+BAND = 25  # people in a band: band_km2 = BAND / density, the land a band roams
+DEMO_DEFAULT = {"density": 2.0, "explore": 0.5, "sea_share": 0.03, "insularity": 0.5}
+DEMOGRAPHY = {
+    "agricultural": {"density": 10.0},
+    "nomadic": {"density": 0.6, "explore": 0.7},
+    "subterranean": {"density": 3.0, "explore": 0.35},
+    "miner": {"density": 3.0},
+    "flies": {"density": 0.6, "explore": 0.65},
+    "seafaring": {"sea_share": 0.6, "explore": 0.7},
+    "swims": {"sea_share": 0.4},
+    "coastal": {"sea_share": 0.3, "density": 3.0},
+    "cosmopolitan": {"insularity": 0.2, "explore": 0.7},
+    "insular": {"insularity": 0.85, "explore": 0.25},
+}
+DEMO_KEYS = tuple(DEMO_DEFAULT)
+VIABLE_POP = 500.0  # default meta.viable_pop
+
+
+def demography(traits) -> dict:
+    """The demography knobs a set of traits gives (DEMOGRAPHY: the strongest value; 'insular' overrides)."""
+    out = dict(DEMO_DEFAULT)
+    for k in DEMO_KEYS:
+        vals = [DEMOGRAPHY[t][k] for t in traits if k in DEMOGRAPHY.get(t, {}) and t != "insular"]
+        if vals:
+            out[k] = max(vals) if k != "insularity" else min(vals)
+        if "insular" in traits and k in DEMOGRAPHY["insular"]:
+            out[k] = DEMOGRAPHY["insular"][k]
+    return out
+
+
 ORIGINS = ("root", "split", "arrival", "hybrid", "template")
 
 KOPPEN_CODES = ["Af", "Am", "Aw", "BWh", "BWk", "BSh", "BSk", "Csa", "Csb", "Csc", "Cwa", "Cwb", "Cwc", "Cfa", "Cfb",
@@ -86,7 +136,11 @@ class Lineage:
     prefers: list[str] = field(default_factory=list)
     avoids: list[str] = field(default_factory=list)
     traits: list[str] = field(default_factory=list)
-    speed_kmyr: float = 0.5
+    speed_kmyr: float = 0.5  # expansion: how fast the frontier advances, km/yr (x the traits' speed)
+    density: float | None = None  # people per km² at full habitat (None: from the traits, DEMOGRAPHY)
+    explore: float | None = None  # 0..1, how readily it pushes into new land and over the sea
+    sea_share: float | None = None  # 0..1, the share of its frontier that tries water crossings
+    insularity: float | None = None  # 0..1, resistance to mixing and to leaving home
     persists: bool = False  # keeps living after its last split child
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
@@ -115,6 +169,17 @@ class Lineage:
 
     def label(self) -> str:
         return self.name or self.id
+
+    def demo(self, key: str) -> float:
+        """A demography knob: as given (or inherited), else from the traits (DEMOGRAPHY)."""
+        v = getattr(self, key)
+        return float(v) if v is not None else demography(self.traits)[key]
+
+    def demos(self) -> dict:
+        return {k: self.demo(k) for k in DEMO_KEYS}
+
+    def given_demo(self) -> dict:
+        return {k: getattr(self, k) for k in DEMO_KEYS if getattr(self, k) is not None}
 
 
 @dataclass
@@ -152,6 +217,7 @@ class Tree:
     disabled: list[str] = field(default_factory=list)  # lines switched off (enabled = false) and those that went with them
     uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
     land_pull: float = LAND_PULL
+    viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
         """The goods a line looks for (from its traits and preferred places), weights summed per good."""
@@ -284,6 +350,22 @@ def parse(raw: dict) -> Tree:
         for x in traits:
             if x not in TRAITS:
                 raise ValueError(f"{lid}: unknown trait {x!r} (one of {sorted(TRAITS)})")
+        if r.get("band_km2") not in (None, "") and r.get("density") in (None, ""):
+            r = {**r, "density": BAND / float(r["band_km2"])}
+        demo = {}
+        for k in DEMO_KEYS:
+            v = r.get(k)
+            if v in (None, ""):
+                # inherited from a split's parent where given there (else from its own traits); a hybrid's,
+                # an arrival's or a template's from its own (merged) traits unless given
+                demo[k] = getattr(base, k) if origin == "split" else None
+                continue
+            v = float(v)
+            if k == "density" and not v > 0:
+                raise ValueError(f"{lid}: density must be > 0 (people per km²)")
+            if k != "density" and not 0 <= v <= 1:
+                raise ValueError(f"{lid}: {k} must be within 0..1")
+            demo[k] = v
         place = r.get("place")
         if place is not None:
             place = (float(place["lat"]), float(place["lon"])) if isinstance(place, dict) else (float(place[0]), float(place[1]))
@@ -293,7 +375,7 @@ def parse(raw: dict) -> Tree:
                     elev_m=_pair(r.get("elev_m"), "elev_m") if "elev_m" in r else base.elev_m,
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
-                    traits=traits, speed_kmyr=float(r.get("speed_kmyr", base.speed_kmyr)),
+                    traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), children=[],
@@ -362,6 +444,9 @@ def parse(raw: dict) -> Tree:
     t.disabled = disabled
     t.uses = uses
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
+    t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
+    if t.viable_pop < 0:
+        raise ValueError("meta.viable_pop must be >= 0")
     if not 0 <= t.land_pull <= 1:
         raise ValueError("meta.land_pull must be within 0..1")
     return t
@@ -375,7 +460,7 @@ def to_raw(t: Tree) -> dict:
         if l.parents:
             r["parents"] = l.parents
         r.update(temp_c=list(l.temp_c), rain_mm=list(l.rain_mm), prefers=l.prefers, avoids=l.avoids,
-                 traits=l.traits, speed_kmyr=l.speed_kmyr)
+                 traits=l.traits, speed_kmyr=l.speed_kmyr, **l.given_demo())
         if l.elev_m is not None:
             r["elev_m"] = list(l.elev_m)
         if l.place is not None:
@@ -395,6 +480,7 @@ def to_raw(t: Tree) -> dict:
         if l.origin == "template":
             r["sites"] = l.sites
         out.append(r)
-    return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull},
+    return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
+                     "viable_pop": t.viable_pop},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}
