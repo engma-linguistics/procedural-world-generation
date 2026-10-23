@@ -107,12 +107,21 @@ From `mixing_start` (default 3 kyr ago) competition relaxes where people can rea
 
 The whole history is cheap, so `--tries N` (default 4) runs it with N noise seeds and keeps the one that best satisfies the wishes (score in the report). This is the main nudge: the history is never edited after the fact.
 
+### Owner additions (2026-10-23): origins beyond splits, the editor, switching off, extinctions
+
+Built as follows (the input is a DAG; `planet/lineages/spec.py` has the exact rules):
+- `origin`: **root**, **split** (`parents = [p]`), **arrival** from outside the world (elves, gnomes from the feywild; optional `place = [lat, lon]`, else the best habitat, near the other parent of any hybrid it has), **hybrid** of two parents (half-elves, half-orcs; `contact = true`: exists only where both meet, as an overlay; false: founds a people of its own where they meet; waits until they do), **template** (tieflings, aasimar, genasi: an overlay on its hosts from `at`, seeded at `sites` places in their range, spreading only through it, `share` of the hosts' people).
+- `enabled = false`: its split children re-parent to its nearest enabled ancestor (or become roots / arrivals), keeping their inherited niche; its hybrids and templates go too. `custom = true` marks user-added lines.
+- `extinct = "T"`: the line's habitat dwindles to nothing by T; it shows in the past epochs and its descendants and hybrids live on; a dying side branch doesn't end its parent.
+- Preset: `planet/lineages/samples/dnd.toml` (37 lines, editable defaults, two extinct extras).
+- Editor: `viewer/lineages.html` (a log time axis over the three scales; drag times; edit, add, switch off, delete; wishes; save / load / download; run on a world and see origins and areas back).
+
 ## 3. Outputs
 
 - A run of `kind: timezoom`, `meta.phase = "lineages"`, frames at the deep, glacial and recent epochs (time in kyr before present: −8000 … −300 … −30 … 0; the slider is by frame, so the uneven spacing is fine) with the terrain layers of each epoch plus:
   - `peoples`: the dominant line per cell (uint8 index into `meta.lineages`, 255 none),
   - `peoples_mix`: how many lines hold ≥ 25% there (0–n),
-  - `peoples_p<k>`: per line presence (0–100%) only at the present frame? No: stored for every frame for the leaves only when cells × frames × leaves stays under 64 MB, else at the present only.
+  - `peoples_share` (the leading people's share, %) and `peoples_overlay` (the strongest template or contact hybrid); every line's presence (%) at the present in `layers/presence_present.bin` (lines × cells).
 - `meta.lineages`: the tree (ids, names, parents, split times, colours), each origin (cell, lat/lon, epoch, why: isolated / edge / habitat), each line's range by epoch (area in Mkm², centroid), migration paths (centroid track over time), extinctions and refugia.
 - `meta.present`: per line area, centroid, main landmasses, neighbours (the lines whose ranges touch it, with border length), mixing zones (connected regions where ≥ 2 lines hold ≥ 25%, with their lines), isolates (a line's separate patches), wish scores.
 - `run.txt`: the readable report, with ASCII maps of the present (letters per line).

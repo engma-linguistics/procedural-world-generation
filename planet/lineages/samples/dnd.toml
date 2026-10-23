@@ -1,0 +1,367 @@
+# The usual D&D peoples: editable defaults (times, niches, traits, wishes are all guesses to change).
+# Format: planet/lineages/spec.py. Times are years before the present ("8 Myr", "450 kyr", "12000 yr").
+# origin: root | split (parents = [p]) | arrival (from outside the world) | hybrid (two parents) | template (overlay)
+# temp_c / rain_mm: comfort range of the annual mean temperature and rain (soft edges).
+# enabled = false switches a line off (its split children re-parent to its parent; its hybrids and templates go too).
+# extinct = "T": the line dwindles and is gone by T before the present.
+
+[meta]
+name = "D&D peoples (preset)"
+seed = 7
+mixing_start = "3 kyr"
+
+# ---- the reptilian line ---------------------------------------------------------------
+[[lineage]]
+id = "reptilian"
+name = "reptilian stem"
+origin = "root"
+at = "12 Myr"
+temp_c = [18, 30]
+rain_mm = [700, 3500]
+prefers = ["tropical"]
+
+[[lineage]]
+id = "kobold"
+name = "kobolds"
+parents = ["reptilian"]
+at = "2 Myr"
+temp_c = [5, 25]
+rain_mm = [300, 2000]
+prefers = ["mountain"]
+traits = ["subterranean", "hardy"]
+
+[[lineage]]
+id = "troglodyte"
+name = "troglodytes (extinct)"
+parents = ["reptilian"]
+at = "2.5 Myr"
+extinct = "60 kyr"
+temp_c = [12, 28]
+traits = ["subterranean"]
+
+[[lineage]]
+id = "lizardfolk"
+name = "lizardfolk"
+parents = ["reptilian"]
+at = "1.5 Myr"
+temp_c = [20, 30]
+rain_mm = [1500, 4500]
+prefers = ["wetland", "rainforest"]
+traits = ["swims"]
+
+[[lineage]]
+id = "tortle"
+name = "tortles"
+parents = ["reptilian"]
+at = "900 kyr"
+temp_c = [20, 30]
+rain_mm = [600, 3000]
+prefers = ["coast", "island"]
+traits = ["swims", "coastal"]
+
+[[lineage]]
+id = "dragonborn"
+name = "dragonborn"
+parents = ["reptilian"]
+at = "300 kyr"
+temp_c = [8, 28]
+rain_mm = [250, 1500]
+prefers = ["open", "mountain"]
+traits = ["hardy"]
+
+# ---- the mammalian line ---------------------------------------------------------------
+[[lineage]]
+id = "mammalian"
+name = "mammalian stem"
+origin = "root"
+at = "10 Myr"
+temp_c = [8, 26]
+rain_mm = [400, 2500]
+
+[[lineage]]
+id = "tabaxi"
+name = "tabaxi"
+parents = ["mammalian"]
+at = "3 Myr"
+temp_c = [18, 30]
+rain_mm = [900, 3500]
+prefers = ["rainforest", "forest"]
+
+[[lineage]]
+id = "goblinoid"
+name = "goblinoid stem"
+parents = ["mammalian"]
+at = "2.5 Myr"
+temp_c = [15, 28]
+rain_mm = [800, 3500]
+prefers = ["tropical", "forest"]
+
+[[lineage]]
+id = "goblin"
+name = "goblins"
+parents = ["goblinoid"]
+at = "400 kyr"
+temp_c = [18, 30]
+rain_mm = [1200, 4000]
+prefers = ["rainforest"]
+
+[[lineage]]
+id = "hobgoblin"
+name = "hobgoblins"
+parents = ["goblinoid"]
+at = "250 kyr"
+temp_c = [12, 26]
+rain_mm = [500, 2000]
+prefers = ["savanna", "temperate", "open"]
+
+[[lineage]]
+id = "bugbear"
+name = "bugbears"
+parents = ["goblinoid"]
+at = "200 kyr"
+temp_c = [3, 20]
+rain_mm = [500, 2000]
+prefers = ["forest", "continental"]
+traits = ["hardy"]
+
+[[lineage]]
+id = "hominid"
+name = "hominid stem"
+parents = ["mammalian"]
+at = "2 Myr"
+temp_c = [8, 26]
+rain_mm = [400, 2200]
+
+[[lineage]]
+id = "giantkin"
+name = "giant-kin stem"
+parents = ["hominid"]
+at = "1.2 Myr"
+temp_c = [-4, 14]
+rain_mm = [300, 1500]
+prefers = ["mountain"]
+traits = ["hardy", "mountain"]
+
+[[lineage]]
+id = "titan"
+name = "elder giants (extinct)"
+parents = ["giantkin"]
+at = "800 kyr"
+extinct = "12 kyr"
+temp_c = [-8, 8]
+prefers = ["tundra", "mountain"]
+
+[[lineage]]
+id = "goliath"
+name = "goliaths"
+parents = ["giantkin"]
+at = "300 kyr"
+temp_c = [-6, 12]
+prefers = ["mountain"]
+
+[[lineage]]
+id = "firbolg"
+name = "firbolgs"
+parents = ["giantkin"]
+at = "200 kyr"
+temp_c = [2, 16]
+rain_mm = [600, 2000]
+prefers = ["forest"]
+traits = ["hardy"]
+
+[[lineage]]
+id = "orc"
+name = "orcs"
+parents = ["hominid"]
+at = "700 kyr"
+temp_c = [2, 20]
+rain_mm = [200, 900]
+prefers = ["steppe", "open"]
+traits = ["nomadic", "hardy"]
+
+[[lineage]]
+id = "dwarf"
+name = "dwarves"
+parents = ["hominid"]
+at = "500 kyr"
+temp_c = [-2, 18]
+rain_mm = [250, 1500]
+prefers = ["mountain"]
+traits = ["mountain", "subterranean"]
+
+[[lineage]]
+id = "human"
+name = "humans"
+parents = ["hominid"]
+at = "150 kyr"
+persists = true
+temp_c = [6, 26]
+rain_mm = [350, 2200]
+prefers = ["temperate", "subtropical", "lowland"]
+traits = ["agricultural", "seafaring", "cosmopolitan"]
+
+[[lineage]]
+id = "halfling"
+name = "halflings"
+parents = ["human"]
+at = "60 kyr"
+temp_c = [9, 22]
+rain_mm = [600, 1600]
+prefers = ["temperate", "lowland"]
+traits = ["agricultural", "cosmopolitan"]
+
+# ---- from outside the world -------------------------------------------------------------
+[[lineage]]
+id = "elf"
+name = "elves (from the feywild)"
+origin = "arrival"
+at = "25 kyr"
+persists = true
+temp_c = [5, 22]
+rain_mm = [700, 2600]
+prefers = ["forest"]
+traits = ["insular"]
+
+[[lineage]]
+id = "drow"
+name = "drow"
+parents = ["elf"]
+at = "12 kyr"
+temp_c = [4, 24]
+prefers = ["mountain"]
+traits = ["subterranean", "insular"]
+
+[[lineage]]
+id = "sea_elf"
+name = "sea elves"
+parents = ["elf"]
+at = "8 kyr"
+temp_c = [8, 26]
+prefers = ["coast", "island"]
+traits = ["swims", "coastal"]
+
+[[lineage]]
+id = "gnome"
+name = "gnomes (from the feywild)"
+origin = "arrival"
+at = "15 kyr"
+temp_c = [4, 18]
+rain_mm = [600, 2000]
+prefers = ["forest", "mountain"]
+
+[[lineage]]
+id = "triton"
+name = "tritons (from the plane of water)"
+origin = "arrival"
+at = "6 kyr"
+temp_c = [12, 28]
+prefers = ["island", "coast"]
+traits = ["swims", "coastal", "insular"]
+
+# ---- hybrids: only where both parents meet ------------------------------------------------
+[[lineage]]
+id = "half_elf"
+name = "half-elves"
+origin = "hybrid"
+parents = ["human", "elf"]
+at = "20 kyr"
+contact = true
+
+[[lineage]]
+id = "half_orc"
+name = "half-orcs"
+origin = "hybrid"
+parents = ["human", "orc"]
+at = "60 kyr"
+contact = true
+
+# ---- templates: overlays on existing peoples ----------------------------------------------
+[[lineage]]
+id = "tiefling"
+name = "tieflings (infernal)"
+origin = "template"
+parents = ["human"]
+at = "3 kyr"
+share = 0.05
+sites = 2
+
+[[lineage]]
+id = "aasimar"
+name = "aasimar (celestial)"
+origin = "template"
+parents = ["human", "elf"]
+at = "2 kyr"
+share = 0.03
+sites = 2
+
+[[lineage]]
+id = "genasi"
+name = "genasi (elemental)"
+origin = "template"
+parents = ["human", "dwarf"]
+at = "4 kyr"
+share = 0.03
+sites = 3
+
+# ---- the avian line --------------------------------------------------------------------
+[[lineage]]
+id = "avian"
+name = "avian stem"
+origin = "root"
+at = "6 Myr"
+temp_c = [10, 28]
+rain_mm = [500, 3000]
+prefers = ["mountain", "coast"]
+traits = ["flies"]
+
+[[lineage]]
+id = "aarakocra"
+name = "aarakocra"
+parents = ["avian"]
+at = "900 kyr"
+prefers = ["mountain", "island"]
+traits = ["flies", "mountain"]
+
+[[lineage]]
+id = "kenku"
+name = "kenku"
+parents = ["avian"]
+at = "400 kyr"
+temp_c = [12, 26]
+prefers = ["forest"]
+traits = []
+
+# ---- wishes (soft: best of N tries + mild nudges; each reports a score) ---------------------
+[[wish]]
+a = "goblin"
+b = "orc"
+want = "near"
+
+[[wish]]
+a = "hobgoblin"
+b = "goblin"
+want = "near"
+
+[[wish]]
+a = "halfling"
+b = "human"
+want = "near"
+
+[[wish]]
+a = "aarakocra"
+want = "island"
+
+[[wish]]
+a = "tortle"
+want = "island"
+
+[[wish]]
+a = "lizardfolk"
+b = "tortle"
+want = "apart"
+
+[[wish]]
+a = "lizardfolk"
+b = "aarakocra"
+want = "apart"
+weight = 0.5

@@ -104,3 +104,87 @@ def test_recent_saved_as_a_viewable_time_zoom(faketz):
     assert arr["precipitation"].shape == (11, build_grid(LEVEL).n)
     assert (out / "run.txt").is_file()
     assert R.resolve(faketz) == (faketz, None, None)
+
+
+# ---- the input and the history -------------------------------------------------------------------
+from planet.lineages import history as H  # noqa: E402
+from planet.lineages import output as O  # noqa: E402
+from planet.lineages import run as LR  # noqa: E402
+from planet.lineages import spec as SP  # noqa: E402
+
+
+def _raw():
+    return {"meta": {"name": "t", "seed": 2, "mixing_start": "3 kyr"}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000]},
+        {"id": "a", "parents": ["stem"], "at": "20 kyr"},
+        {"id": "b", "parents": ["stem"], "at": "15 kyr", "traits": ["swims"]},
+        {"id": "fey", "origin": "arrival", "at": "10 kyr", "place": [0, 120]},
+        {"id": "half", "origin": "hybrid", "parents": ["a", "fey"], "at": "8 kyr"},
+        {"id": "tmpl", "origin": "template", "parents": ["a"], "at": "4 kyr", "share": 0.05},
+        {"id": "gone", "parents": ["a"], "at": "12 kyr", "extinct": "5 kyr"}],
+        "wish": [{"a": "b", "want": "coast"}]}
+
+
+def test_spec_parses_the_dag_and_the_preset():
+    t = SP.parse(_raw())
+    assert t.lines["half"].origin == "hybrid" and t.lines["half"].overlay
+    assert t.lines["tmpl"].overlay and not t.lines["a"].overlay
+    assert t.lines["stem"].children == ["a", "b"] and t.lines["gone"].extinct_kyr == 5.0
+    assert SP.parse_ago("8 Myr") == 8000 and SP.parse_ago("12000 yr") == 12 and SP.parse_ago(450) == 450
+    assert SP.parse(SP.to_raw(t)).lines.keys() == t.lines.keys()
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    assert {"elf", "human", "half_elf", "tiefling", "kobold", "aarakocra", "titan"} <= dnd.lines.keys()
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"},
+                              {"id": "y", "parents": ["x"], "at": "2 kyr"}]})  # child older than parent
+
+
+def test_spec_disable_reparents_and_cascades():
+    raw = _raw()
+    raw["lineage"][1]["enabled"] = False  # 'a' off: its split child 'gone' re-parents to 'stem'; half, tmpl go
+    t = SP.parse(raw)
+    assert "a" not in t.lines and t.lines["gone"].parents == ["stem"]
+    assert "half" not in t.lines and "tmpl" not in t.lines and set(t.disabled) == {"a", "half", "tmpl"}
+    raw = _raw()
+    raw["lineage"][0]["enabled"] = False  # the root off: its children become roots
+    t = SP.parse(raw)
+    assert t.lines["a"].origin == "root" and t.lines["a"].parents == []
+
+
+def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    tree = SP.parse(_raw())
+    h, res, pres = H.simulate(tree, ps, tries=2)
+    assert {"stem", "a", "b", "fey", "gone"} <= h.origins.keys()
+    assert "stem" in h.ended  # ended at its last split; its range went to a and b
+    assert "gone" in h.ended and not (res["present"][h.idx["gone"]] > 0).any()
+    pa = res["present"][h.idx["a"]] > H.EST
+    assert pa.any()
+    tm = res["present"][h.idx["tmpl"]] > H.EST
+    assert tm.any() and not (tm & ~pa).any()  # a template lives only on its host
+    assert pres["wishes"] and len(pres["tries"]) == 2
+    out = O.save(h, res, pres, name="test peoples")
+    run = json.loads((out / "run.json").read_text())
+    assert run["meta"]["phase"] == "lineages" and run["frames"][-1]["t"] == 0
+    assert [l["id"] for l in run["meta"]["lineages"]] == [l.id for l in h.lines]
+    _, arr = T.load_frames(out, ("peoples",))
+    assert arr["peoples"].shape[0] == len(run["frames"])
+
+
+def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    g = ps.grid
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(g, env)
+    walker = SP.Lineage("w", temp_c=(-20, 40), rain_mm=(1, 9000))
+    K = H.capacity(walker, env, tags)
+    island = env["land"] & (g.lon < -100) & (g.lon > -140)  # the fake island
+    assert island.any() and K[island].max() > 0.5
+    p = np.zeros(g.n)
+    p[np.argmax(np.where(np.abs(g.lon) < 30, K, 0))] = 1.0
+    land = env["land"]
+    enter = np.ones(g.n)
+    a = H.spread(p.copy(), K, enter, tags["elev"], 0.0, 0.0, land, g.nbr_off, g.nbr_idx, 400)
+    assert not (a[island] > 0).any()
+    b = H.spread(p.copy(), K, enter, tags["elev"], 0.0, 0.9, land, g.nbr_off, g.nbr_idx, 400)
+    assert (b[island] > 0).any()
