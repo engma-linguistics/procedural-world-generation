@@ -384,3 +384,28 @@ Proposed model:
   religions, customs, cultural spread or assimilation, or effects of culture on peoples: those belong to the
   civilization-simulation epic PW-661. Model and UI stay minimal: a row per group, an expandable row in the
   Peoples tab, roll-ups in the results.
+
+## Peoples change the land (PW-662, built 2026-10-24)
+As built (`planet/lineages/landuse.py`, `planet landuse RUN`; `planet lineages` runs it on every run with a world):
+- **No names.** A line's way of life is the weights its `[[use]]` rows (traits, preferred places, own id) put on the goods that feed a people: `fertile` is farming, `grazing` herding, `timber` (and 0.3 x `foraging`) woodland; the shares are of those weights. Miners, flyers, seafarers' harbours and the like add nothing. Numbers are presence at the present x the line's density x cell area (overlays are shares of their hosts and are skipped; the total is ~5% under `meta.present` because lingering hybrids are left out).
+- **Per cell** (people per km² by way of life, the world's own farmland class 0..4 and grazing good, the present's tree cover):
+  - cropland: farming people x 0.007 km² / yield of the class (0.55 marginal, 0.8 fair, 1 good, 1.15 prime), capped by class (35 / 60 / 85 / 95% of the cell);
+  - pasture: herding people x 0.15 km² plus 0.01 km² of meadow per farming person, on grazing land outside the fields;
+  - burned grassland: herding people x 0.10 km² of woodland margin on grazing land;
+  - managed woods: every person 0.003 km² for fuel, timber users 0.03 km² more x their share, out of the trees left (canopy thinned by 30%);
+  - settlement density: all people per km²; tree cover left after all of it.
+- **Stored** as static files on the run, not per frame: `layers/anthro_{crop,pasture,burned,managed,people,tree_after}.bin` (uint8, one value per cell, `people` log2p1), described in `meta.anthro` with the summary. `run.txt` ends with "Peoples change the land". `planet landuse RUN` redoes it in place.
+- **Viewer** (peoples runs): a "land use" colour layer (wild tree cover with cropland, pasture, burned grass, managed woods and dense settlement over it), a "show cleared land (present)" checkbox in the Peoples panel that tints the tree-cover (and vegetation / satellite, where a run has them) colours, a hover line, `&anthro=0`. Only the last frame, the present, shows it. Screenshots: `docs/review/lineages/anthro-*.png`.
+- **Numbers** (L7, runs d489d0 on 1df1c3 and 7709bf on 3e9e7d; the same draws as 8bac4d and c646ea, so the peoples are unchanged):
+
+  | | 1df1c3 (d489d0) | 3e9e7d (7709bf) |
+  |---|---|---|
+  | people (farming / herding) | 329 M (246 M / 8 M) | 358 M (262 M / 15 M) |
+  | land; fair-to-prime farmland | 188; 48 Mkm² | 169; 43 Mkm² |
+  | cropland | 1.37 Mkm² = 0.7% of the land, 1.1% of the farmland (0.51 Mkm² of it on it) | 2.21 Mkm² = 1.3%, 2.2% (0.94) |
+  | pasture / burned grass / managed woods | 2.34 / 0.02 / 0.68 Mkm² | 3.93 / 0.10 / 0.89 Mkm² |
+  | tree cover | 57.2 -> 56.4 Mkm² (-1.5%) | 60.1 -> 58.6 Mkm² (-2.5%) |
+  | densest cell | 22 people/km², 24% cropland | 22 people/km², 23% cropland |
+
+  Against Earth's pre-industrial range (plausibility, not a target): ~300 M people c. 1000 AD farmed ~2-3 Mkm² (~1.5-2% of the land), ~1700 AD ~4 Mkm² (~3%); pasture and range ~8-15 Mkm²; ~3-5% of the forest was gone by 1000 AD. So cropland is in range for the population, pasture and forest loss are at or under its low end (few herders: 8-15 M, and the peoples' densities top out near 20 /km² where Earth's farmed plains reached 30-100). Clearing here is population-limited, which is the `density` knobs' call (draft-anthro-land-per-person).
+- **Not built:** feedback onto zoom plants (draft-anthro-feedback-zoom-plants), the satellite view of a finished world (draft-anthro-tint-world-satellite); history (soil exhaustion, collapse, war) is PW-661's.

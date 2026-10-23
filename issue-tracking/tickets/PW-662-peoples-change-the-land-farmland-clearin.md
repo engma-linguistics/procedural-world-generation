@@ -21,3 +21,4 @@ Owner (2026-10-24) asked whether peoples affect the land (farmland, cutting down
 
 ## Updates
 - 2026-10-23: Created.
+- 2026-10-24: First version built (planet/lineages/landuse.py, `planet landuse`, viewer land-use layer and tint; see docs/proposals/lineages.md "Peoples change the land"). Runs d489d0 (1df1c3) and 7709bf (3e9e7d): cropland 0.7% / 1.3% of the land, forest lost 1.5% / 2.5%. Open: drafts anthro-feedback-zoom-plants, anthro-land-per-person (needs-decision), anthro-tint-world-satellite.

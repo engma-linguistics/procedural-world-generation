@@ -13,6 +13,7 @@ from .. import timeline as T
 from ..geo import R_KM
 from ..provenance import code_version
 from . import land as LD
+from . import landuse as LU
 from . import spec as SP
 from .history import EST, PALETTE, History
 
@@ -109,6 +110,10 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "grid": f"../../grids/L{g.level}.json", "legend": S.legends(), "layers": layers,
         "events": events, "frames": out_frames})
     report(out, h, res, pres)
+    if world:  # (peoples change the land, PW-662: needs the world's farmland)
+        sm = LU.write(out)
+        with open(out / "run.txt", "a") as f:
+            f.write("\n".join(LU.lines_for_report(sm)) + "\n")
     T.update_index()
     return out
 

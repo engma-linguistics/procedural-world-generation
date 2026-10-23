@@ -878,6 +878,59 @@ function peoplesColor(layer, i, c) {
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
 }
+// Peoples change the land (planet/lineages/landuse.py, PW-662): the run's anthropogenic overlay at the present
+// (meta.anthro: cropland, pasture, burned grassland, managed woods, settlement density, tree cover left) as the
+// 'land use' layer, and as a tint on the vegetation colours (tree cover, vegetation, satellite) where land is
+// cleared (state.anthro, the panel's checkbox; &anthro=0 turns it off). Only the last frame (the present) shows it.
+const ANTHRO_TINTED = new Set(['tree cover', 'vegetation', 'satellite']);
+const A_CROP = new THREE.Color('#f0b429'), A_PAST = new THREE.Color('#b9d36a'), A_BURN = new THREE.Color('#c98a3c'),
+  A_MAN = new THREE.Color('#2d6a4a'), A_TOWN = new THREE.Color('#9c3b2a');
+function anthroLoad() {
+  const a = V.run.meta.anthro, id = V.run.id;
+  V.anthroFor = id; V.anthro = {};
+  Promise.all(Object.entries(a.layers).map(([k, s]) => fetch(`../runs/${id}/${s.file}`).then((r) => r.arrayBuffer())
+    .then((b) => { V.anthro[k] = new Uint8Array(b); }))).then(() => { if (V.run.id === id) { V.anthroReady = id; paint(); } }).catch(() => {});
+}
+// the present's overlay is ready and this frame is the present (the last)
+const anthroOn = () => !!(V.run?.meta?.anthro && V.anthroReady === V.run.id && V.frame === V.run.frames.length - 1);
+function anthroTint(i, c) {
+  const A = V.anthro, cr = A.crop[i] / 100, pa = A.pasture[i] / 100, bu = A.burned[i] / 100, ma = A.managed[i] / 100;
+  if (cr + pa + bu + ma <= 0.004) return c;
+  c.lerp(A_PAST, Math.min(0.85, 1.6 * Math.sqrt(pa))).lerp(A_BURN, Math.min(0.85, 2.5 * Math.sqrt(bu)));
+  c.lerp(A_MAN, Math.min(0.5, 2 * ma)).lerp(A_CROP, Math.min(0.95, 2.2 * Math.sqrt(cr)));
+  return c;
+}
+function landUseColor(i, c) {
+  const L = V.layers;
+  if (L.elevation[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  rampFns['tree cover'](L.tree_cover[i], c);  // (the land as it was: wild tree cover)
+  if (!anthroOn()) return c;
+  anthroTint(i, c);
+  const d = 2 ** (V.anthro.people[i] * V.run.meta.anthro.layers.people.scale) - 1;  // people/km²: settled country reddens
+  if (d >= 6) c.lerp(A_TOWN, Math.min(0.4, 0.02 * (d - 4)));
+  return c;
+}
+function anthroRows(i, R) {
+  if (!anthroOn()) return;
+  const A = V.anthro, d = 2 ** (A.people[i] * V.run.meta.anthro.layers.people.scale) - 1;
+  const bits = [['cropland', A.crop[i]], ['pasture', A.pasture[i]], ['burned grass', A.burned[i]], ['managed woods', A.managed[i]]]
+    .filter(([, v]) => v >= 1).map(([k, v]) => `${k} ${v}%`);
+  R('place', '', `${d >= 0.1 ? `${d < 10 ? d.toFixed(1) : Math.round(d)} people/km²` : 'unsettled'}${bits.length ? ': ' + bits.join(', ') : ''}`,
+    { lab: 'land use (present)', ess: true });
+}
+function anthroPanel() {
+  const a = V.run.meta.anthro;
+  if (!a) return '';
+  const s = a.summary;
+  return `<div style="margin-top:4px"><label title="Tint the vegetation colours (tree cover) where peoples have cleared the land, grazed it, burned it or cut it. Shown at the present (the last frame); the 'land use' layer shows it on its own."><input type="checkbox" data-anthro ${state.anthro !== false ? 'checked' : ''}> show cleared land (present)</label>
+    <div class="muted" style="max-width:340px">cropland ${s.cropland_mkm2} Mkm² (${(100 * s.cropland_share_of_fertile).toFixed(1)}% of ${s.fertile_mkm2} Mkm² farmland), pasture ${s.pasture_mkm2}, burned grass ${s.burned_mkm2}, managed woods ${s.managed_mkm2}; trees ${s.tree_before_mkm2} → ${s.tree_after_mkm2} Mkm² (−${(100 * s.forest_lost_share).toFixed(1)}%)</div></div>`;
+}
+document.addEventListener('change', (e) => {
+  if (!e.target.matches?.('[data-anthro]') || !V?.run?.meta?.anthro) return;
+  state.anthro = e.target.checked;
+  paint(); buildOverlays(); renderRunSummary();
+});
 function peoplesPanel() {
   const m = V.run.meta, lines = m.lineages || [], s = V.run.frames[V.frame].stats.peoples || {};
   const kids = {}; lines.forEach((l) => (l.parents || []).forEach((p) => (kids[p] = kids[p] || []).push(l)));
@@ -901,6 +954,7 @@ function peoplesPanel() {
   return `<div class="tzBox"><b>Peoples</b> <span class="muted">(${esc(m.tree_name || '')}; click one to show only its range;
     <a href="lineages.html?tree=${encodeURIComponent((m.tree_file || '').split('/').pop().replace(/\.(toml|json)$/, '') || 'dnd')}&world=${m.world || ''}">edit the tree</a>)</span>
     ${hasGroups ? `<div><label title="A people with groups (ways of life: steppe and forest orcs, human seafarers...) shown as one people, or each group in its own tint"><input type="checkbox" data-peopleswhole ${state.peoplesWhole ? 'checked' : ''}> peoples as wholes (not by group)</label></div>` : ''}
+    ${anthroPanel()}
     ${state.people != null ? `<div><a href="#" data-people="-1">show all</a></div>` : ''}${out.join('')}
     ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b> <span class="muted">${p.mixing ? `${p.mixing.area_mkm2} Mkm² (${Math.round(100 * p.mixing.land_share)}% of the land; corridors ${Math.round(100 * (p.mixing.in_corridors || 0))}% mixed, closed country ${Math.round(100 * (p.mixing.in_closed || 0))}%)` : ''}</span><br>${zones.join('<br>')}</div>` : ''}
     ${p.empty_continents?.length ? `<div class="muted">nobody on ${p.empty_continents.join(', ')}</div>` : ''}
@@ -927,12 +981,15 @@ function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
   const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
   const sv = seasonalData(layer);  // temperature / rain: the year's, or July's / January's
+  if (V.run?.meta?.anthro && V.anthroFor !== V.run.id) anthroLoad();  // (peoples change the land, PW-662)
+  const tint = state.anthro !== false && ANTHRO_TINTED.has(layer) && anthroOn();
   for (let i = 0; i < n; i++) {
     if (lakes && lakeColor(i, c)) { /* a lake (or salt pan) */ }
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay') peoplesColor(layer, i, c);
+    else if (layer === 'land use') landUseColor(i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -1012,6 +1069,7 @@ function cellColors(layer) {
       rampFns[layer]((sv || L[layer])[i], c);
       if (layer === 'elevation' && L.ice && L.ice[i] > 0 && elev[i] > 0) c.lerp(ICE, 0.75);
     }
+    if (tint && elev[i] > 0 && !(L.ice && L.ice[i] > 0)) anthroTint(i, c);
     out[3 * i] = c.r; out[3 * i + 1] = c.g; out[3 * i + 2] = c.b;
   }
   return out;
@@ -1021,7 +1079,7 @@ function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
-    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : []);
+    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : [], V.run?.meta?.anthro ? ['land use'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -2075,6 +2133,10 @@ function renderLegend() {
       el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
         sw('#5a5a52', 'nobody') + '<span class="muted">(whitened: mixed)</span>';
     }
+  } else if (state.layer === 'land use') {
+    el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
+      sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
+      `<span class="muted">${anthroOn() ? 'the present, from the peoples and their ways of life' : 'step to the last frame (the present) to see it'}</span>`;
   } else if (state.layer === 'vegetation') {
     // the named types present, grouped (forest, savanna, desert, ...), with their share of the land
     const L = V.layers, cnt = new Map();
@@ -2207,6 +2269,7 @@ const LAYER_HINTS = {
   landforms: 'Landform classes: what shaped the ground here (folds, rifts, volcanoes, plains, glacial forms...).',
   vegetation: 'Vegetation types from the mix of plant functional types that grow in this climate.',
   'tree cover': 'Tree canopy cover: the share of the ground under tree crowns.',
+  'land use': 'Peoples runs, at the present: cropland, pasture, burned grassland and managed woods around the peoples there, settlement density in red (planet/lineages/landuse.py).',
   'plant cover': 'Plant cover: the share of the ground shaded by plants of any kind.',
   'canopy height': 'Height of the tallest plant layer.',
   'leaf area': 'Leaf area index (LAI): m² of leaf per m² of ground (0 bare, 1-2 grassland, 4-6 dense forest).',
@@ -2806,7 +2869,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (V.run?.meta?.phase === 'lineages' && L.peoples) peoplesRows(i, R);
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); anthroRows(i, R); }
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
   const vegRows = () => {
@@ -3864,7 +3927,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
+  'land use': ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4134,6 +4197,7 @@ function applyUrlOptions() {
   if (p.get('mode')) { state.mode = p.get('mode'); [...$('modeSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.mode)); controls.enableRotate = state.mode === 'globe'; if (state.mode === 'map') fitMap(); }
   // (&tilt=deg: the flat map seen from the south at that angle, for screenshots of the 3D relief)
   if (p.get('layer')) state.layer = p.get('layer');
+  if (p.get('anthro') === '0') state.anthro = false;  // (peoples runs: no tint of cleared land)
   if (p.get('peopleswhole') === '1') state.peoplesWhole = true;  // (peoples runs: a people with groups as a whole)
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';

@@ -310,6 +310,14 @@ def cmd_lineages(args):
     print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
 
 
+def cmd_landuse(args):
+    """Adds (or redoes) the anthropogenic land-cover layers of peoples runs in place (PW-662)."""
+    from .lineages import landuse as LU
+    for ref in args.runs:
+        sm = LU.write(S.find_run(ref))
+        print(ref, "\n".join(LU.lines_for_report(sm)))
+
+
 def cmd_export(args):
     from . import export as X
     rng = tuple(args.height_range) if args.height_range else None
@@ -569,6 +577,11 @@ def main():
     lg.add_argument("--recent-kyr", type=float, default=30.0, help="the recent pass's window (kyr)")
     lg.add_argument("--name", "-n")
     lg.set_defaults(func=cmd_lineages)
+
+    lu = sub.add_parser("landuse", help="add or redo a peoples run's anthropogenic land cover (cropland, pasture, burned "
+                                        "grassland, managed woods, settlement density; PW-662) in place")
+    lu.add_argument("runs", nargs="+", help="peoples run ids")
+    lu.set_defaults(func=cmd_landuse)
 
     ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
                                        "class maps, GeoJSON features, manifest.json -> exports/<id>/")

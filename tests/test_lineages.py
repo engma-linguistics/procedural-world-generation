@@ -500,3 +500,26 @@ def test_groups_within_a_people(faketz):
     last = arr["peoples_whole"][-1]
     assert not (last == h.idx["warm_orc"]).any() and ((arr["peoples"][-1] == h.idx["warm_orc"]) <= (last == h.idx["orc"])).all()
     assert "Peoples with their groups" in (out / "run.txt").read_text()
+
+
+def test_peoples_change_the_land_from_their_ways_of_life():
+    """PW-662: shares come from the [[use]] table, not names; fields, pasture, fire and woods follow the people."""
+    from planet.lineages import landuse as LU
+    t = SP.load(LR.tree_path("dnd"))
+    s = {k: LU.shares(t, t.lines[k]) for k in ("human_farmer", "human_herder", "steppe_orc", "dwarf")}
+    assert s["human_farmer"]["farm"] == 1 and s["human_herder"]["herd"] == 1 and s["steppe_orc"]["herd"] == 1
+    assert sum(s["dwarf"].values()) == 0  # (miners eat nothing the land grows here: no clearing)
+    n = 4
+    z, one = np.zeros(n), np.ones(n)
+    fcls = np.array([4, 4, 1, 0])
+    # farmers: dense on prime land clear more than sparse; poor land is capped; no farmland, no fields
+    out = LU.cover(np.array([20, 5, 20, 20.0]), np.array([20, 5, 20, 20.0]), z, z, 0.8 * one, fcls, 0.5 * one)
+    assert out["crop"][0] > out["crop"][1] > 0 and out["crop"][2] <= LU.CROP_CAP[1] and out["crop"][3] == 0
+    assert out["tree_after"][3] < 0.8  # (wood cutting thins even there)
+    assert (out["crop"] + out["pasture"] + out["burned"] <= 1 + 1e-9).all()
+    # herders: pasture and burned grassland on grazing land, none without grazing
+    h = LU.cover(np.full(n, 3.0), z, np.full(n, 3.0), z, 0.4 * one, np.zeros(n, int), np.array([0.8, 0.8, 0.05, 0.8]))
+    assert h["pasture"][0] > 0 and h["burned"][0] > 0 and h["pasture"][2] == 0 and h["burned"][2] == 0 and (h["crop"] == 0).all()
+    # nobody, nothing
+    e = LU.cover(z, z, z, z, 0.8 * one, fcls, one)
+    assert (e["crop"] == 0).all() and (e["pasture"] == 0).all() and np.allclose(e["tree_after"], 0.8)
