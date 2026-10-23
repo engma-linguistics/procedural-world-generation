@@ -1,4 +1,5 @@
 ---
+id: PW-638
 title: "PW-632 option A measured: on the failing cold worlds the glacial's leftover ice is partly a held branch at I = 0 (seed 8 on step 2 keeps 51% for 120 kyr), so no faster-melting rule can meet the endings bar; only the marine fronts' loss moves it"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneA19
 blocked_by: []
 relates: [PW-632, PW-627, PW-588, PW-385, PW-569, PW-623, PW-471]
 refs: [docs/review/base-climate/laneA19/, docs/review/base-climate/stages.md, tests/test_timezoom_cycle.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -75,3 +78,6 @@ frontal melt.
 - Lean: B now, with A2 as the physics follow-up under PW-385, using this seed scan as its bar. No change to the test's
   assertions in either.
 - [ ] owner picks A2 / B / C
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-pw632-option-a-held-branch.md (found by base-climate-laneA19).

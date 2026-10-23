@@ -1,4 +1,5 @@
 ---
+id: PW-637
 title: "Time zoom: grounded marine fronts lose ice only by the depth calving law; no ocean melt of the face, so a cold planet's marine sheets feel nothing of an ending's warming (the lever that clears PW-632's held branches)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA19
 blocked_by: []
 relates: [PW-385, PW-632, PW-367, PW-588]
 refs: [planet/timezoom/sim.py, planet/timezoom/fields.py, planet/ocean.py, docs/review/base-climate/laneA19/]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -39,3 +42,6 @@ forcing and the front's summer meltwater discharge.
 - [ ] Bar: PW-632's endings test on seeds 1-9 (L4 300 Myr, `laneA19/scan.py`) with extra > 10 m, both trees.
 - [ ] Earth's `tz_earth.py --dt0` no worse.
 - [ ] Earth's glacials still -80 m or deeper.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-marine-fronts-no-ocean-melt.md (found by base-climate-laneA19).

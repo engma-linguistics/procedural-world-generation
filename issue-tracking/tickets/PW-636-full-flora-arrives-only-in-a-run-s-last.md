@@ -1,5 +1,6 @@
 ---
-title: "Full flora arrives only in a run's last ~15-25%, so showcase moments are squeezed to its end"
+id: PW-636
+title: Full flora arrives only in a run's last ~15-25%, so showcase moments are squeezed to its end
 type: task
 status: needs-decision
 parent: null
@@ -11,6 +12,8 @@ found_by: pw634-bug-hunt
 blocked_by: []
 relates: [PW-634, PW-434]
 refs: [planet/vegetation.py, planet/highlights.py, planet/timeline.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -35,3 +38,6 @@ The decision: is "the full flora only at the end of the run" what we want? Optio
 Recommendation: 1 for v1 (cheapest, already merged), revisit with 2 when PW-434's deep end-of-run sea
 level is fixed or if late-run geography turns out atypical.
 - [ ] owner picks an option
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-flora-arrives-late-in-runs.md (found by pw634-bug-hunt).

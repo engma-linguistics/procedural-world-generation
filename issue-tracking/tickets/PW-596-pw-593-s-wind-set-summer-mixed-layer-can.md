@@ -2,7 +2,7 @@
 id: PW-596
 title: "PW-593's wind-set summer mixed layer can't work on the model's summer winds: the westerly belts have one strength in every season and hemisphere, and the land-sea part slows the SH coasts' summer westerlies to 2-3.5 m/s"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v1
 subsystem: climate
@@ -62,4 +62,5 @@ Options:
       summer winds not under ~5 m/s
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Merged (A16 98749b4 + merge): westerly belts per season and hemisphere from that season's 30-65 deg contrast; thermal low as deep as the column share its warmth fills. With A17's island walls (PW-594 part 1). Earth: rain r 0.620 -> 0.630, Koppen group 70 -> 71, Fennoscandia coldest -4.5 -> -2.8; stage-1 overturning holds. Full pytest green on main dc2e54e. SH coastal summer winds still calm: PW-626.
 - 2026-10-23: Created from inbox draft draft-summer-mixed-layer-needs-seasonal-winds.md (found by base-climate-laneA14).

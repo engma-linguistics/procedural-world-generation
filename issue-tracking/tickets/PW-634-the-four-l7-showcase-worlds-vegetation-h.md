@@ -2,7 +2,7 @@
 id: PW-634
 title: "The four L7 showcase worlds' vegetation has no grasses: pasture is ~0 on their steppes"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: surface
@@ -30,6 +30,7 @@ The lineages lane works around it rather than stretching noise: a living good on
 - [ ] grazing on the L7 steppes comparable to 119973's
 
 ## Updates
+- 2026-10-23: Status todo -> done. Fixed (083d3d4): representative_time waits for the full flora (last plant group). Not stale worlds. Stored worlds with <19 PFTs need re-slicing at the new picks: 1144ce, 3e0b0a, 31926a, 7082f5, 81aced, a5a387, c00ebf, 28442c (6 PFTs); 91448a, 607540 (17). Trade-off in PW-636.
 - 2026-10-23: Root cause found (bug-hunt lane): not stale worlds and not a vegetation bug. Each world's PFTs
   are exactly `vegetation.unlocked_at(run plant_groups, t)` with current code: the plant groups appear late in a
   run (flowering trees/shrubs at ~0.73, grasses ~0.85, C4 ~0.94 of the span; 1 Gyr runs reach full flora at

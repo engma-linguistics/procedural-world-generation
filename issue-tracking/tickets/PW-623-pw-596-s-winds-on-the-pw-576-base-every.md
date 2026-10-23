@@ -93,6 +93,7 @@ Options:
 Coordinator (2026-10-23 night): held for the owner. Option A turns the 1% sheets assertion into a seed-choice condition, which is what lane B3 did and B4 reverted (it makes `test_cold_moment_has_sheets` true by construction), so it isn't a harness-only change. Coordinator lean: B with no new number — the fixture's "cold moment" must be colder than its own run's long-run mean (run dT at the moment below the run's median dT), since a +6.7 C hothouse moment isn't what a cold-moment fixture is meant to test; the sheets and ice-speed assertions stay as they are. Branch worktree-agent-a34e43ec48de2d53e (c0d5924) waits for the answer.
 
 ## Updates
+- 2026-10-23: Merged anyway on the A17 tree: there both cold-moment tests pass and main stays green with assertions unchanged. The fixture still passes or fails by which seed qualifies first; the owner's question (how the fixture should choose its source) stays open, together with PW-638 (PW-632 option B).
 - 2026-10-23: Held branch is now worktree-agent-a22d5ce3841f99b73 (A16 winds + A17 island walls + A18 docs, head 5d12daf).
 - 2026-10-23: The held branch is now worktree-agent-a6b65c5df0ddd0d62 (A16's winds + A17's PW-594 island walls, head 3e9855a); on that tree both cold-moment tests happen to pass (the seed lottery moved with the walls), so the fixture question stands.
 - 2026-10-23: Created from inbox draft draft-pw596-winds-break-timezoom-ice-tests.md (found by base-climate-laneA16).
