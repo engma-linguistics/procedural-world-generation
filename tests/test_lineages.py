@@ -448,3 +448,55 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     assert pres["lines"]["f"]["population"] > 100 * pres["lines"].get("g2", {"population": 1})["population"]
     first = [m for m in pres["landmasses"] if m["discovered"]]
     assert first and all(m["discovered"]["by"] in t.lines for m in first)
+
+
+def test_groups_within_a_people(faketz):
+    """PW-665: a group is a way of life within a people (origin 'group', group_of): it inherits what it leaves
+    out (demography too), never ends its people, appears where its own niche beats its people's, mixes with it
+    as kin (no closed-country exclusion), keeps a range of its own, and rolls up into its people in the summaries."""
+    raw = {"meta": {"name": "g", "seed": 3},
+           "lineage": [{"id": "orc", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000], "density": 1.5},
+                       {"id": "warm_orc", "origin": "group", "group_of": "orc", "at": "10 kyr", "temp_c": [16, 32]},
+                       {"id": "elf", "origin": "root", "at": "30 kyr", "temp_c": [0, 18], "rain_mm": [1, 9000]},
+                       {"id": "half", "origin": "hybrid", "parents": ["orc", "elf"], "at": "5 kyr"}],
+           "wish": [{"a": "elf", "b": "orc", "want": "apart"}]}
+    t = SP.parse(raw)
+    g = t.lines["warm_orc"]
+    assert g.origin == "group" and g.group_of == "orc" and t.groups_of("orc") == ["warm_orc"] and t.people_of("warm_orc") == "orc"
+    assert g.demo("density") == 1.5 and g.rain_mm == (1.0, 9000.0) and t.lines["orc"].children == []
+    assert {l.id for l in t.leaves()} >= {"orc", "warm_orc"}  # (a group never ends its people)
+    assert SP.parse(SP.to_raw(t)).lines["warm_orc"].group_of == "orc"
+    assert SP.parse({**raw, "lineage": [raw["lineage"][0], {k: v for k, v in raw["lineage"][1].items() if k != "at"}], "wish": []}
+                    ).lines["warm_orc"].ago_kyr == SP.GROUP_KYR
+    off = SP.parse({**raw, "lineage": [{**raw["lineage"][0], "enabled": False}, *raw["lineage"][1:]], "wish": []})
+    assert "warm_orc" in off.disabled  # (no groups without their people)
+    with pytest.raises(ValueError):  # (a group of a group)
+        SP.parse({**raw, "lineage": [*raw["lineage"], {"id": "x", "origin": "group", "group_of": "warm_orc", "at": "1 kyr"}]})
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(t, ps, 1)
+    i, j, e = h.idx["warm_orc"], h.idx["orc"], h.idx["elf"]
+    assert h.terr[i, j] == 0 and h.terr[j, i] == 0 and h.terr[j, e] > 0
+    assert h.alpha[i, j] < H.niche_overlap(g, t.lines["orc"], t)  # (kin: GROUP_KIN of the overlap)
+    h, res, pres = H.simulate(t, ps, tries=1)
+    assert "orc" not in h.ended and "warm_orc" in h.origins
+    assert h.origins["warm_orc"]["why"].startswith("where its way of life")
+    P = res["present"]
+    po, pg = P[h.idx["orc"]] >= H.EST, P[h.idx["warm_orc"]] >= H.EST
+    assert po.any() and pg.any()
+    temp = ps.fields(0.0, variability=False)["temperature"]
+    assert temp[pg].mean() > temp[po].mean() + 3  # (each holds the land its way of life suits)
+    w = pres["peoples"]["orc"]
+    assert w["groups"] == ["warm_orc"] and pres["lines"]["warm_orc"]["group_of"] == "orc"
+    assert w["population"] == pres["lines"]["orc"]["population"] + pres["lines"]["warm_orc"]["population"]
+    assert w["area_mkm2"] >= max(pres["lines"]["orc"]["area_mkm2"], pres["lines"]["warm_orc"]["area_mkm2"])
+    assert np.array_equal(h.whole("orc", P) >= H.EST, po | pg)
+    assert all(not {"orc", "warm_orc"} <= set(z["lines"]) for z in pres["mixing_zones"])  # (one people, not a mix)
+    out = O.save(h, res, pres, name="test groups")
+    run = json.loads((out / "run.json").read_text())
+    ml = {l["id"]: l for l in run["meta"]["lineages"]}
+    assert ml["warm_orc"]["group_of"] == "orc" and ml["orc"]["groups"] == ["warm_orc"]
+    assert ml["warm_orc"]["color"] == O.tint(ml["orc"]["color"], 0) and "way of life" in ml["warm_orc"]["story"]
+    _, arr = T.load_frames(out, ("peoples", "peoples_whole"))
+    last = arr["peoples_whole"][-1]
+    assert not (last == h.idx["warm_orc"]).any() and ((arr["peoples"][-1] == h.idx["warm_orc"]) <= (last == h.idx["orc"])).all()
+    assert "Peoples with their groups" in (out / "run.txt").read_text()

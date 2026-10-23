@@ -43,6 +43,9 @@ DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x 
 EXPLORE_MARGIN = (0.25, 0.5)  # into marginal land (K < 0.3) the spread keeps a + (1 - a) K / 0.3, a = [0] + [1] x explore
 MVP_TAU_KYR = 2.0  # a separate patch of a people with fewer than meta.viable_pop people fades with this e-folding time
 MVP_EVERY_KYR = 1.0  # (looked at about this often; a people's largest patch is never faded: its refuges hold)
+GROUP_KIN = 0.5  # a group, its people and its sister groups compete at this share of their niche overlap, with no
+# closed-country exclusion (terr 0): one people, mixing freely where their ways of life overlap (PW-665)
+GROUP_MARGIN = 0.15  # a group appears where its own habitat beats its people's by this share (its niche exists there)
 PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c",
            "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
@@ -236,6 +239,15 @@ class History:
                 if a.id != b.id and not a.overlay and not b.overlay:
                     i, j = self.idx[a.id], self.idx[b.id]
                     self.terr[i, j] = max(0.0, ALPHA_CLOSED - self.alpha[i, j]) * same_way(a, b)
+        # a group and its people (and its sister groups) are one people: they mix freely (GROUP_KIN, no exclusion)
+        for a in self.lines:
+            for b in self.lines:
+                if a.id != b.id and not a.overlay and not b.overlay and (a.group_of or b.group_of) \
+                        and tree.people_of(a.id) == tree.people_of(b.id):
+                    i, j = self.idx[a.id], self.idx[b.id]
+                    self.alpha[i, j] *= GROUP_KIN
+                    self.terr[i, j] = 0.0
+        self._groups = {l.id: [self.idx[x] for x in tree.groups_of(l.id)] for l in self.lines}
         # numbers: a denser rival weighs more (DENSITY_PUSH)
         self.dens = np.array([l.demo("density") for l in self.lines])
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
@@ -244,11 +256,13 @@ class History:
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:
-                i, j = self.idx[w.a], self.idx[w.b]
                 f = 1 - NEAR_TOLERANCE * min(w.weight, 1.0)
-                for x, y in ((i, j), (j, i)):
-                    self.alpha[x, y] *= f
-                    self.terr[x, y] *= f
+                # (a people named in a wish counts with its groups, PW-665)
+                for i in [self.idx[w.a], *self._groups[w.a]]:
+                    for j in [self.idx[w.b], *self._groups[w.b]]:
+                        for x, y in ((i, j), (j, i)):
+                            self.alpha[x, y] *= f
+                            self.terr[x, y] *= f
         self._chains = needs_chains(tree)
         self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
@@ -391,7 +405,7 @@ class History:
                 blob = blob | part
             self.p[pk][blob & P] = 0.0
         elif line.origin == "hybrid":
-            a, b = (self.p[self.idx[q]] for q in line.parents)
+            a, b = (self.whole(q) for q in line.parents)
             O = np.minimum(a, b)
             if O.max() < EST:
                 return False  # the parents haven't met yet: wait
@@ -403,8 +417,13 @@ class History:
                 cell = int(np.argmax(O * (K + 0.05) * noise))
                 self._seed_blob(k, cell, np.maximum(K, O), O > EST, 2)
                 why = "where the parents meet (a people of its own)"
+        elif line.origin == "group":
+            res = self._group_origin(line, step, env, tags, K)
+            if res is None:
+                return False
+            cell, why = res
         else:  # template
-            H = np.max([self.p[self.idx[q]] for q in line.parents], axis=0)
+            H = np.max([self.whole(q) for q in line.parents], axis=0)
             if H.max() < EST:
                 return False
             cells = []
@@ -416,6 +435,69 @@ class History:
             why = f"{len(cells)} incursion sites in the hosts' range"
         self._record_origin(line, step, cell, why)
         return True
+
+    def _group_origin(self, line, step, env, tags, K):
+        """A way of life within a people (PW-665): it takes hold where its own habitat beats its people's by
+        GROUP_MARGIN (unclipped, so prime land for both still tells them apart): in every such cell of its
+        people's range (divergence in place), and as founders (FOUNDER_KM, as a split's) around the cell of the
+        largest advantage, its origin. Without such land, at its people's range edge where it does best. Half
+        the people's presence there goes over to it (they are of it); the people lives on. None: its people
+        isn't there yet (wait)."""
+        k = self.idx[line.id]
+        pid = line.group_of
+        pk = self.idx[pid]
+        P = self.p[pk] > EST
+        if not P.any():
+            if pid not in self.started:
+                return None
+            cell = int(np.argmax(K * self._noise()))
+            self._seed_blob(k, cell, K, K > EST, 3)
+            return cell, "its people gone: best habitat"
+        Kg = self._K(line, env, tags, step, clip=False)
+        Kp = self._K(self.tree.lines[pid], env, tags, step, clip=False)
+        good = P & (Kg > (1 + GROUP_MARGIN) * Kp) & (K > 2 * EST)
+        nudge = self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._noise()
+        if good.any():
+            score = np.where(good, Kg - Kp, 0) * nudge
+            why, mask = "where its way of life suits the land better than its people's", good
+        else:
+            near = self._dilate(P, 2) & tags["land"]
+            score = np.where(near, K, 0) * nudge * (K > 2 * EST)
+            why, mask = "at its people's range edge (no land suits it better there)", K > EST
+            if score.max() <= 0:
+                score, why = K * nudge, "best habitat (none near its people)"
+        cell = int(np.argmax(score))
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        blob = self._seed_blob(k, cell, K, mask, r)
+        # a way of life arises in place wherever it suits the land better (divergence, not migration): every such
+        # cell of the people's range takes it up, from half the people there
+        took = good & ~blob
+        self.p[k][took] = np.maximum(self.p[k][took], np.minimum(K[took], np.maximum(0.5 * self.p[pk][took], 2 * EST)))
+        self.p[pk][(blob | took) & P] *= 0.5
+        self.p[pk][self.p[pk] < EST] = 0
+        return cell, why
+
+    def whole(self, lid: str, P: np.ndarray | None = None) -> np.ndarray:
+        """A people's presence with its groups (their sum, at most 1); a line without groups, its own."""
+        P = self.p if P is None else P
+        k = self.idx[lid]
+        gs = self._groups.get(lid)
+        if not gs:
+            return P[k]
+        return np.minimum(1.0, P[k] + P[gs].sum(0))
+
+    def rollup(self, P: np.ndarray) -> np.ndarray:
+        """P with each people's row holding its groups too (whole) and the groups' rows zeroed: the peoples as
+        wholes, indexed as the lines (the whole-people map layer, the mixing of peoples, the summaries)."""
+        if not any(self._groups.values()):
+            return P
+        out = P.copy()
+        for lid, gs in self._groups.items():
+            if gs:
+                k = self.idx[lid]
+                out[k] = np.minimum(1.0, P[k] + P[gs].sum(0))
+                out[gs] = 0.0
+        return out
 
     def _origin_fallback(self, line, step, env, tags, K, why):
         k = self.idx[line.id]
@@ -429,7 +511,8 @@ class History:
         self.origins[line.id] = {"cell": int(cell), "lat": round(float(g.lat[cell]), 2), "lon": round(float(g.lon[cell]), 2),
                                  "ago_kyr": round(step.ago, 3), "wanted_kyr": line.ago_kyr, "epoch": step.epoch, "why": why}
         verb = {"root": "arises", "split": f"splits from {line.parents[0] if line.parents else '?'}", "arrival": "arrives",
-                "hybrid": f"appears where {' and '.join(line.parents)} meet", "template": f"appears among {', '.join(line.parents)}"}
+                "hybrid": f"appears where {' and '.join(line.parents)} meet", "template": f"appears among {', '.join(line.parents)}",
+                "group": f"becomes a way of life among the {self.tree.lines[line.parents[0]].label() if line.parents else '?'}"}
         self.events.append({"ago_kyr": round(step.ago, 3), "kind": line.origin, "line": line.id,
                             "text": f"{line.label()} {verb[line.origin]} ({why})", "lat": self.origins[line.id]["lat"],
                             "lon": self.origins[line.id]["lon"]})
@@ -450,7 +533,7 @@ class History:
             other = w.b if w.a == line.id else w.a if (origin and w.b == line.id and w.want == "near") else None
             if not other or not self.active.get(other):
                 continue
-            po = self.p[self.idx[other]]
+            po = self.whole(other)
             if w.want == "near":
                 L = (NEAR_ORIGIN_KM if origin else NEAR_KM) / self.cell_km
                 d = graph_dist(po > EST, int(np.ceil(3 * L)), g.nbr_off, g.nbr_idx)
@@ -674,7 +757,8 @@ class History:
         x = np.where(P[k] >= EST, P[k], 0.0)
         if not l.overlay:
             return x * self.dens[k] * area
-        hosts = sum(np.where(P[self.idx[q]] >= EST, P[self.idx[q]], 0.0) * self.dens[self.idx[q]] for q in l.parents)
+        hosts = sum(np.where(P[j] >= EST, P[j], 0.0) * self.dens[j]
+                    for q in l.parents for j in [self.idx[q], *self._groups.get(q, [])])
         own = self._linger[k]
         return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * hosts * area)
 
@@ -683,7 +767,7 @@ class History:
         once it has appeared it lingers where they no longer meet, fading (LINGER_KYR) within its own habitat,
         and where they last met it lives on as a small people of its own (PW-613)."""
         g = self.grid
-        a, b = (self.p[self.idx[q]] for q in l.parents)
+        a, b = (self.whole(q) for q in l.parents)
         O = np.minimum(a, b)
         meet = O >= EST
         old = self.p[k]
@@ -712,9 +796,9 @@ class History:
         self.p[k] = new
         self._linger[k] = (new >= EST) & ~meet
 
-    def _K(self, l, env, tags, step):
+    def _K(self, l, env, tags, step, clip=True):
         if l.overlay and l.origin == "template":
-            return np.max([self.p[self.idx[q]] for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
+            return np.max([self.whole(q) for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
         K = capacity(l, env, tags) * self._place_mult(l, tags)
         K = K * self._wish_near(l)
         if self.goods is not None and step.epoch != "deep":  # (the plates have moved since the deep epochs)
@@ -723,7 +807,7 @@ class History:
             span = min(0.3 * (l.ago_kyr - l.extinct_kyr), 20.0)
             if span > 0 and step.ago < l.extinct_kyr + span:
                 K = K * max(0.0, (step.ago - l.extinct_kyr) / span)
-        return np.clip(K, 0, 1)
+        return np.clip(K, 0, 1) if clip else np.maximum(K, 0)
 
     def _volcanic(self, deep: bool = False):
         """The world's volcanic good for the volcanic place tag (None without a world, and in the deep epochs)."""
@@ -777,7 +861,9 @@ class History:
         own = natives[:, None] | self._linger  # (a contact hybrid living on as a people of its own counts there)
         P = np.where(own, self.p, 0)
         dom = np.where(P.max(0) >= EST, P.argmax(0), 255).astype(np.uint8)
-        mixn = (P >= 0.25).sum(0).astype(np.uint8)
+        Pw = self.rollup(P)  # (the peoples as wholes: a people and its groups mixing is one people)
+        whole = np.where(Pw.max(0) >= EST, Pw.argmax(0), 255).astype(np.uint8)
+        mixn = (Pw >= 0.25).sum(0).astype(np.uint8)
         O = np.where(~own, self.p, 0)
         ov = np.where(O.max(0) >= EST, O.argmax(0), 255).astype(np.uint8)
         areas = {l.id: round(float((self.p[k] >= EST).sum() * self.cell_mkm2), 2)
@@ -794,7 +880,8 @@ class History:
                                           pops.get(l.id, 0)])
         return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "peoples_mix": mixn,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
-                "peoples_overlay": ov, "stats": {**step.stats, "peoples": areas, "population": pops}}
+                "peoples_overlay": ov, "peoples_whole": whole,
+                "stats": {**step.stats, "peoples": areas, "population": pops}}
 
 
 # -- the present ------------------------------------------------------------------------------------
@@ -820,6 +907,8 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                               "largest_patch_share": round(float(sizes[0] / sizes.sum()), 2),
                               "centroid": tr[1:3] if tr else None,
                               "neighbours": dict(sorted(nb.items(), key=lambda x: -x[1])[:8]), "overlay": l.overlay}
+        if l.group_of:
+            out["lines"][l.id]["group_of"] = l.group_of
         if l.overlay and l.origin == "hybrid":  # (the land it holds as a people of its own, its parents apart)
             out["lines"][l.id]["own_mkm2"] = round(float((h._linger[k] & sel).sum() * h.cell_mkm2), 2)
         # numbers: the people (presence x density x area), by present-day landmass
@@ -833,7 +922,8 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                                   by_landmass={str(int(m)): int(by[m]) for m in top if by[m] >= 1},
                                   faded_patches=h.faded.get(l.id, 0))
     natives = np.array([not l.overlay for l in h.lines])
-    mix = (np.where(natives[:, None], P, 0) >= 0.25).sum(0) >= 2
+    Pw = h.rollup(np.where(natives[:, None], P, 0))  # (peoples as wholes: a people mixing with its own groups is one people)
+    mix = (Pw >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
     tags = _tags(g, env, h._chains, h._volcanic())
     corr = corridor(tags, env, h.flow)
@@ -868,7 +958,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
         sel = lab == z
         if sel.sum() < 3:
             continue
-        who = [l.id for k, l in enumerate(h.lines) if natives[k] and (P[k][sel] >= 0.25).mean() > 0.2]
+        who = [l.id for k, l in enumerate(h.lines) if natives[k] and (Pw[k][sel] >= 0.25).mean() > 0.2]
         c = g.centers[sel].mean(0)
         c /= np.linalg.norm(c)
         out["mixing_zones"].append({"cells": int(sel.sum()), "area_mkm2": round(float(sel.sum() * h.cell_mkm2), 2),
@@ -877,10 +967,37 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     out["mixing_zones"].sort(key=lambda z: -z["cells"])
     out["mixing_zones"] = out["mixing_zones"][:20]
     out["wishes"] = wish_scores(h, P, tags)
+    out["peoples"] = people_rollup(h, P, out["lines"])
     # lines that should be alive at the present (leaves not set to die out) but aren't
     out["lost"] = [l.id for l in tree.leaves() if l.extinct_kyr is None and l.id not in out["lines"]]
     out["wish_score"] = round(sum(w["score"] * w["weight"] for w in out["wishes"]) /
                               max(sum(w["weight"] for w in out["wishes"]), 1e-9), 3) if out["wishes"] else None
+    return out
+
+
+def people_rollup(h: History, P: np.ndarray, lines: dict) -> dict:
+    """Per people with groups (PW-665): the people as a whole, its own row and its groups' rows together:
+    area and patches of their joint range, population and by-landmass numbers summed, each part's share."""
+    out = {}
+    g = h.grid
+    for l in h.lines:
+        gs = h.tree.groups_of(l.id)
+        if not gs:
+            continue
+        parts = [x for x in [l.id, *gs] if x in lines]
+        if not parts:
+            continue
+        sel = h.whole(l.id, P) >= EST
+        _, n = g.components(sel) if sel.any() else (None, 0)
+        pop = sum(lines[x].get("population", 0) for x in parts)
+        by: dict[str, int] = {}
+        for x in parts:
+            for m, v in lines[x].get("by_landmass", {}).items():
+                by[m] = by.get(m, 0) + v
+        out[l.id] = {"groups": gs, "living": parts, "area_mkm2": round(float(sel.sum() * h.cell_mkm2), 2),
+                     "patches": int(n), "population": int(pop),
+                     "by_landmass": dict(sorted(by.items(), key=lambda x: -x[1])[:6]),
+                     "shares": {x: round(lines[x].get("population", 0) / max(pop, 1), 3) for x in parts}}
     return out
 
 
@@ -890,7 +1007,7 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
         tags = _tags(g, h.steps[-1].get(), h._chains, h._volcanic())
     out = []
     for w in h.tree.wishes:
-        a = P[h.idx[w.a]] >= EST
+        a = h.whole(w.a, P) >= EST  # (a people with groups: as a whole)
         if not a.any():
             out.append({**vars(w), "score": 0.0, "note": "a is gone"})
             continue
@@ -905,7 +1022,7 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
             cover, share = float(a[t].mean()), float(t[a].mean())
             s = 0.5 * min(1.0, cover / 0.5) + 0.5 * min(1.0, share / min(0.5, 8 * base))
         else:
-            b = P[h.idx[w.b]] >= EST
+            b = h.whole(w.b, P) >= EST
             near = b.copy()
             for _ in range(max(1, int(round(NEAR_SCORE_KM / h.cell_km)))):  # within NEAR_SCORE_KM of b
                 near = near | _nbr(np.logical_or, near[g.nbr_idx], g)

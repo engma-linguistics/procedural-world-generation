@@ -86,7 +86,7 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const ORIGIN_COL = { split: '#9fd18b', root: '#e3c26b', arrival: '#c79bff', hybrid: '#ff9d6b', template: '#ff6b9a' };
+const ORIGIN_COL = { split: '#9fd18b', root: '#e3c26b', arrival: '#c79bff', hybrid: '#ff9d6b', template: '#ff6b9a', group: '#6bd6d0' };
 // (mirrors of planet/lineages/spec.py TRAITS, PLACES, DEMOGRAPHY and land.py GOODS)
 const TRAITS = ['flies', 'swims', 'coastal', 'seafaring', 'agricultural', 'nomadic', 'mountain', 'hardy', 'insular', 'cosmopolitan', 'subterranean', 'miner'];
 const PLACES = ['coast', 'island', 'island_chain', 'mountain', 'lowland', 'inland', 'forest', 'open', 'wetland', 'jungle', 'steppe', 'desert', 'tundra', 'volcanic', 'hills'];
@@ -120,7 +120,8 @@ function fmt(k) {
   return `${Math.round(k * 1000)} yr`;
 }
 const num = (n) => n >= 1e6 ? `${+(n / 1e6).toPrecision(2)} M` : n >= 1e3 ? `${+(n / 1e3).toPrecision(2)} k` : `${Math.round(n)}`;
-const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.parent ? [r.parent] : [];
+const parentsOf = (r) => r.parents ? [].concat(r.parents) : r.group_of ? [r.group_of] : r.parent ? [r.parent] : [];
+const groupsOf = (id) => T.lineage.filter((x) => originOf(x) === 'group' && parentsOf(x)[0] === id);  // (ways of life within a people, PW-665)
 const originOf = (r) => r.origin || (parentsOf(r).length ? 'split' : 'root');
 const byId = () => Object.fromEntries(T.lineage.map((r) => [r.id, r]));
 
@@ -132,7 +133,7 @@ function inherited(r, key, seen = new Set()) {
   const ps = parentsOf(r).map((p) => byId()[p]).filter(Boolean);
   if (!ps.length) return undefined;
   if (key === 'traits' && originOf(r) === 'hybrid') return [...new Set(ps.flatMap((p) => inherited(p, 'traits', seen) || []))].sort();
-  if (DEMO_KEYS.includes(key) && originOf(r) !== 'split') return undefined;  // (only splits inherit demography)
+  if (DEMO_KEYS.includes(key) && !['split', 'group'].includes(originOf(r))) return undefined;  // (only splits and groups inherit demography)
   return inherited(ps[0], key, seen);
 }
 function demography(traits) {  // spec.demography
@@ -157,7 +158,7 @@ function demoOf(r) {  // the value a line runs with, and whether it was given on
 function effective() {  // what switching lines off does (spec.parse): which lines go, who re-parents
   const ids = byId(), off = new Set(T.lineage.filter((r) => r.enabled === false).map((r) => r.id));
   let ch = true;
-  while (ch) { ch = false; for (const r of T.lineage) if (!off.has(r.id) && ['hybrid', 'template'].includes(originOf(r)) && parentsOf(r).some((p) => off.has(p))) { off.add(r.id); ch = true; } }
+  while (ch) { ch = false; for (const r of T.lineage) if (!off.has(r.id) && ['hybrid', 'template', 'group'].includes(originOf(r)) && parentsOf(r).some((p) => off.has(p))) { off.add(r.id); ch = true; } }
   const parent = {};
   for (const r of T.lineage) {
     if (originOf(r) !== 'split') continue;
@@ -176,8 +177,9 @@ const FOOT = {
   tree: `Time runs left to right, Myr to the present, on a log scale (tectonic run, glacial time zoom, recent pass). Drag a bar's left end to move when
     the line appears; click a bar to edit it. Origins: <span style="color:#9fd18b">split</span> · <span style="color:#e3c26b">root</span> ·
     <span style="color:#c79bff">arrival</span> · <span style="color:#ff9d6b">hybrid</span> · <span style="color:#ff6b9a">template (overlay)</span>.
-    Switching a line off: its split children re-parent to its parent; its hybrids and templates go with it.`,
-  peoples: `Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
+    <span style="color:#6bd6d0">group (a way of life within a people)</span>.
+    Switching a line off: its split children re-parent to its parent; its hybrids, templates and groups go with it.`,
+  peoples: `A people's groups (ways of life: steppe and forest orcs, human seafarers...) sit under it: ▸ opens them, + group adds one. Empty demography fields come from the traits (grey: the value used; a split inherits what its parent was given). Density: people per km² of full
     habitat; a band of ${BAND} roams ${BAND} / density km². A separate patch with fewer than the tree's viable population fades, so sparse peoples need big lands.`,
   places: 'What each way of life looks for in the world\'s land (planet/lineages/land.py). by: a trait, a place or climate tag in a line\'s prefers, or one line\'s id.',
   wishes: 'Soft wishes: best of N tries plus mild nudges on habitat and origins; each reports a score after a run.',
@@ -213,8 +215,9 @@ function order() {  // depth-first by split edges, roots and arrivals by age
   const kids = {}, out = [], seen = new Set();
   for (const r of T.lineage) if (originOf(r) === 'split') (kids[parentsOf(r)[0]] = kids[parentsOf(r)[0]] || []).push(r);
   const walk = (r, d) => { if (seen.has(r.id)) return; seen.add(r.id); out.push([r, d]);
+    groupsOf(r.id).sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((k) => walk(k, d + 1));
     (kids[r.id] || []).sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((k) => walk(k, d + 1)); };
-  T.lineage.filter((r) => originOf(r) !== 'split' && !['hybrid', 'template'].includes(originOf(r)))
+  T.lineage.filter((r) => originOf(r) !== 'split' && !['hybrid', 'template', 'group'].includes(originOf(r)))
     .sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((r) => walk(r, 0));
   T.lineage.filter((r) => ['hybrid', 'template'].includes(originOf(r))).sort((a, b) => kyrOf(b.at) - kyrOf(a.at)).forEach((r) => walk(r, 0));
   T.lineage.forEach((r) => walk(r, 0));
@@ -226,7 +229,7 @@ function endOf(r, eff, res) {
   if (res && result?.lineages) return res.ended_kyr ?? kyrOf(r.extinct);
   const ex = kyrOf(r.extinct);
   if (ex != null) return ex;
-  if (r.persists || ['hybrid', 'template'].includes(originOf(r))) return null;
+  if (r.persists || ['hybrid', 'template', 'group'].includes(originOf(r))) return null;
   const kids = T.lineage.filter((x) => originOf(x) === 'split' && eff.parent[x.id] === r.id && !eff.off.has(x.id) && kyrOf(x.extinct) == null)
     .map((x) => kyrOf(x.at));
   return kids.length ? Math.min(...kids) : null;
@@ -296,7 +299,7 @@ const demoInput = (r, k, step, w = 62) => {
 function drawSide() {
   const side = $('side');
   const r = sel && byId()[sel];
-  let h = `<div class="row"><button id="add">+ Add a people</button>${r ? '<button id="addChild">+ Branch from this</button><button id="del">Delete</button>' : ''}</div>`;
+  let h = `<div class="row"><button id="add">+ Add a people</button>${r ? `<button id="addChild">+ Branch from this</button>${originOf(r) !== 'group' && !['hybrid', 'template'].includes(originOf(r)) ? `<button data-addgroup="${esc(r.id)}" title="A way of life within this people (its own niche, knobs, land use and wishes)">+ group</button>` : ''}<button id="del">Delete</button>` : ''}</div>`;
   if (r) {
     const o = originOf(r), eff = effective(), res = resLine(r.id), p = resPres(r.id);
     const ids = T.lineage.map((x) => x.id).filter((x) => x !== r.id);
@@ -309,7 +312,9 @@ function drawSide() {
       <div class="row">${field('origin', `<select data-k="origin">${Object.keys(ORIGIN_COL).map((x) => `<option ${x === o ? 'selected' : ''}>${x}</option>`).join('')}</select>`)}
         ${field('at (ago)', `<input data-k="at" size="9" value="${esc(r.at)}">`)}
         ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
-      ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="parents" ${o === 'split' ? '' : 'multiple size="4"'} class="wide">
+      ${o === 'group' ? `<div class="muted">A way of life within the ${esc(byId()[parentsOf(r)[0]]?.name || parentsOf(r)[0])}: it inherits what it leaves out, takes hold where its own niche
+        beats its people's, mixes freely with them, and counts with them in the summaries.</div>` : ''}
+      ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'group' ? 'group of (people)' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="${o === 'group' ? 'group_of' : 'parents'}" ${o === 'split' || o === 'group' ? '' : 'multiple size="4"'} class="wide">
         ${ids.map((x) => `<option ${parentsOf(r).includes(x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
       ${o === 'arrival' ? `<div class="row">${field('arrives at lat', `<input type="number" data-k="place.0" value="${r.place?.[0] ?? ''}">`)}${field('lon', `<input type="number" data-k="place.1" value="${r.place?.[1] ?? ''}">`)}<span class="muted">(empty: best habitat, near any hybrid partner; a place on an empty continent peoples it)</span></div>` : ''}
       ${o === 'hybrid' ? `<label class="trait"><input type="checkbox" data-k="contact" ${r.contact === false ? '' : 'checked'}> only where both parents meet</label>` : ''}
@@ -324,6 +329,9 @@ function drawSide() {
       <div class="row">${field('density /km²', demoInput(r, 'density', 'any'))}${field('expansion km/yr', `<input type="number" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}">`)}</div>
       <div class="row">${field('explore', demoInput(r, 'explore', 0.05, 55))}${field('sea share', demoInput(r, 'sea_share', 0.05, 55))}${field('insularity', demoInput(r, 'insularity', 0.05, 55))}</div>
       ${field('colour', `<input type="color" data-k="color" value="${r.color || '#888888'}">`)}
+      <h3>Its land use <a href="#" data-tabgo="places" style="font-weight:normal">(edit in the Places tab)</a></h3>
+      ${(T.use || []).filter((u) => usesOf(u).includes(r)).map((u) => `<div>${esc(u.good)} <span class="muted">by ${esc(u.by)} · w ${u.weight ?? 1}${u.pull != null ? ` · pull ${u.pull}` : ''}${u.strict ? ' · strict' : ''}</span></div>`).join('') || '<div class="muted">none</div>'}
+      ${groupsOf(r.id).length ? `<h3>Its groups</h3>${groupsOf(r.id).map((x) => `<div><a href="#" data-pick="${esc(x.id)}">${esc(x.name || x.id)}</a> <span class="muted">${esc(x.at || '')}</span></div>`).join('')}` : ''}
       <h3>Its wishes <a href="#" data-wishfor="${esc(r.id)}" style="font-weight:normal">(edit in the Wishes tab)</a></h3>
       ${(T.wish || []).filter((w) => w.a === r.id || w.b === r.id).map((w) => {
         const sc = (result?.present?.wishes || []).find((x) => x.a === w.a && x.want === w.want && (x.b || null) === (w.b || null));
@@ -351,6 +359,7 @@ function editLine(r, el) {
     if (r[a].every((v) => v === '')) delete r[a];
   } else if (k === 'enabled' || k === 'persists' || k === 'contact') r[k] = el.checked;
   else if (k === 'parents') r.parents = [...el.selectedOptions].map((o) => o.value);
+  else if (k === 'group_of') { r.group_of = el.value; delete r.parents; }
   else if (k === 'prefers' || k === 'avoids' || k === 'traits') r[k] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
   else if (['share', 'sites', 'speed_kmyr', ...DEMO_KEYS, 'band_km2'].includes(k)) {
     if (el.value === '') delete r[k]; else r[k] = +el.value;
@@ -359,11 +368,16 @@ function editLine(r, el) {
   else if (k === 'id') {
     const old = r.id; r.id = el.value.trim();
     for (const x of T.lineage) if (x.parents) x.parents = [].concat(x.parents).map((p) => (p === old ? r.id : p));
+    for (const x of T.lineage) if (x.group_of === old) x.group_of = r.id;
     for (const w of T.wish || []) { if (w.a === old) w.a = r.id; if (w.b === old) w.b = r.id; }
     for (const u of T.use || []) if (u.by === old) u.by = r.id;
     if (sel === old) sel = r.id;
   } else r[k] = el.value;
-  if (k === 'origin') { delete r.parent; if (['root', 'arrival'].includes(r.origin)) delete r.parents; }
+  if (k === 'origin') {
+    delete r.parent; if (['root', 'arrival'].includes(r.origin)) delete r.parents;
+    if (r.origin === 'group' && !r.group_of) { r.group_of = parentsOf(r)[0] || T.lineage.find((x) => x !== r)?.id; delete r.parents; }
+    if (r.origin !== 'group' && r.group_of) { if (!['root', 'arrival'].includes(r.origin)) r.parents = [r.group_of]; delete r.group_of; }
+  }
 }
 function onChange(e) {
   const el = e.target;
@@ -391,7 +405,16 @@ document.querySelector('main').addEventListener('click', (e) => {
     const r = { id: `custom_${n}`, name: `new people ${n}`, custom: true, origin: par ? 'split' : 'arrival',
                 at: par ? fmt(Math.max(0.2, (kyrOf(par.at) || 10) / 3)) : '10 kyr', ...(par ? { parents: [par.id] } : {}) };
     T.lineage.push(r); sel = r.id;
-  } else if (id === 'del' && sel) {
+  } else if (d.addgroup != null) {
+    const par = byId()[d.addgroup];
+    let n = 1; while (byId()[`${par.id}_group_${n}`]) n++;
+    const r = { id: `${par.id}_group_${n}`, name: `${par.name || par.id}: new way of life ${n}`, custom: true, origin: 'group', group_of: par.id,
+                at: fmt(Math.min(6, (kyrOf(par.at) || 10) / 2)) };
+    T.lineage.push(r); sel = r.id; openGroups.add(par.id);
+    if (tab !== 'peoples') { showTab('tree'); return; }
+  } else if (d.opengroups != null) { openGroups.has(d.opengroups) ? openGroups.delete(d.opengroups) : openGroups.add(d.opengroups); }
+  else if (d.tabgo != null) { showTab(d.tabgo); return; }
+  else if (id === 'del' && sel) {
     const r = byId()[sel];
     if (T.lineage.some((x) => parentsOf(x).includes(sel)) && !confirm(`${sel} has descendants; delete anyway? (switching it off keeps them)`)) return;
     T.lineage = T.lineage.filter((x) => x !== r); sel = null;
@@ -408,14 +431,18 @@ document.querySelector('main').addEventListener('click', (e) => {
 
 // ---- tab 2: the peoples table ---------------------------------------------------------------------
 let peopleSort = '';
+const openGroups = new Set();  // peoples whose groups are shown in the Peoples tab
 function drawPeoples() {
   const eff = effective();
-  let rows = order().map(([r, d]) => ({ r, d, dm: demoOf(r), p: resPres(r.id) }));
+  let rows = order().filter(([r]) => originOf(r) !== 'group').map(([r, d]) => ({ r, d, dm: demoOf(r), p: resPres(r.id) }));
   if (peopleSort) {
     const k = peopleSort.replace('-', ''), s = peopleSort.startsWith('-') ? -1 : 1;
     const v = (x) => k === 'pop' ? x.p?.population ?? -1 : k === 'area' ? x.p?.area_mkm2 ?? -1 : x.dm[k]?.[0] ?? 0;
     rows.sort((a, b) => s * (v(b) - v(a)));
   }
+  // a people's groups sit under it (shown when opened), indented
+  rows = rows.flatMap((x) => [x, ...(openGroups.has(x.r.id) ? groupsOf(x.r.id).sort((a, b) => kyrOf(b.at) - kyrOf(a.at))
+    .map((g) => ({ r: g, d: x.d + 1, dm: demoOf(g), p: resPres(g.id), group: true })) : [])]);
   const th = (k, label, tip) => `<th ${k ? `data-sort="${k}" style="cursor:pointer"` : ''} title="${esc(tip || '')}">${label}${peopleSort.replace('-', '') === k && k ? (peopleSort.startsWith('-') ? ' ▴' : ' ▾') : ''}</th>`;
   const val = (r, k, step, cls = '') => { const [v, how] = demoOf(r)[k];
     return `<input type="number" class="${cls}" step="${step}" min="0" ${k === 'density' ? '' : 'max="1"'} data-k="${k}" value="${r[k] ?? ''}" placeholder="${+v.toPrecision(3)}" title="${how === 'own' ? 'given' : how}">`; };
@@ -426,12 +453,15 @@ function drawPeoples() {
     ${th('density', 'density /km²', 'people per km² of full habitat')}<th title="km² a band of ${BAND} roams">band km²</th><th title="frontier speed, km/yr">expansion</th>
     ${th('explore', 'explore', 'how readily it pushes into new land and over the sea, 0..1')}${th('sea_share', 'sea share', 'share of its frontier that tries water crossings, 0..1')}
     ${th('insularity', 'insularity', 'resistance to mixing and to leaving home, 0..1')}${th('pop', 'population')}${th('area', 'Mkm²')}<th>patches</th></tr>`;
-  for (const { r, d, dm, p } of rows) {
-    const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [];
+  for (const { r, d, dm, p, group } of rows) {
+    const o = originOf(r), off = eff.off.has(r.id), tr = r.traits ?? inherited(r, 'traits') ?? [], gs = group ? [] : groupsOf(r.id);
+    const whole = result?.present?.peoples?.[r.id];
+    const tog = gs.length ? `<a href="#" data-opengroups="${esc(r.id)}" title="its ways of life (groups)" style="text-decoration:none">${openGroups.has(r.id) ? '▾' : '▸'}</a> ` : '';
+    const addg = group || ['hybrid', 'template'].includes(o) ? '' : ` <button class="s" data-addgroup="${esc(r.id)}" title="add a way of life within this people" style="padding:0 4px;font-size:11px">+ group</button>`;
     const t = r.temp_c ?? inherited(r, 'temp_c'), rn = r.rain_mm ?? inherited(r, 'rain_mm'), pf = r.prefers ?? inherited(r, 'prefers') ?? [];
     h += `<tr data-id="${esc(r.id)}" class="${off ? 'off' : ''}">
       <td><input type="checkbox" data-k="enabled" ${r.enabled === false ? '' : 'checked'}></td>
-      <td style="white-space:nowrap;padding-left:${5 + 8 * Math.min(d, 6)}px"><span class="sw" style="background:${colorOf(r)}"></span><a href="#" data-pick="${esc(r.id)}">${esc(r.name || r.id)}</a></td>
+      <td style="white-space:nowrap;padding-left:${5 + 8 * Math.min(d, 6)}px">${group ? '<span class="muted">↳ </span>' : tog}<span class="sw" style="background:${colorOf(r)}"></span><a href="#" data-pick="${esc(r.id)}">${esc(r.name || r.id)}</a>${gs.length ? ` <span class="muted">(${gs.length} group${gs.length > 1 ? 's' : ''})</span>` : ''}${addg}</td>
       <td>${o}</td><td><input class="s" data-k="at" value="${esc(r.at)}" style="width:62px"></td>
       <td class="muted">${t ? `${t[0]}…${t[1]}` : ''}</td><td class="muted">${rn ? `${rn[0]}…${rn[1]}` : ''}</td>
       <td><input class="txt" data-k="prefers" value="${esc((r.prefers ?? []).join(', '))}" placeholder="${esc(pf.join(', '))}"></td>
@@ -440,7 +470,8 @@ function drawPeoples() {
       <td><input type="number" data-k="band_km2" step="any" min="1" placeholder="${+(BAND / dm.density[0]).toPrecision(3)}" title="km² a band of ${BAND} roams (sets density)"></td>
       <td><input type="number" class="s" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}"></td>
       <td>${val(r, 'explore', 0.05, 's')}</td><td>${val(r, 'sea_share', 0.05, 's')}</td><td>${val(r, 'insularity', 0.05, 's')}</td>
-      <td class="n">${p?.population != null ? num(p.population) : ''}</td><td class="n">${p ? p.area_mkm2 : ''}</td><td class="n">${p ? p.patches : ''}</td></tr>`;
+      <td class="n">${p?.population != null ? num(p.population) : ''}${whole ? `<br><span class="muted" title="with its groups">all ${num(whole.population)}</span>` : ''}</td>
+      <td class="n">${p ? p.area_mkm2 : ''}${whole ? `<br><span class="muted">all ${whole.area_mkm2}</span>` : ''}</td><td class="n">${p ? p.patches : ''}</td></tr>`;
   }
   $('tab-peoples').innerHTML = h + '</table>';
 }
@@ -515,20 +546,28 @@ function drawResults() {
   if (!result) { el.innerHTML = pick + '<p class="muted">Run the tree on a world, or pick a peoples run.</p>'; return; }
   const P = result.present || {}, lines = result.lineages || [], L = Object.fromEntries(lines.map((l) => [l.id, l]));
   const nm = (id) => esc(L[id]?.name || id), sw = (id) => `<span class="sw" style="background:${L[id]?.color || '#888'}"></span>`;
-  const living = Object.entries(P.lines || {}).sort((a, b) => (b[1].population ?? 0) - (a[1].population ?? 0));
-  const total = living.filter(([id]) => !L[id]?.overlay).reduce((s, [, v]) => s + (v.population ?? 0), 0);
+  const W = P.peoples || {};  // (peoples with groups, as wholes: PW-665)
+  const popOf = (id, v) => W[id]?.population ?? v.population ?? 0;
+  const tops = Object.entries(P.lines || {}).filter(([id]) => !L[id]?.group_of || !P.lines[L[id].group_of])
+    .sort((a, b) => popOf(b[0], b[1]) - popOf(a[0], a[1]));
+  const living = tops.flatMap(([id, v]) => [[id, v], ...(W[id]?.groups || []).filter((g) => P.lines[g]).map((g) => [g, P.lines[g]])]);
+  const total = Object.entries(P.lines || {}).filter(([id]) => !L[id]?.overlay).reduce((s, [, v]) => s + (v.population ?? 0), 0);
   const lms = (P.landmasses || []), lmName = (k) => lms.find((m) => String(m.rank) === String(k))?.name || `landmass ${k}`;
-  let h = pick + `<div class="kpi"><div><b>${num(total)}</b><span>people (natives)</span></div><div><b>${living.length}</b><span>peoples living</span></div>
+  let h = pick + `<div class="kpi"><div><b>${num(total)}</b><span>people (natives)</span></div><div><b>${tops.length}</b><span>peoples living${living.length > tops.length ? ` (+${living.length - tops.length} groups)` : ''}</span></div>
     <div><b>${P.wish_score ?? '–'}</b><span>wish score (tries ${esc((P.tries || []).join(', '))})</span></div>
     <div><b>${P.mixing?.area_mkm2 ?? '–'} Mkm²</b><span>mixed land (${Math.round(100 * (P.mixing?.land_share ?? 0))}%)</span></div>
     <div><b>${(P.empty_continents || []).length}</b><span>empty continents</span></div><div><b>${(P.lost || []).length}</b><span>lost peoples</span></div>
     <div><b>${esc(result.world || '')}</b><span>world · L${result.level} · ${result.generated_in_s ?? '?'} s a try</span></div></div>`;
   // population table
-  const maxPop = Math.max(1, ...living.map(([, v]) => v.population ?? 0));
+  const maxPop = Math.max(1, ...living.map(([id, v]) => popOf(id, v)));
   h += `<div class="cols"><div><h2>Peoples today</h2><table class="t"><tr><th>people</th><th>population</th><th></th><th>/km²</th><th>Mkm²</th><th>patches</th><th>main lands</th></tr>`;
+  const landsOf = (v) => Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
   for (const [id, v] of living) {
-    const lands = Object.entries(v.by_landmass || {}).slice(0, 3).map(([k, n]) => `${esc(lmName(k).replace(/^the /, '').replace(/ \(.*\)$/, ''))} ${num(n)}`).join('; ');
-    h += `<tr><td style="white-space:nowrap">${sw(id)}${nm(id)}${v.overlay ? ' <span class="muted">(overlay)</span>' : ''}</td><td class="n">${num(v.population ?? 0)}</td>
+    const lands = landsOf(v), grp = L[id]?.group_of, w = W[id];
+    if (w) h += `<tr style="border-top:1px solid var(--line)"><td style="white-space:nowrap">${sw(id)}<b>${nm(id)}, all</b> <span class="muted">(${w.living.length - 1} group${w.living.length > 2 ? 's' : ''})</span></td>
+      <td class="n"><b>${num(w.population)}</b></td><td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + w.population) / Math.log10(1 + maxPop)))}px"></span></td>
+      <td></td><td class="n">${w.area_mkm2}</td><td class="n">${w.patches}</td><td class="muted">${landsOf(w)}</td></tr>`;
+    h += `<tr><td style="white-space:nowrap;${grp || w ? 'padding-left:16px' : ''}">${grp ? '<span class="muted">↳ </span>' : ''}${sw(id)}${nm(id)}${v.overlay ? ' <span class="muted">(overlay)</span>' : ''}${w ? ' <span class="muted">(old ways)</span>' : ''}${grp && W[grp]?.shares?.[id] != null ? ` <span class="muted">${Math.round(100 * W[grp].shares[id])}%</span>` : ''}</td><td class="n">${num(v.population ?? 0)}</td>
       <td><span class="bars" style="width:${Math.max(1, Math.round(90 * Math.log10(1 + (v.population ?? 0)) / Math.log10(1 + maxPop)))}px"></span></td>
       <td class="n">${v.density ?? ''}</td><td class="n">${v.area_mkm2}</td><td class="n">${v.patches}${v.faded_patches ? ` <span class="muted" title="times a small patch was fading below the viable population (patches x checks, about one a kyr)">(fades ${v.faded_patches})</span>` : ''}</td>
       <td class="muted">${lands}</td></tr>`;

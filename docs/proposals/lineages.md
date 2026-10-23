@@ -313,7 +313,49 @@ PW-655: the giants' uses are now pull 0.7, not strict. The giants are rare throu
 
 No server change: the page uses the existing `/api/lineage-tree(s)`, `/api/lineages` and the store's `runs/index.json`.
 
-### Next: groups within a people (owner, 2026-10-24; designed here, not built)
+### Groups within a people (PW-665; built by the groups lane, 2026-10-24)
+As built (the design follows below; where they differ, this wins):
+- **Spec.** `origin = "group"`, `group_of = <people>` (`at` defaults to `spec.GROUP_KYR` = 6 kyr). It inherits what it leaves out, demography too, as a split does. It is never a split child, so it never ends its people. A group of a group, template or contact hybrid is refused. Switching a people off switches its groups off. `Tree.groups_of`, `Tree.people_of`.
+- **Appearance** (`History._group_origin`). At `at`, a group takes up every cell of its people's range where its own habitat beats its people's by `GROUP_MARGIN` (0.15). The comparison is unclipped, so prime land for both still tells them apart. It takes half the people's presence there. Its origin (the event and story) is the cell of the largest advantage, with founders within `FOUNDER_KM` around it. Without such land, it starts at its people's range edge.
+  - Taking every such cell is divergence in place. At first only the founders' blob was seeded, and the groups stayed speed-limited: seafarers held 58–193 cells after 6 kyr.
+- **Mixing.** A group, its people and its sister groups compete at `GROUP_KIN` (0.5) × their niche overlap, with no closed-country term.
+  - A near wish naming a people tolerates its groups too.
+  - Hybrids, templates' hosts and near / apart wishes see a people as a whole (`History.whole`: its presence plus its groups', at most 1). So half-orcs appear where steppe orcs meet human herders.
+- **Outputs.**
+  - A group is a line of its own: row, story, population, homeland notes.
+  - `meta.present.peoples[<people>]`: the people as a whole (joint area and patches, population, by landmass, each part's share). `meta.present.lines[g].group_of`; `meta.lineages[].group_of` and `groups`.
+  - Mixing (zones, `peoples_mix`) counts peoples as wholes, so a people mixing with its own groups is not a mix.
+  - New layer `peoples_whole`: the leading people as a whole.
+  - A group's colour is a tint of its people's (`output.tint`).
+  - Stories: "Steppe orcs became a way of life among the orcs ~9 kyr ago…", and the people's story ends with the whole: "…the humans are 200 million in 31 Mkm²; 72% keep the old ways".
+  - `run.txt` gets "Peoples with their groups".
+- **Workbench.**
+  - Peoples tab: ▸ opens a people's groups (indented); "+ group" adds one; population and area also show "all".
+  - Side panel: a group's own knobs, "Its land use" (the `[[use]]` rows that apply to it) and its wishes; a people lists its groups.
+  - Results: a people's "all" row with its groups beneath, each with its share.
+- **Globe.** The peoples panel lists groups under their people, with a checkbox "peoples as wholes (not by group)" (`&peopleswhole=1`), which draws the `peoples_whole` layer.
+- **Preset.**
+  - orcs → steppe orcs (steppe, grazing pull 0.75), forest orcs (forest, cold, density 2, insular-ish);
+  - humans → farmers (fertile pull 0.75, density 12), herders (open / hills / steppe, grazing), nomads (nomadic, steppe / desert, density 0.8), seafarers (coast / island, sea share 0.85, harbour pull 0.75);
+  - dwarves → hill dwarves (hills, density 6).
+- **Runs** (L7, 2 tries; ~123 s a try, about as before). Shares are of each group's land at ≥25% presence; the world's land in brackets.
+
+  | | 1df1c3: 8bac4d (was 37e9da) | 3e9e7d: c646ea (was 33b1c3) |
+  |---|---|---|
+  | wish score | 0.715 (0.72) | 0.687 (0.687) |
+  | orc steppe wish | 0.587 (0.602) | 0.251 (0.152) |
+  | steppe orcs | 1.1 Mkm² thin (no land ≥25%: the orcs already hold the steppe there, 88%) | 0.56 Mkm², 97% steppe (8%) |
+  | forest orcs | 0.52 Mkm², 88% forest | 0.06 Mkm², 100% forest |
+  | human seafarers | 1.06 Mkm², 100% coast (7%), 9% island (1%), 2–7 kyr crossings up to 2,500 km | 1.56 Mkm², 100% coast (10%), 15% island |
+  | human farmers | 11.9 Mkm², 91% farmland (39%) | 18.6 Mkm² |
+  | human herders | 5.4 Mkm², 96% open (33%) | 13.0 Mkm², 91% open, 45% steppe |
+  | human nomads | 5.3 Mkm², 65% desert (14%) | 12.6 Mkm², 29% steppe, 33% desert |
+  | hill dwarves | 0.67 Mkm², 99% hills (18%) | 0.36 Mkm², 84% hills |
+  | humans, all | 198 M; old ways 72%, farmers 24%, herders 2.5%, seafarers 0.8%, nomads 0.9% | 273 M; 67 / 27 / 3.8 / 0.7 / 1.4% |
+
+  Screenshots: `docs/review/lineages/groups-*.png`. How large a share takes up a way of life is a judgement call (inbox draft-peoples-group-shares).
+
+### The groups design (owner, 2026-10-24)
 The owner's idea: groups within a people are cultures, not subspecies. Examples: steppe orcs and forest orcs;
 human seafarers, farmers and nomads. Each group shares its people's ancestry and identity, but has its own way
 of life: habitat niche, traits, demography (sea share, density…), land use and wishes. So it settles and

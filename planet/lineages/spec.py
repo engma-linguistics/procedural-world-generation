@@ -10,6 +10,9 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
             parents meet (half-elves); false: it founds a people of its own
 - template: an overlay on `parents` (hosts) from `at` on (tieflings): a `share` of the hosts' people,
             spreading from a few `sites` through the hosts' range only
+- group:    a way of life within a people (`group_of = <people>`, default `at` GROUP_KYR): steppe and forest orcs,
+            human seafarers and farmers. Not a split: it appears where its own niche beats its people's, never
+            ends its people, mixes freely with it and its sister groups, and rolls up into it in the summaries
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -107,7 +110,8 @@ def demography(traits) -> dict:
     return out
 
 
-ORIGINS = ("root", "split", "arrival", "hybrid", "template")
+ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
+GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
 KOPPEN_CODES = ["Af", "Am", "Aw", "BWh", "BWk", "BSh", "BSk", "Csa", "Csb", "Csc", "Cwa", "Cwb", "Cwc", "Cfa", "Cfb",
                 "Cfc", "Dsa", "Dsb", "Dsc", "Dsd", "Dwa", "Dwb", "Dwc", "Dwd", "Dfa", "Dfb", "Dfc", "Dfd", "ET", "EF"]
@@ -127,7 +131,7 @@ PLACES = ("coast", "island", "mountain", "lowland", "inland", "forest", "open", 
 class Lineage:
     id: str
     name: str = ""
-    origin: str = "root"  # root | split | arrival | hybrid | template
+    origin: str = "root"  # root | split | arrival | hybrid | template | group
     parents: list[str] = field(default_factory=list)
     ago_kyr: float = 0.0  # when it appears, splits, arrives, kyr before present
     temp_c: tuple[float, float] = (8.0, 24.0)  # comfort range of the annual mean (soft edges)
@@ -154,6 +158,11 @@ class Lineage:
     @property
     def parent(self) -> str | None:
         return self.parents[0] if self.origin == "split" else None
+
+    @property
+    def group_of(self) -> str | None:
+        """The people a group belongs to (None for any other line)."""
+        return self.parents[0] if self.origin == "group" else None
 
     @property
     def overlay(self) -> bool:
@@ -251,6 +260,14 @@ class Tree:
         """Split children that are not set to die out (a side branch that dies leaves its parent going)."""
         return [c for c in self.lines[lid].children if self.lines[c].extinct_kyr is None]
 
+    def groups_of(self, lid: str) -> list[str]:
+        """The groups (ways of life) within a people, oldest first."""
+        return [l.id for l in self.order() if l.group_of == lid]
+
+    def people_of(self, lid: str) -> str:
+        """The people a line belongs to: its people for a group, else itself."""
+        return self.lines[lid].group_of or lid
+
     def ancestors(self, lid: str) -> list[str]:
         out, l = [], self.lines[lid]
         while l.parents:
@@ -297,6 +314,8 @@ def load(path: str | Path) -> Tree:
 
 def _parents_of(r) -> list[str]:
     ps = r.get("parents")
+    if ps is None and r.get("group_of"):
+        ps = [r["group_of"]]
     if ps is None:
         ps = [r["parent"]] if r.get("parent") else []
     return [str(x) for x in ([ps] if isinstance(ps, str) else ps)]
@@ -325,7 +344,7 @@ def parse(raw: dict) -> Tree:
         origin = str(r.get("origin") or ("split" if pars else "root"))
         if origin not in ORIGINS:
             raise ValueError(f"{lid}: origin must be one of {ORIGINS}")
-        lo, hi = {"root": (0, 0), "arrival": (0, 0), "split": (1, 1), "hybrid": (2, 2), "template": (1, 9)}[origin]
+        lo, hi = {"root": (0, 0), "arrival": (0, 0), "split": (1, 1), "hybrid": (2, 2), "template": (1, 9), "group": (1, 1)}[origin]
         if not lo <= len(pars) <= hi:
             raise ValueError(f"{lid}: a {origin} line takes {lo}{'' if lo == hi else '+'} parent(s), got {pars}")
         for q in pars:
@@ -334,6 +353,10 @@ def parse(raw: dict) -> Tree:
         bases = [build(q, seen + (lid,)) for q in pars]
         base = bases[0] if bases else Lineage(id="")
         when = next((r[k] for k in ("at", "split", "appears", "arrives", "ago") if k in r), None)
+        if when is None and origin == "group":
+            when = min(GROUP_KYR, 0.5 * bases[0].ago_kyr)
+        if origin == "group" and bases[0].origin in ("group", "template") or origin == "group" and bases[0].overlay:
+            raise ValueError(f"{lid}: a group belongs to a people of its own (not a group, template or contact hybrid)")
         if when is None:
             raise ValueError(f"{lid}: give at (e.g. at = '2 Myr')")
         ago = parse_ago(when)
@@ -358,7 +381,7 @@ def parse(raw: dict) -> Tree:
             if v in (None, ""):
                 # inherited from a split's parent where given there (else from its own traits); a hybrid's,
                 # an arrival's or a template's from its own (merged) traits unless given
-                demo[k] = getattr(base, k) if origin == "split" else None
+                demo[k] = getattr(base, k) if origin in ("split", "group") else None
                 continue
             v = float(v)
             if k == "density" and not v > 0:
@@ -395,7 +418,7 @@ def parse(raw: dict) -> Tree:
     while changed:
         changed = False
         for l in lines.values():
-            if l.id not in off and l.origin in ("hybrid", "template") and any(q in off for q in l.parents):
+            if l.id not in off and l.origin in ("hybrid", "template", "group") and any(q in off for q in l.parents):
                 off.add(l.id)
                 changed = True
     for l in sorted(lines.values(), key=lambda l: -l.ago_kyr):
@@ -457,7 +480,9 @@ def to_raw(t: Tree) -> dict:
     out = []
     for l in t.order():
         r = {"id": l.id, "name": l.name, "origin": l.origin, "at": f"{l.ago_kyr:g} kyr"}
-        if l.parents:
+        if l.origin == "group":
+            r["group_of"] = l.group_of
+        elif l.parents:
             r["parents"] = l.parents
         r.update(temp_c=list(l.temp_c), rain_mm=list(l.rain_mm), prefers=l.prefers, avoids=l.avoids,
                  traits=l.traits, speed_kmyr=l.speed_kmyr, **l.given_demo())

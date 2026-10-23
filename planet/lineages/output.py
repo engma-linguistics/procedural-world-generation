@@ -22,10 +22,21 @@ PEOPLE_LAYERS = {
     "peoples_mix": U8("how many peoples hold 25% or more of the cell"),
     "peoples_share": U8("% of the cell's habitat the leading people holds"),
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
+    "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),
 }
 TERRAIN = {"elevation": S.LAYERS["elevation"], "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
            "temperature": S.LAYERS["temperature"], "climate": S.LAYERS["climate"], "tree_cover": S.LAYERS["tree_cover"],
            "precipitation": S.LAYERS["precipitation"]}
+
+
+TINTS = ((1.0, 0.4), (0.0, 0.35), (1.0, 0.65), (0.0, 0.55), (1.0, 0.25), (0.0, 0.2))  # a group's: (toward white / black, by)
+
+
+def tint(hexc: str, i: int) -> str:
+    """The i-th group's colour: its people's, lightened or darkened in turn."""
+    to, f = TINTS[i % len(TINTS)]
+    c = [int(hexc.lstrip("#")[k:k + 2], 16) for k in (0, 2, 4)]
+    return "#" + "".join(f"{round(v + (255 * to - v) * f):02x}" for v in c)
 
 
 def colors(h: History) -> list[str]:
@@ -33,6 +44,8 @@ def colors(h: History) -> list[str]:
     for l in h.lines:
         if l.color:
             out.append(l.color)
+        elif l.group_of:  # (a tint of its people's colour; the people comes first in the order)
+            out.append(tint(out[h.idx[l.group_of]], h.tree.groups_of(l.group_of).index(l.id)))
         else:
             out.append(PALETTE[used % len(PALETTE)])
             used += 1
@@ -67,6 +80,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     S.write_grid(g)
     cols = colors(h)
     lines = [{"index": k, "id": l.id, "name": l.label(), "origin": l.origin, "parents": l.parents, "ago_kyr": l.ago_kyr,
+              "group_of": l.group_of, "groups": h.tree.groups_of(l.id),
               "extinct_kyr": l.extinct_kyr, "overlay": l.overlay, "traits": l.traits, "color": cols[k],
               "leaf": l in h.tree.leaves(), "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id),
               "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],
@@ -175,10 +189,14 @@ def stories(h: History, pres: dict) -> dict[str, str]:
         where = names[lm]["name"] if lm >= 0 else f"land now under the sea near {o['lat']:.0f}, {o['lon']:.0f}"
         what = {"root": "arose", "split": f"split from the {h.tree.lines[l.parents[0]].label() if l.parents and l.parents[0] in h.tree.lines else '?'}",
                 "arrival": "arrived from beyond the world", "hybrid": f"first appeared where {' and '.join(l.parents)} met",
-                "template": f"appeared among the {', '.join(l.parents)}"}[l.origin]
+                "template": f"appeared among the {', '.join(l.parents)}",
+                "group": f"became a way of life among the {h.tree.lines[l.group_of].label() if l.group_of else '?'}"}[l.origin]
         why = {"isolated part of the parent's range": "in an isolated part of its parent's land",
                "edge of the parent's range": "at the edge of its parent's land",
-               "beside the parent's range (new niche)": "just beyond its parent's land, in a new niche"}.get(o["why"], f"({o['why']})")
+               "beside the parent's range (new niche)": "just beyond its parent's land, in a new niche",
+               "where its way of life suits the land better than its people's":
+                   "where its ways suited the land better than its people's",
+               "at its people's range edge (no land suits it better there)": "at the edge of its people's land"}.get(o["why"], f"({o['why']})")
         s = [f"{l.label()[0].upper()}{l.label()[1:]} {what} ~{_ago(o['ago_kyr'])} ago {why}, on {where}."]
         for m, r in sorted(h.cross.reached.get(l.id, {}).items(), key=lambda x: -x[1]["ago_kyr"]):
             if r["how"] == "origin" or names[m]["area_mkm2"] < 0.05:
@@ -207,6 +225,11 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             hl = pres.get("homeland", {}).get(l.id)
             if hl:
                 s.append(f"The {l.label()} " + "; and they ".join(hl) + ".")
+        w = pres.get("peoples", {}).get(l.id)
+        if w and len(w["living"]) > 1:  # (a people with groups: the whole)
+            gl = [h.tree.lines[x].label() for x in w["living"] if x != l.id]
+            s.append(f"With its ways of life ({', '.join(gl)}) the {l.label()} are {people(w['population'])} in "
+                     f"{w['area_mkm2']} Mkm²; {round(100 * w['shares'].get(l.id, 0))}% keep the old ways.")
         out[l.id] = " ".join(s)
     return out
 
@@ -237,6 +260,11 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         f"  {lid:<18} {v.get('population', 0):>12,} people  {v.get('density', 0):g}/km² (a band of {SP.BAND} roams "
         f"{v.get('band_km2', 0):g} km²)  {v['area_mkm2']} Mkm²" + (f"; {v['faded_patches']} patch-fadings below the viable number (patches x checks)" if v.get('faded_patches') else "")
         for lid, v in sorted(pres["lines"].items(), key=lambda x: -x[1].get("population", 0))]
+    if pres.get("peoples"):
+        L += ["", "## Peoples with their groups (ways of life, PW-665)"]
+        for lid, w in pres["peoples"].items():
+            L.append(f"  {lid:<18} {w['population']:>12,} people  {w['area_mkm2']} Mkm² in {w['patches']} patch(es): "
+                     + ", ".join(f"{x} {round(100 * v)}%" for x, v in w["shares"].items()))
     L += ["", "## Landmasses: who found them first"] + [
         f"  {nm['name']}: held {nm['held_share']}; " + (f"first {nm['discovered']['by']} {_ago(nm['discovered']['ago_kyr'])} ago ({nm['discovered']['how']}"
                                                          + (f", {nm['discovered']['gap_km']} km" if nm['discovered'].get('gap_km') else "") + ")"
