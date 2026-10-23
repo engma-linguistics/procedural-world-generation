@@ -1,4 +1,5 @@
 ---
+id: PW-635
 title: "Lineages land use: how strongly should the world's goods shape the peoples' ranges (land_pull)?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane-4
 blocked_by: []
 relates: [PW-601]
 refs: [planet/lineages/land.py, planet/lineages/history.py, planet/lineages/samples/dnd.toml, docs/review/lineages/showcase-4.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 - C: per-use strength: let the weight scale the pull, instead of being only relative within a line.
 
 Lean: A for now. Revisit with C if the owner wants some goods (mines) to bite harder than others (forests).
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-land-pull-strength.md (found by lineages-lane-4).

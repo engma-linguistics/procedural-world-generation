@@ -1,4 +1,5 @@
 ---
+id: PW-634
 title: "The four L7 showcase worlds' vegetation has no grasses: pasture is ~0 on their steppes"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lineages-lane-4
 blocked_by: []
 relates: [PW-103]
 refs: [planet/vegetation.py, planet/gameattrs.py, "worlds 1144ce, 3e0b0a (and likely 31926a, 91448a)", planet/lineages/land.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ This looks like a world finished before a vegetation change, or a history-mode p
 The lineages lane works around it rather than stretching noise: a living good on under 2% of the land is left out as missing (`land.MISSING_SHARE`), and the report says so. Orcs therefore get no pasture pull on these worlds.
 - [ ] find why 1144ce's vegetation has 6 PFTs; refinish or fix the path
 - [ ] grazing on the L7 steppes comparable to 119973's
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-l7-worlds-have-no-grasses.md (found by lineages-lane-4).
