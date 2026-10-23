@@ -1,4 +1,5 @@
 ---
+id: PW-619
 title: "Coast classes on Earth: 6 of 32 anchor places miss (Cornwall, Bunda Cliffs, Korea flats, Mississippi, Belize, Namibia seals)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: coast-detail
 blocked_by: []
 relates: [PW-097, PW-074, PW-323]
 refs: [planet/coastform.py, tools/coast_check.py, "world 577526"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,3 +27,6 @@ refs: [planet/coastform.py, tools/coast_check.py, "world 577526"]
 - Belize -> 0.7% reef next to the coast, under REEF_PCT 0.75 (Earth rock map's shale shelves, see PW-323).
 - Namibia seals 0.32: warmest-month SST at the edge of the 25 -> 18 C ramp.
 An anchor, not a target: only fix where a cause is physical (PW-074 waves), not by moving thresholds.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-coast-earth-misses.md (found by coast-detail).

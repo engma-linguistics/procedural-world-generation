@@ -1,4 +1,5 @@
 ---
+id: PW-622
 title: "Zoom barrier islands as terrain: opt-in add-on (--terrain) or a step of planet zoom?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: coast-detail
 blocked_by: []
 relates: [PW-097, PW-326]
 refs: [planet/zoom_coast.py, planet/zoom.py, "zoom ccf03a (scratch store)", docs/review/coast_detail/]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Lean: B, with the lagoon as sheltered water for humanuse and the inlets as hazar
 docs/review/coast_detail/zoom_ccf03a_barrier.png.
 - [ ] islands in zoom.py before the landscape pass; rivers reach the lagoon; satellite sand colour
 - [ ] lagoons count as sheltered water in humanuse harbours
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-zoom-barrier-terrain.md (found by coast-detail).

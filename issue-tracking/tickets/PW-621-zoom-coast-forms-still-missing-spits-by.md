@@ -1,4 +1,5 @@
 ---
+id: PW-621
 title: "Zoom coast forms still missing: spits by longshore drift, beach ridges, tidal channel networks, cliffs as terrain, drowned reefs"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: coast-detail
 blocked_by: []
 relates: [PW-097, PW-326, PW-004]
 refs: [planet/zoom_coast.py, docs/proposals/coast_detail.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -28,3 +31,6 @@ beach/rocky classes run up tidal rivers; harmless but noisy.
 - [ ] spits at inlets and headlands oriented by drift
 - [ ] cliff step in the terrain (opt-in like barrier islands)
 - [ ] drowned-reef layer from a time zoom's sea-level curve
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-coast-zoom-forms-remaining.md (found by coast-detail).

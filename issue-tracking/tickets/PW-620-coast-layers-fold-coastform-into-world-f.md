@@ -1,4 +1,5 @@
 ---
+id: PW-620
 title: "Coast layers: fold coastform into world.finish, or keep them an add-on (planet coast)?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: coast-detail
 blocked_by: []
 relates: [PW-097, PW-155]
 refs: [planet/coastform.py, planet/world.py, docs/proposals/coast_detail.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,6 @@ worlds therefore lack them until someone runs the command.
 - B: keep the add-on; `planet make` / the one-command flow runs it.
 - C: leave as is.
 Lean: A, once the owner has looked at the classes in the viewer (docs/review/coast_detail/).
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-coast-layers-in-finish.md (found by coast-detail).
