@@ -1,0 +1,133 @@
+diff --git a/planet/climate.py b/planet/climate.py
+index 07031f6..a9ef707 100644
+--- a/planet/climate.py
++++ b/planet/climate.py
+@@ -1597,6 +1597,9 @@ TUNE = dict(
+     ice_km=800.0,  # ... spread over this far
+     brine_m=50.0,  # m: depth of the winter mixed layer the brine of new sea ice mixes into (and the seasons' heat:
+     # _sea_half)
++    ml_wind=0.0,  # PW-593 probe: 1 = the sea's summer swing goes into a wind-set summer layer (_summer_layer)
++    light_m=20.0,  # m: ... at least the depth sunlight heats (clear sea water's e-folding for visible light)
++    land_fetch=0.0,  # PW-593 probe: 1 = the land's share of the sea's swing is the fetched land air's (_summer_fetch)
+     moc=0.65,  # Sv sinking per kg/m3 of density difference (sinking - water replacing it) per 1e6 km2
+     moc_k=3.0,  # Sv per kg/m3: the most one sinking site turns over (see ocean.overturning)
+     moc_z=2000.0,  # m: depth at which the waters' densities are compared for sinking
+@@ -2088,7 +2091,11 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # land (land_air: the share of it that did, within ~air_km_w on the
+     # prevailing winds).
+     h = _geom(grid)["h"]
+-    land_air = carry(grid, wind(grid, 0.0), land.astype(float), np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
++    src = land.astype(float)
++    if tune["land_fetch"]:
++        bl = tune["sum_h"] / tune["fetch_h"]
++        src = src * (bl + (1 - bl) * np.clip(smooth(grid, src, tune["fetch_km"]), 0.0, 1.0))
++    land_air = carry(grid, wind(grid, 0.0), src, np.where(ocean, np.exp(-h / tune["air_km_w"]), 0.0),
+                      4 * tune["air_km_w"], 0.25)
+     sea_half = _sea_half(grid.lat, tilt, s, land_air, tune)
+ 
+@@ -2124,6 +2131,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     sst0 = sst = np.maximum(raw0, FREEZE)
+     v_sum = np.where(north[:, None], v_jul, v_jan)  # each hemisphere's summer wind
+     v_win = np.where(north[:, None], v_jan, v_jul)
++    sea_half_s = sea_half
++    if tune["ml_wind"]:
++        sea_half_s = _sea_half(grid.lat, tilt, s, land_air, tune,
++                               _summer_layer(grid.lat, tilt, v_sum, sst + sea_half, tune))
+     lift = LAPSE * np.maximum(surf, 0)
+     # the air over land ice is the sheet's own (icemass.air_mass; ice_air: the ice whose air it is, by
+     # default `ice`; the time zoom's elevation already has its ice on, and it passes that ice here)
+@@ -2131,13 +2142,13 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     from .icemass import air_mass
+     damp_air = air_mass(grid, ice_air, cold=ice_cold) if (ice_air > 1).any() else np.zeros(n)
+     air = dict(grid=grid, ocean=ocean, temp0=temp0, lift=lift, t_sea_air=t_sea_air, t_sea=t_sea, s=s,
+-               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air)
++               sea_half=sea_half, v_sum=v_sum, v_win=v_win, tune=tune, damp_air=damp_air, sea_half_s=sea_half_s)
+     t_warm, t_cold, temp, open_w = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
+ 
+     # rain in each half-year, from its mean conditions
+     tm = 0.5 * (t_warm + t_cold)
+     dt = hk * (np.where(north, t_warm, t_cold) - tm)
+-    sum_half = _summer_half(sst, sea_half, sea_half)
++    sum_half = _summer_half(sst, sea_half_s, sea_half)
+     sst_jul = np.maximum(sst + hk * np.where(north, sum_half, -sea_half), FREEZE)
+     sst_jan = np.maximum(sst + hk * np.where(north, -sea_half, sum_half), FREEZE)
+     # the jet stream over each half-year's temperatures steers its storms
+@@ -2240,7 +2251,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
+     # swing), and the half-years' humidity
+     swing = sgn * np.clip((sst - FREEZE) / 4.0, 0.1, 1.0)
+     # (July is the north's summer and the south's winter)
+-    sum_half = _summer_half(sst, sea_half, half_w)
++    sum_half = _summer_half(sst, sea_half_s, half_w)
+     sst_m = (np.maximum(sst + swing * np.where(north, sum_half, half_w), FREEZE),
+              np.maximum(sst - swing * np.where(north, half_w, sum_half), FREEZE))
+     tm = 0.5 * (t_warm + t_cold)
+@@ -2276,7 +2287,7 @@ def _orbit(temps, orbit_dt, north):
+ 
+ 
+ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_sum, v_win, tune, damp_air,
+-               half_w=None, d_sum=None):
++               half_w=None, d_sum=None, sea_half_s=None):
+     """Each place takes on the temperature of the air the wind brings it.
+     Air over land drifts toward the land's own temperature for the
+     season (land holds little heat: hot summers, cold winters) over a few
+@@ -2302,10 +2313,11 @@ def _air_temps(grid, ocean, sst, temp0, lift, t_sea_air, t_sea, s, sea_half, v_s
+     Returns (t_warm, t_cold, temp, open water in winter 0..1)."""
+     from .icemass import SUMMER_DAMP
+     half_w = sea_half if half_w is None else half_w
++    sea_half_s = sea_half if sea_half_s is None else sea_half_s
+     half_l = tune["continental"] * s + 0.3  # land left to itself
+     t_land = temp0 + lift  # (carried at sea level; heights are taken off after)
+     frozen = np.minimum(t_sea_air - t_sea, 0)  # how far below freezing the latitude's sea would be
+-    sea_sum = np.maximum(sst + frozen + _summer_half(sst, sea_half, half_w), FREEZE)
++    sea_sum = np.maximum(sst + frozen + _summer_half(sst, sea_half_s, half_w), FREEZE)
+     h = _geom(grid)["h"]
+     # The summer air relaxes toward the land's summer in time (sum_tau),
+     # not over a fixed distance: it reaches U x sum_tau inland (PW-581),
+@@ -2346,7 +2358,7 @@ SUN_SURFACE = 0.5  # share of the top-of-atmosphere sunshine that reaches the gr
+ # sunshine, at half the day sunny)
+ 
+ 
+-def _sea_half(lat, tilt, s, land_air, tune):
++def _sea_half(lat, tilt, s, land_air, tune, depth=None):
+     """The sea's seasonal half-swing (C): its own plus a share of the land's.
+     Its own: the seasons' sunshine (half the year's swing of the monthly
+     mean at the ground, after the sea's albedo) into the mixed layer
+@@ -2361,12 +2373,37 @@ def _sea_half(lat, tilt, s, land_air, tune):
+     inside a continent most of all. (The winter air's own cold over the sea
+     is carried separately: _winter_air.)"""
+     ra = insolation(lat, tilt) * (1e6 / 86400.0)  # W/m2, (12, n)
+-    cap = RHO_C_SEA * tune["brine_m"] * 2 * np.pi / YEAR_S
++    cap = RHO_C_SEA * (tune["brine_m"] if depth is None else depth) * 2 * np.pi / YEAR_S
+     own = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0)) / np.hypot(cap, tune["ice_b"])
+     c = tune["open_b"] / (tune["open_b"] + cap)
+     return own + c * tune["continental"] * s * land_air
+ 
+ 
++SEA_DRAG = 1.3e-3  # the sea surface's drag coefficient (bulk formula, ~10 m wind)
++KARMAN = 0.4
++
++
++def _summer_layer(lat, tilt, v_sum, t_sum, tune):
++    """m: the summer mixed layer's depth (PW-593 probe), the Monin-Obukhov
++    depth u*^3 / (kappa B): how deep the summer wind's stirring reaches
++    against the buoyancy the summer's heating puts into the top. u*: the
++    water's friction velocity from the wind stress rho_a C_D U^2; B = g
++    alpha Q / (rho c), Q the summer's extra sunshine at the ground (as
++    _sea_half), alpha the water's thermal expansion at its summer
++    temperature (ocean.density: cold water barely stratifies, so a cold
++    sea mixes deeper). At least light_m (the sunlight heats that deep
++    whatever the wind), at most the winter layer (brine_m)."""
++    from .ocean import RHO0
++    u = U_REF * speed(v_sum)
++    ust3 = (1.2 * SEA_DRAG / RHO0 * u * u) ** 1.5
++    ra = insolation(lat, tilt) * (1e6 / 86400.0)
++    q = (1 - SEA_ALBEDO) * SUN_SURFACE * 0.5 * (ra.max(0) - ra.min(0))
++    ta = np.clip(t_sum, FREEZE, 35.0) - 10.0
++    alpha = 0.1655 * (1.0 + 0.05952 * ta) / RHO0
++    b = 9.81 * np.maximum(alpha, 1e-6) * q / RHO_C_SEA
++    return np.clip(ust3 / (KARMAN * np.maximum(b, 1e-12)), tune["light_m"], tune["brine_m"])
++
++
+ def _summer_half(sst, half, half_w):
+     """The sea's summer half-swing: half, less the winter's freezing deficit
+     (how far the water's winter, sst - half_w, would fall below freezing).
