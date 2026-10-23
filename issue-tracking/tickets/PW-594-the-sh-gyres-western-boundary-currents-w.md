@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-589, PW-017]
 refs: [planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt]
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 ---
 
 ## Description
@@ -34,4 +34,5 @@ whether the westerlies' equatorward Ekman transport (cold water north) is missin
 - [ ] Tasman / Agulhas near-land SST within 2 C, without cooling the SH subtropics' east coasts' summers below NCEP
 
 ## Updates
+- 2026-10-23: Lane A17 (branch worktree-agent-a6b65c5df0ddd0d62, 7b41cea, waits on PW-623 with PW-596): islands longer N-S than two boundary-current widths now wall the gyres (New Zealand, Luzon, Sulawesi); Tasman SST 19.3 -> 18.5, bar not met; remainder PW-625.
 - 2026-10-22: Created from inbox draft draft-sh-western-boundary-currents-too-warm.md (found by base-climate-laneA13).
