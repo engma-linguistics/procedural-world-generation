@@ -54,3 +54,32 @@ Next, in order:
 
 - [ ] SH 40-55S summer winds faster than NH 40-55N; SH coastal summer winds not under ~5 m/s
 - [ ] PW-593's summer layer passes rain r >= 0.617 and the SH coastal range <= 12.5
+
+## Lane A17 (steps 1-3 of the list above, Earth L6; `docs/review/base-climate/laneA17/`)
+Summer winds (m/s) A16 branch -> step 1 (New Zealand walls the gyres) -> step 2 (stable summer off-land air,
+`draft-stable-summer-off-land-air.md`): off Patagonia 3.4 / 3.4 / 3.4, Tasman 3.2 / 3.4 / 3.6, Agulhas 2.0 / 2.0 /
+1.9, NE Atlantic 6.6 / 6.6 / 5.9; band 40-55 N / S 6.2 / 6.2 -> 5.9 / 6.1. **They did not come up.**
+- Off Patagonia step 2 took the sea's first-guess summer anomaly from +1.9 to -0.2 C, but the wind stayed 3.4: the
+  belts give 5.4 there, and Patagonia's own low still costs -1.4 m/s east through the 900 km part (land anomaly +1.1
+  even after `low_column`; its 900 km smoothing +0.4 reaches the coastal sea). The belts alone, 5.4, are short of
+  the observed 8-10 too.
+- Tasman and Agulhas: the belts alone are 3.1 and 1.8 (they sit in the horse latitudes); `front_shift` costs
+  0.8 / 0.3 after step 1's cooler Tasman. The calm is the mean-vector wind's, not the warm currents'.
+- Step 3, the storms' transients in the stirring wind (u^2 = |U|^2 + (ml_storm x storminess x U_REF)^2, on step 2
+  with `ml_wind`; `laneA17/bars_pw593_on_step2.md`):
+
+  | | step 2 | + ml_wind | + ml_storm 0.5 | + ml_storm 1 |
+  |---|---|---|---|---|
+  | SH coastal range (<= 12.5) | 12.1 | 14.5 | 14.2 | 13.2 |
+  | W Europe warmest | -2.1 | +0.2 | -0.5 | -1.9 |
+  | Biscay-N Sea sea summer | -5.4 | -0.9 | -2.5 | -4.7 |
+  | near-land swing in 1.5x N / S | 33 / 69% | 69 / 46% | 65 / 48% | 50 / 56% |
+  | half-swing NE Atl / Pat / Tasman (obs 3.2 / 3.7 / 2.7) | 1.7 / 4.8 / 3.1 | 3.1 / 6.9 / 4.8 | 2.7 / 6.7 / 4.8 | 1.8 / 5.8 / 3.8 |
+
+  The transients deepen both hemispheres' layers alike (the summer storminess is about equal), so they take back
+  the NH's gain before they fix the SH. Rain r stays 0.649 (the layer acts on the final winds only).
+- So `ml_wind` still fails. What the SH coasts lack is neither the warm currents nor the transients: it is the
+  summer belts' own SH strength (S summer belt 0.91 of the mean, 5.4 m/s off Patagonia, SH 40-55 no faster than NH)
+  and a thermal low over narrow land that still reaches the sea. Next candidates: the SH summer belt's contrast
+  (westerly_belt reads 30-65 deg; the SH summer storm track's contrast sits at 45-60 over open sea), and
+  `monsoon_wind`'s 900 km part over land narrower than the smoothing.

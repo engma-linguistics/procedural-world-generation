@@ -1428,3 +1428,90 @@ and the icehouse share spreads both ways. These are single chaotic runs. It's re
 
 **Ready to merge? Not yet.** Everything but one fixture's seed lottery is green or better. Making it green takes a
 change to how the fixture picks its moment, which is the owner's call (draft, option A).
+
+## PW-594 and the SH coastal summer winds (lane A17)
+
+**Step 1 (PW-594, New Zealand walls the gyres) is committed and green. Step 2 (the land's air lies stable over the
+sea in summer, PW-595's land part) improves rain r to 0.649 and the SH bars but cools W Europe's sea summers and
+turns the time zoom's endings test red: saved as a diff, `draft-stable-summer-off-land-air.md` (needs-decision).
+The SH coastal summer winds did not come up, so PW-593's layer still fails (step 3 below).**
+
+Branch `worktree-agent-a6b65c5df0ddd0d62`: main d01c772 + lane A16's branch (b04a5fc) merged (1a68a7e), then step 1
+(7b41cea). Files in `laneA17/` (README.md lists them; `bars.md` is the full table).
+
+### What was found (`wbc.py`, `gyre.py`, `curmap.py`)
+- The SH gyres' extent is about right: annual westerlies peak at 44-52S (6.5 m/s), curl zero at ~46S.
+- **New Zealand's two islands (112,000 and 149,000 km2) were each under `island_km2`**, so the whole South Pacific
+  gyre closed on Australia and Tasmania: the coastal current ran 2.0-2.3 m/s to 35S, and psi in the western Tasman
+  was the full Pacific's.
+- What is left after the walls: the current follows the coast to 38S (no separation at 31-34S in a linear Stommel
+  solver), at ~2 m/s where the heat's reach is capped at 7500 km, then spreads east at 0.8-1 m/s across 40-47S.
+  `cur_max` 3 -> 1.5 would cut the Tasman another 1.2 C (sensitivity only). `draft-pw594-tasman-still-warm.md`.
+- Tried and dropped: no Sverdrup gyre (a circumpolar flow instead) in latitudes whose walls are under 3-5% of the
+  circle: the Tasman unchanged, off Patagonia +3 C. The Ekman drift is ~1.5 cm/s, too small to matter.
+
+### Step 1: walls by north-south span (`currents`)
+An island walls the gyres if it is bigger than `island_km2` (as before) or longer north to south than two
+boundary-current widths (2 r / beta at its latitude): New Zealand's islands, Luzon, Sulawesi. No new constant.
+
+### Step 2 (not merged): the land's air in summer lies stable over the sea (`step2_stable_summer.diff`)
+`_sea_half` returns a summer and a winter half. The winter's land air (colder than the water) churns and takes its
+heat at `open_b`, as before; the summer's (warmer) lies stable and gives the water only its longwave (4 sigma T^3,
+~5 W/m2 per C, as PW-578 says for its vapour). The water's year is then colder by hk x (winter - summer) / 2, a
+surface cooling carried like upwelling's.
+
+### The bars (Earth L6; A16 branch -> step 1 -> step 2; `bars.md`)
+| bar | A16 branch | step 1 | step 2 |
+|---|---|---|---|
+| rain log-r (>= 0.617) | 0.631 | 0.630 | **0.649** |
+| Köppen exact / group; cities wrong | 34 / 71; 19 | 33 / 71; 19 | 34 / 71; 16 |
+| SH coastal range 0-150 km (<= 12.5) | 12.3 | 12.5 | 12.1 |
+| SH land 150-400 / 400-800 range bias | +2.1 / +1.6 | +2.1 / +1.6 | +2.7 / +2.6 |
+| Tasman 35-45S SST (NCEP air 15.2); sea air annual / warmest | 19.3; +3.9 / +4.7 | 18.5; +3.1 / +3.8 | 18.4; +2.4 / +2.6 |
+| sea air annual / warmest: Agulhas / Brazil / off Patagonia | +1.3/+2.3, +1.2/+1.8, +0.7/+2.7 | +1.2/+2.2, +1.0/+1.6, +0.7/+2.7 | +0.5/+1.0, +0.3/+0.2, -0.6/+0.1 |
+| Gulf Stream box 35-45N sea air annual | +5.0 | +5.0 | +4.5 |
+| sea's warmest: NE Atl / Biscay-N Sea / Labrador Sea | -1.1 / -2.5 / +2.8 | -1.3 / -2.5 / +2.8 | -0.7 / **-5.4** / +0.3 |
+| W Europe / Fennoscandia warmest | -0.9 / -3.7 | -1.0 / -3.8 | **-2.1** / -4.7 |
+| Labrador / Iceland warmest | +4.0 / +3.5 | +4.3 / +3.4 | +2.4 / +1.5 |
+| sea swing within 1.5x near N / near S | 52 / 54% | 52 / 55% | **33** / 69% |
+| half-swing NE Atl / Pat / Tasman / Agulhas (obs 3.2 / 3.7 / 2.7 / 2.4) | 1.7 / 6.1 / 3.7 / 3.6 | same | 1.7 / 4.8 / 3.1 / 3.1 |
+| summer wind Pat / Tasman / Agulhas; 40-55 N / S | 3.4 / 3.2 / 2.0; 6.2 / 6.2 | 3.4 / 3.4 / 2.0; 6.2 / 6.2 | 3.4 / 3.6 / 1.9; 5.9 / 6.1 |
+| Earth NH Sv (open polar %) / SH Sv; Norwegian coast open, winter sea air | 13.98 (90) / 5.58; 100%, 6.9 | 13.86 (90) / 5.61; 100%, 6.4 | 13.64 (89) / 5.99; 100%, 7.6 |
+| 9 worlds: all sink in both hemispheres; lowest | yes; dad91b S 2.85 | yes; dad91b S 2.85 (c00ebf S 11.6 -> 7.9) | yes; dad91b S 1.89 |
+
+### Step 3: PW-593's layer on step 2, with the storms' transients in the stirring wind (`bars_pw593_on_step2.md`)
+The SH coastal winds didn't come up (Patagonia's belts 5.4 and its own low through the 900 km part; Tasman and
+Agulhas sit in the horse latitudes' calm belts), so the saved PW-593 layer was re-tried as asked only to measure:
+| | step 2 | + ml_wind | + ml_storm 0.5 | + ml_storm 1 |
+|---|---|---|---|---|
+| SH coastal range (<= 12.5) | 12.1 | 14.5 | 14.2 | 13.2 |
+| W Europe warmest | -2.1 | +0.2 | -0.5 | -1.9 |
+| near-land swing in 1.5x N / S | 33 / 69% | 69 / 46% | 65 / 48% | 50 / 56% |
+| half-swing NE Atl / Pat / Tasman | 1.7 / 4.8 / 3.1 | 3.1 / 6.9 / 4.8 | 2.7 / 6.7 / 4.8 | 1.8 / 5.8 / 3.8 |
+
+The transients deepen both hemispheres' layers alike and take back the NH's gain before they fix the SH. Recorded in
+`draft-sh-coastal-summer-winds-still-calm.md` (lane A17 section).
+
+### Tests
+- Step 1: `uv run pytest -q` **593 passed** (goldens unchanged: no such island at L4). Both cold-moment tests pass
+  on this tree: the seed lottery of PW-623 moved with the walls (the fixture is untouched). That is luck, not a fix;
+  PW-623 stands.
+- Step 2: 592 passed, `test_glacials_grow_ice_and_endings_melt_it_fast` red (extra / left 33.2 / 19.7 m; A16
+  branch 49.9 / -0.5). Not crossed yet (A16's `xzoom.sh` needs a second tree).
+
+### Health (`tools/health.py --quick` on step 1, 7b41cea; `laneA17/health_step1/report.md` vs `laneA16/health_branch.md`)
+| | A16 branch | step 1 |
+|---|---|---|
+| outlier spells | 60 | 72 |
+| seeds with ice sea level below -150 m for >10% of the run | 0 | 2 (2 11.8%, 42 11.8%) |
+| plate-collapse spells | 0 | 0 |
+| seeds with giant-lake frames > 5% | 3 | 4 (11 27.5%, 77 9.8, 2 7.8, 505 7.8) |
+| new ice bar (icehouse 5-70%) fails | 5 | 4 (21 0%, 3199 0%, 77 84%, 505 4%) |
+| icehouse share, median seed | 34% | ~18% |
+| determinism | identical | identical |
+
+Single chaotic 500 Myr runs (the walls change any generated world with a long narrow island); no direction holds
+across the rows, so nothing here is pinned on step 1. Step 2 was not swept (not merged).
+
+**Ready to merge?** Step 1 (7b41cea) yes: green, every Earth bar within noise of the A16 branch except the Tasman
+(better), stage 1 holds. It sits on A16's branch, so it waits on PW-623 with it. Step 2 needs the draft's decision.
