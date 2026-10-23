@@ -182,6 +182,13 @@ def cmd_humanuse(args):
             print(S.rel(W.save(w, w["name"], rid)))
 
 
+def cmd_resources(args):
+    """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place."""
+    from . import resources as RS
+    for ref in args.ids:
+        print(S.rel(RS.add_to_world(ref, use_history=not args.no_history)))
+
+
 def cmd_timezoom(args):
     from . import timezoom as TZ
     out = TZ.timezoom(args.run, args.at, args.kyr, args.step, args.every, _parse_set(args.set),
@@ -435,6 +442,11 @@ def main():
     hu = sub.add_parser("humanuse", help="add or redo the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms (in place)")
     hu.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     hu.set_defaults(func=cmd_humanuse)
+    rs = sub.add_parser("resources", help="add or redo the resource layers (ores, coal, oil, salt, gems, stone; "
+                                          "coarse likelihoods from the run's history) of saved worlds (in place)")
+    rs.add_argument("ids", nargs="+", help="world ids")
+    rs.add_argument("--no-history", action="store_true", help="from the world's own layers only (no run keyframes)")
+    rs.set_defaults(func=cmd_resources)
 
     h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
     h.add_argument("ref", help="world id, or run id (then --at; default: the run's end)")

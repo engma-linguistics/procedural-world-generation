@@ -62,6 +62,7 @@ except ImportError:  # (Windows: no cross-process locks; the project targets Lin
 import numpy as np
 
 from .humanuse import LAYER_SPECS as HUMAN_USE_SPECS
+from .resources import LAYER_SPECS as RESOURCE_SPECS
 
 REPO = Path(__file__).resolve().parent.parent
 KINDS = ("run", "world", "zoom")
@@ -356,6 +357,8 @@ LAYERS = {
     "loess": _spec("<u2", "m", "wind-blown silt thickness", scale=0.1),
     # human-use layers (humanuse.py, worlds and zooms; PW-099): class ids, legend 'human_use'
     **{k: _spec(dt, units, desc, scale=sc) for k, (dt, sc, units, desc) in HUMAN_USE_SPECS.items()},
+    # resources (resources.py, worlds; PW-155): likelihoods 0-1, class ids, legend 'resources'
+    **{k: _spec(dt, units, desc, scale=sc) for k, (dt, sc, units, desc) in RESOURCE_SPECS.items()},
 }
 # the satellite view (satellite.py): true colour as 0xRRGGBB (worlds only)
 # Runs store some layers more compactly than worlds and zooms (a keyframe per
@@ -505,11 +508,12 @@ def legends() -> dict:
     from .surface import ROCKS
     from .soils import legend as soil_legend
     from .humanuse import legend as human_use_legend
+    from .resources import legend as resources_legend
     from .vegetation import legend as veg_legend
     from .zoom_coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
-            "soils": soil_legend(), "human_use": human_use_legend(),
+            "soils": soil_legend(), "human_use": human_use_legend(), "resources": resources_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}
 

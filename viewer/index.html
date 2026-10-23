@@ -226,6 +226,9 @@
     <!-- the plant functional type the 'plant type' layer shows (?pft=) -->
     <label id="pftRow" style="margin-top:6px;display:none" title="Cover of one plant functional type: where are the larches?">
       plant type <select id="pftSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
+    <!-- the resource the 'resource' layer shows (resources.py, PW-155; ?res=) -->
+    <label id="resRow" style="margin-top:6px;display:none" title="Likelihood of one resource per cell, from the deposit model in its tooltip">
+      resource <select id="resSel" style="flex: 1; min-width: 0; padding: 1px"></select></label>
     <label id="seasonRow" style="margin-top:6px;display:none" title="Temperature and rain over the year, or in July / January (rain: the April-September / October-March half-year, as a rate per year)">
       season <select id="layerSeason" style="flex: none; width: auto; padding: 1px">
         <option value="">year</option><option value="jul">July</option><option value="jan">January</option></select></label>
@@ -495,6 +498,71 @@ function huColor(layer, i, c) {
   if (col && k !== 'river_nav' && (k === 'harbour' ? !land : land)) c.copy(col); else c.copy(land ? BARE : OCEAN);
   if (k === 'river_nav' && land) c.multiplyScalar(0.7);  // (darker ground, so the ribbons stand out)
 }
+// resources (resources.py, PW-155): 'resources' = the most likely metal/gem/energy/salt resource per cell (faded by
+// its likelihood), 'resource' = one resource's likelihood (picker resSel, ?res=), 'building stone' = the best stone
+const RES_LAYERS = new Set(['resources', 'resource', 'building stone']);
+state.res = 'porphyry_cu';
+function resInfo(key) { return V.resLeg?.resources.find((r) => r.key === key); }
+function resColor(layer, i, c) {
+  const L = V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
+  if (layer === 'building stone') {
+    const e = V.resLeg.stone[L.stone[i]];
+    if (land && e && L.stone[i]) c.set(e.color); else c.copy(land ? BARE : OCEAN);
+    return;
+  }
+  const base = land ? BARE : OCEAN;
+  if (layer === 'resources') {
+    const id = L.resource[i], r = id ? V.resLeg.resources[id - 1] : null;
+    if (!r) { c.copy(base); return; }
+    const v = (L['res_' + r.key]?.[i] || 0);
+    c.copy(base).lerp(new THREE.Color(r.color), 0.35 + 0.65 * Math.min(1, v));
+    return;
+  }
+  const r = resInfo(state.res), v = r ? (L['res_' + r.key]?.[i] || 0) : 0;
+  c.copy(base).multiplyScalar(0.8).lerp(new THREE.Color(r?.color || '#fff'), Math.sqrt(Math.min(1, v)));
+}
+function resLegend(layer, sw) {
+  const L = V.layers, R = V.resLeg;
+  if (layer === 'building stone') {
+    const present = new Set(L.stone);
+    return R.stone.filter((e) => e.id && present.has(e.id)).map((e) => sw(e.color, e.name)).join('') +
+      '<span class="muted">(the best stone exposed: rock at the surface, hardness; folded limestone = marble, folded shale = slate)</span>';
+  }
+  if (layer === 'resources') {
+    const cnt = new Map();
+    for (let i = 0; i < V.n; i++) if (L.resource[i]) cnt.set(L.resource[i], (cnt.get(L.resource[i]) || 0) + 1);
+    return [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => R.resources[id - 1])
+      .map((r) => `<span title="${esc(r.model)}">${sw(r.color, esc(r.name))}</span>`).join('') +
+      '<span class="muted">(the most likely resource per cell, brighter = likelier; coarse likelihoods from the run\'s history, not surveyed deposits; hover for the top three)</span>';
+  }
+  const r = resInfo(state.res);
+  return `<div><div class="grad" style="background:linear-gradient(90deg,#55524c,${r?.color || '#fff'})"></div>
+    <div class="row" style="justify-content:space-between;width:260px"><span>0</span><span class="muted">likelihood</span><span>1</span></div></div>
+    <span>${r ? esc(r.name) : '?'}</span><span class="muted">(${r ? esc(r.model) : ''})</span>`;
+}
+function resRows(L, i, land, R) {
+  if (!L.resource || !V.resLeg) return;
+  const top = V.resLeg.resources.map((r) => [r, L['res_' + r.key]?.[i] || 0]).filter(([, v]) => v >= 0.15)
+    .sort((a, b) => b[1] - a[1]);
+  const real = top.filter(([r]) => r.group !== 'fantasy').slice(0, 3), fan = top.filter(([r]) => r.group === 'fantasy');
+  if (real.length) R('ground', 'resources', real.map(([r, v]) => `${r.name} ${v.toFixed(2)}` +
+    (r.key === 'coal' && L.coal_rank?.[i] ? ` (${['', 'lignite', 'bituminous', 'anthracite'][L.coal_rank[i]]})` : '')).join(' · ') +
+    (L.resource[i] && L.res_depth ? `; the first at ~${Math.round(L.res_depth[i])} m` : ''), { sep: ': ', ess: true });
+  if (fan.length) R('ground', 'fantasy', fan.map(([r, v]) => `${r.name} ${v.toFixed(2)}`).join(' · '), { sep: ': ' });
+  if (land && L.stone && L.stone[i]) R('ground', 'building stone', V.resLeg.stone[L.stone[i]].name, { sep: ': ' });
+}
+function fillRes() {
+  if (!V?.resLeg) return;
+  if (!resInfo(state.res)) state.res = V.resLeg.resources[0].key;
+  const groups = [...new Set(V.resLeg.resources.map((r) => r.group))];
+  $('resSel').innerHTML = groups.map((g) => `<optgroup label="${g}">` + V.resLeg.resources.filter((r) => r.group === g)
+    .map((r) => `<option value="${r.key}" title="${esc(r.model)}"${r.key === state.res ? ' selected' : ''}>${esc(r.name)}</option>`).join('') + '</optgroup>').join('');
+}
+$('resSel').addEventListener('change', () => {
+  state.res = $('resSel').value;
+  const u = new URL(location); u.searchParams.set('res', state.res); history.replaceState(null, '', u);
+  paint(); updateHover();
+});
 const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours: shelter and depth at the coast',
                   pass: 'mountain passes: how long they are open', fertile: 'farmland', fresh_water: 'fresh water within reach' };
 function huSwatches(k) {
@@ -797,6 +865,7 @@ function cellColors(layer) {
       if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L[SOIL_LAYERS[layer]][i], c);
     }
     else if (HU_LAYERS[layer]) huColor(layer, i, c);
+    else if (RES_LAYERS.has(layer)) resColor(layer, i, c);
     else if (layer === 'bed under ice') {
       rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
       if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
@@ -882,6 +951,7 @@ function availableLayers() {
   if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
   if (V.layers.flood_ratio) ls.push('river floods');
   for (const [name, k] of Object.entries(HU_LAYERS)) if (V.layers[k] && V.humanUse?.[k]) ls.push(name);
+  if (V.layers.resource && V.resLeg) ls.push('resources', 'resource', 'building stone');
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
@@ -1889,6 +1959,7 @@ function renderLegend() {
   const sk = SEASONAL[state.layer] && SEASONAL[state.layer] + '_jul';
   $('seasonRow').style.display = sk && (V.layers[sk] || (V.kind === 'run' && V.run.layers[sk])) && !ov ? '' : 'none';
   $('pftRow').style.display = state.layer === 'plant type' && V.pfts?.length ? '' : 'none';
+  $('resRow').style.display = state.layer === 'resource' && V.resLeg ? '' : 'none';
   drawMarks();  // (the plant groups' ticks come and go with the vegetation views)
   const sw = (color, text) => `<span><span class="sw" style="background:${color}"></span>${text}</span>`;
   if (ov && ov.diff && state.layer === 'climate') {
@@ -1976,6 +2047,8 @@ function renderLegend() {
     el.innerHTML = V.koppen.filter((k) => present.has(k.id) && k.code !== '-')
       .map((k) => `<span title="${k.name}"><span class="sw" style="background:${k.color}"></span>${k.code} ${k.name}</span>`).join('') +
       `<span class="muted">(Köppen climate classes${ov ? ', observed: Kottek et al. 2006; grey = no data' : ''})</span>`;
+  } else if (RES_LAYERS.has(state.layer)) {
+    el.innerHTML = resLegend(state.layer, sw);
   } else if (HU_LAYERS[state.layer]) {
     const k = HU_LAYERS[state.layer];
     el.innerHTML = huSwatches(k) + `<span class="muted">(${{ river_nav: 'ribbons follow the rivers; also under Overlays', harbour: 'diamonds mark them; also under Overlays',
@@ -2075,6 +2148,7 @@ const LAYER_HINTS = {
 const HINT_HAS_UNITS = new Set(['NPP', 'biomass', 'leaf area', 'salinity', 'river floods', 'plant type']);
 function renderLayerButtons() {
   fillPfts();
+  fillRes();
   const layers = availableLayers();
   if (!layers.includes(state.layer)) state.layer = layers[0];
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
@@ -2671,6 +2745,7 @@ function cellInfo(i) {
     else R('plants', 'biome', V.biomes[L.biome[i]].name, { ess: true });
     soilRows();
     humanRows();
+    resRows(L, i, land, R);
     const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
     if (s) R('climate', SEASON_NAMES[s], `${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
       ` (${s === 'jul' ? 'Apr–Sep' : 'Oct–Mar'} rate)`, { sep: ': ', ess: true });
@@ -3598,7 +3673,7 @@ function legendFields(leg) {
            pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [],
            soilTypes: leg.soils?.types || [], soilColors: (leg.soils?.types || []).map((t) => t.color),
            soilTextures: leg.soils?.textures || [], soilDrainage: leg.soils?.drainage || [],
-           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {} };
+           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, resLeg: leg.resources || null };
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?
@@ -3918,6 +3993,7 @@ function applyUrlOptions() {
   }
   if (p.get('season')) setSeason(p.get('season'));
   if (p.get('pft')) state.pft = p.get('pft');
+  if (p.get('res')) state.res = p.get('res');
   if (HL_CATS[p.get('hlcat')]) state.hlCat = p.get('hlcat');  // a highlights category: landscape, water, climate, travel, geology, vegetation  // jul | jan: the winds' half-year and the temperature / rain season
   return p;
 }

@@ -279,6 +279,9 @@ def summarize(world: dict) -> dict:
     if "landform" in L:
         from .landform import shares
         s["landform_pct"] = shares(np.asarray(L["landform"]))
+    if "resource" in L:  # (resources.py, PW-155: top deposit districts per landmass)
+        from .resources import deposits
+        s["resources"] = deposits(g, L)
     return s
 
 
@@ -405,6 +408,9 @@ def text_report(world: dict, summary: dict, width: int = 120) -> str:
     for layer in layers:
         out += [f"## {layer} map (equirectangular, north up, lon -180..180)",
                 LEGENDS[layer], ascii_map(world, layer, width), ""]
+    if summary.get("resources"):
+        from .resources import text_section
+        out += [text_section(summary["resources"]), ""]
     return "\n".join(out)
 
 

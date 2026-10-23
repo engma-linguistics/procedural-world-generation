@@ -779,6 +779,10 @@ A sea cell's shares are taken reef first, then kelp, then seagrass. **Vegetation
 
 ---
 
+### 2.23 Resources (`resources.py`; design: `docs/proposals/resources.md`, PW-155 stage 1)
+
+`planet resources <world>` (in place; not yet automatic) adds a coarse per-cell likelihood (0..1) of ~22 resources, each from a named deposit model: porphyry copper and epithermal gold on young arcs, VMS at ridges and accreted arcs, orogenic gold in collision belts and greenstone belts, tin-tungsten granites, banded iron on old craton margins, magmatic nickel under plumes, laterites and bauxite from long tropical weathering, sediment-hosted lead-zinc, carbonatite rare earths, placer gold and tin down rivers, kimberlite diamonds, metamorphic gems, coal, oil, gas, salt, obsidian, flint, clay; plus three exotics clearly marked **[fantasy]** (deep-silver, adamant, star-iron). The history they need is read from the run's keyframes along the plates' motion (each cell's ground traced back 600 Myr frame by frame with each frame's plate rotations): time spent in arcs, fold belts, rifts, over plumes and in the wet tropics, the thickest crust it sat on, and a 10-layer column rebuilt from cover changes (coal from buried peat, source shale in the oil and gas windows, evaporites). 1.5 s at L6, 6 s at L7; no run time. Layers `res_<key>`, `resource` (dominant), `stone` (best building stone), `coal_rank`, `res_depth`; legend `resources`; summary and `.txt`: top districts per landmass. Viewer layers: resources, resource (picker), building stone; hover shows the top three. Check: `tools/resources_check.py`. Zoom siting of concrete deposits is stage 2 (designed, not built).
+
 ## 3. Calibration and validation
 
 **Tests** (`uv run pytest -q`, 180 tests): invariants (determinism, the crust budget closing, sane values, storage that doesn't clip, the sim → world → zoom chain), envelopes (plausible ranges: land 22–42%, dry climates 12–45% of land, continental crust 33–50%, plate speeds 2–9 cm/yr, 5–30 plates, ocean age 25–120 Myr, churn), and golden hashes of a short L4 run and one climate computation, so refactors can be shown not to change results.
