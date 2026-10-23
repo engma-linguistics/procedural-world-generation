@@ -714,6 +714,55 @@ function lakeLine(i) {
 const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', salinity: 'salinity', 'sea temperature': 'sst',
                      turbidity: 'turbidity', upwelling: 'upwelling' };
 // fills a Float32Array(3n) with per-cell colours
+// Peoples (planet/lineages/, meta.phase 'lineages'): the leading people's colour, paler where it holds
+// less of the land, whitened where two or more mix; 'peoples mix' counts them. A picked line
+// (state.people, from the panel) shows only its own range.
+const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
+function peoplesColor(layer, i, c) {
+  const L = V.layers, elev = L.elevation;
+  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  const lines = V.run.meta.lineages || [];
+  if (layer === 'peoples mix') { const m = L.peoples_mix[i]; return m ? c.setHSL(0.75 - 0.12 * Math.min(m, 6), 0.7, 0.35 + 0.06 * m) : c.copy(NOBODY); }
+  const d = L.peoples[i];
+  if (d === 255 || !lines[d]) return c.copy(NOBODY);
+  if (state.people != null && d !== state.people) return c.copy(NOBODY).lerp(c.set(lines[d].color), 0.15);
+  c.set(lines[d].color).lerp(NOBODY, 0.55 * (1 - (L.peoples_share ? L.peoples_share[i] : 100) / 100));
+  if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
+  return c;
+}
+function peoplesPanel() {
+  const m = V.run.meta, lines = m.lineages || [], s = V.run.frames[V.frame].stats.peoples || {};
+  const kids = {}; lines.forEach((l) => (l.parents || []).forEach((p) => (kids[p] = kids[p] || []).push(l)));
+  const fmt = (a) => (a >= 1000 ? `${+(a / 1000).toFixed(1)} Myr` : a >= 1 ? `${+a.toFixed(1)} kyr` : `${Math.round(a * 1000)} yr`);
+  const row = (l, depth) => {
+    const alive = s[l.id] != null, o = l.origin_place;
+    const kind = l.origin === 'split' ? '' : ` <span class="muted">(${l.origin}${l.parents?.length && l.origin !== 'split' ? ' of ' + l.parents.join(' + ') : ''})</span>`;
+    return `<div style="padding:1px 0 1px ${6 + 12 * depth}px;cursor:pointer;opacity:${alive ? 1 : 0.5}" data-people="${l.index}"
+      title="${o ? `from ${o.lat}, ${o.lon} at ${fmt(o.ago_kyr)} ago: ${o.why}` : 'not yet / never appeared'}">
+      <span style="display:inline-block;width:10px;height:10px;background:${l.color};margin-right:4px"></span>${esc(l.name)}${kind}
+      <span class="muted">${fmt(l.ago_kyr)}${l.extinct_kyr != null ? ` → † ${fmt(l.extinct_kyr)}` : ''}${alive ? ` · ${s[l.id]} Mkm²` : ''}</span></div>`;
+  };
+  const seen = new Set(), out = [];
+  const walk = (l, d) => { if (seen.has(l.id)) return; seen.add(l.id); out.push(row(l, d));
+    (kids[l.id] || []).filter((k) => k.origin === 'split').forEach((k) => walk(k, d + 1)); };
+  lines.filter((l) => l.origin !== 'split').forEach((l) => walk(l, 0));
+  const p = m.present || {}, zones = (p.mixing_zones || []).slice(0, 5).map((z) => `${z.lines.join(', ')} <span class="muted">(${z.area_mkm2} Mkm² near ${z.lat}, ${z.lon})</span>`);
+  return `<div class="tzBox"><b>Peoples</b> <span class="muted">(${esc(m.tree_name || '')}; click one to show only its range;
+    <a href="lineages.html?tree=${encodeURIComponent((m.tree_file || '').split('/').pop().replace(/\.(toml|json)$/, '') || 'dnd')}&world=${m.world || ''}">edit the tree</a>)</span>
+    ${state.people != null ? `<div><a href="#" data-people="-1">show all</a></div>` : ''}${out.join('')}
+    ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b><br>${zones.join('<br>')}</div>` : ''}
+    ${p.wishes?.length ? `<div style="margin-top:4px"><b>Wishes</b> <span class="muted">(score ${p.wish_score}; tries ${(p.tries || []).join(', ')})</span><br>${p.wishes.map((w) => `${w.a} ${w.want} ${w.b || ''}: ${w.score}`).join(' · ')}</div>` : ''}</div>`;
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.('[data-people]');
+  if (!el || !V?.run?.meta?.lineages) return;
+  e.preventDefault();
+  const k = +el.dataset.people;
+  state.people = k < 0 || state.people === k ? null : k;
+  paint(); renderRunSummary();
+});
+
 function cellColors(layer) {
   const L = V.layers, n = V.n, out = new Float32Array(3 * n), c = new THREE.Color();
   const elev = L.elevation, ov = obsView(layer), lakes = !ov && LAKE_LAYERS.has(layer) && (L.lake_kind || L.lake);
@@ -723,6 +772,7 @@ function cellColors(layer) {
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
+    else if (layer === 'peoples' || layer === 'peoples mix') peoplesColor(layer, i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -803,7 +853,8 @@ function cellColors(layer) {
 function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
-    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : []);
+    hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
+    hasLayer('peoples') ? ['peoples', 'peoples mix'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -1811,6 +1862,15 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
+  } else if (state.layer === 'peoples' || state.layer === 'peoples mix') {
+    // the peoples present in this frame (planet/lineages/), by the land they lead
+    const L = V.layers, lines = V.run.meta.lineages || [], cnt = new Map();
+    if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
+    else {
+      for (let i = 0; i < V.n; i++) { const d = L.peoples?.[i]; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
+      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
+        sw('#5a5a52', 'nobody') + '<span class="muted">(whitened: mixed)</span>';
+    }
   } else if (state.layer === 'vegetation') {
     // the named types present, grouped (forest, savanna, desert, ...), with their share of the land
     const L = V.layers, cnt = new Map();
@@ -2051,10 +2111,35 @@ function renderRunSummary() {
 // today's Earth), with the geology frozen. Its summary has the sea-level curve.
 function timeLabel(t) {
   if (!V.tz) return `${t} Myr`;
+  if (V.run.meta.phase) return agoLabel(t);  // recent pass and lineages (planet/lineages/): kyr before the present
   return V.tzEarth ? `+${t} kyr from today` : `+${t} kyr`;
 }
 
+// Recent passes and lineage histories (planet/lineages/, docs/proposals/lineages.md) are time-zoom
+// runs with meta.phase and time in kyr before the present (t <= 0).
+function agoLabel(t) {
+  const a = -t;
+  if (a <= 0) return 'present';
+  if (a >= 1000) return `${+(a / 1000).toFixed(a >= 10000 ? 0 : 1)} Myr ago`;
+  return a >= 10 ? `${+a.toFixed(1)} kyr ago` : `${Math.round(a * 1000)} years ago`;
+}
+function phaseSummary() {
+  const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
+  const sign = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d);
+  const what = m.phase === 'recent' ? `recent pass (${m.kyr} kyr at ${m.step_kyr * 1000}-year steps)` : 'peoples and their history';
+  const tzl = m.timezoom ? `<a href="?run=${m.timezoom}&t=${m.now_kyr}" data-run="${m.timezoom}" data-t="${m.now_kyr}">time zoom ${m.timezoom} @ +${m.now_kyr} kyr</a>` : '';
+  const remake = m.phase === 'recent' ? `uv run python -m planet recent ${m.timezoom} --now ${m.now_kyr} --kyr ${m.kyr}`
+    : `uv run python -m planet lineages ${m.world || m.timezoom} --tree ${m.tree_file || '<tree.toml>'}`;
+  const stat = s.sea_level_change_m != null ? `sea level ${sign(s.sea_level_change_m)} m vs the time zoom's start · land ice on ${s.ice_pct}% of the surface` : '';
+  return `<b>${r.id || ''}</b> ${r.name} <span class="muted">· ${what} · ${m.cells} cells · made ${m.created}</span><br>
+    <b>${agoLabel(V.t)}</b>${s.variability_c != null ? ` · centennial anomaly ${sign(s.variability_c, 2)} °C` : ''}<br>${stat}<br>
+    ${m.phase === 'lineages' && typeof peoplesPanel === 'function' ? peoplesPanel() : ''}
+    <span class="muted">Present = </span>${tzl}${m.world ? ` (finished world <a href="?world=${m.world}.json" data-world="${m.world}.json">${m.world}</a>)` : ''}<br>
+    <span class="muted">Remake:</span> <code>${remake}</code>`;
+}
+
 function timezoomSummary() {
+  if (V.run.meta.phase) return phaseSummary();
   const r = V.run, m = r.meta, s = r.frames[V.frame].stats;
   const when = V.tzEarth ? `<b>+${V.t} kyr</b> from today's Earth`
     : `<b>+${V.t} kyr</b> after ${m.source_name} @ ${m.at_myr} Myr`;
@@ -3489,6 +3574,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
+  peoples: ['peoples', 'peoples_mix', 'peoples_share'], 'peoples mix': ['peoples_mix'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],

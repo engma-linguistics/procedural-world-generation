@@ -223,6 +223,28 @@ def cmd_finish(args):
           f"  view: http://127.0.0.1:8765/viewer/?world={path.name}")
 
 
+def cmd_recent(args):
+    from .lineages import recent as R
+    tz, now, world = R.resolve(args.ref)
+    if args.now is not None:
+        now = args.now
+    params = R.RecentParams(**{**_parse_set(args.set), "kyr": args.kyr, "step": args.step, "every": args.every})
+    ps = R.Pass(tz, now, params, world_ref=world)
+    out = R.save(ps, args.name)
+    run = json.loads((out / "run.json").read_text())
+    print(f"{S.rel(out)}  [{len(run['frames'])} frames, {-ps.start:g} kyr before {ps.now:g} kyr of time zoom {tz}; "
+          f"{len(ps.episodes)} episodes]  view: http://127.0.0.1:8765/viewer/?run={out.name}")
+
+
+def cmd_lineages(args):
+    from .lineages import run as LR
+    tree = LR.load_tree(args.tree)
+    out = LR.run(args.ref, tree, args.tries, args.now, args.recent_kyr, args.name,
+                 progress=lambda f, msg: print(f"  {100 * f:3.0f}% {msg}", flush=True))
+    print((out / "run.txt").read_text()[:6000])
+    print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
+
+
 def cmd_export(args):
     from . import export as X
     rng = tuple(args.height_range) if args.height_range else None
@@ -442,6 +464,27 @@ def main():
     fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
     fi.set_defaults(func=cmd_finish)
+
+    rc = sub.add_parser("recent", help="the recent pass: the last ~30 kyr of a time zoom at century steps "
+                                       "(interpolated, with short-period variability) -> runs/<id>/")
+    rc.add_argument("ref", help="a time zoom id (present = its end, or --now) or a finished world's id (present = its kyr)")
+    rc.add_argument("--now", type=float, help="the present, kyr of the time zoom")
+    rc.add_argument("--kyr", type=float, default=30.0, help="window before the present (kyr)")
+    rc.add_argument("--step", type=float, default=0.1, help="step (kyr)")
+    rc.add_argument("--every", type=float, default=0.5, help="stored frame every N kyr")
+    rc.add_argument("--name", "-n")
+    rc.add_argument("--set", nargs="*", metavar="KEY=VALUE", help="lineages.recent.RecentParams knobs, e.g. seed=3 noise_sd=0.5")
+    rc.set_defaults(func=cmd_recent)
+
+    lg = sub.add_parser("lineages", help="peoples: place, split and spread a tree of lineages through the run, the "
+                                         "time zoom and the recent pass -> runs/<id>/ (docs/proposals/lineages.md)")
+    lg.add_argument("ref", help="a finished world's id (present = its kyr) or a time zoom id")
+    lg.add_argument("--tree", default="dnd", help="a tree file (.toml/.json), or a preset or saved tree's name (default dnd)")
+    lg.add_argument("--tries", type=int, default=4, help="seeds tried; the best by the wishes is kept")
+    lg.add_argument("--now", type=float, help="the present, kyr of the time zoom")
+    lg.add_argument("--recent-kyr", type=float, default=30.0, help="the recent pass's window (kyr)")
+    lg.add_argument("--name", "-n")
+    lg.set_defaults(func=cmd_lineages)
 
     ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
                                        "class maps, GeoJSON features, manifest.json -> exports/<id>/")
