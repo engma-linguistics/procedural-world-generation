@@ -11,7 +11,7 @@ impact: high
 found_by: daniel
 blocked_by: [PW-352]
 relates: [PW-019]
-refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/, docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
+refs: [planet/climate.py, tools/earth_check.py, tools/scorecard.py, "plan_next@bdc967f: Known issues → Climate", tools/ice_probe.py, docs/review/audit/polar-bundle.md, tools/moisture_budget.py, docs/review/audit/pw015-rain.md, docs/review/health-rain-s2b/ (removed; see git d32f7fa), docs/review/audit/pw015-handoff.md, tools/overturning_report.py, docs/review/base-climate/handoff-A.md]
 created: 2026-10-14
 updated: 2026-10-22
 ---

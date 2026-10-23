@@ -11,7 +11,7 @@ impact: low
 found_by: clouds
 blocked_by: []
 relates: [PW-143, PW-019]
-refs: [planet/climate.py, tools/earth_check.py, "world dc3732", docs/review/clouds/]
+refs: [planet/climate.py, tools/earth_check.py, "world dc3732", docs/review/clouds/ (removed; see git d32f7fa)]
 created: 2026-10-14
 updated: 2026-10-16
 ---

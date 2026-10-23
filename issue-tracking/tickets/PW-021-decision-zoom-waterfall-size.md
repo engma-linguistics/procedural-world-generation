@@ -11,7 +11,7 @@ impact: med
 found_by: falls
 blocked_by: []
 relates: [PW-005, PW-055]
-refs: ["morning_decisions@bdc967f item 2", docs/review/falls/]
+refs: ["morning_decisions@bdc967f item 2", docs/review/falls/ (removed; see git d32f7fa)]
 created: 2026-10-14
 updated: 2026-10-14
 ---

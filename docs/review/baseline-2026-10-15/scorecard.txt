@@ -1,7 +1,0 @@
-seed 1 @ 1000 Myr: land 32.6% (range 29.3-36.6), crust 43.3%, volume x0.936, dry 32.0%, ice 0.0%, largest landmass max 32.0%, ocean age 73.6 Myr, land NPP 395 g C/m2/yr, tree cover 23.3%, plant groups at [2.0, 64.0, 188.0, 720.0, 776.0, 840.0] Myr
-seed 2 @ 1000 Myr: land 32.1% (range 29.0-34.5), crust 43.1%, volume x0.955, dry 37.2%, ice 3.6%, largest landmass max 32.5%, ocean age 41.5 Myr, land NPP 327 g C/m2/yr, tree cover 19.8%, plant groups at [2.0, 48.0, 208.0, 712.0, 804.0, 852.0] Myr
-appended to docs/scorecard.jsonl  [346s]
-
-real	5m45.869s
-user	30m2.848s
-sys	6m3.863s

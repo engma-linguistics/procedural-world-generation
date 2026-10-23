@@ -11,7 +11,7 @@ impact: med
 found_by: pw390-fine-zoom-gorge
 blocked_by: []
 relates: [PW-129, PW-390]
-refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", docs/review/fine-zoom-gorge/]
+refs: [planet/zoom_fine.py, "zoom 3e74b0", "zoom b3c260", docs/review/fine-zoom-gorge/ (removed; see git d32f7fa)]
 created: 2026-10-16
 updated: 2026-10-16
 ---
