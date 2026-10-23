@@ -21,3 +21,4 @@ Owner (2026-10-24): the viewer chugs mightily on the peoples tab (possibly partl
 
 ## Updates
 - 2026-10-23: Created.
+- 2026-10-23: perf679 lane. Measured and fixed in viewer/index.html (timings: docs/review/lineages/perf-679.md, harness tools/viewer_perf.py): hover 36 -> 0.07 ms (the globe pick no longer tests ~1 M triangles), frame step 23-30 -> 16-20 ms (colour parsing and track-point lookups cached), slider bursts coalesced to one repaint per display frame, peoples layers no longer refetched on a layer switch (19 refetches / 45 MB per 12 switches -> 0), overlay-legend crash fixed. The workbench (lineages.html) was already cheap (tabs 2-18 ms). Left as drafts: run layers hold all frames (216 MB resident), the per-vertex paint upload, a self-lerp bug in peoplesColor. Status stays todo until the owner confirms it no longer chugs on an idle machine.
