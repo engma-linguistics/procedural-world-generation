@@ -2,7 +2,7 @@
 id: PW-668
 title: How much land does a person clear? Land-per-person constants and the farming densities behind the cleared shares
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-103
 milestone: v2
 subsystem: surface
@@ -27,4 +27,5 @@ Options:
 - C: make the constants planet-relative (scaled to the world's own best farmland yield, as `land.goods` does for goods) instead of Earth-shaped.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> wontdo. Owner (2026-10-24): leave the land-per-person constants and farming densities as they are for now.
 - 2026-10-23: Created from inbox draft draft-anthro-land-per-person.md (found by anthro).

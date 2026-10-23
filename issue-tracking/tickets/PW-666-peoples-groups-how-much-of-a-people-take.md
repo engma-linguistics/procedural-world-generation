@@ -2,8 +2,8 @@
 id: PW-666
 title: "Peoples groups: how much of a people takes up a way of life (seafarers ~1% of humans; steppe orcs thin where the orcs already are steppe folk)"
 type: task
-status: needs-decision
-parent: PW-103
+status: todo
+parent: PW-661
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -39,4 +39,5 @@ Options:
 Lean: C for the orcs plus A elsewhere; B if the owner wants "the humans" to read mostly as their groups.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): taking to the sea should follow exposure, i.e. the share of a people living on the coast, not a fixed group share; probably belongs with the wider culture pass. Moved under PW-661; preset left as is for now.
 - 2026-10-23: Created from inbox draft draft-peoples-group-shares.md (found by peoples-groups-lane).
