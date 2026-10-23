@@ -44,6 +44,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     frames = res["frames"]
     pres["homeland"] = homeland(h, res["present"], world)
     pres["stories"] = stories(h, pres)
+    pres["ascii"] = {"rows": ascii_present(h, res, 96, 36), "letters": {LETTERS[k % len(LETTERS)]: l.id for k, l in enumerate(h.lines)}}
     arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS)}
     out_frames = []
     for f in frames:
@@ -70,7 +71,9 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "leaf": l in h.tree.leaves(), "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id),
               "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
-              "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id)} for k, l in enumerate(h.lines)]
+              "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
+              "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
+              "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -122,6 +125,16 @@ def ascii_present(h: History, res: dict, w: int = 120, hh: int = 40) -> list[str
                 s.append(LETTERS[dom[c] % len(LETTERS)] if mix[c] < 2 else "+")
         rows.append("".join(s))
     return rows
+
+
+def people(n: float) -> str:
+    """A rough head count in words: 'about 7,000', '1.2 million'."""
+    n = float(n)
+    if n >= 1e6:
+        return f"{n / 1e6:.2g} million"
+    if n >= 100:
+        return f"about {int(float(f'{n:.2g}')):,}"
+    return f"a few dozen" if n >= 20 else "a handful"
 
 
 def _ago(kyr: float) -> str:
@@ -187,7 +200,8 @@ def stories(h: History, pres: dict) -> dict[str, str]:
         elif p:
             nb = [h.tree.lines[x].label() for x in list(p["neighbours"])[:4] if x in h.tree.lines]
             iso = "one land" if p["patches"] == 1 else f"{p['patches']} separate lands (the largest {round(100 * p['largest_patch_share'])}%)"
-            s.append(f"Today: {p['area_mkm2']} Mkm² in {iso}" + (f"; neighbours {', '.join(nb)}." if nb else "; no neighbours."))
+            s.append(f"Today: {people(p.get('population', 0))} in {p['area_mkm2']} Mkm² in {iso}"
+                     + (f"; neighbours {', '.join(nb)}." if nb else "; no neighbours."))
             if p.get("own_mkm2"):
                 s.append(f"Of that, {p['own_mkm2']} Mkm² is a land of its own, where its parents no longer meet.")
             hl = pres.get("homeland", {}).get(l.id)
@@ -219,7 +233,18 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L += ["", f"## Mixing at the present: {mx.get('area_mkm2')} Mkm2 ({mx.get('land_share')} of the land; corridor land "
               f"{mx.get('in_corridors')} mixed, closed land {mx.get('in_closed')}); empty continents: "
               f"{', '.join(pres.get('empty_continents') or []) or 'none'}; lost: {', '.join(pres.get('lost') or []) or 'none'}"]
-    L += ["## Mixing zones at the present"] + [f"  {z['area_mkm2']:>6} Mkm2 near {z['lat']},{z['lon']}: {', '.join(z['lines'])}"
+    L += ["## Numbers at the present (presence x density x area)"] + [
+        f"  {lid:<18} {v.get('population', 0):>12,} people  {v.get('density', 0):g}/km² (a band of {SP.BAND} roams "
+        f"{v.get('band_km2', 0):g} km²)  {v['area_mkm2']} Mkm²" + (f"; {v['faded_patches']} patch-fadings below the viable number (patches x checks)" if v.get('faded_patches') else "")
+        for lid, v in sorted(pres["lines"].items(), key=lambda x: -x[1].get("population", 0))]
+    L += ["", "## Landmasses: who found them first"] + [
+        f"  {nm['name']}: held {nm['held_share']}; " + (f"first {nm['discovered']['by']} {_ago(nm['discovered']['ago_kyr'])} ago ({nm['discovered']['how']}"
+                                                         + (f", {nm['discovered']['gap_km']} km" if nm['discovered'].get('gap_km') else "") + ")"
+                                                         if nm.get("discovered") else "never reached")
+        + (f"; of today's peoples {nm['settled_by']['by']} {_ago(nm['settled_by']['ago_kyr'])} ago ({nm['settled_by']['how']}"
+           + (f", {nm['settled_by']['gap_km']} km" if nm['settled_by'].get('gap_km') else "") + ")" if nm.get("settled_by") else "")
+        for nm in pres.get("landmasses", [])[:16]]
+    L += ["", "## Mixing zones at the present"] + [f"  {z['area_mkm2']:>6} Mkm2 near {z['lat']},{z['lon']}: {', '.join(z['lines'])}"
                                                    for z in pres["mixing_zones"][:12]] or ["  (none)"]
     L += ["", "## Neighbours at the present"] + [f"  {lid}: {', '.join(v['neighbours'])}" for lid, v in pres["lines"].items()]
     if pres["wishes"]:

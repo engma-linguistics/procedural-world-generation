@@ -5,10 +5,12 @@ Crossings, three ways (docs/proposals/lineages.md, "Sea crossings"):
   surface above its sea level), so a strait that falls dry at a glacial low stand is walked
   over by the ordinary spread; the history only names it (an event) when a line first
   reaches a present-day landmass that way.
-- short hops: the spread's per-trait sea factor (spec.TRAITS 'sea' / 'late_sea'), a few cells.
+- short hops: the spread's per-trait sea factor (spec.TRAITS 'sea'; boats over straits late for a
+  people with a sea share >= spec.SHORT_HOP_SHARE), a few cells.
 - long crossings: a Poisson chance per step for each landmass a line doesn't hold yet,
   rate x dt x exp(-gap / L) summed over the line's ways of crossing (spec.HOPS: rafting on
-  drift for anyone, rare; coastal canoes; swimming; flying; seafaring boats, late). The gap is
+  drift for anyone, rare; coastal canoes; swimming; flying; boats, late, by the people's sea share,
+  spec.BOATS; every way but the raft x the people's exploration and will to leave home). The gap is
   the sea distance from the line's own coast (a sea-only BFS), so island chains are stepping
   stones. A landing needs habitat and room there.
 
@@ -58,14 +60,34 @@ def sea_gap(src, land, nbr_off, nbr_idx, maxd):
     return d
 
 
+def hop_mult(line: SP.Lineage) -> float:
+    """How readily a people's frontier sets out over the sea at all: x 2 explore x (1.25 - 0.5 insularity)
+    (1 at the defaults, 0.5 and 0.5; spec.DEMOGRAPHY)."""
+    return 2.0 * line.demo("explore") * (1.25 - 0.5 * line.demo("insularity"))
+
+
 def modes(line: SP.Lineage, ago_kyr: float) -> list[tuple[str, float, float]]:
-    """(way, rate per kyr, length scale km) of the line's ways of crossing open sea at that time."""
+    """(way, rate per kyr, length scale km) of the line's ways of crossing open sea at that time: the raft for
+    anyone; its traits' ways (spec.HOPS) and boats by its sea share (spec.BOATS, way 'seafaring'), x hop_mult."""
     out = []
+    m = hop_mult(line)
     for way in ("raft", *line.traits):
         h = SP.HOPS.get(way)
         if h and (h[2] is None or ago_kyr <= h[2] + 1e-9):
-            out.append((way, h[0], h[1]))
+            out.append((way, h[0] * (1.0 if way == "raft" else m), h[1]))
+    share = line.demo("sea_share")
+    rate, l0, l1, since = SP.BOATS
+    if share > 0 and ago_kyr <= since + 1e-9:
+        f = min(share / SP.BOATS_FULL, 1.0)
+        out.append(("seafaring", rate * share / SP.BOATS_FULL * m, l0 + (l1 - l0) * f))
     return out
+
+
+def short_hop(line: SP.Lineage) -> float:
+    """The spread's sea factor for boats over straits (from spec.LATE_SEA_KYR ago): 0.75 at a sea share of
+    BOATS_FULL (a few cells), less below, none under SHORT_HOP_SHARE."""
+    share = line.demo("sea_share")
+    return 0.0 if share < SP.SHORT_HOP_SHARE else 0.75 * min(1.0, share / SP.BOATS_FULL) ** 0.5
 
 
 SHELF_CONTACT = 0.7  # exposed continental shelf at a low stand: flat coastal plain crossed by the rivers' lower courses
