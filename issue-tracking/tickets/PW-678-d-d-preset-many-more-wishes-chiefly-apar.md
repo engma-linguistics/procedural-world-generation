@@ -21,3 +21,4 @@ Owner (2026-10-24): add a ton more wishes to samples/dnd.toml, mostly apart pair
 
 ## Updates
 - 2026-10-23: Created.
+- 2026-10-24: Done on branch worktree-agent-ab254628c4ccfa51b: dnd.toml has 38 wishes (27 new: 20 apart, 4 near incl. three for fire giants). Wish score 0.715 / 0.687 before; 0.782 / 0.799 after with all 38 (the old 11 alone 0.827 / 0.694); spread unchanged. See docs/proposals/lineages.md. Status left for the coordinator.
