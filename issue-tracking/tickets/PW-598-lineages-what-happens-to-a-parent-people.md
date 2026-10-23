@@ -1,4 +1,5 @@
 ---
+id: PW-598
 title: "Lineages: what happens to a parent people at a split, and what switching one off does"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane
 blocked_by: []
 relates: [PW-103]
 refs: [planet/lineages/history.py, planet/lineages/spec.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,3 +24,6 @@ Built on the leans below (each a small swap in history.py / spec.py):
 3. Extinct-by-T: built as a habitat that dwindles linearly over min(30% of the line's life, 20 kyr) to nothing at T. Alternatives: absorbed into a named hybrid or sister, or a sudden end.
 
 Lean: keep A and the built rules.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-parent-split.md (found by lineages-lane).

@@ -1,4 +1,5 @@
 ---
+id: PW-599
 title: "Lineages: what the recent pass (last ~30 kyr at century steps) simulates"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane
 blocked_by: []
 relates: [PW-103, PW-091]
 refs: [planet/lineages/recent.py, docs/proposals/lineages.md, "recent pass 0a04f4"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Options:
 - C: A plus a full climate.compute every 2 kyr on the interpolated surface (better rain than the scaled keyframe's; ~1 min at L6).
 
 Lean A now, C if the peoples' rain-driven habitat looks wrong on review. The episode rate (1 per 6 kyr gave 12 on one seed) may want tuning down.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-recent-physics.md (found by lineages-lane).
