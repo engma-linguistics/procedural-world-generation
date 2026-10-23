@@ -348,3 +348,75 @@ Recommendation, for the owner to decide:
 - On the old start, 400-500 Myr would be the honest warm-up: erosion, relief and cover settle at ~350-450 Myr.
 - **Default run length: 1 Gyr.** At 500 Myr (`simulate`'s default), a 300 Myr warm-up leaves 200 judged Myr, a
   single icehouse or two.
+
+## Stage 4: landing the mature start with (a) on main, lane B fourth agent
+
+Owner's decision (PW-576): the mature start, the CO2 stock with its reference set once (a), no relief term; the
+warm-up stays at 300 Myr; `simulate` runs 1 Gyr by default.
+
+**The code:**
+- The relief term is gone: `params.co2_relief_myr`, `sim.ref_rate`, the `relief` field in the diagnostics and
+  `test_relief_term_off`. With the switch at 0 the term was already inert, so (a) runs as it did in stage 3.
+- `simulate --myr` defaults to 1000 (CLI, `parallel.simulate_many`, README).
+- `tests/test_timezoom_consistency.py`: the precondition is the world again (sea level, overturning in both
+  hemispheres, polar land), as on main; the sheets test keeps its own assertion. 13 of seeds 4-35 meet the
+  precondition on this code. Most are warm moments where 4 C of cooling leaves < 1% under sheets: 4 (0.9%), 5 (0.3%),
+  8 (0.9%), 15, 23 (0.2%), 27 (0.5%). Seven have more: 20 (1.1%), 25 (3.2%) and 28-34 (1.5-6.3%). `SEEDS` now starts
+  at 25, the first with a margin.
+- The golden was regenerated.
+
+### The comparison on current main (c1b2229: PW-582, PW-579, stage 3; 10 L6 seeds, 1 Gyr)
+
+Judged after 300 Myr:
+
+| | N1-N4 pass | icehouse share median (seeds in 15-45%) | CO2 answer, trends out, median C/C | in 0.35-0.9 | against drift-made dT | mean dT median | fails |
+|---|---|---|---|---|---|---|---|
+| main (no stock), 5c4c0fd | 3/10 | 70% (1) | +0.28 | 3/10 | 10/10 | −0.7 | (stage 3) |
+| mature, (a), on 5c4c0fd | 8/10 | 43% (5) | +0.21 | 3/10 | 9/10 | +0.8 | deep era 200 Myr and share 82% (2); deep era 176 Myr (3199) |
+| **mature, (a), on c1b2229** | **8/10** | **54% (2)** | **+0.32** | **5/10** | **10/10** | +1.5 | icehouse 356 Myr (2); deep era 176 Myr and icehouse 380 Myr (99) |
+
+Judged after 500 Myr: 8/10, 52% (2), +0.41, 5/10, 10/10, +1.6.
+
+Per seed (icehouse share after 300 Myr): 1 56%, 2 69%, 5 14%, 7 51%, 11 38%, 13 60%, 21 11%, 42 23%, 99 62%,
+3199 59%. Wall 937 s (10 seeds, 2 numba threads each).
+
+Against the bar:
+- **N1-N4 on ≥ 7/10: met** (8/10).
+- **The CO2 term against drift-made dT on ≥ 8/10: met** (10/10).
+- **The icehouse share median in 15-45% on about 70% of seeds: not met.** It was 5/10 on 5c4c0fd and is 2/10 now.
+  The seeds split into two groups: six at 51-69% and four at 11-38% (5 and 21 just under 15%). N3's own band
+  (5-70%) passes on 9/10.
+  - Pooled over the seeds, the share hasn't moved: 44% of the steps after 300 Myr against 46% on 5c4c0fd. Main's
+    climate changes hold ice at a warmer dT. The share of steps in an icehouse goes 32 → 46% at dT +1..+2, 19 → 30%
+    at +2..+3, and 9 → 18% at +3..+4. The runs sit warmer to match (median dT +1.1 → +1.8 pooled).
+  - This is the set point (PW-559), the owner's open question, not a thermostat fault. I haven't tuned anything for
+    it (inbox draft `draft-icehouse-share-split-on-main`).
+
+### Why the CO2 answer fell on the mature start (draft-mature-start-co2-answer-drop)
+With the stock near its steady state, co2 ≈ (ln src − ln sink) / WEATHER_CO2. So the trends-out answer splits into
+three parts:
+- the sink's own fb;
+- minus the source's (chance) answer to the drift, fb_src = co2_sensitivity × iv(ln src) / WEATHER_CO2;
+- times the forcing's tanh slope.
+
+The split reproduces every seed to within 0.05 C/C (0.09 on one):
+
+| sweep | answer | sink fb | source fb | tanh slope |
+|---|---|---|---|---|
+| old start (a), 5c4c0fd | +0.33 | +0.36 | +0.02 | 0.98 |
+| mature (a), 5c4c0fd | +0.21 | +0.40 | +0.10 | 0.99 |
+| mature (b), 5c4c0fd | +0.13 | +0.35 | +0.19 | 0.99 |
+| mature (a), c1b2229 | +0.32 | +0.39 | +0.02 | 0.98 |
+
+(medians over seeds)
+- The sink answered as strongly on the mature start. The whole drop came from the volcanic source covarying with the
+  random drift: +0.22..+0.31 on seeds 5, 13 and 99.
+- On current main that term is back to +0.02, and the answer to +0.32. Its cross-covariance with the drift is as
+  large at negative lags (the source first) as at positive ones, ±0.1-0.2 by lag, on every sweep.
+- So it was chance at 17 independent drift samples per seed, not a mechanism. Not a bug either.
+- Scripts: `laneB4/decomp.py` and `laneB4/lag.py` in the session scratch.
+
+### Checks
+- `uv run pytest -q`: 573 pass.
+- `tools/overturning_report.py --earth`: identical to main.
+- `tools/scorecard.py` and `tools/health.py`: see below.
