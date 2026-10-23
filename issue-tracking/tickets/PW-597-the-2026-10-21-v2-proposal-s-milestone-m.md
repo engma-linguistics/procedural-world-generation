@@ -1,8 +1,10 @@
 ---
+id: PW-597
 title: The 2026-10-21 v2 proposal's milestone moves, merges and drops were never applied to the board
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: docs
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: docs-cleanup
 blocked_by: []
 relates: [PW-244]
 refs: ["git d32f7fa:docs/review/v2-proposal.md (deleted 2026-10-23)", "git d32f7fa:docs/review/v1-reassessment-2026-10-16.md"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -36,3 +40,6 @@ refs: ["git d32f7fa:docs/review/v2-proposal.md (deleted 2026-10-23)", "git d32f7
 Options: A) accept all and apply with `board.py update`; B) go through them selectively; C) drop the lot as overtaken by events. Lean: B, starting with the merges (cheap) and the four v1 bug moves.
 
 - [ ] each item above applied or explicitly rejected
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-v2-proposal-unapplied-triage.md (found by docs-cleanup).
