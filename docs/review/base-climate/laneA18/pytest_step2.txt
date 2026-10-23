@@ -1,0 +1,8 @@
+tests/test_timezoom_consistency.py::test_cold_moment_has_sheets
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a22d5ce3841f99b73/planet/climate.py:2290: RuntimeWarning: fresh water into the sea doesn't balance: -0.0227 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+1 failed, 594 passed, 106 warnings in 193.72s (0:03:13)

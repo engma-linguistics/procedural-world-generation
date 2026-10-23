@@ -1,0 +1,16 @@
+s1 seed 2 | dumped; ice cells>1m 0.66% dT 3.2323522359951977 | ending at 79.0 kyr; extra 87.6 m, left 20.5 m; sl_off -19.4 -> 3.8, sl_on -107.1 -> -16.7; pass=True
+s1 seed 3 | dumped; ice cells>1m 0.08% dT 4.323264797696017 | ending at 79.0 kyr; extra 79.7 m, left 0.7 m; sl_off -14.4 -> -14.7, sl_on -94.2 -> -15.3; pass=True
+s1 seed 4 | dumped; ice cells>1m 0.00% dT 4.3833504991396 | ending at 79.0 kyr; extra 43.3 m, left 6.2 m; sl_off -19.6 -> -20.6, sl_on -62.8 -> -26.9; pass=True
+s1 seed 5 | dumped; ice cells>1m 0.00% dT 12.325424120277017 | ending at 79.5 kyr; extra 3.8 m, left 0.4 m; sl_off -0.0 -> -0.0, sl_on -3.8 -> -0.4; pass=False
+s1 seed 6 | dumped; ice cells>1m 0.27% dT 7.939506564624834 | ending at 79.0 kyr; extra 21.5 m, left -0.3 m; sl_off -3.2 -> 0.7, sl_on -24.7 -> 1.1; pass=True
+s1 seed 7 | dumped; ice cells>1m 0.00% dT 0.7452762665672559 | ending at 79.0 kyr; extra 133.4 m, left 90.4 m; sl_off -74.1 -> -48.1, sl_on -207.5 -> -138.6; pass=False
+s1 seed 8 | dumped; ice cells>1m 0.00% dT 1.3675166852416245 | ending at 78.0 kyr; extra 70.5 m, left 42.8 m; sl_off -36.8 -> -23.8, sl_on -107.3 -> -66.5; pass=False
+s1 seed 9 | dumped; ice cells>1m 0.55% dT 1.8478223963752325 | ending at 79.0 kyr; extra 44.6 m, left 8.1 m; sl_off -37.0 -> -8.8, sl_on -81.6 -> -16.9; pass=True
+s2 seed 2 | dumped; ice cells>1m 0.00% dT 7.70690939916657 | ending at 79.0 kyr; extra 13.9 m, left 1.7 m; sl_off -5.6 -> 0.0, sl_on -19.5 -> -1.7; pass=True
+s2 seed 3 | dumped; ice cells>1m 0.04% dT 4.284715966504955 | ending at 79.0 kyr; extra 27.6 m, left -0.6 m; sl_off -5.8 -> -5.4, sl_on -33.4 -> -4.8; pass=True
+s2 seed 4 | dumped; ice cells>1m 0.59% dT 3.6859474109886663 | ending at 79.0 kyr; extra 68.6 m, left 5.1 m; sl_off -16.9 -> -5.8, sl_on -85.4 -> -10.8; pass=True
+s2 seed 5 | dumped; ice cells>1m 0.23% dT 2.499379386799571 | ending at 78.0 kyr; extra 45.9 m, left 2.7 m; sl_off -25.6 -> -33.3, sl_on -71.5 -> -36.0; pass=True
+s2 seed 6 | dumped; ice cells>1m 0.55% dT 6.063570935538072 | ending at 78.5 kyr; extra 19.9 m, left 0.8 m; sl_off -15.7 -> -1.2, sl_on -35.6 -> -2.0; pass=True
+s2 seed 7 | dumped; ice cells>1m 0.00% dT 3.2960794785457024 | ending at 79.0 kyr; extra 24.4 m, left 0.6 m; sl_off -23.6 -> -15.4, sl_on -48.0 -> -16.0; pass=True
+s2 seed 8 | dumped; ice cells>1m 1.44% dT 0.7945573087968443 | ending at 77.5 kyr; extra 80.7 m, left 48.9 m; sl_off -30.7 -> -32.6, sl_on -111.4 -> -81.5; pass=False
+s2 seed 9 | dumped; ice cells>1m 0.66% dT 1.797539032457809 | ending at 78.5 kyr; extra 98.5 m, left 40.5 m; sl_off -29.7 -> -3.6, sl_on -128.2 -> -44.1; pass=True

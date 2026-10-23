@@ -499,7 +499,7 @@ def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
 TRADE_ROUND = 3.0  # deg
 
 
-def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.ndarray:
+def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None, belt=1.0) -> np.ndarray:
     """The planet-wide three-cell pattern, the same at every longitude
     (unless front moves it, below):
     easterly trade winds below ~30 deg, westerlies from 30 to 60, polar
@@ -508,7 +508,9 @@ def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.
     much (they stay strong at 45-60 deg in winter, which is what brings the
     sea's mild air deep into Europe). front: deg added to each cell's
     latitude for the bands outside the tropics (front_shift: they sit where
-    the air masses are, not at fixed latitudes)."""
+    the air masses are, not at fixed latitudes). belt: the westerlies'
+    strength, per cell or one number (westerly_belt: each season's and
+    hemisphere's own, from its baroclinicity)."""
     G = _geom(grid)
     lat = _wind_lat(grid, shift, front)
     a = np.abs(lat)
@@ -520,7 +522,7 @@ def wind(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None) -> np.
     # convergence, where |lat| has a corner: the speed had a one-cell dip there,
     # where the air lingered and rained more; PW-227)
     au = np.where(a < TRADE_ROUND, a * a / (2 * TRADE_ROUND) + TRADE_ROUND / 2, a)
-    ue = (-0.9 * np.exp(-((au - 12) / 14) ** 2) + 1.0 * np.exp(-((au - 48) / 15) ** 2)
+    ue = (-0.9 * np.exp(-((au - 12) / 14) ** 2) + belt * np.exp(-((au - 48) / 15) ** 2)
           - 0.4 * np.exp(-((a - 78) / 10) ** 2))[:, None]
     un = (-0.3 * np.sin(np.radians(6 * np.minimum(a, 90))))[:, None]
     return ue * G["east"] + un * hemi * G["north"]
@@ -583,8 +585,55 @@ def polar_drift(grid: Grid, shift: float = 0.0, front: np.ndarray | None = None)
     return (un * np.sign(lat))[:, None] * G["north"]
 
 
+BELT_LAT = (30.0, 65.0)  # deg: the mid-latitudes whose baroclinicity drives the eddy-driven westerlies
+
+
+def westerly_belt(grid: Grid, t_jul: np.ndarray, t_jan: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """The westerlies' strength (wind()'s belt) in each half-year, per cell:
+    each hemisphere's own in each season (PW-596). The surface westerlies
+    are eddy-driven: the storms that grow on the mid-latitudes' poleward
+    temperature contrast carry the jet's westerly momentum down to the
+    ground, and the jet scales with that contrast (the thermal wind). So the
+    belt follows each season's and hemisphere's zonal-mean contrast
+    (storminess: the zonal mean jet_stream's thermal wind is built on),
+    averaged over BELT_LAT, relative to the planet's own mean of the four
+    (both seasons, both hemispheres). A planet without seasons keeps one
+    belt, and the mean strength stays the one the winds are measured in
+    (U_REF). On Earth the northern summer's belt is weak (the continents
+    warm and the contrast falls by a third) and the south's strong all year
+    round the cold Antarctic. t_jul / t_jan: the half-years' temperatures
+    reduced to sea level, C."""
+    a = np.abs(grid.lat)
+    mid = (a >= BELT_LAT[0]) & (a <= BELT_LAT[1])
+    north = grid.lat >= 0
+    g = {}
+    for k, t in (("jul", t_jul), ("jan", t_jan)):
+        st = storminess(grid, t)
+        g[k] = [float(st[mid & h].mean()) if (mid & h).any() else 0.0 for h in (north, ~north)]
+    ref = float(np.mean(g["jul"] + g["jan"]))
+    if ref <= 1e-9:
+        return np.ones(grid.n), np.ones(grid.n)
+    return tuple(np.where(north, g[k][0], g[k][1]) / ref for k in ("jul", "jan"))
+
+
+def low_column(grid: Grid, land: np.ndarray, tune: dict) -> np.ndarray:
+    """How much of the air column over each cell its ground's warmth or cold
+    fills (0..1): what sets a thermal low's or high's pressure, which is
+    hydrostatic, the column's mean temperature (PW-596). The boundary layer
+    (sum_h) takes on any land's heat within a day; the air above it, up to
+    the depth a continent's heat low reaches (fetch_h), only as far as the
+    land within the synoptic scale (fetch_km) is land (as _summer_fetch). So
+    a narrow land (Patagonia, Tasmania, New Zealand) or a continent's coast
+    makes a shallow low, and a continent's interior a deep one. The sea's
+    own column: 1."""
+    bl = tune["sum_h"] / tune["fetch_h"]
+    cont = np.clip(smooth(grid, land.astype(float), tune["fetch_km"]), 0.0, 1.0)
+    return np.where(land, bl + (1 - bl) * cont, 1.0)
+
+
 def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1.0, big: float = 0.0,
-                 big_km: float = 2000.0, front: np.ndarray | None = None):
+                 big_km: float = 2000.0, front: np.ndarray | None = None, belt=1.0,
+                 column: np.ndarray | None = None):
     """Zonal bands plus the winds made by land-sea temperature contrasts.
     Air over ground warmer than its latitude's average rises (low pressure),
     over cooler ground it sinks (high pressure). Away from the equator the
@@ -598,9 +647,14 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
     big_km, which reaches out over the neighbouring oceans (the summer heat
     of all of Asia pulls the monsoon across the Indian Ocean). t_sl:
     surface temperature reduced to sea level, C. front: the bands'
-    displacement (wind(), front_shift). Returns (wind, warmth):
+    displacement (wind(), front_shift); belt: the westerlies' strength
+    (westerly_belt). column: how much of the air column the ground's
+    warmth fills (low_column; default all of it): a land's lows and highs
+    are as deep as its air's warmth or cold. Returns (wind, warmth):
     warmth is the smoothed temperature excess, C (>0: rising air)."""
     anom = t_sl - zonal_mean(grid, t_sl)
+    if column is not None:
+        anom = anom * column
     warmth = smooth(grid, anom, 900.0)
     if big > 0:
         warmth = warmth + big * smooth_big(grid, anom, big_km)
@@ -616,7 +670,7 @@ def monsoon_wind(grid: Grid, t_sl: np.ndarray, shift: float, strength: float = 1
     m = np.linalg.norm(v, axis=1, keepdims=True)
     cap = 0.7 * strength * np.clip((65 - np.abs(grid.lat)) / 25, 0.3, 1)[:, None]
     v = v * np.minimum(1, cap / np.maximum(m, 1e-9))
-    return wind(grid, shift, front) + v, warmth
+    return wind(grid, shift, front, belt) + v, warmth
 
 
 def speed(v):
@@ -773,17 +827,30 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     up = grid.centers
     h = G["h"]
     lat = grid.lat
-    # Small islands are sea as far as the gyres are concerned.
+    # The boundary layer (r/beta) has to span a couple of cells to be resolved.
+    r = max(tune["gyre_km"], 0.8 * h)
+    # Small islands are sea as far as the gyres are concerned, unless they
+    # reach further north to south than the boundary current is wide (two
+    # of its widths r/beta at the island's latitude): then the current runs
+    # along the island's east coast instead of passing it (New Zealand,
+    # Sakhalin, Luzon: the Pacific's gyre closes on New Zealand, and the
+    # Tasman Sea between it and Australia has only its own; PW-594).
     land = ~ocean
     lab, nlab = _components(grid, land)
-    sizes = np.bincount(lab[lab >= 0], minlength=max(nlab, 1)) * (4 * np.pi * R_KM**2 / grid.n)
-    wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
+    nl = max(nlab, 1)
+    k = np.maximum(lab, 0)
+    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (4 * np.pi * R_KM**2 / grid.n)
+    lo = np.full(nl, 90.0)
+    hi = np.full(nl, -90.0)
+    np.minimum.at(lo, lab[lab >= 0], lat[lab >= 0])
+    np.maximum.at(hi, lab[lab >= 0], lat[lab >= 0])
+    span = np.radians(hi - lo) * R_KM + h
+    width = 2 * r / np.maximum(np.cos(np.radians(0.5 * (lo + hi))), 0.1)
+    wall = land & ((sizes[k] >= tune["island_km2"]) | (span[k] >= width[k]))
     sea = ~wall
     cosl = np.cos(np.radians(lat))
     tau = wind_v * np.abs(speed(wind_v))[:, None] ** (tune["tau_pow"] - 1)  # stress ~ |u|^p
     F = R_KM * smooth(grid, curl(grid, tau), 250.0) * sea
-    # The boundary layer (r/beta) has to span a couple of cells to be resolved.
-    r = max(tune["gyre_km"], 0.8 * h)
     order = np.argsort(-grid.lon, kind="stable")
     iters = int(tune["gyre_iters"] * 2 ** max(grid.level - 6, 0))  # finer grids: more cells across an ocean
     psi = _stommel(F, cosl, _csr_east(grid), sea, order, grid.nbr_off, grid.nbr_idx, r, h, r / 3000.0**2,
@@ -2102,8 +2169,12 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     t_sl0 = np.where(ocean, t_sea_air, 0.5 * (warm0 + cold0) + lift)
     dsl = np.where(ocean, sea_half, 0.5 * (warm0 - cold0)) * sgn * hk
     t_sl_jul, t_sl_jan = t_sl0 + dsl, t_sl0 - dsl
-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"])
-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"])
+    # the westerlies by season and hemisphere, from the first guess's contrast (westerly_belt); the land's
+    # lows and highs as deep as its air column's warmth (low_column)
+    col = low_column(grid, land, tune)
+    b_jul, b_jan = westerly_belt(grid, t_sl_jul, t_sl_jan)
+    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jul, col)
+    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], None, b_jan, col)
     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
     v_ann = 0.5 * (v_jul + v_jan)
     # the rain's wind: the water vapour rides above the polar inversion, not
@@ -2225,8 +2296,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     # overturning.)
     t_sj, t_sn = season_temps(grid, surf, t_warm, t_cold, hk)
     f_jul, f_jan = front_shift(grid, t_sj), front_shift(grid, t_sn)
-    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul)
-    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan)
+    # (and the westerlies' strength from the finished air's contrast)
+    b_jul, b_jan = westerly_belt(grid, t_sj, t_sn)
+    w_jul, _ = monsoon_wind(grid, t_sl_jul, shift, tune["monsoon"], tune["big"], tune["big_km"], f_jul, b_jul, col)
+    w_jan, _ = monsoon_wind(grid, t_sl_jan, -shift, tune["monsoon"], tune["big"], tune["big_km"], f_jan, b_jan, col)
     v_jul, v_jan = deflect(grid, w_jul, surf, tune), deflect(grid, w_jan, surf, tune)
     air["v_sum"] = np.where(north[:, None], v_jul, v_jan)
     air["v_win"] = np.where(north[:, None], v_jan, v_jul)

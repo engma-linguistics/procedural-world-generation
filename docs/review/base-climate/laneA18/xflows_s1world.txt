@@ -1,0 +1,9 @@
+<scratch>/a18_src_s1.pkl: source dT 5.10 (zoom start 1.10), ending at 78.5 kyr; flows cols 4 (accumulation, ablation, calving, NH net ...), Gt/yr: on | off
+  -20..-15 kyr: on     4219     1641     1122     1687 | off     2172     1462      353      425
+  -15..-10 kyr: on     3750     2100     1407      765 | off     1930     1493      322        5
+  -10.. -5 kyr: on     3034     2323     1540      423 | off     1471     1747      300      -13
+   -5.. +0 kyr: on     2767     1890     1496     1119 | off     1139     1484      277      295
+   +0.. +5 kyr: on     2215     3352     1416     -234 | off     1114      872      291      365
+   +5..+10 kyr: on      872     1967      626     -935 | off      882      967      248     -206
+  +10..+15 kyr: on     1213      522      231      214 | off     1417      702      230      182
+  +15..+20 kyr: on     1386      942      234      572 | off     1466     1065      236      552
