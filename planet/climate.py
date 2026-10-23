@@ -470,19 +470,22 @@ def carry(grid: Grid, v: np.ndarray, a: np.ndarray, b: np.ndarray, km: float = 8
                         G["deg"], grid.nbr_off, grid.nbr_idx, iters, diffusion)
 
 
-def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width: float = 3.0):
+def zonal_mean(grid: Grid, f: np.ndarray, mask: np.ndarray | None = None, width: float = 3.0,
+               fold: bool = False):
     """Mean of f in latitude bands `width` deg wide, given back per cell,
     interpolated linearly in latitude between the bands' centres (a step at
     each band's edge left straight east-west lines in the sea temperatures,
-    and the rain and clouds over the sea followed them)."""
+    and the rain and clouds over the sea followed them). fold: the bands
+    take in both hemispheres at the same distance from the equator."""
     nb = int(180 // width)
-    bins = np.clip(((grid.lat + 90) // width).astype(int), 0, nb - 1)
+    lat = -np.abs(grid.lat) if fold else grid.lat
+    bins = np.clip(((lat + 90) // width).astype(int), 0, nb - 1)
     m = np.ones(grid.n, bool) if mask is None else mask
     tot = np.bincount(bins[m], f[m], nb)
     cnt = np.bincount(bins[m], minlength=nb)
     allm = np.bincount(bins, f, nb) / np.maximum(np.bincount(bins, minlength=nb), 1)
     zm = np.where(cnt > 0, tot / np.maximum(cnt, 1), allm)
-    return np.interp(grid.lat, -90 + width * (np.arange(nb) + 0.5), zm)
+    return np.interp(lat, -90 + width * (np.arange(nb) + 0.5), zm)
 
 
 def _nbr_mean(grid: Grid, f: np.ndarray) -> np.ndarray:
@@ -905,13 +908,19 @@ def sea_surface(grid: Grid, ocean: np.ndarray, t_eq: np.ndarray, wind_v: np.ndar
         # Where the overturning's inflow makes up a share of the surface
         # water, the water relaxes toward its temperature instead: carried
         # by the same currents, that adds (the carrying is linear) to base.
-        # Its warmth stays within its latitude band (moc_zonal = 1: the
-        # band's mean change is taken off, as for the gyres), so the
-        # overturning moves heat around rather than making it: t_eq was
-        # fitted to Earth's sea, overturning and all (PW-265).
+        # The overturning moves heat rather than making it (PW-265): the
+        # mean change over each latitude's sea, in both hemispheres
+        # together, is taken off (moc_zonal = 1). t_eq is the same in both
+        # hemispheres, so it can hold only the overturning's average over
+        # the two; what one hemisphere's overturning carries beyond the
+        # other's is its own, and comes out of the other hemisphere's sea
+        # (the north's sinking draws its warm water across the equator).
+        # Taken off each band alone, it cooled the coasts off the inflow's
+        # path (Alaska, the Baltic) and left the south as warm as the north
+        # (PW-589).
         d = np.where(ocean, (1 - keep) * share * (t_in - t_eq), 0.0)
         e = np.where(ocean, carry(grid, cur, d, b, km=km, diffusion=0.15, allowed=allowed), 0.0)
-        return base + e - tune["moc_zonal"] * np.where(ocean, zonal_mean(grid, e, ocean), 0.0), cur
+        return base + e - tune["moc_zonal"] * np.where(ocean, zonal_mean(grid, e, ocean, fold=True), 0.0), cur
     cold = upwelling_cooling(grid, ocean, wind_v, away, upwelling, eq_upwelling)
     a = np.where(ocean, (1 - keep) * (t_eq - cold), t_eq)
     sst = carry(grid, cur, a, b, km=km, diffusion=0.15, allowed=allowed)
@@ -1606,7 +1615,8 @@ TUNE = dict(
     moc_lambda=30.0,  # ... W/m2 per C it gives up to the air above the latitude's sea temperature
     moc_q0=0.001,  # Sv per km of width: an inflow this strong makes up ~2/3 of the surface water
     moc_layer_m=500.0,  # m: the inflow layer's depth, which winter convection mixes into (ocean.winter_half)
-    moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean (see sea_surface; PW-265)
+    moc_zonal=1.0,  # share of the inflow's warmth taken off its latitude's mean, both hemispheres together
+    # (see sea_surface; PW-265, PW-589)
     moc_level=5,  # grid level the overturning is solved on (5: ~220 km cells)
     moc_spin=6.0,  # x moc_drho at the start (see ocean.solve)
     moc_iters=4,  # damped iterations of salinity <-> overturning while the spin-up tightens, then ...

@@ -1,0 +1,83 @@
+=== overturning: Earth L6, dT +0.0 (6 s) ===
+  NH sinking 13.86 Sv, heat 1.148 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  90%
+  SH sinking  5.66 Sv, heat 0.000 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  44%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    71.5   -23.0  13.14  4.260   1.095   5338396      361.8  0.60
+   -78.0   -46.2   2.78  2.788   0.000   1513759      361.8  0.49
+   -79.7  -153.8   2.17  2.993   0.000   1394725      361.8  0.52
+   -67.5    71.1   0.36  1.841   0.000    340557      361.8  0.51
+    59.8   167.9   0.33  5.575   0.032    271970      361.8  0.62
+   -68.8    28.4   0.32  1.761   0.000    531487      361.8  0.55
+    54.0   143.4   0.25  5.819   0.021    263185      361.8  0.50
+   -66.6   122.8   0.11  1.772   0.000     97590      361.8  0.54
+  by sea (Sv): Nordic Seas 5.82, Barents / Kara 2.09, Irminger / Iceland S 1.97, Labrador Sea 2.53, Baffin Bay 0.36, North Atlantic 40-55N 0.12, North Pacific >40N 0.54, Weddell 2.19, Ross 1.32, Southern Ocean (all) 5.66
+  Norwegian coast sea (62-72N 5W-15E): open in winter 100% of area, coldest-month SST 6.7 C, sea air 6.6 C (NCEP ~+3.5)
+  Fennoscandia (ice-free land): coldest month -13.0 vs -8.5 (-4.5), warmest 10.0 vs 14.0 (-3.9)
+=== overturning: world 119973 L6 (3 s) ===
+  NH sinking 15.87 Sv, heat 1.607 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking 16.29 Sv, heat 1.672 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  95%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -78.4  -107.5  16.35  5.237   1.672  15300604      313.8  1.00
+    81.0   -24.1  15.79  5.087   1.607  16781332      313.8  1.00
+=== overturning: world 28442c L6 (3 s) ===
+  NH sinking 17.10 Sv, heat 1.852 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking 15.61 Sv, heat 1.600 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    81.7    60.5  17.08  5.490   1.852  16104452      340.7  1.00
+   -87.7   -18.6  15.58  4.991   1.600  16517462      340.7  1.00
+=== overturning: world 607540 L6 (3 s) ===
+  NH sinking 16.31 Sv, heat 1.688 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  98%
+  SH sinking 13.75 Sv, heat 1.285 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    85.4  -158.6  16.36  5.260   1.688  18131809      329.8  1.00
+   -68.1   179.6  10.01  4.345   0.979   8846702      329.8  1.00
+   -62.6     5.4   3.54  4.358   0.306   3530479      329.8  1.00
+=== overturning: world 81aced L6 (3 s) ===
+  NH sinking 14.40 Sv, heat 1.403 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  85%
+  SH sinking 12.97 Sv, heat 1.215 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    76.0   131.1  14.19  4.578   1.392   6535330      336.3  0.63
+   -77.9   -54.1  11.90  4.090   1.122   8121955      336.3  1.00
+   -67.3   157.9   1.10  4.180   0.093    752651      336.3  0.98
+    60.6   -48.4   0.13  4.391   0.011     94237      336.3  0.49
+=== overturning: world 7082f5 L6 (3 s) ===
+  NH sinking  8.67 Sv, heat 0.783 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  87%
+  SH sinking 14.47 Sv, heat 1.299 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  93%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -71.2   -41.7   8.79  4.542   0.749   3718577      339.0  0.81
+   -63.8  -172.3   5.73  4.630   0.550   3140307      339.0  0.92
+    62.2    57.4   4.79  4.561   0.439   3279036      339.0  1.00
+    57.3   -60.3   2.35  4.720   0.220   1351018      339.0  1.00
+    58.9  -139.9   1.32  4.301   0.124   2118552      339.0  1.00
+=== overturning: world d14b89 L6 (3 s) ===
+  NH sinking 15.85 Sv, heat 1.621 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  95%
+  SH sinking 18.39 Sv, heat 1.945 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -81.3   -77.1  18.32  5.852   1.945  16874591      341.4  0.71
+    77.5   -85.8  11.36  5.269   1.172  12887230      341.4  1.00
+    68.7   119.0   4.40  4.460   0.435   5699729      341.4  1.00
+    56.3    83.1   0.15  4.153   0.014    373021      341.4  0.58
+=== overturning: world a5a387 L6 (3 s) ===
+  NH sinking  9.93 Sv, heat 0.834 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  76%
+  SH sinking 15.85 Sv, heat 1.511 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -70.2    -2.6  15.09  4.935   1.469   8036690      341.4  0.61
+    62.5   125.2   7.79  3.908   0.620   3890785      341.4  0.94
+    59.3   -45.2   1.73  3.792   0.154   1081324      341.4  0.38
+    70.0    47.8   0.35  5.512   0.035     97861      341.4  0.59
+    57.3    19.5   0.25  5.327   0.025    255932      341.4  0.75
+   -63.4  -108.1   0.25  4.690   0.025    233378      341.4  0.60
+   -54.5   -86.0   0.17  4.673   0.017    664091      341.4  0.61
+=== overturning: world dad91b L6 (3 s) ===
+  NH sinking 13.63 Sv, heat 1.314 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking  2.02 Sv, heat 0.201 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  52%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    84.7   -24.9  13.47  4.309   1.314  18167334      325.3  1.00
+   -68.1    59.2   2.17  4.216   0.201   1775011      325.3  0.82
+=== overturning: world c00ebf L6 (3 s) ===
+  NH sinking 11.67 Sv, heat 0.973 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  77%
+  SH sinking 11.87 Sv, heat 1.062 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  77%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    68.0   -21.4  11.55  3.584   0.973  11197307      343.2  1.00
+   -63.8     2.8   6.17  3.427   0.554   6777042      343.2  1.00
+   -59.0   143.3   5.69  3.990   0.508   3828479      343.2  0.79

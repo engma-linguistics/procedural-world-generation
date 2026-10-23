@@ -711,7 +711,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     overturning is thousands of km across; ~10x cheaper). There the
     inflow's warmth is added to the sea temperature sst0 (without it) the
     way climate.sea_surface would: by the same currents, part of the
-    latitude's mean change taken off (moc_zonal; 1: the heat stays in its band, PW-265).
+    latitude's mean change over both hemispheres taken off (moc_zonal; 1: the heat is conserved, PW-265, PW-589).
     sst_of(share, t_in): the full sea-surface temperature (on grid) where a
     share of the surface water is the overturning's inflow at t_in, used
     once at the end. t_eq: the latitude's sea temperature; cur: the
@@ -757,7 +757,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
         D = np.where(sea_c, st["share"] * (st["t_in"] - teq_c), 0.0)
         E = _carry(cg, out_w, (1 - keep) * D, keep, 1.5 * tune["cur_max"] * 2500.0, 0.15, warm.get("E"))
         warm["E"] = E
-        zm = tune["moc_zonal"] * C.zonal_mean(cg, E, sea_c)
+        zm = tune["moc_zonal"] * C.zonal_mean(cg, E, sea_c, fold=True)
         return np.where(sea_c, np.maximum(sst0_c + E - zm, C.FREEZE), sst0_c)
 
     def state(st, sst):

@@ -1,0 +1,35 @@
+bringing up nodes...
+bringing up nodes...
+
+.........F
+=================================== FAILURES ===================================
+_______________ test_glacials_grow_ice_and_endings_melt_it_fast ________________
+[gw0] linux -- Python 3.14.7 /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a759d4eade75b5dcd/.venv/bin/python
+
+icehouse = [{'frames': [{'t': 0.0, 'stats': {'t': 0.0, 'plates': 9, 'land_pct': np.float64(23.8), 'landmasses': 4, ...}}, {'t': 2...4.46}, 'cycle': {'on': False, 'lat': 69.4, 'sun': {'build': 423.2, 'lo': 434.8, 'hi': 463.5}, 'builds': [], ...}, ...}]
+
+    def test_glacials_grow_ice_and_endings_melt_it_fast(icehouse):
+        """The ice follows the index: lower seas at a glacial maximum than without it, and an ending gives
+        back most of the glacial's extra ice within 15 kyr."""
+        on, off = icehouse
+        t = np.array([f["t"] for f in on["frames"]])
+        sl_on = np.array([f["stats"]["sea_level_change_m"] for f in on["frames"]])
+        sl_off = np.array([f["stats"]["sea_level_change_m"] for f in off["frames"]])
+        e = on["cycle"]["endings"][0]
+        i, j = np.searchsorted(t, e["t"]), np.searchsorted(t, e["t"] + 15.0)
+        extra = sl_off[i] - sl_on[i]
+        print("glacial extra ice (m):", round(extra, 1), "left after 15 kyr:", round(sl_off[j] - sl_on[j], 1))
+        assert extra > 10.0
+>       assert sl_off[j] - sl_on[j] < 0.5 * extra
+E       assert (np.float64(-15.87) - np.float64(-56.96)) < (0.5 * np.float64(33.72))
+
+tests/test_timezoom_cycle.py:101: AssertionError
+=============================== warnings summary ===============================
+tests/test_timezoom_cycle.py::test_zoom_climate_follows_the_index
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a759d4eade75b5dcd/planet/climate.py:2209: RuntimeWarning: fresh water into the sea doesn't balance: -0.0250 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+1 failed, 9 passed, 1 warning in 22.50s
