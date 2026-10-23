@@ -555,8 +555,11 @@ class History:
         s = _nbr(np.add, x[g.nbr_idx], g)
         return np.maximum(x, s / np.diff(g.nbr_off))
 
-    def _end_parent(self, line, step):
-        """After its last split: the parent's remaining range is shared among its children."""
+    def _end_parent(self, line, step, env, tags):
+        """After its last split: the parent's remaining range is shared among its children. Country joined to
+        a child's land goes to the nearest child; a part cut off from every child (the stem held other
+        landmasses too) carries on as the child whose niche suits it best (mean habitat over the part): the
+        stem's isolated stock is that people's own ancestors there, not lost with the stem (PW-677)."""
         g, k = self.grid, self.idx[line.id]
         P = self.p[k] > EST
         lab = np.full(g.n, -1, np.int64)
@@ -565,6 +568,15 @@ class History:
             lab[self.p[self.idx[c]] > EST] = ci
         if kids and P.any():
             near = nearest_label(lab, P | (lab >= 0), g.nbr_off, g.nbr_idx)
+            orphan = P & (near < 0)
+            if orphan.any():
+                Kk = [self._K(self.tree.lines[c], env, tags, step) for c in kids]
+                comp, nco = g.components(orphan)
+                for z in range(nco):
+                    part = comp == z
+                    best = int(np.argmax([float(K[part].mean()) for K in Kk]))
+                    if Kk[best][part].max() > EST:
+                        near[part] = best
             for ci, c in enumerate(kids):
                 sel = P & (near == ci)
                 kc = self.idx[c]
@@ -614,7 +626,7 @@ class History:
                     if l.parent:
                         par = self.tree.lines[l.parent]
                         if not par.persists and self.tree.living_children(par.id) and all(c in self.started for c in self.tree.living_children(par.id)) and self.active.get(par.id):
-                            self._end_parent(par, step)
+                            self._end_parent(par, step, env, tags)
             mix = self._mix_ramp(step.ago)
             order = [l for l in L if self.active[l.id]]
             self.rng.shuffle(order)

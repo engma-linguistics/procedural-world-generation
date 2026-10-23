@@ -21,3 +21,4 @@ Owner (2026-10-24) on run d489d0: the cell at 42.5, -113.3 (437 m) is unpeopled 
 
 ## Updates
 - 2026-10-23: Created.
+- 2026-10-24: Fixed on branch worktree-agent-ab254628c4ccfa51b. Causes: (1) a stem's range on landmasses not joined to a child vanished when the stem ended (`History._end_parent`); (2) no sea crossing for ordinary peoples between the raft and the boats at 6 kyr (`spec.CANOES_KYR`). Habitable land empty at the present: 1df1c3 35.7% -> 19.9% (31.9% -> 11.8% of the land warmer than 0 C), 3e9e7d 30.4% -> 19.7% (21.0% -> 4.7%); the rest is mostly cold country. 42.5 N -113.3 is peopled. See docs/proposals/lineages.md. Status left for the coordinator.

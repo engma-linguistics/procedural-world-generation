@@ -172,6 +172,29 @@ def test_history_places_splits_hybrids_templates_and_extinctions(faketz):
     assert arr["peoples"].shape[0] == len(run["frames"])
 
 
+def test_a_stem_cut_off_from_its_children_carries_on_as_one_of_them(faketz):
+    """PW-677: when a stem ends, the part of its range joined to no child (another landmass) goes to the child
+    whose niche suits it, instead of vanishing with the stem."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    h.p = np.zeros((len(h.lines), h.grid.n))
+    h.active = {l.id: False for l in h.lines}
+    h.ended = {}
+    step = h.steps[-1]
+    env = step.get()
+    tags = H._tags(h.grid, env)
+    lon = h.grid.lon
+    west = tags["land"] & (np.abs(lon) < 60)
+    east = tags["land"] & (lon > 90) & (lon < 150)
+    assert west.any() and east.any()
+    h.p[h.idx["stem"]][west | east] = 1.0
+    h.p[h.idx["a"]][west] = 1.0  # the child 'a' lives on the west continent only; 'b' is not yet alive
+    h.active["stem"] = h.active["a"] = True
+    h._end_parent(h.tree.lines["stem"], step, env, tags)
+    assert not (h.p[h.idx["stem"]] > 0).any()
+    assert (h.p[h.idx["a"]][east] > H.EST).mean() > 0.5  # the cut-off east stock carried on as 'a'
+
+
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     g = ps.grid
@@ -212,8 +235,11 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     monkeypatch.setitem(SP.HOPS, "swims", (1.0, 8000.0, None))  # (level 3 cells are ~900 km: a long-range swimmer)
     got = cr.hop(swimmer, p, K, K, env, tags, 100.0, 4000.0, rng, H.EST)
     assert any(island[c] for c, _, _ in got)
-    # (before the boats, a walker only drifts; after, a small share of its frontier sails, PW-650)
-    assert C.modes(walker, 10.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    # (before the canoes, a walker only drifts; then a small share of its frontier paddles short gaps and, from
+    # the voyages, sails further, PW-650, PW-677)
+    assert C.modes(walker, 100.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    canoe = dict((w, (r, L)) for w, r, L in C.modes(walker, 10.0))["seafaring"]
+    assert canoe[1] == SP.BOATS[1] and canoe[1] < dict((w, L) for w, _, L in C.modes(walker, 1.0))["seafaring"]
     assert C.modes(SP.Lineage("w0", sea_share=0.0), 1.0) == [("raft",) + SP.HOPS["raft"][:2]]
     boat = dict((w, (r, L)) for w, r, L in C.modes(walker, 1.0))["seafaring"]
     sailor = dict((w, (r, L)) for w, r, L in C.modes(SP.Lineage("s", traits=["seafaring"]), 1.0))["seafaring"]
