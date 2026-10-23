@@ -39,4 +39,5 @@ F (-0.24 W/m2 at L6) is also a fifth of Köhler's, though the test's 10 kyr at -
 - [ ] The 0-40 deg vegetation response to glacial cooling is plausible against the LGM (direction first)
 
 ## Updates
+- 2026-10-23: Lane A22 (held branch worktree-agent-ac50a7a56279c5017, 3e2a10a; harness cherry-pick 89cc49c separate): C3 quantum yield from Farquhar's q3(t,Ci) and WUE scaling with Ca for all plants. Earth glacial max |lat|<15: forest 0.44->0.51 on main becomes 0.43->0.28; savanna+grass 9.9 -> 20.6 Mkm2 at the zoom's LGM. Multi-seed bars pass on all draws; health quick: deep-ice frames worse on one draw (seed 1 29%), second draw pending. Single-seed fixtures flip (PW-643).
 - 2026-10-23: Created from inbox draft draft-cooling-greens-the-low-latitudes.md (found by base-climate-laneA21).
