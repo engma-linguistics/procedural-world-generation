@@ -254,19 +254,31 @@ def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int |
     d_shore = _distance(land, sea, res, SHOAL_KM + res)
     hazard = sea & ((life == 1) | ((depth < SHOAL_M) & ~np.isfinite(d_shore)) | (bi == 3))
     out = {"coast_type": band_ct, "barrier_island": bi, "nav_hazard": hazard.astype(np.uint8)}
+    # spits, beach ridges, tidal channels, drowned reefs (zoom_shoreforms.py, PW-621)
+    from . import zoom_shoreforms as SF
+    ctx = {"land": land, "sea": sea, "shore": shore, "h": h, "res": res, "ct": ct, "Pk": Pk, "cells": cells,
+           "wave_sea": wave_sea, "tide_sea": tide_sea, "rise": rise, "hard": hard,
+           "uniform": lambda km, sd: _uniform(Pk, km, res, sd).reshape(ny, nx)}
+    sf = SF.build(world, meta, lay, ctx, terrain=terrain, seed=seed)
+    out["shore_form"] = sf["shore_form"]
+    feats += sf["features"]
     if terrain:
         h2 = h.copy()
         h2[island] = ISLAND_M * (0.5 + 0.5 * u[island])
         h2[lagoon] = np.maximum(h2[lagoon], -LAGOON_M)
         w2 = water.copy()
         w2[island] = 0
+        if sf["terrain"] is not None:  # (spits raised out of the sea)
+            m, z = sf["terrain"]
+            h2[m] = np.maximum(h2[m], z[m])
+            w2[m] = 0
         out["elevation"], out["water"] = h2.astype(np.float32), w2
     km = {CF.CLASSES[cid][1]: round(float((ct == cid).sum() * res), 1) for cid in range(1, len(CF.CLASSES))
           if (ct == cid).any()}
     stats = {"shore_km": km, "barrier_islands_km2": round(float(island.sum() * res * res), 1),
              "lagoons_km2": round(float(lagoon.sum() * res * res), 1), "inlets": int(_count_blobs(inlet)),
              "inlet_spacing_km": round(inlet_km, 1), "hazard_km2": round(float(hazard.sum() * res * res), 1),
-             "terrain": bool(terrain)}
+             "terrain": bool(terrain), "forms": sf["stats"]}
     return {"layers": out, "features": feats, "stats": stats}
 
 
@@ -289,6 +301,8 @@ LAYER_SPECS = {
                                                                       "(zoom_coast.py)"},
     "nav_hazard": {"dtype": "u1", "units": "0/1", "description": "hazard to ships: reefs, shoals off the shore, "
                                                                  "barrier inlets"},
+    "shore_form": {"dtype": "u1", "units": "enum", "description": "1 spit, 2 beach-ridge plain, 3 tidal channel, "
+                                                                 "4 tidal flat, 5 drowned reef (zoom_shoreforms.py)"},
 }
 
 
@@ -310,6 +324,8 @@ def add_to_zoom(ref, terrain: bool = False):
             meta["layers"].update(S.write_layers(d, {k: S.encode(new[k], spec)}, {k: spec}))
     meta.setdefault("legend", {})["coast"] = CF.legend()
     meta["legend"]["barrier_island"] = BARRIER_LEGEND
+    from .zoom_shoreforms import LEGEND as SHORE_FORM_LEGEND
+    meta["legend"]["shore_form"] = SHORE_FORM_LEGEND
     meta["coast"] = {"features": r["features"], "stats": r["stats"], "created": time.strftime("%Y-%m-%d %H:%M:%S")}
     S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
     return d
@@ -322,6 +338,11 @@ def text_lines(c: dict) -> list[str]:
     out.append(f"  barrier islands {s['barrier_islands_km2']:g} km2, lagoons {s['lagoons_km2']:g} km2, "
                f"{s['inlets']} inlets (~{s['inlet_spacing_km']:g} km apart); hazards {s['hazard_km2']:g} km2"
                + ("; islands raised in the terrain" if s.get("terrain") else ""))
-    for f in c["features"][:8]:
+    fm = s.get("forms")
+    if fm:
+        out.append(f"  shore forms: {fm['spits']} spits ({fm['spit_km']:g} km), beach ridges {fm['beach_ridges_km2']:g} km2, "
+                   f"tidal flats {fm['tidal_flats_km2']:g} km2 with {fm['tidal_channels_km2']:g} km2 of channels, "
+                   f"drowned reefs {fm['drowned_reefs_km2']:g} km2 (lowstand {fm['lowstand_m']:g} m)")
+    for f in [f for f in c["features"] if f["kind"] != "spit"][:8]:
         out.append(f"  {f['kind']} at {f['lat']:.2f}, {f['lon']:.2f} ({f['coast']}, {f['score']:.2f})")
     return out

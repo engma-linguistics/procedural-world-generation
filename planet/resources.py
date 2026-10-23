@@ -138,6 +138,12 @@ TROPIC_KEEP_MYR = 60.0  # a laterite profile's survival (erosion, burial): older
 LATERITE_MYR = 40.0  # uninterrupted weathering a mature bauxite profile takes (tens of Myr: Guinea, Weipa, Guiana)
 BURY_KM, STRIP_KM = 0.01, 0.01  # km of cover gained / lost per Myr that buries / strips a weathering profile
 SMOOTH_FRAMES = 5  # the traced cover's running mean over this many keyframes (the keyframes' 0.1 km steps flicker)
+PRESENT_KM = 0.02  # km of a lithology for a column to count as holding it (the neighbour vote)
+COLUMN_PASSES = 1  # neighbour-filter passes over the column summaries (trace noise between neighbours)
+_OROGEN = 4  # surface.OROGEN: folded, metamorphosed sediment (a collision belt's basement)
+# Sn-W granites (S-type, ilmenite series): crust thickened in a collision melts its own metasediment
+MELT_KM = (52.0, 62.0)  # crust thickness (km) in a collision setting from barely to fully melting its base
+ROOF_MYR = 150.0  # e-folding of a granite's roof zone (greisens, cupolas) after unroofing: erosion strips it
 
 
 @njit(cache=True)
@@ -234,6 +240,44 @@ def _dilate(grid, mask, hops=1):
     return m
 
 
+def _same_ground(grid, plate, cont) -> np.ndarray:
+    """(n, 7) the cell and its neighbours on the same plate and crust (continental or oceanic) today; -1 pads."""
+    src, dst = np.asarray(grid.nbr_src), np.asarray(grid.nbr_idx)
+    ok = (plate[src] == plate[dst]) & (cont[src] == cont[dst])
+    nb = np.full((grid.n, 7), -1, np.int64)
+    nb[:, 0] = np.arange(grid.n)
+    slot = np.arange(len(src)) - np.asarray(grid.nbr_off)[src] + 1
+    nb[src[ok], slot[ok]] = dst[ok]
+    return nb
+
+
+def _smooth_columns(grid, nb, tot, dep, mx, oil, gas, shallow, passes: int):
+    """Column summaries (n, lithologies) filtered over each cell and its same-ground neighbours `nb`, `passes`
+    times. Per lithology and summary, a vote: a cell holds the unit (> PRESENT_KM) where most of its
+    neighbourhood does, which removes lone cells and fills lone gaps without spreading a unit's edge. A kept
+    cell's value is pulled halfway to the mean of the neighbours that hold it (a filled gap takes that mean);
+    depths and burials follow the unit's own km."""
+    pad = nb < 0
+    idx = np.where(pad, 0, nb)
+    w = (~pad).astype(float)[:, :, None]
+    cnt = w.sum(1)
+
+    def vote(x, has):
+        h = has[idx] * w  # (n, 7, lithologies)
+        nh = h.sum(1)
+        mean = (x[idx] * h).sum(1) / np.maximum(nh, 1.0)
+        own = np.where(has, 0.5 * (x + mean), mean)
+        return np.where(nh / cnt >= 0.5, own, 0.0)
+    for _ in range(passes):
+        has = tot > PRESENT_KM
+        keep_tot = vote(tot, has)
+        dep, mx = vote(dep, has), vote(mx, has)
+        oil, gas, shallow = (vote(x, x > PRESENT_KM) for x in (oil, gas, shallow))
+        tot = keep_tot
+        dep, mx = np.where(tot > 0, dep, 0.0), np.where(tot > 0, mx, 0.0)
+    return tot, dep, mx, oil, gas, shallow
+
+
 def _running_mean(a: np.ndarray, w: int) -> np.ndarray:
     """Centred running mean of a (frames, n) along the frames (edges: the window shrinks)."""
     if w <= 1 or len(a) < 2:
@@ -302,6 +346,9 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
     last = {k: np.full(n, 1e4) for k in ("arc", "fold", "rift", "plume", "vent")}
     thick_max = np.zeros(n)
     thick_max_age = np.full(n, 1e4)
+    coll_thick = np.zeros(n)  # the thickest crust while in a collision setting (fold belt or orogen basement)
+    granite_myr = np.zeros(n)  # how long the ground has been granite at the surface, continuously, up to now
+    granite_run = np.ones(n, bool)
     # the column, oldest frame first: walk the traced frames backwards to collect, then replay forwards
     samples = []
     for kk_i, k in enumerate(ks):
@@ -339,6 +386,11 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
         th = np.where(alive, th, 0.0)
         thick_max_age = np.where(th > thick_max, age, thick_max_age)
         thick_max = np.maximum(thick_max, th)
+        if "rock" in arr:
+            rk = dec("rock", k)[idx]
+            coll_thick = np.maximum(coll_thick, np.where(cr & ((lf == 3) | (rk == _OROGEN)), th, 0.0))
+            granite_run &= rk == _GRANITE
+            granite_myr += np.where(granite_run, dt, 0.0)
         # what this frame deposits, if it gains cover (strata_top names the rock; the setting adds peat and source shale)
         top = dec("strata_top", k)[idx] if "strata_top" in arr else np.full(n, _SHALE)
         tree = dec("tree_cover", k)[idx] if "tree_cover" in arr else np.zeros(n)
@@ -386,8 +438,14 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
     ok = np.stack([s_[2] for s_ in reversed(samples)]) & (dcov < BURY_KM) & (dcov > -STRIP_KM)
     tropic_run = _streaks(ok, dts, ages, TROPIC_KEEP_MYR)
     tot, dep, mx, oil, gas, shallow = _column_summary(typ, km, maxd, ntop, 6)
+    # neighbouring cells trace back to different keyframe cells (their paths split at plate boundaries and in the
+    # nearest-cell lookup), so their columns differ by trace noise: average each column with its neighbours on
+    # the same plate and crust today (a basin's strata are continuous; a plate boundary or a coast is a real edge)
+    same = _same_ground(grid, dec("plate", k_now), dec("crust", k_now) > 0)
+    tot, dep, mx, oil, gas, shallow = _smooth_columns(grid, same, tot, dep, mx, oil, gas, shallow, COLUMN_PASSES)
     out = {**acc, **{f"last_{k}": v for k, v in last.items()}, "tropic_run_myr": tropic_run,
-           "thick_max": thick_max, "thick_max_age": thick_max_age, "t_now": t_now,
+           "thick_max": thick_max, "thick_max_age": thick_max_age, "coll_thick": coll_thick,
+           "granite_myr": granite_myr, "t_now": t_now,
            "column_km": tot, "column_depth": dep, "column_maxburial": mx, "column_oil": oil, "column_gas": gas,
            "column_shallow": shallow, "frames": len(ks), "seconds": round(time.time() - t0, 1)}
     if log:
@@ -510,9 +568,26 @@ def likelihoods(grid, L: dict, meta: dict | None = None, hist: dict | None = Non
     edge = _dilate(grid, ~craton & cont, 3) & craton
     green = craton * ramp(age, 2400, 2900) * (0.15 + 0.3 * edge)
     R["orogenic_au"] = np.maximum(belt, green) * cont * exposed * np.where(cover < 0.05, 1.0, 0.7)
-    # Sn-W: granites, mostly crustal-melt granites of thick collision crust (S-type)
-    R["sn_w"] = (np.maximum(granite * 0.55, orogen * exposed * ramp(thick_max, 50, 65) * 0.8)
-                 * np.where(granite & (thick_max > 50), 1.4, 1.0)).clip(0, 1) * cont
+    # Sn-W (Lehmann 1990; Ishihara 1977): the evolved, reduced (S-type, ilmenite-series) granites of crust that a
+    # collision thickened until its metasedimentary base melted, and only their roof zones (greisens, cupolas,
+    # veins in the roof rock), which erosion strips within ~100-200 Myr of unroofing. Arc (I-type, magnetite-
+    # series) granites carry porphyry Cu instead and only a little tin.
+    if h is not None:
+        coll, roof = h["coll_thick"], np.exp(-h["granite_myr"] / ROOF_MYR)
+    else:  # today's collision belts and crust; the roof's age unknown
+        coll, roof = np.where(_dilate(grid, orogen | (lf == 3), 2), thick_max, 0.0), np.full(n, 0.6)
+    metased = np.where(_dilate(grid, orogen | (rock == 3), 2), 1.0, 0.6)  # a reduced (graphitic) melt source
+    s_type = ramp(coll, *MELT_KM) * metased
+    tin_granite = granite * (0.04 + 0.86 * s_type) * (0.3 + 0.7 * roof)
+    # a melted collision belt's own S-type plutons (the rock layer names its basement, not them), reached once the
+    # belt's thickened crust has been worn or collapsed a few km (still deep under a plateau) and lost before its
+    # migmatite roots show (crust lost ~ the exhumation: the window ~2-12 km)
+    lost = np.maximum(thick_max - thick, 0)
+    window = (0.25 + 0.75 * ramp(lost, 3, 8)) * (1 - ramp(lost, 12, 20))
+    # (and the melts lag the thickening: a thickened root takes 10-30 Myr to heat to melting; England &
+    # Thompson 1984)
+    incubate = ramp(h["thick_max_age"], 5, 20) if h is not None else 1.0
+    R["sn_w"] = np.maximum(tin_granite, orogen * exposed * s_type * window * incubate * 0.4) * cont
     # banded iron formations: ancient shield crust (>= ~1.8 Gyr: the age of the iron oceans), exposed
     R["bif_fe"] = craton * ramp(age, 1800, 2700) * exposed * (0.15 + 0.55 * edge)
     # magmatic Ni-Cu-PGE: plume heads and flood basalts on continental crust, best near old cratons

@@ -172,7 +172,7 @@ const LAYERS = [
   ['satellite', 'Satellite'], ['relief', 'Relief'], ['height', 'Height'], ['shade', 'Hillshade'], ['rivers', 'Rivers'],
   ['rock', 'Rock'], ['surface_rock', 'Surface rock'], ['climate', 'Climate'], ['biome', 'Biome'], ['landform', 'Landform'],
   ['vegetation', 'Vegetation'], ['tree_cover', 'Tree cover'], ['canopy_height', 'Canopy height'], ['npp', 'NPP'],
-  ['fire_return', 'Fire return'], ['lai', 'Leaf area'], ['coastal_life', 'Coastal life'], ['coast_type', 'Coasts'], ['barrier_island', 'Barrier islands'],
+  ['fire_return', 'Fire return'], ['lai', 'Leaf area'], ['coastal_life', 'Coastal life'], ['coast_type', 'Coasts'], ['barrier_island', 'Barrier islands'], ['shore_form', 'Shore forms'],
   ['soil', 'Soils'], ['soil_depth', 'Soil depth'], ['soil_water', 'Soil water'], ['soil_fertility', 'Fertility'],
   ['soil_carbon', 'Soil carbon'], ['peat_depth', 'Peat'], ['permafrost', 'Permafrost'], ['loess', 'Loess'],
   ['river_nav', 'Navigable rivers'], ['harbour', 'Harbours'], ['pass', 'Passes'], ['fertile', 'Farmland'], ['fresh_water', 'Fresh water'],
@@ -185,7 +185,7 @@ const LAYERS = [
 // layers that need data the zoom may not have (zooms made before them): their button is hidden
 const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_height: 'canopy_height', npp: 'npp',
   fire_return: 'fire_return', lai: 'lai', radiation_index: 'radiation_index', twi: 'twi', landform: 'landform',
-  coastal_life: 'coastal_life', coast_type: 'coast_type', barrier_island: 'barrier_island', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
+  coastal_life: 'coastal_life', coast_type: 'coast_type', barrier_island: 'barrier_island', shore_form: 'shore_form', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
   soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
   loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m',
   river_nav: 'river_nav', harbour: 'harbour', pass: 'pass', fertile: 'fertile', fresh_water: 'fresh_water',
@@ -196,7 +196,7 @@ const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_heigh
 const HU_SPARSE = ['river_nav', 'harbour', 'pass'], HU_AREA = ['fertile', 'fresh_water'];
 const HU_TEXT = { river_nav: 'navigable rivers: what floats on them', harbour: 'harbours at the coast', pass: 'mountain passes: how long they are open',
   fertile: 'farmland', fresh_water: 'fresh water within reach' };
-const COAST_SPARSE = ['coast_type', 'barrier_island'];  // (zoom_coast.py, PW-097: the shore's form; barrier islands, lagoons, inlets)
+const COAST_SPARSE = ['coast_type', 'barrier_island', 'shore_form'];  // (zoom_coast.py, PW-097: the shore's form; barrier islands, lagoons, inlets)
 const CATEGORICAL = ['rock', 'surface_rock', 'climate', 'biome', 'landform', 'vegetation', 'coastal_life', 'soil', 'valley_floor', ...COAST_SPARSE,
   ...HU_SPARSE, ...HU_AREA];
 // a fine zoom's alluvial valley floors (zoom_fine_floodplain, PW-412; planet/zoom.py LAYER_DOC valley_floor)
@@ -1116,6 +1116,7 @@ function legendFor(kind) {
     : kind === 'valley_floor' ? VALLEY_FLOOR
     : kind === 'coast_type' ? (lg.coast || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
     : kind === 'barrier_island' ? (lg.barrier_island || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
+    : kind === 'shore_form' ? (lg.shore_form || []).map((e) => ({ ...e, color: e.color.slice(0, 7) }))
     : HU_SPARSE.includes(kind) || HU_AREA.includes(kind) ? (lg.human_use?.[kind] || []).filter((e) => e.color.length <= 7)
     : kind === 'soil' ? (lg.soils?.types || []).map((t) => ({ ...t, text: `${t.wrb} / ${t.usda}: ${t.desc}` })) : lg.rocks;
 }
@@ -1256,7 +1257,8 @@ function renderLayer() {
         : k === 'river_nav' ? ` ~${fmt(present.get(id) * m.res_km)} km` : ''}</span>`).join('')
       + (HU_TEXT[k] ? `<span class="muted">(${HU_TEXT[k]}${k === 'harbour' ? '; diamonds under Overlays' : k === 'pass' ? '; bow-ties under Overlays' : ''}; hover a pixel for details)</span>` : '')
       + (k === 'coast_type' ? '<span class="muted">(the shore\'s form, from the world\'s coast classes and the zoom\'s own relief, waves, rock and coastal life: zoom_coast.py; km of band)</span>'
-        : k === 'barrier_island' ? '<span class="muted">(sand islands off low barrier coasts, lagoons behind, tidal inlets between: zoom_coast.py)</span>' : '')
+        : k === 'barrier_island' ? '<span class="muted">(sand islands off low barrier coasts, lagoons behind, tidal inlets between: zoom_coast.py)</span>'
+        : k === 'shore_form' ? '<span class="muted">(spits built by longshore drift, beach-ridge plains, tidal flats and their channels, reefs drowned since the last lowstand: zoom_shoreforms.py)</span>' : '')
       + (k === 'coastal_life' ? '<span class="muted">(reefs, kelp and seagrass on the shallow sea floor; mangroves and salt marsh between the tides: zoom_coastal)</span>'
         : k === 'valley_floor' ? `<span class="muted">${present.size ? '(an alluvial river\'s valley floor: the meander belt is where its channel sweeps)' : 'no valley floors in this zoom'}</span>` : '');
   } else if (k === 'floor_m') {
@@ -1468,6 +1470,7 @@ function hoverPx(r, c) {
     ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     ${L.coast_type && L.coast_type[i] ? `<tr><td>coast</td><td>${name(lg.coast || [], L.coast_type[i])}</td></tr>` : ''}
     ${L.barrier_island && L.barrier_island[i] ? `<tr><td>barrier</td><td>${name(lg.barrier_island || [], L.barrier_island[i])}</td></tr>` : ''}
+    ${L.shore_form && L.shore_form[i] ? `<tr><td>shore form</td><td>${name(lg.shore_form || [], L.shore_form[i])}</td></tr>` : ''}
     ${L.nav_hazard && L.nav_hazard[i] ? '<tr><td>ships</td><td>hazard (reef, shoal or inlet bar)</td></tr>' : ''}
     <tr><td>temperature</td><td>${fmt(L.temperature[i], 1)} &deg;C${L.temperature_jul ? ` <span class="muted">(Jul ${fmt(L.temperature_jul[i])}, Jan ${fmt(L.temperature_jan[i])})</span>` : ''}</td></tr>
     <tr><td>rain</td><td>${fmt(L.precipitation[i])} mm/yr${L.precipitation_jul ? ` <span class="muted">(Apr-Sep ${fmt(L.precipitation_jul[i] / 2)}, Oct-Mar ${fmt(L.precipitation_jan[i] / 2)} mm)</span>` : ''}</td></tr>

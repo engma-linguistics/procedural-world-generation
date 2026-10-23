@@ -29,4 +29,5 @@ instead.
       site tens of deposits, not hundreds
 
 ## Updates
+- 2026-10-23: polish1 lane (branch worktree-agent-ab67a9e26ffa4d792): Sn-W by mechanism. The history records collision crust (coll_thick) and continuous granite exposure (granite_myr). Tin granites = granite x (0.04 + 0.86 x S-type) x roof, where S-type = ramp(coll_thick, 52, 62) x reduced source, and roof = exp(-granite_myr/150). Melted collision belts get 0.4 x S-type x an exhumation window (3-20 km of crust lost) x 10-30 Myr incubation. sn_w >= 0.5 now covers 6-23% of granite cells, and 0.05-0.24% of land instead of 4-5%. Zoom 72857c: 286 -> 0 deposits (a plateau still thickening). Zoom 439e2a: 331 -> 105, ~30 notable (a genuinely melted belt). docs/review/polish/polish-1.md. Follow-up draft: draft-snw-melted-belt-proxy.
 - 2026-10-23: Created from inbox draft draft-resources-snw-granite-spread.md (found by resources2).

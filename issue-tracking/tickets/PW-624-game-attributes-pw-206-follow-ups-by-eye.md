@@ -27,4 +27,5 @@ PW-206's game attributes (`planet/gameattrs.py`) are built; what is left from it
 - [ ] replace the crocodile placeholder when PW-103 lands
 
 ## Updates
+- 2026-10-23: polish1 lane: the sea is already masked on the zoom's game ramps. zoom.html's RAMPS branch draws sea pixels with the depth ramp (since ca5fafc), and travel and sightline are RAMPS layers; screenshot docs/review/polish/viewer_368c45_travel_sea_masked.png. The first checkbox can be ticked. The by-eye scale review against named Earth places was not done.
 - 2026-10-23: Created from inbox draft draft-game-attrs-followups.md (found by soilveg).
