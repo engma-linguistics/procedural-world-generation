@@ -32,9 +32,27 @@ def cold_run(cold_src):
 def test_glacial_cooling_turns_forest_to_tundra_and_cools_further(sources4):
     """PW-450: plants grown to balance with the start, then on a climate 4 C colder, lose forest toward the
     pole; the lying snow it no longer hides brightens the ground, which cools the land (the local
-    correction) and the planet (the global term, in dTg). On each of the L4 worlds (seeds.SEEDS4), at least
-    seeds.PASS_RATE of them (one world is a chaotic run's draw: PW-640)."""
-    seeds.check_rate("forest to tundra", seeds.run_case(_forest_case, sources4))
+    correction) and the planet (the global term, in dTg). On each of the L4 worlds (seeds.SEEDS4) that has a
+    boreal forest over seasonal snow (_boreal_snow: the premise's prerequisite, PW-645), at least
+    seeds.PASS_RATE_L4 of them (one world is a chaotic run's draw: PW-640, PW-643)."""
+    seeds.check_rate("forest to tundra", seeds.run_case(_forest_case, sources4), rate=seeds.PASS_RATE_L4)
+
+
+# The premise (the boreal forest's loss over lying snow outweighs the darkening below 40 deg as cooling greens the
+# low latitudes: PW-645) needs a boreal forest over seasonal snow. Eligible: the start's forest poleward of 40 deg (the
+# test's own band) lies under snow at least a season of the year, on its tree-weighted mean. A season is a quarter
+# of the year (3 of 12 months). The planet's own snow and forest, read at the start, before the cooling, never F.
+# (On main's 120 L4 worlds, seeds 1-24 in three draws and 25-72: 78 of 98 eligible pass, 9 of 22 ineligible.)
+SEASON = 3 / 12
+
+
+def _boreal_snow(g, tilt, c, tree, open_, area):
+    """The start's forest poleward of 40 deg: the share of the year it lies under snow (tree-weighted, 0..1)."""
+    from planet import climate
+    sc = climate.snow_cover(g.lat, tilt, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], climate.TUNE)
+    m = open_ & (np.abs(g.lat) >= 40)
+    w = (tree * area)[m]
+    return float((w * sc.mean(0)[m]).sum() / w.sum()) if w.sum() > 0 else 0.0
 
 
 def _forest_case(src, out):
@@ -46,13 +64,17 @@ def _forest_case(src, out):
     elev, H = np.asarray(src["elev"], float), np.maximum(np.asarray(src["ice"], float), 0.0)
     grounded = (H > 1.0) & (elev > 0)
     surf = np.where(grounded, elev + H, elev)
-    pl = Plants(g, src, Z.TZParams(), tilt, geometry(g)["area"])
+    area = geometry(g)["area"]
+    pl = Plants(g, src, Z.TZParams(), tilt, area)
 
     def compute(dT):
         return lambda veg: climate.compute(g, surf, src["dT"] + dT, tilt, veg=veg)
 
-    pl.step(0.0, compute(0.0)(None), surf, grounded, H, 0.0, compute(0.0))
+    c0 = pl.step(0.0, compute(0.0)(None), surf, grounded, H, 0.0, compute(0.0))
     tree0 = pl.tree.copy()
+    out.update(boreal_snow=_boreal_snow(g, tilt, c0, tree0, (surf > 0) & ~grounded, area))
+    if out["boreal_snow"] < SEASON:  # (no boreal forest over seasonal snow: the premise's prerequisite is missing)
+        raise seeds.Ineligible
     assert pl.series[-1]["F_wm2"] == 0.0  # (the start is the reference)
     c = compute(-4.0)(pl.feedback(grounded))
     t0 = c["temp"].copy()

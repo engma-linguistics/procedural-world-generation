@@ -33,9 +33,11 @@ FLT = 1 - P.RHO_I / P.RHO_W
 # test (at I = 0 the zoom keeps the run's ice) needs an ordinary world with polar land, not a particular one:
 # every seed of SEEDS whose cold moment meets the precondition below, so the fixture tracks the current code
 # without riding on one chaotic world. Of those, the ones with sheets (> 1% of cells under > 1 m: else the drift
-# tests prove nothing) are the drift tests' worlds; each drift test asks seeds.PASS_RATE of them to pass.
+# tests prove nothing) are the drift tests' worlds; each drift test asks seeds.PASS_RATE of them to pass (the
+# index-is-zero invariant: every plausible seed).
 SEEDS = tuple(range(25, 51))  # (lane A16's scan window; 14 of them are plausible on main 86d3806, 7 with sheets)
-MIN_SHEETED = 5  # plausible seeds with sheets the window must give (so a 70% bar on them tolerates one world)
+MIN_SHEETED = 5  # plausible seeds with sheets the window must give (so a 70% bar on them tolerates one world;
+# PW-643 ruling: kept at 5)
 SL_MAX = 150.0  # m: the run's sea level within this of today's
 MOC_MIN = 2.0  # Sv: the cold climate overturns in both hemispheres
 POLAR_LAND = 0.25  # land's share of the cap poleward of 60 deg, in at least one hemisphere (where sheets can grow)
@@ -75,7 +77,7 @@ def _plausible(src, c):
 def _moment(seed):
     """The seed's L5 300 Myr moment made 4 C colder (_cold) and its 20 kyr zoom, if it meets _plausible's
     precondition (else None): (src, zoom). Its run's dT is kept as src["run_dT"]."""
-    src0 = Z.source_from_sim(run_sim(level=5, seed=seed, myr=300))
+    src0 = Z.source_from_sim(run_sim(level=5, seed=seed, myr=300, climate_offset=seeds.OFFSET))
     src, c = _cold(src0)
     if not _plausible(src, c):
         return None
@@ -158,12 +160,20 @@ def test_ice_at_index_zero_is_the_runs(cold_moments):
     the default index never builds, and sea level moves little (PW-366: -43 m in 20 kyr here while the
     run's sheets were 50 kPa profiles with their margins' inner-edge rise and the time zoom melted its
     margins before its flow; PW-471: the index replaced the CO2 and ice-albedo feedbacks)."""
-    seeds.check_rate("ice at index zero", _rows(_index_zero_case, _sheeted(cold_moments)))
+    # The index is the orbit's alone (cycle.Index: no swing, no ice ages), not the world's draw, so it holds on
+    # every plausible seed, sheets or not (rate 1: one world breaking it is a real break, never a lottery). The
+    # sea level's drift is the world's: on the seeds with sheets, at seeds.PASS_RATE.
+    seeds.check_rate("index stays zero", _rows(_index_zero_case, cold_moments), rate=1.0)
+    seeds.check_rate("ice at index zero", _rows(_drift_case, _sheeted(cold_moments)))
 
 
 def _index_zero_case(cold_moment, out):
     _, r = cold_moment
-    out.update(index_max=max(f["stats"]["glacial_index"] for f in r["frames"]),
-               sl_change_m=float(r["frames"][-1]["stats"]["sea_level_change_m"]))
+    out.update(index_max=max(f["stats"]["glacial_index"] for f in r["frames"]))
     assert all(f["stats"]["glacial_index"] == 0.0 for f in r["frames"])
+
+
+def _drift_case(cold_moment, out):
+    _, r = cold_moment
+    out.update(sl_change_m=float(r["frames"][-1]["stats"]["sea_level_change_m"]))
     assert abs(r["frames"][-1]["stats"]["sea_level_change_m"]) < 25.0
