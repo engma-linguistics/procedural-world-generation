@@ -10,7 +10,7 @@ browser viewer.
 uv run python -m planet make --seed 7              # everything: 1 Gyr run (L6, ~6 min), ice-age time zoom, finished world, highlights, 4 zooms
 uv run python -m planet make --seed 7 --preset cold --level 7 --zooms 6   # a showcase recipe; --dry-run shows the plan and time estimate
 uv run python -m planet make --seed 7 --now glacial   # the world's "now": interglacial (default), glacial, end, or a kyr
-uv run python -m planet simulate --seed 1          # 500 Myr of plate tectonics + climate -> runs/<id>/
+uv run python -m planet simulate --seed 1          # 1 Gyr of plate tectonics + climate -> runs/<id>/
 uv run python -m planet simulate --seed 1 2 3 4 --level 6 --jobs 4   # several seeds at once, one process each
 uv run python -m planet list                       # runs, worlds and zooms with their ids
 uv run python -m planet delete <id>                # a run, world or zoom (a world takes its zooms along)

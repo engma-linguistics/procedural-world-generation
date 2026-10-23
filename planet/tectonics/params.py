@@ -81,8 +81,6 @@ class Params:
     climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
     co2_sensitivity: float = 3.0  # C per e-fold of volcanic CO2 output relative to weathering
-    co2_relief_myr: float = 200.0  # Myr: the CO2 stock's relief term (earth.global_temperature); 0 = off, the
-    # reference set once (PW-576: the owner picks one of the two on the mature start; the switch goes then)
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
     # from Earth's ice, so an ice-free planet is ~1.4 C warmer) ...
     ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)

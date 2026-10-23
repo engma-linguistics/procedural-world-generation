@@ -325,7 +325,7 @@ def run(fn, items, workers: int | None = None, threads: int | None = None,
 # --- several runs at once (multi-seed sweeps, PW-246) --------------------------
 def _simulate(spec: dict, progress) -> str:
     from . import timeline as T
-    s = {"level": 6, "myr": 500.0, "dt": 2.0, "every": 4.0, **spec}
+    s = {"level": 6, "myr": 1000.0, "dt": 2.0, "every": 4.0, **spec}
     params = T.make_params(s.get("set") or {})
     name = s.get("name") or f"seed {s['seed']}, level {s['level']}"
     out = T.simulate(s["seed"], s["level"], s["myr"], s["dt"], s["every"], name, params,
@@ -337,7 +337,7 @@ def _simulate(spec: dict, progress) -> str:
 def simulate_many(specs: list[dict], workers: int | None = None, threads: int | None = None,
                   progress=None, on_done=None) -> list[str]:
     """`planet simulate` for each spec ({"seed", and optionally "level" (6),
-    "myr" (500), "dt", "every", "name", "set": {param: value},
+    "myr" (1000), "dt", "every", "name", "set": {param: value},
     "checkpoint_every"}), several at once; returns the run ids in spec order.
     (~8 L6 seeds at 2-4 threads each finish in little more than one run's time.)"""
     return run(_simulate, specs, workers, threads, progress, on_done)

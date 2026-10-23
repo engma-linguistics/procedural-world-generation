@@ -35,8 +35,6 @@ SEEDS = tuple(range(4, 16))  # (was 4-11; on the mature start, PW-576, none of t
 SL_MAX = 150.0  # m: the run's sea level within this of today's
 MOC_MIN = 2.0  # Sv: the cold climate overturns in both hemispheres
 POLAR_LAND = 0.25  # land's share of the cap poleward of 60 deg, in at least one hemisphere (where sheets can grow)
-SHEETS_MIN = 0.01  # share of the surface under > 1 m of ice in the cold moment (else the drift test proves nothing;
-# a 300 Myr moment can be a greenhouse that 4 C of cooling leaves ice-free)
 
 
 def _cold(src):
@@ -62,12 +60,12 @@ def _cold(src):
 
 
 def _plausible(src, c):
-    """The precondition: a plausible sea level, an overturning in both hemispheres, polar land and sheets."""
+    """The precondition: a plausible sea level, an overturning in both hemispheres and polar land."""
     lat, land = src["grid"].lat, src["elev"] > 0
     sink = np.where(land, 0.0, c["overturning"])
     cap = max(land[lat > 60].mean(), land[lat < -60].mean())
     return (abs(src["sea_level"]) <= SL_MAX and sink[lat > 0].sum() >= MOC_MIN and sink[lat < 0].sum() >= MOC_MIN
-            and cap >= POLAR_LAND and (src["ice"] > 1).mean() > SHEETS_MIN)
+            and cap >= POLAR_LAND)
 
 
 @pytest.fixture(scope="module")
@@ -84,7 +82,7 @@ def cold_moment():
 
 def test_cold_moment_has_sheets(cold_moment):
     src, _ = cold_moment
-    assert (src["ice"] > 1).mean() > SHEETS_MIN  # (else the drift test below proves nothing; _plausible's too)
+    assert (src["ice"] > 1).mean() > 0.01  # (else the drift test below proves nothing)
 
 
 def test_ice_speeds_plausible(cold_moment):

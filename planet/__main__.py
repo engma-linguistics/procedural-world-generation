@@ -366,9 +366,9 @@ def main():
     t.add_argument("--seed", "-s", type=int, nargs="+", default=[1],
                    help="several seeds: one run each, --jobs at a time in worker processes")
     t.add_argument("--level", "-l", type=int, default=6,
-                   help="grid detail: 5=10k cells, 6=41k (~3 min per 500 Myr), 7=164k (~30-40 min per Gyr), "
+                   help="grid detail: 5=10k cells, 6=41k (~6 min per Gyr), 7=164k (~30-40 min per Gyr), "
                         "8=655k (hours); rough times, they vary with load")
-    t.add_argument("--myr", type=float, default=500, help="how long to simulate (million years)")
+    t.add_argument("--myr", type=float, default=1000, help="how long to simulate (million years)")
     t.add_argument("--dt", type=float, default=2, help="time step (million years)")
     t.add_argument("--every", type=float, default=4, help="keep a viewer keyframe every N Myr")
     t.add_argument("--checkpoint-every", type=float, default=T.CHECKPOINT_EVERY,
