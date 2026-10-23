@@ -11,8 +11,10 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
 - template: an overlay on `parents` (hosts) from `at` on (tieflings): a `share` of the hosts' people,
             spreading from a few `sites` through the hosts' range only
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
-[[use]] (by = a trait or a place tag, good = land.GOODS, weight) says what each way of life looks for in
-the land (farmland, pasture, ores, harbours, coral coasts...); meta.land_pull how strongly (history._land_mult).
+[[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
+of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
+strongly, or the use's own pull (a line takes the strongest pull of its favoured goods; history._land_mult);
+strict = true: off those goods the habitat is cut, not lifted back to a mean of 1 (peoples bound to one country).
 """
 
 from __future__ import annotations
@@ -66,7 +68,9 @@ GROUPS = {  # Köppen groups usable in prefers / avoids (climate.KOPPEN ids)
     "polar": [28, 29], "tundra": [28],
 }
 PLACES = ("coast", "island", "mountain", "lowland", "inland", "forest", "open", "wetland",
-          "jungle", "steppe", "desert", "tundra", "island_chain")  # (history._tags; all usable as place wishes)
+          "jungle", "steppe", "desert", "tundra", "island_chain", "volcanic", "hills")
+# (history._tags; all usable as place wishes. volcanic: the world's volcanoes and young volcanic ground, land.goods,
+# glacial and recent epochs only; hills: rolling country, moderate relief under the mountains)
 
 
 @dataclass
@@ -123,11 +127,15 @@ class Wish:
 
 @dataclass
 class Use:
-    """A way of life looking for a good in the land: lines with trait (or preferred place) `by` favour
-    (weight > 0) or avoid (< 0) the world's `good` (land.GOODS) in their habitat."""
+    """A way of life looking for a good in the land: lines with trait (or preferred place, or the line whose id
+    is) `by` favour (weight > 0) or avoid (< 0) the world's `good` (land.GOODS) in their habitat; `pull`
+    (0..1, default meta.land_pull) how strongly; `strict`: the habitat off the goods is cut by the pull,
+    not renormalised to a mean of 1 over the line's country (history._land_mult)."""
     by: str
     good: str
     weight: float = 1.0
+    pull: float | None = None
+    strict: bool = False
 
 
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
@@ -148,10 +156,22 @@ class Tree:
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
         """The goods a line looks for (from its traits and preferred places), weights summed per good."""
         out: dict[str, float] = {}
-        for u in self.uses:
-            if u.by in l.traits or u.by in l.prefers:
-                out[u.good] = out.get(u.good, 0.0) + u.weight
+        for u in self._uses_by(l):
+            out[u.good] = out.get(u.good, 0.0) + u.weight
         return [(k, v) for k, v in out.items() if v != 0]
+
+    def _uses_by(self, l: Lineage) -> list[Use]:
+        return [u for u in self.uses if u.by in l.traits or u.by in l.prefers or u.by == l.id]
+
+    def pull_of(self, l: Lineage) -> float:
+        """How strongly a line's land use acts: the strongest pull of its favoured goods (meta.land_pull unless
+        a [[use]] gives its own)."""
+        ps = [self.land_pull if u.pull is None else u.pull for u in self._uses_by(l) if u.weight > 0]
+        return max(ps) if ps else self.land_pull
+
+    def strict_of(self, l: Lineage) -> bool:
+        """Whether any of a line's favoured goods is a strict use (no renormalising of its land use)."""
+        return any(u.strict for u in self._uses_by(l) if u.weight > 0)
 
     def order(self) -> list[Lineage]:
         """Lines oldest event first (parents before children)."""
@@ -327,11 +347,16 @@ def parse(raw: dict) -> Tree:
     uses = []
     for u in raw.get("use", raw.get("uses", [])):
         by, good = str(u.get("by", "")), str(u.get("good", u.get("layer", "")))
-        if by not in TRAITS and by not in PLACES and by not in GROUPS and by not in KOPPEN_CODES:
-            raise ValueError(f"use {u}: by must be a trait ({sorted(TRAITS)}) or a place or climate tag")
+        if by in off:
+            continue
+        if by not in TRAITS and by not in PLACES and by not in GROUPS and by not in KOPPEN_CODES and by not in lines:
+            raise ValueError(f"use {u}: by must be a trait ({sorted(TRAITS)}), a place or climate tag or a line's id")
         if good not in GOODS:
             raise ValueError(f"use {u}: good must be one of {list(GOODS)}")
-        uses.append(Use(by, good, float(u.get("weight", 1.0))))
+        pull = None if u.get("pull") in (None, "") else float(u["pull"])
+        if pull is not None and not 0 <= pull <= 1:
+            raise ValueError(f"use {u}: pull must be within 0..1")
+        uses.append(Use(by, good, float(u.get("weight", 1.0)), pull, bool(u.get("strict", False))))
     t = Tree(str(meta.get("name", "peoples")), int(meta.get("seed", 1)), lines, wishes,
              float(parse_ago(meta.get("mixing_start", 3.0))))
     t.disabled = disabled
@@ -372,4 +397,4 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
-            "use": [vars(u) for u in t.uses]}
+            "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

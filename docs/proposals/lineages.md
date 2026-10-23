@@ -113,7 +113,7 @@ Built as follows (the input is a DAG; `planet/lineages/spec.py` has the exact ru
 - `origin`: **root**, **split** (`parents = [p]`), **arrival** from outside the world (elves, gnomes from the feywild; optional `place = [lat, lon]`, else the best habitat, near the other parent of any hybrid it has), **hybrid** of two parents (half-elves, half-orcs; `contact = true`: exists only where both meet, as an overlay; false: founds a people of its own where they meet; waits until they do), **template** (tieflings, aasimar, genasi: an overlay on its hosts from `at`, seeded at `sites` places in their range, spreading only through it, `share` of the hosts' people).
 - `enabled = false`: its split children re-parent to its nearest enabled ancestor (or become roots / arrivals), keeping their inherited niche; its hybrids and templates go too. `custom = true` marks user-added lines.
 - `extinct = "T"`: the line's habitat dwindles to nothing by T; it shows in the past epochs and its descendants and hybrids live on; a dying side branch doesn't end its parent.
-- Preset: `planet/lineages/samples/dnd.toml` (37 lines, editable defaults, two extinct extras).
+- Preset: `planet/lineages/samples/dnd.toml` (46 lines since the preset lane, editable defaults, one extinct extra: troglodytes).
 - Editor: `viewer/lineages.html` (a log time axis over the three scales; drag times; edit, add, switch off, delete; wishes; save / load / download; run on a world and see origins and areas back).
 
 ## 3. Outputs
@@ -216,3 +216,27 @@ Place wishes score half "how much of that kind of place the line holds" (half of
     Timing: the land use is off in the deep epochs (the plates have moved since). Before `HOLOCENE_KYR` (10 kyr ago) only the geology counts, because the farmland, pasture, forests and coasts are today's. The dwarves' origin (500 kyr) is therefore already drawn toward the ores.
   - **Homeland notes.** `land.homeland_notes` adds one or two sentences per people to its story: what its land (presence ≥ 25%) gives it, for the goods its way of life looks for. Ores, harbours, coral and seabird coasts are counted as districts (connected cells ≥ 0.5): "the dwarves hold two of the world's five richest gold districts (the best in the 2,000 km mountain range at 9°N 39°W)". Area goods are a share of the world's best: "the humans hold 31% of the world's best farmland (…)". The world has no place names, so the notes name the nearest highlight feature that covers the place (`highlights.find`: mountain ranges, plateaus, great forests, deserts and so on), or else give directions. Stored in `meta.present.homeland`.
 - Showcase: `docs/review/lineages/showcase-4.md`.
+
+## Preset lane (2026-10-24): the owner's D&D tree
+
+- **Intermediate stems**, as with real hominids:
+  - draconic stem (3 Myr) → kobolds, dragonborn;
+  - feline stem (4 Myr) → tabaxi (1.2 Myr), leonin (900 kyr);
+  - goblinoid stem → goblins, and the greater goblinoid stem (600 kyr) → hobgoblins, bugbears;
+  - archaic humans stem (400 kyr) → humans (200 kyr), halflings (100 kyr).
+- **Giants.** The elder giants are gone. The giant-kin stem (1.5 Myr) → goliaths, firbolgs and the true giants stem (1.2 Myr), which splits into:
+  - hill giants (900 kyr);
+  - sky giants stem (800 kyr) → cloud giants (400 kyr), storm giants (300 kyr);
+  - elemental giants stem (700 kyr) → frost giants (350 kyr), fire giants (250 kyr).
+
+  All five live today, as rare insular peoples with narrow niches.
+- **New goods** (`land.goods`):
+  - `volcanic`: the world's volcano table, active 1, extinct exp(−age / 3 Myr), young arc and hotspot ground ≥ 0.5;
+  - `hills`: moderate relief under the mountains, the steepest rise to a neighbour 1.5–14 m/km on ground 100–1900 m;
+  - `peaks`: ground 2000→3500 m;
+  - `frost`: permafrost and the ice's edge, today's only;
+  - `storm_coast`: wave power offshore, today's only.
+- **New place tags:** `volcanic` (glacial and recent epochs only) and `hills`.
+- **`[[use]]` changes.** `by` may name one line's id, and an optional `pull` (0..1) overrides `meta.land_pull`; a line takes the strongest pull of its favoured goods. `strict = true` cuts the habitat off the goods to 1 − pull instead of renormalising it to a mean of 1. The preset gives each true giant its own good at pull 0.85, strict. On run e8cc18 (1df1c3) the giants hold 0.01–3.7 Mkm² each (frost giants the most); humans hold ~20.
+- **New wishes:** leonin on open country; frost giants apart from fire giants.
+

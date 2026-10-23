@@ -12,6 +12,8 @@ mixing_start = "3 kyr"
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
+# reptilian stem -> troglodytes (extinct), lizardfolk, tortles, and the draconic (dragon-blooded) stem
+# -> kobolds, dragonborn
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
@@ -22,9 +24,19 @@ rain_mm = [700, 3500]
 prefers = ["tropical"]
 
 [[lineage]]
+id = "draconic"
+name = "draconic stem (elder, dragon-blooded)"
+parents = ["reptilian"]
+at = "3 Myr"
+temp_c = [6, 28]
+rain_mm = [250, 2000]
+prefers = ["mountain", "open"]
+traits = ["hardy"]
+
+[[lineage]]
 id = "kobold"
 name = "kobolds"
-parents = ["reptilian"]
+parents = ["draconic"]
 at = "2 Myr"
 temp_c = [5, 25]
 rain_mm = [300, 2000]
@@ -63,7 +75,7 @@ traits = ["swims", "coastal"]
 [[lineage]]
 id = "dragonborn"
 name = "dragonborn"
-parents = ["reptilian"]
+parents = ["draconic"]
 at = "300 kyr"
 temp_c = [8, 28]
 rain_mm = [250, 1500]
@@ -71,6 +83,8 @@ prefers = ["open", "mountain"]
 traits = ["hardy"]
 
 # ---- the mammalian line ---------------------------------------------------------------
+# mammalian stem -> feline stem (tabaxi, leonin), goblinoid stem (goblins; the greater goblinoids:
+# hobgoblins, bugbears), hominid stem (giant-kin, orcs, dwarves; archaic humans: humans, halflings)
 [[lineage]]
 id = "mammalian"
 name = "mammalian stem"
@@ -80,13 +94,34 @@ temp_c = [8, 26]
 rain_mm = [400, 2500]
 
 [[lineage]]
+id = "feline"
+name = "feline stem"
+parents = ["mammalian"]
+at = "4 Myr"
+temp_c = [16, 30]
+rain_mm = [500, 3000]
+prefers = ["tropical"]
+
+[[lineage]]
 id = "tabaxi"
 name = "tabaxi"
-parents = ["mammalian"]
-at = "3 Myr"
+parents = ["feline"]
+at = "1.2 Myr"
 temp_c = [18, 30]
 rain_mm = [900, 3500]
 prefers = ["rainforest", "forest"]
+traits = ["cosmopolitan"]  # wanderers and traders: mix freely late, and move faster
+speed_kmyr = 0.8
+
+[[lineage]]
+id = "leonin"
+name = "leonin"
+parents = ["feline"]
+at = "900 kyr"
+temp_c = [16, 32]
+rain_mm = [300, 1400]
+prefers = ["savanna", "open"]
+traits = ["nomadic"]  # pride hunters following the herds across open grassland
 
 [[lineage]]
 id = "goblinoid"
@@ -96,6 +131,15 @@ at = "2.5 Myr"
 temp_c = [15, 28]
 rain_mm = [800, 3500]
 prefers = ["tropical", "forest"]
+
+[[lineage]]
+id = "greater_goblinoid"
+name = "greater goblinoid stem"
+parents = ["goblinoid"]
+at = "600 kyr"
+temp_c = [6, 26]
+rain_mm = [500, 2200]
+prefers = ["temperate", "open", "forest"]
 
 [[lineage]]
 id = "goblin"
@@ -109,7 +153,7 @@ prefers = ["rainforest"]
 [[lineage]]
 id = "hobgoblin"
 name = "hobgoblins"
-parents = ["goblinoid"]
+parents = ["greater_goblinoid"]
 at = "250 kyr"
 temp_c = [12, 26]
 rain_mm = [500, 2000]
@@ -118,7 +162,7 @@ prefers = ["savanna", "temperate", "open"]
 [[lineage]]
 id = "bugbear"
 name = "bugbears"
-parents = ["goblinoid"]
+parents = ["greater_goblinoid"]
 at = "200 kyr"
 temp_c = [3, 20]
 rain_mm = [500, 2000]
@@ -133,24 +177,99 @@ at = "2 Myr"
 temp_c = [8, 26]
 rain_mm = [400, 2200]
 
+# -- giant-kin: goliaths, firbolgs and the true giants of the ordning. The true giants are few:
+# narrow niches, insular, each in its own kind of country (hill, peak, storm coast, ice, fire)
 [[lineage]]
 id = "giantkin"
 name = "giant-kin stem"
 parents = ["hominid"]
-at = "1.2 Myr"
+at = "1.5 Myr"
 temp_c = [-4, 14]
 rain_mm = [300, 1500]
 prefers = ["mountain"]
 traits = ["hardy", "mountain"]
 
 [[lineage]]
-id = "titan"
-name = "elder giants (extinct)"
+id = "true_giant"
+name = "true giants stem (the ordning)"
 parents = ["giantkin"]
+at = "1.2 Myr"
+temp_c = [-6, 18]
+rain_mm = [300, 1800]
+prefers = ["mountain"]
+traits = ["hardy", "mountain", "insular"]
+
+[[lineage]]
+id = "hill_giant"
+name = "hill giants"
+parents = ["true_giant"]
+at = "900 kyr"
+temp_c = [0, 18]
+rain_mm = [350, 1500]
+prefers = ["hills"]  # rolling hill country and uplands, below the mountains (and the 'hills' good, [[use]])
+traits = ["hardy", "insular"]
+
+[[lineage]]
+id = "sky_giant"
+name = "sky giants stem (storm and cloud kin)"
+parents = ["true_giant"]
 at = "800 kyr"
-extinct = "12 kyr"
-temp_c = [-8, 8]
-prefers = ["tundra", "mountain"]
+temp_c = [-6, 22]
+rain_mm = [600, 3000]
+prefers = ["mountain", "coast"]
+traits = ["mountain", "insular"]
+
+[[lineage]]
+id = "elemental_giant"
+name = "elemental giants stem (frost and fire kin)"
+parents = ["true_giant"]
+at = "700 kyr"
+temp_c = [-14, 30]
+rain_mm = [100, 1500]
+prefers = ["mountain"]
+traits = ["hardy", "mountain", "insular"]
+
+[[lineage]]
+id = "cloud_giant"
+name = "cloud giants"
+parents = ["sky_giant"]
+at = "400 kyr"
+temp_c = [-12, 10]
+rain_mm = [400, 2500]
+elev_m = [2000, 7000]  # the high peaks (and the 'peaks' good, [[use]])
+prefers = ["mountain"]
+traits = ["mountain", "insular"]
+
+[[lineage]]
+id = "frost_giant"
+name = "frost giants"
+parents = ["elemental_giant"]
+at = "350 kyr"
+temp_c = [-20, -2]
+rain_mm = [100, 1000]
+prefers = ["tundra", "polar", "mountain"]  # (and the 'frost' good, [[use]]: frozen ground, the ice's edge)
+traits = ["insular"]
+
+[[lineage]]
+id = "storm_giant"
+name = "storm giants"
+parents = ["sky_giant"]
+at = "300 kyr"
+temp_c = [4, 24]
+rain_mm = [1000, 4000]  # wet, stormy coasts
+elev_m = [-50, 600]
+prefers = ["coast", "island"]  # (and the 'storm_coast' good, [[use]]: the wave-beaten coasts)
+traits = ["swims", "insular"]
+
+[[lineage]]
+id = "fire_giant"
+name = "fire giants"
+parents = ["elemental_giant"]
+at = "250 kyr"
+temp_c = [12, 34]
+rain_mm = [50, 1500]
+prefers = ["volcanic"]  # smiths of the forges in the fire mountains (and the 'volcanic' good, [[use]])
+traits = ["mountain", "insular"]
 
 [[lineage]]
 id = "goliath"
@@ -159,6 +278,7 @@ parents = ["giantkin"]
 at = "300 kyr"
 temp_c = [-6, 12]
 prefers = ["mountain"]
+traits = ["hardy", "mountain"]
 
 [[lineage]]
 id = "firbolg"
@@ -191,11 +311,19 @@ prefers = ["mountain"]
 traits = ["mountain", "subterranean", "miner"]
 
 [[lineage]]
+id = "archaic_human"
+name = "archaic humans stem"
+parents = ["hominid"]
+at = "400 kyr"
+temp_c = [6, 26]
+rain_mm = [350, 2200]
+prefers = ["temperate", "subtropical", "lowland"]
+
+[[lineage]]
 id = "human"
 name = "humans"
-parents = ["hominid"]
-at = "150 kyr"
-persists = true
+parents = ["archaic_human"]
+at = "200 kyr"
 temp_c = [6, 26]
 rain_mm = [350, 2200]
 prefers = ["temperate", "subtropical", "lowland"]
@@ -204,8 +332,8 @@ traits = ["agricultural", "seafaring", "cosmopolitan"]
 [[lineage]]
 id = "halfling"
 name = "halflings"
-parents = ["human"]
-at = "60 kyr"
+parents = ["archaic_human"]
+at = "100 kyr"
 temp_c = [9, 22]
 rain_mm = [600, 1600]
 prefers = ["temperate", "lowland"]
@@ -378,11 +506,23 @@ a = "orc"
 want = "steppe"
 weight = 0.5
 
+[[wish]]  # pride hunters of the open savanna and grassland
+a = "leonin"
+want = "open"
+
+[[wish]]  # the old feud of ice and fire
+a = "frost_giant"
+b = "fire_giant"
+want = "apart"
+weight = 0.5
+
 # ---- land use: what each way of life looks for in the world's land ---------------------------
 # by: a trait, or a place or climate tag in a line's prefers; good: planet/lineages/land.py GOODS
 # (fertile, grazing, foraging, timber, fuel, building, stone, metal, gold, iron, copper, tin, gems,
-# mithril, coal, harbour, nav_hazard, coral, lagoon, mangrove, cliff, seabirds, seals); weight > 0
-# favours it, < 0 avoids it. Each good is 0..1 against the world's own best; ores and coasts reach
+# mithril, coal, harbour, nav_hazard, coral, lagoon, mangrove, cliff, seabirds, seals, volcanic, hills,
+# peaks, frost, storm_coast); weight > 0 favours it, < 0 avoids it. by may also be one line's id; pull
+# (0..1, default meta.land_pull) says how strongly that use moves the line (it takes its strongest pull);
+# strict = true cuts the habitat off those goods instead of renormalising it to a mean of 1. Each good is 0..1 against the world's own best; ores and coasts reach
 # one cell ring inland. A line's habitat is x(1 - pull + pull G), G the best of its goods there
 # (by weight / its largest weight). Farmland, pasture and the coast count from 10 kyr ago (today's climate and sea
 # level), the geology (ores, stone) in the ice ages too.
@@ -472,3 +612,35 @@ weight = 0.6
 by = "flies"
 good = "seabirds"
 weight = 0.6
+
+# the true giants: each greatly prefers its own kind of country (pull 0.85, strict: off it, the habitat is
+# cut to 0.15 and not lifted back, so the giants stay few and bound to their volcanoes, hills, peaks, ice, storm coasts)
+[[use]]
+by = "fire_giant"
+good = "volcanic"
+pull = 0.85
+strict = true
+
+[[use]]
+by = "hill_giant"
+good = "hills"
+pull = 0.85
+strict = true
+
+[[use]]
+by = "cloud_giant"
+good = "peaks"
+pull = 0.85
+strict = true
+
+[[use]]
+by = "frost_giant"
+good = "frost"
+pull = 0.85
+strict = true
+
+[[use]]
+by = "storm_giant"
+good = "storm_coast"
+pull = 0.85
+strict = true
