@@ -1,4 +1,5 @@
 ---
+id: PW-603
 title: "Lineages: remote continents stay empty unless seafarers or fliers get lucky; owner call on whether that is wanted"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane-2
 blocked_by: []
 relates: [PW-601]
 refs: [planet/lineages/crossing.py, planet/lineages/spec.py, "world 119973 (18 Mkm2 continent 4300 km out)", "world c00ebf (16 Mkm2 at 52N)"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options:
 - C: the owner places an arrival or seafaring people there in the editor. This already works: give an arrival a `place`.
 
 Lean: A + C, with C documented in the editor. B only if the owner wants every continent peopled by default.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-empty-remote-continents.md (found by lineages-lane-2).

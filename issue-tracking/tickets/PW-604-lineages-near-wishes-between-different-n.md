@@ -1,4 +1,5 @@
 ---
+id: PW-604
 title: "Lineages: 'near' wishes between different-niche peoples fail more often now that ranges are distinct"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lineages-lane-2
 blocked_by: []
 relates: [PW-601]
 refs: [planet/lineages/history.py, planet/lineages/crossing.py, docs/proposals/lineages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Options:
 - C: PW-601 option B (place the wished lines' origins to satisfy the wish first).
 
 Lean: B. It is small and still only a nudge.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-near-wishes-after-exclusion.md (found by lineages-lane-2).

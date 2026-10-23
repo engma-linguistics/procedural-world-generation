@@ -1,4 +1,5 @@
 ---
+id: PW-602
 title: "Lineages: review the contact-corridor values and the mixing share on more worlds"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lineages-lane-2
 blocked_by: []
 relates: [PW-601]
 refs: [planet/lineages/crossing.py, planet/lineages/history.py, docs/review/lineages/showcase-2.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -31,3 +34,6 @@ The values are first guesses:
 
 - [ ] look at the showcase maps (docs/review/lineages/) and decide whether plains should mix less (contact 0.4) or rivers more
 - [ ] the river field is the world's present flow, used for all glacial and recent epochs, so rivers on shelves exposed at low sea level are missing; deep epochs have no rivers
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-lineages-corridor-tuning.md (found by lineages-lane-2).
