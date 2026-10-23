@@ -1,0 +1,43 @@
+bringing up nodes...
+bringing up nodes...
+
+.F
+=================================== FAILURES ===================================
+_______________ test_glacials_grow_ice_and_endings_melt_it_fast ________________
+[gw0] linux -- Python 3.14.7 /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/a19_s2/.venv/bin/python
+
+icehouse = [{'frames': [{'t': 0.0, 'stats': {'t': 0.0, 'plates': 9, 'land_pct': np.float64(23.5), 'landmasses': 5, ...}}, {'t': 2...9.24}, 'cycle': {'on': False, 'lat': 72.5, 'sun': {'build': 424.8, 'lo': 437.3, 'hi': 467.3}, 'builds': [], ...}, ...}]
+
+    def test_glacials_grow_ice_and_endings_melt_it_fast(icehouse):
+        """The ice follows the index: lower seas at a glacial maximum than without it, and an ending gives
+        back most of the glacial's extra ice within 15 kyr."""
+        on, off = icehouse
+        t = np.array([f["t"] for f in on["frames"]])
+        sl_on = np.array([f["stats"]["sea_level_change_m"] for f in on["frames"]])
+        sl_off = np.array([f["stats"]["sea_level_change_m"] for f in off["frames"]])
+        e = on["cycle"]["endings"][0]
+        i, j = np.searchsorted(t, e["t"]), np.searchsorted(t, e["t"] + 15.0)
+        extra = sl_off[i] - sl_on[i]
+        print("glacial extra ice (m):", round(extra, 1), "left after 15 kyr:", round(sl_off[j] - sl_on[j], 1))
+        assert extra > 10.0
+>       assert sl_off[j] - sl_on[j] < 0.5 * extra
+E       assert (np.float64(-27.52) - np.float64(-45.89)) < (0.5 * np.float64(30.93999999999999))
+
+tests/test_timezoom_cycle.py:101: AssertionError
+=============================== warnings summary ===============================
+tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+  /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/a19_s2/planet/climate.py:2290: RuntimeWarning: fresh water into the sea doesn't balance: +0.0391 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+  /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/a19_s2/planet/climate.py:2290: RuntimeWarning: fresh water into the sea doesn't balance: +0.0291 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+  /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/a19_s2/planet/climate.py:2290: RuntimeWarning: fresh water into the sea doesn't balance: +0.0200 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+1 failed, 1 passed, 3 warnings in 30.62s

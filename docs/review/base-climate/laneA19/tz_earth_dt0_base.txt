@@ -1,0 +1,4 @@
+dT 0: today's ice 14.15 Mkm2; area/start 0.877..1.505 (worst at 14 kyr), last 20 kyr 1.174, end 1.39; corr(dA/dt, dq65) -0.02 | 32 s
+  series 0:1.00 16:1.49 32:1.35 48:1.12 64:1.50 80:1.26 96:1.08
+  at the end, extra/lost Mkm2: Greenland +0.68/-0.16, Arctic Canada +1.1/-0.0, N America +2.08/-0.0, Eurasia +1.06/-0.0, Antarctica +0.66/-0.34, other +0.37/-0.0
+  bars: within_20pct F follows_orbit ok

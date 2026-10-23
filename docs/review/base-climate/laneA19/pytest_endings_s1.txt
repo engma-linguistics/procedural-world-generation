@@ -1,0 +1,15 @@
+bringing up nodes...
+bringing up nodes...
+
+..
+=============================== warnings summary ===============================
+tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a818192c7d6091881/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: +0.0398 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+tests/test_timezoom_cycle.py::test_glacials_grow_ice_and_endings_melt_it_fast
+  /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a818192c7d6091881/planet/climate.py:2280: RuntimeWarning: fresh water into the sea doesn't balance: +0.0319 m/yr
+    fw = ocean_mod.freshwater(grid, ocean, surf, precip, sea_evap, np.where(land, wb["runoff"], 0.0), ice_m, melt,
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 2 warnings in 28.47s

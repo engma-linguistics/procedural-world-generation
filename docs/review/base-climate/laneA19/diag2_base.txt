@@ -1,0 +1,30 @@
+[s1] a18_src_s1.pkl : ending 78.5, frame 94.0
+[s1]   land   (extra weight 0.91 Mkm3, on - off surface +542 m = -3.5 C): A: t_warm  -8.1 smb +0.015  B: t_warm  -6.9 smb -0.165  C: t_warm  -4.2 smb -0.425
+[s1]      fields on - off at these cells: t_mean -7.7 (of it the lapse over s0 -4.0), half -1.1, p_jan+p_jul ratio 0.86
+[s1]   marine (extra weight 0.39 Mkm3, on - off surface +1445 m = -9.4 C): A: t_warm  +0.6 smb -0.575  B: t_warm  +5.7 smb -3.762  C: t_warm  +2.0 smb -1.444
+[s1]      fields on - off at these cells: t_mean -5.3 (of it the lapse over s0 +0.3), half -4.8, p_jan+p_jul ratio 0.57
+[s1] a18_src_s1_8.pkl : ending 78.0, frame 94.0
+[s1]   land   (extra weight 5.94 Mkm3, on - off surface +1239 m = -8.1 C): A: t_warm  -7.9 smb +0.076  B: t_warm  -5.6 smb -0.697  C: t_warm  -4.2 smb -0.461
+[s1]      fields on - off at these cells: t_mean -12.7 (of it the lapse over s0 -7.7), half -0.5, p_jan+p_jul ratio 0.83
+[s1]   marine (extra weight 12.95 Mkm3, on - off surface +1498 m = -9.7 C): A: t_warm -11.5 smb +0.390  B: t_warm -10.1 smb +0.247  C: t_warm  -6.7 smb +0.289
+[s1]      fields on - off at these cells: t_mean -12.7 (of it the lapse over s0 -8.2), half -0.2, p_jan+p_jul ratio 0.98
+[s2] a18_src_s2_8.pkl : ending 77.5, frame 94.0
+[s2]   land   (extra weight 8.55 Mkm3, on - off surface +1216 m = -7.9 C): A: t_warm -18.4 smb +0.093  B: t_warm -13.3 smb -0.318  C: t_warm -14.9 smb -0.063
+[s2]      fields on - off at these cells: t_mean -13.7 (of it the lapse over s0 -7.5), half -2.7, p_jan+p_jul ratio 0.66
+[s2]   marine (extra weight 13.24 Mkm3, on - off surface +1482 m = -9.6 C): A: t_warm -16.8 smb +0.251  B: t_warm -13.5 smb +0.058  C: t_warm -11.9 smb +0.191
+[s2]      fields on - off at these cells: t_mean -16.0 (of it the lapse over s0 -10.5), half -1.2, p_jan+p_jul ratio 0.97
+[s2] a18_src_s2.pkl : ending 79.0, frame 94.0
+[s2]   land   (extra weight 4.47 Mkm3, on - off surface +984 m = -6.4 C): A: t_warm -12.7 smb +0.021  B: t_warm -11.1 smb -0.101  C: t_warm  -7.8 smb -0.207
+[s2]      fields on - off at these cells: t_mean -10.9 (of it the lapse over s0 -5.7), half -0.3, p_jan+p_jul ratio 0.74
+[s2]   marine (extra weight 5.52 Mkm3, on - off surface +1401 m = -9.1 C): A: t_warm -12.5 smb +0.181  B: t_warm -13.5 smb +0.040  C: t_warm  -7.6 smb +0.024
+[s2]      fields on - off at these cells: t_mean -10.8 (of it the lapse over s0 -6.9), half +1.3, p_jan+p_jul ratio 1.01
+[s1] a18_src_s1_2.pkl : ending 79.0, frame 94.0
+[s1]   land   (extra weight 7.28 Mkm3, on - off surface +1104 m = -7.2 C): A: t_warm -10.2 smb +0.161  B: t_warm  -5.5 smb -0.078  C: t_warm  -5.6 smb -0.084
+[s1]      fields on - off at these cells: t_mean -12.5 (of it the lapse over s0 -5.9), half -2.5, p_jan+p_jul ratio 0.66
+[s1]   marine (extra weight 1.50 Mkm3, on - off surface +1183 m = -7.7 C): A: t_warm  -5.0 smb -0.805  B: t_warm  -3.3 smb -0.468  C: t_warm  -1.2 smb -1.324
+[s1]      fields on - off at these cells: t_mean -19.4 (of it the lapse over s0 -13.7), half -0.7, p_jan+p_jul ratio 0.56
+[s1] a18_src_s1_7.pkl : ending 79.0, frame 94.0
+[s1]   land   (extra weight 12.35 Mkm3, on - off surface +1452 m = -9.4 C): A: t_warm -14.7 smb +0.052  B: t_warm  -9.3 smb -0.422  C: t_warm -10.5 smb -0.071
+[s1]      fields on - off at these cells: t_mean -15.7 (of it the lapse over s0 -8.8), half -2.8, p_jan+p_jul ratio 0.51
+[s1]   marine (extra weight 23.44 Mkm3, on - off surface +1674 m = -10.9 C): A: t_warm -14.8 smb +0.194  B: t_warm -12.0 smb -0.075  C: t_warm -10.2 smb +0.092
+[s1]      fields on - off at these cells: t_mean -15.5 (of it the lapse over s0 -9.5), half -0.8, p_jan+p_jul ratio 0.89

@@ -1,0 +1,44 @@
+diff --git a/planet/timezoom/fields.py b/planet/timezoom/fields.py
+index ca8e625..8810bc6 100644
+--- a/planet/timezoom/fields.py
++++ b/planet/timezoom/fields.py
+@@ -80,7 +80,7 @@ class ClimateFields:
+                    k_own=M.seasonal_k(g.lat, gw, gc, self.tilt),
+                    # (how much of the air over each ice cell is the sheets' own, as the climate just counted it)
+                    air=M.air_mass(g, np.where(grounded, H, 0.0), cold=cold),
+-                   s0=np.maximum(surf, 0), dTg0=dTg, sst_w=np.minimum(c["sst_jul"], c["sst_jan"]),
++                   s0=np.maximum(surf, 0), dTg0=dTg, sst_w=np.minimum(c["sst_jul"], c["sst_jan"]), sst_a=0.5 * (c["sst_jul"] + c["sst_jan"]),
+                    # (the cold half-year's wind, the dust's: January in the north, July in the south)
+                    wind_w=np.where((g.lat >= 0)[:, None], c["wind_jan"], c["wind_jul"]))
+         # the steps until the next refresh blend from the last one to this one, so the climate
+diff --git a/planet/timezoom/params.py b/planet/timezoom/params.py
+index c34189c..478912b 100644
+--- a/planet/timezoom/params.py
++++ b/planet/timezoom/params.py
+@@ -150,6 +150,7 @@ class TZParams:
+     flex_km: float = FLEX_KM  # ... spread over this (km, lithospheric flexure) ...
+     iso_tau: float = 3.0  # ... with this e-folding time (kyr)
+     calving: float = M.CALVING  # per yr: calving speed (m/yr) per m of water depth at a marine ice front ...
++    front_melt: float = 0.0  # PROBE: m/yr of a marine front's retreat per C of its sea's annual water above freezing
+     calve_depth: float = M.CALVE_DEPTH  # m: ... and wherever grounded ice stands in deeper water than this, even
+     # with no open sea beside it (a deep basin the grid can't resolve: ice flowing into it would float,
+     # break up and melt in the sea water under it, not fill it 10 km thick; PW-199: ~4 km basins). Deeper
+diff --git a/planet/timezoom/sim.py b/planet/timezoom/sim.py
+index 1a1cfb6..ac2a6e2 100644
+--- a/planet/timezoom/sim.py
++++ b/planet/timezoom/sim.py
+@@ -487,7 +487,13 @@ class _Sim:
+             front = marine & (nb_sea | (depth > p.calve_depth))
+             # (a front calves only where it faces open water, not a shelf)
+             covered = shelf_cover(g, front, sea, np.where(sea, H, 0.0), p)
+-            frac = np.exp(-p.calving * (1.0 - covered) * depth * dt / np.sqrt(area))
++            speed = p.calving * depth
++            if p.front_melt > 0:  # PROBE: the sea's warmth melts the face (its sea neighbours' annual water)
++                w = np.where(sea, np.maximum(F["sst_a"] - climate.FREEZE, 0.0), 0.0)
++                tot = np.bincount(g.nbr_src, weights=w[g.nbr_idx], minlength=self.n)
++                cnt = np.bincount(g.nbr_src, weights=sea[g.nbr_idx].astype(float), minlength=self.n)
++                speed = speed + p.front_melt * tot / np.maximum(cnt, 1.0)
++            frac = np.exp(-(1.0 - covered) * speed * dt / np.sqrt(area))
+             lost += np.where(front, H * (1 - frac), 0.0)
+             H[front] *= frac[front]
+         if p.carving:

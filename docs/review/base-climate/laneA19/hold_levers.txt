@@ -1,0 +1,4 @@
+[s2] a18_src_s2_8.pkl summer_damp=0: ending 77.5, I = 0 from 85.5; extra after the ending (kyr: m): 0:68 10:46 20:38 30:34 40:32 50:20 60:20 70:15 80:13 90:18 100:18 110:9 120:17 | last 40 kyr mean 15.0 m (0.22 of the glacial's); off mean -2.3 m
+[s2] a18_src_s2_8.pkl calving=4: ending 77.5, I = 0 from 85.5; extra after the ending (kyr: m): 0:66 10:27 20:31 30:25 40:21 50:12 60:10 70:9 80:10 90:7 100:4 110:1 120:5 | last 40 kyr mean 5.5 m (0.08 of the glacial's); off mean -23.8 m
+[s1] a18_src_s1_7.pkl summer_damp=0: ending 79.0, I = 0 from 87.0; extra after the ending (kyr: m): 1:116 11:70 21:36 31:30 41:27 51:7 61:7 71:5 81:7 91:2 101:1 111:2 121:0 | last 40 kyr mean 1.9 m (0.02 of the glacial's); off mean -25.1 m
+[s1] a18_src_s1_7.pkl calving=4: ending 79.0, I = 0 from 87.0; extra after the ending (kyr: m): 1:117 11:99 21:54 31:47 41:29 51:20 61:14 71:5 81:5 91:-0 101:-1 111:-0 121:-0 | last 40 kyr mean -0.0 m (-0.00 of the glacial's); off mean -64.0 m

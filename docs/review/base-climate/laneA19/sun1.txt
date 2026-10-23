@@ -1,0 +1,88 @@
+[s1] a18_src_s1.pkl sun_melt=0.5: ending at 78.5 kyr; extra 55.2 m, left 0.1 m; sl_off -15.7 -> -18.0, sl_on -70.9 -> -18.1; pass=True
+[s1]   sl_on  every 10 kyr: [0.0, -11.5, -26.9, -40.8, -30.8, -28.4, -65.3, -84.1, -70.9, -12.1, -21.1, -30.0, -22.2, -23.2, -43.6, -75.5, -51.8, -44.5, -19.0, -22.8, -15.7]
+[s1]   sl_off every 10 kyr: [0.0, -11.5, -21.8, -24.5, -13.3, -15.8, -28.0, -30.0, -15.7, -11.9, -21.0, -23.2, -13.9, -15.2, -23.6, -32.9, -16.9, -14.0, -18.3, -23.1, -14.9]
+[s1]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  10.0 -60..-40:   5.5 -40..0:   0.0 0..40:   0.0 40..60:  14.7 60..75:  20.5 75..90:   5.4
+[s1]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:   0.2 -60..-40:   0.7 -40..0:   0.0 0..40:   0.0 40..60:  -0.8 60..75:  -0.1 75..90:   0.0
+[s1]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    3201    2163    1592     782
+[s1]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    2935    1867    1526    1328
+[s1]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    2430    3567    1580    -150
+[s1]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):     909    2484     757   -1481
+[s1]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    1317     530     241     201
+[s1]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    1393    1048     237     575
+[s2] a18_src_s2_9.pkl sun_melt=0.5: ending at 78.5 kyr; extra 97.2 m, left 42.4 m; sl_off -29.2 -> -3.9, sl_on -126.5 -> -46.3; pass=True
+[s2]   sl_on  every 10 kyr: [0.0, -0.7, -22.8, -33.9, -38.6, -43.4, -84.2, -107.4, -126.5, -62.5, -57.8, -70.3, -47.4, -54.9, -67.6, -113.6, -112.4, -125.9, -110.1, -76.6, -77.5]
+[s2]   sl_off every 10 kyr: [0.0, -0.7, -16.4, -19.7, -14.2, -8.4, -26.0, -34.0, -29.2, -5.6, -15.2, -30.9, -12.1, -16.7, -22.2, -36.7, -24.1, -14.8, -24.0, -24.7, -24.6]
+[s2]   extra ice (m sl, on - off, by lat) at ending: -90..-60:   0.0 -60..-40:   2.2 -40..0:   0.0 0..40:   0.0 40..60:  27.5 60..75:  52.7 75..90:  14.3
+[s2]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:   0.0 -60..-40:   0.3 -40..0:   0.0 0..40:   0.0 40..60:   0.7 60..75:  20.6 75..90:  21.4
+[s2]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    4530    1660    2579    2642
+[s2]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    4822    1161    2719    3538
+[s2]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    4968    2915    3060    2124
+[s2]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    3522    4046    2789    -587
+[s2]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    2399    2407    1597    -196
+[s2]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    2753    1420     755    1401
+[s1] a18_src_s1_8.pkl sun_melt=0.5: ending at 78.0 kyr; extra 64.1 m, left 39.2 m; sl_off -38.7 -> -24.4, sl_on -102.8 -> -63.7; pass=False
+[s1]   sl_on  every 10 kyr: [0.0, -10.3, -40.0, -80.4, -84.1, -95.1, -115.9, -117.3, -100.4, -66.1, -57.4, -58.4, -62.0, -66.1, -101.4, -120.0, -113.7, -108.6, -93.5, -79.4, -56.1]
+[s1]   sl_off every 10 kyr: [0.0, -7.2, -27.5, -39.5, -25.9, -23.2, -42.3, -49.0, -37.7, -20.8, -28.2, -38.2, -19.7, -18.9, -30.9, -46.9, -33.0, -22.2, -34.4, -33.7, -30.8]
+[s1]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  27.7 -60..-40:  20.9 -40..0:   0.0 0..40:   1.7 40..60:   7.9 60..75:   3.1 75..90:   2.6
+[s1]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:  10.7 -60..-40:   6.4 -40..0:   0.0 0..40:   0.0 40..60:   5.4 60..75:  13.4 75..90:   3.0
+[s1]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    5919    1209    5088    1765
+[s1]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    5636    1600    4851    2081
+[s1]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    5681    1861    4515    2393
+[s1]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    4567    1930    4855    1298
+[s1]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    4811     687    4456    1475
+[s1]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    4402    1291    3486    1623
+[s2] a18_src_s2.pkl sun_melt=0.5: ending at 79.0 kyr; extra 41.7 m, left 19.2 m; sl_off -26.6 -> -28.6, sl_on -68.3 -> -47.8; pass=True
+[s2]   sl_on  every 10 kyr: [0.0, -13.3, -36.3, -50.7, -47.0, -54.2, -71.0, -75.0, -68.3, -54.4, -45.8, -55.2, -54.0, -56.6, -67.7, -73.9, -72.1, -68.5, -73.0, -78.4, -53.8]
+[s2]   sl_off every 10 kyr: [0.0, -13.3, -30.6, -44.3, -28.5, -29.1, -43.5, -46.2, -26.6, -19.0, -33.1, -45.7, -27.8, -23.6, -34.4, -47.0, -37.1, -25.4, -32.6, -38.2, -32.8]
+[s2]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  11.7 -60..-40:   7.3 -40..0:   0.0 0..40:   0.0 40..60:   7.9 60..75:   5.6 75..90:  10.7
+[s2]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:   7.4 -60..-40:   0.5 -40..0:   0.0 0..40:   0.0 40..60:   1.4 60..75:   0.8 75..90:   9.2
+[s2]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    4214     848    3497    1837
+[s2]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    3808    1015    3187    1946
+[s2]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    3896     861    3584    1890
+[s2]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    4012    1196    3510    1653
+[s2]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    4420    1725    3255     873
+[s2]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    3859    1154    2905    1644
+[s2] a18_src_s2_8.pkl sun_melt=0.5: ending at 77.5 kyr; extra 86.0 m, left 54.8 m; sl_off -24.4 -> -25.5, sl_on -110.5 -> -80.4; pass=False
+[s2]   sl_on  every 10 kyr: [0.0, 2.3, -19.9, -63.2, -73.0, -88.6, -100.0, -120.2, -106.6, -79.3, -73.8, -77.7, -91.3, -83.2, -104.5, -117.2, -114.4, -112.2, -102.4, -87.7, -66.9]
+[s2]   sl_off every 10 kyr: [0.0, 4.2, -11.3, -40.4, -26.3, -28.6, -32.2, -38.8, -17.3, -14.4, -25.9, -27.4, -24.4, -10.1, -28.9, -36.3, -32.8, -19.9, -24.8, -48.8, -14.2]
+[s2]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  61.7 -60..-40:  21.3 -40..0:   0.0 0..40:   0.0 40..60:   2.2 60..75:   0.0 75..90:   0.0
+[s2]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:  47.6 -60..-40:   6.8 -40..0:   0.0 0..40:   0.0 40..60:  -0.0 60..75:   0.0 75..90:   0.0
+[s2]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    4366    1071    3052     293
+[s2]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    3838    1505    2856     327
+[s2]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    3549    1584    3796     278
+[s2]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    3396    1355    3166     277
+[s2]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    4083     370    3413     217
+[s2]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    3931     924    3081     231
+[s1] a18_src_s1_2.pkl sun_melt=0.5: ending at 79.0 kyr; extra 89.1 m, left 31.0 m; sl_off -18.8 -> 3.9, sl_on -107.9 -> -27.1; pass=True
+[s1]   sl_on  every 10 kyr: [0.0, 2.2, -25.6, -31.7, -34.4, -31.9, -80.1, -93.6, -107.9, -49.4, -33.3, -61.5, -31.0, -37.1, -48.2, -92.6, -86.3, -88.8, -106.0, -110.7, -97.5]
+[s1]   sl_off every 10 kyr: [0.0, 2.2, -18.2, -15.6, -1.1, 0.6, -22.0, -31.9, -18.8, 4.7, -4.9, -34.3, 1.6, 0.6, -5.6, -33.9, -9.2, -0.0, -13.8, -11.7, -18.9]
+[s1]   extra ice (m sl, on - off, by lat) at ending: -90..-60:   0.0 -60..-40:   0.0 -40..0:   0.0 0..40:   0.3 40..60:  26.6 60..75:  43.4 75..90:  19.8
+[s1]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:   0.0 -60..-40:   0.0 -40..0:   0.0 0..40:   0.0 40..60:   7.0 60..75:  18.7 75..90:   5.4
+[s1]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    4478    1540    2875    2938
+[s1]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    4977    1166    3003    3811
+[s1]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    5575    2331    3460    3244
+[s1]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    4846    4662    3765     184
+[s1]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    3617    2781    3129     836
+[s1]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    4040    1377    2265    2663
+[s1] a18_src_s1_7.pkl sun_melt=0: ending at 79.0 kyr; extra 131.7 m, left 88.5 m; sl_off -74.1 -> -48.1, sl_on -205.8 -> -136.6; pass=False
+[s1]   sl_on  every 10 kyr: [0.0, -24.0, -61.0, -94.3, -109.5, -111.9, -149.7, -181.4, -205.8, -161.0, -139.2, -159.5, -128.7, -144.0, -162.2, -194.2, -207.4, -222.2, -235.6, -243.8, -220.2]
+[s1]   sl_off every 10 kyr: [0.0, -24.0, -55.4, -78.5, -65.3, -59.3, -80.6, -89.0, -74.1, -44.4, -65.8, -88.0, -55.5, -52.7, -68.0, -89.4, -73.3, -58.6, -73.8, -82.8, -70.0]
+[s1]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  29.5 -60..-40:  10.0 -40..0:   0.0 0..40:   0.0 40..60:  40.0 60..75:  37.7 75..90:  12.6
+[s1]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:  25.8 -60..-40:   1.5 -40..0:   0.0 0..40:   0.0 40..60:  16.3 60..75:  26.3 75..90:  17.0
+[s1]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    6321    1458    4115    3177
+[s1]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    6487    1447    4091    3534
+[s1]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    7139    2593    4885    3089
+[s1]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    7200    3893    5670    1543
+[s1]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    6513    3101    5754    1570
+[s1]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    6299    1372    4778    3427
+[s1] a18_src_s1_7.pkl sun_melt=0.5: ending at 79.0 kyr; extra 128.8 m, left 83.2 m; sl_off -76.1 -> -47.0, sl_on -204.9 -> -130.2; pass=False
+[s1]   sl_on  every 10 kyr: [0.0, -21.6, -59.2, -92.6, -106.3, -108.7, -150.6, -180.8, -204.9, -154.6, -133.4, -157.8, -123.8, -137.8, -151.1, -184.2, -199.8, -215.4, -232.8, -240.3, -217.0]
+[s1]   sl_off every 10 kyr: [0.0, -21.6, -54.4, -80.1, -63.9, -57.2, -81.8, -92.7, -76.1, -44.5, -63.1, -86.3, -55.0, -51.3, -71.4, -92.7, -78.2, -58.4, -73.5, -75.1, -65.2]
+[s1]   extra ice (m sl, on - off, by lat) at ending: -90..-60:  29.7 -60..-40:  10.2 -40..0:   0.0 0..40:   0.0 40..60:  39.4 60..75:  36.1 75..90:  11.1
+[s1]   extra ice (m sl, on - off, by lat) at +15 kyr: -90..-60:  24.8 -60..-40:   3.1 -40..0:   0.0 0..40:   0.0 40..60:  15.9 60..75:  22.7 75..90:  14.9
+[s1]   on flows -10.. -5 kyr (acc abl calv NHnet Gt/yr):    6256    1398    4130    3187
+[s1]   on flows  -5.. +0 kyr (acc abl calv NHnet Gt/yr):    6456    1382    4079    3584
+[s1]   on flows  +0.. +5 kyr (acc abl calv NHnet Gt/yr):    7121    2680    5015    3082
+[s1]   on flows  +5..+10 kyr (acc abl calv NHnet Gt/yr):    7114    4065    5657    1311
+[s1]   on flows +10..+15 kyr (acc abl calv NHnet Gt/yr):    6522    3111    5762    1388
+[s1]   on flows +15..+20 kyr (acc abl calv NHnet Gt/yr):    6407    1337    4875    3332

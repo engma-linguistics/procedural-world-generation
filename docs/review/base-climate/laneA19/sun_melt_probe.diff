@@ -1,0 +1,135 @@
+diff --git a/planet/icemass.py b/planet/icemass.py
+index c406e1a..d366b47 100644
+--- a/planet/icemass.py
++++ b/planet/icemass.py
+@@ -52,6 +52,8 @@ PDD_SIGMA = 5.0  # C: day-to-day spread of temperature around the monthly mean
+ DDF_SNOW = 3.0  # mm w.e. melted per positive degree-day, snow (Braithwaite 1995)
+ DDF_ICE = 8.0  # ... ice
+ REFREEZE = 0.6  # share of snowmelt that refreezes in the snowpack
++ALB_SNOW = 0.75  # albedo of melting snow (climate.compute's snow on open ground) ...
++ALB_ICE = 0.45  # ... and of bare glacier ice (Cuffey & Paterson 2010: clean to slightly dirty ice 0.35-0.5)
+ PRECIP_K = 0.07  # rain ~ exp(PRECIP_K * dT) (Clausius-Clapeyron)
+ SHEET_KM = 1000.0  # km: a sheet's own air mass (air_mass) ...
+ LOCAL = 0.3  # ... and the share of the damping any ice gets, however small its patch (bare ground's lying
+@@ -317,7 +319,7 @@ def _mean_year(lat, land, t_warm, t_cold, p_jul, p_jan, h, cover, dt_wet):
+             np.broadcast_to(np.asarray(p_jul, float), (n,)).copy(), np.broadcast_to(np.asarray(p_jan, float), (n,)).copy(),
+             -climate.LAPSE * h + dt_wet, dt_wet)
+     rest = (f_ice, f_alb, ICE_COOL, damp, MELT_HOLD, BARE_SHARE, SNOW_W,
+-            PDD_SIGMA, DDF_SNOW, DDF_ICE, REFREEZE, PRECIP_K)
++            PDD_SIGMA, DDF_SNOW, DDF_ICE, REFREEZE, PRECIP_K, 0.0, ALB_SNOW, ALB_ICE)  # (no sun melt: the run's rule)
+     climate_step(*args, np.zeros(n), np.zeros(n, np.int64), np.zeros((1, 12)), *rest, smb, t_ann, t_w, t_c,
+                  p_scale, f_sum)
+     return (smb, t_ann, t_w, t_c), args, rest, (f_alb, p_scale, f_sum)
+diff --git a/planet/timezoom/kernels.py b/planet/timezoom/kernels.py
+index 52a80b3..6a6b3b7 100644
+--- a/planet/timezoom/kernels.py
++++ b/planet/timezoom/kernels.py
+@@ -16,12 +16,13 @@ from numba import njit, prange
+ 
+ DAYS = 365.25 / 12  # days per month
+ SQRT2PI = math.sqrt(2 * math.pi)
++LATENT_FUSION = 3.34e5  # J/kg: melting ice (1 kg/m2 = 1 mm w.e.)
+ 
+ 
+ @njit(cache=True, parallel=True)
+ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb, band, dq, f_ice, f_alb,
+                  cool, damp, hold, bare_share, snow_w,
+-                 sigma, ddf_snow, ddf_ice, refreeze, precip_k,
++                 sigma, ddf_snow, ddf_ice, refreeze, precip_k, sun, alb_snow, alb_ice,
+                  smb, t_ann, t_warm, t_cold, p_scale, f_sum):
+     """One (orbit-averaged) year at every cell (icemass describes the rule).
+ 
+@@ -95,10 +96,22 @@ def climate_step(land, north, t_mean, half, p_jul, p_jan, dt_base, dt_wet, k_orb
+                 x = t / sigma
+                 pdd = DAYS * (sigma / SQRT2PI * math.exp(-0.5 * x * x) + 0.5 * t * math.erfc(-x / math.sqrt(2.0)))
+                 ds = ddf_snow
+-                melt = min(lying, ds * pdd)
+-                lying -= melt
+-                lost += (1.0 - refreeze) * melt
+-                ice_melt += ddf_ice * (pdd - melt / ds)
++                if sun > 0.0:
++                    # the orbit's sunshine change on the days the surface melts (the share of days above 0 C)
++                    # melts it directly (mm w.e.): a melting surface can't warm, so what it absorbs of the
++                    # change goes into melt, not into the air temperature the degree days read
++                    e = (sun * 0.5 * math.erfc(-x / math.sqrt(2.0)) * dq[b, m] * DAYS * 86400.0 / LATENT_FUSION)
++                    pdd_s = max(pdd + e * (1.0 - alb_snow) / ds, 0.0)
++                    melt = min(lying, ds * pdd_s)
++                    lying -= melt
++                    lost += (1.0 - refreeze) * melt
++                    r = 1.0 - melt / (ds * pdd_s) if pdd_s > 0.0 else 0.0
++                    ice_melt += r * max(ddf_ice * pdd + e * (1.0 - alb_ice), 0.0)
++                else:
++                    melt = min(lying, ds * pdd)
++                    lying -= melt
++                    lost += (1.0 - refreeze) * melt
++                    ice_melt += ddf_ice * (pdd - melt / ds)
+         t_ann[i], t_warm[i], t_cold[i] = tsum / 12.0, tmax, tmin
+         f_sum[i] = fs / max(ns, 1)
+         if land[i]:
+diff --git a/planet/timezoom/params.py b/planet/timezoom/params.py
+index c34189c..18389aa 100644
+--- a/planet/timezoom/params.py
++++ b/planet/timezoom/params.py
+@@ -137,6 +137,9 @@ class TZParams:
+     # few kyr; the plants themselves are grown afresh on each full climate)
+     precip_k: float = M.PRECIP_K  # rain ~ exp(precip_k * dT) (Clausius-Clapeyron)
+     # mass balance
++    sun_melt: float = 0.0  # PROBE: share of the orbit's sunshine change reaching a melting surface (0 = off)
++    alb_snow: float = M.ALB_SNOW
++    alb_ice: float = M.ALB_ICE
+     pdd_sigma: float = M.PDD_SIGMA  # C: day-to-day spread of temperature around the monthly mean
+     ddf_snow: float = M.DDF_SNOW  # mm w.e. melted per positive degree-day, snow
+     ddf_ice: float = M.DDF_ICE  # ... ice
+diff --git a/planet/timezoom/sim.py b/planet/timezoom/sim.py
+index 1a1cfb6..497a8a7 100644
+--- a/planet/timezoom/sim.py
++++ b/planet/timezoom/sim.py
+@@ -223,7 +223,7 @@ class _Sim:
+         climate_step(self.land, self.north, t_mean, F["half"], F["p_jul"],
+                      F["p_jan"], dt_b, self.dt_wet, k_orb, self.band, dq_, self.f_ice, self.f_alb,
+                      p.ice_cool, self.damp, p.melt_hold, p.bare_share, p.snow_w,
+-                     p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, self.smb, self.t_ann,
++                     p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, p.sun_melt, p.alb_snow, p.alb_ice, self.smb, self.t_ann,
+                      self.t_warm, self.t_cold, self.p_scale, self.f_snow)
+         m = self.margin
+         if len(m):  # the margins' ramp: its other quadrature points too, the cell's share f of it iced
+@@ -235,7 +235,7 @@ class _Sim:
+                              dt_b[m] - climate.LAPSE * (self.m_hq[k] - self.m_hq[0]), self.dt_wet[m], k_orb[m],
+                              self.band[m], dq_, np.clip(self.m_hq[k] / p.albedo_h, 0, 1) * self.own_air[m],
+                              self.f_alb[m], p.ice_cool, self.damp[m], p.melt_hold, p.bare_share, p.snow_w,
+-                             p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *out)
++                             p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, p.sun_melt, p.alb_snow, p.alb_ice, *out)
+                 for j in range(6):
+                     acc[j] += w[k] * out[j]
+             self.smb[m] = self.m_f * acc[0]
+@@ -386,7 +386,7 @@ class _Sim:
+                              self.dt_wet[fi], self.k_orb[fi], band[fi], dq,
+                              np.full(len(fi), min(hk / p.albedo_h, 1.0)) * own, np.ones(len(fi)), p.ice_cool,
+                              p.summer_damp * M.sheet_cover(g, np.ones(n))[fi] * own, p.melt_hold,
+-                             p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub)
++                             p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, p.sun_melt, p.alb_snow, p.alb_ice, *sub)
+                 acc += wk * sub[0]
+             rate[fi] = acc
+         elif front.any():
+@@ -397,7 +397,7 @@ class _Sim:
+                          self.dt_wet[fi], self.k_orb[fi], band[fi], dq,
+                          np.full(len(fi), min(p.edge_h / p.albedo_h, 1.0)), np.ones(len(fi)), p.ice_cool,
+                          p.summer_damp * M.sheet_cover(g, np.ones(n))[fi], p.melt_hold,
+-                         p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, *sub)
++                         p.bare_share, p.snow_w, p.pdd_sigma, p.ddf_snow, p.ddf_ice, p.refreeze, p.precip_k, p.sun_melt, p.alb_snow, p.alb_ice, *sub)
+             rate[fi] = sub[0]
+         return rate, near, active
+ 
+diff --git a/tests/test_kernel_threads.py b/tests/test_kernel_threads.py
+index 92ef0d9..2f84d46 100644
+--- a/tests/test_kernel_threads.py
++++ b/tests/test_kernel_threads.py
+@@ -170,7 +170,7 @@ def test_climate_step(g5):
+     ins = (land, lat >= 0, 0.5 * (t_warm + t_cold), 0.5 * (t_warm - t_cold), rng.random(n) * 1500,
+            rng.random(n) * 1500, -0.0065 * h, rng.normal(0, 1, n), rng.random(n) * 0.04, band, dq,
+            np.clip(h / 500, 0, 1), np.clip(h / 50, 0, 1), 5.0, rng.random(n) * 0.5, 0.3, 0.4, 300.0,
+-           4.5, 3.0, 8.0, 0.4, 0.07)
++           4.5, 3.0, 8.0, 0.4, 0.07, 0.5, 0.75, 0.45)
+ 
+     def run(fn):
+         outs = [np.zeros(n) for _ in range(6)]

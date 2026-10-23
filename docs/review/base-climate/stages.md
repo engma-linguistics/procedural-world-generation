@@ -1596,3 +1596,87 @@ on a candidate. A17's step-2 numbers (stage 1 holds; rain r 0.649; SH coastal ra
 
 **Ready to merge?** No code. Step 2 waits on the endings draft's decision; Europe's summer on PW-592 first, then the
 shelf cap and PW-595.
+
+## PW-632 option A: what holds a cold world's glacial ice (lane A19)
+
+**No missing termination mechanism inside the zoom meets option A's bar.** On the failing cold worlds, part of the
+glacial's leftover ice is a held branch at I = 0, the sheets' own hysteresis: seed 8 on step 2 keeps 51% of it for
+120 kyr, which is past the bar at any speed. The rest decays with an e-folding of ~30-40 kyr, against the < 22 kyr the
+bar needs, and the extra height (8-11 C of lapse) sets that. Of every candidate, only the marine fronts' loss moves
+it, and the zoom has no ocean physics for that on a cold sea (PW-385). Nothing under `planet/` is committed. Two
+drafts: `draft-pw632-option-a-held-branch.md` (needs-decision, lean: PW-632 option B now, the marine physics after)
+and `draft-marine-fronts-no-ocean-melt.md`.
+
+Branch `worktree-agent-a818192c7d6091881`: main b289b95 + lane A18's branch 5d12daf, merged as cdec55d. Step 2 =
+cdec55d + `laneA17/step2_stable_summer.diff` (scratch worktree). Sources: A18's pickles (runs unchanged since). Files
+in `laneA19/` (README.md lists them).
+
+### The seed scan (L4, 300 Myr; extra / left after 15 kyr, m; bar: extra > 10 and left < extra / 2)
+
+| seed | step 1 (this branch) | step 2 |
+|---|---|---|
+| 1 | 50.2 / 1.9 | **30.9 / 18.4 F** |
+| 2 | 87.2 / 20.4 | 13.9 / 1.7 |
+| 3 | 79.7 / 0.7 | 28.0 / -0.6 |
+| 4 | 43.2 / 6.2 | 68.5 / 5.0 |
+| 5 | 3.8 / 0.4 (extra < 10: outside the bar) | 49.0 / 5.4 |
+| 6 | 21.5 / -0.3 | 19.9 / 0.8 |
+| 7 | **131.7 / 88.5 F** | 24.4 / 0.4 |
+| 8 | **70.5 / 43.9 F** | **80.8 / 49.0 F** |
+| 9 | 44.6 / 7.7 | 101.9 / 47.3 |
+
+- These are A18's numbers to within ~2 m; the soils lane's crown fire acts in the zoom's plants.
+- The real test agrees: it passes on step 1 and fails on step 2 (`pytest_endings_s{1,2}.txt`).
+- "After" is the same table, since no mechanism was merged.
+
+### What holds the leftover (`diag.py`, `diag2.py`, `diag2_base.txt`)
+- **Most of it is marine.** 55-70% of the extra left 15 kyr after the ending is grounded marine ice, 2.3-2.5 km thick,
+  on beds pushed 650-700 m down. At the ending, 84-87% of its fronts are behind shelves, and 58-69% still are 15 kyr
+  later. The rest is land ice above its equilibrium line.
+- **Its warm month is -12 to -17 C**, against +3 to +10 C for bare ground there in the index-off run. About 8-11 C of
+  that is the extra surface height, 1.2-1.7 km, after isostasy has already lowered it.
+- **Neither the climate nor the local rules hold it.** Taking out the full climate's answer to the sheets (the off
+  run's fields on the on run's surface) or the ice surface's local terms warms the leftover by 2-5 C. Its smb stays
+  near 0 either way (marine +0.04 to +0.25 m/yr). The height alone holds it.
+- **The warm world's ending works differently.** There, the accumulation falls 2767 -> 872 Gt/yr as the snow turns
+  to rain. On cold worlds it stays at 4000-7000 Gt/yr: the Clausius-Clapeyron rise in snowfall on sheets that stay
+  far below 0 C.
+
+### Slow or held? (`hold.py`: I kept at 0 after the first ending, 120 kyr; `hold_base.txt`)
+- Warm worlds lose their extra in 10-20 kyr.
+- The failing worlds keep 17% for good (seed 7 step 1, seed 1 step 2), 27% (seed 8 step 1) and 51% (seed 8 step 2).
+  What does decay has an e-folding of ~30-40 kyr.
+- On these worlds the index-off run is itself an ice age: mean sea level -27 to -66 m. The test's "run's moment
+  -4 C" puts a cold planet's I = 0 inside the sheets' multiple-equilibria range, where real sheets don't end either
+  (Abe-Ouchi et al. 2013; Ganopolski & Calov 2011).
+- It is no clean precondition, though. Seed 5 on step 2 passes with an off-run mean of -28 m.
+
+### Candidates (the four failing cases; `levers1.txt`, `levers2.txt`, `sun1.txt`, `frontmelt1.txt`)
+
+| candidate (mechanism) | passes | note |
+|---|---|---|
+| isostatic lag (`iso_tau` 1 kyr) | 1 | |
+| ice shelves gone (`shelf_warm` -30) | 0 | s2 seed 8 worse (52 / 35) |
+| no buttressing | 0 | |
+| `sheet_air=cold`, `surface_air=fetch`, `margin=ramp`, `front=ramp` | 0, 2, 2, 0 | stage 1 rules |
+| climate every 2.5 kyr (the blend's 10 kyr lag) | 1 | |
+| flow `enhancement` x2 | 0 | |
+| the orbit's sunshine change melting a melting surface (`sun_melt_probe.diff`) | 1 | the leftover never melts, so it can't act |
+| frontal melt by the sea's annual water above freezing (`front_melt_probe.diff`) | 1 | cold worlds' fronts sit in water at freezing |
+| proglacial lakes, glacial dust | | tried under PW-030, moved nothing |
+| `calving` x4 (tuning) | 3 | held share 0-8%; s1 seed 7 still 117 / 65 |
+| `summer_damp` 0 (tuning; PW-569's question) | 3 | held share 2-22%; s2 seed 8 68 / 40 |
+
+The one lever with traction is the marine fronts' loss. `calving` x4 clears the held branches and hardly moves the
+off run's own ice (-66 -> -64 m, -27 -> -24 m). But raising the constant is tuning. The mechanism behind it at real
+terminations is warm subsurface water at the fronts, and the zoom has none (PW-385).
+
+### Earth (L6; `tz_earth_base.txt`, `tz_earth_dt0_*.txt`, code unchanged)
+- The zoom: cycles 98.5-108.5 kyr; maxima -79 / -80 / -98 / -93 / -94 / -94 m; give-back 0.70-0.87; interglacial ice
+  9.8-12.9%. Bars: cycles ok, maxima F (-79), cooling F (6.22), give-back ok, interglacial ice F.
+- `--dt0`: area 0.88-1.51 x the start, corr -0.02 (within 20% F, follows ok).
+- `calving` x4 for scale:
+  - `--dt0`: 0.86-1.44 x, Antarctica -0.55 Mkm2 (base -0.34), follows F (corr 0.07).
+  - The zoom: glacials only -56 / -62 / -73 / -70 / -69 / -74 m (base -79..-98), give-back 0.66-0.84.
+  So a uniform rise in calving costs Earth ~20 m of glacial. The marine loss would have to grow at the endings
+  themselves, through the ocean's warmth, not everywhere: `draft-marine-fronts-no-ocean-melt.md`.
