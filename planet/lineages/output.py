@@ -12,6 +12,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM
 from ..provenance import code_version
+from . import land as LD
 from . import spec as SP
 from .history import EST, PALETTE, History
 
@@ -41,6 +42,7 @@ def colors(h: History) -> list[str]:
 def save(h: History, res: dict, pres: dict, world: str | None = None, name: str | None = None) -> Path:
     g, ps = h.grid, h.ps
     frames = res["frames"]
+    pres["homeland"] = homeland(h, res["present"], world)
     pres["stories"] = stories(h, pres)
     arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS)}
     out_frames = []
@@ -77,7 +79,9 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
-                 "disabled": h.tree.disabled, "lineages": lines, "present": pres, "try_seed": h.seed,
+                 "disabled": h.tree.disabled, "lineages": lines,
+                 "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
+                                                           "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
                                       "shape": [len(h.lines), g.n], "units": "%"},
                  "kyr": round(max(fr["ago"] for fr in frames), 3), "step_kyr": ps.params.step, "every": ps.params.every,
@@ -128,6 +132,22 @@ def _ago(kyr: float) -> str:
     return f"{max(round(kyr * 10) * 100, 100):.0f} years"
 
 
+def homeland(h: History, P: np.ndarray, world: str | None) -> dict[str, list[str]]:
+    """Per living people, what its land gives it (land.homeland_notes) for the goods its way of life looks for."""
+    if h.goods is None:
+        return {}
+    uses, held = {}, {}
+    for k, l in enumerate(h.lines):
+        if l.origin == "template":
+            continue
+        u = h.tree.uses_of(l)
+        if not u:
+            continue
+        uses[l.id] = u
+        held[l.id] = h._linger[k] if l.overlay else P[k] >= 0.25
+    return LD.homeland_notes(h.grid, uses, held, h.goods, LD.landmarks(world), h.cell_mkm2)
+
+
 def stories(h: History, pres: dict) -> dict[str, str]:
     """Per people, a few game-ready sentences from its history: where and why it arose, its crossings,
     refuges and end, and where it lives at the present (and with whom)."""
@@ -158,6 +178,9 @@ def stories(h: History, pres: dict) -> dict[str, str]:
         for e in h.events:
             if e["line"] == l.id and e["kind"] == "refuge":
                 s.append(f"~{_ago(e['ago_kyr'])} ago, at its lowest, it held out in a refuge near {e['lat']:.0f}, {e['lon']:.0f}.")
+            if e["line"] == l.id and e["kind"] == "lingers" and l.id in h._apart:  # (apart still at the present)
+                s.append(f"~{_ago(e['ago_kyr'])} ago its parents' lands drew apart; it lived on as a people of its own "
+                         f"near {e['lat']:.0f}, {e['lon']:.0f}.")
         p = pres["lines"].get(l.id)
         if l.id in h.ended and not p:
             s.append(f"It was gone by ~{_ago(h.ended[l.id])} ago" + (" (as its children took its land)." if h.tree.living_children(l.id) else "."))
@@ -165,6 +188,11 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             nb = [h.tree.lines[x].label() for x in list(p["neighbours"])[:4] if x in h.tree.lines]
             iso = "one land" if p["patches"] == 1 else f"{p['patches']} separate lands (the largest {round(100 * p['largest_patch_share'])}%)"
             s.append(f"Today: {p['area_mkm2']} Mkm² in {iso}" + (f"; neighbours {', '.join(nb)}." if nb else "; no neighbours."))
+            if p.get("own_mkm2"):
+                s.append(f"Of that, {p['own_mkm2']} Mkm² is a land of its own, where its parents no longer meet.")
+            hl = pres.get("homeland", {}).get(l.id)
+            if hl:
+                s.append(f"The {l.label()} " + "; and they ".join(hl) + ".")
         out[l.id] = " ".join(s)
     return out
 
@@ -174,6 +202,9 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
          f"{h.tree.source or '(inline)'}; seed {h.seed}; tries {pres.get('tries')}; {h.runtime:.1f} s", ""]
     if h.tree.disabled:
         L.append(f"switched off: {', '.join(h.tree.disabled)}")
+    if h.goods is not None:
+        L.append(f"land use: pull {h.tree.land_pull}; worked out here: {', '.join(h.goods['_made']) or 'none'}; "
+                 f"missing on this world: {', '.join(h.goods['_missing']) or 'none'}")
     L += ["## Lines (letter on the map; '+' mixed, '.' unpeopled land, '#' ice)"]
     for k, l in enumerate(h.lines):
         o = h.origins.get(l.id)

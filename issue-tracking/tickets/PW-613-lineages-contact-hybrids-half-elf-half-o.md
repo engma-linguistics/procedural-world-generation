@@ -32,3 +32,4 @@ Lean: B. A half-elf people that outlives the contact is plausible and game-usefu
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-lineages-contact-hybrids-lost.md (found by lineages-lane-3).
+- 2026-10-23: Lane 4 built lean B (`History._hybrid`): once it has appeared, a contact hybrid fades where its parents no longer meet (LINGER_KYR 10 kyr) and lives on as a small people of its own where they last met (>= 0.3 of its habitat, shown on the peoples layer; `present.lines[id].own_mkm2`; a 'lingers' event). L7 showcase 4: no appeared hybrid lost (half-elves kept on 1144ce); half-orcs never appeared on 3e0b0a (humans and orcs never met), which this does not cover. Test test_contact_hybrid_lingers_when_its_parents_part. Status left for the coordinator.

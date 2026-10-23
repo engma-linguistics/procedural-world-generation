@@ -9,6 +9,7 @@
 name = "D&D peoples (preset)"
 seed = 7
 mixing_start = "3 kyr"
+land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
 [[lineage]]
@@ -187,7 +188,7 @@ at = "500 kyr"
 temp_c = [-2, 18]
 rain_mm = [250, 1500]
 prefers = ["mountain"]
-traits = ["mountain", "subterranean"]
+traits = ["mountain", "subterranean", "miner"]
 
 [[lineage]]
 id = "human"
@@ -248,6 +249,7 @@ at = "15 kyr"
 temp_c = [4, 18]
 rain_mm = [600, 2000]
 prefers = ["forest", "mountain"]
+traits = ["miner"]
 
 [[lineage]]
 id = "triton"
@@ -332,8 +334,8 @@ prefers = ["forest"]
 traits = []
 
 # ---- wishes (soft: best of N tries + mild nudges; each reports a score) ---------------------
-[[wish]]
-a = "goblin"
+[[wish]]  # (the usual pairing of hobgoblin and orc warbands; savanna borders steppe, PW-614)
+a = "hobgoblin"
 b = "orc"
 want = "near"
 
@@ -375,3 +377,98 @@ weight = 0.5
 a = "orc"
 want = "steppe"
 weight = 0.5
+
+# ---- land use: what each way of life looks for in the world's land ---------------------------
+# by: a trait, or a place or climate tag in a line's prefers; good: planet/lineages/land.py GOODS
+# (fertile, grazing, foraging, timber, fuel, building, stone, metal, gold, iron, copper, tin, gems,
+# mithril, coal, harbour, nav_hazard, coral, lagoon, mangrove, cliff, seabirds, seals); weight > 0
+# favours it, < 0 avoids it. Each good is 0..1 against the world's own best; ores and coasts reach
+# one cell ring inland. A line's habitat is x(1 - pull + pull G), G the best of its goods there
+# (by weight / its largest weight). Farmland, pasture and the coast count from 10 kyr ago (today's climate and sea
+# level), the geology (ores, stone) in the ice ages too.
+[[use]]
+by = "agricultural"
+good = "fertile"
+
+[[use]]
+by = "nomadic"
+good = "grazing"
+
+[[use]]
+by = "forest"
+good = "timber"
+weight = 0.5
+
+[[use]]
+by = "forest"
+good = "foraging"
+weight = 0.5
+
+[[use]]
+by = "rainforest"
+good = "foraging"
+weight = 0.5
+
+[[use]]
+by = "miner"
+good = "gold"
+weight = 0.6
+
+[[use]]
+by = "miner"
+good = "iron"
+weight = 0.4
+
+[[use]]
+by = "miner"
+good = "gems"
+weight = 0.4
+
+[[use]]
+by = "miner"
+good = "mithril"
+weight = 0.6
+
+[[use]]
+by = "subterranean"
+good = "stone"
+weight = 0.3
+
+[[use]]
+by = "subterranean"
+good = "metal"
+weight = 0.3
+
+[[use]]
+by = "seafaring"
+good = "harbour"
+
+[[use]]
+by = "seafaring"
+good = "nav_hazard"
+weight = -0.7
+
+[[use]]
+by = "coastal"
+good = "coral"
+weight = 0.7
+
+[[use]]
+by = "coastal"
+good = "lagoon"
+weight = 0.7
+
+[[use]]
+by = "wetland"
+good = "mangrove"
+weight = 0.5
+
+[[use]]
+by = "flies"
+good = "cliff"
+weight = 0.6
+
+[[use]]
+by = "flies"
+good = "seabirds"
+weight = 0.6
