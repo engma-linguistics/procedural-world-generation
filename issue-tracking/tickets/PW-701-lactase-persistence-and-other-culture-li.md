@@ -25,5 +25,6 @@ Options:
 Lean: A for now (nothing reads it yet), B when PW-692 starts, since lactase persistence is a share of a population (~35% of humans on Earth), not a switch.
 
 ## Updates
+- 2026-10-23: Built with PW-689 (option B): body flags may be a share 0..1 of a people (milk 0.6 on human herders and nomads, 0.7 on steppe orcs); body_milk layer = the share mixed by each cell's composition; hover, a body: milk colour layer and run.txt report it (6% of peopled land on 1df1c3, 10% on 3e9e7d).
 - 2026-10-23: Status needs-decision -> todo. Coordinator's call: keep the bool on herder groups for now; once PW-689 per-cell composition lands, make lactase persistence a share that mixes with the peoples in a cell (as real persistence is a population frequency).
 - 2026-10-23: Created from inbox draft draft-lactase-body-trait-on-groups-or-peoples.md (found by horses-senses).

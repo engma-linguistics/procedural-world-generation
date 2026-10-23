@@ -465,7 +465,8 @@ RAMPS['rainfall ratio'] = [[-2, '#a6611a'], [-1, '#dfc27d'], [-0.2, '#f0ece2'], 
 RAMPS['sunshine difference'] = [[-4, '#4d5674'], [-2, '#a3b1bf'], [-0.5, '#f0ece2'], [0.5, '#f0ece2'], [2, '#efd98a'], [4, '#e57a22']];
 // vegetation (worlds; tree cover and NPP also in runs)
 RAMPS['tree cover'] = [[0, '#e8dcb0'], [10, '#cdd28a'], [30, '#8fb85f'], [60, '#3f8f3f'], [90, '#1f5a2a']];
-RAMPS['plant cover'] = [[0, '#efe0b0'], [25, '#d8cf8a'], [50, '#a9c46a'], [75, '#5f9f4a'], [100, '#2f6f3a']];
+RAMPS['body'] = [[0, '#ece6d6'], [25, '#e6c98a'], [50, '#d8a24a'], [75, '#b9712a'], [100, '#7a3b14']];  // (peoples runs: a body trait as a share of the cell's people, PW-701)
+RAMPS['plant cover'] =[[0, '#efe0b0'], [25, '#d8cf8a'], [50, '#a9c46a'], [75, '#5f9f4a'], [100, '#2f6f3a']];
 RAMPS['canopy height'] = [[0, '#efe6c8'], [2, '#c9cf8a'], [8, '#8fb85f'], [20, '#4f8f45'], [35, '#2a6a3a'], [50, '#123f2a']];
 RAMPS['leaf area'] = [[0, '#efe6c8'], [1, '#cfd28a'], [2.5, '#8fbf5a'], [4, '#4f9a45'], [6, '#1f6a32']];
 RAMPS.NPP = [[0, '#f2ead0'], [100, '#e3d28a'], [300, '#b9c85f'], [600, '#6faf45'], [900, '#2f8a3a'], [1300, '#0f5a2a']];
@@ -875,6 +876,14 @@ function peoplesColor(layer, i, c) {
     }
     return c.copy(lineColor(lines[o]));
   }
+  if (layer === 'peoples blend') {  // the cell's composition (PW-689): the leading people's colour and the second's, by their shares, and the rest grey
+    const a = L.peoples_whole[i], lead = lines[a];
+    if (a === 255 || !lead) return c.copy(NOBODY);
+    const sh = L.mix_lead_share[i] / 100, sb = L.mix_second_share[i] / 100, second = lines[L.mix_second[i]];
+    const cl = lineColor(lead), cs = second ? lineColor(second) : NOBODY, rest = Math.max(0, 1 - sh - (second ? sb : 0));
+    return c.setRGB(cl.r * sh + (second ? cs.r * sb : 0) + NOBODY.r * rest, cl.g * sh + (second ? cs.g * sb : 0) + NOBODY.g * rest,
+      cl.b * sh + (second ? cs.b * sb : 0) + NOBODY.b * rest);
+  }
   if (layer === 'peoples mix') { const m = L.peoples_mix[i]; return m ? c.setHSL(0.75 - 0.12 * Math.min(m, 6), 0.7, 0.35 + 0.06 * m) : c.copy(NOBODY); }
   const d = peoplesIdx(i);
   if (d === 255 || !lines[d]) return c.copy(NOBODY);
@@ -1042,7 +1051,11 @@ function cellColors(layer) {
     else if (layer === 'satellite') { const v = sv[i]; c.setRGB(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255, THREE.SRGBColorSpace); }
     else if (ov) obsColor(ov, i, c);
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
-    else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay') peoplesColor(layer, i, c);
+    else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') peoplesColor(layer, i, c);
+    else if (layer.startsWith('body: ')) {
+      if (L.ice && L.ice[i] > 0) c.copy(ICE); else if (elev[i] <= 0) c.copy(OCEAN);
+      else if (L.peoples_whole[i] === 255) c.copy(NOBODY); else rampFns.body(L['body_' + layer.slice(6)][i], c);
+    }
     else if (layer === 'land use') landUseColor(i, c);
     else if (layer === 'horses') horsesColor(i, c);
     else if (layer === 'vegetation') {
@@ -1134,7 +1147,8 @@ function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
-    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : [], hasLayer('horse_wild') ? ['horses'] : [], V.run?.meta?.anthro ? ['land use'] : []);
+    hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), 'peoples mix', 'peoples overlay'].concat(
+      Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('horse_wild') ? ['horses'] : [], V.run?.meta?.anthro ? ['land use'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -2211,7 +2225,9 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
-  } else if (state.layer === 'peoples' || state.layer === 'peoples mix' || state.layer === 'peoples overlay') {
+  } else if (state.layer.startsWith('body: ')) {
+    el.innerHTML = rampLegend('body', `% of the cell's people with it (${state.layer.slice(6)}: each people's share, mixed by who lives there)`, ['0%', '100%']) + sw('#5a5a52', 'nobody');
+  } else if (state.layer === 'peoples' || state.layer === 'peoples mix' || state.layer === 'peoples overlay' || state.layer === 'peoples blend') {
     // the peoples present in this frame (planet/lineages/), by the land they lead
     const L = V.layers, lines = V.run.meta.lineages || [], cnt = new Map();
     if (state.layer === 'peoples overlay') {  // (it fell through to the ramp legend, which threw: PW-679)
@@ -2223,7 +2239,7 @@ function renderLegend() {
     else {
       for (let i = 0; i < V.n; i++) { const d = L.peoples ? peoplesIdx(i) : null; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
       el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
-        sw('#5a5a52', 'nobody') + '<span class="muted">(whitened: mixed)</span>';
+        sw('#5a5a52', 'nobody') + (state.layer === 'peoples blend' ? '<span class="muted">(each cell blends its leading people\'s colour, the second\'s and grey for all the others, by their shares)</span>' : '<span class="muted">(whitened: mixed)</span>');
     }
   } else if (state.layer === 'horses') {
     const h = V.run.meta.horses, t = h?.tamed?.[0];
@@ -2948,6 +2964,15 @@ function peoplesRows(i, R) {
   const mixn = L.peoples_mix?.[i] || 0;
   R('place', '', d !== 255 && lines[d] ? `${lines[d].name} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
     { lab: 'peoples (this frame)', ess: true });
+  const wd = L.peoples_whole?.[i];  // the cell's composition (PW-689): leading people, second, all others
+  if (L.mix_lead_share && wd != null && wd !== 255 && lines[wd]) {
+    const sd = L.mix_second[i], ot = L.mix_other_share[i];
+    R('place', '', `${lines[wd].name} ${L.mix_lead_share[i]}%${sd !== 255 && lines[sd] ? `, ${lines[sd].name} ${L.mix_second_share[i]}%` : ''}${ot ? `, others ${ot}%` : ''}`,
+      { lab: 'who lives here', ess: true });
+  }
+  for (const k of Object.keys(V.run.layers).filter((x) => x.startsWith('body_')))  // body traits that are population shares (lactase persistence...)
+    if (L[k] && wd !== 255) R('place', '', `${L[k][i]}% ${({ milk: 'digest milk as adults', sweet: 'taste sweet', capsaicin: 'feel capsaicin heat', raw_meat: 'eat raw meat safely', cellulose: 'digest cellulose' })[k.slice(5)] || k.slice(5)}`,
+      { lab: 'of its people', ess: true });
   if (o != null && o !== 255 && lines[o]) R('place', '', `${lines[o].name}`, { lab: 'among them', ess: true });
   const pp = m.presence_present;
   if (pp && V.presence === undefined && V.presenceFor !== V.run.id) {
@@ -4100,9 +4125,11 @@ function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
   // ice, which says which cells are land (see iceBed)
   const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || [])];
+  if (state.layer.startsWith('body: ')) want.push('peoples_whole', 'body_' + state.layer.slice(6));
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses);
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses, 'mix_lead_share', 'mix_second',
+    'mix_second_share', 'mix_other_share', ...Object.keys(V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);

@@ -12,7 +12,7 @@
 # new land and over the sea), sea_share (0..1: the share of its frontier that takes to the water), insularity
 # (0..1: resistance to mixing and to leaving home); speed_kmyr is the expansion rate (km/yr of frontier).
 # body (PW-694): senses and body for the future cuisine pass; only what differs from the human-like baseline, inherited key by
-# key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults), capsaicin (feels chili heat), bitter and
+# key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults; true/false, or a share 0..1 of the people for the traits that are population frequencies), capsaicin (feels chili heat), bitter and
 # smell (low | normal | high or keen), diet (herbivore | omnivore | carnivore | obligate_carnivore), raw_meat (eats raw meat
 # safely), cellulose (digests it), toxic (alliums: onion and garlic; theobromine: chocolate). Real analogues: felines taste no
 # sweet, birds feel no capsaicin, herding peoples keep lactase.
@@ -366,7 +366,7 @@ traits = ["nomadic", "hardy"]
 [[lineage]]  # horse-and-herd raiders of the dry grassland
 id = "steppe_orc"
 name = "steppe orcs"
-body = { milk = true }  # mare's milk and kumis
+body = { milk = 0.7 }  # mare's milk and kumis: a share of the people (lactase persistence is a population frequency, PW-701)
 origin = "group"
 group_of = "orc"
 at = "9 kyr"
@@ -452,7 +452,7 @@ traits = ["agricultural", "cosmopolitan"]
 [[lineage]]  # flocks and herds on the open hills and grassland between the fields and the steppe
 id = "human_herder"
 name = "human herders"
-body = { milk = true }  # lactase persistence in herding peoples
+body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
 origin = "group"
 group_of = "human"
 at = "8 kyr"
@@ -465,7 +465,7 @@ traits = ["hardy", "cosmopolitan"]
 [[lineage]]  # horse nomads of the steppe and desert edge
 id = "human_nomad"
 name = "human nomads"
-body = { milk = true }  # lactase persistence in herding peoples
+body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
 origin = "group"
 group_of = "human"
 at = "5 kyr"

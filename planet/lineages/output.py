@@ -15,7 +15,7 @@ from ..provenance import code_version
 from . import land as LD
 from . import landuse as LU
 from . import spec as SP
-from .history import EST, PALETTE, History
+from .history import COMPOSITION_TWO_PCT, EST, PALETTE, History
 
 U8 = lambda d: {"dtype": "uint8", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
 PEOPLE_LAYERS = {
@@ -24,6 +24,10 @@ PEOPLE_LAYERS = {
     "peoples_share": U8("% of the cell's habitat the leading people holds"),
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
     "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),
+    "mix_lead_share": U8("composition of the cell (PW-689): % of its people that are the leading one (peoples_whole)"),
+    "mix_second": U8("composition: the second people (index into meta.lineages; 255 none)"),
+    "mix_second_share": U8("composition: % of the cell's people that are the second people"),
+    "mix_other_share": U8("composition: % of the cell's people that are all the others together"),
 }
 HORSE_LAYERS = {
     "horse_wild": U8("wild horse range: suitability % of open temperate grassland and steppe (horses.wild_range; 0 in the deep epochs)"),
@@ -62,8 +66,12 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     frames = res["frames"]
     pres["homeland"] = homeland(h, res["present"], world)
     pres["stories"] = stories(h, pres)
+    pres["composition"] = composition(h, res["frames"])
     pres["ascii"] = {"rows": ascii_present(h, res, 96, 36), "letters": {LETTERS[k % len(LETTERS)]: l.id for k, l in enumerate(h.lines)}}
     horse_layers = HORSE_LAYERS if h.horses is not None else {}
+    # body flags given as a share of a people (lactase persistence...): % of the cell's people with the trait (PW-701)
+    horse_layers = {**horse_layers, **{f"body_{k}": U8(f"% of the cell's people with the body trait '{k}' (each people's share, mixed by the cell's composition)")
+                                       for k in h.share_traits}}
     arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS, *horse_layers)}
     out_frames = []
     for f in frames:
@@ -121,6 +129,31 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         with open(out / "run.txt", "a") as f:
             f.write("\n".join(LU.lines_for_report(sm)) + "\n")
     T.update_index()
+    return out
+
+
+def composition(h: History, frames: list) -> dict:
+    """How the peoples share the cells (PW-689): at the present and about 5 kyr ago, the share of peopled land with
+    2+ peoples (a second people with at least history.COMPOSITION_TWO_PCT of the cell), the mean lead share, the empty
+    land; the commonest pairs at the present; body flags given as a share (PW-701), mean over peopled land."""
+    def at(ago):
+        return min(frames, key=lambda f: abs(f["ago"] - ago))
+    out = {"two_pct_min": COMPOSITION_TWO_PCT}
+    for key, ago in (("present", 0.0), ("5kyr", 5.0)):
+        f = at(ago)
+        out[key] = {"ago_kyr": round(f["ago"], 2), **{k: f["stats"][k] for k in ("peopled_cells", "land_cells", "empty_land_pct", "two_plus_pct", "lead_share_mean_pct")}}
+        sec, lead = f["mix_second_share"], f["peoples_whole"]
+        out[key]["three_plus_pct"] = round(100 * float(((f["mix_other_share"] >= COMPOSITION_TWO_PCT) & (lead < 255)).sum() / max((lead < 255).sum(), 1)), 2)
+        out[key]["second_3pct_pct"] = round(100 * float(((sec >= 3) & (lead < 255)).sum() / max((lead < 255).sum(), 1)), 2)
+    f = frames[-1]
+    pairs: dict[tuple, int] = {}
+    sel = (f["peoples_whole"] < 255) & (f["mix_second"] < 255) & (f["mix_second_share"] >= COMPOSITION_TWO_PCT)
+    for a, b in zip(f["peoples_whole"][sel].tolist(), f["mix_second"][sel].tolist()):
+        pairs[(a, b)] = pairs.get((a, b), 0) + 1
+    out["pairs"] = [{"lead": h.lines[a].id, "second": h.lines[b].id, "cells": n, "area_mkm2": round(n * h.cell_mkm2, 2)}
+                    for (a, b), n in sorted(pairs.items(), key=lambda x: -x[1])[:10]]
+    pop = f["peoples_whole"] < 255
+    out["shares"] = {k: round(float(f["body_" + k][pop].mean()), 1) if pop.any() else 0.0 for k in h.share_traits}
     return out
 
 
@@ -288,6 +321,17 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L += ["", f"## Mixing at the present: {mx.get('area_mkm2')} Mkm2 ({mx.get('land_share')} of the land; corridor land "
               f"{mx.get('in_corridors')} mixed, closed land {mx.get('in_closed')}); empty continents: "
               f"{', '.join(pres.get('empty_continents') or []) or 'none'}; lost: {', '.join(pres.get('lost') or []) or 'none'}"]
+    cp = pres.get("composition")
+    if cp:
+        L += ["", f"## Who lives together (PW-689): peopled land with a second people of at least {cp['two_pct_min']}% of the cell"]
+        for key, lab in (("5kyr", "about 5 kyr ago"), ("present", "present")):
+            c = cp[key]
+            L.append(f"  {lab:<16} {c['two_plus_pct']}% with 2+ peoples ({c['second_3pct_pct']}% with a second of 3% or more; "
+                     f"{c['three_plus_pct']}% with 10%+ of others besides); the leader holds {c['lead_share_mean_pct']}% of a cell on average; "
+                     f"{c['empty_land_pct']}% of the land is empty ({c['peopled_cells']} of {c['land_cells']} land cells peopled)")
+        L += ["  commonest pairs: " + ", ".join(f"{p['lead']}+{p['second']} {p['area_mkm2']} Mkm²" for p in cp["pairs"][:6])]
+        for k, v in cp["shares"].items():
+            L.append(f"  body '{k}': {v}% of the people on peopled land (each people's share, mixed by the cells' composition)")
     L += ["## Numbers at the present (presence x density x area)"] + [
         f"  {lid:<18} {v.get('population', 0):>12,} people  {v.get('density', 0):g}/km² (a band of {SP.BAND} roams "
         f"{v.get('band_km2', 0):g} km²)  {v['area_mkm2']} Mkm²" + (f"; {v['faded_patches']} patch-fadings below the viable number (patches x checks)" if v.get('faded_patches') else "")

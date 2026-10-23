@@ -607,6 +607,41 @@ def test_body_traits_default_inherit_and_round_trip():
             SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": bad}]})
 
 
+# ---- composition of peoples per cell (PW-689) and body shares (PW-701) ------------------------------
+def test_body_flags_can_be_a_share_of_a_people():
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    assert 0 < dnd.lines["human_herder"].body["milk"] < 1 and dnd.share_traits() == ["milk"]
+    assert "60% digest milk as adults" in SP.body_notes(dnd.lines["human_herder"].body)
+    assert SP.parse(SP.to_raw(dnd)).lines["human_herder"].body["milk"] == dnd.lines["human_herder"].body["milk"]
+    for bad in (1.5, -0.1, "some"):
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"milk": bad}}]})
+
+
+def test_composition_follows_who_reaches_and_tolerates_a_place():
+    from planet.lineages import compose as CP
+    t = SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}, {"id": "b", "origin": "root", "at": "9 kyr"},
+                              {"id": "c", "origin": "root", "at": "9 kyr", "traits": ["insular"]}],
+                  "wish": [{"a": "a", "b": "b", "want": "near"}, {"a": "a", "b": "c", "want": "apart"}]})
+    lines = t.order()
+    idx = {l.id: k for k, l in enumerate(lines)}
+    H_ = CP.cohabitation(t, lines, idx)
+    ia, ib, ic = idx["a"], idx["b"], idx["c"]
+    assert np.allclose(H_, H_.T) and H_[ia, ib] > 0.5 > H_[ia, ic]  # (near pairs mix readily, apart or insular ones rarely)
+    Pw = np.zeros((3, 1))
+    Pw[ia], Pw[ib], Pw[ic] = 0.8, 0.5, 0.5
+    early = CP.compose(Pw, Pw, H_, 0.0, 0.12)
+    late = CP.compose(Pw, Pw, H_, 1.0, 0.12)
+    for c in (early, late):
+        assert int(c["mix_lead_share"][0]) + int(c["mix_second_share"][0]) + int(c["mix_other_share"][0]) == 100
+    assert early["mix_lead_share"][0] > late["mix_lead_share"][0]  # (little intermingling before the late mixing)
+    assert late["mix_second"][0] == ib  # (the tolerated people is second)
+    z = CP.compose(np.zeros((3, 2)), np.zeros((3, 2)), H_, 1.0, 0.12)
+    assert (z["mix_lead_share"] == 0).all() and (z["mix_second"] == 255).all()
+    m = CP.compose(Pw, Pw, H_, 1.0, 0.12, {"milk": np.array([[0.0], [1.0], [0.0]])})  # (a trait share mixed by the composition)
+    assert abs(int(m["body_milk"][0]) - int(m["mix_second_share"][0])) <= 1
+
+
 # ---- horses (PW-688 part 1) -------------------------------------------------------------------------
 def test_wild_horse_range_is_open_temperate_grassland():
     from planet.lineages import horses as HO

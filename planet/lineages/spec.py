@@ -137,9 +137,13 @@ def parse_body(v, lid: str = "") -> dict:
         if k not in BODY_DEFAULT:
             raise ValueError(f"{lid}: unknown body key {k!r} (one of {sorted(BODY_DEFAULT)})")
         if k in BODY_BOOLS:
-            if not isinstance(x, bool):
-                raise ValueError(f"{lid}: body.{k} must be true or false")
-            out[k] = x
+            # true / false, or a share 0..1 of the people (lactase persistence is a population frequency, PW-701)
+            if isinstance(x, bool):
+                out[k] = x
+            elif isinstance(x, (int, float)) and 0 <= x <= 1:
+                out[k] = float(x)
+            else:
+                raise ValueError(f"{lid}: body.{k} must be true, false or a share between 0 and 1")
         elif k == "toxic":
             xs = [x] if isinstance(x, str) else list(x)
             bad = [t for t in xs if t not in TOXINS]
@@ -154,14 +158,16 @@ def parse_body(v, lid: str = "") -> dict:
 
 
 def body_notes(b: dict) -> list[str]:
-    """What is notable about a body (differences from the human-like baseline), as short phrases."""
+    """What is notable about a body (differences from the human-like baseline), as short phrases. A share
+    (0 < x < 1) reads as 'x% ...'."""
     out = []
-    if not b["sweet"]:
-        out.append("cannot taste sweet")
+    pct = lambda v: f"{round(100 * v)}% "  # noqa: E731
+    if b["sweet"] is not True:
+        out.append("cannot taste sweet" if not b["sweet"] else pct(b["sweet"]) + "taste sweet")
     if b["milk"]:
-        out.append("digest milk as adults")
-    if not b["capsaicin"]:
-        out.append("feel no capsaicin heat")
+        out.append("digest milk as adults" if b["milk"] is True else pct(b["milk"]) + "digest milk as adults")
+    if b["capsaicin"] is not True:
+        out.append("feel no capsaicin heat" if not b["capsaicin"] else pct(b["capsaicin"]) + "feel capsaicin heat")
     if b["bitter"] != "normal":
         out.append("taste bitterness faintly" if b["bitter"] == "low" else "are very sensitive to bitter tastes")
     if b["smell"] != "normal":
@@ -170,9 +176,9 @@ def body_notes(b: dict) -> list[str]:
         out.append({"herbivore": "are herbivores", "carnivore": "are carnivores",
                     "obligate_carnivore": "are obligate carnivores"}[b["diet"]])
     if b["raw_meat"]:
-        out.append("eat raw meat safely")
+        out.append("eat raw meat safely" if b["raw_meat"] is True else pct(b["raw_meat"]) + "eat raw meat safely")
     if b["cellulose"]:
-        out.append("digest cellulose")
+        out.append("digest cellulose" if b["cellulose"] is True else pct(b["cellulose"]) + "digest cellulose")
     tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)"}[t] for t in b["toxic"]]
     if tox:
         out.append("are poisoned by " + " and ".join(tox))
@@ -332,6 +338,11 @@ class Tree:
     def living_children(self, lid: str) -> list[str]:
         """Split children that are not set to die out (a side branch that dies leaves its parent going)."""
         return [c for c in self.lines[lid].children if self.lines[c].extinct_kyr is None]
+
+    def share_traits(self) -> list[str]:
+        """The body flags some line gives as a share of its people (0..1), not true/false: mapped per cell
+        as a population frequency (PW-701)."""
+        return [k for k in BODY_BOOLS if any(not isinstance(l.body.get(k), bool) for l in self.lines.values() if not l.overlay)]
 
     def groups_of(self, lid: str) -> list[str]:
         """The groups (ways of life) within a people, oldest first."""

@@ -105,7 +105,7 @@ const DEMOGRAPHY = { agricultural: { density: 10 }, nomadic: { density: 0.6, exp
 const DEMO_KEYS = Object.keys(DEMO_DEFAULT);
 // senses and bodies (PW-694; mirrors spec.BODY_DEFAULT): for the future cuisine pass, nothing in the run reads them
 const BODY_DEFAULT = { sweet: true, milk: false, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [] };
-const BODY_FIELDS = [['sweet', 'tastes sweet', [true, false]], ['milk', 'digests milk as an adult', [true, false]], ['capsaicin', 'feels capsaicin heat', [true, false]],
+const BODY_FIELDS = [['sweet', 'tastes sweet', [true, false]], ['milk', 'digests milk as an adult (or the share of the people that does)', [true, false, 0.1, 0.25, 0.5, 0.75]], ['capsaicin', 'feels capsaicin heat', [true, false]],
   ['bitter', 'bitter sensitivity', ['low', 'normal', 'high']], ['smell', 'smell acuity', ['low', 'normal', 'keen']],
   ['diet', 'diet', ['herbivore', 'omnivore', 'carnivore', 'obligate_carnivore']], ['raw_meat', 'tolerates raw meat', [true, false]], ['cellulose', 'digests cellulose', [true, false]]];
 const TOXINS = [['alliums', 'alliums (onion, garlic)'], ['theobromine', 'theobromine (chocolate)']];
@@ -115,8 +115,9 @@ function bodyOf(r, seen = new Set()) {  // the body a line runs with: its own ke
   const p = parentsOf(r).map((x) => byId()[x]).filter(Boolean)[0];
   return { ...(p ? bodyOf(p, seen) : BODY_DEFAULT), ...(r.body || {}) };
 }
-const bodyInput = (r, k, opts) => {
-  const own = r.body?.[k], inh = bodyOf({ ...r, body: {} })[k], lab = (v) => (v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '));
+const bodyInput = (r, k, opts) => {  // (opts: the choices; a flag may also be a share of the people, 0..1)
+  const own = r.body?.[k], inh = bodyOf({ ...r, body: {} })[k], lab = (v) => (v === true ? 'yes' : v === false ? 'no' : typeof v === 'number' ? Math.round(100 * v) + '% of the people' : String(v).replace('_', ' '));
+  if (typeof own === 'number' && !opts.includes(own)) opts = [...opts, own];
   return `<select data-b="${k}"><option value="" ${own == null ? 'selected' : ''}>(${lab(inh)})</option>${opts.map((v) => `<option value="${v}" ${own === v ? 'selected' : ''}>${lab(v)}</option>`).join('')}</select>`;
 };
 let T = null, sel = null, result = null;  // the raw tree (the input's shape), the selected id, a run's meta (+ id)
