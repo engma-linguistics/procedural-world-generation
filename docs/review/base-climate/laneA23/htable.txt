@@ -1,0 +1,75 @@
+## main (laneA22/health_main_report.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+1 | 9.9 | 0.0 | ok | ok | 15.7
+2 | 13.5 | 11.8 | ok | ok | 19.6
+11 | 10.4 | 0.0 | ok | ok | 43.1
+21 | 11.6 | 0.0 | ok | F | 0.0
+42 | 11.1 | 11.8 | ok | ok | 62.7
+77 | 8.0 | 9.8 | ok | F | 84.3
+505 | 6.1 | 0.0 | ok | F | 3.9
+3199 | 6.3 | 0.0 | ok | F | 0.0
+seeds with >10% of keyframes below -150 m: 2 [2, 42]; old bar F 0; new bar F 4; median icehouse 17.6%
+
+## A22 (laneA22/health/report.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+1 | 16.5 | 29.4 | F | ok | 37.3
+2 | 16.6 | 19.6 | ok | F | 74.5
+11 | 9.5 | 15.7 | F | ok | 60.8
+21 | 8.3 | 0.0 | ok | ok | 11.8
+42 | 7.7 | 0.0 | ok | ok | 45.1
+77 | 7.9 | 0.0 | ok | F | 82.4
+505 | 5.5 | 0.0 | ok | ok | 13.7
+3199 | 6.1 | 0.0 | ok | ok | 19.6
+seeds with >10% of keyframes below -150 m: 3 [1, 2, 11]; old bar F 2; new bar F 2; median icehouse 41.2%
+ppm 5/50/95% 136/420/1301; <124 ppm 3.9% <150 ppm 6.1% of 1034 keyframes
+
+## C (laneA23/health_c/report.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+1 | 12.0 | 39.2 | ok | ok | 60.8
+2 | 11.3 | 0.0 | ok | ok | 11.8
+11 | 7.3 | 0.0 | ok | F | 0.0
+21 | 11.8 | 0.0 | ok | ok | 21.6
+42 | 5.0 | 0.0 | ok | F | 0.0
+77 | 10.7 | 19.6 | ok | F | 100.0
+505 | 11.4 | 3.9 | ok | ok | 56.9
+3199 | 10.7 | 5.9 | ok | ok | 23.5
+seeds with >10% of keyframes below -150 m: 2 [1, 77]; old bar F 0; new bar F 3; median icehouse 22.6%
+ppm 5/50/95% 142/461/1370; <124 ppm 3.4% <150 ppm 5.6% of 1034 keyframes
+
+## main2 (laneA22/health2/main.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+101 | 6.2 | 0.0 | ok | F | 0.0
+102 | 6.0 | 0.0 | ok | ok | 5.9
+103 | 11.5 | 27.5 | ok | ok | 68.6
+104 | 9.1 | 0.0 | ok | ok | 31.4
+105 | 4.8 | 0.0 | ok | ok | 58.8
+106 | 8.5 | 0.0 | ok | F | 0.0
+107 | 5.9 | 0.0 | ok | ok | 23.5
+108 | 9.5 | 0.0 | ok | ok | 56.9
+seeds with >10% of keyframes below -150 m: 1 [103]; old bar F 0; new bar F 2; median icehouse 27.4%
+
+## A22_2 (laneA22/health2/a22.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+101 | 7.0 | 0.0 | ok | ok | 47.1
+102 | 6.1 | 0.0 | ok | F | 0.0
+103 | 12.2 | 13.7 | F | ok | 54.9
+104 | 6.5 | 0.0 | ok | ok | 9.8
+105 | 9.6 | 0.0 | ok | F | 0.0
+106 | 5.1 | 0.0 | ok | ok | 5.9
+107 | 10.2 | 54.9 | ok | F | 80.4
+108 | 10.0 | 80.4 | F | F | 86.3
+seeds with >10% of keyframes below -150 m: 3 [103, 107, 108]; old bar F 2; new bar F 4; median icehouse 28.5%
+
+## C2 (laneA23/health2_c/report.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+101 | 4.0 | 0.0 | ok | F | 0.0
+102 | 6.0 | 0.0 | ok | ok | 17.6
+103 | 11.4 | 3.9 | ok | F | 88.2
+104 | 7.8 | 0.0 | ok | ok | 41.2
+105 | 11.5 | 21.6 | ok | F | 84.3
+106 | 8.8 | 0.0 | ok | ok | 35.3
+107 | 8.8 | 0.0 | ok | ok | 33.3
+108 | 10.6 | 0.0 | ok | ok | 29.4
+seeds with >10% of keyframes below -150 m: 1 [105]; old bar F 0; new bar F 3; median icehouse 34.3%
+ppm 5/50/95% 131/388/1019; <124 ppm 4.5% <150 ppm 8.0% of 1008 keyframes
+

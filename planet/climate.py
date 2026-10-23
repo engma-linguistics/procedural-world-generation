@@ -44,6 +44,17 @@ from . import ocean as ocean_mod
 from .geo import R_KM, is_land
 from .grid import Grid
 
+PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
+# 320-370 ppm; the plants' "today", vegetation.CA_REF). A run's CO2 stock is ln X against the planet's own balance
+# once its start has settled (tectonics/earth.py), and that balance holds dT = 0 (no drift, no ice beyond Earth's),
+# so X = 1 is this pCO2 (PW-646).
+
+
+def pco2(co2: float) -> float:
+    """The CO2 stock co2 (ln X, X against its reference) as a partial pressure, ppm: what plants and the
+    temperature term both read (PW-646)."""
+    return PCO2_REF * float(np.exp(co2))
+
 LAPSE = 6.5 / 1000  # degC per metre
 FREEZE = -1.8  # C: sea water freezes
 

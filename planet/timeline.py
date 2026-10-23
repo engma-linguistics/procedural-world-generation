@@ -28,6 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import climate
 from . import soils as SOILS
 from . import store as S
 from . import vegetation as VEG
@@ -192,10 +193,10 @@ def plant_groups(sim: Simulation) -> list:
 
 def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray, plants_from: float) -> dict:
     """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
-    cover (%, forest or savanna) as a warm start, its CO2 index, and the plant groups by then."""
+    cover (%, forest or savanna) as a warm start, its CO2 (ppm), and the plant groups by then."""
     groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
     t_fr = float(fr["t"])
-    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "co2": fr["stats"].get("co2", 0.0),
+    return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
             "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
                          if t_fr >= plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
             "groups": groups}
@@ -352,7 +353,7 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = 
     simulation's current state, in memory. memory: the run's keyframe
     climate for the soils (soil_memory)."""
     snap = sim.snapshot()
-    veg = {"nu0": sim.veg_frac, "co2": sim.co2, "unlocked": VEG.unlocked_at(sim.flora, sim.t),
+    veg = {"nu0": sim.veg_frac, "pco2": climate.pco2(sim.co2), "unlocked": VEG.unlocked_at(sim.flora, sim.t),
            "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
     if sim.t < sim.params.plants_from - 1e-9:
         veg["unlocked"] = np.zeros(VEG.NP, bool)

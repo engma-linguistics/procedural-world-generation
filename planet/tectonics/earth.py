@@ -72,7 +72,7 @@ def weathering(sim, land):
 
 
 def co2_stock(co2, s, w, dt, steps=4):
-    """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (~pCO2) relative to the reference; s the
+    """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (pCO2, climate.pco2) relative to the reference; s the
     volcanic source and w the weathering sink, each against its reference. Weathering also grows with CO2
     itself (~pCO2^WEATHER_CO2: carbonic acid in soils, GEOCARB's f(CO2)), so
         dX/dt = (s - w X^WEATHER_CO2) / CO2_TAU.
@@ -97,9 +97,10 @@ def co2_stock(co2, s, w, dt, steps=4):
 
 
 def co2_term(p, co2):
-    """The CO2 stock's warming, C: co2_sensitivity per e-fold, levelling off smoothly toward +-CO2_MAX
-    e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar and grows less beyond)."""
-    return p.co2_sensitivity * CO2_MAX * float(np.tanh(co2 / CO2_MAX))
+    """The CO2 stock's warming, C: co2_sensitivity per doubling of pCO2 (climate.pco2; an e-fold is 1 / ln 2
+    doublings), levelling off smoothly toward +-CO2_MAX e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar
+    and grows less beyond)."""
+    return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(co2 / CO2_MAX))
 
 
 def global_temperature(sim, growth, newc, rng):
@@ -266,7 +267,7 @@ def update_vegetation(sim, e):
     lake = np.isin(kind, (hydrology.OPEN_LAKE, hydrology.CLOSED_LAKE))
     v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
                          sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
-                         co2=sim.co2, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
+                         pco2=climate.pco2(sim.co2), unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
                          locked_potential=True, crown=False)  # (crown fire, PW-347: not yet in runs)
     sim.veg_niche = vegetation.niches(v)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)

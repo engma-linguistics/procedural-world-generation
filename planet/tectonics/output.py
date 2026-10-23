@@ -163,6 +163,7 @@ def stats(sim) -> dict:
         "max_elev_m": int(sim.bed().max()),
         "global_temp_c": round(14.5 + sim.dT, 1),
         "co2": round(float(sim.co2), 3),
+        "pco2": round(climate.pco2(sim.co2), 1),  # ppm (PW-646)
         "sea_level_m": round(sim.sea_level, 1),
         # (its two parts, PW-555: the land ice's and the ocean basins'; judge cold eras on the first)
         "sea_ice_m": round(float(sim.sea_ice), 1),

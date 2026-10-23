@@ -135,7 +135,7 @@ def frame_state(tz_dir: Path, i: int) -> dict:
     if "tree_cover" in run["layers"]:
         tree = T.frame(run, S.read_layers(tz_dir, run["layers"], ("tree_cover",)), "tree_cover", i)
         veg = {"nu0": vegetation.start_from_tree_cover(np.asarray(tree, float) / 100.0), "held": True,
-               **({"co2": s["co2"]} if "co2" in s else {})}
+               **({"pco2": s["pco2"]} if "pco2" in s else {})}
     return {"veg": veg, "elevation": bed, "ice": ice, "dT": s["global_temp_c"] - 14.5, "sea_level": s["sea_level_m"],
             "tilt": s["obliquity"], "below_sea_cells": int(((ice > 0) & (bed <= 0)).sum()), "stats": s,
             "t": run["frames"][i]["t"], "glacial": glacial_imprint(tz_dir, i)}

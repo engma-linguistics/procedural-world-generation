@@ -1,0 +1,13 @@
+## C2 (laneA23/health2_c/report.md)
+seed | dT range | ice SL<-150 m % | old bar | new bar | icehouse %
+101 | 4.0 | 0.0 | ok | F | 0.0
+102 | 6.0 | 0.0 | ok | ok | 17.6
+103 | 11.4 | 3.9 | ok | F | 88.2
+104 | 7.8 | 0.0 | ok | ok | 41.2
+105 | 11.5 | 21.6 | ok | F | 84.3
+106 | 8.8 | 0.0 | ok | ok | 35.3
+107 | 8.8 | 0.0 | ok | ok | 33.3
+108 | 10.6 | 0.0 | ok | ok | 29.4
+seeds with >10% of keyframes below -150 m: 1 [105]; old bar F 0; new bar F 3; median icehouse 34.3%
+ppm 5/50/95% 131/388/1019; <124 ppm 4.5% <150 ppm 8.0% of 1008 keyframes
+

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .. import climate
 from .. import timeline as T
 from .. import vegetation as VEG
 from ..geo import is_land
@@ -72,7 +73,7 @@ def source_from_sim(sim, name: str = "in-memory simulation") -> dict:
                         "erod_base": ROCK_K[np.asarray(snap.rock).astype(int)]},
             "hotspots": [[round(a, 1), round(b, 1)] for a, b in snap.hotspots],
             "volcanoes": T.active_volcanoes(snap.volcanoes),
-            "veg": None if sim.veg_frac is None else {"nu0": sim.veg_frac, "co2": float(sim.co2),
+            "veg": None if sim.veg_frac is None else {"nu0": sim.veg_frac, "pco2": climate.pco2(sim.co2),
                                                       "unlocked": VEG.unlocked_at(sim.flora, sim.t)}}
 
 

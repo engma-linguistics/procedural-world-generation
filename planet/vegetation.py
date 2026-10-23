@@ -180,7 +180,7 @@ _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS]
 # monthly mean of QY_CROSS (Collatz et al. 1998's C4 climate criterion, at
 # their ~350 ppm), so C3 grass's efficiency is C4 grass's there, scaled by
 # its quantum yield elsewhere (vegetation._q3; the qy column flags it).
-QY_CROSS, CA_REF = 22.0, 350.0  # C, ppm (today: the run's CO2 index 0)
+QY_CROSS, CA_REF = 22.0, climate.PCO2_REF  # C, ppm (today: the climate model's dT = 0 and the CO2 stock's reference)
 
 
 def _gstar(t):
@@ -201,12 +201,19 @@ def _ft_np(t, t0, t1, t2, t3):
 _KP[C3, 0] = _KP[C4, 0] * _ft_np(QY_CROSS, *PFTS[C4]["temp"]) / _q3(QY_CROSS, 0.7 * CA_REF)
 # The other C3 plants (trees, shrubs, herbs, moss: all but C4 grass, CAM succulents and C3 grass, which has its
 # own) feel CO2 through the same quantum yield, as today's times its ratio to today's at that month's temperature
-# (qy column 2; PW-644): 1 at the CO2 index 0, so their efficiencies stay as tuned on Earth today. A glacial's low
+# (qy column 2; PW-644): 1 at today's CA_REF, so their efficiencies stay as tuned on Earth today. A glacial's low
 # CO2 costs them most where it is hot (photorespiration), which is why C4 grassland spread through the tropics at
 # the LGM (Ehleringer et al. 1997; Collatz et al. 1998).
 C3_PFTS = np.array([p["code"] not in ("C4G", "Succ", "C3G") for p in PFTS])
 _KP[C3_PFTS, 17] = 2.0
 CI_REF = 0.7 * CA_REF
+CO2_RANGE = 1.5  # doublings: the plants' CO2 responses are held at their values this far from CA_REF (124-990 ppm)
+
+
+def co2_doublings(pco2: float) -> float:
+    """log2 of pCO2 (ppm) against today's CA_REF, within +-CO2_RANGE: the scale of the plants' CO2 responses
+    (PW-646: the run and the time zoom hand them a real pCO2, climate.pco2)."""
+    return float(np.clip(np.log2(max(float(pco2), 1e-9) / CA_REF), -CO2_RANGE, CO2_RANGE))
 
 # ---------------------------------------------------------------------------
 # Plant groups that appear during a run (decision 3)
@@ -471,14 +478,14 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
                 cloud=None if cloud_jul is None else 0.5 * (np.asarray(cloud_jul) + np.asarray(cloud_jan)))
 
 
-def envelope(s: dict, co2: float = 0.0) -> np.ndarray:
+def envelope(s: dict, pco2: float = CA_REF) -> np.ndarray:
     """(NP, n) bool: where each PFT can establish by its climate limits
     (section 2.2; the drought limit is checked after the water balance).
-    co2 (the run's log CO2 index, ~log2 of CO2 against today's) moves the
-    C4 grasses' warmth threshold: lower CO2, cooler C4 (Ehleringer 1997)."""
+    pco2 (ppm) moves the C4 grasses' warmth threshold by 3 C per doubling
+    against today's: lower CO2, cooler C4 (Ehleringer 1997)."""
     out = np.zeros((NP, len(s["tc"])), bool)
     for i, p in enumerate(PFTS):
-        tw_min = p["tw"] + (3.0 * float(np.clip(co2, -1.5, 1.5)) if i == C4 else 0.0)
+        tw_min = p["tw"] + (3.0 * co2_doublings(pco2) if i == C4 else 0.0)
         out[i] = ((s["tc"] >= p["tc_min"]) & (s["tc"] <= p["tc_max"]) & (s["tmin"] >= p["tmin"])
                   & (s["gdd5"] >= p["gdd"]) & (s["tw"] >= tw_min) & (s["tw"] <= p["tw_max"]) & (s["precip"] >= p["p_min"])
                   & (s["mi"] >= p["mi_min"])
@@ -667,10 +674,12 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                         gmon[j, m, i] = best[7 + m]
 
 
-def potential(s: dict, viable: np.ndarray, eff: np.ndarray, co2: float = 0.0, lai0=None, cheap: bool = False) -> dict:
+def potential(s: dict, viable: np.ndarray, eff: np.ndarray, pco2: float = CA_REF, lai0=None,
+              cheap: bool = False) -> dict:
     """Potential productivity of each PFT on each cell where viable (NP, n),
     as if it grew alone (section 3.2). eff: (NP, n) efficiency multipliers
-    (stand-ins). co2: the run's CO2 index (~log2 of CO2 against today's) sets
+    (stand-ins). pco2: the CO2, ppm (climate.pco2 of the run's stock; held
+    within CO2_RANGE doublings of today's), sets
     the C3 plants' light-use efficiency through their quantum yield (_q3:
     C3 grass's own, the other C3 types' against today's) and every plant's
     water-use efficiency: carbon gained per water transpired is
@@ -685,9 +694,9 @@ def potential(s: dict, viable: np.ndarray, eff: np.ndarray, co2: float = 0.0, la
     n = len(s["tc"])
     cells = np.flatnonzero(viable.any(0)).astype(np.int64)
     kp = _KP.copy()
-    co2 = float(np.clip(co2, -1.5, 1.5))
-    ci = CI_REF * 2.0 ** co2  # the CO2 index is ~log2 of CO2 against today's
-    kp[:, 16] *= 2.0 ** co2  # water-use efficiency ~ Ca
+    x = co2_doublings(pco2)
+    ci = CI_REF * 2.0 ** x  # Ci = 0.7 Ca
+    kp[:, 16] *= 2.0 ** x  # water-use efficiency ~ Ca
     res = np.zeros((8, NP, n))
     gmon = np.zeros((2, 12, n))
     lai = np.zeros((NP, n)) if lai0 is None else np.asarray(lai0, float)
@@ -1247,7 +1256,7 @@ def biome_of(types, sea_biome) -> np.ndarray:
 # The whole model on a world, and on a run's climate update
 # ---------------------------------------------------------------------------
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
-          lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, co2: float = 0.0, unlocked=None,
+          lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, pco2: float = CA_REF, unlocked=None,
           cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
           soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
@@ -1274,7 +1283,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     s = site(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, rel)
     if soil is not None:
         s["cap1"], s["cap2"] = soil["cap1"], soil["cap2"]
-    env = envelope(s, co2) & land[None, :]
+    env = envelope(s, pco2) & land[None, :]
     viable = env & unlocked[:, None]
     eff = np.ones((NP, n))
     sub = standin_map(unlocked)
@@ -1286,7 +1295,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
         viable_c = viable | (env & ~unlocked[:, None])
     else:
         viable_c = viable
-    pot_all = potential(s, viable_c, eff, co2, lai0, cheap)
+    pot_all = potential(s, viable_c, eff, pco2, lai0, cheap)
     if soil is not None:  # the soil's fertility factor scales each stand's NPP (decision 6A: 0.85-1.1 on plants)
         fs = np.asarray(soil["f_soil"], float)[None, :]
         pot_all = dict(pot_all, npp=pot_all["npp"] * fs, net=pot_all["net"] * fs)
@@ -1380,14 +1389,14 @@ def feedback(nu, lai_p) -> dict:
                 mask=np.clip((shade * SNOW_MASK[:, None]).sum(0), 0, 1))
 
 
-def coupled_climate(grid, elev, dT: float = 0.0, tilt: float = 23.4, ice=None, nu0=None, co2: float = 0.0,
+def coupled_climate(grid, elev, dT: float = 0.0, tilt: float = 23.4, ice=None, nu0=None, pco2: float = CA_REF,
                     unlocked=None) -> tuple[dict, dict]:
     """climate.compute with the vegetation's feedbacks, as a world gets
     them (world.finish): the climate, a first cheap vegetation on it, then
     the climate again with that vegetation. Returns (climate, feedback)."""
     c = climate.compute(grid, elev, dT, tilt, ice)
     v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-              c["cloud_jan"], ice=ice, nu0=nu0, co2=co2, unlocked=unlocked, cheap=True)
+              c["cloud_jan"], ice=ice, nu0=nu0, pco2=pco2, unlocked=unlocked, cheap=True)
     fb = feedback(v["eq"]["nu"], v["pot"]["lai"])
     return climate.compute(grid, elev, dT, tilt, ice, veg=fb), fb
 

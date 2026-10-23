@@ -1812,3 +1812,131 @@ Drafts:
 - `draft-tropical-forest-area-hypersensitive.md` (a 20% CO2 drop takes the tropical forest from 15 to 9 Mkm2 at
   today's climate);
 - `draft-co2-index-units-ln-or-log2.md` (needs-decision).
+
+## PW-646 option C: the run carries a real pCO2 (lane A23)
+Branch on main 9b30887 + lane A22 (PW-644, 3e2a10a; its harness cherry-pick 89cc49c reverted). Scripts and outputs
+are in `laneA23/` (README there).
+
+### What changed
+- `climate.pco2(co2) = PCO2_REF x e^co2`, with `PCO2_REF` = 350 ppm.
+  - The stock's reference (X = 1) is the planet's own balance at REF_FREEZE. That balance holds the climate model's
+    dT = 0, which is Earth's climate as its data show it (~1960-2000, 320-370 ppm). It is also the plants' "today"
+    (`vegetation.CA_REF`, which they were tuned at), so no new number.
+- `co2_sensitivity` is now **3 C per doubling** of pCO2 (Earth's equilibrium sensitivity, AR6 2.5-4; the ice's
+  albedo is its own term). It was 3 C per e-fold, 2.1 C per doubling. `earth.co2_term` divides by ln 2; the param's
+  value is unchanged.
+- The plants take pCO2 in ppm (`vegetation.envelope/potential/model/coupled_climate(pco2=)`):
+  - Ci = 0.7 Ca;
+  - WUE ~ Ca;
+  - C4's warmth threshold moves 3 C per doubling.
+  - They are held within `CO2_RANGE` = 1.5 doublings of CA_REF (124-990 ppm, the old clip).
+- The run hands them `climate.pco2(sim.co2)`; frames and world meta store `pco2` (ppm); `co2` (ln X) stays in the
+  run's stats for the thermostat's tools.
+- The time zoom's plants feel `pco2_0 x 2^(co2_c / co2_sensitivity)`, where co2_c is the CO2 part of dTg. So
+  plants and temperature read one quantity in the run and in the zoom.
+- `ice_diag`'s fb and `diag`'s co2_term_free use the per-e-fold sensitivity.
+
+### Question 1: reference and sensitivity (`co2_choices.txt`)
+Earth's zoom at its glacial maximum (CO2 term -3.11 C):
+
+| reading | per doubling | ppm |
+|---|---|---|
+| A (log2, as A22) | (3 per e-fold) | 171 |
+| B (ln, 3 C per e-fold) | 2.08 | 124 (at the clip) |
+| **C (ppm, 3 C per doubling, ref 350)** | 3 | **171** |
+| C, ref 280 | 3 | 136 |
+| C, 4 C per doubling | 4 | 204 |
+
+- C with Earth's sensitivity gives the same plants as A for any given CO2 term in C. A's log2 reading *was* 3 C per
+  doubling, as far as the plants could tell.
+- What C changes is the run: an e-fold of the stock now warms 4.33 C, not 3.
+- 171 ppm against the LGM's 185-190 is plausible. The glacial / interglacial ratio, 0.49 against Earth's 0.68, is
+  off: `co2_share` 0.5 is about twice CO2's own share (27% at 3 C per doubling). It cancels with the 350 ppm
+  interglacial. Draft filed (`draft-co2-share-overstates-glacial-co2.md`).
+
+### Question 2: Earth's zoom, the run's ppm, the low tail
+- `tz_earth --level 6` (`tz_earth_c.txt`) matches A22's to rounding:
+  - cycles 98-108 kyr;
+  - glacials -80..-101 m;
+  - give-back 0.67-0.85;
+  - interglacial ice 9.9-13.1%;
+  - forest by band, interglacial -> glacial maximum: 60-90 N 0.26->0.01, |lat|<15 0.43->0.28, 50-60 N
+    0.69->0.34.
+
+  The bars are the same as A22's: cooling F and ig_ice F on both.
+- The run's pCO2, 5/50/95% of keyframes:
+
+  | sweep | index | ppm (as the plants read it) | < 150 ppm | < 124 ppm |
+  |---|---|---|---|---|
+  | A22, draw 1 | -0.95 / +0.18 / +1.31 | 182 / 397 / 869 | 2.0% | 0.6% |
+  | C, draw 1 | -0.90 / +0.28 / +1.36 | 142 / 461 / 1370 | 5.6% | 3.4% |
+  | C, draw 2 | | 131 / 388 / 1019 | 8.0% | 4.5% |
+
+  - The stock's ln X spread hardly narrows: the stronger temperature term damps it only ~10%.
+  - So, read as ppm, the plants' range widens on both sides.
+  - The old store's index 5/50/95% (-1.25 / -0.20 / +0.97) would be 100 (held at 124) / 286 / 923 ppm.
+- Hot-month C3 failures (`lowtail_L6.txt`, Earth's plants grown at each pCO2):
+  - Share of growing land cell-months with q3 = 0 (Ci <= G*, which takes a monthly mean above 39.5 C at 124 ppm):
+    0.04% at dT 0 and 0.29% at dT +3.
+  - Share with q3 under a quarter of today's: 2.9% / 4.5% at 124 ppm, 0.35% / 1.1% at 150 ppm, 0 at 171 ppm and
+    above.
+  - Outright failures are negligible. The real cost of the low tail is the forest's area (PW-648's knife edge):
+    the forest biome goes 56 -> 35 Mkm2 at 171 ppm and 9 Mkm2 at 124 ppm (dT 0), with savanna and grass taking over.
+
+    That is the same in A and C for the same CO2 term. Under C, the run reaches it more often (3-4.5% of keyframes
+    at the clip, against 0.6%).
+
+### Question 3: does C change A22's deeper icehouses? (`htable.txt`)
+`health.py --quick`, the same 8 + 8 seeds. Main and A22 are lane A22's sweeps; `planet/` on main is unchanged since
+then.
+
+| | main | A22 | A22 + C |
+|---|---|---|---|
+| draw 1 (defaults): seeds > 10% of keyframes below -150 m | 2 (2, 42; 77 9.8%) | 3 (1 29%, 2 20%, 11 16%) | 2 (1 39%, 77 20%) |
+| draw 1: old / new ice bar F | 0 / 4 | 2 / 2 | 0 / 3 |
+| draw 1: median icehouse % | 18 | 41 | 23 |
+| draw 2 (101-108): seeds > 10% below -150 m | 1 (103 28%) | 3 (103 14%, 107 55%, 108 80%) | 1 (105 22%) |
+| draw 2: old / new ice bar F | 0 / 2 | 2 / 4 | 0 / 3 |
+| draw 2: median icehouse % | 27 | 29 | 34 |
+| pooled: mean % of keyframes below -150 m | 3.8 | 13.4 | 5.9 |
+| pooled: old / new ice bar F | 0 / 6 | 4 / 6 | 0 / 6 |
+
+- C takes the deep-ice frames most of the way back to main: 3 seeds over 10% in 16, as on main, against A22's 6.
+- No old-bar fails, against A22's 4.
+- Determinism is bit-identical.
+- Single seeds still swing; draw 2's second half was re-reported from its runs (`--manifest`) after a pause stopped
+  the sweep.
+
+Why the thermostat answers differently, per C of CO2 term:
+- The plants are the same as A's.
+- The stock's answer per C of cooling, fb = sensitivity per e-fold x g / WEATHER_CO2 (g ~0.047 per C, PW-576), goes
+  from 0.35 to 0.51 C/C.
+- A non-CO2 cooling's equilibrium (the plants' albedo, A22) is damped by 1 / (1 + fb): 11% less than before.
+- A sink-side change (more NPP weathering, as in PW-636's flora; mountains) moves dT by -sensitivity / WEATHER_CO2
+  / (1 + fb) per unit of ln sink: 29% more than before.
+- A cold era's piled-up CO2 also warms 1.44x more per e-fold, which shortens deep spells. That is the channel the
+  health numbers show.
+
+So C brakes A22's plant–albedo deepening and amplifies PW-636's weathering drawdown in dT. The thermostat's new
+gain should be measured with `ice_diag --summary` on the 10 seeds (draft filed).
+
+### Tests
+- `pytest -q` (-n 4): 599 passed, 2 failed.
+  - The sim golden changed on purpose; it is regenerated.
+  - `test_timezoom_consistency.py::test_cold_moment_has_sheets` is a single-seed fixture flip. The first plausible
+    seed now has 0.42% ice against its 1% precondition. A22 saw it flip too. It is not counted, and PW-643's
+    multi-seed fixtures replace it.
+- Changed for the API only:
+  - `test_co2_stock`'s forcing check (now per doubling);
+  - `test_timezoom`'s stats key (`pco2`);
+  - `test_timezoom_consistency`'s `pco2=` keyword.
+
+**Verdict: C.** It is sound, not wildly off:
+- Earth's glacial lands at 171 ppm;
+- Earth's zoom is unchanged from A22;
+- today's plants are unchanged (350 ppm at index 0);
+- outright C3 failures are negligible;
+- the run's deep icehouses come back to main's level.
+
+The cost is a wider pCO2 range in the runs: 5% of keyframes are under ~140 ppm, where tropical forest gives way to
+savanna.

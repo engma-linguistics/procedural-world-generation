@@ -69,7 +69,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     grounded land ice (isostasy.grounded): land is elevation > 0 or ice > 0
     (geo.is_land: a bed below sea level under the ice is land, PW-307); veg: the vegetation's history and
     setting, all optional: nu0 (PFT cover fractions to start from: history
-    decides forest vs savanna), co2 (the run's CO2 index), unlocked (the
+    decides forest vs savanna), pco2 (the run's CO2, ppm: climate.pco2), unlocked (the
     PFTs that exist by then), groups (the plant groups' appearance times,
     for the meta). orbit_dt: an orbit's monthly temperature anomaly
     (climate.compute's; a finished time-zoom frame). soil_memory: the run's
@@ -86,7 +86,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # first, cheap vegetation on the first climate, then the climate again
     # with it (on the eroded terrain, if any).
     v0 = vegetation.model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt,
-                          c["cloud_jul"], c["cloud_jan"], ice=ice, nu0=veg.get("nu0"), co2=veg.get("co2", 0.0),
+                          c["cloud_jul"], c["cloud_jan"], ice=ice, nu0=veg.get("nu0"), pco2=veg.get("pco2", vegetation.CA_REF),
                           unlocked=veg.get("unlocked"), cheap=True, **held)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
@@ -170,7 +170,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                        flood_ratio=flood["flood_ratio"], winds=winds, memory=soil_memory, **soils.geology(extra))
     vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
                          c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
-                         co2=veg.get("co2", 0.0), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
+                         pco2=veg.get("pco2", vegetation.CA_REF), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
                          coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm, **held)
     layers.update(vegetation.world_layers(vg))
     # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
@@ -194,7 +194,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                    "dT": dT, "tilt": tilt, **(params or {})},
         # the overturning: Sv, sinking sites and a schematic of its loop (ocean.loop_schematic)
         "overturning": ocean.loop_schematic(grid, elev, c, ice=ice),
-        "vegetation": {"co2": round(float(veg.get("co2", 0.0)), 3),
+        "vegetation": {"pco2": round(float(veg.get("pco2", vegetation.CA_REF)), 1),
                        "pfts": [p for p, ok in zip(vegetation.CODES, vg["unlocked"]) if ok],
                        **({"groups": veg["groups"]} if veg.get("groups") is not None else {}),
                        "from_history": veg.get("nu0") is not None},
