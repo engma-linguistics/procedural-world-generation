@@ -1357,3 +1357,74 @@ It still fails, for the same reason as in A14: the SH coasts' summer winds are s
 W Europe, Fennoscandia's winter, stage 1), and it is the mechanism PW-596 asked for. But it turns two time-zoom
 tests red and makes the health sweep's ice-age outliers worse. Under the "global, not local, optimum" rule that is
 the coordinator's ruling (the draft's option A), not a lane's.
+
+## PW-596 option A on the PW-576 base (lane A16): re-measured
+
+**The time zoom's glacial passes, health is no worse than main, and no ice rule leans on the old winds. One
+fixture is still red: the cold-moment tests' first plausible seed is now a hothouse moment. That needs a ruling
+(`issue-tracking/inbox/draft-pw596-winds-break-timezoom-ice-tests.md`, lean A: the fixture picks the first
+plausible seed with sheets).**
+
+Branch `worktree-agent-a34e43ec48de2d53e`:
+- main 2180b8e merged with lane A15's 98749b4;
+- goldens regenerated on the merged code (only `sim_L4_s1_60myr` conflicted).
+
+Files are in `laneA16/` (README.md lists them).
+
+### Earth bars and winds
+`planet/climate.py` is unchanged on main since A15's base (d32f7fa). So `earth_check`, `climate_bias` and the
+overturning (Earth and the 9 worlds) on the branch are byte-identical to A15's `*_after.txt` except the timings.
+A15's table above stands:
+- rain r 0.620 -> 0.631;
+- Köppen 32 / 70 -> 34 / 71;
+- Fennoscandia coldest -4.5 -> -2.8;
+- the summer winds as in A15's table;
+- stage 1 holds.
+
+### Tests (`uv run pytest -q`, 585 tests)
+main 2180b8e is green. On the branch, 583 pass and 2 fail, on one fixture:
+
+| test | main | branch |
+|---|---|---|
+| glacial extra / left after 15 kyr, m (bar: left < extra / 2) | 93.0 / 15.3 | 49.9 / -0.5, passes (A15 on the old base: 38.2 / 21.2) |
+| cold moment under sheets (bar > 1%) | 2.09% (seed 28) | **0.86%** (seed 31) |
+| cold-moment ice speeds, median (bar < 100 m/yr) | passes | **117** |
+| ice at index zero | passes | passes |
+
+**Mechanism, by crossing the climates on fixed worlds.**
+- *Time zoom:* `xzoom.sh` runs sim4's source from each tree with each tree's climate. main's world gives 93.0 / 15.3
+  with main's climate and 90.5 / 18.6 with the branch's. The branch's world gives 37.9 / 1.8 and 49.9 / -0.5. The
+  zoom's ice rules (PW-471's index, PW-569's surface air) don't lean on the winds. The difference between the worlds
+  is the run's chaos, and both pass.
+- *The run's ice rule (`_cold`):* `xcold.sh` runs it on the same world with each climate, `xcold.txt`.
+  - main 28: 2.09 vs 2.10%; main 32: 1.38 vs 1.39%; branch 31: 0.74 vs 0.86%.
+  - With the belts or the column switched off it moves by at most 0.25 points.
+  - So the winds don't weaken the run's sheets either.
+- *The fixture:* it takes the first of seeds 25-35 that meets `_plausible`.
+  - On the branch that is seed 31 alone, a hothouse moment (run dT +6.66 C).
+  - main has the same kind at 31 (+8.0 C, 0.46%). It passes because seed 28 comes first.
+  - Over seeds 25-50, plausible seeds with more than 1% under sheets: main 3 of 6, branch 2 of 7
+    (`coldscan_*.txt`).
+  - The branch's first plausible seed with sheets is 46 (3.20%). With SEEDS = (46,), all three cold-moment tests
+    pass.
+  - Widening the window can't help, because seed 31 stays first.
+- *A trap for scripts:* `planet` has to be imported before numpy, or BLAS's thread caps come too late and the
+  chaotic run diverges. Seed 31 gave run dT +7.05 instead of +6.66.
+
+### Health (`tools/health.py --quick`, 8 L6 seeds, 500 Myr, 8 workers x 2 threads; `health_main.md` / `health_branch.md`)
+| | main 2180b8e | branch |
+|---|---|---|
+| outlier spells | 80 | **60** |
+| seeds with ice sea level below -150 m for >10% of the run | 2 (42 47%, 77 37%) | **0** (2 9.8%) |
+| plate-collapse spells (<= 4 plates) | 1 (77 24%) | 0 |
+| seeds with giant-lake frames > 5% | 6 | 3 |
+| new ice bar (icehouse 5-70%) fails | 3 (11 0%, 3199 0%, 42 100%) | 5 (1 4%, 11 96%, 21 0%, 77 76%, 505 100%) |
+| icehouse share, median seed | 21% | 34% |
+| ice sea level, median of the seeds' medians | -7.8 m | -16.4 m |
+| determinism | identical | identical |
+
+A15's "deeper ice ages" doesn't reproduce on the CO2 stock: none goes deep. The runs spend more time with some ice,
+and the icehouse share spreads both ways. These are single chaotic runs. It's recorded as a follow-up in the draft.
+
+**Ready to merge? Not yet.** Everything but one fixture's seed lottery is green or better. Making it green takes a
+change to how the fixture picks its moment, which is the owner's call (draft, option A).
