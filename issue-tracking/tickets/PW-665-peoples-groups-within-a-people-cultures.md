@@ -35,5 +35,6 @@ The design is in docs/proposals/lineages.md, "Next: groups within a people":
 - [x] preset: steppe/forest orcs; human seafarers/farmers/nomads; runs on 1df1c3 and 3e9e7d
 
 ## Updates
+- 2026-10-23: Scope (owner 2026-10-24): a group is only a way of life within a people (habitat niche, traits, land use, wishes); languages, religions, customs, cultural spread or assimilation and cultural effects on peoples belong to PW-661.
 - 2026-10-23: Created from inbox draft draft-peoples-groups.md (found by peoples-workbench-lane).
 - 2026-10-24: Built by peoples-groups-lane (docs/proposals/lineages.md, "Groups within a people"). Groups take up every cell of their people's range where their habitat beats the people's by GROUP_MARGIN 0.15; they mix as kin (GROUP_KIN 0.5, no exclusion); hybrids, hosts and wishes see a people as a whole; meta.present.peoples roll-ups, the peoples_whole layer, workbench groups (Peoples, side panel, Results) and the globe toggle. Preset: steppe/forest orcs; human farmers, herders, nomads, seafarers; hill dwarves. Runs 8bac4d (1df1c3) and c646ea (3e9e7d) replace 37e9da and 33b1c3: seafarers hold coasts (100% coast), nomads desert/steppe, herders open land, hill dwarves hills, forest orcs forest; steppe orcs hold the steppe on 3e9e7d but stay thin on 1df1c3, where the orcs already are steppe folk. Shares: draft-peoples-group-shares.

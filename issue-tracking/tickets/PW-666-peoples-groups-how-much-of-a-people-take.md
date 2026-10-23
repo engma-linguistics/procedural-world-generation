@@ -1,8 +1,9 @@
 ---
+id: PW-666
 title: "Peoples groups: how much of a people takes up a way of life (seafarers ~1% of humans; steppe orcs thin where the orcs already are steppe folk)"
 type: task
 status: needs-decision
-parent: PW-649
+parent: PW-103
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -11,6 +12,8 @@ found_by: peoples-groups-lane
 blocked_by: []
 relates: [PW-665]
 refs: [planet/lineages/history.py, planet/lineages/samples/dnd.toml, docs/proposals/lineages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Options:
   woodland; steppe orcs: the steppe), keeping the knobs.
 
 Lean: C for the orcs plus A elsewhere; B if the owner wants "the humans" to read mostly as their groups.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-peoples-group-shares.md (found by peoples-groups-lane).
