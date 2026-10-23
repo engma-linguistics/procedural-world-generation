@@ -135,6 +135,9 @@ PEAT_T, PEAT_P, PEAT_ELEV, PEAT_TREE = 5.0, 1000.0, 250.0, 30.0  # warm-enough, 
 SOURCE_DEPTH_M = 1200.0  # shale settling in seas shallower than this (epeiric seas, shelves, rift gulfs)
 TROPIC_T, TROPIC_P, TROPIC_ELEV = 20.0, 1200.0, 1500.0  # deep tropical weathering
 TROPIC_KEEP_MYR = 60.0  # a laterite profile's survival (erosion, burial): older tropical time counts less
+LATERITE_MYR = 40.0  # uninterrupted weathering a mature bauxite profile takes (tens of Myr: Guinea, Weipa, Guiana)
+BURY_KM, STRIP_KM = 0.01, 0.01  # km of cover gained / lost per Myr that buries / strips a weathering profile
+SMOOTH_FRAMES = 5  # the traced cover's running mean over this many keyframes (the keyframes' 0.1 km steps flicker)
 
 
 @njit(cache=True)
@@ -231,7 +234,40 @@ def _dilate(grid, mask, hops=1):
     return m
 
 
-def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, log=None) -> dict:
+def _running_mean(a: np.ndarray, w: int) -> np.ndarray:
+    """Centred running mean of a (frames, n) along the frames (edges: the window shrinks)."""
+    if w <= 1 or len(a) < 2:
+        return a
+    c = np.cumsum(np.vstack([np.zeros((1, a.shape[1])), a]), axis=0)
+    k = np.arange(len(a))
+    lo, hi = np.maximum(k - w // 2, 0), np.minimum(k + w // 2 + 1, len(a))
+    return (c[hi] - c[lo]) / (hi - lo)[:, None]
+
+
+@njit(cache=True)
+def _streaks(ok, dt, age, keep_myr):
+    """Uninterrupted weathering (frames oldest first): the longest run of ok frames (Myr), each run weighted by
+    exp(-(age when it ended)/keep_myr) for its survival since; the run still going counts in full."""
+    nf, n = ok.shape
+    best = np.zeros(n)
+    for i in range(n):
+        run = 0.0
+        for f in range(nf):
+            if ok[f, i]:
+                run += dt[f]
+            else:
+                if run > 0:
+                    v = run * np.exp(-age[f] / keep_myr)
+                    if v > best[i]:
+                        best[i] = v
+                run = 0.0
+        if run > best[i]:
+            best[i] = run
+    return best
+
+
+def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, log=None,
+            smooth_frames: int = SMOOTH_FRAMES) -> dict:
     """Each cell's past, read from the run's keyframes where its ground was then: stepped back frame by frame
     with that frame's plate rotations (the plate under the traced point), so it follows plate reorganisations.
     Sea floor is traced only back to its birth (crust_age). Returns per-cell arrays (Myr of each setting, ages
@@ -297,8 +333,8 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
             m = m & alive
             acc[key + "_myr"] += np.where(m, dt, 0.0)
             last[key] = np.where(m & (last[key] > age), age, last[key])
-        acc["tropic_myr"] += np.exp(-age / TROPIC_KEEP_MYR) * np.where(alive & land & (tmp >= TROPIC_T) & (pr >= TROPIC_P) & (elev < TROPIC_ELEV)
-                                      & (lf != 3) & (lf != 11), dt, 0.0)
+        tropic_ok = alive & land & (tmp >= TROPIC_T) & (pr >= TROPIC_P) & (elev < TROPIC_ELEV) & (lf != 3) & (lf != 11)
+        acc["tropic_myr"] += np.exp(-age / TROPIC_KEEP_MYR) * np.where(tropic_ok, dt, 0.0)
         acc["traced_myr"] += np.where(alive, dt, 0.0)
         th = np.where(alive, th, 0.0)
         thick_max_age = np.where(th > thick_max, age, thick_max_age)
@@ -314,7 +350,7 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
         lit[(~land & (elev > -SOURCE_DEPTH_M) & cr & np.isin(top, (_SHALE, 3))) | (land & (lake == 2))] = SOURCE
         lit[top == _EVAPORITE] = EVAP
         cover = np.where(alive, dec("sediment_cover", k)[idx].astype(float), 0.0)
-        samples.append((cover, lit))
+        samples.append((cover, lit, tropic_ok, dt, age))
         # step back to the previous keyframe along this frame's rotation of the plate under each point
         if kk_i + 1 < len(ks):
             kp = ks[kk_i + 1]
@@ -331,15 +367,26 @@ def history(run_dir: Path, t_myr: float, grid, lookback: float = LOOKBACK_MYR, l
     km = np.zeros((n, K_STACK))
     maxd = np.zeros((n, K_STACK))
     ntop = np.zeros(n, np.int64)
-    c0, _ = samples[-1]
+    # (oldest first; the cover along each traced path smoothed over a few frames: the keyframes store it in
+    # 0.1 km steps that flicker up and down, each flicker otherwise eroding and redepositing the column's top)
+    covers = _running_mean(np.stack([s_[0] for s_ in reversed(samples)]), smooth_frames)
+    # (and the peat swamp's own flicker: a frame's swamp is the majority of its neighbouring frames' along the path)
+    liths = np.stack([s_[1] for s_ in reversed(samples)])
+    swamp = _running_mean((liths == COALY).astype(float), smooth_frames) >= 0.5
+    liths = np.where(swamp & (liths != EVAP), COALY, np.where(liths == COALY, CLASTIC, liths)).astype(np.int8)
+    c0 = covers[0]
     km[:, 0], maxd[:, 0] = c0, c0 / 2  # the cover before the record: one older clastic layer
     ntop[:] = (c0 > 0).astype(np.int64)
-    prev = c0
-    for cover, lit in reversed(samples[:-1]):
-        _stack_step(typ, km, maxd, ntop, cover - prev, lit)
-        prev = cover
+    for f in range(1, len(covers)):
+        _stack_step(typ, km, maxd, ntop, covers[f] - covers[f - 1], liths[f])
+    # uninterrupted tropical weathering of a surface that is neither buried nor stripped (a laterite's maturing)
+    dts = np.array([s_[3] for s_ in reversed(samples)], float)
+    ages = np.array([s_[4] for s_ in reversed(samples)], float)
+    dcov = np.vstack([np.zeros((1, n)), np.diff(covers, axis=0)]) / np.maximum(dts, 1e-6)[:, None]
+    ok = np.stack([s_[2] for s_ in reversed(samples)]) & (dcov < BURY_KM) & (dcov > -STRIP_KM)
+    tropic_run = _streaks(ok, dts, ages, TROPIC_KEEP_MYR)
     tot, dep, mx, oil, gas, shallow = _column_summary(typ, km, maxd, ntop, 6)
-    out = {**acc, **{f"last_{k}": v for k, v in last.items()},
+    out = {**acc, **{f"last_{k}": v for k, v in last.items()}, "tropic_run_myr": tropic_run,
            "thick_max": thick_max, "thick_max_age": thick_max_age, "t_now": t_now,
            "column_km": tot, "column_depth": dep, "column_maxburial": mx, "column_oil": oil, "column_gas": gas,
            "column_shallow": shallow, "frames": len(ks), "seconds": round(time.time() - t0, 1)}
@@ -430,6 +477,7 @@ def likelihoods(grid, L: dict, meta: dict | None = None, hist: dict | None = Non
         plume_myr = np.where((lf == 7) | (lf == 12), 10.0, 0.0)
         rift_myr = np.where(rift > 0.1, 10.0, 0.0)
         tropic = np.where(land & (temp >= TROPIC_T) & (prec >= TROPIC_P), 80.0, 0.0)
+        tropic_run = np.where(lf == 2, tropic, 0.4 * tropic)  # (a shield's old surface has weathered longest)
         thick_max = np.maximum(thick, np.where(orogen, 50.0, 0.0))
         vent_myr = np.zeros(n)
         col = None
@@ -437,6 +485,7 @@ def likelihoods(grid, L: dict, meta: dict | None = None, hist: dict | None = Non
         arc_myr, last_arc = h["arc_myr"], h["last_arc"]
         fold_myr, last_fold = h["fold_myr"], h["last_fold"]
         plume_myr, rift_myr, tropic = h["plume_myr"], h["rift_myr"], h["tropic_myr"]
+        tropic_run = h["tropic_run_myr"]
         thick_max, vent_myr = np.maximum(h["thick_max"], thick), h["vent_myr"]
         col = h
     # exhumation proxy: an exhumed granite or a shield shows deep levels; young cover hides them
@@ -470,14 +519,20 @@ def likelihoods(grid, L: dict, meta: dict | None = None, hist: dict | None = Non
     flood = (lf == 7) | np.isin(top, (_FLOOD,)) | np.isin(nxt, (_FLOOD,))
     R["magmatic_ni"] = (np.maximum(sat(plume_myr, 30) * cont * (cover < 1.0) * np.where(craton, 0.8, 0.45),
                                    flood * 0.6)) * cont
-    # laterites: long tropical weathering on flat ground; nickel from mafic/ultramafic parents (basalt, arc and
-    # ophiolitic suture rock), bauxite from any aluminous rock that drains well
+    # laterites: a profile matures over ~10-30 Myr of *uninterrupted* tropical weathering of a surface that is
+    # neither buried nor stripped (the history's longest such run, discounted for its survival since), on flat
+    # ground whose water table lies deep (above its lowest neighbour: a plateau or interfluve, not a swamp);
+    # nickel from mafic/ultramafic parents (basalt, arc and ophiolitic suture rock), bauxite from aluminous rock
+    # (granite, gneiss, basalt, shale; little from quartz sand, carbonate only as karst bauxite)
     flat = ramp(_relief(grid, elev), 600, 150)
     stripped = np.where(g("glaciated_myr", 9999) < 5, 0.2, 1.0)  # recent ice scraped the regolith off
-    tro = sat(tropic, 60) * flat * land * (elev > 30) * stripped
+    drained = np.maximum(ramp(elev - np.maximum(_lowest_nbr(grid, elev), 0.0), 10, 80), ramp(elev, 100, 400)) * (elev > 30)
+    tro = sat(tropic_run, LATERITE_MYR) * flat * land * drained * stripped
     mafic = np.isin(top, (1, _FLOOD)) | (exposed & np.isin(rock, (0, 1))) | (orogen & (lf == 3) & exposed)
     R["laterite_ni"] = tro * mafic * 0.85
-    R["bauxite"] = 0.8 * tro * (1.0 - 0.6 * np.isin(top, (_LIMESTONE, _DOLOMITE, _EVAPORITE))) * np.where(elev > 150, 1.0, 0.6)
+    aluminous = np.select([np.isin(top, (_SANDSTONE, _QUARTZITE)), np.isin(top, (_LIMESTONE, _DOLOMITE)),
+                           top == _EVAPORITE], [0.25, 0.4, 0.0], 1.0)
+    R["bauxite"] = 0.85 * tro * aluminous
     # sediment-hosted Pb-Zn-Cu: carbonate or red-bed strata in rifts and orogen forelands
     carb = np.isin(top, (_LIMESTONE, _DOLOMITE)) | np.isin(nxt, (_LIMESTONE, _DOLOMITE))
     foreland = _dilate(grid, (lf == 3) & land, 3) & (lf != 3)
@@ -561,6 +616,15 @@ def _relief(grid, elev):
     np.maximum.at(out, e[:, 0], d)
     np.maximum.at(out, e[:, 1], d)
     return out
+
+
+def _lowest_nbr(grid, elev):
+    """The lowest neighbour's elevation (m) of each cell."""
+    e = np.asarray(grid.edges)
+    out = np.full(grid.n, np.inf)
+    np.minimum.at(out, e[:, 0], elev[e[:, 1]])
+    np.minimum.at(out, e[:, 1], elev[e[:, 0]])
+    return np.where(np.isfinite(out), out, elev)
 
 
 def stone_class(L: dict) -> np.ndarray:

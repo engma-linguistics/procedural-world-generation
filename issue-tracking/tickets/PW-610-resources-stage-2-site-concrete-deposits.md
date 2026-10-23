@@ -31,3 +31,12 @@ table, draw as markers with a legend and hover in zoom.html; add to export featu
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-resources-zoom-siting.md (found by resources).
+- 2026-10-23: Built (lane resources2): planet/zoom_resources.py, `planet resources zoom:<id>` (zoom.json
+  `resources`: deposits with type, size, tonnage, grade, depth, host; coal outcrop belts; summary), zoom.html
+  markers/legend/cards/filter and an about row, export `deposit` features. Siting reads a world likelihood p as
+  P(notable deposit in cell), so world districts show up (~90% of district cells at p = 0.5 in the checks).
+  Seams: coal measures cut by the zoom's terrain; placers: the zoom's own drainage and gradient (valley_floor
+  in fine zooms). Also bauxite by mechanism (uninterrupted weathering runs) and a partial coal-speckle fix in
+  resources.py. Write-up and screenshots (arc, coal basin, placer river): docs/review/resources/stage2.md.
+  Follow-ups in the inbox (draft-resources-*: snw-granite-spread, coal-speckle-residual,
+  zoom-deposits-auto-and-3d, zoom-bed-geometry).

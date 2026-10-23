@@ -1,7 +1,7 @@
 # Resources: ores, coal, oil, salt, gems, stone (PW-155)
 
-Status: **stage 1 built** (world-level likelihood layers, viewer, summary; `planet/resources.py`). Stage 2
-(zoom siting of concrete deposits) designed below, not built. Owner decisions pending: see section 7.
+Status: **stages 1 and 2 built** (world-level likelihood layers, viewer, summary: `planet/resources.py`; zoom siting:
+`planet/zoom_resources.py`, `docs/review/resources/stage2.md`). Owner decisions pending: see section 7.
 
 ## 1. Idea
 
@@ -64,7 +64,7 @@ All in `planet/resources.py` (`likelihoods()`), each rule next to its code. `sat
 | bif_fe | banded iron | ancient (>= 1.8 Gyr) shield, mostly at craton margins (Hamersley, Labrador) | craton x ramp(age 1.8-2.7 Gyr) x exposed x (0.15 + 0.55 margin) |
 | magmatic_ni | Ni-Cu-PGE | plume melts and flood basalts on continents (Noril'sk, Bushveld) | sat(plume Myr, 30) (0.8 on craton, 0.45 elsewhere), flood basalt 0.6 |
 | laterite_ni | laterite nickel | long tropical weathering of mafic/ultramafic rock | tropical weathering x flat x mafic parent (basalt, exposed ocean/hotspot crust, folded orogen) |
-| bauxite | bauxite | long tropical weathering of flat, drained ground (Guinea, N Australia) | 0.8 sat(tropic Myr, 60) x flat x above 30 m (x0.6 below 150 m); x0.2 if glaciated < 5 Myr |
+| bauxite | bauxite | tens of Myr of uninterrupted tropical weathering of flat, drained, aluminous ground (Guinea, N Australia) | 0.85 sat(longest unburied, unstripped tropical run, 40 Myr) x flat x drained (10-80 m above the lowest neighbour, or a plateau) x parent (sand x0.25, carbonate x0.4); x0.2 if glaciated < 5 Myr |
 | sed_pbzn | sediment-hosted Pb-Zn-Cu | carbonates in forelands (MVT), red beds over evaporite in rifts (Kupferschiefer) | carbonate strata near fold belts 0.7, in rifts 0.6; rift sandstone over evaporite/shale 0.5 |
 | ree | rare earths | carbonatites where rifts or plumes tap old thick continents | old continent x max(sat(plume,25), 0.8 sat(rift,25)) x 0.7 |
 | placer_au, placer_sn | placers | eroding sources upstream, dropped where rivers slow | sources (gold models; tin granites) carried down `downstream` (x0.7 per cell), deposited below 600 m on bigger rivers |
@@ -120,7 +120,7 @@ rarely names evaporite as a cell's dominant rock. BIF, diamonds, gems need basem
 Earth's world lacks (PW-132). So on Earth only the climate- and rock-driven rules can be checked; they land
 where expected.
 
-## 6. Stage 2: zoom siting (designed, not built)
+## 6. Stage 2: zoom siting (built; as built: docs/review/resources/stage2.md)
 
 `zoom_resources.py`, run with the zoom (labels only, ~0.1 s): for each resource, the zoom's pixels inherit the
 parent cells' likelihood (bilinear, as other world fields), then deposits are **sited** as points by the

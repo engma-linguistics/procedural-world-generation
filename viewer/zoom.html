@@ -113,6 +113,8 @@
   <label title="Natural harbours (diamonds, bigger and redder = better), one per stretch of coast (humanuse.py)"><input type="checkbox" id="harb"> Harbours <span class="muted" id="harbN"></span></label>
   <label title="The saddle on each divide between drainage basins (bow-ties, coloured by the months it is open)"><input type="checkbox" id="passm"> Mountain passes <span class="muted" id="passN"></span></label>
   <label title="Springs at the foot of wetter high ground in dry country"><input type="checkbox" id="spring"> Springs <span class="muted" id="springN"></span></label>
+  <div class="row" id="depRow" style="display:none;gap:6px" title="Mineral deposits sited from the world's resource likelihoods (zoom_resources.py; make them with: planet resources zoom:ID)"><label style="flex:none"><input type="checkbox" id="dep" checked> Deposits <span class="muted" id="depN"></span></label>
+    <select id="depSel" style="flex:1;min-width:0"></select></div>
   <label id="cloudsRow" title="Clouds on the satellite view: patches covering the season's cloud share (the world's, interpolated); the shapes are made up"><input type="checkbox" id="clouds"> Clouds (satellite view)</label>
   <label><input type="checkbox" id="smooth" checked> Smooth when magnified</label>
 
@@ -307,6 +309,9 @@ async function init() {
   $('falls').onchange = () => { render(); hideTip(); };
   $('volc').onchange = () => { render(); hideTip(); };
   for (const o of ['harb', 'passm', 'spring']) $(o).onchange = () => { render(); hideTip(); };
+  if (p.get('dep') === '0') $('dep').checked = false;
+  $('dep').onchange = () => { render(); hideTip(); };
+  $('depSel').onchange = () => { render(); hideTip(); };
   $('smooth').onchange = draw;
   $('btn3d').onclick = () => (state.d3 ? exit3d() : enter3d());
   $('back2d').onclick = exit3d;
@@ -472,6 +477,7 @@ async function load(id) {
   fineLoaded();
   $('msg').textContent = '';
   about();
+  depMenu();
   resetView();
   render();
   syncURL();
@@ -483,10 +489,18 @@ async function load(id) {
     const v = state.view;
     hover({ clientX: v.x + (pxq[1] + 0.5) * v.s, clientY: v.y + (pxq[0] + 0.5) * v.s });
   }
-  // ?mark=fall:0 or ?mark=volcano:2 opens that marker's card (falls highest first)
+  // ?at=row,col,magnification centres the map there, magnified (the first zoom loaded only)
+  const at = (START_AT || '').split(',').map(Number);
+  START_AT = null;
+  if (at.length === 3 && at.every(Number.isFinite)) {
+    const v = state.view, W = innerWidth, H = innerHeight;
+    v.s *= at[2]; v.x = 300 + (W - 300) / 2 - at[1] * v.s; v.y = H / 2 - at[0] * v.s;
+    render();
+  }
+  // ?mark=fall:0, ?mark=volcano:2 or ?mark=dep:5 opens that marker's card (falls highest first)
   const mk = (START_MARK || '').split(':');
   START_MARK = null;
-  const o = mk.length === 2 ? (mk[0] === 'fall' ? state.marks.falls : state.marks.volc)[+mk[1]] : null;
+  const o = mk.length === 2 ? (mk[0] === 'fall' ? state.marks.falls : mk[0] === 'dep' ? state.marks.dep : state.marks.volc)[+mk[1]] : null;
   if (o) {
     const v = state.view;
     showTip(o, { clientX: v.x + o.c * v.s, clientY: v.y + o.r * v.s }, true);
@@ -537,6 +551,7 @@ function about() {
     ${(s.waterfalls || []).length ? `<tr><td>biggest falls</td><td>${s.waterfalls.slice(0, 3).map((w) =>
       `${fmt(w.height_m)} m over ${fmt(w.length_km, 1)} km, ${fmt(w.discharge_m3s)} m&sup3;/s${w.from_lake ? ' (lake outlet)' : ''}${w.gorge_km ? `, gorge ${fmt(w.gorge_km, 1)} km` : ''} at ${w.lat}, ${w.lon}`).join('<br>')}</td></tr>` : ''}
     ${(s.deltas || []).length ? `<tr><td>deltas</td><td>${s.deltas.slice(0, 4).map((d) => deltaLine(d)).join('<br>')}</td></tr>` : ''}
+    ${m.resources ? `<tr><td>deposits</td><td>${depAbout(m.resources)}</td></tr>` : ''}
     <tr><td>made in</td><td>${m.generated_in_s} s</td></tr>
     <tr><td>files</td><td><a href="../zooms/${m.id}/heightmap.png">heightmap.png</a> (16-bit: ${fmt(m.heightmap.min_m)}..${fmt(m.heightmap.max_m)} m)<br>
       <a href="../zooms/${m.id}/preview.png">preview.png</a> &middot; <a href="../zooms/${m.id}/zoom.json">zoom.json</a></td></tr>
@@ -544,6 +559,14 @@ function about() {
 }
 
 
+// the zoom's deposits in a few lines: counts by resource, the biggest, the world's districts that show up
+function depAbout(res) {
+  const s = res.summary, by = Object.values(s.by_resource).filter((e) => e.group !== 'fantasy').sort((a, b) => b.sited - a.sited);
+  const d = Object.values(s.districts || {}), cells = d.reduce((a, x) => a + x.district_cells, 0), hit = d.reduce((a, x) => a + x.with_deposit, 0);
+  return `${s.total} sited: ${by.slice(0, 5).map((e) => `${e.name.replace(/ \(.*\)$/, '')} ${e.sited}`).join(', ')}${by.length > 5 ? ', ...' : ''}<br>
+    biggest: ${s.biggest.slice(0, 3).map((b) => `${b.size} ${b.name.replace(/ \(.*\)$/, '')} (${fmt(b.tonnage, b.tonnage < 1 ? 2 : 0)} ${b.tonnage_unit})`).join('; ')}
+    ${cells ? `<br><span class="muted">world districts (cells &ge; 0.5) holding a deposit: ${hit} of ${cells}</span>` : ''}`;
+}
 // ------------------------------------------------------------ waterfall and volcano markers
 // (stats.falls: every fall >= 30 m; stats.volcanoes: the volcanoes the zoom drew, PW-120/181)
 const FALL_KIND = {
@@ -561,7 +584,68 @@ function markers(m, L) {
   });
   const volc = (st.volcanoes || []).map((v) => ({ ...v, kindOf: 'volcano', active: v.active ?? /^active/.test(v.form || ''),
     c: v.x_km / res + nx / 2, r: ny / 2 - v.y_km / res }));
-  return { falls, volc, ...huMarkers(m, L) };
+  // mineral deposits (zoom_resources.py, PW-610): points, laterites, placers, kimberlite fields, seams, fields, beds
+  const dep = ((m.resources || {}).deposits || []).map((d) => ({ ...d, kindOf: 'deposit', r: d.px[0], c: d.px[1] }));
+  const belts = ((m.resources || {}).belts || []);
+  return { falls, volc, dep, belts, ...huMarkers(m, L) };
+}
+// ------------------------------------------------------------ deposits (zoom_resources.py)
+const DEP_SIZE = { small: 3, medium: 4.5, large: 6.5, giant: 9 };
+const DEP_FORM = { point: 'hard-rock deposit', laterite: 'weathering blanket', placer: 'placer (river or beach)',
+  pipes: 'kimberlite field', seam: 'coal measures', field: 'oil or gas field', bed: 'salt bed, dome or pan' };
+function depColor(key) { return ((state.meta.resources || {}).legend || []).find((e) => e.key === key)?.color || '#ffffff'; }
+function depShown(o) {
+  if (!$('dep').checked) return false;
+  const v = $('depSel').value;
+  return !v || v === o.key || v === 'g:' + o.group;
+}
+function depPath(g, o, x, y) {
+  const s = DEP_SIZE[o.size] || 4;
+  g.beginPath();
+  if (o.form === 'laterite' || o.form === 'bed') g.rect(x - s, y - s, 2 * s, 2 * s);
+  else if (o.form === 'placer') { g.moveTo(x, y - s * 1.2); g.lineTo(x + s, y); g.lineTo(x, y + s * 1.2); g.lineTo(x - s, y); g.closePath(); }
+  else if (o.form === 'seam') g.rect(x - 1.6 * s, y - 0.6 * s, 3.2 * s, 1.2 * s);
+  else if (o.form === 'field') g.ellipse(x, y, 1.5 * s, s, 0, 0, 2 * Math.PI);
+  else if (o.form === 'pipes') { for (let k = 0; k < 6; k++) { const a = Math.PI / 3 * k; g[k ? 'lineTo' : 'moveTo'](x + s * Math.cos(a), y + s * Math.sin(a)); } g.closePath(); }
+  else g.arc(x, y, s, 0, 2 * Math.PI);
+  return s;
+}
+function depIcon(form, color) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 14;
+  const g = cv.getContext('2d');
+  depPath(g, { form, size: 'medium' }, 7, 7); g.fillStyle = color; g.fill(); g.lineWidth = 1.2; g.strokeStyle = '#0b0b0b'; g.stroke();
+  return `<img class="mk" src="${cv.toDataURL()}" width="14" height="14">`;
+}
+let START_AT = new URLSearchParams(location.search).get('at'), START_DEP = new URLSearchParams(location.search).get('depsel');
+function depMenu() {
+  const m = state.meta, res = m.resources, sel = $('depSel');
+  $('depRow').style.display = res ? 'flex' : 'none';
+  if (!res) return;
+  const by = res.summary.by_resource, keep = sel.value;
+  const groups = [...new Set(Object.values(by).map((e) => e.group))];
+  sel.innerHTML = `<option value="">all (${res.deposits.length})</option>` +
+    groups.map((g) => `<option value="g:${g}">${g === 'fantasy' ? 'fantasy [not geology]' : g}</option>`).join('') +
+    Object.entries(by).sort((a, b) => b[1].sited - a[1].sited).map(([k, e]) => `<option value="${k}">${e.name} (${e.sited})</option>`).join('');
+  const want = START_DEP || keep;
+  START_DEP = null;
+  sel.value = [...sel.options].some((o) => o.value === want) ? want : '';
+}
+function depCard(o) {
+  const row = (k, v) => `<tr><td>${k}</td><td>${v}</td></tr>`;
+  const e = ((state.meta.resources || {}).legend || []).find((x) => x.key === o.key) || {};
+  return `<h3>${depIcon(o.form, depColor(o.key))}${o.name.replace(/^./, (c) => c.toUpperCase())}</h3><table>
+    ${row('size', `${o.size}: ${fmt(o.tonnage, o.tonnage < 1 ? 2 : 0)} ${o.tonnage_unit}`)}
+    ${o.grade != null ? row('grade', `${fmt(o.grade, o.grade < 10 ? 2 : 0)} ${o.grade_unit}`) : ''}
+    ${row('depth', `${fmt(o.depth_m)} m (${o.depth_class})`)}
+    ${row('host', o.host)}
+    ${o.rank ? row('rank', `${o.rank}, ${o.seams} seam${o.seams > 1 ? 's' : ''}; ${o.mining}`) : ''}
+    ${o.kind ? row('kind', o.kind) : ''}
+    ${o.pipes ? row('pipes', `${o.pipes} (${o.diamondiferous} rich enough to mine)`) : ''}
+    ${o.blanket_km2 ? row('blanket', `~${fmt(o.blanket_km2, 1)} km&sup2;`) : ''}
+    ${row('model', `${DEP_FORM[o.form] || o.form}; ${e.model || ''}`)}
+    ${row('world cell', `likelihood ${fmt(o.likelihood, 2)}`)}
+    ${row('lat, lon', `${o.lat}, ${o.lon}`)}
+  </table>`;
 }
 // harbours, passes and springs from the human-use class maps (humanuse.py): the best harbour pixel and one spring per
 // stretch of coast / ground (cells of about 20 km), every pass saddle
@@ -626,6 +710,13 @@ function markLegend() {
     else parts.push(`<span>${(state.meta.legend.human_use?.[kind] || []).filter((e) => e.id > 0 && e.color.length <= 7 && (mk[key] || []).some((o) => o.cls === e.id))
       .map((e) => `${markIcon(kind, e.color)}${e.name}`).join(' ')} <span class="muted">(${kind === 'harbour' ? 'harbours' : 'passes'})</span></span>`);
   }
+  const dep = (mk.dep || []).filter(depShown);
+  $('depN').textContent = (mk.dep || []).length ? `(${mk.dep.length})` : '';
+  if (dep.length) {
+    const keys = [...new Set(dep.map((o) => o.key))], form = Object.fromEntries(dep.map((o) => [o.key, o.form]));
+    parts.push(`<span>${keys.map((k) => `${depIcon(form[k], depColor(k))}${dep.find((o) => o.key === k).name.replace(/ \(.*\)$/, '')}`).join(' ')}
+      <span class="muted">(deposits; size: small / medium / large / giant${(mk.belts || []).length && $('depSel').value in { '': 1, coal: 1, 'g:energy': 1 } ? '; dots: coal measures at the surface' : ''})</span></span>`);
+  }
   if (parts.length) $('legend').insertAdjacentHTML('beforeend', parts.join(''));
 }
 function drawMarks() {
@@ -648,6 +739,18 @@ function drawMarks() {
       ctx.lineWidth = 1.5; ctx.strokeStyle = o.kindOf === 'spring' ? '#0b2540' : '#0b0b0b'; ctx.stroke();
     }
   }
+  if ($('dep').checked && ['', 'coal', 'g:energy'].includes($('depSel').value)) for (const b of mk.belts || []) {
+    ctx.fillStyle = depColor(b.key) + '80';
+    const q = Math.max(1, v.s * Math.sqrt(b.step || 1) * 0.8);
+    for (const i of b.px) ctx.fillRect(X((i % state.meta.nx) + 0.5) - q / 2, Y(Math.floor(i / state.meta.nx) + 0.5) - q / 2, q, q);
+  }
+  if ($('dep').checked) for (const o of (mk.dep || []).filter(depShown).sort((a, b) => DEP_SIZE[a.size] - DEP_SIZE[b.size])) {
+    const x = X(o.c), y = Y(o.r);
+    if (o.form === 'pipes') for (const [pr, pc] of o.pipes_px || []) { ctx.beginPath(); ctx.arc(X(pc), Y(pr), 1.6, 0, 2 * Math.PI); ctx.fillStyle = depColor(o.key); ctx.fill(); }
+    depPath(ctx, o, x, y);
+    ctx.fillStyle = depColor(o.key); ctx.fill();
+    ctx.lineWidth = o.size === 'giant' || o.size === 'large' ? 2 : 1.2; ctx.strokeStyle = o.group === 'fantasy' ? '#ff00ff' : '#0b0b0b'; ctx.stroke();
+  }
   if ($('falls').checked) for (const f of mk.falls) {
     const s = fallSize(f), x = X(f.c), y = Y(f.r);
     ctx.beginPath(); ctx.moveTo(x - s, y - 0.8 * s); ctx.lineTo(x + s, y - 0.8 * s); ctx.lineTo(x, y + s); ctx.closePath();
@@ -667,6 +770,7 @@ function pick(ev) {
   for (const [id, lay, key] of [['harb', 'harbour', 'harb'], ['passm', 'pass', 'passm'], ['spring', 'fresh_water', 'spring']])
     if (huShow(id, lay)) for (const o of mk[key] || []) test(o, HU_MARK_SIZE[o.kindOf](o));
   if ($('volc').checked) for (const o of mk.volc) test(o, volcSize(o));
+  for (const o of mk.dep || []) if (depShown(o)) test(o, DEP_SIZE[o.size] || 4);
   return best;
 }
 function cardHTML(o) {
@@ -682,6 +786,7 @@ function cardHTML(o) {
       ${row('open', nm('pass', o.cls))}${row('height', `${fmt(o.height)} m, the saddle on the divide`)}${ll}</table>`;
     return `<h3>${markIcon('spring')}Springs</h3><table>${row('where', 'the foot of wetter high ground, in dry country')}${ll}</table>`;
   }
+  if (o.kindOf === 'deposit') return depCard(o);
   if (o.kindOf === 'fall') {
     const casc = o.cascades || [];
     return `<h3>${markIcon('fall')}Waterfall, ${fmt(o.height_m)} m</h3><table>
