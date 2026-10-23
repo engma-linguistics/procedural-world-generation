@@ -41,4 +41,5 @@ which is right, but the overturning's sites and the Norwegian coast need the usu
 - [ ] the seasons' layer no deeper than the sea floor, with the Earth bars and stage 1 measured after PW-592
 
 ## Updates
+- 2026-10-23: Lane A20: with the shelf-air rule + step 2, the shelf-depth layer moves W Europe warmest -1.6 -> -1.3.
 - 2026-10-23: Created from inbox draft draft-sea-layer-deeper-than-shelf.md (found by base-climate-laneA18).
