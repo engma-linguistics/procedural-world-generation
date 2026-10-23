@@ -80,7 +80,8 @@ class Params:
     climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
     climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
-    co2_sensitivity: float = 3.0  # C per e-fold of volcanic CO2 output relative to weathering
+    co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3
+    # (IPCC AR6 2.5-4; the land ice's albedo is its own term); 3 C per e-fold before PW-646 (2.1 per doubling)
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
     # from Earth's ice, so an ice-free planet is ~1.4 C warmer) ...
     ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)

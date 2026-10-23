@@ -1,0 +1,21 @@
+1. Earth's zoom at the glacial maximum (CO2 term -3.11 C)
+reading | C per doubling | reference ppm | doublings | ppm | ratio to interglacial
+A: log2, 3 C per e-fold (as A22) | 3.00 | 350 | -1.04 | 171 | 0.49
+B: ln, 3 C per e-fold (2.08 per doubling) | 2.08 | 350 | -1.50 | 124 | 0.35
+C: ppm, 3 C per doubling, ref 350 (this lane) | 3.00 | 350 | -1.04 | 171 | 0.49
+C': ppm, 3 C per doubling, ref 280 (preindustrial) | 3.00 | 280 | -1.04 | 136 | 0.49
+C'': ppm, 4 C per doubling, ref 350 | 4.00 | 350 | -0.78 | 204 | 0.58
+Earth: LGM ~185-190 ppm, 0.68 of the preindustrial 280; CO2's own share of the LGM's ~6 C at 3 C per doubling is -1.68 C (27%), so co2_share 0.5 overstates it
+
+2. C3 quantum yield against today's (350 ppm) at monthly means of 25/30/35/40 C
+ 350 ppm (as 350): 1.00 1.00 1.00 1.00
+ 280 ppm (as 280): 0.89 0.86 0.82 0.78
+ 190 ppm (as 190): 0.67 0.60 0.51 0.39
+ 171 ppm (as 171): 0.61 0.53 0.42 0.28
+ 150 ppm (as 150): 0.53 0.43 0.31 0.16
+ 136 ppm (as 136): 0.47 0.37 0.23 0.06
+ 124 ppm (as 124): 0.42 0.30 0.16 -0.02
+ 100 ppm (as 124): 0.42 0.30 0.16 -0.02
+C3 gains nothing above a monthly mean of 39.5 C at 124 ppm (G* = Ci)
+C3 gains nothing above a monthly mean of 43.7 C at 150 ppm (G* = Ci)
+C3 gains nothing above a monthly mean of 49.0 C at 190 ppm (G* = Ci)

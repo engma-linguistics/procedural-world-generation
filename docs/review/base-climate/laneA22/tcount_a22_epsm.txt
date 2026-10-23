@@ -1,0 +1,52 @@
+forest: 19 of 24 seeds pass (bar 17)
+  seed   1: pass  run_dT=1.88  lost=28  cooling=-0.412  F_wm2=-0.032  dT_target=-0.0252
+  seed   2: pass  run_dT=5.71  lost=37  cooling=-0.337  F_wm2=-0.037  dT_target=-0.0292
+  seed   3: pass  run_dT=5.35  lost=59  cooling=-0.365  F_wm2=-0.148  dT_target=-0.118
+  seed   4: pass  run_dT=2.41  lost=57  cooling=-0.382  F_wm2=-0.228  dT_target=-0.183
+  seed   5: pass  run_dT=7.29  lost=50  cooling=-0.272  F_wm2=-0.019  dT_target=-0.0153
+  seed   6: FAIL  run_dT=7.12  lost=33  cooling=-0.234  F_wm2=0.051  dT_target=0.0405
+  seed   7: pass  run_dT=0.672  lost=40  cooling=-0.407  F_wm2=-0.159  dT_target=-0.127
+  seed   8: pass  run_dT=2.27  lost=65  cooling=-0.32  F_wm2=-0.096  dT_target=-0.0765
+  seed   9: pass  run_dT=2.18  lost=78  cooling=-0.319  F_wm2=-0.218  dT_target=-0.174
+  seed  10: pass  run_dT=3.25  lost=77  cooling=-0.289  F_wm2=-0.143  dT_target=-0.114
+  seed  11: pass  run_dT=2.97  lost=23  cooling=-0.448  F_wm2=-0.057  dT_target=-0.0453
+  seed  12: pass  run_dT=2.51  lost=85  cooling=-0.297  F_wm2=-0.178  dT_target=-0.142
+  seed  13: pass  run_dT=-1.3  lost=40  cooling=-0.425  F_wm2=-0.106  dT_target=-0.0848
+  seed  14: FAIL  run_dT=6.03  lost=49  cooling=-0.233  F_wm2=0.025  dT_target=0.0197
+  seed  15: FAIL  run_dT=11.4  lost=29  cooling=-0.0946  F_wm2=0.194  dT_target=0.155
+  seed  16: pass  run_dT=4.89  lost=67  cooling=-0.327  F_wm2=-0.178  dT_target=-0.142
+  seed  17: pass  run_dT=2.31  lost=101  cooling=-0.355  F_wm2=-0.34  dT_target=-0.272
+  seed  18: pass  run_dT=2.42  lost=36  cooling=-0.451  F_wm2=-0.032  dT_target=-0.0259
+  seed  19: pass  run_dT=3.41  lost=59  cooling=-0.359  F_wm2=-0.134  dT_target=-0.108
+  seed  20: pass  run_dT=1.54  lost=41  cooling=-0.346  F_wm2=-0.021  dT_target=-0.0171
+  seed  21: FAIL  run_dT=10.7  lost=20  cooling=-0.214  F_wm2=0.119  dT_target=0.0949
+  seed  22: FAIL  run_dT=8.67  lost=19  cooling=-0.298  F_wm2=0.103  dT_target=0.0823
+  seed  23: pass  run_dT=5.35  lost=50  cooling=-0.325  F_wm2=-0.094  dT_target=-0.0751
+  seed  24: pass  run_dT=2.57  lost=74  cooling=-0.382  F_wm2=-0.341  dT_target=-0.272
+COUNT forest 19 / 24
+endings: 22 of 24 seeds pass (bar 17)
+  seed   1: pass  run_dT=1.88  ending_kyr=78  extra_m=45  left_m=19.9
+  seed   2: pass  run_dT=5.71  ending_kyr=79  extra_m=57.8  left_m=1.18
+  seed   3: pass  run_dT=5.35  ending_kyr=79  extra_m=47  left_m=5.59
+  seed   4: pass  run_dT=2.41  ending_kyr=78  extra_m=87.9  left_m=31.1
+  seed   5: FAIL  run_dT=7.29  ending_kyr=79.5  extra_m=9.79  left_m=0.49
+  seed   6: pass  run_dT=7.12  ending_kyr=79  extra_m=17.2  left_m=-0.76
+  seed   7: pass  run_dT=0.672  ending_kyr=77.5  extra_m=87.2  left_m=17
+  seed   8: pass  run_dT=2.27  ending_kyr=78  extra_m=116  left_m=56.3
+  seed   9: pass  run_dT=2.18  ending_kyr=78.5  extra_m=97.4  left_m=1.42
+  seed  10: pass  run_dT=3.25  ending_kyr=77.5  extra_m=61.7  left_m=11.6
+  seed  11: pass  run_dT=2.97  ending_kyr=78  extra_m=31.7  left_m=-4.06
+  seed  12: pass  run_dT=2.51  ending_kyr=79  extra_m=78.8  left_m=10.4
+  seed  13: pass  run_dT=-1.3  ending_kyr=78  extra_m=46.7  left_m=10.7
+  seed  14: pass  run_dT=6.03  ending_kyr=79  extra_m=15  left_m=0.47
+  seed  15: FAIL  run_dT=11.4  ending_kyr=79.5  extra_m=4.23  left_m=0.7
+  seed  16: pass  run_dT=4.89  ending_kyr=79  extra_m=134  left_m=6.7
+  seed  17: pass  run_dT=2.31  ending_kyr=79  extra_m=146  left_m=5.63
+  seed  18: pass  run_dT=2.42  ending_kyr=78  extra_m=59.5  left_m=21.5
+  seed  19: pass  run_dT=3.41  ending_kyr=78.5  extra_m=53.5  left_m=10.3
+  seed  20: pass  run_dT=1.54  ending_kyr=79  extra_m=46.2  left_m=8.71
+  seed  21: pass  run_dT=10.7  ending_kyr=77.5  extra_m=13.3  left_m=4.53
+  seed  22: pass  run_dT=8.67  ending_kyr=79.5  extra_m=14.2  left_m=3.02
+  seed  23: pass  run_dT=5.35  ending_kyr=77.5  extra_m=34  left_m=8.16
+  seed  24: pass  run_dT=2.57  ending_kyr=78.5  extra_m=64  left_m=13.3
+COUNT endings 22 / 24
