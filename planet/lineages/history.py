@@ -17,7 +17,7 @@ from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
 from .crossing import Crossings, corridor
-from .spread import EST, nearest_label, rings, spread
+from .spread import EST, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
@@ -43,17 +43,15 @@ class Step:
     stats: dict = field(default_factory=dict)
 
 
-def _tags(grid, env: dict) -> dict:
-    """Place tags of an epoch (PLACES) and Köppen ids, shared by every line."""
+def _tags(grid, env: dict, chains: bool = True) -> dict:
+    """Place tags of an epoch (PLACES) and Köppen ids, shared by every line (island_chain only if `chains`:
+    the costliest tag, needed only when a wish or a line names it)."""
     land = env["land"] & ~(env["ice"] > 0.5)
     sea = ~env["land"]
-    no, ni = grid.nbr_off, grid.nbr_idx
-    src = grid.nbr_src
-    sea_nbr = np.zeros(grid.n, bool)
-    np.logical_or.at(sea_nbr, src, sea[ni])
+    ni, src = grid.nbr_idx, grid.nbr_src
+    sea_nbr = _nbr(np.logical_or, sea[ni], grid)
     elev = np.maximum(env["elevation"] - env["ice"], 0)
-    dh = np.zeros(grid.n)
-    np.maximum.at(dh, src, np.abs(elev[ni] - elev[src]))
+    dh = np.maximum(0.0, _nbr(np.maximum, np.abs(elev[ni] - elev[src]), grid))
     lab, k = grid.components(env["land"])
     sizes = np.bincount(lab[lab >= 0], minlength=k) if k else np.zeros(0)
     island = np.zeros(grid.n, bool)
@@ -66,20 +64,19 @@ def _tags(grid, env: dict) -> dict:
     cl = env["climate"].astype(int)
     # island chains: islands with another island (or any other landmass) within CHAIN_CELLS cells over the sea
     chain = np.zeros(grid.n, bool)
-    if island.any():
+    if chains and island.any():
         big = np.iinfo(np.int64).max
         lo_ = np.where(env["land"], lab, big)
         hi_ = np.where(env["land"], lab, -1)
         through = ~env["land"] | island
         for _ in range(CHAIN_CELLS):
-            l2, h2 = lo_.copy(), hi_.copy()
-            np.minimum.at(l2, src, np.where(through[ni], lo_[ni], big))
-            np.maximum.at(h2, src, np.where(through[ni], hi_[ni], -1))
+            l2 = np.minimum(lo_, _nbr(np.minimum, np.where(through[ni], lo_[ni], big), grid))
+            h2 = np.maximum(hi_, _nbr(np.maximum, np.where(through[ni], hi_[ni], -1), grid))
             lo_, hi_ = np.where(through, l2, lo_), np.where(through, h2, hi_)
         chain = island & (lo_ != hi_)
-    farm = land & np.isin(cl, SP.GROUPS["temperate"] + [2, 20, 24]) & (rain > 500) & (elev < 1000)
-    return {"farmland": farm, "jungle": land & np.isin(cl, [0, 1]), "steppe": land & np.isin(cl, [5, 6]),
-            "desert": land & np.isin(cl, [3, 4]), "tundra": land & (cl == 28), "island_chain": chain,
+    farm = land & _isin(cl, SP.GROUPS["temperate"] + [2, 20, 24]) & (rain > 500) & (elev < 1000)
+    return {"farmland": farm, "jungle": land & _isin(cl, [0, 1]), "steppe": land & _isin(cl, [5, 6]),
+            "desert": land & _isin(cl, [3, 4]), "tundra": land & (cl == 28), "island_chain": chain,
             "land": land, "coast": land & sea_nbr, "island": island, "mountain": mountain,
             "lowland": land & (elev < 500), "inland": land & ~sea_nbr, "forest": land & (trees >= 35),
             "open": land & (trees < 20) & (rain > 200), "wetland": land & (elev < 300) & (rain > 1600),
@@ -89,28 +86,61 @@ def _tags(grid, env: dict) -> dict:
 CHAIN_CELLS = 4
 
 
+def _nbr(ufunc, vals, grid):
+    """ufunc over each cell's neighbours (vals: one per CSR edge; every cell has neighbours):
+    ufunc.at(out, nbr_src, vals) without the slow unbuffered .at, as nbr_src is sorted."""
+    return ufunc.reduceat(vals, grid.nbr_off[:-1])
+
+
+def _isin(cl, ids):
+    """np.isin for the small Köppen ids (a lookup table)."""
+    lut = np.zeros(max(int(cl.max()), max(ids)) + 1, bool)
+    lut[list(ids)] = True
+    return lut[cl]
+
+
+def needs_chains(tree: SP.Tree) -> bool:
+    return any(w.want == "island_chain" for w in tree.wishes) or any(
+        "island_chain" in (*l.prefers, *l.avoids) for l in tree.lines.values())
+
+
 def _soft(x, lo, hi, soft):
     return np.clip(np.minimum((x - (lo - soft)) / soft, ((hi + soft) - x) / soft), 0, 1)
 
 
+def _land_view(env: dict, tags: dict) -> dict:
+    """An epoch's inputs on its ice-free land cells only, built once per epoch (the habitat is 0 elsewhere)."""
+    v = tags.get("_land_view")
+    if v is None:
+        li = np.flatnonzero(tags["land"])
+        v = tags["_land_view"] = {"li": li, "temp": env["temperature"][li],
+                                  "lr": np.log2(np.maximum(env["precipitation"][li], 1.0)),
+                                  "elev": tags["elev"][li], "cl": env["climate"][li].astype(int), "has": {}}
+    return v
+
+
 def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
-    """Carrying capacity K in [0, 1] of a line's own habitat."""
+    """Carrying capacity K in [0, 1] of a line's own habitat (worked out on the land cells only)."""
+    v = _land_view(env, tags)
+    li = v["li"]
     w = line.trait("widen", 1.0)
     lo, hi = line.temp_c
     mid, half = (lo + hi) / 2, (hi - lo) / 2 * w
-    K = _soft(env["temperature"], mid - half, mid + half, 4.0 * w)
+    K = _soft(v["temp"], mid - half, mid + half, 4.0 * w)
     rlo, rhi = line.rain_mm
-    lr = np.log2(np.maximum(env["precipitation"], 1.0))
-    K = K * _soft(lr, np.log2(max(rlo, 1)) - (w - 1), np.log2(max(rhi, 1)) + (w - 1), 1.0 * w)
+    K = K * _soft(v["lr"], np.log2(max(rlo, 1)) - (w - 1), np.log2(max(rhi, 1)) + (w - 1), 1.0 * w)
     if line.elev_m:
-        K = K * _soft(tags["elev"], line.elev_m[0], line.elev_m[1], 600.0 * w)
-    cl = env["climate"].astype(int)
+        K = K * _soft(v["elev"], line.elev_m[0], line.elev_m[1], 600.0 * w)
 
     def has(tag):
-        if tag in SP.PLACES:
-            return tags[tag]
-        ids = SP.GROUPS.get(tag) or [SP.KOPPEN_CODES.index(tag)]
-        return np.isin(cl, ids)
+        m = v["has"].get(tag)
+        if m is None:
+            if tag in SP.PLACES:
+                m = tags[tag][li]
+            else:
+                m = _isin(v["cl"], SP.GROUPS.get(tag) or [SP.KOPPEN_CODES.index(tag)])
+            v["has"][tag] = m
+        return m
 
     if line.prefers:
         match = np.zeros(len(K), bool)
@@ -121,14 +151,16 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
         K = K * np.where(has(t), 0.25, 1.0)
     cb = line.trait("coast", 0.0)
     if cb:
-        K = K * np.where(tags["coast"], 1.0, 1.0 - cb)
+        K = K * np.where(has("coast"), 1.0, 1.0 - cb)
     mb = line.trait("mountain", 0.0)
     if mb:
-        K = K * np.where(tags["mountain"], 1.0, 1.0 - mb)
+        K = K * np.where(has("mountain"), 1.0, 1.0 - mb)
     ob = line.trait("open", 0.0)
     if ob:
-        K = K * np.where(tags["open"], 1.0, 1.0 - ob)
-    return np.where(tags["land"], np.clip(K, 0, 1), 0.0)
+        K = K * np.where(has("open"), 1.0, 1.0 - ob)
+    out = np.zeros(len(tags["land"]))
+    out[li] = np.clip(K, 0, 1)
+    return out
 
 
 WAYS = ("flies", "swims", "mountain", "coastal", "subterranean")
@@ -180,6 +212,9 @@ class History:
                 if a.id != b.id and not a.overlay and not b.overlay:
                     i, j = self.idx[a.id], self.idx[b.id]
                     self.terr[i, j] = max(0.0, ALPHA_CLOSED - self.alpha[i, j]) * same_way(a, b)
+        # each line's rivals: the lines whose presence enters its competition
+        self._chains = needs_chains(tree)
+        self._rivals = [np.flatnonzero((self.alpha[i] != 0) | (self.terr[i] != 0)) for i in range(len(self.lines))]
         self.steps = self._steps(glacial_every)
         self.events: list[dict] = []
         self.origins: dict[str, dict] = {}
@@ -297,8 +332,7 @@ class History:
             lab, n = g.components(P)
             sizes = np.bincount(lab[P], minlength=n)
             big = int(np.argmax(sizes))
-            edge = np.zeros(g.n, bool)
-            np.logical_or.at(edge, g.nbr_src, ~P[g.nbr_idx])
+            edge = _nbr(np.logical_or, ~P[g.nbr_idx], g)
             iso = np.where(P & (lab != big), 3.0, np.where(edge & P, 1.5, 1.0))
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
             near = self._dilate(P, 4) & tags["land"]
@@ -376,15 +410,12 @@ class History:
         g = self.grid
         m = m.copy()
         for _ in range(r):
-            m2 = m.copy()
-            np.logical_or.at(m2, g.nbr_src, m[g.nbr_idx])
-            m = m2
+            m = m | _nbr(np.logical_or, m[g.nbr_idx], g)
         return m
 
     def _smooth(self, x):
         g = self.grid
-        s = np.zeros(g.n)
-        np.add.at(s, g.nbr_src, x[g.nbr_idx])
+        s = _nbr(np.add, x[g.nbr_idx], g)
         return np.maximum(x, s / np.diff(g.nbr_off))
 
     def _end_parent(self, line, step):
@@ -421,7 +452,7 @@ class History:
         t0 = time.time()
         for si, step in enumerate(self.steps):
             env = step.get()
-            tags = _tags(g, env)
+            tags = _tags(g, env, self._chains)
             tags["corridor"] = corr = corridor(tags, env, self.flow if step.epoch != "deep" else None)
             Ks = {}
             # events due by this step, oldest first (lines older than the history start at its first step)
@@ -468,11 +499,17 @@ class History:
                     # relaxed in corridors, most during the late mixing
                     # (alpha_eff = alpha + (1 - c)(ALPHA_CLOSED - alpha) x same_way, Lotka-Volterra-like: under 1
                     # the peoples settle side by side, over 1 the larger one excludes; contact c: crossing.corridor)
-                    q = self.alpha[k] @ self.p + (1 - corr) * (self.terr[k] @ self.p)
+                    # (only where the line can hold ground, K >= EST, and only over its rivals: the room
+                    # elsewhere is never used, so this is exact and ~5x cheaper than over every cell and line)
+                    idx = np.flatnonzero(K >= EST)
+                    J = np.array([j for j in self._rivals[k] if self.active[L[j].id]], np.int64)
+                    c = corr[idx]
+                    q = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx, c)
                     if "agricultural" in l.traits and step.ago <= FARM_KYR:
-                        q = q * np.where(tags["farmland"], 0.5, 1.0)  # farmers push into others' fertile lowland
-                    f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * corr, 0.05, 1)
-                    room = np.clip(K - f * q, 0, None)
+                        q = q * np.where(tags["farmland"][idx], 0.5, 1.0)  # farmers push into others' fertile lowland
+                    f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * c, 0.05, 1)
+                    room = np.zeros(g.n)
+                    room[idx] = np.clip(K[idx] - f * q, 0, None)
                     over = self.p[k] > room  # displacement: held above its room, a people dwindles there
                     if over.any():
                         held = (self.p[k] >= EST).sum() * self.cell_mkm2
@@ -602,7 +639,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     natives = np.array([not l.overlay for l in h.lines])
     mix = (np.where(natives[:, None], P, 0) >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
-    tags = _tags(g, env)
+    tags = _tags(g, env, h._chains)
     corr = corridor(tags, env, h.flow)
     land = tags["land"]
     out["mixing"] = {"area_mkm2": round(float(mix.sum() * h.cell_mkm2), 2),
@@ -641,7 +678,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
 def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dict]:
     g = h.grid
     if tags is None:
-        tags = _tags(g, h.steps[-1].get())
+        tags = _tags(g, h.steps[-1].get(), h._chains)
     out = []
     for w in h.tree.wishes:
         a = P[h.idx[w.a]] >= EST
@@ -662,9 +699,7 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
             b = P[h.idx[w.b]] >= EST
             near = b.copy()
             for _ in range(3):  # within 3 cells of b
-                near2 = near.copy()
-                np.logical_or.at(near2, g.nbr_src, near[g.nbr_idx])
-                near = near2
+                near = near | _nbr(np.logical_or, near[g.nbr_idx], g)
             close = float(near[a].mean()) if b.any() else 0.0
             s = min(1.0, 2.5 * close) if w.want == "near" else 1.0 - close
         out.append({**vars(w), "score": round(s, 3)})

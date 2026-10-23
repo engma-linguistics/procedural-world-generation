@@ -13,13 +13,31 @@ def spread(p, room, enter, elev, relief_k, sea, land, nbr_off, nbr_idx, passes):
     """p: presence (n,) in [0, 1], updated in place and returned. The pressure starts at p and
     moves one ring per pass (Jacobi): into land cell i it keeps enter[i] (x exp(-relief_k per
     1000 m climbed)), into a sea cell `sea` (0: no crossing). A cell is taken up to its room
-    where the pressure reaches EST."""
+    where the pressure reaches EST.
+
+    Only the front is visited: a pass looks at the neighbours of the cells that changed in the
+    pass before (the first, at the neighbours of the held cells); any other cell would find what
+    it found last time, so the result is the same as sweeping every cell every pass."""
     n = p.shape[0]
     c = p.copy()
-    new = c.copy()
+    mark = np.zeros(n, np.bool_)
+    cand = np.empty(n, np.int64)
+    nc = 0
+    for i in range(n):
+        if c[i] > 0:
+            for k in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[k]
+                if not mark[j]:
+                    mark[j] = True
+                    cand[nc] = j
+                    nc += 1
+    chg = np.empty(n, np.int64)
+    val = np.empty(n)
     for _ in range(passes):
-        changed = False
-        for i in range(n):
+        nch = 0
+        for a in range(nc):
+            i = cand[a]
+            mark[i] = False
             best = c[i]
             for k in range(nbr_off[i], nbr_off[i + 1]):
                 j = nbr_idx[k]
@@ -35,13 +53,23 @@ def spread(p, room, enter, elev, relief_k, sea, land, nbr_off, nbr_idx, passes):
                 v = c[j] * f
                 if v > best:
                     best = v
-            if best > new[i] + 1e-6:
-                new[i] = best
-                changed = True
-        for i in range(n):
-            c[i] = new[i]
-        if not changed:
+            if best > c[i] + 1e-6:
+                chg[nch] = i
+                val[nch] = best
+                nch += 1
+        if nch == 0:
             break
+        for a in range(nch):
+            c[chg[a]] = val[a]
+        nc = 0
+        for a in range(nch):
+            i = chg[a]
+            for k in range(nbr_off[i], nbr_off[i + 1]):
+                j = nbr_idx[k]
+                if not mark[j]:
+                    mark[j] = True
+                    cand[nc] = j
+                    nc += 1
     for i in range(n):
         if land[i] and c[i] >= EST and room[i] > p[i]:
             v = min(room[i], c[i])
@@ -94,3 +122,22 @@ def rings(seed, mask, r, nbr_off, nbr_idx):
                 q[t] = j
                 t += 1
     return d >= 0
+
+
+@njit(cache=True)
+def rivals_load(p, rows, a, t, idx, contact):
+    """Competition a line feels on the cells idx: sum_j a_j p[j] + (1 - contact) sum_j t_j p[j] over
+    the rival rows (niche overlap a, closed-country extra t; history.History.run)."""
+    m = idx.shape[0]
+    qa = np.zeros(m)
+    qt = np.zeros(m)
+    for r in range(rows.shape[0]):
+        j = rows[r]
+        aj, tj = a[j], t[j]
+        for x in range(m):
+            v = p[j, idx[x]]
+            qa[x] += aj * v
+            qt[x] += tj * v
+    for x in range(m):
+        qa[x] += (1.0 - contact[x]) * qt[x]
+    return qa

@@ -227,3 +227,57 @@ def test_closed_country_keeps_peoples_apart(faketz):
     assert c[tags["coast"]].min() >= c[tags["land"] & tags["mountain"]].max() if (tags["mountain"]).any() else True
     a, b = SP.Lineage("a"), SP.Lineage("b", traits=["flies"])
     assert H.same_way(a, a) == 1.0 and H.same_way(a, b) == 0.5
+
+
+def _spread_full_sweep(p, room, enter, elev, relief_k, sea, land, nbr_off, nbr_idx, passes):
+    """The plain Jacobi sweep over every cell (the reference the front-only spread must equal)."""
+    from numba import njit
+
+    @njit
+    def sweep(p, room, enter, elev, relief_k, sea, land, nbr_off, nbr_idx, passes, est):
+        n = p.shape[0]
+        c = p.copy()
+        new = c.copy()
+        for _ in range(passes):
+            changed = False
+            for i in range(n):
+                best = c[i]
+                for k in range(nbr_off[i], nbr_off[i + 1]):
+                    j = nbr_idx[k]
+                    if c[j] <= best:
+                        continue
+                    if land[i]:
+                        f = enter[i]
+                        dh = elev[i] - elev[j]
+                        if relief_k > 0 and dh > 0:
+                            f *= np.exp(-relief_k * dh / 1000.0)
+                    else:
+                        f = sea
+                    best = max(best, c[j] * f)
+                if best > new[i] + 1e-6:
+                    new[i] = best
+                    changed = True
+            c[:] = new
+            if not changed:
+                break
+        for i in range(n):
+            if land[i] and c[i] >= est and room[i] > p[i]:
+                v = min(room[i], c[i])
+                if v >= est and v > p[i]:
+                    p[i] = v
+        return p
+    return sweep(p.copy(), room, enter, elev, relief_k, sea, land, nbr_off, nbr_idx, passes, H.EST)
+
+
+def test_front_only_spread_equals_the_full_sweep():
+    g = build_grid(LEVEL)
+    rng = np.random.default_rng(3)
+    land = rng.random(g.n) < 0.7
+    elev = rng.random(g.n) * 3000
+    room = np.where(land, rng.random(g.n), 0.0)
+    enter = 0.5 + 0.5 * rng.random(g.n)
+    p = np.where(land & (rng.random(g.n) < 0.03), 0.3 + 0.7 * rng.random(g.n), 0.0)
+    for passes, sea, rk in ((1, 0.0, 0.6), (3, 0.55, 0.6), (400, 0.3, 0.0)):
+        a = H.spread(p.copy(), room, enter, elev, rk, sea, land, g.nbr_off, g.nbr_idx, passes)
+        b = _spread_full_sweep(p, room, enter, elev, rk, sea, land, g.nbr_off, g.nbr_idx, passes)
+        assert np.array_equal(a, b)
