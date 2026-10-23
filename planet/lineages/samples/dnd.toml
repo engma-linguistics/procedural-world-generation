@@ -471,6 +471,20 @@ sea_share = 0.85
 prefers = ["coast", "island"]
 traits = ["seafaring", "coastal", "cosmopolitan"]
 
+[[lineage]]  # hunters of the tundra and the taiga edge, and of the cold coasts (Earth's Arctic peoples)
+id = "human_arctic"
+name = "human arctic hunters"
+origin = "group"
+group_of = "human"
+at = "30 kyr"
+density = 0.3
+explore = 0.7
+sea_share = 0.5  # kayaks and skin boats: the Thule crossed Smith Sound, the Inuit settled Greenland
+temp_c = [-14, 8]
+rain_mm = [60, 1500]
+prefers = ["tundra", "subarctic", "polar", "coast"]
+traits = ["hardy", "cosmopolitan"]
+
 [[lineage]]
 id = "halfling"
 name = "halflings"

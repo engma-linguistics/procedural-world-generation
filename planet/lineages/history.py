@@ -21,6 +21,7 @@ from .crossing import Crossings, corridor, short_hop
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
+PIONEER_P = 1.0  # pressure a people's frontier carries into empty country, at most (its habitat there); 0: only its presence
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then
@@ -32,6 +33,7 @@ NEAR_KM, NEAR_RANGE = 300.0, 0.5  # a 'near' wish's pull on the habitat: x(1 + 0
 NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
+APART_CONTESTED = 0.1  # an 'apart' wish counts when the two niches would put at least this share of a's habitat near b's
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
@@ -477,6 +479,23 @@ class History:
         self.p[pk][self.p[pk] < EST] = 0
         return cell, why
 
+    def _diverge(self, l, k, env, tags, step):
+        """A way of life goes on arising in place after its origin (PW-684): in a cell of its people's range that
+        it doesn't hold yet and where its habitat beats its people's by GROUP_MARGIN (as at its origin), half the
+        people there go over to it. A people that settles new country later (crossing a sea to a cold coast, or
+        to a river plain) lives there as its ways of life suit it, as it would have where it already was."""
+        pk = self.idx[l.group_of]
+        P = self.p[pk] > EST
+        if not P.any():
+            return
+        Kg = self._K(l, env, tags, step, clip=False)
+        Kp = self._K(self.tree.lines[l.group_of], env, tags, step, clip=False)
+        new = P & (self.p[k] < EST) & (Kg > (1 + GROUP_MARGIN) * Kp) & (np.minimum(Kg, 1.0) > 2 * EST)
+        if new.any():
+            self.p[k][new] = np.minimum(np.minimum(Kg[new], 1.0), np.maximum(0.5 * self.p[pk][new], 2 * EST))
+            self.p[pk][new] *= 0.5
+            self.p[pk][self.p[pk] < EST] = 0
+
     def whole(self, lid: str, P: np.ndarray | None = None) -> np.ndarray:
         """A people's presence with its groups (their sum, at most 1); a line without groups, its own."""
         P = self.p if P is None else P
@@ -526,11 +545,13 @@ class History:
         shared border instead of one people pushing into or spreading thinly inside the other's;
         the two also compete less, NEAR_TOLERANCE, so neither displaces the other there) and x(1 + NEAR_ORIGIN w e^(-d / NEAR_ORIGIN_KM))
         on an origin's score (a split arises on the side of its parent's range facing the other;
-        either people of the wish, whichever comes second). apart: x(1 - 0.6 w p_other) as before."""
+        either people of the wish, whichever comes second). apart: x(1 - 0.6 w p_other), on both peoples."""
         m = np.ones(self.grid.n)
         g = self.grid
         for w in self.tree.wishes:
-            other = w.b if w.a == line.id else w.a if (origin and w.b == line.id and w.want == "near") else None
+            # (apart acts on both peoples, PW-682: keeping out of each other's country is mutual; near on a, and at an
+            # origin on either)
+            other = w.b if w.a == line.id else w.a if (w.b == line.id and (w.want == "apart" or (origin and w.want == "near"))) else None
             if not other or not self.active.get(other):
                 continue
             po = self.whole(other)
@@ -594,6 +615,8 @@ class History:
         self.crossings_n: dict[str, int] = {}
         self._hop_dt = np.zeros(len(L))
         self._mvp_dt = np.zeros(len(L))
+        self._div_dt = np.zeros(len(L))
+        self._native = np.array([i for i, x in enumerate(L) if not x.overlay], np.int64)
         self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
@@ -647,6 +670,11 @@ class History:
                     continue
                 self.p[k] = np.minimum(self.p[k], K)
                 self.p[k][self.p[k] < EST] = 0
+                if l.group_of and not deep:
+                    self._div_dt[k] += step.dt
+                    if self._div_dt[k] >= HOP_EVERY_KYR:
+                        self._diverge(l, k, env, tags, step)
+                        self._div_dt[k] = 0.0
                 if l.overlay:  # template: within its hosts, no competition
                     room = K
                 else:
@@ -690,6 +718,15 @@ class History:
                     enter = np.where(ice, 0.6 if "flies" in l.traits else 0.3, a0 + (1 - a0) * np.minimum(1, K / 0.3))
                     land_any = env["land"]
                     spread(self.p[k], room, enter, tags["elev"], relief, sea, land_any, g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
+                    if not deep and not l.overlay and PIONEER_P > 0:
+                        # pioneers: a people crowded at home still settles empty country next to its range, at the
+                        # pressure of the habitat there, not of its own (competition-thinned) presence (PW-683/684)
+                        src = np.where(self.p[k] >= EST, np.maximum(self.p[k], np.minimum(K, PIONEER_P)), 0.0)
+                        taken = (self.p[self._native] >= EST).any(0)
+                        new = spread(src, np.where(taken, 0.0, room), enter, tags["elev"], relief, sea, land_any,
+                                     g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
+                        fill = (new >= EST) & ~taken & (self.p[k] < EST)
+                        self.p[k][fill] = new[fill]
                 if not l.overlay:
                     how = "overland" if step.epoch == "deep" else "land bridge" if l.trait("sea", 0.0) == 0 and not (
                         step.ago <= SP.LATE_SEA_KYR and short_hop(l)) else "strait"
@@ -982,8 +1019,13 @@ def present_summary(h: History, P: np.ndarray) -> dict:
     out["peoples"] = people_rollup(h, P, out["lines"])
     # lines that should be alive at the present (leaves not set to die out) but aren't
     out["lost"] = [l.id for l in tree.leaves() if l.extinct_kyr is None and l.id not in out["lines"]]
-    out["wish_score"] = round(sum(w["score"] * w["weight"] for w in out["wishes"]) /
-                              max(sum(w["weight"] for w in out["wishes"]), 1e-9), 3) if out["wishes"] else None
+    # (an 'apart' wish whose niches rarely meet has nothing to keep apart: left out of the average, PW-682;
+    # wish_score_raw: every wish, an 'apart' scored as 1 - closeness, as before)
+    cw = [w for w in out["wishes"] if w.get("contested", True)]
+    out["wish_score"] = round(sum(w["score"] * w["weight"] for w in cw) / max(sum(w["weight"] for w in cw), 1e-9), 3) if cw else None
+    out["wish_score_raw"] = round(sum(w.get("raw", w["score"]) * w["weight"] for w in out["wishes"]) /
+                                  max(sum(w["weight"] for w in out["wishes"]), 1e-9), 3) if out["wishes"] else None
+    out["wishes_counted"] = len(cw)
     return out
 
 
@@ -1013,6 +1055,28 @@ def people_rollup(h: History, P: np.ndarray, lines: dict) -> dict:
     return out
 
 
+def _within(g, mask: np.ndarray, cell_km: float) -> np.ndarray:
+    """Cells within NEAR_SCORE_KM of the mask."""
+    near = mask.copy()
+    for _ in range(max(1, int(round(NEAR_SCORE_KM / cell_km)))):
+        near = near | _nbr(np.logical_or, near[g.nbr_idx], g)
+    return near
+
+
+def _niche_closeness(h: History, w, tags: dict) -> float:
+    """Share of a's habitat (own niche at the present, K >= 0.25, its groups' too) within NEAR_SCORE_KM of b's
+    habitat: how close the two would sit with no wish and no competition."""
+    env = h.steps[-1].get()
+
+    def hab(lid):
+        ids = [lid, *h.tree.groups_of(lid)]
+        return np.any([capacity(h.tree.lines[x], env, tags) >= 0.25 for x in ids], axis=0) & tags["land"]
+    ha, hb = hab(w.a), hab(w.b)
+    if not ha.any() or not hb.any():
+        return 0.0
+    return float(_within(h.grid, hb, h.cell_km)[ha].mean())
+
+
 def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dict]:
     g = h.grid
     if tags is None:
@@ -1035,11 +1099,22 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
             s = 0.5 * min(1.0, cover / 0.5) + 0.5 * min(1.0, share / min(0.5, 8 * base))
         else:
             b = h.whole(w.b, P) >= EST
-            near = b.copy()
-            for _ in range(max(1, int(round(NEAR_SCORE_KM / h.cell_km)))):  # within NEAR_SCORE_KM of b
-                near = near | _nbr(np.logical_or, near[g.nbr_idx], g)
+            near = _within(g, b, h.cell_km)
             close = float(near[a].mean()) if b.any() else 0.0
-            s = min(1.0, 2.5 * close) if w.want == "near" else 1.0 - close
+            if w.want == "near":
+                s = min(1.0, 2.5 * close)
+            else:
+                # apart: against what the niches alone would give (the share of a's habitat within reach of b's
+                # habitat, both before competition); a pair whose niches hardly meet has nothing to keep apart
+                base = _niche_closeness(h, w, tags)
+                if base < APART_CONTESTED:
+                    out.append({**vars(w), "score": round(1.0 - close, 3), "baseline": round(base, 3), "contested": False, "raw": round(1.0 - close, 3),
+                                "note": "niches rarely meet: not counted"})
+                    continue
+                s = float(np.clip(1.0 - close / base, 0.0, 1.0))
+                out.append({**vars(w), "score": round(s, 3), "baseline": round(base, 3), "contested": True, "raw": round(1.0 - close, 3),
+                            "closeness": round(close, 3)})
+                continue
         out.append({**vars(w), "score": round(s, 3)})
     return out
 

@@ -344,6 +344,41 @@ def test_near_wish_pulls_toward_a_shared_border(faketz):
     assert mo[d == 1].min() > 2 and np.allclose(mo[b], 1.0)
 
 
+def test_apart_wish_cuts_both_peoples_and_scores_against_the_niches(faketz):
+    """PW-682: 'apart' keeps each people out of the other's country; its score is against what the niches alone
+    would give, and a pair whose niches don't meet isn't counted."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "c", "appears": "30 kyr", "temp_c": [-60, -50], "rain_mm": [1, 9000]}],
+           "wish": [{"a": "a", "b": "b", "want": "apart"}, {"a": "a", "b": "c", "want": "apart"}]}
+    tree = SP.parse(raw)
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    ia, ib = h.idx["a"], h.idx["b"]
+    h.p = np.zeros((3, g.n))
+    h.active = {"a": True, "b": True, "c": False}
+    land = ps.fields(0.0, variability=False)["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    blob = H.rings(cell, land, 2, g.nbr_off, g.nbr_idx)
+    h.p[ib][blob] = 0.8
+    assert h._wish_near(tree.lines["a"])[blob].max() < 0.6  # a is cut where b lives...
+    h.p[ib][:] = 0
+    h.p[ia][blob] = 0.8
+    assert h._wish_near(tree.lines["b"])[blob].max() < 0.6  # ...and b where a lives
+    tags = H._tags(g, h.steps[-1].get(), h._chains, h._volcanic())
+    assert H._niche_closeness(h, tree.wishes[0], tags) > 0.9 > H.APART_CONTESTED  # (the niches overlap everywhere)
+    assert H._niche_closeness(h, tree.wishes[1], tags) < H.APART_CONTESTED  # (c lives where a doesn't)
+    h.p[ib][blob] = 0.8
+    ws = H.wish_scores(h, h.p, tags)
+    assert ws[0]["contested"] and ws[0]["score"] < 0.5  # both on the same ground: the wish failed
+    h.p[ib][:] = 0
+    h.p[ic := h.idx["c"]][:] = 0
+    ws = H.wish_scores(h, h.p, tags)
+    assert ws[0]["score"] == 1.0 and not ws[1].get("contested", True)  # b gone: kept apart; a/c: nothing to keep apart
+
+
 def test_contact_hybrid_lingers_when_its_parents_part(faketz):
     """PW-613: a contact hybrid grows where its parents meet, fades where they no longer do, and where they
     last met it lives on as a small people of its own (shown on the peoples layer there)."""

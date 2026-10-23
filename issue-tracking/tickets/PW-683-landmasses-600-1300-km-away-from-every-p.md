@@ -21,3 +21,4 @@ PW-677 added canoes (from 60 kyr ago, 300 km reach, for peoples with a sea share
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-cut-off-continents-need-longer-crossings.md (found by pw677).
+- 2026-10-24: fill2: crossing rates and reaches checked against Earth (Sahul, Remote Oceania): plausible, unchanged. The causes were pioneer pressure (a crowded people couldn't settle empty land) and cold landings; fixed in the spread (PIONEER_P) and by the arctic hunters. 3e9e7d's north-Atlantic continent 68% empty -> 1% (one run; empty in some seeds when no one crosses 1,564 km). Arrivals from outside: draft-arrivals-from-outside-pick-several-landmasses.
