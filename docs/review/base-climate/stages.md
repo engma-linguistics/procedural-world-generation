@@ -978,3 +978,85 @@ The code is not on the branch. Files in `laneA11/`:
   The decision is in `issue-tracking/inbox/draft-stage3-after-three-attempts.md` (lean: redesign the fetch first).
 - The scorecard and the checkpoint (`ckpt.sh`) were not re-run: nothing changed in the base climate on the branch,
   so the PW-579 checkpoint above stands.
+
+## Stage 3, round 2 attempt 1 (lane A12): the fetch redesigned, stage 3 landed together (PW-587 option B)
+
+**Green, and merge-ready under the owner's principle. Two of stage 3's bars are missed: the humid summers are still
++3–4 C, and W Europe / Fennoscandia sit under main's** (`issue-tracking/inbox/draft-stage3-fetch-merge-with-bar-misses.md`).
+
+Stage 3 is the candidate of attempt 3 (`laneA11/stage3_attempt3_candidate.diff`) plus the new fetch. The candidate
+brings the per-time reach and the mountain rule (PW-581), the PET-referenced energy split (PW-352 / PW-457) and the
+humidity floor (PW-586).
+
+Files in `laneA12/`:
+- the probe tables: `stage3_probe_fetch.txt` (after), `stage3_probe_fetch_sens.txt` (the scales) and
+  `stage3_probe_fetch_obs_sea.txt` (NCEP's sea air in the fetch);
+- `endings_variants.txt`;
+- the tool outputs `*_s3b.txt`. The "before" files are `laneA10/*_e579.txt`, as main's base climate hasn't changed
+  since PW-579.
+
+### The fetch (`_summer_fetch`, PW-573)
+- **Built from the arriving sea air.** The land's summer air is `sea_in + f × (land_full − sea_in)`. It always lies
+  between the two, so summer land no longer cools the sea air (PW-588's flaw).
+- **Two parts, both distances, so the grid's cell size doesn't enter:**
+  - The boundary layer (`sum_h` 1500 m) takes the ground's heat in a day wherever it is. That is a share
+    sum_h / `fetch_h` of the swing, and `fetch_h` = 3500 m is the summer heat low's depth (~650 hPa).
+  - The air above it mixes over the synoptic scale. That share is as continental as the land's share within
+    `fetch_km` = 1000 km (`smooth` of the land mask).
+  - So f = 0.43 + 0.57 × the land share.
+- **The arriving sea air is the sea's summer air along the wind's path**, weighted over `fetch_km`. It is the ocean
+  air mass upwind, not the nearest cell's water. With the nearest cell's water, the Baltic's 3 C air and the Arctic's
+  0 C air were taken straight into the land. The L4 endings test then failed robustly (52 / 29 at −3.8 … −4.2 C).
+- **An ice sheet's own share of the air** (SUMMER_DAMP × damp_air) stays the sheet's annual mean, as before. Only the
+  rest is fetched.
+
+Variants measured and dropped:
+- the land share alone (f = share): the NH coasts' range falls 3.6 C, W Europe −3.5, rain r 0.613;
+- an upwind land share instead of the isotropic one: the same or worse on every bar;
+- the nearest cell's sea air: see `endings_variants.txt`.
+
+### The bars (Earth L6; main → attempt-3 candidate → this)
+| bar | main | candidate | this |
+|---|---|---|---|
+| humid warmest within 2.5 C: SE USA / SE China / NE USA / Great Lakes | +4.8 / +4.9 / +6.0 / +6.1 | +4.8 / +4.5 / +4.6 / +4.1 | +3.6 / +3.3 / +3.7 / +3.5 |
+| ... Labrador / HB lowlands / Pampas / E Australia | +4.2 / +5.6 / +5.6 / +4.4 | +4.4 / +4.8 / +6.1 / +3.6 | **+2.0** / +3.7 / +4.3 / **+1.8** |
+| SH coastal range ≤ 1.3× (NCEP 9.6) | 14.3 (1.49×) | 14.7 | **12.4 (1.29×)** |
+| SH 150–400 / 400–800 km (NCEP 14.1 / 17.6) | 20.0 / 24.5 | 19.9 / 25.7 | 16.1 / 21.0 |
+| Patagonia / NZ / Tasmania / Chile mid warmest | +6.0 / +2.3 / +6.9 / +2.2 | +5.9 / +2.9 / +8.5 / +3.6 | +2.1 / +1.4 / +6.2 / 0.0 |
+| NH continentality range, 0–150 … >1500 km (NCEP 26.4 / 30.8 / 33.7 / 34.7 / 33.4) | 24.6 / 31.4 / 35.0 / 34.9 / 33.9 | 26.9 / 32.6 / 34.9 / 35.0 / 34.7 | 24.9 / 29.9 / 33.0 / 33.8 / 34.4 |
+| W Europe warmest (no worse than main) | +0.4 | −0.2 | **−2.1** |
+| Fennoscandia warmest / coldest | −5.2 / −6.0 | −3.6 / −5.9 | **−5.7** / −6.0 |
+| summer-half rain where obs < 300 mm, N / S (obs 167 / 200) | 660 / 1623 | 644 / 1619 | **602 / 1165** |
+| log-rain r ≥ 0.617 | 0.622 | 0.626 | 0.620 |
+| Köppen group / exact | 70.5 / 30.9 | 70.4 / 30.9 | 69.5 / 31.7 |
+| obs D → model E | 13% | | 19% |
+| dry interiors: Great Plains / C Asia / Aus. interior / Sahara / Arabia | +0.2 / −2.3 / −0.4 / −0.2 / −4.0 | +0.2 / −1.6 / −0.7 / +3.3 / +0.2 | −1.3 / −2.1 / −3.3 / +1.9 / −1.0 |
+| Alaska / Keewatin / Iceland warmest | −2.8 / −0.4 / +0.5 | +0.6 / +3.9 / +2.0 | −5.2 / +0.6 / +0.7 |
+| mountain coldest: Canadian Rockies / Tibet / Alps (±6) | −7.7 / −4.1 / −3.3 | −6.8 / −4.2 / −2.4 | −7.0 / −4.2 / −2.5 |
+| Greenland ice / Antarctic plateau warmest | −4.2 / +2.1 | −2.1 / +1.0 | −6.6 / −0.4 |
+
+- **Stage 1 and 2 hold:**
+  - Earth NH 14.41 → 14.37 Sv, 92% open; the Norwegian coast open 100%;
+  - the 9 worlds within ±0.1 Sv of before;
+  - Labrador / HB lowland coldest month +2.8 / +5.2, unchanged.
+- **W Europe and Fennoscandia are the sea's summer air.** It is 2.3–3.8 C too cold off Europe and 6 C too cold in the
+  Gulf of Alaska, because the annual SST is too cold there. The fetch now passes that on, where the full continental
+  swing used to hide it. Details: `draft-near-land-sea-summer-air-cold-north-warm-south.md`.
+  - With NCEP's sea air put into the fetch (`stage3_probe_fetch_obs_sea.txt`): W Europe −1.6, Fennoscandia −5.0,
+    Alaska −3.8, group 70.2, r 0.622.
+  - The rest comes in through the reach and the coast mixing, which carry the same sea air.
+- **No scale setting meets both the SH range and W Europe** (`stage3_probe_fetch_sens.txt`). With `fetch_km`
+  700–1400 or `fetch_h` 2500–5000, the SH range runs 11.9–13.1 and W Europe −1.5 … −2.5. The two move against each
+  other.
+- **The ice sheets' summers are colder.** Greenland's sea air, lifted over the sheet, is colder than the curve's
+  summer for it. Options: `draft-stage3-fetch-cools-ice-sheet-summers.md`.
+
+### Tests
+- `uv run pytest -q`: 568 passed, with the goldens regenerated on purpose.
+- The L4 endings test: 57.7 / 1.4 m. It is not a knife edge: 58.6 / 2.4 at −3.9 C and 58.6 / 1.3 at −4.1 C.
+- `test_same_planet_rains_the_same_at_two_levels`, `test_cold_moment_has_sheets` and `test_sheet_air_is_carried`
+  pass.
+- The scorecard line (`docs/scorecard.jsonl`, 61517ea+dirty) has Earth group 69.5 and r 0.62.
+  - Seed 1 at 1 Gyr: ice 0.8 → 6.9%, dry 22.7 → 27.9%.
+  - Seed 2: ice 4.7 → 1.8%.
+  - The seeds' tectonics differ run to run at 1 Gyr, so these are noise-level, not attributable.

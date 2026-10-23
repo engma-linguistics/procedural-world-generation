@@ -1,0 +1,10 @@
+L4 endings fixture (test_glacials_grow_ice_and_endings_melt_it_fast; endiag.py, DT4 = source shift), extra / left after 15 kyr, bar left < extra / 2
+
+variant                                                          DT4 3.9        4.0           4.1
+candidate without fetch (pytest)                                      -        31.8 / 0.7       -
+fetch, land share only (bl 0), cell sea air                           -        (not run: probe fails r 0.613)
+fetch bl 0.4, cell sea air (pytest)                                   -        84.4 / 16.9      -
+fetch bl 0.5, cell sea air (pytest)                                   -        59.9 / 42.7 F    -
+fetch bl 0.4286, cell sea air (3.8 / 4.2: 47.6/30.5 F, 54.3/32.0 F)  48.4/26.7 F   51.8/28.5 F   52.9/31.5 F
+fetch bl 0.4286, sea air along the path                           123.4/20.2    123.5/20.2    124.1/20.1
+... and the ice sheet's own air kept out of the fetch (final)      58.6/2.4      57.7/1.4      58.6/1.3
