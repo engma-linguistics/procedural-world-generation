@@ -1515,3 +1515,84 @@ across the rows, so nothing here is pinned on step 1. Step 2 was not swept (not 
 
 **Ready to merge?** Step 1 (7b41cea) yes: green, every Earth bar within noise of the A16 branch except the Tasman
 (better), stage 1 holds. It sits on A16's branch, so it waits on PW-623 with it. Step 2 needs the draft's decision.
+
+## PW-627 step 2: the endings test crossed, and Europe's summer layer (lane A18)
+
+**Step 2's red endings test is the run's chaos, not its climate: step 2's climate passes on step 1's world, and step
+1's climate fails on step 2's world. But no harness-only change can make it green (the fixture has no window; a seed
+pick or a "not too cold" precondition changes what is tested), so step 2 still can't merge with main green
+(`draft-endings-test-fails-on-cold-source-worlds.md`, needs-decision). No wind-free summer-layer mechanism restores
+Europe: the shelf-depth cap is sound but blocked by the European shelf seas' annual cold (PW-592)
+(`draft-sea-layer-deeper-than-shelf.md`). Nothing committed but docs and drafts.**
+
+Branch `worktree-agent-a22d5ce3841f99b73`: main b900f1c + lane A17's branch 3e9855a, merged as 644a4f0. Since 3e9855a
+main changed no run or climate code, so A17's step-1 / step-2 bars stand (re-run `p3.py`: identical). Files in
+`laneA18/` (README.md lists them).
+
+### 1. The endings test crossed (lane A16's method; `laneA18/xzoom_cross.txt`)
+sim4's source (L4, seed 1, 300 Myr) from each tree, zoomed with each tree's climate. Extra / left after 15 kyr, m
+(bar: extra > 10, left < extra / 2):
+
+| | step 1's climate | step 2's climate |
+|---|---|---|
+| step 1's world (run dT +5.10, 0.04% under ice) | 49.9 / -0.5, passes | 44.0 / -0.9, passes |
+| step 2's world (run dT +2.67, 1.13% under ice) | 31.3 / 15.7, fails | 33.2 / 19.7, fails |
+
+The own-tree numbers equal the test's printouts. The world decides; step 2's climate on a fixed world moves extra /
+left by 6 / 0.4 m (step 1's world) and 2 / 4 m (step 2's).
+
+Seeds 1-9, each tree its own climate (`seedscan_2-9.txt`): step 1 passes 6 / 9 (fails seed 5, a hothouse at dT +12.3
+with extra 3.8 m; seeds 7 and 8, its coldest at dT +0.75 / +1.37), step 2 passes 7 / 9 (fails seeds 1 and 8, dT
++2.67 / +0.79). Every failure with enough ice is a cold world, on either tree. Step 2 doesn't make the test fail more
+often; seed 1 drew a cold world.
+
+Why cold worlds fail (`xflows_s{1,2}world.txt`, the index-on run's ice budget, Gt/yr, step 2's climate): on the
+warm world the ending lifts ablation 1890 -> 3352 and the NH net turns negative; on the cold world ablation goes only
+873 -> 1611 over 15 kyr and the NH net stays positive (+1900 -> +1000): the sheets stand above their equilibrium line
+even at I = 0 and lose ice mainly by calving. PW-588's hysteresis, on a colder planet.
+
+`pytest -q` on step 2 (goldens regenerated, not committed): 594 passed, 1 failed (this test). `pytest_step2.txt`.
+
+### 2. Is a harness-only change legitimate? No
+- The fixture is the session's sim4 (seed 1), shared by ~100 tests, cooled 4 C; there is no search window to widen
+  (unlike `test_run_lakes`).
+- A module-only seed for this test is a pick by outcome. A precondition ("source not a deep icehouse") is a new
+  threshold, and it would hide what the failures show (the zoom's endings leave over half the extra ice on cold
+  worlds).
+- So PW-627's lean A (merge once shown to be chaos) leaves main red. The draft's options: A (lean) find and fix why
+  cold worlds' endings are slow, bar: every seed 1-9 with extra > 10 m passes on both trees; B a fixture source by a
+  rule that isn't the outcome (owner); C hold (a lottery).
+
+### 3. Europe's summer under step 2 (`seabox_step{1,2}.txt`, `depth.py`, `step2_shelf_probe.diff`)
+Where the regression comes from, per box (sea air, model / obs; half = (warmest - coldest) / 2):
+
+| box | annual SST | moc heat | half-swing step 1 / step 2 / obs | warmest bias step 1 / step 2 |
+|---|---|---|---|---|
+| NE Atl 45-55N | 12.7 / 13.5 | +3.2 / +3.6 | 1.7 / 1.7 / 3.2 | -1.3 / -0.7 |
+| North Sea 51-58N 0-8E | 6.9 / 6.8 (obs air ~10.5) | +1.4 / +1.8 | 6.2 / 4.3 / 5.9 | -2.4 / -5.9 |
+| Biscay 43-48N | 11.1 / 11.2 (obs air ~14.7) | -0.2 / -0.2 | 4.0 / 3.2 / 5.0 | -4.3 / -5.8 |
+| S Atl off Pat | 11.5 / 11.5 | -0.5 | 6.1 / 4.8 / 3.7 | +2.7 / +0.1 |
+
+- Two parts: the shelf seas' annual SST was already ~3 C too cold on step 1 (the overturning's and the gyre's heat
+  don't reach them: PW-592's first candidate), and step 2 cuts their swing below the observed one (North Sea 6.2 ->
+  4.3 against 5.9), where it rightly cuts Patagonia's (6.1 -> 4.8 against 3.7).
+- The suggested mechanisms keyed on the off-land air (the stable summer air shallows the layer) can't separate the two:
+  land_air is 0.55 over the North Sea and 0.48 off Patagonia, and the NE Atlantic upwind of Europe has 0.02. Any
+  land_air-keyed shallowing deepens Patagonia's swing (already too big) as much as the North Sea's, and leaves the
+  NE Atlantic (W Europe's air) alone. A depth from the local summer wind is PW-593's `ml_wind`, which A17 measured on
+  step 2: Europe back (+0.2), SH coastal range 14.5. Not measured again.
+- The one wind-free mechanism with a geographic NH / SH difference: the layer no deeper than the sea floor (`min(brine_m,
+  depth)`). L6 ocean cells 20-65 deg shallower than 50 m: N 4.1%, S 0.4% (North Sea 45%, Baltic 44%, Yellow / E
+  China Sea 39%; Patagonian shelf 6%, Tasman / Agulhas / NE Atl 0%). Probe on step 2: North Sea halves 3.7 / 7.1 ->
+  7.1 / 11.0, but its sea air's swing stays 4.3: the annual 6.6 C puts the bigger winter below freezing, and
+  `_summer_half` spends the summer on melting that ice. Bars: rain r 0.649 -> 0.653, Biscay-N Sea -5.4 -> -5.3, near-N
+  within 1.5x 33 -> 35%, SH unchanged. Not committed: it does nothing for Europe until PW-592's marginal-sea warmth
+  (and PW-595's land part by the land's width, which makes the North Sea's winter half too big) land.
+- Probed and dropped: more diffusion in `sea_surface`'s carry (0.15 -> 0.3 / 0.6) doesn't carry the NE Atlantic's
+  heat into Biscay or the North Sea; it only weakens the boundary currents' anomalies.
+
+Not run, since no candidate passed: the full tools.sh bars, the overturning on the 9 worlds and `health.py --quick`
+on a candidate. A17's step-2 numbers (stage 1 holds; rain r 0.649; SH coastal range 12.1) stand for step 2 itself.
+
+**Ready to merge?** No code. Step 2 waits on the endings draft's decision; Europe's summer on PW-592 first, then the
+shelf cap and PW-595.
