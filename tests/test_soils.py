@@ -215,11 +215,10 @@ def test_world_soils(sim4):
     w = T.world_from_sim(sim4)
     L = w["layers"]
     land = (L["elevation"] > 0) & (L["ice"] <= 0) & (L["lake"] == 0)
-    shore = np.asarray(L["elevation"]) == 0  # (the stored layer rounds: a cell at +0.4 m is land)
     soil = np.asarray(L["soil"])
-    assert (soil[~land & ~shore] == SO.NONE).all() and (soil[land] > 0).mean() > 0.95
+    assert (soil[~land] == SO.NONE).all() and (soil[land] > 0).mean() > 0.95
     assert (np.asarray(L["soil_depth"]) <= SO.H_MAX).all()
     # no one type covers most of the land
     share = np.bincount(soil[land], minlength=len(SO.TYPES)) / land.sum()
     assert share.max() < 0.6
-    assert (np.asarray(L["soil_carbon"])[~land & ~shore] == 0).all()
+    assert (np.asarray(L["soil_carbon"])[~land] == 0).all()

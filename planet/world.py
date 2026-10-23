@@ -98,7 +98,10 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     land = is_land(elev, ice)
     sea = ~land
     flood = _flood(grid, down, lk, c, sea)
+    # whole metres, but land stays land: a cell at +0.4 m would round to 0, which readers take for sea (elevation
+    # > 0 is land), while the soil, plants and rivers here were made on it as land (PW-348)
     elev_m = np.round(elev).astype(int)
+    elev_m = np.where(elev > 0, np.maximum(elev_m, 1), np.minimum(elev_m, 0))
 
     layers = {
         "elevation": elev_m,
