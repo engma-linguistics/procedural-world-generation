@@ -177,3 +177,42 @@ Place wishes score half "how much of that kind of place the line holds" (half of
 - **Shelf corridors.** Land of a glacial or recent epoch that is sea at the present has a contact value of at least 0.7 (`crossing.SHELF_CONTACT`).
 - **Best of N** takes 0.05 off a try's score for each living line it lost (`LOST_PENALTY`).
 - Showcase: `docs/review/lineages/showcase-3.md`.
+
+## Lane 4 additions (2026-10-23)
+
+- **Contact hybrids linger (PW-613, lean B).** `History._hybrid`. Where its parents meet, a contact hybrid is a share of their people, as before, and it can keep growing there. Once it has appeared:
+  - where its parents no longer meet, it fades within its own habitat (e-folding `LINGER_KYR` = 10 kyr);
+  - where they last met, it lives on as a small people of its own, at least `LINGER_MIN` (0.3) of its habitat;
+  - cells it holds on its own count on the `peoples` layer as its own people, not as an overlay. `meta.present.lines[id].own_mkm2` gives their area;
+  - the first parting is an event ("half-elves live on as a people of their own where humans and elves last met"), and the story tells it if the parents are still apart at the present.
+- **Preset (PW-614, lean B).** The wish "goblin near orc" is now "hobgoblin near orc", the usual pairing of hobgoblin and orc warbands: savanna borders steppe. Goblins keep the jungle wish.
+- **Land use: the world's game layers in the habitat** (`planet/lineages/land.py`, spec `[[use]]`, meta `land_pull`).
+  - **Goods.** `land.goods(world)` makes 0..1 goods per cell from the world's layers:
+    - living goods: `fertile` (humanuse), `grazing`, `foraging`, `timber`, `fuel`, `building` (gameattrs). Each is scaled to this world's own best (the 95th percentile of the land that has any). A living good on under 2% of the land is left out as missing, e.g. pasture on worlds whose plants have no grasses;
+    - geology: `stone` (resources.stone: granite and marble best), `metal`, `gold`, `iron`, `copper`, `tin`, `gems`, `mithril` (the fantasy ores), `coal` (res_* likelihoods);
+    - coasts: `harbour` and `nav_hazard` (from the sea cells, carried to the coast), `coral`, `lagoon` (barrier islands), `mangrove`, `cliff`, `seabirds`, `seals` (coastform).
+
+    Point-like goods (ores, coasts) reach one cell ring inland at 0.7 of their value. A world without the resource or coast layers (they are add-on commands) gets them worked out in memory, never written to the world. That is ~10 s at L7 with the run's history, once per run.
+  - **Uses.** `[[use]] by = <trait or place/climate tag in prefers>, good = <good>, weight = w` (w < 0 avoids). The editor has a "Land use" table and a "land pull" field. The preset:
+
+    | way of life | goods |
+    |---|---|
+    | agricultural | fertile |
+    | nomadic | grazing |
+    | forest | timber, foraging |
+    | rainforest | foraging |
+    | miner (new trait: dwarves, gnomes) | gold, iron, gems, mithril |
+    | subterranean | stone, metal |
+    | seafaring | harbour (+), nav_hazard (−0.7) |
+    | coastal (tortles, sea elves, tritons) | coral, lagoon |
+    | wetland | mangrove |
+    | flies (aarakocra, the avian stem) | cliff, seabirds |
+  - **Habitat.** `History._land_mult` multiplies K by (1 − pull + pull G):
+    - G is the best of the line's favoured goods in the cell, each by weight ÷ the largest weight. A people favours any of its goods, so farmland or a harbour, not both;
+    - the multiplier is normalised to a mean of 1 over the line's own country (today's habitat). The goods move a people within its niche without making it a weaker people overall: a rare good like a coral coast lifts its few places instead of cutting everywhere else;
+    - each avoided good multiplies K by (1 − pull |w| g);
+    - pull is 0.5 by default (`meta.land_pull`).
+
+    Timing: the land use is off in the deep epochs (the plates have moved since). Before `HOLOCENE_KYR` (10 kyr ago) only the geology counts, because the farmland, pasture, forests and coasts are today's. The dwarves' origin (500 kyr) is therefore already drawn toward the ores.
+  - **Homeland notes.** `land.homeland_notes` adds one or two sentences per people to its story: what its land (presence ≥ 25%) gives it, for the goods its way of life looks for. Ores, harbours, coral and seabird coasts are counted as districts (connected cells ≥ 0.5): "the dwarves hold two of the world's five richest gold districts (the best in the 2,000 km mountain range at 9°N 39°W)". Area goods are a share of the world's best: "the humans hold 31% of the world's best farmland (…)". The world has no place names, so the notes name the nearest highlight feature that covers the place (`highlights.find`: mountain ranges, plateaus, great forests, deserts and so on), or else give directions. Stored in `meta.present.homeland`.
+- Showcase: `docs/review/lineages/showcase-4.md`.

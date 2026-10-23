@@ -34,3 +34,4 @@ Lean: B. It matches the usual D&D pairing of hobgoblin and orc armies, and geogr
 
 ## Updates
 - 2026-10-23: Created from inbox draft draft-lineages-goblin-orc-niches.md (found by lineages-lane-3).
+- 2026-10-23: Lane 4 built lean B in planet/lineages/samples/dnd.toml: the wish is now 'hobgoblin near orc'; goblins keep the jungle wish. L7 showcase 4 (best of 2): 0.91 / 0.57 / 1.00 / 0.15 on 1144ce / 31926a / 91448a / 3e0b0a (lane 3's runs, recomputed: 0.50 / 0.00 / 1.00 / 0.78). Status left for the coordinator.

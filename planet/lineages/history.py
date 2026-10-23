@@ -32,6 +32,9 @@ NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
+LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
+LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
+HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
 PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6", "#bcf60c",
            "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
@@ -196,8 +199,12 @@ def niche_overlap(a: SP.Lineage, b: SP.Lineage, tree: SP.Tree) -> float:
 
 # -- the history -----------------------------------------------------------------------------------
 class History:
-    def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0):
+    def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
+                 goods: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
+        self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
+        self._land_m: dict[str, tuple] = {}
+        self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
         g = self.grid
         self.rng = np.random.default_rng(seed)
         self.seed = seed
@@ -476,6 +483,10 @@ class History:
         self._hop_dt = np.zeros(len(L))
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
+        self._last_meet: dict[str, np.ndarray] = {}  # contact hybrids: where their parents last met
+        self._apart: set[str] = set()  # ...and those whose parents no longer meet anywhere
+        self._lingered: set[str] = set()
+        self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         budget = np.zeros(len(L))
         frames = []
         nsteps = len(self.steps)
@@ -518,9 +529,7 @@ class History:
                 if K is None:
                     K = self._K(l, env, tags, step)
                 if l.overlay and l.origin == "hybrid":
-                    a, b = (self.p[self.idx[q]] for q in l.parents)
-                    O = np.minimum(a, b)
-                    self.p[k] = np.where(O >= EST, O, 0.0)
+                    self._hybrid(l, k, K, step)
                     continue
                 self.p[k] = np.minimum(self.p[k], K)
                 self.p[k][self.p[k] < EST] = 0
@@ -605,16 +614,83 @@ class History:
         self.runtime = time.time() - t0
         return {"frames": frames, "present": self.p.copy()}
 
+    def _hybrid(self, l, k, K, step):
+        """A contact hybrid: where its parents meet it is a share of their people (and grows with the contact);
+        once it has appeared it lingers where they no longer meet, fading (LINGER_KYR) within its own habitat,
+        and where they last met it lives on as a small people of its own (PW-613)."""
+        g = self.grid
+        a, b = (self.p[self.idx[q]] for q in l.parents)
+        O = np.minimum(a, b)
+        meet = O >= EST
+        old = self.p[k]
+        linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K)
+        new = np.where(meet, np.maximum(O, linger), linger)
+        if meet.any():
+            self._last_meet[l.id] = meet & (K > EST)
+            self._apart.discard(l.id)
+        elif l.id in self._last_meet:
+            last = self._last_meet[l.id]
+            if not last.any():  # (the parents met only where its own habitat is poor: the best of it nearby)
+                near = self._dilate(old > 0, 2) if (old > 0).any() else np.ones(g.n, bool)
+                last = rings(int(np.argmax(np.where(near, K, 0))), K > EST, 1, g.nbr_off, g.nbr_idx)
+                self._last_meet[l.id] = last
+            new[last] = np.maximum(new[last], np.clip(K[last] * LINGER_MIN, 2 * EST, None))
+            if l.id not in self._apart:
+                self._apart.add(l.id)
+            if l.id not in self._lingered:  # (the first time only: parents can meet again and part again)
+                self._lingered.add(l.id)
+                c = int(np.flatnonzero(last)[0]) if last.any() else 0
+                self.events.append({"ago_kyr": round(step.ago, 3), "kind": "lingers", "line": l.id,
+                                    "text": f"{l.label()} live on as a people of their own where "
+                                            f"{' and '.join(self.tree.lines[q].label() for q in l.parents)} last met",
+                                    "lat": round(float(g.lat[c]), 2), "lon": round(float(g.lon[c]), 2)})
+        new[new < EST] = 0.0
+        self.p[k] = new
+        self._linger[k] = (new >= EST) & ~meet
+
     def _K(self, l, env, tags, step):
         if l.overlay and l.origin == "template":
             return np.max([self.p[self.idx[q]] for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
         K = capacity(l, env, tags) * self._place_mult(l, tags)
         K = K * self._wish_near(l)
+        if self.goods is not None and step.epoch != "deep":  # (the plates have moved since the deep epochs)
+            K = K * self._land_mult(l, step.ago <= HOLOCENE_KYR)
         if l.extinct_kyr is not None:  # dwindles toward its end
             span = min(0.3 * (l.ago_kyr - l.extinct_kyr), 20.0)
             if span > 0 and step.ago < l.extinct_kyr + span:
                 K = K * max(0.0, (step.ago - l.extinct_kyr) / span)
         return np.clip(K, 0, 1)
+
+    def _land_mult(self, l, holocene: bool) -> np.ndarray | float:
+        """What the line's way of life looks for in the land (spec [[use]]; land.goods): x(1 - pull + pull G),
+        G the best of its favoured goods here (each by weight / the largest weight); x(1 - pull |w| g) per
+        avoided good. Before HOLOCENE_KYR only the geology (ores, stone) counts: the farmland, pasture,
+        forests and coasts are today's. A line with no favoured good of an epoch is left as it is then."""
+        from .land import GOODS
+        key = (l.id, holocene)
+        m = self._land_m.get(key)
+        if m is None:
+            uses = [(g, w) for g, w in self.tree.uses_of(l) if g in self.goods and (holocene or GOODS[g][1])]
+            pull = self.tree.land_pull
+            m = 1.0
+            pos = [(g, w) for g, w in uses if w > 0]
+            if pos and pull > 0:
+                wmax = max(w for _, w in pos)
+                G = np.max([min(w / wmax, 1.0) * self.goods[g] for g, w in pos], axis=0)
+                m = (1 - pull) + pull * G
+                # over the line's own country (today's habitat) the mean is 1: the goods move a people within
+                # its niche, toward the farmland or the mines, without making it a weaker people overall
+                # (a rare good, a coral coast, lifts its few places rather than cutting everywhere else)
+                if self._pres is None:
+                    env = self.steps[-1].get()
+                    self._pres = (env, _tags(self.grid, env, self._chains))
+                hab = capacity(l, *self._pres) > 0.25
+                m = m / max(float(m[hab].mean()) if hab.any() else 1.0, 1 - pull)
+            for g, w in uses:
+                if w < 0:
+                    m = m * (1 - pull * min(-w, 1.0) * self.goods[g])
+            self._land_m[key] = m
+        return m
 
     def _mix_ramp(self, ago):
         ms = self.tree.mixing_start_kyr
@@ -625,10 +701,11 @@ class History:
 
     def _frame(self, step, env) -> dict:
         natives = np.array([not l.overlay for l in self.lines])
-        P = np.where(natives[:, None], self.p, 0)
+        own = natives[:, None] | self._linger  # (a contact hybrid living on as a people of its own counts there)
+        P = np.where(own, self.p, 0)
         dom = np.where(P.max(0) >= EST, P.argmax(0), 255).astype(np.uint8)
         mixn = (P >= 0.25).sum(0).astype(np.uint8)
-        O = np.where(~natives[:, None], self.p, 0)
+        O = np.where(~own, self.p, 0)
         ov = np.where(O.max(0) >= EST, O.argmax(0), 255).astype(np.uint8)
         areas = {l.id: round(float((self.p[k] >= EST).sum() * self.cell_mkm2), 2)
                  for k, l in enumerate(self.lines) if self.active[l.id]}
@@ -668,6 +745,8 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                               "largest_patch_share": round(float(sizes[0] / sizes.sum()), 2),
                               "centroid": tr[1:3] if tr else None,
                               "neighbours": dict(sorted(nb.items(), key=lambda x: -x[1])[:8]), "overlay": l.overlay}
+        if l.overlay and l.origin == "hybrid":  # (the land it holds as a people of its own, its parents apart)
+            out["lines"][l.id]["own_mkm2"] = round(float((h._linger[k] & sel).sum() * h.cell_mkm2), 2)
     natives = np.array([not l.overlay for l in h.lines])
     mix = (np.where(natives[:, None], P, 0) >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
@@ -738,18 +817,19 @@ def wish_scores(h: History, P: np.ndarray, tags: dict | None = None) -> list[dic
     return out
 
 
-def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: None) -> tuple[History, dict, dict]:
+def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: None,
+             goods: dict | None = None) -> tuple[History, dict, dict]:
     """Best of `tries` seeds by the wishes' score, less LOST_PENALTY per living line lost (e.g. a contact
     hybrid whose parents no longer meet); one try without wishes."""
     best = None
     n = tries if tree.wishes else 1
     scores = []
     for k in range(n):
-        h = History(tree, ps, tree.seed * 1000 + k)
+        h = History(tree, ps, tree.seed * 1000 + k, goods=goods)
         res = h.run(lambda f, msg, k=k: progress((k + f) / n, f"try {k + 1}/{n}: {msg}"))
         pres = present_summary(h, res["present"])
         sc = pres["wish_score"] if pres["wish_score"] is not None else 0.0
-        scores.append(round(sc, 3))
+        scores.append(round(float(sc), 3))
         key = sc - LOST_PENALTY * len(pres["lost"])  # (a try that keeps every living line is preferred)
         if best is None or key > best[3] + 1e-9:
             best = (h, res, pres, key)

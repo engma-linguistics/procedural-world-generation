@@ -11,6 +11,8 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
 - template: an overlay on `parents` (hosts) from `at` on (tieflings): a `share` of the hosts' people,
             spreading from a few `sites` through the hosts' range only
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
+[[use]] (by = a trait or a place tag, good = land.GOODS, weight) says what each way of life looks for in
+the land (farmland, pasture, ores, harbours, coral coasts...); meta.land_pull how strongly (history._land_mult).
 """
 
 from __future__ import annotations
@@ -37,6 +39,7 @@ TRAITS = {
     "insular": {"mix": 0.2},
     "cosmopolitan": {"mix": 1.6},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
+    "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
 LATE_SEA_KYR = 3.0
 # long sea crossings (crossing.py): way -> (rate per kyr at a zero gap, length scale km, only since kyr ago).
@@ -119,6 +122,18 @@ class Wish:
 
 
 @dataclass
+class Use:
+    """A way of life looking for a good in the land: lines with trait (or preferred place) `by` favour
+    (weight > 0) or avoid (< 0) the world's `good` (land.GOODS) in their habitat."""
+    by: str
+    good: str
+    weight: float = 1.0
+
+
+LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
+
+
+@dataclass
 class Tree:
     name: str
     seed: int
@@ -127,6 +142,16 @@ class Tree:
     mixing_start_kyr: float = 3.0
     source: str | None = None
     disabled: list[str] = field(default_factory=list)  # lines switched off (enabled = false) and those that went with them
+    uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
+    land_pull: float = LAND_PULL
+
+    def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
+        """The goods a line looks for (from its traits and preferred places), weights summed per good."""
+        out: dict[str, float] = {}
+        for u in self.uses:
+            if u.by in l.traits or u.by in l.prefers:
+                out[u.good] = out.get(u.good, 0.0) + u.weight
+        return [(k, v) for k, v in out.items() if v != 0]
 
     def order(self) -> list[Lineage]:
         """Lines oldest event first (parents before children)."""
@@ -298,9 +323,22 @@ def parse(raw: dict) -> Tree:
         if want not in ("near", "apart") and want not in PLACES:
             raise ValueError(f"wish {w}: want must be near, apart or one of {PLACES}")
         wishes.append(Wish(str(w["a"]), want, w.get("b") or None, float(w.get("weight", 1.0))))
+    from .land import GOODS
+    uses = []
+    for u in raw.get("use", raw.get("uses", [])):
+        by, good = str(u.get("by", "")), str(u.get("good", u.get("layer", "")))
+        if by not in TRAITS and by not in PLACES and by not in GROUPS and by not in KOPPEN_CODES:
+            raise ValueError(f"use {u}: by must be a trait ({sorted(TRAITS)}) or a place or climate tag")
+        if good not in GOODS:
+            raise ValueError(f"use {u}: good must be one of {list(GOODS)}")
+        uses.append(Use(by, good, float(u.get("weight", 1.0))))
     t = Tree(str(meta.get("name", "peoples")), int(meta.get("seed", 1)), lines, wishes,
              float(parse_ago(meta.get("mixing_start", 3.0))))
     t.disabled = disabled
+    t.uses = uses
+    t.land_pull = float(meta.get("land_pull", LAND_PULL))
+    if not 0 <= t.land_pull <= 1:
+        raise ValueError("meta.land_pull must be within 0..1")
     return t
 
 
@@ -332,5 +370,6 @@ def to_raw(t: Tree) -> dict:
         if l.origin == "template":
             r["sites"] = l.sites
         out.append(r)
-    return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr"}, "lineage": out,
-            "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes]}
+    return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull},
+            "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
+            "use": [vars(u) for u in t.uses]}
