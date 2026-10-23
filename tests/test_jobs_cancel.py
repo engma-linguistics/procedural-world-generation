@@ -159,3 +159,11 @@ def test_highlight_zooms_request():
         api.parse_highlight_zooms_request({"world": "nonexistent"})
     body, code = server.submit(api.Jobs(lambda r, p: {}), "/api/highlight-zooms", b'{"world": "zzzzzz"}')
     assert code == 404
+
+
+def test_enrich_request_is_checked_up_front():
+    for bad in ({}, {"world": "zzzzzz"}, {"world": "zzzzzz", "what": "ore"}):
+        with pytest.raises((api.BadRequest, SystemExit)):
+            api.parse_enrich_request(bad)
+    body, code = server.submit(api.Jobs(lambda r, p: {}), "/api/enrich", b'{"world": "zzzzzz", "what": "coast"}')
+    assert code == 404

@@ -3719,6 +3719,7 @@ function navSync() { navUi?.set(navView()); }
 async function navOpen(n, planet, t) {
   await fillSelector();
   if (state.tab === 'zoom' && n.kind !== 'zoom') showTab('globe');
+  if (n.phase === 'lineages') state.layer = 'peoples';  // (a peoples run opens on its own layer)
   if (n.kind === 'run' || n.kind === 'timezoom') await openRun(n.id, t);
   else if (n.kind === 'world') await openWorld(n.file);
   else {
@@ -3744,7 +3745,12 @@ addEventListener('popstate', () => {
   fromPop = true;
   try { if (q.get('tab') === 'zoom') showTab('zoom', q.get('zoom')); else showTab('globe'); } finally { fromPop = false; }
 });
-navUi = createNavigator({ openNode: navOpen, findHighlights: () => fetchHighlights(false), zoomSource: () => (V ? zoomSource() : null), picked: () => picked });
+// the world on screen and which of the optional layers it lacks (the navigator's "Add resources / coasts")
+function navLayers() {
+  if (V?.kind !== 'world' || !V.id || !V.layers) return null;
+  return { world: V.id, resources: !!(V.layers.resource || Object.keys(V.layers).some((k) => k.startsWith('res_'))), coast: !!V.layers.coast_type };
+}
+navUi = createNavigator({ openNode: navOpen, layers: navLayers, findHighlights: () => fetchHighlights(false), zoomSource: () => (V ? zoomSource() : null), picked: () => picked });
 
 // The squares of the zooms already made of what is on screen (a world, or the world made from this run
 // frame), clickable on their edge: a click there opens that zoom instead of picking a cell.

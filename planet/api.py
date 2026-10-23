@@ -459,7 +459,9 @@ def parse_lineages_request(req: dict) -> dict:
     if not ref:
         raise BadRequest("give world or timezoom")
     try:
-        R.resolve(str(ref).removesuffix(".json"))
+        tz = R.resolve(str(ref).removesuffix(".json"))[0]
+        if not S.exists("run", tz):
+            raise ValueError(f"the time zoom {tz} (of {ref}) has been deleted; peoples need it")
         SP.parse(req["raw"]) if req.get("raw") else LR.load_tree(str(req.get("tree") or ""))
     except (ValueError, KeyError, FileNotFoundError) as e:
         raise BadRequest(str(e)) from e
@@ -472,8 +474,36 @@ def parse_lineages_request(req: dict) -> dict:
     return out
 
 
+ENRICH = ("resources", "coast")  # what POST /api/enrich can add to a saved world
+
+
+def parse_enrich_request(req: dict) -> dict:
+    """Check a POST /api/enrich {world, what: resources | coast} now (the layers `planet resources` / `planet coast` add)."""
+    if not isinstance(req, dict) or not req.get("world"):
+        raise BadRequest("give a world")
+    if req.get("what") not in ENRICH:
+        raise BadRequest(f"what is one of {', '.join(ENRICH)}")
+    world = str(req["world"]).removesuffix(".json")
+    S.find_world(world)  # (SystemExit: no such world)
+    return {"type": "enrich", "world": world, "what": req["what"]}
+
+
+def enrich_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/enrich's work: add the resource or coast layers to the saved world in place."""
+    r = parse_enrich_request(req)
+    progress(0.05, f"adding {r['what']} to world {r['world']}")
+    if r["what"] == "resources":
+        from . import resources as RS
+        RS.add_to_world(r["world"], log=lambda *a: None)
+    else:
+        from . import coastform as CF
+        CF.add_to_world(r["world"])
+    progress(1.0, "done")
+    return {"world": r["world"]}
+
+
 JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job,
-        "lineages": lineages_job}
+        "lineages": lineages_job, "enrich": enrich_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
