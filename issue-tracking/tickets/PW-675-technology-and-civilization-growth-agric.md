@@ -4,7 +4,7 @@ title: "Technology and civilization growth: agriculture, writing, metallurgy and
 type: epic
 status: todo
 parent: null
-milestone: later
+milestone: v3
 subsystem: timezoom
 effort: xl
 impact: med
@@ -20,4 +20,5 @@ updated: 2026-10-23
 Owner (2026-10-24): like the plants' evolution timeline, a timeline (or tree) of technologies peoples discover and spread: agriculture, herding, boats, metallurgy, writing, cities and states. What a people knows sets its densities, reach (sailing), land use (PW-662) and how strongly its states unify cultures (see the unifying-pressure story under PW-661). Civilization management, of the kind the owner always expected this to grow into.
 
 ## Updates
+- 2026-10-23: Milestone -> v3 (board triage 2026-10-24): deliberately far off, a system of its own after v2; see docs/review/board/triage-2026-10-24.md.
 - 2026-10-23: Created.

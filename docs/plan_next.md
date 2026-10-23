@@ -5,7 +5,8 @@
 ## Milestones
 - **v1** (epic PW-244): a reliable, finished, usable planet from a seed. `planet make` / the start screen, export, human-use layers, glacial imprint, fine-zoom redraws, then the showcase remake (PW-202) and the final calibration pass. `board.py milestones v1` lists what is open.
 - **v2:** features before more physics fidelity. Mainly speed (PW-247/252), resources (PW-155 with PW-474), planet settings and phone layout (PW-481, PW-483), fine-zoom and zoom landform quality (PW-516 and the zoom tickets), and the base-climate and ocean follow-ups. `board.py milestones v2`.
-- **later / parked:** ice ages done properly (epic PW-470; v1 uses the glacial index kludge PW-471), L8/L9 finish (PW-490), multiscale time (PW-103), weather (PW-156), moons and planet bodies (PW-216), weird worlds (PW-443).
+- **v3:** deliberately far off, each a system of its own: the civilization epic (PW-661: warfare and displacement, culture fracture PW-670, unifying pressure PW-676), technology (PW-675), weather (PW-156), moons and planet bodies (PW-216), weird worlds (PW-443), whole-world L8/L9 finish (PW-490).
+- **later:** maybe, unscheduled: polish, quality-pass items (epic PW-649) and ideas nobody has pulled for. Ice ages done properly (epic PW-470; v1 uses the glacial index kludge PW-471) is run-physics work in the v2 lane.
 - The base-climate v2 plan (overturning, sea's air, summer heat, thermostat; PW-570) is tracked in `docs/review/base-climate/stages.md`.
 
 Defaults: level 7 for showcases, level 6 for quick large-scale tests.
