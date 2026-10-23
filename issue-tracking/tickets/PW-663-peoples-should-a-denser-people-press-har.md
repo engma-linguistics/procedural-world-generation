@@ -1,4 +1,5 @@
 ---
+id: PW-663
 title: "Peoples: should a denser people press harder on its neighbours (DENSITY_PUSH), and how hard?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: peoples-workbench-lane
 blocked_by: []
 relates: [PW-650, PW-655, PW-601]
 refs: [planet/lineages/history.py, planet/lineages/spec.py, docs/proposals/lineages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -44,3 +47,6 @@ Options:
 
 Lean: A. The giants need some push to stay off contested land without the old strict pull, but anything
 stronger hands the world to the humans.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-peoples-density-push.md (found by peoples-workbench-lane).

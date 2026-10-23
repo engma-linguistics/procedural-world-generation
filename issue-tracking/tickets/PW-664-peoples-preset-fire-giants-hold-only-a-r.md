@@ -1,4 +1,5 @@
 ---
+id: PW-664
 title: "Peoples preset: fire giants hold only a refuge (~50 giants) on 1df1c3 and 3e9e7d"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: peoples-workbench-lane
 blocked_by: []
 relates: [PW-650, PW-655]
 refs: [planet/lineages/samples/dnd.toml, "run 37e9da (1df1c3)", "run 33b1c3 (3e9e7d)"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Things to try, in order:
 3. Exempt patches that hold a line's favoured good from the viable-population rule. This is a bigger change and needs an owner nod.
 
 - [ ] fire giants hold ≥ 0.1 Mkm² and a few hundred on both showcase worlds without the strict pull
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-peoples-fire-giants-refuge.md (found by peoples-workbench-lane).
