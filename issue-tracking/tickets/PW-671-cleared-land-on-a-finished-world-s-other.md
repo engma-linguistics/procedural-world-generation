@@ -1,4 +1,5 @@
 ---
+id: PW-671
 title: Cleared land on a finished world's other colour views, runs picker and 3D relief
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: zoompeoples
 blocked_by: []
 relates: [PW-669, PW-662]
 refs: [viewer/index.html, viewer/relief.js]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -18,3 +21,6 @@ PW-669 tints a finished world's `satellite`, `vegetation` and `biome` colours wi
 
 What to try: a tree-cover view for worlds with the tint, a run picker when several peoples runs name the world, and a quieter tint factor for the satellite.
 - [ ] a world with two peoples runs offers both
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-world-anthro-tint-more-views.md (found by zoompeoples).

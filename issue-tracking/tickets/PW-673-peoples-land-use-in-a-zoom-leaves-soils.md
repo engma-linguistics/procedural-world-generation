@@ -1,4 +1,5 @@
 ---
+id: PW-673
 title: Peoples' land use in a zoom leaves soils, fire and the named types as they were
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: zoompeoples
 blocked_by: []
 relates: [PW-667, PW-661]
 refs: [planet/zoom_peoples.py, planet/zoom_vegetation.py, planet/soils.py, planet/vegetation.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -18,3 +21,6 @@ PW-667's overlay changes the plant fractions, tree cover, plant cover, leaf area
 
 What to try: a `land_use` input to soils.organic (carbon x 0.6 under fields, x 0.85 under pasture, none on villages), to gameattrs (fields give no timber and little foraging; managed woods more fuel), and decide (needs the owner) whether the named vegetation types should grow 'cropland' and 'pasture' entries (the legend and goldens would change).
 - [ ] soil carbon under the demo zoom's fields is lower than under its neighbouring wild ground
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-zoom-peoples-soils-and-names.md (found by zoompeoples).
