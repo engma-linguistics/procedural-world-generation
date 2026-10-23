@@ -1,4 +1,5 @@
 ---
+id: PW-595
 title: "The land's share of the sea's seasonal swing (_sea_half) is a big continent's swing, whatever the land's width: off Patagonia the sea's half-swing is 6.2 C against 3.7"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA14
 blocked_by: []
 relates: [PW-593, PW-573]
 refs: [planet/climate.py, docs/review/base-climate/laneA14/p3_attempt1.txt, docs/review/base-climate/laneA14/pw593_attempt1_toggles.diff]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -33,3 +36,6 @@ right only because the NE Atlantic's own swing is too small (PW-593). Not merged
 once the winds allow that (see the draft on the summer mixed layer and the seasonal winds).
 - [ ] the land part of the sea's swing from the fetched land air, merged together with a summer layer that restores
       the NE Atlantic's own swing; rain r ≥ 0.617
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-sea-swing-land-part-is-a-big-continents.md (found by base-climate-laneA14).

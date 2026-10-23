@@ -1,4 +1,5 @@
 ---
+id: PW-596
 title: "PW-593's wind-set summer mixed layer can't work on the model's summer winds: the westerly belts have one strength in every season and hemisphere, and the land-sea part slows the SH coasts' summer westerlies to 2-3.5 m/s"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: base-climate-laneA14
 blocked_by: []
 relates: [PW-593, PW-589, PW-573, PW-575]
 refs: [planet/climate.py, docs/review/base-climate/laneA14/, docs/review/base-climate/stages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -57,3 +60,6 @@ Options:
 - [ ] rule A / B / C
 - [ ] (A) summer westerlies by season and hemisphere: SH 40-55S summer faster than NH 40-55N summer; SH coastal
       summer winds not under ~5 m/s
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-summer-mixed-layer-needs-seasonal-winds.md (found by base-climate-laneA14).
