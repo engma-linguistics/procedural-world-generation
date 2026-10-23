@@ -25,6 +25,10 @@ The design is in docs/proposals/lineages.md, "Next: groups within a people":
 - a per-people roll-up in the summaries, with the groups' own rows in results and stories;
 - the Peoples tab expands a people to its groups.
 
+Scope (owner, 2026-10-24): a shallow pass only. A group is a way of life within a people. Deeper culture
+(languages, religions, customs, cultural spread and assimilation, cultural effects on peoples) is PW-661's.
+Keep the model and the UI minimal.
+
 - [ ] `origin = "group"` parsed, inherited from the people, never ending its parent
 - [ ] divergence placement; free mixing with kin groups
 - [ ] people roll-ups in `meta.present` and run.txt; the groups' rows and stories
