@@ -9,7 +9,10 @@ Each place's colour is mixed in linear light (reflectances add; sRGB doesn't):
    deserts, grey cold deserts), tinted by the exposed rock where it is
    known (basalt dark, limestone and evaporites pale, sandstone red, an
    old shield laterite-red in hot dry country), sand on dune fields, grey
-   rock high up.
+   rock high up. Where the soil is known (worlds and zooms since PW-206),
+   its type sets most of the colour (SOIL_SURFACE: red tropical soils,
+   near-black earths and peat, pale lime and gypsum, white salt), and thin
+   stony soils show their rock.
 2. Plants: each plant type's share (the vegetation's per-PFT fractions)
    x its colour, leaf-on or leaf-off in that month (PFT_COLOURS). The leaf
    habit follows vegetation.py's rules: summergreen types need the month
@@ -47,6 +50,7 @@ from __future__ import annotations
 import numpy as np
 
 from . import climate
+from . import soils as SO
 from . import vegetation as V
 from .geo import world_land
 from .surface import ROCKS
@@ -115,6 +119,15 @@ SOIL_HUMID_WARM, SOIL_HUMID_COLD = "#5e4b38", "#6b665b"
 DESERT_RED, DESERT_SAND, DESERT_COLD = "#b77a4b", "#d8b681", "#a39a87"
 LATERITE = "#a8653d"  # an old shield's iron crust in hot, dry country (Australia)
 DUNE_SAND = "#ddbb86"
+# each soil type's bare, dry surface (soils.TYPES keys; None: keep the climate's colour). Muted, as seen from orbit:
+# red Ferralsols, near-black earths and peat, pale lime and gypsum crusts, white salt (PW-206; soils proposal 6)
+SOIL_SURFACE = {
+    "none": None, "peat": "#3d3127", "frozen": "#6f675b", "thin": None, "salt": "#e2ddd0", "alluvium": "#6e6352",
+    "gley": "#5f5d55", "andosol": "#3e3631", "sand": "#d3b88a", "gypsic": "#d8c49c", "calcic": "#c7ab84",
+    "vertisol": "#4a4440", "chestnut": "#7d6449", "chernozem": "#3a322b", "podzol": "#8f877a", "rendzina": "#6b675c",
+    "ferralsol": "#8f4a2c", "acrisol": "#a0643f", "luvisol": "#7c6046", "cambisol": "#8a7457",
+}
+SOIL_WEIGHT = 0.7  # how much of the bare colour the soil sets (the rest: the climate's guess, then the rock)
 HIGH_ROCK = "#8a857e"
 ROCK_COLOURS = {  # exposed rock (surface_rock), by key
     "ocean": "#4d4842", "hotspot": "#3f3a36", "arc": "#6a6159", "sediment": "#b09a78", "orogen": "#858079",
@@ -170,7 +183,11 @@ def leaf_on(mo: dict, m: int) -> np.ndarray:
     return out
 
 
-def _bare(mo, temp, elev, rock, landform) -> np.ndarray:
+def _soil_table() -> np.ndarray:
+    return np.array([lin(SOIL_SURFACE[t[1]]) if SOIL_SURFACE[t[1]] else np.full(3, np.nan) for t in SO.TYPES])
+
+
+def _bare(mo, temp, elev, rock, landform, soil=None) -> np.ndarray:
     pet = np.maximum(mo["pet"].sum(0), 1.0)
     mi = mo["p"].sum(0) / pet
     arid = _smooth(0.5, 0.08, mi)
@@ -178,18 +195,24 @@ def _bare(mo, temp, elev, rock, landform) -> np.ndarray:
     humid = _mix(lin(SOIL_HUMID_COLD), lin(SOIL_HUMID_WARM), hot)
     desert = _mix(lin(DESERT_COLD), _mix(lin(DESERT_RED), lin(DESERT_SAND), _smooth(0.15, 0.03, mi)), hot)
     c = _mix(humid, desert, arid)
+    rock_w = 0.2 + 0.35 * arid
+    if soil is not None:  # the soil's own surface colour where it is known (PW-206); thin soils show their rock
+        st = _soil_table()[np.clip(np.asarray(soil, int), 0, len(SO.TYPES) - 1)]
+        known = np.isfinite(st[:, 0])
+        c = np.where(known[:, None], _mix(c, np.nan_to_num(st), SOIL_WEIGHT), c)
+        rock_w = np.where(np.asarray(soil) == SO.THIN, 0.7, np.where(known, 0.6 * rock_w, rock_w))
     if rock is not None:
         rock = np.clip(np.asarray(rock, int), 0, len(ROCKS) - 1)
         rc = _rock_table()[rock]
         rc = np.where((rock == CRATON)[:, None], _mix(rc, lin(LATERITE), arid * hot), rc)
-        c = _mix(c, rc, 0.2 + 0.35 * arid)
+        c = _mix(c, rc, rock_w)
     if landform is not None:
         c = _mix(c, lin(DUNE_SAND), 0.75 * (np.asarray(landform) == DUNES))
     return _mix(c, lin(HIGH_ROCK), 0.6 * _smooth(2500.0, 4500.0, elev))
 
 
 def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_jul, p_jan, nu, cover, tree,
-            ice=None, lake_kind=None, rock=None, landform=None, wet=None, tilt: float = 23.4,
+            ice=None, lake_kind=None, rock=None, landform=None, wet=None, soil=None, tilt: float = 23.4,
             mo: dict | None = None, coastal: dict | None = None) -> np.ndarray:
     """Linear-light colours (n, 3) of month (0 = January ... 11) for n places.
     water: 0 land, 1 sea, 2 lake; elev: ground (sea and lake floors
@@ -198,7 +221,7 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     each plant type's share; cover, tree: plant and tree cover (0..1); ice:
     m of land ice; lake_kind: 1 fresh, 2 salt, 3 salt pan (None: by the
     climate, salt where dry); rock: exposed rock ids (surface.ROCKS);
-    landform: class ids; wet: flooded share (0..1). mo: climate.months of
+    landform: class ids; soil: soils.TYPES ids (bare ground takes their colour); wet: flooded share (0..1). mo: climate.months of
     these places, when the caller has it. coastal: coastal life's shares
     (0..1; coastal.py) "reef", "kelp", "seagrass" (sea), "mangrove",
     "salt_marsh" (land)."""
@@ -210,7 +233,7 @@ def colours(month: int, lat, elev, water, lake_depth, temp, t_warm, t_cold, p_ju
     m = month
     t_m = mo["t"][m]
     # --- land: ground, plants, wetlands
-    c = _bare(mo, temp, elev, rock, landform)
+    c = _bare(mo, temp, elev, rock, landform, soil)
     g = leaf_on(mo, m)
     cold = 1 - _smooth(-1.0, 4.0, t_m)
     tot = np.maximum(nu.sum(0), 1e-9)
@@ -326,7 +349,7 @@ def world_layers(grid, L: dict, tilt: float = 23.4) -> dict:
     col = seasons(grid.lat, elev=elev, water=water, lake_depth=depth, temp=temp, t_warm=tw, t_cold=tc,
                   p_jul=np.asarray(L["precipitation_jul"], float), p_jan=np.asarray(L["precipitation_jan"], float),
                   nu=nu, cover=np.asarray(L["plant_cover"], float) / 100, tree=np.asarray(L["tree_cover"], float) / 100,
-                  ice=L.get("ice"), lake_kind=kind, rock=L.get("surface_rock"), landform=L.get("landform"),
+                  ice=L.get("ice"), lake_kind=kind, rock=L.get("surface_rock"), landform=L.get("landform"), soil=L.get("soil"),
                   wet=np.asarray(L["flooded"], float) / 100 if "flooded" in L else None, tilt=tilt,
                   coastal={k: np.asarray(L[k], float) / 100 for k in COASTAL if k in L})
     return {WORLD_LAYERS[s]: pack(v) for s, v in col.items()}
@@ -352,7 +375,7 @@ def zoom_images(Lz: dict, nu: np.ndarray, lat: np.ndarray, tilt: float = 23.4) -
     col = seasons(lat, elev=f["elevation"].astype(float), water=f["water"], lake_depth=f["lake_depth"],
                   temp=temp, t_warm=tw, t_cold=tc, p_jul=pj, p_jan=pn, mo=mo,
                   nu=nu, cover=f["plant_cover"].astype(float) / 100, tree=f["tree_cover"].astype(float) / 100,
-                  ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"), lake_kind=f.get("lake_kind"),
+                  ice=f["ice"], rock=f.get("surface_rock"), landform=f.get("landform"), soil=f.get("soil"), lake_kind=f.get("lake_kind"),
                   wet=(f["wetland"] > 0) * 0.6 if "wetland" in f else None, tilt=tilt,
                   coastal={k: f["coastal_life"] == i for k, i in ZOOM_COASTAL.items()} if "coastal_life" in f else None)
     return {k: v.reshape(ny, nx, 3) for k, v in col.items()}

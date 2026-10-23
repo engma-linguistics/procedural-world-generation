@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, coastal, humanuse, hydrology, ocean, satellite, soils, vegetation
+from . import climate, coast, coastal, gameattrs, humanuse, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, is_land, latlon, world_land, xyz
@@ -181,6 +181,9 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     layers.update(satellite.world_layers(grid, layers, tilt))
     # human-use layers (humanuse.py, PW-099): navigable rivers, harbours, passes, farmland, fresh water
     layers.update(humanuse.world_layers(grid, layers))
+    # game attributes of the plants and soils (gameattrs.py, PW-206): travel, sightlines, grazing, foraging,
+    # timber, fuel, building ground, mud, fire and green months, hazards
+    layers.update(gameattrs.world_layers(grid, layers, tilt))
 
     meta = {
         **meta,

@@ -203,6 +203,31 @@ def cmd_humanuse(args):
             print(S.rel(W.save(w, w["name"], rid)))
 
 
+def cmd_game(args):
+    """Adds (or redoes) the game attributes of the plants and soils (PW-206) of saved worlds and zooms in place;
+    with --satellite also the satellite view (its bare ground follows the soils)."""
+    from . import gameattrs as GA
+    from . import satellite as SAT
+    from . import zoom as Z
+    for ref in args.ids:
+        kind, _, rid = ref.rpartition(":")
+        kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
+        if len(kinds) != 1:
+            raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
+        if kinds[0] == "zoom":
+            print(S.rel(Z.add_game(rid)))
+            if args.satellite:
+                Z.add_satellite(rid)
+        else:
+            path = S.find_world(rid)
+            w = W.load(path)
+            tilt = float(w["meta"].get("params", {}).get("tilt", 23.4))
+            w["layers"].update(GA.world_layers(w["grid"], w["layers"], tilt))
+            if args.satellite:
+                w["layers"].update(SAT.world_layers(w["grid"], w["layers"], tilt))
+            print(S.rel(W.save(w, w["name"], rid)))
+
+
 def cmd_resources(args):
     """Adds (or redoes) the resource likelihood layers (PW-155) of saved worlds in place, or sites concrete
     deposits in saved zooms (PW-610: zoom_resources.py; the world is not written)."""
@@ -481,6 +506,12 @@ def main():
     hu = sub.add_parser("humanuse", help="add or redo the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms (in place)")
     hu.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     hu.set_defaults(func=cmd_humanuse)
+    ga = sub.add_parser("game", help="add or redo the game attributes of the plants and soils (travel, sightlines, "
+                                     "grazing, foraging, timber, fuel, building ground, mud, fire and green months, "
+                                     "hazards) of saved worlds and zooms (in place)")
+    ga.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
+    ga.add_argument("--satellite", action="store_true", help="also redo the satellite view")
+    ga.set_defaults(func=cmd_game)
     rs = sub.add_parser("resources", help="add or redo the resource layers (ores, coal, oil, salt, gems, stone; "
                                           "coarse likelihoods from the run's history) of saved worlds, or site "
                                           "concrete deposits in saved zooms (in place)")

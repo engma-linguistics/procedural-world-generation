@@ -13,6 +13,9 @@ Writes into one directory (default: <data root>/exports/<id>/):
   ice_thickness*   16-bit, the same way: m of land ice on the ground
   water*.png       8-bit ids: 0 land, 1 sea, 2 lake
   biome*, vegetation*, rock*.png   8-bit class ids (legend.json)
+  travel*, sightline*, grazing*, foraging*, timber*, fuel*, building*, mud_months*,
+  fire_months*, green_months*, hazards*.png   game attributes of the plants and soils
+                   (PW-206, gameattrs.py): value = stored x the layer's scale; masks 16-bit
   river_nav*, harbour*, pass*, fertile*, fresh_water*.png   8-bit human-use class ids
                    (PW-099, humanuse.py; legend.json); features.geojson gets the kinds
                    navigable_river, harbour, pass, spring and (worlds) fertile_land
@@ -38,8 +41,8 @@ gnomonic); a zoom keeps its native grid (--res = km per pixel, a multiple of
 the native one by block averaging). Big rasters are cut into --tile px tiles
 (--overlap px shared between neighbours: use 1 for 2^n + 1 terrain tiles).
 
-Layers are a registry (manifest layouts.<name>.layers): later layers
-(PW-206's game attributes) add entries and feature kinds without changing the format.
+Layers are a registry (manifest layouts.<name>.layers): later layers add entries
+and feature kinds without changing the format.
 """
 
 from __future__ import annotations
@@ -50,6 +53,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import gameattrs as GA
 from . import humanuse as HU
 from . import hydrology
 from . import projection as PJ
@@ -366,6 +370,17 @@ def _write_products(w: Writer, P: dict, lo: float, hi: float, folder: str = "", 
                 ids = np.where(valid, ids, NODATA_ID).astype(np.uint8)
             layers[k] = {"kind": "ids", "bits": 8, "legend": leg, "description": desc,
                          **({} if valid is None else {"nodata": NODATA_ID}), "files": w.write(k, ids, folder)}
+    # game attributes (gameattrs.py, PW-206): stored integers, value = stored x scale; masks 16-bit, bit 0 = January
+    for k in GA.NAMES:
+        if P.get(k) is not None:
+            dt, sc, units, desc = GA.LAYER_SPECS[k]
+            big = dt != "u1"
+            v = np.clip(np.round(np.nan_to_num(np.asarray(P[k], float)) / sc), 0, 65535 if big else 255)
+            layers[k] = {"kind": "mask" if units == "mask" else "scalar", "bits": 16 if big else 8, "units": units,
+                         "scale": sc, "value": f"stored x {sc}" if sc != 1 else "stored", "description": desc,
+                         **({"legend": "game.hazards"} if k == "hazards" else {}),
+                         **({} if valid is None else {"nodata": "see coverage"}),
+                         "files": w.write(k, v.astype(np.uint16 if big else np.uint8), folder)}
     if P.get("splat") is not None:
         for i in range(2):
             layers[f"splat_{i}"] = {"kind": "rgba", "bits": 8, "legend": "splat",
@@ -639,7 +654,7 @@ def _world_rasters(world: dict, pts: np.ndarray, shape: tuple, dx_m, dy_m) -> di
     for k, src in (("biome", "biome"), ("vegetation", "vegetation"), ("rock", "surface_rock")):
         if src in L:
             P[k] = sm.nearest(L[src]).reshape(ny, nx)
-    for k in HU.CLASS_MAPS:
+    for k in (*HU.CLASS_MAPS, *GA.NAMES):
         if k in L:
             P[k] = sm.nearest(L[k]).reshape(ny, nx)
     if "tree_cover" in L:
@@ -841,6 +856,8 @@ def export_world(path: Path, out: Path, res: int | None, tile: int, overlap: int
     hu, hu_tab = HU.analyse_world(world["grid"], world["layers"])  # (a stored layer wins; older worlds have none)
     for k, v in hu.items():
         world["layers"].setdefault(k, v)
+    if "travel" not in world["layers"]:  # (game attributes, PW-206; older worlds have none)
+        world["layers"].update(GA.world_layers(world["grid"], world["layers"], float(meta.get("params", {}).get("tilt", 23.4))))
     width = int(res or WORLD_WIDTH)
     wr = Writer(out, tile, overlap, raw)
     mv = valid = None
@@ -980,7 +997,7 @@ def _zoom_products(A: dict, r_dx, r_dy) -> dict:
     water = A.get("water", np.where(el > 0, 0, 1)).astype(np.uint8)
     P = {"elevation": el, "ice": A.get("ice"), "water": water, "biome": A.get("biome"),
          "vegetation": A.get("vegetation"), "rock": A.get("surface_rock"),
-         **{k: A[k] for k in HU.CLASS_MAPS if k in A}}
+         **{k: A[k] for k in (*HU.CLASS_MAPS, *GA.NAMES) if k in A}}
     if "tree_cover" in A:
         P["splat"] = splat_weights(
             slope_deg(el, r_dx, r_dy), np.asarray(A.get("ice", 0 * el), float),
@@ -995,7 +1012,8 @@ def export_zoom(d: Path, out: Path, res: float | None, tile: int, overlap: int, 
     meta, L = Z.load(d, decode=True)
     nat = float(meta["res_km"])
     f = 1 if mv_args else max(int(round((res or nat) / nat)), 1)
-    cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland", *HU.CLASS_MAPS, "spring")
+    cat = ("water", "biome", "vegetation", "surface_rock", "rock", "lake_kind", "wetland", *HU.CLASS_MAPS, "spring",
+           "fire_months", "green_months", "hazards", "mud_months")
     hu, hu_tab = HU.analyse_zoom(L, nat, HU.falls_pixels(meta.get("stats", {}).get("falls", []),
                                                         Z.Frame(meta["center"]["lat"], meta["center"]["lon"]),
                                                         meta["nx"], meta["ny"], nat))
@@ -1244,7 +1262,7 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
     lo, hi = r.pop("height")
     legend = S.legends()
     leg = {"water": list(WATER), "biome": legend["biomes"], "vegetation": legend["vegetation"]["types"],
-           "rock": legend["rocks"], **legend["human_use"],
+           "rock": legend["rocks"], **legend["human_use"], "game": legend["game"],
            "splat": [{"channel": i, "file": f"splat_{i // 4}", "component": "RGBA"[i % 4], "name": n, "color": c}
                      for i, (n, c) in enumerate(SPLAT)]}
     (out / "legend.json").write_text(json.dumps(leg, indent=1))
@@ -1261,8 +1279,12 @@ def export(ref: str, out: str | Path | None = None, *, res: float | None = None,
         "human_use": "PW-099 (humanuse.py): class-map layers river_nav, harbour, pass, fertile, fresh_water (legend.json "
                      "has each one's ids) and feature kinds navigable_river (lines), harbour, pass, spring, "
                      "fertile_land (worlds) in features.geojson. Derived from the simulation's fields, not new physics.",
-        "reserved": "Further layers (PW-206 game attributes) are added as new entries of "
-                    "layouts.<name>.layers and new feature kinds, not new top-level keys.",
+        "game": "PW-206 (gameattrs.py): scalar layers travel (x walking time), sightline (m), grazing, foraging, timber, "
+                "fuel, building (0-5), mud_months, and 16-bit masks fire_months, green_months (bit 0 = January) and "
+                "hazards (legend.json game.hazards: bit, name, rule); value = stored x scale (each layer says). "
+                "Computed from the plant and soil layers by written-down rules, not new physics.",
+        "reserved": "Further layers are added as new entries of layouts.<name>.layers and new feature kinds, not new "
+                    "top-level keys.",
     }
     (out / "manifest.json").write_text(json.dumps(_clean(manifest), indent=1))
     log(f"  {len(list(out.rglob('*')))} files, {r['features']['counts']}")
