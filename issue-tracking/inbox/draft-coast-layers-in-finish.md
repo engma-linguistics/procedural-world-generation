@@ -1,0 +1,24 @@
+---
+title: "Coast layers: fold coastform into world.finish, or keep them an add-on (planet coast)?"
+type: task
+status: needs-decision
+parent: PW-097
+milestone: v2
+subsystem: coast
+effort: xs
+impact: med
+found_by: coast-detail
+blocked_by: []
+relates: [PW-097, PW-155]
+refs: [planet/coastform.py, planet/world.py, docs/proposals/coast_detail.md]
+---
+
+## Description
+The coast-form layers (coast_type, barrier, cliff, seabirds, seals, nav_hazard; planet/coastform.py) are made
+by an add-on, `planet coast <world>`, like the resource layers, so no existing world output changes. New
+worlds therefore lack them until someone runs the command.
+- A: call `coastform.world_layers` at the end of `world.finish` (after humanuse): every world has them,
+  ~1 s per L6 world; adds layers to every world file (no existing layer changes).
+- B: keep the add-on; `planet make` / the one-command flow runs it.
+- C: leave as is.
+Lean: A, once the owner has looked at the classes in the viewer (docs/review/coast_detail/).
