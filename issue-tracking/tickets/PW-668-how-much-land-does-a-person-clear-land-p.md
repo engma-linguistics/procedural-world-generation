@@ -1,4 +1,5 @@
 ---
+id: PW-668
 title: How much land does a person clear? Land-per-person constants and the farming densities behind the cleared shares
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: anthro
 blocked_by: []
 relates: [PW-662, PW-650]
 refs: [planet/lineages/landuse.py, "run 8bac4d", "run c646ea"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,6 @@ Options:
 - A (lean): leave as is. The overlay shows where peoples live and farm; the cleared share rises if the farming densities do.
 - B: raise farming densities on prime land (e.g. a `density` bonus for `agricultural` peoples on class 3-4 farmland: intensification) so a few lowlands reach 40-60 /km² while the world total stays near today's. That changes the peoples' numbers and the spread; a PW-650 knob, and the owner's call.
 - C: make the constants planet-relative (scaled to the world's own best farmland yield, as `land.goods` does for goods) instead of Earth-shaped.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-anthro-land-per-person.md (found by anthro).

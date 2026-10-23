@@ -1,4 +1,5 @@
 ---
+id: PW-667
 title: Feed the peoples' land cover (fields, pasture, burned grass, managed woods) back into the zoom's plants
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: anthro
 blocked_by: []
 relates: [PW-662]
 refs: [planet/lineages/landuse.py, planet/zoom_vegetation.py, "run 8bac4d", "run c646ea"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,3 +27,6 @@ Out of scope for PW-662; what to try: when a regional zoom is made for a world t
 Keep it opt-in, written as a second vegetation layer or a flag on the zoom, so wild-vegetation zooms and their goldens stay as they are.
 - [ ] a zoom of a settled region shows fields on flat fertile ground and woods thinned near settlement
 - [ ] a zoom made without a peoples run is unchanged
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-anthro-feedback-zoom-plants.md (found by anthro).
