@@ -337,3 +337,8 @@ Proposed model:
   - orcs → `steppe_orc` (nomadic, steppe, grazing) and `forest_orc` (forest, timber, density 2, insular);
   - humans → `human_seafarer` (coastal, sea share 0.8, harbour), `human_farmer` (agricultural, fertile, density 12), `human_nomad` (nomadic, steppe, density 0.8, explore 0.7).
 - **Cost.** A group is a line in the loop. Six groups add ~15% runtime at L7.
+- **Scope: shallow on purpose** (owner, 2026-10-24). A group is "culture instead of genetics" only as far
+  as a way of life goes: habitat niche, traits, land use and wishes within a people. No languages,
+  religions, customs, cultural spread or assimilation, or effects of culture on peoples: those belong to the
+  civilization-simulation epic PW-661. Model and UI stay minimal: a row per group, an expandable row in the
+  Peoples tab, roll-ups in the results.
