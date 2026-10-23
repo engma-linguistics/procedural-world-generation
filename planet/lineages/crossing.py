@@ -155,7 +155,7 @@ class Crossings:
         Lmax = max(m[2] for m in ms)
         maxd = int(min(6 * Lmax / self.cell_km, 200))
         d = sea_gap(src, land, g.nbr_off, g.nbr_idx, maxd)
-        lab, n = g.components(land)
+        lab = tags["label"]  # (this epoch's land components, history._tags)
         heldc = np.unique(lab[held & (lab >= 0)])
         cand = land & (d > 0) & (K > est) & (room > est) & (lab >= 0) & ~np.isin(lab, heldc)
         if not cand.any():

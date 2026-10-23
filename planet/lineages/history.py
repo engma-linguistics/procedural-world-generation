@@ -19,6 +19,7 @@ from . import spec as SP
 from .crossing import Crossings, corridor
 from .spread import EST, nearest_label, rings, spread
 
+HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then
@@ -411,6 +412,7 @@ class History:
         self.active = {l.id: False for l in L}
         self.started, self.ended = {}, {}
         self.crossings_n: dict[str, int] = {}
+        self._hop_dt = np.zeros(len(L))
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
         budget = np.zeros(len(L))
@@ -497,7 +499,13 @@ class History:
                     how = "overland" if step.epoch == "deep" else "land bridge" if l.trait("sea", 0.0) == 0 and not (
                         step.ago <= SP.LATE_SEA_KYR and l.trait("late_sea", 0.0)) else "strait"
                     self.cross.note(l.id, self.p[k] >= EST, step.ago, how, self.events, l.label())
-                    for cell, way, gap in self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, step.dt, self.rng, EST):
+                    # long crossings, looked at about once a kyr (the chance is per kyr; centuries add up)
+                    self._hop_dt[k] += step.dt
+                    landings = []
+                    if self._hop_dt[k] >= HOP_EVERY_KYR or step.epoch == "deep":
+                        landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self.rng, EST)
+                        self._hop_dt[k] = 0.0
+                    for cell, way, gap in landings:
                         blob = rings(int(cell), K > EST, 1, g.nbr_off, g.nbr_idx) & (room > EST)
                         blob[cell] = True
                         self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
