@@ -1,4 +1,5 @@
 ---
+id: PW-594
 title: "The SH gyres' western boundary currents warm their coasts 3-5 C too far south: Tasman SST 19.3 (NCEP air 15.2), Agulhas +1.3, Tasmania warmest +6.0"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA13
 blocked_by: []
 relates: [PW-589, PW-017]
 refs: [planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -29,3 +32,6 @@ subtropics' warmth (reach `relax_km` × speed / `cur_ref`) all the way to 45S.
 What to check: where the gyre streamfunction closes against the circumpolar band (`currents`, `_circumpolar`); and
 whether the westerlies' equatorward Ekman transport (cold water north) is missing from `sea_surface`.
 - [ ] Tasman / Agulhas near-land SST within 2 C, without cooling the SH subtropics' east coasts' summers below NCEP
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-sh-western-boundary-currents-too-warm.md (found by base-climate-laneA13).

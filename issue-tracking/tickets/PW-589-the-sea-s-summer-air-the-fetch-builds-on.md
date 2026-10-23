@@ -2,7 +2,7 @@
 id: PW-589
 title: "The sea's summer air the fetch builds on is 2-6 C too cold off W Europe, Scandinavia and Alaska and 2-5 C too warm in the SH: the annual SST, not the swing"
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v1
 subsystem: ocean
@@ -48,4 +48,5 @@ Europe and Fennoscandia under main's.
 - [ ] NE Atlantic, North Sea and Gulf of Alaska summer sea air within 2 C of NCEP, without warming the Tasman further
 
 ## Updates
+- 2026-10-22: Status todo -> done. 2026-10-22 merged (lane A13): the overturning's heat comes off the mean over each latitude's sea in both hemispheres (fold=True). Near-land SST rows within +-2 C 3/8 -> 5/8; Fennoscandia summer -5.7 -> -3.9, winter -6.0 -> -4.5; W Europe summer -2.1 -> -1.2 (bar +0.4 missed: the summer swing, new ticket); rain r 0.620.
 - 2026-10-22: Created from inbox draft draft-near-land-sea-summer-air-cold-north-warm-south.md (found by base-climate-laneA12).

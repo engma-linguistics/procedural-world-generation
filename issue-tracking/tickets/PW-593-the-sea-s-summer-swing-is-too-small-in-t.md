@@ -1,4 +1,5 @@
 ---
+id: PW-593
 title: "The sea's summer swing is too small in the NH (NE Atlantic 1.7 vs 3.2 C, Norwegian Sea 1.8 vs 4.0, NE Pacific 2.0 vs 3.9) and too big off SH coasts: one 50 m layer for every summer, whatever the wind"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: base-climate-laneA13
 blocked_by: []
 relates: [PW-589, PW-580, PW-573]
 refs: [planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt, docs/review/base-climate/stages.md]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -43,3 +46,6 @@ Not done in lane A13: the depth goes as U^3, so it needs its own measurement pas
 test, the lakes).
 - [ ] the summer's mixed layer from the summer wind (and the summer heating), not a fixed 50 m
 - [ ] W Europe's warmest month no worse than +0.4; NE Atlantic / NE Pacific summer sea air within 2 C
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-sea-summer-swing-wind-mixed-layer.md (found by base-climate-laneA13).

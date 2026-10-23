@@ -1,5 +1,6 @@
 ---
-title: "With the overturning's heat folded over both hemispheres (PW-589), the NH open sea at 45-65N is 1.8-5 C too warm, and the inflow seas' winters are too mild (Norwegian coast sea air 6.6 vs NCEP 3.5)"
+id: PW-592
+title: With the overturning's heat folded over both hemispheres (PW-589), the NH open sea at 45-65N is 1.8-5 C too warm, and the inflow seas' winters are too mild (Norwegian coast sea air 6.6 vs NCEP 3.5)
 type: task
 status: todo
 parent: PW-470
@@ -11,6 +12,8 @@ found_by: base-climate-laneA13
 blocked_by: []
 relates: [PW-589, PW-583, PW-458]
 refs: [planet/ocean.py, planet/climate.py, docs/review/base-climate/laneA13/bands_fold.txt, docs/review/base-climate/laneA13/climate_bias_a1.txt]
+created: 2026-10-22
+updated: 2026-10-22
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Candidates:
 The Barents (PW-583) does not share PW-589's cause. The fold warms it only 0.5–0.8 C (annual −5.7 → −5.2, coldest
 month −13.1 → −12.3), so its too-cold inflow stays PW-583's.
 - [ ] NH open sea 45–65N within 2 C without losing the band means
+
+## Updates
+- 2026-10-22: Created from inbox draft draft-nh-open-sea-and-inflow-winters-too-warm.md (found by base-climate-laneA13).
