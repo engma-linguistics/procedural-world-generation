@@ -1,0 +1,86 @@
+Using CPython 3.14.7
+Creating virtual environment at: .venv
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 10 packages in 48ms
+=== overturning: Earth L6, dT +0.0 (13 s) ===
+  NH sinking 14.37 Sv, heat 1.230 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  92%
+  SH sinking  5.97 Sv, heat 0.000 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  46%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    69.8   -24.1  14.02  4.454   1.215   5513638      361.8  0.63
+   -78.0   -46.2   2.84  2.834   0.000   1513759      361.8  0.49
+   -79.5  -152.9   2.31  3.022   0.000   1491536      361.8  0.52
+   -67.5    71.2   0.39  1.935   0.000    340557      361.8  0.51
+   -68.7    28.2   0.37  1.849   0.000    531487      361.8  0.55
+    53.0   143.6   0.18  6.058   0.015    211699      361.8  0.56
+   -66.6   122.8   0.12  1.871   0.000     97590      361.8  0.54
+  by sea (Sv): Nordic Seas 6.41, Barents / Kara 1.63, Irminger / Iceland S 2.50, Labrador Sea 2.79, Baffin Bay 0.40, North Atlantic 40-55N 0.13, North Pacific >40N 0.18, Weddell 2.23, Ross 1.39, Southern Ocean (all) 5.97
+  Norwegian coast sea (62-72N 5W-15E): open in winter 100% of area, coldest-month SST 4.4 C, sea air 4.2 C (NCEP ~+3.5)
+  Fennoscandia (ice-free land): coldest month -14.5 vs -8.5 (-6.0), warmest 8.3 vs 14.0 (-5.7)
+=== overturning: world 119973 L6 (2 s) ===
+  NH sinking 15.80 Sv, heat 1.597 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking 16.33 Sv, heat 1.681 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  95%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -78.4  -107.0  16.39  5.251   1.681  15430704      313.8  1.00
+    81.4   -22.1  15.72  5.065   1.597  17116068      313.8  1.00
+=== overturning: world 28442c L6 (2 s) ===
+  NH sinking 16.98 Sv, heat 1.811 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking 15.67 Sv, heat 1.616 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    81.1    56.8  16.98  5.454   1.811  15838296      340.7  1.00
+   -87.2   -10.4  15.63  5.013   1.616  16656163      340.7  1.00
+=== overturning: world 607540 L6 (2 s) ===
+  NH sinking 16.30 Sv, heat 1.675 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  98%
+  SH sinking 13.82 Sv, heat 1.306 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    85.1  -163.9  16.35  5.256   1.675  17651812      329.8  1.00
+   -81.9   162.4  13.75  4.365   1.306  12977472      329.8  1.00
+=== overturning: world 81aced L6 (2 s) ===
+  NH sinking 14.82 Sv, heat 1.528 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  87%
+  SH sinking 12.73 Sv, heat 1.163 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    76.2   137.7  14.75  4.743   1.528   6982688      336.3  0.71
+   -78.0   -55.5  11.72  4.025   1.077   7884721      336.3  1.00
+   -67.4   157.8   1.05  4.103   0.086    694846      336.3  0.98
+=== overturning: world 7082f5 L6 (2 s) ===
+  NH sinking  8.03 Sv, heat 0.709 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  87%
+  SH sinking 15.07 Sv, heat 1.414 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -69.9   -38.1   8.31  4.704   0.743   3726524      339.0  0.80
+   -63.2  -171.6   6.78  4.861   0.671   3412526      339.0  0.92
+    62.1    57.5   4.47  4.495   0.400   3229886      339.0  1.00
+    57.3   -60.5   2.31  4.681   0.210   1351018      339.0  1.00
+    58.5  -142.3   1.08  4.253   0.099   1791281      339.0  1.00
+=== overturning: world d14b89 L6 (2 s) ===
+  NH sinking 15.85 Sv, heat 1.617 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  95%
+  SH sinking 18.32 Sv, heat 1.938 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -81.1   -77.8  18.24  5.825   1.938  16766099      341.4  0.71
+    77.6   -85.2  11.27  5.274   1.163  12685994      341.4  1.00
+    68.6   118.4   4.50  4.475   0.441   5699219      341.4  1.00
+    56.3    83.0   0.15  4.177   0.013    373021      341.4  0.58
+=== overturning: world a5a387 L6 (2 s) ===
+  NH sinking 10.03 Sv, heat 0.854 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  76%
+  SH sinking 15.81 Sv, heat 1.501 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  94%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+   -70.5     0.4  15.02  4.937   1.454   8120457      341.4  0.61
+    62.3   124.7   7.83  3.940   0.636   4076629      341.4  0.97
+    59.3   -45.2   1.75  3.800   0.156   1081324      341.4  0.38
+    70.0    47.8   0.35  5.516   0.035     97861      341.4  0.59
+   -63.3  -107.8   0.28  4.694   0.028    233378      341.4  0.53
+    57.3    19.5   0.26  5.319   0.027    255932      341.4  0.75
+   -54.6   -86.1   0.20  4.667   0.019    664091      341.4  0.61
+=== overturning: world dad91b L6 (2 s) ===
+  NH sinking 13.60 Sv, heat 1.313 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  97%
+  SH sinking  2.47 Sv, heat 0.241 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  58%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    84.6   -25.2  13.45  4.302   1.313  18167742      325.3  1.00
+   -67.0    58.1   2.62  4.097   0.241   2159837      325.3  0.86
+=== overturning: world c00ebf L6 (2 s) ===
+  NH sinking 11.70 Sv, heat 0.974 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  78%
+  SH sinking 11.83 Sv, heat 1.054 PW, poleward of 55 in open sea (>= 0.55 within 1000 km):  77%
+     lat     lon     Sv   drho heat PW  area km2 basin Mkm2  open
+    67.7   -22.0  11.58  3.597   0.974  11094454      343.2  1.00
+   -64.5    10.0   6.45  3.446   0.576   7293429      343.2  1.00
+   -59.0   143.3   5.37  3.978   0.478   3879952      343.2  0.79

@@ -1077,3 +1077,93 @@ Variants measured and dropped:
 - The Earth zoom's honest give-back and interglacial ice are worse, and the dT-0 run no longer follows the orbit.
 - That agrees with the earlier checkpoint: what holds the ice under the honest rules is the ice-surface air
   (PW-569 / PW-439), which now meets cooler polar summers. So it goes back to the ice lane.
+
+## PW-589: the overturning's heat between the hemispheres (lane A13), attempt 1 of 3
+
+**Green and merge-ready. Of the bars, the near-land SST, Fennoscandia, rain and stages 1–3 pass. W Europe's warmest
+month misses (−1.2 against +0.4).** What is left is the sea's summer swing, which is a different mechanism
+(`issue-tracking/inbox/draft-sea-summer-swing-wind-mixed-layer.md`).
+
+Files in `laneA13/`:
+- `bands.py` and its outputs `bands_base.txt` (main), `bands_z0.txt` (`moc_zonal` 0) and `bands_fold.txt` (this).
+  They give per-band and per-box annual / warmest / coldest sea air against NCEP, near land and in open sea, and
+  the SST's parts: t_eq, the gyres' anomaly and the overturning's heat.
+- `p3_fold.txt` (lane A12's stage-3 probe).
+- The tool outputs `*_before.txt` / `*_a1.txt`, and `checkpoint/`.
+
+### Measured first (main, `bands_base.txt`)
+- **Not upwelling, and not the gyres, in the north.** The gyres' near-land anomaly at 45–70N is −0.1 … +0.8 C.
+- **The overturning's heat is the cause.** `moc_zonal` = 1 took the inflow's warmth off each latitude band's own
+  mean (PW-265). So every NH cell off the inflow's path was cooled by the band's share of the North Atlantic's heat:
+  Gulf of Alaska −2.4 C, Baltic −2.3, NE Pacific −1.2, North Sea −0.4.
+  - The NH band means at 55–70N came out 2.9–3.6 C too cold, while the SH's were left untouched (+1.4 … +2.2 C too
+    warm at 40–60S).
+  - t_eq is one curve for both hemispheres. NCEP's sea is 1.6–2.4 C warmer in the north than at the same latitude
+    in the south (7 C at 65N). Earth's overturning heat by band, E_N, is 1.0 / 1.5 / 2.5 / 3.7 / 4.2 C at
+    40 / 45 / 50 / 55 / 60N: close to NCEP's north-minus-south at 40–65N.
+- **The sea's own swing** is the other half of the summer bias, a separate one:
+  - NH half-swings are too small: NE Atlantic 1.7 against 3.2, Norwegian Sea 1.8 / 4.0, NE Pacific 2.0 / 3.9.
+  - SH coasts' are too big: off Patagonia 6.2 / 3.7, Tasman 3.7 / 2.7.
+  - Drafted, not changed.
+- **The SH's warm coasts at 35–45S are the gyres' western boundary currents** (Tasman +5.0, Agulhas +3.1), not
+  PW-017's southern sinking (`draft-sh-western-boundary-currents-too-warm.md`).
+- **The Barents (PW-583) doesn't share the cause.** The fix warms it only 0.5–0.8 C (annual −5.7 → −5.2 C, coldest
+  month −13.1 → −12.3): its inflow arrives too cold, as PW-583 says.
+- `moc_zonal` 0 (no compensation at all) fixes the off-path coasts but makes heat: the ocean's air is +0.25 C
+  warmer, and the NH open sea +3 … +5.7 C.
+
+### What changed (`planet/climate.py` `zonal_mean(fold=)`, `sea_surface`; `planet/ocean.py` `solve`)
+- The overturning's heat E is now taken off the mean over each latitude's sea **in both hemispheres together**
+  (`zonal_mean(..., fold=True)`), not each band's own.
+- Heat is still conserved. t_eq is symmetric, so it can only stand for the two hemispheres' average overturning.
+  What one hemisphere's overturning carries beyond the other's is now that hemisphere's own warmth, taken from the
+  other hemisphere's sea at the same latitude. That is the north's sinking drawing warm water across the equator.
+- No new constant. A planet that sinks equally in both hemispheres is unchanged. One that sinks in one hemisphere
+  gets a warm hemisphere.
+
+### The bars (Earth L6; main → this)
+| bar | main | this |
+|---|---|---|
+| PW-589 SST rows within ±2 C of NCEP's annual air: NE Atl / Biscay–N Sea / Norw / Baltic / G Alaska / NE Pac / Patagonia / Tasman | −1.0 / −4.0 / −1.7 / −6.3 / −3.2 / −2.6 / +1.9 / +4.4 (3 of 8) | +0.1 / −2.7 / +0.9 / −4.3 / −1.5 / −1.7 / +1.4 / +4.1 (**5 of 8**) |
+| near-land annual sea air by 5° band, within ±2 C | NH 55–70N −3.6 … −4.5 (3 rows out); SH 40–45S +2.4, 60–65S −4.3 | NH all rows within except 65–70N −2.0; SH 40–45S +2.1, 60–65S −5.1 |
+| NH / SH ocean mean sea-air bias | −0.74 / +0.60 | −0.34 / +0.31 (global mean unchanged, 16.42) |
+| W Europe warmest (pre-stage-3 +0.4) | −2.1 | **−1.2** (misses) |
+| Fennoscandia warmest / coldest (pre-stage-3 −5.2) | −5.7 / −6.0 | **−3.9 / −4.5** |
+| log-rain r ≥ 0.617 / Köppen group / exact | 0.620 / 69.5 / 31.7 | 0.620 / 69.9 / 32.1 |
+| Iceland warmest / coldest | +0.7 / −10.0 | +3.2 / **−3.7** |
+| Alaska / Kola warmest | −5.2 / −4.9 | −4.9 / −4.3 |
+| NH coasts' range 0–150 / 150–400 km (NCEP 26.4 / 30.8) | 24.9 / 29.9 | 25.1 / 30.1 |
+| SH coastal range (≤ 1.3× NCEP 9.6) | 12.4 | 12.4 (1.29×) |
+| humid warmest: Labrador / HB lowlands / E Australia | +2.0 / +3.7 / +1.8 | +3.2 / +4.0 / +1.8 |
+| winter sea ice N / S (NCEP 16.8 / 20.2 Mkm2) | 18.2 / 21.5 | 16.8 / 23.3 (+15%, within ±25%) |
+| Southern Ocean 60–70S coldest month | −3.6 | −4.7 |
+
+- **Stage 1 holds:**
+  - Earth NH 14.37 → 13.86 Sv at 90% open polar sea;
+  - the Norwegian coast is open 100%, its sea air 4.2 → 6.6 C (NCEP ~3.5: now too mild);
+  - the 9 worlds' sinking is within ±0.6 Sv per hemisphere, all sink in both.
+- **Stage 2 holds:**
+  - Hudson Bay, Baffin and Okhotsk freeze (coldest month −19.9 / −29.0 / −4.1);
+  - Labrador / HB lowland winters +2.9 / +5.0;
+  - the Antarctic pack's winter −1.5.
+- **Stage 3's humid summers are a little warmer.** Labrador loses its in-bar +2.0. The NH open sea at 45–65N is
+  now +1.8 … +5 C (it was +0.5 … +2.6), and the inflow seas' winters are milder
+  (`draft-nh-open-sea-and-inflow-winters-too-warm.md`).
+
+### Tests and the checkpoint
+- `uv run pytest -q`: 568 passed, with the goldens regenerated on purpose.
+- The L4 endings test: 71.8 / 11.7 m (bar left < extra / 2).
+- Scorecard line `964a132+dirty`: Earth group 69.9, r 0.62; seed 1 ice 1.6%, seed 2 4.8%.
+- Checkpoint (`laneA13/checkpoint/`; measured only, the defaults are unchanged), stage 3 → this:
+
+| check | defaults | honest rules |
+|---|---|---|
+| `tests/test_timezoom_cycle.py` | 10 passed → **10 passed** | 9 passed, 1 failed → 9 passed, 1 failed (endings 42.9 / 42.7 → 33.7 / 41.1 m) |
+| `tz_earth.py` maxima (≤ −80 m) | −88 … −104 ok → −80 … −100 ok | −80 … −96 F → −75 … −90 F |
+| ... give-back ≥ 0.6 | 0.65–0.87 ok → 0.62–0.86 ok | 0.45–0.81 F → 0.49–0.78 F |
+| ... interglacial ice 9–12% | 9.8–13.3 F → 9.7–12.9 F | 13.4–14.9 F → 13.1–14.7 F |
+| ... cooling ≤ 6 C | 6.55 F → 6.41 F | 6.55 F → 6.41 F |
+| `tz_earth.py --dt0` (honest: area within 20%, follows the orbit) | | 1.36×, corr 0.02 → 1.26×, corr 0.12 (both F) |
+
+The defaults stay green and slightly closer on every bar. The honest rules are still red on the endings test and
+the Earth zoom's bars, as in the stage-3 checkpoint: that still points to the ice lane (PW-569 / PW-439).
