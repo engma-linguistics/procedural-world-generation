@@ -2288,6 +2288,10 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
         half_w = air["half_w"] = ocean_mod.winter_half(sea_half, oc["share"], tune)
         t_warm, t_cold, temp, _ = _orbit(_air_temps(sst=sst, **air), orbit_dt, north)
         t_warm, t_cold, temp, _, _ = _land_finish(t_warm, t_cold, temp, **fin)
+    # A shelf sea's water is the air's more than the currents' (_shelf_air): the North Sea's and the Baltic's
+    # winters are the Atlantic air's that crossed Britain and Denmark, the Yellow Sea's the monsoon's off China.
+    # (After the overturning, like its warmth: the rain and the sinking don't see it.)
+    sst = _shelf_air(grid, ocean, sst, t_sea, v_ann, -elev, _open_air(t_warm + lift, t_cold + lift), tune)
     # The wind belts follow the air masses (front_shift): with the finished
     # air, a warm polar sea pulls the westerlies north over it and a cold
     # continent lets the polar air south. The land-sea winds stay the first
@@ -2417,6 +2421,36 @@ YEAR_S = 365.25 * 86400.0
 SEA_ALBEDO = 0.06
 SUN_SURFACE = 0.5  # share of the top-of-atmosphere sunshine that reaches the ground (Angstrom's 0.25 + 0.5 x
 # sunshine, at half the day sunny)
+
+
+def _open_air(t_warm, t_cold):
+    """The year's mean of the air as a sea's water feels it: the months'
+    sine between t_cold and t_warm, but no colder than freezing, since the
+    sea's ice keeps the colder air off the water."""
+    m, amp = 0.5 * (t_warm + t_cold), np.maximum(0.5 * (t_warm - t_cold), 1e-6)
+    th = np.arcsin(np.clip((FREEZE - m) / amp, -1.0, 1.0))
+    return FREEZE + ((m - FREEZE) * (np.pi - 2 * th) + 2 * amp * np.cos(th)) / (2 * np.pi)
+
+
+def _shelf_air(grid, ocean, sst, t_eq, v, depth, t_air, tune):
+    """The sea temperature on the shelves (PW-592). The currents carry the
+    water's warmth (or cold) in a layer moc_layer_m deep (the overturning's
+    inflow, the gyres' thermocline), and the shelf break steers them along
+    it (geostrophic flow follows the depth contours), so on a shelf only
+    depth / moc_layer_m of their anomaly (sst - t_eq) comes onto it. The rest
+    of a shallow column's temperature is the air's: it takes on the air the
+    wind brings, which is the land's (t_air: its annual air at sea level as
+    the water feels it, _open_air) where that came off land, and the
+    water's own over the sea it crossed. So the
+    North Sea gets the Atlantic air that crossed Britain instead of the
+    latitude's mean, and the Yellow Sea the monsoon air off China; the deep
+    sea next to them is left as it was. Not kept to each band's mean: the
+    heat is the air's, not moved round the ocean."""
+    anom = np.where(ocean, sst - t_eq, 0.0)
+    f = np.where(ocean, np.clip(1.0 - np.maximum(depth, 0.0) / tune["moc_layer_m"], 0.0, 1.0), 0.0)
+    a = np.where(ocean, (1.0 - f) * anom, t_air - t_eq)
+    z = carry(grid, v, a, f, 4 * tune["air_km_w"], 0.25)
+    return np.where(ocean, np.maximum(t_eq + z, FREEZE), sst)
 
 
 def _sea_half(lat, tilt, s, land_air, tune):
