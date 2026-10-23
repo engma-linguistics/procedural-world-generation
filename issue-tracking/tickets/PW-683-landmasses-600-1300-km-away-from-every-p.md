@@ -2,7 +2,7 @@
 id: PW-683
 title: Landmasses 600-1300 km away from every people's home stay unreached by non-seafaring peoples
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -20,5 +20,6 @@ updated: 2026-10-23
 PW-677 added canoes (from 60 kyr ago, 300 km reach, for peoples with a sea share). Gaps of 600-1300 km still wait for the voyages (6 kyr ago), which leaves the far continents (e.g. 3e9e7d's 7 Mkm2 north-Atlantic continent, 68% empty) to a few peoples by the present. Decide whether the long reach should open earlier for the most seafaring peoples (sea share >= 0.6) or stay a late event, and whether arrivals from outside the world (elves, gnomes, tritons) should pick their landing from more than one landmass.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): fill2 (e81da1d): crossing rates are plausible against Earth (Sahul ~50-65 kyr over ~100 km, Remote Oceania ~3 kyr); far land was left empty by pressure dying at crowded borders, fixed by the pioneer spread. 3e9e7d's far north-Atlantic continent 68% -> ~0-3% empty.
 - 2026-10-23: Created from inbox draft draft-cut-off-continents-need-longer-crossings.md (found by pw677).
 - 2026-10-24: fill2: crossing rates and reaches checked against Earth (Sahul, Remote Oceania): plausible, unchanged. The causes were pioneer pressure (a crowded people couldn't settle empty land) and cold landings; fixed in the spread (PIONEER_P) and by the arctic hunters. 3e9e7d's north-Atlantic continent 68% empty -> 1% (one run; empty in some seeds when no one crosses 1,564 km). Arrivals from outside: draft-arrivals-from-outside-pick-several-landmasses.
