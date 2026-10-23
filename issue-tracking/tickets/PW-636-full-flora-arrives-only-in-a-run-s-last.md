@@ -40,7 +40,17 @@ level is fixed or if late-run geography turns out atypical.
 - [ ] owner picks an option
 
 ## Updates
+- 2026-10-23: Thermostat lane 1024 step 2: fd7c174 re-applied on main + PW-680's fixed bed test. 611 passed; health (16 seeds) pooled deep share 12.3 -> 12.0%, icehouse +1.5 +- 9.3 points paired (no signal); golden regenerated; scorecard Earth 71.1%. Green to merge. docs/review/base-climate/thermostat-1024/.
 - 2026-10-23: Merge lane 1024 step 5: red on test_bed_settles_under_the_ice (47.1 m vs 46.2 m tolerance, one world, both re-rolled draws); not merged, held on PW-680. Branch worktree-agent-a7d7d62cbdfbcd691 kept.
 - 2026-10-23: Held branch worktree-agent-a7d7d62cbdfbcd691 (a3128cc): FLORA_PACE 0.8, C4 at ~0.68 of the run, 63-92 candidate frames. Health quick deepens icehouses (29 -> 43%); to be re-measured on top of PW-646 C (which amplifies sink-side changes ~29%) and PW-643's harness. Merge order: A20, then A22+C, then this.
+- 2026-10-23: Built (run lane, branch worktree-agent-a7d7d62cbdfbcd691). `vegetation.FLORA_PACE` = 0.8 scales every
+  group's Earth fraction in `group_windows`. GROUPS keeps Earth's numbers, order and spacing. 0.8 rather than
+  0.66/0.94 because draws land before the nominal fraction: the stored 1 Gyr runs had C4 at 772-872 Myr (mean ~0.83).
+  Windows at 1 Gyr, old -> new (Myr): marsh 46-99 -> 36-79; forests 114-247 -> 91-198; flowering 416-902 -> 333-721;
+  grasses 484-950 -> 388-840; C4/succulents 536-950 -> 429-929. On 3 new L6 1 Gyr runs (seeds 7, 13, 101) C4
+  arrived at 752, 660, 636 Myr (mean 0.68) and `representative_time` had 63-92 candidate frames (was 32-58). Picks
+  780, 772, 844 Myr, all within 30 m of the run's median sea level; the old 1 Gyr picks sat at 844-996. Golden
+  `sim_L4_s1_60myr.json` regenerated. Side effect: the quick health sweep runs icier (icehouse 29 -> 43%,
+  ice SL after 250 Myr -31 -> -50 m), filed as a draft against the thermostat question (PW-611/PW-576).
 - 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: option 2, compress the flora timeline under the presumption that a world's starting point is much earlier: C4 grasses and succulents at ~66% of the run instead of ~94%, the other groups earlier in proportion. Changes simulate outputs: serial physics lane.
 - 2026-10-23: Created from inbox draft draft-flora-arrives-late-in-runs.md (found by pw634-bug-hunt).

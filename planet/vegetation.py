@@ -227,6 +227,13 @@ GROUPS = [
     ("grasses and sedges", ("C3G", "TunH"), 0.85),
     ("C4 grasses and succulents (CAM)", ("C4G", "Succ"), 0.94),
 ]
+# A world's starting point is presumed to be much earlier in its planet's
+# history than land plants' arrival was in Earth's (PW-636, owner 2026-10-24):
+# Earth's sequence is compressed by this factor into the span, so the full
+# flora (C4 grasses and succulents) appears around two thirds of the way
+# through a run (~0.66 on the stored 1 Gyr runs' draws, was ~0.83) and a
+# showcase moment can be picked from the run's last third, not its last ~15%.
+FLORA_PACE = 0.8
 # Before its group exists, a PFT's niche is filled by the first available
 # PFT on its list, with that PFT's limits widened to cover it and its
 # efficiency reduced (STANDIN_EFF): conifer-like forest in the tropics before
@@ -269,13 +276,13 @@ def standin_map(unlocked: np.ndarray) -> np.ndarray:
 
 def group_windows(plants_from: float, end: float) -> list[tuple[float, float]]:
     """(earliest, latest) appearance time (Myr) of each group: from 0.6x to
-    1.3x its Earth fraction of the span from plants_from to the hard
-    deadline D = end - max(16 Myr, 5% of the span), every group by D."""
+    1.3x its Earth fraction, times FLORA_PACE, of the span from plants_from
+    to the hard deadline D = end - max(16 Myr, 5% of the span), every group by D."""
     span = max(end - plants_from, 1e-6)
     d = end - max(16.0, 0.05 * span)
     s = max(d - plants_from, 0.0)
     return [(plants_from + 0.6 * f * s, min(plants_from + 1.3 * f * s, d)) if f > 0 else (plants_from, plants_from)
-            for _, _, f in GROUPS]
+            for f in (FLORA_PACE * g[2] for g in GROUPS)]
 
 
 # ---------------------------------------------------------------------------

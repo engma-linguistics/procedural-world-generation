@@ -57,3 +57,29 @@ physics it names, so a chaotic world shouldn't flip it by its sheet's net volume
 
 Full `pytest -q -n 4`: **611 passed** in 1000 s (`step1/full.txt`). Main's physics is unchanged, so the health and
 Earth numbers are merge-1024 step 4's (main 12b2b02 has no run-physics change since 641ce4f).
+
+## Step 2: PW-636, FLORA_PACE 0.8 (fd7c174 cherry-picked)
+
+The change lines are fd7c174's (`vegetation.FLORA_PACE`, `group_windows`, overview). Conflicts: PW-636's Updates
+(both kept) and `tests/golden/sim_L4_s1_60myr.json`, **regenerated on purpose** (`--update-golden`; identical to
+merge-1024's step 5 golden). The branch's draft `draft-earlier-flora-deepens-ice.md` is left out: it is PW-657.
+
+- Full `pytest -q -n 4`: **611 passed** in 1087 s (`step2/full.txt`). The bed test passes on sim4 with step 1's
+  lag (47.1 m against 97.1 m). The multi-seed tests are merge-1024 step 5's three draws (all green): the runs are
+  bit-identical here (below), and the bed test reads only sim4, which the offset doesn't touch.
+- **Health** (`step2/health_def_101.md`). This lane's sweep on PW-636's tree reproduces merge-1024's step 5 sweep seed
+  for seed, so the step-1 baseline is merge-1024's step 4 sweep (the same physics):
+
+| sweep | pooled % kf < -150 m (step 1 -> 2) | seeds > 10% | old bar F | new bar F | icehouse % median / mean |
+|---|---|---|---|---|---|
+| defaults | 4.4 -> 17.4 | 1 -> 3 | 1 -> 0 | 2 -> 5 | 35.3 / 33.3 -> 53.0 / 46.1 |
+| 101-108 | 20.1 -> 6.6 | 5 -> 1 | 2 -> 1 | 3 -> 4 | 56.9 / 53.2 -> 42.2 / 43.4 |
+| all 16 | 12.3 +- 4.4 -> 12.0 +- 5.8 | 6 -> 4 | 3 -> 1 | 5 -> 9 | 47.1 / 43.3 -> 47.0 / 44.7 |
+
+  Paired by seed: deep share -0.3 +- 7.4 points, icehouse share +1.5 +- 9.3 (`step2/hpair.txt`). No signal either
+  way; the third seed set is in step 3.
+- **Earth:** unchanged by PW-636 (merge-1024 `step5_not_kept/earth`, the same physics). `tools/scorecard.py`
+  (`step2/scorecard.txt`): Earth group agreement 71.1% (exact 33.9%), log-rain r 0.649; seeds 1 and 2 at 1 Gyr: land
+  34.0 / 33.2%, ice 1.1 / 1.9%, dry 27.5 / 21.2%, crust volume x0.992 / x0.967, land NPP 361 / 391, C4 at 720 / 712 Myr.
+
+Green to merge.
