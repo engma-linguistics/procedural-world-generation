@@ -144,9 +144,27 @@ E_MIN, E_STEEP, S_STEEP, E_WIND = 0.001, 1.0, 30.0, 0.01
 # hollows keep soil under the steepest slopes).
 P0_REF, H0, H_MAX, H_MIN = 0.15, 0.5, 3.0, 0.1
 AGE_MAX = 5e7  # yr: a soil's age is at most this (relic surfaces)
+# Weathering profile (PW-329): under the soil the weathering front eats into
+# fresh rock at a rate that falls off with the saprolite above it (the
+# solutes must diffuse and drain out through it), R = R_SAP x leaching water
+# (m/yr) x warmth x e^(-D / D_SAP) mm/yr, so a surface wearing down at E keeps
+# D = D_SAP ln(R / E) of saprolite: tens of metres on old shields in the wet
+# tropics (Amazonia, the Congo, the West African and Brazilian shields:
+# 20-100 m; Nahon 1991, Tardy 1997), a few metres in hill country, none on
+# steep ranges or where little water leaches. The soil's material has spent
+# (D + h) / E on its way up from the front, which is the age its weathering
+# stage W counts (capped as the soil's, by glaciation, lava and AGE_MAX).
+# Front advance in the wet tropics ~0.02-0.05 mm/yr (Puerto Rico's
+# Rio Icacos ~0.04, Brantley & White 2009; Guinea ~0.02, Dosseto 2012).
+R_SAP, D_SAP = 0.02, 10.0  # mm/yr per m/yr of leaching water at 15 C; m
 SOFT_M = 1.0  # m: loose parent (unconsolidated sediment, fresh ash) is rootable at least this deep
 TILL_MYR = 2.0  # glaciated within this many Myr: till and outwash
 STEEP = 8.0  # m/km: steeper ground has no till, alluvium or cracking clay
+# Blown sand (PW-330): the wind winnows dry, bare sandy ground, but the sand
+# comes to rest in the flat lowlands (sand seas and sheets fill basins and
+# plains: Wilson 1973, Lancaster 1995); on rolling and sloping ground it is
+# carried on, leaving rock and stony pavement (hamada, reg)
+SAND_SLOPE = 3.0  # m/km: flatter ground keeps a sand sheet
 ALLUVIUM_KYR = 10.0  # age of floodplain soils (each flood lays fresh silt)
 COASTAL_PLAIN_MYR = 1.0  # a coastal plain whose top stratum grew this recently is still aggrading
 VOLCANIC_MYR = 1.0  # an arc or hotspot volcano this young covers the land with ash
@@ -390,10 +408,13 @@ def cell_slope(grid, elev) -> np.ndarray:
 
 
 def salt_near(grid, lake_kind) -> np.ndarray:
-    """Cells with a closed (salt) lake or salt pan in them or next to them."""
+    """Cells with a closed (salt) lake or salt pan in them (PW-330): salt
+    soils form where salty groundwater reaches the surface, on the pan's
+    floor and fringe, a few to tens of km across; the basin's slopes around
+    it (the neighbouring cells) drain to it and stay unsalted. (grid: kept
+    for the callers.)"""
     lake_kind = np.asarray(lake_kind, int)
-    salt = np.isin(lake_kind, (CLOSED_LAKE, SALT_PAN))
-    return salt | (np.add.reduceat(salt[grid.nbr_idx].astype(float), grid.nbr_off[:-1]) > 0)
+    return np.isin(lake_kind, (CLOSED_LAKE, SALT_PAN))
 
 
 def _climate(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan) -> dict:
@@ -459,10 +480,17 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
     h_grow = H0 * np.log1p(p0 * 1e-3 * np.minimum(age_cap, 1e12) / H0)
     h_rock = np.clip(np.minimum(h_ss, h_grow), 0, H_MAX)
     tau = np.minimum(np.minimum(h_ss / (E * 1e-3), age_cap), AGE_MAX)  # yr
+    # the weathering profile under it (PW-329): saprolite depth, and the age of the soil's material since
+    # it left the weathering front, which W counts
+    r_front = R_SAP * fu_runoff(P, pet) / 1000.0 * np.exp(K_WARM * (temp - 15.0))  # mm/yr
+    sap = D_SAP * np.log(np.maximum(r_front / E, 1.0))
+    sap = np.where(lava | (glac < 9999), np.minimum(sap, r_front * 1e-3 * np.minimum(age_cap, 1e12)), sap)
+    tau_w = np.minimum(np.minimum((h_ss + sap) / (E * 1e-3), age_cap), AGE_MAX)
     # loess, till and alluvium are soft deposits: rootable to their own depth
     # loose to depth: unconsolidated sediment, fresh ash, and sandy ground the wind has winnowed (the
     # silt blown away as loess, the sand left as a loose sheet)
-    soft = (PARENT_FLAGS["soft"][rock] | andic | (lfm == LF.DUNES) | (PARENT_FLAGS["sandy"][rock] & (bare >= 0.5)))
+    soft = (PARENT_FLAGS["soft"][rock] | andic | (lfm == LF.DUNES)
+            | (PARENT_FLAGS["sandy"][rock] & (bare >= 0.5) & (slope < SAND_SLOPE)))
     h_rock = np.where(soft, np.maximum(h_rock, SOFT_M), h_rock)
     if colluvium is not None:  # (soil washed down into a hollow: as deep as it has piled up)
         h_rock = np.maximum(h_rock, colluvium)
@@ -471,10 +499,10 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
     h = np.where(land, np.clip(h, 0, H_MAX), 0.0)
 
     # weathering stage (section 3.3), with the run's climate over the soil's age
-    t_eff, p_eff = (temp, P) if memory is None else _remembered(memory, tau, temp, P)
+    t_eff, p_eff = (temp, P) if memory is None else _remembered(memory, tau_w, temp, P)
     pet_eff = pet * np.maximum(t_eff + 5, 0.5) / np.maximum(temp + 5, 0.5)  # Oudin: PET ~ T + 5
     leach = fu_runoff(p_eff, pet_eff) / 1000.0  # m/yr
-    W = np.log10(np.maximum(leach * np.exp(K_WARM * (t_eff - 15.0)) * tau, 1.0))
+    W = np.log10(np.maximum(leach * np.exp(K_WARM * (t_eff - 15.0)) * tau_w, 1.0))
     W = np.where(land, W, 0.0)
 
     # texture, water and fertility: the parts of the cell mixed
@@ -505,7 +533,7 @@ def _mineral(cl, land, elev, ice, wet_lake, lake_kind, rock, lfm, lfa, glac, tem
     cap2 = (awc * np.clip(h - 0.3, 0, 1.2) + AWC_ROCK * (1.2 - np.clip(h - 0.3, 0, 1.2))) * CAP_SCALE[1]
     return dict(land=land, rock=rock, landform=lfm, slope=slope, flat=flat, mi=mi, pet=pet, P=P, temp=temp,
                 t_warm=np.maximum(t_warm, t_cold), dry_months=dry_months, months=mo, erosion=E, p0=p0,
-                age=tau, age_cap=age_cap, bare=bare, depth=h, W=W, texture=np.where(land, tx, TX_NONE), awc=awc,
+                age=tau, age_w=tau_w, saprolite=np.where(land, sap, 0.0), age_cap=age_cap, bare=bare, depth=h, W=W, texture=np.where(land, tx, TX_NONE), awc=awc,
                 fertility=fert, salty=salty, andic=andic, alluvial=alluvial, till=till, loess=loess_m,
                 w_rock=w_rock, permafrost=perm, t_ground=t_ground, lake_kind=lake_kind, wet_lake=wet_lake,
                 ice=ice, cap1=np.where(land, cap1, 0.0), cap2=np.where(land, cap2, 0.0),
@@ -673,8 +701,10 @@ def organic(m: dict, vg: dict) -> dict:
     sandy = PARENT_FLAGS["sandy"][rock] & (m["w_rock"] >= 0.5)
     # dune fields, sandy rock that is dry or young, and loose sediment the wind has winnowed (the silt
     # blown away as loess, the sand left behind)
+    # (in the flat lowlands where blown sand comes to rest: SAND_SLOPE)
     deflated = (PARENT_FLAGS["soft"][rock] | PARENT_FLAGS["sandy"][rock]) & (m["bare"] >= 0.5)
-    put((m["landform"] == LF.DUNES) | (sandy & ((mi < 0.5) | (W < W_LUVISOL))) | deflated, SAND)
+    put((m["landform"] == LF.DUNES) | ((sandy & ((mi < 0.5) | (W < W_LUVISOL)) | deflated) & (m["slope"] < SAND_SLOPE)),
+        SAND)
     # gypsum and lime pile up where the rain can't wash them out, given time (Gile et al. 1966's stages)
     # (lime needs a source: a base-rich or calcareous parent, or dust; on siliceous rock young brown soils form)
     old = m["age"] >= CALCIC_YR

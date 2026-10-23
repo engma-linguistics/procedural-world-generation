@@ -267,7 +267,7 @@ def update_vegetation(sim, e):
     v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
                          sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
                          co2=sim.co2, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
-                         locked_potential=True)
+                         locked_potential=True, crown=False)  # (crown fire, PW-347: not yet in runs)
     sim.veg_niche = vegetation.niches(v)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)
     sim.veg_lai = v["pot"]["lai"].astype(np.float32)
