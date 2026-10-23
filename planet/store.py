@@ -62,6 +62,7 @@ except ImportError:  # (Windows: no cross-process locks; the project targets Lin
 import numpy as np
 
 from .humanuse import LAYER_SPECS as HUMAN_USE_SPECS
+from .gameattrs import LAYER_SPECS as GAME_SPECS
 from .resources import LAYER_SPECS as RESOURCE_SPECS
 from .coastform import LAYER_SPECS as COAST_SPECS
 
@@ -358,6 +359,8 @@ LAYERS = {
     "loess": _spec("<u2", "m", "wind-blown silt thickness", scale=0.1),
     # human-use layers (humanuse.py, worlds and zooms; PW-099): class ids, legend 'human_use'
     **{k: _spec(dt, units, desc, scale=sc) for k, (dt, sc, units, desc) in HUMAN_USE_SPECS.items()},
+    # game attributes of the plants and soils (gameattrs.py, worlds and zooms; PW-206): scores, masks, legend 'game'
+    **{k: _spec(dt, units, desc, scale=sc) for k, (dt, sc, units, desc) in GAME_SPECS.items()},
     # resources (resources.py, worlds; PW-155): likelihoods 0-1, class ids, legend 'resources'
     **{k: _spec(dt, units, desc, scale=sc) for k, (dt, sc, units, desc) in RESOURCE_SPECS.items()},
     # coast form and coast-bound life (coastform.py, worlds; PW-097): class ids (legend 'coast'), scores 0-1
@@ -511,13 +514,14 @@ def legends() -> dict:
     from .surface import ROCKS
     from .soils import legend as soil_legend
     from .humanuse import legend as human_use_legend
+    from .gameattrs import legend as game_legend
     from .resources import legend as resources_legend
     from .coastform import legend as coast_legend
     from .vegetation import legend as veg_legend
     from .zoom_coastal import legend as coastal_legend
     return {"rocks": [{"id": r[0], "key": r[1], "name": r[2], "color": r[4]} for r in ROCKS],
             "landforms": legend(), "vegetation": veg_legend(), "coastal_life": coastal_legend(),
-            "soils": soil_legend(), "human_use": human_use_legend(), "resources": resources_legend(),
+            "soils": soil_legend(), "human_use": human_use_legend(), "game": game_legend(), "resources": resources_legend(),
             "coast": coast_legend(),
             "koppen": [{"id": k[0], "code": k[1], "name": k[2], "color": k[3]} for k in KOPPEN],
             "biomes": [{"id": b[0], "name": b[1], "char": b[2], "color": b[3]} for b in BIOMES]}

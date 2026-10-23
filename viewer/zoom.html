@@ -176,6 +176,8 @@ const LAYERS = [
   ['soil', 'Soils'], ['soil_depth', 'Soil depth'], ['soil_water', 'Soil water'], ['soil_fertility', 'Fertility'],
   ['soil_carbon', 'Soil carbon'], ['peat_depth', 'Peat'], ['permafrost', 'Permafrost'], ['loess', 'Loess'],
   ['river_nav', 'Navigable rivers'], ['harbour', 'Harbours'], ['pass', 'Passes'], ['fertile', 'Farmland'], ['fresh_water', 'Fresh water'],
+  ['travel', 'Travel'], ['sightline', 'Sightlines'], ['grazing', 'Grazing'], ['foraging', 'Foraging'], ['timber', 'Timber'],
+  ['fuel', 'Fuel'], ['building', 'Building ground'], ['mud_months', 'Mud season'],
   ['precipitation', 'Rain'], ['temperature', 'Temperature'], ['ice', 'Ice'],
   ['radiation_index', 'Sun on slopes'], ['twi', 'Wetness index'],
   ['valley_floor', 'Valley floor'], ['floor_m', 'Floor height'], ['coarse', 'Coarse cells'],
@@ -186,7 +188,9 @@ const NEEDS = { vegetation: 'vegetation', tree_cover: 'tree_cover', canopy_heigh
   coastal_life: 'coastal_life', coast_type: 'coast_type', barrier_island: 'barrier_island', soil: 'soil', soil_depth: 'soil_depth', soil_water: 'soil_water',
   soil_fertility: 'soil_fertility', soil_carbon: 'soil_carbon', peat_depth: 'peat_depth', permafrost: 'permafrost',
   loess: 'loess', valley_floor: 'valley_floor', floor_m: 'floor_m',
-  river_nav: 'river_nav', harbour: 'harbour', pass: 'pass', fertile: 'fertile', fresh_water: 'fresh_water' };  // (the last two: fine zooms only)
+  river_nav: 'river_nav', harbour: 'harbour', pass: 'pass', fertile: 'fertile', fresh_water: 'fresh_water',
+  travel: 'travel', sightline: 'sightline', grazing: 'grazing', foraging: 'foraging', timber: 'timber', fuel: 'fuel',
+  building: 'building', mud_months: 'mud_months' };  // (the last two: fine zooms only)
 // the human-use class maps (humanuse.py, PW-099/505), coloured from legend.human_use; the first three show only their classes
 // over plain ground, the other two cover the land
 const HU_SPARSE = ['river_nav', 'harbour', 'pass'], HU_AREA = ['fertile', 'fresh_water'];
@@ -227,6 +231,7 @@ const ICE_RGB = [206, 228, 250];  // glaciers on the hillshade and height layers
 const ICE_T = [[0, [150, 190, 230]], [100, [190, 215, 245]], [500, [120, 160, 225]], [1500, [60, 90, 190]], [3000, [40, 40, 130]]];
 const TEMP = [[-30, [60, 40, 140]], [-10, [80, 120, 220]], [0, [190, 230, 250]], [10, [120, 200, 120]], [20, [240, 210, 90]], [30, [220, 70, 40]]];
 // vegetation and terrain ramps (the globe's colours for the vegetation layers): [value, rgb], units
+const GAME5 = [[0, [239, 230, 200]], [1, [224, 207, 138]], [2, [185, 194, 96]], [3, [122, 168, 72]], [4, [63, 138, 58]], [5, [26, 90, 42]]];
 const RAMPS = {
   tree_cover: [[[0, [232, 220, 176]], [10, [205, 210, 138]], [30, [143, 184, 95]], [60, [63, 143, 63]], [90, [31, 90, 42]]], '% tree canopy cover'],
   canopy_height: [[[0, [239, 230, 200]], [2, [201, 207, 138]], [8, [143, 184, 95]], [20, [79, 143, 69]], [35, [42, 106, 58]], [50, [18, 63, 42]]], 'm, tallest layer'],
@@ -244,6 +249,13 @@ const RAMPS = {
   peat_depth: [[[0, [239, 230, 200]], [0.3, [185, 165, 122]], [1, [122, 90, 58]], [3, [58, 42, 26]], [8, [18, 10, 5]]], 'm of peat where peat lies'],
   permafrost: [[[0, [232, 220, 192]], [1, [188, 208, 220]], [2, [127, 168, 200]], [3, [58, 106, 154]]], '0 none, 1 sporadic, 2 discontinuous, 3 continuous'],
   loess: [[[0, [236, 230, 214]], [1, [230, 212, 154]], [5, [217, 180, 90]], [20, [181, 133, 47]], [60, [122, 84, 24]]], 'm of wind-blown silt'],
+  // game attributes (gameattrs.py per pixel, PW-206; the globe's ramps)
+  travel: [[[0, [26, 58, 90]], [1, [242, 234, 208]], [1.5, [232, 211, 138]], [2, [224, 168, 90]], [3, [201, 112, 58]], [5, [154, 58, 42]], [8, [90, 26, 26]]], 'x the time of walking open level ground (snow-free, off roads)'],
+  sightline: [[[15, [26, 58, 34]], [50, [63, 122, 58]], [150, [143, 176, 90]], [500, [217, 207, 138]], [5000, [245, 239, 220]]], 'm you can see at eye level'],
+  grazing: [GAME5, '0-5 pasture for herds'], foraging: [GAME5, '0-5 wild food for people'], timber: [GAME5, '0-5 building timber'],
+  fuel: [[[0, [239, 230, 200]], [1, [232, 207, 138]], [2, [217, 166, 90]], [3, [184, 116, 58]], [4, [138, 74, 42]], [5, [74, 42, 26]]], '0-5 firewood and fuel'],
+  building: [[[0, [106, 58, 58]], [1, [168, 96, 63]], [2, [217, 166, 90]], [3, [227, 210, 138]], [4, [181, 201, 160]], [5, [127, 159, 176]]], '0-5: 0 peat or swelling clay .. 5 firm, dry rock'],
+  mud_months: [[[0, [239, 230, 200]], [2, [217, 192, 138]], [4, [168, 132, 79]], [7, [106, 74, 42]], [12, [58, 42, 26]]], 'months the ground is mud'],
 };
 const DECODE = { float32: Float32Array, uint8: Uint8Array, int8: Int8Array, uint16: Uint16Array, int16: Int16Array };
 const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
@@ -1452,6 +1464,7 @@ function hoverPx(r, c) {
     ${soilRows(i)}
     ${L.valley_floor && L.valley_floor[i] ? `<tr><td>valley floor</td><td>${name(VALLEY_FLOOR, L.valley_floor[i])}, ${fmt(L.floor_m[i])} m</td></tr>` : ''}
     ${huRows(i)}
+    ${gameRows(i)}
     ${L.coastal_life && L.coastal_life[i] ? `<tr><td>coastal life</td><td>${name(lg.coastal_life || [], L.coastal_life[i])}</td></tr>` : ''}
     ${L.coast_type && L.coast_type[i] ? `<tr><td>coast</td><td>${name(lg.coast || [], L.coast_type[i])}</td></tr>` : ''}
     ${L.barrier_island && L.barrier_island[i] ? `<tr><td>barrier</td><td>${name(lg.barrier_island || [], L.barrier_island[i])}</td></tr>` : ''}
@@ -1461,6 +1474,24 @@ function hoverPx(r, c) {
     ${L.radiation_index && L.water[i] === 0 ? `<tr><td>terrain</td><td>sun ${fmt(100 * L.radiation_index[i])}% of flat &middot; wetness ${fmt(L.twi[i], 1)}${L.river_dist[i] < 255 ? ` &middot; river ${fmt(L.river_dist[i] * m.res_km, 1)} km` : ''}</td></tr>` : ''}
     <tr><td>river</td><td>${L.water[i] === 0 ? `${fmt(L.discharge[i], L.discharge[i] < 10 ? 1 : 0)} m&sup3;/s, ${fmt(L.drainage_area[i])} km&sup2;` : '-'}</td></tr>
   </table>`;
+}
+
+// the zoom's game attributes at pixel i (gameattrs.py, PW-206)
+function gameRows(i) {
+  const L = state.L, gl = state.meta.legend.game;
+  if (!L.travel || !gl || L.water[i] !== 0) return '';
+  const W = ['none', 'poor', 'fair', 'good', 'rich', 'superb'], sc = (k) => `${W[Math.round(L[k][i])]} (${fmt(L[k][i], 1)})`;
+  const M = gl.months, runs = (m) => { if (!m) return ''; if (m === 4095) return 'all year'; let s = 0; while ((m >> s) & 1) s++;
+    const on = (k) => (m >> (k % 12)) & 1, out = [];
+    for (let k = s; k < s + 12; k++) if (on(k) && !on(k + 11)) { let e = k; while (on(e + 1) && e < s + 11) e++; out.push(e > k ? `${M[k % 12]}–${M[e % 12]}` : M[k % 12]); }
+    return out.join(', '); };
+  const sl = L.sightline[i], g = runs(L.green_months[i]), f = runs(L.fire_months[i]);
+  const hz = gl.hazards.filter((h) => (L.hazards[i] >> h.bit) & 1).map((h) => h.name);
+  return [['on foot', `&times;${fmt(L.travel[i], 1)} the time of open ground, sightlines ${sl >= 4000 ? 'to the horizon' : `~${fmt(sl)} m`}`],
+    ['yields', `grazing ${sc('grazing')}, foraging ${sc('foraging')}, timber ${sc('timber')}, fuel ${sc('fuel')}`],
+    ['ground', `building ${sc('building')}, ${L.mud_months[i] ? `mud ${L.mud_months[i]} months` : 'no mud season'}`],
+    ['seasons', `${g ? `green ${g}` : 'never green'}, ${f ? `fire weather ${f}` : 'does not burn'}`],
+    ...(hz.length ? [['hazards', hz.join(', ')]] : [])].map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 }
 
 // the zoom's human-use classes at pixel i (humanuse.py)

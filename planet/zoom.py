@@ -155,6 +155,7 @@ import numpy as np
 
 from . import climate, coast, icemass, kernels
 from . import humanuse as HU
+from . import gameattrs as GA
 from . import store as S
 from . import world as W
 from . import zoom_kernels as ZK
@@ -3322,6 +3323,9 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     nu = np.zeros((vegetation.NP, nx * ny))
     nu[:, vz["idx"]] = vz["nu"]
     tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
+    # game attributes of the plants and soils (gameattrs.py, PW-206), from the same per-pixel fractions
+    layers.update({k: v.ravel() for k, v in GA.zoom_layers(
+        {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, res, pix_lat, nu, tilt).items()})
     sat = SAT.zoom_images({k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, nu, pix_lat, tilt)
     coarse = {"elevation": elev[own], "precipitation": L["precipitation"][own].astype(float),
               "river_segs": river_segs}
@@ -3494,6 +3498,8 @@ LAYER_DOC = {
     **ZVG.SOIL_LAYER_DOC,
     # human-use layers (humanuse.py, PW-099)
     **HU.zoom_layer_doc(),
+    # game attributes (gameattrs.py, PW-206)
+    **GA.zoom_layer_doc(),
 }
 
 
@@ -3597,6 +3603,32 @@ def add_satellite(ref: str | Path) -> Path:
         write_png(d / SAT_FILES[k], img)
     write_png(d / meta["files"]["preview"], preview({"layers": lay, "res": res, "satellite": sat}))
     meta["files"].update({f[:-4]: f for f in SAT_FILES.values()})
+    S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
+    return d
+
+
+def add_game(ref: str | Path) -> Path:
+    """(Re)makes a saved zoom's game attributes in place (gameattrs.py, PW-206). Recomputes the plant
+    fractions (zoom_vegetation.fractions, ~5 s)."""
+    d = S.find_zoom(ref)
+    meta, lay = load(d, decode=True)
+    world = W.load(find_world(meta["source_world"]["id"]))
+    nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
+    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    xs = (np.arange(nx) + 0.5 - nx / 2) * res
+    ys = (ny / 2 - np.arange(ny) - 0.5) * res
+    X, Y = np.meshgrid(xs, ys)
+    lat = latlon(fr.to_sphere(X.ravel(), Y.ravel()))[0]
+    fra = ZVG.fractions(d)
+    nu = np.stack([fra[c].ravel() for c in vegetation.CODES])
+    tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
+    new = GA.zoom_layers(lay, res, lat, nu, tilt)
+    specs = {}
+    for k in new:
+        units, desc, *enc = LAYER_DOC[k]
+        specs[k] = {**(enc[0] if enc else {"dtype": "u1"}), "units": units, "description": desc}
+    meta["layers"].update(S.write_layers(d, {k: S.encode(v, specs[k]) for k, v in new.items()}, specs))
+    meta.setdefault("legend", {})["game"] = GA.legend()
     S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
     return d
 

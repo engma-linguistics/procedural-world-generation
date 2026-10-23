@@ -483,6 +483,31 @@ RAMPS.permafrost = [[0, '#e8dcc0'], [1, '#bcd0dc'], [2, '#7fa8c8'], [3, '#3a6a9a
 RAMPS.loess = [[0, '#ece6d6'], [1, '#e6d49a'], [5, '#d9b45a'], [20, '#b5852f'], [60, '#7a5418']];
 const SOIL_LAYERS = { 'soil depth': 'soil_depth', 'soil water': 'soil_water', fertility: 'soil_fertility',
                       'soil carbon': 'soil_carbon', peat: 'peat_depth', permafrost: 'permafrost', loess: 'loess' };
+// game attributes of the plants and soils (gameattrs.py, PW-206): ramps on land; the month masks as month counts
+const SCORE5 = [[0, '#efe6c8'], [1, '#e0cf8a'], [2, '#b9c260'], [3, '#7aa848'], [4, '#3f8a3a'], [5, '#1a5a2a']];
+RAMPS.travel = [[1, '#f2ead0'], [1.5, '#e8d38a'], [2, '#e0a85a'], [3, '#c9703a'], [5, '#9a3a2a'], [8, '#5a1a1a']];
+RAMPS.sightline = [[15, '#1a3a22'], [50, '#3f7a3a'], [150, '#8fb05a'], [500, '#d9cf8a'], [5000, '#f5efdc']];
+RAMPS.grazing = SCORE5; RAMPS.foraging = SCORE5; RAMPS.timber = SCORE5;
+RAMPS.fuel = [[0, '#efe6c8'], [1, '#e8cf8a'], [2, '#d9a65a'], [3, '#b8743a'], [4, '#8a4a2a'], [5, '#4a2a1a']];
+RAMPS['building ground'] = [[0, '#6a3a3a'], [1, '#a8603f'], [2, '#d9a65a'], [3, '#e3d28a'], [4, '#b5c9a0'], [5, '#7f9fb0']];
+RAMPS['mud season'] = [[0, '#efe6c8'], [2, '#d9c08a'], [4, '#a8844f'], [7, '#6a4a2a'], [12, '#3a2a1a']];
+RAMPS['fire season'] = [[0, '#dfe6d8'], [1, '#f2d36a'], [3, '#f09a3a'], [6, '#e8503a'], [9, '#8a2a2a']];
+RAMPS['green season'] = [[0, '#c9b38a'], [3, '#d9cf8a'], [6, '#a9c26a'], [9, '#5f9f45'], [12, '#1f6a32']];
+const GAME_LAYERS = { travel: 'travel', sightline: 'sightline', grazing: 'grazing', foraging: 'foraging', timber: 'timber',
+                      fuel: 'fuel', 'building ground': 'building', 'mud season': 'mud_months', 'fire season': 'fire_months',
+                      'green season': 'green_months' };
+const bits = (m) => { let n = 0; for (let k = 0; k < 12; k++) n += (m >> k) & 1; return n; };
+const GAME_MASKS = new Set(['fire season', 'green season']);
+// month ranges of a 12-bit mask ("Jun–Sep, Dec"; "all year"), runs wrapping round the year
+function monthRuns(m) {
+  const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], on = (k) => (m >> ((k + 12) % 12)) & 1;
+  if (bits(m) === 12) return 'all year';
+  if (!m) return '';
+  let s = 0; while (on(s) && s < 12) s++;  // (start after an off month, so a run across December stays one)
+  const out = [];
+  for (let k = s; k < s + 12; k++) if (on(k) && !on(k - 1)) { let e = k; while (on(e + 1)) e++; out.push(e > k ? `${M[k % 12]}–${M[e % 12]}` : M[k % 12]); }
+  return out.join(', ');
+}
 // human use (humanuse.py, PW-099/505): class maps coloured from the legend (legend.human_use); the first three also
 // draw ribbons / markers (overlays huRivers, huHarbours, huPasses), which a layer of the same name switches on by itself
 const HU_LAYERS = { 'navigable rivers': 'river_nav', harbours: 'harbour', passes: 'pass', farmland: 'fertile', 'fresh water': 'fresh_water' };
@@ -696,6 +721,11 @@ const UNITS = { elevation: 'm', temperature: '°C mean annual', precipitation: '
                 fertility: 'soil fertility, 0 poor to 1 rich', 'soil carbon': 'kg C/m² in the top metre',
                 peat: 'm of peat where peat lies', permafrost: '0 none, 1 sporadic, 2 discontinuous, 3 continuous',
                 loess: 'm of wind-blown silt',
+                travel: "x the time of walking open level ground (snow-free, off roads)", sightline: 'm you can see at eye level (log scale)',
+                grazing: '0-5 pasture for herds', foraging: '0-5 wild food for people', timber: '0-5 building timber',
+                fuel: '0-5 firewood and fuel', 'building ground': '0-5: 0 peat or swelling clay .. 5 firm, dry rock',
+                'mud season': 'months the ground is mud', 'fire season': 'fire-weather months (where it burns)',
+                'green season': 'months the plants are in leaf and snow-free',
                 turbidity: 'mg/L of river mud at the sea surface (clear sea ~0.5; reefs need under ~10)',
                 upwelling: '°C the sea surface is cooled by upwelling (nutrients for kelp and fisheries)',
                 'coastal life': '% of the cell: the biggest habitat\'s colour, stronger = more' };
@@ -904,6 +934,11 @@ function cellColors(layer) {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.soilColors[L.soil[i]] || '#888');
     } else if (SOIL_LAYERS[layer]) {
       if (elev[i] <= 0) c.copy(OCEAN); else rampFns[layer](L[SOIL_LAYERS[layer]][i], c);
+    } else if (GAME_LAYERS[layer]) {
+      const v = L[GAME_LAYERS[layer]][i];
+      if (elev[i] <= 0) c.copy(OCEAN);
+      else if (layer === 'travel' && !v) c.copy(BARE);  // (lakes)
+      else rampFns[layer](GAME_MASKS.has(layer) ? bits(v) : v, c);
     }
     else if (HU_LAYERS[layer]) huColor(layer, i, c);
     else if (RES_LAYERS.has(layer)) resColor(layer, i, c);
@@ -991,6 +1026,7 @@ function availableLayers() {
   if (V.layers.vegetation) ls.push('vegetation', 'tree cover', 'plant cover', 'canopy height', 'leaf area', 'NPP', 'biomass',
                                    'fire return', 'stand age', 'plant type');
   if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
+  if (V.layers.travel) ls.push(...Object.keys(GAME_LAYERS));
   if (V.layers.flood_ratio) ls.push('river floods');
   for (const [name, k] of Object.entries(HU_LAYERS)) if (V.layers[k] && V.humanUse?.[k]) ls.push(name);
   if (V.layers.resource && V.resLeg) ls.push('resources', 'resource', 'building stone');
@@ -2175,6 +2211,16 @@ const LAYER_HINTS = {
   permafrost: 'Permanently frozen ground: sporadic, discontinuous or continuous.',
   loess: 'Wind-blown silt, from deserts and glacier margins, laid down downwind.',
   'river floods': 'How seasonal the rivers are: the peak month over the mean month.',
+  travel: 'How slow walking is, off roads in the snow-free season: stems and undergrowth, wet ground and bogs, deadfall in old forest, rough or steep ground (gameattrs.py).',
+  sightline: 'How far you can see at eye level through the plants: tens of metres in forest, to the horizon on open ground.',
+  grazing: 'Pasture for herds: the herb layer\'s growth plus browse from shrubs, less where the ground is frozen or snowed in.',
+  foraging: 'Wild food for people: mast and fruit trees, game, wetlands (waterfowl, wild grain, roots) and river fish.',
+  timber: 'Building timber: woody biomass and height; straight conifers score higher.',
+  fuel: 'Firewood and fuel: wood, shrubs, cut peat from bogs, dung on pasture.',
+  'building ground': 'How good the ground is to build on: firm rock or gravel best; loose sand, soft clay, loess, waterlogged ground, salt, swelling clay, peat, permafrost and slopes worse.',
+  'mud season': 'Months the ground turns to mud: wet, thawed months on clay, silt or poorly drained soil, and the summer thaw over permafrost.',
+  'fire season': 'Months of fire weather (dry litter, warm, no snow), where the place burns at all.',
+  'green season': 'Months the plants are in leaf and free of snow (each plant type\'s leaf habit, weighted by its cover).',
   'navigable rivers': 'Rivers by what can float on them: small boats, barges, sea-going ships (depth from the mean discharge, rapids, months frozen).',
   harbours: 'Natural harbours at the coast: sheltered, deep water, or an estuary (anchorage, harbour, fine harbour).',
   passes: 'The lowest crossings of divides between drainage basins separated by real relief, by the months they are open.',
@@ -2645,7 +2691,27 @@ function drawTint() {
 // "more" panel), join: appended to the previous line of the text with this separator,
 // lab: the label to show when k is empty, extra: only in the panel, not in the text }.
 // describe(i) is the text (the clipboard and the deep link) made from it.
-const GROUPS = { place: 'Place', climate: 'Climate', water: 'Water', plants: 'Plants', soil: 'Soil', ground: 'Rock and landforms',
+// the players' line of the game attributes (gameattrs.py): "Travel slow (x2.5), sightlines 30 m, fine timber, poor
+// grazing; fire weather Jul-Sep, big fires every ~30 yr." Words from the scores; the per-type text is the legend's.
+const SCORE_WORDS = ['none', 'poor', 'fair', 'good', 'rich', 'superb'];
+const sightText = (m) => (m >= 4000 ? 'to the horizon' : m >= 1000 ? `~${(m / 1000).toFixed(1)} km` : `~${m >= 100 ? Math.round(m / 50) * 50 : Math.round(m / 5) * 5} m`);
+function gameSentence(L, i) {
+  const t = L.travel[i], words = [];
+  words.push(`Travel ${t < 1.3 ? 'easy' : t < 2 ? 'steady' : t < 3 ? 'slow' : t < 5 ? 'very slow' : 'a struggle'} (×${t.toFixed(1)})`);
+  words.push(`sightlines ${sightText(L.sightline[i])}`);
+  const best = [['timber', 'timber'], ['grazing', 'grazing'], ['foraging', 'foraging'], ['fuel', 'fuel']]
+    .map(([k, n]) => [L[k][i], n]).sort((a, b) => b[0] - a[0]);
+  const [v0, n0] = best[0], [v1, n1] = best[3];
+  if (v0 >= 1.5) words.push(`${SCORE_WORDS[Math.round(v0)]} ${n0}`);
+  if (v1 < 1 && v0 >= 1.5) words.push(`no ${n1}`);
+  if (L.building[i] <= 1.5) words.push('treacherous ground to build on');
+  if (L.mud_months[i] >= 3) words.push(`mud ${L.mud_months[i]} months a year`);
+  const f = monthRuns(L.fire_months[i]), fr = L.fire_return?.[i];
+  const fire = f ? `fire weather ${f}${fr ? `, fires every ~${fr < 10 ? fr : Math.round(fr / 10) * 10} yr` : ''}` : 'fire almost never';
+  const g = monthRuns(L.green_months[i]);
+  return words.join(', ') + `; ${g === 'all year' ? 'green all year' : g ? `green ${g}` : 'never green'}; ${fire}.`;
+}
+const GROUPS = { place: 'Place', climate: 'Climate', water: 'Water', plants: 'Plants', soil: 'Soil', game: 'For players', ground: 'Rock and landforms',
                  plates: 'Plates', observed: 'Observed (Earth)' };
 // hover hints for terms that aren't self-evident: what it is and its units
 const HINTS = {
@@ -2782,6 +2848,19 @@ function cellInfo(i) {
     if (lo > 0.05 && lo < 1) also.push(`loess ${lo.toFixed(1)} m`);
     if (also.length) R('soil', '', also.join(', '), { lab: 'soil, also' });
   };
+  // game attributes (gameattrs.py, PW-206): a line for players, then the numbers
+  const gameRows = () => {
+    if (!L.travel || !L.travel[i]) return;
+    R('game', '', gameSentence(L, i), { lab: 'for players', ess: true });
+    const sc = (k) => `${SCORE_WORDS[Math.round(L[k][i])]} (${L[k][i].toFixed(1)})`;
+    R('game', 'on foot', `×${L.travel[i].toFixed(1)} the time of open ground · sightlines ${sightText(L.sightline[i])}`, { sep: ': ' });
+    R('game', 'yields', `grazing ${sc('grazing')} · foraging ${sc('foraging')} · timber ${sc('timber')} · fuel ${sc('fuel')}`, { sep: ': ' });
+    R('game', 'ground', `building ${sc('building')}` + (L.mud_months[i] ? ` · mud ${L.mud_months[i]} months` : ' · no mud season'), { sep: ': ' });
+    const g = monthRuns(L.green_months[i]), f = monthRuns(L.fire_months[i]);
+    R('game', 'seasons', (g ? `green ${g}` : 'never green') + (f ? ` · fire weather ${f}` : ' · does not burn'), { sep: ': ' });
+    const hz = (V.gameLeg?.hazards || []).filter((h) => (L.hazards[i] >> h.bit) & 1).map((h) => h.name);
+    if (hz.length) R('game', 'hazards', hz.join(', '), { sep: ': ', ess: true });
+  };
   // human use (humanuse.py): navigable reach, harbour, pass, farmland, fresh water
   const humanRows = () => {
     const H = V.humanUse, nm = (k) => H[k]?.[L[k][i]]?.name;
@@ -2796,6 +2875,7 @@ function cellInfo(i) {
     else R('plants', 'biome', V.biomes[L.biome[i]].name, { ess: true });
     soilRows();
     humanRows();
+    gameRows();
     resRows(L, i, land, R);
     const s = L.temperature_jul ? state.season : '', yr = L.temperature_jul ? ' (year)' : '';
     if (s) R('climate', SEASON_NAMES[s], `${L['temperature_' + s][i]} °C, rain ${L['precipitation_' + s][i]} mm/yr` +
@@ -3726,7 +3806,8 @@ function legendFields(leg) {
            pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [],
            soilTypes: leg.soils?.types || [], soilColors: (leg.soils?.types || []).map((t) => t.color),
            soilTextures: leg.soils?.textures || [], soilDrainage: leg.soils?.drainage || [],
-           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, resLeg: leg.resources || null,
+           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, gameLeg: leg.game || null,
+           resLeg: leg.resources || null,
            coastLeg: leg.coast || null };
 }
 
