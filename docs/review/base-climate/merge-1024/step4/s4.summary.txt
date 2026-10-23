@@ -1,0 +1,25 @@
+sweep | seeds | pooled % kf < -150 m | seeds >10% deep | old bar F | new bar F | icehouse % median / mean | per-seed deep%
+main_def | 8 | 4.2 | 2 | 0 | 4 | 17.6 / 28.7 | 1:0.0 2:11.8 11:0.0 21:0.0 42:11.8 77:9.8 505:0.0 3199:0.0
+s4_def | 8 | 4.4 | 1 | 1 | 2 | 35.3 / 33.3 | 1:0.0 2:3.9 11:0.0 21:0.0 42:31.4 77:0.0 505:0.0 3199:0.0
+main_101 | 8 | 3.4 | 1 | 0 | 2 | 27.4 / 30.6 | 101:0.0 102:0.0 103:27.5 104:0.0 105:0.0 106:0.0 107:0.0 108:0.0
+s4_101 | 8 | 20.1 | 5 | 2 | 3 | 56.9 / 53.2 | 101:41.2 102:0.0 103:37.3 104:0.0 105:0.0 106:47.1 107:23.5 108:11.8
+603 passed, 94 warnings in 632.10s (0:10:32)
+exit 0 wall 633 s
+== /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/m1024/s4.off-0.001.txt
+forest to tundra: 18 of 20 eligible seeds pass (bar 10; 4 not eligible)
+glacial endings: 21 of 24 eligible seeds pass (bar 12; 0 not eligible)
+cold moments with sheets: 20 of 29 plausible
+ice speeds plausible: 20 of 20 eligible seeds pass (bar 14; 0 not eligible)
+index stays zero: 29 of 29 eligible seeds pass (bar 29; 0 not eligible)
+ice at index zero: 18 of 20 eligible seeds pass (bar 14; 0 not eligible)
+38 passed, 4 warnings in 844.94s (0:14:04)
+exit 0 wall 846 s
+== /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/m1024/s4.off0.001.txt
+forest to tundra: 19 of 20 eligible seeds pass (bar 10; 4 not eligible)
+glacial endings: 21 of 24 eligible seeds pass (bar 12; 0 not eligible)
+cold moments with sheets: 20 of 26 plausible
+ice speeds plausible: 20 of 20 eligible seeds pass (bar 14; 0 not eligible)
+index stays zero: 26 of 26 eligible seeds pass (bar 26; 0 not eligible)
+ice at index zero: 17 of 20 eligible seeds pass (bar 14; 0 not eligible)
+38 passed, 4 warnings in 835.92s (0:13:55)
+exit 0 wall 837 s

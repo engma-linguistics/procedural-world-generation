@@ -79,3 +79,33 @@ fails on 2 of 16 after A20 (0 before). Recorded, not a stop: the tests and Earth
 Earth L6 (`step3/earth`): North Sea annual SST 6.9 -> 8.5, W Europe warmest 17.1 -> 17.6 vs 18.0 (-0.9 -> -0.4), so
 C left A20's gains as A20 measured them. Rain log-r 0.630, SH coastal range 12.5 (<= 12.5). The overturning on Earth
 is unchanged: NH sinking 13.86 Sv (8-20), 90% in open polar seas (>= 70%), Norwegian coast open in winter 100%.
+
+## Step 4: PW-627, stable summer air off land (commit 555883d)
+
+A17's `step2_stable_summer.diff` does not apply on the shelf-air tree (context in `compute`). A20's
+`laneA20/step2_on_branch.diff` applies cleanly but also carries a default-off PW-633 probe (`shelf_probe` in TUNE,
+a `depth` argument to `_sea_half`). It was applied without the probe, so the change lines are A17's exactly (checked
+line for line). Goldens regenerated on purpose (`climate_L4.json`, `sim_L4_s1_60myr.json`). Full `pytest -q`: 603
+passed in 632 s.
+
+| draw | forest (bar) | endings (bar 12) | sheeted (need 5) | speeds | index zero | ice at index zero | result |
+|---|---|---|---|---|---|---|---|
+| +0.001 | 19 / 20 (10) | 21 / 24 | 20 of 26 | 20 / 20 | 26 / 26 | 17 / 20 (14) | 38 passed |
+| -0.001 | 18 / 20 (10) | 21 / 24 | 20 of 29 | 20 / 20 | 29 / 29 | 18 / 20 (14) | 38 passed |
+
+Earth L6 (`step4/earth`): rain log-r 0.630 -> **0.649** (>= 0.617; A17 had 0.649), SH coastal range 12.5 -> **12.2**
+(<= 12.5), W Europe warmest 17.6 -> 16.6 vs 18.0 (**-0.4 -> -1.4**; A20 measured -1.6), North Sea annual SST 8.5 -> 7.9
+(warmest month 15.5 -> 11.6 vs 16.4). Overturning: NH sinking 13.64 Sv, 89% in open polar seas, Norwegian coast open
+in winter 100%.
+
+Health:
+
+| sweep | pooled % kf < -150 m (main / s2 / s3 / s4) | seeds > 10% (s4) | old bar F (s4) | new bar F (s4) | icehouse % median / mean (s4) |
+|---|---|---|---|---|---|
+| defaults | 4.2 / 8.6 / 7.6 / 4.4 | 1 (42) | 1 (11) | 2 | 35.3 / 33.3 |
+| 101-108 | 3.4 / 3.2 / 7.3 / **20.1** | 5 (101, 103, 106, 107, 108) | 2 (101, 103) | 3 (106, 107, 108: icehouse > 70%) | 56.9 / 53.2 |
+
+Mean over both sets: 3.8 / 5.9 / 7.45 / **12.25**. On 101-108 step 4 gives clearly deeper icehouses (5 of 8 seeds
+deep, median icehouse 57%). The tests are green, the Earth bars hold, and the mechanism is physical, so step 4 stays
+by the owner's principle. The icehouse depth belongs to the thermostat (PW-611 / PW-653). Recorded on PW-627 and
+PW-653.
