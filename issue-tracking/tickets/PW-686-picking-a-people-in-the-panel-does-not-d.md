@@ -2,7 +2,7 @@
 id: PW-686
 title: Picking a people in the panel does not dim the other peoples (peoplesColor lerps a colour with itself)
 type: task
-status: todo
+status: done
 parent: PW-103
 milestone: v2
 subsystem: viewer
@@ -29,4 +29,5 @@ layer on 7bc9ed to see that the intended dim reads well; it changes those two vi
 - [ ] the overlay layer shows the leading people at 25% where nothing overlays
 
 ## Updates
+- 2026-10-23: Status todo -> done. Fixed (coordinator): a picked people dims the rest to grey with 15% of their colour; the overlay layer shows the leading people at 25% over grey where nothing overlays. Owner OK'd the look change (2026-10-24).
 - 2026-10-23: Created from inbox draft draft-viewer-peoples-pick-dim-noop.md (found by perf679).

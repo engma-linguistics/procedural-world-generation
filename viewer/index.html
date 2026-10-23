@@ -869,13 +869,16 @@ function peoplesColor(layer, i, c) {
   const lines = V.run.meta.lineages || [];
   if (layer === 'peoples overlay') {  // templates (tieflings...) and contact hybrids (half-elves...): the strongest
     const o = L.peoples_overlay?.[i];
-    if (o == null || o === 255 || !lines[o]) return c.copy(lineColor(lines[L.peoples[i]]));  // (as ever: the old c.copy(NOBODY).lerp(c.set(..), .25) lerped c with itself, PW-679 draft)
+    if (o == null || o === 255 || !lines[o]) {  // (no overlay here: the leading people at 25% over grey, PW-686)
+      const p = lines[L.peoples[i]];
+      return p ? c.copy(NOBODY).lerp(lineColor(p), 0.25) : c.copy(NOBODY);
+    }
     return c.copy(lineColor(lines[o]));
   }
   if (layer === 'peoples mix') { const m = L.peoples_mix[i]; return m ? c.setHSL(0.75 - 0.12 * Math.min(m, 6), 0.7, 0.35 + 0.06 * m) : c.copy(NOBODY); }
   const d = peoplesIdx(i);
   if (d === 255 || !lines[d]) return c.copy(NOBODY);
-  if (state.people != null && d !== state.people) return c.copy(lineColor(lines[d]));  // (as ever, see above)
+  if (state.people != null && d !== state.people) return c.copy(NOBODY).lerp(lineColor(lines[d]), 0.15);  // (the others dimmed, PW-686)
   c.copy(lineColor(lines[d])).lerp(NOBODY, 0.55 * (1 - (L.peoples_share ? L.peoples_share[i] : 100) / 100));
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
