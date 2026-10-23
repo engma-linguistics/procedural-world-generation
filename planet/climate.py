@@ -827,17 +827,30 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     up = grid.centers
     h = G["h"]
     lat = grid.lat
-    # Small islands are sea as far as the gyres are concerned.
+    # The boundary layer (r/beta) has to span a couple of cells to be resolved.
+    r = max(tune["gyre_km"], 0.8 * h)
+    # Small islands are sea as far as the gyres are concerned, unless they
+    # reach further north to south than the boundary current is wide (two
+    # of its widths r/beta at the island's latitude): then the current runs
+    # along the island's east coast instead of passing it (New Zealand,
+    # Sakhalin, Luzon: the Pacific's gyre closes on New Zealand, and the
+    # Tasman Sea between it and Australia has only its own; PW-594).
     land = ~ocean
     lab, nlab = _components(grid, land)
-    sizes = np.bincount(lab[lab >= 0], minlength=max(nlab, 1)) * (4 * np.pi * R_KM**2 / grid.n)
-    wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
+    nl = max(nlab, 1)
+    k = np.maximum(lab, 0)
+    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (4 * np.pi * R_KM**2 / grid.n)
+    lo = np.full(nl, 90.0)
+    hi = np.full(nl, -90.0)
+    np.minimum.at(lo, lab[lab >= 0], lat[lab >= 0])
+    np.maximum.at(hi, lab[lab >= 0], lat[lab >= 0])
+    span = np.radians(hi - lo) * R_KM + h
+    width = 2 * r / np.maximum(np.cos(np.radians(0.5 * (lo + hi))), 0.1)
+    wall = land & ((sizes[k] >= tune["island_km2"]) | (span[k] >= width[k]))
     sea = ~wall
     cosl = np.cos(np.radians(lat))
     tau = wind_v * np.abs(speed(wind_v))[:, None] ** (tune["tau_pow"] - 1)  # stress ~ |u|^p
     F = R_KM * smooth(grid, curl(grid, tau), 250.0) * sea
-    # The boundary layer (r/beta) has to span a couple of cells to be resolved.
-    r = max(tune["gyre_km"], 0.8 * h)
     order = np.argsort(-grid.lon, kind="stable")
     iters = int(tune["gyre_iters"] * 2 ** max(grid.level - 6, 0))  # finer grids: more cells across an ocean
     psi = _stommel(F, cosl, _csr_east(grid), sea, order, grid.nbr_off, grid.nbr_idx, r, h, r / 3000.0**2,

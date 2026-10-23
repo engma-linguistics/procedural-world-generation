@@ -1,0 +1,37 @@
+  belt N 0.76 S 1.17
+  belt N 1.16 S 0.91
+box (summer): final | belts | belts+900km | belts+900+big   (m/s)   winter final | belts without front_shift
+    NE Atl 45-55N:  5.9 |  5.6 |  5.7 |  5.9     8.9 |  5.5
+   Norw Sea 60-70:  4.2 |  2.9 |  4.3 |  4.2     5.2 |  1.9
+         G Alaska:  4.8 |  3.1 |  4.7 |  4.8     4.9 |  4.7
+     NE Pac 40-50:  7.2 |  5.4 |  6.7 |  7.2     9.1 |  4.9
+     NW Pac 35-45:  4.6 |  4.2 |  4.0 |  4.6     9.4 |  3.3
+  N Pac 40-50 mid:  6.0 |  5.3 |  5.4 |  6.0    10.5 |  4.9
+    S Atl off Pat:  3.4 |  5.4 |  4.1 |  3.4     8.7 |  5.9
+           Tasman:  3.6 |  3.1 |  3.3 |  3.6     7.0 |  3.9
+ SE Pac off Chile:  5.5 |  5.5 |  5.6 |  5.5     7.8 |  5.5
+          Agulhas:  1.9 |  1.8 |  1.8 |  1.9     5.8 |  2.1
+   S Indian 40-50:  6.9 |  6.0 |  6.5 |  6.9     7.3 |  5.8
+    S Ocean 50-60:  5.8 |  5.7 |  5.7 |  5.8     5.8 |  5.7
+  off NZ W 40-47S:  5.2 |  4.7 |  5.0 |  5.2     8.3 |  5.4
+zonal-mean poleward cooling 30-65 deg, C/1000 km: [first-guess t_sl] [finished season temps]
+  N: jul 5.23 jan 7.20 | jul 5.15 jan 7.97
+  S: jul 5.88 jan 5.38 | jul 8.17 jan 6.45
+band (sea) summer / winter speed:
+   -70..-60 :  2.6  2.5
+   -60..-50 :  5.8  5.8
+   -50..-40 :  6.0  8.1
+   -40..-30 :  2.8  5.1
+   -30..-20 :  4.2  1.4
+   -20..-10 :  6.6  4.3
+   -10..0   :  4.5  6.1
+     0..10  :  4.6  6.2
+    10..20  :  7.1  4.2
+    20..30  :  5.9  2.8
+    30..40  :  3.2  7.4
+    40..50  :  5.8  9.5
+    50..60  :  5.2  6.6
+    60..70  :  2.9  4.0
+    70..80  :  2.7  2.6
+  N 40-55 summer  5.9 winter  9.1
+  S 40-55 summer  6.1 winter  7.7
