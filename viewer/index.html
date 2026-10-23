@@ -883,6 +883,18 @@ function peoplesColor(layer, i, c) {
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
 }
+// Horses (planet/lineages/horses.py, PW-688): the wild range (green, by suitability: open temperate grassland and steppe)
+// and where riding is known (amber, spreading from the taming homeland over peopled land); both: amber over green.
+const HORSE_WILD = new THREE.Color('#3f9d4a'), HORSE_RIDE = new THREE.Color('#e8a23a');
+function horsesColor(i, c) {
+  const L = V.layers, elev = L.elevation;
+  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  const w = (L.horse_wild?.[i] || 0) / 100, r = (L.horse_riding?.[i] || 0) / 100;
+  c.copy(BARE).lerp(HORSE_WILD, Math.min(1, 0.25 + 0.75 * w) * (w >= 0.35 ? 1 : w / 0.35 * 0.6));
+  if (r > 0) c.lerp(HORSE_RIDE, 0.7);
+  return c;
+}
 // Peoples change the land (planet/lineages/landuse.py, PW-662): the run's anthropogenic overlay at the present
 // (meta.anthro: cropland, pasture, burned grassland, managed woods, settlement density, tree cover left) as the
 // 'land use' layer, and as a tint on the vegetation colours (tree cover, vegetation, satellite) where land is
@@ -1032,6 +1044,7 @@ function cellColors(layer) {
     else if (layer === 'biome') c.set(V.biomeColors[L.biome[i]]);
     else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay') peoplesColor(layer, i, c);
     else if (layer === 'land use') landUseColor(i, c);
+    else if (layer === 'horses') horsesColor(i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -1121,7 +1134,7 @@ function availableLayers() {
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
-    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : [], V.run?.meta?.anthro ? ['land use'] : []);
+    hasLayer('peoples') ? ['peoples', 'peoples mix', 'peoples overlay'] : [], hasLayer('horse_wild') ? ['horses'] : [], V.run?.meta?.anthro ? ['land use'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -2212,6 +2225,10 @@ function renderLegend() {
       el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
         sw('#5a5a52', 'nobody') + '<span class="muted">(whitened: mixed)</span>';
     }
+  } else if (state.layer === 'horses') {
+    const h = V.run.meta.horses, t = h?.tamed?.[0];
+    el.innerHTML = sw('#3f9d4a', 'wild horse range (open temperate grassland, steppe)') + sw('#e8a23a', 'riding known') +
+      `<span class="muted">${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world' : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}</span>`;
   } else if (state.layer === 'land use') {
     el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
       sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
@@ -2942,6 +2959,12 @@ function peoplesRows(i, R) {
     R('place', '', here.length ? here.map(([v, l]) => `${l.name} ${v}%`).join(', ') : 'nobody', { lab: 'at the present', ess: true });
   }
 }
+function horseRows(i, R) {  // wild horse range and riding in this frame (horses.py)
+  const L = V.layers;
+  if (!L.horse_wild) return;
+  const w = L.horse_wild[i], r = L.horse_riding?.[i] || 0;
+  if (w >= 10 || r) R('place', '', `${w >= 35 ? 'wild horse range' : w >= 10 ? 'marginal for wild horses' : ''}${w >= 10 && r ? '; ' : ''}${r ? 'riding known' : ''}`, { lab: 'horses', ess: true });
+}
 function cellInfo(i) {
   const L = V.layers, G = V.grid, rows = [];
   const R = (g, k, v, o = {}) => rows.push({ g, k, v: String(v), sep: o.sep ?? ' ', ess: !!o.ess, join: o.join, lab: o.lab, extra: o.extra });
@@ -2952,7 +2975,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); anthroRows(i, R); }
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); horseRows(i, R); anthroRows(i, R); }
   if (V.kind === 'world' && V.wAnthro && state.anthro !== false) anthroRows(i, R);
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
@@ -4064,6 +4087,7 @@ const COLOUR_NEEDS = {
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
   'land use': ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
+  horses: ['horse_wild', 'horse_riding', 'ice'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4078,7 +4102,7 @@ function layersNeeded() {
   const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || [])];
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay');
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses);
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);

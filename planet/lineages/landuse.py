@@ -46,6 +46,7 @@ BURN_KM2 = 0.10  # woodland margin burned per herding person
 WOOD_BASE_KM2 = 0.003  # woods cut and coppiced for fuel and building, per person of any way of life
 WOOD_USE_KM2 = 0.03  # extra, per timber-using person x their timber share
 THIN = 0.3  # a managed wood keeps this much less canopy
+HORSE_HERD = 0.5  # where riding is known, the land a herding person works is x(1 + this x the people's propensity to ride)
 GRAZE_MIN = 0.1  # grazing good (0..1) under which pasture is not made
 FOOD = ("fertile", "grazing", "timber", "foraging")  # the goods that feed a people: the denominator of its shares
 LAYERS = ("crop", "pasture", "burned", "managed", "people", "tree_after")
@@ -83,16 +84,18 @@ def _load(run_dir: Path):
     return run, m
 
 
-def cover(dens, farm, herd, wood, tc, fcls, graze) -> dict:
+def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None) -> dict:
     """Land cover fractions per cell from the people per km2 (all, farming, herding, timber-using), the wild tree
-    cover (0..1), the farmland class (0..4) and the grazing good (0..1)."""
+    cover (0..1), the farmland class (0..4) and the grazing good (0..1). herd_eff: the herding people weighted by
+    the land a herder works (mounted herders work more: horses.HORSE_HERD); default `herd`."""
+    herd_eff = herd if herd_eff is None else herd_eff
     grazable = np.clip(graze / 0.6, 0, 1) * (graze >= GRAZE_MIN)
     crop = np.minimum(np.array(CROP_CAP)[fcls], farm * CROP_KM2 / np.maximum(np.array(YIELD)[fcls], 1e-9))
     room = 1.0 - crop
-    pasture = np.minimum(room * 0.9 * grazable, herd * HERD_KM2 + farm * MEADOW_KM2 * (grazable > 0))
+    pasture = np.minimum(room * 0.9 * grazable, herd_eff * HERD_KM2 + farm * MEADOW_KM2 * (grazable > 0))
     t1 = tc * (1 - crop)
     t2 = t1 * (1 - pasture / np.maximum(room, 1e-9))  # (pasture thins the woods it takes in proportion)
-    burned = np.minimum(t2, herd * BURN_KM2 * (grazable > 0))
+    burned = np.minimum(t2, herd_eff * BURN_KM2 * (grazable > 0))
     t3 = t2 - burned
     managed = np.minimum(1.0, dens * WOOD_BASE_KM2 + wood * WOOD_USE_KM2) * t3  # (managed wood: a share of the trees left)
     return {"crop": crop, "pasture": pasture, "burned": burned, "managed": managed, "people": dens,
@@ -115,7 +118,12 @@ def derive(run_dir: Path) -> dict:
     tc = np.clip(tc, 0, 1) * land
 
     dens = np.zeros(n)
-    farm, herd, wood = np.zeros(n), np.zeros(n), np.zeros(n)
+    farm, herd, wood, herd_eff = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
+    # riding (horses.py): where riding is known, a herding person works more land
+    riding, hprop = np.zeros(n), (m.get("horses") or {}).get("propensity", {})
+    if "horse_riding" in run["layers"]:
+        rs = run["layers"]["horse_riding"]
+        riding = np.asarray(S.decode(np.asarray(S.read_layer(run_dir, rs)[-1]), rs), float) / 100.0
     by_line = {}
     for k, ln in enumerate(m["lineages"]):
         l = tree.lines.get(ln["id"])
@@ -128,12 +136,13 @@ def derive(run_dir: Path) -> dict:
         dens += d
         farm += s["farm"] * d
         herd += s["herd"] * d
+        herd_eff += s["herd"] * d * (1.0 + HORSE_HERD * riding * hprop.get(ln["id"], 0.0))
         wood += s["wood"] * d
         by_line[ln["id"]] = {**{kk: round(v, 2) for kk, v in s.items()}, "people": float(d.sum() * area_km2)}
 
     fcls = np.clip(np.rint(np.asarray(goods["_raw"]["fertile"]) * 4).astype(int), 0, 4)
     graze = goods["grazing"] if "grazing" in goods else np.zeros(n)
-    out = cover(dens, farm, herd, wood, tc, fcls, graze)
+    out = cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff)
     crop, pasture, burned, managed, tree_after = (out[k] for k in ("crop", "pasture", "burned", "managed", "tree_after"))
 
     # summary against the world

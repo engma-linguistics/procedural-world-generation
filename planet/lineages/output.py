@@ -25,6 +25,10 @@ PEOPLE_LAYERS = {
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
     "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),
 }
+HORSE_LAYERS = {
+    "horse_wild": U8("wild horse range: suitability % of open temperate grassland and steppe (horses.wild_range; 0 in the deep epochs)"),
+    "horse_riding": U8("where riding horses is known, % (0 before the taming; the front spreads over peopled land, horses.py)"),
+}
 TERRAIN = {"elevation": S.LAYERS["elevation"], "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
            "temperature": S.LAYERS["temperature"], "climate": S.LAYERS["climate"], "tree_cover": S.LAYERS["tree_cover"],
            "precipitation": S.LAYERS["precipitation"]}
@@ -59,20 +63,21 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     pres["homeland"] = homeland(h, res["present"], world)
     pres["stories"] = stories(h, pres)
     pres["ascii"] = {"rows": ascii_present(h, res, 96, 36), "letters": {LETTERS[k % len(LETTERS)]: l.id for k, l in enumerate(h.lines)}}
-    arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS)}
+    horse_layers = HORSE_LAYERS if h.horses is not None else {}
+    arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS, *horse_layers)}
     out_frames = []
     for f in frames:
         env = f["env"]
         for k, spec in TERRAIN.items():
             v = env.get(k, np.zeros(g.n))
             arrays[k].append(S.encode(np.round(v) if k != "climate" else v, spec))
-        for k in PEOPLE_LAYERS:
+        for k in (*PEOPLE_LAYERS, *horse_layers):
             arrays[k].append(f[k])
         st = {kk: vv for kk, vv in f["stats"].items() if not isinstance(vv, (list, dict)) or kk == "peoples"}
         st["t"] = -round(f["ago"], 3)
         out_frames.append({"t": -round(f["ago"], 3), "stats": st, "omega": {}, "hotspots": [], "volcanoes": []})
     arrays = {k: np.stack(v) for k, v in arrays.items()}
-    specs = {**TERRAIN, **PEOPLE_LAYERS}
+    specs = {**TERRAIN, **PEOPLE_LAYERS, **horse_layers}
     run_id = S.new_id()
     out = S.path_of("run", run_id)
     layers = S.write_layers(out, arrays, specs)
@@ -88,6 +93,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
               "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
               "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
+              "body": l.body,
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
@@ -97,7 +103,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
-                 "disabled": h.tree.disabled, "lineages": lines,
+                 "disabled": h.tree.disabled, "lineages": lines, "horses": pres["horses"],
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
@@ -235,6 +241,19 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             gl = [h.tree.lines[x].label() for x in w["living"] if x != l.id]
             s.append(f"With its ways of life ({', '.join(gl)}) the {l.label()} are {people(w['population'])} in "
                      f"{w['area_mkm2']} Mkm²; {round(100 * w['shares'].get(l.id, 0))}% keep the old ways.")
+        hs = pres.get("horses")
+        if hs and hs["tamed"]:
+            tm = hs["tamed"]
+            if tm[0]["line"] == l.id:
+                s.append(f"It was the first to tame the horse, ~{_ago(tm[0]['ago_kyr'])} ago on the {tm[0]['country']} of {tm[0]['landmass_name']}.")
+            elif any(t["line"] == l.id for t in tm[1:]):
+                t = next(t for t in tm[1:] if t["line"] == l.id)
+                s.append(f"It tamed horses again on its own ~{_ago(t['ago_kyr'])} ago on {t['landmass_name']}.")
+            if hs["took_up_kyr"].get(l.id) is not None and hs["propensity"].get(l.id, 0) >= 0.3 and tm[0]["line"] != l.id:
+                s.append(f"It took up riding ~{_ago(hs['took_up_kyr'][l.id])} ago and rides today across {round(100 * hs['riders_share'].get(l.id, 0))}% of its land.")
+        bn = SP.body_notes(l.body)
+        if bn:
+            s.append(f"The {l.label()} " + (", ".join(bn[:-1]) + (", and " if len(bn) > 2 else " and ") + bn[-1] if len(bn) > 1 else bn[0]) + ".")
         out[l.id] = " ".join(s)
     return out
 
@@ -255,6 +274,14 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         now = f"now {p['area_mkm2']} Mkm2 in {p['patches']} patch(es)" if p else \
             (f"ended {h.ended.get(l.id):g} kyr ago" if l.id in h.ended else "absent")
         L.append(f"  {LETTERS[k % len(LETTERS)]} {l.label():<22} {l.origin:<8} {where}; {now}")
+    hs = pres.get("horses")
+    if hs:
+        L += ["", "## Horses (PW-688)"] + [f"  {hs['wild_mkm2']} Mkm² of wild range at the present; riding known over {hs['riding_mkm2']} Mkm² "
+                                           f"({hs['riding_on_wild_mkm2']} Mkm² of it wild range)"] + (
+            [f"  tamed ~{_ago(t['ago_kyr'])} ago by the {t['people']} on the {t['country']} of {t['landmass_name']} "
+             f"({t['lat']}, {t['lon']}; {t['wild_mkm2']} Mkm² of wild range there)" + ("" if t["first"] else " (again, on its own)")
+             for t in hs["tamed"]] or [f"  never tamed: {hs['never']} (date drawn {hs['date_drawn_kyr']} kyr ago)"])
+        L += [f"  riders (share of their land that rides): " + ", ".join(f"{k} {round(100 * v)}%" for k, v in sorted(hs["riders_share"].items(), key=lambda x: -x[1])[:10] if v > 0.01)]
     L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
     L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     mx = pres.get("mixing", {})

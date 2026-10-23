@@ -11,6 +11,11 @@
 # per km² of full habitat, or band_km2: the land a band of 25 roams), explore (0..1: how readily it pushes into
 # new land and over the sea), sea_share (0..1: the share of its frontier that takes to the water), insularity
 # (0..1: resistance to mixing and to leaving home); speed_kmyr is the expansion rate (km/yr of frontier).
+# body (PW-694): senses and body for the future cuisine pass; only what differs from the human-like baseline, inherited key by
+# key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults), capsaicin (feels chili heat), bitter and
+# smell (low | normal | high or keen), diet (herbivore | omnivore | carnivore | obligate_carnivore), raw_meat (eats raw meat
+# safely), cellulose (digests it), toxic (alliums: onion and garlic; theobromine: chocolate). Real analogues: felines taste no
+# sweet, birds feel no capsaicin, herding peoples keep lactase.
 
 [meta]
 name = "D&D peoples (preset)"
@@ -25,6 +30,7 @@ land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
+body = { smell = "keen", raw_meat = true }  # reptiles flick their tongues to smell; swallow prey raw
 origin = "root"
 at = "12 Myr"
 temp_c = [18, 30]
@@ -44,6 +50,7 @@ traits = ["hardy"]
 [[lineage]]
 id = "kobold"
 name = "kobolds"
+body = { bitter = "low" }  # scavengers
 parents = ["draconic"]
 at = "2 Myr"
 density = 4
@@ -65,6 +72,7 @@ traits = ["subterranean"]
 [[lineage]]
 id = "lizardfolk"
 name = "lizardfolk"
+body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["reptilian"]
 at = "1.5 Myr"
 density = 1.5
@@ -78,6 +86,7 @@ traits = ["swims"]
 [[lineage]]
 id = "tortle"
 name = "tortles"
+body = { cellulose = true, diet = "herbivore" }  # tortoise-like hindgut fermenters of leaves and weed
 parents = ["reptilian"]
 at = "900 kyr"
 density = 1
@@ -91,6 +100,7 @@ traits = ["swims", "coastal"]
 [[lineage]]
 id = "dragonborn"
 name = "dragonborn"
+body = { smell = "keen" }  # dragon-blooded predators
 parents = ["draconic"]
 at = "300 kyr"
 density = 2
@@ -114,6 +124,7 @@ rain_mm = [400, 2500]
 [[lineage]]
 id = "feline"
 name = "feline stem"
+body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"] }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison
 parents = ["mammalian"]
 at = "4 Myr"
 temp_c = [16, 30]
@@ -148,6 +159,7 @@ traits = ["nomadic"]  # pride hunters following the herds across open grassland
 [[lineage]]
 id = "goblinoid"
 name = "goblinoid stem"
+body = { raw_meat = true, bitter = "low" }  # scavengers with strong stomachs
 parents = ["mammalian"]
 at = "2.5 Myr"
 temp_c = [15, 28]
@@ -187,6 +199,7 @@ prefers = ["savanna", "temperate", "open"]
 [[lineage]]
 id = "bugbear"
 name = "bugbears"
+body = { smell = "keen", diet = "carnivore" }  # ambush hunters
 parents = ["greater_goblinoid"]
 at = "200 kyr"
 density = 0.8
@@ -340,6 +353,7 @@ traits = ["hardy"]
 [[lineage]]
 id = "orc"
 name = "orcs"
+body = { raw_meat = true, smell = "keen" }  # hunters
 parents = ["hominid"]
 at = "700 kyr"
 density = 1
@@ -352,6 +366,7 @@ traits = ["nomadic", "hardy"]
 [[lineage]]  # horse-and-herd raiders of the dry grassland
 id = "steppe_orc"
 name = "steppe orcs"
+body = { milk = true }  # mare's milk and kumis
 origin = "group"
 group_of = "orc"
 at = "9 kyr"
@@ -375,6 +390,7 @@ traits = ["hardy"]
 [[lineage]]
 id = "dwarf"
 name = "dwarves"
+body = { bitter = "low" }  # bitter ale and hard roots do not put them off
 parents = ["hominid"]
 at = "500 kyr"
 density = 4
@@ -436,6 +452,7 @@ traits = ["agricultural", "cosmopolitan"]
 [[lineage]]  # flocks and herds on the open hills and grassland between the fields and the steppe
 id = "human_herder"
 name = "human herders"
+body = { milk = true }  # lactase persistence in herding peoples
 origin = "group"
 group_of = "human"
 at = "8 kyr"
@@ -448,6 +465,7 @@ traits = ["hardy", "cosmopolitan"]
 [[lineage]]  # horse nomads of the steppe and desert edge
 id = "human_nomad"
 name = "human nomads"
+body = { milk = true }  # lactase persistence in herding peoples
 origin = "group"
 group_of = "human"
 at = "5 kyr"
@@ -503,6 +521,7 @@ traits = ["agricultural", "cosmopolitan"]
 [[lineage]]
 id = "elf"
 name = "elves (from the feywild)"
+body = { bitter = "high", smell = "keen" }  # delicate palates
 origin = "arrival"
 at = "25 kyr"
 density = 1
@@ -556,6 +575,7 @@ traits = ["miner"]
 [[lineage]]
 id = "triton"
 name = "tritons (from the plane of water)"
+body = { capsaicin = false, diet = "carnivore", raw_meat = true }  # sea folk: raw fish
 origin = "arrival"
 at = "6 kyr"
 density = 1
@@ -617,6 +637,7 @@ sites = 3
 [[lineage]]
 id = "avian"
 name = "avian stem"
+body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"] }  # birds: no sweet receptor, immune to capsaicin, poor smell
 origin = "root"
 at = "6 Myr"
 temp_c = [10, 28]

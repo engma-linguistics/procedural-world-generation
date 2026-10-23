@@ -584,3 +584,76 @@ def test_peoples_change_the_land_from_their_ways_of_life():
     # nobody, nothing
     e = LU.cover(z, z, z, z, 0.8 * one, fcls, one)
     assert (e["crop"] == 0).all() and (e["pasture"] == 0).all() and np.allclose(e["tree_after"], 0.8)
+
+
+# ---- senses and bodies (PW-694) ---------------------------------------------------------------------
+def test_body_traits_default_inherit_and_round_trip():
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    b = lambda k: dnd.lines[k].body  # noqa: E731
+    # real-world analogues: cats taste no sweet, birds feel no capsaicin, herding peoples keep lactase
+    assert not b("tabaxi")["sweet"] and not b("leonin")["sweet"] and b("leonin")["diet"] == "obligate_carnivore"
+    assert not b("aarakocra")["capsaicin"] and not b("kenku")["sweet"] and b("human")["capsaicin"] and b("human")["sweet"]
+    assert b("human_herder")["milk"] and b("steppe_orc")["milk"] and not b("human")["milk"] and not b("human_farmer")["milk"]
+    assert set(b("tabaxi")["toxic"]) == {"alliums", "theobromine"} and b("human")["toxic"] == []
+    assert dnd.lines["tabaxi"].body_given == {}  # (inherited from the feline stem, not given)
+    assert SP.parse(SP.to_raw(dnd)).lines["steppe_orc"].body == b("steppe_orc")
+    assert SP.body_notes(SP.BODY_DEFAULT) == [] and "cannot taste sweet" in SP.body_notes(b("leonin"))
+    base = {"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"toxic": ["alliums"], "smell": "keen"}},
+                        {"id": "y", "parents": ["x"], "at": "0.5 kyr", "body": {"smell": "low"}}]}
+    t = SP.parse(base)
+    assert t.lines["y"].body["smell"] == "low" and t.lines["y"].body["toxic"] == ["alliums"] and t.lines["y"].body["sweet"]
+    for bad in ({"sweet": "yes"}, {"diet": "frugivore"}, {"toxic": ["lead"]}, {"taste": 1}):
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": bad}]})
+
+
+# ---- horses (PW-688 part 1) -------------------------------------------------------------------------
+def test_wild_horse_range_is_open_temperate_grassland():
+    from planet.lineages import horses as HO
+    n = 6  # steppe, forest, desert, tundra, tropical savanna, high plateau
+    env = {"temperature": np.array([8, 8, 15, -10, 28, 8.0]), "precipitation": np.array([500, 1200, 80, 300, 900, 400.0]),
+           "tree_cover": np.array([5, 70, 0, 0, 10, 0.0]), "elevation": np.array([300, 300, 300, 300, 300, 5000.0]), "ice": np.zeros(n)}
+    w = HO.wild_range(env, np.ones(n, bool))
+    assert w[0] == 1 and (w[1:] < HO.WILD_MIN).all() and (HO.wild_range(env, np.zeros(n, bool)) == 0).all()
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    p = {k: HO.propensity(dnd, dnd.lines[k]) for k in ("human_nomad", "steppe_orc", "human_herder", "human_farmer", "aarakocra", "dwarf", "hill_giant")}
+    assert p["human_nomad"] == p["steppe_orc"] == p["human_herder"] == 1.0
+    assert 0 < p["human_farmer"] < 0.5 and p["aarakocra"] == p["dwarf"] == p["hill_giant"] == 0.0
+
+
+def _horse_tree(horses=True):
+    raw = {"meta": {"name": "h", "seed": 3, "mixing_start": "3 kyr", "horses": horses, "horses_at": "9 kyr"}, "lineage": [
+        {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"]},
+        {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"]}],
+        "use": [{"by": "nomadic", "good": "grazing"}, {"by": "agricultural", "good": "fertile"}]}
+    return SP.parse(raw)
+
+
+def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(faketz, monkeypatch):
+    from planet.lineages import horses as HO
+    monkeypatch.setattr(HO, "wild_range", lambda env, land: np.where(land & (np.abs(env["temperature"] - 12) < 8), 0.9, 0.0))
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
+    hs = pres["horses"]
+    t = hs["tamed"][0]
+    assert t["line"] == "herd" and t["first"] and t["ago_kyr"] <= hs["date_drawn_kyr"] + 1e-6 and hs["wild_mkm2"] > 0
+    assert hs["riding_mkm2"] > 0 and hs["riders_share"]["herd"] > 0.5  # herders ride across their land
+    assert hs["propensity"]["herd"] == 1.0 and hs["propensity"]["farm"] < hs["propensity"]["herd"]
+    assert any(e["kind"] == "horses" for e in h.events)
+    # layers on the run, and the story says so
+    out = O.save(h, res, pres, name="horse test")
+    run = json.loads((out / "run.json").read_text())
+    assert {"horse_wild", "horse_riding"} <= run["layers"].keys() and run["meta"]["horses"]["tamed"][0]["line"] == "herd"
+    assert "first to tame the horse" in run["meta"]["lineages"][h.idx["herd"]]["story"]
+    assert "Horses" in (out / "run.txt").read_text()
+    # off: nothing is stored
+    h0, res0, pres0 = H.simulate(_horse_tree(False), ps, tries=1)
+    assert pres0["horses"] is None and h0.horses is None
+    assert "horse_wild" not in json.loads((O.save(h0, res0, pres0, name="no horses") / "run.json").read_text())["layers"]
+
+
+def test_no_wild_range_no_taming(faketz):
+    # (the fake world is forested everywhere: nowhere for wild horses)
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
+    assert pres["horses"]["tamed"] == [] and pres["horses"]["never"] and not h.horses.rd.any()

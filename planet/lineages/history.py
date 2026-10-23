@@ -18,6 +18,7 @@ from . import recent as R
 from . import spec as SP
 from . import land as LD
 from .crossing import Crossings, corridor, short_hop
+from .horses import Horses
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
@@ -273,6 +274,7 @@ class History:
         self.tracks: dict[str, list] = {l.id: [] for l in self.lines}
         self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2)
         self.flow = getattr(ps, "flow", None)
+        self.horses: Horses | None = None  # (made in run(): the tree's first domesticated animal, horses.py)
 
     def _steps(self, glacial_every) -> list[Step]:
         ps, out = self.ps, []
@@ -625,6 +627,7 @@ class History:
         self._lingered: set[str] = set()
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         budget = np.zeros(len(L))
+        self.horses = Horses(self) if self.tree.horses else None
         frames = []
         nsteps = len(self.steps)
         t0 = time.time()
@@ -650,6 +653,8 @@ class History:
                         par = self.tree.lines[l.parent]
                         if not par.persists and self.tree.living_children(par.id) and all(c in self.started for c in self.tree.living_children(par.id)) and self.active.get(par.id):
                             self._end_parent(par, step, env, tags)
+            if self.horses is not None:
+                self.horses.step(step, env, tags, self.p, self._native)
             mix = self._mix_ramp(step.ago)
             order = [l for l in L if self.active[l.id]]
             self.rng.shuffle(order)
@@ -700,6 +705,8 @@ class History:
                         self.p[k][over] -= r * (self.p[k][over] - room[over])
                         self.p[k][self.p[k] < EST] = 0
                 speed = l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
+                if self.horses is not None:  # riders spread faster over open land (horses.py)
+                    speed *= self.horses.speed_mult(k)
                 if step.epoch == "deep":
                     passes = CONVERGE
                 else:
@@ -852,6 +859,8 @@ class History:
         K = K * self._wish_near(l)
         if self.goods is not None and step.epoch != "deep":  # (the plates have moved since the deep epochs)
             K = K * self._land_mult(l, step.ago <= HOLOCENE_KYR)
+            if self.horses is not None and not l.overlay:  # riding herders make more of grazing land
+                K = K * self.horses.k_mult(self.idx[l.id])
         if l.extinct_kyr is not None:  # dwindles toward its end
             span = min(0.3 * (l.ago_kyr - l.extinct_kyr), 20.0)
             if span > 0 and step.ago < l.extinct_kyr + span:
@@ -930,13 +939,14 @@ class History:
         return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "peoples_mix": mixn,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
                 "peoples_overlay": ov, "peoples_whole": whole,
+                **(self.horses.frame_layers() if self.horses is not None else {}),
                 "stats": {**step.stats, "peoples": areas, "population": pops}}
 
 
 # -- the present ------------------------------------------------------------------------------------
 def present_summary(h: History, P: np.ndarray) -> dict:
     g, tree = h.grid, h.tree
-    out = {"lines": {}, "mixing_zones": [], "wishes": []}
+    out = {"lines": {}, "mixing_zones": [], "wishes": [], "horses": h.horses.summary(P) if h.horses is not None else None}
     pres = P >= EST
     src, dst = g.nbr_src, g.nbr_idx
     for k, l in enumerate(h.lines):
