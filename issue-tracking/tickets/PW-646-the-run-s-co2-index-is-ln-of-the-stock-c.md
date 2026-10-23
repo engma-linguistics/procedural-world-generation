@@ -45,4 +45,5 @@ Options:
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-23: Owner 2026-10-24: the coordinator's call; explore C (carry a real pCO2 in ppm from the stock) first; if it makes things wildly off, take A for now and revisit later.
 - 2026-10-23: Created from inbox draft draft-co2-index-units-ln-or-log2.md (found by base-climate-laneA22).

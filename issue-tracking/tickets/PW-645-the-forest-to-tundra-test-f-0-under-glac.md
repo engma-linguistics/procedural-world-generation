@@ -2,7 +2,7 @@
 id: PW-645
 title: "The forest-to-tundra test (F < 0 under glacial cooling) holds on snowy worlds but not warm ones: main's own null draws give 16 of 24 on seeds 1-24 (bar 17), so A20's 12 and main's 20 are the spread's tails, not a physics signal"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -60,4 +60,5 @@ snow 0.16.
 - [ ] A / B / C
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: option A, eligibility by a rule on the world (rules needn't fire where their prerequisites aren't there).
 - 2026-10-23: Created from inbox draft draft-forest-test-premise-is-planet-dependent.md (found by base-climate-laneA21).

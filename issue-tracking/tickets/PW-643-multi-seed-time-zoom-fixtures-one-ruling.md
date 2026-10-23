@@ -2,7 +2,7 @@
 id: PW-643
 title: "Multi-seed time-zoom fixtures (one ruling for PW-623, PW-638, PW-640): ready on a branch; main stays green, three deliberate breaks fail clearly; but the forest test stays red on both held branches (12 and 16 of 24), and a 70% bar sits close to main's own pass rate"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v1
 subsystem: timezoom
@@ -76,5 +76,6 @@ Branch `worktree-agent-acfa88d756b0677df` (on main 86d3806) holds the coordinato
 - [ ] (if A/B) the index-is-zero invariant at 100% rather than under the rate bar?
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner 2026-10-24: adopt A with B's change: the L4 multi-seed tests at ~50% (lottery-proof against main's measured ~70% rates); MIN_SHEETED as proposed. A20's forest result as a physics question: answered by lane A21 (PW-640: lottery, same mean F over 240 worlds).
 - 2026-10-23: Lane A21: main's true pass rates are ~72% (forest) and ~69% (endings), so a 70% bar on 24 seeds is itself a lottery (main red in 3 of 4 re-rolled draws). Bars must sit well below the measured rate (~50%), or use more seeds, or rule-based eligibility (PW-644).
 - 2026-10-23: Created from inbox draft draft-multiseed-fixtures.md (found by tests-multiseed).
