@@ -77,9 +77,10 @@ def modes(line: SP.Lineage, ago_kyr: float) -> list[tuple[str, float, float]]:
             out.append((way, h[0] * (1.0 if way == "raft" else m), h[1]))
     share = line.demo("sea_share")
     rate, l0, l1, since = SP.BOATS
-    if share > 0 and ago_kyr <= since + 1e-9:
+    if share > 0 and ago_kyr <= SP.CANOES_KYR + 1e-9:
         f = min(share / SP.BOATS_FULL, 1.0)
-        out.append(("seafaring", rate * share / SP.BOATS_FULL * m, l0 + (l1 - l0) * f))
+        # (canoes before the voyages: the same rate, but only the short reach)
+        out.append(("seafaring", rate * share / SP.BOATS_FULL * m, l0 + (l1 - l0) * f if ago_kyr <= since + 1e-9 else l0))
     return out
 
 

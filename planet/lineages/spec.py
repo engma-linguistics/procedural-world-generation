@@ -67,6 +67,10 @@ HOPS = {
 # often and less far, but not never.
 BOATS = (1.0, 300.0, 1500.0, 6.0)
 BOATS_FULL = 0.6
+# canoes (PW-677): before the voyaging (BOATS[3]) and since CANOES_KYR ago (Sahul ~60 kyr ago), a people with a
+# sea share crosses the way boats do but only over short gaps (reach BOATS[1] km): modern peoples that have been
+# around for tens of kyr reach the next landmass over a few hundred km of water, not only after the voyages.
+CANOES_KYR = 60.0
 
 # demography and movement, per people (PW-650): each can be given in the spec; else it comes from the traits
 # (the strongest value among its traits; 'insular' sets exploration and insularity whatever else).

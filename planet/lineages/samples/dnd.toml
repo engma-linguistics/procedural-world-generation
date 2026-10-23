@@ -686,6 +686,173 @@ b = "fire_giant"
 want = "apart"
 weight = 0.5
 
+# -- old enmities (PW-678): mostly 'apart'. a keeps away from b: a's habitat is cut where b lives (a mild nudge, scaled by
+# weight; one direction per pair, a the people with more to lose or more to say), and the score is the share of a's range
+# more than ~330 km from b's. Human-elf and human-orc stay unwished (the half-elves and half-orcs need them to meet).
+[[wish]]  # human settlements keep away from goblin warrens ...
+a = "human"
+b = "goblin"
+want = "apart"
+weight = 0.6
+
+[[wish]]  # ... lizardfolk marshes ...
+a = "human"
+b = "lizardfolk"
+want = "apart"
+weight = 0.6
+
+[[wish]]  # ... the bugbears of the woods ...
+a = "human"
+b = "bugbear"
+want = "apart"
+weight = 0.5
+
+[[wish]]  # ... kobold tunnels ...
+a = "human"
+b = "kobold"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # ... and the drow below
+a = "human"
+b = "drow"
+want = "apart"
+weight = 0.5
+
+[[wish]]  # the giants raid the steadings of the hills
+a = "human"
+b = "hill_giant"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # elves and orcs: the oldest hatred
+a = "elf"
+b = "orc"
+want = "apart"
+weight = 0.8
+
+[[wish]]
+a = "elf"
+b = "goblin"
+want = "apart"
+weight = 0.5
+
+[[wish]]  # ... and the hobgoblin legions
+a = "elf"
+b = "hobgoblin"
+want = "apart"
+weight = 0.5
+
+[[wish]]  # the drow were cast out of the elven lands
+a = "elf"
+b = "drow"
+want = "apart"
+weight = 0.6
+
+[[wish]]  # dwarves and orcs
+a = "dwarf"
+b = "orc"
+want = "apart"
+weight = 0.8
+
+[[wish]]  # dwarves and the drow of the deep
+a = "dwarf"
+b = "drow"
+want = "apart"
+weight = 0.8
+
+[[wish]]
+a = "dwarf"
+b = "goblin"
+want = "apart"
+weight = 0.5
+
+[[wish]]
+a = "dwarf"
+b = "hill_giant"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # halflings keep to quiet country, away from the raiders
+a = "halfling"
+b = "bugbear"
+want = "apart"
+weight = 0.5
+
+[[wish]]
+a = "halfling"
+b = "goblin"
+want = "apart"
+weight = 0.4
+
+[[wish]]
+a = "halfling"
+b = "orc"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # gnomes and kobolds: a feud of tunnels
+a = "gnome"
+b = "kobold"
+want = "apart"
+weight = 0.6
+
+[[wish]]
+a = "gnome"
+b = "goblin"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # the forest firbolgs and the orc warbands
+a = "firbolg"
+b = "orc"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # aarakocra and kenku: kin that don't speak
+a = "aarakocra"
+b = "kenku"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # tabaxi keep out of the orcs' steppe raids
+a = "tabaxi"
+b = "orc"
+want = "apart"
+weight = 0.3
+
+[[wish]]  # lizardfolk and the sea folk
+a = "lizardfolk"
+b = "sea_elf"
+want = "apart"
+weight = 0.4
+
+[[wish]]  # kobolds gather around the dragonborn they revere
+a = "kobold"
+b = "dragonborn"
+want = "near"
+weight = 0.5
+
+# fire giants as warlords and emperors: they like to sit by the peoples they rule (and forge for). Full weight: their
+# own habitat (the fire mountains, pull 0.7) is narrow, and a near wish is only a nudge on the country beside the others
+[[wish]]
+a = "fire_giant"
+b = "hobgoblin"
+want = "near"
+weight = 1.0
+
+[[wish]]
+a = "fire_giant"
+b = "dwarf"
+want = "near"
+weight = 1.0
+
+[[wish]]
+a = "fire_giant"
+b = "human"
+want = "near"
+weight = 1.0
+
 # ---- land use: what each way of life looks for in the world's land ---------------------------
 # by: a trait, or a place or climate tag in a line's prefers; good: planet/lineages/land.py GOODS
 # (fertile, grazing, foraging, timber, fuel, building, stone, metal, gold, iron, copper, tin, gems,

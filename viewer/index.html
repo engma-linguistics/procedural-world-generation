@@ -860,6 +860,8 @@ const SEA_LAYERS = { 'wave power': 'wave_power', 'tide range': 'tide_range', sal
 // (ways of life, PW-665) as a whole, from the peoples_whole layer, instead of by group.
 const peoplesIdx = (i) => (state.peoplesWhole && V.layers.peoples_whole ? V.layers.peoples_whole : V.layers.peoples)[i];
 const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
+// (each line's THREE.Color once: parsing its CSS string per cell was a third of the recolour, PW-679)
+const lineColor = (l) => (l ? (l._c ||= new THREE.Color(l.color)) : NOBODY);
 function peoplesColor(layer, i, c) {
   const L = V.layers, elev = L.elevation;
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
@@ -867,14 +869,17 @@ function peoplesColor(layer, i, c) {
   const lines = V.run.meta.lineages || [];
   if (layer === 'peoples overlay') {  // templates (tieflings...) and contact hybrids (half-elves...): the strongest
     const o = L.peoples_overlay?.[i];
-    if (o == null || o === 255 || !lines[o]) return c.copy(NOBODY).lerp(c.set(lines[L.peoples[i]]?.color || '#5a5a52'), 0.25);
-    return c.set(lines[o].color);
+    if (o == null || o === 255 || !lines[o]) {  // (no overlay here: the leading people at 25% over grey, PW-686)
+      const p = lines[L.peoples[i]];
+      return p ? c.copy(NOBODY).lerp(lineColor(p), 0.25) : c.copy(NOBODY);
+    }
+    return c.copy(lineColor(lines[o]));
   }
   if (layer === 'peoples mix') { const m = L.peoples_mix[i]; return m ? c.setHSL(0.75 - 0.12 * Math.min(m, 6), 0.7, 0.35 + 0.06 * m) : c.copy(NOBODY); }
   const d = peoplesIdx(i);
   if (d === 255 || !lines[d]) return c.copy(NOBODY);
-  if (state.people != null && d !== state.people) return c.copy(NOBODY).lerp(c.set(lines[d].color), 0.15);
-  c.set(lines[d].color).lerp(NOBODY, 0.55 * (1 - (L.peoples_share ? L.peoples_share[i] : 100) / 100));
+  if (state.people != null && d !== state.people) return c.copy(NOBODY).lerp(lineColor(lines[d]), 0.15);  // (the others dimmed, PW-686)
+  c.copy(lineColor(lines[d])).lerp(NOBODY, 0.55 * (1 - (L.peoples_share ? L.peoples_share[i] : 100) / 100));
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
 }
@@ -1175,8 +1180,10 @@ function needsPerTri() { return state.mode !== 'globe' && state.layer === 'satel
 function buildTopology() {
   const G = V.grid, globe = state.mode === 'globe', perTri = needsPerTri();
   const vCell = [], vCorner = [], base = [], triCell = [], index = [];
+  const triStart = globe ? new Int32Array(V.n + 1) : null;  // (the globe: cell i's triangles are triStart[i] .. triStart[i+1]-1)
   const cell = (i, C, P, cs) => {  // C, P: the base positions of the centre and the corners
     const v0 = vCell.length;
+    if (triStart) { triStart[i] = triCell.length; triStart[i + 1] = triCell.length + cs.length; }
     if (!perTri) { vCell.push(i); vCorner.push(-1); base.push(...C); }
     for (let k = 0; k < cs.length; k++) {
       const k2 = (k + 1) % cs.length;
@@ -1204,7 +1211,7 @@ function buildTopology() {
   const cList = Int32Array.from(cc.flat());
   const vSrc = Int32Array.from(vCorner, (k, v) => (k < 0 ? vCell[v] : V.n + k));
   topo = { vCell: Int32Array.from(vCell), vCorner: Int32Array.from(vCorner), vSrc, cStart, cList, base: Float32Array.from(base),
-           triCell, globe, perTri, posKey: null };
+           triCell, triStart, globe, perTri, posKey: null };
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(base.length), 3));
   // colours as normalized 16-bit (half the upload of floats, no banding in the dark sea ramps)
@@ -1282,10 +1289,11 @@ function paint() {
   V.R = writePos ? R : null;  // (the overlays sit on it)
   if (seaShell) seaShell.visible = sea;
   const pos = mesh.geometry.attributes.position.array, rgb = mesh.geometry.attributes.color.array;
-  let maxR = 1;
+  let maxR = 1, minR = Infinity;
   if (writePos) for (let v = 0; v < nv; v++) {
     const rr = R[vSrc[v]], r = globe ? rr : 1, v3 = 3 * v;
     if (rr > maxR) maxR = rr;
+    if (rr < minR) minR = rr;
     pos[v3] = base[v3] * r; pos[v3 + 1] = base[v3 + 1] * r; pos[v3 + 2] = shadeMap || r3d && !globe ? mapZ * (rr - 1) : base[v3 + 2] * r;
   }
   // (16-bit colours: each cell's, or corner's, converted once, then copied to its vertices)
@@ -1312,6 +1320,7 @@ function paint() {
     // the bounding sphere (for picking and culling), without a pass over every vertex:
     // the globe is centred, of radius the highest point; the map is 4 x 2 (plus the overlap)
     topo.maxR = maxR;  // (the highest point: fitClip)
+    topo.minR = minR;  // (the lowest: the globe pick's shell)
     if (globe) mesh.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), maxR);
     else mesh.geometry.computeBoundingSphere();
     topo.posKey = posKey;
@@ -1425,6 +1434,17 @@ function llPos(lat, lon, r, mapLift = 0.003) {
   }
   return [lon / 90, lat / 90, mapLift + (relief3d() && V.R ? mapRelief(nearestCell(lat, lon)) : 0)];
 }
+// llPos for a point whose cell and unit vector are known: {lat, lon, cell, u} from llPoint (PW-679: the
+// peoples tracks ask for the same thousands of points every frame, and the grid doesn't change)
+function llPoint(lat, lon) { return { lat, lon, cell: nearestCell(lat, lon), u: unitVec(lat, lon) }; }
+function llPosPt(q, r, mode, mapLift = 0.003) {  // mode: llMode()
+  if (state.mode === 'globe') {
+    const k = (mode.flat ? 1 : Math.max(cellRadius(q.cell), 1)) * r;
+    return [q.u[0] * k, q.u[1] * k, q.u[2] * k];
+  }
+  return [q.lon / 90, q.lat / 90, mapLift + (mode.r3d && V.R ? mapRelief(q.cell) : 0)];
+}
+function llMode() { const r3d = relief3d(); return { r3d, flat: !r3d && !(reliefScale() > 0) }; }
 
 // The rivers are ribbons of triangles a fixed number of screen pixels
 // wide (three's fat lines, LineSegments2): they read better than 1-pixel lines and are drawn
@@ -1569,25 +1589,42 @@ function peopleOverlays(globe, wraps) {
   const lines = V.peopleTracks, now = -(V.run.frames[V.frame]?.t ?? 0), pts = [], cols = [], rings = [], rcols = [];
   const c = new THREE.Color(), r0 = globe ? 1.014 : 1, D = Math.PI / 180;
   const llv = (la, lo) => [Math.cos(la * D) * Math.cos(lo * D), Math.cos(la * D) * Math.sin(lo * D), Math.sin(la * D)];
+  // (every point's cell and unit vector once per run, in V.peopleCache: the overlays are rebuilt each frame)
+  const cache = V.peopleCache ||= new Map(), mode = llMode();
   for (const l of lines) {
     if (l.overlay || (state.people != null && l.index !== state.people)) continue;
     c.set(l.color);
     const o = l.origin_place;
     if (o && o.ago_kyr >= now - 1e-6) {
-      const cl = Math.max(Math.cos(o.lat * Math.PI / 180), 0.2);
+      let ring = cache.get('o' + l.index);
+      if (!ring) {
+        const cl = Math.max(Math.cos(o.lat * Math.PI / 180), 0.2);
+        ring = [];
+        for (let k = 0; k <= 20; k++) { const a = k / 20 * 2 * Math.PI; ring.push(llPoint(o.lat + 2 * Math.sin(a), o.lon + 2 * Math.cos(a) / cl)); }
+        cache.set('o' + l.index, ring);
+      }
+      let p1 = llPosPt(ring[0], r0, mode);
       for (let k = 0; k < 20; k++) {
-        const a1 = k / 20 * 2 * Math.PI, a2 = (k + 1) / 20 * 2 * Math.PI;
-        const p1 = llPos(o.lat + 2 * Math.sin(a1), o.lon + 2 * Math.cos(a1) / cl, r0), p2 = llPos(o.lat + 2 * Math.sin(a2), o.lon + 2 * Math.cos(a2) / cl, r0);
+        const p2 = llPosPt(ring[k + 1], r0, mode);
         if (!wraps(p1, p2)) { rings.push(...p1, ...p2); rcols.push(c.r, c.g, c.b, c.r, c.g, c.b); }
+        p1 = p2;
       }
     }
     const tr = (l.track || []).filter((x) => x[0] >= now - 1e-6);
     for (let k = 1; k < tr.length; k++) {  // (a few steps along the great circle between stored centres)
-      const a = llv(tr[k - 1][1], tr[k - 1][2]), b = llv(tr[k][1], tr[k][2]);
+      let seg = cache.get(l.index + ':' + tr[k][0]);
+      if (!seg) {
+        const a = llv(tr[k - 1][1], tr[k - 1][2]), b = llv(tr[k][1], tr[k][2]);
+        seg = [];
+        for (let s = 0; s <= 6; s++) {
+          const v = a.map((x, j) => x * (1 - s / 6) + b[j] * (s / 6)), n = Math.hypot(...v) || 1;
+          seg.push(llPoint(Math.asin(v[2] / n) * 180 / Math.PI, Math.atan2(v[1], v[0]) * 180 / Math.PI));
+        }
+        cache.set(l.index + ':' + tr[k][0], seg);
+      }
       let prev = null;
       for (let s = 0; s <= 6; s++) {
-        const v = a.map((x, j) => x * (1 - s / 6) + b[j] * (s / 6)), n = Math.hypot(...v) || 1;
-        const p = llPos(Math.asin(v[2] / n) * 180 / Math.PI, Math.atan2(v[1], v[0]) * 180 / Math.PI, r0);
+        const p = llPosPt(seg[s], r0, mode);
         if (prev && !wraps(prev, p)) { pts.push(...prev, ...p); cols.push(c.r, c.g, c.b, c.r, c.g, c.b); }
         prev = p;
       }
@@ -2161,10 +2198,15 @@ function renderLegend() {
   } else if (ov && ov.diff) {
     el.innerHTML = rampLegend('rainfall ratio', 'model ÷ observed rainfall', ['¼×', '4×']) +
       '<span class="muted">observed: GPCC (land), GPCP where GPCC has none</span>';
-  } else if (state.layer === 'peoples' || state.layer === 'peoples mix') {
+  } else if (state.layer === 'peoples' || state.layer === 'peoples mix' || state.layer === 'peoples overlay') {
     // the peoples present in this frame (planet/lineages/), by the land they lead
     const L = V.layers, lines = V.run.meta.lineages || [], cnt = new Map();
-    if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
+    if (state.layer === 'peoples overlay') {  // (it fell through to the ramp legend, which threw: PW-679)
+      const ov = L.peoples_overlay;
+      for (let i = 0; i < V.n; i++) { const d = ov ? ov[i] : 255; if (d !== 255 && lines[d]) cnt.set(d, (cnt.get(d) || 0) + 1); }
+      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d].color, esc(lines[d].name))).join('') +
+        '<span class="muted">templates and contact hybrids; elsewhere the leading people</span>';
+    } else if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
     else {
       for (let i = 0; i < V.n; i++) { const d = L.peoples ? peoplesIdx(i) : null; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
       el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
@@ -3216,11 +3258,62 @@ function seasonChart(i) {
 // hover / click
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 let hovered = -1, infoHtml = null;
+// The cell under the pointer on the globe (PW-679). three's raycast tests every triangle (~1 M at L7,
+// ~25 ms a mouse move); the ray only crosses the thin shell between the lowest and the highest
+// surface point, so walk it in half-cell steps, take the cells nearest those points and their
+// neighbours, and test only their triangles (Moller-Trumbore, nearest hit). Same cell as the full
+// raycast (planetViewer.pickCheck). undefined: not the globe, use the full raycast.
+const pickTmp = new THREE.Matrix4();
+function pickGlobeCell() {
+  const T = topo;
+  if (!T.globe || !T.triStart || !T.maxR || !(T.minR < Infinity)) return undefined;
+  const rr = ray.ray.clone().applyMatrix4(pickTmp.copy(mesh.matrixWorld).invert());
+  const o = rr.origin, d = rr.direction, b = o.dot(d), c0 = o.dot(o);
+  const dOut = b * b - (c0 - T.maxR * T.maxR);
+  if (dOut < 0) return -1;
+  const sOut = Math.sqrt(dOut);
+  let t0 = Math.max(-b - sOut, 0), t1 = -b + sOut;
+  if (t1 < 0) return -1;
+  const rIn = Math.max(T.minR - 1e-4, 1e-3), dIn = b * b - (c0 - rIn * rIn);
+  if (dIn >= 0) { const ti = -b - Math.sqrt(dIn); if (ti >= t0) t1 = Math.min(t1, ti); }
+  const G = V.grid, n = V.n, pos = mesh.geometry.attributes.position.array, idx = mesh.geometry.index?.array, tri = T.triStart;
+  const step = 0.5 * Math.sqrt(4 * Math.PI / n), seen = new Set(), P = [0, 0, 0];
+  let best = -1, bt = Infinity;
+  const test = (c) => {
+    if (seen.has(c)) return; seen.add(c);
+    for (let t = tri[c]; t < tri[c + 1]; t++) {
+      const ia = idx ? idx[3 * t] : 3 * t, ib = idx ? idx[3 * t + 1] : 3 * t + 1, ic = idx ? idx[3 * t + 2] : 3 * t + 2;
+      const ax = pos[3 * ia], ay = pos[3 * ia + 1], az = pos[3 * ia + 2];
+      const e1x = pos[3 * ib] - ax, e1y = pos[3 * ib + 1] - ay, e1z = pos[3 * ib + 2] - az;
+      const e2x = pos[3 * ic] - ax, e2y = pos[3 * ic + 1] - ay, e2z = pos[3 * ic + 2] - az;
+      const px = d.y * e2z - d.z * e2y, py = d.z * e2x - d.x * e2z, pz = d.x * e2y - d.y * e2x;
+      const det = e1x * px + e1y * py + e1z * pz;
+      if (Math.abs(det) < 1e-14) continue;
+      const inv = 1 / det, sx = o.x - ax, sy = o.y - ay, sz = o.z - az;
+      const u = (sx * px + sy * py + sz * pz) * inv;
+      if (u < 0 || u > 1) continue;
+      const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+      const v = (d.x * qx + d.y * qy + d.z * qz) * inv;
+      if (v < 0 || u + v > 1) continue;
+      const tt = (e2x * qx + e2y * qy + e2z * qz) * inv;
+      if (tt >= 0 && tt < bt) { bt = tt; best = c; }
+    }
+  };
+  for (let t = t0; ; t += step) {
+    const tc = Math.min(t, t1), x = o.x + d.x * tc, y = o.y + d.y * tc, z = o.z + d.z * tc, l = Math.hypot(x, y, z) || 1;
+    P[0] = x / l; P[1] = y / l; P[2] = z / l;
+    const c = nearestCellU(P);
+    test(c); for (const j of G.nbr[c]) test(j);
+    if (tc >= t1) break;
+  }
+  return best;
+}
 function updateHover() {
   if (!mesh) return;
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObject(mesh)[0];
-  hovered = hit ? topo.triCell[hit.faceIndex] : -1;
+  const fast = pickGlobeCell();
+  if (fast !== undefined) hovered = fast;
+  else { const hit = ray.intersectObject(mesh)[0]; hovered = hit ? topo.triCell[hit.faceIndex] : -1; }
   renderHover();
 }
 function renderHover() {
@@ -3983,6 +4076,9 @@ function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
   // ice, which says which cells are land (see iceBed)
   const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || [])];
+  // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
+  // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay');
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);
   for (const [id, ks] of Object.entries(OVERLAY_NEEDS)) if ($(id).checked) want.push(...ks);
@@ -4166,7 +4262,15 @@ function togglePlay() {
   $('play').innerHTML = '&#10073;&#10073;';
 }
 $('play').addEventListener('click', togglePlay);
-$('frame').addEventListener('input', (e) => { stop(); setFrame(+e.target.value); });
+// (scrubbing: at most one repaint per display frame, the last position wins; a repaint is ~20 ms at L7, and slider
+// events arrive faster than that when the machine is busy, so each used to queue behind the one before, PW-679)
+let scrubTo = null;
+$('frame').addEventListener('input', (e) => {
+  stop();
+  const wasIdle = scrubTo === null;
+  scrubTo = +e.target.value;
+  if (wasIdle) requestAnimationFrame(() => { const f = scrubTo; scrubTo = null; if (V?.kind === 'run' && f < V.run.frames.length) setFrame(f); });
+});
 addEventListener('keydown', (e) => {
   if (!V || state.tab === 'zoom' || e.target.tagName === 'SELECT') return;
   if (e.code === 'KeyN' && !e.metaKey && !e.ctrlKey) northUp();
@@ -4354,6 +4458,20 @@ function navBarHide() { $('navBar')?.setAttribute('hidden', ''); }
 // painted (setFrame) and drawn, a pixel read back after each so the GPU's time counts;
 // then frames drawn with the camera turning and nothing repainted
 window.planetViewer = {
+  // random pointer positions: the globe's fast pick against three's full raycast (PW-679); {tested, hits, mismatches}
+  pickCheck(count = 400) {
+    const out = { tested: 0, hits: 0, mismatches: 0, undefinedPicks: 0, examples: [] };
+    group.updateMatrixWorld(true);
+    for (let k = 0; k < count; k++) {
+      mouse.set(Math.random() * 1.3 - 0.65, Math.random() * 1.3 - 0.65);
+      ray.setFromCamera(mouse, camera);
+      const fast = pickGlobeCell(), hit = ray.intersectObject(mesh)[0], slow = hit ? topo.triCell[hit.faceIndex] : -1;
+      if (fast === undefined) { out.undefinedPicks++; continue; }
+      out.tested++; if (slow >= 0) out.hits++;
+      if (fast !== slow) { out.mismatches++; if (out.examples.length < 5) out.examples.push({ fast, slow, mx: mouse.x, my: mouse.y }); }
+    }
+    return out;
+  },
   bench(frames = 30) {
     const gl = renderer.getContext(), px = new Uint8Array(4), out = {};
     const draw = () => { controls.update(); fitClip(); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
