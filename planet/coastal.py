@@ -418,7 +418,8 @@ def environment(grid, L: dict, meta: dict | None = None, unlocked=None, ssc=None
             "kelp_water": np.where(sea, kelp_w, z), "seagrass_water": np.where(sea, seag_w, z),
             "mangrove_climate": mang_c, "salt_marsh_climate": marsh_c, "mud": np.where(sea, mud, z),
             "ssc": ssc, "kd": np.where(sea, kd, 0.0), "rocky": rocky,
-            "tide_land": tide_l, "wave_land": wave_l, "coastal_sea": coastal_sea, "coastal_land": near}
+            "tide_land": tide_l, "wave_land": wave_l, "coastal_sea": coastal_sea, "coastal_land": near,
+            "rocky_land": np.where(land, rocky_l, 0.0), "hard": (hard & land).astype(float)}
 
 
 def intertidal_habitat(wave, mud) -> np.ndarray:

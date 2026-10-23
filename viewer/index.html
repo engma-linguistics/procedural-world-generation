@@ -521,6 +521,47 @@ function resColor(layer, i, c) {
   const r = resInfo(state.res), v = r ? (L['res_' + r.key]?.[i] || 0) : 0;
   c.copy(base).multiplyScalar(0.8).lerp(new THREE.Color(r?.color || '#fff'), Math.sqrt(Math.min(1, v)));
 }
+// coast form (coastform.py, PW-097): 'coasts' = each coastal land cell's class (legend.coast); the scores 0-1
+// (barrier islands, cliffs, seabird and seal colonies on the coast's land, hazards to ships at sea)
+const COAST_SCORES = { 'barrier islands': 'barrier', cliffs: 'cliff', seabirds: 'seabirds', seals: 'seals', 'sea hazards': 'nav_hazard' };
+const COAST_LAYERS = new Set(['coasts', ...Object.keys(COAST_SCORES)]);
+const COAST_RAMP = ramp([[0, '#3a4250'], [0.25, '#3f7f9f'], [0.5, '#8fc89a'], [0.75, '#f2c45a'], [1, '#e8503c']]);
+function coastColor(layer, i, c) {
+  const L = V.layers, land = L.elevation[i] > 0 || (L.ice && L.ice[i] > 0);
+  if (layer === 'coasts') {
+    const e = V.coastLeg?.[L.coast_type[i]];
+    if (e && e.id > 0) c.set(e.color.slice(0, 7));
+    else { c.copy(land ? BARE : OCEAN); if (land) c.multiplyScalar(0.6); }
+    return;
+  }
+  const k = COAST_SCORES[layer], v = L[k][i];
+  if (land === (k === 'nav_hazard') || v <= 0) { c.copy(land ? BARE : OCEAN); if (land) c.multiplyScalar(0.6); return; }
+  COAST_RAMP(v, c);
+}
+function coastLegend(layer, sw) {
+  const L = V.layers, km = Math.sqrt(4 * Math.PI * 6371 ** 2 / V.n);  // (one cell width of coast per coastal cell)
+  if (layer === 'coasts') {
+    const cnt = new Map();
+    for (let i = 0; i < V.n; i++) if (L.coast_type[i]) cnt.set(L.coast_type[i], (cnt.get(L.coast_type[i]) || 0) + 1);
+    return [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => V.coastLeg[id])
+      .map((e) => `<span title="${esc(e.about)}">${sw(e.color.slice(0, 7), `${esc(e.name)} ${Math.round(cnt.get(e.id) * km / 1000).toLocaleString()}k km`)}</span>`).join('') +
+      '<span class="muted">(the coast form of each coastal land cell, km of coastline; hover a class for what it means, a cell for its scores)</span>';
+  }
+  const about = { barrier: 'low coast, gentle shelf, waves, small tides, sand', cliff: 'high or hard land under strong waves',
+                  seabirds: 'food in the water (upwelling, cool or tidally mixed seas) x nesting cliffs or predator-free islands',
+                  seals: 'food in cool water x rocky shores, island beaches or sea ice to haul out on',
+                  nav_hazard: 'reefs, shallow banks off the coast, sea ice much of the year' }[COAST_SCORES[layer]];
+  return [0.25, 0.5, 0.75, 1].map((v) => { const c = new THREE.Color(); COAST_RAMP(v, c); return sw('#' + c.getHexString(), v.toFixed(2)); }).join('') +
+    `<span class="muted">(likelihood 0-1: ${about}; coastform.py)</span>`;
+}
+function coastText(i) {
+  const L = V.layers, e = V.coastLeg?.[L.coast_type[i]];
+  if (!e || !e.id) return '';
+  const extra = [['barrier', 'barrier'], ['cliff', 'cliffs'], ['seabirds', 'seabirds'], ['seals', 'seals']]
+    .filter(([k]) => L[k] && L[k][i] >= 0.3).map(([k, n]) => `${n} ${L[k][i].toFixed(2)}`);
+  return e.name + (extra.length ? ` (${extra.join(', ')})` : '');
+}
+
 function resLegend(layer, sw) {
   const L = V.layers, R = V.resLeg;
   if (layer === 'building stone') {
@@ -866,6 +907,7 @@ function cellColors(layer) {
     }
     else if (HU_LAYERS[layer]) huColor(layer, i, c);
     else if (RES_LAYERS.has(layer)) resColor(layer, i, c);
+    else if (COAST_LAYERS.has(layer)) coastColor(layer, i, c);
     else if (layer === 'bed under ice') {
       rampFns.elevation(L.bed ? L.bed[i] : elev[i], c);
       if (L.ice && L.ice[i] > 0) c.lerp(ICE, 0.15);
@@ -952,6 +994,7 @@ function availableLayers() {
   if (V.layers.flood_ratio) ls.push('river floods');
   for (const [name, k] of Object.entries(HU_LAYERS)) if (V.layers[k] && V.humanUse?.[k]) ls.push(name);
   if (V.layers.resource && V.resLeg) ls.push('resources', 'resource', 'building stone');
+  if (V.layers.coast_type && V.coastLeg) ls.push('coasts', ...Object.keys(COAST_SCORES));
   if (V.layers.wave_power) ls.push('wave power');
   if (V.layers.tide_range) ls.push('tide range');
   if (V.layers.sst) ls.push('sea temperature');
@@ -2049,6 +2092,8 @@ function renderLegend() {
       `<span class="muted">(Köppen climate classes${ov ? ', observed: Kottek et al. 2006; grey = no data' : ''})</span>`;
   } else if (RES_LAYERS.has(state.layer)) {
     el.innerHTML = resLegend(state.layer, sw);
+  } else if (COAST_LAYERS.has(state.layer)) {
+    el.innerHTML = coastLegend(state.layer, sw);
   } else if (HU_LAYERS[state.layer]) {
     const k = HU_LAYERS[state.layer];
     el.innerHTML = huSwatches(k) + `<span class="muted">(${{ river_nav: 'ribbons follow the rivers; also under Overlays', harbour: 'diamonds mark them; also under Overlays',
@@ -2142,6 +2187,12 @@ const LAYER_HINTS = {
   humidity: 'Relative humidity near the ground.', 'dew point': 'Dew point: the temperature at which the air would be saturated.',
   cloud: 'Cloud cover: the share of the sky covered.', sunshine: 'Hours of bright sunshine a day.',
   'coastal life': 'Coral reefs, kelp forests and seagrass on the shallow sea floor, mangroves and salt marsh between the tides: each cell in its biggest habitat\'s colour.',
+  coasts: 'The form of each coast: ice fronts, fjords, deltas, mangrove and coral coasts, tidal flats, barrier islands, cliffs, rocky shores, beaches (planet/coastform.py).',
+  'barrier islands': 'How likely the coast is fronted by barrier islands and lagoons: low land, a gentle shelf, waves and small tides.',
+  cliffs: 'How likely the coast is cliffed: high or hard land under strong waves.',
+  seabirds: 'How likely seabird colonies are: rich water nearby and cliffs or predator-free islands to nest on.',
+  seals: 'How likely seals and sea lions haul out here: rich, cool water and rocky shores, island beaches or sea ice.',
+  'sea hazards': 'Hazards to ships: coral reefs, shallow banks away from the coast, sea ice much of the year.',
   turbidity: 'River mud suspended in the sea (it takes the light reefs and seagrass need).',
   upwelling: 'Cold, nutrient-rich water welling up along coasts and the equator: how much it cools the sea.',
 };
@@ -2764,6 +2815,8 @@ function cellInfo(i) {
     landformRows();
     if (L.wave_power && !land) R('water', 'waves', `${L.wave_power[i].toFixed(1)} kW/m, tides ${L.tide_range[i].toFixed(1)} m`);
     if (L.reef && coastalText(i)) R('plants', 'coastal life', coastalText(i), { sep: ': ', ess: true });
+    if (L.coast_type && coastText(i)) R('ground', 'coast', coastText(i), { sep: ': ', ess: true });
+    if (L.nav_hazard && !land && L.nav_hazard[i] >= 0.3) R('water', 'hazard to ships', L.nav_hazard[i].toFixed(2), { sep: ': ' });
     if (L.turbidity && !land) R('water', 'mud', `${L.turbidity[i].toFixed(1)} mg/L in the water`, { sep: ': ', extra: true });
     if (L.upwelling && !land && L.upwelling[i] >= 0.3) R('water', 'upwelling', `cools the sea ${L.upwelling[i].toFixed(1)} °C`, { sep: ': ' });
     if (L.sst && !land) {
@@ -3673,7 +3726,8 @@ function legendFields(leg) {
            pfts: leg.vegetation?.pfts || [], plantGroups: leg.vegetation?.groups || [],
            soilTypes: leg.soils?.types || [], soilColors: (leg.soils?.types || []).map((t) => t.color),
            soilTextures: leg.soils?.textures || [], soilDrainage: leg.soils?.drainage || [],
-           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, resLeg: leg.resources || null };
+           soilPermafrost: leg.soils?.permafrost || [], humanUse: leg.human_use || {}, resLeg: leg.resources || null,
+           coastLeg: leg.coast || null };
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?

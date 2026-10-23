@@ -164,6 +164,27 @@ def cmd_satellite(args):
             print(S.rel(W.save(w, w["name"], rid)))
 
 
+def cmd_coast(args):
+    """Adds (or redoes) the coast layers (PW-097: coast form, barrier and cliff scores, seabird and seal
+    colonies, navigation hazards) of saved worlds in place; on saved zooms, draws them per pixel
+    (zoom_coast.py)."""
+    from . import coastform as CF
+    for ref in args.ids:
+        kind, _, rid = ref.rpartition(":")
+        kinds = [kind] if kind else [k for k in S.kinds_of(rid) if k in ("world", "zoom")]
+        if len(kinds) != 1:
+            raise SystemExit(f"{ref}: {'ambiguous, give world:' + rid + ' or zoom:' + rid if kinds else 'no such world or zoom'}")
+        if kinds[0] == "zoom":
+            from . import zoom_coast as ZC
+            d = ZC.add_to_zoom(rid, terrain=args.terrain)
+            print(S.rel(d))
+            print("\n".join(ZC.text_lines(json.loads((d / "zoom.json").read_text())["coast"])))
+        else:
+            path = CF.add_to_world(rid)
+            print(S.rel(path))
+            print(CF.text_section(json.loads(path.read_text())["summary"]["coast"]))
+
+
 def cmd_humanuse(args):
     """Adds (or redoes) the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms in place."""
     from . import humanuse as HU
@@ -450,6 +471,13 @@ def main():
     sa.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     sa.set_defaults(func=cmd_satellite)
 
+    co = sub.add_parser("coast", help="add or redo the coast layers (coast form: fjords, cliffs, beaches, barrier "
+                                      "islands, tidal flats, mangrove and coral coasts; seabird and seal colonies; "
+                                      "navigation hazards) of saved worlds, or draw them in saved zooms (in place)")
+    co.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
+    co.add_argument("--terrain", action="store_true", help="zooms: also raise barrier islands out of the sea in the "
+                                                          "elevation layer (opt-in: changes the zoom's terrain)")
+    co.set_defaults(func=cmd_coast)
     hu = sub.add_parser("humanuse", help="add or redo the human-use layers (navigable rivers, harbours, passes, farmland, fresh water) of saved worlds and zooms (in place)")
     hu.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     hu.set_defaults(func=cmd_humanuse)

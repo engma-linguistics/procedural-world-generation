@@ -282,6 +282,9 @@ def summarize(world: dict) -> dict:
     if "resource" in L:  # (resources.py, PW-155: top deposit districts per landmass)
         from .resources import deposits
         s["resources"] = deposits(g, L)
+    if "coast_type" in L:  # (coastform.py, PW-097: coast classes, colonies, hazards)
+        from .coastform import summary as coast_summary
+        s["coast"] = coast_summary(g, L)
     return s
 
 
@@ -411,6 +414,9 @@ def text_report(world: dict, summary: dict, width: int = 120) -> str:
     if summary.get("resources"):
         from .resources import text_section
         out += [text_section(summary["resources"]), ""]
+    if summary.get("coast"):
+        from .coastform import text_section as coast_text
+        out += [coast_text(summary["coast"]), ""]
     return "\n".join(out)
 
 
