@@ -2,7 +2,7 @@
 id: PW-610
 title: "Resources stage 2: site concrete deposits (points, seams, placers) in regional zooms"
 type: task
-status: todo
+status: done
 parent: PW-155
 milestone: v2
 subsystem: zoom
@@ -30,6 +30,7 @@ table, draw as markers with a legend and hover in zoom.html; add to export featu
 - [ ] screenshots on a porphyry arc, a coal basin and a placer river
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (resources lane 2, 5ad220f): deposits sited in zooms (planet/zoom_resources.py, viewer Deposits overlay, export features), bauxite by uninterrupted weathering runs, coal column smoothed. Follow-ups PW-615..618.
 - 2026-10-23: Created from inbox draft draft-resources-zoom-siting.md (found by resources).
 - 2026-10-23: Built (lane resources2): planet/zoom_resources.py, `planet resources zoom:<id>` (zoom.json
   `resources`: deposits with type, size, tonnage, grade, depth, host; coal outcrop belts; summary), zoom.html

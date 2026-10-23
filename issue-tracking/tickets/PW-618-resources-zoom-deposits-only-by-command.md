@@ -1,4 +1,5 @@
 ---
+id: PW-618
 title: "Resources: zoom deposits only by command; not in the 3D view; fine zooms don't inherit them"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: resources2
 blocked_by: []
 relates: [PW-609, PW-610]
 refs: [planet/zoom_resources.py, viewer/zoom.html, viewer/zoom3d.js, planet/zoom_fine.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -27,3 +30,6 @@ at L7, which could be cached per world. There are three gaps:
    zoom has it.
 Lean: B for gap 1. Then gap 3: inherit the points that fall inside, and re-site at the fine resolution with
 the same seeds.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-zoom-deposits-auto-and-3d.md (found by resources2).

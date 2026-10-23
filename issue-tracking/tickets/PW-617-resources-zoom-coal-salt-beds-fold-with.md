@@ -1,4 +1,5 @@
 ---
+id: PW-617
 title: "Resources: zoom coal/salt beds fold with the zoom's ridges by a proxy, not the fold-belt structure"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: resources2
 blocked_by: []
 relates: [PW-610]
 refs: [planet/zoom_resources.py, planet/zoom_landforms.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,3 +26,6 @@ the zoom is built, and fold the beds with it. The seams would then outcrop along
 the zoom draws, as in the design in docs/proposals/resources.md section 6. Flat-lying beds also have no
 regional dip, so a bed outcrops only where valleys cut down to it.
 - [ ] coal outcrop belts in a fold-belt zoom follow its ridges' strike
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-zoom-bed-geometry.md (found by resources2).

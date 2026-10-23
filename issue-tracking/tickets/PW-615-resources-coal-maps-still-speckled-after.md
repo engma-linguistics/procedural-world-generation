@@ -1,4 +1,5 @@
 ---
+id: PW-615
 title: "Resources: coal maps still speckled after smoothing the traced cover (cell-to-cell trace noise)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: resources2
 blocked_by: []
 relates: [PW-134, PW-155]
 refs: [planet/resources.py, docs/review/resources/stage2.md, docs/review/resources/stage2/coal_1144ce_before_after.jpg]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Options:
 The keyframe flicker itself is PW-134.
 - [ ] isolated coal cells are under 10% of the coal cells on 1144ce and 119973, and coal's share of land does
       not grow
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-resources-coal-speckle-residual.md (found by resources2).
