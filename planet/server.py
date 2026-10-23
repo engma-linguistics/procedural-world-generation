@@ -334,7 +334,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def lineages_api(self, method: str) -> bool:
         """The peoples editor (viewer/lineages.html, planet/lineages/): GET /api/lineage-trees, GET or POST
         /api/lineage-tree?name=N (the tree as JSON; POST validates and saves it), POST /api/lineages
-        {world | timezoom, tree | raw, tries} (runs at once, ~20 s a try at L6; answers {run})."""
+        {world | timezoom, tree | raw, tries} (queued on the job queue like a time zoom, ~20 s a try at L6;
+        answers {job}; GET /api/jobs/<id> has its progress, and {run} when done)."""
         url = urlsplit(self.path)
         if not url.path.startswith("/api/lineage"):
             return False
@@ -351,8 +352,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     LR.save_raw(q.get("name", ""), body)
                     self.send_json({"saved": q.get("name")})
                 else:
-                    with api.COMPUTE:
-                        self.send_json(LR.job(body))
+                    try:
+                        req = api.parse_lineages_request(body)
+                    except api.BadRequest as e:
+                        return self.send_json({"error": str(e)}, 400) or True
+                    self.send_json({"job": self.jobs.submit(req)})
             else:
                 self.send_error(404)
         except (ValueError, KeyError) as e:

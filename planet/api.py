@@ -444,7 +444,36 @@ def make_job(req: dict, progress=lambda f, msg: None, ctx: dict | None = None) -
     return make.make(req, progress, state=(ctx or {}).get("state"), resume=bool((ctx or {}).get("resume")))
 
 
-JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job}
+def lineages_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/lineages's work (planet/lineages/run.job): {"run"} (a peoples run, meta.phase 'lineages')."""
+    from .lineages import run as LR
+    return LR.job({k: v for k, v in req.items() if k != "type"}, progress)
+
+
+def parse_lineages_request(req: dict) -> dict:
+    """Check a POST /api/lineages {world | timezoom, tree | raw, tries} now, so a bad one fails at once."""
+    from .lineages import recent as R
+    from .lineages import run as LR
+    from .lineages import spec as SP
+    ref = req.get("world") or req.get("timezoom")
+    if not ref:
+        raise BadRequest("give world or timezoom")
+    try:
+        R.resolve(str(ref).removesuffix(".json"))
+        SP.parse(req["raw"]) if req.get("raw") else LR.load_tree(str(req.get("tree") or ""))
+    except (ValueError, KeyError, FileNotFoundError) as e:
+        raise BadRequest(str(e)) from e
+    tries = int(_num(req, "tries", 4))
+    if not 1 <= tries <= 16:
+        raise BadRequest("tries is 1-16")
+    out = {"type": "lineages", "tries": tries, **({"world": str(req["world"])} if req.get("world") else
+                                                  {"timezoom": str(req["timezoom"])})}
+    out.update({"raw": req["raw"]} if req.get("raw") else {"tree": str(req["tree"])})
+    return out
+
+
+JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job,
+        "lineages": lineages_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:

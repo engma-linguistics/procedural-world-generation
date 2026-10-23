@@ -39,6 +39,19 @@ TRAITS = {
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
 }
 LATE_SEA_KYR = 3.0
+# long sea crossings (crossing.py): way -> (rate per kyr at a zero gap, length scale km, only since kyr ago).
+# The chance a line reaches a landmass it doesn't hold in a step of dt kyr is 1 - exp(-dt x sum over its
+# ways of rate x exp(-gap / L)) x the landing's habitat. 'raft' is everyone's (drift rafts, storms: monkeys
+# across the young Atlantic, lemurs to Madagascar): a few hundred km once in a few Myr. Coastal foragers'
+# canoes (Sahul ~60 kyr ago, ~100 km gaps), swimmers and fliers reach further; seafarers with boats
+# (the Lapita / Polynesian voyages, 1000s of km) only late.
+HOPS = {
+    "raft": (3e-4, 150.0, None),
+    "coastal": (0.01, 250.0, None),
+    "swims": (0.05, 400.0, None),
+    "flies": (0.05, 700.0, None),
+    "seafaring": (1.0, 1500.0, 6.0),
+}
 ORIGINS = ("root", "split", "arrival", "hybrid", "template")
 
 KOPPEN_CODES = ["Af", "Am", "Aw", "BWh", "BWk", "BSh", "BSk", "Csa", "Csb", "Csc", "Cwa", "Cwb", "Cwc", "Cfa", "Cfb",
@@ -49,7 +62,8 @@ GROUPS = {  # Köppen groups usable in prefers / avoids (climate.KOPPEN ids)
     "oceanic": [14, 15], "continental": list(range(16, 28)), "subarctic": [18, 19, 22, 23, 26, 27],
     "polar": [28, 29], "tundra": [28],
 }
-PLACES = ("coast", "island", "mountain", "lowland", "inland", "forest", "open", "wetland")
+PLACES = ("coast", "island", "mountain", "lowland", "inland", "forest", "open", "wetland",
+          "jungle", "steppe", "desert", "tundra", "island_chain")  # (history._tags; all usable as place wishes)
 
 
 @dataclass

@@ -365,3 +365,13 @@ a = "lizardfolk"
 b = "aarakocra"
 want = "apart"
 weight = 0.5
+
+[[wish]]
+a = "goblin"
+want = "jungle"
+weight = 0.5
+
+[[wish]]
+a = "orc"
+want = "steppe"
+weight = 0.5

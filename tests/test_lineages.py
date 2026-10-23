@@ -188,3 +188,42 @@ def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
     assert not (a[island] > 0).any()
     b = H.spread(p.copy(), K, enter, tags["elev"], 0.0, 0.9, land, g.nbr_off, g.nbr_idx, 400)
     assert (b[island] > 0).any()
+
+
+def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
+    """crossing.py: the sea gap is counted in sea cells from the line's own coast; swimmers reach the
+    fake island over a long step, a walker's rafting almost never does in a short one."""
+    from planet.lineages import crossing as C
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    g = ps.grid
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(g, env)
+    island = env["land"] & (g.lon < -100) & (g.lon > -140)
+    p = np.where(env["land"] & (np.abs(g.lon) < 60), 1.0, 0.0)
+    src = (p > 0) & tags["coast"]
+    d = C.sea_gap(src, env["land"], g.nbr_off, g.nbr_idx, 50)
+    assert (d[island] > 0).all() and (d[src] == 0).all()
+    cr = C.Crossings(g, env, g.spacing * 6371, 1.0)
+    K = np.where(tags["land"], 1.0, 0.0)
+    swimmer = SP.Lineage("s", traits=["swims"])
+    walker = SP.Lineage("w")
+    rng = np.random.default_rng(0)
+    monkeypatch.setitem(SP.HOPS, "swims", (1.0, 8000.0, None))  # (level 3 cells are ~900 km: a long-range swimmer)
+    got = cr.hop(swimmer, p, K, K, env, tags, 100.0, 4000.0, rng, H.EST)
+    assert any(island[c] for c, _, _ in got)
+    assert C.modes(walker, 1.0) == [("raft",) + SP.HOPS["raft"][:2]]
+    hits = sum(any(island[c] for c, _, _ in cr.hop(walker, p, K, K, env, tags, 1.0, 0.1, rng, H.EST)) for _ in range(50))
+    assert hits == 0
+
+
+def test_closed_country_keeps_peoples_apart(faketz):
+    """Competition rises toward exclusion where the contact value is low (crossing.corridor)."""
+    from planet.lineages import crossing as C
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    env = ps.fields(0.0, variability=False)
+    tags = H._tags(ps.grid, env)
+    c = C.corridor(tags, env, None)
+    assert c[~tags["land"]].max() == 0 and 0 < c[tags["land"]].min() and c[tags["land"]].max() <= 1
+    assert c[tags["coast"]].min() >= c[tags["land"] & tags["mountain"]].max() if (tags["mountain"]).any() else True
+    a, b = SP.Lineage("a"), SP.Lineage("b", traits=["flies"])
+    assert H.same_way(a, a) == 1.0 and H.same_way(a, b) == 0.5

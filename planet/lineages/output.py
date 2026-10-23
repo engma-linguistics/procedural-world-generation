@@ -41,6 +41,7 @@ def colors(h: History) -> list[str]:
 def save(h: History, res: dict, pres: dict, world: str | None = None, name: str | None = None) -> Path:
     g, ps = h.grid, h.ps
     frames = res["frames"]
+    pres["stories"] = stories(h, pres)
     arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS)}
     out_frames = []
     for f in frames:
@@ -65,7 +66,9 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     lines = [{"index": k, "id": l.id, "name": l.label(), "origin": l.origin, "parents": l.parents, "ago_kyr": l.ago_kyr,
               "extinct_kyr": l.extinct_kyr, "overlay": l.overlay, "traits": l.traits, "color": cols[k],
               "leaf": l in h.tree.leaves(), "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id),
-              "origin_place": h.origins.get(l.id), "track": h.tracks[l.id]} for k, l in enumerate(h.lines)]
+              "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],
+              "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
+              "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id)} for k, l in enumerate(h.lines)]
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -117,6 +120,55 @@ def ascii_present(h: History, res: dict, w: int = 120, hh: int = 40) -> list[str
     return rows
 
 
+def _ago(kyr: float) -> str:
+    if kyr >= 1000:
+        return f"{kyr / 1000:.3g} Myr"
+    if kyr >= 1:
+        return f"{kyr:.3g} kyr"
+    return f"{max(round(kyr * 10) * 100, 100):.0f} years"
+
+
+def stories(h: History, pres: dict) -> dict[str, str]:
+    """Per people, a few game-ready sentences from its history: where and why it arose, its crossings,
+    refuges and end, and where it lives at the present (and with whom)."""
+    out = {}
+    names = h.cross.names
+    for k, l in enumerate(h.lines):
+        o = h.origins.get(l.id)
+        if not o:
+            out[l.id] = f"{l.label()} never appeared on this world."
+            continue
+        lm = int(h.cross.label[o["cell"]]) if h.cross.label[o["cell"]] >= 0 else -1
+        where = names[lm]["name"] if lm >= 0 else f"land now under the sea near {o['lat']:.0f}, {o['lon']:.0f}"
+        what = {"root": "arose", "split": f"split from the {h.tree.lines[l.parents[0]].label() if l.parents and l.parents[0] in h.tree.lines else '?'}",
+                "arrival": "arrived from beyond the world", "hybrid": f"first appeared where {' and '.join(l.parents)} met",
+                "template": f"appeared among the {', '.join(l.parents)}"}[l.origin]
+        why = {"isolated part of the parent's range": "in an isolated part of its parent's land",
+               "edge of the parent's range": "at the edge of its parent's land",
+               "beside the parent's range (new niche)": "just beyond its parent's land, in a new niche"}.get(o["why"], f"({o['why']})")
+        s = [f"{l.label()[0].upper()}{l.label()[1:]} {what} ~{_ago(o['ago_kyr'])} ago {why}, on {where}."]
+        for m, r in sorted(h.cross.reached.get(l.id, {}).items(), key=lambda x: -x[1]["ago_kyr"]):
+            if r["how"] == "origin" or names[m]["area_mkm2"] < 0.05:
+                continue
+            how = {"land bridge": "walked over a land bridge (low sea) to", "strait": "crossed a strait to",
+                   "overland": "spread overland (the land was joined then) to", "raft": "was carried on drift rafts to",
+                   "coastal": "paddled to", "swims": "swam to", "flies": "flew to", "seafaring": "sailed to"}.get(r["how"], "reached")
+            gap = f" over {r['gap_km']} km of open sea" if r.get("gap_km") else ""
+            s.append(f"~{_ago(r['ago_kyr'])} ago it {how} {names[m]['name']}{gap}.")
+        for e in h.events:
+            if e["line"] == l.id and e["kind"] == "refuge":
+                s.append(f"~{_ago(e['ago_kyr'])} ago, at its lowest, it held out in a refuge near {e['lat']:.0f}, {e['lon']:.0f}.")
+        p = pres["lines"].get(l.id)
+        if l.id in h.ended and not p:
+            s.append(f"It was gone by ~{_ago(h.ended[l.id])} ago" + (" (as its children took its land)." if h.tree.living_children(l.id) else "."))
+        elif p:
+            nb = [h.tree.lines[x].label() for x in list(p["neighbours"])[:4] if x in h.tree.lines]
+            iso = "one land" if p["patches"] == 1 else f"{p['patches']} separate lands (the largest {round(100 * p['largest_patch_share'])}%)"
+            s.append(f"Today: {p['area_mkm2']} Mkm² in {iso}" + (f"; neighbours {', '.join(nb)}." if nb else "; no neighbours."))
+        out[l.id] = " ".join(s)
+    return out
+
+
 def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L = [f"# Peoples {out.name}: {h.tree.name}", f"present = time zoom {h.ps.run['id']} @ {h.ps.now:g} kyr; tree "
          f"{h.tree.source or '(inline)'}; seed {h.seed}; tries {pres.get('tries')}; {h.runtime:.1f} s", ""]
@@ -130,8 +182,13 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         now = f"now {p['area_mkm2']} Mkm2 in {p['patches']} patch(es)" if p else \
             (f"ended {h.ended.get(l.id):g} kyr ago" if l.id in h.ended else "absent")
         L.append(f"  {LETTERS[k % len(LETTERS)]} {l.label():<22} {l.origin:<8} {where}; {now}")
+    L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
     L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
-    L += ["", "## Mixing zones at the present"] + [f"  {z['area_mkm2']:>6} Mkm2 near {z['lat']},{z['lon']}: {', '.join(z['lines'])}"
+    mx = pres.get("mixing", {})
+    L += ["", f"## Mixing at the present: {mx.get('area_mkm2')} Mkm2 ({mx.get('land_share')} of the land; corridor land "
+              f"{mx.get('in_corridors')} mixed, closed land {mx.get('in_closed')}); empty continents: "
+              f"{', '.join(pres.get('empty_continents') or []) or 'none'}; lost: {', '.join(pres.get('lost') or []) or 'none'}"]
+    L += ["## Mixing zones at the present"] + [f"  {z['area_mkm2']:>6} Mkm2 near {z['lat']},{z['lon']}: {', '.join(z['lines'])}"
                                                    for z in pres["mixing_zones"][:12]] or ["  (none)"]
     L += ["", "## Neighbours at the present"] + [f"  {lid}: {', '.join(v['neighbours'])}" for lid, v in pres["lines"].items()]
     if pres["wishes"]:

@@ -58,6 +58,7 @@ export function createNavigator(host) {
   }
   const short = (n, v) => {
     if (n.kind === 'run') return `Run${v && keyOf(v) === n.key && v.t != null ? ` ${v.t} Myr` : ''}`;
+    if (n.phase) return n.phase === 'lineages' ? `Peoples${n.world ? ` on world ${n.world}` : ''}` : 'Recent pass (last kyr)';
     if (n.kind === 'timezoom') return `Time zoom${v && keyOf(v) === n.key && v.t != null ? ` +${v.t} kyr` : ` ${n.kyr} kyr`}`;
     if (n.kind === 'world') return n.timezoom_kyr != null ? `Finished world +${n.timezoom_kyr} kyr` : `World ${n.t_myr ?? ''} Myr`;
     return n.kind === 'fine' ? `Fine zoom ${n.size_km} km` : `Zoom ${n.size_km} km`;
@@ -99,6 +100,9 @@ export function createNavigator(host) {
         <select class="pl-btn sm" data-kyr title="How long the time zoom runs">${[100, 300, 1000].map((k) => `<option value="${k}"${k === kyr ? ' selected' : ''}>${k} kyr</option>`).join('')}</select>
         <button class="pl-btn sm" data-do="finishRun" ${dis} title="The full world at this keyframe">Finish world here</button>`;
     }
+    if (n.phase === 'lineages')  // (a peoples run: its tree opens in the editor; worlds are finished from the time zoom)
+      return `<a class="pl-btn sm" href="lineages.html?run=${esc(n.id)}${n.world ? `&world=${esc(n.world)}` : ''}">Open its tree in the editor</a>`;
+    if (n.phase) return '';
     if (n.kind === 'timezoom')
       return `<button class="pl-btn sm" data-do="finishTz" data-id="${esc(n.id)}" ${dis}>Finish ${here ? `at +${view.t} kyr` : 'at its end'}</button>
         <button class="pl-btn sm" data-do="finishIg" data-id="${esc(n.id)}" ${dis} title="The latest interglacial peak of the time zoom, like Earth today">Finish at the interglacial</button>

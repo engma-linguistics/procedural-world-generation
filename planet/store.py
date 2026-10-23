@@ -666,6 +666,8 @@ def _run_item(p: Path) -> dict:
             "seed": m["seed"], "level": m["level"], "myr": m["myr"], "created": m["created"]}
     if r.get("kind") == "timezoom":  # glacial time zoom (planet/timezoom/): time in kyr
         item.update(kind="timezoom", source_run=m["source_run"], at_myr=m["at_myr"], kyr=m["kyr"])
+        if m.get("phase"):  # a recent pass or a peoples run (planet/lineages/): of a time zoom (and world)
+            item.update(phase=m["phase"], timezoom=m.get("timezoom"), world=m.get("world"))
     return item
 
 
