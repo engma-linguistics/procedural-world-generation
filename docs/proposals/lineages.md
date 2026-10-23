@@ -312,3 +312,28 @@ PW-655: the giants' uses are now pull 0.7, not strict. The giants are rare throu
   - links to the globe and to `run.txt`.
 
 No server change: the page uses the existing `/api/lineage-tree(s)`, `/api/lineages` and the store's `runs/index.json`.
+
+### Next: groups within a people (owner, 2026-10-24; designed here, not built)
+The owner's idea: groups within a people are cultures, not subspecies. Examples: steppe orcs and forest orcs;
+human seafarers, farmers and nomads. Each group shares its people's ancestry and identity, but has its own way
+of life: habitat niche, traits, demography (sea share, density…), land use and wishes. So it settles and
+spreads as a range of its own.
+
+Proposed model:
+- **Spec.** A new origin kind, `origin = "group"`, `group_of = "<people>"`, `at` (default `mixing_start` or 6 kyr), plus any niche, trait, demography, use or wish fields.
+  - What a group leaves out comes from its people, as for a split.
+  - It is a row of its own, so the Tree and Peoples tabs, wishes and `[[use]] by = <id>` work unchanged.
+  - Alternative input: a `groups = [{…}]` list under the people, flattened by `spec.parse`.
+- **Appearance.** By divergence, not a split. At `at`, the group takes the cells of its people's range where the group's own capacity K beats the people's by a margin (its niche exists there), seeded as a split's founders. Without such cells, it is placed at the people's range edge with the best K_group.
+  - The people does not end: groups never end their parent, like `persists`.
+- **Mixing.** A group and its people, and sister groups, compete as kin with no closed-country exclusion: `terr = 0`, α × 0.5. So they mix freely where their niches overlap, and no hybrid is needed.
+  - Against other peoples, each group competes with its own niche and density.
+- **Outputs.**
+  - Each group keeps its own presence row, layer index, story and population.
+  - Summaries add a `people` roll-up: the people's own row plus its groups' rows, for area, population, landmasses and wish scores naming the people.
+  - The `peoples` map layer shows the group's colour, a tint of its people's colour.
+- **Workbench.** Peoples tab: a people's row expands to its groups (indented, "+ group" button). Results: a people row with its groups beneath. Stories: "the steppe orcs, a way of life among the orcs since ~4 kyr ago, …".
+- **Preset examples.**
+  - orcs → `steppe_orc` (nomadic, steppe, grazing) and `forest_orc` (forest, timber, density 2, insular);
+  - humans → `human_seafarer` (coastal, sea share 0.8, harbour), `human_farmer` (agricultural, fertile, density 12), `human_nomad` (nomadic, steppe, density 0.8, explore 0.7).
+- **Cost.** A group is a line in the loop. Six groups add ~15% runtime at L7.
