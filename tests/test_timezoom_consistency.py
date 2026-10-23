@@ -1,7 +1,7 @@
 """The time zoom from a run's moment starts close to its own balance (PW-418, PW-366): the run's ice
 rule (earth.ice_sheets, as earth.update_climate runs it) makes the sheets of a cold moment, then the time
 zoom runs 20 kyr with no orbital swing (so the glacial index stays 0: an interglacial). Level 5, 300 Myr, 4 C
-colder; the first seed from 4 on whose moment is a plausible world with polar land (see SEEDS: the run is chaotic,
+colder; the first of SEEDS whose moment is a plausible world with polar land (the run is chaotic,
 so the seed used to be re-picked by hand: seed 2 lost most of its polar ice after PW-300, seed 1 after PW-549)."""
 
 from types import SimpleNamespace
@@ -31,7 +31,10 @@ FLT = 1 - P.RHO_I / P.RHO_W
 # test (at I = 0 the zoom keeps the run's ice) needs an ordinary world with polar land, not a particular one:
 # the first of SEEDS whose cold moment meets the precondition below, so the fixture tracks the current code
 # without riding on one chaotic world.
-SEEDS = tuple(range(4, 16))  # (was 4-11; on the mature start, PW-576, none of those met it)
+SEEDS = tuple(range(25, 36))
+# (On the mature start with the CO2 stock, PW-576, 13 of seeds 4-35 meet the precondition, but most of them are warm
+# moments that 4 C of cooling leaves with < 1% under sheets: 4 0.9%, 5 0.3%, 8 0.9%, 15 0.2%, 20 1.1%, 23 0.2%,
+# 25 3.2%, 27 0.5%; 28-34 1.5-6.3%. The list starts at 25, the first with a margin; the sheets test stays a check.)
 SL_MAX = 150.0  # m: the run's sea level within this of today's
 MOC_MIN = 2.0  # Sv: the cold climate overturns in both hemispheres
 POLAR_LAND = 0.25  # land's share of the cap poleward of 60 deg, in at least one hemisphere (where sheets can grow)
