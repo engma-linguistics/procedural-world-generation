@@ -217,7 +217,15 @@ def main():
     res = Z.simulate(src, kyr, 0.5, 2.0, Z.TZParams(**sets))
     r = (evaluate_dt0 if a.dt0 else evaluate)(res, src["grid"])
     r["params"] = sets
+    if res.get("veg_glacial"):
+        r["veg_glacial"] = res["veg_glacial"]
     print((summary_dt0 if a.dt0 else summary)(r), flush=True)
+    vg = res.get("veg_glacial") or {}
+    if "glacial" in vg and "interglacial" in vg:
+        gb, ib = vg["glacial"]["forest_share_by_lat"], vg["interglacial"]["forest_share_by_lat"]
+        print("  forest share of open land by latitude, interglacial -> glacial maximum: " + "; ".join(
+            f"{k} {ib[k]:.2f}->{gb[k]:.2f}" for k in gb if gb[k] is not None and ib.get(k) is not None)
+            + f" | refugia {vg['glacial'].get('refugia_mkm2')} Mkm2", flush=True)
     if a.json:
         Path(a.json).write_text(json.dumps(r, indent=1))
     if a.npz:

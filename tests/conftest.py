@@ -14,6 +14,7 @@ import pytest  # noqa: E402
 from planet.grid import build_grid  # noqa: E402
 
 from helpers import run_sim  # noqa: E402
+import seeds  # noqa: E402
 
 
 def pytest_addoption(parser):
@@ -30,6 +31,14 @@ def sim4():
     """Level 4 (2.5k cells), seed 1, 300 Myr: small but has seen rifting,
     collisions, a few climate updates."""
     return run_sim()
+
+
+@pytest.fixture(scope="session")
+def sources4(tmp_path_factory):
+    """The time zoom's sources (timezoom.source_from_sim) of the L4 300 Myr runs of seeds.SEEDS4 (sim4's
+    world and 23 others), built once per session for the multi-seed tests: [(seed, source)]."""
+    return seeds.shared(tmp_path_factory, "sources4",
+                        lambda: list(zip(seeds.SEEDS4, seeds.pool_map(seeds.source4, seeds.SEEDS4))))
 
 
 @pytest.fixture(scope="session")
