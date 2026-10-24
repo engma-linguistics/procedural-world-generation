@@ -4,7 +4,7 @@ No fauna is simulated (PW-184), so each animal's wild range is derived from the 
 function of the epoch; nothing in it names Earth's continents or a species, so "horses" are the rideable grazing
 herd animal of open country on any world. One row says, for an animal: its wild range, the date it was first tamed
 on Earth (the anchor; each run draws its own around it), who tames it and who then takes it up (by a people's way
-of life: the shares of `landuse.shares`, plus `forage` = what is neither farm nor herd), how fast its use spreads
+of life: the shares of `landuse.shares`: farm, herd and `forage` = the foraging use or the hunter trait, PW-718), how fast its use spreads
 over peopled land, what it does (speed, capacity, the land a herder or farmer works), and how big a craft carries it
 over the sea (`size`). `fantasy` rows are animals Earth never domesticated: off by default, rare when switched on
 (`rare` = the chance a world has such a taming at all), always there when forced (`meta.animals_force`, for tests),
@@ -112,6 +112,10 @@ class Animal:
     dairy: bool = False  # milk peoples keep dairy herds of it
     fantasy: bool = False
     rare: float = 1.0  # fantasy rows: the chance a world has the taming at all
+    plant: bool = False  # a crop row (crop_defs.TABLE, PW-721), not an animal: `wild` also takes a `widen` (the range it grows in)
+    deed: str = "tamed"  # what the first people do with it, in events and stories ("tamed", "first cultivated")
+    weight: float = 0.0  # crops: how much of a staple it is (the share of the cropland a known crop of this weight can feed; crop_defs)
+    straw: float = 0.0  # crops: stalks and straw left on the fields, for fuel (fuels.py)
 
 
 TABLE: tuple[Animal, ...] = (
@@ -142,8 +146,8 @@ REAL_IDS = tuple(a.id for a in TABLE if not a.fantasy)
 # a sailing ship. Before them only drift rafts, which carry no animals.
 def craft_ladder() -> tuple[tuple, ...]:
     from . import spec as SP
-    return (("canoe or outrigger", SP.CANOES_KYR, 300.0, 0, 0.05),
-            ("planked boat", SP.BOATS[3], 800.0, 1, 0.2),
+    return (("canoe or outrigger", SP.CANOES_KYR, 300.0, 0, 0.02),
+            ("planked boat", SP.BOATS[3], 1500.0, 1, 0.2),
             ("sailing ship", SP.LATE_SEA_KYR, 2500.0, 2, 0.3))
 
 
@@ -153,6 +157,16 @@ def craft_for(size: int, ago_kyr: float):
     for name, since, reach, big, need in craft_ladder():
         if big >= size and ago_kyr <= since + 1e-9 and (best is None or reach > best[1]):
             best = (name, reach, need)
+    return best
+
+
+def craft_for_people(share: float, ago_kyr: float):
+    """The best craft (name, reach km) a people with that sea share can man at that time, or None (PW-720: the same ladder as the
+    animals'; a people needs the sea share of the craft and the craft must exist yet)."""
+    best = None
+    for name, since, reach, _, need in craft_ladder():
+        if share >= need and ago_kyr <= since + 1e-9 and (best is None or reach > best[1]):
+            best = (name, reach)
     return best
 
 

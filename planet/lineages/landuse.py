@@ -65,14 +65,17 @@ DOC = {
 
 
 def shares(tree: SP.Tree, l: SP.Lineage) -> dict:
-    """A line's way of life from the [[use]] table: {farm, herd, wood} summing to at most 1 (0 when it uses
-    none of the goods that feed a people: foragers of other things, miners, flyers...)."""
+    """A line's way of life from the [[use]] table: {farm, herd, wood, forage} (farm + herd + wood summing to at most 1;
+    forage = its share of the wild-food use, `foraging`, or 1 for a hunter; gather = the wild-food use alone (who first cultivates plants); 0 when it uses none of the goods that feed a people: foragers of
+    other things, miners, flyers...). The hunter trait counts as a full forage use (PW-718: who tames the dog)."""
     w = {g: max(v, 0.0) for g, v in tree.uses_of(l) if g in FOOD}
     tot = sum(w.values())
+    hunt = 1.0 if "hunter" in l.traits else 0.0
     if tot <= 0:
-        return {"farm": 0.0, "herd": 0.0, "wood": 0.0}
+        return {"farm": 0.0, "herd": 0.0, "wood": 0.0, "forage": hunt, "gather": 0.0}
     return {"farm": w.get("fertile", 0.0) / tot, "herd": w.get("grazing", 0.0) / tot,
-            "wood": (w.get("timber", 0.0) + 0.3 * w.get("foraging", 0.0)) / tot}
+            "wood": (w.get("timber", 0.0) + 0.3 * w.get("foraging", 0.0)) / tot,
+            "forage": min(1.0, hunt + w.get("foraging", 0.0) / tot), "gather": w.get("foraging", 0.0) / tot}
 
 
 def _load(run_dir: Path):
@@ -85,7 +88,10 @@ def _load(run_dir: Path):
     return run, m
 
 
-def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None, farm_eff=None) -> dict:
+CROP_FLOOR = 0.3  # fields without any staple crop known (crops.py) are this share of what they would be with one (PW-721)
+
+
+def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None, farm_eff=None, know=None) -> dict:
     """Land cover fractions per cell from the people per km2 (all, farming, herding, timber-using), the wild tree
     cover (0..1), the farmland class (0..4) and the grazing good (0..1). herd_eff: the herding people weighted by
     the land a herder works (mounted herders work more: animal_defs herd_land) and farm_eff likewise for farmers (the plough: crop_land); default `herd` and `farm`."""
@@ -93,6 +99,8 @@ def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None, farm_eff=None)
     farm_eff = farm if farm_eff is None else farm_eff
     grazable = np.clip(graze / 0.6, 0, 1) * (graze >= GRAZE_MIN)
     crop = np.minimum(np.array(CROP_CAP)[fcls], farm_eff * CROP_KM2 / np.maximum(np.array(YIELD)[fcls], 1e-9))
+    if know is not None:  # (no staple crop known: little is sown)
+        crop = crop * (CROP_FLOOR + (1.0 - CROP_FLOOR) * know)
     room = 1.0 - crop
     pasture = np.minimum(room * 0.9 * grazable, herd_eff * HERD_KM2 + farm * MEADOW_KM2 * (grazable > 0))
     t1 = tc * (1 - crop)
@@ -153,7 +161,9 @@ def derive(run_dir: Path) -> dict:
 
     fcls = np.clip(np.rint(np.asarray(goods["_raw"]["fertile"]) * 4).astype(int), 0, 4)
     graze = goods["grazing"] if "grazing" in goods else np.zeros(n)
-    out = cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff, farm_eff)
+    cl = (m.get("crops") or {}).get("layers") or {}
+    know = np.fromfile(run_dir / cl["know"]["file"], np.uint8).astype(float) / 100.0 if "know" in cl else None
+    out = cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff, farm_eff, know)
     crop, pasture, burned, managed, tree_after = (out[k] for k in ("crop", "pasture", "burned", "managed", "tree_after"))
 
     # summary against the world

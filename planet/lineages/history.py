@@ -20,6 +20,7 @@ from . import land as LD
 from .crossing import Crossings, corridor, short_hop
 from . import compose as CP
 from .animals import Animals
+from .crops import Crops
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
 
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
@@ -297,6 +298,7 @@ class History:
         self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2)
         self.flow = getattr(ps, "flow", None)
         self.animals: Animals | None = None  # (made in run(): the domesticated animals, animals.py)
+        self.crops: Crops | None = None  # (made in run(): the cultivated plants, crops.py)
 
     def _steps(self, glacial_every) -> list[Step]:
         ps, out = self.ps, []
@@ -753,6 +755,7 @@ class History:
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         budget = np.zeros(len(L))
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
+        self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
         frames = []
         nsteps = len(self.steps)
         t0 = time.time()
@@ -781,6 +784,8 @@ class History:
                             self._end_parent(par, step, env, tags)
             if self.animals is not None:
                 self.animals.step(step, env, tags, self.p, self._native)
+            if self.crops is not None:
+                self.crops.step(step, env, tags, self.p, self._native)
             mix = self._mix_ramp(step.ago)
             order = [l for l in L if self.active[l.id]]
             self.rng.shuffle(order)
@@ -988,6 +993,8 @@ class History:
             K = K * self._land_mult(l, step.ago <= HOLOCENE_KYR)
             if self.animals is not None and not l.overlay:  # herds, dogs and ploughs make more of the land
                 K = K * self.animals.k_mult(self.idx[l.id])
+            if self.crops is not None and not l.overlay and self.goods is not None and step.epoch != "deep":  # crops feed more farmers
+                K = K * self.crops.k_mult(self.idx[l.id])
         if l.extinct_kyr is not None:  # dwindles toward its end
             span = min(0.3 * (l.ago_kyr - l.extinct_kyr), 20.0)
             if span > 0 and step.ago < l.extinct_kyr + span:
@@ -1080,13 +1087,15 @@ class History:
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
                 "peoples_overlay": ov, "peoples_whole": whole, **comp,
                 **(self.animals.frame_layers() if self.animals is not None else {}),
+                **(self.crops.frame_layers() if self.crops is not None else {}),
                 "stats": {**step.stats, "peoples": areas, "population": pops, **cstats}}
 
 
 # -- the present ------------------------------------------------------------------------------------
 def present_summary(h: History, P: np.ndarray) -> dict:
     g, tree = h.grid, h.tree
-    out = {"lines": {}, "mixing_zones": [], "wishes": [], "animals": h.animals.summary(P) if h.animals is not None else None}
+    out = {"lines": {}, "mixing_zones": [], "wishes": [], "animals": h.animals.summary(P) if h.animals is not None else None,
+           "crops": h.crops.summary(P) if h.crops is not None else None}
     pres = P >= EST
     src, dst = g.nbr_src, g.nbr_idx
     for k, l in enumerate(h.lines):

@@ -12,6 +12,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM
 from ..provenance import code_version
+from . import fuels as FU
 from . import land as LD
 from . import landuse as LU
 from . import spec as SP
@@ -33,6 +34,11 @@ PEOPLE_LAYERS = {
 ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 7 animals in two layers, not 14)
     "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs"),
     "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]"),
+}
+U16 = lambda d: {"dtype": "<u2", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
+CROP_LAYERS = {  # (bit flags, one bit per crop in crop_defs.TABLE: 12 crops in two uint16 layers)
+    "crop_wild": U16("bit flags: the crops whose wild range (suitability >= 0.35, crop_defs wild functions) covers the cell; bit i = crop_defs.TABLE[i]; 0 in the deep epochs"),
+    "crop_known": U16("bit flags: the crops known in the cell and growable there (the grown range, crops.py GROWN_MIN; 0 before the first cultivation; the front of the knowledge spreads over peopled land and by canoe and boat); bit i = crop_defs.TABLE[i]"),
 }
 TERRAIN = {"elevation": S.LAYERS["elevation"], "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
            "temperature": S.LAYERS["temperature"], "climate": S.LAYERS["climate"], "tree_cover": S.LAYERS["tree_cover"],
@@ -69,7 +75,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     pres["stories"] = stories(h, pres)
     pres["composition"] = composition(h, res["frames"])
     pres["ascii"] = {"rows": ascii_present(h, res, 96, 36), "letters": {LETTERS[k % len(LETTERS)]: l.id for k, l in enumerate(h.lines)}}
-    animal_layers = ANIMAL_LAYERS if h.animals is not None else {}
+    animal_layers = {**(ANIMAL_LAYERS if h.animals is not None else {}), **(CROP_LAYERS if h.crops is not None else {})}
     # body flags given as a share of a people (lactase persistence...): % of the cell's people with the trait (PW-701)
     animal_layers = {**animal_layers, **{f"body_{k}": U8(f"% of the cell's people with the body trait '{k}' (each people's share, mixed by the cell's composition)")
                                        for k in h.share_traits}}
@@ -90,6 +96,13 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     run_id = S.new_id()
     out = S.path_of("run", run_id)
     layers = S.write_layers(out, arrays, specs)
+    if h.crops is not None:  # the present's crop facts for the cropland and the fuels (PW-721, PW-722), one frame each
+        pres["crops"]["layers"] = {}
+        for ck, cv in h.crops.present_cells().items():
+            (out / "layers" / f"crops_{ck}.bin").write_bytes(np.round(np.clip(cv, 0, 1) * 100).astype(np.uint8).tobytes())
+            pres["crops"]["layers"][ck] = {"file": f"layers/crops_{ck}.bin", "dtype": "uint8", "shape": [1, g.n], "units": "%",
+                                           "description": {"know": "share of a staple diet the crops known and growable here make (crops.py)",
+                                                           "straw": "mean stalks and straw the staple crops leave here, relative"}[ck]}
     pres_q = np.round(np.clip(res["present"], 0, 1) * 100).astype(np.uint8)
     (out / "layers" / "presence_present.bin").write_bytes(pres_q.tobytes())
     S.write_grid(g)
@@ -112,7 +125,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
-                 "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"],
+                 "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
@@ -129,6 +142,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         sm = LU.write(out)
         with open(out / "run.txt", "a") as f:
             f.write("\n".join(LU.lines_for_report(sm)) + "\n")
+        FU.write(out)  # (what each people burns to cook: fuels.py, PW-722; adds a line to the stories and run.txt)
     T.update_index()
     return out
 
@@ -276,6 +290,21 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             s.append(f"With its ways of life ({', '.join(gl)}) the {l.label()} are {people(w['population'])} in "
                      f"{w['area_mkm2']} Mkm²; {round(100 * w['shares'].get(l.id, 0))}% keep the old ways.")
         keeps = []
+        crops = ((pres.get("crops") or {}).get("stocks") or {})
+        for aid, hs in crops.items():
+            tm = hs["tamed"]
+            if not tm:
+                continue
+            if tm[0]["line"] == l.id:
+                s.append(f"It was the first to cultivate {hs['noun']}, ~{_ago(tm[0]['ago_kyr'])} ago on {tm[0]['landmass_name']}.")
+            elif any(t["line"] == l.id for t in tm[1:]):
+                t = next(t for t in tm[1:] if t["line"] == l.id)
+                s.append(f"It cultivated {hs['label']} again on its own ~{_ago(t['ago_kyr'])} ago on {t['landmass_name']}.")
+        if crops and not l.overlay and LU.shares(h.tree, l)["farm"] >= 0.2:
+            grown = sorted(((hs["adoption"].get(l.id, 0.0) * hs["weight"], hs["label"]) for hs in crops.values() if hs["adoption"].get(l.id, 0.0) >= 0.25), reverse=True)
+            if grown:
+                cn = [n for _, n in grown[:4]]
+                s.append("Its fields grow mostly " + (", ".join(cn[:-1]) + " and " if len(cn) > 1 else "") + cn[-1] + ".")
         for aid, hs in ((pres.get("animals") or {}).get("stocks") or {}).items():
             tm, noun = hs["tamed"], hs["noun"]
             if not tm:
@@ -337,6 +366,16 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         if an["dairy"]:
             L += ["  dairy (milk-digesting share x land with a dairy animal): " + ", ".join(
                 f"{k} {round(100 * v['dairy_share'])}% ({', '.join(v['animals'])})" for k, v in an["dairy"].items())]
+    cr = pres.get("crops")
+    if cr:
+        L += ["", "## Crops (PW-721)", f"  mean share of a staple diet the crops known and growable make on peopled land: {cr['know_mean_peopled']}"]
+        for aid, hs in cr["stocks"].items():
+            tag = f" [{cr['mode']} mode: fantasy crop]" if hs["fantasy"] else ""
+            L += [f"  {hs['label']}{tag}: {hs['wild_mkm2']} Mkm² of wild range at the present; grown over {hs['grown_mkm2']} Mkm² "
+                  f"(known over {hs['known_mkm2']}); crossed the sea {hs['crossed']} time(s)"]
+            L += [f"    {'first ' if t['first'] else ''}cultivated ~{_ago(t['ago_kyr'])} ago by the {t['people']} on {t['landmass_name']} "
+                  f"({t['lat']}, {t['lon']}; {t['wild_mkm2']} Mkm² of wild range there)" + ("" if t["first"] else " (again, on its own)")
+                  for t in hs["tamed"]] or [f"    never cultivated: {hs['never']} (date drawn {hs['date_drawn_kyr']} kyr ago)"]
     L += ["", "## Stories"] + [f"  {t}" for t in pres.get("stories", {}).values()]
     L += ["", "## Events"] + [f"  {e['ago_kyr']:>9.2f} kyr ago  {e['text']}" for e in sorted(h.events, key=lambda e: -e["ago_kyr"])]
     mx = pres.get("mixing", {})

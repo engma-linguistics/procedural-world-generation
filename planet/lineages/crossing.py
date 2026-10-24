@@ -10,7 +10,9 @@ Crossings, three ways (docs/proposals/lineages.md, "Sea crossings"):
 - long crossings: a Poisson chance per step for each landmass a line doesn't hold yet,
   rate x dt x exp(-gap / L) summed over the line's ways of crossing (spec.HOPS: rafting on
   drift for anyone, rare; coastal canoes; swimming; flying; boats, late, by the people's sea share,
-  spec.BOATS; every way but the raft x the people's exploration and will to leave home). The gap is
+  spec.BOATS; every way but the raft x the people's exploration and will to leave home). The boats are the craft ladder
+  (animal_defs.craft_ladder), the same as for the animals: canoes, planked boats, sailing ships, each with its date, reach and the sea
+  share a people needs to man it (PW-720). The gap is
   the sea distance from the line's own coast (a sea-only BFS), so island chains are stepping
   stones. A landing needs habitat and room there.
 
@@ -25,6 +27,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
+from . import animal_defs as AD
 from . import spec as SP
 
 
@@ -76,11 +79,9 @@ def modes(line: SP.Lineage, ago_kyr: float) -> list[tuple[str, float, float]]:
         if h and (h[2] is None or ago_kyr <= h[2] + 1e-9):
             out.append((way, h[0] * (1.0 if way == "raft" else m), h[1]))
     share = line.demo("sea_share")
-    rate, l0, l1, since = SP.BOATS
-    if share > 0 and ago_kyr <= SP.CANOES_KYR + 1e-9:
-        f = min(share / SP.BOATS_FULL, 1.0)
-        # (canoes before the voyages: the same rate, but only the short reach)
-        out.append(("seafaring", rate * share / SP.BOATS_FULL * m, l0 + (l1 - l0) * f if ago_kyr <= since + 1e-9 else l0))
+    craft = AD.craft_for_people(share, ago_kyr)  # (PW-720: canoes, planked boats and sailing ships, as for the animals: their dates, reaches and crews)
+    if craft is not None:
+        out.append(("seafaring", SP.BOATS[0] * share / SP.BOATS_FULL * m, craft[1]))
     return out
 
 

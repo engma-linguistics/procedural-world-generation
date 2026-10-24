@@ -654,6 +654,22 @@ function drawResults() {
     const dy = Object.entries(an.dairy || {});
     if (dy.length) h += `<h3>Dairy</h3><div>${dy.map(([id, v]) => `${sw(id)}${nm(id)}: ${Math.round(100 * v.milk_share)}% digest milk, ${Math.round(100 * v.dairy_share)}% keep dairy herds of ${v.animals.map((x) => esc(an.stocks[x].label)).join(', ')}`).join('<br>')}</div>`;
   }
+  // crops (crops.py, PW-721) and fuels (fuels.py, PW-722)
+  const cr = P.crops;
+  if (cr) {
+    h += `<h2>Crops <span class="muted" style="font-weight:normal;font-size:12px">(${esc(cr.mode)} mode; staple share on peopled land ${Math.round(100 * cr.know_mean_peopled)}%)</span></h2>`;
+    for (const [cid, hs] of Object.entries(cr.stocks)) {
+      h += `<h3>${esc(hs.label)}${hs.fantasy ? ` <span class="muted">(fantasy crop, ${esc(cr.mode)} mode only)</span>` : ''} <a href="index.html?run=${encodeURIComponent(result.id)}&layer=${encodeURIComponent('crop: ' + cid)}" target="_blank" style="font-weight:normal;font-size:12px">(on the globe)</a></h3>
+        <div class="muted">${hs.wild_mkm2} Mkm² of wild range; grown over ${hs.grown_mkm2} Mkm² (known over ${hs.known_mkm2}); crossed the sea ${hs.crossed} times. Date drawn: ${fmt(hs.date_drawn_kyr)} ago (anchor ${fmt(hs.anchor_kyr)}).</div>
+        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'First cultivated' : 'Cultivated again, on its own,'} ~${fmt(t.ago_kyr)} ago by the ${sw(t.line)}${esc(t.people)} on ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon})</span></div>`).join('') || `<div class="err">Never cultivated: ${esc(hs.never || '')}</div>`}`;
+    }
+  }
+  const fu = result.meta?.fuels || result.fuels;
+  if (fu) {
+    h += `<h2>Fuels <span class="muted" style="font-weight:normal;font-size:12px">(share of each people's cooking fuel, by heads)</span></h2><table class="grid"><tr><th></th>${fu.names.map((k) => `<th>${esc(k)}</th>`).join('')}</tr>` +
+      [['world', fu.summary.world], ...Object.entries(fu.summary.by_biome), ...Object.entries(fu.summary.by_line).slice(0, 12)]
+        .map(([k, v]) => `<tr><td>${esc(k)}</td>${fu.names.map((f) => `<td>${Math.round(100 * v[f])}%</td>`).join('')}</tr>`).join('') + '</table>';
+  }
   // the map
   if (P.ascii?.rows) {
     const col = Object.fromEntries(Object.entries(P.ascii.letters).map(([ch, id]) => [ch, L[id]?.color || '#ccc']));

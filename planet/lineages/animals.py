@@ -33,6 +33,9 @@ from .crossing import sea_gap
 from .spread import EST, rings, spread
 
 JITTER, CLIP = 0.2, (0.7, 1.5)  # date: anchor x lognormal(0, 0.2), within 0.7..1.5
+CROP_RANGE_KYR = 0.5  # a crop's wild and grown ranges are worked out again after this long (they follow the climate)
+GROW_WIDEN = 0.6  # a crop is grown past its wild range: its climate windows widened by this share of their ramps
+HOME_PENALTY = 1.0  # x per other first domestication on the landmass (crops: several homelands per world)
 WILD_MIN = 0.35  # a cell is in the wild range from this suitability
 WILD_PATCH_MKM2 = 0.25  # a landmass needs this much range to count
 OVERLAP_MIN = 3  # cells where tamers sit on the wild range
@@ -46,20 +49,22 @@ BOAT_KEEP = 40  # crossings listed per animal in the summary
 class Stock:
     """One animal's state: where it is known (`rd`, 0..1), its wild range, the tamings and the crossings."""
 
-    def __init__(self, h, a: Animal, force: bool):
-        self.h, self.a = h, a
+    def __init__(self, h, a: Animal, force: bool, anchors: dict | None = None, owner=None):
+        self.h, self.a, self.owner = h, a, owner
         tree = h.tree
-        self.rng = np.random.default_rng((h.seed, 691) if a.bit == 0 else (h.seed, 691, a.bit))  # (own stream: the peoples' draws stay the same)
-        self.anchor = tree.animals_at.get(a.id, a.anchor_kyr)
+        self.rng = np.random.default_rng((h.seed, 721, a.bit) if a.plant else (h.seed, 691) if a.bit == 0 else (h.seed, 691, a.bit))  # (own stream: the peoples' draws stay the same)
+        self.anchor = (tree.animals_at if anchors is None else anchors).get(a.id, a.anchor_kyr)
         self.d0 = float(np.clip(self.anchor * np.exp(JITTER * self.rng.standard_normal()), CLIP[0] * self.anchor, CLIP[1] * self.anchor))
         self.absent = bool(a.fantasy and not force and self.rng.random() >= a.rare)  # (a rare taming that this world does not have)
         n = h.grid.n
         self.rd = np.zeros(n)
         self.wild = np.zeros(n)
         L = len(h.lines)
-        sh = np.array([[*[LU.shares(tree, l)[k] for k in ("farm", "herd", "wood")]] if not l.overlay else [0.0, 0.0, 0.0] for l in h.lines]).reshape(L, 3)
-        forage = np.array([0.0 if l.overlay else 1.0 for l in h.lines]) * np.clip(1 - sh[:, 0] - sh[:, 1], 0, 1)  # (a people with no farm or herd use forages)
-        self.sh = {"farm": sh[:, 0], "herd": sh[:, 1], "forage": forage}
+        sh = np.array([[*[LU.shares(tree, l)[k] for k in ("farm", "herd", "wood", "forage", "gather")]] if not l.overlay else [0.0] * 5 for l in h.lines]).reshape(L, 5)
+        self.sh = {"farm": sh[:, 0], "herd": sh[:, 1], "forage": sh[:, 3], "gather": sh[:, 4]}  # (forage: the foraging use or the hunter trait, PW-718)
+        self.grow = np.zeros(n)
+        self.gk = np.zeros(n)
+        self._range_age, self._ranged = 0.0, False
         self.tamer = sum(w * self.sh[k] for k, w in a.tame.items())
         self.prop = np.array([self._propensity(l, i) for i, l in enumerate(h.lines)])
         self.adopt = np.zeros(L)
@@ -81,7 +86,14 @@ class Stock:
     # -- per step -----------------------------------------------------------------------------------
     def step(self, step, env, tags, p, native, sea) -> None:
         """Update the wild range, taming, the front and the sea crossings for a step (after the epoch's tags, before the peoples move)."""
-        self.wild = self.a.wild(env, tags, tags["land"])
+        if not self.a.plant:
+            self.wild = self.a.wild(env, tags, tags["land"])
+        elif self._range_age + step.dt >= CROP_RANGE_KYR or not self._ranged:  # (a crop's range follows the climate slowly: every 0.5 kyr, not every step)
+            self.wild = self.a.wild(env, tags, tags["land"])
+            self.grow = self.a.wild(env, tags, tags["land"], widen=GROW_WIDEN)  # (where it can be grown: past its wild range)
+            self._range_age, self._ranged = 0.0, True
+        else:
+            self._range_age += step.dt
         self.climate = env["climate"]
         if self.absent:
             return
@@ -111,6 +123,9 @@ class Stock:
         n_over = np.bincount(lab[cand], minlength=len(by_land))
         wild_area = np.bincount(lab[wild & (lab >= 0)], minlength=len(by_land)) * h.cell_mkm2
         ok = (n_over >= OVERLAP_MIN) & (wild_area >= WILD_PATCH_MKM2)
+        pen = getattr(self.owner, "penalty", HOME_PENALTY)
+        if pen != 1.0 and first:  # (several homelands: a landmass that already has a first domestication is less likely again)
+            by_land = by_land * pen ** np.array([self.owner.homes.get(i, 0) for i in range(len(by_land))])
         if first:
             if not ok.any():
                 return
@@ -140,8 +155,10 @@ class Stock:
                            "country": "steppe" if steppe >= 0.4 else "open grassland" if a.id == "horse" else "wild country", "first": first,
                            "wild_mkm2": round(float(wild_area[m]), 2)})
         self.landed.add(m)
-        h.events.append({"ago_kyr": round(step.ago, 3), "kind": "animals", "line": h.lines[who].id,
-                         "text": f"{a.label} are {'tamed' if first else 'tamed again, on their own,'} by the {h.lines[who].label()} "
+        if first and self.owner is not None:
+            self.owner.homes[m] = self.owner.homes.get(m, 0) + 1
+        h.events.append({"ago_kyr": round(step.ago, 3), "kind": "crops" if a.plant else "animals", "line": h.lines[who].id,
+                         "text": f"{a.label} are {a.deed if first else a.deed.replace('first ', '') + ' again, on their own,'} by the {h.lines[who].label()} "
                                  f"{'on the ' + self.tamed[-1]['country'] + ' of' if a.id == 'horse' else 'on'} {cl}",
                          "lat": self.tamed[-1]["lat"], "lon": self.tamed[-1]["lon"]})
 
@@ -202,7 +219,7 @@ class Stock:
                 self.crossings.append(rec)
             if pl >= 0 and pl not in self.landed and h.cross.names[pl]["area_mkm2"] >= 0.05:
                 self.landed.add(pl)
-                h.events.append({"ago_kyr": rec["ago_kyr"], "kind": "animals", "line": None,
+                h.events.append({"ago_kyr": rec["ago_kyr"], "kind": "crops" if self.a.plant else "animals", "line": None,
                                  "text": f"{self.a.label} cross the sea to {rec['landmass_name']} in {'an' if name[0] in 'aeiou' else 'a'} {name} "
                                          f"({rec['gap_km']} km of open sea)", "lat": round(float(h.grid.lat[cell]), 2), "lon": round(float(h.grid.lon[cell]), 2)})
 
@@ -220,7 +237,7 @@ class Stock:
             never = "a rare taming this world does not have"
         elif not self.tamed:
             never = "no people that can tame it held ground on its wild range after the drawn date"
-        return {"enabled": True, "label": a.label, "noun": a.noun, "bit": a.bit, "fantasy": a.fantasy, "size": a.size,
+        return {"enabled": True, "label": a.label, "noun": a.noun, "bit": a.bit, "fantasy": a.fantasy, "size": a.size, "plant": a.plant, "deed": a.deed,
                 "date_drawn_kyr": round(self.d0, 3), "anchor_kyr": self.anchor, "tamed": self.tamed,
                 "wild_mkm2": round(float(wild.sum() * h.cell_mkm2), 2),
                 "known_mkm2": round(float((self.rd >= EST).sum() * h.cell_mkm2), 2),
@@ -235,12 +252,16 @@ class Animals:
     def __init__(self, h):
         self.h = h
         tree = h.tree
-        self.stocks = [Stock(h, a, a.id in tree.animals_force) for a in resolve(tree.animals, tree.animals_force, tree.mode)]
+        self.homes: dict[int, int] = {}  # landmass -> first domestications on it (crops.py spreads the homelands)
+        self.stocks = self._make(tree)
         self.ago = 0.0
         L = len(h.lines)
         self.open_share = np.zeros(L)
         self.speed = np.ones(L)
         self.sea = np.array([l.demo("sea_share") for l in h.lines])
+
+    def _make(self, tree) -> list:
+        return [Stock(self.h, a, a.id in tree.animals_force, None, self) for a in resolve(tree.animals, tree.animals_force, tree.mode)]
 
     def step(self, step, env, tags, p, native) -> None:
         if step.epoch == "deep":

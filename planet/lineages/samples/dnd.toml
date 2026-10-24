@@ -146,7 +146,7 @@ explore = 0.8
 temp_c = [18, 30]
 rain_mm = [900, 3500]
 prefers = ["rainforest", "forest"]
-traits = ["cosmopolitan"]  # wanderers and traders: mix freely late, and move faster
+traits = ["cosmopolitan", "hunter"]  # wanderers and traders: mix freely late, and move faster
 speed_kmyr = 0.8
 
 [[lineage]]
@@ -159,7 +159,7 @@ explore = 0.6
 temp_c = [16, 32]
 rain_mm = [300, 1400]
 prefers = ["savanna", "open"]
-traits = ["nomadic"]  # pride hunters following the herds across open grassland
+traits = ["nomadic", "hunter"]  # pride hunters following the herds across open grassland
 
 [[lineage]]
 id = "goblinoid"
@@ -189,6 +189,7 @@ density = 5
 temp_c = [18, 30]
 rain_mm = [1200, 4000]
 prefers = ["rainforest"]
+traits = ["hunter"]
 
 [[lineage]]
 id = "hobgoblin"
@@ -200,6 +201,7 @@ explore = 0.6
 temp_c = [12, 26]
 rain_mm = [500, 2000]
 prefers = ["savanna", "temperate", "open"]
+traits = ["hunter"]
 
 [[lineage]]
 id = "bugbear"
@@ -212,7 +214,7 @@ explore = 0.4
 temp_c = [3, 20]
 rain_mm = [500, 2000]
 prefers = ["forest", "continental"]
-traits = ["hardy"]
+traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "hominid"
@@ -340,7 +342,7 @@ explore = 0.4
 insularity = 0.7
 temp_c = [-6, 12]
 prefers = ["mountain"]
-traits = ["hardy", "mountain"]
+traits = ["hardy", "mountain", "hunter"]
 
 [[lineage]]
 id = "firbolg"
@@ -353,7 +355,7 @@ insularity = 0.8
 temp_c = [2, 16]
 rain_mm = [600, 2000]
 prefers = ["forest"]
-traits = ["hardy"]
+traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "orc"
@@ -390,7 +392,7 @@ insularity = 0.8
 temp_c = [-2, 16]
 rain_mm = [450, 1800]
 prefers = ["forest"]
-traits = ["hardy"]
+traits = ["hardy", "hunter"]
 
 [[lineage]]
 id = "dwarf"
@@ -428,6 +430,7 @@ density = 2
 temp_c = [6, 26]
 rain_mm = [350, 2200]
 prefers = ["temperate", "subtropical", "lowland"]
+traits = ["hunter"]
 
 [[lineage]]
 id = "human"
@@ -513,7 +516,7 @@ sea_share = 0.5  # kayaks and skin boats: the Thule crossed Smith Sound, the Inu
 temp_c = [-14, 8]
 rain_mm = [60, 1500]
 prefers = ["tundra", "subarctic", "polar", "coast"]
-traits = ["hardy", "cosmopolitan"]
+traits = ["hardy", "cosmopolitan", "hunter"]
 
 [[lineage]]
 id = "halfling"

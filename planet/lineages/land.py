@@ -205,6 +205,7 @@ def goods(world_ref: str | None) -> dict | None:
         else:  # (likelihoods and classes: already 0..1; point-like, so they reach the country around)
             out[k] = np.where(land, _reach(g, v), 0.0)
     out["_raw"] = {k: np.where(land, v, 0.0) for k, v in raw.items()}
+    out["_peat"] = np.where(land, f("peat_depth"), 0.0)  # (metres of peat, for the fuels: fuels.py)
     out["_land"] = land
     out["_made"] = made
     out["_missing"] = missing
