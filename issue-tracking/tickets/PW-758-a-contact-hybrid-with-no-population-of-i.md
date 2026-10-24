@@ -1,4 +1,5 @@
 ---
+id: PW-758
 title: A contact hybrid with no population of its own (linger = false) for the owner's half-elves, and culture-only groups
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-730, PW-613]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Two small spec items of PW-730 that `seven_meals.toml` could not use, so it leav
 - [ ] `linger = false`: no `_linger` cells and no 'lingers' event for that hybrid
 - [ ] `niche = false` groups listed in the summaries and the brief as "same land as", taking no land
 - [ ] add both lines back to `seven_meals.toml` when built
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-half-elf-no-population-switch.md (found by fun13).

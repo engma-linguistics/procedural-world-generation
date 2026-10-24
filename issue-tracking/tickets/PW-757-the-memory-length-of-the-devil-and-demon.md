@@ -1,4 +1,5 @@
 ---
+id: PW-757
 title: The memory length of the devil and demon rows (30 kyr) is a judgement call, and the neighbour valence hides the fiends from the people who live among them
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-754, PW-731, PW-730]
 refs: [planet/lineages/reputation.py, planet/lineages/samples/seven_meals.toml]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Two related observations for the owner:
   override a feared/despised memory older than a threshold.
 - the row table only reads substrate takeovers; authored conquests are the `[[event]]` draft.
 Lean: A for now; D is worth a look on the run's actual rows.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-fiend-memory-length-and-folk-table.md (found by fun13).

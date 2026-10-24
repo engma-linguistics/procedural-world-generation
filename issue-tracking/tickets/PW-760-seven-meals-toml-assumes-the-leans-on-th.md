@@ -1,5 +1,6 @@
 ---
-title: "seven_meals.toml assumes the leans on the open PW-734 questions (Q2 dates, Q7 sweet raptors, Q8 source of truth, Q9 marine, Q10 fantasy-only)"
+id: PW-760
+title: seven_meals.toml assumes the leans on the open PW-734 questions (Q2 dates, Q7 sweet raptors, Q8 source of truth, Q9 marine, Q10 fantasy-only)
 type: task
 status: needs-decision
 parent: PW-692
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-730, PW-734, PW-754]
 refs: [planet/lineages/samples/seven_meals.toml, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -23,3 +26,7 @@ The preset (PW-730) had to choose something where the owner has not answered. Ea
 Also decided in the preset and worth a glance: the memory length of the devil and demon rows (30 kyr; PW-754 option A) and the four antelope-kin groups (steppe and savanna males-only, dry-grass and mountain both sexes), where the intake had three.
 
 Lean: keep all as written; the owner only needs to answer if one is wrong.
+
+## Updates
+- 2026-10-24: Same open questions as PW-734 Q2/7/8/9/10; answer there, close both.
+- 2026-10-24: Created from inbox draft draft-seven-meals-assumptions-awaiting-owner.md (found by fun13).

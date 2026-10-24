@@ -2,7 +2,7 @@
 id: PW-754
 title: Exonyms - the folk-category table and how long a conquest is remembered need the owner (no conquest survives the default decay in run 45157b)
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -30,6 +30,7 @@ Not read yet: authored conquests and polities, derived incursions (PW-661): no "
 - [ ] with the PW-734 answers, rows that make humans next to the antelope/cervid folk call them devils (conquest basis) and humans among the cervid folk use an ordinary name.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged 08a93fe: memory_kyr shown, efold validation; 30 kyr guess on PW-757.
 - 2026-10-24: fun13: per-row memory was already supported (a row's `efold_kyr`, option A); added validation (> 0), `memory_kyr` on the reputation row, a test and the SCHEMA line. seven_meals.toml gives its devil/demon rows 30 kyr. The fiends still needed authored `[[event]]` conquests (parsed, stored, read by the reputation pass) because the sim found no takeover by either fiend people on 1df1c3; run e63bfd: humans and cervid-kin call the antelope-kin "devils", humans call the cervid-kin "demons". Status left to the coordinator.
 - 2026-10-24: Status needs-decision -> todo. Coordinator: per-row long memory (row efold_kyr / legend rows) for conquest names; owner wants invader 'devils' to outlast the event. Folk table for the owner's world goes in PW-730's preset.
 - 2026-10-24: Created from inbox draft draft-exonym-rows-and-memory-length.md (found by fun12).

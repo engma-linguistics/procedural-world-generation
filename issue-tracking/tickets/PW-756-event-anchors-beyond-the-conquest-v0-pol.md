@@ -1,4 +1,5 @@
 ---
+id: PW-756
 title: "[[event]] anchors beyond the conquest v0: polities (ruled-by valence), derived incursions, direction, and the culinary-repo events"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-730, PW-731, PW-734, PW-661]
 refs: [planet/lineages/reputation.py, planet/lineages/spec.py, planet/lineages/samples/seven_meals.toml, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -27,3 +30,6 @@ called them devils or demons. What is left:
 - [ ] `resented` valence and a `polity` kind
 - [ ] direction in the reputation text
 - [ ] the viewer's tree editor keeps `[[event]]` rows when it saves a tree (it only knows lineages, wishes and uses today)
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-event-anchors-parsed-and-stored.md (found by fun13).

@@ -1,4 +1,5 @@
 ---
+id: PW-759
 title: A template whose share grows where its bearers and hosts live together (kenku - the curse always takes)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-730]
 refs: [planet/lineages/samples/seven_meals.toml, planet/lineages/history.py, planet/lineages/spec.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -21,3 +24,6 @@ Smallest change: a spec key `grows = <per kyr rate>` on a template that raises t
 non-kenku share) per step, bounded by the hosts' presence there.
 - [ ] a template with `grows` raises its share only where it already is
 - [ ] `dnd.toml` runs byte-identical (no `grows`)
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-kenku-share-grows.md (found by fun13).

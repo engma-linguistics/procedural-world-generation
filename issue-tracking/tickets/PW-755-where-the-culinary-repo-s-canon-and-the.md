@@ -1,4 +1,5 @@
 ---
+id: PW-755
 title: Where the culinary repo's canon and the seven_meals run disagree (for the owner to take into the book, none are bugs)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun13
 blocked_by: []
 relates: [PW-730, PW-734]
 refs: [planet/lineages/samples/seven_meals.toml, "run e63bfd", "culinary-dnd docs/genetics.md"]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -26,3 +29,6 @@ a fact of one world and one seed; re-read after any re-run.
 - **Humans are one 81 Mkm2 people with a margin forager root covering almost all of it**: the forager group's niche is broad (the canon puts it
   at the steppe margin only). The group map, not the preset, is the thing to read; tightening the group's niche to the margin is a preset edit if the owner wants it.
 - **Half-elves and culture-only elf groups are not modelled** (draft-half-elf-no-population-switch), so the brief cannot say "same land as" for the two elf cultures.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-culinary-repo-vs-sim-disagreements.md (found by fun13).
