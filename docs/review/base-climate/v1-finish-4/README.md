@@ -49,4 +49,46 @@ worlds and zooms are remade below.
 
 ## The v1 showcase (PW-202)
 
-(in progress: see the state section at the end)
+Four `planet make --level 7` runs (random seeds, earthlike, 1 Gyr) made by v1-finish-3 from its worktree (PW-725 in,
+PW-736 not). Their runs stand (PW-736 is time zoom only); their time zooms, worlds and zooms were made before the fix
+and are deleted (worlds 8d6d85 7243ca 87c1b0 a5d045 with their zooms; time zooms d9c808 ac8532 11cd95 ff1500).
+`remake.py` re-ran make's chain after the simulation on this branch (make.make resumed from the run: same
+representative moment, 300 kyr time zoom, now = interglacial, highlights, 4 zooms), then `planet resources` and
+`planet coast` on the world. (A first try reused the old time zooms: api.timezoom_job finds an existing one with the
+same request, so the old outputs had to go first.) c6c24f's four highlight zooms had no islands, so it got a fifth on
+its archipelago.
+
+`showcheck.py` (now's glacial index and ice, layers, islands = land masses inside a zoom, deposits) and
+`runtrack.py` + v1-finish-3's `passrate.py` (LEVEL=7) on the runs' keyframes (it reproduces the old showcase's
+70/79/63/67%):
+
+| seed | run | time zoom | world | zooms | now | icehouse 300-1000 Myr |
+|---|---|---|---|---|---|---|
+| 957317 | 656f66 @964 | ad26f3 | bacb95 | 5397aa e2c8db 8f040a a7081c | 300 kyr, index 0.00, 7.7 Mkm3 (tz 7.3-18.7), 13.9 C | 64% ICEBOX -> F |
+| 619496 | fdb41e @1000 | bd6c87 | c6c24f | baab22 81fd07 4b8885 fd3051 70fe22 | 204 kyr, index 0.00, 38.6 Mkm3 (tz 10.2-123), 16.5 C | 42% -> F (by 2 points) |
+| 583167 | 9882e7 @936 | 06667e | f2a9a4 | d0951d 7b8ddc 9e74dd 1b1daa | 298 kyr, index 0.02, 0.4 Mkm3 (tz 0.4-7.6), 19.4 C | 22% ok |
+| 639472 | 27929a @944 | 21b68b | 61ac61 | 103ed4 8c58d0 c2c627 2c2557 | 282 kyr, index 0.00, 17.0 Mkm3 (tz 5.0-71.6), 16.8 C | 60% ICEBOX -> F |
+
+Every world's now is an interglacial (glacial index 0.00-0.02, PW-700); each has the 26 resource layers and the coast
+layers; every zoom has deposits (93-2907), and each world has zooms with islands (8f040a 2; 7b8ddc 4, 9e74dd 1;
+70fe22 73; 2c2557 8, 8c58d0 7). c6c24f's interglacial still holds 39 Mkm3 (an icehouse planet's interglacial, like
+Earth's 30): fine as a world.
+
+Against the owner's bar (icehouse <= ~40%, outliers OK, ~70% of seeds passing) the four histories pass **1/4**
+(2/4 if 42% counts as ~40%), median 51%; the two ICEBOX flags are deep ice on 30.1% of the updates, at the 30% line.
+The same four seeds at L6 (tools/ice_diag.py, same code, scratchpad `v1f4/l6/`): 48, 23, 0, 32% -> **3/4**, median
+28%. Every seed is 16-28 points icier at L7. Pooled with v1-finish-3's 8 L7 draws on the same run code: 6/12 pass
+(7/12), median ~41%. PW-725 took the level effect from ~+35 points to ~+10-15, not to zero: inbox draft
+`draft-l7-runs-still-icier-same-seeds.md` (v1, high).
+
+Superseded (not deleted, for the coordinator): the previous L7 showcase, runs 89c2ab 6ca373 8b1617 7f4f06 (worlds
+a95cdc 09262b 730669 d86d34, time zooms 04e831 d07f9f 7ff0cd 0e0301), made with the one-ring rule in both the run
+and the time zoom.
+
+## Verdict
+
+PW-736: fixed. The v1 showcase chain works end to end at L7 on the fixed code (runs, carved time zooms, interglacial
+worlds with resources and coasts, zooms with islands and deposits). The L7 climate histories are not yet at the
+owner's bar (1-2 of 4 here, ~50-58% over 12 draws, vs L6's 3 of 4 on the same seeds): v1 is done for L6 and for the
+L7 pipeline; L7's long-run climate needs the remaining level effect fixed (the draft) or the owner's acceptance of
+these four as the showcase.
