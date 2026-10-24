@@ -522,3 +522,25 @@ def test_carbonate_bank_and_barrier_reef(gen4):
     feats = H.find(w)
     assert not [f for f in feats if f["kind"] == "barrier_reef"]
     assert [f for f in feats if f["kind"] == "coral_coast"]
+
+
+def test_representative_time_interglacial_in_icehouse():
+    # PW-700: the most typical frame (360) is deep in an icehouse era (320-400, with a 4 Myr ice-free flicker
+    # joined in); the pick moves to a warm moment of that era (least ice), the most typical among those
+    def fr(t, big, si):
+        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": big, "landmasses": 20, "sea_ice_m": si}}
+    frames = [fr(t, 15, 0.0) for t in range(0, 300, 20)]
+    era = {320: -60.0, 328: -90.0, 336: -120.0, 340: -10.0, 344: -150.0, 352: -40.0, 360: -200.0, 368: -35.0,
+           376: -180.0, 384: -45.0, 392: -100.0}
+    frames += [fr(300, 5, 0.0), fr(308, 6, 0.0)]
+    frames += [fr(t, 15 + (t - 360) / 10, si) for t, si in era.items()]
+    frames += [fr(410, 25, 0.0), fr(420, 28, 0.0), fr(430, 30, 0.0), fr(440, 32, 0.0)]
+    bare = [{"t": f["t"], "stats": {k: v for k, v in f["stats"].items() if k != "sea_ice_m"}} for f in frames]
+    assert H.representative_time(bare) == 360  # (the geography alone: mid-era, 200 m of ice)
+    t = H.representative_time(frames)
+    warm = sorted(era, key=lambda k: -era[k])[:3]  # the era's least-ice quarter: 340, 368, 352
+    assert t in warm and t == 352, t  # (the most typical of the three; 340, the warmest, is the least)
+    # outside an icehouse the pick is unchanged; without sea_ice_m too
+    for f in frames:
+        f["stats"]["sea_ice_m"] = 0.0
+    assert H.representative_time(frames) == 360

@@ -2686,6 +2686,9 @@ REPRESENTATIVE_AFTER_MYR = 300.0
 
 
 SEA_LEVEL_MIN_SCALE_M = 40.0  # floor on the sea-level scale: a run with a steady sea level isn't over-penalised for wobbles
+ICEHOUSE_SEA_ICE_M = -20.0  # an icehouse: land ice holding at least 20 m of sea level (tools/ice_criteria.ICEHOUSE_SL)
+ICEHOUSE_JOIN_MYR = 8.0  # icehouse spells closer than this are one era (tools/ice_criteria.JOIN)
+WARM_QUANTILE = 0.75  # in an icehouse era, the warm moments: frames with no more ice than this quantile's sea_ice_m allows
 
 
 def flora_complete_myr(plant_groups) -> float | None:
@@ -2711,7 +2714,15 @@ def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AF
     skip it. plant_groups (the run's meta.plant_groups): the pick is limited
     to frames once the last plant group has appeared (flora_complete_myr), so
     a showcase world has grasses, shrubs and flowering trees (PW-634); the
-    medians are still the whole stretch's. No such frame: the latest one."""
+    medians are still the whole stretch's. No such frame: the latest one.
+
+    When that frame falls in an icehouse era (sea_ice_m at or below
+    ICEHOUSE_SEA_ICE_M; spells closer than ICEHOUSE_JOIN_MYR joined), the pick
+    moves to a warm moment of that same era, like Holocene Earth inside the
+    late Cenozoic icehouse (PW-700): among the era's frames with the least
+    ice (sea_ice_m in the era's top WARM_QUANTILE), the geographically most
+    typical. The era's glacial depths stay reachable through its frames and
+    the time zoom (finish.now_kyr "glacial"). Runs without sea_ice_m skip it."""
     end = frames[-1]["t"]
     start = after_myr if end > after_myr else end / 3
     late = [f for f in frames if f["t"] >= start] or frames[-1:]
@@ -2733,7 +2744,30 @@ def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AF
         if not ok.any():
             return float(frames[-1]["t"])
         d = np.where(ok, d, np.inf)
-    return float(late[int(np.argmin(d))]["t"])
+    i = int(np.argmin(d))
+    if all("sea_ice_m" in f["stats"] for f in late):
+        i = _warm_in_era(late, d, i)
+    return float(late[i]["t"])
+
+
+def _warm_in_era(late: list[dict], d: np.ndarray, i: int) -> int:
+    """representative_time's frame i, or a warm moment of the icehouse era it falls in (PW-700): late's
+    frames with their distances d (inf: not eligible)."""
+    t = np.array([f["t"] for f in late], float)
+    si = np.array([f["stats"]["sea_ice_m"] for f in late], float)
+    if si[i] > ICEHOUSE_SEA_ICE_M:
+        return i
+    ice = np.flatnonzero(si <= ICEHOUSE_SEA_ICE_M)
+    # the era: the icehouse frames around i, gaps up to ICEHOUSE_JOIN_MYR joined (its ice-free flickers belong to it)
+    lo = hi = int(np.searchsorted(ice, i))
+    while lo > 0 and t[ice[lo]] - t[ice[lo - 1]] <= ICEHOUSE_JOIN_MYR + 1e-9:
+        lo -= 1
+    while hi < len(ice) - 1 and t[ice[hi + 1]] - t[ice[hi]] <= ICEHOUSE_JOIN_MYR + 1e-9:
+        hi += 1
+    era = np.arange(ice[lo], ice[hi] + 1)
+    era = era[np.isfinite(d[era])]
+    warm = era[si[era] >= np.quantile(si[era], WARM_QUANTILE)]
+    return int(warm[np.argmin(d[warm])])
 
 
 def representative_note(frames: list[dict], t: float) -> str:

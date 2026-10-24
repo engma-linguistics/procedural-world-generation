@@ -61,6 +61,11 @@ def test_criteria_spells_and_bars():
     # too little time in an icehouse fails the share
     r = C.evaluate(_track(np.where(np.arange(n) == 200, -60.0, 0.0), il), spinup=100.0)
     assert any("icehouse" in f for f in r["fails"])
+    # ... but only on a window long enough to hold an ice age (PW-709): a 500 Myr run isn't judged on the floor
+    r = C.evaluate(_track(np.zeros(125), il[:125]), spinup=100.0)
+    assert r["pass"] and not r["icehouse"]["floor_judged"], r["fails"]
+    r = C.evaluate(_track(np.full(125, -60.0), il[:125]), spinup=100.0)  # the cap is judged on any window
+    assert any("icehouse" in f for f in r["fails"])
     # a deep era that never ends fails the new bar; the old bar sees only depth
     si[150:] = -200.0
     r = C.evaluate(_track(si, il), spinup=100.0)

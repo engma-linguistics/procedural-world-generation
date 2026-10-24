@@ -229,7 +229,7 @@ settle into each other:
 |---|---|---|
 | **N1 recovery** | every deep era ends within 150 Myr; every very deep era within 60 Myr. An era still on at the run's end fails only if it has already run longer | Sturtian ~57 Myr, LPIA ~90 Myr; a planet may sit deep for a long time but must come out |
 | **N2 floor** | sea level from ice never below −1000 m | the outside edge of snowball estimates; below that the model is doing something no planet did |
-| **N3 icehouse share** | 5–70% of the time in an icehouse, and no single icehouse longer than 300 Myr | Earth ~10–30%; wide, because world variety is the point. A permanently frozen or permanently unglaciated planet is possible but should be a world-builder choice (`climate_offset`), not the default |
+| **N3 icehouse share** | 5–70% of the time in an icehouse, and no single icehouse longer than 300 Myr (the 5% floor judged only on runs of >= 1 Gyr, PW-709: a 200 Myr quick window can't hold the gap between ice ages) | Earth ~10–30%; wide, because world variety is the point. A permanently frozen or permanently unglaciated planet is possible but should be a world-builder choice (`climate_offset`), not the default |
 | **N4 hot eras end** | dT above +8 C for at most 150 Myr at a time | the Mesozoic greenhouse moved within itself; a planet stuck hot is as wrong as one stuck cold |
 | N5 onset from the poles (reported) | no ice equatorward of 30° unless ice poleward of 60° existed the update before | Chandler & Sohl 2000; universal in models |
 | reported, not barred | the gaps between icehouses (Earth 60 Myr–1.5 Gyr), each era's length and depth, the time below −150/−430 m, flicker eras (one update long) | to watch, not to tune to |

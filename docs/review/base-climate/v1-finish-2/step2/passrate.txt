@@ -1,0 +1,37 @@
+    main seed     1: icehouse  36.9% (300-500   0%, 600-1000  53%), deep  0.0%, dT max +7.1 -> ok | N1-N4 ok
+    main seed     2: icehouse  84.7% (300-500  50%, 600-1000  98%), deep 30.1%, dT max +9.5 ICEBOX -> F | N1-N4 F
+    main seed     5: icehouse  36.4% (300-500  62%, 600-1000  33%), deep 11.9%, dT max +9.0 -> ok | N1-N4 ok
+    main seed     7: icehouse  39.8% (300-500   0%, 600-1000  58%), deep  0.0%, dT max +7.8 -> ok | N1-N4 ok
+    main seed    11: icehouse   0.0% (300-500   0%, 600-1000   0%), deep  0.0%, dT max +9.5 -> ok | N1-N4 F
+    main seed    13: icehouse  56.8% (300-500  20%, 600-1000  71%), deep  0.0%, dT max +6.2 -> F | N1-N4 ok
+    main seed    21: icehouse   0.6% (300-500   2%, 600-1000   0%), deep  0.0%, dT max +10.6 -> ok | N1-N4 F
+    main seed    42: icehouse  25.6% (300-500  50%, 600-1000  13%), deep  8.5%, dT max +9.3 -> ok | N1-N4 ok
+    main seed    99: icehouse  73.3% (300-500  74%, 600-1000  71%), deep  8.5%, dT max +6.2 -> F | N1-N4 F
+    main seed   101: icehouse  39.8% (300-500   0%, 600-1000  69%), deep  0.0%, dT max +9.2 -> ok | N1-N4 ok
+    main seed   102: icehouse   6.2% (300-500   0%, 600-1000  11%), deep  0.0%, dT max +9.9 -> ok | N1-N4 ok
+    main seed   103: icehouse  72.7% (300-500  42%, 600-1000  81%), deep 25.0%, dT max +9.6 -> F | N1-N4 F
+    main seed   104: icehouse   8.5% (300-500   0%, 600-1000  10%), deep  0.0%, dT max +9.5 -> ok | N1-N4 ok
+    main seed   105: icehouse  43.8% (300-500  22%, 600-1000  42%), deep  0.0%, dT max +8.1 -> F | N1-N4 ok
+    main seed   106: icehouse  34.7% (300-500  10%, 600-1000  53%), deep  4.0%, dT max +8.1 -> ok | N1-N4 ok
+    main seed  3199: icehouse  21.6% (300-500   0%, 600-1000  38%), deep  0.0%, dT max +9.5 -> ok | N1-N4 ok
+main: owner's bar 11/16 (69%), icehouse median 37% (early 6, late 48), always-icebox 1, hellhole 0, N1-N4 11/16
+
+    rr_p seed     1: icehouse  45.5% (300-500  28%, 600-1000  55%), deep  9.1%, dT max +8.0 -> F | N1-N4 ok
+    rr_p seed     2: icehouse  26.7% (300-500   8%, 600-1000  20%), deep  5.7%, dT max +10.2 -> ok | N1-N4 ok
+    rr_p seed     5: icehouse   0.0% (300-500   0%, 600-1000   0%), deep  0.0%, dT max +9.2 -> ok | N1-N4 F
+    rr_p seed     7: icehouse   2.8% (300-500   4%, 600-1000   0%), deep  0.0%, dT max +9.7 -> ok | N1-N4 F
+    rr_p seed    11: icehouse   3.4% (300-500   0%, 600-1000   6%), deep  0.0%, dT max +9.6 -> ok | N1-N4 F
+    rr_p seed    13: icehouse  38.1% (300-500   0%, 600-1000  54%), deep  0.0%, dT max +6.8 -> ok | N1-N4 ok
+    rr_p seed    21: icehouse  19.9% (300-500   2%, 600-1000  34%), deep 10.2%, dT max +11.8 -> ok | N1-N4 ok
+    rr_p seed    42: icehouse  42.0% (300-500  54%, 600-1000  30%), deep 11.9%, dT max +9.3 -> F | N1-N4 ok
+    rr_p seed    99: icehouse   8.0% (300-500   4%, 600-1000   0%), deep  0.0%, dT max +8.8 -> ok | N1-N4 ok
+    rr_p seed   101: icehouse  30.1% (300-500  12%, 600-1000  47%), deep  5.1%, dT max +8.2 -> ok | N1-N4 ok
+    rr_p seed   102: icehouse  31.2% (300-500   0%, 600-1000  54%), deep  4.0%, dT max +8.1 -> ok | N1-N4 ok
+    rr_p seed   103: icehouse  49.4% (300-500  26%, 600-1000  63%), deep  4.5%, dT max +9.3 -> F | N1-N4 ok
+    rr_p seed   104: icehouse  15.9% (300-500  10%, 600-1000  16%), deep  0.0%, dT max +11.5 -> ok | N1-N4 ok
+    rr_p seed   105: icehouse  35.2% (300-500  46%, 600-1000  27%), deep  0.0%, dT max +10.6 -> ok | N1-N4 ok
+    rr_p seed   106: icehouse   7.4% (300-500   6%, 600-1000  10%), deep  0.0%, dT max +8.4 -> ok | N1-N4 ok
+    rr_p seed  3199: icehouse  37.5% (300-500  24%, 600-1000  29%), deep  2.8%, dT max +8.9 -> ok | N1-N4 ok
+rr_p: owner's bar 13/16 (81%), icehouse median 28% (early 7, late 28), always-icebox 0, hellhole 0, N1-N4 13/16
+
+pooled: owner's bar 24/32 (75%), icehouse median 33%, always-icebox 1, hellhole 0, N1-N4 24/32
