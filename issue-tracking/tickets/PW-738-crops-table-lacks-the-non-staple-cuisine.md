@@ -1,4 +1,5 @@
 ---
+id: PW-738
 title: Crops table lacks the non-staple cuisine plants (tree fruit, olives and vines, oil seeds, spices, sugar, tea and coffee, cooking greens)
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: fun7
 blocked_by: []
 relates: [PW-721, PW-692, PW-719]
 refs: [planet/lineages/crop_defs.py, planet/lineages/crops.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,4 @@ past that).
 - [ ] fruit/oil/spice/sugar rows with wild ranges from climate, soils and (for vines/olives) dry summers
 
 ## Updates
+- 2026-10-24: Created from inbox draft draft-cuisine-goods-fruit-oil-spice-sugar.md (found by fun7).

@@ -1,5 +1,6 @@
 ---
-title: Fuels use every coal outcrop and every cell's own supply: coal known by a people's era and tech, fuels in trade, and the zooms
+id: PW-739
+title: "Fuels use every coal outcrop and every cell's own supply: coal known by a people's era and tech, fuels in trade, and the zooms"
 type: task
 status: todo
 parent: PW-692
@@ -11,6 +12,8 @@ found_by: fun7
 blocked_by: []
 relates: [PW-722, PW-714, PW-675, PW-661]
 refs: [planet/lineages/fuels.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -29,3 +32,5 @@ the staples' straw and the coal likelihood. What it leaves out, each a follow-up
 - [ ] coal known by era and tech; fuel trade; cooking-style row per fuel
 
 ## Updates
+- 2026-10-24: Also add the fat fuels: seal and whale oil (arctic lamps), tallow and rendered fat (goliaths, PW-730), and bone where wood is scarce; tundra's 60% 'grass' should read heath and dwarf shrub.
+- 2026-10-24: Created from inbox draft draft-fuels-coal-known-era-and-trade.md (found by fun7).

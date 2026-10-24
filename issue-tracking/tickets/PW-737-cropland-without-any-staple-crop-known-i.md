@@ -1,7 +1,8 @@
 ---
-title: Cropland without any staple crop known is cut to 30% (landuse.CROP_FLOOR): a judgement call
+id: PW-737
+title: "Cropland without any staple crop known is cut to 30% (landuse.CROP_FLOOR): a judgement call"
 type: task
-status: needs-decision
+status: done
 parent: PW-721
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun7
 blocked_by: []
 relates: [PW-721, PW-662]
 refs: [planet/lineages/landuse.py, planet/lineages/crops.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,5 @@ and keep crops as a farm-capacity effect only.
 - [ ] owner picks the floor
 
 ## Updates
+- 2026-10-24: Status needs-decision -> done. Coordinator: keep 0.3 (fields without a staple stand for minor crops and gardens); revisit with PW-738's cuisine plants.
+- 2026-10-24: Created from inbox draft draft-crop-floor-without-a-staple.md (found by fun7).

@@ -2,7 +2,7 @@
 id: PW-720
 title: The peoples' own sea crossings do not yet follow the craft ladder that now gates animals
 type: task
-status: todo
+status: done
 parent: PW-688
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-688, PW-702, PW-675]
 refs: [planet/lineages/crossing.py, planet/lineages/animal_defs.py, planet/lineages/spec.py]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
 ## Description
@@ -28,5 +28,6 @@ Also: animals land only on peopled cells (an empty island gets them with its set
 - [ ] one ladder for people and animals
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged (fun7, 60c433c); runs b18a68 f78aa8 (fantasy), 3b20dc eda3d7 (real).
 - 2026-10-24: Built on branch fun7: crossing.modes reads animal_defs.craft_ladder (canoe 300 km from 60 kyr at sea share 0.02, planked boat 1500 km from 6 kyr at 0.2, sailing ship 2500 km from 3 kyr at 0.3); the ladder's planked reach went 800 -> 1500 km because 800 raised the empty land by 9 points (1df1c3 real, seed 7: 15.9% -> 24.8%).
 - 2026-10-23: Created from inbox draft draft-boats-for-peoples-follow-the-craft-ladder.md (found by fun6).

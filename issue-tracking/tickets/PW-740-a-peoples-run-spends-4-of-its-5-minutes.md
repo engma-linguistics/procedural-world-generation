@@ -1,4 +1,5 @@
 ---
+id: PW-740
 title: A peoples run spends ~4 of its ~5 minutes working out the world's land goods in memory (cache them in the world or on disk)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun7
 blocked_by: []
 relates: [PW-722, PW-721]
 refs: [planet/lineages/land.py, planet/lineages/run.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -23,3 +26,4 @@ Options: (A) write the made game attributes into the world (`planet gameattrs WO
 - [ ] a peoples run on a world with its goods made costs the history, not the goods
 
 ## Updates
+- 2026-10-24: Created from inbox draft draft-goods-cache-per-world.md (found by fun7).
