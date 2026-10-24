@@ -30,4 +30,5 @@ PW-732 built the goods (`salt`, `fish`, `shellfish`, `sea_mammals`, `_salt_km`, 
 - [ ] trade: salt reach per people
 
 ## Updates
+- 2026-10-24: fun13: tried a mild `[[use]]` salt pull (weight 0.3) for the ruminant peoples in seven_meals.toml on 1df1c3: mean km to salt 307 -> 320 (antelope-kin), 482 -> 494 (cervid-kin), wish 0.635 -> 0.615, one draw each: no effect, so not kept. Fisher ways already read fish and shellfish through WAYS (PW-723). Trade reach, salting works and the boiling-fuel check are untouched.
 - 2026-10-24: Created from inbox draft draft-salt-trade-and-sea-food-uses.md (found by fun9).

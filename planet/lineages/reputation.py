@@ -9,13 +9,16 @@ For an observer O and a subject S that met:
              edge      thin contact (few years, a short border): strangers at the edge of the map
              exotic    some contact, not much (a trade partner, a coast visitor)
              neighbour rich, peaceful contact (years in contact and a mixed zone, or a close tier): O uses S's own name
+             A row may carry its own `efold_kyr` (a legend: the invader's name outlasts the event for that many kyr, whatever the
+             era); the row then reports `memory_kyr`.
   category the preset's `[[exonym]]` row that best fits S's visible body / ancestry / way / origin (most conditions
            matched; a row may be limited to some valences); the valence's fallback row where none fits
   lumped_with  other subjects in thin contact that O files under the same name
   borrowed  an observer that never met S takes the view of its best-connected neighbour that did (at half strength)
 The result is `meta.present.reputation`: {"params", "rows": {observer: {subject: row}}}. The rows are data
 (spec.Tree.exonyms): the mechanism holds no story; a preset can give any folk category a body, an ancestry or an arrival
-and the valences it applies to. Not yet read: authored conquests / polities and derived incursions (PW-661), so there is
+and the valences it applies to. Authored conquests (`[[event]]`, kind conquest: S overran O at a date) are read as feared. Not yet
+read: polities and derived incursions (PW-661), so there is
 no 'resented' (ruled by S) valence yet."""
 
 from __future__ import annotations
@@ -75,7 +78,41 @@ def parse_rows(rows, body_keys, choices) -> list[dict]:
                 row[k] = str(r[k])
         if r.get("efold_kyr") is not None:
             row["efold_kyr"] = float(r["efold_kyr"])
+            if not row["efold_kyr"] > 0:
+                raise ValueError(f"exonym {r['id']}: efold_kyr must be > 0 (kyr)")
         out.append(row)
+    return out
+
+
+EVENT_KINDS = ("conquest",)
+EVENT_STRENGTH = 0.8  # how deeply an authored conquest is remembered at the moment it happened (0..1)
+
+
+def parse_events(rows, lines, off=()) -> list[dict]:
+    """Validate the `[[event]]` rows of a spec: dated history the owner insists on, kept as an anchor the reputation pass reads
+    (PW-730, owner PW-734: a thin slice of history). `kind = "conquest"`, `by` = the people that conquered, `over` = the peoples it
+    overran (one id or a list), `at` = when (kyr ago), optional `strength` 0..1. No place: where the conquerors came from is the
+    world's to say. Events that name a line switched off (real mode, enabled = false) are dropped."""
+    from .spec import parse_ago
+    out = []
+    for r in rows or []:
+        bad = [k for k in r if k not in ("kind", "by", "over", "at", "strength", "note")]
+        kind = str(r.get("kind", "conquest"))
+        if bad or kind not in EVENT_KINDS or not r.get("by") or not r.get("over") or r.get("at") in (None, ""):
+            raise ValueError(f"event {r}: needs kind {list(EVENT_KINDS)}, by, over, at, and only those keys (and strength, note)")
+        over = [str(r["over"])] if isinstance(r["over"], str) else [str(x) for x in r["over"]]
+        names = [str(r["by"]), *over]
+        if any(x in off for x in names):
+            continue
+        if any(x not in lines for x in names):
+            raise ValueError(f"event {r}: unknown lineage")
+        st = float(r.get("strength", EVENT_STRENGTH))
+        if not 0 < st <= 1:
+            raise ValueError(f"event {r}: strength must be within 0..1")
+        ev = {"kind": kind, "by": str(r["by"]), "over": over, "at": parse_ago(r["at"]), "strength": st}
+        if r.get("note"):
+            ev["note"] = str(r["note"])
+        out.append(ev)
     return out
 
 
@@ -194,27 +231,39 @@ def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict) -> d
             continue
         lost = t["cells"] / max(held.get(loser, 0) + t["cells"], 1)
         row, _ = _category(tree, s, val)
-        efold = (row or {}).get("efold_kyr") or P["efold_kyr"] * P["era_scale"]
+        own = (row or {}).get("efold_kyr")  # a legend row: its own memory length in kyr (not scaled by the era), PW-754
+        efold = own or P["efold_kyr"] * P["era_scale"]
         st = min(1.0, P["loss_scale"] * lost) * math.exp(-t["until_kyr"] / efold)
         if st >= P["min_strength"]:
-            cands.append((st, val, f"conquest: {taker} took {t['cells']} cells ({round(100 * lost)}% of {loser}'s land)", t["until_kyr"]))
+            cands.append((st, val, f"conquest: {taker} took {t['cells']} cells ({round(100 * lost)}% of {loser}'s land)", t["until_kyr"], own))
+    for ev in getattr(tree, "events", None) or []:  # authored conquests (PW-730): S's people overran O's, ev["at"] kyr ago
+        if tree.people_of(ev["by"]) != s or o not in {tree.people_of(x) for x in ev["over"]}:
+            continue
+        row, _ = _category(tree, s, "feared")
+        own = (row or {}).get("efold_kyr")
+        st = ev["strength"] * math.exp(-ev["at"] / (own or P["efold_kyr"] * P["era_scale"]))
+        if st >= P["min_strength"]:
+            cands.append((st, "feared", f"conquest (authored): {s} overran {o} {ev['at']:g} kyr ago", ev["at"], own))
     if cands:
-        strength, val, basis, since = max(cands)
+        strength, val, basis, since, legend = max(cands, key=lambda c: c[:4])
     else:
         rich = (yrs >= P["rich_years"] and rec["mixed_pct_now"] >= RICH_MIXED_PCT) or (rec["tier"] in ("T0", "T1") and yrs >= P["rich_years"] // 2)
         thin = yrs < P["thin_years"] or km < P["thin_km"]
         val = "neighbour" if rich else "edge" if thin else "exotic"
         basis = {"neighbour": f"rich peaceful contact ({yrs} yr, {rec['mixed_pct_now']}% mixed)",
                  "edge": f"thin contact ({yrs} yr, border {km} km)", "exotic": f"some contact ({yrs} yr, along {rec['kind']})"}[val]
-        since = rec["first_contact_kyr"]
+        since, legend = rec["first_contact_kyr"], None
         strength = max(0.0, 1 - yrs / max(P["thin_years"], 1)) if val == "edge" else min(1.0, yrs / max(P["rich_years"], 1))
     if val == "neighbour":
         cat, name = None, tree.lines[s].label()
     else:
         row, _ = _category(tree, s, val)
         cat, name = (row["id"], row["label"]) if row else (val, val)
-    return {"category": cat, "name": name, "valence": val, "basis": basis, "since_kyr": round(since, 2), "strength": round(strength, 3),
-            "lumped_with": [], "tier": rec["tier"]}
+    out = {"category": cat, "name": name, "valence": val, "basis": basis, "since_kyr": round(since, 2), "strength": round(strength, 3),
+           "lumped_with": [], "tier": rec["tier"]}
+    if legend:  # (only where the row gave its own memory length: every other row is unchanged)
+        out["memory_kyr"] = legend
+    return out
 
 
 def _lump(rows: dict) -> None:

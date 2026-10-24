@@ -144,17 +144,18 @@ def demography(traits) -> dict:
 # Inherited from the first parent key by key (a `body` table in the spec gives only what differs).
 # The culinary keys (PW-726; intake section 4.3): suction (drinking and slurping), teeth, gut (ruminants are foregut),
 # salt (herbivores crave it), display (horns are permanent and ringed, antlers shed yearly) and shed (who sheds: one
-# clock or two), hours (when it is active), thermo (ectotherms feast and fast) and fire (false: cooks without fire).
+# clock or two), display_sex (both | males: which sexes carry horns or antlers, as real species differ: reindeer and oryx both,
+# deer, moose and impala males only; PW-730), hours (when it is active), thermo (ectotherms feast and fast) and fire (false: cooks without fire).
 # Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
 BODY_DEFAULT = {"sweet": True, "milk": False, "capsaicin": True, "bitter": "normal", "smell": "normal",
                 "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
                 "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
-                "shed": "none", "hours": "diurnal", "thermo": "endo", "fire": True}
+                "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True}
 BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
                 "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore"),
                 "suction": ("none", "poor", "normal"), "teeth": ("grinding", "conical", "dental_pad", "beak"),
                 "gut": ("simple", "hindgut", "foregut"), "salt": ("normal", "craving"), "display": ("none", "horns", "antlers"),
-                "shed": ("none", "both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto")}
+                "shed": ("none", "both", "males"), "display_sex": ("both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto")}
 TOXINS = ("alliums", "theobromine")
 BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
 
@@ -227,6 +228,8 @@ def body_notes(b: dict) -> list[str]:
                     ("thermo", {"ecto": "are ectotherms (their appetite follows the weather)"})):
         if b.get(k) in text:
             out.append(text[b[k]])
+        if k == "display" and b.get("display") in ("horns", "antlers") and b.get("display_sex") == "males":
+            out[-1] += ", in males only"  # (which sexes carry the display: real species differ, PW-730)
     if b.get("fire") is False:
         out.append("cook without fire")
     tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)"}[t] for t in b["toxic"]]
@@ -382,6 +385,7 @@ class Tree:
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
     exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
+    events: list = field(default_factory=list)  # [[event]]: dated conquests the reputation pass remembers (reputation.parse_events, PW-730)
     reputation: dict = field(default_factory=dict)  # meta.reputation: knobs of the reputation pass (reputation.params)
     tiers: list = field(default_factory=list)  # [[interfertile]]: per-pair overrides [a, b, tier 0..3] (the half-elf exemption...)
 
@@ -717,6 +721,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         t.tiers.append((a, b, int(tr)))
     from . import reputation as RP
     t.exonyms = RP.parse_rows(raw.get("exonym"), BODY_DEFAULT, BODY_CHOICES)
+    t.events = RP.parse_events(raw.get("event"), lines, off)
     t.reputation = dict(meta.get("reputation") or {})
     bad = [k for k in t.reputation if k not in RP.KNOBS]
     if bad:
@@ -802,6 +807,7 @@ def to_raw(t: Tree) -> dict:
                      **({"crops": t.crops} if t.crops is not None else {}),
                      **({"crops_force": t.crops_force} if t.crops_force else {}),
                      **({"crops_at": {k: f"{v:g} kyr" for k, v in t.crops_at.items()}} if t.crops_at else {})},
-            "lineage": out, "exonym": t.exonyms, "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
+            "lineage": out, "exonym": t.exonyms,
+            "event": [{**e, "at": f"{e['at']:g} kyr"} for e in t.events], "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
             "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

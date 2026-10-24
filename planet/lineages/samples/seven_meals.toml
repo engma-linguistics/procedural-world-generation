@@ -1,0 +1,1135 @@
+# The owner's world (PW-730): the lineage tree of the culinary-dnd repo (docs/genetics.md, docs/decisions/2026-09-24-lineages.md),
+# beside dnd.toml, which stays the traditional D&D template. Format: planet/lineages/spec.py (see the header of dnd.toml).
+# Source of truth for people facts is the culinary repo (bodies, ancestry, rulings; the check script of intake Q8 is not built);
+# procgen owns WHERE and WHEN (PW-734, owner 2026-10-24: the written geography of the culinary repo is not fitted to; homelands,
+# neighbours, conquests and dates all come out of the world). Interfertility tiers fall out of the split depths (spec.TIER_KYR:
+# T0 same people, T1 under 1 Myr, T2 under 40 Myr, else T3), so the depths below ARE the culinary repo's tier table:
+#   humans-orcs-goliaths T1; goblins-hobgoblins T1; leonin-tabaxi T1; the giant kinds T1; dwarves, halflings, giants, bugbears T2
+#   with humans and each other; lizardfolk-dragonborn-kobolds T2; merfolk-deep folk T2; everything cross-clade T3.
+# The "fiends" (PW-734, owner): the infernal "tieflings" are antelope-kin and the abyssal "tieflings" are cervid-kin, a deep
+# ruminant branch (~50 Myr from humans: T3, no half-fiends; antelope-kin and cervid-kin are ~25 Myr apart: T2). "Devils" and
+# "demons" are what their neighbours made of them (the [[exonym]] rows at the end, with a long memory). The tiefling template
+# is not in this tree. The antelope-kin are a conquest people (their homeland is wherever the world puts them, not "the western
+# steppe"); the sim's substrate takeovers are the conquests the reputation pass reads.
+# Not in this tree (cut or absorbed in the canon): drow, sea elves (an exonym for the deep folk), tritons, firbolgs, aasimar,
+# genasi, troglodytes, the tiefling template. Half-elves are the canon's exemption (no population, no cline, no community
+# anywhere): they have no line here, because a contact hybrid still makes a people of its own where its parents last met (PW-613).
+# Horns and antlers (owner 2026-10-24): by variant, following real species. body.display = horns | antlers; body.display_sex =
+# both | males (which sexes carry it); body.shed (antlers) = both | males (who sheds, a yearly cycle).
+#   reindeer-like cervids: antlers in both sexes; deer-, elk-, moose-like: males only.
+#   oryx-, eland-like antelope: horns in both sexes; impala-, blackbuck-, kudu-, saiga-like: males only.
+
+[meta]
+name = "Seven Meals (the owner's world)"
+seed = 7
+mixing_start = "3 kyr"
+era = "renaissance"
+viable_pop = 500
+mode = "fantasy"
+portal_mode = "off"  # (the elves and gnomes each arrive from outside at their best habitat: "two separate places")
+portals = 1
+land_pull = 0.5
+
+# ---- one tree of life ----------------------------------------------------------------------------------
+# the mammal-reptile split is as deep as Earth's (~320 Myr). Worlds sliced shallower than that clamp: every line older than the
+# run's first step starts at its first step. The convergence on people-shaped bodies is a premise, not a mechanism.
+[[lineage]]
+id = "life"
+name = "one tree of life"
+origin = "root"
+at = "340 Myr"
+temp_c = [10, 30]
+rain_mm = [300, 3500]
+
+# ---- the mammalian line --------------------------------------------------------------------------------
+[[lineage]]
+id = "mammalian"
+name = "mammalian line"
+parents = ["life"]
+at = "320 Myr"
+temp_c = [8, 26]
+rain_mm = [400, 2500]
+
+[[lineage]]  # carnivore-like branch ~60 Myr off the terrestrial clade; originates in or near the Near Isles
+id = "feline"
+name = "cat peoples stem"
+body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular" }
+parents = ["mammalian"]
+at = "60 Myr"
+temp_c = [16, 30]
+rain_mm = [500, 3000]
+prefers = ["tropical"]
+
+[[lineage]]
+id = "tabaxi"
+name = "tabaxi"
+parents = ["feline"]
+at = "800 kyr"
+density = 1.5
+explore = 0.8
+temp_c = [18, 30]
+rain_mm = [900, 3500]
+prefers = ["rainforest", "forest"]
+traits = ["cosmopolitan", "hunter"]
+speed_kmyr = 0.8
+
+[[lineage]]
+id = "leonin"
+name = "leonin"
+parents = ["feline"]
+at = "600 kyr"
+density = 0.5
+explore = 0.6
+temp_c = [16, 32]
+rain_mm = [300, 1400]
+prefers = ["savanna", "open"]
+traits = ["nomadic", "hunter"]
+
+# -- the ruminant branch (PW-734): the "fiends". ~50 Myr off the line of the humans (T3), ~25 Myr between the two peoples (T2).
+[[lineage]]
+id = "ruminant"
+name = "ruminant stem"
+body = { gut = "foregut", cellulose = true, diet = "herbivore", teeth = "dental_pad", salt = "craving", hours = "crepuscular", smell = "keen" }  # intake 4.3: rumen (grain sickens it), a dental pad and no upper incisors, a sodium craving, crepuscular
+parents = ["mammalian"]
+at = "50 Myr"
+temp_c = [-8, 26]
+rain_mm = [200, 2200]
+prefers = ["open", "temperate"]
+
+[[lineage]]  # the "infernal" fiends: the conquest people of the open dry country
+id = "antelope_folk"
+name = "antelope-kin"
+body = { display = "horns", display_sex = "males" }  # permanent horns with growth rings; the default variant is males-only (saiga-, impala-like)
+parents = ["ruminant"]
+at = "25 Myr"
+density = 0.8
+explore = 0.7
+insularity = 0.5
+temp_c = [-5, 26]
+rain_mm = [150, 900]
+prefers = ["steppe", "savanna", "open"]
+traits = ["nomadic", "hardy"]
+way = "pastoral_nomad"
+
+[[lineage]]  # cold steppe runners, saiga-like (males only)
+id = "antelope_steppe"
+name = "antelope-kin of the steppe (saiga-like)"
+origin = "group"
+group_of = "antelope_folk"
+at = "9 kyr"
+temp_c = [-12, 20]
+rain_mm = [150, 600]
+prefers = ["steppe"]
+
+[[lineage]]  # savanna and woodland-edge browsers, impala- and kudu-like (males only)
+id = "antelope_savanna"
+name = "antelope-kin of the savanna (impala-, kudu-like)"
+origin = "group"
+group_of = "antelope_folk"
+at = "9 kyr"
+temp_c = [14, 32]
+rain_mm = [500, 1400]
+prefers = ["savanna"]
+
+[[lineage]]  # desert-edge and dry-grass herds, oryx- and eland-like (both sexes horned)
+id = "antelope_oryx"
+name = "antelope-kin of the dry grassland (oryx-, eland-like)"
+body = { display_sex = "both" }
+origin = "group"
+group_of = "antelope_folk"
+at = "9 kyr"
+temp_c = [12, 34]
+rain_mm = [100, 700]
+prefers = ["desert", "savanna", "steppe"]
+
+[[lineage]]  # hills and peaks, ibex-like (both sexes horned)
+id = "antelope_mountain"
+name = "antelope-kin of the mountains (ibex-like)"
+body = { display_sex = "both" }
+origin = "group"
+group_of = "antelope_folk"
+at = "9 kyr"
+temp_c = [-10, 16]
+rain_mm = [250, 1400]
+prefers = ["mountain", "hills"]
+traits = ["mountain", "hardy"]
+
+[[lineage]]  # the "abyssal" fiends: forest and its edges
+id = "cervid_folk"
+name = "cervid-kin"
+body = { bitter = "low", display = "antlers", shed = "males", display_sex = "males" }  # browsers: tannin-binding saliva (low bitter); antlers shed yearly; the default variant is deer-like (males only)
+parents = ["ruminant"]
+at = "25 Myr"
+density = 2
+insularity = 0.6
+temp_c = [-12, 18]
+rain_mm = [400, 2000]
+prefers = ["forest", "temperate", "continental"]
+traits = ["hardy"]
+way = "forager"
+
+[[lineage]]  # oak and chestnut country, red-deer-like (males only)
+id = "cervid_forest"
+name = "cervid-kin of the oak woods (red-deer-like)"
+origin = "group"
+group_of = "cervid_folk"
+at = "9 kyr"
+temp_c = [2, 18]
+rain_mm = [600, 2000]
+prefers = ["forest", "temperate"]
+
+[[lineage]]  # boreal wetland, moose-like (males only)
+id = "cervid_boreal"
+name = "cervid-kin of the boreal wetlands (moose-like)"
+origin = "group"
+group_of = "cervid_folk"
+at = "9 kyr"
+temp_c = [-14, 10]
+rain_mm = [400, 1400]
+prefers = ["subarctic", "wetland"]
+
+[[lineage]]  # tundra herders, reindeer-like (antlers in both sexes: one clock); neighbours of goliaths and frost giants
+id = "cervid_tundra"
+name = "cervid-kin of the tundra (reindeer-like)"
+body = { shed = "both", display_sex = "both" }
+origin = "group"
+group_of = "cervid_folk"
+at = "9 kyr"
+temp_c = [-20, 6]
+rain_mm = [150, 1200]
+prefers = ["tundra", "subarctic"]
+way = "pastoral_nomad"
+
+# -- the aquatic clade: sister to the terrestrial clade ~15 Myr. Marine habitat is not built (draft-marine-peoples): both
+# peoples live on the coasts here, as the dnd.toml sea folk do. The deep folk cook without fire.
+[[lineage]]
+id = "aquatic"
+name = "aquatic clade"
+parents = ["mammalian"]
+at = "15 Myr"
+temp_c = [4, 28]
+rain_mm = [400, 4000]
+prefers = ["coast"]
+traits = ["swims", "coastal"]
+
+[[lineage]]
+id = "merfolk"
+name = "merfolk"
+parents = ["aquatic"]
+at = "3 Myr"
+density = 2
+explore = 0.7
+sea_share = 0.7
+temp_c = [8, 28]
+prefers = ["coast", "island"]
+traits = ["swims", "coastal"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "deep_folk"
+name = "deep folk"
+body = { fire = false }  # no fire: fermentation, hyper-saline brine, vent cooking
+parents = ["aquatic"]
+at = "2.5 Myr"
+density = 1
+explore = 0.6
+sea_share = 0.9
+insularity = 0.8
+temp_c = [2, 22]
+prefers = ["coast", "island"]
+traits = ["swims", "coastal", "insular"]
+way = "sea_nomad"
+
+# -- the terrestrial clade, a radiation like the real hominids
+[[lineage]]
+id = "terrestrial"
+name = "terrestrial clade"
+parents = ["mammalian"]
+at = "14 Myr"
+temp_c = [8, 26]
+rain_mm = [400, 2500]
+
+[[lineage]]  # goblinoids split first (~6 Myr); bugbears split from goblins and hobgoblins ~2 Myr (T2, no offspring)
+id = "goblinoid"
+name = "goblinoid stem"
+body = { raw_meat = true, bitter = "low" }
+parents = ["terrestrial"]
+at = "6 Myr"
+temp_c = [15, 28]
+rain_mm = [800, 3500]
+prefers = ["tropical", "forest"]
+
+[[lineage]]
+id = "bugbear"
+name = "bugbears"
+body = { smell = "keen", diet = "carnivore" }
+parents = ["goblinoid"]
+at = "2 Myr"
+density = 0.8
+explore = 0.4
+temp_c = [10, 28]
+rain_mm = [1200, 4000]
+prefers = ["rainforest"]
+traits = ["hardy", "hunter"]
+
+[[lineage]]
+id = "goblin_kind"
+name = "goblin and hobgoblin stem"
+parents = ["goblinoid"]
+at = "2 Myr"
+temp_c = [12, 30]
+rain_mm = [500, 3500]
+prefers = ["tropical", "savanna"]
+
+[[lineage]]
+id = "goblin"
+name = "goblins"
+parents = ["goblin_kind"]
+at = "250 kyr"
+density = 5
+temp_c = [18, 30]
+rain_mm = [1200, 4000]
+prefers = ["rainforest"]
+traits = ["hunter"]
+
+[[lineage]]
+id = "hobgoblin"
+name = "hobgoblins"
+parents = ["goblin_kind"]
+at = "250 kyr"
+density = 4
+explore = 0.6
+temp_c = [12, 30]
+rain_mm = [400, 2000]
+prefers = ["savanna", "open"]
+traits = ["hunter", "agricultural"]  # the sorghum and millet granary states of the savanna
+way = "farmer"
+
+# -- the giants (~3 Myr): six kinds split 300-500 kyr ago, T1 with each other, and they almost never interbreed. Few because
+# sparse (a band of 25 roams thousands of km2), not because their habitat is cut (PW-650, PW-655).
+[[lineage]]
+id = "giant"
+name = "giants stem"
+parents = ["terrestrial"]
+at = "3 Myr"
+density = 0.008
+explore = 0.3
+sea_share = 0.02
+insularity = 0.85
+temp_c = [-10, 24]
+rain_mm = [100, 3000]
+prefers = ["mountain"]
+traits = ["hardy", "mountain", "insular"]
+
+[[lineage]]
+id = "stone_giant"
+name = "stone giants"
+parents = ["giant"]
+at = "500 kyr"
+density = 0.006
+temp_c = [-6, 16]
+rain_mm = [250, 1500]
+prefers = ["mountain"]
+traits = ["hardy", "mountain", "insular"]
+
+[[lineage]]
+id = "hill_giant"
+name = "hill giants"
+body = { gut = "foregut" }  # the ancestral fermenting gut: agro-pastoralists who eat continuously; the route is the pantry
+parents = ["giant"]
+at = "450 kyr"
+density = 0.01
+temp_c = [0, 18]
+rain_mm = [350, 1500]
+prefers = ["hills"]
+traits = ["hardy", "insular"]
+way = "pastoral_nomad"
+
+[[lineage]]
+id = "cloud_giant"
+name = "cloud giants"
+parents = ["giant"]
+at = "400 kyr"
+density = 0.005
+temp_c = [-12, 10]
+rain_mm = [400, 2500]
+elev_m = [2000, 7000]
+prefers = ["mountain"]
+traits = ["mountain", "insular"]
+
+[[lineage]]
+id = "fire_giant"
+name = "fire giants"
+parents = ["giant"]
+at = "350 kyr"
+density = 0.008
+temp_c = [12, 34]
+rain_mm = [50, 1500]
+prefers = ["volcanic"]
+traits = ["mountain", "insular"]
+
+[[lineage]]
+id = "frost_giant"
+name = "frost giants"
+parents = ["giant"]
+at = "320 kyr"
+density = 0.006
+temp_c = [-20, -2]
+rain_mm = [100, 1000]
+prefers = ["tundra", "polar", "mountain"]
+traits = ["insular"]
+
+[[lineage]]  # marine-coastal
+id = "storm_giant"
+name = "storm giants"
+parents = ["giant"]
+at = "300 kyr"
+density = 0.005
+explore = 0.45
+sea_share = 0.5
+temp_c = [4, 24]
+rain_mm = [1000, 4000]
+elev_m = [-50, 600]
+prefers = ["coast", "island"]
+traits = ["swims", "insular"]
+
+[[lineage]]  # ~1-1.5 Myr, T2 with humans and with the halflings
+id = "dwarf"
+name = "dwarves"
+body = { bitter = "low" }
+parents = ["terrestrial"]
+at = "1.5 Myr"
+density = 4
+explore = 0.35
+sea_share = 0.05
+insularity = 0.75
+temp_c = [-2, 18]
+rain_mm = [250, 1500]
+prefers = ["mountain"]
+traits = ["mountain", "subterranean", "miner"]
+
+[[lineage]]
+id = "halfling"
+name = "halflings"
+parents = ["terrestrial"]
+at = "1.2 Myr"
+density = 12
+explore = 0.35
+sea_share = 0.1
+insularity = 0.4
+temp_c = [9, 22]
+rain_mm = [600, 1600]
+prefers = ["temperate", "lowland", "coast"]
+traits = ["agricultural", "cosmopolitan"]
+
+[[lineage]]  # the human line: goliaths (450 kyr) and orcs (300 kyr) are T1 sisters of the humans; goliaths are NOT giant-kin
+id = "human_line"
+real = true
+name = "human line stem"
+parents = ["terrestrial"]
+at = "1 Myr"
+temp_c = [6, 26]
+rain_mm = [350, 2200]
+prefers = ["temperate", "subtropical", "lowland"]
+traits = ["hunter"]
+way = "forager"
+
+[[lineage]]
+id = "goliath"
+name = "goliaths"
+parents = ["human_line"]
+at = "450 kyr"
+density = 0.15
+explore = 0.4
+insularity = 0.7
+temp_c = [-20, 10]
+rain_mm = [60, 1500]
+prefers = ["tundra", "mountain", "subarctic"]
+traits = ["hardy", "mountain", "hunter"]
+way = "forager"
+
+[[lineage]]
+id = "orc"
+name = "orcs"
+body = { raw_meat = true, smell = "keen", milk = 0.1 }  # Arha are fermenters: a share of adults digest fresh milk (the cline carries the human herders' share across the margin)
+parents = ["human_line"]
+at = "300 kyr"
+density = 1
+explore = 0.7
+temp_c = [2, 20]
+rain_mm = [200, 900]
+prefers = ["steppe", "open"]
+traits = ["nomadic", "hardy"]
+
+[[lineage]]  # the Arha of the dry steppe: a dung fire cannot sear
+id = "arha"
+name = "Arha (steppe orcs)"
+origin = "group"
+group_of = "orc"
+at = "9 kyr"
+rain_mm = [150, 650]
+prefers = ["steppe"]
+way = "pastoral_nomad"
+
+[[lineage]]  # the Anja of the cold western woods: wood-fire roasting, same ancestors, opposite table
+id = "anja"
+name = "Anja (forest orcs)"
+origin = "group"
+group_of = "orc"
+at = "9 kyr"
+density = 2
+explore = 0.4
+insularity = 0.8
+temp_c = [-2, 16]
+rain_mm = [450, 1800]
+prefers = ["forest"]
+traits = ["hardy", "hunter"]
+way = "forager"
+
+[[lineage]]
+id = "human"
+real = true
+name = "humans"
+parents = ["human_line"]
+at = "200 kyr"
+density = 10
+explore = 0.55
+sea_share = 0.6
+insularity = 0.3
+temp_c = [6, 26]
+rain_mm = [350, 2200]
+prefers = ["temperate", "subtropical", "lowland"]
+traits = ["agricultural", "seafaring", "cosmopolitan"]
+way = "farmer"
+
+[[lineage]]  # the forager root of the forest-steppe margin: wild harvest, honey and mead; they drink fresh milk (the margin's lactase persistence, G-05)
+id = "human_forager"
+real = true
+name = "human foragers (the margin root)"
+body = { milk = 0.6 }
+origin = "group"
+group_of = "human"
+at = "11 kyr"
+density = 3
+sea_share = 0.05
+temp_c = [0, 22]
+rain_mm = [250, 1200]
+prefers = ["forest", "open", "temperate"]
+traits = ["hardy", "hunter"]
+way = "forager"
+
+[[lineage]]  # bread, beer, taxes and granaries
+id = "human_farmer"
+real = true
+name = "human grain-belt farmers"
+origin = "group"
+group_of = "human"
+at = "9 kyr"
+density = 12
+sea_share = 0.1
+explore = 0.45
+prefers = ["temperate", "subtropical", "lowland"]
+traits = ["agricultural", "cosmopolitan"]
+way = "farmer"
+
+[[lineage]]  # cattle as wealth: milk and blood from living animals (lactase persistence arisen separately)
+id = "human_jangwa"
+real = true
+name = "human cattle peoples of the savanna (Jangwa)"
+body = { milk = 0.9 }
+origin = "group"
+group_of = "human"
+at = "7 kyr"
+density = 1.5
+sea_share = 0.02
+explore = 0.5
+temp_c = [14, 34]
+rain_mm = [300, 1400]
+prefers = ["savanna", "open"]
+traits = ["nomadic", "hardy"]
+way = "transhumant"
+
+[[lineage]]
+id = "human_seafarer"
+real = true
+name = "human seafarers"
+origin = "group"
+group_of = "human"
+at = "6 kyr"
+density = 4
+explore = 0.8
+sea_share = 0.85
+prefers = ["coast", "island"]
+traits = ["seafaring", "coastal", "cosmopolitan"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "human_arctic"
+real = true
+name = "human arctic hunters"
+origin = "group"
+group_of = "human"
+at = "30 kyr"
+density = 0.3
+explore = 0.7
+sea_share = 0.5
+temp_c = [-14, 8]
+rain_mm = [60, 1500]
+prefers = ["tundra", "subarctic", "polar", "coast"]
+traits = ["hardy", "cosmopolitan", "hunter"]
+way = "forager"
+
+[[lineage]]  # the half-orcs: "a country ten thousand years old", at the margin of the humans and the orcs (a people of its own)
+id = "half_orc"
+name = "half-orcs"
+origin = "hybrid"
+parents = ["human", "orc"]
+at = "10 kyr"
+contact = false
+
+# ---- the reptilian line ---------------------------------------------------------------------------------
+[[lineage]]
+id = "reptilian"
+name = "reptilian line"
+body = { smell = "keen", raw_meat = true, thermo = "ecto" }
+parents = ["life"]
+at = "320 Myr"
+temp_c = [18, 30]
+rain_mm = [700, 3500]
+prefers = ["tropical"]
+
+[[lineage]]  # Sun Flats and delta are one people (T0)
+id = "lizardfolk"
+name = "lizardfolk"
+body = { diet = "carnivore" }
+parents = ["reptilian"]
+at = "20 Myr"
+density = 1.5
+explore = 0.4
+sea_share = 0.25
+temp_c = [18, 36]
+rain_mm = [40, 4500]
+prefers = ["desert", "wetland"]
+traits = ["swims"]
+
+[[lineage]]  # the arid belt, ancestral: ectothermy as a desert superpower
+id = "lizard_desert"
+name = "lizardfolk of the Sun Flats"
+origin = "group"
+group_of = "lizardfolk"
+at = "9 kyr"
+density = 0.8
+temp_c = [18, 36]
+rain_mm = [30, 450]
+prefers = ["desert"]
+traits = ["hardy", "nomadic"]
+way = "forager"
+
+[[lineage]]  # the later expansion into the southern swamp deltas
+id = "lizard_delta"
+name = "lizardfolk of the deltas"
+origin = "group"
+group_of = "lizardfolk"
+at = "6 kyr"
+density = 2
+temp_c = [20, 32]
+rain_mm = [1500, 4500]
+prefers = ["wetland", "rainforest"]
+traits = ["swims"]
+way = "fisher_forager"
+
+[[lineage]]
+id = "tortle"  # a far deeper branch
+name = "tortles"
+body = { cellulose = true, diet = "herbivore", teeth = "beak" }
+parents = ["reptilian"]
+at = "90 Myr"
+density = 1
+explore = 0.7
+sea_share = 0.8
+temp_c = [20, 30]
+rain_mm = [600, 3000]
+prefers = ["coast", "island"]
+traits = ["swims", "coastal"]
+way = "sea_nomad"
+
+[[lineage]]
+id = "draconic"
+name = "draconic stem"
+parents = ["reptilian"]
+at = "5 Myr"
+temp_c = [6, 30]
+rain_mm = [250, 2500]
+prefers = ["lowland", "coast"]
+traits = ["hardy"]
+
+[[lineage]]  # a flood-calendar delta civilization with farmland
+id = "dragonborn"
+name = "dragonborn"
+body = { smell = "keen", suction = "poor", thermo = "endo" }  # (running warm and diurnal is convergence, not descent)
+parents = ["draconic"]
+at = "2 Myr"
+density = 6
+explore = 0.6
+temp_c = [10, 32]
+rain_mm = [600, 3000]
+prefers = ["coast", "lowland", "subtropical"]
+traits = ["agricultural", "coastal"]
+way = "farmer"
+
+[[lineage]]  # not dragonborn vassals: their own people; homeland left to the sim (B-23)
+id = "kobold"
+name = "kobolds"
+body = { bitter = "low" }
+parents = ["draconic"]
+at = "2 Myr"
+density = 4
+sea_share = 0.02
+temp_c = [5, 25]
+rain_mm = [300, 2000]
+prefers = ["mountain"]
+traits = ["subterranean", "hardy"]
+
+# -- the avian branch comes off the reptilian line long ago, the way birds do
+[[lineage]]
+id = "avian"
+name = "avian stem"
+body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"], teeth = "beak", suction = "none", thermo = "endo" }  # warm-blooded; no suction (narrow-necked pouring vessels, scoopable broths)
+parents = ["reptilian"]
+at = "150 Myr"
+temp_c = [10, 28]
+rain_mm = [500, 3000]
+prefers = ["mountain", "coast"]
+traits = ["flies"]
+
+[[lineage]]
+id = "aarakocra"
+name = "aarakocra"
+body = { sweet = true }  # the owner's pepper joke: all ecotypes taste sweet, raptors too (intake 3.7; Q7 still open)
+parents = ["avian"]
+at = "3 Myr"
+density = 0.5
+explore = 0.7
+temp_c = [4, 30]
+rain_mm = [200, 3500]
+prefers = ["mountain", "coast"]
+traits = ["flies", "mountain"]
+
+[[lineage]]  # aged and hung meat; the pepper gardeners
+id = "aarakocra_raptor"
+name = "raptor aarakocra of the highlands"
+origin = "group"
+group_of = "aarakocra"
+at = "9 kyr"
+elev_m = [800, 6000]
+prefers = ["mountain"]
+way = "horticulturalist"
+
+[[lineage]]  # Jangwa: the great bakers and porridge-makers
+id = "aarakocra_granivore"
+name = "granivore aarakocra of the lowlands"
+origin = "group"
+group_of = "aarakocra"
+at = "9 kyr"
+density = 1.5
+temp_c = [14, 34]
+rain_mm = [400, 1800]
+prefers = ["savanna", "lowland"]
+way = "farmer"
+
+[[lineage]]  # beak-spearfishing and raw fish
+id = "aarakocra_piscivore"
+name = "piscivore aarakocra of the coasts"
+origin = "group"
+group_of = "aarakocra"
+at = "9 kyr"
+density = 1
+prefers = ["coast"]
+traits = ["flies", "coastal"]
+way = "fisher_forager"
+
+[[lineage]]  # the far-chain navigators
+id = "aarakocra_sailor"
+name = "sailor aarakocra"
+origin = "group"
+group_of = "aarakocra"
+at = "6 kyr"
+sea_share = 0.6
+explore = 0.8
+prefers = ["island_chain", "island"]
+traits = ["flies", "seafaring"]
+way = "sea_nomad"
+
+[[lineage]]  # a divine curse, 1-5 kya: aarakocra who lost their flight (a template; the curse always takes, which would let the share grow: draft-kenku-share-grows)
+id = "kenku"
+name = "kenku"
+origin = "template"
+parents = ["aarakocra"]
+at = "3 kyr"
+share = 0.08
+sites = 2
+
+# ---- from outside the world: the Fae ----------------------------------------------------------------------
+[[lineage]]
+id = "elf"
+name = "elves (the Fae)"
+body = { bitter = "high", smell = "keen" }
+origin = "arrival"
+at = "30 kyr"
+density = 1
+explore = 0.8
+sea_share = 0.3
+insularity = 0.7
+persists = true
+temp_c = [2, 20]
+rain_mm = [700, 2600]
+prefers = ["forest"]
+traits = ["insular"]
+
+[[lineage]]
+id = "gnome"
+name = "gnomes (the Fae)"
+origin = "arrival"
+at = "30 kyr"
+density = 3
+explore = 0.5
+sea_share = 0.1
+temp_c = [2, 16]
+rain_mm = [900, 2600]
+prefers = ["mountain", "forest"]
+traits = ["miner"]
+
+# ---- wishes: the canon's adjacency table and placements (soft) ---------------------------------------------------
+[[wish]]  # halfling downs beside the grain belt
+a = "halfling"
+b = "human"
+want = "near"
+
+[[wish]]  # the forest-steppe margin and the salt-lake country
+a = "orc"
+b = "human"
+want = "near"
+
+[[wish]]
+a = "goblin"
+b = "hobgoblin"
+want = "near"
+
+[[wish]]
+a = "goblin"
+b = "bugbear"
+want = "near"
+
+[[wish]]  # Jangwa: three clades in one breadbasket
+a = "hobgoblin"
+b = "human"
+want = "near"
+weight = 0.5
+
+[[wish]]
+a = "hobgoblin"
+b = "aarakocra"
+want = "near"
+weight = 0.5
+
+[[wish]]  # the delta fish trade
+a = "lizardfolk"
+b = "aarakocra"
+want = "near"
+weight = 0.5
+
+[[wish]]
+a = "dwarf"
+b = "gnome"
+want = "near"
+
+[[wish]]  # the far chain
+a = "tortle"
+b = "aarakocra"
+want = "near"
+weight = 0.5
+
+[[wish]]
+a = "storm_giant"
+b = "deep_folk"
+want = "near"
+weight = 0.5
+
+[[wish]]  # the old polity was mixed
+a = "cervid_folk"
+b = "human"
+want = "near"
+
+[[wish]]  # the conquest people come down on farmland
+a = "antelope_folk"
+b = "human"
+want = "near"
+weight = 0.5
+
+[[wish]]  # grazing rivals: the canon gives the steppe to the orcs
+a = "antelope_folk"
+b = "orc"
+want = "apart"
+weight = 0.3
+
+[[wish]]  # the Near Isles
+a = "leonin"
+want = "island"
+
+[[wish]]
+a = "tabaxi"
+want = "island"
+
+[[wish]]
+a = "tortle"
+want = "island"
+
+[[wish]]
+a = "goblin"
+want = "jungle"
+weight = 0.5
+
+[[wish]]
+a = "dragonborn"
+want = "coast"
+weight = 0.5
+
+[[wish]]
+a = "orc"
+want = "steppe"
+weight = 0.5
+
+[[wish]]
+a = "gnome"
+want = "mountain"
+weight = 0.5
+
+# ---- land use ----------------------------------------------------------------------------------------------------
+[[use]]
+by = "agricultural"
+good = "fertile"
+
+[[use]]
+by = "nomadic"
+good = "grazing"
+
+[[use]]
+by = "forest"
+good = "timber"
+weight = 0.5
+
+[[use]]
+by = "forest"
+good = "foraging"
+weight = 0.5
+
+[[use]]
+by = "rainforest"
+good = "foraging"
+weight = 0.5
+
+[[use]]
+by = "miner"
+good = "gold"
+weight = 1.0
+
+[[use]]
+by = "miner"
+good = "iron"
+weight = 0.7
+
+[[use]]
+by = "miner"
+good = "gems"
+weight = 0.7
+
+[[use]]
+by = "miner"
+good = "mithril"
+weight = 1.0
+
+[[use]]
+by = "subterranean"
+good = "stone"
+weight = 1.0
+
+[[use]]
+by = "subterranean"
+good = "metal"
+weight = 1.0
+
+[[use]]
+by = "seafaring"
+good = "harbour"
+
+[[use]]
+by = "seafaring"
+good = "nav_hazard"
+weight = -0.7
+
+[[use]]
+by = "coastal"
+good = "coral"
+weight = 1.0
+
+[[use]]
+by = "coastal"
+good = "lagoon"
+weight = 1.0
+
+[[use]]
+by = "wetland"
+good = "mangrove"
+weight = 0.5
+
+[[use]]
+by = "flies"
+good = "cliff"
+weight = 1.0
+
+[[use]]
+by = "flies"
+good = "seabirds"
+weight = 1.0
+
+[[use]]
+by = "arha"
+good = "grazing"
+pull = 0.75
+
+[[use]]
+by = "human_farmer"
+good = "fertile"
+pull = 0.75
+
+[[use]]
+by = "human_jangwa"
+good = "grazing"
+pull = 0.7
+
+[[use]]
+by = "human_seafarer"
+good = "harbour"
+pull = 0.75
+
+[[use]]
+by = "antelope_folk"
+good = "grazing"
+pull = 0.75
+
+[[use]]
+by = "cervid_folk"
+good = "foraging"
+pull = 0.6
+
+[[use]]
+by = "cervid_folk"
+good = "timber"
+pull = 0.4
+weight = 0.5
+
+# (No salt use for the ruminants' craving, body.salt: tried at weight 0.3 on world 1df1c3 and it moved nothing -- mean km to salt
+# 307 -> 320 antelope-kin, 482 -> 494 cervid-kin, one draw each; PW-745.)
+
+[[use]]
+by = "hill_giant"
+good = "hills"
+pull = 0.7
+
+[[use]]
+by = "cloud_giant"
+good = "peaks"
+pull = 0.7
+
+[[use]]
+by = "frost_giant"
+good = "frost"
+pull = 0.7
+
+[[use]]
+by = "storm_giant"
+good = "storm_coast"
+pull = 0.7
+
+[[use]]
+by = "fire_giant"
+good = "volcanic"
+pull = 0.7
+
+# ---- folk categories (reputation.py): what a people calls a neighbour ---------------------------------------------
+# The fiends (PW-734, PW-754): the neighbours' "devils" (horns) and "demons" (antlers) are what the antelope-kin and cervid-kin
+# became in the memory of those they overran (or who overran them). A conquest is remembered as a legend: efold_kyr is the
+# memory length of this row, much longer than an ordinary conquest's (1.5 kyr x the era), so the name outlasts the event.
+# Honest limit: 30 kyr is a judgement call (the median takeover of a run is ~12 kyr old; the [[event]] rows above are 2-3 kyr).
+# Dated conquests (PW-730, read by the reputation pass; the owner's thin history slice, PW-734). No place: where the antelope-kin
+# come from is the world's. The sim's own substrate takeovers found no conquest by either fiend people on world 1df1c3 (they are
+# small peoples among 80 Mkm2 of humans), so these anchors are what the neighbours remember. Dates are anchors (Q2), not exact.
+[[event]]
+kind = "conquest"
+by = "antelope_folk"
+over = ["human", "cervid_folk"]
+at = "2.1 kyr"
+note = "the antelope-kin came down in a generation and took the best farmland and the strait; the 'contract with devils' is the humans' memory of the vassal treaties they signed"
+
+[[event]]
+kind = "conquest"
+by = "cervid_folk"
+over = ["human"]
+at = "3 kyr"
+note = "the old cervid-led polity over a human majority in forest and upland (it fell ~1.9 kyr ago); an elite overlay, here the humans' memory of being ruled"
+
+[[exonym]]
+id = "devil"
+label = "devils"
+body = { display = "horns" }
+valence = ["feared", "despised"]
+efold_kyr = 30.0
+
+[[exonym]]
+id = "demon"
+label = "demons"
+body = { display = "antlers" }
+valence = ["feared", "despised"]
+efold_kyr = 30.0
+
+[[exonym]]
+id = "giant_kin"  # outsiders lump the cold, tall goliaths with the giants; they are sisters of the humans
+label = "giant-kin"
+ancestor = "goliath"
+
+[[exonym]]
+id = "sea_elves"  # the deep folk, by neighbours with thin contact
+label = "sea elves"
+ancestor = "deep_folk"
+valence = ["exotic", "edge"]
+
+[[exonym]]
+id = "fae"
+label = "the fair folk"
+origin = "arrival"
+
+[[exonym]]
+id = "goblin_menace"  # bugbears, goblins and hobgoblins in one breath
+label = "the goblin menace"
+ancestor = "goblinoid"
+valence = ["feared", "edge"]
+
+[[exonym]]
+id = "raiders"
+label = "raiders"
+valence = ["feared"]
+
+[[exonym]]
+id = "lesser_folk"
+label = "lesser folk"
+valence = ["despised"]
+
+[[exonym]]
+id = "strangers"
+label = "foreigners"
+valence = ["exotic"]
+
+[[exonym]]
+id = "edge_folk"
+label = "folk from beyond the edge"
+valence = ["edge"]

@@ -1263,6 +1263,11 @@ def test_conquest_memory_fades_unless_the_legend_row_keeps_it_longer():
     assert old["valence"] == "neighbour"  # 12 kyr at an e-folding of 2.4 kyr: gone, the pair reads by its contact
     kept = RP.build(_rep_tree(efold=20.0), _contacts(took_kyr=12.0))["rows"]["farmers"]["herders"]
     assert kept["valence"] == "feared" and kept["name"] == "devils" and 0.05 < kept["strength"] < 0.6
+    assert kept["memory_kyr"] == 20.0 and "memory_kyr" not in RP.build(_rep_tree(), _contacts())["rows"]["farmers"]["herders"]  # (PW-754: only a legend row says so)
+    ordinary = RP.build(_rep_tree(), _contacts(took_kyr=1.0))["rows"]["farmers"]["sailors"]
+    assert "memory_kyr" not in ordinary  # rows without their own memory length behave as before
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"}], "exonym": [{"id": "q", "efold_kyr": 0}]})
 
 
 def test_a_people_that_never_met_borrows_its_best_connected_neighbours_view():
@@ -1284,3 +1289,65 @@ def test_exonym_rows_are_validated_and_survive_the_round_trip():
     with pytest.raises(ValueError):
         SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"}], "exonym": [{"id": "q", "valence": ["scorned"]}]})
     assert SP.load(LR.SAMPLES / "dnd.toml").exonyms  # the preset ships the generic folk table
+
+
+def test_an_authored_conquest_event_is_remembered_by_the_overrun_under_the_legend_row():
+    """PW-730: `[[event]] kind = conquest` is read by the reputation pass; the legend row's memory length keeps it."""
+    raw = SP.to_raw(_rep_tree(efold=20.0))
+    raw["event"] = [{"kind": "conquest", "by": "herders", "over": ["hunters"], "at": "12 kyr", "note": "x"}]
+    t = SP.parse(raw)
+    assert t.events == [{"kind": "conquest", "by": "herders", "over": ["hunters"], "at": 12.0, "strength": RP.EVENT_STRENGTH, "note": "x"}]
+    assert SP.parse(SP.to_raw(t)).events == t.events
+    c = _contacts(took_kyr=1.0)
+    c["pairs"].append(_pair("herders", "hunters", 40000, mixed=2.0))
+    r = RP.build(t, c)["rows"]["hunters"]["herders"]
+    assert r["valence"] == "feared" and r["name"] == "devils" and r["memory_kyr"] == 20.0 and "authored" in r["basis"]
+    assert 0.3 < r["strength"] < RP.EVENT_STRENGTH  # (0.8 x exp(-12 / 20))
+    plain = SP.parse({**raw, "event": [], "exonym": [e for e in raw["exonym"] if "efold_kyr" not in e]})  # no legend row: 12 kyr is gone
+    assert RP.build(plain, c)["rows"]["hunters"]["herders"]["valence"] != "feared"
+    for bad in ({"kind": "polity", "by": "herders", "over": "hunters", "at": "1 kyr"}, {"by": "herders", "over": "nobody", "at": "1 kyr"},
+                {"by": "herders", "over": "hunters"}, {"by": "herders", "over": "hunters", "at": "1 kyr", "from": "the steppe"},
+                {"by": "herders", "over": "hunters", "at": "1 kyr", "strength": 0}):
+        with pytest.raises(ValueError):
+            SP.parse({**raw, "event": [bad]})
+
+
+# ---- the owner's world preset (PW-730) ----------------------------------------------------------------------------------
+def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_fiends_are_a_deep_branch():
+    t = SP.load(LR.SAMPLES / "seven_meals.toml")
+    tier = lambda a, b: t.tier_of(a, b)  # noqa: E731
+    # genetics.md's tier table falls out of the split depths
+    for a, b in (("human", "orc"), ("human", "goliath"), ("leonin", "tabaxi"), ("goblin", "hobgoblin"), ("hill_giant", "storm_giant")):
+        assert tier(a, b) == 1, (a, b)
+    for a, b in (("human", "dwarf"), ("dwarf", "halfling"), ("human", "halfling"), ("goblin", "bugbear"), ("lizardfolk", "dragonborn"),
+                 ("dragonborn", "kobold"), ("merfolk", "deep_folk"), ("human", "hill_giant")):
+        assert tier(a, b) == 2, (a, b)
+    for a, b in (("human", "leonin"), ("human", "lizardfolk"), ("elf", "gnome"), ("human", "elf"), ("tortle", "dragonborn"), ("human", "aarakocra")):
+        assert tier(a, b) == 3, (a, b)
+    assert tier("arha", "anja") == 0 and tier("lizard_desert", "lizard_delta") == 0 and tier("aarakocra", "kenku") == 0
+    # goliaths are sisters of the humans, not giant-kin
+    assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
+    # the fiends (PW-734): a deep ruminant branch, no half-fiends, no tiefling template
+    assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 2
+    assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents] and "half_elf" not in t.lines
+    assert all(t.lines[k].body["gut"] == "foregut" and t.lines[k].body["cellulose"] for k in ("antelope_folk", "cervid_folk"))
+
+
+def test_seven_meals_horns_and_antlers_follow_real_species_and_the_devils_are_remembered_long():
+    t = SP.load(LR.SAMPLES / "seven_meals.toml")
+    b = lambda k: t.lines[k].body  # noqa: E731
+    assert b("antelope_folk")["display"] == "horns" and b("cervid_folk")["display"] == "antlers"
+    # antlers: reindeer-like both sexes; deer-, moose-like males only. Horns: oryx-, ibex-like both sexes; saiga-, impala-like males only
+    assert (b("cervid_tundra")["display_sex"], b("cervid_tundra")["shed"]) == ("both", "both")
+    assert all((b(k)["display_sex"], b(k)["shed"]) == ("males", "males") for k in ("cervid_forest", "cervid_boreal"))
+    assert all(b(k)["display_sex"] == "both" for k in ("antelope_oryx", "antelope_mountain"))
+    assert all(b(k)["display_sex"] == "males" for k in ("antelope_steppe", "antelope_savanna"))
+    assert "in males only" in " ".join(SP.body_notes(b("antelope_steppe"))) and "in males only" not in " ".join(SP.body_notes(b("antelope_oryx")))
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"display_sex": "females"}}]})
+    # the neighbours' devils (horns) and demons (antlers) are legends: their own memory length, longer than an ordinary conquest's
+    rows = {r["id"]: r for r in t.exonyms}
+    assert rows["devil"]["body"] == {"display": "horns"} and rows["demon"]["body"] == {"display": "antlers"}
+    assert rows["devil"]["efold_kyr"] > RP.EFOLD_KYR * 10 and rows["demon"]["efold_kyr"] > RP.EFOLD_KYR * 10
+    assert t.lines["aarakocra"].body["sweet"] is True and t.lines["arha"].body["milk"] == 0.1
+    assert {(e["by"], e["kind"]) for e in t.events} == {("antelope_folk", "conquest"), ("cervid_folk", "conquest")}  # (no place: the world's)
