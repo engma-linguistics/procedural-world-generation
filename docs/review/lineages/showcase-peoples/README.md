@@ -8,7 +8,7 @@ to more than the land. All counts are the present day of the run. Heads are give
 
 | world | run | peoples run score |
 |---|---|---|
-| 6fbc2c | 104de8 | 0.712 |
+| 6fbc2c | 9a2aae | 0.712 |
 | 067778 | b36648 | 0.688 |
 | a12762 | 1184cc | 0.719 |
 | 6909cb | b4e3c2 | 0.722 |
@@ -17,11 +17,11 @@ to more than the land. All counts are the present day of the run. Heads are give
 
 Common to all four: humans are the big people everywhere (52-69% of heads, 63-76 Mkm2 range) and are mostly farmers. Every world now has
 **fermented dairy** (yogurt, kefir, kumis, cheese) for its no-lactase herders, the antelope-kin (dairy share 40-50%) and in b36648 the tundra cervid-kin
-(68%), and **fresh milk, butter and cream** only where a human group has lactase: the Jangwa cattle people (90% lactase) in 104de8, the forager
+(68%), and **fresh milk, butter and cream** only where a human group has lactase: the Jangwa cattle people (90% lactase) in 9a2aae, the forager
 "margin root" (60%) in b4e3c2; 1184cc has fermented dairy only. The salt brief now counts trade (PW-745): 9-18% of the land is cut off from salt even by
 trade and no world is flagged salt-poor (the old flag, mean walk over 300 km, would have flagged 1184cc).
 
-## 6fbc2c (run 104de8): land 35.2% of the planet (179.5 Mkm2 of 510)
+## 6fbc2c (run 9a2aae): land 35.2% of the planet (179.5 Mkm2 of 510)
 
 - **Big peoples (share of heads / range):** humans 52% / 76.4 Mkm2 (with groups: foragers of the margin root 78 Mkm2 range, arctic hunters 16), antelope-kin 10% / 56.8
   (179 patches), lizardfolk 9% / 32.3, half-orcs 8% / 22.7, cervid-kin 6% / 48.7, dragonborn 5% / 27.3, halflings 2%.
@@ -63,7 +63,7 @@ trade and no world is flagged salt-poor (the old flag, mean walk over 300 km, wo
 
 ## Comparison
 
-| | 6fbc2c (104de8) | 067778 (b36648) | a12762 (1184cc) | 6909cb (b4e3c2) |
+| | 6fbc2c (9a2aae) | 067778 (b36648) | a12762 (1184cc) | 6909cb (b4e3c2) |
 |---|---|---|---|---|
 | land Mkm2 | 179.5 | 188.5 | 189.5 | 177.6 |
 | humans, heads share / range Mkm2 | 52% / 76 | 62% / 68 | 60% / 73 | 69% / 63 |
@@ -76,8 +76,8 @@ trade and no world is flagged salt-poor (the old flag, mean walk over 300 km, wo
 
 ## Pick
 
-**6fbc2c (run 104de8)** still: both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other
+**6fbc2c (run 9a2aae)** still: both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other
 "demons"; add the most varied staples and fuels and both fresh and fermented dairy. 067778 (b36648) is now a closer runner-up (both fiends named, the biggest cervid-kin).
 Single draws each: a different `--tries` or tree seed on the same world will move these counts (PW-707).
 
-Briefs for the pick: `briefs/104de8/` (made before PW-745, so without the salt reach lines; run `planet brief 104de8 --all --out ...` for the eras and mixing zones).
+Briefs for the pick: `briefs/9a2aae/` (made before PW-745, so without the salt reach lines; run `planet brief 9a2aae --all --out ...` for the eras and mixing zones).

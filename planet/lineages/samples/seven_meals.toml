@@ -100,7 +100,7 @@ prefers = ["open", "temperate"]
 [[lineage]]  # the "infernal" fiends: the conquest people of the open dry country
 id = "antelope_folk"
 name = "antelope-kin"
-body = { display = "horns", display_sex = "males" }  # permanent horns with growth rings; the default variant is males-only (saiga-, impala-like)
+body = { display = "horns", display_sex = "males", milks = false }  # (PW-793: no milking, kin of the herd animals) permanent horns with growth rings; the default variant is males-only (saiga-, impala-like)
 parents = ["ruminant"]
 at = "25 Myr"
 density = 0.8
@@ -160,7 +160,7 @@ traits = ["mountain", "hardy"]
 [[lineage]]  # the "abyssal" fiends: forest and its edges
 id = "cervid_folk"
 name = "cervid-kin"
-body = { bitter = "low", display = "antlers", shed = "males", display_sex = "males" }  # browsers: tannin-binding saliva (low bitter); antlers shed yearly; the default variant is deer-like (males only)
+body = { bitter = "low", display = "antlers", shed = "males", display_sex = "males", milks = false }  # (PW-793: no milking) browsers: tannin-binding saliva (low bitter); antlers shed yearly; the default variant is deer-like (males only)
 parents = ["ruminant"]
 at = "25 Myr"
 density = 2

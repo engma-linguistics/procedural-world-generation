@@ -101,6 +101,7 @@ class Animal:
     prop: dict
     front_kmyr: float  # the front of its use over peopled land
     excl: tuple = ()  # traits of peoples that never take it up (too big, too small, no ground...)
+    uptake: str = "front"  # "front": its use creeps at front_kmyr; "contact" (a high-value mount, PW-794): peoples take it up at once on meeting, so the front moves at the contact speed (animals.CONTACT_KMYR) wherever the land suits it, and is held back by land that does not (dense forest, hot-wet tropics, high mountains: outside its wild range) and by open sea
     gap: float = 0.8  # pressure kept per unpeopled cell crossed
     again: float = 0.06  # per kyr per other landmass with tamers on the wild range and no use yet: taming again, on its own
     speed: float = 1.0  # x the people's spread at full adoption
@@ -120,7 +121,7 @@ class Animal:
 
 TABLE: tuple[Animal, ...] = (
     Animal("horse", "horses", "horse", 0, wild_horse, 5.5, 2, {"herd": 1.0}, 0.4, 0.15, {"herd": 0.85}, 1.8,
-           excl=("flies", "swims", "subterranean"), speed=2.5, speed_open=True, k={"herd": 0.3}, herd_land=0.5, dairy=True),
+           excl=("flies", "swims", "subterranean"), uptake="contact", speed=2.5, speed_open=True, k={"herd": 0.3}, herd_land=0.5, dairy=True),
     Animal("dog", "dogs", "dog", 1, wild_dog, 15.0, 0, {"forage": 1.0}, 0.5, 0.6, {"forage": 0.4}, 3.0,
            excl=("flies", "swims", "subterranean"), gap=0.9, again=0.15, speed=1.15, k={"forage": 0.1}),
     Animal("caprine", "sheep and goats", "sheep and goat", 2, wild_caprine, 11.0, 1, {"farm": 1.0, "herd": 1.0}, 0.4, 0.1,
