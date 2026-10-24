@@ -38,11 +38,11 @@ ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 7 anim
     "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs"),
     "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]"),
 }
-U32 = lambda d: {"dtype": "<u4", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
+U64 = lambda d: {"dtype": "<u8", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
 U16 = lambda d: {"dtype": "<u2", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
-CROP_LAYERS = {  # (bit flags, one bit per crop in crop_defs.TABLE: 24 crops in two uint32 layers)
-    "crop_wild": U32("bit flags: the crops whose wild range (suitability >= 0.35, crop_defs wild functions) covers the cell; bit i = crop_defs.TABLE[i]; 0 in the deep epochs"),
-    "crop_known": U32("bit flags: the crops known in the cell and growable there (the grown range, crops.py GROWN_MIN; 0 before the first cultivation; the front of the knowledge spreads over peopled land and by canoe and boat); bit i = crop_defs.TABLE[i]"),
+CROP_LAYERS = {  # (bit flags, one bit per crop in crop_defs.TABLE: 33 crops in two uint64 layers)
+    "crop_wild": U64("bit flags: the crops whose wild range (suitability >= 0.35, crop_defs wild functions) covers the cell; bit i = crop_defs.TABLE[i]; 0 in the deep epochs"),
+    "crop_known": U64("bit flags: the crops known in the cell and growable there (the grown range, crops.py GROWN_MIN; 0 before the first cultivation; the front of the knowledge spreads over peopled land and by canoe and boat); bit i = crop_defs.TABLE[i]"),
 }
 TERRAIN = {"elevation": S.LAYERS["elevation"], "ice": {**S.LAYERS["ice"], "dtype": "<u2", "scale": 1},
            "temperature": S.LAYERS["temperature"], "climate": S.LAYERS["climate"], "tree_cover": S.LAYERS["tree_cover"],

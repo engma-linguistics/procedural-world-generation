@@ -20,4 +20,5 @@ updated: 2026-10-24
 Owner 2026-10-24: one group herds, one has become farmers (seven_meals has Anja as foragers: make them farmers). Same people split by way of life, T0. Wishes should keep the two populations in the same general region; the steppe ones may be low-lactase.
 
 ## Updates
+- 2026-10-24: fun15: Anja (seven_meals) and forest orcs (dnd) are farmers; Arha/steppe orcs stay pastoral, low-lactase (milk 0.1 from the orc people); a `near` wish keeps each pair in one region. Same people (T0) as before.
 - 2026-10-24: Created.

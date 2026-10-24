@@ -975,7 +975,7 @@ def test_crops_are_cultivated_by_farmers_add_capacity_and_leave_layers(faketz, m
     assert know.max() > 0.5 and know.max() <= 1.0 and np.all(np.asarray(h.crops.k_mult(h.idx["herd"])) >= 1.0)
     out = O.save(h, res, pres, name="crop test")
     run = json.loads((out / "run.json").read_text())
-    assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint32"
+    assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint64"
     assert any(e["kind"] == "crops" for e in h.events) and "first to cultivate wheat and barley" in run["meta"]["lineages"][h.idx["farm"]]["story"]
     assert "Crops (PW-721)" in (out / "run.txt").read_text()
     rt = np.fromfile(out / "layers" / "route_wheat.bin", np.uint8)  # how each cell came to know wheat (PW-742)
@@ -1115,7 +1115,7 @@ def test_ways_of_life_set_the_uses_a_people_reads():
     from planet.lineages import landuse as LU
     t = SP.load(LR.tree_path("dnd"))
     assert t.lines["hill_giant"].way == "pastoral_nomad" and t.lines["steppe_orc"].way == "pastoral_nomad"
-    assert t.lines["forest_orc"].way == "forager" and t.lines["human_seafarer"].way == "fisher_forager"
+    assert t.lines["forest_orc"].way == "farmer" and t.lines["human_seafarer"].way == "fisher_forager"
     assert LU.shares(t, t.lines["hill_giant"])["herd"] == 1
     assert LU.shares(t, t.lines["human_seafarer"])["forage"] == 1
     assert dict(t.uses_of(t.lines["human"])).get("harbour", 0) > 0  # (seafaring's harbour row stays under the farmer way)
@@ -1400,6 +1400,36 @@ def test_a_sudden_advance_into_another_peoples_land_is_an_incursion_with_a_direc
     assert len(slow) < len(cols) and sum(r["cells"] for r in slow) < int(east.sum())  # (some columns are big enough to count alone; not all)
 
 
+def test_a_fast_rise_of_a_people_living_among_another_is_a_settled_among_incursion(faketz):
+    from planet.lineages import contacts as CT
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    tree = SP.parse({"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "a", "parents": ["stem"], "at": "25 kyr"}, {"id": "b", "parents": ["stem"], "at": "20 kyr"}]})
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    ia, ib = h.idx["a"], h.idx["b"]
+    band = land & (np.abs(g.lat) < 40)
+    tags = {"coast": np.zeros(g.n, bool), "open": np.ones(g.n, bool)}
+    corr = np.full(g.n, 0.5)
+    n = len(h.lines)
+
+    def frame(ct, ago, dt, b_in_a):
+        P = np.zeros((n, g.n))
+        P[ia][band] = 0.8  # a leads everywhere throughout
+        P[ib][band & (g.lon < -20)] = 0.3 if b_in_a else 0.0
+        ct.update(P, H.Step(ago, dt, "recent", True, None), tags, corr, land)
+
+    ct = CT.Contacts(h)
+    frame(ct, 10.0, 0.5, False)
+    frame(ct, 9.5, 0.5, True)  # b appears among a within one frame; a still leads
+    frame(ct, 0.0, 9.5, True)
+    inc = ct.summary()["incursions"]
+    assert len(inc) == 1 and inc[0]["by"] == "b" and inc[0]["over"] == "a" and inc[0]["kind"] == "settled_among"
+    assert inc[0]["cells"] == int((band & (g.lon < -20)).sum())
+
+
 def test_reputation_reads_derived_incursions_before_authored_events_and_names_the_direction():
     c = _contacts(took_kyr=40.0)  # (the substrate takeover is too old to count)
     c["incursions"] = [{"by": "herders", "over": "farmers", "ago_kyr": 1.0, "span_kyr": 0.5, "cells": 120, "mkm2": 0.4, "gain": 0.3,
@@ -1432,3 +1462,17 @@ def test_herders_press_on_pasture_only_in_proportion_to_the_herds_they_keep(fake
     assert herd
     herd[0].adopt[k] = 0.3
     assert an.herding(k) == 0.3
+
+
+def test_presets_orc_kin_pair_farm_and_herd_and_aarakocra_taste_like_humans_but_for_capsaicin():
+    """PW-762 / PW-764 / PW-765: the orc groups are one people split by way of life and wished near; aarakocra taste sweet and
+    roughly like humans but feel no capsaicin; the regional foods sit beyond bit 31 (uint64 crop layers)."""
+    from planet.lineages import crop_defs as CD
+    for name, herd, farm in (("dnd", "steppe_orc", "forest_orc"), ("seven_meals", "arha", "anja")):
+        t = SP.load(LR.tree_path(name))
+        assert t.lines[herd].way == "pastoral_nomad" and t.lines[farm].way == "farmer" and t.tier_of(herd, farm) == 0
+        assert any({w.a, w.b} == {herd, farm} and w.want == "near" for w in t.wishes)
+        b = t.lines["aarakocra"].body
+        assert b["sweet"] is True and b["capsaicin"] is False and b["bitter"] == "normal" and b["smell"] == "normal"
+    assert max(a.bit for a in CD.TABLE) >= 32 and len({a.bit for a in CD.TABLE}) == len(CD.TABLE)
+    assert {"nightshade_fruit", "cacao", "pseudograin"} <= set(CD.IDS) and all(CD.BY_ID[i].weight == 0 for i in ("cacao", "squash"))

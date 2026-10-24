@@ -269,7 +269,7 @@ def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict, inc:
             if st >= P["min_strength"]:
                 d = None if r.get("from_deg") is None or val != "feared" else compass(r["from_deg"])
                 derived = derived or val == "feared"
-                cands.append((st, val, f"incursion (derived): {taker} took {r['cells']} cells in {max(r['span_kyr'], 0.1):g} kyr "
+                cands.append((st, val, f"incursion (derived): {taker} " + (f"settled among {loser} on {r['cells']} cells" if r.get("kind") == "settled_among" else f"took {r['cells']} cells") + f" in {max(r['span_kyr'], 0.1):g} kyr "
                                        f"({round(100 * r['local_share'])}% of {loser}'s land nearby)" + (f", from the {d}" if d else ""), r["ago_kyr"], own, d))
     for ev in getattr(tree, "events", None) or []:  # authored conquests (PW-730): S's people overran O's, ev["at"] kyr ago (the fallback: where the history found an incursion of S over O, that stands instead)
         if derived or tree.people_of(ev["by"]) != s or o not in {tree.people_of(x) for x in ev["over"]}:

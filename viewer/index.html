@@ -912,14 +912,16 @@ function animalsColor(i, c, id) {
 // Crops (planet/lineages/crops.py, PW-721): the same as the animals, per crop: its wild range (green) and where it is known (its colour);
 // the layers crop_wild / crop_known hold one bit per crop (meta.crops.stocks[id].bit).
 const CROP_COLS = ['#e6c829', '#7aa650', '#d6b25e', '#4aa3c7', '#c9a227', '#f2d04a', '#a67c52', '#c06b3a', '#e3c34f', '#9fb46a', '#7d6bb0', '#d4482f',
-  '#c0504d', '#8a9a3b', '#7b3f6e', '#d9c35a', '#5fa8a0', '#9c5a2a', '#e8452c', '#f0e6c8', '#c98a3c', '#3f7d4a', '#6fbf73', '#b58fc7'];
+  '#c0504d', '#8a9a3b', '#7b3f6e', '#d9c35a', '#5fa8a0', '#9c5a2a', '#e8452c', '#f0e6c8', '#c98a3c', '#3f7d4a', '#6fbf73', '#b58fc7',
+  '#d9532b', '#5b8c3a', '#9bb86a', '#5a3b2e', '#e9e2c4', '#c79a5a', '#e08a4a', '#a3a3d1', '#6e9b3f'];  // (24-32: the regional foods, PW-765)
+function cropBit(a, i, bit) { const v = a?.[i]; return v ? Number((BigInt(v) >> BigInt(bit)) & 1n) : 0; }  // (the crop layers are uint64: BigInt)
 function cropStocks() { return V.run?.meta?.crops?.stocks || {}; }
 function cropsColor(i, c, id) {
   const L = V.layers, elev = L.elevation, st = cropStocks()[id];
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
   if (!st) return c.copy(BARE);
-  const w = ((L.crop_wild?.[i] || 0) >> st.bit) & 1, r = ((L.crop_known?.[i] || 0) >> st.bit) & 1;
+  const w = cropBit(L.crop_wild, i, st.bit), r = cropBit(L.crop_known, i, st.bit);
   c.copy(BARE);
   if (w) c.lerp(ANIMAL_WILD, 0.75);
   if (r) c.lerp(new THREE.Color(CROP_COLS[st.bit % CROP_COLS.length]), 0.8);
@@ -930,8 +932,8 @@ function cropRows(i, R) {  // the crops known in this frame's cell, and the wild
   if (!L.crop_wild) return;
   const known = [], wild = [];
   for (const [, st] of Object.entries(cropStocks())) {
-    if (((L.crop_known?.[i] || 0) >> st.bit) & 1) known.push(st.label);
-    else if (((L.crop_wild?.[i] || 0) >> st.bit) & 1) wild.push(st.label);
+    if (cropBit(L.crop_known, i, st.bit)) known.push(st.label);
+    else if (cropBit(L.crop_wild, i, st.bit)) wild.push(st.label);
   }
   if (known.length) R('place', '', known.join(', '), { lab: 'crops known', ess: true });
   if (wild.length) R('place', '', wild.join(', '), { lab: 'wild range of (crops)' });
@@ -4174,7 +4176,7 @@ async function setWorld(w) {
 // ("log2p1": 2^value - 1; "nbr_slot": the stored number is the position of the
 // target cell in the cell's neighbour list, 255 = none -> -1).
 // Only the layers the picture needs are downloaded (layersNeeded), when needed.
-const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, int8: Int8Array, float32: Float32Array };
+const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, uint64: BigUint64Array, int8: Int8Array, float32: Float32Array };
 // colour layer / overlay -> the run layers it draws from (elevation is always loaded)
 const LAKE_NEEDS = ['lake_kind', 'lake_depth'];
 const COLOUR_NEEDS = {

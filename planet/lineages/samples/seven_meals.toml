@@ -471,7 +471,7 @@ rain_mm = [150, 650]
 prefers = ["steppe"]
 way = "pastoral_nomad"
 
-[[lineage]]  # the Anja of the cold western woods: wood-fire roasting, same ancestors, opposite table
+[[lineage]]  # the Anja of the cold western woods: wood-fire roasting, same ancestors, opposite table: one orc people split by way of life (T0, freely interbreeding), herders and farmers (PW-762)
 id = "anja"
 name = "Anja (forest orcs)"
 origin = "group"
@@ -483,8 +483,8 @@ insularity = 0.8
 temp_c = [-2, 16]
 rain_mm = [450, 1800]
 prefers = ["forest"]
-traits = ["hardy", "hunter"]
-way = "forager"
+traits = ["hardy"]
+way = "farmer"
 
 [[lineage]]
 id = "human"
@@ -705,7 +705,7 @@ traits = ["flies"]
 [[lineage]]
 id = "aarakocra"
 name = "aarakocra"
-body = { sweet = true }  # the owner's pepper joke: all ecotypes taste sweet, raptors too (intake 3.7; Q7 still open)
+body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
 parents = ["avian"]
 at = "3 Myr"
 density = 0.5
@@ -803,6 +803,11 @@ traits = ["miner"]
 [[wish]]  # halfling downs beside the grain belt
 a = "halfling"
 b = "human"
+want = "near"
+
+[[wish]]  # the orc kin pair: Arha herders and Anja farmers stay in the same general region (PW-762)
+a = "arha"
+b = "anja"
 want = "near"
 
 [[wish]]  # the forest-steppe margin and the salt-lake country

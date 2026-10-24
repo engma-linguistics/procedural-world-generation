@@ -35,5 +35,6 @@ elves; the cervid-kin are on the losing side of hobgoblin ones), so on this worl
 - [ ] Judgement: INCURSION_GAIN 0.10, INCURSION_SPAN 2 kyr, INCURSION_MIN_MKM2 0.05, LOCAL_KM 1000 are first guesses; no sweep done (one world, tries 1).
 
 ## Updates
+- 2026-10-24: fun15: done on the branch. contacts.py notes `settled_among` rises (presence +0.15 in one frame in cells another people still leads) into the same episode/threshold machinery; incursions carry `kind` (displacement | settled_among); reputation names the kind. Follow-up in draft-settled-incursions-reputation-gate.
 - 2026-10-24: Owner 2026-10-24: yes, a ruling-minority fast rise counts; keep it light.
 - 2026-10-24: Created from inbox draft draft-incursions-by-co-residence.md (found by fun14).

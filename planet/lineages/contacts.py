@@ -21,6 +21,10 @@ SERIES_KEEP = 14  # points of a pair's border series kept in the run's meta (the
 # ordinary give and take of a frontier, a percent of a big people's range, is not an incursion). The loss is measured
 # against what the loser held within LOCAL_KM of the ground (the memory is the frontier people's, not the whole people's),
 # and the direction is where the taker's older cells within DIR_KM of the ground taken lie, seen from it.
+# The same episode machinery counts a second kind (PW-769): a people living among another (the other still leads those cells)
+# whose presence there rises by at least SETTLE_RISE within one stored frame (a ruling minority, a settlement wave), kind
+# `settled_among`; the other kind, the old people losing the cells, is `displacement`.
+SETTLE_RISE = 0.15
 INCURSION_KYR = 100.0
 INCURSION_SPAN = 2.0
 INCURSION_GAIN = 0.10
@@ -59,7 +63,8 @@ class Contacts:
         self.agos: list[float] = []  # (the stored epochs seen, oldest first)
         la, lo = np.radians(h.grid.lat), np.radians(h.grid.lon)
         self.xyz = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], 1)
-        self.takes: dict[tuple, list] = {}  # (taker, loser) -> the takeovers of each stored frame (see _note)
+        self.takes: dict[tuple, list] = {}  # (taker, loser, kind) -> the takeovers of each stored frame (see _note)
+        self._pw: np.ndarray | None = None  # (the last frame's presence)
 
     # -- per stored frame -----------------------------------------------------------------------------
     def update(self, Pw: np.ndarray, step, tags: dict, corr: np.ndarray, land: np.ndarray) -> None:
@@ -94,13 +99,24 @@ class Contacts:
         flip = (lead >= 0) & (old >= 0) & (lead != old) & ~held[np.maximum(old, 0), np.arange(g.n)]
         if flip.any() and ago <= INCURSION_KYR:
             self._note(ago, lead, old, flip)
+        if self._pw is not None and ago <= INCURSION_KYR:
+            self._note_settled(ago, lead, flip, Pw, pres)
+        self._pw = Pw.copy()
         self.prev[flip] = old[flip]
         self.until[flip] = ago
         self.cur = np.where(lead >= 0, lead, old).astype(np.int16)
 
-    def _note(self, ago: float, lead: np.ndarray, old: np.ndarray, flip: np.ndarray) -> None:
+    def _note_settled(self, ago: float, lead: np.ndarray, flip: np.ndarray, Pw: np.ndarray, pres: np.ndarray) -> None:
+        """Record this frame's settling-among per (settler, host): cells the host still leads where the settler's presence rose
+        by SETTLE_RISE since the last frame (and is now there). Fed to `_note` as a takeover of kind `settled_among`."""
+        rise = (Pw - self._pw >= SETTLE_RISE) & pres & (lead >= 0)[None, :] & ~flip[None, :] & (lead[None, :] != np.arange(self.n)[:, None])
+        for a in np.flatnonzero(rise.any(1)):
+            self._note(ago, np.full(len(lead), a, np.int16), lead, rise[a], "settled_among", taker_n=int((self._pw[a] >= EST).sum()))
+
+    def _note(self, ago: float, lead: np.ndarray, old: np.ndarray, flip: np.ndarray, kind: str = "displacement", taker_n: int | None = None) -> None:
         """Record this frame's takeovers per (taker, loser): the cells, their centre, the loser's cells near them and the taker's
-        own older cells near them (all before this frame's change)."""
+        own older cells near them (all before this frame's change). For `settled_among` the "loser" is the host that still leads
+        the cells and `taker_n` is the settler's range before."""
         key = lead[flip].astype(np.int64) * 1000 + old[flip]
         cos_loc = np.cos(LOCAL_KM / R_KM)
         cells = np.flatnonzero(flip)
@@ -114,22 +130,22 @@ class Contacts:
             c = c / norm
             dots = self.xyz @ c
             rec = {"ago": ago, "cells": int(len(idx)), "c": c, "loser": int(((old == b) & (dots >= cos_loc)).sum()),
-                   "taker": int((old == a).sum())}
+                   "taker": int((old == a).sum()) if taker_n is None else taker_n}
             reach = np.arccos(np.clip(float(dots[idx].min()), -1, 1)) + DIR_KM / R_KM  # (the taken ground's own spread, and DIR_KM beyond it)
             mine = (old == a) & (dots >= np.cos(min(reach, np.pi)))
             if mine.any():
                 rec["from"] = self.xyz[mine].mean(0)
                 rec["from_n"] = int(mine.sum())
-            self.takes.setdefault((a, b), []).append(rec)
+            self.takes.setdefault((a, b, kind), []).append(rec)
 
     def incursions(self) -> list[dict]:
         """The incursions of the run: episodes (INCURSION_SPAN kyr) in which a people took ground from another by at least
-        INCURSION_GAIN of its own range: {by, over, ago_kyr, span_kyr, cells, mkm2, gain, local_share, lat, lon, from_deg}
+        INCURSION_GAIN of its own range: {by, over, kind, ago_kyr, span_kyr, cells, mkm2, gain, local_share, lat, lon, from_deg}
         (from_deg: the compass bearing, clockwise from north, from the ground taken to the taker's older land near it, or None)."""
         h = self.h
         ids = [l.id for l in h.lines]
         out = []
-        for (a, b), recs in self.takes.items():
+        for (a, b, kind), recs in self.takes.items():
             recs = sorted(recs, key=lambda r: -r["ago"])
             i = 0
             while i < len(recs):
@@ -151,7 +167,7 @@ class Contacts:
                         dl = np.arctan2(f[1], f[0]) - np.radians(lon)
                         deg = float(np.degrees(np.arctan2(np.sin(dl) * np.cos(la2), np.cos(la1) * np.sin(la2) - np.sin(la1) * np.cos(la2) * np.cos(dl))) % 360)
                 ago = sum(r["ago"] * r["cells"] for r in grp) / n
-                out.append({"by": ids[a], "over": ids[b], "ago_kyr": round(ago, 2), "span_kyr": round(first["ago"] - grp[-1]["ago"], 2),
+                out.append({"by": ids[a], "over": ids[b], "kind": kind, "ago_kyr": round(ago, 2), "span_kyr": round(first["ago"] - grp[-1]["ago"], 2),
                             "cells": n, "mkm2": round(n * h.cell_mkm2, 3), "gain": round(gain, 3),
                             "local_share": round(min(1.0, n / max(first["loser"], n)), 3),
                             "lat": round(lat, 2), "lon": round(lon, 2), "from_deg": None if deg is None else round(deg)})

@@ -14,13 +14,14 @@ cultivation is less likely to get another), as the Fertile Crescent, China, Meso
 Guinea each had their own. `fantasy` rows are plants Earth never farmed: rare when on, certain when forced
 (`meta.crops_force`), and dropped in the real-world mode (PW-695), like the fantasy animals.
 
+The regional foods (PW-765, rows 24-32) are cuisine rows too.
 The first ten real rows are staples (weight > 0: they feed the cropland); rows 12-23 are the cuisine plants (PW-738): tree fruit and
 nuts, olives, vines, oil seeds, coconut and oil palm, tropical spices, chili-like capsicum, cane sugar, sap sugar, tea and coffee,
 cooking greens and alliums. They have `weight` 0 (no say in the cropland or the straw), a small `k` (a little farm capacity where they
 grow: orchards, oil, sugar feed people) and mostly serve as a per-cell "crops known" list and wild range for the culinary brief.
 Dry-summer plants (olive, vine) read the Koppen class (`climate=`).
 
-Bit i of the stored `crop_known` / `crop_wild` layers (uint32 since the cuisine plants: 24 rows) is the crop with `bit` i here.
+Bit i of the stored `crop_known` / `crop_wild` layers (uint64 since the regional foods: 33 rows) is the crop with `bit` i here.
 """
 
 from __future__ import annotations
@@ -128,6 +129,23 @@ TABLE: tuple[Animal, ...] = (
     _crop(22, "greens", "cooking greens (brassicas, leeks)", _range((0, 5, 20, 26), (300, 500, 1800, 2500), elev=(-1, 0, 3000, 4000)), 5.0, 1.1, 0.02,
           0.0, 0.0, noun="cooking green"),
     _crop(23, "alliums", "onions and garlic", _range((2, 8, 26, 32), (200, 350, 1200, 1800), tree=(30, 70)), 6.0, 1.1, 0.0, 0.0, 0.0, noun="allium"),
+    # the regionally restricted foods (PW-765): cuisine rows (weight 0) with their own wild range and homelands from the landmass draw, and a slow
+    # front, so a world's cuisines differ by which of them grew where (Earth's New World foods, as plants of those climates on any world)
+    _crop(24, "nightshade_fruit", "tomatoes and other nightshade fruits", _range((12, 17, 28, 33), (400, 700, 2200, 3200), elev=(-1, 0, 2600, 3600)), 5.0, 0.6,
+          0.02, 0.0, 0.0, noun="tomato-like fruit"),
+    _crop(25, "squash", "squash and gourds", _range((12, 17, 28, 34), (400, 650, 1800, 2600), tree=(30, 80), elev=(-1, 0, 2500, 3500)), 10.0, 0.7, 0.03,
+          0.0, 0.0, noun="squash"),
+    _crop(26, "beans", "common beans", _range((10, 15, 26, 32), (400, 650, 1600, 2400), tree=(30, 80), elev=(-1, 0, 3000, 4000)), 7.0, 0.7, 0.05,
+          0.0, 0.0, noun="bean"),
+    _crop(27, "cacao", "cacao", _range((21, 24, 30, 35), (1500, 2000, 4000, 6000), elev=(-1, 0, 600, 1200)), 5.3, 0.5, 0.01, 0.0, 0.0, noun="cacao"),
+    _crop(28, "vanilla", "vanilla", _range((20, 23, 30, 35), (1500, 2000, 4000, 6000), elev=(-1, 0, 800, 1400)), 1.0, 0.4, 0.0, 0.0, 0.0, noun="vanilla"),
+    _crop(29, "peanut", "peanuts", _range((16, 21, 30, 35), (400, 600, 1500, 2200), tree=(30, 80), elev=(-1, 0, 1500, 2500)), 7.6, 0.7, 0.03, 0.0, 0.0,
+          noun="groundnut"),
+    _crop(30, "sweet_potato", "sweet potatoes", _range((16, 21, 30, 35), (600, 900, 2500, 3500), elev=(-1, 0, 2200, 3200)), 5.0, 0.7, 0.05, 0.0, 0.0,
+          noun="sweet potato"),
+    _crop(31, "pseudograin", "quinoa and amaranth", _range((3, 8, 20, 26), (200, 350, 900, 1400), tree=(20, 60), elev=(-1, 100, 4000, 4800)), 7.0, 0.6,
+          0.05, 0.0, 0.0, noun="quinoa and amaranth"),
+    _crop(32, "avocado", "avocados", _range((14, 18, 28, 33), (700, 1100, 2500, 3500), elev=(-1, 0, 2300, 3300)), 5.5, 0.6, 0.02, 0.0, 0.0, noun="avocado"),
     _crop(10, "stonegrain", "stonegrain", _stonegrain, 6.0, 1.0, 0.12, 0.4, 0.6, fantasy=True, rare=0.3),
     _crop(11, "emberpod", "emberpods", _emberpod, 5.0, 1.0, 0.1, 0.3, 0.0, fantasy=True, rare=0.25, noun="emberpod"),
 )

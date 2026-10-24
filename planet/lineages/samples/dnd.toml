@@ -386,7 +386,7 @@ rain_mm = [150, 650]
 prefers = ["steppe"]
 way = "pastoral_nomad"
 
-[[lineage]]  # clans of the cold woods: settled, wary, denser on the land
+[[lineage]]  # farming clans of the cold woods: settled, wary, denser on the land; the same people as the steppe orcs, split by way of life (T0, freely interbreeding, PW-762)
 id = "forest_orc"
 name = "forest orcs"
 origin = "group"
@@ -398,8 +398,8 @@ insularity = 0.8
 temp_c = [-2, 16]
 rain_mm = [450, 1800]
 prefers = ["forest"]
-traits = ["hardy", "hunter"]
-way = "forager"
+traits = ["hardy"]
+way = "farmer"
 
 [[lineage]]
 id = "dwarf"
@@ -678,6 +678,7 @@ traits = ["flies"]
 [[lineage]]
 id = "aarakocra"
 name = "aarakocra"
+body = { sweet = true, capsaicin = false, bitter = "normal", smell = "normal" }  # taste roughly human-equivalent including sweet (unlike other birds); their one trait is not feeling capsaicin (PW-764)
 parents = ["avian"]
 at = "900 kyr"
 density = 0.5
@@ -697,6 +698,11 @@ prefers = ["forest"]
 traits = []
 
 # ---- wishes (soft: best of N tries + mild nudges; each reports a score) ---------------------
+[[wish]]  # the orc kin pair: steppe herders and forest farmers stay in the same general region (PW-762)
+a = "steppe_orc"
+b = "forest_orc"
+want = "near"
+
 [[wish]]  # (the usual pairing of hobgoblin and orc warbands; savanna borders steppe, PW-614)
 a = "hobgoblin"
 b = "orc"

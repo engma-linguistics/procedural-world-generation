@@ -20,4 +20,5 @@ updated: 2026-10-24
 Owner 2026-10-24 (PW-734 Q7).
 
 ## Updates
+- 2026-10-24: fun15: aarakocra body is sweet true, capsaicin false, bitter and smell normal in dnd and seven_meals.
 - 2026-10-24: Created.
