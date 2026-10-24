@@ -1,0 +1,40 @@
+        ww_0     seed13 300-2000: icehouse 100.0% deep 36.6% dT med -4.3 max +2.3 ICEBOX -> F
+                         300-1000: icehouse 100.0% deep  2.3% dT med -3.3 max +2.3 ICEBOX -> F | star +3.6 co2_term -5.8 albedo_term -0.4
+                        1000-1500: icehouse 100.0% deep 72.8% dT med -5.3 max -0.3 ICEBOX -> F | star +7.0 co2_term -10.6 albedo_term -1.0
+                        1500-2000: icehouse 100.0% deep 48.4% dT med -4.6 max +0.6 ICEBOX -> F | star +10.0 co2_term -13.3 albedo_term -0.9
+   ww_-0.001     seed13 300-2000: icehouse 93.4% deep 32.4% dT med -4.2 max +3.2 ICEBOX -> F
+                         300-1000: icehouse 84.0% deep  0.0% dT med -2.6 max +3.2 -> F | star +3.6 co2_term -5.6 albedo_term +0.1
+                        1000-1500: icehouse 100.0% deep 64.8% dT med -5.6 max +1.7 ICEBOX -> F | star +7.0 co2_term -10.5 albedo_term -0.9
+                        1500-2000: icehouse 100.0% deep 45.2% dT med -4.9 max +0.5 ICEBOX -> F | star +10.0 co2_term -14.1 albedo_term -0.7
+    ww_0.001     seed13 300-2000: icehouse 86.2% deep 40.4% dT med -4.2 max +5.9 ICEBOX -> F
+                         300-1000: icehouse 66.3% deep 26.9% dT med -3.8 max +5.9 -> F | star +3.6 co2_term -5.9 albedo_term +0.0
+                        1000-1500: icehouse 100.0% deep 47.2% dT med -4.3 max +1.8 ICEBOX -> F | star +7.0 co2_term -9.4 albedo_term -1.0
+                        1500-2000: icehouse 100.0% deep 52.4% dT med -4.5 max -0.4 ICEBOX -> F | star +10.0 co2_term -14.1 albedo_term -0.9
+        eb_0     seed12 300-2000: icehouse 31.0% deep  0.0% dT med +5.0 max +13.7 -> ok
+                         300-1000: icehouse 33.7% deep  0.0% dT med +3.6 max +11.8 -> ok | star +3.6 co2_term -0.2 albedo_term +0.8
+                        1000-1500: icehouse  2.4% deep  0.0% dT med +4.6 max +13.7 NEVER-ICE -> ok | star +7.0 co2_term -3.5 albedo_term +1.1
+                        1500-2000: icehouse 55.6% deep  0.0% dT med +7.0 max +12.6 -> F | star +10.0 co2_term -4.8 albedo_term +0.5
+   eb_-0.001     seed12 300-2000: icehouse 11.5% deep  0.0% dT med +6.7 max +13.3 -> ok
+                         300-1000: icehouse  4.0% deep  0.0% dT med +4.1 max +9.6 NEVER-ICE -> ok | star +3.6 co2_term -0.1 albedo_term +1.2
+                        1000-1500: icehouse 33.6% deep  0.0% dT med +8.0 max +13.0 -> ok | star +7.0 co2_term -0.7 albedo_term +0.7
+                        1500-2000: icehouse  0.0% deep  0.0% dT med +7.9 max +13.3 NEVER-ICE -> ok | star +10.0 co2_term -5.0 albedo_term +1.2
+    eb_0.001     seed12 300-2000: icehouse  9.2% deep  1.6% dT med +5.2 max +11.7 -> ok
+                         300-1000: icehouse  4.0% deep  0.0% dT med +4.5 max +8.1 NEVER-ICE -> ok | star +3.6 co2_term +0.2 albedo_term +1.1
+                        1000-1500: icehouse  0.0% deep  0.0% dT med +6.3 max +11.7 NEVER-ICE -> ok | star +7.0 co2_term -2.7 albedo_term +1.1
+                        1500-2000: icehouse 25.4% deep  5.6% dT med +7.2 max +11.7 -> ok | star +10.0 co2_term -6.0 albedo_term +0.9
+        sc2g seed583167 300-2000: icehouse 27.7% deep  0.7% dT med +4.9 max +12.3 -> ok
+                         300-1000: icehouse 28.6% deep  0.0% dT med +5.5 max +12.0 -> ok | star +3.6 co2_term +1.1 albedo_term +0.9
+                        1000-1500: icehouse 13.6% deep  0.0% dT med +4.0 max +10.2 -> ok | star +7.0 co2_term -3.5 albedo_term +0.9
+                        1500-2000: icehouse 40.5% deep  2.4% dT med +5.5 max +12.3 -> F | star +10.0 co2_term -3.9 albedo_term +0.3
+        sc2g seed619496 300-2000: icehouse 11.0% deep  0.0% dT med +5.3 max +12.9 -> ok
+                         300-1000: icehouse  8.6% deep  0.0% dT med +3.8 max +9.3 -> ok | star +3.6 co2_term +0.1 albedo_term +1.1
+                        1000-1500: icehouse 18.4% deep  0.0% dT med +4.9 max +12.8 -> ok | star +7.0 co2_term -3.0 albedo_term +0.9
+                        1500-2000: icehouse  7.1% deep  0.0% dT med +8.2 max +12.9 -> ok | star +10.0 co2_term -4.6 albedo_term +1.2
+        sc2g seed639472 300-2000: icehouse 64.3% deep 10.3% dT med +3.7 max +10.5 -> F
+                         300-1000: icehouse 69.1% deep 17.7% dT med +2.9 max +10.5 -> F | star +3.6 co2_term -1.3 albedo_term +0.1
+                        1000-1500: icehouse 63.2% deep 10.4% dT med +3.5 max +10.2 -> F | star +7.0 co2_term -3.8 albedo_term +0.2
+                        1500-2000: icehouse 58.7% deep  0.0% dT med +4.3 max +7.9 -> F | star +10.0 co2_term -5.7 albedo_term +0.3
+        sc2g seed957317 300-2000: icehouse 16.4% deep  0.0% dT med +5.4 max +11.8 -> ok
+                         300-1000: icehouse  4.6% deep  0.0% dT med +5.0 max +11.8 NEVER-ICE -> ok | star +3.6 co2_term +1.3 albedo_term +1.1
+                        1000-1500: icehouse 46.4% deep  0.0% dT med +5.2 max +10.4 -> F | star +7.0 co2_term -3.4 albedo_term +0.5
+                        1500-2000: icehouse  3.2% deep  0.0% dT med +6.0 max +11.1 NEVER-ICE -> ok | star +10.0 co2_term -6.5 albedo_term +1.0

@@ -62,7 +62,7 @@ PRESETS = {
                    "blurb": "60% continental crust: big continents and little ocean."},
     "cold": {"label": "Cold world", "myr": 1000, "set": {"tilt": 15, "climate_offset": -6},
              "blurb": "Low tilt and a colder climate: big ice sheets."},
-    "hothouse": {"label": "Hothouse", "myr": 1000, "set": {"tilt": 45, "climate_offset": 5},
+    "hothouse": {"label": "Hothouse", "myr": 1000, "set": {"tilt": 45, "climate_offset": 3},
                  "blurb": "High tilt and a warmer climate: strong seasons, little ice."},
 }
 DEFAULT_PRESET = "earthlike"
