@@ -1,7 +1,8 @@
 ---
+id: PW-761
 title: "PW-750 measured: drift 2 C (B) and a long-run CO2 reference (D) leave the icehouse median at 46% (pass 39-50% vs ~70%); the gap is the late weatherability trend, and the brightening star (C) overshoots to ice-free worlds"
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish-6
 blocked_by: []
 relates: [PW-750, PW-368, PW-240, PW-564, PW-708, PW-558, PW-559]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/base-climate/v1-finish-6/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -52,3 +55,7 @@ Options (geophysics delegated to the coordinator; owner signs v1 off):
 Lean: A for v1 with B' (no change to merge, no showcase remake needed for this), C' as the v2 route to a flatter
 history. Remeasuring any option needs >= ~40 draws to tell 30% from 50%.
 - [ ] coordinator decision recorded on PW-750
+
+## Updates
+- 2026-10-24: Status needs-decision -> in-progress. Coordinator: one bounded lane on C' (brightening star + a thermostat that absorbs Gyr-long forcing) at L6; fallback A (accept ~46%) needs the owner since it's under the bar.
+- 2026-10-24: Created from inbox draft draft-icehouse-bar-late-trend-after-pw750.md (found by v1-finish-6).

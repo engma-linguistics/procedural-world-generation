@@ -2,7 +2,7 @@
 id: PW-750
 title: After PW-741 both levels spend ~45% of 300-1000 Myr in an icehouse (pass ~30-38% of seed-draws against the ~70% bar); L6's ~33% was the crust thermostat's CO2
 type: task
-status: needs-decision
+status: done
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -36,6 +36,7 @@ Options (owner's call; not a resolution question any more):
 No per-level factor needed: the levels agree.
 
 ## Updates
+- 2026-10-24: Status needs-decision -> done. Measured in v1-finish-6: B and D don't reach the bar; continues on PW-761.
 - 2026-10-24: Lane v1-finish-6 (docs/review/base-climate/v1-finish-6/): measured at L6 on the same 18 seed-draws. B (drift 2 C) 9/18 pass, median 46%, more deep ice (17% vs 12%); D (source reference = its causal running mean) 8/18, 46%: the 200-300 Myr reference is only ~4% above the long run, no causal D warms; D+B 7/18; probe +1.5 C 10/18 (36%, early 2% late 54%); C (star +0.9%/100 Myr, measurement) 17/18 but 16 never-ice, dT +7.4. None reaches ~70%; nothing merged, showcase not remade. Gap is the late weatherability trend (PW-708). Decision draft: draft-icehouse-bar-late-trend-after-pw750.md (lean: accept for v1, do not apply B).
 - 2026-10-24: Coordinator (geophysics delegated): measure B (drift 3->2 C, already decided on PW-240) first at L6 multi-seed, then D if short; owner signs off v1 on the outcome.
 - 2026-10-24: Created from inbox draft draft-icehouse-share-both-levels-after-pw741.md (found by v1-finish-5).
