@@ -1,7 +1,8 @@
 ---
+id: PW-706
 title: "'near' wishes are all contested on the D&D preset, so the PW-699 rule changes nothing there; the fire giants' misses are real"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun-lane-3
 blocked_by: []
 relates: [PW-699, PW-682]
 refs: [planet/lineages/history.py, planet/lineages/samples/dnd.toml]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,3 +29,5 @@ Options:
 Lean: A, and look again once the tries' spread (a wish score moves 0.70-0.81 between seeds) is smaller than the effect being tuned.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Accepted: the rule stays (it bites on other trees); the fire giants' misses are real dynamics, not this rule.
+- 2026-10-23: Created from inbox draft draft-near-wish-contested-rule-is-a-noop.md (found by fun-lane-3).

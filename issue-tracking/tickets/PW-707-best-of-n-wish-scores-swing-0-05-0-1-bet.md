@@ -1,4 +1,5 @@
 ---
+id: PW-707
 title: Best-of-N wish scores swing 0.05-0.1 between picks; judge wish-dynamics changes on the mean of the tries
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-3
 blocked_by: []
 relates: [PW-635, PW-699]
 refs: [planet/lineages/history.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -19,3 +22,5 @@ With the same seeds (tree seed 7: tries 7000-7003) the per-try wish scores on 1d
 Suggestion: store the empty land and the composition numbers per try next to `tries` (cheap: they come out of the same present frame), and compare changes by the mean over >= 4 tries, with the best-of-N pick reported separately. `simulate` already keeps `tries`; add `try_stats`.
 
 ## Updates
+- 2026-10-23: Yes: store per-try stats; judge wish-dynamics changes on the mean of >=4 tries.
+- 2026-10-23: Created from inbox draft draft-wish-score-needs-mean-of-tries.md (found by fun-lane-3).

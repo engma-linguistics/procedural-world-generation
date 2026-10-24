@@ -2,7 +2,7 @@
 id: PW-699
 title: "'near' wishes are weak against a narrow habitat (fire giants near their rulers)"
 type: task
-status: todo
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -20,6 +20,7 @@ updated: 2026-10-23
 PW-682 asked about the fire-giant 'near' wishes (met in 1-2 of 3). I made 'apart' mutual and scored it against the niches; 'near' is unchanged: x1.5 at the border cannot move a people whose habitat is the volcanic mountains. Options: (A) accept (a narrow-habitat people is where its habitat is; score 'near' only when the habitats are within reach, as 'apart' now is), (B) strengthen the pull for strict-use peoples. Lean A: apply the same contested-baseline rule to 'near'.
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (fun lane 3, runs fa7183/18cf62).
 - 2026-10-23: Built (fun lane 3), option A: a 'near' wish is counted only where the niches' baseline >= APART_CONTESTED, as 'apart'. On 1df1c3 and 3e9e7d all 7 near wishes have baselines 0.60-1.00, so nothing changes there (scores identical, 2 tries each). The fire giants' misses are real (draft draft-near-wish-contested-rule-is-a-noop).
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): A: score a 'near' wish only where the two habitats are within reach, as 'apart' now is.
 - 2026-10-23: Created from inbox draft draft-near-wish-weak-against-narrow-habitat.md (found by fill2).

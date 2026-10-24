@@ -2,7 +2,7 @@
 id: PW-635
 title: "Lineages land use: how strongly should the world's goods shape the peoples' ranges (land_pull)?"
 type: task
-status: todo
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -40,6 +40,7 @@ Options:
 Lean: A for now. Revisit with C if the owner wants some goods (mines) to bite harder than others (forests).
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (fun lane 3, runs fa7183/18cf62).
 - 2026-10-23: Built (fun lane 3), option C: each use's own pull = (its pull or meta.land_pull) x min(weight, 1); `Tree.pulls_of`; the multiplier is (1 - Pmax) + max_g(pull_g x G_g). dnd.toml weights rescaled so miners, subterranean, flyers and coastal peoples keep their old full strength (top weight 1) while forests and wetland stay at 0.5. Measured on 1df1c3 / 3e9e7d, 4 tries each, same seeds: mean wish score 0.723 -> 0.706 and 0.761 -> 0.780, best 0.802 -> 0.751 and 0.811 -> 0.793; empty land of the kept try 18.9 -> 12.6% and 9.1 -> 9.8%. Per-try differences go both ways: no signal beyond the best-of-N pick (draft draft-wish-score-needs-mean-of-tries).
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): C, per-use strength: each [[use]] row's weight sets its own pull, so mines or volcanoes can bite harder than forests.
 - 2026-10-23: Created from inbox draft draft-lineages-land-pull-strength.md (found by lineages-lane-4).

@@ -1,7 +1,8 @@
 ---
+id: PW-705
 title: The cell's leader is the people holding most ground, so by head count the "lead" share can fall below the second's
 type: task
-status: needs-decision
+status: todo
 parent: PW-689
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun-lane-3
 blocked_by: []
 relates: [PW-703, PW-689]
 refs: [planet/lineages/compose.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -24,3 +27,5 @@ Options:
 Lean: B.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: B, pick the cell's leader by heads.
+- 2026-10-23: Created from inbox draft draft-composition-leader-by-heads.md (found by fun-lane-3).
