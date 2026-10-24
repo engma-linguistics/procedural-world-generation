@@ -2,7 +2,7 @@
 id: PW-726
 title: "Body keys for the culinary pass: suction, teeth, gut, salt craving, display organ and shed cycle, activity hours, ectothermy, fire use"
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -38,6 +38,7 @@ fact sheets for the rest.
 - [ ] Validated in `spec.parse_body`.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged (fun8): body keys on tree, workbench, stories, brief; fire=false honoured in fuels.
 - 2026-10-24: fun8: remade fantasy run 6ca7e0 on 1df1c3 (--tries 2) carries the new keys; examples in docs/review/lineages/briefs/ (people_triton shows 'cook without fire').
 - 2026-10-24: fun8: nine body keys (suction teeth gut salt display shed hours thermo fire) validated in spec.parse_body, inherited key by key, in the story notes, the workbench dropdowns, the brief; fire=false honoured by fuels.py (It cooks without fire). Preset (dnd.toml) set where the analogue is clear: reptilian ecto, avian endo+beak+no suction, dragonborn poor suction, tortle beak, feline conical+crepuscular, hill giants foregut, triton and sea elves no fire. The ruminant folk (display, shed, salt) wait for the owner preset (PW-730).
 - 2026-10-24: Created from inbox draft draft-body-keys-for-the-culinary-world.md (found by culinary-intake).

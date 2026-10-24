@@ -2,7 +2,7 @@
 id: PW-740
 title: A peoples run spends ~4 of its ~5 minutes working out the world's land goods in memory (cache them in the world or on disk)
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: infra
@@ -26,5 +26,6 @@ Options: (A) write the made game attributes into the world (`planet gameattrs WO
 - [ ] a peoples run on a world with its goods made costs the history, not the goods
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged (fun8): goods and recent climates cached, bit-identical; 8.5-9 -> 6.2 min per run.
 - 2026-10-24: fun8: land goods kept in worlds/goods/<id>.npz and the recent pass's 16 full climates in runs/<timezoom>/recent_rain.npz, each keyed by file stats and a digest of the model source (store.code_digest); bit-identical. Measured: the goods were only 3-4 s on 1df1c3 (world already had its layers); the ~2 min under the 'goods' label was the recent climates. CLI run 8.5-9 min -> 6.2 min warm. See draft-peoples-run-cost-is-the-history-loop.
 - 2026-10-24: Created from inbox draft draft-goods-cache-per-world.md (found by fun7).

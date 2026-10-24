@@ -1,4 +1,5 @@
 ---
+id: PW-742
 title: "Culinary brief follow-ups: --all files, default era slices, group ranges per era, route and per-cell fields, schema doc"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun8
 blocked_by: []
 relates: [PW-728, PW-726]
 refs: [planet/lineages/brief.py, docs/review/lineages/briefs/, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -33,3 +36,6 @@ refs: [planet/lineages/brief.py, docs/review/lineages/briefs/, docs/proposals/cu
 - Null by design until built: salt (a deposit likelihood is under `land.resources`), `trade_reach`, `reputation`,
   `substrate`, honey, mast, fungi, the shelf.
 - [ ] a schema doc (field, unit, source, era-dependence) beside the examples
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-brief-follow-ups-after-first-cut.md (found by fun8).

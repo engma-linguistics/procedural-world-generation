@@ -1,4 +1,5 @@
 ---
+id: PW-743
 title: A peoples run's minutes are the history loop (animals, crops, habitat), not the land's goods; the cached goods and climates leave ~6 of ~9 min
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun8
 blocked_by: []
 relates: [PW-740, PW-722]
 refs: [planet/lineages/history.py, planet/lineages/animals.py, planet/lineages/crops.py, planet/lineages/recent.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -27,3 +30,6 @@ total 512 s): `History.run` 381 s of which `animals.step` 78 s (6435 calls, most
 - [ ] profile `animals.step` and `crops.step` (the spread sweeps each step) and vectorise or do them every Nth step
 - [ ] share the world-and-time-zoom-only inputs between tries (the habitat fields per step do not depend on the seed)
 - [ ] label the progress "recent pass: full climates" instead of "the land's goods" while the climates run
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-peoples-run-cost-is-the-history-loop.md (found by fun8).

@@ -2,7 +2,7 @@
 id: PW-728
 title: "Culinary brief: export per region, people and era (land, fuels, wild food, fish, salt, crops, animals, peoples, neighbours, substrate, trade reach, events, reputation) as JSON and Markdown"
 type: story
-status: todo
+status: in-progress
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -52,5 +52,6 @@ mixing zones, the bad years. Later fields are added as their tickets land, behin
 - [ ] A Markdown rendering readable on its own.
 
 ## Updates
+- 2026-10-24: Status todo -> in-progress. First cut merged (fun8): planet brief; examples in docs/review/lineages/briefs/; follow-ups PW-742.
 - 2026-10-24: fun8: first cut shipped (brief_version 1): planet brief RUN [--region lat,lon[,r] | --people ID] [--era kyr] [--format md|json] [--out DIR --name N]; planet/lineages/brief.py; examples in docs/review/lineages/briefs/. Null by design: salt, trade_reach, reputation, substrate, honey, mast, fungi, tiers. Follow-ups: draft-brief-follow-ups-after-first-cut.
 - 2026-10-24: Created from inbox draft draft-culinary-brief-export.md (found by culinary-intake).
