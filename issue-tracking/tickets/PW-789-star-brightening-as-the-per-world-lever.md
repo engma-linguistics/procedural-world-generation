@@ -2,7 +2,7 @@
 id: PW-789
 title: "Star brightening as the per-world lever: expose it to the user (form + docs), and what it can and can't do per seed"
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 milestone: v2
 subsystem: climate
@@ -56,5 +56,6 @@ L7 draws than this lane's budget (~1.5 h per 2 Gyr L7 run).
 - [ ] if A or B: SETTINGS entry and docs; test_make still green
 
 ## Updates
+- 2026-10-24: Status needs-decision -> wontdo. Superseded by the star-thermostat story (owner 2026-10-24).
 - 2026-10-24: Coordinator lean: expose in the New planet form as a warmer/colder knob, not an ice-age picker; asked owner.
 - 2026-10-24: Created from inbox draft draft-star-brightening-per-world-lever.md (found by v1-finish-8).
