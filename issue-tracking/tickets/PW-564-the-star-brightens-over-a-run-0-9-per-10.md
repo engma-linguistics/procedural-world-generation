@@ -29,5 +29,6 @@ scales, so a "solar help" lever is a world-builder control unless the star is se
 - [ ] 10-seed 2 Gyr L6 check: CO2 index trends down, icehouse share within N3
 
 ## Updates
+- 2026-10-24: Lane v1-finish-6 measured a brightening star (monkeypatched, not merged; docs/review/base-climate/v1-finish-6/c_run.py): +0.9%/100 Myr at 0.6 C per W/m2 = +1.3 C/100 Myr; the model thermostat passes ~half of a sustained forcing, so dT +7.4 over 300-1000 Myr and 16/18 draws never-ice. Needs a stronger Gyr-scale thermostat (or a weaker star) before it can be used.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-stellar-brightening.md (found by ice-v2-stage0).
