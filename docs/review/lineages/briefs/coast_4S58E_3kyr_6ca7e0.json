@@ -1,0 +1,276 @@
+{
+ "brief_version": 1,
+ "run": "6ca7e0",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@96d6644b5e",
+ "mode": "fantasy",
+ "seed": 7000,
+ "code": {
+  "commit": "afea16b",
+  "dirty": false,
+  "planet_src_sha": "02fbf6e3e71238ec"
+ },
+ "era_kyr": 3.0,
+ "era_asked_kyr": 3.0,
+ "place": {
+  "lat": -4.5,
+  "lon": 58.1,
+  "radius_km": 500.0,
+  "basis": "a circle",
+  "cells": 267,
+  "land_cells": 226,
+  "area_mkm2": 0.8312,
+  "land_mkm2": 0.7036,
+  "landmass": "the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Am tropical monsoon": 0.867,
+   "Cwa subtropical, dry winter": 0.106,
+   "Af tropical rainforest": 0.018,
+   "Aw tropical savanna": 0.009
+  },
+  "temperature_c": 26.044,
+  "precipitation_mm": 3073.681,
+  "tree_cover_pct": 26.801,
+  "elevation_m": {
+   "mean": 326.442,
+   "max": 1160.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "savanna": 0.509,
+   "temperate grassland": 0.487,
+   "hot desert": 0.004
+  },
+  "soil": {
+   "leached red tropical soil": 0.912,
+   "river-laid alluvium": 0.035,
+   "red clay forest soil": 0.035,
+   "brown forest soil": 0.013,
+   "thin stony soil": 0.004
+  },
+  "fertile": {
+   "mean_0_4": 0.907,
+   "share_good": 0.022
+  },
+  "rivers": {
+   "navigable": {
+    "small boats": 0.646,
+    "barges": 0.181,
+    "not navigable": 0.119,
+    "sea-going": 0.053
+   },
+   "max_flow": 557.5,
+   "fresh_water_km_mean": 0.488,
+   "lake_share": 0.0
+  },
+  "coast": {
+   "beaches": 0.385,
+   "barrier islands and lagoons": 0.192,
+   "delta": 0.154,
+   "mangrove coast": 0.077
+  },
+  "harbour_best": "harbour",
+  "growing_months": 11.111,
+  "coldest_month_c": 25.788,
+  "warmest_month_c": 27.926,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 27.929,
+   "temperature_jul_c": 25.792,
+   "precipitation_jan_mm": 4482.991,
+   "precipitation_jul_mm": 993.558
+  },
+  "fire_months": 1.248,
+  "flood_month": 1,
+  "mud_months": 3.084,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.023,
+   "peat_depth_m": 0.408
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.342,
+  "charcoal": 0.029,
+  "dung": 0.0,
+  "peat": 0.157,
+  "straw": 0.0,
+  "grass": 0.343,
+  "drift": 0.072,
+  "coal": 0.039,
+  "lead": {
+   "wood": 0.46,
+   "grass": 0.265,
+   "drift": 0.106
+  },
+  "basis": "the run's present (fuels.py), not this era"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.825,
+  "grazing": 0.832,
+  "timber": 0.041,
+  "game": [
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "fowl",
+    "label": "fowl",
+    "range_share": 0.969
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "rice",
+    "label": "rice",
+    "range_share": 0.929
+   },
+   {
+    "id": "roots",
+    "label": "yams, taro and cassava",
+    "range_share": 0.996
+   },
+   {
+    "id": "banana",
+    "label": "bananas and plantains",
+    "range_share": 0.996
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 41,
+  "coast_cells": 26,
+  "river_runs": null,
+  "kelp": 0.0,
+  "reef": 0.073,
+  "seagrass": 0.204,
+  "salt_marsh": 0.612,
+  "mangrove": 0.827,
+  "upwelling": 0.101,
+  "seals": 0.036,
+  "seabirds": 0.007,
+  "sst_c": 28.617,
+  "tide_range_m": 1.162,
+  "good_coral": 0.02,
+  "good_lagoon": 0.061,
+  "good_mangrove": 0.021,
+  "good_harbour": 0.079,
+  "good_storm_coast": 0.018,
+  "shelf": null
+ },
+ "salt": null,
+ "crops": [],
+ "animals": [
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 1.0,
+   "since_kyr": 9.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
+   }
+  },
+  {
+   "id": "fowl",
+   "label": "fowl",
+   "known_share": 0.996,
+   "since_kyr": 7.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.5,
+    "lat": -14.13,
+    "lon": 48.29,
+    "people": "kenku"
+   }
+  }
+ ],
+ "peoples": {
+  "peopled_cells": 217,
+  "empty_share": 0.187,
+  "others_together": 0.0,
+  "list": [
+   {
+    "id": "kenku",
+    "name": "kenku",
+    "share": 1.0,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": false,
+     "milk": false,
+     "capsaicin": false,
+     "bitter": "low",
+     "smell": "low",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [
+      "alliums",
+      "theobromine"
+     ],
+     "suction": "none",
+     "teeth": "beak",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "kenku",
+    "ring_cells": 584,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "salt": "not modelled yet",
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

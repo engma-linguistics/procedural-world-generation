@@ -116,6 +116,23 @@ def history_path(world_id: str) -> Path:
     return worlds_dir() / "history" / f"{world_id}.npz"
 
 
+def code_digest() -> str:
+    """A digest of the model's source (planet/*.py and planet/timezoom/*.py; not the lineages package), for caches that
+    must not outlive a change to the code that made them (PW-740)."""
+    import hashlib
+    root = Path(__file__).resolve().parent
+    h = hashlib.sha256()
+    for f in sorted(root.glob("*.py")) + sorted((root / "timezoom").glob("*.py")):
+        h.update(f.name.encode())
+        h.update(f.read_bytes())
+    return h.hexdigest()
+
+
+def goods_path(world_id: str) -> Path:
+    """The lineages' land goods kept for a world (lineages/land.goods; PW-740), keyed inside by the world's and code's state."""
+    return worlds_dir() / "goods" / f"{world_id}.npz"
+
+
 def write_history(world_id: str, hist: dict) -> None:
     p = history_path(world_id)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -649,7 +666,7 @@ def delete(kind: str, item_id: str) -> list[Path]:
     p = path_of(kind, item_id)
     gone = []
     if kind == "world":
-        for q in (p, p.with_suffix(".txt"), highlights_path(item_id), history_path(item_id)):
+        for q in (p, p.with_suffix(".txt"), highlights_path(item_id), history_path(item_id), goods_path(item_id)):
             if q.exists():
                 q.unlink()
                 gone.append(q)
@@ -685,6 +702,7 @@ def orphans() -> list[Path]:
             out.append(p.parent)
     out += [p for p in sorted((worlds_dir() / "highlights").glob("*.json")) if not exists("world", p.stem)]
     out += [p for p in sorted((worlds_dir() / "history").glob("*.npz")) if not exists("world", p.stem)]
+    out += [p for p in sorted((worlds_dir() / "goods").glob("*.npz")) if not exists("world", p.stem)]
     return out
 
 

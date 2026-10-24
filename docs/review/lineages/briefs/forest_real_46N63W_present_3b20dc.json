@@ -1,0 +1,234 @@
+{
+ "brief_version": 1,
+ "run": "3b20dc",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@a4a5819e99",
+ "mode": "real",
+ "seed": 7000,
+ "code": {
+  "commit": "092c53e",
+  "dirty": true,
+  "planet_src_sha": "53acb4a3b87ca8ce"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 46.2,
+  "lon": -62.8,
+  "radius_km": 500.0,
+  "basis": "a circle",
+  "cells": 262,
+  "land_cells": 262,
+  "area_mkm2": 0.8156,
+  "land_mkm2": 0.8156,
+  "landmass": "the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Dwb continental, dry winter, warm summer": 0.748,
+   "Dwc subarctic, dry winter": 0.252
+  },
+  "temperature_c": 3.561,
+  "precipitation_mm": 1032.252,
+  "tree_cover": 83.477,
+  "elevation_m": {
+   "mean": 1238.58,
+   "max": 1796.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "temperate forest": 0.805,
+   "boreal forest": 0.195
+  },
+  "soil": {
+   "young brown soil": 0.439,
+   "ash-grey podzol": 0.191,
+   "waterlogged grey clay": 0.122,
+   "river-laid alluvium": 0.099,
+   "peat": 0.092,
+   "brown forest soil": 0.057
+  },
+  "fertile": {
+   "mean_0_4": 0.702,
+   "share_good": 0.0
+  },
+  "rivers": {
+   "navigable": {
+    "small boats": 0.702,
+    "barges": 0.164,
+    "sea-going": 0.107,
+    "not navigable": 0.027
+   },
+   "max_flow": 459.8,
+   "fresh_water_km_mean": 0.0,
+   "lake_share": 0.0
+  },
+  "coast": {},
+  "harbour_best": "none",
+  "growing_months": 11.676,
+  "coldest_month_c": -10.338,
+  "warmest_month_c": 16.237,
+  "frost_months_est": 5.1,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": -10.332,
+   "temperature_jul_c": 16.237,
+   "precipitation_jan_mm": 103.149,
+   "precipitation_jul_mm": 2129.137
+  },
+  "fire_months": 0.156,
+  "flood_month": 7,
+  "mud_months": 5.355,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.0,
+   "peat_depth_m": 0.963
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.723,
+  "charcoal": 0.003,
+  "dung": 0.0,
+  "peat": 0.27,
+  "straw": 0.0,
+  "grass": 0.002,
+  "drift": 0.0,
+  "coal": 0.0,
+  "lead": {
+   "wood": 1.0
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.725,
+  "grazing": 0.04,
+  "timber": 0.914,
+  "game": [
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "potato",
+    "label": "potatoes and other cool tubers",
+    "range_share": 0.664
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 0,
+  "river_runs": null,
+  "kelp": null,
+  "reef": null,
+  "seagrass": null,
+  "salt_marsh": null,
+  "mangrove": null,
+  "upwelling": null,
+  "seals": null,
+  "seabirds": null,
+  "sst_c": null,
+  "tide_range_m": null,
+  "good_coral": 0.0,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.0,
+  "good_storm_coast": 0.0,
+  "shelf": null
+ },
+ "salt": null,
+ "crops": [],
+ "animals": [
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 1.0,
+   "since_kyr": 10.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 48.97,
+    "lon": -60.34,
+    "people": "human_arctic"
+   }
+  }
+ ],
+ "peoples": {
+  "peopled_cells": 262,
+  "empty_share": 0.0,
+  "others_together": 0.0,
+  "list": [
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 1.0,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": []
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "human",
+    "ring_cells": 767,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 10.5,
+   "kind": "animals",
+   "text": "dogs are tamed by the human arctic hunters on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 359
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "salt": "not modelled yet",
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

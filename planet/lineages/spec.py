@@ -126,10 +126,19 @@ def demography(traits) -> dict:
 # nothing in the simulation reads them. Real-world analogues: cats lack the sweet receptor, birds feel no capsaicin,
 # lactase persistence in herding humans, onions and garlic poison dogs, cats and birds, chocolate (theobromine) too.
 # Inherited from the first parent key by key (a `body` table in the spec gives only what differs).
+# The culinary keys (PW-726; intake section 4.3): suction (drinking and slurping), teeth, gut (ruminants are foregut),
+# salt (herbivores crave it), display (horns are permanent and ringed, antlers shed yearly) and shed (who sheds: one
+# clock or two), hours (when it is active), thermo (ectotherms feast and fast) and fire (false: cooks without fire).
+# Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
 BODY_DEFAULT = {"sweet": True, "milk": False, "capsaicin": True, "bitter": "normal", "smell": "normal",
-                "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": []}
+                "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
+                "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
+                "shed": "none", "hours": "diurnal", "thermo": "endo", "fire": True}
 BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
-                "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore")}
+                "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore"),
+                "suction": ("none", "poor", "normal"), "teeth": ("grinding", "conical", "dental_pad", "beak"),
+                "gut": ("simple", "hindgut", "foregut"), "salt": ("normal", "craving"), "display": ("none", "horns", "antlers"),
+                "shed": ("none", "both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto")}
 TOXINS = ("alliums", "theobromine")
 BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
 
@@ -152,6 +161,10 @@ def parse_body(v, lid: str = "") -> dict:
                 out[k] = float(x)
             else:
                 raise ValueError(f"{lid}: body.{k} must be true, false or a share between 0 and 1")
+        elif k == "fire":
+            if not isinstance(x, bool):
+                raise ValueError(f"{lid}: body.fire must be true or false")
+            out[k] = x
         elif k == "toxic":
             xs = [x] if isinstance(x, str) else list(x)
             bad = [t for t in xs if t not in TOXINS]
@@ -187,6 +200,19 @@ def body_notes(b: dict) -> list[str]:
         out.append("eat raw meat safely" if b["raw_meat"] is True else pct(b["raw_meat"]) + "eat raw meat safely")
     if b["cellulose"]:
         out.append("digest cellulose" if b["cellulose"] is True else pct(b["cellulose"]) + "digest cellulose")
+    for k, text in (("suction", {"none": "cannot suck (they lap or tip their drink)", "poor": "suck poorly"}),
+                    ("teeth", {"conical": "have conical, tearing teeth", "dental_pad": "have a dental pad and no upper incisors",
+                               "beak": "have a beak and no teeth"}),
+                    ("gut", {"hindgut": "ferment plant food in a hindgut", "foregut": "ferment plant food in a foregut (they chew the cud)"}),
+                    ("salt", {"craving": "crave salt"}),
+                    ("display", {"horns": "carry permanent horns (growth rings)", "antlers": "carry antlers, shed yearly"}),
+                    ("shed", {"both": "shed antlers in both sexes", "males": "shed antlers in males only"}),
+                    ("hours", {"crepuscular": "are active at dawn and dusk", "nocturnal": "are active at night"}),
+                    ("thermo", {"ecto": "are ectotherms (their appetite follows the weather)"})):
+        if b.get(k) in text:
+            out.append(text[b[k]])
+    if b.get("fire") is False:
+        out.append("cook without fire")
     tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)"}[t] for t in b["toxic"]]
     if tox:
         out.append("are poisoned by " + " and ".join(tox))

@@ -155,6 +155,12 @@ class Pass:
         from .. import climate, finish
         t0 = time.time()
         m = self.run["meta"]
+        key = self._clim_key()
+        hit = self._clim_read(key)
+        if hit is not None:
+            self._clim = hit
+            self.climate_s = time.time() - t0
+            return self._clim
         lo, ts = self.now + self.start, self.ts
         keep, last = [], -1e9
         before = np.flatnonzero(ts <= lo + 1e-9)
@@ -172,8 +178,37 @@ class Pass:
             c = climate.compute(self.grid, st["elevation"], st["dT"], tilt, ice, orbit_dt=orbit)
             rain.append(np.asarray(c["precip"], float))
         self._clim = (ts[keep] - self.now, np.stack(rain))
+        self._clim_write(key)
         self.climate_s = time.time() - t0
         return self._clim
+
+    # (the full climates cost minutes at L7 and depend only on the time zoom, the window and the code: kept in the
+    # time zoom's folder, named by a key so a changed zoom, window or model never reads an old one; PW-740)
+    def _clim_key(self) -> str:
+        import hashlib
+        st = (self.tz_dir / "run.json").stat()
+        h = hashlib.sha256(f"{self.run['id']}:{st.st_size}:{st.st_mtime_ns}:{self.now!r}:{self.start!r}:"
+                           f"{self.params.climate_every!r}".encode())
+        h.update(S.code_digest().encode())
+        return h.hexdigest()
+
+    def _clim_read(self, key: str):
+        try:
+            with np.load(self.tz_dir / "recent_rain.npz", allow_pickle=False) as z:
+                if str(z["_key"]) == key:
+                    return z["tn"], z["rain"]
+        except (OSError, ValueError, KeyError):
+            pass
+        return None
+
+    def _clim_write(self, key: str) -> None:
+        p = self.tz_dir / "recent_rain.npz"
+        try:
+            tmp = p.with_name("recent_rain.tmp.npz")
+            np.savez(tmp, _key=np.array(key), tn=self._clim[0], rain=self._clim[1])
+            tmp.replace(p)
+        except OSError:
+            pass
 
     def _rain_at(self, t: float) -> np.ndarray | None:
         """The full climate's rain at t (linear between its frames), or None outside them / when it is off."""

@@ -849,6 +849,75 @@ def test_recent_rain_is_a_full_climate_every_2_kyr(faketz):
     assert old._clim is None and not np.allclose(scaled, rn[1])  # (a different rain: the climate's own)
 
 
+def test_recent_climates_are_kept_beside_the_time_zoom_and_never_read_stale(faketz):
+    """PW-740: the full climates of the recent pass are written next to the time zoom, keyed by the zoom, window, spacing
+    and model source: a second pass reads them back bit for bit, a changed window or spacing makes them again."""
+    a = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3))
+    tn, rn = a._climate()
+    f = a.tz_dir / "recent_rain.npz"
+    assert f.exists()
+    b = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=9))  # (the seed does not enter the climates)
+    tn2, rn2 = b._climate()
+    assert np.array_equal(tn, tn2) and np.array_equal(rn, rn2) and b.climate_s < 0.5 * max(a.climate_s, 1e-9) + 0.05
+    c = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3, climate_every=4.0))
+    assert c._clim_read(c._clim_key()) is None and len(c._climate()[0]) < len(tn)
+    f.write_bytes(b"not an npz")  # (an unreadable file is just a miss)
+    assert R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3))._clim_read(a._clim_key()) is None
+
+
+def test_land_goods_are_kept_on_disk_keyed_by_world_and_code(tmp_path, monkeypatch):
+    """PW-740: land.goods writes its goods beside the worlds and reads them back identically; a changed world file or
+    changed model source gives another key, so an old file is never read."""
+    from planet.lineages import land as LD
+    old = S.root()
+    S.set_root(tmp_path)
+    try:
+        (tmp_path / "worlds").mkdir()
+        w = tmp_path / "worlds" / "abc123.json"
+        w.write_text('{\n"format": "x",\n"meta": {}\n}\n')
+        out = {"fertile": np.linspace(0, 1, 7), "_raw": {"fertile": np.arange(7.0)}, "_peat": np.zeros(7), "_land": np.arange(7) > 2,
+               "_made": ["resources"], "_missing": [], "_s": 1.5}
+        k = LD._disk_key("abc123")
+        assert LD._disk_read("abc123", k) is None
+        LD._disk_write("abc123", k, out)
+        back = LD._disk_read("abc123", k)
+        assert np.array_equal(back["fertile"], out["fertile"]) and np.array_equal(back["_raw"]["fertile"], out["_raw"]["fertile"])
+        assert back["_land"].dtype == bool and back["_made"] == ["resources"] and back["_missing"] == [] and back["_s"] == 1.5
+        w.write_text('{\n"format": "y",\n"meta": {}\n}\n')  # (the world changed)
+        k2 = LD._disk_key("abc123")
+        assert k2 != k and LD._disk_read("abc123", k2) is None
+        monkeypatch.setattr(S, "code_digest", lambda: "another model")
+        assert LD._disk_key("abc123") != k2
+    finally:
+        S.set_root(old)
+
+
+def test_culinary_body_keys_validate_inherit_and_read_in_the_preset():
+    """PW-726: suction, teeth, gut, salt, display, shed, hours, thermo and fire are validated, inherited key by key,
+    spoken in the story notes and set in the preset where the D&D analogue is clear."""
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    b = lambda k: dnd.lines[k].body  # noqa: E731
+    assert b("aarakocra")["suction"] == "none" and b("aarakocra")["teeth"] == "beak" and b("aarakocra")["thermo"] == "endo"
+    assert b("dragonborn")["suction"] == "poor" and b("lizardfolk")["thermo"] == "ecto" and b("hill_giant")["gut"] == "foregut"
+    assert b("tabaxi")["teeth"] == "conical" and b("triton")["fire"] is False and b("human")["fire"] is True and b("human")["gut"] == "simple"
+    assert "cook without fire" in SP.body_notes(b("triton")) and "are ectotherms" in " ".join(SP.body_notes(b("lizardfolk")))
+    assert SP.parse(SP.to_raw(dnd)).lines["triton"].body == b("triton")
+    for bad in ({"suction": "strong"}, {"teeth": "tusks"}, {"gut": "four"}, {"display": "mane"}, {"shed": "yearly"}, {"fire": "yes"}, {"fire": 0.5}):
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": bad}]})
+    t = SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"display": "antlers", "shed": "males"}},
+                              {"id": "y", "parents": ["x"], "at": "0.5 kyr", "body": {"shed": "both"}}]})
+    assert t.lines["y"].body["display"] == "antlers" and t.lines["y"].body["shed"] == "both" and t.lines["y"].body["hours"] == "diurnal"
+
+
+def test_brief_helpers():
+    from planet.lineages import brief as BR
+    assert BR._frost_months(5.0, 20.0) == 0.0 and BR._frost_months(-5.0, -1.0) == 12.0 and 3 < BR._frost_months(-10.0, 10.0) < 7
+    assert BR._popcount(np.array([0, 0b101, 4095])).tolist() == [0, 2, 12]
+    assert BR._shares(np.array([1, 1, 2, 3]), {1: "a", 2: "b"}, np.array([1, 1, 1, 0], bool)) == {"a": 0.667, "b": 0.333}
+    assert abs(BR._gc(0, 0, 0, 90) - 3.14159265 / 2 * BR.R_KM) < 1
+
+
 # ---- crops (PW-721), who tames by trait (PW-718) and fuels (PW-722) -------------------------------------------------
 def test_crop_ranges_read_the_land_and_widen_for_growing():
     from planet.lineages import crop_defs as CD
