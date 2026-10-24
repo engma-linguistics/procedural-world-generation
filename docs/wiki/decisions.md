@@ -10,6 +10,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-22 · Local optima · land a correct mechanism even if a fitted kernel (rain/Koppen) regresses; fix that next · PW-578
 - 2026-10-16 · Chasing Earth · if an option batch misses the bar, step back to cruder approximations or a relaxed bar; don't chase Earth perfection · PW-015
 - 2026-10-19 · Models and budgets · Haiku mechanical, Sonnet moderate, Opus ice-age physics; hand off at ~100 calls · see [playbook](coordinator-playbook.md)
+- 2026-10-24 · Climate (coordinator) · water-world icebox: fix the CO2 reference freeze planet-relatively before adding any preset warming offset · PW-798, PW-799
 - 2026-10-24 · Wiki · lean coordinator wiki approved; the full human wiki is parked to late v2 · PW-786, PW-792
 - standing · No temporary fixes · fold a stopgap into the owning ticket; don't merge partial fixes · PW-074 (cited)
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
