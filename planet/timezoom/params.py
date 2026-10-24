@@ -83,8 +83,8 @@ class TZParams:
     surface_km: float = M.SURFACE_KM  # km: 'fetch''s scale (icemass.surface_share)
     margin: str = "edge"  # a margin cell's (ice next to bare land) surface balance: 'ramp', over the sheet's Nye
     # ramp across the part of the cell its ice covers (icemass.margin_ramp, PW-460; ~900 m mean at ~110 km cells);
-    # 'edge': its edge's, at most edge_h thick (the run's rule: earth.ICE_EDGE_M), for the run/zoom rule check
-    # until the run takes the ramp (PW-555 stage 3)
+    # 'edge': its edge's, at most edge_h thick, over the run's margin band (earth.margin_band: the ice within
+    # MARGIN_KM of bare land, PW-736; earth.ICE_EDGE_M), the run's rule until it takes the ramp (PW-555 stage 3)
     ramp_n: int = 0  # the ramp's quadrature (icemass.ramp_rule): 0, 2-point Gauss-Legendre in x; n > 0, n points in
     # sqrt(x) (PW-555 stage 1c: 8 points move Earth's Greenland margins by 0.01 m/yr, the yardstick by 0.01: not a cause)
     front: str = "edge"  # bare land the flow reaches (new_ice_rates): 'ramp', the sheet's outermost edge_km of its

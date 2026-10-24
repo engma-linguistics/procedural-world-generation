@@ -24,6 +24,7 @@ from .. import store as S
 from ..geo import R_KM
 from ..grid import Grid
 from ..orbit import BAND_DEG, BAND_LAT, insolation, orbit_at, orbit_phases, reference_orbit
+from ..tectonics.earth import margin_band
 from ..tectonics.isostasy import ice_load
 from .cycle import NAMES, Index, cooling, cycling_latitude, snowline_land
 from .events import cycling_ice_sun
@@ -183,19 +184,21 @@ class _Sim:
         # cell its ice covers (margin 'ramp': icemass.margin_ramp, PW-460): its snow and melt are the
         # ramp's, at two heights on it (year), not its mean thickness's (the grid's cliff-like margin,
         # which would keep it as cold as the interior and let the sheet creep onto warm land), nor its
-        # outermost 10 km's ('edge', the run's rule until PW-555 stage 3: the whole ~110 km cell melts as
-        # its edge, edge_h thick, PW-115)
+        # outermost 10 km's ('edge', the run's rule until PW-555 stage 3: the ice within the run's margin band,
+        # earth.margin_band's MARGIN_KM of bare land, melts as its edge, edge_h thick, PW-115; in km, not one
+        # ring of cells, which at L7 made the band half as wide as at L6, PW-736)
         ice_g = np.where(grounded, H, 0.0)
         self.ice_g = ice_g
         self.bare_land = land & (ice_g <= 1.0)
-        margin = (ice_g > 1.0) & (np.add.reduceat(self.bare_land[g.nbr_idx], g.nbr_off[:-1]) > 0)
         h_sfc = ice_g.copy()
         if p.margin == "ramp":
+            margin = (ice_g > 1.0) & (np.add.reduceat(self.bare_land[g.nbr_idx], g.nbr_off[:-1]) > 0)
             self.margin = np.flatnonzero(margin)
             self.m_f, hq = M.margin_ramp(ice_g[self.margin], self.width, p.ramp_n)
             self.m_hq, self.m_w = hq, M.ramp_rule(p.ramp_n)[1]
             h_sfc[self.margin] = hq[0]
         else:
+            margin = (ice_g > 1.0) & margin_band(g, self.bare_land)
             h_sfc = np.where(margin, np.minimum(ice_g, p.edge_h), ice_g)
         surf_eff = surf - (ice_g - h_sfc)
         self.dt_base = -climate.LAPSE * (np.maximum(surf_eff, 0) - F["s0"]) + self.dt_wet
