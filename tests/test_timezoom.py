@@ -511,3 +511,30 @@ def test_frames_carry_the_migrating_tree_cover(cold_run, cold_src):
     free = Z.simulate(cold_src, kyr=40, step=0.5, every=2.0, params=Z.TZParams(veg_speed=0.0))
     assert np.array_equal(free["data"]["ice"], cold_run["data"]["ice"])  # (the ice and climate are the same)
     assert np.array_equal(free["data"]["tree_cover"][0], tc[0])
+
+
+def test_edge_margins_are_the_run_margin_band(sim4, monkeypatch):
+    """PW-736: the time zoom's 'edge' margins (prepare_surface: snow and melt as the sheet's edge, edge_h thick) are
+    the run's margin band (earth.margin_band, MARGIN_KM of bare land), not one ring of cells whatever their size:
+    with the band two rings wide, the second ring's thick ice too counts at edge_h, lapse-rate warmer by
+    the ice it doesn't count, and nothing else changes."""
+    from planet import climate
+    from planet.geo import R_KM
+    from planet.tectonics import earth
+    from planet.timezoom.sim import _Sim
+    g = sim4.grid
+    src = Z.source_from_sim(sim4)
+    land = src["elev"] > 0
+    src["ice"] = np.where(land & (np.abs(g.lat) > 55), 2000.0, 0.0)  # thick caps on the high-latitude land
+    s = _Sim(src, 1.0, 0.5, 0.5, Z.TZParams())
+    s.fields.f.update(dTg0=0.0, s0=np.zeros(g.n))  # (the first climate's; only the difference is tested)
+    s.prepare_surface(0.0)
+    one = s.dt_base.copy()
+    monkeypatch.setattr(earth, "MARGIN_KM", 2 * g.spacing * R_KM)
+    s.prepare_surface(0.0)
+    bare = s.bare_land
+    ring1 = (s.ice_g > 1) & (np.add.reduceat(bare[g.nbr_idx], g.nbr_off[:-1]) > 0)
+    ring2 = (s.ice_g > 1) & earth.margin_band(g, bare) & ~ring1
+    assert ring2.sum() > 3
+    np.testing.assert_allclose(s.dt_base[~ring2], one[~ring2])
+    np.testing.assert_allclose((s.dt_base - one)[ring2], climate.LAPSE * (s.ice_g[ring2] - s.p.edge_h))
