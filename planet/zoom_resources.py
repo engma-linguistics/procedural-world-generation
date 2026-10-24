@@ -140,9 +140,49 @@ def _seed(meta, key):
     return [int(zlib.crc32(f"{meta['id']}|{meta.get('seed', 1)}|{key}".encode())), 0x5172]
 
 
-def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, log=None) -> dict:
+def _inherit(pmeta: dict, pres: dict, meta: dict, river: np.ndarray) -> list[dict]:
+    """A fine zoom's deposits (PW-618): its parent's that lie inside it, the same deposits (name, size, grade) at
+    this zoom's pixels. A placer moves to the nearest river pixel within a few parent pixels (the fine zoom's
+    river runs a little differently), a kimberlite field's pipes follow."""
+    from .geo import xyz
+    from .zoom import Frame
+    nx, ny, res = int(meta["nx"]), int(meta["ny"]), float(meta["res_km"])
+    fr = Frame(meta["center"]["lat"], meta["center"]["lon"])
+    pfr = Frame(pmeta["center"]["lat"], pmeta["center"]["lon"])
+    pnx, pny, pres_km = int(pmeta["nx"]), int(pmeta["ny"]), float(pmeta["res_km"])
+
+    def to_px(rows_cols):
+        rc = np.asarray(rows_cols, float).reshape(-1, 2)
+        x, y = (rc[:, 1] - pnx / 2) * pres_km, (pny / 2 - rc[:, 0]) * pres_km
+        fx, fy = fr.to_plane(pfr.to_sphere(x, y))
+        return ny / 2 - fy / res, fx / res + nx / 2
+
+    rr, cc = np.nonzero(river)
+    out = []
+    for d in pres.get("deposits", []):
+        (r,), (c,) = to_px(d["px"])
+        if not (0 <= r < ny and 0 <= c < nx):
+            continue
+        d = dict(d)
+        if d["form"] == "placer" and len(rr) and not river[int(r), int(c)]:
+            j = int(np.argmin((rr - r) ** 2 + (cc - c) ** 2))
+            if np.hypot(rr[j] - r, cc[j] - c) * res <= 4 * pres_km:
+                r, c = rr[j] + 0.5, cc[j] + 0.5
+        d["px"] = [round(float(r), 2), round(float(c), 2)]
+        if d.get("pipes_px"):
+            pr, pc = to_px(d["pipes_px"])
+            ok = (pr >= 0) & (pr < ny) & (pc >= 0) & (pc < nx)
+            d["pipes_px"] = [[round(float(a), 1), round(float(b), 1)] for a, b in zip(pr[ok], pc[ok])]
+        out.append(d)
+    return out
+
+
+def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, log=None,
+         inherit: tuple[dict, dict] | None = None) -> dict:
     """Deposits for a zoom (meta, decoded layers lay (ny, nx)) from the world's likelihoods R ({key: per cell})
-    and the run's history (the coal and salt beds' depth; None: the world's strata only)."""
+    and the run's history (the coal and salt beds' depth; None: the world's strata only). inherit: (parent zoom's
+    meta, its `resources`) for a fine zoom (PW-618): it keeps its parent's deposits that lie inside it (_inherit)
+    and re-sites only what depends on its own ground (the coal outcrop belts)."""
     from . import zoom_kernels as ZK
     from .zoom import Frame
     t0 = time.time()
@@ -289,9 +329,13 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
     }
     onshore = {k for k in KEYS if k not in ("vms", "oil", "gas", "salt", "placer_sn")}
     deposits, counts = [], {}
+    inherited = _inherit(inherit[0], inherit[1], meta, river) if inherit else None
     cell_of = np.searchsorted(np.sort(np.unique(own)), own).reshape(ny, nx)
     ncell = int(cell_of.max()) + 1
     for k in KEYS:
+        if inherited is not None:
+            counts[k] = sum(d["key"] == k for d in inherited)
+            continue
         s = np.clip(np.nan_to_num(S[k]), 0, None)
         if MODELS[k][0] not in ("placer", "seam", "bed"):  # (any ground can host one, rarely)
             s = np.maximum(s, 0.01)
@@ -319,6 +363,8 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
                               src_dep=src_dep[r, c], soil=soil[r, c], river=bool(river[r, c]), q=q[r, c],
                               beach=bool(beach[r, c]), th_evap=th_evap[r, c], p=float(p[r, c])))
             deposits.append(d)
+    if inherited is not None:
+        deposits = inherited
     # the coal measures at the surface (outcrop belts), as pixels for the map (at most ~6000)
     belts = []
     if coal_out.any():
@@ -455,20 +501,21 @@ def text_lines(res: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 # A saved zoom, in place
 # ---------------------------------------------------------------------------
-def add_to_zoom(ref, log=print) -> Path:
+def add_to_zoom(ref, log=print, world: dict | None = None) -> Path:
     """(Re)makes a saved zoom's deposits in place: zoom.json gets `resources` (deposits, outcrop belts, summary).
     The world's likelihoods are its res_* layers when it has them, else made here (with the run's history when the
-    run is stored; the world is not written)."""
+    run is stored; the world is not written). world: the loaded world, when the caller has it. Made by every
+    zoom build (zoom.zoom, zoom_fine.zoom; PW-618) unless the world has no resource layers."""
     from . import store as S
     from . import world as W
     from . import zoom as Z
     d = S.find_zoom(ref)
     meta, lay = Z.load(d, decode=True)
     sw = meta["source_world"]
-    w = W.load(S.find_world(sw["id"]))
+    w = world or W.load(S.find_world(sw["id"]))
     m = w["meta"]
-    hist = None
-    if m.get("source_run") and S.exists("run", m["source_run"]):
+    hist = S.read_history(sw["id"])  # (kept beside the world when it was made, PW-609)
+    if hist is None and m.get("source_run") and S.exists("run", m["source_run"]):
         hist = RS.history(S.find_run(m["source_run"]), float(m["t_myr"]), w["grid"], log=log)
     real = m.get("mode") == "real"  # (the world's mode, PW-695: no fantasy exotics in the real world)
     keys = [k for k in RS.KEYS if not (real and k in RS.FANTASY)]
@@ -478,7 +525,12 @@ def add_to_zoom(ref, log=print) -> Path:
         R = RS.likelihoods(w["grid"], w["layers"], m, hist)
         if real:
             R = {k: (np.zeros(w["grid"].n) if k in RS.FANTASY else v) for k, v in R.items()}
-    out = site(w, meta, lay, R, hist, log=log)
+    inherit = None
+    if meta.get("parent_zoom"):  # (a fine zoom: its parent's deposits that lie inside, PW-618)
+        pmeta = json.loads((S.find_zoom(meta["parent_zoom"]["id"]) / "zoom.json").read_text())
+        if pmeta.get("resources"):
+            inherit = (pmeta, pmeta["resources"])
+    out = site(w, meta, lay, R, hist, log=log, inherit=inherit)
     out["created"] = time.strftime("%Y-%m-%d %H:%M:%S")
     out["history"] = hist is not None
     out["legend"] = [{"key": k, "name": n, "group": gp, "color": c, "model": md, "form": MODELS[k][0]}

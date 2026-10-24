@@ -11,6 +11,7 @@ both, e.g. for tests). Under it:
   runs/<id>/volcanoes.json.gz    every volcano at every keyframe (write_volcanoes)
   worlds/<id>.json, <id>.txt     a full world (JSON layers; the grid by reference)
   worlds/highlights/<id>.json    highlights.py cache for world <id>
+  worlds/history/<id>.npz        resources.history pass of world <id> (its zooms' deposits)
   zooms/<id>/zoom.json           a regional zoom: meta + layer specs
   zooms/<id>/layers/<name>.bin   one layer, (ny, nx)
   grids/L<level>.json            grid geometry, shared by every run and world at that level
@@ -107,6 +108,28 @@ def grids_dir() -> Path:
 def highlights_path(world_id: str) -> Path:
     """highlights.py's cache for a world (a subfolder: world listings don't see it)."""
     return worlds_dir() / "highlights" / f"{world_id}.json"
+
+
+def history_path(world_id: str) -> Path:
+    """The resource history pass kept for a world (resources.history; PW-609/618): its zooms' deposits read it
+    instead of tracing 600 Myr of keyframes again (a subfolder: world listings don't see it)."""
+    return worlds_dir() / "history" / f"{world_id}.npz"
+
+
+def write_history(world_id: str, hist: dict) -> None:
+    p = history_path(world_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(p.stem + ".tmp.npz")
+    np.savez_compressed(tmp, **{k: np.asarray(v) for k, v in hist.items()})
+    tmp.replace(p)
+
+
+def read_history(world_id: str) -> dict | None:
+    p = history_path(world_id)
+    if not p.exists():
+        return None
+    with np.load(p) as z:
+        return {k: (z[k].item() if z[k].ndim == 0 else z[k]) for k in z.files}
 
 
 def new_id() -> str:
@@ -626,7 +649,7 @@ def delete(kind: str, item_id: str) -> list[Path]:
     p = path_of(kind, item_id)
     gone = []
     if kind == "world":
-        for q in (p, p.with_suffix(".txt"), highlights_path(item_id)):
+        for q in (p, p.with_suffix(".txt"), highlights_path(item_id), history_path(item_id)):
             if q.exists():
                 q.unlink()
                 gone.append(q)
@@ -661,6 +684,7 @@ def orphans() -> list[Path]:
         if not exists("world", wid) or (pz and not exists("zoom", pz)):
             out.append(p.parent)
     out += [p for p in sorted((worlds_dir() / "highlights").glob("*.json")) if not exists("world", p.stem)]
+    out += [p for p in sorted((worlds_dir() / "history").glob("*.npz")) if not exists("world", p.stem)]
     return out
 
 

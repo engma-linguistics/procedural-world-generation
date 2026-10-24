@@ -869,4 +869,6 @@ def add_to_world(ref: str, use_history: bool = True, log=print, mode: str | None
     m["mode"] = mode
     m["resources"] = {"history": hist is not None, "keyframes": hist["frames"] if hist else 0,
                       "created": time.strftime("%Y-%m-%d %H:%M:%S")}
+    if hist is not None:
+        w["history"] = hist  # (saved beside the world: its zooms' deposits read it, PW-618)
     return W.save(w, w["name"], path.stem)

@@ -63,9 +63,9 @@ def load_tree(ref: str, mode: str | None = None) -> SP.Tree:
 
 
 def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recent_kyr: float = 30.0,
-        name: str | None = None, progress=lambda f, msg: None) -> Path:
+        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0) -> Path:
     tz, now0, world = R.resolve(ref)
-    ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr), world_ref=world)
+    ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr, climate_every=climate_every), world_ref=world)
     goods = None
     if world and tree.uses:
         progress(0.0, "the land's goods (game attributes, resources, coasts)")

@@ -19,17 +19,34 @@ ASCII maps. That's the conversation-friendly view.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
 import time
 from pathlib import Path
 
 import numpy as np
 
-from . import climate, coast, coastal, gameattrs, humanuse, hydrology, ocean, satellite, soils, vegetation
+from . import climate, coast, coastal, coastform, gameattrs, humanuse, hydrology, ocean, satellite, soils, vegetation
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, is_land, latlon, world_land, xyz
 from .grid import Grid, build_grid
+
+
+# Whether finish() makes the resource layers (PW-609): `--no-resources` turns them off for the commands that make
+# worlds (a context variable, so it reaches finish() through slice, finish and the server alike)
+_RESOURCES = contextvars.ContextVar("resources", default=True)
+
+
+@contextlib.contextmanager
+def resources_off():
+    """Within this block finish() leaves the resource layers out (`planet resources <world>` adds them later)."""
+    tok = _RESOURCES.set(False)
+    try:
+        yield
+    finally:
+        _RESOURCES.reset(tok)
 
 
 def generate(method: str, seed: int = 0, level: int = 5, erosion: float = 1.0,
@@ -204,7 +221,22 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "generated_in_s": round(time.time() - t0, 2),
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
-    return {"grid": grid, "layers": layers, "meta": meta}
+    # the coast-form layers (coastform.py, PW-097, PW-620) and, for a world from a stored run, the resource layers
+    # with the run's history pass (resources.py, PW-155, PW-609); the history is kept beside the world (save()) for
+    # its zooms' deposits (PW-618)
+    layers.update(coastform.world_layers(grid, layers, meta))
+    meta["coast"] = {"created": meta["created"]}
+    hist = None
+    sr = meta.get("source_run")
+    if _RESOURCES.get() and sr and S.exists("run", sr) and "landform" in layers:
+        from . import resources
+        hist = resources.history(S.find_run(sr), float(meta["t_myr"]), grid)
+        mode = str(meta.get("mode") or "fantasy")
+        layers.update(resources.world_layers(grid, layers, meta, hist, mode))
+        meta["mode"] = mode
+        meta["resources"] = {"history": True, "keyframes": hist["frames"], "created": meta["created"]}
+    meta["generated_in_s"] = round(time.time() - t0, 2)
+    return {"grid": grid, "layers": layers, "meta": meta, **({"history": hist} if hist is not None else {})}
 
 
 # ---------------------------------------------------------------------------
@@ -456,6 +488,8 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
     path = S.path_of("world", file_id)
     S.write_atomic(path.with_suffix(".txt"), text_report(world, summary))
+    if world.get("history") is not None:  # (the resources' history pass, for the zooms' deposits)
+        S.write_history(file_id, world["history"])
     S.write_atomic(path, text)  # (last: a world is listed once its .json is there)
     update_index()
     return path

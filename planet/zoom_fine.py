@@ -2035,4 +2035,6 @@ def zoom(parent_ref: str, lat: float, lon: float, size_km: float | None = None, 
     world = W.load(Z.find_world(pmeta["source_world"]["id"]))
     z = build((pmeta, play), world, lat, lon, size_km, res_km, seed, log=log)
     with S.lock(S.zooms_dir(), fine_id(pmeta["id"], lat, lon, size_km, res_km, seed)):
-        return save(z, pmeta, lat, lon, size_km, res_km, seed)
+        out = save(z, pmeta, lat, lon, size_km, res_km, seed)
+    Z.add_deposits(out, world)  # (its parent's deposits that lie inside it, PW-618)
+    return out

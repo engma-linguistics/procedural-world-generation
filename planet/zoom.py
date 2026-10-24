@@ -166,6 +166,7 @@ from . import vegetation
 from . import zoom_vegetation as ZVG
 from . import zoom_peoples as ZP
 from . import zoom_coastal as ZCL
+from . import zoom_coast as ZC
 from . import zoom_falls as ZFL
 from .geo import R_KM, latlon, xyz
 from .images import write_png
@@ -1340,10 +1341,19 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
                 barrier = on & (din > 0) & (din <= bw + 0.1 * res) & ~inlet
                 ind_n = np.where(band | inlet, np.minimum(ind_n, -0.05), ind_n)
                 log(f"  coastal plain: barrier {int(barrier.sum())} px, lagoons {int((band | inlet).sum())} px")
+    # Barrier islands off the world's barrier coasts (zoom_coast.islands, PW-622), here so the rivers, the satellite
+    # view, the coastal life and the harbours all see them: a strip of low sand, the shallow lagoon behind it
+    isl = ZC.islands(world, Pk, P, ind_n, e_land, e_sea, lagoon | barrier | (ind_n == -0.05), sel, nx, ny, res, S)
+    bi_island = isl["island"]
+    ind_n = np.where(bi_island, np.maximum(ind_n, 0.4), np.where(isl["lagoon"], np.maximum(ind_n, -0.12), ind_n))
+    if bi_island.any():
+        log(f"  barrier islands: {int(bi_island.sum())} px, lagoons {int(isl['lagoon'].sum())} px, inlets {int(isl['inlet'].sum())} px")
     land = ind_n > 0
     ramp_l = smoothstep(0.0, 0.55, ind_n)
     ramp_s = smoothstep(0.0, 0.45, -ind_n)
     base = np.where(land, e_land * ramp_l, e_sea * ramp_s)
+    if bi_island.any():
+        base = np.where(bi_island, ZC.ISLAND_M * (0.5 + 0.5 * isl["u"]), base)
 
     # --- detail ----------------------------------------------------------
     lam_f = 0.8 * sp
@@ -1360,11 +1370,12 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     detail = 2.2 * np.tanh(detail / 2.2) + 0.06 * tex  # no absurd spikes
     amp_land = (rug * (0.36 * np.maximum(base, 0) + 0.3 * np.nan_to_num(rel) + 25) + 12) * (1 - 0.9 * wD)
     amp_sea = (5 + 0.08 * np.abs(base)) * (1 - 0.7 * wS)
-    taper = np.where(land, smoothstep(0.0, 0.35, ind_n), smoothstep(0.0, 0.25, -ind_n))
+    taper = np.where(land, smoothstep(0.0, 0.35, ind_n), smoothstep(0.0, 0.25, -ind_n)) * ~bi_island
     h = base + taper * np.where(land, amp_land, amp_sea) * detail
 
     # soft floor/ceiling at the coast (the delta plain and prodelta get a much harder one)
     s_land, s_sea = 15.0 * (1 - 0.95 * wD), 15.0 * (1 - 0.9 * wS)
+    s_land, s_sea = np.where(bi_island, 0.4, s_land), np.where(isl["lagoon"], 0.5, s_sea)  # (low sand, shallow lagoon)
 
     def clamp(hh):
         return np.where(land, 0.5 + softplus(hh - 0.5, s_land), -0.5 - softplus(-0.5 - hh, s_sea))
@@ -3041,6 +3052,8 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         h, discharge, lf_overlay = fz["h"], np.where(land, fz["q"], 0.0), fz["stats"]
         lf_lake = lf_lake | fz["pond"]
         lake_depth = np.where(fz["pond"], fz["pond_depth"], lake_depth)
+    if bi_island.any():  # (the barrier islands stand 1.5-3 m: the mean correction and the landscape pass had lifted them)
+        h = np.where(bi_island, ZC.ISLAND_M * (0.5 + 0.5 * isl["u"]), h)
     # --- shoreface (zoom_coastal, PW-327): the sea floor shoals to the shore
     # along Dean's profile, then the inner shelf, where the shore isn't rocky;
     # each cell's mean kept by deepening the sea floor further out
@@ -3113,12 +3126,13 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
     lake_kind[lf_lake] = np.where(lf_sink[lf_lake], 2, 1)
     lake_kind[lf_sink & ~lf_lake & ~lake] = 3
     glac_form, glac_loess, glac_stats = ZL.glacial_layers(lf, h, fjord, lf_lake, region, nx, ny, res)
+    bi_layer = np.where(isl["island"], 1, np.where(isl["lagoon"], 2, np.where(isl["inlet"], 3, 0))).astype(np.uint8)
     (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py, clim_f, w_cp,
      lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own, own_s, barrier, rapids_lift,
-     lake_kind, glac_form, glac_loess) = (
+     lake_kind, glac_form, glac_loess, bi_layer) = (
         crop(a) for a in (h, lake, lf_lake, sea, land, plunge, glacier, ice_th, cov_f, precip, jul_f, P, Pk, px, py,
                           clim_f, w_cp, lake_depth, discharge, area, rock_f, surf_f, form_f, tide_f, wave_f, own,
-                          own_s, barrier, rapids_lift, lake_kind, glac_form, glac_loess))
+                          own_s, barrier, rapids_lift, lake_kind, glac_form, glac_loess, bi_layer))
     if vf is not None:
         vf["list"] = [v for v in vf["list"] if max(abs(v["x_km"]), abs(v["y_km"])) < size_in / 2]
         vf = {k: crop(v) for k, v in vf.items()}
@@ -3305,6 +3319,7 @@ def build(world: dict, lat: float, lon: float, size_km: float = 1000.0, res_km: 
         **({"landform": form_f} if form_f is not None else {}),
         **({"glacial_form": glac_form, "loess": glac_loess.astype(np.float32)} if glac_stats else {}),
         "wetland": wetland,
+        "barrier_island": bi_layer,
         "coastal_life": cz["layer"],
         # vegetation (decision 9A: the summary layers; zoom_vegetation.fractions recomputes each type's cover)
         **veg_l,
@@ -3473,6 +3488,7 @@ LAYER_DOC = {
     "coastal_life": ("enum", "coastal and shallow-sea life (zoom_coastal, PW-188): 0 none, 1 coral reef, 2 kelp "
                              "forest, 3 seagrass meadow (sea); 4 mangrove, 5 salt marsh (land between the tides); "
                              "legend 'coastal_life'"),
+    "barrier_island": ("enum", "1 barrier island, 2 lagoon, 3 tidal inlet (zoom_coast.islands, PW-622)"),
     "wetland": ("enum", "0 none; 1 marsh: a coastal plain's lowest wet ground near the sea and its lagoons; "
                         "2 the vegetation's wetlands (floodplains, mires, lake shores: swamp forest, marsh, bog, fen)"),
     "land_use": ("enum", "peoples' land use (zoom_peoples, PW-667; only on a zoom made with a peoples run): 0 wild, "
@@ -3700,4 +3716,16 @@ def zoom(world_ref: str, lat: float, lon: float, size_km: float = 1000.0, res_km
         peoples = A["id"]
     z = build(world, lat, lon, size_km, res_km, seed, iterations, log=log, peoples=A)
     with S.lock(S.zooms_dir(), zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples)):
-        return save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples)  # (one writer per zoom folder)
+        out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples)  # (one writer per zoom folder)
+    ZC.add_to_zoom(out.name, world=world)  # (the coast layers and features, PW-097: the islands are in the terrain already)
+    add_deposits(out, world)
+    return out
+
+
+def add_deposits(zoom_dir: Path, world: dict) -> None:
+    """The zoom's mineral deposits (zoom_resources.py, PW-610/618), a step of every zoom build: sited from the
+    world's resource layers and the history kept with it (~1 s). Left out when the world has no resource layers
+    (`--no-resources`, or a world not from a run)."""
+    if W._RESOURCES.get() and "resource" in world["layers"]:
+        from . import zoom_resources as ZR
+        ZR.add_to_zoom(zoom_dir.name, log=lambda *a: None, world=world)

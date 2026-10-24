@@ -2,7 +2,7 @@
 id: PW-622
 title: "Zoom barrier islands as terrain: opt-in add-on (--terrain) or a step of planet zoom?"
 type: task
-status: todo
+status: done
 parent: PW-097
 milestone: v2
 subsystem: zoom
@@ -30,5 +30,6 @@ docs/review/coast_detail/zoom_ccf03a_barrier.png.
 - [ ] lagoons count as sheltered water in humanuse harbours
 
 ## Updates
+- 2026-10-23: Status todo -> done. fun5: B built. zoom.build makes the barrier islands (zoom_coast.islands, 1.5-3 m) in the coastline step, before rivers, vegetation, coastal life, harbours and the satellite view; planet zoom then runs the coast layers. Lagoons shelter harbours through the fetch but are too shallow to rate (draft-lagoon-harbour-depth); spits are still after the fact (draft-zoom-shore-forms-in-build).
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): B: barrier islands as a step of planet zoom before rivers, satellite, coastal life and harbours (zoom goldens move, OK'd).
 - 2026-10-23: Created from inbox draft draft-zoom-barrier-terrain.md (found by coast-detail).
