@@ -3,7 +3,7 @@ id: PW-788
 title: Showcase README for 067778, a12762, 6909cb still describes dairy as fresh-only (written before PW-784)
 type: task
 status: todo
-parent: null
+parent: PW-692
 milestone: v2
 subsystem: docs
 effort: xs
