@@ -35,7 +35,7 @@ land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
-body = { smell = "keen", raw_meat = true }  # reptiles flick their tongues to smell; swallow prey raw
+body = { smell = "keen", raw_meat = true, thermo = "ecto" }  # reptiles flick their tongues to smell; swallow prey raw; ectotherms: appetite and activity follow the weather (feast and fast)
 origin = "root"
 at = "12 Myr"
 temp_c = [18, 30]
@@ -91,7 +91,7 @@ traits = ["swims"]
 [[lineage]]
 id = "tortle"
 name = "tortles"
-body = { cellulose = true, diet = "herbivore" }  # tortoise-like hindgut fermenters of leaves and weed
+body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["reptilian"]
 at = "900 kyr"
 density = 1
@@ -105,7 +105,7 @@ traits = ["swims", "coastal"]
 [[lineage]]
 id = "dragonborn"
 name = "dragonborn"
-body = { smell = "keen" }  # dragon-blooded predators
+body = { smell = "keen", suction = "poor" }  # dragon-blooded predators; dragonborn: a poor sucker (lapping and tipping, intake 4.3)
 parents = ["draconic"]
 at = "300 kyr"
 density = 2
@@ -129,7 +129,7 @@ rain_mm = [400, 2500]
 [[lineage]]
 id = "feline"
 name = "feline stem"
-body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"] }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison
+body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular" }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison; cats: tearing teeth, active at dawn and dusk
 parents = ["mammalian"]
 at = "4 Myr"
 temp_c = [16, 30]
@@ -253,6 +253,7 @@ traits = ["hardy", "mountain", "insular"]
 
 [[lineage]]
 id = "hill_giant"
+body = { gut = "foregut" }  # the ancestral fermenting gut
 name = "hill giants"
 parents = ["true_giant"]
 at = "900 kyr"
@@ -564,6 +565,7 @@ traits = ["subterranean", "insular"]
 
 [[lineage]]
 id = "sea_elf"
+body = { fire = false }  # deep folk cook without fire: vents, brine, fermentation
 name = "sea elves"
 parents = ["elf"]
 at = "8 kyr"
@@ -590,7 +592,7 @@ traits = ["miner"]
 [[lineage]]
 id = "triton"
 name = "tritons (from the plane of water)"
-body = { capsaicin = false, diet = "carnivore", raw_meat = true }  # sea folk: raw fish
+body = { capsaicin = false, diet = "carnivore", raw_meat = true, fire = false }  # sea folk: raw fish; sea folk cook without fire: brine, fermentation, drying
 origin = "arrival"
 at = "6 kyr"
 density = 1
@@ -652,7 +654,7 @@ sites = 3
 [[lineage]]
 id = "avian"
 name = "avian stem"
-body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"] }  # birds: no sweet receptor, immune to capsaicin, poor smell
+body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"], thermo = "endo", teeth = "beak", suction = "none" }  # birds: no sweet receptor, immune to capsaicin, poor smell; birds: warm-blooded, toothless beaked, they scoop and tip the head back to drink
 origin = "root"
 at = "6 Myr"
 temp_c = [10, 28]

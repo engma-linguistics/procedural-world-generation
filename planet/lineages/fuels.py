@@ -125,6 +125,8 @@ def derive(run_dir: Path) -> dict:
         top = sorted(mixl.items(), key=lambda x: -x[1])
         by_line[ln["id"]] = {"people": int(w.sum()), **{f: round(v, 3) for f, v in mixl.items()}, "lead": top[0][0], "lead_share": round(top[0][1], 3),
                              "sentence": sentence(top)}
+        if (ln.get("body") or {}).get("fire") is False:  # (a people that cooks without fire, body.fire = false, PW-726: the land's fuels are not theirs)
+            by_line[ln["id"]].update({"lead": None, "lead_share": 0.0, "fire": False, "sentence": "It cooks without fire."})
     return {"layers": sh, "lead": lead, "summary": {"world": world, "by_biome": by_biome, "by_line": by_line,
                                                    "lead_cells": {FUELS[i]: int((lead == i).sum()) for i in range(len(FUELS))}}}
 

@@ -322,6 +322,27 @@ def cmd_fuels(args):
         print(ref, "\n".join(FU.lines_for_report(sm)))
 
 
+def cmd_brief(args):
+    """The culinary brief of a peoples run's region or people at an era (PW-728): JSON and Markdown."""
+    from .lineages import brief as BR
+    region = None
+    if args.region:
+        v = [float(x) for x in args.region.split(",")]
+        if len(v) not in (2, 3):
+            raise SystemExit("--region lat,lon[,radius_km]")
+        region = (v[0], v[1], v[2] if len(v) == 3 else BR.DEFAULT_RADIUS_KM)
+    ctx = BR.Ctx(args.run)
+    b = BR.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx)
+    if args.out:
+        out = Path(args.out)
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f"{args.name}.json").write_text(BR.dumps(b))
+        (out / f"{args.name}.md").write_text(BR.markdown(b))
+        print(out / f"{args.name}.json", out / f"{args.name}.md")
+    else:
+        print(BR.dumps(b) if args.format == "json" else BR.markdown(b))
+
+
 def cmd_landuse(args):
     """Adds (or redoes) the anthropogenic land-cover layers of peoples runs in place (PW-662)."""
     from .lineages import landuse as LU
@@ -602,6 +623,16 @@ def main():
                     "(PW-599; 0: the keyframe's rain scaled with the warming, as before)")
     lg.add_argument("--name", "-n")
     lg.set_defaults(func=cmd_lineages)
+
+    br = sub.add_parser("brief", help="the culinary brief of a peoples run's region or people at an era: JSON and Markdown (PW-728)")
+    br.add_argument("run", help="a peoples run id")
+    br.add_argument("--region", metavar="LAT,LON[,RADIUS_KM]", help="a circle (default radius 500 km)")
+    br.add_argument("--people", metavar="ID", help="a people's range (the cells where it is the lead or second people) in place of --region")
+    br.add_argument("--era", type=float, default=0.0, help="kyr ago (default 0: the present); the nearest stored frame")
+    br.add_argument("--format", choices=("md", "json"), default="md", help="what to print without --out")
+    br.add_argument("--out", help="write NAME.json and NAME.md into this directory instead of printing")
+    br.add_argument("--name", default="brief", help="file name stem with --out")
+    br.set_defaults(func=cmd_brief)
 
     lu = sub.add_parser("landuse", help="add or redo a peoples run's anthropogenic land cover (cropland, pasture, burned "
                                         "grassland, managed woods, settlement density; PW-662) in place")

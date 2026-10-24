@@ -154,6 +154,98 @@ def goods(world_ref: str | None) -> dict | None:
         return None
     if world_ref in _CACHE:
         return _CACHE[world_ref]
+    key = _disk_key(world_ref)
+    out = _disk_read(world_ref, key)
+    if out is not None:
+        _CACHE[world_ref] = out
+        return out
+    out = _make_goods(world_ref)
+    _disk_write(world_ref, key, out)
+    _CACHE[world_ref] = out
+    return out
+
+
+def _disk_key(world_ref: str) -> str:
+    """Names the state the goods were made from: the world file (size, mtime), the run its resources trace (same),
+    and the source of the modules that make the layers (planet/*.py and this file; the other lineages modules don't
+    enter), so a changed world or changed code never reads an old cache."""
+    import hashlib
+    from pathlib import Path
+    from .. import store as S
+    h = hashlib.sha256()
+    wp = S.find_world(world_ref)
+    st = wp.stat()
+    h.update(f"{wp.name}:{st.st_size}:{st.st_mtime_ns}".encode())
+    try:
+        src = S.read_header(wp, keys=("meta",)).get("meta") or {}
+    except (OSError, ValueError):
+        src = {}
+    rid = src.get("source_run")
+    if rid and S.exists("run", rid):
+        rj = S.find_run(rid) / "run.json"
+        rs = rj.stat()
+        h.update(f"{rid}:{rs.st_size}:{rs.st_mtime_ns}".encode())
+    hp = S.history_path(wp.stem)
+    if hp.exists():
+        hs = hp.stat()
+        h.update(f"h:{hs.st_size}:{hs.st_mtime_ns}".encode())
+    h.update(S.code_digest().encode())
+    h.update(Path(__file__).read_bytes())  # (this file's own source)
+    return h.hexdigest()
+
+
+def _disk_read(world_ref: str, key: str):
+    from .. import store as S
+    p = S.goods_path(S.find_world(world_ref).stem)
+    if not p.exists():
+        return None
+    try:
+        with np.load(p, allow_pickle=False) as z:
+            if str(z["_key"]) != key:
+                return None
+            out, raw = {}, {}
+            for k in z.files:
+                if k == "_key":
+                    continue
+                elif k.startswith("raw/"):
+                    raw[k[4:]] = z[k]
+                elif k == "_made":
+                    out[k] = [str(x) for x in z[k]]
+                elif k == "_missing":
+                    out[k] = [str(x) for x in z[k]]
+                elif k == "_s":
+                    out[k] = float(z[k])
+                else:
+                    out[k] = z[k]
+            out["_raw"] = raw
+            return out
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _disk_write(world_ref: str, key: str, out: dict) -> None:
+    from .. import store as S
+    p = S.goods_path(S.find_world(world_ref).stem)
+    arrs = {"_key": np.array(key)}
+    for k, v in out.items():
+        if k == "_raw":
+            arrs.update({f"raw/{a}": np.asarray(b) for a, b in v.items()})
+        elif k in ("_made", "_missing"):
+            arrs[k] = np.array(v, dtype=str)
+        elif k == "_s":
+            arrs[k] = np.array(float(v))
+        else:
+            arrs[k] = np.asarray(v)
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.stem + ".tmp.npz")
+        np.savez(tmp, **arrs)
+        tmp.replace(p)
+    except OSError:
+        pass
+
+
+def _make_goods(world_ref: str) -> dict:
     from .. import coastform as CF
     t0 = time.time()
     g, L, made = _layers(world_ref)
@@ -210,7 +302,6 @@ def goods(world_ref: str | None) -> dict | None:
     out["_made"] = made
     out["_missing"] = missing
     out["_s"] = round(time.time() - t0, 1)
-    _CACHE[world_ref] = out
     return out
 
 

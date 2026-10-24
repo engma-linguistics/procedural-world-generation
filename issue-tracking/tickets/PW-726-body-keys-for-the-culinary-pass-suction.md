@@ -38,4 +38,5 @@ fact sheets for the rest.
 - [ ] Validated in `spec.parse_body`.
 
 ## Updates
+- 2026-10-24: fun8: nine body keys (suction teeth gut salt display shed hours thermo fire) validated in spec.parse_body, inherited key by key, in the story notes, the workbench dropdowns, the brief; fire=false honoured by fuels.py (It cooks without fire). Preset (dnd.toml) set where the analogue is clear: reptilian ecto, avian endo+beak+no suction, dragonborn poor suction, tortle beak, feline conical+crepuscular, hill giants foregut, triton and sea elves no fire. The ruminant folk (display, shed, salt) wait for the owner preset (PW-730).
 - 2026-10-24: Created from inbox draft draft-body-keys-for-the-culinary-world.md (found by culinary-intake).

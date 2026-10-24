@@ -1,0 +1,544 @@
+{
+ "brief_version": 1,
+ "run": "b18a68",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@fc4cf82b9b",
+ "mode": "fantasy",
+ "seed": 7002,
+ "code": {
+  "commit": "092c53e",
+  "dirty": true,
+  "planet_src_sha": "53acb4a3b87ca8ce"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 4.5,
+  "lon": 54.1,
+  "radius_km": 500.0,
+  "basis": "a circle",
+  "cells": 274,
+  "land_cells": 274,
+  "area_mkm2": 0.853,
+  "land_mkm2": 0.853,
+  "landmass": "the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Cfa humid subtropical": 0.387,
+   "Cwb subtropical highland, dry winter": 0.343,
+   "Cwa subtropical, dry winter": 0.095,
+   "Cfb oceanic": 0.073,
+   "Af tropical rainforest": 0.058,
+   "Csa Mediterranean, hot summer": 0.036
+  },
+  "temperature_c": 17.847,
+  "precipitation_mm": 3189.175,
+  "tree_cover": 80.73,
+  "elevation_m": {
+   "mean": 1520.639,
+   "max": 2726.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "temperate forest": 0.274,
+   "tropical seasonal forest": 0.201,
+   "temperate grassland": 0.146,
+   "savanna": 0.142,
+   "temperate rainforest": 0.128,
+   "tropical rainforest": 0.109
+  },
+  "soil": {
+   "brown forest soil": 0.299,
+   "leached red tropical soil": 0.292,
+   "red clay forest soil": 0.19,
+   "thin stony soil": 0.182,
+   "ash-grey podzol": 0.026,
+   "young brown soil": 0.011
+  },
+  "fertile": {
+   "mean_0_4": 0.934,
+   "share_good": 0.0
+  },
+  "rivers": {
+   "navigable": {
+    "small boats": 0.529,
+    "not navigable": 0.409,
+    "barges": 0.062
+   },
+   "max_flow": 143.6,
+   "fresh_water_km_mean": 0.0,
+   "lake_share": 0.0
+  },
+  "coast": {},
+  "harbour_best": "none",
+  "growing_months": 11.748,
+  "coldest_month_c": 17.214,
+  "warmest_month_c": 21.398,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 21.383,
+   "temperature_jul_c": 17.237,
+   "precipitation_jan_mm": 1928.307,
+   "precipitation_jul_mm": 4035.051
+  },
+  "fire_months": 1.073,
+  "flood_month": 7,
+  "mud_months": 4.653,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.0,
+   "peat_depth_m": 0.665
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.636,
+  "charcoal": 0.085,
+  "dung": 0.058,
+  "peat": 0.184,
+  "straw": 0.009,
+  "grass": 0.024,
+  "drift": 0.0,
+  "coal": 0.0,
+  "lead": {
+   "wood": 0.85,
+   "peat": 0.142,
+   "straw": 0.004
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.64,
+  "grazing": 0.236,
+  "timber": 0.553,
+  "game": [
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "fowl",
+    "label": "fowl",
+    "range_share": 0.201
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "roots",
+    "label": "yams, taro and cassava",
+    "range_share": 0.288
+   },
+   {
+    "id": "banana",
+    "label": "bananas and plantains",
+    "range_share": 0.208
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 0,
+  "river_runs": null,
+  "kelp": null,
+  "reef": null,
+  "seagrass": null,
+  "salt_marsh": null,
+  "mangrove": null,
+  "upwelling": null,
+  "seals": null,
+  "seabirds": null,
+  "sst_c": null,
+  "tide_range_m": null,
+  "good_coral": 0.0,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.0,
+  "good_storm_coast": 0.0,
+  "shelf": null
+ },
+ "salt": null,
+ "crops": [
+  {
+   "id": "banana",
+   "label": "bananas and plantains",
+   "known_share": 0.398,
+   "since_kyr": 9.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.4,
+    "lat": -2.53,
+    "lon": 60.44,
+    "people": "goblin"
+   }
+  },
+  {
+   "id": "roots",
+   "label": "yams, taro and cassava",
+   "known_share": 0.453,
+   "since_kyr": 8.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 11.2,
+    "lat": -15.11,
+    "lon": 55.45,
+    "people": "human"
+   }
+  }
+ ],
+ "animals": [
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 1.0,
+   "since_kyr": 15.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 17.6,
+    "lat": -53.45,
+    "lon": 97.14,
+    "people": "human_arctic"
+   }
+  },
+  {
+   "id": "fowl",
+   "label": "fowl",
+   "known_share": 1.0,
+   "since_kyr": 7.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 7.3,
+    "lat": 2.06,
+    "lon": 57.1,
+    "people": "tabaxi"
+   }
+  },
+  {
+   "id": "cattle",
+   "label": "cattle",
+   "known_share": 1.0,
+   "since_kyr": 5.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 11.3,
+    "lat": 39.52,
+    "lon": 9.39,
+    "people": "human"
+   }
+  },
+  {
+   "id": "caprine",
+   "label": "sheep and goats",
+   "known_share": 1.0,
+   "since_kyr": 5.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.8,
+    "lat": 35.61,
+    "lon": 13.2,
+    "people": "human"
+   }
+  },
+  {
+   "id": "horse",
+   "label": "horses",
+   "known_share": 1.0,
+   "since_kyr": 1.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 4.5,
+    "lat": 40.45,
+    "lon": 16.02,
+    "people": "human_herder"
+   }
+  }
+ ],
+ "peoples": {
+  "peopled_cells": 274,
+  "empty_share": 0.0,
+  "others_together": 0.115,
+  "list": [
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 0.54,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": []
+    }
+   },
+   {
+    "id": "kenku",
+    "name": "kenku",
+    "share": 0.226,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": false,
+     "milk": false,
+     "capsaicin": false,
+     "bitter": "low",
+     "smell": "low",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [
+      "alliums",
+      "theobromine"
+     ]
+    }
+   },
+   {
+    "id": "tabaxi",
+    "name": "tabaxi",
+    "share": 0.07,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": false,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "keen",
+     "diet": "obligate_carnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [
+      "alliums",
+      "theobromine"
+     ]
+    }
+   },
+   {
+    "id": "bugbear",
+    "name": "bugbears",
+    "share": 0.023,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "low",
+     "smell": "keen",
+     "diet": "carnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": []
+    }
+   },
+   {
+    "id": "halfling",
+    "name": "halflings",
+    "share": 0.015,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": []
+    }
+   },
+   {
+    "id": "hobgoblin",
+    "name": "hobgoblins",
+    "share": 0.011,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "low",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": []
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "human",
+    "ring_cells": 436,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "tabaxi",
+    "ring_cells": 224,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "kenku",
+    "ring_cells": 101,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "hobgoblin",
+    "ring_cells": 77,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "cloud_giant",
+    "ring_cells": 54,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "dwarf",
+    "ring_cells": 46,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "goliath",
+    "ring_cells": 33,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "bugbear",
+    "ring_cells": 19,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 7.3,
+   "kind": "animals",
+   "text": "fowl are tamed by the tabaxi on the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)",
+   "km": 430
+  },
+  {
+   "kyr_ago": 8.0,
+   "kind": "group",
+   "text": "hill dwarves becomes a way of life among the dwarves (at its people's range edge (no land suits it better there))",
+   "km": 793
+  },
+  {
+   "kyr_ago": 10.4,
+   "kind": "crops",
+   "text": "bananas and plantains are first cultivated by the goblins on the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)",
+   "km": 1052
+  },
+  {
+   "kyr_ago": 200.0,
+   "kind": "split",
+   "text": "bugbears splits from greater_goblinoid (beside the parent's range (new niche))",
+   "km": 6
+  },
+  {
+   "kyr_ago": 300.0,
+   "kind": "split",
+   "text": "goliaths splits from giantkin (inside the parent's range)",
+   "km": 1060
+  },
+  {
+   "kyr_ago": 300.0,
+   "kind": "split",
+   "text": "storm giants splits from sky_giant (beside the parent's range (new niche))",
+   "km": 301
+  },
+  {
+   "kyr_ago": 400.0,
+   "kind": "split",
+   "text": "cloud giants splits from sky_giant (inside the parent's range)",
+   "km": 540
+  },
+  {
+   "kyr_ago": 400.0,
+   "kind": "split",
+   "text": "goblins splits from goblinoid (inside the parent's range)",
+   "km": 625
+  },
+  {
+   "kyr_ago": 500.0,
+   "kind": "split",
+   "text": "dwarves splits from hominid (isolated part of the parent's range)",
+   "km": 942
+  },
+  {
+   "kyr_ago": 600.0,
+   "kind": "split",
+   "text": "greater goblinoid stem splits from goblinoid (inside the parent's range)",
+   "km": 669
+  },
+  {
+   "kyr_ago": 10000.0,
+   "kind": "root",
+   "text": "mammalian stem arises (habitat)",
+   "km": 870
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "salt": "not modelled yet",
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}
