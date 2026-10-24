@@ -1,4 +1,5 @@
 ---
+id: PW-777
 title: Marine habitat K is only water temperature and a depth band; use sst, upwelling, kelp, reef and tide range, and let the coast realm hold the land end
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun17
 blocked_by: []
 relates: [PW-729, PW-775]
 refs: [planet/lineages/history.py, planet/lineages/seafood.py, planet/coastal.py, planet/lineages/samples/seven_meals.toml]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -27,3 +30,6 @@ band `elev_m` (negative metres). Known limits, each a data or small-code step if
 - The `storm_coast` [[use]] rows for the storm giants were dropped (a land good); wave power could pull them instead.
 - Cost: not measured separately (the sea realm adds the ocean cells to the spread passes of the sea lines only); see PW-775's
   measured cost note.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-marine-habitat-fidelity.md (found by fun17).

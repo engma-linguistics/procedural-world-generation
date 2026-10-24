@@ -2,7 +2,7 @@
 id: PW-775
 title: "Marine peoples v0: design note for PW-729 (coast realm first, sea realm second)"
 type: task
-status: todo
+status: done
 parent: PW-729
 milestone: v2
 subsystem: timezoom
@@ -38,5 +38,6 @@ sea lines only (few lines), so well under +10% at L7. Acceptance: land peoples' 
 line has a realm; golden unchanged.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Built in 179532d.
 - 2026-10-24: fun17 built steps 1 and 2 (realm coast and sea; planet/lineages/history.py marine_capacity, contacts.py, brief.py `sea_peoples`, brief_version 6). A preset with no marine lines is byte-identical (seven_meals on 1df1c3, runs 4271da vs e6745a); merfolk (coast, shallow shore ring) and storm giants (sea) in seven_meals and dnd. Follow-ups in drafts draft-marine-peoples-viewer-and-vents and draft-marine-habitat-fidelity.
 - 2026-10-24: Created from inbox draft draft-marine-peoples-v0-design.md (found by fun16).

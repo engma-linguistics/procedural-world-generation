@@ -1,5 +1,6 @@
 ---
-title: Marine peoples v0 follow-ups: the viewer's peoples layer at sea, and the deep folk's trench and vent habitat
+id: PW-778
+title: "Marine peoples v0 follow-ups: the viewer's peoples layer at sea, and the deep folk's trench and vent habitat"
 type: task
 status: todo
 parent: PW-729
@@ -11,6 +12,8 @@ found_by: fun17
 blocked_by: []
 relates: [PW-729, PW-775]
 refs: [planet/lineages/history.py, planet/lineages/output.py, viewer/, planet/lineages/samples/seven_meals.toml]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,6 @@ storm giants on open water, contacts and the brief's `sea_peoples`. Left out on 
   exposes ridge/arc vents at sea. Their facts (no fire, brine curing, vent intoxicant) are the culinary side's.
 - [ ] viewer: legend and hatch at sea, editor `realm` select
 - [ ] decide the deep folk's stand-in (see above)
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-marine-peoples-viewer-and-vents.md (found by fun17).
