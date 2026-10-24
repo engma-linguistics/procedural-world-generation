@@ -1538,3 +1538,51 @@ def test_presets_orc_kin_pair_farm_and_herd_and_aarakocra_taste_like_humans_but_
         assert b["sweet"] is True and b["capsaicin"] is False and b["bitter"] == "normal" and b["smell"] == "normal"
     assert max(a.bit for a in CD.TABLE) >= 32 and len({a.bit for a in CD.TABLE}) == len(CD.TABLE)
     assert {"nightshade_fruit", "cacao", "pseudograin"} <= set(CD.IDS) and all(CD.BY_ID[i].weight == 0 for i in ("cacao", "squash"))
+
+
+# ---- marine peoples (PW-775) ----------------------------------------------------------------------
+def _marine_raw(marine: bool):
+    rows = [{"id": "land", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "traits": ["coastal"]}]
+    if marine:
+        rows += [{"id": "tide", "origin": "root", "at": "25 kyr", "realm": "coast", "temp_c": [-20, 40], "traits": ["swims"]},
+                 {"id": "storm", "origin": "root", "at": "25 kyr", "realm": "sea", "temp_c": [-20, 40], "elev_m": [-3000, 0], "traits": ["swims"]}]
+    return {"meta": {"seed": 3}, "lineage": rows}
+
+
+def test_marine_realms_parse_and_reject_land_only_origins():
+    t = SP.parse(_marine_raw(True))
+    assert t.lines["tide"].realm == "coast" and t.lines["storm"].marine and not t.lines["land"].marine
+    assert SP.parse(SP.to_raw(t)).lines["tide"].realm == "coast"
+    with pytest.raises(ValueError):  # a group is a way of life on land
+        SP.parse({"lineage": [{"id": "g", "origin": "root", "at": "20 kyr"}, {"id": "h", "origin": "group", "parents": ["g"], "at": "10 kyr", "realm": "sea"}]})
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "realm": "air"}]})
+
+
+def test_marine_lines_hold_the_shore_and_the_sea_and_meet_the_land_people_on_the_coast(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(SP.parse(_marine_raw(True)), ps, tries=1)
+    env, tags = h.present()
+    k = {x: h.idx[x] for x in ("land", "tide", "storm")}
+    held = h.p >= H.EST
+    assert held[k["land"]][tags["land"]].any() and not held[k["land"]][~tags["land"]].any()
+    assert held[k["tide"]].any() and not (held[k["tide"]] & ~tags["shore"]).any()  # only the shore ring
+    assert held[k["storm"]].sum() > held[k["tide"]].sum() and not (held[k["storm"]] & env["land"]).any()  # open water too, no land
+    assert not (held[k["storm"]] & (env["elevation"] < -3700)).any()  # inside the depth band (and its soft edge)
+    pairs = {frozenset((h.lines[a].id, h.lines[b].id)) for a, b in h.contacts.pairs}
+    assert frozenset(("land", "tide")) in pairs  # the shared coast is a contact
+    assert {"land", "tide", "storm"} <= pres["lines"].keys()
+    assert all(pres["lines"][x].get("area_mkm2", 0) > 0 for x in ("tide", "storm"))
+    run = json.loads((O.save(h, res, pres, name="marine test") / "run.json").read_text())  # (the stories, homeland and layers take them)
+    assert {l["id"]: l["realm"] for l in run["meta"]["lineages"]} == {"land": "land", "tide": "coast", "storm": "sea"}
+    assert any(p["a"] in ("tide", "land") and p["b"] in ("tide", "land") for p in run["meta"]["contacts"]["pairs"])
+
+
+def test_marine_lines_leave_the_land_peoples_as_they_were(faketz):
+    """Competition stays within realms, and the animals, crops and counts are the land's: a land people's range on the
+    fake world is about the same with or without the sea lines (they only take a place in the shuffled order)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h0, _, _ = H.simulate(SP.parse(_marine_raw(False)), ps, tries=1)
+    h1, _, _ = H.simulate(SP.parse(_marine_raw(True)), ps, tries=1)
+    a, b = h0.p[h0.idx["land"]] >= H.EST, h1.p[h1.idx["land"]] >= H.EST
+    assert abs(int(a.sum()) - int(b.sum())) <= max(2, 0.05 * a.sum())

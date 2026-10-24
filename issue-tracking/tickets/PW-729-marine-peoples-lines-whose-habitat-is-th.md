@@ -39,6 +39,7 @@ visit" there anyway. The lean is A for merfolk and storm giants.
 - [ ] Land peoples' numbers unchanged.
 
 ## Updates
+- 2026-10-24: fun17 built the v0 (PW-775 steps 1 and 2): `realm = "coast" | "sea"`; land peoples unchanged (byte-identical with no marine line; within draw noise with one); the deep folk stay authored; viewer and habitat-fidelity follow-ups in drafts. Measured cost at L7: no visible change in run time (429-631 s wall under varying load, with and without marine lines).
 - 2026-10-24: fun16 did not build it; design note in draft-marine-peoples-v0-design (coast realm first, sea realm second).
 - 2026-10-24: fun14 code pointers in PW-770: K and spread are land-only; Contacts, _frame, landuse, viewer assume land presence.
 - 2026-10-24: Created from inbox draft draft-marine-peoples.md (found by culinary-intake).

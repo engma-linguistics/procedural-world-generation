@@ -73,23 +73,27 @@ class Contacts:
         self.agos.append(round(ago, 3))
         pres = (Pw >= EST) & land[None, :]
         held = (Pw >= PRESENT_OVERLAP) & land[None, :]
-        rows = [k for k in range(self.n) if pres[k].any()]
+        # a marine line (PW-775) is in contact where its sea cells touch another's: a land people's coast, or another marine line
+        # (the substrate and the incursions stay the land's: `held` and `pres` are the land cells)
+        mar = np.array([l.marine for l in h.lines])
+        pc = np.where(mar[:, None], (Pw >= EST) & ~land[None, :], pres) if mar.any() else pres
+        rows = [k for k in range(self.n) if pc[k].any()]
         src, dst = g.nbr_src, g.nbr_idx
         for x, a in enumerate(rows):
-            ea = np.flatnonzero(pres[a][src])  # (the edges out of a's cells: the edge list holds each neighbour pair both ways)
+            ea = np.flatnonzero(pc[a][src])  # (the edges out of a's cells: the edge list holds each neighbour pair both ways)
             sa, da = src[ea], dst[ea]
             for b in rows[x + 1:]:
-                edge = pres[b][da]  # (a->b edges are the border)
+                edge = pc[b][da]  # (a->b edges are the border)
                 if not edge.any():
                     continue
                 touch = np.unique(np.concatenate([sa[edge], da[edge]]))
                 both = int((held[a] & held[b]).sum())
-                small = max(1, min(int(pres[a].sum()), int(pres[b].sum())))
+                small = max(1, min(int(pc[a].sum()), int(pc[b].sum())))
                 rec = self.pairs.setdefault((a, b), {"first": ago, "series": [], "kinds": {}})
                 # the border: the cells of one people that touch the other's range without being in it (the longer side), one cell long each
                 na = np.unique(sa[edge])
                 nb = np.unique(da[edge])
-                km = max(int((~pres[b][na]).sum()), int((~pres[a][nb]).sum())) * h.cell_km
+                km = max(int((~pc[b][na]).sum()), int((~pc[a][nb]).sum())) * h.cell_km
                 rec["series"].append([round(ago, 3), int(round(km)), round(100 * both / small, 1)])
                 k = kind_of(tags, corr, touch)
                 rec["kinds"][k] = rec["kinds"].get(k, 0) + 1

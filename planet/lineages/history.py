@@ -109,7 +109,7 @@ def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = No
     return {"farmland": farm, "jungle": land & _isin(cl, [0, 1]), "steppe": land & _isin(cl, [5, 6]),
             "desert": land & _isin(cl, [3, 4]), "tundra": land & (cl == 28), "island_chain": chain,
             "hills": hills, "volcanic": volc,
-            "land": land, "coast": land & sea_nbr, "island": island, "mountain": mountain,
+            "land": land, "sea": sea, "shore": sea & _nbr(np.logical_or, env["land"][ni], grid), "coast": land & sea_nbr, "island": island, "mountain": mountain,
             "lowland": land & (elev < 500), "inland": land & ~sea_nbr, "forest": land & (trees >= 35),
             "open": land & (trees < 20) & (rain > 200), "wetland": land & (elev < 300) & (rain > 1600),
             "elev": elev, "label": lab, "sizes": sizes}
@@ -174,7 +174,10 @@ def _land_view(env: dict, tags: dict) -> dict:
 
 
 def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
-    """Carrying capacity K in [0, 1] of a line's own habitat (worked out on the land cells only)."""
+    """Carrying capacity K in [0, 1] of a line's own habitat (worked out on the land cells only; a marine line's, on its
+    realm's sea cells, marine_capacity)."""
+    if line.marine:
+        return marine_capacity(line, env, tags)
     v = _land_view(env, tags)
     li = v["li"]
     w = line.trait("widen", 1.0)
@@ -212,6 +215,28 @@ def capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
     ob = line.trait("open", 0.0)
     if ob:
         K = K * np.where(has("open"), 1.0, 1.0 - ob)
+    out = np.zeros(len(tags["land"]))
+    out[li] = np.clip(K, 0, 1)
+    return out
+
+
+def hold_mask(line: SP.Lineage, tags: dict) -> np.ndarray:
+    """The cells a line can hold at all: its realm's (land: the ice-free land; coast: the sea cells next to land, the shelf
+    and tidal flats; sea: every sea cell)."""
+    return tags["shore"] if line.realm == "coast" else tags["sea"] if line.realm == "sea" else tags["land"]
+
+
+def marine_capacity(line: SP.Lineage, env: dict, tags: dict) -> np.ndarray:
+    """K in [0, 1] of a marine line (PW-775) on its realm's cells: the water temperature (env temperature at sea) within the
+    line's comfort range, and, if it gives `elev_m`, the depth band (negative metres: [-200, 0] a shelf people). Rain, prefers and
+    avoids do not apply: a coast line holds the shore ring (the habitat is data: its temp_c and elev_m)."""
+    li = np.flatnonzero(hold_mask(line, tags))
+    w = line.trait("widen", 1.0)
+    lo, hi = line.temp_c
+    mid, half = (lo + hi) / 2, (hi - lo) / 2 * w
+    K = _soft(env["temperature"][li], mid - half, mid + half, 4.0 * w)
+    if line.elev_m:
+        K = K * _soft(env["elevation"][li], line.elev_m[0], line.elev_m[1], 600.0 * w)
     out = np.zeros(len(tags["land"]))
     out[li] = np.clip(K, 0, 1)
     return out
@@ -276,6 +301,12 @@ class History:
                 if a.id != b.id and not a.overlay and not b.overlay:
                     i, j = self.idx[a.id], self.idx[b.id]
                     self.terr[i, j] = max(0.0, ALPHA_CLOSED - self.alpha[i, j]) * same_way(a, b)
+        # marine lines (coast, sea) compete with each other, not with land peoples: they only share the coast (PW-775)
+        mar = np.array([l.marine for l in self.lines])
+        if mar.any():
+            across = mar[:, None] != mar[None, :]
+            self.alpha[across] = 0.0
+            self.terr[across] = 0.0
         # a group and its people (and its sister groups) are one people: they mix freely (GROUP_KIN, no exclusion)
         for a in self.lines:
             for b in self.lines:
@@ -439,7 +470,7 @@ class History:
                 why = "given place"
             cell = int(np.argmax(score))
             if K[cell] <= EST:
-                cell = int(np.argmax(np.where(tags["land"], K + 1e-6, 0) * noise))
+                cell = int(np.argmax(np.where(hold_mask(line, tags), K + 1e-6, 0) * noise))
                 why += " (poor habitat)"
             if line.origin == "arrival" and not line.place and self.tree.portal_mode != "off" and self.portal_cells():
                 # through the portals (PW-697): at each where the people can live within PORTAL_KM (else, within
@@ -474,7 +505,7 @@ class History:
             edge = _nbr(np.logical_or, ~P[g.nbr_idx], g)
             iso = np.where(P & (lab != big), 3.0, np.where(edge & P, 1.5, 1.0))
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
-            near = self._dilate(P, 4) & tags["land"]
+            near = self._dilate(P, 4) & hold_mask(line, tags)
             score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, 0)) * self._place_mult(line, tags) \
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
@@ -796,7 +827,7 @@ class History:
         self._hop_dt = np.zeros(len(L))
         self._mvp_dt = np.zeros(len(L))
         self._div_dt = np.zeros(len(L))
-        self._native = np.array([i for i, x in enumerate(L) if not x.overlay], np.int64)
+        self._native = np.array([i for i, x in enumerate(L) if not x.overlay and not x.marine], np.int64)  # (land peoples: the sea ones leave the animals, crops and counts as they were)
         self._nat_set = set(self._native.tolist())
         self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
@@ -901,7 +932,7 @@ class History:
                         self.p[k][over] -= r * (self.p[k][over] - room[over])
                         self.p[k][self.p[k] < EST] = 0
                 speed = l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
-                if self.animals is not None:  # riders and herders spread faster (animals.py)
+                if self.animals is not None and not l.marine:  # riders and herders spread faster (animals.py)
                     speed *= self.animals.speed_mult(k)
                 if step.epoch == "deep":
                     passes = CONVERGE
@@ -920,8 +951,14 @@ class History:
                     a0 = EXPLORE_MARGIN[0] + EXPLORE_MARGIN[1] * l.demo("explore")
                     enter = np.where(ice, 0.6 if "flies" in l.traits else 0.3, a0 + (1 - a0) * np.minimum(1, K / 0.3))
                     land_any = env["land"]
-                    spread(self.p[k], room, enter, tags["elev"], relief, sea, land_any, g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
-                    if not deep and not l.overlay and PIONEER_P > 0:
+                    if l.marine:
+                        # every cell is 'entered' by its own factor: the realm's cells by their habitat, other sea (a coast
+                        # line's open water between shores) at the sea share, the land not at all (PW-775)
+                        enter = np.where(hold_mask(l, tags), enter, np.where(tags["sea"], sea, 0.0))
+                        spread(self.p[k], room, enter, tags["elev"], 0.0, 0.0, np.ones(g.n, bool), g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
+                    else:
+                        spread(self.p[k], room, enter, tags["elev"], relief, sea, land_any, g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
+                    if not deep and not l.overlay and not l.marine and PIONEER_P > 0:
                         # pioneers: a people crowded at home still settles empty country next to its range, at the
                         # pressure of the habitat there, not of its own (competition-thinned) presence (PW-683/684)
                         src = np.where(self.p[k] >= EST, np.maximum(self.p[k], np.minimum(K, PIONEER_P)), 0.0)
@@ -930,7 +967,7 @@ class History:
                                      g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
                         fill = (new >= EST) & ~taken & (self.p[k] < EST)
                         self.p[k][fill] = new[fill]
-                if not l.overlay:
+                if not l.overlay and not l.marine:
                     how = "overland" if step.epoch == "deep" else "land bridge" if l.trait("sea", 0.0) == 0 and not (
                         step.ago <= SP.LATE_SEA_KYR and short_hop(l)) else "strait"
                     self.cross.note(l.id, self.p[k] >= EST, step.ago, how, self.events, l.label())
@@ -946,7 +983,7 @@ class History:
                         self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
                         self.crossings_n[l.id] = self.crossings_n.get(l.id, 0) + 1
                         self.cross.note(l.id, blob, step.ago, way, self.events, l.label(), gap)
-                if not l.overlay:
+                if not l.overlay and not l.marine:
                     self._mvp_dt[k] += step.dt
                     if self._mvp_dt[k] >= MVP_EVERY_KYR or deep:
                         self._viable(l, k, self._mvp_dt[k], step)
@@ -1059,9 +1096,11 @@ class History:
     def _K(self, l, env, tags, step, clip=True):
         if l.overlay and l.origin == "template":
             return np.max([self.whole(q) for q in l.parents], axis=0) * np.where(tags["land"], 1.0, 0)
-        K = capacity(l, env, tags) * self._place_mult(l, tags)
-        K = K * self._wish_near(l)
-        if self.goods is not None and step.epoch != "deep":  # (the plates have moved since the deep epochs)
+        K = capacity(l, env, tags)
+        if not l.marine:  # (the places, wishes and goods are the land's)
+            K = K * self._place_mult(l, tags)
+            K = K * self._wish_near(l)
+        if self.goods is not None and step.epoch != "deep" and not l.marine:  # (the plates have moved since the deep epochs)
             K = K * self._land_mult(l, step.ago <= HOLOCENE_KYR)
             if self.animals is not None and not l.overlay:  # herds, dogs and ploughs make more of the land
                 K = K * self.animals.k_mult(self.idx[l.id])
@@ -1209,7 +1248,7 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                                   band_km2=round(SP.BAND / d["density"], 1),
                                   by_landmass={str(int(m)): int(by[m]) for m in top if by[m] >= 1},
                                   faded_patches=h.faded.get(l.id, 0))
-    natives = np.array([not l.overlay for l in h.lines])
+    natives = np.array([not l.overlay and not l.marine for l in h.lines])  # (the land peoples: the sea ones do not mix or hold land)
     Pw = h.rollup(np.where(natives[:, None], P, 0))  # (peoples as wholes: a people mixing with its own groups is one people)
     mix = (Pw >= 0.25).sum(0) >= 2
     env = h.steps[-1].get()
@@ -1309,7 +1348,7 @@ def _niche_closeness(h: History, w, tags: dict) -> float:
 
     def hab(lid):
         ids = [lid, *h.tree.groups_of(lid)]
-        return np.any([capacity(h.tree.lines[x], env, tags) >= 0.25 for x in ids], axis=0) & tags["land"]
+        return np.any([capacity(h.tree.lines[x], env, tags) >= 0.25 for x in ids], axis=0) & (tags["land"] | tags["sea"])
     ha, hb = hab(w.a), hab(w.b)
     if not ha.any() or not hb.any():
         return 0.0
