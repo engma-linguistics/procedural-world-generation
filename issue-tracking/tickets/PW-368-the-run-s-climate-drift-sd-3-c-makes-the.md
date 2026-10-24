@@ -40,6 +40,7 @@ Lean: A for now (the cold eras' depth follows geography soundly after PW-364); B
 -300..-500 m icehouses too frequent in the viewer. A tuned parameter, so the owner's call.
 
 ## Updates
+- 2026-10-24: Lane v1-finish-6 measured option B at L6 (18 seed-draws, 300-1000 Myr): climate_drift 2 C leaves the icehouse median at 46% and raises the deep-ice share (17% of updates below -150 m vs 12%); the pass-count change (5 -> 9 of 18) is within draw noise. Not applied; see draft-icehouse-bar-late-trend-after-pw750.md.
 - 2026-10-23: Filed under the quality-pass epic PW-649 (parent PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: PW-597 triage (2026-10-23): kept. PW-584 (time-zoom drift spread at I = 0) does not cover this: it concerns the 20 kyr sea-level drift of the time zoom over plausible worlds and a test bound, while this ticket is the run's own climate drift (sd 3 C) that makes the deep cold eras. PW-584 added to relates.
 - 2026-10-16: Parked per owner (v1 reassessment 2026-10-16); impact set low so board next stops offering it.
