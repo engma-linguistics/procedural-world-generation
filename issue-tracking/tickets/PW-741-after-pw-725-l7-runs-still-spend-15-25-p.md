@@ -1,4 +1,5 @@
 ---
+id: PW-741
 title: "After PW-725, L7 runs still spend ~15-25 points more of 300-1000 Myr in an icehouse than the same seeds at L6 (new showcase: 4 of 4 seeds icier at L7, 1-2 of 4 pass vs 3 of 4)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-4
 blocked_by: []
 relates: [PW-725, PW-736, PW-460, PW-202]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-4/, docs/review/base-climate/v1-finish-3/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -41,3 +44,6 @@ eqcurve.py (v1-finish-3) on one of these runs, e.g. 27929a or 656f66 at a cold m
 - [ ] if it's the relief, decide (owner) whether L7's own peaks icing more is acceptable physics or a bias to
   remove; if it's the band, PW-460
 - [ ] re-judge the L7 pass rate on a few more draws after any fix (seed-pass-rate rule: several re-rolled draws)
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-l7-runs-still-icier-same-seeds.md (found by v1-finish-4).
