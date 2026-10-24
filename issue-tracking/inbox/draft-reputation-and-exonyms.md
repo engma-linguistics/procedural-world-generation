@@ -1,0 +1,48 @@
+---
+title: "Reputation and exonyms: what each people calls its neighbours and why (devils, demons, giant-kin, sea elves), set by conquest and contact history, kept apart from what they are"
+type: story
+status: todo
+parent: PW-692
+milestone: v2
+subsystem: timezoom
+effort: m
+impact: med
+found_by: culinary-intake
+blocked_by: []
+relates: [PW-661, PW-103]
+refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/history.py]
+---
+
+## Description
+The owner's change (proposal §4). In their world, the "infernal" and "abyssal" tieflings are antelope-like and
+cervid peoples. Popular belief made them devils and demons ("devils who came down from the western steppe and took
+over swathes of land"). The same mechanism covers the culinary repo's other outsider errors: "giant-kin" for goliaths,
+"sea elves" for deep folk, one "goblinoid menace".
+
+**Inputs per observer O and subject S:**
+- the contact record (draft-contact-history-and-interfertility-tiers);
+- events: authored `[[event]]` conquests and polities from the preset, and derived incursions (S's presence rising
+  sharply in O's cells within a few centuries; riding fronts), each with a direction from O;
+- S's visible body (the display keys of draft-body-keys-for-the-culinary-world, size, aquatic, arrival) matched
+  against a small table of folk categories (devil: horns and hooves; demon: antlers; giant-kin: size; sea elf: aquatic
+  people-shape; fae: arrival);
+- the tier.
+
+**Rules:**
+- O names S by its best-fitting category unless contact is rich and peaceful.
+- Valence from history: conquered by S → feared; ruled by S → resented; ruled S → despised; trade → exotic; barely
+  met → edge monsters.
+- A conquest's reputation fades with an e-folding of ~1.5 kyr (slower with writing, by era). Peace erodes it slowly.
+- Lumping under one name where contact is thin.
+- A people without contact borrows its best-connected neighbour's view.
+
+**Outputs:**
+- `meta.present.reputation[O][S] = {category, valence, basis, since, strength, lumped_with}`;
+- a story sentence per notable row;
+- brief rows showing what a people is next to what it is called.
+
+v0 runs on the lineage history and event anchors; v1 reads PW-661's conquests and trade.
+
+Judgement calls for the owner: the folk-category table, and the decay time.
+- [ ] On the owner's preset, humans near the conquest call the antelope folk "devils" with a conquest basis, and
+      humans who live among the cervid folk use an ordinary name.
