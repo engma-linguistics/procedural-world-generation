@@ -1,4 +1,5 @@
 ---
+id: PW-715
 title: Fine zooms keep their parent's deposits but do not re-site them at the fine scale
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun5
 blocked_by: []
 relates: [PW-618, PW-610]
 refs: [planet/zoom_resources.py, planet/zoom_fine.py, "zoom c7eff5 (fun5 test, fine zoom of 875af2)"]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,3 +26,6 @@ on its own ground. What is not done, from the PW-618 description (gap 3):
 - a deposit near the fine zoom's edge whose parent point lies just outside is missed (no halo).
 Options: A leave it (points are fine for the game use); B re-site with the same seeds at the fine resolution and match
 to the parent's deposits by key and nearest position. Lean A until the lines are wanted.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-fine-zoom-deposits-resite.md (found by fun5).

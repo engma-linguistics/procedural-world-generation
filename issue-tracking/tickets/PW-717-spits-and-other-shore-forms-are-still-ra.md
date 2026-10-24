@@ -1,4 +1,5 @@
 ---
+id: PW-717
 title: Spits and other shore forms are still raised after the fact (planet coast zoom --terrain)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun5
 blocked_by: []
 relates: [PW-622, PW-621]
 refs: [planet/zoom_coast.py, planet/zoom_shoreforms.py, planet/zoom.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -21,3 +24,6 @@ raised out of the sea with `planet coast zoom:<id> --terrain`; so a raised spit 
 (rivers end at the old shore, the satellite view shows sea). Every `planet zoom` runs `add_to_zoom` without `--terrain`.
 Options: A leave them as layers (no terrain change); B build them in `zoom.build` like the islands (zoom goldens move).
 Lean B if the owner wants spits as terrain.
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-zoom-shore-forms-in-build.md (found by fun5).
