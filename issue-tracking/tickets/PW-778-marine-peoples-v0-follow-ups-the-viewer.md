@@ -31,3 +31,4 @@ storm giants on open water, contacts and the brief's `sea_peoples`. Left out on 
 
 ## Updates
 - 2026-10-24: Created from inbox draft draft-marine-peoples-viewer-and-vents.md (found by fun17).
+- 2026-10-24: fun21: map half done in viewer/index.html: marine peoples drawn on sea cells (their colour over the ocean, plain/whole/blend layers), legend "(at sea)", panel marks "sea people, shore ring / open sea", hover card too; checked on run 104de8 (merfolk, storm giants). Editor realm select, hatch and sea area read-outs left (draft-peoples-editor-realm-select).
