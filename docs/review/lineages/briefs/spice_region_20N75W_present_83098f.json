@@ -1,0 +1,780 @@
+{
+ "brief_version": 2,
+ "run": "83098f",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@96d6644b5e",
+ "mode": "fantasy",
+ "seed": 7000,
+ "code": {
+  "commit": "aad7a33",
+  "dirty": true,
+  "planet_src_sha": "0177d486106eb63f"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 20.0,
+  "lon": -75.0,
+  "radius_km": 500.0,
+  "basis": "a circle",
+  "cells": 239,
+  "land_cells": 239,
+  "area_mkm2": 0.744,
+  "land_mkm2": 0.744,
+  "landmass": "the large island at 27\u00b0N 54\u00b0W (0.4 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Cwa subtropical, dry winter": 0.782,
+   "Aw tropical savanna": 0.188,
+   "Cwb subtropical highland, dry winter": 0.029
+  },
+  "temperature_c": 21.075,
+  "precipitation_mm": 1456.151,
+  "tree_cover_pct": 2.347,
+  "elevation_m": {
+   "mean": 691.699,
+   "max": 1909.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "savanna": 0.795,
+   "temperate grassland": 0.176,
+   "temperate forest": 0.025,
+   "tropical seasonal forest": 0.004
+  },
+  "soil": {
+   "leached red tropical soil": 0.502,
+   "cracking black clay": 0.176,
+   "red clay forest soil": 0.13,
+   "black earth": 0.079,
+   "thin stony soil": 0.059,
+   "river-laid alluvium": 0.021
+  },
+  "fertile": {
+   "mean_0_4": 1.54,
+   "share_good": 0.126
+  },
+  "rivers": {
+   "navigable": {
+    "small boats": 0.766,
+    "barges": 0.142,
+    "not navigable": 0.059,
+    "sea-going": 0.033
+   },
+   "max_flow": 78.7,
+   "fresh_water_km_mean": 0.0,
+   "lake_share": 0.0
+  },
+  "coast": {},
+  "harbour_best": "none",
+  "growing_months": 10.067,
+  "coldest_month_c": 17.916,
+  "warmest_month_c": 24.838,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 17.937,
+   "temperature_jul_c": 24.833,
+   "precipitation_jan_mm": 364.653,
+   "precipitation_jul_mm": 2170.464
+  },
+  "fire_months": 4.933,
+  "flood_month": 7,
+  "mud_months": 2.41,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.002,
+   "peat_depth_m": 0.284
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.022,
+  "charcoal": 0.005,
+  "dung": 0.549,
+  "peat": 0.064,
+  "straw": 0.076,
+  "grass": 0.204,
+  "drift": 0.0,
+  "coal": 0.011,
+  "heath": 0.0,
+  "oil": 0.0,
+  "tallow": 0.053,
+  "bone": 0.018,
+  "lead": {
+   "dung": 0.9,
+   "peat": 0.038,
+   "wood": 0.029
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.764,
+  "grazing": 0.897,
+  "timber": 0.058,
+  "game": [
+   {
+    "id": "horse",
+    "label": "horses",
+    "range_share": 0.343
+   },
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "cattle",
+    "label": "cattle",
+    "range_share": 0.987
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "wheat",
+    "label": "wheat and barley",
+    "range_share": 0.368
+   },
+   {
+    "id": "pulses",
+    "label": "lentils and peas",
+    "range_share": 0.205
+   },
+   {
+    "id": "rice",
+    "label": "rice",
+    "range_share": 0.644
+   },
+   {
+    "id": "maize",
+    "label": "maize",
+    "range_share": 0.933
+   },
+   {
+    "id": "potato",
+    "label": "potatoes and other cool tubers",
+    "range_share": 0.276
+   },
+   {
+    "id": "roots",
+    "label": "yams, taro and cassava",
+    "range_share": 0.485
+   },
+   {
+    "id": "banana",
+    "label": "bananas and plantains",
+    "range_share": 0.121
+   },
+   {
+    "id": "tree_fruit",
+    "label": "tree fruit and nuts",
+    "range_share": 1.0
+   },
+   {
+    "id": "oil_seeds",
+    "label": "oil seeds (sesame, flax, rape)",
+    "range_share": 0.686
+   },
+   {
+    "id": "chili",
+    "label": "chili-like capsicum",
+    "range_share": 0.908
+   },
+   {
+    "id": "cane",
+    "label": "sugar cane",
+    "range_share": 0.561
+   },
+   {
+    "id": "sap_sugar",
+    "label": "sap sugar (maple and birch) and beet",
+    "range_share": 0.117
+   },
+   {
+    "id": "tea",
+    "label": "tea, coffee and other infusions",
+    "range_share": 0.586
+   },
+   {
+    "id": "greens",
+    "label": "cooking greens (brassicas, leeks)",
+    "range_share": 0.883
+   },
+   {
+    "id": "alliums",
+    "label": "onions and garlic",
+    "range_share": 0.686
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 0,
+  "river_runs": 0.118,
+  "kelp": null,
+  "reef": null,
+  "seagrass": null,
+  "salt_marsh": null,
+  "mangrove": null,
+  "upwelling": null,
+  "seals": null,
+  "seabirds": null,
+  "sst_c": null,
+  "tide_range_m": null,
+  "good_coral": 0.0,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.0,
+  "good_storm_coast": 0.0,
+  "coast_fish": null,
+  "coast_shellfish": null,
+  "coast_sea_mammals": null,
+  "fish_mix": {
+   "sea": 0.0,
+   "river runs": 1.0,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {},
+  "shelf": null
+ },
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.0
+  },
+  "km_to_salt": {
+   "mean": 854,
+   "p90": 1173,
+   "max": 1330
+  },
+  "nearest_source": {
+   "sea salt": 1.0
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.0,
+  "beyond_trade_km_share": 1.0,
+  "plant_ash": 0.331,
+  "poor": true
+ },
+ "crops": [
+  {
+   "id": "pulses",
+   "label": "lentils and peas",
+   "known_share": 0.833,
+   "since_kyr": 9.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.1,
+    "lat": 20.36,
+    "lon": -80.23,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "cane",
+   "label": "sugar cane",
+   "known_share": 0.887,
+   "since_kyr": 7.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 12.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "roots",
+   "label": "yams, taro and cassava",
+   "known_share": 0.845,
+   "since_kyr": 7.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.6,
+    "lat": 9.77,
+    "lon": -79.65,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "wheat",
+   "label": "wheat and barley",
+   "known_share": 0.95,
+   "since_kyr": 6.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.7,
+    "lat": 26.38,
+    "lon": -52.77,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "greens",
+   "label": "cooking greens (brassicas, leeks)",
+   "known_share": 1.0,
+   "since_kyr": 5.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 5.5,
+    "lat": 21.32,
+    "lon": -73.83,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "alliums",
+   "label": "onions and garlic",
+   "known_share": 0.983,
+   "since_kyr": 4.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 5.2,
+    "lat": 20.99,
+    "lon": -68.06,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "foxtail_millet",
+   "label": "foxtail millet",
+   "known_share": 0.259,
+   "since_kyr": 4.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.6,
+    "lat": -37.82,
+    "lon": -72.42,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "tree_fruit",
+   "label": "tree fruit and nuts",
+   "known_share": 1.0,
+   "since_kyr": 3.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.3,
+    "lat": 25.82,
+    "lon": -54.87,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "maize",
+   "label": "maize",
+   "known_share": 0.975,
+   "since_kyr": 2.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.8,
+    "lat": 15.75,
+    "lon": -36.23,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "oil_seeds",
+   "label": "oil seeds (sesame, flax, rape)",
+   "known_share": 0.983,
+   "since_kyr": 2.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 7.0,
+    "lat": 15.72,
+    "lon": -41.77,
+    "people": "human_farmer"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "vine",
+   "label": "grapes and vines",
+   "known_share": 0.699,
+   "since_kyr": 2.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.2,
+    "lat": 27.39,
+    "lon": -48.33,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "sorghum",
+   "label": "sorghum and pearl millet",
+   "known_share": 0.757,
+   "since_kyr": 2.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 3.8,
+    "lat": 26.65,
+    "lon": -56.28,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "tea",
+   "label": "tea, coffee and other infusions",
+   "known_share": 0.983,
+   "since_kyr": 2.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 2.1,
+    "lat": 18.07,
+    "lon": -76.7,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "rice",
+   "label": "rice",
+   "known_share": 0.904,
+   "since_kyr": 1.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.3,
+    "lat": -8.02,
+    "lon": -50.21,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "potato",
+   "label": "potatoes and other cool tubers",
+   "known_share": 0.891,
+   "since_kyr": 1.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.0,
+    "lat": -36.07,
+    "lon": -67.84,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "chili",
+   "label": "chili-like capsicum",
+   "known_share": 0.929,
+   "since_kyr": 0.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": 17.05,
+    "lon": -35.33,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "coconut",
+   "label": "coconut and oil palm",
+   "known_share": 0.397,
+   "since_kyr": -0.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 4.6,
+    "lat": -3.07,
+    "lon": -79.64,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "spice_tree",
+   "label": "pepper, cinnamon and other tropical spices",
+   "known_share": 0.356,
+   "since_kyr": -0.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 3.6,
+    "lat": -11.28,
+    "lon": -95.24,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  }
+ ],
+ "animals": [
+  {
+   "id": "caprine",
+   "label": "sheep and goats",
+   "known_share": 1.0,
+   "since_kyr": 11.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 11.8,
+    "lat": 20.44,
+    "lon": -81.44,
+    "people": "human"
+   }
+  },
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 1.0,
+   "since_kyr": 1.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
+   }
+  },
+  {
+   "id": "cattle",
+   "label": "cattle",
+   "known_share": 0.31,
+   "since_kyr": -0.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   }
+  }
+ ],
+ "peoples": {
+  "peopled_cells": 239,
+  "empty_share": 0.0,
+  "others_together": 0.016,
+  "list": [
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 0.949,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "dragonborn",
+    "name": "dragonborn",
+    "share": 0.026,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "keen",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "poor",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "ecto",
+     "fire": true
+    }
+   },
+   {
+    "id": "kobold",
+    "name": "kobolds",
+    "share": 0.01,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "low",
+     "smell": "keen",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "ecto",
+     "fire": true
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "caprine",
+    "known_share": 1.0
+   },
+   {
+    "id": "cattle",
+    "known_share": 0.31
+   }
+  ],
+  "eggs": [],
+  "dairy_animals": [
+   {
+    "id": "caprine",
+    "known_share": 1.0
+   },
+   {
+    "id": "cattle",
+    "known_share": 0.31
+   }
+  ],
+  "dairy_peoples": []
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "human",
+    "ring_cells": 624,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "kobold",
+    "ring_cells": 139,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "dragonborn",
+    "ring_cells": 52,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "aarakocra",
+    "ring_cells": 5,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 2.1,
+   "kind": "crops",
+   "text": "tea, coffee and other infusions are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 279
+  },
+  {
+   "kyr_ago": 5.0,
+   "kind": "group",
+   "text": "human nomads becomes a way of life among the humans (where its way of life suits the land better than its people's)",
+   "km": 545
+  },
+  {
+   "kyr_ago": 5.2,
+   "kind": "crops",
+   "text": "onions and garlic are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 731
+  },
+  {
+   "kyr_ago": 5.5,
+   "kind": "crops",
+   "text": "cooking greens (brassicas, leeks) are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 191
+  },
+  {
+   "kyr_ago": 9.1,
+   "kind": "crops",
+   "text": "lentils and peas are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 547
+  },
+  {
+   "kyr_ago": 11.8,
+   "kind": "animals",
+   "text": "sheep and goats are tamed by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 674
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing",
+   "salt is far (854 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt",
+   "vines are grown here: wine and vinegar are within reach",
+   "chili-like peppers are grown here: heat is a local seasoning",
+   "tropical spice trees grow here: pepper-like and cinnamon-like spices are local, and trade goods elsewhere",
+   "sugar cane is grown here: sugar and cane syrup sweeten, and ferment",
+   "tea- and coffee-like plants are grown here: infusions are the everyday drink",
+   "grain is grown here: what ferments follows what is stored, so beer or bread before wine"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

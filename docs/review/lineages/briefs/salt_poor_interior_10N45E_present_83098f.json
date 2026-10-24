@@ -1,0 +1,419 @@
+{
+ "brief_version": 2,
+ "run": "83098f",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@96d6644b5e",
+ "mode": "fantasy",
+ "seed": 7000,
+ "code": {
+  "commit": "aad7a33",
+  "dirty": true,
+  "planet_src_sha": "0177d486106eb63f"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 10.0,
+  "lon": 45.0,
+  "radius_km": 500.0,
+  "basis": "a circle",
+  "cells": 267,
+  "land_cells": 267,
+  "area_mkm2": 0.8312,
+  "land_mkm2": 0.8312,
+  "landmass": "the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Cwa subtropical, dry winter": 0.479,
+   "Cwb subtropical highland, dry winter": 0.371,
+   "BWk cold desert": 0.086,
+   "BSk cold steppe": 0.052,
+   "BSh hot steppe": 0.011
+  },
+  "temperature_c": 15.993,
+  "precipitation_mm": 2007.715,
+  "tree_cover_pct": 25.026,
+  "elevation_m": {
+   "mean": 1741.536,
+   "max": 3269.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "temperate grassland": 0.569,
+   "savanna": 0.169,
+   "tundra": 0.154,
+   "hot desert": 0.071,
+   "temperate forest": 0.022,
+   "alpine / bare rock": 0.011
+  },
+  "soil": {
+   "leached red tropical soil": 0.277,
+   "brown forest soil": 0.228,
+   "young brown soil": 0.116,
+   "ash-grey podzol": 0.094,
+   "thin stony soil": 0.086,
+   "red clay forest soil": 0.075
+  },
+  "fertile": {
+   "mean_0_4": 1.303,
+   "share_good": 0.097
+  },
+  "rivers": {
+   "navigable": {
+    "small boats": 0.476,
+    "not navigable": 0.386,
+    "barges": 0.124,
+    "sea-going": 0.015
+   },
+   "max_flow": 194.4,
+   "fresh_water_km_mean": 14.806,
+   "lake_share": 0.0
+  },
+  "coast": {},
+  "harbour_best": "none",
+  "growing_months": 9.787,
+  "coldest_month_c": 16.058,
+  "warmest_month_c": 17.369,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 17.011,
+   "temperature_jul_c": 16.408,
+   "precipitation_jan_mm": 51.648,
+   "precipitation_jul_mm": 3922.539
+  },
+  "fire_months": 2.727,
+  "flood_month": 7,
+  "mud_months": 2.277,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.0,
+   "peat_depth_m": 0.554
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.4,
+  "charcoal": 0.051,
+  "dung": 0.0,
+  "peat": 0.163,
+  "straw": 0.0,
+  "grass": 0.156,
+  "drift": 0.0,
+  "coal": 0.0,
+  "heath": 0.0,
+  "oil": 0.0,
+  "tallow": 0.043,
+  "bone": 0.014,
+  "lead": {
+   "wood": 0.476,
+   "peat": 0.213,
+   "255": 0.172
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.6,
+  "grazing": 0.455,
+  "timber": 0.045,
+  "game": [
+   {
+    "id": "horse",
+    "label": "horses",
+    "range_share": 0.146
+   },
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "caprine",
+    "label": "sheep and goats",
+    "range_share": 0.15
+   },
+   {
+    "id": "cattle",
+    "label": "cattle",
+    "range_share": 0.412
+   },
+   {
+    "id": "fowl",
+    "label": "fowl",
+    "range_share": 0.446
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "wheat",
+    "label": "wheat and barley",
+    "range_share": 0.135
+   },
+   {
+    "id": "pulses",
+    "label": "lentils and peas",
+    "range_share": 0.135
+   },
+   {
+    "id": "foxtail_millet",
+    "label": "foxtail millet",
+    "range_share": 0.12
+   },
+   {
+    "id": "rice",
+    "label": "rice",
+    "range_share": 0.146
+   },
+   {
+    "id": "potato",
+    "label": "potatoes and other cool tubers",
+    "range_share": 0.142
+   },
+   {
+    "id": "tree_fruit",
+    "label": "tree fruit and nuts",
+    "range_share": 0.592
+   },
+   {
+    "id": "oil_seeds",
+    "label": "oil seeds (sesame, flax, rape)",
+    "range_share": 0.109
+   },
+   {
+    "id": "chili",
+    "label": "chili-like capsicum",
+    "range_share": 0.187
+   },
+   {
+    "id": "cane",
+    "label": "sugar cane",
+    "range_share": 0.206
+   },
+   {
+    "id": "tea",
+    "label": "tea, coffee and other infusions",
+    "range_share": 0.498
+   },
+   {
+    "id": "greens",
+    "label": "cooking greens (brassicas, leeks)",
+    "range_share": 0.412
+   },
+   {
+    "id": "alliums",
+    "label": "onions and garlic",
+    "range_share": 0.139
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 0,
+  "river_runs": null,
+  "kelp": null,
+  "reef": null,
+  "seagrass": null,
+  "salt_marsh": null,
+  "mangrove": null,
+  "upwelling": null,
+  "seals": null,
+  "seabirds": null,
+  "sst_c": null,
+  "tide_range_m": null,
+  "good_coral": 0.0,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.0,
+  "good_storm_coast": 0.0,
+  "coast_fish": null,
+  "coast_shellfish": null,
+  "coast_sea_mammals": null,
+  "fish_mix": null,
+  "lake_fish": null,
+  "sea_mammals": {},
+  "shelf": null
+ },
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.0
+  },
+  "km_to_salt": {
+   "mean": 2322,
+   "p90": 2659,
+   "max": 2816
+  },
+  "nearest_source": {
+   "rock salt": 0.172,
+   "sea salt": 0.828
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.0,
+  "beyond_trade_km_share": 1.0,
+  "plant_ash": 0.321,
+  "poor": true
+ },
+ "crops": [],
+ "animals": [
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 0.888,
+   "since_kyr": 10.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
+   }
+  },
+  {
+   "id": "fowl",
+   "label": "fowl",
+   "known_share": 0.888,
+   "since_kyr": 6.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.5,
+    "lat": -14.13,
+    "lon": 48.29,
+    "people": "kenku"
+   }
+  }
+ ],
+ "peoples": {
+  "peopled_cells": 226,
+  "empty_share": 0.154,
+  "others_together": 0.0,
+  "list": [
+   {
+    "id": "kenku",
+    "name": "kenku",
+    "share": 0.731,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": false,
+     "milk": false,
+     "capsaicin": false,
+     "bitter": "low",
+     "smell": "low",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [
+      "alliums",
+      "theobromine"
+     ],
+     "suction": "none",
+     "teeth": "beak",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 0.269,
+    "groups_of": null,
+    "overlay": false,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "fowl",
+    "known_share": 0.888
+   }
+  ],
+  "eggs": [
+   {
+    "id": "fowl",
+    "known_share": 0.888
+   }
+  ],
+  "dairy_animals": [],
+  "dairy_peoples": []
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "kenku",
+    "ring_cells": 630,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "human",
+    "ring_cells": 195,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)",
+   "salt is far (2322 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

@@ -28,4 +28,5 @@ past that).
 - [ ] fruit/oil/spice/sugar rows with wild ranges from climate, soils and (for vines/olives) dry summers
 
 ## Updates
+- 2026-10-24: (fun9) 12 cuisine rows added (bits 12-23): tree fruit and nuts, olive, vine, oil seeds, coconut and oil palm, tropical spices, chili-like capsicum, cane, sap sugar, tea and coffee, greens, alliums; weight 0, k 0 to .05; crop layers now uint32; brief splits staples and cuisine plants with origin lat/lon. Open: draft-cuisine-plants-effects-and-trade.
 - 2026-10-24: Created from inbox draft draft-cuisine-goods-fruit-oil-spice-sugar.md (found by fun7).

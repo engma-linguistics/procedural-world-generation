@@ -240,6 +240,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["crops"] = _grown(ctx, "crop_known", "crops", i, sel, land)
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
+    brief["animal_foods"] = _animal_foods(brief)
     brief["mixing_zones"] = zones
     brief["substrate"] = None
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
@@ -439,6 +440,34 @@ def _grown(ctx: Ctx, layer: str, key: str, i: int, sel: np.ndarray, land: np.nda
     return sorted(out, key=lambda r: (-(r["since_kyr"] or 0), r["id"]))
 
 
+LACTASE_FRESH = 0.6  # share of a people who digest fresh milk (body.milk): at or above it milk is drunk fresh, below it soured, curdled and aged
+EGG_ANIMALS, NOT_MEAT = ("fowl",), ("dog",)  # (dogs: a pet and a helper before a meal; the canid taboo is not consulted yet, PW-719)
+
+
+def _animal_foods(brief: dict) -> dict | None:
+    """Animals as food goods (PW-719, from the animals known here and the peoples' bodies): meat animals, eggs, dairy animals, and for
+    each dairy people whether its milk is drunk fresh or fermented (cheese, yogurt, kefir keep little lactose) by its lactase share."""
+    from . import animal_defs as AD
+    an = brief.get("animals")
+    if an is None:
+        return None
+    known = {a["id"]: a for a in an}
+    dairy_ids = [a.id for a in AD.TABLE if a.dairy and a.id in known]
+    out: dict = {"meat": [{"id": k, "known_share": a["known_share"]} for k, a in known.items() if k not in NOT_MEAT],
+                 "eggs": [{"id": k, "known_share": known[k]["known_share"]} for k in EGG_ANIMALS if k in known],
+                 "dairy_animals": [{"id": k, "known_share": known[k]["known_share"]} for k in dairy_ids], "dairy_peoples": []}
+    for r in brief["peoples"]["list"]:
+        d = r.get("dairy")
+        if not d:
+            continue
+        milk = r["body"].get("milk", False)
+        lac = 1.0 if milk is True else 0.0 if milk is False else float(milk)
+        out["dairy_peoples"].append({"id": r["id"], "lactase_share": lac, "milk_share": d["milk_share"], "dairy_share": d["dairy_share"],
+                                     "animals": d["animals"], "use": "fresh milk, butter and cream" if lac >= LACTASE_FRESH
+                                     else "soured and curdled: yogurt, kefir, cheese, butter (the lactose is fermented away)"})
+    return out
+
+
 def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
     lead, ls = ctx.f("mix_lead", i), ctx.f("mix_lead_share", i).astype(float)
     sec, ss = ctx.f("mix_second", i), ctx.f("mix_second_share", i).astype(float)
@@ -515,7 +544,7 @@ def _suggested(brief: dict) -> dict:
         notes.append(f"the commonest cooking fuel is {top}")
     sa, fi = brief.get("salt") or {}, brief.get("fish") or {}
     if sa.get("poor"):
-        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average): it is traded in, dear and rationed; cure with smoke and sour ferments, and "
+        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average" + ("; only the coast itself makes it" if sa['source_share_of_land'].get('sea', 0) > 0 else "") + "): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and "
                      "season with plant ash before salt")
     elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
         notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
@@ -622,6 +651,15 @@ def markdown(b: dict) -> str:
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
     if b["mixing_zones"]:
         t += ["", "Mixing zones (where peoples meet): " + "; ".join(f"{z['lat']}, {z['lon']} ({', '.join(map(str, z['peoples']))})" for z in b["mixing_zones"])]
+    af = b.get("animal_foods")
+    t += ["", "## Animal foods (from the animals known and the peoples' bodies)", ""]
+    if af:
+        t += ["- Meat animals: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["meat"]) or "none"),
+              "- Eggs: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["eggs"]) or "none"),
+              "- Dairy animals: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["dairy_animals"]) or "none")]
+        t += [f"- Dairy people {d['id']} (lactase {_pc(d['lactase_share'])}): {d['use']}" for d in af["dairy_peoples"]]
+    else:
+        t += ["- not in this run"]
     t += ["", "## Neighbours", ""]
     t += [f"- {n['id']}: {n['ring_cells']} ring cells" + (", also inside" if n["also_in_region"] else "") for n in b["neighbours"]["list"]] or ["- none"]
     t += ["", "## Events", ""]
