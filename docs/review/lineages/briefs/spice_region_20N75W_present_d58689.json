@@ -1,21 +1,21 @@
 {
- "brief_version": 2,
- "run": "83098f",
+ "brief_version": 3,
+ "run": "d58689",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@96d6644b5e",
+ "tree": "D&D peoples (preset)@5aa933efb8",
  "mode": "fantasy",
  "seed": 7000,
  "code": {
-  "commit": "aad7a33",
+  "commit": "3596b11",
   "dirty": true,
-  "planet_src_sha": "0177d486106eb63f"
+  "planet_src_sha": "eca91942232cd8a8"
  },
  "era_kyr": 0.0,
  "era_asked_kyr": 0.0,
  "place": {
   "lat": 20.0,
   "lon": -75.0,
-  "radius_km": 500.0,
+  "radius_km": 500,
   "basis": "a circle",
   "cells": 239,
   "land_cells": 239,
@@ -93,19 +93,19 @@
  "fuels": {
   "wood": 0.022,
   "charcoal": 0.005,
-  "dung": 0.549,
-  "peat": 0.064,
-  "straw": 0.076,
-  "grass": 0.204,
+  "dung": 0.512,
+  "peat": 0.066,
+  "straw": 0.081,
+  "grass": 0.211,
   "drift": 0.0,
   "coal": 0.011,
   "heath": 0.0,
   "oil": 0.0,
-  "tallow": 0.053,
-  "bone": 0.018,
+  "tallow": 0.07,
+  "bone": 0.023,
   "lead": {
-   "dung": 0.9,
-   "peat": 0.038,
+   "dung": 0.887,
+   "peat": 0.05,
    "wood": 0.029
   },
   "basis": "the run's present (fuels.py)"
@@ -250,21 +250,22 @@
    "rock": 0.0,
    "lake": 0.0,
    "spring": 0.0,
-   "sea": 0.0
+   "sea": 0.0,
+   "lick": 0.184
   },
   "km_to_salt": {
-   "mean": 854,
-   "p90": 1173,
-   "max": 1330
+   "mean": 141,
+   "p90": 313,
+   "max": 547
   },
   "nearest_source": {
-   "sea salt": 1.0
+   "mineral lick": 1.0
   },
   "unreached_share": 0.0,
-  "within_100km_share": 0.0,
-  "beyond_trade_km_share": 1.0,
+  "within_100km_share": 0.582,
+  "beyond_trade_km_share": 0.159,
   "plant_ash": 0.331,
-  "poor": true
+  "poor": false
  },
  "crops": [
   {
@@ -338,6 +339,20 @@
    "kind": "cuisine"
   },
   {
+   "id": "foxtail_millet",
+   "label": "foxtail millet",
+   "known_share": 0.259,
+   "since_kyr": 5.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.6,
+    "lat": -40.78,
+    "lon": -104.71,
+    "people": "human_arctic"
+   },
+   "kind": "staple"
+  },
+  {
    "id": "alliums",
    "label": "onions and garlic",
    "known_share": 0.983,
@@ -345,25 +360,11 @@
    "route": null,
    "origin": {
     "kyr_ago": 5.2,
-    "lat": 20.99,
-    "lon": -68.06,
+    "lat": 20.07,
+    "lon": -67.65,
     "people": "human"
    },
    "kind": "cuisine"
-  },
-  {
-   "id": "foxtail_millet",
-   "label": "foxtail millet",
-   "known_share": 0.259,
-   "since_kyr": 4.5,
-   "route": null,
-   "origin": {
-    "kyr_ago": 10.6,
-    "lat": -37.82,
-    "lon": -72.42,
-    "people": "human"
-   },
-   "kind": "staple"
   },
   {
    "id": "tree_fruit",
@@ -394,20 +395,6 @@
    "kind": "staple"
   },
   {
-   "id": "oil_seeds",
-   "label": "oil seeds (sesame, flax, rape)",
-   "known_share": 0.983,
-   "since_kyr": 2.5,
-   "route": null,
-   "origin": {
-    "kyr_ago": 7.0,
-    "lat": 15.72,
-    "lon": -41.77,
-    "people": "human_farmer"
-   },
-   "kind": "cuisine"
-  },
-  {
    "id": "vine",
    "label": "grapes and vines",
    "known_share": 0.699,
@@ -422,20 +409,6 @@
    "kind": "cuisine"
   },
   {
-   "id": "sorghum",
-   "label": "sorghum and pearl millet",
-   "known_share": 0.757,
-   "since_kyr": 2.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 3.8,
-    "lat": 26.65,
-    "lon": -56.28,
-    "people": "human"
-   },
-   "kind": "staple"
-  },
-  {
    "id": "tea",
    "label": "tea, coffee and other infusions",
    "known_share": 0.983,
@@ -443,17 +416,31 @@
    "route": null,
    "origin": {
     "kyr_ago": 2.1,
-    "lat": 18.07,
-    "lon": -76.7,
+    "lat": 16.03,
+    "lon": -73.48,
     "people": "human"
    },
    "kind": "cuisine"
   },
   {
+   "id": "banana",
+   "label": "bananas and plantains",
+   "known_share": 0.72,
+   "since_kyr": 0.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": 8.38,
+    "lon": -22.57,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
    "id": "rice",
    "label": "rice",
-   "known_share": 0.904,
-   "since_kyr": 1.5,
+   "known_share": 0.879,
+   "since_kyr": 0.5,
    "route": null,
    "origin": {
     "kyr_ago": 8.3,
@@ -464,43 +451,15 @@
    "kind": "staple"
   },
   {
-   "id": "potato",
-   "label": "potatoes and other cool tubers",
-   "known_share": 0.891,
-   "since_kyr": 1.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 10.0,
-    "lat": -36.07,
-    "lon": -67.84,
-    "people": "human"
-   },
-   "kind": "staple"
-  },
-  {
    "id": "chili",
    "label": "chili-like capsicum",
-   "known_share": 0.929,
-   "since_kyr": 0.5,
-   "route": null,
-   "origin": {
-    "kyr_ago": 6.0,
-    "lat": 17.05,
-    "lon": -35.33,
-    "people": "human"
-   },
-   "kind": "cuisine"
-  },
-  {
-   "id": "coconut",
-   "label": "coconut and oil palm",
-   "known_share": 0.397,
+   "known_share": 0.218,
    "since_kyr": -0.0,
    "route": null,
    "origin": {
-    "kyr_ago": 4.6,
-    "lat": -3.07,
-    "lon": -79.64,
+    "kyr_ago": 6.0,
+    "lat": 17.43,
+    "lon": -36.44,
     "people": "human"
    },
    "kind": "cuisine"
@@ -538,7 +497,7 @@
    "id": "dog",
    "label": "dogs",
    "known_share": 1.0,
-   "since_kyr": 1.5,
+   "since_kyr": 2.0,
    "route": null,
    "origin": {
     "kyr_ago": 10.5,
@@ -562,6 +521,113 @@
   }
  ],
  "peoples": {
+  "ways_of_life": {
+   "farmer": 0.949
+  },
+  "groups": [
+   {
+    "id": "human_farmer",
+    "name": "human farmers",
+    "share": 0.236,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "farmer",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "human_herder",
+    "name": "human herders",
+    "share": 0.227,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "transhumant",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.413
+    }
+   },
+   {
+    "id": "human_nomad",
+    "name": "human nomads",
+    "share": 0.073,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "pastoral_nomad",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.204
+    }
+   }
+  ],
   "peopled_cells": 239,
   "empty_share": 0.0,
   "others_together": 0.016,
@@ -572,6 +638,7 @@
     "share": 0.949,
     "groups_of": null,
     "overlay": false,
+    "way": "farmer",
     "body": {
      "sweet": true,
      "milk": false,
@@ -596,9 +663,10 @@
    {
     "id": "dragonborn",
     "name": "dragonborn",
-    "share": 0.026,
+    "share": 0.025,
     "groups_of": null,
     "overlay": false,
+    "way": null,
     "body": {
      "sweet": true,
      "milk": false,
@@ -626,6 +694,7 @@
     "share": 0.01,
     "groups_of": null,
     "overlay": false,
+    "way": null,
     "body": {
      "sweet": true,
      "milk": false,
@@ -672,7 +741,32 @@
     "known_share": 0.31
    }
   ],
-  "dairy_peoples": []
+  "dairy_peoples": [
+   {
+    "id": "human_herder",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.413,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   },
+   {
+    "id": "human_nomad",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.204,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   }
+  ]
  },
  "mixing_zones": [],
  "substrate": null,
@@ -681,7 +775,7 @@
   "list": [
    {
     "id": "human",
-    "ring_cells": 624,
+    "ring_cells": 589,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
@@ -689,7 +783,7 @@
    },
    {
     "id": "kobold",
-    "ring_cells": 139,
+    "ring_cells": 164,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
@@ -697,7 +791,7 @@
    },
    {
     "id": "dragonborn",
-    "ring_cells": 52,
+    "ring_cells": 55,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
@@ -720,7 +814,7 @@
    "kyr_ago": 2.1,
    "kind": "crops",
    "text": "tea, coffee and other infusions are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
-   "km": 279
+   "km": 470
   },
   {
    "kyr_ago": 5.0,
@@ -732,13 +826,19 @@
    "kyr_ago": 5.2,
    "kind": "crops",
    "text": "onions and garlic are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
-   "km": 731
+   "km": 768
   },
   {
    "kyr_ago": 5.5,
    "kind": "crops",
    "text": "cooking greens (brassicas, leeks) are first cultivated by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
    "km": 191
+  },
+  {
+   "kyr_ago": 5.5,
+   "kind": "crops",
+   "text": "foxtail millet are cultivated again, on their own, by the humans on the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2)",
+   "km": 759
   },
   {
    "kyr_ago": 9.1,
@@ -758,7 +858,6 @@
   "basis": "rule-based from this brief only; the culinary side overrules",
   "notes": [
    "dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing",
-   "salt is far (854 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt",
    "vines are grown here: wine and vinegar are within reach",
    "chili-like peppers are grown here: heat is a local seasoning",
    "tropical spice trees grow here: pepper-like and cinnamon-like spices are local, and trade goods elsewhere",

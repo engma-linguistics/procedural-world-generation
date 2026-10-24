@@ -1,6 +1,6 @@
 # Culinary brief: -10.0, 45.0 (r 500 km), 0 kyr ago
 
-Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed 7000, brief_version 2. Region: a circle; 242 land cells, 0.7534 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
+Run d58689 on world 1df1c3, tree D&D peoples (preset)@5aa933efb8 (fantasy), seed 7000, brief_version 3. Region: a circle; 242 land cells, 0.7534 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
 
 ## Land
 
@@ -19,7 +19,7 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Fuels
 
-- wood 0.715, charcoal 0.069, dung 0.0, peat 0.095, straw 0.0, grass 0.053, drift 0.021, coal 0.0, heath 0.0, oil 0.025, tallow 0.015, bone 0.005
+- wood 0.715, charcoal 0.07, dung 0.0, peat 0.095, straw 0.0, grass 0.053, drift 0.021, coal 0.0, heath 0.0, oil 0.025, tallow 0.015, bone 0.005
 - Commonest: wood 88%, oil 6%, grass 4%
 - (the run's present (fuels.py))
 
@@ -36,9 +36,9 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Salt
 
-- Sources over the region's land (share of cells): rock 0%, lake 0%, spring 0%, sea 6%
-- Distance to salt: mean 494 km, p90 939 km, max 1095 km; within 100 km 13%; beyond 300 km 72%
-- Nearest source: sea salt 100%
+- Sources over the region's land (share of cells): rock 0%, lake 0%, spring 0%, sea 6%, lick 14%
+- Distance to salt: mean 154 km, p90 313 km, max 469 km; within 100 km 46%; beyond 300 km 18%
+- Nearest source: sea salt 26%, mineral lick 74%
 - Plant ash (fuel good, 0 to 1): 0.588
 
 ## Crops known (staples)
@@ -57,6 +57,7 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 ## Peoples
 
 - 242 peopled cells, 10% empty
+- Ways of life (share of heads): not in this run
 - kenku (kenku): 100%
   - body: cannot taste sweet; feel no capsaicin heat; taste bitterness faintly; have a poor sense of smell; eat raw meat safely; cannot suck (they lap or tip their drink); have a beak and no teeth; are poisoned by alliums (onion, garlic) and theobromine (chocolate)
 
@@ -79,7 +80,6 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 ## Suggested (rule-based, overrule freely)
 
 - wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)
-- salt is far (494 km on average; only the coast itself makes it): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt
 - a rich fishery on this coast: fish is a staple, salted or dried for the lean months
 
 ## Not modelled yet (null in the JSON)

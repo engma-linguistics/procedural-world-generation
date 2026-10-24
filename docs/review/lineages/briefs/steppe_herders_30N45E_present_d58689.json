@@ -1,21 +1,21 @@
 {
- "brief_version": 1,
- "run": "6ca7e0",
+ "brief_version": 3,
+ "run": "d58689",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@96d6644b5e",
+ "tree": "D&D peoples (preset)@5aa933efb8",
  "mode": "fantasy",
  "seed": 7000,
  "code": {
-  "commit": "afea16b",
-  "dirty": false,
-  "planet_src_sha": "02fbf6e3e71238ec"
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
  },
  "era_kyr": 0.0,
  "era_asked_kyr": 0.0,
  "place": {
   "lat": 30.3,
   "lon": 45.1,
-  "radius_km": 600.0,
+  "radius_km": 600,
   "basis": "a circle",
   "cells": 343,
   "land_cells": 335,
@@ -98,10 +98,14 @@
   "charcoal": 0.0,
   "dung": 0.0,
   "peat": 0.0,
-  "straw": 0.0,
-  "grass": 0.981,
-  "drift": 0.019,
+  "straw": 0.004,
+  "grass": 0.589,
+  "drift": 0.015,
   "coal": 0.0,
+  "heath": 0.0,
+  "oil": 0.001,
+  "tallow": 0.294,
+  "bone": 0.098,
   "lead": {
    "grass": 0.973,
    "drift": 0.027
@@ -160,16 +164,53 @@
   "good_mangrove": 0.0,
   "good_harbour": 0.0,
   "good_storm_coast": 0.01,
+  "coast_fish": 0.17,
+  "coast_shellfish": 0.125,
+  "coast_sea_mammals": 0.058,
+  "fish_mix": {
+   "sea": 1.0,
+   "river runs": 0.0,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {
+   "seals": 0.0,
+   "whales": 0.044
+  },
   "shelf": null
  },
- "salt": null,
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.006,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.027,
+   "lick": 0.057
+  },
+  "km_to_salt": {
+   "mean": 208,
+   "p90": 391,
+   "max": 547
+  },
+  "nearest_source": {
+   "rock salt": 0.203,
+   "sea salt": 0.263,
+   "mineral lick": 0.534
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.272,
+  "beyond_trade_km_share": 0.304,
+  "plant_ash": 0.18,
+  "poor": false
+ },
  "crops": [],
  "animals": [
   {
    "id": "dog",
    "label": "dogs",
    "known_share": 1.0,
-   "since_kyr": 1.0,
+   "since_kyr": 1.5,
    "route": null,
    "origin": {
     "kyr_ago": 10.5,
@@ -182,7 +223,7 @@
    "id": "fowl",
    "label": "fowl",
    "known_share": 1.0,
-   "since_kyr": 0.5,
+   "since_kyr": 1.5,
    "route": null,
    "origin": {
     "kyr_ago": 8.5,
@@ -193,6 +234,48 @@
   }
  ],
  "peoples": {
+  "ways_of_life": {
+   "farmer": 1.0
+  },
+  "groups": [
+   {
+    "id": "human_nomad",
+    "name": "human nomads",
+    "share": 0.736,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "pastoral_nomad",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.204
+    }
+   }
+  ],
   "peopled_cells": 335,
   "empty_share": 0.023,
   "others_together": 0.0,
@@ -203,6 +286,7 @@
     "share": 1.0,
     "groups_of": null,
     "overlay": false,
+    "way": "farmer",
     "body": {
      "sweet": true,
      "milk": false,
@@ -227,6 +311,35 @@
   ],
   "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
  },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "fowl",
+    "known_share": 1.0
+   }
+  ],
+  "eggs": [
+   {
+    "id": "fowl",
+    "known_share": 1.0
+   }
+  ],
+  "dairy_animals": [],
+  "dairy_peoples": [
+   {
+    "id": "human_nomad",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.204,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   }
+  ]
+ },
  "mixing_zones": [],
  "substrate": null,
  "neighbours": {
@@ -234,7 +347,7 @@
   "list": [
    {
     "id": "human",
-    "ring_cells": 657,
+    "ring_cells": 596,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
@@ -242,7 +355,15 @@
    },
    {
     "id": "kenku",
-    "ring_cells": 116,
+    "ring_cells": 176,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "aarakocra",
+    "ring_cells": 1,
     "also_in_region": false,
     "border_km": null,
     "since_kyr": null,
@@ -262,7 +383,6 @@
   "drink": null
  },
  "not_modelled": {
-  "salt": "not modelled yet",
   "trade_reach": "not modelled yet",
   "reputation": "not modelled yet",
   "substrate": "not modelled yet",

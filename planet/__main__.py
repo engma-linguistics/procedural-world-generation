@@ -331,6 +331,9 @@ def cmd_brief(args):
         if len(v) not in (2, 3):
             raise SystemExit("--region lat,lon[,radius_km]")
         region = (v[0], v[1], v[2] if len(v) == 3 else BR.DEFAULT_RADIUS_KM)
+    if args.all:
+        BR.all_briefs(args.run, args.out or "briefs", eras=tuple(float(x) for x in args.eras.split(",")) if args.eras else BR.DEFAULT_ERAS)
+        return
     ctx = BR.Ctx(args.run)
     b = BR.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx)
     if args.out:
@@ -632,6 +635,8 @@ def main():
     br.add_argument("--format", choices=("md", "json"), default="md", help="what to print without --out")
     br.add_argument("--out", help="write NAME.json and NAME.md into this directory instead of printing")
     br.add_argument("--name", default="brief", help="file name stem with --out")
+    br.add_argument("--all", action="store_true", help="one brief per people and per mixing zone for the default era slices into OUT/<run>/ (PW-742)")
+    br.add_argument("--eras", metavar="KYR,KYR,...", help="with --all: the eras (default 0,0.5,1,2,3,6,9,12 kyr ago)")
     br.set_defaults(func=cmd_brief)
 
     lu = sub.add_parser("landuse", help="add or redo a peoples run's anthropogenic land cover (cropland, pasture, burned "

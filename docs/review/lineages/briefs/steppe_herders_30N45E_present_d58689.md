@@ -1,6 +1,6 @@
 # Culinary brief: 30.3, 45.1 (r 600 km), 0 kyr ago
 
-Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed 7000, brief_version 2. Region: a circle; 335 land cells, 1.0429 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
+Run d58689 on world 1df1c3, tree D&D peoples (preset)@5aa933efb8 (fantasy), seed 7000, brief_version 3. Region: a circle; 335 land cells, 1.0429 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
 
 ## Land
 
@@ -19,7 +19,7 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Fuels
 
-- wood 0.0, charcoal 0.0, dung 0.0, peat 0.0, straw 0.0, grass 0.59, drift 0.015, coal 0.0, heath 0.0, oil 0.001, tallow 0.295, bone 0.098
+- wood 0.0, charcoal 0.0, dung 0.0, peat 0.0, straw 0.004, grass 0.589, drift 0.015, coal 0.0, heath 0.0, oil 0.001, tallow 0.294, bone 0.098
 - Commonest: grass 97%, drift 3%
 - (the run's present (fuels.py))
 
@@ -36,9 +36,9 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Salt
 
-- Sources over the region's land (share of cells): rock 1%, lake 0%, spring 0%, sea 3%
-- Distance to salt: mean 388 km, p90 704 km, max 939 km; within 100 km 10%; beyond 300 km 63%
-- Nearest source: rock salt 66%, salt lake 0%, sea salt 33%
+- Sources over the region's land (share of cells): rock 1%, lake 0%, spring 0%, sea 3%, lick 6%
+- Distance to salt: mean 208 km, p90 391 km, max 547 km; within 100 km 27%; beyond 300 km 30%
+- Nearest source: rock salt 20%, sea salt 26%, mineral lick 53%
 - Plant ash (fuel good, 0 to 1): 0.18
 
 ## Crops known (staples)
@@ -51,25 +51,30 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Animals known
 
-- dogs: 100% of the land, here since 1.0 kyr ago (first tamed 10.5 kyr ago by kenku at 15.83, 50.1)
-- fowl: 100% of the land, here since 0.5 kyr ago (first tamed 8.5 kyr ago by kenku at -14.13, 48.29)
+- dogs: 100% of the land, here since 1.5 kyr ago (first tamed 10.5 kyr ago by kenku at 15.83, 50.1)
+- fowl: 100% of the land, here since 1.5 kyr ago (first tamed 8.5 kyr ago by kenku at -14.13, 48.29)
 
 ## Peoples
 
 - 335 peopled cells, 2% empty
-- humans (human): 100%
+- Ways of life (share of heads): farmer 100%
+- humans (human): 100%, farmer
   - body: the human-like baseline
+- human nomads (human_nomad): 74%, pastoral nomad (group, mean presence), dairy {"milk_share": 0.6, "animals": ["cattle", "horse", "caprine"], "dairy_share": 0.204}
+  - body: 60% digest milk as adults
 
 ## Animal foods (from the animals known and the peoples' bodies)
 
 - Meat animals: fowl (100%)
 - Eggs: fowl (100%)
 - Dairy animals: none
+- Dairy people human_nomad (lactase 60%): fresh milk, butter and cream
 
 ## Neighbours
 
-- human: 657 ring cells, also inside
-- kenku: 116 ring cells
+- human: 596 ring cells, also inside
+- kenku: 176 ring cells
+- aarakocra: 1 ring cells
 
 ## Events
 
@@ -78,7 +83,6 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 ## Suggested (rule-based, overrule freely)
 
 - dry grass and brush are the fuel of last resort here: food is boiled or eaten raw before fuel is spent
-- salt is far (388 km on average; only the coast itself makes it): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt
 
 ## Not modelled yet (null in the JSON)
 

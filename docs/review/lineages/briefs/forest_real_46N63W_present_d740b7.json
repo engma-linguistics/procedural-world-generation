@@ -1,0 +1,278 @@
+{
+ "brief_version": 3,
+ "run": "d740b7",
+ "world": "3e9e7d",
+ "tree": "D&D peoples (preset)@3b79d2fd69",
+ "mode": "real",
+ "seed": 7000,
+ "code": {
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 46.2,
+  "lon": -62.8,
+  "radius_km": 500,
+  "basis": "a circle",
+  "cells": 262,
+  "land_cells": 4,
+  "area_mkm2": 0.8156,
+  "land_mkm2": 0.0125,
+  "landmass": "the island at 47\u00b0N 71\u00b0W (0.15 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Dfb humid continental, warm summer": 0.5,
+   "EF ice cap": 0.5
+  },
+  "temperature_c": -1.0,
+  "precipitation_mm": 1063.0,
+  "tree_cover_pct": 36.75,
+  "elevation_m": {
+   "mean": 1090.0,
+   "max": 2305.0
+  },
+  "ice_share": 0.008,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "ice sheet": 0.5,
+   "temperate forest": 0.5
+  },
+  "soil": {
+   "no soil": 0.5,
+   "young brown soil": 0.5
+  },
+  "fertile": {
+   "mean_0_4": 2.0,
+   "share_good": 0.5
+  },
+  "rivers": {
+   "navigable": {
+    "not navigable": 1.0
+   },
+   "max_flow": 2.3,
+   "fresh_water_km_mean": 0.0,
+   "lake_share": 0.0
+  },
+  "coast": {
+   "ice front": 0.5,
+   "fjord coast": 0.25,
+   "cliffs": 0.25
+  },
+  "harbour_best": "none",
+  "growing_months": 3.5,
+  "coldest_month_c": -7.738,
+  "warmest_month_c": 15.117,
+  "frost_months_est": 4.7,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": -7.75,
+   "temperature_jul_c": 15.25,
+   "precipitation_jan_mm": 710.75,
+   "precipitation_jul_mm": 1500.5
+  },
+  "fire_months": 0.0,
+  "flood_month": 7,
+  "mud_months": 0.0,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.0,
+   "peat_depth_m": 0.0
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.0,
+  "charcoal": 0.0,
+  "dung": 0.0,
+  "peat": 0.0,
+  "straw": 0.0,
+  "grass": 0.0,
+  "drift": 0.0,
+  "coal": 0.0,
+  "heath": 0.0,
+  "oil": 0.0,
+  "tallow": 0.0,
+  "bone": 0.0,
+  "lead": {
+   "255": 1.0
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.289,
+  "grazing": 0.022,
+  "timber": 0.493,
+  "game": [
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 0.5
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "potato",
+    "label": "potatoes and other cool tubers",
+    "range_share": 0.5
+   },
+   {
+    "id": "tree_fruit",
+    "label": "tree fruit and nuts",
+    "range_share": 0.25
+   },
+   {
+    "id": "sap_sugar",
+    "label": "sap sugar (maple and birch) and beet",
+    "range_share": 0.5
+   },
+   {
+    "id": "greens",
+    "label": "cooking greens (brassicas, leeks)",
+    "range_share": 0.5
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 258,
+  "coast_cells": 4,
+  "river_runs": null,
+  "kelp": 0.014,
+  "reef": 0.0,
+  "seagrass": 0.006,
+  "salt_marsh": 0.0,
+  "mangrove": 0.0,
+  "upwelling": 0.001,
+  "seals": 0.004,
+  "seabirds": 0.004,
+  "sst_c": 11.14,
+  "tide_range_m": 1.367,
+  "good_coral": 0.0,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.0,
+  "good_storm_coast": 0.31,
+  "coast_fish": 0.347,
+  "coast_shellfish": 0.208,
+  "coast_sea_mammals": 0.335,
+  "fish_mix": {
+   "sea": 1.0,
+   "river runs": 0.0,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {
+   "seals": 0.25,
+   "whales": 0.0
+  },
+  "shelf": null
+ },
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 1.0,
+   "lick": 0.0
+  },
+  "km_to_salt": {
+   "mean": 0,
+   "p90": 0,
+   "max": 0
+  },
+  "nearest_source": {
+   "sea salt": 1.0
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 1.0,
+  "beyond_trade_km_share": 0.0,
+  "plant_ash": 0.484,
+  "poor": false
+ },
+ "crops": [],
+ "animals": [],
+ "peoples": {
+  "ways_of_life": {},
+  "groups": [],
+  "peopled_cells": 0,
+  "empty_share": 1.0,
+  "others_together": 0.0,
+  "list": [],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "animal_foods": {
+  "meat": [],
+  "eggs": [],
+  "dairy_animals": [],
+  "dairy_peoples": []
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "human",
+    "ring_cells": 7,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 0.4,
+   "kind": "crossing",
+   "text": "human arctic hunters sails across the sea to the island at 47\u00b0N 71\u00b0W (0.15 Mkm\u00b2) (963 km of open sea)",
+   "km": 655
+  },
+  {
+   "kyr_ago": 1.7,
+   "kind": "crossing",
+   "text": "human seafarers sails across the sea to the island at 47\u00b0N 71\u00b0W (0.15 Mkm\u00b2) (1384 km of open sea)",
+   "km": 655
+  },
+  {
+   "kyr_ago": 2.5,
+   "kind": "crossing",
+   "text": "human farmers walks over a land bridge to the island at 47\u00b0N 71\u00b0W (0.15 Mkm\u00b2)",
+   "km": 655
+  },
+  {
+   "kyr_ago": 2.6,
+   "kind": "crossing",
+   "text": "humans sails across the sea to the island at 47\u00b0N 71\u00b0W (0.15 Mkm\u00b2) (2587 km of open sea)",
+   "km": 655
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "the commonest cooking fuel is 255",
+   "the sea is the salt: cheap, so curing, brining and fish sauce are possible"
+  ],
+  "drink": null
+ },
+ "not_modelled": {
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

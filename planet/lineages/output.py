@@ -116,7 +116,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},
               "crossings": h.crossings_n.get(l.id, 0), "story": pres["stories"].get(l.id),
               "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
-              "body": l.body,
+              "body": l.body, "way": l.way,
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"

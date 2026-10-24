@@ -30,7 +30,7 @@ from ..geo import R_KM
 from ..grid import shared_grid
 from . import spec as SP
 
-BRIEF_VERSION = 2
+BRIEF_VERSION = 3  # 3: peoples carry their way of life (PW-723), salt gains mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -408,8 +408,8 @@ def _salt(ctx: Ctx, land: np.ndarray) -> dict | None:
         return None
     R = G["_raw"]
     km, kind = G["_salt_km"][land], G["_salt_kind"][land].astype(int)
-    from .seafood import SALT_KINDS, SALT_UNREACHED
-    src = {k.replace("salt_", ""): round(float((R[k][land] >= 0.25).mean()), 3) for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")}
+    from .seafood import SALT_KINDS, SALT_PARTS, SALT_UNREACHED
+    src = {k.replace("salt_", ""): round(float((R[k][land] >= 0.25).mean()), 3) for k in SALT_PARTS}
     out: dict = {"basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
                  "source_share_of_land": src,
                  "km_to_salt": {"mean": round(float(km.mean())), "p90": round(float(np.percentile(km, 90))), "max": round(float(km.max()))},
@@ -456,7 +456,7 @@ def _animal_foods(brief: dict) -> dict | None:
     out: dict = {"meat": [{"id": k, "known_share": a["known_share"]} for k, a in known.items() if k not in NOT_MEAT],
                  "eggs": [{"id": k, "known_share": known[k]["known_share"]} for k in EGG_ANIMALS if k in known],
                  "dairy_animals": [{"id": k, "known_share": known[k]["known_share"]} for k in dairy_ids], "dairy_peoples": []}
-    for r in brief["peoples"]["list"]:
+    for r in brief["peoples"]["list"] + brief["peoples"].get("groups", []):
         d = r.get("dairy")
         if not d:
             continue
@@ -485,14 +485,45 @@ def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
         if n and v / n / 100 >= 0.005:
             l = ctx.lines[k]
             row = {"id": l["id"], "name": l["name"], "share": round(v / n / 100, 3), "groups_of": l["group_of"], "overlay": l["overlay"],
-                   "body": _body(l)}
+                   "way": l.get("way"), "body": _body(l)}
             dairy = ((ctx.meta.get("animals") or {}).get("dairy") or {}).get(l["id"])
             if dairy:
                 row["dairy"] = dairy
             rows.append(row)
     other = float(oth[peopled].sum()) / n / 100 if n else 0.0
-    return {"peopled_cells": n, "empty_share": round(1 - n / max(int(sel.sum()), 1), 3), "others_together": round(other, 3), "list": rows,
+    ways: dict[str, float] = {}
+    for r in rows:
+        if r.get("way") and not r["overlay"]:
+            ways[r["way"]] = round(ways.get(r["way"], 0.0) + r["share"], 3)
+    groups = _groups_here(ctx, i, sel & (lead < 255), {r["id"] for r in rows})
+    return {"ways_of_life": dict(sorted(ways.items(), key=lambda kv: -kv[1])), "groups": groups, "peopled_cells": n, "empty_share": round(1 - n / max(int(sel.sum()), 1), 3), "others_together": round(other, 3), "list": rows,
             "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"}
+
+
+GROUP_MIN = 0.05  # a group (a way of life inside a people) counts as present in a region from this mean presence
+
+
+def _groups_here(ctx: Ctx, i: int, sel: np.ndarray, listed: set) -> list:
+    """The groups (human herders, steppe orcs...) the composition layers fold into their people: at the present, from the presence
+    layer, those with a mean presence of at least GROUP_MIN over the region's peopled cells. Earlier eras have no per-line frames
+    (PW-742): empty. Their ways and dairy are what the brief reads."""
+    if i != len(ctx.ts) - 1 or not sel.any():
+        return []
+    pp = np.fromfile(ctx.dir / "layers" / "presence_present.bin", dtype=np.uint8).reshape(len(ctx.lines), -1)
+    rows = []
+    for l in ctx.lines:
+        if l["overlay"] or not l.get("group_of") or l["id"] in listed:
+            continue
+        share = float(pp[l["index"]][sel].mean()) / 100.0
+        if share < GROUP_MIN:
+            continue
+        row = {"id": l["id"], "name": l["name"], "share": round(share, 3), "groups_of": l["group_of"], "overlay": False,
+               "way": l.get("way"), "body": _body(l)}
+        dairy = ((ctx.meta.get("animals") or {}).get("dairy") or {}).get(l["id"])
+        if dairy:
+            row["dairy"] = dairy
+        rows.append(row)
+    return sorted(rows, key=lambda r: (-r["share"], r["id"]))
 
 
 def _neighbours(ctx: Ctx, i: int, sel: np.ndarray, place: dict) -> dict:
@@ -561,6 +592,15 @@ def _suggested(brief: dict) -> dict:
             notes.append(text)
     if "sap_sugar" in grown and "cane" not in grown:
         notes.append("sap sugar (maple and birch) is the local sweetener: spring boiling, syrups")
+    ways = brief["peoples"].get("ways_of_life") or {}
+    herd = sum(ways.get(w, 0.0) for w in ("pastoral_nomad", "transhumant", "agro_pastoral"))
+    if herd >= 0.25:
+        notes.append("herding is a main way of life here (" + ", ".join(w.replace("_", " ") for w in ways if w in ("pastoral_nomad", "transhumant", "agro_pastoral"))
+                     + "): the herd is the larder (meat, milk, blood, fat), grain and salt come by trade or the season's move; a feast is a slaughter")
+    if ways.get("fisher_forager", 0.0) + ways.get("sea_nomad", 0.0) >= 0.25:
+        notes.append("fisher-foragers live here: the catch and the shore are the staples, often settled where the water is rich")
+    if ways.get("forager", 0.0) >= 0.5:
+        notes.append("foraging is the main way of life here: a broad wild menu by season, little stored")
     dairy = [p["id"] for p in brief["peoples"]["list"] if p.get("dairy")]
     if dairy:
         notes.append(f"dairy herders here ({', '.join(dairy)}): what ferments follows what is stored, so soured milk and cheese before beer")
@@ -580,7 +620,7 @@ def _people(ctx: Ctx, pid: str) -> dict:
         cur = ctx.lines[ctx.idx[par]] if par in ctx.idx else None
     st = p["lines"].get(pid) or {}
     return {"id": pid, "name": l["name"], "origin": l["origin"], "parents": l["parents"], "lineage_chain": chain, "groups": l["groups"],
-            "group_of": l["group_of"], "overlay": l["overlay"], "body": _body(l), "started_kyr": l["started_kyr"],
+            "group_of": l["group_of"], "overlay": l["overlay"], "way": l.get("way"), "body": _body(l), "started_kyr": l["started_kyr"],
             "ended_kyr": l["ended_kyr"], "extinct_kyr": l["extinct_kyr"], "origin_place": l["origin_place"],
             "demography": l["demography"], "present": {k: st.get(k) for k in ("area_mkm2", "patches", "population", "centroid", "by_landmass")},
             "homeland": (p.get("homeland") or {}).get(pid), "neighbours_present": st.get("neighbours"),
@@ -644,10 +684,11 @@ def markdown(b: dict) -> str:
               f" (first tamed {c['origin']['kyr_ago']} kyr ago by {c['origin']['people']} at {c['origin']['lat']}, {c['origin']['lon']})" if c["origin"] else "")
               for c in b[key] or [] if kind is None or c.get("kind") == kind] or ["- none"]
     p = b["peoples"]
-    t += ["", "## Peoples", "", f"- {p['peopled_cells']} peopled cells, {_pc(p['empty_share'])} empty"]
-    for r in p["list"]:
+    t += ["", "## Peoples", "", f"- {p['peopled_cells']} peopled cells, {_pc(p['empty_share'])} empty",
+          "- Ways of life (share of heads): " + (_kv(p["ways_of_life"], _pc) if p.get("ways_of_life") else "not in this run").replace("_", " ")]
+    for r in p["list"] + p.get("groups", []):
         body = r["body"]
-        t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
+        t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (" (group, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
     if b["mixing_zones"]:
         t += ["", "Mixing zones (where peoples meet): " + "; ".join(f"{z['lat']}, {z['lon']} ({', '.join(map(str, z['peoples']))})" for z in b["mixing_zones"])]
@@ -671,6 +712,44 @@ def markdown(b: dict) -> str:
     t += ["", "## Suggested (rule-based, overrule freely)", ""] + [f"- {n}" for n in b["suggested"]["notes"]]
     t += ["", "## Not modelled yet (null in the JSON)", "", "- " + ", ".join(b["not_modelled"]), ""]
     return "\n".join(t)
+
+
+DEFAULT_ERAS = (0.0, 0.5, 1.0, 2.0, 3.0, 6.0, 9.0, 12.0)  # kyr ago: the era slices of --all (the nearest stored frame each; repeats are dropped)
+
+
+def all_briefs(run_ref, out_dir, eras=DEFAULT_ERAS, log=print) -> list[Path]:
+    """PW-742 --all: one brief per people (peoples and groups, not overlays) at each era slice, and per mixing zone at the present,
+    into out_dir/<run>/ as people_<id>_<era>kyr and zone_<lat>_<lon>_present (.json and .md). A Ctx opens the run once.
+    A people with no cells at an era is skipped (a group falls back to its people's range; place.basis says so)."""
+    ctx = Ctx(run_ref)
+    out = Path(out_dir) / ctx.dir.name
+    out.mkdir(parents=True, exist_ok=True)
+    frames, written = [], []
+    for e in eras:
+        i = ctx.frame_at(e)
+        if i not in frames:
+            frames.append(i)
+    for i in frames:
+        era = round(-float(ctx.ts[i]), 3) + 0.0
+        for l in ctx.lines:
+            if l["overlay"]:
+                continue
+            if not region_of_people(ctx, l["id"], i)[0].any():
+                continue
+            b = build(ctx.dir.name, people=l["id"], era_kyr=era, ctx=ctx)
+            stem = f"people_{l['id']}_{era:g}kyr"
+            (out / f"{stem}.json").write_text(dumps(b))
+            (out / f"{stem}.md").write_text(markdown(b))
+            written.append(out / f"{stem}.json")
+    for z in ctx.meta["present"].get("mixing_zones", []):
+        rad = max(150.0, round(float(np.sqrt(z["area_mkm2"] * 1e6 / np.pi)), -1))
+        b = build(ctx.dir.name, region=(z["lat"], z["lon"], rad), era_kyr=0.0, ctx=ctx)
+        stem = f"zone_{z['lat']:g}_{z['lon']:g}_present"
+        (out / f"{stem}.json").write_text(dumps(b))
+        (out / f"{stem}.md").write_text(markdown(b))
+        written.append(out / f"{stem}.json")
+    log(f"{len(written)} briefs in {out}")
+    return written
 
 
 def dumps(b: dict) -> str:

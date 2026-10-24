@@ -1,21 +1,21 @@
 {
- "brief_version": 1,
- "run": "6ca7e0",
+ "brief_version": 3,
+ "run": "d58689",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@96d6644b5e",
+ "tree": "D&D peoples (preset)@5aa933efb8",
  "mode": "fantasy",
  "seed": 7000,
  "code": {
-  "commit": "afea16b",
-  "dirty": false,
-  "planet_src_sha": "02fbf6e3e71238ec"
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
  },
  "era_kyr": 0.0,
  "era_asked_kyr": 0.0,
  "place": {
   "lat": 4.5,
   "lon": 54.1,
-  "radius_km": 500.0,
+  "radius_km": 500,
   "basis": "a circle",
   "cells": 274,
   "land_cells": 274,
@@ -103,6 +103,10 @@
   "grass": 0.025,
   "drift": 0.0,
   "coal": 0.0,
+  "heath": 0.0,
+  "oil": 0.0,
+  "tallow": 0.0,
+  "bone": 0.0,
   "lead": {
    "wood": 0.85,
    "peat": 0.15
@@ -138,6 +142,21 @@
     "id": "banana",
     "label": "bananas and plantains",
     "range_share": 0.208
+   },
+   {
+    "id": "spice_tree",
+    "label": "pepper, cinnamon and other tropical spices",
+    "range_share": 0.212
+   },
+   {
+    "id": "cane",
+    "label": "sugar cane",
+    "range_share": 0.339
+   },
+   {
+    "id": "tea",
+    "label": "tea, coffee and other infusions",
+    "range_share": 0.599
    }
   ]
  },
@@ -145,7 +164,7 @@
   "basis": "the world's own moment; sea cells inside the region and its coast",
   "sea_cells": 0,
   "coast_cells": 0,
-  "river_runs": null,
+  "river_runs": 0.163,
   "kelp": null,
   "reef": null,
   "seagrass": null,
@@ -161,9 +180,41 @@
   "good_mangrove": 0.0,
   "good_harbour": 0.0,
   "good_storm_coast": 0.0,
+  "coast_fish": null,
+  "coast_shellfish": null,
+  "coast_sea_mammals": null,
+  "fish_mix": {
+   "sea": 0.0,
+   "river runs": 1.0,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {},
   "shelf": null
  },
- "salt": null,
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.0,
+   "lick": 0.0
+  },
+  "km_to_salt": {
+   "mean": 888,
+   "p90": 1384,
+   "max": 1564
+  },
+  "nearest_source": {
+   "mineral lick": 1.0
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.0,
+  "beyond_trade_km_share": 0.971,
+  "plant_ash": 0.674,
+  "poor": true
+ },
  "crops": [],
  "animals": [
   {
@@ -194,6 +245,8 @@
   }
  ],
  "peoples": {
+  "ways_of_life": {},
+  "groups": [],
   "peopled_cells": 274,
   "empty_share": 0.0,
   "others_together": 0.0,
@@ -204,6 +257,7 @@
     "share": 1.0,
     "groups_of": null,
     "overlay": false,
+    "way": null,
     "body": {
      "sweet": false,
      "milk": false,
@@ -231,6 +285,22 @@
   ],
   "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
  },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "fowl",
+    "known_share": 1.0
+   }
+  ],
+  "eggs": [
+   {
+    "id": "fowl",
+    "known_share": 1.0
+   }
+  ],
+  "dairy_animals": [],
+  "dairy_peoples": []
+ },
  "mixing_zones": [],
  "substrate": null,
  "neighbours": {
@@ -253,12 +323,12 @@
  "suggested": {
   "basis": "rule-based from this brief only; the culinary side overrules",
   "notes": [
-   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)"
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)",
+   "salt is far (888 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt"
   ],
   "drink": null
  },
  "not_modelled": {
-  "salt": "not modelled yet",
   "trade_reach": "not modelled yet",
   "reputation": "not modelled yet",
   "substrate": "not modelled yet",

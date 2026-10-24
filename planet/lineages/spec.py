@@ -54,6 +54,22 @@ TRAITS = {
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
+# ways of life (PW-723): how a people gets its living, a cultural trait (a group of a people may differ from it). The goods a
+# way reads (weight per good; the same [[use]] rows a trait would give) REPLACE the food rows its traits would give
+# (agricultural -> fertile, nomadic -> grazing; place and own-id rows stay), set who tames the herd animals (herd share),
+# who first cultivates plants (gather share) and who tames dogs (forage share), and so the fuels and the brief's foods.
+# A line with no way keeps its traits' rows. Raiding, tribute and trade belong on top of these (PW-661), not here.
+WAYS = {
+    "forager": {"foraging": 1.0},  # broad hunting and gathering
+    "fisher_forager": {"foraging": 0.6, "fish": 1.0, "shellfish": 0.5},  # specialised, often settled, on rich coasts, rivers and lakes
+    "horticulturalist": {"fertile": 0.5, "foraging": 0.5},  # gardens and swidden, still half gathered
+    "farmer": {"fertile": 1.0},  # plough and irrigation
+    "pastoral_nomad": {"grazing": 1.0},  # herds followed over open country, all year
+    "transhumant": {"grazing": 0.7, "fertile": 0.3},  # herds moved between seasonal pastures from a home base with some fields
+    "agro_pastoral": {"fertile": 0.5, "grazing": 0.5},  # fields and herds on the same ground
+    "sea_nomad": {"fish": 1.0, "harbour": 0.7, "foraging": 0.3},  # boat-dwelling fishers moving along the coasts
+}
+WAY_FOOD = ("fertile", "grazing", "foraging", "fish", "shellfish")  # (the goods a way's rows replace from the traits; harbours, timber and the rest stay)
 LATE_SEA_KYR = 3.0  # short sea hops by boat (the spread's sea factor) from then, for a sea share >= SHORT_HOP_SHARE
 SHORT_HOP_SHARE = 0.2
 # long sea crossings (crossing.py): way -> (rate per kyr at a zero gap, length scale km, only since kyr ago).
@@ -256,6 +272,8 @@ class Lineage:
     insularity: float | None = None  # 0..1, resistance to mixing and to leaving home
     body: dict = field(default_factory=lambda: {**BODY_DEFAULT, "toxic": []})  # senses and body, resolved (BODY_DEFAULT)
     body_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
+    way: str | None = None  # way of life (WAYS), inherited from the parent (a group's people) where not given; None: from the traits
+    way_given: str | None = None  # of it, what the spec gave on this line itself
     persists: bool = False  # keeps living after its last split child
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
@@ -370,7 +388,11 @@ class Tree:
         return [(k, v) for k, v in out.items() if v != 0]
 
     def _uses_by(self, l: Lineage) -> list[Use]:
-        return [u for u in self.uses if u.by in l.traits or u.by in l.prefers or u.by == l.id]
+        rows = [u for u in self.uses if u.by in l.traits or u.by in l.prefers or u.by == l.id]
+        if l.way:  # (the way's goods replace the food rows its traits give; place and own-id rows stay)
+            rows = [u for u in rows if not (u.good in WAY_FOOD and u.by in TRAITS)]
+            rows += [Use(l.way, g, w) for g, w in WAYS[l.way].items()]
+        return rows
 
     def pulls_of(self, l: Lineage) -> dict[str, float]:
         """Per favoured good, how strongly it moves a line: the row's pull (meta.land_pull unless given) x
@@ -545,6 +567,11 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         bgiven = parse_body(r.get("body"), lid)
         body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
         body["toxic"] = list(body["toxic"])
+        wgiven = r.get("way")
+        if wgiven in ("",):
+            wgiven = None
+        if wgiven is not None and wgiven not in WAYS:
+            raise ValueError(f"{lid}: unknown way of life {wgiven!r} (one of {sorted(WAYS)})")
         place = r.get("place")
         if place is not None:
             place = (float(place["lat"]), float(place["lon"])) if isinstance(place, dict) else (float(place[0]), float(place[1]))
@@ -555,7 +582,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
-                    body=body, body_given=bgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None)
@@ -687,6 +714,8 @@ def to_raw(t: Tree) -> dict:
             r["place"] = list(l.place)
         if l.body_given:
             r["body"] = l.body_given
+        if l.way_given:
+            r["way"] = l.way_given
         if l.color:
             r["color"] = l.color
         if l.persists:

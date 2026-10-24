@@ -70,7 +70,9 @@ def shares(tree: SP.Tree, l: SP.Lineage) -> dict:
     other things, miners, flyers...). The hunter trait counts as a full forage use (PW-718: who tames the dog)."""
     w = {g: max(v, 0.0) for g, v in tree.uses_of(l) if g in FOOD}
     tot = sum(w.values())
-    hunt = 1.0 if "hunter" in l.traits else 0.0
+    hunt = 1.0 if "hunter" in l.traits and not l.way else 0.0  # (a way of life says it itself: forager, fisher_forager)
+    if l.way in ("forager", "fisher_forager", "sea_nomad"):
+        hunt = 1.0
     if tot <= 0:
         return {"farm": 0.0, "herd": 0.0, "wood": 0.0, "forage": hunt, "gather": 0.0}
     return {"farm": w.get("fertile", 0.0) / tot, "herd": w.get("grazing", 0.0) / tot,

@@ -572,7 +572,8 @@ def test_peoples_change_the_land_from_their_ways_of_life():
     from planet.lineages import landuse as LU
     t = SP.load(LR.tree_path("dnd"))
     s = {k: LU.shares(t, t.lines[k]) for k in ("human_farmer", "human_herder", "steppe_orc", "dwarf")}
-    assert s["human_farmer"]["farm"] == 1 and s["human_herder"]["herd"] == 1 and s["steppe_orc"]["herd"] == 1
+    assert s["human_farmer"]["farm"] == 1 and s["steppe_orc"]["herd"] == 1
+    assert s["human_herder"]["herd"] > 0.8 and 0 < s["human_herder"]["farm"] < 0.2  # (PW-723: transhumant herders keep some fields; was herd == 1)
     assert sum(s["dwarf"].values()) == 0  # (miners eat nothing the land grows here: no clearing)
     n = 4
     z, one = np.zeros(n), np.ones(n)
@@ -1069,3 +1070,51 @@ def test_salt_distance_and_sources_and_sea_food():
     assert rich["sea_mammals"][coast].mean() > poor["sea_mammals"][coast].mean()  # (seals and whales on the cold coast)
     for k in ("fish", "shellfish", "sea_mammals"):
         assert (rich[k] >= 0).all() and (rich[k] <= 1).all()
+
+
+def test_salt_playa_lick_and_basin_brine():
+    """PW-746: a closed dry basin makes a playa, a river over shale a lick, a spring over a sediment basin a brine."""
+    from planet.lineages import seafood as SF
+    g, L, land, isl = _toy_world()
+    n = g.n
+    sea = ~land
+    coast = land & SF._nbr(g, np.logical_or, sea[g.nbr_idx])
+    inland = np.flatnonzero(land & ~coast & ~SF._nbr(g, np.logical_or, coast[g.nbr_idx]))
+    a, b, c = int(inland[0]), int(inland[len(inland) // 2]), int(inland[-1])
+    L["salinity"] = np.where(sea, 35.0, 0.0)
+    L["precipitation"] = np.full(n, 1000.0)
+    L["pet"] = np.full(n, 500.0)
+    L["coast_type"] = np.where(coast, 10, 0)
+    L["sst_jul"] = L["sst_jan"] = np.where(sea, 10.0, 0.0)
+    L["downstream"] = np.full(n, 0)
+    L["downstream"][a] = -1  # (a drainage ends here)
+    L["pet"] = np.where(np.arange(n) == a, 3000.0, 500.0)
+    L["surface_rock"] = np.zeros(n)
+    L["surface_rock"][b] = 8
+    L["flow"] = np.zeros(n)
+    L["flow"][b] = 5.0
+    L["spring"] = np.zeros(n)
+    L["spring"][c] = 1
+    L["surface_rock"][c] = 8
+    L["sediment_cover"] = np.full(n, 2.0)
+    out = SF.salt(g, L, land, coast, _getter(L, n))
+    assert out["salt_lake"][a] > 0.9 and out["_salt_km"][a] == 0
+    assert out["salt_lick"][b] == SF.LICK and out["salt_spring"][c] >= 0.5
+
+
+def test_ways_of_life_set_the_uses_a_people_reads():
+    """PW-723: a way replaces the food rows its traits give (not harbours or place rows), inherits down the tree, and
+    sets the shares that decide who tames, cultivates and herds."""
+    from planet.lineages import landuse as LU
+    t = SP.load(LR.tree_path("dnd"))
+    assert t.lines["hill_giant"].way == "pastoral_nomad" and t.lines["steppe_orc"].way == "pastoral_nomad"
+    assert t.lines["forest_orc"].way == "forager" and t.lines["human_seafarer"].way == "fisher_forager"
+    assert LU.shares(t, t.lines["hill_giant"])["herd"] == 1
+    assert LU.shares(t, t.lines["human_seafarer"])["forage"] == 1
+    assert dict(t.uses_of(t.lines["human"])).get("harbour", 0) > 0  # (seafaring's harbour row stays under the farmer way)
+    assert t.lines["steppe_orc"].body["milk"] < 0.6 <= t.lines["human_herder"].body["milk"]  # (soured dairy vs fresh)
+    raw = SP.to_raw(t)
+    assert {r["id"]: r.get("way") for r in raw["lineage"]}["hill_giant"] == "pastoral_nomad"
+    bad = [{**r, "way": "bard"} if r["id"] == "human" else r for r in raw["lineage"]]
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "lineage": bad})

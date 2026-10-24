@@ -1,0 +1,1240 @@
+{
+ "brief_version": 3,
+ "run": "d58689",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@5aa933efb8",
+ "mode": "fantasy",
+ "seed": 7000,
+ "code": {
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": -4.1,
+  "lon": -59.9,
+  "radius_km": 18254.0,
+  "basis": "the range of human_herder at 0.0 kyr ago (its cells; the radius is the farthest one from the centre)",
+  "cells": 7153,
+  "land_cells": 7153,
+  "area_mkm2": 22.2684,
+  "land_mkm2": 22.2684,
+  "landmass": "the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Aw tropical savanna": 0.209,
+   "Cwa subtropical, dry winter": 0.202,
+   "BWh hot desert": 0.125,
+   "BSh hot steppe": 0.087,
+   "Cfa humid subtropical": 0.086,
+   "Am tropical monsoon": 0.078
+  },
+  "temperature_c": 20.507,
+  "precipitation_mm": 1032.918,
+  "tree_cover_pct": 7.302,
+  "elevation_m": {
+   "mean": 565.27,
+   "max": 3742.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "temperate grassland": 0.448,
+   "savanna": 0.448,
+   "temperate forest": 0.057,
+   "hot desert": 0.039,
+   "boreal forest": 0.003,
+   "tundra": 0.003
+  },
+  "soil": {
+   "leached red tropical soil": 0.302,
+   "caliche desert soil": 0.147,
+   "red clay forest soil": 0.103,
+   "chestnut steppe soil": 0.102,
+   "young brown soil": 0.083,
+   "loose sand": 0.071
+  },
+  "fertile": {
+   "mean_0_4": 1.691,
+   "share_good": 0.18
+  },
+  "rivers": {
+   "navigable": {
+    "not navigable": 0.512,
+    "small boats": 0.384,
+    "barges": 0.087,
+    "sea-going": 0.018
+   },
+   "max_flow": 1972.8,
+   "fresh_water_km_mean": 45.834,
+   "lake_share": 0.0
+  },
+  "coast": {
+   "beaches": 0.418,
+   "rocky shore": 0.192,
+   "coral coast": 0.186,
+   "cliffs": 0.097
+  },
+  "harbour_best": "none",
+  "growing_months": 8.749,
+  "coldest_month_c": 14.881,
+  "warmest_month_c": 27.083,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 23.305,
+   "temperature_jul_c": 18.662,
+   "precipitation_jan_mm": 1270.674,
+   "precipitation_jul_mm": 770.39
+  },
+  "fire_months": 4.746,
+  "flood_month": 7,
+  "mud_months": 1.804,
+  "resources": {
+   "salt_deposit_likelihood": 0.002,
+   "coal": 0.022,
+   "peat_depth_m": 0.173
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.038,
+  "charcoal": 0.01,
+  "dung": 0.403,
+  "peat": 0.052,
+  "straw": 0.081,
+  "grass": 0.228,
+  "drift": 0.044,
+  "coal": 0.037,
+  "heath": 0.001,
+  "oil": 0.024,
+  "tallow": 0.06,
+  "bone": 0.02,
+  "lead": {
+   "dung": 0.631,
+   "grass": 0.16,
+   "wood": 0.046
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.693,
+  "grazing": 0.818,
+  "timber": 0.081,
+  "game": [
+   {
+    "id": "horse",
+    "label": "horses",
+    "range_share": 0.343
+   },
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "caprine",
+    "label": "sheep and goats",
+    "range_share": 0.443
+   },
+   {
+    "id": "cattle",
+    "label": "cattle",
+    "range_share": 0.452
+   },
+   {
+    "id": "fowl",
+    "label": "fowl",
+    "range_share": 0.142
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "wheat",
+    "label": "wheat and barley",
+    "range_share": 0.386
+   },
+   {
+    "id": "pulses",
+    "label": "lentils and peas",
+    "range_share": 0.364
+   },
+   {
+    "id": "foxtail_millet",
+    "label": "foxtail millet",
+    "range_share": 0.305
+   },
+   {
+    "id": "rice",
+    "label": "rice",
+    "range_share": 0.301
+   },
+   {
+    "id": "sorghum",
+    "label": "sorghum and pearl millet",
+    "range_share": 0.174
+   },
+   {
+    "id": "maize",
+    "label": "maize",
+    "range_share": 0.33
+   },
+   {
+    "id": "potato",
+    "label": "potatoes and other cool tubers",
+    "range_share": 0.151
+   },
+   {
+    "id": "roots",
+    "label": "yams, taro and cassava",
+    "range_share": 0.302
+   },
+   {
+    "id": "banana",
+    "label": "bananas and plantains",
+    "range_share": 0.212
+   },
+   {
+    "id": "tree_fruit",
+    "label": "tree fruit and nuts",
+    "range_share": 0.366
+   },
+   {
+    "id": "vine",
+    "label": "grapes and vines",
+    "range_share": 0.187
+   },
+   {
+    "id": "oil_seeds",
+    "label": "oil seeds (sesame, flax, rape)",
+    "range_share": 0.427
+   },
+   {
+    "id": "coconut",
+    "label": "coconut and oil palm",
+    "range_share": 0.195
+   },
+   {
+    "id": "spice_tree",
+    "label": "pepper, cinnamon and other tropical spices",
+    "range_share": 0.173
+   },
+   {
+    "id": "chili",
+    "label": "chili-like capsicum",
+    "range_share": 0.409
+   },
+   {
+    "id": "cane",
+    "label": "sugar cane",
+    "range_share": 0.304
+   },
+   {
+    "id": "tea",
+    "label": "tea, coffee and other infusions",
+    "range_share": 0.242
+   },
+   {
+    "id": "greens",
+    "label": "cooking greens (brassicas, leeks)",
+    "range_share": 0.338
+   },
+   {
+    "id": "alliums",
+    "label": "onions and garlic",
+    "range_share": 0.483
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 1042,
+  "river_runs": 0.192,
+  "kelp": 0.0,
+  "reef": 0.0,
+  "seagrass": 0.0,
+  "salt_marsh": 0.194,
+  "mangrove": 0.605,
+  "upwelling": 0.0,
+  "seals": 0.058,
+  "seabirds": 0.115,
+  "sst_c": null,
+  "tide_range_m": 0.0,
+  "good_coral": 0.047,
+  "good_lagoon": 0.005,
+  "good_mangrove": 0.008,
+  "good_harbour": 0.06,
+  "good_storm_coast": 0.025,
+  "coast_fish": 0.548,
+  "coast_shellfish": 0.429,
+  "coast_sea_mammals": 0.457,
+  "fish_mix": {
+   "sea": 0.675,
+   "river runs": 0.325,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {
+   "seals": 0.058,
+   "whales": 0.335
+  },
+  "shelf": null
+ },
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.003,
+   "lake": 0.001,
+   "spring": 0.002,
+   "sea": 0.137,
+   "lick": 0.074
+  },
+  "km_to_salt": {
+   "mean": 234,
+   "p90": 547,
+   "max": 1251
+  },
+  "nearest_source": {
+   "rock salt": 0.057,
+   "salt lake": 0.08,
+   "brine spring": 0.015,
+   "sea salt": 0.355,
+   "mineral lick": 0.493
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.41,
+  "beyond_trade_km_share": 0.332,
+  "plant_ash": 0.356,
+  "poor": false
+ },
+ "crops": [
+  {
+   "id": "cane",
+   "label": "sugar cane",
+   "known_share": 0.356,
+   "since_kyr": 9.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 12.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "foxtail_millet",
+   "label": "foxtail millet",
+   "known_share": 0.361,
+   "since_kyr": 9.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.6,
+    "lat": -40.78,
+    "lon": -104.71,
+    "people": "human_arctic"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "pulses",
+   "label": "lentils and peas",
+   "known_share": 0.371,
+   "since_kyr": 7.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.1,
+    "lat": 20.36,
+    "lon": -80.23,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "roots",
+   "label": "yams, taro and cassava",
+   "known_share": 0.274,
+   "since_kyr": 6.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.6,
+    "lat": 9.77,
+    "lon": -79.65,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "wheat",
+   "label": "wheat and barley",
+   "known_share": 0.372,
+   "since_kyr": 6.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.7,
+    "lat": 26.38,
+    "lon": -52.77,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "maize",
+   "label": "maize",
+   "known_share": 0.405,
+   "since_kyr": 5.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.8,
+    "lat": 15.75,
+    "lon": -36.23,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "potato",
+   "label": "potatoes and other cool tubers",
+   "known_share": 0.191,
+   "since_kyr": 5.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.0,
+    "lat": -48.66,
+    "lon": -129.74,
+    "people": "human_arctic"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "rice",
+   "label": "rice",
+   "known_share": 0.341,
+   "since_kyr": 4.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.3,
+    "lat": -8.02,
+    "lon": -50.21,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "chili",
+   "label": "chili-like capsicum",
+   "known_share": 0.369,
+   "since_kyr": 4.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": 17.43,
+    "lon": -36.44,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "greens",
+   "label": "cooking greens (brassicas, leeks)",
+   "known_share": 0.251,
+   "since_kyr": 4.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 5.5,
+    "lat": 21.32,
+    "lon": -73.83,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "alliums",
+   "label": "onions and garlic",
+   "known_share": 0.108,
+   "since_kyr": 3.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 5.2,
+    "lat": 20.07,
+    "lon": -67.65,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "banana",
+   "label": "bananas and plantains",
+   "known_share": 0.281,
+   "since_kyr": 3.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": 8.38,
+    "lon": -22.57,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "tree_fruit",
+   "label": "tree fruit and nuts",
+   "known_share": 0.32,
+   "since_kyr": 2.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.3,
+    "lat": 25.82,
+    "lon": -54.87,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "sorghum",
+   "label": "sorghum and pearl millet",
+   "known_share": 0.123,
+   "since_kyr": 2.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 3.8,
+    "lat": 24.33,
+    "lon": 15.58,
+    "people": "human_seafarer"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "coconut",
+   "label": "coconut and oil palm",
+   "known_share": 0.109,
+   "since_kyr": 1.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 4.6,
+    "lat": -14.67,
+    "lon": -90.0,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "vine",
+   "label": "grapes and vines",
+   "known_share": 0.106,
+   "since_kyr": 1.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.2,
+    "lat": 27.39,
+    "lon": -48.33,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "spice_tree",
+   "label": "pepper, cinnamon and other tropical spices",
+   "known_share": 0.124,
+   "since_kyr": -0.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 3.6,
+    "lat": -11.28,
+    "lon": -95.24,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  }
+ ],
+ "animals": [
+  {
+   "id": "caprine",
+   "label": "sheep and goats",
+   "known_share": 0.516,
+   "since_kyr": 10.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 11.8,
+    "lat": 20.44,
+    "lon": -81.44,
+    "people": "human"
+   }
+  },
+  {
+   "id": "cattle",
+   "label": "cattle",
+   "known_share": 0.584,
+   "since_kyr": 7.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   }
+  },
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 0.529,
+   "since_kyr": 6.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
+   }
+  },
+  {
+   "id": "horse",
+   "label": "horses",
+   "known_share": 0.466,
+   "since_kyr": 5.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": -40.39,
+    "lon": -110.3,
+    "people": "human_herder"
+   }
+  },
+  {
+   "id": "fowl",
+   "label": "fowl",
+   "known_share": 0.234,
+   "since_kyr": 1.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.5,
+    "lat": -14.13,
+    "lon": 48.29,
+    "people": "kenku"
+   }
+  }
+ ],
+ "peoples": {
+  "ways_of_life": {
+   "farmer": 0.963,
+   "forager": 0.006
+  },
+  "groups": [
+   {
+    "id": "human_farmer",
+    "name": "human farmers",
+    "share": 0.328,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "farmer",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "human_nomad",
+    "name": "human nomads",
+    "share": 0.328,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "pastoral_nomad",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.204
+    }
+   },
+   {
+    "id": "human_herder",
+    "name": "human herders",
+    "share": 0.32,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "transhumant",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.413
+    }
+   }
+  ],
+  "peopled_cells": 7153,
+  "empty_share": 0.0,
+  "others_together": 0.014,
+  "list": [
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 0.963,
+    "groups_of": null,
+    "overlay": false,
+    "way": "farmer",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "kenku",
+    "name": "kenku",
+    "share": 0.006,
+    "groups_of": null,
+    "overlay": false,
+    "way": null,
+    "body": {
+     "sweet": false,
+     "milk": false,
+     "capsaicin": false,
+     "bitter": "low",
+     "smell": "low",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [
+      "alliums",
+      "theobromine"
+     ],
+     "suction": "none",
+     "teeth": "beak",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "halfling",
+    "name": "halflings",
+    "share": 0.006,
+    "groups_of": null,
+    "overlay": false,
+    "way": "forager",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "caprine",
+    "known_share": 0.516
+   },
+   {
+    "id": "cattle",
+    "known_share": 0.584
+   },
+   {
+    "id": "horse",
+    "known_share": 0.466
+   },
+   {
+    "id": "fowl",
+    "known_share": 0.234
+   }
+  ],
+  "eggs": [
+   {
+    "id": "fowl",
+    "known_share": 0.234
+   }
+  ],
+  "dairy_animals": [
+   {
+    "id": "horse",
+    "known_share": 0.466
+   },
+   {
+    "id": "caprine",
+    "known_share": 0.516
+   },
+   {
+    "id": "cattle",
+    "known_share": 0.584
+   }
+  ],
+  "dairy_peoples": [
+   {
+    "id": "human_nomad",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.204,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   },
+   {
+    "id": "human_herder",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.413,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   }
+  ]
+ },
+ "mixing_zones": [
+  {
+   "lat": 20.6,
+   "lon": -83.3,
+   "area_mkm2": 1.81,
+   "peoples": [
+    "kobold",
+    "aarakocra",
+    "dragonborn",
+    "human"
+   ]
+  },
+  {
+   "lat": -37.1,
+   "lon": -18.9,
+   "area_mkm2": 0.62,
+   "peoples": [
+    "hobgoblin",
+    "firbolg",
+    "human"
+   ]
+  },
+  {
+   "lat": 14.2,
+   "lon": -69.8,
+   "area_mkm2": 0.45,
+   "peoples": [
+    "dragonborn",
+    "human",
+    "triton"
+   ]
+  },
+  {
+   "lat": -22.4,
+   "lon": -57.7,
+   "area_mkm2": 0.1,
+   "peoples": [
+    "cloud_giant",
+    "human"
+   ]
+  }
+ ],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "tortle",
+    "ring_cells": 1,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 0.1,
+   "kind": "crops",
+   "text": "chili-like capsicum cross the sea to the large island at 27\u00b0N 54\u00b0W (0.4 Mkm\u00b2) in a sailing ship (963 km of open sea)",
+   "km": 3308
+  },
+  {
+   "kyr_ago": 0.1,
+   "kind": "animals",
+   "text": "horses cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a sailing ship (662 km of open sea)",
+   "km": 1650
+  },
+  {
+   "kyr_ago": 0.2,
+   "kind": "crops",
+   "text": "tea, coffee and other infusions cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a sailing ship (1203 km of open sea)",
+   "km": 1946
+  },
+  {
+   "kyr_ago": 0.2,
+   "kind": "crops",
+   "text": "yams, taro and cassava cross the sea to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2) in a sailing ship (1384 km of open sea)",
+   "km": 7315
+  },
+  {
+   "kyr_ago": 0.3,
+   "kind": "crossing",
+   "text": "human farmers walks over a land bridge to the island at 13\u00b0N 177\u00b0W (0.1 Mkm\u00b2)",
+   "km": 13034
+  },
+  {
+   "kyr_ago": 0.3,
+   "kind": "crops",
+   "text": "wheat and barley cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a sailing ship (662 km of open sea)",
+   "km": 1650
+  },
+  {
+   "kyr_ago": 0.4,
+   "kind": "crossing",
+   "text": "human herders walks over a land bridge to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2)",
+   "km": 7649
+  },
+  {
+   "kyr_ago": 0.4,
+   "kind": "crossing",
+   "text": "humans sails across the sea to the island at 13\u00b0N 177\u00b0W (0.1 Mkm\u00b2) (602 km of open sea)",
+   "km": 13034
+  },
+  {
+   "kyr_ago": 0.4,
+   "kind": "crossing",
+   "text": "sea elves sails across the sea to the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2) (842 km of open sea)",
+   "km": 11533
+  },
+  {
+   "kyr_ago": 0.4,
+   "kind": "crossing",
+   "text": "sea elves sails across the sea to the continent at 76\u00b0S 99\u00b0W (68 Mkm\u00b2) (60 km of open sea)",
+   "km": 8386
+  },
+  {
+   "kyr_ago": 0.6,
+   "kind": "animals",
+   "text": "cattle cross the sea to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2) in a sailing ship (481 km of open sea)",
+   "km": 6591
+  },
+  {
+   "kyr_ago": 0.6,
+   "kind": "crops",
+   "text": "chili-like capsicum cross the sea to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2) in a sailing ship (662 km of open sea)",
+   "km": 6591
+  },
+  {
+   "kyr_ago": 0.6,
+   "kind": "crossing",
+   "text": "human seafarers sails across the sea to the island at 13\u00b0N 177\u00b0W (0.1 Mkm\u00b2) (541 km of open sea)",
+   "km": 13034
+  },
+  {
+   "kyr_ago": 0.6,
+   "kind": "crossing",
+   "text": "human seafarers sails across the sea to the island at 50\u00b0N 158\u00b0W (0.05 Mkm\u00b2) (4332 km of open sea)",
+   "km": 10928
+  },
+  {
+   "kyr_ago": 0.7,
+   "kind": "crossing",
+   "text": "human nomads walks over a land bridge to the island at 17\u00b0N 170\u00b0W (0.084 Mkm\u00b2)",
+   "km": 12319
+  },
+  {
+   "kyr_ago": 0.7,
+   "kind": "crops",
+   "text": "tea, coffee and other infusions cross the sea to the large island at 27\u00b0N 54\u00b0W (0.4 Mkm\u00b2) in a sailing ship (722 km of open sea)",
+   "km": 3566
+  },
+  {
+   "kyr_ago": 0.8,
+   "kind": "crops",
+   "text": "wheat and barley cross the sea to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2) in a sailing ship (1143 km of open sea)",
+   "km": 6591
+  },
+  {
+   "kyr_ago": 0.9,
+   "kind": "crops",
+   "text": "sap sugar (maple and birch) and beet are first cultivated by the human farmers on the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2)",
+   "km": 5309
+  },
+  {
+   "kyr_ago": 0.9,
+   "kind": "crops",
+   "text": "sorghum and pearl millet cross the sea to the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2) in a sailing ship (602 km of open sea)",
+   "km": 10212
+  },
+  {
+   "kyr_ago": 1.1,
+   "kind": "crops",
+   "text": "bananas and plantains cross the sea to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2) in a sailing ship (541 km of open sea)",
+   "km": 7315
+  },
+  {
+   "kyr_ago": 1.1,
+   "kind": "animals",
+   "text": "cattle cross the sea to the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2) in a sailing ship (241 km of open sea)",
+   "km": 3017
+  },
+  {
+   "kyr_ago": 1.1,
+   "kind": "crops",
+   "text": "chili-like capsicum cross the sea to the continent at 52\u00b0N 91\u00b0W (60 Mkm\u00b2) in a sailing ship (241 km of open sea)",
+   "km": 2580
+  },
+  {
+   "kyr_ago": 1.4,
+   "kind": "crossing",
+   "text": "human farmers walks over a land bridge to the island at 17\u00b0N 170\u00b0W (0.084 Mkm\u00b2)",
+   "km": 12319
+  },
+  {
+   "kyr_ago": 1.5,
+   "kind": "crossing",
+   "text": "human arctic hunters sails across the sea to the island at 23\u00b0S 129\u00b0E (0.047 Mkm\u00b2) (5414 km of open sea)",
+   "km": 16837
+  },
+  {
+   "kyr_ago": 1.5,
+   "kind": "crossing",
+   "text": "human herders walks over a land bridge to the island at 17\u00b0N 170\u00b0W (0.084 Mkm\u00b2)",
+   "km": 12319
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing",
+   "vines are grown here: wine and vinegar are within reach",
+   "chili-like peppers are grown here: heat is a local seasoning",
+   "tropical spice trees grow here: pepper-like and cinnamon-like spices are local, and trade goods elsewhere",
+   "sugar cane is grown here: sugar and cane syrup sweeten, and ferment",
+   "grain is grown here: what ferments follows what is stored, so beer or bread before wine"
+  ],
+  "drink": null
+ },
+ "people": {
+  "id": "human_herder",
+  "name": "human herders",
+  "origin": "group",
+  "parents": [
+   "human"
+  ],
+  "lineage_chain": [
+   {
+    "id": "human_herder",
+    "name": "human herders",
+    "origin": "group",
+    "ago_kyr": 8.0
+   },
+   {
+    "id": "human",
+    "name": "humans",
+    "origin": "split",
+    "ago_kyr": 200.0
+   },
+   {
+    "id": "archaic_human",
+    "name": "archaic humans stem",
+    "origin": "split",
+    "ago_kyr": 400.0
+   },
+   {
+    "id": "hominid",
+    "name": "hominid stem",
+    "origin": "split",
+    "ago_kyr": 2000.0
+   },
+   {
+    "id": "mammalian",
+    "name": "mammalian stem",
+    "origin": "root",
+    "ago_kyr": 10000.0
+   }
+  ],
+  "groups": [],
+  "group_of": "human",
+  "overlay": false,
+  "way": "transhumant",
+  "body": {
+   "sweet": true,
+   "milk": 0.6,
+   "capsaicin": true,
+   "bitter": "normal",
+   "smell": "normal",
+   "diet": "omnivore",
+   "raw_meat": false,
+   "cellulose": false,
+   "toxic": [],
+   "suction": "normal",
+   "teeth": "grinding",
+   "gut": "simple",
+   "salt": "normal",
+   "display": "none",
+   "shed": "none",
+   "hours": "diurnal",
+   "thermo": "endo",
+   "fire": true
+  },
+  "started_kyr": 8.0,
+  "ended_kyr": null,
+  "extinct_kyr": null,
+  "origin_place": {
+   "cell": 55210,
+   "lat": -21.77,
+   "lon": -53.41,
+   "ago_kyr": 8.0,
+   "wanted_kyr": 8.0,
+   "epoch": "recent",
+   "why": "where its way of life suits the land better than its people's"
+  },
+  "demography": {
+   "density": 3.0,
+   "explore": 0.55,
+   "sea_share": 0.05,
+   "insularity": 0.3
+  },
+  "present": {
+   "area_mkm2": 22.27,
+   "patches": 101,
+   "population": 21380998,
+   "centroid": [
+    -12.42,
+    -67.69
+   ],
+   "by_landmass": {
+    "0": 12127555,
+    "2": 3379213,
+    "1": 2712716,
+    "4": 2353317,
+    "5": 397438,
+    "3": 210475
+   }
+  },
+  "homeland": [
+   "hold 16% of the world's best pasture (10 Mkm\u00b2, the heart of it in the country at 36\u00b0N 15\u00b0E)",
+   "hold 14% of the world's best farmland (6.7 Mkm\u00b2, the heart of it in the country at 41\u00b0S 80\u00b0W)"
+  ],
+  "neighbours_present": {
+   "human_farmer": 33568,
+   "human": 31613,
+   "human_nomad": 23142,
+   "genasi": 13638,
+   "tiefling": 6636,
+   "dragonborn": 3852,
+   "lizardfolk": 3465,
+   "human_seafarer": 2004
+  },
+  "story": "Human herders became a way of life among the humans ~8 kyr ago where its ways suited the land better than its people's, on the continent at 76\u00b0S 99\u00b0W (68 Mkm\u00b2). ~2.6 kyr ago it walked over a land bridge (low sea) to the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2). ~1.5 kyr ago it walked over a land bridge (low sea) to the island at 17\u00b0N 170\u00b0W (0.084 Mkm\u00b2). ~400 years ago it walked over a land bridge (low sea) to the continent at 49\u00b0S 2\u00b0E (24 Mkm\u00b2). Today: 21 million in 22.27 Mkm\u00b2 in 101 separate lands (the largest 21%); neighbours human farmers, humans, human nomads, genasi (elemental). The human herders hold 16% of the world's best pasture (10 Mkm\u00b2, the heart of it in the country at 36\u00b0N 15\u00b0E); and they hold 14% of the world's best farmland (6.7 Mkm\u00b2, the heart of it in the country at 41\u00b0S 80\u00b0W). It was the first to tame the horse, ~6 kyr ago on the open grassland of the continent at 76\u00b0S 99\u00b0W (68 Mkm\u00b2). It took up dogs (~2.3 kyr ago), sheep and goats (~8 kyr ago) and cattle (~6.2 kyr ago). Its milk-drinking 60% keep dairy herds of cattle and horses and sheep and goats. The human herders 60% digest milk as adults. It cooks over dung fires.",
+  "reputation": null
+ },
+ "not_modelled": {
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

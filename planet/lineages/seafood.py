@@ -7,10 +7,14 @@ Salt sources (each 0..1 likelihood, on land cells; land.goods reaches them one r
     salt_spring  brine springs: a spring on or beside evaporite
     salt_sea     sea salt on coasts: solar pans where the air dries (pet over rain) behind tidal flats and low shores, and
                  salt boiled over wood on any other ice-free coast (a poorer source: it costs fuel) -- both need a salty sea
-    salt         the best of the four
+    salt_lick    sodium-bearing clays (shale, coal, tuff, evaporite) that rivers cut bare: a poor source animals and people use
+    salt         the best of the five
+(PW-746: salt_lake also holds playas -- the end of a drainage that never reaches the sea, where pet over rain is high --
+and salt_spring brine springs over any sedimentary basin, not only beside evaporite.)
     _salt_km     distance over land to the nearest source (km, route-bent; SALT_UNREACHED where the landmass has none)
     _salt_kind   which source is nearest (SALT_KINDS index; 0 none)
-Plant ash (potash, vegetable salt) is a marker only (the brief reads the fuel good): a poor-man's salt everywhere trees grow.
+Plant ash (potash, vegetable salt) is a marker only (the brief reads the fuel good): a poor-man's salt everywhere trees grow. It is
+deliberately not a distance source (it would put salt at 0 km under every forest).
 
 Sea food (0..1 per coastal, river and lake land cell; land.goods scales them to the world's best and reaches inland):
     fish         the best of fish_sea (shelf, upwelling and cool nutrient-rich water, reef/kelp/seagrass nurseries),
@@ -34,7 +38,13 @@ ROCK_MIN = 0.2  # res_salt likelihood below this is not worked
 SRC_MIN = 0.25  # a cell with salt at least this is a source for the distance
 ROUTE = 1.3  # a road bends: km along the land graph over the straight hops
 SALT_UNREACHED = 5000.0  # km: no salt on this landmass (carried by trade or not at all)
-SALT_KINDS = ("none", "rock salt", "salt lake", "brine spring", "sea salt")
+SALT_KINDS = ("none", "rock salt", "salt lake", "brine spring", "sea salt", "mineral lick")
+PLAYA_ARID = (1.2, 2.5)  # pet / precipitation: a closed basin from this dry gathers its salt in a playa, fully at the second
+BRINE = {3: 0.4, 6: 0.3, 7: 0.35, 8: 0.5, 9: 0.7, 10: 0.5, 14: 0.3}  # surface_rock id -> brine spring strength: connate brines of the basin's sediments (evaporite, shale and coal measures best)
+BRINE_COVER = (0.2, 1.0)  # km of sediment: a brine needs a basin under it
+LICK_ROCK = (3, 8, 9, 10, 15)  # sediment, shale, evaporite, coal, tuff: sodium-bearing clays that rivers cut and animals lick
+LICK_FLOW = 2.0  # flow (cells of runoff) at which a river cuts banks that lay the clay bare
+LICK = 0.3  # a lick or seep is a poor source: a place to take salt, not a salt works
 SEA_SOLAR = (0.8, 2.0)  # pet / precipitation: solar pans from drier than 0.8, full at 2
 SEA_BOIL = 0.35  # boiled sea salt on a damp coast (fuel and labour): this share of a solar coast
 SALINITY = (15.0, 30.0)  # psu of the sea next to the coast: a brackish sea (Baltic) makes thin brine
@@ -49,6 +59,9 @@ RUN_FROZEN = (6.0, 11.0)  # months of frozen river: runs fade
 LAKE_CELLS = (1.0, 6.0)  # lake cells (connected): a lake of this size is a poor, then a full fishery
 WHALE_SST = (10.0, 2.0)  # C warmest-month sea: whales at the cold, ice-edge feeding grounds
 DUGONG_SST = (20.0, 24.0)
+
+
+SALT_PARTS = ("salt_rock", "salt_lake", "salt_spring", "salt_sea", "salt_lick")  # (SALT_KINDS order, after "none")
 
 
 def _kind(L: dict, k: str) -> np.ndarray:
@@ -82,7 +95,19 @@ def salt(g, L: dict, land: np.ndarray, coast: np.ndarray, f) -> dict:
     out["salt_lake"] = np.where(land, np.where(lk == 3, 1.0, np.where(lk == 2, 0.8, 0.0)), 0.0)
     spring = f("spring") > 0
     beds = _nmax(g, _nmax(g, np.where(land & (rs >= 0.05), rs, 0.0)))
-    out["salt_spring"] = np.where(land & spring, 0.7 * ramp(beds, 0.05, 0.3), 0.0)
+    brine = np.zeros(g.n)  # a spring near evaporite, or any spring over a sedimentary basin (connate brine)
+    rock = f("surface_rock").astype(int)
+    for rid, w in BRINE.items():
+        brine[rock == rid] = w
+    brine *= ramp(f("sediment_cover"), *BRINE_COVER)
+    out["salt_spring"] = np.where(land & spring, np.maximum(0.7 * ramp(beds, 0.05, 0.3), brine), 0.0)
+    # playas: the end of a drainage that never reaches the sea, where the air takes more than the rain gives (salts stay)
+    aridity = f("pet") / np.maximum(f("precipitation"), 50.0)
+    down = np.asarray(L["downstream"]).astype(int) if "downstream" in L else np.full(g.n, 0)
+    playa = land & (down < 0) & (f("ice") <= 0)
+    out["salt_lake"] = np.maximum(out["salt_lake"], np.where(playa, ramp(aridity, *PLAYA_ARID), 0.0))
+    # licks: rivers that cut sodium-bearing clays bare
+    out["salt_lick"] = np.where(land & (f("flow") >= LICK_FLOW) & np.isin(rock, LICK_ROCK), LICK, 0.0)
     # the sea: salty enough, and dry enough for pans; the coast's form says how easy the flats are
     sal = _sea_to_coast(g, np.where(sea, f("salinity"), 0.0), sea, coast, 1)
     salty = ramp(sal, *SALINITY)
@@ -94,9 +119,9 @@ def salt(g, L: dict, land: np.ndarray, coast: np.ndarray, f) -> dict:
     ice_coast = _sea_to_coast(g, np.where(sea, f("sst_jul") < 2.0, False).astype(float), sea, coast, 1) > 0
     solar = arid * flats
     out["salt_sea"] = np.where(coast & ~ice_coast, salty * np.maximum(solar, SEA_BOIL * np.where(ct > 0, 1.0, 0.0)), 0.0)
-    out["salt"] = np.maximum.reduce([out[k] for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")])
+    out["salt"] = np.maximum.reduce([out[k] for k in SALT_PARTS])
     # distance over land to the nearest source (the sources' own value is a likelihood; the cell counts as a source from SRC_MIN)
-    kinds = np.stack([out[k] for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")])
+    kinds = np.stack([out[k] for k in SALT_PARTS])
     src = np.flatnonzero(land & (kinds.max(0) >= SRC_MIN))
     label = land.astype(np.int64)
     km = np.full(g.n, SALT_UNREACHED)

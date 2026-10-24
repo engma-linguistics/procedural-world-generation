@@ -1,6 +1,6 @@
 # Culinary brief: 10.0, 45.0 (r 500 km), 0 kyr ago
 
-Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed 7000, brief_version 2. Region: a circle; 267 land cells, 0.8312 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
+Run d58689 on world 1df1c3, tree D&D peoples (preset)@5aa933efb8 (fantasy), seed 7000, brief_version 3. Region: a circle; 267 land cells, 0.8312 Mkm2 of land, on the continent at 18°N 43°E (28 Mkm²).
 
 ## Land
 
@@ -19,8 +19,8 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Fuels
 
-- wood 0.4, charcoal 0.051, dung 0.0, peat 0.163, straw 0.0, grass 0.156, drift 0.0, coal 0.0, heath 0.0, oil 0.0, tallow 0.043, bone 0.014
-- Commonest: wood 48%, peat 21%, 255 17%
+- wood 0.427, charcoal 0.03, dung 0.0, peat 0.163, straw 0.0, grass 0.15, drift 0.0, coal 0.0, heath 0.0, oil 0.0, tallow 0.04, bone 0.013
+- Commonest: wood 49%, peat 21%, 255 18%
 - (the run's present (fuels.py))
 
 ## Wild food
@@ -36,9 +36,9 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Salt
 
-- Sources over the region's land (share of cells): rock 0%, lake 0%, spring 0%, sea 0%
-- Distance to salt: mean 2322 km, p90 2659 km, max 2816 km; within 100 km 0%; beyond 300 km 100%
-- Nearest source: rock salt 17%, sea salt 83%
+- Sources over the region's land (share of cells): rock 0%, lake 0%, spring 0%, sea 0%, lick 0%
+- Distance to salt: mean 835 km, p90 1330 km, max 1564 km; within 100 km 0%; beyond 300 km 97%
+- Nearest source: brine spring 26%, mineral lick 74%
 - Plant ash (fuel good, 0 to 1): 0.321
 
 ## Crops known (staples)
@@ -51,27 +51,25 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 
 ## Animals known
 
-- dogs: 89% of the land, here since 10.0 kyr ago (first tamed 10.5 kyr ago by kenku at 15.83, 50.1)
-- fowl: 89% of the land, here since 6.5 kyr ago (first tamed 8.5 kyr ago by kenku at -14.13, 48.29)
+- dogs: 88% of the land, here since 10.0 kyr ago (first tamed 10.5 kyr ago by kenku at 15.83, 50.1)
+- fowl: 88% of the land, here since 6.5 kyr ago (first tamed 8.5 kyr ago by kenku at -14.13, 48.29)
 
 ## Peoples
 
-- 226 peopled cells, 15% empty
-- kenku (kenku): 73%
+- 225 peopled cells, 16% empty
+- Ways of life (share of heads): not in this run
+- kenku (kenku): 100%
   - body: cannot taste sweet; feel no capsaicin heat; taste bitterness faintly; have a poor sense of smell; eat raw meat safely; cannot suck (they lap or tip their drink); have a beak and no teeth; are poisoned by alliums (onion, garlic) and theobromine (chocolate)
-- humans (human): 27%
-  - body: the human-like baseline
 
 ## Animal foods (from the animals known and the peoples' bodies)
 
-- Meat animals: fowl (89%)
-- Eggs: fowl (89%)
+- Meat animals: fowl (88%)
+- Eggs: fowl (88%)
 - Dairy animals: none
 
 ## Neighbours
 
-- kenku: 630 ring cells, also inside
-- human: 195 ring cells, also inside
+- kenku: 822 ring cells, also inside
 
 ## Events
 
@@ -80,7 +78,7 @@ Run 83098f on world 1df1c3, tree D&D peoples (preset)@96d6644b5e (fantasy), seed
 ## Suggested (rule-based, overrule freely)
 
 - wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)
-- salt is far (2322 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt
+- salt is far (835 km on average): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt
 
 ## Not modelled yet (null in the JSON)
 

@@ -1,21 +1,21 @@
 {
- "brief_version": 1,
- "run": "6ca7e0",
+ "brief_version": 3,
+ "run": "d58689",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@96d6644b5e",
+ "tree": "D&D peoples (preset)@5aa933efb8",
  "mode": "fantasy",
  "seed": 7000,
  "code": {
-  "commit": "afea16b",
-  "dirty": false,
-  "planet_src_sha": "02fbf6e3e71238ec"
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
  },
  "era_kyr": 3.0,
  "era_asked_kyr": 3.0,
  "place": {
   "lat": -4.5,
   "lon": 58.1,
-  "radius_km": 500.0,
+  "radius_km": 500,
   "basis": "a circle",
   "cells": 267,
   "land_cells": 226,
@@ -95,18 +95,22 @@
  },
  "bad_years": [],
  "fuels": {
-  "wood": 0.342,
+  "wood": 0.338,
   "charcoal": 0.029,
   "dung": 0.0,
-  "peat": 0.157,
+  "peat": 0.135,
   "straw": 0.0,
-  "grass": 0.343,
-  "drift": 0.072,
+  "grass": 0.254,
+  "drift": 0.044,
   "coal": 0.039,
+  "heath": 0.0,
+  "oil": 0.029,
+  "tallow": 0.086,
+  "bone": 0.029,
   "lead": {
    "wood": 0.46,
    "grass": 0.265,
-   "drift": 0.106
+   "peat": 0.084
   },
   "basis": "the run's present (fuels.py), not this era"
  },
@@ -144,6 +148,26 @@
     "id": "banana",
     "label": "bananas and plantains",
     "range_share": 0.996
+   },
+   {
+    "id": "coconut",
+    "label": "coconut and oil palm",
+    "range_share": 0.996
+   },
+   {
+    "id": "spice_tree",
+    "label": "pepper, cinnamon and other tropical spices",
+    "range_share": 0.996
+   },
+   {
+    "id": "cane",
+    "label": "sugar cane",
+    "range_share": 0.987
+   },
+   {
+    "id": "tea",
+    "label": "tea, coffee and other infusions",
+    "range_share": 0.752
    }
   ]
  },
@@ -151,7 +175,7 @@
   "basis": "the world's own moment; sea cells inside the region and its coast",
   "sea_cells": 41,
   "coast_cells": 26,
-  "river_runs": null,
+  "river_runs": 0.244,
   "kelp": 0.0,
   "reef": 0.073,
   "seagrass": 0.204,
@@ -167,9 +191,45 @@
   "good_mangrove": 0.021,
   "good_harbour": 0.079,
   "good_storm_coast": 0.018,
+  "coast_fish": 0.636,
+  "coast_shellfish": 0.59,
+  "coast_sea_mammals": 0.595,
+  "fish_mix": {
+   "sea": 0.4,
+   "river runs": 0.6,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {
+   "seals": 0.094,
+   "whales": 0.399
+  },
   "shelf": null
  },
- "salt": null,
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.08,
+   "lick": 0.093
+  },
+  "km_to_salt": {
+   "mean": 212,
+   "p90": 469,
+   "max": 626
+  },
+  "nearest_source": {
+   "sea salt": 0.199,
+   "mineral lick": 0.792
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.416,
+  "beyond_trade_km_share": 0.336,
+  "plant_ash": 0.316,
+  "poor": false
+ },
  "crops": [],
  "animals": [
   {
@@ -200,6 +260,8 @@
   }
  ],
  "peoples": {
+  "ways_of_life": {},
+  "groups": [],
   "peopled_cells": 217,
   "empty_share": 0.187,
   "others_together": 0.0,
@@ -210,6 +272,7 @@
     "share": 1.0,
     "groups_of": null,
     "overlay": false,
+    "way": null,
     "body": {
      "sweet": false,
      "milk": false,
@@ -237,6 +300,22 @@
   ],
   "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
  },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "fowl",
+    "known_share": 0.996
+   }
+  ],
+  "eggs": [
+   {
+    "id": "fowl",
+    "known_share": 0.996
+   }
+  ],
+  "dairy_animals": [],
+  "dairy_peoples": []
+ },
  "mixing_zones": [],
  "substrate": null,
  "neighbours": {
@@ -259,12 +338,12 @@
  "suggested": {
   "basis": "rule-based from this brief only; the culinary side overrules",
   "notes": [
-   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)"
+   "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)",
+   "a rich fishery on this coast: fish is a staple, salted or dried for the lean months"
   ],
   "drink": null
  },
  "not_modelled": {
-  "salt": "not modelled yet",
   "trade_reach": "not modelled yet",
   "reputation": "not modelled yet",
   "substrate": "not modelled yet",

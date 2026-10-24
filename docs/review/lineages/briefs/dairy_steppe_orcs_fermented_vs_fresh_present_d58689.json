@@ -1,0 +1,1019 @@
+{
+ "brief_version": 3,
+ "run": "d58689",
+ "world": "1df1c3",
+ "tree": "D&D peoples (preset)@5aa933efb8",
+ "mode": "fantasy",
+ "seed": 7000,
+ "code": {
+  "commit": "3596b11",
+  "dirty": true,
+  "planet_src_sha": "eca91942232cd8a8"
+ },
+ "era_kyr": 0.0,
+ "era_asked_kyr": 0.0,
+ "place": {
+  "lat": 12.6,
+  "lon": -49.6,
+  "radius_km": 335.0,
+  "basis": "the range of steppe_orc at 0.0 kyr ago (its cells; the radius is the farthest one from the centre)",
+  "cells": 28,
+  "land_cells": 28,
+  "area_mkm2": 0.0872,
+  "land_mkm2": 0.0872,
+  "landmass": "the large island at 27\u00b0N 54\u00b0W (0.4 Mkm\u00b2)"
+ },
+ "land": {
+  "koppen": {
+   "Aw tropical savanna": 0.464,
+   "Cfa humid subtropical": 0.464,
+   "Cwa subtropical, dry winter": 0.071
+  },
+  "temperature_c": 23.179,
+  "precipitation_mm": 902.571,
+  "tree_cover_pct": 0.143,
+  "elevation_m": {
+   "mean": 538.214,
+   "max": 925.0
+  },
+  "ice_share": 0.0,
+  "world_layers_basis": "the world's own moment (not this era)",
+  "biome": {
+   "savanna": 0.964,
+   "temperate grassland": 0.036
+  },
+  "soil": {
+   "chestnut steppe soil": 0.5,
+   "thin stony soil": 0.143,
+   "volcanic ash soil": 0.143,
+   "black earth": 0.143,
+   "young brown soil": 0.071
+  },
+  "fertile": {
+   "mean_0_4": 3.0,
+   "share_good": 0.75
+  },
+  "rivers": {
+   "navigable": {
+    "not navigable": 0.893,
+    "small boats": 0.107
+   },
+   "max_flow": 4.4,
+   "fresh_water_km_mean": 10.093,
+   "lake_share": 0.0
+  },
+  "coast": {
+   "coral coast": 0.923,
+   "beaches": 0.077
+  },
+  "harbour_best": "none",
+  "growing_months": 11.964,
+  "coldest_month_c": 23.522,
+  "warmest_month_c": 24.718,
+  "frost_months_est": 0.0,
+  "dry_season": null,
+  "seasons": {
+   "temperature_jan_c": 23.964,
+   "temperature_jul_c": 24.25,
+   "precipitation_jan_mm": 516.393,
+   "precipitation_jul_mm": 1293.821
+  },
+  "fire_months": 6.5,
+  "flood_month": 7,
+  "mud_months": 0.25,
+  "resources": {
+   "salt_deposit_likelihood": 0.0,
+   "coal": 0.0,
+   "peat_depth_m": 0.0
+  }
+ },
+ "bad_years": [],
+ "fuels": {
+  "wood": 0.0,
+  "charcoal": 0.0,
+  "dung": 0.496,
+  "peat": 0.0,
+  "straw": 0.067,
+  "grass": 0.171,
+  "drift": 0.116,
+  "coal": 0.0,
+  "heath": 0.0,
+  "oil": 0.107,
+  "tallow": 0.034,
+  "bone": 0.012,
+  "lead": {
+   "dung": 0.929,
+   "drift": 0.071
+  },
+  "basis": "the run's present (fuels.py)"
+ },
+ "wild_food": {
+  "mast": null,
+  "honey": null,
+  "fungi": null,
+  "foraging": 0.758,
+  "grazing": 0.993,
+  "timber": 0.037,
+  "game": [
+   {
+    "id": "horse",
+    "label": "horses",
+    "range_share": 0.821
+   },
+   {
+    "id": "dog",
+    "label": "dogs",
+    "range_share": 1.0
+   },
+   {
+    "id": "caprine",
+    "label": "sheep and goats",
+    "range_share": 0.964
+   },
+   {
+    "id": "cattle",
+    "label": "cattle",
+    "range_share": 1.0
+   }
+  ],
+  "wild_crops": [
+   {
+    "id": "wheat",
+    "label": "wheat and barley",
+    "range_share": 1.0
+   },
+   {
+    "id": "pulses",
+    "label": "lentils and peas",
+    "range_share": 1.0
+   },
+   {
+    "id": "foxtail_millet",
+    "label": "foxtail millet",
+    "range_share": 0.607
+   },
+   {
+    "id": "sorghum",
+    "label": "sorghum and pearl millet",
+    "range_share": 0.964
+   },
+   {
+    "id": "maize",
+    "label": "maize",
+    "range_share": 1.0
+   },
+   {
+    "id": "tree_fruit",
+    "label": "tree fruit and nuts",
+    "range_share": 1.0
+   },
+   {
+    "id": "vine",
+    "label": "grapes and vines",
+    "range_share": 1.0
+   },
+   {
+    "id": "oil_seeds",
+    "label": "oil seeds (sesame, flax, rape)",
+    "range_share": 1.0
+   },
+   {
+    "id": "chili",
+    "label": "chili-like capsicum",
+    "range_share": 1.0
+   },
+   {
+    "id": "greens",
+    "label": "cooking greens (brassicas, leeks)",
+    "range_share": 0.786
+   },
+   {
+    "id": "alliums",
+    "label": "onions and garlic",
+    "range_share": 1.0
+   }
+  ]
+ },
+ "fish": {
+  "basis": "the world's own moment; sea cells inside the region and its coast",
+  "sea_cells": 0,
+  "coast_cells": 13,
+  "river_runs": null,
+  "kelp": 0.0,
+  "reef": 0.0,
+  "seagrass": 0.0,
+  "salt_marsh": 0.0,
+  "mangrove": 0.192,
+  "upwelling": 0.0,
+  "seals": 0.0,
+  "seabirds": 0.188,
+  "sst_c": null,
+  "tide_range_m": 0.0,
+  "good_coral": 0.729,
+  "good_lagoon": 0.0,
+  "good_mangrove": 0.0,
+  "good_harbour": 0.135,
+  "good_storm_coast": 0.022,
+  "coast_fish": 0.827,
+  "coast_shellfish": 0.425,
+  "coast_sea_mammals": 0.708,
+  "fish_mix": {
+   "sea": 0.997,
+   "river runs": 0.003,
+   "lakes": 0.0
+  },
+  "lake_fish": null,
+  "sea_mammals": {
+   "seals": 0.0,
+   "whales": 0.541
+  },
+  "shelf": null
+ },
+ "salt": {
+  "basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+  "source_share_of_land": {
+   "rock": 0.0,
+   "lake": 0.0,
+   "spring": 0.0,
+   "sea": 0.464,
+   "lick": 0.036
+  },
+  "km_to_salt": {
+   "mean": 45,
+   "p90": 78,
+   "max": 156
+  },
+  "nearest_source": {
+   "sea salt": 0.857,
+   "mineral lick": 0.143
+  },
+  "unreached_share": 0.0,
+  "within_100km_share": 0.929,
+  "beyond_trade_km_share": 0.0,
+  "plant_ash": 0.386,
+  "poor": false
+ },
+ "crops": [
+  {
+   "id": "maize",
+   "label": "maize",
+   "known_share": 1.0,
+   "since_kyr": 8.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.8,
+    "lat": 15.75,
+    "lon": -36.23,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "oil_seeds",
+   "label": "oil seeds (sesame, flax, rape)",
+   "known_share": 1.0,
+   "since_kyr": 6.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 7.0,
+    "lat": 16.17,
+    "lon": -40.42,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "roots",
+   "label": "yams, taro and cassava",
+   "known_share": 1.0,
+   "since_kyr": 5.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.6,
+    "lat": 9.77,
+    "lon": -79.65,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "cane",
+   "label": "sugar cane",
+   "known_share": 0.786,
+   "since_kyr": 4.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 12.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "chili",
+   "label": "chili-like capsicum",
+   "known_share": 1.0,
+   "since_kyr": 4.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.0,
+    "lat": 17.43,
+    "lon": -36.44,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "tree_fruit",
+   "label": "tree fruit and nuts",
+   "known_share": 1.0,
+   "since_kyr": 4.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 6.3,
+    "lat": 25.82,
+    "lon": -54.87,
+    "people": "human"
+   },
+   "kind": "cuisine"
+  },
+  {
+   "id": "rice",
+   "label": "rice",
+   "known_share": 0.929,
+   "since_kyr": 3.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 8.3,
+    "lat": -8.02,
+    "lon": -50.21,
+    "people": "human"
+   },
+   "kind": "staple"
+  },
+  {
+   "id": "foxtail_millet",
+   "label": "foxtail millet",
+   "known_share": 1.0,
+   "since_kyr": 1.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.6,
+    "lat": -40.78,
+    "lon": -104.71,
+    "people": "human_arctic"
+   },
+   "kind": "staple"
+  }
+ ],
+ "animals": [
+  {
+   "id": "dog",
+   "label": "dogs",
+   "known_share": 1.0,
+   "since_kyr": 5.0,
+   "route": null,
+   "origin": {
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
+   }
+  },
+  {
+   "id": "caprine",
+   "label": "sheep and goats",
+   "known_share": 1.0,
+   "since_kyr": 1.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 11.8,
+    "lat": 20.44,
+    "lon": -81.44,
+    "people": "human"
+   }
+  },
+  {
+   "id": "cattle",
+   "label": "cattle",
+   "known_share": 1.0,
+   "since_kyr": 1.5,
+   "route": null,
+   "origin": {
+    "kyr_ago": 9.0,
+    "lat": -1.65,
+    "lon": -80.76,
+    "people": "human"
+   }
+  }
+ ],
+ "peoples": {
+  "ways_of_life": {
+   "farmer": 0.617,
+   "forager": 0.307
+  },
+  "groups": [
+   {
+    "id": "human_farmer",
+    "name": "human farmers",
+    "share": 0.316,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "farmer",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "steppe_orc",
+    "name": "steppe orcs",
+    "share": 0.271,
+    "groups_of": "orc",
+    "overlay": false,
+    "way": "pastoral_nomad",
+    "body": {
+     "sweet": true,
+     "milk": 0.1,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "keen",
+     "diet": "omnivore",
+     "raw_meat": true,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.1,
+     "animals": [
+      "cattle",
+      "caprine"
+     ],
+     "dairy_share": 0.1
+    }
+   },
+   {
+    "id": "human_herder",
+    "name": "human herders",
+    "share": 0.143,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "transhumant",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.413
+    }
+   },
+   {
+    "id": "human_seafarer",
+    "name": "human seafarers",
+    "share": 0.135,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "fisher_forager",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "human_nomad",
+    "name": "human nomads",
+    "share": 0.12,
+    "groups_of": "human",
+    "overlay": false,
+    "way": "pastoral_nomad",
+    "body": {
+     "sweet": true,
+     "milk": 0.6,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    },
+    "dairy": {
+     "milk_share": 0.6,
+     "animals": [
+      "cattle",
+      "horse",
+      "caprine"
+     ],
+     "dairy_share": 0.204
+    }
+   },
+   {
+    "id": "hill_dwarf",
+    "name": "hill dwarves",
+    "share": 0.119,
+    "groups_of": "dwarf",
+    "overlay": false,
+    "way": null,
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "low",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   }
+  ],
+  "peopled_cells": 28,
+  "empty_share": 0.0,
+  "others_together": 0.076,
+  "list": [
+   {
+    "id": "human",
+    "name": "humans",
+    "share": 0.617,
+    "groups_of": null,
+    "overlay": false,
+    "way": "farmer",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   },
+   {
+    "id": "halfling",
+    "name": "halflings",
+    "share": 0.307,
+    "groups_of": null,
+    "overlay": false,
+    "way": "forager",
+    "body": {
+     "sweet": true,
+     "milk": false,
+     "capsaicin": true,
+     "bitter": "normal",
+     "smell": "normal",
+     "diet": "omnivore",
+     "raw_meat": false,
+     "cellulose": false,
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
+    }
+   }
+  ],
+  "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"
+ },
+ "animal_foods": {
+  "meat": [
+   {
+    "id": "caprine",
+    "known_share": 1.0
+   },
+   {
+    "id": "cattle",
+    "known_share": 1.0
+   }
+  ],
+  "eggs": [],
+  "dairy_animals": [
+   {
+    "id": "caprine",
+    "known_share": 1.0
+   },
+   {
+    "id": "cattle",
+    "known_share": 1.0
+   }
+  ],
+  "dairy_peoples": [
+   {
+    "id": "steppe_orc",
+    "lactase_share": 0.1,
+    "milk_share": 0.1,
+    "dairy_share": 0.1,
+    "animals": [
+     "cattle",
+     "caprine"
+    ],
+    "use": "soured and curdled: yogurt, kefir, cheese, butter (the lactose is fermented away)"
+   },
+   {
+    "id": "human_herder",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.413,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   },
+   {
+    "id": "human_nomad",
+    "lactase_share": 0.6,
+    "milk_share": 0.6,
+    "dairy_share": 0.204,
+    "animals": [
+     "cattle",
+     "horse",
+     "caprine"
+    ],
+    "use": "fresh milk, butter and cream"
+   }
+  ]
+ },
+ "mixing_zones": [],
+ "substrate": null,
+ "neighbours": {
+  "ring_km": 600.0,
+  "list": [
+   {
+    "id": "human",
+    "ring_cells": 220,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "hill_giant",
+    "ring_cells": 18,
+    "also_in_region": true,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "orc",
+    "ring_cells": 17,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "tabaxi",
+    "ring_cells": 16,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "dwarf",
+    "ring_cells": 3,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   },
+   {
+    "id": "hobgoblin",
+    "ring_cells": 3,
+    "also_in_region": false,
+    "border_km": null,
+    "since_kyr": null,
+    "tier": null
+   }
+  ],
+  "tier_note": "interfertility tiers: not modelled yet"
+ },
+ "trade_reach": null,
+ "events": [
+  {
+   "kyr_ago": 0.2,
+   "kind": "crops",
+   "text": "tea, coffee and other infusions cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a sailing ship (1203 km of open sea)",
+   "km": 232
+  },
+  {
+   "kyr_ago": 1.9,
+   "kind": "animals",
+   "text": "sheep and goats cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a sailing ship (963 km of open sea)",
+   "km": 343
+  },
+  {
+   "kyr_ago": 4.4,
+   "kind": "crops",
+   "text": "tree fruit and nuts cross the sea to the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2) in a planked boat (963 km of open sea)",
+   "km": 343
+  },
+  {
+   "kyr_ago": 6.0,
+   "kind": "group",
+   "text": "human seafarers becomes a way of life among the humans (where its way of life suits the land better than its people's)",
+   "km": 145
+  },
+  {
+   "kyr_ago": 6.0,
+   "kind": "arrival",
+   "text": "tritons (from the plane of water) arrives (habitat)",
+   "km": 569
+  },
+  {
+   "kyr_ago": 8.0,
+   "kind": "group",
+   "text": "hill dwarves becomes a way of life among the dwarves (at its people's range edge (no land suits it better there))",
+   "km": 198
+  },
+  {
+   "kyr_ago": 9.0,
+   "kind": "group",
+   "text": "forest orcs becomes a way of life among the orcs (at its people's range edge (no land suits it better there))",
+   "km": 451
+  },
+  {
+   "kyr_ago": 9.0,
+   "kind": "group",
+   "text": "steppe orcs becomes a way of life among the orcs (at its people's range edge (no land suits it better there))",
+   "km": 87
+  },
+  {
+   "kyr_ago": 58.0,
+   "kind": "lingers",
+   "text": "half-orcs live on as a people of their own where humans and orcs last met",
+   "km": 75
+  },
+  {
+   "kyr_ago": 60.0,
+   "kind": "hybrid",
+   "text": "half-orcs appears where human and orc meet (where the parents meet)",
+   "km": 75
+  },
+  {
+   "kyr_ago": 100.0,
+   "kind": "split",
+   "text": "halflings splits from archaic_human (beside the parent's range (new niche))",
+   "km": 388
+  },
+  {
+   "kyr_ago": 300.0,
+   "kind": "split",
+   "text": "storm giants splits from sky_giant (edge of the parent's range)",
+   "km": 193
+  },
+  {
+   "kyr_ago": 500.0,
+   "kind": "split",
+   "text": "dwarves splits from hominid (beside the parent's range (new niche))",
+   "km": 347
+  },
+  {
+   "kyr_ago": 800.0,
+   "kind": "split",
+   "text": "sky giants stem (storm and cloud kin) splits from true_giant (edge of the parent's range)",
+   "km": 463
+  },
+  {
+   "kyr_ago": 900.0,
+   "kind": "split",
+   "text": "hill giants splits from true_giant (inside the parent's range)",
+   "km": 628
+  },
+  {
+   "kyr_ago": 1200.0,
+   "kind": "split",
+   "text": "true giants stem (the ordning) splits from giantkin (edge of the parent's range)",
+   "km": 482
+  },
+  {
+   "kyr_ago": 1500.0,
+   "kind": "split",
+   "text": "giant-kin stem splits from hominid (beside the parent's range (new niche))",
+   "km": 506
+  }
+ ],
+ "reputation": null,
+ "suggested": {
+  "basis": "rule-based from this brief only; the culinary side overrules",
+  "notes": [
+   "dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing",
+   "the sea is the salt: cheap, so curing, brining and fish sauce are possible",
+   "a rich fishery on this coast: fish is a staple, salted or dried for the lean months",
+   "chili-like peppers are grown here: heat is a local seasoning",
+   "sugar cane is grown here: sugar and cane syrup sweeten, and ferment",
+   "grain is grown here: what ferments follows what is stored, so beer or bread before wine"
+  ],
+  "drink": null
+ },
+ "people": {
+  "id": "steppe_orc",
+  "name": "steppe orcs",
+  "origin": "group",
+  "parents": [
+   "orc"
+  ],
+  "lineage_chain": [
+   {
+    "id": "steppe_orc",
+    "name": "steppe orcs",
+    "origin": "group",
+    "ago_kyr": 9.0
+   },
+   {
+    "id": "orc",
+    "name": "orcs",
+    "origin": "split",
+    "ago_kyr": 700.0
+   },
+   {
+    "id": "hominid",
+    "name": "hominid stem",
+    "origin": "split",
+    "ago_kyr": 2000.0
+   },
+   {
+    "id": "mammalian",
+    "name": "mammalian stem",
+    "origin": "root",
+    "ago_kyr": 10000.0
+   }
+  ],
+  "groups": [],
+  "group_of": "orc",
+  "overlay": false,
+  "way": "pastoral_nomad",
+  "body": {
+   "sweet": true,
+   "milk": 0.1,
+   "capsaicin": true,
+   "bitter": "normal",
+   "smell": "keen",
+   "diet": "omnivore",
+   "raw_meat": true,
+   "cellulose": false,
+   "toxic": [],
+   "suction": "normal",
+   "teeth": "grinding",
+   "gut": "simple",
+   "salt": "normal",
+   "display": "none",
+   "shed": "none",
+   "hours": "diurnal",
+   "thermo": "endo",
+   "fire": true
+  },
+  "started_kyr": 9.0,
+  "ended_kyr": null,
+  "extinct_kyr": null,
+  "origin_place": {
+   "cell": 110663,
+   "lat": 11.99,
+   "lon": -50.1,
+   "ago_kyr": 9.0,
+   "wanted_kyr": 9.0,
+   "epoch": "recent",
+   "why": "at its people's range edge (no land suits it better there)"
+  },
+  "demography": {
+   "density": 1.0,
+   "explore": 0.7,
+   "sea_share": 0.03,
+   "insularity": 0.5
+  },
+  "present": {
+   "area_mkm2": 0.09,
+   "patches": 1,
+   "population": 23618,
+   "centroid": [
+    12.59,
+    -49.57
+   ],
+   "by_landmass": {
+    "4": 23618
+   }
+  },
+  "homeland": null,
+  "neighbours_present": {
+   "human_farmer": 132,
+   "human": 128,
+   "halfling": 114,
+   "half_orc": 114,
+   "hill_giant": 80,
+   "human_herder": 80,
+   "hill_dwarf": 70,
+   "human_nomad": 70
+  },
+  "story": "Steppe orcs became a way of life among the orcs ~9 kyr ago at the edge of its people's land, on the continent at 6\u00b0N 31\u00b0W (7.4 Mkm\u00b2). Today: about 24,000 in 0.09 Mkm\u00b2 in one land; neighbours human farmers, humans, halflings, half-orcs. It took up dogs (~5.3 kyr ago), sheep and goats (~1.8 kyr ago) and cattle (~1.5 kyr ago). Its milk-drinking 10% keep dairy herds of cattle and sheep and goats. The steppe orcs 10% digest milk as adults, have a keen sense of smell, and eat raw meat safely. It cooks over dung fires.",
+  "reputation": null
+ },
+ "not_modelled": {
+  "trade_reach": "not modelled yet",
+  "reputation": "not modelled yet",
+  "substrate": "not modelled yet",
+  "honey": "not modelled yet",
+  "mast": "not modelled yet",
+  "fungi": "not modelled yet",
+  "interfertility_tiers": "not modelled yet"
+ }
+}

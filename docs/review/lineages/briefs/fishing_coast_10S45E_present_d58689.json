@@ -1,21 +1,21 @@
 {
- "brief_version": 2,
- "run": "83098f",
+ "brief_version": 3,
+ "run": "d58689",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@96d6644b5e",
+ "tree": "D&D peoples (preset)@5aa933efb8",
  "mode": "fantasy",
  "seed": 7000,
  "code": {
-  "commit": "aad7a33",
+  "commit": "3596b11",
   "dirty": true,
-  "planet_src_sha": "0177d486106eb63f"
+  "planet_src_sha": "eca91942232cd8a8"
  },
  "era_kyr": 0.0,
  "era_asked_kyr": 0.0,
  "place": {
   "lat": -10.0,
   "lon": 45.0,
-  "radius_km": 500.0,
+  "radius_km": 500,
   "basis": "a circle",
   "cells": 268,
   "land_cells": 242,
@@ -96,7 +96,7 @@
  "bad_years": [],
  "fuels": {
   "wood": 0.715,
-  "charcoal": 0.069,
+  "charcoal": 0.07,
   "dung": 0.0,
   "peat": 0.095,
   "straw": 0.0,
@@ -232,21 +232,23 @@
    "rock": 0.0,
    "lake": 0.0,
    "spring": 0.0,
-   "sea": 0.062
+   "sea": 0.062,
+   "lick": 0.14
   },
   "km_to_salt": {
-   "mean": 494,
-   "p90": 939,
-   "max": 1095
+   "mean": 154,
+   "p90": 313,
+   "max": 469
   },
   "nearest_source": {
-   "sea salt": 1.0
+   "sea salt": 0.264,
+   "mineral lick": 0.736
   },
   "unreached_share": 0.0,
-  "within_100km_share": 0.128,
-  "beyond_trade_km_share": 0.719,
+  "within_100km_share": 0.455,
+  "beyond_trade_km_share": 0.182,
   "plant_ash": 0.588,
-  "poor": true
+  "poor": false
  },
  "crops": [],
  "animals": [
@@ -278,6 +280,8 @@
   }
  ],
  "peoples": {
+  "ways_of_life": {},
+  "groups": [],
   "peopled_cells": 242,
   "empty_share": 0.097,
   "others_together": 0.0,
@@ -288,6 +292,7 @@
     "share": 1.0,
     "groups_of": null,
     "overlay": false,
+    "way": null,
     "body": {
      "sweet": false,
      "milk": false,
@@ -373,7 +378,6 @@
   "basis": "rule-based from this brief only; the culinary side overrules",
   "notes": [
    "wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)",
-   "salt is far (494 km on average; only the coast itself makes it): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and season with plant ash before salt",
    "a rich fishery on this coast: fish is a staple, salted or dried for the lean months"
   ],
   "drink": null

@@ -38,4 +38,5 @@ updated: 2026-10-24
 - [ ] a schema doc (field, unit, source, era-dependence) beside the examples
 
 ## Updates
+- 2026-10-24: Built on branch fun10: `planet brief RUN --all [--eras ...] --out DIR` (people and group briefs per default era slice 0, 0.5, 1, 2, 3, 6, 9, 12 kyr, plus mixing zones), brief_version 3 (ways of life, mineral licks), schema doc docs/review/lineages/briefs/SCHEMA.md. Still open: per-era group ranges (a group falls back to its people's range before the present), fuels per era, route.
 - 2026-10-24: Created from inbox draft draft-brief-follow-ups-after-first-cut.md (found by fun8).
