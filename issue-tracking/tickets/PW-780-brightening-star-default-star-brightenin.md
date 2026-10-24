@@ -1,4 +1,5 @@
 ---
+id: PW-780
 title: "Brightening star default star_brightening 0.45 (a K-type star) is a chosen number: owner sign-off, and check 2 Gyr runs and the cold/hothouse recipes on it"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: v1-finish-7
 blocked_by: []
 relates: [PW-761, PW-750, PW-564, PW-576, PW-708, PW-202]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/base-climate/v1-finish-7/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -42,3 +45,6 @@ points:
   over the run; re-pick if they read wrong.
 - [ ] PW-564's ticket text estimated the model's sensitivity at 0.56-0.6 C per W/m2. The model's own value is
   co2_sensitivity / (5.35 ln 2) = 0.81: 3 C is per doubling, not per e-fold. star_forcing uses 0.81.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-star-brightening-default-signoff.md (found by v1-finish-7).
