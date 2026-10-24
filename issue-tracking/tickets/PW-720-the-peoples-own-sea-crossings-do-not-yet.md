@@ -1,4 +1,5 @@
 ---
+id: PW-720
 title: The peoples' own sea crossings do not yet follow the craft ladder that now gates animals
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun6
 blocked_by: []
 relates: [PW-688, PW-702, PW-675]
 refs: [planet/lineages/crossing.py, planet/lineages/animal_defs.py, planet/lineages/spec.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,3 +26,6 @@ read the same ladder (reach and date per craft) and decide whether the sailing s
 Also: animals land only on peopled cells (an empty island gets them with its settlers), and a landing is a chance per
 0.5 kyr (`BOAT_RATE`), fine for a first pass.
 - [ ] one ladder for people and animals
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-boats-for-peoples-follow-the-craft-ladder.md (found by fun6).

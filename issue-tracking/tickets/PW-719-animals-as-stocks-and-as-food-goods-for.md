@@ -1,4 +1,5 @@
 ---
+id: PW-719
 title: Animals as stocks and as food goods for the culinary pass (separate stocks, dairy, meat animals, fowl and eggs)
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: fun6
 blocked_by: []
 relates: [PW-691, PW-692, PW-694]
 refs: [planet/lineages/animals.py, planet/lineages/animal_defs.py, docs/proposals/lineages.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -25,3 +28,6 @@ homogeneous stock, stored as two bit-flag layers (`animal_wild`, `animal_known`)
 - no wild fauna that is not tamed (eland-like, owner ruling): wild ranges exist only for the table's animals; a hunting
   good from the same range functions would be cheap.
 - [ ] decide the per-cell representation (bit flags per people, or a share layer per animal)
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-animals-stocks-and-goods-for-cuisine.md (found by fun6).

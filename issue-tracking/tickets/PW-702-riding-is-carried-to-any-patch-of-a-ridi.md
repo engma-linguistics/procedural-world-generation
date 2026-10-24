@@ -2,7 +2,7 @@
 id: PW-702
 title: Riding is carried to any patch of a riding people at once, even across the sea; tie it to boats and add mounts for the big and the winged
 type: task
-status: todo
+status: done
 parent: PW-688
 milestone: v2
 subsystem: timezoom
@@ -24,5 +24,6 @@ Follow-ups:
 - Taming more than once exists (AGAIN_RATE 0.06 /kyr per landmass with herders on wild range) but with `_carry` it almost never fires on 1df1c3 because riding arrives first; check on worlds with a separate steppe continent.
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged: riding and other animals cross the sea only by craft able to carry them.
 - 2026-10-24: Done on branch fun6: `_carry` is replaced by boat crossings (animals.Stock._sail) by craft size and crew sea share; mounts for the big and winged remain only as the table's fantasy rows (great elk, riding lizards).
 - 2026-10-23: Created from inbox draft draft-riding-carried-instantly-across-seas.md (found by horses-senses).

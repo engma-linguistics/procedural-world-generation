@@ -1,4 +1,5 @@
 ---
+id: PW-718
 title: Who tames dogs and fowl is any people without a farm or herd use (dragonborn, kenku), not hunters by trait
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun6
 blocked_by: []
 relates: [PW-691, PW-692, PW-695]
 refs: [planet/lineages/animals.py, planet/lineages/animal_defs.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,3 +26,7 @@ Options: (A) weight the draw by a `hunter` trait or the foraging use only (`LU.s
 fantasy-world feature (any people may tame dogs), (C) per-animal `tame_traits`. Lean A with the tree's own traits.
 Effects are small (dogs: speed x1.15, forage capacity +10%), so this is about the stories and the culinary goal.
 - [ ] dogs are tamed by a foraging people in the real mode (humans), by the table's tamers in fantasy mode
+
+## Updates
+- 2026-10-23: Fold into the crops lane: tamers by trait (foraging/hunting use), not by absence of farm/herd.
+- 2026-10-23: Created from inbox draft draft-animal-tamers-by-trait.md (found by fun6).
