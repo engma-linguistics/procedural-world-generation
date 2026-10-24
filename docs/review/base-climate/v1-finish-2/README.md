@@ -102,4 +102,32 @@ pytest 623 passed, 1 skipped (`step1/full.txt`). Docs: coordination.md's recipes
 **Earth world:** `tools/earth_world.py` (L6) -> **506694** ("Earth (today, ETOPO1) — model vs observed"). The
 worktree needed `data/earth/` copied from the main checkout (the Koppen server resets connections).
 
-(The four L7 planets: filled in below once made.)
+**The four L7 planets** (`planet make --level 7`, random seeds, earthlike, 1000 Myr, 300 kyr time zoom, now =
+interglacial, 4 zooms; on 2ac35b4's code, so resource and coast layers in every world, barrier islands and deposits
+in every zoom; made 2026-10-23 21:58 - 00:40, ~2.7 h at load 16-50):
+
+| seed | run @ Myr | time zoom | world | zooms | icehouse 300-1000 | deepest ice |
+|---|---|---|---|---|---|---|
+| 733847 | 89c2ab @ 700 | 04e831 | a95cdc | f7b835 5681aa 7d4da9 9af754 | 70% | -369 m |
+| 819014 | 6ca373 @ 804 | d07f9f | 09262b | fc539e 722133 d192a3 5f1ab3 | 79% | -428 m |
+| 53669 | 8b1617 @ 864 | 7ff0cd | 730669 | 985225 529333 203584 5aaba5 | 63% | -476 m |
+| 958504 | 7f4f06 @ 996 | 0e0301 | d86d34 | a1dd8e ee382f 734bff 96804b | 67% | -429 m |
+
+Viewer: http://127.0.0.1:8765/viewer/?world=a95cdc.json, ?world=09262b.json, ?world=730669.json,
+?world=d86d34.json; runs ?run=89c2ab etc.; Earth ?world=506694.json&layer=temperature.
+
+**All four L7 histories fail the owner's bar** (63-79% icehouse), where L6 passes 24/32 at a median of 33%. Four
+in a row is ~2e-4 under the L6 distribution: a level effect, not the draw. Inbox draft
+`draft-l7-runs-icier-than-l6.md` (v1, high). The presents are interglacials inside the icehouse (PW-700), so the
+worlds look right; the run histories are icier than the bar.
+
+Old showcase, superseded, **not deleted** (the coordinator deletes once the fun lane is clear): runs a6643c,
+3a0480, 0d1889, 89bea8; time zooms fc82c2, 141402, 7deb8a, 6e96d2; worlds 1df1c3, afcee8, 1f0505, 3e9e7d (and
+bdded2, another finished world of 89bea8); Earth world 577526 (an Earth time-zoom world, kept) is not replaced by
+506694 (earth_world.py's model-vs-observed world). Peoples runs fa7183 / 18cf62 and zoom c0edc3 (and 9dc3d3,
+6920a9, f5958f, 3433f0 on the old runs) are superseded too, untouched.
+
+## Left
+
+- `draft-l7-runs-icier-than-l6.md`: the v1 blocker for the showcase's histories.
+- Delete the superseded showcase once the fun lane is clear (coordinator).
