@@ -2,7 +2,7 @@
 id: PW-760
 title: seven_meals.toml assumes the leans on the open PW-734 questions (Q2 dates, Q7 sweet raptors, Q8 source of truth, Q9 marine, Q10 fantasy-only)
 type: task
-status: needs-decision
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -28,5 +28,6 @@ Also decided in the preset and worth a glance: the memory length of the devil an
 Lean: keep all as written; the owner only needs to answer if one is wrong.
 
 ## Updates
+- 2026-10-24: Status needs-decision -> done. Answered on PW-734 (owner 2026-10-24).
 - 2026-10-24: Same open questions as PW-734 Q2/7/8/9/10; answer there, close both.
 - 2026-10-24: Created from inbox draft draft-seven-meals-assumptions-awaiting-owner.md (found by fun13).
