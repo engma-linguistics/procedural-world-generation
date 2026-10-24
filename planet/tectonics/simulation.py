@@ -261,7 +261,7 @@ class Simulation:
         plates at the end."""
         conv = np.clip(bd.conv, 0, 15)
         thermostat, shrink = crust.thermostats(self)
-        growth = crust.arc_growth(self, bd, conv, thermostat)
+        growth, outgas = crust.arc_growth(self, bd, conv, thermostat)
         stretch = crust.rift_stretching(self, bd)
         head, apron, vents, dome = volcanism.hotspots(self, rng, bd)
 
@@ -289,7 +289,7 @@ class Simulation:
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
         # numbers the tectonics draws shouldn't reshuffle the climate history)
-        earth.global_temperature(self, growth, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
+        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
             self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
                                     sediment_km(col.cover, col.x)))

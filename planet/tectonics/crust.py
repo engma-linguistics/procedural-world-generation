@@ -78,22 +78,29 @@ def thermostats(sim):
     return thermostat, shrink
 
 
-def spread(sim, src_rate, width, gap=0.0):
+def spread(sim, src_rate, width, gap=0.0, also=None):
     """A rate at source cells, spread over a Gaussian belt `width` level-5
     cells wide on the same plate; with a gap (level-5 cells), little of it
-    lands within ~gap of the source (1 - e^-(d/gap)^2)."""
+    lands within ~gap of the source (1 - e^-(d/gap)^2). also: a second rate
+    at the same source cells (> 0 where src_rate is), spread the same way
+    and returned with the first (one search for both)."""
     g, n = sim.grid, sim.grid.n
     src = np.flatnonzero(src_rate > 0)
     if len(src) == 0:
-        return np.zeros(n)
+        return np.zeros(n) if also is None else (np.zeros(n), np.zeros(n))
     w = width * sim.scale
     dist, s = kernels.bfs_within(src, sim.owner, g.nbr_off, g.nbr_idx, int(3 * w))
-    out = np.zeros(n)
     hit = s >= 0
-    out[hit] = src_rate[s[hit]] * np.exp(-((dist[hit] / w) ** 2))
-    if gap > 0:
-        out[hit] *= 1 - np.exp(-((dist[hit] / (gap * sim.scale)) ** 2))
-    return out
+    bell = np.exp(-((dist[hit] / w) ** 2))
+    near = 1 - np.exp(-((dist[hit] / (gap * sim.scale)) ** 2)) if gap > 0 else None
+    outs = []
+    for rate in (src_rate,) if also is None else (src_rate, also):
+        out = np.zeros(n)
+        out[hit] = rate[s[hit]] * bell
+        if near is not None:
+            out[hit] *= near
+        outs.append(out)
+    return outs[0] if also is None else tuple(outs)
 
 
 def arc_growth(sim, bd, conv, thermostat):
@@ -106,13 +113,17 @@ def arc_growth(sim, bd, conv, thermostat):
     the nominal rate. (Steering both made a volume shortfall build new
     continent out of island arcs: more area instead of thicker crust, which
     the area thermostat then wore away again at the continents' edges, and
-    the continents thinned over the run: PW-046, PW-052.)"""
+    the continents thinned over the run: PW-046, PW-052.)
+    Returns (growth, nominal): nominal is the same arcs at their nominal
+    rate (thermostat 1), the melt the subducting slabs make, which is what
+    the arcs outgas (earth.global_temperature's CO2 source, PW-741)."""
     p = sim.params
     up = bd.overriding
     gain = np.where(sim.w_cont[up], thermostat, 1.0)
-    arc_src = np.zeros(sim.grid.n)
+    arc_src, arc_nom = np.zeros(sim.grid.n), np.zeros(sim.grid.n)
     np.maximum.at(arc_src, up, p.arc_growth * sim.heat() * gain * bd.at_trenches(conv))
-    return spread(sim, arc_src, 1.6, FOREARC_KM / L5_KM)
+    np.maximum.at(arc_nom, up, p.arc_growth * sim.heat() * bd.at_trenches(conv))
+    return spread(sim, arc_src, 1.6, FOREARC_KM / L5_KM, also=arc_nom)
 
 
 def rift_stretching(sim, bd):
