@@ -112,6 +112,21 @@ def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = No
 
 
 CHAIN_CELLS = 4
+PORTAL_SEP_KM = 1800.0  # portals are at least this far apart
+PORTAL_KM = 700.0  # an arriving people founds at a portal if it can live within this of it...
+PORTAL_FAR_KM = 2500.0  # ...else within this of it (the portal opens onto bad ground for it); else at its best habitat anywhere
+
+
+def _depth(grid, mask, cap: int = 80) -> np.ndarray:
+    """How deep each cell of `mask` lies in it, in cells from the edge (successive erosions), 0 outside."""
+    d = np.zeros(grid.n)
+    cur = mask.copy()
+    for _ in range(cap):
+        if not cur.any():
+            break
+        d += cur
+        cur = cur & _nbr(np.logical_and, cur[grid.nbr_idx], grid)
+    return d
 
 
 def _nbr(ufunc, vals, grid):
@@ -225,6 +240,7 @@ class History:
         self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
         self._land_m: dict[str, tuple] = {}
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
+        self._portals = None  # (the arrivals' portals, portal_cells)
         self._K_now: dict[int, np.ndarray] = {}  # (each line's habitat this step, and the contact value: the composition's reach)
         self._corr_now = None
         g = self.grid
@@ -383,6 +399,27 @@ class History:
             if K[cell] <= EST:
                 cell = int(np.argmax(np.where(tags["land"], K + 1e-6, 0) * noise))
                 why += " (poor habitat)"
+            if line.origin == "arrival" and not line.place and self.tree.portal_mode != "off" and self.portal_cells():
+                # through the portals (PW-697): at each where the people can live within PORTAL_KM (else, within
+                # PORTAL_FAR_KM of the nearest that can hold it; else at its best habitat anywhere, as without portals)
+                near, far = [], []
+                for pt in self.portal_cells():
+                    d = np.arccos(np.clip(g.centers @ g.centers[pt["cell"]], -1, 1)) * R_KM
+                    ok = (d < PORTAL_KM) & (K > EST)
+                    if ok.any():
+                        near.append((int(np.argmax(np.where(ok, K * noise, 0))), pt["kind"]))
+                        continue
+                    ok = (d < PORTAL_FAR_KM) & (K > EST)
+                    if ok.any():
+                        far.append((float(d[ok].min()), int(np.argmax(np.where(ok, K * noise * np.exp(-d / 1000), 0))), pt["kind"]))
+                if not near and far:
+                    f = min(far)
+                    near = [(f[1], f[2])]
+                if near:
+                    cell = near[0][0]
+                    for c, _ in near[1:]:
+                        self._seed_blob(k, c, K, K > EST, 3)
+                    why = f"through {'a portal' if len(near) == 1 else str(len(near)) + ' portals'} ({', '.join(sorted({f[1] for f in near}))})"
             self._seed_blob(k, cell, K, K > EST, 3)
         elif line.origin == "split":
             pk = self.idx[line.parents[0]]
@@ -445,6 +482,68 @@ class History:
             why = f"{len(cells)} incursion sites in the hosts' range"
         self._record_origin(line, step, cell, why)
         return True
+
+    def present(self):
+        """The present epoch's env and tags (built once)."""
+        if self._pres is None:
+            env = self.steps[-1].get()
+            self._pres = (env, _tags(self.grid, env, self._chains, self._volcanic()))
+        return self._pres
+
+    def portal_cells(self) -> list[dict]:
+        """The portals the arrivals from outside come through (meta.portal_mode random | sites, meta.portals; PW-697):
+        chosen once per try on today's land, at least PORTAL_SEP_KM apart. 'random': any ice-free land. 'sites': the
+        tree's portal_sites in turn, shuffled: the deepest part of the largest forest, the middle of the largest desert,
+        a coral reef coast, the foot of a volcanic cone (land beside young volcanic ground)."""
+        if self._portals is not None:
+            return self._portals
+        tree, g = self.tree, self.grid
+        env, tags = self.present()
+        land = tags["land"]
+        out: list[dict] = []
+        if tree.portal_mode == "off" or not land.any():
+            self._portals = out
+            return out
+        noise = self.rng.random(g.n)
+        free = land.copy()
+
+        def pick(score, kind):
+            sc = np.where(free, score, 0.0)
+            if sc.max() <= 0:
+                return False
+            c = int(np.argmax(sc + 1e-6 * noise * (sc > 0)))
+            out.append({"cell": c, "kind": kind, "lat": round(float(g.lat[c]), 2), "lon": round(float(g.lon[c]), 2)})
+            d = np.arccos(np.clip(g.centers @ g.centers[c], -1, 1)) * R_KM
+            free[d < PORTAL_SEP_KM] = False
+            return True
+
+        if tree.portal_mode == "random":
+            for _ in range(tree.portals):
+                if not pick(land * 1.0, "random"):
+                    break
+        else:
+            scores = {}
+            if "forest" in tree.portal_sites:
+                scores["forest"] = _depth(g, tags["forest"])
+            if "desert" in tree.portal_sites:
+                scores["desert"] = _depth(g, tags["desert"])
+            if "reef" in tree.portal_sites and self.goods is not None and "coral" in self.goods:
+                scores["reef"] = np.where(land, np.asarray(self.goods["coral"], float), 0.0)
+            if "volcano" in tree.portal_sites and tags["volcanic"].any():
+                v = tags["volcanic"]
+                foot = self._dilate(v, 2) & land & ~v
+                scores["volcano"] = foot * (1.0 + self._dilate(v, 1) * 0.5)
+            kinds = [k for k in tree.portal_sites if k in scores]
+            if not kinds:  # (none of those places on this world: anywhere)
+                kinds = ["random"]
+                scores["random"] = land * 1.0
+            order = [kinds[i] for i in self.rng.permutation(len(kinds))]
+            for i in range(tree.portals):
+                for k in order[i % len(order):] + order[:i % len(order)]:  # (this kind first, any other if it has no room left)
+                    if pick(scores[k], k):
+                        break
+        self._portals = out
+        return out
 
     def _group_origin(self, line, step, env, tags, K):
         """A way of life within a people (PW-665): it takes hold where its own habitat beats its people's by
@@ -1184,15 +1283,22 @@ def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: 
     hybrid whose parents no longer meet); one try without wishes."""
     best = None
     n = tries if tree.wishes else 1
-    scores = []
+    scores, tstats = [], []
     for k in range(n):
         h = History(tree, ps, tree.seed * 1000 + k, goods=goods)
         res = h.run(lambda f, msg, k=k: progress((k + f) / n, f"try {k + 1}/{n}: {msg}"))
         pres = present_summary(h, res["present"])
         sc = pres["wish_score"] if pres["wish_score"] is not None else 0.0
         scores.append(round(float(sc), 3))
+        fs = res["frames"][-1]["stats"] if res.get("frames") else {}  # (the present frame; PW-707)
+        tstats.append({"wish_score": round(float(sc), 3), "lost": len(pres["lost"]),
+                       **{q: fs.get(q) for q in ("empty_land_pct", "two_plus_pct", "lead_share_mean_pct")}})
         key = sc - LOST_PENALTY * len(pres["lost"])  # (a try that keeps every living line is preferred)
         if best is None or key > best[3] + 1e-9:
             best = (h, res, pres, key)
     best[2]["tries"] = scores
+    best[2]["try_stats"] = tstats
+    best[2]["tries_mean"] = {q: round(float(np.mean([t[q] for t in tstats if t[q] is not None])), 3)
+                             for q in ("wish_score", "empty_land_pct", "two_plus_pct", "lead_share_mean_pct")
+                             if any(t[q] is not None for t in tstats)}
     return best[:3]

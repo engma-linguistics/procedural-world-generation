@@ -55,21 +55,23 @@ def save_raw(name: str, raw: dict) -> Path:
     return S.write_atomic(d / f"{name}.json", json.dumps(raw, indent=1))
 
 
-def load_tree(ref: str) -> SP.Tree:
+def load_tree(ref: str, mode: str | None = None) -> SP.Tree:
     p = Path(ref)
     if p.is_file():
-        return SP.load(p)
-    return SP.load(tree_path(ref))
+        return SP.load(p, mode)
+    return SP.load(tree_path(ref), mode)
 
 
 def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recent_kyr: float = 30.0,
-        name: str | None = None, progress=lambda f, msg: None) -> Path:
+        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0) -> Path:
     tz, now0, world = R.resolve(ref)
-    ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr), world_ref=world)
+    ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr, climate_every=climate_every), world_ref=world)
     goods = None
     if world and tree.uses:
         progress(0.0, "the land's goods (game attributes, resources, coasts)")
         goods = LD.goods(world)
+        if tree.mode == "real" and goods:  # (no fantasy goods in the real world)
+            goods = {k: v for k, v in goods.items() if k not in SP.FANTASY_GOODS}
     h, res, pres = simulate(tree, ps, tries, progress, goods=goods)
     return save(h, res, pres, world=world, name=name)
 
@@ -79,7 +81,7 @@ def job(req: dict, progress=lambda f, msg: None) -> dict:
     ref = req.get("world") or req.get("timezoom")
     if not ref:
         raise ValueError("give world or timezoom")
-    tree = SP.parse(req["raw"]) if req.get("raw") else load_tree(req["tree"])
+    tree = SP.parse(req["raw"], req.get("mode")) if req.get("raw") else load_tree(req["tree"], req.get("mode"))
     if req.get("tree"):
         tree.source = req["tree"]
     out = run(str(ref).removesuffix(".json"), tree, int(req.get("tries", 4)), progress=progress)

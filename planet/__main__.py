@@ -244,7 +244,7 @@ def cmd_resources(args):
             print(S.rel(d))
             print("\n".join(ZR.text_lines(json.loads((d / "zoom.json").read_text())["resources"])))
         else:
-            print(S.rel(RS.add_to_world(rid, use_history=not args.no_history)))
+            print(S.rel(RS.add_to_world(rid, use_history=not args.no_history, mode=args.mode)))
 
 
 def cmd_timezoom(args):
@@ -303,9 +303,13 @@ def cmd_recent(args):
 
 def cmd_lineages(args):
     from .lineages import run as LR
-    tree = LR.load_tree(args.tree)
+    tree = LR.load_tree(args.tree, args.mode)
+    if args.portal_mode:  # (PW-697: arrivals from outside the world through N portals)
+        tree.portal_mode = args.portal_mode
+    if args.portals:
+        tree.portals = args.portals
     out = LR.run(args.ref, tree, args.tries, args.now, args.recent_kyr, args.name,
-                 progress=lambda f, msg: print(f"  {100 * f:3.0f}% {msg}", flush=True))
+                 progress=lambda f, msg: print(f"  {100 * f:3.0f}% {msg}", flush=True), climate_every=args.climate_every)
     print((out / "run.txt").read_text()[:6000])
     print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
 
@@ -484,6 +488,7 @@ def main():
                     help="final valley-sharpening pass (erosion already ran during the simulation)")
     sl.add_argument("--force", action="store_true",
                     help="save the world even if the replay doesn't match the run's stored keyframe")
+    sl.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     sl.set_defaults(func=cmd_slice)
 
     z = sub.add_parser("zoom", help="refine a region of a sliced world to a few km -> zooms/<id>/; "
@@ -530,6 +535,8 @@ def main():
                                           "concrete deposits in saved zooms (in place)")
     rs.add_argument("ids", nargs="+", help="world or zoom ids (kind:id when ambiguous)")
     rs.add_argument("--no-history", action="store_true", help="from the world's own layers only (no run keyframes)")
+    rs.add_argument("--mode", choices=("fantasy", "real"), help="the world's mode (PW-695, PW-607): fantasy (default; keeps the fantasy exotics: deep-silver, adamant, star-iron) "
+                                               "or real (leaves them out); stored in the world and honoured by its zooms and peoples runs")
     rs.set_defaults(func=cmd_resources)
 
     h = sub.add_parser("highlights", help="list a world's (or a run's, at --at) most interesting places")
@@ -559,6 +566,7 @@ def main():
     fi.add_argument("--now", metavar="WHEN", help="instead of --kyr: interglacial (the latest peak), glacial (the glacial maximum) or end")
     fi.add_argument("--at", type=_at, help="for a run: time in Myr (nearest keyframe), or 'auto'")
     fi.add_argument("--erosion", type=float, default=0.3, help="strength of the final river-carving pass")
+    fi.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     fi.set_defaults(func=cmd_finish)
 
     rc = sub.add_parser("recent", help="the recent pass: the last ~30 kyr of a time zoom at century steps "
@@ -576,9 +584,14 @@ def main():
                                          "time zoom and the recent pass -> runs/<id>/ (docs/proposals/lineages.md)")
     lg.add_argument("ref", help="a finished world's id (present = its kyr) or a time zoom id")
     lg.add_argument("--tree", default="dnd", help="a tree file (.toml/.json), or a preset or saved tree's name (default dnd)")
+    lg.add_argument("--mode", choices=("fantasy", "real"), help="world mode (PW-695): fantasy (default, the tree's own) or real (humans only, real goods)")
+    lg.add_argument("--portal-mode", choices=("off", "random", "sites"), help="arrivals from outside the world (PW-697): off (each at its best habitat), or through portals placed at random / at interesting sites")
+    lg.add_argument("--portals", type=int, help="how many portals (with --portal-mode random | sites)")
     lg.add_argument("--tries", type=int, default=4, help="seeds tried; the best by the wishes is kept")
     lg.add_argument("--now", type=float, help="the present, kyr of the time zoom")
     lg.add_argument("--recent-kyr", type=float, default=30.0, help="the recent pass's window (kyr)")
+    lg.add_argument("--climate-every", type=float, default=2.0, help="the recent pass takes a full climate every this many kyr "
+                    "(PW-599; 0: the keyframe's rain scaled with the warming, as before)")
     lg.add_argument("--name", "-n")
     lg.set_defaults(func=cmd_lineages)
 
@@ -628,6 +641,7 @@ def main():
     mk.add_argument("--zooms", type=int, metavar="N", help=f"regional zooms of the top N highlights (default {MD['zooms']})")
     mk.add_argument("--name", "-n")
     mk.add_argument("--dry-run", action="store_true", help="print the plan and the time estimate only")
+    mk.add_argument("--no-resources", action="store_true", help="leave the resource layers out of the world (they are made with it by default; `planet resources <world>` adds them later)")
     mk.set_defaults(func=cmd_make)
 
     rp = sub.add_parser("report", help="re-render runs/<name>/run.txt")
@@ -657,6 +671,9 @@ def main():
     v.set_defaults(func=cmd_serve)
 
     args = ap.parse_args()
+    if getattr(args, "no_resources", False):
+        with W.resources_off():
+            return args.func(args)
     args.func(args)
 
 

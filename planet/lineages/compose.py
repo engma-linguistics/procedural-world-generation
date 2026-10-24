@@ -65,12 +65,11 @@ def reach(g, Pw: np.ndarray, suit: np.ndarray, corr: np.ndarray, open_land: np.n
 def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: float, freq=None, dens=None) -> dict:
     """Pw (lines x cells): each native people's presence (groups folded into their people); Pr: the same with the
     reach added (reach()). ramp 0..1: how far the late mixing has come. dens (per line, people/km2 at full
-    habitat; None: all alike): the shares are shares of the cell's people, so presence is weighted by density (PW-703). Returns uint8 layers: mix_lead_share, mix_second (index; 255 none), mix_second_share,
-    mix_other_share (percent of the cell, summing to 100 where anyone lives; the leader is argmax Pw, the layer
-    peoples_whole), and, per `freq` ({trait: line x cells share of the line}), body_<trait> (% of the cell)."""
+    habitat; None: all alike): the shares are shares of the cell's people, so presence is weighted by density (PW-703). Returns uint8 layers: mix_lead (index; the people with most heads, PW-705; the ground holder stays peoples_whole), mix_lead_share, mix_second (index; 255 none), mix_second_share,
+    mix_other_share (percent of the cell, summing to 100 where anyone lives; the leader is the largest share), and, per `freq` ({trait: line x cells share of the line}), body_<trait> (% of the cell)."""
     n, N = Pw.shape
     here = Pw.max(0) >= est
-    out = {"mix_lead_share": np.zeros(N, np.uint8), "mix_second": np.full(N, 255, np.uint8),
+    out = {"mix_lead": np.full(N, 255, np.uint8), "mix_lead_share": np.zeros(N, np.uint8), "mix_second": np.full(N, 255, np.uint8),
            "mix_second_share": np.zeros(N, np.uint8), "mix_other_share": np.zeros(N, np.uint8)}
     for k in (freq or {}):
         out["body_" + k] = np.zeros(N, np.uint8)
@@ -86,15 +85,18 @@ def compose(Pw: np.ndarray, Pr: np.ndarray, H: np.ndarray, ramp: float, est: flo
     if dens is not None:
         W = W * np.asarray(dens, float)[:, None]  # heads, not ground held: 12/km2 farmers beside 2/km2 foragers count 6:1
     tot = W.sum(0)
-    a = W[lead, np.arange(len(cells))] / tot
+    ar = np.arange(len(cells))
+    hl = W.argmax(0)  # the composition's leader is the people with most heads (PW-705), not the ground holder
+    a = W[hl, ar] / tot
     W2 = W.copy()
-    W2[lead, np.arange(len(cells))] = 0
+    W2[hl, ar] = 0
     sec = W2.argmax(0)
-    b = W2[sec, np.arange(len(cells))] / tot
+    b = W2[sec, ar] / tot
     keep = b >= MIN_SHARE
     la = np.round(100 * a).astype(np.int64)
     sb = np.where(keep, np.round(100 * b), 0).astype(np.int64)
     sb = np.minimum(sb, 100 - la)
+    out["mix_lead"][cells] = hl
     out["mix_lead_share"][cells] = la
     out["mix_second"][cells] = np.where(sb > 0, sec, 255)
     out["mix_second_share"][cells] = sb

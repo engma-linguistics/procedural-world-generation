@@ -18,6 +18,10 @@ So the "tree" is a DAG. Anything a line leaves out it inherits from its first pa
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
 strongly, or the use's own pull (a line takes the strongest pull of its favoured goods; history._land_mult);
 strict = true: off those goods the habitat is cut, not lifted back to a mean of 1 (peoples bound to one country).
+meta.mode (PW-695): "fantasy" (default; every line, the fantasy goods) or "real" (only the lines with `real = true`,
+the humans, leave the rest out as if disabled; the fantasy goods (FANTASY_GOODS) drop out of [[use]]). Magic is PW-696.
+meta.portal_mode / portals / portal_sites (PW-697): arrivals from outside come "off" (each at its best habitat),
+or through N portals placed "random"ly or at interesting "sites" (history.History.portal_cells).
 """
 
 from __future__ import annotations
@@ -230,6 +234,7 @@ class Lineage:
     sites: int = 3  # template: incursion sites
     extinct_kyr: float | None = None  # gone by this long before the present (dwindles over the time before)
     custom: bool = False  # added by the user (the editor marks it), not from a preset
+    real: bool = False  # lives in the real-world mode too (meta.mode = 'real' keeps only these lines, PW-695)
     children: list[str] = field(default_factory=list)  # split children
 
     @property
@@ -295,6 +300,11 @@ ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present. A PLACEH
 # technology tree (epic PW-675, v3) will, to say how far population, spread, mixing and technology climb by the present.
 # The history is not run forward past the present for it.
 
+FANTASY_GOODS = ("mithril",)  # land.GOODS entries that are not geology (resources group 'fantasy'); real mode ignores them
+MODES = ("fantasy", "real")
+MODE_DEFAULT = "fantasy"  # meta.mode (PW-695): fantasy = every people and the fantasy goods; real = humans only (lines marked real = true), real goods
+PORTAL_MODES = ("off", "random", "sites")
+PORTAL_SITES = ("forest", "desert", "reef", "volcano")  # (history.History.portal_sites: deepest forest, middle of a desert, a coral reef, the foot of a volcano)
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 
 
@@ -312,6 +322,10 @@ class Tree:
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     horses: bool = True  # meta.horses: wild horses, their taming and riding (horses.py); false: none
     horses_at: float | None = None  # meta.horses_at: the anchor time of the taming, kyr ago (None: horses.ANCHOR_KYR)
+    mode: str = MODE_DEFAULT  # meta.mode: 'fantasy' (all the peoples, the fantasy goods) or 'real' (only the lines marked real, real goods; PW-695)
+    portal_mode: str = "off"  # meta.portal_mode: arrivals from outside: 'off' (each at its best habitat), 'random' or 'sites' (PW-697)
+    portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
+    portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
@@ -405,10 +419,10 @@ def _check_tag(t, lid):
     raise ValueError(f"{lid}: unknown climate or place {t!r} (Köppen codes, {sorted(GROUPS)} or {list(PLACES)})")
 
 
-def load(path: str | Path) -> Tree:
+def load(path: str | Path, mode: str | None = None) -> Tree:
     p = Path(path)
     raw = json.loads(p.read_text()) if p.suffix == ".json" else tomllib.loads(p.read_text())
-    t = parse(raw)
+    t = parse(raw, mode)
     t.source = str(p)
     return t
 
@@ -422,8 +436,12 @@ def _parents_of(r) -> list[str]:
     return [str(x) for x in ([ps] if isinstance(ps, str) else ps)]
 
 
-def parse(raw: dict) -> Tree:
+def parse(raw: dict, mode: str | None = None) -> Tree:
+    """mode: overrides meta.mode ('fantasy' | 'real'); in real mode only the lines marked `real = true` live."""
     meta = raw.get("meta", {})
+    mode = str(mode or meta.get("mode") or MODE_DEFAULT).strip().lower()
+    if mode not in MODES:
+        raise ValueError(f"meta.mode must be one of {list(MODES)}")
     given = raw.get("lineage") or raw.get("lineages") or []
     if not given:
         raise ValueError("no [[lineage]] entries")
@@ -505,7 +523,7 @@ def parse(raw: dict) -> Tree:
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     body=body, body_given=bgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
-                    sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), children=[],
+                    sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None)
         if l.extinct_kyr is not None and not 0 <= l.extinct_kyr < ago:
             raise ValueError(f"{lid}: extinct ({l.extinct_kyr:g} kyr) must come after it appears ({ago:g} kyr)")
@@ -518,6 +536,10 @@ def parse(raw: dict) -> Tree:
     # (or, under a disabled root or arrival, becomes a root or arrival itself, keeping the niche it inherited);
     # hybrids and templates of a disabled line go too (no half-elves without elves)
     off = {lid for lid, r in rows.items() if r.get("enabled", True) is False}
+    if mode == "real":  # humans only: the lines marked real stay, the rest leave like a disabled line
+        if not any(r.get("real") for r in rows.values()):
+            raise ValueError("real mode needs lines marked `real = true` (the humans)")
+        off |= {lid for lid, r in rows.items() if not r.get("real")}
     changed = True
     while changed:
         changed = False
@@ -556,7 +578,7 @@ def parse(raw: dict) -> Tree:
     uses = []
     for u in raw.get("use", raw.get("uses", [])):
         by, good = str(u.get("by", "")), str(u.get("good", u.get("layer", "")))
-        if by in off:
+        if by in off or (mode == "real" and good in FANTASY_GOODS):
             continue
         if by not in TRAITS and by not in PLACES and by not in GROUPS and by not in KOPPEN_CODES and by not in lines:
             raise ValueError(f"use {u}: by must be a trait ({sorted(TRAITS)}), a place or climate tag or a line's id")
@@ -569,6 +591,16 @@ def parse(raw: dict) -> Tree:
     t = Tree(str(meta.get("name", "peoples")), int(meta.get("seed", 1)), lines, wishes,
              float(parse_ago(meta.get("mixing_start", 3.0))))
     t.disabled = disabled
+    t.mode = mode
+    t.portal_mode = str(meta.get("portal_mode") or "off").strip().lower()
+    if t.portal_mode not in PORTAL_MODES:
+        raise ValueError(f"meta.portal_mode must be one of {list(PORTAL_MODES)}")
+    t.portals = int(meta.get("portals", 1))
+    if not 1 <= t.portals <= 12:
+        raise ValueError("meta.portals must be within 1..12")
+    t.portal_sites = [str(x) for x in meta.get("portal_sites", PORTAL_SITES)]
+    if not t.portal_sites or any(x not in PORTAL_SITES for x in t.portal_sites):
+        raise ValueError(f"meta.portal_sites must be some of {list(PORTAL_SITES)}")
     t.uses = uses
     t.horses = bool(meta.get("horses", True))
     t.horses_at = parse_ago(meta["horses_at"]) if meta.get("horses_at") not in (None, "") else None
@@ -609,6 +641,8 @@ def to_raw(t: Tree) -> dict:
             r["extinct"] = f"{l.extinct_kyr:g} kyr"
         if l.custom:
             r["custom"] = True
+        if l.real:
+            r["real"] = True
         if l.origin in ("template", "hybrid"):
             r["share"] = l.share
         if l.origin == "hybrid":
@@ -617,7 +651,8 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "era": t.era, "viable_pop": t.viable_pop, "horses": t.horses,
+                     "era": t.era, "viable_pop": t.viable_pop, "horses": t.horses, "mode": t.mode, "portal_mode": t.portal_mode,
+                     "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"horses_at": f"{t.horses_at:g} kyr"} if t.horses_at is not None else {})},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

@@ -89,6 +89,8 @@ RESOURCES = [
 ]
 KEYS = tuple(r[0] for r in RESOURCES)
 REAL = tuple(k for k, _, g, _, _ in RESOURCES if g != "fantasy")
+FANTASY = tuple(k for k, _, g, _, _ in RESOURCES if g == "fantasy")
+MODES = ("fantasy", "real")  # a world's mode (PW-695, PW-607): 'real' leaves the fantasy exotics out (no res_x_* layers, no deposits)
 # the dominant-resource map leaves out the near-ubiquitous stone group (its own map is 'stone')
 DOMINANT = tuple(k for k, _, g, _, _ in RESOURCES if g in ("metal", "gem", "energy", "industrial"))
 DOMINANT_MIN = 0.3  # likelihood under this: 'none' in the dominant map
@@ -727,11 +729,11 @@ def stone_class(L: dict) -> np.ndarray:
     return out
 
 
-def world_layers(grid, L: dict, meta: dict | None = None, hist: dict | None = None) -> dict:
+def world_layers(grid, L: dict, meta: dict | None = None, hist: dict | None = None, mode: str = "fantasy") -> dict:
     """The resource layers to store with a world: res_<key> (0..1 to 0.01), the dominant class, the best stone,
     coal rank and the dominant resource's typical depth (m)."""
     R = likelihoods(grid, L, meta, hist)
-    out = {f"res_{k}": np.round(R[k], 2) for k in KEYS}
+    out = {f"res_{k}": np.round(R[k], 2) for k in KEYS if mode != "real" or k not in FANTASY}
     stack = np.stack([R[k] for k in DOMINANT])
     best = stack.argmax(0)
     ids = np.array([KEYS.index(k) + 1 for k in DOMINANT])
@@ -847,7 +849,7 @@ def text_section(summary: dict) -> str:
 # ---------------------------------------------------------------------------
 # A saved world, in place
 # ---------------------------------------------------------------------------
-def add_to_world(ref: str, use_history: bool = True, log=print) -> Path:
+def add_to_world(ref: str, use_history: bool = True, log=print, mode: str | None = None) -> Path:
     """(Re)makes a saved world's resource layers in place (`planet resources <world>`), with the run's history
     when the world came from a run that is still stored."""
     from . import store as S
@@ -855,10 +857,18 @@ def add_to_world(ref: str, use_history: bool = True, log=print) -> Path:
     path = S.find_world(ref)
     w = W.load(path)
     m = w["meta"]
+    mode = str(mode or m.get("mode") or "fantasy")
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {list(MODES)}")
     hist = None
     if use_history and m.get("source_run") and S.exists("run", m["source_run"]):
         hist = history(S.find_run(m["source_run"]), float(m["t_myr"]), w["grid"], log=log)
-    w["layers"].update(world_layers(w["grid"], w["layers"], m, hist))
+    for k in FANTASY:  # (a switch to the real world takes the exotics out)
+        w["layers"].pop(f"res_{k}", None)
+    w["layers"].update(world_layers(w["grid"], w["layers"], m, hist, mode))
+    m["mode"] = mode
     m["resources"] = {"history": hist is not None, "keyframes": hist["frames"] if hist else 0,
                       "created": time.strftime("%Y-%m-%d %H:%M:%S")}
+    if hist is not None:
+        w["history"] = hist  # (saved beside the world: its zooms' deposits read it, PW-618)
     return W.save(w, w["name"], path.stem)

@@ -352,7 +352,7 @@ from today's Earth, °C). There are no `equator_temp`/`pole_temp` knobs:
   its extinction, or at the computed end after a run).
 - **Resources and coasts**: the same panel shows whether the world on screen has its `res_*` / `coast_type` layers and, if
   not, **Add resources** / **Add coasts** (`POST /api/enrich {world, what: resources | coast}`, a queued job running
-  `planet resources` / `planet coast`; the world is rewritten in place and reopened).
+  `planet resources` / `planet coast`; the world is rewritten in place and reopened). New worlds have both already; the buttons are for older ones.
 
 ## Waves, tides and delta types (`planet/coast.py`)
 

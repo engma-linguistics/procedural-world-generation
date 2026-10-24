@@ -2,7 +2,7 @@
 id: PW-705
 title: The cell's leader is the people holding most ground, so by head count the "lead" share can fall below the second's
 type: task
-status: todo
+status: done
 parent: PW-689
 milestone: v2
 subsystem: timezoom
@@ -27,5 +27,7 @@ Options:
 Lean: B.
 
 ## Updates
+- 2026-10-23: Status todo -> done. Merged (fun lane 4, bfddaaf): see docs/proposals/lineages.md 'Fun lane 4'.
+- 2026-10-23: fun4: built (option B): layer mix_lead = most heads; peoples_whole stays the ground holder; blend and hover use mix_lead. Output only, dynamics unchanged.
 - 2026-10-23: Status needs-decision -> todo. Coordinator's call: B, pick the cell's leader by heads.
 - 2026-10-23: Created from inbox draft draft-composition-leader-by-heads.md (found by fun-lane-3).

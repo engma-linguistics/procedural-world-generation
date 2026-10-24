@@ -122,6 +122,9 @@ def _files(d):
             if p.name == "zoom.json":
                 m = json.loads(b)
                 m.pop("created"), m.pop("generated_in_s")
+                # (the coast and deposit steps of every zoom: when they were made, and how long the siting took)
+                m.get("coast", {}).pop("created", None), m.get("resources", {}).pop("created", None)
+                m.get("resources", {}).get("summary", {}).pop("seconds", None)
                 b = json.dumps(m, sort_keys=True).encode()
             out[str(p.relative_to(d))] = b
     return out

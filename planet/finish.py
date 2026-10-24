@@ -72,6 +72,7 @@ def frame_index(run: dict, kyr: float | None) -> int:
     return int(np.argmin(np.abs(times - kyr)))
 
 
+ORBIT_STATS = ("obliquity", "eccentricity", "perihelion")  # what a time zoom frame's stats hold of its orbit
 NOWS = ("interglacial", "glacial", "end")
 LOW_I = 0.05   # (an interglacial: the glacial index this low)
 
@@ -195,7 +196,7 @@ def _finish(tz_dir, run: dict, tz_id: str, i: int, t: float, erosion: float, pro
     s = st["stats"]
     prov = {"timezoom": tz_id, "timezoom_name": run["name"], "timezoom_kyr": t, "finished": True,
             "sea_level_change_m": s["sea_level_change_m"], "ice_volume_mkm3": s["ice_volume_mkm3"],
-            "orbit": {k: s[k] for k in ("obliquity", "eccentricity", "perihelion", "insol_65n_jul_anom")},
+            "orbit": {k: s[k] for k in (*ORBIT_STATS, "insol_65n_jul_anom")},
             "ice_bed_below_sea_cells": st["below_sea_cells"]}
     state = {k: st[k] for k in ("elevation", "ice", "dT", "sea_level", "tilt", "glacial", "veg")}
     # (the orbit's obliquity is in its insolation anomaly: the climate keeps the planet's mean tilt, as the

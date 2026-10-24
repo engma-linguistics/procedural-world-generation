@@ -23,6 +23,10 @@ seed = 7
 mixing_start = "3 kyr"
 era = "renaissance"  # the era the present is meant to be (stone age | bronze age | classical | medieval | renaissance | industrial). A PLACEHOLDER: stored, not yet read; the technology tree (PW-675) will use it. The history is not run past the present.
 viable_pop = 500  # a separate patch of a people with fewer people than this fades (sparse peoples need big lands)
+mode = "fantasy"  # fantasy (all these peoples, the fantasy goods) | real (only the lines marked real = true: humans; no fantasy goods). PW-695; magic is PW-696.
+portal_mode = "off"  # arrivals from outside the world (origin = "arrival"): off (each at its best habitat) | random | sites (PW-697)
+portals = 1  # ...how many portals they come through (portal_mode random / sites)
+portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' draws on: deepest part of a large forest, middle of a desert, a coral reef, the foot of a volcano
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
@@ -416,6 +420,7 @@ traits = ["subterranean", "miner"]
 
 [[lineage]]
 id = "archaic_human"
+real = true  # (kept in the real-world mode)
 name = "archaic humans stem"
 parents = ["hominid"]
 at = "400 kyr"
@@ -426,6 +431,7 @@ prefers = ["temperate", "subtropical", "lowland"]
 
 [[lineage]]
 id = "human"
+real = true  # (kept in the real-world mode)
 name = "humans"
 parents = ["archaic_human"]
 at = "200 kyr"
@@ -440,6 +446,7 @@ traits = ["agricultural", "seafaring", "cosmopolitan"]
 
 [[lineage]]  # the first fields: fertile lowland, dense villages
 id = "human_farmer"
+real = true  # (kept in the real-world mode)
 name = "human farmers"
 origin = "group"
 group_of = "human"
@@ -452,6 +459,7 @@ traits = ["agricultural", "cosmopolitan"]
 
 [[lineage]]  # flocks and herds on the open hills and grassland between the fields and the steppe
 id = "human_herder"
+real = true  # (kept in the real-world mode)
 name = "human herders"
 body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
 origin = "group"
@@ -465,6 +473,7 @@ traits = ["hardy", "cosmopolitan"]
 
 [[lineage]]  # horse nomads of the steppe and desert edge
 id = "human_nomad"
+real = true  # (kept in the real-world mode)
 name = "human nomads"
 body = { milk = 0.6 }  # lactase persistence in herding peoples: a share of the people (Earth: 40-90% of herding peoples)
 origin = "group"
@@ -480,6 +489,7 @@ traits = ["nomadic", "hardy"]
 
 [[lineage]]  # fishers, traders and voyagers of the coasts and islands
 id = "human_seafarer"
+real = true  # (kept in the real-world mode)
 name = "human seafarers"
 origin = "group"
 group_of = "human"
@@ -492,6 +502,7 @@ traits = ["seafaring", "coastal", "cosmopolitan"]
 
 [[lineage]]  # hunters of the tundra and the taiga edge, and of the cold coasts (Earth's Arctic peoples)
 id = "human_arctic"
+real = true  # (kept in the real-world mode)
 name = "human arctic hunters"
 origin = "group"
 group_of = "human"

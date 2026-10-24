@@ -1,8 +1,11 @@
 """The recent pass: the last ~30 kyr of a glacial time zoom at century steps.
 
 Not new physics: the time zoom's frames (every 2 kyr) interpolated in time,
-rain the time zoom doesn't store (the source keyframe's, scaled by
-exp(0.07 dT) with the local warming, as the time zoom scales its rain), plus
+rain the time zoom doesn't store: a full climate.compute at every 2 kyr on the
+time zoom's surface, ice, temperature offset and orbit (PW-599; as a finished
+world's first climate), interpolated in time between (without it, the source
+keyframe's rain scaled by exp(0.07 dT) with the local warming, as the time zoom
+scales its rain), plus
 seeded short-period variability that acts on habitat only: a red-noise global
 anomaly (centuries) and regional episodes (cold spells, droughts) and, when
 the window holds a deglaciation, one Younger Dryas-like cold reversal. The
@@ -48,6 +51,7 @@ class RecentParams:
     noise_tau: float = 0.3  # kyr: ... its memory
     episodes_per_kyr: float = 1 / 6  # regional cold spells and droughts
     reversal: bool = True  # a cold reversal in a deglaciation inside the window (Younger Dryas-like)
+    climate_every: float = 2.0  # kyr: a full climate.compute on the time zoom's frames this far apart (0: rain scaled from the keyframe)
 
 
 @dataclass
@@ -97,6 +101,8 @@ class Pass:
         self.rng = np.random.default_rng(p.seed)
         self._rain_ref(world_ref)
         self._variability()
+        self._clim: tuple[np.ndarray, np.ndarray] | None = None  # (node times kyr rel. to the present, rain per node)
+        self.climate_s = 0.0
 
     # -- the time zoom's frames, interpolated ---------------------------------------------------
     def _bracket(self, t: float) -> tuple[int, int, float]:
@@ -138,6 +144,49 @@ class Pass:
         guess[cl <= 1] = 2200; guess[cl == 2] = 1200; guess[(cl == 3) | (cl == 4)] = 120; guess[(cl == 5) | (cl == 6)] = 350
         self.rain0, self.temp0 = guess, T.frame(self.run, self.arr, "temperature", 0).astype(float)
         self.rain_src = "climate classes (rough)"
+
+    def _climate(self):
+        """The rain of a full climate at the time zoom's frames in the window (PW-599), made once: climate.compute on
+        each frame's bed, ice, global temperature and orbit, as finish.py does for a finished world (its first
+        climate, before the vegetation's feedback). Frames at least climate_every apart, with the one just before
+        the window so the first steps interpolate."""
+        if self._clim is not None:
+            return self._clim
+        from .. import climate, finish
+        t0 = time.time()
+        m = self.run["meta"]
+        lo, ts = self.now + self.start, self.ts
+        keep, last = [], -1e9
+        before = np.flatnonzero(ts <= lo + 1e-9)
+        for k in ([int(before[-1])] if len(before) else []) + [int(k) for k in np.flatnonzero((ts > lo + 1e-9) & (ts <= self.now + 1e-9))]:
+            if ts[k] - last >= self.params.climate_every - 1e-9:
+                keep.append(k)
+                last = ts[k]
+        tilt = float(m["params"].get("tilt", 23.44 if m["source_run"] == "earth" else 23.4))
+        rain = []
+        for k in keep:
+            surf, ice = (T.frame(self.run, self.arr, n, k).astype(float) for n in ("elevation", "ice"))
+            s = self.run["frames"][k]["stats"]
+            st = {"stats": s, "elevation": surf - ice, "ice": ice, "dT": s["global_temp_c"] - 14.5}
+            orbit = finish.orbit_dt(self.run, st) if all(k in s for k in finish.ORBIT_STATS) else None  # (a time zoom stores its orbit)
+            c = climate.compute(self.grid, st["elevation"], st["dT"], tilt, ice, orbit_dt=orbit)
+            rain.append(np.asarray(c["precip"], float))
+        self._clim = (ts[keep] - self.now, np.stack(rain))
+        self.climate_s = time.time() - t0
+        return self._clim
+
+    def _rain_at(self, t: float) -> np.ndarray | None:
+        """The full climate's rain at t (linear between its frames), or None outside them / when it is off."""
+        if self.params.climate_every <= 0:
+            return None
+        tn, rn = self._climate()
+        if t < tn[0] - 1e-9 or t > tn[-1] + 1e-9:
+            return None
+        if len(tn) == 1:
+            return rn[0]
+        j = int(np.clip(np.searchsorted(tn, t), 1, len(tn) - 1))
+        w = float(np.clip((t - tn[j - 1]) / (tn[j] - tn[j - 1]), 0, 1))
+        return rn[j - 1] * (1 - w) + rn[j] * w
 
     # -- variability ----------------------------------------------------------------------------
     def _variability(self):
@@ -210,7 +259,9 @@ class Pass:
         clim = T.frame(self.run, self.arr, "climate", i if w < 0.5 else j)
         trees = self._lerp("tree_cover", t) if "tree_cover" in self.arr else np.zeros(self.grid.n)
         dT, rf, g = self.anomaly(t) if variability else (0.0, 1.0, 0.0)
-        rain = self.rain0 * np.clip(np.exp(RAIN_K * (temp - self.temp0)), 0.5, 1.5)
+        rain = self._rain_at(t)
+        if rain is None:  # (outside the full climate's frames, or switched off: the keyframe's rain scaled)
+            rain = self.rain0 * np.clip(np.exp(RAIN_K * (temp - self.temp0)), 0.5, 1.5)
         temp = temp + dT
         rain = rain * np.exp(RAIN_K * dT) * rf
         return {"elevation": elev, "ice": ice, "temperature": temp, "precipitation": rain, "climate": clim,
