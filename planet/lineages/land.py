@@ -53,6 +53,11 @@ GOODS = {
     "cliff": ("sea cliffs", False),
     "seabirds": ("seabird cliffs", False),
     "seals": ("seal haul-outs", False),
+    # salt and the sea's food (PW-732; seafood.py)
+    "salt": ("salt (rock, lakes, brine springs, sea pans)", True),
+    "fish": ("fisheries (shelf seas, river runs, big lakes)", False),
+    "shellfish": ("shellfish shores", False),
+    "sea_mammals": ("seal and whale coasts", False),
     # terrain and fire (the giants' countries; the terrain is today's, valid through the ice ages too)
     "volcanic": ("volcanoes and young volcanic ground", True),
     "hills": ("rolling hill country", True),
@@ -62,11 +67,12 @@ GOODS = {
 }
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
 DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
-             "volcanic"}
+             "volcanic", "salt"}
 _ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe",),
          "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"), "gems": ("diamond", "gem_meta"),
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
 LIVING = ("fertile", "grazing", "foraging", "timber", "fuel", "building")  # scaled to the world's best
+SEAFOOD = ("fish", "shellfish", "sea_mammals")  # scaled to the world's best, then reach inland
 AREA = ("hills", "peaks", "frost", "storm_coast")  # already 0..1 per cell and area-like: no reach inland
 # volcanic: an active volcano's cell 1, an extinct one exp(-age / VOLCANO_MYR); young arc / hotspot ground
 # (landform, within a cell of a volcano younger than YOUNG_MYR) at least YOUNG_GROUND
@@ -191,6 +197,7 @@ def _disk_key(world_ref: str) -> str:
         h.update(f"h:{hs.st_size}:{hs.st_mtime_ns}".encode())
     h.update(S.code_digest().encode())
     h.update(Path(__file__).read_bytes())  # (this file's own source)
+    h.update((Path(__file__).parent / "seafood.py").read_bytes())
     return h.hexdigest()
 
 
@@ -282,6 +289,11 @@ def _make_goods(world_ref: str) -> dict:
     ice = f("ice") > 0
     ice_edge = ~ice & _nbr(g, np.logical_or, ice[g.nbr_idx])
     raw["frost"] = np.maximum(np.clip(f("permafrost") / 3.0, 0, 1), 0.8 * ice_edge) * ~ice
+    from . import seafood as SF
+    sl, sf = SF.salt(g, L, land, coast, f), SF.seafood(g, L, land, coast, f)
+    salt_km, salt_kind = sl.pop("_salt_km"), sl.pop("_salt_kind")
+    raw.update(sl)
+    raw.update(sf)
     wp = np.where(sea, f("wave_power"), 0.0)
     raw["storm_coast"] = np.where(coast, _rel(_nbr(g, np.maximum, wp[g.nbr_idx]), coast), 0.0)
     out, missing = {}, []
@@ -294,9 +306,15 @@ def _make_goods(world_ref: str) -> dict:
             out[k] = _rel(v, land)
         elif k in AREA:
             out[k] = v
+        elif k in SEAFOOD:
+            out[k] = np.where(land, _reach(g, _rel(v, land)), 0.0)
+        elif k not in GOODS:  # (the parts a good is made of: salt_rock, fish_run...; for the brief, not the peoples)
+            continue
         else:  # (likelihoods and classes: already 0..1; point-like, so they reach the country around)
             out[k] = np.where(land, _reach(g, v), 0.0)
     out["_raw"] = {k: np.where(land, v, 0.0) for k, v in raw.items()}
+    out["_salt_km"], out["_salt_kind"] = salt_km, salt_kind
+    out["_temp"] = f("temperature")  # (mean annual C, for the heath fuel: fuels.py)
     out["_peat"] = np.where(land, f("peat_depth"), 0.0)  # (metres of peat, for the fuels: fuels.py)
     out["_land"] = land
     out["_made"] = made

@@ -30,7 +30,7 @@ from ..geo import R_KM
 from ..grid import shared_grid
 from . import spec as SP
 
-BRIEF_VERSION = 1
+BRIEF_VERSION = 2
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -41,6 +41,7 @@ EVENT_CAP = 25
 MONTHS = 12
 
 NOT_MODELLED = "not modelled yet"
+SALT_TRADED_KM = 300.0  # land farther than this from any salt gets its salt by trade, or goes without (a salt-poor interior)
 
 
 def _popcount(a: np.ndarray) -> np.ndarray:
@@ -235,7 +236,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["fuels"] = _fuels(ctx, land, era)
     brief["wild_food"] = _wild_food(ctx, i, land)
     brief["fish"] = _fish(ctx, i, sel, sea, land)
-    brief["salt"] = None
+    brief["salt"] = _salt(ctx, land)
     brief["crops"] = _grown(ctx, "crop_known", "crops", i, sel, land)
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
@@ -248,7 +249,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["suggested"] = _suggested(brief)
     if people:
         brief["people"] = _people(ctx, people)
-    brief["not_modelled"] = {k: NOT_MODELLED for k in ("salt", "trade_reach", "reputation", "substrate", "honey", "mast", "fungi",
+    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "reputation", "substrate", "honey", "mast", "fungi",
                                                        "interfertility_tiers")}
     return brief
 
@@ -370,7 +371,53 @@ def _fish(ctx: Ctx, i: int, sel: np.ndarray, sea: np.ndarray, land: np.ndarray) 
         for k in ("coral", "lagoon", "mangrove", "harbour", "storm_coast"):
             if k in ctx.goods:
                 out[f"good_{k}"] = _mean(ctx.goods[k], land | coastal)
+    if ctx.goods is not None and "_raw" in ctx.goods and "fish" in ctx.goods:
+        out.update(_seafood(ctx, land, coastal))
+    return out
+
+
+def _seafood(ctx: Ctx, land: np.ndarray, coastal: np.ndarray) -> dict:
+    """The sea's and the rivers' food (PW-732, seafood.py): the goods over the region's coast, the mix of where the fish
+    comes from, river runs and big lakes, shellfish and sea mammals."""
+    R, G = ctx.goods["_raw"], ctx.goods
+    runs, lakes = land & (R["fish_run"] > 0.05), land & (R["fish_lake"] > 0.05)
+    out: dict = {}
+    for k in ("fish", "shellfish", "sea_mammals"):
+        if k in G:
+            out[f"coast_{k}"] = _mean(G[k], coastal)
+    wet = coastal | runs | lakes  # (cells that fish at all)
+    if wet.any():
+        w = np.array([R["fish_sea"][wet].sum(), R["fish_run"][wet].sum(), R["fish_lake"][wet].sum()])
+        tot = max(float(w.sum()), 1e-9)
+        out["fish_mix"] = {"sea": round(float(w[0]) / tot, 3), "river runs": round(float(w[1]) / tot, 3), "lakes": round(float(w[2]) / tot, 3)}
+    else:
+        out["fish_mix"] = None
+    out["river_runs"] = _mean(R["fish_run"], runs) if runs.any() else None
+    out["lake_fish"] = _mean(R["fish_lake"], lakes) if lakes.any() else None
+    out["sea_mammals"] = {k: _mean(R[k], coastal) for k in ("seals", "whales") if coastal.any()}
     out["shelf"] = None
+    return out
+
+
+def _salt(ctx: Ctx, land: np.ndarray) -> dict | None:
+    """Salt (PW-732, seafood.py): which sources the region has, how far the land is from salt and what the nearest source
+    is, plant ash as the fallback. The world's own moment."""
+    G = ctx.goods
+    if G is None or "_salt_km" not in G or not land.any():
+        return None
+    R = G["_raw"]
+    km, kind = G["_salt_km"][land], G["_salt_kind"][land].astype(int)
+    from .seafood import SALT_KINDS, SALT_UNREACHED
+    src = {k.replace("salt_", ""): round(float((R[k][land] >= 0.25).mean()), 3) for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")}
+    out: dict = {"basis": "the world's own moment (seafood.py): land distance to the nearest salt, bent by routes",
+                 "source_share_of_land": src,
+                 "km_to_salt": {"mean": round(float(km.mean())), "p90": round(float(np.percentile(km, 90))), "max": round(float(km.max()))},
+                 "nearest_source": {SALT_KINDS[k]: round(float((kind == k).mean()), 3) for k in range(1, len(SALT_KINDS)) if (kind == k).any()},
+                 "unreached_share": round(float((km >= SALT_UNREACHED).mean()), 3),
+                 "within_100km_share": round(float((km <= 100).mean()), 3),
+                 "beyond_trade_km_share": round(float((km > SALT_TRADED_KM).mean()), 3),
+                 "plant_ash": _mean(G["fuel"], land) if "fuel" in G else None}
+    out["poor"] = bool(out["km_to_salt"]["mean"] > SALT_TRADED_KM)
     return out
 
 
@@ -464,6 +511,14 @@ def _suggested(brief: dict) -> dict:
         notes.append("driftwood and dried seaweed are the commonest fuel: fuel is scarce, so little is cooked long")
     elif top:
         notes.append(f"the commonest cooking fuel is {top}")
+    sa, fi = brief.get("salt") or {}, brief.get("fish") or {}
+    if sa.get("poor"):
+        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average): it is traded in, dear and rationed; cure with smoke and sour ferments, and "
+                     "season with plant ash before salt")
+    elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
+        notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
+    if fi.get("fish_mix") and fi.get("coast_fish") is not None and fi["coast_fish"] >= 0.6:
+        notes.append("a rich fishery on this coast: fish is a staple, salted or dried for the lean months")
     grown = [c["id"] for c in brief.get("crops") or []]
     dairy = [p["id"] for p in brief["peoples"]["list"] if p.get("dairy")]
     if dairy:
@@ -531,7 +586,16 @@ def markdown(b: dict) -> str:
     fi = b["fish"]
     t += ["", "## Coast and fish", ""]
     t += [f"- {_kv({k: v for k, v in fi.items() if v is not None and k not in ('basis',)})}"] if fi else ["- no world"]
-    t += ["", "## Salt", "", "- " + NOT_MODELLED + f" (a deposit likelihood is under Land: {land.get('resources', {}).get('salt_deposit_likelihood')})"]
+    sa = b["salt"]
+    t += ["", "## Salt", ""]
+    if sa:
+        t += [f"- Sources over the region's land (share of cells): {_kv(sa['source_share_of_land'], _pc)}",
+              f"- Distance to salt: mean {sa['km_to_salt']['mean']} km, p90 {sa['km_to_salt']['p90']} km, max {sa['km_to_salt']['max']} km; "
+              f"within 100 km {_pc(sa['within_100km_share'])}; beyond {SALT_TRADED_KM:g} km {_pc(sa['beyond_trade_km_share'])}"
+              + (f"; no salt anywhere on the landmass {_pc(sa['unreached_share'])}" if sa["unreached_share"] else ""),
+              f"- Nearest source: {_kv(sa['nearest_source'], _pc)}", f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
+    else:
+        t += ["- no world"]
     for key, title in (("crops", "Crops known"), ("animals", "Animals known")):
         t += ["", f"## {title}", ""]
         t += [f"- {c['label']}: {_pc(c['known_share'])} of the land, here since {c['since_kyr']} kyr ago" + (

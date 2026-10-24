@@ -992,3 +992,80 @@ def test_fuels_follow_trees_herds_peat_crops_and_coast():
     assert c["coal"][0] > c["wood"][0]
     assert FU.sentence([("dung", 0.7), ("wood", 0.2)]) == "It cooks mostly over dung fires."
     assert FU.sentence([("wood", 0.45), ("peat", 0.3), ("dung", 0.1)]) == "It cooks over wood fires and peat fires."
+
+
+def test_fuels_coal_by_era_heath_in_the_cold_and_fat_where_nothing_else():
+    from planet.lineages import fuels as FU
+    one = np.ones(1)
+    z = np.zeros(1)
+    kw = dict(tc=np.array([0.0]), pasture=z, crop=z, dens=np.array([3.0]), herd_known=z, peat_m=z, straw_mix=z, graze=np.array([0.9]),
+              coast=np.zeros(1, bool), coal=np.array([0.9]))
+    assert FU.mix(**kw, coal_known=FU.COAL_ERA["stone age"])["coal"][0] == 0 < FU.mix(**kw, coal_known=FU.COAL_ERA["medieval"])["coal"][0]
+    assert FU.COAL_ERA["classical"] < FU.COAL_ERA["medieval"] < FU.COAL_ERA["renaissance"] == 1.0
+    kw["coal"] = z
+    warm, cold = FU.mix(**kw, temp=np.array([15.0])), FU.mix(**kw, temp=np.array([-8.0]))
+    assert warm["heath"][0] == 0 < cold["heath"][0] and cold["grass"][0] == 0 < warm["grass"][0]  # (tundra grass is heath)
+    coast = FU.mix(**{**kw, "coast": np.ones(1, bool)}, sea=one)
+    assert coast["oil"][0] > 0 and FU.mix(**kw, sea=one)["oil"][0] == 0  # (oil only on a coast with sea mammals)
+    treeless = FU.mix(**{**kw, "herd_known": one}, temp=np.array([20.0]))
+    woods = FU.mix(**{**kw, "tc": 0.9 * one, "herd_known": one}, temp=np.array([20.0]))
+    assert treeless["tallow"][0] > woods["tallow"][0] >= 0 and treeless["bone"][0] > woods["bone"][0]  # (fat fills in where wood is scarce)
+    for sh in (warm, cold, coast, treeless, woods):
+        assert abs(sum(sh[k][0] for k in FU.FUELS) - 1) < 1e-9
+
+
+def _toy_world():
+    """A level-3 grid with a continent (north of 5 N, 0..150 E) and a one-cell island, for the salt and sea-food goods."""
+    from planet.geo import world_land
+    from planet.grid import shared_grid
+    g = shared_grid(3)
+    lat, lon = g.lat, g.lon
+    elev = np.where((lat > 5) & (lon > 0) & (lon < 150), 300.0, -2000.0)
+    isl = int(np.argmin(np.where((elev < 0) & (lat < -40), np.abs(lon), 1e9)))
+    elev[isl] = 100.0
+    L = {"elevation": elev, "ice": np.zeros(g.n)}
+    return g, L, world_land(L), isl
+
+
+def _getter(L, n):
+    return lambda k: np.asarray(L[k], float) if k in L else np.zeros(n)
+
+
+def test_salt_distance_and_sources_and_sea_food():
+    from planet.lineages import seafood as SF
+    g, L, land, isl = _toy_world()
+    n = g.n
+    sea = ~land
+    coast = land & SF._nbr(g, np.logical_or, sea[g.nbr_idx])
+    inland = land & ~coast & ~SF._nbr(g, np.logical_or, coast[g.nbr_idx])
+    pit = int(np.flatnonzero(inland)[0])
+    L["res_salt"] = np.zeros(n)
+    L["res_salt"][pit] = 0.9
+    L["salinity"] = np.where(sea, 35.0, 0.0)
+    L["precipitation"] = np.full(n, 1000.0)
+    L["pet"] = np.full(n, 500.0)
+    L["coast_type"] = np.where(coast, 10, 0)
+    L["sst_jul"] = L["sst_jan"] = np.where(sea, 10.0, 0.0)
+    out = SF.salt(g, L, land, coast, _getter(L, n))
+    km = out["_salt_km"]
+    assert km[pit] == 0 and out["_salt_kind"][pit] == 1  # (rock salt where it is)
+    assert km[isl] == 0 and out["_salt_kind"][isl] == 4  # (the island is its own coast: sea salt)
+    far = int(np.argmax(np.where(land & ~coast, km, -1)))  # (the interior cell farthest from a source)
+    assert 0 < km[far] < SF.SALT_UNREACHED
+    assert (km[land] >= 0).all() and (out["salt"] >= 0).all() and (out["salt"] <= 1).all()
+    # a dry coast makes solar-pan salt, a damp one only the dearer boiled salt; a brackish sea makes none
+    Ld = {**L, "pet": np.full(n, 3000.0)}
+    dry = SF.salt(g, Ld, land, coast, _getter(Ld, n))
+    assert dry["salt_sea"][coast].max() > out["salt_sea"][coast].max() > 0
+    Lb = {**L, "salinity": np.where(sea, 5.0, 0.0)}
+    assert SF.salt(g, Lb, land, coast, _getter(Lb, n))["salt_sea"].max() == 0
+    # sea food: cold upwelling coasts beat warm still ones
+    L2 = {**L, "upwelling": np.where(sea, 3.0, 0.0), "sst_jul": np.where(sea, 8.0, 0.0), "sst_jan": np.where(sea, 6.0, 0.0),
+          "tide_range": np.where(sea, 1.5, 0.0), "seals": np.where(coast, 0.5, 0.0)}
+    rich = SF.seafood(g, L2, land, coast, _getter(L2, n))
+    L3 = {**L, "sst_jul": np.where(sea, 28.0, 0.0), "sst_jan": np.where(sea, 26.0, 0.0)}
+    poor = SF.seafood(g, L3, land, coast, _getter(L3, n))
+    assert rich["fish_sea"][coast].mean() > poor["fish_sea"][coast].mean() >= 0
+    assert rich["sea_mammals"][coast].mean() > poor["sea_mammals"][coast].mean()  # (seals and whales on the cold coast)
+    for k in ("fish", "shellfish", "sea_mammals"):
+        assert (rich[k] >= 0).all() and (rich[k] <= 1).all()

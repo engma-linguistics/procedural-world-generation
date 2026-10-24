@@ -1,0 +1,175 @@
+"""Salt and sea food (PW-732): goods per cell from layers a world already has (resources, springs, lakes, coast forms,
+coastal life, tides, upwelling, rivers). Called from land._make_goods; nothing here knows a people.
+
+Salt sources (each 0..1 likelihood, on land cells; land.goods reaches them one ring inland):
+    salt_rock    evaporite beds and salt pans of closed hot basins (resources `res_salt`, worked where >= ROCK_MIN)
+    salt_lake    salt lakes and playas (hydrology lake_kind 2 closed, 3 salt pan)
+    salt_spring  brine springs: a spring on or beside evaporite
+    salt_sea     sea salt on coasts: solar pans where the air dries (pet over rain) behind tidal flats and low shores, and
+                 salt boiled over wood on any other ice-free coast (a poorer source: it costs fuel) -- both need a salty sea
+    salt         the best of the four
+    _salt_km     distance over land to the nearest source (km, route-bent; SALT_UNREACHED where the landmass has none)
+    _salt_kind   which source is nearest (SALT_KINDS index; 0 none)
+Plant ash (potash, vegetable salt) is a marker only (the brief reads the fuel good): a poor-man's salt everywhere trees grow.
+
+Sea food (0..1 per coastal, river and lake land cell; land.goods scales them to the world's best and reaches inland):
+    fish         the best of fish_sea (shelf, upwelling and cool nutrient-rich water, reef/kelp/seagrass nurseries),
+                 fish_run (rivers that reach the sea: salmon-like runs in cold ones, shad, sturgeon and eels in warm ones,
+                 carried upstream with a loss per cell) and fish_lake (big fresh lakes)
+    shellfish    marsh, seagrass, reef, tidal flats and mangrove, plus rocky shores in nutrient-rich water
+    sea_mammals  seals (coastform's `seals`), whales on upwelling coasts and at the ice edge, dugong-like grazers in warm
+                 seagrass lagoons
+"""
+
+from __future__ import annotations
+
+import numpy as np
+
+from .. import coastform as CF
+from ..coastal import ramp
+from ..geo import R_KM
+from ..kernels import bfs_within
+
+ROCK_MIN = 0.2  # res_salt likelihood below this is not worked
+SRC_MIN = 0.25  # a cell with salt at least this is a source for the distance
+ROUTE = 1.3  # a road bends: km along the land graph over the straight hops
+SALT_UNREACHED = 5000.0  # km: no salt on this landmass (carried by trade or not at all)
+SALT_KINDS = ("none", "rock salt", "salt lake", "brine spring", "sea salt")
+SEA_SOLAR = (0.8, 2.0)  # pet / precipitation: solar pans from drier than 0.8, full at 2
+SEA_BOIL = 0.35  # boiled sea salt on a damp coast (fuel and labour): this share of a solar coast
+SALINITY = (15.0, 30.0)  # psu of the sea next to the coast: a brackish sea (Baltic) makes thin brine
+FLATS = {"tidal": 1.0, "low": 0.9, "beach": 0.8, "barrier": 0.9, "delta": 0.5, "mangrove": 0.8, "rocky": 0.4, "cliff": 0.25,
+         "fjord": 0.3, "coral": 0.6, "ice": 0.0, "none": 0.0}
+SHELF_M = (1500.0, 300.0)  # coastal sea cells (60 km) with mean depth under the second are shelf, over the first deep sea
+RUN_FLOW = 3.0  # flow (cells of runoff) at which a river is large enough for runs
+RUN_LOSS = 0.96  # share of a run kept per cell upstream
+RUN_COLD = (20.0, 6.0)  # mean temperature C: salmon-like runs in cold rivers, the warm ones keep RUN_WARM of it
+RUN_WARM = 0.35
+RUN_FROZEN = (6.0, 11.0)  # months of frozen river: runs fade
+LAKE_CELLS = (1.0, 6.0)  # lake cells (connected): a lake of this size is a poor, then a full fishery
+WHALE_SST = (10.0, 2.0)  # C warmest-month sea: whales at the cold, ice-edge feeding grounds
+DUGONG_SST = (20.0, 24.0)
+
+
+def _kind(L: dict, k: str) -> np.ndarray:
+    return np.asarray(L[k]).astype(int)
+
+
+def _nbr(g, ufunc, v):
+    return ufunc.reduceat(v, g.nbr_off[:-1])
+
+
+def _nmax(g, v, mask=None):
+    """Max of v over each cell's neighbours (and itself), optionally only neighbours in mask."""
+    w = v if mask is None else np.where(mask, v, 0.0)
+    return np.maximum(w, _nbr(g, np.maximum, w[g.nbr_idx]))
+
+
+def _sea_to_coast(g, v, sea, coast, rings=2):
+    """The best sea value within `rings` cell rings, taken to each coastal land cell."""
+    w = np.where(sea, v, 0.0)
+    for _ in range(rings):
+        w = _nmax(g, w)
+    return np.where(coast, w, 0.0)
+
+
+def salt(g, L: dict, land: np.ndarray, coast: np.ndarray, f) -> dict:
+    sea = ~land
+    out = {}
+    rs = f("res_salt")
+    out["salt_rock"] = np.where(land & (rs >= ROCK_MIN), rs, 0.0)
+    lk = _kind(L, "lake_kind") if "lake_kind" in L else np.zeros(g.n, int)
+    out["salt_lake"] = np.where(land, np.where(lk == 3, 1.0, np.where(lk == 2, 0.8, 0.0)), 0.0)
+    spring = f("spring") > 0
+    beds = _nmax(g, _nmax(g, np.where(land & (rs >= 0.05), rs, 0.0)))
+    out["salt_spring"] = np.where(land & spring, 0.7 * ramp(beds, 0.05, 0.3), 0.0)
+    # the sea: salty enough, and dry enough for pans; the coast's form says how easy the flats are
+    sal = _sea_to_coast(g, np.where(sea, f("salinity"), 0.0), sea, coast, 1)
+    salty = ramp(sal, *SALINITY)
+    arid = ramp(f("pet") / np.maximum(f("precipitation"), 50.0), *SEA_SOLAR)
+    ct = f("coast_type").astype(int)
+    flats = np.zeros(g.n)
+    for name, k in CF.KEYS.items():
+        flats[ct == k] = FLATS.get(name, 0.3)
+    ice_coast = _sea_to_coast(g, np.where(sea, f("sst_jul") < 2.0, False).astype(float), sea, coast, 1) > 0
+    solar = arid * flats
+    out["salt_sea"] = np.where(coast & ~ice_coast, salty * np.maximum(solar, SEA_BOIL * np.where(ct > 0, 1.0, 0.0)), 0.0)
+    out["salt"] = np.maximum.reduce([out[k] for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")])
+    # distance over land to the nearest source (the sources' own value is a likelihood; the cell counts as a source from SRC_MIN)
+    kinds = np.stack([out[k] for k in ("salt_rock", "salt_lake", "salt_spring", "salt_sea")])
+    src = np.flatnonzero(land & (kinds.max(0) >= SRC_MIN))
+    label = land.astype(np.int64)
+    km = np.full(g.n, SALT_UNREACHED)
+    kind = np.zeros(g.n, np.int8)
+    if len(src):
+        hop, origin = bfs_within(src.astype(np.int64), label, g.nbr_off, g.nbr_idx, g.n)
+        ok = land & (hop >= 0)
+        km[ok] = np.minimum(hop[ok] * g.spacing * R_KM * ROUTE, SALT_UNREACHED)
+        # (the nearest source's kind: its strongest, with the ties to the sources listed first)
+        kind[ok] = 1 + kinds[:, origin[ok]].argmax(0)
+    km[~land] = 0.0
+    out["_salt_km"] = km
+    out["_salt_kind"] = kind
+    return out
+
+
+def seafood(g, L: dict, land: np.ndarray, coast: np.ndarray, f) -> dict:
+    sea = ~land
+    n = g.n
+    elev = f("elevation")
+    depth = np.where(sea, -elev, 0.0)
+    up, kelp, grass, reef = f("upwelling"), f("kelp"), f("seagrass"), f("reef")
+    s_warm = np.maximum(f("sst_jul"), f("sst_jan"))
+    tide = f("tide_range")
+    # a sea cell's food: nutrients (upwelling, cool water, tidal mixing) over a shelf, or a nursery (reef, kelp, seagrass)
+    prod = np.maximum.reduce([ramp(up, *CF.PROD_UPWELL), ramp(s_warm, *CF.PROD_COLD), 0.6 * ramp(tide, *CF.PROD_TIDE)])
+    shelf = ramp(depth, *SHELF_M)
+    nursery = np.maximum.reduce([ramp(kelp, 0, 20), ramp(grass, 0, 20), ramp(reef, 0, 20)])
+    iced = ramp(f("sst_jan"), 0.5, -1.5)  # (sea ice in winter)
+    fish_sea_cell = np.where(sea, np.maximum(prod * (0.35 + 0.65 * shelf), 0.7 * nursery) * (1 - 0.8 * iced), 0.0)
+    out = {"fish_sea": _sea_to_coast(g, fish_sea_cell, sea, coast, 2)}
+    # river runs: large rivers that reach the sea, carried upstream with a loss per cell
+    flow = f("flow")
+    down = np.asarray(L["downstream"]).astype(int) if "downstream" in L else np.full(n, -1)
+    frozen = f("river_frozen")
+    temp = f("temperature")
+    run = ramp(temp, *RUN_COLD)
+    run = RUN_WARM + (1 - RUN_WARM) * run
+    run = run * ramp(frozen, *RUN_FROZEN[::-1])
+    river = land & (flow >= RUN_FLOW) & (down >= 0)
+    mouth = river & ~land[np.maximum(down, 0)]
+    val = np.where(mouth, run * ramp(flow, RUN_FLOW, 30.0), 0.0)
+    cap = run * (0.5 + 0.5 * ramp(flow, RUN_FLOW, 30.0))
+    ups = np.flatnonzero(river & ~mouth)
+    for _ in range(400):  # (up the whole tree; a river is < 400 cells long)
+        new = val.copy()
+        new[ups] = np.maximum(val[ups], np.minimum(val[down[ups]] * RUN_LOSS, cap[ups]))  # (a headwater is as cold as it is, and small)
+        if np.array_equal(new, val):
+            break
+        val = new
+    out["fish_run"] = np.where(river, val, 0.0)
+    # lakes: fresh lakes by size (salt ones hold little)
+    lake = land & (f("lake") > 0)
+    lk = _kind(L, "lake_kind") if "lake_kind" in L else np.zeros(n, int)
+    lab, k = g.components(lake)
+    size = np.bincount(lab[lab >= 0], minlength=max(k, 1))
+    s = ramp(size[np.maximum(lab, 0)], *LAKE_CELLS)
+    out["fish_lake"] = np.where(lake, np.where(lk == 1, 0.35 + 0.65 * s, 0.1 * s), 0.0)
+    out["fish"] = np.maximum.reduce([out["fish_sea"], out["fish_run"], out["fish_lake"]])
+    # shellfish: marsh, seagrass beds, reef, flats; mussels and limpets on rocky shores in rich water
+    ct = f("coast_type").astype(int)
+    flats = np.zeros(n)
+    for name in ("tidal", "barrier", "mangrove", "low", "delta"):
+        flats[ct == CF.KEYS[name]] = 0.7
+    rocky = np.isin(ct, (CF.KEYS["rocky"], CF.KEYS["cliff"], CF.KEYS["fjord"])).astype(float)
+    nb = lambda v: _sea_to_coast(g, v, sea, coast, 1)  # noqa: E731
+    cold = nb(np.where(sea, np.maximum(ramp(up, *CF.PROD_UPWELL), ramp(s_warm, *CF.PROD_COLD)), 0.0))
+    shell = np.maximum.reduce([0.9 * ramp(f("salt_marsh"), 1.0, 15.0), 0.8 * nb(ramp(grass, 0, 15)), 0.9 * nb(ramp(reef, 0, 15)),
+                               flats * (0.4 + 0.6 * ramp(tide, 0.3, 2.0)), 0.5 * rocky * cold, 0.7 * ramp(f("mangrove"), 1.0, 20.0)])
+    out["shellfish"] = np.where(coast, shell, 0.0)
+    # sea mammals: seals; whales on upwelling coasts and at the ice edge; dugong-like grazers in warm seagrass
+    whale_cell = np.where(sea, np.maximum(0.7 * ramp(up, 0.8, 3.0), 0.8 * ramp(s_warm, *WHALE_SST) * (s_warm > -2)), 0.0)
+    dug_cell = np.where(sea, 0.5 * ramp(grass, 0, 15) * ramp(s_warm, *DUGONG_SST), 0.0)
+    out["whales"] = _sea_to_coast(g, np.maximum(whale_cell, dug_cell), sea, coast, 2)
+    out["sea_mammals"] = np.maximum(f("seals"), out["whales"])
+    return out
