@@ -17,6 +17,10 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
 A root, arrival or split may say where its origin is placed (PW-763; soft multipliers on the origin's score, never forced):
 `near = [ids]` / `far_from = [ids]` (relative to those lines' ranges when it starts; ones not yet alive are ignored),
 `lat_band = [south, north]`, `landmass = "largest" | "elsewhere"`.
+A line's `realm` (PW-775): "land" (default), "coast" (the sea cells next to land, the shelf and tidal flats: merfolk) or "sea"
+(all open water, within its `temp_c` and its `elev_m` as a depth band in negative metres: storm giants). Marine lines (coast, sea)
+only take root, arrival or split origins; they compete with each other, not with land peoples, who they meet on the shared coast
+(the contact record, the brief); rain, prefers and avoids do not apply to them. The deep folk stay authored (no realm).
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -251,6 +255,7 @@ def body_notes(b: dict) -> list[str]:
 
 
 TIER_KYR = (10.0, 1000.0, 40000.0)  # split depths under which peoples are T0, T1, T2 (else T3): interfertility tiers, PW-727
+REALMS = ("land", "coast", "sea")
 ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
 GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
@@ -290,6 +295,7 @@ class Lineage:
     body_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
     way: str | None = None  # way of life (WAYS), inherited from the parent (a group's people) where not given; None: from the traits
     way_given: str | None = None  # of it, what the spec gave on this line itself
+    realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
     persists: bool = False  # keeps living after its last split child
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
@@ -305,6 +311,11 @@ class Lineage:
     custom: bool = False  # added by the user (the editor marks it), not from a preset
     real: bool = False  # lives in the real-world mode too (meta.mode = 'real' keeps only these lines, PW-695)
     children: list[str] = field(default_factory=list)  # split children
+
+    @property
+    def marine(self) -> bool:
+        """Lives on sea cells (realm coast or sea), not on land."""
+        return self.realm != "land"
 
     @property
     def parent(self) -> str | None:
@@ -634,6 +645,11 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
             wgiven = None
         if wgiven is not None and wgiven not in WAYS:
             raise ValueError(f"{lid}: unknown way of life {wgiven!r} (one of {sorted(WAYS)})")
+        realm = str(r.get("realm") or (base.realm if origin == "split" else "land"))
+        if realm not in REALMS:
+            raise ValueError(f"{lid}: realm must be one of {REALMS}")
+        if realm != "land" and origin not in ("root", "arrival", "split"):
+            raise ValueError(f"{lid}: a marine line (realm {realm}) takes a root, arrival or split origin")
         place = r.get("place")
         if place is not None:
             place = (float(place["lat"]), float(place["lon"])) if isinstance(place, dict) else (float(place[0]), float(place[1]))
@@ -659,7 +675,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)),
@@ -807,6 +823,8 @@ def to_raw(t: Tree) -> dict:
                  traits=l.traits, speed_kmyr=l.speed_kmyr, **l.given_demo())
         if l.elev_m is not None:
             r["elev_m"] = list(l.elev_m)
+        if l.marine or (l.origin == "split" and t.lines[l.parents[0]].marine):  # (a land tree's raw stays as it was)
+            r["realm"] = l.realm
         if l.place is not None:
             r["place"] = list(l.place)
         if l.start_near:

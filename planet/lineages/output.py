@@ -129,7 +129,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     cols = colors(h)
     lines = [{"index": k, "id": l.id, "name": l.label(), "origin": l.origin, "parents": l.parents, "ago_kyr": l.ago_kyr,
               "group_of": l.group_of, "groups": h.tree.groups_of(l.id),
-              "extinct_kyr": l.extinct_kyr, "overlay": l.overlay, "traits": l.traits, "color": cols[k],
+              "extinct_kyr": l.extinct_kyr, "overlay": l.overlay, "realm": l.realm, "traits": l.traits, "color": cols[k],
               "leaf": l in h.tree.leaves(), "started_kyr": h.started.get(l.id), "ended_kyr": h.ended.get(l.id),
               "origin_place": h.origins.get(l.id), "track": h.tracks[l.id],
               "reached": {str(k): v for k, v in h.cross.reached.get(l.id, {}).items()},

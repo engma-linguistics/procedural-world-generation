@@ -30,7 +30,7 @@ from ..geo import R_KM
 from ..grid import shared_grid
 from . import spec as SP
 
-BRIEF_VERSION = 5  # 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 6  # 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -241,6 +241,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["crops"] = _grown(ctx, "crop_known", "crops", i, sel, land)
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
+    brief["sea_peoples"] = _sea_peoples(ctx, i, sel, sea, land_all)
     brief["animal_foods"] = _animal_foods(brief)
     brief["mixing_zones"] = zones
     brief["substrate"] = _substrate(ctx, brief["peoples"])
@@ -521,7 +522,8 @@ def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
     lead, ls = ctx.f("mix_lead", i), ctx.f("mix_lead_share", i).astype(float)
     sec, ss = ctx.f("mix_second", i), ctx.f("mix_second_share", i).astype(float)
     oth = ctx.f("mix_other_share", i).astype(float)
-    peopled = sel & (lead < 255)
+    mar = _marine_mask(ctx)
+    peopled = sel & (lead < 255) & ~mar[np.minimum(lead, len(mar) - 1)]  # (the land's peoples: the sea peoples are _sea_peoples')
     n = int(peopled.sum())
     share: dict[int, float] = {}
     for k in np.unique(lead[peopled]).tolist():
@@ -547,6 +549,69 @@ def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
     groups = _groups_here(ctx, i, sel & (lead < 255), {r["id"] for r in rows})
     return {"ways_of_life": dict(sorted(ways.items(), key=lambda kv: -kv[1])), "groups": groups, "peopled_cells": n, "empty_share": round(1 - n / max(int(sel.sum()), 1), 3), "others_together": round(other, 3), "list": rows,
             "share_basis": "mean over the region's peopled cells of each people's share of the cell's heads (composition, PW-689)"}
+
+
+def _marine_mask(ctx: Ctx) -> np.ndarray:
+    """Per line index: lives at sea (realm coast or sea, PW-775; a run made before it has none). One extra False at the end."""
+    return np.array([l.get("realm", "land") != "land" for l in ctx.lines] + [False], bool)
+
+
+SEA_FOOD_MIN = 0.2  # a sea good (0..1) from this is a food the people has; the kelp, seal and reef layers (a share of the cell) from SEA_LAYER_MIN
+SEA_LAYER_MIN = 0.05
+_SEA_BASIS = ("peoples whose realm is the sea: coast (the shore ring of sea cells next to land) or sea (open water); share_of_sea is their share of the "
+              "region's sea cells; goods are the world's coastal-life layers over their cells and the land coast they touch (the moment of the world's slice); "
+              "foods are the goods at or above a fixed floor; land_contacts is the contact record with the land peoples whose cells it touches now (up to 6, longest border first)")
+
+
+def _sea_peoples(ctx: Ctx, i: int, sel: np.ndarray, sea: np.ndarray, land_all: np.ndarray) -> dict | None:
+    """The peoples of the sea (PW-775; realm coast: the shore ring, realm sea: open water) in the region: the cells of the region
+    where each leads or is second (as region_of_people), its share of the region's sea cells, the sea goods over those cells (the
+    world's coastal-life layers) and over the land coast they touch (seafood.py: fish, shellfish, sea mammals), the foods that
+    makes, and its contact record with the land peoples of that coast. None for a run with no marine line."""
+    mar = _marine_mask(ctx)
+    ks = [k for k in range(len(ctx.lines)) if mar[k]]
+    if not ks:
+        return None
+    g, L = ctx.g, ctx.world
+    pp = None
+    if i == len(ctx.ts) - 1:
+        pp = np.fromfile(ctx.dir / "layers" / "presence_present.bin", dtype=np.uint8).reshape(len(ctx.lines), -1)
+    lead, sec = ctx.f("mix_lead", i), ctx.f("mix_second", i)
+    whole, dom = ctx.f("peoples_whole", i), ctx.f("peoples", i)
+    elev = ctx.f("elevation", i).astype(float)
+    rows = []
+    for k in ks:
+        mine = (lead == k) | (sec == k) | (whole == k) | (dom == k)
+        if pp is not None:
+            mine = mine | (pp[k] >= PRESENCE_MIN)
+        mc = sel & sea & mine
+        if not mc.any():
+            continue
+        l = ctx.lines[k]
+        near = np.logical_or.reduceat(mc[g.nbr_idx], g.nbr_off[:-1])
+        coast = land_all & near  # (the land coast it touches, in the region or just past its edge)
+        goods: dict = {"sea_cells": int(mc.sum()), "coast_cells": int(coast.sum()), "depth_m": _mean(-elev, mc)}
+        if L is not None:
+            for key in ("kelp", "reef", "seagrass", "upwelling", "seals", "seabirds"):
+                if key in L:
+                    goods[key] = _mean(L[key], mc)
+            goods["sst_c"] = _mean(L["sst"], mc)
+            goods["tide_range_m"] = _mean(L["tide_range"], mc | coast)
+        if ctx.goods is not None:
+            for key in ("fish", "shellfish", "sea_mammals"):
+                if key in ctx.goods and coast.any():
+                    goods[f"coast_{key}"] = _mean(ctx.goods[key], coast)
+        v = lambda key: goods.get(key) or 0.0  # noqa: E731
+        foods = [f for f, on in (("fish", v("coast_fish") >= SEA_FOOD_MIN), ("shellfish", v("coast_shellfish") >= SEA_FOOD_MIN),
+                                 ("kelp", v("kelp") >= SEA_LAYER_MIN),
+                                 ("seals", v("seals") >= SEA_LAYER_MIN or v("coast_sea_mammals") >= SEA_FOOD_MIN)) if on]
+        met = (_people_contacts(ctx, l["id"]) or {}).get("met") or []
+        rows.append({"id": l["id"], "name": l["name"], "realm": l["realm"], "way": l.get("way"), "body": _body(l),
+                     "share_of_sea": round(float(mc.sum() / max(int(sea.sum()), 1)), 3), "goods": goods, "foods": foods,
+                     "land_contacts": sorted((m for m in met if m["in_contact_now"] and not mar[ctx.idx[m["id"]]]),
+                                             key=lambda m: (-m["border_km_now"], m["id"]))[:6]})
+    rows.sort(key=lambda r: (-r["share_of_sea"], r["id"]))
+    return {"list": rows, "basis": _SEA_BASIS}
 
 
 GROUP_MIN = 0.05  # a group (a way of life inside a people) counts as present in a region from this mean presence
@@ -835,6 +900,17 @@ def markdown(b: dict) -> str:
         body = r["body"]
         t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (" (group, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
+    sp = b.get("sea_peoples")
+    if sp and sp["list"]:
+        t += ["", "## Sea peoples", ""]
+        for r in sp["list"]:
+            gd = r["goods"]
+            t += [f"- {r['name']} ({r['id']}, {r['realm']} realm): {_pc(r['share_of_sea'])} of the region's sea, {r['way'].replace('_', ' ') if r.get('way') else 'no set way'}"
+                  + (f"; sea foods: {', '.join(r['foods'])}" if r["foods"] else "; no sea food above the floor"),
+                  f"  - body: {'; '.join(SP.body_notes(r['body'])) or 'the human-like baseline'}",
+                  "  - sea goods: " + _kv({k: v for k, v in gd.items() if k not in ("sea_cells", "coast_cells")})]
+            t += [f"  - meets {c['id']}: {c['tier']}, since {c['first_contact_kyr']} kyr ago ({c['years_in_contact']} yr), border {c['border_km_now']} km now"
+                  + (f", along {c['kind']}" if c.get("kind") else "") for c in r["land_contacts"]]
     if b["mixing_zones"]:
         t += ["", "Mixing zones (where peoples meet): " + "; ".join(f"{z['lat']}, {z['lon']} ({', '.join(map(str, z['peoples']))})" for z in b["mixing_zones"])]
     af = b.get("animal_foods")

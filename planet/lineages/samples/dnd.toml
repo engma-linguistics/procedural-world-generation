@@ -320,10 +320,9 @@ at = "300 kyr"
 density = 0.005
 explore = 0.45
 sea_share = 0.5
+realm = "sea"  # offshore and along the coast (PW-775): all open water within the depth band
 temp_c = [4, 24]
-rain_mm = [1000, 4000]  # wet, stormy coasts
-elev_m = [-50, 600]
-prefers = ["coast", "island"]  # (and the 'storm_coast' good, [[use]]: the wave-beaten coasts)
+elev_m = [-4000, 0]
 traits = ["swims", "insular"]
 
 [[lineage]]
@@ -1070,11 +1069,6 @@ pull = 0.7
 [[use]]
 by = "frost_giant"
 good = "frost"
-pull = 0.7
-
-[[use]]
-by = "storm_giant"
-good = "storm_coast"
 pull = 0.7
 
 # Folk categories (PW-731, reputation.py): what a people calls a neighbour, by what the neighbour looks like (body, ancestry,

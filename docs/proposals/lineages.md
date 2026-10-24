@@ -580,3 +580,16 @@ Runs are deterministic for code + seed, so "before" (main at f93b63e) reproduced
 | 3e9e7d | 3 portals at random | 0.803 0.778 0.832 0.785 | 0.799 | 0.832 | 7.9% | 6.7% |
 
   Portals move the mean by +0.01 to +0.03 (within the try-to-try spread of ~0.05; `half_elf` is lost in the picked try of 2 of the 4 portal runs, 0 of the 2 defaults: the elves and humans meet less when the elves land elsewhere). Real mode (humans only, no wishes, one try): 1df1c3 23.3% of the land empty, 3e9e7d 27.0% (one continent unpeopled): the humans alone do not fill the land in the time they have, as expected without the other peoples' pioneers.
+
+## Marine peoples (PW-729 / PW-775, fun17; built 2026-10-24)
+A line may say `realm = "coast"` or `"sea"` (default `"land"`; marine lines take root, arrival or split origins). Habitat is data on
+the line (`history.marine_capacity`): K from the water temperature (`temp_c`, the lineages env's temperature at sea) and `elev_m` as a depth
+band in negative metres; no rain, prefers or avoids. **coast** holds the shore ring (sea cells next to land: `tags["shore"]`; merfolk,
+`[-600, 0]`); **sea** holds every sea cell (storm giants, `[-4000, 0]`). Marine lines compete with each other, not with land peoples
+(`History.alpha`/`terr` zeroed across realms), spread over sea cells only (the same `spread()` with the land mask all true and `enter`
+per cell: the realm's cells by habitat, other sea at the line's sea share, land 0), and leave the land peoples' machinery alone: not in
+`_native` (animals, crops, counts), no pioneers, long crossings or viable-population fade, no [[use]] goods, wishes or places. Their
+presence is on sea cells only, so the land-facing layers (composition, mixing, landmass counts, substrate) are the land peoples' exactly;
+the contact record pairs a marine line with the land peoples whose cells its sea cells touch (`Contacts.update`), and the brief has a
+`sea_peoples` block (goods, foods, contacts). A preset without marine lines is byte-identical to before (checked on seven_meals at L7).
+The deep folk stay authored: see the drafts for the viewer and habitat limits.

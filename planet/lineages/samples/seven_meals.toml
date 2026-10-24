@@ -201,8 +201,9 @@ rain_mm = [150, 1200]
 prefers = ["tundra", "subarctic"]
 way = "pastoral_nomad"
 
-# -- the aquatic clade: sister to the terrestrial clade ~15 Myr. Marine habitat is not built (draft-marine-peoples): both
-# peoples live on the coasts here, as the dnd.toml sea folk do. The deep folk cook without fire.
+# -- the aquatic clade: sister to the terrestrial clade ~15 Myr. The merfolk are a coast realm (PW-775: the sea cells next to
+# land, shelf and tidal flats; their `temp_c` is the water's) and the storm giants a sea realm; the deep folk stay authored
+# (they keep their coastal stand-in here: no trench or vent habitat is built) and cook without fire.
 [[lineage]]
 id = "aquatic"
 name = "aquatic clade"
@@ -221,8 +222,9 @@ at = "3 Myr"
 density = 2
 explore = 0.7
 sea_share = 0.7
+realm = "coast"  # the shore ring, shallow part: the depth band is elev_m (negative metres)
 temp_c = [8, 28]
-prefers = ["coast", "island"]
+elev_m = [-600, 0]
 traits = ["swims", "coastal"]
 way = "fisher_forager"
 
@@ -388,10 +390,9 @@ at = "300 kyr"
 density = 0.005
 explore = 0.45
 sea_share = 0.5
+realm = "sea"  # offshore and along the coast: all open water within the depth band
 temp_c = [4, 24]
-rain_mm = [1000, 4000]
-elev_m = [-50, 600]
-prefers = ["coast", "island"]
+elev_m = [-4000, 0]
 traits = ["swims", "insular"]
 
 [[lineage]]  # ~1-1.5 Myr, T2 with humans and with the halflings
@@ -1061,11 +1062,6 @@ pull = 0.7
 [[use]]
 by = "frost_giant"
 good = "frost"
-pull = 0.7
-
-[[use]]
-by = "storm_giant"
-good = "storm_coast"
 pull = 0.7
 
 [[use]]
