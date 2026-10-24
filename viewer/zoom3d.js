@@ -31,6 +31,7 @@ const RIVER_RGB = '#3b77ad';
 const SEA_RGB = 0x1d5487, LAKE_RGB = 0x3a7cb8, SKIRT_RGB = 0x3a3128;
 // lakes by kind (1 fresh, 2 salt: the zoom's lake_kind; its pans, 3, are white land)
 const LAKE_KIND_RGB = { 1: LAKE_RGB, 2: 0xc9769f };
+const DEP_PINS = 250;  // the most deposit pins at once (the biggest)
 const VOLC_PIN = { active: '#ff7a55', dormant: '#ffd23f', extinct: '#d9a66a', sea: '#8fc2ff' };
 const SKY = 0xa9c2dc;
 const SEAM_PX = 8;          // a fine tile's edge blends into the coarser ground over this many pixels
@@ -443,7 +444,7 @@ export class Zoom3D {
     this.scene.add(this.hemi, this.sun, this.sun.target);
     this.group = new THREE.Group();   // terrain, lakes, sea: y in metres, scaled by exag / 1000
     this.scene.add(this.group);
-    this.pins = null; this.on = { fall: true, volcano: true }; this.marks = [];
+    this.pins = null; this.on = { fall: true, volcano: true, deposit: true }; this.depFilter = () => true; this.depKey = null; this.marks = [];
     this.pinMat = new THREE.LineBasicMaterial({ color: 0xe8f6ff });
     this.skirtMat = new THREE.MeshBasicMaterial({ color: SKIRT_RGB, side: THREE.DoubleSide });
     // (each tile has its own terrain, sea and lake materials: tileMats)
@@ -500,6 +501,7 @@ export class Zoom3D {
     // (ids: the first zoom's falls and volcanoes by index, as zoom.html lists them; a fine tile's "<zoom>:<index>")
     t.falls = (z.falls || []).map((f, j) => ({ ...f, k: root ? j : `${z.id}:${j}`, t, path: t.fallPath(f) }));
     t.volcs = (z.volc || []).map((v, j) => ({ ...v, k: root ? j : `${z.id}:${j}`, t }));
+    t.deps = (z.dep || []).map((d, j) => ({ ...d, k: root ? j : `${z.id}:${j}`, t }));  // (mineral deposits, PW-618)
     t.dataTex = Look.dataTexture(t);
     t.flowTex = null;
     this.tiles.push(t);
@@ -549,6 +551,13 @@ export class Zoom3D {
   covered(j, X, Z) { for (let k = j + 1; k < this.tiles.length; k++) if (this.tiles[k].covers(X, Z)) return true; return false; }
   fallXZ(f) { const t = f.t; return t.scene(t.x(f.px[1]), t.z(f.px[0])); }
   volcXZ(v) { const t = v.t; return t.scene(t.x(v.c - 0.5), t.z(v.r - 0.5)); }
+  depXZ(d) { const t = d.t; return t.scene(t.x(d.c - 0.5), t.z(d.r - 0.5)); }
+  // the deposits the page's filter lets through (zoom.html depShown: the checkbox and the resource menu); the pins follow
+  setDeps(filter, key) {
+    if (key === this.depKey) return;
+    this.depKey = key; this.depFilter = filter;
+    this.buildPins();
+  }
   rebuild() {
     if (!this.tiles.length) return;
     let triangles = 0;
@@ -651,17 +660,30 @@ export class Zoom3D {
       const vbig = new Set([...volcs].sort((a, b) => b.height_m - a.height_m).slice(0, 8).map((v) => v.k));
       for (const f of falls) { f.kindOf = 'fall'; f.isBig = big.has(f.k); this.marks.push(f); }
       for (const v of volcs) { v.kindOf = 'volcano'; v.isBig = vbig.has(v.k); this.marks.push(v); }
+      // deposits: at most the biggest DEP_PINS, the largest with a name (their pins are the ore's colour)
+      const rank = { small: 0, medium: 1, large: 2, giant: 3 };
+      const deps = t.deps.filter((d) => this.depFilter(d) && !this.covered(j, ...this.depXZ(d)))
+        .sort((a, b) => rank[b.size] - rank[a.size] || b.tonnage - a.tonnage).slice(0, DEP_PINS);
+      for (const d of deps) { d.kindOf = 'deposit'; d.isBig = d.size === 'giant'; this.marks.push(d); }
     });
     this.marks.forEach((f, pi) => {
-      const fall = f.kindOf === 'fall', isBig = f.isBig, t = f.t;
+      const fall = f.kindOf === 'fall', dep = f.kindOf === 'deposit', isBig = f.isBig, t = f.t;
       let x, z, y;
       if (fall) { [x, z] = this.fallXZ(f); y = Math.max(f.top_m ?? t.wsA[f.path[0]], 0) * s; }
-      else { [x, z] = this.volcXZ(f); y = Math.max(t.height(t.x(f.c - 0.5), t.z(f.r - 0.5)), 0) * s; }
+      else { [x, z] = dep ? this.depXZ(f) : this.volcXZ(f); y = Math.max(t.height(t.x(f.c - 0.5), t.z(f.r - 0.5)), 0) * s; }
       pos.push(x, y, z, x, y, z);
       f.pi = pi; f.base = new THREE.Vector3(x, y, z); f.anchor = f.base.clone(); f.pin = isBig ? 0.07 : 0.035;
       const el = document.createElement('div');
-      el.className = `z3d-${fall ? 'fall' : 'volc'}` + (isBig ? ' big' : '') + (f.top ? ' top' : '');
-      if (fall) {
+      el.className = `z3d-${fall ? 'fall' : dep ? 'dep' : 'volc'}` + (isBig ? ' big' : '') + (f.top ? ' top' : '');
+      if (dep) {
+        el.style.color = this.api.depColor ? this.api.depColor(f.key) : '#ffffff';
+        const glyph = f.form === 'laterite' || f.form === 'bed' ? '&#9632;' : f.form === 'placer' ? '&#9670;' : f.form === 'seam' ? '&#9644;'
+          : f.form === 'field' ? '&#11052;' : f.form === 'pipes' ? '&#11042;' : '&#9679;';
+        el.innerHTML = isBig ? `${glyph} ${f.name}` : glyph;
+        el.style.fontSize = `${{ small: 8, medium: 10, large: 12, giant: 13 }[f.size] || 10}px`;
+        el.title = `${f.size} ${f.name} deposit (click: pin the card)`;
+        el.onclick = (e) => { e.stopPropagation(); this.api.showCard(f, e, true); };
+      } else if (fall) {
         el.innerHTML = isBig ? `&#9660; ${Math.round(f.height_m)} m` : '&#9660;';
         el.title = `waterfall ${Math.round(f.height_m)} m, ${Math.round(f.discharge_m3s)} m3/s (click: fly there)`;
         // (the first zoom's falls through zoom.html, which also opens the card)

@@ -787,3 +787,17 @@ def test_portals_are_placed_apart_on_land(faketz):
     assert H.History(SP.parse(_mode_raw()), ps, 1).portal_cells() == []  # (off: none)
     sites = H.History(SP.parse(_mode_raw(portal_mode="sites", portals=1, portal_sites=["forest"])), ps, 1).portal_cells()
     assert sites[0]["kind"] == "forest"
+
+
+def test_recent_rain_is_a_full_climate_every_2_kyr(faketz):
+    """PW-599 C: the rain comes from climate.compute at the time zoom's frames (2 kyr apart) in the window, linear
+    in time between them; climate_every=0 keeps the keyframe's rain scaled with the warming."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3))
+    tn, rn = ps._climate()
+    assert tn.tolist() == [-10.0, -8.0, -6.0, -4.0, -2.0, 0.0] and rn.shape == (6, ps.grid.n)
+    mid = ps.fields(-9.0, variability=False)["precipitation"]  # halfway between the -10 and -8 kyr climates
+    assert np.allclose(mid, 0.5 * (rn[0] + rn[1]))
+    assert np.allclose(ps.fields(-8.0, variability=False)["precipitation"], rn[1])
+    old = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3, climate_every=0))
+    scaled = old.fields(-8.0, variability=False)["precipitation"]
+    assert old._clim is None and not np.allclose(scaled, rn[1])  # (a different rain: the climate's own)

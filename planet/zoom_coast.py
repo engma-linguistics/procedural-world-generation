@@ -2,9 +2,10 @@
 the world's coast classes (coastform.py) drawn per pixel along the zoom's own
 shore, barrier islands with inlets and lagoons where the world says the coast
 is a barrier coast, seabird and seal colonies as points, and hazards to ships.
-An add-on on saved zooms (`planet coast zoom:<id>`): new layers only; the
-zoom's terrain changes only with --terrain (opt-in), which raises the barrier
-islands out of the sea.
+A step of every `planet zoom` (and `planet coast zoom:<id>` redoes it): the
+barrier islands are part of the zoom's terrain (islands(), called by zoom.build
+before the rivers; PW-622); build() draws the rest as new layers, and with
+--terrain also raises the spits and other shore forms out of the sea.
 
 Per shore pixel (land with a sea pixel among its 8 neighbours), first match wins:
   ice       a glacier pixel at the shore
@@ -30,8 +31,8 @@ BAR_DEPTH_M; tidal inlets cut it where a planet-fixed noise with patches
 INLET_KM across (fewer and wider apart with small tides: Hayes 1979's
 microtidal barriers are long, mesotidal ones short, "drumstick") falls
 under INLET_SHARE. Layer barrier_island: 1 island, 2 lagoon, 3 inlet.
-With --terrain the islands stand ISLAND_M above the sea (water -> land)
-and the lagoon is at most LAGOON_M deep.
+The islands are made by zoom.build as part of the terrain (islands(), PW-622: they stand ISLAND_M above
+the sea, the lagoon is at most LAGOON_M deep), so its rivers, satellite view, coastal life and harbours see them.
 
 Colonies: the shore pixels with the best cliff-or-island nesting, where
 the world's seabird (seal) score >= COLONY_MIN, at least COLONY_KM apart.
@@ -144,6 +145,53 @@ def _coast_class(grid, ct, cells):
     return first[cells]
 
 
+def inlet_spacing(tide_mean: float) -> float:
+    """km between tidal inlets: fewer and wider apart with small tides (Hayes 1979)."""
+    return float(np.interp(tide_mean, [0.5, 2.0], INLET_KM[::-1]))
+
+
+def islands(world: dict, Pk: np.ndarray, P: np.ndarray, ind: np.ndarray, e_land: np.ndarray,
+            e_sea: np.ndarray, taken: np.ndarray, sel: np.ndarray, nx: int, ny: int, res: float, seed: int) -> dict:
+    """Barrier islands for zoom.build's coastline (PW-622), before the terrain, rivers, coastal life and harbours are
+    made, so they all see them: off the low shores of the world's barrier coasts (coastform.BAR_MIN), a strip of sand
+    ISLAND_KM wide stands LAGOON_KM off the mainland over shallow water, tidal inlets cut it; the lagoon is the
+    shallow sea behind. ind: the coast indicator (> 0 land) flat over the built area (halo included), e_land / e_sea
+    the interpolated coarse heights, taken: pixels the delta and coastal-plain barriers already use, sel: the coarse
+    cells around (their mean tide sets how far apart the inlets lie).
+    Returns {"island", "lagoon", "inlet"}: flat bool arrays."""
+    from .zoom_coastal import _uniform, window_max
+    g, L = world["grid"], world["layers"]
+    none = np.zeros(nx * ny, bool)
+    if "barrier" not in L:  # (a world without coast layers, e.g. a hand-made test world: no coast data, no islands)
+        return {"island": none, "lagoon": none, "inlet": none}
+    s = CF.scores(g, L, world["meta"])
+    cells = g.locate(P)
+    bar_w = _coast_value(g, s["near"], s["barrier"], cells).reshape(ny, nx)
+    if not (bar_w >= CF.BAR_MIN).any():
+        return {"island": none, "lagoon": none, "inlet": none}
+    land = (ind > 0).reshape(ny, nx)
+    sea = ~land
+    shore = land & _dilate(sea, 1)
+    r_px = max(1, int(round(RISE_KM / res)))
+    low = window_max(np.where(land, e_land.reshape(ny, nx), -np.inf), r_px) < LOW_M
+    taken = _dilate(taken.reshape(ny, nx), max(1, int(round(LAGOON_KM[1] / res))))
+    d_land = _distance(land, sea, res, LAGOON_KM[1] + ISLAND_KM + 2 * res)
+    u = _uniform(Pk, 30.0, res, seed + 71).reshape(ny, nx)
+    d0 = np.maximum(LAGOON_KM[0] + u * (LAGOON_KM[1] - LAGOON_KM[0]), res)
+    w = max(ISLAND_KM, 1.5 * res)  # (1.5 pixels: a diagonal strip stays connected)
+    low_shore = _dilate(shore & low & (bar_w >= CF.BAR_MIN) & ~taken, int(math.ceil((LAGOON_KM[1] + w) / res)) + 1)
+    depth = np.where(sea, -e_sea.reshape(ny, nx), 0.0)
+    band = sea & low_shore & ~taken & (d_land > d0) & (d_land <= d0 + w) & (depth < BAR_DEPTH_M)
+    tide = np.asarray(L["tide_range"], float)[sel]
+    sea_c = np.asarray(L["elevation"])[sel] <= 0
+    inlet_km = inlet_spacing(float(tide[sea_c].mean()) if sea_c.any() else 1.0)
+    v = _uniform(Pk, inlet_km, res, seed + 72).reshape(ny, nx)
+    inlet = band & (v < INLET_SHARE)
+    island = band & ~inlet
+    lagoon = sea & low_shore & ~taken & (d_land <= d0) & _dilate(island, int(math.ceil(LAGOON_KM[1] / res)))
+    return {"island": island.ravel(), "lagoon": lagoon.ravel(), "inlet": inlet.ravel(), "u": u.ravel()}
+
+
 def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int | None = None) -> dict:
     """The zoom's coast layers (flat arrays are (ny, nx) here) and its point features. lay: the zoom's
     layers decoded (elevation, water, coastal_life, wave_power, tide_range, surface_rock or rock, ice)."""
@@ -184,24 +232,11 @@ def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int |
     mang_near = _dilate(life == 4, r_px)
     marsh_near = _dilate(life == 5, r_px)
     low = window_max(np.where(land, h, -np.inf), r_px) < LOW_M
-    # barrier islands: off low shores of the world's barrier coasts
-    d_land = _distance(land, sea, res, LAGOON_KM[1] + ISLAND_KM + 2 * res)
-    u = _uniform(Pk, 30.0, res, seed + 71).reshape(ny, nx)
-    d0 = np.maximum(LAGOON_KM[0] + u * (LAGOON_KM[1] - LAGOON_KM[0]), res)
-    w = max(ISLAND_KM, 1.5 * res)  # (1.5 pixels: a diagonal strip stays connected)
-    low_shore = _dilate(shore & low & (bar_w >= CF.BAR_MIN), int(math.ceil((LAGOON_KM[1] + w) / res)) + 1)
     depth = np.where(sea, -h, 0.0)
-    band = sea & low_shore & (d_land > d0) & (d_land <= d0 + w) & (depth < BAR_DEPTH_M)
-    t_mean = float(np.mean(tide[sea])) if sea.any() else 1.0
-    inlet_km = float(np.interp(t_mean, [0.5, 2.0], INLET_KM[::-1]))
-    v = _uniform(Pk, inlet_km, res, seed + 72).reshape(ny, nx)
-    inlet = band & (v < INLET_SHARE)
-    island = band & ~inlet
-    lagoon = sea & low_shore & (d_land <= d0) & _dilate(island, int(math.ceil(LAGOON_KM[1] / res)))
-    bi = np.zeros((ny, nx), np.uint8)
-    bi[lagoon] = 2
-    bi[island] = 1
-    bi[inlet] = 3
+    # barrier islands: drawn into the terrain by zoom.build (islands(), PW-622); here they are the layer it left
+    bi = np.asarray(lay["barrier_island"], np.uint8) if "barrier_island" in lay else np.zeros((ny, nx), np.uint8)
+    island, lagoon, inlet = bi == 1, bi == 2, bi == 3
+    inlet_km = inlet_spacing(float(np.mean(tide[sea])) if sea.any() else 1.0)
     lagoon_shore = shore & _dilate(lagoon, 1)
     # the shore's class
     ct = np.zeros((ny, nx), np.uint8)
@@ -264,10 +299,7 @@ def build(world: dict, meta: dict, lay: dict, terrain: bool = False, seed: int |
     feats += sf["features"]
     if terrain:
         h2 = h.copy()
-        h2[island] = ISLAND_M * (0.5 + 0.5 * u[island])
-        h2[lagoon] = np.maximum(h2[lagoon], -LAGOON_M)
         w2 = water.copy()
-        w2[island] = 0
         if sf["terrain"] is not None:  # (spits raised out of the sea)
             m, z = sf["terrain"]
             h2[m] = np.maximum(h2[m], z[m])
@@ -306,14 +338,14 @@ LAYER_SPECS = {
 }
 
 
-def add_to_zoom(ref, terrain: bool = False):
+def add_to_zoom(ref, terrain: bool = False, world: dict | None = None):
     """(Re)makes a saved zoom's coast layers in place; with terrain, also its elevation and water."""
     from . import store as S
     from . import world as W
     from . import zoom as Z
     d = S.find_zoom(ref)
     meta, lay = Z.load(d, decode=True)
-    w = W.load(S.find_world(meta["source_world"]["id"]))
+    w = world or W.load(S.find_world(meta["source_world"]["id"]))
     r = build(w, meta, lay, terrain=terrain)
     new = r["layers"]
     specs = {k: LAYER_SPECS[k] for k in new if k in LAYER_SPECS}
@@ -337,7 +369,7 @@ def text_lines(c: dict) -> list[str]:
                                                          sorted(s["shore_km"].items(), key=lambda kv: -kv[1]))]
     out.append(f"  barrier islands {s['barrier_islands_km2']:g} km2, lagoons {s['lagoons_km2']:g} km2, "
                f"{s['inlets']} inlets (~{s['inlet_spacing_km']:g} km apart); hazards {s['hazard_km2']:g} km2"
-               + ("; islands raised in the terrain" if s.get("terrain") else ""))
+               + "; the islands are part of the zoom's terrain")
     fm = s.get("forms")
     if fm:
         out.append(f"  shore forms: {fm['spits']} spits ({fm['spit_km']:g} km), beach ridges {fm['beach_ridges_km2']:g} km2, "

@@ -2,7 +2,7 @@
 id: PW-609
 title: "Resources: make the resource layers automatically when a world is saved from a run?"
 type: task
-status: todo
+status: done
 parent: PW-155
 milestone: v2
 subsystem: surface
@@ -31,5 +31,6 @@ Lean: **B** once the owner has looked at the maps (docs/review/resources/), sinc
 feature and the cost is small.
 
 ## Updates
+- 2026-10-23: Status todo -> done. fun5: B built. world.finish makes the resource layers (with the run's history pass, kept beside the world in worlds/history/<id>.npz) for every world from a stored run; --no-resources on slice / finish / make skips them; planet resources redoes them.
 - 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): B: resource layers in every world saved from a run, with a skip flag.
 - 2026-10-23: Created from inbox draft draft-resources-when.md (found by resources).

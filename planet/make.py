@@ -47,9 +47,9 @@ LEVELS = (4, 5, 6, 7, 8)
 RUN_S_PER_GYR = {4: 230, 5: 400, 6: 705, 7: 3010, 8: 12000}
 # seconds per kyr of glacial time zoom
 TZ_S_PER_KYR = {4: 0.07, 5: 0.12, 6: 0.21, 7: 0.65, 8: 2.6}
-FINISH_S = {4: 1, 5: 2, 6: 7, 7: 29, 8: 117}   # finishing / slicing one world
+FINISH_S = {4: 1.5, 5: 3, 6: 9, 7: 38, 8: 155}   # finishing / slicing one world (PW-609: with its coast and resource layers, +1.5 s at L6, +9 s at L7)
 HIGHLIGHTS_S = {4: 0.3, 5: 0.5, 6: 1.2, 7: 4.8, 8: 19}
-ZOOM_S = {4: 8, 5: 11, 6: 15, 7: 21, 8: 30}   # one regional zoom (500 px); 25-50 km zooms run ~1/3 of this
+ZOOM_S = {4: 8, 5: 11, 6: 15, 7: 22, 8: 31}   # one regional zoom (500 px); 25-50 km zooms run ~1/3 of this
 DT, EVERY = 2.0, 4.0                          # the simulate defaults
 
 # The showcase recipes (docs/coordination.md), as presets. `set` are tectonics.Params overrides.

@@ -66,7 +66,10 @@
     font-size: 11px; text-shadow: 0 0 3px #1a0a02, 0 0 2px #1a0a02; }
   .z3d-volc.big { font-size: 12px; font-weight: 600; background: rgba(26, 12, 4, 0.72); border: 1px solid currentColor;
     border-radius: 4px; padding: 0 4px; }
-  .z3d-fall.behind, .z3d-volc.behind { opacity: 0.3; }
+  .z3d-dep { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+    text-shadow: 0 0 3px #0b0b0b, 0 0 2px #0b0b0b; }
+  .z3d-dep.big { font-weight: 600; background: rgba(11, 11, 11, 0.72); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; }
+  .z3d-fall.behind, .z3d-volc.behind, .z3d-dep.behind { opacity: 0.3; }
   #p3d { display: none; flex: 0 1 auto; min-height: 120px; }
   body.d3 #p3d { display: block; }
   body.d3 #info { flex: 0 3 auto; min-height: 60px; }  /* (the card gives way first; the 3D panel keeps more of its height) */
@@ -352,6 +355,7 @@ const api3d = {
   fps: (f) => { $('fps3d').textContent = `${Math.round(f)} fps`; },
   shadowsOff: () => { $('shadows3d').checked = false; syncURL(); },
   flyTo: (k) => fly(k),
+  depColor: (key) => depColor(key),
   // a river flight's progress line, or null when it ends
   flying: (info) => { $('flyInfo').textContent = info || ''; $('fly3d').textContent = info ? 'Stop' : 'Fly'; },
 };
@@ -1028,7 +1032,7 @@ function renderFine(smooth, natural) {
   const key = shown.map((zd) => zd.meta.id).join(',');
   if (V3.fineKey !== key) {
     V3.setFine(shown.map((zd) => ({ id: zd.meta.id, nx: zd.meta.nx, ny: zd.meta.ny, res_km: zd.meta.res_km, center: zd.meta.center,
-      L: zd.L, falls: zd.marks.falls, volc: zd.marks.volc, colours: zd.off })));
+      L: zd.L, falls: zd.marks.falls, volc: zd.marks.volc, dep: zd.marks.dep, colours: zd.off })));
     V3.fineKey = key;
     const err = Math.max(0, ...V3.tiles.slice(1).map((t) => t.placeErr || 0));
     if (err > 0.005) console.warn(`fine tiles placed to within ${(err * 1000).toFixed(1)} m (an affine fit of the reprojection)`);
@@ -1134,7 +1138,7 @@ function render() {
   V3.opts.rivers = $('rivers').checked;
   if (V3.zoomId !== m.id) {
     V3.zoomId = m.id; V3.fineKey = '';
-    V3.setZoom({ id: m.id, nx: m.nx, ny: m.ny, res_km: m.res_km, center: m.center, L: state.L, falls: state.marks.falls, volc: state.marks.volc, colours: state.off, smooth, natural }, state.cam3d);
+    V3.setZoom({ id: m.id, nx: m.nx, ny: m.ny, res_km: m.res_km, center: m.center, L: state.L, falls: state.marks.falls, volc: state.marks.volc, dep: state.marks.dep, colours: state.off, smooth, natural }, state.cam3d);
     if (state.cam3d) fine.flyTo = null;  // (the URL's camera wins)
     state.cam3d = null;
     fallList();
@@ -1145,6 +1149,7 @@ function render() {
   renderFine(smooth, natural);
   V3.showFalls($('falls').checked);
   V3.showVolc($('volc').checked);
+  V3.setDeps(depShown, `${$('dep').checked}|${$('depSel').value}|${m.id}|${V3.fineKey}`);
 }
 const FLAT_SHADE = Math.sin(40 * Math.PI / 180);  // hillshade() of flat ground
 function shadeNow() {
