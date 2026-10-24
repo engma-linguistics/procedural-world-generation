@@ -1,4 +1,5 @@
 ---
+id: PW-745
 title: Salt trade reach, salting works and the sea-food goods are not read by any way of life yet
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: fun9
 blocked_by: []
 relates: [PW-732, PW-723, PW-739]
 refs: [planet/lineages/seafood.py, planet/lineages/land.py, planet/lineages/brief.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,6 @@ PW-732 built the goods (`salt`, `fish`, `shellfish`, `sea_mammals`, `_salt_km`, 
   (the fuels layers: no wood, no boiling) is a judgement call.
 - [ ] a [[use]] row for fishers and a salt use for the craving peoples, measured on 1df1c3 / 3e9e7d
 - [ ] trade: salt reach per people
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-salt-trade-and-sea-food-uses.md (found by fun9).

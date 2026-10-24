@@ -2,7 +2,7 @@
 id: PW-719
 title: Animals as stocks and as food goods for the culinary pass (separate stocks, dairy, meat animals, fowl and eggs)
 type: story
-status: todo
+status: in-progress
 parent: PW-691
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-691, PW-692, PW-694]
 refs: [planet/lineages/animals.py, planet/lineages/animal_defs.py, docs/proposals/lineages.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
 ## Description
@@ -30,5 +30,6 @@ homogeneous stock, stored as two bit-flag layers (`animal_wild`, `animal_known`)
 - [ ] decide the per-cell representation (bit flags per people, or a share layer per animal)
 
 ## Updates
+- 2026-10-24: Status todo -> in-progress. Brief-level animal foods merged (fun9); per-cell stocks and wild fauna goods remain.
 - 2026-10-24: (fun9) Brief-level piece only: brief.animal_foods (meat animals, eggs, dairy animals, dairy peoples fresh vs fermented by their lactase share). Per-cell animal share layers, canid taboo and wild fauna goods remain.
 - 2026-10-23: Created from inbox draft draft-animals-stocks-and-goods-for-cuisine.md (found by fun6).

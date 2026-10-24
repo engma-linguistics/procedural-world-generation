@@ -2,7 +2,7 @@
 id: PW-732
 title: "Salt and sea-food goods: salt sources and distance to salt per cell; fish, shellfish and sea mammals by coast, shelf, upwelling, river runs and lakes"
 type: story
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -47,5 +47,6 @@ Exported in the culinary brief. Optionally read by fisher-forager ways of life (
 - [ ] Earth plausibility check of the fish good against known rich fisheries (a sanity look, not a fit).
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged (fun9): salt sources and distance, fish/shellfish/sea mammals; brief v2 fills them.
 - 2026-10-24: (fun9) Built in planet/lineages/seafood.py (called from land._make_goods): goods salt (rock, lake, spring, sea), fish, shellfish, sea_mammals; _salt_km and _salt_kind; brief v2 fills salt and fish (river_runs, fish_mix, sea_mammals; fish.shelf stays null). Earth-world look done (North Sea .95, Grand Banks .84, Japan .82, Benguela .77, Humboldt .61). Not read by any [[use]] yet: draft-salt-trade-and-sea-food-uses.
 - 2026-10-24: Created from inbox draft draft-salt-and-sea-food-goods.md (found by culinary-intake).

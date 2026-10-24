@@ -1,5 +1,6 @@
 ---
-title: Cuisine plants are markers only: no trade goods, no ferments, crude wild ranges for tea, spice and capsicum
+id: PW-744
+title: "Cuisine plants are markers only: no trade goods, no ferments, crude wild ranges for tea, spice and capsicum"
 type: task
 status: todo
 parent: PW-692
@@ -11,6 +12,8 @@ found_by: fun9
 blocked_by: []
 relates: [PW-738, PW-721, PW-719]
 refs: [planet/lineages/crop_defs.py, planet/lineages/crops.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -22,3 +25,6 @@ tea and coffee, greens, alliums) with weight 0 and small `k`. What is left:
 - ferments (wine, cane spirits, rice beer) follow the plants known but the brief's `drink` stays null;
 - the crop layers are uint32 now (24 rows); 32 is the next ceiling.
 - [ ] wild ranges checked against the world's own soils and shade; trade and ferment hooks
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-cuisine-plants-effects-and-trade.md (found by fun9).

@@ -2,7 +2,7 @@
 id: PW-739
 title: "Fuels use every coal outcrop and every cell's own supply: coal known by a people's era and tech, fuels in trade, and the zooms"
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v3
 subsystem: timezoom
@@ -32,6 +32,7 @@ the staples' straw and the coal likelihood. What it leaves out, each a follow-up
 - [ ] coal known by era and tech; fuel trade; cooking-style row per fuel
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged (fun9): coal by era proxy, heath, sea-mammal oil, tallow, bone; fuel trade left to PW-745/trade work.
 - 2026-10-24: (fun9) Done in fuels.py: coal gated by the target era (COAL_ERA proxy: 0 before classical, .35, .75, 1 from renaissance; per run, not per people), fat fuels oil (sea-mammal), tallow and bone (fill only what better fuels leave), heath (grass fuel's cold twin by mean temperature). Fuel trade and per-people coal knowledge stay open.
 - 2026-10-24: Also add the fat fuels: seal and whale oil (arctic lamps), tallow and rendered fat (goliaths, PW-730), and bone where wood is scarce; tundra's 60% 'grass' should read heath and dwarf shrub.
 - 2026-10-24: Created from inbox draft draft-fuels-coal-known-era-and-trade.md (found by fun7).
