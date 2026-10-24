@@ -1,8 +1,9 @@
 ---
+id: PW-710
 title: World mode (PW-695) does not yet gate fantasy domestications, because none exist (PW-691)
 type: task
 status: todo
-parent: null
+parent: PW-691
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -11,6 +12,8 @@ found_by: fun4
 blocked_by: [PW-691]
 relates: [PW-695, PW-691, PW-692]
 refs: [planet/lineages/spec.py, planet/lineages/horses.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -23,3 +26,6 @@ catalogue, mark each entry `fantasy = true` or real and have the mode filter it 
 (a flag on the entry, a filter at parse time, a test next to `test_real_mode_keeps_only_the_marked_lines`).
 - [ ] domestication entries carry a real/fantasy flag; real mode lists only the real ones
 - [ ] viewer/workbench shows the mode on the domestication rows
+
+## Updates
+- 2026-10-23: Created from inbox draft draft-mode-gates-fantasy-domestications.md (found by fun4).

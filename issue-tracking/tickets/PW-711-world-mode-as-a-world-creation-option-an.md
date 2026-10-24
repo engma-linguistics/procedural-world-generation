@@ -1,7 +1,8 @@
 ---
+id: PW-711
 title: World mode as a world-creation option and a viewer toggle for the fantasy resources
 type: task
-status: needs-decision
+status: wontdo
 parent: null
 milestone: v2
 subsystem: viewer
@@ -11,6 +12,8 @@ found_by: fun4
 blocked_by: []
 relates: [PW-695, PW-607]
 refs: [planet/resources.py, planet/zoom_resources.py, viewer/index.html, viewer/zoom.html, planet/__main__.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -26,3 +29,7 @@ zooms site no fantasy deposits); the peoples runs take `--mode` / the workbench'
    Lean: no toggle, the mode switch per world is enough; revisit when magic (PW-696) adds more fantasy layers.
 
 Options: A. leave as built; B. add the creation flag; C. B plus the viewer filter. Lean A.
+
+## Updates
+- 2026-10-23: Status needs-decision -> wontdo. Coordinator's call: as built (mode on the tree and on planet resources); revisit if the owner asks for a viewer toggle.
+- 2026-10-23: Created from inbox draft draft-mode-viewer-toggle-and-world-option.md (found by fun4).

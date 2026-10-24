@@ -1,5 +1,6 @@
 ---
-title: Portal sites: extinct-volcano foot and coral reef are approximated (young volcanic ground, coral coast good)
+id: PW-712
+title: "Portal sites: extinct-volcano foot and coral reef are approximated (young volcanic ground, coral coast good)"
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: fun4
 blocked_by: []
 relates: [PW-697, PW-607]
 refs: [planet/lineages/history.py]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -22,3 +25,7 @@ specifically an extinct cone (the world has no active/extinct flag per volcano).
 crystals" of PW-607 (a likelihood layer around the portals, a world-side feature that needs the portals stored with the world, not the peoples run).
 Next: if the volcano list in the world meta gains an age, prefer extinct ones; put the reef portal on the sea cell and found the people on the nearest coast;
 store the portals where a world-side crystal layer can read them.
+
+## Updates
+- 2026-10-23: Accepted as approximations for now; store portals world-side when PW-607's arrival-site crystals are built.
+- 2026-10-23: Created from inbox draft draft-portal-sites-extinct-volcanoes-and-reefs.md (found by fun4).
