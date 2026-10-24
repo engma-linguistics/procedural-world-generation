@@ -6,7 +6,7 @@ Markdown, for the owner's culinary project (docs/proposals/culinary-dnd-intake.m
 
 Built only from what a run and its world hold today: land and biome, climate and seasons, fuels, wild and grown foods,
 coast and fish goods, peoples and shares, neighbours, senses and bodies, events and the bad years. What is not modelled
-yet (salt, trade reach, reputation, substrate, honey, mast, fungi, interfertility tiers) is present and null, never
+yet (trade reach, reputation, honey, mast, fungi) is present and null, never
 invented, so the culinary side can see what is missing. The brief is deterministic: the same run, region and era give
 the same text. Everything under `suggested` is rule-based and for the culinary side to overrule.
 
@@ -30,7 +30,7 @@ from ..geo import R_KM
 from ..grid import shared_grid
 from . import spec as SP
 
-BRIEF_VERSION = 3  # 3: peoples carry their way of life (PW-723), salt gains mineral licks (PW-746)
+BRIEF_VERSION = 4  # 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -242,7 +242,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["peoples"] = _peoples(ctx, i, sel)
     brief["animal_foods"] = _animal_foods(brief)
     brief["mixing_zones"] = zones
-    brief["substrate"] = None
+    brief["substrate"] = _substrate(ctx, brief["peoples"])
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
     brief["trade_reach"] = None
     brief["events"] = _events(ctx, place, era)
@@ -250,8 +250,9 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["suggested"] = _suggested(brief)
     if people:
         brief["people"] = _people(ctx, people)
-    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "reputation", "substrate", "honey", "mast", "fungi",
-                                                       "interfertility_tiers")}
+    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "reputation", "honey", "mast", "fungi")}
+    if brief["substrate"] is None:
+        brief["not_modelled"]["substrate"] = "this run has no contact record (made before PW-727)"
     return brief
 
 
@@ -536,9 +537,59 @@ def _neighbours(ctx: Ctx, i: int, sel: np.ndarray, place: dict) -> dict:
     rows = []
     for k in np.unique(whole[ring & (whole < 255)]).tolist():
         c = int((ring & (whole == k)).sum())
-        rows.append({"id": ctx.lines[k]["id"], "ring_cells": c, "also_in_region": k in own, "border_km": None, "since_kyr": None, "tier": None})
+        row = {"id": ctx.lines[k]["id"], "ring_cells": c, "also_in_region": k in own, "border_km": None, "since_kyr": None, "tier": None}
+        best = None  # (the longest contact with a people of the region)
+        for o in own:
+            r = _pair(ctx, ctx.lines[o]["id"], row["id"])
+            if r and (best is None or r["border_km_peak"] > best[1]["border_km_peak"]):
+                best = (ctx.lines[o]["id"], r)
+        if best:
+            o, r = best
+            row.update(with_people=o, border_km=r["border_km_now"], since_kyr=r["first_contact_kyr"], tier=r["tier"],
+                       years_in_contact=r["years_in_contact"], kind=r["kind"])
+        rows.append(row)
     rows.sort(key=lambda r: (-r["ring_cells"], r["id"]))
-    return {"ring_km": RING_KM, "list": rows[:12], "tier_note": "interfertility tiers: " + NOT_MODELLED}
+    return {"ring_km": RING_KM, "list": rows[:12],
+            "tier_note": "tier from split depth (T0 under 10 kyr or the same people, T1 under 1 Myr, T2 under 40 Myr, else T3); border_km is the border of the two peoples (cells of one that touch the other's range without being in it, x cell size), since_kyr their first contact"
+            if ctx.meta.get("contacts") else "interfertility tiers: " + NOT_MODELLED}
+
+
+def _pair(ctx: Ctx, a: str, b: str) -> dict | None:
+    """The contact record of two peoples (meta.contacts, PW-727), in either order; None without one."""
+    for r in (ctx.meta.get("contacts") or {}).get("pairs", []):
+        if {r["a"], r["b"]} == {a, b}:
+            return r
+    return None
+
+
+def _substrate(ctx: Ctx, peoples: dict) -> dict | None:
+    """Who held the region's ground before its present peoples (meta.contacts.substrate): per people here, the peoples
+    that held its cells before, with the share of its cells and the median time they lost them (kyr ago)."""
+    sub = (ctx.meta.get("contacts") or {}).get("substrate")
+    if sub is None:
+        return None
+    out = {r["id"]: sub[r["id"]] for r in peoples["list"] if r["id"] in sub and not r["overlay"]}
+    return {"by_people": out, "basis": "the people holding most of a cell (presence at least 25%) before its present one, at the stored epochs; "
+                                         "counts are of the people's whole present range in the run, not only the region"}
+
+
+def _people_contacts(ctx: Ctx, pid: str) -> dict | None:
+    """One people's contact record: the other peoples by tier, who it met and when, who held its land before (PW-727)."""
+    c = ctx.meta.get("contacts")
+    if c is None:
+        return None
+    pairs = [r for r in c["pairs"] if pid in (r["a"], r["b"])]
+    met = [{"id": r["b"] if r["a"] == pid else r["a"], "tier": r["tier"], "first_contact_kyr": r["first_contact_kyr"],
+            "years_in_contact": r["years_in_contact"], "in_contact_now": r["in_contact_now"], "border_km_now": r["border_km_now"],
+            "border_km_peak": r["border_km_peak"], "mixed_pct_now": r["mixed_pct_now"], "kind": r["kind"], "series": r["series"]}
+           for r in sorted(pairs, key=lambda r: (-r["first_contact_kyr"], r["a"], r["b"]))]
+    tree = SP.parse(ctx.meta["tree"], ctx.meta.get("mode"))
+    tiers: dict[str, list] = {}
+    for l in ctx.lines:
+        if l["id"] != pid and not l["group_of"] and l["id"] in tree.lines and pid in tree.lines:
+            tiers.setdefault(f"T{tree.tier_of(pid, l['id'])}", []).append(l["id"])
+    return {"met": met, "children_with": tiers, "substrate": (c.get("substrate") or {}).get(pid),
+            "tier_kyr": c["tier_kyr"], "basis": "stored epochs; years_in_contact sums the span each stored epoch stands for (half the gap to its neighbours) in which the two ranges touch"}
 
 
 def _events(ctx: Ctx, place: dict, era: float) -> list:
@@ -624,7 +675,7 @@ def _people(ctx: Ctx, pid: str) -> dict:
             "ended_kyr": l["ended_kyr"], "extinct_kyr": l["extinct_kyr"], "origin_place": l["origin_place"],
             "demography": l["demography"], "present": {k: st.get(k) for k in ("area_mkm2", "patches", "population", "centroid", "by_landmass")},
             "homeland": (p.get("homeland") or {}).get(pid), "neighbours_present": st.get("neighbours"),
-            "story": l.get("story"), "reputation": None}
+            "story": l.get("story"), "reputation": None, "contacts": _people_contacts(ctx, pid)}
 
 
 # -- Markdown --------------------------------------------------------------------------------------------
@@ -702,13 +753,31 @@ def markdown(b: dict) -> str:
     else:
         t += ["- not in this run"]
     t += ["", "## Neighbours", ""]
-    t += [f"- {n['id']}: {n['ring_cells']} ring cells" + (", also inside" if n["also_in_region"] else "") for n in b["neighbours"]["list"]] or ["- none"]
+    t += [f"- {n['id']}: {n['ring_cells']} ring cells" + (", also inside" if n["also_in_region"] else "")
+          + (f"; with {n['with_people']}: {n['tier']}, in contact since {n['since_kyr']} kyr ago ({n['years_in_contact']} yr), "
+             f"border {n['border_km']} km now" + (f", along {n['kind']}" if n.get("kind") else "") if n.get("with_people") else "")
+          for n in b["neighbours"]["list"]] or ["- none"]
+    if b.get("substrate"):
+        t += ["", "## Substrate (who held the land before)", ""]
+        t += [f"- {pid}: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])} of its cells)" for r in v["held_before"])
+                             or "no other people held its cells") + f" ({_pc(v['first_here_share'])} first held by itself)"
+              for pid, v in b["substrate"]["by_people"].items()] or ["- none"]
     t += ["", "## Events", ""]
     t += [f"- {e['kyr_ago']} kyr ago ({e['kind']}, {e['km']} km): {e['text']}" for e in b["events"]] or ["- none"]
     if "people" in b:
         q = b["people"]
         t += ["", f"## The people: {q['name']}", "", "- Lineage: " + " <- ".join(f"{c['id']} ({c['origin']}, {c['ago_kyr']} kyr)" for c in q["lineage_chain"]),
               f"- Body: {'; '.join(SP.body_notes(q['body'])) or 'the human-like baseline'}", f"- Present: {_kv(q['present'])}", f"- Homeland: {q['homeland']}", f"- Story: {q['story']}"]
+        c = q.get("contacts")
+        if c:
+            t += ["- Can have children with: " + (", ".join(f"{k} {'/'.join(v)}" for k, v in sorted(c["children_with"].items())) or "none")
+                  + " (T0 the same people or under 10 kyr apart; T1 sister peoples; T2 distant; T3 not)"]
+            t += [f"- Met {m['id']} ({m['tier']}) {m['first_contact_kyr']} kyr ago, {m['years_in_contact']} yr in contact, border {m['border_km_now']} km now "
+                  f"(peak {m['border_km_peak']}), mixed {m['mixed_pct_now']}%, along {m['kind']}" for m in c["met"]]
+            sb = c.get("substrate")
+            if sb:
+                t += ["- Held land before it: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])})" for r in sb["held_before"])
+                                                   or "nobody (first on its ground)")]
     t += ["", "## Suggested (rule-based, overrule freely)", ""] + [f"- {n}" for n in b["suggested"]["notes"]]
     t += ["", "## Not modelled yet (null in the JSON)", "", "- " + ", ".join(b["not_modelled"]), ""]
     return "\n".join(t)

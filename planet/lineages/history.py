@@ -19,6 +19,7 @@ from . import spec as SP
 from . import land as LD
 from .crossing import Crossings, corridor, short_hop
 from . import compose as CP
+from . import contacts as CT
 from .animals import Animals
 from .crops import Crops
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
@@ -136,6 +137,13 @@ def _nbr(ufunc, vals, grid):
     return ufunc.reduceat(vals, grid.nbr_off[:-1])
 
 
+def _csr_gather(off, rows):
+    """The positions in a CSR edge list of the edges of `rows`, row after row, each in its own order."""
+    cnt = off[rows + 1] - off[rows]
+    start = np.cumsum(cnt) - cnt
+    return np.repeat(off[rows] - start, cnt) + np.arange(int(cnt.sum()))
+
+
 def _isin(cl, ids):
     """np.isin for the small Köppen ids (a lookup table)."""
     lut = np.zeros(max(int(cl.max()), max(ids)) + 1, bool)
@@ -244,6 +252,9 @@ class History:
         self._portals = None  # (the arrivals' portals, portal_cells)
         self._K_now: dict[int, np.ndarray] = {}  # (each line's habitat this step, and the contact value: the composition's reach)
         self._corr_now = None
+        self._tags_now = None
+        self._deg = np.diff(self.grid.nbr_off)
+        self.contacts = None  # (contacts.Contacts, made by run: the contact record, PW-727)
         g = self.grid
         self.rng = np.random.default_rng(seed)
         self.seed = seed
@@ -701,9 +712,20 @@ class History:
         return m
 
     def _smooth(self, x):
+        """max(x, mean of the neighbours). A presence field is mostly zero: then only the cells next to a held cell are summed
+        (each over its own neighbours in the same order as the full sum, so the result is the same to the last bit; PW-743)."""
         g = self.grid
-        s = _nbr(np.add, x[g.nbr_idx], g)
-        return np.maximum(x, s / np.diff(g.nbr_off))
+        nz = np.flatnonzero(x)
+        if len(nz) * 4 > g.n:
+            s = _nbr(np.add, x[g.nbr_idx], g)
+        else:
+            s = np.zeros(g.n)
+            if len(nz):
+                rows = np.unique(g.nbr_idx[_csr_gather(g.nbr_off, nz)])
+                at = _csr_gather(g.nbr_off, rows)
+                cnt = g.nbr_off[rows + 1] - g.nbr_off[rows]
+                s[rows] = np.add.reduceat(x[g.nbr_idx[at]], np.cumsum(cnt) - cnt)
+        return np.maximum(x, s / self._deg)
 
     def _end_parent(self, line, step, env, tags):
         """After its last split: the parent's remaining range is shared among its children. Country joined to
@@ -746,6 +768,7 @@ class History:
         self._mvp_dt = np.zeros(len(L))
         self._div_dt = np.zeros(len(L))
         self._native = np.array([i for i, x in enumerate(L) if not x.overlay], np.int64)
+        self._nat_set = set(self._native.tolist())
         self.faded: dict[str, int] = {}  # patches faded below the viable population, per line
         self._living = {x.id for x in self.tree.leaves()}
         self._refuged: set[str] = set()
@@ -754,6 +777,7 @@ class History:
         self._lingered: set[str] = set()
         self._linger = np.zeros((len(L), g.n), bool)  # cells a contact hybrid holds on its own
         budget = np.zeros(len(L))
+        self.contacts = CT.Contacts(self)
         self.animals = Animals(self) if (self.tree.animals is None or self.tree.animals or self.tree.animals_force) else None
         self.crops = Crops(self) if (self.tree.crops is None or self.tree.crops or self.tree.crops_force) else None
         frames = []
@@ -766,6 +790,7 @@ class History:
             tags["corridor"] = corr = corridor(tags, env, None if deep else self.flow,
                                                None if deep else env["land"] & (self.cross.label < 0))
             self._corr_now = corr
+            self._tags_now = tags
             Ks = {}
             # events due by this step, oldest first (lines older than the history start at its first step)
             for l in L:
@@ -787,6 +812,8 @@ class History:
             if self.crops is not None:
                 self.crops.step(step, env, tags, self.p, self._native)
             mix = self._mix_ramp(step.ago)
+            self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
+            self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
             order = [l for l in L if self.active[l.id]]
             self.rng.shuffle(order)
             for l in order:
@@ -797,6 +824,7 @@ class History:
                     self.ended[l.id] = step.ago
                     self.events.append({"ago_kyr": round(step.ago, 3), "kind": "extinct", "line": l.id,
                                         "text": f"{l.label()} dies out", "lat": None, "lon": None})
+                    self._sync(k)
                     continue
                 K = Ks.get(l.id)
                 if K is None:
@@ -811,6 +839,7 @@ class History:
                     self._div_dt[k] += step.dt
                     if self._div_dt[k] >= HOP_EVERY_KYR:
                         self._diverge(l, k, env, tags, step)
+                        self._sync(self.idx[l.group_of])  # (it moved some of its people's range over to the group)
                         self._div_dt[k] = 0.0
                 if l.overlay:  # template: within its hosts, no competition
                     room = K
@@ -861,7 +890,7 @@ class History:
                         # pioneers: a people crowded at home still settles empty country next to its range, at the
                         # pressure of the habitat there, not of its own (competition-thinned) presence (PW-683/684)
                         src = np.where(self.p[k] >= EST, np.maximum(self.p[k], np.minimum(K, PIONEER_P)), 0.0)
-                        taken = (self.p[self._native] >= EST).any(0)
+                        taken = (self._cnt - self._pm[k] + (self.p[k] >= EST)) > 0  # (== any native line holds it, now)
                         new = spread(src, np.where(taken, 0.0, room), enter, tags["elev"], relief, sea, land_any,
                                      g.nbr_off, g.nbr_idx, min(passes, CONVERGE))
                         fill = (new >= EST) & ~taken & (self.p[k] < EST)
@@ -905,12 +934,20 @@ class History:
                     self.ended[l.id] = step.ago
                     self.events.append({"ago_kyr": round(step.ago, 3), "kind": "extinct", "line": l.id,
                                         "text": f"{l.label()} dies out (no habitat left)", "lat": None, "lon": None})
+                self._sync(k)
             if step.store or si == nsteps - 1:
                 frames.append(self._frame(step, env))
             if si % 25 == 0:
                 progress(si / nsteps, f"step {si}/{nsteps} ({step.epoch}, {step.ago:g} kyr ago)")
         self.runtime = time.time() - t0
         return {"frames": frames, "present": self.p.copy()}
+
+    def _sync(self, k):
+        """Bring the step's held-mask of line k, and the count of natives holding each cell, up to date after p[k] changed."""
+        now = self.p[k] >= EST
+        if k in self._nat_set:
+            self._cnt += now.astype(np.int16) - self._pm[k]
+        self._pm[k] = now
 
     def _viable(self, l, k, dt, step):
         """A separate patch of the people's land holding fewer than tree.viable_pop people fades (e-folding
@@ -1065,6 +1102,9 @@ class History:
         land = env["land"] & ~(env["ice"] > 0.5) if "ice" in env else env["land"]
         Pr = CP.reach(self.grid, Pw, self._suit(), self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land, ramp, EST)
         comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens)
+        CT.cline(self, comp, whole, land)  # (a body share spreads over the border of a close people; output only, PW-727)
+        if self.contacts is not None and self._tags_now is not None:
+            self.contacts.update(Pw, step, self._tags_now, self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land)
         pop = land & (whole < 255)
         two = pop & (comp["mix_second_share"] >= COMPOSITION_TWO_PCT)
         cstats = {"land_cells": int(land.sum()), "peopled_cells": int(pop.sum()),
@@ -1294,6 +1334,7 @@ def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: 
     n = tries if tree.wishes else 1
     scores, tstats = [], []
     for k in range(n):
+        progress(k / n, f"try {k + 1}/{n}: recent pass: full climates (kept on disk after the first run)")  # (History.__init__ makes them; PW-743)
         h = History(tree, ps, tree.seed * 1000 + k, goods=goods)
         res = h.run(lambda f, msg, k=k: progress((k + f) / n, f"try {k + 1}/{n}: {msg}"))
         pres = present_summary(h, res["present"])

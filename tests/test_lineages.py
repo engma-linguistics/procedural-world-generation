@@ -1118,3 +1118,87 @@ def test_ways_of_life_set_the_uses_a_people_reads():
     bad = [{**r, "way": "bard"} if r["id"] == "human" else r for r in raw["lineage"]]
     with pytest.raises(ValueError):
         SP.parse({**raw, "lineage": bad})
+
+
+# ---- contacts, interfertility tiers, substrate and clines (PW-727) --------------------------------------------------
+def test_interfertility_tiers_come_from_split_depth_with_overrides():
+    raw = {"meta": {"name": "t", "seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 Myr"},
+        {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "200 kyr"},
+        {"id": "c", "parents": ["stem"], "at": "20 Myr"}, {"id": "a2", "parents": ["a"], "at": "5 kyr"},
+        {"id": "fey", "origin": "arrival", "at": "10 kyr", "place": [0, 120]},
+        {"id": "half", "origin": "hybrid", "parents": ["a", "fey"], "at": "8 kyr"},
+        {"id": "far", "origin": "root", "at": "30 Myr"}],
+        "interfertile": [{"a": "a", "b": "c", "tier": 1}]}
+    t = SP.parse(raw)
+    assert t.split_kyr("a", "b") == 500 and t.tier_of("a", "b") == 1 and t.tier_of("b", "a") == 1
+    assert t.tier_of("a", "a2") == 0 and t.tier_of("a", "c") == 1  # (the override beats the 20 Myr split)
+    assert t.tier_of("b", "c") == 2 and t.tier_of("a2", "b") == 1
+    assert t.tier_of("a", "fey") == 3 and t.tier_of("stem", "far") == 3  # (an arrival from outside, another root)
+    assert t.tier_of("half", "a") == 0 and t.tier_of("half", "b") == 1  # (an overlay is interfertile with its hosts)
+    assert SP.parse(SP.to_raw(t)).tiers == t.tiers
+    raw["meta"]["tier_kyr"] = ["1 kyr", "100 kyr", "5 Myr"]
+    assert SP.parse(raw).tier_of("a", "b") == 2
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "interfertile": [{"a": "a", "b": "nope", "tier": 1}]})
+
+
+def test_contacts_record_borders_tiers_and_substrate_and_clines_carry_a_share(faketz):
+    from planet.lineages import contacts as CT
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "a", "parents": ["stem"], "at": "25 kyr"}, {"id": "b", "parents": ["stem"], "at": "20 kyr"}]}
+    tree = SP.parse(raw)
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    ia, ib = h.idx["a"], h.idx["b"]
+    west, east = land & (g.lon < 0) & (np.abs(g.lat) < 40), land & (g.lon >= 0) & (np.abs(g.lat) < 40)
+    ct = CT.Contacts(h)
+    n = len(h.lines)
+    tags = {"coast": np.zeros(g.n, bool), "open": np.ones(g.n, bool)}
+    corr = np.full(g.n, 0.5)
+
+    def frame(ago, Pw):
+        ct.update(Pw, H.Step(ago, 1.0, "recent", True, None), tags, corr, land)
+
+    P = np.zeros((n, g.n))
+    P[ia][west | east] = 0.8  # a holds both sides, b nowhere: no contact, and nobody to take over from
+    frame(10.0, P)
+    P[ib][east] = 0.8
+    P[ia][east] = 0.0
+    frame(6.0, P)  # b takes the east from a, the two now share a border
+    P[ia][west] = 0.0
+    frame(0.0, P)  # a leaves the west (no one else there)
+    sm = ct.summary()
+    (pair,) = sm["pairs"]
+    assert {pair["a"], pair["b"]} == {"a", "b"} and pair["tier"] == "T1" and pair["first_contact_kyr"] == 6.0
+    assert pair["years_in_contact"] == 5000 and pair["in_contact_now"] is False and pair["border_km_peak"] > 0
+    held = sm["substrate"]["b"]["held_before"]
+    assert held and held[0]["id"] == "a" and held[0]["held_until_kyr"] == 6.0
+    # a cline: a trait one people has runs into the next people's country, away from the border, not in a far people
+    lead = np.where(west, ia, np.where(east, ib, 255)).astype(np.uint8)
+    body = np.where(west, 100, 0).astype(np.uint8)
+    comp = {"body_milk": body.copy()}
+    assert CT.cline(h, comp, lead, land) > 0
+    out = comp["body_milk"]
+    assert out[west].mean() < 100 and 0 < out[east].mean() < 50 and out[east].max() > 0
+    assert (out[~(west | east)] == 0).all()
+    far = SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "1 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                                {"id": "b", "origin": "root", "at": "1 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]}]})
+    h2 = H.History(far, ps, 1)
+    comp2 = {"body_milk": body.copy()}
+    assert CT.cline(h2, comp2, lead, land) == 0 and (comp2["body_milk"] == body).all()  # (a distant tier pushes no share across)
+
+
+def test_sparse_smooth_equals_the_full_neighbour_mean(faketz):
+    """PW-743: _smooth sums only the cells next to a held cell; the result is the full neighbour mean to the last bit."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse({"meta": {"seed": 1}, "lineage": [{"id": "a", "origin": "root", "at": "10 kyr"}]}), ps, 1)
+    g = h.grid
+    rng = np.random.default_rng(3)
+    for frac in (0.0, 0.002, 0.05, 0.4):
+        x = np.where(rng.random(g.n) < frac, rng.random(g.n), 0.0)
+        full = np.maximum(x, H._nbr(np.add, x[g.nbr_idx], g) / np.diff(g.nbr_off))
+        assert np.array_equal(h._smooth(x), full)
