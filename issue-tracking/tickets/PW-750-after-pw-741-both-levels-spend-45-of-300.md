@@ -1,4 +1,5 @@
 ---
+id: PW-750
 title: After PW-741 both levels spend ~45% of 300-1000 Myr in an icehouse (pass ~30-38% of seed-draws against the ~70% bar); L6's ~33% was the crust thermostat's CO2
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: v1-finish-5
 blocked_by: []
 relates: [PW-741, PW-368, PW-558, PW-564, PW-611]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-5/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -31,3 +34,7 @@ Options (owner's call; not a resolution question any more):
 - C. PW-564's brightening star (a physical warming trend after the reference freezes), measured first.
 - D. A different reference (the source's long-run mean rather than the 200-300 Myr window): a design change to PW-558/559 B.
 No per-level factor needed: the levels agree.
+
+## Updates
+- 2026-10-24: Coordinator (geophysics delegated): measure B (drift 3->2 C, already decided on PW-240) first at L6 multi-seed, then D if short; owner signs off v1 on the outcome.
+- 2026-10-24: Created from inbox draft draft-icehouse-share-both-levels-after-pw741.md (found by v1-finish-5).

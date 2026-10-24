@@ -1,4 +1,5 @@
 ---
+id: PW-749
 title: The crust thermostats run differently by level (L6's volume gain climbs to ~2.5-4 and its area runs over target; L7's gain stays ~1.1-1.8 and its area under)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-5
 blocked_by: []
 relates: [PW-741, PW-046, PW-052]
 refs: [planet/tectonics/crust.py, docs/review/base-climate/v1-finish-5/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -29,3 +32,6 @@ in km.
 
 - [ ] split the per-process area and volume budgets (km2 and km3, not km x cells) L6 vs L7 on two seeds
 - [ ] the process whose rate per km of coast/trench differs by level: make it level-consistent
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-crust-thermostats-level-dependent.md (found by v1-finish-5).
