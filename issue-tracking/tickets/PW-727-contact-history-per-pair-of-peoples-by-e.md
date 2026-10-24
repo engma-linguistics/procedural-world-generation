@@ -2,7 +2,7 @@
 id: PW-727
 title: Contact history per pair of peoples by epoch, interfertility tiers from split depth, substrate (who held a cell before), and Tier-1 clines carrying body shares across a border
 type: story
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -42,5 +42,6 @@ rate. That makes the culinary ruling "the milk line runs through the orc side, n
 - [ ] Wish score and empty land unchanged (output only), except the cline layer.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged 214fb0c: contacts.py, tiers, substrate, clines, brief v4. Follow-ups PW-751/752.
 - 2026-10-24: Created from inbox draft draft-contact-history-and-interfertility-tiers.md (found by culinary-intake).
 - 2026-10-24: (fun11) Built as output only (planet/lineages/contacts.py): `meta.contacts` with `pairs` (tier from split depth via `Tree.tier_of`/`split_kyr`, `meta.tier_kyr`, `[[interfertile]]` per-pair overrides; first contact, years in contact, border km, mixed %, corridor kind, a thinned series) and `substrate` (per people, who held its cells before and until when). Tier-1 clines: `contacts.cline` smooths `body_<trait>` across T0/T1 borders (300 km, output only; wishes and empty land unchanged). Brief version 4: neighbours rows carry tier/border/since, `substrate`, `people.contacts` (children_with by tier, met list); SCHEMA.md updated. Limits and open choices in inbox drafts draft-contact-record-resolution and draft-dnd-interfertility-overrides. "Measured on two worlds" not done (one world, 1df1c3).

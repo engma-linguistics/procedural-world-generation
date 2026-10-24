@@ -1,8 +1,9 @@
 ---
+id: PW-751
 title: The contact record is read at the stored epochs, from the wholes' presence; border, corridor kind and substrate are coarse
 type: task
 status: todo
-parent: null
+parent: PW-692
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -11,6 +12,8 @@ found_by: fun11
 blocked_by: []
 relates: [PW-727, PW-701]
 refs: [planet/lineages/contacts.py, planet/lineages/history.py, docs/review/lineages/briefs/SCHEMA.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -28,3 +31,6 @@ PW-727 is built as output only (contacts.py), so its limits are known and listed
   fed back into the history and its width is not calibrated against anything.
 - [ ] decide whether the brief should give the substrate for the region's cells only (needs the per-cell previous holder stored as a layer)
 - [ ] store `contacts` per epoch as a layer if the viewer wants to draw the haloclines over time
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-contact-record-resolution.md (found by fun11).
