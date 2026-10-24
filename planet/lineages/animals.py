@@ -40,6 +40,8 @@ WILD_MIN = 0.35  # a cell is in the wild range from this suitability
 WILD_PATCH_MKM2 = 0.25  # a landmass needs this much range to count
 OVERLAP_MIN = 3  # cells where tamers sit on the wild range
 TOOK_UP = 0.2  # a people has taken up an animal when it is known over this share of its land
+CONTACT_KMYR = 8.0  # the front of an `uptake = "contact"` animal, km/yr: about ten times the peoples' own expansion (0.5-0.8 km/yr), a mount is adopted on meeting
+BARRIER_ENTER = 0.8  # contact animals: pressure kept per peopled cell outside the wild range (a belt of ~3 cells of forest or high ground stops it)
 BOAT_EVERY_KYR = 0.5  # how often the crossings are tried
 BOAT_RATE = 0.6  # per kyr at no gap, per landmass, for a people with a sea share of 0.6 (scaled by share / 0.6)
 BOAT_FULL = 0.6
@@ -77,6 +79,7 @@ class Stock:
         self.budget = 0.0
         self.boat_dt = 0.0
         self.n_crossed = 0
+        self.reached: dict[int, float] = {}  # landmass -> when (kyr ago) its use first reached it
 
     def _propensity(self, l, i) -> float:
         a = self.a
@@ -109,6 +112,9 @@ class Stock:
             if self.boat_dt >= BOAT_EVERY_KYR:
                 self._sail(step, env, tags, p, peopled, sea, self.boat_dt)
                 self.boat_dt = 0.0
+            lab = tags["label"]
+            for c in np.unique(lab[(self.rd >= EST) & (lab >= 0)]):
+                self.reached.setdefault(int(c), round(step.ago, 3))
 
     def _tame(self, step, p, peopled, first: bool) -> None:
         h, a = self.h, self.a
@@ -169,12 +175,15 @@ class Stock:
     def _front(self, step, env, tags, peopled) -> None:
         """The front of use: one ring per pass over peopled land, a gap of unpeopled land costs `gap` per cell."""
         h = self.h
-        self.budget += self.a.front_kmyr * step.dt * 1000 / h.cell_km
+        contact = self.a.uptake == "contact"
+        self.budget += (CONTACT_KMYR if contact else self.a.front_kmyr) * step.dt * 1000 / h.cell_km
         passes = int(self.budget)
         self.budget -= passes
         if passes <= 0:
             return
-        enter = np.where(peopled, 1.0, self.a.gap)
+        enter = np.where(peopled, BARRIER_ENTER if contact else 1.0, self.a.gap)
+        if contact:
+            enter = np.where(peopled & (self.wild >= WILD_MIN), 1.0, enter)
         room = np.where(peopled, 1.0, 0.0)
         before = self.rd >= EST
         spread(self.rd, room, enter, tags["elev"], 0.3, 0.0, env["land"], h.grid.nbr_off, h.grid.nbr_idx, passes)
@@ -249,6 +258,7 @@ class Stock:
                 "wild_mkm2": round(float(wild.sum() * h.cell_mkm2), 2),
                 "known_mkm2": round(float((self.rd >= EST).sum() * h.cell_mkm2), 2),
                 "known_on_wild_mkm2": round(float(((self.rd >= EST) & wild).sum() * h.cell_mkm2), 2),
+                "reached_kyr": {h.cross.names[c]["name"]: v for c, v in self.reached.items() if c < len(h.cross.names) and h.cross.names[c]["area_mkm2"] >= 0.05},
                 "never": never, "crossed": self.n_crossed, "crossings": self.crossings,
                 "propensity": {l.id: round(float(self.prop[k]), 2) for k, l in enumerate(h.lines) if self.prop[k] > 0},
                 "users_share": riders, "took_up_kyr": {h.lines[k].id: v for k, v in self.took_up.items()},

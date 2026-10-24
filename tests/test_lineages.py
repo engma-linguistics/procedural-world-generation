@@ -775,14 +775,16 @@ def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(f
         # off that landmass by the end (seed 4: 106 -> 3 Mkm2, its last 6 cells an island the horse never reached) has no horse to ride (PW-783)
         from planet.lineages.spread import EST
         lab = h.cross.label
-        home = (h.p[h.idx["herd"]] >= EST) & (lab == t["landmass"])
+        # (PW-794: a contact-speed mount also crosses a land bridge while it lasts, so "the landmass where they tamed it" is every landmass its use reached)
+        reached = [c for c, nm in enumerate(h.cross.names) if nm["name"] in hs["reached_kyr"]]
+        home = (h.p[h.idx["herd"]] >= EST) & np.isin(lab, reached)
         riders.append((sd, bool(home.any()), hs["users_share"]["herd"]))
         assert hs["propensity"]["herd"] == 1.0 and hs["propensity"]["farm"] < hs["propensity"]["herd"]
         assert any(e["kind"] == "animals" for e in h.events) and not hs["fantasy"]
         keep = (h, res, pres, ps)
     assert len(tamed_in) >= len(seeds) // 4, tamed_in  # (it was 4 of 8 when this was written)
     assert all(r > 0.5 for _, on_home, r in riders if on_home), riders  # herders ride across their land in EVERY seed that tames and where they still hold the horse's landmass
-    assert all(r == 0.0 for _, on_home, r in riders if not on_home), riders  # (and a line driven off it rides nothing: the horse never crossed the sea to its refuge)
+    assert all(r == 0.0 for _, on_home, r in riders if not on_home), riders  # (and a line on a landmass the horse never reached rides nothing)
     assert any(on_home for _, on_home, _ in riders), riders
     h, res, pres, ps = keep
     # layers on the run (bit flags), and the story says so
@@ -1649,6 +1651,8 @@ def test_a_group_carries_its_own_markers_and_its_people_keeps_the_default():
     assert SP.parse(SP.to_raw(t)).lines["herd"].body["milk"] == 0.1
     sm = LR.load_tree("seven_meals")
     assert sm.lines["arha"].body["milk"] == 0.1 and sm.lines["anja"].body["milk"] is False and sm.lines["orc"].body["milk"] is False
+    fiends = [k for k in sm.lines if k.startswith(("antelope_", "cervid_"))]  # PW-793: the fiend-kin and all their cultures do not milk
+    assert len(fiends) == 9 and all(sm.lines[k].body["milks"] is False for k in fiends)
 
 
 def test_salt_reach_rivers_and_contact_zones_shorten_the_trade_route_and_the_cap_cuts_off():
