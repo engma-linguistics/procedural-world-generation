@@ -2,7 +2,7 @@
 id: PW-559
 title: "Default planets spend ~60% of their time in an icehouse (Earth ~10-30%): dT 0 is today's icehouse Earth and the thermostat steers back to it"
 type: task
-status: todo
+status: done
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -32,6 +32,7 @@ Lean: B together with the carbon stock, with A as a quick test on the 10 seeds f
 icy-by-default is wanted.
 
 ## Updates
+- 2026-10-23: Status todo -> done. Option B built by v1-finish (378a927): PCO2_BALANCE 500 ppm; icehouse median 14-19% on the 300-500 Myr window, 72-91% of 32 seeds within the owner's 40% bar; late-history cooling follows up in PW-708.
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: After PW-576 (CO2 stock, mature start): full sweep icehouse share median 43% (14-95%), ice bar passes on 5/11 runs (was 2/10 in band). Too-long/too-common icehouses on L6 seeds 11, 77, 505 and all three L7 seeds. See PW-611.

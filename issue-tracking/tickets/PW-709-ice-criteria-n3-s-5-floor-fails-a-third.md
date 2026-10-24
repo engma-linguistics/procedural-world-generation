@@ -1,7 +1,8 @@
 ---
-title: "Ice criteria N3's 5% floor fails a third of seeds on a 200 Myr quick window now that the balance is 500 ppm; the owner's v1 bar only caps the icehouse at ~40%"
+id: PW-709
+title: Ice criteria N3's 5% floor fails a third of seeds on a 200 Myr quick window now that the balance is 500 ppm; the owner's v1 bar only caps the icehouse at ~40%
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish
 blocked_by: []
 relates: [PW-559, PW-681, PW-555]
 refs: [tools/ice_criteria.py, docs/review/base-climate/v1-finish/, docs/review/ice-v2-criteria.md]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -30,3 +33,7 @@ The thresholds are the owner's, so this lane left them unchanged. Options:
 
 Lean: C. The floor is about variety over a long history, and a 200 Myr window can't measure that. The cap is the
 north-star check and stays judged everywhere.
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: yes, judge N3's floor only on windows long enough to hold an ice age (>=1 Gyr runs); a window-scope change, no threshold moves.
+- 2026-10-23: Created from inbox draft draft-n3-floor-against-owner-icebox-bar.md (found by v1-finish).

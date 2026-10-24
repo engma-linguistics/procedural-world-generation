@@ -1,7 +1,8 @@
 ---
+id: PW-708
 title: "Runs get icier after ~500 Myr: the icehouse share on 1 Gyr is ~36% median, 5 of 10 seeds within the owner's 40% bar, against 72-91% on the 300-500 Myr quick window"
 type: task
-status: needs-decision
+status: todo
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish
 blocked_by: []
 relates: [PW-559, PW-681, PW-653]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish/]
+created: 2026-10-23
+updated: 2026-10-23
 ---
 
 ## Description
@@ -40,3 +43,7 @@ Options:
 Lean: A first (one measurement pass; the scripts exist), and C only if the trend proves real physics.
 - [ ] the source/sink split of the late cooling on the 10 seeds
 - [ ] the 1 Gyr pass rate against the owner's bar on >= 16 seeds after the decision
+
+## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator's call: A first (one measurement pass, source/sink split over 300-1000 Myr) so the choice between B and C is informed; then decide and go to PW-202.
+- 2026-10-23: Created from inbox draft draft-late-history-cooling-1gyr.md (found by v1-finish).
