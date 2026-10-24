@@ -1,0 +1,13 @@
+   l7_d1 seed 583167: icehouse  33.5% (300-500   0%, 600-1000  58%), deep 22.2%, dT med +4.0 max +9.7 -> ok | N1-N4 F
+   l7_d1 seed 619496: icehouse  25.0% (300-500   0%, 600-1000  32%), deep  4.0%, dT med +4.3 max +13.0 -> ok | N1-N4 ok
+   l7_d1 seed 639472: icehouse  37.5% (300-500  24%, 600-1000  36%), deep  8.5%, dT med +3.0 max +9.4 -> ok | N1-N4 ok
+   l7_d1 seed 957317: icehouse  15.3% (300-500   0%, 600-1000  27%), deep  0.0%, dT med +3.5 max +9.9 -> ok | N1-N4 ok
+l7_d1: owner's bar 4/4 (100%), icehouse median 29% (early 0, late 34), always-icebox 0, never-ice 0, hellhole 0, dT median +3.7, N1-N4 3/4
+
+   l7_d2 seed 583167: icehouse  19.3% (300-500  36%, 600-1000   8%), deep  0.0%, dT med +3.7 max +10.1 -> ok | N1-N4 ok
+   l7_d2 seed 619496: icehouse  42.6% (300-500  42%, 600-1000  47%), deep 18.2%, dT med +3.5 max +11.1 -> F | N1-N4 ok
+   l7_d2 seed 639472: icehouse  23.3% (300-500   0%, 600-1000  36%), deep  9.7%, dT med +3.5 max +8.9 -> ok | N1-N4 ok
+   l7_d2 seed 957317: icehouse  25.6% (300-500   0%, 600-1000  41%), deep  2.8%, dT med +4.8 max +10.6 -> ok | N1-N4 ok
+l7_d2: owner's bar 3/4 (75%), icehouse median 24% (early 18, late 38), always-icebox 0, never-ice 0, hellhole 0, dT median +3.6, N1-N4 4/4
+
+pooled: owner's bar 7/8 (88%), icehouse median 25% (early 0, late 36), always-icebox 0, never-ice 0, hellhole 0, dT median +3.6, N1-N4 7/8

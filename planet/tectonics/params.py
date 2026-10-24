@@ -78,6 +78,12 @@ class Params:
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
     climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
+    # The star brightens as it ages (earth.star_forcing, PW-564/761): this many times a Sun-like star's rate on
+    # Gough's (1981) curve, counted against the run's start. 0.45 is a slower-evolving K-type star (~0.75 solar
+    # masses: main-sequence life ~M^-2.5): the model's thermostat passes ~3/4 of a sustained forcing, and a
+    # Sun-like 1.0 warms 1 Gyr runs ice-free (v1-finish-7). A chosen star, within the plausible range.
+    star_brightening: float = 0.45
+    star_age: float = 0.0  # Myr: the star's age at the run's start (0: the planet is as young as its star)
     climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3

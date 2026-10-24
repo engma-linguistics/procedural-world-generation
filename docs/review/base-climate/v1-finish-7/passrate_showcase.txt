@@ -1,0 +1,6 @@
+showtrack seed 583167: icehouse  33.5% (300-500   0%, 600-1000  58%), deep 22.2%, dT med +4.0 max +9.7 -> ok | N1-N4 F
+showtrack seed 619496: icehouse  25.0% (300-500   0%, 600-1000  32%), deep  4.0%, dT med +4.3 max +13.0 -> ok | N1-N4 ok
+showtrack seed 639472: icehouse  38.1% (300-500  26%, 600-1000  36%), deep  8.5%, dT med +3.1 max +9.4 -> ok | N1-N4 ok
+showtrack seed 957317: icehouse  15.3% (300-500   0%, 600-1000  27%), deep  0.0%, dT med +3.5 max +9.9 -> ok | N1-N4 ok
+showtrack: owner's bar 4/4 (100%), icehouse median 29% (early 0, late 34), always-icebox 0, never-ice 0, hellhole 0, dT median +3.8, N1-N4 3/4
+

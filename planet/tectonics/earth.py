@@ -47,6 +47,19 @@ def heat(p, t: float) -> float:
     return 1.0 + (p.heat_start - 1.0) * 0.5 ** (t / p.heat_halflife)
 
 
+def star_forcing(p, t: float) -> float:
+    """The brightening star's warming, C, against the run's start (planet-relative; PW-564, PW-761). A Sun-like
+    star's luminosity follows Gough (1981), L / L_now = 1 / (1 + 0.4 (1 - age / 4570 Myr)): +6.7% over its first
+    Gyr. star_brightening scales that rate (a lower-mass star evolves more slowly). The forcing is
+    S0 / 4 (1 - 0.3) dL / L = 238 W/m2 x dL / L, at the model's own sensitivity: co2_sensitivity per doubling of
+    CO2's 5.35 ln 2 W/m2 (Myhre et al. 1998), ~0.81 C per W/m2. The weathering thermostat absorbs what it can."""
+    if p.star_brightening == 0.0:
+        return 0.0
+    lum = lambda age: 1.0 / (1.0 + 0.4 * (1.0 - age / 4570.0))  # noqa: E731
+    rel = lum(p.star_age + p.star_brightening * t) / lum(p.star_age) - 1.0
+    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * 238.0 * rel)
+
+
 def target_fraction(p, t: float) -> float:
     """Share of the surface the continents are steered toward at time t."""
     if p.continental_start < 0:
@@ -107,7 +120,7 @@ def co2_term(p, co2):
 
 def global_temperature(sim, growth, newc, rng):
     """The planet's mean temperature, as an offset dT from today's Earth.
-    Three things move it, slowly (tens of Myr):
+    Four things move it, slowly (tens of Myr):
       drift      a random walk that keeps returning toward 0 (all the
                  carbon-cycle and ocean details this model doesn't have)
       CO2        a stock (co2_stock): volcanism at ridges and arcs adds
@@ -118,6 +131,8 @@ def global_temperature(sim, growth, newc, rng):
                  counting. A cold or icy planet weathers slower (the
                  weathering thermostat), so CO2 piles up and warms it back
       ice        ice sheets reflect sunlight (cooling feedback)
+      star       the star brightens as it ages (star_forcing; the CO2
+                 thermostat draws CO2 down against it, partly)
     Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
     Permo-Carboniferous, today) between long greenhouse ones.
     growth: the arcs' outgassing this step, as their crust growth at the
@@ -184,7 +199,7 @@ def global_temperature(sim, growth, newc, rng):
 
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE))
+    target = sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
                              -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)
