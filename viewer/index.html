@@ -863,9 +863,17 @@ const peoplesIdx = (i) => (state.peoplesWhole && V.layers.peoples_whole ? V.laye
 const MIXC = new THREE.Color('#ffffff'), NOBODY = new THREE.Color('#5a5a52');
 // (each line's THREE.Color once: parsing its CSS string per cell was a third of the recolour, PW-679)
 const lineColor = (l) => (l ? (l._c ||= new THREE.Color(l.color)) : NOBODY);
+// A marine people (realm 'coast': the shore ring, 'sea': open water; PW-775/778) is drawn on sea cells, its colour over the ocean's blue
+const isSeaPeople = (l) => !!l && (l.realm || 'land') !== 'land';
+const REALM_TEXT = { coast: 'sea people, shore ring', sea: 'sea people, open sea' };
 function peoplesColor(layer, i, c) {
   const L = V.layers, elev = L.elevation;
-  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) {
+    const sl = (V.run.meta.lineages || [])[layer === 'peoples blend' && L.mix_lead ? L.mix_lead[i] : layer === 'peoples mix' ? 255 : peoplesIdx(i)];
+    if (!isSeaPeople(sl)) return c.copy(OCEAN);
+    const dim = state.people != null && sl.index !== state.people;
+    return c.copy(OCEAN).lerp(lineColor(sl), dim ? 0.12 : 0.75 * (0.5 + 0.5 * (L.peoples_share ? L.peoples_share[i] : 100) / 100));
+  }
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
   const lines = V.run.meta.lineages || [];
   if (layer === 'peoples overlay') {  // templates (tieflings...) and contact hybrids (half-elves...): the strongest
@@ -1055,8 +1063,9 @@ function peoplesPanel() {
   const fmt = (a) => (a >= 1000 ? `${+(a / 1000).toFixed(1)} Myr` : a >= 1 ? `${+a.toFixed(1)} kyr` : `${Math.round(a * 1000)} yr`);
   const row = (l, depth) => {
     const alive = s[l.id] != null, o = l.origin_place;
-    const kind = l.origin === 'split' ? '' : l.origin === 'group' ? ' <span class="muted">(way of life)</span>'
-      : ` <span class="muted">(${l.origin}${l.parents?.length && l.origin !== 'split' ? ' of ' + l.parents.join(' + ') : ''})</span>`;
+    const sea = isSeaPeople(l) ? ` <span class="muted">(${REALM_TEXT[l.realm] || 'sea people'})</span>` : '';
+    const kind = sea + (l.origin === 'split' ? '' : l.origin === 'group' ? ' <span class="muted">(way of life)</span>'
+      : ` <span class="muted">(${l.origin}${l.parents?.length && l.origin !== 'split' ? ' of ' + l.parents.join(' + ') : ''})</span>`);
     return `<div style="padding:1px 0 1px ${6 + 12 * depth}px;cursor:pointer;opacity:${alive ? 1 : 0.5}" data-people="${l.index}"
       title="${esc(l.story || (o ? `from ${o.lat}, ${o.lon} at ${fmt(o.ago_kyr)} ago: ${o.why}` : 'not yet / never appeared'))}">
       <span style="display:inline-block;width:10px;height:10px;background:${l.color};margin-right:4px"></span>${esc(l.name)}${kind}
@@ -2295,7 +2304,7 @@ function renderLegend() {
     } else if (state.layer === 'peoples mix') el.innerHTML = [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody');
     else {
       for (let i = 0; i < V.n; i++) { const d = L.peoples ? peoplesIdx(i) : null; if (d != null && d !== 255) cnt.set(d, (cnt.get(d) || 0) + 1); }
-      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
+      el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d) + (isSeaPeople(lines[d]) ? ' (at sea)' : ''))).join('') +
         sw('#5a5a52', 'nobody') + (state.layer === 'peoples blend' ? '<span class="muted">(each cell blends its leading people\'s colour, the second\'s and grey for all the others, by their shares)</span>' : '<span class="muted">(whitened: mixed)</span>');
     }
   } else if (state.layer.startsWith('animal: ')) {
@@ -3028,7 +3037,7 @@ const HINTS = {
 function peoplesRows(i, R) {
   const L = V.layers, m = V.run.meta, lines = m.lineages || [], d = L.peoples[i], o = L.peoples_overlay?.[i];
   const mixn = L.peoples_mix?.[i] || 0;
-  R('place', '', d !== 255 && lines[d] ? `${lines[d].name} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
+  R('place', '', d !== 255 && lines[d] ? `${lines[d].name}${isSeaPeople(lines[d]) ? ' (at sea)' : ''} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
     { lab: 'peoples (this frame)', ess: true });
   const wd = L.peoples_whole?.[i];  // the cell's composition (PW-689): leading people, second, all others
   const ml = L.mix_lead ? L.mix_lead[i] : wd;  // (the people with most heads, PW-705)
