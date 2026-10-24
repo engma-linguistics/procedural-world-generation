@@ -1,14 +1,14 @@
 {
  "brief_version": 1,
- "run": "b18a68",
+ "run": "6ca7e0",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@fc4cf82b9b",
+ "tree": "D&D peoples (preset)@96d6644b5e",
  "mode": "fantasy",
- "seed": 7002,
+ "seed": 7000,
  "code": {
-  "commit": "092c53e",
-  "dirty": true,
-  "planet_src_sha": "53acb4a3b87ca8ce"
+  "commit": "afea16b",
+  "dirty": false,
+  "planet_src_sha": "02fbf6e3e71238ec"
  },
  "era_kyr": 3.0,
  "era_asked_kyr": 3.0,
@@ -32,7 +32,7 @@
   },
   "temperature_c": 26.044,
   "precipitation_mm": 3073.681,
-  "tree_cover": 26.801,
+  "tree_cover_pct": 26.801,
   "elevation_m": {
    "mean": 326.442,
    "max": 1160.0
@@ -95,18 +95,18 @@
  },
  "bad_years": [],
  "fuels": {
-  "wood": 0.269,
-  "charcoal": 0.042,
-  "dung": 0.157,
-  "peat": 0.137,
-  "straw": 0.024,
-  "grass": 0.265,
-  "drift": 0.059,
-  "coal": 0.038,
+  "wood": 0.342,
+  "charcoal": 0.029,
+  "dung": 0.0,
+  "peat": 0.157,
+  "straw": 0.0,
+  "grass": 0.343,
+  "drift": 0.072,
+  "coal": 0.039,
   "lead": {
-   "wood": 0.398,
-   "grass": 0.19,
-   "dung": 0.186
+   "wood": 0.46,
+   "grass": 0.265,
+   "drift": 0.106
   },
   "basis": "the run's present (fuels.py), not this era"
  },
@@ -170,118 +170,44 @@
   "shelf": null
  },
  "salt": null,
- "crops": [
-  {
-   "id": "banana",
-   "label": "bananas and plantains",
-   "known_share": 1.0,
-   "since_kyr": 10.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 10.4,
-    "lat": -2.53,
-    "lon": 60.44,
-    "people": "goblin"
-   }
-  },
-  {
-   "id": "roots",
-   "label": "yams, taro and cassava",
-   "known_share": 1.0,
-   "since_kyr": 10.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 11.2,
-    "lat": -15.11,
-    "lon": 55.45,
-    "people": "human"
-   }
-  }
- ],
+ "crops": [],
  "animals": [
   {
    "id": "dog",
    "label": "dogs",
    "known_share": 1.0,
-   "since_kyr": 14.5,
+   "since_kyr": 9.5,
    "route": null,
    "origin": {
-    "kyr_ago": 17.6,
-    "lat": -53.45,
-    "lon": 97.14,
-    "people": "human_arctic"
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
    }
   },
   {
    "id": "fowl",
    "label": "fowl",
-   "known_share": 1.0,
-   "since_kyr": 7.0,
+   "known_share": 0.996,
+   "since_kyr": 7.5,
    "route": null,
    "origin": {
-    "kyr_ago": 7.3,
-    "lat": 2.06,
-    "lon": 57.1,
-    "people": "tabaxi"
-   }
-  },
-  {
-   "id": "cattle",
-   "label": "cattle",
-   "known_share": 1.0,
-   "since_kyr": 5.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 11.3,
-    "lat": 39.52,
-    "lon": 9.39,
-    "people": "human"
-   }
-  },
-  {
-   "id": "caprine",
-   "label": "sheep and goats",
-   "known_share": 1.0,
-   "since_kyr": 4.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 9.8,
-    "lat": 35.61,
-    "lon": 13.2,
-    "people": "human"
+    "kyr_ago": 8.5,
+    "lat": -14.13,
+    "lon": 48.29,
+    "people": "kenku"
    }
   }
  ],
  "peoples": {
-  "peopled_cells": 226,
-  "empty_share": 0.154,
-  "others_together": 0.025,
+  "peopled_cells": 217,
+  "empty_share": 0.187,
+  "others_together": 0.0,
   "list": [
-   {
-    "id": "tabaxi",
-    "name": "tabaxi",
-    "share": 0.438,
-    "groups_of": null,
-    "overlay": false,
-    "body": {
-     "sweet": false,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "normal",
-     "smell": "keen",
-     "diet": "obligate_carnivore",
-     "raw_meat": true,
-     "cellulose": false,
-     "toxic": [
-      "alliums",
-      "theobromine"
-     ]
-    }
-   },
    {
     "id": "kenku",
     "name": "kenku",
-    "share": 0.328,
+    "share": 1.0,
     "groups_of": null,
     "overlay": false,
     "body": {
@@ -296,61 +222,16 @@
      "toxic": [
       "alliums",
       "theobromine"
-     ]
-    }
-   },
-   {
-    "id": "goblin",
-    "name": "goblins",
-    "share": 0.123,
-    "groups_of": null,
-    "overlay": false,
-    "body": {
-     "sweet": true,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "low",
-     "smell": "normal",
-     "diet": "omnivore",
-     "raw_meat": true,
-     "cellulose": false,
-     "toxic": []
-    }
-   },
-   {
-    "id": "human",
-    "name": "humans",
-    "share": 0.078,
-    "groups_of": null,
-    "overlay": false,
-    "body": {
-     "sweet": true,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "normal",
-     "smell": "normal",
-     "diet": "omnivore",
-     "raw_meat": false,
-     "cellulose": false,
-     "toxic": []
-    }
-   },
-   {
-    "id": "hobgoblin",
-    "name": "hobgoblins",
-    "share": 0.007,
-    "groups_of": null,
-    "overlay": false,
-    "body": {
-     "sweet": true,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "low",
-     "smell": "normal",
-     "diet": "omnivore",
-     "raw_meat": true,
-     "cellulose": false,
-     "toxic": []
+     ],
+     "suction": "none",
+     "teeth": "beak",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
     }
    }
   ],
@@ -362,32 +243,8 @@
   "ring_km": 600.0,
   "list": [
    {
-    "id": "tabaxi",
-    "ring_cells": 258,
-    "also_in_region": true,
-    "border_km": null,
-    "since_kyr": null,
-    "tier": null
-   },
-   {
     "id": "kenku",
-    "ring_cells": 177,
-    "also_in_region": true,
-    "border_km": null,
-    "since_kyr": null,
-    "tier": null
-   },
-   {
-    "id": "human",
-    "ring_cells": 143,
-    "also_in_region": true,
-    "border_km": null,
-    "since_kyr": null,
-    "tier": null
-   },
-   {
-    "id": "hobgoblin",
-    "ring_cells": 8,
+    "ring_cells": 584,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
@@ -397,38 +254,7 @@
   "tier_note": "interfertility tiers: not modelled yet"
  },
  "trade_reach": null,
- "events": [
-  {
-   "kyr_ago": 7.3,
-   "kind": "animals",
-   "text": "fowl are tamed by the tabaxi on the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)",
-   "km": 738
-  },
-  {
-   "kyr_ago": 10.4,
-   "kind": "crops",
-   "text": "bananas and plantains are first cultivated by the goblins on the continent at 18\u00b0N 43\u00b0E (28 Mkm\u00b2)",
-   "km": 340
-  },
-  {
-   "kyr_ago": 200.0,
-   "kind": "split",
-   "text": "bugbears splits from greater_goblinoid (beside the parent's range (new niche))",
-   "km": 1095
-  },
-  {
-   "kyr_ago": 300.0,
-   "kind": "split",
-   "text": "storm giants splits from sky_giant (beside the parent's range (new niche))",
-   "km": 804
-  },
-  {
-   "kyr_ago": 400.0,
-   "kind": "split",
-   "text": "goblins splits from goblinoid (inside the parent's range)",
-   "km": 942
-  }
- ],
+ "events": [],
  "reputation": null,
  "suggested": {
   "basis": "rule-based from this brief only; the culinary side overrules",

@@ -1,14 +1,14 @@
 {
  "brief_version": 1,
- "run": "b18a68",
+ "run": "6ca7e0",
  "world": "1df1c3",
- "tree": "D&D peoples (preset)@fc4cf82b9b",
+ "tree": "D&D peoples (preset)@96d6644b5e",
  "mode": "fantasy",
- "seed": 7002,
+ "seed": 7000,
  "code": {
-  "commit": "092c53e",
-  "dirty": true,
-  "planet_src_sha": "53acb4a3b87ca8ce"
+  "commit": "afea16b",
+  "dirty": false,
+  "planet_src_sha": "02fbf6e3e71238ec"
  },
  "era_kyr": 0.0,
  "era_asked_kyr": 0.0,
@@ -33,7 +33,7 @@
   },
   "temperature_c": 21.934,
   "precipitation_mm": 143.501,
-  "tree_cover": 0.0,
+  "tree_cover_pct": 0.0,
   "elevation_m": {
    "mean": 627.675,
    "max": 1035.0
@@ -96,14 +96,15 @@
  "fuels": {
   "wood": 0.0,
   "charcoal": 0.0,
-  "dung": 0.753,
+  "dung": 0.0,
   "peat": 0.0,
-  "straw": 0.002,
-  "grass": 0.236,
-  "drift": 0.009,
+  "straw": 0.0,
+  "grass": 0.981,
+  "drift": 0.019,
   "coal": 0.0,
   "lead": {
-   "dung": 1.0
+   "grass": 0.973,
+   "drift": 0.027
   },
   "basis": "the run's present (fuels.py)"
  },
@@ -162,110 +163,44 @@
   "shelf": null
  },
  "salt": null,
- "crops": [
-  {
-   "id": "pulses",
-   "label": "lentils and peas",
-   "known_share": 0.34,
-   "since_kyr": 8.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 11.7,
-    "lat": 35.92,
-    "lon": 3.37,
-    "people": "human"
-   }
-  },
-  {
-   "id": "foxtail_millet",
-   "label": "foxtail millet",
-   "known_share": 0.588,
-   "since_kyr": 5.5,
-   "route": null,
-   "origin": {
-    "kyr_ago": 7.0,
-    "lat": 39.48,
-    "lon": 22.55,
-    "people": "human"
-   }
-  }
- ],
+ "crops": [],
  "animals": [
   {
    "id": "dog",
    "label": "dogs",
    "known_share": 1.0,
-   "since_kyr": 16.0,
+   "since_kyr": 1.0,
    "route": null,
    "origin": {
-    "kyr_ago": 17.6,
-    "lat": -53.45,
-    "lon": 97.14,
-    "people": "human_arctic"
-   }
-  },
-  {
-   "id": "cattle",
-   "label": "cattle",
-   "known_share": 1.0,
-   "since_kyr": 8.5,
-   "route": null,
-   "origin": {
-    "kyr_ago": 11.3,
-    "lat": 39.52,
-    "lon": 9.39,
-    "people": "human"
-   }
-  },
-  {
-   "id": "caprine",
-   "label": "sheep and goats",
-   "known_share": 1.0,
-   "since_kyr": 7.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 9.8,
-    "lat": 35.61,
-    "lon": 13.2,
-    "people": "human"
+    "kyr_ago": 10.5,
+    "lat": 15.83,
+    "lon": 50.1,
+    "people": "kenku"
    }
   },
   {
    "id": "fowl",
    "label": "fowl",
    "known_share": 1.0,
-   "since_kyr": 5.0,
+   "since_kyr": 0.5,
    "route": null,
    "origin": {
-    "kyr_ago": 7.3,
-    "lat": 2.06,
-    "lon": 57.1,
-    "people": "tabaxi"
-   }
-  },
-  {
-   "id": "horse",
-   "label": "horses",
-   "known_share": 1.0,
-   "since_kyr": 3.0,
-   "route": null,
-   "origin": {
-    "kyr_ago": 4.5,
-    "lat": 40.45,
-    "lon": 16.02,
-    "people": "human_herder"
+    "kyr_ago": 8.5,
+    "lat": -14.13,
+    "lon": 48.29,
+    "people": "kenku"
    }
   }
  ],
  "peoples": {
   "peopled_cells": 335,
   "empty_share": 0.023,
-  "others_together": 0.007,
+  "others_together": 0.0,
   "list": [
    {
     "id": "human",
     "name": "humans",
-    "share": 0.951,
+    "share": 1.0,
     "groups_of": null,
     "overlay": false,
     "body": {
@@ -277,43 +212,16 @@
      "diet": "omnivore",
      "raw_meat": false,
      "cellulose": false,
-     "toxic": []
-    }
-   },
-   {
-    "id": "orc",
-    "name": "orcs",
-    "share": 0.023,
-    "groups_of": null,
-    "overlay": false,
-    "body": {
-     "sweet": true,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "normal",
-     "smell": "keen",
-     "diet": "omnivore",
-     "raw_meat": true,
-     "cellulose": false,
-     "toxic": []
-    }
-   },
-   {
-    "id": "half_orc",
-    "name": "half-orcs",
-    "share": 0.02,
-    "groups_of": null,
-    "overlay": true,
-    "body": {
-     "sweet": true,
-     "milk": false,
-     "capsaicin": true,
-     "bitter": "normal",
-     "smell": "normal",
-     "diet": "omnivore",
-     "raw_meat": false,
-     "cellulose": false,
-     "toxic": []
+     "toxic": [],
+     "suction": "normal",
+     "teeth": "grinding",
+     "gut": "simple",
+     "salt": "normal",
+     "display": "none",
+     "shed": "none",
+     "hours": "diurnal",
+     "thermo": "endo",
+     "fire": true
     }
    }
   ],
@@ -326,23 +234,15 @@
   "list": [
    {
     "id": "human",
-    "ring_cells": 721,
+    "ring_cells": 657,
     "also_in_region": true,
     "border_km": null,
     "since_kyr": null,
     "tier": null
    },
    {
-    "id": "orc",
-    "ring_cells": 51,
-    "also_in_region": true,
-    "border_km": null,
-    "since_kyr": null,
-    "tier": null
-   },
-   {
-    "id": "hill_giant",
-    "ring_cells": 1,
+    "id": "kenku",
+    "ring_cells": 116,
     "also_in_region": false,
     "border_km": null,
     "since_kyr": null,
@@ -352,20 +252,12 @@
   "tier_note": "interfertility tiers: not modelled yet"
  },
  "trade_reach": null,
- "events": [
-  {
-   "kyr_ago": 9.0,
-   "kind": "refuge",
-   "text": "forest orcs hold out in a refuge",
-   "km": 1053
-  }
- ],
+ "events": [],
  "reputation": null,
  "suggested": {
   "basis": "rule-based from this brief only; the culinary side overrules",
   "notes": [
-   "dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing",
-   "grain is grown here: what ferments follows what is stored, so beer or bread before wine"
+   "dry grass and brush are the fuel of last resort here: food is boiled or eaten raw before fuel is spent"
   ],
   "drink": null
  },
