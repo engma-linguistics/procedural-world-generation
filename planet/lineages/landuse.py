@@ -34,6 +34,7 @@ import numpy as np
 
 from .. import store as S
 from ..geo import R_KM
+from . import animal_defs as AD
 from . import land as LD
 from . import spec as SP
 
@@ -46,7 +47,7 @@ BURN_KM2 = 0.10  # woodland margin burned per herding person
 WOOD_BASE_KM2 = 0.003  # woods cut and coppiced for fuel and building, per person of any way of life
 WOOD_USE_KM2 = 0.03  # extra, per timber-using person x their timber share
 THIN = 0.3  # a managed wood keeps this much less canopy
-HORSE_HERD = 0.5  # where riding is known, the land a herding person works is x(1 + this x the people's propensity to ride)
+
 GRAZE_MIN = 0.1  # grazing good (0..1) under which pasture is not made
 FOOD = ("fertile", "grazing", "timber", "foraging")  # the goods that feed a people: the denominator of its shares
 LAYERS = ("crop", "pasture", "burned", "managed", "people", "tree_after")
@@ -84,13 +85,14 @@ def _load(run_dir: Path):
     return run, m
 
 
-def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None) -> dict:
+def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None, farm_eff=None) -> dict:
     """Land cover fractions per cell from the people per km2 (all, farming, herding, timber-using), the wild tree
     cover (0..1), the farmland class (0..4) and the grazing good (0..1). herd_eff: the herding people weighted by
-    the land a herder works (mounted herders work more: horses.HORSE_HERD); default `herd`."""
+    the land a herder works (mounted herders work more: animal_defs herd_land) and farm_eff likewise for farmers (the plough: crop_land); default `herd` and `farm`."""
     herd_eff = herd if herd_eff is None else herd_eff
+    farm_eff = farm if farm_eff is None else farm_eff
     grazable = np.clip(graze / 0.6, 0, 1) * (graze >= GRAZE_MIN)
-    crop = np.minimum(np.array(CROP_CAP)[fcls], farm * CROP_KM2 / np.maximum(np.array(YIELD)[fcls], 1e-9))
+    crop = np.minimum(np.array(CROP_CAP)[fcls], farm_eff * CROP_KM2 / np.maximum(np.array(YIELD)[fcls], 1e-9))
     room = 1.0 - crop
     pasture = np.minimum(room * 0.9 * grazable, herd_eff * HERD_KM2 + farm * MEADOW_KM2 * (grazable > 0))
     t1 = tc * (1 - crop)
@@ -118,12 +120,15 @@ def derive(run_dir: Path) -> dict:
     tc = np.clip(tc, 0, 1) * land
 
     dens = np.zeros(n)
-    farm, herd, wood, herd_eff = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
-    # riding (horses.py): where riding is known, a herding person works more land
-    riding, hprop = np.zeros(n), (m.get("horses") or {}).get("propensity", {})
-    if "horse_riding" in run["layers"]:
-        rs = run["layers"]["horse_riding"]
-        riding = np.asarray(S.decode(np.asarray(S.read_layer(run_dir, rs)[-1]), rs), float) / 100.0
+    farm, herd, wood, herd_eff, farm_eff = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
+    # the animals (animals.py): where an animal is known, a herder (herd_land) or a farmer (crop_land, the plough) works more land
+    known = {}
+    stocks = (m.get("animals") or {}).get("stocks") or {}
+    if "animal_known" in run["layers"] and stocks:
+        ks = run["layers"]["animal_known"]
+        bits = np.asarray(S.decode(np.asarray(S.read_layer(run_dir, ks)[-1]), ks)).astype(np.int64)
+        for aid, st in stocks.items():
+            known[aid] = ((bits >> st["bit"]) & 1).astype(float)
     by_line = {}
     for k, ln in enumerate(m["lineages"]):
         l = tree.lines.get(ln["id"])
@@ -136,13 +141,19 @@ def derive(run_dir: Path) -> dict:
         dens += d
         farm += s["farm"] * d
         herd += s["herd"] * d
-        herd_eff += s["herd"] * d * (1.0 + HORSE_HERD * riding * hprop.get(ln["id"], 0.0))
+        hl = cl = 0.0
+        for aid, kn in known.items():
+            a, pr = AD.BY_ID[aid], stocks[aid]["propensity"].get(ln["id"], 0.0)
+            hl = hl + a.herd_land * kn * pr
+            cl = cl + a.crop_land * kn * pr * (1.0 if stocks[aid]["tamed"] else 0.0)
+        herd_eff += s["herd"] * d * (1.0 + hl)
+        farm_eff += s["farm"] * d * (1.0 + cl)
         wood += s["wood"] * d
         by_line[ln["id"]] = {**{kk: round(v, 2) for kk, v in s.items()}, "people": float(d.sum() * area_km2)}
 
     fcls = np.clip(np.rint(np.asarray(goods["_raw"]["fertile"]) * 4).astype(int), 0, 4)
     graze = goods["grazing"] if "grazing" in goods else np.zeros(n)
-    out = cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff)
+    out = cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff, farm_eff)
     crop, pasture, burned, managed, tree_after = (out[k] for k in ("crop", "pasture", "burned", "managed", "tree_after"))
 
     # summary against the world

@@ -892,16 +892,21 @@ function peoplesColor(layer, i, c) {
   if (L.peoples_mix && L.peoples_mix[i] >= 2) c.lerp(MIXC, 0.35);
   return c;
 }
-// Horses (planet/lineages/horses.py, PW-688): the wild range (green, by suitability: open temperate grassland and steppe)
-// and where riding is known (amber, spreading from the taming homeland over peopled land); both: amber over green.
-const HORSE_WILD = new THREE.Color('#3f9d4a'), HORSE_RIDE = new THREE.Color('#e8a23a');
-function horsesColor(i, c) {
-  const L = V.layers, elev = L.elevation;
+// Animals (planet/lineages/animals.py, PW-691): per animal the wild range (green: derived from the land) and where it is known
+// (the animal's own colour, spreading from the taming homeland over peopled land and, by boat, over the sea); both: its colour over green.
+// The layers hold one bit per animal (animal_wild, animal_known; meta.animals.stocks[id].bit).
+const ANIMAL_WILD = new THREE.Color('#3f9d4a');
+const ANIMAL_COLS = ['#e8a23a', '#c4553a', '#d9d4c2', '#8a5a2b', '#e6c829', '#3a7bd5', '#9b59b6', '#16a085'];
+function animalStocks() { return V.run?.meta?.animals?.stocks || {}; }
+function animalsColor(i, c, id) {
+  const L = V.layers, elev = L.elevation, st = animalStocks()[id];
   if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
-  const w = (L.horse_wild?.[i] || 0) / 100, r = (L.horse_riding?.[i] || 0) / 100;
-  c.copy(BARE).lerp(HORSE_WILD, Math.min(1, 0.25 + 0.75 * w) * (w >= 0.35 ? 1 : w / 0.35 * 0.6));
-  if (r > 0) c.lerp(HORSE_RIDE, 0.7);
+  if (!st) return c.copy(BARE);
+  const w = ((L.animal_wild?.[i] || 0) >> st.bit) & 1, r = ((L.animal_known?.[i] || 0) >> st.bit) & 1;
+  c.copy(BARE);
+  if (w) c.lerp(ANIMAL_WILD, 0.75);
+  if (r) c.lerp(new THREE.Color(ANIMAL_COLS[st.bit % 8]), 0.8);
   return c;
 }
 // Peoples change the land (planet/lineages/landuse.py, PW-662): the run's anthropogenic overlay at the present
@@ -1057,7 +1062,7 @@ function cellColors(layer) {
       else if (L.peoples_whole[i] === 255) c.copy(NOBODY); else rampFns.body(L['body_' + layer.slice(6)][i], c);
     }
     else if (layer === 'land use') landUseColor(i, c);
-    else if (layer === 'horses') horsesColor(i, c);
+    else if (layer.startsWith('animal: ')) animalsColor(i, c, layer.slice(8));
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -1148,7 +1153,7 @@ function availableLayers() {
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
     hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), 'peoples mix', 'peoples overlay'].concat(
-      Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('horse_wild') ? ['horses'] : [], V.run?.meta?.anthro ? ['land use'] : []);
+      Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], V.run?.meta?.anthro ? ['land use'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -2241,10 +2246,10 @@ function renderLegend() {
       el.innerHTML = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => sw(lines[d]?.color || '#888', esc(lines[d]?.name || d))).join('') +
         sw('#5a5a52', 'nobody') + (state.layer === 'peoples blend' ? '<span class="muted">(each cell blends its leading people\'s colour, the second\'s and grey for all the others, by their shares)</span>' : '<span class="muted">(whitened: mixed)</span>');
     }
-  } else if (state.layer === 'horses') {
-    const h = V.run.meta.horses, t = h?.tamed?.[0];
-    el.innerHTML = sw('#3f9d4a', 'wild horse range (open temperate grassland, steppe)') + sw('#e8a23a', 'riding known') +
-      `<span class="muted">${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world' : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}</span>`;
+  } else if (state.layer.startsWith('animal: ')) {
+    const id = state.layer.slice(8), h = animalStocks()[id], t = h?.tamed?.[0];
+    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % 8], 'tamed and known') +
+      `<span class="muted">${h?.fantasy ? `fantasy animal (${V.run.meta.mode} mode); ` : ''}${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
   } else if (state.layer === 'land use') {
     el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
       sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
@@ -2985,11 +2990,16 @@ function peoplesRows(i, R) {
     R('place', '', here.length ? here.map(([v, l]) => `${l.name} ${v}%`).join(', ') : 'nobody', { lab: 'at the present', ess: true });
   }
 }
-function horseRows(i, R) {  // wild horse range and riding in this frame (horses.py)
+function animalRows(i, R) {  // the animals known in this frame's cell, and the wild ranges it lies in (animals.py)
   const L = V.layers;
-  if (!L.horse_wild) return;
-  const w = L.horse_wild[i], r = L.horse_riding?.[i] || 0;
-  if (w >= 10 || r) R('place', '', `${w >= 35 ? 'wild horse range' : w >= 10 ? 'marginal for wild horses' : ''}${w >= 10 && r ? '; ' : ''}${r ? 'riding known' : ''}`, { lab: 'horses', ess: true });
+  if (!L.animal_wild) return;
+  const known = [], wild = [];
+  for (const [id, st] of Object.entries(animalStocks())) {
+    if (((L.animal_known?.[i] || 0) >> st.bit) & 1) known.push(st.label);
+    else if (((L.animal_wild?.[i] || 0) >> st.bit) & 1 && id !== 'dog') wild.push(st.label);
+  }
+  if (known.length) R('place', '', known.join(', '), { lab: 'animals known', ess: true });
+  if (wild.length) R('place', '', wild.join(', '), { lab: 'wild range of' });
 }
 function cellInfo(i) {
   const L = V.layers, G = V.grid, rows = [];
@@ -3001,7 +3011,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); horseRows(i, R); anthroRows(i, R); }
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); animalRows(i, R); anthroRows(i, R); }
   if (V.kind === 'world' && V.wAnthro && state.anthro !== false) anthroRows(i, R);
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
@@ -4113,7 +4123,6 @@ const COLOUR_NEEDS = {
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
   'land use': ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
-  horses: ['horse_wild', 'horse_riding', 'ice'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4125,11 +4134,11 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
   // ice, which says which cells are land (see iceBed)
-  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || [])];
+  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || []), ...(state.layer.startsWith('animal: ') ? ['animal_wild', 'animal_known'] : [])];
   if (state.layer.startsWith('body: ')) want.push('peoples_whole', 'body_' + state.layer.slice(6));
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses, 'mix_lead', 'mix_lead_share', 'mix_second',
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', 'animal_wild', 'animal_known', 'mix_lead', 'mix_lead_share', 'mix_second',
     'mix_second_share', 'mix_other_share', ...Object.keys(V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);

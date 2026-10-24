@@ -20,6 +20,8 @@ strongly, or the use's own pull (a line takes the strongest pull of its favoured
 strict = true: off those goods the habitat is cut, not lifted back to a mean of 1 (peoples bound to one country).
 meta.mode (PW-695): "fantasy" (default; every line, the fantasy goods) or "real" (only the lines with `real = true`,
 the humans, leave the rest out as if disabled; the fantasy goods (FANTASY_GOODS) drop out of [[use]]). Magic is PW-696.
+meta.animals / animals_force / animals_at (PW-691, PW-710): the domesticable animals (animal_defs.TABLE; default every
+real one), the fantasy ones whose rare taming is forced (tests) and the anchor dates; fantasy animals drop out in real mode.
 meta.portal_mode / portals / portal_sites (PW-697): arrivals from outside come "off" (each at its best habitat),
 or through N portals placed "random"ly or at interesting "sites" (history.History.portal_cells).
 """
@@ -320,8 +322,9 @@ class Tree:
     uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
     land_pull: float = LAND_PULL
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
-    horses: bool = True  # meta.horses: wild horses, their taming and riding (horses.py); false: none
-    horses_at: float | None = None  # meta.horses_at: the anchor time of the taming, kyr ago (None: horses.ANCHOR_KYR)
+    animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
+    animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
+    animals_at: dict = field(default_factory=dict)  # meta.animals_at: id -> anchor time of the taming, kyr ago (default: the table's)
     mode: str = MODE_DEFAULT  # meta.mode: 'fantasy' (all the peoples, the fantasy goods) or 'real' (only the lines marked real, real goods; PW-695)
     portal_mode: str = "off"  # meta.portal_mode: arrivals from outside: 'off' (each at its best habitat), 'random' or 'sites' (PW-697)
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
@@ -602,8 +605,17 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     if not t.portal_sites or any(x not in PORTAL_SITES for x in t.portal_sites):
         raise ValueError(f"meta.portal_sites must be some of {list(PORTAL_SITES)}")
     t.uses = uses
-    t.horses = bool(meta.get("horses", True))
-    t.horses_at = parse_ago(meta["horses_at"]) if meta.get("horses_at") not in (None, "") else None
+    from . import animal_defs as AD
+    am = meta.get("animals")
+    t.animals = None if am is None else [str(x) for x in am]
+    t.animals_force = [str(x) for x in meta.get("animals_force", [])]
+    for x in [*(t.animals or []), *t.animals_force, *(meta.get("animals_at") or {})]:
+        if x not in AD.BY_ID:
+            raise ValueError(f"meta.animals: unknown animal '{x}' (known: {', '.join(AD.IDS)})")
+    t.animals_at = {str(k): parse_ago(v) for k, v in (meta.get("animals_at") or {}).items() if v not in (None, "")}
+    if mode == "real":  # the fantasy domestications are left out in the real-world mode (PW-710)
+        t.animals = [x for x in (AD.REAL_IDS if t.animals is None else t.animals) if not AD.BY_ID[x].fantasy]
+        t.animals_force = [x for x in t.animals_force if not AD.BY_ID[x].fantasy]
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
     t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
     if t.era not in ERAS:
@@ -651,8 +663,10 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "era": t.era, "viable_pop": t.viable_pop, "horses": t.horses, "mode": t.mode, "portal_mode": t.portal_mode,
+                     "era": t.era, "viable_pop": t.viable_pop, "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
-                     **({"horses_at": f"{t.horses_at:g} kyr"} if t.horses_at is not None else {})},
+                     **({"animals": t.animals} if t.animals is not None else {}),
+                     **({"animals_force": t.animals_force} if t.animals_force else {}),
+                     **({"animals_at": {k: f"{v:g} kyr" for k, v in t.animals_at.items()}} if t.animals_at else {})},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

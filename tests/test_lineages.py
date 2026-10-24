@@ -642,56 +642,98 @@ def test_composition_follows_who_reaches_and_tolerates_a_place():
     assert abs(int(m["body_milk"][0]) - int(m["mix_second_share"][0])) <= 1
 
 
-# ---- horses (PW-688 part 1) -------------------------------------------------------------------------
+# ---- animals (PW-691) and boats (PW-688 part 2) --------------------------------------------------------------------
 def test_wild_horse_range_is_open_temperate_grassland():
-    from planet.lineages import horses as HO
+    from planet.lineages import animal_defs as AD
     n = 6  # steppe, forest, desert, tundra, tropical savanna, high plateau
     env = {"temperature": np.array([8, 8, 15, -10, 28, 8.0]), "precipitation": np.array([500, 1200, 80, 300, 900, 400.0]),
            "tree_cover": np.array([5, 70, 0, 0, 10, 0.0]), "elevation": np.array([300, 300, 300, 300, 300, 5000.0]), "ice": np.zeros(n)}
-    w = HO.wild_range(env, np.ones(n, bool))
-    assert w[0] == 1 and (w[1:] < HO.WILD_MIN).all() and (HO.wild_range(env, np.zeros(n, bool)) == 0).all()
-    dnd = SP.load(LR.SAMPLES / "dnd.toml")
-    p = {k: HO.propensity(dnd, dnd.lines[k]) for k in ("human_nomad", "steppe_orc", "human_herder", "human_farmer", "aarakocra", "dwarf", "hill_giant")}
-    assert p["human_nomad"] == p["steppe_orc"] == p["human_herder"] == 1.0
-    assert 0 < p["human_farmer"] < 0.5 and p["aarakocra"] == p["dwarf"] == p["hill_giant"] == 0.0
+    w = AD.wild_horse(env, {}, np.ones(n, bool))
+    assert w[0] == 1 and (w[1:] < 0.35).all() and (AD.wild_horse(env, {}, np.zeros(n, bool)) == 0).all()
+    # the other animals read the same land differently: dogs nearly anywhere with rain, cattle only on moist ground
+    assert AD.wild_dog(env, {}, np.ones(n, bool))[[0, 1, 3, 4]].min() > 0.9 and AD.wild_dog(env, {}, np.ones(n, bool))[2] < 0.5
+    tags = {k: np.zeros(n, bool) for k in ("hills", "mountain", "wetland")}
+    moist = {**env, "temperature": np.full(n, 15.0), "precipitation": np.array([1200, 1200, 80, 1200, 1200, 1200.0]), "tree_cover": np.full(n, 10.0)}
+    wc = AD.wild_cattle(moist, tags, np.ones(n, bool))
+    assert wc[0] > 0.9 and wc[2] == 0 and wc[5] == 0  # (moist grass: yes; desert and the high plateau: no)
 
 
-def _horse_tree(horses=True):
-    raw = {"meta": {"name": "h", "seed": 3, "mixing_start": "3 kyr", "horses": horses, "horses_at": "9 kyr"}, "lineage": [
-        {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"]},
-        {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"]}],
+def test_craft_ladder_and_mode_gates():
+    from planet.lineages import animal_defs as AD
+    assert AD.craft_for(0, 70.0) is None and AD.craft_for(0, 40.0)[0].startswith("canoe")
+    assert AD.craft_for(1, 40.0) is None and AD.craft_for(1, 4.0)[0] == "planked boat"  # (a sheep needs a planked boat)
+    assert AD.craft_for(2, 4.0) is None and AD.craft_for(2, 2.0)[0] == "sailing ship"  # (a horse needs a sailing ship)
+    assert [a.id for a in AD.resolve(None, [], "fantasy")] == list(AD.REAL_IDS)  # (fantasy rows are off by default)
+    assert "great_elk" in [a.id for a in AD.resolve(None, ["great_elk"], "fantasy")]
+    assert "great_elk" not in [a.id for a in AD.resolve(["great_elk"], ["great_elk"], "real")]  # (and gone in the real-world mode)
+    raw = {"meta": {"animals": ["horse"], "animals_force": ["great_elk", "riding_lizard"], "mode": "real"},
+           "lineage": [{"id": "a", "origin": "root", "at": "9 kyr", "real": True}]}
+    t = SP.parse(raw)
+    assert t.animals == ["horse"] and t.animals_force == []
+    assert SP.parse({**raw, "meta": {**raw["meta"], "mode": "fantasy"}}).animals_force == ["great_elk", "riding_lizard"]
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"animals": ["unicorn"]}})
+
+
+def _animal_tree(animals=("horse",), force=(), mode="fantasy"):
+    raw = {"meta": {"name": "h", "seed": 3, "mixing_start": "3 kyr", "mode": mode, "animals": list(animals), "animals_force": list(force),
+                    "animals_at": {"horse": "9 kyr", "dog": "20 kyr", "great_elk": "9 kyr"}}, "lineage": [
+        {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"], "real": True},
+        {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"], "real": True}],
         "use": [{"by": "nomadic", "good": "grazing"}, {"by": "agricultural", "good": "fertile"}]}
     return SP.parse(raw)
 
 
 def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(faketz, monkeypatch):
-    from planet.lineages import horses as HO
-    monkeypatch.setattr(HO, "wild_range", lambda env, land: np.where(land & (np.abs(env["temperature"] - 12) < 8), 0.9, 0.0))
+    import dataclasses
+    from planet.lineages import animal_defs as AD
+    wild = lambda env, tags, land: np.where(land & (np.abs(env["temperature"] - 12) < 8), 0.9, 0.0)  # noqa: E731
+    horse = dataclasses.replace(AD.BY_ID["horse"], wild=wild)
+    monkeypatch.setattr(AD, "TABLE", tuple(horse if a.id == "horse" else a for a in AD.TABLE))
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
-    hs = pres["horses"]
+    h, res, pres = H.simulate(_animal_tree(), ps, tries=1)
+    hs = pres["animals"]["stocks"]["horse"]
     t = hs["tamed"][0]
     assert t["line"] == "herd" and t["first"] and t["ago_kyr"] <= hs["date_drawn_kyr"] + 1e-6 and hs["wild_mkm2"] > 0
-    assert hs["riding_mkm2"] > 0 and hs["riders_share"]["herd"] > 0.5  # herders ride across their land
+    assert hs["known_mkm2"] > 0 and hs["users_share"]["herd"] > 0.5  # herders ride across their land
     assert hs["propensity"]["herd"] == 1.0 and hs["propensity"]["farm"] < hs["propensity"]["herd"]
-    assert any(e["kind"] == "horses" for e in h.events)
-    # layers on the run, and the story says so
+    assert any(e["kind"] == "animals" for e in h.events) and not hs["fantasy"]
+    # layers on the run (bit flags), and the story says so
     out = O.save(h, res, pres, name="horse test")
     run = json.loads((out / "run.json").read_text())
-    assert {"horse_wild", "horse_riding"} <= run["layers"].keys() and run["meta"]["horses"]["tamed"][0]["line"] == "herd"
+    assert {"animal_wild", "animal_known"} <= run["layers"].keys() and run["meta"]["animals"]["stocks"]["horse"]["tamed"][0]["line"] == "herd"
     assert "first to tame the horse" in run["meta"]["lineages"][h.idx["herd"]]["story"]
-    assert "Horses" in (out / "run.txt").read_text()
-    # off: nothing is stored
-    h0, res0, pres0 = H.simulate(_horse_tree(False), ps, tries=1)
-    assert pres0["horses"] is None and h0.horses is None
-    assert "horse_wild" not in json.loads((O.save(h0, res0, pres0, name="no horses") / "run.json").read_text())["layers"]
+    assert "Animals" in (out / "run.txt").read_text() and "sailing ship" in (out / "run.txt").read_text()
+    # none: nothing is stored
+    h0, res0, pres0 = H.simulate(_animal_tree(()), ps, tries=1)
+    assert pres0["animals"] is None and h0.animals is None
+    assert "animal_wild" not in json.loads((O.save(h0, res0, pres0, name="no animals") / "run.json").read_text())["layers"]
+
+
+def test_fantasy_animals_are_off_unless_forced_and_never_in_real_mode(faketz, monkeypatch):
+    import dataclasses
+    from planet.lineages import animal_defs as AD
+    wild = lambda env, tags, land: np.where(land, 0.9, 0.0)  # noqa: E731
+    elk = dataclasses.replace(AD.BY_ID["great_elk"], wild=wild, rare=0.0)  # (a taming that never happens by chance)
+    monkeypatch.setattr(AD, "TABLE", tuple(elk if a.id == "great_elk" else a for a in AD.TABLE))
+    monkeypatch.setattr(AD, "BY_ID", {a.id: a for a in AD.TABLE})
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(_animal_tree(("horse", "great_elk")), ps, tries=1)  # (listed, but rare: not here)
+    assert pres["animals"]["stocks"]["great_elk"]["never"] and not pres["animals"]["stocks"]["great_elk"]["tamed"]
+    h, res, pres = H.simulate(_animal_tree(("horse",), force=("great_elk",)), ps, tries=1)  # (forced: always)
+    st = pres["animals"]["stocks"]["great_elk"]
+    assert st["fantasy"] and st["tamed"] and st["known_mkm2"] > 0
+    h, res, pres = H.simulate(_animal_tree(("horse",), force=("great_elk",), mode="real"), ps, tries=1)
+    assert "great_elk" not in pres["animals"]["stocks"]
+    assert "great_elk" not in pres["animals"]["stocks"] and "riding_lizard" not in pres["animals"]["stocks"]
 
 
 def test_no_wild_range_no_taming(faketz):
     # (the fake world is forested everywhere: nowhere for wild horses)
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
-    assert pres["horses"]["tamed"] == [] and pres["horses"]["never"] and not h.horses.rd.any()
+    h, res, pres = H.simulate(_animal_tree(), ps, tries=1)
+    hs = pres["animals"]["stocks"]["horse"]
+    assert hs["tamed"] == [] and hs["never"] and not h.animals.stocks[0].rd.any()
 
 
 def test_composition_is_by_heads_not_ground_held():

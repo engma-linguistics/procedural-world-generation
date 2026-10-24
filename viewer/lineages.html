@@ -362,7 +362,9 @@ function drawSide() {
         ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${fmt(res.ended_kyr)} ago` : 'absent at the present'}</div>
         ${res.story ? `<div class="muted" style="margin-top:4px">${esc(res.story)}</div>` : ''}` : ''}`;
   }
-  h += `<h3>Tree</h3><div class="row"><label class="trait" title="Wild horses from the land, a taming homeland and date, and riding spreading with the peoples who take it up (horses.py)"><input type="checkbox" data-m="horses" ${T.meta?.horses === false ? '' : 'checked'}> horses</label>${field('horses tamed ~ (ago)', `<input data-m="horses_at" size="7" placeholder="5.5 kyr" value="${esc(T.meta?.horses_at || '')}">`)}</div>
+  const ANIMALS = [['horse', 'horses'], ['dog', 'dogs'], ['caprine', 'sheep and goats'], ['cattle', 'cattle'], ['fowl', 'fowl'], ['great_elk', 'great elk (fantasy, rare)'], ['riding_lizard', 'riding lizards (fantasy, rare)']];
+  const onAn = T.meta?.animals || ANIMALS.filter(([id]) => !id.match(/great_elk|riding_lizard/)).map(([id]) => id);
+  h += `<h3>Tree</h3><div class="row">${ANIMALS.map(([id, nmx]) => `<label class="trait" title="Domesticated animals (animals.py): wild range from the land, a taming homeland and date, and use spreading with the peoples who take it up, over the sea only in boats able to carry it. The fantasy animals are rare, and only in fantasy mode."><input type="checkbox" data-animal="${id}" ${onAn.includes(id) ? 'checked' : ''}> ${esc(nmx)}</label>`).join('')}</div>
     <div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
     <div class="row">${field('world mode', `<select data-m="mode" title="Fantasy (default): all the peoples, the fantasy goods (mithril, adamant, star-iron). Real world: humans only (the peoples marked real), real materials. Magic is a later setting (PW-696).">${['fantasy', 'real'].map((e) => `<option value="${e}"${(T.meta?.mode || 'fantasy') === e ? ' selected' : ''}>${e === 'real' ? 'real world (humans only)' : 'fantasy'}</option>`).join('')}</select>`)}
       ${field('arrivals from outside come', `<select data-m="portal_mode" title="Peoples with origin 'arrival' (elves, gnomes, tritons...): each at its best habitat (off), or through portals placed at random or at interesting places (PW-697)">${[['off', 'at their best habitat'], ['random', 'through portals at random'], ['sites', 'through portals at interesting sites']].map(([e, t]) => `<option value="${e}"${(T.meta?.portal_mode || 'off') === e ? ' selected' : ''}>${t}</option>`).join('')}</select>`)}
@@ -425,6 +427,12 @@ function onChange(e) {
     el.checked ? cur.add(el.dataset.ps) : cur.delete(el.dataset.ps);
     T.meta.portal_sites = [...cur];
     redraw(); return;
+  }
+  if (el.dataset.animal) {  // (meta.animals: the list of animals on; fantasy ones are rare and only in fantasy mode)
+    T.meta = T.meta || {};
+    const all = ['horse', 'dog', 'caprine', 'cattle', 'fowl', 'great_elk', 'riding_lizard'], cur = new Set(T.meta.animals || all.slice(0, 5));
+    el.checked ? cur.add(el.dataset.animal) : cur.delete(el.dataset.animal);
+    T.meta.animals = all.filter((x) => cur.has(x)); redraw(); return;
   }
   if (el.dataset.m) { T.meta = T.meta || {}; T.meta[el.dataset.m] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (el.value === '' ? undefined : +el.value) : el.value; redraw(); return; }
   if (el.dataset.wk) { const w = T.wish[+el.closest('[data-w]').dataset.w]; w[el.dataset.wk] = el.dataset.wk === 'weight' ? +el.value : el.value || undefined; redraw(); return; }
@@ -630,14 +638,21 @@ function drawResults() {
       <td class="muted">${esc((m.arrivals || []).slice(1, 5).map((a) => `${L[a.by]?.name || a.by} ${fmt(a.ago_kyr)}`).join('; '))}</td></tr>`;
   }
   h += '</table></div></div>';
-  // horses (horses.py, PW-688)
-  const hs = P.horses;
-  if (hs) {
-    const rs = Object.entries(hs.riders_share || {}).filter(([, v]) => v >= 0.02).sort((a, b) => b[1] - a[1]);
-    h += `<h2>Horses <a href="index.html?run=${encodeURIComponent(result.id)}&layer=horses" target="_blank" style="font-weight:normal;font-size:12px">(open the wild range and the riding front on the globe)</a></h2>
-      <div class="muted">${hs.wild_mkm2} Mkm² of wild range at the present (open temperate grassland and steppe); riding known over ${hs.riding_mkm2} Mkm². Date drawn: ${fmt(hs.date_drawn_kyr)} ago (anchor ${fmt(hs.anchor_kyr)}).</div>
-      ${(hs.tamed || []).map((t) => `<div>${t.first ? 'Horses were tamed' : 'Tamed again, on their own,'} ~${fmt(t.ago_kyr)} ago by the ${sw(t.line)}${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon}; ${t.wild_mkm2} Mkm² of wild range on that land)</span></div>`).join('') || `<div class="err">Never tamed: ${esc(hs.never || '')}</div>`}
-      ${rs.length ? `<div style="margin-top:4px">Riding known over: ${rs.map(([id, v]) => `${sw(id)}${nm(id)} ${Math.round(100 * v)}%${hs.took_up_kyr?.[id] != null ? ` <span class="muted">(from ${fmt(hs.took_up_kyr[id])} ago)</span>` : ''}`).join('; ')}</div>` : ''}`;
+  // animals (animals.py, PW-691) and the boats that carry them (PW-688)
+  const an = P.animals;
+  if (an) {
+    h += `<h2>Animals and boats <span class="muted" style="font-weight:normal;font-size:12px">(${esc(an.mode)} mode)</span></h2>
+      <div class="muted">Craft that carry animals over the sea: ${an.craft.map((c) => `${esc(c.name)} since ${fmt(c.since_kyr)} ago (${c.reach_km} km; ${esc(c.carries_up_to)})`).join('; ')}.</div>`;
+    for (const [aid, hs] of Object.entries(an.stocks)) {
+      const rs = Object.entries(hs.users_share || {}).filter(([, v]) => v >= 0.02).sort((a, b) => b[1] - a[1]);
+      h += `<h3>${esc(hs.label)}${hs.fantasy ? ` <span class="muted">(fantasy animal, ${esc(an.mode)} mode only)</span>` : ''} <a href="index.html?run=${encodeURIComponent(result.id)}&layer=${encodeURIComponent('animal: ' + aid)}" target="_blank" style="font-weight:normal;font-size:12px">(on the globe)</a></h3>
+        <div class="muted">${hs.wild_mkm2} Mkm² of wild range at the present; known over ${hs.known_mkm2} Mkm² (${hs.known_on_wild_mkm2} Mkm² of it wild range); crossed the sea ${hs.crossed} times. Date drawn: ${fmt(hs.date_drawn_kyr)} ago (anchor ${fmt(hs.anchor_kyr)}).</div>
+        ${(hs.tamed || []).map((t) => `<div>${t.first ? 'Tamed' : 'Tamed again, on their own,'} ~${fmt(t.ago_kyr)} ago by the ${sw(t.line)}${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} <span class="muted">(${t.lat}, ${t.lon}; ${t.wild_mkm2} Mkm² of wild range on that land)</span></div>`).join('') || `<div class="err">Never tamed: ${esc(hs.never || '')}</div>`}
+        ${(hs.crossings || []).length ? `<div class="muted">By boat: ${hs.crossings.slice(0, 6).map((c) => `${esc(c.landmass_name)} ${fmt(c.ago_kyr)} ago (${esc(c.craft)}, ${c.gap_km} km)`).join('; ')}${hs.crossed > 6 ? '; ...' : ''}</div>` : ''}
+        ${rs.length ? `<div style="margin-top:4px">Known over: ${rs.map(([id, v]) => `${sw(id)}${nm(id)} ${Math.round(100 * v)}%${hs.took_up_kyr?.[id] != null ? ` <span class="muted">(from ${fmt(hs.took_up_kyr[id])} ago)</span>` : ''}`).join('; ')}</div>` : ''}`;
+    }
+    const dy = Object.entries(an.dairy || {});
+    if (dy.length) h += `<h3>Dairy</h3><div>${dy.map(([id, v]) => `${sw(id)}${nm(id)}: ${Math.round(100 * v.milk_share)}% digest milk, ${Math.round(100 * v.dairy_share)}% keep dairy herds of ${v.animals.map((x) => esc(an.stocks[x].label)).join(', ')}`).join('<br>')}</div>`;
   }
   // the map
   if (P.ascii?.rows) {

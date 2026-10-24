@@ -28,4 +28,5 @@ catalogue, mark each entry `fantasy = true` or real and have the mode filter it 
 - [ ] viewer/workbench shows the mode on the domestication rows
 
 ## Updates
+- 2026-10-24: Built on branch fun6: fantasy rows (great_elk, riding_lizard) are `fantasy = true` in the animal table; `spec.parse` drops them in real mode (`animals`, `animals_force`), `rare` chance when listed in fantasy mode, `animals_force` for tests; the workbench and results show the mode on those rows; test_fantasy_animals_are_off_unless_forced_and_never_in_real_mode.
 - 2026-10-23: Created from inbox draft draft-mode-gates-fantasy-domestications.md (found by fun4).

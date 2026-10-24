@@ -1,0 +1,25 @@
+---
+title: The peoples' own sea crossings do not yet follow the craft ladder that now gates animals
+type: task
+status: todo
+parent: PW-688
+milestone: v2
+subsystem: timezoom
+effort: s
+impact: low
+found_by: fun6
+blocked_by: []
+relates: [PW-688, PW-702, PW-675]
+refs: [planet/lineages/crossing.py, planet/lineages/animal_defs.py, planet/lineages/spec.py]
+---
+
+## Description
+`animal_defs.craft_ladder()` (canoe or outrigger 60 kyr, 300 km, dogs and fowl; planked boat 6 kyr, 800 km, sheep and goats;
+sailing ship 3 kyr, 2500 km, horses and cattle) decides which animals cross which gaps, with the sea share a people needs to
+man each craft (0.05, 0.2, 0.3). People themselves still cross by `crossing.modes` (raft; canoes since CANOES_KYR over
+BOATS[1] = 300 km; voyaging since BOATS[3] = 6 kyr to 1500 km), unchanged on purpose so the peoples' draws stay comparable. So
+a people can settle an island that its animals only reach later, and the two ladders can drift apart. Make `crossing.modes`
+read the same ladder (reach and date per craft) and decide whether the sailing ship should lift the people's reach too.
+Also: animals land only on peopled cells (an empty island gets them with its settlers), and a landing is a chance per
+0.5 kyr (`BOAT_RATE`), fine for a first pass.
+- [ ] one ladder for people and animals
