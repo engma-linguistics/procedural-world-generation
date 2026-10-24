@@ -284,6 +284,8 @@ def update_vegetation(sim, e):
 ICE_TAU = icemass.SHEET_TAU  # Pa: yield stress of ice, sets the (Nye) profile of a sheet
 ICE_EDGE_M = icemass.EDGE_H  # m: ~400, a sheet's thinnest margin (its profile 10 km in from its edge)
 ICE_MAX = 4000.0  # m
+MARGIN_KM = 120.0  # km: a sheet's margin band (margin_band), melting as its edge: the width the rule was set at
+# (one ring of L6's ~120 km cells, PW-366); the sub-cell ramp (icemass.margin_ramp, PW-460) is its honest successor
 ICE_RINGS = 40  # at most this many rings of ablation zone around a sheet
 PASS_TOL = 0.002  # ... once the iced cells repeat but for this share of them (a few margin cells flickering)
 ICE_PASSES = 200  # a sheet settles in at most this many passes (a sheet's retreat or advance is ~1 cell a pass)
@@ -362,6 +364,19 @@ def ice_sheets(sim, land, bed, ground, old, sink=None, info=None, *, marine):
     return ice
 
 
+def margin_band(g, bare):
+    """The cells within MARGIN_KM of bare land (bare: land without ice), as hops of the grid's cells, at least
+    one: the band of a sheet whose snow and melt are its edge's (_ice_pass). In km, not cells (PW-725): one ring
+    at any cell size made the band, which melts as the sheet's outermost 10 km, half as wide at L7 as at L6, so
+    the same planet at the same dT grew ~2x the iced land and ~3x the ice at L7 from its first update
+    (docs/review/base-climate/v1-finish-3/)."""
+    rings = max(1, int(round(MARGIN_KM / (g.spacing * R_KM))))
+    band = np.asarray(bare, bool)
+    for _ in range(rings):
+        band = band | (np.add.reduceat(band[g.nbr_idx], g.nbr_off[:-1]) > 0)
+    return band
+
+
 def _start(sim, land, ground):
     """Where a new cap can start: snow outlasting the summer on bare ground,
     on average over the ice-age cycle's orbits (icemass.balance at no ice)."""
@@ -412,11 +427,11 @@ def _ice_pass(sim, land, bed, ground, old, marine, cost=None, start=None):
     # average over the ice-age cycle's orbits (bright ice feels less of them, mixed over the air around)
     tilt = sim.params.tilt
     start = _start(sim, land, ground) if start is None else start
-    # (a margin cell, old ice next to bare land, is a slope from the bare edge up to its inner neighbour: its
-    # snow and melt are its edge's, as the time zoom's margins (PW-366); at the cell-mean rise, ~800 m at L6,
-    # its own thickness would keep it as cold as the interior and the sheet would creep a ring a pass)
-    bare_nb = np.add.reduceat((land & (old <= 0))[g.nbr_idx], g.nbr_off[:-1]) > 0
-    h = np.where(old > 0, np.where(bare_nb, np.minimum(old, ICE_EDGE_M), old), ICE_EDGE_M)
+    # (the margin band, old ice within MARGIN_KM of bare land, is a slope from the bare edge up to the
+    # interior: its snow and melt are its edge's, as the time zoom's margins (PW-366); at the cell-mean rise,
+    # ~800 m at L6, its own thickness would keep it as cold as the interior and the sheet would creep a ring a pass)
+    band = margin_band(g, land & (old <= 0))
+    h = np.where(old > 0, np.where(band, np.minimum(old, ICE_EDGE_M), old), ICE_EDGE_M)
     cover = icemass.sheet_cover(g, old)
     # (as the time zoom's orbit_k, PW-114/PW-365: the air over bright ice brings the response of the land,
     # sea and ice around, each its own share of the land's: the sea INSOL_SEA, bright ice ICE_ABSORB; before,

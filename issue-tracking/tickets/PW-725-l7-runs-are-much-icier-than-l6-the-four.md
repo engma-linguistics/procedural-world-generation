@@ -2,7 +2,7 @@
 id: PW-725
 title: "L7 runs are much icier than L6: the four L7 showcase runs spend 63-79% of 300-1000 Myr in an icehouse, L6 a median 33% (24/32 seed-draws within the owner's 40%)"
 type: task
-status: todo
+status: done
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -38,3 +38,4 @@ interglacials within their icehouse (PW-700), so they look fine; their histories
 
 ## Updates
 - 2026-10-24: Created from inbox draft draft-l7-runs-icier-than-l6.md (found by v1-finish-2).
+- 2026-10-24: Done (v1-finish-3, be6f208). Cause: the run's margin band (melting as the sheet's outermost 10 km) was one ring of cells, ~120 km at L6, ~60 km at L7; same planet at the same dT grew ~2x iced land, ~3.5x ice at L7. Fix: earth.margin_band, MARGIN_KM 120 (L6 bit-identical, two rings at L7); levels within ~20% over dT -3..+2. L7 1 Gyr: 5/8 seed-draws on the bar, icehouse median 33% (= L6), from 0/4 at 68%. Showcase remake started (seeds 957317, 619496, 583167, 639472; ids to record on PW-202). docs/review/base-climate/v1-finish-3/.

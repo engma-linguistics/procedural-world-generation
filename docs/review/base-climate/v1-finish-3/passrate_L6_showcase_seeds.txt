@@ -1,0 +1,6 @@
+    base seed 53669: icehouse  43.2% (300-500   0%, 600-1000  54%), deep 22.7%, dT max +7.7 -> F | N1-N4 F
+    base seed 733847: icehouse  16.5% (300-500  28%, 600-1000   0%), deep  0.0%, dT max +10.9 -> ok | N1-N4 ok
+    base seed 819014: icehouse  54.5% (300-500  86%, 600-1000  35%), deep 12.5%, dT max +7.8 -> F | N1-N4 ok
+    base seed 958504: icehouse   9.1% (300-500   0%, 600-1000  16%), deep  0.0%, dT max +10.5 -> ok | N1-N4 ok
+base: owner's bar 2/4 (50%), icehouse median 30% (early 14, late 25), always-icebox 0, hellhole 0, N1-N4 3/4
+
