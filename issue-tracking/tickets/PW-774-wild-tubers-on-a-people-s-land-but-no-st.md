@@ -1,9 +1,10 @@
 ---
+id: PW-774
 title: "Wild tubers on a people's land but no staple: independent cultivation is 0.03/kyr per landmass (anja, run dcdfd4)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-721
-milestone: null
+milestone: later
 subsystem: timezoom
 effort: s
 impact: low
@@ -11,6 +12,8 @@ found_by: fun16
 blocked_by: []
 relates: [PW-721, PW-762]
 refs: [planet/lineages/animals.py, planet/lineages/crop_defs.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -27,3 +30,7 @@ Options: A leave (diffusion-and-isolation is the intended story, and anja have w
 tamers' farm/forage share and the wild area on the landmass (a big wild range with farmers on it is a likelier cradle);
 C raise `again` to 0.06. Lean A (the wheat/maize rows already carry anja; isolated crops give regional flavour); B if the
 owner wants staples wherever the wild plant is.
+
+## Updates
+- 2026-10-24: Status needs-decision -> todo. Coordinator: option A (leave) for now; option B (rate scaled by tamers and wild area) is the later refinement.
+- 2026-10-24: Created from inbox draft draft-crop-independent-taming-rate.md (found by fun16).

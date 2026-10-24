@@ -1,4 +1,5 @@
 ---
+id: PW-775
 title: "Marine peoples v0: design note for PW-729 (coast realm first, sea realm second)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun16
 blocked_by: []
 relates: [PW-729, PW-770]
 refs: [planet/lineages/history.py, planet/lineages/spread.py, planet/lineages/landuse.py, planet/lineages/contacts.py, planet/lineages/output.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -33,3 +36,6 @@ steps, each a separate small merge:
 Cost: step 1 is a small constant over the K build; step 2 adds the ocean cells (about 2/3 of the grid) to the spread passes of
 sea lines only (few lines), so well under +10% at L7. Acceptance: land peoples' areas and populations byte-identical when no
 line has a realm; golden unchanged.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-marine-peoples-v0-design.md (found by fun16).
