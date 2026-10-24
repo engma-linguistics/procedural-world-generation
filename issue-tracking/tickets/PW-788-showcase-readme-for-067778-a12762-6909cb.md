@@ -2,7 +2,7 @@
 id: PW-788
 title: Showcase README for 067778, a12762, 6909cb still describes dairy as fresh-only (written before PW-784)
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: docs
@@ -23,5 +23,6 @@ the other three worlds (a703b0, e06714, 7fd2b7) are the old numbers. If those wo
 - [ ] README rows for the three worlds match a run made with the dairy rule.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Re-runs b36648 (067778), 1184cc (a12762), b4e3c2 (6909cb); README refreshed.
 - 2026-10-24: Created from inbox draft draft-showcase-worlds-rerun-for-dairy.md (found by fun20).
 - 2026-10-24: fun21: re-ran seven_meals on 067778, a12762, 6909cb (runs b36648, 1184cc, b4e3c2), deleted a703b0/e06714/7fd2b7, README notes, table and the 104de8 section refreshed.

@@ -2,7 +2,7 @@
 id: PW-778
 title: "Marine peoples v0 follow-ups: the viewer's peoples layer at sea, and the deep folk's trench and vent habitat"
 type: task
-status: todo
+status: done
 parent: PW-729
 milestone: v2
 subsystem: viewer
@@ -30,5 +30,6 @@ storm giants on open water, contacts and the brief's `sea_peoples`. Left out on 
 - [ ] decide the deep folk's stand-in (see above)
 
 ## Updates
+- 2026-10-24: Status todo -> done. Viewer part merged 615c1ff; editor realm/hatch in PW-795, deep folk vents remain open in PW-777/PW-729 notes.
 - 2026-10-24: Created from inbox draft draft-marine-peoples-viewer-and-vents.md (found by fun17).
 - 2026-10-24: fun21: map half done in viewer/index.html: marine peoples drawn on sea cells (their colour over the ocean, plain/whole/blend layers), legend "(at sea)", panel marks "sea people, shore ring / open sea", hover card too; checked on run 104de8 (merfolk, storm giants). Editor realm select, hatch and sea area read-outs left (draft-peoples-editor-realm-select).
