@@ -49,5 +49,6 @@ curve turns out to be right and the owner wants the preset to show emerging land
 - [ ] the preset reads as intended (not an always-icebox unless the owner picks C)
 
 ## Updates
+- 2026-10-24: v2-climate-1 (docs/review/base-climate/v2-climate-1/): the heat_start 2 decline is within the literature. The heat-only outgassing step over 300-1000 Myr is x0.68, against x0.66-0.82, and the 600 Myr half-life is at the fast end. A heat_start 1 control is just as cold (dT -8.5 at 1 Gyr), so the mantle is not the cause. The cause is the 300 Myr reference freeze locking a ~1.3x sink surplus while the land emerges (draft-co2-ref-freeze-emerging-land). Recipe at L6: offset +8 passes 2/2, while +4 and +6 fail after 1 Gyr. The L7 check was stopped for the benchmark (draft-water-world-offset-l7-check). No physics change.
 - 2026-10-24: Status needs-decision -> todo. Coordinator (geophysics delegated): check the outgassing decline (heat_start=2 mantle cooling) first; recipe re-pick only after.
 - 2026-10-24: Created from inbox draft draft-water-world-recipe-icebox.md (found by v1-finish-8).
