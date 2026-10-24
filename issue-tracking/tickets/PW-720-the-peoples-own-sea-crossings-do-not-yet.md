@@ -28,4 +28,5 @@ Also: animals land only on peopled cells (an empty island gets them with its set
 - [ ] one ladder for people and animals
 
 ## Updates
+- 2026-10-24: Built on branch fun7: crossing.modes reads animal_defs.craft_ladder (canoe 300 km from 60 kyr at sea share 0.02, planked boat 1500 km from 6 kyr at 0.2, sailing ship 2500 km from 3 kyr at 0.3); the ladder's planked reach went 800 -> 1500 km because 800 raised the empty land by 9 points (1df1c3 real, seed 7: 15.9% -> 24.8%).
 - 2026-10-23: Created from inbox draft draft-boats-for-peoples-follow-the-craft-ladder.md (found by fun6).

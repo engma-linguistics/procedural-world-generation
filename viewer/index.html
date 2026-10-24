@@ -909,6 +909,50 @@ function animalsColor(i, c, id) {
   if (r) c.lerp(new THREE.Color(ANIMAL_COLS[st.bit % 8]), 0.8);
   return c;
 }
+// Crops (planet/lineages/crops.py, PW-721): the same as the animals, per crop: its wild range (green) and where it is known (its colour);
+// the layers crop_wild / crop_known hold one bit per crop (meta.crops.stocks[id].bit).
+const CROP_COLS = ['#e6c829', '#7aa650', '#d6b25e', '#4aa3c7', '#c9a227', '#f2d04a', '#a67c52', '#c06b3a', '#e3c34f', '#9fb46a', '#7d6bb0', '#d4482f'];
+function cropStocks() { return V.run?.meta?.crops?.stocks || {}; }
+function cropsColor(i, c, id) {
+  const L = V.layers, elev = L.elevation, st = cropStocks()[id];
+  if (elev[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  if (!st) return c.copy(BARE);
+  const w = ((L.crop_wild?.[i] || 0) >> st.bit) & 1, r = ((L.crop_known?.[i] || 0) >> st.bit) & 1;
+  c.copy(BARE);
+  if (w) c.lerp(ANIMAL_WILD, 0.75);
+  if (r) c.lerp(new THREE.Color(CROP_COLS[st.bit % 12]), 0.8);
+  return c;
+}
+function cropRows(i, R) {  // the crops known in this frame's cell, and the wild ranges it lies in
+  const L = V.layers;
+  if (!L.crop_wild) return;
+  const known = [], wild = [];
+  for (const [, st] of Object.entries(cropStocks())) {
+    if (((L.crop_known?.[i] || 0) >> st.bit) & 1) known.push(st.label);
+    else if (((L.crop_wild?.[i] || 0) >> st.bit) & 1) wild.push(st.label);
+  }
+  if (known.length) R('place', '', known.join(', '), { lab: 'crops known', ess: true });
+  if (wild.length) R('place', '', wild.join(', '), { lab: 'wild range of (crops)' });
+}
+// Fuels (planet/lineages/fuels.py, PW-722): what the cell burns to cook, at the present (meta.fuels: the lead fuel and each fuel's share)
+function fuelColor(i, c) {
+  const L = V.layers, F = V.run.meta.fuels;
+  if (L.elevation[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
+  if (L.ice && L.ice[i] > 0) return c.copy(ICE);
+  if (!anthroOn() || !V.anthro.fuel_lead) return c.copy(BARE);
+  const d = V.anthro.fuel_lead[i];
+  if (d === 255) return c.copy(NOBODY);
+  const name = F.names[d];
+  c.set(F.colors[name]);
+  return c.lerp(NOBODY, 0.45 * (1 - V.anthro['fuel_' + name][i] / 100));
+}
+function fuelRows(i, R) {
+  const F = V.run.meta.fuels;
+  if (!F || !anthroOn() || !V.anthro.fuel_lead || V.anthro.fuel_lead[i] === 255) return;
+  const bits = F.names.map((k) => [k, V.anthro['fuel_' + k][i]]).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}%`);
+  R('place', '', bits.join(', '), { lab: 'fuel (present)', ess: true });
+}
 // Peoples change the land (planet/lineages/landuse.py, PW-662): the run's anthropogenic overlay at the present
 // (meta.anthro: cropland, pasture, burned grassland, managed woods, settlement density, tree cover left) as the
 // 'land use' layer, and as a tint on the vegetation colours (tree cover, vegetation, satellite) where land is
@@ -920,8 +964,10 @@ const A_CROP = new THREE.Color('#f0b429'), A_PAST = new THREE.Color('#b9d36a'), 
 function anthroLoad() {
   const a = V.run.meta.anthro, id = V.run.id;
   V.anthroFor = id; V.anthro = {};
-  Promise.all(Object.entries(a.layers).map(([k, s]) => fetch(`../runs/${id}/${s.file}`).then((r) => r.arrayBuffer())
-    .then((b) => { V.anthro[k] = new Uint8Array(b); }))).then(() => { if (V.run.id === id) { V.anthroReady = id; paint(); } }).catch(() => {});
+  const fl = V.run.meta.fuels?.layers || {};  // (the fuel layers ride along: V.anthro.fuel_<name>)
+  Promise.all([...Object.entries(a.layers).map(([k, s]) => [k, s]), ...Object.entries(fl).map(([k, s]) => ['fuel_' + k, s])]
+    .map(([k, s]) => fetch(`../runs/${id}/${s.file}`).then((r) => r.arrayBuffer())
+    .then((b) => { V.anthro[k] = new Uint8Array(b); }))).then(() => { if (V.run.id === id) { V.anthroReady = id; paint(); if (picked) renderZoomBox(); } }).catch(() => {});
 }
 // A finished world with a peoples run (run.meta.world = the world id): the run's overlay tints the world's own
 // satellite, vegetation and biome colours (PW-669). Newest peoples run, or &peoples=RUN (&peoples=0: none). The
@@ -1063,6 +1109,8 @@ function cellColors(layer) {
     }
     else if (layer === 'land use') landUseColor(i, c);
     else if (layer.startsWith('animal: ')) animalsColor(i, c, layer.slice(8));
+    else if (layer.startsWith('crop: ')) cropsColor(i, c, layer.slice(6));
+    else if (layer === 'fuels') fuelColor(i, c);
     else if (layer === 'vegetation') {
       if (elev[i] <= 0) c.copy(OCEAN); else c.set(V.vegColors[L.vegetation[i]] || '#888');
     } else if (layer === 'plant type') {
@@ -1153,7 +1201,8 @@ function availableLayers() {
   if (V.tz) return ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate'].concat(V.tzEarth ? [] : ['plates', 'crust age'],
     hasLayer('glacial_erosion') ? ['glacial erosion', 'glacial till', 'glacial outwash', 'glacial loess'] : [], hasLayer('tree_cover') ? ['tree cover'] : [],
     hasLayer('peoples') ? ['peoples', ...(hasLayer('mix_second') ? ['peoples blend'] : []), 'peoples mix', 'peoples overlay'].concat(
-      Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], V.run?.meta?.anthro ? ['land use'] : []);
+      Object.keys(V.run.layers).filter((k) => k.startsWith('body_')).map((k) => 'body: ' + k.slice(5))) : [], hasLayer('animal_wild') ? Object.keys(animalStocks()).map((k) => 'animal: ' + k) : [], hasLayer('crop_wild') ? Object.keys(cropStocks()).map((k) => 'crop: ' + k) : [],
+    V.run?.meta?.anthro ? ['land use'] : [], V.run?.meta?.fuels ? ['fuels'] : []);
   if (V.kind === 'run') return ['elevation', 'plates', 'crust age'].concat(hasLayer('ice') ? ['bed under ice'] : [],
     hasLayer('rock') ? (hasLayer('surface_rock') ? ['surface rock'] : []).concat(['rock type', 'crust thickness', 'sediment', 'rainfall']) : [],
     hasLayer('climate') ? ['temperature', 'climate'] : [], hasLayer('landform') ? ['landforms'] : [],
@@ -2250,6 +2299,14 @@ function renderLegend() {
     const id = state.layer.slice(8), h = animalStocks()[id], t = h?.tamed?.[0];
     el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % 8], 'tamed and known') +
       `<span class="muted">${h?.fantasy ? `fantasy animal (${V.run.meta.mode} mode); ` : ''}${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
+  } else if (state.layer.startsWith('crop: ')) {
+    const id = state.layer.slice(6), h = cropStocks()[id], t = h?.tamed?.[0];
+    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % 12], 'cultivated and known') +
+      `<span class="muted">${h?.fantasy ? `fantasy crop (${V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
+  } else if (state.layer === 'fuels') {
+    const F = V.run.meta.fuels;
+    el.innerHTML = F.names.map((k) => sw(F.colors[k], F.phrases[k])).join('') + sw('#5a5a52', 'nobody') +
+      `<span class="muted">${anthroOn() ? 'the leading fuel at the present, paler where it is a smaller share' : 'step to the last frame (the present) to see it'}</span>`;
   } else if (state.layer === 'land use') {
     el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
       sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
@@ -2389,6 +2446,7 @@ const LAYER_HINTS = {
   landforms: 'Landform classes: what shaped the ground here (folds, rifts, volcanoes, plains, glacial forms...).',
   vegetation: 'Vegetation types from the mix of plant functional types that grow in this climate.',
   'tree cover': 'Tree canopy cover: the share of the ground under tree crowns.',
+  fuels: 'Peoples runs, at the present: what each cell burns to cook and heat (wood, charcoal, dung, peat, straw, grass, driftwood, coal), from the trees left, the herds, the peat, the crops and the coal (planet/lineages/fuels.py).',
   'land use': 'Peoples runs, at the present: cropland, pasture, burned grassland and managed woods around the peoples there, settlement density in red (planet/lineages/landuse.py).',
   'plant cover': 'Plant cover: the share of the ground shaded by plants of any kind.',
   'canopy height': 'Height of the tallest plant layer.',
@@ -3011,7 +3069,7 @@ function cellInfo(i) {
   R('place', 'elevation', `${L.elevation[i]} m${V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); animalRows(i, R); anthroRows(i, R); }
+  if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
   if (V.kind === 'world' && V.wAnthro && state.anthro !== false) anthroRows(i, R);
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
@@ -4122,7 +4180,7 @@ const COLOUR_NEEDS = {
   elevation: ['ice', ...LAKE_NEEDS], 'ice thickness': ['ice'], 'bed under ice': ['ice'], plates: ['plate', 'crust', 'plate_boundary'], 'crust age': ['crust', 'crust_age'],
   'rock type': ['rock'], 'surface rock': ['surface_rock'], 'crust thickness': ['crust_thickness'], sediment: ['sediment_cover'],
   rainfall: ['precipitation'], temperature: ['temperature'], climate: ['climate'],
-  'land use': ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
+  'land use': ['tree_cover', 'ice'], fuels: ['tree_cover', 'ice'], peoples: ['peoples', 'peoples_mix', 'peoples_share', 'peoples_whole'], 'peoples mix': ['peoples_mix'], 'peoples overlay': ['peoples', 'peoples_overlay'],
   'glacial erosion': ['glacial_erosion'], 'glacial till': ['glacial_till'], 'glacial outwash': ['glacial_outwash'], 'glacial loess': ['glacial_loess'],
   landforms: ['landform', 'landform_age', 'strata_top', 'strata_top_km', 'strata_next', 'strata_dip', 'fold_wavelength'],
   vegetation: ['vegetation', 'tree_cover', 'npp'], 'tree cover': ['vegetation', 'tree_cover', 'npp'], NPP: ['vegetation', 'tree_cover', 'npp'],
@@ -4134,11 +4192,11 @@ const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_
 function layersNeeded() {
   // elevation always; lake_kind too, so hovering any layer names the lake (its depth comes with the elevation layer);
   // ice, which says which cells are land (see iceBed)
-  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || []), ...(state.layer.startsWith('animal: ') ? ['animal_wild', 'animal_known'] : [])];
+  const want = ['elevation', 'lake_kind', 'ice', ...(COLOUR_NEEDS[state.layer] || []), ...(state.layer.startsWith('animal: ') ? ['animal_wild', 'animal_known'] : []), ...(state.layer.startsWith('crop: ') ? ['crop_wild', 'crop_known'] : [])];
   if (state.layer.startsWith('body: ')) want.push('peoples_whole', 'body_' + state.layer.slice(6));
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', 'animal_wild', 'animal_known', 'mix_lead', 'mix_lead_share', 'mix_second',
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', 'animal_wild', 'animal_known', 'crop_wild', 'crop_known', 'mix_lead', 'mix_lead_share', 'mix_second',
     'mix_second_share', 'mix_other_share', ...Object.keys(V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);

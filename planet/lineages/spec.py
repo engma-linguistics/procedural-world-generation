@@ -22,6 +22,7 @@ meta.mode (PW-695): "fantasy" (default; every line, the fantasy goods) or "real"
 the humans, leave the rest out as if disabled; the fantasy goods (FANTASY_GOODS) drop out of [[use]]). Magic is PW-696.
 meta.animals / animals_force / animals_at (PW-691, PW-710): the domesticable animals (animal_defs.TABLE; default every
 real one), the fantasy ones whose rare taming is forced (tests) and the anchor dates; fantasy animals drop out in real mode.
+meta.crops / crops_force / crops_at (PW-721): the same for the staple plants (crop_defs.TABLE).
 meta.portal_mode / portals / portal_sites (PW-697): arrivals from outside come "off" (each at its best habitat),
 or through N portals placed "random"ly or at interesting "sites" (history.History.portal_cells).
 """
@@ -50,6 +51,7 @@ TRAITS = {
     "insular": {},  # (insularity and exploration: DEMOGRAPHY)
     "cosmopolitan": {},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
+    "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
 LATE_SEA_KYR = 3.0  # short sea hops by boat (the spread's sea factor) from then, for a sea share >= SHORT_HOP_SHARE
@@ -325,6 +327,9 @@ class Tree:
     animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
     animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
     animals_at: dict = field(default_factory=dict)  # meta.animals_at: id -> anchor time of the taming, kyr ago (default: the table's)
+    crops: list[str] | None = None  # meta.crops: the cultivated plants (crop_defs.IDS) of the world; None: every real one; [] none
+    crops_force: list[str] = field(default_factory=list)  # meta.crops_force: fantasy crops whose rare domestication is certain (tests)
+    crops_at: dict = field(default_factory=dict)  # meta.crops_at: id -> anchor time of the first cultivation, kyr ago
     mode: str = MODE_DEFAULT  # meta.mode: 'fantasy' (all the peoples, the fantasy goods) or 'real' (only the lines marked real, real goods; PW-695)
     portal_mode: str = "off"  # meta.portal_mode: arrivals from outside: 'off' (each at its best habitat), 'random' or 'sites' (PW-697)
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
@@ -616,6 +621,17 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     if mode == "real":  # the fantasy domestications are left out in the real-world mode (PW-710)
         t.animals = [x for x in (AD.REAL_IDS if t.animals is None else t.animals) if not AD.BY_ID[x].fantasy]
         t.animals_force = [x for x in t.animals_force if not AD.BY_ID[x].fantasy]
+    from . import crop_defs as CD
+    cm = meta.get("crops")
+    t.crops = None if cm is None else [str(x) for x in cm]
+    t.crops_force = [str(x) for x in meta.get("crops_force", [])]
+    for x in [*(t.crops or []), *t.crops_force, *(meta.get("crops_at") or {})]:
+        if x not in CD.BY_ID:
+            raise ValueError(f"meta.crops: unknown crop '{x}' (known: {', '.join(CD.IDS)})")
+    t.crops_at = {str(k): parse_ago(v) for k, v in (meta.get("crops_at") or {}).items() if v not in (None, "")}
+    if mode == "real":  # the fantasy plants are left out in the real-world mode
+        t.crops = [x for x in (CD.REAL_IDS if t.crops is None else t.crops) if not CD.BY_ID[x].fantasy]
+        t.crops_force = [x for x in t.crops_force if not CD.BY_ID[x].fantasy]
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
     t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
     if t.era not in ERAS:
@@ -667,6 +683,9 @@ def to_raw(t: Tree) -> dict:
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"animals": t.animals} if t.animals is not None else {}),
                      **({"animals_force": t.animals_force} if t.animals_force else {}),
-                     **({"animals_at": {k: f"{v:g} kyr" for k, v in t.animals_at.items()}} if t.animals_at else {})},
+                     **({"animals_at": {k: f"{v:g} kyr" for k, v in t.animals_at.items()}} if t.animals_at else {}),
+                     **({"crops": t.crops} if t.crops is not None else {}),
+                     **({"crops_force": t.crops_force} if t.crops_force else {}),
+                     **({"crops_at": {k: f"{v:g} kyr" for k, v in t.crops_at.items()}} if t.crops_at else {})},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

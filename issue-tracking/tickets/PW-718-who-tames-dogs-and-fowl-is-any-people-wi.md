@@ -28,5 +28,6 @@ Effects are small (dogs: speed x1.15, forage capacity +10%), so this is about th
 - [ ] dogs are tamed by a foraging people in the real mode (humans), by the table's tamers in fantasy mode
 
 ## Updates
+- 2026-10-24: Built on branch fun7: landuse.shares gains forage (the foraging use or the new hunter trait) and gather; a people with no use row is no longer a forager; dogs are tamed by hunters and forest foragers (arctic hunters in the real mode).
 - 2026-10-23: Fold into the crops lane: tamers by trait (foraging/hunting use), not by absence of farm/herd.
 - 2026-10-23: Created from inbox draft draft-animal-tamers-by-trait.md (found by fun6).

@@ -314,6 +314,14 @@ def cmd_lineages(args):
     print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
 
 
+def cmd_fuels(args):
+    """Adds (or redoes) the fuel layers and story lines of peoples runs in place (PW-722); needs the land use (planet landuse)."""
+    from .lineages import fuels as FU
+    for ref in args.runs:
+        sm = FU.write(S.find_run(ref), report=False)
+        print(ref, "\n".join(FU.lines_for_report(sm)))
+
+
 def cmd_landuse(args):
     """Adds (or redoes) the anthropogenic land-cover layers of peoples runs in place (PW-662)."""
     from .lineages import landuse as LU
@@ -599,6 +607,11 @@ def main():
                                         "grassland, managed woods, settlement density; PW-662) in place")
     lu.add_argument("runs", nargs="+", help="peoples run ids")
     lu.set_defaults(func=cmd_landuse)
+
+    fu = sub.add_parser("fuels", help="add or redo a peoples run's fuel layers (wood, charcoal, dung, peat, straw, grass, driftwood, coal) "
+                                      "and each people's cooking-fuel line, in place (PW-722); the run needs its land use")
+    fu.add_argument("runs", nargs="+", help="peoples run ids")
+    fu.set_defaults(func=cmd_fuels)
 
     ex = sub.add_parser("export", help="export a world or zoom for game engines: 16-bit heightmap tiles, splat and "
                                        "class maps, GeoJSON features, manifest.json -> exports/<id>/")

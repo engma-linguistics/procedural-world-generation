@@ -239,7 +239,11 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     # the voyages, sails further, PW-650, PW-677)
     assert C.modes(walker, 100.0) == [("raft",) + SP.HOPS["raft"][:2]]
     canoe = dict((w, (r, L)) for w, r, L in C.modes(walker, 10.0))["seafaring"]
-    assert canoe[1] == SP.BOATS[1] and canoe[1] < dict((w, L) for w, _, L in C.modes(walker, 1.0))["seafaring"]
+    # (PW-720: one craft ladder for peoples and animals: a default people only paddles canoes; planked boats need a sea share of 0.2, sailing ships 0.3)
+    assert canoe[1] == SP.BOATS[1] and dict((w, L) for w, _, L in C.modes(walker, 1.0))["seafaring"] == canoe[1]
+    mar = SP.Lineage("m", sea_share=0.25)
+    reach = lambda ln, t: dict((w, L) for w, _, L in C.modes(ln, t))["seafaring"]  # noqa: E731
+    assert reach(mar, 10.0) == 300.0 and reach(mar, 5.0) == 1500.0 and reach(mar, 1.0) == 1500.0 and reach(SP.Lineage("t", sea_share=0.5), 1.0) == 2500.0
     assert C.modes(SP.Lineage("w0", sea_share=0.0), 1.0) == [("raft",) + SP.HOPS["raft"][:2]]
     boat = dict((w, (r, L)) for w, r, L in C.modes(walker, 1.0))["seafaring"]
     sailor = dict((w, (r, L)) for w, r, L in C.modes(SP.Lineage("s", traits=["seafaring"]), 1.0))["seafaring"]
@@ -843,3 +847,79 @@ def test_recent_rain_is_a_full_climate_every_2_kyr(faketz):
     old = R.Pass(faketz, 40.0, R.RecentParams(kyr=10, seed=3, climate_every=0))
     scaled = old.fields(-8.0, variability=False)["precipitation"]
     assert old._clim is None and not np.allclose(scaled, rn[1])  # (a different rain: the climate's own)
+
+
+# ---- crops (PW-721), who tames by trait (PW-718) and fuels (PW-722) -------------------------------------------------
+def test_crop_ranges_read_the_land_and_widen_for_growing():
+    from planet.lineages import crop_defs as CD
+    n = 5  # temperate plain, warm wet lowland, hot dry desert, cold tundra, cool highland
+    env = {"temperature": np.array([12, 26, 30, -8, 8.0]), "precipitation": np.array([600, 2200, 60, 250, 900.0]),
+           "tree_cover": np.array([10, 40, 0, 0, 20.0]), "elevation": np.array([100, 50, 100, 100, 2500.0]), "ice": np.zeros(n)}
+    tags = {"wetland": np.array([0, 1, 0, 0, 0], bool), "volcanic": np.zeros(n, bool), "hills": np.zeros(n, bool)}
+    land = np.ones(n, bool)
+    wheat, rice, potato = (CD.BY_ID[k].wild(env, tags, land) for k in ("wheat", "rice", "potato"))
+    assert wheat[0] > 0.9 and wheat[2] == 0 and wheat[3] == 0  # (open temperate ground; not desert or tundra)
+    assert rice[1] > 0.5 and rice[0] == 0 and rice[2] == 0  # (warm wet flats only)
+    assert potato[4] > 0.5 and potato[1] == 0  # (cool uplands, not the hot lowland)
+    assert (CD.BY_ID["wheat"].wild(env, tags, land, widen=0.6) >= wheat).all()  # (grown past where it grew wild)
+    assert (CD.BY_ID["wheat"].wild(env, tags, np.zeros(n, bool)) == 0).all()
+    assert [a.id for a in CD.resolve(None, [], "fantasy")] == list(CD.REAL_IDS) and not any(a.fantasy for a in CD.resolve(None, ["emberpod"], "real"))
+    assert "emberpod" in [a.id for a in CD.resolve(None, ["emberpod"], "fantasy")]
+    raw = {"meta": {"crops": ["wheat"], "crops_force": ["emberpod"], "mode": "real"}, "lineage": [{"id": "a", "origin": "root", "at": "9 kyr", "real": True}]}
+    assert SP.parse(raw).crops == ["wheat"] and SP.parse(raw).crops_force == []
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"crops": ["manna"]}})
+
+
+def test_hunters_tame_dogs_not_whoever_lacks_a_farm_or_herd_use():
+    from planet.lineages import landuse as LU
+    raw = {"meta": {"name": "h", "seed": 1}, "lineage": [
+        {"id": "plain", "origin": "root", "at": "30 kyr"},
+        {"id": "hunt", "origin": "root", "at": "30 kyr", "traits": ["hunter"]},
+        {"id": "farm", "origin": "root", "at": "30 kyr", "traits": ["agricultural"]}],
+        "use": [{"by": "agricultural", "good": "fertile"}]}
+    t = SP.parse(raw)
+    assert LU.shares(t, t.lines["plain"])["forage"] == 0.0  # (no use of any food good: no longer counted a forager)
+    assert LU.shares(t, t.lines["hunt"])["forage"] == 1.0 and LU.shares(t, t.lines["farm"])["forage"] == 0.0
+
+
+def test_crops_are_cultivated_by_farmers_add_capacity_and_leave_layers(faketz, monkeypatch):
+    import dataclasses
+    from planet.lineages import crop_defs as CD
+    wild = lambda env, tags, land, widen=0.0: np.where(land & (np.abs(env["temperature"] - 12) < 8 + 6 * widen), 0.9, 0.0)  # noqa: E731
+    wheat = dataclasses.replace(CD.BY_ID["wheat"], wild=wild)
+    monkeypatch.setattr(CD, "TABLE", tuple(wheat if a.id == "wheat" else a for a in CD.TABLE))
+    monkeypatch.setattr(CD, "BY_ID", {a.id: a for a in CD.TABLE})
+    tree = _animal_tree(())
+    tree.crops, tree.crops_at = ["wheat"], {"wheat": 12.0}
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(tree, ps, tries=1)
+    st = pres["crops"]["stocks"]["wheat"]
+    assert st["tamed"] and st["tamed"][0]["line"] == "farm" and st["tamed"][0]["first"] and st["known_mkm2"] > 0 and st["grown_mkm2"] > 0
+    assert st["adoption"]["farm"] > st["adoption"].get("herd", 0.0) and st["propensity"]["farm"] > st["propensity"]["herd"]
+    know = h.crops.know()
+    assert know.max() > 0.5 and know.max() <= 1.0 and np.all(np.asarray(h.crops.k_mult(h.idx["herd"])) >= 1.0)
+    out = O.save(h, res, pres, name="crop test")
+    run = json.loads((out / "run.json").read_text())
+    assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint16"
+    assert any(e["kind"] == "crops" for e in h.events) and "first to cultivate wheat and barley" in run["meta"]["lineages"][h.idx["farm"]]["story"]
+    assert "Crops (PW-721)" in (out / "run.txt").read_text()
+
+
+def test_fuels_follow_trees_herds_peat_crops_and_coast():
+    from planet.lineages import fuels as FU
+    # forest, steppe herd country, bog, grain plain, treeless coast, dense town in woods; coal outcrop
+    z = np.zeros(6)
+    sh = FU.mix(tc=np.array([0.9, 0.02, 0.05, 0.1, 0.0, 0.7]), pasture=np.array([0, 0.5, 0.0, 0.1, 0.0, 0.0]), crop=np.array([0, 0, 0, 0.6, 0.0, 0.2]),
+                dens=np.array([2, 2, 2, 5, 2, 40.0]), herd_known=np.array([0, 1, 1, 1, 1, 1.0]), peat_m=np.array([0, 0, 2.0, 0, 0, 0.0]),
+                straw_mix=np.full(6, 0.9), graze=np.array([0.1, 0.8, 0.2, 0.3, 0.1, 0.1]), coast=np.array([0, 0, 0, 0, 1, 0], bool), coal=z)
+    lead = [FU.FUELS[int(np.argmax([sh[k][i] for k in FU.FUELS]))] for i in range(6)]
+    assert lead[:5] == ["wood", "dung", "peat", "straw", "drift"], lead
+    assert all(abs(sum(sh[k][i] for k in FU.FUELS) - 1) < 1e-9 for i in range(6)) and sh["charcoal"][5] > sh["charcoal"][0] >= 0  # (towns burn charcoal)
+    nobody = FU.mix(z, z, z, z, z, z, z, z, z.astype(bool), z)
+    assert all(nobody[k].sum() == 0 for k in FU.FUELS)  # (no people, no fuel)
+    c = FU.mix(tc=np.array([0.1]), pasture=np.zeros(1), crop=np.zeros(1), dens=np.array([3.0]), herd_known=np.zeros(1), peat_m=np.zeros(1),
+               straw_mix=np.zeros(1), graze=np.zeros(1), coast=np.zeros(1, bool), coal=np.array([0.9]))
+    assert c["coal"][0] > c["wood"][0]
+    assert FU.sentence([("dung", 0.7), ("wood", 0.2)]) == "It cooks mostly over dung fires."
+    assert FU.sentence([("wood", 0.45), ("peat", 0.3), ("dung", 0.1)]) == "It cooks over wood fires and peat fires."
