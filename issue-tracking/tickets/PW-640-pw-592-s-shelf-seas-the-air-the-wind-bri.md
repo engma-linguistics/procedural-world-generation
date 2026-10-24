@@ -2,7 +2,7 @@
 id: PW-640
 title: "PW-592's shelf seas (the air the wind brings) is green on every Earth bar, but the run's chaos turns three fixture tests red: sim4 draws a colder world (run dT +5.10 -> +2.01) and the forest-to-tundra test's forcing goes +0.079 W/m2; the cold-moment fixture's first plausible seed becomes 29 (0.28% under sheets)"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v2
 subsystem: ocean
@@ -45,6 +45,7 @@ Options:
 Coordinator (2026-10-23 night): this is the third physics change tonight blocked only by chaotic single-world fixtures (PW-623 cold moment, PW-638 endings, now the forest-to-tundra forcing test). Each lane traced the flip to the run's chaos with a climate swap. Coordinator lean for one ruling covering all three: make these time-zoom/ice fixtures multi-seed with a pass-rate bar, in line with the owner's seed-pass rule (~70% of seeds pass), each seed's assertion unchanged; seeds and moments chosen by a fixed rule (not by outcome). Costs test time (a few L4 300 Myr runs, cached per session). Until then, held: branch worktree-agent-a2b66e784ed5186c3 (1d076ad, the shelf-air rule).
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): merged in main (merge lane 1024); decided by merging under the owner's mechanism rule.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Correction 2 (lane A21, 240 worlds via climate_offset +-0.001 C re-rolls): main passes the forest test 103/144 (72%), A20 63/96 (66%), ~1 SE apart; mean F identical (-0.054 vs -0.053). A20's 12/24 was the tail of the draw; its nudged draw passes every multi-seed bar except none. No physics side effect: the shelf-air rule is ready on the physics; merge waits only on the fixture ruling (PW-643). Under PW-643's 70%/24 bar main itself is red in 3 of 4 draws.
 - 2026-10-23: Correction (multi-seed lane, PW-643): over 24 seeds the forest-to-tundra test fails on 12/24 worlds from A20's runs vs 4/24 on main (~0.7% by chance), and A20's climate on main's worlds gives main's numbers: so A20 changes what the runs make, a real multi-world signal, not one world's luck. The single-world climate swap couldn't show that. A20 stays held as a physics question (why do its runs' worlds force positive under forest loss?).

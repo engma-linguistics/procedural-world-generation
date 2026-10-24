@@ -2,7 +2,7 @@
 id: PW-622
 title: "Zoom barrier islands as terrain: opt-in add-on (--terrain) or a step of planet zoom?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-097
 milestone: v2
 subsystem: zoom
@@ -30,4 +30,5 @@ docs/review/coast_detail/zoom_ccf03a_barrier.png.
 - [ ] lagoons count as sheltered water in humanuse harbours
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): B: barrier islands as a step of planet zoom before rivers, satellite, coastal life and harbours (zoom goldens move, OK'd).
 - 2026-10-23: Created from inbox draft draft-zoom-barrier-terrain.md (found by coast-detail).

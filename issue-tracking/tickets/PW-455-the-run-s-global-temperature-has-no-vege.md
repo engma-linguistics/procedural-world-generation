@@ -2,7 +2,7 @@
 id: PW-455
 title: The run's global temperature has no vegetation albedo term (the time zoom has one since PW-450)
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -31,5 +31,6 @@ eras re-measured (PW-438's table). Lean: A, unless the plant groups' arrival sho
 step that the run ought to have.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-run-no-global-vegetation-albedo.md (found by pw450).

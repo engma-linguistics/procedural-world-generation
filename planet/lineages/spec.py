@@ -114,6 +114,77 @@ def demography(traits) -> dict:
     return out
 
 
+# senses and bodies (PW-694): what a people tastes, digests and is poisoned by, for the future cuisine pass (PW-692);
+# nothing in the simulation reads them. Real-world analogues: cats lack the sweet receptor, birds feel no capsaicin,
+# lactase persistence in herding humans, onions and garlic poison dogs, cats and birds, chocolate (theobromine) too.
+# Inherited from the first parent key by key (a `body` table in the spec gives only what differs).
+BODY_DEFAULT = {"sweet": True, "milk": False, "capsaicin": True, "bitter": "normal", "smell": "normal",
+                "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": []}
+BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
+                "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore")}
+TOXINS = ("alliums", "theobromine")
+BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
+
+
+def parse_body(v, lid: str = "") -> dict:
+    """Validate a `body` table (only the keys given)."""
+    if v in (None, ""):
+        return {}
+    if not isinstance(v, dict):
+        raise ValueError(f"{lid}: body must be a table of {sorted(BODY_DEFAULT)}")
+    out = {}
+    for k, x in v.items():
+        if k not in BODY_DEFAULT:
+            raise ValueError(f"{lid}: unknown body key {k!r} (one of {sorted(BODY_DEFAULT)})")
+        if k in BODY_BOOLS:
+            # true / false, or a share 0..1 of the people (lactase persistence is a population frequency, PW-701)
+            if isinstance(x, bool):
+                out[k] = x
+            elif isinstance(x, (int, float)) and 0 <= x <= 1:
+                out[k] = float(x)
+            else:
+                raise ValueError(f"{lid}: body.{k} must be true, false or a share between 0 and 1")
+        elif k == "toxic":
+            xs = [x] if isinstance(x, str) else list(x)
+            bad = [t for t in xs if t not in TOXINS]
+            if bad:
+                raise ValueError(f"{lid}: unknown toxicity {bad} (one of {list(TOXINS)})")
+            out[k] = sorted(set(xs))
+        else:
+            if x not in BODY_CHOICES[k]:
+                raise ValueError(f"{lid}: body.{k} must be one of {list(BODY_CHOICES[k])}")
+            out[k] = x
+    return out
+
+
+def body_notes(b: dict) -> list[str]:
+    """What is notable about a body (differences from the human-like baseline), as short phrases. A share
+    (0 < x < 1) reads as 'x% ...'."""
+    out = []
+    pct = lambda v: f"{round(100 * v)}% "  # noqa: E731
+    if b["sweet"] is not True:
+        out.append("cannot taste sweet" if not b["sweet"] else pct(b["sweet"]) + "taste sweet")
+    if b["milk"]:
+        out.append("digest milk as adults" if b["milk"] is True else pct(b["milk"]) + "digest milk as adults")
+    if b["capsaicin"] is not True:
+        out.append("feel no capsaicin heat" if not b["capsaicin"] else pct(b["capsaicin"]) + "feel capsaicin heat")
+    if b["bitter"] != "normal":
+        out.append("taste bitterness faintly" if b["bitter"] == "low" else "are very sensitive to bitter tastes")
+    if b["smell"] != "normal":
+        out.append("have a poor sense of smell" if b["smell"] == "low" else "have a keen sense of smell")
+    if b["diet"] != "omnivore":
+        out.append({"herbivore": "are herbivores", "carnivore": "are carnivores",
+                    "obligate_carnivore": "are obligate carnivores"}[b["diet"]])
+    if b["raw_meat"]:
+        out.append("eat raw meat safely" if b["raw_meat"] is True else pct(b["raw_meat"]) + "eat raw meat safely")
+    if b["cellulose"]:
+        out.append("digest cellulose" if b["cellulose"] is True else pct(b["cellulose"]) + "digest cellulose")
+    tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)"}[t] for t in b["toxic"]]
+    if tox:
+        out.append("are poisoned by " + " and ".join(tox))
+    return out
+
+
 ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
 GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
@@ -149,6 +220,8 @@ class Lineage:
     explore: float | None = None  # 0..1, how readily it pushes into new land and over the sea
     sea_share: float | None = None  # 0..1, the share of its frontier that tries water crossings
     insularity: float | None = None  # 0..1, resistance to mixing and to leaving home
+    body: dict = field(default_factory=lambda: {**BODY_DEFAULT, "toxic": []})  # senses and body, resolved (BODY_DEFAULT)
+    body_given: dict = field(default_factory=dict)  # of it, what the spec gave on this line itself
     persists: bool = False  # keeps living after its last split child
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
@@ -207,7 +280,8 @@ class Wish:
 class Use:
     """A way of life looking for a good in the land: lines with trait (or preferred place, or the line whose id
     is) `by` favour (weight > 0) or avoid (< 0) the world's `good` (land.GOODS) in their habitat; `pull`
-    (0..1, default meta.land_pull) how strongly; `strict`: the habitat off the goods is cut by the pull,
+    (0..1, default meta.land_pull) how strongly; the use's own strength is pull x min(weight, 1) (PW-635: a weight of
+    0.5 pulls half as hard as a weight of 1, so mines can bite harder than forests); `strict`: the habitat off the goods is cut by the pull,
     not renormalised to a mean of 1 over the line's country (history._land_mult)."""
     by: str
     good: str
@@ -215,6 +289,11 @@ class Use:
     pull: float | None = None
     strict: bool = False
 
+
+ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
+ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present. A PLACEHOLDER (PW-690): nothing reads it yet; the
+# technology tree (epic PW-675, v3) will, to say how far population, spread, mixing and technology climb by the present.
+# The history is not run forward past the present for it.
 
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 
@@ -230,6 +309,9 @@ class Tree:
     disabled: list[str] = field(default_factory=list)  # lines switched off (enabled = false) and those that went with them
     uses: list[Use] = field(default_factory=list)  # [[use]]: trait or place -> good, weight
     land_pull: float = LAND_PULL
+    era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
+    horses: bool = True  # meta.horses: wild horses, their taming and riding (horses.py); false: none
+    horses_at: float | None = None  # meta.horses_at: the anchor time of the taming, kyr ago (None: horses.ANCHOR_KYR)
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
@@ -242,11 +324,21 @@ class Tree:
     def _uses_by(self, l: Lineage) -> list[Use]:
         return [u for u in self.uses if u.by in l.traits or u.by in l.prefers or u.by == l.id]
 
+    def pulls_of(self, l: Lineage) -> dict[str, float]:
+        """Per favoured good, how strongly it moves a line: the row's pull (meta.land_pull unless given) x
+        min(weight, 1), the strongest row where several name the good (PW-635: the weight is the use's own strength)."""
+        out: dict[str, float] = {}
+        for u in self._uses_by(l):
+            if u.weight > 0:
+                p = (self.land_pull if u.pull is None else u.pull) * min(u.weight, 1.0)
+                out[u.good] = max(out.get(u.good, 0.0), p)
+        return out
+
     def pull_of(self, l: Lineage) -> float:
-        """How strongly a line's land use acts: the strongest pull of its favoured goods (meta.land_pull unless
-        a [[use]] gives its own)."""
-        ps = [self.land_pull if u.pull is None else u.pull for u in self._uses_by(l) if u.weight > 0]
-        return max(ps) if ps else self.land_pull
+        """How strongly a line's land use acts at most: the strongest per-good pull (pulls_of); meta.land_pull
+        for a line with no favoured good."""
+        ps = self.pulls_of(l)
+        return max(ps.values()) if ps else self.land_pull
 
     def strict_of(self, l: Lineage) -> bool:
         """Whether any of a line's favoured goods is a strict use (no renormalising of its land use)."""
@@ -263,6 +355,11 @@ class Tree:
     def living_children(self, lid: str) -> list[str]:
         """Split children that are not set to die out (a side branch that dies leaves its parent going)."""
         return [c for c in self.lines[lid].children if self.lines[c].extinct_kyr is None]
+
+    def share_traits(self) -> list[str]:
+        """The body flags some line gives as a share of its people (0..1), not true/false: mapped per cell
+        as a population frequency (PW-701)."""
+        return [k for k in BODY_BOOLS if any(not isinstance(l.body.get(k), bool) for l in self.lines.values() if not l.overlay)]
 
     def groups_of(self, lid: str) -> list[str]:
         """The groups (ways of life) within a people, oldest first."""
@@ -393,6 +490,9 @@ def parse(raw: dict) -> Tree:
             if k != "density" and not 0 <= v <= 1:
                 raise ValueError(f"{lid}: {k} must be within 0..1")
             demo[k] = v
+        bgiven = parse_body(r.get("body"), lid)
+        body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
+        body["toxic"] = list(body["toxic"])
         place = r.get("place")
         if place is not None:
             place = (float(place["lat"]), float(place["lon"])) if isinstance(place, dict) else (float(place[0]), float(place[1]))
@@ -403,7 +503,7 @@ def parse(raw: dict) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
-                    persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None)
@@ -470,7 +570,12 @@ def parse(raw: dict) -> Tree:
              float(parse_ago(meta.get("mixing_start", 3.0))))
     t.disabled = disabled
     t.uses = uses
+    t.horses = bool(meta.get("horses", True))
+    t.horses_at = parse_ago(meta["horses_at"]) if meta.get("horses_at") not in (None, "") else None
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
+    t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
+    if t.era not in ERAS:
+        raise ValueError(f"meta.era must be one of {list(ERAS)}")
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
@@ -494,6 +599,8 @@ def to_raw(t: Tree) -> dict:
             r["elev_m"] = list(l.elev_m)
         if l.place is not None:
             r["place"] = list(l.place)
+        if l.body_given:
+            r["body"] = l.body_given
         if l.color:
             r["color"] = l.color
         if l.persists:
@@ -510,6 +617,7 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "viable_pop": t.viable_pop},
+                     "era": t.era, "viable_pop": t.viable_pop, "horses": t.horses,
+                     **({"horses_at": f"{t.horses_at:g} kyr"} if t.horses_at is not None else {})},
             "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

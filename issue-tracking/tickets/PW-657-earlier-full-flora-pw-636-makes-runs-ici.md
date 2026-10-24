@@ -2,7 +2,7 @@
 id: PW-657
 title: "Earlier full flora (PW-636) makes runs icier: icehouse share 29 -> 43%, ice sea level after 250 Myr -31 -> -50 m on the quick sweep"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -47,5 +47,6 @@ Options:
 - [ ] owner/thermostat lane picks; re-measure on the multi-seed harness
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): on 16 seeds PW-636 shows no icehouse signal (12.3 -> 12.0% pooled deep share, thermostat lane 1024); PW-636 merged.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-earlier-flora-deepens-ice.md (found by pw636-flora-pace).

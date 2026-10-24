@@ -2,7 +2,7 @@
 id: PW-585
 title: "dad91b's southern sinking (2.5 Sv) is now set by the straits: its densest polar water sits behind passages too small for the inflow"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: ocean
@@ -35,5 +35,6 @@ Lean: A for v2. B is a real mechanism, but it matters for one world in 9.
 - [ ] rule A or B
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-dad91b-south-is-straits.md (found by base-climate-laneA10).

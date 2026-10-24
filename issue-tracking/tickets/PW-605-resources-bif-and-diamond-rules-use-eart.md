@@ -2,7 +2,7 @@
 id: PW-605
 title: "Resources: BIF and diamond rules use Earth's absolute geological clocks (1.8 / 2.5 Gyr)"
 type: task
-status: needs-decision
+status: done
 parent: PW-155
 milestone: v2
 subsystem: surface
@@ -29,4 +29,5 @@ own oldest crust (the oldest 30% of crust ages); **C.** make the oxygenation tim
 Lean: **A** for v2, **C** with PW-443.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (owner defers geology): A, keep Earth's absolute clocks for v2; a planet oxygenation parameter comes with weird worlds (PW-443).
 - 2026-10-23: Created from inbox draft draft-resources-clocks.md (found by resources).

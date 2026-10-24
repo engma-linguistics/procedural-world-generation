@@ -2,7 +2,7 @@
 id: PW-623
 title: "PW-596's winds on the PW-576 base: every Earth bar better and the time zoom's glacial passes, but the cold-moment fixture's first plausible seed is now a hothouse moment (0.86% under sheets < 1%; ice speeds median 117 > 100 m/yr). No ice rule leans on the old winds"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -93,6 +93,7 @@ Options:
 Coordinator (2026-10-23 night): held for the owner. Option A turns the 1% sheets assertion into a seed-choice condition, which is what lane B3 did and B4 reverted (it makes `test_cold_moment_has_sheets` true by construction), so it isn't a harness-only change. Coordinator lean: B with no new number — the fixture's "cold moment" must be colder than its own run's long-run mean (run dT at the moment below the run's median dT), since a +6.7 C hothouse moment isn't what a cold-moment fixture is meant to test; the sheets and ice-speed assertions stay as they are. Branch worktree-agent-a34e43ec48de2d53e (c0d5924) waits for the answer.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): superseded: the cold-moment and endings fixtures are multi-seed with a pass-rate bar (PW-643, owner A) and eligibility by rule (PW-645); red single draws are no longer a merge decision.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Merged anyway on the A17 tree: there both cold-moment tests pass and main stays green with assertions unchanged. The fixture still passes or fails by which seed qualifies first; the owner's question (how the fixture should choose its source) stays open, together with PW-638 (PW-632 option B).
 - 2026-10-23: Held branch is now worktree-agent-a22d5ce3841f99b73 (A16 winds + A17 island walls + A18 docs, head 5d12daf).

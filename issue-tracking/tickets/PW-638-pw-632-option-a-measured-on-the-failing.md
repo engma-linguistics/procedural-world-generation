@@ -2,7 +2,7 @@
 id: PW-638
 title: "PW-632 option A measured: on the failing cold worlds the glacial's leftover ice is partly a held branch at I = 0 (seed 8 on step 2 keeps 51% for 120 kyr), so no faster-melting rule can meet the endings bar; only the marine fronts' loss moves it"
 type: task
-status: needs-decision
+status: done
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -80,5 +80,6 @@ frontal melt.
 - [ ] owner picks A2 / B / C
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Coordinator (2026-10-24): superseded: the cold-moment and endings fixtures are multi-seed with a pass-rate bar (PW-643, owner A) and eligibility by rule (PW-645); red single draws are no longer a merge decision.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-pw632-option-a-held-branch.md (found by base-climate-laneA19).

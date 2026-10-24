@@ -2,7 +2,7 @@
 id: PW-603
 title: "Lineages: remote continents stay empty unless seafarers or fliers get lucky; owner call on whether that is wanted"
 type: task
-status: needs-decision
+status: done
 parent: PW-103
 milestone: v2
 subsystem: timezoom
@@ -32,4 +32,5 @@ Options:
 Lean: A + C, with C documented in the editor. B only if the owner wants every continent peopled by default.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> done. Owner (2026-10-24): A + C: a far empty continent is that world's story; place an arrival people there in the editor (document it there).
 - 2026-10-23: Created from inbox draft draft-lineages-empty-remote-continents.md (found by lineages-lane-2).

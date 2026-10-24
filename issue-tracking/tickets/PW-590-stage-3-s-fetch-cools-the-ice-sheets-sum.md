@@ -2,7 +2,7 @@
 id: PW-590
 title: "Stage 3's fetch cools the ice sheets' summer air: Greenland ice warmest month -4.2 -> -6.6 C, Antarctic plateau +2.1 -> -0.4"
 type: task
-status: needs-decision
+status: todo
 parent: PW-470
 milestone: v2
 subsystem: climate
@@ -43,5 +43,6 @@ Lean: A for now. The time-zoom endings test passes with A (58 / 1.4 m; bar left 
 (PW-569 / PW-439) owns the sheet's surface air.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Created from inbox draft draft-stage3-fetch-cools-ice-sheet-summers.md (found by base-climate-laneA12).

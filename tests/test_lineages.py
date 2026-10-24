@@ -344,6 +344,41 @@ def test_near_wish_pulls_toward_a_shared_border(faketz):
     assert mo[d == 1].min() > 2 and np.allclose(mo[b], 1.0)
 
 
+def test_apart_wish_cuts_both_peoples_and_scores_against_the_niches(faketz):
+    """PW-682: 'apart' keeps each people out of the other's country; its score is against what the niches alone
+    would give, and a pair whose niches don't meet isn't counted."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "c", "appears": "30 kyr", "temp_c": [-60, -50], "rain_mm": [1, 9000]}],
+           "wish": [{"a": "a", "b": "b", "want": "apart"}, {"a": "a", "b": "c", "want": "apart"}]}
+    tree = SP.parse(raw)
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    ia, ib = h.idx["a"], h.idx["b"]
+    h.p = np.zeros((3, g.n))
+    h.active = {"a": True, "b": True, "c": False}
+    land = ps.fields(0.0, variability=False)["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    blob = H.rings(cell, land, 2, g.nbr_off, g.nbr_idx)
+    h.p[ib][blob] = 0.8
+    assert h._wish_near(tree.lines["a"])[blob].max() < 0.6  # a is cut where b lives...
+    h.p[ib][:] = 0
+    h.p[ia][blob] = 0.8
+    assert h._wish_near(tree.lines["b"])[blob].max() < 0.6  # ...and b where a lives
+    tags = H._tags(g, h.steps[-1].get(), h._chains, h._volcanic())
+    assert H._niche_closeness(h, tree.wishes[0], tags) > 0.9 > H.APART_CONTESTED  # (the niches overlap everywhere)
+    assert H._niche_closeness(h, tree.wishes[1], tags) < H.APART_CONTESTED  # (c lives where a doesn't)
+    h.p[ib][blob] = 0.8
+    ws = H.wish_scores(h, h.p, tags)
+    assert ws[0]["contested"] and ws[0]["score"] < 0.5  # both on the same ground: the wish failed
+    h.p[ib][:] = 0
+    h.p[ic := h.idx["c"]][:] = 0
+    ws = H.wish_scores(h, h.p, tags)
+    assert ws[0]["score"] == 1.0 and not ws[1].get("contested", True)  # b gone: kept apart; a/c: nothing to keep apart
+
+
 def test_contact_hybrid_lingers_when_its_parents_part(faketz):
     """PW-613: a contact hybrid grows where its parents meet, fades where they no longer do, and where they
     last met it lives on as a small people of its own (shown on the peoples layer there)."""
@@ -549,3 +584,142 @@ def test_peoples_change_the_land_from_their_ways_of_life():
     # nobody, nothing
     e = LU.cover(z, z, z, z, 0.8 * one, fcls, one)
     assert (e["crop"] == 0).all() and (e["pasture"] == 0).all() and np.allclose(e["tree_after"], 0.8)
+
+
+# ---- senses and bodies (PW-694) ---------------------------------------------------------------------
+def test_body_traits_default_inherit_and_round_trip():
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    b = lambda k: dnd.lines[k].body  # noqa: E731
+    # real-world analogues: cats taste no sweet, birds feel no capsaicin, herding peoples keep lactase
+    assert not b("tabaxi")["sweet"] and not b("leonin")["sweet"] and b("leonin")["diet"] == "obligate_carnivore"
+    assert not b("aarakocra")["capsaicin"] and not b("kenku")["sweet"] and b("human")["capsaicin"] and b("human")["sweet"]
+    assert b("human_herder")["milk"] and b("steppe_orc")["milk"] and not b("human")["milk"] and not b("human_farmer")["milk"]
+    assert set(b("tabaxi")["toxic"]) == {"alliums", "theobromine"} and b("human")["toxic"] == []
+    assert dnd.lines["tabaxi"].body_given == {}  # (inherited from the feline stem, not given)
+    assert SP.parse(SP.to_raw(dnd)).lines["steppe_orc"].body == b("steppe_orc")
+    assert SP.body_notes(SP.BODY_DEFAULT) == [] and "cannot taste sweet" in SP.body_notes(b("leonin"))
+    base = {"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"toxic": ["alliums"], "smell": "keen"}},
+                        {"id": "y", "parents": ["x"], "at": "0.5 kyr", "body": {"smell": "low"}}]}
+    t = SP.parse(base)
+    assert t.lines["y"].body["smell"] == "low" and t.lines["y"].body["toxic"] == ["alliums"] and t.lines["y"].body["sweet"]
+    for bad in ({"sweet": "yes"}, {"diet": "frugivore"}, {"toxic": ["lead"]}, {"taste": 1}):
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": bad}]})
+
+
+# ---- composition of peoples per cell (PW-689) and body shares (PW-701) ------------------------------
+def test_body_flags_can_be_a_share_of_a_people():
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    assert 0 < dnd.lines["human_herder"].body["milk"] < 1 and dnd.share_traits() == ["milk"]
+    assert "60% digest milk as adults" in SP.body_notes(dnd.lines["human_herder"].body)
+    assert SP.parse(SP.to_raw(dnd)).lines["human_herder"].body["milk"] == dnd.lines["human_herder"].body["milk"]
+    for bad in (1.5, -0.1, "some"):
+        with pytest.raises(ValueError):
+            SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"milk": bad}}]})
+
+
+def test_composition_follows_who_reaches_and_tolerates_a_place():
+    from planet.lineages import compose as CP
+    t = SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}, {"id": "b", "origin": "root", "at": "9 kyr"},
+                              {"id": "c", "origin": "root", "at": "9 kyr", "traits": ["insular"]}],
+                  "wish": [{"a": "a", "b": "b", "want": "near"}, {"a": "a", "b": "c", "want": "apart"}]})
+    lines = t.order()
+    idx = {l.id: k for k, l in enumerate(lines)}
+    H_ = CP.cohabitation(t, lines, idx)
+    ia, ib, ic = idx["a"], idx["b"], idx["c"]
+    assert np.allclose(H_, H_.T) and H_[ia, ib] > 0.5 > H_[ia, ic]  # (near pairs mix readily, apart or insular ones rarely)
+    Pw = np.zeros((3, 1))
+    Pw[ia], Pw[ib], Pw[ic] = 0.8, 0.5, 0.5
+    early = CP.compose(Pw, Pw, H_, 0.0, 0.12)
+    late = CP.compose(Pw, Pw, H_, 1.0, 0.12)
+    for c in (early, late):
+        assert int(c["mix_lead_share"][0]) + int(c["mix_second_share"][0]) + int(c["mix_other_share"][0]) == 100
+    assert early["mix_lead_share"][0] > late["mix_lead_share"][0]  # (little intermingling before the late mixing)
+    assert late["mix_second"][0] == ib  # (the tolerated people is second)
+    z = CP.compose(np.zeros((3, 2)), np.zeros((3, 2)), H_, 1.0, 0.12)
+    assert (z["mix_lead_share"] == 0).all() and (z["mix_second"] == 255).all()
+    m = CP.compose(Pw, Pw, H_, 1.0, 0.12, {"milk": np.array([[0.0], [1.0], [0.0]])})  # (a trait share mixed by the composition)
+    assert abs(int(m["body_milk"][0]) - int(m["mix_second_share"][0])) <= 1
+
+
+# ---- horses (PW-688 part 1) -------------------------------------------------------------------------
+def test_wild_horse_range_is_open_temperate_grassland():
+    from planet.lineages import horses as HO
+    n = 6  # steppe, forest, desert, tundra, tropical savanna, high plateau
+    env = {"temperature": np.array([8, 8, 15, -10, 28, 8.0]), "precipitation": np.array([500, 1200, 80, 300, 900, 400.0]),
+           "tree_cover": np.array([5, 70, 0, 0, 10, 0.0]), "elevation": np.array([300, 300, 300, 300, 300, 5000.0]), "ice": np.zeros(n)}
+    w = HO.wild_range(env, np.ones(n, bool))
+    assert w[0] == 1 and (w[1:] < HO.WILD_MIN).all() and (HO.wild_range(env, np.zeros(n, bool)) == 0).all()
+    dnd = SP.load(LR.SAMPLES / "dnd.toml")
+    p = {k: HO.propensity(dnd, dnd.lines[k]) for k in ("human_nomad", "steppe_orc", "human_herder", "human_farmer", "aarakocra", "dwarf", "hill_giant")}
+    assert p["human_nomad"] == p["steppe_orc"] == p["human_herder"] == 1.0
+    assert 0 < p["human_farmer"] < 0.5 and p["aarakocra"] == p["dwarf"] == p["hill_giant"] == 0.0
+
+
+def _horse_tree(horses=True):
+    raw = {"meta": {"name": "h", "seed": 3, "mixing_start": "3 kyr", "horses": horses, "horses_at": "9 kyr"}, "lineage": [
+        {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"]},
+        {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"]}],
+        "use": [{"by": "nomadic", "good": "grazing"}, {"by": "agricultural", "good": "fertile"}]}
+    return SP.parse(raw)
+
+
+def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(faketz, monkeypatch):
+    from planet.lineages import horses as HO
+    monkeypatch.setattr(HO, "wild_range", lambda env, land: np.where(land & (np.abs(env["temperature"] - 12) < 8), 0.9, 0.0))
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
+    hs = pres["horses"]
+    t = hs["tamed"][0]
+    assert t["line"] == "herd" and t["first"] and t["ago_kyr"] <= hs["date_drawn_kyr"] + 1e-6 and hs["wild_mkm2"] > 0
+    assert hs["riding_mkm2"] > 0 and hs["riders_share"]["herd"] > 0.5  # herders ride across their land
+    assert hs["propensity"]["herd"] == 1.0 and hs["propensity"]["farm"] < hs["propensity"]["herd"]
+    assert any(e["kind"] == "horses" for e in h.events)
+    # layers on the run, and the story says so
+    out = O.save(h, res, pres, name="horse test")
+    run = json.loads((out / "run.json").read_text())
+    assert {"horse_wild", "horse_riding"} <= run["layers"].keys() and run["meta"]["horses"]["tamed"][0]["line"] == "herd"
+    assert "first to tame the horse" in run["meta"]["lineages"][h.idx["herd"]]["story"]
+    assert "Horses" in (out / "run.txt").read_text()
+    # off: nothing is stored
+    h0, res0, pres0 = H.simulate(_horse_tree(False), ps, tries=1)
+    assert pres0["horses"] is None and h0.horses is None
+    assert "horse_wild" not in json.loads((O.save(h0, res0, pres0, name="no horses") / "run.json").read_text())["layers"]
+
+
+def test_no_wild_range_no_taming(faketz):
+    # (the fake world is forested everywhere: nowhere for wild horses)
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h, res, pres = H.simulate(_horse_tree(), ps, tries=1)
+    assert pres["horses"]["tamed"] == [] and pres["horses"]["never"] and not h.horses.rd.any()
+
+
+def test_composition_is_by_heads_not_ground_held():
+    from planet.lineages import compose as CP
+    t = SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}, {"id": "b", "origin": "root", "at": "9 kyr"}]})
+    lines = t.order()
+    H_ = CP.cohabitation(t, lines, {l.id: k for k, l in enumerate(lines)})
+    Pw = np.array([[0.8], [0.8]])  # equal ground held
+    even = CP.compose(Pw, Pw, H_, 1.0, 0.12)
+    dense = CP.compose(Pw, Pw, H_, 1.0, 0.12, dens=np.array([1.0, 6.0]))
+    assert abs(int(even["mix_lead_share"][0]) - 100 * 1 / (1 + H_[0, 1])) <= 1
+    assert dense["mix_second_share"][0] > dense["mix_lead_share"][0]  # b has six times the heads per km2: it outweighs a
+    assert dense["mix_lead_share"][0] < even["mix_lead_share"][0]
+
+
+def test_era_is_a_validated_placeholder_setting():
+    raw = {"lineage": [{"id": "a", "origin": "root", "at": "9 kyr"}]}
+    assert SP.parse(raw).era == "renaissance"
+    t = SP.parse({**raw, "meta": {"era": "Bronze Age"}})
+    assert t.era == "bronze age" and SP.parse(SP.to_raw(t)).era == "bronze age"
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "meta": {"era": "space age"}})
+
+
+def test_a_use_pulls_in_proportion_to_its_weight():
+    raw = {"meta": {"land_pull": 0.5}, "lineage": [{"id": "a", "origin": "root", "at": "9 kyr", "traits": ["miner"]}],
+           "use": [{"by": "a", "good": "gold", "weight": 1.0}, {"by": "a", "good": "timber", "weight": 0.5},
+                   {"by": "a", "good": "iron", "weight": 1.0, "pull": 0.8}]}
+    t = SP.parse(raw)
+    assert t.pulls_of(t.lines["a"]) == {"gold": 0.5, "timber": 0.25, "iron": 0.8}
+    assert t.pull_of(t.lines["a"]) == 0.8

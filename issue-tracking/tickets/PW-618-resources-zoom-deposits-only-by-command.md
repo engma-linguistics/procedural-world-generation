@@ -2,7 +2,7 @@
 id: PW-618
 title: "Resources: zoom deposits only by command; not in the 3D view; fine zooms don't inherit them"
 type: task
-status: needs-decision
+status: todo
 parent: PW-155
 milestone: v2
 subsystem: zoom
@@ -32,4 +32,5 @@ Lean: B for gap 1. Then gap 3: inherit the points that fall inside, and re-site 
 the same seeds.
 
 ## Updates
+- 2026-10-23: Status needs-decision -> todo. Owner (2026-10-24): B: deposits at every zoom build (history cached on the world, as PW-609 B makes it), shown in the 3D view, inherited by fine zooms.
 - 2026-10-23: Created from inbox draft draft-resources-zoom-deposits-auto-and-3d.md (found by resources2).
