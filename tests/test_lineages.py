@@ -1649,3 +1649,22 @@ def test_a_group_carries_its_own_markers_and_its_people_keeps_the_default():
     assert SP.parse(SP.to_raw(t)).lines["herd"].body["milk"] == 0.1
     sm = LR.load_tree("seven_meals")
     assert sm.lines["arha"].body["milk"] == 0.1 and sm.lines["anja"].body["milk"] is False and sm.lines["orc"].body["milk"] is False
+
+
+def test_salt_reach_rivers_and_contact_zones_shorten_the_trade_route_and_the_cap_cuts_off():
+    """PW-745: cost-distance to salt: a river and a contact zone make a cell nearer than on foot; beyond the cap it is cut off."""
+    from planet.lineages import salt_reach as SR
+    g, L, land, isl = _toy_world()
+    own = np.where(land, 1000.0, 0.0)
+    pit = int(np.flatnonzero(land)[0])
+    own[pit] = 0.0
+    none = np.zeros(g.n, bool)
+    plain = SR.reach(g, land, own, np.zeros(g.n), none, 300.0, cap_km=1e9)
+    riv = SR.reach(g, land, own, np.full(g.n, 5.0), none, 300.0, cap_km=1e9)
+    zone = SR.reach(g, land, own, np.zeros(g.n), land.copy(), 300.0, cap_km=1e9)
+    far = land & (plain["km"] < SR.UNREACHED) & (plain["km"] > 0)
+    assert far.any()
+    assert np.allclose(riv["km"][far], plain["km"][far] * SR.RIVER_COST) and np.allclose(zone["km"][far], plain["km"][far] * SR.TRADE_COST)
+    capped = SR.reach(g, land, own, np.zeros(g.n), none, 300.0, cap_km=float(np.median(plain["km"][far])))
+    assert (capped["how"][far] == 3).any() and (capped["how"][far] == 2).any()  # (inside the cap: traded; beyond: cut off)
+    assert plain["how"][pit] == 1 and (plain["how"][~land] == 0).all()

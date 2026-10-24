@@ -1,94 +1,83 @@
-# Seven meals on the four new showcase worlds (fun19)
+# Seven meals on the four showcase worlds (fun19, refreshed by fun21 after PW-784)
 
-`planet lineages WORLD --tree seven_meals --tries 1` on each of the four new showcase worlds (the owner's `seven_meals` preset, fantasy mode,
-nothing tuned; one try each, so each is one draw, not a rate: PW-707). Numbers are as-is from `runs/RUN/run.txt` and a whole-planet
-`planet brief RUN --region 0,0,20100` (plus `--people` briefs for the antelope-kin, cervid-kin and humans). People "range" areas are the cells
-where a people (with its cultures) is the lead or second people, so ranges overlap and add up to more than the land. All counts are the
-present day of the run.
+`planet lineages WORLD --tree seven_meals --tries 1` on each of the four showcase worlds (the owner's `seven_meals` preset, fantasy mode,
+nothing tuned; one try each, so each is one draw, not a rate: PW-707). All four runs were made with the dairy rule (PW-784) and the ways ruling.
+Numbers are from `runs/RUN/run.txt` (range areas) and a whole-planet `planet brief RUN --region 0,0,20100` (shares of heads, salt, dairy,
+reputation). People "range" areas are the cells where a people (with its cultures) is the lead or second people, so ranges overlap and add up
+to more than the land. All counts are the present day of the run. Heads are given as shares of the peopled heads (the brief), not millions.
 
-| world | seed | run | peoples run score |
-|---|---|---|---|
-| 6fbc2c | 957317 | 104de8 | 0.712 |
-| 067778 | 619496 | a703b0 | 0.688 |
-| a12762 | 583167 | e06714 | 0.719 |
-| 6909cb | 639472 | 7fd2b7 | 0.724 |
+| world | run | peoples run score |
+|---|---|---|
+| 6fbc2c | 104de8 | 0.712 |
+| 067778 | b36648 | 0.688 |
+| a12762 | 1184cc | 0.719 |
+| 6909cb | b4e3c2 | 0.722 |
 
-Common to all four: humans are the big people everywhere (577-628 M heads with their cultures; 53-68% of heads) and are mostly
-farmers; the only dairy peoples are human groups (the Jangwa cattle people, the forager "margin root"), and they have lactase, so
-every dairy line reads **fresh milk, butter and cream**. Nobody gets soured or fermented dairy in any of the four (the antelope-kin and
-cervid-kin bodies are `milk: false`). That was before PW-784; 6fbc2c (run 104de8, re-run after it) now has fermented dairy for its low- and no-lactase herders
-(Arha 10%, antelope-kin and cervid-kin 0%: yogurt, kefir, kumis, cheese) beside the Jangwa's fresh; the other three worlds' notes are as first run. The tame-able animals are the same set (dog, caprine, cattle, horse, fowl); the horse is first tamed ~6 kyr ago
-by the antelope-kin in 3 of the 4 worlds (by the Jangwa in a12762).
+(The runs replace a703b0, e06714 and 7fd2b7, which were made before PW-784 and are deleted.)
 
-## 6fbc2c (run 104de8, re-run after PW-784 and the owner's ways ruling: antelope-kin and cervid-kin mostly farmers, the tundra cervids herd; the numbers below this heading are from the first run, e4de0e, and are stale): land 35.2% of the planet (179.5 Mkm2 of 510)
+Common to all four: humans are the big people everywhere (52-69% of heads, 63-76 Mkm2 range) and are mostly farmers. Every world now has
+**fermented dairy** (yogurt, kefir, kumis, cheese) for its no-lactase herders, the antelope-kin (dairy share 40-50%) and in b36648 the tundra cervid-kin
+(68%), and **fresh milk, butter and cream** only where a human group has lactase: the Jangwa cattle people (90% lactase) in 104de8, the forager
+"margin root" (60%) in b4e3c2; 1184cc has fermented dairy only. The salt brief now counts trade (PW-745): 9-18% of the land is cut off from salt even by
+trade and no world is flagged salt-poor (the old flag, mean walk over 300 km, would have flagged 1184cc).
 
-- **Big peoples (heads / range):** humans 610 M / 110 Mkm2 (with cultures; farmers 36%, foragers 9%, Jangwa 5%), half-orcs 59 M / 17, halflings 56 M / 15,
-  antelope-kin 51 M / 92.5, dragonborn 45 M / 30, cervid-kin 69 M / 47.7 (with its cultures), lizardfolk 36 M / 46.
-- **Antelope-kin:** the most widespread by area of the four (92.5 Mkm2, 171 patches) from one continent (11 N 107 W, 110 Mkm2) out to several; ways: 58% farmers,
-  24% pastoral nomads. Staples there: pulses, foxtail millet, maize, wheat; goats/sheep 83%, horse 70%, cattle 36%; cooks over dung (77%).
-- **Cervid-kin:** big, 47.7 Mkm2 (the tundra culture 13 M alone), 70% farmers / 17% foragers; maize, rice, roots, pulses; dung 58% + peat 13% + wood 14%.
-  They hold 42% of the world's best timber (the 2,500 km range at 0 S 80 W).
-- **Ways of life (by heads):** farmer 64%, pastoral nomad 12%, forager 5%.
-- **Derived incursions (as-is):** the busiest of the four. Humans call the antelope-kin "devils" (feared, from the north-west, 2 kyr), dragonborn "raiders" (west),
-  lizardfolk "raiders" (north), halflings "raiders", half-orcs "raiders" (west); humans call the cervid-kin "demons" but despised (the humans settled among them).
-  The antelope-kin call the half-orcs "raiders" (feared).
-- **Cuisines:** grain-belt farmers on maize/wheat/rice/millet; dung-fired steppe-and-savanna country (antelope-kin); fresh Jangwa dairy (horse, goat, cattle milk) and fermented dairy for the antelope-kin, cervid-kin and Arha herders (PW-784);
-  the interior is not salt-poor (mean 272 km to salt, 39% of land beyond trade reach, plant ash 36%; a lick is the nearest salt for 60%); sea peoples are minor
-  (storm giants offshore, merfolk on a 0.12 Mkm2 coast).
-- **Why this one:** the only world where *both* kin are big and both are called fiends by the humans ("devils" and "demons"), with the most varied staples and fuels.
+## 6fbc2c (run 104de8): land 35.2% of the planet (179.5 Mkm2 of 510)
 
-## 067778 (run a703b0, seed 619496): land 37.0%
+- **Big peoples (share of heads / range):** humans 52% / 76.4 Mkm2 (with groups: foragers of the margin root 78 Mkm2 range, arctic hunters 16), antelope-kin 10% / 56.8
+  (179 patches), lizardfolk 9% / 32.3, half-orcs 8% / 22.7, cervid-kin 6% / 48.7, dragonborn 5% / 27.3, halflings 2%.
+- **Ways of life:** farmers are 81% of the peopled heads; antelope-kin and cervid-kin are mostly farmers, the tundra cervids herd.
+- **Dairy:** Jangwa fresh (horse, goat, cattle; 63% of its people use dairy) and fermented dairy for the antelope-kin (43%).
+- **Salt:** mean 272 km to salt, 39% of land beyond the 300 km walk; with trade (rivers, contact zones, 450 km cap) own 61%, traded 30%, cut off 9%: not salt-poor.
+  Plant ash 0.36; a mineral lick is the nearest salt for 60% of cells (licks are herd salt: PW-745 draft).
+- **Sea peoples (PW-775):** storm giants 0.7 Mkm2 offshore, merfolk 0.12 Mkm2 on the shore ring (7 patches); the viewer now draws them on the sea (PW-778).
+- **Incursions:** the busiest of the four: the humans call the antelope-kin "devils" and the cervid-kin "demons", with dragonborn, lizardfolk, halflings and half-orcs "raiders".
+- **Why this one:** the only world where *both* kin are big and both are called fiends, with the most varied staples and fuels.
 
-- **Big peoples:** humans 628 M / 108 Mkm2, cervid-kin 87 M / 51.5 (the biggest of the four), antelope-kin 27 M / 47.7, lizardfolk 13 M / 13, orcs 16 M / 21.
-- **Antelope-kin:** 107 patches on the home continent (4 S 171 E, 140 Mkm2); 55% farmers, 18% pastoral; millet, pulses, wheat, rice; cattle 81%, horse 65%; coal 9% of fuel.
-- **Cervid-kin:** the biggest foraging share of the four (14% of heads are foragers; cervid-kin are 12% of all heads); the tundra culture is 27 M alone (51% ride), oak woods 14 M; they hold 55% of the
-  world's best timber. Ways: 56% farmers, 33% foragers. Wheat, millet, pulses; dung 60%, wood 23%.
-- **Ways of life:** farmer 66%, forager 14%, pastoral 6%.
-- **Derived incursions:** the calmest: only the hobgoblins ("the goblin menace", feared) took cervid-kin land from the south and settled among antelope-kin from the east.
-  No people is called a fiend here.
-- **Cuisines:** wheat/millet belt; the forager margin root has fresh dairy; salt is not scarce (mean 294 km); sea peoples minor. Coal burns beside dung on the plains.
-- **Why this one:** the calmest map, with big cervid-kin forest-and-tundra country (moose, reindeer, red-deer cultures) and lots of cattle; but the antelope-kin are not called anything.
+## 067778 (run b36648): land 188.5 Mkm2
 
-## a12762 (run e06714, seed 583167): land 37.1%
+- **Big peoples:** humans 62% of heads / 67.8 Mkm2, cervid-kin 13% / 44.9 (the biggest of the four), lizardfolk 7% / 11.0, antelope-kin 5% / 21.5, orcs 4% / 13.3,
+  storm giants 3.6 Mkm2 of open sea.
+- **Ways of life:** farmers 81%, foragers 4%.
+- **Dairy:** fermented only: antelope-kin (40%) and the tundra cervid-kin (68%, the highest dairy share of the four).
+- **Salt:** mean 294 km; own 55%, traded 27%, cut off 13%; not poor.
+- **Incursions:** busy this time: antelope-kin "devils" (feared) and cervid-kin "demons" (despised) by the humans, dragonborn, tabaxi and orcs "raiders", hobgoblins "the goblin menace".
+  (The old run's quiet map was a different draw.)
 
-- **Big peoples:** humans 610 M / 123 Mkm2, lizardfolk 60 M / 57 (the biggest lizard people of the four), orcs 23 M / 48, antelope-kin 16 M / 28, cervid-kin 10 M / 11.
-- **Antelope-kin:** smaller (28 Mkm2), half of it in hot desert (BWh 50%): 52% farmers, 38% pastoral (the highest nomad share); wheat 66%, pulses, sorghum; goats 100%,
-  horse only 14%; dung 77%. Mostly the oryx culture (44%).
-- **Cervid-kin:** the smallest share of the land (11 Mkm2, 35 patches); farmers 73%; wheat, maize, pulses.
-- **Ways of life:** farmer 63%, pastoral 6%, forager 1%.
-- **Derived incursions:** half-orcs "raiders" (west, into human land), hobgoblins "the goblin menace" (south), antelope-kin "devils" (feared by humans, from the east).
-- **Cuisines:** the only world flagged **salt-poor** overall (mean 335 km, 47% of land beyond trade reach); no dairy people shows at the planet level (the Jangwa and foragers only show in the cervid-kin and human briefs); lizardfolk and orcs are large peoples with their own cooking; sea peoples minor.
+## a12762 (run 1184cc): land 189.5 Mkm2
+
+- **Big peoples:** humans 60% / 73.0 Mkm2, lizardfolk 22% / 45.5 (the biggest lizard people of the four), orcs 38.6 Mkm2 range, antelope-kin 6% / 12.4, cervid-kin 11.7.
+- **Ways of life:** farmers 69%, foragers 1%.
+- **Dairy:** fermented only (antelope-kin 50%); no fresh dairy people.
+- **Salt:** the longest walk, mean 335 km (47% beyond 300 km); own 53%, traded 30%, cut off 18%: not poor with trade, the closest to the 25% line.
+- **Incursions:** half-orcs and halflings "raiders", hobgoblins "the goblin menace", cervid-kin "demons" (despised); no "devils".
 - **Why this one:** the wide lizardfolk/orc world, if the "fiends" should be small peoples in a human sea; weak on kin.
 
-## 6909cb (run 7fd2b7, seed 639472): land 34.8%
+## 6909cb (run b4e3c2): land 177.6 Mkm2
 
-- **Big peoples:** humans 577 M / 119 Mkm2 (68% of heads, the most human-heavy), antelope-kin 33 M / 53.6, lizardfolk 37 M / 36, cervid-kin 14 M / 13.5, tabaxi 2.7% of heads.
-- **Antelope-kin:** 53.6 Mkm2 in 109 patches on a 99 Mkm2 southern continent; 65% farmers / 21% pastoral; wheat, millet, pulses; goats 99%, cattle 63%, fowl 54%, horse 60%.
-  Flagged salt-poor (mean 315 km).
-- **Cervid-kin:** small (13.5 Mkm2, 24 patches); rice is the only staple known; wood 43% / dung 41% fuel. They hold 25% of the world's best timber (the largest plateau at 34 N 63 E).
-- **Ways of life:** farmer 69%, pastoral 6%, forager 3%.
-- **Derived incursions:** a single one: the cervid-kin settled among humans from the north, and the humans call them "demons" (feared).
-- **Cuisines:** humans on wood-and-dung fires, the most human-dominated; dairy from the forager margin root; storm giants hold the most open sea (3% of sea cells).
-- **Why this one:** quiet; the antelope-kin steppe and a single "demon" story; not the first pick.
+- **Big peoples:** humans 69% (the most human-heavy) / 62.7 Mkm2, antelope-kin 5% / 36.6, lizardfolk 6% / 25.1, cervid-kin 2% / 11.1, tabaxi 3% of heads;
+  storm giants hold 10 Mkm2 of open sea (the most).
+- **Ways of life:** farmers 77%, foragers 2%.
+- **Dairy:** fermented antelope-kin (50%) and the forager margin root with fresh milk (60% lactase).
+- **Salt:** mean 289 km; own 61%, traded 28%, cut off 12%; not poor; plant ash 0.44.
+- **Incursions:** dragonborn "raiders", antelope-kin "devils" (despised), cervid-kin "demons" (feared).
 
 ## Comparison
 
-| | 6fbc2c (104de8) | 067778 (a703b0) | a12762 (e06714) | 6909cb (7fd2b7) |
+| | 6fbc2c (104de8) | 067778 (b36648) | a12762 (1184cc) | 6909cb (b4e3c2) |
 |---|---|---|---|---|
-| land % | 35.2 | 37.0 | 37.1 | 34.8 |
-| humans, heads / range | 610 M / 110 | 628 M / 108 | 610 M / 123 | 577 M / 119 |
-| antelope-kin, range Mkm2 | 92.5 | 47.7 | 28.4 | 53.6 |
-| cervid-kin, range Mkm2 | 47.7 | 51.5 | 11.0 | 13.5 |
-| farmer / pastoral / forager (heads) | 64 / 12 / 5 | 66 / 5 / 14 | 63 / 6 / 1 | 69 / 6 / 3 |
-| derived incursions named | 6 (devils, raiders x4, demons) | 2 (goblin menace) | 3 (raiders, goblin menace, devils) | 1 (demons) |
-| dairy | fresh only (Jangwa) | fresh only | fresh only | fresh only |
-| salt-poor (planet) | no (272 km) | no (294) | yes (335) | no (289; antelope-kin yes) |
-| antelope staples | millet, pulses, maize, wheat | millet, pulses, wheat | wheat, pulses, sorghum | wheat, millet, pulses |
+| land Mkm2 | 179.5 | 188.5 | 189.5 | 177.6 |
+| humans, heads share / range Mkm2 | 52% / 76 | 62% / 68 | 60% / 73 | 69% / 63 |
+| antelope-kin, range Mkm2 | 56.8 | 21.5 | 12.4 | 36.6 |
+| cervid-kin, range Mkm2 | 48.7 | 44.9 | 11.7 | 11.1 |
+| farmer share of heads | 81% | 81% | 69% | 77% |
+| dairy | fresh (Jangwa) + fermented | fermented only | fermented only | fermented + fresh (forager) |
+| salt: own / traded / cut off | 61 / 30 / 9 | 55 / 27 / 13 | 53 / 30 / 18 | 61 / 28 / 12 |
+| devils / demons called | both | both | demons only | both |
 
 ## Pick
 
-**6fbc2c (run 104de8).** Both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other "demons";
-add the most varied staples and fuels (maize, rice, wheat, millet; dung, peat, wood) and the Jangwa dairy. 067778 is the runner-up for calm, forest-and-tundra cervid-kin country.
+**6fbc2c (run 104de8)** still: both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other
+"demons"; add the most varied staples and fuels and both fresh and fermented dairy. 067778 (b36648) is now a closer runner-up (both fiends named, the biggest cervid-kin).
 Single draws each: a different `--tries` or tree seed on the same world will move these counts (PW-707).
 
-Briefs for the pick: `briefs/104de8/` (the markdown for each people and group at the present only; run `planet brief 104de8 --all --out ...` for the eras and mixing zones).
+Briefs for the pick: `briefs/104de8/` (made before PW-745, so without the salt reach lines; run `planet brief 104de8 --all --out ...` for the eras and mixing zones).

@@ -28,9 +28,10 @@ from .. import timeline as T
 from .. import world as W
 from ..geo import R_KM
 from ..grid import shared_grid
+from . import salt_reach as SR
 from . import spec as SP
 
-BRIEF_VERSION = 6  # 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 7  # 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -41,6 +42,7 @@ EVENT_CAP = 25
 MONTHS = 12
 
 NOT_MODELLED = "not modelled yet"
+SALT_POOR_CUT_OFF = 0.25  # salt-poor: this share of a people's land is out of reach of salt even by trade (PW-745)
 SALT_TRADED_KM = 300.0  # land farther than this from any salt gets its salt by trade, or goes without (a salt-poor interior)
 
 
@@ -237,7 +239,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["fuels"] = _fuels(ctx, land, era, i)
     brief["wild_food"] = _wild_food(ctx, i, land)
     brief["fish"] = _fish(ctx, i, sel, sea, land)
-    brief["salt"] = _salt(ctx, land)
+    brief["salt"] = _salt(ctx, land, i)
     brief["crops"] = _grown(ctx, "crop_known", "crops", i, sel, land)
     brief["animals"] = _grown(ctx, "animal_known", "animals", i, sel, land)
     brief["peoples"] = _peoples(ctx, i, sel)
@@ -431,7 +433,7 @@ def _seafood(ctx: Ctx, land: np.ndarray, coastal: np.ndarray) -> dict:
     return out
 
 
-def _salt(ctx: Ctx, land: np.ndarray) -> dict | None:
+def _salt(ctx: Ctx, land: np.ndarray, i: int) -> dict | None:
     """Salt (PW-732, seafood.py): which sources the region has, how far the land is from salt and what the nearest source
     is, plant ash as the fallback. The world's own moment."""
     G = ctx.goods
@@ -449,7 +451,33 @@ def _salt(ctx: Ctx, land: np.ndarray) -> dict | None:
                  "within_100km_share": round(float((km <= 100).mean()), 3),
                  "beyond_trade_km_share": round(float((km > SALT_TRADED_KM).mean()), 3),
                  "plant_ash": _mean(G["fuel"], land) if "fuel" in G else None}
-    out["poor"] = bool(out["km_to_salt"]["mean"] > SALT_TRADED_KM)
+    out["poor_on_foot"] = bool(out["km_to_salt"]["mean"] > SALT_TRADED_KM)
+    rc = _salt_reach(ctx, i)
+    if rc is not None:  # PW-745: trade along rivers and contact zones, to a cap
+        how, tkm = rc["how"][land], rc["km"][land]
+        out["reach"] = {"basis": f"cost-distance to salt: rivers x{SR.RIVER_COST}, contact zones x{SR.TRADE_COST}, capped at {SR.TRADE_CAP_KM:g} km; own = within {SALT_TRADED_KM:g} km on foot, "
+                                 "traded = beyond that but inside the cap, cut off = beyond the cap (no salt works or goods yet)",
+                        "own_share": round(float((how == 1).mean()), 3), "traded_share": round(float((how == 2).mean()), 3),
+                        "cut_off_share": round(float((how == 3).mean()), 3),
+                        "traded_km": {"mean": round(float(tkm[how <= 2].mean())) if (how <= 2).any() else None}}
+        out["poor"] = bool(out["reach"]["cut_off_share"] >= SALT_POOR_CUT_OFF)
+    else:
+        out["poor"] = out["poor_on_foot"]
+    return out
+
+
+def _salt_reach(ctx: Ctx, i: int) -> dict | None:
+    """Whole-grid salt reach at frame i (cached per brief context): salt_reach.reach over the world's land, with the frame's contact zones."""
+    key = ("salt_reach", i)
+    if key in ctx._frame_cache:
+        return ctx._frame_cache[key]
+    G, W = ctx.goods, ctx.world
+    out = None
+    if G is not None and "_salt_km" in G and W is not None and "flow" in W:
+        wl = np.asarray(W["elevation"]) > 0
+        zone = SR.contact_zone(ctx.g, wl, ctx.f("peoples", i), _marine_mask(ctx))
+        out = SR.reach(ctx.g, wl, np.asarray(G["_salt_km"], float), np.asarray(W["flow"], float), zone, SALT_TRADED_KM)
+    ctx._frame_cache[key] = out
     return out
 
 
@@ -786,7 +814,7 @@ def _suggested(brief: dict) -> dict:
         notes.append(f"the commonest cooking fuel is {top}")
     sa, fi = brief.get("salt") or {}, brief.get("fish") or {}
     if sa.get("poor"):
-        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average" + ("; only the coast itself makes it" if sa['source_share_of_land'].get('sea', 0) > 0 else "") + "): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and "
+        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average" + (f"; {round(100 * sa['reach']['cut_off_share'])}% of the land is out of trade's reach" if sa.get("reach") else "") + ("; only the coast itself makes it" if sa['source_share_of_land'].get('sea', 0) > 0 else "") + "): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and "
                      "season with plant ash before salt")
     elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
         notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
@@ -885,7 +913,9 @@ def markdown(b: dict) -> str:
               f"- Distance to salt: mean {sa['km_to_salt']['mean']} km, p90 {sa['km_to_salt']['p90']} km, max {sa['km_to_salt']['max']} km; "
               f"within 100 km {_pc(sa['within_100km_share'])}; beyond {SALT_TRADED_KM:g} km {_pc(sa['beyond_trade_km_share'])}"
               + (f"; no salt anywhere on the landmass {_pc(sa['unreached_share'])}" if sa["unreached_share"] else ""),
-              f"- Nearest source: {_kv(sa['nearest_source'], _pc)}", f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
+              f"- Nearest source: {_kv(sa['nearest_source'], _pc)}",
+              *([f"- Salt reach with trade: own {_pc(sa['reach']['own_share'])}, traded {_pc(sa['reach']['traded_share'])}, cut off {_pc(sa['reach']['cut_off_share'])} of the land"
+                 f" (mean {sa['reach']['traded_km']['mean']} km of cost where reached); salt-poor: {'yes' if sa['poor'] else 'no'}"] if sa.get("reach") else []), f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
     else:
         t += ["- no world"]
     for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),

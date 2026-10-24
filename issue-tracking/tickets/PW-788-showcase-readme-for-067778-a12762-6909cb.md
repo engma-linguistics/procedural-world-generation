@@ -24,3 +24,4 @@ the other three worlds (a703b0, e06714, 7fd2b7) are the old numbers. If those wo
 
 ## Updates
 - 2026-10-24: Created from inbox draft draft-showcase-worlds-rerun-for-dairy.md (found by fun20).
+- 2026-10-24: fun21: re-ran seven_meals on 067778, a12762, 6909cb (runs b36648, 1184cc, b4e3c2), deleted a703b0/e06714/7fd2b7, README notes, table and the 104de8 section refreshed.
