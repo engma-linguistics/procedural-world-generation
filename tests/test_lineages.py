@@ -703,8 +703,10 @@ def test_composition_is_by_heads_not_ground_held():
     even = CP.compose(Pw, Pw, H_, 1.0, 0.12)
     dense = CP.compose(Pw, Pw, H_, 1.0, 0.12, dens=np.array([1.0, 6.0]))
     assert abs(int(even["mix_lead_share"][0]) - 100 * 1 / (1 + H_[0, 1])) <= 1
-    assert dense["mix_second_share"][0] > dense["mix_lead_share"][0]  # b has six times the heads per km2: it outweighs a
-    assert dense["mix_lead_share"][0] < even["mix_lead_share"][0]
+    # b has six times the heads per km2: it outweighs a, so it is the composition's leader (PW-705), the share a "lead" should be
+    assert dense["mix_lead"][0] == 1 and dense["mix_second"][0] == 0
+    assert dense["mix_lead_share"][0] > dense["mix_second_share"][0]
+    assert even["mix_lead"][0] in (0, 1) and dense["mix_lead_share"][0] > even["mix_lead_share"][0]
 
 
 def test_era_is_a_validated_placeholder_setting():
@@ -723,3 +725,65 @@ def test_a_use_pulls_in_proportion_to_its_weight():
     t = SP.parse(raw)
     assert t.pulls_of(t.lines["a"]) == {"gold": 0.5, "timber": 0.25, "iron": 0.8}
     assert t.pull_of(t.lines["a"]) == 0.8
+
+
+# ---- world mode (PW-695) and portals (PW-697) ---------------------------------------------------
+def _mode_raw(**meta):
+    return {"meta": meta, "lineage": [
+        {"id": "stem", "origin": "root", "at": "9 kyr", "real": True},
+        {"id": "human", "parents": ["stem"], "at": "6 kyr", "real": True},
+        {"id": "elf", "origin": "arrival", "at": "4 kyr"},
+        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "2 kyr"},
+        {"id": "ork", "parents": ["stem"], "at": "5 kyr"}],
+        "wish": [{"a": "human", "b": "elf", "want": "near"}],
+        "use": [{"by": "human", "good": "mithril"}, {"by": "human", "good": "iron"}]}
+
+
+def test_real_mode_keeps_only_the_marked_lines_and_no_fantasy_goods():
+    fan = SP.parse(_mode_raw())
+    assert fan.mode == "fantasy" and set(fan.lines) == {"stem", "human", "elf", "half", "ork"} and len(fan.uses) == 2
+    real = SP.parse(_mode_raw(mode="real"))
+    assert real.mode == "real" and set(real.lines) == {"stem", "human"} and not real.wishes
+    assert [u.good for u in real.uses] == ["iron"]  # (mithril is a fantasy good)
+    assert SP.parse(_mode_raw(), mode="real").mode == "real"  # (an override, as `planet lineages --mode real`)
+    back = SP.parse(SP.to_raw(real))
+    assert back.mode == "real" and set(back.lines) == {"stem", "human"}
+    assert SP.parse(SP.to_raw(fan)).lines["human"].real
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "a", "origin": "root", "at": "1 kyr"}], "meta": {"mode": "real"}})  # no human marked
+    with pytest.raises(ValueError):
+        SP.parse(_mode_raw(mode="magic"))
+
+
+def test_the_dnd_preset_has_a_human_real_mode():
+    real = SP.load(LR.SAMPLES / "dnd.toml", "real")
+    assert real.mode == "real" and set(real.lines) == {"archaic_human", "human", "human_farmer", "human_herder", "human_nomad",
+                                                       "human_seafarer", "human_arctic"}
+    assert SP.load(LR.SAMPLES / "dnd.toml").mode == "fantasy"
+
+
+def test_portal_settings_are_validated_and_round_trip():
+    t = SP.parse(_mode_raw(portal_mode="sites", portals=3, portal_sites=["forest", "reef"]))
+    assert (t.portal_mode, t.portals, t.portal_sites) == ("sites", 3, ["forest", "reef"])
+    b = SP.parse(SP.to_raw(t))
+    assert (b.portal_mode, b.portals, b.portal_sites) == ("sites", 3, ["forest", "reef"])
+    assert SP.parse(_mode_raw()).portal_mode == "off"
+    for bad in ({"portal_mode": "everywhere"}, {"portals": 0}, {"portal_sites": ["moon"]}):
+        with pytest.raises(ValueError):
+            SP.parse(_mode_raw(**bad))
+
+
+def test_portals_are_placed_apart_on_land(faketz):
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    for mode in ("random", "sites"):
+        tree = SP.parse(_mode_raw(portal_mode=mode, portals=2))
+        h = H.History(tree, ps, 1)
+        pts = h.portal_cells()
+        assert len(pts) == 2
+        land = H._tags(h.grid, h.steps[-1].get())["land"]
+        assert all(land[p["cell"]] for p in pts)
+        d = np.arccos(np.clip(h.grid.centers[pts[0]["cell"]] @ h.grid.centers[pts[1]["cell"]], -1, 1)) * H.R_KM
+        assert d >= H.PORTAL_SEP_KM
+    assert H.History(SP.parse(_mode_raw()), ps, 1).portal_cells() == []  # (off: none)
+    sites = H.History(SP.parse(_mode_raw(portal_mode="sites", portals=1, portal_sites=["forest"])), ps, 1).portal_cells()
+    assert sites[0]["kind"] == "forest"

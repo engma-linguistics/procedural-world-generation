@@ -877,7 +877,7 @@ function peoplesColor(layer, i, c) {
     return c.copy(lineColor(lines[o]));
   }
   if (layer === 'peoples blend') {  // the cell's composition (PW-689): the leading people's colour and the second's, by their shares, and the rest grey
-    const a = L.peoples_whole[i], lead = lines[a];
+    const a = L.mix_lead ? L.mix_lead[i] : L.peoples_whole[i], lead = lines[a];
     if (a === 255 || !lead) return c.copy(NOBODY);
     const sh = L.mix_lead_share[i] / 100, sb = L.mix_second_share[i] / 100, second = lines[L.mix_second[i]];
     const cl = lineColor(lead), cs = second ? lineColor(second) : NOBODY, rest = Math.max(0, 1 - sh - (second ? sb : 0));
@@ -2965,9 +2965,10 @@ function peoplesRows(i, R) {
   R('place', '', d !== 255 && lines[d] ? `${lines[d].name} ${L.peoples_share?.[i] ?? ''}%${mixn >= 2 ? ` (${mixn} peoples mix here)` : ''}` : 'nobody',
     { lab: 'peoples (this frame)', ess: true });
   const wd = L.peoples_whole?.[i];  // the cell's composition (PW-689): leading people, second, all others
-  if (L.mix_lead_share && wd != null && wd !== 255 && lines[wd]) {
+  const ml = L.mix_lead ? L.mix_lead[i] : wd;  // (the people with most heads, PW-705)
+  if (L.mix_lead_share && wd != null && wd !== 255 && lines[ml]) {
     const sd = L.mix_second[i], ot = L.mix_other_share[i];
-    R('place', '', `${lines[wd].name} ${L.mix_lead_share[i]}%${sd !== 255 && lines[sd] ? `, ${lines[sd].name} ${L.mix_second_share[i]}%` : ''}${ot ? `, others ${ot}%` : ''}`,
+    R('place', '', `${lines[ml].name} ${L.mix_lead_share[i]}%${sd !== 255 && lines[sd] ? `, ${lines[sd].name} ${L.mix_second_share[i]}%` : ''}${ot ? `, others ${ot}%` : ''}`,
       { lab: 'who lives here', ess: true });
   }
   for (const k of Object.keys(V.run.layers).filter((x) => x.startsWith('body_')))  // body traits that are population shares (lactase persistence...)
@@ -4128,7 +4129,7 @@ function layersNeeded() {
   if (state.layer.startsWith('body: ')) want.push('peoples_whole', 'body_' + state.layer.slice(6));
   // a peoples run keeps all its peoples layers: switching between them (or away and back) refetched and
   // re-parsed 24 MB each time, and the hover card names the overlay peoples (PW-679)
-  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses, 'mix_lead_share', 'mix_second',
+  if (V.run.meta?.phase === 'lineages') want.push(...COLOUR_NEEDS.peoples, 'peoples_overlay', ...COLOUR_NEEDS.horses, 'mix_lead', 'mix_lead_share', 'mix_second',
     'mix_second_share', 'mix_other_share', ...Object.keys(V.run.layers).filter((k) => k.startsWith('body_')));
   // the picked season's temperature or rain (runs since PW-138 store them)
   if (state.season && SEASONAL[state.layer]) want.push(`${SEASONAL[state.layer]}_${state.season}`);

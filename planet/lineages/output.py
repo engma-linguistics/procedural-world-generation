@@ -24,7 +24,8 @@ PEOPLE_LAYERS = {
     "peoples_share": U8("% of the cell's habitat the leading people holds"),
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
     "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),
-    "mix_lead_share": U8("composition of the cell (PW-689): % of its people that are the leading one (peoples_whole)"),
+    "mix_lead": U8("composition of the cell (PW-689): the people with most heads here (index; 255 none); peoples_whole stays the one holding most ground"),
+    "mix_lead_share": U8("composition of the cell (PW-689): % of its people that are the leading one (mix_lead)"),
     "mix_second": U8("composition: the second people (index into meta.lineages; 255 none)"),
     "mix_second_share": U8("composition: % of the cell's people that are the second people"),
     "mix_other_share": U8("composition: % of the cell's people that are all the others together"),
@@ -110,7 +111,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     S.write_json(out / "run.json", {
         "format": "procgen-run/2", "kind": "timezoom", "id": run_id, "name": label,
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
-                 "tree_name": h.tree.name, "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
+                 "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "horses": pres["horses"],
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
@@ -147,8 +148,8 @@ def composition(h: History, frames: list) -> dict:
         out[key]["second_3pct_pct"] = round(100 * float(((sec >= 3) & (lead < 255)).sum() / max((lead < 255).sum(), 1)), 2)
     f = frames[-1]
     pairs: dict[tuple, int] = {}
-    sel = (f["peoples_whole"] < 255) & (f["mix_second"] < 255) & (f["mix_second_share"] >= COMPOSITION_TWO_PCT)
-    for a, b in zip(f["peoples_whole"][sel].tolist(), f["mix_second"][sel].tolist()):
+    sel = (f["mix_lead"] < 255) & (f["mix_second"] < 255) & (f["mix_second_share"] >= COMPOSITION_TWO_PCT)
+    for a, b in zip(f["mix_lead"][sel].tolist(), f["mix_second"][sel].tolist()):
         pairs[(a, b)] = pairs.get((a, b), 0) + 1
     out["pairs"] = [{"lead": h.lines[a].id, "second": h.lines[b].id, "cells": n, "area_mkm2": round(n * h.cell_mkm2, 2)}
                     for (a, b), n in sorted(pairs.items(), key=lambda x: -x[1])[:10]]
@@ -294,6 +295,8 @@ def stories(h: History, pres: dict) -> dict[str, str]:
 def report(out: Path, h: History, res: dict, pres: dict) -> Path:
     L = [f"# Peoples {out.name}: {h.tree.name}", f"present = time zoom {h.ps.run['id']} @ {h.ps.now:g} kyr; tree "
          f"{h.tree.source or '(inline)'}; seed {h.seed}; tries {pres.get('tries')}; {h.runtime:.1f} s", ""]
+    L.append(f"mode: {h.tree.mode}" + (f"; portals ({h.tree.portal_mode}): " + ", ".join(f"{q['kind']} {q['lat']},{q['lon']}" for q in h._portals or [])
+                                      if h.tree.portal_mode != "off" else ""))
     L.append(f"target era: {h.tree.era} (a setting only: the technology tree, PW-675, will read it; the history is not run past the present)")
     if h.tree.disabled:
         L.append(f"switched off: {', '.join(h.tree.disabled)}")
@@ -349,6 +352,13 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         + (f"; of today's peoples {nm['settled_by']['by']} {_ago(nm['settled_by']['ago_kyr'])} ago ({nm['settled_by']['how']}"
            + (f", {nm['settled_by']['gap_km']} km" if nm['settled_by'].get('gap_km') else "") + ")" if nm.get("settled_by") else "")
         for nm in pres.get("landmasses", [])[:16]]
+    if pres.get("try_stats"):
+        top = max(x["wish_score"] for x in pres["try_stats"])
+        L += ["", "## Tries (PW-707: judge changes on the mean; the best-of-N pick moves by chance)"]
+        L += [f"  try {k}{' *' if t['wish_score'] == top else ''}: wish {t['wish_score'] if pres['wishes'] else 'n/a (no wishes)'}, empty land {t['empty_land_pct']}%, "
+              f"two+ peoples {t['two_plus_pct']}%, lead share {t['lead_share_mean_pct']}%, lost {t['lost']}"
+              for k, t in enumerate(pres["try_stats"])]
+        L += ["  mean: " + ", ".join(f"{q} {v}" for q, v in pres["tries_mean"].items())]
     L += ["", "## Mixing zones at the present"] + [f"  {z['area_mkm2']:>6} Mkm2 near {z['lat']},{z['lon']}: {', '.join(z['lines'])}"
                                                    for z in pres["mixing_zones"][:12]] or ["  (none)"]
     L += ["", "## Neighbours at the present"] + [f"  {lid}: {', '.join(v['neighbours'])}" for lid, v in pres["lines"].items()]

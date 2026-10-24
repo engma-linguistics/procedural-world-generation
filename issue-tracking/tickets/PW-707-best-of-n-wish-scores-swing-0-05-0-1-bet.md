@@ -22,5 +22,6 @@ With the same seeds (tree seed 7: tries 7000-7003) the per-try wish scores on 1d
 Suggestion: store the empty land and the composition numbers per try next to `tries` (cheap: they come out of the same present frame), and compare changes by the mean over >= 4 tries, with the best-of-N pick reported separately. `simulate` already keeps `tries`; add `try_stats`.
 
 ## Updates
+- 2026-10-23: fun4: built. present.try_stats / tries_mean in the run meta and run.txt; workbench shows the mean. Base runs reproduce fa7183 / 18cf62 exactly (docs/proposals/lineages.md, Fun lane 4).
 - 2026-10-23: Yes: store per-try stats; judge wish-dynamics changes on the mean of >=4 tries.
 - 2026-10-23: Created from inbox draft draft-wish-score-needs-mean-of-tries.md (found by fun-lane-3).
