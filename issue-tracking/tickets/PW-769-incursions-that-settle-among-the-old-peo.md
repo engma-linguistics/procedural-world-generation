@@ -1,8 +1,9 @@
 ---
-title: Incursions that settle among the old people (co-residence) are not derived yet: only displacement is
+id: PW-769
+title: "Incursions that settle among the old people (co-residence) are not derived yet: only displacement is"
 type: task
 status: todo
-parent: null
+parent: PW-103
 milestone: v2
 subsystem: timezoom
 effort: m
@@ -11,6 +12,8 @@ found_by: fun14
 blocked_by: []
 relates: [PW-756, PW-730, PW-731, PW-734]
 refs: [planet/lineages/contacts.py, planet/lineages/reputation.py, "world 1df1c3", planet/lineages/samples/seven_meals.toml]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -30,3 +33,7 @@ seed) the antelope-kin go 3.85 -> 14.0 Mkm2 and the cervid-kin 18.5 -> 39.2 Mkm2
 elves; the cervid-kin are on the losing side of hobgoblin ones), so on this world nobody calls them devils or demons now. This makes the co-residence decision below the one that matters for the owner's names.
 - [ ] Decide whether co-residence counts; if so, record presence rises per frame (Contacts._note) next to lead flips.
 - [ ] Judgement: INCURSION_GAIN 0.10, INCURSION_SPAN 2 kyr, INCURSION_MIN_MKM2 0.05, LOCAL_KM 1000 are first guesses; no sweep done (one world, tries 1).
+
+## Updates
+- 2026-10-24: Owner 2026-10-24: yes, a ruling-minority fast rise counts; keep it light.
+- 2026-10-24: Created from inbox draft draft-incursions-by-co-residence.md (found by fun14).

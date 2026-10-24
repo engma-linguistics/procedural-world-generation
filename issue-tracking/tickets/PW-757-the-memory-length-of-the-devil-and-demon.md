@@ -3,8 +3,8 @@ id: PW-757
 title: The memory length of the devil and demon rows (30 kyr) is a judgement call, and the neighbour valence hides the fiends from the people who live among them
 type: task
 status: todo
-parent: PW-692
-milestone: v2
+parent: PW-767
+milestone: later
 subsystem: timezoom
 effort: s
 impact: med
@@ -30,5 +30,6 @@ Two related observations for the owner:
 Lean: A for now; D is worth a look on the run's actual rows.
 
 ## Updates
+- 2026-10-24: Owner 2026-10-24: parked under PW-767 (historical linguistics, later).
 - 2026-10-24: Status needs-decision -> todo. Owner 2026-10-24: 'bit of both' - the name in everyday use fades (modern people know they're deerfolk), while folklore/songs/children's stories keep 'horned devils and demons'. Keep it simple: two layers per row, current exonym (fades) and legend/folklore (long). Don't overdesign.
 - 2026-10-24: Created from inbox draft draft-fiend-memory-length-and-folk-table.md (found by fun13).

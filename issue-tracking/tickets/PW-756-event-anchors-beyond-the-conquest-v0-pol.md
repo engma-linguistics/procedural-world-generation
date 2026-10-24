@@ -2,7 +2,7 @@
 id: PW-756
 title: "[[event]] anchors beyond the conquest v0: polities (ruled-by valence), derived incursions, direction, and the culinary-repo events"
 type: task
-status: todo
+status: in-progress
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -32,5 +32,6 @@ called them devils or demons. What is left:
 - [ ] the viewer's tree editor keeps `[[event]]` rows when it saves a tree (it only knows lineages, wishes and uses today)
 
 ## Updates
+- 2026-10-24: Status todo -> in-progress. Merged 76b0bc6: derived incursions (displacement), authored events as fallback, herder press, v0 aggressive trait; seven_meals authored conquests removed. Co-residence in PW-769 (owner: yes, light).
 - 2026-10-24: Created from inbox draft draft-event-anchors-parsed-and-stored.md (found by fun13).
 - 2026-10-24: fun14: built derived incursions (contacts.Contacts.incursions into meta.contacts.incursions; reputation reads them before authored events, which stand only where none was found; rows carry from_dir and the text names the direction) and a herder press (spec.WAY_PRESS). On 1df1c3 neither fiend people conquers by displacement, so the authored events still carry the devils and demons. Left: polities and the resented valence, viewer tree editor keeping [[event]] rows, co-residence incursions (draft-incursions-by-co-residence).

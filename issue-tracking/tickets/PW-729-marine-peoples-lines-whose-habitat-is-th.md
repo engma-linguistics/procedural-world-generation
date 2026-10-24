@@ -39,5 +39,6 @@ visit" there anyway. The lean is A for merfolk and storm giants.
 - [ ] Land peoples' numbers unchanged.
 
 ## Updates
+- 2026-10-24: fun14 code pointers in PW-770: K and spread are land-only; Contacts, _frame, landuse, viewer assume land presence.
 - 2026-10-24: Created from inbox draft draft-marine-peoples.md (found by culinary-intake).
 - 2026-10-24: fun14 did not start this (budget went to PW-756); code pointers and the lean are in draft-marine-habitat-not-started.
