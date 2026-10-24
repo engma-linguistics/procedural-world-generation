@@ -120,8 +120,13 @@ def global_temperature(sim, growth, newc, rng):
       ice        ice sheets reflect sunlight (cooling feedback)
     Real Earth: a few long icehouse eras (Cryogenian, late Ordovician,
     Permo-Carboniferous, today) between long greenhouse ones.
-    growth: arc crust growth this step (km/Myr per cell); newc: number of
-    new ocean-floor cells this step."""
+    growth: the arcs' outgassing this step, as their crust growth at the
+    nominal rate (crust.arc_growth's nominal, km/Myr per cell: the melt the
+    slabs make, without the crust thermostat's gain, which holds the
+    continents' volume on target and is a bookkeeping knob, not a magma
+    flux: at L6 it climbed ~1.4 -> ~2.5-3.3 over 300-1000 Myr, at L7 it
+    stayed ~1.1-1.8, and the CO2 it added made L6 ~1 C warmer than L7,
+    PW-741); newc: number of new ocean-floor cells this step."""
     p, dt = sim.params, sim.dt
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()

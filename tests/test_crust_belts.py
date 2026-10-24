@@ -60,3 +60,22 @@ def test_the_continents_start_at_the_volume_thermostats_target():
         p = sim.params
         assert abs((sim.w_thick * c).sum() / c.sum() - p.continental_thickness) < 0.05
         assert abs((sim.w_thick * c).mean() / (sim.target_fraction() * p.continental_thickness) - 1) < 0.01
+
+
+def test_arc_outgassing_is_the_slabs_melt_not_the_volume_thermostats_gain():
+    """PW-741: the CO2 the arcs outgas is their crust growth at the nominal rate, the melt the slabs make. The
+    volume thermostat's gain (which holds the continents' volume on target, and climbed to ~3 at L6 but stayed
+    ~1.5 at L7) speeds the Andean arcs' crust growth but not their outgassing, so it can't warm the climate."""
+    from planet.tectonics import motion
+    sim = Simulation(build_grid(5), 1, Params(), 2.0)
+    for _ in range(60):  # (until a trench runs under a continent: an Andean arc)
+        sim.step()
+        bd = motion.boundaries(sim)
+        if (sim.w_cont[bd.overriding] & (bd.at_trenches(np.clip(bd.conv, 0, 15)) > 0)).any():
+            break
+    conv = np.clip(bd.conv, 0, 15)
+    g1, n1 = crust.arc_growth(sim, bd, conv, 1.0)
+    g3, n3 = crust.arc_growth(sim, bd, conv, 3.0)
+    assert n1.sum() > 0 and np.array_equal(n1, n3) and np.allclose(g1, n1)
+    assert g3.sum() > n3.sum() + 0.1  # (the gain still builds the continental arcs' crust)
+    assert np.all(g3 >= n3 - 1e-12) and np.all(g3 <= 3.0 * n3 + 1e-12)
