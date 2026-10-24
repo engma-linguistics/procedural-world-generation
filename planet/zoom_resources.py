@@ -470,15 +470,20 @@ def add_to_zoom(ref, log=print) -> Path:
     hist = None
     if m.get("source_run") and S.exists("run", m["source_run"]):
         hist = RS.history(S.find_run(m["source_run"]), float(m["t_myr"]), w["grid"], log=log)
-    if all(f"res_{k}" in w["layers"] for k in RS.KEYS):
-        R = {k: np.asarray(w["layers"][f"res_{k}"], float) for k in RS.KEYS}
+    real = m.get("mode") == "real"  # (the world's mode, PW-695: no fantasy exotics in the real world)
+    keys = [k for k in RS.KEYS if not (real and k in RS.FANTASY)]
+    if all(f"res_{k}" in w["layers"] for k in keys):
+        R = {k: np.asarray(w["layers"].get(f"res_{k}", 0.0), float) * np.ones(w["grid"].n) for k in RS.KEYS}
     else:
         R = RS.likelihoods(w["grid"], w["layers"], m, hist)
+        if real:
+            R = {k: (np.zeros(w["grid"].n) if k in RS.FANTASY else v) for k, v in R.items()}
     out = site(w, meta, lay, R, hist, log=log)
     out["created"] = time.strftime("%Y-%m-%d %H:%M:%S")
     out["history"] = hist is not None
     out["legend"] = [{"key": k, "name": n, "group": gp, "color": c, "model": md, "form": MODELS[k][0]}
-                     for k, n, gp, c, md in RS.RESOURCES if k in MODELS]
+                     for k, n, gp, c, md in RS.RESOURCES if k in MODELS and not (real and k in RS.FANTASY)]
+    out["mode"] = "real" if real else "fantasy"
     meta["resources"] = out
     S.write_atomic(d / "zoom.json", json.dumps(meta, indent=1))
     return d

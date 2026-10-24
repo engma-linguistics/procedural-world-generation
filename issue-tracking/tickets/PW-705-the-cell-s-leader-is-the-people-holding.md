@@ -27,5 +27,6 @@ Options:
 Lean: B.
 
 ## Updates
+- 2026-10-23: fun4: built (option B): layer mix_lead = most heads; peoples_whole stays the ground holder; blend and hover use mix_lead. Output only, dynamics unchanged.
 - 2026-10-23: Status needs-decision -> todo. Coordinator's call: B, pick the cell's leader by heads.
 - 2026-10-23: Created from inbox draft draft-composition-leader-by-heads.md (found by fun-lane-3).

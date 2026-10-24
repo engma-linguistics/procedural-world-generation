@@ -66,3 +66,16 @@ def test_zoom_models_cover_resources():
     assert abs(ZR.SIZE_P.sum() - 1) < 1e-9
     for k, (form, *_rest) in ZR.MODELS.items():
         assert form in ZR.FORM_NOTE, k
+
+
+def test_real_mode_world_has_no_fantasy_layers(monkeypatch):
+    """PW-695 / PW-607: a world in real mode stores no res_x_* layers; fantasy mode keeps them."""
+    n = 12
+    monkeypatch.setattr(RS, "likelihoods", lambda grid, L, meta=None, hist=None: {k: np.full(n, 0.5) for k in RS.KEYS})
+    monkeypatch.setattr(RS, "stone_class", lambda L: np.zeros(n))
+    grid = type("G", (), {"n": n})()
+    L = {"landform": np.zeros(n)}
+    fan = RS.world_layers(grid, L)
+    real = RS.world_layers(grid, L, mode="real")
+    assert all(f"res_{k}" in fan for k in RS.FANTASY) and RS.FANTASY
+    assert not any(f"res_{k}" in real for k in RS.FANTASY) and all(f"res_{k}" in real for k in RS.REAL)
