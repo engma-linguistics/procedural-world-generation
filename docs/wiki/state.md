@@ -4,8 +4,8 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics (Opus): idle for the owner's clean benchmark (one L6 then one L7, scratchpad bench). PW-790 analysed (docs/review/base-climate/v2-climate-1/): outgassing decline is in the literature range; the water-world icebox comes from the CO2 references freezing at 300 Myr while land still emerges. RULING (coordinator): fix the freeze planet-relatively (PW-798, option A) before any +8 offset (PW-799, blocked). Next: PW-798, then PW-791 star thermostat.
-- Fun (Sonnet): idle for the benchmark. PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
+- Physics (Opus): PW-798 CO2 reference freeze, option A (v2-climate-2). Then PW-791 star thermostat; PW-801 run memory queued (benchmark 2026-10-24: L6 5:40 / 2.8 GB, L7 28:52 / 9.9 GB).
+- Fun (Sonnet): PW-797 salt-miner dwarves (fun-lane-23). Last merged: PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
