@@ -1,4 +1,5 @@
 ---
+id: PW-725
 title: "L7 runs are much icier than L6: the four L7 showcase runs spend 63-79% of 300-1000 Myr in an icehouse, L6 a median 33% (24/32 seed-draws within the owner's 40%)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-2
 blocked_by: []
 relates: [PW-708, PW-559, PW-202]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish-2/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -32,3 +35,6 @@ seeds at L6: dT parts (drift, CO2 term, albedo), the CO2 source/sink parts (`doc
 relief.py`, `trend.py`), iced land and snowline land per level. Fix the root cause if it's resolution-dependent
 physics; the showcase (PW-202) is L7, so v1's look depends on it. The L7 showcase's present worlds are
 interglacials within their icehouse (PW-700), so they look fine; their histories are icier than the bar.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-l7-runs-icier-than-l6.md (found by v1-finish-2).
