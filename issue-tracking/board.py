@@ -642,6 +642,46 @@ def dangling_refs(b, items, body=False):
     return out
 
 
+WIKI_LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[^)]*)?\)")
+WIKI_PATH_RE = re.compile(r"`((?:docs|planet|tools|tests|viewer|issue-tracking)/[^`\s<>*{}]+)`")
+WIKI_STALE_DAYS = 3
+
+
+def wiki_check(b, tickets):
+    """(problems, warnings) for docs/wiki/*.md: markdown links and backticked repo paths must exist,
+    PW- ids must be tickets, and state.md's "Last updated: YYYY-MM-DD" should be under 3 days old.
+    Empty when the repo has no docs/wiki/."""
+    repo = b.root.resolve().parent
+    wiki = repo / "docs" / "wiki"
+    if not wiki.is_dir():
+        return [], []
+    problems, warnings = [], []
+    for page in sorted(wiki.glob("*.md")):
+        text = page.read_text()
+        name = f"docs/wiki/{page.name}"
+        for target in sorted(set(WIKI_LINK_RE.findall(text))):
+            if "://" not in target and not target.startswith("mailto:") and not (page.parent / target).exists():
+                problems.append(f"{name}: broken link {target}")
+        for path in sorted(set(WIKI_PATH_RE.findall(text))):
+            if "..." not in path and not (repo / path.rstrip("/.,;:")).exists():
+                problems.append(f"{name}: no such file {path}")
+        for tid in sorted(set(re.findall(r"\bPW-\d+\b", text))):
+            if tid not in tickets:
+                problems.append(f"{name}: unknown ticket {tid}")
+    state = wiki / "state.md"
+    if state.is_file():
+        m = re.search(r"[Ll]ast updated:?\**\s*(\d{4}-\d{2}-\d{2})", state.read_text())
+        try:
+            age = (dt.date.today() - dt.date.fromisoformat(m.group(1))).days if m else None
+        except ValueError:
+            age = None
+        if age is None:
+            warnings.append("docs/wiki/state.md has no readable 'Last updated: YYYY-MM-DD'")
+        elif age > WIKI_STALE_DAYS:
+            warnings.append(f"docs/wiki/state.md was last updated {age} days ago; overwrite it")
+    return problems, warnings
+
+
 def cmd_check(b, tickets, args):
     problems = list(args.load_errors)
     for tid, t in tickets.items():
@@ -655,7 +695,11 @@ def cmd_check(b, tickets, args):
             problems.append(f"inbox/{path.name}: {e}")
             continue
         problems += [f"inbox/{path.name}: {m}" for m in problems_for(d, tickets, draft=True)]
+    wiki_problems, wiki_warnings = wiki_check(b, tickets)
+    problems += wiki_problems
     print("\n".join(problems) if problems else f"OK ({len(tickets)} tickets, {n_drafts} inbox drafts)")
+    for w in wiki_warnings:
+        print(f"warning: {w}")
     # a warning, not a problem: deleting a run/world/zoom leaves refs to it behind
     open_items = [(tid, t) for tid, t in tickets.items() if t.get("status") not in CLOSED]
     gone = dangling_refs(b, open_items if not args.refs else list(tickets.items()), body=args.refs)

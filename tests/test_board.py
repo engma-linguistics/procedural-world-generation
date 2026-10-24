@@ -296,3 +296,24 @@ def test_check_warns_on_dangling_data_refs(tmp_path, capsys):
         run(root, "check", "--refs")
     out = capsys.readouterr().out
     assert "refs run abcdef" in out and "refs world 000000" in out and "fe7144" not in out
+
+
+def test_check_wiki_links_ids_and_staleness(tmp_path, capsys):
+    import datetime
+    repo = tmp_path / "repo"
+    root = repo / "issue-tracking"
+    (root / "tickets").mkdir(parents=True)
+    (root / "inbox").mkdir()
+    wiki = repo / "docs" / "wiki"
+    wiki.mkdir(parents=True)
+    (repo / "docs" / "overview.md").write_text("# o")
+    new(root, "First")
+    old = (datetime.date.today() - datetime.timedelta(days=5)).isoformat()
+    (wiki / "state.md").write_text(f"Last updated: {old}\nSee [o](../overview.md), `docs/overview.md`, PW-001.\n")
+    capsys.readouterr()
+    assert check(root) == 0
+    assert "last updated 5 days ago" in capsys.readouterr().out  # a warning, not a failure
+    (wiki / "state.md").write_text(f"Last updated: {datetime.date.today()}\n[x](../nope.md) `docs/gone.md` PW-999\n")
+    assert check(root) == 1
+    out = capsys.readouterr().out
+    assert "broken link ../nope.md" in out and "no such file docs/gone.md" in out and "unknown ticket PW-999" in out

@@ -1,0 +1,35 @@
+# Where things live
+
+Code map by file: [overview section 6](../overview.md). This page is the operational map.
+
+## Data stores (repo root, git-ignored; worktrees symlink them to the main checkout)
+| Store | Contents | Delete with |
+|---|---|---|
+| `runs/<id>/` | simulation runs: keyframes, layers, checkpoints, time zooms (also runs) | `uv run python -m planet delete run:<id>` |
+| `worlds/<id>.json` | finished worlds | `delete world:<id>` |
+| `zooms/<id>/` | regional and fine zooms | `delete zoom:<id>` |
+| `grids/` | cached icosphere grids | rebuilt on demand |
+| `data/` | symlinked input data (Earth reference data) | |
+
+`--orphans` deletes things whose parent is gone. Bulk cleanup: `uv run python tools/cleanup_outputs.py` (lists), `--yes` (deletes everything not referenced by an open ticket, not younger than 12 h, not the Earth world). Outputs are freely deletable ([decisions](decisions.md)).
+
+## Docs
+- `docs/overview.md`: how it works. `docs/coordination.md`: worktrees, merging, costs, recipes. `docs/plan_next.md`: roadmap pointer.
+- `docs/proposals/`: design write-ups (lineages, resources, soils, vegetation, culinary-dnd intake).
+- `docs/review/`: investigations kept for open tickets and the images the overview links; subfolders audit/, base-climate/, ice-v2/, health*/, lineages/ (with briefs/), screens/. Cleanup log: [cleanup-2026-10-23.md](../cleanup-2026-10-23.md).
+- `docs/scorecard.jsonl`: scorecard history (written by `tools/scorecard.py`).
+- `docs/wiki/`: this folder.
+
+## Tools and checks
+- `tools/scorecard.py` (~11 min; after model changes), `tools/earth_check.py` (after climate changes), `tools/health.py` (multi-seed sweep; `--quick` ~6 min), `tools/cleanup_outputs.py`.
+- Tests: `uv run pytest -q` (~5 min; `-m 'not slow'`), goldens in `tests/golden/`.
+
+## Server
+- `planet serve --no-open` on port **8765**, viewer at http://127.0.0.1:8765/viewer/. Restart only after `planet/server.py` or `planet/api.py` change; recipe in [coordination.md](../coordination.md). Subagents never touch it.
+
+## Peoples presets
+- `planet/lineages/samples/dnd.toml` (stock D&D tree), `planet/lineages/samples/seven_meals.toml` (the owner's world). Spec reference: docstring of `planet/lineages/spec.py`. The editor is `viewer/lineages.html`.
+
+## Board
+- Tickets `issue-tracking/tickets/PW-NNN-*.md`, drafts `issue-tracking/inbox/`, CLI `issue-tracking/board.py`, rules [issue-tracking/README.md](../../issue-tracking/README.md). Starting points: `board.py next`, `decisions`, `milestones`, `list --open --subsystem X`.
+- Consumer repo: culinary-dnd at `~/personal/repos/culinary-dnd`, read-only.

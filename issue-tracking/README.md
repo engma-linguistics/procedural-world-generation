@@ -140,7 +140,7 @@ uv run python issue-tracking/board.py check [--refs]                          # 
 
 ## Validation
 
-`check` enforces the exact field set; valid type, status, subsystem, effort, impact and milestone values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
+`check` also verifies that `docs/wiki/*.md` links and repo paths exist and its PW- ids are tickets, and warns when `docs/wiki/state.md` is over 3 days old. It enforces the exact field set; valid type, status, subsystem, effort, impact and milestone values; non-empty `found_by`; real dates with `updated` ≥ `created`; list-typed links whose targets exist and aren't the ticket itself; parent rank and no parent loops; `blocked` only with `blocked_by`; `## Description` and `## Updates` sections with well-formed entries; filenames starting with the id. Drafts get the same checks, minus `id`/`created`/`updated` and the Updates section.
 
 Frontmatter is a small YAML subset (one `key: value` per line, flow lists `[a, "b c"]`, `#` comments), parsed by `board.py` itself, so it needs no dependencies.
 
