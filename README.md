@@ -89,7 +89,7 @@ Other things to try:
 ```sh
 uv run python -m planet simulate -s 7 --myr 1000 --set start=scattered n_plates=16
 uv run python -m planet simulate --myr 2000 --set heat_start=2 continental_start=0.1   # ocean world, land emerges
-uv run python -m planet simulate --set tilt=45 climate_offset=5                        # extreme seasons, hothouse
+uv run python -m planet simulate --set tilt=45 climate_offset=3                        # extreme seasons, hothouse
 uv run python -m planet report <run-id>                                                # re-render run.txt
 ```
 

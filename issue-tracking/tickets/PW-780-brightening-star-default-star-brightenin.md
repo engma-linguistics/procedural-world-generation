@@ -47,4 +47,14 @@ points:
   co2_sensitivity / (5.35 ln 2) = 0.81: 3 C is per doubling, not per e-fold. star_forcing uses 0.81.
 
 ## Updates
+- 2026-10-24: Lane v1-finish-8 (docs/review/base-climate/v1-finish-8/README.md).
+  - 2 Gyr: no hothouse. L6 Earth-like 6/7 on 300-2000 (never-ice 0, hellhole 0, late dT med +4..+8). L7 2 draws are
+    warmer late: 1500-2000 ice-free in both, dT +9.1 / +7.4; seed 12 never-ice overall.
+  - Water world: always-icebox with or without the star (the outgassing falls 3x; draft-water-world-recipe-icebox.md).
+  - Cold recipe kept. Hothouse preset climate_offset 5 -> 3 (at 5 with the star, dT med +12.9 / +10.9 crossed the
+    hellhole line).
+  - Strict reading (never-ice fails): L6 13/18, L7 7/8. A lower rate cools the warm draws by 2-4 C, but the share per
+    seed is chaotic (583167: 0 / 60 / 12 / 11% at 0.45 / 0.2 / 0.1 / 0). star_age can't help (it warms).
+    Per-world lever: draft-star-brightening-per-world-lever.md.
+  - PW-564's text corrected.
 - 2026-10-24: Created from inbox draft draft-star-brightening-default-signoff.md (found by v1-finish-7).
