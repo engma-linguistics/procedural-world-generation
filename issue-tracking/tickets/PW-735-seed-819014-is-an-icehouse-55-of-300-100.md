@@ -4,7 +4,7 @@ title: Seed 819014 is an icehouse 55% of 300-1000 Myr at L6 and 75-89% (always-i
 type: task
 status: todo
 parent: PW-244
-milestone: null
+milestone: v2
 subsystem: climate
 effort: s
 impact: low
