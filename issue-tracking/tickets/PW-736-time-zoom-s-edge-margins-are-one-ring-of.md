@@ -1,9 +1,10 @@
 ---
+id: PW-736
 title: "Time zoom's 'edge' margins are one ring of cells at any level, as the run's were before PW-725: at L7 the band melting as the sheet's edge is half as wide as at L6"
 type: task
-status: todo
-parent: PW-470
-milestone: v2
+status: in-progress
+parent: PW-244
+milestone: v1
 subsystem: timezoom
 effort: s
 impact: med
@@ -11,6 +12,8 @@ found_by: v1-finish-3
 blocked_by: []
 relates: [PW-725, PW-460, PW-555]
 refs: [planet/timezoom/sim.py, planet/tectonics/earth.py, docs/review/base-climate/v1-finish-3/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -29,3 +32,7 @@ draw, PW-471, and has its own checks); left for whoever owns the time zoom.
   sea level at the glacial and interglacial.
 - [ ] If it differs, use `earth.margin_band` for the 'edge' mode so it stays the run's rule; or take the ramp
   (PW-460) in both, which retires the band.
+
+## Updates
+- 2026-10-24: Status todo -> in-progress. Coordinator: v1, since every L7 showcase time zoom reads it; fix in km like PW-725, then remake the showcase time zooms from the new runs.
+- 2026-10-24: Created from inbox draft draft-timezoom-edge-margin-one-ring.md (found by v1-finish-3).
