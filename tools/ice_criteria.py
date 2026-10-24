@@ -12,7 +12,10 @@ from none, the plants spread, the ocean basins start from a made-up floor), and 
 - new, per run (section 3): N1 every cold era ends (deep, below DEEP m, within DEEP_MAX Myr; very deep,
   below VDEEP m, within VDEEP_MAX Myr; eras still on at the end are censored, not failed, if they started
   less than that before it); N2 the ice's sea level stays above FLOOR; N3 the planet spends between
-  ICEHOUSE_SHARE of its time in an icehouse and no icehouse lasts longer than ICEHOUSE_MAX Myr; N4 a hot
+  ICEHOUSE_SHARE of its time in an icehouse and no icehouse lasts longer than ICEHOUSE_MAX Myr (the share's floor
+  only on runs of at least FLOOR_RUN Myr: a shorter window, e.g. health --quick's 300-500 Myr, can't hold the
+  gap between two ice ages, Earth's Mesozoic was ~200 Myr without one; PW-709. The cap is judged on every
+  window); N4 a hot
   era (dT above HOT C) ends within HOT_MAX Myr. Gaps between icehouses and their lengths are reported,
   not barred (Earth's range is 80 Myr to ~1.5 Gyr).
 
@@ -42,6 +45,7 @@ VDEEP, VDEEP_MAX = -430.0, 60.0  # m, Myr
 FLOOR = -1000.0  # m
 ICEHOUSE_SHARE = (0.05, 0.70)
 ICEHOUSE_MAX = 300.0  # Myr
+FLOOR_RUN = 1000.0  # Myr: the run's end from which ICEHOUSE_SHARE's floor is judged (PW-709)
 HOT, HOT_MAX = 8.0, 150.0  # C, Myr
 
 
@@ -120,7 +124,9 @@ def evaluate(d: dict, spinup: float = SPINUP) -> dict:
                        "gaps": gaps, "median_gap": float(np.median(gaps)) if gaps else None,
                        "first": sp[0][0] if sp else None,
                        "flicker_eras": sum(x <= EVERY + 1e-6 for x in lens)}
-    if not ICEHOUSE_SHARE[0] <= share <= ICEHOUSE_SHARE[1]:
+    floor = end >= FLOOR_RUN - EVERY  # (a 1 Gyr run's last climate update may fall a step short of its end)
+    res["icehouse"]["floor_judged"] = floor
+    if share > ICEHOUSE_SHARE[1] or (floor and share < ICEHOUSE_SHARE[0]):
         fails.append(f"icehouse {100 * share:.0f}% of the time, outside {100 * ICEHOUSE_SHARE[0]:g}-"
                      f"{100 * ICEHOUSE_SHARE[1]:g}%")
     if lens and max(lens) > ICEHOUSE_MAX:
