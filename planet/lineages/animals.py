@@ -84,8 +84,9 @@ class Stock:
         return float(np.clip(a.prop_floor + sum(w * self.sh[k][i] for k, w in a.prop.items()), 0, 1))
 
     # -- per step -----------------------------------------------------------------------------------
-    def step(self, step, env, tags, p, native, sea) -> None:
-        """Update the wild range, taming, the front and the sea crossings for a step (after the epoch's tags, before the peoples move)."""
+    def step(self, step, env, tags, p, native, sea, peopled=None) -> None:
+        """Update the wild range, taming, the front and the sea crossings for a step (after the epoch's tags, before the peoples move).
+        peopled: the cells any people holds (the same for every stock of a step: Animals.step makes it once)."""
         if not self.a.plant:
             self.wild = self.a.wild(env, tags, tags["land"])
         elif self._range_age + step.dt >= CROP_RANGE_KYR or not self._ranged:  # (a crop's range follows the climate slowly: every 0.5 kyr, not every step)
@@ -97,7 +98,8 @@ class Stock:
         self.climate = env["climate"]
         if self.absent:
             return
-        peopled = (p[native] >= EST).any(0)
+        if peopled is None:
+            peopled = (p[native] >= EST).any(0)
         if step.ago <= self.d0 + 1e-9:
             self._tame(step, p, peopled, first=not self.tamed)
         if self.tamed:
@@ -267,10 +269,13 @@ class Animals:
         if step.epoch == "deep":
             return
         self.ago = step.ago
+        pn = p[native]
+        held = pn >= EST
+        peopled = held.any(0)
         for s in self.stocks:
-            s.step(step, env, tags, p, native, self.sea)
+            s.step(step, env, tags, p, native, self.sea, peopled)
         # adoption by line: the share of its land where the animal is known x its propensity (one matrix product)
-        W = np.where(p[native] >= EST, p[native], 0.0)
+        W = np.where(held, pn, 0.0)
         tot = W.sum(1)
         ok = tot > 0
         den = np.where(ok, tot, 1.0)

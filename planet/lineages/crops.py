@@ -39,9 +39,12 @@ class Crops(Animals):
         goods = self.h.goods
         if goods is not None and "fertile" in goods:  # the soil: the world's farmland (the plates have moved in the deep epochs)
             tags = {**tags, "soil": goods["fertile"]}
+        pn = p[native]
+        held = pn >= EST
+        peopled = held.any(0)
         for s in self.stocks:
-            s.step(step, env, tags, p, native, self.sea)
-        W = np.where(p[native] >= EST, p[native], 0.0)
+            s.step(step, env, tags, p, native, self.sea, peopled)
+        W = np.where(held, pn, 0.0)
         tot = W.sum(1)
         ok = tot > 0
         den = np.where(ok, tot, 1.0)

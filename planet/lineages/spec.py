@@ -235,6 +235,7 @@ def body_notes(b: dict) -> list[str]:
     return out
 
 
+TIER_KYR = (10.0, 1000.0, 40000.0)  # split depths under which peoples are T0, T1, T2 (else T3): interfertility tiers, PW-727
 ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
 GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
@@ -379,6 +380,8 @@ class Tree:
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
+    tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
+    tiers: list = field(default_factory=list)  # [[interfertile]]: per-pair overrides [a, b, tier 0..3] (the half-elf exemption...)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
         """The goods a line looks for (from its traits and preferred places), weights summed per good."""
@@ -430,6 +433,42 @@ class Tree:
         """The body flags some line gives as a share of its people (0..1), not true/false: mapped per cell
         as a population frequency (PW-701)."""
         return [k for k in BODY_BOOLS if any(not isinstance(l.body.get(k), bool) for l in self.lines.values() if not l.overlay)]
+
+    def split_kyr(self, a: str, b: str) -> float | None:
+        """Kyr since two lines last shared a population (None: no common ancestor, or an arrival from outside).
+        A line splits from its parent when it appears, so the depth is the older of the two branchings below the
+        common ancestor (0: the same people or one of its groups; a parent and its child: the child's age).
+        An overlay (template, contact hybrid) counts as its closest parent (it is interfertile with its hosts)."""
+        la, lb = self.lines[a], self.lines[b]
+        if self.people_of(a) == self.people_of(b):
+            return 0.0
+        if la.overlay or lb.overlay:
+            ca = la.parents if la.overlay else [a]
+            cb = lb.parents if lb.overlay else [b]
+            ds = [self.split_kyr(x, y) for x in ca for y in cb]
+            ds = [d for d in ds if d is not None]
+            return min(ds) if ds else None
+        if la.origin == "arrival" or lb.origin == "arrival":
+            return None
+        ca = [a, *self.ancestors(a)]
+        cb = [b, *self.ancestors(b)]
+        common = next((x for x in ca if x in cb), None)
+        if common is None:
+            return None
+        ta, tb = ca[:ca.index(common)], cb[:cb.index(common)]
+        d = [self.lines[x].ago_kyr for x in (ta[-1:] + tb[-1:])]
+        return max(d) if d else 0.0
+
+    def tier_of(self, a: str, b: str) -> int:
+        """Interfertility tier of two lines from the depth of their split (meta.tier_kyr: T0 under 10 kyr or the
+        same people, T1 under 1 Myr, T2 under 40 Myr, else T3), unless a [[interfertile]] row names the pair."""
+        for x, y, t in self.tiers:
+            if {x, y} == {a, b}:
+                return t
+        d = self.split_kyr(a, b)
+        if d is None:
+            return 3
+        return next((i for i, lim in enumerate(self.tier_kyr) if d < lim), 3)
 
     def groups_of(self, lid: str) -> list[str]:
         """The groups (ways of life) within a people, oldest first."""
@@ -663,6 +702,17 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     if not t.portal_sites or any(x not in PORTAL_SITES for x in t.portal_sites):
         raise ValueError(f"meta.portal_sites must be some of {list(PORTAL_SITES)}")
     t.uses = uses
+    tk = tuple(float(parse_ago(x)) for x in meta.get("tier_kyr", TIER_KYR))
+    if len(tk) != 3 or list(tk) != sorted(tk) or tk[0] <= 0:
+        raise ValueError("meta.tier_kyr must be three rising split depths (T0, T1, T2 limits)")
+    t.tier_kyr = tk
+    for r in raw.get("interfertile", []):
+        a, b, tr = str(r.get("a", "")), str(r.get("b", "")), r.get("tier")
+        if a in off or b in off:
+            continue
+        if a not in lines or b not in lines or a == b or tr not in (0, 1, 2, 3):
+            raise ValueError(f"interfertile {r}: a and b must be two lines of the tree and tier 0..3")
+        t.tiers.append((a, b, int(tr)))
     from . import animal_defs as AD
     am = meta.get("animals")
     t.animals = None if am is None else [str(x) for x in am]
@@ -734,7 +784,8 @@ def to_raw(t: Tree) -> dict:
             r["sites"] = l.sites
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
-                     "era": t.era, "viable_pop": t.viable_pop, "mode": t.mode, "portal_mode": t.portal_mode,
+                     "era": t.era, "viable_pop": t.viable_pop,
+                     **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
                      **({"animals": t.animals} if t.animals is not None else {}),
                      **({"animals_force": t.animals_force} if t.animals_force else {}),
@@ -742,5 +793,6 @@ def to_raw(t: Tree) -> dict:
                      **({"crops": t.crops} if t.crops is not None else {}),
                      **({"crops_force": t.crops_force} if t.crops_force else {}),
                      **({"crops_at": {k: f"{v:g} kyr" for k, v in t.crops_at.items()}} if t.crops_at else {})},
-            "lineage": out, "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
+            "lineage": out, "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
+            "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

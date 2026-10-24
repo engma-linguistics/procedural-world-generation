@@ -127,6 +127,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
+                 "contacts": h.contacts.summary() if h.contacts is not None else None,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
