@@ -45,15 +45,21 @@ from .geo import R_KM, is_land
 from .grid import Grid
 
 PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
-# 320-370 ppm; the plants' "today", vegetation.CA_REF). A run's CO2 stock is ln X against the planet's own balance
-# once its start has settled (tectonics/earth.py), and that balance holds dT = 0 (no drift, no ice beyond Earth's),
-# so X = 1 is this pCO2 (PW-646).
+# 320-370 ppm; the plants' "today", vegetation.CA_REF).
+PCO2_BALANCE = 500.0  # ppm: the pCO2 a planet's carbon cycle rests at, its own balance of outgassing against
+# weathering once its start has settled (tectonics/earth.py; the CO2 stock is ln X against it, X = 1 here). Not
+# today's: Earth's present is the low end of its Phanerozoic range (~280-400 ppm in the Carboniferous-Permian and
+# the late Cenozoic, ~1000+ through the Mesozoic and the early Paleozoic; Foster et al. 2017), and its long-run mean
+# climate is several C warmer than today's (Scotese et al. 2021). 500 ppm, about the record's middle in log terms,
+# is half a doubling above PCO2_REF (+1.5 C at co2_sensitivity 3; PW-559 B). With the balance at today's pCO2 the
+# planets spent a median 45% of their time in an icehouse; with 500 ppm 19% (Earth ~10-30%); with 700 ppm 0%,
+# i.e. most never glaciate (32 L6 seeds, docs/review/base-climate/v1-finish/).
 
 
 def pco2(co2: float) -> float:
-    """The CO2 stock co2 (ln X, X against its reference) as a partial pressure, ppm: what plants and the
-    temperature term both read (PW-646)."""
-    return PCO2_REF * float(np.exp(co2))
+    """The CO2 stock co2 (ln X, X against the planet's balance PCO2_BALANCE) as a partial pressure, ppm: what
+    plants and the temperature term both read (PW-646)."""
+    return PCO2_BALANCE * float(np.exp(co2))
 
 LAPSE = 6.5 / 1000  # degC per metre
 FREEZE = -1.8  # C: sea water freezes

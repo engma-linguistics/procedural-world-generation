@@ -31,11 +31,19 @@ def test_stock_is_stable_at_long_steps():
 
 
 def test_forcing_levels_off_smoothly():
+    """co2_term reads the stock as pCO2 against the climate model's dT = 0 (climate.PCO2_REF): the planet's
+    balance (stock 0, climate.PCO2_BALANCE) is a doubling above it (PW-559 B)."""
+    from planet import climate
+
     class P:
         co2_sensitivity = 3.0
-    assert np.isclose(earth.co2_term(P, np.log(2.0)), 3.0, rtol=0.01)  # co2_sensitivity per doubling (PW-646)
+    at = lambda ppm: earth.co2_term(P, np.log(ppm / climate.PCO2_BALANCE))  # the term at a pCO2
+    assert np.isclose(climate.pco2(0.0), climate.PCO2_BALANCE)
+    assert abs(at(climate.PCO2_REF)) < 1e-12
+    assert np.isclose(at(2 * climate.PCO2_REF), 3.0, rtol=0.01)  # co2_sensitivity per doubling (PW-646)
+    assert np.isclose(earth.co2_term(P, 0.0), 3.0 * np.log2(climate.PCO2_BALANCE / climate.PCO2_REF), rtol=0.01)
     assert earth.co2_term(P, 50.0) < 3.0 / np.log(2.0) * earth.CO2_MAX + 1e-9
-    assert earth.co2_term(P, -1.0) == -earth.co2_term(P, 1.0)
+    assert at(climate.PCO2_REF / np.e) == -at(climate.PCO2_REF * np.e)
 
 
 def test_references_are_kept_after_the_spin_up():

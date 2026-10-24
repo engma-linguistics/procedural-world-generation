@@ -98,9 +98,11 @@ def co2_stock(co2, s, w, dt, steps=4):
 
 def co2_term(p, co2):
     """The CO2 stock's warming, C: co2_sensitivity per doubling of pCO2 (climate.pco2; an e-fold is 1 / ln 2
-    doublings), levelling off smoothly toward +-CO2_MAX e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar
+    doublings) above the climate model's dT = 0 (climate.PCO2_REF: the planet's balance, PCO2_BALANCE, is a
+    doubling warmer), levelling off smoothly toward +-CO2_MAX e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar
     and grows less beyond)."""
-    return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(co2 / CO2_MAX))
+    c = co2 + np.log(climate.PCO2_BALANCE / climate.PCO2_REF)  # e-folds above the climate's dT = 0 (PW-559 B)
+    return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(c / CO2_MAX))
 
 
 def global_temperature(sim, growth, newc, rng):

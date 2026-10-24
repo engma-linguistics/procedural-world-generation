@@ -1,0 +1,6 @@
+tree | seeds | hellhole | icehouse > 40% (owner's bar) | always-icebox (icehouse >= 90% or deep >= 30%) | pass owner's bar | icehouse % median / mean | old bar ok | new bar ok | temp median / max | failing seeds
+---|---|---|---|---|---|---|---|---|---|---
+canon | 32 | 0 | 16 | 5 | 16 (50%) | 45 / 44 +- 5 | 31 | 23 | 16.4 / 25.9 | 1(ice 65%, deep 14%) 2(ice 71%, deep 18%) 11(BOX ice 53%, deep 33%) 21(ice 57%, deep 0%) 42(BOX ice 67%, deep 49%) 102(BOX ice 100%, deep 20%) 103(ice 55%, deep 6%) 106(ice 67%, deep 22%) 107(ice 55%, deep 16%) 108(BOX ice 96%, deep 18%) 201(ice 71%, deep 2%) 204(ice 76%, deep 10%) 207(ice 72%, deep 28%) 212(ice 63%, deep 0%) 214(BOX ice 98%, deep 74%) 216(ice 67%, deep 0%)
+bal500 | 32 | 0 | 9 | 2 | 23 (72%) | 19 / 26 +- 5 | 31 | 22 | 18.1 / 27.6 | 107(ice 55%, deep 24%) 108(BOX ice 94%, deep 0%) 201(ice 45%, deep 0%) 204(ice 47%, deep 0%) 207(BOX ice 100%, deep 22%) 210(ice 51%, deep 6%) 213(ice 45%, deep 0%) 215(ice 49%, deep 18%) 3199(ice 61%, deep 0%)
+bal500_rr | 32 | 0 | 3 | 1 | 29 (91%) | 14 / 18 +- 4 | 30 | 18 | 18.0 / 27.6 | 77(BOX ice 92%, deep 4%) 102(ice 53%, deep 0%) 202(ice 53%, deep 0%)
+bal700 | 32 | 0 | 5 | 0 | 27 (84%) | 0 / 15 +- 4 | 32 | 10 | 19.6 / 28.7 | 103(ice 65%, deep 12%) 105(ice 43%, deep 0%) 205(ice 49%, deep 0%) 213(ice 63%, deep 0%) 214(ice 78%, deep 0%)

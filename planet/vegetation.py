@@ -180,7 +180,7 @@ _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS]
 # monthly mean of QY_CROSS (Collatz et al. 1998's C4 climate criterion, at
 # their ~350 ppm), so C3 grass's efficiency is C4 grass's there, scaled by
 # its quantum yield elsewhere (vegetation._q3; the qy column flags it).
-QY_CROSS, CA_REF = 22.0, climate.PCO2_REF  # C, ppm (today: the climate model's dT = 0 and the CO2 stock's reference)
+QY_CROSS, CA_REF = 22.0, climate.PCO2_REF  # C, ppm (today: the climate model's dT = 0; a run's balance is climate.PCO2_BALANCE)
 
 
 def _gstar(t):
