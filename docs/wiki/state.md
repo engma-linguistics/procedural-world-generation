@@ -4,7 +4,9 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- (not filled in yet)
+- Physics (Opus): PW-790 water-world outgassing check (docs/review/base-climate/v2-climate-1/). Next: PW-791 star thermostat.
+- Fun (Sonnet): PW-793 no dairy for seven_meals fiend-kin; PW-794 fast horse uptake on contact.
+- Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
 - Epic PW-244. Only the owner sign-off PW-780 is open (default `star_brightening` 0.45, a K-type star; provisional owner OK 2026-10-24). 2 open tickets in the v1 milestone.
