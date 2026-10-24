@@ -1,9 +1,10 @@
 ---
-title: "The water-world recipe (seed 13, continental_start 0.1, heat_start 2) is an always-icebox over 2 Gyr, with or without the brightening star"
+id: PW-790
+title: The water-world recipe (seed 13, continental_start 0.1, heat_start 2) is an always-icebox over 2 Gyr, with or without the brightening star
 type: task
-status: needs-decision
-parent: PW-244
-milestone: v1
+status: todo
+parent: null
+milestone: v2
 subsystem: climate
 effort: s
 impact: med
@@ -11,6 +12,8 @@ found_by: v1-finish-8
 blocked_by: []
 relates: [PW-780, PW-564, PW-202, PW-576]
 refs: [planet/make.py, planet/tectonics/earth.py, docs/review/base-climate/v1-finish-8/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -44,3 +47,7 @@ Lean: B first, a short check of the outgassing curve, since a 3x fall in ~700 My
 curve turns out to be right and the owner wants the preset to show emerging land under a living climate.
 - [ ] outgassing decline under heat_start 2 measured against a literature heat-flow decline
 - [ ] the preset reads as intended (not an always-icebox unless the owner picks C)
+
+## Updates
+- 2026-10-24: Status needs-decision -> todo. Coordinator (geophysics delegated): check the outgassing decline (heat_start=2 mantle cooling) first; recipe re-pick only after.
+- 2026-10-24: Created from inbox draft draft-water-world-recipe-icebox.md (found by v1-finish-8).
