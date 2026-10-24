@@ -10,7 +10,7 @@ so this is `Animals` with another table and these differences:
     grew wild) x the people's adoption (share of its land where the crop is known x its propensity) x its farm share;
   - `crop_know` per cell (0..1): how much of a staple diet the crops known and growable there make (landuse.py scales the
     cropland by it: no fields without a crop to sow).
-Stored per frame as two uint16 bit-flag layers `crop_wild` and `crop_known` (bit i = crop_defs.TABLE[i]).
+Stored per frame as two uint32 bit-flag layers `crop_wild` and `crop_known` (bit i = crop_defs.TABLE[i]).
 """
 
 from __future__ import annotations
@@ -90,10 +90,10 @@ class Crops(Animals):
 
     def frame_layers(self) -> dict:
         n = self.h.grid.n
-        known, wild = np.zeros(n, np.uint16), np.zeros(n, np.uint16)
+        known, wild = np.zeros(n, np.uint32), np.zeros(n, np.uint32)
         for s in self.stocks:
-            known |= (((s.rd >= EST) & (s.grow >= GROWN_MIN)) * (1 << s.a.bit)).astype(np.uint16)
-            wild |= ((s.wild >= 0.35) * (1 << s.a.bit)).astype(np.uint16)
+            known |= (((s.rd >= EST) & (s.grow >= GROWN_MIN)) * (1 << s.a.bit)).astype(np.uint32)
+            wild |= ((s.wild >= 0.35) * (1 << s.a.bit)).astype(np.uint32)
         return {"crop_known": known, "crop_wild": wild}
 
     def summary(self, P: np.ndarray) -> dict:

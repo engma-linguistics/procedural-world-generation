@@ -970,7 +970,7 @@ def test_crops_are_cultivated_by_farmers_add_capacity_and_leave_layers(faketz, m
     assert know.max() > 0.5 and know.max() <= 1.0 and np.all(np.asarray(h.crops.k_mult(h.idx["herd"])) >= 1.0)
     out = O.save(h, res, pres, name="crop test")
     run = json.loads((out / "run.json").read_text())
-    assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint16"
+    assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint32"
     assert any(e["kind"] == "crops" for e in h.events) and "first to cultivate wheat and barley" in run["meta"]["lineages"][h.idx["farm"]]["story"]
     assert "Crops (PW-721)" in (out / "run.txt").read_text()
 

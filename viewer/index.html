@@ -911,7 +911,8 @@ function animalsColor(i, c, id) {
 }
 // Crops (planet/lineages/crops.py, PW-721): the same as the animals, per crop: its wild range (green) and where it is known (its colour);
 // the layers crop_wild / crop_known hold one bit per crop (meta.crops.stocks[id].bit).
-const CROP_COLS = ['#e6c829', '#7aa650', '#d6b25e', '#4aa3c7', '#c9a227', '#f2d04a', '#a67c52', '#c06b3a', '#e3c34f', '#9fb46a', '#7d6bb0', '#d4482f'];
+const CROP_COLS = ['#e6c829', '#7aa650', '#d6b25e', '#4aa3c7', '#c9a227', '#f2d04a', '#a67c52', '#c06b3a', '#e3c34f', '#9fb46a', '#7d6bb0', '#d4482f',
+  '#c0504d', '#8a9a3b', '#7b3f6e', '#d9c35a', '#5fa8a0', '#9c5a2a', '#e8452c', '#f0e6c8', '#c98a3c', '#3f7d4a', '#6fbf73', '#b58fc7'];
 function cropStocks() { return V.run?.meta?.crops?.stocks || {}; }
 function cropsColor(i, c, id) {
   const L = V.layers, elev = L.elevation, st = cropStocks()[id];
@@ -921,7 +922,7 @@ function cropsColor(i, c, id) {
   const w = ((L.crop_wild?.[i] || 0) >> st.bit) & 1, r = ((L.crop_known?.[i] || 0) >> st.bit) & 1;
   c.copy(BARE);
   if (w) c.lerp(ANIMAL_WILD, 0.75);
-  if (r) c.lerp(new THREE.Color(CROP_COLS[st.bit % 12]), 0.8);
+  if (r) c.lerp(new THREE.Color(CROP_COLS[st.bit % CROP_COLS.length]), 0.8);
   return c;
 }
 function cropRows(i, R) {  // the crops known in this frame's cell, and the wild ranges it lies in
@@ -2301,7 +2302,7 @@ function renderLegend() {
       `<span class="muted">${h?.fantasy ? `fantasy animal (${V.run.meta.mode} mode); ` : ''}${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
   } else if (state.layer.startsWith('crop: ')) {
     const id = state.layer.slice(6), h = cropStocks()[id], t = h?.tamed?.[0];
-    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % 12], 'cultivated and known') +
+    el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % CROP_COLS.length], 'cultivated and known') +
       `<span class="muted">${h?.fantasy ? `fantasy crop (${V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
   } else if (state.layer === 'fuels') {
     const F = V.run.meta.fuels;
@@ -4173,7 +4174,7 @@ async function setWorld(w) {
 // ("log2p1": 2^value - 1; "nbr_slot": the stored number is the position of the
 // target cell in the cell's neighbour list, 255 = none -> -1).
 // Only the layers the picture needs are downloaded (layersNeeded), when needed.
-const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, int8: Int8Array, float32: Float32Array };
+const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, int8: Int8Array, float32: Float32Array };
 // colour layer / overlay -> the run layers it draws from (elevation is always loaded)
 const LAKE_NEEDS = ['lake_kind', 'lake_depth'];
 const COLOUR_NEEDS = {

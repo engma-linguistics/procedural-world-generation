@@ -14,7 +14,13 @@ cultivation is less likely to get another), as the Fertile Crescent, China, Meso
 Guinea each had their own. `fantasy` rows are plants Earth never farmed: rare when on, certain when forced
 (`meta.crops_force`), and dropped in the real-world mode (PW-695), like the fantasy animals.
 
-Bit i of the stored `crop_known` / `crop_wild` layers (uint16) is the crop with `bit` i here.
+The first ten real rows are staples (weight > 0: they feed the cropland); rows 12-23 are the cuisine plants (PW-738): tree fruit and
+nuts, olives, vines, oil seeds, coconut and oil palm, tropical spices, chili-like capsicum, cane sugar, sap sugar, tea and coffee,
+cooking greens and alliums. They have `weight` 0 (no say in the cropland or the straw), a small `k` (a little farm capacity where they
+grow: orchards, oil, sugar feed people) and mostly serve as a per-cell "crops known" list and wild range for the culinary brief.
+Dry-summer plants (olive, vine) read the Koppen class (`climate=`).
+
+Bit i of the stored `crop_known` / `crop_wild` layers (uint32 since the cuisine plants: 24 rows) is the crop with `bit` i here.
 """
 
 from __future__ import annotations
@@ -35,14 +41,22 @@ def _soil(tags, w):
     return 1.0 if s is None or w <= 0 else (1.0 - w) + w * np.clip(s / 0.45, 0, 1)
 
 
-def _range(t, r, tree=(0.0, 100.0), elev=(-1.0, 0.0, 2800.0, 4200.0), flat=0.0, soil=0.4):
+_DRY_SUMMER = (7, 8, 9)  # Koppen ids Csa, Csb, Csc: the Mediterranean classes (olive and vine country)
+
+
+def _range(t, r, tree=(0.0, 100.0), elev=(-1.0, 0.0, 2800.0, 4200.0), flat=0.0, soil=0.4, climate=None):
     """A crop's range function. t, r: the ramps (rises, full from, full to, gone) of annual temperature (C) and rain (mm);
     tree: the tree cover (%) it tolerates (fully below the first value, gone at the second: clearing makes room);
-    elev: the heights (m); flat: how much it needs flat wet lowland (0..1; rice); soil: the weight of the world's farmland."""
+    elev: the heights (m); flat: how much it needs flat wet lowland (0..1; rice); soil: the weight of the world's farmland;
+    climate: (Koppen ids, floor): the share of the range kept outside those classes (floor 0: only in them; the wider grown range
+    lets half the rest back in)."""
     def wild(env, tags, land, widen=0.0):
         el = np.maximum(env["elevation"] - env["ice"], 0)
         v = _winw(env["temperature"], t, widen) * _winw(env["precipitation"], r, widen) * _winw(el, elev, widen)
         v = v * (_open(env, *tree) if tree[1] < 100 else 1.0) * _soil(tags, soil)
+        if climate is not None:
+            ids, floor = climate
+            v = v * (np.isin(env["climate"].astype(int), ids) + (floor + widen * 0.5 * (1.0 - floor)) * ~np.isin(env["climate"].astype(int), ids))
         if flat > 0:
             low = np.maximum(tags["wetland"] * 1.0, 0.55 * _win(el, (-1.0, 0.0, 600.0, 1500.0)))
             v = v * ((1.0 - flat) + flat * low)
@@ -91,9 +105,33 @@ TABLE: tuple[Animal, ...] = (
     _crop(8, "banana", "bananas and plantains", _range((21, 25, 32, 37), (1200, 1800, 5000, 7000), elev=(-1, 0, 1500, 2500)), 7.0, 0.8, 0.15, 0.4, 0.2,
           noun="banana"),
     _crop(9, "rye", "rye and oats", _range((-4, 2, 12, 18), (300, 450, 1000, 1500), tree=(20, 60)), 3.5, 1.5, 0.08, 0.4, 1.0, noun="rye and oats"),
+    # the cuisine plants (PW-738): weight 0 and a small k; anchors are Earth's first cultivation, kyr ago
+    _crop(12, "tree_fruit", "tree fruit and nuts", _range((3, 8, 22, 28), (400, 700, 2000, 3000), elev=(-1, 0, 2500, 3500)), 7.0, 1.0, 0.03, 0.0, 0.0,
+          noun="fruit and nut tree"),
+    _crop(13, "olive", "olives", _range((9, 14, 24, 30), (250, 350, 900, 1200), climate=(_DRY_SUMMER, 0.0)), 6.5, 0.9, 0.03, 0.0, 0.0, noun="olive"),
+    _crop(14, "vine", "grapes and vines", _range((8, 12, 24, 30), (300, 450, 1100, 1500), climate=(_DRY_SUMMER, 0.45)), 8.0, 0.9, 0.03, 0.0, 0.0,
+          noun="vine"),
+    _crop(15, "oil_seeds", "oil seeds (sesame, flax, rape)", _range((6, 12, 28, 34), (250, 400, 1200, 1800), tree=(30, 70)), 6.0, 1.1, 0.02, 0.0, 0.0,
+          noun="oil seed"),
+    _crop(16, "coconut", "coconut and oil palm", _range((22, 25, 32, 37), (1200, 1800, 5000, 7000), elev=(-1, 0, 800, 1500)), 4.5, 0.7, 0.03, 0.0, 0.0,
+          noun="coconut and oil palm"),
+    _crop(17, "spice_tree", "pepper, cinnamon and other tropical spices", _range((21, 24, 31, 36), (1500, 2200, 5000, 7000), elev=(-1, 0, 1200, 2000)),
+          3.5, 0.7, 0.01, 0.0, 0.0, noun="tropical spice"),
+    _crop(18, "chili", "chili-like capsicum", _range((15, 20, 30, 36), (400, 700, 2000, 3000), elev=(-1, 0, 2600, 3600)), 6.0, 1.0, 0.01, 0.0, 0.0,
+          noun="chili-like pepper"),
+    _crop(19, "cane", "sugar cane", _range((19, 23, 32, 37), (1000, 1500, 3500, 5000), elev=(-1, 0, 1200, 2000)), 8.0, 0.8, 0.05, 0.0, 0.0,
+          noun="sugar cane"),
+    _crop(20, "sap_sugar", "sap sugar (maple and birch) and beet", _range((0, 4, 14, 20), (500, 700, 1600, 2200), elev=(-1, 0, 2000, 3000)), 1.0, 1.0, 0.01,
+          0.0, 0.0, noun="sap sugar"),
+    _crop(21, "tea", "tea, coffee and other infusions", _range((14, 18, 26, 31), (1200, 1700, 4000, 6000), elev=(-1, 300, 2200, 3200)), 3.0, 0.8, 0.0, 0.0, 0.0,
+          noun="tea and coffee"),
+    _crop(22, "greens", "cooking greens (brassicas, leeks)", _range((0, 5, 20, 26), (300, 500, 1800, 2500), elev=(-1, 0, 3000, 4000)), 5.0, 1.1, 0.02,
+          0.0, 0.0, noun="cooking green"),
+    _crop(23, "alliums", "onions and garlic", _range((2, 8, 26, 32), (200, 350, 1200, 1800), tree=(30, 70)), 6.0, 1.1, 0.0, 0.0, 0.0, noun="allium"),
     _crop(10, "stonegrain", "stonegrain", _stonegrain, 6.0, 1.0, 0.12, 0.4, 0.6, fantasy=True, rare=0.3),
     _crop(11, "emberpod", "emberpods", _emberpod, 5.0, 1.0, 0.1, 0.3, 0.0, fantasy=True, rare=0.25, noun="emberpod"),
 )
+TABLE = tuple(sorted(TABLE, key=lambda a: a.bit))  # (TABLE[i] is the crop with bit i)
 BY_ID = {a.id: a for a in TABLE}
 IDS = tuple(a.id for a in TABLE)
 REAL_IDS = tuple(a.id for a in TABLE if not a.fantasy)

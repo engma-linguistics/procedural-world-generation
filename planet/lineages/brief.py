@@ -433,6 +433,8 @@ def _grown(ctx: Ctx, layer: str, key: str, i: int, sel: np.ndarray, land: np.nda
         row = {"id": sid, "label": s["label"], "known_share": share, "since_kyr": _since(ctx, layer, s, sel, land, i),
                "route": None, "origin": None if not first else {"kyr_ago": first["ago_kyr"], "lat": first["lat"], "lon": first["lon"],
                                                               "people": first["line"]}}
+        if key == "crops":  # (PW-738: the staples feed the cropland, the cuisine plants flavour and fatten the plate)
+            row["kind"] = "staple" if s.get("weight", 0) > 0 else "cuisine"
         out.append(row)
     return sorted(out, key=lambda r: (-(r["since_kyr"] or 0), r["id"]))
 
@@ -520,6 +522,16 @@ def _suggested(brief: dict) -> dict:
     if fi.get("fish_mix") and fi.get("coast_fish") is not None and fi["coast_fish"] >= 0.6:
         notes.append("a rich fishery on this coast: fish is a staple, salted or dried for the lean months")
     grown = [c["id"] for c in brief.get("crops") or []]
+    for cid, text in (("olive", "olives are grown here: olive oil is the cooking fat, and the fruit is cured"),
+                      ("vine", "vines are grown here: wine and vinegar are within reach"),
+                      ("chili", "chili-like peppers are grown here: heat is a local seasoning"),
+                      ("spice_tree", "tropical spice trees grow here: pepper-like and cinnamon-like spices are local, and trade goods elsewhere"),
+                      ("cane", "sugar cane is grown here: sugar and cane syrup sweeten, and ferment"),
+                      ("tea", "tea- and coffee-like plants are grown here: infusions are the everyday drink")):
+        if cid in grown:
+            notes.append(text)
+    if "sap_sugar" in grown and "cane" not in grown:
+        notes.append("sap sugar (maple and birch) is the local sweetener: spring boiling, syrups")
     dairy = [p["id"] for p in brief["peoples"]["list"] if p.get("dairy")]
     if dairy:
         notes.append(f"dairy herders here ({', '.join(dairy)}): what ferments follows what is stored, so soured milk and cheese before beer")
@@ -596,10 +608,12 @@ def markdown(b: dict) -> str:
               f"- Nearest source: {_kv(sa['nearest_source'], _pc)}", f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
     else:
         t += ["- no world"]
-    for key, title in (("crops", "Crops known"), ("animals", "Animals known")):
+    for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),
+                             ("animals", "Animals known", None)):
         t += ["", f"## {title}", ""]
         t += [f"- {c['label']}: {_pc(c['known_share'])} of the land, here since {c['since_kyr']} kyr ago" + (
-              f" (first tamed {c['origin']['kyr_ago']} kyr ago by {c['origin']['people']})" if c["origin"] else "") for c in b[key] or []] or ["- none"]
+              f" (first tamed {c['origin']['kyr_ago']} kyr ago by {c['origin']['people']} at {c['origin']['lat']}, {c['origin']['lon']})" if c["origin"] else "")
+              for c in b[key] or [] if kind is None or c.get("kind") == kind] or ["- none"]
     p = b["peoples"]
     t += ["", "## Peoples", "", f"- {p['peopled_cells']} peopled cells, {_pc(p['empty_share'])} empty"]
     for r in p["list"]:

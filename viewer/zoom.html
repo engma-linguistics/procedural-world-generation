@@ -260,7 +260,7 @@ const RAMPS = {
   building: [[[0, [106, 58, 58]], [1, [168, 96, 63]], [2, [217, 166, 90]], [3, [227, 210, 138]], [4, [181, 201, 160]], [5, [127, 159, 176]]], '0-5: 0 peat or swelling clay .. 5 firm, dry rock'],
   mud_months: [[[0, [239, 230, 200]], [2, [217, 192, 138]], [4, [168, 132, 79]], [7, [106, 74, 42]], [12, [58, 42, 26]]], 'months the ground is mud'],
 };
-const DECODE = { float32: Float32Array, uint8: Uint8Array, int8: Int8Array, uint16: Uint16Array, int16: Int16Array };
+const DECODE = { float32: Float32Array, uint8: Uint8Array, int8: Int8Array, uint16: Uint16Array, uint32: Uint32Array, int16: Int16Array };
 const fmt = (v, d = 0) => (v == null || Number.isNaN(v) ? '-' : Number(v).toFixed(d));
 
 async function getJSON(url) {
