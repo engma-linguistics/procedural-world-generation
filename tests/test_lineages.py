@@ -744,7 +744,7 @@ def test_craft_ladder_and_mode_gates():
 
 
 def _animal_tree(animals=("horse",), force=(), mode="fantasy"):
-    raw = {"meta": {"name": "h", "seed": 3, "mixing_start": "3 kyr", "mode": mode, "animals": list(animals), "animals_force": list(force),
+    raw = {"meta": {"name": "h", "seed": 1, "mixing_start": "3 kyr", "mode": mode, "animals": list(animals), "animals_force": list(force),
                     "animals_at": {"horse": "9 kyr", "dog": "20 kyr", "great_elk": "9 kyr"}}, "lineage": [
         {"id": "herd", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["nomadic"], "real": True},
         {"id": "farm", "origin": "root", "at": "30 kyr", "temp_c": [-5, 35], "rain_mm": [50, 6000], "traits": ["agricultural"], "real": True}],
@@ -1541,9 +1541,15 @@ def test_presets_orc_kin_pair_farm_and_herd_and_aarakocra_taste_like_humans_but_
 
 
 # ---- marine peoples (PW-775) ----------------------------------------------------------------------
-def _marine_raw(marine: bool):
+def _marine_raw(marine: bool, more: bool = False):
     rows = [{"id": "land", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "traits": ["coastal"]}]
+    if more:  # (a split and a template: they draw at their own starts, after the marine lines' starts)
+        rows += [{"id": "stem", "origin": "root", "at": "29 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                 {"id": "twig", "origin": "split", "parents": ["stem"], "at": "15 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                 {"id": "curse", "origin": "template", "parents": ["land"], "at": "8 kyr", "share": 0.1, "sites": 2}]
     if marine:
+        if more:  # (a marine child of a land stem: it neither takes the stem's land nor holds back its end)
+            rows += [{"id": "tidal", "origin": "split", "parents": ["stem"], "at": "12 kyr", "realm": "coast", "temp_c": [-20, 40], "traits": ["swims"]}]
         rows += [{"id": "tide", "origin": "root", "at": "25 kyr", "realm": "coast", "temp_c": [-20, 40], "traits": ["swims"]},
                  {"id": "storm", "origin": "root", "at": "25 kyr", "realm": "sea", "temp_c": [-20, 40], "elev_m": [-3000, 0], "traits": ["swims"]}]
     return {"meta": {"seed": 3}, "lineage": rows}
@@ -1579,10 +1585,21 @@ def test_marine_lines_hold_the_shore_and_the_sea_and_meet_the_land_people_on_the
 
 
 def test_marine_lines_leave_the_land_peoples_as_they_were(faketz):
-    """Competition stays within realms, and the animals, crops and counts are the land's: a land people's range on the
-    fake world is about the same with or without the sea lines (they only take a place in the shuffled order)."""
+    """Marine lines draw from their own generator (PW-779): the land people is byte-identical with or without them."""
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    h0, _, _ = H.simulate(SP.parse(_marine_raw(False)), ps, tries=1)
-    h1, _, _ = H.simulate(SP.parse(_marine_raw(True)), ps, tries=1)
-    a, b = h0.p[h0.idx["land"]] >= H.EST, h1.p[h1.idx["land"]] >= H.EST
-    assert abs(int(a.sum()) - int(b.sum())) <= max(2, 0.05 * a.sum())
+    h0, _, _ = H.simulate(SP.parse(_marine_raw(False, True)), ps, tries=1)
+    h1, _, _ = H.simulate(SP.parse(_marine_raw(True, True)), ps, tries=1)
+    for lid in ("land", "stem", "twig", "curse"):
+        assert np.array_equal(h0.p[h0.idx[lid]], h1.p[h1.idx[lid]]), lid
+    assert h0.p[h0.idx["land"]].max() > 0 and h0.p[h0.idx["twig"]].max() > 0 and h1.p[h1.idx["storm"]].max() > 0
+
+
+def test_a_group_carries_its_own_markers_and_its_people_keeps_the_default():
+    """PW-776: groups are cultures with markers (lactase on the Arha only), not subspecies; seven_meals puts milk on them alone."""
+    t = SP.parse({"lineage": [{"id": "orc", "origin": "root", "at": "300 kyr"},
+                              {"id": "herd", "origin": "group", "group_of": "orc", "at": "9 kyr", "body": {"milk": 0.1}},
+                              {"id": "farm", "origin": "group", "group_of": "orc", "at": "9 kyr"}]})
+    assert t.lines["herd"].body["milk"] == 0.1 and t.lines["farm"].body["milk"] is False and t.lines["orc"].body["milk"] is False
+    assert SP.parse(SP.to_raw(t)).lines["herd"].body["milk"] == 0.1
+    sm = LR.load_tree("seven_meals")
+    assert sm.lines["arha"].body["milk"] == 0.1 and sm.lines["anja"].body["milk"] is False and sm.lines["orc"].body["milk"] is False

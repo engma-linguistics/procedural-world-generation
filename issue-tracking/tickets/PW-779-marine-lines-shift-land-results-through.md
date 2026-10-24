@@ -21,3 +21,4 @@ fun17: with marine lines present, land peoples diverge (dnd dwarf x0.03, gnome x
 
 ## Updates
 - 2026-10-24: Created.
+- 2026-10-24: fun18: a generator per line (seeded run seed + line id) for origin noise, hops and the step order key, so no line's draws depend on how many others are alive; a land parent ends and hands its range over among its land children only (a marine child neither took its land nor held back its end). Test: land/stem/twig/curse byte-identical with and without marine lines (fake world). 1df1c3 seven_meals with vs without merfolk+storm giants: all 48 land lines cell-for-cell identical (a wish toward a marine line is authored coupling, dropped from both). Storm giants narrowed to the cool open sea (temp 6-16 C, depth -3500..-300 m): 111.4 Mkm2 / 240k people -> 2.35 Mkm2 / 7.3k (density kept 0.005).

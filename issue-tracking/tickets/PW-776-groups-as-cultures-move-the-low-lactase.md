@@ -21,3 +21,4 @@ Owner 2026-10-24: steppe vs forest orcs are cultures with genetic markers (like 
 
 ## Updates
 - 2026-10-24: Created.
+- 2026-10-24: fun18: seven_meals milk 0.1 moved from the orc people to the Arha group only (Anja take the orc default); group-level body keys already worked (spec: a group inherits its people's body and overrides what it gives; test added). Viewer lineages.html: a group draws no branch line, is marked with an arrow and its note says culture, not split; the people's panel lists its cultures with their own markers. Brief/run.txt wording: culture of <people>.

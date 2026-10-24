@@ -7,6 +7,7 @@ the recent pass (centuries). Design: docs/proposals/lineages.md.
 from __future__ import annotations
 
 import time
+import zlib
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -288,6 +289,9 @@ class History:
         self.cell_km = g.spacing * R_KM
         self.cell_mkm2 = 4 * np.pi * R_KM ** 2 / g.n / 1e6
         self.lines = tree.order()
+        # (a generator per line, seeded from the run seed and the line's id: no line's draws depend on how many others are alive, so a
+        # marine line, or a parent kept alive by one, leaves the land peoples' draws as they were, PW-779)
+        self._lrng = {l.id: np.random.default_rng((seed, 779, zlib.crc32(l.id.encode()))) for l in self.lines}
         self.idx = {l.id: k for k, l in enumerate(self.lines)}
         self.alpha = np.zeros((len(self.lines),) * 2)
         for a in self.lines:
@@ -406,8 +410,8 @@ class History:
         return out
 
     # -- origins ---------------------------------------------------------------------------------
-    def _noise(self):
-        return np.exp(0.5 * self.rng.gumbel(size=self.grid.n))
+    def _noise(self, line):
+        return np.exp(0.5 * self._lrng[line.id].gumbel(size=self.grid.n))
 
     def _place_mult(self, line, tags):
         m = np.ones(self.grid.n)
@@ -452,7 +456,7 @@ class History:
 
     def _origin(self, line, step, env, tags, K):
         g, k = self.grid, self.idx[line.id]
-        noise = self._noise()
+        noise = self._noise(line)
         why = "habitat"
         if line.origin in ("root", "arrival"):
             score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise
@@ -548,7 +552,7 @@ class History:
                 return False
             cells = []
             for _ in range(max(1, line.sites)):
-                cell = int(np.argmax(np.where(H > EST, H, 0) * self._noise()))
+                cell = int(np.argmax(np.where(H > EST, H, 0) * self._noise(line)))
                 cells.append(cell)
                 self.p[k][rings(cell, H > EST, 1, g.nbr_off, g.nbr_idx)] = 0.5
             cell = cells[0]
@@ -632,13 +636,13 @@ class History:
         if not P.any():
             if pid not in self.started:
                 return None
-            cell = int(np.argmax(K * self._noise()))
+            cell = int(np.argmax(K * self._noise(line)))
             self._seed_blob(k, cell, K, K > EST, 3)
             return cell, "its people gone: best habitat"
         Kg = self._K(line, env, tags, step, clip=False)
         Kp = self._K(self.tree.lines[pid], env, tags, step, clip=False)
         good = P & (Kg > (1 + GROUP_MARGIN) * Kp) & (K > 2 * EST)
-        nudge = self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._noise()
+        nudge = self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._noise(line)
         if good.any():
             score = np.where(good, Kg - Kp, 0) * nudge
             why, mask = "where its way of life suits the land better than its people's", good
@@ -720,7 +724,7 @@ class History:
 
     def _origin_fallback(self, line, step, env, tags, K, why):
         k = self.idx[line.id]
-        cell = int(np.argmax(K * self._noise()))
+        cell = int(np.argmax(K * self._noise(line)))
         self._seed_blob(k, cell, K, K > EST, 3)
         self._record_origin(line, step, cell, why)
         return True
@@ -787,6 +791,11 @@ class History:
                 s[rows] = np.add.reduceat(x[g.nbr_idx[at]], np.cumsum(cnt) - cnt)
         return np.maximum(x, s / self._deg)
 
+    def _realm_kids(self, line) -> list:
+        """The living split children in the line's own realm: a land people ends and hands its range over among its land children
+        only (a marine child never takes its land, nor holds the parent's end back, PW-779)."""
+        return [c for c in self.tree.living_children(line.id) if self.tree.lines[c].marine == line.marine]
+
     def _end_parent(self, line, step, env, tags):
         """After its last split: the parent's remaining range is shared among its children. Country joined to
         a child's land goes to the nearest child; a part cut off from every child (the stem held other
@@ -795,7 +804,7 @@ class History:
         g, k = self.grid, self.idx[line.id]
         P = self.p[k] > EST
         lab = np.full(g.n, -1, np.int64)
-        kids = [c for c in self.tree.living_children(line.id) if self.active.get(c)]
+        kids = [c for c in self._realm_kids(line) if self.active.get(c)]
         for ci, c in enumerate(kids):
             lab[self.p[self.idx[c]] > EST] = ci
         if kids and P.any():
@@ -865,7 +874,8 @@ class History:
                     self.active[l.id] = True
                     if l.parent:
                         par = self.tree.lines[l.parent]
-                        if not par.persists and self.tree.living_children(par.id) and all(c in self.started for c in self.tree.living_children(par.id)) and self.active.get(par.id):
+                        kin = self._realm_kids(par)
+                        if not par.persists and kin and all(c in self.started for c in kin) and self.active.get(par.id):
                             self._end_parent(par, step, env, tags)
             if self.animals is not None:
                 self.animals.step(step, env, tags, self.p, self._native)
@@ -875,7 +885,8 @@ class History:
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
             order = [l for l in L if self.active[l.id]]
-            self.rng.shuffle(order)
+            keys = {l.id: self._lrng[l.id].random() for l in order}  # (the order: a random key per line from its own generator)
+            order.sort(key=lambda l: (l.marine, keys[l.id]))
             for l in order:
                 k = self.idx[l.id]
                 if l.extinct_kyr is not None and step.ago <= l.extinct_kyr + 1e-9:
@@ -975,7 +986,7 @@ class History:
                     self._hop_dt[k] += step.dt
                     landings = []
                     if self._hop_dt[k] >= HOP_EVERY_KYR or step.epoch == "deep":
-                        landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self.rng, EST)
+                        landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self._lrng[l.id], EST)
                         self._hop_dt[k] = 0.0
                     for cell, way, gap in landings:
                         blob = rings(int(cell), K > EST, 1, g.nbr_off, g.nbr_idx) & (room > EST)

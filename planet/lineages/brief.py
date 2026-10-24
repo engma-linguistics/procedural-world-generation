@@ -898,7 +898,7 @@ def markdown(b: dict) -> str:
           "- Ways of life (share of heads): " + (_kv(p["ways_of_life"], _pc) if p.get("ways_of_life") else "not in this run").replace("_", " ")]
     for r in p["list"] + p.get("groups", []):
         body = r["body"]
-        t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (" (group, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
+        t += [f"- {r['name']} ({r['id']}): {_pc(r['share'])}" + (f", {r['way'].replace('_', ' ')}" if r.get("way") else "") + (f" (culture of {r['groups_of']}, mean presence)" if r.get("groups_of") and r.get("share") is not None and r in p.get("groups", []) else "") + (", dairy " + json.dumps(r["dairy"]) if r.get("dairy") else ""),
               f"  - body: {'; '.join(SP.body_notes(body)) or 'the human-like baseline'}"]
     sp = b.get("sea_peoples")
     if sp and sp["list"]:
