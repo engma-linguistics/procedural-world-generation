@@ -1,7 +1,8 @@
 ---
+id: PW-798
 title: The CO2 references freeze at 300 Myr while a growing-continents planet's land is still emerging, locking in a ~1.3x weathering surplus (water world)
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v2
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v2-climate-1
 blocked_by: []
 relates: [PW-790, PW-558, PW-559, PW-576]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v2-climate-1/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -39,3 +42,7 @@ no-op for the Earth-like default (flat land, so it should be), and redo the L6 1
 check.
 - [ ] references fixed at a settled start on a growing-continents planet
 - [ ] water world at L6 and L7 over 2 Gyr not an always-icebox at offset 0; Earth-like pass rate not regressed
+
+## Updates
+- 2026-10-24: Status needs-decision -> todo. Coordinator ruling: option A (freeze references once the planet's land has settled, planet-relative). Next physics ticket after the benchmark.
+- 2026-10-24: Created from inbox draft draft-co2-ref-freeze-emerging-land.md (found by v2-climate-1).

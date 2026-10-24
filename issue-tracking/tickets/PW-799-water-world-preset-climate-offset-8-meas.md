@@ -1,16 +1,19 @@
 ---
+id: PW-799
 title: Water-world preset climate_offset +8 (measured at L6, 2/2 pass) needs its L7 check before it lands, or is dropped if the reference-freeze fix lands
 type: task
-status: needs-decision
+status: blocked
 parent: null
 milestone: v2
 subsystem: climate
 effort: s
 impact: med
 found_by: v2-climate-1
-blocked_by: []
+blocked_by: [PW-798]
 relates: [PW-790]
 refs: [planet/make.py, tests/test_make.py, README.md, docs/coordination.md, docs/review/base-climate/v2-climate-1/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -29,3 +32,7 @@ Options:
   unnecessary.
 
 Lean: B, under the no-temporary-fixes rule. Take A only if B is far off.
+
+## Updates
+- 2026-10-24: Status needs-decision -> blocked. Held behind PW-798; drop if the reference fix lets the water world run at offset ~0.
+- 2026-10-24: Created from inbox draft draft-water-world-offset-l7-check.md (found by v2-climate-1).
