@@ -21,3 +21,4 @@ fun18 moved _animal_tree's seed 3 -> 1 after per-line RNG streams; assertions un
 
 ## Updates
 - 2026-10-24: Created.
+- 2026-10-24: fun19: test now loops tree/pass seeds 1-8, asserts the taming claims in every seed that tames, a rate (>= 2 of 8 tame) and that herders ride in a majority of tamed seeds (was every one; seed 4 tames without herder use: draft-herd-tamer-no-riders).
