@@ -367,6 +367,25 @@ def test_hillslope_wear_level_consistent():
     assert wear[1] == pytest.approx(wear[0], rel=0.15), wear
 
 
+def test_ice_margin_band_level_consistent():
+    """PW-725: the band of a sheet that melts as its edge (earth.margin_band) is MARGIN_KM wide at any grid
+    level, not one ring of cells: around the same cap of bare land it reaches as far at L6 (one ring, the
+    rule as it was) as at L7 (two rings of its half-size cells)."""
+    from planet.geo import R_KM
+    from planet.tectonics import earth
+    widths = []
+    for level in (6, 7):
+        g = build_grid(level)
+        bare = g.centers[:, 2] > np.cos(np.radians(30.0))  # a polar cap of bare land, 30 deg wide
+        band = earth.margin_band(g, bare)
+        one_ring = bare | (np.add.reduceat(bare[g.nbr_idx], g.nbr_off[:-1]) > 0)
+        assert (band == one_ring).all() if level == 6 else (band & ~one_ring).any()
+        beyond = np.degrees(np.arccos(np.clip(g.centers[band & ~bare, 2], -1, 1))) - 30.0
+        widths.append(beyond.max() * np.pi / 180.0 * R_KM)
+    assert widths[1] == pytest.approx(widths[0], rel=0.25), widths
+    assert widths[0] == pytest.approx(earth.MARGIN_KM, rel=0.25), widths
+
+
 def test_kernel_budyko_matches_and_stays_finite():
     """The rain kernel's scalar Budyko (PW-266) is water_balance's, and stays
     finite for a trace of rain under a big potential evaporation."""
