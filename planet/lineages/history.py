@@ -857,6 +857,12 @@ class History:
                     q = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx, c)
                     if "agricultural" in l.traits and step.ago <= FARM_KYR:
                         q = q * np.where(tags["farmland"][idx], 0.5, 1.0)  # farmers push into others' fertile lowland
+                    press = SP.WAY_PRESS.get(l.way) if l.way and self.animals is not None and self.goods is not None else None
+                    if press and press[0] in self.goods and step.epoch != "deep":
+                        herd = min(1.0, self.animals.herding(k) / SP.HERD_FULL)
+                        if herd > 0:  # herders hold good pasture against settled neighbours (spec.WAY_PRESS, PW-756)
+                            q = q * (1 - (1 - press[1]) * herd * np.clip(self.goods[press[0]][idx], 0, 1))
+                    q = q * l.trait("push", 1.0)
                     f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * c, 0.05, 1)
                     room = np.zeros(g.n)
                     room[idx] = np.clip(K[idx] - f * q, 0, None)

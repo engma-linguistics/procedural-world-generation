@@ -1350,4 +1350,85 @@ def test_seven_meals_horns_and_antlers_follow_real_species_and_the_devils_are_re
     assert rows["devil"]["body"] == {"display": "horns"} and rows["demon"]["body"] == {"display": "antlers"}
     assert rows["devil"]["efold_kyr"] > RP.EFOLD_KYR * 10 and rows["demon"]["efold_kyr"] > RP.EFOLD_KYR * 10
     assert t.lines["aarakocra"].body["sweet"] is True and t.lines["arha"].body["milk"] == 0.1
-    assert {(e["by"], e["kind"]) for e in t.events} == {("antelope_folk", "conquest"), ("cervid_folk", "conquest")}  # (no place: the world's)
+    # (intended change, owner 2026-10-24: the preset ships no authored conquests, the devils and demons come from the sim; the fiends are aggressive)
+    assert t.events == [] and "aggressive" in t.lines["antelope_folk"].traits and "aggressive" in t.lines["cervid_folk"].traits
+    assert t.lines["antelope_folk"].trait("push", 1.0) == 0.7
+
+
+# ---- derived incursions (PW-756) ---------------------------------------------------------------------------------------
+def test_a_sudden_advance_into_another_peoples_land_is_an_incursion_with_a_direction_and_slow_drift_is_not(faketz):
+    from planet.lineages import contacts as CT
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    tree = SP.parse({"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "a", "parents": ["stem"], "at": "25 kyr"}, {"id": "b", "parents": ["stem"], "at": "20 kyr"}]})
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    ia, ib = h.idx["a"], h.idx["b"]
+    band = land & (np.abs(g.lat) < 40)
+    home = band & (g.lon < -20) & (g.lat > 0)
+    east = band & (g.lon >= -20)
+    tags = {"coast": np.zeros(g.n, bool), "open": np.ones(g.n, bool)}
+    corr = np.full(g.n, 0.5)
+    n = len(h.lines)
+
+    def frame(ct, ago, dt, own_b):
+        P = np.zeros((n, g.n))
+        P[ib][own_b] = 0.8
+        P[ia][band & ~own_b] = 0.8
+        ct.update(P, H.Step(ago, dt, "recent", True, None), tags, corr, land)
+
+    ct = CT.Contacts(h)
+    frame(ct, 10.0, 0.5, home)  # b holds its home in the north-west, a the rest
+    frame(ct, 9.5, 0.5, home)
+    frame(ct, 9.0, 0.5, home | east)  # b takes the whole east within one frame: an incursion
+    frame(ct, 0.0, 9.0, home | east)
+    inc = ct.summary()["incursions"]
+    assert len(inc) == 1 and inc[0]["by"] == "b" and inc[0]["over"] == "a"
+    assert inc[0]["cells"] == int(east.sum()) and inc[0]["gain"] >= CT.INCURSION_GAIN and 8.9 < inc[0]["ago_kyr"] < 9.1
+    assert inc[0]["from_deg"] is not None and 180 < inc[0]["from_deg"] < 360  # (b's older land lies to the west of the east it took)
+    # the same ground taken a sliver at a time (a cell column per 2 kyr window) is the frontier's give and take, not an incursion
+    ct2 = CT.Contacts(h)
+    cols = np.unique(np.round(g.lon[east] / 4))
+    taken = np.zeros(g.n, bool)
+    for i, c in enumerate(cols):
+        frame(ct2, 90.0 - 3.0 * i, 3.0, home | taken)
+        taken |= east & (np.round(g.lon / 4) == c)
+    frame(ct2, 0.0, 3.0, home | taken)
+    slow = ct2.summary()["incursions"]
+    assert len(slow) < len(cols) and sum(r["cells"] for r in slow) < int(east.sum())  # (some columns are big enough to count alone; not all)
+
+
+def test_reputation_reads_derived_incursions_before_authored_events_and_names_the_direction():
+    c = _contacts(took_kyr=40.0)  # (the substrate takeover is too old to count)
+    c["incursions"] = [{"by": "herders", "over": "farmers", "ago_kyr": 1.0, "span_kyr": 0.5, "cells": 120, "mkm2": 0.4, "gain": 0.3,
+                        "local_share": 0.4, "lat": 40.0, "lon": 10.0, "from_deg": 280}]
+    raw = SP.to_raw(_rep_tree())
+    raw["event"] = [{"kind": "conquest", "by": "herders", "over": ["farmers"], "at": "3 kyr"}]
+    t = SP.parse(raw)
+    r = RP.build(t, c)["rows"]["farmers"]["herders"]
+    assert r["valence"] == "feared" and r["name"] == "devils" and r["basis"].startswith("incursion (derived)") and r["from_dir"] == "west"
+    assert "from the west" in r["text"] and r["since_kyr"] == 1.0
+    c["incursions"] = []  # nothing derived: the authored anchor stands in
+    r2 = RP.build(t, c)["rows"]["farmers"]["herders"]
+    assert r2["basis"].startswith("conquest (authored)") and "from_dir" not in r2
+    assert RP.compass(0) == "north" and RP.compass(350) == "north" and RP.compass(135) == "south-east" and RP.compass(260) == "west"
+
+
+def test_herders_press_on_pasture_only_in_proportion_to_the_herds_they_keep(faketz):
+    """PW-756: spec.WAY_PRESS names the good a way presses for; history scales the rivals' load there by the people's herding."""
+    for way, (good, share) in SP.WAY_PRESS.items():
+        assert way in SP.WAYS and good in SP.WAYS[way] and 0 < share < 1  # (a way presses for a good it reads)
+    from planet.lineages.animals import Animals
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    tree = SP.parse({"meta": {"seed": 1}, "lineage": [
+        {"id": "a", "origin": "root", "at": "10 kyr", "way": "pastoral_nomad", "temp_c": [-20, 40], "rain_mm": [1, 9000]}]})
+    h = H.History(tree, ps, 1)
+    an = Animals(h)
+    k = h.idx["a"]
+    assert an.herding(k) == 0.0  # (no herd animal known to it: nothing to press with)
+    herd = [s for s in an.stocks if "herd" in s.a.k]
+    assert herd
+    herd[0].adopt[k] = 0.3
+    assert an.herding(k) == 0.3

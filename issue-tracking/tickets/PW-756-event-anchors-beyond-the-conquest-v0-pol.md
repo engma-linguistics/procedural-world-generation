@@ -33,3 +33,4 @@ called them devils or demons. What is left:
 
 ## Updates
 - 2026-10-24: Created from inbox draft draft-event-anchors-parsed-and-stored.md (found by fun13).
+- 2026-10-24: fun14: built derived incursions (contacts.Contacts.incursions into meta.contacts.incursions; reputation reads them before authored events, which stand only where none was found; rows carry from_dir and the text names the direction) and a herder press (spec.WAY_PRESS). On 1df1c3 neither fiend people conquers by displacement, so the authored events still carry the devils and demons. Left: polities and the resented valence, viewer tree editor keeping [[event]] rows, co-residence incursions (draft-incursions-by-co-residence).

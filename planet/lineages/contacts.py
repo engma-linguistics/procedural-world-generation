@@ -15,6 +15,20 @@ PRESENT_OVERLAP = 0.25  # a people holds a cell for the substrate where its pres
 CLINE_KM = 300.0  # how far a body share spreads over a T0/T1 border (in rings of the cell size)
 CLINE_RATE = 0.5  # share of the difference to the neighbours taken up per pass
 SERIES_KEEP = 14  # points of a pair's border series kept in the run's meta (the rest thinned evenly)
+# incursions (PW-756): a people's range jumping into cells another people held, over a short span. Looked at only for the
+# last INCURSION_KYR (an older one is out of any memory), as episodes of INCURSION_SPAN kyr; one counts where the taker gains
+# at least INCURSION_GAIN of its own range at the start of the episode and at least INCURSION_MIN_MKM2 of ground (the
+# ordinary give and take of a frontier, a percent of a big people's range, is not an incursion). The loss is measured
+# against what the loser held within LOCAL_KM of the ground (the memory is the frontier people's, not the whole people's),
+# and the direction is where the taker's older cells within DIR_KM of the ground taken lie, seen from it.
+INCURSION_KYR = 100.0
+INCURSION_SPAN = 2.0
+INCURSION_GAIN = 0.10
+INCURSION_MIN_MKM2 = 0.05
+LOCAL_KM = 1000.0
+DIR_KM = 2000.0
+INCURSION_KEEP = 200  # incursions kept in the run's meta (the largest)
+R_KM = 6371.0
 
 
 def kind_of(tags: dict, corr: np.ndarray, cells: np.ndarray) -> str:
@@ -43,6 +57,9 @@ class Contacts:
         self.prev = np.full(m, -1, np.int16)  # ...the last other people that held it
         self.until = np.full(m, np.nan)  # ...and when (kyr ago) it lost the cell
         self.agos: list[float] = []  # (the stored epochs seen, oldest first)
+        la, lo = np.radians(h.grid.lat), np.radians(h.grid.lon)
+        self.xyz = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], 1)
+        self.takes: dict[tuple, list] = {}  # (taker, loser) -> the takeovers of each stored frame (see _note)
 
     # -- per stored frame -----------------------------------------------------------------------------
     def update(self, Pw: np.ndarray, step, tags: dict, corr: np.ndarray, land: np.ndarray) -> None:
@@ -75,9 +92,71 @@ class Contacts:
         lead = np.where(held.any(0), np.argmax(np.where(held, Pw, 0), 0), -1).astype(np.int16)
         old = self.cur
         flip = (lead >= 0) & (old >= 0) & (lead != old) & ~held[np.maximum(old, 0), np.arange(g.n)]
+        if flip.any() and ago <= INCURSION_KYR:
+            self._note(ago, lead, old, flip)
         self.prev[flip] = old[flip]
         self.until[flip] = ago
         self.cur = np.where(lead >= 0, lead, old).astype(np.int16)
+
+    def _note(self, ago: float, lead: np.ndarray, old: np.ndarray, flip: np.ndarray) -> None:
+        """Record this frame's takeovers per (taker, loser): the cells, their centre, the loser's cells near them and the taker's
+        own older cells near them (all before this frame's change)."""
+        key = lead[flip].astype(np.int64) * 1000 + old[flip]
+        cos_loc = np.cos(LOCAL_KM / R_KM)
+        cells = np.flatnonzero(flip)
+        for kk in np.unique(key):
+            a, b = int(kk // 1000), int(kk % 1000)
+            idx = cells[key == kk]
+            c = self.xyz[idx].mean(0)
+            norm = float(np.linalg.norm(c))
+            if norm < 1e-9:
+                continue
+            c = c / norm
+            dots = self.xyz @ c
+            rec = {"ago": ago, "cells": int(len(idx)), "c": c, "loser": int(((old == b) & (dots >= cos_loc)).sum()),
+                   "taker": int((old == a).sum())}
+            reach = np.arccos(np.clip(float(dots[idx].min()), -1, 1)) + DIR_KM / R_KM  # (the taken ground's own spread, and DIR_KM beyond it)
+            mine = (old == a) & (dots >= np.cos(min(reach, np.pi)))
+            if mine.any():
+                rec["from"] = self.xyz[mine].mean(0)
+                rec["from_n"] = int(mine.sum())
+            self.takes.setdefault((a, b), []).append(rec)
+
+    def incursions(self) -> list[dict]:
+        """The incursions of the run: episodes (INCURSION_SPAN kyr) in which a people took ground from another by at least
+        INCURSION_GAIN of its own range: {by, over, ago_kyr, span_kyr, cells, mkm2, gain, local_share, lat, lon, from_deg}
+        (from_deg: the compass bearing, clockwise from north, from the ground taken to the taker's older land near it, or None)."""
+        h = self.h
+        ids = [l.id for l in h.lines]
+        out = []
+        for (a, b), recs in self.takes.items():
+            recs = sorted(recs, key=lambda r: -r["ago"])
+            i = 0
+            while i < len(recs):
+                first = recs[i]
+                grp = [r for r in recs[i:] if first["ago"] - r["ago"] <= INCURSION_SPAN + 1e-9]
+                i += len(grp)
+                n = sum(r["cells"] for r in grp)
+                gain = 1.0 if first["taker"] == 0 else min(1.0, n / first["taker"])
+                if n * h.cell_mkm2 < INCURSION_MIN_MKM2 or gain < INCURSION_GAIN:
+                    continue
+                c = np.sum([r["c"] * r["cells"] for r in grp], 0)
+                c = c / np.linalg.norm(c)
+                lat, lon = float(np.degrees(np.arcsin(np.clip(c[2], -1, 1)))), float(np.degrees(np.arctan2(c[1], c[0])))
+                deg = None
+                if first.get("from_n", 0) >= 3:
+                    f = first["from"] / max(float(np.linalg.norm(first["from"])), 1e-9)
+                    if np.degrees(np.arccos(np.clip(c @ f, -1, 1))) * 111.0 > h.cell_km:  # (the taker's older cells are not the ground taken)
+                        la1, la2 = np.radians(lat), np.arcsin(np.clip(f[2], -1, 1))
+                        dl = np.arctan2(f[1], f[0]) - np.radians(lon)
+                        deg = float(np.degrees(np.arctan2(np.sin(dl) * np.cos(la2), np.cos(la1) * np.sin(la2) - np.sin(la1) * np.cos(la2) * np.cos(dl))) % 360)
+                ago = sum(r["ago"] * r["cells"] for r in grp) / n
+                out.append({"by": ids[a], "over": ids[b], "ago_kyr": round(ago, 2), "span_kyr": round(first["ago"] - grp[-1]["ago"], 2),
+                            "cells": n, "mkm2": round(n * h.cell_mkm2, 3), "gain": round(gain, 3),
+                            "local_share": round(min(1.0, n / max(first["loser"], n)), 3),
+                            "lat": round(lat, 2), "lon": round(lon, 2), "from_deg": None if deg is None else round(deg)})
+        out.sort(key=lambda r: -r["cells"])
+        return sorted(out[:INCURSION_KEEP], key=lambda r: (r["ago_kyr"], r["by"], r["over"]))
 
     def _span(self, ago: float) -> float:
         """The kyr a stored epoch stands for: half the gap to the epoch before and to the one after (the first and the last: half their one gap)."""
@@ -121,7 +200,7 @@ class Contacts:
                              "held_until_kyr": round(float(np.median(until[sel])), 2)})
             rows.sort(key=lambda q: -q["cells"])
             sub[l.id] = {"cells": n, "first_here_share": round(1 - sum(q["cells"] for q in rows) / n, 3), "held_before": rows[:6]}
-        return {"pairs": pairs, "substrate": sub, "tier_kyr": list(T.tier_kyr)}
+        return {"pairs": pairs, "substrate": sub, "incursions": self.incursions(), "tier_kyr": list(T.tier_kyr)}
 
 
 def cline(h, comp: dict, lead: np.ndarray, land: np.ndarray) -> int:

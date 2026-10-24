@@ -637,7 +637,7 @@ def _rep_row(ctx: Ctx, subject: str, r: dict) -> dict:
     b = l.get("body") or {}
     return {"id": subject, "called": r["name"], "category": r["category"], "valence": r["valence"], "basis": r["basis"],
             "since_kyr": r["since_kyr"], "strength": r["strength"], "lumped_with": r["lumped_with"], "borrowed_from": r.get("borrowed_from"),
-            "actually": {"name": l["name"], "way": l.get("way"), "display": b.get("display"), "tier": r.get("tier")}, "text": r["text"]}
+            "from_dir": r.get("from_dir"), "actually": {"name": l["name"], "way": l.get("way"), "display": b.get("display"), "tier": r.get("tier")}, "text": r["text"]}
 
 
 def _reputation(ctx: Ctx, brief: dict) -> dict | None:
