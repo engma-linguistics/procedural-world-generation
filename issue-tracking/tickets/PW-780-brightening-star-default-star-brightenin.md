@@ -47,5 +47,6 @@ points:
   co2_sensitivity / (5.35 ln 2) = 0.81: 3 C is per doubling, not per e-fold. star_forcing uses 0.81.
 
 ## Updates
+- 2026-10-24: Owner 2026-10-24: for Earth-like worlds NO ice ages is a fail too. The star's brightening is the accepted per-world lever (slower/none for never-ice, faster for icy). Physics lane measuring.
 - 2026-10-24: Owner 2026-10-24 (phone, provisional): 'probably' - happy to have ice ages set via this external variable; hasn't reviewed fully. Treat 0.45 as the working default.
 - 2026-10-24: Created from inbox draft draft-star-brightening-default-signoff.md (found by v1-finish-7).
