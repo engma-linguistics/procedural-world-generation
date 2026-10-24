@@ -1,0 +1,27 @@
+   l6fix seed 583167: icehouse  34.7% (300-500  20%, 600-1000  39%), deep  0.0%, dT med +3.4 max +7.7 -> ok | N1-N4 ok
+   l6fix seed 619496: icehouse  54.5% (300-500   6%, 600-1000  92%), deep 16.5%, dT med +2.4 max +8.8 -> F | N1-N4 ok
+   l6fix seed 639472: icehouse  14.8% (300-500  26%, 600-1000   6%), deep  0.0%, dT med +2.9 max +8.0 -> ok | N1-N4 ok
+   l6fix seed 957317: icehouse  19.3% (300-500   0%, 600-1000  31%), deep  0.0%, dT med +2.5 max +9.7 -> ok | N1-N4 ok
+l6fix: owner's bar 3/4 (75%), icehouse median 27% (early 13, late 35), always-icebox 0, never-ice 0, hellhole 0, dT median +2.7, N1-N4 4/4
+
+   l6c_0 seed  53669: icehouse   8.0% (300-500   6%, 600-1000  11%), deep  3.4%, dT med +3.7 max +7.9 -> ok | N1-N4 ok
+   l6c_0 seed 733847: icehouse  23.9% (300-500   0%, 600-1000  42%), deep  8.0%, dT med +3.7 max +8.3 -> ok | N1-N4 ok
+   l6c_0 seed 819014: icehouse  73.9% (300-500 100%, 600-1000  54%), deep 30.7%, dT med +0.8 max +7.4 ICEBOX -> F | N1-N4 F
+   l6c_0 seed 958504: icehouse  47.2% (300-500   0%, 600-1000  82%), deep 29.0%, dT med +2.4 max +10.0 -> F | N1-N4 F
+l6c_0: owner's bar 2/4 (50%), icehouse median 36% (early 3, late 48), always-icebox 1, never-ice 0, hellhole 0, dT median +3.1, N1-N4 2/4
+
+   l6c_m seed  53669: icehouse  21.6% (300-500   0%, 600-1000  38%), deep  0.0%, dT med +2.6 max +6.7 -> ok | N1-N4 ok
+   l6c_m seed 958504: icehouse   0.0% (300-500   0%, 600-1000   0%), deep  0.0%, dT med +6.2 max +11.2 NEVER-ICE -> ok | N1-N4 F
+l6c_m: owner's bar 2/2 (100%), icehouse median 11% (early 0, late 19), always-icebox 0, never-ice 1, hellhole 0, dT median +4.4, N1-N4 1/2
+
+   l6c_p seed  53669: icehouse  27.8% (300-500   0%, 600-1000  49%), deep  6.2%, dT med +3.7 max +11.1 -> ok | N1-N4 ok
+   l6c_p seed 583167: icehouse  47.2% (300-500   4%, 600-1000  76%), deep 21.6%, dT med +3.3 max +10.0 -> F | N1-N4 F
+   l6c_p seed 619496: icehouse  83.5% (300-500  42%, 600-1000 100%), deep 26.1%, dT med -0.1 max +8.8 -> F | N1-N4 F
+   l6c_p seed 639472: icehouse  13.1% (300-500   0%, 600-1000  12%), deep  0.0%, dT med +3.5 max +8.6 -> ok | N1-N4 ok
+   l6c_p seed 733847: icehouse   2.8% (300-500   0%, 600-1000   5%), deep  0.0%, dT med +5.7 max +11.8 NEVER-ICE -> ok | N1-N4 F
+   l6c_p seed 819014: icehouse  34.1% (300-500  34%, 600-1000  33%), deep  3.4%, dT med +3.2 max +10.5 -> ok | N1-N4 ok
+   l6c_p seed 957317: icehouse  41.5% (300-500  38%, 600-1000  32%), deep  0.0%, dT med +2.2 max +8.5 -> F | N1-N4 ok
+   l6c_p seed 958504: icehouse  15.9% (300-500   0%, 600-1000  28%), deep  0.0%, dT med +4.9 max +12.7 -> ok | N1-N4 ok
+l6c_p: owner's bar 5/8 (62%), icehouse median 31% (early 2, late 32), always-icebox 0, never-ice 1, hellhole 0, dT median +3.4, N1-N4 5/8
+
+pooled: owner's bar 12/18 (67%), icehouse median 26% (early 2, late 35), always-icebox 1, never-ice 2, hellhole 0, dT median +3.3, N1-N4 12/18
