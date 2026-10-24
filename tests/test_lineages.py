@@ -771,12 +771,19 @@ def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(f
         t = hs["tamed"][0]
         assert t["line"] == "herd" and t["first"] and t["ago_kyr"] <= hs["date_drawn_kyr"] + 1e-6 and hs["wild_mkm2"] > 0
         assert hs["known_mkm2"] > 0 and hs["users_share"]["farm"] > 0
-        riders.append(hs["users_share"]["herd"])
+        # the herders ride wherever they still hold ground on the landmass where they tamed it; a line the farmers have squeezed
+        # off that landmass by the end (seed 4: 106 -> 3 Mkm2, its last 6 cells an island the horse never reached) has no horse to ride (PW-783)
+        from planet.lineages.spread import EST
+        lab = h.cross.label
+        home = (h.p[h.idx["herd"]] >= EST) & (lab == t["landmass"])
+        riders.append((sd, bool(home.any()), hs["users_share"]["herd"]))
         assert hs["propensity"]["herd"] == 1.0 and hs["propensity"]["farm"] < hs["propensity"]["herd"]
         assert any(e["kind"] == "animals" for e in h.events) and not hs["fantasy"]
         keep = (h, res, pres, ps)
     assert len(tamed_in) >= len(seeds) // 4, tamed_in  # (it was 4 of 8 when this was written)
-    assert sum(r > 0.5 for r in riders) * 2 > len(riders), riders  # herders ride across their land in most of the seeds that tame (seed 4 tames but its herders never ride: see draft-herd-tamer-no-riders)
+    assert all(r > 0.5 for _, on_home, r in riders if on_home), riders  # herders ride across their land in EVERY seed that tames and where they still hold the horse's landmass
+    assert all(r == 0.0 for _, on_home, r in riders if not on_home), riders  # (and a line driven off it rides nothing: the horse never crossed the sea to its refuge)
+    assert any(on_home for _, on_home, _ in riders), riders
     h, res, pres, ps = keep
     # layers on the run (bit flags), and the story says so
     out = O.save(h, res, pres, name="horse test")
@@ -788,6 +795,33 @@ def test_horses_are_tamed_where_herders_meet_the_wild_range_and_riding_spreads(f
     h0, res0, pres0 = H.simulate(_animal_tree(()), ps, tries=1)
     assert pres0["animals"] is None and h0.animals is None
     assert "animal_wild" not in json.loads((O.save(h0, res0, pres0, name="no animals") / "run.json").read_text())["layers"]
+
+
+def test_dairy_comes_from_the_herd_and_the_way_of_life_not_from_lactase(faketz, monkeypatch):
+    """PW-784: a herding people with no lactase still has dairy (fermented, the brief says), and `milks = false` takes it away."""
+    import dataclasses
+    from planet.lineages import animal_defs as AD
+    assert SP.parse_body({"milks": False}) == {"milks": False} and SP.BODY_DEFAULT["milks"] is True
+    assert "do not milk their animals" in SP.body_notes({**SP.BODY_DEFAULT, "milks": False})
+    with pytest.raises(ValueError):
+        SP.parse_body({"milks": 0.5})
+    wild = lambda env, tags, land: np.where(land & (np.abs(env["temperature"] - 12) < 8), 0.9, 0.0)  # noqa: E731
+    horse = dataclasses.replace(AD.BY_ID["horse"], wild=wild)
+    monkeypatch.setattr(AD, "TABLE", tuple(horse if a.id == "horse" else a for a in AD.TABLE))
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    for milks in (True, False):
+        tree = _animal_tree(seed=1)
+        tree.lines["herd"].body["milk"] = 0.0  # (nobody digests fresh milk)
+        tree.lines["herd"].body["milks"] = milks
+        h, res, pres = H.simulate(tree, ps, tries=1)
+        dairy = pres["animals"]["dairy"]
+        assert pres["animals"]["stocks"]["horse"]["tamed"], "seed 1 tames the horse on the fake world"
+        if milks:
+            d = dairy["herd"]
+            assert d["lactase_share"] == 0.0 and d["milks_share"] > 0.9 and d["dairy_share"] > 0 and "horse" in d["animals"]
+            assert "farm" not in dairy or dairy["farm"]["dairy_share"] < d["dairy_share"]  # (farmers milk less, by their herd share)
+        else:
+            assert "herd" not in dairy
 
 
 def test_fantasy_animals_are_off_unless_forced_and_never_in_real_mode(faketz, monkeypatch):

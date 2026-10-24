@@ -346,7 +346,7 @@ def stories(h: History, pres: dict) -> dict[str, str]:
             s.append("It took up " + ", ".join(keeps[:-1]) + (" and " if len(keeps) > 1 else "") + keeps[-1] + ".")
         dy = ((pres.get("animals") or {}).get("dairy") or {}).get(l.id)
         if dy and dy["dairy_share"] >= 0.05:
-            s.append(f"Its milk-drinking {round(100 * dy['milk_share'])}% keep dairy herds of " + " and ".join(pres["animals"]["stocks"][x]["label"] for x in dy["animals"][:3]) + ".")
+            s.append(f"Its herders keep dairy herds of " + " and ".join(pres["animals"]["stocks"][x]["label"] for x in dy["animals"][:3]) + (", drinking the milk fresh" if dy["lactase_share"] >= 0.6 else ", souring and curdling the milk (few digest it fresh)") + ".")
         bn = SP.body_notes(l.body)
         if bn:
             s.append(f"The {l.label()} " + (", ".join(bn[:-1]) + (", and " if len(bn) > 2 else " and ") + bn[-1] if len(bn) > 1 else bn[0]) + ".")
@@ -387,7 +387,7 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
             L += [f"    by boat: {c['landmass_name']}, {_ago(c['ago_kyr'])} ago, {c['craft']}, {c['gap_km']} km" for c in hs["crossings"][:6]]
             L += ["    users (share of their land): " + ", ".join(f"{k} {round(100 * v)}%" for k, v in sorted(hs["users_share"].items(), key=lambda x: -x[1])[:8] if v > 0.01)]
         if an["dairy"]:
-            L += ["  dairy (milk-digesting share x land with a dairy animal): " + ", ".join(
+            L += ["  dairy (herd share x land with a dairy animal): " + ", ".join(
                 f"{k} {round(100 * v['dairy_share'])}% ({', '.join(v['animals'])})" for k, v in an["dairy"].items())]
     cr = pres.get("crops")
     if cr:

@@ -8,7 +8,7 @@ present day of the run.
 
 | world | seed | run | peoples run score |
 |---|---|---|---|
-| 6fbc2c | 957317 | e4de0e | 0.746 |
+| 6fbc2c | 957317 | 104de8 | 0.712 |
 | 067778 | 619496 | a703b0 | 0.688 |
 | a12762 | 583167 | e06714 | 0.719 |
 | 6909cb | 639472 | 7fd2b7 | 0.724 |
@@ -16,10 +16,11 @@ present day of the run.
 Common to all four: humans are the big people everywhere (577-628 M heads with their cultures; 53-68% of heads) and are mostly
 farmers; the only dairy peoples are human groups (the Jangwa cattle people, the forager "margin root"), and they have lactase, so
 every dairy line reads **fresh milk, butter and cream**. Nobody gets soured or fermented dairy in any of the four (the antelope-kin and
-cervid-kin bodies are `milk: false`). The tame-able animals are the same set (dog, caprine, cattle, horse, fowl); the horse is first tamed ~6 kyr ago
+cervid-kin bodies are `milk: false`). That was before PW-784; 6fbc2c (run 104de8, re-run after it) now has fermented dairy for its low- and no-lactase herders
+(Arha 10%, antelope-kin and cervid-kin 0%: yogurt, kefir, kumis, cheese) beside the Jangwa's fresh; the other three worlds' notes are as first run. The tame-able animals are the same set (dog, caprine, cattle, horse, fowl); the horse is first tamed ~6 kyr ago
 by the antelope-kin in 3 of the 4 worlds (by the Jangwa in a12762).
 
-## 6fbc2c (run e4de0e, seed 957317): land 35.2% of the planet (179.5 Mkm2 of 510)
+## 6fbc2c (run 104de8, re-run after PW-784 and the owner's ways ruling: antelope-kin and cervid-kin mostly farmers, the tundra cervids herd; the numbers below this heading are from the first run, e4de0e, and are stale): land 35.2% of the planet (179.5 Mkm2 of 510)
 
 - **Big peoples (heads / range):** humans 610 M / 110 Mkm2 (with cultures; farmers 36%, foragers 9%, Jangwa 5%), half-orcs 59 M / 17, halflings 56 M / 15,
   antelope-kin 51 M / 92.5, dragonborn 45 M / 30, cervid-kin 69 M / 47.7 (with its cultures), lizardfolk 36 M / 46.
@@ -31,7 +32,7 @@ by the antelope-kin in 3 of the 4 worlds (by the Jangwa in a12762).
 - **Derived incursions (as-is):** the busiest of the four. Humans call the antelope-kin "devils" (feared, from the north-west, 2 kyr), dragonborn "raiders" (west),
   lizardfolk "raiders" (north), halflings "raiders", half-orcs "raiders" (west); humans call the cervid-kin "demons" but despised (the humans settled among them).
   The antelope-kin call the half-orcs "raiders" (feared).
-- **Cuisines:** grain-belt farmers on maize/wheat/rice/millet; dung-fired steppe-and-savanna country (antelope-kin); fresh Jangwa dairy (horse, goat, cattle milk);
+- **Cuisines:** grain-belt farmers on maize/wheat/rice/millet; dung-fired steppe-and-savanna country (antelope-kin); fresh Jangwa dairy (horse, goat, cattle milk) and fermented dairy for the antelope-kin, cervid-kin and Arha herders (PW-784);
   the interior is not salt-poor (mean 272 km to salt, 39% of land beyond trade reach, plant ash 36%; a lick is the nearest salt for 60%); sea peoples are minor
   (storm giants offshore, merfolk on a 0.12 Mkm2 coast).
 - **Why this one:** the only world where *both* kin are big and both are called fiends by the humans ("devils" and "demons"), with the most varied staples and fuels.
@@ -72,7 +73,7 @@ by the antelope-kin in 3 of the 4 worlds (by the Jangwa in a12762).
 
 ## Comparison
 
-| | 6fbc2c (e4de0e) | 067778 (a703b0) | a12762 (e06714) | 6909cb (7fd2b7) |
+| | 6fbc2c (104de8) | 067778 (a703b0) | a12762 (e06714) | 6909cb (7fd2b7) |
 |---|---|---|---|---|
 | land % | 35.2 | 37.0 | 37.1 | 34.8 |
 | humans, heads / range | 610 M / 110 | 628 M / 108 | 610 M / 123 | 577 M / 119 |
@@ -86,8 +87,8 @@ by the antelope-kin in 3 of the 4 worlds (by the Jangwa in a12762).
 
 ## Pick
 
-**6fbc2c (run e4de0e).** Both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other "demons";
+**6fbc2c (run 104de8).** Both kin are big, they share a home continent with the humans, and the humans call one "devils" and the other "demons";
 add the most varied staples and fuels (maize, rice, wheat, millet; dung, peat, wood) and the Jangwa dairy. 067778 is the runner-up for calm, forest-and-tundra cervid-kin country.
 Single draws each: a different `--tries` or tree seed on the same world will move these counts (PW-707).
 
-Briefs for the pick: `briefs/e4de0e/` (the markdown for each people and group at the present only; run `planet brief e4de0e --all --out ...` for the eras and mixing zones).
+Briefs for the pick: `briefs/104de8/` (the markdown for each people and group at the present only; run `planet brief 104de8 --all --out ...` for the eras and mixing zones).

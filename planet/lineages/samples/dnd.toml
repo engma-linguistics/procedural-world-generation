@@ -15,7 +15,7 @@
 # fisher_forager, horticulturalist, farmer, pastoral_nomad, transhumant, agro_pastoral, sea_nomad (spec.WAYS). Its goods
 # replace the food rows a trait would give; it sets who tames the herd animals, who first cultivates plants, the fuels, the brief.
 # body (PW-694): senses and body for the future cuisine pass; only what differs from the human-like baseline, inherited key by
-# key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults; true/false, or a share 0..1 of the people for the traits that are population frequencies), capsaicin (feels chili heat), bitter and
+# key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults; true/false, or a share 0..1 of the people for the traits that are population frequencies; it decides only fresh or fermented dairy), milks (false: the people does not milk its animals at all; default true, PW-784), capsaicin (feels chili heat), bitter and
 # smell (low | normal | high or keen), diet (herbivore | omnivore | carnivore | obligate_carnivore), raw_meat (eats raw meat
 # safely), cellulose (digests it), toxic (alliums: onion and garlic; theobromine: chocolate). Real analogues: felines taste no
 # sweet, birds feel no capsaicin, herding peoples keep lactase.
