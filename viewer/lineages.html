@@ -273,7 +273,7 @@ function drawTimeline() {
     const end = endOf(r, eff, res);
     s += `<g class="bar${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.3 : 1}">
       <rect class="bg" x="0" y="${yy - ROW / 2}" width="${WIDTH}" height="${ROW}" fill="transparent"/>
-      <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
+      <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${o === 'group' ? '↳ ' : ''}${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
       <rect x="${xOf(a)}" y="${yy - 5}" width="${Math.max(2, xOf(end ?? 0.05) - xOf(a))}" height="10" rx="3" fill="${col}" opacity="${o === 'template' ? 0.55 : 0.9}"
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
@@ -281,7 +281,7 @@ function drawTimeline() {
       ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
     </g>`;
     const ps = o === 'split' ? [eff.parent[r.id]].filter(Boolean) : parentsOf(r);
-    for (const p of ps) if (y[p] != null) {
+    for (const p of ps) if (y[p] != null && o !== 'group') {  // (a group is a culture under its people, not a split: no branch line, PW-776)
       s += `<path d="M${xOf(a)},${y[p]} L${xOf(a)},${yy}" stroke="${ORIGIN_COL[o]}" stroke-width="1.2" fill="none" opacity="${off ? 0.25 : 0.8}"
         ${o !== 'split' ? 'stroke-dasharray="3 2"' : ''}/>`;
     }
@@ -332,7 +332,7 @@ function drawSide() {
       <div class="row">${field('origin', `<select data-k="origin">${Object.keys(ORIGIN_COL).map((x) => `<option ${x === o ? 'selected' : ''}>${x}</option>`).join('')}</select>`)}
         ${field('at (ago)', `<input data-k="at" size="9" value="${esc(r.at)}">`)}
         ${field('extinct by', `<input data-k="extinct" size="9" placeholder="(lives on)" value="${esc(r.extinct || '')}">`)}</div>
-      ${o === 'group' ? `<div class="muted">A way of life within the ${esc(byId()[parentsOf(r)[0]]?.name || parentsOf(r)[0])}: it inherits what it leaves out, takes hold where its own niche
+      ${o === 'group' ? `<div class="muted">A culture within the ${esc(byId()[parentsOf(r)[0]]?.name || parentsOf(r)[0])} (not a subspecies; its date is when it is first told apart, not a split; it may carry its own markers, e.g. lactase in body): it inherits what it leaves out, takes hold where its own niche
         beats its people's, mixes freely with them, and counts with them in the summaries.</div>` : ''}
       ${o !== 'root' && o !== 'arrival' ? field(o === 'split' ? 'parent' : o === 'group' ? 'group of (people)' : o === 'hybrid' ? 'parents (two)' : 'hosts', `<select data-k="${o === 'group' ? 'group_of' : 'parents'}" ${o === 'split' || o === 'group' ? '' : 'multiple size="4"'} class="wide">
         ${ids.map((x) => `<option ${parentsOf(r).includes(x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
@@ -355,7 +355,7 @@ function drawSide() {
       ${field('colour', `<input type="color" data-k="color" value="${r.color || '#888888'}">`)}
       <h3>Its land use <a href="#" data-tabgo="places" style="font-weight:normal">(edit in the Places tab)</a></h3>
       ${(T.use || []).filter((u) => usesOf(u).includes(r)).map((u) => `<div>${esc(u.good)} <span class="muted">by ${esc(u.by)} · w ${u.weight ?? 1}${u.pull != null ? ` · pull ${u.pull}` : ''}${u.strict ? ' · strict' : ''}</span></div>`).join('') || '<div class="muted">none</div>'}
-      ${groupsOf(r.id).length ? `<h3>Its groups</h3>${groupsOf(r.id).map((x) => `<div><a href="#" data-pick="${esc(x.id)}">${esc(x.name || x.id)}</a> <span class="muted">${esc(x.at || '')}</span></div>`).join('')}` : ''}
+      ${groupsOf(r.id).length ? `<h3>Its cultures (groups)</h3>${groupsOf(r.id).map((x) => `<div><a href="#" data-pick="${esc(x.id)}">${esc(x.name || x.id)}</a>${x.body ? ' <span class="muted">own markers: ' + esc(Object.entries(x.body).map(([k, v]) => k + ' ' + v).join(', ')) + '</span>' : ''}</div>`).join('')}` : ''}
       <h3>Its wishes <a href="#" data-wishfor="${esc(r.id)}" style="font-weight:normal">(edit in the Wishes tab)</a></h3>
       ${(T.wish || []).filter((w) => w.a === r.id || w.b === r.id).map((w) => {
         const sc = (result?.present?.wishes || []).find((x) => x.a === w.a && x.want === w.want && (x.b || null) === (w.b || null));

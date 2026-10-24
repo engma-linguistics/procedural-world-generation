@@ -321,8 +321,8 @@ density = 0.005
 explore = 0.45
 sea_share = 0.5
 realm = "sea"  # offshore and along the coast (PW-775): all open water within the depth band
-temp_c = [4, 24]
-elev_m = [-4000, 0]
+temp_c = [6, 16]  # (a rare people of the cool open sea, not every ocean: PW-779 was 111 Mkm2 at [4, 24] over [-4000, 0])
+elev_m = [-3500, -300]
 traits = ["swims", "insular"]
 
 [[lineage]]
@@ -623,8 +623,7 @@ origin = "hybrid"
 parents = ["human", "elf"]
 at = "20 kyr"
 contact = true
-explore = 0.7  # (wanderers between two worlds, at home in neither: not as aloof as their elven parents)
-insularity = 0.3
+insularity = 0.3  # (at home in neither parent group, not as aloof as their elven parents; it feeds the composition's cohabitation. A contact hybrid spreads nowhere itself, so no explore, PW-758)
 
 [[lineage]]
 id = "half_orc"
@@ -633,8 +632,7 @@ origin = "hybrid"
 parents = ["human", "orc"]
 at = "60 kyr"
 contact = true
-explore = 0.6  # (like the half-elves: at home in neither parent group, with a strong wish to stay with one or strike out)
-insularity = 0.3
+insularity = 0.3  # (like the half-elves; no explore: a contact hybrid does not spread itself, PW-758)
 
 # ---- templates: overlays on existing peoples ----------------------------------------------
 [[lineage]]

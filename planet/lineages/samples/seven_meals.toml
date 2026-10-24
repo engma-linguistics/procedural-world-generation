@@ -391,8 +391,8 @@ density = 0.005
 explore = 0.45
 sea_share = 0.5
 realm = "sea"  # offshore and along the coast: all open water within the depth band
-temp_c = [4, 24]
-elev_m = [-4000, 0]
+temp_c = [6, 16]  # (a rare people of the cool open sea, not every ocean: PW-779 was 111 Mkm2 at [4, 24] over [-4000, 0])
+elev_m = [-3500, -300]
 traits = ["swims", "insular"]
 
 [[lineage]]  # ~1-1.5 Myr, T2 with humans and with the halflings
@@ -453,7 +453,7 @@ way = "forager"
 [[lineage]]
 id = "orc"
 name = "orcs"
-body = { raw_meat = true, smell = "keen", milk = 0.1 }  # Arha are fermenters: a share of adults digest fresh milk (the cline carries the human herders' share across the margin)
+body = { raw_meat = true, smell = "keen" }
 parents = ["human_line"]
 at = "300 kyr"
 density = 1
@@ -472,6 +472,7 @@ at = "9 kyr"
 rain_mm = [150, 650]
 prefers = ["steppe"]
 way = "pastoral_nomad"
+body = { milk = 0.1 }  # a culture's marker, not a subspecies (PW-776): the Arha are fermenters, 10% of adults take fresh milk (the cline carries the human herders' share across the margin); the Anja keep the orc default
 
 [[lineage]]  # the Anja of the cold western woods: wood-fire roasting, same ancestors, opposite table: one orc people split by way of life (T0, freely interbreeding), herders and farmers (PW-762)
 id = "anja"

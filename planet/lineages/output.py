@@ -272,7 +272,7 @@ def stories(h: History, pres: dict) -> dict[str, str]:
         what = {"root": "arose", "split": f"split from the {h.tree.lines[l.parents[0]].label() if l.parents and l.parents[0] in h.tree.lines else '?'}",
                 "arrival": "arrived from beyond the world", "hybrid": f"first appeared where {' and '.join(l.parents)} met",
                 "template": f"appeared among the {', '.join(l.parents)}",
-                "group": f"became a way of life among the {h.tree.lines[l.group_of].label() if l.group_of else '?'}"}[l.origin]
+                "group": f"became a way of life among the {h.tree.lines[l.group_of].label() if l.group_of else '?'}, a culture of it rather than a split"}[l.origin]
         why = {"isolated part of the parent's range": "in an isolated part of its parent's land",
                "edge of the parent's range": "at the edge of its parent's land",
                "beside the parent's range (new niche)": "just beyond its parent's land, in a new niche",
@@ -310,7 +310,7 @@ def stories(h: History, pres: dict) -> dict[str, str]:
         w = pres.get("peoples", {}).get(l.id)
         if w and len(w["living"]) > 1:  # (a people with groups: the whole)
             gl = [h.tree.lines[x].label() for x in w["living"] if x != l.id]
-            s.append(f"With its ways of life ({', '.join(gl)}) the {l.label()} are {people(w['population'])} in "
+            s.append(f"With its cultures ({', '.join(gl)}) the {l.label()} are {people(w['population'])} in "
                      f"{w['area_mkm2']} Mkm²; {round(100 * w['shares'].get(l.id, 0))}% keep the old ways.")
         keeps = []
         crops = ((pres.get("crops") or {}).get("stocks") or {})
@@ -421,7 +421,7 @@ def report(out: Path, h: History, res: dict, pres: dict) -> Path:
         f"{v.get('band_km2', 0):g} km²)  {v['area_mkm2']} Mkm²" + (f"; {v['faded_patches']} patch-fadings below the viable number (patches x checks)" if v.get('faded_patches') else "")
         for lid, v in sorted(pres["lines"].items(), key=lambda x: -x[1].get("population", 0))]
     if pres.get("peoples"):
-        L += ["", "## Peoples with their groups (ways of life, PW-665)"]
+        L += ["", "## Peoples with their groups (cultures, PW-665)"]
         for lid, w in pres["peoples"].items():
             L.append(f"  {lid:<18} {w['population']:>12,} people  {w['area_mkm2']} Mkm² in {w['patches']} patch(es): "
                      + ", ".join(f"{x} {round(100 * v)}%" for x, v in w["shares"].items()))
