@@ -565,6 +565,10 @@ def test_groups_within_a_people(faketz):
     last = arr["peoples_whole"][-1]
     assert not (last == h.idx["warm_orc"]).any() and ((arr["peoples"][-1] == h.idx["warm_orc"]) <= (last == h.idx["orc"])).all()
     assert "Peoples with their groups" in (out / "run.txt").read_text()
+    _, ga = T.load_frames(out, ("groups_best", "groups_best_pct"))  # (a group's own range at every frame, PW-742)
+    gl = ga["groups_best"][-1]
+    assert (gl == h.idx["warm_orc"]).any() and set(np.unique(gl).tolist()) <= {h.idx["warm_orc"], 255}
+    assert (ga["groups_best_pct"][-1][gl == 255] == 0).all() and (ga["groups_best_pct"][-1][gl == h.idx["warm_orc"]] >= 12).all()
 
 
 def test_peoples_change_the_land_from_their_ways_of_life():
@@ -974,6 +978,9 @@ def test_crops_are_cultivated_by_farmers_add_capacity_and_leave_layers(faketz, m
     assert {"crop_wild", "crop_known"} <= run["layers"].keys() and run["layers"]["crop_known"]["dtype"] == "uint32"
     assert any(e["kind"] == "crops" for e in h.events) and "first to cultivate wheat and barley" in run["meta"]["lineages"][h.idx["farm"]]["story"]
     assert "Crops (PW-721)" in (out / "run.txt").read_text()
+    rt = np.fromfile(out / "layers" / "route_wheat.bin", np.uint8)  # how each cell came to know wheat (PW-742)
+    assert set(np.unique(rt).tolist()) <= {0, 1, 2, 3} and (rt == 1).any() and (rt > 0).sum() == int((h.crops.stocks[0].rd >= H.EST).sum())
+    assert st["route_file"] == "layers/route_wheat.bin"
 
 
 def test_fuels_follow_trees_herds_peat_crops_and_coast():
@@ -1202,3 +1209,78 @@ def test_sparse_smooth_equals_the_full_neighbour_mean(faketz):
         x = np.where(rng.random(g.n) < frac, rng.random(g.n), 0.0)
         full = np.maximum(x, H._nbr(np.add, x[g.nbr_idx], g) / np.diff(g.nbr_off))
         assert np.array_equal(h._smooth(x), full)
+
+
+# ---- reputation and exonyms (PW-731) -----------------------------------------------------------------------------------
+from planet.lineages import reputation as RP  # noqa: E402
+
+
+def _rep_tree(efold=None):
+    devil = {"id": "devil", "label": "devils", "body": {"display": "horns"}, "valence": ["feared", "despised"]}
+    if efold:
+        devil["efold_kyr"] = efold
+    return SP.parse({"meta": {"name": "t", "seed": 1}, "lineage": [
+        {"id": "farmers", "origin": "root", "at": "1 Myr"}, {"id": "hunters", "origin": "root", "at": "1 Myr"},
+        {"id": "herders", "origin": "root", "at": "1 Myr", "body": {"display": "horns"}},
+        {"id": "sailors", "origin": "root", "at": "1 Myr", "traits": ["swims"]},
+        {"id": "reavers", "origin": "root", "at": "1 Myr", "traits": ["swims"]}],
+        "exonym": [devil, {"id": "sea", "label": "sea elves", "traits": ["swims"], "valence": ["exotic", "edge"]},
+                   {"id": "raiders", "label": "raiders", "valence": ["feared"]},
+                   {"id": "lesser", "label": "lesser folk", "valence": ["despised"]},
+                   {"id": "far", "label": "the far folk", "valence": ["edge"]}]})
+
+
+def _pair(a, b, years, km=400, mixed=0.0, first=20.0, now=True):
+    return {"a": a, "b": b, "tier": "T3", "split_kyr": None, "first_contact_kyr": first, "years_in_contact": years, "in_contact_now": now,
+            "border_km_now": km, "border_km_peak": km, "mixed_pct_now": mixed, "kind": "coast", "series": []}
+
+
+def _contacts(took_kyr=1.0):
+    sub = {"farmers": {"cells": 700, "first_here_share": 1.0, "held_before": []},
+           "hunters": {"cells": 500, "first_here_share": 1.0, "held_before": []},
+           "sailors": {"cells": 100, "first_here_share": 1.0, "held_before": []},
+           "reavers": {"cells": 100, "first_here_share": 1.0, "held_before": []},
+           "herders": {"cells": 900, "first_here_share": 0.7, "held_before": [{"id": "farmers", "cells": 300, "share": 0.3, "held_until_kyr": took_kyr}]}}
+    return {"pairs": [_pair("farmers", "herders", 30000, mixed=5.0), _pair("farmers", "hunters", 90000, mixed=10.0),
+                      _pair("farmers", "sailors", 800, km=60), _pair("farmers", "reavers", 900, km=60),
+                      _pair("hunters", "sailors", 1000, km=60, now=True)], "substrate": sub, "tier_kyr": [10, 1000, 40000]}
+
+
+def test_reputation_is_set_by_conquest_contact_and_body_not_by_what_a_people_is():
+    r = RP.build(_rep_tree(), _contacts())["rows"]
+    f = r["farmers"]
+    assert f["herders"]["valence"] == "feared" and f["herders"]["name"] == "devils" and f["herders"]["category"] == "devil"
+    assert f["herders"]["strength"] > 0.5 and "took 300 cells" in f["herders"]["basis"]
+    assert r["herders"]["farmers"]["valence"] == "despised" and r["herders"]["farmers"]["name"] == "lesser folk"  # the conqueror's view; no horns on the farmers
+    assert f["hunters"]["valence"] == "neighbour" and f["hunters"]["name"] == "hunters" and f["hunters"]["category"] is None  # rich peaceful contact: its own name
+    # thin contact: the body picks the name (swimmers: sea elves), and two such peoples are lumped under it
+    assert f["sailors"]["valence"] == "edge" and f["sailors"]["name"] == "sea elves" and f["sailors"]["lumped_with"] == ["reavers"]
+    assert "devils" in f["herders"]["text"]
+
+
+def test_conquest_memory_fades_unless_the_legend_row_keeps_it_longer():
+    old = RP.build(_rep_tree(), _contacts(took_kyr=12.0))["rows"]["farmers"]["herders"]
+    assert old["valence"] == "neighbour"  # 12 kyr at an e-folding of 2.4 kyr: gone, the pair reads by its contact
+    kept = RP.build(_rep_tree(efold=20.0), _contacts(took_kyr=12.0))["rows"]["farmers"]["herders"]
+    assert kept["valence"] == "feared" and kept["name"] == "devils" and 0.05 < kept["strength"] < 0.6
+
+
+def test_a_people_that_never_met_borrows_its_best_connected_neighbours_view():
+    c = _contacts()
+    c["pairs"].append(_pair("hunters", "reavers", 40000, mixed=5.0))
+    r = RP.build(_rep_tree(), c)["rows"]
+    # the reavers never met the herders; their best-connected neighbour (the hunters) did not either, so nothing is borrowed there,
+    # but the hunters, who never met the herders, borrow the farmers' view (their best-connected neighbour: 90000 yr) at half strength
+    b = r["hunters"]["herders"]
+    assert b["borrowed_from"] == "farmers" and b["valence"] == "feared" and b["strength"] == round(r["farmers"]["herders"]["strength"] / 2, 3)
+    assert "herders" not in r["reavers"]
+
+
+def test_exonym_rows_are_validated_and_survive_the_round_trip():
+    t = _rep_tree()
+    assert SP.parse(SP.to_raw(t)).exonyms == t.exonyms
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"}], "exonym": [{"id": "q", "body": {"display": "wings"}}]})
+    with pytest.raises(ValueError):
+        SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr"}], "exonym": [{"id": "q", "valence": ["scorned"]}]})
+    assert SP.load(LR.SAMPLES / "dnd.toml").exonyms  # the preset ships the generic folk table

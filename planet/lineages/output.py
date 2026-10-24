@@ -15,6 +15,7 @@ from ..provenance import code_version
 from . import fuels as FU
 from . import land as LD
 from . import landuse as LU
+from . import reputation as RP
 from . import spec as SP
 from .history import COMPOSITION_TWO_PCT, EST, PALETTE, History
 
@@ -25,6 +26,8 @@ PEOPLE_LAYERS = {
     "peoples_share": U8("% of the cell's habitat the leading people holds"),
     "peoples_overlay": U8("the strongest overlay people here (template or contact hybrid; index; 255 none)"),
     "peoples_whole": U8("the people holding most of the cell as a whole, its groups counted in (index; 255 none)"),
+    "groups_best": U8("the group (a way of life within a people: steppe orcs, human farmers...) with most presence in the cell (index into meta.lineages; 255 none); a group's range at an era (PW-742)"),
+    "groups_best_pct": U8("% of the cell's habitat the strongest group holds (groups_best)"),
     "mix_lead": U8("composition of the cell (PW-689): the people with most heads here (index; 255 none); peoples_whole stays the one holding most ground"),
     "mix_lead_share": U8("composition of the cell (PW-689): % of its people that are the leading one (mix_lead)"),
     "mix_second": U8("composition: the second people (index into meta.lineages; 255 none)"),
@@ -93,10 +96,19 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         st["t"] = -round(f["ago"], 3)
         out_frames.append({"t": -round(f["ago"], 3), "stats": st, "omega": {}, "hotspots": [], "volcanoes": []})
     arrays = {k: np.stack(v) for k, v in arrays.items()}
+    win = [(j, f) for j, f in enumerate(frames) if f.get("eraq")]  # frames recent enough to keep the land-use inputs of the fuels per era (PW-742)
+    eraq_meta = None
+    if win:
+        eraq_meta = {"frames": [j for j, _ in win], "ago_kyr": [round(f["ago"], 3) for _, f in win], "keys": list(LU.ERA_KEYS),
+                     "note": "uint8 per window frame (landuse.frame_inputs): dens log2p1, farm/herd/wood % of heads, herd_mult/farm_mult x20"}
     specs = {**TERRAIN, **PEOPLE_LAYERS, **animal_layers}
     run_id = S.new_id()
     out = S.path_of("run", run_id)
     layers = S.write_layers(out, arrays, specs)
+    if eraq_meta:
+        for k in LU.ERA_KEYS:
+            (out / "layers" / f"eraq_{k}.bin").write_bytes(np.stack([f["eraq"][k] for _, f in win]).tobytes())
+        eraq_meta["layers"] = {k: {"file": f"layers/eraq_{k}.bin", "dtype": "uint8", "shape": [len(win), g.n]} for k in LU.ERA_KEYS}
     if h.crops is not None:  # the present's crop facts for the cropland and the fuels (PW-721, PW-722), one frame each
         pres["crops"]["layers"] = {}
         for ck, cv in h.crops.present_cells().items():
@@ -104,6 +116,13 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             pres["crops"]["layers"][ck] = {"file": f"layers/crops_{ck}.bin", "dtype": "uint8", "shape": [1, g.n], "units": "%",
                                            "description": {"know": "share of a staple diet the crops known and growable here make (crops.py)",
                                                            "straw": "mean stalks and straw the staple crops leave here, relative"}[ck]}
+    for kind, owner in (("animals", h.animals), ("crops", h.crops)):  # how each cell came to know each stock (PW-742): 0 not known, 1 origin, 2 road (land front), 3 sea (boat)
+        if owner is None or not pres.get(kind):
+            continue
+        for st in owner.stocks:
+            if st.a.id in pres[kind]["stocks"]:
+                (out / "layers" / f"route_{st.a.id}.bin").write_bytes(np.where(st.rd >= EST, st.route, 0).astype(np.uint8).tobytes())
+                pres[kind]["stocks"][st.a.id]["route_file"] = f"layers/route_{st.a.id}.bin"
     pres_q = np.round(np.clip(res["present"], 0, 1) * 100).astype(np.uint8)
     (out / "layers" / "presence_present.bin").write_bytes(pres_q.tobytes())
     S.write_grid(g)
@@ -118,6 +137,8 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
               "demography": {kk: round(v, 4) for kk, v in l.demos().items()}, "speed_kmyr": l.speed_kmyr,
               "body": l.body, "way": l.way,
               "faded_patches": h.faded.get(l.id, 0)} for k, l in enumerate(h.lines)]
+    contacts = h.contacts.summary() if h.contacts is not None else None
+    pres["reputation"] = RP.build(h.tree, contacts)  # what each people calls the others (PW-731)
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -127,7 +148,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         "meta": {"kind": "timezoom", "phase": "lineages", "time_unit": "kyr", **ps.meta(), "world": world,
                  "tree_name": h.tree.name, "mode": h.tree.mode, "portals": [{k: v for k, v in q.items() if k != "cell"} for q in (h._portals or [])], "era": h.tree.era, "tree_file": h.tree.source, "tree": SP.to_raw(h.tree),
                  "disabled": h.tree.disabled, "lineages": lines, "animals": pres["animals"], "crops": pres.get("crops"),
-                 "contacts": h.contacts.summary() if h.contacts is not None else None,
+                 "contacts": contacts, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",

@@ -58,6 +58,7 @@ class Stock:
         self.absent = bool(a.fantasy and not force and self.rng.random() >= a.rare)  # (a rare taming that this world does not have)
         n = h.grid.n
         self.rd = np.zeros(n)
+        self.route = np.zeros(n, np.uint8)  # how each cell came to know it (PW-742): 1 first taming (origin), 2 the land front (road), 3 a boat crossing (sea)
         self.wild = np.zeros(n)
         L = len(h.lines)
         sh = np.array([[*[LU.shares(tree, l)[k] for k in ("farm", "herd", "wood", "forage", "gather")]] if not l.overlay else [0.0] * 5 for l in h.lines]).reshape(L, 5)
@@ -147,6 +148,7 @@ class Stock:
         cell = int(self.rng.choice(len(pick), p=pick / pick.sum()))
         blob = rings(cell, (self.wild > 0) | peopled, 2, h.grid.nbr_off, h.grid.nbr_idx) & peopled
         blob[cell] = True
+        self.route[blob & (self.rd < EST)] = 1
         self.rd[blob] = 1.0
         near = rings(cell, np.ones(len(H), bool), 3, h.grid.nbr_off, h.grid.nbr_idx)
         who = max(tamers, key=lambda k: float(p[k][near].sum()))
@@ -174,7 +176,9 @@ class Stock:
             return
         enter = np.where(peopled, 1.0, self.a.gap)
         room = np.where(peopled, 1.0, 0.0)
+        before = self.rd >= EST
         spread(self.rd, room, enter, tags["elev"], 0.3, 0.0, env["land"], h.grid.nbr_off, h.grid.nbr_idx, passes)
+        self.route[(self.rd >= EST) & ~before] = 2
         self.rd[self.rd >= EST] = 1.0
 
     def _sail(self, step, env, tags, p, peopled, sea, dt) -> None:
@@ -212,6 +216,7 @@ class Stock:
                 continue
             blob = rings(cell, peopled, 2, h.grid.nbr_off, h.grid.nbr_idx) & peopled
             blob[cell] = True
+            self.route[blob & (self.rd < EST)] = 3
             self.rd[blob] = 1.0
             self.n_crossed += 1
             pl = int(h.cross.label[cell])

@@ -381,6 +381,8 @@ class Tree:
     portal_sites: list[str] = field(default_factory=lambda: list(PORTAL_SITES))  # meta.portal_sites: the kinds of place 'sites' draws from
     viable_pop: float = VIABLE_POP  # a separate patch of a people with fewer people fades (history.MVP_TAU_KYR)
     tier_kyr: tuple = TIER_KYR  # meta.tier_kyr: split depths (kyr) under which two peoples are T0, T1, T2 (else T3; PW-727)
+    exonyms: list = field(default_factory=list)  # [[exonym]]: the folk categories a people's neighbours are named by (reputation.py, PW-731)
+    reputation: dict = field(default_factory=dict)  # meta.reputation: knobs of the reputation pass (reputation.params)
     tiers: list = field(default_factory=list)  # [[interfertile]]: per-pair overrides [a, b, tier 0..3] (the half-elf exemption...)
 
     def uses_of(self, l: Lineage) -> list[tuple[str, float]]:
@@ -713,6 +715,12 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         if a not in lines or b not in lines or a == b or tr not in (0, 1, 2, 3):
             raise ValueError(f"interfertile {r}: a and b must be two lines of the tree and tier 0..3")
         t.tiers.append((a, b, int(tr)))
+    from . import reputation as RP
+    t.exonyms = RP.parse_rows(raw.get("exonym"), BODY_DEFAULT, BODY_CHOICES)
+    t.reputation = dict(meta.get("reputation") or {})
+    bad = [k for k in t.reputation if k not in RP.KNOBS]
+    if bad:
+        raise ValueError(f"meta.reputation: unknown keys {bad}")
     from . import animal_defs as AD
     am = meta.get("animals")
     t.animals = None if am is None else [str(x) for x in am]
@@ -787,12 +795,13 @@ def to_raw(t: Tree) -> dict:
                      "era": t.era, "viable_pop": t.viable_pop,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites,
+                     **({"reputation": t.reputation} if t.reputation else {}),
                      **({"animals": t.animals} if t.animals is not None else {}),
                      **({"animals_force": t.animals_force} if t.animals_force else {}),
                      **({"animals_at": {k: f"{v:g} kyr" for k, v in t.animals_at.items()}} if t.animals_at else {}),
                      **({"crops": t.crops} if t.crops is not None else {}),
                      **({"crops_force": t.crops_force} if t.crops_force else {}),
                      **({"crops_at": {k: f"{v:g} kyr" for k, v in t.crops_at.items()}} if t.crops_at else {})},
-            "lineage": out, "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
+            "lineage": out, "exonym": t.exonyms, "interfertile": [{"a": a, "b": b, "tier": x} for a, b, x in t.tiers],
             "wish": [{k: v for k, v in vars(w).items() if v is not None} for w in t.wishes],
             "use": [{k: v for k, v in vars(u).items() if v is not None and v is not False} for u in t.uses]}

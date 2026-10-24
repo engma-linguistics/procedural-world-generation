@@ -37,6 +37,7 @@ from ..geo import R_KM
 from . import animal_defs as AD
 from . import land as LD
 from . import spec as SP
+from .spread import EST
 
 CROP_KM2 = 0.007  # cropland per farming person (0.7 ha: Earth ~1700 AD)
 YIELD = (0.0, 0.55, 0.8, 1.0, 1.15)  # by humanuse farmland class (none, marginal, fair, good, prime): output per area
@@ -112,6 +113,45 @@ def cover(dens, farm, herd, wood, tc, fcls, graze, herd_eff=None, farm_eff=None,
     managed = np.minimum(1.0, dens * WOOD_BASE_KM2 + wood * WOOD_USE_KM2) * t3  # (managed wood: a share of the trees left)
     return {"crop": crop, "pasture": pasture, "burned": burned, "managed": managed, "people": dens,
             "tree_after": t3 - THIN * managed}
+
+
+ERA_WINDOW_KYR = 12.5  # frames this recent keep the land-use inputs (frame_inputs) for the brief's fuels per era (PW-742)
+ERA_KEYS = ("dens", "farm", "herd", "wood", "herd_mult", "farm_mult")
+MULT_SCALE = 20.0  # herd_mult / farm_mult stored x this (1..12.75)
+
+
+def frame_inputs(h, P: np.ndarray, land: np.ndarray) -> dict:
+    """The land use's inputs at a frame of the run (as `derive` reads them for the present), quantised to uint8: `dens` (all
+    people/km2, log2p1 / PEOPLE_SCALE), `farm`, `herd`, `wood` (% of the cell's people that farm, herd, use timber), `herd_mult` and
+    `farm_mult` (the herders' and farmers' land per person from the animals known, x MULT_SCALE). P: line presence (overlays count
+    only where they are a people of their own); h: the History."""
+    L, n = P.shape
+    sh = getattr(h, "_lu_sh", None)
+    if sh is None:
+        sh = h._lu_sh = np.array([[0.0, 0.0, 0.0] if l.overlay else [shares(h.tree, l)[k] for k in ("farm", "herd", "wood")] for l in h.lines]).reshape(L, 3)
+    d = P * h.dens[:, None] * land[None, :]
+    d = d * np.array([not l.overlay for l in h.lines])[:, None]
+    hl, cl = np.zeros((L, n)), np.zeros((L, n))
+    if h.animals is not None:
+        for s in h.animals.stocks:
+            k = (s.rd >= EST)[None, :] * s.prop[:, None]
+            hl += s.a.herd_land * k
+            cl += s.a.crop_land * k * (1.0 if s.tamed else 0.0)
+    dens = d.sum(0)
+    farm, herd, wood = (sh[:, j] @ d for j in range(3))
+    herd_eff, farm_eff = (sh[:, 1][:, None] * d * (1 + hl)).sum(0), (sh[:, 0][:, None] * d * (1 + cl)).sum(0)
+    q = lambda v: np.clip(np.rint(v), 0, 255).astype(np.uint8)  # noqa: E731
+    frac = lambda v: q(100 * v / np.maximum(dens, 1e-9))  # noqa: E731
+    return {"dens": q(np.log2(1 + dens) / PEOPLE_SCALE), "farm": frac(farm), "herd": frac(herd), "wood": frac(wood),
+            "herd_mult": q(MULT_SCALE * herd_eff / np.maximum(herd, 1e-9)) if herd.any() else q(np.full(n, MULT_SCALE)),
+            "farm_mult": q(MULT_SCALE * farm_eff / np.maximum(farm, 1e-9)) if farm.any() else q(np.full(n, MULT_SCALE))}
+
+
+def inputs_from(q: dict) -> dict:
+    """The arrays `cover` takes (people/km2 and the herding, farming and timber-using people/km2, with the herd_eff and farm_eff) from a stored frame_inputs."""
+    dens = 2.0 ** (q["dens"].astype(float) * PEOPLE_SCALE) - 1
+    farm, herd, wood = (dens * q[k].astype(float) / 100 for k in ("farm", "herd", "wood"))
+    return {"dens": dens, "farm": farm, "herd": herd, "wood": wood, "herd_eff": herd * q["herd_mult"] / MULT_SCALE, "farm_eff": farm * q["farm_mult"] / MULT_SCALE}
 
 
 def derive(run_dir: Path) -> dict:

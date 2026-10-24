@@ -20,6 +20,7 @@ from . import land as LD
 from .crossing import Crossings, corridor, short_hop
 from . import compose as CP
 from . import contacts as CT
+from . import landuse as LU
 from .animals import Animals
 from .crops import Crops
 from .spread import EST, graph_dist, nearest_label, rings, rivals_load, spread
@@ -1123,7 +1124,12 @@ class History:
                 self.tracks[l.id].append([round(step.ago, 3), round(float(np.degrees(np.arcsin(v[2]))), 2),
                                           round(float(np.degrees(np.arctan2(v[1], v[0]))), 2), areas.get(l.id, 0),
                                           pops.get(l.id, 0)])
-        return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "peoples_mix": mixn,
+        G = np.where(np.array([l.origin == "group" for l in self.lines])[:, None] & own, self.p, 0.0)  # (the groups' own ranges: PW-742)
+        gp = G.max(0)
+        eraq = LU.frame_inputs(self, P, land) if step.ago <= LU.ERA_WINDOW_KYR and self.goods is not None else None
+        return {"ago": step.ago, "epoch": step.epoch, "env": env, "peoples": dom, "eraq": eraq,
+                "groups_best": np.where(gp >= EST, G.argmax(0), 255).astype(np.uint8),
+                "groups_best_pct": np.where(gp >= EST, np.round(gp * 100), 0).astype(np.uint8), "peoples_mix": mixn,
                 "peoples_share": np.round(np.where(dom < 255, P.max(0), 0) * 100).astype(np.uint8),
                 "peoples_overlay": ov, "peoples_whole": whole, **comp,
                 **(self.animals.frame_layers() if self.animals is not None else {}),

@@ -106,6 +106,37 @@ def mix(tc, pasture, crop, dens, herd_known, peat_m, straw_mix, graze, coast, co
     return sh
 
 
+def at_frame(m: dict, goods: dict, q: dict, tc: np.ndarray, animal_bits: np.ndarray | None, crop_bits: np.ndarray | None) -> dict:
+    """Fuel shares at a stored frame of the run (PW-742): the frame's land use inputs (landuse.frame_inputs, stored `q`), tree cover
+    (0..1), the animals and crops known there; the world's goods are those of its slice moment. Like `derive`, but with the crops'
+    `know` and `straw` taken from the stocks known at the frame (every grown stock counts at full growth)."""
+    n = m["cells"]
+    land = goods["_land"]
+    g = shared_grid(m["level"])
+    coast = land & LD._nbr(g, np.logical_or, ~land[g.nbr_idx])
+    herd_known = np.zeros(n)
+    stocks = (m.get("animals") or {}).get("stocks") or {}
+    if animal_bits is not None:
+        for aid, st in stocks.items():
+            if aid in HERD_ANIMALS:
+                herd_known = np.maximum(herd_known, ((animal_bits.astype(np.int64) >> st["bit"]) & 1).astype(float))
+    w, sw = np.zeros(n), np.zeros(n)
+    if crop_bits is not None:
+        for st in ((m.get("crops") or {}).get("stocks") or {}).values():
+            x = st.get("weight", 0.0) * ((crop_bits.astype(np.int64) >> st["bit"]) & 1)
+            w += x
+            sw += x * st.get("straw", 0.0)
+    know = np.minimum(w, 1.0)
+    straw = np.where(w > 0, sw / np.maximum(w, 1e-9), 0.0)
+    fcls = np.clip(np.rint(np.asarray(goods["_raw"]["fertile"]) * 4).astype(int), 0, 4)
+    graze = goods["grazing"] if "grazing" in goods else np.zeros(n)
+    inp = LU.inputs_from(q)
+    cov = LU.cover(inp["dens"], inp["farm"], inp["herd"], inp["wood"], np.clip(tc, 0, 1) * land, fcls, graze, inp["herd_eff"], inp["farm_eff"], know)
+    return mix(cov["tree_after"], cov["pasture"], cov["crop"], cov["people"], herd_known, goods.get("_peat", np.zeros(n)), straw, graze, coast,
+               goods["coal"] if "coal" in goods else np.zeros(n), sea=goods["sea_mammals"] if "sea_mammals" in goods else None, temp=goods.get("_temp"),
+               coal_known=COAL_ERA[m.get("era") or SP.ERA_DEFAULT])
+
+
 def _last(run_dir: Path, run: dict, key: str):
     spec = run["layers"][key]
     return np.asarray(S.decode(np.asarray(S.read_layer(run_dir, spec)[-1]), spec))

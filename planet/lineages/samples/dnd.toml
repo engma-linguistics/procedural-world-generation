@@ -1068,3 +1068,63 @@ pull = 0.7
 by = "storm_giant"
 good = "storm_coast"
 pull = 0.7
+
+# Folk categories (PW-731, reputation.py): what a people calls a neighbour, by what the neighbour looks like (body, ancestry,
+# way, arrival) and how the two remember each other (valence: feared = overrun by them, despised = held them down,
+# edge = barely met, exotic = some contact; a people in rich peaceful contact uses the neighbour's own name).
+# The row with the most conditions met wins; rows with only a valence are the fallbacks. A generic table: the owner's own
+# story (which peoples are called devils) is a matter of their rows and bodies, not of this file (PW-734).
+[[exonym]]
+id = "devil"
+label = "devils"
+body = { display = "horns" }
+valence = ["feared", "despised"]
+
+[[exonym]]
+id = "demon"
+label = "demons"
+body = { display = "antlers" }
+valence = ["feared", "despised"]
+
+[[exonym]]
+id = "giant_kin"
+label = "giant-kin"
+ancestor = "giantkin"
+
+[[exonym]]
+id = "sea_elves"
+label = "sea elves"
+traits = ["swims"]
+ancestor = "elf"
+valence = ["exotic", "edge"]
+
+[[exonym]]
+id = "fae"
+label = "the fair folk"
+origin = "arrival"
+
+[[exonym]]
+id = "goblin_menace"
+label = "the goblin menace"
+ancestor = "goblinoid"
+valence = ["feared", "edge"]
+
+[[exonym]]
+id = "raiders"
+label = "raiders"
+valence = ["feared"]
+
+[[exonym]]
+id = "lesser_folk"
+label = "lesser folk"
+valence = ["despised"]
+
+[[exonym]]
+id = "strangers"
+label = "foreigners"
+valence = ["exotic"]
+
+[[exonym]]
+id = "edge_folk"
+label = "folk from beyond the edge"
+valence = ["edge"]

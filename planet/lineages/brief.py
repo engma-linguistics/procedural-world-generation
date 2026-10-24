@@ -6,7 +6,7 @@ Markdown, for the owner's culinary project (docs/proposals/culinary-dnd-intake.m
 
 Built only from what a run and its world hold today: land and biome, climate and seasons, fuels, wild and grown foods,
 coast and fish goods, peoples and shares, neighbours, senses and bodies, events and the bad years. What is not modelled
-yet (trade reach, reputation, honey, mast, fungi) is present and null, never
+yet (trade reach, honey, mast, fungi) is present and null, never
 invented, so the culinary side can see what is missing. The brief is deterministic: the same run, region and era give
 the same text. Everything under `suggested` is rule-based and for the culinary side to overrule.
 
@@ -30,7 +30,7 @@ from ..geo import R_KM
 from ..grid import shared_grid
 from . import spec as SP
 
-BRIEF_VERSION = 4  # 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 5  # 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -99,8 +99,9 @@ class Ctx:
         self.dir = S.find_run(run_ref)
         names = ["elevation", "ice", "temperature", "climate", "tree_cover", "precipitation", "peoples", "peoples_whole",
                  "mix_lead", "mix_lead_share", "mix_second", "mix_second_share", "mix_other_share",
-                 "animal_wild", "animal_known", "crop_wild", "crop_known"]
-        self.run, self.arr = T.load_frames(self.dir, [n for n in names])
+                 "animal_wild", "animal_known", "crop_wild", "crop_known", "groups_best", "groups_best_pct"]
+        self.run, _ = T.load_frames(self.dir, ())
+        self.arr = S.read_layers(self.dir, self.run["layers"], [n for n in names if n in self.run["layers"]])  # (the group layers: runs since PW-742)
         self.meta = self.run["meta"]
         self.g = shared_grid(self.meta["level"])
         self.ts = np.array([f["t"] for f in self.run["frames"]], float)
@@ -233,7 +234,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     }
     brief["land"] = _land(ctx, i, land, sel)
     brief["bad_years"] = _bad_years(ctx, place, era)
-    brief["fuels"] = _fuels(ctx, land, era)
+    brief["fuels"] = _fuels(ctx, land, era, i)
     brief["wild_food"] = _wild_food(ctx, i, land)
     brief["fish"] = _fish(ctx, i, sel, sea, land)
     brief["salt"] = _salt(ctx, land)
@@ -246,11 +247,13 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
     brief["trade_reach"] = None
     brief["events"] = _events(ctx, place, era)
-    brief["reputation"] = None
+    brief["reputation"] = _reputation(ctx, brief)
     brief["suggested"] = _suggested(brief)
     if people:
         brief["people"] = _people(ctx, people)
-    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "reputation", "honey", "mast", "fungi")}
+    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "honey", "mast", "fungi")}
+    if brief["reputation"] is None:
+        brief["not_modelled"]["reputation"] = "this run has no reputation table (made before PW-731)"
     if brief["substrate"] is None:
         brief["not_modelled"]["substrate"] = "this run has no contact record (made before PW-727)"
     return brief
@@ -328,7 +331,33 @@ def _gc(lat1, lon1, lat2, lon2) -> float:
     return float(2 * R_KM * np.arcsin(np.sqrt(np.clip(h, 0, 1))))
 
 
-def _fuels(ctx: Ctx, land: np.ndarray, era: float) -> dict | None:
+def _fuels_at(ctx: Ctx, i: int, land: np.ndarray) -> dict | None:
+    """The fuels at a stored frame within the run's window of land-use inputs (landuse.frame_inputs; PW-742): the region's mean shares and
+    leads, from the frame's settlement, ways, tree cover, animals and crops known and the world's goods; None outside the window."""
+    eq = ctx.meta.get("eraq")
+    if not eq or i not in eq["frames"] or ctx.goods is None:
+        return None
+    from . import fuels as FU
+    j = eq["frames"].index(i)
+    q = {k: np.fromfile(ctx.dir / v["file"], np.uint8).reshape(v["shape"])[j] for k, v in eq["layers"].items()}
+    tc = np.asarray(T.frame(ctx.run, ctx.arr, "tree_cover", i), float) / 100.0
+    ab = ctx.f("animal_known", i) if "animal_known" in ctx.arr else None
+    cb = ctx.f("crop_known", i) if "crop_known" in ctx.arr else None
+    sh = FU.at_frame(ctx.meta, ctx.goods, q, tc, ab, cb)
+    out = {k: _mean(v, land) for k, v in sh.items()}
+    stack = np.stack([sh[k] for k in FU.FUELS])
+    lead = np.where(stack.sum(0) > 0, stack.argmax(0), 255).astype(int)
+    out["lead"] = _shares(lead, {k: n for k, n in enumerate(FU.FUELS)}, land, 3)
+    out["basis"] = (f"this era (the frame {eq['ago_kyr'][j]} kyr ago): its settlement, ways of life, tree cover, herds and crops known; "
+                    "the world's own goods (peat, coal, grazing, sea mammals) are those of its slice moment")
+    return out
+
+
+def _fuels(ctx: Ctx, land: np.ndarray, era: float, i: int | None = None) -> dict | None:
+    if era > 0 and i is not None:
+        at = _fuels_at(ctx, i, land)
+        if at is not None:
+            return at
     if ctx.fuels is None:
         return None
     out = {k: _mean(v / 100.0, land) for k, v in ctx.fuels.items() if k != "lead"}
@@ -423,6 +452,25 @@ def _salt(ctx: Ctx, land: np.ndarray) -> dict | None:
     return out
 
 
+def _route(ctx: Ctx, s: dict, arr: np.ndarray, sel: np.ndarray, land: np.ndarray) -> dict | None:
+    """How the region's cells that know a stock at this era came to know it (PW-742): shares by `origin` (the first taming's own ground),
+    `road` (the front of use over peopled land) and `sea` (a boat crossing), and the `dominant` one; null for a run made before the route was kept.
+    `wing` (carried by birds) is not modelled: nothing in the spread does it."""
+    f = s.get("route_file")
+    if not f or not (ctx.dir / f).exists():
+        return None
+    cache = ctx.__dict__.setdefault("_routes", {})
+    if f not in cache:
+        cache[f] = np.fromfile(ctx.dir / f, np.uint8)
+    cells = sel & land & (((arr.astype(np.int64) >> int(s["bit"])) & 1) == 1)
+    n = int(cells.sum())
+    if not n:
+        return None
+    out = {name: round(float((cache[f][cells] == v).sum() / n), 3) for v, name in ((1, "origin"), (2, "road"), (3, "sea"))}
+    out["dominant"] = max(("origin", "road", "sea"), key=lambda k: out[k])
+    return out
+
+
 def _grown(ctx: Ctx, layer: str, key: str, i: int, sel: np.ndarray, land: np.ndarray) -> list | None:
     st = (ctx.meta.get(key) or {}).get("stocks")
     if not st:
@@ -433,7 +481,7 @@ def _grown(ctx: Ctx, layer: str, key: str, i: int, sel: np.ndarray, land: np.nda
         s = st[sid]
         first = (s.get("tamed") or [None])[0]
         row = {"id": sid, "label": s["label"], "known_share": share, "since_kyr": _since(ctx, layer, s, sel, land, i),
-               "route": None, "origin": None if not first else {"kyr_ago": first["ago_kyr"], "lat": first["lat"], "lon": first["lon"],
+               "route": _route(ctx, s, ctx.f(layer, i), sel, land), "origin": None if not first else {"kyr_ago": first["ago_kyr"], "lat": first["lat"], "lon": first["lon"],
                                                               "people": first["line"]}}
         if key == "crops":  # (PW-738: the staples feed the cropland, the cuisine plants flavour and fatten the plate)
             row["kind"] = "staple" if s.get("weight", 0) > 0 else "cuisine"
@@ -506,16 +554,21 @@ GROUP_MIN = 0.05  # a group (a way of life inside a people) counts as present in
 
 def _groups_here(ctx: Ctx, i: int, sel: np.ndarray, listed: set) -> list:
     """The groups (human herders, steppe orcs...) the composition layers fold into their people: at the present, from the presence
-    layer, those with a mean presence of at least GROUP_MIN over the region's peopled cells. Earlier eras have no per-line frames
-    (PW-742): empty. Their ways and dairy are what the brief reads."""
-    if i != len(ctx.ts) - 1 or not sel.any():
+    layer, those with a mean presence of at least GROUP_MIN over the region's peopled cells. At any era in a run with the `groups_best`
+    layers (PW-742) the group with most presence in each cell counts there (a group beside a stronger one is not seen); an older run reads
+    the present's presence layer and has nothing at earlier eras. Their ways and dairy are what the brief reads."""
+    if not sel.any():
         return []
-    pp = np.fromfile(ctx.dir / "layers" / "presence_present.bin", dtype=np.uint8).reshape(len(ctx.lines), -1)
+    gb = ctx.f("groups_best", i) if "groups_best" in ctx.arr else None
+    gp = ctx.f("groups_best_pct", i).astype(float) if gb is not None else None
+    if gb is None and i != len(ctx.ts) - 1:
+        return []
+    pp = None if gb is not None else np.fromfile(ctx.dir / "layers" / "presence_present.bin", dtype=np.uint8).reshape(len(ctx.lines), -1)
     rows = []
     for l in ctx.lines:
         if l["overlay"] or not l.get("group_of") or l["id"] in listed:
             continue
-        share = float(pp[l["index"]][sel].mean()) / 100.0
+        share = float(np.where(gb == l["index"], gp, 0.0)[sel].mean()) / 100.0 if gb is not None else float(pp[l["index"]][sel].mean()) / 100.0
         if share < GROUP_MIN:
             continue
         row = {"id": l["id"], "name": l["name"], "share": round(share, 3), "groups_of": l["group_of"], "overlay": False,
@@ -571,6 +624,47 @@ def _substrate(ctx: Ctx, peoples: dict) -> dict | None:
     out = {r["id"]: sub[r["id"]] for r in peoples["list"] if r["id"] in sub and not r["overlay"]}
     return {"by_people": out, "basis": "the people holding most of a cell (presence at least 25%) before its present one, at the stored epochs; "
                                          "counts are of the people's whole present range in the run, not only the region"}
+
+
+def _rep_table(ctx: Ctx) -> dict | None:
+    r = (ctx.meta.get("present") or {}).get("reputation")
+    return r.get("rows") if r else None
+
+
+def _rep_row(ctx: Ctx, subject: str, r: dict) -> dict:
+    """One reputation row beside what the subject is: the name it is called, why, and its own way and display (PW-731)."""
+    l = ctx.lines[ctx.idx[subject]]
+    b = l.get("body") or {}
+    return {"id": subject, "called": r["name"], "category": r["category"], "valence": r["valence"], "basis": r["basis"],
+            "since_kyr": r["since_kyr"], "strength": r["strength"], "lumped_with": r["lumped_with"], "borrowed_from": r.get("borrowed_from"),
+            "actually": {"name": l["name"], "way": l.get("way"), "display": b.get("display"), "tier": r.get("tier")}, "text": r["text"]}
+
+
+def _reputation(ctx: Ctx, brief: dict) -> dict | None:
+    """What the region's peoples call the peoples of the region and its ring of neighbours, kept beside what those are."""
+    rows = _rep_table(ctx)
+    if rows is None:
+        return None
+    here = [r["id"] for r in brief["peoples"]["list"]]
+    subj = set(here) | {n["id"] for n in brief["neighbours"]["list"]}
+    out = {}
+    for o in here:
+        rs = [_rep_row(ctx, s, r) for s, r in (rows.get(o) or {}).items() if s in subj and s in ctx.idx]
+        if rs:
+            out[o] = sorted(rs, key=lambda r: (-r["strength"], r["id"]))[:8]
+    return {"by_people": out, "basis": "from the contact record: valence from who took whose land (a conquest fades with an e-folding of about 1.5 kyr x the era's scale) or how thin / rich the contact is; the name from the folk category (preset [[exonym]] rows) that best fits the neighbour's body, ancestry, way or arrival. `actually` is what the neighbour is, kept apart from the name"}
+
+
+def _people_reputation(ctx: Ctx, pid: str) -> dict | None:
+    rows = _rep_table(ctx)
+    if rows is None:
+        return None
+    calls = [_rep_row(ctx, s, r) for s, r in (rows.get(pid) or {}).items() if s in ctx.idx]
+    by = [_rep_row(ctx, o, v[pid]) for o, v in rows.items() if pid in v and o in ctx.idx]
+
+    def key(r):
+        return (-r["strength"], r["id"])
+    return {"calls": sorted(calls, key=key), "called_by": sorted(by, key=key)}
 
 
 def _people_contacts(ctx: Ctx, pid: str) -> dict | None:
@@ -675,7 +769,7 @@ def _people(ctx: Ctx, pid: str) -> dict:
             "ended_kyr": l["ended_kyr"], "extinct_kyr": l["extinct_kyr"], "origin_place": l["origin_place"],
             "demography": l["demography"], "present": {k: st.get(k) for k in ("area_mkm2", "patches", "population", "centroid", "by_landmass")},
             "homeland": (p.get("homeland") or {}).get(pid), "neighbours_present": st.get("neighbours"),
-            "story": l.get("story"), "reputation": None, "contacts": _people_contacts(ctx, pid)}
+            "story": l.get("story"), "reputation": _people_reputation(ctx, pid), "contacts": _people_contacts(ctx, pid)}
 
 
 # -- Markdown --------------------------------------------------------------------------------------------
@@ -762,6 +856,14 @@ def markdown(b: dict) -> str:
         t += [f"- {pid}: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])} of its cells)" for r in v["held_before"])
                              or "no other people held its cells") + f" ({_pc(v['first_here_share'])} first held by itself)"
               for pid, v in b["substrate"]["by_people"].items()] or ["- none"]
+    if b.get("reputation"):
+        t += ["", "## What the peoples call their neighbours (and what those are)", ""]
+        for o, rs in b["reputation"]["by_people"].items():
+            t += [f"- {o}:"] + [f"  - {r['id']} ({r['actually']['name']}, {r['actually']['way'] or 'no set way'}"
+                                + (f", {r['actually']['display']}" if r['actually']['display'] not in (None, 'none') else "")
+                                + f") is called \"{r['called']}\": {r['valence']}, {r['basis']}"
+                                + (f", {r['since_kyr']:g} kyr ago" if r["valence"] in ("feared", "despised") else "") + f", strength {r['strength']}"
+                                + (f"; lumped with {', '.join(r['lumped_with'])}" if r["lumped_with"] else "") for r in rs]
     t += ["", "## Events", ""]
     t += [f"- {e['kyr_ago']} kyr ago ({e['kind']}, {e['km']} km): {e['text']}" for e in b["events"]] or ["- none"]
     if "people" in b:
@@ -778,6 +880,11 @@ def markdown(b: dict) -> str:
             if sb:
                 t += ["- Held land before it: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])})" for r in sb["held_before"])
                                                    or "nobody (first on its ground)")]
+    if "people" in b and (b["people"].get("reputation") or {}).get("calls") is not None:
+        rp = b["people"]["reputation"]
+        t += ["", "### Names (PW-731)", ""]
+        t += [f"- calls {r['id']} \"{r['called']}\" ({r['valence']}, {r['basis']})" for r in rp["calls"]] or ["- calls nobody anything special"]
+        t += [f"- is called \"{r['called']}\" by {r['id']} ({r['valence']}, {r['basis']})" for r in rp["called_by"]]
     t += ["", "## Suggested (rule-based, overrule freely)", ""] + [f"- {n}" for n in b["suggested"]["notes"]]
     t += ["", "## Not modelled yet (null in the JSON)", "", "- " + ", ".join(b["not_modelled"]), ""]
     return "\n".join(t)
