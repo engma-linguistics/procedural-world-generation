@@ -417,6 +417,65 @@ def test_contact_hybrid_lingers_when_its_parents_part(faketz):
     assert (f["peoples"][zone] == k).all()  # (its own people there, not an overlay)
 
 
+def test_contact_hybrid_without_linger_vanishes_when_its_parents_part(faketz):
+    """PW-758: linger = false: the hybrid lives where its parents meet and nowhere else, no people of its own."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1},
+           "lineage": [{"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+                       {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr", "linger": False}]}
+    tree = SP.parse(raw)
+    assert tree.lines["ab"].linger is False and SP.to_raw(tree)["lineage"][2]["linger"] is False
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    ia, ib, k = h.idx["a"], h.idx["b"], h.idx["ab"]
+    h.p = np.zeros((3, g.n))
+    h.active = {"a": True, "b": True, "ab": True}
+    h._last_meet, h._apart, h._lingered, h.events = {}, set(), set(), []
+    h._linger = np.zeros((3, g.n), bool)
+    land = ps.fields(0.0, variability=False)["land"]
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    zone = H.rings(cell, land, 1, g.nbr_off, g.nbr_idx)
+    K = np.where(land, 0.9, 0.0)
+    step = H.Step(10.0, 1.0, "recent", True, None)
+    h.p[ia][zone] = h.p[ib][zone] = 0.6
+    h._hybrid(tree.lines["ab"], k, K, step)
+    assert np.allclose(h.p[k][zone], 0.6)
+    h.p[ib][:] = h.p[ia][:] = 0.0
+    for _ in range(3):
+        h._hybrid(tree.lines["ab"], k, K, step)
+    assert not (h.p[k] >= H.EST).any() and not h._linger[k].any() and not h.events
+
+
+def test_start_hints_place_an_origin_near_far_and_in_a_band(faketz):
+    """PW-763: near / far_from / lat_band / landmass on a root's origin (soft multipliers on its placement)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "a", "appears": "30 kyr", **base},
+        {"id": "far", "appears": "20 kyr", "far_from": ["a"], **base},
+        {"id": "near", "appears": "20 kyr", "near": ["a"], **base},
+        {"id": "band", "appears": "20 kyr", "lat_band": [10, 25], **base}]}
+    tree = SP.parse(raw)
+    assert tree.lines["far"].start_far == ["a"] and {r["id"]: r for r in SP.to_raw(tree)["lineage"]}["band"]["lat_band"] == [10, 25]
+    h = H.History(tree, ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    tags = {"land": land}
+    cell = int(np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20)))
+    h.p = np.zeros((4, g.n))
+    h.p[h.idx["a"]][H.rings(cell, land, 2, g.nbr_off, g.nbr_idx)] = 0.8
+    h.active = {"a": True}
+    d = H.graph_dist(h.p[h.idx["a"]] > H.EST, 400, g.nbr_off, g.nbr_idx)
+    mf, mn = h._start_hints(tree.lines["far"], {}, tags), h._start_hints(tree.lines["near"], {}, tags)
+    assert mf[cell] < 0.1 < mf[d > 10].max()
+    assert mn[(d > 0) & (d < 4)].mean() > mn[d > 10].mean()
+    mb = h._start_hints(tree.lines["band"], {}, tags)
+    assert mb[(g.lat > 12) & (g.lat < 23)].min() == 1.0 and mb[g.lat < -30].max() < 0.01
+    with pytest.raises(ValueError, match="unknown line"):
+        SP.parse({"lineage": [{"id": "x", "appears": "1 Myr", "near": ["nope"]}]})
+
+
 def test_land_use_moves_a_people_toward_its_goods(faketz):
     """[[use]]: a line's habitat is x(1 - pull + pull G) over the goods its traits look for, normalised to a
     mean of 1 over its own country; avoided goods cut; in the deep epochs the land use is off, and before
@@ -1329,7 +1388,10 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_fiends_are_a_d
     assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
     # the fiends (PW-734): a deep ruminant branch, no half-fiends, no tiefling template
     assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 2
-    assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents] and "half_elf" not in t.lines
+    assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents]
+    # half-elves (PW-758): a contact hybrid that never lingers, so no people of their own
+    he = t.lines["half_elf"]
+    assert he.origin == "hybrid" and he.contact and not he.linger
     assert all(t.lines[k].body["gut"] == "foregut" and t.lines[k].body["cellulose"] for k in ("antelope_folk", "cervid_folk"))
 
 

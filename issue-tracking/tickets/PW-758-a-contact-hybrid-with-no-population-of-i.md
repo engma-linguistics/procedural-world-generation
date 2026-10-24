@@ -28,4 +28,5 @@ Two small spec items of PW-730 that `seven_meals.toml` could not use, so it leav
 - [ ] add both lines back to `seven_meals.toml` when built
 
 ## Updates
+- 2026-10-24: fun16: `linger = false` built (spec + history._hybrid; test) and half_elf added to seven_meals.toml (run 4f82a4: 0.03 Mkm2, no lingers event). `niche = false` groups NOT built (still open). dnd.toml half_orc given explore 0.6 / insularity 0.3 (data only; overlays do not read them yet).
 - 2026-10-24: Created from inbox draft draft-half-elf-no-population-switch.md (found by fun13).

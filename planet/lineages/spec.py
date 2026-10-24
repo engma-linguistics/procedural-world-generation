@@ -7,12 +7,16 @@ TOML (or JSON of the same shape); preset: planet/lineages/samples/dnd.toml. Each
 - split:    branches from `parents = [p]` (the usual tree edge); the parent ends at its last split unless `persists`
 - arrival:  comes from outside the world (feywild, the planes) at `place = [lat, lon]` or where its habitat is best
 - hybrid:   of two `parents`, where their ranges overlap; `contact = true` (default): it exists only where both
-            parents meet (half-elves); false: it founds a people of its own
+            parents meet (half-elves); false: it founds a people of its own. `linger = false` (contact only): it never
+            outlives the meeting (no people of its own where the parents part: the half-elves of the canon)
 - template: an overlay on `parents` (hosts) from `at` on (tieflings): a `share` of the hosts' people,
             spreading from a few `sites` through the hosts' range only
 - group:    a way of life within a people (`group_of = <people>`, default `at` GROUP_KYR): steppe and forest orcs,
             human seafarers and farmers. Not a split: it appears where its own niche beats its people's, never
             ends its people, mixes freely with it and its sister groups, and rolls up into it in the summaries
+A root, arrival or split may say where its origin is placed (PW-763; soft multipliers on the origin's score, never forced):
+`near = [ids]` / `far_from = [ids]` (relative to those lines' ranges when it starts; ones not yet alive are ignored),
+`lat_band = [south, north]`, `landmass = "largest" | "elsewhere"`.
 So the "tree" is a DAG. Anything a line leaves out it inherits from its first parent.
 [[use]] (by = a trait, a place tag or a line's id, good = land.GOODS, weight, optional pull) says what each way
 of life looks for in the land (farmland, pasture, ores, harbours, coral coasts, volcanoes...); meta.land_pull how
@@ -289,8 +293,13 @@ class Lineage:
     persists: bool = False  # keeps living after its last split child
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
+    start_near: list[str] = field(default_factory=list)  # where its origin is placed (PW-763): near these lines' ranges...
+    start_far: list[str] = field(default_factory=list)  # ...far from these (only those already alive when it starts)
+    start_lat: tuple[float, float] | None = None  # ...within this latitude band (soft edges)
+    start_land: str | None = None  # ...on the biggest landmass ('largest') or off it ('elsewhere')
     share: float = 0.1  # template / contact hybrid: share of the hosts' people
     contact: bool = True  # hybrid: exists only where both parents meet
+    linger: bool = True  # contact hybrid: lives on as a small people of its own where its parents last met (False: never, PW-758)
     sites: int = 3  # template: incursion sites
     extinct_kyr: float | None = None  # gone by this long before the present (dwindles over the time before)
     custom: bool = False  # added by the user (the editor marks it), not from a preset
@@ -628,6 +637,21 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         place = r.get("place")
         if place is not None:
             place = (float(place["lat"]), float(place["lon"])) if isinstance(place, dict) else (float(place[0]), float(place[1]))
+        sl = r.get("lat_band")
+        if sl is not None:
+            sl = _pair(sl, "lat_band")
+            if not -90 <= sl[0] <= sl[1] <= 90:
+                raise ValueError(f"{lid}: lat_band must be [south, north] within -90..90")
+        sland = r.get("landmass")
+        if sland not in (None, "", "largest", "elsewhere"):
+            raise ValueError(f"{lid}: landmass must be 'largest' or 'elsewhere'")
+        hints = {}
+        for key in ("near", "far_from"):
+            ids = [str(x) for x in r.get(key, [])]
+            for q in ids:
+                if q not in rows or q == lid:
+                    raise ValueError(f"{lid}: {key} names an unknown line {q!r}")
+            hints[key] = ids
         l = replace(base, id=lid, name=str(r.get("name", lid)), origin=origin, parents=pars, ago_kyr=ago,
                     temp_c=_pair(r.get("temp_c"), "temp_c") or temp,
                     rain_mm=_pair(r.get("rain_mm"), "rain_mm") or rain,
@@ -636,7 +660,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
                     body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
+                    start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
+                    linger=bool(r.get("linger", True)),
                     sites=int(r.get("sites", 3)), custom=bool(r.get("custom", False)), real=bool(r.get("real", False)), children=[],
                     extinct_kyr=parse_ago(r["extinct"]) if r.get("extinct") not in (None, "") else None)
         if l.extinct_kyr is not None and not 0 <= l.extinct_kyr < ago:
@@ -783,6 +809,14 @@ def to_raw(t: Tree) -> dict:
             r["elev_m"] = list(l.elev_m)
         if l.place is not None:
             r["place"] = list(l.place)
+        if l.start_near:
+            r["near"] = l.start_near
+        if l.start_far:
+            r["far_from"] = l.start_far
+        if l.start_lat:
+            r["lat_band"] = list(l.start_lat)
+        if l.start_land:
+            r["landmass"] = l.start_land
         if l.body_given:
             r["body"] = l.body_given
         if l.way_given:
@@ -801,6 +835,8 @@ def to_raw(t: Tree) -> dict:
             r["share"] = l.share
         if l.origin == "hybrid":
             r["contact"] = l.contact
+            if not l.linger:
+                r["linger"] = False
         if l.origin == "template":
             r["sites"] = l.sites
         out.append(r)

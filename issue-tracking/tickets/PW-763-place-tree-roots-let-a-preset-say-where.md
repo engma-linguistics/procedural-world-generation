@@ -20,4 +20,5 @@ updated: 2026-10-24
 Owner 2026-10-24 (PW-734 Q2): rather than authored history, the owner wants to anchor where on the world each root clade starts and at what point in the tree, relative placements (far from / near to) are enough.
 
 ## Updates
+- 2026-10-24: fun16 built it: `near` / `far_from` (line ids), `lat_band`, `landmass` on a root, arrival or split (history._start_hints, soft multipliers on the origin score, START_KM 1500). seven_meals: reptilian far_from mammalian, avian near reptilian. Run 4f82a4 (L7 world 1df1c3): the two 320 Myr splits still land 1900 km apart because the one-tree-of-life range is small; modest effect. Ready for the coordinator to close.
 - 2026-10-24: Created.

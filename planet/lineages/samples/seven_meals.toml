@@ -13,7 +13,8 @@
 # steppe"); the sim's substrate takeovers are the conquests the reputation pass reads.
 # Not in this tree (cut or absorbed in the canon): drow, sea elves (an exonym for the deep folk), tritons, firbolgs, aasimar,
 # genasi, troglodytes, the tiefling template. Half-elves are the canon's exemption (no population, no cline, no community
-# anywhere): they have no line here, because a contact hybrid still makes a people of its own where its parents last met (PW-613).
+# anywhere): a contact hybrid with linger = false (PW-758): born where humans and elves meet, living inside the parent groups.
+# Placement hints (PW-763), modest: the mammal and reptile lines start apart ("far_from"), birds start by the reptiles ("near").
 # Horns and antlers (owner 2026-10-24): by variant, following real species. body.display = horns | antlers; body.display_sex =
 # both | males (which sexes carry it); body.shed (antlers) = both | males (who sheds, a yearly cycle).
 #   reindeer-like cervids: antlers in both sexes; deer-, elk-, moose-like: males only.
@@ -587,10 +588,20 @@ parents = ["human", "orc"]
 at = "10 kyr"
 contact = false
 
+[[lineage]]  # the canon's exemption (PW-758): no people, no cline, no community; exists only inside the human and elf groups
+id = "half_elf"
+name = "half-elves"
+origin = "hybrid"
+parents = ["human", "elf"]
+at = "20 kyr"
+contact = true
+linger = false
+
 # ---- the reptilian line ---------------------------------------------------------------------------------
 [[lineage]]
 id = "reptilian"
 name = "reptilian line"
+far_from = ["mammalian"]  # (PW-763: the two old lines start apart; the mammalian line is placed first)
 body = { smell = "keen", raw_meat = true, thermo = "ecto" }
 parents = ["life"]
 at = "320 Myr"
@@ -693,6 +704,7 @@ traits = ["subterranean", "hardy"]
 # -- the avian branch comes off the reptilian line long ago, the way birds do
 [[lineage]]
 id = "avian"
+near = ["reptilian"]  # (PW-763: birds start close to the reptiles)
 name = "avian stem"
 body = { sweet = false, capsaicin = false, bitter = "low", smell = "low", raw_meat = true, toxic = ["alliums", "theobromine"], teeth = "beak", suction = "none", thermo = "endo" }  # warm-blooded; no suction (narrow-necked pouring vessels, scoopable broths)
 parents = ["reptilian"]

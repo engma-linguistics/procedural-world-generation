@@ -634,6 +634,8 @@ origin = "hybrid"
 parents = ["human", "orc"]
 at = "60 kyr"
 contact = true
+explore = 0.6  # (like the half-elves: at home in neither parent group, with a strong wish to stay with one or strike out)
+insularity = 0.3
 
 # ---- templates: overlays on existing peoples ----------------------------------------------
 [[lineage]]

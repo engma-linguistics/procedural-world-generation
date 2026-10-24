@@ -39,6 +39,7 @@ NEAR_TOLERANCE = 0.5  # ...and the two compete this much less with each other
 NEAR_ORIGIN_KM, NEAR_ORIGIN = 1000.0, 2.0  # ...and on an origin's placement (up to x3 next to it, e-folding 1000 km)
 LOST_PENALTY = 0.05  # best of N: score taken off a try per line lost that the tree says lives at the present
 APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches would put at least this share of a's habitat near b's
+START_KM = 1500.0  # a start hint's reach (PW-763): 'far_from' ramps from x0.05 at the other's border to x1 over this, 'near' falls off with it
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
@@ -384,6 +385,33 @@ class History:
                 m = m * np.where(tags[w.want], 1 + 0.5 * w.weight, 1 - 0.25 * min(w.weight, 1))
         return m
 
+    def _start_hints(self, line, env, tags):
+        """Origin multiplier from the line's own placement hints (PW-763): near / far from other lines' ranges (those
+        alive now), a latitude band, the biggest landmass or off it. Soft: a hint that nothing satisfies changes nothing."""
+        g = self.grid
+        m = np.ones(g.n)
+        for key, far in (("start_near", False), ("start_far", True)):
+            for q in getattr(line, key):
+                if q not in self.idx or not self.active.get(q):
+                    continue
+                po = self.whole(q) > EST
+                if not po.any():
+                    continue
+                L = START_KM / self.cell_km
+                d = graph_dist(po, int(np.ceil(3 * L)), g.nbr_off, g.nbr_idx)
+                d = np.where(d < 0, 3 * L, d)  # (unreached: as far as the search went)
+                m = m * (0.05 + 0.95 * (1 - np.exp(-d / L)) if far else 0.2 + 2.0 * np.exp(-d / L))
+        if line.start_lat:
+            lo, hi = line.start_lat
+            out = np.maximum(lo - g.lat, g.lat - hi)  # degrees outside the band (negative inside)
+            m = m * np.exp(-(np.maximum(out, 0) / 8.0) ** 2)
+        if line.start_land:
+            lab, n = g.components(tags["land"])
+            if n:
+                big = lab == int(np.argmax(np.bincount(lab[lab >= 0], minlength=n)))
+                m = m * (np.where(big, 1.0, 0.1) if line.start_land == "largest" else np.where(big, 0.1, 1.0))
+        return m
+
     def _seed_blob(self, k, cell, K, mask, r):
         g = self.grid
         blob = rings(int(cell), mask | (np.arange(g.n) == cell), r, g.nbr_off, g.nbr_idx) & (K > EST)
@@ -396,7 +424,7 @@ class History:
         noise = self._noise()
         why = "habitat"
         if line.origin in ("root", "arrival"):
-            score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * noise
+            score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise
             if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
                 for h in self.tree.lines.values():
                     if h.origin == "hybrid" and line.id in h.parents:
@@ -448,7 +476,7 @@ class History:
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
             near = self._dilate(P, 4) & tags["land"]
             score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, 0)) * self._place_mult(line, tags) \
-                * self._wish_near(line, origin=True) * noise * (K > 2 * EST)  # (where the founders can live)
+                * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
             cell = int(np.argmax(score))
@@ -1003,12 +1031,12 @@ class History:
         O = np.minimum(a, b)
         meet = O >= EST
         old = self.p[k]
-        linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K)
+        linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K) if l.linger else np.zeros(g.n)
         new = np.where(meet, np.maximum(O, linger), linger)
         if meet.any():
             self._last_meet[l.id] = meet & (K > EST)
             self._apart.discard(l.id)
-        elif l.id in self._last_meet:
+        elif l.linger and l.id in self._last_meet:
             last = self._last_meet[l.id]
             if not last.any():  # (the parents met only where its own habitat is poor: the best of it nearby)
                 near = self._dilate(old > 0, 2) if (old > 0).any() else np.ones(g.n, bool)
