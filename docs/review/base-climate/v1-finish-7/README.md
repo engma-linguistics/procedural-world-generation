@@ -135,7 +135,35 @@ L7 keeps more of a late trend than L6 (late 34-38% against early 0-18%), but it 
 
 ## 3. Tests, scorecard, earth_check
 
-(filled below)
+- **`uv run pytest -q`**: 661 tests, all passing after two deliberate updates.
+  - The goldens were updated on purpose (`tests/golden/sim_L4_s1_60myr.json`: every run's dT changes).
+  - `tests/test_ice_diag.py`'s bookkeeping identity now includes the new recorded `star` term (diag `steps[].star`):
+    drift + CO2 + albedo + star + offset = target. This is the identity extended to the new term; no threshold
+    changed.
+- **`tools/earth_check.py`**: Koppen group 71.1%, exact 33.9%, the same as before. The check runs the climate on
+  Earth at dT 0 and doesn't touch the star.
+- **`tools/scorecard.py`** (commit 9852149, appended to `docs/scorecard.jsonl`): Earth 71.1 / 33.9.
+  - Seed 1: land 33.7%, ice 0.0%, NPP 352.
+  - Seed 2: land 34.4%, ice 0.1%.
+  - The last line before this (51ee51f) predates PW-741, so the seeds' differences aren't attributable to this
+    change alone.
+
+## 4. The v1 L7 showcase, remade (PW-202)
+
+Made on 9852149 with `showcase.sh`: `planet make --level 7 --seed S`, earthlike, 1 Gyr, a 300 kyr time zoom, now =
+interglacial, resources and 4 zooms, into the main data root. `planet coast` was then run on the worlds. The
+icehouse column comes from v1-finish-4's `runtrack.py` and `passrate.py` (`passrate_showcase.txt`) and is identical
+to L7 draw 1.
+
+| seed | run | time zoom | world | zooms | icehouse 300-1000 Myr (v1-finish-4's) |
+|---|---|---|---|---|---|
+| 957317 | 6c652c @744 | ddc091 | 6fbc2c | 471429 edac2e 9cd9e4 3eb133 | 15% ok (64%) |
+| 619496 | d30069 @892 | 606a1b | 067778 | b4a10e 17a86d aaa670 82f703 | 25% ok (42%) |
+| 583167 | 99dc70 @972 | 41a7a4 | a12762 | b47502 e1d5ea 6b3ee8 0eb5f0 | 34% ok (22%) |
+| 639472 | feaade @796 | fd187b | 6909cb | 1bcbb9 b0c5b6 ab86cf 030abb | 38% ok (60%) |
+
+The old showcase (v1-finish-4's runs 656f66 fdb41e 9882e7 27929a, with their time zooms, worlds and zooms) is left
+for the coordinator to delete.
 
 ## Files
 
