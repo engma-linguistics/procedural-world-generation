@@ -1,4 +1,5 @@
 ---
+id: PW-731
 title: "Reputation and exonyms: what each people calls its neighbours and why (devils, demons, giant-kin, sea elves), set by conquest and contact history, kept apart from what they are"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-661, PW-103]
 refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/history.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -46,3 +49,6 @@ v0 runs on the lineage history and event anchors; v1 reads PW-661's conquests an
 Judgement calls for the owner: the folk-category table, and the decay time.
 - [ ] On the owner's preset, humans near the conquest call the antelope folk "devils" with a conquest basis, and
       humans who live among the cervid folk use an ordinary name.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-reputation-and-exonyms.md (found by culinary-intake).

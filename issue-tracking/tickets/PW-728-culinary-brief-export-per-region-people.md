@@ -1,4 +1,5 @@
 ---
+id: PW-728
 title: "Culinary brief: export per region, people and era (land, fuels, wild food, fish, salt, crops, animals, peoples, neighbours, substrate, trade reach, events, reputation) as JSON and Markdown"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-722, PW-721, PW-719, PW-475]
 refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/output.py]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -47,3 +50,6 @@ mixing zones, the bad years. Later fields are added as their tickets land, behin
 - [ ] Run id, tree hash and seed in every file.
 - [ ] A schema doc.
 - [ ] A Markdown rendering readable on its own.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-culinary-brief-export.md (found by culinary-intake).

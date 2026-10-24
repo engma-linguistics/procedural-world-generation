@@ -1,4 +1,5 @@
 ---
+id: PW-729
 title: "Marine peoples: lines whose habitat is the sea (deep folk on trenches and vents, merfolk on the tidal interface, storm giants offshore)"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-188, PW-692]
 refs: [planet/lineages/history.py, planet/lineages/spread.py, planet/coastal.py, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -34,3 +37,6 @@ Option B, if the cost bites: coast lines only, with the deeps authored by the cu
 visit" there anyway. The lean is A for merfolk and storm giants.
 - [ ] Measured cost at L7.
 - [ ] Land peoples' numbers unchanged.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-marine-peoples.md (found by culinary-intake).

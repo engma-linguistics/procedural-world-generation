@@ -1,4 +1,5 @@
 ---
+id: PW-726
 title: "Body keys for the culinary pass: suction, teeth, gut, salt craving, display organ and shed cycle, activity hours, ectothermy, fire use"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-694, PW-701]
 refs: [planet/lineages/spec.py, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -33,3 +36,6 @@ fact sheets for the rest.
 - [ ] Workbench dropdowns.
 - [ ] Story sentences.
 - [ ] Validated in `spec.parse_body`.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-body-keys-for-the-culinary-world.md (found by culinary-intake).

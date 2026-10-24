@@ -1,4 +1,5 @@
 ---
+id: PW-730
 title: "The owner's world as a lineages preset (seven_meals.toml): the culinary repo's tree, groups, bodies and wishes beside dnd.toml"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-103, PW-694, PW-613]
 refs: [docs/proposals/culinary-dnd-intake.md, planet/lineages/samples/dnd.toml, "culinary-dnd docs/genetics.md"]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -50,3 +53,6 @@ Measure on two L7 worlds, with four tries' means.
 - [ ] Every living line holds land.
 - [ ] Wish score mean reported.
 - [ ] `dnd.toml` runs byte-identical.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-owner-world-lineages-preset.md (found by culinary-intake).

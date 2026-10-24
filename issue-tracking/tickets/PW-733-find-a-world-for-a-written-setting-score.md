@@ -1,8 +1,9 @@
 ---
+id: PW-733
 title: "Find a world for a written setting: score candidate worlds on setting requirements (rain-shadow steppe, inner sea with a strait, desert belt, volcano coast, tea highlands to an eastern delta, island arcs) and keep the best"
 type: story
 status: todo
-parent: null
+parent: PW-692
 milestone: v2
 subsystem: highlights
 effort: m
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-692]
 refs: [planet/highlights.py, docs/proposals/culinary-dnd-intake.md, "culinary-dnd docs/world-map.md"]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Leans on Q1 of the proposal (the sim's world is the map). The requirements file 
 of their master reference §3. The culinary side writes it.
 - [ ] Works on existing showcase worlds.
 - [ ] Earth scores well on "Mediterranean with a strait" as a sanity look.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-world-fit-for-a-written-setting.md (found by culinary-intake).

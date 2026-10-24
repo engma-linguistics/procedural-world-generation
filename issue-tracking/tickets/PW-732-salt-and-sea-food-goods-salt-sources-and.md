@@ -1,4 +1,5 @@
 ---
+id: PW-732
 title: "Salt and sea-food goods: salt sources and distance to salt per cell; fish, shellfish and sea mammals by coast, shelf, upwelling, river runs and lakes"
 type: story
 status: todo
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-188, PW-097, PW-722]
 refs: [planet/lineages/land.py, planet/resources.py, planet/coastal.py, docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -42,3 +45,6 @@ The culinary canon leans on salt and the sea, and neither is a food good yet.
 
 Exported in the culinary brief. Optionally read by fisher-forager ways of life (PW-723).
 - [ ] Earth plausibility check of the fish good against known rich fisheries (a sanity look, not a fit).
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-salt-and-sea-food-goods.md (found by culinary-intake).

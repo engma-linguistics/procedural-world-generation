@@ -1,5 +1,6 @@
 ---
-title: "Contact history per pair of peoples by epoch, interfertility tiers from split depth, substrate (who held a cell before), and Tier-1 clines carrying body shares across a border"
+id: PW-727
+title: Contact history per pair of peoples by epoch, interfertility tiers from split depth, substrate (who held a cell before), and Tier-1 clines carrying body shares across a border
 type: story
 status: todo
 parent: PW-692
@@ -11,6 +12,8 @@ found_by: culinary-intake
 blocked_by: []
 relates: [PW-103, PW-701, PW-661]
 refs: [planet/lineages/history.py, planet/lineages/compose.py, "culinary-dnd docs/genetics.md", docs/proposals/culinary-dnd-intake.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -37,3 +40,6 @@ there first.
 rate. That makes the culinary ruling "the milk line runs through the orc side, not along the border" an output.
 - [ ] Measured on two worlds.
 - [ ] Wish score and empty land unchanged (output only), except the cline layer.
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-contact-history-and-interfertility-tiers.md (found by culinary-intake).
