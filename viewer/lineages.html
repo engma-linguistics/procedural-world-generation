@@ -104,7 +104,7 @@ const DEMOGRAPHY = { agricultural: { density: 10 }, nomadic: { density: 0.6, exp
   coastal: { sea_share: 0.3, density: 3 }, cosmopolitan: { insularity: 0.2, explore: 0.7 }, insular: { insularity: 0.85, explore: 0.25 } };
 const DEMO_KEYS = Object.keys(DEMO_DEFAULT);
 // senses and bodies (PW-694; mirrors spec.BODY_DEFAULT): for the future cuisine pass, nothing in the run reads them
-const BODY_DEFAULT = { sweet: true, milk: false, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [], suction: 'normal', teeth: 'grinding', gut: 'simple', salt: 'normal', display: 'none', shed: 'none', display_sex: 'both', hours: 'diurnal', thermo: 'endo', fire: true };
+const BODY_DEFAULT = { sweet: true, milk: false, milks: true, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [], suction: 'normal', teeth: 'grinding', gut: 'simple', salt: 'normal', display: 'none', shed: 'none', display_sex: 'both', hours: 'diurnal', thermo: 'endo', fire: true };
 const BODY_FIELDS = [['sweet', 'tastes sweet', [true, false]], ['milk', 'digests milk as an adult (or the share of the people that does)', [true, false, 0.1, 0.25, 0.5, 0.75]], ['capsaicin', 'feels capsaicin heat', [true, false]],
   ['bitter', 'bitter sensitivity', ['low', 'normal', 'high']], ['smell', 'smell acuity', ['low', 'normal', 'keen']],
   ['diet', 'diet', ['herbivore', 'omnivore', 'carnivore', 'obligate_carnivore']], ['raw_meat', 'tolerates raw meat', [true, false]], ['cellulose', 'digests cellulose', [true, false]],
@@ -655,7 +655,7 @@ function drawResults() {
         ${rs.length ? `<div style="margin-top:4px">Known over: ${rs.map(([id, v]) => `${sw(id)}${nm(id)} ${Math.round(100 * v)}%${hs.took_up_kyr?.[id] != null ? ` <span class="muted">(from ${fmt(hs.took_up_kyr[id])} ago)</span>` : ''}`).join('; ')}</div>` : ''}`;
     }
     const dy = Object.entries(an.dairy || {});
-    if (dy.length) h += `<h3>Dairy</h3><div>${dy.map(([id, v]) => `${sw(id)}${nm(id)}: ${Math.round(100 * v.milk_share)}% digest milk, ${Math.round(100 * v.dairy_share)}% keep dairy herds of ${v.animals.map((x) => esc(an.stocks[x].label)).join(', ')}`).join('<br>')}</div>`;
+    if (dy.length) h += `<h3>Dairy</h3><div>${dy.map(([id, v]) => `${sw(id)}${nm(id)}: ${Math.round(100 * v.lactase_share)}% digest milk, ${Math.round(100 * v.dairy_share)}% keep dairy herds of ${v.animals.map((x) => esc(an.stocks[x].label)).join(', ')}`).join('<br>')}</div>`;
   }
   // crops (crops.py, PW-721) and fuels (fuels.py, PW-722)
   const cr = P.crops;

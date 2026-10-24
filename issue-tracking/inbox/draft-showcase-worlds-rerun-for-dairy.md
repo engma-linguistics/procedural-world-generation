@@ -1,0 +1,20 @@
+---
+title: Showcase README for 067778, a12762, 6909cb still describes dairy as fresh-only (written before PW-784)
+type: task
+status: todo
+parent: null
+milestone: v2
+subsystem: docs
+effort: xs
+impact: low
+found_by: fun20
+blocked_by: []
+relates: [PW-784]
+refs: [docs/review/lineages/showcase-peoples/README.md]
+---
+
+## Description
+Only 6fbc2c was re-run (run eaf863) after PW-784, so the README's notes and the comparison table row "dairy | fresh only" for
+the other three worlds (a703b0, e06714, 7fd2b7) are the old numbers. If those worlds are kept as showcases, re-run
+`planet lineages WORLD --tree seven_meals --tries 1` on them and update their lines and the table; otherwise mark the notes as pre-PW-784.
+- [ ] README rows for the three worlds match a run made with the dairy rule.

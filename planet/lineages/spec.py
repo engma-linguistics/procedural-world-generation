@@ -162,8 +162,9 @@ def demography(traits) -> dict:
 # salt (herbivores crave it), display (horns are permanent and ringed, antlers shed yearly) and shed (who sheds: one
 # clock or two), display_sex (both | males: which sexes carry horns or antlers, as real species differ: reindeer and oryx both,
 # deer, moose and impala males only; PW-730), hours (when it is active), thermo (ectotherms feast and fast) and fire (false: cooks without fire).
-# Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
-BODY_DEFAULT = {"sweet": True, "milk": False, "capsaicin": True, "bitter": "normal", "smell": "normal",
+# `milk` is the lactase share (fresh milk or fermented only); `milks = false` says a people does not milk its animals at all
+# (default: herders milk, PW-784; animals.summary and the brief read it). Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
+BODY_DEFAULT = {"sweet": True, "milk": False, "milks": True, "capsaicin": True, "bitter": "normal", "smell": "normal",
                 "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
                 "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
                 "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True}
@@ -194,9 +195,9 @@ def parse_body(v, lid: str = "") -> dict:
                 out[k] = float(x)
             else:
                 raise ValueError(f"{lid}: body.{k} must be true, false or a share between 0 and 1")
-        elif k == "fire":
+        elif k in ("fire", "milks"):
             if not isinstance(x, bool):
-                raise ValueError(f"{lid}: body.fire must be true or false")
+                raise ValueError(f"{lid}: body.{k} must be true or false")
             out[k] = x
         elif k == "toxic":
             xs = [x] if isinstance(x, str) else list(x)
@@ -220,6 +221,8 @@ def body_notes(b: dict) -> list[str]:
         out.append("cannot taste sweet" if not b["sweet"] else pct(b["sweet"]) + "taste sweet")
     if b["milk"]:
         out.append("digest milk as adults" if b["milk"] is True else pct(b["milk"]) + "digest milk as adults")
+    if b.get("milks") is False:
+        out.append("do not milk their animals")
     if b["capsaicin"] is not True:
         out.append("feel no capsaicin heat" if not b["capsaicin"] else pct(b["capsaicin"]) + "feel capsaicin heat")
     if b["bitter"] != "normal":

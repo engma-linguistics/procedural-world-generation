@@ -20,6 +20,7 @@ updated: 2026-10-24
 fun18 moved _animal_tree's seed 3 -> 1 after per-line RNG streams; assertions unchanged. Per the re-rolled-draws rule, assert a rate over several seeds (or a forced case) instead of one draw.
 
 ## Updates
+- 2026-10-24: fun20: the strict claim is back, with its precise condition (PW-783): in every seed that tames, herders still holding the tamed landmass ride >0.5; herders driven off it (seed 4) ride 0.
 - 2026-10-24: Status todo -> in-progress. Merged 8e3c6b1: multi-seed test; riding assertion relaxed to a majority because of seed 4 (PW-783). Restore 'herders ride in every tamed seed' when PW-783 is fixed.
 - 2026-10-24: Created.
 - 2026-10-24: fun19: test now loops tree/pass seeds 1-8, asserts the taming claims in every seed that tames, a rate (>= 2 of 8 tame) and that herders ride in a majority of tamed seeds (was every one; seed 4 tames without herder use: draft-herd-tamer-no-riders).

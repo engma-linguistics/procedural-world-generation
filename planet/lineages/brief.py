@@ -496,7 +496,8 @@ EGG_ANIMALS, NOT_MEAT = ("fowl",), ("dog",)  # (dogs: a pet and a helper before 
 
 def _animal_foods(brief: dict) -> dict | None:
     """Animals as food goods (PW-719, from the animals known here and the peoples' bodies): meat animals, eggs, dairy animals, and for
-    each dairy people whether its milk is drunk fresh or fermented (cheese, yogurt, kefir keep little lactose) by its lactase share."""
+    each dairy people (the dairy animals of its herd x its way of life, PW-784: herders milk, unless body.milks is false) whether its milk
+    is drunk fresh or fermented (cheese, yogurt, kefir keep little lactose): the lactase share decides only that, never whether it has dairy."""
     from . import animal_defs as AD
     an = brief.get("animals")
     if an is None:
@@ -512,9 +513,9 @@ def _animal_foods(brief: dict) -> dict | None:
             continue
         milk = r["body"].get("milk", False)
         lac = 1.0 if milk is True else 0.0 if milk is False else float(milk)
-        out["dairy_peoples"].append({"id": r["id"], "lactase_share": lac, "milk_share": d["milk_share"], "dairy_share": d["dairy_share"],
-                                     "animals": d["animals"], "use": "fresh milk, butter and cream" if lac >= LACTASE_FRESH
-                                     else "soured and curdled: yogurt, kefir, cheese, butter (the lactose is fermented away)"})
+        out["dairy_peoples"].append({"id": r["id"], "lactase_share": lac, "milks_share": d["milks_share"], "dairy_share": d["dairy_share"],
+                                     "animals": d["animals"], "use": "fresh milk, butter and cream (and cheese)" if lac >= LACTASE_FRESH
+                                     else "fermented, not fresh: yogurt, kefir, kumis, cheese, butter (the lactose is fermented away)"})
     return out
 
 

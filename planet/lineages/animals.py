@@ -350,16 +350,20 @@ class Animals:
     def summary(self, P: np.ndarray) -> dict:
         h = self.h
         stocks = {s.a.id: s.summary(P) for s in self.stocks}
+        # dairy (PW-784): which dairy animals a people keeps (known on its land) x its way of life (herders milk, by their herd share; so do peoples with lactase)
+        # unless its body says `milks = false`; the lactase share (body.milk) only decides fresh milk or fermented (brief.py)
         dairy = {}
         for k, l in enumerate(h.lines):
-            m = l.body.get("milk")
-            f = 1.0 if m is True else float(m or 0.0)
-            if f <= 0 or l.overlay:
+            f = l.body.get("milk")
+            lac = 1.0 if f is True else float(f or 0.0)
+            herd = float(self.stocks[0].sh["herd"][k]) if self.stocks else 0.0
+            milks = max(herd, lac)  # (herders milk by their herd share; a people with lactase milks, that is how it came to have it)
+            if l.overlay or not l.body.get("milks", True) or milks <= 0:
                 continue
             best = [(s.share[k], s.a.id) for s in self.stocks if s.a.dairy and s.share[k] > 0.05]
             if best:
-                dairy[l.id] = {"milk_share": round(f, 2), "animals": [i for _, i in sorted(best, reverse=True)],
-                               "dairy_share": round(f * max(b for b, _ in best), 3)}
+                dairy[l.id] = {"lactase_share": round(lac, 2), "milks_share": round(milks, 2), "animals": [i for _, i in sorted(best, reverse=True)],
+                               "dairy_share": round(milks * max(b for b, _ in best), 3)}
         return {"mode": h.tree.mode, "stocks": stocks, "dairy": dairy,
                 "craft": [{"name": n, "since_kyr": s, "reach_km": r, "carries_up_to": ["dogs and fowl", "sheep, goats", "horses and cattle"][b], "sea_share_needed": need}
                           for n, s, r, b, need in craft_ladder()]}

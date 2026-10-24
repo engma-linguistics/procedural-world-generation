@@ -20,4 +20,5 @@ updated: 2026-10-24
 fun19 on the new showcase: 'no fermented dairy anywhere'; antelope-kin and cervid-kin are milk:false so their herds give them no dairy at all, and Arha (lactase 10%) show dairy 6%. Real low-lactase herders eat yogurt, cheese, kumis. Dairy availability should come from herd animals x way of life; lactase only decides fresh vs fermented. Owner may want to say whether the fiend herders milk at all.
 
 ## Updates
+- 2026-10-24: fun20: dairy = dairy animals known on the land x way of life (herd share; a people with lactase milks too) unless body.milks = false; lactase only picks fresh vs fermented. 6fbc2c re-run as eaf863: Arha, antelope-kin, cervid-kin show fermented dairy. Owner question on the fiend herders: draft-fiend-herders-milk.
 - 2026-10-24: Created.

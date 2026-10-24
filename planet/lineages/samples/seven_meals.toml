@@ -110,7 +110,7 @@ temp_c = [-5, 26]
 rain_mm = [150, 900]
 prefers = ["steppe", "savanna", "open"]
 traits = ["nomadic", "hardy", "aggressive"]  # (aggressive: PW-756, owner 2026-10-24: a data-driven tendency to take ground)
-way = "pastoral_nomad"
+way = "farmer"  # owner 2026-10-24: plant eaters, so mostly farmers whatever their kin graze (PW-784); the steppe and dry-grass cultures are agro-pastoral
 
 [[lineage]]  # cold steppe runners, saiga-like (males only)
 id = "antelope_steppe"
@@ -121,6 +121,7 @@ at = "9 kyr"
 temp_c = [-12, 20]
 rain_mm = [150, 600]
 prefers = ["steppe"]
+way = "agro_pastoral"
 
 [[lineage]]  # savanna and woodland-edge browsers, impala- and kudu-like (males only)
 id = "antelope_savanna"
@@ -142,6 +143,7 @@ at = "9 kyr"
 temp_c = [12, 34]
 rain_mm = [100, 700]
 prefers = ["desert", "savanna", "steppe"]
+way = "agro_pastoral"
 
 [[lineage]]  # hills and peaks, ibex-like (both sexes horned)
 id = "antelope_mountain"
@@ -167,7 +169,7 @@ temp_c = [-12, 18]
 rain_mm = [400, 2000]
 prefers = ["forest", "temperate", "continental"]
 traits = ["hardy", "aggressive"]
-way = "forager"
+way = "farmer"  # owner 2026-10-24: mostly farmers; only the tundra reindeer-herders herd (nothing to farm there)
 
 [[lineage]]  # oak and chestnut country, red-deer-like (males only)
 id = "cervid_forest"
