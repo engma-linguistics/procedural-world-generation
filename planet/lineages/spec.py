@@ -51,6 +51,7 @@ TRAITS = {
     "insular": {},  # (insularity and exploration: DEMOGRAPHY)
     "cosmopolitan": {},
     "subterranean": {"relief": 0.15, "widen": 1.15, "mountain": 0.3},
+    "aggressive": {"push": 0.7},  # (PW-756: the load of its rivals is felt at this share, anywhere: a people that takes ground rather than shares it; history.run)
     "hunter": {},  # (no movement knob: hunting and foraging peoples are who tames dogs and first cultivates wild plants, PW-718, PW-721)
     "miner": {},  # (no movement knob: what it looks for in the land is the [[use]] table's)
 }
@@ -70,6 +71,13 @@ WAYS = {
     "sea_nomad": {"fish": 1.0, "harbour": 0.7, "foraging": 0.3},  # boat-dwelling fishers moving along the coasts
 }
 WAY_FOOD = ("fertile", "grazing", "foraging", "fish", "shellfish")  # (the goods a way's rows replace from the traits; harbours, timber and the rest stay)
+# what a way of life presses on others for (PW-756): way -> (good, share of the rivals' load that is felt there at full strength).
+# Herders who keep their wealth on the hoof move all of it with them and are not tied to fields, so on good pasture they hold
+# their ground against settled neighbours better than those do against them: the load of the rivals on good grazing land is
+# felt at this share, in proportion to how far the people keeps herds (animals.herding; HERD_FULL: fully), so nothing before
+# the herd animals are known to it (the farmers' analogue is the agricultural trait's push into fertile land, history.run).
+WAY_PRESS = {"pastoral_nomad": ("grazing", 0.6)}
+HERD_FULL = 0.5
 LATE_SEA_KYR = 3.0  # short sea hops by boat (the spread's sea factor) from then, for a sea share >= SHORT_HOP_SHARE
 SHORT_HOP_SHARE = 0.2
 # long sea crossings (crossing.py): way -> (rate per kyr at a zero gap, length scale km, only since kyr ago).
@@ -308,7 +316,7 @@ class Lineage:
         vals = [TRAITS[t][key] for t in self.traits if key in TRAITS.get(t, {})]
         if not vals:
             return default
-        return min(vals) if key == "relief" else max(vals)
+        return min(vals) if key in ("relief", "push") else max(vals)
 
     def label(self) -> str:
         return self.name or self.id

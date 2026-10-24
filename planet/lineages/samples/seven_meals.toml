@@ -108,7 +108,7 @@ insularity = 0.5
 temp_c = [-5, 26]
 rain_mm = [150, 900]
 prefers = ["steppe", "savanna", "open"]
-traits = ["nomadic", "hardy"]
+traits = ["nomadic", "hardy", "aggressive"]  # (aggressive: PW-756, owner 2026-10-24: a data-driven tendency to take ground)
 way = "pastoral_nomad"
 
 [[lineage]]  # cold steppe runners, saiga-like (males only)
@@ -165,7 +165,7 @@ insularity = 0.6
 temp_c = [-12, 18]
 rain_mm = [400, 2000]
 prefers = ["forest", "temperate", "continental"]
-traits = ["hardy"]
+traits = ["hardy", "aggressive"]
 way = "forager"
 
 [[lineage]]  # oak and chestnut country, red-deer-like (males only)
@@ -1060,24 +1060,25 @@ pull = 0.7
 # The fiends (PW-734, PW-754): the neighbours' "devils" (horns) and "demons" (antlers) are what the antelope-kin and cervid-kin
 # became in the memory of those they overran (or who overran them). A conquest is remembered as a legend: efold_kyr is the
 # memory length of this row, much longer than an ordinary conquest's (1.5 kyr x the era), so the name outlasts the event.
-# Honest limit: 30 kyr is a judgement call (the median takeover of a run is ~12 kyr old; the [[event]] rows above are 2-3 kyr).
-# Dated conquests (PW-730, read by the reputation pass; the owner's thin history slice, PW-734). No place: where the antelope-kin
-# come from is the world's. The sim's own substrate takeovers found no conquest by either fiend people on world 1df1c3 (they are
-# small peoples among 80 Mkm2 of humans), so these anchors are what the neighbours remember. Dates are anchors (Q2), not exact.
-[[event]]
-kind = "conquest"
-by = "antelope_folk"
-over = ["human", "cervid_folk"]
-at = "2.1 kyr"
-note = "the antelope-kin came down in a generation and took the best farmland and the strait; the 'contract with devils' is the humans' memory of the vassal treaties they signed"
-
-[[event]]
-kind = "conquest"
-by = "cervid_folk"
-over = ["human"]
-at = "3 kyr"
-note = "the old cervid-led polity over a human majority in forest and upland (it fell ~1.9 kyr ago); an elite overlay, here the humans' memory of being ruled"
-
+# Honest limit: 30 kyr is a judgement call (the median takeover of a run is ~12 kyr old).
+# Devils and demons come only from the sim: substrate takeovers and derived incursions (PW-756: a short, sharp advance, with the
+# direction it came from). The antelope- and cervid-kin carry the "aggressive" trait (owner 2026-10-24) and the antelope-kin are
+# pastoral nomads (spec.WAY_PRESS). Authored conquests (PW-730) are an optional back-fill for the owner (default focus is plausible
+# simulation); the mechanism stays, and an [[event]] stands only for a pair where the history found no incursion. Examples:
+# [[event]]
+# kind = "conquest"
+# by = "antelope_folk"
+# over = ["human", "cervid_folk"]
+# at = "2.1 kyr"
+# note = "the antelope-kin came down in a generation and took the best farmland and the strait; the 'contract with devils' is the humans' memory of the vassal treaties they signed"
+#
+# [[event]]
+# kind = "conquest"
+# by = "cervid_folk"
+# over = ["human"]
+# at = "3 kyr"
+# note = "the old cervid-led polity over a human majority in forest and upland (it fell ~1.9 kyr ago); an elite overlay, here the humans' memory of being ruled"
+#
 [[exonym]]
 id = "devil"
 label = "devils"

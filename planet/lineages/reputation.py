@@ -17,9 +17,14 @@ For an observer O and a subject S that met:
   borrowed  an observer that never met S takes the view of its best-connected neighbour that did (at half strength)
 The result is `meta.present.reputation`: {"params", "rows": {observer: {subject: row}}}. The rows are data
 (spec.Tree.exonyms): the mechanism holds no story; a preset can give any folk category a body, an ancestry or an arrival
-and the valences it applies to. Authored conquests (`[[event]]`, kind conquest: S overran O at a date) are read as feared. Not yet
-read: polities and derived incursions (PW-661), so there is
-no 'resented' (ruled by S) valence yet."""
+and the valences it applies to. A conquest candidate is one of three (the strongest of S over O stands):
+  substrate   cells of S's present range that O held before (memory fades from when they changed hands)
+  incursion   derived from the run's own history (contacts.Contacts.incursions, PW-756): S's range jumped into ground O held within a
+              short span (a gain of 10% of its own range or more); the loss is the share of O's land within 1000 km of that ground, so a
+              big people's frontier memory is not diluted by its far provinces; it carries the compass direction S came from
+  authored    `[[event]]` rows (kind conquest: S overran O at a date, PW-730): the fallback, used only where the history found no
+              incursion of S over O (an authored anchor is not stacked on a derived one)
+Not yet read: polities (PW-661), so there is no 'resented' (ruled by S) valence yet."""
 
 from __future__ import annotations
 
@@ -192,6 +197,23 @@ def _takings(tree, sub: dict) -> dict:
     return out
 
 
+def _incursions(tree, contacts: dict) -> dict:
+    """{(taker, loser): [incursion, ...]} by people from the derived incursions (contacts.Contacts.incursions, PW-756)."""
+    out: dict = {}
+    for r in contacts.get("incursions") or []:
+        if r["by"] not in tree.lines or r["over"] not in tree.lines:
+            continue
+        p, q = tree.people_of(r["by"]), tree.people_of(r["over"])
+        if p != q:
+            out.setdefault((p, q), []).append(r)
+    return out
+
+
+def compass(deg: float) -> str:
+    """The eight-point compass word of a bearing in degrees."""
+    return ("north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west")[int(((deg % 360) + 22.5) // 45) % 8]
+
+
 def _cells_of(tree, sub: dict) -> dict:
     out: dict = {}
     for k, v in (sub or {}).items():
@@ -209,11 +231,12 @@ def build(tree, contacts: dict | None) -> dict | None:
     alive = {tree.people_of(k) for k in (contacts.get("substrate") or {}) if k in leaves}  # (peoples with land at the present: no stems, no extinct lines)
     pairs = {k: v for k, v in _people_pairs(tree, contacts).items() if k[0] in alive and k[1] in alive}
     take = _takings(tree, contacts.get("substrate"))
+    inc = _incursions(tree, contacts)
     held = _cells_of(tree, contacts.get("substrate"))
     rows: dict = {}
     for (a, b), rec in pairs.items():
         for o, s in ((a, b), (b, a)):
-            rows.setdefault(o, {})[s] = _view(tree, P, o, s, rec, take, held)
+            rows.setdefault(o, {})[s] = _view(tree, P, o, s, rec, take, held, inc)
     _lump(rows)
     _borrow(rows, pairs)
     for o in rows:
@@ -222,9 +245,9 @@ def build(tree, contacts: dict | None) -> dict | None:
     return {"params": P, "rows": {o: dict(sorted(v.items())) for o, v in sorted(rows.items())}}
 
 
-def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict) -> dict:
+def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict, inc: dict | None = None) -> dict:
     yrs, km = rec["years_in_contact"], rec["border_km_peak"]
-    cands = []  # (strength, valence, basis, since)
+    cands = []  # (strength, valence, basis, since, legend memory, direction the taker came from)
     for taker, loser, val in ((s, o, "feared"), (o, s, "despised")):
         t = take.get((taker, loser))
         if not t:
@@ -235,24 +258,36 @@ def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict) -> d
         efold = own or P["efold_kyr"] * P["era_scale"]
         st = min(1.0, P["loss_scale"] * lost) * math.exp(-t["until_kyr"] / efold)
         if st >= P["min_strength"]:
-            cands.append((st, val, f"conquest: {taker} took {t['cells']} cells ({round(100 * lost)}% of {loser}'s land)", t["until_kyr"], own))
-    for ev in getattr(tree, "events", None) or []:  # authored conquests (PW-730): S's people overran O's, ev["at"] kyr ago
-        if tree.people_of(ev["by"]) != s or o not in {tree.people_of(x) for x in ev["over"]}:
+            cands.append((st, val, f"conquest: {taker} took {t['cells']} cells ({round(100 * lost)}% of {loser}'s land)", t["until_kyr"], own, None))
+    derived = False
+    for taker, loser, val in ((s, o, "feared"), (o, s, "despised")):  # derived incursions (PW-756): a short, sharp advance into the loser's frontier
+        row, _ = _category(tree, s, val)
+        own = (row or {}).get("efold_kyr")
+        efold = own or P["efold_kyr"] * P["era_scale"]
+        for r in (inc or {}).get((taker, loser), []):
+            st = min(1.0, P["loss_scale"] * r["local_share"]) * math.exp(-r["ago_kyr"] / efold)
+            if st >= P["min_strength"]:
+                d = None if r.get("from_deg") is None or val != "feared" else compass(r["from_deg"])
+                derived = derived or val == "feared"
+                cands.append((st, val, f"incursion (derived): {taker} took {r['cells']} cells in {max(r['span_kyr'], 0.1):g} kyr "
+                                       f"({round(100 * r['local_share'])}% of {loser}'s land nearby)" + (f", from the {d}" if d else ""), r["ago_kyr"], own, d))
+    for ev in getattr(tree, "events", None) or []:  # authored conquests (PW-730): S's people overran O's, ev["at"] kyr ago (the fallback: where the history found an incursion of S over O, that stands instead)
+        if derived or tree.people_of(ev["by"]) != s or o not in {tree.people_of(x) for x in ev["over"]}:
             continue
         row, _ = _category(tree, s, "feared")
         own = (row or {}).get("efold_kyr")
         st = ev["strength"] * math.exp(-ev["at"] / (own or P["efold_kyr"] * P["era_scale"]))
         if st >= P["min_strength"]:
-            cands.append((st, "feared", f"conquest (authored): {s} overran {o} {ev['at']:g} kyr ago", ev["at"], own))
+            cands.append((st, "feared", f"conquest (authored): {s} overran {o} {ev['at']:g} kyr ago", ev["at"], own, None))
     if cands:
-        strength, val, basis, since, legend = max(cands, key=lambda c: c[:4])
+        strength, val, basis, since, legend, came = max(cands, key=lambda c: c[:4])
     else:
         rich = (yrs >= P["rich_years"] and rec["mixed_pct_now"] >= RICH_MIXED_PCT) or (rec["tier"] in ("T0", "T1") and yrs >= P["rich_years"] // 2)
         thin = yrs < P["thin_years"] or km < P["thin_km"]
         val = "neighbour" if rich else "edge" if thin else "exotic"
         basis = {"neighbour": f"rich peaceful contact ({yrs} yr, {rec['mixed_pct_now']}% mixed)",
                  "edge": f"thin contact ({yrs} yr, border {km} km)", "exotic": f"some contact ({yrs} yr, along {rec['kind']})"}[val]
-        since, legend = rec["first_contact_kyr"], None
+        since, legend, came = rec["first_contact_kyr"], None, None
         strength = max(0.0, 1 - yrs / max(P["thin_years"], 1)) if val == "edge" else min(1.0, yrs / max(P["rich_years"], 1))
     if val == "neighbour":
         cat, name = None, tree.lines[s].label()
@@ -261,6 +296,8 @@ def _view(tree, P: dict, o: str, s: str, rec: dict, take: dict, held: dict) -> d
         cat, name = (row["id"], row["label"]) if row else (val, val)
     out = {"category": cat, "name": name, "valence": val, "basis": basis, "since_kyr": round(since, 2), "strength": round(strength, 3),
            "lumped_with": [], "tier": rec["tier"]}
+    if came:
+        out["from_dir"] = came
     if legend:  # (only where the row gave its own memory length: every other row is unchanged)
         out["memory_kyr"] = legend
     return out
@@ -304,5 +341,7 @@ def text(tree, o: str, s: str, r: dict) -> str:
     if r["valence"] == "neighbour":
         return f"{on} call {sn} by their own name ({r['basis']})."
     when = f", {r['since_kyr']:g} kyr ago" if r["valence"] in ("feared", "despised") else ""
+    if r.get("from_dir"):
+        when += f", from the {r['from_dir']}"
     lump = f"; one name for {', '.join(r['lumped_with'])} too" if r["lumped_with"] else ""
     return f"{on} call {sn} \"{r['name']}\" ({r['valence']}{when}; {r['basis']}{lump})."

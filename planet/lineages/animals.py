@@ -304,6 +304,11 @@ class Animals:
     def speed_mult(self, k: int) -> float:
         return float(self.speed[k])
 
+    def herding(self, k: int) -> float:
+        """How far the line keeps herds (0..1): the best adoption among the animals that carry a herd (a.k 'herd': sheep, goats,
+        cattle, horses...), so a people with no domestic herd known has none to press with (PW-756)."""
+        return float(max([s.adopt[k] for s in self.stocks if "herd" in s.a.k] or [0.0]))
+
     def k_mult(self, k: int):
         out = None
         graze = None
