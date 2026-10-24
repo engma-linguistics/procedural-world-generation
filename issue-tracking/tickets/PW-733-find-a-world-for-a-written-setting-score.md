@@ -4,7 +4,7 @@ title: "Find a world for a written setting: score candidate worlds on setting re
 type: story
 status: todo
 parent: PW-692
-milestone: v2
+milestone: later
 subsystem: highlights
 effort: m
 impact: med
@@ -43,4 +43,5 @@ of their master reference §3. The culinary side writes it.
 - [ ] Earth scores well on "Mediterranean with a strait" as a sanity look.
 
 ## Updates
+- 2026-10-24: Owner 2026-10-24: procgen owns the map; no fitting worlds to the culinary repo's written geography. Moved to later; a 'find a cool-looking world' search can reuse it.
 - 2026-10-24: Created from inbox draft draft-world-fit-for-a-written-setting.md (found by culinary-intake).

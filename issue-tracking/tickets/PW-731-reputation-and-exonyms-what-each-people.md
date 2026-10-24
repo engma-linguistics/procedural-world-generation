@@ -2,7 +2,7 @@
 id: PW-731
 title: "Reputation and exonyms: what each people calls its neighbours and why (devils, demons, giant-kin, sea elves), set by conquest and contact history, kept apart from what they are"
 type: story
-status: todo
+status: done
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -51,5 +51,6 @@ Judgement calls for the owner: the folk-category table, and the decay time.
       humans who live among the cervid folk use an ordinary name.
 
 ## Updates
+- 2026-10-24: Status todo -> done. Merged f721107: reputation.py, [[exonym]] rows, brief v5. Memory length PW-754.
 - 2026-10-24: Created from inbox draft draft-reputation-and-exonyms.md (found by culinary-intake).
 - 2026-10-24: fun12 (branch worktree-agent-a9e99f60fb4ba7931): v0 built on the contact record. `planet/lineages/reputation.py` -> `meta.present.reputation[observer][subject]` (category, name, valence feared/despised/edge/exotic/neighbour, basis, since_kyr, strength, lumped_with, borrowed_from, text); folk categories are `[[exonym]]` spec rows (generic table in dnd.toml, no owner story); brief_version 5 shows them beside what each people is (region `reputation`, `people.reputation`); schema doc updated. Conquest = substrate (S holds cells O held), fading with an e-folding of 1.5 kyr x era scale or a row's own `efold_kyr`. Not yet: authored conquests/polities and derived incursions (PW-661), so no "resented" valence; the owner's rows and decay are in draft-exonym-rows-and-memory-length.

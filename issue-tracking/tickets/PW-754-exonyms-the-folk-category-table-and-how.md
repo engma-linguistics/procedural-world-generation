@@ -1,7 +1,8 @@
 ---
+id: PW-754
 title: Exonyms - the folk-category table and how long a conquest is remembered need the owner (no conquest survives the default decay in run 45157b)
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun12
 blocked_by: []
 relates: [PW-731, PW-734, PW-661]
 refs: [planet/lineages/reputation.py, planet/lineages/samples/dnd.toml, "run 45157b", docs/review/lineages/briefs/SCHEMA.md]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -25,3 +28,7 @@ Also owner's: the generic table in dnd.toml (devil = horns, demon = antlers, gia
 fae = arrivals, goblin menace) and the rich/thin thresholds (20000 / 3000 years in contact; the run's contacts span 100s of kyr, so most pairs read "rich" or "exotic").
 Not read yet: authored conquests and polities, derived incursions (PW-661): no "resented" (ruled by) valence.
 - [ ] with the PW-734 answers, rows that make humans next to the antelope/cervid folk call them devils (conquest basis) and humans among the cervid folk use an ordinary name.
+
+## Updates
+- 2026-10-24: Status needs-decision -> todo. Coordinator: per-row long memory (row efold_kyr / legend rows) for conquest names; owner wants invader 'devils' to outlast the event. Folk table for the owner's world goes in PW-730's preset.
+- 2026-10-24: Created from inbox draft draft-exonym-rows-and-memory-length.md (found by fun12).

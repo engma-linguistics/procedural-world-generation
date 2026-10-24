@@ -55,4 +55,5 @@ Measure on two L7 worlds, with four tries' means.
 - [ ] `dnd.toml` runs byte-identical.
 
 ## Updates
+- 2026-10-24: Unblocked by PW-734 answers 1/3/4/5: deep fiend branch, antelope-kin invaders, horns/antlers by variant following real species.
 - 2026-10-24: Created from inbox draft draft-owner-world-lineages-preset.md (found by culinary-intake).
