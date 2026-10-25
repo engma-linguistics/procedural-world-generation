@@ -1,4 +1,5 @@
 ---
+id: PW-804
 title: Salt dwarves rarely reach rock-salt beds because evaporites lie in deserts the dwarves do not hold
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-23
 blocked_by: []
 relates: [PW-797, PW-796]
 refs: [planet/lineages/mining.py, planet/lineages/samples/dnd.toml, "run d22731 (deleted), world 6fbc2c"]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -24,3 +27,7 @@ Options: (A) leave it, since an occasional salt-dwarf culture is the owner's wis
 people's range touches the ring around one; (C) make the group a standalone line with its own origin in bedded mountain foothills.
 Lean: A until a showcase world needs one, then B.
 - [ ] a showcase run where a salt-dwarf group leads at least one bed district
+
+## Updates
+- 2026-10-24: Placed under PW-692.
+- 2026-10-24: Created from inbox draft draft-salt-dwarves-reach-the-beds.md (found by fun-lane-23).

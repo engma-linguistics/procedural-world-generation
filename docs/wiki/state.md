@@ -5,7 +5,7 @@
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
 - Physics (Opus): closing v1 for Earth-likes (PW-780 sign-off doc, 2 Gyr checks, the low tree cover of recent L7 showcases). PW-798 parked: water/hothouse/molten worlds wait until after the v1.0 tag (owner 2026-10-24).
-- Fun (Sonnet): PW-797 salt-miner dwarves (fun-lane-23). Last merged: PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
+- Fun (Sonnet): idle (showcase build). Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
