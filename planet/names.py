@@ -76,3 +76,43 @@ def save_overrides(world_id: str, ov: dict[str, str]) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({k: ov[k] for k in sorted(ov, key=lambda x: (len(x), x))}, indent=1, ensure_ascii=False) + "\n")
     return p
+
+
+def world_landmasses(ref: str):
+    """(world id, header, landmasses, generated names) of a saved world: the summary's landmasses by rank and the names the seed gives them
+    (letters for a world without a seed). SystemExit when there is no such world."""
+    from . import store as S
+    ref = ref.split(":", 1)[-1]
+    if not S.exists("world", ref):
+        raise SystemExit(f"ERROR: no world {ref!r} (run planet list)")
+    path = S.find_world(ref)
+    head, summary = S.read_header(path, ("id", "name", "meta")), {}
+    with open(path) as fh:  # (the summary is one line of the file, before the layers)
+        for line in fh:
+            if line.startswith('"summary": '):
+                summary = json.loads(line[len('"summary": '):].rstrip().rstrip(","))
+                break
+            if line.startswith('"layers"'):
+                break
+    seed = head.get("meta", {}).get("seed")
+    lms = summary.get("landmasses") or []
+    lms = lms if isinstance(lms, list) else []
+    gen = landmass_names(seed, len(lms)) if seed is not None else [rank_letter(i) for i in range(len(lms))]
+    return path.stem, head, lms, gen
+
+
+def set_name(ref: str, letter: str, name: str) -> list[dict]:
+    """Give landmass `letter` of a world your own name (an empty name clears it back to the generated one); the file is the CLI's
+    (worlds/names/<id>.json). Returns [{letter, name, generated, custom}] for the world's landmasses."""
+    wid, _head, lms, gen = world_landmasses(ref)
+    letter = str(letter).strip().upper()
+    if not letter.isalpha() or letter not in {rank_letter(i) for i in range(len(lms))}:
+        raise ValueError(f"{letter!r} is not a landmass of this world")
+    ov = load_overrides(wid)
+    name = " ".join(str(name).split())[:40]
+    if name:
+        ov[letter] = name
+    else:
+        ov.pop(letter, None)
+    save_overrides(wid, ov)
+    return [{"letter": rank_letter(i), "name": ov.get(rank_letter(i), g), "generated": g, "custom": rank_letter(i) in ov} for i, g in enumerate(gen)]

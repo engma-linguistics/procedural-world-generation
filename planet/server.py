@@ -15,6 +15,7 @@
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
+  POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/cell?world=<id>&i=<cell>  one world cell's 12 months (cell())
 
 Big data files (.bin run layers, .json worlds and grids) go gzipped when the
@@ -95,6 +96,31 @@ def highlights(query: str, compute=None) -> tuple[dict, int]:
         return {"error": str(e)}, 404
     except Exception as e:  # a bug: show it in the viewer rather than drop the connection
         return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+def rename_landmass(raw: bytes) -> tuple[dict, int]:
+    """POST /api/names {world, letter, name}: your own name for a landmass of a world (an empty name: back to the generated one), kept in
+    worlds/names/<id>.json like `planet name`. Answers {names: [{letter, name, generated, custom}]} (PW-886)."""
+    from . import names as NM
+    try:
+        b = json.loads(raw or b"{}")
+        return {"names": NM.set_name(str(b.get("world") or ""), str(b.get("letter") or ""), str(b.get("name") or ""))}, 200
+    except (ValueError, TypeError) as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+
+
+def landmass_names(query: str) -> tuple[dict, int]:
+    """GET /api/names?world=<id>: [{letter, name, generated, custom}] of a world's landmasses, as the viewer's labels and peoples runs show them."""
+    from . import names as NM
+    try:
+        wid, _h, lms, gen = NM.world_landmasses(dict(parse_qsl(query)).get("world", ""))
+        ov = NM.load_overrides(wid)
+        return {"names": [{"letter": NM.rank_letter(i), "name": ov.get(NM.rank_letter(i), g), "generated": g, "custom": NM.rank_letter(i) in ov}
+                          for i, g in enumerate(gen)]}, 200
+    except SystemExit as e:
+        return {"error": str(e)}, 404
 
 
 def brief(query: str) -> tuple[dict, int]:
@@ -327,6 +353,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
         if url.path == "/api/brief":
             return self.send_json(*brief(url.query))
+        if url.path == "/api/names":
+            return self.send_json(*landmass_names(url.query))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
         if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom_fine): the viewer's size menu
@@ -400,6 +428,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.lineages_api("POST"):
             return
+        if self.path == "/api/names":
+            return self.send_json(*rename_landmass(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
                          "/api/enrich"):
             return self.send_error(404)

@@ -405,22 +405,9 @@ def cmd_name(args):
     """Landmass names of a world (PW-867): list them, give some of your own (A=Jangwa: A is the largest, B the next...), clear one
     (A=), or write the generated names down for a world made before they existed (--generated)."""
     from . import names as NM
-    ref = args.world.split(":", 1)[-1]
-    if not S.exists("world", ref):
-        raise SystemExit(f"ERROR: no world {ref!r} (run planet list)")
-    path = S.find_world(ref)
-    head, summary = S.read_header(path, ("id", "name", "meta")), {}
-    with open(path) as fh:  # (the summary is one line of the file, before the layers)
-        for line in fh:
-            if line.startswith('"summary": '):
-                summary = json.loads(line[len('"summary": '):].rstrip().rstrip(","))
-                break
-            if line.startswith('"layers"'):
-                break
-    wid, seed = path.stem, head.get("meta", {}).get("seed")
-    lms = summary.get("landmasses") or []
-    n = len(lms) if isinstance(lms, list) else 0
-    gen = NM.landmass_names(seed, n) if seed is not None else [NM.rank_letter(i) for i in range(n)]
+    wid, head, lms, gen = NM.world_landmasses(args.world)
+    seed = head.get("meta", {}).get("seed")
+    n = len(lms)
     ov = NM.load_overrides(wid)
     if args.generated:
         ov = {**{NM.rank_letter(i): g for i, g in enumerate(gen)}, **ov}

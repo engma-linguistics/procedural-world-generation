@@ -2802,6 +2802,38 @@ function renderLayerButtons() {
   document.querySelectorAll('[data-needs-volc]').forEach((e) => (e.style.display = V[e.dataset.needsVolc]?.length ? '' : 'none'));
 }
 
+// Renaming a landmass (PW-886): click its name here, type, Enter; "reset" gives the generated name back. Saved by POST /api/names to the file
+// `planet name` writes (worlds/names/<id>.json); the labels, this list and later peoples runs take it from there.
+let lmEdit = -1;
+function landmassRows(s) {
+  return s.landmasses.slice(0, 5).map((l, i) => lmEdit === i
+    ? `<span class="lmEdit"><input id="lmInput" data-lm="${i}" value="${esc(l.name)}" maxlength="40" size="12"> <button data-lm-save="${i}">save</button> <button data-lm-reset="${i}" title="back to the generated name">reset</button> <button data-lm-cancel>cancel</button></span> ${l.pct_of_surface}%`
+    : `<a href="#" class="lmName" data-lm-edit="${i}" title="rename this landmass">${esc(l.name)}</a> ${l.pct_of_surface}%`).join(', ');
+}
+async function saveLandmassName(i, name) {
+  const letter = rankLetter(i);
+  const r = await fetch('/api/names', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ world: V.id, letter, name }) });
+  const d = await r.json();
+  if (!r.ok) return toast(d.error || 'Could not save the name');
+  d.names.forEach((n, k) => { if (V.summary.landmasses[k]) V.summary.landmasses[k].name = n.name; });
+  lmEdit = -1;
+  renderSummary(); buildLandmassNames();
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest?.('[data-lm-edit],[data-lm-save],[data-lm-reset],[data-lm-cancel]');
+  if (!t || V?.kind !== 'world') return;
+  e.preventDefault();
+  if (t.dataset.lmEdit != null) { lmEdit = +t.dataset.lmEdit; renderSummary(); $('lmInput')?.focus(); $('lmInput')?.select(); }
+  else if (t.dataset.lmSave != null) saveLandmassName(+t.dataset.lmSave, $('lmInput').value);
+  else if (t.dataset.lmReset != null) saveLandmassName(+t.dataset.lmReset, '');
+  else { lmEdit = -1; renderSummary(); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'lmInput') return;
+  if (e.key === 'Enter') saveLandmassName(+e.target.dataset.lm, e.target.value);
+  else if (e.key === 'Escape') { lmEdit = -1; renderSummary(); }
+  e.stopPropagation();
+});
 function renderSummary() {
   if (V.kind === 'run') return renderRunSummary();
   const m = V.meta, s = V.summary;
@@ -2827,7 +2859,7 @@ function renderSummary() {
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
     Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
-    <span class="muted">Landmasses:</span> ${s.landmasses.slice(0, 5).map((l) => `${l.name} ${l.pct_of_surface}%`).join(', ')}<br>
+    <span class="muted">Landmasses (click a name to rename it):</span> ${landmassRows(s)}<br>
     ${overturningLine(m.overturning)}
     <span class="muted">Remake:</span> <code>${cmd}</code>`;
 }
@@ -4497,8 +4529,9 @@ async function setWorld(w) {
   const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
   const pg = prepareGrid(G);
   // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
-  const nameOv = w.id ? await fetch(`../worlds/names/${w.id}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) : {};
-  (w.summary?.landmasses || []).forEach((m, i) => { const o = nameOv[rankLetter(i)]; if (o) m.name = o; });
+  const nm = w.id ? await fetch(`/api/names?world=${w.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;  // (the server's: the owner's names, else the generated; PW-886)
+  (w.summary?.landmasses || []).forEach((m, i) => { const o = nm?.names?.[i]?.name; if (o) m.name = o; });
+  lmEdit = -1;
   for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,

@@ -91,3 +91,39 @@ def test_fine_rules(http_root):
     assert status == 200 and out["max_step"] == 20 and out["sizes"]["default"] == {"size_km": 100.0, "res_km": 0.2}
     assert "sizes" not in json.loads(get("/api/fine-rules")[2])
     assert get("/api/fine-rules?res_km=x")[0] == 400
+
+
+def test_rename_landmass(http_root):
+    """PW-886: POST /api/names saves a landmass's name to worlds/names/<id>.json (the file `planet name` writes), an empty name clears it."""
+    from planet import names as NM
+    root, get = http_root
+    w = W.generate("plates", seed=3, level=3)
+    wid = W.save(w, "cells").stem
+    n = len(NM.world_landmasses(wid)[2])
+    assert n >= 2
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+
+    def post(body):
+        c = http.client.HTTPConnection("127.0.0.1", httpd.server_address[1], timeout=60)
+        c.request("POST", "/api/names", body=json.dumps(body), headers={"Content-Type": "application/json"})
+        r = c.getresponse()
+        out = r.status, json.loads(r.read())
+        c.close()
+        return out
+
+    try:
+        gen = NM.landmass_names(w["meta"]["seed"], n)
+        st, d = post({"world": wid, "letter": "b", "name": "  Zorb   land "})
+        assert st == 200 and d["names"][1]["name"] == "Zorb land" and d["names"][1]["generated"] == gen[1] and d["names"][1]["custom"]
+        assert NM.load_overrides(wid) == {"B": "Zorb land"}
+        st, h, body = get(f"/api/names?world={wid}", gz=False)
+        assert st == 200 and [x["name"] for x in json.loads(body)["names"]] == [gen[0], "Zorb land"] + gen[2:]
+        st, d = post({"world": wid, "letter": "B", "name": ""})
+        assert st == 200 and d["names"][1]["name"] == gen[1] and not d["names"][1]["custom"]
+        assert NM.load_overrides(wid) == {} and not NM.overrides_path(wid).exists()
+        assert post({"world": wid, "letter": "Z", "name": "x"})[0] == 400
+        assert post({"world": "nope", "letter": "A", "name": "x"})[0] == 404
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
