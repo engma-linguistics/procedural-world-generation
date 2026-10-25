@@ -4,7 +4,7 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics (Opus): v1-finish-10: star anchored at the run end (PW-809 B, PW-813, PW-815), plant calendar (PW-807), re-measure (PW-812). PW-806 plant acclimation merged; thermostat opt-in (PW-810). Assumptions audit workflow running (docs/review/assumptions-audit/ when done).
+- Physics (Opus): v1-finish-10: star anchored at the run end (PW-809 B, PW-813, PW-815), plant calendar (PW-807), re-measure (PW-812). PW-806 plant acclimation merged; thermostat opt-in (PW-810). Assumptions audit done (docs/review/assumptions-audit/; PW-816..836, 14 in v1); PW-819 drift-to-carbon folded into v1-finish-10.
 - Fun (Sonnet): idle (showcase build). Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
