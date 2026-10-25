@@ -21,3 +21,4 @@ Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner on seven_meals: 
 
 ## Updates
 - 2026-10-25: Created.
+- 2026-10-25: Fun lane 25: the name column now fits the longest name (clipped with a tooltip beyond 330 px) and stays pinned on the left; the axis stays pinned on top; the timeline is at least 1100 px wide and scrolls sideways; a select above the names switches 'species + cultures' / 'species only' (hides the cultures, i.e. groups). Checked on seven_meals in headless Chrome, scrolled both ways.

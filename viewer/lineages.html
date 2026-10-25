@@ -19,6 +19,10 @@
   .tab.on { display: block; }
   #tab-tree.on { display: grid; grid-template-columns: 1fr 380px; padding: 0; }
   #tl { overflow: auto; position: relative; }
+  /* PW-841: the axis stays on top and the names stay on the left when the timeline scrolls */
+  #tl svg { display: block; } #axis { position: sticky; top: 0; z-index: 3; background: var(--bg); }
+  #lab { position: sticky; left: 0; z-index: 2; } #tlctl { position: sticky; top: 0; left: 0; z-index: 4; height: 0; }
+  #tlctl select { margin: 4px 0 0 6px; max-width: 170px; }
   #side { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px; }
   footer { border-top: 1px solid var(--line); padding: 6px 12px; color: var(--muted); }
   button, select, input { background: #1d2532; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; font: inherit; }
@@ -75,7 +79,7 @@
   <button data-tab="results">Results</button>
 </nav>
 <main>
-  <section class="tab" id="tab-tree"><div id="tl"><svg id="svg"></svg></div><div id="side"></div></section>
+  <section class="tab" id="tab-tree"><div id="tl"><div id="tlctl"><select id="tlView" title="species: peoples and their splits; with cultures: also the ways of life (groups) inside each people"><option value="all">species + cultures</option><option value="species">species only</option></select></div><svg id="axis"></svg><svg id="svg"></svg><svg id="lab"></svg></div><div id="side"></div></section>
   <section class="tab" id="tab-peoples"></section>
   <section class="tab" id="tab-places"></section>
   <section class="tab" id="tab-wishes"></section>
@@ -226,7 +230,8 @@ function redraw() {
 }
 
 // ---- tab 1: the timeline ---------------------------------------------------------------------------
-const W0 = 190, ROW = 22, TOP = 34;
+let W0 = 190;  // (the name column: as wide as the longest name, drawTimeline)
+const ROW = 22, TOP = 34;
 const LMIN = Math.log10(0.05), LMAX = Math.log10(20000);  // 50 yr .. 20 Myr
 let WIDTH = 900;
 const xOf = (kyr) => W0 + (1 - (Math.log10(Math.max(kyr, 0.05)) - LMIN) / (LMAX - LMIN)) * (WIDTH - W0 - 20);
@@ -255,17 +260,28 @@ function endOf(r, eff, res) {
   return kids.length ? Math.min(...kids) : null;
 }
 function drawTimeline() {
-  WIDTH = Math.max(700, $('tl').clientWidth - 4);
-  const rows = order(), eff = effective(), svg = $('svg'), H = TOP + rows.length * ROW + 10;
-  svg.setAttribute('width', WIDTH); svg.setAttribute('height', H);
+  let rows = order();
+  if (viewMode === 'species') rows = rows.filter(([r]) => originOf(r) !== 'group');
+  // the name column fits the longest name (indent + ~6.3 px a letter, at most 330 px; a longer one is clipped, its full name a tooltip)
+  const label = (r, d) => `${originOf(r) === 'group' ? '↳ ' : ''}${r.name || r.id}${r.custom ? ' ✎' : ''}${eff0.off.has(r.id) ? ' (off)' : ''}`;
+  const eff = effective(), eff0 = eff;
+  W0 = Math.min(330, Math.max(190, ...rows.map(([r, d]) => 14 + 10 * Math.min(d, 8) + 6.3 * label(r, d).length)));
+  WIDTH = Math.max(1100, $('tl').clientWidth - 4);  // (a narrower window scrolls sideways)
+  const svg = $('svg'), H = TOP + rows.length * ROW + 10;
+  svg.setAttribute('width', WIDTH); svg.setAttribute('height', H - TOP); svg.setAttribute('viewBox', `0 ${TOP} ${WIDTH} ${H - TOP}`);
+  const axis = $('axis'); axis.setAttribute('width', WIDTH); axis.setAttribute('height', TOP); axis.setAttribute('viewBox', `0 0 ${WIDTH} ${TOP}`);
+  const lab = $('lab'); lab.setAttribute('width', W0); lab.setAttribute('height', H - TOP); lab.setAttribute('viewBox', `0 ${TOP} ${W0} ${H - TOP}`);
+  lab.style.marginTop = `${-(H - TOP)}px`; lab.style.marginBottom = `${H - TOP}px`;  // (over the bars, taking no room of its own)
   const y = {}; rows.forEach(([r], i) => (y[r.id] = TOP + i * ROW + ROW / 2));
-  let s = '<g class="axis">';
+  let s = '<g class="axis">', ax = '<g class="axis">';
   for (const k of [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000]) {
-    s += `<line x1="${xOf(k)}" x2="${xOf(k)}" y1="${TOP - 6}" y2="${H}" stroke="#1f2836"/><text x="${xOf(k)}" y="${TOP - 10}" text-anchor="middle">${fmt(k)}</text>`;
+    s += `<line x1="${xOf(k)}" x2="${xOf(k)}" y1="${TOP - 6}" y2="${H}" stroke="#1f2836"/>`;
+    ax += `<line x1="${xOf(k)}" x2="${xOf(k)}" y1="${TOP - 6}" y2="${TOP}" stroke="#2a3446"/><text x="${xOf(k)}" y="${TOP - 10}" text-anchor="middle">${fmt(k)}</text>`;
   }
   const band = (a, b, name, col) => `<rect x="${xOf(a)}" y="2" width="${xOf(b) - xOf(a)}" height="12" fill="${col}" opacity=".35"/><text x="${(xOf(a) + xOf(b)) / 2}" y="12" text-anchor="middle">${name}</text>`;
-  s += band(20000, 300, 'tectonic run (Myr keyframes)', '#3b4d6b') + band(300, 30, 'glacial time zoom (kyr)', '#2f5a5a') + band(30, 0.05, 'recent pass (centuries)', '#5a4a2f');
-  s += '</g>';
+  ax += band(20000, 300, 'tectonic run (Myr keyframes)', '#3b4d6b') + band(300, 30, 'glacial time zoom (kyr)', '#2f5a5a') + band(30, 0.05, 'recent pass (centuries)', '#5a4a2f');
+  s += '</g>'; ax += `<line x1="0" x2="${WIDTH}" y1="${TOP - 0.5}" y2="${TOP - 0.5}" stroke="#2a3446"/></g>`;
+  let ls = `<rect x="0" y="${TOP}" width="${W0}" height="${H - TOP}" style="fill:var(--bg)"/><line x1="${W0 - 0.5}" x2="${W0 - 0.5}" y1="${TOP}" y2="${H}" stroke="#2a3446"/>`;
   rows.forEach(([r, d]) => {
     const yy = y[r.id], off = eff.off.has(r.id), o = originOf(r), a = kyrOf(r.at) ?? 1, ex = kyrOf(r.extinct);
     const col = r.color || ORIGIN_COL[o] || '#aaa';
@@ -273,13 +289,14 @@ function drawTimeline() {
     const end = endOf(r, eff, res);
     s += `<g class="bar${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.3 : 1}">
       <rect class="bg" x="0" y="${yy - ROW / 2}" width="${WIDTH}" height="${ROW}" fill="transparent"/>
-      <text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}">${o === 'group' ? '↳ ' : ''}${esc(r.name || r.id)}${r.custom ? ' ✎' : ''}${off ? ' (off)' : ''}</text>
       <rect x="${xOf(a)}" y="${yy - 5}" width="${Math.max(2, xOf(end ?? 0.05) - xOf(a))}" height="10" rx="3" fill="${col}" opacity="${o === 'template' ? 0.55 : 0.9}"
         ${o === 'template' || (o === 'hybrid' && r.contact !== false) ? 'stroke="#fff" stroke-dasharray="3 2"' : ''}/>
       <rect class="grip" data-id="${esc(r.id)}" x="${xOf(a) - 4}" y="${yy - 8}" width="8" height="16" fill="${col}" style="cursor:ew-resize"/>
       ${ex != null ? `<text x="${xOf(ex) + 3}" y="${yy + 4}">†</text>` : ''}
       ${res?.started_kyr != null ? `<circle cx="${xOf(res.started_kyr)}" cy="${yy}" r="3.5" fill="#fff"><title>placed ${fmt(res.started_kyr)} ago: ${esc(res.origin_place?.why || '')}</title></circle>` : ''}
     </g>`;
+    ls += `<g class="lab${sel === r.id ? ' sel' : ''}" data-id="${esc(r.id)}" opacity="${off ? 0.4 : 1}" style="cursor:pointer"><rect x="0" y="${yy - ROW / 2}" width="${W0 - 2}" height="${ROW}" fill="${sel === r.id ? '#233047' : 'transparent'}"/>` +
+      `<text x="${6 + 10 * Math.min(d, 8)}" y="${yy + 4}" clip-path="url(#labclip)"><title>${esc(label(r, d))}</title>${esc(label(r, d))}</text></g>`;
     const ps = o === 'split' ? [eff.parent[r.id]].filter(Boolean) : parentsOf(r);
     for (const p of ps) if (y[p] != null && o !== 'group') {  // (a group is a culture under its people, not a split: no branch line, PW-776)
       s += `<path d="M${xOf(a)},${y[p]} L${xOf(a)},${yy}" stroke="${ORIGIN_COL[o]}" stroke-width="1.2" fill="none" opacity="${off ? 0.25 : 0.8}"
@@ -287,7 +304,15 @@ function drawTimeline() {
     }
   });
   svg.innerHTML = s;
+  axis.innerHTML = ax;
+  lab.innerHTML = `<defs><clipPath id="labclip"><rect x="0" y="${TOP}" width="${W0 - 6}" height="${H}"/></clipPath></defs>` + ls;
 }
+let viewMode = 'all';
+$('tlView').onchange = (e) => { viewMode = e.target.value; drawTimeline(); };
+$('lab').addEventListener('mousedown', (e) => {
+  const b = e.target.closest('.lab');
+  if (b) { sel = b.dataset.id; drawTimeline(); drawSide(); }
+});
 let drag = null;
 $('svg').addEventListener('mousedown', (e) => {
   const g = e.target.closest('.grip');
