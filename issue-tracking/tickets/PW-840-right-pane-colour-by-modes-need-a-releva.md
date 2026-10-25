@@ -21,3 +21,4 @@ Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner: hard to read fu
 
 ## Updates
 - 2026-10-25: Created.
+- 2026-10-25: Fun lane 25: the Summary panel now opens with a block for the colour layer (categorical layers: share of the land per class, fuels included; ramp layers: mean, median, 10/90 percent, range over land, sea or the planet as the layer is). A hover tooltip by the pointer (globe and flat map) names the layer's value under the cursor, then height and position. "for players" is no longer an essential row: it shows only under More detail. Not done: peoples, animal and crop layers get no summary block yet (inbox draft).

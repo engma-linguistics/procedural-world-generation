@@ -21,3 +21,4 @@ PW-838 (owner) made the flat map default to Equal Earth. The projected maps (`pr
 
 ## Updates
 - 2026-10-25: Created from inbox draft draft-flat-map-projections-lack-overlays.md (found by fun-lane-24).
+- 2026-10-25: Done in fun lane 25: projFeatures() in viewer/index.html reads the live-map overlays (rivers, volcanoes, hotspots, events, origin rings, highlight rings and labels, zoom outlines, tropics) as lat/lon; projmap.drawFeatures draws them through the chosen projection. Hill shading is not drawn on projected maps.
