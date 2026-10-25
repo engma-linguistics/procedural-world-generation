@@ -5,7 +5,7 @@
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
 - Physics (Opus): v1-finish-11 on top of hold/v1-finish-10-anchor (star anchored, full Gough, real plant calendar, drift on outgassing; failed the bar 0/6 ICEBOX because the carbon balance was frozen at 300 Myr). RULING (coordinator): anchor the carbon balance at the end (GEOCARB frame) and check the weathering feedback strength against the literature; end pCO2 ~180-600 ppm is a diagnostic. Audit done (PW-816..836).
-- Fun (Sonnet): idle (showcase build). Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
+- Fun (Sonnet): fun-lane-24 (PW-852 half-elves bug, PW-858 drop fiend framing, PW-850 diet, PW-857 remove tracks, PW-842/839/838 viewer). v2 hold lifted 2026-10-25. Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
