@@ -21,3 +21,4 @@ Owner: 'Let a subagent take our visualizer for how a world works and just demo a
 
 ## Updates
 - 2026-10-24: Created.
+- 2026-10-24: Built viewer/ringworld.html + ringworld.js (open at /viewer/ringworld.html on `planet serve`, ?cam=over|edge|surf); screenshots in docs/review/viewer/ringworld/. Crude: noise land, one hull colour, no link from the main viewer, flat unlit shading.
