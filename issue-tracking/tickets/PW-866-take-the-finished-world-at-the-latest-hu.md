@@ -28,4 +28,5 @@ Design points:
 - This must not hide model bugs. The per-moment finish rates stay diagnostics, and the physics fixes (light, drift) go ahead regardless.
 
 ## Updates
+- 2026-10-25: Owner 2026-10-25: wants many candidate steps to choose a near-ideal moment from. Several measures together: the deep-time bar on the whole history, the finish checks at the chosen moment, the look-back, and the pass rate at the very end. Run climate is every 4 Myr (keyframes) and the time zoom is 300 kyr, already set at an interglacial. Plan (coordinator): run the last ~10 Myr at a finer climate step (~0.5 Myr) to give ~20 candidate moments, window ~5-10 Myr, then the time zoom at the best one. Waits for the carbon fixes (v1-finish-13).
 - 2026-10-25: Created from inbox draft draft-finish-at-a-habitable-moment.md (found by coordinator).
