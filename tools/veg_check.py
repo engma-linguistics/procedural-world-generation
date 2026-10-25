@@ -41,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import planet  # noqa: E402,F401  (first: its thread caps must precede numpy, planet/parallel.py)
 import numpy as np  # noqa: E402
+from planet import climate  # noqa: E402
 from planet import store as S  # noqa: E402
 from planet import vegetation as V  # noqa: E402
 from planet import world as W  # noqa: E402
@@ -86,7 +87,7 @@ def run(grid, L, obs: dict | None, geo: dict | None = None):
     buckets) when geo is None."""
     t, tw, tc = L["temperature"].astype(float), L["warm_month"].astype(float), L["cold_month"].astype(float)
     pj, pa = L["precipitation_jul"].astype(float), L["precipitation_jan"].astype(float)
-    cj, ca = L["cloud_jul"] / 100.0, L["cloud_jan"] / 100.0
+    cj, ca = climate.shade_from_hours(grid.lat, L["sunshine_jul"], L["sunshine_jan"])  # (the light's cloud)
     if obs is not None:
         def fill(o, m):
             o = np.asarray(o, float)

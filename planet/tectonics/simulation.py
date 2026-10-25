@@ -75,7 +75,8 @@ class Simulation:
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
-        "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (light for the plants)
+        "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (names the cloud forests)
+        "shade_jul", "shade_jan",  # 0..1 the cloud as the light sees it per half-year (climate.shade; the plants' light)
         "removed",  # km of crust eroded per cell in the last step
         "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
@@ -151,7 +152,7 @@ class Simulation:
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6
         self.veg_niche = np.zeros(6)
-        self.cloud_jul = self.cloud_jan = None
+        self.cloud_jul = self.cloud_jan = self.shade_jul = self.shade_jan = None
         self.removed = np.zeros(n)
         self.weathered = np.zeros(n)
         self.thermo = np.zeros(2)

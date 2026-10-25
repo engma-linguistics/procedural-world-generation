@@ -69,7 +69,7 @@ def test_ice_surface_rises_from_the_edge(sim4):
     bed = s.w_elev - s.ice_sink
     e, ice0, _ = land_view(bed, np.where(s.w_elev > 0, s.ice, 0.0))
     land = e > 0
-    c = climate.compute(g, e, s.dT - 12.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
+    c = climate.compute(g, e, s.dT - 14.0, s.params.tilt, np.where(land, ice0, 0.0))  # (colder: bigger sheets)
     marine = earth.marine_view(bed, c)
     a = earth._ice_pass(s, land, e, c["ground"], ice0, marine)
     iced = a > 0

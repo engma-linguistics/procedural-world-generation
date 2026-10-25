@@ -1321,9 +1321,12 @@ def biome_of(types, sea_biome) -> np.ndarray:
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, pco2: float = CA_REF, unlocked=None,
           cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
-          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
+          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True,
+          sky=None) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
-    arrays (climate.compute's names; flood_ratio: the rivers' peak month
+    arrays (climate.compute's names; cloud_jul / cloud_jan: the cloud as the light sees it, compute's
+    shade_jul / shade_jan; sky: (cloud_jul, cloud_jan), the sky's cover, which names the montane cloud
+    forests, default the light's; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
     stood in for, STANDINS). soil: soils.mineral's result (the buckets
@@ -1344,6 +1347,8 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     unlocked = all_unlocked() if unlocked is None else np.asarray(unlocked, bool)
     rel = relief(grid, elev)
     s = site(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, rel)
+    if sky is not None:
+        s["cloud"] = 0.5 * (np.asarray(sky[0], float) + np.asarray(sky[1], float))
     if soil is not None:
         s["cap1"], s["cap2"] = soil["cap1"], soil["cap2"]
     env = envelope(s, pco2) & land[None, :]
@@ -1458,8 +1463,8 @@ def coupled_climate(grid, elev, dT: float = 0.0, tilt: float = 23.4, ice=None, n
     them (world.finish): the climate, a first cheap vegetation on it, then
     the climate again with that vegetation. Returns (climate, feedback)."""
     c = climate.compute(grid, elev, dT, tilt, ice)
-    v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-              c["cloud_jan"], ice=ice, nu0=nu0, pco2=pco2, unlocked=unlocked, cheap=True)
+    v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["shade_jul"],
+              c["shade_jan"], ice=ice, nu0=nu0, pco2=pco2, unlocked=unlocked, cheap=True)
     fb = feedback(v["eq"]["nu"], v["pot"]["lai"])
     return climate.compute(grid, elev, dT, tilt, ice, veg=fb), fb
 

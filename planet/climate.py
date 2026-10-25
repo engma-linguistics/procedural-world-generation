@@ -1297,6 +1297,24 @@ def sunshine(cloud: np.ndarray) -> np.ndarray:
     return np.clip(SUN_CLEAR - SUN_CLOUD * cloud, 0, 1)
 
 
+def shade(sun_share) -> np.ndarray:
+    """The cloud cover as the day's light sees it (0..1): the cover that sunshine() maps onto the sunshine
+    share sun_share. clouds' sunshine counts the convective clouds at cloud_sun_conv of the day (afternoon
+    showers leave sunny mornings), so in the wet tropics the shade is well below the sky's cover. What the
+    light at the ground follows (months' PAR for the plants, PW-806/PW-808: they read the sky's cover before
+    v1-finish-12, ~0.21 sunshine on the Earth world's wet equatorial land against the climate's own 0.31 and
+    CRU's ~0.51)."""
+    return np.clip((SUN_CLEAR - np.asarray(sun_share, float)) / SUN_CLOUD, 0, 1)
+
+
+def shade_from_hours(lat, sun_jul, sun_jan, tilt: float = 23.4) -> tuple[np.ndarray, np.ndarray]:
+    """(shade_jul, shade_jan) from a world's stored bright-sunshine hours a day (sunshine_jul / sunshine_jan
+    layers: day_hours x the sunshine share)."""
+    h_jul, h_jan = day_hours(lat, tilt)
+    return (shade(np.asarray(sun_jul, float) / np.maximum(h_jul, 1e-6)),
+            shade(np.asarray(sun_jan, float) / np.maximum(h_jan, 1e-6)))
+
+
 def storminess(grid: Grid, t_sl: np.ndarray) -> np.ndarray:
     """How stormy each latitude is in a season: the north-south temperature
     gradient of the latitude belt (C per 1000 km, from its zonal mean). The
@@ -1827,7 +1845,10 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
       par    MJ/m2: photosynthetically active light at the ground: the top of
              the atmosphere's sunshine x the share reaching the ground
              (Angstrom-Prescott: 0.25 + 0.5 x the sunshine share, from the
-             cloud cover as climate.sunshine; 0.5 cloud without one) x 0.48
+             cloud as climate.sunshine; 0.5 cloud without one) x 0.48. The
+             cloud given should be the light's (compute's shade_jul /
+             shade_jan, or shade_from_hours of a world's sunshine layers),
+             not the sky's cover: showers leave sunny mornings
       snow   mm: snowpack at the month's end (snow falls below 0 C, half of
              it between -2 and +2 C, and melts SNOW_DDF mm per degree-day;
              two years spun up from bare ground)
@@ -2114,6 +2135,9 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
                              half-year (humidity())
       rh_jul, rh_jan         %: relative humidity, July / January half-year
       cloud_jul, cloud_jan   0..1: cloud cover, July / January half-year (clouds())
+      shade_jul, shade_jan   0..1: the cloud as the day's light sees it (shade(): the
+                             convective clouds count at cloud_sun_conv); what the
+                             plants' light (months' cloud_jul / cloud_jan) takes
       sun_jul, sun_jan       hours/day of bright sunshine, July / January half-year
                              (day_hours x sunshine())
       wind_jul, wind_jan     tangent vectors, ~1 = a steady trade wind
@@ -2361,7 +2385,8 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     return dict(temp=temp, t_warm=t_warm, t_cold=t_cold, t_jul=np.where(jul_warm, t_warm, t_cold),
                 t_jan=np.where(jul_warm, t_cold, t_warm), precip=precip, p_jul=p_jul, p_jan=p_jan, koppen=k,
                 sst=sst, sst_jul=sst_m[0], sst_jan=sst_m[1], dew_jul=dew_jul, dew_jan=dew_jan, rh_jul=rh_jul,
-                rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, sun_jul=day_jul * sun_jul,
+                rh_jan=rh_jan, cloud_jul=cloud_jul, cloud_jan=cloud_jan, shade_jul=shade(sun_jul),
+                shade_jan=shade(sun_jan), sun_jul=day_jul * sun_jul,
                 sun_jan=day_jan * sun_jan, wind_jul=v_jul, wind_jan=v_jan, current=cur, jet_jul=jets[0], jet_jan=jets[1], **wb,
                 sss=oc["sss"], density=oc["density"], density_winter=oc["density_w"], overturning=oc["sinking"],
                 moc_inflow=oc["inflow"], moc_heat=np.where(ocean, sst - sst0, 0.0), freshwater=fw["total"],

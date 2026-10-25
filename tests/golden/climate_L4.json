@@ -26,6 +26,8 @@
  "runoff": "<f8[2562]:3e106a406b8149479758",
  "sea_evap": "<f8[2562]:efdf868bf103685cc8ff",
  "sea_ice_growth": "<f8[2562]:dc60c15bab8293c519cb",
+ "shade_jan": "<f8[2562]:751bb2cd5c774b9fca7e",
+ "shade_jul": "<f8[2562]:779e510dd4752145db7e",
  "sss": "<f8[2562]:41dda522ae812dba5dde",
  "sst": "<f8[2562]:ff986be42c6fefb62573",
  "sst_jan": "<f8[2562]:715f2cfc44c590a82f12",

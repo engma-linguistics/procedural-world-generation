@@ -103,7 +103,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # first, cheap vegetation on the first climate, then the climate again
     # with it (on the eroded terrain, if any).
     v0 = vegetation.model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt,
-                          c["cloud_jul"], c["cloud_jan"], ice=ice, nu0=veg.get("nu0"), pco2=veg.get("pco2", vegetation.CA_REF),
+                          c["shade_jul"], c["shade_jan"], ice=ice, nu0=veg.get("nu0"), pco2=veg.get("pco2", vegetation.CA_REF),
                           unlocked=veg.get("unlocked"), cheap=True, **held)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
@@ -185,13 +185,14 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # soils (soils.py, PW-185): the mineral pass before the vegetation (which uses its water capacity,
     # fertility and permafrost), the organic pass after it
     winds = [tuple(v for _, v in vec_layers(grid, "w", c[k])) for k in ("wind_jul", "wind_jan")]
-    sm = soils.mineral(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-                       c["cloud_jan"], ice=ice, lake_kind=lk["kind"], lake=lk["wet"], flow=flow,
+    sm = soils.mineral(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["shade_jul"],
+                       c["shade_jan"], ice=ice, lake_kind=lk["kind"], lake=lk["wet"], flow=flow,
                        flood_ratio=flood["flood_ratio"], winds=winds, memory=soil_memory, **soils.geology(extra))
-    vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-                         c["cloud_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
+    vg = vegetation.model(grid, elev, temp, c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["shade_jul"],
+                         c["shade_jan"], flow, lk["kind"], lk["wet"], ice, nu0=veg.get("nu0"),
                          pco2=veg.get("pco2", vegetation.CA_REF), unlocked=veg.get("unlocked"), flood_ratio=flood["flood_ratio"],
-                         coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm, **held)
+                         coastal={k: layers[k] / 100 for k in ("mangrove", "salt_marsh")}, soil=sm,
+                         sky=(c["cloud_jul"], c["cloud_jan"]), **held)
     layers.update(vegetation.world_layers(vg))
     # soils: type, depth, texture, water, fertility, drainage, carbon, peat, permafrost, loess
     layers.update(soils.world_layers(sm, soils.organic(sm, vg)))

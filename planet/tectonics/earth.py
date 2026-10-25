@@ -448,6 +448,7 @@ def update_climate(sim, e):
     sim.koppen = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                                 sim.p_jan, g.lat, sim.ice)
     sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]
+    sim.shade_jul, sim.shade_jan = c["shade_jul"], c["shade_jan"]  # (the light's cloud: climate.shade)
     update_vegetation(sim, e)
     sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
@@ -485,8 +486,8 @@ def update_vegetation(sim, e):
     kind = np.where(land, sim.lake_kind, 0)
     lake = np.isin(kind, (hydrology.OPEN_LAKE, hydrology.CLOSED_LAKE))
     if sim.t < REF_FREEZE:  # the weathering reference's plants (global_temperature): every group, the balance's CO2
-        pv = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
-                              sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.pot_frac, lai0=sim.pot_lai,
+        pv = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                              sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.pot_frac, lai0=sim.pot_lai,
                               pco2=climate.PCO2_BALANCE, cheap=True, crown=False)
         sim.npp_pot = pv["sm"]["npp"]
         sim.pot_frac, sim.pot_lai = pv["eq"]["nu"].astype(np.float32), pv["pot"]["lai"].astype(np.float32)
@@ -497,10 +498,11 @@ def update_vegetation(sim, e):
         sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
         sim.veg_niche = vegetation.bare_niches()
         return
-    v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
-                         sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
+    v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                         sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
                          pco2=climate.pco2(sim.co2), unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
-                         locked_potential=True, crown=False)  # (crown fire, PW-347: not yet in runs)
+                         locked_potential=True, crown=False,  # (crown fire, PW-347: not yet in runs)
+                         sky=(sim.cloud_jul, sim.cloud_jan))
     sim.veg_niche = vegetation.niches(v)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)
     sim.veg_lai = v["pot"]["lai"].astype(np.float32)

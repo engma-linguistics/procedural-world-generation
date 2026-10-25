@@ -117,10 +117,13 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     interpolated, then the warmer of the two, with jul_warm (bool) where
     that is July; on the bare ground under any coarse ice,
     zoom.ice_ground), the July / January half-years' rain
-    (mm/yr), cloud (0..1; None without), runoff (mm/yr, the land's), and
-    the world's vegetation fractions (NP, n; land without ice; None without)."""
+    (mm/yr), cloud (0..1; None without), the light's cloud shade_jul /
+    shade_jan (climate.shade, from the sunshine layers), runoff (mm/yr, the
+    land's), and the world's vegetation fractions (NP, n; land without ice;
+    None without)."""
     from .zoom import ice_ground
     g, L = world["grid"], world["layers"]
+    tilt = float(world.get("meta", {}).get("params", {}).get("tilt", 23.4))
     sp = g.spacing * R_KM
     sel = _sel(g, fr, size_km)
     cx, cy = fr.to_plane(g.centers[sel])
@@ -145,10 +148,14 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
     has_cloud = "cloud_jul" in L and "cloud_jan" in L
     cj = np.asarray(L["cloud_jul"], float) / 100 if has_cloud else np.zeros(g.n)
     cn = np.asarray(L["cloud_jan"], float) / 100 if has_cloud else np.zeros(g.n)
+    # (the light's cloud, climate.shade: from the world's sunshine hours, which count the showers' sunny mornings)
+    has_sun = "sunshine_jul" in L and "sunshine_jan" in L
+    sj, sn = (climate.shade_from_hours(g.lat, L["sunshine_jul"], L["sunshine_jan"], tilt) if has_sun
+              else (cj, cn))
     ro = np.asarray(L["runoff"] if "runoff" in L else prc, float)
     cov = climate.ice_cover(g, ice, elev > 0)
     vals = np.column_stack([ta[sel] + up, gw[sel] + up, gc[sel] + up, pj[sel], pn[sel], cj[sel], cn[sel], ro[sel],
-                            cov[sel]])
+                            cov[sel], sj[sel], sn[sel]])
     # (the land's: the sea cells' rain, cloud and runoff count only where no land cell is near, e.g. an island)
     wts = np.where(land_c, 1.0, SEA_W)[:, None] * np.ones_like(vals)
     wts[:, [0, 1, 2, 8]] = 1.0
@@ -160,7 +167,9 @@ def fine_fields(world: dict, fr, px: np.ndarray, py: np.ndarray, size_km: float)
                jul_warm=jul_warm, p_jul=np.maximum(fine[:, 3], 0),
                p_jan=np.maximum(fine[:, 4], 0), cloud_jul=fine[:, 5] if has_cloud else None,
                cloud_jan=fine[:, 6] if has_cloud else None, runoff=np.maximum(fine[:, 7], 0),
-               ice_cover=np.clip(fine[:, 8], 0, 1), nu0=None)
+               ice_cover=np.clip(fine[:, 8], 0, 1), nu0=None,
+               shade_jul=fine[:, 9] if has_sun or has_cloud else None,
+               shade_jan=fine[:, 10] if has_sun or has_cloud else None)
     if all(f"veg_{c}" in L for c in V.CODES):
         nu_c = np.stack([np.asarray(L[f"veg_{c}"], float)[sel] / 100 for c in V.CODES], 1)
         w = (land_c & (ice[sel] <= 0)).astype(float)
@@ -334,8 +343,8 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     rip = np.clip((np.minimum(dist + 0.5 * res, 0.5 * width) - np.maximum(dist - 0.5 * res, -0.5 * width)) / res, 0, 1)
     rip = np.where(np.isfinite(dist), rip, 0.0)
     slope = tr["slope"][idx]
-    cj = fields["cloud_jul"][idx] if fields["cloud_jul"] is not None else None
-    cn = fields["cloud_jan"][idx] if fields["cloud_jan"] is not None else None
+    cj = fields["shade_jul"][idx] if fields["shade_jul"] is not None else None
+    cn = fields["shade_jan"][idx] if fields["shade_jan"] is not None else None
     pj, pn = fields["p_jul"][idx], fields["p_jan"][idx]
     latv = season_lat(lat[idx], north)
     nu0 = fields["nu0"][:, idx] if fields["nu0"] is not None else None

@@ -93,7 +93,7 @@ class Plants:
     def grow(self, c: dict, surf: np.ndarray, H_g: np.ndarray, co2_c: float, full: bool = False) -> None:
         t0 = time.time()
         v = V.model(self.g, surf, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], self.tilt,
-                    c["cloud_jul"], c["cloud_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
+                    c["shade_jul"], c["shade_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
                     pco2=self.pco2(co2_c), unlocked=self.unlocked, cheap=not full)
         self.nu, self.lai = v["eq"]["nu"], v["pot"]["lai"]
         self._last = v
