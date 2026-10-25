@@ -163,16 +163,18 @@ def demography(traits) -> dict:
 # clock or two), display_sex (both | males: which sexes carry horns or antlers, as real species differ: reindeer and oryx both,
 # deer, moose and impala males only; PW-730), hours (when it is active), thermo (ectotherms feast and fast) and fire (false: cooks without fire).
 # `milk` is the lactase share (fresh milk or fermented only); `milks = false` says a people does not milk its animals at all
-# (default: herders milk, PW-784; animals.summary and the brief read it). Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
+# (default: herders milk, PW-784; animals.summary and the brief read it). `grain` (normal | moderate | none, PW-850) is how much grain a
+# gut takes: ruminants do eat grain if adapted gradually (acidosis comes from sudden high-grain feeding), so 'moderate'; the brief says so. Only `fire = false` is read by a pass (fuels.py); the rest are for the story and the culinary brief.
 BODY_DEFAULT = {"sweet": True, "milk": False, "milks": True, "capsaicin": True, "bitter": "normal", "smell": "normal",
                 "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
                 "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
-                "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True}
+                "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True, "grain": "normal"}
 BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
                 "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore"),
                 "suction": ("none", "poor", "normal"), "teeth": ("grinding", "conical", "dental_pad", "beak"),
                 "gut": ("simple", "hindgut", "foregut"), "salt": ("normal", "craving"), "display": ("none", "horns", "antlers"),
-                "shed": ("none", "both", "males"), "display_sex": ("both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto")}
+                "shed": ("none", "both", "males"), "display_sex": ("both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto"),
+                "grain": ("normal", "moderate", "none")}
 TOXINS = ("alliums", "theobromine")
 BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
 
@@ -244,7 +246,9 @@ def body_notes(b: dict) -> list[str]:
                     ("display", {"horns": "carry permanent horns (growth rings)", "antlers": "carry antlers, shed yearly"}),
                     ("shed", {"both": "shed antlers in both sexes", "males": "shed antlers in males only"}),
                     ("hours", {"crepuscular": "are active at dawn and dusk", "nocturnal": "are active at night"}),
-                    ("thermo", {"ecto": "are ectotherms (their appetite follows the weather)"})):
+                    ("thermo", {"ecto": "are ectotherms (their appetite follows the weather)"}),
+                    ("grain", {"moderate": "take grain in moderation (a rumen adapted gradually; fields lead with legumes, roots and leafy fodder)",
+                               "none": "cannot take grain"})):
         if b.get(k) in text:
             out.append(text[b[k]])
         if k == "display" and b.get("display") in ("horns", "antlers") and b.get("display_sex") == "males":

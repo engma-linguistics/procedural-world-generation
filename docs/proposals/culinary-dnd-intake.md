@@ -290,6 +290,8 @@ with magic. procgen's default `era = "renaissance"` fits. It is a placeholder un
 
 ## 4. The antelope and cervid "fiends": a worked proposal
 
+> **Superseded 2026-10-25 (PW-858, owner):** the fiend angle is dropped. The antelope-kin and cervid-kin stay (deep ruminant branch, horns and antlers, no dairy) as this world's closest equivalent to tieflings, with no fiend, infernal or abyssal labels; the stock D&D tiefling is a demonic template on humans from a historical event in the last ~10 kyr. The text below is the original proposal, kept for its record.
+
 ### 4.1 The change
 
 `dnd.toml` keeps its tiefling template. In the owner's world:

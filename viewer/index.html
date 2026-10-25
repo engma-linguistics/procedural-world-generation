@@ -248,7 +248,7 @@
     <label data-needs="harbour" title="Natural harbours at the coast: diamonds, bigger and redder = better (anchorage, harbour, fine harbour)"><input type="checkbox" id="huHarbours"> Harbours</label>
     <label data-needs="pass" title="Mountain passes: bow-ties on the divides, coloured by how long they are open"><input type="checkbox" id="huPasses"> Mountain passes</label>
     <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
-    <label data-needs-volc="peopleTracks" title="Peoples runs: where each people arose (a ring) and the track of its range's centre up to this frame (a picked people only, if one is picked in the peoples panel)"><input type="checkbox" id="peopleTracks" checked> Peoples' origins and tracks</label>
+    <label data-needs-volc="peopleTracks" title="Peoples runs: where each people arose (a ring; a picked people only, if one is picked in the peoples panel)"><input type="checkbox" id="peopleTracks" checked> Peoples' origins</label>
     <label data-needs-volc="hotspots"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
     <label data-needs-volc="volcanoes"><input type="checkbox" id="volcanoes" checked> Volcanoes</label>
     <label data-needs-volc="volcTable" title="Also the extinct volcanoes: dead arc cones, old calderas, seamounts and guyots (hover a cell to see what is in it)"><input type="checkbox" id="volcExtinct"> &nbsp;&nbsp;extinct ones too</label>
@@ -408,7 +408,8 @@ resize();
 const state = { mode: 'globe', layer: 'biome', playing: false };
 let V = null, mesh = null, topo = null, overlays = {};
 let lastColors = null;  // the current layer's colours (paint), for the 2D map
-const proj = { on: false, name: 'equirect', lat: 0, lon: 0, ext: null, grid: null };
+const proj = { on: false, name: 'equal-earth',  // (PW-838: the flat map opens in Equal Earth; equirectangular is the live three.js map, ?proj=equirect)
+   lat: 0, lon: 0, ext: null, grid: null };
 
 // ------------------------------------------------------------ colours
 function ramp(stops) {
@@ -1676,12 +1677,11 @@ function cloudOverlay() {
   return m;
 }
 
-// Peoples runs (planet/lineages/): a ring at each people's origin, and the track of its range's
-// centre (meta.lineages[].track: [kyr ago, lat, lon, Mkm²] per stored frame) up to this frame, in its colour
+// Peoples runs (planet/lineages/): a ring at each people's origin, in its colour. (The track of each range's centre,
+// meta.lineages[].track, stays in the data but is not drawn: PW-857, owner.)
 function peopleOverlays(globe, wraps) {
-  const lines = V.peopleTracks, now = -(V.run.frames[V.frame]?.t ?? 0), pts = [], cols = [], rings = [], rcols = [];
-  const c = new THREE.Color(), r0 = globe ? 1.014 : 1, D = Math.PI / 180;
-  const llv = (la, lo) => [Math.cos(la * D) * Math.cos(lo * D), Math.cos(la * D) * Math.sin(lo * D), Math.sin(la * D)];
+  const lines = V.peopleTracks, now = -(V.run.frames[V.frame]?.t ?? 0), rings = [], rcols = [];
+  const c = new THREE.Color(), r0 = globe ? 1.014 : 1;
   // (every point's cell and unit vector once per run, in V.peopleCache: the overlays are rebuilt each frame)
   const cache = V.peopleCache ||= new Map(), mode = llMode();
   for (const l of lines) {
@@ -1703,27 +1703,8 @@ function peopleOverlays(globe, wraps) {
         p1 = p2;
       }
     }
-    const tr = (l.track || []).filter((x) => x[0] >= now - 1e-6);
-    for (let k = 1; k < tr.length; k++) {  // (a few steps along the great circle between stored centres)
-      let seg = cache.get(l.index + ':' + tr[k][0]);
-      if (!seg) {
-        const a = llv(tr[k - 1][1], tr[k - 1][2]), b = llv(tr[k][1], tr[k][2]);
-        seg = [];
-        for (let s = 0; s <= 6; s++) {
-          const v = a.map((x, j) => x * (1 - s / 6) + b[j] * (s / 6)), n = Math.hypot(...v) || 1;
-          seg.push(llPoint(Math.asin(v[2] / n) * 180 / Math.PI, Math.atan2(v[1], v[0]) * 180 / Math.PI));
-        }
-        cache.set(l.index + ':' + tr[k][0], seg);
-      }
-      let prev = null;
-      for (let s = 0; s <= 6; s++) {
-        const p = llPosPt(seg[s], r0, mode);
-        if (prev && !wraps(prev, p)) { pts.push(...prev, ...p); cols.push(c.r, c.g, c.b, c.r, c.g, c.b); }
-        prev = p;
-      }
-    }
   }
-  return { peopleRings: ribbonObj(rings, 0xffffff, 1, 2.5, rcols), peopleTracks: ribbonObj(pts, 0xffffff, 0.9, 2, cols) };
+  return { peopleRings: ribbonObj(rings, 0xffffff, 1, 2.5, rcols) };
 }
 function buildOverlays() {
   DIAG.n.overlays++;
@@ -2188,7 +2169,10 @@ function textSprite(text, color) {
   g.font = 'bold 44px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 32, 34);
   g.fillStyle = color; g.fillText(text, 32, 34);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
+  // (PW-839: drawn after the 3D relief's translucent sea (renderOrder 1), which would otherwise blend over it; the transparent
+  // corners of the square canvas neither write depth nor hide what is behind: alphaTest, depthWrite false)
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05 }));
+  sp.renderOrder = 5;
   sp.scale.set(0.11, 0.11, 1);
   return sp;
 }
@@ -3604,7 +3588,7 @@ function syncProj() {
   } else if (was) { hovered = -1; renderHover(); }
   const u = new URL(location);
   ['mode', 'proj', 'map2d'].forEach((k) => u.searchParams.delete(k));
-  if (flat) { u.searchParams.set('mode', 'map'); if (proj.name !== 'equirect') u.searchParams.set('proj', proj.name); }
+  if (flat) { u.searchParams.set('mode', 'map'); if (proj.name !== 'equal-earth') u.searchParams.set('proj', proj.name); }
   history.replaceState(null, '', u);
 }
 function projCell(e) {
@@ -4107,7 +4091,9 @@ function wideSprite(text, color) {  // (a label of a few words: textSprite's can
   g.font = 'bold 32px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.lineWidth = 6; g.strokeStyle = '#0b0f17'; g.strokeText(text, 128, 34);
   g.fillStyle = color; g.fillText(text, 128, 34);
-  return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05 }));
+  sp.renderOrder = 5;  // (after the 3D relief's translucent sea: PW-839)
+  return sp;
 }
 function buildZoomOutlines() {
   zoomOutlines.children.forEach(disposeObj);

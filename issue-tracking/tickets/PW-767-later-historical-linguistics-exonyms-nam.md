@@ -13,11 +13,12 @@ blocked_by: []
 relates: [PW-731]
 refs: []
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 ## Description
 Owner 2026-10-24: whether anyone ends up calling the antelope-/cervid-kin devils or demons is historical-linguistics territory, overstepping for this stage. Park it here for a token-heavy pass another time. The owner has a separate (unnamed, don't look for it) repo for writing systems from writing materials; unify someday, not now. Current reputation.py / [[exonym]] stays as a light v0. Relates PW-692, PW-731, PW-754, PW-757.
 
 ## Updates
+- 2026-10-25: fun-lane-24: re-read under PW-858 (owner dropped the fiend angle): see PW-858's update for how this ticket now reads.
 - 2026-10-24: Created.

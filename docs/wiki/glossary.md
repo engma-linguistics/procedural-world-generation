@@ -17,7 +17,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **people**: a living line, with niche, traits and range. The tree is a DAG; unset fields inherit from the first parent.
 - **group** (culture): a way of life inside one people (`group_of`): steppe vs forest orcs. Not a split; mixes freely and rolls up into its people (PW-776; deeper culture is PW-661).
 - **template**: an overlay on host peoples from `at` on (tieflings): a share of the hosts, spread from a few sites.
-- **hybrid**: two parents. `contact = true` (default): exists only where both meet (half-elves); `linger = false`: gone once the parents part; `contact = false`: founds its own people.
+- **hybrid**: two parents. `contact = true` (default): exists only where both meet, in a shared cell or on a frontier (a cell of one beside a cell of the other, PW-852; half-elves), and an arrival whose hybrid is wanted lands about 600 km from the other parent; `linger = false`: gone once the parents part; `contact = false`: founds its own people.
 - **arrival**: a line from outside the world (feywild, planes), at a `place` or its best habitat; optionally through portals (PW-697).
 - **realm**: `land` (default), `coast` (shelf, tidal flats: merfolk) or `sea` (open water by depth band: storm giants) (PW-775).
 - **way of life**: what a people or group does for a living (forage, farm, herd, sail...), expressed by `[[use]]` entries and the land goods it wants.

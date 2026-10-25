@@ -104,7 +104,7 @@ const DEMOGRAPHY = { agricultural: { density: 10 }, nomadic: { density: 0.6, exp
   coastal: { sea_share: 0.3, density: 3 }, cosmopolitan: { insularity: 0.2, explore: 0.7 }, insular: { insularity: 0.85, explore: 0.25 } };
 const DEMO_KEYS = Object.keys(DEMO_DEFAULT);
 // senses and bodies (PW-694; mirrors spec.BODY_DEFAULT): for the future cuisine pass, nothing in the run reads them
-const BODY_DEFAULT = { sweet: true, milk: false, milks: true, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [], suction: 'normal', teeth: 'grinding', gut: 'simple', salt: 'normal', display: 'none', shed: 'none', display_sex: 'both', hours: 'diurnal', thermo: 'endo', fire: true };
+const BODY_DEFAULT = { sweet: true, milk: false, milks: true, capsaicin: true, bitter: 'normal', smell: 'normal', diet: 'omnivore', raw_meat: false, cellulose: false, toxic: [], suction: 'normal', teeth: 'grinding', gut: 'simple', salt: 'normal', display: 'none', shed: 'none', display_sex: 'both', hours: 'diurnal', thermo: 'endo', fire: true, grain: 'normal' };
 const BODY_FIELDS = [['sweet', 'tastes sweet', [true, false]], ['milk', 'digests milk as an adult (or the share of the people that does)', [true, false, 0.1, 0.25, 0.5, 0.75]], ['capsaicin', 'feels capsaicin heat', [true, false]],
   ['bitter', 'bitter sensitivity', ['low', 'normal', 'high']], ['smell', 'smell acuity', ['low', 'normal', 'keen']],
   ['diet', 'diet', ['herbivore', 'omnivore', 'carnivore', 'obligate_carnivore']], ['raw_meat', 'tolerates raw meat', [true, false]], ['cellulose', 'digests cellulose', [true, false]],
@@ -592,14 +592,30 @@ function drawWishes() {
 }
 
 // ---- tab 5: results ----------------------------------------------------------------------------------
-let peoplesRuns = [];
+let peoplesRuns = [], resAll = false;
+// PW-842: the Results tab lists the current world's peoples runs (the world picker's choice, or a time zoom's), newest first;
+// "all worlds" lists every run, and the run on show is always in the list. With none open, the newest of the world's is opened.
+function worldRuns() {
+  const wv = ($('world') && $('world').value) || '';
+  return wv.startsWith('tz:') ? peoplesRuns.filter((r) => r.timezoom === wv.slice(3)) : wv ? peoplesRuns.filter((r) => r.world === wv) : [];
+}
 function drawResults() {
   const el = $('tab-results');
-  const pick = `<div class="row" style="margin-bottom:8px"><span class="muted">peoples run</span><select id="resRun">${peoplesRuns.length ? '' : '<option value="">(none)</option>'}
-    ${peoplesRuns.map((r) => `<option value="${esc(r.dir)}" ${r.dir === result?.id ? 'selected' : ''}>${esc(r.dir)} · ${esc(r.world || '')} · ${esc(r.created || '')}</option>`).join('')}</select>
+  const mine = worldRuns(), shown = resAll ? peoplesRuns : mine.concat(peoplesRuns.filter((r) => r.dir === result?.id && !mine.includes(r)));
+  if (!result && mine.length && !resAll && !drawResults.busy) {
+    drawResults.busy = true;
+    showResult(mine[0].dir).finally(() => { drawResults.busy = false; });
+  }
+  const pick = `<div class="row" style="margin-bottom:8px"><span class="muted">peoples run</span><select id="resRun">${shown.length ? '' : '<option value="">(none for this world)</option>'}
+    ${shown.map((r) => `<option value="${esc(r.dir)}" ${r.dir === result?.id ? 'selected' : ''}>${esc(r.dir)} · ${esc(r.name || '')} · ${esc(r.world || '')} · ${esc(r.created || '')}</option>`).join('')}</select>
+    <label class="muted"><input type="checkbox" id="resAll" ${resAll ? 'checked' : ''}> all worlds (${peoplesRuns.length})</label>
     ${result ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=peoples" target="_blank">open ${esc(result.id)} on the globe</a>
     <a href="../runs/${encodeURIComponent(result.id)}/run.txt" target="_blank">report (run.txt)</a>` : ''}</div>`;
-  if (!result) { el.innerHTML = pick + '<p class="muted">Run the tree on a world, or pick a peoples run.</p>'; return; }
+  const bind = () => {
+    $('resRun').onchange = (e) => e.target.value && showResult(e.target.value);
+    $('resAll').onchange = (e) => { resAll = e.target.checked; drawResults(); };
+  };
+  if (!result) { el.innerHTML = pick + '<p class="muted">Run the tree on a world, or pick a peoples run.</p>'; bind(); return; }
   const P = result.present || {}, lines = result.lineages || [], L = Object.fromEntries(lines.map((l) => [l.id, l]));
   const nm = (id) => esc(L[id]?.name || id), sw = (id) => `<span class="sw" style="background:${L[id]?.color || '#888'}"></span>`;
   const W = P.peoples || {};  // (peoples with groups, as wholes: PW-665)
@@ -689,7 +705,7 @@ function drawResults() {
     <div class="muted" style="font-size:11px">${l.leaf ? 'lives today' : l.ended_kyr != null ? `gone ${fmt(l.ended_kyr)} ago` : ''} · ${esc(Object.entries(l.demography || {}).map(([k, v]) => `${k} ${v}`).join(', '))}</div>
     <div style="margin-top:4px">${esc(l.story)}</div></div>`).join('')}</div>`;
   el.innerHTML = h;
-  $('resRun').onchange = (e) => e.target.value && showResult(e.target.value);
+  bind();
 }
 function discoverySvg(lms, L) {  // each landmass on a log time axis, a dot per arrival, the first larger
   const rows = lms.filter((m) => m.area_mkm2 >= 0.3 && m.arrivals?.length).slice(0, 12);
@@ -783,6 +799,7 @@ async function listWorlds() {
   $('world').innerHTML = (opts.length ? '' : '<option value="">(no finished world with its time zoom)</option>') + opts.join('');
   if (cur) $('world').value = cur;
   if (want) $('world').value = want;
+  $('world').onchange = () => { if (tab === 'results') { result = null; redraw(); } };
   if (tz) $('world').value = 'tz:' + tz;
 }
 (async () => {

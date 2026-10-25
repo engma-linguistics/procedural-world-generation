@@ -20,5 +20,6 @@ updated: 2026-10-25
 Owner saw a meandering pink line (likely the tabaxi, #ff69b4, 44 patches round the equator) in b69f51. viewer/index.html:1680-1726 draws meta.lineages[].track, the presence-weighted centroid per frame (history.py:1202-1209). Show a largest-patch or per-patch track, snap to land, or label it 'range centre'.
 
 ## Updates
+- 2026-10-25: fun-lane-24: peopleOverlays no longer draws the range-centre tracks (meta.lineages[].track stays in the data); the checkbox is relabelled 'Peoples' origins' (the origin rings stay).
 - 2026-10-25: Owner: don't draw the range-centre track at all unless it's useful to us; remove the overlay.
 - 2026-10-25: Created.
