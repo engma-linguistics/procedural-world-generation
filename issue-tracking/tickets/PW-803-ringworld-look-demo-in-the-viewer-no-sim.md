@@ -2,7 +2,7 @@
 id: PW-803
 title: "Ringworld look demo in the viewer: no sims, just see one"
 type: task
-status: in-progress
+status: done
 parent: PW-802
 milestone: later
 subsystem: viewer
