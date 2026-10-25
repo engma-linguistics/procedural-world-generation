@@ -1917,6 +1917,7 @@ function buildOverlays() {
   buildAxis();
   buildHighlightMarks();
   buildZoomOutlines();
+  projOverlaysChanged();
 }
 // ------------------------------------------------------------ ocean currents as streamlines, the overturning loop
 // Streamlines (Jobard & Lefer 1997, simplified): from evenly spread seeds,
@@ -2892,7 +2893,7 @@ async function refreshIndex() {
   await fillSelector();
   navUi?.refresh();
   if (!V) return;
-  renderSummary(); drawMarks(); buildZoomOutlines();
+  renderSummary(); drawMarks(); buildZoomOutlines(); projOverlaysChanged();
 }
 
 // ------------------------------------------------------------ cold eras on the timeline
@@ -3556,6 +3557,56 @@ function projBox() {  // the room the map may use: between the control panel and
   const wide = innerWidth > 1000, l = innerWidth > 700 ? 300 : 8, r = wide ? 340 : 8;
   return { l, t: 60, w: Math.max(100, innerWidth - l - r), h: Math.max(100, innerHeight - 60 - 96) };
 }
+// PW-860: the overlays of the live map (rivers, events, highlights, zoom outlines, tropics, tracks, labels...)
+// are three.js objects whose map-mode positions are (lon / 90, lat / 90); read back as (lat, lon) they go through
+// the chosen projection's forward map. So every overlay the equirectangular map draws shows here too, without a second
+// description of each. (The human-use ribbons have their own map form, huMapFeatures; their three.js objects are skipped.)
+let projDirty = false;
+function projOverlaysChanged() {  // overlays were rebuilt: redraw the canvas once, after whatever else this frame does
+  if (!proj.on || projDirty) return;
+  projDirty = true;
+  requestAnimationFrame(() => { if (projDirty) drawProj(); });
+}
+function projFeatures(cssW) {
+  const feats = huMapFeatures() || { lines: [], marks: [] }, buckets = new Map(), labels = [];
+  const hex = (c) => '#' + c.getHexString(THREE.SRGBColorSpace);
+  const add = (color, alpha, width, a, b) => {
+    const key = `${color}|${alpha}|${width}`;
+    let e = buckets.get(key);
+    if (!e) buckets.set(key, e = { color, alpha, width, pts: [] });
+    e.pts.push(a, b);
+  };
+  const ll = (x, y) => [y * 90, x * 90];
+  const col = new THREE.Color();
+  const visit = (o) => {
+    if (o.visible === false) return;
+    if (o.isSprite) {
+      const img = o.material.map?.image;
+      if (img) labels.push({ lat: o.position.y * 90, lon: o.position.x * 90, img, w: o.scale.x, h: o.scale.y });
+      return;
+    }
+    const m = o.material;
+    if (o.isLineSegments2) {
+      const g = o.geometry, A = g.attributes.instanceStart, B = g.attributes.instanceEnd, C = g.attributes.instanceColorStart;
+      if (!A) return;
+      const w = m.linewidth, al = m.opacity;
+      for (let i = 0; i < A.count; i++) {
+        let c;
+        if (C) { col.setRGB(C.getX(i), C.getY(i), C.getZ(i)); c = hex(col); } else c = hex(m.color);
+        add(c, al, w, ll(A.getX(i), A.getY(i)), ll(B.getX(i), B.getY(i)));
+      }
+    } else if (o.isLineSegments && o.geometry.attributes.position) {
+      const P = o.geometry.attributes.position, c = hex(m.color), al = m.opacity;
+      for (let i = 0; i + 1 < P.count; i += 2) add(c, al, 1, ll(P.getX(i), P.getY(i)), ll(P.getX(i + 1), P.getY(i + 1)));
+    }
+  };
+  for (const [k, o] of Object.entries(overlays)) if (!/^hu(Riv|Har|Pass)/.test(k)) visit(o);
+  for (const grp of [hlGroup, zoomOutlines, axisGroup]) grp.children.forEach(visit);
+  feats.segs = [...buckets.values()];
+  feats.labels = labels;
+  feats.cssW = cssW;
+  return feats;
+}
 function drawProj() {
   if (!proj.on || !V || !lastColors) return;
   const cv = $('projCanvas'), p = PM.makeProjection(proj.name, proj.lat, proj.lon), ext = projExtent();
@@ -3564,8 +3615,9 @@ function drawProj() {
   Object.assign(cv.style, { width: cssW + 'px', height: cssH + 'px', left: b.l + (b.w - cssW) / 2 + 'px', top: b.t + (b.h - cssH) / 2 + 'px' });
   V.projCache ??= {};
   proj.grid = PM.drawMap(cv, p, Math.round(cssW * Math.min(devicePixelRatio || 1, 2)), ext, lastColors, (x, y, z) => nearestCellU([x, z, -y]),
-    { cache: V.projCache, gridId: V.n, graticule: $('projGrid').checked, marker: true, features: huMapFeatures() });
+    { cache: V.projCache, gridId: V.n, graticule: $('projGrid').checked, marker: true, features: projFeatures(cssW) });
   proj.p = p;
+  projDirty = false;
   $('projCentre').textContent = `centre ${fmtLL(proj.lat, proj.lon)}`;
 }
 // One control: Flat map's projection. The live three.js map is the equirectangular one (overlays, hill
@@ -3857,7 +3909,7 @@ async function fetchHighlights(cached) {
   if (!hl || hl.key !== key) hlSel = -1;  // a refresh of the same list keeps the selection
   hl = { key, t: out.t_myr, world: out.world, features: out.features };
   renderHighlights();
-  buildHighlightMarks();
+  buildHighlightMarks(); projOverlaysChanged();
   // ?hl=<rank>: open that highlight once, the first time a list arrives
   if (urlp.has('hl')) {
     const k = hl.features.findIndex((f) => f.rank === +urlp.get('hl'));
@@ -3890,7 +3942,7 @@ $('hlCats').addEventListener('click', (e) => {
   const u = new URL(location);
   if (state.hlCat) u.searchParams.set('hlcat', state.hlCat); else u.searchParams.delete('hlcat');
   history.replaceState(null, '', u);
-  renderHighlights(); buildHighlightMarks();
+  renderHighlights(); buildHighlightMarks(); projOverlaysChanged();
 });
 function renderHighlights() {
   const here = hl && hl.key === viewKey();

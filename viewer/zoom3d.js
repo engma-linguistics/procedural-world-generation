@@ -435,7 +435,7 @@ export class Zoom3D {
     const C = this.controls = new OrbitControls(this.camera, cv);
     C.enableDamping = true; C.dampingFactor = 0.12;
     C.screenSpacePanning = false; C.maxPolarAngle = THREE.MathUtils.degToRad(89);
-    C.zoomToCursor = true; C.minDistance = 0.3;
+    C.enableZoom = false; C.minDistance = 0.3;  // (the wheel is ours, wheelZoom: PW-843)
     C.listenToKeyEvents(window);
     this.hemi = new THREE.HemisphereLight(0xe4eef8, 0x5b4c3c, 1.0);
     this.sun = new THREE.DirectionalLight(0xfff2dd, 2.4);
@@ -916,6 +916,31 @@ export class Zoom3D {
         p1: this.camera.position.clone().add(p.clone().sub(this.controls.target)), q1: p };
     });
     this.controls.addEventListener('change', () => { this.dirty = true; this.moved = performance.now(); });
+    cv.addEventListener('wheel', (e) => { e.preventDefault(); this.wheelZoom(e); }, { passive: false });
+  }
+  // One wheel step moves the camera a fixed share of its distance to the ground under the cursor (PW-843). OrbitControls'
+  // zoomToCursor scaled the step by the distance to the orbit target, which sits far away (up to 3x the size) while the
+  // camera is held above the ground, so one notch could fly kilometres. The target moves with the camera, so the orbit stays
+  // the same shape.
+  wheelZoom(e) {
+    this.fly = null; if (this.flight) this.stopFlight();
+    const C = this.controls, cam = this.camera.position;
+    let dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+    dy = Math.max(-120, Math.min(120, dy));  // (a notch is ~100; trackpads send many small ones)
+    const f = Math.exp(-dy * 0.0016);  // >1 in, <1 out
+    const hit = this.pickGround(e) || C.target.clone();
+    const to = hit.clone().sub(cam), d = to.length();
+    if (d < 1e-6) return;
+    const dNew = Math.max(d / f, f > 1 ? C.minDistance : 0);
+    const move = to.multiplyScalar((d - dNew) / d);
+    const ny = cam.y + move.y, top = 3 * this.size;
+    if (f < 1 && ny > top) return;  // (out as far as the view goes)
+    if (f < 1 && cam.distanceTo(hit) > 3 * this.size) return;
+    cam.add(move); C.target.add(move);
+    // the orbit pivot stays on the ground the camera looks at (same line of sight, so the view doesn't change)
+    const fwd = C.target.clone().sub(cam).normalize(), g = this.march(cam, fwd, 4 * this.size, this.tiles[0].res * 0.4);
+    if (g) C.target.copy(g);
+    this.dirty = true; this.moved = performance.now();
   }
   resize() {
     const w = this.host.clientWidth || innerWidth, h = this.host.clientHeight || innerHeight;

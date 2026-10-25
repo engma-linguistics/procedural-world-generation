@@ -220,6 +220,27 @@ export function drawFeatures(ctx, proj, g, feats) {
     return proj.forward(p, q) ? [(q[0] + g.hw) / g.step, (g.hh - q[1]) / g.step] : null;
   };
   const lim = g.width / 4;  // a segment longer than this on the map crosses the seam
+  // PW-860: the live map's overlays read back as (lat, lon): feats.segs [{color, alpha, width (css px), pts: [[lat, lon], [lat, lon], ...] in pairs}],
+  // feats.labels [{lat, lon, img, w, h}] (w, h the sprite's size in live-map units, 4 across)
+  const cssK = feats.cssW ? g.width / feats.cssW : k;
+  ctx.save();
+  for (const s of feats.segs || []) {
+    ctx.strokeStyle = s.color; ctx.globalAlpha = s.alpha; ctx.lineWidth = Math.max(1, s.width * cssK);
+    ctx.beginPath();
+    for (let j = 0; j + 1 < s.pts.length; j += 2) {
+      const a = px(...s.pts[j]), b = px(...s.pts[j + 1]);
+      if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) > lim) continue;
+      ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
+    }
+    ctx.stroke();
+  }
+  for (const l of feats.labels || []) {
+    const c = px(l.lat, l.lon);
+    if (!c) continue;
+    const h = Math.max(14, l.h * 4.2) * cssK, w = h * l.w / l.h;
+    ctx.globalAlpha = 1; ctx.drawImage(l.img, c[0] - w / 2, c[1] - h / 2, w, h);
+  }
+  ctx.restore();
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const halo of [true, false]) {
     for (const l of feats.lines || []) {
