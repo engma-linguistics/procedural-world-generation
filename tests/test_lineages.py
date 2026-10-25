@@ -1420,7 +1420,7 @@ def test_an_authored_conquest_event_is_remembered_by_the_overrun_under_the_legen
 
 
 # ---- the owner's world preset (PW-730) ----------------------------------------------------------------------------------
-def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_fiends_are_a_deep_branch():
+def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_ruminant_peoples_are_a_deep_branch():
     t = SP.load(LR.SAMPLES / "seven_meals.toml")
     tier = lambda a, b: t.tier_of(a, b)  # noqa: E731
     # genetics.md's tier table falls out of the split depths
@@ -1434,7 +1434,7 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_fiends_are_a_d
     assert tier("arha", "anja") == 0 and tier("lizard_desert", "lizard_delta") == 0 and tier("aarakocra", "kenku") == 0
     # goliaths are sisters of the humans, not giant-kin
     assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
-    # the fiends (PW-734): a deep ruminant branch, no half-fiends, no tiefling template
+    # the ruminant peoples (PW-734, PW-858): a deep branch, no hybrids with humans, no tiefling template
     assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 2
     assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents]
     # half-elves (PW-758): a contact hybrid that never lingers, so no people of their own
@@ -1443,7 +1443,7 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_fiends_are_a_d
     assert all(t.lines[k].body["gut"] == "foregut" and t.lines[k].body["cellulose"] for k in ("antelope_folk", "cervid_folk"))
 
 
-def test_seven_meals_horns_and_antlers_follow_real_species_and_the_devils_are_remembered_long():
+def test_seven_meals_horns_and_antlers_follow_real_species_and_the_horned_and_antlered_are_remembered_long():
     t = SP.load(LR.SAMPLES / "seven_meals.toml")
     b = lambda k: t.lines[k].body  # noqa: E731
     assert b("antelope_folk")["display"] == "horns" and b("cervid_folk")["display"] == "antlers"
@@ -1455,12 +1455,15 @@ def test_seven_meals_horns_and_antlers_follow_real_species_and_the_devils_are_re
     assert "in males only" in " ".join(SP.body_notes(b("antelope_steppe"))) and "in males only" not in " ".join(SP.body_notes(b("antelope_oryx")))
     with pytest.raises(ValueError):
         SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 kyr", "body": {"display_sex": "females"}}]})
-    # the neighbours' devils (horns) and demons (antlers) are legends: their own memory length, longer than an ordinary conquest's
+    # the neighbours' horned ones and antlered ones are legends: their own memory length, longer than an ordinary conquest's
     rows = {r["id"]: r for r in t.exonyms}
-    assert rows["devil"]["body"] == {"display": "horns"} and rows["demon"]["body"] == {"display": "antlers"}
-    assert rows["devil"]["efold_kyr"] > RP.EFOLD_KYR * 10 and rows["demon"]["efold_kyr"] > RP.EFOLD_KYR * 10
+    assert rows["horned"]["body"] == {"display": "horns"} and rows["antlered"]["body"] == {"display": "antlers"}
+    assert rows["horned"]["efold_kyr"] > RP.EFOLD_KYR * 10 and rows["antlered"]["efold_kyr"] > RP.EFOLD_KYR * 10
+    # PW-858: no fiend, infernal, abyssal, devil or demon label anywhere in the preset
+    import re
+    assert not re.search(r"fiend|infernal|abyssal|devil|demon", (LR.SAMPLES / "seven_meals.toml").read_text(), re.I)
     assert t.lines["aarakocra"].body["sweet"] is True and t.lines["arha"].body["milk"] == 0.1
-    # (intended change, owner 2026-10-24: the preset ships no authored conquests, the devils and demons come from the sim; the fiends are aggressive)
+    # (intended change, owner 2026-10-24: the preset ships no authored conquests, the horned and antlered names come from the sim; both ruminant peoples are aggressive)
     assert t.events == [] and "aggressive" in t.lines["antelope_folk"].traits and "aggressive" in t.lines["cervid_folk"].traits
     assert t.lines["antelope_folk"].trait("push", 1.0) == 0.7
 
@@ -1651,8 +1654,8 @@ def test_a_group_carries_its_own_markers_and_its_people_keeps_the_default():
     assert SP.parse(SP.to_raw(t)).lines["herd"].body["milk"] == 0.1
     sm = LR.load_tree("seven_meals")
     assert sm.lines["arha"].body["milk"] == 0.1 and sm.lines["anja"].body["milk"] is False and sm.lines["orc"].body["milk"] is False
-    fiends = [k for k in sm.lines if k.startswith(("antelope_", "cervid_"))]  # PW-793: the fiend-kin and all their cultures do not milk
-    assert len(fiends) == 9 and all(sm.lines[k].body["milks"] is False for k in fiends)
+    ruminants = [k for k in sm.lines if k.startswith(("antelope_", "cervid_"))]  # PW-793: the antelope-kin, cervid-kin and all their cultures do not milk
+    assert len(ruminants) == 9 and all(sm.lines[k].body["milks"] is False for k in ruminants)
 
 
 def test_salt_reach_rivers_and_contact_zones_shorten_the_trade_route_and_the_cap_cuts_off():
@@ -1745,3 +1748,97 @@ def test_salt_dwarves_hold_the_beds_in_the_sample_tree(faketz):
     assert m[beds > 0].min() > 3 * m[land & (beds == 0)].max()  # (strict, pull 0.8: 1 on the beds, 0.2 off them)
     m0 = H.History(tree, ps, 1, goods={"salt_rock": np.zeros_like(beds)})._land_mult(sd, True)
     assert np.allclose(m0[land], m0[land][0])  # (no beds anywhere: no preference)
+
+
+# ---- contact hybrids need contact, not overlap (PW-852) ---------------------------------------------------------------
+def test_a_frontier_is_contact_two_ranges_that_only_touch_make_a_hybrid_where_they_touch(faketz):
+    """PW-852: in closed country a rival excludes the other from its cells, so two peoples on one continent usually only touch.
+    Contact is the border: the hybrid is where one holds a cell and the other the cell beside it, and nowhere else."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "a", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "b", "appears": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr"}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    lat0 = g.lat[np.argmax(land & (np.abs(g.lon) < 20) & (np.abs(g.lat) < 20))]
+    box = land & (np.abs(g.lon) < 20) & (np.abs(g.lat - lat0) < 15)
+    west, east = box & (g.lon < 0), box & (g.lon >= 0)
+    a, b = np.where(west, 0.7, 0.0), np.where(east, 0.7, 0.0)
+    assert west.any() and east.any() and not (a * b).any()  # (disjoint ranges)
+    touch = h._meeting(a, b) >= H.EST
+    assert touch.any() and not (touch & ~(west | east)).any()  # (only on the two ranges' own cells)
+    beside = (h._dilate(west, 1) & east) | (h._dilate(east, 1) & west)
+    assert (touch == beside).all()  # exactly the cells with the other people beside them
+    assert np.allclose(h._meeting(a, b)[touch], 0.7)
+    assert (h._meeting(a, np.zeros(g.n)) == 0).all()  # nobody beside them: no contact
+    assert (h._meeting(a, a) == a).all()  # (full overlap is as it was: the weaker of the two)
+
+
+def test_a_contact_hybrid_appears_soon_after_both_parents_hold_one_continent(faketz):
+    """PW-852: an arrival whose hybrid is wanted comes down near the other parent, and the hybrid appears within a few kyr of
+    the two sharing a land (the dnd run 6b5d0e never produced half-elves though the elves and humans shared a continent)."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+    h = H.History(SP.parse(raw), ps, 3)
+    seen = {}
+    orig = H.History._frame
+
+    def frame(self, step, env):
+        lab, _ = self.grid.components(env["land"])
+        hu, el = self.whole("human") >= H.EST, self.whole("elf") >= H.EST
+        shared = set(lab[hu & (lab >= 0)].tolist()) & set(lab[el & (lab >= 0)].tolist())
+        if shared and "share" not in seen:
+            seen["share"] = step.ago
+        return orig(self, step, env)
+
+    H.History._frame = frame
+    try:
+        h.run()
+    finally:
+        H.History._frame = orig
+    assert "half" in h.origins, "the hybrid never appeared"
+    assert "share" in seen and seen["share"] <= 14.0  # (the arrival came down on the humans' own land)
+    assert 7.0 <= h.started["half"] <= 10.0  # (the hybrid line's own date is 10 kyr ago: it appears within 3 kyr of that, not never)
+
+
+def test_the_stock_tiefling_is_a_late_template_on_humans():
+    """PW-858: dnd's tieflings are a demonic template on humans from a historical event within the last ~10 kyr, never a people of their own."""
+    t = SP.load(LR.SAMPLES / "dnd.toml")
+    tf = t.lines["tiefling"]
+    assert tf.origin == "template" and tf.parents == ["human"] and 0 < tf.ago_kyr <= 10
+    assert "infernal" not in tf.name.lower()
+
+
+def test_an_arrival_whose_hybrid_is_wanted_comes_down_within_reach_of_the_other_parent(faketz):
+    """PW-852: the arrival's pull toward the other parent holds it within 2.5 x HYBRID_REACH_KM (it was three cells), whatever the dice."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+    tree = SP.parse(raw)
+    far = []
+    for seed in range(1, 13):
+        h = H.History(tree, ps, seed)
+        h.p = np.zeros((len(h.lines), h.grid.n))
+        h.active = {l.id: False for l in h.lines}
+        step = h.steps[-1]
+        env = step.get()
+        tags = H._tags(h.grid, env)
+        g = h.grid
+        patch = tags["land"] & (g.lon > 90) & (g.lon < 110) & (np.abs(g.lat) < 10)  # (the humans: a patch of the east continent)
+        assert patch.any()
+        h.p[h.idx["human"]][patch] = 0.8
+        h.active["human"] = True
+        K = h._K(tree.lines["elf"], env, tags, step)
+        h._origin(tree.lines["elf"], step, env, tags, K)
+        c = h.origins["elf"]["cell"]
+        reach = max(H.HYBRID_REACH_KM / h.cell_km, 1.0)  # (cells; a cell at least on this coarse test grid)
+        d = H.graph_dist(patch, int(np.ceil(3 * reach)), g.nbr_off, g.nbr_idx)[c]
+        far.append(d < 0 or d > 2.5 * reach)
+    assert not any(far), (far, h.grid.n, h.cell_km)

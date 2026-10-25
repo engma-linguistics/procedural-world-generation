@@ -17,7 +17,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **people**: a living line, with niche, traits and range. The tree is a DAG; unset fields inherit from the first parent.
 - **group** (culture): a way of life inside one people (`group_of`): steppe vs forest orcs. Not a split; mixes freely and rolls up into its people (PW-776; deeper culture is PW-661).
 - **template**: an overlay on host peoples from `at` on (tieflings): a share of the hosts, spread from a few sites.
-- **hybrid**: two parents. `contact = true` (default): exists only where both meet (half-elves); `linger = false`: gone once the parents part; `contact = false`: founds its own people.
+- **hybrid**: two parents. `contact = true` (default): exists only where both meet, in a shared cell or on a frontier (a cell of one beside a cell of the other, PW-852; half-elves), and an arrival whose hybrid is wanted lands about 600 km from the other parent; `linger = false`: gone once the parents part; `contact = false`: founds its own people.
 - **arrival**: a line from outside the world (feywild, planes), at a `place` or its best habitat; optionally through portals (PW-697).
 - **realm**: `land` (default), `coast` (shelf, tidal flats: merfolk) or `sea` (open water by depth band: storm giants) (PW-775).
 - **way of life**: what a people or group does for a living (forage, farm, herd, sail...), expressed by `[[use]]` entries and the land goods it wants.
@@ -25,7 +25,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **culinary-dnd**: the owner's north-star consumer repo (read-only here); PW-692 frames priorities.
 
 ## Bars and checks
-- **icehouse**: share of a run's time under ice-age conditions. The owner wants Earth-like worlds near ~40% icehouse.
+- **icehouse**: share of a run's time under ice-age conditions. Reported, not capped (owner 2026-10-25, PW-865; it was ~40% before).
 - **icehouse bar**: ~70% of seed-draws pass, not all (outlier worlds allowed; "not worse" means the pass share doesn't drop). Never-ice and always-icebox both fail for Earth-like worlds (PW-780; the star thermostat idea is PW-791).
 - **strict bar**: the stricter pass criteria in PW-780's sign-off (numbers in [state.md](state.md)).
 - **scorecard / earth_check**: `tools/scorecard.py` after model changes, `tools/earth_check.py` after climate changes. Earth is a plausibility anchor, never a parity target.

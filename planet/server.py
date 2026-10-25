@@ -14,6 +14,7 @@
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
+  GET    /api/brief?run=<id>&people=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief())
   GET    /api/cell?world=<id>&i=<cell>  one world cell's 12 months (cell())
 
 Big data files (.bin run layers, .json worlds and grids) go gzipped when the
@@ -93,6 +94,33 @@ def highlights(query: str, compute=None) -> tuple[dict, int]:
     except SystemExit as e:  # no such run / world
         return {"error": str(e)}, 404
     except Exception as e:  # a bug: show it in the viewer rather than drop the connection
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+def brief(query: str) -> tuple[dict, int]:
+    """GET /api/brief?run=<run>&people=<id>[&era=<kyr ago>] or &region=lat,lon[,radius_km]: the culinary brief
+    (lineages/brief.py, PW-728) as {markdown, brief} (PW-837: the viewer's Peoples panel shows it)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import brief as BR
+        run, era = q.get("run"), float(q.get("era") or 0.0)
+        if not run:
+            raise ValueError("run= is required")
+        region = None
+        if q.get("region"):
+            v = [float(x) for x in q["region"].split(",")]
+            if len(v) not in (2, 3):
+                raise ValueError("region=lat,lon[,radius_km]")
+            region = (v[0], v[1], v[2] if len(v) == 3 else BR.DEFAULT_RADIUS_KM)
+        elif not q.get("people"):
+            raise ValueError("give people=<id> or region=lat,lon[,radius_km]")
+        b = BR.build(run, region=region, people=q.get("people"), era_kyr=era)
+        return {"markdown": BR.markdown(b), "brief": b}, 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:  # no such run / people
+        return {"error": str(e)}, 404
+    except Exception as e:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
@@ -297,6 +325,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if url.path == "/api/highlights":
             return self.send_json(*highlights(url.query, self.hl_pool.call if self.hl_pool else None))
+        if url.path == "/api/brief":
+            return self.send_json(*brief(url.query))
         if url.path == "/api/cell":
             return self.send_json(*cell(url.query))
         if url.path == "/api/fine-rules":  # what a fine zoom may be (zoom_fine): the viewer's size menu

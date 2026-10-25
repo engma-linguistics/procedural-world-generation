@@ -231,3 +231,11 @@ def test_zoom3d_lake_is_one_flat_clipped_surface():
     assert o["levels"] == 1 and len(o["ys"]) == 1, o   # one lake, one level
     assert o["outside"] == 0 and o["tris"] > 0, o      # no orphan water
     assert o["above"] == 0, o                          # nowhere over higher ground
+
+
+def test_brief_endpoint_rejects_bad_requests():
+    """GET /api/brief (PW-837) answers 400 for a missing run or target, 404 for a run that doesn't exist."""
+    from planet import server
+    assert server.brief("people=x")[1] == 400
+    assert server.brief("run=nope")[1] == 400
+    assert server.brief("run=no-such-run-xyz&people=orc")[1] == 404

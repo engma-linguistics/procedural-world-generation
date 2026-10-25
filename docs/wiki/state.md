@@ -4,13 +4,13 @@
 
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
-- Physics (Opus): v1-finish-11 on top of hold/v1-finish-10-anchor (star anchored, full Gough, real plant calendar, drift on outgassing; failed the bar 0/6 ICEBOX because the carbon balance was frozen at 300 Myr). RULING (coordinator): anchor the carbon balance at the end (GEOCARB frame) and check the weathering feedback strength against the literature; end pCO2 ~180-600 ppm is a diagnostic. Audit done (PW-816..836).
-- Fun (Sonnet): idle (showcase build). Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
+- Physics (Opus): v1-finish-12 on hold/v1-finish-11-balance (v1-finish-11 anchored the carbon balance at the end with GEOCARB III weathering laws and literature strength; full Gough alone failed the old <=40% icehouse cap 0/6; the star thermostat passed it only by riding its bound). RULING (owner, PW-865): option C, no icehouse cap, thermostat off. v1-finish-12 re-measures on the new bar (L6 18, L7 8, 2 Gyr 13) with finish diagnostics, then works the wet tropics and end-CO2 spread. Held: hold/v1-finish-10-anchor (inside 11), hold/pw798-ref-freeze.
+- Fun (Sonnet): fun-lane-25 (viewer: PW-860 Equal Earth overlays, 843 wheel zoom, 840 right pane, 841 workbench, 845 fuels, 837 brief in viewer). Fun lane 24 merged (de83743): half-elves through frontier contact and arrival on free land near the partner (PW-852; residual PW-861), fiend framing dropped and dnd tieflings as a 3 kyr human template (PW-858), ruminant diet data and the no-dairy brief line (PW-850/800), tracks overlay removed (PW-857), Results tab per world (PW-842), label depth (PW-839), Equal Earth default (PW-838; overlays missing, PW-860). Kept runs on 2a7385: dnd 62341d and seven_meals bbfba8. Next: the coordinator's pick from PW-840/841/843/845, 851, 855, 853, 854, 837, 861.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
 - Epic PW-244. Only the owner sign-off PW-780 is open (default `star_brightening` 0.45, a K-type star; provisional owner OK 2026-10-24). 2 open tickets in the v1 milestone.
-- Strict icehouse bar: L6 13/18 seed-draws, L7 7/8. Rule: ~70% pass, never-ice and always-icebox both fail ([glossary](glossary.md), [decisions](decisions.md)).
+- Icehouse bar loosened 2026-10-25 (PW-865): icehouse share is uncapped; snowball, hellhole and never-ice fail. The old bar on main's forward star was L6 13/18 and L7 7/8. Rule: ~70% pass, never-ice and always-icebox both fail ([glossary](glossary.md), [decisions](decisions.md)).
 - Showcase remake (PW-202) done; the 4 L6 + 4 L7 showcases below.
 
 ## v2 and later (board.py milestones, 2026-10-24)

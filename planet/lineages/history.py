@@ -43,6 +43,7 @@ APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches wo
 START_KM = 1500.0  # a start hint's reach (PW-763): 'far_from' ramps from x0.05 at the other's border to x1 over this, 'near' falls off with it
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
+HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
 DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x (its density / one's own)^0.1, within
@@ -447,6 +448,32 @@ class History:
                 m = m * (np.where(big, 1.0, 0.1) if line.start_land == "largest" else np.where(big, 0.1, 1.0))
         return m
 
+    def _near_range(self, other):
+        """Multiplier for an origin by a people's range (PW-852): best at about HYBRID_REACH_KM from it (free land to spread over for
+        a few centuries, then the two meet), falling off either side to 0.05 on the range itself (a newcomer among the denser people
+        would be squeezed into a refuge: ALPHA_CLOSED) and 0.001 beyond 2.5 reaches. The origin's own luck (the gumbel noise is
+        heavy-tailed: over a fine grid its best cell is hundreds of times a typical one) must not carry a newcomer far from the people
+        whose hybrid is wanted; where nothing near suits it, it falls back to its habitat."""
+        g = self.grid
+        po = self.whole(other) > EST
+        if not po.any():
+            return np.ones(g.n)
+        L = max(HYBRID_REACH_KM / self.cell_km, 1.0)  # (a cell at least: coarse test grids)
+        d = graph_dist(po, int(np.ceil(2.5 * L)), g.nbr_off, g.nbr_idx)
+        m = 0.05 + np.exp(-(((d - L) / (0.8 * L)) ** 2))
+        return np.where(d < 0, 0.001, np.where(d == 0, 0.05, m))
+
+    def _rivals_here(self, line, K):
+        """The competition `line` would feel at each cell from the peoples alive now (as history.run: niche overlap, closed-country extra)."""
+        k = self.idx[line.id]
+        idx = np.flatnonzero(K >= EST)
+        J = np.array([j for j in self._rivals[k] if self.active[self.lines[j].id]], np.int64)
+        q = np.zeros(self.grid.n)
+        if len(idx) and len(J):
+            q[idx] = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx,
+                                  (self._corr_now if self._corr_now is not None else np.full(self.grid.n, 0.5))[idx])
+        return q
+
     def _seed_blob(self, k, cell, K, mask, r):
         g = self.grid
         blob = rings(int(cell), mask | (np.arange(g.n) == cell), r, g.nbr_off, g.nbr_idx) & (K > EST)
@@ -460,12 +487,21 @@ class History:
         why = "habitat"
         if line.origin in ("root", "arrival"):
             score = K * self._place_mult(line, tags) * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise
+            pull = None
             if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
                 for h in self.tree.lines.values():
                     if h.origin == "hybrid" and line.id in h.parents:
                         other = [q for q in h.parents if q != line.id][0]
-                        if self.active.get(other):
-                            score = score * (0.2 + self._dilate(self.p[self.idx[other]] > EST, 3))
+                        if self.active.get(other):  # (PW-852: within HYBRID_REACH_KM of its range, not just three cells: the two should meet soon)
+                            m = self._near_range(other)
+                            # where the newcomer can really live: free room (habitat less what its rivals already hold there) of at
+                            # least half its best; on a crowded continent it would be squeezed into a refuge (ALPHA_CLOSED), so it
+                            # then keeps its own best habitat
+                            ok = (m > 0.3) & (K - self._rivals_here(line, K) >= 0.5 * K.max())
+                            if ok.any():  # (a restriction, not a weight: the origin's noise is heavy-tailed, a weight of 0.05 is beaten by its luck)
+                                m = np.where(ok, m, 0.0)
+                                pull = m if pull is None else pull * m
+                                score = score * m
             if line.place:
                 la, lo = np.radians(line.place)
                 c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
@@ -493,6 +529,8 @@ class History:
                     f = min(far)
                     near = [(f[1], f[2])]
                 if near:
+                    if pull is not None:  # (the portal nearest the other parent first: PW-852)
+                        near.sort(key=lambda x: -pull[x[0]])
                     cell = near[0][0]
                     for c, _ in near[1:]:
                         self._seed_blob(k, c, K, K > EST, 3)
@@ -530,7 +568,7 @@ class History:
             self.p[pk][blob & P] = 0.0
         elif line.origin == "hybrid":
             a, b = (self.whole(q) for q in line.parents)
-            O = np.minimum(a, b)
+            O = self._meeting(a, b)
             if O.max() < EST:
                 return False  # the parents haven't met yet: wait
             if line.contact:
@@ -1070,13 +1108,22 @@ class History:
         own = self._linger[k]
         return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * hosts * area)
 
+    def _meeting(self, a, b):
+        """Where two peoples meet (PW-852): in a cell both hold, or on a frontier: one holds the cell and the other the cell next to it.
+        In closed country a rival excludes the other from its cells (history.run, ALPHA_CLOSED), so two ranges on one continent
+        usually only touch, and contact is a border, not an overlap. The presence there is the weaker of the two."""
+        g = self.grid
+        da = np.maximum(a, _nbr(np.maximum, a[g.nbr_idx], g))
+        db = np.maximum(b, _nbr(np.maximum, b[g.nbr_idx], g))
+        return np.maximum(np.minimum(a, db), np.minimum(da, b))
+
     def _hybrid(self, l, k, K, step):
         """A contact hybrid: where its parents meet it is a share of their people (and grows with the contact);
         once it has appeared it lingers where they no longer meet, fading (LINGER_KYR) within its own habitat,
         and where they last met it lives on as a small people of its own (PW-613)."""
         g = self.grid
         a, b = (self.whole(q) for q in l.parents)
-        O = np.minimum(a, b)
+        O = self._meeting(a, b)
         meet = O >= EST
         old = self.p[k]
         linger = np.minimum(old * np.exp(-step.dt / LINGER_KYR), K) if l.linger else np.zeros(g.n)

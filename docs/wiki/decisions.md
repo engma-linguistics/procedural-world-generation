@@ -5,6 +5,14 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 **Convention:** write new rulings in the ticket's Updates as `RULING (owner): ...` or `RULING (coordinator): ...`, then add a line here. Rows below before 2026-10-25 were seeded by grepping "Owner 20xx" in ticket Updates; the ticket has the full text.
 
 ## Standing process rules (owner)
+- 2026-10-25 · Framing (owner) · drop the 'fiend' angle: seven_meals' antelope-kin and cervid-kin are the closest equivalent to tieflings; dnd tieflings are a demonic/abyssal template on humans from a historical event in the last ~10 kyr; forage-led farming, grain in moderation, no dairy approved · PW-858, PW-850
+- 2026-10-25 · Greenhouse gases (owner) · track CH4/N2O separately from CO2 (climate reads all, plants read CO2) - an important v1 thread · PW-859
+- 2026-10-25 · Feedback (owner) · cultures/civs, not species, are the unit of the culinary book; settlements mostly one species outside cities (design talk pending) · PW-856
+- 2026-10-25 · Fantasy realism (owner) · hybrids follow real divergence times; fiend-kin are ruminants, so grain only as real ruminants can take it (coordinator: in moderation) or via an evolved trait; mostly farmers · PW-850, PW-851
+- 2026-10-25 · Finished worlds (owner) · end temperatures within what modern humans lived through (coordinator: true mean ~-6..+3 C vs pre-industrial) and interglacial land ice near Earth's, not none and not ice-age · PW-812
+- 2026-10-25 · Plates (owner) · a half-planet plate is wrong: find the cause; largest plate a little above Earth's historical largest, by mechanism · PW-827
+- 2026-10-25 · Dragons (owner) · dragons are reptiles: a deep reptile line, extant megafauna at giant-like density, chromatic/metallic by biome · PW-855
+- 2026-10-25 · Scope (owner) · iron from bog ore/laterite in v1; ice ages keep modern timing, documented; other greenhouse gases as a CO2-equivalent; don't over-chase Earth's dryness · PW-817, PW-824, PW-828, PW-821
 - 2026-10-20 · Pass bar · ~70% of seeds passing is enough; outlier worlds allowed; use 6-10 seeds when 4 is too few; "not worse" = pass share doesn't drop · PW-438
 - 2026-10-22 · Regressions · as the sim gets more sound, individual regressions are expected and teach what else to fix; adopt the whole-history ice criteria · PW-560
 - 2026-10-22 · Local optima · land a correct mechanism even if a fitted kernel (rain/Koppen) regresses; fix that next · PW-578
@@ -22,6 +30,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-25 · Icehouse bar (owner) · option C: keep the physics (end-anchored GEOCARB balance, literature weathering, star thermostat off); no cap on a run's icehouse share; snowball/always-icebox, hellhole and never-ice still fail at ~70% of draws passing; finish checks (true mean -6..+3 C, interglacial ice ~Earth's, wet-tropics trees) stay · PW-865
 - 2026-10-24 · Star lever · for Earth-like worlds NO ice ages is a fail too; star brightening is the accepted per-world lever; 0.45 is the working default (provisional, phone) · PW-780
 - 2026-10-24 · Star thermostat · opt-in per preset, causal, slow, bounded luminosity range · PW-791
 - 2026-10-24 · pCO2 · coordinator's call: carry a real ppm from the stock first; if wildly off, take A for now · PW-646

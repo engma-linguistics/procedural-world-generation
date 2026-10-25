@@ -13,11 +13,12 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 ## Description
 From the pre-v1 assumptions audit (docs/review/assumptions-audit/README.md, findings.json): Pre-industrial iron: bog iron, lateritic ferricrete and ironstone on young land, not only banded iron on old shields.
 
 ## Updates
+- 2026-10-25: Owner 2026-10-25: hard agree, fix in v1.
 - 2026-10-24: Created.

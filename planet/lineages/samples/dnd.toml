@@ -646,9 +646,10 @@ contact = true
 insularity = 0.3  # (like the half-elves; no explore: a contact hybrid does not spread itself, PW-758)
 
 # ---- templates: overlays on existing peoples ----------------------------------------------
-[[lineage]]
+[[lineage]]  # a demonic (abyssal or infernal) template on humans, laid on by a historical event within the last ~10 kyr (PW-858): it
+# arises at its incursion sites in the humans' range at this date and is a share of the humans where it is (never a people of its own)
 id = "tiefling"
-name = "tieflings (infernal)"
+name = "tieflings (demonic template on humans)"
 origin = "template"
 parents = ["human"]
 at = "3 kyr"
