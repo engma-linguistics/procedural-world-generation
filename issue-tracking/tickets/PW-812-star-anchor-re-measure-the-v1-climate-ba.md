@@ -1,4 +1,5 @@
 ---
+id: PW-812
 title: "Star anchor: re-measure the v1 climate bar and PW-806's showcase diagnosis on the anchored star; add an end-counted last-540-Myr window as a reported diagnostic"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-806, PW-780, PW-202]
 refs: [docs/review/base-climate/v1-finish-8/passrate2.py, docs/review/base-climate/v1-signoff/, tools/ice_criteria.py, docs/review/base-climate/star-anchor-audit/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -37,3 +40,6 @@ Do:
 - [ ] pass rates on the anchored star recorded in PW-791
 - [ ] end-counted window reported
 - [ ] PW-806's showcase check re-measured after the anchor
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-remeasure-v1-bar-on-anchored-star.md (found by star-anchor-audit).

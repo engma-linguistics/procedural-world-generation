@@ -1,4 +1,5 @@
 ---
+id: PW-814
 title: "Star anchor docs: overview has no star section; the params comment, PW-789's help text, make.py UNSUPPORTED and coordination.md describe the old from-start star"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-789]
 refs: [docs/overview.md, planet/tectonics/params.py, planet/make.py, docs/coordination.md, docs/review/base-climate/star-anchor-audit/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Audit item 14 (docs/review/base-climate/star-anchor-audit/README.md). Fix these 
 - planet/make.py:88 lists "star brightness" as UNSUPPORTED.
 - docs/coordination.md:60 notes the hothouse change "5 before the brightening star".
 - [ ] all five updated to the anchored semantics
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-star-docs-after-anchor.md (found by star-anchor-audit).

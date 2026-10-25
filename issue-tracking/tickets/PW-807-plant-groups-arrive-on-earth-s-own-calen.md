@@ -11,7 +11,7 @@ impact: high
 found_by: owner-2026-10-24
 blocked_by: []
 relates: [PW-636]
-refs: []
+refs: [planet/vegetation.py, planet/tectonics/earth.py, planet/highlights.py, planet/make.py, tests/test_vegetation.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
 updated: 2026-10-24
 ---
@@ -25,5 +25,24 @@ Consequences to handle:
 Supersedes PW-636's compression.
 
 ## Updates
+- 2026-10-24: Merged inbox draft draft-flora-calendar-co2-and-auto-slice.md ("Plant calendar (PW-807) consequences: bare-land spin-up against the CO2 reference freeze, and slice --at auto's flora gate leaving only the last ~10-30 Myr", found by star-anchor-audit).
+  Audit items 6 and 7 (docs/review/base-climate/star-anchor-audit/README.md).
+  
+  The compression to remove: `FLORA_PACE` 0.8, the `GROUPS` fractions of ~470 Myr, and `group_windows`' deadline
+  D = end - max(16 Myr, 5%) (planet/vegetation.py:222-286). Also `plants_from` 0, `FLORA_END` 1000, and
+  test_vegetation's group_windows test.
+  
+  Knock-ons to measure:
+  - **CO2.** A run longer than ~470 Myr gets bare continents first: the weathering `plants` factor is 1.0 against up to
+    1.75, and bare ground erodes up to 1.6x faster. On runs over ~770 Myr the reference freezes at 300 Myr on bare
+    land, and the plants' arrival is then a lasting weathering surplus (cooling). The direction is physical (the
+    Devonian drawdown), but its size on top of the anchored star's dim start is unmeasured. Measure it with the star
+    zero-point decision. PW-798 A's "freeze once the start has settled" may need "once land plants exist".
+  - **`--at auto`.** `highlights.representative_time` restricts to frames after the last group. On the real calendar
+    that is ~30-8 Ma, which leaves 2-7 keyframes. The geographic-typicality medians and PW-700's warm-moment-of-the-era
+    pick then mostly degenerate to the last frame. Owner question already in PW-807. One option: gate on flowering
+    trees (~100 Ma) or grasses (~55 Ma), not C4 grasses.
+  - [ ] CO2 reference vs plant arrival measured on a 1 Gyr L6 run
+  - [ ] --at auto rule decided and test_highlights updated
 - 2026-10-24: Owner 2026-10-24: (1) Showcase/default worlds are taken at the run's end ('now') or its last few Myr: the default use is a world with modern plants and people. A deliberate earlier era (e.g. a dinosaur-age TTRPG) is asked for by age, ideally 'Ma before now' (e.g. slice --ago 70). (2) Marine algae appear in water >1 Ga before now (Natural History Museum); land plants 470-500 Ma. Long runs should reflect life in the sea before land: whatever the model ties to marine life (reefs, carbon burial, plankton) follows the real calendar too, e.g. reef builders ~540 Ma onward, microbial mats/stromatolites earlier.
 - 2026-10-24: Created.

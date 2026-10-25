@@ -1,9 +1,10 @@
 ---
+id: PW-811
 title: "Star anchor: re-pick the recipe offsets measured on the old star (hothouse 5 -> 3, cold -6 kept, water world +8 proposed)"
 type: task
 status: todo
 parent: PW-244
-milestone: v1
+milestone: v2
 subsystem: climate
 effort: s
 impact: med
@@ -11,6 +12,8 @@ found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-799, PW-798, PW-790]
 refs: [planet/make.py, README.md, docs/coordination.md, docs/review/base-climate/star-anchor-audit/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Audit items 8 and 9 (docs/review/base-climate/star-anchor-audit/README.md).
   PW-798 A first, then the anchor, and re-measure from offset 0.
 - [ ] hothouse and cold re-checked at L6 (1 Gyr, 2 draws each), offsets updated in make.py, README and coordination.md
 - [ ] water-world offset re-measured after PW-798 and the anchor
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-recipe-offsets-after-anchor.md (found by star-anchor-audit).

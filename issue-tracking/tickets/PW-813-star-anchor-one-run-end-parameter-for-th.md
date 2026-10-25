@@ -1,4 +1,5 @@
 ---
+id: PW-813
 title: "Star anchor: one run-end parameter for the star and the plant calendar, set by every direct Simulation caller and stored for replays; guard runs longer than the star's age; an extension keeps the anchor"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-807, PW-557]
 refs: [planet/tectonics/params.py, planet/timeline.py, tests/helpers.py, tools/scorecard.py, tools/ice_diag.py, tools/sealevel.py, tools/supercontinent.py, docs/review/base-climate/star-anchor-audit/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -39,3 +42,6 @@ re-anchoring would change the run's past.
 - [ ] one run-end field used by star and flora; direct callers set it
 - [ ] T > 4570 guarded
 - [ ] PW-557 note added on intake
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-run-end-param-star-and-flora.md (found by star-anchor-audit).

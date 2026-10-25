@@ -1,4 +1,5 @@
 ---
+id: PW-815
 title: "Star anchor: re-pick star_brightening (0.45 was tuned on the old from-age-0 curve; anchored it gives +7.6 C per Gyr raw, full Gough +16.9) and remove star_age"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: star-anchor-audit
 blocked_by: []
 relates: [PW-791, PW-780, PW-789, PW-761]
 refs: [planet/tectonics/params.py, planet/tectonics/earth.py, docs/review/base-climate/star-anchor-audit/]
+created: 2026-10-24
+updated: 2026-10-24
 ---
 
 ## Description
@@ -45,3 +48,6 @@ Lean C. Measure the anchored star alone before deciding on the thermostat, as PW
 way (no backward compatibility): the anchor plus the ruled optional "future offset" replace it.
 - [ ] rate re-picked with numbers; owner told of the conflict between the two rulings
 - [ ] star_age removed; params comment rewritten
+
+## Updates
+- 2026-10-24: Created from inbox draft draft-star-rate-after-anchor.md (found by star-anchor-audit).
