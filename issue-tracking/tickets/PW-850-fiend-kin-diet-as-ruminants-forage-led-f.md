@@ -20,4 +20,5 @@ updated: 2026-10-25
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner: fix the fantasy thing to be more realistic; grain either a no-go for ruminants or an evolved trait near agriculture, as long as they can be fed. Coordinator note: real ruminants do eat grain if adapted gradually (acidosis comes from sudden high-grain diets), so 'grain in moderation' is the realistic default. Relates PW-793, PW-800.
 
 ## Updates
+- 2026-10-25: Owner 2026-10-25: 'love it, ship it' - forage-led farming (legumes, roots, leafy fodder), grain in moderation, no dairy.
 - 2026-10-25: Created.

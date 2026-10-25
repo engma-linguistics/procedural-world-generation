@@ -5,6 +5,8 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 **Convention:** write new rulings in the ticket's Updates as `RULING (owner): ...` or `RULING (coordinator): ...`, then add a line here. Rows below before 2026-10-25 were seeded by grepping "Owner 20xx" in ticket Updates; the ticket has the full text.
 
 ## Standing process rules (owner)
+- 2026-10-25 · Framing (owner) · drop the 'fiend' angle: seven_meals' antelope-kin and cervid-kin are the closest equivalent to tieflings; dnd tieflings are a demonic/abyssal template on humans from a historical event in the last ~10 kyr; forage-led farming, grain in moderation, no dairy approved · PW-858, PW-850
+- 2026-10-25 · Greenhouse gases (owner) · track CH4/N2O separately from CO2 (climate reads all, plants read CO2) - an important v1 thread · PW-859
 - 2026-10-25 · Feedback (owner) · cultures/civs, not species, are the unit of the culinary book; settlements mostly one species outside cities (design talk pending) · PW-856
 - 2026-10-25 · Fantasy realism (owner) · hybrids follow real divergence times; fiend-kin are ruminants, so grain only as real ruminants can take it (coordinator: in moderation) or via an evolved trait; mostly farmers · PW-850, PW-851
 - 2026-10-25 · Finished worlds (owner) · end temperatures within what modern humans lived through (coordinator: true mean ~-6..+3 C vs pre-industrial) and interglacial land ice near Earth's, not none and not ice-age · PW-812
