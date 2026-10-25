@@ -252,6 +252,35 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     assert hits == 0
 
 
+def test_newcomers_and_expansive_peoples_press_into_held_country():
+    """PW-869: a newcomer feels less competition (and is not displaced) during its founding window; an expansive people with little of
+    its country filled presses on; a homebody or a people that has filled its country does neither. Before, the factor was always 1."""
+    f = H.pioneer_factors
+    assert f(None, 0.9, 0, 1000) == (1.0, 0.0)  # (a deep step: nothing)
+    q0, pio0 = f(0.0, 0.25, 1000, 1000)  # (a homebody, just arrived, filled: only the founding window)
+    assert pio0 == 1.0 and q0 == pytest.approx(1 - H.PIONEER_Q)
+    q1, pio1 = f(H.PIONEER_KYR, 0.25, 1000, 1000)
+    assert pio1 == 0.0 and q1 == 1.0
+    assert 1 - H.PIONEER_Q < f(H.PIONEER_KYR / 2, 0.25, 1000, 1000)[0] < 1.0  # (the window ramps back)
+    young = f(100.0, 0.7, 10, 1000)[0]  # (long settled, expansive, a sliver of its country: presses)
+    assert young == pytest.approx(1 - H.EXPANSE_PRESS * (1 - 10 / (H.EXPANSE_FILL * 1000)))
+    assert f(100.0, 0.7, 10, 1000)[0] < f(100.0, 0.5, 10, 1000)[0] < f(100.0, 0.4, 10, 1000)[0] == 1.0  # (the more expansive, the more)
+    assert f(100.0, 0.7, int(H.EXPANSE_FILL * 1000), 1000)[0] == 1.0  # (filled: no more pressing)
+
+
+def test_rafts_and_dugouts_give_coastal_peoples_an_early_rung():
+    """PW-869: from RAFT_KYR a people with a sea share of 0.1 crosses ~100 km gaps; before it, and below the share, only the drift raft.
+    Animals do not ride in them."""
+    from planet.lineages import animal_defs as AD
+    from planet.lineages import crossing as C
+    sailor = SP.Lineage("s", sea_share=0.6)
+    reach = lambda ln, t: dict((w, L) for w, _, L in C.modes(ln, t)).get("seafaring")  # noqa: E731
+    assert reach(sailor, 130.0) is None and reach(sailor, 80.0) == 120.0 and reach(sailor, 50.0) == 300.0 and reach(sailor, 5.0) == 1500.0
+    assert reach(SP.Lineage("w", sea_share=0.05), 80.0) is None  # (a share under 0.1: no rafts)
+    assert AD.craft_for(0, 80.0) is None and AD.craft_for(2, 80.0) is None  # (no animal rides a raft)
+    assert [c[0] for c in AD.craft_ladder()][0] == "raft or dugout"
+
+
 def test_closed_country_keeps_peoples_apart(faketz):
     """Competition rises toward exclusion where the contact value is low (crossing.corridor)."""
     from planet.lineages import crossing as C

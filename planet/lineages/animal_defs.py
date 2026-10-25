@@ -147,7 +147,8 @@ REAL_IDS = tuple(a.id for a in TABLE if not a.fantasy)
 # a sailing ship. Before them only drift rafts, which carry no animals.
 def craft_ladder() -> tuple[tuple, ...]:
     from . import spec as SP
-    return (("canoe or outrigger", SP.CANOES_KYR, 300.0, 0, 0.02),
+    return (("raft or dugout", SP.RAFT_KYR, 120.0, -1, 0.1),  # (people only: no animal rides in one, PW-869)
+            ("canoe or outrigger", SP.CANOES_KYR, 300.0, 0, 0.02),
             ("planked boat", SP.BOATS[3], 1500.0, 1, 0.2),
             ("sailing ship", SP.LATE_SEA_KYR, 2500.0, 2, 0.3))
 

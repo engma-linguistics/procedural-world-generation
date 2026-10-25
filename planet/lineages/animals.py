@@ -375,5 +375,5 @@ class Animals:
                 dairy[l.id] = {"lactase_share": round(lac, 2), "milks_share": round(milks, 2), "animals": [i for _, i in sorted(best, reverse=True)],
                                "dairy_share": round(milks * max(b for b, _ in best), 3)}
         return {"mode": h.tree.mode, "stocks": stocks, "dairy": dairy,
-                "craft": [{"name": n, "since_kyr": s, "reach_km": r, "carries_up_to": ["dogs and fowl", "sheep, goats", "horses and cattle"][b], "sea_share_needed": need}
+                "craft": [{"name": n, "since_kyr": s, "reach_km": r, "carries_up_to": ["people only", "dogs and fowl", "sheep, goats", "horses and cattle"][b + 1], "sea_share_needed": need}
                           for n, s, r, b, need in craft_ladder()]}

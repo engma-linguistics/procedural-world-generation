@@ -45,6 +45,11 @@ NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within 
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
 ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
+PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
+PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
+EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
+EXPANSE_FROM, EXPANSE_SPAN = 0.4, 0.3  # ...presses into country others hold: the competition it feels falls by up to this x its expansiveness x the unfilled
+EXPANSE_FILL = 0.5  # share (1 - its range / (this x the country with K >= 0.3)); alone the founding window left the elves at 2 of 8 tries with 500 cells
 PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted is this much likelier (x1 + this) on the partner's own coast (PW-861)
 MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
@@ -162,6 +167,22 @@ def _isin(cl, ids):
 def needs_chains(tree: SP.Tree) -> bool:
     return any(w.want == "island_chain" for w in tree.wishes) or any(
         "island_chain" in (*l.prefers, *l.avoids) for l in tree.lines.values())
+
+
+def pioneer_factors(age_kyr: float | None, explore: float, held_cells: int, potential_cells: int) -> tuple[float, float]:
+    """(the multiplier on the competition a people feels, the share of its founding window left) (PW-869). A newcomer, `age_kyr` since it
+    started (None: a deep step, no pioneering), feels PIONEER_Q less competition at first, ramping back over PIONEER_KYR, and its founders are
+    not displaced meanwhile (the second number, 1 -> 0). An expansive people (`explore` from EXPANSE_FROM) that holds a small share of the
+    country it could hold (K >= 0.3: `potential_cells`; full at EXPANSE_FILL of it) presses into country others hold: that much less."""
+    if age_kyr is None:
+        return 1.0, 0.0
+    pio = max(0.0, 1.0 - age_kyr / PIONEER_KYR)
+    m = 1.0 - PIONEER_Q * pio
+    expansive = min(1.0, max(0.0, (explore - EXPANSE_FROM) / EXPANSE_SPAN))
+    if expansive > 0:
+        unfilled = min(1.0, max(0.0, 1.0 - held_cells / (EXPANSE_FILL * max(1, potential_cells))))
+        m *= 1.0 - EXPANSE_PRESS * expansive * unfilled
+    return m, pio
 
 
 def _soft(x, lo, hi, soft):
@@ -1009,13 +1030,16 @@ class History:
                         if herd > 0:  # herders hold good pasture against settled neighbours (spec.WAY_PRESS, PW-756)
                             q = q * (1 - (1 - press[1]) * herd * np.clip(self.goods[press[0]][idx], 0, 1))
                     q = q * l.trait("push", 1.0)
+                    qm, pio = pioneer_factors(None if deep else self.started[l.id] - step.ago, l.demo("explore"),
+                                              int((self.p[k] >= EST).sum()), int((K >= 0.3).sum()))
+                    q = q * qm  # (a newcomer takes room as a first settler does; an expansive people with room to grow presses on, PW-869)
                     f = np.clip(1 - MIX_DROP * mix * self._mixf(l) * c, 0.05, 1)
                     room = np.zeros(g.n)
                     room[idx] = np.clip(K[idx] - f * q, 0, None)
                     over = self.p[k] > room  # displacement: held above its room, a people dwindles there
                     if over.any():
                         held = (self.p[k] >= EST).sum() * self.cell_mkm2
-                        r = (1 - np.exp(-step.dt / TAU_KYR)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1)
+                        r = (1 - np.exp(-step.dt / TAU_KYR)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1) * (1.0 - pio)  # (a newcomer's founders are not displaced, PW-869)
                         self.p[k][over] -= r * (self.p[k][over] - room[over])
                         self.p[k][self.p[k] < EST] = 0
                 speed = l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
