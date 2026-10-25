@@ -55,6 +55,10 @@ MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons p
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
+INVADE, INVADE_FLOOR = 0.5, 0.3  # frontier invasion (PW-887): on the cells touching its range, a rival thinner than one weighs exp(-INVADE x ln(own density / its))
+# (a small demographic edge at the front displaces a thinner people, the modern-human / Neanderthal mechanism: Banks 2008, Kolodny & Feldman 2017), at least INVADE_FLOOR
+CROWD_HOP, CROWD_ENTER = 2.0, 0.5  # crowding drives exploration (PW-887): a people that loses share of its held country to rivals crosses water (the crossing rate x 1 + CROWD_HOP x crowd,
+# within its craft: crossing.modes) and enters poor country (the entry pressure a0 -> a0 + (1 - a0) x CROWD_ENTER x crowd)
 DENSITY_PUSH, DENSITY_CLIP = 0.1, (0.7, 1.4)  # competition felt from a rival x (its density / one's own)^0.1, within
 # 0.7..1.4: numbers tell a little where peoples share land (farmers at 10 /km² press on foragers at 2 x1.17; giants
 # at 0.005 dent others' room x0.7 and feel theirs x1.4). Mild: at 0.25, 0.5..2, the elves and orcs lost
@@ -183,6 +187,20 @@ def pioneer_factors(age_kyr: float | None, explore: float, held_cells: int, pote
         unfilled = min(1.0, max(0.0, 1.0 - held_cells / (EXPANSE_FILL * max(1, potential_cells))))
         m *= 1.0 - EXPANSE_PRESS * expansive * unfilled
     return m, pio
+
+
+def invasion_weights(dens: np.ndarray, k: int) -> np.ndarray:
+    """What each rival j weighs in line k's competition on the cells next to k's own range: 1 for a rival as dense or denser than k,
+    exp(-INVADE x ln(dens_k / dens_j)) (not under INVADE_FLOOR) for a thinner one. Every people by the same rule (PW-887)."""
+    adv = np.log(np.maximum(dens[k], 1e-9) / np.maximum(dens, 1e-9))
+    return np.clip(np.exp(-INVADE * np.maximum(adv, 0.0)), INVADE_FLOOR, 1.0)
+
+
+def crowding(K: np.ndarray, room: np.ndarray, held: np.ndarray) -> float:
+    """How crowded a people is, 0..1: the mean share of its habitat (K) over its held cells that rivals take (1 - room / K)."""
+    if not held.any():
+        return 0.0
+    return float(np.clip(1.0 - room[held] / np.maximum(K[held], 1e-9), 0.0, 1.0).mean())
 
 
 def _soft(x, lo, hi, soft):
@@ -1009,6 +1027,7 @@ class History:
                         self._diverge(l, k, env, tags, step)
                         self._sync(self.idx[l.group_of])  # (it moved some of its people's range over to the group)
                         self._div_dt[k] = 0.0
+                crowd = 0.0
                 if l.overlay:  # template: within its hosts, no competition
                     room = K
                 else:
@@ -1022,6 +1041,13 @@ class History:
                     J = np.array([j for j in self._rivals[k] if self.active[L[j].id]], np.int64)
                     c = corr[idx]
                     q = rivals_load(self.p, J, self.alpha[k], self.terr[k], idx, c)
+                    if INVADE > 0 and not deep and not l.marine and len(J):
+                        # frontier invasion: along the contact line a denser people weighs its thinner rivals less (PW-887)
+                        front = self._dilate(self.p[k] >= EST, 1)[idx]
+                        if front.any():
+                            w = invasion_weights(self.dens, k)
+                            fi = np.flatnonzero(front)
+                            q[fi] = rivals_load(self.p, J, self.alpha[k] * w, self.terr[k] * w, idx[fi], c[fi])
                     if "agricultural" in l.traits and step.ago <= FARM_KYR:
                         q = q * np.where(tags["farmland"][idx], 0.5, 1.0)  # farmers push into others' fertile lowland
                     press = SP.WAY_PRESS.get(l.way) if l.way and self.animals is not None and self.goods is not None else None
@@ -1042,6 +1068,8 @@ class History:
                         r = (1 - np.exp(-step.dt / TAU_KYR)) * np.clip(held / REFUGE_MKM2 - 1, 0, 1) * (1.0 - pio)  # (a newcomer's founders are not displaced, PW-869)
                         self.p[k][over] -= r * (self.p[k][over] - room[over])
                         self.p[k][self.p[k] < EST] = 0
+                    if not deep and not l.marine:
+                        crowd = crowding(K, room, self.p[k] >= EST)
                 speed = l.speed_kmyr * l.trait("speed", 1.0) * (2.0 if "agricultural" in l.traits and step.ago <= FARM_KYR else 1.0)
                 if self.animals is not None and not l.marine:  # riders and herders spread faster (animals.py)
                     speed *= self.animals.speed_mult(k)
@@ -1060,6 +1088,7 @@ class History:
                     # into marginal land (K < 0.3) the pressure keeps a + (1 - a) K / 0.3, a = 0.25 + 0.5 explore:
                     # explorers push into poor country, homebodies stay in good
                     a0 = EXPLORE_MARGIN[0] + EXPLORE_MARGIN[1] * l.demo("explore")
+                    a0 += (1 - a0) * CROWD_ENTER * crowd  # (a crowded people is driven into poor country, PW-887)
                     enter = np.where(ice, 0.6 if "flies" in l.traits else 0.3, a0 + (1 - a0) * np.minimum(1, K / 0.3))
                     land_any = env["land"]
                     if l.marine:
@@ -1083,7 +1112,7 @@ class History:
                         step.ago <= SP.LATE_SEA_KYR and short_hop(l)) else "strait"
                     self.cross.note(l.id, self.p[k] >= EST, step.ago, how, self.events, l.label())
                     # long crossings, looked at about once a kyr (the chance is per kyr; centuries add up)
-                    self._hop_dt[k] += step.dt
+                    self._hop_dt[k] += step.dt * (1.0 + CROWD_HOP * crowd)  # (a crowded people sets out more often, within its craft, PW-887)
                     landings = []
                     if self._hop_dt[k] >= HOP_EVERY_KYR or step.epoch == "deep":
                         landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self._lrng[l.id], EST,
