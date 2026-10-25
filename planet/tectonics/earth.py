@@ -60,6 +60,32 @@ def star_forcing(p, t: float) -> float:
     return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * 238.0 * rel)
 
 
+WPM2_PER_LUM = 238.0  # W/m2 of forcing per unit relative luminosity (S0 / 4 (1 - 0.3))
+STAR_ICEHOUSE_SL = -20.0  # m: an icehouse holds at least this much sea level as land ice (tools/ice_criteria's)
+
+
+def star_control(sim) -> float:
+    """The star thermostat (PW-791), a world-builder's CONTROL, not physics: C of forcing added to the star's.
+    Causal and slow: it follows the planet's own running icehouse share (an e-folding mean over star_window Myr of
+    whether land ice holds >= 20 m of sea level) and, from star_control_from Myr, moves the star's output by
+    star_gain C per Myr per unit of share outside [star_ice_lo, star_ice_hi]: dimmer for a planet that has gone
+    without ice (never-ice, hellhole), brighter for one that stays iced (icebox). Inside the band it holds.
+    Bounded to +-star_control_max of the luminosity. It never sets CO2: the weathering thermostat answers the
+    star's change, keeping more CO2 under a dimmer star. Off (0) unless params.star_thermostat."""
+    p = sim.params
+    if not p.star_thermostat:
+        return 0.0
+    iced = 1.0 if sim.sea_ice <= STAR_ICEHOUSE_SL else 0.0
+    if sim.ice_share is None:  # (the run's start: the middle of the band, so nothing acts on an empty memory)
+        sim.ice_share = 0.5 * (p.star_ice_lo + p.star_ice_hi)
+    sim.ice_share += (1 - np.exp(-sim.dt / p.star_window)) * (iced - sim.ice_share)
+    if sim.t >= p.star_control_from:
+        off = min(sim.ice_share - p.star_ice_lo, 0.0) + max(sim.ice_share - p.star_ice_hi, 0.0)
+        bound = p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * p.star_control_max
+        sim.star_ctl = float(np.clip(sim.star_ctl + p.star_gain * off * sim.dt, -bound, bound))
+    return sim.star_ctl
+
+
 def target_fraction(p, t: float) -> float:
     """Share of the surface the continents are steered toward at time t."""
     if p.continental_start < 0:
@@ -199,7 +225,8 @@ def global_temperature(sim, growth, newc, rng):
 
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
+    target = (sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
+              + star_control(sim))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
                              -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)

@@ -84,6 +84,19 @@ class Params:
     # Sun-like 1.0 warms 1 Gyr runs ice-free (v1-finish-7). A chosen star, within the plausible range.
     star_brightening: float = 0.45
     star_age: float = 0.0  # Myr: the star's age at the run's start (0: the planet is as young as its star)
+    # A CONTROL, NOT PHYSICS (PW-791; earth.star_control): the world-builder's star thermostat, on for the Earth-like
+    # preset. It dims or brightens the star slowly when the planet's running icehouse share (the share of the last
+    # ~star_window Myr with land ice holding >= 20 m of sea level) leaves star_ice_band, so a run stays in a
+    # "life can live here" state (neither never-ice nor icebox nor hellhole). It moves the star's output only;
+    # CO2 stays the carbon cycle's outcome (a dimmer star lets the weathering thermostat keep more of it).
+    # Bounded to +-star_control_max of the star's luminosity; it acts from star_control_from Myr.
+    star_thermostat: bool = False
+    star_ice_lo: float = 0.10  # running icehouse share below which the star dims ...
+    star_ice_hi: float = 0.35  # ... and above which it brightens (Earth's Phanerozoic: ~0.25-0.3)
+    star_window: float = 100.0  # Myr: the running share's e-folding memory
+    star_gain: float = 0.2  # C of forcing per Myr per unit of share outside the band (0 share: -2 C per 100 Myr)
+    star_control_max: float = 0.04  # +- share of the star's luminosity (+-7.7 C of forcing at co2_sensitivity 3)
+    star_control_from: float = 200.0  # Myr: no control before (the made-up start settles)
     climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3

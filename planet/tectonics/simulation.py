@@ -59,6 +59,7 @@ class Simulation:
         "dT",  # C: global temperature offset from today's Earth
         "drift",  # C: its random part
         "co2",  # ln of the CO2 stock against the reference balance (earth.co2_stock)
+        "star_ctl", "ice_share",  # C of the star thermostat's forcing, and its running icehouse share (earth.star_control)
         "rates",  # [source, sink] of the last step (None before the first step)
         "refs",  # the reference [source, sink]: learnt until earth.REF_FREEZE, then kept (None before the first step)
         "depth_ridge",  # m: mean ocean depth, smoothed over params.ridge_time (None before the first step)
@@ -132,6 +133,7 @@ class Simulation:
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
         self.dT, self.drift, self.co2, self.rates, self.refs = 0.0, 0.0, 0.0, None, None
+        self.star_ctl, self.ice_share = 0.0, None
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
         self.sea_level, self.sea_ice, self.sea_tect = 0.0, 0.0, 0.0
