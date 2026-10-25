@@ -7,7 +7,7 @@ parent: PW-244
 milestone: v1
 subsystem: climate
 effort: m
-impact: critical
+impact: high
 found_by: owner-feedback-2026-10-25
 blocked_by: []
 relates: [PW-828]
