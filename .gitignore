@@ -21,3 +21,4 @@ data/
 # tools/ice_diag.py --moments output (tools/tz_mean.py suite), regenerable
 ice_v2_moments/
 ice_diag_out/
+briefs/
