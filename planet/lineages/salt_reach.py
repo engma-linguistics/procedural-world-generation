@@ -20,6 +20,7 @@ TRADE_CAP_KM = 450.0  # cost-km: salt is not traded further than this from its s
 RIVER_FLOW = 2.0  # flow (cells of runoff) that counts as a river for the route (as seafood.LICK_FLOW)
 UNREACHED = 5000.0
 ROUTE = 1.3  # as seafood.ROUTE
+MINED_CAP = 1.6  # salt a mining people works (mining.py) is traded this much further (cost-km) than the salt of unworked beds: a mine is a salt works
 
 
 @njit(cache=True)
@@ -71,9 +72,11 @@ def contact_zone(g, land: np.ndarray, peoples: np.ndarray, sea_lines: np.ndarray
 
 
 def reach(g, land: np.ndarray, own_km: np.ndarray, flow: np.ndarray, zone: np.ndarray, traded_km: float,
-          cap_km: float = TRADE_CAP_KM) -> dict:
+          cap_km: float = TRADE_CAP_KM, mined: np.ndarray | None = None) -> dict:
     """Per cell: `km` (cost-distance to salt; UNREACHED beyond the cap or where a landmass has no salt) and `how`
-    (0 not land, 1 own: within `traded_km` on foot, 2 traded: beyond it but within the cap, 3 cut off)."""
+    (0 not land, 1 own: within `traded_km` on foot, 2 traded: beyond it but within the cap, 3 cut off).
+    `mined`: cells that are a salt mine (a source worked by a mining people): their salt is traded MINED_CAP x further, and
+    `gain` marks the cells that are traded only thanks to them."""
     src = np.flatnonzero(land & (own_km == 0))
     cost = np.where(land, 1.0, 0.0)
     cost = np.where(land & zone, TRADE_COST, cost)
@@ -83,4 +86,11 @@ def reach(g, land: np.ndarray, own_km: np.ndarray, flow: np.ndarray, zone: np.nd
     km = np.where(land & (km <= UNREACHED - 1.0), km, UNREACHED)
     how = np.zeros(g.n, np.int8)
     how[land] = np.where(own_km[land] <= traded_km, 1, np.where(km[land] <= cap_km, 2, 3))
-    return {"km": km, "how": how}
+    gain = np.zeros(g.n, bool)
+    if mined is not None and (mined & land & (own_km == 0)).any():
+        msrc = np.flatnonzero(mined & land & (own_km == 0))
+        km_m = _spfa(msrc.astype(np.int64), cost, g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), hop_km, UNREACHED - 1.0)
+        gain = land & (how == 3) & (km_m <= cap_km * MINED_CAP)
+        how[gain] = 2
+        km = np.where(gain, km_m, km)
+    return {"km": km, "how": how, "gain": gain}

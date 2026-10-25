@@ -426,6 +426,17 @@ elev_m = [100, 1800]
 prefers = ["hills"]
 traits = ["subterranean", "miner"]
 
+[[lineage]]  # the occasional dwarves of the salt: where rock-salt beds (evaporite) lie near the surface they work them (Hallstatt, Wieliczka, Khewra), with ore where it lies near (PW-797)
+id = "salt_dwarf"
+name = "salt dwarves"
+origin = "group"
+group_of = "dwarf"
+at = "8 kyr"
+density = 5
+elev_m = [0, 2500]
+rain_mm = [100, 1500]  # (evaporites lie in dry basins: the salt dwarves cope with the arid foothills the other dwarves leave, like the Salt Range)
+traits = ["subterranean", "miner"]
+
 [[lineage]]
 id = "archaic_human"
 real = true  # (kept in the real-world mode)
@@ -1048,6 +1059,12 @@ pull = 0.75
 by = "hill_dwarf"
 good = "hills"
 pull = 0.6
+
+[[use]]  # salt dwarves hold the rock-salt beds (evaporite): off them they are a thin remnant (strict)
+by = "salt_dwarf"
+good = "salt_rock"
+pull = 0.8
+strict = true
 
 [[use]]
 by = "fire_giant"

@@ -55,6 +55,7 @@ GOODS = {
     "seals": ("seal haul-outs", False),
     # salt and the sea's food (PW-732; seafood.py)
     "salt": ("salt (rock, lakes, brine springs, sea pans)", True),
+    "salt_rock": ("rock salt (evaporite beds near the surface: salt mines)", True),
     "fish": ("fisheries (shelf seas, river runs, big lakes)", False),
     "shellfish": ("shellfish shores", False),
     "sea_mammals": ("seal and whale coasts", False),
@@ -67,7 +68,7 @@ GOODS = {
 }
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
 DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
-             "volcanic", "salt"}
+             "volcanic", "salt", "salt_rock"}
 _ORES = {"gold": ("orogenic_au", "epithermal_au", "placer_au"), "iron": ("bif_fe",),
          "copper": ("porphyry_cu", "vms", "sed_pbzn"), "tin": ("sn_w", "placer_sn"), "gems": ("diamond", "gem_meta"),
          "mithril": ("x_mithril", "x_adamant", "x_star_iron"), "coal": ("coal",)}
