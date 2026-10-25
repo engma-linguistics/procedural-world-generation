@@ -107,11 +107,22 @@ class Params:
     star_gain: float = 0.2  # C of forcing per Myr per unit of share outside the band (0 share: -2 C per 100 Myr)
     star_control_max: float = 0.04  # +- share of the star's luminosity (+-7.7 C of forcing at co2_sensitivity 3)
     star_control_from: float = 200.0  # Myr: no control before (the made-up start settles)
-    # C: size of the slow random wander of the carbon cycle (PW-819: noise on the carbon source, outgassing and
-    # all the burial/ocean details the model doesn't have, not on the temperature), as the warming it gives at
-    # the balance (earth.drift_source: 3 C is +-0.44 e-folds of the source, ~x1.55; GEOCARB's degassing factor
-    # alone spans ~0.75-1.75 over the Phanerozoic)...
-    climate_drift: float = 3.0
+    # C: size of the slow random wander of the carbon cycle (PW-819: noise on the carbon source, not on the
+    # temperature), as the warming it gives at the balance (earth.drift_source: 1 C is 0.12 e-folds of the
+    # source). It stands only for the source terms the model lacks; the ridges' and arcs' outgassing is explicit
+    # (its own sd(ln) 0.2-0.45 after 300 Myr, already GEOCARB's f_G spread). The lacking terms, sized from the
+    # literature (docs/review/base-climate/v1-finish-13/README.md), add in quadrature to sd(ln) ~0.10:
+    #  - net organic burial (organic C buried minus weathered and degassed): it is O2's source, so the O2
+    #    record bounds it. GEOCARBSULF's Phanerozoic O2 (~15-30%, Berner 2006, 2009; +-30% envelope, Royer et
+    #    al. 2014) is +-~7e18 mol of 38e18 (Berner 2004); held over the drift's 40 Myr that is ~0.18e18 mol/Myr,
+    #    ~3% of the silicate weathering flux (~6.7e18 mol/Myr, Berner & Kothavala 2001); x2 for pyrite burial
+    #    offsetting O2 (Berner & Raiswell 1983): sd(ln) ~0.05. (Royer et al. 2014: the carbonate d13C, which
+    #    drives the organic burial, is among the top O2 drivers and not among the CO2 ones.)
+    #  - ocean chemistry: carbonate on the subducting plates (GEOCARB's f_C, 0.75 -> 1 as pelagic carbonate
+    #    spread, Wilkinson & Walker 1989; Berner 2004), a ln range of 0.29: sd(ln) ~0.08.
+    # 0.8 C is sd(ln) 0.096. Was 3 C (sd(ln) 0.36), which also counted the outgassing the model has explicitly.
+    # Not sized to any end-pCO2 band...
+    climate_drift: float = 0.8
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3
     # (IPCC AR6 2.5-4; the land ice's albedo is its own term); 3 C per e-fold before PW-646 (2.1 per doubling)
