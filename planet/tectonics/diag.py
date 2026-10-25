@@ -70,14 +70,21 @@ class Recorder:
         it (w_supply, model units, as sink_raw), the supply-weighted plant factor (w_plant) and the
         temperature factor weighted by supply and plants (w_temp); and, to see what the factors read, the
         supply-weighted local temperature (w_T, C) and runoff (w_q, mm/yr) and the mean erosion rate of
-        the eroding land (w_rate, km/Myr = mm/yr)."""
+        the eroding land (w_rate, km/Myr = mm/yr). Also the sink's bare-ground share (w_bare), its CO2
+        log-slope (w_a) and, in the spin-up, the supply-weighted plant factor of the reference's potential
+        vegetation (w_pot)."""
         from . import earth
         land = sim.land()
-        w, supply, warm, plants = earth.weathering(sim, land)
+        w, supply, warm, plants, bare = earth.weathering(sim, land)
         s, sp = float(supply.sum()), float((supply * plants).sum())
         free = land & (sim.ice <= 0)
         out = {"w_area": round(float(free.mean()), 4), "w_supply": s / sim.scale**2,
                "w_plant": round(sp / s, 4) if s > 0 else None, "w_temp": round(float(w.sum()) / sp, 4) if sp > 0 else None}
+        if w.sum() > 0:  # the sink's share on bare ground and its CO2 log-slope there (earth.co2_law, v1-finish-11)
+            out["w_bare"] = round(float(bare.sum() / w.sum()), 4)
+            out["w_a"] = round(earth.co2_slope(float(np.exp(sim.co2)), out["w_bare"]), 4)
+        if sim.npp_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
+            out["w_pot"] = round(float((supply * earth.plant_factor(sim.npp_pot)).sum()) / s, 4)
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None

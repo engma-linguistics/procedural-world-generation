@@ -70,6 +70,8 @@ class Simulation:
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
         "npp",  # g C/m2/yr per cell
+        "npp_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
+        # balance's CO2) the weathering reference is learnt with (earth.global_temperature; None after it)
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
@@ -144,6 +146,7 @@ class Simulation:
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
+        self.npp_pot = self.pot_frac = self.pot_lai = None
         self.veg_type = np.zeros(n, np.uint8)
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6

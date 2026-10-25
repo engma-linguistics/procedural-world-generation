@@ -56,6 +56,10 @@ PCO2_BALANCE = 500.0  # ppm: the pCO2 a planet's carbon cycle rests at, its own 
 # i.e. most never glaciate (32 L6 seeds, docs/review/base-climate/v1-finish/).
 
 
+RAIN_PER_C = 0.03  # global mean rain's growth per C of dT (compute's wet; ~2-3%/K in GCMs, Held & Soden 2006: the
+# upper end), which the weathering sink's runoff factor also reads (tectonics/earth.py, WEATHER_RUNOFF)
+
+
 def pco2(co2: float) -> float:
     """The CO2 stock co2 (ln X, X against the planet's balance PCO2_BALANCE) as a partial pressure, ppm: what
     plants and the temperature term both read (PW-646)."""
@@ -2247,7 +2251,7 @@ def compute(grid: Grid, elev: np.ndarray, dT: float = 0.0, tilt: float = 23.4,
     s_in = [_season_inputs(grid, elev, tm + dt, sst_jul, vq_jul, shift, t_sl_jul, tune, tracks[0], surf, ocean),
             _season_inputs(grid, elev, tm - dt, sst_jan, vq_jan, -shift, t_sl_jan, tune, tracks[1], surf, ocean)]
     fb = vegetation_feedbacks(land & (ice <= 0), veg, tune)
-    wet = np.exp(0.03 * dT)  # a warmer world is a wetter one
+    wet = np.exp(RAIN_PER_C * dT)  # a warmer world is a wetter one
     # The air takes up water from the open sea and from the land as much as
     # the land's water balance evaporates (on these first-pass temperatures;
     # the kernel's own mm/yr, for that and its wet-cool / dry-hot showers,

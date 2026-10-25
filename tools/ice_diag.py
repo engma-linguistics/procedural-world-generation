@@ -117,7 +117,7 @@ def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
     """The CO2 thermostat's gain after the spin-up (PW-572), by regression over the steps:
       g          d ln(sink)/dT, holding the land share fixed (sea level and tectonics move the land
                  independently of the climate; the review's thermo2): how hard the sink answers warmth
-      fb         the CO2 warming per C of cooling it gives: co2_sensitivity / ln 2 x g / WEATHER_CO2
+      fb         the CO2 warming per C of cooling it gives: co2_sensitivity / ln 2 x g / the sink's CO2 log-slope
       g_raw      the same slope without the land control
       parts      d ln(part)/dT of each part of the sink (they add up to g_raw): the erosion supply from the
                  ice-free land, the temperature factor, the plant factor (and the saturation's efficiency,
@@ -127,7 +127,10 @@ def gain(d: dict, spinup: float = C.SPINUP) -> dict | None:
       corr_src   the same with the volcanic source's part taken out (CO2 term and dT regressed on ln src)
     None for runs recorded before the sink's parts were logged."""
     from planet.tectonics import Params
-    from planet.tectonics.earth import WEATHER_CO2
+    # the sink's CO2 log-slope (earth.co2_slope, logged as w_a; 0.4 before v1-finish-11's co2_law)
+    WEATHER_CO2 = float(np.nanmedian([r.get("w_a") or np.nan for r in d["steps"] if r["t"] >= spinup] or [0.4]))
+    if not np.isfinite(WEATHER_CO2):
+        WEATHER_CO2 = 0.4
     st = [r for r in d["steps"] if r["t"] >= spinup and r.get("w_supply") and r.get("sink_raw", 0) > 0]
     if len(st) < 20 or "w_temp" not in st[0]:
         return None
