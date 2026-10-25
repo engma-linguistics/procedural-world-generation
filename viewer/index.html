@@ -948,21 +948,26 @@ function cropRows(i, R) {  // the crops known in this frame's cell, and the wild
   if (wild.length) R('place', '', wild.join(', '), { lab: 'wild range of (crops)' });
 }
 // Fuels (planet/lineages/fuels.py, PW-722): what the cell burns to cook, at the present (meta.fuels: the lead fuel and each fuel's share)
+// (PW-845: the same layer on a run's present and on a finished world with a peoples run: fuelSrc gives {F: meta.fuels, A: the layers})
+function fuelSrc() {
+  if (V.kind === 'world') return V.wAnthroRun?.fuels && V.wAnthro?.fuel_lead && worldAnthroOn() ? { F: V.wAnthroRun.fuels, A: V.wAnthro } : null;
+  return V.run?.meta?.fuels && anthroOn() && V.anthro?.fuel_lead ? { F: V.run.meta.fuels, A: V.anthro } : null;
+}
 function fuelColor(i, c) {
-  const L = V.layers, F = V.run.meta.fuels;
+  const L = V.layers, S = fuelSrc();
   if (L.elevation[i] <= 0 && !(L.ice && L.ice[i] > 0)) return c.copy(OCEAN);
   if (L.ice && L.ice[i] > 0) return c.copy(ICE);
-  if (!anthroOn() || !V.anthro.fuel_lead) return c.copy(BARE);
-  const d = V.anthro.fuel_lead[i];
+  if (!S) return c.copy(BARE);
+  const d = S.A.fuel_lead[i];
   if (d === 255) return c.copy(NOBODY);
-  const name = F.names[d];
-  c.set(F.colors[name]);
-  return c.lerp(NOBODY, 0.45 * (1 - V.anthro['fuel_' + name][i] / 100));
+  const name = S.F.names[d];
+  c.set(S.F.colors[name]);
+  return c.lerp(NOBODY, 0.45 * (1 - S.A['fuel_' + name][i] / 100));
 }
 function fuelRows(i, R) {
-  const F = V.run.meta.fuels;
-  if (!F || !anthroOn() || !V.anthro.fuel_lead || V.anthro.fuel_lead[i] === 255) return;
-  const bits = F.names.map((k) => [k, V.anthro['fuel_' + k][i]]).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}%`);
+  const S = fuelSrc();
+  if (!S || S.A.fuel_lead[i] === 255) return;
+  const F = S.F, bits = F.names.map((k) => [k, S.A['fuel_' + k][i]]).filter(([, v]) => v >= 5).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}%`);
   R('place', '', bits.join(', '), { lab: 'fuel (present)', ess: true });
 }
 // Peoples change the land (planet/lineages/landuse.py, PW-662): the run's anthropogenic overlay at the present
@@ -997,11 +1002,14 @@ async function worldAnthroLoad() {
       const a = run.meta?.anthro;
       if (!a || run.meta.cells !== v.n) continue;
       const A = {};
-      await Promise.all(Object.entries(a.layers).map(([k, s]) => fetch(`../runs/${r.dir}/${s.file}`).then((x) => x.arrayBuffer())
-        .then((b) => { A[k] = new Uint8Array(b); })));
+      const fl = run.meta.fuels?.layers || {};  // (the fuels view of the peoples run, PW-845)
+      await Promise.all([...Object.entries(a.layers), ...Object.entries(fl).map(([k, s]) => ['fuel_' + k, s])]
+        .map(([k, s]) => fetch(`../runs/${r.dir}/${s.file}`).then((x) => x.arrayBuffer()).then((b) => { A[k] = new Uint8Array(b); })));
       if (V !== v) return;
-      v.wAnthro = A; v.wAnthroRun = { id: r.id, dir: r.dir, name: r.name, anthro: a };
-      renderSummary(); renderLegend(); paint();
+      v.wAnthro = A; v.wAnthroRun = { id: r.id, dir: r.dir, name: r.name, anthro: a, fuels: run.meta.fuels || null };
+      if (state.wantLayer === 'fuels') state.layer = 'fuels';
+      state.wantLayer = null;
+      renderLayerButtons(); renderSummary(); renderLegend(); paint();
       return;
     } catch (err) { console.warn('peoples run', r.dir, err); }
   }
@@ -1234,6 +1242,7 @@ function availableLayers() {
                                    'fire return', 'stand age', 'plant type');
   if (V.layers.soil) ls.push('soils', ...Object.keys(SOIL_LAYERS));
   if (V.layers.travel) ls.push(...Object.keys(GAME_LAYERS));
+  if (V.wAnthroRun?.fuels) ls.push('fuels');  // (the peoples run's lead fuel, as in its own view: PW-845)
   if (V.layers.flood_ratio) ls.push('river floods');
   for (const [name, k] of Object.entries(HU_LAYERS)) if (V.layers[k] && V.humanUse?.[k]) ls.push(name);
   if (V.layers.resource && V.resLeg) ls.push('resources', 'resource', 'building stone');
@@ -2269,9 +2278,9 @@ function layerNumbers(layer) {  // {arr, key, where} for a ramp layer with one n
 function layerCats(layer) {  // {arr (ids), names, colors} for a categorical layer, fuels included
   const L = V.layers, c = CAT_LAYERS()[layer];
   if (c && L[c[0]] && c[1]?.length) return { arr: L[c[0]], names: c[1].map((e) => e.name || e.code || String(e)), colors: c[1].map((e) => e.color || '#888'), land: true, none: c[0] === 'soil' || c[0] === 'landform' ? 0 : -1 };
-  if (layer === 'fuels' && V.run?.meta?.fuels && V.anthro?.fuel_lead && anthroOn()) {
-    const F = V.run.meta.fuels;
-    return { arr: V.anthro.fuel_lead, names: F.names, colors: F.names.map((k) => F.colors[k]), land: true, none: 255, noneName: 'nobody there' };
+  if (layer === 'fuels' && fuelSrc()) {
+    const { F, A } = fuelSrc();
+    return { arr: A.fuel_lead, names: F.names, colors: F.names.map((k) => F.colors[k]), land: true, none: 255, noneName: 'nobody there' };
   }
   return null;
 }
@@ -2323,7 +2332,7 @@ function tipHtml(i) {
   let main = '';
   if (cat) { const v = cat.arr[i]; main = v === cat.none ? (cat.noneName || 'none') : cat.names[v] || '?'; }
   else if (num) { const v = Number(num.arr[i]); if (Number.isFinite(v)) main = `${fmtNum(v)} ${String(UNITS[layer] || '').split(/[,(:]/)[0].replace(/^class$/, '')}`; }
-  else if (layer === 'fuels' && V.run?.meta?.fuels) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
+  else if (layer === 'fuels' && fuelSrc()) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
   else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') { const t = []; peoplesRows?.(i, (g, k, v, o) => { if (t.length < 2) t.push(v); }); main = t.join(' · '); }
   return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
 }
@@ -2382,9 +2391,9 @@ function renderLegend() {
     el.innerHTML = sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % CROP_COLS.length], 'cultivated and known') +
       `<span class="muted">${h?.fantasy ? `fantasy crop (${V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
   } else if (state.layer === 'fuels') {
-    const F = V.run.meta.fuels;
+    const F = V.kind === 'world' ? V.wAnthroRun.fuels : V.run.meta.fuels;
     el.innerHTML = F.names.map((k) => sw(F.colors[k], F.phrases[k])).join('') + sw('#5a5a52', 'nobody') +
-      `<span class="muted">${anthroOn() ? 'the leading fuel at the present, paler where it is a smaller share' : 'step to the last frame (the present) to see it'}</span>`;
+      `<span class="muted">${V.kind === 'world' ? `the leading fuel of peoples run ${V.wAnthroRun.id}, paler where it is a smaller share (the 'fuel' layer is the land's firewood score, 0-5)` : anthroOn() ? 'the leading fuel at the present, paler where it is a smaller share' : 'step to the last frame (the present) to see it'}</span>`;
   } else if (state.layer === 'land use') {
     el.innerHTML = rampLegend('tree cover', '% wild tree cover (the land as it was)') + sw('#f0b429', 'cropland') + sw('#b9d36a', 'pasture') +
       sw('#c98a3c', 'burned grassland') + sw('#2d6a4a', 'managed woods') + sw('#9c3b2a', 'densely settled (6+ people/km²)') +
@@ -2579,7 +2588,7 @@ function renderLayerButtons() {
   fillPfts();
   fillRes();
   const layers = availableLayers();
-  if (!layers.includes(state.layer)) state.layer = layers[0];
+  if (!layers.includes(state.layer)) { state.wantLayer = state.layer; state.layer = layers[0]; }  // (wantLayer: a layer that arrives later, like a world's fuels, PW-845)
   $('layerSeg').innerHTML = layers.map((l) => `<button data-v="${l}" class="${l === state.layer ? 'on' : ''}"` +
     (LAYER_HINTS[l] ? ` title="${esc(LAYER_HINTS[l] + (UNITS[l] && !HINT_HAS_UNITS.has(l) ? ` Units: ${UNITS[l]}.` : ''))}"` : '') + `>${l}</button>`).join('');
   $('arrowsLbl').style.display = hasLayer('plate') && !V.tz ? '' : 'none';
@@ -3148,7 +3157,7 @@ function cellInfo(i) {
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
   if (V.run?.meta?.phase === 'lineages' && L.peoples) { peoplesRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
-  if (V.kind === 'world' && V.wAnthro && state.anthro !== false) anthroRows(i, R);
+  if (V.kind === 'world' && V.wAnthro && state.anthro !== false) { anthroRows(i, R); fuelRows(i, R); }
   const vl = V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });
   const vegRows = () => {
