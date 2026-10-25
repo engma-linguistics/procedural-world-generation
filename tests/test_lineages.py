@@ -2141,3 +2141,33 @@ def test_crowding_measures_the_share_of_habitat_rivals_take():
     assert H.crowding(K, np.array([0.5, 0.5, 0.25, 0.0]), held) == pytest.approx(0.5)  # (half of every held cell)
     assert H.crowding(K, np.zeros(4), held) == 1.0
     assert H.crowding(K, K, np.zeros(4, bool)) == 0.0  # (no range: nothing)
+
+
+def test_origins_pick_a_landmass_by_habitable_area_to_the_z(faketz):
+    """PW-888: the landmass of an origin is drawn with probability ~ (habitable cells)^z (species-area, z = 0.3), the island
+    keeping a share, a landmass too small to hold a viable founder population drawing none; habitat then picks the cell."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"temp_c": [-20, 40], "rain_mm": [1, 9000]}
+    raw = {"meta": {"seed": 1, "viable_pop": 0}, "lineage": [{"id": "a", "appears": "30 kyr", **base}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    g = h.grid
+    land = ps.fields(0.0, variability=False)["land"]
+    lab, n = g.components(land)
+    sizes = np.bincount(lab[land], minlength=n).astype(float)
+    assert n >= 3 and sizes.min() < 0.1 * sizes.max()  # two continents and an island
+    K = np.where(land, 1.0, 0.0)
+    line = h.tree.lines["a"]
+    score = K * np.exp(np.random.default_rng(3).gumbel(size=g.n))  # (heavy-tailed luck, as _noise)
+    env = {"land": land}
+    picks = np.array([lab[int(np.argmax(h._by_landmass(line, score, K, env)))] for _ in range(1500)])
+    got = np.bincount(picks, minlength=n) / len(picks)
+    want = sizes ** H.SPECIES_AREA_Z / (sizes ** H.SPECIES_AREA_Z).sum()
+    assert np.allclose(got, want, atol=0.05)
+    assert got[np.argmax(sizes)] < 0.6 and (got > 0.03).sum() == n  # (the biggest does not take all; every landmass draws some)
+    # a founder population that the smallest landmass cannot hold: only the others draw
+    h.tree.viable_pop = float(np.sort(sizes)[1] * h.dens[h.idx["a"]] * h.cell_mkm2 * 1e6 * 0.5 * 0.99)
+    few = np.array([lab[int(np.argmax(h._by_landmass(line, score, K, env)))] for _ in range(300)])
+    assert set(np.unique(few)) <= {int(i) for i in np.argsort(sizes)[-2:]}
+    # one qualifying landmass: nothing is drawn
+    one = np.where(lab == np.argmax(sizes), score, 0)
+    assert np.array_equal(h._by_landmass(line, one, K, env), one)

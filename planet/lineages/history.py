@@ -45,6 +45,7 @@ NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within 
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
 ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
+SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (its habitable area)^z, z ~ 0.25-0.35 (the species-area relationship, Rosenzweig 1995, Species Diversity in Space and Time); islands keep some, as isolation drives speciation
 PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
 PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
 EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
@@ -547,6 +548,26 @@ class History:
         self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 0.3, 1))
         return blob
 
+    def _by_landmass(self, line, score, K, env):
+        """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
+        glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would hold a
+        viable founder population (tree.viable_pop, as _viable), draws with probability (habitable area)^SPECIES_AREA_Z; the
+        habitat score then picks the cell within it. Without this the best cell of a heavy-tailed noise field wins wherever it
+        falls, and one small continent held 13-15 peoples. The same rule for every people; nothing is drawn when only one
+        landmass qualifies."""
+        lab, n = self.grid.components(env["land"])
+        suit = (K > EST) & (score > 0) & (lab >= 0)
+        if n < 2 or not suit.any():
+            return score
+        k = self.idx[line.id]
+        cells = np.bincount(lab[suit], minlength=n).astype(float)
+        founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
+        w = np.where(founders >= self.tree.viable_pop, cells, 0.0) ** SPECIES_AREA_Z
+        if np.count_nonzero(w) < 2:
+            return score
+        pick = int(self._lrng[line.id].choice(n, p=w / w.sum()))
+        return np.where(lab == pick, score, 0.0)
+
     def _origin(self, line, step, env, tags, K):
         g, k = self.grid, self.idx[line.id]
         noise = self._noise(line)
@@ -579,6 +600,8 @@ class History:
                                 m = np.where(ok, m, 0.0)
                                 pull = m if pull is None else pull * m
                                 score = score * m
+            if not line.place:
+                score = self._by_landmass(line, score, K, env)
             if line.place:
                 la, lo = np.radians(line.place)
                 c = np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
@@ -629,6 +652,7 @@ class History:
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
+            score = self._by_landmass(line, score, K, env)
             cell = int(np.argmax(score))
             why = ("isolated part of the parent's range" if lab[cell] != big else
                    "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
