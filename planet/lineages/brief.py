@@ -28,10 +28,11 @@ from .. import timeline as T
 from .. import world as W
 from ..geo import R_KM
 from ..grid import shared_grid
+from . import mining as MN
 from . import salt_reach as SR
 from . import spec as SP
 
-BRIEF_VERSION = 7  # 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 8  # 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -248,6 +249,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["mixing_zones"] = zones
     brief["substrate"] = _substrate(ctx, brief["peoples"])
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
+    brief["mining"] = _mining(ctx, i, sel, land, brief)
     brief["trade_reach"] = None
     brief["events"] = _events(ctx, place, era)
     brief["reputation"] = _reputation(ctx, brief)
@@ -460,6 +462,10 @@ def _salt(ctx: Ctx, land: np.ndarray, i: int) -> dict | None:
                         "own_share": round(float((how == 1).mean()), 3), "traded_share": round(float((how == 2).mean()), 3),
                         "cut_off_share": round(float((how == 3).mean()), 3),
                         "traded_km": {"mean": round(float(tkm[how <= 2].mean())) if (how <= 2).any() else None}}
+        gain = rc["gain"][land]
+        if rc["gain"].any():  # PW-797: land that gets salt only because a mining people works the beds
+            out["reach"]["from_mines_share"] = round(float(gain.mean()), 3)
+            out["reach"]["basis"] += f"; salt a mining people works is traded {SR.MINED_CAP:g}x further"
         out["poor"] = bool(out["reach"]["cut_off_share"] >= SALT_POOR_CUT_OFF)
     else:
         out["poor"] = out["poor_on_foot"]
@@ -476,9 +482,53 @@ def _salt_reach(ctx: Ctx, i: int) -> dict | None:
     if G is not None and "_salt_km" in G and W is not None and "flow" in W:
         wl = np.asarray(W["elevation"]) > 0
         zone = SR.contact_zone(ctx.g, wl, ctx.f("peoples", i), _marine_mask(ctx))
-        out = SR.reach(ctx.g, wl, np.asarray(G["_salt_km"], float), np.asarray(W["flow"], float), zone, SALT_TRADED_KM)
+        out = SR.reach(ctx.g, wl, np.asarray(G["_salt_km"], float), np.asarray(W["flow"], float), zone, SALT_TRADED_KM,
+                       mined=MN.worked_salt(G, _miner_cells(ctx, i)))
     ctx._frame_cache[key] = out
     return out
+
+
+def _miner_cells(ctx: Ctx, i: int, k: int | None = None) -> np.ndarray:
+    """Cells (whole grid, frame i) where a line with the miner trait (or line k) leads, is second or is the strongest group (PW-797)."""
+    key = ("miner_cells", i, k)
+    if key not in ctx._frame_cache:
+        ks = [k] if k is not None else [l["index"] for l in ctx.lines if MN.is_miner(l.get("traits")) and not l["overlay"]]
+        out = np.zeros(ctx.g.n, bool)
+        layers = [ctx.f("mix_lead", i), ctx.f("mix_second", i)] + ([ctx.f("groups_best", i)] if "groups_best" in ctx.arr else [])
+        for a in layers:
+            out |= np.isin(a, ks)
+        ctx._frame_cache[key] = out
+    return ctx._frame_cache[key]
+
+
+def _mining(ctx: Ctx, i: int, sel: np.ndarray, land: np.ndarray, brief: dict) -> dict | None:
+    """Mining peoples of the region (PW-797, mining.py): per line with the miner trait (people or group) the work its country gives it
+    (salt, ore, or both), the salt it can sell, what its country lacks (so what it buys back) and the peoples it trades with. The
+    world's own moment (the goods are geology)."""
+    G = ctx.goods
+    if G is None or "salt_rock" not in G or not land.any():
+        return None
+    p = brief["peoples"]
+    partners = [r["id"] for r in p["list"] if not MN.is_miner(ctx.lines[ctx.idx[r["id"]]].get("traits"))]
+    partners += [n["id"] for n in brief["neighbours"]["list"] if n["id"] not in partners and not MN.is_miner(ctx.lines[ctx.idx[n["id"]]].get("traits"))]
+    rows = []
+    for r in p["list"] + p.get("groups", []):
+        l = ctx.lines[ctx.idx[r["id"]]]
+        if l["overlay"] or not MN.is_miner(l.get("traits")):
+            continue
+        w = MN.people_kind(G, land & _miner_cells(ctx, i, l["index"]))
+        if w is None or w["kind"] is None:
+            continue
+        row = {"id": r["id"], "name": r["name"], "kind": w["kind"], "salt_share": w["salt_share"], "ore_share": w["ore_share"]}
+        if "salt" in w["kind"]:
+            row["sells"] = "rock salt (and the cured foods it makes cheap)"
+            row["gets_back"] = w["lacks"] or ["grain, meat, hides and timber from the neighbours' farms and herds (a mining people farms little): the salt pays for it"]
+            row["trades_with"] = partners[:4]
+        rows.append(row)
+    return {"basis": f"lines with the miner trait over the cells where they lead or are second here; a bed is rock salt (good salt_rock) >= {MN.SALT_MIN}, ore a "
+                     f"district (>= {MN.ORE_MIN}) of {', '.join(MN.ORE_GOODS)}; a kind needs {MN.HELD_MIN:.0%} of their cells; the mined salt is traded {SR.MINED_CAP:g}x further than unworked salt",
+            "list": rows,
+            "worked_salt_share_of_land": round(float(MN.worked_salt(G, _miner_cells(ctx, i))[land].mean()), 3)}
 
 
 def _route(ctx: Ctx, s: dict, arr: np.ndarray, sel: np.ndarray, land: np.ndarray) -> dict | None:
@@ -818,6 +868,12 @@ def _suggested(brief: dict) -> dict:
                      "season with plant ash before salt")
     elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
         notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
+    for m in (brief.get("mining") or {}).get("list", []):
+        if "salt" not in m["kind"]:
+            continue
+        also = " and ore" if m["kind"] == "salt and ore" else ""
+        notes.append(f"{m['name']} ({m['id']}) mine rock salt{also}: salt is their trade good, so their halls cure and brine freely (salt pork, brined cheese, "
+                     f"pickles) and the neighbours ({', '.join(m['trades_with']) or 'whoever comes to trade'}) buy it; they buy back {', '.join(m['gets_back'])}")
     if fi.get("fish_mix") and fi.get("coast_fish") is not None and fi["coast_fish"] >= 0.6:
         notes.append("a rich fishery on this coast: fish is a staple, salted or dried for the lean months")
     grown = [c["id"] for c in brief.get("crops") or []]
@@ -915,9 +971,18 @@ def markdown(b: dict) -> str:
               + (f"; no salt anywhere on the landmass {_pc(sa['unreached_share'])}" if sa["unreached_share"] else ""),
               f"- Nearest source: {_kv(sa['nearest_source'], _pc)}",
               *([f"- Salt reach with trade: own {_pc(sa['reach']['own_share'])}, traded {_pc(sa['reach']['traded_share'])}, cut off {_pc(sa['reach']['cut_off_share'])} of the land"
-                 f" (mean {sa['reach']['traded_km']['mean']} km of cost where reached); salt-poor: {'yes' if sa['poor'] else 'no'}"] if sa.get("reach") else []), f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
+                 f" (mean {sa['reach']['traded_km']['mean']} km of cost where reached)"
+                 + (f", {_pc(sa['reach']['from_mines_share'])} of it only because miners work the beds" if sa["reach"].get("from_mines_share") else "")
+                 + f"; salt-poor: {'yes' if sa['poor'] else 'no'}"] if sa.get("reach") else []), f"- Plant ash (fuel good, 0 to 1): {sa['plant_ash']}"]
     else:
         t += ["- no world"]
+    mi = b.get("mining")
+    if mi and mi["list"]:
+        t += ["", "## Mining peoples", ""]
+        for m in mi["list"]:
+            t += [f"- {m['name']} ({m['id']}): {m['kind']} miners (rock salt on {_pc(m['salt_share'])} of their cells, ore on {_pc(m['ore_share'])})"
+                  + (f"; sells {m['sells']}; buys back {', '.join(m['gets_back'])}; trades with {', '.join(m['trades_with']) or 'no one named here'}" if m.get("sells") else "")]
+        t += [f"- ({mi['basis']})"]
     for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),
                              ("animals", "Animals known", None)):
         t += ["", f"## {title}", ""]

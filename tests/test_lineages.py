@@ -1672,3 +1672,76 @@ def test_salt_reach_rivers_and_contact_zones_shorten_the_trade_route_and_the_cap
     capped = SR.reach(g, land, own, np.zeros(g.n), none, 300.0, cap_km=float(np.median(plain["km"][far])))
     assert (capped["how"][far] == 3).any() and (capped["how"][far] == 2).any()  # (inside the cap: traded; beyond: cut off)
     assert plain["how"][pit] == 1 and (plain["how"][~land] == 0).all()
+
+
+def test_salt_miners_happen_where_the_beds_are_and_not_where_they_are_not():
+    """PW-797: a people with the miner trait works rock salt only on country that holds beds (and ore beside it makes it both);
+    no beds, no salt miners; no miner trait, no mining; worked salt reaches further, and only from where it is worked."""
+    from planet.lineages import mining as MN
+    from planet.lineages import salt_reach as SR
+    n = 100
+    beds, ore = np.zeros(n), np.zeros(n)
+    beds[:20], ore[10:40] = 0.9, 0.9  # cells 0..9 salt only, 10..19 both, 20..39 ore only, the rest neither
+    G = {"salt_rock": beds, "gold": ore, "_land": np.ones(n, bool)}
+
+    def cells(a, b):
+        return np.isin(np.arange(n), np.arange(a, b))
+
+    assert MN.people_kind(G, cells(0, 10))["kind"] == "salt"
+    assert MN.people_kind(G, cells(10, 20))["kind"] == "salt and ore"
+    assert MN.people_kind(G, cells(20, 40))["kind"] == "ore"
+    assert MN.people_kind(G, cells(40, 100))["kind"] is None  # (stone only)
+    assert MN.people_kind(G, np.zeros(n, bool)) is None
+    # a few salt cells in a big country are a mine, not a mining people (HELD_MIN)
+    assert MN.people_kind(G, cells(18, 100))["kind"] == "ore" and MN.people_kind(G, cells(0, 100))["kind"] == "salt and ore"
+    # a world without beds has no salt miners whatever the people
+    assert MN.people_kind({**G, "salt_rock": np.zeros(n)}, cells(0, 100))["kind"] == "ore"
+    assert MN.people_kind({k: v for k, v in G.items() if k != "salt_rock"}, cells(0, 100))["kind"] == "ore"
+    # worked salt: beds AND a miner there
+    worked = MN.worked_salt(G, cells(5, 60))
+    assert worked.sum() == 15 and worked[5:20].all() and not worked[:5].any() and not worked[20:].any()
+    assert not MN.worked_salt(G, np.zeros(n, bool)).any()
+    assert MN.is_miner(["subterranean", "miner"]) and not MN.is_miner(["subterranean"]) and not MN.is_miner(None)
+    # what the miners buy back is what their country lacks
+    assert MN.people_kind({**G, "fertile": np.zeros(n), "grazing": np.ones(n)}, cells(0, 10))["lacks"] == ["grain and bread"]
+    # reach: worked beds carry salt further; nothing changes without a mine or off the beds
+    g, L, land, isl = _toy_world()
+    own = np.where(land, 1000.0, 0.0)
+    pit = int(np.flatnonzero(land)[0])
+    own[pit] = 0.0
+    flow, none = np.zeros(g.n), np.zeros(g.n, bool)
+    base = SR.reach(g, land, own, flow, none, 300.0, cap_km=SR.UNREACHED)
+    far = land & (base["km"] < SR.UNREACHED)
+    cap = float(np.median(base["km"][far]))
+    plain = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap)
+    assert not plain["gain"].any() and (plain["how"][far] == 3).any()
+    off = none.copy()
+    off[int(np.flatnonzero(~land)[0])] = True
+    for m in (None, none, off):  # (no mine info, no mine, a "mine" off the land)
+        r = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap, mined=m)
+        assert (r["how"] == plain["how"]).all() and not r["gain"].any()
+    mined = none.copy()
+    mined[pit] = True
+    r = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap, mined=mined)
+    assert r["gain"].any() and (r["how"][r["gain"]] == 2).all() and (plain["how"][r["gain"]] == 3).all()
+    assert (r["how"][~r["gain"]] == plain["how"][~r["gain"]]).all()  # (only the cells the mine brings in change)
+    assert (r["km"][r["gain"]] <= cap * SR.MINED_CAP).all()
+
+
+def test_salt_dwarves_hold_the_beds_in_the_sample_tree(faketz):
+    """PW-797: the dnd sample's salt dwarves are a miner group of the dwarves that looks for rock salt; the habitat is strongly
+    higher on the beds than off them, flat where there are none, and the other dwarves have no such pull."""
+    from planet.lineages import land as LD
+    assert "salt_rock" in LD.GOODS
+    tree = LR.load_tree("dnd")
+    sd = tree.lines["salt_dwarf"]
+    assert sd.group_of == "dwarf" and "miner" in sd.traits and tree.strict_of(sd)
+    assert "salt_rock" in dict(tree.uses_of(sd))
+    assert "salt_rock" not in dict(tree.uses_of(tree.lines["hill_dwarf"])) and "salt_rock" not in dict(tree.uses_of(tree.lines["dwarf"]))
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    land = ps.fields(0.0, variability=False)["land"]
+    beds = np.where(land & (build_grid(LEVEL).lat > 0), 1.0, 0.0)
+    m = H.History(tree, ps, 1, goods={"salt_rock": beds})._land_mult(sd, True)
+    assert m[beds > 0].min() > 3 * m[land & (beds == 0)].max()  # (strict, pull 0.8: 1 on the beds, 0.2 off them)
+    m0 = H.History(tree, ps, 1, goods={"salt_rock": np.zeros_like(beds)})._land_mult(sd, True)
+    assert np.allclose(m0[land], m0[land][0])  # (no beds anywhere: no preference)
