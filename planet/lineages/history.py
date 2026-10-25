@@ -352,7 +352,8 @@ class History:
         self.events: list[dict] = []
         self.origins: dict[str, dict] = {}
         self.tracks: dict[str, list] = {l.id: [] for l in self.lines}
-        self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2, getattr(ps, "world_seed", None))
+        self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2, getattr(ps, "world_seed", None),
+                            getattr(ps, "world_names", None))
         self.flow = getattr(ps, "flow", None)
         self.animals: Animals | None = None  # (made in run(): the domesticated animals, animals.py)
         self.crops: Crops | None = None  # (made in run(): the cultivated plants, crops.py)

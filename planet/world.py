@@ -269,12 +269,7 @@ def landmasses(grid: Grid, land: np.ndarray, min_cells: int = 3, seed=None):
 
 
 def _letters(i: int) -> str:
-    s = ""
-    i += 1
-    while i:
-        i, r = divmod(i - 1, 26)
-        s = chr(65 + r) + s
-    return s
+    return NM.rank_letter(i)
 
 
 def summarize(world: dict) -> dict:

@@ -122,12 +122,15 @@ class Pass:
         m = self.run["meta"]
         self.flow = None  # the world's river flow (lineages' contact corridors), if a world is given
         self.world_seed = None  # ...and its seed: the landmasses' names (names.py, PW-853)
+        self.world_names: dict = {}  # ...and the owner's own names for some of them (planet name, PW-867)
         if world_ref:
             from .. import world as W
             w = W.load(S.find_world(world_ref))
             self.rain0, self.temp0 = w["layers"]["precipitation"].astype(float), w["layers"]["temperature"].astype(float)
             self.rain_src = f"world {w['meta'].get('id', world_ref)}"
             self.world_seed = w["meta"].get("seed")
+            from .. import names as NM
+            self.world_names = NM.load_overrides(S.find_world(world_ref).stem)
             if "flow" in w["layers"]:
                 self.flow = w["layers"]["flow"].astype(float)
             return

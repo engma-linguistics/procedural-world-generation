@@ -1948,6 +1948,56 @@ def test_landmasses_are_named_from_the_worlds_seed_and_rank():
     assert Crossings(g, env, 100.0, 0.1).names[0]["called"] is None  # (no world: by coordinates)
 
 
+def test_owner_given_landmass_names_override_the_generated_ones(data_root):
+    """PW-867: `planet name world:ID A=Jangwa` keeps the owner's name beside the world; the peoples' history (Crossings) uses it for that
+    rank only, the others keep their generated names, and deleting the world takes the file with it."""
+    from planet import names as NM
+    from planet.lineages.crossing import Crossings
+    gen = NM.landmass_names(11, 5)
+    assert NM.rank_letter(0) == "A" and NM.rank_letter(25) == "Z" and NM.rank_letter(26) == "AA"
+    assert NM.load_overrides("abc123") == {} and NM.load_overrides(None) == {}
+    NM.save_overrides("abc123", {"A": "Jangwa", "C": "Kitu"})
+    assert NM.load_overrides("abc123") == {"A": "Jangwa", "C": "Kitu"}
+    assert S.names_path("abc123").parent.name == "names"
+    mixed = NM.landmass_names(11, 5, NM.load_overrides("abc123"))
+    assert mixed[0] == "Jangwa" and mixed[2] == "Kitu" and [mixed[1], mixed[3], mixed[4]] == [gen[1], gen[3], gen[4]]
+    g = build_grid(LEVEL)
+    land = g.lat > 20
+    cr = Crossings(g, {"land": land}, 100.0, 0.1, seed=11, overrides={"A": "Jangwa"})
+    assert cr.names[0]["called"] == "Jangwa" and "Jangwa" in cr.names[0]["name"]
+    assert Crossings(g, {"land": land}, 100.0, 0.1, seed=11).names[0]["called"] == gen[0]  # (no override: as before)
+    NM.save_overrides("abc123", {})  # (nothing left: the file goes)
+    assert not S.names_path("abc123").exists()
+
+
+def test_planet_name_command_stores_overrides(data_root, capsys):
+    """PW-867: the CLI lists a world's landmass names, stores LETTER=Name, clears LETTER=, and --generated writes the generated names."""
+    import argparse
+
+    from planet import __main__ as CLI
+    from planet import names as NM
+    wid = "ab12cd"
+    w = S.worlds_dir() / f"{wid}.json"
+    w.parent.mkdir(parents=True, exist_ok=True)
+    lm = [{"name": "A", "cells": 9, "pct_of_surface": 20.0}, {"name": "B", "cells": 5, "pct_of_surface": 8.0}]
+    w.write_text("{\n\"format\": \"procgen-planet/2\",\n\"name\": \"t\",\n\"id\": \"" + wid + "\",\n\"meta\": {\"seed\": 11},\n"
+                 + "\"summary\": " + json.dumps({"landmasses": lm}) + ",\n\"layers\": {}\n}\n")
+
+    def run(*a, gen=False):
+        CLI.cmd_name(argparse.Namespace(world=f"world:{wid}", assign=list(a), generated=gen))
+    run("a=Jangwa")
+    assert NM.load_overrides(wid) == {"A": "Jangwa"} and "Jangwa" in capsys.readouterr().out
+    run("A=")
+    assert NM.load_overrides(wid) == {}
+    run(gen=True)
+    gn = NM.landmass_names(11, 2)
+    assert NM.load_overrides(wid) == {"A": gn[0], "B": gn[1]}
+    with pytest.raises(SystemExit):
+        run("Jangwa")  # (no LETTER=)
+    S.delete("world", wid)
+    assert not S.names_path(wid).exists()
+
+
 def test_a_sea_landing_follows_the_pull_toward_the_partner():
     """PW-861: a people whose contact hybrid is wanted comes down by the other parent when it sails over: the landing cell and chance follow
     `pull` (history._partner_pull), as the plain landing is the nearest good coast."""

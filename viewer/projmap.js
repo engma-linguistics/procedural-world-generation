@@ -237,7 +237,7 @@ export function drawFeatures(ctx, proj, g, feats) {
   for (const l of feats.labels || []) {
     const c = px(l.lat, l.lon);
     if (!c) continue;
-    const h = Math.max(14, l.h * 4.2) * cssK, w = h * l.w / l.h;
+    const h = (l.px || Math.max(14, l.h * 4.2)) * cssK, w = h * l.w / l.h;  // (l.px: a label that asks for its height in css px)
     ctx.globalAlpha = 1; ctx.drawImage(l.img, c[0] - w / 2, c[1] - h / 2, w, h);
   }
   ctx.restore();

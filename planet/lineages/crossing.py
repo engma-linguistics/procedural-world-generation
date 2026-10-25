@@ -126,7 +126,7 @@ def corridor(tags: dict, env: dict, flow: np.ndarray | None, shelf: np.ndarray |
 class Crossings:
     """Per history: the present-day landmasses (to name where a line got to) and the arrivals."""
 
-    def __init__(self, grid, present_env: dict, cell_km: float, cell_mkm2: float, seed=None):
+    def __init__(self, grid, present_env: dict, cell_km: float, cell_mkm2: float, seed=None, overrides: dict | None = None):
         self.g, self.cell_km = grid, cell_km
         land = present_env["land"]
         lab, k = grid.components(land)
@@ -136,7 +136,7 @@ class Crossings:
         rank[order] = np.arange(k)
         self.label = np.where(lab >= 0, rank[np.maximum(lab, 0)], -1)  # 0 = the largest
         self.names = []
-        given = NM.landmass_names(seed, len(order)) if seed is not None else None  # (the world's own names, PW-853)
+        given = NM.landmass_names(seed, len(order), overrides) if seed is not None else None  # (the world's own names, PW-853; the owner's, PW-867)
         for r, i in enumerate(order):
             sel = lab == i
             a = sizes[i] * cell_mkm2
