@@ -2,7 +2,7 @@
 id: PW-806
 title: Star-warmed Earth-like worlds are nearly treeless (wet tropics at 1-8% trees); the plants' responses to pCO2 below 350 ppm and to warming are too steep
 type: task
-status: todo
+status: in-progress
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -73,5 +73,6 @@ Lean A, because the steepness is the fault. B is a fallback for v1 timing only.
 - [ ] the L7 showcases' wet tropics (> 2000 mm, < 27 C) carry forest again
 
 ## Updates
+- 2026-10-24: Status todo -> in-progress. Owner: tree cover 15-40% agreed with a geography caveat. Coordinator: global range is a diagnostic; hard check is wet equatorial lowland (>2000 mm) >= ~20% trees where it exists. Plants change only where steeper than the literature (owner: prefer the more correct simulation).
 - 2026-10-24: Status needs-decision -> todo. Coordinator ruling: option A (recalibrate the plants' pCO2 and warming responses against Holocene 280 ppm, LGM ~180 ppm and Eocene warm forests). Holocene Earth losing half its forest at 280 ppm is a mechanism fault, whatever the bar. The 15-40% tree-cover range is a threshold: owner question in the feedback doc. Physics lane's v1 task.
 - 2026-10-24: Created from inbox draft draft-treeless-tropics-co2-heat.md (found by v1-signoff).
