@@ -5,7 +5,7 @@
 ## Lanes running
 <!-- coordinator: fill in at each compaction or lane change -->
 - Physics (Opus): v1-finish-11 on top of hold/v1-finish-10-anchor (star anchored, full Gough, real plant calendar, drift on outgassing; failed the bar 0/6 ICEBOX because the carbon balance was frozen at 300 Myr). RULING (coordinator): anchor the carbon balance at the end (GEOCARB frame) and check the weathering feedback strength against the literature; end pCO2 ~180-600 ppm is a diagnostic. Audit done (PW-816..836).
-- Fun (Sonnet): fun-lane-24 (PW-852 half-elves bug, PW-858 drop fiend framing, PW-850 diet, PW-857 remove tracks, PW-842/839/838 viewer). v2 hold lifted 2026-10-25. Merged PW-797 salt miners (miner trait reads beds/ore; PW-804/805 follow-ups); PW-793 (no fiend dairy) and PW-794 (horse contact uptake, barriers) merged; riders test now reads "home" as every landmass the horse reached (both strict conditions kept). Next: PW-797 salt-miner dwarves, PW-800 follow-ups.
+- Fun (Sonnet): fun-lane-25 (viewer: PW-860 Equal Earth overlays, 843 wheel zoom, 840 right pane, 841 workbench, 845 fuels, 837 brief in viewer). Fun lane 24 merged (de83743): half-elves through frontier contact and arrival on free land near the partner (PW-852; residual PW-861), fiend framing dropped and dnd tieflings as a 3 kyr human template (PW-858), ruminant diet data and the no-dairy brief line (PW-850/800), tracks overlay removed (PW-857), Results tab per world (PW-842), label depth (PW-839), Equal Earth default (PW-838; overlays missing, PW-860). Kept runs on 2a7385: dnd 62341d and seven_meals bbfba8. Next: the coordinator's pick from PW-840/841/843/845, 851, 855, 853, 854, 837, 861.
 - Pick planet for seven_meals: 6fbc2c (peoples run 104de8, may be replaced by fun lane 22).
 
 ## v1
