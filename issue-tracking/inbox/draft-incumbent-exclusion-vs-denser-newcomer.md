@@ -1,0 +1,24 @@
+---
+title: Closed-country exclusion keeps a denser newcomer (humans, 10 per km2) boxed in by 13-15 thinner incumbents on a shared continent; pick the mechanism or accept the niche
+type: task
+status: needs-decision
+parent: PW-692
+milestone: v2
+subsystem: timezoom
+effort: m
+impact: med
+found_by: fun-lane-28
+blocked_by: []
+relates: [PW-885, PW-869]
+refs: [planet/lineages/history.py, planet/lineages/spread.py, "world 2a7385", "dnd tries 7000, 7005, 7006"]
+---
+
+## Description
+PW-885 (fun lane 28) measured why humans stay at 1.8k cells on landmass 1 of 2a7385 (tries 7000, 7005, 7006). At 100 kyr ago, of the 568 unheld cells next to their range, 538 have K >= EST and are all held by other peoples (orc, hobgoblin, leonin, bugbear, lizardfolk, tabaxi, halfling...; 13-15 peoples); none is empty and only ~30 are outside the niche. The load on a frontier cell is q ~1.07 (median) against K ~0.81, so room = K - q x qm is ~0.01 even with the expansive press (qm 0.73); inside their range q is 0.47. The exclusion is the closed-country alpha_eff > 1 summed over many rivals (bistable: first holder wins). Raising EXPANSE_PRESS (ticket) or EXPANSE_FILL (lane 28) did not move it. Humans are the densest line there (10 per km2 against 0.5-5 for the incumbents, halfling 12); `DENSITY_PUSH` (0.1, clip 0.7-1.4) is the existing density term, and a stronger one cost the elves/orcs in an earlier lane.
+
+Options:
+- A. Accept it as the niche/tree (the continent holds only ~4.2k suitable human cells anyway, so 8k cells needs the sea, which opens at 58 kyr and with the planked boat). Close PW-885 as a tree question.
+- B. A frontier-invasion term: a newcomer's pressure at the contact line scales with its density advantage over the incumbent (sum the rivals by people-weighted load, not presence), so a denser people takes a thinner people's cells only along the front. Needs a multi-seed check on the elves/orcs (>= 500 cells on 7 of 8).
+- C. Let the incumbents' claim fade where they hold below their own viable population in a patch (the MVP fade for non-separate patches).
+Lean: B, behind a seed sweep; A if the owner prefers the tree to say it.
+- [ ] humans on landmass 1 reach their whole niche (~4k cells) within 30 kyr of their origin on 3 of 3 tries without the elves dropping under 500 cells on 7 of 8
