@@ -252,6 +252,35 @@ def test_long_crossings_scale_with_gap_and_way(faketz, monkeypatch):
     assert hits == 0
 
 
+def test_newcomers_and_expansive_peoples_press_into_held_country():
+    """PW-869: a newcomer feels less competition (and is not displaced) during its founding window; an expansive people with little of
+    its country filled presses on; a homebody or a people that has filled its country does neither. Before, the factor was always 1."""
+    f = H.pioneer_factors
+    assert f(None, 0.9, 0, 1000) == (1.0, 0.0)  # (a deep step: nothing)
+    q0, pio0 = f(0.0, 0.25, 1000, 1000)  # (a homebody, just arrived, filled: only the founding window)
+    assert pio0 == 1.0 and q0 == pytest.approx(1 - H.PIONEER_Q)
+    q1, pio1 = f(H.PIONEER_KYR, 0.25, 1000, 1000)
+    assert pio1 == 0.0 and q1 == 1.0
+    assert 1 - H.PIONEER_Q < f(H.PIONEER_KYR / 2, 0.25, 1000, 1000)[0] < 1.0  # (the window ramps back)
+    young = f(100.0, 0.7, 10, 1000)[0]  # (long settled, expansive, a sliver of its country: presses)
+    assert young == pytest.approx(1 - H.EXPANSE_PRESS * (1 - 10 / (H.EXPANSE_FILL * 1000)))
+    assert f(100.0, 0.7, 10, 1000)[0] < f(100.0, 0.5, 10, 1000)[0] < f(100.0, 0.4, 10, 1000)[0] == 1.0  # (the more expansive, the more)
+    assert f(100.0, 0.7, int(H.EXPANSE_FILL * 1000), 1000)[0] == 1.0  # (filled: no more pressing)
+
+
+def test_rafts_and_dugouts_give_coastal_peoples_an_early_rung():
+    """PW-869: from RAFT_KYR a people with a sea share of 0.1 crosses ~100 km gaps; before it, and below the share, only the drift raft.
+    Animals do not ride in them."""
+    from planet.lineages import animal_defs as AD
+    from planet.lineages import crossing as C
+    sailor = SP.Lineage("s", sea_share=0.6)
+    reach = lambda ln, t: dict((w, L) for w, _, L in C.modes(ln, t)).get("seafaring")  # noqa: E731
+    assert reach(sailor, 130.0) is None and reach(sailor, 80.0) == 120.0 and reach(sailor, 50.0) == 300.0 and reach(sailor, 5.0) == 1500.0
+    assert reach(SP.Lineage("w", sea_share=0.05), 80.0) is None  # (a share under 0.1: no rafts)
+    assert AD.craft_for(0, 80.0) is None and AD.craft_for(2, 80.0) is None  # (no animal rides a raft)
+    assert [c[0] for c in AD.craft_ladder()][0] == "raft or dugout"
+
+
 def test_closed_country_keeps_peoples_apart(faketz):
     """Competition rises toward exclusion where the contact value is low (crossing.corridor)."""
     from planet.lineages import crossing as C
@@ -1946,6 +1975,56 @@ def test_landmasses_are_named_from_the_worlds_seed_and_rank():
     cr = Crossings(g, env, 100.0, 0.1, seed=11)
     assert cr.names[0]["called"] == a[0] and a[0] in cr.names[0]["name"] and cr.names[0]["kind"] in ("continent", "large island", "island")
     assert Crossings(g, env, 100.0, 0.1).names[0]["called"] is None  # (no world: by coordinates)
+
+
+def test_owner_given_landmass_names_override_the_generated_ones(data_root):
+    """PW-867: `planet name world:ID A=Jangwa` keeps the owner's name beside the world; the peoples' history (Crossings) uses it for that
+    rank only, the others keep their generated names, and deleting the world takes the file with it."""
+    from planet import names as NM
+    from planet.lineages.crossing import Crossings
+    gen = NM.landmass_names(11, 5)
+    assert NM.rank_letter(0) == "A" and NM.rank_letter(25) == "Z" and NM.rank_letter(26) == "AA"
+    assert NM.load_overrides("abc123") == {} and NM.load_overrides(None) == {}
+    NM.save_overrides("abc123", {"A": "Jangwa", "C": "Kitu"})
+    assert NM.load_overrides("abc123") == {"A": "Jangwa", "C": "Kitu"}
+    assert S.names_path("abc123").parent.name == "names"
+    mixed = NM.landmass_names(11, 5, NM.load_overrides("abc123"))
+    assert mixed[0] == "Jangwa" and mixed[2] == "Kitu" and [mixed[1], mixed[3], mixed[4]] == [gen[1], gen[3], gen[4]]
+    g = build_grid(LEVEL)
+    land = g.lat > 20
+    cr = Crossings(g, {"land": land}, 100.0, 0.1, seed=11, overrides={"A": "Jangwa"})
+    assert cr.names[0]["called"] == "Jangwa" and "Jangwa" in cr.names[0]["name"]
+    assert Crossings(g, {"land": land}, 100.0, 0.1, seed=11).names[0]["called"] == gen[0]  # (no override: as before)
+    NM.save_overrides("abc123", {})  # (nothing left: the file goes)
+    assert not S.names_path("abc123").exists()
+
+
+def test_planet_name_command_stores_overrides(data_root, capsys):
+    """PW-867: the CLI lists a world's landmass names, stores LETTER=Name, clears LETTER=, and --generated writes the generated names."""
+    import argparse
+
+    from planet import __main__ as CLI
+    from planet import names as NM
+    wid = "ab12cd"
+    w = S.worlds_dir() / f"{wid}.json"
+    w.parent.mkdir(parents=True, exist_ok=True)
+    lm = [{"name": "A", "cells": 9, "pct_of_surface": 20.0}, {"name": "B", "cells": 5, "pct_of_surface": 8.0}]
+    w.write_text("{\n\"format\": \"procgen-planet/2\",\n\"name\": \"t\",\n\"id\": \"" + wid + "\",\n\"meta\": {\"seed\": 11},\n"
+                 + "\"summary\": " + json.dumps({"landmasses": lm}) + ",\n\"layers\": {}\n}\n")
+
+    def run(*a, gen=False):
+        CLI.cmd_name(argparse.Namespace(world=f"world:{wid}", assign=list(a), generated=gen))
+    run("a=Jangwa")
+    assert NM.load_overrides(wid) == {"A": "Jangwa"} and "Jangwa" in capsys.readouterr().out
+    run("A=")
+    assert NM.load_overrides(wid) == {}
+    run(gen=True)
+    gn = NM.landmass_names(11, 2)
+    assert NM.load_overrides(wid) == {"A": gn[0], "B": gn[1]}
+    with pytest.raises(SystemExit):
+        run("Jangwa")  # (no LETTER=)
+    S.delete("world", wid)
+    assert not S.names_path(wid).exists()
 
 
 def test_a_sea_landing_follows_the_pull_toward_the_partner():

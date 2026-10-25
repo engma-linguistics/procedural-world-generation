@@ -401,6 +401,52 @@ def cmd_delete(args):
         print("orphans: " + (", ".join(S.rel(p) for p in gone) if gone else "none"))
 
 
+def cmd_name(args):
+    """Landmass names of a world (PW-867): list them, give some of your own (A=Jangwa: A is the largest, B the next...), clear one
+    (A=), or write the generated names down for a world made before they existed (--generated)."""
+    from . import names as NM
+    ref = args.world.split(":", 1)[-1]
+    if not S.exists("world", ref):
+        raise SystemExit(f"ERROR: no world {ref!r} (run planet list)")
+    path = S.find_world(ref)
+    head, summary = S.read_header(path, ("id", "name", "meta")), {}
+    with open(path) as fh:  # (the summary is one line of the file, before the layers)
+        for line in fh:
+            if line.startswith('"summary": '):
+                summary = json.loads(line[len('"summary": '):].rstrip().rstrip(","))
+                break
+            if line.startswith('"layers"'):
+                break
+    wid, seed = path.stem, head.get("meta", {}).get("seed")
+    lms = summary.get("landmasses") or []
+    n = len(lms) if isinstance(lms, list) else 0
+    gen = NM.landmass_names(seed, n) if seed is not None else [NM.rank_letter(i) for i in range(n)]
+    ov = NM.load_overrides(wid)
+    if args.generated:
+        ov = {**{NM.rank_letter(i): g for i, g in enumerate(gen)}, **ov}
+    for a in args.assign:
+        k, eq, v = a.partition("=")
+        k = k.strip().upper()
+        if not eq or not k.isalpha():
+            raise SystemExit(f"ERROR: {a!r}: say LETTER=Name (A is the largest landmass), or LETTER= to clear")
+        if v.strip():
+            ov[k] = v.strip()
+        else:
+            ov.pop(k, None)
+    if args.assign or args.generated:
+        NM.save_overrides(wid, ov)
+    print(f"world {wid} ({head.get('name')}): landmass names" + ("" if seed is not None else " (no seed: letters)"))
+    for i, m in enumerate(lms):
+        L = NM.rank_letter(i)
+        print(f"  {L:<3} {ov.get(L, gen[i]):<14} {m.get('pct_of_surface', '?')}% of the surface"
+              + (f"   (yours; generated: {gen[i]})" if L in ov else ""))
+    stale = [k for k in ov if len(lms) and k not in {NM.rank_letter(i) for i in range(n)}]
+    if stale:
+        print("  not a landmass of this world (kept): " + ", ".join(stale))
+    if args.assign or args.generated:
+        print("  the viewer shows these; peoples runs made after this use them (planet lineages ...)")
+
+
 def cmd_highlights(args):
     from . import api
     if S.exists("run", args.ref):
@@ -704,6 +750,12 @@ def main():
     d.add_argument("ids", nargs="*", help="ids, or kind:id (run:a3f9c2, world:..., zoom:...) when ambiguous")
     d.add_argument("--orphans", action="store_true", help="also delete zooms and highlight caches of deleted worlds, and unfinished runs")
     d.set_defaults(func=cmd_delete)
+
+    nm = sub.add_parser("name", help="landmass names of a world: list, give your own (A=Jangwa), or write the generated ones down (PW-867)")
+    nm.add_argument("world", help="world id, or world:<id>")
+    nm.add_argument("assign", nargs="*", help="LETTER=Name (A is the largest landmass, B the next...); LETTER= clears it")
+    nm.add_argument("--generated", action="store_true", help="store the generated names too (a world made before they existed shows letters in the viewer)")
+    nm.set_defaults(func=cmd_name)
 
     s = sub.add_parser("show", help="print an ASCII map of a saved world")
     s.add_argument("file")

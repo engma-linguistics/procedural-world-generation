@@ -247,6 +247,7 @@
     <label data-needs="river_nav" title="Rivers that carry boats, coloured by what floats on them: small boats, barges, sea-going ships (humanuse.py)"><input type="checkbox" id="huRivers"> Navigable rivers</label>
     <label data-needs="harbour" title="Natural harbours at the coast: diamonds, bigger and redder = better (anchorage, harbour, fine harbour)"><input type="checkbox" id="huHarbours"> Harbours</label>
     <label data-needs="pass" title="Mountain passes: bow-ties on the divides, coloured by how long they are open"><input type="checkbox" id="huPasses"> Mountain passes</label>
+    <label title="The names of the continents, at their centres (a world's own, or the one you gave it with: planet name world:ID A=Jangwa; a world made before the names shows letters). Peoples runs name the continents too."><input type="checkbox" id="lmNames" checked> Continent names</label>
     <label class="runOnly"><input type="checkbox" id="events" checked> Event markers</label>
     <label data-needs-volc="peopleTracks" title="Peoples runs: where each people arose (a ring; a picked people only, if one is picked in the peoples panel)"><input type="checkbox" id="peopleTracks" checked> Peoples' origins</label>
     <label data-needs-volc="hotspots"><input type="checkbox" id="hotspots" checked> Hotspots (mantle plumes)</label>
@@ -1107,6 +1108,8 @@ document.addEventListener('change', (e) => {
 // The culinary brief of a people (PW-837): the server builds it (GET /api/brief) and the panel shows its Markdown text
 // as it is, with a copy button and the JSON a download.
 const briefBox = document.createElement('div');
+// (the box's inline display:flex beat the `hidden` attribute, so the brief's dark overlay covered the page from the start: [hidden] wins now)
+document.head.append(Object.assign(document.createElement('style'), { textContent: '[hidden]{display:none !important}' }));
 briefBox.hidden = true;
 briefBox.style.cssText = 'position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center';
 briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1">Culinary brief</b><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
@@ -1954,6 +1957,7 @@ function buildOverlays() {
   }
   Object.values(overlays).forEach((o) => group.add(o));
   buildAxis();
+  buildLandmassNames();
   buildHighlightMarks();
   buildZoomOutlines();
   projOverlaysChanged();
@@ -2217,6 +2221,45 @@ function textSprite(text, color) {
   return sp;
 }
 
+// Continent names (PW-867): a label at each continent's centre. A world's own summary (landmasses[].name, centre; the owner's names from
+// worlds/names/<id>.json replace the generated ones, `planet name`), or a peoples run's present landmasses (the names its history used).
+const lmGroup = new THREE.Group();
+group.add(lmGroup);
+const rankLetter = (r) => { let s = '', i = r + 1; while (i) { const k = (i - 1) % 26; s = String.fromCharCode(65 + k) + s; i = Math.floor((i - 1) / 26); } return s; };
+function wordSprite(text, color) {
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96;
+  const g = cv.getContext('2d');
+  g.font = 'bold 56px -apple-system, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 9; g.lineJoin = 'round'; g.strokeStyle = 'rgba(8,12,20,0.85)'; g.strokeText(text, 256, 50);
+  g.fillStyle = color; g.fillText(text, 256, 50);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), depthWrite: false, alphaTest: 0.05, transparent: true, opacity: 0.92 }));
+  sp.renderOrder = 6;
+  return sp;
+}
+function landmassLabels() {  // [{name, lat, lon, area}] of the continents (a share of the surface of at least ~1%)
+  if (!V) return [];
+  if (V.kind === 'world' && V.summary?.landmasses?.length)
+    return V.summary.landmasses.filter((m) => m.pct_of_surface >= 1).map((m) => ({ name: m.name, lat: m.center_lat, lon: m.center_lon, area: m.pct_of_surface }));
+  const pl = V.run?.meta?.present?.landmasses;
+  if (pl) return pl.filter((m) => m.kind === 'continent' && m.called).map((m) => ({ name: m.called, lat: m.lat, lon: m.lon, area: m.area_mkm2 / 5.1 }));
+  return [];
+}
+function buildLandmassNames() {
+  lmGroup.children.forEach(disposeObj);
+  lmGroup.clear();
+  if (!$('lmNames').checked) return;
+  const globe = state.mode === 'globe';
+  for (const m of landmassLabels()) {
+    if (!m.name || m.lat == null) continue;
+    const sp = wordSprite(m.name, '#f4f1e6');
+    const w = (globe ? 0.6 : 1.1) * Math.min(0.75, 0.4 + 0.05 * Math.sqrt(m.area));  // (a little bigger for the bigger land; the canvas is 512 x 96)
+    sp.scale.set(w, w * 96 / 512, 1);
+    sp.position.set(...(globe ? llPos(m.lat, m.lon, 1.025) : llPos(m.lat, m.lon, 1, 0.012)));
+    sp.userData.px = Math.min(44, 24 + 4 * Math.sqrt(m.area));  // (the projected map draws it this high, css px)
+    lmGroup.add(sp);
+  }
+}
+
 const axisGroup = new THREE.Group();
 group.add(axisGroup);
 function buildAxis() {
@@ -2315,14 +2358,142 @@ function layerCats(layer) {  // {arr (ids), names, colors} for a categorical lay
   return null;
 }
 function fmtNum(v) { const a = Math.abs(v); return a >= 100 ? Math.round(v).toLocaleString() : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toFixed(3); }
+// PW-864: the summary block and the tooltip value for the layers that are neither a category nor one number a cell: the peoples
+// layers (share of the land per people, mixing), animal: and crop: (wild range against where it is known), land use, resources, coasts.
+// Returns {sum: html, tip: (i) => text} or null.
+const sumSw = (color, text) => `<div><span class="swatch" style="display:inline-block;width:9px;height:9px;background:${color};margin-right:5px"></span>${text}</div>`;
+function layerSpecial(layer) {  // (cached: the tooltip asks on every hover)
+  const key = [layer, V.id, V.run?.id, V.frame, V.layers, state.res, state.peoplesWhole, anthroOn?.()].map((x) => (typeof x === "object" && x ? (x._k ||= Math.random()) : x)).join("|");
+  if (V._spec?.key !== key) V._spec = { key, val: layerSpecialMake(layer) };
+  return V._spec.val;
+}
+function layerSpecialMake(layer) {
+  const L = V.layers, elev = L.elevation, n = V.n, cellMkm2 = 4 * Math.PI * 6371 ** 2 / n / 1e6;
+  const mk = (x) => (x * cellMkm2 >= 10 ? (x * cellMkm2).toFixed(1) : (x * cellMkm2).toFixed(2)) + ' Mkm²';
+  const share = (x, tot) => (tot ? (100 * x / tot < 1 && x ? (100 * x / tot).toFixed(1) : Math.round(100 * x / tot)) : 0) + '%';
+  const lines = V.run?.meta?.lineages || [];
+  if (['peoples', 'peoples mix', 'peoples overlay', 'peoples blend'].includes(layer) && L.peoples) {
+    let tot = 0, peopled = 0, mixed = 0; const cnt = new Map(), mixc = [0, 0, 0, 0, 0];
+    const ov = layer === 'peoples overlay' ? L.peoples_overlay : null;
+    for (let i = 0; i < n; i++) {
+      if (elev[i] <= 0) continue;
+      tot++;
+      const m = L.peoples_mix ? L.peoples_mix[i] : 0;
+      if (m >= 1) peopled++;
+      if (m >= 2) mixed++;
+      mixc[Math.min(4, m)]++;
+      const d = ov ? ov[i] : layer === 'peoples blend' && L.mix_lead ? L.mix_lead[i] : peoplesIdx(i);
+      if (d != null && d !== 255 && lines[d]) cnt.set(d, (cnt.get(d) || 0) + 1);
+    }
+    const rows = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
+    let html;
+    if (layer === 'peoples mix') {
+      html = `<div class="muted">peoples per land cell</div>` + [1, 2, 3, 4].map((m) => mixc[m] ? `<div>${m === 4 ? '4+' : m} ${m === 1 ? 'people' : 'peoples'} <span class="muted">${share(mixc[m], tot)} · ${mk(mixc[m])}</span></div>` : '').join('') +
+        `<div class="muted">nobody ${share(mixc[0], tot)}</div>`;
+    } else {
+      html = `<div class="muted">${ov ? 'templates and contact hybrids' : 'leading people'}, share of the land (${mk(tot)})</div>` + rows.slice(0, 8).map(([d, k]) =>
+        sumSw(lines[d].color, `${esc(lines[d].name)} <span class="muted">${share(k, tot)} · ${mk(k)}</span>`)).join('') +
+        (rows.length > 8 ? `<div class="muted">+ ${rows.length - 8} more</div>` : '') +
+        (ov ? '' : `<div class="muted">peopled ${share(peopled, tot)} of the land · ${share(mixed, tot)} holds two or more peoples</div>`);
+    }
+    const tip = (i) => {
+      if (elev[i] <= 0) return '';
+      const m = L.peoples_mix?.[i] || 0, d = ov ? ov[i] : layer === 'peoples blend' && L.mix_lead ? L.mix_lead[i] : peoplesIdx(i);
+      const nm = d != null && d !== 255 && lines[d] ? lines[d].name : ov ? 'no template or hybrid' : 'nobody';
+      return layer === 'peoples mix' ? `${m} ${m === 1 ? 'people' : 'peoples'}` : nm + (m >= 2 ? ` (${m} peoples here)` : '');
+    };
+    return { sum: html, tip };
+  }
+  const bitSum = (what, wild, known, label) => {
+    let tot = 0, w = 0, k = 0, kw = 0;
+    for (let i = 0; i < n; i++) { if (elev[i] <= 0) continue; tot++; const a = wild(i), b = known(i); if (a) w++; if (b) k++; if (a && b) kw++; }
+    return `<div class="muted">${esc(what)}, share of the land (${mk(tot)})</div>` +
+      `<div>wild range <b>${mk(w)}</b> <span class="muted">${share(w, tot)}</span></div>` +
+      `<div>${label} <b>${mk(k)}</b> <span class="muted">${share(k, tot)}${w ? ` · ${share(kw, w)} of its wild range` : ''}</span></div>` +
+      (k > kw ? `<div class="muted">${mk(k - kw)} of it outside the wild range (carried there)</div>` : '');
+  };
+  const bitTip = (wild, known, label) => (i) => elev[i] <= 0 ? '' : known(i) ? `${label} here` + (wild(i) ? ' (and wild)' : '') : wild(i) ? 'wild range, not yet known' : 'not here';
+  if (layer.startsWith('animal: ') && L.animal_wild) {
+    const st = animalStocks()[layer.slice(8)];
+    if (!st) return null;
+    const wild = (i) => ((L.animal_wild[i] || 0) >> st.bit) & 1, known = (i) => ((L.animal_known?.[i] || 0) >> st.bit) & 1;
+    return { sum: bitSum(st.label || layer.slice(8), wild, known, 'tamed and known'), tip: bitTip(wild, known, 'tamed and known') };
+  }
+  if (layer.startsWith('crop: ') && L.crop_wild) {
+    const st = cropStocks()[layer.slice(6)];
+    if (!st) return null;
+    const wild = (i) => cropBit(L.crop_wild, i, st.bit), known = (i) => cropBit(L.crop_known, i, st.bit);
+    return { sum: bitSum(st.label || layer.slice(6), wild, known, 'cultivated and known'), tip: bitTip(wild, known, 'cultivated and known') };
+  }
+  if (layer === 'land use') {
+    if (!anthroOn()) return { sum: '<div class="muted">step to the last frame (the present) to see it</div>', tip: () => '' };
+    const A = anthroSrc(), P = V.run.meta.anthro.layers.people.scale;
+    let tot = 0, cr = 0, pa = 0, bu = 0, ma = 0, town = 0;
+    for (let i = 0; i < n; i++) {
+      if (elev[i] <= 0) continue;
+      tot++; cr += A.crop[i] / 100; pa += A.pasture[i] / 100; bu += A.burned[i] / 100; ma += A.managed[i] / 100;
+      if (2 ** (A.people[i] * P) - 1 >= 6) town++;
+    }
+    const row = (c, name, v) => sumSw(c, `${name} <b>${mk(v)}</b> <span class="muted">${share(v, tot)} of the land</span>`);
+    return { sum: row('#f0b429', 'cropland', cr) + row('#b9d36a', 'pasture', pa) + row('#c98a3c', 'burned grassland', bu) + row('#2d6a4a', 'managed woods', ma) +
+      sumSw('#9c3b2a', `densely settled (6+ people/km²) <b>${mk(town)}</b> <span class="muted">${share(town, tot)}</span>`),
+      tip: (i) => {
+        if (elev[i] <= 0) return '';
+        const d = 2 ** (A.people[i] * P) - 1;
+        const bits = [['cropland', A.crop[i]], ['pasture', A.pasture[i]], ['burned grass', A.burned[i]], ['managed woods', A.managed[i]]].filter(([, v]) => v >= 1).map(([k, v]) => `${k} ${v}%`);
+        return (d >= 0.1 ? `${d < 10 ? d.toFixed(1) : Math.round(d)} people/km²` : 'unsettled') + (bits.length ? ': ' + bits.join(', ') : '');
+      } };
+  }
+  if (layer === 'resources' && L.resource && V.resLeg) {
+    const cnt = new Map(); let tot = 0;
+    for (let i = 0; i < n; i++) { if (elev[i] <= 0) continue; tot++; if (L.resource[i]) cnt.set(L.resource[i], (cnt.get(L.resource[i]) || 0) + 1); }
+    const rows = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
+    return { sum: `<div class="muted">most likely resource, share of the land</div>` + rows.slice(0, 7).map(([id, k]) => {
+      const r = V.resLeg.resources[id - 1];
+      return sumSw(r.color, `${esc(r.name)} <span class="muted">${share(k, tot)}</span>`);
+    }).join('') + (rows.length > 7 ? `<div class="muted">+ ${rows.length - 7} more</div>` : ''),
+      tip: (i) => { const id = L.resource[i], r = id ? V.resLeg.resources[id - 1] : null; return r ? `${r.name} ${(L['res_' + r.key]?.[i] || 0).toFixed(2)}` : 'none likely'; } };
+  }
+  if (layer === 'resource' && L.resource && V.resLeg) {
+    const r = resInfo(state.res), a = r && L['res_' + r.key];
+    if (!a) return null;
+    let tot = 0, hi = 0, mid = 0, sum = 0;
+    for (let i = 0; i < n; i++) { if (elev[i] <= 0) continue; tot++; sum += a[i]; if (a[i] >= 0.5) hi++; else if (a[i] >= 0.15) mid++; }
+    return { sum: `<div class="muted">${esc(r.name)} likelihood, over the land (${mk(tot)})</div><div>likely (0.5+) <b>${mk(hi)}</b> <span class="muted">${share(hi, tot)}</span></div>` +
+      `<div>possible (0.15 to 0.5) <b>${mk(mid)}</b> <span class="muted">${share(mid, tot)}</span></div><div class="muted">mean ${fmtNum(sum / tot)}</div>`,
+      tip: (i) => `${r.name} ${fmtNum(a[i] || 0)}` };
+  }
+  if (layer === 'building stone' && L.stone && V.resLeg) {
+    const cnt = new Map(); let tot = 0;
+    for (let i = 0; i < n; i++) { if (elev[i] <= 0) continue; tot++; if (L.stone[i]) cnt.set(L.stone[i], (cnt.get(L.stone[i]) || 0) + 1); }
+    const rows = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
+    return { sum: `<div class="muted">best stone exposed, share of the land</div>` + rows.slice(0, 7).map(([id, k]) => sumSw(V.resLeg.stone[id].color, `${esc(V.resLeg.stone[id].name)} <span class="muted">${share(k, tot)}</span>`)).join(''),
+      tip: (i) => (L.stone[i] ? V.resLeg.stone[L.stone[i]].name : 'none') };
+  }
+  if (layer === 'coasts' && L.coast_type && V.coastLeg) {
+    const km = Math.sqrt(cellMkm2 * 1e6), cnt = new Map();
+    for (let i = 0; i < n; i++) if (L.coast_type[i]) cnt.set(L.coast_type[i], (cnt.get(L.coast_type[i]) || 0) + 1);
+    return { sum: `<div class="muted">coastline by form</div>` + [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([id, k]) => {
+      const e = V.coastLeg[id];
+      return sumSw(e.color.slice(0, 7), `${esc(e.name)} <span class="muted">${Math.round(k * km / 1000).toLocaleString()}k km</span>`);
+    }).join(''), tip: (i) => coastText(i) };
+  }
+  if (COAST_SCORES[layer] && L[COAST_SCORES[layer]]) {
+    const a = L[COAST_SCORES[layer]]; let k = 0, hi = 0;
+    for (let i = 0; i < n; i++) if (a[i] > 0) { k++; if (a[i] >= 0.5) hi++; }
+    return { sum: `<div class="muted">cells with any: ${mk(k)}; 0.5 or more: ${mk(hi)}</div>`, tip: (i) => (a[i] > 0 ? fmtNum(a[i]) : 'none') };
+  }
+  return null;
+}
 function renderLayerSum() {
   const el = $('layerSum');
   if (!el) return;
   if (!V || !V.layers || state.playing) { if (!V) el.innerHTML = ''; return; }
   const layer = state.layer, L = V.layers, elev = L.elevation, n = V.n;
   let html = '';
-  const cat = layerCats(layer), num = !cat && layerNumbers(layer);
-  if (cat) {
+  const cat = layerCats(layer), num = !cat && layerNumbers(layer), spec = !cat && !num && layerSpecial(layer);
+  if (spec) html = spec.sum;
+  else if (cat) {
     const cnt = new Map(); let tot = 0;
     for (let i = 0; i < n; i++) {
       if (cat.land && elev[i] <= 0) continue;
@@ -2363,7 +2534,7 @@ function tipHtml(i) {
   if (cat) { const v = cat.arr[i]; main = v === cat.none ? (cat.noneName || 'none') : cat.names[v] || '?'; }
   else if (num) { const v = Number(num.arr[i]); if (Number.isFinite(v)) main = `${fmtNum(v)} ${String(UNITS[layer] || '').split(/[,(:]/)[0].replace(/^class$/, '')}`; }
   else if (layer === 'fuels' && fuelSrc()) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
-  else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') { const t = []; peoplesRows?.(i, (g, k, v, o) => { if (t.length < 2) t.push(v); }); main = t.join(' · '); }
+  else { const sp = layerSpecial(layer); if (sp) main = sp.tip(i); }
   return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
 }
 function renderTip() {
@@ -3703,7 +3874,7 @@ function projFeatures(cssW) {
     if (o.visible === false) return;
     if (o.isSprite) {
       const img = o.material.map?.image;
-      if (img) labels.push({ lat: o.position.y * 90, lon: o.position.x * 90, img, w: o.scale.x, h: o.scale.y });
+      if (img) labels.push({ lat: o.position.y * 90, lon: o.position.x * 90, img, w: o.scale.x, h: o.scale.y, px: o.userData.px });
       return;
     }
     const m = o.material;
@@ -3722,7 +3893,7 @@ function projFeatures(cssW) {
     }
   };
   for (const [k, o] of Object.entries(overlays)) if (!/^hu(Riv|Har|Pass)/.test(k)) visit(o);
-  for (const grp of [hlGroup, zoomOutlines, axisGroup]) grp.children.forEach(visit);
+  for (const grp of [lmGroup, hlGroup, zoomOutlines, axisGroup]) grp.children.forEach(visit);
   feats.segs = [...buckets.values()];
   feats.labels = labels;
   feats.cssW = cssW;
@@ -3812,7 +3983,7 @@ function applyProjUrl() {
 }
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-const OVERLAY_IDS = ['peopleTracks', 'rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
+const OVERLAY_IDS = ['lmNames', 'peopleTracks', 'rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
                      'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them
@@ -4325,6 +4496,9 @@ async function setWorld(w) {
   stop(); picked = null; renderZoomBox();
   const G = typeof w.grid === 'string' ? await (await fetch(new URL(w.grid, new URL('../worlds/', location.href)))).json() : w.grid;
   const pg = prepareGrid(G);
+  // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
+  const nameOv = w.id ? await fetch(`../worlds/names/${w.id}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) : {};
+  (w.summary?.landmasses || []).forEach((m, i) => { const o = nameOv[rankLetter(i)]; if (o) m.name = o; });
   for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
     if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
   V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, cornerCells: pg.cornerCells, layers: w.layers,

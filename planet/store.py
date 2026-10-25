@@ -128,6 +128,11 @@ def code_digest() -> str:
     return h.hexdigest()
 
 
+def names_path(world_id: str) -> Path:
+    """The owner's names for a world's landmasses (names.py, PW-867), in a subfolder: world listings don't see it."""
+    return worlds_dir() / "names" / f"{world_id}.json"
+
+
 def goods_path(world_id: str) -> Path:
     """The lineages' land goods kept for a world (lineages/land.goods; PW-740), keyed inside by the world's and code's state."""
     return worlds_dir() / "goods" / f"{world_id}.npz"
@@ -666,7 +671,7 @@ def delete(kind: str, item_id: str) -> list[Path]:
     p = path_of(kind, item_id)
     gone = []
     if kind == "world":
-        for q in (p, p.with_suffix(".txt"), highlights_path(item_id), history_path(item_id), goods_path(item_id)):
+        for q in (p, p.with_suffix(".txt"), highlights_path(item_id), history_path(item_id), goods_path(item_id), names_path(item_id)):
             if q.exists():
                 q.unlink()
                 gone.append(q)
@@ -701,6 +706,7 @@ def orphans() -> list[Path]:
         if not exists("world", wid) or (pz and not exists("zoom", pz)):
             out.append(p.parent)
     out += [p for p in sorted((worlds_dir() / "highlights").glob("*.json")) if not exists("world", p.stem)]
+    out += [p for p in sorted((worlds_dir() / "names").glob("*.json")) if not exists("world", p.stem)]
     out += [p for p in sorted((worlds_dir() / "history").glob("*.npz")) if not exists("world", p.stem)]
     out += [p for p in sorted((worlds_dir() / "goods").glob("*.npz")) if not exists("world", p.stem)]
     return out
