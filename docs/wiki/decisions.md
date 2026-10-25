@@ -30,6 +30,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-25 · Non-CO2 greenhouse gases first (owner) · PW-859 goes to the top of the physics queue; the faint-young-Sun icebox is fixed by planet-side greenhouse (CO2 response, methane), not by bending the star curve · PW-859
 - 2026-10-25 · Plume degassing (coordinator) · plumes and LIPs outgas CO2, sized from the literature · PW-875
 - 2026-10-25 · Finish moment (owner) · taking the finished world at a human-habitable moment near the run end is choosing the right moment, not a kludge (Earth passes the finish checks only in its last few Myr); window set from measurement; approved plan: last ~10 Myr at a ~0.5 Myr climate step, pick the best candidate · PW-866
 - 2026-10-25 · Carbon source (coordinator) · the climate drift stands only for what the model lacks (burial, ocean chemistry), sized from the literature, with outgassing no longer counted twice; check a C3-limit weathering floor (Pagani 2009) · draft on v1-finish-12
