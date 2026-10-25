@@ -21,3 +21,4 @@ PW-837 (lane 25) shows a people's brief at the present from the Peoples panel (G
 
 ## Updates
 - 2026-10-25: Created from inbox draft draft-brief-here-and-era-in-viewer.md (found by fun-lane-25).
+- 2026-10-25: fun-lane-28: viewer done. The brief window now has a people list (every people of the run, switching re-asks), an era box (kyr ago) with Show, and Brief here (the picked cell, region=lat,lon, all peoples there; a toast asks for a pick first); the Peoples panel's Culinary brief button shows always (the selected people, else human). Checked with headless Chrome on port 8793 on run 62341d (50 peoples listed, orcs at 20 kyr ago, brief around a clicked cell). Not done: a per-run Ctx cache (the 3 s per call remains, see the ticket). Status left.

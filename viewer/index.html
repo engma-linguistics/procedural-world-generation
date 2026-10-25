@@ -1095,7 +1095,7 @@ function peoplesPanel() {
     ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b> <span class="muted">${p.mixing ? `${p.mixing.area_mkm2} Mkm² (${Math.round(100 * p.mixing.land_share)}% of the land; corridors ${Math.round(100 * (p.mixing.in_corridors || 0))}% mixed, closed country ${Math.round(100 * (p.mixing.in_closed || 0))}%)` : ''}</span><br>${zones.join('<br>')}</div>` : ''}
     ${p.empty_continents?.length ? `<div class="muted">nobody on ${p.empty_continents.join(', ')}</div>` : ''}
     ${state.people != null && lines[state.people]?.story ? `<div style="margin-top:4px;max-width:340px">${esc(lines[state.people].story)}</div>` : ''}
-    ${state.people != null && lines[state.people] ? `<div style="margin-top:4px"><button data-brief="${esc(lines[state.people].id)}" title="What this people's range looks like for a cook: land, fuels, wild and grown foods, coast, seasons, bad years (planet brief, PW-728)">Culinary brief…</button></div>` : ''}
+    <div style="margin-top:4px"><button data-brief="${state.people != null && lines[state.people] ? esc(lines[state.people].id) : ''}" title="What a people's range looks like for a cook: land, fuels, wild and grown foods, coast, seasons, bad years; pick any people, an era, or the picked cell in the window (planet brief, PW-728)">Culinary brief…</button></div>
     ${p.wishes?.length ? `<div style="margin-top:4px"><b>Wishes</b> <span class="muted">(score ${p.wish_score}; tries ${(p.tries || []).join(', ')})</span><br>${p.wishes.map((w) => `${w.a} ${w.want} ${w.b || ''}: ${w.score}`).join(' · ')}</div>` : ''}</div>`;
 }
 document.addEventListener('change', (e) => {
@@ -1112,7 +1112,7 @@ const briefBox = document.createElement('div');
 document.head.append(Object.assign(document.createElement('style'), { textContent: '[hidden]{display:none !important}' }));
 briefBox.hidden = true;
 briefBox.style.cssText = 'position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center';
-briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1">Culinary brief</b><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
+briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1">Culinary brief</b><select id="briefWho" title="Any people of this run"></select><label title="How long ago, in kyr (0: the present)">era <input id="briefEra" type="number" min="0" step="1" value="0" style="width:56px"> kyr ago</label><button id="briefGo">Show</button><button id="briefHere" title="The brief of the country around the picked cell (click a cell on the map first), all peoples there">Brief here</button><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
 document.body.append(briefBox);
 let briefData = null;
 briefBox.addEventListener('click', (e) => { if (e.target === briefBox || e.target.id === 'briefClose') briefBox.hidden = true; });
@@ -1121,18 +1121,34 @@ $('briefJson', briefBox).addEventListener('click', () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(briefData.brief, null, 1)], { type: 'application/json' }));
   a.download = `brief-${V.run.id}-${briefData.who}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
-async function showBrief(pid) {
-  const run = V.run.id || V.dir, line = (V.run.meta.lineages || []).find((l) => l.id === pid);
-  $('briefTitle', briefBox).textContent = `Culinary brief: ${line?.name || pid} (present)`;
+// (people: one of the run's peoples; region: {lat, lon} of the picked cell for "brief here": the country around it, whoever lives there; era: kyr ago, PW-863)
+async function showBrief(pid, era = 0, region = null) {
+  const run = V.run.id || V.dir, lines = (V.run.meta.lineages || []).filter((l) => !l.overlay);
+  const who = $('briefWho', briefBox), eraIn = $('briefEra', briefBox);
+  if (who.options.length !== lines.length) who.innerHTML = lines.map((l) => `<option value="${esc(l.id)}">${esc(l.name || l.id)}</option>`).join('');
+  if (!pid && !who.value) pid = 'human';
+  if (pid && [...who.options].some((o) => o.value === pid)) who.value = pid;
+  eraIn.value = era;
+  const line = lines.find((l) => l.id === who.value);
+  const when = era > 0 ? `${era} kyr ago` : 'present';
+  $('briefTitle', briefBox).textContent = region ? `Culinary brief: around ${region.lat}, ${region.lon} (${when})` : `Culinary brief: ${line?.name || who.value} (${when})`;
   $('briefText', briefBox).textContent = 'Building the brief…';
   briefBox.hidden = false;
   try {
-    const r = await fetch(`/api/brief?run=${encodeURIComponent(run)}&people=${encodeURIComponent(pid)}&era=0`), j = await r.json();
+    const q = region ? `region=${region.lat},${region.lon}` : `people=${encodeURIComponent(who.value)}`;
+    const r = await fetch(`/api/brief?run=${encodeURIComponent(run)}&${q}&era=${era}`), j = await r.json();
     if (!r.ok) throw new Error(j.error || r.status);
-    briefData = { ...j, who: pid };
+    briefData = { ...j, who: region ? `here-${region.lat}_${region.lon}` : who.value };
     $('briefText', briefBox).textContent = j.markdown;
   } catch (err) { $('briefText', briefBox).textContent = 'Could not build the brief: ' + err.message; }
 }
+const briefEra = () => Math.max(0, +$('briefEra', briefBox).value || 0);
+$('briefGo', briefBox).addEventListener('click', () => showBrief($('briefWho', briefBox).value, briefEra()));
+$('briefWho', briefBox).addEventListener('change', () => showBrief($('briefWho', briefBox).value, briefEra()));
+$('briefHere', briefBox).addEventListener('click', () => {
+  if (!picked) return toast('Pick a cell on the map first');
+  showBrief($('briefWho', briefBox).value, briefEra(), { lat: picked.lat, lon: picked.lon });
+});
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && !briefBox.hidden) briefBox.hidden = true; });
 document.addEventListener('click', (e) => {
   const bt = e.target.closest?.('[data-brief]');
