@@ -1,4 +1,5 @@
 ---
+id: PW-885
 title: Humans stay at 1.8-3k cells on a held continent until the Holocene on 3 of 8 dnd tries (2a7385); pressing harder did not move them
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: fun-lane-27
 blocked_by: []
 relates: [PW-869, PW-861]
 refs: [planet/lineages/history.py, planet/lineages/crossing.py, "world 2a7385", "dnd tries 7000, 7005, 7006"]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -19,3 +22,6 @@ PW-869 (fun lane 27) added a newcomer's founding window and an expansive people'
 - The rivals are not the whole limiter either. With the expansive press (`history.EXPANSE_PRESS`, which is what lets the elves hold their ground) raised from 0.6 to 0.95 the humans ended at 4.6k and 7.2k cells on 7005 and 7006, against 6.5k and 4.9k at 0.6 (in a1: 6.5k, 4.9k), with the same flat range from 100 to 20 kyr ago. So it presses newcomers (elves) into country but does not free the humans.
 - Suspects: the human niche (`temp_c [6, 26]`, `prefers temperate/subtropical/lowland`, K) on that continent before farming; `spread()` speed (`speed_kmyr`) against the 1-kyr steps; the MVP fade of small separate patches; or the closed-country exclusion by dragonborn, lizardfolk and kenku (25k, 12k and 14k cells) which have the same niche overlap. A per-cell dump of K, the competition `q` and `room` for the humans on 7005 at 100 kyr ago would say which.
 - [ ] humans on the small continent reach 8k+ cells within 30 kyr of their origin on 3 of 3 tries, or the cause is written down as the niche (then it is a tree question, not a mechanism)
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-humans-stay-small-on-a-held-continent-before-the-holocene.md (found by fun-lane-27).
