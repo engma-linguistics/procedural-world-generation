@@ -47,7 +47,7 @@ def parse_sets(kvs):
     for kv in kvs:
         k, v = kv.split("=", 1)
         f = Params.__dataclass_fields__[k]
-        sets[k] = v if f.type == "str" else (int(v) if f.type == "int" else float(v))
+        sets[k] = v if f.type == "str" else (int(v) if f.type == "int" else bool(float(v)) if f.type == "bool" else float(v))
     return sets
 
 

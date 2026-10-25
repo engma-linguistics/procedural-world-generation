@@ -126,6 +126,26 @@ _ROWS = [
      1.00, 0.50, (-4, 8, 20, 30), 2.0, 30, 3, 1.5, 0, 0.5, 1, 1.0, 300, 0.020, 0.30, 0.1, 0.50, 5),
 ]
 PFTS = [dict(zip(_COLS, r)) for r in _ROWS]
+# Respiration acclimates to the growth temperature (PW-806). The rates rl, rw (at 20 C, Q10 = 2 month to month) are
+# those of each type grown where it grows on Earth: T_GROWN is its cover-weighted mean temperature of the warmest
+# three months there (Earth's model climate at CA_REF; Atkin et al. 2015's TWQ). A stand grown warmer than that
+# respires less at a given temperature, one grown colder more: RESP_ACCLIM of the growth temperature's difference
+# is taken back from the month's Q10 term. Leaf respiration's global trait data give about half (Atkin et al.
+# 2015's TWQ term against Heskel et al. 2016's instantaneous curve, as JULES takes them up, Huntingford et al.
+# 2017); warming experiments on whole trees up to ~80% (Reich et al. 2016); whole plants' respiration/
+# photosynthesis ratio is conserved at full acclimation (Gifford 1995; Dewar et al. 1999). Acclimation is bounded
+# (Atkin & Tjoelker 2003): it counts within ACCLIM_SPAN of T_GROWN, about the span of growth temperatures the
+# controlled-growth and seasonal acclimation data cover (a desert's soil crust, ~20 C above the mosses' Earth range,
+# gets no more of it). (Succulents and wetland herbs are rare on Earth's model: their temperature plateau's middle.)
+RESP_ACCLIM = 0.8
+# Photosynthesis acclimates too: its optimum temperature moves ~0.4-0.6 C per C of growth temperature (Kattge &
+# Knorr 2007; Kumarathunge et al. 2019), so the hump's high-temperature side (temp[2], temp[3]) moves by PS_ACCLIM of
+# the same bounded difference. Its cold side stays (frost and the envelopes set it).
+PS_ACCLIM = 0.5
+ACCLIM_SPAN = 10.0  # C: acclimation is bounded; a stand grown further from T_GROWN than this gets no more of it
+T_GROWN = {"TrBE": 25.5, "TrBR": 25.5, "TeBE": 24.0, "TeBS": 22.0, "TeNE": 22.0, "BoNE": 18.0, "BoNS": 11.0,
+           "BoBS": 10.0, "SclS": 24.5, "XerS": 29.5, "DecS": 9.0, "HthS": 9.5, "C4G": 28.5, "C3G": 25.5, "TunH": 7.0,
+           "Succ": 29.0, "Moss": 13.5, "WetH": 23.5, "Sph": 14.0}
 # water-use efficiency, g C of GPP per mm transpired in moderately humid air
 # (C4 and CAM plants waste less water), and the warmest month above which a
 # type can't hold its own (heath: cool summers)
@@ -150,6 +170,7 @@ for _p in PFTS:
     # and winter- or evenly-watered scrub); where the rain comes in the warm season,
     # raingreen trees, thorn shrubs and grasses use it instead (PW-234 follow-up)
     _p["summer_rain_max"] = {"SclS": 0.5}.get(_p["code"], 1.0)
+    _p["t_grown"] = T_GROWN[_p["code"]]
 CODES = [p["code"] for p in PFTS]
 NP = len(PFTS)
 IDX = {c: i for i, c in enumerate(CODES)}
@@ -170,7 +191,9 @@ EPS_SCALE = 0.8  # all efficiencies (tuned: Earth's land NPP)
 C4, C3 = IDX["C4G"], IDX["C3G"]
 _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS], float) for j in range(4)), _col("amin"),
                 _col("top"), _col("phen"), _col("on"), _col("rl"), _col("rw"), _col("lma"), _col("tleaf"),
-                _col("kt"), _col("wet"), _col("laimax"), _col("wue"), (np.arange(NP) == C3).astype(float)], 1)
+                _col("kt"), _col("wet"), _col("laimax"), _col("wue"), (np.arange(NP) == C3).astype(float),
+                _col("wue"), _col("t_grown")], 1)  # (water-use efficiency at today's CA_REF, which potential()
+# leaves unscaled; the growth temperature the respiration rates are for, T_GROWN)
 # C3 against C4 grasses (PW-231): the two differ only in their photosynthetic
 # pathway, and which wins a month is set by the quantum yield (Ehleringer &
 # Bjorkman 1977; Ehleringer et al. 1997): C4's is the same at any temperature,
@@ -478,7 +501,9 @@ def site(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_jul=
     drought = (dry_s < 40) & (dry_s < np.where(summer, -np.inf, mo["p"]).max(0) / 3)
     ratio = mo["water"] / np.maximum(mo["pet"], 1e-6)
     fire = (np.clip((1.0 - ratio) / 0.8, 0, 1) * (mo["t"] > 5) * (mo["snow"] <= 1)).sum(0) / 12.0
-    return dict(mo, fire_season=fire, summer_drought=drought, tc=tc, tw=tw, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
+    # growth temperature: the mean of the three warmest months (the respiration acclimates to it, RESP_ACCLIM)
+    tg = np.sort(mo["t"], 0)[-3:].mean(0)
+    return dict(mo, fire_season=fire, summer_drought=drought, tc=tc, tw=tw, tg=tg, dryair=np.clip(0.35 + 0.65 * mi, 0.45, 1.2), tmin=0.006 * tc ** 2 + 1.316 * tc - 21.9, temp=np.asarray(temp, float),
                 precip=p, pet_y=pet, mi=mi, dry=dry, lat=np.asarray(lat, float),
                 cap1=np.full(len(p), TOP_MM), cap2=DEEP_MM * (1 - steep),
                 p_summer=np.where(north, p_jul, p_jan), p_winter=np.where(north, p_jan, p_jul),
@@ -518,17 +543,23 @@ def _ft(t, t0, t1, t2, t3):
 
 
 @njit(cache=True)
-def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
+def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
     """One PFT growing alone at LAI lai on cell i, two years of months
     (the first spins the soil bucket up from full). Writes into out:
     [0] NPP, [1] net (NPP - leaf and fine-root turnover), [2] GPP,
     [3] mean water-stress ratio over the leaf-on months, [4] months with
     a dry topsoil (< 30% full, above 5 C), [5] leaf-on months Apr-Sep,
-    [6] leaf-on months Oct-Mar, [7 + m] GPP in month m (Jan..Dec)."""
+    [6] leaf-on months Oct-Mar, [7 + m] GPP in month m (Jan..Dec). tg: the cell's growth temperature (C; the
+    respiration acclimates to it, RESP_ACCLIM)."""
     eps, t0, t1, t2, t3, amin, top, phen, on_t = kp[0], kp[1], kp[2], kp[3], kp[4], kp[5], kp[6], kp[7], kp[8]
-    rl, rw, lma, tleaf, kt, wet, wue, qy = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16], kp[17]
+    rl, rw, lma, tleaf, kt, wet, wue, qy, wue0 = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16], kp[17], kp[18]
     w1, w2 = cap1, cap2
     gpp = resp = asum = 0.0
+    gref = 0.0  # GPP as it would be at today's CA_REF (the respiration's carbon supply, below)
+    dg = min(max(tg - kp[19], -ACCLIM_SPAN), ACCLIM_SPAN)  # C grown warmer than T_GROWN (within ACCLIM_SPAN)
+    acc = RESP_ACCLIM * dg  # C the respiration's Q10 term is shifted by
+    t2 += PS_ACCLIM * dg  # ... and the high-temperature side of the growth hump
+    t3 += PS_ACCLIM * dg
     non = ndry = 0.0
     onj = ona = 0.0
     fap_full = 1.0 - np.exp(-0.5 * lai)
@@ -583,22 +614,29 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
         # bare-soil evaporation dries the topsoil between the plants
         w1 = max(w1 - 0.3 * PET[m, i] * (1.0 - fap_full) * r1, 0.0)
         if k >= 12:
-            q10 = 2.0 ** ((t - 20.0) / 10.0)
+            q10 = 2.0 ** ((t - 20.0 - acc) / 10.0)
             leaf = lai if (on or phen == 0) else 0.0
             resp += (rl * leaf + rw) * q10 * days[m] / 30.4
             if on:
                 fw = (alpha - half) / (1.0 - half)
                 fw = min(max(fw, 0.0), 1.0)
                 g_m = eps * eff * fap * PAR[m, i] * _ft(t, t0, t1, t2, t3) * fw
+                g_r = g_m
                 if qy > 0:  # C3 plants: their quantum yield (QY_CROSS, _q3; C3_PFTS: against today's)
                     gs = 42.75 * np.exp(37830.0 * (t - 25.0) / (298.15 * 8.314 * (t + 273.15)))
                     q = max((ci - gs) / (ci + 2.0 * gs), 0.0)
+                    q_r = max((CI_REF - gs) / (CI_REF + 2.0 * gs), 0.0)
                     if qy > 1.5:
-                        q /= (CI_REF - gs) / (CI_REF + 2.0 * gs)
+                        q = q / q_r if q_r > 0 else 0.0
+                        q_r = 1.0
                     g_m *= q
+                    g_r *= q_r
                 if wet == 0 and g_m > wue * dryf * aet:  # no more carbon than the water allows
                     g_m = wue * dryf * aet
+                if wet == 0 and g_r > wue0 * dryf * aet:
+                    g_r = wue0 * dryf * aet
                 gpp += g_m
+                gref += g_r
                 out[7 + m] = g_m
                 asum += alpha
                 non += 1.0
@@ -606,6 +644,11 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
                     onj += 1.0
                 else:
                     ona += 1.0
+    # The respiration follows the carbon supply's CO2 factor (PW-806): a plant grown at another CO2 keeps the
+    # carbon-use efficiency NPP/GPP it has at today's (Gifford 1995; Dewar et al. 1998; Gifford 2003), so a
+    # glacial's lower GPP lowers its NPP in proportion instead of tipping a forest's thin NPP margin below zero.
+    if gref > 1e-9:
+        resp *= gpp / gref
     npp = 0.75 * (gpp - resp) if gpp > resp else gpp - resp
     out[0] = npp
     out[1] = npp - 1.5 * lma * lai / tleaf
@@ -617,7 +660,7 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, days, ci, out):
 
 
 @njit(parallel=True, cache=True)
-def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, mode, days, ci, grass, res, gmon):
+def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, tg, lai0, mode, days, ci, grass, res, gmon):
     """Potential NPP of every viable PFT on every cell in cells, at the LAI
     that maximises its net NPP. mode 0: golden-section search over
     (0.05, laimax) (8 evaluations); mode 1: a local step around lai0 (the
@@ -638,7 +681,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                 bl, bv = 0.0, -1e30
                 for f in (1.0, 0.8, 1.25):
                     x = min(max(lai0[p, i] * f, 0.05), lmax)
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                     if out[1] > bv:
                         bv, bl = out[1], x
                         best[:] = out
@@ -646,11 +689,11 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                 a, b = 0.05, lmax
                 c = b - gr * (b - a)
                 d = a + gr * (b - a)
-                _year(kp[p], i, c, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
+                _year(kp[p], i, c, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                 fc = out[1]
                 bv, bl = fc, c
                 best[:] = out
-                _year(kp[p], i, d, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
+                _year(kp[p], i, d, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                 fd = out[1]
                 if fd > bv:
                     bv, bl = fd, d
@@ -664,7 +707,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, lai0, m
                         a, c, fc = c, d, fd
                         d = a + gr * (b - a)
                         x = d
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], days, ci, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                     if x == c:
                         fc = out[1]
                     else:
@@ -693,6 +736,9 @@ def potential(s: dict, viable: np.ndarray, eff: np.ndarray, pco2: float = CA_REF
     Ca (1 - Ci/Ca) / (1.6 VPD), and Ci/Ca stays near constant (Wong et al.
     1979), so it scales with Ca (PW-644). In a glacial's low CO2 the
     stomata open wider for the same carbon and the plants run dry sooner.
+    The respiration follows the CO2's change to the carbon supply (_year:
+    NPP/GPP stays today's, PW-806), and acclimates to the cell's growth
+    temperature (s["tg"]; RESP_ACCLIM, PS_ACCLIM).
     Returns (NP, n) arrays npp, net, gpp, alpha, dry (months), on_jul,
     on_jan (leaf-on months per half-year), lai; c4_share (n,), the share of
     the grasses' growth that is C4's (the better pathway takes each month);
@@ -708,7 +754,7 @@ def potential(s: dict, viable: np.ndarray, eff: np.ndarray, pco2: float = CA_REF
     gmon = np.zeros((2, 12, n))
     lai = np.zeros((NP, n)) if lai0 is None else np.asarray(lai0, float)
     _potential(cells, kp, s["t"], s["water"], s["pet"], s["par"], s["cap1"], s["cap2"], viable,
-               np.asarray(eff, float), s["dryair"], lai, 1 if cheap else 0, _DAYS, ci, np.array([C3, C4], np.int64),
+               np.asarray(eff, float), s["dryair"], s["tg"], lai, 1 if cheap else 0, _DAYS, ci, np.array([C3, C4], np.int64),
                res, gmon)
     out = dict(zip(("npp", "net", "gpp", "alpha", "dry", "on_jul", "on_jan", "lai"), res))
     # the grasses' C4 share: each month's grass growth goes to the pathway that
