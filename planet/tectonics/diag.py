@@ -60,6 +60,7 @@ class Recorder:
             "offset": p.climate_offset,
             "star": round(star_forcing(p, sim.t) + float(sim.star_ctl), 3), "star_ctl": round(float(sim.star_ctl), 3),
             "ice_share": round(float(sim.ice_share if sim.ice_share is not None else 0.0), 3), "source_raw": float(source), "sink_raw": float(sink),
+            "plume_src": round(float(getattr(sim, "plume_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
             **self._sink_parts(sim)}
 

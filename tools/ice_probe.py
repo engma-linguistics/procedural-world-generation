@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import planet  # noqa: E402,F401  (first: its thread caps)
 import numpy as np  # noqa: E402
-from planet import climate, timezoom  # noqa: E402
+from planet import climate, ocean, timezoom  # noqa: E402
 from planet.geo import R_KM  # noqa: E402
 from planet.tectonics import earth  # noqa: E402
 from planet.tectonics.isostasy import ice_load, land_view  # noqa: E402
@@ -141,6 +141,7 @@ def main():
     p = Params()
     p.tilt = 23.44
     cell = 4 * np.pi / g.n
+    w = ocean.cell_area_km2(g)
     for dT in a.dT:
         ice = src["ice"].copy() if a.start == "earth" else np.zeros(g.n)
         sim = SimpleNamespace(grid=g, params=p, cell_area=cell, precip=None, p_jul=None, p_jan=None)
@@ -154,7 +155,9 @@ def main():
             ice = earth.ice_sheets(sim, land, e, c["ground"], ice0, ice_load(g, ice), marine=earth.marine_view(bed, c))
             on = ice > 0
             sl = -0.9 * (ice[land] / 1000).sum() / max((~land).sum(), 1) * 1000
-            rows.append(f"{sl:7.1f} m {100 * on.mean():5.2f}% {ice[on].mean() if on.any() else 0:5.0f}/{ice.max():5.0f}")
+            aw = float((on * w).sum() / w.sum())  # (the area-weighted share: earth.EARTH_ICE's, PW-873)
+            rows.append(f"{sl:7.1f} m {100 * on.mean():5.2f}% (area {100 * aw:5.3f}%) "
+                        f"{ice[on].mean() if on.any() else 0:5.0f}/{ice.max():5.0f}")
         print(f"dT {dT:+5.1f}:  " + " | ".join(rows), flush=True)
         if a.regions:
             ant = g.lat < -60

@@ -108,9 +108,9 @@ class Params:
     star_control_max: float = 0.04  # +- share of the star's luminosity (+-7.7 C of forcing at co2_sensitivity 3)
     star_control_from: float = 200.0  # Myr: no control before (the made-up start settles)
     # C: size of the slow random wander of the carbon cycle (PW-819: noise on the carbon source, not on the
-    # temperature), as the warming it gives at the balance (earth.drift_source: 1 C is 0.12 e-folds of the
+    # temperature), as the warming it gives at the balance (earth.drift_source: 1 C is 0.116 e-folds of the
     # source). It stands only for the source terms the model lacks; the ridges' and arcs' outgassing is explicit
-    # (its own sd(ln) 0.2-0.45 after 300 Myr, already GEOCARB's f_G spread). The lacking terms, sized from the
+    # (its own sd(ln) 0.2-0.45 after 300 Myr, already GEOCARB's f_G spread; the plumes' since PW-875). The lacking terms, sized from the
     # literature (docs/review/base-climate/v1-finish-13/README.md), add in quadrature to sd(ln) ~0.10:
     #  - net organic burial (organic C buried minus weathered and degassed): it is O2's source, so the O2
     #    record bounds it. GEOCARBSULF's Phanerozoic O2 (~15-30%, Berner 2006, 2009; +-30% envelope, Royer et
@@ -120,7 +120,7 @@ class Params:
     #    drives the organic burial, is among the top O2 drivers and not among the CO2 ones.)
     #  - ocean chemistry: carbonate on the subducting plates (GEOCARB's f_C, 0.75 -> 1 as pelagic carbonate
     #    spread, Wilkinson & Walker 1989; Berner 2004), a ln range of 0.29: sd(ln) ~0.08.
-    # 0.8 C is sd(ln) 0.096. Was 3 C (sd(ln) 0.36), which also counted the outgassing the model has explicitly.
+    # 0.8 C is sd(ln) 0.093. Was 3 C (sd(ln) ~0.36), which also counted the outgassing the model has explicitly.
     # Not sized to any end-pCO2 band...
     climate_drift: float = 0.8
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget

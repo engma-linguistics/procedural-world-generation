@@ -72,6 +72,8 @@ class Simulation:
         "npp",  # g C/m2/yr per cell
         "npp_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
         # balance's CO2) the weathering reference is learnt with (earth.global_temperature; None after it)
+        "npp_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the NPP the weathering sink's
+        # plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law)
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
@@ -148,6 +150,7 @@ class Simulation:
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
         self.npp_pot = self.pot_frac = self.pot_lai = None
+        self.npp_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
         self.veg_type = np.zeros(n, np.uint8)
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6
@@ -297,7 +300,8 @@ class Simulation:
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
         # numbers the tectonics draws shouldn't reshuffle the climate history)
-        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
+        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]),
+                                 plume=head + apron + vents)  # (the plumes' melt degasses: PW-875)
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
             self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
                                     sediment_km(col.cover, col.x)))

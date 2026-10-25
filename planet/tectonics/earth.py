@@ -15,20 +15,37 @@ import numpy as np
 
 from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
+from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
+from .isostasy import (CARB, COAL, EVAP, MIX, OCEAN_KM, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
                        ocean_depth, sediment_iso, sediment_km)
 
 SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward +-this (PW-293: was 250, which
 # shaped the signal; at 400 a Cretaceous-like +250 m passes at +222)
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
+# The ice-albedo term's zero (PW-873): the model's own Earth at dT = 0 (tools/ice_probe.py 0, the ice rule on
+# Earth's bed, area-weighted share of the last 4 of 8 climate updates; v1-finish-13 code), per grid level. The
+# climate model's dT = 0 is Earth with that ice, so that ice is neutral, not the real 3.1%.
+MODEL_EARTH_ICE = {6: 0.0277, 7: 0.0305}
+
+
+def earth_ice(level: int) -> float:
+    """The model's own Earth ice share at dT = 0 at this grid level (the nearest probed level's)."""
+    return MODEL_EARTH_ICE[min(MODEL_EARTH_ICE, key=lambda k: abs(k - level))]
 WEATHER_K = 0.09  # per C of local temperature: silicate weathering's kinetics (GEOCARB III's ACT, an activation
 # energy of ~62 kJ/mol at 288 K; field silicate fluxes ~59 kJ/mol, White & Blum 1995; the 40-60 kJ/mol range is
 # 5.8-8.7%/K; PW-235)
-WEATHER_RUNOFF = 0.65  # weathering ~ runoff^this (GEOCARB, Berner 1994, from Peters 1984's rivers), runoff following
-# the climate's rain, exp(climate.RAIN_PER_C dT): ~2%/C. The erosion supply the sink multiplies doesn't carry it (it
-# is set by uplift over Myr: measured -0.008/C, v1-finish-10), so it is a factor of its own (v1-finish-11)
+WEATHER_RUNOFF = 0.65  # weathering ~ runoff^this (GEOCARB, Berner 1994, from Peters 1984's rivers), on each cell's
+# own land runoff from the climate's water balance (sim.runoff against RUNOFF_REF; PW-881: was the global mean
+# rain's 3%/C law, while the model's land rain grows 0.5-2.3%/C on generated planets). The erosion supply the sink
+# multiplies doesn't carry it (it is set by uplift over Myr: measured -0.008/C, v1-finish-10), so it is a factor of
+# its own (v1-finish-11)
+RUNOFF_REF = 560.0  # mm/yr: the scale of the runoff factor (the model's Earth at dT 0, ice-free land's mean; it
+# cancels against the sink's reference)
+RUNOFF_PER_C = 0.016  # ln of sum(runoff^WEATHER_RUNOFF) over the ice-free land per C of dT, the model's Earth (L6,
+# dT -3..+3: 0.0163, 0.0154; land runoff itself 2.6%/C): the runoff's small-signal part of climate_coef and of
+# the spin-up's shift to the balance climate, where the runoff at another dT isn't computed
 WEATHER_CO2_BARE = 0.5  # bare ground weathers ~ pCO2^this (GEOCARB, Berner 1994: carbonic acid from the air)
 WEATHER_FERT = 0.4  # planted ground ~ (2X / (1 + X))^this, X pCO2 against the balance (GEOCARB II/III's FERT, Volk
 # 1987): the soil's CO2 comes from roots and microbes, so the air's CO2 acts only through the plants' growth, which
@@ -126,8 +143,8 @@ START_PLANTED = 0.5  # the share of the weathering ground counted as fully plant
 
 def climate_coef() -> float:
     """ln of the sink per C of dT on the weathering land, small signal: kinetics (WEATHER_K at the land's
-    START_RESPONSE) and runoff (WEATHER_RUNOFF x climate.RAIN_PER_C)."""
-    return WEATHER_K * START_RESPONSE + WEATHER_RUNOFF * climate.RAIN_PER_C
+    START_RESPONSE) and runoff (RUNOFF_PER_C, the model's own land runoff)."""
+    return WEATHER_K * START_RESPONSE + RUNOFF_PER_C
 
 
 def temp_response(grid) -> np.ndarray:
@@ -241,11 +258,15 @@ def weathering(sim, land):
     supply = sim.weathered * land
     # chemical weathering: faster when warm and when wet (the weathering thermostat, Walker et al. 1981: a cold
     # planet weathers slower, CO2 builds up and warms it back, PW-235): the kinetics on the local temperature,
-    # and the runoff, which follows the climate's rain (WEATHER_RUNOFF)
+    # and the cell's own land runoff (WEATHER_RUNOFF; PW-881)
     warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else np.ones_like(supply)
-    warm = warm * np.exp(WEATHER_RUNOFF * climate.RAIN_PER_C * sim.dT)
+    if sim.runoff is not None:
+        warm = warm * (np.maximum(sim.runoff, 0.0) / RUNOFF_REF) ** WEATHER_RUNOFF
     # roots and soil CO2 speed it up, in proportion to how much grows there (GEOCARB's f_E, plant_factor)
-    plants = plant_factor(sim.npp)
+    # (on the run's plants grown at the balance's CO2, sim.npp_w: the CO2 acts on the planted ground through
+    # co2_law's FERT, GEOCARB's form of the plants' CO2 response, and counting the NPP's own CO2 response too made
+    # the planted sink's CO2 slope ~55% too steep, PW-880)
+    plants = plant_factor(sim.npp_w)
     v = (plants - 1.0) / (PLANT_WEATHER - 1.0)
     return supply * (warm * plants), supply, warm, plants, supply * warm * (1.0 - v)
 
@@ -295,15 +316,23 @@ def co2_term(p, co2):
     return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(c / CO2_MAX))
 
 
-def global_temperature(sim, growth, newc, rng):
+PLUME_CO2 = 3.3  # CO2 per km3 of plume melt (plume heads, their vents and aprons: volcanism.hotspots, before the
+# height caps, which decide where lava piles, not how much melt degasses) against the ridges' per km3 of new ocean
+# crust (PW-875). Ridges: ~2.2e12 mol C/yr (Marty & Tolstikhin 1998) over ~21 km3/yr of crust (Crisp 1984), ~1e11
+# mol/km3, ~0.15 wt% CO2. Plume and flood-basalt melts: ~0.5 wt% (Self et al. 2006's Deccan figure; Black &
+# Gibson 2019: plume melts carry recycled carbon, richer than MORB). 0.5 / 0.15. Not counted: the sediments a
+# LIP's sills bake (Svensen et al. 2004, Siberia), which the model has no carbon-bearing basin rock for.
+
+
+def global_temperature(sim, growth, newc, rng, plume=None):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Four things move it, slowly (tens of Myr):
       drift      a random walk that keeps returning toward 0 (all the
                  carbon-cycle and ocean details this model doesn't have),
                  on the carbon source (PW-819: drift_source), so a warm
                  era carries high CO2, as Earth's did, not low
-      CO2        a stock (co2_stock): volcanism at ridges and arcs adds
-                 it (warming); fresh rock weathering in warm, wet mountains
+      CO2        a stock (co2_stock): volcanism at ridges, arcs and plumes
+                 (PW-875) adds it (warming); fresh rock weathering in warm, wet mountains
                  removes it (cooling, e.g. the Himalaya since 40 Ma). Each
                  is measured against the planet's own balance once its
                  start has settled (REF_FREEZE), so lasting changes keep
@@ -326,7 +355,10 @@ def global_temperature(sim, growth, newc, rng):
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
     noise = drift_source(p, sim.drift)
-    source = (newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2) * noise
+    # (plume: km/Myr of plume melt per cell; as new ocean floor's cells of OCEAN_KM crust per step, times its yield)
+    melt = float(plume.sum()) * sim.dt / OCEAN_KM if plume is not None else 0.0
+    sim.plume_src = PLUME_CO2 * melt / sim.scale**2
+    source = (newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2 + sim.plume_src) * noise
     sink_cells, supply, warm, _, bare_cells = weathering(sim, land)
     sink = float(sink_cells.sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
@@ -348,7 +380,7 @@ def global_temperature(sim, growth, newc, rng):
         if sim.t < REF_FREEZE:
             # (the source's reference without its drift: the wander is not learnt as the balance either)
             shift = co2_term(p, 0.0) + p.climate_offset - sim.dT  # C of dT from here to the balance climate
-            resp = WEATHER_K * temp_response(sim.grid) + WEATHER_RUNOFF * climate.RAIN_PER_C
+            resp = WEATHER_K * temp_response(sim.grid) + RUNOFF_PER_C
             pot = plant_factor(sim.npp_pot if sim.npp_pot is not None else sim.npp)
             at_bal = float((supply * warm * pot * np.exp(resp * shift)).sum()) / sim.scale**2
             learn = np.array([now[0] / noise, max(at_bal, 1e-12)])
@@ -390,19 +422,21 @@ def global_temperature(sim, growth, newc, rng):
     # on the continents (one reason the young Earth was mostly sea).
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
     sim.sea_level = sim.sea_ice + sim.sea_tect
-    ice_frac = (sim.ice > 0).mean()
+    w = ocean_area(sim.grid)
+    ice_frac = float(((sim.ice > 0) * w).sum() / w.sum())  # (area-weighted: cells differ by up to ~9%)
+    ice_ref = earth_ice(sim.grid.level)
     # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
     # cloudier and dimmer at high latitude, and the snow it would brighten is often white already)
     def albedo(f):
         return p.ice_albedo_max * np.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
 
-    # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
+    # (measured from the model's own Earth ice, earth_ice: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = (co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
+    target = (co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(ice_ref)) + star_forcing(p, sim.t)
               + star_control(sim))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
-                             -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)
+                             -(albedo(ice_frac) - albedo(ice_ref)), target + p.climate_offset)
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
@@ -472,7 +506,8 @@ def update_vegetation(sim, e):
     update), and the plant groups that appear (vegetation.flora_update,
     on the niches measured at the last update, on Earth's calendar counted
     back from the run's end: vegetation.group_windows). Sets veg (ground
-    cover, which slows erosion), npp (which speeds weathering), veg_frac,
+    cover, which slows erosion), npp, npp_w (the same plants at the balance's
+    CO2, which speed weathering: PW-880), veg_frac,
     veg_lai, veg_type, tree_cover, flora and veg_niche. Before the land
     pioneers arrive the land is bare. During the spin-up it also sets
     npp_pot, the potential vegetation (every group, the balance's CO2) the
@@ -494,7 +529,7 @@ def update_vegetation(sim, e):
     else:
         sim.npp_pot = sim.pot_frac = sim.pot_lai = None
     if not vegetation.land_plants(sim.flora, sim.t):
-        sim.veg, sim.npp, sim.tree_cover = np.zeros(n), np.zeros(n), np.zeros(n)
+        sim.veg, sim.npp, sim.tree_cover, sim.npp_w = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
         sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
         sim.veg_niche = vegetation.bare_niches()
         return
@@ -504,6 +539,13 @@ def update_vegetation(sim, e):
                          locked_potential=True, crown=False,  # (crown fire, PW-347: not yet in runs)
                          sky=(sim.cloud_jul, sim.cloud_jan))
     sim.veg_niche = vegetation.niches(v)
+    # the same plants at the balance's CO2, for the weathering sink (PW-880; warm-started from its own last update)
+    vw = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                          sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.wv_frac, lai0=sim.wv_lai,
+                          pco2=climate.PCO2_BALANCE, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
+                          locked_potential=True, crown=False)
+    sim.npp_w = vw["sm"]["npp"]
+    sim.wv_frac, sim.wv_lai = vw["eq"]["nu"].astype(np.float32), vw["pot"]["lai"].astype(np.float32)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)
     sim.veg_lai = v["pot"]["lai"].astype(np.float32)
     sim.veg = vegetation.ground_cover(v)

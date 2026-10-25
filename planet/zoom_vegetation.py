@@ -345,6 +345,9 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     slope = tr["slope"][idx]
     cj = fields["shade_jul"][idx] if fields["shade_jul"] is not None else None
     cn = fields["shade_jan"][idx] if fields["shade_jan"] is not None else None
+    # the sky's cover names the montane cloud forest (vegetation.model's sky=), the shade only lights the plants
+    sky = (0.5 * (fields["cloud_jul"][idx] + fields["cloud_jan"][idx]) if fields.get("cloud_jul") is not None
+           else None)
     pj, pn = fields["p_jul"][idx], fields["p_jan"][idx]
     latv = season_lat(lat[idx], north)
     nu0 = fields["nu0"][:, idx] if fields["nu0"] is not None else None
@@ -397,6 +400,8 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
                    None if cj is None else cj[sl], None if cn is None else cn[sl],
                    light=ri[:, sl], extra_water=gw[sl], extra_pet=ep[a:b])
         s["cap1"], s["cap2"] = sp_m["cap1"][sl], sp_m["cap2"][sl]
+        if sky is not None:
+            s["cloud"] = sky[sl]
         f_soil = sp_m["f_soil"][sl][None, :]
         sl = slice(a, b)
         env = V.envelope(s, pco2)
