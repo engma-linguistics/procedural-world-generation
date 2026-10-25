@@ -25,4 +25,5 @@ Consequences to handle:
 Supersedes PW-636's compression.
 
 ## Updates
+- 2026-10-24: Owner 2026-10-24: (1) Showcase/default worlds are taken at the run's end ('now') or its last few Myr: the default use is a world with modern plants and people. A deliberate earlier era (e.g. a dinosaur-age TTRPG) is asked for by age, ideally 'Ma before now' (e.g. slice --ago 70). (2) Marine algae appear in water >1 Ga before now (Natural History Museum); land plants 470-500 Ma. Long runs should reflect life in the sea before land: whatever the model ties to marine life (reefs, carbon burial, plankton) follows the real calendar too, e.g. reef builders ~540 Ma onward, microbial mats/stromatolites earlier.
 - 2026-10-24: Created.
