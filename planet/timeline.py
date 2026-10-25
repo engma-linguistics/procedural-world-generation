@@ -40,6 +40,7 @@ from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
 from .surface import _relief, surface_rock
+from .tectonics.earth import now_myr
 from .tectonics.isostasy import grounded
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
@@ -115,8 +116,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     progress(fraction of myr done): called at every keyframe."""
     t0 = time.time()
     grid = build_grid(level)
-    if params.flora_end <= 0:  # the plant groups' timeline is scaled to the run's length
-        params = replace(params, flora_end=float(myr))
+    if params.run_end <= 0:  # the run's end is now, for the star and the plant calendar (PW-813)
+        params = replace(params, run_end=float(myr))
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
@@ -184,21 +185,20 @@ def plant_groups(sim: Simulation) -> list:
     """When each plant group appeared in a run (vegetation.GROUPS), with its
     window: what the viewer ticks on the time slider."""
     p = sim.params
-    win = VEG.group_windows(p.plants_from, p.flora_end if p.flora_end > 0 else sim.t)
+    win = VEG.group_windows(now_myr(p))
     return [{"group": k + 1, "name": name, "pfts": list(codes),
              "t": None if not np.isfinite(t) else round(float(t), 1),
              "window": [round(a, 1), round(b, 1)]}
             for k, ((name, codes, _), t, (a, b)) in enumerate(zip(VEG.GROUPS, sim.flora, win))]
 
 
-def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray, plants_from: float) -> dict:
+def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray) -> dict:
     """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
     cover (%, forest or savanna) as a warm start, its CO2 (ppm), and the plant groups by then."""
     groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
     t_fr = float(fr["t"])
     return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
-            "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
-                         if t_fr >= plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
+            "unlocked": VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr),
             "groups": groups}
 
 
@@ -355,8 +355,6 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = 
     snap = sim.snapshot()
     veg = {"nu0": sim.veg_frac, "pco2": climate.pco2(sim.co2), "unlocked": VEG.unlocked_at(sim.flora, sim.t),
            "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
-    if sim.t < sim.params.plants_from - 1e-9:
-        veg["unlocked"] = np.zeros(VEG.NP, bool)
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
@@ -403,7 +401,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     exposed = surface_rock(a["rock"], a["sediment_cover"], a["strata_top"], a["strata_top_km"])
     s = fr["stats"]
     t_fr = float(fr["t"])
-    veg = keyframe_vegetation(m, fr, a["tree_cover"], params.plants_from)
+    veg = keyframe_vegetation(m, fr, a["tree_cover"])
     st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
     if st.get("veg"):  # a time zoom's plants (finish.py): its cover and CO2 instead of the keyframe's

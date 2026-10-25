@@ -115,6 +115,14 @@ class Recorder:
                "sea_ice": round(float(sim.sea_ice), 2), "sea_tect": round(float(sim.sea_tect), 2),
                "iced_lat_min": round(float(np.abs(g.lat[iced]).min()), 2) if iced.any() else None,
                "iced_lat_max": round(float(np.abs(g.lat[iced]).max()), 2) if iced.any() else None}
+        # the plants at the last update (one climate step behind): tree cover over land, and over the wet
+        # equatorial lowland (|lat| < 10 deg, > 2000 mm/yr, below 500 m: the hard check of PW-806/812)
+        tc = np.asarray(sim.tree_cover, float)
+        wet = land & (np.abs(g.lat) < 10.0) & (sim.precip > 2000.0) & (e < 500.0)
+        rec["trees"] = round(100 * float(tc[land].mean()), 2) if land.any() else 0.0
+        rec["wet_eq_trees"] = round(100 * float(tc[wet].mean()), 2) if wet.any() else None
+        rec["wet_eq_cells"] = int(wet.sum())
+        rec["pco2"] = round(float(climate.pco2(sim.co2)), 1)
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
         rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)

@@ -78,12 +78,22 @@ class Params:
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
     climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
-    # The star brightens as it ages (earth.star_forcing, PW-564/761): this many times a Sun-like star's rate on
-    # Gough's (1981) curve, counted against the run's start. 0.45 is a slower-evolving K-type star (~0.75 solar
-    # masses: main-sequence life ~M^-2.5): the model's thermostat passes ~3/4 of a sustained forcing, and a
-    # Sun-like 1.0 warms 1 Gyr runs ice-free (v1-finish-7). A chosen star, within the plausible range.
-    star_brightening: float = 0.45
-    star_age: float = 0.0  # Myr: the star's age at the run's start (0: the planet is as young as its star)
+    # The star brightens as it ages (earth.star_forcing, PW-809/815): a Sun-like star on Gough's (1981) curve,
+    # anchored so the run's END is now (owner 2026-10-24): a run of run_end Myr spans the star's ages
+    # 4570 - run_end .. 4570 Myr, so it starts under a fainter young star (-8% at 1 Gyr, -15% at 2 Gyr) and ends
+    # under today's Sun. The forcing is counted against today's Sun (negative early, 0 at the end; the climate's
+    # dT = 0 is Earth under it); the carbon cycle answers the faint start with high CO2 (earth.start_carbon).
+    # star_brightening: times the Sun's rate (1: Gough's Sun; < 1 a slower-evolving, lower-mass star; 0: a star
+    # that doesn't change).
+    star_brightening: float = 1.0
+    # Myr: the run ends this far after today's Sun (> 0: a look into the future, e.g. ~600 Myr ahead of the
+    # CO2 collapse; an extension of a run keeps its anchor, so the extended part is this offset)
+    star_now_offset_myr: float = 0.0
+    # Myr: the run's end, the moment that is "now" (less star_now_offset_myr) for the star and for the plant
+    # groups' calendar (vegetation.group_windows; earth.now_myr). 0: the run's length (timeline.simulate sets
+    # it; a direct Simulation caller should, else 1000, earth.RUN_END_DEFAULT). An extension keeps it. A run
+    # longer than its star's age is refused (earth.check_star).
+    run_end: float = 0.0
     # A CONTROL, NOT PHYSICS (PW-791; earth.star_control): the world-builder's star thermostat, on for the Earth-like
     # preset. It dims or brightens the star slowly when the planet's running icehouse share (the share of the last
     # ~star_window Myr with land ice holding >= 20 m of sea level) leaves star_ice_band, so a run stays in a
@@ -106,10 +116,6 @@ class Params:
     ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # rocks
-    plants_from: float = 0.0  # Myr: land plants exist from this time on (slow erosion, make coal)
-    # Myr: the run's end, for the plant groups' timeline (vegetation.group_windows);
-    # simulate sets it to the run's length, 0: 1000
-    flora_end: float = 0.0
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp

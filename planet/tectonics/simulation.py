@@ -132,7 +132,9 @@ class Simulation:
         self.mantle_lid = np.zeros(n)  # running average of continental cover over it
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
-        self.dT, self.drift, self.co2, self.rates, self.refs = 0.0, 0.0, 0.0, None, None
+        self.drift, self.rates, self.refs = 0.0, None, None
+        # the carbon stock in balance with the run's starting star, and its climate (PW-809)
+        self.co2, self.dT = earth.start_carbon(self.params)
         self.star_ctl, self.ice_share = 0.0, None
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor

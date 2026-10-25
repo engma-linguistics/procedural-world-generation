@@ -2682,109 +2682,52 @@ def find(world: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 # A representative moment of a run (`--at auto`)
 # ---------------------------------------------------------------------------
-REPRESENTATIVE_AFTER_MYR = 300.0
-
-
-SEA_LEVEL_MIN_SCALE_M = 40.0  # floor on the sea-level scale: a run with a steady sea level isn't over-penalised for wobbles
+RECENT_MYR = 12.0  # Myr: "the last few Myr" of a run, from which a default world is taken (owner, PW-807)
 ICEHOUSE_SEA_ICE_M = -20.0  # an icehouse: land ice holding at least 20 m of sea level (tools/ice_criteria.ICEHOUSE_SL)
-ICEHOUSE_JOIN_MYR = 8.0  # icehouse spells closer than this are one era (tools/ice_criteria.JOIN)
-WARM_QUANTILE = 0.75  # in an icehouse era, the warm moments: frames with no more ice than this quantile's sea_ice_m allows
+WARM_QUANTILE = 0.75  # in an icehouse, the interglacial-like frames: no more ice than this quantile's sea_ice_m allows
 
 
-def flora_complete_myr(plant_groups) -> float | None:
-    """When a run's last plant group appeared (run.json meta.plant_groups, as
-    timeline.plant_groups writes it, or plain times; None entries: never),
-    i.e. from when a slice has every plant type; None without the groups."""
-    ts = [g.get("t") if isinstance(g, dict) else g for g in plant_groups or []]
-    ts = [float(t) for t in ts if t is not None and np.isfinite(t)]
-    return max(ts) if ts else None
-
-
-def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR,
-                        plant_groups=None) -> float:
-    """The keyframe time most typical of a run's mature geography: after
-    `after_myr` (once the start-up has settled; the last two thirds for a
-    shorter run), the frame whose land %, largest landmass %, log of the
-    landmass count and total sea level are jointly closest to that stretch's
-    medians, each measured in its interquartile ranges. Neither the most
-    dispersed nor the most assembled moment, nor one in a cold-era sea-level
-    trough, which is what a showcase world should be. The sea-level term is
-    relative to the run's own median (a nudge: when no frame near it fits the
-    other criteria, the nearest overall wins); runs without `sea_level_m`
-    skip it. plant_groups (the run's meta.plant_groups): the pick is limited
-    to frames once the last plant group has appeared (flora_complete_myr), so
-    a showcase world has grasses, shrubs and flowering trees (PW-634); the
-    medians are still the whole stretch's. No such frame: the latest one.
-
-    When that frame falls in an icehouse era (sea_ice_m at or below
-    ICEHOUSE_SEA_ICE_M; spells closer than ICEHOUSE_JOIN_MYR joined), the pick
-    moves to a warm moment of that same era, like Holocene Earth inside the
-    late Cenozoic icehouse (PW-700): among the era's frames with the least
-    ice (sea_ice_m in the era's top WARM_QUANTILE), the geographically most
-    typical. The era's glacial depths stay reachable through its frames and
-    the time zoom (finish.now_kyr "glacial"). Runs without sea_ice_m skip it."""
-    end = frames[-1]["t"]
-    start = after_myr if end > after_myr else end / 3
-    late = [f for f in frames if f["t"] >= start] or frames[-1:]
-    cols = [[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
-             np.log(1 + f["stats"]["landmasses"])] for f in late]
-    if all("sea_level_m" in f["stats"] for f in late):
-        for c, f in zip(cols, late):
-            c.append(f["stats"]["sea_level_m"])
-    x = np.array(cols, float)
-    med = np.median(x, 0)
-    q1, q3 = np.percentile(x, [25, 75], 0)
-    scale = np.maximum(q3 - q1, 1e-6 + 0.05 * np.abs(med))
-    if x.shape[1] == 4:
-        scale[3] = max(scale[3], SEA_LEVEL_MIN_SCALE_M)
-    d = np.sqrt((((x - med) / scale) ** 2).sum(1))
-    t_full = flora_complete_myr(plant_groups)
-    if t_full is not None:
-        ok = np.array([f["t"] >= t_full - 1e-9 for f in late])
-        if not ok.any():
-            return float(frames[-1]["t"])
-        d = np.where(ok, d, np.inf)
-    i = int(np.argmin(d))
-    if all("sea_ice_m" in f["stats"] for f in late):
-        i = _warm_in_era(late, d, i)
-    return float(late[i]["t"])
-
-
-def _warm_in_era(late: list[dict], d: np.ndarray, i: int) -> int:
-    """representative_time's frame i, or a warm moment of the icehouse era it falls in (PW-700): late's
-    frames with their distances d (inf: not eligible)."""
-    t = np.array([f["t"] for f in late], float)
-    si = np.array([f["stats"]["sea_ice_m"] for f in late], float)
-    if si[i] > ICEHOUSE_SEA_ICE_M:
-        return i
-    ice = np.flatnonzero(si <= ICEHOUSE_SEA_ICE_M)
-    # the era: the icehouse frames around i, gaps up to ICEHOUSE_JOIN_MYR joined (its ice-free flickers belong to it)
-    lo = hi = int(np.searchsorted(ice, i))
-    while lo > 0 and t[ice[lo]] - t[ice[lo - 1]] <= ICEHOUSE_JOIN_MYR + 1e-9:
-        lo -= 1
-    while hi < len(ice) - 1 and t[ice[hi + 1]] - t[ice[hi]] <= ICEHOUSE_JOIN_MYR + 1e-9:
-        hi += 1
-    era = np.arange(ice[lo], ice[hi] + 1)
-    era = era[np.isfinite(d[era])]
-    warm = era[si[era] >= np.quantile(si[era], WARM_QUANTILE)]
-    return int(warm[np.argmin(d[warm])])
+def representative_time(frames: list[dict]) -> float:
+    """The moment a default or showcase world is taken at (`--at auto`; owner 2026-10-24, PW-807): the run's
+    end, which is "now" (today's Sun, the plants' modern calendar: grasses, C4 grasses, flowering trees), or,
+    when the end is in an icehouse (sea_ice_m at or below ICEHOUSE_SEA_ICE_M), the latest interglacial-like
+    frame of the run's last RECENT_MYR: among those frames, the latest with no more ice than WARM_QUANTILE of
+    them (like Holocene Earth inside the late Cenozoic icehouse, PW-700). Earlier eras are asked for by age
+    (`slice --ago`). Runs without sea_ice_m: the end."""
+    end = float(frames[-1]["t"])
+    recent = [f for f in frames if f["t"] >= end - RECENT_MYR - 1e-9]
+    if not all("sea_ice_m" in f["stats"] for f in recent) or frames[-1]["stats"]["sea_ice_m"] > ICEHOUSE_SEA_ICE_M:
+        return end
+    si = np.array([f["stats"]["sea_ice_m"] for f in recent], float)
+    warm = np.flatnonzero(si >= np.quantile(si, WARM_QUANTILE) - 1e-9)
+    return float(recent[int(warm[-1])]["t"])
 
 
 def representative_note(frames: list[dict], t: float) -> str:
-    """One line on the picked frame's total sea level against the run's median
-    (after 300 Myr), flagging a pick well outside the run's typical band."""
-    start = REPRESENTATIVE_AFTER_MYR if frames[-1]["t"] > REPRESENTATIVE_AFTER_MYR else frames[-1]["t"] / 3
-    sl = [f["stats"]["sea_level_m"] for f in frames if f["t"] >= start and "sea_level_m" in f["stats"]]
+    """One line on the picked frame: the run's end, or how far before it and its land ice against the end's."""
+    end = frames[-1]
     f = next((f for f in frames if f["t"] == t), None)
-    if not sl or f is None or "sea_level_m" not in f["stats"]:
+    if f is None:
         return ""
-    med = float(np.median(sl))
-    q1, q3 = np.percentile(sl, [25, 75])
-    here = f["stats"]["sea_level_m"]
-    note = f"(sea level {here:.0f} m; run median {med:.0f} m)"
-    if abs(here - med) > max(q3 - q1, SEA_LEVEL_MIN_SCALE_M):
-        note += " NOTE: no frame near the run's typical sea level fits the other criteria; best available taken"
-    return note
+    if f is end:
+        return "(the run's end: now)"
+    note = f"({end['t'] - t:g} Myr before the run's end"
+    if "sea_ice_m" in f["stats"] and "sea_ice_m" in end["stats"]:
+        note += f": an interglacial-like frame, land ice {-f['stats']['sea_ice_m']:.0f} m of sea level against " \
+                f"{-end['stats']['sea_ice_m']:.0f} m at the end"
+    return note + ")"
+
+
+def ago_time(frames: list[dict], meta: dict, ago_ma: float) -> float:
+    """The run time (Myr) ago_ma Ma before now (`slice --ago`): now is the run's end less its
+    star_now_offset_myr (tectonics.earth.now_myr, from the run's stored params)."""
+    from .tectonics import Params
+    from .tectonics.earth import now_myr
+    t = now_myr(Params.from_stored(meta.get("params", {}))) - float(ago_ma)
+    if t < frames[0]["t"] - 1e-9 or t > frames[-1]["t"] + 1e-9:
+        raise ValueError(f"{ago_ma:g} Ma before now is run time {t:g} Myr, outside the run "
+                         f"({frames[0]['t']:g}-{frames[-1]['t']:g} Myr)")
+    return t
 
 
 # ---------------------------------------------------------------------------

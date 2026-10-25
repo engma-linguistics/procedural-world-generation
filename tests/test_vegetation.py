@@ -129,29 +129,34 @@ def test_legend_and_biome_grouping():
 
 # --------------------------------------------------------------------------- plant groups (decision 3)
 def test_group_windows_and_timeline():
-    for end in (600.0, 1000.0, 2000.0):
-        win = V.group_windows(0.0, end)
-        d = end - max(16.0, 0.05 * end)
-        assert win[0] == (0.0, 0.0)
-        assert all(a <= b <= d + 1e-9 for a, b in win)
+    """Plant groups on Earth's calendar counted back from the run's end (PW-807): each within its window in Ma
+    before now, by its deadline; a group whose window is before the run's start is there from the start."""
+    for end in (300.0, 600.0, 1000.0, 2000.0):
+        win = V.group_windows(end)
+        assert all(a <= b for a, b in win)
         assert all(win[k][0] <= win[k + 1][0] for k in range(len(win) - 1))
+        assert [round(end - b) for a, b in win] == [470, 420, 375, 120, 60, 25]  # the latest ages, Ma
         # with no niche at all, each group still appears, at the latest by its window's end
         times = [float("nan")] * len(V.GROUPS)
         rng = np.random.default_rng(0)
         for t in np.arange(0, end + 4, 4.0):
-            times = V.flora_update(times, t, 4.0, 0.0, end, np.zeros(len(V.GROUPS)), rng)
-        assert all(np.isfinite(times)) and max(times) <= d + 4
+            times = V.flora_update(times, t, 4.0, end, np.zeros(len(V.GROUPS)), rng)
+        assert all(np.isfinite(times)) and max(times) <= end - 25 + 4
         assert all(times[k] <= times[k + 1] for k in range(len(times) - 1))
         for (a, b), tg in zip(win, times):
-            assert a - 4 <= tg <= b + 4
+            assert max(a, 0.0) - 4 <= tg <= max(b, 0.0) + 4
+        assert V.land_plants(times, end) and not (end > 500 and V.land_plants(times, 0.0))
+    # a 300 Myr run starts with land plants and forests already there
+    times = V.flora_update([float("nan")] * 6, 0.0, 4.0, 300.0, np.zeros(6), np.random.default_rng(0))
+    assert times[:3] == [0.0, 0.0, 0.0] and not np.isfinite(times[3])
     # a big niche makes a group appear early in its window; draws are seeded
     times = [0.0, 40.0, 100.0, float("nan"), float("nan"), float("nan")]
-    a, b = V.group_windows(0.0, 1000.0)[3]
+    a, b = V.group_windows(1000.0)[3]
     got = []
     for seed in range(20):
         rng, tt, t = np.random.default_rng(seed), list(times), a
         while not np.isfinite(tt[3]):
-            tt = V.flora_update(tt, t, 4.0, 0.0, 1000.0, np.array([0, 0, 0, 0.8, 0, 0]), rng)
+            tt = V.flora_update(tt, t, 4.0, 1000.0, np.array([0, 0, 0, 0.8, 0, 0]), rng)
             t += 4.0
         got.append(tt[3])
     assert np.median(got) < 0.5 * (a + b)

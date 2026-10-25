@@ -53,7 +53,7 @@ def parse_sets(kvs):
 
 def run(seed, myr, level, sets, out: Path, fields=False, moments=()):
     from planet import timezoom as Z
-    sets = {"flora_end": float(myr), **sets}  # (as timeline.simulate: plant groups scaled to the run)
+    sets = {"run_end": float(myr), **sets}  # (as timeline.simulate: the run's end is now)
     sim = Simulation(build_grid(level), seed, Params(**sets), 2.0)
     sim.diag = Recorder(fields=fields)
     todo = sorted(float(m) for m in moments)

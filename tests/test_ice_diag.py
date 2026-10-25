@@ -10,7 +10,7 @@ from tools import ice_criteria as C
 
 
 def _run(diag: bool, myr=24.0):
-    sim = Simulation(build_grid(4), 1, Params(flora_end=myr, climate_offset=-6.0), 2.0)
+    sim = Simulation(build_grid(4), 1, Params(run_end=myr, climate_offset=-6.0), 2.0)
     if diag:
         sim.diag = Recorder(fields=True)
     sim.run(myr, (lambda s: s.diag.step(s)) if diag else None)

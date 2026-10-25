@@ -47,20 +47,79 @@ def heat(p, t: float) -> float:
     return 1.0 + (p.heat_start - 1.0) * 0.5 ** (t / p.heat_halflife)
 
 
+STAR_AGE_NOW = 4570.0  # Myr: the Sun's age today
+WPM2_PER_LUM = 238.0  # W/m2 of forcing per unit relative luminosity (S0 / 4 (1 - 0.3))
+
+
+def star_luminosity(age: float) -> float:
+    """A Sun-like star's luminosity against today's Sun's, at age Myr: Gough (1981),
+    L / L_now = 1 / (1 + 0.4 (1 - age / 4570 Myr))."""
+    return 1.0 / (1.0 + 0.4 * (1.0 - age / STAR_AGE_NOW))
+
+
+def star_age(p, t: float) -> float:
+    """The star's age, Myr, at run time t: today's Sun's at now_myr (the run's end, less star_now_offset_myr);
+    star_brightening times the Sun's pace (PW-809)."""
+    return STAR_AGE_NOW + p.star_brightening * (t - now_myr(p))
+
+
+def check_star(p) -> None:
+    """Refuse a run that would start before its star formed (PW-813)."""
+    if p.star_brightening > 0.0 and star_age(p, 0.0) < 0.0:
+        longest = STAR_AGE_NOW / p.star_brightening + p.star_now_offset_myr
+        raise ValueError(f"a run of {now_myr(p) + p.star_now_offset_myr:g} Myr would start before its star formed (star age "
+                         f"{star_age(p, 0.0):.0f} Myr); at star_brightening {p.star_brightening:g} and "
+                         f"star_now_offset_myr {p.star_now_offset_myr:g} runs can be at most {longest:.0f} Myr")
+
+
+RUN_END_DEFAULT = 1000.0  # Myr: the run's end when a direct Simulation caller hasn't set params.run_end
+
+
+def now_myr(p) -> float:
+    """The run time that is today ("now", Ma 0) for the star and the plant calendar, the one place both read
+    it: the run's end (params.run_end; 0: RUN_END_DEFAULT), less star_now_offset_myr (PW-813)."""
+    return (p.run_end if p.run_end > 0 else RUN_END_DEFAULT) - p.star_now_offset_myr
+
+
 def star_forcing(p, t: float) -> float:
-    """The brightening star's warming, C, against the run's start (planet-relative; PW-564, PW-761). A Sun-like
-    star's luminosity follows Gough (1981), L / L_now = 1 / (1 + 0.4 (1 - age / 4570 Myr)): +6.7% over its first
-    Gyr. star_brightening scales that rate (a lower-mass star evolves more slowly). The forcing is
+    """The star's forcing, C, against TODAY's Sun (PW-809, coordinator ruling B): the run's end is now, so a run
+    starts under a fainter young star (negative forcing: -15.5 C raw at the start of a 1 Gyr run, -29 C for 2 Gyr)
+    and ends at 0, the climate model's dT = 0 being Earth under today's Sun. The forcing is
     S0 / 4 (1 - 0.3) dL / L = 238 W/m2 x dL / L, at the model's own sensitivity: co2_sensitivity per doubling of
-    CO2's 5.35 ln 2 W/m2 (Myhre et al. 1998), ~0.81 C per W/m2. The weathering thermostat absorbs what it can."""
+    CO2's 5.35 ln 2 W/m2 (Myhre et al. 1998), ~0.81 C per W/m2. The carbon cycle answers it (the weathering
+    thermostat, with references learnt at the balance climate: start_carbon, global_temperature): the faint
+    young star is met by high CO2, as Earth's was."""
     if p.star_brightening == 0.0:
         return 0.0
-    lum = lambda age: 1.0 / (1.0 + 0.4 * (1.0 - age / 4570.0))  # noqa: E731
-    rel = lum(p.star_age + p.star_brightening * t) / lum(p.star_age) - 1.0
-    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * 238.0 * rel)
+    rel = star_luminosity(star_age(p, t)) - 1.0
+    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * rel)
 
 
-WPM2_PER_LUM = 238.0  # W/m2 of forcing per unit relative luminosity (S0 / 4 (1 - 0.3))
+def balance_co2(p, forcing: float) -> float:
+    """The CO2 stock (ln X against PCO2_BALANCE) at which the weathering thermostat balances a lasting
+    forcing (C, e.g. the star's against today's Sun) on a planet of the reference weatherability: weathering
+    ~ X^WEATHER_CO2 exp(WEATHER_K dT') equals the outgassing when WEATHER_CO2 ln X = -WEATHER_K dT', dT' the
+    departure from the balance climate, co2_term(ln X) - co2_term(0) + forcing. The walk that drifts the
+    climate and the ice's albedo are left out (they start at 0 and at no ice)."""
+    def f(c):
+        return WEATHER_CO2 * c + WEATHER_K * (co2_term(p, c) - co2_term(p, 0.0) + forcing)
+    lo, hi = -30.0, 30.0  # (f increases with c)
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if f(mid) < 0.0 else (lo, mid)
+    return 0.5 * (lo + hi)
+
+
+def start_carbon(p) -> tuple[float, float]:
+    """(co2, dT) a run starts from (PW-809): the carbon stock in balance with the star of the run's start, so a
+    faint young star starts the planet warm through high CO2 rather than frozen, and the climate that stock
+    and that star give (plus climate_offset, the world-builder's shift)."""
+    check_star(p)
+    f0 = star_forcing(p, 0.0)
+    c = balance_co2(p, f0)
+    return c, co2_term(p, c) + f0 + p.climate_offset
+
+
 STAR_ICEHOUSE_SL = -20.0  # m: an icehouse holds at least this much sea level as land ice (tools/ice_criteria's)
 
 
@@ -177,15 +236,22 @@ def global_temperature(sim, growth, newc, rng):
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
         now = np.array([max(source, 1e-6), sink])
         sim.rates = now
-        if sim.refs is None:
-            sim.refs = now.copy()
         # The references: the planet's own balance of outgassing against weathering, followed while the made-up
         # start settles and then kept for the rest of the run (PW-558, PW-559 B). Kept, they let a long cold era's
         # weathering deficit go on piling up CO2 (and a long surplus go on drawing it down), as a real carbon
         # stock does, where baselines that relearned took both up within a few hundred Myr (PW-576).
+        # The sink's reference is its weatherability at the balance climate (PW-809): the sink taken back to
+        # the balance's dT (co2_term(0), plus climate_offset, the world-builder's shift) through the weathering's
+        # temperature law. So a cold spin-up under the faint young star is not learnt as the planet's balance:
+        # its slow weathering lets CO2 build up during the spin-up too, as it does after the freeze.
         if sim.t < REF_FREEZE:
+            learn = np.array([now[0], now[1] * np.exp(-WEATHER_K * (sim.dT - p.climate_offset - co2_term(p, 0.0)))])
+            if sim.refs is None:
+                sim.refs = learn
             b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
-            sim.refs = sim.refs + b * (now - sim.refs)
+            sim.refs = sim.refs + b * (learn - sim.refs)
+        elif sim.refs is None:
+            sim.refs = now.copy()
         sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / sim.refs[1], dt)
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
@@ -283,33 +349,33 @@ def update_climate(sim, e):
 def veg_feedback(sim):
     """The vegetation's feedbacks on the climate (climate.compute's veg),
     from the last update's vegetation (one climate step behind): bare land
-    before land plants, an Earth-like average on the first update."""
-    if sim.t < sim.params.plants_from - 1e-9:
+    before land plants (vegetation.land_plants: the pioneers' arrival), an Earth-like average on the first
+    update."""
+    if not vegetation.land_plants(sim.flora, sim.t):
         return vegetation.bare(sim.grid.n)
     if sim.veg_frac is None:
         return None
     return vegetation.feedback(sim.veg_frac, sim.veg_lai)
 
 
-FLORA_END = 1000.0  # Myr: the plant groups' timeline when the run's end isn't known (params.flora_end = 0)
-
-
 def update_vegetation(sim, e):
     """The vegetation in equilibrium with the climate just computed
     (vegetation.model, the cheap variant: warm-started from the last
     update), and the plant groups that appear (vegetation.flora_update,
-    on the niches measured at the last update). Sets veg (ground cover,
-    which slows erosion), npp (which speeds weathering), veg_frac,
-    veg_lai, veg_type, tree_cover, flora and veg_niche."""
+    on the niches measured at the last update, on Earth's calendar counted
+    back from the run's end: vegetation.group_windows). Sets veg (ground
+    cover, which slows erosion), npp (which speeds weathering), veg_frac,
+    veg_lai, veg_type, tree_cover, flora and veg_niche. Before the land
+    pioneers arrive the land is bare."""
     p, g = sim.params, sim.grid
     n = g.n
-    if sim.t < p.plants_from - 1e-9:
+    rng = np.random.default_rng([sim.seed, sim.step_no, 11])
+    sim.flora = vegetation.flora_update(sim.flora, sim.t, p.climate_every, now_myr(p), sim.veg_niche, rng)
+    if not vegetation.land_plants(sim.flora, sim.t):
         sim.veg, sim.npp, sim.tree_cover = np.zeros(n), np.zeros(n), np.zeros(n)
         sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
+        sim.veg_niche = vegetation.bare_niches()
         return
-    end = p.flora_end if p.flora_end > 0 else FLORA_END
-    rng = np.random.default_rng([sim.seed, sim.step_no, 11])
-    sim.flora = vegetation.flora_update(sim.flora, sim.t, p.climate_every, p.plants_from, end, sim.veg_niche, rng)
     land = e > 0
     ice = np.where(land, sim.ice, 0.0)
     kind = np.where(land, sim.lake_kind, 0)
@@ -769,6 +835,21 @@ def bury(sim, col):
     col.cover = col.cover - cooked
 
 
+REEF_BUILDERS_MA = (545.0, 520.0)  # Ma before now: skeletal reef builders (archaeocyaths, then corals,
+# stromatoporoids) arrive within this window, per seed (Cambrian; Wood 1999; Kiessling 2009), on Earth's calendar
+# counted back from the run's end like the plant groups (PW-807)
+MICROBIAL_REEF = 0.1  # before them: microbial carbonate (stromatolites, thrombolites) builds up at this share of
+# reef_rate (Shark Bay's stromatolites accrete ~0.3-0.5 mm/yr, against a few mm/yr for Holocene coral reefs:
+# Montaggioni 2005). Crude: it only sets how readily a pre-Cambrian sea's carbonate keeps up with subsidence
+
+
+def reef_builders_t(sim) -> float:
+    """Run time (Myr) from which skeletal reef builders exist: a per-seed draw in REEF_BUILDERS_MA before now."""
+    u = np.random.default_rng([sim.seed, 13]).random()
+    ma = REEF_BUILDERS_MA[0] + u * (REEF_BUILDERS_MA[1] - REEF_BUILDERS_MA[0])
+    return now_myr(sim.params) - ma
+
+
 def reefs(sim, col, dep, chem):
     """Reefs: in warm, clear, shallow sea, corals and other carbonate
     makers build up to just below sea level, fast enough to outpace any
@@ -777,7 +858,9 @@ def reefs(sim, col, dep, chem):
     drowns into a flat-topped seamount (the Darwin point, ~30 deg).
     Muddy water from big rivers stops them (no reefs off the Amazon).
     The chemical sediments (chem: km of evaporite and of coal) join the
-    crust here too. All go on top of the strata."""
+    crust here too. All go on top of the strata. Before skeletal reef
+    builders exist (reef_builders_t), microbial carbonate builds up at
+    MICROBIAL_REEF of the rate."""
     p, dt = sim.params, sim.dt
     evap, coal = chem
     chem = evap + coal
@@ -785,7 +868,8 @@ def reefs(sim, col, dep, chem):
     sed = sediment_km(col.cover, col.x)
     e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
     reef = (e < -5) & (e > -1500) & (sim.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
-    grow = np.minimum(p.reef_rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
+    rate = p.reef_rate * (1.0 if sim.t >= reef_builders_t(sim) - 1e-9 else MICROBIAL_REEF)
+    grow = np.minimum(rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
     carb = grow / sediment_iso(cont, rock, sed)
     col.t, col.cover = col.t + carb, col.cover + carb
     col.x[:, CARB] += carb
