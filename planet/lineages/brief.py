@@ -31,8 +31,9 @@ from ..grid import shared_grid
 from . import mining as MN
 from . import salt_reach as SR
 from . import spec as SP
+from .spread import graph_dist
 
-BRIEF_VERSION = 8  # 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 9  # 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -482,10 +483,28 @@ def _salt_reach(ctx: Ctx, i: int) -> dict | None:
     if G is not None and "_salt_km" in G and W is not None and "flow" in W:
         wl = np.asarray(W["elevation"]) > 0
         zone = SR.contact_zone(ctx.g, wl, ctx.f("peoples", i), _marine_mask(ctx))
+        mined, works = _salt_works(ctx, i)
         out = SR.reach(ctx.g, wl, np.asarray(G["_salt_km"], float), np.asarray(W["flow"], float), zone, SALT_TRADED_KM,
-                       mined=MN.worked_salt(G, _miner_cells(ctx, i)))
+                       mined=mined, works=works)
     ctx._frame_cache[key] = out
     return out
+
+
+def _salt_works(ctx: Ctx, i: int) -> tuple[np.ndarray, np.ndarray]:
+    """(mines, works) at frame i (PW-854): the mines are rock-salt beds in the miners' own country plus their colonies (beds held by
+    other peoples within MN.COLONY_KM of it); the works are the beds in the country of any other settled people. Whole grid."""
+    key = ("salt_works", i)
+    if key not in ctx._frame_cache:
+        G = ctx.goods
+        lead = ctx.f("mix_lead", i).astype(int)
+        mar = _marine_mask(ctx)
+        settled = (lead != 255) & ~mar[np.minimum(lead, len(mar) - 1)]
+        mine = _miner_cells(ctx, i)
+        hops = int(np.ceil(MN.COLONY_KM / (ctx.g.spacing * R_KM)))
+        d = graph_dist(mine, hops, ctx.g.nbr_off, ctx.g.nbr_idx) if mine.any() else np.full(ctx.g.n, -1)
+        mined = MN.worked_salt(G, mine) | MN.colony_cells(G, mine, settled, d >= 0)
+        ctx._frame_cache[key] = (mined, MN.settled_works(G, settled, mined))
+    return ctx._frame_cache[key]
 
 
 def _miner_cells(ctx: Ctx, i: int, k: int | None = None) -> np.ndarray:
@@ -508,6 +527,7 @@ def _mining(ctx: Ctx, i: int, sel: np.ndarray, land: np.ndarray, brief: dict) ->
     G = ctx.goods
     if G is None or "salt_rock" not in G or not land.any():
         return None
+    mined, works = _salt_works(ctx, i)
     p = brief["peoples"]
     partners = [r["id"] for r in p["list"] if not MN.is_miner(ctx.lines[ctx.idx[r["id"]]].get("traits"))]
     partners += [n["id"] for n in brief["neighbours"]["list"] if n["id"] not in partners and not MN.is_miner(ctx.lines[ctx.idx[n["id"]]].get("traits"))]
@@ -528,7 +548,14 @@ def _mining(ctx: Ctx, i: int, sel: np.ndarray, land: np.ndarray, brief: dict) ->
     return {"basis": f"lines with the miner trait over the cells where they lead or are second here; a bed is rock salt (good salt_rock) >= {MN.SALT_MIN}, ore a "
                      f"district (>= {MN.ORE_MIN}) of {', '.join(MN.ORE_GOODS)}; a kind needs {MN.HELD_MIN:.0%} of their cells; the mined salt is traded {SR.MINED_CAP:g}x further than unworked salt",
             "list": rows,
-            "worked_salt_share_of_land": round(float(MN.worked_salt(G, _miner_cells(ctx, i))[land].mean()), 3)}
+            "worked_salt_share_of_land": round(float(MN.worked_salt(G, _miner_cells(ctx, i))[land].mean()), 3),
+            # PW-854: salt is something peoples seek, not a subgroup: any settled people works the beds in its country (salt works),
+            # and a miner people (dwarves) sends colonies to beds in reach of its own country
+            "salt_works": {"basis": f"rock-salt beds (>= {MN.SALT_MIN}) in the country of a settled people: works; of a miner people, or within {MN.COLONY_KM:g} km of it: mines and colonies "
+                                    f"(salt traded {SR.MINED_CAP:g}x further than unworked beds, works {SR.WORKS_CAP:g}x)",
+                           "mines_and_colonies_share_of_land": round(float(mined[land].mean()), 3),
+                           "colony_share_of_land": round(float((mined & ~MN.worked_salt(G, _miner_cells(ctx, i)))[land].mean()), 3),
+                           "works_share_of_land": round(float(works[land].mean()), 3)}}
 
 
 def _route(ctx: Ctx, s: dict, arr: np.ndarray, sel: np.ndarray, land: np.ndarray) -> dict | None:
@@ -758,7 +785,7 @@ def _neighbours(ctx: Ctx, i: int, sel: np.ndarray, place: dict) -> dict:
         rows.append(row)
     rows.sort(key=lambda r: (-r["ring_cells"], r["id"]))
     return {"ring_km": RING_KM, "list": rows[:12],
-            "tier_note": "tier from split depth (T0 under 10 kyr or the same people, T1 under 1 Myr, T2 under 40 Myr, else T3); border_km is the border of the two peoples (cells of one that touch the other's range without being in it, x cell size), since_kyr their first contact"
+            "tier_note": "tier from split depth (T0 under 10 kyr or the same people, T1 under 1.1 Myr: fertile, T2 under 4 Myr: mostly sterile, else T3: no young); border_km is the border of the two peoples (cells of one that touch the other's range without being in it, x cell size), since_kyr their first contact"
             if ctx.meta.get("contacts") else "interfertility tiers: " + NOT_MODELLED}
 
 
