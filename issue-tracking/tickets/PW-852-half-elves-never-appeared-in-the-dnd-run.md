@@ -20,5 +20,6 @@ updated: 2026-10-25
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner: 'about ten months after the first elves show up'. Cause being checked.
 
 ## Updates
+- 2026-10-25: Owner: humans spread like a gas; on a continent shared for ~6 kyr with elves who'd been expanding ~20 kyr, they should meet within hundreds to low thousands of years and mix. Something is wrong: investigate the overlap (EST threshold, exclusion, human spread on continent 0) and fix.
 - 2026-10-25: Diagnosis: contact hybrids are born only where both parents share cells; elves arrived ~25 kyr ago on continent 0 while humans lived on continent 1 and only reached continent 0 ~5.9 kyr ago, with no human-elf mixing zone. Working as written; the owner wants half-elves soon after the elves arrive, so the Fae arrival should favour land near humans or hybrids should form at sea/coast contact.
 - 2026-10-25: Created.
