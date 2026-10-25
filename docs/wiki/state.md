@@ -25,6 +25,7 @@
 v2 priorities: always one fun lane on peoples/lineages (PW-692 frames the end goal), then speed, resources (PW-155), zoom quality (PW-516). Roadmap: [plan_next.md](../plan_next.md).
 
 ## Current showcases
+- Owner feedback world (2026-10-24): world 2a7385 (seed 11 L7, run 6b48f5, time zoom f778ab, zooms 1ab4c4 91bf86 cd4341 80a169), peoples b69f51 (seven_meals) and 6b5d0e (dnd). Feedback doc: https://claude.ai/artifact/GMaU7W2PynuiY9z5o71kDA
 - Runs: 6c652c, d30069, 99dc70, feaade.
 - Worlds: 6fbc2c, 067778, a12762, 6909cb.
 - Peoples run 104de8 (`seven_meals` preset) on world 6fbc2c.
