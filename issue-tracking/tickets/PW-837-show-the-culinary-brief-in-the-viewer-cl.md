@@ -21,3 +21,4 @@ Owner asked how to find and read the briefs; today they exist only via 'planet b
 
 ## Updates
 - 2026-10-24: Created.
+- 2026-10-25: Fun lane 25: GET /api/brief?run=&people=&era= (or &region=lat,lon,km) builds the brief (server.brief, ~3 s) and the Peoples panel shows a 'Culinary brief...' button when one people is selected: a dialog with the Markdown text, Copy text and Download JSON. Checked on run bbfba8 (orcs). Left: a 'brief here' for a picked cell (the endpoint takes region= already), an era choice (present only), and a brief list of every people.

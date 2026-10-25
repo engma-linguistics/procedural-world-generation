@@ -198,7 +198,7 @@
       <button id="northUp" class="btn" title="Turn the globe so north points up, keeping the longitude (key N)">North up</button>
     </div>
     <div id="flatOpts" class="rbox" hidden>
-      <label title="How the flat map is drawn. Equirectangular is the live map (overlays, hill shading, 3D relief); the others redraw the layer in that projection, without overlays">projection <select id="projSel"></select></label>
+      <label title="How the flat map is drawn. Equirectangular is the live map (hill shading, 3D relief); the others redraw the layer and the overlays in that projection (not the hill shading)">projection <select id="projSel"></select></label>
       <div id="projBox" hidden>
         <label title="How much ground the map shows (a square this many km across), or the whole projection">extent <select id="projExt"><option value="">whole projection</option></select></label>
         <div class="muted" id="projCentre"></div>
@@ -1094,6 +1094,7 @@ function peoplesPanel() {
     ${zones.length ? `<div style="margin-top:4px"><b>Mixing at the present:</b> <span class="muted">${p.mixing ? `${p.mixing.area_mkm2} Mkm² (${Math.round(100 * p.mixing.land_share)}% of the land; corridors ${Math.round(100 * (p.mixing.in_corridors || 0))}% mixed, closed country ${Math.round(100 * (p.mixing.in_closed || 0))}%)` : ''}</span><br>${zones.join('<br>')}</div>` : ''}
     ${p.empty_continents?.length ? `<div class="muted">nobody on ${p.empty_continents.join(', ')}</div>` : ''}
     ${state.people != null && lines[state.people]?.story ? `<div style="margin-top:4px;max-width:340px">${esc(lines[state.people].story)}</div>` : ''}
+    ${state.people != null && lines[state.people] ? `<div style="margin-top:4px"><button data-brief="${esc(lines[state.people].id)}" title="What this people's range looks like for a cook: land, fuels, wild and grown foods, coast, seasons, bad years (planet brief, PW-728)">Culinary brief…</button></div>` : ''}
     ${p.wishes?.length ? `<div style="margin-top:4px"><b>Wishes</b> <span class="muted">(score ${p.wish_score}; tries ${(p.tries || []).join(', ')})</span><br>${p.wishes.map((w) => `${w.a} ${w.want} ${w.b || ''}: ${w.score}`).join(' · ')}</div>` : ''}</div>`;
 }
 document.addEventListener('change', (e) => {
@@ -1103,7 +1104,36 @@ document.addEventListener('change', (e) => {
   if (state.peoplesWhole && state.people != null && lines[state.people]?.group_of) state.people = lines.find((l) => l.id === lines[state.people].group_of)?.index ?? null;
   paint(); buildOverlays(); renderRunSummary();
 });
+// The culinary brief of a people (PW-837): the server builds it (GET /api/brief) and the panel shows its Markdown text
+// as it is, with a copy button and the JSON a download.
+const briefBox = document.createElement('div');
+briefBox.hidden = true;
+briefBox.style.cssText = 'position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center';
+briefBox.innerHTML = '<div class="panel" style="width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column;padding:12px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><b id="briefTitle" style="flex:1">Culinary brief</b><button id="briefCopy">Copy text</button><button id="briefJson">Download JSON</button><button id="briefClose">Close</button></div><pre id="briefText" style="overflow:auto;white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace"></pre></div>';
+document.body.append(briefBox);
+let briefData = null;
+briefBox.addEventListener('click', (e) => { if (e.target === briefBox || e.target.id === 'briefClose') briefBox.hidden = true; });
+$('briefCopy', briefBox).addEventListener('click', () => navigator.clipboard?.writeText(briefData?.markdown || '').then(() => toast('Copied the brief')));
+$('briefJson', briefBox).addEventListener('click', () => {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(briefData.brief, null, 1)], { type: 'application/json' }));
+  a.download = `brief-${V.run.id}-${briefData.who}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+async function showBrief(pid) {
+  const run = V.run.id || V.dir, line = (V.run.meta.lineages || []).find((l) => l.id === pid);
+  $('briefTitle', briefBox).textContent = `Culinary brief: ${line?.name || pid} (present)`;
+  $('briefText', briefBox).textContent = 'Building the brief…';
+  briefBox.hidden = false;
+  try {
+    const r = await fetch(`/api/brief?run=${encodeURIComponent(run)}&people=${encodeURIComponent(pid)}&era=0`), j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    briefData = { ...j, who: pid };
+    $('briefText', briefBox).textContent = j.markdown;
+  } catch (err) { $('briefText', briefBox).textContent = 'Could not build the brief: ' + err.message; }
+}
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !briefBox.hidden) briefBox.hidden = true; });
 document.addEventListener('click', (e) => {
+  const bt = e.target.closest?.('[data-brief]');
+  if (bt) { e.preventDefault(); showBrief(bt.dataset.brief); return; }
   const el = e.target.closest?.('[data-people]');
   if (!el || !V?.run?.meta?.lineages) return;
   e.preventDefault();

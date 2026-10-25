@@ -15,3 +15,7 @@ refs: [viewer/index.html, viewer/projmap.js]
 
 ## Description
 PW-838 (owner) made the flat map default to Equal Earth. The projected maps (`projmap.js` canvas) draw only the layer colours, no overlays: highlight rings and number labels, event markers, rivers, peoples' origin rings, volcanoes. So the default flat map shows none of them until the owner switches the projection to Equirectangular or ticks 3D relief (which keeps the live three.js map). Options: (A) leave it and say so in the tooltip (as now); (B) project the overlay points through `makeProjection` and draw them on the canvas (highlights and events first); (C) keep Equal Earth as the default only when no overlay is ticked. Lean B for highlights and event markers, since the owner looks at highlights on the flat map.
+
+
+## Done (fun lane 25)
+Done in this lane: viewer/index.html projFeatures() reads the live map overlays (rivers, volcanoes, hotspots, events, tracks, highlight rings and labels, zoom outlines, tropics) back as lat/lon and projmap.drawFeatures draws them through the chosen projection. Coordinator: close this draft against PW-860 on intake.
