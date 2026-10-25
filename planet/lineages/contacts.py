@@ -200,7 +200,7 @@ class Contacts:
             keep = s if len(s) <= SERIES_KEEP else [s[int(round(i))] for i in np.linspace(0, len(s) - 1, SERIES_KEEP)]
             kind = max(r["kinds"], key=lambda q: r["kinds"][q]) if r["kinds"] else None
             sk = T.split_kyr(ids[a], ids[b])
-            pairs.append({"a": ids[a], "b": ids[b], "tier": f"T{T.tier_of(ids[a], ids[b])}",
+            pairs.append({"a": ids[a], "b": ids[b], "tier": f"T{T.tier_of(ids[a], ids[b])}", "hybrid_fertility": round(T.fertility(ids[a], ids[b]), 3),
                           "split_kyr": None if sk is None else round(sk, 1),
                           "first_contact_kyr": round(r["first"], 3), "years_in_contact": int(round(years * 1000)),
                           "in_contact_now": now is not None, "border_km_now": now[1] if now else 0,

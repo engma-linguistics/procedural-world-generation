@@ -28,6 +28,7 @@ from pathlib import Path
 import numpy as np
 
 from . import climate, coast, coastal, coastform, gameattrs, humanuse, hydrology, ocean, satellite, soils, vegetation
+from . import names as NM
 from . import store as S
 from .generators import GENERATORS
 from .geo import R_KM, is_land, latlon, world_land, xyz
@@ -243,18 +244,22 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
 # ---------------------------------------------------------------------------
 # Summaries
 # ---------------------------------------------------------------------------
-def landmasses(grid: Grid, land: np.ndarray, min_cells: int = 3):
+def landmasses(grid: Grid, land: np.ndarray, min_cells: int = 3, seed=None):
     """Connected land regions with at least min_cells cells, largest first
-    (ties: lowest cell id first), named A, B, C..."""
+    (ties: lowest cell id first). `letter` A, B, C...; `name` a generated name from the world's seed and the rank
+    (names.landmass_name, PW-853), or the letter without a seed."""
     label, k = grid.components(land)
     sizes = np.bincount(label[label >= 0], minlength=k)
     out = []
-    for idx, comp in enumerate(c for c in np.argsort(-sizes, kind="stable") if sizes[c] >= min_cells):
+    order = [c for c in np.argsort(-sizes, kind="stable") if sizes[c] >= min_cells]
+    given = NM.landmass_names(seed, len(order)) if seed is not None else None
+    for idx, comp in enumerate(order):
         m = np.flatnonzero(label == comp)
         c = grid.centers[m].mean(0)
         lat, lon = latlon(c / np.linalg.norm(c))
         out.append({
-            "name": _letters(idx),
+            "name": given[idx] if given else _letters(idx),
+            "letter": _letters(idx),
             "cells": len(m),
             "pct_of_surface": round(100 * len(m) / grid.n, 2),
             "center_lat": round(float(lat), 1),
@@ -278,7 +283,7 @@ def summarize(world: dict) -> dict:
     L = world["layers"]
     elev, biome = L["elevation"], L["biome"]
     land = world_land(L)
-    masses = landmasses(g, land)
+    masses = landmasses(g, land, seed=world["meta"].get("seed"))
     lm = np.full(g.n, "", dtype=object)
     for m in masses:
         lm[m["_members"]] = m["name"]

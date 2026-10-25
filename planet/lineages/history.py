@@ -43,6 +43,10 @@ APART_CONTESTED = 0.1  # an 'apart' or 'near' wish counts when the two niches wo
 START_KM = 1500.0  # a start hint's reach (PW-763): 'far_from' ramps from x0.05 at the other's border to x1 over this, 'near' falls off with it
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
+ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
+ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
+PARTNER_PULL = 4.0  # a sea landing of a people whose contact hybrid is wanted is this much likelier (x1 + this) on the partner's own coast (PW-861)
+MEGAFAUNA_PUSH = 0.1  # the competition a megafauna line (a handful of dragons per country, spec megafauna) puts on others, against its niche overlap (PW-855)
 HYBRID_REACH_KM = 600.0  # an arrival whose hybrid is wanted comes down within about this of the other parent's range (PW-852)
 LINGER_MIN = 0.3  # ...but where they last met it lives on as a small people of its own (at least this share)
 HOLOCENE_KYR = 10.0  # the land's living goods (farmland, pasture, forest, coasts) are today's from then on
@@ -328,6 +332,10 @@ class History:
         push = np.clip((self.dens[None, :] / self.dens[:, None]) ** DENSITY_PUSH, *DENSITY_CLIP)
         self.alpha *= push
         self.terr *= push
+        for b in self.lines:  # megafauna press the peoples hardly at all: a handful of dragons does not hold a country against its farmers (PW-855)
+            if b.megafauna:
+                self.alpha[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
+                self.terr[:, self.idx[b.id]] *= MEGAFAUNA_PUSH
         # each line's rivals: the lines whose presence enters its competition
         for w in tree.wishes:  # peoples wished near each other tolerate each other (they share a border)
             if w.want == "near" and w.a in self.idx and w.b in self.idx:
@@ -344,7 +352,7 @@ class History:
         self.events: list[dict] = []
         self.origins: dict[str, dict] = {}
         self.tracks: dict[str, list] = {l.id: [] for l in self.lines}
-        self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2)
+        self.cross = Crossings(self.grid, self.steps[-1].get(), self.cell_km, self.cell_mkm2, getattr(ps, "world_seed", None))
         self.flow = getattr(ps, "flow", None)
         self.animals: Animals | None = None  # (made in run(): the domesticated animals, animals.py)
         self.crops: Crops | None = None  # (made in run(): the cultivated plants, crops.py)
@@ -463,6 +471,24 @@ class History:
         m = 0.05 + np.exp(-(((d - L) / (0.8 * L)) ** 2))
         return np.where(d < 0, 0.001, np.where(d == 0, 0.05, m))
 
+    def _partner_pull(self, line):
+        """Per cell, how much likelier a sea landing of `line` is there for the sake of its wanted contact hybrids (PW-861): x(1 + PARTNER_PULL)
+        right at the range of the other parent of each such hybrid, falling off over HYBRID_REACH_KM; None when no hybrid is wanted or the
+        partners hold nothing. Hybrids happen on a frontier, so a people that sails over should come down where its partner already is."""
+        partners = [q for h in self.tree.lines.values() if h.origin == "hybrid" and line.id in h.parents and h.contact
+                    for q in h.parents if q != line.id and self.active.get(q)]
+        if not partners:
+            return None
+        g = self.grid
+        po = np.zeros(g.n, bool)
+        for q in partners:
+            po |= self.whole(q) > EST
+        if not po.any():
+            return None
+        L = max(HYBRID_REACH_KM / self.cell_km, 1.0)
+        d = graph_dist(po, int(np.ceil(3 * L)), g.nbr_off, g.nbr_idx)
+        return 1.0 + PARTNER_PULL * np.where(d < 0, 0.0, np.exp(-np.maximum(d, 0) / L))
+
     def _rivals_here(self, line, K):
         """The competition `line` would feel at each cell from the peoples alive now (as history.run: niche overlap, closed-country extra)."""
         k = self.idx[line.id]
@@ -497,8 +523,19 @@ class History:
                             # where the newcomer can really live: free room (habitat less what its rivals already hold there) of at
                             # least half its best; on a crowded continent it would be squeezed into a refuge (ALPHA_CLOSED), so it
                             # then keeps its own best habitat
-                            ok = (m > 0.3) & (K - self._rivals_here(line, K) >= 0.5 * K.max())
-                            if ok.any():  # (a restriction, not a weight: the origin's noise is heavy-tailed, a weight of 0.05 is beaten by its luck)
+                            free = K - self._rivals_here(line, K)
+                            for share in ARRIVAL_ROOM:  # (PW-861: the freest country near the partner, not only pristine land: on a crowded
+                                # continent there is none, and the newcomer fell back to a continent of its own, far from its partner)
+                                ok = (m > 0.3) & (K > EST) & (free >= max(share * K.max(), EST))
+                                if ok.any():
+                                    break
+                            if ok.any():
+                                # ...in the roomier half of those cells: room round about it (the free country within a few rings), so the
+                                # newcomer is not squeezed into a pocket of a few cells (it then held 50-100 cells where 1000+ were usual)
+                                pocket = np.clip(free, 0, None) * (K > EST)
+                                for _ in range(ARRIVAL_POCKET_RINGS):
+                                    pocket = self._smooth(pocket)
+                                ok = ok & (pocket >= np.median(pocket[ok]))  # (a restriction, not a weight: the origin's noise is heavy-tailed, a weight of 0.05 is beaten by its luck)
                                 m = np.where(ok, m, 0.0)
                                 pull = m if pull is None else pull * m
                                 score = score * m
@@ -1024,7 +1061,8 @@ class History:
                     self._hop_dt[k] += step.dt
                     landings = []
                     if self._hop_dt[k] >= HOP_EVERY_KYR or step.epoch == "deep":
-                        landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self._lrng[l.id], EST)
+                        landings = self.cross.hop(l, self.p[k], K, room, env, tags, step.ago, self._hop_dt[k], self._lrng[l.id], EST,
+                                                  self._partner_pull(l))
                         self._hop_dt[k] = 0.0
                     for cell, way, gap in landings:
                         blob = rings(int(cell), K > EST, 1, g.nbr_off, g.nbr_idx) & (room > EST)
@@ -1106,7 +1144,17 @@ class History:
         hosts = sum(np.where(P[j] >= EST, P[j], 0.0) * self.dens[j]
                     for q in l.parents for j in [self.idx[q], *self._groups.get(q, [])])
         own = self._linger[k]
-        return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * hosts * area)
+        return np.where(own, x * self.dens[k] * area, (x > 0) * l.share * self._fertility(l) * hosts * area)
+
+    def _fertility(self, l) -> float:
+        """A contact hybrid's share scales with how fertile its parents' hybrids are by their divergence (PW-851: fertile out to ~1-2 Myr, mostly
+        sterile to ~4, none beyond); 1 for a template, and where no divergence date is there to read (half-elves)."""
+        if l.origin != "hybrid":
+            return 1.0
+        f = self.__dict__.setdefault("_fert", {})
+        if l.id not in f:
+            f[l.id] = self.tree.fertility(*l.parents)
+        return f[l.id]
 
     def _meeting(self, a, b):
         """Where two peoples meet (PW-852): in a cell both hold, or on a frontier: one holds the cell and the other the cell next to it.

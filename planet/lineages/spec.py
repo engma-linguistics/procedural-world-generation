@@ -261,8 +261,20 @@ def body_notes(b: dict) -> list[str]:
     return out
 
 
-TIER_KYR = (10.0, 1000.0, 40000.0)  # split depths under which peoples are T0, T1, T2 (else T3): interfertility tiers, PW-727
+TIER_KYR = (10.0, 1100.0, 4000.0)  # split depths under which peoples are T0, T1, T2 (else T3): interfertility tiers, PW-727. Real hybrids: fertile out to ~1-2 Myr of divergence (horse x donkey is ~4 Myr and mostly sterile; wolf x dog, bison x cattle fertile), mostly sterile to ~4 Myr, none beyond (PW-851)
+TIER_FERTILITY = (1.0, 1.0, 0.1, 0.0)  # share of hybrid matings that bear fertile young at each tier (T2: 0.2 at the edge of T1 falling to 0.02 at the edge of T3, see fertility_at)
 REALMS = ("land", "coast", "sea")
+def fertility_at(d_kyr: float, tier_kyr: tuple = TIER_KYR) -> float:
+    """Share of hybrid matings bearing fertile young after d_kyr of divergence: 1 under the T1 limit (fertile, with the
+    brake of a cline), then mostly sterile (0.2 falling to 0.02 across T2, log-linear), none beyond the T2 limit (PW-851)."""
+    t1, t2 = tier_kyr[1], tier_kyr[2]
+    if d_kyr < t1:
+        return 1.0
+    if d_kyr >= t2:
+        return 0.0
+    return float(0.2 * (0.02 / 0.2) ** ((d_kyr - t1) / max(t2 - t1, 1e-9)))
+
+
 ORIGINS = ("root", "split", "arrival", "hybrid", "template", "group")
 GROUP_KYR = 6.0  # a group's default time (kyr ago): the Holocene ways of life
 
@@ -304,6 +316,7 @@ class Lineage:
     way_given: str | None = None  # of it, what the spec gave on this line itself
     realm: str = "land"  # land | coast (shore ring of sea cells) | sea (all sea cells): PW-775
     persists: bool = False  # keeps living after its last split child
+    megafauna: bool = False  # a handful per country (dragons): its range hardly takes room from the peoples that share it (history.MEGAFAUNA_PUSH, PW-855)
     color: str | None = None
     place: tuple[float, float] | None = None  # arrival: lat, lon
     start_near: list[str] = field(default_factory=list)  # where its origin is placed (PW-763): near these lines' ranges...
@@ -502,7 +515,7 @@ class Tree:
 
     def tier_of(self, a: str, b: str) -> int:
         """Interfertility tier of two lines from the depth of their split (meta.tier_kyr: T0 under 10 kyr or the
-        same people, T1 under 1 Myr, T2 under 40 Myr, else T3), unless a [[interfertile]] row names the pair."""
+        same people, T1 under 1.1 Myr, T2 under 4 Myr, else T3), unless a [[interfertile]] row names the pair."""
         for x, y, t in self.tiers:
             if {x, y} == {a, b}:
                 return t
@@ -510,6 +523,16 @@ class Tree:
         if d is None:
             return 3
         return next((i for i, lim in enumerate(self.tier_kyr) if d < lim), 3)
+
+    def fertility(self, a: str, b: str) -> float:
+        """Share of hybrid matings of two lines that bear fertile young, from their split depth (PW-851). An [[interfertile]]
+        row gives its tier's nominal share; no common ancestor (an arrival from outside, another root: the fantasy exemptions,
+        half-elves) gives 1, since no divergence date is there to read."""
+        for x, y, t in self.tiers:
+            if {x, y} == {a, b}:
+                return TIER_FERTILITY[t]
+        d = self.split_kyr(a, b)
+        return 1.0 if d is None else fertility_at(d, self.tier_kyr)
 
     def groups_of(self, lid: str) -> list[str]:
         """The groups (ways of life) within a people, oldest first."""
@@ -682,7 +705,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     prefers=[_check_tag(x, lid) for x in r.get("prefers", base.prefers)],
                     avoids=[_check_tag(x, lid) for x in r.get("avoids", base.avoids)],
                     traits=traits, speed_kmyr=float(r.get("speed_kmyr", r.get("expansion_kmyr", base.speed_kmyr))), **demo,
-                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), color=r.get("color"), place=place,
+                    body=body, body_given=bgiven, way=wgiven or (base.way if bases else None), way_given=wgiven, realm=realm, persists=bool(r.get("persists", False)), megafauna=bool(r.get("megafauna", base.megafauna if (bases and origin == "group") else False)), color=r.get("color"), place=place,
                     start_near=hints["near"], start_far=hints["far_from"], start_lat=sl, start_land=sland or None,
                     share=float(r.get("share", 0.1)), contact=bool(r.get("contact", True)),
                     linger=bool(r.get("linger", True)),
@@ -850,6 +873,8 @@ def to_raw(t: Tree) -> dict:
             r["color"] = l.color
         if l.persists:
             r["persists"] = True
+        if l.megafauna:
+            r["megafauna"] = True
         if l.extinct_kyr is not None:
             r["extinct"] = f"{l.extinct_kyr:g} kyr"
         if l.custom:

@@ -30,6 +30,9 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-25 · Plume degassing (coordinator) · plumes and LIPs outgas CO2, sized from the literature · PW-875
+- 2026-10-25 · Finish moment (owner) · taking the finished world at a human-habitable moment near the run end is choosing the right moment, not a kludge (Earth passes the finish checks only in its last few Myr); window set from measurement · PW-866
+- 2026-10-25 · Carbon source (coordinator) · the climate drift stands only for what the model lacks (burial, ocean chemistry), sized from the literature, with outgassing no longer counted twice; check a C3-limit weathering floor (Pagani 2009) · draft on v1-finish-12
 - 2026-10-25 · Icehouse bar (owner) · option C: keep the physics (end-anchored GEOCARB balance, literature weathering, star thermostat off); no cap on a run's icehouse share; snowball/always-icebox, hellhole and never-ice still fail at ~70% of draws passing; finish checks (true mean -6..+3 C, interglacial ice ~Earth's, wet-tropics trees) stay · PW-865
 - 2026-10-24 · Star lever · for Earth-like worlds NO ice ages is a fail too; star brightening is the accepted per-world lever; 0.45 is the working default (provisional, phone) · PW-780
 - 2026-10-24 · Star thermostat · opt-in per preset, causal, slow, bounded luminosity range · PW-791
@@ -58,6 +61,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-10-25 · Dispersal (coordinator) · humans should spread like the record (Sahul by sea >=50 kyr, through held country within 10-20 kyr): pioneer advantage plus an early boat rung, by mechanism · PW-869
 - 2026-10-24 · Owner's world (seven_meals) · antelope-kin and cervid-kin can milk by default but are mostly farmers, **then reversed**: no dairying for the setting's tieflings · PW-784 (**superseded** by) PW-793
 - 2026-10-24 · Folklore · two layers per row: current name fades, legend/folklore persists; parked under historical linguistics · PW-757, PW-767
 - 2026-10-24 · Empires · present-day Empire (antelope-kin) and fallen Empire (cervid-kin) in seven_meals; needs polities or authored anchors · PW-785

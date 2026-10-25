@@ -52,3 +52,19 @@ def people_kind(G: dict, cells: np.ndarray) -> dict | None:
     os_ = float((ore_cells(G)[cells] >= ORE_MIN).mean())
     lacks = [text for g, text in NEEDS if g in G and float(np.asarray(G[g], float)[cells].mean()) < NEED_BELOW]
     return {"kind": kind_of(ss, os_), "salt_share": round(ss, 3), "ore_share": round(os_, 3), "lacks": lacks}
+
+
+COLONY_KM = 300.0  # a mining people (the miner trait: dwarves) sends a colony to work beds this far from its own country, if a people holds them (PW-854)
+
+
+def colony_cells(G: dict, miner_here: np.ndarray, settled: np.ndarray, near_miner: np.ndarray) -> np.ndarray:
+    """Cells of a mining colony (PW-854): rock-salt beds held by a settled people beyond the miners' own country but within COLONY_KM of it
+    (near_miner), worked by a colony of the miners: dwarves are predisposed to mining, so the beds of their neighbours get a mining
+    settlement. Salt is something peoples seek: no subgroup of miners is needed for it."""
+    return (salt_cells(G) >= SALT_MIN) & settled & near_miner & ~miner_here
+
+
+def settled_works(G: dict, settled: np.ndarray, mined: np.ndarray) -> np.ndarray:
+    """Cells where a settled people of any kind works the beds in its country as salt works (PW-854), the miners' mines and colonies
+    (mined) apart."""
+    return (salt_cells(G) >= SALT_MIN) & settled & ~mined

@@ -1240,6 +1240,7 @@ def test_interfertility_tiers_come_from_split_depth_with_overrides():
         {"id": "stem", "origin": "root", "at": "30 Myr"},
         {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "200 kyr"},
         {"id": "c", "parents": ["stem"], "at": "20 Myr"}, {"id": "a2", "parents": ["a"], "at": "5 kyr"},
+        {"id": "d", "parents": ["stem"], "at": "2.5 Myr"},
         {"id": "fey", "origin": "arrival", "at": "10 kyr", "place": [0, 120]},
         {"id": "half", "origin": "hybrid", "parents": ["a", "fey"], "at": "8 kyr"},
         {"id": "far", "origin": "root", "at": "30 Myr"}],
@@ -1247,7 +1248,8 @@ def test_interfertility_tiers_come_from_split_depth_with_overrides():
     t = SP.parse(raw)
     assert t.split_kyr("a", "b") == 500 and t.tier_of("a", "b") == 1 and t.tier_of("b", "a") == 1
     assert t.tier_of("a", "a2") == 0 and t.tier_of("a", "c") == 1  # (the override beats the 20 Myr split)
-    assert t.tier_of("b", "c") == 2 and t.tier_of("a2", "b") == 1
+    assert t.tier_of("b", "d") == 2 and t.tier_of("a2", "b") == 1  # (2.5 Myr: mostly sterile, PW-851)
+    assert t.tier_of("b", "c") == 3 and t.tier_of("d", "c") == 3  # (20 Myr: no young; it was T2 under the old 40 Myr limit)
     assert t.tier_of("a", "fey") == 3 and t.tier_of("stem", "far") == 3  # (an arrival from outside, another root)
     assert t.tier_of("half", "a") == 0 and t.tier_of("half", "b") == 1  # (an overlay is interfertile with its hosts)
     assert SP.parse(SP.to_raw(t)).tiers == t.tiers
@@ -1255,6 +1257,44 @@ def test_interfertility_tiers_come_from_split_depth_with_overrides():
     assert SP.parse(raw).tier_of("a", "b") == 2
     with pytest.raises(ValueError):
         SP.parse({**raw, "interfertile": [{"a": "a", "b": "nope", "tier": 1}]})
+
+
+def test_hybrid_fertility_follows_divergence_times():
+    """PW-851: fertile out to ~1-2 Myr of divergence, mostly sterile to ~4 Myr, none beyond; from the lineages' own dates."""
+    f = SP.fertility_at
+    assert f(0) == f(500) == f(1000) == 1.0  # (T0, T1: fertile)
+    assert 0.1 < f(1200) <= 0.2 and 0.02 < f(2500) < 0.1 and f(3999) < 0.03  # (mostly sterile, falling)
+    assert f(1200) > f(2000) > f(3000) > f(3999) > 0 and f(4000) == f(20000) == 0.0
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr"},
+        {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "2.5 Myr"},
+        {"id": "c", "parents": ["stem"], "at": "8 Myr"}, {"id": "fey", "origin": "arrival", "at": "20 kyr"}],
+        "interfertile": [{"a": "a", "b": "c", "tier": 1}]}
+    t = SP.parse(raw)
+    assert t.fertility("a", "a") == 1.0 and t.fertility("a", "stem") == 1.0
+    assert 0 < t.fertility("a", "b") < 0.1 and t.fertility("b", "c") == 0.0  # (2.5 and 8 Myr)
+    assert t.fertility("a", "c") == 1.0 and t.fertility("a", "fey") == 1.0  # (an override; no date to read: the fantasy exemption)
+
+
+def test_a_contact_hybrid_of_distant_parents_is_a_thinner_share(faketz):
+    """PW-851: the hybrid's share of its hosts' people scales with its parents' fertility, so the same cell holds fewer hybrids of a
+    mostly sterile pair than of a fertile one."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "a", "parents": ["stem"], "at": "500 kyr"}, {"id": "b", "parents": ["stem"], "at": "600 kyr"},
+        {"id": "far", "parents": ["stem"], "at": "2.5 Myr"},
+        {"id": "ab", "origin": "hybrid", "parents": ["a", "b"], "at": "20 kyr", "share": 0.2},
+        {"id": "afar", "origin": "hybrid", "parents": ["a", "far"], "at": "20 kyr", "share": 0.2}]}
+    h = H.History(SP.parse(raw), ps, 1)
+    P = np.zeros((len(h.lines), h.grid.n))
+    h._linger = np.zeros(P.shape, bool)
+    for q in ("a", "b", "far"):
+        P[h.idx[q]] = 0.8
+    P[h.idx["ab"]] = 0.5
+    P[h.idx["afar"]] = 0.5
+    full, thin = h.population(h.idx["ab"], P), h.population(h.idx["afar"], P)
+    assert full.sum() > 0 and thin.sum() > 0 and thin.sum() < 0.2 * full.sum()
 
 
 def test_contacts_record_borders_tiers_and_substrate_and_clines_carry_a_share(faketz):
@@ -1426,16 +1466,21 @@ def test_seven_meals_tiers_follow_the_culinary_repos_tree_and_the_ruminant_peopl
     # genetics.md's tier table falls out of the split depths
     for a, b in (("human", "orc"), ("human", "goliath"), ("leonin", "tabaxi"), ("goblin", "hobgoblin"), ("hill_giant", "storm_giant")):
         assert tier(a, b) == 1, (a, b)
-    for a, b in (("human", "dwarf"), ("dwarf", "halfling"), ("human", "halfling"), ("goblin", "bugbear"), ("lizardfolk", "dragonborn"),
+    for a, b in (("human", "dwarf"), ("dwarf", "halfling"), ("human", "halfling"), ("goblin", "bugbear"),
                  ("dragonborn", "kobold"), ("merfolk", "deep_folk"), ("human", "hill_giant")):
         assert tier(a, b) == 2, (a, b)
-    for a, b in (("human", "leonin"), ("human", "lizardfolk"), ("elf", "gnome"), ("human", "elf"), ("tortle", "dragonborn"), ("human", "aarakocra")):
+    # dragons are a deep reptile line (PW-855): the lizardfolk and tortles split from them in the dinosaur era, so they are no kin of the
+    # dragon-blooded peoples any more; dragonborn and kobolds are kin of the dragons (split off recently) and of each other (T2)
+    for a, b in (("human", "leonin"), ("human", "lizardfolk"), ("elf", "gnome"), ("human", "elf"), ("tortle", "dragonborn"), ("human", "aarakocra"),
+                 ("lizardfolk", "dragonborn"), ("lizardfolk", "kobold"), ("lizardfolk", "draconic")):
         assert tier(a, b) == 3, (a, b)
+    assert tier("draconic", "dragonborn") == 2 and tier("draconic", "kobold") == 2
+    assert t.lines["draconic"].persists and t.lines["draconic"].ago_kyr >= 150_000
     assert tier("arha", "anja") == 0 and tier("lizard_desert", "lizard_delta") == 0 and tier("aarakocra", "kenku") == 0
     # goliaths are sisters of the humans, not giant-kin
     assert "giant" not in t.ancestors("goliath") and t.lines["goliath"].parents == ["human_line"]
     # the ruminant peoples (PW-734, PW-858): a deep branch, no hybrids with humans, no tiefling template
-    assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 2
+    assert tier("antelope_folk", "human") == 3 and tier("cervid_folk", "human") == 3 and tier("antelope_folk", "cervid_folk") == 3  # (~25 Myr apart: past the 4 Myr limit, PW-851)
     assert not [l for l in t.lines.values() if l.origin == "template" and "human" in l.parents]
     # half-elves (PW-758): a contact hybrid that never lingers, so no people of their own
     he = t.lines["half_elf"]
@@ -1731,23 +1776,41 @@ def test_salt_miners_happen_where_the_beds_are_and_not_where_they_are_not():
     assert (r["km"][r["gain"]] <= cap * SR.MINED_CAP).all()
 
 
-def test_salt_dwarves_hold_the_beds_in_the_sample_tree(faketz):
-    """PW-797: the dnd sample's salt dwarves are a miner group of the dwarves that looks for rock salt; the habitat is strongly
-    higher on the beds than off them, flat where there are none, and the other dwarves have no such pull."""
-    from planet.lineages import land as LD
-    assert "salt_rock" in LD.GOODS
-    tree = LR.load_tree("dnd")
-    sd = tree.lines["salt_dwarf"]
-    assert sd.group_of == "dwarf" and "miner" in sd.traits and tree.strict_of(sd)
-    assert "salt_rock" in dict(tree.uses_of(sd))
-    assert "salt_rock" not in dict(tree.uses_of(tree.lines["hill_dwarf"])) and "salt_rock" not in dict(tree.uses_of(tree.lines["dwarf"]))
-    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    land = ps.fields(0.0, variability=False)["land"]
-    beds = np.where(land & (build_grid(LEVEL).lat > 0), 1.0, 0.0)
-    m = H.History(tree, ps, 1, goods={"salt_rock": beds})._land_mult(sd, True)
-    assert m[beds > 0].min() > 3 * m[land & (beds == 0)].max()  # (strict, pull 0.8: 1 on the beds, 0.2 off them)
-    m0 = H.History(tree, ps, 1, goods={"salt_rock": np.zeros_like(beds)})._land_mult(sd, True)
-    assert np.allclose(m0[land], m0[land][0])  # (no beds anywhere: no preference)
+def test_salt_is_sought_by_settlements_not_by_a_salt_dwarf_group():
+    """PW-854: no salt-dwarf subgroup in the sample trees; any settled people works the beds in its country (salt works), the miners
+    (dwarves) work them as mines and send colonies to beds in reach of their country; each reaches salt further than unworked beds."""
+    from planet.lineages import mining as MN
+    from planet.lineages import salt_reach as SR
+    for name in ("dnd", "seven_meals"):
+        tree = LR.load_tree(name)
+        assert "salt_dwarf" not in tree.lines and not [u for u in tree.uses if u.by == "salt_dwarf"]
+    n = 100
+    G = {"salt_rock": np.where(np.arange(n) < 60, 0.9, 0.0), "_land": np.ones(n, bool)}
+    idx = np.arange(n)
+    settled = idx >= 10  # (cells 0..9 empty land)
+    miners = (idx >= 20) & (idx < 30)
+    near = (idx >= 15) & (idx < 45)  # (within reach of the miners)
+    mined = MN.worked_salt(G, miners) | MN.colony_cells(G, miners, settled, near)
+    assert mined[20:30].all() and mined[15:20].all() and mined[30:45].all()  # (their own beds, and their neighbours' within reach)
+    assert not mined[:10].any() and not mined[10:15].any() and not mined[45:].any()  # (empty land: no works; out of reach: no colony)
+    works = MN.settled_works(G, settled, mined)
+    assert works[10:15].all() and works[45:60].all() and not works[60:].any() and not (works & mined).any()
+    assert not MN.colony_cells(G, np.zeros(n, bool), settled, np.zeros(n, bool)).any()  # (no miners, no colonies)
+    # reach: a works brings salt in further than none, a mine further than a works
+    g, L, land, isl = _toy_world()
+    own = np.where(land, 1000.0, 0.0)
+    pit = int(np.flatnonzero(land)[0])
+    own[pit] = 0.0
+    flow, none = np.zeros(g.n), np.zeros(g.n, bool)
+    base = SR.reach(g, land, own, flow, none, 300.0, cap_km=SR.UNREACHED)
+    cap = float(np.median(base["km"][land & (base["km"] < SR.UNREACHED)])) / 1.2  # (the median cell is inside the works band: cap < km <= 1.25 cap)
+    src = none.copy()
+    src[pit] = True
+    plain = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap)
+    w = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap, works=src)
+    m = SR.reach(g, land, own, flow, none, 300.0, cap_km=cap, mined=src)
+    assert not plain["gain"].any() and w["gain"].any()
+    assert m["gain"].sum() > w["gain"].sum() and (m["gain"] | ~w["gain"]).all()  # (a mine reaches a superset of a works)
 
 
 # ---- contact hybrids need contact, not overlap (PW-852) ---------------------------------------------------------------
@@ -1842,3 +1905,139 @@ def test_an_arrival_whose_hybrid_is_wanted_comes_down_within_reach_of_the_other_
         d = H.graph_dist(patch, int(np.ceil(3 * reach)), g.nbr_off, g.nbr_idx)[c]
         far.append(d < 0 or d > 2.5 * reach)
     assert not any(far), (far, h.grid.n, h.cell_km)
+
+
+def test_dragons_are_a_deep_extant_reptile_line_with_kinds_by_biome():
+    """PW-855: the draconic stem is the dragons: dinosaur-era reptiles that persist as megafauna at giant-like density, with the
+    chromatic and metallic kinds as groups by biome; the lizardfolk and tortles split from the reptile line as long ago, so
+    the dragon-blooded peoples are no kin of them."""
+    chromatic, metallic = {"red", "blue", "green", "black", "white"}, {"gold", "silver", "bronze", "copper", "brass"}
+    for name in ("dnd", "seven_meals"):
+        t = LR.load_tree(name)
+        d = t.lines["draconic"]
+        assert d.persists and d.megafauna and d.ago_kyr >= 150_000
+        assert d.demo("density") <= 0.01 and "draconic" in [x.id for x in t.leaves()]
+        kinds = {l.id.removesuffix("_dragon"): l for l in t.lines.values() if l.id.endswith("_dragon")}
+        assert set(kinds) == chromatic | metallic
+        assert all(l.origin == "group" and l.group_of == "draconic" and l.prefers for l in kinds.values())
+        assert len({tuple(l.prefers) for l in kinds.values()}) >= 8  # (kinds differ by biome)
+        for k in ("lizardfolk", "tortle"):
+            assert t.lines[k].ago_kyr >= 150_000 and t.tier_of(k, "dragonborn") == 3 and t.tier_of(k, "kobold") == 3
+        assert t.tier_of("dragonborn", "kobold") == 2 and t.tier_of("draconic", "dragonborn") <= 2
+        for k in ("dragonborn", "kobold"):
+            assert t.lines[k].parents == ["draconic"] and t.lines[k].start_near == ["draconic"]
+
+
+def test_landmasses_are_named_from_the_worlds_seed_and_rank():
+    """PW-853: the continents have generated names, the same for the world's summary and the peoples' history, stable per seed."""
+    from planet import names as NM
+    from planet import world as WD
+    a = NM.landmass_names(11, 8)
+    assert len(set(a)) == 8 and all(n[0].isupper() and n.isalpha() for n in a)
+    assert a == NM.landmass_names(11, 12)[:8] and NM.landmass_name(11, 3, tuple(a[:3])) == a[3]  # (a rank's name does not depend on how many)
+    assert NM.landmass_names(12, 8) != a
+    g = build_grid(LEVEL)
+    land = g.lat > 20
+    m = WD.landmasses(g, land, seed=11)
+    assert m[0]["name"] == a[0] and m[0]["letter"] == "A"
+    assert WD.landmasses(g, land)[0]["name"] == "A"  # (without a seed: letters, as before)
+    from planet.lineages.crossing import Crossings
+    env = {"land": land}
+    cr = Crossings(g, env, 100.0, 0.1, seed=11)
+    assert cr.names[0]["called"] == a[0] and a[0] in cr.names[0]["name"] and cr.names[0]["kind"] in ("continent", "large island", "island")
+    assert Crossings(g, env, 100.0, 0.1).names[0]["called"] is None  # (no world: by coordinates)
+
+
+def test_a_sea_landing_follows_the_pull_toward_the_partner():
+    """PW-861: a people whose contact hybrid is wanted comes down by the other parent when it sails over: the landing cell and chance follow
+    `pull` (history._partner_pull), as the plain landing is the nearest good coast."""
+    from planet.geo import world_land
+    from planet.grid import shared_grid
+    from planet.lineages.crossing import Crossings
+    g = shared_grid(3)
+    elev = np.where((g.lat > 5) & (g.lat < 50) & (((g.lon > 0) & (g.lon < 40)) | ((g.lon > 70) & (g.lon < 150))), 300.0, -2000.0)
+    land = world_land({"elevation": elev, "ice": np.zeros(g.n)})
+    lab, _ = g.components(land)
+    home = land & (g.lon < 40)
+    tags = {"coast": land.copy(), "label": lab}
+    env = {"land": land}
+    line = SP.parse({"lineage": [{"id": "x", "origin": "root", "at": "1 Myr", "traits": ["flies"]}]}).lines["x"]
+    cr = Crossings(g, env, 300.0, 0.1)
+    K = np.where(land, 1.0, 0.0)
+    p = np.where(home, 1.0, 0.0)
+    far = land & (g.lon > 120)
+    out = cr.hop(line, p, K, K.copy(), env, tags, 1.0, 1e6, np.random.default_rng(1), 0.12)
+    assert out and not far[out[0][0]] and not home[out[0][0]]  # (plain: the nearest good coast over the water)
+    out = cr.hop(line, p, K, K.copy(), env, tags, 1.0, 1e6, np.random.default_rng(1), 0.12, np.where(far, 1e6, 1.0))
+    assert out and far[out[0][0]]  # (pulled: the partner's coast)
+
+
+def test_an_arrival_near_its_partner_takes_the_freest_country_when_none_is_free(faketz):
+    """PW-861: on a crowded continent no land by the partner is free of rivals (half its best habitat), and the arrival fell back to its best
+    habitat anywhere, far from the partner: it now takes the freest tier near the partner (ARRIVAL_ROOM). The partner's pull for sea landings is
+    x(1 + PARTNER_PULL) on its range, falling off, none without a wanted hybrid."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    raw = {"meta": {"seed": 3}, "lineage": [
+        {"id": "human", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "crowd", "origin": "root", "at": "30 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000], "density": 1},
+        {"id": "elf", "origin": "arrival", "at": "14 kyr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "half", "origin": "hybrid", "parents": ["human", "elf"], "at": "10 kyr", "contact": True}]}
+    tree = SP.parse(raw)
+    far = []
+    for seed in range(1, 11):
+        h = H.History(tree, ps, seed)
+        h.p = np.zeros((len(h.lines), h.grid.n))
+        h.active = {l.id: False for l in h.lines}
+        h._corr_now = np.full(h.grid.n, 0.2)  # (closed country)
+        step = h.steps[-1]
+        env = step.get()
+        tags = H._tags(h.grid, env)
+        g = h.grid
+        patch = tags["land"] & (g.lon > 90) & (g.lon < 110) & (np.abs(g.lat) < 10)
+        crowd = tags["land"] & (g.lon > 60) & (g.lon < 140) & ~patch
+        assert patch.any() and crowd.any()
+        h.p[h.idx["human"]][patch] = 0.8
+        h.p[h.idx["crowd"]][crowd] = 0.7  # (every cell around the humans is held: free room under half the best habitat)
+        h.active["human"] = h.active["crowd"] = True
+        elf = tree.lines["elf"]
+        K = h._K(elf, env, tags, step)
+        assert (K - h._rivals_here(elf, K))[crowd].max() < 0.5 * K.max()
+        h._origin(elf, step, env, tags, K)
+        c = h.origins["elf"]["cell"]
+        reach = max(H.HYBRID_REACH_KM / h.cell_km, 1.0)
+        d = H.graph_dist(patch, int(np.ceil(3 * reach)), g.nbr_off, g.nbr_idx)[c]
+        far.append(d < 0 or d > 2.5 * reach)
+    assert not any(far), far
+    # the pull
+    h.active["elf"] = False
+    assert h._partner_pull(tree.lines["elf"]) is not None  # (the humans are alive: the elf lands by them)
+    assert h._partner_pull(tree.lines["crowd"]) is None  # (no hybrid is wanted of the crowd)
+    pu = h._partner_pull(tree.lines["elf"])
+    here = h.whole("human") > H.EST
+    assert pu[here].min() == pu.max() == 1 + H.PARTNER_PULL and pu.min() == 1.0
+    h.active["human"] = False
+    assert h._partner_pull(tree.lines["elf"]) is None  # (no partner alive)
+
+
+def test_megafauna_press_the_peoples_hardly_at_all_and_the_kinds_inherit_it(faketz):
+    """PW-855: a megafauna line (dragons: a handful per country) puts MEGAFAUNA_PUSH of its niche overlap on the peoples that share its
+    country; its kind groups are megafauna too; its dragon-blooded children are not."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    base = {"meta": {"seed": 1}, "lineage": [
+        {"id": "stem", "origin": "root", "at": "10 Myr", "temp_c": [-20, 40], "rain_mm": [1, 9000]},
+        {"id": "wyrm", "parents": ["stem"], "at": "5 Myr", "density": 0.006, "persists": True},
+        {"id": "red", "origin": "group", "group_of": "wyrm", "at": "20 kyr"},
+        {"id": "kin", "parents": ["wyrm"], "at": "1 Myr", "density": 2},
+        {"id": "folk", "parents": ["stem"], "at": "2 Myr", "density": 2}]}
+    plain = H.History(SP.parse(base), ps, 1)
+    raw = {**base, "lineage": [dict(r, **({"megafauna": True} if r["id"] == "wyrm" else {})) for r in base["lineage"]]}
+    t = SP.parse(raw)
+    assert t.lines["wyrm"].megafauna and t.lines["red"].megafauna and not t.lines["kin"].megafauna and not t.lines["folk"].megafauna
+    assert SP.parse(SP.to_raw(t)).lines["wyrm"].megafauna
+    mega = H.History(t, ps, 1)
+    i, j = mega.idx["folk"], mega.idx["wyrm"]
+    assert plain.alpha[i, plain.idx["wyrm"]] > 0
+    assert np.isclose(mega.alpha[i, j], H.MEGAFAUNA_PUSH * plain.alpha[i, plain.idx["wyrm"]])
+    assert np.isclose(mega.alpha[i, mega.idx["red"]], H.MEGAFAUNA_PUSH * plain.alpha[i, plain.idx["red"]])
+    assert np.isclose(mega.alpha[i, mega.idx["kin"]], plain.alpha[i, plain.idx["kin"]])  # (the dragon-blooded peoples press as peoples)
+    assert np.isclose(mega.alpha[j, i], plain.alpha[plain.idx["wyrm"], plain.idx["folk"]])  # (the peoples press the dragons as before)

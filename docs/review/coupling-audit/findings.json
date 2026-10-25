@@ -1,0 +1,327 @@
+{
+ "audit": "coupling-audit",
+ "date": "2026-10-25",
+ "base": "main d89f602",
+ "branch_read": "v1-finish-12",
+ "findings": [
+  {
+   "id": "C1",
+   "slug": "weathering-co2-counted-twice-on-planted-ground",
+   "title": "Weathering sink counts CO2 twice on planted ground (GEOCARB FERT law and the NPP it multiplies)",
+   "sev": "high",
+   "subsystem": "climate",
+   "side_a": "planet/tectonics/earth.py (v1-finish-12) co2_law L121-125 and co2_stock L234-267: planted ground ~ (2X/(1+X))^WEATHER_FERT, GEOCARB's plant-mediated CO2 response (log-slope 0.2 at the balance)",
+   "side_b": "planet/tectonics/earth.py (v1-finish-12) plant_factor L209-212 x weathering() L229, with sim.npp from update_vegetation L482-491, which grows the plants at pco2=climate.pco2(sim.co2); vegetation.co2_doublings L236 raises NPP with CO2. On main the same pair is WEATHER_CO2 X^0.4 (earth.py:28) and plants = 1 + 0.5 clip(npp/800) (earth.py:109)",
+   "why": "GEOCARB's FERT term IS the plants' CO2 fertilisation acting on weathering. The model now also feeds the sink an NPP that already responds to CO2, and plant_factor is linear in NPP below NPP_WEATHER = 500, which covers 84-93% of vegetated land in worlds 2a7385, e71172, 6909cb.",
+   "check": "vegetation.model (branch code, the run's cheap variant, crown off) on world 6909cb's climate at 350 and 700 ppm: land NPP 379 -> 452 g/m2/yr (x1.19 per doubling); the sum of plant_factor rises 8.2% per doubling, an extra sink log-slope of ~0.11 on top of FERT's 0.2 (planted, at the balance). The planted sink's CO2 sensitivity is ~55% too strong, so CO2 moves ~1/3 less than intended for a given source/sink imbalance (the faint-star compensation, cold-era recoveries, the drift's CO2 swing).",
+   "fix": "Evaluate plant_factor on NPP at the balance pCO2 (the run already grows npp_pot at PCO2_BALANCE during the spin-up; keep a balance-CO2 NPP after REF_FREEZE too, or divide out the model's own CO2 response), so CO2 reaches the sink only through co2_law. Alternative: drop FERT on planted ground and let NPP carry the CO2 dependence (then NPP_WEATHER's saturation sets the slope, not the literature).",
+   "relates": [
+    "PW-865",
+    "PW-830",
+    "PW-646"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": 1,
+   "draft": "issue-tracking/inbox/draft-weathering-co2-counted-twice-on-planted-ground.md"
+  },
+  {
+   "id": "C2",
+   "slug": "plume-volcanism-never-outgasses",
+   "title": "Plume and hotspot magmatism is modelled but never outgasses CO2; the resized drift no longer stands in for it",
+   "sev": "medium",
+   "subsystem": "climate",
+   "side_a": "planet/tectonics/earth.py (v1-finish-12) global_temperature L310: source = new ocean floor + 20 x arc growth, times the drift",
+   "side_b": "planet/tectonics/simulation.py (v1-finish-12) _physics L253-263: volcanism.hotspots / cap_plumes make plume heads, aprons and vents (lava added to the crust), scaled by mantle heat; no CO2 term anywhere in volcanism.py or events.py. params.py (v1-finish-12) climate_drift comment L109-121 now sizes the drift for organic burial and ocean chemistry only",
+   "why": "The ridge and arc fluxes became explicit and the drift was shrunk to the terms \"the model lacks\", but plume degassing is a term the model has the magma for and still lacks the carbon for. Hotspot/plume degassing is of the same order as ridge degassing (Marty & Tolstikhin 1998: ridges ~2e12, arcs ~2.5e12, plumes ~3e12 mol C/yr, wide error), and plume heads (LIPs) are the Phanerozoic's main warm-pulse drivers.",
+   "check": "Code read only: grep finds no co2/outgas/degass in volcanism.py, events.py, mantle.py. Magnitude from the literature, not measured (plume lava volume is not stored in runs).",
+   "fix": "Options: (A) add plume lava x a CO2 yield to the source (learnt into the reference like the rest, so it adds variance and LIP pulses rather than shifting the mean); (B) keep it out and put plume degassing back into the drift's sizing; (C) leave and document. Lean A: the magma is already there, and LIP pulses are a feature for history.",
+   "relates": [
+    "PW-819"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": 2,
+   "draft": "issue-tracking/inbox/draft-plume-volcanism-never-outgasses.md"
+  },
+  {
+   "id": "C3",
+   "slug": "weathering-runoff-from-global-rain-not-land-runoff",
+   "title": "Weathering's runoff factor scales with the global-mean rain law, not the land runoff the climate computes",
+   "sev": "medium",
+   "subsystem": "climate",
+   "side_a": "planet/tectonics/earth.py (v1-finish-12) weathering() L227 warm *= exp(WEATHER_RUNOFF x climate.RAIN_PER_C x dT); climate_coef() L108-111, used by drift_source and balance_co2",
+   "side_b": "planet/climate.py compute L2278-2298: RAIN_PER_C renormalises the GLOBAL mean rain (sea included); the per-cell land runoff is computed (water_balance) and kept as sim.runoff (earth.py update_climate L414)",
+   "why": "The stand-in assumes weathering-land runoff grows like the global mean rain, 3%/C. The model's own land rain grows much less, and runoff = rain - AET grows differently again, while the real quantity sits in sim.runoff.",
+   "check": "Across keyframes 50-1000 Myr of L6 runs 0ceebf, 172922, 343058, 2b0b65: global rain d ln P/dT = 0.030 (by construction); ice-free land rain 0.005, 0.019, 0.012, 0.023 per C. So the runoff term (0.0195/C in climate_coef) is 1.3-6x too strong on these planets, and climate_coef (0.0735) ~5-17% too strong.",
+   "fix": "Use the weathering land's own runoff against the reference, (runoff/runoff_ref)^WEATHER_RUNOFF per cell (GEOCARB's f_R on the model's water balance), learnt with the rest of the reference; size climate_coef from a measured land runoff slope.",
+   "relates": [
+    "PW-865"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": 3,
+   "draft": "issue-tracking/inbox/draft-weathering-runoff-from-global-rain-not-land-runoff.md"
+  },
+  {
+   "id": "C4",
+   "slug": "timezoom-treats-run-state-as-interglacial-peak",
+   "title": "Time zoom treats the run's moment as the interglacial peak; the run's erosion, weathering and sea level never see the glacial half of an icehouse",
+   "sev": "medium",
+   "subsystem": "timezoom",
+   "side_a": "planet/timezoom/cycle.py Index (I starts 0 \"interglacial: the run's own climate, so the run's ice\") and forcing.py Forcing.update L88-94: dTg = -I x cool <= 0, CO2 x glacial_pco2^I <= 1",
+   "side_b": "planet/tectonics/earth.py global_temperature / ice_sheets: the run's dT, CO2 and ice are the Myr-scale state with ice averaged over the orbits; docs/overview.md section 2.8 says a time zoom \"swings around\" the run's balance",
+   "why": "The run is the long-run mean of an icehouse era but behaves as its warm extreme: in the zoom the mean state is mean(I) x cool colder. The run's 2 Myr steps then erode, weather, glaciate and set sea level at interglacial conditions throughout cold eras (Earth's icehouse is glacial most of the time).",
+   "check": "8 L7 time zooms (f778ab 41a7a4 f06bbb ddc091 fd187b 606a1b fc82c2 6e96d2, 300 kyr each): mean I 0.44-0.57; mean dTg -1.3 to -6.2 C (min -2.3 to -9.6); mean sea-level change -5 to -205 m. The zooms' start matches their run keyframe exactly (T, pCO2, ice, sea level), so the handoff itself is consistent.",
+   "fix": "Options: (A) document the run as the interglacial state (fix overview 2.8) and accept; (B) run the run's weathering/erosion/sea level at the cycle mean (apply mean(I) x cool, measured or a fixed ~0.5, inside icehouse eras); (C) centre the index on the run (I in [-a, 1-a]). Belongs with the ice-age epic (PW-470); A is a v1 doc fix.",
+   "relates": [
+    "PW-470",
+    "PW-471"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-timezoom-treats-run-state-as-interglacial-peak.md"
+  },
+  {
+   "id": "C5",
+   "slug": "glacier-bed-threshold-in-pre-pw277-frame",
+   "title": "Glacier bed rule (warm month > -8 C slides, else frozen) was set on the bare-ground frame and now reads the ice surface",
+   "sev": "low-med",
+   "subsystem": "surface",
+   "side_a": "planet/tectonics/earth.py erode() (main L690; branch erode): k_mult = glacial_erosion where sim.t_warm > -8, else 0.3; the line predates PW-277 (present at 30d06a8, 2026-10-13)",
+   "side_b": "planet/tectonics/earth.py update_climate (branch L420): sim.t_warm is overwritten with the ice surface's warmest month (climate.ice_surface, PW-277, a26c7eb 2026-10-15: ~8 C colder in winter on big sheets than the old rule). The time zoom decides glacial erosion by sliding speed instead (timezoom/params.py)",
+   "why": "A threshold in surface-air units that was set when the temperature on ice was the bare ground's minus a cover term; after PW-277 the same number means a different bed. Two rules (run: air temperature; time zoom: sliding) for one quantity.",
+   "check": "Run keyframes (every 10 Myr after 50 Myr): share of iced cells counted wet-based 0.16, 0.24, 0.18 (L6 0ceebf, 172922, 2b0b65), 0.47 (L7 6b48f5); of ice > 1 km 0.10-0.35. Antarctica's bed is ~half thawed (Pattyn 2010), so the share is plausible-ish, but the rule is no longer the one that was tuned.",
+   "fix": "Re-derive the bed regime from the ice's own state (thickness and surface temperature, e.g. the time zoom's sliding rule or a pressure-melting estimate), or at least re-check the -8 C on the post-PW-277 temperatures against the glacial-erosion calibration.",
+   "relates": [
+    "PW-277"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-glacier-bed-threshold-in-pre-pw277-frame.md"
+  },
+  {
+   "id": "C6",
+   "slug": "timezoom-vegetation-albedo-on-top-of-lgm-cooling",
+   "title": "Time zoom adds a global vegetation-albedo cooling on top of a glacial cooling sized on Earth's whole LGM cooling",
+   "sev": "low",
+   "subsystem": "timezoom",
+   "side_a": "planet/timezoom/params.py glacial_cool 6.5 (\"Earth's LGM 4.5-6 C\"; the LGM total includes vegetation albedo, ~-1 W/m2, Kohler et al. 2010)",
+   "side_b": "planet/timezoom/plants.py measure(): dT_target = veg_lambda x veg_toa x surface albedo change, added to dTg in forcing.py Forcing.update",
+   "why": "The plants' darkening/brightening is in both the scripted cooling and the explicit term.",
+   "check": "8 L7 time zooms: the vegetation term reaches -0.09 to -0.61 C at glacial maxima, 3-7% of the zooms' coldest dTg (-2.3 to -9.6 C).",
+   "fix": "Either take ~5% off glacial_cool (say so in its comment) or keep the explicit term and note that glacial_cool excludes vegetation. Fold into the ice-age epic.",
+   "relates": [
+    "PW-470",
+    "PW-471"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-timezoom-vegetation-albedo-on-top-of-lgm-cooling.md"
+  },
+  {
+   "id": "C7",
+   "slug": "reefs-read-air-temperature-as-sea-surface",
+   "title": "Reef growth tests the annual air temperature against reef_temp, which is documented as sea-surface temperature",
+   "sev": "low",
+   "subsystem": "surface",
+   "side_a": "planet/tectonics/earth.py reefs() (main L787): reef where sim.temp >= p.reef_temp; volcanism.py L393 likewise builds an \"sst\" from sim.temp",
+   "side_b": "planet/tectonics/params.py reef_temp \"C, annual mean sea surface\"; climate.compute returns sst (currents, upwelling, overturning), used by coastal.py for living reefs",
+   "why": "The run's reefs and the world's coastal reefs use different temperatures for the same threshold.",
+   "check": "Shallow sea (-1500..-5 m) in worlds 2a7385, e71172, 6909cb, a12762: air is 1.5-2.0 C colder than SST on average; cells passing 23.5 C by air are 4-16% fewer than by SST.",
+   "fix": "Keep the climate's sst on the sim (sim.sst) and test it, or lower reef_temp by ~1.7 C and relabel it as air.",
+   "relates": [],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-reefs-read-air-temperature-as-sea-surface.md"
+  },
+  {
+   "id": "C8",
+   "slug": "ice-albedo-reference-is-real-earths-ice",
+   "title": "Ice-albedo term counts from real Earth's ice share (3.1%), not the model's own ice at dT = 0",
+   "sev": "low",
+   "subsystem": "climate",
+   "side_a": "planet/tectonics/earth.py EARTH_ICE = 0.031 (branch L25) and global_temperature: -(albedo(ice_frac) - albedo(EARTH_ICE)), ice_frac a cell count",
+   "side_b": "The model's own Earth at dT = 0 holds 2.53% of the surface in ice (tools/ice_probe.py, docs/overview.md section 2.8, L6)",
+   "why": "The intent is \"Earth's ice is neutral\"; with the model's own Earth ice the term is +0.23 C, not 0. ice_frac is also a cell share (cells differ by up to ~9% in area).",
+   "check": "albedo(f) = 3 tanh(f/0.06): albedo(0.031) - albedo(0.0253) = 0.23 C.",
+   "fix": "Set EARTH_ICE from the model's own Earth probe (area-weighted) and weight ice_frac by cell area. Fold into the next calibration pass.",
+   "relates": [],
+   "fixed_on_branch": false,
+   "physics_lane_order": 4,
+   "draft": "issue-tracking/inbox/draft-ice-albedo-reference-is-real-earths-ice.md"
+  },
+  {
+   "id": "C9",
+   "slug": "insolation-uses-todays-sun-not-the-runs-star",
+   "title": "Light, PET, ice balance and orbital anomalies use today's S0 while the run's star is fainter (or thermostatted)",
+   "sev": "low",
+   "subsystem": "climate",
+   "side_a": "planet/orbit.py S0 = 1361; planet/climate.py S0_MJ (insolation -> PAR, Oudin PET, the sea's seasonal swing, icemass, orbit anomalies, timezoom/plants.py sun)",
+   "side_b": "planet/tectonics/earth.py star_forcing / star_control (branch): L/L_now 0.92 at the start of a 1 Gyr run, 0.85 at 2 Gyr, +-4% under the star thermostat; it enters only through dT",
+   "why": "Same family as the star-frame fix: the star's luminosity is a run quantity, but the radiation the plants, PET and ice see is today's Sun. On the branch it is exact at the run's end, so default worlds are fine; worlds taken earlier, and thermostatted runs, are not.",
+   "check": "Arithmetic only: PAR and Oudin PET (both linear in top-of-atmosphere radiation) are 8% too high at the start of a 1 Gyr run, 15% for 2 Gyr; orbital W/m2 anomalies likewise.",
+   "fix": "Pass the star's L/L_now into climate.compute / months / icemass (one scale on S0), from the run's frame stats.",
+   "relates": [
+    "PW-809",
+    "PW-791"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-insolation-uses-todays-sun-not-the-runs-star.md"
+  },
+  {
+   "id": "C10",
+   "slug": "zoom-cloud-forest-tested-on-shade-not-sky",
+   "title": "On v1-finish-12 the zoom names cloud forest from the light's shade, not the sky's cover (run and world pass sky)",
+   "sev": "low-med",
+   "subsystem": "zoom",
+   "side_a": "v1-finish-12 planet/zoom_vegetation.py compute: V.site/V.model get shade_jul/jan only, no sky, so s[\"cloud\"] falls back to the shade",
+   "side_b": "v1-finish-12 planet/world.py and earth.update_vegetation pass sky=(cloud_jul, cloud_jan); vegetation.classify's montane cloud forest test (cloud >= 0.65 above 1 km) reads s[\"cloud\"]",
+   "why": "The PW-806/808 shade fix kept the sky for naming cloud forest in the run and worlds but not in zooms, so a zoom loses cloud forest its world has.",
+   "check": "Tropical (|lat| < 25) land above 1 km, worlds 6909cb and 2a7385: mean sky cover 0.45 / 0.68 vs shade 0.39 / 0.59; cells at >= 0.65: 645 -> 423 and 1116 -> 837 (-34% and -25%).",
+   "fix": "Interpolate cloud_jul/jan in zoom_vegetation.fine_fields as before and pass sky= to the vegetation; land with the v1-finish-12 merge.",
+   "relates": [
+    "PW-806",
+    "PW-808"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-zoom-cloud-forest-tested-on-shade-not-sky.md"
+  },
+  {
+   "id": "C11",
+   "slug": "zoom-glaciers-read-a-different-tilt-key",
+   "title": "Zoom glaciers read the tilt from meta.params.tectonics, the zoom's climate and plants from meta.params",
+   "sev": "low",
+   "subsystem": "zoom",
+   "side_a": "planet/zoom.py:1900 and zoom_fine_forms.py:76: params.tectonics.tilt (default 23.4)",
+   "side_b": "planet/zoom_vegetation.py:289, zoom.py:3352, 3633, 3657: params.tilt (world.py writes it)",
+   "why": "Generated worlds (no tectonics key) and Earth worlds get 23.4 for glacier mass balance whatever their tilt, while plants and satellite use the true tilt.",
+   "check": "World 2a7385 has both keys (23.4 each); the mismatch only bites on non-default tilt without a tectonics block. Not measured further.",
+   "fix": "Read meta.params.tilt everywhere.",
+   "relates": [],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-zoom-glaciers-read-a-different-tilt-key.md"
+  },
+  {
+   "id": "C12",
+   "slug": "zoom-loess-layer-overwritten-by-soils",
+   "title": "A zoom's stored loess layer is the soils' interpolated world loess, not the glacial loess the zoom drew",
+   "sev": "low",
+   "subsystem": "zoom",
+   "side_a": "planet/zoom.py:3320: layers {\"glacial_form\", \"loess\": glac_loess} (zoom_glacial's own, which softens and classes the terrain)",
+   "side_b": "planet/zoom.py:3325 **veg_l afterwards, whose soils part carries \"loess\" (zoom_vegetation.py:265, from the world's soils), and wins the key",
+   "why": "Two producers write one key; the later one silently replaces what the terrain was built with, and the soils never see the zoom's loess.",
+   "check": "Code read: both keys confirmed. Not measured.",
+   "fix": "Name the glacial one glacial_loess (or feed it to the soils as their loess).",
+   "relates": [],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-zoom-loess-layer-overwritten-by-soils.md"
+  },
+  {
+   "id": "C13",
+   "slug": "snow-and-permafrost-rules-diverge",
+   "title": "Snowpack and permafrost are each computed by several rules (months vs icemass; three permafrost tests)",
+   "sev": "low",
+   "subsystem": "climate",
+   "side_a": "planet/climate.py months: snowmelt at the monthly mean with no day-to-day scatter (SNOW_DDF, ramp -2..+2 C), gdd5 with sd 4; comment \"as earth.ICE_DDF\", which no longer exists; earth.degree_days (sd 5) has no callers",
+   "side_b": "planet/icemass.py: positive degree-days with sd 5, DDF 3/8, refreeze 60%. Permafrost: soils.py (nival offset on temp), vegetation.flooded (temp < -2), hydrology (>= 6 months below -2 C)",
+   "why": "Snow albedo, soils' permafrost, satellite snow and game attributes use months' snow while ice caps start on icemass's; the three permafrost tests disagree at their margins.",
+   "check": "Code read only; not measured.",
+   "fix": "Let months take icemass's PDD melt (one snow rule), share one permafrost class (soils') with vegetation and hydrology, drop the dead helper and stale comment.",
+   "relates": [],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-snow-and-permafrost-rules-diverge.md"
+  },
+  {
+   "id": "C14",
+   "slug": "finish-seasons-orbit-response-adds-ice-twice",
+   "title": "finish.orbit_dt (orbit_resp seasons) passes bed + ice as elevation and the ice again, so the climate sees bed + 2 x ice",
+   "sev": "low",
+   "subsystem": "timezoom",
+   "side_a": "planet/finish.py orbit_dt: climate.compute(grid, st[\"elevation\"] + st[\"ice\"], dT, tilt, ice) where st[\"elevation\"] is the bed (frame_state)",
+   "side_b": "planet/climate.py compute: surf = elev + ice; the time zoom calls it with the ice surface as elev and no ice (timezoom/fields.py)",
+   "why": "Dormant: only on orbit_resp == \"seasons\" (default \"run\"). If switched on, the finished world's per-cell orbit response is computed on ice twice as thick.",
+   "check": "Code read only.",
+   "fix": "Pass st[\"elevation\"] (the bed) with the ice, as world.finish does.",
+   "relates": [
+    "PW-459",
+    "PW-555"
+   ],
+   "fixed_on_branch": false,
+   "physics_lane_order": null,
+   "draft": "issue-tracking/inbox/draft-finish-seasons-orbit-response-adds-ice-twice.md"
+  }
+ ],
+ "rejected": [
+  {
+   "candidate": "Weathering's temperature factor uses each cell's own temperature against 15 C, while WEATHER_K is a global-mean sensitivity",
+   "reason": "The sink is divided by references learnt with the same per-cell law, so the absolute 15 C frame cancels; per-cell kinetics is GEOCARB-consistent."
+  },
+  {
+   "candidate": "Global ice-albedo term and the climate's local ice-surface cooling both count the ice",
+   "reason": "Different effects: planetary albedo vs the surface's own energy balance. dT = 0 is Earth's climate with both; vegetation and snow albedo are local only and exclude ice cells."
+  },
+  {
+   "candidate": "Rain counted twice in stream-power incision (rain factor x sqrt(flow of runoff))",
+   "reason": "Documented and calibrated (PW-055, overview 2.5); a climate-dependent erodibility on top of discharge is a standard approximation."
+  },
+  {
+   "candidate": "Run hydrology makes lakes under ice sheets",
+   "reason": "Run keyframes show 0 lake cells under ice (0ceebf, 172922, 2b0b65, 6b48f5; 171 frames); not reproduced."
+  },
+  {
+   "candidate": "Soils run their own Fu water balance (w = 2.6, annual)",
+   "reason": "Measured on 4 worlds: soils' runoff is 0.89-0.94 of the climate's land runoff, median per-cell difference 6-12%. Crude but consistent."
+  },
+  {
+   "candidate": "Run vegetation is the cheap variant (fixed buckets, no f_soil, no crown fire), the world's the full one",
+   "reason": "Documented (earth.update_vegetation, PW-347); crown fire off in runs is already on the assumptions audit's list."
+  },
+  {
+   "candidate": "Keyframe worlds warm-start plants from tree_cover (canopy shade), slices from true PFT fractions",
+   "reason": "tree_cover is 0.89x the tree PFTs' cover (3 worlds); a warm start the equilibrium resolves. Too small to flip states on its own."
+  },
+  {
+   "candidate": "Time zoom's between-refresh snowfall law (7%/C, local, amplified) vs the climate's 3%/C global mean",
+   "reason": "Both defensible at their scales (local Clausius-Clapeyron vs a global mean); the kernel is reset to the full climate every 10 kyr. No measurement shows divergence."
+  },
+  {
+   "candidate": "Orbital reference is the circular orbit while the climate is calibrated on today's (perihelion 283)",
+   "reason": "Consistent between run and zoom; a calibration nuance, not a disagreement between systems."
+  },
+  {
+   "candidate": "earth.temp_response duplicates climate.temperature's latitude shape",
+   "reason": "Exactly the same polynomial (0.5 + f) as compute's 0.5/1.5 dT; consistent."
+  },
+  {
+   "candidate": "Eroded carbonate, evaporite, coal and recycled sediment all count as silicate weathering",
+   "reason": "Already the assumptions audit's finding 14 (lithology-weighted sink)."
+  },
+  {
+   "candidate": "The glacial index stands for CO2 and ice-albedo, so the zoom's ice has no albedo of its own",
+   "reason": "Owner-ruled kludge (PW-471, parked under PW-470)."
+  },
+  {
+   "candidate": "Sea level from ice: run 0.9 x all ice / ocean area vs zoom above-flotation volume",
+   "reason": "Zoom reports changes from the same start (checked: zoom start equals the run keyframe in 6 zooms); differs only for marine ice. Low and inside the ice-age epic."
+  },
+  {
+   "candidate": "Koppen and vegetation see the sea level before the step's ice change",
+   "reason": "About 10 m per climate step; negligible."
+  },
+  {
+   "candidate": "Time zoom start re-derives the run's state",
+   "reason": "Checked 6 zooms: start T, pCO2, ice share and sea level equal the source keyframe's."
+  },
+  {
+   "candidate": "orbit_resp 'run' vs 'seasons' (~3x different response)",
+   "reason": "Default is 'run' in both; tracked by PW-555."
+  },
+  {
+   "candidate": "The four known findings (star frame, frozen balance, plants' sunshine, drift double count)",
+   "reason": "Fixed on v1-finish-12 (e6439ee/eaf72b4, eaf72b4, be00f07, dfc8b48); the zoom's sky gap is a leftover of the sunshine fix (C10)."
+  }
+ ]
+}
