@@ -4,6 +4,7 @@
 # temp_c / rain_mm: comfort range of the annual mean temperature and rain (soft edges).
 # enabled = false switches a line off (its split children re-parent to its parent; its hybrids and templates go too).
 # extinct = "T": the line dwindles and is gone by T before the present.
+# persists = true: the line lives on after its last split. megafauna = true (PW-855): a handful per country (the dragons); its range hardly takes room from the peoples (history.MEGAFAUNA_PUSH); its groups inherit it.
 # origin = "group", group_of = <people>: a way of life within a people (steppe and forest orcs; human seafarers, farmers,
 # herders, nomads): not a split and not deeper culture. It inherits what it leaves out, takes hold where its own niche
 # beats its people's, mixes freely with its people and sister groups, and rolls up into its people in the summaries.
@@ -33,27 +34,134 @@ portal_sites = ["forest", "desert", "reef", "volcano"]  # ...the places 'sites' 
 land_pull = 0.5  # how strongly the land's goods ([[use]], at the end) move each people within its niche (0: not at all)
 
 # ---- the reptilian line ---------------------------------------------------------------
-# reptilian stem -> troglodytes (extinct), lizardfolk, tortles, and the draconic (dragon-blooded) stem
-# -> kobolds, dragonborn
+# Real reptile splits (PW-855): turtles ~250 Myr, lizards and snakes ~200 Myr, the archosaur-dinosaur line ~230 Myr. The draconic stem IS
+# the dragons: reptiles from the dinosaur era that never went out, extant megafauna at very low density (as the true giants), intelligence
+# arriving late (not modelled: the stem is the animals; the dragonborn and kobolds are its dragon-blooded humanoid peoples, split off
+# recently while the stem lives on). The chromatic and metallic kinds are its groups, by biome (below). Interfertility follows the
+# dates (PW-851): dragons are kin of dragonborn and kobolds, and of no other reptile people.
 [[lineage]]
 id = "reptilian"
 name = "reptilian stem"
 body = { smell = "keen", raw_meat = true, thermo = "ecto" }  # reptiles flick their tongues to smell; swallow prey raw; ectotherms: appetite and activity follow the weather (feast and fast)
 origin = "root"
-at = "12 Myr"
+at = "320 Myr"
 temp_c = [18, 30]
 rain_mm = [700, 3500]
 prefers = ["tropical"]
 
 [[lineage]]
 id = "draconic"
-name = "draconic stem (elder, dragon-blooded)"
+name = "dragons (the draconic stem: dinosaur-era reptiles; elder, dragon-blooded)"
 parents = ["reptilian"]
-at = "3 Myr"
-temp_c = [6, 28]
-rain_mm = [250, 2000]
+at = "230 Myr"
+persists = true  # extant: the great wyrms live on beside the peoples they sired
+megafauna = true  # a handful per country: their range hardly takes room from the peoples
+density = 0.006  # as the true giants: a handful per country
+explore = 0.3
+sea_share = 0.02
+insularity = 0.85
+temp_c = [-6, 38]
+rain_mm = [150, 3000]
 prefers = ["mountain", "open"]
-traits = ["hardy"]
+traits = ["hardy", "flies", "insular"]
+
+# the kinds of dragon, by the country they lair in (PW-855): chromatic (red, blue, green, black, white) and metallic (gold, silver, bronze, copper, brass)
+[[lineage]]
+id = "red_dragon"
+name = "red dragons (chromatic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [12, 40]
+prefers = ["volcanic", "mountain"]
+
+[[lineage]]
+id = "blue_dragon"
+name = "blue dragons (chromatic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [14, 40]
+rain_mm = [60, 600]
+prefers = ["desert"]
+
+[[lineage]]
+id = "green_dragon"
+name = "green dragons (chromatic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [8, 30]
+rain_mm = [900, 3000]
+prefers = ["forest", "jungle"]
+
+[[lineage]]
+id = "black_dragon"
+name = "black dragons (chromatic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [14, 34]
+rain_mm = [1000, 3000]
+prefers = ["wetland"]
+
+[[lineage]]
+id = "white_dragon"
+name = "white dragons (chromatic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [-20, 6]
+prefers = ["tundra", "polar"]
+
+[[lineage]]
+id = "gold_dragon"
+name = "gold dragons (metallic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [16, 32]
+rain_mm = [500, 1500]
+prefers = ["savanna", "open"]
+
+[[lineage]]
+id = "silver_dragon"
+name = "silver dragons (metallic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [-8, 12]
+rain_mm = [300, 2000]
+prefers = ["mountain"]
+
+[[lineage]]
+id = "bronze_dragon"
+name = "bronze dragons (metallic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [10, 32]
+prefers = ["coast", "island"]
+
+[[lineage]]
+id = "copper_dragon"
+name = "copper dragons (metallic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [10, 30]
+rain_mm = [300, 1100]
+prefers = ["hills"]
+
+[[lineage]]
+id = "brass_dragon"
+name = "brass dragons (metallic)"
+origin = "group"
+group_of = "draconic"
+at = "60 kyr"
+temp_c = [18, 40]
+rain_mm = [100, 700]
+prefers = ["steppe", "arid"]
 
 [[lineage]]
 id = "kobold"
@@ -67,12 +175,13 @@ temp_c = [5, 25]
 rain_mm = [300, 2000]
 prefers = ["mountain"]
 traits = ["subterranean", "hardy"]
+near = ["draconic"]  # dragon-blooded: they arose in the dragons' country
 
 [[lineage]]
 id = "troglodyte"
 name = "troglodytes (extinct)"
 parents = ["reptilian"]
-at = "2.5 Myr"
+at = "100 Myr"
 extinct = "60 kyr"
 temp_c = [12, 28]
 traits = ["subterranean"]
@@ -82,7 +191,7 @@ id = "lizardfolk"
 name = "lizardfolk"
 body = { diet = "carnivore" }  # fish and game, eaten raw or cooked
 parents = ["reptilian"]
-at = "1.5 Myr"
+at = "200 Myr"
 density = 1.5
 explore = 0.4
 sea_share = 0.25
@@ -96,7 +205,7 @@ id = "tortle"
 name = "tortles"
 body = { cellulose = true, diet = "herbivore", teeth = "beak" }  # tortoise-like hindgut fermenters of leaves and weed; turtle-like beaks
 parents = ["reptilian"]
-at = "900 kyr"
+at = "250 Myr"
 density = 1
 explore = 0.7
 sea_share = 0.8
@@ -117,6 +226,7 @@ temp_c = [8, 28]
 rain_mm = [250, 1500]
 prefers = ["open", "mountain"]
 traits = ["hardy"]
+near = ["draconic"]  # sired in the dragons' country
 
 # ---- the mammalian line ---------------------------------------------------------------
 # mammalian stem -> feline stem (tabaxi, leonin), goblinoid stem (goblins; the greater goblinoids:
@@ -424,17 +534,6 @@ at = "8 kyr"
 density = 6
 elev_m = [100, 1800]
 prefers = ["hills"]
-traits = ["subterranean", "miner"]
-
-[[lineage]]  # the occasional dwarves of the salt: where rock-salt beds (evaporite) lie near the surface they work them (Hallstatt, Wieliczka, Khewra), with ore where it lies near (PW-797)
-id = "salt_dwarf"
-name = "salt dwarves"
-origin = "group"
-group_of = "dwarf"
-at = "8 kyr"
-density = 5
-elev_m = [0, 2500]
-rain_mm = [100, 1500]  # (evaporites lie in dry basins: the salt dwarves cope with the arid foothills the other dwarves leave, like the Salt Range)
 traits = ["subterranean", "miner"]
 
 [[lineage]]
@@ -1060,12 +1159,6 @@ pull = 0.75
 by = "hill_dwarf"
 good = "hills"
 pull = 0.6
-
-[[use]]  # salt dwarves hold the rock-salt beds (evaporite): off them they are a thin remnant (strict)
-by = "salt_dwarf"
-good = "salt_rock"
-pull = 0.8
-strict = true
 
 [[use]]
 by = "fire_giant"

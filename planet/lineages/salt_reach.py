@@ -20,7 +20,8 @@ TRADE_CAP_KM = 450.0  # cost-km: salt is not traded further than this from its s
 RIVER_FLOW = 2.0  # flow (cells of runoff) that counts as a river for the route (as seafood.LICK_FLOW)
 UNREACHED = 5000.0
 ROUTE = 1.3  # as seafood.ROUTE
-MINED_CAP = 1.6  # salt a mining people works (mining.py) is traded this much further (cost-km) than the salt of unworked beds: a mine is a salt works
+MINED_CAP = 1.6  # salt a mining people works, or its colony (mining.py), is traded this much further (cost-km) than the salt of unworked beds: a mine is a salt works
+WORKS_CAP = 1.25  # salt any other settled people works from the beds in its country (a salt works, PW-854): traded this much further, a little less than a mining people's
 
 
 @njit(cache=True)
@@ -72,11 +73,12 @@ def contact_zone(g, land: np.ndarray, peoples: np.ndarray, sea_lines: np.ndarray
 
 
 def reach(g, land: np.ndarray, own_km: np.ndarray, flow: np.ndarray, zone: np.ndarray, traded_km: float,
-          cap_km: float = TRADE_CAP_KM, mined: np.ndarray | None = None) -> dict:
+          cap_km: float = TRADE_CAP_KM, mined: np.ndarray | None = None, works: np.ndarray | None = None) -> dict:
     """Per cell: `km` (cost-distance to salt; UNREACHED beyond the cap or where a landmass has no salt) and `how`
     (0 not land, 1 own: within `traded_km` on foot, 2 traded: beyond it but within the cap, 3 cut off).
-    `mined`: cells that are a salt mine (a source worked by a mining people): their salt is traded MINED_CAP x further, and
-    `gain` marks the cells that are traded only thanks to them."""
+    `mined`: cells that are a salt mine (a source worked by a mining people or its colony): their salt is traded MINED_CAP x further;
+    `works`: the salt works of any other settled people on beds in its country, WORKS_CAP x further; `gain` marks the cells that
+    are traded only thanks to either."""
     src = np.flatnonzero(land & (own_km == 0))
     cost = np.where(land, 1.0, 0.0)
     cost = np.where(land & zone, TRADE_COST, cost)
@@ -87,10 +89,12 @@ def reach(g, land: np.ndarray, own_km: np.ndarray, flow: np.ndarray, zone: np.nd
     how = np.zeros(g.n, np.int8)
     how[land] = np.where(own_km[land] <= traded_km, 1, np.where(km[land] <= cap_km, 2, 3))
     gain = np.zeros(g.n, bool)
-    if mined is not None and (mined & land & (own_km == 0)).any():
-        msrc = np.flatnonzero(mined & land & (own_km == 0))
-        km_m = _spfa(msrc.astype(np.int64), cost, g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), hop_km, UNREACHED - 1.0)
-        gain = land & (how == 3) & (km_m <= cap_km * MINED_CAP)
-        how[gain] = 2
-        km = np.where(gain, km_m, km)
+    for cells, mult in ((works, WORKS_CAP), (mined, MINED_CAP)):  # (the further reach second: a mine beats a plain works)
+        if cells is not None and (cells & land & (own_km == 0)).any():
+            msrc = np.flatnonzero(cells & land & (own_km == 0))
+            km_m = _spfa(msrc.astype(np.int64), cost, g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), hop_km, UNREACHED - 1.0)
+            new = land & (how == 3) & (km_m <= cap_km * mult)
+            how[new] = 2
+            km = np.where(new, km_m, km)
+            gain |= new
     return {"km": km, "how": how, "gain": gain}

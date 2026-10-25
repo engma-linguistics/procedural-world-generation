@@ -27,6 +27,7 @@ from __future__ import annotations
 import numpy as np
 from numba import njit
 
+from .. import names as NM
 from . import animal_defs as AD
 from . import spec as SP
 
@@ -125,7 +126,7 @@ def corridor(tags: dict, env: dict, flow: np.ndarray | None, shelf: np.ndarray |
 class Crossings:
     """Per history: the present-day landmasses (to name where a line got to) and the arrivals."""
 
-    def __init__(self, grid, present_env: dict, cell_km: float, cell_mkm2: float):
+    def __init__(self, grid, present_env: dict, cell_km: float, cell_mkm2: float, seed=None):
         self.g, self.cell_km = grid, cell_km
         land = present_env["land"]
         lab, k = grid.components(land)
@@ -135,6 +136,7 @@ class Crossings:
         rank[order] = np.arange(k)
         self.label = np.where(lab >= 0, rank[np.maximum(lab, 0)], -1)  # 0 = the largest
         self.names = []
+        given = NM.landmass_names(seed, len(order)) if seed is not None else None  # (the world's own names, PW-853)
         for r, i in enumerate(order):
             sel = lab == i
             a = sizes[i] * cell_mkm2
@@ -146,7 +148,9 @@ class Crossings:
             ew = "E" if lo >= 0 else "W"
             self.names.append({"rank": r, "kind": kind, "area_mkm2": round(float(a), 2),
                                "lat": round(float(la), 1), "lon": round(float(lo), 1),
-                               "name": f"the {kind} at {abs(la):.0f}°{ns} {abs(lo):.0f}°{ew} ({a:.2g} Mkm²)"})
+                               "name": f"the {kind} of {given[r]} ({a:.2g} Mkm²)" if given else
+                               f"the {kind} at {abs(la):.0f}°{ns} {abs(lo):.0f}°{ew} ({a:.2g} Mkm²)",
+                               "called": given[r] if given else None})
         self.reached: dict[str, dict[int, dict]] = {}  # line -> landmass -> first arrival
 
     def note(self, line_id: str, held: np.ndarray, ago: float, how: str, events: list, label: str,
@@ -172,8 +176,9 @@ class Crossings:
                                "lat": self.names[m]["lat"], "lon": self.names[m]["lon"]})
 
     def hop(self, line: SP.Lineage, p: np.ndarray, K: np.ndarray, room: np.ndarray, env: dict, tags: dict,
-            ago: float, dt: float, rng, est: float):
-        """Long sea crossings in this step: returns [(cell, way, gap_km)] of the landings made."""
+            ago: float, dt: float, rng, est: float, pull: np.ndarray | None = None):
+        """Long sea crossings in this step: returns [(cell, way, gap_km)] of the landings made. `pull`: per-cell multiplier on the landing
+        chance and place (history._partner_pull: a people whose contact hybrid is wanted lands by its partner, PW-861)."""
         ms = modes(line, ago)
         if not ms or dt <= 0:
             return []
@@ -202,6 +207,8 @@ class Crossings:
             best_way[better] = wi
             best_r[better] = r[better]
         w = np.where(cand, rates * np.minimum(K, room), 0.0)
+        if pull is not None:
+            w = w * pull
         out = []
         for c in np.unique(lab[cand]):
             sel = cand & (lab == c)
