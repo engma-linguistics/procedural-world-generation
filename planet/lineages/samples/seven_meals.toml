@@ -6,10 +6,11 @@
 # T0 same people, T1 under 1 Myr, T2 under 40 Myr, else T3), so the depths below ARE the culinary repo's tier table:
 #   humans-orcs-goliaths T1; goblins-hobgoblins T1; leonin-tabaxi T1; the giant kinds T1; dwarves, halflings, giants, bugbears T2
 #   with humans and each other; lizardfolk-dragonborn-kobolds T2; merfolk-deep folk T2; everything cross-clade T3.
-# The "fiends" (PW-734, owner): the infernal "tieflings" are antelope-kin and the abyssal "tieflings" are cervid-kin, a deep
-# ruminant branch (~50 Myr from humans: T3, no half-fiends; antelope-kin and cervid-kin are ~25 Myr apart: T2). "Devils" and
-# "demons" are what their neighbours made of them (the [[exonym]] rows at the end, with a long memory). The tiefling template
-# is not in this tree. The antelope-kin are a conquest people (their homeland is wherever the world puts them, not "the western
+# The ruminant peoples (PW-734, PW-858, owner): antelope-kin and cervid-kin are this world's closest equivalent to tieflings
+# (horns and antlers), a deep ruminant branch (~50 Myr from humans: T3, no hybrids with
+# them; antelope-kin and cervid-kin are ~25 Myr apart: T2). What their neighbours call the horned and antlered peoples is in
+# the [[exonym]] rows at the end, with a long memory). The tiefling template is not in this tree.
+# The antelope-kin are a conquest people (their homeland is wherever the world puts them, not "the western
 # steppe"); the sim's substrate takeovers are the conquests the reputation pass reads.
 # Not in this tree (cut or absorbed in the canon): drow, sea elves (an exonym for the deep folk), tritons, firbolgs, aasimar,
 # genasi, troglodytes, the tiefling template. Half-elves are the canon's exemption (no population, no cline, no community
@@ -86,18 +87,18 @@ rain_mm = [300, 1400]
 prefers = ["savanna", "open"]
 traits = ["nomadic", "hunter"]
 
-# -- the ruminant branch (PW-734): the "fiends". ~50 Myr off the line of the humans (T3), ~25 Myr between the two peoples (T2).
+# -- the ruminant branch (PW-734): the horned and antlered peoples. ~50 Myr off the line of the humans (T3), ~25 Myr between the two peoples (T2).
 [[lineage]]
 id = "ruminant"
 name = "ruminant stem"
-body = { gut = "foregut", cellulose = true, diet = "herbivore", teeth = "dental_pad", salt = "craving", hours = "crepuscular", smell = "keen" }  # intake 4.3: rumen (grain sickens it), a dental pad and no upper incisors, a sodium craving, crepuscular
+body = { gut = "foregut", cellulose = true, diet = "herbivore", grain = "moderate", teeth = "dental_pad", salt = "craving", hours = "crepuscular", smell = "keen" }  # intake 4.3: rumen (grain in moderation, adapted gradually: PW-850; forage leads their fields), a dental pad and no upper incisors, a sodium craving, crepuscular
 parents = ["mammalian"]
 at = "50 Myr"
 temp_c = [-8, 26]
 rain_mm = [200, 2200]
 prefers = ["open", "temperate"]
 
-[[lineage]]  # the "infernal" fiends: the conquest people of the open dry country
+[[lineage]]  # the horned people: the conquest people of the open dry country
 id = "antelope_folk"
 name = "antelope-kin"
 body = { display = "horns", display_sex = "males", milks = false }  # (PW-793: no milking, kin of the herd animals) permanent horns with growth rings; the default variant is males-only (saiga-, impala-like)
@@ -132,6 +133,7 @@ at = "9 kyr"
 temp_c = [14, 32]
 rain_mm = [500, 1400]
 prefers = ["savanna"]
+way = "horticulturalist"  # PW-850: some gatherers: browsers of the woodland edge garden half and gather half
 
 [[lineage]]  # desert-edge and dry-grass herds, oryx- and eland-like (both sexes horned)
 id = "antelope_oryx"
@@ -157,7 +159,7 @@ rain_mm = [250, 1400]
 prefers = ["mountain", "hills"]
 traits = ["mountain", "hardy"]
 
-[[lineage]]  # the "abyssal" fiends: forest and its edges
+[[lineage]]  # the antlered people: forest and its edges
 id = "cervid_folk"
 name = "cervid-kin"
 body = { bitter = "low", display = "antlers", shed = "males", display_sex = "males", milks = false }  # (PW-793: no milking) browsers: tannin-binding saliva (low bitter); antlers shed yearly; the default variant is deer-like (males only)
@@ -190,6 +192,7 @@ at = "9 kyr"
 temp_c = [-14, 10]
 rain_mm = [400, 1400]
 prefers = ["subarctic", "wetland"]
+way = "forager"  # PW-850: some gatherers: the boreal wetlands are gathered (sedges, roots, leaves), not ploughed
 
 [[lineage]]  # tundra herders, reindeer-like (antlers in both sexes: one clock); neighbours of goliaths and frost giants
 id = "cervid_tundra"
@@ -1073,11 +1076,11 @@ good = "volcanic"
 pull = 0.7
 
 # ---- folk categories (reputation.py): what a people calls a neighbour ---------------------------------------------
-# The fiends (PW-734, PW-754): the neighbours' "devils" (horns) and "demons" (antlers) are what the antelope-kin and cervid-kin
+# The horned and antlered peoples (PW-734, PW-754, PW-858): the neighbours' "horned ones" and "antlered ones" are what the antelope-kin and cervid-kin
 # became in the memory of those they overran (or who overran them). A conquest is remembered as a legend: efold_kyr is the
 # memory length of this row, much longer than an ordinary conquest's (1.5 kyr x the era), so the name outlasts the event.
 # Honest limit: 30 kyr is a judgement call (the median takeover of a run is ~12 kyr old).
-# Devils and demons come only from the sim: substrate takeovers and derived incursions (PW-756: a short, sharp advance, with the
+# These names come only from the sim: substrate takeovers and derived incursions (PW-756: a short, sharp advance, with the
 # direction it came from). The antelope- and cervid-kin carry the "aggressive" trait (owner 2026-10-24) and the antelope-kin are
 # pastoral nomads (spec.WAY_PRESS). Authored conquests (PW-730) are an optional back-fill for the owner (default focus is plausible
 # simulation); the mechanism stays, and an [[event]] stands only for a pair where the history found no incursion. Examples:
@@ -1086,7 +1089,7 @@ pull = 0.7
 # by = "antelope_folk"
 # over = ["human", "cervid_folk"]
 # at = "2.1 kyr"
-# note = "the antelope-kin came down in a generation and took the best farmland and the strait; the 'contract with devils' is the humans' memory of the vassal treaties they signed"
+# note = "the antelope-kin came down in a generation and took the best farmland and the strait; the 'contract' is the humans' memory of the vassal treaties they signed"
 #
 # [[event]]
 # kind = "conquest"
@@ -1096,15 +1099,15 @@ pull = 0.7
 # note = "the old cervid-led polity over a human majority in forest and upland (it fell ~1.9 kyr ago); an elite overlay, here the humans' memory of being ruled"
 #
 [[exonym]]
-id = "devil"
-label = "devils"
+id = "horned"
+label = "the horned ones"
 body = { display = "horns" }
 valence = ["feared", "despised"]
 efold_kyr = 30.0
 
 [[exonym]]
-id = "demon"
-label = "demons"
+id = "antlered"
+label = "the antlered ones"
 body = { display = "antlers" }
 valence = ["feared", "despised"]
 efold_kyr = 30.0

@@ -597,6 +597,17 @@ def _animal_foods(brief: dict) -> dict | None:
     return out
 
 
+def _dairy_line(af: dict) -> str:
+    """The brief's dairy-animals line. Animals known on the land are not milk on the plate (PW-850/PW-800): where no people here milks
+    (the ruminant peoples' body.milks = false, or no herders), the animals are named as known only and the line says nobody milks them."""
+    names = ", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["dairy_animals"])
+    if not names:
+        return "- Dairy animals: none"
+    if not af["dairy_peoples"]:
+        return f"- Dairy animals: none milked here (known on the land, but no people of this region milks: {names})"
+    return f"- Dairy animals: {names}"
+
+
 def _peoples(ctx: Ctx, i: int, sel: np.ndarray) -> dict:
     lead, ls = ctx.f("mix_lead", i), ctx.f("mix_lead_share", i).astype(float)
     sec, ss = ctx.f("mix_second", i), ctx.f("mix_second_share", i).astype(float)
@@ -1014,7 +1025,7 @@ def markdown(b: dict) -> str:
     if af:
         t += ["- Meat animals: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["meat"]) or "none"),
               "- Eggs: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["eggs"]) or "none"),
-              "- Dairy animals: " + (", ".join(f"{a['id']} ({_pc(a['known_share'])})" for a in af["dairy_animals"]) or "none")]
+              _dairy_line(af)]
         t += [f"- Dairy people {d['id']} (lactase {_pc(d['lactase_share'])}): {d['use']}" for d in af["dairy_peoples"]]
     else:
         t += ["- not in this run"]
