@@ -1,0 +1,6 @@
+  land NPP              43.3 Pg C/yr      (target 45-70; obs ~56)
+  MOD44B tree cover (2001-2015, today's land use): mean model 0.33 / MODIS 0.19, canopy area 39.8 / 23.2 Mkm2; r by cell 0.23
+  potential-vegetation agreement 39.3%  (target >= 60 obs climate, >= 50 model)
+  land NPP              59.5 Pg C/yr      (target 45-70; obs ~56)
+  MOD44B tree cover (2001-2015, today's land use): mean model 0.34 / MODIS 0.19, canopy area 41.4 / 23.2 Mkm2; r by cell 0.70
+  potential-vegetation agreement 61.6%  (target >= 60 obs climate, >= 50 model)

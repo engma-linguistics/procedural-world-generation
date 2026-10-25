@@ -1,0 +1,24 @@
+== /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/pw806/before
+577526 L 6 stored tree 3476.0 stored wet-eq 37.4 pco2 None n wet-eq 1318
+ pco2  350 dT +0: tree  34.7  eq  37.0  wet-eq  41.6 | wet-eq TrBE 19.7 TrBR  8.4 C4G 44.6 C3G  0.2 | npp TrBE
+ pco2  280 dT +0: tree  29.5  eq  22.9  wet-eq  25.7 | wet-eq TrBE  9.7 TrBR  4.2 C4G 62.2 C3G  0.2 | npp TrBE
+ pco2  350 dT +3: tree  27.5  eq  15.4  wet-eq  17.2 | wet-eq TrBE  7.2 TrBR  3.8 C4G 72.6 C3G  0.1 | npp TrBE
+ pco2  350 dT +6: tree  17.0  eq   7.0  wet-eq   7.7 | wet-eq TrBE  3.8 TrBR  1.1 C4G 83.2 C3G  0.1 | npp TrBE
+ pco2  560 dT +3: tree  36.7  eq  40.1  wet-eq  45.3 | wet-eq TrBE 23.4 TrBR 15.8 C4G 39.3 C3G  0.1 | npp TrBE
+ pco2  700 dT +6: tree  28.3  eq  21.5  wet-eq  24.2 | wet-eq TrBE 11.4 TrBR 10.4 C4G 62.9 C3G  0.1 | npp TrBE
+ pco2 1000 dT +6: tree  33.8  eq  33.2  wet-eq  36.7 | wet-eq TrBE 17.6 TrBR 17.7 C4G 46.8 C3G  0.0 | npp TrBE
+ pco2  280 dT -4: tree  40.3  eq  66.7  wet-eq  70.2 | wet-eq TrBE 26.3 TrBR  5.3 C4G  8.9 C3G  3.9 | npp TrBE
+ pco2  185 dT -5: tree  29.7  eq  40.7  wet-eq  42.0 | wet-eq TrBE  3.2 TrBR  0.4 C4G 40.3 C3G  3.5 | npp TrBE
+ pco2  155 dT +4: tree   4.5  eq   1.9  wet-eq   2.0 | wet-eq TrBE  0.0 TrBR  0.0 C4G 88.4 C3G  0.3 | npp TrBE
+== /data/personal/repos/procedural-world-generation/.claude/worktrees/agent-a859f6d1291b796bd
+577526 L 6 stored tree 3476.0 stored wet-eq 37.4 pco2 None n wet-eq 1318
+ pco2  350 dT +0: tree  41.2  eq  54.8  wet-eq  60.8 | wet-eq TrBE 27.3 TrBR  8.8 C4G 22.3 C3G  0.2 | npp TrBE
+ pco2  280 dT +0: tree  40.0  eq  48.8  wet-eq  54.8 | wet-eq TrBE 25.9 TrBR  5.4 C4G 28.4 C3G  0.1 | npp TrBE
+ pco2  350 dT +3: tree  38.0  eq  38.9  wet-eq  44.6 | wet-eq TrBE 24.5 TrBR  9.7 C4G 41.2 C3G  0.2 | npp TrBE
+ pco2  350 dT +6: tree  33.0  eq  24.2  wet-eq  28.3 | wet-eq TrBE 17.7 TrBR  7.6 C4G 59.7 C3G  0.1 | npp TrBE
+ pco2  560 dT +3: tree  40.8  eq  47.6  wet-eq  53.3 | wet-eq TrBE 27.2 TrBR 15.3 C4G 31.1 C3G  0.1 | npp TrBE
+ pco2  700 dT +6: tree  37.3  eq  36.1  wet-eq  41.4 | wet-eq TrBE 22.3 TrBR 17.1 C4G 45.0 C3G  0.1 | npp TrBE
+ pco2 1000 dT +6: tree  38.8  eq  39.5  wet-eq  44.9 | wet-eq TrBE 23.2 TrBR 19.9 C4G 39.5 C3G  0.1 | npp TrBE
+ pco2  280 dT -4: tree  42.1  eq  71.2  wet-eq  74.0 | wet-eq TrBE 19.1 TrBR  2.3 C4G  3.4 C3G  3.5 | npp TrBE
+ pco2  185 dT -5: tree  41.0  eq  69.8  wet-eq  72.3 | wet-eq TrBE 14.1 TrBR  0.3 C4G  6.4 C3G  1.9 | npp TrBE
+ pco2  155 dT +4: tree  23.5  eq   9.2  wet-eq  10.6 | wet-eq TrBE  4.7 TrBR  0.0 C4G 79.1 C3G  0.2 | npp TrBE

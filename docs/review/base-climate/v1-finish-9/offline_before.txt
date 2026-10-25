@@ -1,0 +1,40 @@
+6fbc2c L 7 stored tree 246.1 stored wet-eq 1.9 pco2 155.0 n wet-eq 8202
+ pco2  155 dT +0: tree   5.1  eq   2.5  wet-eq   2.4 | wet-eq TrBE  0.0 TrBR  0.0 C4G 85.6 C3G  0.2 | npp TrBE  -333 C4G   654 ok TrBE   1% burned  1.8  (4s)
+ pco2  350 dT +0: tree  29.6  eq  37.4  wet-eq  41.0 | wet-eq TrBE 27.0 TrBR  8.2 C4G 43.0 C3G  0.1 | npp TrBE   111 C4G   665 ok TrBE  64% burned  1.2  (1s)
+ pco2  280 dT +0: tree  22.1  eq  15.1  wet-eq  16.4 | wet-eq TrBE  8.8 TrBR  2.5 C4G 70.6 C3G  0.1 | npp TrBE     7 C4G   665 ok TrBE  37% burned  1.9  (1s)
+ pco2  180 dT +0: tree   9.6  eq   3.6  wet-eq   3.6 | wet-eq TrBE  0.2 TrBR  0.0 C4G 84.5 C3G  0.1 | npp TrBE  -242 C4G   663 ok TrBE   2% burned  2.0  (1s)
+a12762 L 7 stored tree 173.2 stored wet-eq 1.3 pco2 142.2 n wet-eq 4515
+ pco2  142 dT +0: tree   3.6  eq   2.0  wet-eq   2.0 | wet-eq TrBE  0.0 TrBR  0.0 C4G 86.5 C3G  0.1 | npp TrBE  -430 C4G   590 ok TrBE   0% burned  1.5  (1s)
+ pco2  350 dT +0: tree  22.5  eq  22.4  wet-eq  24.8 | wet-eq TrBE 13.4 TrBR  6.3 C4G 62.4 C3G  0.3 | npp TrBE     1 C4G   628 ok TrBE  35% burned  2.1  (1s)
+ pco2  280 dT +0: tree  19.4  eq  11.1  wet-eq  12.3 | wet-eq TrBE  6.0 TrBR  2.5 C4G 75.6 C3G  0.3 | npp TrBE   -97 C4G   628 ok TrBE  19% burned  2.5  (1s)
+ pco2  180 dT +0: tree  10.7  eq   2.6  wet-eq   2.7 | wet-eq TrBE  0.2 TrBR  0.0 C4G 85.5 C3G  0.1 | npp TrBE  -314 C4G   613 ok TrBE   2% burned  2.0  (1s)
+067778 L 7 stored tree 1139.9 stored wet-eq 3.4 pco2 220.9 n wet-eq 6586
+ pco2  221 dT +0: tree  16.6  eq   5.2  wet-eq   6.2 | wet-eq TrBE  3.1 TrBR  1.3 C4G 80.3 C3G  0.0 | npp TrBE   -82 C4G   650 ok TrBE  13% burned  3.6  (1s)
+ pco2  350 dT +0: tree  25.5  eq  33.4  wet-eq  42.5 | wet-eq TrBE 28.3 TrBR 12.1 C4G 40.1 C3G  0.0 | npp TrBE   123 C4G   636 ok TrBE  66% burned  1.5  (1s)
+ pco2  280 dT +0: tree  20.8  eq  16.7  wet-eq  21.1 | wet-eq TrBE 12.0 TrBR  7.2 C4G 63.2 C3G  0.0 | npp TrBE    31 C4G   636 ok TrBE  43% burned  2.7  (1s)
+ pco2  180 dT +0: tree  13.1  eq   2.0  wet-eq   2.3 | wet-eq TrBE  0.3 TrBR  0.0 C4G 85.0 C3G  0.0 | npp TrBE  -190 C4G   644 ok TrBE   4% burned  3.3  (1s)
+6909cb L 7 stored tree 2022.3 stored wet-eq 8.9 pco2 349.0 n wet-eq 8493
+ pco2  349 dT +0: tree  25.9  eq  13.3  wet-eq  14.1 | wet-eq TrBE  8.2 TrBR  5.3 C4G 72.4 C3G  0.0 | npp TrBE    20 C4G   694 ok TrBE  29% burned  1.0  (1s)
+ pco2  350 dT +0: tree  26.0  eq  13.6  wet-eq  14.4 | wet-eq TrBE  8.3 TrBR  5.4 C4G 72.1 C3G  0.0 | npp TrBE    21 C4G   694 ok TrBE  30% burned  1.0  (1s)
+ pco2  280 dT +0: tree  19.8  eq   4.0  wet-eq   4.3 | wet-eq TrBE  2.4 TrBR  0.9 C4G 83.4 C3G  0.0 | npp TrBE   -99 C4G   694 ok TrBE   8% burned  1.3  (1s)
+ pco2  180 dT +0: tree   6.7  eq   1.0  wet-eq   1.1 | wet-eq TrBE  0.2 TrBR  0.0 C4G 86.9 C3G  0.0 | npp TrBE  -376 C4G   692 ok TrBE   1% burned  1.2  (1s)
+e71172 L 7 stored tree 237.3 stored wet-eq 3.2 pco2 159.5 n wet-eq 8138
+ pco2  160 dT +0: tree   4.1  eq   3.4  wet-eq   3.9 | wet-eq TrBE  0.0 TrBR  0.0 C4G 83.6 C3G  0.2 | npp TrBE  -386 C4G   634 ok TrBE   3% burned  1.3  (1s)
+ pco2  350 dT +0: tree  25.9  eq  21.8  wet-eq  25.8 | wet-eq TrBE 13.8 TrBR  5.5 C4G 59.4 C3G  0.4 | npp TrBE    48 C4G   618 ok TrBE  36% burned  0.9  (1s)
+ pco2  280 dT +0: tree  18.3  eq  13.5  wet-eq  15.5 | wet-eq TrBE  6.9 TrBR  3.2 C4G 70.4 C3G  0.4 | npp TrBE   -65 C4G   618 ok TrBE  23% burned  1.3  (1s)
+ pco2  180 dT +0: tree   6.6  eq   4.8  wet-eq   5.4 | wet-eq TrBE  1.0 TrBR  0.1 C4G 81.7 C3G  0.3 | npp TrBE  -317 C4G   635 ok TrBE   6% burned  1.5  (1s)
+2a7385 L 7 stored tree 1664.6 stored wet-eq 8.2 pco2 277.0 n wet-eq 7782
+ pco2  277 dT +0: tree  22.8  eq  11.8  wet-eq  11.8 | wet-eq TrBE  5.1 TrBR  2.7 C4G 77.5 C3G  0.1 | npp TrBE   -88 C4G   672 ok TrBE  17% burned  1.2  (1s)
+ pco2  350 dT +0: tree  28.8  eq  24.5  wet-eq  25.6 | wet-eq TrBE 14.7 TrBR  6.7 C4G 62.5 C3G  0.1 | npp TrBE    36 C4G   667 ok TrBE  41% burned  0.8  (1s)
+ pco2  280 dT +0: tree  23.1  eq  12.2  wet-eq  12.2 | wet-eq TrBE  5.4 TrBR  2.9 C4G 77.0 C3G  0.1 | npp TrBE   -82 C4G   667 ok TrBE  18% burned  1.2  (1s)
+ pco2  180 dT +0: tree   8.1  eq   4.8  wet-eq   4.0 | wet-eq TrBE  0.4 TrBR  0.1 C4G 86.1 C3G  0.1 | npp TrBE  -349 C4G   672 ok TrBE   3% burned  1.5  (1s)
+bdded2 L 7 stored tree 2480.1 stored wet-eq 47.3 pco2 350.0 n wet-eq 4297
+ pco2  350 dT +0: tree  31.5  eq  49.3  wet-eq  60.7 | wet-eq TrBE  5.1 TrBR  0.3 C4G 16.1 C3G  5.0 | npp TrBE    25 C4G   490 ok TrBE  15% burned  0.8  (1s)
+ pco2  350 dT +0: tree  31.5  eq  49.3  wet-eq  60.7 | wet-eq TrBE  5.1 TrBR  0.3 C4G 16.1 C3G  5.0 | npp TrBE    25 C4G   490 ok TrBE  15% burned  0.8  (1s)
+ pco2  280 dT +0: tree  26.7  eq  35.3  wet-eq  44.7 | wet-eq TrBE  0.2 TrBR  0.0 C4G 30.0 C3G  7.6 | npp TrBE    -3 C4G   490 ok TrBE   4% burned  0.8  (1s)
+ pco2  180 dT +0: tree  12.8  eq  12.1  wet-eq  14.5 | wet-eq TrBE  0.0 TrBR  0.0 C4G 63.3 C3G 14.2 | npp TrBE   -74 C4G   493 ok TrBE   0% burned  1.4  (1s)
+577526 L 6 stored tree 3476.0 stored wet-eq 37.4 pco2 None n wet-eq 1318
+ pco2  350 dT +0: tree  34.7  eq  37.0  wet-eq  41.6 | wet-eq TrBE 19.7 TrBR  8.4 C4G 44.6 C3G  0.2 | npp TrBE   112 C4G   603 ok TrBE  60% burned  1.6  (0s)
+ pco2  350 dT +0: tree  34.7  eq  37.0  wet-eq  41.6 | wet-eq TrBE 19.7 TrBR  8.4 C4G 44.6 C3G  0.2 | npp TrBE   112 C4G   603 ok TrBE  60% burned  1.6  (0s)
+ pco2  280 dT +0: tree  29.5  eq  22.9  wet-eq  25.7 | wet-eq TrBE  9.7 TrBR  4.2 C4G 62.2 C3G  0.2 | npp TrBE    21 C4G   603 ok TrBE  34% burned  2.2  (0s)
+ pco2  180 dT +0: tree  17.2  eq   9.3  wet-eq  10.1 | wet-eq TrBE  0.7 TrBR  0.2 C4G 79.5 C3G  0.2 | npp TrBE  -197 C4G   624 ok TrBE   8% burned  2.7  (0s)
