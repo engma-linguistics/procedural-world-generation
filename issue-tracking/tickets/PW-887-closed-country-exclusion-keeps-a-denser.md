@@ -1,7 +1,8 @@
 ---
+id: PW-887
 title: Closed-country exclusion keeps a denser newcomer (humans, 10 per km2) boxed in by 13-15 thinner incumbents on a shared continent; pick the mechanism or accept the niche
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: v2
 subsystem: timezoom
@@ -11,6 +12,8 @@ found_by: fun-lane-28
 blocked_by: []
 relates: [PW-885, PW-869]
 refs: [planet/lineages/history.py, planet/lineages/spread.py, "world 2a7385", "dnd tries 7000, 7005, 7006"]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -22,3 +25,7 @@ Options:
 - C. Let the incumbents' claim fade where they hold below their own viable population in a patch (the MVP fade for non-separate patches).
 Lean: B, behind a seed sweep; A if the owner prefers the tree to say it.
 - [ ] humans on landmass 1 reach their whole niche (~4k cells) within 30 kyr of their origin on 3 of 3 tries without the elves dropping under 500 cells on 7 of 8
+
+## Updates
+- 2026-10-25: Status needs-decision -> todo. RULING (coordinator): B, a frontier-invasion term. A denser people takes a thinner people's cells along the contact line; this is the modern-human vs Neanderthal replacement mechanism (a small demographic advantage at the front, e.g. Banks et al. 2008, Kolodny & Feldman 2017). Not ruled: A, accepting it, because the owner expects humans to spread like the record. Check over 8 seeds: elves >= 500 on 7 of 8, half-elves still appear, orcs and the other incumbents keep viable ranges.
+- 2026-10-25: Created from inbox draft draft-incumbent-exclusion-vs-denser-newcomer.md (found by fun-lane-28).
