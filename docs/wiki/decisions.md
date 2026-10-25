@@ -60,6 +60,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-10-25 · Dispersal (coordinator) · humans should spread like the record (Sahul by sea >=50 kyr, through held country within 10-20 kyr): pioneer advantage plus an early boat rung, by mechanism · PW-869
 - 2026-10-24 · Owner's world (seven_meals) · antelope-kin and cervid-kin can milk by default but are mostly farmers, **then reversed**: no dairying for the setting's tieflings · PW-784 (**superseded** by) PW-793
 - 2026-10-24 · Folklore · two layers per row: current name fades, legend/folklore persists; parked under historical linguistics · PW-757, PW-767
 - 2026-10-24 · Empires · present-day Empire (antelope-kin) and fallen Empire (cervid-kin) in seven_meals; needs polities or authored anchors · PW-785
