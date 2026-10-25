@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-636]
 refs: [planet/vegetation.py, planet/tectonics/earth.py, planet/highlights.py, planet/make.py, tests/test_vegetation.py, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 ## Description
@@ -25,6 +25,7 @@ Consequences to handle:
 Supersedes PW-636's compression.
 
 ## Updates
+- 2026-10-25: v1-finish-11: the plants' calendar now sets weathering: bare land weathers 1/3 of planted (PLANT_WEATHER 3 at NPP 500); the reference is planted, so the pioneers' and forests' arrival brings CO2 to the balance, not below it. docs/review/base-climate/v1-finish-11/README.md
 - 2026-10-24: v1-finish-10: plant groups on Earth's calendar (vegetation.GROUPS windows in Ma before now: 500-470, 440-420, 395-375, 140-120, 75-60, 35-25), FLORA_PACE and plants_from removed, bare land before the pioneers; skeletal reefs 545-520 Ma (earth.REEF_BUILDERS_MA), microbial carbonate before. --at auto is now the run's end or its latest interglacial-like frame of the last 12 Myr; slice --ago MA added. Coastal layers not yet on the calendar: draft-coastal-reefs-on-the-calendar.md. docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Merged inbox draft draft-flora-calendar-co2-and-auto-slice.md ("Plant calendar (PW-807) consequences: bare-land spin-up against the CO2 reference freeze, and slice --at auto's flora gate leaving only the last ~10-30 Myr", found by star-anchor-audit).
   Audit items 6 and 7 (docs/review/base-climate/star-anchor-audit/README.md).

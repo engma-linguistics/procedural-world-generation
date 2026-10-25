@@ -473,7 +473,9 @@ def update_vegetation(sim, e):
     back from the run's end: vegetation.group_windows). Sets veg (ground
     cover, which slows erosion), npp (which speeds weathering), veg_frac,
     veg_lai, veg_type, tree_cover, flora and veg_niche. Before the land
-    pioneers arrive the land is bare."""
+    pioneers arrive the land is bare. During the spin-up it also sets
+    npp_pot, the potential vegetation (every group, the balance's CO2) the
+    weathering reference is learnt with (global_temperature)."""
     p, g = sim.params, sim.grid
     n = g.n
     rng = np.random.default_rng([sim.seed, sim.step_no, 11])

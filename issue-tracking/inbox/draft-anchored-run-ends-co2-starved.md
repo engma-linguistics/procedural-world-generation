@@ -47,3 +47,9 @@ Options:
 Lean A, then re-measure full Gough alone before the thermostat (PW-810).
 - [ ] option chosen; end pCO2 of 1 Gyr L6 runs within ~180-600 ppm on most draws
 - [ ] strict bar re-measured (L6 >= 13/18, L7 >= 7/8 at 1 Gyr; 2 Gyr late window ~70%)
+
+v1-finish-11 (2026-10-25): option A built (coordinator ruling) with GEOCARB's weathering laws and a runoff factor;
+the plant weathering factor is now 3x at NPP 500 (Moulton/Berner 2-5x, Drever < 2x, GEOCARB 4x). End pCO2 is no
+longer systematically starved (medians 750-2400 ppm after 300 Myr), but full Gough alone still fails the bar (0/6)
+and end pCO2 still spreads 90-990 with the drift; the remaining question is in draft-balance-climate-vs-bar.md.
+- [x] option chosen (A)

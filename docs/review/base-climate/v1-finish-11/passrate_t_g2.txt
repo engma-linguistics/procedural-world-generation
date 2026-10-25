@@ -1,0 +1,113 @@
+     t_g2_eb_0      seed12 300-2000: icehouse 61.3% deep 32.4% dT med -0.0 max +11.1 ICEBOX -> F
+                            300-1000: icehouse 92.0% deep 69.7% dT med -3.4 max +1.3 ICEBOX -> F
+                           1000-1500: icehouse 51.2% deep 12.8% dT med +0.9 max +6.0 -> F
+                           1500-2000: icehouse 28.6% deep  0.0% dT med +4.5 max +11.1 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 28.7% deep  0.0% dT med +4.6 max +11.1 -> ok
+                           pCO2 after 300: median 1426 (10-90% 303-5154), <180 ppm 5%, at the end 409; corr(dT, ln pCO2) -0.67
+                           end: dT +7.1, true mean T 20.2 C (14.5 + dT = 21.6), trees 17.94% of land, wet-eq lowland trees 1% (1261 cells)
+                           finish: true mean +6.4 C vs pre-industrial (OUTSIDE -6..+3); land ice 3.3% at the end, 3.3% least in the last 12 Myr (Earth ~10, LGM ~25)
+ t_g2_eb_0.001      seed12 300-2000: icehouse 63.1% deep 18.5% dT med +1.8 max +13.9 -> F
+                            300-1000: icehouse 100.0% deep 45.1% dT med -3.8 max +3.0 ICEBOX -> F
+                           1000-1500: icehouse 63.2% deep  0.0% dT med +2.1 max +5.7 -> F
+                           1500-2000: icehouse 11.9% deep  0.0% dT med +6.1 max +13.9 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 11.0% deep  0.0% dT med +6.0 max +13.9 -> ok
+                           pCO2 after 300: median 1859 (10-90% 602-5108), <180 ppm 0%, at the end 499; corr(dT, ln pCO2) -0.53
+                           end: dT +3.9, true mean T 16.4 C (14.5 + dT = 18.4), trees 20.95% of land, wet-eq lowland trees 4% (593 cells)
+                           finish: true mean +2.6 C vs pre-industrial (inside -6..+3); land ice 9.0% at the end, 9.0% least in the last 12 Myr (Earth ~10, LGM ~25)
+t_g2_eb_-0.001      seed12 300-2000: icehouse 66.2% deep 32.6% dT med -0.4 max +9.3 ICEBOX -> F
+                            300-1000: icehouse 100.0% deep 78.9% dT med -5.6 max -0.1 ICEBOX -> F
+                           1000-1500: icehouse 52.8% deep  0.8% dT med +2.3 max +8.0 -> F
+                           1500-2000: icehouse 32.5% deep  0.0% dT med +3.8 max +9.3 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 30.1% deep  0.0% dT med +3.8 max +9.3 -> ok
+                           pCO2 after 300: median 1354 (10-90% 231-5623), <180 ppm 7%, at the end 392; corr(dT, ln pCO2) -0.49
+                           end: dT +7.8, true mean T 20.9 C (14.5 + dT = 22.3), trees 20.85% of land, wet-eq lowland trees 0% (1197 cells)
+                           finish: true mean +7.1 C vs pre-industrial (OUTSIDE -6..+3); land ice 2.7% at the end, 2.7% least in the last 12 Myr (Earth ~10, LGM ~25)
+      t_g2_sc0  seed583167 300-2000: icehouse 60.3% deep 22.3% dT med +1.6 max +9.5 -> F
+                            300-1000: icehouse 89.7% deep 54.3% dT med -2.7 max +2.2 ICEBOX -> F
+                           1000-1500: icehouse 32.0% deep  0.0% dT med +2.7 max +7.4 -> ok
+                           1500-2000: icehouse 47.6% deep  0.0% dT med +4.2 max +9.5 -> F
+                           last 540 (1460-2000, diagnostic): icehouse 45.6% deep  0.0% dT med +4.2 max +9.5 -> F
+                           pCO2 after 300: median 1921 (10-90% 285-9805), <180 ppm 5%, at the end 340; corr(dT, ln pCO2) -0.62
+                           end: dT +8.4, true mean T 21.1 C (14.5 + dT = 22.9), trees 24.04% of land, wet-eq lowland trees 6% (1052 cells)
+                           finish: true mean +7.3 C vs pre-industrial (OUTSIDE -6..+3); land ice 0.7% at the end, 0.7% least in the last 12 Myr (Earth ~10, LGM ~25) NO-ICE
+      t_g2_sc0  seed619496 300-2000: icehouse 63.6% deep 28.9% dT med +1.7 max +11.1 -> F
+                            300-1000: icehouse 94.3% deep 59.4% dT med -2.1 max +3.6 ICEBOX -> F
+                           1000-1500: icehouse 79.2% deep 15.2% dT med +2.5 max +7.9 -> F
+                           1500-2000: icehouse  5.6% deep  0.0% dT med +5.0 max +11.1 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse  5.1% deep  0.0% dT med +5.2 max +11.1 -> ok
+                           pCO2 after 300: median 1870 (10-90% 394-12502), <180 ppm 3%, at the end 94; corr(dT, ln pCO2) -0.43
+                           end: dT -0.5, true mean T 13.9 C (14.5 + dT = 14.0), trees 10.86% of land, wet-eq lowland trees 1% (1459 cells)
+                           finish: true mean +0.1 C vs pre-industrial (inside -6..+3); land ice 1.3% at the end, 0.6% least in the last 12 Myr (Earth ~10, LGM ~25) NO-ICE
+      t_g2_sc0  seed639472 300-2000: icehouse 71.6% deep 34.5% dT med -1.6 max +7.6 ICEBOX -> F
+                            300-1000: icehouse 100.0% deep 68.6% dT med -4.5 max -0.5 ICEBOX -> F
+                           1000-1500: icehouse 60.0% deep 21.6% dT med +0.7 max +5.6 -> F
+                           1500-2000: icehouse 43.7% deep  0.0% dT med +1.5 max +7.6 -> F
+                           last 540 (1460-2000, diagnostic): icehouse 40.4% deep  0.0% dT med +1.6 max +7.6 -> F
+                           pCO2 after 300: median 1172 (10-90% 129-5397), <180 ppm 15%, at the end 19; corr(dT, ln pCO2) -0.44
+                           end: dT -2.9, true mean T 10.3 C (14.5 + dT = 11.6), trees 6.56% of land, wet-eq lowland trees 0% (958 cells)
+                           finish: true mean -3.5 C vs pre-industrial (inside -6..+3); land ice 22.2% at the end, 13.9% least in the last 12 Myr (Earth ~10, LGM ~25)
+      t_g2_sc0  seed957317 300-2000: icehouse 55.9% deep 42.0% dT med -0.8 max +9.9 ICEBOX -> F
+                            300-1000: icehouse 100.0% deep 94.9% dT med -5.8 max -0.8 ICEBOX -> F
+                           1000-1500: icehouse 29.6% deep  5.6% dT med +1.7 max +9.5 -> ok
+                           1500-2000: icehouse 20.6% deep  4.8% dT med +3.4 max +9.9 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 19.1% deep  4.4% dT med +3.6 max +9.9 -> ok
+                           pCO2 after 300: median 1207 (10-90% 391-4379), <180 ppm 5%, at the end 133; corr(dT, ln pCO2) -0.07
+                           end: dT -2.3, true mean T 10.2 C (14.5 + dT = 12.2), trees 20.96% of land, wet-eq lowland trees 7% (252 cells)
+                           finish: true mean -3.6 C vs pre-industrial (inside -6..+3); land ice 19.9% at the end, 19.9% least in the last 12 Myr (Earth ~10, LGM ~25)
+     t_g2_new0      seed11 300-2000: icehouse 82.4% deep 26.1% dT med -0.5 max +9.9 -> F
+                            300-1000: icehouse 99.4% deep 47.4% dT med -2.8 max +2.7 ICEBOX -> F
+                           1000-1500: icehouse 92.8% deep 22.4% dT med -0.3 max +7.7 ICEBOX -> F
+                           1500-2000: icehouse 48.4% deep  0.0% dT med +2.1 max +9.9 -> F
+                           last 540 (1460-2000, diagnostic): icehouse 45.6% deep  0.0% dT med +2.4 max +9.9 -> F
+                           pCO2 after 300: median 1614 (10-90% 173-7120), <180 ppm 10%, at the end 158; corr(dT, ln pCO2) -0.40
+                           end: dT +7.1, true mean T 20.7 C (14.5 + dT = 21.6), trees 18.99% of land, wet-eq lowland trees 4% (991 cells)
+                           finish: true mean +6.9 C vs pre-industrial (OUTSIDE -6..+3); land ice 0.5% at the end, 0.1% least in the last 12 Myr (Earth ~10, LGM ~25) NO-ICE
+     t_g2_new0      seed21 300-2000: icehouse 57.3% deep  4.9% dT med +0.6 max +8.7 -> F
+                            300-1000: icehouse 84.0% deep  6.9% dT med -1.6 max +2.3 -> F
+                           1000-1500: icehouse 44.8% deep  7.2% dT med +2.3 max +5.6 -> F
+                           1500-2000: icehouse 32.5% deep  0.0% dT med +3.9 max +8.7 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 37.5% deep  0.0% dT med +3.9 max +8.7 -> ok
+                           pCO2 after 300: median 1946 (10-90% 216-8330), <180 ppm 7%, at the end 286; corr(dT, ln pCO2) -0.34
+                           end: dT +7.9, true mean T 21.3 C (14.5 + dT = 22.4), trees 22.9% of land, wet-eq lowland trees 13% (1206 cells)
+                           finish: true mean +7.5 C vs pre-industrial (OUTSIDE -6..+3); land ice 0.2% at the end, 0.2% least in the last 12 Myr (Earth ~10, LGM ~25) NO-ICE
+     t_g2_newp  seed583167 300-2000: icehouse 79.8% deep 32.2% dT med -0.4 max +11.0 ICEBOX -> F
+                            300-1000: icehouse 94.9% deep 58.3% dT med -3.2 max +1.5 ICEBOX -> F
+                           1000-1500: icehouse 84.0% deep 15.2% dT med +1.8 max +7.2 -> F
+                           1500-2000: icehouse 54.8% deep 12.7% dT med +2.7 max +11.0 -> F
+                           last 540 (1460-2000, diagnostic): icehouse 52.2% deep 11.8% dT med +3.0 max +11.0 -> F
+                           pCO2 after 300: median 1462 (10-90% 211-8247), <180 ppm 9%, at the end 180; corr(dT, ln pCO2) -0.31
+                           end: dT +4.5, true mean T 18.5 C (14.5 + dT = 19.0), trees 8.92% of land, wet-eq lowland trees 0% (1018 cells)
+                           finish: true mean +4.7 C vs pre-industrial (OUTSIDE -6..+3); land ice 1.4% at the end, 1.4% least in the last 12 Myr (Earth ~10, LGM ~25)
+     t_g2_newp  seed619496 300-2000: icehouse 54.9% deep 30.5% dT med +1.6 max +12.1 ICEBOX -> F
+                            300-1000: icehouse 100.0% deep 62.9% dT med -4.6 max +1.6 ICEBOX -> F
+                           1000-1500: icehouse 30.4% deep 16.0% dT med +3.3 max +6.8 -> ok
+                           1500-2000: icehouse 16.7% deep  0.0% dT med +5.3 max +12.1 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 15.4% deep  0.0% dT med +5.6 max +12.1 -> ok
+                           pCO2 after 300: median 1622 (10-90% 347-7014), <180 ppm 5%, at the end 115; corr(dT, ln pCO2) -0.36
+                           end: dT +3.6, true mean T 17.5 C (14.5 + dT = 18.1), trees 13.67% of land, wet-eq lowland trees 0% (862 cells)
+                           finish: true mean +3.7 C vs pre-industrial (OUTSIDE -6..+3); land ice 1.8% at the end, 0.9% least in the last 12 Myr (Earth ~10, LGM ~25) NO-ICE
+     t_g2_newp  seed639472 300-2000: icehouse 71.8% deep 40.1% dT med -1.2 max +7.5 ICEBOX -> F
+                            300-1000: icehouse 86.9% deep 64.6% dT med -3.6 max +1.9 ICEBOX -> F
+                           1000-1500: icehouse 42.4% deep 31.2% dT med +2.2 max +7.2 ICEBOX -> F
+                           1500-2000: icehouse 80.2% deep 15.1% dT med +0.6 max +7.5 -> F
+                           last 540 (1460-2000, diagnostic): icehouse 74.3% deep 14.0% dT med +0.9 max +7.5 -> F
+                           pCO2 after 300: median 1350 (10-90% 132-6672), <180 ppm 15%, at the end 36; corr(dT, ln pCO2) -0.26
+                           end: dT -1.2, true mean T 12.5 C (14.5 + dT = 13.3), trees 7.48% of land, wet-eq lowland trees 0% (1079 cells)
+                           finish: true mean -1.3 C vs pre-industrial (inside -6..+3); land ice 5.9% at the end, 5.6% least in the last 12 Myr (Earth ~10, LGM ~25)
+     t_g2_newp  seed957317 300-2000: icehouse 48.1% deep 30.5% dT med +1.0 max +9.2 ICEBOX -> F
+                            300-1000: icehouse 96.6% deep 74.3% dT med -4.5 max +1.6 ICEBOX -> F
+                           1000-1500: icehouse 14.4% deep  0.0% dT med +2.7 max +5.7 -> ok
+                           1500-2000: icehouse 14.3% deep  0.0% dT med +3.9 max +9.2 -> ok
+                           last 540 (1460-2000, diagnostic): icehouse 14.7% deep  0.0% dT med +4.1 max +9.2 -> ok
+                           pCO2 after 300: median 1362 (10-90% 236-6553), <180 ppm 7%, at the end 285; corr(dT, ln pCO2) -0.45
+                           end: dT +5.4, true mean T 18.7 C (14.5 + dT = 19.9), trees 25.48% of land, wet-eq lowland trees 1% (984 cells)
+                           finish: true mean +4.9 C vs pre-industrial (OUTSIDE -6..+3); land ice 3.5% at the end, 3.5% least in the last 12 Myr (Earth ~10, LGM ~25)
+
+pass tallies (strict bar):
+  t L6 2000: 0/13
+  t L6 2000 1000-1500: 4/13
+  t L6 2000 1500-2000: 8/13
+  t L6 2000 300-1000: 0/13
+  t L6 2000 end T in human range: 5/13
+  t L6 2000 end land ice 1-25%: 8/13
+  t L6 2000 last540: 8/13
