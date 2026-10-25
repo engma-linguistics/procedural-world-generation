@@ -290,7 +290,7 @@
   <div id="info" class="panel"><div id="infoText"><span class="muted">Hover a cell. Click to copy its description
     and to zoom into that region.</span></div><div id="zoomBox" hidden></div></div>
   <div id="summary" class="panel"><button id="sumToggle" title="Show or hide the summary (remembered)"><span id="sumTitle">Summary</span><span class="chev"></span></button>
-    <div id="summaryBody"></div></div>
+    <div id="layerSum"></div><div id="summaryBody"></div></div>
 </div>
 <!-- everything about one cell ("More detail" in the info box) -->
 <div id="detail" hidden><div class="dpanel panel" role="dialog" aria-label="Cell detail">
@@ -2252,7 +2252,88 @@ function rampLegend(key, units, labels) {
     <div class="row" style="justify-content:space-between;width:260px"><span>${a}</span><span class="muted">${units}</span><span>${b}</span></div></div>`;
 }
 
+// ------------------------------------------------------------ what the colour layer says about the whole world (PW-840)
+// and about the cell under the cursor: a summary under the world's own, and a small tooltip by the pointer.
+const CAT_LAYERS = () => ({ biome: ['biome', V.biomes], climate: ['climate', V.koppen], 'rock type': ['rock', V.rocks], 'surface rock': ['surface_rock', V.rocks],
+  vegetation: ['vegetation', V.vegTypes], soils: ['soil', V.soilTypes], landforms: ['landform', V.landforms] });
+// where a numeric layer has values: 'sea', 'all', or land
+const NUM_ALL = new Set(['elevation', 'temperature', 'precipitation', 'humidity', 'dew point', 'cloud', 'sunshine', 'crust age', 'crust thickness', 'sediment']);
+function layerNumbers(layer) {  // {arr, key, where} for a ramp layer with one number a cell, or null
+  const L = V.layers, sv = seasonalData(layer);
+  const key = SEA_LAYERS[layer] || VEG_LAYERS[layer] || SOIL_LAYERS[layer] || GAME_LAYERS[layer]
+    || { 'crust age': 'crust_age', 'crust thickness': 'crust_thickness', sediment: 'sediment_cover', 'leaf area': 'lai_jul', 'river floods': 'flood_ratio' }[layer] || layer;
+  const arr = sv || L[key];
+  if (!arr || !arr.length || typeof arr[0] === 'bigint' || !(layer in UNITS) && !RAMPS[layer]) return null;
+  return { arr, where: SEA_LAYERS[layer] ? 'sea' : NUM_ALL.has(layer) ? 'all' : 'land' };
+}
+function layerCats(layer) {  // {arr (ids), names, colors} for a categorical layer, fuels included
+  const L = V.layers, c = CAT_LAYERS()[layer];
+  if (c && L[c[0]] && c[1]?.length) return { arr: L[c[0]], names: c[1].map((e) => e.name || e.code || String(e)), colors: c[1].map((e) => e.color || '#888'), land: true, none: c[0] === 'soil' || c[0] === 'landform' ? 0 : -1 };
+  if (layer === 'fuels' && V.run?.meta?.fuels && V.anthro?.fuel_lead && anthroOn()) {
+    const F = V.run.meta.fuels;
+    return { arr: V.anthro.fuel_lead, names: F.names, colors: F.names.map((k) => F.colors[k]), land: true, none: 255, noneName: 'nobody there' };
+  }
+  return null;
+}
+function fmtNum(v) { const a = Math.abs(v); return a >= 100 ? Math.round(v).toLocaleString() : a >= 10 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toFixed(3); }
+function renderLayerSum() {
+  const el = $('layerSum');
+  if (!el) return;
+  if (!V || !V.layers || state.playing) { if (!V) el.innerHTML = ''; return; }
+  const layer = state.layer, L = V.layers, elev = L.elevation, n = V.n;
+  let html = '';
+  const cat = layerCats(layer), num = !cat && layerNumbers(layer);
+  if (cat) {
+    const cnt = new Map(); let tot = 0;
+    for (let i = 0; i < n; i++) {
+      if (cat.land && elev[i] <= 0) continue;
+      const v = cat.arr[i]; if (cat.none === 0 && v === 0) continue;
+      cnt.set(v, (cnt.get(v) || 0) + 1); tot++;
+    }
+    const rows = [...cnt.entries()].sort((a, b) => b[1] - a[1]);
+    if (tot) html = `<div class="muted">share of the land</div>` + rows.slice(0, 7).map(([v, k]) =>
+      `<div><span class="swatch" style="display:inline-block;width:9px;height:9px;background:${v === cat.none ? '#555' : cat.colors[v] || '#888'};margin-right:5px"></span>${esc(v === cat.none ? cat.noneName || 'none' : cat.names[v] || '?')} <span class="muted">${(100 * k / tot).toFixed(1)}%</span></div>`).join('') +
+      (rows.length > 7 ? `<div class="muted">+ ${rows.length - 7} more</div>` : '');
+  } else if (num) {
+    const vals = [], stride = Math.max(1, Math.floor(n / 30000));
+    for (let i = 0; i < n; i += stride) {
+      if (num.where === 'land' && elev[i] <= 0 || num.where === 'sea' && elev[i] > 0) continue;
+      const v = Number(num.arr[i]); if (Number.isFinite(v)) vals.push(v);
+    }
+    vals.sort((a, b) => a - b);
+    if (vals.length) {
+      const q = (f) => vals[Math.min(vals.length - 1, Math.floor(f * vals.length))], mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const unit = esc(String(UNITS[layer] || '').split(/[,(]/)[0]);
+      html = `<div class="muted">over ${num.where === 'sea' ? 'the sea' : num.where === 'all' ? 'the whole planet' : 'the land'}${unit ? ` (${unit})` : ''}</div>` +
+        `<div>mean <b>${fmtNum(mean)}</b> · median ${fmtNum(q(0.5))}</div><div class="muted">10% below ${fmtNum(q(0.1))} · 90% below ${fmtNum(q(0.9))} · range ${fmtNum(vals[0])} to ${fmtNum(vals[vals.length - 1])}</div>`;
+    }
+  }
+  el.innerHTML = html ? `<hr style="border:0;border-top:1px solid var(--border);margin:6px 0"><b>${esc(layer)}</b>${html}` : '';
+}
+// the tooltip: the colour layer's value under the pointer first, then place and height
+const tipEl = document.createElement('div');
+tipEl.style.cssText = 'position:fixed;z-index:30;pointer-events:none;display:none;max-width:260px;padding:5px 8px;border-radius:6px;font-size:12px;line-height:1.35;background:rgba(14,19,30,0.94);border:1px solid var(--border);color:var(--text, #e6edf3)';
+document.body.append(tipEl);
+let tipXY = [0, 0];
+addEventListener('pointermove', (e) => { tipXY = [e.clientX, e.clientY]; if (tipEl.style.display !== 'none') placeTip(); }, true);
+function placeTip() { const w = tipEl.offsetWidth; tipEl.style.left = Math.min(innerWidth - w - 8, tipXY[0] + 14) + 'px'; tipEl.style.top = Math.min(innerHeight - tipEl.offsetHeight - 8, tipXY[1] + 14) + 'px'; }
+function tipHtml(i) {
+  const layer = state.layer, L = V.layers, G = V.grid, land = L.elevation[i] > 0;
+  const cat = layerCats(layer), num = !cat && layerNumbers(layer);
+  let main = '';
+  if (cat) { const v = cat.arr[i]; main = v === cat.none ? (cat.noneName || 'none') : cat.names[v] || '?'; }
+  else if (num) { const v = Number(num.arr[i]); if (Number.isFinite(v)) main = `${fmtNum(v)} ${String(UNITS[layer] || '').split(/[,(:]/)[0].replace(/^class$/, '')}`; }
+  else if (layer === 'fuels' && V.run?.meta?.fuels) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
+  else if (layer === 'peoples' || layer === 'peoples mix' || layer === 'peoples overlay' || layer === 'peoples blend') { const t = []; peoplesRows?.(i, (g, k, v, o) => { if (t.length < 2) t.push(v); }); main = t.join(' · '); }
+  return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
+}
+function renderTip() {
+  if (!V || hovered < 0 || !V.layers) { tipEl.style.display = 'none'; return; }
+  try { tipEl.innerHTML = tipHtml(hovered); } catch (e) { tipEl.style.display = 'none'; return; }
+  tipEl.style.display = 'block'; placeTip();
+}
 function renderLegend() {
+  try { renderLayerSum(); } catch (e) { console.error(e); }
   const el = $('legend');
   const ov = obsView(state.layer);
   // the model / observed / difference switch: only for an Earth world's temperature, rainfall, climate and sunshine
@@ -3125,7 +3206,7 @@ function cellInfo(i) {
   // game attributes (gameattrs.py, PW-206): a line for players, then the numbers
   const gameRows = () => {
     if (!L.travel || !L.travel[i]) return;
-    R('game', '', gameSentence(L, i), { lab: 'for players', ess: true });
+    R('game', '', gameSentence(L, i), { lab: 'for players' });  // (More detail only, PW-840)
     const sc = (k) => `${SCORE_WORDS[Math.round(L[k][i])]} (${L[k][i].toFixed(1)})`;
     R('game', 'on foot', `×${L.travel[i].toFixed(1)} the time of open ground · sightlines ${sightText(L.sightline[i])}`, { sep: ': ' });
     R('game', 'yields', `grazing ${sc('grazing')} · foraging ${sc('foraging')} · timber ${sc('timber')} · fuel ${sc('fuel')}`, { sep: ': ' });
@@ -3431,6 +3512,7 @@ function updateHover() {
   renderHover();
 }
 function renderHover() {
+  renderTip();
   if (detailCell >= 0) renderDetail();  // (a new frame: the panel follows)
   if (picked) return;  // the info box stays on the clicked cell until it's closed
   const html = hovered >= 0 ? infoBoxHtml(hovered) + '<div class="muted ifoot">click: copy and pick for zooming · double-click: zoom</div>'
