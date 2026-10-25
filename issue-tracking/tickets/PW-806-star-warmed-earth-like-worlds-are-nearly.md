@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-644, PW-646, PW-761, PW-780, PW-290, PW-454]
 refs: [planet/vegetation.py, "world 6fbc2c", "world a12762", "world 067778", "world 6909cb", "world bdded2", "world 577526", docs/review/base-climate/v1-signoff/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 ## Description
@@ -73,6 +73,7 @@ Lean A, because the steepness is the fault. B is a fallback for v1 timing only.
 - [ ] the L7 showcases' wet tropics (> 2000 mm, < 27 C) carry forest again
 
 ## Updates
+- 2026-10-25: v1-finish-12: thermostat off, the star is not the cause (today's Sun at the end); wet-eq trees >= 20% on 5/10 L6 draws. Two causes: C3 starvation on ~90 ppm ends (draft-drift-double-counts-degassing) and the plants' light read from the sky's cover instead of the climate's own convective-aware sunshine (0.21 vs 0.31 on Earth's wet tropics). The light is fixed (climate.shade, be00f07): offline Earth wet-eq trees 45 -> 72% at 280 ppm, 26 -> 59% at 180, 24 -> 60% at +3 C. Re-measure pending (lane.sh shade).
 - 2026-10-24: Status in-progress -> done. Merged: respiration CO2 + temperature acclimation and photosynthesis acclimation from the literature; 4/6 showcases pass the wet-tropics check offline (the two failing sit at C3 starvation, 142-160 ppm, which the star anchor should lift). Climate pass rates re-measured with PW-809.
 - 2026-10-24: Status todo -> in-progress. Owner: tree cover 15-40% agreed with a geography caveat. Coordinator: global range is a diagnostic; hard check is wet equatorial lowland (>2000 mm) >= ~20% trees where it exists. Plants change only where steeper than the literature (owner: prefer the more correct simulation).
 - 2026-10-24: v1-finish-9: plant fix in (docs/review/base-climate/v1-finish-9/). Respiration keeps today's NPP/GPP at any CO2 (Gifford 1995; Dewar et al. 1998) and acclimates to growth temperature (0.8, bounded 10 C; Atkin et al. 2015, Reich et al. 2016), photosynthesis optimum acclimates 0.5 (Kattge & Knorr 2007). Earth offline: 280 ppm keeps 97% of 350 ppm trees (90% wet tropics); LGM-like keeps rainforest; showcases offline 17-34% trees, wet tropics 4/6 >= 20% (the two failing at 142/160 ppm, the C3 starvation limit). The sign-off's offline harness passed cloud in % (half the light). Pass rates not re-measured: waiting on the star anchor (draft-star-anchor-at-run-end). Remaining warming sensitivity is the model climate's dim tropics (draft-dim-model-tropics-thin-forest-margin).

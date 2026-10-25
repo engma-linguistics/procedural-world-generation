@@ -54,5 +54,6 @@ when it pins at its bound.
 - [ ] re-measured: L6 18, L7 8, 2 Gyr 13; end pCO2, finish T and ice, wet-tropics trees
 
 ## Updates
+- 2026-10-25: v1-finish-12: harness on the ruled bar (passrate4.py, no cap). v1-finish-11 physics, thermostat off, 10 of 18 L6 1 Gyr draws: bar 7/10, bar + hard finish checks 3/10 (wet-eq trees 5/10, finish T 8/10, land ice 10/10). Plants' light fix committed (be00f07), so the full set (L6 18, 2 Gyr 13, L7 8) is re-running on it (lane.sh shade); not tallied at hand-off. docs/review/base-climate/v1-finish-12/README.md
 - 2026-10-25: Status needs-decision -> in-progress. RULING (owner): option C. Keep the physics: GEOCARB end anchor, literature-strength weathering, star thermostat off. Loosen the icehouse bar: no cap on the share of a run's time under polar ice. Snowball/always-icebox, hellhole and never-ice still fail, and ~70% of draws must pass. The owner's finish checks stay: true mean -6..+3 C and interglacial land ice ~Earth's. Coordinator: the wet-tropics trees >= 20% hard check also stays.
 - 2026-10-25: Created from inbox draft draft-balance-climate-vs-bar.md (found by v1-finish-11).
