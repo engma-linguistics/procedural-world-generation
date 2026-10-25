@@ -27,7 +27,8 @@ def test_diag_is_read_only_and_records():
     st = d.steps[-1]
     assert abs(st["sea_ice"] + st["sea_tect"] - st["sea_level"]) < 0.02
     # the target's terms add up (drift + CO2 as counted + ice albedo + offset)
-    assert abs(st["drift"] + st["co2_term"] + st["albedo_term"] + st["star"] + st["offset"] - st["target"]) < 0.01
+    # (the drift is on the carbon source, PW-819: not a temperature term)
+    assert abs(st["co2_term"] + st["albedo_term"] + st["star"] + st["offset"] - st["target"]) < 0.01
     s = a.stats()
     assert s["sea_ice_m"] == round(a.sea_ice, 1) and s["sea_tect_m"] == round(a.sea_tect, 1)
     up = [u for u in d.updates if u["sheets"]]

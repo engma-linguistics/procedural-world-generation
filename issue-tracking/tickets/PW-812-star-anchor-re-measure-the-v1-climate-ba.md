@@ -42,4 +42,5 @@ Do:
 - [ ] PW-806's showcase check re-measured after the anchor
 
 ## Updates
+- 2026-10-24: v1-finish-10: harness passrate3.py (strict bar, forward windows, end-counted last 540 Myr diagnostic, pCO2, true mean T, trees, wet-tropics trees, corr). Partial measurement only (L6 1 Gyr first waves): full Gough 0/6, 0.45 1/6, full Gough + thermostat see README. L7 and 2 Gyr not run: the anchored code fails at L6. docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-remeasure-v1-bar-on-anchored-star.md (found by star-anchor-audit).

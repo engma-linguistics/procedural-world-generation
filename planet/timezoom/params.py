@@ -109,7 +109,10 @@ class TZParams:
     # cycle.snowline_land), in proportion to the planet's own share ...
     glacial_cap: float = 1.6  # ... at most this x glacial_cool
     glacial_dt: float = -1.0  # C: the glacial maximum's cooling set by hand (>= 0), instead of the above
-    co2_share: float = 0.5  # the share of that cooling that is CO2 (for the plants' CO2; Earth's LGM ~half)
+    # the plants' CO2 at a glacial maximum against the interglacial's (PW-828): Earth's LGM ~190 / 280 ppm
+    # (EPICA Dome C, Luthi et al. 2008), at a planet's glacial_cool-sized cooling, in proportion to its own
+    # (was a 0.5 share of the cooling as CO2's warming, which gave 0.47x)
+    glacial_pco2: float = 0.68
     build_kyr: float = 36.0  # kyr: a glacial takes I toward 1 with this e-folding time ...
     build_orb: float = 0.5  # ... faster in a weak summer and slower in a strong one: 1 +- this per half the
     # summer sun's 10-90 percentile spread from its median

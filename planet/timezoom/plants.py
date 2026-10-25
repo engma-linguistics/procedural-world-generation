@@ -164,9 +164,9 @@ class Plants:
             self.migrate(t_end)
 
     def pco2(self, co2_c: float) -> float:
-        """The CO2 the plants feel, ppm, at the CO2 term co2_c (C) of dTg: the run's, co2_c / co2_sensitivity
-        doublings away (PW-646)."""
-        return self.pco2_0 * 2.0 ** (co2_c / self.co2_sens)
+        """The CO2 the plants feel, ppm: the run's, co2_c doublings away (Forcing.co2: the glacial index's,
+        PW-828; PW-646)."""
+        return self.pco2_0 * 2.0 ** co2_c
 
     def correct(self, c: dict, open_: np.ndarray, old: dict | None) -> None:
         """The climate c (computed with the plants old) given the current plants' albedo warming instead

@@ -107,7 +107,11 @@ class Params:
     star_gain: float = 0.2  # C of forcing per Myr per unit of share outside the band (0 share: -2 C per 100 Myr)
     star_control_max: float = 0.04  # +- share of the star's luminosity (+-7.7 C of forcing at co2_sensitivity 3)
     star_control_from: float = 200.0  # Myr: no control before (the made-up start settles)
-    climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
+    # C: size of the slow random wander of the carbon cycle (PW-819: noise on the carbon source, outgassing and
+    # all the burial/ocean details the model doesn't have, not on the temperature), as the warming it gives at
+    # the balance (earth.drift_source: 3 C is +-0.44 e-folds of the source, ~x1.55; GEOCARB's degassing factor
+    # alone spans ~0.75-1.75 over the Phanerozoic)...
+    climate_drift: float = 3.0
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3
     # (IPCC AR6 2.5-4; the land ice's albedo is its own term); 3 C per e-fold before PW-646 (2.1 per doubling)

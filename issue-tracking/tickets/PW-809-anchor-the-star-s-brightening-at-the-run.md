@@ -42,6 +42,7 @@ the PW-791 thermostat (in the branch, opt-in, off) is needed by default.
 - [ ] strict bar re-measured: L6 >= 13/18, L7 >= 7/8 at 1 Gyr; 1500-2000 Myr window ~70% at L6 2 Gyr
 
 ## Updates
+- 2026-10-24: v1-finish-10: B built. earth.star_forcing counts against today's Sun (age 4570 - run_end + t); start_carbon sets the start's stock for the dim star; the spin-up's sink reference is taken to the balance climate per cell (temp_response), so a cold spin-up is not learnt as the balance. star_now_offset_myr added. Measured: full Gough alone 0/6 L6 strict (all ICEBOX), the thermostat 3/6 first wave; the cause is the carbon cycle (draft-anchored-run-ends-co2-starved.md). docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Merged inbox draft draft-star-anchor-zero-point-co2-balance.md ("Star anchor: choose the forcing's zero point together with the CO2 balance (PCO2_BALANCE 500 ppm) and the 300 Myr spin-up reference, or anchored runs start in deep ice and end CO2-starved", found by star-anchor-audit).
   Audit items 1, 2 and 13 (docs/review/base-climate/star-anchor-audit/README.md).
   

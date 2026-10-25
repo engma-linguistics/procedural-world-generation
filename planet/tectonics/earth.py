@@ -95,14 +95,36 @@ def star_forcing(p, t: float) -> float:
     return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * rel)
 
 
+def drift_source(p, drift: float) -> float:
+    """The carbon source's drift factor (PW-819): the walk drift (C, sd climate_drift) as the source change
+    that warms the balance planet by that much through the weathering thermostat (balance_co2's law, small
+    signal, the weathering land's START_RESPONSE): ln s = drift (WEATHER_CO2 + WEATHER_K r G) / G,
+    G = co2_sensitivity / ln 2 C per e-fold of CO2."""
+    g = p.co2_sensitivity / np.log(2.0)
+    return float(np.exp(drift * (WEATHER_CO2 + WEATHER_K * START_RESPONSE * g) / g))
+
+
+START_RESPONSE = 0.6  # C of weathering-land temperature per C of dT, for start_carbon's first guess only (the
+# land isn't made yet): temp_response's 0.5 in the tropics to ~0.8 at 40 deg, where most rock weathers
+
+
+def temp_response(grid) -> np.ndarray:
+    """Per cell, C of its annual temperature per C of the climate's dT: climate.compute moves the equator by
+    0.5 dT and the poles by 1.5 dT along climate.temperature's latitude shape (polar amplification)."""
+    x = np.sin(np.radians(grid.lat)) ** 2
+    return 0.5 + (0.156 * x + 2.012 * x**2 - 1.168 * x**3)
+
+
 def balance_co2(p, forcing: float) -> float:
     """The CO2 stock (ln X against PCO2_BALANCE) at which the weathering thermostat balances a lasting
     forcing (C, e.g. the star's against today's Sun) on a planet of the reference weatherability: weathering
-    ~ X^WEATHER_CO2 exp(WEATHER_K dT') equals the outgassing when WEATHER_CO2 ln X = -WEATHER_K dT', dT' the
-    departure from the balance climate, co2_term(ln X) - co2_term(0) + forcing. The walk that drifts the
-    climate and the ice's albedo are left out (they start at 0 and at no ice)."""
+    ~ X^WEATHER_CO2 exp(WEATHER_K r dT') equals the outgassing when WEATHER_CO2 ln X = -WEATHER_K r dT', dT'
+    the departure from the balance climate, co2_term(ln X) - co2_term(0) + forcing, r = START_RESPONSE the
+    weathering land's temperature response. It is the run's start only: from the first step the carbon cycle
+    itself sets the stock. The carbon source's drift and
+    the ice's albedo are left out (they start at 0 and at no ice)."""
     def f(c):
-        return WEATHER_CO2 * c + WEATHER_K * (co2_term(p, c) - co2_term(p, 0.0) + forcing)
+        return WEATHER_CO2 * c + WEATHER_K * START_RESPONSE * (co2_term(p, c) - co2_term(p, 0.0) + forcing)
     lo, hi = -30.0, 30.0  # (f increases with c)
     for _ in range(80):
         mid = 0.5 * (lo + hi)
@@ -207,7 +229,9 @@ def global_temperature(sim, growth, newc, rng):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Four things move it, slowly (tens of Myr):
       drift      a random walk that keeps returning toward 0 (all the
-                 carbon-cycle and ocean details this model doesn't have)
+                 carbon-cycle and ocean details this model doesn't have),
+                 on the carbon source (PW-819: drift_source), so a warm
+                 era carries high CO2, as Earth's did, not low
       CO2        a stock (co2_stock): volcanism at ridges and arcs adds
                  it (warming); fresh rock weathering in warm, wet mountains
                  removes it (cooling, e.g. the Himalaya since 40 Ma). Each
@@ -231,8 +255,10 @@ def global_temperature(sim, growth, newc, rng):
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
-    source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
-    sink = float(weathering(sim, land)[0].sum()) / sim.scale**2
+    noise = drift_source(p, sim.drift)
+    source = (newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2) * noise
+    sink_cells = weathering(sim, land)[0]
+    sink = float(sink_cells.sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
         now = np.array([max(source, 1e-6), sink])
         sim.rates = now
@@ -242,10 +268,13 @@ def global_temperature(sim, growth, newc, rng):
         # stock does, where baselines that relearned took both up within a few hundred Myr (PW-576).
         # The sink's reference is its weatherability at the balance climate (PW-809): the sink taken back to
         # the balance's dT (co2_term(0), plus climate_offset, the world-builder's shift) through the weathering's
-        # temperature law. So a cold spin-up under the faint young star is not learnt as the planet's balance:
+        # temperature law, each cell by its own temperature's response to dT (temp_response). So a cold spin-up under the faint young star is not learnt as the planet's balance:
         # its slow weathering lets CO2 build up during the spin-up too, as it does after the freeze.
         if sim.t < REF_FREEZE:
-            learn = np.array([now[0], now[1] * np.exp(-WEATHER_K * (sim.dT - p.climate_offset - co2_term(p, 0.0)))])
+            # (the source's reference without its drift: the wander is not learnt as the balance either)
+            shift = co2_term(p, 0.0) + p.climate_offset - sim.dT  # C of dT from here to the balance climate
+            at_bal = float((sink_cells * np.exp(WEATHER_K * temp_response(sim.grid) * shift)).sum()) / sim.scale**2
+            learn = np.array([now[0] / noise, max(at_bal, 1e-12)])
             if sim.refs is None:
                 sim.refs = learn
             b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
@@ -291,7 +320,7 @@ def global_temperature(sim, growth, newc, rng):
 
     # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = (sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
+    target = (co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
               + star_control(sim))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),

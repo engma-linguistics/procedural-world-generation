@@ -80,7 +80,7 @@ class Forcing:
         self.index: Index | None = None
         self.cool = 0.0  # C: the glacial maximum's global cooling
         self.I = 0.0
-        self.co2 = 0.0  # C, the CO2 part of the index's cooling (co2_share: for the plants' CO2)
+        self.co2 = 0.0  # doublings of the plants' CO2 at the index (glacial_pco2; negative in a glacial)
         self.veg = 0.0  # C, the plants' part (plants.py), following ...
         self.veg_target = 0.0  # ... this (set at each full climate)
 
@@ -89,6 +89,6 @@ class Forcing:
         p = self.p
         self.I = 0.0 if self.index is None else float(self.index.I[s_no])
         glacial = -self.I * self.cool
-        self.co2 = p.co2_share * glacial
+        self.co2 = self.I * (self.cool / p.glacial_cool) * math.log2(p.glacial_pco2)
         self.veg += (1 - math.exp(-self.step / p.veg_lag)) * (self.veg_target - self.veg)
         return glacial + self.veg
