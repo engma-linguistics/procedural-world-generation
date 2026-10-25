@@ -1,5 +1,6 @@
 ---
-title: "Glacier bed rule (warm month > -8 C slides, else frozen) was set on the bare-ground frame and now reads the ice surface"
+id: PW-872
+title: Glacier bed rule (warm month > -8 C slides, else frozen) was set on the bare-ground frame and now reads the ice surface
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: [PW-277]
 refs: [planet/tectonics/earth.py, planet/timezoom/params.py, "runs 0ceebf 172922 2b0b65 6b48f5", docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Coupling audit finding C5 (severity low-med for the Earth-like v1 finish; docs/r
 **Measured:** Run keyframes (every 10 Myr after 50 Myr): share of iced cells counted wet-based 0.16, 0.24, 0.18 (L6 0ceebf, 172922, 2b0b65), 0.47 (L7 6b48f5); of ice > 1 km 0.10-0.35. Antarctica's bed is ~half thawed (Pattyn 2010), so the share is plausible-ish, but the rule is no longer the one that was tuned.
 
 **What to try:** Re-derive the bed regime from the ice's own state (thickness and surface temperature, e.g. the time zoom's sliding rule or a pressure-melting estimate), or at least re-check the -8 C on the post-PW-277 temperatures against the glacial-erosion calibration.
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-glacier-bed-threshold-in-pre-pw277-frame.md (found by coupling-audit).

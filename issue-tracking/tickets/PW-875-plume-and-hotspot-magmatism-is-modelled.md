@@ -1,7 +1,8 @@
 ---
-title: "Plume and hotspot magmatism is modelled but never outgasses CO2; the resized drift no longer stands in for it"
+id: PW-875
+title: Plume and hotspot magmatism is modelled but never outgasses CO2; the resized drift no longer stands in for it
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: [PW-819]
 refs: [planet/tectonics/earth.py, planet/tectonics/volcanism.py, planet/tectonics/params.py, docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -27,3 +30,7 @@ Coupling audit finding C2 (severity medium for the Earth-like v1 finish; docs/re
 **Measured:** Code read only: grep finds no co2/outgas/degass in volcanism.py, events.py, mantle.py. Magnitude from the literature, not measured (plume lava volume is not stored in runs).
 
 **What to try:** Options: (A) add plume lava x a CO2 yield to the source (learnt into the reference like the rest, so it adds variance and LIP pulses rather than shifting the mean); (B) keep it out and put plume degassing back into the drift's sizing; (C) leave and document. Lean A: the magma is already there, and LIP pulses are a feature for history.
+
+## Updates
+- 2026-10-25: Status needs-decision -> todo. RULING (coordinator): add plume/LIP degassing as a CO2 source tied to the modelled plume heads and vents, sized from the literature (e.g. Self et al. 2006, Black & Gibson 2019), as a mechanism, not tuned. Physics lane, with PW-880/881/873.
+- 2026-10-25: Created from inbox draft draft-plume-volcanism-never-outgasses.md (found by coupling-audit).

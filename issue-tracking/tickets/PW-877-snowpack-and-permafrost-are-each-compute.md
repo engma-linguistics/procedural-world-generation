@@ -1,5 +1,6 @@
 ---
-title: "Snowpack and permafrost are each computed by several rules (months vs icemass; three permafrost tests)"
+id: PW-877
+title: Snowpack and permafrost are each computed by several rules (months vs icemass; three permafrost tests)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: []
 refs: [planet/climate.py, planet/icemass.py, planet/soils.py, planet/vegetation.py, planet/hydrology.py, docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Coupling audit finding C13 (severity low for the Earth-like v1 finish; docs/revi
 **Measured:** Code read only; not measured.
 
 **What to try:** Let months take icemass's PDD melt (one snow rule), share one permafrost class (soils') with vegetation and hydrology, drop the dead helper and stale comment.
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-snow-and-permafrost-rules-diverge.md (found by coupling-audit).

@@ -1,5 +1,6 @@
 ---
-title: "Weathering sink counts CO2 twice on planted ground (GEOCARB FERT law and the NPP it multiplies)"
+id: PW-880
+title: Weathering sink counts CO2 twice on planted ground (GEOCARB FERT law and the NPP it multiplies)
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: [PW-865, PW-830, PW-646]
 refs: [planet/tectonics/earth.py, planet/vegetation.py, "world 6909cb", docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Coupling audit finding C1 (severity high for the Earth-like v1 finish; docs/revi
 **Measured:** vegetation.model (branch code, the run's cheap variant, crown off) on world 6909cb's climate at 350 and 700 ppm: land NPP 379 -> 452 g/m2/yr (x1.19 per doubling); the sum of plant_factor rises 8.2% per doubling, an extra sink log-slope of ~0.11 on top of FERT's 0.2 (planted, at the balance). The planted sink's CO2 sensitivity is ~55% too strong, so CO2 moves ~1/3 less than intended for a given source/sink imbalance (the faint-star compensation, cold-era recoveries, the drift's CO2 swing).
 
 **What to try:** Evaluate plant_factor on NPP at the balance pCO2 (the run already grows npp_pot at PCO2_BALANCE during the spin-up; keep a balance-CO2 NPP after REF_FREEZE too, or divide out the model's own CO2 response), so CO2 reaches the sink only through co2_law. Alternative: drop FERT on planted ground and let NPP carry the CO2 dependence (then NPP_WEATHER's saturation sets the slope, not the literature).
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-weathering-co2-counted-twice-on-planted-ground.md (found by coupling-audit).

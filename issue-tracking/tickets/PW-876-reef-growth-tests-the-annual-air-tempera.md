@@ -1,5 +1,6 @@
 ---
-title: "Reef growth tests the annual air temperature against reef_temp, which is documented as sea-surface temperature"
+id: PW-876
+title: Reef growth tests the annual air temperature against reef_temp, which is documented as sea-surface temperature
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: []
 refs: [planet/tectonics/earth.py, planet/tectonics/volcanism.py, planet/coastal.py, docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Coupling audit finding C7 (severity low for the Earth-like v1 finish; docs/revie
 **Measured:** Shallow sea (-1500..-5 m) in worlds 2a7385, e71172, 6909cb, a12762: air is 1.5-2.0 C colder than SST on average; cells passing 23.5 C by air are 4-16% fewer than by SST.
 
 **What to try:** Keep the climate's sst on the sim (sim.sst) and test it, or lower reef_temp by ~1.7 C and relabel it as air.
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-reefs-read-air-temperature-as-sea-surface.md (found by coupling-audit).

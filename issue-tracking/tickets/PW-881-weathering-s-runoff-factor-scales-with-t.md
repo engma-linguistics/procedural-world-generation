@@ -1,5 +1,6 @@
 ---
-title: "Weathering's runoff factor scales with the global-mean rain law, not the land runoff the climate computes"
+id: PW-881
+title: Weathering's runoff factor scales with the global-mean rain law, not the land runoff the climate computes
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: coupling-audit
 blocked_by: []
 relates: [PW-865]
 refs: [planet/tectonics/earth.py, planet/climate.py, "runs 0ceebf 172922 343058 2b0b65", docs/review/coupling-audit/]
+created: 2026-10-25
+updated: 2026-10-25
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Coupling audit finding C3 (severity medium for the Earth-like v1 finish; docs/re
 **Measured:** Across keyframes 50-1000 Myr of L6 runs 0ceebf, 172922, 343058, 2b0b65: global rain d ln P/dT = 0.030 (by construction); ice-free land rain 0.005, 0.019, 0.012, 0.023 per C. So the runoff term (0.0195/C in climate_coef) is 1.3-6x too strong on these planets, and climate_coef (0.0735) ~5-17% too strong.
 
 **What to try:** Use the weathering land's own runoff against the reference, (runoff/runoff_ref)^WEATHER_RUNOFF per cell (GEOCARB's f_R on the model's water balance), learnt with the rest of the reference; size climate_coef from a measured land runoff slope.
+
+## Updates
+- 2026-10-25: Created from inbox draft draft-weathering-runoff-from-global-rain-not-land-runoff.md (found by coupling-audit).
