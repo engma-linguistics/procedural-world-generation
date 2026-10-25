@@ -37,3 +37,6 @@ Options:
   limitation). Today the model's weathering-weighted plant factor falls only ~10% at 100-130 ppm, because C4 and
   grass NPP keep it up. Check this against the literature before choosing.
 Lean A with C checked. This changes the bar's variability (the deep-ice share and never-ice), so re-measure.
+
+## Updates
+- 2026-10-25: RULING (coordinator): A, with C checked. The drift should stand only for what the model lacks (organic burial, ocean chemistry). Its size comes from a literature number for non-degassing source variability, with the explicit outgassing's measured variance taken out, not from tuning the end pCO2. Check C (Pagani et al. 2009 plant-assisted weathering failing near C3 limitation) against the literature, and add it only if the mechanism is well supported and the model lacks it. Re-measure the PW-865 bar after both.
