@@ -25,7 +25,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **culinary-dnd**: the owner's north-star consumer repo (read-only here); PW-692 frames priorities.
 
 ## Bars and checks
-- **icehouse**: share of a run's time under ice-age conditions. The owner wants Earth-like worlds near ~40% icehouse.
+- **icehouse**: share of a run's time under ice-age conditions. Reported, not capped (owner 2026-10-25, PW-865; it was ~40% before).
 - **icehouse bar**: ~70% of seed-draws pass, not all (outlier worlds allowed; "not worse" means the pass share doesn't drop). Never-ice and always-icebox both fail for Earth-like worlds (PW-780; the star thermostat idea is PW-791).
 - **strict bar**: the stricter pass criteria in PW-780's sign-off (numbers in [state.md](state.md)).
 - **scorecard / earth_check**: `tools/scorecard.py` after model changes, `tools/earth_check.py` after climate changes. Earth is a plausibility anchor, never a parity target.

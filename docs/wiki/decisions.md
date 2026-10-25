@@ -30,6 +30,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-25 · Icehouse bar (owner) · option C: keep the physics (end-anchored GEOCARB balance, literature weathering, star thermostat off); no cap on a run's icehouse share; snowball/always-icebox, hellhole and never-ice still fail at ~70% of draws passing; finish checks (true mean -6..+3 C, interglacial ice ~Earth's, wet-tropics trees) stay · PW-865
 - 2026-10-24 · Star lever · for Earth-like worlds NO ice ages is a fail too; star brightening is the accepted per-world lever; 0.45 is the working default (provisional, phone) · PW-780
 - 2026-10-24 · Star thermostat · opt-in per preset, causal, slow, bounded luminosity range · PW-791
 - 2026-10-24 · pCO2 · coordinator's call: carry a real ppm from the stock first; if wildly off, take A for now · PW-646
