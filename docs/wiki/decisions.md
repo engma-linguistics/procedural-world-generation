@@ -63,6 +63,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 ## Peoples, culture, culinary
 - 2026-10-25 · Origins and crowding (owner) · most species must not evolve on one small landmass (origins by habitable area, species-area); crowding raises the drive to explore; conflict and warfare go to the civilizations epic · PW-888, PW-887, PW-856
 - 2026-10-25 · Contact fronts (coordinator) · a denser people takes a thinner one's cells along the contact line (modern-human vs Neanderthal replacement) · PW-887
+- 2026-10-25 · Frontier invasion built (coordinator) · INVADE 0.5, floor 0.3, crowding x(1+2 crowd) on sea crossings; accepted although the PW-885 8k line is unmet: the small continent holds only ~4k suitable cells, so the niche, not exclusion, is the limit now. Hobgoblin thinning re-measured after PW-888 changes origins · PW-887, PW-885
 - 2026-10-25 · Dispersal (coordinator) · humans should spread like the record (Sahul by sea >=50 kyr, through held country within 10-20 kyr): pioneer advantage plus an early boat rung, by mechanism · PW-869
 - 2026-10-24 · Owner's world (seven_meals) · antelope-kin and cervid-kin can milk by default but are mostly farmers, **then reversed**: no dairying for the setting's tieflings · PW-784 (**superseded** by) PW-793
 - 2026-10-24 · Folklore · two layers per row: current name fades, legend/folklore persists; parked under historical linguistics · PW-757, PW-767
