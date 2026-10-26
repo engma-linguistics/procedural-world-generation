@@ -242,13 +242,13 @@ def test_run_layout(data_root):
     assert list(run["layers"]) == list(T.RUN_LAYERS) and not (out / "state").exists()
     for k, spec in run["layers"].items():
         assert (out / spec["file"]).stat().st_size == np.dtype(spec["dtype"]).itemsize * np.prod(spec["shape"]), k
-        assert spec["shape"] == [3, run["meta"]["cells"]]
+        assert spec["shape"] == [len(run["frames"]), run["meta"]["cells"]]
     assert run["layers"]["ice"]["scale"] == 20 and run["layers"]["flow"]["transform"] == "log2p1"
     assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms", "vegetation", "coastal_life", "soils", "human_use", "game", "resources", "coast"}
     run2, arr = T.load_frames(out, ("plate", "downstream"))
     sim = run_sim(myr=8)
-    assert np.array_equal(T.frame(run2, arr, "plate", 2), sim.snapshot().plate)
-    assert np.array_equal(T.frame(run2, arr, "downstream", 2, sim.grid), sim.snapshot().downstream)
+    assert np.array_equal(T.frame(run2, arr, "plate", len(run2["frames"]) - 1), sim.snapshot().plate)
+    assert np.array_equal(T.frame(run2, arr, "downstream", len(run2["frames"]) - 1, sim.grid), sim.snapshot().downstream)
     assert S.read_header(out / "run.json")["name"] == "t"
     assert S.update_index("run")[0]["id"] == run["id"]
 

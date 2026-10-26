@@ -31,6 +31,7 @@ import numpy as np
 
 from .. import climate, icemass, kernels
 from ..geo import R_KM
+from . import output
 
 TOP_SHEETS = 12  # sheets recorded per update (the largest by area); the rest are summed as "other"
 
@@ -92,7 +93,7 @@ class Recorder:
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
-        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)
+        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt_now, 5)
         return out
 
     def step(self, sim) -> None:
@@ -104,6 +105,7 @@ class Recorder:
         rec.update({"dT_end": round(float(sim.dT), 3), "iced_land": round(iced_land, 4),
                     "sea_level": round(float(sim.sea_level), 2), "sea_ice": round(float(sim.sea_ice), 2),
                     "sea_tect": round(float(sim.sea_tect), 2), "land": round(float(land.mean()), 4)})
+        rec.update(output.habitability(sim))  # (what the finish moment reads: highlights.finish_moment, PW-866)
         self._pending = None
         self.steps.append(rec)
 
@@ -129,7 +131,7 @@ class Recorder:
         # the plants at the last update (one climate step behind): tree cover over land, and over the wet
         # equatorial lowland (|lat| < 10 deg, > 2000 mm/yr, below 500 m: the hard check of PW-806/812)
         tc = np.asarray(sim.tree_cover, float)
-        wet = land & (np.abs(g.lat) < 10.0) & (sim.precip > 2000.0) & (e < 500.0)
+        wet = output.wet_eq_lowland(g.lat, land, sim.precip, e)
         rec["trees"] = round(100 * float(tc[land].mean()), 2) if land.any() else 0.0
         rec["wet_eq_trees"] = round(100 * float(tc[wet].mean()), 2) if wet.any() else None
         rec["wet_eq_cells"] = int(wet.sum())

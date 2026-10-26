@@ -72,7 +72,7 @@ def thermostats(sim):
     vol = max(float((sim.w_thick * sim.w_cont).mean()), 1e-3)
     target = sim.target_fraction()
     err = np.log([target * p.continental_thickness / vol, frac / target])
-    sim.thermo = np.clip(sim.thermo + sim.dt / THERMO_MYR * err, -THERMO_MAX, THERMO_MAX)
+    sim.thermo = np.clip(sim.thermo + sim.dt_now / THERMO_MYR * err, -THERMO_MAX, THERMO_MAX)
     thermostat = np.clip(np.exp(4 * (err[0] + sim.thermo[0])), 0.1, 5.0)
     shrink = np.clip(np.exp(4 * (err[1] + sim.thermo[1])), 0.2, 5.0)
     return thermostat, shrink
@@ -149,7 +149,7 @@ def add_arcs_and_plumes(sim, col, growth, plume):
     spreads over the land as a cover of basalt flows (Snake River Plain,
     Deccan Traps; at most a LAVA_MAX_KM pile), and part of an arc's erupts as ash and ignimbrite
     sheets (tuff: the Altiplano-Puna, Taupo); both go on top of the strata."""
-    dt, cont = sim.dt, col.cont
+    dt, cont = sim.dt_now, col.cont
     col.t = col.t + growth * dt + plume * dt
     sim.book("arc", 0, growth * dt, cont)
     sim.book("plume", 0, plume * dt, cont)
@@ -205,7 +205,7 @@ def accrete(sim, bd, conv, col):
     edge of the overriding one (accretionary wedges: Makran, Barbados,
     much of Japan); the rest goes down with the slab. The share scraped
     per step grows with how much plate the trench swallows in it."""
-    p, n, dt = sim.params, sim.grid.n, sim.dt
+    p, n, dt = sim.params, sim.grid.n, sim.dt_now
     if p.accretion <= 0:
         return
     dn, up, cv = bd.sinking, bd.overriding, bd.at_trenches(conv)
@@ -230,7 +230,7 @@ def subduction_erosion(sim, bd, conv, col, shrink):
     coast has retreated ~250 km since the Jurassic). Globally it removes
     about as much continental crust as arcs add. A continental edge cell
     worn below 15 km is gone: what's left counts as oceanic."""
-    p, n, dt = sim.params, sim.grid.n, sim.dt
+    p, n, dt = sim.params, sim.grid.n, sim.dt_now
     if p.subduction_erosion <= 0:
         return
     up, cv = bd.overriding, bd.at_trenches(conv)
@@ -280,7 +280,7 @@ def floor_age(sim, cells, cont):
 def arc_rock(sim, col, growth):
     """Arc rock: on continents wherever arcs build; at sea only once the
     crust has thickened into a real island arc. Returns where."""
-    arcky = (growth * sim.dt > 0.1) & (col.rock != CRATON) & (col.cont | (col.t > OCEAN_KM + 5))
+    arcky = (growth * sim.dt_now > 0.1) & (col.rock != CRATON) & (col.cont | (col.t > OCEAN_KM + 5))
     col.rock[arcky] = ARC
     return arcky
 
@@ -298,7 +298,7 @@ def stretch(sim, col, rate, plume, newc, stack_add=None):
     its rift strain added up to beta ~6-9 on 80 km crust, whose thermal
     uplift, isostasy.subsidence, put it ~2 km above its belt: PW-172's
     one-frame 10.6 km peaks)."""
-    dt, t = sim.dt, col.t
+    dt, t = sim.dt_now, col.t
     thin = col.cont & (t > 22)
     if stack_add is not None:
         thin &= stack_add <= SQUEEZED * dt
@@ -322,7 +322,7 @@ def flanks(sim, col, cont):
     Crust kept, so the pool isn't a sink (PW-287: the decayed share used to
     be deleted, ~5% of all stretched crust). Booked as "rift flanks"."""
     pl, own = sim.plates, sim.owner
-    back = pl.rift_pool * (1 - np.exp(-sim.dt / POOL_MYR))
+    back = pl.rift_pool * (1 - np.exp(-sim.dt_now / POOL_MYR))
     pl.rift_pool -= back
     if not (back > 0).any():
         return
@@ -417,7 +417,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
     crust is being stacked up, whatever it was before (an old arc,
     sediment); very thick crust is metamorphosed too. Returns where crust
     is being squeezed."""
-    p, dt, cont, rock = sim.params, sim.dt, col.cont, col.rock
+    p, dt, cont, rock = sim.params, sim.dt_now, col.cont, col.rock
     t0 = col.t
     # (a hotter planet's crust is softer: mountains and plateaus can't stand as high)
     t = crust_flow(col.t, edges[0], edges[1], p.crust_flow * sim.heat() ** 2 * dt / 3,

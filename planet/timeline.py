@@ -31,6 +31,7 @@ import numpy as np
 from . import climate
 from . import soils as SOILS
 from . import store as S
+from . import highlights as H
 from . import vegetation as VEG
 from . import world as W
 from .provenance import code_version, describe
@@ -128,10 +129,13 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
 
     writer = S.CheckpointWriter()
 
+    def on(t, period):  # (t on a multiple of period: the step count isn't, after the finish window's fine steps)
+        return abs(t / period - round(t / period)) < 1e-6
+
     def keep(s: Simulation):
-        if ck_stride and s.step_no and s.step_no % ck_stride == 0:
+        if ck_stride and s.step_no and on(s.t, ck_stride * dt):
             S.save_checkpoint(out, s, writer)
-        if s.step_no % stride:
+        if not (on(s.t, stride * dt) or s.in_finish_window()):  # (every finish-window step is a candidate moment)
             return
         snap = s.snapshot()
         if jet["v"] is None or jet["src"] is not s.t_warm:
@@ -168,6 +172,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
                  "plant_groups": plant_groups(sim),
+                 # the finished world's moment and why (PW-866): what `--at auto`, make and the viewer take
+                 "finish_moment": H.finish_moment(frames, params.finish_window),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
@@ -284,6 +290,17 @@ def report(run_dir: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Replay + slice
 # ---------------------------------------------------------------------------
+def snap_time(run: dict, at: float) -> float:
+    """A run time snapped to a step the run took: its nearest keyframe in the finish window (whose steps are
+    params.finish_step long, Simulation.step_length), else the nearest multiple of dt."""
+    times = [f["t"] for f in run["frames"]]
+    p = run["meta"]["params"]
+    start = p.get("run_end", 0) - p.get("finish_window", 0)
+    if p.get("finish_window", 0) > 0 and at > start + 1e-9:
+        return float(min(times, key=lambda t: abs(t - at)))
+    return round(at / run["meta"]["dt"]) * run["meta"]["dt"]
+
+
 def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) -> Simulation:
     """The run's simulation at time `at`: from the latest checkpoint at or
     before it when the run was made by this same code (else from t=0)."""
@@ -316,7 +333,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     run, arr = load_frames(run_dir, ("elevation", "plate"))
     _not_timezoom(run, run_dir)
     m = run["meta"]
-    at = round(at / m["dt"]) * m["dt"]
+    at = snap_time(run, at)
     if not 0 <= at <= m["myr"] + 1e-9:
         raise SystemExit(f"--at must be between 0 and {m['myr']}")
     made_by, now = m.get("code"), code_version()

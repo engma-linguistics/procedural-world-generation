@@ -115,6 +115,7 @@ class Simulation:
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
         self.cell_area = 4 * np.pi / g.n
         self.edge_len = g.spacing
+        self.dt_now = self.dt  # Myr: this step's length (step_length; dt but in the finish window)
 
     def _init_state(self):
         """Every STATE attribute, empty: no plates yet, no climate yet."""
@@ -206,18 +207,33 @@ class Simulation:
             if on_step:
                 on_step(self)
 
+    def step_length(self) -> float:
+        """Myr the next step lasts: dt, but params.finish_step in the run's last params.finish_window Myr
+        (counted back from params.run_end), where every step gets a climate update (earth.climate_due) and a
+        keyframe (timeline.simulate): the candidate moments the finished world is picked from (PW-866,
+        highlights.representative_time)."""
+        p = self.params
+        if p.finish_window > 0 and p.run_end > 0 and self.t >= p.run_end - p.finish_window - 1e-9:
+            return min(p.finish_step, self.dt)
+        return self.dt
+
+    def in_finish_window(self) -> bool:
+        """This step is one of the finish window's fine steps (step_length)."""
+        return self.dt_now < self.dt - 1e-12
+
     def step(self):
         """One time step. All randomness comes from default_rng([seed,
         step_no]), drawn in a fixed order: hotspots, volcanoes (both in
         _physics), then the forces, then rifts; plus side streams
         default_rng([seed, step_no, k]) for the global temperature's drift
         (k=1) and the volcanoes' own details (k=7, 8; volcanism.py)."""
+        self.dt_now = self.step_length()
         self.step_no += 1
-        self.t = self.step_no * self.dt
+        self.t = round(self.t + self.dt_now, 9)
         rng = np.random.default_rng([self.seed, self.step_no])
 
         # 1-2. move plates and pull
-        self.plates.move(self.grid, self.dt)
+        self.plates.move(self.grid, self.dt_now)
 
         # 3. resolve ownership
         newc, stacked = self._resolve()
@@ -280,8 +296,8 @@ class Simulation:
         plume = volcanism.cap_plumes(self, col, head, (3000.0, 2000.0))
         # (provisionally, so the apron sees the head's lava)
         t0, lava0 = col.t, col.x[:, LAVA].copy()
-        col.t = col.t + plume * self.dt
-        col.x[:, LAVA] += plume * self.dt * col.cont
+        col.t = col.t + plume * self.dt_now
+        col.x[:, LAVA] += plume * self.dt_now * col.cont
         plume = plume + volcanism.cap_plumes(self, col, apron, volcanism.APRON_TOP, cont_share=1.0)
         col.t, col.x[:, LAVA] = t0, lava0
         plume = plume + vents  # (each vent capped itself)
@@ -326,12 +342,12 @@ class Simulation:
         (Doing it only on the cells currently visible on the world grid left
         the 10-20% momentarily unsampled cells un-aged: speckle.)"""
         pl = self.plates
-        pl.age[pl.owned] += self.dt
+        pl.age[pl.owned] += self.dt_now
         self._world_view()
         col = Column(t=self.w_thick, cover=self.w_cover, x=self.w_extra.copy(), cont=self.w_cont,
                      rock=self.w_rock.copy(), rec=self.w_rec.copy(), lith=self.w_lith.copy())
         # the swell rides off with the plate and subsides as the mantle under it cools
-        col.x[:, LIFT] = np.maximum(col.x[:, LIFT] * np.exp(-self.dt / self.params.swell_time), dome)
+        col.x[:, LIFT] = np.maximum(col.x[:, LIFT] * np.exp(-self.dt_now / self.params.swell_time), dome)
         self.swell = col.x[:, LIFT]
         return col
 

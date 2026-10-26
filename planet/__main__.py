@@ -95,8 +95,8 @@ def _resolve_at(run_dir, at, ago=None):
         return at
     run = json.loads((Path(run_dir) / "run.json").read_text())
     frames = run["frames"]
-    t = H.representative_time(frames)
-    print(f"representative moment: {t:g} Myr {H.representative_note(frames, t)}".rstrip(), flush=True)
+    t = H.representative_time(frames, run["meta"])
+    print(f"finish moment: {t:g} Myr {H.representative_note(frames, t, run['meta'])}".rstrip(), flush=True)
     return t
 
 

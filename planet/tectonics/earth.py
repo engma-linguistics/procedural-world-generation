@@ -285,11 +285,11 @@ def star_control(sim) -> float:
     iced = 1.0 if sim.sea_ice <= STAR_ICEHOUSE_SL else 0.0
     if sim.ice_share is None:  # (the run's start: the middle of the band, so nothing acts on an empty memory)
         sim.ice_share = 0.5 * (p.star_ice_lo + p.star_ice_hi)
-    sim.ice_share += (1 - np.exp(-sim.dt / p.star_window)) * (iced - sim.ice_share)
+    sim.ice_share += (1 - np.exp(-sim.dt_now / p.star_window)) * (iced - sim.ice_share)
     if sim.t >= p.star_control_from:
         off = min(sim.ice_share - p.star_ice_lo, 0.0) + max(sim.ice_share - p.star_ice_hi, 0.0)
         bound = p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * p.star_control_max
-        sim.star_ctl = float(np.clip(sim.star_ctl + p.star_gain * off * sim.dt, -bound, bound))
+        sim.star_ctl = float(np.clip(sim.star_ctl + p.star_gain * off * sim.dt_now, -bound, bound))
     return sim.star_ctl
 
 
@@ -310,11 +310,13 @@ def plant_factor(npp) -> np.ndarray:
 def weathering(sim, land):
     """The silicate weathering sink per cell at the balance's CO2 (model units: km of rock per step, times the
     factors; co2_law gives its CO2 dependence) and its parts, for global_temperature and the diagnostics:
-    (sink, supply, climate factor, plant factor, bare part). The supply is what bare ground lost to erosion
+    (sink, supply, climate factor, plant factor, bare part). "Per step" is per step of dt (the run's step):
+    a finish-window step (Simulation.step_length) counts its erosion at that rate. The supply is what bare ground
+    lost to erosion
     (sim.weathered: not under land ice, where glaciers grind their beds fast but the rock flour hardly
     weathers chemically in the cold, and counting it made a cold era draw down more CO2 the more ice it grew).
     The bare part is the sink of the cell's unplanted ground, which goes as X^WEATHER_CO2_BARE."""
-    supply = sim.weathered * land
+    supply = sim.weathered * land * (sim.dt / sim.dt_now)  # (per dt step: the references are learnt in those)
     # chemical weathering: faster when warm and when wet (the weathering thermostat, Walker et al. 1981: a cold
     # planet weathers slower, CO2 builds up and warms it back, PW-235): the kinetics on the local temperature,
     # and the cell's own land runoff (WEATHER_RUNOFF; PW-881)
@@ -424,15 +426,17 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     flux: at L6 it climbed ~1.4 -> ~2.5-3.3 over 300-1000 Myr, at L7 it
     stayed ~1.1-1.8, and the CO2 it added made L6 ~1 C warmer than L7,
     PW-741); newc: number of new ocean-floor cells this step."""
-    p, dt = sim.params, sim.dt
+    p, dt = sim.params, sim.dt_now
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
     noise = drift_source(p, sim.drift)
     # (plume: km/Myr of plume melt per cell; as new ocean floor's cells of OCEAN_KM crust per step, times its yield)
+    # (the source and the sink are counted per step of dt, the run's step, which the references are learnt in;
+    # a finish-window step's per-step amounts are scaled to that: Simulation.step_length)
     melt = float(plume.sum()) * sim.dt / OCEAN_KM if plume is not None else 0.0
     sim.plume_src = PLUME_CO2 * melt / sim.scale**2
-    source = (newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2 + sim.plume_src) * noise
+    source = (newc * (sim.dt / dt) / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2 + sim.plume_src) * noise
     sink_cells, supply, warm, _, bare_cells = weathering(sim, land)
     sink = float(sink_cells.sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
@@ -516,9 +520,17 @@ def global_temperature(sim, growth, newc, rng, plume=None):
 
 def climate_due(sim) -> bool:
     """The climate is updated on the first step and then at every multiple of
-    climate_every Myr, so keyframes on those multiples show current climate."""
+    climate_every Myr, so keyframes on those multiples show current climate; in the finish window
+    (Simulation.step_length) at every step."""
+    if sim.in_finish_window():
+        return True
     k = sim.params.climate_every
     return sim.precip is None or (sim.t + 1e-9) // k > (sim.climate_t + 1e-9) // k
+
+
+def climate_interval(sim) -> float:
+    """Myr between this climate update and the last: climate_every, or the finish window's step."""
+    return sim.dt_now if sim.in_finish_window() else sim.params.climate_every
 
 
 def update_climate(sim, e):
@@ -589,7 +601,7 @@ def update_vegetation(sim, e):
     p, g = sim.params, sim.grid
     n = g.n
     rng = np.random.default_rng([sim.seed, sim.step_no, 11])
-    sim.flora = vegetation.flora_update(sim.flora, sim.t, p.climate_every, now_myr(p), sim.veg_niche, rng)
+    sim.flora = vegetation.flora_update(sim.flora, sim.t, climate_interval(sim), now_myr(p), sim.veg_niche, rng)
     land = e > 0
     ice = np.where(land, sim.ice, 0.0)
     kind = np.where(land, sim.lake_kind, 0)
@@ -983,7 +995,7 @@ def erode(sim, col):
     """Weather, ice, rivers, erosion, sediment transport (surface.erode) on
     the crust column col, in place. Returns (deposited km, lake class) per
     cell for sediments()."""
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     t, cover, x, cont, rock = col.t, col.cover, col.x, col.cont, col.rock
     # Glaciers grind their beds hard where they slide on meltwater (the
     # 'glacial buzzsaw' that keeps ranges from growing much above the
@@ -1037,7 +1049,7 @@ def sediments(sim, col, dep, lake):
                  shallow hot seas next to desert (the Persian Gulf)
       coal       warm, wet, low-lying swamps full of plants, if plants
                  exist (none before land plants ~450 Ma on Earth)"""
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     x, cover = col.x, col.cover
     e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x))
     land = e > 0
@@ -1096,7 +1108,7 @@ def reefs(sim, col, dep, chem):
     crust here too. All go on top of the strata. Before skeletal reef
     builders exist (reef_builders_t), microbial carbonate builds up at
     MICROBIAL_REEF of the rate."""
-    p, dt = sim.params, sim.dt
+    p, dt = sim.params, sim.dt_now
     evap, coal = chem
     chem = evap + coal
     cont, rock = col.cont, col.rock
