@@ -2909,6 +2909,7 @@ function renderRunSummary() {
     t = ${V.t} Myr · ${s.plates} plates · land ${s.land_pct}% · ${s.landmasses} landmasses (largest ${s.largest_landmass_pct}%)<br>
     plate speed: mean ${s.mean_speed_cmyr}, max ${s.max_speed_cmyr} cm/yr · peak ${s.max_elev_m} m<br>
     ${s.global_temp_c != null ? `global mean ${s.global_temp_c} °C (Earth today ~14.5) · land ice ${s.ice_pct}% of surface · sea level ${s.sea_level_m} m<br>` : ''}
+    ${finishMomentLine()}
     ${finishBox()}
     ${timezoomBox()}`;
   $('sumTitle').textContent = V.tz ? 'Time zoom and events' : 'Run and events';
@@ -3080,6 +3081,16 @@ async function startTimezoom() {
 // button builds). A job on the server, then the world opens.
 let finJob = null;
 const finishedOf = (tzId) => IDX.worlds.filter((w) => w.timezoom === tzId).sort((a, b) => a.timezoom_kyr - b.timezoom_kyr);
+// The run's finish moment (PW-866, highlights.finish_moment): the latest human-habitable keyframe near its end,
+// where the default finished world is taken; flagged when no moment in the finish window passes.
+function finishMomentLine() {
+  const fm = V.run.meta.finish_moment;
+  if (!fm) return '';
+  const tag = fm.passes ? '' : ' <span class="err">(no habitable moment: flagged)</span>';
+  return `<span class="muted">Finish moment:</span> <a href="#" data-jump="${fm.t}" title="Go to ${fm.t} Myr">${fm.t} Myr</a>${tag}
+    <span class="muted">· ${esc(fm.why)}</span><br>`;
+}
+
 function finishBox() {
   const s = V.run.frames[V.frame].stats;
   if (!V.tz && s.sea_level_m == null) return '';
@@ -4666,6 +4677,7 @@ async function loadRun(dir, wantT) {
   document.title = `${run.name} · Planet Viewer`;
   $('frame').max = run.frames.length - 1;
   let f = 0;
+  if (wantT == null && !tz && run.meta.finish_moment) wantT = run.meta.finish_moment.t;  // (PW-866: open at the finish moment)
   if (wantT != null) f = run.frames.reduce((b, fr, i) => (Math.abs(fr.t - wantT) < Math.abs(run.frames[b].t - wantT) ? i : b), 0);
   V.frame = f;
   renderLayerButtons();  // settles state.layer, which says what to load

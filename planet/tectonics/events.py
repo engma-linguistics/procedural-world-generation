@@ -110,7 +110,7 @@ def sutures(sim, bd: Boundaries):
         where = g.centers[bd.a[c][sel]].mean(0)
         log(sim, "collision", [i, j], where, "continents on plates {0} and {1} collide")
         pl.last_logged[i, j] = sim.t
-    pl.contact = np.where(active, pl.contact + sim.dt, np.maximum(pl.contact - sim.dt, 0))
+    pl.contact = np.where(active, pl.contact + sim.dt_now, np.maximum(pl.contact - sim.dt_now, 0))
     # How fast each colliding pair is still closing (cm/yr, smoothed over
     # ~10 Myr). Collision goes on while they converge (India has pushed
     # into Asia for 50 Myr and counting); they only weld into one plate
@@ -118,7 +118,7 @@ def sutures(sim, bd: Boundaries):
     csum = np.zeros((P_MAX, P_MAX))
     np.add.at(csum, (pairs[:, 0], pairs[:, 1]), bd.conv[c])
     rate = np.where(cnt > 0, csum / np.maximum(cnt, 1), 0.0)
-    w = 1 - np.exp(-sim.dt / 10.0)
+    w = 1 - np.exp(-sim.dt_now / 10.0)
     pl.closing = np.where(active, pl.closing + w * (rate - pl.closing), pl.closing)
     stalled = (pl.contact >= p.suture_after) & (pl.closing < p.suture_closing)
     for i, j in zip(*np.nonzero(stalled | (pl.contact >= p.suture_max))):
@@ -307,7 +307,7 @@ def maybe_rift(sim, cf: CellForces, rng):
                 and cont_cells[k] >= 0.5 * big):
             margin = max(0.0, margin_age[k] / p.margin_age - 1) * 3
         rate = stress + margin
-        if rate == 0 or rng.random() > 1 - np.exp(-sim.dt / p.rift_timescale * rate):
+        if rate == 0 or rng.random() > 1 - np.exp(-sim.dt_now / p.rift_timescale * rate):
             continue
         refs = np.flatnonzero(pl.owned[k])
         world = P[refs] @ pl.Q[k].T

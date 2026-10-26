@@ -201,7 +201,7 @@ def stir(sim, rng):
     ways (why plates much bigger than the Pacific are rare), and it keeps
     continents meandering."""
     Y, deg = basis(sim.grid)
-    a = np.exp(-sim.dt / sim.params.mantle_timescale)
+    a = np.exp(-sim.dt_now / sim.params.mantle_timescale)
     sim.mantle_eddies = sim.mantle_eddies * a + np.sqrt(1 - a * a) * rng.normal(size=len(deg)) * _eddy_scale(sim, deg)
 
 
@@ -213,7 +213,7 @@ def eddies(sim) -> np.ndarray:
 
 def update(sim, bd):
     """One step of the mantle field (in place on sim.mantle, sim.mantle_lid)."""
-    p, dt, n = sim.params, sim.dt, sim.grid.n
+    p, dt, n = sim.params, sim.dt_now, sim.grid.n
     if p.mantle_memory <= 0:
         return
     # how long continent has covered each patch of mantle (~100 Myr memory)

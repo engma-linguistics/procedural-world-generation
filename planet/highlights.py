@@ -2682,40 +2682,69 @@ def find(world: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 # A representative moment of a run (`--at auto`)
 # ---------------------------------------------------------------------------
-RECENT_MYR = 12.0  # Myr: "the last few Myr" of a run, from which a default world is taken (owner, PW-807)
-ICEHOUSE_SEA_ICE_M = -20.0  # an icehouse: land ice holding at least 20 m of sea level (tools/ice_criteria.ICEHOUSE_SL)
-WARM_QUANTILE = 0.75  # in an icehouse, the interglacial-like frames: no more ice than this quantile's sea_ice_m allows
+# The finish checks (PW-865 option C, owner 2026-10-25; passrate4's, unchanged): a moment people could live in
+PREIND_T = 13.8  # C: Earth's pre-industrial (1850-1900) true area mean (Berkeley Earth / HadCRUT ~13.7-13.9)
+HUMAN_RANGE = (-6.0, 3.0)  # C against it (LGM to Pliocene-ish)
+LAND_ICE_RANGE = (1.0, 25.0)  # % of land under ice: not none, not LGM-like (Earth pre-industrial ~10, LGM ~25)
+WET_TREES = 20.0  # % tree cover on the wet equatorial lowland (PW-806)
 
 
-def representative_time(frames: list[dict]) -> float:
-    """The moment a default or showcase world is taken at (`--at auto`; owner 2026-10-24, PW-807): the run's
-    end, which is "now" (today's Sun, the plants' modern calendar: grasses, C4 grasses, flowering trees), or,
-    when the end is in an icehouse (sea_ice_m at or below ICEHOUSE_SEA_ICE_M), the latest interglacial-like
-    frame of the run's last RECENT_MYR: among those frames, the latest with no more ice than WARM_QUANTILE of
-    them (like Holocene Earth inside the late Cenozoic icehouse, PW-700). Earlier eras are asked for by age
-    (`slice --ago`). Runs without sea_ice_m: the end."""
+def habitable(stats: dict) -> list[str]:
+    """The finish checks a moment's stats (tectonics.output.habitability) fail; [] when it passes all.
+    A frame without them (no climate yet) fails every one."""
+    out = []
+    t = stats.get("true_temp_c")
+    if t is None or not HUMAN_RANGE[0] <= t - PREIND_T <= HUMAN_RANGE[1]:
+        out.append("temperature")
+    ice = stats.get("iced_land_pct")
+    if ice is None or not LAND_ICE_RANGE[0] <= ice < LAND_ICE_RANGE[1]:
+        out.append("land ice")
+    w = stats.get("wet_eq_trees_pct")
+    if w is None or w < WET_TREES:
+        out.append("wet-tropics trees")
+    return out
+
+
+def finish_moment(frames: list[dict], window: float) -> dict:
+    """The moment a default or showcase world is taken at (`--at auto`; owner 2026-10-25, PW-866): the latest
+    human-habitable keyframe (habitable: the finish checks) of the run's last `window` Myr, the finish window
+    whose steps each have a climate (tectonics Simulation.step_length). Earth passes those checks only in its
+    last few Myr, so this is choosing the right kind of moment. Without a passing one: the run's end, flagged.
+    Returns {t, before_end_myr, passes, candidates, passing, fails_at_end, why} (the run records it in its
+    meta as finish_moment, for the viewer)."""
     end = float(frames[-1]["t"])
-    recent = [f for f in frames if f["t"] >= end - RECENT_MYR - 1e-9]
-    if not all("sea_ice_m" in f["stats"] for f in recent) or frames[-1]["stats"]["sea_ice_m"] > ICEHOUSE_SEA_ICE_M:
-        return end
-    si = np.array([f["stats"]["sea_ice_m"] for f in recent], float)
-    warm = np.flatnonzero(si >= np.quantile(si, WARM_QUANTILE) - 1e-9)
-    return float(recent[int(warm[-1])]["t"])
+    cand = [f for f in frames if f["t"] >= end - window - 1e-9] if window > 0 else [frames[-1]]
+    ok = [f for f in cand if not habitable(f["stats"])]
+    at_end = habitable(frames[-1]["stats"])
+    out = {"candidates": len(cand), "passing": len(ok), "fails_at_end": at_end}
+    if not ok:
+        return {**out, "t": end, "before_end_myr": 0.0, "passes": False,
+                "why": f"NO human-habitable moment in the last {window:g} Myr ({len(cand)} candidates): the run's "
+                       f"end, which fails {', '.join(at_end) or 'nothing'}"}
+    t = float(ok[-1]["t"])
+    back = round(end - t, 3)
+    why = ("the run's end: human-habitable" if back == 0 else
+           f"finished {back:g} Myr before the run's end: the latest human-habitable moment (the end fails "
+           f"{', '.join(at_end)})")
+    return {**out, "t": t, "before_end_myr": back, "passes": True,
+            "why": why + f"; {len(ok)} of {len(cand)} candidates pass"}
 
 
-def representative_note(frames: list[dict], t: float) -> str:
-    """One line on the picked frame: the run's end, or how far before it and its land ice against the end's."""
-    end = frames[-1]
-    f = next((f for f in frames if f["t"] == t), None)
-    if f is None:
-        return ""
-    if f is end:
-        return "(the run's end: now)"
-    note = f"({end['t'] - t:g} Myr before the run's end"
-    if "sea_ice_m" in f["stats"] and "sea_ice_m" in end["stats"]:
-        note += f": an interglacial-like frame, land ice {-f['stats']['sea_ice_m']:.0f} m of sea level against " \
-                f"{-end['stats']['sea_ice_m']:.0f} m at the end"
-    return note + ")"
+def window_of(meta: dict) -> float:
+    """The run's finish window (Myr; tectonics Params.finish_window)."""
+    return float(meta.get("params", {}).get("finish_window", 0.0))
+
+
+def representative_time(frames: list[dict], meta: dict | None = None) -> float:
+    """The finish moment's time (finish_moment): as the run recorded it, else worked out from its frames."""
+    fm = (meta or {}).get("finish_moment")
+    return float(fm["t"]) if fm else finish_moment(frames, window_of(meta or {}))["t"]
+
+
+def representative_note(frames: list[dict], t: float, meta: dict | None = None) -> str:
+    """One line on the picked moment: why it was taken (finish_moment)."""
+    fm = (meta or {}).get("finish_moment") or finish_moment(frames, window_of(meta or {}))
+    return f"({fm['why']})" if abs(fm["t"] - t) < 1e-9 else ""
 
 
 def ago_time(frames: list[dict], meta: dict, ago_ma: float) -> float:

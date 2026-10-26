@@ -189,24 +189,33 @@ def test_most_varied(world4):
     assert len(v) == 1 and v[0]["stats"]["koppen_classes"] >= 2 and v[0]["size_km"] == 1000
 
 
-def test_representative_time_is_the_end_or_its_latest_interglacial():
-    # PW-807 (owner): a default world is the run's end (now), or, when the end is in an icehouse, the latest
-    # interglacial-like frame of the last few Myr (the least-ice quarter of them)
-    def fr(t, si=None):
-        st = {"land_pct": 30, "largest_landmass_pct": 15, "landmasses": 20}
-        if si is not None:
-            st["sea_ice_m"] = si
-        return {"t": t, "stats": st}
-    frames = [fr(t) for t in range(0, 1004, 4)]
-    assert H.representative_time(frames) == 1000 and H.representative_note(frames, 1000) == "(the run's end: now)"
-    frames = [fr(t, 0.0) for t in range(0, 984, 4)] + [fr(984, -30.0), fr(988, -12.0), fr(992, -60.0),
-                                                         fr(996, -25.0), fr(1000, -80.0)]
-    t = H.representative_time(frames)
-    assert t == 988, t  # (984 is outside the last 12 Myr; 988 has the least ice of 988-1000)
-    assert "12 Myr before the run's end" in H.representative_note(frames, t)
-    frames[-1]["stats"]["sea_ice_m"] = -5.0  # an ice-free end: the end
-    assert H.representative_time(frames) == 1000
+def test_finish_moment_is_the_latest_habitable_candidate():
+    # PW-866 (owner): the finished world is the latest human-habitable keyframe of the finish window (the
+    # finish checks: true mean -6..+3 C of 13.8, land ice 1-25% of land, wet-tropics trees >= 20%), else the end,
+    # flagged
+    def fr(t, temp=14.0, ice=8.0, wet=40.0):
+        return {"t": t, "stats": {"true_temp_c": temp, "iced_land_pct": ice, "wet_eq_trees_pct": wet}}
+    frames = [fr(t) for t in range(0, 992, 4)] + [fr(990 + 0.5 * k) for k in range(1, 21)]
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 1000 and fm["passes"] and fm["before_end_myr"] == 0 and fm["candidates"] == 20
+    meta = {"params": {"finish_window": 10.0}}
+    assert H.representative_time(frames, meta) == 1000
+    frames[-1]["stats"]["true_temp_c"] = 19.0  # a hot end
+    frames[-2]["stats"]["iced_land_pct"] = 0.0  # no ice
+    frames[-3]["stats"]["wet_eq_trees_pct"] = 5.0  # bare tropics
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 998.5 and fm["before_end_myr"] == 1.5 and fm["fails_at_end"] == ["temperature"]
+    assert "1.5 Myr before the run's end" in H.representative_note(frames, 998.5, meta)
+    assert H.representative_time(frames, {**meta, "finish_moment": fm}) == 998.5
+    for f in frames[-20:]:
+        f["stats"]["true_temp_c"] = 30.0
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 1000 and not fm["passes"] and "NO human-habitable moment" in fm["why"]
+    assert H.finish_moment(frames[:-20] + [fr(992)], 10.0)["t"] == 992  # (a candidate before the window's 990)
+
+def test_ago_time():
     # --ago: Ma before now, now being the run's end less star_now_offset_myr
+    frames = [{"t": t, "stats": {}} for t in range(0, 1004, 4)]
     meta = {"params": {"run_end": 1000.0}}
     assert H.ago_time(frames, meta, 70) == 930.0
     assert H.ago_time(frames, {"params": {"run_end": 1000.0, "star_now_offset_myr": 100.0}}, 70) == 830.0

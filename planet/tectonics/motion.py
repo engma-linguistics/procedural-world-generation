@@ -102,7 +102,7 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     """Move every plate's angular velocity toward the one the forces on it
     call for (relaxing over velocity_timescale, capped at max_speed; in
     place on plates.omega and plates.wander)."""
-    g, p, dt = sim.grid, sim.params, sim.dt
+    g, p, dt = sim.grid, sim.params, sim.dt_now
     pl = sim.plates
     P = g.centers
     mantle.stir(sim, rng)
