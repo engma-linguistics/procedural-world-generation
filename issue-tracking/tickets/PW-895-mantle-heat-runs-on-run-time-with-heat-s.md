@@ -27,4 +27,5 @@ argues a hotter mantle had slower plates, so the sign on the CO2 flux is debated
 look at the sea-level and continent paths, which also read heat().
 
 ## Updates
+- 2026-10-26: Held on hold/v1-finish-15-heat: no 2 Gyr gain, L6 1 Gyr all checks 12->9/18, L7 4->2/8. Revisit with 2 Gyr post-v1.
 - 2026-10-26: Created from inbox draft draft-mantle-heat-by-age.md (found by v1-finish-14).
