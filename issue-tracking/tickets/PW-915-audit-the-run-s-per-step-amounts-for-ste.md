@@ -1,4 +1,5 @@
 ---
+id: PW-915
 title: Audit the run's per-step amounts for step-length dependence now that the finish window steps 0.5 Myr
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-16
 blocked_by: []
 relates: [PW-866]
 refs: [planet/tectonics/simulation.py, planet/tectonics/earth.py]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -28,3 +31,6 @@ learnt at dt = 2:
   references or rates, and compare a run's last 10 Myr with finish_window=0 against the default for drift in
   sea level, CO2 and land share.
 - [ ] audit done, any further per-step amount scaled to per-dt
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-step-length-audit.md (found by v1-finish-16).
