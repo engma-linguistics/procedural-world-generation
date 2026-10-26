@@ -104,7 +104,8 @@ class TZParams:
     # the glacial index (cycle.py, PW-471): the ice-age cycle as a scripted cooling paced by the orbit; it stands
     # for the cycle's CO2 and ice-albedo feedbacks, so the zoom has none of its own
     index: str = "on"  # 'off': I stays 0 (the run's climate, with the orbit's own anomaly only)
-    glacial_cool: float = 6.5  # C global cooling at a glacial maximum (Earth's LGM 4.5-6 C) for a planet with ...
+    # (excluding the plants' albedo, which plants.measure adds itself: ~5% of the LGM total, Kohler et al. 2010, PW-879)
+    glacial_cool: float = 6.2  # C global cooling at a glacial maximum (Earth's LGM 4.5-6 C) for a planet with ...
     glacial_f: float = 0.035  # ... this share of its surface ice-free land poleward of its snowline (Earth's at L6,
     # cycle.snowline_land), in proportion to the planet's own share ...
     glacial_cap: float = 1.6  # ... at most this x glacial_cool
