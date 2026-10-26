@@ -1,6 +1,6 @@
 # v1-finish-14: why 2 Gyr runs sit in icebox; PW-859 CH4/N2O; CO2's forcing log to 0.1 bar (2026-10-25)
 
-Status: **handed off at the call budget, with the measurement still running.** The code is b9eab15. The L6 2 Gyr set
+Status: **measured; all three sets tallied (passrate_ghg_all.txt).** The code is b9eab15. The L6 2 Gyr set
 is tallied. L7 1 Gyr (8 draws) and L6 1 Gyr (18 draws) are running under nohup.
 
 ## Cause (evidence: cpl_g2_sc0 seed957317, tools/ice_diag.py series)
@@ -65,3 +65,17 @@ Weathering has not been changed, as the coordinator asked.
   at once. earth_check should be nearly unchanged: GHG is 0 at dT 0 after the NOE.
 - The 1 Gyr runs feel the Proterozoic methane at t < 460 Myr (1.0-0.54 Ga). In a smoke test, 619496 fix went from
   ICEB to a pass on the bar, with a warm finish (+5.9). Watch the L6 1 Gyr warm-finish count.
+
+## Full set on b9eab15 (prefix ghg; passrate_ghg_all.txt)
+
+| check | L6 1 Gyr cpl / ghg | L6 2 Gyr cpl / ghg | L7 1 Gyr cpl (6) / ghg (8) |
+|---|---|---|---|
+| bar 300-end | 16/18 / 16/18 | 0/13 / 0/13 | 3/6 / **7/8** |
+| bar + finish checks | 9/18 / **12/18** | 0/13 / 0/13 | 0/6 / **4/8** |
+| finish T -6..+3 | 12/18 / 14/18 | 5/13 / 6/13 | 3/6 / 5/8 |
+| land ice 1-25% | 16/18 / 17/18 | 10/13 / 9/13 | 2/6 / 8/8 |
+| trees >= 20% | 18/18 / 18/18 | 13/13 / 13/13 | 6/6 / 8/8 |
+
+L7 and L6 1 Gyr reach the bar's ~70%, and L6 1 Gyr does not regress. 2 Gyr stays at 0/13 (see the
+thermostat-return draft). earth_check on b9eab15: group 71.2%, exact 33.9%, log-rain corr 0.648, unchanged. The
+scorecard line is committed.
