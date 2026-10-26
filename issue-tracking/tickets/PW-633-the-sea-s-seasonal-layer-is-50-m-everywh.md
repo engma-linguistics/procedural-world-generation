@@ -3,7 +3,7 @@ id: PW-633
 title: "The sea's seasonal layer is 50 m everywhere, also on shelves shallower than that (North Sea, Baltic, Yellow Sea: ~40% of their L6 cells): a shelf sea should swing as its whole column. On step 2 of PW-627 it can't yet help, because those seas' annual SST is ~3 C too cold (PW-592) and the bigger winter half freezes them"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: s

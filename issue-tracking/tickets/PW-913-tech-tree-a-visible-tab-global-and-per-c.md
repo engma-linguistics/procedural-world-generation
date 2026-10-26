@@ -4,7 +4,7 @@ title: "Tech tree: a visible tab (global and per civ), default stop at ~mid-1400
 type: story
 status: todo
 parent: PW-675
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: l
 impact: high

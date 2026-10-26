@@ -3,7 +3,7 @@ id: PW-594
 title: "The SH gyres' western boundary currents warm their coasts 3-5 C too far south: Tasman SST 19.3 (NCEP air 15.2), Agulhas +1.3, Tasmania warmest +6.0"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: m

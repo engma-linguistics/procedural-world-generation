@@ -30,6 +30,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-26 · Backlog workgroups (owner) · 19 workgroups as in the backlog doc; base climate (PW-570) on the physics lane early in v2; other planet kinds v3; phone viewing out of v2/v3 (PC only); progress bars added (PW-914) · PW-900
 - 2026-10-26 · Run length (owner) · v1 is judged on 1 Gyr runs; 2 Gyr runs are a post-v1 stretch goal and, when they return, are judged on their last 1 Gyr only (early snowball-era ice allowed) · PW-894, PW-895
 - 2026-10-25 · Non-CO2 greenhouse gases first (owner) · PW-859 goes to the top of the physics queue; the faint-young-Sun icebox is fixed by planet-side greenhouse (CO2 response, methane), not by bending the star curve · PW-859
 - 2026-10-25 · Plume degassing (coordinator) · plumes and LIPs outgas CO2, sized from the literature · PW-875

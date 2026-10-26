@@ -3,7 +3,7 @@ id: PW-577
 title: With the sea's air in the winter carry, PW-575's offshore Nordic winds chill the open Norwegian Sea (air -4.4 vs +3.5 C), and Baffin Bay's summer runs +8.7 C
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: m

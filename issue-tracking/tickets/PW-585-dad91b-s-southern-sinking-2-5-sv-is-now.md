@@ -3,7 +3,7 @@ id: PW-585
 title: "dad91b's southern sinking (2.5 Sv) is now set by the straits: its densest polar water sits behind passages too small for the inflow"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: s

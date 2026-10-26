@@ -3,7 +3,7 @@ id: PW-592
 title: With the overturning's heat folded over both hemispheres (PW-589), the NH open sea at 45-65N is 1.8-5 C too warm, and the inflow seas' winters are too mild (Norwegian coast sea air 6.6 vs NCEP 3.5)
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: m

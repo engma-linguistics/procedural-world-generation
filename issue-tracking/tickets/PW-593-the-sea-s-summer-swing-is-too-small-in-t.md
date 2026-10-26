@@ -3,7 +3,7 @@ id: PW-593
 title: "The sea's summer swing is too small in the NH (NE Atlantic 1.7 vs 3.2 C, Norwegian Sea 1.8 vs 4.0, NE Pacific 2.0 vs 3.9) and too big off SH coasts: one 50 m layer for every summer, whatever the wind"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: m

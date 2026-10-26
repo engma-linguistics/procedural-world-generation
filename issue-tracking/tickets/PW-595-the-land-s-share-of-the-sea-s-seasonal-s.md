@@ -3,7 +3,7 @@ id: PW-595
 title: "The land's share of the sea's seasonal swing (_sea_half) is a big continent's swing, whatever the land's width: off Patagonia the sea's half-swing is 6.2 C against 3.7"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: s

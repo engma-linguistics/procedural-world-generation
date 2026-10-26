@@ -3,7 +3,7 @@ id: PW-639
 title: "The NE Atlantic's warmth sits in a narrow inflow trunk west of 15W: Rockall 55-62N +2.7 C too warm, while the eastern Atlantic at 42-50N and Biscay are 3 C too cold (inflow share 0 east of 15W south of 50N)"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: m
