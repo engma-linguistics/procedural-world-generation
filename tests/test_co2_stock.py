@@ -73,8 +73,11 @@ def test_forcing_levels_off_smoothly():
     assert abs(at(climate.PCO2_REF)) < 1e-12
     assert np.isclose(at(2 * climate.PCO2_REF), 3.0, rtol=0.01)  # co2_sensitivity per doubling (PW-646)
     assert np.isclose(earth.co2_term(P, 0.0), 3.0 * np.log2(climate.PCO2_BALANCE / climate.PCO2_REF), rtol=0.01)
-    assert earth.co2_term(P, 50.0) < 3.0 / np.log(2.0) * earth.CO2_MAX + 1e-9
-    assert at(climate.PCO2_REF / np.e) == -at(climate.PCO2_REF * np.e)
+    g = 3.0 / np.log(2.0)
+    assert earth.co2_term(P, 50.0) < g * (earth.CO2_LOG + earth.CO2_SAT) + 1e-9  # the maximum greenhouse
+    assert earth.co2_term(P, -50.0) > -g * earth.CO2_MAX - 1e-9
+    assert np.isclose(at(0.9e5), 3.0 * np.log2(0.9e5 / climate.PCO2_REF))  # logarithmic up to ~0.1 bar (v1-finish-14)
+    assert at(1e6) < 3.0 * np.log2(1e6 / climate.PCO2_REF) - 1.0
 
 
 def test_references_are_kept_after_the_spin_up():

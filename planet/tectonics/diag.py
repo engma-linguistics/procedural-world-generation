@@ -50,15 +50,18 @@ class Recorder:
         """From earth.global_temperature, with its own numbers: this step's raw volcanic source and
         weathering sink (model units), the iced share it counted, the CO2 term as counted (clipped)
         and the ice albedo term (C, negative = cooling), and the target dT relaxes toward."""
-        from .earth import star_forcing
+        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, star_forcing
         p = sim.params
         rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)
+        free = ghg_icefree(sim, ice_frac, earth_ice(sim.grid.level))
         self._pending = {
             "t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "target": round(float(target), 3),
             "drift": round(float(sim.drift), 3), "co2": round(float(sim.co2), 3), "co2_term": round(float(co2_term), 3),
             "co2_term_free": round(p.co2_sensitivity / np.log(2.0) * float(sim.co2), 3), "albedo_term": round(float(albedo_term), 3),
             "offset": p.climate_offset,
             "star": round(star_forcing(p, sim.t) + float(sim.star_ctl), 3), "star_ctl": round(float(sim.star_ctl), 3),
+            "ghg": round(ghg_forcing(p, sim.t, float(sim.dT), free), 3),
+            "ch4_ppb": round(ghg_conc(p, sim.t, float(sim.dT), free)[0], 1),
             "ice_share": round(float(sim.ice_share if sim.ice_share is not None else 0.0), 3), "source_raw": float(source), "sink_raw": float(sink),
             "plume_src": round(float(getattr(sim, "plume_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),

@@ -59,6 +59,12 @@ NPP_WEATHER = 500.0  # g C/m2/yr: the NPP at which ground counts as fully plante
 CO2_MAX = 6.0  # e-folds of CO2 the log forcing levels off toward (+-; smoothly, tanh: ~400x / 0.0025x the
 # reference; snowball exits needed ~40-400x, 3.6-6 e-folds, Caldeira & Kasting 1992, Hoffman et al. 2017; was a hard
 # clip at 3, PW-558)
+CO2_LOG = float(np.log(1.0e5 / 350.0))  # e-folds above climate.PCO2_REF (350 ppm) to ~0.1 bar, to which CO2's forcing
+# stays logarithmic (Myhre et al. 1998's form; line-by-line it is log to super-log up to ~0.1 bar, Byrne & Goldblatt
+# 2014, GRL 41: 152; Kasting 1993; Feulner 2012's faint-young-Sun CO2 of 0.01-0.1 bar rests on it) (v1-finish-14)
+CO2_SAT = float(np.log(10.0))  # e-folds beyond CO2_LOG over which it levels off: CO2's Rayleigh scattering and the
+# saturated bands give a maximum greenhouse near ~1 bar (Kasting 1991; Kasting et al. 1993; Wordsworth &
+# Pierrehumbert 2013), one decade further
 CO2_TAU = 0.4  # Myr: the CO2 stock's residence time at the reference, ocean-atmosphere carbon over outgassing
 # (~40,000 GtC over ~0.1 GtC/yr; the weathering feedback's e-folding, ~CO2_TAU / 0.3 ~1 Myr, is Earth's
 # few hundred kyr to ~1 Myr: Archer et al. 2009, Colbourn et al. 2015)
@@ -123,6 +129,59 @@ def star_forcing(p, t: float) -> float:
         return 0.0
     rel = star_luminosity(star_age(p, t)) - 1.0
     return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * rel)
+
+
+GOE_MA = (2400.0, 2100.0)  # Ma: the Great Oxidation Event, over which methane falls from its Archean level (Lyons
+# et al. 2014, Nature 506: 307; Holland 2006)
+NOE_MA = (800.0, 540.0)  # Ma: the Neoproterozoic Oxygenation Event, over which it falls to the Phanerozoic's
+# (Och & Shields-Zhou 2012; Lyons et al. 2014)
+
+
+CH4_PI, N2O_PI = 700.0, 270.0  # ppb: pre-industrial, in the climate model's dT = 0
+CH4_Q10, N2O_Q10 = 3.0, 2.0  # the wetlands' methane and the soils' N2O per 10 C of their ground (wetland CH4
+# Q10 ~2-4: Walter & Heimann 2000; Gedney et al. 2004 use ~3; soil N2O ~2, Butterbach-Bahl et al. 2013)
+GHG_LAND_T = 0.7  # C of the emitting land's temperature per C of dT (temp_response at the wetlands' ~30-60 deg)
+CH4_LOG = 5000.0  # ppb above which CH4's forcing goes as ln rather than Myhre's sqrt (its bands saturate; the
+# shortwave absorption grows: Byrne & Goldblatt 2014, Clim. Past 10: 1779), with the slope continuous there
+
+
+def ghg_conc(p, t: float, dT: float, icefree: float) -> tuple[float, float]:
+    """(CH4, N2O), ppb, at run time t (PW-859; v1-finish-14): each a steady state of its source over its
+    oxidation lifetime (~10 yr for CH4, ~120 yr for N2O: years against the run's Myr steps), so the
+    concentration goes as source x lifetime.
+      - Source: the wetlands' methane and the soils' N2O, against the pre-industrial's: warmer ground
+        (CH4_Q10, N2O_Q10 on GHG_LAND_T dT), wetter (the model's own land runoff, RUNOFF_PER_C), and the
+        ice-free land against Earth's (icefree). The LGM check: dT ~-5 gives CH4 ~390 ppb and N2O ~200
+        (ice cores ~370 and ~200, Loulergue et al. 2008, Schilt et al. 2010).
+      - Lifetime: methane's oxidation is slower under the low-oxygen air before the oxygenation events (less
+        OH; Pavlov et al. 2000, Kasting 2005), params.methane_proterozoic / methane_archean x the
+        pre-industrial's, falling linearly across each event (GOE_MA, NOE_MA). N2O's deep-time levels are not
+        known well enough to count (Roberson et al. 2011: possibly higher in a copper-poor ocean)."""
+    ma = now_myr(p) - t
+
+    def ramp(old_young, a, b):  # a before (older than) the event, b after
+        old, young = old_young
+        return a if ma >= old else b if ma <= young else b + (a - b) * (ma - young) / (old - young)
+    life = ramp(NOE_MA, ramp(GOE_MA, p.methane_archean, p.methane_proterozoic), 1.0)
+    land = GHG_LAND_T * dT
+    wet = np.exp(RUNOFF_PER_C * dT) * icefree
+    return (CH4_PI * life * wet * CH4_Q10 ** (land / 10.0), N2O_PI * wet * N2O_Q10 ** (land / 10.0))
+
+
+def ghg_forcing(p, t: float, dT: float = 0.0, icefree: float = 1.0) -> float:
+    """CH4's and N2O's forcing, C, against the pre-industrial's (ghg_conc), at the model's own sensitivity
+    (as the star's): Myhre et al. 1998's 0.036 (sqrt M - sqrt M0) and 0.12 (sqrt N - sqrt N0) W/m2 (overlap
+    left out), CH4's going over to ln beyond CH4_LOG. Sized so ~30 ppm (the Proterozoic's middle) is ~4 W/m2
+    and ~1000 ppm (the Archean's) ~8 W/m2, as the line-by-line work (Byrne & Goldblatt 2014; Haqq-Misra et al.
+    2008: ~+10 K)."""
+    m, n = ghg_conc(p, t, dT, icefree)
+
+    def ch4(x):
+        if x <= CH4_LOG:
+            return 0.036 * np.sqrt(x)
+        return 0.036 * np.sqrt(CH4_LOG) + 0.018 * np.sqrt(CH4_LOG) * np.log(x / CH4_LOG)
+    w = ch4(m) - ch4(CH4_PI) + 0.12 * (np.sqrt(n) - np.sqrt(N2O_PI))
+    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * w)
 
 
 def drift_source(p, drift: float) -> float:
@@ -204,7 +263,7 @@ def start_carbon(p) -> tuple[float, float]:
     faint young star starts the planet warm through high CO2 rather than frozen, and the climate that stock
     and that star give (plus climate_offset, the world-builder's shift)."""
     check_star(p)
-    f0 = star_forcing(p, 0.0)
+    f0 = star_forcing(p, 0.0) + ghg_forcing(p, 0.0)
     c = balance_co2(p, f0)
     return c, co2_term(p, c) + f0 + p.climate_offset
 
@@ -313,7 +372,15 @@ def co2_term(p, co2):
     doubling warmer), levelling off smoothly toward +-CO2_MAX e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar
     and grows less beyond)."""
     c = co2 + np.log(climate.PCO2_BALANCE / climate.PCO2_REF)  # e-folds above the climate's dT = 0 (PW-559 B)
-    return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(c / CO2_MAX))
+    g = p.co2_sensitivity / np.log(2.0)
+    if c <= 0.0:
+        return g * CO2_MAX * float(np.tanh(c / CO2_MAX))
+    # (above the reference: exactly logarithmic up to ~0.1 bar, then levelling off over the next decade toward the
+    # maximum greenhouse; a tanh over all of it, as before v1-finish-14, already withheld 8% of the forcing at
+    # 20x and 18% at 150x, the faint young Sun's CO2)
+    if c <= CO2_LOG:
+        return g * c
+    return g * (CO2_LOG + CO2_SAT * float(np.tanh((c - CO2_LOG) / CO2_SAT)))
 
 
 PLUME_CO2 = 3.3  # CO2 per km3 of plume melt (plume heads, their vents and aprons: volcanism.hotspots, before the
@@ -322,6 +389,13 @@ PLUME_CO2 = 3.3  # CO2 per km3 of plume melt (plume heads, their vents and apron
 # mol/km3, ~0.15 wt% CO2. Plume and flood-basalt melts: ~0.5 wt% (Self et al. 2006's Deccan figure; Black &
 # Gibson 2019: plume melts carry recycled carbon, richer than MORB). 0.5 / 0.15. Not counted: the sediments a
 # LIP's sills bake (Svensen et al. 2004, Siberia), which the model has no carbon-bearing basin rock for.
+
+
+def ghg_icefree(sim, ice_frac: float, ice_ref: float) -> float:
+    """The ice-free land against Earth's (its ice, earth_ice), for ghg_conc: (land - ice) / (land - Earth's ice),
+    planet shares."""
+    land = float((sim.land() * ocean_area(sim.grid)).sum() / ocean_area(sim.grid).sum())
+    return max(land - ice_frac, 0.0) / max(land - ice_ref, 1e-6)
 
 
 def global_temperature(sim, growth, newc, rng, plume=None):
@@ -433,7 +507,7 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     # (measured from the model's own Earth ice, earth_ice: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
     target = (co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(ice_ref)) + star_forcing(p, sim.t)
-              + star_control(sim))
+              + ghg_forcing(p, sim.t, sim.dT, ghg_icefree(sim, ice_frac, ice_ref)) + star_control(sim))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
                              -(albedo(ice_frac) - albedo(ice_ref)), target + p.climate_offset)

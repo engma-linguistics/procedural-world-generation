@@ -124,6 +124,13 @@ class Params:
     # Not sized to any end-pCO2 band...
     climate_drift: float = 0.8
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
+    # x pre-industrial: methane's lifetime (so its level) under the low-oxygen air (earth.ghg_conc, PW-859): between
+    # the Great and the Neoproterozoic Oxygenation Events (~2.1-0.8 Ga) CH4 stood at ~10-300 ppm against today's
+    # pre-industrial 0.7 (Pavlov et al. 2003, Geology 31: 87: 100-300 ppm; Roberson et al. 2011, Geobiology 9: 313;
+    # Olson et al. 2016, PNAS 113: 11447: <~10 ppm): ~30 ppm, 43x, the middle (~4 W/m2). Before the GOE ~1000 ppm
+    # (Pavlov et al. 2000; Kasting 2005; Haqq-Misra et al. 2008), 1400x (~8 W/m2)
+    methane_proterozoic: float = 43.0
+    methane_archean: float = 1400.0
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3
     # (IPCC AR6 2.5-4; the land ice's albedo is its own term); 3 C per e-fold before PW-646 (2.1 per doubling)
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
