@@ -1,7 +1,8 @@
 ---
+id: PW-893
 title: "End pCO2 spreads 90-990 ppm because the carbon source varies ~2x GEOCARB's degassing: the climate drift (sd 3 C, documented as standing for outgassing among others) rides on top of the explicit tectonic outgassing"
 type: task
-status: needs-decision
+status: done
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish-12
 blocked_by: []
 relates: [PW-865, PW-819, PW-806]
 refs: [planet/tectonics/earth.py, planet/tectonics/params.py, docs/review/base-climate/v1-finish-12/]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -39,5 +42,7 @@ Options:
 Lean A with C checked. This changes the bar's variability (the deep-ice share and never-ice), so re-measure.
 
 ## Updates
+- 2026-10-26: Status needs-decision -> done. Drift resized 3->0.8 C from the literature (v1-finish-13, merged 1c41ec0).
+- 2026-10-26: Created from inbox draft draft-drift-double-counts-degassing.md (found by v1-finish-12).
 - 2026-10-25: v1-finish-13: option A in (dfc8b48): climate_drift 3 -> 0.8 C (sd(ln) of the source 0.36 -> 0.10), sized from net organic burial bounded by GEOCARBSULF's O2 (Berner 2004/2006, Royer et al. 2014) and the subducting carbonate's f_C (Wilkinson & Walker 1989), not from the end pCO2. Option C checked: the model already has the feedback (GEOCARB's FERT plus NPP-driven plant_factor), weaker than Beerling et al. 2012; no floor added, follow-up in draft-plant-weathering-grass-as-forest.md. docs/review/base-climate/v1-finish-13/README.md
 - 2026-10-25: RULING (coordinator): A, with C checked. The drift should stand only for what the model lacks (organic burial, ocean chemistry). Its size comes from a literature number for non-degassing source variability, with the explicit outgassing's measured variance taken out, not from tuning the end pCO2. Check C (Pagani et al. 2009 plant-assisted weathering failing near C3 limitation) against the literature, and add it only if the mechanism is well supported and the model lacks it. Re-measure the PW-865 bar after both.

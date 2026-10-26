@@ -1,4 +1,5 @@
 ---
+id: PW-892
 title: "World coastal layers (living reef, kelp) ignore the sea-life calendar: a `slice --ago 600` world still gets coral reefs"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-10
 blocked_by: []
 relates: [PW-807]
 refs: [planet/coastal.py, planet/tectonics/earth.py, planet/timeline.py]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -23,3 +26,6 @@ the reef builders. Default worlds are taken at the run's end, so they are right;
 - [ ] store the reef builders' arrival in run meta (beside plant_groups) and gate coastal.py's reef term on it
   (pre-arrival: stromatolite flats at most, no coral coast)
 - [ ] kelp (brown algae, ~ Mesozoic-Cenozoic radiation) checked against the same calendar
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-coastal-reefs-on-the-calendar.md (found by v1-finish-10).

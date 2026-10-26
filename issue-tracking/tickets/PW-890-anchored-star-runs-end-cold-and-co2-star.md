@@ -1,7 +1,8 @@
 ---
+id: PW-890
 title: "Anchored star: runs end cold and CO2-starved (end pCO2 25-250 ppm) because weatherability rises over the run against the reference frozen at 300 Myr (relief, then land plants at ~470 Ma), and the thermostat is weak (~40% compensation); the star can't hide it any more"
 type: task
-status: needs-decision
+status: done
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish-10
 blocked_by: []
 relates: [PW-809, PW-815, PW-791, PW-810, PW-812, PW-708, PW-830, PW-806]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish-10/]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -53,3 +56,7 @@ the plant weathering factor is now 3x at NPP 500 (Moulton/Berner 2-5x, Drever < 
 longer systematically starved (medians 750-2400 ppm after 300 Myr), but full Gough alone still fails the bar (0/6)
 and end pCO2 still spreads 90-990 with the drift; the remaining question is in draft-balance-climate-vs-bar.md.
 - [x] option chosen (A)
+
+## Updates
+- 2026-10-26: Status needs-decision -> done. Superseded by the end-anchored balance (v1-finish-11) merged in 1c41ec0; residual weak thermostat is PW-894.
+- 2026-10-26: Created from inbox draft draft-anchored-run-ends-co2-starved.md (found by v1-finish-10).

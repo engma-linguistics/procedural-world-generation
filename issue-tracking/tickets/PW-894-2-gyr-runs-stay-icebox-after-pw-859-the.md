@@ -1,4 +1,5 @@
 ---
+id: PW-894
 title: "2 Gyr runs stay icebox after PW-859: the bare-ground weathering thermostat returns only ~40% of the faint star's forcing"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: v1-finish-14
 blocked_by: []
 relates: [PW-859, PW-865]
 refs: [planet/tectonics/earth.py, docs/review/base-climate/v1-finish-14/README.md]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options, all literature-sized; the owner picks:
 - (c) Mantle heat dated by planet age (see draft-mantle-heat-by-age).
 - (d) Accept that 2 Gyr Earth-likes are cold early and judge the bar on 1000-end. That is a threshold, so it is the
   owner's call.
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-faint-sun-thermostat-return-bare-ground.md (found by v1-finish-14).

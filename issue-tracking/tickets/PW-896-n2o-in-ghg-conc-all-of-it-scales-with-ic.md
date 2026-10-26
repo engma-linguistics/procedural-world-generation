@@ -1,4 +1,5 @@
 ---
+id: PW-896
 title: "N2O in ghg_conc: all of it scales with ice-free land (the ocean's ~1/3 shouldn't), and there is no deep-time N2O"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: v1-finish-14
 blocked_by: []
 relates: [PW-859]
 refs: [planet/tectonics/earth.py]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -18,3 +21,6 @@ refs: [planet/tectonics/earth.py]
 ice cores (Schilt et al. 2010). The ocean's ~1/3 of the source (Ciais et al. 2013, AR5) should scale with temperature
 only. Proterozoic N2O, which may have been higher in a copper-poor ocean (Roberson et al. 2011, Buick 2007), is not
 counted. Small: ~0.1 W/m2 at the LGM.
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-n2o-ocean-share-and-deep-time.md (found by v1-finish-14).

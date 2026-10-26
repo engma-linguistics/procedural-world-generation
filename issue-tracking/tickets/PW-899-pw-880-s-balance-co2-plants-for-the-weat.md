@@ -1,5 +1,6 @@
 ---
-title: "PW-880's balance-CO2 plants for the weathering sink run vegetation.model twice per climate update; measure the cost and find a cheaper exact form"
+id: PW-899
+title: PW-880's balance-CO2 plants for the weathering sink run vegetation.model twice per climate update; measure the cost and find a cheaper exact form
 type: task
 status: todo
 parent: PW-244
@@ -11,6 +12,8 @@ found_by: v1-finish-13
 blocked_by: []
 relates: [PW-880]
 refs: [planet/tectonics/earth.py]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -25,3 +28,6 @@ against 8:13 on the previous commit.
 - [ ] If it costs more than ~15%, look for a form that gives the same answer: the plants' CO2 response only enters
   through vegetation.potential's quantum yield and respiration (co2_doublings), so the balance-CO2 NPP could come
   from the same call's potential at a second CO2, without a second equilibrium pass.
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-weathering-plants-second-vegetation-call-cost.md (found by v1-finish-13).

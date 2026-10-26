@@ -1,7 +1,8 @@
 ---
+id: PW-891
 title: "Anchored balance: with a literature-strength thermostat the planet sits at its balance climate (+1.5 C, 500 ppm), too icy for the strict bar; the star thermostat passes it (16/18 L6) only by pinning at +4% luminosity, with warm finishes and treeless wet tropics"
 type: task
-status: needs-decision
+status: done
 parent: PW-244
 milestone: v1
 subsystem: climate
@@ -11,6 +12,8 @@ found_by: v1-finish-11
 blocked_by: []
 relates: [PW-809, PW-810, PW-791, PW-806, PW-812, PW-559]
 refs: [planet/tectonics/earth.py, planet/climate.py, docs/review/base-climate/v1-finish-11/]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -49,3 +52,7 @@ Lean: B with a small thermostat bound, measured against all three diagnostics; A
 when it pins at its bound.
 - [ ] option chosen
 - [ ] re-measured: L6 18, L7 8, 2 Gyr 13; end pCO2, finish T and ice, wet-tropics trees
+
+## Updates
+- 2026-10-26: Status needs-decision -> done. Ruled by owner (PW-865 option C): no icehouse cap, thermostat off.
+- 2026-10-26: Created from inbox draft draft-balance-climate-vs-bar.md (found by v1-finish-11).

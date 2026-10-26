@@ -1,5 +1,6 @@
 ---
-title: "Plume degassing is only ~2% of the carbon source (max ~5%) because the modelled plume melt is small next to the ridges; the literature puts plume CO2 near the ridges' order"
+id: PW-898
+title: Plume degassing is only ~2% of the carbon source (max ~5%) because the modelled plume melt is small next to the ridges; the literature puts plume CO2 near the ridges' order
 type: task
 status: todo
 parent: PW-244
@@ -11,6 +12,8 @@ found_by: v1-finish-13
 blocked_by: []
 relates: [PW-875]
 refs: [planet/tectonics/earth.py, planet/tectonics/volcanism.py, docs/review/base-climate/v1-finish-13/README.md]
+created: 2026-10-26
+updated: 2026-10-26
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Measure before changing anything, and don't tune PLUME_CO2:
 - [ ] Compare plume melt km3/yr with Crisp 1984 (and LIP pulses with Bryan & Ernst 2008's ~1e6 km3 per LIP).
 - [ ] If the melt volume is low, that is a volcanism.hotspots calibration question (hotspot count, strength),
   which goes to its own ticket.
+
+## Updates
+- 2026-10-26: Created from inbox draft draft-plume-melt-small-share-of-source.md (found by v1-finish-13).
