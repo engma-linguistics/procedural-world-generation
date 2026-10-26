@@ -555,6 +555,8 @@ class History:
         habitat score then picks the cell within it. Without this the best cell of a heavy-tailed noise field wins wherever it
         falls, and one small continent held 13-15 peoples. The same rule for every people; nothing is drawn when only one
         landmass qualifies."""
+        if SPECIES_AREA_Z <= 0:  # (0: off)
+            return score
         lab, n = self.grid.components(env["land"])
         suit = (K > EST) & (score > 0) & (lab >= 0)
         if n < 2 or not suit.any():
@@ -648,7 +650,14 @@ class History:
             iso = np.where(P & (lab != big), 3.0, np.where(edge & P, 1.5, 1.0))
             # within the parent's range, or a short way beyond it (a daughter taking a new niche next door)
             near = self._dilate(P, 4) & hold_mask(line, tags)
-            score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, 0)) * self._place_mult(line, tags) \
+            # ...or, PW-888, founders carried over the sea to a landmass the parent's range does not touch (rafting on drift over
+            # Myr, island radiations): its country weighs like the country beside the range; _by_landmass then draws the landmass
+            # by habitable area, so a stem on one small continent does not put all its daughters there
+            ll, _ = g.components(env["land"])
+            touched = np.zeros(ll.max() + 2, bool)
+            touched[ll[(P | near) & (ll >= 0)]] = True
+            across = hold_mask(line, tags) & (ll >= 0) & ~touched[ll] & (SPECIES_AREA_Z > 0)
+            score = np.where(P, (K + 0.02) * iso, np.where(near | across, 0.6 * K, 0)) * self._place_mult(line, tags) \
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
@@ -656,6 +665,7 @@ class History:
             cell = int(np.argmax(score))
             why = ("isolated part of the parent's range" if lab[cell] != big else
                    "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
+                else "across the sea from the parent's range (founders carried over)" if across[cell] \
                 else "beside the parent's range (new niche)"
             # the founders hold the country around the origin that suits them at least half as well as it
             # suits the parent (FOUNDER_KM), or the whole cut-off part of the parent's range they arose in
