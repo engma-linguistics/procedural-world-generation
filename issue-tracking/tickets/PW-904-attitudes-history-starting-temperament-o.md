@@ -4,7 +4,7 @@ title: "Attitudes: history + starting temperament (orcs aggressive, elves insula
 type: story
 status: todo
 parent: PW-856
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: m
 impact: high
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26 Q5 and round 2.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-attitudes-temperament-forgiveness.md (found by owner).

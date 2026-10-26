@@ -2,7 +2,7 @@
 id: PW-030
 title: "Time zoom: no real 100-kyr sawtooth"
 type: task
-status: todo
+status: wontdo
 parent: PW-470
 milestone: v2
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: [PW-366]
 relates: [PW-018, PW-037]
 refs: [planet/timezoom.py]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -22,6 +22,7 @@ there are no terminations. They need mechanisms not modelled yet: a CO₂ rise i
 proglacial lakes, dust darkening the ice, and the overturning/meltwater coupling (PW-018).
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-469. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Owner 2026-10-20: moved out of v1 into the parked epic PW-470; v1 uses PW-471's kludge.
 - 2026-10-20: pw460: PW-460/459 not merged (run cold eras freeze, PW-461). Ice-age physics time-boxed by the owner to the morning of 2026-10-21; after that, kludge route or park.

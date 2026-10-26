@@ -3,7 +3,7 @@ id: PW-175
 title: Coastal plain beds have no recorded seaward dip, so its cuestas follow the contours
 type: task
 status: todo
-parent: PW-005
+parent: null
 milestone: later
 subsystem: surface
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-012, PW-147, PW-649]
 refs: [planet/landform.py, planet/zoom_landforms.py]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -31,5 +31,6 @@ direction; the zoom then uses them instead of the assumption.
 Same family as PW-147 (caprock recorded as near-flat).
 
 ## Updates
+- 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Created from inbox draft draft-coastal-plain-seaward-dip.md (found by zoomland3).

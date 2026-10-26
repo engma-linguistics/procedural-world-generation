@@ -4,7 +4,7 @@ title: "N2O in ghg_conc: all of it scales with ice-free land (the ocean's ~1/3 s
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v1
 subsystem: climate
 effort: xs
 impact: low
@@ -23,4 +23,5 @@ only. Proterozoic N2O, which may have been higher in a copper-poor ocean (Robers
 counted. Small: ~0.1 W/m2 at the LGM.
 
 ## Updates
+- 2026-10-26: Milestone null -> v1. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-n2o-ocean-share-and-deep-time.md (found by v1-finish-14).

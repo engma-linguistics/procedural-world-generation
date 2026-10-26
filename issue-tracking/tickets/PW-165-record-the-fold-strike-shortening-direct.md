@@ -3,7 +3,7 @@ id: PW-165
 title: Record the fold strike (shortening direction) so fold belts don't guess it from crust thickness
 type: task
 status: todo
-parent: PW-005
+parent: null
 milestone: null
 subsystem: tectonics
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-011, PW-008]
 refs: [planet/zoom_landforms.py, planet/tectonics/record.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-26
 ---
 
 ## Description
@@ -35,4 +35,5 @@ let build_frames use it as the main cue. Same idea for rifts (stretching
 direction), which now use the long axis of the rift's band of cells.
 
 ## Updates
+- 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-14: Created from inbox draft draft-fold-strike-in-record.md (found by zoomland2).

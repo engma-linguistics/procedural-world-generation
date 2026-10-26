@@ -2,7 +2,7 @@
 id: PW-513
 title: "Run ice coast_loss (PW-465): fixed margin thickness, cheap shallow coasts, and newly exposed marine coast charged a climate update late"
 type: task
-status: todo
+status: wontdo
 parent: PW-470
 milestone: v2
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-465, PW-464, PW-452]
 refs: [planet/icemass.py, planet/tectonics/earth.py, docs/review/audit/PW-465-side-lane.md]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -32,5 +32,6 @@ approximations:
 - [ ] coastal thickness from the pass's own Nye surface (sheet_surface) if (1) matters
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-465. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Created from inbox draft draft-coast-loss-approximations.md (found by pw465).

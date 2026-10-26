@@ -2,7 +2,7 @@
 id: PW-898
 title: Plume degassing is only ~2% of the carbon source (max ~5%) because the modelled plume melt is small next to the ridges; the literature puts plume CO2 near the ridges' order
 type: task
-status: todo
+status: wontdo
 parent: PW-244
 milestone: v1
 subsystem: tectonics
@@ -34,4 +34,5 @@ Measure before changing anything, and don't tune PLUME_CO2:
   which goes to its own ticket.
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-875. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-plume-melt-small-share-of-source.md (found by v1-finish-13).

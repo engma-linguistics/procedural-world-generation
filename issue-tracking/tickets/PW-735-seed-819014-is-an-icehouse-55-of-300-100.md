@@ -2,7 +2,7 @@
 id: PW-735
 title: Seed 819014 is an icehouse 55% of 300-1000 Myr at L6 and 75-89% (always-icebox) at L7 even after PW-725
 type: task
-status: todo
+status: wontdo
 parent: PW-244
 milestone: v2
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-725, PW-202]
 refs: [docs/review/base-climate/v1-finish-3/, tools/ice_criteria.py]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-26
 ---
 
 ## Description
@@ -24,4 +24,5 @@ this is not a v1 blocker; worth one look (ice_diag on it: CO2 term vs albedo, wh
 a later sweep shows more seeds like it, i.e. if it is a class of geography rather than one planet.
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: outlier seeds are allowed. (PW-900 backlog reorg).
 - 2026-10-24: Created from inbox draft draft-seed-819014-icy-at-both-levels.md (found by v1-finish-3).

@@ -2,7 +2,7 @@
 id: PW-535
 title: planet make's time estimates for L4, L5 and L8 are still scaled, not measured
 type: task
-status: todo
+status: wontdo
 parent: PW-244
 milestone: v2
 subsystem: infra
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-478, PW-649]
 refs: [planet/make.py, docs/coordination.md]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -33,5 +33,6 @@ also be worth one timing each.
 - [ ] L8 run timed or the row kept with its note.
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-247. (PW-900 backlog reorg).
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-21: Created from inbox draft draft-make-estimate-unmeasured-levels.md (found by worktree-agent-a7b485e309b6e3a74 (PW-478 calibration)).

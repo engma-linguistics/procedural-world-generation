@@ -4,7 +4,7 @@ title: "Backlog refactor: organize open tickets into v2 workgroups that ship ind
 type: task
 status: todo
 parent: PW-856
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: med
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26: after the civ discussion, reorganize the backlog into distinct workgroups.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-backlog-workgroups.md (found by owner).

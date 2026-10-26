@@ -2,7 +2,7 @@
 id: PW-526
 title: "Ice batch (coast_loss + PW-460/459 + PW-464) fails: with honest margins neither the run nor the zoom can deglaciate a big sheet (cold eras 1/10, Earth interglacials 16-20% iced)"
 type: task
-status: todo
+status: wontdo
 parent: PW-470
 milestone: v2
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-514, PW-464, PW-460, PW-459, PW-465, PW-461, PW-515]
 refs: [docs/review/audit/PW-514-batch.md, planet/tectonics/earth.py, planet/icemass.py, planet/timezoom/sim.py]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -42,6 +42,7 @@ Lean: (C) now, plus the cost cut. (A) as the next ice-physics attempt under PW-4
 - [ ] decide
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: a result record, kept as a note under PW-555. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-21: Status needs-decision -> todo. Owner 2026-10-21: park the batch. Take PW-465 coast_loss with the cost cut (PW-514 option A) onto main if it holds up. For v2, a holistic review of ice-age work first: what's been tried and what didn't work.
 - 2026-10-21: Created from inbox draft draft-honest-margins-need-sheet-deglaciation.md (found by pw514).

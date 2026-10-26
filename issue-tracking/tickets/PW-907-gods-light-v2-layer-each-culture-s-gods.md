@@ -4,7 +4,7 @@ title: "Gods, light v2 layer: each culture's gods with placeholder domains, merg
 type: story
 status: todo
 parent: PW-856
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: med
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26: barely more than a placeholder for v2; faith shapes gods; full epic later.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-gods-light-layer.md (found by owner).

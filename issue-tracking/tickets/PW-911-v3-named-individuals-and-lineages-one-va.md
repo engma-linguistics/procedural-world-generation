@@ -4,7 +4,7 @@ title: "v3: named individuals and lineages (one vampire through history, kings),
 type: story
 status: todo
 parent: PW-856
-milestone: null
+milestone: v3
 subsystem: timezoom
 effort: l
 impact: low
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26: no terabytes of lineages.
 
 ## Updates
+- 2026-10-26: Milestone null -> v3. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-named-individuals-v3.md (found by owner).

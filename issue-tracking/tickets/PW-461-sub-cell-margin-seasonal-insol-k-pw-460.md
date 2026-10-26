@@ -2,7 +2,7 @@
 id: PW-461
 title: "Sub-cell margin + seasonal insol_k (PW-460/459) deepen the zoom but freeze the run's cold eras (1/10 seeds): the run needs a way to deglaciate"
 type: task
-status: todo
+status: wontdo
 parent: PW-470
 milestone: v2
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-460, PW-459, PW-033, PW-435, PW-422, PW-115, PW-440]
 refs: [planet/icemass.py, planet/tectonics/earth.py, planet/timezoom/sim.py, planet/timezoom/forcing.py, docs/review/audit/PW-033-diagnosis.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -114,6 +114,7 @@ Options:
 - [ ] decide
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-465. (PW-900 backlog reorg).
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-subcell-margin-needs-run-deglaciation.md (found by pw460).

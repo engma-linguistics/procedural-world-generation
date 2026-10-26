@@ -3,7 +3,7 @@ id: PW-130
 title: Carbonate strata rarely reach the land surface (karst 0.4% of land; Earth ~10%)
 type: task
 status: todo
-parent: PW-005
+parent: null
 milestone: null
 subsystem: surface
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-012]
 refs: [planet/tectonics/earth.py, planet/landform.py]
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-26
 ---
 
 ## Description
@@ -31,5 +31,6 @@ warm and temperate shallow seas. Karst synthesis (PW-012) will have little
 to draw until this changes.
 
 ## Updates
+- 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-14: zoomland3 (PW-012): the zoom's karst synthesiser now exists; on a08983 all 204 karst cells are still low coastal platforms (median 14 m), so real zooms show lowland karst (towers on a plain, dolines, flooded poljes); the Dinaric upland look is only seen in synthetic tests (docs/review/landforms/zoom_karst_synthetic_temperate_tropical.png).
 - 2026-10-14: Created from inbox draft draft-carbonate-rare-on-land.md (found by landform).

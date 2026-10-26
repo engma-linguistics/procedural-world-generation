@@ -4,7 +4,7 @@ title: "History zoom: per-region start where farming begins (tech + environment,
 type: story
 status: todo
 parent: PW-856
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: l
 impact: high
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26 Q2. Replaces a fixed 12 kya start.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-history-zoom-farming-onset.md (found by owner).

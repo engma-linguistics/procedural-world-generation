@@ -4,7 +4,7 @@ title: Species-level biomes a people cannot live in or strongly avoid (merfolk o
 type: task
 status: todo
 parent: PW-856
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: med
@@ -20,4 +20,5 @@ updated: 2026-10-26
 Owner 2026-10-26: some species are very hard to integrate with others by habitat alone; add hard limits beside preferred biomes.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-26: Created from inbox draft draft-species-hard-habitat-limits.md (found by owner).

@@ -4,7 +4,7 @@ title: Hobgoblins end at 80-140 cells at the present on the small-continent trie
 type: task
 status: needs-decision
 parent: PW-692
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-26
 ---
 
 ## Description
@@ -21,4 +21,5 @@ With the frontier-invasion term (history.INVADE 0.5, floor 0.3) the humans on th
 - [ ] decide on a hobgoblin refuge floor or a lower INVADE; re-measure over 8 seeds
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-25: Created from inbox draft draft-hobgoblins-thin-out-under-frontier-invasion.md (found by fun-lane-29).
