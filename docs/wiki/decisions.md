@@ -63,6 +63,7 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-10-26 · Civilizations design (owner) · cultures/settlements/polities built in steps; history zoom from a per-region farming onset at 25-yr steps; emergent first, anchors later (may be credited to gods); plague on every world, other templates at sim rates; attitudes = history + temperament, xenophobia by culture and species; tech stops ~mid-1400s by default with a visible tech tree; named individuals/writing/industry v3+. Open questions in the doc round 2 · PW-856
 - 2026-10-25 · Origins and crowding (owner) · most species must not evolve on one small landmass (origins by habitable area, species-area); crowding raises the drive to explore; conflict and warfare go to the civilizations epic · PW-888, PW-887, PW-856
 - 2026-10-25 · Contact fronts (coordinator) · a denser people takes a thinner one's cells along the contact line (modern-human vs Neanderthal replacement) · PW-887
 - 2026-10-25 · Frontier invasion built (coordinator) · INVADE 0.5, floor 0.3, crowding x(1+2 crowd) on sea crossings; accepted although the PW-885 8k line is unmet: the small continent holds only ~4k suitable cells, so the niche, not exclusion, is the limit now. Hobgoblin thinning re-measured after PW-888 changes origins · PW-887, PW-885
