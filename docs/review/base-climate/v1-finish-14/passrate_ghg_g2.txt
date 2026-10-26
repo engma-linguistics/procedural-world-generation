@@ -1,0 +1,36 @@
+   ghg_g2_eb_0      seed12 300-2000: icehouse 95.3% deep 53.8% dT med -3.2 max +3.3 ICEBOX -> F
+ghg_g2_eb_-0.001      seed12 300-2000: icehouse 89.9% deep 54.7% dT med -2.8 max +4.9 ICEBOX -> F
+ghg_g2_eb_0.001      seed12 300-2000: icehouse 89.4% deep 39.2% dT med -3.1 max +7.1 ICEBOX -> F
+   ghg_g2_new0      seed11 300-2000: icehouse 99.1% deep 37.1% dT med -4.7 max +7.6 ICEBOX -> F
+   ghg_g2_new0      seed21 300-2000: icehouse 91.1% deep 31.0% dT med -2.6 max +7.9 ICEBOX -> F
+   ghg_g2_newp  seed583167 300-2000: icehouse 94.8% deep 77.2% dT med -5.6 max +4.4 ICEBOX -> F
+   ghg_g2_newp  seed619496 300-2000: icehouse 99.8% deep 47.7% dT med -4.0 max +5.4 ICEBOX -> F
+   ghg_g2_newp  seed639472 300-2000: icehouse 99.3% deep 62.2% dT med -7.4 max -0.5 ICEBOX -> F
+   ghg_g2_newp  seed957317 300-2000: icehouse 86.6% deep 54.0% dT med -2.2 max +5.9 ICEBOX -> F
+    ghg_g2_sc0  seed583167 300-2000: icehouse 97.2% deep 56.1% dT med -4.4 max +4.1 ICEBOX -> F
+    ghg_g2_sc0  seed619496 300-2000: icehouse 84.3% deep 51.4% dT med -4.5 max +5.5 ICEBOX -> F
+    ghg_g2_sc0  seed639472 300-2000: icehouse 99.5% deep 39.2% dT med -3.7 max +3.9 ICEBOX -> F
+    ghg_g2_sc0  seed957317 300-2000: icehouse 81.5% deep 44.1% dT med -2.2 max +11.4 ICEBOX -> F
+  L6 2 Gyr ghg_g2_eb_-0.001      seed12  89.9  54.7   -2.8 ICEB  +3.1     2.4    48  1038 no
+  L6 2 Gyr    ghg_g2_eb_0      seed12  95.3  53.8   -3.2 ICEB  -5.7    40.2    66   664 no
+  L6 2 Gyr ghg_g2_eb_0.001      seed12  89.4  39.2   -3.1 ICEB  +4.6     4.4    63   680 no
+  L6 2 Gyr    ghg_g2_new0      seed11  99.1  37.1   -4.7 ICEB  -2.6    17.6    65   278 no
+  L6 2 Gyr    ghg_g2_new0      seed21  91.1  31.0   -2.6 ICEB  +5.3     0.4    61   738 no
+  L6 2 Gyr    ghg_g2_newp  seed583167  94.8  77.2   -5.6 ICEB  -3.3     7.5    56   177 no
+  L6 2 Gyr    ghg_g2_newp  seed619496  99.8  47.7   -4.0 ICEB  -6.6     7.8    49    91 no
+  L6 2 Gyr    ghg_g2_newp  seed639472  99.3  62.2   -7.4 ICEB  -6.2    37.6    44   221 no
+  L6 2 Gyr    ghg_g2_newp  seed957317  86.6  54.0   -2.2 ICEB  +3.3     4.6    58   691 no
+  L6 2 Gyr     ghg_g2_sc0  seed583167  97.2  56.1   -4.4 ICEB  +0.8    13.7    64   543 no
+  L6 2 Gyr     ghg_g2_sc0  seed619496  84.3  51.4   -4.5 ICEB  -1.4     9.0    36   268 no
+  L6 2 Gyr     ghg_g2_sc0  seed639472  99.5  39.2   -3.7 ICEB  -9.9    42.0    63   102 no
+  L6 2 Gyr     ghg_g2_sc0  seed957317  81.5  44.1   -2.2 ICEB  +2.5     2.3    60   541 no
+    L6 2 Gyr bar + hard finish checks: 0/13
+    L6 2 Gyr bar 1000-1500: 2/13
+    L6 2 Gyr bar 1500-2000: 5/13
+    L6 2 Gyr bar 300-1000: 0/13
+    L6 2 Gyr bar 300-end: 0/13
+    L6 2 Gyr end pCO2 180-600 (diag.): 5/13
+    L6 2 Gyr finish T -6..+3: 6/13
+    L6 2 Gyr finish land ice 1-25%: 9/13
+    L6 2 Gyr finish land ice 5-20%: 5/13
+    L6 2 Gyr finish wet-eq trees >= 20%: 13/13
