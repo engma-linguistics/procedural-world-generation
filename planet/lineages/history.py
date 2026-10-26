@@ -46,6 +46,7 @@ LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, 
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
 ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
 SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (its habitable area)^z, z ~ 0.25-0.35 (the species-area relationship, Rosenzweig 1995, Species Diversity in Space and Time); islands keep some, as isolation drives speciation
+ORIGIN_MVP_MULT = 8.0  # PW-888: a landmass can take an origin only if it can carry a long-term minimum viable population, this many times tree.viable_pop (the founder size, 500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500. Founders still start at the founder size
 PIONEER_KYR = 8.0  # a newcomer's founding window (PW-869): the competition it feels is cut by PIONEER_Q at first, ramping back over this, and its founders are not displaced
 PIONEER_Q = 0.5  # (its founders take the room as a first settler does in empty country; the incumbents press back as the window closes)
 EXPANSE_PRESS = 0.6  # an expansive people (explore from EXPANSE_FROM, in full at +EXPANSE_SPAN) that holds a small share of the country it could hold
@@ -550,8 +551,8 @@ class History:
 
     def _by_landmass(self, line, score, K, env):
         """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
-        glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would hold a
-        viable founder population (tree.viable_pop, as _viable), draws with probability (habitable area)^SPECIES_AREA_Z; the
+        glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
+        long-term viable population (ORIGIN_MVP_MULT x tree.viable_pop, as _viable counts people), draws with probability (habitable area)^SPECIES_AREA_Z; the
         habitat score then picks the cell within it. Without this the best cell of a heavy-tailed noise field wins wherever it
         falls, and one small continent held 13-15 peoples. The same rule for every people; nothing is drawn when only one
         landmass qualifies."""
@@ -564,7 +565,7 @@ class History:
         k = self.idx[line.id]
         cells = np.bincount(lab[suit], minlength=n).astype(float)
         founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
-        w = np.where(founders >= self.tree.viable_pop, cells, 0.0) ** SPECIES_AREA_Z
+        w = np.where(founders >= ORIGIN_MVP_MULT * self.tree.viable_pop, cells, 0.0) ** SPECIES_AREA_Z
         if np.count_nonzero(w) < 2:
             return score
         pick = int(self._lrng[line.id].choice(n, p=w / w.sum()))

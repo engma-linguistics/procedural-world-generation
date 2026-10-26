@@ -2164,8 +2164,8 @@ def test_origins_pick_a_landmass_by_habitable_area_to_the_z(faketz):
     want = sizes ** H.SPECIES_AREA_Z / (sizes ** H.SPECIES_AREA_Z).sum()
     assert np.allclose(got, want, atol=0.05)
     assert got[np.argmax(sizes)] < 0.6 and (got > 0.03).sum() == n  # (the biggest does not take all; every landmass draws some)
-    # a founder population that the smallest landmass cannot hold: only the others draw
-    h.tree.viable_pop = float(np.sort(sizes)[1] * h.dens[h.idx["a"]] * h.cell_mkm2 * 1e6 * 0.5 * 0.99)
+    # a long-term viable population (ORIGIN_MVP_MULT x viable_pop) that the smallest landmass cannot hold: only the others draw
+    h.tree.viable_pop = float(np.sort(sizes)[1] * h.dens[h.idx["a"]] * h.cell_mkm2 * 1e6 * 0.5 * 0.99 / H.ORIGIN_MVP_MULT)
     few = np.array([lab[int(np.argmax(h._by_landmass(line, score, K, env)))] for _ in range(300)])
     assert set(np.unique(few)) <= {int(i) for i in np.argsort(sizes)[-2:]}
     # one qualifying landmass: nothing is drawn

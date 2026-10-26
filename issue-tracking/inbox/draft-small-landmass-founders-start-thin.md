@@ -1,7 +1,7 @@
 ---
-title: Under the species-area origin draw (PW-888) some peoples now found on small landmasses and start thin: humans at 100 kyr ago, elves on 1df1c3
+title: RULED (floor B built, not sufficient): under the species-area origin draw (PW-888) some peoples now found on small landmasses and start thin: humans at 100 kyr ago, elves on 1df1c3
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 subsystem: timezoom
 effort: s
@@ -18,3 +18,11 @@ PW-888 draws each origin's landmass with probability (habitable cells)^0.3 (`his
 - 1df1c3: humans at 100 kyr ago 3, 3 and 32 cells on tries 7001, 7006 and 7004 (2.7-6.7k on all eight before), present 12-26k (13-23k before); elves under 500 cells on 7004 (176) and 7007 (186): 6 of 8 at >= 500 (8 of 8 before).
 Likely cause: a founder population at the viability floor (500 people) on a landmass of a few hundred km2 passes the filter but cannot grow. Options: A. accept (isolation, island peoples; the Holocene farmers still reach 12k+). B. raise the founder floor to a multiple of `viable_pop` (say 10x) so a landmass must hold a lasting population. C. weight the draw by (habitable area)^z only above a minimum landmass size and give smaller ones a fixed small share. Lean: B, behind the same 8-try sweep on both worlds.
 - [ ] humans >= 1k cells at 100 kyr ago and elves >= 500 on 7 of 8 tries on both 2a7385 and 1df1c3, with no landmass under ~15% of the land holding most peoples
+
+## Ruling and result (fun-lane-30, second pass)
+RULED by the coordinator: option B, a landmass takes an origin only if it can carry a long-term minimum viable population, a multiple of `tree.viable_pop` derived from Traill et al. 2007 (median vertebrate MVP ~4000) over Frankham 2014's 500: `history.ORIGIN_MVP_MULT = 8`. Built and re-measured over 8 tries on 2a7385 and 1df1c3 (dnd): the floor alone does NOT meet the targets.
+- No majority landmass holds (kept): top share 50-71% on 2a7385 (the 70% landmass), 29-39% on 1df1c3.
+- Elves >= 500 cells: 4 of 8 on each world (before the floor: 8 of 8 on 2a7385, 6 of 8 on 1df1c3; before PW-888: 8/8 on both). Half-elves present: 8 of 8 on 2a7385, 6 of 8 on 1df1c3 (0 cells on 7005, 7006).
+- Humans at 100 kyr ago under 1k cells: 2a7385 7004 (84), 7005 (607), 7006 (103); 1df1c3 7004 (32), 7006 (3).
+Cause (probe on 2a7385 7004 and 7006): the founders are not rare big-landmass accidents but 1-2 cell places. A cell at L7 is ~3000 km2, so 4000 people fit on one cell at a density of 1.3 per km2 and the floor in people never bites: hominid split onto a 2-cell and a 108-cell landmass, archaic humans onto 88 and 2 cells, humans onto 1 and 2 cells ("across the sea from the parent's range", the PW-888 split rule). The elves on those seeds arrive on the big landmass (41.7k cells) by habitat, so their drop is downstream (the humans/hosts are elsewhere, fewer half-elf meetings), not their own origin.
+What would act on it (not tuned): (1) a landmass floor in cells, not people (a range of tens of cells, e.g. the REFUGE_MKM2 0.5 Mkm2 already used for refuges), (2) make the across-the-sea split founding follow the crossing law (probability ~ exp(-gap / L) of the parent's coast, `crossing.hop`) instead of every landmass at 0.6 K, so isolated 1-2 cell places far from the parent are rare, (3) both. Needs the owner/coordinator's call on (1)'s size.
