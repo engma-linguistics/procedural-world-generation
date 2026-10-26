@@ -18,7 +18,7 @@ from ..geo import R_KM, is_land
 from . import recent as R
 from . import spec as SP
 from . import land as LD
-from .crossing import Crossings, corridor, short_hop
+from .crossing import Crossings, corridor, modes, sea_gap, short_hop
 from . import compose as CP
 from . import contacts as CT
 from . import landuse as LU
@@ -549,7 +549,7 @@ class History:
         self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 0.3, 1))
         return blob
 
-    def _by_landmass(self, line, score, K, env):
+    def _by_landmass(self, line, score, K, env, reach=None):
         """PW-888: the landmass of an origin is drawn before the cell. Each landmass of the step's own land (connected land, so a
         glacial bridge joins two) that the origin's score reaches, and whose habitable country (cells with K > EST) would carry a
         long-term viable population (ORIGIN_MVP_MULT x tree.viable_pop, as _viable counts people), draws with probability (habitable area)^SPECIES_AREA_Z; the
@@ -566,6 +566,10 @@ class History:
         cells = np.bincount(lab[suit], minlength=n).astype(float)
         founders = np.bincount(lab[suit], weights=K[suit], minlength=n) * self.dens[k] * self.cell_mkm2 * 1e6 * 0.5
         w = np.where(founders >= ORIGIN_MVP_MULT * self.tree.viable_pop, cells, 0.0) ** SPECIES_AREA_Z
+        if reach is not None:  # (founders carried over the sea: a landmass is drawn in proportion to how readily the crossing reaches it)
+            top = np.zeros(n)
+            np.maximum.at(top, lab[suit], reach[suit])
+            w = w * top
         if np.count_nonzero(w) < 2:
             return score
         pick = int(self._lrng[line.id].choice(n, p=w / w.sum()))
@@ -658,11 +662,22 @@ class History:
             touched = np.zeros(ll.max() + 2, bool)
             touched[ll[(P | near) & (ll >= 0)]] = True
             across = hold_mask(line, tags) & (ll >= 0) & ~touched[ll] & (SPECIES_AREA_Z > 0)
-            score = np.where(P, (K + 0.02) * iso, np.where(near | across, 0.6 * K, 0)) * self._place_mult(line, tags) \
+            # ...its chance falling with the sea gap from the parent's coast as any crossing does (crossing.hop: the ways open to the
+            # parent at that time, rate x exp(-gap / L), relative to a gap of 0), so a far islet is rarely where founders land
+            reach = np.ones(g.n)
+            src = P & tags["coast"]
+            if across.any() and src.any():
+                ms = modes(self.tree.lines[line.parents[0]], step.ago)
+                if ms:
+                    d = sea_gap(src, env["land"], g.nbr_off, g.nbr_idx, int(min(6 * max(m[2] for m in ms) / self.cell_km, 200)))
+                    km = np.maximum(d, 0) * self.cell_km
+                    f = sum(m[1] * np.exp(-km / m[2]) for m in ms) / sum(m[1] for m in ms)
+                    reach = np.where(across, np.where(d > 0, f, 0.0), 1.0)
+            score = np.where(P, (K + 0.02) * iso, np.where(near, 0.6 * K, np.where(across, 0.6 * K * reach, 0))) * self._place_mult(line, tags) \
                 * self._wish_near(line, origin=True) * self._start_hints(line, env, tags) * noise * (K > 2 * EST)  # (where the founders can live)
             if score.max() <= 0:
                 return self._origin_fallback(line, step, env, tags, K, "no room for it by the parent: best habitat")
-            score = self._by_landmass(line, score, K, env)
+            score = self._by_landmass(line, score, K, env, reach)
             cell = int(np.argmax(score))
             why = ("isolated part of the parent's range" if lab[cell] != big else
                    "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
