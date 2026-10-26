@@ -2,7 +2,7 @@
 id: PW-894
 title: "2 Gyr runs stay icebox after PW-859: the bare-ground weathering thermostat returns only ~40% of the faint star's forcing"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1
 subsystem: climate
@@ -35,4 +35,5 @@ Options, all literature-sized; the owner picks:
   owner's call.
 
 ## Updates
+- 2026-10-26: Status needs-decision -> todo. Owner 2026-10-26: v1 = 1 Gyr runs (option C); 2 Gyr is a post-v1 stretch goal. When it returns, judge 2 Gyr runs on their last 1 Gyr only (option A). PW-895 mantle heat held on hold/v1-finish-15-heat.
 - 2026-10-26: Created from inbox draft draft-faint-sun-thermostat-return-bare-ground.md (found by v1-finish-14).
