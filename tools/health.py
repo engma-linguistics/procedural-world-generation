@@ -125,9 +125,9 @@ def sweep_specs(l6, l7, myr, every, determinism: bool) -> list[dict]:
     specs = [{"seed": s, "level": lv, "myr": myr, "every": every, "name": f"health {tag} seed {s} L{lv}"}
              for lv, seeds in ((7, l7), (6, l6)) for s in seeds]  # (L7 first: the longest jobs start first)
     if determinism and l6:
-        # the plant groups' timeline is scaled to the run's length (flora_end): pin it to the sweep's
+        # the run's end (star, plant calendar: run_end) is the run's length: pin it to the sweep's
         specs.append({"seed": l6[0], "level": 6, "myr": min(DETERMINISM_MYR, myr), "every": every,
-                      "set": {"flora_end": float(myr)}, "name": f"health {tag} seed {l6[0]} L6 determinism",
+                      "set": {"run_end": float(myr)}, "name": f"health {tag} seed {l6[0]} L6 determinism",
                       "determinism": True})
     return specs
 

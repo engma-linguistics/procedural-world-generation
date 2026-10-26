@@ -30,4 +30,5 @@ Coupling audit finding C10 (severity low-med for the Earth-like v1 finish; docs/
 **What to try:** Interpolate cloud_jul/jan in zoom_vegetation.fine_fields as before and pass sky= to the vegetation; land with the v1-finish-12 merge.
 
 ## Updates
+- 2026-10-25: v1-finish-13 (1b52cdf): zoom_vegetation sets s['cloud'] from the world's sky cover (cloud_jul/jan), as the globe does.
 - 2026-10-25: Created from inbox draft draft-zoom-cloud-forest-tested-on-shade-not-sky.md (found by coupling-audit).

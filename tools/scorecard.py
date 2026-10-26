@@ -57,7 +57,7 @@ def earth_scores() -> dict | None:
 
 
 def world_scores(seed: int, myr: float) -> dict:
-    sim = Simulation(build_grid(6), seed, Params(flora_end=myr), 2.0)  # (plant groups scaled as simulate does)
+    sim = Simulation(build_grid(6), seed, Params(run_end=myr), 2.0)  # (the run's end is now, as simulate sets it)
     v0 = float((sim.w_thick * sim.w_cont).sum())
     track = []
     while sim.t < myr - 1e-9:

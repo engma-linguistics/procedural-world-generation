@@ -32,4 +32,5 @@ Coupling audit finding C8 (severity low for the Earth-like v1 finish; docs/revie
 **What to try:** Set EARTH_ICE from the model's own Earth probe (area-weighted) and weight ice_frac by cell area. Fold into the next calibration pass.
 
 ## Updates
+- 2026-10-25: v1-finish-13 (1b52cdf): ice-albedo zero is the model's own Earth ice at dT 0, area-weighted (earth.MODEL_EARTH_ICE: L6 2.77%, L7 3.05%, tools/ice_probe.py now prints the area share); the run's ice share is area-weighted.
 - 2026-10-25: Created from inbox draft draft-ice-albedo-reference-is-real-earths-ice.md (found by coupling-audit).

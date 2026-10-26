@@ -33,7 +33,7 @@ def source_from_run(run_dir: Path, at: float) -> dict:
     fr = run["frames"][i]
     if "sea_level_m" not in fr["stats"] or "tree_cover" not in run["layers"]:
         raise SystemExit(f"run {run_dir.name} is too old (its keyframes have no climate or vegetation)")
-    veg = T.keyframe_vegetation(m, fr, T.frame(run, arr, "tree_cover", i), Params.from_stored(m["params"]).plants_from)
+    veg = T.keyframe_vegetation(m, fr, T.frame(run, arr, "tree_cover", i))
     return {"source_run": run.get("id", run_dir.name), "source_name": run["name"], "seed": m["seed"],
             "level": m["level"], "tilt": m["params"].get("tilt", 23.4), "params": m["params"],
             "grid": build_grid(m["level"]), "at": float(fr["t"]),

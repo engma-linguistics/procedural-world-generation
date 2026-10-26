@@ -70,10 +70,15 @@ class Simulation:
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
         "npp",  # g C/m2/yr per cell
+        "npp_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
+        # balance's CO2) the weathering reference is learnt with (earth.global_temperature; None after it)
+        "npp_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the NPP the weathering sink's
+        # plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law)
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
-        "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (light for the plants)
+        "cloud_jul", "cloud_jan",  # 0..1 cloud cover per half-year (names the cloud forests)
+        "shade_jul", "shade_jan",  # 0..1 the cloud as the light sees it per half-year (climate.shade; the plants' light)
         "removed",  # km of crust eroded per cell in the last step
         "weathered",  # ... of it from ground bare of ice during that erosion (feeds weathering)
         "thermo",  # the crust thermostats' integrated log error [volume, area] (crust.thermostats)
@@ -132,7 +137,9 @@ class Simulation:
         self.mantle_lid = np.zeros(n)  # running average of continental cover over it
         self.mantle_eddies = np.zeros(0)  # spherical-harmonic coefficients of its unresolved eddies
         # earth system (EARTH_STATE)
-        self.dT, self.drift, self.co2, self.rates, self.refs = 0.0, 0.0, 0.0, None, None
+        self.drift, self.rates, self.refs = 0.0, None, None
+        # the carbon stock in balance with the run's starting star, and its climate (PW-809)
+        self.co2, self.dT = earth.start_carbon(self.params)
         self.star_ctl, self.ice_share = 0.0, None
         self.depth_ridge = self.depth_ref = None
         # m, relative to an ice-free planet with the starting sea floor
@@ -142,11 +149,13 @@ class Simulation:
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
+        self.npp_pot = self.pot_frac = self.pot_lai = None
+        self.npp_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
         self.veg_type = np.zeros(n, np.uint8)
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6
         self.veg_niche = np.zeros(6)
-        self.cloud_jul = self.cloud_jan = None
+        self.cloud_jul = self.cloud_jan = self.shade_jul = self.shade_jan = None
         self.removed = np.zeros(n)
         self.weathered = np.zeros(n)
         self.thermo = np.zeros(2)
@@ -291,7 +300,8 @@ class Simulation:
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
         # numbers the tectonics draws shouldn't reshuffle the climate history)
-        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]))
+        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]),
+                                 plume=head + apron + vents)  # (the plumes' melt degasses: PW-875)
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
             self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
                                     sediment_km(col.cover, col.x)))

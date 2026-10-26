@@ -32,4 +32,5 @@ Coupling audit finding C1 (severity high for the Earth-like v1 finish; docs/revi
 **What to try:** Evaluate plant_factor on NPP at the balance pCO2 (the run already grows npp_pot at PCO2_BALANCE during the spin-up; keep a balance-CO2 NPP after REF_FREEZE too, or divide out the model's own CO2 response), so CO2 reaches the sink only through co2_law. Alternative: drop FERT on planted ground and let NPP carry the CO2 dependence (then NPP_WEATHER's saturation sets the slope, not the literature).
 
 ## Updates
+- 2026-10-25: v1-finish-13 (1b52cdf): the sink's plant factor reads sim.npp_w, the run's plants grown at PCO2_BALANCE (a second vegetation.model call per update), so CO2 reaches planted ground only through FERT. Cost follow-up: draft-weathering-plants-second-vegetation-call-cost.md. Pass rates re-measuring (cpl set). docs/review/base-climate/v1-finish-13/README.md
 - 2026-10-25: Created from inbox draft draft-weathering-co2-counted-twice-on-planted-ground.md (found by coupling-audit).

@@ -50,4 +50,5 @@ way (no backward compatibility): the anchor plus the ruled optional "future offs
 - [ ] star_age removed; params comment rewritten
 
 ## Updates
+- 2026-10-24: v1-finish-10: star_age removed; default star_brightening 1.0 (full Gough) per the ruling, but anchored it fails: L6 1 Gyr 0/6 alone, 0.45 alone 1/6. Not re-pickable until the carbon-cycle draft is settled. docs/review/base-climate/v1-finish-10/README.md
 - 2026-10-24: Created from inbox draft draft-star-rate-after-anchor.md (found by star-anchor-audit).

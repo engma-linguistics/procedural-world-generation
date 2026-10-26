@@ -93,7 +93,7 @@ class Plants:
     def grow(self, c: dict, surf: np.ndarray, H_g: np.ndarray, co2_c: float, full: bool = False) -> None:
         t0 = time.time()
         v = V.model(self.g, surf, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], self.tilt,
-                    c["cloud_jul"], c["cloud_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
+                    c["shade_jul"], c["shade_jan"], ice=H_g, nu0=self.nu, lai0=None if full else self.lai,
                     pco2=self.pco2(co2_c), unlocked=self.unlocked, cheap=not full)
         self.nu, self.lai = v["eq"]["nu"], v["pot"]["lai"]
         self._last = v
@@ -164,9 +164,9 @@ class Plants:
             self.migrate(t_end)
 
     def pco2(self, co2_c: float) -> float:
-        """The CO2 the plants feel, ppm, at the CO2 term co2_c (C) of dTg: the run's, co2_c / co2_sensitivity
-        doublings away (PW-646)."""
-        return self.pco2_0 * 2.0 ** (co2_c / self.co2_sens)
+        """The CO2 the plants feel, ppm: the run's, co2_c doublings away (Forcing.co2: the glacial index's,
+        PW-828; PW-646)."""
+        return self.pco2_0 * 2.0 ** co2_c
 
     def correct(self, c: dict, open_: np.ndarray, old: dict | None) -> None:
         """The climate c (computed with the plants old) given the current plants' albedo warming instead
