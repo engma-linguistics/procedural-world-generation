@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-806, PW-228, PW-290]
 refs: [planet/climate.py, planet/vegetation.py, tools/veg_check.py, docs/review/base-climate/v1-finish-9/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-25
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Borneo: ~40-50% of possible sunshine) before touching any plant parameter.
 - [ ] equatorial land NPP on the model climate within ~25% of MOD17 (veg_check), without retuning the plants
 
 ## Updates
+- 2026-10-25: v1-finish-12: first check done (eqsun.py, Earth world 506694, wet-eq land): cover 0.82 vs NCEP 0.64; climate's sunshine 0.31-0.33 vs CRU 0.50-0.52; the plants used 0.21-0.23 (raw cover; fixed in be00f07, climate.shade). Remaining gap 0.31 vs 0.51 is the cloud scheme's (cover and cloud_sun_conv).
 - 2026-10-24: Created from inbox draft draft-dim-model-tropics-thin-forest-margin.md (found by v1-finish-9).

@@ -4,7 +4,7 @@ title: Hobgoblins end at 80-140 cells at the present on the small-continent trie
 type: task
 status: needs-decision
 parent: PW-692
-milestone: null
+milestone: v2
 subsystem: timezoom
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-26
 ---
 
 ## Description
@@ -22,4 +22,5 @@ With the frontier-invasion term (history.INVADE 0.5, floor 0.3) the humans on th
 
 ## Updates
 - 2026-10-25: (fun-lane-30) With PW-888 origins, hobgoblins at the present on tries 7000/7005/7006 of 2a7385: 7406/12479/6317 cells (82/92/141 before); the other five tries 3.1-8.5k. Different draws of origin, so not the same worlds of peoples as before.
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-25: Created from inbox draft draft-hobgoblins-thin-out-under-frontier-invasion.md (found by fun-lane-29).

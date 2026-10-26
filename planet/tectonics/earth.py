@@ -15,22 +15,58 @@ import numpy as np
 
 from .. import climate, hydrology, icemass, kernels, surface, vegetation
 from ..geo import R_KM
+from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
-from .isostasy import (CARB, COAL, EVAP, MIX, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
+from .isostasy import (CARB, COAL, EVAP, MIX, OCEAN_KM, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
                        ocean_depth, sediment_iso, sediment_km)
 
 SEA_TECT_MAX = 400.0  # m: the ocean basins' part of sea level levels off toward +-this (PW-293: was 250, which
 # shaped the signal; at 400 a Cretaceous-like +250 m passes at +222)
 EARTH_ICE = 0.031  # Earth's land ice today, share of the surface (Antarctica and Greenland)
-WEATHER_K = 0.09  # per C: silicate weathering's temperature sensitivity (GEOCARB III's activation energy; its
-# runoff part, ~0.03, is already in the erosion rate the sink multiplies, PW-278; 0.06 before PW-235, 0.12 after)
-WEATHER_CO2 = 0.4  # silicate weathering ~ pCO2^this (GEOCARB's f(CO2) for vascular plants ~0.4, without 0.5)
+# The ice-albedo term's zero (PW-873): the model's own Earth at dT = 0 (tools/ice_probe.py 0, the ice rule on
+# Earth's bed, area-weighted share of the last 4 of 8 climate updates; v1-finish-13 code), per grid level. The
+# climate model's dT = 0 is Earth with that ice, so that ice is neutral, not the real 3.1%.
+MODEL_EARTH_ICE = {6: 0.0277, 7: 0.0305}
+
+
+def earth_ice(level: int) -> float:
+    """The model's own Earth ice share at dT = 0 at this grid level (the nearest probed level's)."""
+    return MODEL_EARTH_ICE[min(MODEL_EARTH_ICE, key=lambda k: abs(k - level))]
+WEATHER_K = 0.09  # per C of local temperature: silicate weathering's kinetics (GEOCARB III's ACT, an activation
+# energy of ~62 kJ/mol at 288 K; field silicate fluxes ~59 kJ/mol, White & Blum 1995; the 40-60 kJ/mol range is
+# 5.8-8.7%/K; PW-235)
+WEATHER_RUNOFF = 0.65  # weathering ~ runoff^this (GEOCARB, Berner 1994, from Peters 1984's rivers), on each cell's
+# own land runoff from the climate's water balance (sim.runoff against RUNOFF_REF; PW-881: was the global mean
+# rain's 3%/C law, while the model's land rain grows 0.5-2.3%/C on generated planets). The erosion supply the sink
+# multiplies doesn't carry it (it is set by uplift over Myr: measured -0.008/C, v1-finish-10), so it is a factor of
+# its own (v1-finish-11)
+RUNOFF_REF = 560.0  # mm/yr: the scale of the runoff factor (the model's Earth at dT 0, ice-free land's mean; it
+# cancels against the sink's reference)
+RUNOFF_PER_C = 0.016  # ln of sum(runoff^WEATHER_RUNOFF) over the ice-free land per C of dT, the model's Earth (L6,
+# dT -3..+3: 0.0163, 0.0154; land runoff itself 2.6%/C): the runoff's small-signal part of climate_coef and of
+# the spin-up's shift to the balance climate, where the runoff at another dT isn't computed
+WEATHER_CO2_BARE = 0.5  # bare ground weathers ~ pCO2^this (GEOCARB, Berner 1994: carbonic acid from the air)
+WEATHER_FERT = 0.4  # planted ground ~ (2X / (1 + X))^this, X pCO2 against the balance (GEOCARB II/III's FERT, Volk
+# 1987): the soil's CO2 comes from roots and microbes, so the air's CO2 acts only through the plants' growth, which
+# saturates (log-slope 0.2 at the balance, ~0 at high CO2). Before v1-finish-11 one X^0.4 for all ground
+PLANT_WEATHER = 3.0  # fully planted ground weathers this many times faster than bare ground at the same climate and
+# CO2 (roots, mycorrhizae, soil CO2 and acids, wetter soils): field pairs 2-5x (Moulton & Berner 1998; Moulton, West
+# & Berner 2000, Iceland), ~10x in sandboxes (Bormann et al. 1998), < 2x (Drever 1994); GEOCARB's pre-vascular f_E
+# 0.25 is 4x (Berner 1994, 2004). 3 is the field pairs' middle
+NPP_WEATHER = 500.0  # g C/m2/yr: the NPP at which ground counts as fully planted for weathering (a temperate forest's,
+# ~500-700, Luyssaert et al. 2007); sparser plants enhance it in proportion
 CO2_MAX = 6.0  # e-folds of CO2 the log forcing levels off toward (+-; smoothly, tanh: ~400x / 0.0025x the
 # reference; snowball exits needed ~40-400x, 3.6-6 e-folds, Caldeira & Kasting 1992, Hoffman et al. 2017; was a hard
 # clip at 3, PW-558)
+CO2_LOG = float(np.log(1.0e5 / 350.0))  # e-folds above climate.PCO2_REF (350 ppm) to ~0.1 bar, to which CO2's forcing
+# stays logarithmic (Myhre et al. 1998's form; line-by-line it is log to super-log up to ~0.1 bar, Byrne & Goldblatt
+# 2014, GRL 41: 152; Kasting 1993; Feulner 2012's faint-young-Sun CO2 of 0.01-0.1 bar rests on it) (v1-finish-14)
+CO2_SAT = float(np.log(10.0))  # e-folds beyond CO2_LOG over which it levels off: CO2's Rayleigh scattering and the
+# saturated bands give a maximum greenhouse near ~1 bar (Kasting 1991; Kasting et al. 1993; Wordsworth &
+# Pierrehumbert 2013), one decade further
 CO2_TAU = 0.4  # Myr: the CO2 stock's residence time at the reference, ocean-atmosphere carbon over outgassing
-# (~40,000 GtC over ~0.1 GtC/yr; the weathering feedback's e-folding, CO2_TAU / WEATHER_CO2 ~1 Myr, is Earth's
+# (~40,000 GtC over ~0.1 GtC/yr; the weathering feedback's e-folding, ~CO2_TAU / 0.3 ~1 Myr, is Earth's
 # few hundred kyr to ~1 Myr: Archer et al. 2009, Colbourn et al. 2015)
 REF_MYR = 100.0  # Myr: during the spin-up, the source's and sink's references follow the planet's rates over this
 REF_FREEZE = 300.0  # Myr: then they are kept (PW-558/559 B): the planet's own balance once the made-up start has
@@ -47,20 +83,191 @@ def heat(p, t: float) -> float:
     return 1.0 + (p.heat_start - 1.0) * 0.5 ** (t / p.heat_halflife)
 
 
+STAR_AGE_NOW = 4570.0  # Myr: the Sun's age today
+WPM2_PER_LUM = 238.0  # W/m2 of forcing per unit relative luminosity (S0 / 4 (1 - 0.3))
+
+
+def star_luminosity(age: float) -> float:
+    """A Sun-like star's luminosity against today's Sun's, at age Myr: Gough (1981),
+    L / L_now = 1 / (1 + 0.4 (1 - age / 4570 Myr))."""
+    return 1.0 / (1.0 + 0.4 * (1.0 - age / STAR_AGE_NOW))
+
+
+def star_age(p, t: float) -> float:
+    """The star's age, Myr, at run time t: today's Sun's at now_myr (the run's end, less star_now_offset_myr);
+    star_brightening times the Sun's pace (PW-809)."""
+    return STAR_AGE_NOW + p.star_brightening * (t - now_myr(p))
+
+
+def check_star(p) -> None:
+    """Refuse a run that would start before its star formed (PW-813)."""
+    if p.star_brightening > 0.0 and star_age(p, 0.0) < 0.0:
+        longest = STAR_AGE_NOW / p.star_brightening + p.star_now_offset_myr
+        raise ValueError(f"a run of {now_myr(p) + p.star_now_offset_myr:g} Myr would start before its star formed (star age "
+                         f"{star_age(p, 0.0):.0f} Myr); at star_brightening {p.star_brightening:g} and "
+                         f"star_now_offset_myr {p.star_now_offset_myr:g} runs can be at most {longest:.0f} Myr")
+
+
+RUN_END_DEFAULT = 1000.0  # Myr: the run's end when a direct Simulation caller hasn't set params.run_end
+
+
+def now_myr(p) -> float:
+    """The run time that is today ("now", Ma 0) for the star and the plant calendar, the one place both read
+    it: the run's end (params.run_end; 0: RUN_END_DEFAULT), less star_now_offset_myr (PW-813)."""
+    return (p.run_end if p.run_end > 0 else RUN_END_DEFAULT) - p.star_now_offset_myr
+
+
 def star_forcing(p, t: float) -> float:
-    """The brightening star's warming, C, against the run's start (planet-relative; PW-564, PW-761). A Sun-like
-    star's luminosity follows Gough (1981), L / L_now = 1 / (1 + 0.4 (1 - age / 4570 Myr)): +6.7% over its first
-    Gyr. star_brightening scales that rate (a lower-mass star evolves more slowly). The forcing is
+    """The star's forcing, C, against TODAY's Sun (PW-809, coordinator ruling B): the run's end is now, so a run
+    starts under a fainter young star (negative forcing: -15.5 C raw at the start of a 1 Gyr run, -29 C for 2 Gyr)
+    and ends at 0, the climate model's dT = 0 being Earth under today's Sun. The forcing is
     S0 / 4 (1 - 0.3) dL / L = 238 W/m2 x dL / L, at the model's own sensitivity: co2_sensitivity per doubling of
-    CO2's 5.35 ln 2 W/m2 (Myhre et al. 1998), ~0.81 C per W/m2. The weathering thermostat absorbs what it can."""
+    CO2's 5.35 ln 2 W/m2 (Myhre et al. 1998), ~0.81 C per W/m2. The carbon cycle answers it (the weathering
+    thermostat, with references learnt at the balance climate: start_carbon, global_temperature): the faint
+    young star is met by high CO2, as Earth's was."""
     if p.star_brightening == 0.0:
         return 0.0
-    lum = lambda age: 1.0 / (1.0 + 0.4 * (1.0 - age / 4570.0))  # noqa: E731
-    rel = lum(p.star_age + p.star_brightening * t) / lum(p.star_age) - 1.0
-    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * 238.0 * rel)
+    rel = star_luminosity(star_age(p, t)) - 1.0
+    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * rel)
 
 
-WPM2_PER_LUM = 238.0  # W/m2 of forcing per unit relative luminosity (S0 / 4 (1 - 0.3))
+GOE_MA = (2400.0, 2100.0)  # Ma: the Great Oxidation Event, over which methane falls from its Archean level (Lyons
+# et al. 2014, Nature 506: 307; Holland 2006)
+NOE_MA = (800.0, 540.0)  # Ma: the Neoproterozoic Oxygenation Event, over which it falls to the Phanerozoic's
+# (Och & Shields-Zhou 2012; Lyons et al. 2014)
+
+
+CH4_PI, N2O_PI = 700.0, 270.0  # ppb: pre-industrial, in the climate model's dT = 0
+CH4_Q10, N2O_Q10 = 3.0, 2.0  # the wetlands' methane and the soils' N2O per 10 C of their ground (wetland CH4
+# Q10 ~2-4: Walter & Heimann 2000; Gedney et al. 2004 use ~3; soil N2O ~2, Butterbach-Bahl et al. 2013)
+GHG_LAND_T = 0.7  # C of the emitting land's temperature per C of dT (temp_response at the wetlands' ~30-60 deg)
+CH4_LOG = 5000.0  # ppb above which CH4's forcing goes as ln rather than Myhre's sqrt (its bands saturate; the
+# shortwave absorption grows: Byrne & Goldblatt 2014, Clim. Past 10: 1779), with the slope continuous there
+
+
+def ghg_conc(p, t: float, dT: float, icefree: float) -> tuple[float, float]:
+    """(CH4, N2O), ppb, at run time t (PW-859; v1-finish-14): each a steady state of its source over its
+    oxidation lifetime (~10 yr for CH4, ~120 yr for N2O: years against the run's Myr steps), so the
+    concentration goes as source x lifetime.
+      - Source: the wetlands' methane and the soils' N2O, against the pre-industrial's: warmer ground
+        (CH4_Q10, N2O_Q10 on GHG_LAND_T dT), wetter (the model's own land runoff, RUNOFF_PER_C), and the
+        ice-free land against Earth's (icefree). The LGM check: dT ~-5 gives CH4 ~390 ppb and N2O ~200
+        (ice cores ~370 and ~200, Loulergue et al. 2008, Schilt et al. 2010).
+      - Lifetime: methane's oxidation is slower under the low-oxygen air before the oxygenation events (less
+        OH; Pavlov et al. 2000, Kasting 2005), params.methane_proterozoic / methane_archean x the
+        pre-industrial's, falling linearly across each event (GOE_MA, NOE_MA). N2O's deep-time levels are not
+        known well enough to count (Roberson et al. 2011: possibly higher in a copper-poor ocean)."""
+    ma = now_myr(p) - t
+
+    def ramp(old_young, a, b):  # a before (older than) the event, b after
+        old, young = old_young
+        return a if ma >= old else b if ma <= young else b + (a - b) * (ma - young) / (old - young)
+    life = ramp(NOE_MA, ramp(GOE_MA, p.methane_archean, p.methane_proterozoic), 1.0)
+    land = GHG_LAND_T * dT
+    wet = np.exp(RUNOFF_PER_C * dT) * icefree
+    return (CH4_PI * life * wet * CH4_Q10 ** (land / 10.0), N2O_PI * wet * N2O_Q10 ** (land / 10.0))
+
+
+def ghg_forcing(p, t: float, dT: float = 0.0, icefree: float = 1.0) -> float:
+    """CH4's and N2O's forcing, C, against the pre-industrial's (ghg_conc), at the model's own sensitivity
+    (as the star's): Myhre et al. 1998's 0.036 (sqrt M - sqrt M0) and 0.12 (sqrt N - sqrt N0) W/m2 (overlap
+    left out), CH4's going over to ln beyond CH4_LOG. Sized so ~30 ppm (the Proterozoic's middle) is ~4 W/m2
+    and ~1000 ppm (the Archean's) ~8 W/m2, as the line-by-line work (Byrne & Goldblatt 2014; Haqq-Misra et al.
+    2008: ~+10 K)."""
+    m, n = ghg_conc(p, t, dT, icefree)
+
+    def ch4(x):
+        if x <= CH4_LOG:
+            return 0.036 * np.sqrt(x)
+        return 0.036 * np.sqrt(CH4_LOG) + 0.018 * np.sqrt(CH4_LOG) * np.log(x / CH4_LOG)
+    w = ch4(m) - ch4(CH4_PI) + 0.12 * (np.sqrt(n) - np.sqrt(N2O_PI))
+    return float(p.co2_sensitivity / (5.35 * np.log(2.0)) * w)
+
+
+def drift_source(p, drift: float) -> float:
+    """The carbon source's drift factor (PW-819): the walk drift (C, sd climate_drift) as the source change
+    that warms the balance planet (planted, at the balance: the reference, v1-finish-11) by that much through
+    the weathering thermostat (small signal, the weathering land's START_RESPONSE): ln s = drift (a + c G) / G,
+    a = WEATHER_FERT / 2 the planted law's CO2 log-slope at the balance, c = climate_coef(), G =
+    co2_sensitivity / ln 2 C per e-fold of CO2."""
+    g = p.co2_sensitivity / np.log(2.0)
+    return float(np.exp(drift * (0.5 * WEATHER_FERT + climate_coef() * g) / g))
+
+
+START_RESPONSE = 0.6  # C of weathering-land temperature per C of dT, for start_carbon's first guess and the drift's
+# size only (the land isn't made yet): temp_response's 0.5 in the tropics to ~0.8 at 40 deg, where most rock weathers
+START_PLANTED = 0.5  # the share of the weathering ground counted as fully planted (NPP_WEATHER) in start_carbon's
+# first guess (from the first step the carbon cycle itself sets the stock, within ~CO2_TAU)
+
+
+def climate_coef() -> float:
+    """ln of the sink per C of dT on the weathering land, small signal: kinetics (WEATHER_K at the land's
+    START_RESPONSE) and runoff (RUNOFF_PER_C, the model's own land runoff)."""
+    return WEATHER_K * START_RESPONSE + RUNOFF_PER_C
+
+
+def temp_response(grid) -> np.ndarray:
+    """Per cell, C of its annual temperature per C of the climate's dT: climate.compute moves the equator by
+    0.5 dT and the poles by 1.5 dT along climate.temperature's latitude shape (polar amplification)."""
+    x = np.sin(np.radians(grid.lat)) ** 2
+    return 0.5 + (0.156 * x + 2.012 * x**2 - 1.168 * x**3)
+
+
+def co2_law(x, bare: float):
+    """The weathering sink's CO2 factor at X = x (pCO2 against the balance; 1 there): bare ground's share
+    `bare` of the sink (at the balance) ~ X^WEATHER_CO2_BARE, the planted rest ~ (2X / (1 + X))^WEATHER_FERT
+    (GEOCARB III, Berner & Kothavala 2001; their mix while plants spread, Berner 2006)."""
+    return bare * x**WEATHER_CO2_BARE + (1.0 - bare) * (2.0 * x / (1.0 + x)) ** WEATHER_FERT
+
+
+def co2_slope(x, bare: float) -> float:
+    """d ln co2_law / d ln X: the sink's CO2 log-slope (0.5 on bare ground; 0.2 planted at the balance, less
+    above it)."""
+    sat = (2.0 * x / (1.0 + x)) ** WEATHER_FERT
+    num = bare * WEATHER_CO2_BARE * x**WEATHER_CO2_BARE + (1.0 - bare) * WEATHER_FERT * sat / (1.0 + x)
+    return float(num / co2_law(x, bare))
+
+
+def start_weatherability(p) -> tuple[float, float]:
+    """(w, bare): the start's sink at the balance climate against the planted reference, and its bare share,
+    for start_carbon's first guess: the run's land counted START_PLANTED planted if the land pioneers are
+    there from the start (vegetation.group_windows), else bare, which weathers 1 / (1 + (PLANT_WEATHER - 1)
+    START_PLANTED) of the planted reference."""
+    planted = 1.0 + (PLANT_WEATHER - 1.0) * START_PLANTED
+    if vegetation.group_windows(now_myr(p))[0][1] <= 0.0:
+        return 1.0, (1.0 - START_PLANTED) / planted
+    return 1.0 / planted, 1.0
+
+
+def balance_co2(p, forcing: float) -> float:
+    """The CO2 stock (ln X against PCO2_BALANCE) at which the weathering thermostat balances a lasting
+    forcing (C, e.g. the star's against today's Sun) on the run's starting land (start_weatherability: w,
+    bare): w co2_law(X) exp(c dT') equals the outgassing, dT' the departure from the balance climate,
+    co2_term(ln X) - co2_term(0) + forcing, c = climate_coef(). It is the run's start only: from the first step
+    the carbon cycle itself sets the stock. The carbon source's drift and the ice's albedo are left out (they
+    start at 0 and at no ice)."""
+    w, bare = start_weatherability(p)
+
+    def f(c):
+        return (np.log(w * co2_law(np.exp(c), bare))
+                + climate_coef() * (co2_term(p, c) - co2_term(p, 0.0) + forcing))
+    lo, hi = -30.0, 30.0  # (f increases with c)
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if f(mid) < 0.0 else (lo, mid)
+    return 0.5 * (lo + hi)
+
+
+def start_carbon(p) -> tuple[float, float]:
+    """(co2, dT) a run starts from (PW-809): the carbon stock in balance with the star of the run's start, so a
+    faint young star starts the planet warm through high CO2 rather than frozen, and the climate that stock
+    and that star give (plus climate_offset, the world-builder's shift)."""
+    check_star(p)
+    f0 = star_forcing(p, 0.0) + ghg_forcing(p, 0.0)
+    c = balance_co2(p, f0)
+    return c, co2_term(p, c) + f0 + p.climate_offset
+
+
 STAR_ICEHOUSE_SL = -20.0  # m: an icehouse holds at least this much sea level as land ice (tools/ice_criteria's)
 
 
@@ -78,11 +285,11 @@ def star_control(sim) -> float:
     iced = 1.0 if sim.sea_ice <= STAR_ICEHOUSE_SL else 0.0
     if sim.ice_share is None:  # (the run's start: the middle of the band, so nothing acts on an empty memory)
         sim.ice_share = 0.5 * (p.star_ice_lo + p.star_ice_hi)
-    sim.ice_share += (1 - np.exp(-sim.dt / p.star_window)) * (iced - sim.ice_share)
+    sim.ice_share += (1 - np.exp(-sim.dt_now / p.star_window)) * (iced - sim.ice_share)
     if sim.t >= p.star_control_from:
         off = min(sim.ice_share - p.star_ice_lo, 0.0) + max(sim.ice_share - p.star_ice_hi, 0.0)
         bound = p.co2_sensitivity / (5.35 * np.log(2.0)) * WPM2_PER_LUM * p.star_control_max
-        sim.star_ctl = float(np.clip(sim.star_ctl + p.star_gain * off * sim.dt, -bound, bound))
+        sim.star_ctl = float(np.clip(sim.star_ctl + p.star_gain * off * sim.dt_now, -bound, bound))
     return sim.star_ctl
 
 
@@ -94,43 +301,69 @@ def target_fraction(p, t: float) -> float:
         -t / p.continental_growth)
 
 
+def plant_factor(npp) -> np.ndarray:
+    """Per cell, how many times faster than bare ground its plants make it weather (1 bare, PLANT_WEATHER
+    fully planted at NPP_WEATHER and above; in proportion between)."""
+    return 1.0 + (PLANT_WEATHER - 1.0) * np.clip(np.asarray(npp, float) / NPP_WEATHER, 0.0, 1.0)
+
+
 def weathering(sim, land):
-    """The silicate weathering sink per cell (model units: km of rock per step, times the factors) and
-    its parts, for global_temperature and the diagnostics: (sink, supply, temperature factor, plant
-    factor). The supply is what bare ground lost to erosion (sim.weathered: not under land ice, where
-    glaciers grind their beds fast but the rock flour hardly weathers chemically in the cold, and
-    counting it made a cold era draw down more CO2 the more ice it grew)."""
-    supply = sim.weathered * land
-    # chemical weathering: faster when warm (and so wetter); the weathering thermostat (Walker et al.
-    # 1981): a cold planet weathers slower, CO2 builds up and warms it back (PW-235)
+    """The silicate weathering sink per cell at the balance's CO2 (model units: km of rock per step, times the
+    factors; co2_law gives its CO2 dependence) and its parts, for global_temperature and the diagnostics:
+    (sink, supply, climate factor, plant factor, bare part). "Per step" is per step of dt (the run's step):
+    a finish-window step (Simulation.step_length) counts its erosion at that rate. The supply is what bare ground
+    lost to erosion
+    (sim.weathered: not under land ice, where glaciers grind their beds fast but the rock flour hardly
+    weathers chemically in the cold, and counting it made a cold era draw down more CO2 the more ice it grew).
+    The bare part is the sink of the cell's unplanted ground, which goes as X^WEATHER_CO2_BARE."""
+    supply = sim.weathered * land * (sim.dt / sim.dt_now)  # (per dt step: the references are learnt in those)
+    # chemical weathering: faster when warm and when wet (the weathering thermostat, Walker et al. 1981: a cold
+    # planet weathers slower, CO2 builds up and warms it back, PW-235): the kinetics on the local temperature,
+    # and the cell's own land runoff (WEATHER_RUNOFF; PW-881)
     warm = np.exp(WEATHER_K * (sim.temp - 15.0)) if sim.temp is not None else np.ones_like(supply)
-    # roots and soil CO2 speed it up, in proportion to how much grows there
-    # (GEOCARB's biological weathering factor)
-    plants = 1 + 0.5 * np.clip(sim.npp / 800.0, 0, 1.5)
-    return supply * (warm * plants), supply, warm, plants
+    if sim.runoff is not None:
+        warm = warm * (np.maximum(sim.runoff, 0.0) / RUNOFF_REF) ** WEATHER_RUNOFF
+    # roots and soil CO2 speed it up, in proportion to how much grows there (GEOCARB's f_E, plant_factor)
+    # (on the run's plants grown at the balance's CO2, sim.npp_w: the CO2 acts on the planted ground through
+    # co2_law's FERT, GEOCARB's form of the plants' CO2 response, and counting the NPP's own CO2 response too made
+    # the planted sink's CO2 slope ~55% too steep, PW-880)
+    plants = plant_factor(sim.npp_w)
+    v = (plants - 1.0) / (PLANT_WEATHER - 1.0)
+    return supply * (warm * plants), supply, warm, plants, supply * warm * (1.0 - v)
 
 
-def co2_stock(co2, s, w, dt, steps=4):
-    """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (pCO2, climate.pco2) relative to the reference; s the
-    volcanic source and w the weathering sink, each against its reference. Weathering also grows with CO2
-    itself (~pCO2^WEATHER_CO2: carbonic acid in soils, GEOCARB's f(CO2)), so
-        dX/dt = (s - w X^WEATHER_CO2) / CO2_TAU.
-    Its steady state is X^WEATHER_CO2 = s / w (the old ratio rule: a weathering deficit raises CO2 1 /
-    WEATHER_CO2 times further than the bare ratio). CO2_TAU is far below a step, so X is about there each
-    step, except where the sink is nearly gone (ice over the weathering land): then X grows at s / CO2_TAU, as
-    outgassing piled CO2 up under the Cryogenian ice. Backward Euler substeps (stable at any step); each
-    solves X + c1 X^a = c0 by Newton's method in ln X from above (the function is convex and increasing)."""
-    a, h = WEATHER_CO2, dt / steps
+def co2_stock(co2, s, w, dt, bare=1.0, steps=4):
+    """The CO2 stock over a step (PW-558). co2 is ln X, X the stock (pCO2, climate.pco2) relative to the
+    reference; s the volcanic source and w the weathering sink at X = 1, each against its reference; bare the
+    sink's share on bare ground. Weathering also grows with CO2 itself (carbonic acid; co2_law: X^0.5 on bare
+    ground, saturating under plants, GEOCARB III), so
+        dX/dt = (s - w co2_law(X, bare)) / CO2_TAU.
+    Its steady state is w co2_law(X) = s. CO2_TAU is far below a step, so X is about there each step, except
+    where the sink is nearly gone (ice over the weathering land): then X grows at s / CO2_TAU, as outgassing
+    piled CO2 up under the Cryogenian ice. Backward Euler substeps (stable at any step); each solves
+    X + c1 co2_law(X) = c0 by Newton's method in ln X, kept inside a bracket (the function increases)."""
+    h = dt / steps
     x = float(np.exp(co2))
     for _ in range(steps):
         c1, c0 = h * w / CO2_TAU, x + h * s / CO2_TAU
-        u = np.log(c0)
-        for _ in range(40):
-            eu, eau = np.exp(u), c1 * np.exp(a * u)
-            du = (eu + eau - c0) / (eu + a * eau)
-            u -= du
-            if abs(du) < 1e-10:
+        hi = np.log(c0)  # (F(hi) >= 0: co2_law >= 0)
+        lo = hi - 80.0
+        u = hi
+        for _ in range(100):
+            eu = np.exp(u)
+            fu = eu + c1 * co2_law(eu, bare) - c0
+            if fu > 0.0:
+                hi = u
+            else:
+                lo = u
+            du = fu / (eu + c1 * co2_law(eu, bare) * co2_slope(eu, bare))
+            un = u - du
+            if not lo < un < hi:
+                un = 0.5 * (lo + hi)
+            if abs(un - u) < 1e-12:
+                u = un
                 break
+            u = un
         x = float(np.exp(u))
     return float(np.log(x))
 
@@ -141,16 +374,41 @@ def co2_term(p, co2):
     doubling warmer), levelling off smoothly toward +-CO2_MAX e-folds (CO2's forcing is ~logarithmic up to ~0.1 bar
     and grows less beyond)."""
     c = co2 + np.log(climate.PCO2_BALANCE / climate.PCO2_REF)  # e-folds above the climate's dT = 0 (PW-559 B)
-    return p.co2_sensitivity / np.log(2.0) * CO2_MAX * float(np.tanh(c / CO2_MAX))
+    g = p.co2_sensitivity / np.log(2.0)
+    if c <= 0.0:
+        return g * CO2_MAX * float(np.tanh(c / CO2_MAX))
+    # (above the reference: exactly logarithmic up to ~0.1 bar, then levelling off over the next decade toward the
+    # maximum greenhouse; a tanh over all of it, as before v1-finish-14, already withheld 8% of the forcing at
+    # 20x and 18% at 150x, the faint young Sun's CO2)
+    if c <= CO2_LOG:
+        return g * c
+    return g * (CO2_LOG + CO2_SAT * float(np.tanh((c - CO2_LOG) / CO2_SAT)))
 
 
-def global_temperature(sim, growth, newc, rng):
+PLUME_CO2 = 3.3  # CO2 per km3 of plume melt (plume heads, their vents and aprons: volcanism.hotspots, before the
+# height caps, which decide where lava piles, not how much melt degasses) against the ridges' per km3 of new ocean
+# crust (PW-875). Ridges: ~2.2e12 mol C/yr (Marty & Tolstikhin 1998) over ~21 km3/yr of crust (Crisp 1984), ~1e11
+# mol/km3, ~0.15 wt% CO2. Plume and flood-basalt melts: ~0.5 wt% (Self et al. 2006's Deccan figure; Black &
+# Gibson 2019: plume melts carry recycled carbon, richer than MORB). 0.5 / 0.15. Not counted: the sediments a
+# LIP's sills bake (Svensen et al. 2004, Siberia), which the model has no carbon-bearing basin rock for.
+
+
+def ghg_icefree(sim, ice_frac: float, ice_ref: float) -> float:
+    """The ice-free land against Earth's (its ice, earth_ice), for ghg_conc: (land - ice) / (land - Earth's ice),
+    planet shares."""
+    land = float((sim.land() * ocean_area(sim.grid)).sum() / ocean_area(sim.grid).sum())
+    return max(land - ice_frac, 0.0) / max(land - ice_ref, 1e-6)
+
+
+def global_temperature(sim, growth, newc, rng, plume=None):
     """The planet's mean temperature, as an offset dT from today's Earth.
     Four things move it, slowly (tens of Myr):
       drift      a random walk that keeps returning toward 0 (all the
-                 carbon-cycle and ocean details this model doesn't have)
-      CO2        a stock (co2_stock): volcanism at ridges and arcs adds
-                 it (warming); fresh rock weathering in warm, wet mountains
+                 carbon-cycle and ocean details this model doesn't have),
+                 on the carbon source (PW-819: drift_source), so a warm
+                 era carries high CO2, as Earth's did, not low
+      CO2        a stock (co2_stock): volcanism at ridges, arcs and plumes
+                 (PW-875) adds it (warming); fresh rock weathering in warm, wet mountains
                  removes it (cooling, e.g. the Himalaya since 40 Ma). Each
                  is measured against the planet's own balance once its
                  start has settled (REF_FREEZE), so lasting changes keep
@@ -168,25 +426,50 @@ def global_temperature(sim, growth, newc, rng):
     flux: at L6 it climbed ~1.4 -> ~2.5-3.3 over 300-1000 Myr, at L7 it
     stayed ~1.1-1.8, and the CO2 it added made L6 ~1 C warmer than L7,
     PW-741); newc: number of new ocean-floor cells this step."""
-    p, dt = sim.params, sim.dt
+    p, dt = sim.params, sim.dt_now
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
     land = sim.land()
-    source = newc / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2
-    sink = float(weathering(sim, land)[0].sum()) / sim.scale**2
+    noise = drift_source(p, sim.drift)
+    # (plume: km/Myr of plume melt per cell; as new ocean floor's cells of OCEAN_KM crust per step, times its yield)
+    # (the source and the sink are counted per step of dt, the run's step, which the references are learnt in;
+    # a finish-window step's per-step amounts are scaled to that: Simulation.step_length)
+    melt = float(plume.sum()) * sim.dt / OCEAN_KM if plume is not None else 0.0
+    sim.plume_src = PLUME_CO2 * melt / sim.scale**2
+    source = (newc * (sim.dt / dt) / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2 + sim.plume_src) * noise
+    sink_cells, supply, warm, _, bare_cells = weathering(sim, land)
+    sink = float(sink_cells.sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
         now = np.array([max(source, 1e-6), sink])
         sim.rates = now
-        if sim.refs is None:
-            sim.refs = now.copy()
         # The references: the planet's own balance of outgassing against weathering, followed while the made-up
         # start settles and then kept for the rest of the run (PW-558, PW-559 B). Kept, they let a long cold era's
         # weathering deficit go on piling up CO2 (and a long surplus go on drawing it down), as a real carbon
         # stock does, where baselines that relearned took both up within a few hundred Myr (PW-576).
+        # The sink's reference is anchored where the star is, at the run's end (GEOCARB's frame, coordinator
+        # ruling v1-finish-11): the planet's weatherability with land plants, at the balance climate. So
+        #  - its plants are the potential vegetation of the spin-up's climate with every group there, at the
+        #    balance's CO2 (sim.npp_pot, update_vegetation), not the spin-up's own (bare before ~470 Ma), and
+        #    bare early land weathers slower than the balance, holding more CO2, until the plants come;
+        #  - its climate is the balance's (PW-809): the sink taken back to the balance's dT (co2_term(0), plus
+        #    climate_offset, the world-builder's shift) through the weathering's temperature law, each cell by
+        #    its own temperature's response to dT (temp_response), and the runoff's, so a cold spin-up under the
+        #    faint young star is not learnt as the planet's balance either.
         if sim.t < REF_FREEZE:
+            # (the source's reference without its drift: the wander is not learnt as the balance either)
+            shift = co2_term(p, 0.0) + p.climate_offset - sim.dT  # C of dT from here to the balance climate
+            resp = WEATHER_K * temp_response(sim.grid) + RUNOFF_PER_C
+            pot = plant_factor(sim.npp_pot if sim.npp_pot is not None else sim.npp)
+            at_bal = float((supply * warm * pot * np.exp(resp * shift)).sum()) / sim.scale**2
+            learn = np.array([now[0] / noise, max(at_bal, 1e-12)])
+            if sim.refs is None:
+                sim.refs = learn
             b = 1 - np.exp(-dt / min(REF_MYR, 10.0 + sim.t))
-            sim.refs = sim.refs + b * (now - sim.refs)
-        sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / sim.refs[1], dt)
+            sim.refs = sim.refs + b * (learn - sim.refs)
+        elif sim.refs is None:
+            sim.refs = now.copy()
+        sim.co2 = co2_stock(sim.co2, now[0] / sim.refs[0], now[1] / sim.refs[1], dt,
+                            bare=float(bare_cells.sum()) / max(float(sink_cells.sum()), 1e-300))
     # Sea level also follows the ocean basins: young sea floor is hot and
     # shallow, so when ridges are long and fast the water has less room
     # and floods the continents (the Cretaceous, ~200 m higher than now).
@@ -217,27 +500,37 @@ def global_temperature(sim, growth, newc, rng):
     # on the continents (one reason the young Earth was mostly sea).
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
     sim.sea_level = sim.sea_ice + sim.sea_tect
-    ice_frac = (sim.ice > 0).mean()
+    w = ocean_area(sim.grid)
+    ice_frac = float(((sim.ice > 0) * w).sum() / w.sum())  # (area-weighted: cells differ by up to ~9%)
+    ice_ref = earth_ice(sim.grid.level)
     # (the ice's whiteness levels off: a sheet spreading over more land shades its own cold surroundings,
     # cloudier and dimmer at high latitude, and the snow it would brighten is often white already)
     def albedo(f):
         return p.ice_albedo_max * np.tanh(p.ice_albedo * f / 0.03 / max(p.ice_albedo_max, 1e-9))
 
-    # (measured from Earth's today, ~3% of the surface: the climate model's dT = 0 is Earth's climate with
+    # (measured from the model's own Earth ice, earth_ice: the climate model's dT = 0 is Earth's climate with
     # its ice; before PW-190 any ice cooled from an ice-free planet's, ~1.4 C too cold with Earth's ice)
-    target = (sim.drift + co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(EARTH_ICE)) + star_forcing(p, sim.t)
-              + star_control(sim))
+    target = (co2_term(p, sim.co2) - (albedo(ice_frac) - albedo(ice_ref)) + star_forcing(p, sim.t)
+              + ghg_forcing(p, sim.t, sim.dT, ghg_icefree(sim, ice_frac, ice_ref)) + star_control(sim))
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
         sim.diag.temperature(sim, source, sink, ice_frac, co2_term(p, sim.co2),
-                             -(albedo(ice_frac) - albedo(EARTH_ICE)), target + p.climate_offset)
+                             -(albedo(ice_frac) - albedo(ice_ref)), target + p.climate_offset)
     sim.dT += (1 - np.exp(-dt / 5.0)) * (target + p.climate_offset - sim.dT)
 
 
 def climate_due(sim) -> bool:
     """The climate is updated on the first step and then at every multiple of
-    climate_every Myr, so keyframes on those multiples show current climate."""
+    climate_every Myr, so keyframes on those multiples show current climate; in the finish window
+    (Simulation.step_length) at every step."""
+    if sim.in_finish_window():
+        return True
     k = sim.params.climate_every
     return sim.precip is None or (sim.t + 1e-9) // k > (sim.climate_t + 1e-9) // k
+
+
+def climate_interval(sim) -> float:
+    """Myr between this climate update and the last: climate_every, or the finish window's step."""
+    return sim.dt_now if sim.in_finish_window() else sim.params.climate_every
 
 
 def update_climate(sim, e):
@@ -275,6 +568,7 @@ def update_climate(sim, e):
     sim.koppen = climate.koppen(e, sim.temp, sim.t_warm, sim.t_cold, sim.precip, sim.p_jul,
                                 sim.p_jan, g.lat, sim.ice)
     sim.cloud_jul, sim.cloud_jan = c["cloud_jul"], c["cloud_jan"]
+    sim.shade_jul, sim.shade_jan = c["shade_jul"], c["shade_jan"]  # (the light's cloud: climate.shade)
     update_vegetation(sim, e)
     sim.ice_sink = ice_load(g, sim.ice)
     sim.climate_t = sim.t
@@ -283,42 +577,61 @@ def update_climate(sim, e):
 def veg_feedback(sim):
     """The vegetation's feedbacks on the climate (climate.compute's veg),
     from the last update's vegetation (one climate step behind): bare land
-    before land plants, an Earth-like average on the first update."""
-    if sim.t < sim.params.plants_from - 1e-9:
+    before land plants (vegetation.land_plants: the pioneers' arrival), an Earth-like average on the first
+    update."""
+    if not vegetation.land_plants(sim.flora, sim.t):
         return vegetation.bare(sim.grid.n)
     if sim.veg_frac is None:
         return None
     return vegetation.feedback(sim.veg_frac, sim.veg_lai)
 
 
-FLORA_END = 1000.0  # Myr: the plant groups' timeline when the run's end isn't known (params.flora_end = 0)
-
-
 def update_vegetation(sim, e):
     """The vegetation in equilibrium with the climate just computed
     (vegetation.model, the cheap variant: warm-started from the last
     update), and the plant groups that appear (vegetation.flora_update,
-    on the niches measured at the last update). Sets veg (ground cover,
-    which slows erosion), npp (which speeds weathering), veg_frac,
-    veg_lai, veg_type, tree_cover, flora and veg_niche."""
+    on the niches measured at the last update, on Earth's calendar counted
+    back from the run's end: vegetation.group_windows). Sets veg (ground
+    cover, which slows erosion), npp, npp_w (the same plants at the balance's
+    CO2, which speed weathering: PW-880), veg_frac,
+    veg_lai, veg_type, tree_cover, flora and veg_niche. Before the land
+    pioneers arrive the land is bare. During the spin-up it also sets
+    npp_pot, the potential vegetation (every group, the balance's CO2) the
+    weathering reference is learnt with (global_temperature)."""
     p, g = sim.params, sim.grid
     n = g.n
-    if sim.t < p.plants_from - 1e-9:
-        sim.veg, sim.npp, sim.tree_cover = np.zeros(n), np.zeros(n), np.zeros(n)
-        sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
-        return
-    end = p.flora_end if p.flora_end > 0 else FLORA_END
     rng = np.random.default_rng([sim.seed, sim.step_no, 11])
-    sim.flora = vegetation.flora_update(sim.flora, sim.t, p.climate_every, p.plants_from, end, sim.veg_niche, rng)
+    sim.flora = vegetation.flora_update(sim.flora, sim.t, climate_interval(sim), now_myr(p), sim.veg_niche, rng)
     land = e > 0
     ice = np.where(land, sim.ice, 0.0)
     kind = np.where(land, sim.lake_kind, 0)
     lake = np.isin(kind, (hydrology.OPEN_LAKE, hydrology.CLOSED_LAKE))
-    v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.cloud_jul,
-                         sim.cloud_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
+    if sim.t < REF_FREEZE:  # the weathering reference's plants (global_temperature): every group, the balance's CO2
+        pv = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                              sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.pot_frac, lai0=sim.pot_lai,
+                              pco2=climate.PCO2_BALANCE, cheap=True, crown=False)
+        sim.npp_pot = pv["sm"]["npp"]
+        sim.pot_frac, sim.pot_lai = pv["eq"]["nu"].astype(np.float32), pv["pot"]["lai"].astype(np.float32)
+    else:
+        sim.npp_pot = sim.pot_frac = sim.pot_lai = None
+    if not vegetation.land_plants(sim.flora, sim.t):
+        sim.veg, sim.npp, sim.tree_cover, sim.npp_w = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
+        sim.veg_type = np.where(e > 0, vegetation.T["barren desert (sand or stone)"], 0).astype(np.uint8)
+        sim.veg_niche = vegetation.bare_niches()
+        return
+    v = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                         sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.veg_frac, lai0=sim.veg_lai,
                          pco2=climate.pco2(sim.co2), unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
-                         locked_potential=True, crown=False)  # (crown fire, PW-347: not yet in runs)
+                         locked_potential=True, crown=False,  # (crown fire, PW-347: not yet in runs)
+                         sky=(sim.cloud_jul, sim.cloud_jan))
     sim.veg_niche = vegetation.niches(v)
+    # the same plants at the balance's CO2, for the weathering sink (PW-880; warm-started from its own last update)
+    vw = vegetation.model(g, e, sim.temp, sim.t_warm, sim.t_cold, sim.p_jul, sim.p_jan, p.tilt, sim.shade_jul,
+                          sim.shade_jan, sim.flow, kind, lake, ice, nu0=sim.wv_frac, lai0=sim.wv_lai,
+                          pco2=climate.PCO2_BALANCE, unlocked=vegetation.unlocked_at(sim.flora, sim.t), cheap=True,
+                          locked_potential=True, crown=False)
+    sim.npp_w = vw["sm"]["npp"]
+    sim.wv_frac, sim.wv_lai = vw["eq"]["nu"].astype(np.float32), vw["pot"]["lai"].astype(np.float32)
     sim.veg_frac = v["eq"]["nu"].astype(np.float32)
     sim.veg_lai = v["pot"]["lai"].astype(np.float32)
     sim.veg = vegetation.ground_cover(v)
@@ -682,7 +995,7 @@ def erode(sim, col):
     """Weather, ice, rivers, erosion, sediment transport (surface.erode) on
     the crust column col, in place. Returns (deposited km, lake class) per
     cell for sediments()."""
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     t, cover, x, cont, rock = col.t, col.cover, col.x, col.cont, col.rock
     # Glaciers grind their beds hard where they slide on meltwater (the
     # 'glacial buzzsaw' that keeps ranges from growing much above the
@@ -736,7 +1049,7 @@ def sediments(sim, col, dep, lake):
                  shallow hot seas next to desert (the Persian Gulf)
       coal       warm, wet, low-lying swamps full of plants, if plants
                  exist (none before land plants ~450 Ma on Earth)"""
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     x, cover = col.x, col.cover
     e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x))
     land = e > 0
@@ -769,6 +1082,21 @@ def bury(sim, col):
     col.cover = col.cover - cooked
 
 
+REEF_BUILDERS_MA = (545.0, 520.0)  # Ma before now: skeletal reef builders (archaeocyaths, then corals,
+# stromatoporoids) arrive within this window, per seed (Cambrian; Wood 1999; Kiessling 2009), on Earth's calendar
+# counted back from the run's end like the plant groups (PW-807)
+MICROBIAL_REEF = 0.1  # before them: microbial carbonate (stromatolites, thrombolites) builds up at this share of
+# reef_rate (Shark Bay's stromatolites accrete ~0.3-0.5 mm/yr, against a few mm/yr for Holocene coral reefs:
+# Montaggioni 2005). Crude: it only sets how readily a pre-Cambrian sea's carbonate keeps up with subsidence
+
+
+def reef_builders_t(sim) -> float:
+    """Run time (Myr) from which skeletal reef builders exist: a per-seed draw in REEF_BUILDERS_MA before now."""
+    u = np.random.default_rng([sim.seed, 13]).random()
+    ma = REEF_BUILDERS_MA[0] + u * (REEF_BUILDERS_MA[1] - REEF_BUILDERS_MA[0])
+    return now_myr(sim.params) - ma
+
+
 def reefs(sim, col, dep, chem):
     """Reefs: in warm, clear, shallow sea, corals and other carbonate
     makers build up to just below sea level, fast enough to outpace any
@@ -777,15 +1105,18 @@ def reefs(sim, col, dep, chem):
     drowns into a flat-topped seamount (the Darwin point, ~30 deg).
     Muddy water from big rivers stops them (no reefs off the Amazon).
     The chemical sediments (chem: km of evaporite and of coal) join the
-    crust here too. All go on top of the strata."""
-    p, dt = sim.params, sim.dt
+    crust here too. All go on top of the strata. Before skeletal reef
+    builders exist (reef_builders_t), microbial carbonate builds up at
+    MICROBIAL_REEF of the rate."""
+    p, dt = sim.params, sim.dt_now
     evap, coal = chem
     chem = evap + coal
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
     e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
     reef = (e < -5) & (e > -1500) & (sim.temp >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
-    grow = np.minimum(p.reef_rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
+    rate = p.reef_rate * (1.0 if sim.t >= reef_builders_t(sim) - 1e-9 else MICROBIAL_REEF)
+    grow = np.minimum(rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
     carb = grow / sediment_iso(cont, rock, sed)
     col.t, col.cover = col.t + carb, col.cover + carb
     col.x[:, CARB] += carb

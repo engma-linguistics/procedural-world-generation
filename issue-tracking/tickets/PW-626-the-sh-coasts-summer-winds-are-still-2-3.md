@@ -3,7 +3,7 @@ id: PW-626
 title: "The SH coasts' summer winds are still 2-3.5 m/s after PW-596 (Patagonia 3.4, Tasman 3.2, Agulhas 2.0): front_shift over the too-warm boundary currents and the sea's big-continent summer swing, so PW-593's summer layer still fails"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: m

@@ -30,6 +30,10 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - standing · Outputs · old runs/worlds/zooms freely deletable; `tools/cleanup_outputs.py` is fine for the coordinator · PW-202
 
 ## Ice ages, climate, star
+- 2026-10-26: v1 finished world = latest habitable moment within the last 10 Myr (PW-866); judged there, flagged if none passes.
+- 2026-10-26 · Backlog workgroups (owner) · 19 workgroups as in the backlog doc; base climate (PW-570) on the physics lane early in v2; other planet kinds v3; phone viewing out of v2/v3 (PC only); progress bars added (PW-914) · PW-900
+- 2026-10-26 · Run length (owner) · v1 is judged on 1 Gyr runs; 2 Gyr runs are a post-v1 stretch goal and, when they return, are judged on their last 1 Gyr only (early snowball-era ice allowed) · PW-894, PW-895
+- 2026-10-25 · Non-CO2 greenhouse gases first (owner) · PW-859 goes to the top of the physics queue; the faint-young-Sun icebox is fixed by planet-side greenhouse (CO2 response, methane), not by bending the star curve · PW-859
 - 2026-10-25 · Plume degassing (coordinator) · plumes and LIPs outgas CO2, sized from the literature · PW-875
 - 2026-10-25 · Finish moment (owner) · taking the finished world at a human-habitable moment near the run end is choosing the right moment, not a kludge (Earth passes the finish checks only in its last few Myr); window set from measurement; approved plan: last ~10 Myr at a ~0.5 Myr climate step, pick the best candidate · PW-866
 - 2026-10-25 · Carbon source (coordinator) · the climate drift stands only for what the model lacks (burial, ocean chemistry), sized from the literature, with outgassing no longer counted twice; check a C3-limit weathering floor (Pagani 2009) · draft on v1-finish-12
@@ -61,6 +65,9 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-10-16 · Nice-to-have, not v1 · river-through-time · PW-416
 
 ## Peoples, culture, culinary
+- 2026-10-26 (PW-888 targets): test on 6 planets; every people needs a livable range (~300+ L7 cells; 100 too low) on ~70% of rolls; hybrids present where parents meet; no planet-wide dominant people assumed (e.g. never plan on 50%+ humans); regional and per-civ dominant peoples are expected and wanted; a planet-wide dominance lever comes later (PW-916); hard fail if a main people is a remnant (<~100 cells) at history start.
+- 2026-10-26 · Civilizations round 2 (owner) · peoples ranges follow the ice-age climate; mixing preset realistic by default; tech uneven between civs with distance-based catch-up and pockets that refuse it; grudges fade with mixing plus a stubbornness axis; refactor the peoples code first and again at epic closures; gods as a light placeholder layer in v2; a backlog reorganization into v2 workgroups next · PW-900..913
+- 2026-10-26 · Civilizations design (owner) · cultures/settlements/polities built in steps; history zoom from a per-region farming onset at 25-yr steps; emergent first, anchors later (may be credited to gods); plague on every world, other templates at sim rates; attitudes = history + temperament, xenophobia by culture and species; tech stops ~mid-1400s by default with a visible tech tree; named individuals/writing/industry v3+. Open questions in the doc round 2 · PW-856
 - 2026-10-25 · Origins and crowding (owner) · most species must not evolve on one small landmass (origins by habitable area, species-area); crowding raises the drive to explore; conflict and warfare go to the civilizations epic · PW-888, PW-887, PW-856
 - 2026-10-25 · Contact fronts (coordinator) · a denser people takes a thinner one's cells along the contact line (modern-human vs Neanderthal replacement) · PW-887
 - 2026-10-25 · Frontier invasion built (coordinator) · INVADE 0.5, floor 0.3, crowding x(1+2 crowd) on sea crossings; accepted although the PW-885 8k line is unmet: the small continent holds only ~4k suitable cells, so the niche, not exclusion, is the limit now. Hobgoblin thinning re-measured after PW-888 changes origins · PW-887, PW-885

@@ -189,54 +189,38 @@ def test_most_varied(world4):
     assert len(v) == 1 and v[0]["stats"]["koppen_classes"] >= 2 and v[0]["size_km"] == 1000
 
 
-def test_representative_time():
-    # a run that alternates dispersed (many small landmasses) and assembled
-    # (one big one) eras after 300 Myr: the pick is a typical in-between frame
-    def fr(t, land, big, n):
-        return {"t": t, "stats": {"land_pct": land, "largest_landmass_pct": big, "landmasses": n}}
-    frames = [fr(t, 5, 1, 200) for t in range(0, 300, 20)]  # start-up: ignored
-    frames += [fr(300, 30, 5, 60), fr(320, 30, 28, 3), fr(340, 30, 14, 20), fr(360, 30, 15, 22),
-               fr(380, 30, 16, 19), fr(400, 30, 6, 55), fr(420, 31, 27, 4)]
-    assert H.representative_time(frames) in (340, 360, 380)
-    # a short run: the last two thirds
-    assert H.representative_time(frames[:6]) >= 100 / 3
+def test_finish_moment_is_the_latest_habitable_candidate():
+    # PW-866 (owner): the finished world is the latest human-habitable keyframe of the finish window (the
+    # finish checks: true mean -6..+3 C of 13.8, land ice 1-25% of land, wet-tropics trees >= 20%), else the end,
+    # flagged
+    def fr(t, temp=14.0, ice=8.0, wet=40.0):
+        return {"t": t, "stats": {"true_temp_c": temp, "iced_land_pct": ice, "wet_eq_trees_pct": wet}}
+    frames = [fr(t) for t in range(0, 992, 4)] + [fr(990 + 0.5 * k) for k in range(1, 21)]
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 1000 and fm["passes"] and fm["before_end_myr"] == 0 and fm["candidates"] == 20
+    meta = {"params": {"finish_window": 10.0}}
+    assert H.representative_time(frames, meta) == 1000
+    frames[-1]["stats"]["true_temp_c"] = 19.0  # a hot end
+    frames[-2]["stats"]["iced_land_pct"] = 0.0  # no ice
+    frames[-3]["stats"]["wet_eq_trees_pct"] = 5.0  # bare tropics
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 998.5 and fm["before_end_myr"] == 1.5 and fm["fails_at_end"] == ["temperature"]
+    assert "1.5 Myr before the run's end" in H.representative_note(frames, 998.5, meta)
+    assert H.representative_time(frames, {**meta, "finish_moment": fm}) == 998.5
+    for f in frames[-20:]:
+        f["stats"]["true_temp_c"] = 30.0
+    fm = H.finish_moment(frames, 10.0)
+    assert fm["t"] == 1000 and not fm["passes"] and "NO human-habitable moment" in fm["why"]
+    assert H.finish_moment(frames[:-20] + [fr(992)], 10.0)["t"] == 992  # (a candidate before the window's 990)
 
-
-def test_representative_time_sea_level():
-    # identical geography every frame except sea level; the run's own typical level is -200 m
-    # (planet-relative, not Earth's), so the -380 m trough and +100 m peak lose to a frame near -200
-    def fr(t, sl):
-        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": 15, "landmasses": 20, "sea_level_m": sl}}
-    frames = [fr(t, -200 + (t % 3 - 1) * 10) for t in range(0, 300, 20)]
-    frames += [fr(300, -380), fr(320, -205), fr(340, 100), fr(360, -195), fr(380, -210), fr(400, -380)]
-    t = H.representative_time(frames)
-    assert t in (320, 360, 380) and H.representative_time(frames) == t  # deterministic
-    assert "NOTE" not in H.representative_note(frames, t)
-    # nothing near the median in sea level is a nudge, not a veto: a frame is still returned and flagged
-    assert "NOTE" in H.representative_note(frames, 300)
-    # old runs without sea_level_m still work
-    for f in frames:
-        del f["stats"]["sea_level_m"]
-    assert H.representative_time(frames) >= 300 and H.representative_note(frames, 320) == ""
-
-
-def test_representative_time_waits_for_full_flora():
-    # PW-634: the most typical frame (360) predates the grasses; with the run's plant groups the pick
-    # is the most typical frame once the last group has appeared, so the world has every plant type
-    from planet import vegetation as V
-
-    def fr(t, big):
-        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": big, "landmasses": 20}}
-    frames = [fr(t, 15) for t in range(0, 300, 20)]
-    frames += [fr(300, 5), fr(320, 10), fr(340, 14), fr(360, 15), fr(380, 25), fr(400, 18), fr(420, 28)]
-    assert H.representative_time(frames) == 360
-    groups = [{"t": 2.0}, {"t": 40.0}, {"t": 150.0}, {"t": 330.0}, {"t": 370.0}, {"t": 395.0}]
-    t = H.representative_time(frames, plant_groups=groups)
-    assert t == 400 and V.unlocked_at([g["t"] for g in groups], t).all()
-    # a group that never appeared is ignored; full flora only after the last frame: the last frame
-    assert H.representative_time(frames, plant_groups=[{"t": 2.0}, {"t": None}]) == 360
-    assert H.representative_time(frames, plant_groups=[{"t": 2.0}, {"t": 900.0}]) == 420
-    assert H.flora_complete_myr(None) is None and H.flora_complete_myr([1.0, None, 7.0]) == 7.0
+def test_ago_time():
+    # --ago: Ma before now, now being the run's end less star_now_offset_myr
+    frames = [{"t": t, "stats": {}} for t in range(0, 1004, 4)]
+    meta = {"params": {"run_end": 1000.0}}
+    assert H.ago_time(frames, meta, 70) == 930.0
+    assert H.ago_time(frames, {"params": {"run_end": 1000.0, "star_now_offset_myr": 100.0}}, 70) == 830.0
+    with pytest.raises(ValueError):
+        H.ago_time(frames, meta, 1200)
 
 
 def test_cli_at_auto():
@@ -524,23 +508,3 @@ def test_carbonate_bank_and_barrier_reef(gen4):
     assert [f for f in feats if f["kind"] == "coral_coast"]
 
 
-def test_representative_time_interglacial_in_icehouse():
-    # PW-700: the most typical frame (360) is deep in an icehouse era (320-400, with a 4 Myr ice-free flicker
-    # joined in); the pick moves to a warm moment of that era (least ice), the most typical among those
-    def fr(t, big, si):
-        return {"t": t, "stats": {"land_pct": 30, "largest_landmass_pct": big, "landmasses": 20, "sea_ice_m": si}}
-    frames = [fr(t, 15, 0.0) for t in range(0, 300, 20)]
-    era = {320: -60.0, 328: -90.0, 336: -120.0, 340: -10.0, 344: -150.0, 352: -40.0, 360: -200.0, 368: -35.0,
-           376: -180.0, 384: -45.0, 392: -100.0}
-    frames += [fr(300, 5, 0.0), fr(308, 6, 0.0)]
-    frames += [fr(t, 15 + (t - 360) / 10, si) for t, si in era.items()]
-    frames += [fr(410, 25, 0.0), fr(420, 28, 0.0), fr(430, 30, 0.0), fr(440, 32, 0.0)]
-    bare = [{"t": f["t"], "stats": {k: v for k, v in f["stats"].items() if k != "sea_ice_m"}} for f in frames]
-    assert H.representative_time(bare) == 360  # (the geography alone: mid-era, 200 m of ice)
-    t = H.representative_time(frames)
-    warm = sorted(era, key=lambda k: -era[k])[:3]  # the era's least-ice quarter: 340, 368, 352
-    assert t in warm and t == 352, t  # (the most typical of the three; 340, the warmest, is the least)
-    # outside an icehouse the pick is unchanged; without sea_ice_m too
-    for f in frames:
-        f["stats"]["sea_ice_m"] = 0.0
-    assert H.representative_time(frames) == 360

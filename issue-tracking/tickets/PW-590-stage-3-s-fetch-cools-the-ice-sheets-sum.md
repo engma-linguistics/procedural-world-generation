@@ -3,7 +3,7 @@ id: PW-590
 title: "Stage 3's fetch cools the ice sheets' summer air: Greenland ice warmest month -4.2 -> -6.6 C, Antarctic plateau +2.1 -> -0.4"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: s

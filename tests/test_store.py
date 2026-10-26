@@ -161,11 +161,11 @@ def test_checkpoint_resume_bit_identical(sim4_60):
     """Restoring the state saved at t and running on to t' gives exactly the
     straight run's state at t' (all arrays, events, budget, scalars)."""
     states = {}
-    sim = Simulation(sim4_60.grid, 1, Params(flora_end=60.0), 2.0)
+    sim = Simulation(sim4_60.grid, 1, Params(run_end=60.0), 2.0)
     sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (20, 40) else None)
     assert sim_digest(sim) == sim_digest(sim4_60)
     for t, st in states.items():
-        r = Simulation.from_state(sim.grid, 1, Params(flora_end=60.0), 2.0, st)
+        r = Simulation.from_state(sim.grid, 1, Params(run_end=60.0), 2.0, st)
         assert r.t == t
         r.run(60)
         assert sim_digest(r) == sim_digest(sim4_60), t
@@ -193,7 +193,7 @@ def test_shrunk_checkpoint_resumes_bit_identical(sim4_60):
     (S.shrink_state: most of them); a run resumed from it is still exactly
     the straight run, and the plates' owned crust is untouched (PW-131)."""
     states = {}
-    sim = Simulation(sim4_60.grid, 1, Params(flora_end=60.0), 2.0)
+    sim = Simulation(sim4_60.grid, 1, Params(run_end=60.0), 2.0)
     sim.run(60, lambda s: states.setdefault(s.t, s.state()) if s.t in (10, 30) else None)
     for t, st in states.items():
         pl = st["plates"]
@@ -201,7 +201,7 @@ def test_shrunk_checkpoint_resumes_bit_identical(sim4_60):
         S.shrink_state(st)
         assert all(np.array_equal(a[pl.owned], b) for a, b in zip(pl.crust(), before))
         assert (pl.thick[~pl.owned] == 0).mean() > 0.8  # (most cells are stale copies)
-        r = Simulation.from_state(sim.grid, 1, Params(flora_end=60.0), 2.0, st)
+        r = Simulation.from_state(sim.grid, 1, Params(run_end=60.0), 2.0, st)
         r.run(60)
         assert sim_digest(r) == sim_digest(sim4_60), t
 
@@ -216,10 +216,10 @@ def test_checkpoint_keeps_world_view_records(tmp_path, sim4_60):
     pl, owner = st["plates"], st["owner"]
     cells = np.arange(0, owner.size, 7)
     pl.owned[owner[cells], pl.idx[owner[cells], cells]] = False  # make some of the view's slots unowned
-    live = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, st)
+    live = Simulation.from_state(sim4_60.grid, 1, Params(run_end=60.0), 2.0, st)
     path = tmp_path / "c.ckpt"
     S._write_checkpoint(path, st, sim4_60.grid)
-    back = Simulation.from_state(sim4_60.grid, 1, Params(flora_end=60.0), 2.0, S.read_checkpoint(path, sim4_60.grid))
+    back = Simulation.from_state(sim4_60.grid, 1, Params(run_end=60.0), 2.0, S.read_checkpoint(path, sim4_60.grid))
     assert np.array_equal(back.w_rec, live.w_rec) and np.array_equal(back.w_lith, live.w_lith)
     assert np.array_equal(back.dyn, live.dyn) and np.array_equal(back.w_elev, live.w_elev)
 
@@ -242,13 +242,13 @@ def test_run_layout(data_root):
     assert list(run["layers"]) == list(T.RUN_LAYERS) and not (out / "state").exists()
     for k, spec in run["layers"].items():
         assert (out / spec["file"]).stat().st_size == np.dtype(spec["dtype"]).itemsize * np.prod(spec["shape"]), k
-        assert spec["shape"] == [3, run["meta"]["cells"]]
+        assert spec["shape"] == [len(run["frames"]), run["meta"]["cells"]]
     assert run["layers"]["ice"]["scale"] == 20 and run["layers"]["flow"]["transform"] == "log2p1"
     assert set(run["legend"]) == {"rocks", "koppen", "biomes", "landforms", "vegetation", "coastal_life", "soils", "human_use", "game", "resources", "coast"}
     run2, arr = T.load_frames(out, ("plate", "downstream"))
     sim = run_sim(myr=8)
-    assert np.array_equal(T.frame(run2, arr, "plate", 2), sim.snapshot().plate)
-    assert np.array_equal(T.frame(run2, arr, "downstream", 2, sim.grid), sim.snapshot().downstream)
+    assert np.array_equal(T.frame(run2, arr, "plate", len(run2["frames"]) - 1), sim.snapshot().plate)
+    assert np.array_equal(T.frame(run2, arr, "downstream", len(run2["frames"]) - 1, sim.grid), sim.snapshot().downstream)
     assert S.read_header(out / "run.json")["name"] == "t"
     assert S.update_index("run")[0]["id"] == run["id"]
 

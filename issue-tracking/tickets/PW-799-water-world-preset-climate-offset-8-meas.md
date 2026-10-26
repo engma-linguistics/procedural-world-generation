@@ -4,7 +4,7 @@ title: Water-world preset climate_offset +8 (measured at L6, 2/2 pass) needs its
 type: task
 status: blocked
 parent: null
-milestone: v2
+milestone: v3
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: [PW-798]
 relates: [PW-790]
 refs: [planet/make.py, tests/test_make.py, README.md, docs/coordination.md, docs/review/base-climate/v2-climate-1/]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-26
 ---
 
 ## Description
@@ -34,5 +34,6 @@ Options:
 Lean: B, under the no-temporary-fixes rule. Take A only if B is far off.
 
 ## Updates
+- 2026-10-26: Milestone v2 -> v3: other planet kind. (PW-900 backlog reorg).
 - 2026-10-24: Status needs-decision -> blocked. Held behind PW-798; drop if the reference fix lets the water world run at offset ~0.
 - 2026-10-24: Created from inbox draft draft-water-world-offset-l7-check.md (found by v2-climate-1).

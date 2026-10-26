@@ -3,7 +3,7 @@ id: PW-583
 title: "After PW-582's three attempts the Barents still freezes (-13.3 C): the inflow now reaches and sinks there (1.4 Sv) but arrives at -0.5 to +1.5 C, against ~4-6 C observed; Iceland -11.6 against the -7.8 bar"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: l

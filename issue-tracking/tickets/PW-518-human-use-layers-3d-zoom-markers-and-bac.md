@@ -3,7 +3,7 @@ id: PW-518
 title: "Human-use layers: 3D zoom markers, and backfill the stored worlds and zooms that predate them"
 type: task
 status: todo
-parent: PW-099
+parent: null
 milestone: null
 subsystem: viewer
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-505]
 refs: [viewer/zoom.html, viewer/zoom3d.js, planet/__main__.py]
 created: 2026-10-21
-updated: 2026-10-21
+updated: 2026-10-26
 ---
 
 ## Description
@@ -24,5 +24,6 @@ PW-505 shows the five human-use layers on the globe, the 2D map and the 2D zoom 
 - [ ] humanuse backfill run on the showcase worlds and zooms
 
 ## Updates
+- 2026-10-26: Parent PW-099 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-21: 2026-10-21: coordinator backfilled world 577526, 28442c and showcase/owner zooms (66c45e 0de6eb 21703a 4f65aa b03a2b bf3c88 85ba3f 9a2621 c9d1a9 91486c 7816f3). 3D zoom markers remain.
 - 2026-10-21: Created from inbox draft draft-humanuse-3d-markers-backfill.md (found by pw505).

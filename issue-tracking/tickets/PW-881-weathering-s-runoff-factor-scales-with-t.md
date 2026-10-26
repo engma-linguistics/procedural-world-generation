@@ -32,4 +32,5 @@ Coupling audit finding C3 (severity medium for the Earth-like v1 finish; docs/re
 **What to try:** Use the weathering land's own runoff against the reference, (runoff/runoff_ref)^WEATHER_RUNOFF per cell (GEOCARB's f_R on the model's water balance), learnt with the rest of the reference; size climate_coef from a measured land runoff slope.
 
 ## Updates
+- 2026-10-25: v1-finish-13 (1b52cdf): the runoff factor is each cell's (sim.runoff / 560 mm/yr)^0.65; RUNOFF_PER_C 0.016/C (the model Earth's sum(runoff^0.65), dT -3..+3) for climate_coef and the spin-up shift. Pass rates re-measuring (cpl set).
 - 2026-10-25: Created from inbox draft draft-weathering-runoff-from-global-rain-not-land-runoff.md (found by coupling-audit).

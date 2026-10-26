@@ -3,7 +3,7 @@ id: PW-625
 title: "After New Zealand walls the gyres (PW-594 step 1) the Tasman is still +3.1 C (SST 18.5 vs NCEP air 15.2): the East Australian Current runs ~2 m/s to 38S and its warmth spreads east at 40-47S"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: ocean
 effort: m

@@ -241,22 +241,23 @@ def co2_doublings(pco2: float) -> float:
 # ---------------------------------------------------------------------------
 # Plant groups that appear during a run (decision 3)
 # ---------------------------------------------------------------------------
-# (name, PFTs it unlocks, when it appeared on Earth as a share of the ~470 Myr since land plants)
+# (name, PFTs it unlocks, (earliest, latest) Ma before now it appears in a run: Earth's own calendar counted
+# back from the run's end, PW-807, owner 2026-10-24). The window is the per-seed spread; its latest end is the
+# deadline by which the group exists. A group whose window lies before the run's start is there from the start.
+# Ages: land plants (cryptospores, liverwort-grade pioneers) ~470-500 Ma (Wellman et al. 2003; Morris et al.
+# 2018); vascular plants ~430 Ma (Cooksonia, Silurian); forests ~385 Ma (Archaeopteris, Gilboa: Stein et al.
+# 2007, 2012); flowering plants ~130 Ma, dominant ~100 Ma; grasses ~70 Ma (Prasad et al. 2005, 2011), widespread
+# ~55; C4 grasses ~30 Ma, spreading ~8 Ma (Christin et al. 2008; Edwards et al. 2010). Life in the sea is far
+# older (algae > 1 Ga): what the run ties to sea life, reefs, is in tectonics/earth.py (REEF_BUILDERS_MA).
 GROUPS = [
-    ("pioneers: mosses, lichens, soil crusts", ("Moss", "Sph"), 0.0),
-    ("early vascular marsh plants", ("WetH",), 0.08),
-    ("forests without flowers: spore trees, seed ferns, conifers", ("TeNE", "BoNE", "BoNS"), 0.2),
-    ("flowering trees and shrubs", ("TrBE", "TrBR", "TeBE", "TeBS", "BoBS", "SclS", "XerS", "DecS", "HthS"), 0.73),
-    ("grasses and sedges", ("C3G", "TunH"), 0.85),
-    ("C4 grasses and succulents (CAM)", ("C4G", "Succ"), 0.94),
+    ("pioneers: mosses, lichens, soil crusts", ("Moss", "Sph"), (500.0, 470.0)),
+    ("early vascular marsh plants", ("WetH",), (440.0, 420.0)),
+    ("forests without flowers: spore trees, seed ferns, conifers", ("TeNE", "BoNE", "BoNS"), (395.0, 375.0)),
+    ("flowering trees and shrubs", ("TrBE", "TrBR", "TeBE", "TeBS", "BoBS", "SclS", "XerS", "DecS", "HthS"),
+     (140.0, 120.0)),
+    ("grasses and sedges", ("C3G", "TunH"), (75.0, 60.0)),
+    ("C4 grasses and succulents (CAM)", ("C4G", "Succ"), (35.0, 25.0)),
 ]
-# A world's starting point is presumed to be much earlier in its planet's
-# history than land plants' arrival was in Earth's (PW-636, owner 2026-10-24):
-# Earth's sequence is compressed by this factor into the span, so the full
-# flora (C4 grasses and succulents) appears around two thirds of the way
-# through a run (~0.66 on the stored 1 Gyr runs' draws, was ~0.83) and a
-# showcase moment can be picked from the run's last third, not its last ~15%.
-FLORA_PACE = 0.8
 # Before its group exists, a PFT's niche is filled by the first available
 # PFT on its list, with that PFT's limits widened to cover it and its
 # efficiency reduced (STANDIN_EFF): conifer-like forest in the tropics before
@@ -297,15 +298,24 @@ def standin_map(unlocked: np.ndarray) -> np.ndarray:
     return out
 
 
-def group_windows(plants_from: float, end: float) -> list[tuple[float, float]]:
-    """(earliest, latest) appearance time (Myr) of each group: from 0.6x to
-    1.3x its Earth fraction, times FLORA_PACE, of the span from plants_from
-    to the hard deadline D = end - max(16 Myr, 5% of the span), every group by D."""
-    span = max(end - plants_from, 1e-6)
-    d = end - max(16.0, 0.05 * span)
-    s = max(d - plants_from, 0.0)
-    return [(plants_from + 0.6 * f * s, min(plants_from + 1.3 * f * s, d)) if f > 0 else (plants_from, plants_from)
-            for f in (FLORA_PACE * g[2] for g in GROUPS)]
+def group_windows(now: float) -> list[tuple[float, float]]:
+    """(earliest, latest) appearance time (run Myr) of each group: its GROUPS window in Ma before now, now
+    being the run time that is today (tectonics.earth.now_myr: the run's end). Times before 0 mean the group
+    is there from the run's start (it appears at the first climate update)."""
+    return [(now - g[2][0], now - g[2][1]) for g in GROUPS]
+
+
+def land_plants(times, t: float) -> bool:
+    """Whether land plants (the pioneers, GROUPS[0]) exist at time t, given the groups' appearance times."""
+    t0 = times[0] if len(times) else None
+    return t0 is not None and bool(np.isfinite(t0)) and t0 <= t + 1e-9
+
+
+def bare_niches() -> np.ndarray:
+    """niches() for bare land: all of it is open to the pioneers, nothing to the rest."""
+    out = np.zeros(len(GROUPS))
+    out[0] = 1.0
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1311,9 +1321,12 @@ def biome_of(types, sea_biome) -> np.ndarray:
 def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=None, cloud_jan=None, flow=None,
           lake_kind=None, lake=None, ice=None, nu0=None, lai0=None, pco2: float = CA_REF, unlocked=None,
           cheap: bool = False, steps=None, locked_potential: bool = False, flood_ratio=None, coastal=None,
-          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True) -> dict:
+          soil: dict | None = None, migrate=None, snaps=(), substeps: int = 1, crown: bool = True,
+          sky=None) -> dict:
     """Vegetation in equilibrium with a climate. Inputs are per-cell
-    arrays (climate.compute's names; flood_ratio: the rivers' peak month
+    arrays (climate.compute's names; cloud_jul / cloud_jan: the cloud as the light sees it, compute's
+    shade_jul / shade_jan; sky: (cloud_jul, cloud_jan), the sky's cover, which names the montane cloud
+    forests, default the light's; flood_ratio: the rivers' peak month
     over their mean, hydrology.seasonal_flow); nu0, lai0: (NP, n) warm starts;
     unlocked: (NP,) bool, the PFTs that exist (default all; the rest are
     stood in for, STANDINS). soil: soils.mineral's result (the buckets
@@ -1334,6 +1347,8 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     unlocked = all_unlocked() if unlocked is None else np.asarray(unlocked, bool)
     rel = relief(grid, elev)
     s = site(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, rel)
+    if sky is not None:
+        s["cloud"] = 0.5 * (np.asarray(sky[0], float) + np.asarray(sky[1], float))
     if soil is not None:
         s["cap1"], s["cap2"] = soil["cap1"], soil["cap2"]
     env = envelope(s, pco2) & land[None, :]
@@ -1448,8 +1463,8 @@ def coupled_climate(grid, elev, dT: float = 0.0, tilt: float = 23.4, ice=None, n
     them (world.finish): the climate, a first cheap vegetation on it, then
     the climate again with that vegetation. Returns (climate, feedback)."""
     c = climate.compute(grid, elev, dT, tilt, ice)
-    v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["cloud_jul"],
-              c["cloud_jan"], ice=ice, nu0=nu0, pco2=pco2, unlocked=unlocked, cheap=True)
+    v = model(grid, elev, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"], tilt, c["shade_jul"],
+              c["shade_jan"], ice=ice, nu0=nu0, pco2=pco2, unlocked=unlocked, cheap=True)
     fb = feedback(v["eq"]["nu"], v["pot"]["lai"])
     return climate.compute(grid, elev, dT, tilt, ice, veg=fb), fb
 
@@ -1478,16 +1493,14 @@ def niches(v: dict) -> np.ndarray:
     return out
 
 
-def flora_update(times: list, t: float, dt: float, plants_from: float, end: float, niche: np.ndarray, rng) -> list:
+def flora_update(times: list, t: float, dt: float, now: float, niche: np.ndarray, rng) -> list:
     """New appearance times (Myr; NaN: not yet) of the plant groups at a
     climate update at time t, dt Myr after the last. A group may appear
     from the start of its window (group_windows) once the one before it
     exists, with a chance per update proportional to its niche, times a
     ramp that reaches certainty at the window's end."""
     times = list(times)
-    if t < plants_from - 1e-9:
-        return times
-    win = group_windows(plants_from, end)
+    win = group_windows(now)
     for k, (a, b) in enumerate(win):
         if np.isfinite(times[k]):
             continue

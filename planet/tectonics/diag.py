@@ -31,6 +31,7 @@ import numpy as np
 
 from .. import climate, icemass, kernels
 from ..geo import R_KM
+from . import output
 
 TOP_SHEETS = 12  # sheets recorded per update (the largest by area); the rest are summed as "other"
 
@@ -50,16 +51,20 @@ class Recorder:
         """From earth.global_temperature, with its own numbers: this step's raw volcanic source and
         weathering sink (model units), the iced share it counted, the CO2 term as counted (clipped)
         and the ice albedo term (C, negative = cooling), and the target dT relaxes toward."""
-        from .earth import star_forcing
+        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, star_forcing
         p = sim.params
         rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)
+        free = ghg_icefree(sim, ice_frac, earth_ice(sim.grid.level))
         self._pending = {
             "t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "target": round(float(target), 3),
             "drift": round(float(sim.drift), 3), "co2": round(float(sim.co2), 3), "co2_term": round(float(co2_term), 3),
             "co2_term_free": round(p.co2_sensitivity / np.log(2.0) * float(sim.co2), 3), "albedo_term": round(float(albedo_term), 3),
             "offset": p.climate_offset,
             "star": round(star_forcing(p, sim.t) + float(sim.star_ctl), 3), "star_ctl": round(float(sim.star_ctl), 3),
+            "ghg": round(ghg_forcing(p, sim.t, float(sim.dT), free), 3),
+            "ch4_ppb": round(ghg_conc(p, sim.t, float(sim.dT), free)[0], 1),
             "ice_share": round(float(sim.ice_share if sim.ice_share is not None else 0.0), 3), "source_raw": float(source), "sink_raw": float(sink),
+            "plume_src": round(float(getattr(sim, "plume_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
             **self._sink_parts(sim)}
 
@@ -70,18 +75,25 @@ class Recorder:
         it (w_supply, model units, as sink_raw), the supply-weighted plant factor (w_plant) and the
         temperature factor weighted by supply and plants (w_temp); and, to see what the factors read, the
         supply-weighted local temperature (w_T, C) and runoff (w_q, mm/yr) and the mean erosion rate of
-        the eroding land (w_rate, km/Myr = mm/yr)."""
+        the eroding land (w_rate, km/Myr = mm/yr). Also the sink's bare-ground share (w_bare), its CO2
+        log-slope (w_a) and, in the spin-up, the supply-weighted plant factor of the reference's potential
+        vegetation (w_pot)."""
         from . import earth
         land = sim.land()
-        w, supply, warm, plants = earth.weathering(sim, land)
+        w, supply, warm, plants, bare = earth.weathering(sim, land)
         s, sp = float(supply.sum()), float((supply * plants).sum())
         free = land & (sim.ice <= 0)
         out = {"w_area": round(float(free.mean()), 4), "w_supply": s / sim.scale**2,
                "w_plant": round(sp / s, 4) if s > 0 else None, "w_temp": round(float(w.sum()) / sp, 4) if sp > 0 else None}
+        if w.sum() > 0:  # the sink's share on bare ground and its CO2 log-slope there (earth.co2_law, v1-finish-11)
+            out["w_bare"] = round(float(bare.sum() / w.sum()), 4)
+            out["w_a"] = round(earth.co2_slope(float(np.exp(sim.co2)), out["w_bare"]), 4)
+        if sim.npp_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
+            out["w_pot"] = round(float((supply * earth.plant_factor(sim.npp_pot)).sum()) / s, 4)
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
-        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)
+        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt_now, 5)
         return out
 
     def step(self, sim) -> None:
@@ -93,6 +105,7 @@ class Recorder:
         rec.update({"dT_end": round(float(sim.dT), 3), "iced_land": round(iced_land, 4),
                     "sea_level": round(float(sim.sea_level), 2), "sea_ice": round(float(sim.sea_ice), 2),
                     "sea_tect": round(float(sim.sea_tect), 2), "land": round(float(land.mean()), 4)})
+        rec.update(output.habitability(sim))  # (what the finish moment reads: highlights.finish_moment, PW-866)
         self._pending = None
         self.steps.append(rec)
 
@@ -115,6 +128,14 @@ class Recorder:
                "sea_ice": round(float(sim.sea_ice), 2), "sea_tect": round(float(sim.sea_tect), 2),
                "iced_lat_min": round(float(np.abs(g.lat[iced]).min()), 2) if iced.any() else None,
                "iced_lat_max": round(float(np.abs(g.lat[iced]).max()), 2) if iced.any() else None}
+        # the plants at the last update (one climate step behind): tree cover over land, and over the wet
+        # equatorial lowland (|lat| < 10 deg, > 2000 mm/yr, below 500 m: the hard check of PW-806/812)
+        tc = np.asarray(sim.tree_cover, float)
+        wet = output.wet_eq_lowland(g.lat, land, sim.precip, e)
+        rec["trees"] = round(100 * float(tc[land].mean()), 2) if land.any() else 0.0
+        rec["wet_eq_trees"] = round(100 * float(tc[wet].mean()), 2) if wet.any() else None
+        rec["wet_eq_cells"] = int(wet.sum())
+        rec["pco2"] = round(float(climate.pco2(sim.co2)), 1)
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
         rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)

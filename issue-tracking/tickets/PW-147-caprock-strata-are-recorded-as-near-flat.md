@@ -3,7 +3,7 @@ id: PW-147
 title: Caprock strata are recorded as near-flat, so the zoom never makes cuestas
 type: task
 status: todo
-parent: PW-005
+parent: null
 milestone: later
 subsystem: surface
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-010, PW-009, PW-649]
 refs: [planet/landform.py, planet/zoom_landforms.py]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -35,6 +35,7 @@ Options:
 Lean: A now, B if cuestas are wanted (it is physics, not a zoom fudge).
 
 ## Updates
+- 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649, milestone later): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-14: Status needs-decision -> todo. Owner decision: B (record a broad regional tilt in the run so cuestas form), wanted for sure but low priority.
 - 2026-10-14: Created from inbox draft draft-cuestas-need-dips.md (found by zoomland1).

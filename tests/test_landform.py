@@ -228,7 +228,7 @@ def test_landforms_in_runs_and_worlds(data_root):
     w2 = TL.world_from_sim(sim)
     for k in LF.LAYERS:
         assert k in w["layers"] and k in w2["layers"], k
-    assert np.array_equal(np.asarray(w["layers"]["landform"]), TL.frame(run, arr, "landform", 2))
+    assert np.array_equal(np.asarray(w["layers"]["landform"]), TL.frame(run, arr, "landform", len(run["frames"]) - 1))
     assert np.array_equal(np.asarray(w2["layers"]["landform"]), sim.snapshot().landform)
     import json
     from planet import world as W

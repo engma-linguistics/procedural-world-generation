@@ -146,6 +146,26 @@ def climate_now(sim) -> dict:
                 current=np.where(land[:, None], 0.0, sim.current))
 
 
+def wet_eq_lowland(lat, land, precip, e) -> np.ndarray:
+    """The wet equatorial lowland the finish's tree check reads (PW-806/812): land within 10 deg of the
+    equator, over 2000 mm/yr of rain, below 500 m."""
+    return land & (np.abs(lat) < 10.0) & (precip > 2000.0) & (e < 500.0)
+
+
+def habitability(sim) -> dict:
+    """What the finish checks read at a moment (PW-866, highlights.habitable): the climate's true area mean
+    temperature (C), the land under ice (% of land) and the trees on the wet equatorial lowland (% cover;
+    None without any). Empty before the first climate."""
+    if sim.temp is None:
+        return {}
+    land = sim.land()
+    wet = wet_eq_lowland(sim.grid.lat, land, sim.precip, sim.bed())
+    tc = np.asarray(sim.tree_cover, float)
+    return {"true_temp_c": round(float(np.mean(sim.temp)), 2),
+            "iced_land_pct": round(100 * float((land & (sim.ice > 0)).sum()) / max(int(land.sum()), 1), 2),
+            "wet_eq_trees_pct": round(100 * float(tc[wet].mean()), 1) if wet.any() else None}
+
+
 def stats(sim) -> dict:
     """A few headline numbers for progress lines and run summaries."""
     g = sim.grid
@@ -171,4 +191,5 @@ def stats(sim) -> dict:
         "ice_pct": round(100 * float((sim.ice > 0).mean()), 1),
         "mean_speed_cmyr": round(float(v.mean()), 2),
         "max_speed_cmyr": round(float(v.max()), 2),
+        **habitability(sim),
     }

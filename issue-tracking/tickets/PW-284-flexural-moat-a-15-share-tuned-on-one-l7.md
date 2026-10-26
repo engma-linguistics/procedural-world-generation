@@ -3,7 +3,7 @@ id: PW-284
 title: "Flexural moat: a 15% share tuned on one L7 seed's closed-basin count, and only the moat half of flexure applied"
 type: task
 status: todo
-parent: PW-245
+parent: null
 milestone: v2
 subsystem: tectonics
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-054, PW-242, PW-649]
 refs: [planet/tectonics/isostasy.py, planet/tectonics/params.py, docs/review/audit/tectonics.md, planet/tectonics/crust.py, planet/tectonics/plate_kernels.py, "run:a1d3b9@900Myr"]
 created: 2026-10-15
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -58,6 +58,7 @@ Lean B: one formula, no tuned share. The blur width is the only
 parameter, and it has a physical value.
 
 ## Updates
+- 2026-10-26: Parent PW-245 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-23: Filed under the quality-pass epic PW-649 (relates PW-649): shipped and judged good enough, residual kept for a later cleanup pass.
 - 2026-10-23: Audit concern restated (PW-597 triage, 2026-10-23): the flexural moat's 15% share was tuned on one L7 seed's closed-basin count and only the moat half of flexure is applied, i.e. metric-chasing under the audit rule. Status left unchanged; milestone stays v2.
 - 2026-10-21: Owner 2026-10-21: moved to v2.

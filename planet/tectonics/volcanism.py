@@ -81,10 +81,10 @@ def hotspots(sim, rng, bd):
     Returns, on each world cell: the plume head's crust (km/Myr, broad,
     for cap_plumes), the vents' apron (km/Myr, broad, for cap_plumes), the
     vents' own crust (km/Myr, already capped per vent) and the dome (m)."""
-    p, g, pl, dt = sim.params, sim.grid, sim.plates, sim.dt
+    p, g, pl, dt = sim.params, sim.grid, sim.plates, sim.dt_now
     follow_plates(sim)
     sim.hotspots = [h for h in sim.hotspots if sim.t - h["born"] < h["life"]]
-    n_new = rng.poisson(p.hotspots * sim.heat() * sim.dt / p.hotspot_life)
+    n_new = rng.poisson(p.hotspots * sim.heat() * sim.dt_now / p.hotspot_life)
     if sim.step_no == 1:
         n_new = int(round(p.hotspots * sim.heat()))  # start with a full set, of mixed ages
     spreading = bd.spreading
@@ -317,7 +317,7 @@ def re_home(sim):
         c = int(g.locate(v["pos"][None])[0])
         k2 = int(sim.owner[c])
         r2 = int(pl.idx[k2, c])
-        if pl.age[k2, r2] + 2 * sim.dt >= sim.t - v["born"]:
+        if pl.age[k2, r2] + 2 * sim.dt_now >= sim.t - v["born"]:
             b = base_level(sim, v)
             v.update(plate=k2, label=int(pl.label[k2]), ref=r2, ppos=pl.Q[k2].T @ v["pos"])
             v["base0"] += base_level(sim, v) - b  # (no jump in its floor)
@@ -347,7 +347,7 @@ def tend(sim):
     re_home(sim)
     if not sim.volcanoes:
         return
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     pos = np.array([v["pos"] for v in sim.volcanoes])
     cells = g.locate(pos)
     keep = []
@@ -444,7 +444,7 @@ def cap_plumes(sim, col, plume, tops, cont_share=0.25):
     flood basalt on any cell (PW-133: the Deccan is ~2 km, the Siberian
     Traps ~3.5; a plateau's height is mostly its swell, counted in
     as_volcano, which sinks as it decays)."""
-    dt, cont = sim.dt, col.cont
+    dt, cont = sim.dt_now, col.cont
     as_volcano = elevation(col.t, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.datum(),
                            sediment_km(col.cover, col.x))
     head = np.where(cont, tops[1], tops[0])
@@ -462,7 +462,7 @@ def volcanoes(sim, growth, t, rng):
     active for a few Myr, then goes extinct and erodes (tend()). Spaced
     out (params.volcano_spacing) so that only a representative few show,
     not every vent. In place on t (km of crust); returns t."""
-    p, g, dt = sim.params, sim.grid, sim.dt
+    p, g, dt = sim.params, sim.grid, sim.dt_now
     area = 4 * np.pi * R_KM**2 / g.n
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)

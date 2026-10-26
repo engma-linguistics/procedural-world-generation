@@ -20,7 +20,7 @@ GROUP = np.array([k[1][0] for k in climate.KOPPEN])
 def world(request):
     # the dry share swings a lot as continents move and cold eras come and go: average it
     # every 20 Myr over 100-400 Myr, so one era can't take a seed out of band (PW-369)
-    sim, dry = run_sim(level=5, seed=request.param, myr=100), []
+    sim, dry = run_sim(level=5, seed=request.param, myr=100, run_end=400.0), []  # (the run goes on to 400)
     frames = []
     for t in range(100, 401, 20):
         while sim.t < t - 1e-9:  # (keyframes every 4 Myr over the last 40, for the churn)

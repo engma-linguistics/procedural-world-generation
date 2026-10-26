@@ -84,21 +84,26 @@ def _at(v: str):
         raise argparse.ArgumentTypeError("a time in Myr, or 'auto'") from None
 
 
-def _resolve_at(run_dir, at):
-    """'auto' -> highlights.representative_time of the run (printed)."""
+def _resolve_at(run_dir, at, ago=None):
+    """'auto' -> highlights.representative_time of the run (printed); ago (Ma before now) -> its run time."""
+    if ago is not None:
+        run = json.loads((Path(run_dir) / "run.json").read_text())
+        t = H.ago_time(run["frames"], run["meta"], ago)
+        print(f"{ago:g} Ma before now: {t:g} Myr", flush=True)
+        return t
     if at != "auto":
         return at
     run = json.loads((Path(run_dir) / "run.json").read_text())
     frames = run["frames"]
-    t = H.representative_time(frames, plant_groups=run["meta"].get("plant_groups"))
-    print(f"representative moment: {t:g} Myr {H.representative_note(frames, t)}".rstrip(), flush=True)
+    t = H.representative_time(frames, run["meta"])
+    print(f"finish moment: {t:g} Myr {H.representative_note(frames, t, run['meta'])}".rstrip(), flush=True)
     return t
 
 
 def cmd_slice(args):
     run_dir = T.find_run(args.run)
     try:
-        path = T.slice_world(run_dir, _resolve_at(run_dir, args.at), args.erosion, force=args.force)
+        path = T.slice_world(run_dir, _resolve_at(run_dir, args.at, args.ago), args.erosion, force=args.force)
     except T.ReplayMismatch as e:
         raise SystemExit(f"ERROR: {e}")
     print(S.rel(path))
@@ -546,9 +551,12 @@ def main():
 
     sl = sub.add_parser("slice", help="replay a run to one moment and build a full world there")
     sl.add_argument("run", help="run id, e.g. a3f9c2 (see `list`)")
-    sl.add_argument("--at", type=_at, required=True,
-                    help="time in Myr, or 'auto': the run's most typical moment after 300 Myr "
-                         "(land %%, largest landmass and landmass count nearest their medians)")
+    when = sl.add_mutually_exclusive_group(required=True)
+    when.add_argument("--at", type=_at,
+                      help="time in Myr, or 'auto': the run's end (now), or its latest interglacial-like moment "
+                           "of the last few Myr when the end is in an icehouse")
+    when.add_argument("--ago", type=float, metavar="MA",
+                      help="Ma before now (the run's end): e.g. --ago 70 for a world just before the grasses spread")
     sl.add_argument("--erosion", type=float, default=0.3,
                     help="final valley-sharpening pass (erosion already ran during the simulation)")
     sl.add_argument("--force", action="store_true",

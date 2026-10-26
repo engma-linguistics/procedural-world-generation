@@ -4,7 +4,7 @@ title: Mount uptake follow-ups (contact fronts, dairy line wording, showcase REA
 type: task
 status: todo
 parent: PW-692
-milestone: null
+milestone: v2
 subsystem: infra
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-794, PW-793]
 refs: [planet/lineages/animals.py, "run 9a2aae"]
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-26
 ---
 
 ## Description
@@ -23,5 +23,6 @@ updated: 2026-10-24
 - The showcase-peoples README prose and numbers (devils/demons counts, old-run tables) were not re-measured for run 9a2aae; only the run id was updated. No dnd run on 6fbc2c is kept (the baseline was pre-change); the next dnd run on 6fbc2c should be added.
 
 ## Updates
+- 2026-10-26: Milestone null -> v2. (PW-900 backlog reorg).
 - 2026-10-24: Placed under PW-692 (v2 fun queue).
 - 2026-10-24: Created from inbox draft draft-mount-uptake-followups.md (found by fun-lane-22).

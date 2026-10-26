@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-645, PW-643, PW-450]
 refs: [tests/test_timezoom.py, docs/review/tests/multiseed-fixtures.md, docs/review/tests/eligibility.txt]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -37,4 +37,5 @@ A physically sharper rule would compare the two parts of the premise, both read 
 It would have no arbitrary number, but it needs care so that it doesn't amount to computing F.
 
 ## Updates
+- 2026-10-26: Merged PW-659: the forest-to-tundra test has no floor on how many worlds are eligible, so a change that removes most boreal snow could pass on a handful of seeds. (PW-900 backlog reorg).
 - 2026-10-23: Created from inbox draft draft-forest-eligibility-sharper-rule.md (found by tests-multiseed-rulings).

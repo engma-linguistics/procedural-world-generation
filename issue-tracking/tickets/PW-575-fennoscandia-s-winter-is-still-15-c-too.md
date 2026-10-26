@@ -3,7 +3,7 @@ id: PW-575
 title: "Fennoscandia's winter is still 15 C too cold with the Norwegian Sea open: the winter winds over the Nordic Seas blow offshore, and the air's winds never see the sea's own warmth"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: l

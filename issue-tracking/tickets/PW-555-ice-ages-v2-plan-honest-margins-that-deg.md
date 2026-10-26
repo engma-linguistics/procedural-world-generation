@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-470, PW-526, PW-514, PW-461, PW-462, PW-464, PW-465, PW-467, PW-469, PW-459, PW-460, PW-538, PW-496, PW-030, PW-549]
 refs: [docs/review/ice-v2-review.md, docs/review/audit/ice-framing-deep-dive.md, docs/review/audit/PW-514-batch.md]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -53,6 +53,7 @@ rules.
 - [ ] stage 0 tickets cut (PW-467 tool, moment suite, ice/basin split in health, hysteresis probe)
 
 ## Updates
+- 2026-10-26: Note from PW-526 (a result record): the ice batch (coast_loss + PW-460/459 + PW-464) fails: with honest margins neither the run nor the zoom can deglaciate a big sheet (cold eras 1/10, Earth interglacials 16-20% iced). (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-22: Owner 2026-10-22: zoom ice work taken as more or less done. Stages 1-1c merged to main with the new zoom rules as TZParams options defaulting to the run's (with them on, the L4 endings test fails; PW-568). Stage 3 (the run runs the zoom's rules) waits on the base climate. The lane worktree moves to a base-climate / whole-sim review against Earth as a plausibility check, not a parity target.
 - 2026-10-22: Stage 1c on branch worktree-agent-a339320374f6026c2 (lane, not for merge). New lever, the margin balance at today's climate. Yardstick tools/tz_earth.py --dt0 (index off, 100 kyr) and an observed SMB, RACMO2.3p3 2001-2018, cached in data/earth (tools/earth_data.py; tools/tz_earth.py --greenland). RACMO: the outer 110 km of Greenland +0.15 m/yr; L6 margin cells -0.02 vs the zoom's +0.21, inland +0.29 vs +0.28. Suspects: (a) ramp quadrature no effect; (b) front=ramp (the new front as the ramp's outer 10 km with the fetch share) kept: dT-0 ice 1.30 -> 1.17 of today's, the recovery bar passes, but it doesn't follow the orbit; (c) caps in place are the base climate's cold mountains. Checkpoint 1c: maxima -49..-93 at 5.5-6 C (fail), give-back 0.51-0.85 (fail), interglacials 11.4-13.1% (fail); suite 4/7 with area (fixture and s1@540 added); L4 test fails (83.4 of 78.2 m left). The lever is spent. Left: Greenland's N/E margin summers 2-5 C too cold (the ice-surface air) and the run-side gap (stage 3). stage-1.md "Stage 1c"; handoff-stage1c.md.

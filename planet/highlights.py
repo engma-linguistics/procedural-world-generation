@@ -2682,109 +2682,81 @@ def find(world: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 # A representative moment of a run (`--at auto`)
 # ---------------------------------------------------------------------------
-REPRESENTATIVE_AFTER_MYR = 300.0
+# The finish checks (PW-865 option C, owner 2026-10-25; passrate4's, unchanged): a moment people could live in
+PREIND_T = 13.8  # C: Earth's pre-industrial (1850-1900) true area mean (Berkeley Earth / HadCRUT ~13.7-13.9)
+HUMAN_RANGE = (-6.0, 3.0)  # C against it (LGM to Pliocene-ish)
+LAND_ICE_RANGE = (1.0, 25.0)  # % of land under ice: not none, not LGM-like (Earth pre-industrial ~10, LGM ~25)
+WET_TREES = 20.0  # % tree cover on the wet equatorial lowland (PW-806)
 
 
-SEA_LEVEL_MIN_SCALE_M = 40.0  # floor on the sea-level scale: a run with a steady sea level isn't over-penalised for wobbles
-ICEHOUSE_SEA_ICE_M = -20.0  # an icehouse: land ice holding at least 20 m of sea level (tools/ice_criteria.ICEHOUSE_SL)
-ICEHOUSE_JOIN_MYR = 8.0  # icehouse spells closer than this are one era (tools/ice_criteria.JOIN)
-WARM_QUANTILE = 0.75  # in an icehouse era, the warm moments: frames with no more ice than this quantile's sea_ice_m allows
+def habitable(stats: dict) -> list[str]:
+    """The finish checks a moment's stats (tectonics.output.habitability) fail; [] when it passes all.
+    A frame without them (no climate yet) fails every one."""
+    out = []
+    t = stats.get("true_temp_c")
+    if t is None or not HUMAN_RANGE[0] <= t - PREIND_T <= HUMAN_RANGE[1]:
+        out.append("temperature")
+    ice = stats.get("iced_land_pct")
+    if ice is None or not LAND_ICE_RANGE[0] <= ice < LAND_ICE_RANGE[1]:
+        out.append("land ice")
+    w = stats.get("wet_eq_trees_pct")
+    if w is None or w < WET_TREES:
+        out.append("wet-tropics trees")
+    return out
 
 
-def flora_complete_myr(plant_groups) -> float | None:
-    """When a run's last plant group appeared (run.json meta.plant_groups, as
-    timeline.plant_groups writes it, or plain times; None entries: never),
-    i.e. from when a slice has every plant type; None without the groups."""
-    ts = [g.get("t") if isinstance(g, dict) else g for g in plant_groups or []]
-    ts = [float(t) for t in ts if t is not None and np.isfinite(t)]
-    return max(ts) if ts else None
+def finish_moment(frames: list[dict], window: float) -> dict:
+    """The moment a default or showcase world is taken at (`--at auto`; owner 2026-10-25, PW-866): the latest
+    human-habitable keyframe (habitable: the finish checks) of the run's last `window` Myr, the finish window
+    whose steps each have a climate (tectonics Simulation.step_length). Earth passes those checks only in its
+    last few Myr, so this is choosing the right kind of moment. Without a passing one: the run's end, flagged.
+    Returns {t, before_end_myr, passes, candidates, passing, fails_at_end, why} (the run records it in its
+    meta as finish_moment, for the viewer)."""
+    end = float(frames[-1]["t"])
+    cand = [f for f in frames if f["t"] >= end - window - 1e-9] if window > 0 else [frames[-1]]
+    ok = [f for f in cand if not habitable(f["stats"])]
+    at_end = habitable(frames[-1]["stats"])
+    out = {"candidates": len(cand), "passing": len(ok), "fails_at_end": at_end}
+    if not ok:
+        return {**out, "t": end, "before_end_myr": 0.0, "passes": False,
+                "why": f"NO human-habitable moment in the last {window:g} Myr ({len(cand)} candidates): the run's "
+                       f"end, which fails {', '.join(at_end) or 'nothing'}"}
+    t = float(ok[-1]["t"])
+    back = round(end - t, 3)
+    why = ("the run's end: human-habitable" if back == 0 else
+           f"finished {back:g} Myr before the run's end: the latest human-habitable moment (the end fails "
+           f"{', '.join(at_end)})")
+    return {**out, "t": t, "before_end_myr": back, "passes": True,
+            "why": why + f"; {len(ok)} of {len(cand)} candidates pass"}
 
 
-def representative_time(frames: list[dict], after_myr: float = REPRESENTATIVE_AFTER_MYR,
-                        plant_groups=None) -> float:
-    """The keyframe time most typical of a run's mature geography: after
-    `after_myr` (once the start-up has settled; the last two thirds for a
-    shorter run), the frame whose land %, largest landmass %, log of the
-    landmass count and total sea level are jointly closest to that stretch's
-    medians, each measured in its interquartile ranges. Neither the most
-    dispersed nor the most assembled moment, nor one in a cold-era sea-level
-    trough, which is what a showcase world should be. The sea-level term is
-    relative to the run's own median (a nudge: when no frame near it fits the
-    other criteria, the nearest overall wins); runs without `sea_level_m`
-    skip it. plant_groups (the run's meta.plant_groups): the pick is limited
-    to frames once the last plant group has appeared (flora_complete_myr), so
-    a showcase world has grasses, shrubs and flowering trees (PW-634); the
-    medians are still the whole stretch's. No such frame: the latest one.
-
-    When that frame falls in an icehouse era (sea_ice_m at or below
-    ICEHOUSE_SEA_ICE_M; spells closer than ICEHOUSE_JOIN_MYR joined), the pick
-    moves to a warm moment of that same era, like Holocene Earth inside the
-    late Cenozoic icehouse (PW-700): among the era's frames with the least
-    ice (sea_ice_m in the era's top WARM_QUANTILE), the geographically most
-    typical. The era's glacial depths stay reachable through its frames and
-    the time zoom (finish.now_kyr "glacial"). Runs without sea_ice_m skip it."""
-    end = frames[-1]["t"]
-    start = after_myr if end > after_myr else end / 3
-    late = [f for f in frames if f["t"] >= start] or frames[-1:]
-    cols = [[f["stats"]["land_pct"], f["stats"]["largest_landmass_pct"],
-             np.log(1 + f["stats"]["landmasses"])] for f in late]
-    if all("sea_level_m" in f["stats"] for f in late):
-        for c, f in zip(cols, late):
-            c.append(f["stats"]["sea_level_m"])
-    x = np.array(cols, float)
-    med = np.median(x, 0)
-    q1, q3 = np.percentile(x, [25, 75], 0)
-    scale = np.maximum(q3 - q1, 1e-6 + 0.05 * np.abs(med))
-    if x.shape[1] == 4:
-        scale[3] = max(scale[3], SEA_LEVEL_MIN_SCALE_M)
-    d = np.sqrt((((x - med) / scale) ** 2).sum(1))
-    t_full = flora_complete_myr(plant_groups)
-    if t_full is not None:
-        ok = np.array([f["t"] >= t_full - 1e-9 for f in late])
-        if not ok.any():
-            return float(frames[-1]["t"])
-        d = np.where(ok, d, np.inf)
-    i = int(np.argmin(d))
-    if all("sea_ice_m" in f["stats"] for f in late):
-        i = _warm_in_era(late, d, i)
-    return float(late[i]["t"])
+def window_of(meta: dict) -> float:
+    """The run's finish window (Myr; tectonics Params.finish_window)."""
+    return float(meta.get("params", {}).get("finish_window", 0.0))
 
 
-def _warm_in_era(late: list[dict], d: np.ndarray, i: int) -> int:
-    """representative_time's frame i, or a warm moment of the icehouse era it falls in (PW-700): late's
-    frames with their distances d (inf: not eligible)."""
-    t = np.array([f["t"] for f in late], float)
-    si = np.array([f["stats"]["sea_ice_m"] for f in late], float)
-    if si[i] > ICEHOUSE_SEA_ICE_M:
-        return i
-    ice = np.flatnonzero(si <= ICEHOUSE_SEA_ICE_M)
-    # the era: the icehouse frames around i, gaps up to ICEHOUSE_JOIN_MYR joined (its ice-free flickers belong to it)
-    lo = hi = int(np.searchsorted(ice, i))
-    while lo > 0 and t[ice[lo]] - t[ice[lo - 1]] <= ICEHOUSE_JOIN_MYR + 1e-9:
-        lo -= 1
-    while hi < len(ice) - 1 and t[ice[hi + 1]] - t[ice[hi]] <= ICEHOUSE_JOIN_MYR + 1e-9:
-        hi += 1
-    era = np.arange(ice[lo], ice[hi] + 1)
-    era = era[np.isfinite(d[era])]
-    warm = era[si[era] >= np.quantile(si[era], WARM_QUANTILE)]
-    return int(warm[np.argmin(d[warm])])
+def representative_time(frames: list[dict], meta: dict | None = None) -> float:
+    """The finish moment's time (finish_moment): as the run recorded it, else worked out from its frames."""
+    fm = (meta or {}).get("finish_moment")
+    return float(fm["t"]) if fm else finish_moment(frames, window_of(meta or {}))["t"]
 
 
-def representative_note(frames: list[dict], t: float) -> str:
-    """One line on the picked frame's total sea level against the run's median
-    (after 300 Myr), flagging a pick well outside the run's typical band."""
-    start = REPRESENTATIVE_AFTER_MYR if frames[-1]["t"] > REPRESENTATIVE_AFTER_MYR else frames[-1]["t"] / 3
-    sl = [f["stats"]["sea_level_m"] for f in frames if f["t"] >= start and "sea_level_m" in f["stats"]]
-    f = next((f for f in frames if f["t"] == t), None)
-    if not sl or f is None or "sea_level_m" not in f["stats"]:
-        return ""
-    med = float(np.median(sl))
-    q1, q3 = np.percentile(sl, [25, 75])
-    here = f["stats"]["sea_level_m"]
-    note = f"(sea level {here:.0f} m; run median {med:.0f} m)"
-    if abs(here - med) > max(q3 - q1, SEA_LEVEL_MIN_SCALE_M):
-        note += " NOTE: no frame near the run's typical sea level fits the other criteria; best available taken"
-    return note
+def representative_note(frames: list[dict], t: float, meta: dict | None = None) -> str:
+    """One line on the picked moment: why it was taken (finish_moment)."""
+    fm = (meta or {}).get("finish_moment") or finish_moment(frames, window_of(meta or {}))
+    return f"({fm['why']})" if abs(fm["t"] - t) < 1e-9 else ""
+
+
+def ago_time(frames: list[dict], meta: dict, ago_ma: float) -> float:
+    """The run time (Myr) ago_ma Ma before now (`slice --ago`): now is the run's end less its
+    star_now_offset_myr (tectonics.earth.now_myr, from the run's stored params)."""
+    from .tectonics import Params
+    from .tectonics.earth import now_myr
+    t = now_myr(Params.from_stored(meta.get("params", {}))) - float(ago_ma)
+    if t < frames[0]["t"] - 1e-9 or t > frames[-1]["t"] + 1e-9:
+        raise ValueError(f"{ago_ma:g} Ma before now is run time {t:g} Myr, outside the run "
+                         f"({frames[0]['t']:g}-{frames[-1]['t']:g} Myr)")
+    return t
 
 
 # ---------------------------------------------------------------------------

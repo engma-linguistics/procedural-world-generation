@@ -2,7 +2,7 @@
 id: PW-659
 title: "The forest-to-tundra test has no floor on how many worlds are eligible: a change that removes most boreal snow would leave it passing on a handful of seeds"
 type: task
-status: todo
+status: wontdo
 parent: PW-649
 milestone: later
 subsystem: timezoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-645, PW-643]
 refs: [tests/test_timezoom.py, tests/seeds.py, docs/review/tests/multiseed-fixtures.md]
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -30,5 +30,6 @@ Good enough for now. For the quality pass, decide one of these:
 - or print a warning when the eligible count drops well below main's 18-21.
 
 ## Updates
+- 2026-10-26: Status todo -> wontdo. Wontdo: merged into PW-658. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> later (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-23: Created from inbox draft draft-forest-test-eligible-floor.md (found by tests-multiseed-rulings).

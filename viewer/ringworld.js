@@ -2,6 +2,7 @@
 // noise coloured with the viewer's biome palette (planet/climate.py BIOMES).
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { wheelZoom } from './wheelzoom.js';
 
 const BIOMES = [  // id, name, colour: copied from planet/climate.py BIOMES
   [0, 'deep ocean', '#1d3f6e'], [1, 'shallow sea', '#3a6ea5'], [2, 'sea ice', '#d8e6ef'], [4, 'ice sheet', '#f4f7fa'],
@@ -40,6 +41,7 @@ scene.background = new THREE.Color(0x05070c);
 const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 6000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+wheelZoom(controls, renderer.domElement);
 
 // background stars
 {

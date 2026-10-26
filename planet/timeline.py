@@ -31,6 +31,7 @@ import numpy as np
 from . import climate
 from . import soils as SOILS
 from . import store as S
+from . import highlights as H
 from . import vegetation as VEG
 from . import world as W
 from .provenance import code_version, describe
@@ -40,6 +41,7 @@ from .noise import Perlin3D, fbm, ridged
 from .tectonics import CMYR, Params, Simulation
 from .landform import LAYERS as LANDFORM_LAYERS
 from .surface import _relief, surface_rock
+from .tectonics.earth import now_myr
 from .tectonics.isostasy import grounded
 from .tectonics.volcanism import COLUMNS as VOLCANO_COLUMNS
 
@@ -115,8 +117,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
     progress(fraction of myr done): called at every keyframe."""
     t0 = time.time()
     grid = build_grid(level)
-    if params.flora_end <= 0:  # the plant groups' timeline is scaled to the run's length
-        params = replace(params, flora_end=float(myr))
+    if params.run_end <= 0:  # the run's end is now, for the star and the plant calendar (PW-813)
+        params = replace(params, run_end=float(myr))
     sim = Simulation(grid, seed, params, dt)
     stride = max(1, round(every / dt))
     ck_stride = round(checkpoint_every / dt) if checkpoint_every > 0 else 0
@@ -127,10 +129,13 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
 
     writer = S.CheckpointWriter()
 
+    def on(t, period):  # (t on a multiple of period: the step count isn't, after the finish window's fine steps)
+        return abs(t / period - round(t / period)) < 1e-6
+
     def keep(s: Simulation):
-        if ck_stride and s.step_no and s.step_no % ck_stride == 0:
+        if ck_stride and s.step_no and on(s.t, ck_stride * dt):
             S.save_checkpoint(out, s, writer)
-        if s.step_no % stride:
+        if not (on(s.t, stride * dt) or s.in_finish_window()):  # (every finish-window step is a candidate moment)
             return
         snap = s.snapshot()
         if jet["v"] is None or jet["src"] is not s.t_warm:
@@ -167,6 +172,8 @@ def simulate(seed: int, level: int, myr: float, dt: float, every: float, name: s
                  "cell_size_km": round(grid.spacing * R_KM),
                  "params": asdict(params), "code": code_version(),
                  "plant_groups": plant_groups(sim),
+                 # the finished world's moment and why (PW-866): what `--at auto`, make and the viewer take
+                 "finish_moment": H.finish_moment(frames, params.finish_window),
                  "generated_in_s": round(time.time() - t0, 1),
                  "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "grid": f"../../grids/L{level}.json",
@@ -184,21 +191,20 @@ def plant_groups(sim: Simulation) -> list:
     """When each plant group appeared in a run (vegetation.GROUPS), with its
     window: what the viewer ticks on the time slider."""
     p = sim.params
-    win = VEG.group_windows(p.plants_from, p.flora_end if p.flora_end > 0 else sim.t)
+    win = VEG.group_windows(now_myr(p))
     return [{"group": k + 1, "name": name, "pfts": list(codes),
              "t": None if not np.isfinite(t) else round(float(t), 1),
              "window": [round(a, 1), round(b, 1)]}
             for k, ((name, codes, _), t, (a, b)) in enumerate(zip(VEG.GROUPS, sim.flora, win))]
 
 
-def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray, plants_from: float) -> dict:
+def keyframe_vegetation(meta: dict, fr: dict, tree_cover: np.ndarray) -> dict:
     """The vegetation's history at a keyframe fr (a world's or a time zoom's veg): the keyframe's tree
     cover (%, forest or savanna) as a warm start, its CO2 (ppm), and the plant groups by then."""
     groups = [g.get("t") for g in meta.get("plant_groups", [])] or [0.0] * len(VEG.GROUPS)
     t_fr = float(fr["t"])
     return {"nu0": VEG.start_from_tree_cover(np.asarray(tree_cover) / 100.0), "pco2": fr["stats"].get("pco2", VEG.CA_REF),
-            "unlocked": (VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr)
-                         if t_fr >= plants_from - 1e-9 else np.zeros(VEG.NP, bool)),
+            "unlocked": VEG.unlocked_at([np.nan if g is None else g for g in groups], t_fr),
             "groups": groups}
 
 
@@ -284,6 +290,17 @@ def report(run_dir: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Replay + slice
 # ---------------------------------------------------------------------------
+def snap_time(run: dict, at: float) -> float:
+    """A run time snapped to a step the run took: its nearest keyframe in the finish window (whose steps are
+    params.finish_step long, Simulation.step_length), else the nearest multiple of dt."""
+    times = [f["t"] for f in run["frames"]]
+    p = run["meta"]["params"]
+    start = p.get("run_end", 0) - p.get("finish_window", 0)
+    if p.get("finish_window", 0) > 0 and at > start + 1e-9:
+        return float(min(times, key=lambda t: abs(t - at)))
+    return round(at / run["meta"]["dt"]) * run["meta"]["dt"]
+
+
 def replay(run_dir: Path, at: float, use_checkpoints: bool = True, log=print) -> Simulation:
     """The run's simulation at time `at`: from the latest checkpoint at or
     before it when the run was made by this same code (else from t=0)."""
@@ -316,7 +333,7 @@ def slice_world(run_dir: Path, at: float, erosion: float = 0.3, force: bool = Fa
     run, arr = load_frames(run_dir, ("elevation", "plate"))
     _not_timezoom(run, run_dir)
     m = run["meta"]
-    at = round(at / m["dt"]) * m["dt"]
+    at = snap_time(run, at)
     if not 0 <= at <= m["myr"] + 1e-9:
         raise SystemExit(f"--at must be between 0 and {m['myr']}")
     made_by, now = m.get("code"), code_version()
@@ -355,8 +372,6 @@ def world_from_sim(sim: Simulation, erosion: float = 0.3, memory: dict | None = 
     snap = sim.snapshot()
     veg = {"nu0": sim.veg_frac, "pco2": climate.pco2(sim.co2), "unlocked": VEG.unlocked_at(sim.flora, sim.t),
            "groups": [None if not np.isfinite(t) else round(float(t), 1) for t in sim.flora]}
-    if sim.t < sim.params.plants_from - 1e-9:
-        veg["unlocked"] = np.zeros(VEG.NP, bool)
     return _world(sim.grid, sim.seed, sim.params, sim.t, snap.elevation.astype(float), snap.plate,
                   snap.continental, snap.boundary, snap.age, sim.velocity(), snap.rock, snap.surface,
                   snap.cover, snap.thickness, snap.ice, snap.hotspots, snap.volcanoes,
@@ -403,7 +418,7 @@ def world_from_frame(run_dir: Path, at: float, erosion: float = 0.3, state: dict
     exposed = surface_rock(a["rock"], a["sediment_cover"], a["strata_top"], a["strata_top_km"])
     s = fr["stats"]
     t_fr = float(fr["t"])
-    veg = keyframe_vegetation(m, fr, a["tree_cover"], params.plants_from)
+    veg = keyframe_vegetation(m, fr, a["tree_cover"])
     st = {"elevation": a["elevation"].astype(float), "ice": a["ice"], "dT": s["global_temp_c"] - 14.5,
           "sea_level": s["sea_level_m"], "tilt": params.tilt, **(state or {})}
     if st.get("veg"):  # a time zoom's plants (finish.py): its cover and CO2 instead of the keyframe's

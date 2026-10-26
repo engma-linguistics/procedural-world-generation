@@ -3,7 +3,7 @@ id: PW-582
 title: "Fennoscandia's winter still 8.9 C too cold after PW-575's winds: the Barents and the northern Greenland Sea freeze (no Atlantic water past the sinking site), and Iceland sits in their cold"
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: l

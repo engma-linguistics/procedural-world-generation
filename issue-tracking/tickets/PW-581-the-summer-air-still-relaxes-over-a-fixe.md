@@ -3,7 +3,7 @@ id: PW-581
 title: The summer air still relaxes over a fixed 450 km while the winter's is now per time (PW-575); mountain cells' own winters run cold (Canadian Rockies −4.7 → −7.6 C)
 type: task
 status: todo
-parent: PW-470
+parent: PW-570
 milestone: v2
 subsystem: climate
 effort: m

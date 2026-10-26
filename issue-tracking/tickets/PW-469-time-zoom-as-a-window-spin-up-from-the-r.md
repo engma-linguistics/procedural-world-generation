@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-462, PW-436, PW-447, PW-030, PW-429]
 refs: [planet/timezoom/sim.py, planet/timezoom/cycle.py, planet/timezoom/forcing.py, planet/orbit.py, docs/review/audit/ice-framing-deep-dive.md]
 created: 2026-10-20
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -47,5 +47,6 @@ spin-up.
 - [ ] phase at start reported; tz_mean table re-measured
 
 ## Updates
+- 2026-10-26: Merged PW-030: the time zoom has no real 100-kyr sawtooth. (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).
 - 2026-10-20: Created from inbox draft draft-tz-window-spinup.md (found by pw462).

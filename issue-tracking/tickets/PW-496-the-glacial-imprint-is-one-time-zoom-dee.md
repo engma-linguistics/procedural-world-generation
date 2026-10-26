@@ -3,7 +3,7 @@ id: PW-496
 title: The glacial imprint is one time zoom deep, not an icehouse era deep
 type: task
 status: todo
-parent: PW-037
+parent: PW-470
 milestone: v2
 subsystem: timezoom
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-037, PW-092, PW-104]
 refs: [planet/timezoom/sim.py, planet/finish.py, docs/proposals/glacial_carving.md]
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 ## Description
@@ -36,5 +36,6 @@ Options:
 Lean: A now, C as the real fix; B is a cheap visual boost if the owner wants Great Lakes before PW-104.
 
 ## Updates
+- 2026-10-26: Parent PW-037 (done) -> PW-470. (PW-900 backlog reorg).
 - 2026-10-23: Status needs-decision -> todo. Coordinator (2026-10-24): owner defers geophysics; not an owner question. The physics lane decides it against the v1/v2 north star (seed robustness first) when it reaches it.
 - 2026-10-21: Created from inbox draft draft-glacial-imprint-depth-only-one-myr.md (found by pw037).

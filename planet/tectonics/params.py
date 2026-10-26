@@ -75,15 +75,30 @@ class Params:
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
     incision: float = 0.0064  # river cutting, per Myr per sqrt(flow) (flow of runoff, ~40% of the rain)
     climate_every: float = 4.0  # Myr between climate (rain, ice, sea level) updates; keyframes (every 4) match
+    # The finish window (PW-866, owner 2026-10-25): the run's last finish_window Myr step finish_step Myr at a
+    # time, each with a climate update and a keyframe, so the finished world can be taken at the latest
+    # human-habitable one of those candidate moments (highlights.representative_time). 0: none.
+    finish_window: float = 10.0
+    finish_step: float = 0.5
     # climate (see earth.global_temperature)
     tilt: float = 23.4  # deg: axial tilt, sets how strong the seasons are
     climate_offset: float = 0.0  # C: shifts the whole history warmer (+) or colder (-)
-    # The star brightens as it ages (earth.star_forcing, PW-564/761): this many times a Sun-like star's rate on
-    # Gough's (1981) curve, counted against the run's start. 0.45 is a slower-evolving K-type star (~0.75 solar
-    # masses: main-sequence life ~M^-2.5): the model's thermostat passes ~3/4 of a sustained forcing, and a
-    # Sun-like 1.0 warms 1 Gyr runs ice-free (v1-finish-7). A chosen star, within the plausible range.
-    star_brightening: float = 0.45
-    star_age: float = 0.0  # Myr: the star's age at the run's start (0: the planet is as young as its star)
+    # The star brightens as it ages (earth.star_forcing, PW-809/815): a Sun-like star on Gough's (1981) curve,
+    # anchored so the run's END is now (owner 2026-10-24): a run of run_end Myr spans the star's ages
+    # 4570 - run_end .. 4570 Myr, so it starts under a fainter young star (-8% at 1 Gyr, -15% at 2 Gyr) and ends
+    # under today's Sun. The forcing is counted against today's Sun (negative early, 0 at the end; the climate's
+    # dT = 0 is Earth under it); the carbon cycle answers the faint start with high CO2 (earth.start_carbon).
+    # star_brightening: times the Sun's rate (1: Gough's Sun; < 1 a slower-evolving, lower-mass star; 0: a star
+    # that doesn't change).
+    star_brightening: float = 1.0
+    # Myr: the run ends this far after today's Sun (> 0: a look into the future, e.g. ~600 Myr ahead of the
+    # CO2 collapse; an extension of a run keeps its anchor, so the extended part is this offset)
+    star_now_offset_myr: float = 0.0
+    # Myr: the run's end, the moment that is "now" (less star_now_offset_myr) for the star and for the plant
+    # groups' calendar (vegetation.group_windows; earth.now_myr). 0: the run's length (timeline.simulate sets
+    # it; a direct Simulation caller should, else 1000, earth.RUN_END_DEFAULT). An extension keeps it. A run
+    # longer than its star's age is refused (earth.check_star).
+    run_end: float = 0.0
     # A CONTROL, NOT PHYSICS (PW-791; earth.star_control): the world-builder's star thermostat, on for the Earth-like
     # preset. It dims or brightens the star slowly when the planet's running icehouse share (the share of the last
     # ~star_window Myr with land ice holding >= 20 m of sea level) leaves star_ice_band, so a run stays in a
@@ -97,8 +112,30 @@ class Params:
     star_gain: float = 0.2  # C of forcing per Myr per unit of share outside the band (0 share: -2 C per 100 Myr)
     star_control_max: float = 0.04  # +- share of the star's luminosity (+-7.7 C of forcing at co2_sensitivity 3)
     star_control_from: float = 200.0  # Myr: no control before (the made-up start settles)
-    climate_drift: float = 3.0  # C: size of the slow random wander in global temperature...
+    # C: size of the slow random wander of the carbon cycle (PW-819: noise on the carbon source, not on the
+    # temperature), as the warming it gives at the balance (earth.drift_source: 1 C is 0.116 e-folds of the
+    # source). It stands only for the source terms the model lacks; the ridges' and arcs' outgassing is explicit
+    # (its own sd(ln) 0.2-0.45 after 300 Myr, already GEOCARB's f_G spread; the plumes' since PW-875). The lacking terms, sized from the
+    # literature (docs/review/base-climate/v1-finish-13/README.md), add in quadrature to sd(ln) ~0.10:
+    #  - net organic burial (organic C buried minus weathered and degassed): it is O2's source, so the O2
+    #    record bounds it. GEOCARBSULF's Phanerozoic O2 (~15-30%, Berner 2006, 2009; +-30% envelope, Royer et
+    #    al. 2014) is +-~7e18 mol of 38e18 (Berner 2004); held over the drift's 40 Myr that is ~0.18e18 mol/Myr,
+    #    ~3% of the silicate weathering flux (~6.7e18 mol/Myr, Berner & Kothavala 2001); x2 for pyrite burial
+    #    offsetting O2 (Berner & Raiswell 1983): sd(ln) ~0.05. (Royer et al. 2014: the carbonate d13C, which
+    #    drives the organic burial, is among the top O2 drivers and not among the CO2 ones.)
+    #  - ocean chemistry: carbonate on the subducting plates (GEOCARB's f_C, 0.75 -> 1 as pelagic carbonate
+    #    spread, Wilkinson & Walker 1989; Berner 2004), a ln range of 0.29: sd(ln) ~0.08.
+    # 0.8 C is sd(ln) 0.093. Was 3 C (sd(ln) ~0.36), which also counted the outgassing the model has explicitly.
+    # Not sized to any end-pCO2 band...
+    climate_drift: float = 0.8
     climate_drift_time: float = 40.0  # Myr: ...and how long it takes to forget
+    # x pre-industrial: methane's lifetime (so its level) under the low-oxygen air (earth.ghg_conc, PW-859): between
+    # the Great and the Neoproterozoic Oxygenation Events (~2.1-0.8 Ga) CH4 stood at ~10-300 ppm against today's
+    # pre-industrial 0.7 (Pavlov et al. 2003, Geology 31: 87: 100-300 ppm; Roberson et al. 2011, Geobiology 9: 313;
+    # Olson et al. 2016, PNAS 113: 11447: <~10 ppm): ~30 ppm, 43x, the middle (~4 W/m2). Before the GOE ~1000 ppm
+    # (Pavlov et al. 2000; Kasting 2005; Haqq-Misra et al. 2008), 1400x (~8 W/m2)
+    methane_proterozoic: float = 43.0
+    methane_archean: float = 1400.0
     co2_sensitivity: float = 3.0  # C per doubling of the CO2 stock (pCO2): Earth's equilibrium sensitivity, ~3
     # (IPCC AR6 2.5-4; the land ice's albedo is its own term); 3 C per e-fold before PW-646 (2.1 per doubling)
     ice_albedo: float = 1.5  # C of cooling per 3% of the planet under land ice (Earth today; dT counts it
@@ -106,10 +143,6 @@ class Params:
     ice_albedo_max: float = 3.0  # ... levelling off toward this many C (Earth's LGM ice sheets: ~2.5-3)
     glacial_erosion: float = 3.0  # erosion multiplier under sliding (temperate) glaciers
     # rocks
-    plants_from: float = 0.0  # Myr: land plants exist from this time on (slow erosion, make coal)
-    # Myr: the run's end, for the plant groups' timeline (vegetation.group_windows);
-    # simulate sets it to the run's length, 0: 1000
-    flora_end: float = 0.0
     craton_age: float = 1500.0  # Myr: untouched continental crust this old becomes craton
     evaporite_rate: float = 0.02  # km/Myr of salt in a hot, dry closed basin
     coal_rate: float = 0.003  # km/Myr of coal in a warm, wet, low swamp

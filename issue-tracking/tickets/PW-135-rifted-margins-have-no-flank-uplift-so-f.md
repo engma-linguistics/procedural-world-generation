@@ -3,7 +3,7 @@ id: PW-135
 title: Rifted margins have no flank uplift, so few great escarpments stand high
 type: task
 status: todo
-parent: PW-005
+parent: null
 milestone: null
 subsystem: tectonics
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-010]
 refs: [planet/tectonics/crust.py, planet/landform.py, planet/tectonics/isostasy.py]
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-26
 ---
 
 ## Description
@@ -29,6 +29,7 @@ the great escarpment. Try a flexural flank uplift alongside
 next to the stretched belt), then recheck escarpment share and heights.
 
 ## Updates
+- 2026-10-26: Parent PW-005 (done) -> none. (PW-900 backlog reorg).
 - 2026-10-15: Merged inbox draft draft-rift-flank-flexure.md ("Rift flanks need flexural unloading uplift (negative-load flexure)", found by tect2).
   PW-054 added `isostasy.subsidence`: flexural moats beside thickened crust
   (positive loads only) and a McKenzie thermal term that lifts the stretched
